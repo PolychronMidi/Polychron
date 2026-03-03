@@ -3,8 +3,8 @@
 // Instead of raw data, this produces a STORY: what the system did, why it
 // did it, and how it felt about it (trust scores, regime transitions, etc.)
 //
-// Sources: output/trace-summary.json, output/system-manifest.json, output/trace.jsonl
-// Output: output/narrative-digest.md
+// Sources: metrics/trace-summary.json, metrics/system-manifest.json, metrics/trace.jsonl
+// Output: metrics/narrative-digest.md
 //
 // This is the most compelling artifact for understanding a composition run
 // without reading thousands of lines of trace data.
@@ -18,11 +18,12 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const OUTPUT_DIR = path.join(ROOT, 'output');
-const SUMMARY_PATH = path.join(OUTPUT_DIR, 'trace-summary.json');
-const MANIFEST_PATH = path.join(OUTPUT_DIR, 'system-manifest.json');
-const TRACE_PATH = path.join(OUTPUT_DIR, 'trace.jsonl');
-const DIGEST_PATH = path.join(OUTPUT_DIR, 'narrative-digest.md');
+const METRICS_DIR = path.join(ROOT, 'metrics');
+const COMPOSITION_DIR = path.join(ROOT, 'output');
+const SUMMARY_PATH = path.join(METRICS_DIR, 'trace-summary.json');
+const MANIFEST_PATH = path.join(METRICS_DIR, 'system-manifest.json');
+const TRACE_PATH = path.join(METRICS_DIR, 'trace.jsonl');
+const DIGEST_PATH = path.join(METRICS_DIR, 'narrative-digest.md');
 
 // ---- Utility ----
 
@@ -302,8 +303,8 @@ function generateNarrative() {
 
   // ---- Output Summary ----
   {
-    const csv1 = path.join(OUTPUT_DIR, 'output1.csv');
-    const csv2 = path.join(OUTPUT_DIR, 'output2.csv');
+    const csv1 = path.join(COMPOSITION_DIR, 'output1.csv');
+    const csv2 = path.join(COMPOSITION_DIR, 'output2.csv');
     const countNotes = (csvPath) => {
       if (!fs.existsSync(csvPath)) return 0;
       let count = 0;
@@ -376,10 +377,10 @@ function main() {
   }
 
   const narrative = generateNarrative();
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(METRICS_DIR, { recursive: true });
   fs.writeFileSync(DIGEST_PATH, narrative, 'utf8');
 
-  console.log('narrative-digest: composition story generated -> output/narrative-digest.md');
+  console.log('narrative-digest: composition story generated -> metrics/narrative-digest.md');
 }
 
 main();

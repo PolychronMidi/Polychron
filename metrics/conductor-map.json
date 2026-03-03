@@ -1,0 +1,1322 @@
+{
+  "meta": {
+    "generated": "2026-03-03T01:12:00.770Z",
+    "description": "Conductor Intelligence Map: per-module registry of signals, biases, domains, and scopes.",
+    "totalModules": 72
+  },
+  "modules": [
+    {
+      "name": "ambitusMigrationTracker",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/ambitusMigrationTracker.js",
+      "registrations": [
+        "density",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.94,
+          "clamped": 0.94
+        }
+      }
+    },
+    {
+      "name": "attackDensityProfiler",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/attackDensityProfiler.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1.05,
+          "clamped": 1.05
+        }
+      }
+    },
+    {
+      "name": "cadenceAdvisor",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/cadenceAdvisor.js",
+      "registrations": [
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "cadentialPreparationAdvisor",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/cadentialPreparationAdvisor.js",
+      "registrations": [
+        "tension",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "chromaticSaturationMonitor",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/chromaticSaturationMonitor.js",
+      "registrations": [
+        "density"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "climaxProximityPredictor",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/climaxProximityPredictor.js",
+      "registrations": [
+        "density",
+        "tension"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "coherenceMonitor",
+      "domain": "signal",
+      "file": "src/conductor/signal/coherenceMonitor.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "density",
+        "densityAttribution",
+        "timeStream"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1.0154813091364892,
+          "clamped": 1.0154813091364892
+        }
+      }
+    },
+    {
+      "name": "composerFeedbackAdvisor",
+      "domain": "texture",
+      "file": "src/conductor/texture/composerFeedbackAdvisor.js",
+      "registrations": [
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "conductorMetaWatchdog",
+      "domain": "signal",
+      "file": "src/conductor/signal/conductorMetaWatchdog.js",
+      "registrations": [
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "explainabilityBus"
+      ],
+      "biasValues": {}
+    },
+    {
+      "name": "conductorState",
+      "domain": "top-level",
+      "file": "src/conductor/conductorState.js",
+      "registrations": [],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "conductorState"
+      ],
+      "biasValues": {}
+    },
+    {
+      "name": "consonanceDissonanceTracker",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/consonanceDissonanceTracker.js",
+      "registrations": [
+        "tension"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 1.0983483483483483,
+          "clamped": 1.0983483483483483
+        }
+      }
+    },
+    {
+      "name": "counterpointMotionTracker",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/counterpointMotionTracker.js",
+      "registrations": [
+        "tension",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "criticalityEngine",
+      "domain": "signal",
+      "file": "src/conductor/signal/criticalityEngine.js",
+      "registrations": [
+        "density",
+        "tension",
+        "flicker",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "all"
+      ],
+      "signalReads": [
+        "conductorState",
+        "density",
+        "explainabilityBus",
+        "flicker",
+        "signalHealth",
+        "tension"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 0.9733333333333334,
+          "clamped": 0.9733333333333334
+        },
+        "tension": {
+          "raw": 0.9733333333333334,
+          "clamped": 0.9733333333333334
+        },
+        "flicker": {
+          "raw": 0.9733333333333334,
+          "clamped": 0.9733333333333334
+        }
+      }
+    },
+    {
+      "name": "crossLayerDensityBalancer",
+      "domain": "texture",
+      "file": "src/conductor/texture/crossLayerDensityBalancer.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "densityWaveAnalyzer",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/densityWaveAnalyzer.js",
+      "registrations": [
+        "flicker",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "dimensionalityExpander",
+      "domain": "signal",
+      "file": "src/conductor/signal/dimensionalityExpander.js",
+      "registrations": [
+        "density",
+        "tension",
+        "flicker",
+        "recorder"
+      ],
+      "scopes": [
+        "all",
+        "section"
+      ],
+      "signalReads": [
+        "explainabilityBus",
+        "systemDynamics"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "tension": {
+          "raw": 0.9951735687255859,
+          "clamped": 0.9951735687255859
+        },
+        "flicker": {
+          "raw": 0.9998812136799097,
+          "clamped": 0.9998812136799097
+        }
+      }
+    },
+    {
+      "name": "durationalContourTracker",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/durationalContourTracker.js",
+      "registrations": [
+        "flicker",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "dynamicArchitectPlanner",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/dynamicArchitectPlanner.js",
+      "registrations": [
+        "tension",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 0.9,
+          "clamped": 0.9
+        }
+      }
+    },
+    {
+      "name": "dynamicPeakMemory",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/dynamicPeakMemory.js",
+      "registrations": [
+        "tension",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 0.9634288194444445,
+          "clamped": 0.9634288194444445
+        }
+      }
+    },
+    {
+      "name": "dynamicRangeTracker",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/dynamicRangeTracker.js",
+      "registrations": [
+        "flicker",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "dynamicRangeTracker:contrast",
+      "domain": "unknown",
+      "file": null,
+      "registrations": [],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "dynamicRangeTracker:spread",
+      "domain": "unknown",
+      "file": null,
+      "registrations": [],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 0.92,
+          "clamped": 0.92
+        }
+      }
+    },
+    {
+      "name": "energyMomentumTracker",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/energyMomentumTracker.js",
+      "registrations": [
+        "density",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "tension"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1.04,
+          "clamped": 1.04
+        }
+      }
+    },
+    {
+      "name": "grooveTemplateAdvisor",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/grooveTemplateAdvisor.js",
+      "registrations": [
+        "flicker"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 1.0018,
+          "clamped": 1.0018
+        }
+      }
+    },
+    {
+      "name": "harmonicDensityOscillator",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/harmonicDensityOscillator.js",
+      "registrations": [
+        "tension",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 1.0315151515151515,
+          "clamped": 1.0315151515151515
+        }
+      }
+    },
+    {
+      "name": "harmonicFieldDensityTracker",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/harmonicFieldDensityTracker.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.94,
+          "clamped": 0.94
+        }
+      }
+    },
+    {
+      "name": "harmonicFunctionGraph",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/harmonicFunctionGraph.js",
+      "registrations": [
+        "tension",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "absoluteTimeGrid",
+        "conductorState"
+      ],
+      "biasValues": {
+        "tension": {
+          "raw": 1.02,
+          "clamped": 1.02
+        }
+      }
+    },
+    {
+      "name": "harmonicPedalFieldTracker",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/harmonicPedalFieldTracker.js",
+      "registrations": [
+        "tension",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 0.9541666666666666,
+          "clamped": 0.9541666666666666
+        }
+      }
+    },
+    {
+      "name": "harmonicRhythmDensityRatio",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/harmonicRhythmDensityRatio.js",
+      "registrations": [
+        "density"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "harmonicRhythmTracker",
+      "domain": "journey",
+      "file": "src/conductor/journey/harmonicRhythmTracker.js",
+      "registrations": [],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "harmonicSurpriseIndex",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/harmonicSurpriseIndex.js",
+      "registrations": [
+        "tension"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 0.92,
+          "clamped": 0.92
+        }
+      }
+    },
+    {
+      "name": "harmonicVelocityMonitor",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/harmonicVelocityMonitor.js",
+      "registrations": [
+        "tension"
+      ],
+      "scopes": [],
+      "signalReads": [
+        "conductorState"
+      ],
+      "biasValues": {
+        "tension": {
+          "raw": 1.07,
+          "clamped": 1.07
+        }
+      }
+    },
+    {
+      "name": "interLayerRhythmAnalyzer",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/interLayerRhythmAnalyzer.js",
+      "registrations": [
+        "flicker",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 0.95,
+          "clamped": 0.95
+        }
+      }
+    },
+    {
+      "name": "intervalBalanceTracker",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/intervalBalanceTracker.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.9514714714714715,
+          "clamped": 0.9514714714714715
+        }
+      }
+    },
+    {
+      "name": "intervalExpansionContractor",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/intervalExpansionContractor.js",
+      "registrations": [
+        "density",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "layerCoherenceScorer",
+      "domain": "texture",
+      "file": "src/conductor/texture/layerCoherenceScorer.js",
+      "registrations": [
+        "density",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.9249999999999999,
+          "clamped": 0.9249999999999999
+        }
+      }
+    },
+    {
+      "name": "layerEntryExitTracker",
+      "domain": "texture",
+      "file": "src/conductor/texture/layerEntryExitTracker.js",
+      "registrations": [
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "layerIndependenceScorer",
+      "domain": "texture",
+      "file": "src/conductor/texture/layerIndependenceScorer.js",
+      "registrations": [
+        "density"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "melodicContourTracker",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/melodicContourTracker.js",
+      "registrations": [
+        "density",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1.02,
+          "clamped": 1.02
+        }
+      }
+    },
+    {
+      "name": "motivicDensityTracker",
+      "domain": "texture",
+      "file": "src/conductor/texture/motivicDensityTracker.js",
+      "registrations": [
+        "density"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "narrativeTrajectory",
+      "domain": "signal",
+      "file": "src/conductor/signal/narrativeTrajectory.js",
+      "registrations": [
+        "tension",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "all"
+      ],
+      "signalReads": [
+        "density",
+        "flicker",
+        "tension"
+      ],
+      "biasValues": {
+        "tension": {
+          "raw": 1.08,
+          "clamped": 1.08
+        }
+      }
+    },
+    {
+      "name": "onsetDensityProfiler",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/onsetDensityProfiler.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [
+        "density"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 0.9299999999999999,
+          "clamped": 0.9299999999999999
+        }
+      }
+    },
+    {
+      "name": "onsetRegularityMonitor",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/onsetRegularityMonitor.js",
+      "registrations": [
+        "density"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.92,
+          "clamped": 0.92
+        }
+      }
+    },
+    {
+      "name": "phraseLengthMomentumTracker",
+      "domain": "texture",
+      "file": "src/conductor/texture/phraseLengthMomentumTracker.js",
+      "registrations": [
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "pipelineBalancer",
+      "domain": "signal",
+      "file": "src/conductor/signal/pipelineBalancer.js",
+      "registrations": [
+        "density",
+        "tension",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "density",
+        "densityAttribution",
+        "tension"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1.0341416455922283,
+          "clamped": 1.0341416455922283
+        },
+        "tension": {
+          "raw": 0.9985152559653399,
+          "clamped": 0.9985152559653399
+        }
+      }
+    },
+    {
+      "name": "pipelineCouplingManager",
+      "domain": "signal",
+      "file": "src/conductor/signal/pipelineCouplingManager.js",
+      "registrations": [
+        "density",
+        "tension",
+        "flicker",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "explainabilityBus",
+        "signalHealth",
+        "systemDynamics"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1.16,
+          "clamped": 1.16
+        },
+        "tension": {
+          "raw": 1.16,
+          "clamped": 1.16
+        },
+        "flicker": {
+          "raw": 1.0507735260005493,
+          "clamped": 1.0507735260005493
+        }
+      }
+    },
+    {
+      "name": "pipelineNormalizer",
+      "domain": "signal",
+      "file": "src/conductor/signal/pipelineNormalizer.js",
+      "registrations": [],
+      "scopes": [
+        "all"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "profileAdaptation",
+      "domain": "signal",
+      "file": "src/conductor/signal/profileAdaptation.js",
+      "registrations": [
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "density",
+        "flicker",
+        "signalTelemetry",
+        "tension"
+      ],
+      "biasValues": {}
+    },
+    {
+      "name": "regimeReactiveDamping",
+      "domain": "signal",
+      "file": "src/conductor/signal/regimeReactiveDamping.js",
+      "registrations": [
+        "density",
+        "tension",
+        "flicker",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "explainabilityBus",
+        "systemDynamics"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "flicker": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "registralVelocityCorrelator",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/registralVelocityCorrelator.js",
+      "registrations": [
+        "flicker"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 0.9414118926054708,
+          "clamped": 0.9414118926054708
+        }
+      }
+    },
+    {
+      "name": "repetitionFatigueMonitor",
+      "domain": "texture",
+      "file": "src/conductor/texture/repetitionFatigueMonitor.js",
+      "registrations": [
+        "tension"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 1.0508224674022066,
+          "clamped": 1.0508224674022066
+        }
+      }
+    },
+    {
+      "name": "restDensityTracker",
+      "domain": "texture",
+      "file": "src/conductor/texture/restDensityTracker.js",
+      "registrations": [
+        "density"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.9,
+          "clamped": 0.9
+        }
+      }
+    },
+    {
+      "name": "rhythmicComplexityGradient",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/rhythmicComplexityGradient.js",
+      "registrations": [
+        "density",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "rhythmicDensityContrastTracker",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/rhythmicDensityContrastTracker.js",
+      "registrations": [
+        "flicker",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 1.032156411967682,
+          "clamped": 1.032156411967682
+        }
+      }
+    },
+    {
+      "name": "rhythmicInertiaTracker",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/rhythmicInertiaTracker.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "flicker"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "sectionLengthAdvisor",
+      "domain": "texture",
+      "file": "src/conductor/texture/sectionLengthAdvisor.js",
+      "registrations": [
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "signalHealthAnalyzer",
+      "domain": "signal",
+      "file": "src/conductor/signal/signalHealthAnalyzer.js",
+      "registrations": [
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "explainabilityBus",
+        "signalHealth",
+        "trust"
+      ],
+      "biasValues": {}
+    },
+    {
+      "name": "signalTelemetry",
+      "domain": "signal",
+      "file": "src/conductor/signal/signalTelemetry.js",
+      "registrations": [
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "density",
+        "flicker",
+        "signalTelemetry",
+        "tension"
+      ],
+      "biasValues": {}
+    },
+    {
+      "name": "structuralFormTracker",
+      "domain": "texture",
+      "file": "src/conductor/texture/structuralFormTracker.js",
+      "registrations": [
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [
+        "timeStream"
+      ],
+      "biasValues": {}
+    },
+    {
+      "name": "structuralNarrativeAdvisor",
+      "domain": "signal",
+      "file": "src/conductor/signal/structuralNarrativeAdvisor.js",
+      "registrations": [
+        "density",
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "all"
+      ],
+      "signalReads": [
+        "conductorState"
+      ],
+      "biasValues": {
+        "density": {
+          "raw": 1.03625,
+          "clamped": 1.03625
+        }
+      }
+    },
+    {
+      "name": "syncopationDensityTracker",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/syncopationDensityTracker.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
+    },
+    {
+      "name": "systemDynamicsProfiler",
+      "domain": "signal",
+      "file": "src/conductor/signal/systemDynamicsProfiler.js",
+      "registrations": [
+        "recorder",
+        "stateProvider"
+      ],
+      "scopes": [
+        "all"
+      ],
+      "signalReads": [
+        "entropy",
+        "explainabilityBus",
+        "systemDynamics",
+        "timeStream",
+        "trust"
+      ],
+      "biasValues": {}
+    },
+    {
+      "name": "temporalProportionTracker",
+      "domain": "rhythmic",
+      "file": "src/conductor/rhythmic/temporalProportionTracker.js",
+      "registrations": [
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "tensionResolutionTracker",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/tensionResolutionTracker.js",
+      "registrations": [
+        "tension"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 1.0537790697674418,
+          "clamped": 1.0537790697674418
+        }
+      }
+    },
+    {
+      "name": "tessituraPressureMonitor",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/tessituraPressureMonitor.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.94,
+          "clamped": 0.94
+        }
+      }
+    },
+    {
+      "name": "texturalGradientTracker",
+      "domain": "texture",
+      "file": "src/conductor/texture/texturalGradientTracker.js",
+      "registrations": [
+        "flicker",
+        "recorder"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 0.9622033379666619,
+          "clamped": 0.9622033379666619
+        }
+      }
+    },
+    {
+      "name": "texturalMemoryAdvisor",
+      "domain": "texture",
+      "file": "src/conductor/texture/texturalMemoryAdvisor.js",
+      "registrations": [
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "thematicRecallDetector",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/thematicRecallDetector.js",
+      "registrations": [
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {}
+    },
+    {
+      "name": "tonalAnchorDistanceTracker",
+      "domain": "harmonic",
+      "file": "src/conductor/harmonic/tonalAnchorDistanceTracker.js",
+      "registrations": [
+        "tension",
+        "stateProvider"
+      ],
+      "scopes": [
+        "section"
+      ],
+      "signalReads": [],
+      "biasValues": {
+        "tension": {
+          "raw": 1.0133333333333332,
+          "clamped": 1.0133333333333332
+        }
+      }
+    },
+    {
+      "name": "velocityShapeAnalyzer",
+      "domain": "dynamics",
+      "file": "src/conductor/dynamics/velocityShapeAnalyzer.js",
+      "registrations": [
+        "flicker",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 1.0957850157850157,
+          "clamped": 1.0957850157850157
+        }
+      }
+    },
+    {
+      "name": "voiceDensityBalancer",
+      "domain": "texture",
+      "file": "src/conductor/texture/voiceDensityBalancer.js",
+      "registrations": [
+        "density"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.9,
+          "clamped": 0.9
+        }
+      }
+    },
+    {
+      "name": "voiceLeadingEfficiencyTracker",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/voiceLeadingEfficiencyTracker.js",
+      "registrations": [
+        "density",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "density": {
+          "raw": 0.94,
+          "clamped": 0.94
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "generated": "2026-03-03T01:12:03.404Z",
+    "traceEntries": 880,
+    "version": 1
+  },
+  "noteCount": {
+    "L1": 11938,
+    "L2": 20926,
+    "total": 32864
+  },
+  "pitchEntropy": 6.407228964252908,
+  "density": {
+    "mean": 0.5774688860106785,
+    "variance": 0.00848275689343498
+  },
+  "tensionArc": [
+    0.45522061667418845,
+    0.5590301677899902,
+    0.5106344771620798
+  ],
+  "trustConvergence": 0.3068625,
+  "trustFinal": {
+    "cadenceAlignment": 0.1234,
+    "coherenceMonitor": 0.6805,
+    "convergence": 0.1972,
+    "entropyRegulator": 0.3173,
+    "feedbackOscillator": 0.1344,
+    "phaseLock": 0.4557,
+    "restSynchronizer": 0.1344,
+    "stutterContagion": 0.412
+  },
+  "regimeDistribution": {
+    "initializing": 0.05568181818181818,
+    "evolving": 0.00909090909090909,
+    "coherent": 0.36704545454545456,
+    "exploring": 0.5681818181818182
+  },
+  "couplingMeans": {
+    "density-entropy": 0.2122,
+    "density-flicker": 0.1498,
+    "density-phase": 0.3151,
+    "density-tension": 0.3349,
+    "density-trust": 0.3228,
+    "entropy-phase": 0.2855,
+    "entropy-trust": 0.233,
+    "flicker-entropy": 0.1409,
+    "flicker-phase": 0.3599,
+    "flicker-trust": 0.2253,
+    "tension-entropy": 0.3549,
+    "tension-flicker": 0.132,
+    "tension-phase": 0.2423,
+    "tension-trust": 0.2415
+  }
+}

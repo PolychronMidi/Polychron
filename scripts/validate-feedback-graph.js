@@ -237,7 +237,7 @@ const results = {
   warnings
 };
 
-const outputPath = path.join(ROOT, 'output', 'feedback-graph-validation.json');
+const outputPath = path.join(ROOT, 'metrics', 'feedback-graph-validation.json');
 fs.writeFileSync(outputPath, JSON.stringify(results, null, 2) + '\n');
 
 // ---- Report ----

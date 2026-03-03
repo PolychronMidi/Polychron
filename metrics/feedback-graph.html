@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Polychron Feedback Topology</title>
+<style>
+  body { margin: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  .container { max-width: 1000px; margin: 20px auto; }
+  h1 { text-align: center; color: #333; margin: 10px 0; font-size: 20px; }
+  svg { display: block; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+  .info { text-align: center; color: #666; font-size: 12px; margin: 10px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Polychron Feedback Topology</h1>
+  <p class="info">8 feedback loops | 3 firewalls | 16 domains</p>
+  <svg viewBox="0 0 1000 660" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+    <marker id="arrow-immediate" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4CAF50"/></marker>
+    <marker id="arrow-beat-delayed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2196F3"/></marker>
+    <marker id="arrow-phrase-delayed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF9800"/></marker>
+    <marker id="arrow-section-delayed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#F44336"/></marker>
+    </defs>
+    <path d="M 500 100 Q 544.9809115148095 123.86568714978004 595.6708580912725 119.03011687217833" fill="none" stroke="#2196F3" stroke-width="2.5" marker-end="url(#arrow-beat-delayed)" opacity="0.8">
+    <title>density-correction (coherenceMonitor)
+Compares absolute note yield against target density. Feeds a PID-like corrective multiplier into conductor density calculations.
+Latency: beat-delayed
+Firewalls: REGISTRY_DAMPENING</title>
+    </path>
+    <text x="544.9809115148095" y="115.86568714978004" text-anchor="middle" font-size="10" fill="#2196F3" font-weight="bold">density-correction</text>
+    <path d="M 676.776695296637 173.22330470336314 Q 691.7074136314246 221.90520148072304 730.9698831278217 254.32914190872754" fill="none" stroke="#4CAF50" stroke-width="2.5" marker-end="url(#arrow-immediate)" opacity="0.8">
+    <title>entropy-steering (entropyRegulator)
+Adapts the structural phase into a target entropy value to maintain varying predictability levels across a composition arc.
+Latency: immediate
+Firewalls: none</title>
+    </path>
+    <text x="691.7074136314246" y="213.90520148072304" text-anchor="middle" font-size="10" fill="#4CAF50" font-weight="bold">entropy-steering</text>
+    <path d="M 750 350 Q 726.13431285022 394.9809115148095 730.9698831278217 445.67085809127246" fill="none" stroke="#2196F3" stroke-width="2.5" marker-end="url(#arrow-beat-delayed)" opacity="0.8">
+    <title>trust-governance (adaptiveTrustScores)
+Rewards structural modules if their recommended adaptations yield musically stable density and cohesion. Punishes destabilizing signals with weight decay.
+Latency: beat-delayed
+Firewalls: none</title>
+    </path>
+    <text x="726.13431285022" y="386.9809115148095" text-anchor="middle" font-size="10" fill="#2196F3" font-weight="bold">trust-governance</text>
+    <path d="M 676.776695296637 526.7766952966368 Q 628.094798519277 541.7074136314246 595.6708580912725 580.9698831278217" fill="none" stroke="#FF9800" stroke-width="2.5" marker-end="url(#arrow-phrase-delayed)" opacity="0.8">
+    <title>pipeline-decorrelation (pipelineCouplingManager)
+Detects high Pearson correlation between density, tension, and flicker pipelines; nudges outputs via adaptive gain to maintain multidimensional variance.
+Latency: phrase-delayed
+Firewalls: REGISTRY_DAMPENING</title>
+    </path>
+    <text x="628.094798519277" y="533.7074136314246" text-anchor="middle" font-size="10" fill="#FF9800" font-weight="bold">pipeline-decorrelation</text>
+    <path d="M 500 600 Q 455.01908848519054 576.13431285022 404.3291419087276 580.9698831278217" fill="none" stroke="#2196F3" stroke-width="2.5" marker-end="url(#arrow-beat-delayed)" opacity="0.8">
+    <title>regime-reactive-damping (regimeReactiveDamping)
+Suppresses volatility when regime is exploring by damping density/tension/flicker biases. Equilibrates regime distribution via rolling share tracking.
+Latency: beat-delayed
+Firewalls: REGISTRY_DAMPENING</title>
+    </path>
+    <text x="455.01908848519054" y="568.13431285022" text-anchor="middle" font-size="10" fill="#2196F3" font-weight="bold">regime-reactive-damping</text>
+    <path d="M 323.22330470336317 526.776695296637 Q 308.2925863685754 478.094798519277 269.0301168721784 445.6708580912726" fill="none" stroke="#2196F3" stroke-width="2.5" marker-end="url(#arrow-beat-delayed)" opacity="0.8">
+    <title>pipeline-tension-homeostasis (pipelineBalancer.tension)
+Closed-loop controller nudging tension product toward neutral (1.0) when divergence exceeds deadband. Gain scaled to match original manual lift.
+Latency: beat-delayed
+Firewalls: REGISTRY_DAMPENING</title>
+    </path>
+    <text x="308.2925863685754" y="470.094798519277" text-anchor="middle" font-size="10" fill="#2196F3" font-weight="bold">pipeline-tension-homeostasis</text>
+    <path d="M 250 350.00000000000006 Q 273.86568714978006 305.0190884851905 269.0301168721784 254.32914190872748" fill="none" stroke="#2196F3" stroke-width="2.5" marker-end="url(#arrow-beat-delayed)" opacity="0.8">
+    <title>dynamic-architect-planning (dynamicArchitectPlanner)
+Closed-loop controller comparing recent average intensity against an ideal dynamic curve derived from macro position. Corrective multiplier keeps overall loudness arc on track.
+Latency: beat-delayed
+Firewalls: REGISTRY_DAMPENING</title>
+    </path>
+    <text x="273.86568714978006" y="297.0190884851905" text-anchor="middle" font-size="10" fill="#2196F3" font-weight="bold">dynamic-architect-planning</text>
+    <path d="M 323.22330470336306 173.22330470336314 Q 371.905201480723 158.29258636857543 404.3291419087274 119.03011687217838" fill="none" stroke="#F44336" stroke-width="2.5" marker-end="url(#arrow-section-delayed)" opacity="0.8">
+    <title>tension-exhaustion (profileAdaptation)
+Senses continuous sustained high-tension streaks and triggers an advisory for the conductor pipeline to initiate a relaxation arc.
+Latency: section-delayed
+Firewalls: none</title>
+    </path>
+    <text x="371.905201480723" y="150.29258636857543" text-anchor="middle" font-size="10" fill="#F44336" font-weight="bold">tension-exhaustion</text>
+    <circle cx="500" cy="100" r="28" fill="#EF5350" stroke="#fff" stroke-width="2" opacity="0.9"><title>play/outcome (actual notes emitted)</title></circle>
+    <text x="500" y="104" text-anchor="middle" font-size="9" fill="white" font-weight="bold">outcome</text>
+    <circle cx="595.6708580912725" cy="119.03011687217833" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/densityRegistry (density bias multiplier)</title></circle>
+    <text x="595.6708580912725" y="123.03011687217833" text-anchor="middle" font-size="9" fill="white" font-weight="bold">densityRegistry</text>
+    <circle cx="676.776695296637" cy="173.22330470336314" r="28" fill="#42A5F5" stroke="#fff" stroke-width="2" opacity="0.9"><title>time/sectionProgress</title></circle>
+    <text x="676.776695296637" y="177.22330470336314" text-anchor="middle" font-size="9" fill="white" font-weight="bold">sectionProgress</text>
+    <circle cx="730.9698831278217" cy="254.32914190872754" r="28" fill="#26A69A" stroke="#fff" stroke-width="2" opacity="0.9"><title>crossLayer/negotiationEngine (entropy target)</title></circle>
+    <text x="730.9698831278217" y="258.32914190872754" text-anchor="middle" font-size="9" fill="white" font-weight="bold">negotiationEngine</text>
+    <circle cx="750" cy="350" r="28" fill="#EF5350" stroke="#fff" stroke-width="2" opacity="0.9"><title>play/crossLayerBeatRecord (negotiation outcomes)</title></circle>
+    <text x="750" y="354" text-anchor="middle" font-size="9" fill="white" font-weight="bold">crossLayerBeatRecord</text>
+    <circle cx="730.9698831278217" cy="445.67085809127246" r="28" fill="#26A69A" stroke="#fff" stroke-width="2" opacity="0.9"><title>crossLayer/negotiationEngine (trust weights)</title></circle>
+    <text x="730.9698831278217" y="449.67085809127246" text-anchor="middle" font-size="9" fill="white" font-weight="bold">negotiationEngine</text>
+    <circle cx="676.776695296637" cy="526.7766952966368" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/systemDynamicsProfiler</title></circle>
+    <text x="676.776695296637" y="530.7766952966368" text-anchor="middle" font-size="9" fill="white" font-weight="bold">systemDynamicsProfiler</text>
+    <circle cx="595.6708580912725" cy="580.9698831278217" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/pipelineNormalizer</title></circle>
+    <text x="595.6708580912725" y="584.9698831278217" text-anchor="middle" font-size="9" fill="white" font-weight="bold">pipelineNormalizer</text>
+    <circle cx="500" cy="600" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/systemDynamicsProfiler (regime classification)</title></circle>
+    <text x="500" y="604" text-anchor="middle" font-size="9" fill="white" font-weight="bold">systemDynamicsProfiler</text>
+    <circle cx="404.3291419087276" cy="580.9698831278217" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/density + tension + flicker pipelines</title></circle>
+    <text x="404.3291419087276" y="584.9698831278217" text-anchor="middle" font-size="9" fill="white" font-weight="bold">density + tension + flicker pipelines</text>
+    <circle cx="323.22330470336317" cy="526.776695296637" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/signalReader (tension product)</title></circle>
+    <text x="323.22330470336317" y="530.776695296637" text-anchor="middle" font-size="9" fill="white" font-weight="bold">signalReader</text>
+    <circle cx="269.0301168721784" cy="445.6708580912726" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/tension pipeline</title></circle>
+    <text x="269.0301168721784" y="449.6708580912726" text-anchor="middle" font-size="9" fill="white" font-weight="bold">tension pipeline</text>
+    <circle cx="250" cy="350.00000000000006" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/intensity snapshots (recent average)</title></circle>
+    <text x="250" y="354.00000000000006" text-anchor="middle" font-size="9" fill="white" font-weight="bold">intensity snapshots</text>
+    <circle cx="269.0301168721784" cy="254.32914190872748" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/tension (macro dynamic curve)</title></circle>
+    <text x="269.0301168721784" y="258.3291419087275" text-anchor="middle" font-size="9" fill="white" font-weight="bold">tension</text>
+    <circle cx="323.22330470336306" cy="173.22330470336314" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/signalHealthAnalyzer</title></circle>
+    <text x="323.22330470336306" y="177.22330470336314" text-anchor="middle" font-size="9" fill="white" font-weight="bold">signalHealthAnalyzer</text>
+    <circle cx="404.3291419087274" cy="119.03011687217838" r="28" fill="#7E57C2" stroke="#fff" stroke-width="2" opacity="0.9"><title>conductor/conductorConfig (bias hints)</title></circle>
+    <text x="404.3291419087274" y="123.03011687217838" text-anchor="middle" font-size="9" fill="white" font-weight="bold">conductorConfig</text>
+    <g transform="translate(20, 20)">
+    <text x="0" y="0" font-size="13" font-weight="bold" fill="#333">Firewalls</text>
+    <text x="0" y="38" font-size="10" fill="#666"><tspan font-weight="bold">CONDUCTOR_BLINDNESS</tspan>: isolating-membrane</text>
+    <text x="0" y="56" font-size="10" fill="#666"><tspan font-weight="bold">SIGNAL_DELAY</tspan>: latency-barrier</text>
+    <text x="0" y="74" font-size="10" fill="#666"><tspan font-weight="bold">REGISTRY_DAMPENING</tspan>: dampener</text>
+    </g>
+    <g transform="translate(20, 620)">
+    <text x="0" y="0" font-size="13" font-weight="bold" fill="#333">Latency</text>
+    <rect x="0" y="10" width="12" height="12" fill="#4CAF50" rx="2"/>
+    <text x="16" y="21" font-size="10" fill="#333">immediate</text>
+    <rect x="130" y="10" width="12" height="12" fill="#2196F3" rx="2"/>
+    <text x="146" y="21" font-size="10" fill="#333">beat-delayed</text>
+    <rect x="260" y="10" width="12" height="12" fill="#FF9800" rx="2"/>
+    <text x="276" y="21" font-size="10" fill="#333">phrase-delayed</text>
+    <rect x="390" y="10" width="12" height="12" fill="#F44336" rx="2"/>
+    <text x="406" y="21" font-size="10" fill="#333">section-delayed</text>
+    </g>
+    <g transform="translate(750, 20)">
+    <rect x="0" y="0" width="220" height="30" rx="6" fill="#F44336" opacity="0.9"/>
+    <text x="110" y="20" text-anchor="middle" font-size="12" fill="white" font-weight="bold">Invariants: 0/10 FAIL</text>
+    </g>
+  </svg>
+  <p class="info">Hover over edges for mechanism details. Generated 2026-03-03T01:12:07.309Z</p>
+</div>
+</body>
+</html>

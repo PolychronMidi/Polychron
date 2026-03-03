@@ -16,7 +16,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT       = path.join(__dirname, '..');
-const TRACE_FILE = path.join(ROOT, 'output', 'trace.jsonl');
+const TRACE_FILE = path.join(ROOT, 'metrics', 'trace.jsonl');
 const HTML_FILE  = path.join(__dirname, 'dashboard.html');
 const DEFAULT_PORT = 3377;
 

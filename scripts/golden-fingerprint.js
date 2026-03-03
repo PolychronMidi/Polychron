@@ -13,9 +13,9 @@
 //   - Regime distribution
 //   - Coupling correlation summary
 //
-// Output: output/golden-fingerprint.json (current run)
-//         output/golden-fingerprint.prev.json (previous run, for diff)
-//         output/fingerprint-comparison.json (comparison results)
+// Output: metrics/golden-fingerprint.json (current run)
+//         metrics/golden-fingerprint.prev.json (previous run, for diff)
+//         metrics/fingerprint-comparison.json (comparison results)
 //
 // Run: node scripts/golden-fingerprint.js
 // Integrated into `npm run main` pipeline.
@@ -26,16 +26,17 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const OUTPUT_DIR = path.join(ROOT, 'output');
-const FINGERPRINT_PATH = path.join(OUTPUT_DIR, 'golden-fingerprint.json');
-const PREV_PATH = path.join(OUTPUT_DIR, 'golden-fingerprint.prev.json');
-const COMPARISON_PATH = path.join(OUTPUT_DIR, 'fingerprint-comparison.json');
-const TRACE_PATH = path.join(OUTPUT_DIR, 'trace.jsonl');
-const SUMMARY_PATH = path.join(OUTPUT_DIR, 'trace-summary.json');
-const MANIFEST_PATH = path.join(OUTPUT_DIR, 'system-manifest.json');
+const METRICS_DIR = path.join(ROOT, 'metrics');
+const COMPOSITION_DIR = path.join(ROOT, 'output');
+const FINGERPRINT_PATH = path.join(METRICS_DIR, 'golden-fingerprint.json');
+const PREV_PATH = path.join(METRICS_DIR, 'golden-fingerprint.prev.json');
+const COMPARISON_PATH = path.join(METRICS_DIR, 'fingerprint-comparison.json');
+const TRACE_PATH = path.join(METRICS_DIR, 'trace.jsonl');
+const SUMMARY_PATH = path.join(METRICS_DIR, 'trace-summary.json');
+const MANIFEST_PATH = path.join(METRICS_DIR, 'system-manifest.json');
 const CSV_PATHS = [
-  path.join(OUTPUT_DIR, 'output1.csv'),
-  path.join(OUTPUT_DIR, 'output2.csv')
+  path.join(COMPOSITION_DIR, 'output1.csv'),
+  path.join(COMPOSITION_DIR, 'output2.csv')
 ];
 
 // ---- Tolerance bands for comparison ----
@@ -404,7 +405,7 @@ function explainDrift(comparison, current, previous) {
   };
 }
 
-const EXPLAINER_PATH = path.join(OUTPUT_DIR, 'fingerprint-drift-explainer.json');
+const EXPLAINER_PATH = path.join(METRICS_DIR, 'fingerprint-drift-explainer.json');
 
 function main() {
   // Rotate previous fingerprint
@@ -415,7 +416,7 @@ function main() {
 
   // Compute current fingerprint
   const fingerprint = computeFingerprint();
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(METRICS_DIR, { recursive: true });
   fs.writeFileSync(FINGERPRINT_PATH, JSON.stringify(fingerprint, null, 2), 'utf8');
 
   // Compare with previous if it exists
@@ -432,19 +433,19 @@ function main() {
                    comparison.verdict === 'EVOLVED' ? 'EVOLVED' : 'DRIFTED';
     console.log(
       'golden-fingerprint: ' + symbol +
-      ' (' + comparison.driftedDimensions + '/' + comparison.totalDimensions + ' dimensions shifted) -> output/fingerprint-comparison.json'
+      ' (' + comparison.driftedDimensions + '/' + comparison.totalDimensions + ' dimensions shifted) -> metrics/fingerprint-comparison.json'
     );
     if (explainer.explanations.length > 0) {
-      console.log('golden-fingerprint: drift explainer -> output/fingerprint-drift-explainer.json');
+      console.log('golden-fingerprint: drift explainer -> metrics/fingerprint-drift-explainer.json');
     }
 
     if (comparison.verdict === 'DRIFTED') {
       console.warn('golden-fingerprint: WARNING - significant character drift detected across ' +
-        comparison.driftedDimensions + ' dimensions. Review output/fingerprint-comparison.json.');
+        comparison.driftedDimensions + ' dimensions. Review metrics/fingerprint-comparison.json.');
       console.warn('golden-fingerprint: ' + explainer.narrative);
     }
   } else {
-    console.log('golden-fingerprint: first run - baseline established -> output/golden-fingerprint.json');
+    console.log('golden-fingerprint: first run - baseline established -> metrics/golden-fingerprint.json');
   }
 }
 

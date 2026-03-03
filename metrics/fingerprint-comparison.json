@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "generated": "2026-03-03T01:12:03.412Z",
+    "currentRun": "2026-03-03T01:12:03.404Z",
+    "previousRun": "2026-03-02T22:36:21.822Z"
+  },
+  "verdict": "EVOLVED",
+  "driftedDimensions": 2,
+  "totalDimensions": 7,
+  "tolerances": {
+    "noteCountRatio": 0.35,
+    "pitchEntropyDelta": 0.25,
+    "densityVarianceDelta": 0.2,
+    "tensionArcDistortion": 0.3,
+    "trustConvergenceDelta": 0.25,
+    "regimeDistributionDelta": 0.2,
+    "couplingDelta": 0.25
+  },
+  "dimensions": [
+    {
+      "dimension": "noteCount",
+      "delta": 0.5877862595419847,
+      "tolerance": 0.35,
+      "status": "drifted",
+      "current": 32864,
+      "previous": 20698
+    },
+    {
+      "dimension": "pitchEntropy",
+      "delta": 0.0021310101164226936,
+      "tolerance": 0.25,
+      "status": "stable",
+      "current": 6.407228964252908,
+      "previous": 6.405097954136485
+    },
+    {
+      "dimension": "densityVariance",
+      "delta": 0.009781182363070653,
+      "tolerance": 0.2,
+      "status": "stable",
+      "current": 0.00848275689343498,
+      "previous": 0.018263939256505633
+    },
+    {
+      "dimension": "tensionArc",
+      "delta": 0.24015415664660342,
+      "tolerance": 0.3,
+      "status": "stable",
+      "current": [
+        0.45522061667418845,
+        0.5590301677899902,
+        0.5106344771620798
+      ],
+      "previous": [
+        0.31508965470859723,
+        0.7228931271895358,
+        0.8663510791071463
+      ]
+    },
+    {
+      "dimension": "trustConvergence",
+      "delta": 0.004387499999999989,
+      "tolerance": 0.25,
+      "status": "stable",
+      "current": 0.3068625,
+      "previous": 0.302475
+    },
+    {
+      "dimension": "regimeDistribution",
+      "delta": 0.28409090909090906,
+      "tolerance": 0.2,
+      "status": "drifted"
+    },
+    {
+      "dimension": "coupling",
+      "delta": 0.10990714285714284,
+      "tolerance": 0.25,
+      "status": "stable"
+    }
+  ]
+}

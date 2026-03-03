@@ -38,7 +38,7 @@ npm install
 npm run main
 ```
 
-This single command runs the full 15-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, and feedback graph visualization. Output lands in `output/`, logs in `log/`.
+This single command runs the full 15-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, and feedback graph visualization. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
 
 Pass `--seed N` to make composition deterministic (seeded PRNG via mulberry32 replaces `Math.random`):
 
@@ -235,7 +235,7 @@ Coordinates the two independent metric layers through trust-weighted negotiation
 ### `src/writer/` — Output (4 files)
 
 - **`grandFinale`** — Final CSV/MIDI file writing
-- **`traceDrain`** — JSONL trace output (`output/trace.jsonl`) when `--trace` is enabled
+- **`traceDrain`** — JSONL trace output (`metrics/trace.jsonl`) when `--trace` is enabled
 - **`logUnit`** — Structured per-unit logging
 
 ### `src/play/` — Execution Loop (16 files)
@@ -435,14 +435,14 @@ The motif subsystem (18 files) provides motivic identity and development:
 
 ### Output Artifacts
 
-- **`output/system-manifest.json`** (JSON) — Machine-readable diagnostic snapshot — config, journey, registries, contributions, health
-- **`output/capability-matrix.md`** (Markdown) — Human-readable summary of system capabilities and module registrations
-- **`output/trace.jsonl`** (JSONL) — Per-beat trace data (when `--trace` enabled) — full pipeline state per beat
-- **`output/trace-summary.json`** (JSON) — Statistical summary of trace (regimes, signals, coupling, trust, stage timing)
-- **`output/dependency-graph.json`** (JSON) — Machine-readable global dependency graph
-- **`output/conductor-map.json`** + **`conductor-map.md`** — Per-module conductor intelligence map
-- **`output/golden-fingerprint.json`** + **`fingerprint-comparison.json`** — Statistical regression detection
-- **`output/narrative-digest.md`** (Markdown) — Prose narrative of the composition run
+- **`metrics/system-manifest.json`** (JSON) — Machine-readable diagnostic snapshot — config, journey, registries, contributions, health
+- **`metrics/capability-matrix.md`** (Markdown) — Human-readable summary of system capabilities and module registrations
+- **`metrics/trace.jsonl`** (JSONL) — Per-beat trace data (when `--trace` enabled) — full pipeline state per beat
+- **`metrics/trace-summary.json`** (JSON) — Statistical summary of trace (regimes, signals, coupling, trust, stage timing)
+- **`metrics/dependency-graph.json`** (JSON) — Machine-readable global dependency graph
+- **`metrics/conductor-map.json`** + **`conductor-map.md`** — Per-module conductor intelligence map
+- **`metrics/golden-fingerprint.json`** + **`fingerprint-comparison.json`** — Statistical regression detection
+- **`metrics/narrative-digest.md`** (Markdown) — Prose narrative of the composition run
 
 **Use `system-manifest.json` as the primary diagnostic source.**
 
@@ -466,7 +466,7 @@ npm run replay -- --stats              # Per-section/phrase aggregates
 npm run replay -- --section 2          # Filter to section 2
 npm run replay -- --layer 1            # Filter to layer 1
 npm run replay -- --search regime=sparse  # Search for specific values
-npm run replay -- --json               # Output as JSON to output/trace-replay.json
+npm run replay -- --json               # Output as JSON to metrics/trace-replay.json
 ```
 
 ### Golden Fingerprint
@@ -477,7 +477,7 @@ npm run replay -- --json               # Output as JSON to output/trace-replay.j
 - **EVOLVED** — 1–2 dimensions shifted (normal musical variation)
 - **DRIFTED** — 3+ dimensions shifted (potential regression)
 
-A **drift explainer** (`output/fingerprint-drift-explainer.json`) is auto-generated alongside the comparison, providing per-dimension causal analysis: note count correlations, pitch entropy interpretation, density variance significance, tension arc reshaping, trust module shifts, and regime balance changes.
+A **drift explainer** (`metrics/fingerprint-drift-explainer.json`) is auto-generated alongside the comparison, providing per-dimension causal analysis: note count correlations, pitch entropy interpretation, density variance significance, tension arc reshaping, trust module shifts, and regime balance changes.
 
 ### Narrative Digest
 
@@ -493,11 +493,11 @@ A **drift explainer** (`output/fingerprint-drift-explainer.json`) is auto-genera
 - Registry scopes (all/section/phrase)
 - ATG channel usage per module
 - Inter-module interactions and dependencies
-- Output: `output/crosslayer-map.json` + `output/crosslayer-map.md`
+- Output: `metrics/crosslayer-map.json` + `metrics/crosslayer-map.md`
 
 ### Feedback Graph Visualization
 
-`scripts/visualize-feedback-graph.js` generates an interactive HTML/SVG visualization (`output/feedback-graph.html`) of the feedback topology from `doc/FEEDBACK_GRAPH.json`. Features:
+`scripts/visualize-feedback-graph.js` generates an interactive HTML/SVG visualization (`metrics/feedback-graph.html`) of the feedback topology from `doc/FEEDBACK_GRAPH.json`. Features:
 - Circle-layout graph with color-coded edges by latency (immediate/beat/phrase/section)
 - Hover tooltips with mechanism details
 - Node colors by subsystem, firewall legend, invariant status badge
@@ -558,7 +558,7 @@ Profiles are defined in `src/conductor/profiles/` and resolved by `conductorConf
 1. `node scripts/generate-globals-dts.js` — Regenerates `VALIDATED_GLOBALS` + `ADVISORY_GLOBALS` from `globals.d.ts`
 2. `node scripts/verify-boot-order.js` — Validates subsystem require order, intra-subsystem dependency ordering, and cross-subsystem dependency ordering
 3. `node scripts/check-tuning-invariants.js` — Validates cross-constant invariants from [TUNING_MAP.md](TUNING_MAP.md)
-4. `node scripts/validate-feedback-graph.js` — Cross-validates `doc/FEEDBACK_GRAPH.json` loop declarations against source-code `feedbackRegistry.registerLoop()` / `closedLoopController` calls. Outputs `output/feedback-graph-validation.json`
+4. `node scripts/validate-feedback-graph.js` — Cross-validates `doc/FEEDBACK_GRAPH.json` loop declarations against source-code `feedbackRegistry.registerLoop()` / `closedLoopController` calls. Outputs `metrics/feedback-graph-validation.json`
 5. `npm run lint` — ESLint with 16 custom rules (auto-fix)
 6. `npm run tc` — TypeScript type-check via `tsc --noEmit`
 7. `node src/play/main.js --trace` — Runs composition (16GB heap, trace enabled)
@@ -577,8 +577,8 @@ All steps log to `log/` via `scripts/run-with-log.js`.
 
 - **`npm run dashboard`** — Launch real-time composition dashboard (WebSocket on `:3377`)
 - **`npm run replay`** — Trace replay analysis (`--timeline`, `--stats`, `--section N`, `--layer L`, `--search K=V`, `--json`)
-- **`npm run snapshot <name>`** — Save current `output/` as a named snapshot for A/B comparison
-- **`npm run compare <name>`** — Compare current `output/` against a named snapshot (verdict: SIMILAR/DIFFERENT/DIVERGENT)
+- **`npm run snapshot <name>`** — Save current `metrics/` as a named snapshot for A/B comparison
+- **`npm run compare <name>`** — Compare current `metrics/` against a named snapshot (verdict: SIMILAR/DIFFERENT/DIVERGENT)
 - **`npm run diff <name>`** — Structural composition diff against a named snapshot (section/harmonic/tension/regime/pitch changes)
 - **`npm run music21-data`** — Run Music21 priors export scripts
 - **`npm run lint:raw`** — ESLint without log wrapper
@@ -618,29 +618,29 @@ All steps log to `log/` via `scripts/run-with-log.js`.
 
 ### Diagnostic Artifacts
 
-- **`output/system-manifest.json`** — Full diagnostic manifest (config, journey, registries, attribution, verdicts)
-- **`output/capability-matrix.md`** — Human-readable capability summary
-- **`output/trace.jsonl`** — Per-beat trace data (when `--trace` enabled)
-- **`output/trace-summary.json`** — Statistical summary of trace data (regimes, signals, coupling, trust, stage timing)
-- **`output/boot-order.json`** — Boot order with per-file global providers, intra-subsystem violations, and cross-subsystem violations
-- **`output/tuning-invariants.json`** — Cross-constant invariant validation results
+- **`metrics/system-manifest.json`** — Full diagnostic manifest (config, journey, registries, attribution, verdicts)
+- **`metrics/capability-matrix.md`** — Human-readable capability summary
+- **`metrics/trace.jsonl`** — Per-beat trace data (when `--trace` enabled)
+- **`metrics/trace-summary.json`** — Statistical summary of trace data (regimes, signals, coupling, trust, stage timing)
+- **`metrics/boot-order.json`** — Boot order with per-file global providers, intra-subsystem violations, and cross-subsystem violations
+- **`metrics/tuning-invariants.json`** — Cross-constant invariant validation results
 
 ### Analysis Artifacts (generated post-composition)
 
-- **`output/dependency-graph.json`** — Machine-readable global dependency graph (nodes, edges, fan-in/fan-out)
-- **`output/conductor-map.json`** — Per-module registry of signals, biases, domains, scopes
-- **`output/conductor-map.md`** — Human-readable conductor intelligence map
-- **`output/golden-fingerprint.json`** — 7-dimension statistical fingerprint of current run
-- **`output/golden-fingerprint.prev.json`** — Previous run fingerprint (for comparison)
-- **`output/fingerprint-comparison.json`** — Dimension-by-dimension drift analysis (STABLE/EVOLVED/DRIFTED)
-- **`output/fingerprint-drift-explainer.json`** — Per-dimension causal drift analysis
-- **`output/crosslayer-map.json`** + **`crosslayer-map.md`** — Cross-layer intelligence map (modules, scopes, ATG channels)
-- **`output/feedback-graph.html`** — Interactive SVG feedback topology visualization
-- **`output/feedback-graph-validation.json`** — Feedback graph cross-validation results (loop counts, source-vs-JSON concordance, passes/failures/warnings)
-- **`output/narrative-digest.md`** — Prose narrative of the composition run
-- **`output/run-comparison.json`** — A/B profile comparison results (when `npm run compare` is used)
-- **`output/composition-diff.json`** + **`composition-diff.md`** — Structural composition diff (when `npm run diff` is used)
-- **`output/trace-replay.json`** — Trace replay output (when `npm run replay -- --json` is used)
+- **`metrics/dependency-graph.json`** — Machine-readable global dependency graph (nodes, edges, fan-in/fan-out)
+- **`metrics/conductor-map.json`** — Per-module registry of signals, biases, domains, scopes
+- **`metrics/conductor-map.md`** — Human-readable conductor intelligence map
+- **`metrics/golden-fingerprint.json`** — 7-dimension statistical fingerprint of current run
+- **`metrics/golden-fingerprint.prev.json`** — Previous run fingerprint (for comparison)
+- **`metrics/fingerprint-comparison.json`** — Dimension-by-dimension drift analysis (STABLE/EVOLVED/DRIFTED)
+- **`metrics/fingerprint-drift-explainer.json`** — Per-dimension causal drift analysis
+- **`metrics/crosslayer-map.json`** + **`crosslayer-map.md`** — Cross-layer intelligence map (modules, scopes, ATG channels)
+- **`metrics/feedback-graph.html`** — Interactive SVG feedback topology visualization
+- **`metrics/feedback-graph-validation.json`** — Feedback graph cross-validation results (loop counts, source-vs-JSON concordance, passes/failures/warnings)
+- **`metrics/narrative-digest.md`** — Prose narrative of the composition run
+- **`metrics/run-comparison.json`** — A/B profile comparison results (when `npm run compare` is used)
+- **`metrics/composition-diff.json`** + **`composition-diff.md`** — Structural composition diff (when `npm run diff` is used)
+- **`metrics/trace-replay.json`** — Trace replay output (when `npm run replay -- --json` is used)
 
 ## Music21 & Priors
 
@@ -667,7 +667,7 @@ Two globals from `src/utils/` are used across all priors modules:
 - [.github/copilot-instructions.md](.github/copilot-instructions.md) — Concise coding rules guide for AI assistants and contributors
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Beat lifecycle deep-dive — signal flow from conductor to emission
 - [TUNING_MAP.md](TUNING_MAP.md) — Feedback loop constants, interaction partners, cross-constant invariants
-- [output/conductor-map.md](output/conductor-map.md) — Auto-generated conductor intelligence map (per-run)
-- [output/crosslayer-map.md](output/crosslayer-map.md) — Auto-generated cross-layer intelligence map (per-run)
-- [output/narrative-digest.md](output/narrative-digest.md) — Auto-generated prose narrative (per-run)
+- [metrics/conductor-map.md](metrics/conductor-map.md) — Auto-generated conductor intelligence map (per-run)
+- [metrics/crosslayer-map.md](metrics/crosslayer-map.md) — Auto-generated cross-layer intelligence map (per-run)
+- [metrics/narrative-digest.md](metrics/narrative-digest.md) — Auto-generated prose narrative (per-run)
 - [doc/FEEDBACK_GRAPH.json](doc/FEEDBACK_GRAPH.json) — Feedback loop topology (source of truth for visualization)

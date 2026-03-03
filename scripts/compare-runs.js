@@ -1,15 +1,15 @@
 // scripts/compare-runs.js
 // Profile A/B comparison tool: compares two composition runs side-by-side.
-// Takes two run directories (or uses output/ vs a named snapshot) and produces
+// Takes two run directories (or uses metrics/ vs a named snapshot) and produces
 // a detailed comparison report showing what changed and why.
 //
 // Usage:
 //   node scripts/compare-runs.js <dirA> <dirB>
-//   node scripts/compare-runs.js --snapshot <name>       (save current output/ as named snapshot)
-//   node scripts/compare-runs.js --against <name>        (compare output/ against snapshot)
+//   node scripts/compare-runs.js --snapshot <name>       (save current metrics/ as named snapshot)
+//   node scripts/compare-runs.js --against <name>        (compare metrics/ against snapshot)
 //
-// Snapshots are stored in tmp/snapshots/<name>/
-// Output: output/run-comparison.json
+// Snapshots are stored in metrics/snapshots/<name>/
+// Output: metrics/run-comparison.json
 //
 // Example workflow:
 //   node scripts/compare-runs.js --snapshot baseline
@@ -22,9 +22,10 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const OUTPUT_DIR    = path.join(ROOT, 'output');
-const SNAPSHOT_DIR  = path.join(ROOT, 'tmp', 'snapshots');
-const COMPARISON_PATH = path.join(OUTPUT_DIR, 'run-comparison.json');
+const METRICS_DIR     = path.join(ROOT, 'metrics');
+const COMPOSITION_DIR = path.join(ROOT, 'output');
+const SNAPSHOT_DIR    = path.join(ROOT, 'metrics', 'snapshots');
+const COMPARISON_PATH = path.join(METRICS_DIR, 'run-comparison.json');
 
 // ---- Helpers ----
 
@@ -43,7 +44,8 @@ function mean(arr) {
   return arr.reduce((s, v) => s + v, 0) / arr.length;
 }
 
-function loadRun(dir) {
+function loadRun(dir, csvDir) {
+  var effectiveCsvDir = csvDir || dir;
   const run = { dir };
 
   // Fingerprint
@@ -67,7 +69,7 @@ function loadRun(dir) {
   // Note counts from CSV
   run.noteCounts = {};
   for (const layer of ['output1', 'output2']) {
-    const csvPath = path.join(dir, layer + '.csv');
+    const csvPath = path.join(effectiveCsvDir, layer + '.csv');
     if (!fs.existsSync(csvPath)) continue;
     const raw = fs.readFileSync(csvPath, 'utf8');
     let count = 0;
@@ -213,19 +215,27 @@ function compareRuns(runA, runB) {
 function saveSnapshot(name) {
   const snapDir = path.join(SNAPSHOT_DIR, name);
   fs.mkdirSync(snapDir, { recursive: true });
-  const filesToCopy = [
+  const metricsFiles = [
     'golden-fingerprint.json', 'trace-summary.json', 'system-manifest.json',
-    'trace.jsonl', 'output1.csv', 'output2.csv'
+    'trace.jsonl'
   ];
+  const compositionFiles = ['output1.csv', 'output2.csv'];
   let copied = 0;
-  for (const f of filesToCopy) {
-    const src = path.join(OUTPUT_DIR, f);
+  for (const f of metricsFiles) {
+    const src = path.join(METRICS_DIR, f);
     if (fs.existsSync(src)) {
       fs.copyFileSync(src, path.join(snapDir, f));
       copied++;
     }
   }
-  console.log(`compare-runs: snapshot '${name}' saved (${copied} files) -> tmp/snapshots/${name}/`);
+  for (const f of compositionFiles) {
+    const src = path.join(COMPOSITION_DIR, f);
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, path.join(snapDir, f));
+      copied++;
+    }
+  }
+  console.log(`compare-runs: snapshot '${name}' saved (${copied} files) -> metrics/snapshots/${name}/`);
 }
 
 // ---- CLI ----
@@ -238,11 +248,12 @@ function main() {
     return;
   }
 
-  let dirA, dirB;
+  let dirA, dirB, csvDirB;
 
   if (args[0] === '--against' && args[1]) {
     dirA = path.join(SNAPSHOT_DIR, args[1]);
-    dirB = OUTPUT_DIR;
+    dirB = METRICS_DIR;
+    csvDirB = COMPOSITION_DIR;
     if (!fs.existsSync(dirA)) {
       throw new Error(`compare-runs: snapshot '${args[1]}' not found at ${dirA}`);
     }
@@ -261,13 +272,13 @@ function main() {
   if (!fs.existsSync(dirB)) throw new Error(`compare-runs: directory not found: ${dirB}`);
 
   const runA = loadRun(dirA);
-  const runB = loadRun(dirB);
+  const runB = loadRun(dirB, csvDirB);
   const report = compareRuns(runA, runB);
 
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(METRICS_DIR, { recursive: true });
   fs.writeFileSync(COMPARISON_PATH, JSON.stringify(report, null, 2), 'utf8');
 
-  console.log(`compare-runs: ${report.verdict} (${report.sections.length} sections) -> output/run-comparison.json`);
+  console.log(`compare-runs: ${report.verdict} (${report.sections.length} sections) -> metrics/run-comparison.json`);
   for (const section of report.sections) {
     console.log(`  ${section.name}: ${section.metrics.length} metrics`);
   }

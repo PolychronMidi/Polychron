@@ -1,7 +1,7 @@
 // scripts/verify-boot-order.js
 // Walks the require chains from src/index.js to build the complete flat
 // boot order, maps each file to the global(s) it provides, and cross-
-// references with globals.d.ts. Writes output/boot-order.json for forensics.
+// references with globals.d.ts. Writes metrics/boot-order.json for forensics.
 //
 // Fails fast on:
 //   - Unresolvable require() paths
@@ -20,7 +20,7 @@ const path = require('path');
 const ROOT        = path.join(__dirname, '..');
 const SRC         = path.join(ROOT, 'src');
 const GLOBALS_DTS = path.join(SRC, 'types', 'globals.d.ts');
-const OUTPUT      = path.join(ROOT, 'output', 'boot-order.json');
+const OUTPUT      = path.join(ROOT, 'metrics', 'boot-order.json');
 
 // ---- Parse globals.d.ts for every `declare var NAME:` entry ----
 
@@ -815,7 +815,7 @@ function writeOutput(bootOrder, fileToGlobals, globalSet, globalToFile, mapped, 
   console.log(
     'verify-boot-order: ' + bootOrder.length + ' files, ' +
     mapped + '/' + globalSet.size + ' globals mapped, ' +
-    subsystemCount + ' subsystems checked -> output/boot-order.json'
+    subsystemCount + ' subsystems checked -> metrics/boot-order.json'
   );
 
   if (orphaned.length) {

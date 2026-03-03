@@ -2,7 +2,7 @@
 // Generates an interactive HTML visualization of the feedback topology
 // from FEEDBACK_GRAPH.json. Pure zero-dependency SVG rendering.
 //
-// Output: output/feedback-graph.html
+// Output: metrics/feedback-graph.html
 // Run: node scripts/visualize-feedback-graph.js
 // Integrated into `npm run main` pipeline.
 
@@ -12,8 +12,8 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const GRAPH_PATH = path.join(ROOT, 'doc/FEEDBACK_GRAPH.json');
-const OUTPUT_DIR = path.join(ROOT, 'output');
+const GRAPH_PATH = path.join(ROOT, 'metrics/FEEDBACK_GRAPH.json');
+const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');
 const INVARIANTS_PATH = path.join(OUTPUT_DIR, 'tuning-invariants.json');
 
@@ -169,7 +169,7 @@ function main() {
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   fs.writeFileSync(HTML_PATH, html, 'utf8');
-  console.log(`visualize-feedback-graph: ${loops.length} loops, ${fwNames.length} firewalls -> output/feedback-graph.html`);
+  console.log(`visualize-feedback-graph: ${loops.length} loops, ${fwNames.length} firewalls -> metrics/feedback-graph.html`);
 }
 
 main();
