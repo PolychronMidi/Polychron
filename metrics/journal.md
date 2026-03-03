@@ -1,3 +1,51 @@
+## R21 — 2026-03-03 — STABLE
+
+**Profile:** explosive | **Beats:** 414 | **Duration:** 47.1s | **Notes:** 15,696
+**Fingerprint:** 9/9 stable | Drifted: none | Cross-profile: atmospheric→explosive (1.3x widening)
+
+### Key Observations
+- **Homeostasis governor (Hypermeta #12) ACTIVATED — FIRST REAL COUPLING DECREASE.** globalGainMultiplier=0.386 (was 1.0 in R20), totalEnergyEma=3.449 converged, energyBudget=3.246 self-derived from peak (3.607×0.90). Total coupling energy decreased 4.205→3.816 (-9.2%), the first genuine total-energy reduction in the entire review lineage (R12-R21). The whole-system governance paradigm is proven: global throttle can reduce what per-pair/per-axis cannot.
+- **Governor OVER-THROTTLED — permanent lock at 0.386.** redistributionScore=0.959 permanently exceeded the 0.15 trigger, preventing any recovery. Root cause: `_pairTurbulenceEma > 0.005` threshold was too sensitive — normal rolling-window noise (~0.01-0.015) always triggered redistribution detection. The multiplier ratcheted down to 0.386 and stayed, never recovering even when energy was below budget.
+- **beatCount=60/414 (14.5%) — STILL underprocessing.** Despite safePreBoot removal, the homeostasis only processed 60 beats. Profiler produced valid coupling matrices on 394/414 beats (per couplingAbs count). Root cause unclear from static analysis — added invoke tracking (E6) to diagnose: `_invokeCount` will reveal if the recorder is called every beat, and `_emptyMatrixBeats` will reveal how many beats had empty matrices.
+- **Whack-a-mole continues but SHIFTED AXIS:** phase-axis pairs ALL decreased (density-phase -39%, flicker-phase -37%), but density-flicker SURGED +76% (0.300→0.529, p95=0.911). Flicker axis total exploded 1.011→1.953 (+93%). The balloon squeezed from phase toward flicker. 3 flicker pairs at GAIN_MAX with heat 0.60-0.65.
+- **Regime still coherent-dominant:** 74.2% (target <60% FAILED). maxConsecutiveCoherent=203 (target <300 CONFIRMED, down from 426). Alpha floor raise to 0.025 helped maxConsecutive but the explosive profile needs faster convergence (~25-beat) to break the lock.
+- **Flicker product partially recovered:** 0.825→0.847 (target >0.90 FAILED). pipelineCouplingManager flicker bias improved 0.814→0.908 (recovery nudge working). But multi-pair compression from 3 GAIN_MAX flicker pairs overwhelmed the nudge.
+- **effectivenessEma visible (E6 CONFIRMED):** range 0.288-0.638 across all 14 pairs. Lowest: flicker-entropy 0.288 (gain 0.600, heat 0.65 — spending heavily but |r| barely budging). No pair below 0.20 halving threshold.
+- **Trust system healthy:** coherenceMonitor dominant (0.714), entropyRegulator major recovery +32% (0.328→0.432), phaseLock declined -15% (0.452→0.384). Convergence 0.362 (+2.5%). No module starved (<0.15).
+- **Gini coefficient 0.317** (below 0.40 threshold, down from 0.383). Coupling more uniformly distributed after global throttle — but still concentrated on density-flicker axis.
+- **9 correlation trend flips** between R20→R21 (0.643 within 1.0 tolerance). All within STABLE verdict.
+- Hotspots reduced 3→1 (density-flicker p95=0.911 only surviving hotspot >0.70).
+- Pipeline: 16/16 passed, 10/10 tuning invariants, 0/414 beat-setup spikes.
+
+### Evolutions Applied (from R20)
+- E1: Homeostasis convergence overhaul (safePreBoot removal, alpha, dampening) — **partially confirmed** — governor active (multiplier=0.386, total energy -9.2%) but beatCount=60/414 still underprocessing. safePreBoot removal necessary but not sufficient.
+- E2: Redistribution detection sensitivity (EMA smoothing, threshold 0.15, turbulence 0.005) — **confirmed but OVER-SENSITIVE** — redistributionScore=0.959 (permanent detection). Turbulence threshold 0.005 too low; normal rolling-window noise always exceeds it. Smoothing EMA works but needs higher threshold.
+- E3: Budget self-derivation from peak energy — **confirmed** — peakEnergyEma=3.607, budget=3.607×0.90=3.246, correctly below totalEnergyEma (3.449). overBudget=TRUE triggers appropriately.
+- E4: Regime alpha floor raise 0.01→0.025 — **partially confirmed** — maxConsecutiveCoherent 426→203 (<300 ✓), but coherent 69.7%→74.2% still above 60% target. Profile switch (atmospheric→explosive) complicates direct comparison.
+- E5: Flicker product sigmoid hysteresis — **partially confirmed** — flicker bias 0.814→0.908 (>0.90 ✓), product 0.825→0.847 (<0.90 ✗). Recovery nudge 0.002/beat improves bias but too slow to overcome multi-pair gain pressure.
+- E6: Effectiveness EMA trace exposure — **confirmed** — effectivenessEma visible for all 14 pairs in trace-summary, range 0.288-0.638. flicker-entropy lowest at 0.288 (high gain, low effectiveness — correctly identified as intractable).
+
+### Evolutions Proposed (for R22)
+- E1: Homeostasis matrix caching — src/conductor/signal/couplingHomeostasis.js (cache last valid matrix, stale decay, process every beat)
+- E2: Recovery floor + redistribution cooldown — src/conductor/signal/couplingHomeostasis.js (minimum 0.003/beat recovery, turbulence threshold 0.005→0.02, 20-beat cooldown with 0.95 decay)
+- E3: Profile-adaptive regime alpha scaling — src/conductor/signal/regimeClassifier.js, systemDynamicsProfiler.js (explosive=0.04, atmospheric=0.02, default=0.025)
+- E4: Flicker recovery nudge escalation + gain cap — src/conductor/signal/pipelineCouplingManager.js (escalate nudge: 0.002→0.005→0.008 by guard duration, cap flicker-pair gain at 0.45 when product<0.88)
+- E5: Homeostasis energy-proportional throttle — src/conductor/signal/couplingHomeostasis.js (throttle rate scales 0.005-0.025 with over-budget severity, replaces fixed 0.01)
+- E6: Homeostasis time-series diagnostics — src/conductor/signal/couplingHomeostasis.js (invokeCount, emptyMatrixBeats, multiplierMin/Max for beat processing diagnosis)
+
+### Hypotheses to Track
+- E1/E6: beatCount should approach totalEntries. invokeCount should equal conductor beat count. If invokeCount≈totalEntries but beatCount<<invokeCount, the issue is matrix availability. If invokeCount<<totalEntries, the recorder isn't being called.
+- E2: redistributionScore should oscillate (not lock at 0.959). globalGainMultiplier should oscillate between 0.50-0.85. multiplierMin should stay above 0.30.
+- E2: Higher turbulence threshold (0.02) should cause redistributionScore to drop below 0.50 during normal operation and only spike during genuine redistribution events.
+- E3: explosive coherent% should drop below 65%. evolving% should exceed 5%. maxConsecutiveCoherent should drop below 150.
+- E4: Flicker product should exceed 0.90. Flicker axis total should decrease from 1.953. No flicker pair should have gain >0.45 when product <0.88.
+- E5: Proportional throttle should prevent multiplier from reaching floor (0.20). totalEnergyEma should converge toward energyBudget rather than being permanently over.
+- Meta: Total coupling energy should continue to decrease (target: <3.5). The combination of proportional throttle + recovery floor should produce a self-regulating equilibrium.
+- Meta: Flicker-axis balloon (1.953) should deflate as gain cap and escalated nudge take effect. Watch for energy transferring to another axis (entropy-axis most likely).
+- Meta: Gini coefficient should remain below 0.40. If gain caps compress flicker-axis, coupling may become more uniform (lower Gini).
+
+---
+
 ## R20 — 2026-03-03 — STABLE
 
 **Profile:** atmospheric | **Beats:** 611 | **Duration:** 76.1s | **Notes:** 21,691
