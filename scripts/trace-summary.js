@@ -269,6 +269,34 @@ function summarizeTrace(entries) {
     trustSummary[key] = trustScoreSummary[key];
   }
 
+  // R18 E5: Extract adaptive coupling target drift from the last trace entry.
+  // pipelineCouplingManager writes couplingTargets per beat; we only need the
+  // final state to diagnose whether coupling surges are target-drift-driven.
+  let adaptiveTargets = null;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (entries[i].couplingTargets && typeof entries[i].couplingTargets === 'object') {
+      const raw = entries[i].couplingTargets;
+      const result = {};
+      const ctKeys = Object.keys(raw);
+      for (let j = 0; j < ctKeys.length; j++) {
+        const ct = raw[ctKeys[j]];
+        if (ct && typeof ct === 'object' && typeof ct.baseline === 'number') {
+          result[ctKeys[j]] = {
+            baseline: ct.baseline,
+            current: ct.current,
+            drift: Number((ct.current - ct.baseline).toFixed(4)),
+            driftRatio: ct.baseline > 0 ? Number((ct.current / ct.baseline).toFixed(2)) : null,
+            rollingAbsCorr: ct.rollingAbsCorr,
+            gain: ct.gain,
+            heatPenalty: ct.heatPenalty
+          };
+        }
+      }
+      if (Object.keys(result).length > 0) adaptiveTargets = result;
+      break;
+    }
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     beats: {
@@ -312,7 +340,8 @@ function summarizeTrace(entries) {
       totalBeats: entries.length,
       exceededRate: entries.length > 0 ? Number((beatSetupExceeded / entries.length).toFixed(4)) : 0,
       spikeIndices: beatSetupSpikeIndices
-    }
+    },
+    adaptiveTargets
   };
 }
 

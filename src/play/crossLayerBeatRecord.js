@@ -174,6 +174,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       trustScores: adaptiveTrustScores.getSnapshot(),
       regime: _traceCachedDynamicsSnap.regime,
       couplingMatrix: _traceCachedDynamicsSnap.couplingMatrix,
+      // R18 E5: Adaptive target state for coupling drift diagnostics
+      couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
       iterBudget: setUnitTimingBudgetStats.getLastBeat(),
       stageTiming: stageTiming
     };
