@@ -37,7 +37,7 @@ pipelineCouplingManager = (() => {
   const PAIR_TARGETS = {
     'density-tension':  0.15,  // structurally persistent -- needs aggressive target
     'density-flicker':  0.12,  // high tail exceedance (22.8% @0.85) -- aggressive
-    'density-entropy':  0.20,  // structural - more notes - entropy shifts
+    'density-entropy':  0.12,  // R16 Evo 1: tightened from 0.20 -- surged to avg 0.338 in R15
     'tension-flicker':  0.15,  // shared compositeIntensity upstream -- aggressive
     'tension-entropy':  0.25,
     'flicker-entropy':  0.18,  // elevated tail (8.8% @0.85) -- tightened
@@ -221,6 +221,7 @@ pipelineCouplingManager = (() => {
         // -- Adaptive gain logic --
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
         const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
+        const isDensityFlickerPair = key === 'density-flicker';
         if (absCorr > target) {
           const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
           // Freeze gain if either axis in this pair is saturated -
@@ -243,6 +244,13 @@ pipelineCouplingManager = (() => {
             if (isTensionEntropyPair && corr < 0) {
               rate *= 1.2;
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.03, 1.0);
+            }
+            // R16 Evo 5: Density-flicker escalation pathway.
+            // This pair pins at r=-0.87 despite PAIR_TARGET 0.12. When strongly
+            // anti-correlated, apply extra decorrelation pressure.
+            if (isDensityFlickerPair && m.abs(corr) > 0.7) {
+              rate *= 1.3;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.02, 1.0);
             }
             const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);

@@ -172,7 +172,13 @@ function summarizeTrace(entries) {
       if (Number.isFinite(setupMs) && setupMs > BEAT_SETUP_BUDGET_MS) {
         beatSetupExceeded++;
         // R10 Evo 3: record index and timing of spike beats
-        beatSetupSpikeIndices.push({ index: i, ms: Number(setupMs.toFixed(4)) });
+        // R16 Evo 6: include per-stage timing breakdown for spike diagnosis
+        const stages = {};
+        for (let k = 0; k < stKeys.length; k++) {
+          const stageMs = toNum(st[stKeys[k]], NaN);
+          if (Number.isFinite(stageMs)) stages[stKeys[k]] = Number(stageMs.toFixed(4));
+        }
+        beatSetupSpikeIndices.push({ index: i, ms: Number(setupMs.toFixed(4)), stages });
       }
     }
   }

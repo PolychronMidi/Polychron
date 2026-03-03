@@ -1,82 +1,75 @@
 # Composition Narrative Digest
 
 > Auto-generated per run by `narrative-digest.js`. A human-readable story of what the system did.
-> Generated: 2026-03-03T08:05:03.254Z | Trace data from: 2026-03-03T08:05:00.766Z
+> Generated: 2026-03-03T13:44:51.999Z | Trace data from: 2026-03-03T13:44:49.994Z
 
 ## Overview
 
 The composition was generated at **72 BPM** with a tuning reference of **432 Hz**, using the **explosive** conductor profile.
 
-The system processed **644 beats** spanning **81.1 seconds** of musical time.
-Layer 1 experienced 267 beats; Layer 2 experienced 377 beats.
+The system processed **496 beats** spanning **79.2 seconds** of musical time.
+Layer 1 experienced 233 beats; Layer 2 experienced 263 beats.
 
 ## Harmonic Journey
 
-- **Section 1:** G locrian (origin)
-- **Section 2:** A locrian (step-up)
-- **Section 3:** B locrian (step-up)
-- **Section 4:** D# major (relative-major (mode-shift))
+- **Section 1:** C# phrygian (origin)
+- **Section 2:** G# phrygian (fifth-up)
+- **Section 3:** G# dorian (parallel-dorian)
+- **Section 4:** B major (mediant-flip)
 
 ## The System's Inner Life
 
-The system spent most of its time **operating in harmony** (73.1% of beats in the `coherent` regime).
+The system spent most of its time **operating in harmony** (55.4% of beats in the `coherent` regime).
 
 Regime breakdown:
 
-- **`coherent`** - 471 beats (73.1%) - operating in harmony
-- **`exploring`** - 86 beats (13.4%) - searching for coherence
-- **`initializing`** - 45 beats (7.0%) - warming up
-- **`evolving`** - 42 beats (6.5%) - developing new musical ideas
+- **`coherent`** - 275 beats (55.4%) - operating in harmony
+- **`exploring`** - 177 beats (35.7%) - searching for coherence
+- **`evolving`** - 24 beats (4.8%) - developing new musical ideas
+- **`initializing`** - 20 beats (4.0%) - warming up
 
 ### Regime Transitions
 
-The system underwent **5 regime transitions** during the composition.
+The system underwent **4 regime transitions** during the composition.
 
-- Beat 45: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
-- Beat 87: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
-- Beat 374: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
-- Beat 410: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
-- Beat 594: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 20: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
+- Beat 44: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
+- Beat 236: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 413: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
 
 ## Signal Landscape
 
-**Density** ranged from 0.33 to 0.74 (avg 0.51). The density was balanced.
-**Tension** ranged from 0.06 to 0.77 (avg 0.55). The composition maintained a relaxed tension profile.
-**Flicker** ranged from 0.93 to 1.17 (avg 0.99). Rhythmic variation was moderate.
+**Density** ranged from 0.34 to 0.70 (avg 0.50). The density was balanced.
+**Tension** ranged from 0.07 to 0.73 (avg 0.52). The composition maintained a relaxed tension profile.
+**Flicker** ranged from 0.86 to 1.19 (avg 0.98). Rhythmic variation was moderate.
 
 ## Trust Governance
 
 The trust system governed cross-layer module influence through EMA-weighted scores:
 
-- **coherenceMonitor**: average score 0.68 (weight 1.51, highly trusted)
-- **entropyRegulator**: average score 0.50 (weight 1.38, trusted)
-- **stutterContagion**: average score 0.44 (weight 1.33, trusted)
-- **phaseLock**: average score 0.43 (weight 1.32, trusted)
+- **coherenceMonitor**: average score 0.69 (weight 1.52, highly trusted)
+- **stutterContagion**: average score 0.47 (weight 1.35, trusted)
+- **entropyRegulator**: average score 0.42 (weight 1.31, trusted)
+- **phaseLock**: average score 0.41 (weight 1.31, trusted)
+- **feedbackOscillator**: average score 0.24 (weight 1.18, neutral)
 - **cadenceAlignment**: average score 0.20 (weight 1.15, neutral)
 - **restSynchronizer**: average score 0.20 (weight 1.15, neutral)
 - **convergence**: average score 0.20 (weight 1.15, neutral)
-- **feedbackOscillator**: average score 0.13 (weight 1.10, neutral)
 
-The system placed the most faith in **coherenceMonitor** and was most skeptical of **feedbackOscillator**.
+The system placed the most faith in **coherenceMonitor** and was most skeptical of **convergence**.
 
 ## Pipeline Coupling
 
-The decorrelation engine flagged elevated coupling in:
-
-- **tension-entropy**: avg |r| = 0.584, peak |r| = 0.900
+All compositional dimension pairs maintained healthy decorrelation levels.
 
 ## Output
 
-- **Layer 1:** 9936 notes
-- **Layer 2:** 12772 notes
+- **Layer 1:** 9349 notes
+- **Layer 2:** 9416 notes
 
 ## Coherence Verdicts
 
-The system issued **0 critical**, **1 warning**, and **1 informational** findings.
-
-### Warnings
-
-- tension-entropy strongly anti-correlated (r=-0.723) - these dimensions may be driven by a shared input or feedback loop.
+The system issued **0 critical**, **0 warning**, and **2 informational** findings.
 
 ---
 

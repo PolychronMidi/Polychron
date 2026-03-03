@@ -1,3 +1,43 @@
+## R15 — 2026-03-03 — STABLE
+
+**Profile:** explosive | **Beats:** 496 | **Duration:** 79.2s | **Notes:** 18765
+**Fingerprint:** 8/8 stable | Drifted: none
+
+### Key Observations
+- Tension-entropy coupling dropped from avg 0.584 to 0.334 (-42.8%) and max from 0.900 to 0.634. R15 E1 escalator is the headline success.
+- Coherent regime fell from 73.1% to 55.4%; exploring recovered from 13.4% to 35.7%. R15 E2 saturation cutoff worked.
+- feedbackOscillator trust nearly doubled from 0.130 to 0.242. R15 E5 velocity support confirmed effective.
+- density-entropy coupling surged from avg 0.124 to 0.338 (+172%), p95=0.864 — new critical hotspot emerged.
+- Tension arc tail collapsed from 0.664 to 0.402 at 90th percentile — composition loses narrative momentum in final quarter.
+- Evolving regime decreased from 6.5% to 4.8% despite threshold widening (R15 E3) — the system cycles coherent↔exploring without passing through evolving.
+- restSynchronizer trust stuck at 0.199 for three consecutive generations.
+- Note count dropped 17.4% (22708→18765); L2 layer contracted disproportionately (26.3%).
+
+### Evolutions Applied (from R14)
+- E1: Tension-Entropy Decorrelation Escalation — confirmed — avg 0.584→0.334, max 0.900→0.634, r shifted from +0.126 to -0.429
+- E2: Coherent Regime Saturation Cutoff — confirmed — coherent 73.1%→55.4%, exploring 13.4%→35.7%
+- E3: Evolving Threshold Widened (0.15→0.10) — refuted — evolving dropped from 6.5% to 4.8%
+- E4: Rest Drought Baseline Push — inconclusive — restSynchronizer 0.200→0.199, drought bonus may not have triggered
+- E5: Feedback Oscillator Velocity Support — confirmed — feedbackOscillator trust 0.130→0.242
+- E6: Density-Flicker Adaptive Target Max — inconclusive — density-flicker avg 0.436→0.469, cap at 0.55 was too permissive
+
+### Evolutions Proposed (for R16)
+- E1: Density-Entropy Coupling Pair Target Reduction — `src/conductor/signal/pipelineCouplingManager.js`
+- E2: Coherent Saturation Onset Reduction — `src/conductor/signal/regimeClassifier.js`
+- E3: Tension Tail Sustain Floor — `src/conductor/signal/narrativeTrajectory.js`
+- E4: Rest Synchronizer Warm-Start Injection — `src/crossLayer/structure/adaptiveTrustScores.js`
+- E5: Density-Flicker Escalation Pathway — `src/conductor/signal/pipelineCouplingManager.js`
+- E6: Beat-Setup Spike Stage Breakdown — `scripts/trace-summary.js`
+
+### Hypotheses to Track
+- Reducing density-entropy pair target to 0.12 should bring avg below 0.25 and p95 below 0.75.
+- Coherent saturation at 35 beats (vs 50) should push coherent below 50% and evolving above 7%.
+- Tension tail floor (1.02 when progress > 75%) should lift 90th percentile tension above 0.50.
+- Warm-starting restSynchronizer at 0.25 should break the 3-generation stagnation near 0.199.
+- Density-flicker escalation pathway should reduce avg below 0.40.
+
+---
+
 ## R14 — 2026-03-03 — STABLE
 
 **Profile:** explosive | **Beats:** 644 | **Duration:** 81.1s | **Notes:** 22708

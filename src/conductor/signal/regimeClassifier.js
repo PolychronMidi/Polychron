@@ -93,8 +93,9 @@ regimeClassifier = (() => {
 
     // R15 Evo 2: Coherent saturation cutoff.
     // After long coherent runs, require stronger coupling to stay coherent.
-    const coherentDurationPenalty = lastRegime === 'coherent' && coherentBeats > 50
-      ? clamp((coherentBeats - 50) * 0.0025, 0, 0.10)
+    // R16 Evo 2: Onset reduced from 50 to 35 to break coherent monopoly earlier.
+    const coherentDurationPenalty = lastRegime === 'coherent' && coherentBeats > 35
+      ? clamp((coherentBeats - 35) * 0.003, 0, 0.10)
       : 0;
 
     const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
