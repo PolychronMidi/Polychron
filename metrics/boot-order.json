@@ -1,9 +1,9 @@
 {
   "meta": {
-    "generated": "2026-03-03T18:52:28.351Z",
-    "totalFiles": 387,
-    "globalsDeclared": 686,
-    "globalsMapped": 686,
+    "generated": "2026-03-03T20:19:22.100Z",
+    "totalFiles": 388,
+    "globalsDeclared": 687,
+    "globalsMapped": 687,
     "orphaned": [],
     "reassigned": [
       {
@@ -834,762 +834,769 @@
     },
     {
       "order": 71,
+      "file": "src/conductor/signal/couplingHomeostasis.js",
+      "provides": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "order": 72,
       "file": "src/conductor/signal/narrativeTrajectory.js",
       "provides": [
         "narrativeTrajectory"
       ]
     },
     {
-      "order": 72,
+      "order": 73,
       "file": "src/conductor/signal/structuralNarrativeAdvisor.js",
       "provides": [
         "structuralNarrativeAdvisor"
       ]
     },
     {
-      "order": 73,
+      "order": 74,
       "file": "src/conductor/signal/criticalityEngine.js",
       "provides": [
         "criticalityEngine"
       ]
     },
     {
-      "order": 74,
+      "order": 75,
       "file": "src/conductor/signal/dimensionalityExpander.js",
       "provides": [
         "dimensionalityExpander"
       ]
     },
     {
-      "order": 75,
+      "order": 76,
       "file": "src/conductor/signal/conductorMetaWatchdog.js",
       "provides": [
         "conductorMetaWatchdog"
       ]
     },
     {
-      "order": 76,
+      "order": 77,
       "file": "src/conductor/signal/metaControllerRegistry.js",
       "provides": [
         "metaControllerRegistry"
       ]
     },
     {
-      "order": 77,
+      "order": 78,
       "file": "src/conductor/signal/output/index.js",
       "provides": []
     },
     {
-      "order": 78,
+      "order": 79,
       "file": "src/conductor/signal/output/coherenceVerdicts.js",
       "provides": [
         "coherenceVerdicts"
       ]
     },
     {
-      "order": 79,
+      "order": 80,
       "file": "src/conductor/signal/output/systemManifestMarkdown.js",
       "provides": [
         "systemManifestMarkdown"
       ]
     },
     {
-      "order": 80,
+      "order": 81,
       "file": "src/conductor/signal/output/outputAnalyzer.js",
       "provides": [
         "outputAnalyzer"
       ]
     },
     {
-      "order": 81,
+      "order": 82,
       "file": "src/conductor/signal/output/systemManifest.js",
       "provides": [
         "systemManifest"
       ]
     },
     {
-      "order": 82,
+      "order": 83,
       "file": "src/conductor/harmonic/index.js",
       "provides": []
     },
     {
-      "order": 83,
+      "order": 84,
       "file": "src/conductor/harmonic/pitchClassHelpers.js",
       "provides": [
         "pitchClassHelpers"
       ]
     },
     {
-      "order": 84,
+      "order": 85,
       "file": "src/conductor/harmonic/cadenceAdvisor.js",
       "provides": [
         "cadenceAdvisor"
       ]
     },
     {
-      "order": 85,
+      "order": 86,
       "file": "src/conductor/harmonic/cadentialPreparationAdvisor.js",
       "provides": [
         "cadentialPreparationAdvisor"
       ]
     },
     {
-      "order": 86,
+      "order": 87,
       "file": "src/conductor/harmonic/chromaticSaturationMonitor.js",
       "provides": [
         "chromaticSaturationMonitor"
       ]
     },
     {
-      "order": 87,
+      "order": 88,
       "file": "src/conductor/harmonic/consonanceDissonanceTracker.js",
       "provides": [
         "consonanceDissonanceTracker"
       ]
     },
     {
-      "order": 88,
+      "order": 89,
       "file": "src/conductor/harmonic/harmonicDensityOscillator.js",
       "provides": [
         "harmonicDensityOscillator"
       ]
     },
     {
-      "order": 89,
+      "order": 90,
       "file": "src/conductor/harmonic/harmonicFieldDensityTracker.js",
       "provides": [
         "harmonicFieldDensityTracker"
       ]
     },
     {
-      "order": 90,
+      "order": 91,
       "file": "src/conductor/harmonic/harmonicPedalFieldTracker.js",
       "provides": [
         "harmonicPedalFieldTracker"
       ]
     },
     {
-      "order": 91,
+      "order": 92,
       "file": "src/conductor/harmonic/harmonicRhythmDensityRatio.js",
       "provides": [
         "harmonicRhythmDensityRatio"
       ]
     },
     {
-      "order": 92,
+      "order": 93,
       "file": "src/conductor/harmonic/harmonicSurpriseIndex.js",
       "provides": [
         "harmonicSurpriseIndex"
       ]
     },
     {
-      "order": 93,
+      "order": 94,
       "file": "src/conductor/harmonic/harmonicVelocityMonitor.js",
       "provides": [
         "harmonicVelocityMonitor"
       ]
     },
     {
-      "order": 94,
+      "order": 95,
       "file": "src/conductor/harmonic/modalColorTracker.js",
       "provides": [
         "modalColorTracker"
       ]
     },
     {
-      "order": 95,
+      "order": 96,
       "file": "src/conductor/harmonic/pitchClassGravityMap.js",
       "provides": [
         "pitchClassGravityMap"
       ]
     },
     {
-      "order": 96,
+      "order": 97,
       "file": "src/conductor/harmonic/pitchGravityCenter.js",
       "provides": [
         "pitchGravityCenter"
       ]
     },
     {
-      "order": 97,
+      "order": 98,
       "file": "src/conductor/harmonic/tensionResolutionTracker.js",
       "provides": [
         "tensionResolutionTracker"
       ]
     },
     {
-      "order": 98,
+      "order": 99,
       "file": "src/conductor/harmonic/tonalAnchorDistanceTracker.js",
       "provides": [
         "tonalAnchorDistanceTracker"
       ]
     },
     {
-      "order": 99,
+      "order": 100,
       "file": "src/conductor/harmonic/harmonicFunctionGraph.js",
       "provides": [
         "harmonicFunctionGraph"
       ]
     },
     {
-      "order": 100,
+      "order": 101,
       "file": "src/conductor/melodic/index.js",
       "provides": []
     },
     {
-      "order": 101,
+      "order": 102,
       "file": "src/conductor/melodic/ambitusMigrationTracker.js",
       "provides": [
         "ambitusMigrationTracker"
       ]
     },
     {
-      "order": 102,
+      "order": 103,
       "file": "src/conductor/melodic/counterpointMotionTracker.js",
       "provides": [
         "counterpointMotionTracker"
       ]
     },
     {
-      "order": 103,
+      "order": 104,
       "file": "src/conductor/melodic/intervalBalanceTracker.js",
       "provides": [
         "intervalBalanceTracker"
       ]
     },
     {
-      "order": 104,
+      "order": 105,
       "file": "src/conductor/melodic/intervalDirectionMemory.js",
       "provides": [
         "intervalDirectionMemory"
       ]
     },
     {
-      "order": 105,
+      "order": 106,
       "file": "src/conductor/melodic/intervalExpansionContractor.js",
       "provides": [
         "intervalExpansionContractor"
       ]
     },
     {
-      "order": 106,
+      "order": 107,
       "file": "src/conductor/melodic/melodicContourTracker.js",
       "provides": [
         "melodicContourTracker"
       ]
     },
     {
-      "order": 107,
+      "order": 108,
       "file": "src/conductor/melodic/octaveHelpers.js",
       "provides": [
         "octaveHelpers"
       ]
     },
     {
-      "order": 108,
+      "order": 109,
       "file": "src/conductor/melodic/octaveSpreadMonitor.js",
       "provides": [
         "octaveSpreadMonitor"
       ]
     },
     {
-      "order": 109,
+      "order": 110,
       "file": "src/conductor/melodic/phraseContourArchetypeDetector.js",
       "provides": [
         "phraseContourArchetypeDetector"
       ]
     },
     {
-      "order": 110,
+      "order": 111,
       "file": "src/conductor/melodic/registerMigrationTracker.js",
       "provides": [
         "registerMigrationTracker"
       ]
     },
     {
-      "order": 111,
+      "order": 112,
       "file": "src/conductor/melodic/registerPressureMonitor.js",
       "provides": [
         "registerPressureMonitor"
       ]
     },
     {
-      "order": 112,
+      "order": 113,
       "file": "src/conductor/melodic/registralVelocityCorrelator.js",
       "provides": [
         "registralVelocityCorrelator"
       ]
     },
     {
-      "order": 113,
+      "order": 114,
       "file": "src/conductor/melodic/tessituraPressureMonitor.js",
       "provides": [
         "tessituraPressureMonitor"
       ]
     },
     {
-      "order": 114,
+      "order": 115,
       "file": "src/conductor/melodic/thematicRecallDetector.js",
       "provides": [
         "thematicRecallDetector"
       ]
     },
     {
-      "order": 115,
+      "order": 116,
       "file": "src/conductor/melodic/voiceLeadingEfficiencyTracker.js",
       "provides": [
         "voiceLeadingEfficiencyTracker"
       ]
     },
     {
-      "order": 116,
+      "order": 117,
       "file": "src/conductor/rhythmic/index.js",
       "provides": []
     },
     {
-      "order": 117,
+      "order": 118,
       "file": "src/conductor/rhythmic/beatGridHelpers.js",
       "provides": [
         "beatGridHelpers"
       ]
     },
     {
-      "order": 118,
+      "order": 119,
       "file": "src/conductor/rhythmic/accentPatternTracker.js",
       "provides": [
         "accentPatternTracker"
       ]
     },
     {
-      "order": 119,
+      "order": 120,
       "file": "src/conductor/rhythmic/attackDensityProfiler.js",
       "provides": [
         "attackDensityProfiler"
       ]
     },
     {
-      "order": 120,
+      "order": 121,
       "file": "src/conductor/rhythmic/grooveTemplateAdvisor.js",
       "provides": [
         "grooveTemplateAdvisor"
       ]
     },
     {
-      "order": 121,
+      "order": 122,
       "file": "src/conductor/rhythmic/interLayerRhythmHelpers.js",
       "provides": [
         "interLayerRhythmHelpers"
       ]
     },
     {
-      "order": 122,
+      "order": 123,
       "file": "src/conductor/rhythmic/interLayerRhythmAnalyzer.js",
       "provides": [
         "interLayerRhythmAnalyzer"
       ]
     },
     {
-      "order": 123,
+      "order": 124,
       "file": "src/conductor/rhythmic/onsetDensityProfiler.js",
       "provides": [
         "onsetDensityProfiler"
       ]
     },
     {
-      "order": 124,
+      "order": 125,
       "file": "src/conductor/rhythmic/onsetRegularityMonitor.js",
       "provides": [
         "onsetRegularityMonitor"
       ]
     },
     {
-      "order": 125,
+      "order": 126,
       "file": "src/conductor/rhythmic/rhythmicComplexityGradient.js",
       "provides": [
         "rhythmicComplexityGradient"
       ]
     },
     {
-      "order": 126,
+      "order": 127,
       "file": "src/conductor/rhythmic/rhythmicDensityContrastTracker.js",
       "provides": [
         "rhythmicDensityContrastTracker"
       ]
     },
     {
-      "order": 127,
+      "order": 128,
       "file": "src/conductor/rhythmic/rhythmicGroupingAnalyzer.js",
       "provides": [
         "rhythmicGroupingAnalyzer"
       ]
     },
     {
-      "order": 128,
+      "order": 129,
       "file": "src/conductor/rhythmic/rhythmicInertiaTracker.js",
       "provides": [
         "rhythmicInertiaTracker"
       ]
     },
     {
-      "order": 129,
+      "order": 130,
       "file": "src/conductor/rhythmic/rhythmicSymmetryDetector.js",
       "provides": [
         "rhythmicSymmetryDetector"
       ]
     },
     {
-      "order": 130,
+      "order": 131,
       "file": "src/conductor/rhythmic/syncopationDensityTracker.js",
       "provides": [
         "syncopationDensityTracker"
       ]
     },
     {
-      "order": 131,
+      "order": 132,
       "file": "src/conductor/rhythmic/temporalProportionTracker.js",
       "provides": [
         "temporalProportionTracker"
       ]
     },
     {
-      "order": 132,
+      "order": 133,
       "file": "src/conductor/dynamics/index.js",
       "provides": []
     },
     {
-      "order": 133,
+      "order": 134,
       "file": "src/conductor/dynamics/climaxProximityPredictor.js",
       "provides": [
         "climaxProximityPredictor"
       ]
     },
     {
-      "order": 134,
+      "order": 135,
       "file": "src/conductor/dynamics/densityWaveAnalyzer.js",
       "provides": [
         "densityWaveAnalyzer"
       ]
     },
     {
-      "order": 135,
+      "order": 136,
       "file": "src/conductor/dynamics/durationalContourTracker.js",
       "provides": [
         "durationalContourTracker"
       ]
     },
     {
-      "order": 136,
+      "order": 137,
       "file": "src/conductor/dynamics/dynamicArchitectPlanner.js",
       "provides": [
         "dynamicArchitectPlanner"
       ]
     },
     {
-      "order": 137,
+      "order": 138,
       "file": "src/conductor/dynamics/dynamicPeakMemory.js",
       "provides": [
         "dynamicPeakMemory"
       ]
     },
     {
-      "order": 138,
+      "order": 139,
       "file": "src/conductor/dynamics/dynamicRangeTracker.js",
       "provides": [
         "dynamicRangeTracker"
       ]
     },
     {
-      "order": 139,
+      "order": 140,
       "file": "src/conductor/dynamics/energyMomentumTracker.js",
       "provides": [
         "energyMomentumTracker"
       ]
     },
     {
-      "order": 140,
+      "order": 141,
       "file": "src/conductor/dynamics/velocityShapeAnalyzer.js",
       "provides": [
         "velocityShapeAnalyzer"
       ]
     },
     {
-      "order": 141,
+      "order": 142,
       "file": "src/conductor/texture/index.js",
       "provides": []
     },
     {
-      "order": 142,
+      "order": 143,
       "file": "src/conductor/texture/articulationProfiler.js",
       "provides": [
         "articulationProfiler"
       ]
     },
     {
-      "order": 143,
+      "order": 144,
       "file": "src/conductor/texture/crossLayerDensityBalancer.js",
       "provides": [
         "crossLayerDensityBalancer"
       ]
     },
     {
-      "order": 144,
+      "order": 145,
       "file": "src/conductor/texture/layerCoherenceScorer.js",
       "provides": [
         "layerCoherenceScorer"
       ]
     },
     {
-      "order": 145,
+      "order": 146,
       "file": "src/conductor/texture/layerEntryExitTracker.js",
       "provides": [
         "layerEntryExitTracker"
       ]
     },
     {
-      "order": 146,
+      "order": 147,
       "file": "src/conductor/texture/layerIndependenceScorer.js",
       "provides": [
         "layerIndependenceScorer"
       ]
     },
     {
-      "order": 147,
+      "order": 148,
       "file": "src/conductor/texture/fragmentHelpers.js",
       "provides": [
         "fragmentHelpers"
       ]
     },
     {
-      "order": 148,
+      "order": 149,
       "file": "src/conductor/texture/motivicDensityTracker.js",
       "provides": [
         "motivicDensityTracker"
       ]
     },
     {
-      "order": 149,
+      "order": 150,
       "file": "src/conductor/texture/orchestrationWeightTracker.js",
       "provides": [
         "orchestrationWeightTracker"
       ]
     },
     {
-      "order": 150,
+      "order": 151,
       "file": "src/conductor/texture/pedalPointDetector.js",
       "provides": [
         "pedalPointDetector"
       ]
     },
     {
-      "order": 151,
+      "order": 152,
       "file": "src/conductor/texture/phraseLengthMomentumTracker.js",
       "provides": [
         "phraseLengthMomentumTracker"
       ]
     },
     {
-      "order": 152,
+      "order": 153,
       "file": "src/conductor/texture/repetitionFatigueMonitor.js",
       "provides": [
         "repetitionFatigueMonitor"
       ]
     },
     {
-      "order": 153,
+      "order": 154,
       "file": "src/conductor/texture/restDensityTracker.js",
       "provides": [
         "restDensityTracker"
       ]
     },
     {
-      "order": 154,
+      "order": 155,
       "file": "src/conductor/texture/sectionLengthAdvisor.js",
       "provides": [
         "sectionLengthAdvisor"
       ]
     },
     {
-      "order": 155,
+      "order": 156,
       "file": "src/conductor/texture/silenceDistributionTracker.js",
       "provides": [
         "silenceDistributionTracker"
       ]
     },
     {
-      "order": 156,
+      "order": 157,
       "file": "src/conductor/texture/structuralFormTracker.js",
       "provides": [
         "structuralFormTracker"
       ]
     },
     {
-      "order": 157,
+      "order": 158,
       "file": "src/conductor/texture/texturalGradientTracker.js",
       "provides": [
         "texturalGradientTracker"
       ]
     },
     {
-      "order": 158,
+      "order": 159,
       "file": "src/conductor/texture/texturalMemoryAdvisor.js",
       "provides": [
         "texturalMemoryAdvisor"
       ]
     },
     {
-      "order": 159,
+      "order": 160,
       "file": "src/conductor/texture/composerFeedbackAdvisor.js",
       "provides": [
         "composerFeedbackAdvisor"
       ]
     },
     {
-      "order": 160,
+      "order": 161,
       "file": "src/conductor/texture/timbreBalanceTracker.js",
       "provides": [
         "timbreBalanceTracker"
       ]
     },
     {
-      "order": 161,
+      "order": 162,
       "file": "src/conductor/texture/voiceDensityBalancer.js",
       "provides": [
         "voiceDensityBalancer"
       ]
     },
     {
-      "order": 162,
+      "order": 163,
       "file": "src/conductor/sectionMemory.js",
       "provides": [
         "sectionMemory"
       ]
     },
     {
-      "order": 163,
+      "order": 164,
       "file": "src/rhythm/index.js",
       "provides": [
         "rhythmMethods"
       ]
     },
     {
-      "order": 164,
+      "order": 165,
       "file": "src/rhythm/rhythmValues.js",
       "provides": [
         "rhythmValues"
       ]
     },
     {
-      "order": 165,
+      "order": 166,
       "file": "src/rhythm/rhythmModulator.js",
       "provides": [
         "rhythmModulator"
       ]
     },
     {
-      "order": 166,
+      "order": 167,
       "file": "src/rhythm/rhythmConfig.js",
       "provides": [
         "rhythmConfig"
       ]
     },
     {
-      "order": 167,
+      "order": 168,
       "file": "src/rhythm/rhythmPriorsData.js",
       "provides": [
         "RHYTHM_PRIOR_TABLES"
       ]
     },
     {
-      "order": 168,
+      "order": 169,
       "file": "src/rhythm/rhythmRegistry.js",
       "provides": [
         "rhythmRegistry"
       ]
     },
     {
-      "order": 169,
+      "order": 170,
       "file": "src/rhythm/RhythmManager.js",
       "provides": [
         "RhythmManager"
       ]
     },
     {
-      "order": 170,
+      "order": 171,
       "file": "src/rhythm/drums/index.js",
       "provides": []
     },
     {
-      "order": 171,
+      "order": 172,
       "file": "src/rhythm/drums/drumMap.js",
       "provides": [
         "drumMap"
       ]
     },
     {
-      "order": 172,
+      "order": 173,
       "file": "src/rhythm/drums/drummer.js",
       "provides": [
         "drummer"
       ]
     },
     {
-      "order": 173,
+      "order": 174,
       "file": "src/rhythm/drums/drumTextureCoupler.js",
       "provides": [
         "drumTextureCoupler"
       ]
     },
     {
-      "order": 174,
+      "order": 175,
       "file": "src/rhythm/drums/playDrums.js",
       "provides": [
         "playDrums"
       ]
     },
     {
-      "order": 175,
+      "order": 176,
       "file": "src/rhythm/drums/playDrums2.js",
       "provides": [
         "playDrums2"
       ]
     },
     {
-      "order": 176,
+      "order": 177,
       "file": "src/rhythm/makeOnsets.js",
       "provides": [
         "makeOnsets"
       ]
     },
     {
-      "order": 177,
+      "order": 178,
       "file": "src/rhythm/patternLength.js",
       "provides": [
         "patternLength"
       ]
     },
     {
-      "order": 178,
+      "order": 179,
       "file": "src/rhythm/getRhythm.js",
       "provides": [
         "getRhythm"
       ]
     },
     {
-      "order": 179,
+      "order": 180,
       "file": "src/rhythm/setRhythm.js",
       "provides": [
         "setRhythm"
       ]
     },
     {
-      "order": 180,
+      "order": 181,
       "file": "src/rhythm/trackRhythm.js",
       "provides": [
         "trackRhythm"
       ]
     },
     {
-      "order": 181,
+      "order": 182,
       "file": "src/rhythm/patterns.js",
       "provides": [
         "rhythms",
@@ -1613,87 +1620,87 @@
       ]
     },
     {
-      "order": 182,
+      "order": 183,
       "file": "src/rhythm/feedback/index.js",
       "provides": []
     },
     {
-      "order": 183,
+      "order": 184,
       "file": "src/rhythm/feedback/feedbackAccumulator.js",
       "provides": [
         "feedbackAccumulator"
       ]
     },
     {
-      "order": 184,
+      "order": 185,
       "file": "src/rhythm/feedback/fXFeedbackListener.js",
       "provides": [
         "FXFeedbackListener"
       ]
     },
     {
-      "order": 185,
+      "order": 186,
       "file": "src/rhythm/feedback/stutterFeedbackListener.js",
       "provides": [
         "stutterFeedbackListener"
       ]
     },
     {
-      "order": 186,
+      "order": 187,
       "file": "src/rhythm/feedback/emissionFeedbackListener.js",
       "provides": [
         "emissionFeedbackListener"
       ]
     },
     {
-      "order": 187,
+      "order": 188,
       "file": "src/rhythm/feedback/journeyRhythmCoupler.js",
       "provides": [
         "journeyRhythmCoupler"
       ]
     },
     {
-      "order": 188,
+      "order": 189,
       "file": "src/rhythm/feedback/conductorRegulationListener.js",
       "provides": [
         "conductorRegulationListener"
       ]
     },
     {
-      "order": 189,
+      "order": 190,
       "file": "src/rhythm/rhythmHistoryTracker.js",
       "provides": [
         "rhythmHistoryTracker"
       ]
     },
     {
-      "order": 190,
+      "order": 191,
       "file": "src/rhythm/phaseLockedRhythmGenerator.js",
       "provides": [
         "phaseLockedRhythmGenerator"
       ]
     },
     {
-      "order": 191,
+      "order": 192,
       "file": "src/rhythm/rhythmPriors.js",
       "provides": [
         "rhythmPriors"
       ]
     },
     {
-      "order": 192,
+      "order": 193,
       "file": "src/rhythm/crossModulateRhythms.js",
       "provides": [
         "crossModulateRhythms"
       ]
     },
     {
-      "order": 193,
+      "order": 194,
       "file": "src/time/index.js",
       "provides": []
     },
     {
-      "order": 194,
+      "order": 195,
       "file": "src/time/LayerManager.js",
       "provides": [
         "LM",
@@ -1701,7 +1708,7 @@
       ]
     },
     {
-      "order": 195,
+      "order": 196,
       "file": "src/time/midiTiming.js",
       "provides": [
         "isPowerOf2",
@@ -1710,7 +1717,7 @@
       ]
     },
     {
-      "order": 196,
+      "order": 197,
       "file": "src/time/setUnitTiming.js",
       "provides": [
         "setUnitTimingBudgetStats",
@@ -1718,28 +1725,28 @@
       ]
     },
     {
-      "order": 197,
+      "order": 198,
       "file": "src/time/polyrhythmPairs.js",
       "provides": [
         "POLYRHYTHM_PAIRS"
       ]
     },
     {
-      "order": 198,
+      "order": 199,
       "file": "src/time/getPolyrhythm.js",
       "provides": [
         "getPolyrhythm"
       ]
     },
     {
-      "order": 199,
+      "order": 200,
       "file": "src/time/getMeterPair.js",
       "provides": [
         "getMeterPair"
       ]
     },
     {
-      "order": 200,
+      "order": 201,
       "file": "src/time/timeGridHelpers.js",
       "provides": [
         "timeGridPrune",
@@ -1747,80 +1754,80 @@
       ]
     },
     {
-      "order": 201,
+      "order": 202,
       "file": "src/time/absoluteTimeWindow.js",
       "provides": [
         "absoluteTimeWindow"
       ]
     },
     {
-      "order": 202,
+      "order": 203,
       "file": "src/time/absoluteTimeGrid.js",
       "provides": [
         "absoluteTimeGrid"
       ]
     },
     {
-      "order": 203,
+      "order": 204,
       "file": "src/time/tempoFeelEngine.js",
       "provides": [
         "tempoFeelEngine"
       ]
     },
     {
-      "order": 204,
+      "order": 205,
       "file": "src/time/timeStream.js",
       "provides": [
         "timeStream"
       ]
     },
     {
-      "order": 205,
+      "order": 206,
       "file": "src/time/fractalArcGenerator.js",
       "provides": [
         "fractalArcGenerator"
       ]
     },
     {
-      "order": 206,
+      "order": 207,
       "file": "src/composers/index.js",
       "provides": []
     },
     {
-      "order": 207,
+      "order": 208,
       "file": "src/composers/intervalComposer.js",
       "provides": [
         "intervalComposer"
       ]
     },
     {
-      "order": 208,
+      "order": 209,
       "file": "src/composers/measureNotePool.js",
       "provides": [
         "measureNotePool"
       ]
     },
     {
-      "order": 209,
+      "order": 210,
       "file": "src/composers/MeasureComposer.js",
       "provides": [
         "MeasureComposer"
       ]
     },
     {
-      "order": 210,
+      "order": 211,
       "file": "src/composers/composerCapabilities.js",
       "provides": [
         "assertComposerCapabilities"
       ]
     },
     {
-      "order": 211,
+      "order": 212,
       "file": "src/composers/utils/index.js",
       "provides": []
     },
     {
-      "order": 212,
+      "order": 213,
       "file": "src/composers/utils/degreeUtils.js",
       "provides": [
         "resolveScalePC",
@@ -1830,21 +1837,21 @@
       ]
     },
     {
-      "order": 213,
+      "order": 214,
       "file": "src/composers/utils/scaleNormalization.js",
       "provides": [
         "scaleNormalization"
       ]
     },
     {
-      "order": 214,
+      "order": 215,
       "file": "src/composers/utils/scaleDegreeTranspose.js",
       "provides": [
         "scaleDegreeTranspose"
       ]
     },
     {
-      "order": 215,
+      "order": 216,
       "file": "src/composers/noiseComposer.js",
       "provides": [
         "applyComposerPitchNoise",
@@ -1855,7 +1862,7 @@
       ]
     },
     {
-      "order": 216,
+      "order": 217,
       "file": "src/composers/ScaleComposer.js",
       "provides": [
         "ScaleComposer",
@@ -1863,68 +1870,68 @@
       ]
     },
     {
-      "order": 217,
+      "order": 218,
       "file": "src/composers/chord/index.js",
       "provides": []
     },
     {
-      "order": 218,
+      "order": 219,
       "file": "src/composers/chord/chordValues.js",
       "provides": [
         "chordValues"
       ]
     },
     {
-      "order": 219,
+      "order": 220,
       "file": "src/composers/chord/chordModulator.js",
       "provides": [
         "chordModulator"
       ]
     },
     {
-      "order": 220,
+      "order": 221,
       "file": "src/composers/chord/chordConfig.js",
       "provides": [
         "chordConfig"
       ]
     },
     {
-      "order": 221,
+      "order": 222,
       "file": "src/composers/chord/chordRegistry.js",
       "provides": [
         "chordRegistry"
       ]
     },
     {
-      "order": 222,
+      "order": 223,
       "file": "src/composers/chord/ChordManager.js",
       "provides": [
         "ChordManager"
       ]
     },
     {
-      "order": 223,
+      "order": 224,
       "file": "src/composers/chord/chordUtils.js",
       "provides": [
         "normalizeChordSymbol"
       ]
     },
     {
-      "order": 224,
+      "order": 225,
       "file": "src/composers/chord/harmonicPriorsData.js",
       "provides": [
         "HARMONIC_PRIOR_TABLES"
       ]
     },
     {
-      "order": 225,
+      "order": 226,
       "file": "src/composers/chord/harmonicPriors.js",
       "provides": [
         "harmonicPriors"
       ]
     },
     {
-      "order": 226,
+      "order": 227,
       "file": "src/composers/chord/ChordComposer.js",
       "provides": [
         "ChordComposer",
@@ -1932,21 +1939,21 @@
       ]
     },
     {
-      "order": 227,
+      "order": 228,
       "file": "src/composers/chord/ProgressionGenerator.js",
       "provides": [
         "ProgressionGenerator"
       ]
     },
     {
-      "order": 228,
+      "order": 229,
       "file": "src/composers/chord/pivotChordBridge.js",
       "provides": [
         "pivotChordBridge"
       ]
     },
     {
-      "order": 229,
+      "order": 230,
       "file": "src/composers/PentatonicComposer.js",
       "provides": [
         "PentatonicComposer",
@@ -1954,7 +1961,7 @@
       ]
     },
     {
-      "order": 230,
+      "order": 231,
       "file": "src/composers/BluesComposer.js",
       "provides": [
         "BluesComposer",
@@ -1962,7 +1969,7 @@
       ]
     },
     {
-      "order": 231,
+      "order": 232,
       "file": "src/composers/ChromaticComposer.js",
       "provides": [
         "ChromaticComposer",
@@ -1970,7 +1977,7 @@
       ]
     },
     {
-      "order": 232,
+      "order": 233,
       "file": "src/composers/QuartalComposer.js",
       "provides": [
         "QuartalComposer",
@@ -1978,14 +1985,14 @@
       ]
     },
     {
-      "order": 233,
+      "order": 234,
       "file": "src/composers/TensionReleaseComposer.js",
       "provides": [
         "TensionReleaseComposer"
       ]
     },
     {
-      "order": 234,
+      "order": 235,
       "file": "src/composers/ModeComposer.js",
       "provides": [
         "ModeComposer",
@@ -1993,206 +2000,206 @@
       ]
     },
     {
-      "order": 235,
+      "order": 236,
       "file": "src/composers/ModalInterchangeComposer.js",
       "provides": [
         "ModalInterchangeComposer"
       ]
     },
     {
-      "order": 236,
+      "order": 237,
       "file": "src/composers/HarmonicRhythmComposer.js",
       "provides": [
         "HarmonicRhythmComposer"
       ]
     },
     {
-      "order": 237,
+      "order": 238,
       "file": "src/composers/melodicDevelopmentVoicingIntent.js",
       "provides": [
         "melodicDevelopmentVoicingIntent"
       ]
     },
     {
-      "order": 238,
+      "order": 239,
       "file": "src/composers/MelodicDevelopmentComposer.js",
       "provides": [
         "MelodicDevelopmentComposer"
       ]
     },
     {
-      "order": 239,
+      "order": 240,
       "file": "src/composers/voice/index.js",
       "provides": []
     },
     {
-      "order": 240,
+      "order": 241,
       "file": "src/composers/voice/voiceValues.js",
       "provides": [
         "voiceValues"
       ]
     },
     {
-      "order": 241,
+      "order": 242,
       "file": "src/composers/voice/voiceModulator.js",
       "provides": [
         "voiceModulator"
       ]
     },
     {
-      "order": 242,
+      "order": 243,
       "file": "src/composers/voice/voiceConfig.js",
       "provides": [
         "voiceConfig"
       ]
     },
     {
-      "order": 243,
+      "order": 244,
       "file": "src/composers/voice/voiceRegistry.js",
       "provides": [
         "voiceRegistry"
       ]
     },
     {
-      "order": 244,
+      "order": 245,
       "file": "src/composers/voice/registerBiasing.js",
       "provides": [
         "registerBiasing"
       ]
     },
     {
-      "order": 245,
+      "order": 246,
       "file": "src/composers/voice/voiceLeadingPriorsData.js",
       "provides": [
         "VOICE_LEADING_PRIOR_TABLES"
       ]
     },
     {
-      "order": 246,
+      "order": 247,
       "file": "src/composers/voice/voiceLeadingPriors.js",
       "provides": [
         "voiceLeadingPriors"
       ]
     },
     {
-      "order": 247,
+      "order": 248,
       "file": "src/composers/voice/melodicPriorsData.js",
       "provides": [
         "MELODIC_PRIOR_TABLES"
       ]
     },
     {
-      "order": 248,
+      "order": 249,
       "file": "src/composers/voice/melodicPriors.js",
       "provides": [
         "melodicPriors"
       ]
     },
     {
-      "order": 249,
+      "order": 250,
       "file": "src/composers/voice/voiceLeadingCore.js",
       "provides": [
         "voiceLeadingCore"
       ]
     },
     {
-      "order": 250,
+      "order": 251,
       "file": "src/composers/voice/voiceLeadingAnalyzeQuality.js",
       "provides": [
         "voiceLeadingAnalyzeQuality"
       ]
     },
     {
-      "order": 251,
+      "order": 252,
       "file": "src/composers/voice/VoiceLeadingComposer.js",
       "provides": [
         "VoiceLeadingComposer"
       ]
     },
     {
-      "order": 252,
+      "order": 253,
       "file": "src/composers/voice/VoiceLeadingScore.js",
       "provides": [
         "VoiceLeadingScore"
       ]
     },
     {
-      "order": 253,
+      "order": 254,
       "file": "src/composers/voice/voiceLeadingScorers.js",
       "provides": [
         "voiceLeadingScorers"
       ]
     },
     {
-      "order": 254,
+      "order": 255,
       "file": "src/composers/voice/voiceLeadingSelectNextNote.js",
       "provides": [
         "voiceLeadingSelectNextNote"
       ]
     },
     {
-      "order": 255,
+      "order": 256,
       "file": "src/composers/voice/VoiceManager.js",
       "provides": [
         "VoiceManager"
       ]
     },
     {
-      "order": 256,
+      "order": 257,
       "file": "src/composers/motif/index.js",
       "provides": []
     },
     {
-      "order": 257,
+      "order": 258,
       "file": "src/composers/motif/motifValues.js",
       "provides": [
         "motifValues"
       ]
     },
     {
-      "order": 258,
+      "order": 259,
       "file": "src/composers/motif/motifModulator.js",
       "provides": [
         "motifModulator"
       ]
     },
     {
-      "order": 259,
+      "order": 260,
       "file": "src/composers/motif/motifConfig.js",
       "provides": [
         "motifConfig"
       ]
     },
     {
-      "order": 260,
+      "order": 261,
       "file": "src/composers/motif/motifRegistry.js",
       "provides": [
         "motifRegistry"
       ]
     },
     {
-      "order": 261,
+      "order": 262,
       "file": "src/composers/motif/motifManager.js",
       "provides": [
         "motifManager"
       ]
     },
     {
-      "order": 262,
+      "order": 263,
       "file": "src/composers/motif/motifValidators.js",
       "provides": [
         "motifValidators"
       ]
     },
     {
-      "order": 263,
+      "order": 264,
       "file": "src/composers/motif/MotifComposer.js",
       "provides": [
         "MotifComposer"
       ]
     },
     {
-      "order": 264,
+      "order": 265,
       "file": "src/composers/motif/Motif.js",
       "provides": [
         "Motif",
@@ -2201,140 +2208,140 @@
       ]
     },
     {
-      "order": 265,
+      "order": 266,
       "file": "src/composers/motif/motifChain.js",
       "provides": [
         "motifChain"
       ]
     },
     {
-      "order": 266,
+      "order": 267,
       "file": "src/composers/motif/motifTransformAdvisor.js",
       "provides": [
         "motifTransformAdvisor"
       ]
     },
     {
-      "order": 267,
+      "order": 268,
       "file": "src/composers/motif/motifSpreader.js",
       "provides": [
         "motifSpreader"
       ]
     },
     {
-      "order": 268,
+      "order": 269,
       "file": "src/composers/motif/motifTransforms.js",
       "provides": [
         "motifTransforms"
       ]
     },
     {
-      "order": 269,
+      "order": 270,
       "file": "src/composers/motif/candidateExpansion.js",
       "provides": [
         "candidateExpansion"
       ]
     },
     {
-      "order": 270,
+      "order": 271,
       "file": "src/composers/motif/playMotifsResolveBucket.js",
       "provides": [
         "playMotifsResolveBucket"
       ]
     },
     {
-      "order": 271,
+      "order": 272,
       "file": "src/composers/motif/playMotifsBuildCandidateNotes.js",
       "provides": [
         "playMotifsBuildCandidateNotes"
       ]
     },
     {
-      "order": 272,
+      "order": 273,
       "file": "src/composers/motif/playMotifsApplyCycleTransforms.js",
       "provides": [
         "playMotifsApplyCycleTransforms"
       ]
     },
     {
-      "order": 273,
+      "order": 274,
       "file": "src/composers/motif/playMotifs.js",
       "provides": [
         "playMotifs"
       ]
     },
     {
-      "order": 274,
+      "order": 275,
       "file": "src/composers/profiles/index.js",
       "provides": []
     },
     {
-      "order": 275,
+      "order": 276,
       "file": "src/composers/profiles/measureProfiles.js",
       "provides": []
     },
     {
-      "order": 276,
+      "order": 277,
       "file": "src/composers/profiles/scaleProfiles.js",
       "provides": []
     },
     {
-      "order": 277,
+      "order": 278,
       "file": "src/composers/profiles/chordsProfiles.js",
       "provides": []
     },
     {
-      "order": 278,
+      "order": 279,
       "file": "src/composers/profiles/modeProfiles.js",
       "provides": []
     },
     {
-      "order": 279,
+      "order": 280,
       "file": "src/composers/profiles/pentatonicProfiles.js",
       "provides": []
     },
     {
-      "order": 280,
+      "order": 281,
       "file": "src/composers/profiles/bluesProfiles.js",
       "provides": []
     },
     {
-      "order": 281,
+      "order": 282,
       "file": "src/composers/profiles/chromaticProfiles.js",
       "provides": []
     },
     {
-      "order": 282,
+      "order": 283,
       "file": "src/composers/profiles/quartalProfiles.js",
       "provides": []
     },
     {
-      "order": 283,
+      "order": 284,
       "file": "src/composers/profiles/tensionReleaseProfiles.js",
       "provides": []
     },
     {
-      "order": 284,
+      "order": 285,
       "file": "src/composers/profiles/modalInterchangeProfiles.js",
       "provides": []
     },
     {
-      "order": 285,
+      "order": 286,
       "file": "src/composers/profiles/melodicDevelopmentProfiles.js",
       "provides": []
     },
     {
-      "order": 286,
+      "order": 287,
       "file": "src/composers/profiles/voiceLeadingProfiles.js",
       "provides": []
     },
     {
-      "order": 287,
+      "order": 288,
       "file": "src/composers/profiles/harmonicRhythmProfiles.js",
       "provides": []
     },
     {
-      "order": 288,
+      "order": 289,
       "file": "src/composers/profiles/profileUtils.js",
       "provides": [
         "COMPOSER_TYPES",
@@ -2342,21 +2349,21 @@
       ]
     },
     {
-      "order": 289,
+      "order": 290,
       "file": "src/composers/profiles/validateProfiles.js",
       "provides": [
         "composerProfileValidation"
       ]
     },
     {
-      "order": 290,
+      "order": 291,
       "file": "src/composers/profiles/runtimeProfileAdapter.js",
       "provides": [
         "composerRuntimeProfileAdapter"
       ]
     },
     {
-      "order": 291,
+      "order": 292,
       "file": "src/composers/profiles/profileRegistry.js",
       "provides": [
         "COMPOSER_TYPE_PROFILES",
@@ -2369,64 +2376,64 @@
       ]
     },
     {
-      "order": 292,
+      "order": 293,
       "file": "src/composers/factory/index.js",
       "provides": []
     },
     {
-      "order": 293,
+      "order": 294,
       "file": "src/composers/factory/factoryProfiles.js",
       "provides": [
         "factoryProfiles"
       ]
     },
     {
-      "order": 294,
+      "order": 295,
       "file": "src/composers/factory/factoryProgression.js",
       "provides": [
         "factoryProgression"
       ]
     },
     {
-      "order": 295,
+      "order": 296,
       "file": "src/composers/factory/factoryPoolResolver.js",
       "provides": [
         "factoryPoolResolver"
       ]
     },
     {
-      "order": 296,
+      "order": 297,
       "file": "src/composers/factory/factoryFamilies.js",
       "provides": [
         "factoryFamilies"
       ]
     },
     {
-      "order": 297,
+      "order": 298,
       "file": "src/composers/factory/factoryConstructors.js",
       "provides": [
         "factoryConstructors"
       ]
     },
     {
-      "order": 298,
+      "order": 299,
       "file": "src/composers/factory/FactoryManager.js",
       "provides": [
         "FactoryManager"
       ]
     },
     {
-      "order": 299,
+      "order": 300,
       "file": "src/fx/index.js",
       "provides": []
     },
     {
-      "order": 300,
+      "order": 301,
       "file": "src/fx/stutter/index.js",
       "provides": []
     },
     {
-      "order": 301,
+      "order": 302,
       "file": "src/fx/stutter/stutterConfigStore.js",
       "provides": [
         "stutterConfigStore",
@@ -2434,70 +2441,70 @@
       ]
     },
     {
-      "order": 302,
+      "order": 303,
       "file": "src/fx/stutter/stutterRegistry.js",
       "provides": [
         "stutterRegistry"
       ]
     },
     {
-      "order": 303,
+      "order": 304,
       "file": "src/fx/stutter/stutterMetrics.js",
       "provides": [
         "stutterMetrics"
       ]
     },
     {
-      "order": 304,
+      "order": 305,
       "file": "src/fx/stutter/stutterChannels.js",
       "provides": [
         "pickStutterChannels"
       ]
     },
     {
-      "order": 305,
+      "order": 306,
       "file": "src/fx/stutter/stutterFailFast.js",
       "provides": [
         "stutterFailFast"
       ]
     },
     {
-      "order": 306,
+      "order": 307,
       "file": "src/fx/stutter/stutterFade.js",
       "provides": [
         "stutterFade"
       ]
     },
     {
-      "order": 307,
+      "order": 308,
       "file": "src/fx/stutter/stutterPan.js",
       "provides": [
         "stutterPan"
       ]
     },
     {
-      "order": 308,
+      "order": 309,
       "file": "src/fx/stutter/stutterFX.js",
       "provides": [
         "stutterFX"
       ]
     },
     {
-      "order": 309,
+      "order": 310,
       "file": "src/fx/stutter/stutterExecutePlan.js",
       "provides": [
         "stutterExecutePlan"
       ]
     },
     {
-      "order": 310,
+      "order": 311,
       "file": "src/fx/stutter/stutterPlanScheduler.js",
       "provides": [
         "stutterPlanScheduler"
       ]
     },
     {
-      "order": 311,
+      "order": 312,
       "file": "src/fx/stutter/stutterManager.js",
       "provides": [
         "stutter",
@@ -2507,19 +2514,19 @@
       ]
     },
     {
-      "order": 312,
+      "order": 313,
       "file": "src/fx/stutter/stutterNotes.js",
       "provides": [
         "stutterNotes"
       ]
     },
     {
-      "order": 313,
+      "order": 314,
       "file": "src/fx/noise/index.js",
       "provides": []
     },
     {
-      "order": 314,
+      "order": 315,
       "file": "src/fx/noise/metaRecursive.js",
       "provides": [
         "easeInOut",
@@ -2537,7 +2544,7 @@
       ]
     },
     {
-      "order": 315,
+      "order": 316,
       "file": "src/fx/noise/SimplexNoise.js",
       "provides": [
         "SimplexNoise",
@@ -2548,7 +2555,7 @@
       ]
     },
     {
-      "order": 316,
+      "order": 317,
       "file": "src/fx/noise/noiseRegistry.js",
       "provides": [
         "defaultSimplex",
@@ -2559,7 +2566,7 @@
       ]
     },
     {
-      "order": 317,
+      "order": 318,
       "file": "src/fx/noise/noiseValues.js",
       "provides": [
         "getNoiseValue",
@@ -2575,7 +2582,7 @@
       ]
     },
     {
-      "order": 318,
+      "order": 319,
       "file": "src/fx/noise/noiseManager.js",
       "provides": [
         "applyNoiseToVelocity",
@@ -2586,14 +2593,14 @@
       ]
     },
     {
-      "order": 319,
+      "order": 320,
       "file": "src/fx/noise/noiseConfig.js",
       "provides": [
         "getNoiseProfile"
       ]
     },
     {
-      "order": 320,
+      "order": 321,
       "file": "src/fx/setBalanceAndFX.js",
       "provides": [
         "setBalanceAndFX",
@@ -2601,319 +2608,319 @@
       ]
     },
     {
-      "order": 321,
+      "order": 322,
       "file": "src/fx/setBinaural.js",
       "provides": [
         "setBinaural"
       ]
     },
     {
-      "order": 322,
+      "order": 323,
       "file": "src/crossLayer/index.js",
       "provides": []
     },
     {
-      "order": 323,
+      "order": 324,
       "file": "src/crossLayer/crossLayerRegistry.js",
       "provides": [
         "crossLayerRegistry"
       ]
     },
     {
-      "order": 324,
+      "order": 325,
       "file": "src/crossLayer/explainabilityBus.js",
       "provides": [
         "explainabilityBus"
       ]
     },
     {
-      "order": 325,
+      "order": 326,
       "file": "src/crossLayer/crossLayerEmissionGateway.js",
       "provides": [
         "crossLayerEmissionGateway"
       ]
     },
     {
-      "order": 326,
+      "order": 327,
       "file": "src/crossLayer/rhythm/index.js",
       "provides": []
     },
     {
-      "order": 327,
+      "order": 328,
       "file": "src/crossLayer/rhythm/convergenceDetector.js",
       "provides": [
         "convergenceDetector"
       ]
     },
     {
-      "order": 328,
+      "order": 329,
       "file": "src/crossLayer/rhythm/emergentDownbeat.js",
       "provides": [
         "emergentDownbeat"
       ]
     },
     {
-      "order": 329,
+      "order": 330,
       "file": "src/crossLayer/rhythm/feedbackOscillator.js",
       "provides": [
         "feedbackOscillator"
       ]
     },
     {
-      "order": 330,
+      "order": 331,
       "file": "src/crossLayer/rhythm/grooveTransfer.js",
       "provides": [
         "grooveTransfer"
       ]
     },
     {
-      "order": 331,
+      "order": 332,
       "file": "src/crossLayer/rhythm/rhythmicComplementEngine.js",
       "provides": [
         "rhythmicComplementEngine"
       ]
     },
     {
-      "order": 332,
+      "order": 333,
       "file": "src/crossLayer/rhythm/rhythmicPhaseLock.js",
       "provides": [
         "rhythmicPhaseLock"
       ]
     },
     {
-      "order": 333,
+      "order": 334,
       "file": "src/crossLayer/rhythm/stutterContagion.js",
       "provides": [
         "stutterContagion"
       ]
     },
     {
-      "order": 334,
+      "order": 335,
       "file": "src/crossLayer/rhythm/temporalGravity.js",
       "provides": [
         "temporalGravity"
       ]
     },
     {
-      "order": 335,
+      "order": 336,
       "file": "src/crossLayer/rhythm/polyrhythmicPhasePredictor.js",
       "provides": [
         "polyrhythmicPhasePredictor"
       ]
     },
     {
-      "order": 336,
+      "order": 337,
       "file": "src/crossLayer/harmony/index.js",
       "provides": []
     },
     {
-      "order": 337,
+      "order": 338,
       "file": "src/crossLayer/harmony/cadenceAlignment.js",
       "provides": [
         "cadenceAlignment"
       ]
     },
     {
-      "order": 338,
+      "order": 339,
       "file": "src/crossLayer/harmony/convergenceHarmonicTrigger.js",
       "provides": [
         "convergenceHarmonicTrigger"
       ]
     },
     {
-      "order": 339,
+      "order": 340,
       "file": "src/crossLayer/harmony/harmonicIntervalGuard.js",
       "provides": [
         "harmonicIntervalGuard"
       ]
     },
     {
-      "order": 340,
+      "order": 341,
       "file": "src/crossLayer/harmony/motifEcho.js",
       "provides": [
         "motifEcho"
       ]
     },
     {
-      "order": 341,
+      "order": 342,
       "file": "src/crossLayer/harmony/motifIdentityMemory.js",
       "provides": [
         "motifIdentityMemory"
       ]
     },
     {
-      "order": 342,
+      "order": 343,
       "file": "src/crossLayer/harmony/phaseAwareCadenceWindow.js",
       "provides": [
         "phaseAwareCadenceWindow"
       ]
     },
     {
-      "order": 343,
+      "order": 344,
       "file": "src/crossLayer/harmony/pitchMemoryRecall.js",
       "provides": [
         "pitchMemoryRecall"
       ]
     },
     {
-      "order": 344,
+      "order": 345,
       "file": "src/crossLayer/harmony/registerCollisionAvoider.js",
       "provides": [
         "registerCollisionAvoider"
       ]
     },
     {
-      "order": 345,
+      "order": 346,
       "file": "src/crossLayer/harmony/spectralComplementarity.js",
       "provides": [
         "spectralComplementarity"
       ]
     },
     {
-      "order": 346,
+      "order": 347,
       "file": "src/crossLayer/harmony/verticalIntervalMonitor.js",
       "provides": [
         "verticalIntervalMonitor"
       ]
     },
     {
-      "order": 347,
+      "order": 348,
       "file": "src/crossLayer/dynamics/index.js",
       "provides": []
     },
     {
-      "order": 348,
+      "order": 349,
       "file": "src/crossLayer/dynamics/articulationComplement.js",
       "provides": [
         "articulationComplement"
       ]
     },
     {
-      "order": 349,
+      "order": 350,
       "file": "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js",
       "provides": [
         "crossLayerDynamicEnvelope"
       ]
     },
     {
-      "order": 350,
+      "order": 351,
       "file": "src/crossLayer/dynamics/dynamicRoleSwap.js",
       "provides": [
         "dynamicRoleSwap"
       ]
     },
     {
-      "order": 351,
+      "order": 352,
       "file": "src/crossLayer/dynamics/restSynchronizer.js",
       "provides": [
         "restSynchronizer"
       ]
     },
     {
-      "order": 352,
+      "order": 353,
       "file": "src/crossLayer/dynamics/texturalMirror.js",
       "provides": [
         "texturalMirror"
       ]
     },
     {
-      "order": 353,
+      "order": 354,
       "file": "src/crossLayer/dynamics/velocityInterference.js",
       "provides": [
         "velocityInterference"
       ]
     },
     {
-      "order": 354,
+      "order": 355,
       "file": "src/crossLayer/structure/index.js",
       "provides": []
     },
     {
-      "order": 355,
+      "order": 356,
       "file": "src/crossLayer/structure/adaptiveTrustScores.js",
       "provides": [
         "adaptiveTrustScores"
       ]
     },
     {
-      "order": 356,
+      "order": 357,
       "file": "src/crossLayer/structure/crossLayerClimaxEngine.js",
       "provides": [
         "crossLayerClimaxEngine"
       ]
     },
     {
-      "order": 357,
+      "order": 358,
       "file": "src/crossLayer/structure/crossLayerSilhouette.js",
       "provides": [
         "crossLayerSilhouette"
       ]
     },
     {
-      "order": 358,
+      "order": 359,
       "file": "src/crossLayer/structure/entropyMetrics.js",
       "provides": [
         "entropyMetrics"
       ]
     },
     {
-      "order": 359,
+      "order": 360,
       "file": "src/crossLayer/structure/entropyRegulator.js",
       "provides": [
         "entropyRegulator"
       ]
     },
     {
-      "order": 360,
+      "order": 361,
       "file": "src/crossLayer/structure/interactionHeatMap.js",
       "provides": [
         "interactionHeatMap"
       ]
     },
     {
-      "order": 361,
+      "order": 362,
       "file": "src/crossLayer/structure/negotiationEngine.js",
       "provides": [
         "negotiationEngine"
       ]
     },
     {
-      "order": 362,
+      "order": 363,
       "file": "src/crossLayer/structure/sectionIntentCurves.js",
       "provides": [
         "sectionIntentCurves"
       ]
     },
     {
-      "order": 363,
+      "order": 364,
       "file": "src/crossLayer/structure/contextualTrust.js",
       "provides": [
         "contextualTrust"
       ]
     },
     {
-      "order": 364,
+      "order": 365,
       "file": "src/crossLayer/structure/beatInterleavedProcessor.js",
       "provides": [
         "beatInterleavedProcessor"
       ]
     },
     {
-      "order": 365,
+      "order": 366,
       "file": "src/crossLayer/conductorSignalBridge.js",
       "provides": [
         "conductorSignalBridge"
       ]
     },
     {
-      "order": 366,
+      "order": 367,
       "file": "src/crossLayer/crossLayerLifecycleManager.js",
       "provides": [
         "crossLayerLifecycleManager"
       ]
     },
     {
-      "order": 367,
+      "order": 368,
       "file": "src/writer/index.js",
       "provides": [
         "fs",
@@ -2926,54 +2933,54 @@
       ]
     },
     {
-      "order": 368,
+      "order": 369,
       "file": "src/writer/logUnit.js",
       "provides": [
         "logUnit"
       ]
     },
     {
-      "order": 369,
+      "order": 370,
       "file": "src/writer/grandFinale.js",
       "provides": [
         "grandFinale"
       ]
     },
     {
-      "order": 370,
+      "order": 371,
       "file": "src/writer/traceDrain.js",
       "provides": [
         "traceDrain"
       ]
     },
     {
-      "order": 371,
+      "order": 372,
       "file": "src/play/index.js",
       "provides": []
     },
     {
-      "order": 372,
+      "order": 373,
       "file": "src/play/events.js",
       "provides": [
         "eventBus"
       ]
     },
     {
-      "order": 373,
+      "order": 374,
       "file": "src/play/channelCoherence.js",
       "provides": [
         "getChannelCoherence"
       ]
     },
     {
-      "order": 374,
+      "order": 375,
       "file": "src/play/emitPickCrossLayerRecord.js",
       "provides": [
         "emitPickCrossLayerRecord"
       ]
     },
     {
-      "order": 375,
+      "order": 376,
       "file": "src/play/emitPickTextureEmit.js",
       "provides": [
         "emitPickSourceTextures",
@@ -2981,7 +2988,7 @@
       ]
     },
     {
-      "order": 376,
+      "order": 377,
       "file": "src/play/playNotesEmitPick.js",
       "provides": [
         "setFeedbackPitchBias",
@@ -2990,49 +2997,49 @@
       ]
     },
     {
-      "order": 377,
+      "order": 378,
       "file": "src/play/playNotesComputeUnit.js",
       "provides": [
         "playNotesComputeUnit"
       ]
     },
     {
-      "order": 378,
+      "order": 379,
       "file": "src/play/playNotes.js",
       "provides": [
         "playNotes"
       ]
     },
     {
-      "order": 379,
+      "order": 380,
       "file": "src/play/microUnitAttenuator.js",
       "provides": [
         "microUnitAttenuator"
       ]
     },
     {
-      "order": 380,
+      "order": 381,
       "file": "src/play/crossLayerBeatRecord.js",
       "provides": [
         "crossLayerBeatRecord"
       ]
     },
     {
-      "order": 381,
+      "order": 382,
       "file": "src/play/processBeat.js",
       "provides": [
         "processBeat"
       ]
     },
     {
-      "order": 382,
+      "order": 383,
       "file": "src/play/layerPass.js",
       "provides": [
         "layerPass"
       ]
     },
     {
-      "order": 383,
+      "order": 384,
       "file": "src/play/main.js",
       "provides": [
         "main",
@@ -3041,28 +3048,28 @@
       ]
     },
     {
-      "order": 384,
+      "order": 385,
       "file": "src/play/beatPipelineDescriptor.js",
       "provides": [
         "beatPipelineDescriptor"
       ]
     },
     {
-      "order": 385,
+      "order": 386,
       "file": "src/play/feedbackGraphContract.js",
       "provides": [
         "feedbackGraphContract"
       ]
     },
     {
-      "order": 386,
+      "order": 387,
       "file": "src/play/mainBootstrap.js",
       "provides": [
         "mainBootstrap"
       ]
     },
     {
-      "order": 387,
+      "order": 388,
       "file": "src/play/fullBootstrap.js",
       "provides": [
         "fullBootstrap"

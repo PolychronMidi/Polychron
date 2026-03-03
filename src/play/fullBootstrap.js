@@ -300,6 +300,7 @@ fullBootstrap = (() => {
     'pipelineBalancer',
     'pipelineNormalizer',
     'pipelineCouplingManager',
+    'couplingHomeostasis',
     'narrativeTrajectory',
     'structuralNarrativeAdvisor',
     'criticalityEngine',

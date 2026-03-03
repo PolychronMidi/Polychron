@@ -38,7 +38,7 @@ Modules self-register at load time. Two registries:
 - **`crossLayerRegistry`** - `register(name, module, scopes)` where scopes ⊆ `['all','section','phrase']`
 - **`conductorIntelligence`** - `registerDensityBias`, `registerTensionBias`, `registerFlickerModifier`, `registerRecorder`, `registerStateProvider`, `registerModule`
 
-11 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, and inter-controller conflict detection. Never manually tune constants that a meta-controller already manages.
+11 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, inter-controller conflict detection, and whole-system coupling energy homeostasis. Never manually tune constants that a meta-controller already manages.
 
 To add a module: write the file, self-register at end of IIFE, require from subsystem `index.js`.
 

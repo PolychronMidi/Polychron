@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-03T18:22:29.674Z",
-    "currentRun": "2026-03-03T18:22:29.671Z",
-    "previousRun": "2026-03-03T16:36:11.424Z"
+    "generated": "2026-03-03T19:49:00.370Z",
+    "currentRun": "2026-03-03T19:49:00.365Z",
+    "previousRun": "2026-03-03T18:22:29.671Z"
   },
   "verdict": "STABLE",
   "driftedDimensions": 0,
@@ -19,69 +19,69 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.22308184143222506,
-      "tolerance": 0.52,
+      "delta": 0.06958021851638872,
+      "tolerance": 0.65,
       "status": "stable",
-      "current": 19129,
-      "previous": 15640,
+      "current": 17798,
+      "previous": 19129,
       "perLayer": {
-        "currentL1": 8214,
-        "currentL2": 10915,
-        "previousL1": 6302,
-        "previousL2": 9338
+        "currentL1": 8542,
+        "currentL2": 9256,
+        "previousL1": 8214,
+        "previousL2": 10915
       }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.026225668235998256,
+      "delta": 0.0016185162099819905,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.32016192203876,
-      "previous": 6.346387590274758
+      "current": 6.321780438248742,
+      "previous": 6.32016192203876
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.006551613663379859,
+      "delta": 0.011691374229234733,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.025942827738367442,
-      "previous": 0.019391214074987582
+      "current": 0.014251453509132709,
+      "previous": 0.025942827738367442
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.14857372494479845,
+      "delta": 0.12510215561485102,
       "tolerance": 0.3,
       "status": "stable",
       "current": [
+        0.34992643824782665,
+        0.7687442110534058,
+        0.3904396737851806,
+        0.33911514906730206
+      ],
+      "previous": [
         0.37015560072399395,
         0.6098668032369963,
         0.5116647748384126,
         0.4882976631351861
-      ],
-      "previous": [
-        0.29911333645214716,
-        0.6021691754176498,
-        0.2959180415944523,
-        0.2968722278254189
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.010999999999999954,
+      "delta": 0.0242,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.35262499999999997,
-      "previous": 0.341625
+      "current": 0.37682499999999997,
+      "previous": 0.35262499999999997
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.10673829751790773,
-      "tolerance": 0.325,
+      "delta": 0.09620224755125925,
+      "tolerance": 0.39,
       "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.14222857142857143,
+      "delta": 0.11697857142857145,
       "tolerance": 0.325,
       "status": "stable"
     },
@@ -92,28 +92,28 @@
       "status": "stable",
       "flipDetails": [
         {
-          "pair": "density-entropy",
-          "from": "stable",
-          "to": "decreasing"
+          "pair": "density-tension",
+          "from": "increasing",
+          "to": "stable"
         },
         {
-          "pair": "density-tension",
+          "pair": "entropy-phase",
           "from": "decreasing",
           "to": "increasing"
         },
         {
-          "pair": "entropy-phase",
+          "pair": "flicker-phase",
           "from": "stable",
-          "to": "decreasing"
+          "to": "increasing"
         },
         {
-          "pair": "flicker-entropy",
+          "pair": "tension-flicker",
           "from": "increasing",
           "to": "decreasing"
         },
         {
-          "pair": "tension-flicker",
-          "from": "decreasing",
+          "pair": "tension-trust",
+          "from": "stable",
           "to": "increasing"
         }
       ]
@@ -123,7 +123,7 @@
       "delta": 0,
       "tolerance": 0,
       "status": "stable",
-      "note": "Profiles differ (explosive -> atmospheric); tolerances widened 1.3x"
+      "note": "Profiles differ (atmospheric -> explosive); tolerances widened 1.3x"
     }
   ]
 }

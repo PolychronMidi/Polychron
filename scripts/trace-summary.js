@@ -275,6 +275,7 @@ function summarizeTrace(entries) {
   // R19 E2: Also extract rawRollingAbsCorr for regime-transparent comparison.
   let adaptiveTargets = null;
   let axisCouplingTotals = null;
+  let couplingHomeostasisState = null;
   for (let i = entries.length - 1; i >= 0; i--) {
     if (entries[i].couplingTargets && typeof entries[i].couplingTargets === 'object') {
       const raw = entries[i].couplingTargets;
@@ -301,7 +302,11 @@ function summarizeTrace(entries) {
     if (!axisCouplingTotals && entries[i].axisCouplingTotals && typeof entries[i].axisCouplingTotals === 'object') {
       axisCouplingTotals = entries[i].axisCouplingTotals;
     }
-    if (adaptiveTargets && axisCouplingTotals) break;
+    // R20 E6: Extract couplingHomeostasis state from final beat
+    if (!couplingHomeostasisState && entries[i].couplingHomeostasis && typeof entries[i].couplingHomeostasis === 'object') {
+      couplingHomeostasisState = entries[i].couplingHomeostasis;
+    }
+    if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState) break;
   }
 
   return {
@@ -349,7 +354,8 @@ function summarizeTrace(entries) {
       spikeIndices: beatSetupSpikeIndices
     },
     adaptiveTargets,
-    axisCouplingTotals
+    axisCouplingTotals,
+    couplingHomeostasis: couplingHomeostasisState
   };
 }
 
