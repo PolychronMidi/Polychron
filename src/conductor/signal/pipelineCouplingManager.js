@@ -61,6 +61,7 @@ pipelineCouplingManager = (() => {
   const _TARGET_TIGHTEN_RATE = 0.0015;   // per-beat tightening when resolved (R7 equalized)
   const _TARGET_MIN = 0.08;
   const _TARGET_MAX = 0.45;
+  const _DENSITY_FLICKER_TARGET_MAX = 0.55;
   /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number }>} */
   const _adaptiveTargets = {};
 
@@ -164,6 +165,11 @@ pipelineCouplingManager = (() => {
     return _getAdaptiveTarget(key).current;
   }
 
+  /** @param {string} key */
+  function _getTargetMax(key) {
+    return key === 'density-flicker' ? _DENSITY_FLICKER_TARGET_MAX : _TARGET_MAX;
+  }
+
   // Per-pipeline accumulators
   let biasDensity = 1.0;
   let biasTension = 1.0;
@@ -214,6 +220,7 @@ pipelineCouplingManager = (() => {
 
         // -- Adaptive gain logic --
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
+        const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
         if (absCorr > target) {
           const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
           // Freeze gain if either axis in this pair is saturated -
@@ -231,13 +238,20 @@ pipelineCouplingManager = (() => {
             } else {
               ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.01);
             }
+            // R15 Evo 1: Escalate anti-correlation handling for tension-entropy.
+            // This pair tends to pin negative; add extra pressure while anti-correlated.
+            if (isTensionEntropyPair && corr < 0) {
+              rate *= 1.2;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.03, 1.0);
+            }
             const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
         } else {
           // Below target - relax gain back toward initial
           // R13 Evo 2: Entropy-Coupling Penalty - faster deadband relaxation rate for entropy
-          const relaxRate = isEntropyPair ? GAIN_RELAX_RATE * 2 : GAIN_RELAX_RATE;
+          let relaxRate = isEntropyPair ? GAIN_RELAX_RATE * 2 : GAIN_RELAX_RATE;
+          if (isTensionEntropyPair) relaxRate *= 0.35;
           ps.gain = clamp(ps.gain - relaxRate, GAIN_INIT, GAIN_MAX);
           ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.05);
         }
@@ -254,7 +268,7 @@ pipelineCouplingManager = (() => {
         at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
         // Intractable: rolling avg far above target despite near-max gain - relax
         if (at.rollingAbsCorr > at.current * 1.8 && ps.gain > GAIN_MAX * 0.85) {
-          at.current = clamp(at.current + _TARGET_RELAX_RATE, _TARGET_MIN, _TARGET_MAX);
+          at.current = clamp(at.current + _TARGET_RELAX_RATE, _TARGET_MIN, _getTargetMax(key));
         // Easily resolved: rolling avg well below target - tighten toward baseline
         // R7 Evo 4: Product-feedback guard -- when density product < 0.75,
         // freeze tightening to prevent coupling manager from death-spiraling density.
@@ -353,6 +367,7 @@ pipelineCouplingManager = (() => {
       _pairState[keys[i]].gain = initGain;
       _pairState[keys[i]].lastAbsCorr = 0;
       _pairState[keys[i]].recentAbsCorr = [];
+      _pairState[keys[i]].heatPenalty = 0;
     }
     // #1: Reset adaptive targets to baseline on section boundary
     const targetKeys = Object.keys(_adaptiveTargets);

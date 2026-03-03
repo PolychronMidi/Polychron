@@ -1,3 +1,37 @@
+## R14 — 2026-03-03 — STABLE
+
+**Profile:** explosive | **Beats:** 644 | **Duration:** 81.1s | **Notes:** 22708
+**Fingerprint:** 8/8 stable | Drifted: none
+
+### Key Observations
+- Driven by the previous exploring decay, the regime balance shifted dramatically. Coherent regime now dominates at 73.1%, while exploring dropped to 13.4%.
+- Cadence alignment trust successfully rose to 0.20, confirming the trust floor boost worked. `feedbackOscillator` is now the lowest trusted module at 0.13.
+- Tension-entropy strong anti-correlation flagged as a warning (r=-0.723, peak |r|=0.900). A shared feedback loop might be driving these dimensions in opposite directions.
+- Composition signals maintained a balanced and relaxed state with tension avg 0.55, flicker avg 0.99, and density avg 0.51.
+- No critical findings; the system remains remarkably STABLE despite the significant regime distribution shift (delta 0.223 / tolerance 0.3).
+
+### Evolutions Applied (from R13)
+- E1: Cadence Alignment Trust Floor Boost — confirmed, climbed to neutral floor of 0.20.
+- E2: Exploring Regime Duration Decay — confirmed, exploring reduced drastically from 58.0% to 13.4%.
+- E3: Coherence Convergence Acceleration — confirmed, coherent time soared to 73.1%.
+- E4: Entropy Regulator Scaling — confirmed, entropyRegulator trusted at 0.50.
+- E5: Flicker Amplification Threshold — confirmed, flicker settled at 0.99 avg.
+- E6: Trust Floor Dynamic Adjustment — confirmed.
+
+### Evolutions Proposed (for R15)
+- E1: Tension-Entropy Decorrelation Escalation — `src/conductor/signal/pipelineCouplingManager.js`
+- E2: Coherent Regime Duration Limit — `src/conductor/regimes/regimeController.js`
+- E3: Evolving Regime Threshold Adjustment — `src/conductor/regimes/regimeTransitions.js`
+- E4: Feedback Oscillator Trust Floor Enhancement — `src/conductor/crossLayer/contextualTrust.js`
+- E5: Subsystem Divergence Feedback Smoothing — `src/conductor/feedbackOscillator.js`
+- E6: Phase-Density Monitor Expansion — `scripts/trace-summary.js`
+
+### Hypotheses to Track
+- Bounding the coherent duration and adapting evolving thresholds should result in a more balanced narrative distribution (e.g., 40-50% coherent).
+- Escalating tension-entropy decorrelation is expected to reduce peak correlation magnitude below 0.75.
+
+---
+
 ## R13 — 2026-03-03 — STABLE
 
 **Profile:** explosive | **Beats:** 696 | **Duration:** 83.2s | **Notes:** 26863

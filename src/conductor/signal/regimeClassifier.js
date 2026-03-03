@@ -19,6 +19,7 @@ regimeClassifier = (() => {
   let candidateRegime = 'evolving';
   let candidateCount = 0;
   let exploringBeats = 0; // duration escalator: consecutive exploring beats
+  let coherentBeats = 0;  // saturation guard: consecutive coherent beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
   let coherentThresholdScale = 1.0; // profile-adaptive multiplier
 
@@ -90,8 +91,14 @@ regimeClassifier = (() => {
       convergenceBonus = clamp((exploringBeats - 32) * 0.005, 0, 0.15);
     }
 
+    // R15 Evo 2: Coherent saturation cutoff.
+    // After long coherent runs, require stronger coupling to stay coherent.
+    const coherentDurationPenalty = lastRegime === 'coherent' && coherentBeats > 50
+      ? clamp((coherentBeats - 50) * 0.0025, 0, 0.10)
+      : 0;
+
     const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
-    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus;
+    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus + coherentDurationPenalty;
     if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
@@ -100,7 +107,7 @@ regimeClassifier = (() => {
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
-    if (lastRegime === 'exploring' && avgVelocity > 0.008 && couplingStrength > 0.15) return 'evolving';
+    if (lastRegime === 'exploring' && avgVelocity > 0.008 && couplingStrength > 0.10) return 'evolving';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
@@ -118,13 +125,23 @@ regimeClassifier = (() => {
     if (rawRegime === lastRegime) {
       candidateRegime = rawRegime;
       candidateCount = 0;
-      if (lastRegime === 'exploring') exploringBeats++;
+      if (lastRegime === 'exploring') {
+        exploringBeats++;
+        coherentBeats = 0;
+      } else if (lastRegime === 'coherent') {
+        coherentBeats++;
+        exploringBeats = 0;
+      } else {
+        exploringBeats = 0;
+        coherentBeats = 0;
+      }
       return lastRegime;
     }
     if (rawRegime === candidateRegime) {
       candidateCount++;
       if (candidateCount >= REGIME_HOLD) {
         if (lastRegime === 'exploring') exploringBeats = 0;
+        if (lastRegime === 'coherent') coherentBeats = 0;
         lastRegime = rawRegime;
         candidateCount = 0;
         return rawRegime;
@@ -154,6 +171,7 @@ regimeClassifier = (() => {
     candidateRegime = 'evolving';
     candidateCount = 0;
     exploringBeats = 0;
+    coherentBeats = 0;
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
     coherentThresholdScale = 1.0;
   }

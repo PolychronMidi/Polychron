@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-03T06:42:49.689Z",
-    "currentRun": "2026-03-03T06:42:49.685Z",
-    "previousRun": "2026-03-03T04:24:47.337Z"
+    "generated": "2026-03-03T08:05:02.967Z",
+    "currentRun": "2026-03-03T08:05:02.964Z",
+    "previousRun": "2026-03-03T06:42:49.685Z"
   },
   "verdict": "STABLE",
   "driftedDimensions": 0,
@@ -19,69 +19,69 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.07066560382622558,
+      "delta": 0.1546737147749693,
       "tolerance": 0.5,
       "status": "stable",
-      "current": 26863,
-      "previous": 25090,
+      "current": 22708,
+      "previous": 26863,
       "perLayer": {
-        "currentL1": 13531,
-        "currentL2": 13332,
-        "previousL1": 9079,
-        "previousL2": 16011
+        "currentL1": 9936,
+        "currentL2": 12772,
+        "previousL1": 13531,
+        "previousL2": 13332
       }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.044472153323916075,
+      "delta": 0.07421992004185007,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.347642444896013,
-      "previous": 6.392114598219929
+      "current": 6.421862364937863,
+      "previous": 6.347642444896013
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.0035730710127278107,
+      "delta": 0.0030100634013833314,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.009993684798805835,
-      "previous": 0.013566755811533646
+      "current": 0.013003748200189166,
+      "previous": 0.009993684798805835
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.22006939270025372,
+      "delta": 0.08512961340540798,
       "tolerance": 0.3,
       "status": "stable",
       "current": [
+        0.33248340808490784,
+        0.6596132139867834,
+        0.5492253290362114,
+        0.6638560751903746
+      ],
+      "previous": [
         0.40579430158750873,
         0.615631682741172,
         0.6453900071117529,
         0.7753535944811012
-      ],
-      "previous": [
-        0.28898663203215663,
-        0.7541583819446316,
-        0.5246052612948071,
-        0.39286239519331156
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.006237499999999951,
+      "delta": 0.018950000000000022,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.32818749999999997,
-      "previous": 0.32195
+      "current": 0.3471375,
+      "previous": 0.32818749999999997
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.08103107200109144,
+      "delta": 0.22345969872206753,
       "tolerance": 0.3,
       "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.11417857142857143,
+      "delta": 0.07585714285714286,
       "tolerance": 0.25,
       "status": "stable"
     },
@@ -92,34 +92,34 @@
       "status": "stable",
       "flipDetails": [
         {
-          "pair": "density-entropy",
-          "from": "decreasing",
-          "to": "increasing"
-        },
-        {
-          "pair": "density-tension",
+          "pair": "density-phase",
           "from": "increasing",
           "to": "stable"
         },
         {
           "pair": "entropy-trust",
-          "from": "stable",
-          "to": "decreasing"
-        },
-        {
-          "pair": "flicker-entropy",
-          "from": "stable",
+          "from": "decreasing",
           "to": "increasing"
         },
         {
-          "pair": "flicker-phase",
+          "pair": "flicker-entropy",
           "from": "increasing",
           "to": "stable"
         },
         {
-          "pair": "tension-trust",
+          "pair": "flicker-phase",
           "from": "stable",
-          "to": "decreasing"
+          "to": "increasing"
+        },
+        {
+          "pair": "tension-entropy",
+          "from": "decreasing",
+          "to": "stable"
+        },
+        {
+          "pair": "tension-flicker",
+          "from": "decreasing",
+          "to": "stable"
         }
       ]
     }
