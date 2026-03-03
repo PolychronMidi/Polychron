@@ -178,6 +178,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
       // R19 E1: Per-axis total |r| sums for axis-centric conservation diagnostics
       axisCouplingTotals: pipelineCouplingManager.getAxisCouplingTotals(),
+      // R20 E6: Whole-system coupling homeostasis state for governor diagnostics
+      couplingHomeostasis: safePreBoot.call(() => couplingHomeostasis.getState(), null),
       iterBudget: setUnitTimingBudgetStats.getLastBeat(),
       stageTiming: stageTiming
     };

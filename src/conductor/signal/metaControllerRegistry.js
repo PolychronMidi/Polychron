@@ -133,6 +133,16 @@ metaControllerRegistry = (() => {
       gain: '_ATTENUATION_FACTOR = 0.50, _CONFLICT_THRESHOLD = 30, floor 0.1',
       interactsWith: [1, 2, 3, 4, 6, 7, 8, 9, 10],
       interactionNotes: 'Supervisory immune system. Fed by #10 (centroid/elasticity signs) and #2 (equilibrator signs). Attenuations queryable via getAttenuation(pipeline, controllerName).'
+    },
+    {
+      id: 12,
+      name: 'couplingHomeostasis',
+      file: 'conductor/signal/couplingHomeostasis.js',
+      axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
+      mechanism: 'Whole-system coupling energy governor. Tracks total |r| as single scalar, detects redistribution (total stable + pair turbulent = balloon effect), applies global gain throttle via pipelineCouplingManager.setGlobalGainMultiplier(). Gini coefficient concentration guard penalizes energy concentration in few pairs. Self-derives energy budget from adaptive target baselines.',
+      gain: '_GAIN_THROTTLE_RATE = 0.01, _GAIN_RECOVERY_RATE = 0.02, _GAIN_FLOOR = 0.20, _GINI_THRESHOLD = 0.40',
+      interactsWith: [1, 6, 9, 11],
+      interactionNotes: '#1 targets feed budget self-derivation. #9 budget manager receives throttled gains from global multiplier. #6 coherent relaxation reduces inputs to total energy. #11 watchdog may detect conflict between homeostasis throttle and per-pair escalation.'
     }
   ]);
 
@@ -151,7 +161,7 @@ metaControllerRegistry = (() => {
   }
 
   /**
-   * Get a controller by its numeric ID (1-11).
+   * Get a controller by its numeric ID (1-12).
    * @param {number} id
    * @returns {MetaControllerEntry|undefined}
    */

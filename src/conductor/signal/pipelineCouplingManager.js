@@ -78,7 +78,7 @@ pipelineCouplingManager = (() => {
     return _adaptiveTargets[key];
   }
 
-  // -- R19 E1: Axis-Centric Coupling Energy Conservation (Hypermeta #12) --
+  // -- R19 E1: Axis-Centric Coupling Energy Conservation --
   // Per-pair decorrelation is structurally incapable of solving aggregate
   // axis-level coupling because correlation energy is conserved across pairs
   // sharing an axis. Track total |r| per axis; when above ceiling, scale
@@ -115,6 +115,17 @@ pipelineCouplingManager = (() => {
   function setDensityFlickerGainScale(scale) {
     _densityFlickerGainCeiling = GAIN_MAX * scale;
   }
+
+  // -- R20 E2: Global Gain Multiplier (controlled by couplingHomeostasis #12) --
+  // Applied to all effective gains and escalation rates. When the whole-system
+  // governor detects redistribution (total energy stable while pairs churn),
+  // it throttles this multiplier to break the conservation barrier.
+  let _globalGainMultiplier = 1.0;
+  /** @param {number} scale */
+  function setGlobalGainMultiplier(scale) {
+    _globalGainMultiplier = clamp(scale, 0.10, 1.0);
+  }
+
   const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
   const GAIN_EMERGENCY_RATE = 0.06; // 3x escalation when |r| > 2x target
   const GAIN_RELAX_RATE    = 0.02; // per-beat gain decrease when resolved (raised from 0.01 to prevent gain saturation on intractable pairs)
@@ -143,10 +154,9 @@ pipelineCouplingManager = (() => {
   // R7 Evo 6: Reduced density-flicker and tension-flicker budgets to
   // 0.24 each to accommodate flicker-trust as 4th axis.
   const _AXIS_BUDGET = 0.24;
-  const _FLICKER_AXIS_BUDGET = _AXIS_BUDGET * 1.5; // 0.36
 
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
-  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number }>} */
+  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number }>} */
   const _pairState = {};
 
   /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
@@ -156,12 +166,12 @@ pipelineCouplingManager = (() => {
   /**
    * Get or create adaptive state for a pair.
    * @param {string} key
-   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number }}
+   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number }}
    */
   function _getPairState(key) {
     if (!_pairState[key]) {
       const initGain = PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT;
-      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0 };
+      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5 };
     }
     return _pairState[key];
   }
@@ -321,6 +331,16 @@ pipelineCouplingManager = (() => {
               rate *= 1.15;
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.01, 1.0);
             }
+            // R20 E3: Per-pair decorrelation effectiveness gating.
+            // When effectiveness EMA < 0.20, the pair is intractable (gain is
+            // being spent without reducing |r|). Halve escalation rate to free
+            // budget for responsive pairs. Effectiveness survives section resets.
+            if ((ps.effectivenessEma || 0.5) < 0.20) {
+              rate *= 0.50;
+            }
+            // R20 E2: Apply global gain multiplier to escalation rate.
+            // When homeostasis detects redistribution, slow ALL gains.
+            rate *= _globalGainMultiplier;
             const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
@@ -351,6 +371,14 @@ pipelineCouplingManager = (() => {
           if (isTensionEntropyPair) relaxRate *= 0.35;
           ps.gain = clamp(ps.gain - relaxRate, GAIN_INIT, GAIN_MAX);
           ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.05);
+        }
+        // R20 E3: Update per-pair decorrelation effectiveness EMA.
+        // Track whether spending gain actually reduced |r|. When a pair has
+        // above-average gain and |r| still exceeds target, check if |r| decreased.
+        // effectiveness = 1 when |r| decreasing under active gain, 0 when stuck.
+        if (ps.gain > GAIN_INIT * 1.2 && absCorr > target) {
+          const improved = absCorr < ps.lastAbsCorr ? 1 : 0;
+          ps.effectivenessEma = (ps.effectivenessEma || 0.5) * 0.95 + improved * 0.05;
         }
         ps.lastAbsCorr = absCorr;
 
@@ -409,7 +437,8 @@ pipelineCouplingManager = (() => {
 
         // R19 E1: Apply axis-centric gain scaling to effective gain
         // R19 E6: Apply flicker product floor scalar to pairs involving flicker
-        let effectiveGain = ps.gain * _axisGainScale;
+        // R20 E2: Apply global gain multiplier from couplingHomeostasis
+        let effectiveGain = ps.gain * _axisGainScale * _globalGainMultiplier;
         if (dimA === 'flicker' || dimB === 'flicker') {
           effectiveGain *= _flickerGainScalar;
         }
@@ -439,9 +468,19 @@ pipelineCouplingManager = (() => {
 
     // #9: Budget enforcement - cap per-axis accumulation before soft-limiting
     // to prevent coupling manager from dominating ANY single pipeline.
-    if (m.abs(nudgeD) > _AXIS_BUDGET) nudgeD = m.sign(nudgeD) * _AXIS_BUDGET;
-    if (m.abs(nudgeT) > _AXIS_BUDGET) nudgeT = m.sign(nudgeT) * _AXIS_BUDGET;
-    if (m.abs(nudgeF) > _FLICKER_AXIS_BUDGET) nudgeF = m.sign(nudgeF) * _FLICKER_AXIS_BUDGET;
+    // R20 E4: Dynamic axis budget self-calibration. Derive from live total
+    // coupling energy so budget auto-scales across profiles. Uses homeostasis
+    // totalEnergyEma when available, else falls back to static default.
+    let _dynAxisBudget = _AXIS_BUDGET;
+    const _homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    if (_homeostasisState && _homeostasisState.totalEnergyEma > 0.1) {
+      // Budget = totalEnergy / (3 nudgeable axes * normalizing factor)
+      _dynAxisBudget = clamp(_homeostasisState.totalEnergyEma / 15.0, 0.12, 0.36);
+    }
+    const _dynFlickerBudget = _dynAxisBudget * 1.5;
+    if (m.abs(nudgeD) > _dynAxisBudget) nudgeD = m.sign(nudgeD) * _dynAxisBudget;
+    if (m.abs(nudgeT) > _dynAxisBudget) nudgeT = m.sign(nudgeT) * _dynAxisBudget;
+    if (m.abs(nudgeF) > _dynFlickerBudget) nudgeF = m.sign(nudgeF) * _dynFlickerBudget;
 
     // Soft-limit: scale accumulated nudges so raw bias stays within the
     // pipeline's clamp envelope. Health-aware: when signalHealthAnalyzer
@@ -578,5 +617,5 @@ pipelineCouplingManager = (() => {
     () => m.sign(biasTension - 1.0)
   );
 
-  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, getAdaptiveTargetSnapshot, getAxisCouplingTotals, reset };
+  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, setGlobalGainMultiplier, getAdaptiveTargetSnapshot, getAxisCouplingTotals, reset };
 })();
