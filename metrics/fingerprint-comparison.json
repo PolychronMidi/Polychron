@@ -1,11 +1,11 @@
 {
   "meta": {
-    "generated": "2026-03-03T01:12:03.412Z",
-    "currentRun": "2026-03-03T01:12:03.404Z",
-    "previousRun": "2026-03-02T22:36:21.822Z"
+    "generated": "2026-03-03T02:44:54.177Z",
+    "currentRun": "2026-03-03T02:44:54.170Z",
+    "previousRun": "2026-03-03T01:12:03.404Z"
   },
   "verdict": "EVOLVED",
-  "driftedDimensions": 2,
+  "driftedDimensions": 1,
   "totalDimensions": 7,
   "tolerances": {
     "noteCountRatio": 0.35,
@@ -19,61 +19,67 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.5877862595419847,
+      "delta": 0.41391796494644595,
       "tolerance": 0.35,
       "status": "drifted",
-      "current": 32864,
-      "previous": 20698
+      "current": 19261,
+      "previous": 32864,
+      "perLayer": {
+        "currentL1": 8253,
+        "currentL2": 11008,
+        "previousL1": 11938,
+        "previousL2": 20926
+      }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.0021310101164226936,
+      "delta": 0.003587242967096671,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.407228964252908,
-      "previous": 6.405097954136485
+      "current": 6.410816207220004,
+      "previous": 6.407228964252908
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.009781182363070653,
+      "delta": 0.007737388881727588,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.00848275689343498,
-      "previous": 0.018263939256505633
+      "current": 0.016220145775162568,
+      "previous": 0.00848275689343498
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.24015415664660342,
+      "delta": 0.09292682140577899,
       "tolerance": 0.3,
       "status": "stable",
       "current": [
+        0.43137091670091204,
+        0.6403763826481812,
+        0.3738128138584408
+      ],
+      "previous": [
         0.45522061667418845,
         0.5590301677899902,
         0.5106344771620798
-      ],
-      "previous": [
-        0.31508965470859723,
-        0.7228931271895358,
-        0.8663510791071463
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.004387499999999989,
+      "delta": 0.007112500000000022,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.3068625,
-      "previous": 0.302475
+      "current": 0.313975,
+      "previous": 0.3068625
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.28409090909090906,
-      "tolerance": 0.2,
-      "status": "drifted"
+      "delta": 0.11623893428668712,
+      "tolerance": 0.25,
+      "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.10990714285714284,
+      "delta": 0.0753,
       "tolerance": 0.25,
       "status": "stable"
     }

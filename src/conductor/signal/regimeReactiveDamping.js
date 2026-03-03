@@ -266,7 +266,9 @@ regimeReactiveDamping = (() => {
 
   // --- Self-registration ---
   conductorIntelligence.registerDensityBias('regimeReactiveDamping', densityBias, 0.88, 1.12);
-  conductorIntelligence.registerTensionBias('regimeReactiveDamping', tensionBias, 0.94, 1.06);
+  // R11 Evo 3: Widen tension bias upper bound from 1.06 to 1.15 -- raw values
+  // routinely reached 1.11 via drift+equilibrator, clipping against old ceiling.
+  conductorIntelligence.registerTensionBias('regimeReactiveDamping', tensionBias, 0.94, 1.15);
   conductorIntelligence.registerFlickerModifier('regimeReactiveDamping', flickerMod, 0.85, 1.15);
   conductorIntelligence.registerRecorder('regimeReactiveDamping', refresh);
   conductorIntelligence.registerModule('regimeReactiveDamping', { reset }, ['section']);
