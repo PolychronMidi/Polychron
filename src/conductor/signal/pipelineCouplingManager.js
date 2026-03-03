@@ -62,21 +62,40 @@ pipelineCouplingManager = (() => {
   const _TARGET_MIN = 0.08;
   const _TARGET_MAX = 0.45;
   const _DENSITY_FLICKER_TARGET_MAX = 0.55;
-  /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number }>} */
+  /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number }>} */
   const _adaptiveTargets = {};
 
   /**
    * Get or create adaptive target state for a pair.
    * @param {string} key
-   * @returns {{ baseline: number, current: number, rollingAbsCorr: number }}
+   * @returns {{ baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number }}
    */
   function _getAdaptiveTarget(key) {
     if (!_adaptiveTargets[key]) {
       const baseline = PAIR_TARGETS[key] !== undefined ? PAIR_TARGETS[key] : DEFAULT_TARGET;
-      _adaptiveTargets[key] = { baseline, current: baseline, rollingAbsCorr: 0 };
+      _adaptiveTargets[key] = { baseline, current: baseline, rollingAbsCorr: 0, rawRollingAbsCorr: 0 };
     }
     return _adaptiveTargets[key];
   }
+
+  // -- R19 E1: Axis-Centric Coupling Energy Conservation (Hypermeta #12) --
+  // Per-pair decorrelation is structurally incapable of solving aggregate
+  // axis-level coupling because correlation energy is conserved across pairs
+  // sharing an axis. Track total |r| per axis; when above ceiling, scale
+  // each pair's effective gain proportionally so the dominant pair on each
+  // axis receives more decorrelation budget. Prevents whack-a-mole.
+  const _AXIS_COUPLING_CEILING = {
+    density: 2.0,   // 5 pairs: avg |r|=0.40 per pair at ceiling
+    tension: 2.0,
+    flicker: 2.0,
+    entropy: 2.0,   // entropy is the conservation bottleneck (5 pairs)
+    trust:   2.5,   // trust pairs are structurally high, allow more room
+    phase:   2.0
+  };
+  /** @type {Record<string, number>} */
+  let _axisTotalAbsR = {};
+  /** @type {Record<string, Record<string, number>>} */
+  let _axisPairContrib = {};
 
   // -- Adaptive gain parameters --
   // Every pair starts at GAIN_INIT. Each beat, if |r| > target, we check
@@ -199,6 +218,17 @@ pipelineCouplingManager = (() => {
     const dynamicCoherentRelax = 1.0 + m.max(0, 0.50 - _coherentShareEma) * 1.2;
     const targetScale = regime === 'coherent' ? dynamicCoherentRelax : 1.0;
 
+    // R19 E6: Flicker product floor constraint.
+    // When flicker product drops below 0.92, progressively reduce gain for
+    // pairs involving flicker to prevent chronic over-compression. At product
+    // 0.82: scalar=0.15 (85% gain reduction). At 0.87: scalar=0.50. At 0.92+:
+    // scalar=1.0 (no effect). Self-healing: as flicker drops, decorrelation
+    // backs off, allowing recovery.
+    const _flickerProd = safePreBoot.call(() => signalReader.snapshot()?.flickerProduct, 1.0);
+    const _flickerGainScalar = typeof _flickerProd === 'number' && _flickerProd < 0.92
+      ? clamp((_flickerProd - 0.82) / 0.10, 0.15, 1.0)
+      : 1.0;
+
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
     let nudgeD = 0;
     let nudgeT = 0;
@@ -212,6 +242,27 @@ pipelineCouplingManager = (() => {
     }
 
     const matrix = snap.couplingMatrix;
+
+    // R19 E1: Pre-pass to compute per-axis total |r| for proportional gain allocation.
+    _axisTotalAbsR = {};
+    _axisPairContrib = {};
+    for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
+      for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
+        const dA = ALL_MONITORED_DIMS[a];
+        const dB = ALL_MONITORED_DIMS[b];
+        const k = dA + '-' + dB;
+        const cv = matrix[k];
+        if (cv === null || cv !== cv) continue;
+        const ac = m.abs(cv);
+        // Attribute to both axes
+        _axisTotalAbsR[dA] = (_axisTotalAbsR[dA] || 0) + ac;
+        _axisTotalAbsR[dB] = (_axisTotalAbsR[dB] || 0) + ac;
+        if (!_axisPairContrib[dA]) _axisPairContrib[dA] = {};
+        if (!_axisPairContrib[dB]) _axisPairContrib[dB] = {};
+        _axisPairContrib[dA][k] = ac;
+        _axisPairContrib[dB][k] = ac;
+      }
+    }
 
     for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
       for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
@@ -229,6 +280,7 @@ pipelineCouplingManager = (() => {
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
         const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
         const isDensityFlickerPair = key === 'density-flicker';
+        let _axisGainScale = 1.0;
         if (absCorr > target) {
           const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
           // Freeze gain if either axis in this pair is saturated -
@@ -272,6 +324,26 @@ pipelineCouplingManager = (() => {
             const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
+
+          // R19 E1: Axis-centric proportional gain scaling.
+          // When an axis's total |r| exceeds its ceiling, scale this pair's
+          // effective gain by its contribution share. Pairs contributing more
+          // coupling get more budget; pairs contributing less get throttled.
+          // This prevents decorrelating one pair from pumping energy into others.
+          _axisGainScale = 1.0;
+          const _dimATotal = _axisTotalAbsR[dimA] || 0;
+          const _dimBTotal = _axisTotalAbsR[dimB] || 0;
+          const _dimACeiling = _AXIS_COUPLING_CEILING[dimA] || 2.0;
+          const _dimBCeiling = _AXIS_COUPLING_CEILING[dimB] || 2.0;
+          if (_dimATotal > _dimACeiling && _axisPairContrib[dimA]) {
+            const pairShare = (_axisPairContrib[dimA][key] || 0) / _dimATotal;
+            _axisGainScale = m.min(_axisGainScale, pairShare * (Object.keys(_axisPairContrib[dimA]).length));
+          }
+          if (_dimBTotal > _dimBCeiling && _axisPairContrib[dimB]) {
+            const pairShare = (_axisPairContrib[dimB][key] || 0) / _dimBTotal;
+            _axisGainScale = m.min(_axisGainScale, pairShare * (Object.keys(_axisPairContrib[dimB]).length));
+          }
+          _axisGainScale = clamp(_axisGainScale, 0.15, 1.5);
         } else {
           // Below target - relax gain back toward initial
           // R13 Evo 2: Entropy-Coupling Penalty - faster deadband relaxation rate for entropy
@@ -291,18 +363,37 @@ pipelineCouplingManager = (() => {
         // R13 Evo 2: Modulate adapt EMA for entropy pairs tighter to limit runaway phase velocity
         const adaptEma = isEntropyPair ? _TARGET_ADAPT_EMA * 2.5 : _TARGET_ADAPT_EMA;
         at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
-        // Intractable: rolling avg far above target despite near-max gain - relax
-        if (at.rollingAbsCorr > at.current * 1.8 && ps.gain > GAIN_MAX * 0.85) {
+
+        // R19 E2: Regime-transparent target adaptation (dual-EMA).
+        // Maintain a raw rolling |r| EMA (unscaled by regime) for target self-
+        // calibration. During coherent regime, dynamicCoherentRelax masks structural
+        // coupling from the effective EMA (rollingAbsCorr). The raw EMA captures
+        // true coupling magnitude regardless of regime, enabling timely target
+        // tightening/relaxation. Apply 0.8x scaling during coherent to avoid
+        // over-aggressive tightening (still captures 80% of structural info).
+        const rawEmaInput = regime === 'coherent' ? absCorr * 0.8 : absCorr;
+        at.rawRollingAbsCorr = at.rawRollingAbsCorr * (1 - adaptEma) + rawEmaInput * adaptEma;
+
+        // Intractable: raw rolling avg far above target despite near-max gain - relax.
+        // R19 E2: Use rawRollingAbsCorr instead of rollingAbsCorr so coherent
+        // relaxation cannot mask structural coupling from target calibration.
+        if (at.rawRollingAbsCorr > at.current * 1.8 && ps.gain > GAIN_MAX * 0.85) {
           at.current = clamp(at.current + _TARGET_RELAX_RATE, _TARGET_MIN, _getTargetMax(key));
-        // Easily resolved: rolling avg well below target - tighten toward baseline
-        // R7 Evo 4: Product-feedback guard -- when density product < 0.75,
-        // freeze tightening to prevent coupling manager from death-spiraling density.
-        } else if (at.rollingAbsCorr < at.current * 0.5) {
-          let canTighten = true;
+        // Easily resolved: raw rolling avg well below target - tighten toward baseline
+        // R19 E4: Density product guard sigmoid. Binary <0.75 gate was blocking ALL
+        // density pair tightening when product was 0.7357 (barely below threshold),
+        // preventing density-entropy from recovering toward baseline even when resolved.
+        // Sigmoid transition allows proportional tightening as product approaches healthy.
+        } else if (at.rawRollingAbsCorr < at.current * 0.5) {
+          let tightenRate = _TARGET_TIGHTEN_RATE;
           const sig = safePreBoot.call(() => signalReader.snapshot(), null);
-          if (sig && (dimA === 'density' || dimB === 'density') && sig.densityProduct < 0.75) canTighten = false;
-          if (canTighten) {
-            at.current = clamp(at.current - _TARGET_TIGHTEN_RATE, _TARGET_MIN, at.baseline);
+          if (sig && (dimA === 'density' || dimB === 'density')) {
+            // Sigmoid: at 0.68 -> scalar~0.12, at 0.72 -> 0.50, at 0.75 -> 0.82, at 0.80 -> 0.98
+            const _sigScalar = 1 / (1 + m.exp(-25 * (sig.densityProduct - 0.72)));
+            tightenRate *= _sigScalar;
+          }
+          if (tightenRate > 0.0001) {
+            at.current = clamp(at.current - tightenRate, _TARGET_MIN, at.baseline);
           }
         }
 
@@ -316,12 +407,19 @@ pipelineCouplingManager = (() => {
         const bIsNudgeable = NUDGEABLE_SET.has(dimB);
         if (!aIsNudgeable && !bIsNudgeable) continue;
 
+        // R19 E1: Apply axis-centric gain scaling to effective gain
+        // R19 E6: Apply flicker product floor scalar to pairs involving flicker
+        let effectiveGain = ps.gain * _axisGainScale;
+        if (dimA === 'flicker' || dimB === 'flicker') {
+          effectiveGain *= _flickerGainScalar;
+        }
+
         if (aIsNudgeable && bIsNudgeable) {
           const excess = absCorr - target;
           const direction = -m.sign(corr);
           // R14 Evo 5: Escalate magnitude via exponential heat penalty curve
           const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
-          const magnitude = ps.gain * excess * heatMulti;
+          const magnitude = effectiveGain * excess * heatMulti;
 
           const half = magnitude * 0.5;
           _addNudge(dimA, -direction * half);
@@ -331,7 +429,7 @@ pipelineCouplingManager = (() => {
           const direction = -m.sign(corr);
           // R14 Evo 5: Escalate magnitude via exponential heat penalty curve
           const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
-          const magnitude = ps.gain * excess * heatMulti;
+          const magnitude = effectiveGain * excess * heatMulti;
 
           const nudgeAxis = aIsNudgeable ? dimA : dimB;
           _addNudge(nudgeAxis, direction * magnitude);
@@ -419,17 +517,19 @@ pipelineCouplingManager = (() => {
     for (let i = 0; i < targetKeys.length; i++) {
       const at = _adaptiveTargets[targetKeys[i]];
       const driftRatio = at.baseline > 0 ? at.current / at.baseline : 1;
-      at.rollingAbsCorr *= driftRatio > 1.5 ? 0.3 : 0.7;
+      const dampen = driftRatio > 1.5 ? 0.3 : 0.7;
+      at.rollingAbsCorr *= dampen;
+      at.rawRollingAbsCorr *= dampen;
     }
     // #6: Dampen (not reset) coherent share EMA -- preserves cross-section regime memory
     _coherentShareEma = _coherentShareEma * 0.7 + 0.35 * 0.3;
   }
 
-  // R18 E5: Expose adaptive target state for trace diagnostics.
-  // Returns per-pair baseline, current, rollingAbsCorr, gain, and heatPenalty
-  // so trace-summary can reveal whether coupling surges are target-drift-driven.
+  // R18 E5 / R19 E1+E2: Expose adaptive target state for trace diagnostics.
+  // Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
+  // gain, heatPenalty, and per-axis totals for post-run analysis.
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, gain: number, heatPenalty: number }>} */
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number }>} */
     const result = {};
     const keys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < keys.length; i++) {
@@ -440,9 +540,24 @@ pipelineCouplingManager = (() => {
         baseline: at.baseline,
         current: Number(at.current.toFixed(4)),
         rollingAbsCorr: Number(at.rollingAbsCorr.toFixed(4)),
+        rawRollingAbsCorr: Number(at.rawRollingAbsCorr.toFixed(4)),
         gain: ps ? Number(ps.gain.toFixed(4)) : 0,
         heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0
       };
+    }
+    return result;
+  }
+
+  /**
+   * R19 E1: Return per-axis total |r| sums for trace diagnostics.
+   * @returns {Record<string, number>}
+   */
+  function getAxisCouplingTotals() {
+    /** @type {Record<string, number>} */
+    const result = {};
+    const axisKeys = Object.keys(_axisTotalAbsR);
+    for (let i = 0; i < axisKeys.length; i++) {
+      result[axisKeys[i]] = Number(_axisTotalAbsR[axisKeys[i]].toFixed(4));
     }
     return result;
   }
@@ -463,5 +578,5 @@ pipelineCouplingManager = (() => {
     () => m.sign(biasTension - 1.0)
   );
 
-  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, getAdaptiveTargetSnapshot, reset };
+  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, getAdaptiveTargetSnapshot, getAxisCouplingTotals, reset };
 })();

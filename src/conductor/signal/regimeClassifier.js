@@ -27,8 +27,15 @@ regimeClassifier = (() => {
   // Tracks rolling coherent share and derives penalty dynamically instead of
   // using static cap/rate constants. When coherent share > 60%, penalty
   // escalates proportionally. Eliminates manual cap tuning between rounds.
-  const _COHERENT_SHARE_ALPHA = 0.01;  // ~100-beat horizon
-  let _coherentShareEma = 0.50;         // initial: assume 50% coherent
+  // R19 E3: Profile-adaptive convergence. Fixed alpha=0.01 (~100-beat horizon)
+  // converged too slowly for atmospheric profile (326 consecutive coherent
+  // beats). Adaptive alpha: starts at 0.05 (~20 beats), decays exponentially
+  // to 0.01 by ~160 beats. Gives 5x faster initial convergence while
+  // maintaining stable long-horizon behavior.
+  const _COHERENT_SHARE_ALPHA_MIN = 0.01;   // steady-state: ~100-beat horizon
+  const _COHERENT_SHARE_ALPHA_INIT = 0.05;  // initial: ~20-beat horizon
+  const _COHERENT_SHARE_ALPHA_DECAY = 80;   // exponential decay constant
+  let _coherentShareEma = 0.50;             // initial: assume 50% coherent
 
   /**
    * Set the oscillating curvature threshold (profile-adaptive).
@@ -102,7 +109,12 @@ regimeClassifier = (() => {
     // Penalty derived from rolling coherent-share EMA instead of static cap.
     // When coherent share > 60%, penalty cap scales up proportionally (0.08 base
     // + up to 0.20 extra). This auto-adjusts across profiles without manual tuning.
-    _coherentShareEma = _coherentShareEma * (1 - _COHERENT_SHARE_ALPHA) + (lastRegime === 'coherent' ? 1 : 0) * _COHERENT_SHARE_ALPHA;
+    // R19 E3: Adaptive alpha for faster initial convergence.
+    // alpha = max(0.01, 0.05 * exp(-coherentBeats / 80))
+    // At beat 0: alpha=0.05 (~20 horizon). Beat 80: alpha~0.018. Beat 160: alpha->0.01.
+    const _adaptiveAlpha = m.max(_COHERENT_SHARE_ALPHA_MIN,
+      _COHERENT_SHARE_ALPHA_INIT * m.exp(-coherentBeats / _COHERENT_SHARE_ALPHA_DECAY));
+    _coherentShareEma = _coherentShareEma * (1 - _adaptiveAlpha) + (lastRegime === 'coherent' ? 1 : 0) * _adaptiveAlpha;
     const _dynamicPenaltyCap = 0.08 + clamp((_coherentShareEma - 0.60) * 1.0, 0, 0.20);
     const _dynamicPenaltyRate = 0.003 + clamp((_coherentShareEma - 0.50) * 0.004, 0, 0.004);
     const coherentDurationPenalty = lastRegime === 'coherent' && coherentBeats > 35
@@ -179,14 +191,20 @@ regimeClassifier = (() => {
   }
 
   function reset() {
+    // R19 E3: Preserve cross-section coherent share memory and seed
+    // coherentBeats for continuity. Previous reset wiped _coherentShareEma
+    // to 0.50, losing all saturation learning. Now dampens with 0.5x weight
+    // + 0.50 * 0.5 anchor, and seeds coherentBeats at 30% of previous.
+    const _prevCoherentShareEma = _coherentShareEma;
+    const _prevCoherentBeats = coherentBeats;
     lastRegime = 'evolving';
     candidateRegime = 'evolving';
     candidateCount = 0;
     exploringBeats = 0;
-    coherentBeats = 0;
+    coherentBeats = m.floor(_prevCoherentBeats * 0.3);
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
     coherentThresholdScale = 1.0;
-    _coherentShareEma = 0.50;
+    _coherentShareEma = _prevCoherentShareEma * 0.5 + 0.50 * 0.5;
   }
 
   return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, getExploringBeats, getLastRegime, reset };

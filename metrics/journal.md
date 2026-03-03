@@ -1,3 +1,48 @@
+## R18 — 2026-03-03 — STABLE
+
+**Profile:** atmospheric | **Beats:** 522 | **Duration:** 66.8s | **Notes:** 19,129
+**Fingerprint:** 9/9 stable | Drifted: none | Cross-profile: explosive→atmospheric (1.3x widening)
+
+### Key Observations
+- **E1 CONFIRMED:** cadenceAlignment trust recovered 0.110→0.214 (+95%). Universal trust floor coefficient 0.50 produces floor ~0.171, properly lifting starved modules. restSynchronizer also improved 0.206→0.218.
+- **E3 CONFIRMED:** tension-entropy avg crushed 0.407→0.247 (-39%), r -0.815→-0.485. Universal |r|>0.85 escalation stacking with pair-specific 1.2x = total 1.38x working. Gain 0.572, heat 0.51 — actively fighting.
+- **E2 CONFIRMED:** density-flicker target bounded at baseline*2.5=0.30, current=0.1155 (below baseline). Target never approached cap. avg improved 0.580→0.479 (-17%).
+- **E5 CONFIRMED (diagnostic):** Adaptive target snapshot reveals critical insight: end-of-run rolling |r| (0.148–0.308) far below full-run coupling averages (0.247–0.480). Proves coupling surges are **regime-modulated, not target-drift-driven**. Coherent relaxation masks structural coupling from adaptive targets.
+- **WHACK-A-MOLE EMPIRICALLY PROVEN:** Fixing tension-entropy redistributed correlation energy to density-entropy (avg 0.135→0.432, +3.2x) and flicker-entropy (avg 0.194→0.480, +2.5x). Root cause: per-pair decorrelation treats pairs independently but they share axes (entropy shared by 5 pairs). Total entropy-axis |r| approximately conserved.
+- **Regime saturation REGRESSED:** coherent 51.4%→72.8% (+21pts). maxConsecutiveCoherent 213→326. evolving crashed 16.2%→2.3%. Self-calibrating penalty works but _COHERENT_SHARE_ALPHA=0.01 (~100-beat horizon) converges too slowly for atmospheric profile.
+- **Density product guard BLOCKING tightening:** density product 0.7357 < 0.75 binary guard blocked ALL density pair tightening for most of the run, preventing density-entropy target from recovering toward baseline even when resolved.
+- **Flicker REGRESSION:** avg 0.921 (was 1.002), product 0.9033. pipelineCouplingManager flicker bias 0.8826 — chronic over-compression via multi-pair flicker decorrelation.
+- **NEW flicker-trust concern:** r 0.763→0.886, now above universal |r|>0.85 threshold. Will trigger escalation next run.
+- Tension arc RECOVERED: [0.370, 0.610, 0.512, 0.488] — best shape in review history. 5 sections sustain tension.
+- Pipeline 16/16 passed, 10/10 tuning invariants, 1/522 beat-setup spike.
+
+### Evolutions Applied (from R17)
+- E1: Trust floor coefficient 0.30→0.50 — **confirmed** — cadenceAlignment +95% (0.110→0.214), restSynchronizer +6%
+- E2: Bound adaptive target relaxation to baseline*2.5 — **confirmed** — density-flicker target stayed below 0.1155, never approached 0.30 cap
+- E3: Remove tension-entropy universal escalation exclusion — **confirmed** — tension-entropy r crushed -0.815→-0.485, avg 0.407→0.247
+- E4: Graduated cross-section dampening by pair drift — **inconclusive** — only 5 section transitions, insufficient data to isolate graduated vs uniform dampening
+- E5: Adaptive target tracking in trace-summary — **confirmed** — first-ever diagnostic reveals regime-modulated coupling masking. Critical for E2 dual-EMA proposal.
+- E6: Warm-start section gains for elevated pairs — **partially confirmed** — density-flicker improved 0.580→0.479, but warm-start insufficient for new entropy-axis hotspots that emerged mid-run
+
+### Evolutions Proposed (for R19)
+- E1: Axis-centric coupling energy conservation — pipelineCouplingManager.js
+- E2: Regime-transparent target adaptation (dual-EMA) — pipelineCouplingManager.js
+- E3: Profile-adaptive regime saturation convergence — regimeClassifier.js
+- E4: Density product guard sigmoid — pipelineCouplingManager.js
+- E5: Self-deriving trust floor coefficient — adaptiveTrustScores.js
+- E6: Flicker product floor constraint — pipelineCouplingManager.js
+
+### Hypotheses to Track
+- E1: Entropy-axis sum(|r|) should be bounded. No single pair should surge >2x when another pair improves. Track per-axis total |r|.
+- E2: rawRollingAbsCorr should be significantly higher than rollingAbsCorr for pairs active during coherent regime. Targets should tighten during/after coherent.
+- E3: coherent should not exceed 65%. maxConsecutiveCoherent < 200. evolving > 8%.
+- E4: density-entropy avg < 0.30 despite density product in 0.72–0.78 range.
+- E5: cadenceAlignment maintains avg > 0.18 regardless of profile. No module below 0.12.
+- E6: flicker avg > 0.95, product > 0.88. density-flicker coupling should not surge.
+- Aggregate: These 6 evolutions form a complete self-healing layer. If all work, future rounds should require NO manual constant tuning — only algorithmic improvements.
+
+---
+
 ## R17 — 2026-03-03 — STABLE
 
 **Profile:** explosive | **Beats:** 414 | **Duration:** 59.8s | **Notes:** 15,640
