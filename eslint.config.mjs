@@ -93,8 +93,8 @@ export default [
       'local/no-direct-conductor-state-from-crosslayer': 'error',
       'local/no-direct-crosslayer-write-from-conductor': 'error',
       'local/no-direct-buffer-push-from-crosslayer': 'error',
-      'local/prefer-validator': 'warn',
-      'local/no-bare-math': 'warn'
+      'local/prefer-validator': 'error',
+      'local/no-bare-math': 'error'
     },
 
   },

@@ -8,7 +8,7 @@
 //   - Note count per layer
 //   - Pitch distribution entropy
 //   - Density variance across beats
-//   - Tension arc shape (3-point summary: start, peak, end)
+//   - Tension arc shape (4-point summary: start, middle, closing, tail)
 //   - Trust convergence rate
 //   - Regime distribution
 //   - Coupling correlation summary
@@ -144,7 +144,7 @@ function computeFingerprint() {
   const densityVariance = variance(densities);
   const densityMean = mean(densities);
 
-  // Tension arc shape: sample at 25%, 50%, 75% of composition
+  // Tension arc shape: sample at 25%, 50%, 75%, 90% of composition (R11 Evo 4: added 90% tail)
   const tensions = [];
   for (const e of entries) {
     const snap = e.snap || {};
@@ -154,8 +154,9 @@ function computeFingerprint() {
   const tensionArc = tensions.length >= 4 ? [
     mean(tensions.slice(0, Math.floor(tensions.length * 0.25))),
     mean(tensions.slice(Math.floor(tensions.length * 0.35), Math.floor(tensions.length * 0.65))),
-    mean(tensions.slice(Math.floor(tensions.length * 0.75)))
-  ] : [0, 0, 0];
+    mean(tensions.slice(Math.floor(tensions.length * 0.75))),
+    mean(tensions.slice(Math.floor(tensions.length * 0.90)))
+  ] : [0, 0, 0, 0];
 
   // Trust convergence: average final trust scores
   const trustFinal = {};
@@ -185,6 +186,14 @@ function computeFingerprint() {
     }
   }
 
+  // R11 Evo 6: Coupling correlation trend persistence
+  const couplingCorrelation = {};
+  if (summary && summary.couplingCorrelation) {
+    for (const [pair, corr] of Object.entries(summary.couplingCorrelation)) {
+      couplingCorrelation[pair] = corr;
+    }
+  }
+
   return {
     meta: {
       generated: new Date().toISOString(),
@@ -199,6 +208,7 @@ function computeFingerprint() {
     trustFinal,
     regimeDistribution,
     couplingMeans,
+    couplingCorrelation,
     activeProfile: (manifest && manifest.config && manifest.config.activeProfile) || 'unknown'
   };
 }
@@ -209,38 +219,49 @@ function compareFingerprints(current, previous) {
   const results = [];
   let drifted = 0;
 
+  // R11 Evo 5: Cross-profile comparison mode -- widen tolerances when
+  // profiles differ between runs (e.g. explosive -> atmospheric).
+  const crossProfile = current.activeProfile !== previous.activeProfile &&
+    current.activeProfile !== 'unknown' && previous.activeProfile !== 'unknown';
+  const crossProfileScale = crossProfile ? 1.3 : 1.0;
+
   // Note count ratio
   const prevTotal = previous.noteCount.total || 1;
   const noteRatio = Math.abs(current.noteCount.total - previous.noteCount.total) / prevTotal;
-  const notePass = noteRatio <= TOLERANCES.noteCountRatio;
+  // R11 Evo 1: Profile-adaptive noteCount tolerance -- explosive profiles produce
+  // highly variable note counts, ambient profiles are more stable.
+  const PROFILE_NOTE_TOLERANCE = { explosive: 0.50, atmospheric: 0.40, ambient: 0.25, minimal: 0.25 };
+  const effectiveNoteTolerance = (PROFILE_NOTE_TOLERANCE[current.activeProfile] || TOLERANCES.noteCountRatio) * crossProfileScale;
+  const notePass = noteRatio <= effectiveNoteTolerance;
   if (!notePass) drifted++;
-  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: TOLERANCES.noteCountRatio, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
+  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: effectiveNoteTolerance, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
 
   // Pitch entropy
   const pitchDelta = Math.abs(current.pitchEntropy - previous.pitchEntropy);
-  const pitchPass = pitchDelta <= TOLERANCES.pitchEntropyDelta;
+  const pitchPass = pitchDelta <= TOLERANCES.pitchEntropyDelta * crossProfileScale;
   if (!pitchPass) drifted++;
   results.push({ dimension: 'pitchEntropy', delta: pitchDelta, tolerance: TOLERANCES.pitchEntropyDelta, status: pitchPass ? 'stable' : 'drifted', current: current.pitchEntropy, previous: previous.pitchEntropy });
 
   // Density variance
   const densVarDelta = Math.abs(current.density.variance - previous.density.variance);
-  const densPass = densVarDelta <= TOLERANCES.densityVarianceDelta;
+  const densPass = densVarDelta <= TOLERANCES.densityVarianceDelta * crossProfileScale;
   if (!densPass) drifted++;
   results.push({ dimension: 'densityVariance', delta: densVarDelta, tolerance: TOLERANCES.densityVarianceDelta, status: densPass ? 'stable' : 'drifted', current: current.density.variance, previous: previous.density.variance });
 
-  // Tension arc distortion (normalized Euclidean distance)
+  // Tension arc distortion (normalized Euclidean distance) -- R11 Evo 4: supports 4-element arcs
+  const arcLen = Math.min(current.tensionArc.length, previous.tensionArc.length);
   let arcDist = 0;
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < arcLen; i++) {
     arcDist += (current.tensionArc[i] - previous.tensionArc[i]) ** 2;
   }
-  arcDist = Math.sqrt(arcDist / 3);
-  const arcPass = arcDist <= TOLERANCES.tensionArcDistortion;
+  arcDist = Math.sqrt(arcDist / Math.max(arcLen, 1));
+  const arcPass = arcDist <= TOLERANCES.tensionArcDistortion * crossProfileScale;
   if (!arcPass) drifted++;
   results.push({ dimension: 'tensionArc', delta: arcDist, tolerance: TOLERANCES.tensionArcDistortion, status: arcPass ? 'stable' : 'drifted', current: current.tensionArc, previous: previous.tensionArc });
 
   // Trust convergence
   const trustDelta = Math.abs(current.trustConvergence - previous.trustConvergence);
-  const trustPass = trustDelta <= TOLERANCES.trustConvergenceDelta;
+  const trustPass = trustDelta <= TOLERANCES.trustConvergenceDelta * crossProfileScale;
   if (!trustPass) drifted++;
   results.push({ dimension: 'trustConvergence', delta: trustDelta, tolerance: TOLERANCES.trustConvergenceDelta, status: trustPass ? 'stable' : 'drifted', current: current.trustConvergence, previous: previous.trustConvergence });
 
@@ -255,7 +276,7 @@ function compareFingerprints(current, previous) {
   regimeDivergence /= Math.max(allRegimes.size, 1);
   // R10 Evo 5: profile-adaptive tolerance — explosive allows more flux, ambient demands stability
   const PROFILE_REGIME_TOLERANCE = { explosive: 0.30, atmospheric: 0.25, ambient: 0.15, minimal: 0.15 };
-  const effectiveRegimeTolerance = PROFILE_REGIME_TOLERANCE[current.activeProfile] || TOLERANCES.regimeDistributionDelta;
+  const effectiveRegimeTolerance = (PROFILE_REGIME_TOLERANCE[current.activeProfile] || TOLERANCES.regimeDistributionDelta) * crossProfileScale;
   const regimePass = regimeDivergence <= effectiveRegimeTolerance;
   if (!regimePass) drifted++;
   results.push({ dimension: 'regimeDistribution', delta: regimeDivergence, tolerance: effectiveRegimeTolerance, status: regimePass ? 'stable' : 'drifted' });
@@ -271,9 +292,34 @@ function compareFingerprints(current, previous) {
     couplingCount++;
   }
   couplingDelta = couplingCount > 0 ? couplingDelta / couplingCount : 0;
-  const couplingPass = couplingDelta <= TOLERANCES.couplingDelta;
+  const couplingPass = couplingDelta <= TOLERANCES.couplingDelta * crossProfileScale;
   if (!couplingPass) drifted++;
-  results.push({ dimension: 'coupling', delta: couplingDelta, tolerance: TOLERANCES.couplingDelta, status: couplingPass ? 'stable' : 'drifted' });
+  results.push({ dimension: 'coupling', delta: couplingDelta, tolerance: TOLERANCES.couplingDelta * crossProfileScale, status: couplingPass ? 'stable' : 'drifted' });
+
+  // R11 Evo 6: Coupling correlation trend persistence -- detect direction flips between runs
+  if (current.couplingCorrelation && previous.couplingCorrelation) {
+    const corrPairs = new Set([...Object.keys(current.couplingCorrelation), ...Object.keys(previous.couplingCorrelation)]);
+    let flips = 0;
+    let totalPairs = 0;
+    const flipDetails = [];
+    for (const p of corrPairs) {
+      const curDir = (current.couplingCorrelation[p] || {}).direction || 'stable';
+      const prevDir = (previous.couplingCorrelation[p] || {}).direction || 'stable';
+      totalPairs++;
+      if (curDir !== prevDir) {
+        flips++;
+        flipDetails.push({ pair: p, from: prevDir, to: curDir });
+      }
+    }
+    const flipRate = totalPairs > 0 ? flips / totalPairs : 0;
+    // Informational dimension -- not counted toward drift verdict
+    results.push({ dimension: 'correlationTrend', delta: flipRate, tolerance: 1.0, status: 'stable', flipDetails });
+  }
+
+  if (crossProfile) {
+    results.push({ dimension: 'crossProfileWarning', delta: 0, tolerance: 0, status: 'stable',
+      note: 'Profiles differ (' + previous.activeProfile + ' -> ' + current.activeProfile + '); tolerances widened 1.3x' });
+  }
 
   const verdict = drifted === 0 ? 'STABLE' : drifted <= 2 ? 'EVOLVED' : 'DRIFTED';
 
@@ -335,9 +381,11 @@ function explainDrift(comparison, current, previous) {
         break;
       }
       case 'tensionArc': {
-        const labels = ['opening (0-25%)', 'middle (35-65%)', 'closing (75-100%)'];
+        // R11 Evo 4: 4-point arc labels
+        const labels = ['opening (0-25%)', 'middle (35-65%)', 'closing (75-90%)', 'tail (90-100%)'];
         const shifts = [];
-        for (let i = 0; i < 3; i++) {
+        const arcCount = Math.min(current.tensionArc.length, previous.tensionArc.length);
+        for (let i = 0; i < arcCount; i++) {
           const d = current.tensionArc[i] - previous.tensionArc[i];
           if (Math.abs(d) > 0.05) {
             shifts.push(`${labels[i]}: ${d > 0 ? '+' : ''}${d.toFixed(3)}`);

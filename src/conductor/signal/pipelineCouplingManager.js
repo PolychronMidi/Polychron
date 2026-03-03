@@ -125,8 +125,8 @@ pipelineCouplingManager = (() => {
   const _AXIS_BUDGET = 0.24;
   const _FLICKER_AXIS_BUDGET = _AXIS_BUDGET * 1.5; // 0.36
 
-  // Per-pair adaptive state: gain and last-observed |r|
-  /** @type {Record<string, { gain: number, lastAbsCorr: number }>} */
+  // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
+  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[] }>} */
   const _pairState = {};
 
   /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
@@ -136,14 +136,23 @@ pipelineCouplingManager = (() => {
   /**
    * Get or create adaptive state for a pair.
    * @param {string} key
-   * @returns {{ gain: number, lastAbsCorr: number }}
+   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[] }}
    */
   function _getPairState(key) {
     if (!_pairState[key]) {
       const initGain = PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT;
-      _pairState[key] = { gain: initGain, lastAbsCorr: 0 };
+      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [] };
     }
     return _pairState[key];
+  }
+
+  // R11 Evo 2: Rolling p95 for persistent hotspot detection
+  const _P95_WINDOW = 16;
+  function _computeP95(arr) {
+    if (arr.length < 4) return 0;
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const idx = m.floor(sorted.length * 0.95);
+    return sorted[m.min(idx, sorted.length - 1)];
   }
 
   /**
@@ -211,7 +220,11 @@ pipelineCouplingManager = (() => {
           const pairSaturated = _saturatedAxes.has(dimA) || _saturatedAxes.has(dimB);
           if (!improving && !pairSaturated) {
             // Emergency escalation: when |r| > 2x target, escalate 3x faster
-            const rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
+            let rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
+            // R11 Evo 2: Persistent hotspot escalation -- when rolling p95 stays
+            // above 1.5x target, boost escalation rate to break entrenched coupling.
+            const p95 = _computeP95(ps.recentAbsCorr);
+            if (p95 > target * 1.5) rate *= 1.5;
             const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
@@ -220,6 +233,10 @@ pipelineCouplingManager = (() => {
           ps.gain = clamp(ps.gain - GAIN_RELAX_RATE, GAIN_INIT, GAIN_MAX);
         }
         ps.lastAbsCorr = absCorr;
+
+        // R11 Evo 2: Update rolling |r| window for persistent hotspot tracking
+        ps.recentAbsCorr.push(absCorr);
+        if (ps.recentAbsCorr.length > _P95_WINDOW) ps.recentAbsCorr.shift();
 
         // -- #1: Self-calibrate coupling target --
         const at = _getAdaptiveTarget(key);
@@ -316,6 +333,7 @@ pipelineCouplingManager = (() => {
       const initGain = PAIR_GAIN_INIT[keys[i]] !== undefined ? PAIR_GAIN_INIT[keys[i]] : GAIN_INIT;
       _pairState[keys[i]].gain = initGain;
       _pairState[keys[i]].lastAbsCorr = 0;
+      _pairState[keys[i]].recentAbsCorr = [];
     }
     // #1: Reset adaptive targets to baseline on section boundary
     const targetKeys = Object.keys(_adaptiveTargets);
