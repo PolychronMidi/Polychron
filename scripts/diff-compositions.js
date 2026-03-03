@@ -8,7 +8,7 @@
 //   node scripts/diff-compositions.js --against <snapshot>
 //
 // Input: trace.jsonl + output CSVs from each run
-// Output: output/composition-diff.json + output/composition-diff.md
+// Output: metrics/composition-diff.json + metrics/composition-diff.md
 
 'use strict';
 
@@ -16,10 +16,11 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const OUTPUT_DIR    = path.join(ROOT, 'output');
-const SNAPSHOT_DIR  = path.join(ROOT, 'tmp', 'snapshots');
-const DIFF_JSON     = path.join(OUTPUT_DIR, 'composition-diff.json');
-const DIFF_MD       = path.join(OUTPUT_DIR, 'composition-diff.md');
+const METRICS_DIR     = path.join(ROOT, 'metrics');
+const COMPOSITION_DIR = path.join(ROOT, 'output');
+const SNAPSHOT_DIR    = path.join(ROOT, 'metrics', 'snapshots');
+const DIFF_JSON       = path.join(METRICS_DIR, 'composition-diff.json');
+const DIFF_MD         = path.join(METRICS_DIR, 'composition-diff.md');
 
 // ---- Helpers ----
 
@@ -335,17 +336,26 @@ function renderMarkdown(report) {
 
 function main() {
   const args = process.argv.slice(2);
-  let dirA, dirB;
+  let traceDirA, traceDirB, notesDirA, notesDirB;
 
   if (args[0] === '--against' && args[1]) {
-    dirA = path.join(SNAPSHOT_DIR, args[1]);
-    dirB = OUTPUT_DIR;
-    if (!fs.existsSync(dirA)) {
-      throw new Error(`diff-compositions: snapshot '${args[1]}' not found at ${dirA}`);
+    const snapDir = path.join(SNAPSHOT_DIR, args[1]);
+    if (!fs.existsSync(snapDir)) {
+      throw new Error(`diff-compositions: snapshot '${args[1]}' not found at ${snapDir}`);
     }
+    traceDirA = snapDir;
+    notesDirA = snapDir;
+    traceDirB = METRICS_DIR;
+    notesDirB = COMPOSITION_DIR;
   } else if (args.length >= 2) {
-    dirA = path.resolve(args[0]);
-    dirB = path.resolve(args[1]);
+    const dirA = path.resolve(args[0]);
+    const dirB = path.resolve(args[1]);
+    traceDirA = dirA;
+    notesDirA = dirA;
+    traceDirB = dirB;
+    notesDirB = dirB;
+    if (!fs.existsSync(dirA)) throw new Error(`diff-compositions: directory not found: ${dirA}`);
+    if (!fs.existsSync(dirB)) throw new Error(`diff-compositions: directory not found: ${dirB}`);
   } else {
     console.log('Usage:');
     console.log('  node scripts/diff-compositions.js <dirA> <dirB>');
@@ -353,14 +363,14 @@ function main() {
     process.exit(1);
   }
 
-  if (!fs.existsSync(dirA)) throw new Error(`diff-compositions: directory not found: ${dirA}`);
-  if (!fs.existsSync(dirB)) throw new Error(`diff-compositions: directory not found: ${dirB}`);
+  if (!fs.existsSync(traceDirA)) throw new Error(`diff-compositions: directory not found: ${traceDirA}`);
+  if (!fs.existsSync(traceDirB)) throw new Error(`diff-compositions: directory not found: ${traceDirB}`);
 
   // Load data
-  const traceA = loadTrace(dirA);
-  const traceB = loadTrace(dirB);
-  const notesA = loadNotes(dirA);
-  const notesB = loadNotes(dirB);
+  const traceA = loadTrace(traceDirA);
+  const traceB = loadTrace(traceDirB);
+  const notesA = loadNotes(notesDirA);
+  const notesB = loadNotes(notesDirB);
 
   // Extract and diff structure
   const structA = extractStructure(traceA);
@@ -371,8 +381,8 @@ function main() {
   const report = {
     meta: {
       generated: new Date().toISOString(),
-      dirA,
-      dirB,
+      dirA: traceDirA,
+      dirB: traceDirB,
       traceSizeA: traceA.length,
       traceSizeB: traceB.length,
       sectionsA: structA.length,
@@ -381,12 +391,12 @@ function main() {
     diffs: [...structDiffs, ...pitchDiffs]
   };
 
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  fs.mkdirSync(METRICS_DIR, { recursive: true });
   fs.writeFileSync(DIFF_JSON, JSON.stringify(report, null, 2), 'utf8');
   fs.writeFileSync(DIFF_MD, renderMarkdown(report), 'utf8');
 
   const majorCount = report.diffs.filter(d => d.severity === 'major').length;
-  console.log(`diff-compositions: ${report.diffs.length} differences (${majorCount} major) -> output/composition-diff.json + .md`);
+  console.log(`diff-compositions: ${report.diffs.length} differences (${majorCount} major) -> metrics/composition-diff.json + .md`);
 }
 
 main();

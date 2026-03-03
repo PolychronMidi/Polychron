@@ -16,7 +16,7 @@ traceDrain = (() => {
     if (!process.argv.includes('--trace')) return;
     isTracing = true;
 
-    const outDir = path.resolve(process.cwd(), 'output');
+    const outDir = path.resolve(process.cwd(), 'metrics');
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }

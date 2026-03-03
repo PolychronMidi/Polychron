@@ -11,8 +11,8 @@
 //   --search K=V Filter beats where snap.K matches V
 //
 // Usage: node scripts/trace-replay.js [--timeline] [--section N] [--layer L] [--json] [--stats]
-// Input: output/trace.jsonl
-// Output: stdout or output/trace-replay.json (with --json)
+// Input: metrics/trace.jsonl
+// Output: stdout or metrics/trace-replay.json (with --json)
 
 'use strict';
 
@@ -20,7 +20,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const OUTPUT_DIR = path.join(ROOT, 'output');
+const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const TRACE_PATH = path.join(OUTPUT_DIR, 'trace.jsonl');
 const REPLAY_JSON_PATH = path.join(OUTPUT_DIR, 'trace-replay.json');
 
@@ -230,7 +230,7 @@ function main() {
     if (jsonMode) {
       const output = { meta: { generated: new Date().toISOString(), entryCount: entries.length }, stats };
       fs.writeFileSync(REPLAY_JSON_PATH, JSON.stringify(output, null, 2), 'utf8');
-      console.log(`trace-replay: stats written -> output/trace-replay.json`);
+      console.log(`trace-replay: stats written -> metrics/trace-replay.json`);
     } else {
       console.log(`trace-replay: ${entries.length} entries\n`);
       console.log(renderStats(stats));
@@ -255,7 +255,7 @@ function main() {
       }))
     };
     fs.writeFileSync(REPLAY_JSON_PATH, JSON.stringify(output, null, 2), 'utf8');
-    console.log(`trace-replay: ${entries.length} entries written -> output/trace-replay.json`);
+    console.log(`trace-replay: ${entries.length} entries written -> metrics/trace-replay.json`);
   } else {
     console.log(`trace-replay: ${entries.length} entries\n`);
     console.log(renderTimeline(entries));

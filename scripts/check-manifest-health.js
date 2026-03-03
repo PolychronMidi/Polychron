@@ -1,5 +1,5 @@
 // scripts/check-manifest-health.js
-// Enforce machine-readable health gates from output/system-manifest.json.
+// Enforce machine-readable health gates from metrics/system-manifest.json.
 
 'use strict';
 
@@ -226,7 +226,7 @@ function assertManifestHealth(manifest, manifestPath) {
 }
 
 function main() {
-  const manifestPath = path.join(process.cwd(), 'output', 'system-manifest.json');
+  const manifestPath = path.join(process.cwd(), 'metrics', 'system-manifest.json');
   const manifest = loadManifest(manifestPath);
   assertManifestHealth(manifest, manifestPath);
 }

@@ -52,6 +52,7 @@ export default [
       'node_modules/**',
       'csv_maestro/**',
       'output/**',
+      'metrics/**',
       'tmp/**',
       '__pycache__/**'
     ],

@@ -6,7 +6,7 @@
 // references, and inter-module dependency patterns. Produces both JSON and
 // Markdown outputs for forensic and narrative use.
 //
-// Output: output/crosslayer-map.json, output/crosslayer-map.md
+// Output: metrics/crosslayer-map.json, metrics/crosslayer-map.md
 // Run: node scripts/generate-crosslayer-map.js
 // Integrated into `npm run main` pipeline.
 
@@ -17,7 +17,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const CL_DIR = path.join(ROOT, 'src', 'crossLayer');
-const OUTPUT_DIR = path.join(ROOT, 'output');
+const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const JSON_PATH  = path.join(OUTPUT_DIR, 'crosslayer-map.json');
 const MD_PATH    = path.join(OUTPUT_DIR, 'crosslayer-map.md');
 
@@ -263,7 +263,7 @@ function main() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   fs.writeFileSync(JSON_PATH, JSON.stringify(map, null, 2), 'utf8');
   fs.writeFileSync(MD_PATH, renderMarkdown(map), 'utf8');
-  console.log(`crosslayer-map: ${map.meta.moduleCount} modules, ${map.meta.edgeCount} edges, ${map.meta.atgChannelCount} ATG channels -> output/crosslayer-map.json + .md`);
+  console.log(`crosslayer-map: ${map.meta.moduleCount} modules, ${map.meta.edgeCount} edges, ${map.meta.atgChannelCount} ATG channels -> metrics/crosslayer-map.json + .md`);
 }
 
 main();

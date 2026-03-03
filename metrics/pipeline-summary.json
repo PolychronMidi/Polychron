@@ -1,0 +1,88 @@
+{
+  "generated": "2026-03-03T01:12:07.369Z",
+  "wallTimeSeconds": 8091.5,
+  "steps": [
+    {
+      "label": "generate-globals-dts",
+      "elapsedSeconds": 0.8,
+      "ok": true
+    },
+    {
+      "label": "verify-boot-order",
+      "elapsedSeconds": 1.5,
+      "ok": true
+    },
+    {
+      "label": "check-tuning-invariants",
+      "elapsedSeconds": 0.4,
+      "ok": true
+    },
+    {
+      "label": "generate-feedback-graph",
+      "elapsedSeconds": 0.4,
+      "ok": true
+    },
+    {
+      "label": "validate-feedback-graph",
+      "elapsedSeconds": 0.4,
+      "ok": true
+    },
+    {
+      "label": "lint",
+      "elapsedSeconds": 13.7,
+      "ok": true
+    },
+    {
+      "label": "typecheck",
+      "elapsedSeconds": 18.1,
+      "ok": true
+    },
+    {
+      "label": "composition",
+      "elapsedSeconds": 8047.5,
+      "ok": true
+    },
+    {
+      "label": "trace-summary",
+      "elapsedSeconds": 0.8,
+      "ok": true
+    },
+    {
+      "label": "check-manifest-health",
+      "elapsedSeconds": 0.2,
+      "ok": true
+    },
+    {
+      "label": "generate-dependency-graph",
+      "elapsedSeconds": 0.7,
+      "ok": true
+    },
+    {
+      "label": "generate-conductor-map",
+      "elapsedSeconds": 0.3,
+      "ok": true
+    },
+    {
+      "label": "generate-crosslayer-map",
+      "elapsedSeconds": 0.3,
+      "ok": true
+    },
+    {
+      "label": "golden-fingerprint",
+      "elapsedSeconds": 2.4,
+      "ok": true
+    },
+    {
+      "label": "narrative-digest",
+      "elapsedSeconds": 3.6,
+      "ok": true
+    },
+    {
+      "label": "visualize-feedback-graph",
+      "elapsedSeconds": 0.3,
+      "ok": true
+    }
+  ],
+  "passed": 16,
+  "failed": 0
+}

@@ -1,5 +1,5 @@
 // scripts/trace-summary.js
-// Summarize output/trace.jsonl into output/trace-summary.json for quick diagnostics.
+// Summarize metrics/trace.jsonl into metrics/trace-summary.json for quick diagnostics.
 
 'use strict';
 
@@ -243,11 +243,11 @@ function summarizeTrace(entries) {
 }
 
 function main() {
-  const tracePath = path.join(process.cwd(), 'output', 'trace.jsonl');
-  const summaryPath = path.join(process.cwd(), 'output', 'trace-summary.json');
+  const tracePath = path.join(process.cwd(), 'metrics', 'trace.jsonl');
+  const summaryPath = path.join(process.cwd(), 'metrics', 'trace-summary.json');
 
   if (!fs.existsSync(tracePath)) {
-    console.log('trace-summary: trace file not found, skipping (run with --trace to generate output/trace.jsonl).');
+    console.log('trace-summary: trace file not found, skipping (run with --trace to generate metrics/trace.jsonl).');
     return;
   }
 
@@ -271,7 +271,7 @@ function main() {
 
   const summary = summarizeTrace(entries);
   fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + '\n');
-  console.log(`trace-summary: ${entries.length} entries -> output/trace-summary.json`);
+  console.log(`trace-summary: ${entries.length} entries -> metrics/trace-summary.json`);
 }
 
 main();

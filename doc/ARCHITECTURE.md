@@ -61,7 +61,7 @@ After the notes are emitted, the system enters the post-beat phase. It has gener
 4. **Coherence Monitor:** **Firewall Boundary 3: Closed-Loop Output Verification.**
 `coherenceMonitor` listens to the output layer and checks if the actual density matches the conductor's intended density. If the stochastic elements under-produced notes, it sends a bias multiplier back to the conductor to slightly boost density on the *next* beat. This is the only way output affects input, and it operates through a dampened, delayed feedback registry, preventing catastrophic resonance.
 
-When `--trace` is enabled, each beat also writes a JSONL diagnostic entry to `output/trace.jsonl` (via `traceDrain`), including per-stage timing data (14 named stages, nanosecond precision via `process.hrtime.bigint()`), making this full loop replayable and profilable over time.
+When `--trace` is enabled, each beat also writes a JSONL diagnostic entry to `metrics/trace.jsonl` (via `traceDrain`), including per-stage timing data (14 named stages, nanosecond precision via `process.hrtime.bigint()`), making this full loop replayable and profilable over time.
 
 ---
 

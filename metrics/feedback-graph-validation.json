@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "script": "validate-feedback-graph.js",
+    "timestamp": "2026-03-02T22:57:19.441Z",
+    "graphPath": "doc/FEEDBACK_GRAPH.json"
+  },
+  "jsonLoopCount": 8,
+  "sourceLoopCount": 6,
+  "sourceLoops": [
+    {
+      "name": "dynamicArchitectPlanner",
+      "file": "conductor/dynamics/dynamicArchitectPlanner.js",
+      "type": "closedLoopController"
+    },
+    {
+      "name": "coherenceMonitor",
+      "file": "conductor/signal/coherenceMonitor.js",
+      "type": "registerLoop"
+    },
+    {
+      "name": "pipelineBalancer.tension",
+      "file": "conductor/signal/pipelineBalancer.js",
+      "type": "closedLoopController"
+    },
+    {
+      "name": "pipelineCouplingManager",
+      "file": "conductor/signal/pipelineCouplingManager.js",
+      "type": "registerLoop"
+    },
+    {
+      "name": "regimeReactiveDamping",
+      "file": "conductor/signal/regimeReactiveDamping.js",
+      "type": "registerLoop"
+    },
+    {
+      "name": "entropyRegulator",
+      "file": "crossLayer/structure/entropyRegulator.js",
+      "type": "closedLoopController"
+    }
+  ],
+  "firewallCount": 3,
+  "passes": 71,
+  "failures": [],
+  "warnings": []
+}

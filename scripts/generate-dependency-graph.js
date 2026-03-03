@@ -3,7 +3,7 @@
 // consumers across all source files. Extends boot-order.json (which tracks
 // providers) with the consumption side: which files READ which globals.
 //
-// Output: output/dependency-graph.json
+// Output: metrics/dependency-graph.json
 //   - nodes: per-file metadata (subsystem, provides[], consumes[])
 //   - edges: { from, to, globals[] } where `from` provides a global `to` consumes
 //   - summary: aggregate statistics
@@ -18,8 +18,8 @@ const path = require('path');
 
 const ROOT   = path.join(__dirname, '..');
 const SRC    = path.join(ROOT, 'src');
-const OUTPUT = path.join(ROOT, 'output', 'dependency-graph.json');
-const BOOT_ORDER_PATH = path.join(ROOT, 'output', 'boot-order.json');
+const OUTPUT = path.join(ROOT, 'metrics', 'dependency-graph.json');
+const BOOT_ORDER_PATH = path.join(ROOT, 'metrics', 'boot-order.json');
 
 // ---- Load boot-order.json for provider data ----
 
@@ -234,7 +234,7 @@ function main() {
   console.log(
     'generate-dependency-graph: ' + summary.totalFiles + ' files, ' +
     summary.totalGlobals + ' globals, ' +
-    summary.totalEdges + ' edges (' + summary.crossSubsystemEdges + ' cross-subsystem) -> output/dependency-graph.json'
+    summary.totalEdges + ' edges (' + summary.crossSubsystemEdges + ' cross-subsystem) -> metrics/dependency-graph.json'
   );
 }
 

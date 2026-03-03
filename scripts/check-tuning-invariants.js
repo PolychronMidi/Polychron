@@ -247,7 +247,7 @@ function main() {
   }
 
   // Write results for forensics
-  const outputPath = path.join(ROOT, 'output', 'tuning-invariants.json');
+  const outputPath = path.join(ROOT, 'metrics', 'tuning-invariants.json');
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify({
     meta: { generated: new Date().toISOString(), total: invariants.length, passed: invariants.length - failures - skipped, failed: failures, skipped },
@@ -258,7 +258,7 @@ function main() {
   if (failures > 0) {
     throw new Error(
       'check-tuning-invariants: ' + failures + ' invariant(s) FAILED. ' +
-      'See output/tuning-invariants.json for details. ' +
+      'See metrics/tuning-invariants.json for details. ' +
       'Cross-reference TUNING_MAP.md before changing feedback loop constants.'
     );
   }
@@ -266,7 +266,7 @@ function main() {
   console.log(
     'check-tuning-invariants: PASS (' +
     (invariants.length - skipped) + '/' + invariants.length + ' checked, ' +
-    skipped + ' skipped) -> output/tuning-invariants.json'
+    skipped + ' skipped) -> metrics/tuning-invariants.json'
   );
 }
 

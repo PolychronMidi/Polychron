@@ -6,7 +6,7 @@ systemManifest = (() => {
   const V = validator.create('systemManifest');
 
   /**
-   * Write system-manifest.json and capability-matrix.md to output/.
+   * Write system-manifest.json and capability-matrix.md to metrics/.
    * Call after grandFinale() - all registries are fully populated at this point.
    */
   function emit() {
@@ -36,8 +36,8 @@ systemManifest = (() => {
     // -- Coherence verdicts --
     manifest.coherenceVerdicts = coherenceVerdicts.compute(manifest, attribution);
 
-    const manifestPath = 'output/system-manifest.json';
-    const matrixPath = 'output/capability-matrix.md';
+const manifestPath = 'metrics/system-manifest.json';
+  const matrixPath = 'metrics/capability-matrix.md';
 
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
     console.log(`Wrote file: ${manifestPath}`);

@@ -7,8 +7,8 @@
 //   (d) its reset scope
 //   (e) its interaction partners from the feedback topology
 //
-// Sources: output/system-manifest.json + output/boot-order.json + source files
-// Output: output/conductor-map.json + output/conductor-map.md
+// Sources: metrics/system-manifest.json + metrics/boot-order.json + source files
+// Output: metrics/conductor-map.json + metrics/conductor-map.md
 //
 // Run: node scripts/generate-conductor-map.js
 // Integrated into `npm run main` pipeline.
@@ -20,7 +20,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const SRC  = path.join(ROOT, 'src');
-const OUTPUT_DIR = path.join(ROOT, 'output');
+const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const MANIFEST_PATH = path.join(OUTPUT_DIR, 'system-manifest.json');
 const BOOT_ORDER_PATH = path.join(OUTPUT_DIR, 'boot-order.json');
 const JSON_OUTPUT = path.join(OUTPUT_DIR, 'conductor-map.json');
@@ -286,7 +286,7 @@ function main() {
 
   console.log(
     'generate-conductor-map: ' + modules.length + ' modules across ' +
-    Object.keys(domains).length + ' domains -> output/conductor-map.json + output/conductor-map.md'
+    Object.keys(domains).length + ' domains -> metrics/conductor-map.json + metrics/conductor-map.md'
   );
 }
 
