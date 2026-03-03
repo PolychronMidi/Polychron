@@ -75,10 +75,17 @@ systemDynamicsProfiler = (() => {
         regimeClassifier.setOscillatingThreshold(0.65);
         // R8 Evo 5 / R9 Evo 2 / R10 Evo 1: 0.80->0.88 overshot (56.8% exploring); 0.84 targets ~25-35% exploring
         regimeClassifier.setCoherentThresholdScale(0.84);
+        // R21 E3: Faster alpha floor for explosive -- shorter sections need
+        // ~25-beat convergence to prevent 74.2% coherent lock.
+        regimeClassifier.setCoherentShareAlphaMin(0.04);
         // R8 Evo 4: widen flicker target range for explosive depthScale 1.8
         conductorDampening.setFlickerTargetRange(0.15 * 1.8);
         // R9 Evo 3: give density-flicker pair 30% extra gain ceiling for decorrelation
         pipelineCouplingManager.setDensityFlickerGainScale(1.3);
+      } else if (profileName === 'atmospheric') {
+        // R21 E3: Slower alpha floor for atmospheric -- longer sections tolerate
+        // ~50-beat convergence, preventing premature regime flipping.
+        regimeClassifier.setCoherentShareAlphaMin(0.02);
       } else if (profileName === 'minimal') {
         regimeClassifier.setOscillatingThreshold(0.45);
       }

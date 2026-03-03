@@ -37,7 +37,11 @@ regimeClassifier = (() => {
   // (69.7% coherent, maxConsecutive=426). floor 0.025 (~40 beats) ensures
   // the coherent share EMA tracks recent regime distribution accurately
   // enough that the penalty function can actually fire escape transitions.
-  const _COHERENT_SHARE_ALPHA_MIN = 0.025;  // steady-state: ~40-beat horizon
+  // R21 E3: Made profile-adaptive via setter. Explosive=0.04 (~25-beat),
+  // atmospheric=0.02 (~50-beat), default=0.025 (~40-beat). Explosive's
+  // shorter sections (~138 beats) need faster convergence to prevent
+  // the 74.2% coherent lock observed in R21.
+  let _coherentShareAlphaMin = 0.025;  // steady-state: ~40-beat horizon (default)
   const _COHERENT_SHARE_ALPHA_INIT = 0.05;  // initial: ~20-beat horizon
   const _COHERENT_SHARE_ALPHA_DECAY = 80;   // exponential decay constant
   let _coherentShareEma = 0.50;             // initial: assume 50% coherent
@@ -57,6 +61,17 @@ regimeClassifier = (() => {
    */
   function setCoherentThresholdScale(scale) {
     coherentThresholdScale = V.requireFinite(scale, 'coherentThresholdScale');
+  }
+
+  /**
+   * R21 E3: Set profile-adaptive coherent share alpha floor.
+   * Higher values = faster EMA convergence = quicker saturation penalty.
+   * explosive: 0.04 (~25-beat horizon), atmospheric: 0.02 (~50-beat),
+   * default: 0.025 (~40-beat).
+   * @param {number} alphaMin
+   */
+  function setCoherentShareAlphaMin(alphaMin) {
+    _coherentShareAlphaMin = V.requireFinite(alphaMin, 'alphaMin');
   }
 
   /** @returns {number} */
@@ -117,7 +132,7 @@ regimeClassifier = (() => {
     // R19 E3: Adaptive alpha for faster initial convergence.
     // alpha = max(0.01, 0.05 * exp(-coherentBeats / 80))
     // At beat 0: alpha=0.05 (~20 horizon). Beat 80: alpha~0.018. Beat 160: alpha->0.01.
-    const _adaptiveAlpha = m.max(_COHERENT_SHARE_ALPHA_MIN,
+    const _adaptiveAlpha = m.max(_coherentShareAlphaMin,
       _COHERENT_SHARE_ALPHA_INIT * m.exp(-coherentBeats / _COHERENT_SHARE_ALPHA_DECAY));
     _coherentShareEma = _coherentShareEma * (1 - _adaptiveAlpha) + (lastRegime === 'coherent' ? 1 : 0) * _adaptiveAlpha;
     const _dynamicPenaltyCap = 0.08 + clamp((_coherentShareEma - 0.60) * 1.0, 0, 0.20);
@@ -212,5 +227,5 @@ regimeClassifier = (() => {
     _coherentShareEma = _prevCoherentShareEma * 0.5 + 0.50 * 0.5;
   }
 
-  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, getExploringBeats, getLastRegime, reset };
+  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, getExploringBeats, getLastRegime, reset };
 })();

@@ -158,6 +158,11 @@ pipelineCouplingManager = (() => {
   // R20 E5: Flicker product sigmoid hysteresis state.
   // 'normal' -> 'guarding' at product < 0.90, 'guarding' -> 'normal' at > 0.96.
   let _flickerGuardState = 'normal';
+  // R21 E4: Consecutive beats in guarding state for escalated recovery.
+  let _flickerGuardBeats = 0;
+  // R21 E4: Flicker-pair gain cap when product is severely compressed.
+  const _FLICKER_PAIR_GAIN_CAP = 0.45;
+  const _FLICKER_PAIR_GAIN_CAP_THRESHOLD = 0.88;
 
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
   /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number }>} */
@@ -244,8 +249,14 @@ pipelineCouplingManager = (() => {
     if (typeof _flickerProd === 'number') {
       if (_flickerGuardState === 'normal' && _flickerProd < 0.90) {
         _flickerGuardState = 'guarding';
+        _flickerGuardBeats = 0;
       } else if (_flickerGuardState === 'guarding' && _flickerProd > 0.96) {
         _flickerGuardState = 'normal';
+        _flickerGuardBeats = 0;
+      }
+      // R21 E4: Track consecutive guarding beats for escalation
+      if (_flickerGuardState === 'guarding') {
+        _flickerGuardBeats++;
       }
     }
     const _flickerGainScalar = _flickerGuardState === 'guarding' && typeof _flickerProd === 'number'
@@ -354,7 +365,14 @@ pipelineCouplingManager = (() => {
             // R20 E2: Apply global gain multiplier to escalation rate.
             // When homeostasis detects redistribution, slow ALL gains.
             rate *= _globalGainMultiplier;
-            const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
+            let pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
+            // R21 E4: Cap flicker-pair gains when product severely compressed.
+            // 3 pairs at GAIN_MAX with heat 0.60-0.65 were compressing flicker
+            // from multiple directions simultaneously (axis total 1.953).
+            if ((dimA === 'flicker' || dimB === 'flicker') && _flickerGuardState === 'guarding' &&
+                typeof _flickerProd === 'number' && _flickerProd < _FLICKER_PAIR_GAIN_CAP_THRESHOLD) {
+              pairGainMax = m.min(pairGainMax, _FLICKER_PAIR_GAIN_CAP);
+            }
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
 
@@ -528,8 +546,18 @@ pipelineCouplingManager = (() => {
     // R20 E5: While in flicker-guarding state, apply a recovery nudge toward
     // biasFlicker=1.0 to break the vicious cycle where compressed bias -> low
     // product -> gain kill -> compressed bias persists.
+    // R21 E4: Escalated nudge rate based on consecutive guarding beats.
+    // At 0-30 beats: 0.002/beat (original). 30-60: 0.005/beat. 60+: 0.008/beat.
+    // R21 showed product=0.847 after full run -- nudge too slow to overcome
+    // multi-pair flicker compression from 3 pairs at GAIN_MAX.
     if (_flickerGuardState === 'guarding' && biasFlicker < 0.98) {
-      biasFlicker = m.min(biasFlicker + 0.002, 1.0);
+      let nudgeRate = 0.002;
+      if (_flickerGuardBeats > 60) {
+        nudgeRate = 0.008;
+      } else if (_flickerGuardBeats > 30) {
+        nudgeRate = 0.005;
+      }
+      biasFlicker = m.min(biasFlicker + nudgeRate, 1.0);
     }
   }
 

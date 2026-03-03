@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-03T21:20:45.059Z",
+    "generated": "2026-03-03T22:23:03.660Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 388,
     "totalGlobals": 687,
     "totalProvides": 702,
-    "totalConsumes": 2662,
-    "totalEdges": 2028,
-    "crossSubsystemEdges": 1430,
+    "totalConsumes": 2660,
+    "totalEdges": 2026,
+    "crossSubsystemEdges": 1428,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 205
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 144,
         "provides": 190,
-        "consumes": 744
+        "consumes": 742
       },
       "rhythm": {
         "files": 30,
@@ -1324,9 +1324,7 @@
         "explainabilityBus",
         "m",
         "pipelineCouplingManager",
-        "safePreBoot",
-        "systemDynamicsProfiler",
-        "turbulence"
+        "systemDynamicsProfiler"
       ]
     },
     "src/conductor/signal/narrativeTrajectory.js": {
@@ -11555,13 +11553,6 @@
     },
     {
       "from": "src/fx/noise/SimplexNoise.js",
-      "to": "src/conductor/signal/couplingHomeostasis.js",
-      "globals": [
-        "turbulence"
-      ]
-    },
-    {
-      "from": "src/fx/noise/SimplexNoise.js",
       "to": "src/fx/noise/metaRecursive.js",
       "globals": [
         "fbm"
@@ -19277,13 +19268,6 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/conductorMetaWatchdog.js",
-      "globals": [
-        "safePreBoot"
-      ]
-    },
-    {
-      "from": "src/utils/safePreBoot.js",
-      "to": "src/conductor/signal/couplingHomeostasis.js",
       "globals": [
         "safePreBoot"
       ]
