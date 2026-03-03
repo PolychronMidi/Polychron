@@ -1,6 +1,6 @@
 // scripts/visualize-feedback-graph.js
 // Generates an interactive HTML visualization of the feedback topology
-// from FEEDBACK_GRAPH.json. Pure zero-dependency SVG rendering.
+// from feedback_graph.json. Pure zero-dependency SVG rendering.
 //
 // Output: metrics/feedback-graph.html
 // Run: node scripts/visualize-feedback-graph.js
@@ -12,14 +12,14 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const GRAPH_PATH = path.join(ROOT, 'metrics/FEEDBACK_GRAPH.json');
+const GRAPH_PATH = path.join(ROOT, 'metrics/feedback_graph.json');
 const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');
 const INVARIANTS_PATH = path.join(OUTPUT_DIR, 'tuning-invariants.json');
 
 function main() {
   if (!fs.existsSync(GRAPH_PATH)) {
-    console.warn('Acceptable warning: visualize-feedback-graph: FEEDBACK_GRAPH.json not found, skipping.');
+    console.warn('Acceptable warning: visualize-feedback-graph: feedback_graph.json not found, skipping.');
     return;
   }
 
@@ -27,7 +27,7 @@ function main() {
   try {
     graph = JSON.parse(fs.readFileSync(GRAPH_PATH, 'utf8'));
   } catch (err) {
-    console.warn('Acceptable warning: visualize-feedback-graph: failed to parse FEEDBACK_GRAPH.json: ' + (err && err.message ? err.message : err));
+    console.warn('Acceptable warning: visualize-feedback-graph: failed to parse feedback_graph.json: ' + (err && err.message ? err.message : err));
     return;
   }
   const loops = graph.feedbackLoops || [];

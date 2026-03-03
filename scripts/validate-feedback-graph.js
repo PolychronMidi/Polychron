@@ -1,5 +1,5 @@
 // scripts/validate-feedback-graph.js
-// Cross-validates doc/FEEDBACK_GRAPH.json against source code.
+// Cross-validates metrics/feedback_graph.json against source code.
 // Ensures the declared feedback topology matches actual registrations.
 // Runs as a static analysis step (no runtime coupling to the engine).
 //
@@ -48,11 +48,11 @@ function findJsFiles(dir) {
   return results;
 }
 
-// ---- Load FEEDBACK_GRAPH.json ----
+// ---- Load feedback_graph.json ----
 
-const graphPath = path.join(METRICS, 'FEEDBACK_GRAPH.json');
+const graphPath = path.join(METRICS, 'feedback_graph.json');
 if (!fs.existsSync(graphPath)) {
-  console.error('validate-feedback-graph: FATAL - metrics/FEEDBACK_GRAPH.json not found');
+  console.error('validate-feedback-graph: FATAL - metrics/feedback_graph.json not found');
   process.exit(1);
 }
 
@@ -60,7 +60,7 @@ let graph;
 try {
   graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
 } catch (err) {
-  console.error('validate-feedback-graph: FATAL - failed to parse FEEDBACK_GRAPH.json:', err.message);
+  console.error('validate-feedback-graph: FATAL - failed to parse feedback_graph.json:', err.message);
   process.exit(1);
 }
 
@@ -117,10 +117,10 @@ let passes = 0;
 
 // Check 1: JSON structure
 if (!Array.isArray(jsonLoops) || jsonLoops.length === 0) {
-  failures.push('FEEDBACK_GRAPH.json feedbackLoops must be a non-empty array');
+  failures.push('feedback_graph.json feedbackLoops must be a non-empty array');
 }
 if (!graph.firewalls || typeof graph.firewalls !== 'object') {
-  failures.push('FEEDBACK_GRAPH.json firewalls must be an object');
+  failures.push('feedback_graph.json firewalls must be an object');
 }
 
 // Check 2: Every JSON loop has required fields
@@ -163,9 +163,9 @@ for (const sLoop of sourceLoops) {
   if (jsonLoopModules.has(sLoop.name)) {
     passes++;
   } else {
-    // It's a real loop not documented in FEEDBACK_GRAPH.json
+    // It's a real loop not documented in feedback_graph.json
     warnings.push(
-      `Source loop "${sLoop.name}" (${sLoop.type} in ${sLoop.file}) has no entry in FEEDBACK_GRAPH.json. ` +
+      `Source loop "${sLoop.name}" (${sLoop.type} in ${sLoop.file}) has no entry in feedback_graph.json. ` +
       'Consider adding it to maintain topology documentation.'
     );
   }
@@ -183,7 +183,7 @@ for (const jsonLoop of jsonLoops) {
     passes++;
   } else {
     warnings.push(
-      `FEEDBACK_GRAPH.json declares loop module "${jsonMod}" (id: ${jsonModuleToId[jsonMod]}) ` +
+      `feedback_graph.json declares loop module "${jsonMod}" (id: ${jsonModuleToId[jsonMod]}) ` +
       'but no feedbackRegistry.registerLoop() or closedLoopController.create() call found in source. ' +
       'This may be a conceptual loop not enrolled in resonance dampening.'
     );
@@ -207,7 +207,7 @@ const FIREWALL_ESLINT_MAP = {
 const eslintRulesDir = path.join(ROOT, 'scripts', 'eslint-rules');
 for (const [firewallName, ruleNames] of Object.entries(FIREWALL_ESLINT_MAP)) {
   if (!jsonFirewallKeys.has(firewallName)) {
-    warnings.push(`Expected firewall "${firewallName}" not found in FEEDBACK_GRAPH.json`);
+    warnings.push(`Expected firewall "${firewallName}" not found in feedback_graph.json`);
     continue;
   }
   for (const ruleName of ruleNames) {
@@ -226,7 +226,7 @@ const results = {
   meta: {
     script: 'validate-feedback-graph.js',
     timestamp: new Date().toISOString(),
-    graphPath: 'doc/FEEDBACK_GRAPH.json'
+    graphPath: 'metrics/feedback_graph.json'
   },
   jsonLoopCount: jsonLoops.length,
   sourceLoopCount: sourceLoops.length,

@@ -1,4 +1,4 @@
-// feedbackGraphContract.js - Runtime validation of FEEDBACK_GRAPH.json against live module topology.
+// feedbackGraphContract.js - Runtime validation of feedback_graph.json against live module topology.
 // Extracted from mainBootstrap.js for single-responsibility.
 // This is a second immune layer beyond lint rules: it proves the declared
 // feedback topology still matches live registrations and firewall boundaries.
@@ -39,20 +39,20 @@ feedbackGraphContract = (() => {
   }
 
   /**
-   * Assert that FEEDBACK_GRAPH.json matches runtime module topology.
+   * Assert that feedback_graph.json matches runtime module topology.
    * Throws on any contract violation.
    */
   function assert() {
-    const graphPath = path.join(process.cwd(), 'metrics', 'FEEDBACK_GRAPH.json');
+    const graphPath = path.join(process.cwd(), 'metrics', 'feedback_graph.json');
     if (!fs.existsSync(graphPath)) {
-      throw new Error(`feedbackGraphContract: missing FEEDBACK_GRAPH.json at ${graphPath}`);
+      throw new Error(`feedbackGraphContract: missing feedback_graph.json at ${graphPath}`);
     }
 
     let graph;
     try {
       graph = JSON.parse(fs.readFileSync(graphPath, 'utf8'));
     } catch (err) {
-      throw new Error(`feedbackGraphContract: FEEDBACK_GRAPH.json parse failed: ${err && err.message ? err.message : err}`);
+      throw new Error(`feedbackGraphContract: feedback_graph.json parse failed: ${err && err.message ? err.message : err}`);
     }
 
     V.assertObject(graph, 'graph');
@@ -61,13 +61,13 @@ feedbackGraphContract = (() => {
     V.assertPlainObject(firewalls, 'firewalls');
     const firewallKeys = Object.keys(firewalls);
     if (firewallKeys.length === 0) {
-      throw new Error('feedbackGraphContract: FEEDBACK_GRAPH.json firewalls cannot be empty');
+      throw new Error('feedbackGraphContract: feedback_graph.json firewalls cannot be empty');
     }
 
     const loops = graph.feedbackLoops;
     V.assertArray(loops, 'feedbackLoops');
     if (loops.length === 0) {
-      throw new Error('feedbackGraphContract: FEEDBACK_GRAPH.json feedbackLoops must be a non-empty array');
+      throw new Error('feedbackGraphContract: feedback_graph.json feedbackLoops must be a non-empty array');
     }
 
     const { refs: moduleRefs, methods: moduleMethodContracts } = _getModuleContracts();

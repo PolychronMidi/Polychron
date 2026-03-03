@@ -1,8 +1,8 @@
 {
   "meta": {
     "script": "validate-feedback-graph.js",
-    "timestamp": "2026-03-03T03:15:51.923Z",
-    "graphPath": "doc/FEEDBACK_GRAPH.json"
+    "timestamp": "2026-03-03T03:20:30.784Z",
+    "graphPath": "metrics/feedback_graph.json"
   },
   "jsonLoopCount": 8,
   "sourceLoopCount": 6,
