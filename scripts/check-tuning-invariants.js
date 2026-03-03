@@ -83,13 +83,13 @@ function extractConstants() {
     // adaptiveTrustScores
     trust_EMA_decay: extractConst(trust, /score\s*\*\s*([\d.]+)\s*\+/),
     trust_EMA_new: extractConst(trust, /\+\s*p\s*\*\s*([\d.]+)/),
-    trust_weight_multiplier: extractConst(trust, /1\s*\+\s*state\.score\s*\*\s*([\d.]+)/),
-    trust_weight_min: (() => {
-      const m = trust.match(/clamp\(\s*1\s*\+\s*state\.score\s*\*\s*[\d.]+\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
+    trust_weight_multiplier: extractConst(trust, /TRUST_WEIGHT_MULTIPLIER\s*=\s*([\d.]+)/) || extractConst(trust, /1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*([\d.]+)/),
+    trust_weight_min: extractConst(trust, /TRUST_WEIGHT_MIN\s*=\s*([\d.]+)/) || (() => {
+      const m = trust.match(/clamp\(\s*1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*[\d.]+\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
       return m ? parseFloat(m[1]) : null;
     })(),
-    trust_weight_max: (() => {
-      const m = trust.match(/clamp\(\s*1\s*\+\s*state\.score\s*\*\s*[\d.]+\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
+    trust_weight_max: extractConst(trust, /TRUST_WEIGHT_MAX\s*=\s*([\d.]+)/) || (() => {
+      const m = trust.match(/clamp\(\s*1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*[\d.]+\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
       return m ? parseFloat(m[2]) : null;
     })(),
     trust_CEILING: extractConst(trust, /TRUST_CEILING\s*=\s*([\d.]+)/),

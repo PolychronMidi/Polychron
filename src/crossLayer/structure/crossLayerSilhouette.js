@@ -10,7 +10,9 @@ crossLayerSilhouette = (() => {
   const ARC_HISTORY = 16;
 
   /** @type {{ density: number, register: number, dynamic: number, entropy: number, timeMs: number }[]} */
-  const arcHistory = [];
+  const arcHistory = new Array(ARC_HISTORY).fill(null).map(() => ({ density: 0, register: 0, dynamic: 0, entropy: 0, timeMs: 0 }));
+  let arcIndex = 0;
+  let arcCount = 0;
 
   let smoothedDensity = 0.5;
   let smoothedRegister = 0.5;
@@ -53,14 +55,15 @@ crossLayerSilhouette = (() => {
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + rawEntropy * SMOOTHING;
 
     // Record arc history
-    arcHistory.push({
-      density: smoothedDensity,
-      register: smoothedRegister,
-      dynamic: smoothedDynamic,
-      entropy: smoothedEntropy,
-      timeMs: absTimeMs
-    });
-    if (arcHistory.length > ARC_HISTORY) arcHistory.shift();
+    const entry = arcHistory[arcIndex];
+    entry.density = smoothedDensity;
+    entry.register = smoothedRegister;
+    entry.dynamic = smoothedDynamic;
+    entry.entropy = smoothedEntropy;
+    entry.timeMs = absTimeMs;
+
+    arcIndex = (arcIndex + 1) % ARC_HISTORY;
+    if (arcCount < ARC_HISTORY) arcCount++;
   }
 
   /**
@@ -101,11 +104,23 @@ crossLayerSilhouette = (() => {
    * @returns {{ density: number, register: number, dynamic: number, entropy: number, timeMs: number }[]}
    */
   function getSilhouetteArc() {
-    return arcHistory.slice();
+    const result = new Array(arcCount);
+    for (let i = 0; i < arcCount; i++) {
+        result[i] = Object.assign({}, arcHistory[(arcIndex - arcCount + i + ARC_HISTORY) % ARC_HISTORY]);
+    }
+    return result;
   }
 
   function reset() {
-    arcHistory.length = 0;
+    arcIndex = 0;
+    arcCount = 0;
+    for (const entry of arcHistory) {
+        entry.density = 0;
+        entry.register = 0;
+        entry.dynamic = 0;
+        entry.entropy = 0;
+        entry.timeMs = 0;
+    }
     smoothedDensity = 0.5;
     smoothedRegister = 0.5;
     smoothedDynamic = 0.5;

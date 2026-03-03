@@ -1,12 +1,12 @@
 {
   "meta": {
-    "generated": "2026-03-03T02:44:54.177Z",
-    "currentRun": "2026-03-03T02:44:54.170Z",
-    "previousRun": "2026-03-03T01:12:03.404Z"
+    "generated": "2026-03-03T04:24:47.341Z",
+    "currentRun": "2026-03-03T04:24:47.337Z",
+    "previousRun": "2026-03-03T02:44:54.170Z"
   },
-  "verdict": "EVOLVED",
-  "driftedDimensions": 1,
-  "totalDimensions": 7,
+  "verdict": "STABLE",
+  "driftedDimensions": 0,
+  "totalDimensions": 8,
   "tolerances": {
     "noteCountRatio": 0.35,
     "pitchEntropyDelta": 0.25,
@@ -19,69 +19,77 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.41391796494644595,
-      "tolerance": 0.35,
-      "status": "drifted",
-      "current": 19261,
-      "previous": 32864,
+      "delta": 0.30263226208400396,
+      "tolerance": 0.65,
+      "status": "stable",
+      "current": 25090,
+      "previous": 19261,
       "perLayer": {
-        "currentL1": 8253,
-        "currentL2": 11008,
-        "previousL1": 11938,
-        "previousL2": 20926
+        "currentL1": 9079,
+        "currentL2": 16011,
+        "previousL1": 8253,
+        "previousL2": 11008
       }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.003587242967096671,
+      "delta": 0.018701609000075337,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.410816207220004,
-      "previous": 6.407228964252908
+      "current": 6.392114598219929,
+      "previous": 6.410816207220004
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.007737388881727588,
+      "delta": 0.0026533899636289222,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.016220145775162568,
-      "previous": 0.00848275689343498
+      "current": 0.013566755811533646,
+      "previous": 0.016220145775162568
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.09292682140577899,
+      "delta": 0.13657475375336872,
       "tolerance": 0.3,
       "status": "stable",
       "current": [
+        0.28898663203215663,
+        0.7541583819446316,
+        0.5246052612948071,
+        0.39286239519331156
+      ],
+      "previous": [
         0.43137091670091204,
         0.6403763826481812,
         0.3738128138584408
-      ],
-      "previous": [
-        0.45522061667418845,
-        0.5590301677899902,
-        0.5106344771620798
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.007112500000000022,
+      "delta": 0.00797500000000001,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.313975,
-      "previous": 0.3068625
+      "current": 0.32195,
+      "previous": 0.313975
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.11623893428668712,
-      "tolerance": 0.25,
+      "delta": 0.0765623089832072,
+      "tolerance": 0.39,
       "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.0753,
-      "tolerance": 0.25,
+      "delta": 0.07751428571428572,
+      "tolerance": 0.325,
       "status": "stable"
+    },
+    {
+      "dimension": "crossProfileWarning",
+      "delta": 0,
+      "tolerance": 0,
+      "status": "stable",
+      "note": "Profiles differ (atmospheric -> explosive); tolerances widened 1.3x"
     }
   ]
 }

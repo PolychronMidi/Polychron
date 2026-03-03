@@ -1,55 +1,56 @@
 {
   "meta": {
-    "generated": "2026-03-03T01:12:03.404Z",
-    "traceEntries": 880,
+    "generated": "2026-03-03T02:44:54.170Z",
+    "traceEntries": 534,
     "version": 1
   },
   "noteCount": {
-    "L1": 11938,
-    "L2": 20926,
-    "total": 32864
+    "L1": 8253,
+    "L2": 11008,
+    "total": 19261
   },
-  "pitchEntropy": 6.407228964252908,
+  "pitchEntropy": 6.410816207220004,
   "density": {
-    "mean": 0.5774688860106785,
-    "variance": 0.00848275689343498
+    "mean": 0.5799177048407694,
+    "variance": 0.016220145775162568
   },
   "tensionArc": [
-    0.45522061667418845,
-    0.5590301677899902,
-    0.5106344771620798
+    0.43137091670091204,
+    0.6403763826481812,
+    0.3738128138584408
   ],
-  "trustConvergence": 0.3068625,
+  "trustConvergence": 0.313975,
   "trustFinal": {
-    "cadenceAlignment": 0.1234,
-    "coherenceMonitor": 0.6805,
-    "convergence": 0.1972,
-    "entropyRegulator": 0.3173,
-    "feedbackOscillator": 0.1344,
-    "phaseLock": 0.4557,
-    "restSynchronizer": 0.1344,
-    "stutterContagion": 0.412
+    "cadenceAlignment": 0.1481,
+    "coherenceMonitor": 0.6596,
+    "convergence": 0.1966,
+    "entropyRegulator": 0.3762,
+    "feedbackOscillator": 0.1451,
+    "phaseLock": 0.4467,
+    "restSynchronizer": 0.1427,
+    "stutterContagion": 0.3968
   },
   "regimeDistribution": {
-    "initializing": 0.05568181818181818,
-    "evolving": 0.00909090909090909,
-    "coherent": 0.36704545454545456,
-    "exploring": 0.5681818181818182
+    "initializing": 0.03745318352059925,
+    "evolving": 0.09176029962546817,
+    "coherent": 0.5168539325842697,
+    "exploring": 0.3539325842696629
   },
   "couplingMeans": {
-    "density-entropy": 0.2122,
-    "density-flicker": 0.1498,
-    "density-phase": 0.3151,
-    "density-tension": 0.3349,
-    "density-trust": 0.3228,
-    "entropy-phase": 0.2855,
-    "entropy-trust": 0.233,
-    "flicker-entropy": 0.1409,
-    "flicker-phase": 0.3599,
-    "flicker-trust": 0.2253,
-    "tension-entropy": 0.3549,
-    "tension-flicker": 0.132,
-    "tension-phase": 0.2423,
-    "tension-trust": 0.2415
-  }
+    "density-entropy": 0.2172,
+    "density-flicker": 0.419,
+    "density-phase": 0.3202,
+    "density-tension": 0.3341,
+    "density-trust": 0.2668,
+    "entropy-phase": 0.3136,
+    "entropy-trust": 0.3042,
+    "flicker-entropy": 0.333,
+    "flicker-phase": 0.2733,
+    "flicker-trust": 0.2628,
+    "tension-entropy": 0.3233,
+    "tension-flicker": 0.2634,
+    "tension-phase": 0.3532,
+    "tension-trust": 0.2128
+  },
+  "activeProfile": "atmospheric"
 }

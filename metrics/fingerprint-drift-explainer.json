@@ -1,15 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-03T02:44:54.180Z",
-    "verdict": "EVOLVED"
+    "generated": "2026-03-03T04:24:47.342Z",
+    "verdict": "STABLE"
   },
-  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. fewer notes emitted (32864 -> 19261, 41.4% change).",
-  "explanations": [
-    {
-      "dimension": "noteCount",
-      "delta": 0.41391796494644595,
-      "tolerance": 0.35,
-      "cause": "fewer notes emitted (32864 -> 19261, 41.4% change)"
-    }
-  ]
+  "narrative": "The composition character is statistically stable. No significant drift detected.",
+  "explanations": []
 }
