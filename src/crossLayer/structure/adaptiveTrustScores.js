@@ -7,7 +7,6 @@ adaptiveTrustScores = (() => {
   // to ensure they occasionally act and have a chance to prove their worth.
   const EXPLORATION_THRESHOLD = 0.10; // score below this triggers exploration
   const EXPLORATION_NUDGE     = 0.03; // small positive injection per decay cycle
-  const EXPLORATION_INTERVAL  = 8;    // apply nudge every N decay cycles
 
   // Decay floor: scores cannot decay below this minimum. Prevents trust
   // from collapsing to near-zero for infrequently-active systems where
@@ -76,6 +75,10 @@ adaptiveTrustScores = (() => {
     const p = clamp(payoff, -1, 1);
     const scoreBefore = state.score;
     state.score = clamp(state.score * 0.9 + p * 0.1, -1, TRUST_CEILING);
+
+    // R14 Evo 1: True Trust Score Floor Injection
+    if (systemName === trustSystems.names.CADENCE_ALIGNMENT && state.score < 0.20) state.score = 0.20;
+
     state.samples += 1;
     state.lastMs = beatStartTime * 1000;
 
@@ -118,11 +121,25 @@ adaptiveTrustScores = (() => {
     return clamp(1 + effectiveScore * TRUST_WEIGHT_MULTIPLIER, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
   }
 
+  let lastTensionForExploration = 1.0;
+  let accumulatedTensionDelta = 0;
+
   /** @param {number} [rate=0.01] */
   function decayAll(rate) {
     const decayRate = clamp(V.optionalFinite(rate, 0.01), 0, 1);
     decayCycleCount++;
-    const applyExploration = (decayCycleCount % EXPLORATION_INTERVAL) === 0;
+
+    const currentTension = safePreBoot.call(() => signalReader.tension(), 1.0);
+    const resolvedTension = typeof currentTension === 'number' ? currentTension : 1.0;
+    accumulatedTensionDelta += m.abs(resolvedTension - lastTensionForExploration);
+    lastTensionForExploration = resolvedTension;
+
+    let applyExploration = false;
+    // R14 Evo 4: Tension auto-nourishment triggers explore when tension shifts significantly
+    if (accumulatedTensionDelta >= 0.15 || decayCycleCount % 16 === 0) {
+      applyExploration = true;
+      accumulatedTensionDelta = 0;
+    }
 
     // Health-aware exploration: when signalHealthAnalyzer reports trust as
     // strained or worse, double the exploration nudge to accelerate recovery
@@ -134,12 +151,17 @@ adaptiveTrustScores = (() => {
       effectiveNudge = EXPLORATION_NUDGE * 2;
     }
 
-    for (const state of scoreBySystem.values()) {
+    for (const [name, state] of scoreBySystem.entries()) {
       state.score *= (1 - decayRate);
 
       // Decay floor: prevent trust collapse for established systems
       if (state.samples > 16 && state.score < DECAY_FLOOR) {
         state.score = DECAY_FLOOR;
+      }
+
+      // R14 Evo 1: True Trust Score Floor Injection (decay phase)
+      if (name === trustSystems.names.CADENCE_ALIGNMENT && state.score < 0.20) {
+        state.score = 0.20;
       }
 
       // Exploration bonus: periodically nudge starving systems toward neutral

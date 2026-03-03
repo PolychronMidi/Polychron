@@ -124,8 +124,15 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const entropyError = clEntropy ? m.abs(clEntropy.error) : 0;
   const entropyOutcome = clamp(1 - entropyError * 3, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.ENTROPY_REGULATOR, entropyOutcome);
-  // R13 Evo 4: Rest Synchronizer Bias Bump (0.5 -> 0.8 reward)
-  const restOutcome = clRest.shouldRest ? 0.8 : 0.08;
+
+  // R14 Evo 6: Rest Synchronizer Weight Escalation
+  // Boost reward dynamically past prior 0.8 limit up to 1.0 when rest density is high
+  let restOutcome = 0.08;
+  if (clRest.shouldRest) {
+    const restDensityTarget = clIntent ? clIntent.densityTarget : 0.5;
+    const scarcityBonus = clamp(1.0 - restDensityTarget, 0, 0.2); // rewards rests more when density is meant to be sparse
+    restOutcome = clamp(0.8 + scarcityBonus, 0, 1.0);
+  }
   adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
 
