@@ -103,10 +103,19 @@ adaptiveTrustScores = (() => {
     return state.score;
   }
 
+  const TRUST_WEIGHT_MULTIPLIER = 0.75;
+  const TRUST_WEIGHT_MIN = 0.4;
+  const TRUST_WEIGHT_MAX = 1.8;
+
   /** @param {string} systemName */
   function getWeight(systemName) {
     const state = ensure(systemName);
-    return clamp(1 + state.score * 0.75, 0.4, 1.8);
+    let effectiveScore = state.score;
+    // R13 Evo 1: Cadence Alignment Trust Minimum
+    if (systemName === trustSystems.names.CADENCE_ALIGNMENT && effectiveScore < 0.20) effectiveScore = 0.20;
+    // R13 Evo 5: Stutter Weight Dampening
+    if (systemName === trustSystems.names.STUTTER_CONTAGION && effectiveScore > 0.55) effectiveScore = 0.55;
+    return clamp(1 + effectiveScore * TRUST_WEIGHT_MULTIPLIER, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
   }
 
   /** @param {number} [rate=0.01] */

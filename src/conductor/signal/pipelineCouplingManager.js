@@ -213,6 +213,7 @@ pipelineCouplingManager = (() => {
         const ps = _getPairState(key);
 
         // -- Adaptive gain logic --
+        const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
         if (absCorr > target) {
           const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
           // Freeze gain if either axis in this pair is saturated -
@@ -230,7 +231,9 @@ pipelineCouplingManager = (() => {
           }
         } else {
           // Below target - relax gain back toward initial
-          ps.gain = clamp(ps.gain - GAIN_RELAX_RATE, GAIN_INIT, GAIN_MAX);
+          // R13 Evo 2: Entropy-Coupling Penalty - faster deadband relaxation rate for entropy
+          const relaxRate = isEntropyPair ? GAIN_RELAX_RATE * 2 : GAIN_RELAX_RATE;
+          ps.gain = clamp(ps.gain - relaxRate, GAIN_INIT, GAIN_MAX);
         }
         ps.lastAbsCorr = absCorr;
 
@@ -240,7 +243,9 @@ pipelineCouplingManager = (() => {
 
         // -- #1: Self-calibrate coupling target --
         const at = _getAdaptiveTarget(key);
-        at.rollingAbsCorr = at.rollingAbsCorr * (1 - _TARGET_ADAPT_EMA) + absCorr * _TARGET_ADAPT_EMA;
+        // R13 Evo 2: Modulate adapt EMA for entropy pairs tighter to limit runaway phase velocity
+        const adaptEma = isEntropyPair ? _TARGET_ADAPT_EMA * 2.5 : _TARGET_ADAPT_EMA;
+        at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
         // Intractable: rolling avg far above target despite near-max gain - relax
         if (at.rollingAbsCorr > at.current * 1.8 && ps.gain > GAIN_MAX * 0.85) {
           at.current = clamp(at.current + _TARGET_RELAX_RATE, _TARGET_MIN, _TARGET_MAX);

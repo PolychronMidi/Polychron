@@ -124,8 +124,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const entropyError = clEntropy ? m.abs(clEntropy.error) : 0;
   const entropyOutcome = clamp(1 - entropyError * 3, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.ENTROPY_REGULATOR, entropyOutcome);
-  // restSynchronizer: reward meaningful shared rests (breathing room), penalize stagnation
-  const restOutcome = clRest.shouldRest ? 0.5 : 0.08;
+  // R13 Evo 4: Rest Synchronizer Bias Bump (0.5 -> 0.8 reward)
+  const restOutcome = clRest.shouldRest ? 0.8 : 0.08;
   adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
 

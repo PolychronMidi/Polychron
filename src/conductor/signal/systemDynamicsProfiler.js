@@ -35,6 +35,8 @@ systemDynamicsProfiler = (() => {
   let beatsSeen = 0;
   let _entropySampleErrors = 0;
   let _lastEntropyError = '';
+  // R13 Evo 6: Velocity EMA
+  let _velocityEma = null;
 
   // -- Per-dimension z-score normalization --
   // Pipeline products (density/tension/flicker) are multiplicative products of
@@ -253,6 +255,12 @@ systemDynamicsProfiler = (() => {
       avgVelocity += phaseSpaceMath.magnitude(velocities[i]);
     }
     avgVelocity /= m.max(1, velocities.length);
+
+    // R13 Evo 6: Profiler Tension Velocity Smoothing
+    // Apply EMA to lower mid-curve velocity jitter, giving the arc more definition
+    if (_velocityEma === null) _velocityEma = avgVelocity;
+    _velocityEma = _velocityEma * 0.85 + avgVelocity * 0.15;
+    avgVelocity = _velocityEma;
 
     // -- Trajectory curvature (mean angle between consecutive velocities) --
     let avgCurvature = 0;
