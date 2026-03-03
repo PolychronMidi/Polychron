@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-03T06:42:47.234Z",
+    "generated": "2026-03-03T08:05:01.344Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 387,
     "totalGlobals": 686,
     "totalProvides": 701,
-    "totalConsumes": 2643,
-    "totalEdges": 2009,
-    "crossSubsystemEdges": 1417,
+    "totalConsumes": 2646,
+    "totalEdges": 2012,
+    "crossSubsystemEdges": 1419,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 205
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 143,
         "provides": 189,
-        "consumes": 731
+        "consumes": 733
       },
       "rhythm": {
         "files": 30,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 45,
         "provides": 40,
-        "consumes": 329
+        "consumes": 330
       },
       "writer": {
         "files": 4,
@@ -1095,6 +1095,8 @@
         "eventBus",
         "moduleLifecycle",
         "pipelineNormalizer",
+        "regimeClassifier",
+        "safePreBoot",
         "validator"
       ]
     },
@@ -5612,6 +5614,7 @@
         "safePreBoot",
         "sectionIndex",
         "signalHealthAnalyzer",
+        "signalReader",
         "trustSystems",
         "validator",
         "velocity"
@@ -9747,6 +9750,13 @@
     },
     {
       "from": "src/conductor/signal/regimeClassifier.js",
+      "to": "src/conductor/conductorIntelligence.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/regimeClassifier.js",
       "to": "src/conductor/signal/systemDynamicsProfiler.js",
       "globals": [
         "regimeClassifier"
@@ -9881,6 +9891,13 @@
     {
       "from": "src/conductor/signal/signalReader.js",
       "to": "src/crossLayer/conductorSignalBridge.js",
+      "globals": [
+        "signalReader"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/signalReader.js",
+      "to": "src/crossLayer/structure/adaptiveTrustScores.js",
       "globals": [
         "signalReader"
       ]
@@ -19123,6 +19140,13 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/conductorDampening.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/conductorIntelligence.js",
       "globals": [
         "safePreBoot"
       ]

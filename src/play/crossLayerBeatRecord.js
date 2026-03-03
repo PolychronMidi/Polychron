@@ -21,6 +21,8 @@ let _traceCachedDynamicsSnap = null;
 // trust recovery from the cold-start deficit.
 let _cadenceDroughtBeats = 0;
 const CADENCE_DROUGHT_THRESHOLD = 20;
+let _restDroughtBeats = 0;
+const REST_DROUGHT_THRESHOLD = 16;
 
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const {
@@ -108,10 +110,13 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     _cadenceDroughtBeats++;
   }
   const fop = tp.feedbackOscillator;
+  const dynamicsSnapshot = systemDynamicsProfiler.getSnapshot();
+  const velocityForFeedback = (dynamicsSnapshot && Number.isFinite(dynamicsSnapshot.velocity)) ? dynamicsSnapshot.velocity : 0;
+  const velocitySupport = clamp(velocityForFeedback * 4, 0, 0.12);
   // feedbackOscillator: idle beats get readiness payoff; active gets base + energy
   const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)
-    ? 0.12
-    : clamp(0.20 + clFeedbackEnergy + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
+    ? clamp(0.12 + velocitySupport, -1, 1)
+    : clamp(0.20 + clFeedbackEnergy + velocitySupport + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.STUTTER_CONTAGION, stutterOutcome);
   adaptiveTrustScores.registerOutcome(trustSystems.names.PHASE_LOCK, phaseOutcome);
   adaptiveTrustScores.registerOutcome(trustSystems.names.CADENCE_ALIGNMENT, cadenceOutcome);
@@ -131,7 +136,13 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   if (clRest.shouldRest) {
     const restDensityTarget = clIntent ? clIntent.densityTarget : 0.5;
     const scarcityBonus = clamp(1.0 - restDensityTarget, 0, 0.2); // rewards rests more when density is meant to be sparse
-    restOutcome = clamp(0.8 + scarcityBonus, 0, 1.0);
+    const droughtBonus = _restDroughtBeats >= REST_DROUGHT_THRESHOLD
+      ? clamp((_restDroughtBeats - REST_DROUGHT_THRESHOLD + 1) * 0.01, 0, 0.12)
+      : 0;
+    restOutcome = clamp(0.8 + scarcityBonus + droughtBonus, 0, 1.0);
+    _restDroughtBeats = 0;
+  } else {
+    _restDroughtBeats++;
   }
   adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
