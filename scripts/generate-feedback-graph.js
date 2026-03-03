@@ -19,8 +19,8 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const SRC  = path.join(ROOT, 'src');
-const DOC  = path.join(ROOT, 'doc');
-const GRAPH_PATH = path.join(DOC, 'FEEDBACK_GRAPH.json');
+const METRICS  = path.join(ROOT, 'metrics');
+const GRAPH_PATH = path.join(METRICS, 'FEEDBACK_GRAPH.json');
 
 const CHECK_MODE = process.argv.includes('--check');
 
