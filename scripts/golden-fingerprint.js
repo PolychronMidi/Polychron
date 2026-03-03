@@ -198,7 +198,8 @@ function computeFingerprint() {
     trustConvergence,
     trustFinal,
     regimeDistribution,
-    couplingMeans
+    couplingMeans,
+    activeProfile: (manifest && manifest.config && manifest.config.activeProfile) || 'unknown'
   };
 }
 
@@ -213,7 +214,7 @@ function compareFingerprints(current, previous) {
   const noteRatio = Math.abs(current.noteCount.total - previous.noteCount.total) / prevTotal;
   const notePass = noteRatio <= TOLERANCES.noteCountRatio;
   if (!notePass) drifted++;
-  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: TOLERANCES.noteCountRatio, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total });
+  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: TOLERANCES.noteCountRatio, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
 
   // Pitch entropy
   const pitchDelta = Math.abs(current.pitchEntropy - previous.pitchEntropy);
@@ -252,9 +253,12 @@ function compareFingerprints(current, previous) {
     regimeDivergence += Math.abs(p - q);
   }
   regimeDivergence /= Math.max(allRegimes.size, 1);
-  const regimePass = regimeDivergence <= TOLERANCES.regimeDistributionDelta;
+  // R10 Evo 5: profile-adaptive tolerance — explosive allows more flux, ambient demands stability
+  const PROFILE_REGIME_TOLERANCE = { explosive: 0.30, atmospheric: 0.25, ambient: 0.15, minimal: 0.15 };
+  const effectiveRegimeTolerance = PROFILE_REGIME_TOLERANCE[current.activeProfile] || TOLERANCES.regimeDistributionDelta;
+  const regimePass = regimeDivergence <= effectiveRegimeTolerance;
   if (!regimePass) drifted++;
-  results.push({ dimension: 'regimeDistribution', delta: regimeDivergence, tolerance: TOLERANCES.regimeDistributionDelta, status: regimePass ? 'stable' : 'drifted' });
+  results.push({ dimension: 'regimeDistribution', delta: regimeDivergence, tolerance: effectiveRegimeTolerance, status: regimePass ? 'stable' : 'drifted' });
 
   // Coupling means
   const allPairs = new Set([...Object.keys(current.couplingMeans), ...Object.keys(previous.couplingMeans)]);

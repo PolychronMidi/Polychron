@@ -71,8 +71,8 @@ systemDynamicsProfiler = (() => {
       const profileName = conductorConfig.getActiveProfileName();
       if (profileName === 'explosive') {
         regimeClassifier.setOscillatingThreshold(0.65);
-        // R8 Evo 5 / R9 Evo 2: softened from 0.80 to 0.88 to reintroduce ~10-15% exploring
-        regimeClassifier.setCoherentThresholdScale(0.88);
+        // R8 Evo 5 / R9 Evo 2 / R10 Evo 1: 0.80->0.88 overshot (56.8% exploring); 0.84 targets ~25-35% exploring
+        regimeClassifier.setCoherentThresholdScale(0.84);
         // R8 Evo 4: widen flicker target range for explosive depthScale 1.8
         conductorDampening.setFlickerTargetRange(0.15 * 1.8);
         // R9 Evo 3: give density-flicker pair 30% extra gain ceiling for decorrelation

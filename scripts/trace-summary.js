@@ -82,6 +82,8 @@ function summarizeTrace(entries) {
   const stageTimingAgg = {}; // per-stage min/max/avg across all beats
   const BEAT_SETUP_BUDGET_MS = 200; // R9 Evo 5: flag beats where beat-setup exceeds this
   let beatSetupExceeded = 0;
+  const beatSetupSpikeIndices = []; // R10 Evo 3: record which beats exceeded the budget
+  const couplingRawSeries = {}; // R10 Evo 6: signed coupling values for Pearson correlation
 
   let firstBeatKey = null;
   let lastBeatKey = null;
@@ -117,11 +119,14 @@ function summarizeTrace(entries) {
     const couplingKeys = Object.keys(cm);
     for (let j = 0; j < couplingKeys.length; j++) {
       const key = couplingKeys[j];
-      const value = Math.abs(toNum(cm[key], 0));
+      const raw = toNum(cm[key], 0);
+      const value = Math.abs(raw);
       if (!couplingAbs[key]) couplingAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
       if (!couplingSeries[key]) couplingSeries[key] = [];
+      if (!couplingRawSeries[key]) couplingRawSeries[key] = [];
       updateMinMax(couplingAbs[key], value);
       couplingSeries[key].push(value);
+      couplingRawSeries[key].push(raw);
     }
 
     const trust = e.trust && typeof e.trust === 'object' ? e.trust : {};
@@ -164,7 +169,11 @@ function summarizeTrace(entries) {
       }
       // R9 Evo 5: count beats where beat-setup exceeds the budget
       const setupMs = toNum(st['beat-setup'], NaN);
-      if (Number.isFinite(setupMs) && setupMs > BEAT_SETUP_BUDGET_MS) beatSetupExceeded++;
+      if (Number.isFinite(setupMs) && setupMs > BEAT_SETUP_BUDGET_MS) {
+        beatSetupExceeded++;
+        // R10 Evo 3: record index and timing of spike beats
+        beatSetupSpikeIndices.push({ index: i, ms: Number(setupMs.toFixed(4)) });
+      }
     }
   }
 
@@ -179,6 +188,42 @@ function summarizeTrace(entries) {
   for (let i = 0; i < couplingKeys.length; i++) {
     const key = couplingKeys[i];
     couplingTail[key] = summarizeTail(couplingSeries[key], [0.50, 0.70, 0.85]);
+  }
+
+  // R10 Evo 4: coupling hotspot detection (pairs with p95 > 0.70)
+  const couplingHotspots = [];
+  for (let i = 0; i < couplingKeys.length; i++) {
+    const key = couplingKeys[i];
+    const tail = couplingTail[key];
+    if (tail && tail.p95 !== null && tail.p95 > 0.70) {
+      couplingHotspots.push({ pair: key, p95: tail.p95, avg: couplingSummary[key].avg });
+    }
+  }
+
+  // R10 Evo 6: Pearson correlation direction for each coupling pair
+  const couplingCorrelation = {};
+  for (let i = 0; i < couplingKeys.length; i++) {
+    const key = couplingKeys[i];
+    const raw = couplingRawSeries[key];
+    if (!raw || raw.length < 2) continue;
+    const n = raw.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    // Correlate coupling value against beat index (temporal trend)
+    for (let j = 0; j < n; j++) {
+      sumX += j;
+      sumY += raw[j];
+      sumXY += j * raw[j];
+      sumX2 += j * j;
+      sumY2 += raw[j] * raw[j];
+    }
+    const denom = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    const r = denom > 0 ? (n * sumXY - sumX * sumY) / denom : 0;
+    const meanVal = sumY / n;
+    couplingCorrelation[key] = {
+      pearsonR: Number(r.toFixed(4)),
+      meanSigned: Number(meanVal.toFixed(4)),
+      direction: r > 0.3 ? 'increasing' : r < -0.3 ? 'decreasing' : 'stable'
+    };
   }
 
   const trustScoreSummary = {};
@@ -223,6 +268,8 @@ function summarizeTrace(entries) {
     },
     couplingAbs: couplingSummary,
     couplingTail,
+    couplingHotspots,
+    couplingCorrelation,
     trustScoreAbs: trustScoreSummary,
     trustWeightAbs: trustWeightSummary,
     trustAbs: trustSummary,
@@ -237,7 +284,8 @@ function summarizeTrace(entries) {
       thresholdMs: BEAT_SETUP_BUDGET_MS,
       exceededCount: beatSetupExceeded,
       totalBeats: entries.length,
-      exceededRate: entries.length > 0 ? Number((beatSetupExceeded / entries.length).toFixed(4)) : 0
+      exceededRate: entries.length > 0 ? Number((beatSetupExceeded / entries.length).toFixed(4)) : 0,
+      spikeIndices: beatSetupSpikeIndices
     }
   };
 }
