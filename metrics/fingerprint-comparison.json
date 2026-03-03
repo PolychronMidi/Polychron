@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-03T08:05:02.967Z",
-    "currentRun": "2026-03-03T08:05:02.964Z",
-    "previousRun": "2026-03-03T06:42:49.685Z"
+    "generated": "2026-03-03T13:44:51.778Z",
+    "currentRun": "2026-03-03T13:44:51.774Z",
+    "previousRun": "2026-03-03T08:05:02.964Z"
   },
   "verdict": "STABLE",
   "driftedDimensions": 0,
@@ -19,69 +19,69 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.1546737147749693,
+      "delta": 0.1736392460806764,
       "tolerance": 0.5,
       "status": "stable",
-      "current": 22708,
-      "previous": 26863,
+      "current": 18765,
+      "previous": 22708,
       "perLayer": {
-        "currentL1": 9936,
-        "currentL2": 12772,
-        "previousL1": 13531,
-        "previousL2": 13332
+        "currentL1": 9349,
+        "currentL2": 9416,
+        "previousL1": 9936,
+        "previousL2": 12772
       }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.07421992004185007,
+      "delta": 0.1138877432409231,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.421862364937863,
-      "previous": 6.347642444896013
+      "current": 6.30797462169694,
+      "previous": 6.421862364937863
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.0030100634013833314,
+      "delta": 0.00473637711763804,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.013003748200189166,
-      "previous": 0.009993684798805835
+      "current": 0.008267371082551126,
+      "previous": 0.013003748200189166
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.08512961340540798,
+      "delta": 0.1402851080211712,
       "tolerance": 0.3,
       "status": "stable",
       "current": [
+        0.3900808045334501,
+        0.6458130927583038,
+        0.46801824846753004,
+        0.40190731536894103
+      ],
+      "previous": [
         0.33248340808490784,
         0.6596132139867834,
         0.5492253290362114,
         0.6638560751903746
-      ],
-      "previous": [
-        0.40579430158750873,
-        0.615631682741172,
-        0.6453900071117529,
-        0.7753535944811012
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.018950000000000022,
+      "delta": 0.006975000000000009,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.3471375,
-      "previous": 0.32818749999999997
+      "current": 0.3541125,
+      "previous": 0.3471375
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.22345969872206753,
+      "delta": 0.11165723301943498,
       "tolerance": 0.3,
       "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.07585714285714286,
+      "delta": 0.07937142857142857,
       "tolerance": 0.25,
       "status": "stable"
     },
@@ -92,32 +92,32 @@
       "status": "stable",
       "flipDetails": [
         {
+          "pair": "density-entropy",
+          "from": "increasing",
+          "to": "stable"
+        },
+        {
           "pair": "density-phase",
-          "from": "increasing",
-          "to": "stable"
-        },
-        {
-          "pair": "entropy-trust",
-          "from": "decreasing",
-          "to": "increasing"
-        },
-        {
-          "pair": "flicker-entropy",
-          "from": "increasing",
-          "to": "stable"
-        },
-        {
-          "pair": "flicker-phase",
           "from": "stable",
           "to": "increasing"
         },
         {
-          "pair": "tension-entropy",
-          "from": "decreasing",
+          "pair": "density-tension",
+          "from": "stable",
+          "to": "increasing"
+        },
+        {
+          "pair": "entropy-trust",
+          "from": "increasing",
           "to": "stable"
         },
         {
-          "pair": "tension-flicker",
+          "pair": "tension-entropy",
+          "from": "stable",
+          "to": "decreasing"
+        },
+        {
+          "pair": "tension-trust",
           "from": "decreasing",
           "to": "stable"
         }
