@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-03T04:24:47.341Z",
-    "currentRun": "2026-03-03T04:24:47.337Z",
-    "previousRun": "2026-03-03T02:44:54.170Z"
+    "generated": "2026-03-03T06:42:49.689Z",
+    "currentRun": "2026-03-03T06:42:49.685Z",
+    "previousRun": "2026-03-03T04:24:47.337Z"
   },
   "verdict": "STABLE",
   "driftedDimensions": 0,
@@ -19,77 +19,109 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.30263226208400396,
-      "tolerance": 0.65,
+      "delta": 0.07066560382622558,
+      "tolerance": 0.5,
       "status": "stable",
-      "current": 25090,
-      "previous": 19261,
+      "current": 26863,
+      "previous": 25090,
       "perLayer": {
-        "currentL1": 9079,
-        "currentL2": 16011,
-        "previousL1": 8253,
-        "previousL2": 11008
+        "currentL1": 13531,
+        "currentL2": 13332,
+        "previousL1": 9079,
+        "previousL2": 16011
       }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.018701609000075337,
+      "delta": 0.044472153323916075,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.392114598219929,
-      "previous": 6.410816207220004
+      "current": 6.347642444896013,
+      "previous": 6.392114598219929
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.0026533899636289222,
+      "delta": 0.0035730710127278107,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.013566755811533646,
-      "previous": 0.016220145775162568
+      "current": 0.009993684798805835,
+      "previous": 0.013566755811533646
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.13657475375336872,
+      "delta": 0.22006939270025372,
       "tolerance": 0.3,
       "status": "stable",
       "current": [
+        0.40579430158750873,
+        0.615631682741172,
+        0.6453900071117529,
+        0.7753535944811012
+      ],
+      "previous": [
         0.28898663203215663,
         0.7541583819446316,
         0.5246052612948071,
         0.39286239519331156
-      ],
-      "previous": [
-        0.43137091670091204,
-        0.6403763826481812,
-        0.3738128138584408
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.00797500000000001,
+      "delta": 0.006237499999999951,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.32195,
-      "previous": 0.313975
+      "current": 0.32818749999999997,
+      "previous": 0.32195
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.0765623089832072,
-      "tolerance": 0.39,
+      "delta": 0.08103107200109144,
+      "tolerance": 0.3,
       "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.07751428571428572,
-      "tolerance": 0.325,
+      "delta": 0.11417857142857143,
+      "tolerance": 0.25,
       "status": "stable"
     },
     {
-      "dimension": "crossProfileWarning",
-      "delta": 0,
-      "tolerance": 0,
+      "dimension": "correlationTrend",
+      "delta": 0.42857142857142855,
+      "tolerance": 1,
       "status": "stable",
-      "note": "Profiles differ (atmospheric -> explosive); tolerances widened 1.3x"
+      "flipDetails": [
+        {
+          "pair": "density-entropy",
+          "from": "decreasing",
+          "to": "increasing"
+        },
+        {
+          "pair": "density-tension",
+          "from": "increasing",
+          "to": "stable"
+        },
+        {
+          "pair": "entropy-trust",
+          "from": "stable",
+          "to": "decreasing"
+        },
+        {
+          "pair": "flicker-entropy",
+          "from": "stable",
+          "to": "increasing"
+        },
+        {
+          "pair": "flicker-phase",
+          "from": "increasing",
+          "to": "stable"
+        },
+        {
+          "pair": "tension-trust",
+          "from": "stable",
+          "to": "decreasing"
+        }
+      ]
     }
   ]
 }

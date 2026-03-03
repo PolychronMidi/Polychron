@@ -148,12 +148,25 @@ conductorIntelligence = (() => {
   }
 
   /** @returns {number} product of all flicker modifiers (dampened + soft-envelope normalized) */
-  function collectFlickerModifier() { return pipelineNormalizer.normalize('flicker', _collectDampened(flickerModifiers, 'flicker')); }
+  function collectFlickerModifier() {
+    let raw = _collectDampened(flickerModifiers, 'flicker');
+    // R14 Evo 3: Flicker Target Expansion in Evolving Regime
+    const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);
+    if (isEvolving) {
+      raw *= 1.15;
+    }
+    return pipelineNormalizer.normalize('flicker', raw);
+  }
 
   /** @returns {{ product: number, rawProduct: number, floored: boolean, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectFlickerModifierWithAttribution() {
     const result = _collectDampenedWithAttribution(flickerModifiers, 'flicker');
-    const rawProduct = result.product;
+    let rawProduct = result.product;
+    // R14 Evo 3: Flicker Target Expansion in Evolving Regime
+    const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);
+    if (isEvolving) {
+      rawProduct *= 1.15;
+    }
     const product = pipelineNormalizer.normalize('flicker', rawProduct);
     return {
       product,

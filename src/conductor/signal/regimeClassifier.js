@@ -82,8 +82,16 @@ regimeClassifier = (() => {
     // by up to 0.05 based on exploring duration (adds to duration bonus).
     const coherentFloorBonus = exploringBeats > 100 ? clamp((exploringBeats - 100) * 0.0005, 0, 0.05) : 0;
     const durationBonus = lastRegime === 'exploring' ? clamp(m.floor(exploringBeats / 50) * 0.02, 0, 0.12) : 0;
+
+    // R14 Evo 2: Exploring Convergence Acceleration
+    // Force transition to evolving or coherent faster if stuck exploring for > 32 beats
+    let convergenceBonus = 0;
+    if (lastRegime === 'exploring' && exploringBeats > 32) {
+      convergenceBonus = clamp((exploringBeats - 32) * 0.005, 0, 0.15);
+    }
+
     const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
-    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus;
+    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus;
     if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape

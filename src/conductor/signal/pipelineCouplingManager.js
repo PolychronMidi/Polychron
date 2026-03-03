@@ -126,7 +126,7 @@ pipelineCouplingManager = (() => {
   const _FLICKER_AXIS_BUDGET = _AXIS_BUDGET * 1.5; // 0.36
 
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
-  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[] }>} */
+  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number }>} */
   const _pairState = {};
 
   /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
@@ -136,12 +136,12 @@ pipelineCouplingManager = (() => {
   /**
    * Get or create adaptive state for a pair.
    * @param {string} key
-   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[] }}
+   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number }}
    */
   function _getPairState(key) {
     if (!_pairState[key]) {
       const initGain = PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT;
-      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [] };
+      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0 };
     }
     return _pairState[key];
   }
@@ -222,10 +222,15 @@ pipelineCouplingManager = (() => {
           if (!improving && !pairSaturated) {
             // Emergency escalation: when |r| > 2x target, escalate 3x faster
             let rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
-            // R11 Evo 2: Persistent hotspot escalation -- when rolling p95 stays
-            // above 1.5x target, boost escalation rate to break entrenched coupling.
+            // R11 Evo 2: Persistent hotspot escalation
             const p95 = _computeP95(ps.recentAbsCorr);
-            if (p95 > target * 1.5) rate *= 1.5;
+            if (p95 > target * 1.5) {
+              rate *= 1.5;
+              // R14 Evo 5: Hotspot Heat Penalty Tracking
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.05, 1.0);
+            } else {
+              ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.01);
+            }
             const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
@@ -234,6 +239,7 @@ pipelineCouplingManager = (() => {
           // R13 Evo 2: Entropy-Coupling Penalty - faster deadband relaxation rate for entropy
           const relaxRate = isEntropyPair ? GAIN_RELAX_RATE * 2 : GAIN_RELAX_RATE;
           ps.gain = clamp(ps.gain - relaxRate, GAIN_INIT, GAIN_MAX);
+          ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.05);
         }
         ps.lastAbsCorr = absCorr;
 
@@ -271,15 +277,23 @@ pipelineCouplingManager = (() => {
         const bIsNudgeable = NUDGEABLE_SET.has(dimB);
         if (!aIsNudgeable && !bIsNudgeable) continue;
 
-        const excess = absCorr - target;
-        const direction = -m.sign(corr);
-        const magnitude = ps.gain * excess;
-
         if (aIsNudgeable && bIsNudgeable) {
+          const excess = absCorr - target;
+          const direction = -m.sign(corr);
+          // R14 Evo 5: Escalate magnitude via exponential heat penalty curve
+          const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
+          const magnitude = ps.gain * excess * heatMulti;
+
           const half = magnitude * 0.5;
           _addNudge(dimA, -direction * half);
           _addNudge(dimB, direction * half);
         } else {
+          const excess = absCorr - target;
+          const direction = -m.sign(corr);
+          // R14 Evo 5: Escalate magnitude via exponential heat penalty curve
+          const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
+          const magnitude = ps.gain * excess * heatMulti;
+
           const nudgeAxis = aIsNudgeable ? dimA : dimB;
           _addNudge(nudgeAxis, direction * magnitude);
         }
