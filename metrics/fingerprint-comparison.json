@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-03T19:49:00.370Z",
-    "currentRun": "2026-03-03T19:49:00.365Z",
-    "previousRun": "2026-03-03T18:22:29.671Z"
+    "generated": "2026-03-03T21:20:46.882Z",
+    "currentRun": "2026-03-03T21:20:46.878Z",
+    "previousRun": "2026-03-03T19:49:00.365Z"
   },
   "verdict": "STABLE",
   "driftedDimensions": 0,
@@ -19,100 +19,95 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.06958021851638872,
-      "tolerance": 0.65,
+      "delta": 0.2187324418473986,
+      "tolerance": 0.52,
       "status": "stable",
-      "current": 17798,
-      "previous": 19129,
+      "current": 21691,
+      "previous": 17798,
       "perLayer": {
-        "currentL1": 8542,
-        "currentL2": 9256,
-        "previousL1": 8214,
-        "previousL2": 10915
+        "currentL1": 10408,
+        "currentL2": 11283,
+        "previousL1": 8542,
+        "previousL2": 9256
       }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.0016185162099819905,
+      "delta": 0.07549289887839361,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.321780438248742,
-      "previous": 6.32016192203876
+      "current": 6.397273337127135,
+      "previous": 6.321780438248742
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.011691374229234733,
+      "delta": 0.006117154473519957,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.014251453509132709,
-      "previous": 0.025942827738367442
+      "current": 0.008134299035612752,
+      "previous": 0.014251453509132709
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.12510215561485102,
+      "delta": 0.2755747107669393,
       "tolerance": 0.3,
       "status": "stable",
       "current": [
+        0.4151277647754322,
+        0.588321255953728,
+        0.6248359585710773,
+        0.7995718906053514
+      ],
+      "previous": [
         0.34992643824782665,
         0.7687442110534058,
         0.3904396737851806,
         0.33911514906730206
-      ],
-      "previous": [
-        0.37015560072399395,
-        0.6098668032369963,
-        0.5116647748384126,
-        0.4882976631351861
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.0242,
+      "delta": 0.02381249999999996,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.37682499999999997,
-      "previous": 0.35262499999999997
+      "current": 0.3530125,
+      "previous": 0.37682499999999997
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.09620224755125925,
-      "tolerance": 0.39,
+      "delta": 0.10459395051667819,
+      "tolerance": 0.325,
       "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.11697857142857145,
+      "delta": 0.13494285714285714,
       "tolerance": 0.325,
       "status": "stable"
     },
     {
       "dimension": "correlationTrend",
-      "delta": 0.35714285714285715,
+      "delta": 0.2857142857142857,
       "tolerance": 1,
       "status": "stable",
       "flipDetails": [
         {
-          "pair": "density-tension",
-          "from": "increasing",
+          "pair": "density-entropy",
+          "from": "decreasing",
           "to": "stable"
         },
         {
-          "pair": "entropy-phase",
+          "pair": "density-phase",
           "from": "decreasing",
           "to": "increasing"
         },
         {
-          "pair": "flicker-phase",
-          "from": "stable",
-          "to": "increasing"
+          "pair": "flicker-entropy",
+          "from": "decreasing",
+          "to": "stable"
         },
         {
-          "pair": "tension-flicker",
-          "from": "increasing",
-          "to": "decreasing"
-        },
-        {
-          "pair": "tension-trust",
+          "pair": "tension-phase",
           "from": "stable",
           "to": "increasing"
         }
@@ -123,7 +118,7 @@
       "delta": 0,
       "tolerance": 0,
       "status": "stable",
-      "note": "Profiles differ (atmospheric -> explosive); tolerances widened 1.3x"
+      "note": "Profiles differ (explosive -> atmospheric); tolerances widened 1.3x"
     }
   ]
 }

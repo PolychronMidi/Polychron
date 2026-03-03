@@ -1,3 +1,50 @@
+## R20 — 2026-03-03 — STABLE
+
+**Profile:** atmospheric | **Beats:** 611 | **Duration:** 76.1s | **Notes:** 21,691
+**Fingerprint:** 9/9 stable | Drifted: none | Cross-profile: explosive→atmospheric (1.3x widening)
+
+### Key Observations
+- **Homeostasis governor (Hypermeta #12) was COMPLETELY INACTIVE.** globalGainMultiplier=1.0 (never throttled), redistributionScore=0.042 (far below 0.30 trigger), totalEnergyEma=1.976 vs energyBudget=3.471 (never exceeded). Root causes: (1) safePreBoot wrapper returned null on most beats → only 72/611 processed, (2) EMA alpha=0.03 too slow to converge in 72 beats, (3) section dampening (×0.7) destroyed cross-section signal after 5 sections (retained only 17% vs goal 60%), (4) budget derived from static baselines (3.471) was unreachable by dampened EMA (1.976), (5) redistribution thresholds (|delta|<2%, turbulence>0.01) too tight for noisy beat-to-beat matrix.
+- **Total coupling energy INCREASED 15.4%**: 3.643→4.205. Governor failure allowed unconstrained energy growth. The whole-system energy governance paradigm proved necessary but was not functional.
+- **Phase-axis MASSIVE SURGE (new whack-a-mole target):** density-phase avg +95% (0.222→0.433), flicker-phase +221% (0.133→0.427), tension-phase +81% (0.183→0.332). Phase coupling was negligible in R19, now dominant. Classic balloon effect: trust-axis/entropy-axis compression → phase-axis expansion.
+- **Regime saturation REGRESSED HARD:** coherent 53.6%→69.7% (+16pts), maxConsecutiveCoherent 256→426, evolving 7.9%→2.8% (-5pts). Profile changed explosive→atmospheric, and alpha floor 0.01 (~100-beat) converges too slowly: after 426 consecutive coherent beats, alpha floors at 0.01, _coherentShareEma→~0.986, no relaxation penalty fires.
+- **Flicker product feedback loop:** Product 0.825 triggered sigmoid scalar=0.15 (85% gain kill for flicker pairs), but existing compressed bias (0.814) persisted → vicious cycle. pipelineCouplingManager flicker bias reversed from expansive 1.176→compressive 0.814.
+- **4 pairs at GAIN_MAX (0.60):** density-tension (heat 0.40), tension-entropy (heat 0.24), flicker-entropy (heat 0.45), entropy-trust (heat 0.30). Heat penalties accumulating but gains already capped.
+- **Trust system:** coherenceMonitor dominant at 0.709, phaseLock improved +16% (0.388→0.452). entropyRegulator dropped -22% (0.423→0.328), stutterContagion dropped -22% (0.531→0.413). Overall convergence 0.377→0.353 (-6%).
+- **Hotspots reduced from 5→3** (p95>0.70): density-flicker 0.809 (was 0.93), density-phase 0.732 (new), flicker-phase 0.809 (new). Phase-axis hotspots replaced entropy-axis ones.
+- **Correlation trend flips:** 4 flips — density-entropy: decreasing→stable, density-phase: decreasing→increasing, flicker-entropy: decreasing→stable, tension-phase: stable→increasing. All confirm phase-axis energy absorption.
+- **Axis totals:** density=0.850 (was 0.689, +23%), tension=1.079 (was 0.989, +9%), flicker=1.011 (was 1.161, -13%), entropy=1.544 (was 1.726, -11%). Entropy-axis improved but density-axis surged.
+- **Gini coefficient 0.383** — near 0.40 threshold but never triggered concentration guard (required >0.40).
+- Pipeline: 16/16 passed, 10/10 tuning invariants, 0/611 beat-setup spikes.
+
+### Evolutions Applied (from R19)
+- E1: Whole-system coupling energy governor (couplingHomeostasis.js) — **refuted** — governor processed only 72/611 beats, globalGainMultiplier=1.0 entire run, total energy increased 15.4%
+- E2: Global gain multiplier interface — **inconclusive** — interface works (setGlobalGainMultiplier called successfully) but multiplier was never <1.0 because governor never triggered
+- E3: Per-pair decorrelation effectiveness rating — **inconclusive** — effectivenessEma computed but not exposed in trace snapshot, unable to verify per-pair diagnostics
+- E4: Dynamic axis budget self-calibration — **inconclusive** — budget derived from homeostasis totalEnergyEma (1.976/15=0.132) but homeostasis EMA was dampened by section resets, producing unreliable input
+- E5: Coupling concentration guard (Gini coefficient) — **partially confirmed** — Gini=0.383 tracked correctly, approaching 0.40 threshold but never fired; formula and mechanism validated
+- E6: Homeostasis trace pipeline + registry integration — **confirmed** — couplingHomeostasis state successfully captured in trace-summary.json, metaControllerRegistry reports 12 controllers, traceDrain serializes all fields
+
+### Evolutions Proposed (for R21)
+- E1: Homeostasis convergence overhaul — src/conductor/signal/couplingHomeostasis.js (remove safePreBoot, triple alpha 0.03→0.10, section dampening 0.70→0.90, halve recalibrate interval)
+- E2: Redistribution detection sensitivity — src/conductor/signal/couplingHomeostasis.js (EMA-smoothed delta/turbulence, lower trigger 0.30→0.15, widen stable threshold 2%→5%)
+- E3: Budget self-derivation from observed peak energy — src/conductor/signal/couplingHomeostasis.js (peak tracking with 0.999/beat decay, budget=peak×0.90)
+- E4: Regime saturation alpha floor raise — src/conductor/signal/regimeClassifier.js (_COHERENT_SHARE_ALPHA_MIN 0.01→0.025 for atmospheric)
+- E5: Flicker product sigmoid hysteresis — src/conductor/signal/pipelineCouplingManager.js (guard/normal states, enter <0.90, exit >0.96, +0.002/beat recovery nudge)
+- E6: Effectiveness EMA trace exposure — src/conductor/signal/pipelineCouplingManager.js, scripts/trace-summary.js (add effectivenessEma to getAdaptiveTargetSnapshot and trace extraction)
+
+### Hypotheses to Track
+- E1/E2/E3: Homeostasis governor should now process ALL beats (beatCount≈totalEntries), not just 72. globalGainMultiplier should dip below 0.90 during redistribution and recover.
+- E1/E3: Budget should self-derive from observed peak (expect ~4.2×0.90=3.78), then tighten as the governor throttles. totalEnergyEma should converge within 50 beats (alpha=0.10).
+- E2: redistributionScore should exceed 0.15 when whack-a-mole activates (total stable, pair turbulence high). Track energyDeltaEma and pairTurbulenceEma for calibration.
+- E4: coherent% should drop below 60%, maxConsecutiveCoherent should be <300, evolving% should recover above 5%.
+- E5: Flicker product should stabilize above 0.90 (hysteresis prevents oscillation across boundary). pipelineCouplingManager flicker bias should stay above 0.90 (recovery nudge breaks vicious cycle).
+- E6: effectivenessEma should be visible per-pair in trace-summary. Pairs with effectivenessEma<0.20 should have gain halved per R19 E3 mechanism.
+- Meta: If homeostasis activates properly, total coupling energy should DECREASE (not just redistribute). Phase-axis surge should be contained by global gain throttle.
+- Meta: Gini coefficient should activate (>0.40) in concentrated-energy scenarios, providing a second throttle mechanism.
+
+---
+
 ## R19 — 2025-07-24 — STABLE
 
 **Profile:** explosive | **Beats:** 478 | **Duration:** 66.1s | **Notes:** 17,798
