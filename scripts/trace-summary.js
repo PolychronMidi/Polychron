@@ -272,7 +272,9 @@ function summarizeTrace(entries) {
   // R18 E5: Extract adaptive coupling target drift from the last trace entry.
   // pipelineCouplingManager writes couplingTargets per beat; we only need the
   // final state to diagnose whether coupling surges are target-drift-driven.
+  // R19 E2: Also extract rawRollingAbsCorr for regime-transparent comparison.
   let adaptiveTargets = null;
+  let axisCouplingTotals = null;
   for (let i = entries.length - 1; i >= 0; i--) {
     if (entries[i].couplingTargets && typeof entries[i].couplingTargets === 'object') {
       const raw = entries[i].couplingTargets;
@@ -287,14 +289,19 @@ function summarizeTrace(entries) {
             drift: Number((ct.current - ct.baseline).toFixed(4)),
             driftRatio: ct.baseline > 0 ? Number((ct.current / ct.baseline).toFixed(2)) : null,
             rollingAbsCorr: ct.rollingAbsCorr,
+            rawRollingAbsCorr: ct.rawRollingAbsCorr != null ? ct.rawRollingAbsCorr : null,
             gain: ct.gain,
             heatPenalty: ct.heatPenalty
           };
         }
       }
       if (Object.keys(result).length > 0) adaptiveTargets = result;
-      break;
     }
+    // R19 E1: Extract per-axis coupling totals from final beat
+    if (!axisCouplingTotals && entries[i].axisCouplingTotals && typeof entries[i].axisCouplingTotals === 'object') {
+      axisCouplingTotals = entries[i].axisCouplingTotals;
+    }
+    if (adaptiveTargets && axisCouplingTotals) break;
   }
 
   return {
@@ -341,7 +348,8 @@ function summarizeTrace(entries) {
       exceededRate: entries.length > 0 ? Number((beatSetupExceeded / entries.length).toFixed(4)) : 0,
       spikeIndices: beatSetupSpikeIndices
     },
-    adaptiveTargets
+    adaptiveTargets,
+    axisCouplingTotals
   };
 }
 

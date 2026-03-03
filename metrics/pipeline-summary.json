@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-03T16:36:13.049Z",
-  "wallTimeSeconds": 2490.7,
+  "generated": "2026-03-03T18:22:31.171Z",
+  "wallTimeSeconds": 3946.2,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -9,7 +9,7 @@
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 1,
+      "elapsedSeconds": 1.1,
       "ok": true
     },
     {
@@ -19,47 +19,47 @@
     },
     {
       "label": "generate-feedback-graph",
-      "elapsedSeconds": 0.2,
-      "ok": true
-    },
-    {
-      "label": "validate-feedback-graph",
-      "elapsedSeconds": 0.2,
-      "ok": true
-    },
-    {
-      "label": "lint",
-      "elapsedSeconds": 8.9,
-      "ok": true
-    },
-    {
-      "label": "typecheck",
-      "elapsedSeconds": 10.1,
-      "ok": true
-    },
-    {
-      "label": "composition",
-      "elapsedSeconds": 2466.1,
-      "ok": true
-    },
-    {
-      "label": "trace-summary",
       "elapsedSeconds": 0.3,
       "ok": true
     },
     {
+      "label": "validate-feedback-graph",
+      "elapsedSeconds": 0.3,
+      "ok": true
+    },
+    {
+      "label": "lint",
+      "elapsedSeconds": 10.4,
+      "ok": true
+    },
+    {
+      "label": "typecheck",
+      "elapsedSeconds": 11.7,
+      "ok": true
+    },
+    {
+      "label": "composition",
+      "elapsedSeconds": 3917.4,
+      "ok": true
+    },
+    {
+      "label": "trace-summary",
+      "elapsedSeconds": 0.5,
+      "ok": true
+    },
+    {
       "label": "check-manifest-health",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.5,
       "ok": true
     },
     {
       "label": "generate-dependency-graph",
-      "elapsedSeconds": 0.4,
+      "elapsedSeconds": 0.6,
       "ok": true
     },
     {
       "label": "generate-conductor-map",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
@@ -69,7 +69,7 @@
     },
     {
       "label": "golden-fingerprint",
-      "elapsedSeconds": 0.9,
+      "elapsedSeconds": 1.2,
       "ok": true
     },
     {

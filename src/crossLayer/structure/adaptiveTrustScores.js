@@ -81,14 +81,19 @@ adaptiveTrustScores = (() => {
     // Replaces per-module hard-coded floors (cadenceAlignment 0.20, restSynchronizer 0.20)
     // with a floor derived from the current population mean. Adapts to whatever the
     // trust ecosystem looks like, eliminating per-module floor additions.
-    // R18 E1: Coefficient raised 0.30->0.50. At 0.30, floor was ~0.103 which was LOWER
-    // than old per-module 0.20 floors, crashing cadenceAlignment avg 51%. At 0.50,
-    // floor ~0.171 restores meaningful support without per-module hardcoding.
+    // R18 E1: Coefficient raised 0.30->0.50.
+    // R19 E5: Self-deriving coefficient from trust score standard deviation.
+    // Widely dispersed scores (high stddev) get higher coefficient for stronger floor;
+    // converged scores (low stddev) get lower coefficient for more differentiation.
+    // coeff = clamp(0.30 + stddev * 1.8, 0.30, 0.60)
     if (scoreBySystem.size > 2) {
-      let _floorSum = 0;
-      let _floorCount = 0;
-      for (const s of scoreBySystem.values()) { _floorSum += s.score; _floorCount++; }
-      const _universalFloor = m.max(0.05, (_floorSum / _floorCount) * 0.50);
+      const _scores = [];
+      for (const s of scoreBySystem.values()) _scores.push(s.score);
+      const _mean = _scores.reduce((a, b) => a + b, 0) / _scores.length;
+      const _variance = _scores.reduce((a, b) => a + (b - _mean) * (b - _mean), 0) / _scores.length;
+      const _stddev = m.sqrt(_variance);
+      const _coeff = clamp(0.30 + _stddev * 1.8, 0.30, 0.60);
+      const _universalFloor = m.max(0.05, _mean * _coeff);
       if (state.score < _universalFloor) state.score = _universalFloor;
     }
 
@@ -167,12 +172,16 @@ adaptiveTrustScores = (() => {
     // R17 structural fix: Compute universal trust floor from population mean
     // before applying per-system decay. Replaces per-module hard-coded floors.
     // R18 E1: Coefficient raised 0.30->0.50 (matches registerOutcome change).
+    // R19 E5: Self-deriving coefficient from trust score standard deviation.
     let _universalDecayFloor = 0.05;
     if (scoreBySystem.size > 2) {
-      let _dfs = 0;
-      let _dfc = 0;
-      for (const s of scoreBySystem.values()) { _dfs += s.score; _dfc++; }
-      _universalDecayFloor = m.max(0.05, (_dfs / _dfc) * 0.50);
+      const _dScores = [];
+      for (const s of scoreBySystem.values()) _dScores.push(s.score);
+      const _dMean = _dScores.reduce((a, b) => a + b, 0) / _dScores.length;
+      const _dVariance = _dScores.reduce((a, b) => a + (b - _dMean) * (b - _dMean), 0) / _dScores.length;
+      const _dStddev = m.sqrt(_dVariance);
+      const _dCoeff = clamp(0.30 + _dStddev * 1.8, 0.30, 0.60);
+      _universalDecayFloor = m.max(0.05, _dMean * _dCoeff);
     }
 
     for (const [, state] of scoreBySystem.entries()) {
