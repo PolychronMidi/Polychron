@@ -20,7 +20,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const SRC  = path.join(ROOT, 'src');
-const DOC  = path.join(ROOT, 'doc');
+const METRICS  = path.join(ROOT, 'metrics');
 
 function readFile(relPath) {
   const abs = path.join(SRC, relPath);
@@ -50,9 +50,9 @@ function findJsFiles(dir) {
 
 // ---- Load FEEDBACK_GRAPH.json ----
 
-const graphPath = path.join(DOC, 'FEEDBACK_GRAPH.json');
+const graphPath = path.join(METRICS, 'FEEDBACK_GRAPH.json');
 if (!fs.existsSync(graphPath)) {
-  console.error('validate-feedback-graph: FATAL - doc/FEEDBACK_GRAPH.json not found');
+  console.error('validate-feedback-graph: FATAL - metrics/FEEDBACK_GRAPH.json not found');
   process.exit(1);
 }
 
