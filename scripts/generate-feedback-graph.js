@@ -1,5 +1,5 @@
 // scripts/generate-feedback-graph.js
-// Auto-generates doc/FEEDBACK_GRAPH.json by scanning source code for
+// Auto-generates metrics/feedback_graph.json by scanning source code for
 // closedLoopController.create() and feedbackRegistry.registerLoop() calls,
 // then merging with manually curated annotations from the existing JSON.
 //
@@ -20,7 +20,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const SRC  = path.join(ROOT, 'src');
 const METRICS  = path.join(ROOT, 'metrics');
-const GRAPH_PATH = path.join(METRICS, 'FEEDBACK_GRAPH.json');
+const GRAPH_PATH = path.join(METRICS, 'feedback_graph.json');
 
 const CHECK_MODE = process.argv.includes('--check');
 
@@ -204,7 +204,7 @@ if (CHECK_MODE) {
     );
   } else {
     console.error(
-      'generate-feedback-graph: STALE - doc/FEEDBACK_GRAPH.json is out of date. ' +
+      'generate-feedback-graph: STALE - metrics/feedback_graph.json is out of date. ' +
       'Run: node scripts/generate-feedback-graph.js'
     );
     process.exit(1);
@@ -212,7 +212,7 @@ if (CHECK_MODE) {
 } else {
   fs.writeFileSync(GRAPH_PATH, newJson);
   console.log(
-    'generate-feedback-graph: wrote doc/FEEDBACK_GRAPH.json (' +
+    'generate-feedback-graph: wrote metrics/feedback_graph.json (' +
     newGraph.feedbackLoops.length + ' loops, ' +
     sourceLoops.size + ' from source, ' +
     newGraph.feedbackLoops.filter(l => l.conceptual).length + ' conceptual)'

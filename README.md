@@ -497,7 +497,7 @@ A **drift explainer** (`metrics/fingerprint-drift-explainer.json`) is auto-gener
 
 ### Feedback Graph Visualization
 
-`scripts/visualize-feedback-graph.js` generates an interactive HTML/SVG visualization (`metrics/feedback-graph.html`) of the feedback topology from `doc/FEEDBACK_GRAPH.json`. Features:
+`scripts/visualize-feedback-graph.js` generates an interactive HTML/SVG visualization (`metrics/feedback-graph.html`) of the feedback topology from `metrics/feedback_graph.json`. Features:
 - Circle-layout graph with color-coded edges by latency (immediate/beat/phrase/section)
 - Hover tooltips with mechanism details
 - Node colors by subsystem, firewall legend, invariant status badge
@@ -558,7 +558,7 @@ Profiles are defined in `src/conductor/profiles/` and resolved by `conductorConf
 1. `node scripts/generate-globals-dts.js` — Regenerates `VALIDATED_GLOBALS` + `ADVISORY_GLOBALS` from `globals.d.ts`
 2. `node scripts/verify-boot-order.js` — Validates subsystem require order, intra-subsystem dependency ordering, and cross-subsystem dependency ordering
 3. `node scripts/check-tuning-invariants.js` — Validates cross-constant invariants from [TUNING_MAP.md](TUNING_MAP.md)
-4. `node scripts/validate-feedback-graph.js` — Cross-validates `doc/FEEDBACK_GRAPH.json` loop declarations against source-code `feedbackRegistry.registerLoop()` / `closedLoopController` calls. Outputs `metrics/feedback-graph-validation.json`
+4. `node scripts/validate-feedback-graph.js` — Cross-validates `metrics/feedback_graph.json` loop declarations against source-code `feedbackRegistry.registerLoop()` / `closedLoopController` calls. Outputs `metrics/feedback-graph-validation.json`
 5. `npm run lint` — ESLint with 16 custom rules (auto-fix)
 6. `npm run tc` — TypeScript type-check via `tsc --noEmit`
 7. `node src/play/main.js --trace` — Runs composition (16GB heap, trace enabled)
@@ -670,4 +670,4 @@ Two globals from `src/utils/` are used across all priors modules:
 - [metrics/conductor-map.md](metrics/conductor-map.md) — Auto-generated conductor intelligence map (per-run)
 - [metrics/crosslayer-map.md](metrics/crosslayer-map.md) — Auto-generated cross-layer intelligence map (per-run)
 - [metrics/narrative-digest.md](metrics/narrative-digest.md) — Auto-generated prose narrative (per-run)
-- [doc/FEEDBACK_GRAPH.json](doc/FEEDBACK_GRAPH.json) — Feedback loop topology (source of truth for visualization)
+- [metrics/feedback_graph.json](metrics/feedback_graph.json) — Feedback loop topology (source of truth for visualization)
