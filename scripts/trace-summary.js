@@ -85,6 +85,12 @@ function summarizeTrace(entries) {
   const beatSetupSpikeIndices = []; // R10 Evo 3: record which beats exceeded the budget
   const couplingRawSeries = {}; // R10 Evo 6: signed coupling values for Pearson correlation
 
+  // R17 Evo 6: Regime transition depth tracking
+  let lastRegime = null;
+  let currentCoherentStreak = 0;
+  let maxConsecutiveCoherent = 0;
+  let regimeTransitionCount = 0;
+
   let firstBeatKey = null;
   let lastBeatKey = null;
   let firstTimeMs = null;
@@ -108,6 +114,16 @@ function summarizeTrace(entries) {
     const snap = e.snap && typeof e.snap === 'object' ? e.snap : {};
     const regime = typeof e.regime === 'string' ? e.regime : 'unknown';
     regimeCounts[regime] = (regimeCounts[regime] || 0) + 1;
+
+    // R17 Evo 6: Track consecutive coherent streaks and regime transitions
+    if (lastRegime !== null && regime !== lastRegime) regimeTransitionCount++;
+    if (regime === 'coherent') {
+      currentCoherentStreak++;
+      if (currentCoherentStreak > maxConsecutiveCoherent) maxConsecutiveCoherent = currentCoherentStreak;
+    } else {
+      currentCoherentStreak = 0;
+    }
+    lastRegime = regime;
 
     updateMinMax(playProb, toNum(snap.playProb, 0));
     updateMinMax(stutterProb, toNum(snap.stutterProb, 0));
@@ -265,6 +281,10 @@ function summarizeTrace(entries) {
       spanMs: firstTimeMs !== null && lastTimeMs !== null ? Number((lastTimeMs - firstTimeMs).toFixed(3)) : null
     },
     regimes: regimeCounts,
+    regimeDepth: {
+      maxConsecutiveCoherent,
+      transitionCount: regimeTransitionCount
+    },
     conductor: {
       playProb: finalizeMinMax(playProb),
       stutterProb: finalizeMinMax(stutterProb),

@@ -77,8 +77,17 @@ adaptiveTrustScores = (() => {
     const scoreBefore = state.score;
     state.score = clamp(state.score * 0.9 + p * 0.1, -1, TRUST_CEILING);
 
-    // R14 Evo 1: True Trust Score Floor Injection
-    if (systemName === trustSystems.names.CADENCE_ALIGNMENT && state.score < 0.20) state.score = 0.20;
+    // R17 structural fix: Universal population-derived trust floor.
+    // Replaces per-module hard-coded floors (cadenceAlignment 0.20, restSynchronizer 0.20)
+    // with a floor derived from the current population mean. Adapts to whatever the
+    // trust ecosystem looks like, eliminating per-module floor additions.
+    if (scoreBySystem.size > 2) {
+      let _floorSum = 0;
+      let _floorCount = 0;
+      for (const s of scoreBySystem.values()) { _floorSum += s.score; _floorCount++; }
+      const _universalFloor = m.max(0.05, (_floorSum / _floorCount) * 0.30);
+      if (state.score < _universalFloor) state.score = _universalFloor;
+    }
 
     state.samples += 1;
     state.lastMs = beatStartTime * 1000;
@@ -152,7 +161,17 @@ adaptiveTrustScores = (() => {
       effectiveNudge = EXPLORATION_NUDGE * 2;
     }
 
-    for (const [name, state] of scoreBySystem.entries()) {
+    // R17 structural fix: Compute universal trust floor from population mean
+    // before applying per-system decay. Replaces per-module hard-coded floors.
+    let _universalDecayFloor = 0.05;
+    if (scoreBySystem.size > 2) {
+      let _dfs = 0;
+      let _dfc = 0;
+      for (const s of scoreBySystem.values()) { _dfs += s.score; _dfc++; }
+      _universalDecayFloor = m.max(0.05, (_dfs / _dfc) * 0.30);
+    }
+
+    for (const [, state] of scoreBySystem.entries()) {
       state.score *= (1 - decayRate);
 
       // Decay floor: prevent trust collapse for established systems
@@ -160,9 +179,10 @@ adaptiveTrustScores = (() => {
         state.score = DECAY_FLOOR;
       }
 
-      // R14 Evo 1: True Trust Score Floor Injection (decay phase)
-      if (name === trustSystems.names.CADENCE_ALIGNMENT && state.score < 0.20) {
-        state.score = 0.20;
+      // R17 structural fix: Universal population-derived trust floor (decay phase).
+      // Computed once per decayAll call (above), applied per system.
+      if (state.score < _universalDecayFloor) {
+        state.score = _universalDecayFloor;
       }
 
       // Exploration bonus: periodically nudge starving systems toward neutral

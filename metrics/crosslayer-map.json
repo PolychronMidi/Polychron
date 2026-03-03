@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-03T13:44:50.779Z",
+    "generated": "2026-03-03T15:23:12.155Z",
     "moduleCount": 40,
-    "edgeCount": 53,
+    "edgeCount": 54,
     "atgChannelCount": 15
   },
   "modules": [
@@ -529,7 +529,8 @@
       "interactions": [
         "cadenceAlignment",
         "explainabilityBus",
-        "negotiationEngine"
+        "negotiationEngine",
+        "restSynchronizer"
       ],
       "readsSignals": false,
       "emitsExplain": true,
@@ -873,6 +874,10 @@
     {
       "from": "adaptiveTrustScores",
       "to": "negotiationEngine"
+    },
+    {
+      "from": "adaptiveTrustScores",
+      "to": "restSynchronizer"
     },
     {
       "from": "contextualTrust",
