@@ -81,11 +81,14 @@ adaptiveTrustScores = (() => {
     // Replaces per-module hard-coded floors (cadenceAlignment 0.20, restSynchronizer 0.20)
     // with a floor derived from the current population mean. Adapts to whatever the
     // trust ecosystem looks like, eliminating per-module floor additions.
+    // R18 E1: Coefficient raised 0.30->0.50. At 0.30, floor was ~0.103 which was LOWER
+    // than old per-module 0.20 floors, crashing cadenceAlignment avg 51%. At 0.50,
+    // floor ~0.171 restores meaningful support without per-module hardcoding.
     if (scoreBySystem.size > 2) {
       let _floorSum = 0;
       let _floorCount = 0;
       for (const s of scoreBySystem.values()) { _floorSum += s.score; _floorCount++; }
-      const _universalFloor = m.max(0.05, (_floorSum / _floorCount) * 0.30);
+      const _universalFloor = m.max(0.05, (_floorSum / _floorCount) * 0.50);
       if (state.score < _universalFloor) state.score = _universalFloor;
     }
 
@@ -163,12 +166,13 @@ adaptiveTrustScores = (() => {
 
     // R17 structural fix: Compute universal trust floor from population mean
     // before applying per-system decay. Replaces per-module hard-coded floors.
+    // R18 E1: Coefficient raised 0.30->0.50 (matches registerOutcome change).
     let _universalDecayFloor = 0.05;
     if (scoreBySystem.size > 2) {
       let _dfs = 0;
       let _dfc = 0;
       for (const s of scoreBySystem.values()) { _dfs += s.score; _dfc++; }
-      _universalDecayFloor = m.max(0.05, (_dfs / _dfc) * 0.30);
+      _universalDecayFloor = m.max(0.05, (_dfs / _dfc) * 0.50);
     }
 
     for (const [, state] of scoreBySystem.entries()) {

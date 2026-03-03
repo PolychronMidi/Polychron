@@ -167,7 +167,14 @@ pipelineCouplingManager = (() => {
 
   /** @param {string} key */
   function _getTargetMax(key) {
-    return key === 'density-flicker' ? _DENSITY_FLICKER_TARGET_MAX : _TARGET_MAX;
+    // R18 E2: Bound target relaxation proportional to baseline.
+    // Prevents adaptive targets from drifting to uselessness. density-flicker
+    // baseline=0.12 was relaxing up to 0.55 (4.6x), gutting decorrelation.
+    // Capping at baseline*2.5 bounds density-flicker to 0.30, density-entropy
+    // to 0.30, etc. while leaving higher-baseline pairs unconstrained.
+    const globalMax = key === 'density-flicker' ? _DENSITY_FLICKER_TARGET_MAX : _TARGET_MAX;
+    const at = _adaptiveTargets[key];
+    return at ? m.min(globalMax, at.baseline * 2.5) : globalMax;
   }
 
   // Per-pipeline accumulators
@@ -253,10 +260,12 @@ pipelineCouplingManager = (() => {
               rate *= (1 + dfGrad);
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfGrad * 0.1, 1.0);
             }
-            // R17 Evo 3: Universal high-correlation escalation.
+            // R17 Evo 3 / R18 E3: Universal high-correlation escalation.
             // Catch ANY pair with |r| > 0.85 that has no pair-specific escalator.
-            // Prevents emergent couplings (e.g. entropy-trust r=0.880) from going unaddressed.
-            if (!isTensionEntropyPair && !isDensityFlickerPair && m.abs(corr) > 0.85) {
+            // R18: Removed tension-entropy exclusion. With r=-0.815 resurgence,
+            // the pair-specific 1.2x was insufficient; stacking universal 1.15x
+            // gives total 1.38x when |r| > 0.85 AND anti-correlated.
+            if (!isDensityFlickerPair && m.abs(corr) > 0.85) {
               rate *= 1.15;
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.01, 1.0);
             }
@@ -376,27 +385,66 @@ pipelineCouplingManager = (() => {
     biasTension = 1.0;
     biasFlicker = 1.0;
     _saturatedAxes.clear();
-    // Reset adaptive gains - each section starts fresh
+    // R18 E6: Warm-start section gains for chronically elevated pairs.
+    // For pairs where pre-reset median |r| exceeds target * 2, start
+    // the new section at initGain * 1.5 to close the "gift window"
+    // where coupling spikes before gain escalation catches up.
     const keys = Object.keys(_pairState);
     for (let i = 0; i < keys.length; i++) {
       const initGain = PAIR_GAIN_INIT[keys[i]] !== undefined ? PAIR_GAIN_INIT[keys[i]] : GAIN_INIT;
-      _pairState[keys[i]].gain = initGain;
-      _pairState[keys[i]].lastAbsCorr = 0;
-      _pairState[keys[i]].recentAbsCorr = [];
-      _pairState[keys[i]].heatPenalty = 0;
+      const ps = _pairState[keys[i]];
+      let warmGain = initGain;
+      if (ps.recentAbsCorr.length >= 4) {
+        const sorted = ps.recentAbsCorr.slice().sort((a, b) => a - b);
+        const mid = m.floor(sorted.length / 2);
+        const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+        const pairTarget = _getAdaptiveTarget(keys[i]).current;
+        if (median > pairTarget * 2) {
+          warmGain = m.min(initGain * 1.5, GAIN_MAX * 0.6);
+        }
+      }
+      ps.gain = warmGain;
+      ps.lastAbsCorr = 0;
+      ps.recentAbsCorr = [];
+      ps.heatPenalty = 0;
     }
     // #1: Cross-section coupling memory (R17 structural fix).
     // Adaptive targets are NOT reset on section boundaries. The self-calibrating
     // system (#1 hypermeta) accumulates structural knowledge across the full
     // composition. Only tactical state (gains, heatPenalty) resets per section.
-    // Rolling |r| EMA is dampened (halved) rather than zeroed so the target
-    // system retains directional knowledge while adapting to new section dynamics.
+    // R18 E4: Graduated dampening by pair drift. Pairs that drifted far above
+    // baseline (e.g. density-flicker at 2x+) get heavier dampening (0.3x) to
+    // curtail relaxation drift, while well-controlled pairs retain more memory (0.7x).
     const targetKeys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < targetKeys.length; i++) {
-      _adaptiveTargets[targetKeys[i]].rollingAbsCorr *= 0.5;
+      const at = _adaptiveTargets[targetKeys[i]];
+      const driftRatio = at.baseline > 0 ? at.current / at.baseline : 1;
+      at.rollingAbsCorr *= driftRatio > 1.5 ? 0.3 : 0.7;
     }
     // #6: Dampen (not reset) coherent share EMA -- preserves cross-section regime memory
     _coherentShareEma = _coherentShareEma * 0.7 + 0.35 * 0.3;
+  }
+
+  // R18 E5: Expose adaptive target state for trace diagnostics.
+  // Returns per-pair baseline, current, rollingAbsCorr, gain, and heatPenalty
+  // so trace-summary can reveal whether coupling surges are target-drift-driven.
+  function getAdaptiveTargetSnapshot() {
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, gain: number, heatPenalty: number }>} */
+    const result = {};
+    const keys = Object.keys(_adaptiveTargets);
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const at = _adaptiveTargets[key];
+      const ps = _pairState[key];
+      result[key] = {
+        baseline: at.baseline,
+        current: Number(at.current.toFixed(4)),
+        rollingAbsCorr: Number(at.rollingAbsCorr.toFixed(4)),
+        gain: ps ? Number(ps.gain.toFixed(4)) : 0,
+        heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0
+      };
+    }
+    return result;
   }
 
   // --- Self-registration ---
@@ -415,5 +463,5 @@ pipelineCouplingManager = (() => {
     () => m.sign(biasTension - 1.0)
   );
 
-  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, reset };
+  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, getAdaptiveTargetSnapshot, reset };
 })();
