@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-03T13:44:50.464Z",
+    "generated": "2026-03-03T15:23:11.770Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 387,
     "totalGlobals": 686,
     "totalProvides": 701,
-    "totalConsumes": 2646,
-    "totalEdges": 2012,
-    "crossSubsystemEdges": 1419,
+    "totalConsumes": 2648,
+    "totalEdges": 2014,
+    "crossSubsystemEdges": 1420,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 205
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 143,
         "provides": 189,
-        "consumes": 733
+        "consumes": 734
       },
       "rhythm": {
         "files": 30,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 45,
         "provides": 40,
-        "consumes": 330
+        "consumes": 331
       },
       "writer": {
         "files": 4,
@@ -1323,6 +1323,7 @@
         "m",
         "signalReader",
         "t",
+        "timeStream",
         "velocity"
       ]
     },
@@ -5611,6 +5612,7 @@
         "explainabilityBus",
         "m",
         "p",
+        "restSynchronizer",
         "safePreBoot",
         "sectionIndex",
         "signalHealthAnalyzer",
@@ -10485,6 +10487,13 @@
     },
     {
       "from": "src/crossLayer/dynamics/restSynchronizer.js",
+      "to": "src/crossLayer/structure/adaptiveTrustScores.js",
+      "globals": [
+        "restSynchronizer"
+      ]
+    },
+    {
+      "from": "src/crossLayer/dynamics/restSynchronizer.js",
       "to": "src/play/processBeat.js",
       "globals": [
         "restSynchronizer"
@@ -13577,6 +13586,13 @@
     {
       "from": "src/time/timeStream.js",
       "to": "src/conductor/signal/coherenceMonitor.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
+      "to": "src/conductor/signal/narrativeTrajectory.js",
       "globals": [
         "timeStream"
       ]

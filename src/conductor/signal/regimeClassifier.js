@@ -23,6 +23,13 @@ regimeClassifier = (() => {
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
   let coherentThresholdScale = 1.0; // profile-adaptive multiplier
 
+  // R17 structural fix: Self-calibrating regime saturation.
+  // Tracks rolling coherent share and derives penalty dynamically instead of
+  // using static cap/rate constants. When coherent share > 60%, penalty
+  // escalates proportionally. Eliminates manual cap tuning between rounds.
+  const _COHERENT_SHARE_ALPHA = 0.01;  // ~100-beat horizon
+  let _coherentShareEma = 0.50;         // initial: assume 50% coherent
+
   /**
    * Set the oscillating curvature threshold (profile-adaptive).
    * @param {number} threshold
@@ -91,11 +98,15 @@ regimeClassifier = (() => {
       convergenceBonus = clamp((exploringBeats - 32) * 0.005, 0, 0.15);
     }
 
-    // R15 Evo 2: Coherent saturation cutoff.
-    // After long coherent runs, require stronger coupling to stay coherent.
-    // R16 Evo 2: Onset reduced from 50 to 35 to break coherent monopoly earlier.
+    // R17 structural fix: Self-calibrating coherent saturation.
+    // Penalty derived from rolling coherent-share EMA instead of static cap.
+    // When coherent share > 60%, penalty cap scales up proportionally (0.08 base
+    // + up to 0.20 extra). This auto-adjusts across profiles without manual tuning.
+    _coherentShareEma = _coherentShareEma * (1 - _COHERENT_SHARE_ALPHA) + (lastRegime === 'coherent' ? 1 : 0) * _COHERENT_SHARE_ALPHA;
+    const _dynamicPenaltyCap = 0.08 + clamp((_coherentShareEma - 0.60) * 1.0, 0, 0.20);
+    const _dynamicPenaltyRate = 0.003 + clamp((_coherentShareEma - 0.50) * 0.004, 0, 0.004);
     const coherentDurationPenalty = lastRegime === 'coherent' && coherentBeats > 35
-      ? clamp((coherentBeats - 35) * 0.003, 0, 0.10)
+      ? clamp((coherentBeats - 35) * _dynamicPenaltyRate, 0, _dynamicPenaltyCap)
       : 0;
 
     const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
@@ -175,6 +186,7 @@ regimeClassifier = (() => {
     coherentBeats = 0;
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
     coherentThresholdScale = 1.0;
+    _coherentShareEma = 0.50;
   }
 
   return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, getExploringBeats, getLastRegime, reset };

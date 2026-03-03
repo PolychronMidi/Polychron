@@ -44,7 +44,7 @@ pipelineCouplingManager = (() => {
     'flicker-phase':    0.15,  // strongly co-evolving - aggressive decorrelation
     'density-phase':    0.15,  // both section-position-driven -- aggressive
     'tension-phase':    0.30,
-    'density-trust':    0.18,  // highest avg coupling (0.453) -- aggressive
+    'density-trust':    0.15,  // R17 Evo 2: tightened from 0.18 -- r surged to 0.949 in R16, p95=0.721
     'tension-trust':    0.25,
     'flicker-trust':    0.20,  // R7 Evo 6: relaxed from 0.15 -- was over-decorrelating new high-coupling pair
     'entropy-phase':    0.25,  // elevated tail (9.2% @0.85) -- tightened
@@ -245,12 +245,20 @@ pipelineCouplingManager = (() => {
               rate *= 1.2;
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.03, 1.0);
             }
-            // R16 Evo 5: Density-flicker escalation pathway.
-            // This pair pins at r=-0.87 despite PAIR_TARGET 0.12. When strongly
-            // anti-correlated, apply extra decorrelation pressure.
-            if (isDensityFlickerPair && m.abs(corr) > 0.7) {
-              rate *= 1.3;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.02, 1.0);
+            // R16 Evo 5 / R17 Evo 5: Graduated density-flicker escalation.
+            // Binary threshold at 0.7 over-crushed flicker product to 0.845. Graduated
+            // function applies proportional pressure: mild at |r|=0.81, full at |r|=0.95.
+            if (isDensityFlickerPair && m.abs(corr) > 0.80) {
+              const dfGrad = (m.abs(corr) - 0.80) * 2.0;
+              rate *= (1 + dfGrad);
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfGrad * 0.1, 1.0);
+            }
+            // R17 Evo 3: Universal high-correlation escalation.
+            // Catch ANY pair with |r| > 0.85 that has no pair-specific escalator.
+            // Prevents emergent couplings (e.g. entropy-trust r=0.880) from going unaddressed.
+            if (!isTensionEntropyPair && !isDensityFlickerPair && m.abs(corr) > 0.85) {
+              rate *= 1.15;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.01, 1.0);
             }
             const pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
@@ -377,14 +385,18 @@ pipelineCouplingManager = (() => {
       _pairState[keys[i]].recentAbsCorr = [];
       _pairState[keys[i]].heatPenalty = 0;
     }
-    // #1: Reset adaptive targets to baseline on section boundary
+    // #1: Cross-section coupling memory (R17 structural fix).
+    // Adaptive targets are NOT reset on section boundaries. The self-calibrating
+    // system (#1 hypermeta) accumulates structural knowledge across the full
+    // composition. Only tactical state (gains, heatPenalty) resets per section.
+    // Rolling |r| EMA is dampened (halved) rather than zeroed so the target
+    // system retains directional knowledge while adapting to new section dynamics.
     const targetKeys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < targetKeys.length; i++) {
-      _adaptiveTargets[targetKeys[i]].current = _adaptiveTargets[targetKeys[i]].baseline;
-      _adaptiveTargets[targetKeys[i]].rollingAbsCorr = 0;
+      _adaptiveTargets[targetKeys[i]].rollingAbsCorr *= 0.5;
     }
-    // #6: Reset coherent share EMA
-    _coherentShareEma = 0.35;
+    // #6: Dampen (not reset) coherent share EMA -- preserves cross-section regime memory
+    _coherentShareEma = _coherentShareEma * 0.7 + 0.35 * 0.3;
   }
 
   // --- Self-registration ---
