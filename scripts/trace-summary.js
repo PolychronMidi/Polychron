@@ -292,7 +292,8 @@ function summarizeTrace(entries) {
             rollingAbsCorr: ct.rollingAbsCorr,
             rawRollingAbsCorr: ct.rawRollingAbsCorr != null ? ct.rawRollingAbsCorr : null,
             gain: ct.gain,
-            heatPenalty: ct.heatPenalty
+            heatPenalty: ct.heatPenalty,
+            effectivenessEma: ct.effectivenessEma != null ? ct.effectivenessEma : null
           };
         }
       }

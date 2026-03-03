@@ -155,6 +155,10 @@ pipelineCouplingManager = (() => {
   // 0.24 each to accommodate flicker-trust as 4th axis.
   const _AXIS_BUDGET = 0.24;
 
+  // R20 E5: Flicker product sigmoid hysteresis state.
+  // 'normal' -> 'guarding' at product < 0.90, 'guarding' -> 'normal' at > 0.96.
+  let _flickerGuardState = 'normal';
+
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
   /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number }>} */
   const _pairState = {};
@@ -228,15 +232,24 @@ pipelineCouplingManager = (() => {
     const dynamicCoherentRelax = 1.0 + m.max(0, 0.50 - _coherentShareEma) * 1.2;
     const targetScale = regime === 'coherent' ? dynamicCoherentRelax : 1.0;
 
-    // R19 E6: Flicker product floor constraint.
-    // When flicker product drops below 0.92, progressively reduce gain for
-    // pairs involving flicker to prevent chronic over-compression. At product
-    // 0.82: scalar=0.15 (85% gain reduction). At 0.87: scalar=0.50. At 0.92+:
-    // scalar=1.0 (no effect). Self-healing: as flicker drops, decorrelation
-    // backs off, allowing recovery.
+    // R19 E6: Flicker product floor constraint with R20 E5 hysteresis.
+    // When flicker product drops below 0.90 -> enter 'guarding' state.
+    // Exit 'guarding' only when product recovers above 0.96.
+    // While guarding: apply sigmoid gain reduction AND +0.002/beat recovery
+    // nudge toward biasFlicker=1.0 to break the feedback loop.
+    // R20 fix: Old threshold 0.92 was too tight (entered immediately at
+    // product=0.825 with scalar=0.15, killing 85% of flicker gains while
+    // the existing compressed bias persisted -> vicious cycle).
     const _flickerProd = safePreBoot.call(() => signalReader.snapshot()?.flickerProduct, 1.0);
-    const _flickerGainScalar = typeof _flickerProd === 'number' && _flickerProd < 0.92
-      ? clamp((_flickerProd - 0.82) / 0.10, 0.15, 1.0)
+    if (typeof _flickerProd === 'number') {
+      if (_flickerGuardState === 'normal' && _flickerProd < 0.90) {
+        _flickerGuardState = 'guarding';
+      } else if (_flickerGuardState === 'guarding' && _flickerProd > 0.96) {
+        _flickerGuardState = 'normal';
+      }
+    }
+    const _flickerGainScalar = _flickerGuardState === 'guarding' && typeof _flickerProd === 'number'
+      ? clamp((_flickerProd - 0.80) / 0.12, 0.25, 1.0)
       : 1.0;
 
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
@@ -511,6 +524,13 @@ pipelineCouplingManager = (() => {
     biasDensity = 1.0 + nudgeD;
     biasTension = 1.0 + nudgeT;
     biasFlicker = 1.0 + nudgeF;
+
+    // R20 E5: While in flicker-guarding state, apply a recovery nudge toward
+    // biasFlicker=1.0 to break the vicious cycle where compressed bias -> low
+    // product -> gain kill -> compressed bias persists.
+    if (_flickerGuardState === 'guarding' && biasFlicker < 0.98) {
+      biasFlicker = m.min(biasFlicker + 0.002, 1.0);
+    }
   }
 
   function densityBias() { return biasDensity; }
@@ -562,13 +582,15 @@ pipelineCouplingManager = (() => {
     }
     // #6: Dampen (not reset) coherent share EMA -- preserves cross-section regime memory
     _coherentShareEma = _coherentShareEma * 0.7 + 0.35 * 0.3;
+    // R20 E5: Reset flicker guard to allow fresh assessment per section
+    _flickerGuardState = 'normal';
   }
 
-  // R18 E5 / R19 E1+E2: Expose adaptive target state for trace diagnostics.
+  // R18 E5 / R19 E1+E2 / R20 E6: Expose adaptive target state for trace diagnostics.
   // Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
-  // gain, heatPenalty, and per-axis totals for post-run analysis.
+  // gain, heatPenalty, effectivenessEma, and per-axis totals for post-run analysis.
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number }>} */
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number, effectivenessEma: number }>} */
     const result = {};
     const keys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < keys.length; i++) {
@@ -581,7 +603,8 @@ pipelineCouplingManager = (() => {
         rollingAbsCorr: Number(at.rollingAbsCorr.toFixed(4)),
         rawRollingAbsCorr: Number(at.rawRollingAbsCorr.toFixed(4)),
         gain: ps ? Number(ps.gain.toFixed(4)) : 0,
-        heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0
+        heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0,
+        effectivenessEma: ps ? Number((ps.effectivenessEma || 0.5).toFixed(4)) : 0.5
       };
     }
     return result;

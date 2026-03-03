@@ -30,9 +30,14 @@ regimeClassifier = (() => {
   // R19 E3: Profile-adaptive convergence. Fixed alpha=0.01 (~100-beat horizon)
   // converged too slowly for atmospheric profile (326 consecutive coherent
   // beats). Adaptive alpha: starts at 0.05 (~20 beats), decays exponentially
-  // to 0.01 by ~160 beats. Gives 5x faster initial convergence while
+  // to floor by ~160 beats. Gives 5x faster initial convergence while
   // maintaining stable long-horizon behavior.
-  const _COHERENT_SHARE_ALPHA_MIN = 0.01;   // steady-state: ~100-beat horizon
+  // R20 E4: Raised floor from 0.01 to 0.025. At 0.01 (~100-beat), 426
+  // consecutive coherent beats in R20 atmospheric created a regime lock
+  // (69.7% coherent, maxConsecutive=426). floor 0.025 (~40 beats) ensures
+  // the coherent share EMA tracks recent regime distribution accurately
+  // enough that the penalty function can actually fire escape transitions.
+  const _COHERENT_SHARE_ALPHA_MIN = 0.025;  // steady-state: ~40-beat horizon
   const _COHERENT_SHARE_ALPHA_INIT = 0.05;  // initial: ~20-beat horizon
   const _COHERENT_SHARE_ALPHA_DECAY = 80;   // exponential decay constant
   let _coherentShareEma = 0.50;             // initial: assume 50% coherent
