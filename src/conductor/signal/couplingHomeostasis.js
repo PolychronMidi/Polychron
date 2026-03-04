@@ -379,9 +379,15 @@ couplingHomeostasis = (() => {
   function getFloorDampen() {
     if (_totalEnergyFloor < 0.1 || _totalEnergyEma < 0.1) return 1.0;
     const proximity = _totalEnergyEma / _totalEnergyFloor;
-    // proximity ~1.0 = at floor -> heavy dampening (0.05)
-    // proximity >1.2 = well above floor -> no dampening (1.0)
-    return clamp((proximity - 1.0) / 0.20, 0.05, 1.0);
+    // R26 E1: Relaxed from (window=0.20, min=0.05) to (window=0.35, min=0.20).
+    // R25 had floorDampen=0.05 at end-of-run -- 95% suppression froze ALL
+    // gain escalation, preventing targeted decorrelation of overcoupled pairs.
+    // New parameters: minimum 0.20 (4x more headroom at floor), full lift at
+    // 35% above floor (was 20%). Coherence gating handles redistribution;
+    // floor dampening only needs to provide gentle back-pressure.
+    // proximity ~1.0 = at floor -> dampening (0.20)
+    // proximity >1.35 = well above floor -> no dampening (1.0)
+    return clamp((proximity - 1.0) / 0.35, 0.20, 1.0);
   }
 
   /**

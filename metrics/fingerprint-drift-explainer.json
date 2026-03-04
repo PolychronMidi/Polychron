@@ -1,22 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-04T02:39:34.799Z",
+    "generated": "2026-03-04T04:42:34.620Z",
     "verdict": "EVOLVED"
   },
-  "narrative": "The composition has evolved in 2 dimension(s). This is within normal creative variation range. fewer notes emitted (26029 -> 7829, 69.9% change). regime balance shifted: initializing: 8.1% -> 26.1%; evolving: 74.8% -> 22.0%; exploring: 17.2% -> 51.8%.",
+  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. more notes emitted (7829 -> 19156, 144.7% change).",
   "explanations": [
     {
       "dimension": "noteCount",
-      "delta": 0.6992201006569595,
+      "delta": 1.4468003576446544,
       "tolerance": 0.5,
-      "cause": "fewer notes emitted (26029 -> 7829, 69.9% change)",
-      "layerShift": "L1/L2 balance shifted: 45%/55% -> 31%/69%"
-    },
-    {
-      "dimension": "regimeDistribution",
-      "delta": 0.35164501364858486,
-      "tolerance": 0.3,
-      "cause": "regime balance shifted: initializing: 8.1% -> 26.1%; evolving: 74.8% -> 22.0%; exploring: 17.2% -> 51.8%"
+      "cause": "more notes emitted (7829 -> 19156, 144.7% change)"
     }
   ]
 }

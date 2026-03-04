@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-04T02:39:33.744Z",
+    "generated": "2026-03-04T04:42:32.551Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 388,
     "totalGlobals": 687,
     "totalProvides": 702,
-    "totalConsumes": 2661,
-    "totalEdges": 2027,
-    "crossSubsystemEdges": 1429,
+    "totalConsumes": 2662,
+    "totalEdges": 2028,
+    "crossSubsystemEdges": 1430,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 205
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 144,
         "provides": 190,
-        "consumes": 742
+        "consumes": 743
       },
       "rhythm": {
         "files": 30,
@@ -1228,6 +1228,7 @@
       ],
       "consumes": [
         "clamp",
+        "explainabilityBus",
         "m",
         "validator"
       ]
@@ -10643,6 +10644,13 @@
     {
       "from": "src/crossLayer/explainabilityBus.js",
       "to": "src/conductor/signal/pipelineCouplingManager.js",
+      "globals": [
+        "explainabilityBus"
+      ]
+    },
+    {
+      "from": "src/crossLayer/explainabilityBus.js",
+      "to": "src/conductor/signal/regimeClassifier.js",
       "globals": [
         "explainabilityBus"
       ]

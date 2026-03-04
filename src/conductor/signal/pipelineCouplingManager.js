@@ -266,16 +266,18 @@ pipelineCouplingManager = (() => {
     const dynamicCoherentRelax = 1.0 + m.max(0, 0.50 - _coherentShareEma) * 1.2;
     // R25 E3: Track exploring duration for partial target relaxation.
     if (regime === 'exploring') { _exploringBeatCount++; } else { _exploringBeatCount = 0; }
-    // R25 E3: Partial target relaxation during sustained exploring (>40 beats).
+    // R25 E3 / R26 E3: Partial target relaxation during sustained exploring (>40 beats).
     // Breaks the chicken-and-egg bistability: coupling stays below coherent
     // threshold because aggressive decorrelation prevents rise; coherent
-    // relaxation never activates because threshold never crossed. Applying 25%
-    // of coherent relaxation lets coupling rise naturally during exploring.
+    // relaxation never activates because threshold never crossed.
+    // R26: Increased from 25% to 40% of coherent relaxation. R25 entry at
+    // beat 424/500 was too late; 25% gave targetScale~1.105, insufficient to
+    // produce timely coupling rise. 40% gives targetScale~1.168.
     let targetScale = 1.0;
     if (regime === 'coherent') {
       targetScale = dynamicCoherentRelax;
     } else if (regime === 'exploring' && _exploringBeatCount > 40) {
-      targetScale = 1.0 + (dynamicCoherentRelax - 1.0) * 0.25;
+      targetScale = 1.0 + (dynamicCoherentRelax - 1.0) * 0.40;
     }
 
     // R19 E6: Flicker product floor constraint with R20 E5 hysteresis.
@@ -342,10 +344,18 @@ pipelineCouplingManager = (() => {
     let nudgeDPos = 0, nudgeDNeg = 0;
     let nudgeTPos = 0, nudgeTNeg = 0;
     let nudgeFPos = 0, nudgeFNeg = 0;
+    // R26 E4: Bypass accumulators for severely overcoupled pairs (>2x target).
+    // Coherence gating suppresses ALL redistributive nudges equally, including
+    // those targeting severe outliers. Bypassed nudges skip the gate.
+    let nudgeDBypass = 0, nudgeTBypass = 0, nudgeFBypass = 0;
 
-    /** @param {string} axis  @param {number} amount */
-    function _addNudge(axis, amount) {
-      if (axis === 'density') {
+    /** @param {string} axis  @param {number} amount  @param {boolean} [bypass] */
+    function _addNudge(axis, amount, bypass) {
+      if (bypass) {
+        if (axis === 'density') nudgeDBypass += amount;
+        else if (axis === 'tension') nudgeTBypass += amount;
+        else nudgeFBypass += amount;
+      } else if (axis === 'density') {
         nudgeD += amount;
         if (amount >= 0) nudgeDPos += amount; else nudgeDNeg += amount;
       } else if (axis === 'tension') {
@@ -361,6 +371,12 @@ pipelineCouplingManager = (() => {
 
     // R19 E1: Pre-pass to compute per-axis total |r| for proportional gain allocation.
     _axisTotalAbsR = {};
+    // R26 E5: Initialize all monitored axes to 0 so getAxisCouplingTotals()
+    // always returns all 6 axes. Previously trust/phase reported null when
+    // their pairs had null/NaN correlations on the first captured snapshot.
+    for (let d = 0; d < ALL_MONITORED_DIMS.length; d++) {
+      _axisTotalAbsR[ALL_MONITORED_DIMS[d]] = 0;
+    }
     _axisPairContrib = {};
     for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
       for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
@@ -591,19 +607,24 @@ pipelineCouplingManager = (() => {
           // R14 Evo 5: Escalate magnitude via exponential heat penalty curve
           const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
           const magnitude = effectiveGain * excess * heatMulti;
+          // R26 E4: Bypass coherence gate for severely overcoupled pairs.
+          // When |r| > 2x target, this pair is genuinely problematic and its
+          // nudge should not be suppressed by disagreement from milder pairs.
+          const isSevere = absCorr > target * 2.0;
 
           const half = magnitude * 0.5;
-          _addNudge(dimA, -direction * half);
-          _addNudge(dimB, direction * half);
+          _addNudge(dimA, -direction * half, isSevere);
+          _addNudge(dimB, direction * half, isSevere);
         } else {
           const excess = absCorr - target;
           const direction = -m.sign(corr);
           // R14 Evo 5: Escalate magnitude via exponential heat penalty curve
           const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
           const magnitude = effectiveGain * excess * heatMulti;
+          const isSevere = absCorr > target * 2.0;
 
           const nudgeAxis = aIsNudgeable ? dimA : dimB;
-          _addNudge(nudgeAxis, direction * magnitude);
+          _addNudge(nudgeAxis, direction * magnitude, isSevere);
         }
       }
     }
@@ -679,9 +700,29 @@ pipelineCouplingManager = (() => {
       if (total < 0.001) return 1.0;
       return m.abs(pos + neg) / total;
     }
-    nudgeD *= _coherenceGate(nudgeDPos, nudgeDNeg);
-    nudgeT *= _coherenceGate(nudgeTPos, nudgeTNeg);
-    nudgeF *= _coherenceGate(nudgeFPos, nudgeFNeg);
+    const _gateD = _coherenceGate(nudgeDPos, nudgeDNeg);
+    const _gateT = _coherenceGate(nudgeTPos, nudgeTNeg);
+    const _gateF = _coherenceGate(nudgeFPos, nudgeFNeg);
+    // R26 E4: Apply coherence gate to gated nudges, then add bypass nudges.
+    // Bypass nudges from severely overcoupled pairs (>2x target) skip the
+    // gate to ensure extreme outliers always receive decorrelation pressure.
+    nudgeD = nudgeD * _gateD + nudgeDBypass;
+    nudgeT = nudgeT * _gateT + nudgeTBypass;
+    nudgeF = nudgeF * _gateF + nudgeFBypass;
+
+    // R26 E6: Emit coherence gate + floor dampening diagnostics for trace.
+    // Per-axis gate values reveal how much nudge suppression is occurring
+    // and which axes are most contested. Combined with floorDampen, enables
+    // quantitative analysis of the anti-redistribution mechanisms.
+    explainabilityBus.emit('COUPLING_GATES', 'all', {
+      gateD: Number(_gateD.toFixed(4)),
+      gateT: Number(_gateT.toFixed(4)),
+      gateF: Number(_gateF.toFixed(4)),
+      floorDampen: Number(_floorDampen.toFixed(4)),
+      bypassD: Number(nudgeDBypass.toFixed(6)),
+      bypassT: Number(nudgeTBypass.toFixed(6)),
+      bypassF: Number(nudgeFBypass.toFixed(6)),
+    });
 
     // #9: Budget enforcement - cap per-axis accumulation before soft-limiting
     // to prevent coupling manager from dominating ANY single pipeline.
