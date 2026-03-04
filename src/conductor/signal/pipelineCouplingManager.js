@@ -41,13 +41,13 @@ pipelineCouplingManager = (() => {
     'tension-flicker':  0.15,  // shared compositeIntensity upstream -- aggressive
     'tension-entropy':  0.25,
     'flicker-entropy':  0.18,  // elevated tail (8.8% @0.85) -- tightened
-    'flicker-phase':    0.12,  // R25 E4: tightened from 0.15 -- phase axis surged +47.7% in R24
-    'density-phase':    0.10,  // R25 E4: tightened from 0.15 -- sole hotspot in R24, avg 0.526, p95=0.796
+    'flicker-phase':    0.08,  // R28 E3: tightened from 0.12 -- phase axis surged +81% (0.176->0.318) in R27 after trust tightening
+    'density-phase':    0.06,  // R28 E3: tightened from 0.10 -- density-phase avg +65% (0.277->0.457), p95=0.734, 2.22x target
     'tension-phase':    0.20,  // R25 E4: tightened from 0.30 -- avg 0.407 far exceeded target
     'density-trust':    0.10,  // R27 E3: tightened from 0.15 -- avg surged +30% (0.339->0.440), r=0.959, p95=0.896
     'tension-trust':    0.15,  // R27 E3: tightened from 0.25 -- p95=0.925 (severe), 3 of 6 hotspots involve trust
     'flicker-trust':    0.12,  // R27 E3: tightened from 0.20 -- avg +19.7% (0.413->0.495), r=0.940, approaching severe
-    'entropy-phase':    0.18,  // R25 E4: tightened from 0.25 -- avg 0.238 approaching target, phase axis surging
+    'entropy-phase':    0.10,  // R28 E3: tightened from 0.18 -- entropy-phase avg +192% (0.132->0.385), p95=0.797, 2.85x target
     'entropy-trust':    0.25,  // tightened for tail control
     'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened
   };
@@ -188,6 +188,16 @@ pipelineCouplingManager = (() => {
   let _lastBypassD = 0;
   let _lastBypassT = 0;
   let _lastBypassF = 0;
+
+  // R28 E6: Per-axis gate temporal statistics. Single-beat snapshots reveal
+  // nothing about gate behavior during active evolving/exploring phases.
+  // Running min and EMA average across the run show whether gates are
+  // periodically closing (confirming coherence gate mechanism is engaging)
+  // or always open (redistribution is temporal, not intra-beat).
+  let _gateMinD = 1.0, _gateMinT = 1.0, _gateMinF = 1.0;
+  let _gateEmaD = 1.0, _gateEmaT = 1.0, _gateEmaF = 1.0;
+  const _GATE_EMA_ALPHA = 0.05; // ~20-beat horizon
+  let _gateBeatCount = 0;
 
   // R23 E5: High-priority pair gain promotion.
   // When a pair's rawRollingAbsCorr stays above threshold while at GAIN_MAX,
@@ -738,6 +748,14 @@ pipelineCouplingManager = (() => {
     _lastBypassD = Number(nudgeDBypass.toFixed(6));
     _lastBypassT = Number(nudgeTBypass.toFixed(6));
     _lastBypassF = Number(nudgeFBypass.toFixed(6));
+    // R28 E6: Update gate temporal statistics
+    _gateMinD = m.min(_gateMinD, _gateD);
+    _gateMinT = m.min(_gateMinT, _gateT);
+    _gateMinF = m.min(_gateMinF, _gateF);
+    _gateEmaD = _gateEmaD * (1 - _GATE_EMA_ALPHA) + _gateD * _GATE_EMA_ALPHA;
+    _gateEmaT = _gateEmaT * (1 - _GATE_EMA_ALPHA) + _gateT * _GATE_EMA_ALPHA;
+    _gateEmaF = _gateEmaF * (1 - _GATE_EMA_ALPHA) + _gateF * _GATE_EMA_ALPHA;
+    _gateBeatCount++;
     explainabilityBus.emit('COUPLING_GATES', 'all', {
       gateD: _lastGateD,
       gateT: _lastGateT,
@@ -960,7 +978,7 @@ pipelineCouplingManager = (() => {
    * R27 E2: Return cached coherence gate + floor dampening diagnostics.
    * Updated each time the recorder runs. Enables per-beat trace capture
    * of gate state that was previously only emitted to explainabilityBus.
-   * @returns {{ gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }}
+   * @returns {{ gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number, gateMinD: number, gateMinT: number, gateMinF: number, gateEmaD: number, gateEmaT: number, gateEmaF: number, gateBeatCount: number }}
    */
   function getCouplingGates() {
     return {
@@ -970,8 +988,48 @@ pipelineCouplingManager = (() => {
       floorDampen: _lastFloorDampen,
       bypassD: _lastBypassD,
       bypassT: _lastBypassT,
-      bypassF: _lastBypassF
+      bypassF: _lastBypassF,
+      // R28 E6: Temporal gate statistics across the run
+      gateMinD: Number(_gateMinD.toFixed(4)),
+      gateMinT: Number(_gateMinT.toFixed(4)),
+      gateMinF: Number(_gateMinF.toFixed(4)),
+      gateEmaD: Number(_gateEmaD.toFixed(4)),
+      gateEmaT: Number(_gateEmaT.toFixed(4)),
+      gateEmaF: Number(_gateEmaF.toFixed(4)),
+      gateBeatCount: _gateBeatCount
     };
+  }
+
+  /**
+   * R28 E7: Programmatic pair baseline adjustment for hypermeta controllers.
+   * Allows dynamic tightening/relaxation of pair targets without manual
+   * PAIR_TARGETS edits. The new baseline is clamped to [_TARGET_MIN, _TARGET_MAX]
+   * and the adaptive current target is proportionally scaled.
+   * @param {string} pairKey - e.g. 'density-phase'
+   * @param {number} newBaseline - new baseline target value
+   */
+  function setPairBaseline(pairKey, newBaseline) {
+    const clamped = clamp(newBaseline, _TARGET_MIN, _TARGET_MAX);
+    const at = _getAdaptiveTarget(pairKey);
+    // Scale current target proportionally to baseline change
+    const ratio = at.baseline > 0 ? at.current / at.baseline : 1;
+    at.baseline = clamped;
+    at.current = clamp(clamped * ratio, _TARGET_MIN, _getTargetMax(pairKey));
+  }
+
+  /**
+   * R28 E7: Return all current pair baselines for diagnostic snapshots.
+   * @returns {Record<string, number>}
+   */
+  function getPairBaselines() {
+    /** @type {Record<string, number>} */
+    const result = {};
+    const keys = Object.keys(PAIR_TARGETS);
+    for (let i = 0; i < keys.length; i++) {
+      const at = _getAdaptiveTarget(keys[i]);
+      result[keys[i]] = at.baseline;
+    }
+    return result;
   }
 
   // --- Self-registration ---
@@ -990,5 +1048,5 @@ pipelineCouplingManager = (() => {
     () => m.sign(biasTension - 1.0)
   );
 
-  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, setGlobalGainMultiplier, getAdaptiveTargetSnapshot, getAxisCouplingTotals, getAxisEnergyShare, getCouplingGates, reset };
+  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, setGlobalGainMultiplier, setPairBaseline, getPairBaselines, getAdaptiveTargetSnapshot, getAxisCouplingTotals, getAxisEnergyShare, getCouplingGates, reset };
 })();

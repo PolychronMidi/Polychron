@@ -26,6 +26,8 @@ require('./pipelineBalancer');
 require('./pipelineCouplingManager');
 // @ts-ignore: whole-system coupling energy governor (reads pipelineCouplingManager, modulates global gain)
 require('./couplingHomeostasis');
+// @ts-ignore: axis energy equilibrator (reads axis energy shares, auto-adjusts pair baselines)
+require('./axisEnergyEquilibrator');
 // @ts-ignore: 3D narrative trajectory (tension/novelty/density arc tracking)
 require('./narrativeTrajectory');
 // @ts-ignore: compositional strategy memory (composer family variety pressure)
@@ -36,7 +38,7 @@ require('./criticalityEngine');
 require('./dimensionalityExpander');
 // @ts-ignore: meta-controller interaction watchdog (detects opposing correction patterns)
 require('./conductorMetaWatchdog');
-// @ts-ignore: central manifest of all 12 hypermeta self-calibrating controllers
+// @ts-ignore: central manifest of all 13 hypermeta self-calibrating controllers
 require('./metaControllerRegistry');
 // @ts-ignore: self-organized criticality engine (avalanche-based damping)
 require('./output');

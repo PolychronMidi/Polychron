@@ -36,6 +36,14 @@ regimeClassifier = (() => {
   // only computed from _evolvingBeats (which resets on regime change).
   let _evolvingProximityBonus = 0;
 
+  // R28 E5: Coherent momentum persistence. When coherent is lost, provide
+  // a linearly-decaying threshold bonus for 15 beats to prevent premature
+  // exit during brief coupling dips. R27 lost coherent at beat 551 after
+  // only 44 beats -- coupling naturally oscillates on longer timescales in
+  // atmospheric profile, and brief dips shouldn't terminate coherent.
+  const _COHERENT_MOMENTUM_WINDOW = 15;
+  let _coherentMomentumBeats = 0;
+
   // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
   let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0 };
 
@@ -144,6 +152,16 @@ regimeClassifier = (() => {
     const coherentFloorBonus = exploringBeats > 100 ? clamp((exploringBeats - 100) * 0.0005, 0, 0.05) : 0;
     const durationBonus = lastRegime === 'exploring' ? clamp(m.floor(exploringBeats / 50) * 0.02, 0, 0.12) : 0;
 
+    // R28 E5: Coherent momentum. When system was recently coherent (within
+    // 15 beats), provide a linearly-decaying threshold bonus. This makes
+    // regime exit bidirectionally asymmetric: hard to enter but also hard
+    // to leave. The bonus decays from 0.05 to 0 over 15 beats.
+    const momentumBonus = _coherentMomentumBeats > 0
+      ? 0.05 * (_coherentMomentumBeats / _COHERENT_MOMENTUM_WINDOW)
+      : 0;
+    // Decrement momentum counter each beat (active even during non-coherent)
+    if (_coherentMomentumBeats > 0) _coherentMomentumBeats--;
+
     // R14 Evo 2: Exploring Convergence Acceleration
     // Force transition to evolving or coherent faster if stuck exploring for > 32 beats
     let convergenceBonus = 0;
@@ -188,7 +206,7 @@ regimeClassifier = (() => {
       evolvingProximityBonus = clamp(_evolvingProximityBonus + 0.001, 0, 0.07);
     }
     _evolvingProximityBonus = evolvingProximityBonus;
-    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus + coherentDurationPenalty;
+    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty;
     // R25 E6: Cache classify inputs for transition diagnostics in resolve()
     _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus };
     // R27 E5: Relax velocity threshold from 0.008 to 0.005 after 100 exploring
@@ -269,7 +287,12 @@ regimeClassifier = (() => {
           exploringBeats, evolvingBeats: _evolvingBeats
         });
         if (lastRegime === 'exploring') exploringBeats = 0;
-        if (lastRegime === 'coherent') coherentBeats = 0;
+        // R28 E5: Activate coherent momentum on coherent->non-coherent transition.
+        // Provides 15-beat decaying threshold bonus to prevent premature exit.
+        if (lastRegime === 'coherent') {
+          coherentBeats = 0;
+          _coherentMomentumBeats = _COHERENT_MOMENTUM_WINDOW;
+        }
         if (lastRegime === 'evolving') _evolvingBeats = 0;
         lastRegime = rawRegime;
         candidateCount = 0;
@@ -304,6 +327,8 @@ regimeClassifier = (() => {
     exploringBeats = 0;
     _evolvingBeats = 0;
     _evolvingProximityBonus = 0;
+    // R28 E5: Preserve momentum across section resets (damped to 50%)
+    _coherentMomentumBeats = m.floor(_coherentMomentumBeats * 0.5);
     coherentBeats = m.floor(_prevCoherentBeats * 0.3);
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
     coherentThresholdScale = 1.0;

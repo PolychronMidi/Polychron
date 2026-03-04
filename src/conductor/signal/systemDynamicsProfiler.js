@@ -88,9 +88,18 @@ systemDynamicsProfiler = (() => {
         // R9 Evo 3: give density-flicker pair 30% extra gain ceiling for decorrelation
         pipelineCouplingManager.setDensityFlickerGainScale(1.3);
       } else if (profileName === 'atmospheric') {
-        // R21 E3: Slower alpha floor for atmospheric -- longer sections tolerate
-        // ~50-beat convergence, preventing premature regime flipping.
-        regimeClassifier.setCoherentShareAlphaMin(0.02);
+        // R28 E2: Atmospheric coherent entry scale 0.90 (between explosive's
+        // 0.84 and default 1.0). R27 atmospheric had coherentThresholdScale=1.0
+        // (default), making coherent entry ~19% harder than explosive. With 0.90,
+        // base threshold drops from 0.255 to ~0.230 -- a 10% reduction that gives
+        // atmospheric a moderate advantage without matching explosive aggressiveness.
+        regimeClassifier.setCoherentThresholdScale(0.90);
+        // R28 E4: Raised alpha floor from 0.02 to 0.03 (33-beat horizon).
+        // R27 coherent lasted only 44 beats before loss at beat 551. The 50-beat
+        // horizon (alpha=0.02) barely tracked coherent-share buildup before exit.
+        // Faster convergence improves EMA tracking accuracy during atmospheric's
+        // longer compositions, enabling more responsive saturation penalty.
+        regimeClassifier.setCoherentShareAlphaMin(0.03);
         // R22 E4 / R24 E1: Atmospheric evolving dwell -- reduced from 8 to 6
         // to match regime bistability fix. Longer sections need slightly more
         // dwell than explosive but still within the coherent feedback window.
