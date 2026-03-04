@@ -41,13 +41,13 @@ pipelineCouplingManager = (() => {
     'tension-flicker':  0.15,  // shared compositeIntensity upstream -- aggressive
     'tension-entropy':  0.25,
     'flicker-entropy':  0.18,  // elevated tail (8.8% @0.85) -- tightened
-    'flicker-phase':    0.15,  // strongly co-evolving - aggressive decorrelation
-    'density-phase':    0.15,  // both section-position-driven -- aggressive
-    'tension-phase':    0.30,
+    'flicker-phase':    0.12,  // R25 E4: tightened from 0.15 -- phase axis surged +47.7% in R24
+    'density-phase':    0.10,  // R25 E4: tightened from 0.15 -- sole hotspot in R24, avg 0.526, p95=0.796
+    'tension-phase':    0.20,  // R25 E4: tightened from 0.30 -- avg 0.407 far exceeded target
     'density-trust':    0.15,  // R17 Evo 2: tightened from 0.18 -- r surged to 0.949 in R16, p95=0.721
     'tension-trust':    0.25,
     'flicker-trust':    0.20,  // R7 Evo 6: relaxed from 0.15 -- was over-decorrelating new high-coupling pair
-    'entropy-phase':    0.25,  // elevated tail (9.2% @0.85) -- tightened
+    'entropy-phase':    0.18,  // R25 E4: tightened from 0.25 -- avg 0.238 approaching target, phase axis surging
     'entropy-trust':    0.25,  // tightened for tail control
     'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened
   };
@@ -146,7 +146,7 @@ pipelineCouplingManager = (() => {
   // feature during scarce coherent); when above 50%, tighten. Supersedes
   // the static constant that required manual tuning every round.
   const _COHERENT_SHARE_EMA_ALPHA = 0.015; // ~64-beat horizon
-  let _coherentShareEma = 0.35;            // initial: assume 35% coherent
+  let _coherentShareEma = 0.15;            // R25 E5: reduced from 0.35 -- 0% coherent in R23+R24, assume low
 
   // -- #9: Coupling Gain Budget Manager (Hypermeta) --
   // Per-axis budget cap prevents coupling manager from dominating any
@@ -172,6 +172,11 @@ pipelineCouplingManager = (() => {
   let _densityGuardBeats = 0;
   const _DENSITY_PAIR_GAIN_CAP = 0.45;
   const _DENSITY_PAIR_GAIN_CAP_THRESHOLD = 0.72;
+
+  // R25 E3: Exploring beat counter for partial target relaxation.
+  // When system is stuck in exploring for >40 beats, partially relax
+  // coupling targets to break the chicken-and-egg bistability.
+  let _exploringBeatCount = 0;
 
   // R23 E5: High-priority pair gain promotion.
   // When a pair's rawRollingAbsCorr stays above threshold while at GAIN_MAX,
@@ -259,7 +264,19 @@ pipelineCouplingManager = (() => {
     const isCoherent = regime === 'coherent' ? 1 : 0;
     _coherentShareEma = _coherentShareEma * (1 - _COHERENT_SHARE_EMA_ALPHA) + isCoherent * _COHERENT_SHARE_EMA_ALPHA;
     const dynamicCoherentRelax = 1.0 + m.max(0, 0.50 - _coherentShareEma) * 1.2;
-    const targetScale = regime === 'coherent' ? dynamicCoherentRelax : 1.0;
+    // R25 E3: Track exploring duration for partial target relaxation.
+    if (regime === 'exploring') { _exploringBeatCount++; } else { _exploringBeatCount = 0; }
+    // R25 E3: Partial target relaxation during sustained exploring (>40 beats).
+    // Breaks the chicken-and-egg bistability: coupling stays below coherent
+    // threshold because aggressive decorrelation prevents rise; coherent
+    // relaxation never activates because threshold never crossed. Applying 25%
+    // of coherent relaxation lets coupling rise naturally during exploring.
+    let targetScale = 1.0;
+    if (regime === 'coherent') {
+      targetScale = dynamicCoherentRelax;
+    } else if (regime === 'exploring' && _exploringBeatCount > 40) {
+      targetScale = 1.0 + (dynamicCoherentRelax - 1.0) * 0.25;
+    }
 
     // R19 E6: Flicker product floor constraint with R20 E5 hysteresis.
     // When flicker product drops below 0.90 -> enter 'guarding' state.
@@ -307,16 +324,37 @@ pipelineCouplingManager = (() => {
       ? clamp((_densityProd - 0.65) / 0.12, 0.25, 1.0)
       : 1.0;
 
+    // R25: Structural floor dampening. When total coupling energy is near its
+    // structural minimum (the floor that decorrelation cannot push below due to
+    // conservation), further gain escalation only redistributes energy between
+    // pairs -- the fundamental cause of whack-a-mole. Dampen all gains
+    // proportionally to proximity to floor.
+    const _floorDampen = safePreBoot.call(() => couplingHomeostasis.getFloorDampen(), 1.0) || 1.0;
+
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
     let nudgeD = 0;
     let nudgeT = 0;
     let nudgeF = 0;
+    // R25: Per-axis positive/negative tracking for coherence-gated accumulation.
+    // When pairs sharing an axis disagree on nudge direction, the opposing forces
+    // represent whack-a-mole redistribution (decorrelating one pair inflates
+    // another). Tracking directional agreement enables gating after accumulation.
+    let nudgeDPos = 0, nudgeDNeg = 0;
+    let nudgeTPos = 0, nudgeTNeg = 0;
+    let nudgeFPos = 0, nudgeFNeg = 0;
 
     /** @param {string} axis  @param {number} amount */
     function _addNudge(axis, amount) {
-      if (axis === 'density') nudgeD += amount;
-      else if (axis === 'tension') nudgeT += amount;
-      else nudgeF += amount;
+      if (axis === 'density') {
+        nudgeD += amount;
+        if (amount >= 0) nudgeDPos += amount; else nudgeDNeg += amount;
+      } else if (axis === 'tension') {
+        nudgeT += amount;
+        if (amount >= 0) nudgeTPos += amount; else nudgeTNeg += amount;
+      } else {
+        nudgeF += amount;
+        if (amount >= 0) nudgeFPos += amount; else nudgeFNeg += amount;
+      }
     }
 
     const matrix = snap.couplingMatrix;
@@ -358,6 +396,19 @@ pipelineCouplingManager = (() => {
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
         const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
         const isDensityFlickerPair = key === 'density-flicker';
+        // R25: Skip gain escalation for non-nudgeable pairs. Neither axis has
+        // a bias knob, so gains can never produce nudges. Escalating them wastes
+        // budget and pollutes HP promotion candidates. Still track EMAs.
+        if (!NUDGEABLE_SET.has(dimA) && !NUDGEABLE_SET.has(dimB)) {
+          ps.lastAbsCorr = absCorr;
+          ps.recentAbsCorr.push(absCorr);
+          if (ps.recentAbsCorr.length > _P95_WINDOW) ps.recentAbsCorr.shift();
+          const at = _getAdaptiveTarget(key);
+          const adaptEma = isEntropyPair ? _TARGET_ADAPT_EMA * 2.5 : _TARGET_ADAPT_EMA;
+          at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
+          at.rawRollingAbsCorr = at.rawRollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
+          continue;
+        }
         let _axisGainScale = 1.0;
         if (absCorr > target) {
           const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
@@ -409,6 +460,9 @@ pipelineCouplingManager = (() => {
             // R20 E2: Apply global gain multiplier to escalation rate.
             // When homeostasis detects redistribution, slow ALL gains.
             rate *= _globalGainMultiplier;
+            // R25: Structural floor dampening. Reduces escalation when coupling
+            // energy is near its structural minimum to prevent redistribution.
+            rate *= _floorDampen;
             let pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
             // R23 E5: Allow promoted pair higher gain ceiling.
             if (key === _hpPromotedPair) {
@@ -610,6 +664,25 @@ pipelineCouplingManager = (() => {
       }
     }
 
+    // R25: Coherence-gated nudge accumulation. The structural cause of
+    // whack-a-mole is that pairs sharing an axis often disagree on nudge
+    // direction (pair A wants density UP, pair B wants density DOWN).
+    // The arithmetic sum partially cancels, but BOTH pairs' gains escalate
+    // because neither sees improvement -- a positive feedback loop that
+    // drives total energy up while shuffling it between pairs.
+    // Coherence = |net nudge| / (|positive| + |negative|). When pairs
+    // fully agree (coherence=1), the nudge passes through. When they
+    // disagree (coherence->0), the nudge is suppressed because it would
+    // only redistribute, not reduce, total coupling energy.
+    function _coherenceGate(pos, neg) {
+      const total = pos + m.abs(neg);
+      if (total < 0.001) return 1.0;
+      return m.abs(pos + neg) / total;
+    }
+    nudgeD *= _coherenceGate(nudgeDPos, nudgeDNeg);
+    nudgeT *= _coherenceGate(nudgeTPos, nudgeTNeg);
+    nudgeF *= _coherenceGate(nudgeFPos, nudgeFNeg);
+
     // #9: Budget enforcement - cap per-axis accumulation before soft-limiting
     // to prevent coupling manager from dominating ANY single pipeline.
     // R20 E4: Dynamic axis budget self-calibration. Derive from live total
@@ -732,7 +805,9 @@ pipelineCouplingManager = (() => {
       at.rawRollingAbsCorr *= dampen;
     }
     // #6: Dampen (not reset) coherent share EMA -- preserves cross-section regime memory
-    _coherentShareEma = _coherentShareEma * 0.7 + 0.35 * 0.3;
+    _coherentShareEma = _coherentShareEma * 0.7 + 0.15 * 0.3;
+    // R25 E3: Reset exploring beat counter per section
+    _exploringBeatCount = 0;
     // R20 E5: Reset flicker guard to allow fresh assessment per section
     _flickerGuardState = 'normal';
     // R24 E4: Reset density guard per section

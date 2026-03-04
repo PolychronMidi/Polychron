@@ -1,3 +1,104 @@
+## R25 — Pre-Run — STRUCTURAL WHACK-A-MOLE FIX + 6 EVOLUTIONS
+
+**Scope:** Three structural fixes to the decorrelation engine + all 6 R24 evolutions.
+**Files:** pipelineCouplingManager.js, couplingHomeostasis.js, regimeClassifier.js
+
+### Root Cause Analysis
+The whack-a-mole has persisted across 24+ rounds because the problem is **structurally underdetermined**:
+3 nudgeable bias axes (density, tension, flicker) cannot independently control 15 pair correlations.
+Per-pair greedy nudging mechanically redistributes coupling energy rather than reducing it.
+When pair A wants density UP and pair B wants density DOWN, both nudges partially cancel, but
+BOTH pairs' gains escalate because neither sees improvement — a positive feedback loop that
+drives total energy up while shuffling it between pairs. 12 hypermeta controllers fighting over
+the same 3 knobs made this worse, not better.
+
+### Structural Fix 1: Coherence-Gated Nudge Accumulation
+Track per-axis positive and negative nudge contributions separately. After all pairs processed,
+compute coherence = |net| / (|positive| + |negative|). Scale the effective nudge by coherence.
+When pairs fully agree on direction (coherence=1), the nudge passes through. When they disagree
+(coherence→0), the nudge is suppressed because it would only redistribute. This directly prevents
+the whack-a-mole: opposing forces cancel instead of escalating gains.
+
+### Structural Fix 2: Energy Floor Tracking + Gain Dampening
+Track rolling minimum of total coupling energy with asymmetric rates (fast down α=0.20 when
+discovering new minimum, slow up α=0.002 for floor relaxation). The floor represents the
+minimum achievable coupling given structural correlations. When energy is within 20% of the
+floor, dampen all gain escalation rates (range 0.05–1.0). This prevents the system from
+endlessly escalating gains when total energy is already at its structural minimum.
+
+### Structural Fix 3: Non-Nudgeable Pair Exclusion
+Pairs where neither axis has a bias knob (entropy-trust, entropy-phase, trust-phase) now skip
+gain escalation entirely. They still track correlation EMAs for diagnostics but no longer waste
+budget on gains that can never produce nudges, and no longer pollute HP promotion candidates.
+
+### R24 Evolutions Implemented
+- **E1:** Proximity seeding rate 0.001→0.002, cap 0.05→0.07 (regimeClassifier.js)
+- **E2:** Adaptive peak decay — peakEnergyEma ×0.98 when budget > energy×1.25 (couplingHomeostasis.js)
+- **E3:** Exploring partial target relaxation — 25% of coherent relaxation after 40 beats exploring (pipelineCouplingManager.js)
+- **E4:** Phase-pair target tightening — density-phase 0.15→0.10, tension-phase 0.30→0.20, flicker-phase 0.15→0.12, entropy-phase 0.25→0.18 (pipelineCouplingManager.js)
+- **E5:** Coherent share EMA anchor 0.35→0.15 (pipelineCouplingManager.js)
+- **E6:** Regime transition diagnostic — explainabilityBus REGIME_TRANSITION with coupling/threshold/gap (regimeClassifier.js)
+
+### Hypotheses to Track
+- Structural Fix 1: Redistribution should decrease. Axis-level coupling variance (Gini) should drop. No axis should surge >40%.
+- Structural Fix 2: Total coupling energy should settle near the floor rather than oscillating. Gain escalation rates should decrease as floor is approached.
+- Structural Fix 3: No HP promotion candidates from non-nudgeable pairs. No gain escalation on entropy-trust, entropy-phase, trust-phase.
+- E1+E3+E5: Coherent% should reach 15-45%. Gap between coupling and threshold should flip positive within 60-80 beats.
+- E2: Budget-energy gap should close to <20% by end of run. Multiplier should be active (< 0.95) during above-budget episodes.
+- E4: Phase axis total should drop from 1.520 to <1.3. density-phase p95 should fall below 0.70.
+- Meta: Total energy should stay flat or decrease (not inflate from reduced gain pressure — coherence gating prevents wasted gains).
+
+---
+
+## R24 — 2026-03-04 — EVOLVED
+
+**Profile:** explosive | **Beats:** 218 | **Duration:** 33.1s | **Notes:** 7,829
+**Fingerprint:** 6/8 stable | Drifted: noteCount, regimeDistribution
+
+### Key Observations
+- **COHERENT STILL 0% — missed by 0.003.** System entered evolving at beat 57, spent 48 beats there, then transitioned to exploring at beat 105. Proximity seeding bonus after 44 effective beats = 0.044, effective threshold = 0.170, coupling strength = 0.167. Gap: 0.003. The 0.001/beat seeding rate was too slow to bridge the gap within the evolving window. Exploring dominated remainder (51.8%, 113 beats). Two consecutive rounds at 0% coherent confirms the chicken-and-egg bistability: without coherent, no relaxation; without relaxation, coupling stays below threshold.
+- **E3 PROPORTIONAL CONTROL: MASSIVE SUCCESS.** multiplierStdDev 0.345→0.098 (-71.6%), floorContactBeats 265→0 (eliminated), ceilingContactBeats 299→66 (-77.9%), multiplierMin 0.200→0.611 (+205%). Bang-bang oscillation completely resolved. Multiplier stays in healthy 0.61-1.0 range. The bimodal distribution is gone.
+- **E2 REDISTRIBUTION RESTORED:** redistributionScore 0.000→0.234. Primary turbulence threshold (0.008) or Gini secondary trigger activated. Redistribution now detectable after being blind in R23.
+- **E4 DENSITY GUARD CONFIRMED:** densityProduct 0.707→0.791 (+11.9%). Guard likely activated during early volatility then exited. All three products improved: flicker 0.904→1.079, tension 1.385→1.193.
+- **BUDGET-ENERGY GAP RETURNED:** energyBudget=4.349 vs totalEnergyEma=3.280 (32.6% gap). peakEnergyEma=4.832 inflated during warm-up. Only 42 measure beats: peak decay (0.995^42=0.81) insufficient. Proportional control target = budget/energy = 1.326, clamped to 1.0 → governor passive.
+- **HOTSPOTS COLLAPSED 8→1:** Only density-phase p95=0.796 remains (R23: 3 pairs above 0.96). No pair exceeds 0.85 at p95. Tail severity massively improved. 5 pairs have peak >0.70 (down from 8 at p95).
+- **PHASE AXIS SURGED +47.7%:** 1.029→1.520 (full-run avg sum). Phase absorbed energy from tension (-26.7%) and entropy (-28.5%) axes. density-phase +216% is the new dominant pair. Classic whack-a-mole redistribution, but total energy down -3.1%.
+- **COMPOSITION VERY SHORT:** 218 entries / 33.1s (R23: 745 / 100.6s, -70.7%). Exploring-dominant regime with higher density (0.531 vs 0.488) may end sections faster. Wall time 1256.5s anomalously high (I/O or environmental).
+- **Correlation trend flips halved:** 10→5. 4 of 5 involve phase axis, consistent with phase-axis energy rotation.
+- **Trust healthy:** convergence 0.356, coherenceMonitor 0.698 dominant, no starvation. No HP promotion fired (no pairs at GAIN_MAX).
+- **E5 HP GATES MOOT:** No pair reached GAIN_MAX×0.95. Nudgeability and effectiveness gates not tested. Highest gain: density-tension 0.447.
+- **E6 NARRATIVE HONESTY CONFIRMED:** Narrative reports "5 hotspot pairs (peak > 0.70) -- system elevated". Correctly surfaces coupling severity.
+
+### Evolutions Applied (from R23)
+- E1: Regime bistability fix (min dwell 4, proximity seeding 0.001/beat) — **refuted** — coherent still 0%. Missed threshold by 0.003. Seeding rate too slow; 44 effective beats gave only 0.044 bonus vs gap of 0.047. System transitioned evolving→exploring before reaching 0.05 cap.
+- E2: Redistribution threshold 0.012→0.008 + Gini>0.35 trigger — **confirmed** — redistributionScore 0→0.234. Redistribution now detectable. Primary or secondary trigger activated (Gini=0.339 near boundary).
+- E3: Proportional multiplier control — **confirmed** — multiplierStdDev 0.345→0.098, floorContact 265→0, ceilingContact 299→66. Bang-bang eliminated. Range 0.611-1.0 (was 0.20-1.0).
+- E4: Density product floor guard — **confirmed** — densityProduct 0.707→0.791 (+11.9%). Guard pattern (enter <0.75, exit >0.82) working.
+- E5: HP promotion validation (nudgeability + effectiveness gates) — **inconclusive** — no pair reached GAIN_MAX×0.95, so gates were never tested. The mechanism is correctly gated but untriggered.
+- E6: Narrative coupling honesty — **confirmed** — narrative reports "5 hotspot pairs (peak > 0.70)" with severity context. Information now visible.
+
+### Evolutions Proposed (for R25)
+- E1: Proximity seeding rate 0.001→0.002 + cap 0.05→0.07 — src/conductor/signal/regimeClassifier.js
+- E2: Adaptive peak decay for budget convergence — src/conductor/signal/couplingHomeostasis.js
+- E3: Exploring-phase partial target relaxation (25% of coherent relaxation after 40 beats) — src/conductor/signal/pipelineCouplingManager.js
+- E4: Phase-pair target tightening (density-phase 0.10, tension-phase 0.20, flicker-phase 0.12, entropy-phase 0.18) — src/conductor/signal/pipelineCouplingManager.js
+- E5: Coherent share EMA initial anchor 0.35→0.15 — src/conductor/signal/pipelineCouplingManager.js
+- E6: Regime transition diagnostic enrichment (coupling/threshold/gap at transitions) — src/conductor/signal/regimeClassifier.js
+
+### Hypotheses to Track
+- E1+E3: coherent% should be 15-45%. System should enter coherent within 60-80 beats. The 0.002/beat seeding rate reaches 0.07 cap at 35+dwell beats. Combined with E3's partial relaxation, coupling should rise above threshold.
+- E2: energyBudget should be within 20% of totalEnergyEma by end-of-run. Multiplier should spend <20% at ceiling. Governor should become active (multiplier <0.95) during above-budget episodes.
+- E3: During sustained exploring (>40 beats), coupling should trend upward (not flat or declining). Verify via coupling strength in regime transition diagnostics (E6).
+- E4: Phase axis total should decrease from 1.520 to <1.3. density-phase p95 should drop below 0.70. No axis should surge above 2.0.
+- E5: dynamicCoherentRelax at run start should be ~1.42 (vs 1.18). Early-beat coupling should trend upward during first 30 beats.
+- E6: Trace should contain REGIME_TRANSITION events with coupling/threshold/gap values. Verify gap is positive at evolving→coherent transitions.
+- Meta: Total coupling energy target <3.8 (currently 4.038, trending down). E2 budget convergence + E3 relaxation should NOT inflate total energy; instead they shift timing of decorrelation.
+- Meta: Note count drift should normalize if coherent entry is restored. Coherent-inclusive regimes produce more balanced compositions (418-611 entries in R20-R22 vs 218 in R24).
+- Meta: Regime oscillation pattern (R23 evolving-dominant → R24 exploring-dominant) should break once coherent is achievable. Watch for overcorrection to coherent-dominant (>65%).
+- Meta: axisCouplingTotals reports trust=null, phase=null — investigate whether trust-phase pair is missing from coupling matrix computation or only from axis tallying.
+
+---
+
 ## R23 — 2026-03-04 — EVOLVED
 
 **Profile:** explosive | **Beats:** 745 | **Duration:** 100.6s | **Notes:** 26,029

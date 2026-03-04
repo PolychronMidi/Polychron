@@ -71,6 +71,13 @@ couplingHomeostasis = (() => {
   // --- State ---
   let _totalEnergyEma = 0;
   let _prevTotalEnergy = 0;
+  // R25: Structural energy floor tracking. The minimum achievable coupling
+  // given structural correlations between dimensions. Asymmetric adaptation:
+  // fast downward (discovering new minimum), very slow upward (floor relaxation).
+  // When energy is near the floor, the decorrelation engine is at its
+  // structural optimum -- further gain escalation only redistributes energy
+  // between pairs (the fundamental cause of whack-a-mole).
+  let _totalEnergyFloor = 8.0;          // initialized high; converges down
   let _redistributionScore = 0;        // 0 = none, 1 = severe redistribution
   let _globalGainMultiplier = 1.0;     // applied to pipelineCouplingManager
   let _energyBudget = 3.5;            // initialized high; converges from peak observation
@@ -180,6 +187,16 @@ couplingHomeostasis = (() => {
       _totalEnergyEma = _totalEnergyEma * (1 - _ENERGY_EMA_ALPHA) + totalEnergy * _ENERGY_EMA_ALPHA;
     }
 
+    // R25: Update structural floor (asymmetric: fast down, slow up).
+    // When energy reaches a new low, the floor adapts quickly (alpha=0.20).
+    // When energy rises above floor, the floor drifts up very slowly
+    // (alpha=0.002, ~500-beat horizon) to account for section changes.
+    if (_totalEnergyEma < _totalEnergyFloor) {
+      _totalEnergyFloor = _totalEnergyFloor * 0.80 + _totalEnergyEma * 0.20;
+    } else {
+      _totalEnergyFloor = _totalEnergyFloor * 0.998 + _totalEnergyEma * 0.002;
+    }
+
     // --- 2. Self-derive energy budget from observed peak ---
     _peakEnergyEma = m.max(_totalEnergyEma, _peakEnergyEma * _PEAK_DECAY);
     // R22 E2: Cap peak at 1.5x current EMA to prevent runaway from early volatility.
@@ -187,6 +204,13 @@ couplingHomeostasis = (() => {
     // ensures budget tracks actual energy within 50% even during section transitions.
     if (_totalEnergyEma > 0.1) {
       _peakEnergyEma = m.min(_peakEnergyEma, _totalEnergyEma * _PEAK_EMA_CAP_RATIO);
+    }
+    // R25 E2: Accelerated peak decay when budget diverges from energy by >25%.
+    // Fixed 0.995 decay needed ~140 beats for a 47% gap. With only 42 measure
+    // beats in R24, budget stayed at 4.349 vs energy 3.280 (32.6% gap), making
+    // proportional control passive. Combined 0.975/beat closes gap in ~35 beats.
+    if (_energyBudget > _totalEnergyEma * 1.25 && _totalEnergyEma > 0.1) {
+      _peakEnergyEma *= 0.98;
     }
     if (_beatCount >= 8 && _peakEnergyEma > 0.1) {
       _energyBudget = _peakEnergyEma * _BUDGET_PEAK_RATIO;
@@ -345,6 +369,22 @@ couplingHomeostasis = (() => {
   }
 
   /**
+   * R25: Structural floor dampening factor for pipelineCouplingManager.
+   * When total coupling energy is near the structural minimum (the floor
+   * that decorrelation cannot push below due to conservation), further gain
+   * escalation only redistributes energy between pairs -- the fundamental
+   * cause of whack-a-mole. Returns 0.05 (near floor) to 1.0 (well above).
+   * @returns {number}
+   */
+  function getFloorDampen() {
+    if (_totalEnergyFloor < 0.1 || _totalEnergyEma < 0.1) return 1.0;
+    const proximity = _totalEnergyEma / _totalEnergyFloor;
+    // proximity ~1.0 = at floor -> heavy dampening (0.05)
+    // proximity >1.2 = well above floor -> no dampening (1.0)
+    return clamp((proximity - 1.0) / 0.20, 0.05, 1.0);
+  }
+
+  /**
    * Diagnostic snapshot for trace pipeline.
    * R22: Extended with tickCount, time-series derived metrics, and per-beat diagnostics.
    */
@@ -388,6 +428,8 @@ couplingHomeostasis = (() => {
       totalEnergyEma: Number(_totalEnergyEma.toFixed(4)),
       energyBudget: Number(_energyBudget.toFixed(4)),
       peakEnergyEma: Number(_peakEnergyEma.toFixed(4)),
+      totalEnergyFloor: Number(_totalEnergyFloor.toFixed(4)),
+      floorDampen: Number(getFloorDampen().toFixed(4)),
       redistributionScore: Number(_redistributionScore.toFixed(4)),
       globalGainMultiplier: Number(_globalGainMultiplier.toFixed(4)),
       giniCoefficient: Number(_giniCoefficient.toFixed(4)),
@@ -430,5 +472,5 @@ couplingHomeostasis = (() => {
   conductorIntelligence.registerRecorder('couplingHomeostasis', refresh);
   conductorIntelligence.registerModule('couplingHomeostasis', { reset }, ['section']);
 
-  return { getState, reset, tick };
+  return { getState, reset, tick, getFloorDampen };
 })();

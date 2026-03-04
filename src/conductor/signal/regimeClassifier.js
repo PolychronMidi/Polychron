@@ -30,6 +30,9 @@ regimeClassifier = (() => {
   let _evolvingBeats = 0;
   let _evolvingMinDwell = 4;  // default; profile-adaptive via setter
 
+  // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
+  let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0 };
+
   // R17 structural fix: Self-calibrating regime saturation.
   // Tracks rolling coherent share and derives penalty dynamically instead of
   // using static cap/rate constants. When coherent share > 60%, penalty
@@ -164,10 +167,15 @@ regimeClassifier = (() => {
     // Breaks bistability where coupling (0.214 in R23) sits just below
     // threshold (~0.255) indefinitely because coherent relaxation never
     // activates. Max bonus 0.05 (~20% of base threshold) after 50 beats.
+    // R25 E1: Rate doubled 0.001->0.002, cap raised 0.05->0.07.
+    // R24 missed coherent by 0.003 with 44 beats at 0.001/beat (bonus=0.044).
+    // At 0.002/beat, 0.07 cap reached at 35+dwell beats instead of 54.
     const evolvingProximityBonus = (lastRegime === 'evolving' && _evolvingBeats > _evolvingMinDwell)
-      ? clamp((_evolvingBeats - _evolvingMinDwell) * 0.001, 0, 0.05)
+      ? clamp((_evolvingBeats - _evolvingMinDwell) * 0.002, 0, 0.07)
       : 0;
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus + coherentDurationPenalty;
+    // R25 E6: Cache classify inputs for transition diagnostics in resolve()
+    _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus };
     if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
@@ -226,6 +234,17 @@ regimeClassifier = (() => {
           candidateCount = 0;
           return lastRegime;
         }
+        // R25 E6: Regime transition diagnostic. Emits coupling/threshold/gap
+        // at the moment of transition for post-run verification of proximity
+        // seeding and coherent-entry mechanics.
+        explainabilityBus.emit('REGIME_TRANSITION', 'both', {
+          from: lastRegime, to: rawRegime,
+          coupling: _lastClassifyInputs.couplingStrength,
+          threshold: _lastClassifyInputs.coherentThreshold,
+          proximityBonus: _lastClassifyInputs.evolvingProximityBonus,
+          gap: _lastClassifyInputs.couplingStrength - _lastClassifyInputs.coherentThreshold,
+          exploringBeats, evolvingBeats: _evolvingBeats
+        });
         if (lastRegime === 'exploring') exploringBeats = 0;
         if (lastRegime === 'coherent') coherentBeats = 0;
         if (lastRegime === 'evolving') _evolvingBeats = 0;
