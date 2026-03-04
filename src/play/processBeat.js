@@ -142,6 +142,11 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (_PROFILE) _marks[13] = process.hrtime.bigint();
   if (clRest.shouldRest) restSynchronizer.postRest(clAbsMs, layer);
 
+  // R22 E1: Per-beat homeostasis multiplier update. Coupling data is analysed
+  // per-measure in the recorder pipeline; the multiplier is smoothed per-beat
+  // here for responsive energy governance (~418 ticks/run vs ~78 recorder calls).
+  couplingHomeostasis.tick();
+
   crossLayerBeatRecord({
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
     clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1,

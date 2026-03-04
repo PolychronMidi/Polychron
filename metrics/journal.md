@@ -1,3 +1,52 @@
+## R22 — 2026-03-04 — STABLE
+
+**Profile:** explosive | **Beats:** 418 | **Duration:** 63.0s | **Notes:** 15,816
+**Fingerprint:** 8/8 stable | Drifted: none
+
+### Key Observations
+- **Homeostasis governor MAJOR IMPROVEMENT: multiplier=0.748 (was 0.386).** No longer permanently floor-locked. Oscillated between 0.200-0.947. Proportional throttle (E5) + recovery floor (E2) confirmed working. Total coupling energy decreased further: 3.816->3.678 (-3.6%), third consecutive decline.
+- **CRITICAL BOTTLENECK DISCOVERED: recorder fires once per measure, not per beat.** invokeCount=78/418 (18.7% coverage). layerPass.js caches conductor context per-measure for performance (~147 function calls). The governor only sees 78 of 418 beats. EMA constants (alpha=0.10, ~10-beat) were designed for per-beat — at measure resolution, effective convergence ~54 beats.
+- **Budget permanently unreachable.** peakEnergyEma=6.015 set during early volatility, decays 0.999/beat but only 78 invocations = total decay 7.5%. Budget=5.413 vs actual totalEnergyEma=3.784 (43% gap). overBudget NEVER fires. All throttle from redistributionScore>0.15 only.
+- **Flicker product RECOVERED to 0.901 (was 0.847) — target >0.90 CONFIRMED.** Escalated nudge (0.002/0.005/0.008) + gain cap at 0.45 working. Flicker axis total deflated 1.953->1.478 (-24.3%).
+- **New whack-a-mole balloons:** density-tension surged 0.120->0.470 (+292%, now at GAIN_MAX 0.600). flicker-phase surged 0.270->0.471 (+74%). Trust-axis pairs universally deflated (-40 to -46%), energy absorbed by tension-axis and phase-axis.
+- **Regime improving:** coherent 74.2%->67.9% (-6.3pts), maxConsecutive 203->151 (target <150, within 1 beat!). But evolving 3.9%->1.7% REGRESSED — system passes through evolving in only 7 beats before snapping to coherent.
+- **Matrix caching working:** emptyMatrixBeats=5/78 invocations. 93.6% processing rate when invoked. The issue is invocation rate (18.7%), not matrix availability.
+- **redistributionScore improved but chronically elevated:** 0.756 (was 0.959). pairTurbulenceEma=0.035 > threshold 0.02. Cooldown working (score not locked) but absolute threshold doesn't scale with total energy.
+- **Trust convergence steady:** 0.378 (R21: 0.362, +4.4%). stutterContagion gained +17%, phaseLock +20%. No module starved. Healthy distribution.
+- **Gini coefficient 0.250** (R21: 0.317, -21%) — coupling more uniformly distributed. Below 0.40 threshold. Concentration guard not needed.
+- **3 hotspots (R21: 1):** density-flicker p95=0.940, flicker-phase p95=0.873, density-tension p95=0.743. Hotspot count increased because new balloons created new tail severity, even as density-flicker avg dropped 32%.
+- **Capability products:** density 0.778, tension 1.079, flicker 0.901. Flicker back above 0.90 after 3 rounds of intervention.
+
+### Evolutions Applied (from R21)
+- E1: Homeostasis matrix caching — **confirmed** — emptyMatrixBeats=5, 93.6% processing rate when invoked. Matrix caching works. But invocation rate (78/418=18.7%) is the real bottleneck (recorder fires per-measure not per-beat).
+- E2: Recovery floor + redistribution cooldown — **confirmed** — multiplier 0.386->0.748, redistributionScore 0.959->0.756. Floor prevents permanent lock, cooldown breaks score out of 0.959. But turbulence (0.035) still exceeds threshold (0.02) chronically.
+- E3: Profile-adaptive regime alpha (explosive=0.04) — **partially confirmed** — coherent 74.2%->67.9% (target <65%, close). maxConsecutive 203->151 (target <150, 1 beat away!). But evolving 3.9%->1.7% REGRESSED (target >5% FAILED). Alpha accelerates EMA but doesn't extend evolving phase.
+- E4: Flicker nudge escalation + gain cap — **confirmed** — flicker product 0.847->0.901 (>0.90 target achieved!). Flicker axis total 1.953->1.478 (-24.3%). No flicker pair at gain >0.45 when product <0.88 (product now above 0.88). pipelineCouplingManager flicker bias 0.908->0.928 (improved).
+- E5: Proportional throttle — **partially confirmed** — multiplier oscillated (0.200-0.947). Rate scales with over-budget severity when overBudget fires. But overBudget NEVER fires because budget too high (5.413 vs actual 3.784). All throttle from redistribution. multiplierMin=0.200 (still touches floor, target >0.30 FAILED).
+- E6: Time-series diagnostics — **confirmed** — invokeCount, emptyMatrixBeats, multiplierMin/Max all visible. Correctly diagnosed: 78/418 invocations, 5 empty matrices, 73 processed beats. Root cause identified: measure-only recorder invocation.
+
+### Evolutions Proposed (for R23)
+- E1: Per-beat homeostasis invocation — src/play/processBeat.js, src/conductor/signal/couplingHomeostasis.js
+- E2: Budget convergence fix (peak decay 0.999->0.995, peak cap at 1.5x EMA) — src/conductor/signal/couplingHomeostasis.js
+- E3: Relative redistribution turbulence threshold — src/conductor/signal/couplingHomeostasis.js
+- E4: Evolving regime phase extension (min dwell 12 beats) — src/conductor/signal/regimeClassifier.js
+- E5: Density-tension balloon intervention (high-priority gain ceiling 0.80) — src/conductor/signal/pipelineCouplingManager.js
+- E6: Multiplier time-series trace for throttle behavior analysis — src/conductor/signal/couplingHomeostasis.js, scripts/trace-summary.js
+
+### Hypotheses to Track
+- E1: invokeCount should equal totalEntries (418). beatCount should equal non-initializing beats (~345). totalEnergyEma convergence within 20 beats (not 54). multiplier should respond within 5 beats of energy changes.
+- E2: energyBudget should be within 30% of totalEnergyEma by end-of-run. overBudget should activate during genuine high-energy passages. peakEnergyEma should track actual energy, not be stuck at early-run volatility.
+- E3: redistributionScore should oscillate between 0.20-0.50 (not 0.756). Throttle should use BOTH overBudget and redistribution as triggers.
+- E4: evolving% should exceed 5%. Evolving phase should last >=12 beats per transition. coherent% should further decrease toward 60%.
+- E5: density-tension avg should decrease below 0.40. No other pair should surge above 0.45. Gain should temporarily reach 0.80 then demote.
+- E6: multiplierStdDev, floorContactBeats, ceilingContactBeats, avgRecoveryDuration should be visible in trace-summary. Use for R23 throttle behavior diagnosis.
+- Meta: Total coupling energy target <3.5 (currently 3.678, trending down). If E1+E2+E3 fix governor coverage and budget, expect accelerated decline.
+- Meta: Whack-a-mole test: does E5 density-tension deflation cause inflation elsewhere? If homeostasis governs total energy, new balloons should be contained.
+- Meta: Flicker product should remain >0.90 (currently 0.901). E5's gain increase on density-tension should not compress flicker signal.
+- Meta: 3 hotspots (density-flicker, flicker-phase, density-tension) — target reduction to 1-2 by governor improvements.
+
+---
+
 ## R21 — 2026-03-03 — STABLE
 
 **Profile:** explosive | **Beats:** 414 | **Duration:** 47.1s | **Notes:** 15,696

@@ -16,20 +16,24 @@
  *  4. Concentration guard (Gini coefficient): penalizes concentrated energy
  *  5. Self-derives energy budget from observed peak energy
  *
- * R20 overhaul: Fixed convergence failure from R20 run where governor processed
- * only 72/611 beats and never throttled. Key fixes:
- * - Removed safePreBoot wrapper (profiler boots before this module)
- * - Faster EMA convergence (0.10 alpha, ~10-beat horizon)
- * - Higher section dampening preservation (0.90)
- * - EMA-smoothed redistribution detection (not raw beat-to-beat delta)
- * - Budget derived from observed peak energy, not static baselines
+ * Architecture: Two-speed update.
+ *  - refresh() is called from the recorder pipeline (~once per measure).
+ *    This is where coupling data is analysed: energy EMAs, redistribution
+ *    detection, Gini coefficient, and budget self-derivation.
+ *  - tick() is called from processBeat (once per beat-layer entry, ~418/run).
+ *    This is where the multiplier is adjusted: throttle, recovery, floor,
+ *    and time-series recording. Smooth per-beat resolution prevents the
+ *    multiplier from being stuck for 5+ beats between measure boundaries.
  *
- * R21 overhaul: Fixed three critical issues from R21 run:
- * - beatCount=60/414 (14.5%): Added matrix caching + invoke tracking (E1/E6)
- * - Permanent throttle lock (multiplier=0.386): Recovery floor + redistribution
- *   cooldown prevent ratchet-to-floor (E2). Proportional throttle scales with
- *   over-budget severity (E5).
- * - Redistribution always true: Raised turbulence threshold 0.005->0.02 (E2)
+ * R22 evolution summary:
+ * - E1: Per-beat tick() for multiplier management (separate from per-measure
+ *   coupling analysis in refresh()). invokeCount was 78/418 because recorders
+ *   fire once per measure via layerPass.js caching.
+ * - E2: Budget convergence fix -- peak decay 0.999->0.995, peak capped at
+ *   1.5x totalEnergyEma to prevent runaway budget from early volatility.
+ * - E3: Relative redistribution turbulence threshold -- turbulence/totalEnergy
+ *   instead of absolute threshold. Scale-invariant detection.
+ * - E6: Multiplier time-series trace for throttle behavior analysis.
  *
  * Registered as the 12th hypermeta self-calibrating controller.
  */
@@ -52,13 +56,16 @@ couplingHomeostasis = (() => {
   const _MINIMUM_RECOVERY_RATE = 0.003;     // always applied, even during throttle
   const _GAIN_FLOOR = 0.20;                 // never fully disable coupling management
   const _GINI_THRESHOLD = 0.40;             // concentration guard activates above this
-  // R20 E3: Peak energy decay rate (0.999/beat ~ 1000-beat half-life).
-  const _PEAK_DECAY = 0.999;
+  // R22 E2: Faster peak decay (0.999->0.995, ~200-beat half-life).
+  // At 78 invocations/run: 0.995^78 = 0.676 (32% decay vs 7.5% at 0.999).
+  const _PEAK_DECAY = 0.995;
   const _BUDGET_PEAK_RATIO = 0.90;          // budget = 90% of observed peak
-  // R21 E2: Redistribution turbulence threshold (raised from 0.005).
-  // Normal rolling-window noise produces turbulence ~0.01-0.015; only genuine
-  // redistribution (pair-level shuffling while total stable) exceeds 0.02.
-  const _REDIST_TURBULENCE_THRESHOLD = 0.02;
+  // R22 E2: Cap peak at 1.5x current EMA to prevent runaway from early volatility.
+  const _PEAK_EMA_CAP_RATIO = 1.5;
+  // R22 E3: Relative redistribution turbulence threshold (replaces absolute 0.02).
+  // Turbulence is normalized by total energy for scale-invariant detection.
+  // At totalEnergy=3.8, threshold 0.012 = effective absolute 0.046.
+  const _REDIST_RELATIVE_THRESHOLD = 0.012;
   // R21 E2: Redistribution cooldown -- consecutive non-redistributing beats
   // before accelerated score decay kicks in.
   const _REDIST_COOLDOWN_BEATS = 20;
@@ -72,7 +79,7 @@ couplingHomeostasis = (() => {
   let _energyBudget = 3.5;            // initialized high; converges from peak observation
   let _peakEnergyEma = 0;             // R20 E3: trailing max of totalEnergyEma
   let _giniCoefficient = 0;
-  let _beatCount = 0;                 // beats with valid coupling data
+  let _beatCount = 0;                 // beats with valid coupling data (measure-level)
   // R20 E2: EMA-smoothed redistribution inputs (replace raw beat-to-beat delta).
   let _energyDeltaEma = 0;
   let _pairTurbulenceEma = 0;
@@ -87,6 +94,17 @@ couplingHomeostasis = (() => {
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
   let _multiplierMin = 1.0;
   let _multiplierMax = 0.0;
+  // R22 E1: Per-beat tick counter (tracks tick() calls from processBeat)
+  let _tickCount = 0;
+  // R22 E1: Flag to skip redundant multiplier update when refresh() already ran
+  let _refreshedThisTick = false;
+  // R22 E1: Cached throttle state from refresh() for use in tick()
+  let _overBudget = false;
+  let _energyDecreasing = false;
+  // R22 E6: Multiplier time-series for throttle behavior analysis
+  /** @type {{ beat: number, m: number, e: number, r: number }[]} */
+  const _multiplierTimeSeries = [];
+  const _MAX_TIME_SERIES = 2000;
 
   /** @type {Record<string, number>} */
   let _pairAbsR = {};
@@ -168,6 +186,12 @@ couplingHomeostasis = (() => {
 
     // --- 2. Self-derive energy budget from observed peak ---
     _peakEnergyEma = m.max(_totalEnergyEma, _peakEnergyEma * _PEAK_DECAY);
+    // R22 E2: Cap peak at 1.5x current EMA to prevent runaway from early volatility.
+    // In R22, peakEnergyEma=6.015 while totalEnergyEma=3.784 (59% gap). This cap
+    // ensures budget tracks actual energy within 50% even during section transitions.
+    if (_totalEnergyEma > 0.1) {
+      _peakEnergyEma = m.min(_peakEnergyEma, _totalEnergyEma * _PEAK_EMA_CAP_RATIO);
+    }
     if (_beatCount >= 8 && _peakEnergyEma > 0.1) {
       _energyBudget = _peakEnergyEma * _BUDGET_PEAK_RATIO;
     }
@@ -189,11 +213,17 @@ couplingHomeostasis = (() => {
     }
     _pairTurbulenceEma = _pairTurbulenceEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + pairTurbulence * _REDISTRIBUTION_EMA_ALPHA;
 
-    // R21 E2: Raised turbulence threshold 0.005->0.02. Normal rolling-window
-    // noise was always above 0.005, causing permanent redistribution detection.
+    // R22 E3: Relative turbulence threshold (replaces absolute 0.02).
+    // Turbulence normalized by total energy is scale-invariant. In R22,
+    // pairTurbulenceEma=0.035 and totalEnergyEma=3.784 -> relative=0.0092.
+    // At absolute threshold 0.02, this was always triggered. At relative
+    // threshold 0.012, it correctly identifies genuine redistribution events.
+    const relativeTurbulence = _totalEnergyEma > 0.1
+      ? _pairTurbulenceEma / _totalEnergyEma
+      : 0;
     const isRedistributing = _prevTotalEnergy > 0.1 &&
       m.abs(_energyDeltaEma) / _totalEnergyEma < 0.05 &&
-      _pairTurbulenceEma > _REDIST_TURBULENCE_THRESHOLD;
+      relativeTurbulence > _REDIST_RELATIVE_THRESHOLD;
     const redistTarget = isRedistributing ? 1.0 : 0.0;
     _redistributionScore = _redistributionScore * (1 - _REDISTRIBUTION_EMA_ALPHA) + redistTarget * _REDISTRIBUTION_EMA_ALPHA;
 
@@ -211,23 +241,12 @@ couplingHomeostasis = (() => {
 
     _prevTotalEnergy = totalEnergy;
 
-    // --- 4. Global gain throttle ---
-    const overBudget = _totalEnergyEma > _energyBudget;
-    const energyDecreasing = _energyDeltaEma < -0.005;
-
-    if (_redistributionScore > 0.15 || overBudget) {
-      // R21 E5: Proportional throttle -- rate scales with over-budget severity.
-      // At budget edge: 0.005/beat. At 2x budget: 0.025/beat.
-      const overBudgetRatio = overBudget
-        ? clamp((_totalEnergyEma - _energyBudget) / _energyBudget, 0, 1)
-        : 0;
-      const throttleRate = _THROTTLE_BASE + overBudgetRatio * _THROTTLE_PROPORTIONAL;
-      _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier - throttleRate);
-      // R21 E2: Minimum recovery even during throttle -- prevents ratchet-to-floor.
-      _globalGainMultiplier = m.min(1.0, _globalGainMultiplier + _MINIMUM_RECOVERY_RATE);
-    } else if (energyDecreasing || _totalEnergyEma < _energyBudget * 0.80) {
-      _globalGainMultiplier = m.min(1.0, _globalGainMultiplier + _GAIN_RECOVERY_RATE);
-    }
+    // --- 4. Cache throttle state for tick() ---
+    // R22 E1: Multiplier management moved to tick() for per-beat resolution.
+    // refresh() only updates the coupling analysis state; tick() reads
+    // _overBudget/_energyDecreasing and applies multiplier changes.
+    _overBudget = _totalEnergyEma > _energyBudget;
+    _energyDecreasing = _energyDeltaEma < -0.005;
 
     // --- 5. Coupling concentration guard (Gini coefficient) ---
     const pairKeys = Object.keys(_pairAbsR);
@@ -245,20 +264,14 @@ couplingHomeostasis = (() => {
         }
         _giniCoefficient = (2 * rankSum) / (n * totalEnergy) - (n + 1) / n;
         _giniCoefficient = clamp(_giniCoefficient, 0, 1);
-
-        if (_giniCoefficient > _GINI_THRESHOLD) {
-          const extraThrottle = clamp((_giniCoefficient - _GINI_THRESHOLD) * 0.5, 0, 0.10);
-          _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier - extraThrottle);
-        }
       }
     }
 
-    // R21 E6: Track multiplier extremes
-    _multiplierMin = m.min(_multiplierMin, _globalGainMultiplier);
-    _multiplierMax = m.max(_multiplierMax, _globalGainMultiplier);
+    // R22 E1: Mark that refresh ran on this tick so tick() skips redundant update
+    _refreshedThisTick = true;
 
-    // Apply final multiplier to pipelineCouplingManager
-    pipelineCouplingManager.setGlobalGainMultiplier(_globalGainMultiplier);
+    // Run tick() to apply multiplier changes (will use freshly computed state)
+    tick();
 
     // --- Diagnostics ---
     explainabilityBus.emit('COUPLING_HOMEOSTASIS', 'both', {
@@ -271,17 +284,109 @@ couplingHomeostasis = (() => {
       gini: Number(_giniCoefficient.toFixed(3)),
       energyDeltaEma: Number(_energyDeltaEma.toFixed(4)),
       pairTurbulenceEma: Number(_pairTurbulenceEma.toFixed(4)),
-      overBudget,
+      overBudget: _overBudget,
       pairs: pairCount
     });
   }
 
   /**
+   * Per-beat multiplier management. Called from processBeat's post-beat stage
+   * on every beat-layer entry (~418/run). Provides smoother multiplier evolution
+   * than the measure-only recorder invocation (~78/run).
+   *
+   * R22 E1: Separates multiplier management (per-beat) from coupling analysis
+   * (per-measure). The coupling data only updates when the recorder fires, but
+   * the multiplier adjusts every beat for responsive energy governance.
+   */
+  function tick() {
+    _tickCount++;
+
+    // If refresh() already ran on this tick's recorder invocation, skip the
+    // multiplier update here (refresh -> tick already called above).
+    if (_refreshedThisTick) {
+      _refreshedThisTick = false;
+      // Multiplier was already applied inside this refresh -> tick() path.
+      // Fall through to time-series recording below.
+    } else {
+      // --- Multiplier throttle / recovery ---
+      if (_redistributionScore > 0.15 || _overBudget) {
+        // R21 E5: Proportional throttle -- rate scales with over-budget severity.
+        const overBudgetRatio = _overBudget
+          ? clamp((_totalEnergyEma - _energyBudget) / _energyBudget, 0, 1)
+          : 0;
+        const throttleRate = _THROTTLE_BASE + overBudgetRatio * _THROTTLE_PROPORTIONAL;
+        _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier - throttleRate);
+        // R21 E2: Minimum recovery even during throttle
+        _globalGainMultiplier = m.min(1.0, _globalGainMultiplier + _MINIMUM_RECOVERY_RATE);
+      } else if (_energyDecreasing || _totalEnergyEma < _energyBudget * 0.80) {
+        _globalGainMultiplier = m.min(1.0, _globalGainMultiplier + _GAIN_RECOVERY_RATE);
+      }
+
+      // Gini penalty (uses cached _giniCoefficient from last refresh)
+      if (_giniCoefficient > _GINI_THRESHOLD) {
+        const extraThrottle = clamp((_giniCoefficient - _GINI_THRESHOLD) * 0.5, 0, 0.10);
+        _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier - extraThrottle);
+      }
+    }
+
+    // Track multiplier extremes
+    _multiplierMin = m.min(_multiplierMin, _globalGainMultiplier);
+    _multiplierMax = m.max(_multiplierMax, _globalGainMultiplier);
+
+    // Apply multiplier to pipelineCouplingManager
+    pipelineCouplingManager.setGlobalGainMultiplier(_globalGainMultiplier);
+
+    // R22 E6: Record time-series entry for throttle behavior analysis
+    if (_multiplierTimeSeries.length < _MAX_TIME_SERIES) {
+      _multiplierTimeSeries.push({
+        beat: _tickCount,
+        m: Number(_globalGainMultiplier.toFixed(3)),
+        e: Number(_totalEnergyEma.toFixed(2)),
+        r: Number(_redistributionScore.toFixed(2))
+      });
+    }
+  }
+
+  /**
    * Diagnostic snapshot for trace pipeline.
-   * R21 E6: Extended with invoke tracking, multiplier range, and matrix diagnostics.
-   * @returns {{ totalEnergyEma: number, energyBudget: number, peakEnergyEma: number, redistributionScore: number, globalGainMultiplier: number, giniCoefficient: number, energyDeltaEma: number, pairTurbulenceEma: number, beatCount: number, invokeCount: number, emptyMatrixBeats: number, multiplierMin: number, multiplierMax: number }}
+   * R22: Extended with tickCount, time-series derived metrics, and per-beat diagnostics.
    */
   function getState() {
+    // R22 E6: Compute time-series derived metrics
+    let floorContactBeats = 0;
+    let ceilingContactBeats = 0;
+    let multiplierSum = 0;
+    let multiplierSqSum = 0;
+    const tsLen = _multiplierTimeSeries.length;
+    const recoveryDurations = [];
+    let inFloorContact = false;
+    let floorStart = 0;
+
+    for (let i = 0; i < tsLen; i++) {
+      const mv = _multiplierTimeSeries[i].m;
+      multiplierSum += mv;
+      multiplierSqSum += mv * mv;
+      if (mv <= 0.21) {
+        floorContactBeats++;
+        if (!inFloorContact) { inFloorContact = true; floorStart = i; }
+      } else if (mv >= 0.99) {
+        ceilingContactBeats++;
+      }
+      if (inFloorContact && mv > 0.50) {
+        recoveryDurations.push(i - floorStart);
+        inFloorContact = false;
+      }
+    }
+
+    const multiplierMean = tsLen > 0 ? multiplierSum / tsLen : 0;
+    const multiplierVariance = tsLen > 1
+      ? (multiplierSqSum / tsLen - multiplierMean * multiplierMean)
+      : 0;
+    const multiplierStdDev = m.sqrt(m.max(0, multiplierVariance));
+    const avgRecoveryDuration = recoveryDurations.length > 0
+      ? recoveryDurations.reduce((a, b) => a + b, 0) / recoveryDurations.length
+      : 0;
+
     return {
       totalEnergyEma: Number(_totalEnergyEma.toFixed(4)),
       energyBudget: Number(_energyBudget.toFixed(4)),
@@ -293,16 +398,20 @@ couplingHomeostasis = (() => {
       pairTurbulenceEma: Number(_pairTurbulenceEma.toFixed(4)),
       beatCount: _beatCount,
       invokeCount: _invokeCount,
+      tickCount: _tickCount,
       emptyMatrixBeats: _emptyMatrixBeats,
       multiplierMin: Number(_multiplierMin.toFixed(4)),
-      multiplierMax: Number(_multiplierMax.toFixed(4))
+      multiplierMax: Number(_multiplierMax.toFixed(4)),
+      // R22 E6: Time-series derived metrics
+      multiplierStdDev: Number(multiplierStdDev.toFixed(4)),
+      floorContactBeats,
+      ceilingContactBeats,
+      avgRecoveryDuration: Number(avgRecoveryDuration.toFixed(1))
     };
   }
 
   /**
    * Section reset: dampen rather than wipe. Preserves cross-section energy learning.
-   * R20 E1: Raised dampening from 0.70 to 0.90 to preserve 66% signal after
-   * 5 sections (was 17% at 0.70). Peak tracked separately with slow decay.
    */
   function reset() {
     _totalEnergyEma *= 0.90;
@@ -312,19 +421,17 @@ couplingHomeostasis = (() => {
     _pairTurbulenceEma *= 0.50;
     // Partial recovery toward 1.0 on section reset
     _globalGainMultiplier = _globalGainMultiplier * 0.5 + 0.5;
-    // Peak preserved fully -- only decays via _PEAK_DECAY per beat
     _pairAbsR = {};
     _prevPairAbsR = {};
-    // R21 E2: Reset cooldown on section boundary
     _nonRedistBeats = 0;
-    // R21 E1: Cached matrix preserved across sections (stale decay handles aging)
+    // Cached matrix preserved across sections (stale decay handles aging)
     // _beatCount intentionally NOT reset: tracks lifetime beats for budget recalibration
-    // _invokeCount intentionally NOT reset: tracks total lifetime invocations
+    // _invokeCount/_tickCount intentionally NOT reset: tracks total lifetime invocations
   }
 
   // --- Self-registration ---
   conductorIntelligence.registerRecorder('couplingHomeostasis', refresh);
   conductorIntelligence.registerModule('couplingHomeostasis', { reset }, ['section']);
 
-  return { getState, reset };
+  return { getState, reset, tick };
 })();

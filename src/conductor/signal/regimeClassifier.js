@@ -22,6 +22,11 @@ regimeClassifier = (() => {
   let coherentBeats = 0;  // saturation guard: consecutive coherent beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
   let coherentThresholdScale = 1.0; // profile-adaptive multiplier
+  // R22 E4: Evolving regime minimum dwell time. Prevents the system from
+  // passing through evolving in <7 beats (R22: 7 beats, target >12).
+  // Suppresses evolving->coherent transition until dwell is satisfied.
+  let _evolvingBeats = 0;
+  let _evolvingMinDwell = 12;  // default; profile-adaptive via setter
 
   // R17 structural fix: Self-calibrating regime saturation.
   // Tracks rolling coherent share and derives penalty dynamically instead of
@@ -72,6 +77,16 @@ regimeClassifier = (() => {
    */
   function setCoherentShareAlphaMin(alphaMin) {
     _coherentShareAlphaMin = V.requireFinite(alphaMin, 'alphaMin');
+  }
+
+  /**
+   * R22 E4: Set profile-adaptive evolving minimum dwell time.
+   * Prevents premature evolving->coherent transitions.
+   * explosive: 12, atmospheric: 8, default: 12.
+   * @param {number} minDwell
+   */
+  function setEvolvingMinDwell(minDwell) {
+    _evolvingMinDwell = V.requireFinite(minDwell, 'minDwell');
   }
 
   /** @returns {number} */
@@ -172,20 +187,38 @@ regimeClassifier = (() => {
       if (lastRegime === 'exploring') {
         exploringBeats++;
         coherentBeats = 0;
+        _evolvingBeats = 0;
       } else if (lastRegime === 'coherent') {
         coherentBeats++;
         exploringBeats = 0;
+        _evolvingBeats = 0;
+      } else if (lastRegime === 'evolving') {
+        _evolvingBeats++;
+        exploringBeats = 0;
+        coherentBeats = 0;
       } else {
         exploringBeats = 0;
         coherentBeats = 0;
+        _evolvingBeats = 0;
       }
       return lastRegime;
     }
     if (rawRegime === candidateRegime) {
       candidateCount++;
       if (candidateCount >= REGIME_HOLD) {
+        // R22 E4: Evolving minimum dwell -- suppress evolving->coherent until
+        // at least _evolvingMinDwell beats have passed in evolving. In R22,
+        // the system passed through evolving in only 7 beats before snapping
+        // to coherent. This ensures evolving ideas develop for >= 12 beats.
+        if (lastRegime === 'evolving' && rawRegime === 'coherent' && _evolvingBeats < _evolvingMinDwell) {
+          // Force continuation in evolving -- don't allow transition yet.
+          // Reset candidate so hysteresis re-counts from scratch after dwell.
+          candidateCount = 0;
+          return lastRegime;
+        }
         if (lastRegime === 'exploring') exploringBeats = 0;
         if (lastRegime === 'coherent') coherentBeats = 0;
+        if (lastRegime === 'evolving') _evolvingBeats = 0;
         lastRegime = rawRegime;
         candidateCount = 0;
         return rawRegime;
@@ -211,21 +244,18 @@ regimeClassifier = (() => {
   }
 
   function reset() {
-    // R19 E3: Preserve cross-section coherent share memory and seed
-    // coherentBeats for continuity. Previous reset wiped _coherentShareEma
-    // to 0.50, losing all saturation learning. Now dampens with 0.5x weight
-    // + 0.50 * 0.5 anchor, and seeds coherentBeats at 30% of previous.
     const _prevCoherentShareEma = _coherentShareEma;
     const _prevCoherentBeats = coherentBeats;
     lastRegime = 'evolving';
     candidateRegime = 'evolving';
     candidateCount = 0;
     exploringBeats = 0;
+    _evolvingBeats = 0;
     coherentBeats = m.floor(_prevCoherentBeats * 0.3);
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
     coherentThresholdScale = 1.0;
     _coherentShareEma = _prevCoherentShareEma * 0.5 + 0.50 * 0.5;
   }
 
-  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, getExploringBeats, getLastRegime, reset };
+  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, getExploringBeats, getLastRegime, reset };
 })();
