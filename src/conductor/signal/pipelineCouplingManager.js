@@ -164,6 +164,21 @@ pipelineCouplingManager = (() => {
   const _FLICKER_PAIR_GAIN_CAP = 0.45;
   const _FLICKER_PAIR_GAIN_CAP_THRESHOLD = 0.88;
 
+  // R23 E5: High-priority pair gain promotion.
+  // When a pair's rawRollingAbsCorr stays above threshold while at GAIN_MAX,
+  // temporarily promote it to a higher ceiling. This breaks persistent
+  // overcorrelation that the standard ceiling cannot resolve (e.g. density-
+  // tension +292% in R22). Only one pair promoted at a time to prevent
+  // cascading gain inflation.
+  const _HP_GAIN_MAX = 0.80;
+  const _HP_ROLLING_THRESHOLD = 0.35;
+  const _HP_MAX_BEATS = 50;
+  const _HP_COOLDOWN_BEATS = 30;
+  /** @type {string | null} */
+  let _hpPromotedPair = null;
+  let _hpBeats = 0;
+  let _hpCooldownRemaining = 0;
+
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
   /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number }>} */
   const _pairState = {};
@@ -366,6 +381,10 @@ pipelineCouplingManager = (() => {
             // When homeostasis detects redistribution, slow ALL gains.
             rate *= _globalGainMultiplier;
             let pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
+            // R23 E5: Allow promoted pair higher gain ceiling.
+            if (key === _hpPromotedPair) {
+              pairGainMax = m.max(pairGainMax, _HP_GAIN_MAX);
+            }
             // R21 E4: Cap flicker-pair gains when product severely compressed.
             // 3 pairs at GAIN_MAX with heat 0.60-0.65 were compressing flicker
             // from multiple directions simultaneously (axis total 1.953).
@@ -497,6 +516,52 @@ pipelineCouplingManager = (() => {
       }
     }
 
+    // R23 E5: High-priority pair promotion / demotion / cooldown.
+    // After processing all pairs, evaluate whether to promote, maintain, or
+    // demote a pair. Only one pair may be promoted at a time.
+    if (_hpCooldownRemaining > 0) {
+      _hpCooldownRemaining--;
+    }
+    if (_hpPromotedPair !== null) {
+      _hpBeats++;
+      const hpAt = _adaptiveTargets[_hpPromotedPair];
+      const hpPs = _pairState[_hpPromotedPair];
+      // Demote if: beats exceeded, pair resolved, or pair state missing
+      const hpResolved = hpAt && hpAt.rawRollingAbsCorr < _HP_ROLLING_THRESHOLD * 0.8;
+      if (_hpBeats >= _HP_MAX_BEATS || hpResolved || !hpAt || !hpPs) {
+        // Cap gain back to normal ceiling on demotion
+        if (hpPs) {
+          const normalMax = (_hpPromotedPair === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
+          hpPs.gain = m.min(hpPs.gain, normalMax);
+        }
+        _hpPromotedPair = null;
+        _hpBeats = 0;
+        _hpCooldownRemaining = _HP_COOLDOWN_BEATS;
+      }
+    } else if (_hpCooldownRemaining <= 0) {
+      // Find worst eligible pair: at GAIN_MAX, rawRollingAbsCorr above threshold
+      let worstKey = null;
+      let worstRolling = 0;
+      const atKeys = Object.keys(_adaptiveTargets);
+      for (let i = 0; i < atKeys.length; i++) {
+        const ak = atKeys[i];
+        const at = _adaptiveTargets[ak];
+        const ps = _pairState[ak];
+        if (!at || !ps) continue;
+        // Must be at or near GAIN_MAX and above rolling threshold
+        if (ps.gain >= GAIN_MAX * 0.95 && at.rawRollingAbsCorr > _HP_ROLLING_THRESHOLD) {
+          if (at.rawRollingAbsCorr > worstRolling) {
+            worstRolling = at.rawRollingAbsCorr;
+            worstKey = ak;
+          }
+        }
+      }
+      if (worstKey !== null) {
+        _hpPromotedPair = worstKey;
+        _hpBeats = 0;
+      }
+    }
+
     // #9: Budget enforcement - cap per-axis accumulation before soft-limiting
     // to prevent coupling manager from dominating ANY single pipeline.
     // R20 E4: Dynamic axis budget self-calibration. Derive from live total
@@ -612,13 +677,17 @@ pipelineCouplingManager = (() => {
     _coherentShareEma = _coherentShareEma * 0.7 + 0.35 * 0.3;
     // R20 E5: Reset flicker guard to allow fresh assessment per section
     _flickerGuardState = 'normal';
+    // R23 E5: Reset high-priority promotion state per section
+    _hpPromotedPair = null;
+    _hpBeats = 0;
+    _hpCooldownRemaining = 0;
   }
 
   // R18 E5 / R19 E1+E2 / R20 E6: Expose adaptive target state for trace diagnostics.
   // Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
   // gain, heatPenalty, effectivenessEma, and per-axis totals for post-run analysis.
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number, effectivenessEma: number }>} */
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number, effectivenessEma: number, hpPromoted: boolean }>} */
     const result = {};
     const keys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < keys.length; i++) {
@@ -632,7 +701,8 @@ pipelineCouplingManager = (() => {
         rawRollingAbsCorr: Number(at.rawRollingAbsCorr.toFixed(4)),
         gain: ps ? Number(ps.gain.toFixed(4)) : 0,
         heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0,
-        effectivenessEma: ps ? Number((ps.effectivenessEma || 0.5).toFixed(4)) : 0.5
+        effectivenessEma: ps ? Number((ps.effectivenessEma || 0.5).toFixed(4)) : 0.5,
+        hpPromoted: key === _hpPromotedPair
       };
     }
     return result;
