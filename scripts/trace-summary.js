@@ -276,6 +276,10 @@ function summarizeTrace(entries) {
   let adaptiveTargets = null;
   let axisCouplingTotals = null;
   let couplingHomeostasisState = null;
+  // R27 E4: Per-axis energy share for axis-level redistribution detection
+  let axisEnergyShare = null;
+  // R27 E2: Coherence gate + floor dampening state for anti-redistribution analysis
+  let couplingGates = null;
   for (let i = entries.length - 1; i >= 0; i--) {
     if (entries[i].couplingTargets && typeof entries[i].couplingTargets === 'object') {
       const raw = entries[i].couplingTargets;
@@ -307,7 +311,15 @@ function summarizeTrace(entries) {
     if (!couplingHomeostasisState && entries[i].couplingHomeostasis && typeof entries[i].couplingHomeostasis === 'object') {
       couplingHomeostasisState = entries[i].couplingHomeostasis;
     }
-    if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState) break;
+    // R27 E4: Extract per-axis energy share from final beat
+    if (!axisEnergyShare && entries[i].axisEnergyShare && typeof entries[i].axisEnergyShare === 'object') {
+      axisEnergyShare = entries[i].axisEnergyShare;
+    }
+    // R27 E2: Extract coupling gates from final beat
+    if (!couplingGates && entries[i].couplingGates && typeof entries[i].couplingGates === 'object') {
+      couplingGates = entries[i].couplingGates;
+    }
+    if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState && axisEnergyShare && couplingGates) break;
   }
 
   return {
@@ -356,6 +368,8 @@ function summarizeTrace(entries) {
     },
     adaptiveTargets,
     axisCouplingTotals,
+    axisEnergyShare,
+    couplingGates,
     couplingHomeostasis: couplingHomeostasisState
   };
 }

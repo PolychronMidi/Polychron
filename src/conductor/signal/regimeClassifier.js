@@ -191,7 +191,15 @@ regimeClassifier = (() => {
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus + coherentDurationPenalty;
     // R25 E6: Cache classify inputs for transition diagnostics in resolve()
     _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus };
-    if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
+    // R27 E5: Relax velocity threshold from 0.008 to 0.005 after 100 exploring
+    // beats. In R26, coherent entry was at beat 376/439 (85.6% through) despite
+    // the coupling threshold being deeply negative by beat ~200. The bottleneck
+    // is the velocity condition: transient velocity dips below 0.008 prevent
+    // coherent entry even when coupling strength vastly exceeds threshold.
+    // 0.005-0.008 still represents meaningful state-space movement; 5-beat
+    // hysteresis guards against premature entry from fleeting velocity dips.
+    const _velThreshold = exploringBeats > 100 ? 0.005 : 0.008;
+    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.

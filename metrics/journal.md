@@ -1,3 +1,49 @@
+## R26 — 2026-03-04 — STABLE
+
+**Profile:** explosive | **Beats:** 439 | **Duration:** 52.4s | **Notes:** 18,302
+**Fingerprint:** 8/8 stable | Drifted: none
+
+### Key Observations
+- **COHERENT DOUBLED: 14.4% (63 beats), entry at beat 376 (R25: 6.8%, 34 beats, beat 424).** Floor dampening relaxation (E1) + exploring seeding (E2) + 40% relaxation (E3) combined to produce the strongest coherent phase since the structural fixes in R25. Still late (85.6% through), but 48 beats earlier than R25. The coherent entry threshold is deeply negative by beat ~200 (accumulated bonuses > base threshold); the remaining bottleneck is the velocity condition (`avgVelocity > 0.008`), not the coupling threshold.
+- **FLOOR DAMPENING RELAXATION: CONFIRMED.** floorDampen = 0.20 (R25: 0.05, ×4). Gains now actively moving: flicker-entropy 0.392, density-flicker 0.357 (R25: all gains effectively frozen). floorContactBeats = 0. The system has room to decorrelate while coherence gating handles directional conflicts. Total energy rose 9.9% (2.885→3.171), within the 3.0–4.5 target range.
+- **GINI ACHIEVED TARGET: 0.380 (R25: 0.441, -13.8%).** Just below the <0.38 target. Coupling concentration decreased as expected when floor dampening stopped freezing all gains. The combined effect of E1 (floor relaxation) and E4 (severity bypass) cannot be disentangled without gate diagnostics (E6 failed).
+- **AXIS SPREAD EXPLODED: 0.862 (R25: 0.319, +170%).** Despite pair-level Gini improving, axis-level imbalance dramatically worsened. Entropy axis at 1.757 vs tension at 0.895 — entropy is consuming 96% more axis-energy than tension. This is the most concerning regression: decorrelation gains at the pair level are masked by axis-level energy redistribution.
+- **TRUST-AXIS COUPLING SURGE: 3 severe pairs.** density-trust avg +30% (0.339→0.440, p95 0.896), flicker-trust +19.7% (0.413→0.495, p95 0.790), tension-trust p95 0.925. Pearson r: density-trust 0.959, flicker-trust 0.940 — near-perfect temporal co-evolution. Trust is computed downstream from conductor signals, creating structural correlation that the 3-nudge-axis system struggles to counteract.
+- **E5 axisCouplingTotals NULL FIX: FAILED — ROOT CAUSE FOUND.** The `trust-phase` pair is absent from the coupling matrix (14 of 15 pairs computed). Line 387's guard `cv === null || cv !== cv` catches null and NaN but not undefined. `matrix['trust-phase']` returns undefined → `m.abs(undefined)` = NaN → contaminates both trust and phase axis totals. Fix is one character: `===` to `==`.
+- **E6 COUPLING_GATES: EMISSION EXISTS, CAPTURE MISSING.** explainabilityBus.emit('COUPLING_GATES', ...) fires at line 717 but events aren't serialized to trace.jsonl (beat-level only) or extracted by trace-summary.js. The diagnostic intent was correct but the output pipeline doesn't surface these events.
+- **HOTSPOT COUNT ROSE 4→6, SEVERITY RETURNED.** 3 severe pairs (p95 > 0.85): density-flicker 0.958, density-trust 0.896, tension-trust 0.925. R25 had 0 severe pairs. The floor dampening relaxation allowed gains to escalate, which successfully reduced Gini but also permitted extreme tail events.
+- **DENSITY PRODUCT DECLINING: 0.632 (R25: 0.635, R22: ~0.79).** Third consecutive round of decline. Still above 0.60 critical threshold but approaching. Flicker product also down: 0.829 (R25: 0.850).
+- **redistributionScore CHRONICALLY ELEVATED: 0.936.** Similar to R21–R25 pattern. Opposing nudge forces remain high. May be inflated by non-nudgeable pair contributions.
+
+### Evolutions Applied (from R25)
+- E1: Floor dampening relaxation (min 0.05→0.20, window 0.20→0.35) — **confirmed** — floorDampen=0.20, Gini 0.441→0.380, gains unfrozen, total energy +9.9% and within range
+- E2: Exploring proximity seeding (0.001/beat during exploring) — **partially confirmed** — coherent entry 48 beats earlier (beat 376 vs 424), but seeding reaches cap immediately (inherited from evolving phase); incremental improvement
+- E3: Exploring relaxation 25%→40% — **partially confirmed** — coherent% 6.8%→14.4% (+112%), 63 coherent beats (R25: 34, +85%); target range 15-35% missed by 0.6 pts
+- E4: Coherence gate severity bypass (pairs >2× target) — **inconclusive** — Gini improved but attribution unclear without gate diagnostics; flicker-entropy rollingAbsCorr 0.383 vs target 0.176 (2.18×) suggests bypass may have engaged
+- E5: axisCouplingTotals null fix (init all 6 axes to 0) — **failed** — trust=null, phase=null persist; root cause: undefined not caught by strict equality check; NaN contamination via `trust-phase` pair lookup
+- E6: COUPLING_GATES diagnostic emission — **failed** — events emit to explainabilityBus but not captured in trace.jsonl or trace-summary.js; output pipeline doesn't surface these events
+
+### Evolutions Proposed (for R27)
+- E1: Fix axisCouplingTotals undefined → NaN contamination (`===` to `==`) — src/conductor/signal/pipelineCouplingManager.js
+- E2: Surface COUPLING_GATES diagnostics in beat trace entry — src/conductor/signal/pipelineCouplingManager.js, scripts/trace-summary.js
+- E3: Tighten trust-axis pair adaptive targets (density-trust 0.15→0.10, flicker-trust 0.20→0.12, tension-trust 0.25→0.15) — src/conductor/signal/pipelineCouplingManager.js
+- E4: Per-axis energy budget tracking (axis energy share + axis Gini) — src/conductor/signal/pipelineCouplingManager.js, scripts/trace-summary.js
+- E5: Relaxed velocity threshold during extended exploring (0.008→0.005 after 100 exploring beats) — src/conductor/signal/regimeClassifier.js
+- E6: Exclude non-nudgeable pairs from redistributionScore computation (nudgeable vs total) — src/conductor/signal/couplingHomeostasis.js
+
+### Hypotheses to Track
+- E1: axisCouplingTotals should report 6 finite values (no null). Trust and phase axis totals should be ≥ 0.
+- E2: COUPLING_GATES data should appear in trace-summary.json. Gate values should range 0.0–1.0. Should enable retroactive E4 (severity bypass) verification.
+- E3: density-trust avg < 0.40, flicker-trust avg < 0.45. p95 for density-trust and tension-trust < 0.85. If gains hit max with heat > 0.90, targets are too aggressive.
+- E4: axisEnergyShare should show 6 finite ratios summing to ~1.0. No axis should exceed 0.30 share. Compare across rounds for axis-level redistribution.
+- E5: Coherent entry should occur before beat 340. coherent% should reach 15%+. If no improvement, velocity is NOT the bottleneck.
+- E6: nudgeableRedistributionScore should be lower than total redistributionScore. If nudgeable > 0.90, the nudge axes are genuinely contested.
+- Meta: Density product (0.632) must not decline below 0.60. Three consecutive rounds of decline is concerning.
+- Meta: Axis spread (0.862) should decrease with E3 trust-pair tightening + E1 axis total fix enabling monitoring.
+- Meta: Tension-phase avg regressed 0.203→0.330 (+62.6%), reversing R24 E4 phase tightening gains. Monitor in R27.
+
+---
+
 ## R26 — Pre-Run — FLOOR DAMPENING REBALANCE + COHERENT PATH ACCELERATION
 
 **Scope:** Rebalance floor dampening parameters + accelerate coherent entry + coherence gate severity bypass + diagnostic enrichment.
