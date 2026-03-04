@@ -164,6 +164,15 @@ pipelineCouplingManager = (() => {
   const _FLICKER_PAIR_GAIN_CAP = 0.45;
   const _FLICKER_PAIR_GAIN_CAP_THRESHOLD = 0.88;
 
+  // R24 E4: Density product sigmoid hysteresis state.
+  // Mirrors flicker guard pattern. 'normal' -> 'guarding' at product < 0.75,
+  // 'guarding' -> 'normal' at product > 0.82. Addresses R23 density product
+  // drop to 0.707 that went unmitigated.
+  let _densityGuardState = 'normal';
+  let _densityGuardBeats = 0;
+  const _DENSITY_PAIR_GAIN_CAP = 0.45;
+  const _DENSITY_PAIR_GAIN_CAP_THRESHOLD = 0.72;
+
   // R23 E5: High-priority pair gain promotion.
   // When a pair's rawRollingAbsCorr stays above threshold while at GAIN_MAX,
   // temporarily promote it to a higher ceiling. This breaks persistent
@@ -276,6 +285,26 @@ pipelineCouplingManager = (() => {
     }
     const _flickerGainScalar = _flickerGuardState === 'guarding' && typeof _flickerProd === 'number'
       ? clamp((_flickerProd - 0.80) / 0.12, 0.25, 1.0)
+      : 1.0;
+
+    // R24 E4: Density product floor guard (mirrors flicker guard).
+    // When density product drops below 0.75, enter guarding state that
+    // reduces density-pair gains and nudges biasDensity toward 1.0.
+    const _densityProd = safePreBoot.call(() => signalReader.snapshot()?.densityProduct, 1.0);
+    if (typeof _densityProd === 'number') {
+      if (_densityGuardState === 'normal' && _densityProd < 0.75) {
+        _densityGuardState = 'guarding';
+        _densityGuardBeats = 0;
+      } else if (_densityGuardState === 'guarding' && _densityProd > 0.82) {
+        _densityGuardState = 'normal';
+        _densityGuardBeats = 0;
+      }
+      if (_densityGuardState === 'guarding') {
+        _densityGuardBeats++;
+      }
+    }
+    const _densityGainScalar = _densityGuardState === 'guarding' && typeof _densityProd === 'number'
+      ? clamp((_densityProd - 0.65) / 0.12, 0.25, 1.0)
       : 1.0;
 
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
@@ -392,6 +421,11 @@ pipelineCouplingManager = (() => {
                 typeof _flickerProd === 'number' && _flickerProd < _FLICKER_PAIR_GAIN_CAP_THRESHOLD) {
               pairGainMax = m.min(pairGainMax, _FLICKER_PAIR_GAIN_CAP);
             }
+            // R24 E4: Density pair gain cap when product severely compressed
+            if ((dimA === 'density' || dimB === 'density') && _densityGuardState === 'guarding' &&
+                typeof _densityProd === 'number' && _densityProd < _DENSITY_PAIR_GAIN_CAP_THRESHOLD) {
+              pairGainMax = m.min(pairGainMax, _DENSITY_PAIR_GAIN_CAP);
+            }
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
 
@@ -492,6 +526,10 @@ pipelineCouplingManager = (() => {
         if (dimA === 'flicker' || dimB === 'flicker') {
           effectiveGain *= _flickerGainScalar;
         }
+        // R24 E4: Density product floor guard scalar
+        if (dimA === 'density' || dimB === 'density') {
+          effectiveGain *= _densityGainScalar;
+        }
 
         if (aIsNudgeable && bIsNudgeable) {
           const excess = absCorr - target;
@@ -528,7 +566,10 @@ pipelineCouplingManager = (() => {
       const hpPs = _pairState[_hpPromotedPair];
       // Demote if: beats exceeded, pair resolved, or pair state missing
       const hpResolved = hpAt && hpAt.rawRollingAbsCorr < _HP_ROLLING_THRESHOLD * 0.8;
-      if (_hpBeats >= _HP_MAX_BEATS || hpResolved || !hpAt || !hpPs) {
+      // R24 E5: Early demotion when effectiveness drops below threshold.
+      // Prevents wasting promotion on intractable pairs.
+      const hpLowEffectiveness = hpPs && (hpPs.effectivenessEma || 0.5) < 0.30;
+      if (_hpBeats >= _HP_MAX_BEATS || hpResolved || hpLowEffectiveness || !hpAt || !hpPs) {
         // Cap gain back to normal ceiling on demotion
         if (hpPs) {
           const normalMax = (_hpPromotedPair === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
@@ -550,6 +591,13 @@ pipelineCouplingManager = (() => {
         if (!at || !ps) continue;
         // Must be at or near GAIN_MAX and above rolling threshold
         if (ps.gain >= GAIN_MAX * 0.95 && at.rawRollingAbsCorr > _HP_ROLLING_THRESHOLD) {
+          // R24 E5: Only promote nudgeable pairs. In R23, entropy-phase was
+          // promoted (gain=0.690) but neither axis is nudgeable -- gain ceiling
+          // boost had zero effect since nudge is skipped for non-nudgeable pairs.
+          const hpDims = ak.split('-');
+          if (!NUDGEABLE_SET.has(hpDims[0]) && !NUDGEABLE_SET.has(hpDims[1])) continue;
+          // R24 E5: Require minimum effectiveness before promotion.
+          if ((ps.effectivenessEma || 0.5) < 0.35) continue;
           if (at.rawRollingAbsCorr > worstRolling) {
             worstRolling = at.rawRollingAbsCorr;
             worstKey = ak;
@@ -624,6 +672,16 @@ pipelineCouplingManager = (() => {
       }
       biasFlicker = m.min(biasFlicker + nudgeRate, 1.0);
     }
+    // R24 E4: Density guard recovery nudge (mirrors flicker guard pattern).
+    if (_densityGuardState === 'guarding' && biasDensity < 0.98) {
+      let densityNudgeRate = 0.002;
+      if (_densityGuardBeats > 60) {
+        densityNudgeRate = 0.008;
+      } else if (_densityGuardBeats > 30) {
+        densityNudgeRate = 0.005;
+      }
+      biasDensity = m.min(biasDensity + densityNudgeRate, 1.0);
+    }
   }
 
   function densityBias() { return biasDensity; }
@@ -677,6 +735,8 @@ pipelineCouplingManager = (() => {
     _coherentShareEma = _coherentShareEma * 0.7 + 0.35 * 0.3;
     // R20 E5: Reset flicker guard to allow fresh assessment per section
     _flickerGuardState = 'normal';
+    // R24 E4: Reset density guard per section
+    _densityGuardState = 'normal';
     // R23 E5: Reset high-priority promotion state per section
     _hpPromotedPair = null;
     _hpBeats = 0;

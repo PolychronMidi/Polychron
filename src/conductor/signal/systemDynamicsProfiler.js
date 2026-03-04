@@ -78,10 +78,11 @@ systemDynamicsProfiler = (() => {
         // R21 E3: Faster alpha floor for explosive -- shorter sections need
         // ~25-beat convergence to prevent 74.2% coherent lock.
         regimeClassifier.setCoherentShareAlphaMin(0.04);
-        // R22 E4: Evolving min dwell for explosive -- system was passing
-        // through evolving in 7 beats (R22). 12-beat dwell ensures musical
-        // ideas develop before snapping to coherent.
-        regimeClassifier.setEvolvingMinDwell(12);
+        // R22 E4 / R24 E1: Evolving min dwell for explosive -- R22's 12-beat
+        // dwell disrupted bistable coherent feedback loop (0% coherent in R23).
+        // 4-beat dwell still prevents 7-beat snap but allows coherent entry
+        // within the coupling feedback window.
+        regimeClassifier.setEvolvingMinDwell(4);
         // R8 Evo 4: widen flicker target range for explosive depthScale 1.8
         conductorDampening.setFlickerTargetRange(0.15 * 1.8);
         // R9 Evo 3: give density-flicker pair 30% extra gain ceiling for decorrelation
@@ -90,9 +91,10 @@ systemDynamicsProfiler = (() => {
         // R21 E3: Slower alpha floor for atmospheric -- longer sections tolerate
         // ~50-beat convergence, preventing premature regime flipping.
         regimeClassifier.setCoherentShareAlphaMin(0.02);
-        // R22 E4: Atmospheric evolving dwell -- longer sections can afford
-        // shorter dwell (8 beats) since evolving material has more room.
-        regimeClassifier.setEvolvingMinDwell(8);
+        // R22 E4 / R24 E1: Atmospheric evolving dwell -- reduced from 8 to 6
+        // to match regime bistability fix. Longer sections need slightly more
+        // dwell than explosive but still within the coherent feedback window.
+        regimeClassifier.setEvolvingMinDwell(6);
       } else if (profileName === 'minimal') {
         regimeClassifier.setOscillatingThreshold(0.45);
       }

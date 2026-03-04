@@ -1,3 +1,52 @@
+## R23 — 2026-03-04 — EVOLVED
+
+**Profile:** explosive | **Beats:** 745 | **Duration:** 100.6s | **Notes:** 26,029
+**Fingerprint:** 6/8 stable | Drifted: noteCount, regimeDistribution
+
+### Key Observations
+- **CATASTROPHIC REGIME REGRESSION: coherent=0.0% (R22: 67.9%).** System locked in evolving for 557 consecutive beats, never reaching coherent regime. Only 2 transitions: initializing→evolving (beat 60), evolving→exploring (beat 617). Root cause: E4's 12-beat evolving min dwell (+5-beat hysteresis = 17 total) disrupted a **bistable feedback loop**. In R22, quick coherent entry (7 beats) activated coherent relaxation, which kept coupling above the coherent threshold (~0.255), maintaining coherent. With the 17-beat delay, decorrelation pushed coupling below threshold before the first coherent entry, trapping the system in the evolving attractor permanently.
+- **Total coupling energy INCREASED 13.3%: 3.680→4.169.** Despite homeostasis governor active (multiplier=0.491). Increase driven by zero coherent regime: without coherent relaxation, ALL coupling treated as problematic, driving gain escalation everywhere, ironically increasing total energy.
+- **Whack-a-mole rotated to trust axis:** flicker-trust +71.6% (0.222→0.381), tension-trust +99.1% (0.113→0.225), density-trust +20.7%, entropy-trust +27.1%. Trust axis total surged 0.766→1.139 (+48.7%). Flicker and phase axes deflated (-2.9%, -9.5%).
+- **Hotspots exploded: 3→8 pairs with p95>0.70.** Three pairs have extreme tails: density-flicker p95=0.993, density-trust p95=0.969, flicker-trust p95=0.992.
+- **E2 budget convergence CONFIRMED:** peakEnergyEma=3.696 (R22: 6.015, -38.6%), energyBudget=3.326 (R22: 5.413, -38.5%). Budget now within 0.4% of totalEnergyEma (3.339). Peak cap (1.5×) and faster decay (0.995) working perfectly.
+- **E3 redistribution threshold OVER-CORRECTED:** redistributionScore=0 entire run. Relative ratio pairTurbulenceEma/totalEnergyEma = 0.037/3.339 = 0.0111 < 0.012 threshold. Redistribution not detected despite Gini=0.354 and trust-axis +48.7%.
+- **E1 per-beat tick CONFIRMED:** tickCount=840 (vs invokeCount=100 refresh calls). 8.4× more granularity. But multiplier exhibits **bang-bang oscillation**: floorContactBeats=265 (31.5%), ceilingContactBeats=299 (35.6%), only 276 ticks (32.9%) in usable mid-range. avgRecoveryDuration=140.5 ticks. Bimodal, not smooth regulation.
+- **E5 HP promotion FIRED on entropy-phase** (gain=0.690 > GAIN_MAX 0.60), NOT the intended density-tension. density-tension self-resolved (gain 0.600→0.272, avg 0.470→0.432). entropy-phase avg still rose +40.2% despite promotion (effectivenessEma=0.616, moderate but not dramatic). HP mechanism works but needs candidate filtering.
+- **Flicker product held:** 0.904 (R22: 0.901, +0.3%). Flicker guard stable. Density product dropping: 0.707 (R22: 0.778, -9.1%).
+- **Tension product surging:** 1.385 (R22: 1.079, +28.4%). Multiple tension biases elevated: tensionResolutionTracker=1.139, regimeReactiveDamping=1.114, repetitionFatigueMonitor=1.084, narrativeTrajectory=1.080.
+- **Gini coefficient rose:** 0.354 (R22: 0.250, +41.6%). Coupling more concentrated but neither governor nor concentration guard detected it (redistributionScore=0).
+- **Note count drifted +64.6%** (15,816→26,029) driven by longer composition (745 vs 418 beats) in evolving-dominant regime with lower density mean (0.488 vs 0.567).
+- **Trust system healthy:** convergence 0.366 (R22: 0.378, -3.2%). No modules starved. coherenceMonitor dominant (0.708).
+
+### Evolutions Applied (from R22)
+- E1: Per-beat homeostasis tick — **confirmed** — tickCount=840 vs invokeCount=100 (8.4× granularity). Multiplier now updates every beat, not every measure. But discovered bang-bang oscillation (67.1% at floor/ceiling).
+- E2: Budget convergence fix — **confirmed** — peakEnergyEma 6.015→3.696 (-38.6%), budget 5.413→3.326 (-38.5%). Budget converged within 0.4% of totalEnergyEma. Gap eliminated.
+- E3: Relative redistribution threshold — **over-corrected** — redistributionScore=0 entire run (R22: 0.756). Ratio 0.0111 < 0.012 threshold. Redistribution undetectable despite trust axis +48.7% and Gini=0.354. Threshold too high.
+- E4: Evolving min dwell (12 beats) — **catastrophically over-shot** — evolving 1.7%→74.8%, coherent 67.9%→0.0%. Disrupted bistable coherent feedback loop. System never reached coherent. Min dwell must be reduced.
+- E5: HP gain promotion for density-tension — **partially confirmed** — mechanism works (entropy-phase promoted to gain=0.690>0.60). But fired on entropy-phase, not density-tension. density-tension self-resolved without promotion. Needs candidate filtering.
+- E6: Multiplier time-series diagnostics — **confirmed** — multiplierStdDev=0.345, floorContactBeats=265, ceilingContactBeats=299, avgRecoveryDuration=140.5 all visible. Successfully diagnosed bang-bang oscillation pattern.
+
+### Evolutions Proposed (for R24)
+- E1: Regime bistability fix — reduce evolving min dwell to 4 (explosive) / 6 (atmospheric) + coherent proximity seeding — src/conductor/signal/regimeClassifier.js, src/conductor/signal/systemDynamicsProfiler.js
+- E2: Redistribution threshold recalibration — relative threshold 0.012→0.008 + Gini-based secondary trigger — src/conductor/signal/couplingHomeostasis.js
+- E3: Homeostasis proportional-integral control — replace incremental throttle with EMA-smoothed proportional control — src/conductor/signal/couplingHomeostasis.js
+- E4: Density product floor guard — sigmoid hysteresis mirroring flicker guard pattern — src/conductor/signal/pipelineCouplingManager.js
+- E5: HP promotion target validation — effectiveness gate + non-nudgeable axis exclusion — src/conductor/signal/pipelineCouplingManager.js
+- E6: Narrative digest coupling honesty — hotspot count and severity reporting — scripts/narrative-digest.js
+
+### Hypotheses to Track
+- E1: coherent% should be 20-50% (not 0% or 68%). evolving% should be 10-30%. Regime transitions >3. The coherent proximity seeding should soften bistability — verify coupling strength values near coherent threshold during evolving phase.
+- E2: redistributionScore should oscillate 0.15-0.50. Gini-based trigger should fire when Gini>0.35 even if turbulence ratio is low.
+- E3: floorContactBeats <50, ceilingContactBeats <50, multiplierStdDev <0.15, avgRecoveryDuration <30. Multiplier should spend >80% in 0.30-0.90 range.
+- E4: Density product should stay above 0.72. Guard should activate when product drops below 0.75.
+- E5: HP-promoted pair's avg should decrease >10% during promotion. No pair with effectivenessEma<0.40 should be promoted.
+- Meta: Total coupling energy target <3.8 (currently 4.169). If regime fix restores coherent relaxation AND redistribution detection works, both mechanisms should constrain total energy.
+- Meta: Trust axis surge (1.139) should normalize when regime balance is restored. If trust axis stays elevated even with coherent regime, investigate trust-coupling correlation.
+- Meta: Note count drift (26,029) should normalize with regime restoration. Evolving-dominant compositions run longer because density is lower.
+- Meta: 10 correlation trend flips should decrease to <6 when regime stabilizes. High flip count is driven by regime-induced coupling restructuring.
+
+---
+
 ## R22 — 2026-03-04 — STABLE
 
 **Profile:** explosive | **Beats:** 418 | **Duration:** 63.0s | **Notes:** 15,816
