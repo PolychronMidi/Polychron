@@ -93,6 +93,14 @@ couplingHomeostasis = (() => {
   let _cachedMatrixAge = 0;           // beats since last real matrix update (stale count)
   // R21 E2: Redistribution cooldown tracker
   let _nonRedistBeats = 0;
+  // R27 E6: Nudgeable-only redistribution tracking. Non-nudgeable pairs
+  // (entropy-trust, entropy-phase, trust-phase) always contribute opposing
+  // "phantom" forces that inflate redistributionScore. Tracking nudgeable-
+  // only turbulence reveals whether the 3 nudge axes are genuinely contested.
+  const _NON_NUDGEABLE_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
+  let _nudgeablePairTurbulenceEma = 0;
+  let _nudgeableRedistributionScore = 0;
+  let _nudgeableNonRedistBeats = 0;
   // R21 E6: Invoke tracking for beat processing diagnostics
   let _invokeCount = 0;               // every refresh() call regardless of guards
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
@@ -221,17 +229,28 @@ couplingHomeostasis = (() => {
     _energyDeltaEma = _energyDeltaEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + energyDelta * _REDISTRIBUTION_EMA_ALPHA;
 
     let pairTurbulence = 0;
+    // R27 E6: Separate turbulence for nudgeable-only pairs
+    let nudgeablePairTurbulence = 0;
+    let nudgeablePairCount = 0;
     const prevKeys = Object.keys(_prevPairAbsR);
     if (prevKeys.length > 0) {
       let turbSum = 0;
+      let nudgeableTurbSum = 0;
       for (let i = 0; i < prevKeys.length; i++) {
         const curr = _pairAbsR[prevKeys[i]] || 0;
         const prev = _prevPairAbsR[prevKeys[i]] || 0;
-        turbSum += m.abs(curr - prev);
+        const delta = m.abs(curr - prev);
+        turbSum += delta;
+        if (!_NON_NUDGEABLE_SET.has(prevKeys[i])) {
+          nudgeableTurbSum += delta;
+          nudgeablePairCount++;
+        }
       }
       pairTurbulence = turbSum / prevKeys.length;
+      nudgeablePairTurbulence = nudgeablePairCount > 0 ? nudgeableTurbSum / nudgeablePairCount : 0;
     }
     _pairTurbulenceEma = _pairTurbulenceEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + pairTurbulence * _REDISTRIBUTION_EMA_ALPHA;
+    _nudgeablePairTurbulenceEma = _nudgeablePairTurbulenceEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + nudgeablePairTurbulence * _REDISTRIBUTION_EMA_ALPHA;
 
     // R22 E3: Relative turbulence threshold (replaces absolute 0.02).
     // Turbulence normalized by total energy is scale-invariant. In R22,
@@ -253,6 +272,19 @@ couplingHomeostasis = (() => {
     const redistTarget = isRedistributing ? 1.0 : 0.0;
     _redistributionScore = _redistributionScore * (1 - _REDISTRIBUTION_EMA_ALPHA) + redistTarget * _REDISTRIBUTION_EMA_ALPHA;
 
+    // R27 E6: Nudgeable-only redistribution detection. Same formula but using
+    // nudgeable pair turbulence. Non-nudgeable pairs (entropy-trust, etc.)
+    // contribute structural noise that inflates the total score.
+    const nudgeableRelativeTurbulence = _totalEnergyEma > 0.1
+      ? _nudgeablePairTurbulenceEma / _totalEnergyEma
+      : 0;
+    const isNudgeableRedistributing = _prevTotalEnergy > 0.1 &&
+      m.abs(_energyDeltaEma) / _totalEnergyEma < 0.05 &&
+      nudgeableRelativeTurbulence > _REDIST_RELATIVE_THRESHOLD;
+    const isNudgeableRedist = isNudgeableRedistributing || isGiniConcentrated;
+    const nudgeableRedistTarget = isNudgeableRedist ? 1.0 : 0.0;
+    _nudgeableRedistributionScore = _nudgeableRedistributionScore * (1 - _REDISTRIBUTION_EMA_ALPHA) + nudgeableRedistTarget * _REDISTRIBUTION_EMA_ALPHA;
+
     // R21 E2: Accelerated redistribution cooldown. When not redistributing for
     // _REDIST_COOLDOWN_BEATS consecutive beats, apply faster decay to break
     // the score out of the 0.959 permanent-lock observed in R21.
@@ -263,6 +295,15 @@ couplingHomeostasis = (() => {
       }
     } else {
       _nonRedistBeats = 0;
+    }
+    // R27 E6: Nudgeable redistribution cooldown (mirrors total)
+    if (!isNudgeableRedist) {
+      _nudgeableNonRedistBeats++;
+      if (_nudgeableNonRedistBeats > _REDIST_COOLDOWN_BEATS) {
+        _nudgeableRedistributionScore *= _REDIST_COOLDOWN_DECAY;
+      }
+    } else {
+      _nudgeableNonRedistBeats = 0;
     }
 
     _prevTotalEnergy = totalEnergy;
@@ -437,6 +478,9 @@ couplingHomeostasis = (() => {
       totalEnergyFloor: Number(_totalEnergyFloor.toFixed(4)),
       floorDampen: Number(getFloorDampen().toFixed(4)),
       redistributionScore: Number(_redistributionScore.toFixed(4)),
+      // R27 E6: Nudgeable-only redistribution score (excludes entropy-trust,
+      // entropy-phase, trust-phase phantom turbulence)
+      nudgeableRedistributionScore: Number(_nudgeableRedistributionScore.toFixed(4)),
       globalGainMultiplier: Number(_globalGainMultiplier.toFixed(4)),
       giniCoefficient: Number(_giniCoefficient.toFixed(4)),
       energyDeltaEma: Number(_energyDeltaEma.toFixed(4)),
@@ -462,13 +506,16 @@ couplingHomeostasis = (() => {
     _totalEnergyEma *= 0.90;
     _prevTotalEnergy *= 0.90;
     _redistributionScore *= 0.50;
+    _nudgeableRedistributionScore *= 0.50;
     _energyDeltaEma *= 0.50;
     _pairTurbulenceEma *= 0.50;
+    _nudgeablePairTurbulenceEma *= 0.50;
     // Partial recovery toward 1.0 on section reset
     _globalGainMultiplier = _globalGainMultiplier * 0.5 + 0.5;
     _pairAbsR = {};
     _prevPairAbsR = {};
     _nonRedistBeats = 0;
+    _nudgeableNonRedistBeats = 0;
     // Cached matrix preserved across sections (stale decay handles aging)
     // _beatCount intentionally NOT reset: tracks lifetime beats for budget recalibration
     // _invokeCount/_tickCount intentionally NOT reset: tracks total lifetime invocations

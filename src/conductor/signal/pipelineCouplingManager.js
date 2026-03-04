@@ -44,9 +44,9 @@ pipelineCouplingManager = (() => {
     'flicker-phase':    0.12,  // R25 E4: tightened from 0.15 -- phase axis surged +47.7% in R24
     'density-phase':    0.10,  // R25 E4: tightened from 0.15 -- sole hotspot in R24, avg 0.526, p95=0.796
     'tension-phase':    0.20,  // R25 E4: tightened from 0.30 -- avg 0.407 far exceeded target
-    'density-trust':    0.15,  // R17 Evo 2: tightened from 0.18 -- r surged to 0.949 in R16, p95=0.721
-    'tension-trust':    0.25,
-    'flicker-trust':    0.20,  // R7 Evo 6: relaxed from 0.15 -- was over-decorrelating new high-coupling pair
+    'density-trust':    0.10,  // R27 E3: tightened from 0.15 -- avg surged +30% (0.339->0.440), r=0.959, p95=0.896
+    'tension-trust':    0.15,  // R27 E3: tightened from 0.25 -- p95=0.925 (severe), 3 of 6 hotspots involve trust
+    'flicker-trust':    0.12,  // R27 E3: tightened from 0.20 -- avg +19.7% (0.413->0.495), r=0.940, approaching severe
     'entropy-phase':    0.18,  // R25 E4: tightened from 0.25 -- avg 0.238 approaching target, phase axis surging
     'entropy-trust':    0.25,  // tightened for tail control
     'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened
@@ -177,6 +177,17 @@ pipelineCouplingManager = (() => {
   // When system is stuck in exploring for >40 beats, partially relax
   // coupling targets to break the chicken-and-egg bistability.
   let _exploringBeatCount = 0;
+
+  // R27 E2: Module-level cache for coherence gate + floor dampening diagnostics.
+  // Updated in _addNudge's COUPLING_GATES emission block; exposed via
+  // getCouplingGates() for inclusion in trace beat entries.
+  let _lastGateD = 1.0;
+  let _lastGateT = 1.0;
+  let _lastGateF = 1.0;
+  let _lastFloorDampen = 1.0;
+  let _lastBypassD = 0;
+  let _lastBypassT = 0;
+  let _lastBypassF = 0;
 
   // R23 E5: High-priority pair gain promotion.
   // When a pair's rawRollingAbsCorr stays above threshold while at GAIN_MAX,
@@ -384,7 +395,11 @@ pipelineCouplingManager = (() => {
         const dB = ALL_MONITORED_DIMS[b];
         const k = dA + '-' + dB;
         const cv = matrix[k];
-        if (cv === null || cv !== cv) continue;
+        // R27 E1: Explicit undefined check alongside null and NaN. The trust-phase
+        // pair is absent from the coupling matrix (14 of 15 pairs computed).
+        // matrix['trust-phase'] returns undefined, which strict === null misses.
+        // m.abs(undefined) = NaN contaminates both trust and phase axis totals.
+        if (cv === null || cv === undefined || cv !== cv) continue;
         const ac = m.abs(cv);
         // Attribute to both axes
         _axisTotalAbsR[dA] = (_axisTotalAbsR[dA] || 0) + ac;
@@ -714,14 +729,23 @@ pipelineCouplingManager = (() => {
     // Per-axis gate values reveal how much nudge suppression is occurring
     // and which axes are most contested. Combined with floorDampen, enables
     // quantitative analysis of the anti-redistribution mechanisms.
+    // R27 E2: Also cache values at module level for getCouplingGates() getter,
+    // enabling inclusion in trace beat entries (not just explainabilityBus).
+    _lastGateD = Number(_gateD.toFixed(4));
+    _lastGateT = Number(_gateT.toFixed(4));
+    _lastGateF = Number(_gateF.toFixed(4));
+    _lastFloorDampen = Number(_floorDampen.toFixed(4));
+    _lastBypassD = Number(nudgeDBypass.toFixed(6));
+    _lastBypassT = Number(nudgeTBypass.toFixed(6));
+    _lastBypassF = Number(nudgeFBypass.toFixed(6));
     explainabilityBus.emit('COUPLING_GATES', 'all', {
-      gateD: Number(_gateD.toFixed(4)),
-      gateT: Number(_gateT.toFixed(4)),
-      gateF: Number(_gateF.toFixed(4)),
-      floorDampen: Number(_floorDampen.toFixed(4)),
-      bypassD: Number(nudgeDBypass.toFixed(6)),
-      bypassT: Number(nudgeTBypass.toFixed(6)),
-      bypassF: Number(nudgeFBypass.toFixed(6)),
+      gateD: _lastGateD,
+      gateT: _lastGateT,
+      gateF: _lastGateF,
+      floorDampen: _lastFloorDampen,
+      bypassD: _lastBypassD,
+      bypassT: _lastBypassT,
+      bypassF: _lastBypassF,
     });
 
     // #9: Budget enforcement - cap per-axis accumulation before soft-limiting
@@ -898,6 +922,58 @@ pipelineCouplingManager = (() => {
     return result;
   }
 
+  /**
+   * R27 E4: Return per-axis energy share (fraction of total axis energy).
+   * Enables detection of axis-level redistribution: when one axis consumes
+   * a disproportionate share (>0.30), decorrelation on that axis may be
+   * causing compensating increases on other axes sharing pairs.
+   * Also computes axis-level Gini coefficient for concentration monitoring.
+   * @returns {{ shares: Record<string, number>, axisGini: number }}
+   */
+  function getAxisEnergyShare() {
+    const totals = getAxisCouplingTotals();
+    const keys = Object.keys(totals);
+    let sum = 0;
+    for (let i = 0; i < keys.length; i++) sum += totals[keys[i]];
+    /** @type {Record<string, number>} */
+    const shares = {};
+    if (sum < 0.001 || keys.length === 0) {
+      for (let i = 0; i < keys.length; i++) shares[keys[i]] = 0;
+      return { shares, axisGini: 0 };
+    }
+    const values = [];
+    for (let i = 0; i < keys.length; i++) {
+      const s = totals[keys[i]] / sum;
+      shares[keys[i]] = Number(s.toFixed(4));
+      values.push(s);
+    }
+    // Compute axis Gini coefficient
+    values.sort((a, b) => a - b);
+    const n = values.length;
+    let rankSum = 0;
+    for (let i = 0; i < n; i++) rankSum += (i + 1) * values[i];
+    const axisGini = n > 1 ? clamp((2 * rankSum) / n - (n + 1) / n, 0, 1) : 0;
+    return { shares, axisGini: Number(axisGini.toFixed(4)) };
+  }
+
+  /**
+   * R27 E2: Return cached coherence gate + floor dampening diagnostics.
+   * Updated each time the recorder runs. Enables per-beat trace capture
+   * of gate state that was previously only emitted to explainabilityBus.
+   * @returns {{ gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }}
+   */
+  function getCouplingGates() {
+    return {
+      gateD: _lastGateD,
+      gateT: _lastGateT,
+      gateF: _lastGateF,
+      floorDampen: _lastFloorDampen,
+      bypassD: _lastBypassD,
+      bypassT: _lastBypassT,
+      bypassF: _lastBypassF
+    };
+  }
+
   // --- Self-registration ---
   // Registered ranges accommodate expanded SOFT_LIMIT (0.20): bias in [0.80, 1.20]
   conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.80, 1.20);
@@ -914,5 +990,5 @@ pipelineCouplingManager = (() => {
     () => m.sign(biasTension - 1.0)
   );
 
-  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, setGlobalGainMultiplier, getAdaptiveTargetSnapshot, getAxisCouplingTotals, reset };
+  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, setGlobalGainMultiplier, getAdaptiveTargetSnapshot, getAxisCouplingTotals, getAxisEnergyShare, getCouplingGates, reset };
 })();

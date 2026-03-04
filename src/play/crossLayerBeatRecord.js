@@ -178,6 +178,10 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
       // R19 E1: Per-axis total |r| sums for axis-centric conservation diagnostics
       axisCouplingTotals: pipelineCouplingManager.getAxisCouplingTotals(),
+      // R27 E4: Per-axis energy share for axis-level redistribution detection
+      axisEnergyShare: pipelineCouplingManager.getAxisEnergyShare(),
+      // R27 E2: Coherence gate + floor dampening state for anti-redistribution analysis
+      couplingGates: pipelineCouplingManager.getCouplingGates(),
       // R20 E6: Whole-system coupling homeostasis state for governor diagnostics
       couplingHomeostasis: safePreBoot.call(() => couplingHomeostasis.getState(), null),
       iterBudget: setUnitTimingBudgetStats.getLastBeat(),
