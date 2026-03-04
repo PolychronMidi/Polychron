@@ -1,3 +1,49 @@
+## R28 — 2026-03-04 — STABLE
+
+**Profile:** atmospheric | **Beats:** 765 | **Duration:** 90.1s | **Notes:** 28,340
+**Fingerprint:** 8/8 stable | Drifted: none
+
+### Key Observations
+- **COHERENT MASSIVELY OVERSHOT: 50.8% (389 beats, R27: 7.3%, 44 beats — 7× increase).** System entered coherent at beat 209 (27.3% through — earliest in project history), sustained for 323 consecutive beats, briefly explored, then re-entered coherent at beat 699. The combination of E2 (threshold scale 0.90), E4 (alpha 0.03), and E5 (momentum 15-beat) was collectively too aggressive. Target was 10-15%, got 50.8%.
+- **EQUILIBRATOR (E7) CONFIRMED ACTIVE — first whack-a-mole self-correction.** Non-round baselines prove adjustments: density-entropy 0.12→0.12021, tension-entropy 0.25→0.25021, flicker-phase 0.08→0.08028, entropy-phase 0.10→0.10049. Most notably, density-phase relaxed from 0.06→0.08 (+0.02) — equilibrator detected E3's over-tightening and automatically softened it. First time the system self-corrected a manual target without human intervention.
+- **GINI COLLAPSED: pair 0.659→0.413 (-37.3%), axis 0.408→0.222 (-45.6%).** H2 massively confirmed. Both Gini metrics at best levels since R22. Coupling energy more uniformly distributed across pairs and axes.
+- **totalEnergyEma REVERSED 4-round decline: 2.825→3.658 (+29.5%).** H4 from R27 answered — energy decline was caused by zero/low coherent regime. With 50.8% coherent, decorrelation pressure decreased, allowing coupling energy to naturally rise. Now within healthy 3.0-4.5 range.
+- **ceilingContactBeats COLLAPSED: 188→21 (-88.8%).** System no longer stuck at proportional control ceiling. Healthy coupling dynamics restored.
+- **density-tension SURGED +104% (0.227→0.463, p95 0.859).** Classic whack-a-mole: suppressing phase axis (density-phase -62%) redirected energy to the density-tension compositional pair. Both axes (density 0.171, tension 0.113) are near fair-share, so the equilibrator doesn't see this as a problem — structural gap in axis-only view.
+- **density-phase CRUSHED: 0.457→0.175 (-62%).** E3 phase-pair tightening massively effective on this pair specifically. But entropy-phase (+13%) and flicker-phase (+32%) increased, showing intra-axis redistribution within phase pairs.
+- **Trust axis OVER-SUPPRESSED: share 0.060 (below undershoot threshold 0.08).** H5 confirmed — trust pairs didn't bounce back. But now trust is the most suppressed axis. Equilibrator made only tiny adjustments (~0.0002) due to conservative rates.
+- **regimeDistribution NEARLY DRIFTED: delta 0.218, tolerance 0.25, margin 0.032.** The massive coherent swing (7.3%→50.8%) almost triggered false drift. Tolerance needs widening.
+- **Correlation trend STABILIZED: 5 flips (R27: 8, R24: 10).** All flips were directional→stable. The system is settling into consistent correlation patterns. H7 partially confirmed.
+- **5 transitions** — orderly regime progression. Coherent entry at beat 209 vs R27's ~85% through. Coherent loss at beat 532 (323-beat run), re-entry at beat 699. E5 momentum didn't directly help re-entry (167 exploring beats exceeded 15-beat window).
+- **0 critical, 0 warning, 3 info verdicts.** Cleanest run in project history. No clipping, no meta-controller conflicts.
+- **16/16 pipeline steps, 10/10 tuning invariants, 0 beat-setup spikes, 71/71 feedback validations.**
+
+### Evolutions Applied (from R27)
+- E1: Trace-summary extraction prefers fully-populated axis entries — **confirmed** — phase axis now reports 1.996 (was 0 due to extraction bug). axisCouplingTotals has all 6 finite values. axisEnergyShare fully populated.
+- E2: Atmospheric coherentThresholdScale 0.90 — **confirmed (overshot)** — coherent entry at beat 209 (R27: ~85% through). Threshold 10% easier to reach. Combined with E4/E5, produced 50.8% coherent vs 7.3%.
+- E3: Phase-pair targets tightened (density-phase 0.06, flicker-phase 0.08, entropy-phase 0.10) — **confirmed (mixed)** — density-phase avg -62% (0.457→0.175). But equilibrator relaxed density-phase baseline from 0.06→0.08 (self-correction). entropy-phase +13%, flicker-phase +32% — intra-axis redistribution.
+- E4: Atmospheric coherentShareAlphaMin 0.03 — **confirmed (overshot)** — contributed to 50.8% coherent by slowing self-penalization. Needs partial revert.
+- E5: Coherent momentum persistence (15-beat decay) — **inconclusive** — momentum window (15 beats) was too short relative to the 167-beat exploring interlude (beats 532-699). Did not directly assist re-entry. May have helped prevent premature exit during the 323-beat stretch, but cannot isolate.
+- E6: Per-axis gate EMA/min temporal statistics — **confirmed** — gateEmaD=0.827, gateEmaT=0.976, gateEmaF=0.985, gateMinD=0.020, gateMinT=0.105, gateMinF=0.012 visible in trace-summary. Density gate showed significant temporal variation (min 0.020 vs EMA 0.827).
+- E7: axisEnergyEquilibrator (hypermeta #13) — **confirmed** — registered in conductor-map as recorder+stateProvider. Non-round baselines prove activation. axisGini 0.408→0.222 (-45.6%), pair Gini 0.659→0.413 (-37.3%). First successful automated whack-a-mole self-correction (density-phase 0.06→0.08). Diagnostic gap: adjustmentCount not captured in trace-summary.
+
+### Evolutions Proposed (for R29)
+- E1: **EQUILIBRATOR REWRITE -- two-layer omnipotent self-correction.** Layer 1: pair-level hotspot detection (rollingAbsCorr > 1.5x baseline -> tighten; < 0.3x -> relax). Layer 2: axis-level energy balancing (overshoot > 0.22, undershoot < 0.12). Faster rates (pair: 0.003/0.0015, axis: 0.002/0.0012), shorter cooldowns (pair: 3, axis: 4). This is the permanent fix for whack-a-mole -- no manual pair-target tuning ever again.
+- E2: **REGIME SELF-BALANCING in regimeClassifier.** Auto-adjusts coherentThresholdScale based on rolling coherent share EMA. Target: 15-35%. Nudge rate 0.001/beat, bounded [0.80, 1.15]. Permanently replaces manual per-profile scale tuning.
+- E3: **REVERT manual atmospheric coherentThresholdScale (R28 E2).** Removed setCoherentThresholdScale(0.90) from atmospheric branch. Regime self-balancing (E2 above) now controls this automatically.
+- E4: Reduce momentum window 15->8 beats. Micro-hysteresis only; macro-level regime balance handled by E2.
+
+### Hypotheses to Track
+- H1: Coherent should land 15-35% via self-balancing (E2). If outside range, check _REGIME_SCALE_NUDGE rate (0.001 may be too slow to converge within the run).
+- H2: density-tension avg should decrease below 0.40 with Layer 1 pair-level hotspot detection. If it stays >0.45, _HOTSPOT_RATIO 1.5 is too permissive -- try 1.3.
+- H3: No pair should have avg > 0.45 AND p95 > 0.85 simultaneously. If any pair does, Layer 1 rates need increase.
+- H4: Trust axis share should recover above 0.08 with Layer 2's undershoot threshold at 0.12.
+- H5: axisGini should stay below 0.30. If it rises, Layer 2 rates need increase.
+- H6: pairAdjustments + axisAdjustments should be > 0 (equilibrator activation confirmed). If both zero, warm-up period (16 beats) may be too short or thresholds wrong.
+- H7: coherentThresholdScale should visibly change from 1.0 during the run (self-balancing activation). If it stays at 1.0, coherent share stayed within [0.15, 0.35] naturally -- which is also success.
+
+---
+
 ## R27 — 2025-07-25 — STABLE
 
 **Profile:** atmospheric | **Beats:** 599 | **Duration:** 78.5s | **Notes:** 22,106

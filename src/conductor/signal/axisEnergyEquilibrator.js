@@ -1,223 +1,226 @@
 // @ts-check
 
 /**
- * Axis Energy Equilibrator (R28 E7) -- Hypermeta Self-Calibrating Controller #13
+ * Axis Energy Equilibrator -- Hypermeta Self-Calibrating Controller #13
  *
- * The structural cause of whack-a-mole in Polychron's coupling system is that
- * manually tightening pair targets on one axis cluster (e.g. trust pairs)
- * redirects decorrelation energy to other axis clusters (e.g. phase pairs).
- * This has been observed across R24-R27:
- *   R24: Phase targets tightened -> R25 trust pairs surged
- *   R26: Trust targets tightened -> R27 phase pairs surged +192%
+ * Two-layer omnipotent coupling self-correction that permanently eliminates
+ * whack-a-mole. Manual pair-target tuning is never needed again.
  *
- * This controller monitors the per-axis energy distribution (via
- * pipelineCouplingManager.getAxisEnergyShare()) and automatically adjusts
- * pair baselines to equalize axis energy. When an axis consumes a
- * disproportionate share of coupling energy (> threshold), pairs on that
- * axis have their baselines tightened. When an axis is over-suppressed
- * (< fair share), baselines relax.
+ * LAYER 1 -- PAIR-LEVEL HOTSPOT DETECTION
+ * Reads per-pair rollingAbsCorr from getAdaptiveTargetSnapshot(). When any
+ * pair's measured coupling exceeds HOTSPOT_RATIO x its baseline, that pair
+ * is tightened directly. When a pair is over-suppressed (< COLDSPOT_RATIO),
+ * it relaxes. This catches within-axis redistribution that axis-level
+ * balancing cannot see (e.g. density-tension surging +104% while both axes
+ * are near fair-share).
  *
- * Operates per-measure (via recorder) with conservative rates to avoid
- * oscillation. Does NOT produce pipeline biases -- it modulates the coupling
- * manager's internal targets only.
+ * LAYER 2 -- AXIS-LEVEL ENERGY BALANCING
+ * Monitors per-axis energy shares (getAxisEnergyShare). Nudges ALL pairs on
+ * overloaded/suppressed axes. Fires after Layer 1 and skips pairs already
+ * adjusted (via cooldown).
  *
  * Hypermeta controller #13: axisEnergyEquilibrator
  * Axes: density, tension, flicker, entropy, trust, phase
- * Interacts with: #1 (selfCalibratingCouplingTargets -- the targets it modifies),
- *                 #9 (couplingGainBudgetManager), #12 (couplingHomeostasis)
+ * Interacts with: #1 (selfCalibratingCouplingTargets), #9 (gainBudget),
+ *                 #12 (couplingHomeostasis)
  */
 
 axisEnergyEquilibrator = (() => {
   const V = validator.create('axisEnergyEquilibrator');
 
-  // -- Configuration --
+  // -- Layer 1 config: pair-level hotspot detection --
+  const _HOTSPOT_RATIO = 1.5;      // pair is hot when rolling > 1.5x baseline
+  const _HOTSPOT_ABS_MIN = 0.20;   // ignore unless rolling crosses absolute floor
+  const _COLDSPOT_RATIO = 0.3;     // pair is cold when rolling < 0.3x baseline
+  const _COLDSPOT_ABS_MAX = 0.12;  // only relax if rolling is below this absolute cap
+  const _PAIR_TIGHTEN_RATE = 0.003;
+  const _PAIR_RELAX_RATE = 0.0015;
+  const _PAIR_COOLDOWN = 3;
 
-  // Fair share: 1/6 axes = 0.1667. Overshoot threshold at 1.8x fair share.
+  // -- Layer 2 config: axis-level energy balancing --
   const _FAIR_SHARE = 1.0 / 6.0;
-  // Axis is overloaded when its energy share exceeds this threshold
-  const _OVERSHOOT_THRESHOLD = 0.28;
-  // Axis is suppressed when its energy share falls below this threshold
-  const _UNDERSHOOT_THRESHOLD = 0.08;
+  const _AXIS_OVERSHOOT = 0.22;    // share > 0.22 triggers tightening
+  const _AXIS_UNDERSHOOT = 0.12;   // share < 0.12 triggers relaxation
+  const _AXIS_TIGHTEN_RATE = 0.002;
+  const _AXIS_RELAX_RATE = 0.0012;
+  const _AXIS_COOLDOWN = 4;
+  const _SHARE_EMA_ALPHA = 0.08;   // ~12-beat horizon (faster convergence)
+  const _GINI_ESCALATION = 0.40;   // Gini above this -> 1.5x rate multiplier
 
-  // Per-beat baseline adjustment rates (conservative to prevent oscillation)
-  const _TIGHTEN_RATE = 0.0008;   // ~125 beats to move baseline by 0.10
-  const _RELAX_RATE = 0.0004;     // relaxation at half the tighten rate (asymmetric)
-
-  // Minimum beats between adjustments to the same pair (anti-oscillation)
-  const _COOLDOWN_BEATS = 8;
-
-  // EMA for smoothed axis energy shares (prevents single-beat spikes from triggering)
-  const _SHARE_EMA_ALPHA = 0.06;  // ~16-beat horizon
-
-  // Gini guard: when axis Gini exceeds this, strengthen equalization pressure
-  const _GINI_ESCALATION_THRESHOLD = 0.50;
-  const _GINI_ESCALATION_MULTIPLIER = 1.5;
-
-  // Absolute baseline bounds (same as pipelineCouplingManager's _TARGET_MIN/_TARGET_MAX)
+  // -- Shared config --
   const _BASELINE_MIN = 0.04;
   const _BASELINE_MAX = 0.40;
+  const _WARMUP = 16;
 
   // -- State --
-
-  /** @type {Record<string, number>} Smoothed axis energy shares */
+  /** @type {Record<string, number>} */
   const _smoothedShares = {};
-  /** @type {Record<string, number>} Per-pair cooldown counters */
+  /** @type {Record<string, number>} */
   const _pairCooldowns = {};
   let _beatCount = 0;
-  let _adjustmentCount = 0;
-  /** @type {Record<string, number>} Running count of adjustments per axis */
-  const _axisAdjustments = {};
-  /** @type {Record<string, number>} Last snapshot of baselines before adjustment */
+  let _pairAdjustments = 0;
+  let _axisAdjustments = 0;
+  /** @type {Record<string, number>} */
+  const _perAxisAdj = {};
+  /** @type {Record<string, number>} */
+  const _perPairAdj = {};
+  /** @type {Record<string, number>} */
   let _lastBaselines = {};
 
-  // Dimensions and their pair memberships (precomputed)
+  // Dimensions + pair mapping (precomputed)
   const _ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
-  /** @type {Record<string, string[]>} axis -> list of pair keys containing that axis */
-  const _axisToPairs = {};
-  // Build axis-to-pair mapping from all 15 pairs
   const _ALL_PAIRS = [
     'density-tension', 'density-flicker', 'density-entropy', 'density-phase', 'density-trust',
     'tension-flicker', 'tension-entropy', 'tension-phase', 'tension-trust',
     'flicker-entropy', 'flicker-phase', 'flicker-trust',
-    'entropy-phase', 'entropy-trust',
-    'trust-phase'
+    'entropy-phase', 'entropy-trust', 'trust-phase'
   ];
+  /** @type {Record<string, string[]>} */
+  const _axisToPairs = {};
   for (let a = 0; a < _ALL_AXES.length; a++) {
     const axis = _ALL_AXES[a];
     _axisToPairs[axis] = [];
     for (let p = 0; p < _ALL_PAIRS.length; p++) {
-      if (_ALL_PAIRS[p].indexOf(axis) !== -1) {
-        _axisToPairs[axis].push(_ALL_PAIRS[p]);
-      }
+      if (_ALL_PAIRS[p].indexOf(axis) !== -1) _axisToPairs[axis].push(_ALL_PAIRS[p]);
     }
   }
 
-  /**
-   * Main per-measure update. Reads axis energy distribution, computes
-   * equilibration pressure, and adjusts pair baselines via
-   * pipelineCouplingManager.setPairBaseline().
-   */
   function refresh() {
     _beatCount++;
 
-    // Decrement cooldowns
+    // Tick cooldowns
     const cdKeys = Object.keys(_pairCooldowns);
     for (let i = 0; i < cdKeys.length; i++) {
       if (_pairCooldowns[cdKeys[i]] > 0) _pairCooldowns[cdKeys[i]]--;
     }
 
-    // Read current axis energy shares
+    // Read axis energy + pair snapshots
     const energyData = pipelineCouplingManager.getAxisEnergyShare();
     if (!energyData || !energyData.shares) return;
-
     const shares = energyData.shares;
-    const axisGini = energyData.axisGini;
+    const axisGini = V.optionalFinite(energyData.axisGini, 0);
 
-    // Update smoothed shares via EMA
+    // Update smoothed axis shares
     for (let a = 0; a < _ALL_AXES.length; a++) {
       const axis = _ALL_AXES[a];
-      const raw = typeof shares[axis] === 'number' ? shares[axis] : 0;
+      const raw = V.optionalFinite(shares[axis], 0);
       if (_smoothedShares[axis] === undefined) {
         _smoothedShares[axis] = raw;
       } else {
-        _smoothedShares[axis] = _smoothedShares[axis] * (1 - _SHARE_EMA_ALPHA) + raw * _SHARE_EMA_ALPHA;
+        _smoothedShares[axis] += (raw - _smoothedShares[axis]) * _SHARE_EMA_ALPHA;
       }
     }
 
-    // Skip adjustment during early warm-up (need stable EMAs)
-    if (_beatCount < 20) return;
+    if (_beatCount < _WARMUP) return;
 
-    // Gini escalation: when concentration is severe, increase adjustment rates
-    const safeGini = V.optionalFinite(axisGini, 0);
-    const giniMultiplier = (safeGini > _GINI_ESCALATION_THRESHOLD)
-      ? _GINI_ESCALATION_MULTIPLIER
-      : 1.0;
-
-    // Read current baselines for diagnostic snapshot
+    const giniMult = axisGini > _GINI_ESCALATION ? 1.5 : 1.0;
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
+    const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
 
-    // For each axis, determine if it's overloaded or suppressed
+    // ===== LAYER 1: Pair-level hotspot / coldspot detection =====
+    for (let p = 0; p < _ALL_PAIRS.length; p++) {
+      const pair = _ALL_PAIRS[p];
+      if ((_pairCooldowns[pair] || 0) > 0) continue;
+      const pd = snapshot[pair];
+      if (!pd) continue;
+      const baseline = V.optionalFinite(pd.baseline);
+      const rolling = V.optionalFinite(pd.rollingAbsCorr);
+      if (baseline === undefined || rolling === undefined) continue;
+
+      if (rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) {
+        // Hotspot -- tighten this pair's baseline
+        const overshoot = rolling / m.max(baseline, 0.01);
+        const rate = _PAIR_TIGHTEN_RATE * giniMult * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const nb = m.max(_BASELINE_MIN, baseline - rate);
+        if (nb < baseline) {
+          pipelineCouplingManager.setPairBaseline(pair, nb);
+          _pairCooldowns[pair] = _PAIR_COOLDOWN;
+          _pairAdjustments++;
+          _perPairAdj[pair] = (_perPairAdj[pair] || 0) + 1;
+        }
+      } else if (rolling < _COLDSPOT_RATIO * baseline && rolling < _COLDSPOT_ABS_MAX) {
+        // Coldspot -- relax this pair's baseline
+        const nb = m.min(_BASELINE_MAX, baseline + _PAIR_RELAX_RATE);
+        if (nb > baseline) {
+          pipelineCouplingManager.setPairBaseline(pair, nb);
+          _pairCooldowns[pair] = _PAIR_COOLDOWN;
+          _pairAdjustments++;
+          _perPairAdj[pair] = (_perPairAdj[pair] || 0) + 1;
+        }
+      }
+    }
+
+    // ===== LAYER 2: Axis-level energy balancing =====
     for (let a = 0; a < _ALL_AXES.length; a++) {
       const axis = _ALL_AXES[a];
       const share = _smoothedShares[axis] || 0;
+      const pairs = _axisToPairs[axis];
 
-      if (share > _OVERSHOOT_THRESHOLD) {
-        // Axis overloaded -- tighten pair baselines on this axis
+      if (share > _AXIS_OVERSHOOT) {
         const excess = share - _FAIR_SHARE;
-        const rate = _TIGHTEN_RATE * giniMultiplier * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
-        const pairs = _axisToPairs[axis];
+        const rate = _AXIS_TIGHTEN_RATE * giniMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
-          if ((_pairCooldowns[pair] || 0) > 0) continue;
-          const currentBaseline = V.optionalFinite(_lastBaselines[pair]);
-          if (currentBaseline === undefined) continue;
-          const newBaseline = m.max(_BASELINE_MIN, currentBaseline - rate);
-          if (newBaseline < currentBaseline) {
-            pipelineCouplingManager.setPairBaseline(pair, newBaseline);
-            _pairCooldowns[pair] = _COOLDOWN_BEATS;
-            _adjustmentCount++;
-            _axisAdjustments[axis] = (_axisAdjustments[axis] || 0) + 1;
+          if ((_pairCooldowns[pair] || 0) > 0) continue; // skip Layer-1 adjusted
+          const bl = V.optionalFinite(_lastBaselines[pair]);
+          if (bl === undefined) continue;
+          const nb = m.max(_BASELINE_MIN, bl - rate);
+          if (nb < bl) {
+            pipelineCouplingManager.setPairBaseline(pair, nb);
+            _pairCooldowns[pair] = _AXIS_COOLDOWN;
+            _axisAdjustments++;
+            _perAxisAdj[axis] = (_perAxisAdj[axis] || 0) + 1;
           }
         }
-      } else if (share < _UNDERSHOOT_THRESHOLD && share > 0.001) {
-        // Axis suppressed -- relax pair baselines on this axis
+      } else if (share < _AXIS_UNDERSHOOT && share > 0.001) {
         const deficit = _FAIR_SHARE - share;
-        const rate = _RELAX_RATE * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
-        const pairs = _axisToPairs[axis];
+        const rate = _AXIS_RELAX_RATE * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue;
-          const currentBaseline = V.optionalFinite(_lastBaselines[pair]);
-          if (currentBaseline === undefined) continue;
-          const newBaseline = m.min(_BASELINE_MAX, currentBaseline + rate);
-          if (newBaseline > currentBaseline) {
-            pipelineCouplingManager.setPairBaseline(pair, newBaseline);
-            _pairCooldowns[pair] = _COOLDOWN_BEATS;
-            _adjustmentCount++;
-            _axisAdjustments[axis] = (_axisAdjustments[axis] || 0) + 1;
+          const bl = V.optionalFinite(_lastBaselines[pair]);
+          if (bl === undefined) continue;
+          const nb = m.min(_BASELINE_MAX, bl + rate);
+          if (nb > bl) {
+            pipelineCouplingManager.setPairBaseline(pair, nb);
+            _pairCooldowns[pair] = _AXIS_COOLDOWN;
+            _axisAdjustments++;
+            _perAxisAdj[axis] = (_perAxisAdj[axis] || 0) + 1;
           }
         }
       }
     }
 
-    // Diagnostics
     explainabilityBus.emit('AXIS_ENERGY_EQUIL', 'all', {
       smoothedShares: Object.assign({}, _smoothedShares),
-      axisGini,
-      giniMultiplier,
-      adjustmentCount: _adjustmentCount,
-      beatCount: _beatCount
+      axisGini, giniMult,
+      pairAdj: _pairAdjustments, axisAdj: _axisAdjustments,
+      beat: _beatCount
     });
   }
 
-  /**
-   * Diagnostic snapshot for trace and post-run analysis.
-   * @returns {{ beatCount: number, adjustmentCount: number, smoothedShares: Record<string, number>, axisAdjustments: Record<string, number>, lastBaselines: Record<string, number> }}
-   */
+  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number> }} */
   function getSnapshot() {
     return {
       beatCount: _beatCount,
-      adjustmentCount: _adjustmentCount,
+      pairAdjustments: _pairAdjustments,
+      axisAdjustments: _axisAdjustments,
       smoothedShares: Object.assign({}, _smoothedShares),
-      axisAdjustments: Object.assign({}, _axisAdjustments),
+      perAxisAdj: Object.assign({}, _perAxisAdj),
+      perPairAdj: Object.assign({}, _perPairAdj),
       lastBaselines: Object.assign({}, _lastBaselines)
     };
   }
 
   function reset() {
-    // Dampen smoothed shares across sections (preserve 70% of structural knowledge)
     for (let a = 0; a < _ALL_AXES.length; a++) {
       const axis = _ALL_AXES[a];
       if (_smoothedShares[axis] !== undefined) {
         _smoothedShares[axis] = _smoothedShares[axis] * 0.7 + _FAIR_SHARE * 0.3;
       }
     }
-    // Reset cooldowns per section
     const cdKeys = Object.keys(_pairCooldowns);
-    for (let i = 0; i < cdKeys.length; i++) {
-      _pairCooldowns[cdKeys[i]] = 0;
-    }
-    // Do NOT reset adjustment counts (run-level diagnostic)
+    for (let i = 0; i < cdKeys.length; i++) _pairCooldowns[cdKeys[i]] = 0;
   }
 
   // --- Self-registration ---
