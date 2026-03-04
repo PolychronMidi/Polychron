@@ -1,3 +1,57 @@
+## R27 — 2025-07-25 — STABLE
+
+**Profile:** atmospheric | **Beats:** 599 | **Duration:** 78.5s | **Notes:** 22,106
+**Fingerprint:** 9/9 stable | Drifted: none | Cross-profile: explosive→atmospheric (tolerances 1.3×)
+
+### Key Observations
+- **First atmospheric profile run since R20.** All comparisons cross-profile; tolerances auto-widened 1.3×. Fingerprint now reports 9 dimensions (new: crossProfileWarning)
+- **Trust-pair tightening (R26 E3) massively successful:** density-trust avg -25% (0.440→0.330), flicker-trust avg -51.3% (0.495→0.241), tension-trust p95 -55% (0.925→0.417). All 3 hypotheses met. Trust hotspots eliminated from p95 list
+- **Whack-a-mole energy redirect to phase axis:** density-phase avg +65% (0.277→0.457), entropy-phase +192% (0.132→0.385), flicker-phase +81% (0.176→0.318). All 3 p95 hotspots now phase pairs
+- **Gini exploded 0.380→0.659 (+73.4%)** — coupling now concentrated in fewer active pairs (phase axis), direct consequence of trust-pair suppression
+- **Density product RECOVERED: 0.632→0.800 (+26.6%)** — four-round decline reversed, back above 0.65 concern threshold
+- **Coherent regressed 14.4%→7.3%** — atmospheric coherentThresholdScale=1.0 (default) vs explosive's 0.84 makes coherent entry ~19% harder. In relative terms, coherent entry at 84.6% through composition (R26: 85.6%) — essentially identical
+- **Coherent LOST at beat 551** — reverted to exploring for final 48 beats. First coherent loss in 3+ rounds. Only 44 beats sustained
+- **ceilingContactBeats surged 26→188** — system spending most measures at proportional control ceiling
+- **totalEnergyEma down 10.9% (3.171→2.825)** — fourth consecutive round of decline. Budget gap healthy at 8.2%
+- **8 correlation trend flips** — most volatile round. flicker-entropy r collapsed 0.944→0.145, tension-trust r flipped -0.499→0.804, density-phase r surged 0.588→0.869
+- **tensionArc barely stable:** delta 0.291, tolerance 0.300, margin 0.009. V-shaped atmospheric arc differs from explosive's arch
+- **E1 axisCouplingTotals fix confirmed:** trust axis now finite (0.407). Phase=0 is trace-summary first-wins extraction bug (not NaN)
+- **E2 couplingGates diagnostics working:** gateD=gateT=gateF=1.0 (end-of-run snapshot). Gates fully open — need temporal stats for active-phase behavior
+- **E4 axisEnergyShare diagnostics working:** tension axis dominates at 39.1% (exceeds 0.30 threshold). axisGini=0.408
+- **E6 nudgeableRedistributionScore confirmed:** 0.979 ≈ total 0.981. Non-nudgeable pairs contribute negligibly. Nudge axes genuinely contested
+- **0 beat-setup budget spikes** (R26: 1), 16/16 pipeline steps passed, 10/10 tuning invariants, 71/71 feedback graph validations
+- **Severe peaks still present:** 6 pairs >0.85 (tension-flicker 0.935, density-flicker 0.978, density-tension 0.861, entropy-phase 0.883, tension-trust 0.866, flicker-trust 0.866)
+
+### Evolutions Applied (from R26)
+- E1: Fix axisCouplingTotals undefined → NaN contamination — **confirmed** — trust=0.407 (was null); phase=0 (finite but extraction bug gives first-beat snapshot)
+- E2: Surface COUPLING_GATES in beat trace entry — **confirmed** — couplingGates field present with gateD/gateT/gateF/floorDampen/bypass values
+- E3: Tighten trust-axis pair targets — **confirmed (massive)** — density-trust avg -25%, flicker-trust avg -51.3%, tension-trust p95 -55%; all trust hotspots eliminated
+- E4: Per-axis energy budget tracking — **confirmed** — axisEnergyShare and axisGini working; tension axis at 39.1% exceeds 0.30 threshold
+- E5: Relaxed velocity threshold during extended exploring — **inconclusive** — cross-profile switch prevents reliable comparison; coherent entry at 84.6% (R26: 85.6%) essentially identical in relative terms
+- E6: Exclude non-nudgeable pairs from redistributionScore — **confirmed** — nudgeable=0.979 ≈ total=0.981; nudge axes genuinely contested
+
+### Evolutions Proposed (for R28)
+- E1: Fix trace-summary extraction to use LAST entry for axisCouplingTotals/axisEnergyShare/couplingGates — scripts/trace-summary.js
+- E2: Set atmospheric coherentThresholdScale to 0.90 — src/conductor/signal/systemDynamicsProfiler.js
+- E3: Phase-pair target tightening (density-phase 0.10→0.06, flicker-phase 0.12→0.08, entropy-phase 0.18→0.10) — src/conductor/signal/pipelineCouplingManager.js
+- E4: Atmospheric coherentShareAlphaMin 0.02→0.03 — src/conductor/signal/systemDynamicsProfiler.js
+- E5: Coherent momentum persistence for atmospheric (15-beat decaying bonus after coherent exit) — src/conductor/signal/regimeClassifier.js
+- E6: Track per-axis gate EMA statistics across the run (min/avg) — src/conductor/signal/pipelineCouplingManager.js
+- E7: **Hypermeta axis energy equilibrator (#13)** — automatic pair-target self-calibration based on axis energy distribution. Ends manual whack-a-mole. New file: src/conductor/signal/axisEnergyEquilibrator.js + setPairBaseline() API on pipelineCouplingManager
+
+### Hypotheses to Track
+- H1: Phase-pair tightening (E3) will reduce phase hotspots but may redirect energy to compositional axes (density-tension, density-flicker, tension-flicker). **E7 equilibrator should automatically counter-adjust** — first test of self-correction
+- H2: Atmospheric coherentThresholdScale 0.90 (E2) combined with alpha 0.03 (E4) may cause coherent% >25%. If so, raise scale to 0.95 or alpha back to 0.025
+- H3: Coherent momentum (E5) should prevent coherent loss within 15 beats of entry. If coherent% exceeds 30%, momentum window is too long
+- H4: totalEnergyEma has declined 4 consecutive rounds (R24:3.44→R25:3.62→R26:3.17→R27:2.83). If R28 continues the decline, investigate whether the energy floor is appropriate or needs a regime-sensitive component
+- H5: Gini 0.659 should decrease with E7 equilibrator spreading decorrelation pressure across all 6 axes. If Gini remains >0.55, equilibrator rates need escalation
+- H6: tensionArc is 0.009 from drift threshold. If next atmospheric run produces a different arc shape, the tolerance needs profile-specific calibration (atmospheric V-shape vs explosive arch)
+- H7: The 8 correlation trend flips suggest high inter-run volatility at the correlation level. Track whether R28 shows fewer flips (stabilization) or more (systemic instability)
+- H8: E7 equilibrator adjustmentCount should be >0. If zero, the _OVERSHOOT_THRESHOLD (0.28) or warm-up period (20 beats) may be too conservative. Check axisEnergyEquilibrator.getSnapshot() in trace
+- H8: ceilingContactBeats 188 should decrease if phase-pair tightening reduces concentrated energy. If ceiling contacts remain >100, the proportional control ceiling (1.0) may need profiling
+
+---
+
 ## R26 — 2026-03-04 — STABLE
 
 **Profile:** explosive | **Beats:** 439 | **Duration:** 52.4s | **Notes:** 18,302

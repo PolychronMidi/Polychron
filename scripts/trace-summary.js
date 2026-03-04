@@ -280,6 +280,12 @@ function summarizeTrace(entries) {
   let axisEnergyShare = null;
   // R27 E2: Coherence gate + floor dampening state for anti-redistribution analysis
   let couplingGates = null;
+  // R28 E1: Enhanced extraction - prefer the last entry where ALL monitored
+  // axes have non-zero values. Phase pairs may have null correlations on the
+  // very last beat (producing phase=0 in axisCouplingTotals and axisEnergyShare).
+  // Fall back to any last-available entry if no fully-populated entry exists.
+  let axisCouplingTotalsBest = null;
+  let axisEnergyShareBest = null;
   for (let i = entries.length - 1; i >= 0; i--) {
     if (entries[i].couplingTargets && typeof entries[i].couplingTargets === 'object') {
       const raw = entries[i].couplingTargets;
@@ -303,17 +309,35 @@ function summarizeTrace(entries) {
       }
       if (Object.keys(result).length > 0) adaptiveTargets = result;
     }
-    // R19 E1: Extract per-axis coupling totals from final beat
-    if (!axisCouplingTotals && entries[i].axisCouplingTotals && typeof entries[i].axisCouplingTotals === 'object') {
-      axisCouplingTotals = entries[i].axisCouplingTotals;
+    // R28 E1: Prefer fully-populated axisCouplingTotals (all axes > 0).
+    // On the last beat, phase pairs may have null correlations giving phase=0.
+    // Take the first entry (from end) where all axes are non-zero; fall back
+    // to first available if no fully-populated entry exists.
+    if (entries[i].axisCouplingTotals && typeof entries[i].axisCouplingTotals === 'object') {
+      if (!axisCouplingTotals) {
+        axisCouplingTotals = entries[i].axisCouplingTotals;
+      }
+      if (!axisCouplingTotalsBest) {
+        const vals = Object.values(entries[i].axisCouplingTotals);
+        const allNonZero = vals.length >= 6 && vals.every(function(v) { return typeof v === 'number' && v > 0; });
+        if (allNonZero) axisCouplingTotalsBest = entries[i].axisCouplingTotals;
+      }
     }
     // R20 E6: Extract couplingHomeostasis state from final beat
     if (!couplingHomeostasisState && entries[i].couplingHomeostasis && typeof entries[i].couplingHomeostasis === 'object') {
       couplingHomeostasisState = entries[i].couplingHomeostasis;
     }
-    // R27 E4: Extract per-axis energy share from final beat
-    if (!axisEnergyShare && entries[i].axisEnergyShare && typeof entries[i].axisEnergyShare === 'object') {
-      axisEnergyShare = entries[i].axisEnergyShare;
+    // R28 E1: Prefer fully-populated axisEnergyShare (all shares > 0).
+    if (entries[i].axisEnergyShare && typeof entries[i].axisEnergyShare === 'object') {
+      if (!axisEnergyShare) {
+        axisEnergyShare = entries[i].axisEnergyShare;
+      }
+      if (!axisEnergyShareBest) {
+        const shares = entries[i].axisEnergyShare.shares || entries[i].axisEnergyShare;
+        const sVals = typeof shares === 'object' ? Object.values(shares) : [];
+        const allSharesNonZero = sVals.length >= 6 && sVals.every(function(v) { return typeof v === 'number' && v > 0; });
+        if (allSharesNonZero) axisEnergyShareBest = entries[i].axisEnergyShare;
+      }
     }
     // R27 E2: Extract coupling gates from final beat
     if (!couplingGates && entries[i].couplingGates && typeof entries[i].couplingGates === 'object') {
@@ -321,6 +345,9 @@ function summarizeTrace(entries) {
     }
     if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState && axisEnergyShare && couplingGates) break;
   }
+  // R28 E1: Use fully-populated entries when available
+  if (axisCouplingTotalsBest) axisCouplingTotals = axisCouplingTotalsBest;
+  if (axisEnergyShareBest) axisEnergyShare = axisEnergyShareBest;
 
   return {
     generatedAt: new Date().toISOString(),

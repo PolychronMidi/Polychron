@@ -143,6 +143,16 @@ metaControllerRegistry = (() => {
       gain: '_GAIN_THROTTLE_RATE = 0.01, _GAIN_RECOVERY_RATE = 0.02, _GAIN_FLOOR = 0.20, _GINI_THRESHOLD = 0.40',
       interactsWith: [1, 6, 9, 11],
       interactionNotes: '#1 targets feed budget self-derivation. #9 budget manager receives throttled gains from global multiplier. #6 coherent relaxation reduces inputs to total energy. #11 watchdog may detect conflict between homeostasis throttle and per-pair escalation.'
+    },
+    {
+      id: 13,
+      name: 'axisEnergyEquilibrator',
+      file: 'conductor/signal/axisEnergyEquilibrator.js',
+      axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
+      mechanism: 'Monitors per-axis energy distribution via getAxisEnergyShare(). When an axis consumes disproportionate coupling energy (>0.28 share), tightens pair baselines on that axis via setPairBaseline(). When suppressed (<0.08), relaxes baselines. Gini-escalated rates when concentration exceeds 0.50. Eliminates manual whack-a-mole pair target tuning between rounds.',
+      gain: '_TIGHTEN_RATE = 0.0008, _RELAX_RATE = 0.0004, _COOLDOWN_BEATS = 8, _GINI_ESCALATION_MULTIPLIER = 1.5',
+      interactsWith: [1, 9, 12],
+      interactionNotes: '#1 self-calibrating targets: this controller modifies the same pair baselines that #1 adapts. #9 budget manager: changed baselines affect gain allocation. #12 homeostasis: energy redistribution changes trigger/relax the global multiplier.'
     }
   ]);
 
