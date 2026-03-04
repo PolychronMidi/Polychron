@@ -149,8 +149,8 @@ metaControllerRegistry = (() => {
       name: 'axisEnergyEquilibrator',
       file: 'conductor/signal/axisEnergyEquilibrator.js',
       axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
-      mechanism: 'Monitors per-axis energy distribution via getAxisEnergyShare(). When an axis consumes disproportionate coupling energy (>0.28 share), tightens pair baselines on that axis via setPairBaseline(). When suppressed (<0.08), relaxes baselines. Gini-escalated rates when concentration exceeds 0.50. Eliminates manual whack-a-mole pair target tuning between rounds.',
-      gain: '_TIGHTEN_RATE = 0.0008, _RELAX_RATE = 0.0004, _COOLDOWN_BEATS = 8, _GINI_ESCALATION_MULTIPLIER = 1.5',
+      mechanism: 'Two-layer omnipotent coupling self-correction. Layer 1: pair-level hotspot detection via rollingAbsCorr -- tightens pairs exceeding 1.5x baseline, relaxes pairs below 0.3x baseline. Layer 2: axis-level energy balancing via getAxisEnergyShare() -- nudges all pairs on overloaded (>0.22) or suppressed (<0.12) axes. Gini-escalated rates. Permanently eliminates manual whack-a-mole.',
+      gain: 'L1: _PAIR_TIGHTEN_RATE=0.003, _PAIR_RELAX_RATE=0.0015, _PAIR_COOLDOWN=3. L2: _AXIS_TIGHTEN_RATE=0.002, _AXIS_RELAX_RATE=0.0012, _AXIS_COOLDOWN=4, _GINI_ESCALATION=0.40',
       interactsWith: [1, 9, 12],
       interactionNotes: '#1 self-calibrating targets: this controller modifies the same pair baselines that #1 adapts. #9 budget manager: changed baselines affect gain allocation. #12 homeostasis: energy redistribution changes trigger/relax the global multiplier.'
     }

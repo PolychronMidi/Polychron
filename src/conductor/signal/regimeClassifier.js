@@ -37,12 +37,20 @@ regimeClassifier = (() => {
   let _evolvingProximityBonus = 0;
 
   // R28 E5: Coherent momentum persistence. When coherent is lost, provide
-  // a linearly-decaying threshold bonus for 15 beats to prevent premature
-  // exit during brief coupling dips. R27 lost coherent at beat 551 after
-  // only 44 beats -- coupling naturally oscillates on longer timescales in
-  // atmospheric profile, and brief dips shouldn't terminate coherent.
-  const _COHERENT_MOMENTUM_WINDOW = 15;
+  // a linearly-decaying threshold bonus to prevent premature exit during
+  // brief coupling dips. Reduced from 15 to 8 beats -- regime self-balancing
+  // now handles macro-level coherent targeting via coherentThresholdScale.
+  const _COHERENT_MOMENTUM_WINDOW = 8;
   let _coherentMomentumBeats = 0;
+
+  // R29: Self-correcting regime targeting. Auto-adjusts coherentThresholdScale
+  // based on rolling coherent share. Replaces manual per-profile scale tuning.
+  // Target range: 15-35% coherent. Nudge rate 0.001/beat, bounded [0.80, 1.15].
+  const _REGIME_TARGET_COHERENT_LO = 0.15;
+  const _REGIME_TARGET_COHERENT_HI = 0.35;
+  const _REGIME_SCALE_NUDGE = 0.001;
+  const _REGIME_SCALE_MIN = 0.80;
+  const _REGIME_SCALE_MAX = 1.15;
 
   // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
   let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0 };
@@ -179,6 +187,16 @@ regimeClassifier = (() => {
     const _adaptiveAlpha = m.max(_coherentShareAlphaMin,
       _COHERENT_SHARE_ALPHA_INIT * m.exp(-coherentBeats / _COHERENT_SHARE_ALPHA_DECAY));
     _coherentShareEma = _coherentShareEma * (1 - _adaptiveAlpha) + (lastRegime === 'coherent' ? 1 : 0) * _adaptiveAlpha;
+
+    // R29: Self-correcting regime balance. When coherent share exceeds target
+    // range, tighten entry (raise scale). When below, ease entry (lower scale).
+    // This permanently replaces manual per-profile coherentThresholdScale tuning.
+    if (_coherentShareEma > _REGIME_TARGET_COHERENT_HI) {
+      coherentThresholdScale = m.min(_REGIME_SCALE_MAX, coherentThresholdScale + _REGIME_SCALE_NUDGE);
+    } else if (_coherentShareEma < _REGIME_TARGET_COHERENT_LO) {
+      coherentThresholdScale = m.max(_REGIME_SCALE_MIN, coherentThresholdScale - _REGIME_SCALE_NUDGE);
+    }
+
     const _dynamicPenaltyCap = 0.08 + clamp((_coherentShareEma - 0.60) * 1.0, 0, 0.20);
     const _dynamicPenaltyRate = 0.003 + clamp((_coherentShareEma - 0.50) * 0.004, 0, 0.004);
     const coherentDurationPenalty = lastRegime === 'coherent' && coherentBeats > 35
