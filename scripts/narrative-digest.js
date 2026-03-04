@@ -298,6 +298,22 @@ function generateNarrative() {
         lines.push('All compositional dimension pairs maintained healthy decorrelation levels.');
         lines.push('');
       }
+
+      // R24 E6: Coupling health assessment. Count pairs with extreme tails
+      // and provide honest severity rating in the narrative.
+      const hotspots = pairs.filter(p => p.max > 0.70);
+      if (hotspots.length === 0) {
+        lines.push('**Coupling health:** All pairs within normal bounds (peak < 0.70).');
+        lines.push('');
+      } else {
+        const stress = hotspots.length <= 2 ? 'manageable' : hotspots.length <= 5 ? 'elevated' : 'stressed';
+        lines.push(`**Coupling health:** ${hotspots.length} hotspot pair${hotspots.length !== 1 ? 's' : ''} (peak > 0.70) -- system ${stress}.`);
+        const severe = hotspots.filter(p => p.max > 0.85);
+        if (severe.length > 0) {
+          lines.push('Severe (peak > 0.85): ' + severe.map(p => `**${p.pair}** (${dec(p.max, 3)})`).join(', ') + '.');
+        }
+        lines.push('');
+      }
     }
   }
 

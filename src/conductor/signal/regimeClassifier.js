@@ -22,11 +22,13 @@ regimeClassifier = (() => {
   let coherentBeats = 0;  // saturation guard: consecutive coherent beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
   let coherentThresholdScale = 1.0; // profile-adaptive multiplier
-  // R22 E4: Evolving regime minimum dwell time. Prevents the system from
-  // passing through evolving in <7 beats (R22: 7 beats, target >12).
-  // Suppresses evolving->coherent transition until dwell is satisfied.
+  // R22 E4 / R24 E1: Evolving regime minimum dwell time. Prevents the
+  // system from passing through evolving too quickly. R22 set 12 beats
+  // which catastrophically disrupted bistable coherent feedback (0% coherent
+  // in R23). R24 reduces to 4 (explosive) / 6 (atmospheric) as minimal
+  // guard that still allows coherent entry within the feedback window.
   let _evolvingBeats = 0;
-  let _evolvingMinDwell = 12;  // default; profile-adaptive via setter
+  let _evolvingMinDwell = 4;  // default; profile-adaptive via setter
 
   // R17 structural fix: Self-calibrating regime saturation.
   // Tracks rolling coherent share and derives penalty dynamically instead of
@@ -80,9 +82,9 @@ regimeClassifier = (() => {
   }
 
   /**
-   * R22 E4: Set profile-adaptive evolving minimum dwell time.
+   * R22 E4 / R24 E1: Set profile-adaptive evolving minimum dwell time.
    * Prevents premature evolving->coherent transitions.
-   * explosive: 12, atmospheric: 8, default: 12.
+   * explosive: 4, atmospheric: 6, default: 4.
    * @param {number} minDwell
    */
   function setEvolvingMinDwell(minDwell) {
@@ -157,7 +159,15 @@ regimeClassifier = (() => {
       : 0;
 
     const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
-    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus + coherentDurationPenalty;
+    // R24 E1: Evolving proximity seeding. When system has been in evolving
+    // past the minimum dwell, progressively lower the coherent threshold.
+    // Breaks bistability where coupling (0.214 in R23) sits just below
+    // threshold (~0.255) indefinitely because coherent relaxation never
+    // activates. Max bonus 0.05 (~20% of base threshold) after 50 beats.
+    const evolvingProximityBonus = (lastRegime === 'evolving' && _evolvingBeats > _evolvingMinDwell)
+      ? clamp((_evolvingBeats - _evolvingMinDwell) * 0.001, 0, 0.05)
+      : 0;
+    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus + coherentDurationPenalty;
     if (couplingStrength > coherentThreshold && avgVelocity > 0.008) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape

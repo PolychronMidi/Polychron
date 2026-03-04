@@ -48,12 +48,8 @@ couplingHomeostasis = (() => {
   const _ENERGY_EMA_ALPHA = 0.10;
   // R20 E2: Matched to energy alpha for consistent responsiveness.
   const _REDISTRIBUTION_EMA_ALPHA = 0.10;
-  // R21 E5: Proportional throttle base + ceiling (replaces fixed 0.01).
-  const _THROTTLE_BASE = 0.005;             // minimum throttle per beat
-  const _THROTTLE_PROPORTIONAL = 0.02;      // additional throttle at 100%+ over-budget
-  const _GAIN_RECOVERY_RATE = 0.02;         // per-beat recovery (2x base throttle)
-  // R21 E2: Unconditional minimum recovery prevents permanent throttle lock.
-  const _MINIMUM_RECOVERY_RATE = 0.003;     // always applied, even during throttle
+  // R21 E5 / R24 E3: Proportional control constants (replaces incremental
+  // throttle that caused bang-bang oscillation in R23: 67.1% at floor/ceiling).
   const _GAIN_FLOOR = 0.20;                 // never fully disable coupling management
   const _GINI_THRESHOLD = 0.40;             // concentration guard activates above this
   // R22 E2: Faster peak decay (0.999->0.995, ~200-beat half-life).
@@ -62,10 +58,11 @@ couplingHomeostasis = (() => {
   const _BUDGET_PEAK_RATIO = 0.90;          // budget = 90% of observed peak
   // R22 E2: Cap peak at 1.5x current EMA to prevent runaway from early volatility.
   const _PEAK_EMA_CAP_RATIO = 1.5;
-  // R22 E3: Relative redistribution turbulence threshold (replaces absolute 0.02).
+  // R22 E3 / R24 E2: Relative redistribution turbulence threshold.
   // Turbulence is normalized by total energy for scale-invariant detection.
-  // At totalEnergy=3.8, threshold 0.012 = effective absolute 0.046.
-  const _REDIST_RELATIVE_THRESHOLD = 0.012;
+  // R23: 0.012 was too high (actual ratio 0.0111, redistributionScore=0 entire
+  // run despite trust axis +48.7% and Gini=0.354). Lowered to 0.008.
+  const _REDIST_RELATIVE_THRESHOLD = 0.008;
   // R21 E2: Redistribution cooldown -- consecutive non-redistributing beats
   // before accelerated score decay kicks in.
   const _REDIST_COOLDOWN_BEATS = 20;
@@ -100,7 +97,6 @@ couplingHomeostasis = (() => {
   let _refreshedThisTick = false;
   // R22 E1: Cached throttle state from refresh() for use in tick()
   let _overBudget = false;
-  let _energyDecreasing = false;
   // R22 E6: Multiplier time-series for throttle behavior analysis
   /** @type {{ beat: number, m: number, e: number, r: number }[]} */
   const _multiplierTimeSeries = [];
@@ -221,9 +217,15 @@ couplingHomeostasis = (() => {
     const relativeTurbulence = _totalEnergyEma > 0.1
       ? _pairTurbulenceEma / _totalEnergyEma
       : 0;
-    const isRedistributing = _prevTotalEnergy > 0.1 &&
+    const isPrimaryRedistributing = _prevTotalEnergy > 0.1 &&
       m.abs(_energyDeltaEma) / _totalEnergyEma < 0.05 &&
       relativeTurbulence > _REDIST_RELATIVE_THRESHOLD;
+    // R24 E2: Gini-based secondary trigger. When coupling energy is highly
+    // concentrated (Gini > 0.35 from previous refresh), treat as redistribution
+    // even without turbulence signal. In R23, Gini=0.354 + trust axis +48.7%
+    // was undetected because turbulence ratio (0.0111) missed the 0.012 threshold.
+    const isGiniConcentrated = _giniCoefficient > 0.35 && _prevTotalEnergy > 0.1;
+    const isRedistributing = isPrimaryRedistributing || isGiniConcentrated;
     const redistTarget = isRedistributing ? 1.0 : 0.0;
     _redistributionScore = _redistributionScore * (1 - _REDISTRIBUTION_EMA_ALPHA) + redistTarget * _REDISTRIBUTION_EMA_ALPHA;
 
@@ -241,12 +243,8 @@ couplingHomeostasis = (() => {
 
     _prevTotalEnergy = totalEnergy;
 
-    // --- 4. Cache throttle state for tick() ---
-    // R22 E1: Multiplier management moved to tick() for per-beat resolution.
-    // refresh() only updates the coupling analysis state; tick() reads
-    // _overBudget/_energyDecreasing and applies multiplier changes.
+    // --- 4. Cache state for diagnostics ---
     _overBudget = _totalEnergyEma > _energyBudget;
-    _energyDecreasing = _energyDeltaEma < -0.005;
 
     // --- 5. Coupling concentration guard (Gini coefficient) ---
     const pairKeys = Object.keys(_pairAbsR);
@@ -308,25 +306,24 @@ couplingHomeostasis = (() => {
       // Multiplier was already applied inside this refresh -> tick() path.
       // Fall through to time-series recording below.
     } else {
-      // --- Multiplier throttle / recovery ---
-      if (_redistributionScore > 0.15 || _overBudget) {
-        // R21 E5: Proportional throttle -- rate scales with over-budget severity.
-        const overBudgetRatio = _overBudget
-          ? clamp((_totalEnergyEma - _energyBudget) / _energyBudget, 0, 1)
-          : 0;
-        const throttleRate = _THROTTLE_BASE + overBudgetRatio * _THROTTLE_PROPORTIONAL;
-        _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier - throttleRate);
-        // R21 E2: Minimum recovery even during throttle
-        _globalGainMultiplier = m.min(1.0, _globalGainMultiplier + _MINIMUM_RECOVERY_RATE);
-      } else if (_energyDecreasing || _totalEnergyEma < _energyBudget * 0.80) {
-        _globalGainMultiplier = m.min(1.0, _globalGainMultiplier + _GAIN_RECOVERY_RATE);
+      // --- R24 E3: Proportional multiplier control ---
+      // Replace incremental throttle/recovery (R21 E5) that caused bang-bang
+      // oscillation (67.1% of ticks at floor/ceiling in R23). Target multiplier
+      // is derived directly from energy/budget ratio, EMA-smoothed for stability.
+      let targetMultiplier = _energyBudget > 0.1
+        ? clamp(_energyBudget / m.max(_totalEnergyEma, 0.1), _GAIN_FLOOR, 1.0)
+        : 1.0;
+      // Redistribution penalty: bias target downward when detected
+      if (_redistributionScore > 0.15) {
+        targetMultiplier = m.max(_GAIN_FLOOR, targetMultiplier - _redistributionScore * 0.15);
       }
-
-      // Gini penalty (uses cached _giniCoefficient from last refresh)
+      // Gini penalty: concentrated coupling warrants additional throttle
       if (_giniCoefficient > _GINI_THRESHOLD) {
-        const extraThrottle = clamp((_giniCoefficient - _GINI_THRESHOLD) * 0.5, 0, 0.10);
-        _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier - extraThrottle);
+        const giniPenalty = clamp((_giniCoefficient - _GINI_THRESHOLD) * 0.3, 0, 0.08);
+        targetMultiplier = m.max(_GAIN_FLOOR, targetMultiplier - giniPenalty);
       }
+      // EMA smooth toward target: alpha=0.05 gives ~20-beat convergence
+      _globalGainMultiplier = _globalGainMultiplier * 0.95 + targetMultiplier * 0.05;
     }
 
     // Track multiplier extremes
