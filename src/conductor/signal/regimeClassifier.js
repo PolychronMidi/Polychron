@@ -30,6 +30,12 @@ regimeClassifier = (() => {
   let _evolvingBeats = 0;
   let _evolvingMinDwell = 4;  // default; profile-adaptive via setter
 
+  // R26 E2: Persistent proximity bonus across regime transitions.
+  // During exploring, bonus accumulates at 0.001/beat. Without persistence,
+  // bonus was lost on evolving->exploring transition since the old formula
+  // only computed from _evolvingBeats (which resets on regime change).
+  let _evolvingProximityBonus = 0;
+
   // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
   let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0 };
 
@@ -170,9 +176,18 @@ regimeClassifier = (() => {
     // R25 E1: Rate doubled 0.001->0.002, cap raised 0.05->0.07.
     // R24 missed coherent by 0.003 with 44 beats at 0.001/beat (bonus=0.044).
     // At 0.002/beat, 0.07 cap reached at 35+dwell beats instead of 54.
-    const evolvingProximityBonus = (lastRegime === 'evolving' && _evolvingBeats > _evolvingMinDwell)
-      ? clamp((_evolvingBeats - _evolvingMinDwell) * 0.002, 0, 0.07)
-      : 0;
+    // R26 E2: Extend proximity seeding to exploring regime at half rate.
+    // R25 spent 302 exploring beats (122-424) with zero seeding. System
+    // had to reach coherent purely through natural dynamics + partial
+    // relaxation. Adding 0.001/beat during exploring provides continuous
+    // threshold assistance, ensuring cap (0.07) is reached and maintained.
+    let evolvingProximityBonus = 0;
+    if (lastRegime === 'evolving' && _evolvingBeats > _evolvingMinDwell) {
+      evolvingProximityBonus = clamp((_evolvingBeats - _evolvingMinDwell) * 0.002, 0, 0.07);
+    } else if (lastRegime === 'exploring') {
+      evolvingProximityBonus = clamp(_evolvingProximityBonus + 0.001, 0, 0.07);
+    }
+    _evolvingProximityBonus = evolvingProximityBonus;
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus + coherentDurationPenalty;
     // R25 E6: Cache classify inputs for transition diagnostics in resolve()
     _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus };
@@ -280,6 +295,7 @@ regimeClassifier = (() => {
     candidateCount = 0;
     exploringBeats = 0;
     _evolvingBeats = 0;
+    _evolvingProximityBonus = 0;
     coherentBeats = m.floor(_prevCoherentBeats * 0.3);
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
     coherentThresholdScale = 1.0;

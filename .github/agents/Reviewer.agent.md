@@ -22,7 +22,7 @@ Read ALL of the following files. Do not skip any. Read them in parallel where po
 | File | What it tells you |
 |------|-------------------|
 | `metrics/pipeline-summary.json` | Pipeline health: wall time, per-step timing, pass/fail counts. Check for new failures or regressions. |
-| `metrics/trace-summary.json` | The statistical soul of the run: beat counts, regime distribution, conductor signal ranges (density/tension/flicker min/max/avg), coupling matrices (abs + tail), coupling hotspots (p95 > 0.70), coupling correlation (Pearson r + direction), trust score summaries, beat-setup budget (spike detection), **adaptiveTargets** (per-pair baseline, current, drift, rollingAbsCorr, gain, heatPenalty — reveals whether coupling surges are target-drift-driven or regime-modulated). |
+| `metrics/trace-summary.json` | The statistical soul of the run: beat counts, regime distribution, conductor signal ranges (density/tension/flicker min/max/avg), coupling matrices (abs + tail), coupling hotspots (p95 > 0.70), coupling correlation (Pearson r + direction), trust score summaries, beat-setup budget (spike detection), **adaptiveTargets** (per-pair baseline, current, drift, rollingAbsCorr, gain, heatPenalty — reveals whether coupling surges are target-drift-driven or regime-modulated), **couplingHomeostasis** (totalEnergyEma, energyBudget, peakEnergyEma, totalEnergyFloor, floorDampen, redistributionScore, globalGainMultiplier, giniCoefficient, multiplier stats). |
 | `metrics/golden-fingerprint.json` | Current run's 7-dimension fingerprint: noteCount (per-layer), pitchEntropy, density (mean + variance), tensionArc (4-point: 25%/50%/75%/90%), trustConvergence, regimeDistribution, couplingMeans, couplingCorrelation, activeProfile. |
 | `metrics/golden-fingerprint.prev.json` | Previous run's fingerprint. Compare field-by-field against current. |
 | `metrics/fingerprint-comparison.json` | Automated comparison: verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta vs tolerance, drifted count. This is your headline. |
@@ -105,6 +105,7 @@ One-line summary: `RXX: <beats> beats / <seconds>s <profile> | <VERDICT> (<stabl
 - Gain escalation behavior (check conductor map for pipelineCouplingManager bias values)
 - **Adaptive target diagnostics** (from trace-summary `adaptiveTargets`): baseline vs current, drift ratio, rollingAbsCorr vs full-run avg (regime-masking detection), gain/heat levels
 - **Per-axis coupling totals**: sum |r| across all pairs sharing each axis (density, tension, flicker, entropy, trust, phase). Watch for axis-level energy conservation (decorrelating one pair redistributes to others on the same axis)
+- **Structural mechanisms** (from trace-summary `couplingHomeostasis`): totalEnergyFloor and floorDampen (floor dampening aggressiveness), redistributionScore, Gini coefficient trend. Check whether floor dampening is over/under-aggressive. Non-nudgeable pairs (entropy-trust, entropy-phase) should show zero gain escalation. If coherence gate diagnostics are present, check per-axis gate values.
 
 ### Trust Governance
 - Top 3 and bottom 3 trusted modules

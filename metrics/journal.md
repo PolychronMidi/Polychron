@@ -1,3 +1,77 @@
+## R26 — Pre-Run — FLOOR DAMPENING REBALANCE + COHERENT PATH ACCELERATION
+
+**Scope:** Rebalance floor dampening parameters + accelerate coherent entry + coherence gate severity bypass + diagnostic enrichment.
+**Files:** couplingHomeostasis.js, regimeClassifier.js, pipelineCouplingManager.js
+
+### Changes
+- **E1: Floor dampening relaxation** — min 0.05→0.20, proximity window 0.20→0.35. R25 had floorDampen=0.05 (95% suppression), freezing all gain escalation. New params: 4× more headroom at floor, full lift at 35% above (was 20%). Coherence gating now handles redistribution; floor only provides gentle back-pressure.
+- **E2: Exploring proximity seeding** — 0.001/beat during exploring (half of evolving rate), same 0.07 cap. R25 spent 302 exploring beats with zero seeding. Persistent `_evolvingProximityBonus` accumulates across regime transitions.
+- **E3: Exploring relaxation 25%→40%** — targetScale during exploring rises from ~1.105 to ~1.168. Combined with E2 seeding, should produce coherent entry within 80-150 beats (R25: beat 424).
+- **E4: Coherence gate severity bypass** — Pairs with |r| > 2× target route nudges through a bypass accumulator that skips the coherence gate. Prevents the gate from over-protecting severe outliers. Gini should decrease from 0.441.
+- **E5: axisCouplingTotals null fix** — Initialize `_axisTotalAbsR` with all 6 axes at 0 before accumulation loop. Trust/phase no longer report null.
+- **E6: Coherence gate + floor dampening diagnostics** — `COUPLING_GATES` event emitted per beat with per-axis gate values (gateD/T/F), floorDampen, and bypass nudge magnitudes (bypassD/T/F).
+
+### Hypotheses to Track
+- E1: floorDampen should be ≥0.20 at end-of-run (R25: 0.05). Gini should decrease. No axis surge >30%.
+- E2+E3: Coherent entry before beat 200 (R25: beat 424). Coherent% should reach 15-35%.
+- E4: Gini should decrease from 0.441 to <0.38. No pair avg >0.45.
+- E5: axisCouplingTotals should report 6 finite values (not null for trust/phase).
+- E6: COUPLING_GATES events should appear in trace. Gate values should inversely correlate with axis redistribution.
+- Meta: Total energy should remain in 3.0-4.5 range. Density product should not decline below 0.60.
+
+---
+
+## R25 — 2026-03-04 — EVOLVED
+
+**Profile:** explosive | **Beats:** 500 | **Duration:** 79.8s | **Notes:** 19,156
+**Fingerprint:** 7/8 stable | Drifted: noteCount
+
+### Key Observations
+- **COHERENT RESTORED: 6.8% (34 beats) — first coherent in 3 rounds.** System entered coherent at beat 424, lasted 34 beats until exploring resumed at beat 458. Late entry: 302 exploring beats (122–424) before coupling crossed threshold. The chicken-and-egg bistability is partially broken but path to coherent is still too slow.
+- **STRUCTURAL FIX 1 (Coherence Gating): CONFIRMED.** Axis spread dropped 0.538→0.319 (-40.7%). No axis surged >40%. Phase axis -33.0% (1.520→1.018), density -20.9%, flicker -19.1%. The most balanced axis distribution in the project's history. Coherence gating correctly suppresses redistributive nudges.
+- **STRUCTURAL FIX 2 (Floor Dampening): CONFIRMED BUT OVER-AGGRESSIVE.** floorDampen=0.05 at end-of-run — all gain escalation rates multiplied by 0.05 (95% suppression). totalEnergyEma (2.885) dropped below totalEnergyFloor (3.004). The mechanism correctly identified the structural minimum but then froze ALL decorrelation. No pair reached GAIN_MAX (highest: density-tension 0.45).
+- **STRUCTURAL FIX 3 (Non-Nudgeable Exclusion): CONFIRMED.** entropy-trust gain=0.16, heatPenalty=0. entropy-phase gain=0.16, heatPenalty=0. Zero escalation on unmovable pairs. No wasted budget.
+- **E2 BUDGET CONVERGENCE: CONFIRMED.** Budget gap 32.6%→9.7% (well within 20% target). peakEnergyEma 4.832→3.516 (-27.2%). Adaptive peak decay working perfectly.
+- **E4 PHASE TIGHTENING: MASSIVE SUCCESS.** Phase axis 1.520→1.018 (-33.0%). density-phase p95 0.796→0.598 (below 0.70 target). density-phase avg 0.526→0.312 (-40.7%). tension-phase avg 0.407→0.203 (-50.1%). All 4 phase pairs dramatically reduced.
+- **TOTAL COUPLING ENERGY DOWN -8.1%:** 4.038→3.709. Third consecutive round of decline.
+- **HOTSPOT COUNT ROSE 1→4 but severity lower.** New hotspots: entropy-phase p95=0.805 (non-nudgeable, correctly excluded), density-tension 0.745, density-flicker 0.724, tension-entropy 0.701. No pair at p95>0.85 (R23 had 3 at >0.96).
+- **GINI ROSE 0.339→0.441.** Coupling more concentrated in fewer pairs. Coherence gating may over-protect moderate pairs from targeted decorrelation.
+- **FLOOR DAMPENING DOMINATES SYSTEM DYNAMICS.** With rate multiplier at 0.05, coherence gating is largely moot (gains are frozen anyway). The two mechanisms need to be tuned so floor dampening provides gentle pressure and coherence gating handles directional conflicts.
+- **axisCouplingTotals still reports trust=null, phase=null.** Two consecutive rounds. Likely missing initialization in _axisTotalAbsR before accumulation.
+- **Composition normalized:** 218→500 beats, 33s→80s. noteCount drift driven by length normalization.
+- **Products:** density 0.635 (declining, -19.7%), tension 1.222 (healthy), flicker 0.850 (stable).
+
+### Evolutions Applied (from R24)
+- E1: Proximity seeding rate 0.002 + cap 0.07 — **partially confirmed** — coherent 0%→6.8%. First coherent in 3 rounds, but entry at beat 424/500 is too late. Cap was hit early; no further assistance during 302 exploring beats.
+- E2: Adaptive peak decay — **confirmed** — budget gap 32.6%→9.7%. peakEnergyEma 4.832→3.516. Budget convergence restored.
+- E3: Exploring partial relaxation (25% after 40 beats) — **inconclusive** — exploring phase 302 beats with relaxation from beat 162+. Coupling rose, but hard to disentangle from E5 wider dynamicCoherentRelax and natural dynamics. Coherent entry at beat 424 suggests relaxation was too mild.
+- E4: Phase-pair target tightening — **confirmed (massive success)** — phase axis 1.520→1.018 (-33.0%). density-phase p95 0.796→0.598. All 4 phase pairs dramatically reduced. No axis surged above 2.0.
+- E5: Coherent share EMA anchor 0.15 — **confirmed** — dynamicCoherentRelax≈1.42 (R24: ~1.18). Wider relaxation enabled coupling rise during coherent-eligible phases.
+- E6: Regime transition diagnostics — **confirmed** — 4 transitions logged with beat numbers in narrative-digest. REGIME_TRANSITION events emitting correctly.
+- Structural Fix 1 (Coherence Gating) — **confirmed** — axis spread -40.7%, no axis surged >40%.
+- Structural Fix 2 (Floor Dampening) — **confirmed but over-aggressive** — floorDampen=0.05, all gains frozen.
+- Structural Fix 3 (Non-Nudgeable Exclusion) — **confirmed** — entropy-trust and entropy-phase gains frozen at 0.16.
+
+### Evolutions Proposed (for R26)
+- E1: Relax floor dampening parameters (min 0.05→0.20, window 0.20→0.35) — src/conductor/signal/couplingHomeostasis.js
+- E2: Extend proximity seeding to exploring regime (0.001/beat, same 0.07 cap) — src/conductor/signal/regimeClassifier.js
+- E3: Increase exploring partial relaxation 25%→40% — src/conductor/signal/pipelineCouplingManager.js
+- E4: Coherence gate severity bypass for pairs >2× target — src/conductor/signal/pipelineCouplingManager.js
+- E5: Fix axisCouplingTotals null values for trust/phase — src/conductor/signal/pipelineCouplingManager.js
+- E6: Coherence gate + floor dampening diagnostic enrichment — src/conductor/signal/pipelineCouplingManager.js
+
+### Hypotheses to Track
+- E1: floorDampen should be ≥0.20 at end-of-run. Gini should decrease from 0.441. No axis surge >30%.
+- E2+E3: Coherent entry should occur before beat 200 (R25: beat 424). Coherent% should reach 15-35%.
+- E4: Gini should decrease to <0.38. No pair should sustain avg >0.45. Axis spread should remain <0.40.
+- E5: axisCouplingTotals should report finite numbers for all 6 axes.
+- E6: Coherence gate values should be visible in trace diagnostics. Gate values should inversely correlate with axis-level redistribution.
+- Meta: Total energy should remain in 3.0–4.5 range. Floor dampening relaxation (E1) will increase decorrelation pressure — coherence gating must prevent redistribution.
+- Meta: Density product (0.635) should not decline further. If it drops below 0.60, density guard parameters need revisiting across all 30 density-contributing modules (not just coupling manager).
+- Meta: The three structural fixes (gating, floor, exclusion) are confirmed working. The next frontier is tuning their parameters for optimal balance between anti-redistribution protection and necessary decorrelation.
+
+---
+
 ## R25 — Pre-Run — STRUCTURAL WHACK-A-MOLE FIX + 6 EVOLUTIONS
 
 **Scope:** Three structural fixes to the decorrelation engine + all 6 R24 evolutions.
