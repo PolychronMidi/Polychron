@@ -1,3 +1,94 @@
+## R30 — 2026-03-04 — EVOLVED
+
+**Profile:** explosive | **Beats:** 676 | **Duration:** 95.8s | **Notes:** 25,329
+**Fingerprint:** 7/8 stable | Drifted: noteCount
+
+### Key Observations
+- **COHERENT RESTORED: 17.6% (119 beats, R29: 0.0%).** Target [15-35%] HIT. The three-pronged fix (wider scale range [0.70,1.20], initial EMA 0.25, no manual coherentThresholdScale overrides, preserved across section resets) permanently solved the regime lockout. Natural progression: evolving(295)-->exploring(217)-->coherent(119)-->exploring(coda). 4 transitions, sustained 119-beat coherent phase (beats 406-525). This is the most important result in the R23-R30 coherent saga.
+- **WORST COUPLING PAIRS CRUSHED.** density-flicker avg 0.602-->0.415 (-31.1%), density-tension 0.600-->0.244 (-59.3%), density-trust 0.484-->0.316 (-34.7%). rawRollingAbsCorr fix (Layer 1 reading unattenuated signal) gave the equilibrator true coupling visibility. No pair has avg > 0.45 AND p95 > 0.85 simultaneously -- H2 confirmed.
+- **WHACK-A-MOLE SHIFTED AXIS: entropy surge.** density-entropy +131% (0.110-->0.254), entropy-phase +128% (0.122-->0.278), flicker-entropy +110% (0.190-->0.400). Energy migrated from density-hub to entropy-hub. The pair-level wins are real but the axis-level redistribution continues.
+- **axisGini TRIPLED: 0.382 (R29: 0.137, +179%).** R29's best-ever axis balance destroyed. Root cause: coherent gate froze ALL equilibrator tightening for 414 beats (evolving 295 + coherent 119 = 61.2% of run). Flicker axis accumulated 0.326 share (2x fair share). Only 217 exploring beats were available for correction -- insufficient. The coherent gate trades axis balance for regime stability; the current binary implementation is too blunt.
+- **FLICKER AXIS DOMINATES: 0.326 share (1.95x fair).** Flicker-adjacent pairs form the coupling concentration: density-flicker 0.415, flicker-entropy 0.400, flicker-trust 0.423. Combined flicker axis total 1.413 vs next-highest entropy 1.231. Flicker and entropy together consume 61.0% of coupling energy across 2 of 6 axes.
+- **PHASE AXIS DEAD AGAIN: 0.0.** Same class of issue as R27/R28. axisCouplingTotals resets each beat from the coupling matrix; when phase pairs have null correlations, phase=0. The R28 "best entry" extraction found no beat with all 6 axes > 0. Needs structural fix: running EMA instead of per-beat snapshot.
+- **flicker-entropy at MAX HEAT: heatPenalty 1.0, gain 0.45.** Hotspot detection IS firing (rawRollingAbsCorr 0.382 vs baseline 0.172 = 2.22x ratio), but decorrelation at maximum heat is ineffective (avg still 0.400). Structural correlation floor exists -- flicker and entropy are conceptually coupled (rhythmic variation creates unpredictability). Baseline 0.172 is unrealistically low; gain budget is wasted fighting irreducible structure.
+- **PERSISTENT p95 TAILS.** density-flicker p95 0.973 (R29: 0.995, -2.2%), flicker-trust p95 0.961. Despite avg improvements, extreme tails persist near 1.0. Concentrated around regime transitions where signals co-move rapidly. Current gain mechanism (rolling EMA) too slow to dampen instantaneous spikes.
+- **pairGini 0.612 (R29: 0.438, +39.7%).** Coupling more concentrated in fewer pairs (flicker-adjacent trio). Structural decorrelation pattern: suppress some pairs, energy migrates to their axis neighbors.
+- **noteCount sole drift: +84.5% (13,729-->25,329).** Driven by composition length (+72% beats). Per-beat rate only +7.4% (34.9-->37.5). Not a structural change; fingerprint should normalize by beat count.
+- **Trust healthy, trust axis improved.** Trust share 0.183 (R29: 0.116, +57.8%), above 0.12 target. No starvation, no dominance. coherenceMonitor 0.687 top, cadenceAlignment 0.221 bottom.
+- **totalEnergyEma -16.8% (3.728-->3.102).** Within healthy range (budget 3.162). energyDeltaEma -0.104 (declining). globalGainMultiplier 0.792 (R29: 0.886). ceilingContactBeats 46.
+- **0 critical, 0 warning, 2 info. 16/16 pipeline, 10/10 invariants, 71/71 feedback, 0 beat-setup spikes.**
+
+### Evolutions Applied (from R29)
+- E1: **Fix Layer 1 signal: rawRollingAbsCorr** — **confirmed** — density-flicker avg 0.602-->0.415 (-31.1%), density-tension 0.600-->0.244 (-59.3%). Hotspot detection fires correctly: flicker-entropy rawRollingAbsCorr 0.382 vs baseline 0.172 (2.22x), heatPenalty 1.0. No pair exceeds avg > 0.45 AND p95 > 0.85. Layer 1 has true coupling visibility.
+- E2: **Coherent-gated equilibrator** — **confirmed (with side effect)** — Coherent gate successfully prevented the tightening-coherent negative cycle. Coherent entry at beat 406, 119-beat sustained phase. BUT: gating 61.2% of beats caused axisGini to triple (0.137-->0.382). The gate is necessary for coherent but too broad for axis balance. Binary gate needs graduation.
+- E3: **Widen regime scale range [0.70, 1.20]** — **confirmed** — coherent 17.6%, in target [15-35%]. Scale no longer saturates at floor. Combined with E4/E5, permanently solved the regime lockout.
+- E4: **Initial coherent share EMA 0.50-->0.25** — **confirmed** — no immediate downward pressure from start. System naturally reached coherent at beat 406 (60% through).
+- E5: **Remove ALL manual coherentThresholdScale + preserve across resets** — **confirmed** — No manual overrides, scale accumulated normally across 4 sections. Self-balancing controls all profiles.
+
+### Evolutions Proposed (for R31)
+- E1: **Graduated coherent gate** — evolving: 0.5x tightening, coherent: 0.0 (full freeze) — src/conductor/signal/axisEnergyEquilibrator.js
+- E2: **Phase axis running EMA in axisCouplingTotals** — replace per-beat reset with EMA to eliminate null-phase issue — src/conductor/signal/pipelineCouplingManager.js
+- E3: **Raise flicker-entropy structural baseline to 0.30** — acknowledge irreducible structural floor, stop wasting max heat on unsuppressible pair — src/conductor/signal/pipelineCouplingManager.js
+- E4: **Fingerprint noteCount per-beat normalization** — compare per-beat note rate instead of absolute count — scripts/golden-fingerprint.js
+- E5: **Equilibrator telemetry extraction in trace-summary** — pairAdjustments, axisAdjustments, perAxisAdj, coherentThresholdScale — scripts/trace-summary.js
+- E6: **p95 instantaneous spike dampening** — 2x nudge when current-beat |r| > 0.90, addressing persistent density-flicker 0.973 and flicker-trust 0.961 tails — src/conductor/signal/pipelineCouplingManager.js
+
+### Hypotheses to Track
+- H1: Graduated gate (evolving 0.5x) should restore axisGini < 0.25 while keeping coherent in [15-35%]. If coherent drops below 10%, evolving multiplier too aggressive.
+- H2: Phase axis should report non-zero in axisCouplingTotals with running EMA. If still zero, the coupling matrix genuinely lacks phase correlations (different root cause).
+- H3: flicker-entropy heatPenalty should drop below 0.50 with raised baseline 0.30. Freed gain budget should improve suppression of other pairs.
+- H4: noteCount should be STABLE across runs with varying beat counts after per-beat normalization.
+- H5: density-flicker p95 should drop below 0.90 with spike dampening. If it doesn't, spikes persist for 3+ beats (not instantaneous) and need a different approach.
+- H6: Equilibrator telemetry should reveal per-regime adjustment counts: exploring adjustments >> evolving adjustments >> coherent adjustments (zero).
+- H7: pairGini should decrease below 0.50 as axis balance improves and gain budget is better allocated.
+- H8: The fundamental question: can the system maintain coherent 15-35% AND axisGini < 0.25 simultaneously? R29 had axisGini 0.137 / coherent 0%. R30 has axisGini 0.382 / coherent 17.6%. R31 needs the middle ground.
+
+---
+
+## R29 — 2026-03-04 — STABLE
+
+**Profile:** explosive | **Beats:** 393 | **Duration:** 39.8s | **Notes:** 13,729
+**Fingerprint:** 9/9 stable | Drifted: none | Cross-profile: atmospheric->explosive (tolerances 1.3x)
+
+### Key Observations
+- **COHERENT ZERO AGAIN: 0.0% (R28: 50.8%).** System locked in evolving for 285 beats (72.5%), never reaching coherent. Only 2 transitions: initializing→evolving (beat 30), evolving→exploring (beat 315). This is the second explosive-profile run with 0% coherent (R23 was the first). Regime self-balancing pushed coherentThresholdScale from 0.84 to its floor at 0.80, but the 40-beat nudge range (0.84→0.80) was consumed by beat 70 — scale saturated at floor for the remaining 323 beats with zero effect on coherent entry.
+- **WHACK-A-MOLE WORSE, NOT BETTER.** density-flicker surged +93% (0.312→0.602, p95 0.995 — worst single-pair metric in project history). density-tension rose +30% (0.463→0.600). Two pairs simultaneously above 0.60 avg — unprecedented dual-hotspot. 5 pairs with peaks >0.85 (density-flicker 0.995, flicker-trust 0.916, tension-trust 0.907, tension-flicker 0.862, density-trust 0.860). Energy redirected massively, not reduced.
+- **ROOT CAUSE IDENTIFIED: Layer 1 reads wrong signal.** The equilibrator's hotspot detection uses `rollingAbsCorr` from the adaptive target system (EMA-smoothed, regime-adjusted). For density-flicker: rollingAbsCorr=0.190 vs actual avg |r|=0.602 — the input is **69% attenuated**. Hotspot ratio 0.190/0.117 baseline=1.62x barely crosses the 1.5x threshold, when the true ratio is **5.1x** (0.602/0.117). Layer 1 is structurally blind to actual coupling intensity.
+- **EQUILIBRATOR-COHERENT NEGATIVE CYCLE.** The equilibrator tightens baselines (lowers targets) when it detects hotspots, but this widens the coupling-threshold gap, making coherent entry harder. No coherent → full decorrelation → coupling stays moderate → equilibrator tightens → wider gap → still no coherent. This reinforcing cycle trapped the system at 0% coherent.
+- **axisGini BEST EVER: 0.137** (R28: 0.222, -38.3%). Layer 2 axis balancing is a success — energy distributed evenly across all 6 axes. H5 massively confirmed.
+- **pairGini ROSE: 0.438** (R28: 0.413, +6.0%). Coupling concentrated in 2-3 pairs within balanced axes. axisGini and pairGini now diverge — the system achieves axis balance by letting a few pairs dominate each axis rather than distributing within axes.
+- **DENSITY HUB: 3 of top 5 pairs share density axis.** density-flicker (0.602), density-tension (0.600), density-trust (0.484). Density product=0.832 with 10 of 30 contributors below 1.0. Systematic density compression creates structural predictability that correlates with all adjacent axes.
+- **Trust axis share 0.116** (R28: 0.060, +93%). Major improvement but still below 0.12 undershoot threshold. H4 partially confirmed — Layer 2 made progress but not enough.
+- **totalEnergyEma stable: 3.728** (R28: 3.658, +1.9%). Within healthy range. ceilingContactBeats 31 (R28: 21). globalGainMultiplier 0.886.
+- **Non-nudgeable pairs correctly excluded:** entropy-trust (gain 0.16, drift 0), entropy-phase (drift 0), trust-phase (gain 0). Zero wasted budget.
+- **Trust system healthy:** coherenceMonitor 0.705, entropyRegulator 0.473, stutterContagion 0.466. Convergence 0.379 (+6.1%). No starvation.
+- **Adaptive targets reveal equilibrator activity:** All baselines show non-round values with negative drift (density-tension drift -0.006, density-flicker -0.003, density-entropy -0.025). Equilibrator tightened multiple pairs but the tightening was insufficient because it used the attenuated signal.
+- **0 critical, 0 warning, 1 info.** 16/16 pipeline, 10/10 invariants, 71/71 feedback validations. 0 beat-setup spikes.
+
+### Evolutions Applied (from R28)
+- E1: **Equilibrator rewrite — two-layer omnipotent self-correction** — **partially confirmed** — Layer 2 (axis balancing) works brilliantly: axisGini 0.222→0.137 (-38.3%), all 6 axis shares between 0.116-0.220. Layer 1 (pair hotspot detection) **failed**: density-flicker surged +93%, density-tension +30%, 5 severe peaks >0.85. Root cause: `rollingAbsCorr` input is 60-70% attenuated vs actual coupling — hotspot detection barely triggers when true coupling is 5x baseline.
+- E2: **Regime self-balancing in regimeClassifier** — **failed** — coherentThresholdScale pushed from 0.84 to floor 0.80 (only 40-beat range), then saturated. 0% coherent (target 15-35%). The mechanism activated correctly but the operating range [0.80, 0.84] was far too narrow for the explosive profile's 0.84 start point.
+- E3: **Reverted atmospheric coherentThresholdScale** — **confirmed (no negative effect)** — atmospheric branch no longer has manual 0.90 override. Self-balancing handles it. But R29 ran explosive, so this wasn't tested on atmospheric.
+- E4: **Momentum window 15→8 beats** — **inconclusive** — system never entered coherent, so momentum mechanism never engaged. Cannot evaluate.
+
+### Evolutions Proposed (for R30)
+- E1: **Fix Layer 1 signal: rawRollingAbsCorr.** In R29, rollingAbsCorr was 60-70% attenuated (density-flicker: 0.190 rolling vs 0.602 actual). Switch to rawRollingAbsCorr (unattenuated). Hotspot ratio raised 1.5->2.0 (raw is hotter). Rates increased to 0.004/0.002.
+- E2: **Coherent-gated equilibrator.** Freeze ALL tightening (Layer 1 + Layer 2) when regime is coherent or evolving. Only relaxation allowed. Prevents tightening-coherent negative feedback cycle.
+- E3: **Widen regime scale range [0.70, 1.20].** R29 saturated at 0.80 floor in 40 beats. Faster nudge (0.001->0.002). Initial EMA to 0.25 (was 0.50).
+- E4: **Remove ALL manual coherentThresholdScale.** Removed explosive's 0.84 and atmospheric's 0.90. Self-balancing controls ALL profiles. Initial scale 1.0.
+- E5: **Preserve coherentThresholdScale across section resets.** R29 reset to 1.0 every section boundary, destroying accumulated adjustments. EMA reset blended toward 0.25.
+
+### Hypotheses to Track
+- H1: Coherent should land 15-35% via self-balancing with wider range + no manual override + preserved across resets.
+- H2: No pair should have avg > 0.45 AND p95 > 0.85 -- rawRollingAbsCorr gives Layer 1 true coupling visibility.
+- H3: Coherent-gate prevents equilibrator-coherent negative cycle. Coherent entry should happen naturally.
+- H4: axisGini should stay below 0.20 (was 0.137 in R29 -- Layer 2 works).
+- H5: Trust axis share should reach > 0.12 (was 0.116 in R29, approaching).
+- H6: coherentThresholdScale should end between 0.75-0.95 (not stuck at floor/ceiling).
+- H7: pairAdjustments should be > 0 during exploring regime, 0 during coherent (gate working).
+
+---
+
 ## R28 — 2026-03-04 — STABLE
 
 **Profile:** atmospheric | **Beats:** 765 | **Duration:** 90.1s | **Notes:** 28,340

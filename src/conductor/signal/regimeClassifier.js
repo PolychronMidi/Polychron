@@ -43,14 +43,16 @@ regimeClassifier = (() => {
   const _COHERENT_MOMENTUM_WINDOW = 8;
   let _coherentMomentumBeats = 0;
 
-  // R29: Self-correcting regime targeting. Auto-adjusts coherentThresholdScale
-  // based on rolling coherent share. Replaces manual per-profile scale tuning.
-  // Target range: 15-35% coherent. Nudge rate 0.001/beat, bounded [0.80, 1.15].
+  // R29/R30: Self-correcting regime targeting. Auto-adjusts coherentThresholdScale
+  // based on rolling coherent share. Replaces ALL manual per-profile scale tuning.
+  // Target range: 15-35% coherent. Nudge rate 0.002/beat, bounded [0.70, 1.20].
+  // R30: Widened range from [0.80,1.15] -- R29 saturated at 0.80 floor in 40 beats.
+  // Faster nudge (0.001->0.002) for convergence within shorter explosive runs.
   const _REGIME_TARGET_COHERENT_LO = 0.15;
   const _REGIME_TARGET_COHERENT_HI = 0.35;
-  const _REGIME_SCALE_NUDGE = 0.001;
-  const _REGIME_SCALE_MIN = 0.80;
-  const _REGIME_SCALE_MAX = 1.15;
+  const _REGIME_SCALE_NUDGE = 0.002;
+  const _REGIME_SCALE_MIN = 0.70;
+  const _REGIME_SCALE_MAX = 1.20;
 
   // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
   let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0 };
@@ -76,7 +78,7 @@ regimeClassifier = (() => {
   let _coherentShareAlphaMin = 0.025;  // steady-state: ~40-beat horizon (default)
   const _COHERENT_SHARE_ALPHA_INIT = 0.05;  // initial: ~20-beat horizon
   const _COHERENT_SHARE_ALPHA_DECAY = 80;   // exponential decay constant
-  let _coherentShareEma = 0.50;             // initial: assume 50% coherent
+  let _coherentShareEma = 0.25;             // R30: initial 0.25 (was 0.50) -- avoids immediate downward scale pressure from false high-coherent assumption
 
   /**
    * Set the oscillating curvature threshold (profile-adaptive).
@@ -349,8 +351,10 @@ regimeClassifier = (() => {
     _coherentMomentumBeats = m.floor(_coherentMomentumBeats * 0.5);
     coherentBeats = m.floor(_prevCoherentBeats * 0.3);
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
-    coherentThresholdScale = 1.0;
-    _coherentShareEma = _prevCoherentShareEma * 0.5 + 0.50 * 0.5;
+    // R30: Do NOT reset coherentThresholdScale on section reset. The self-
+    // balancing loop's accumulated adjustment must persist across sections.
+    // Resetting to 1.0 destroyed R29's adjustments every section boundary.
+    _coherentShareEma = _prevCoherentShareEma * 0.5 + 0.25 * 0.5;
   }
 
   return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, getExploringBeats, getLastRegime, reset };

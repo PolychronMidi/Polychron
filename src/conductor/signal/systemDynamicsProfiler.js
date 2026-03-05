@@ -73,8 +73,10 @@ systemDynamicsProfiler = (() => {
       const profileName = conductorConfig.getActiveProfileName();
       if (profileName === 'explosive') {
         regimeClassifier.setOscillatingThreshold(0.65);
-        // R8 Evo 5 / R9 Evo 2 / R10 Evo 1: 0.80->0.88 overshot (56.8% exploring); 0.84 targets ~25-35% exploring
-        regimeClassifier.setCoherentThresholdScale(0.84);
+        // R30: Removed manual coherentThresholdScale (was 0.84). The regime
+        // self-balancing in regimeClassifier now controls this automatically
+        // for ALL profiles. In R29, starting at 0.84 with EMA=0.50 caused
+        // immediate downward drift to floor (0.80) and 0% coherent.
         // R21 E3: Faster alpha floor for explosive -- shorter sections need
         // ~25-beat convergence to prevent 74.2% coherent lock.
         regimeClassifier.setCoherentShareAlphaMin(0.04);
