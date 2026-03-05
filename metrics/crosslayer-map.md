@@ -114,4 +114,4 @@
 | spectralComplementarity | 2 modules |
 
 ---
-*Generated 2026-03-05T16:22:06.828Z*
+*Generated 2026-03-05T18:11:49.254Z*

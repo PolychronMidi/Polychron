@@ -1,3 +1,68 @@
+## R35 — Post-Run — HYSTERESIS DEADLOCK CONFIRMED, STRUCTURAL FIX PACKAGE
+
+### Results: 702 beats, 95.5s, 26,183 notes, STABLE (0/9 drifted)
+
+| Metric | R34 | R35 | Trend |
+|---|---|---|---|
+| Coherent % | 0% | **0%** | 5th consecutive zero |
+| Exploring % | 0% | **0%** | 2nd consecutive zero |
+| Evolving % | 83.7% | 97.9% | Worsened |
+| Transitions | 1 | 1 | Stagnant |
+| Severe pairs | 5 | **2** | Improved |
+| axisGini | 0.096 | 0.1757 | Regressed |
+| Phase share | 0.147 | 0.1884 | Improved |
+| Fingerprint | EVOLVED | **STABLE** | Improved |
+| ThresholdScale | 0.792 | **0.55 (floor)** | Maxed out |
+| Gap avg | +0.1519 | +0.0985 | Improved but insufficient |
+
+### Smoking Gun: Exploring-Block Diagnostic
+
+| Blocker | Beats |
+|---|---|
+| velocity | 15 |
+| dimension | 27 |
+| coupling | 21 |
+| **none (all conditions met)** | **639** |
+
+639/702 beats had ALL exploring conditions satisfied — but exploring never entered.
+Root cause: `classify()` checks coherent BEFORE exploring. With `coherentThresholdScale` at
+floor (0.55), the effective coherent threshold is ≈0.07. Any coupling above 0.07 triggers
+raw='coherent', absorbing all potential exploring beats. But `REGIME_HOLD=5` demands 5
+consecutive coherent beats, and beat-to-beat coupling variance (gapMin=-0.0149) breaks the
+chain every ~20 beats. The system is trapped: coupling too high for exploring (coherent
+fires first), coupling too volatile for coherent (hysteresis resets).
+
+### Hypothesis Evaluation
+
+- H1 Coherent 15-35%: **FAIL** — 0% (5th consecutive)
+- H2 Exploring >10%: **FAIL** — 0% (2nd consecutive)
+- H3 Phase-pair p95 <0.90: **PASS** — flicker-phase 0.857 (from 0.997)
+- H4 Tighten budget >20: **PASS** — evolving=60
+- H5 Severe pairs ≤2: **PASS** — 2 (density-flicker 0.89, flicker-phase 0.86)
+- H6 Exploring-block velocity: **PARTIAL** — velocity only 15; "none" dominates (639)
+- H7 axisGini <0.15: **FAIL** — 0.1757
+
+### R36 Evolutions: Structural Fix Package (parameter tuning exhausted)
+
+- **E1: REGIME_HOLD 5→3** — Break hysteresis deadlock. P(3 consecutive|95% positive gap) ≈ 86%.
+- **E2: effectiveDim ≤ 4.0 gate on coherent** — When dims are diverse (>4.0), skip coherent, fall through to exploring. Opens pathway blocked by coherent's low threshold.
+- **E3: Universal exceedance gain cap** — All pairs capped at 0.30 when |r|>0.85 (was phase-only at 0.35). density-flicker (p95=0.8898, 35 exceedance beats) now covered.
+- **E4: Raw regime diagnostic** — Track raw classify() counts vs resolved. Confirms/refutes hysteresis theory.
+- **E5: Exploring velocity adaptive relax** — After 100+ evolving beats: 0.015→0.010. Recaptures 15 velocity-blocked beats.
+- **E6: coherentThresholdScale initial 0.75→0.65** — Start closer to convergence point. R35 took ~33 nudges to reach floor.
+
+### R36 Hypotheses
+
+- H1: Coherent 15-35% (REGIME_HOLD=3 + dim gate should finally break the drought)
+- H2: Exploring >5% (dim gate + adaptive velocity open the pathway)
+- H3: rawRegimeCounts.coherent ≫ resolved coherent (confirms hysteresis was the blocker)
+- H4: Severe pairs ≤1 (universal gain cap at 0.30)
+- H5: axisGini <0.15 (gain cap reduces flicker dominance)
+- H6: Phase share stable >0.15
+- H7: ≥3 regime transitions
+
+---
+
 ## R35 — Pre-Run — 6 EVOLUTIONS: AGGRESSIVE COHERENT + EXPLORING RESCUE + PHASE CAP + EVOLVING AMPLIFICATION + BLOCK DIAGNOSTIC + EXCEEDANCE TRACKING
 
 ### Root Cause Analysis: Cascade Failure Pattern

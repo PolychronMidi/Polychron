@@ -604,8 +604,12 @@ pipelineCouplingManager = (() => {
             // phase share but also enabled sustained phase-pair coupling that
             // was previously invisible. flicker-phase p95=0.997, density-phase
             // p95=0.958. Cap phase-pair gains at 0.35 when |r| > 0.85.
-            if ((dimA === 'phase' || dimB === 'phase') && absCorr > 0.85) {
-              pairGainMax = m.min(pairGainMax, 0.35);
+            // R36 E3: Universal exceedance gain cap. density-flicker (p95=0.8898,
+            // 35 exceedance beats) was the worst offender in R35 but escaped
+            // the phase-only cap. All pairs now capped at 0.30 when |r|>0.85.
+            // Phase pairs keep their tighter 0.35 cap (absorbed by the lower 0.30).
+            if (absCorr > 0.85) {
+              pairGainMax = m.min(pairGainMax, 0.30);
             }
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
