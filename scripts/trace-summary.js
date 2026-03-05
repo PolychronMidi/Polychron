@@ -95,6 +95,17 @@ function summarizeTrace(entries) {
   let lastBeatKey = null;
   let firstTimeMs = null;
   let lastTimeMs = null;
+  // R34 E6: Transition readiness accumulators (per-beat gap + velocity tracking)
+  let readinessGapSum = 0;
+  let readinessGapMin = Infinity;
+  let readinessGapMax = -Infinity;
+  let readinessVelocityBlockedBeats = 0;
+  let readinessBeats = 0;
+  let readinessLastScale = null;
+  // R35 E5: Exploring-block diagnostic accumulators
+  const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
+  // R35 E6: Per-pair exceedance beat tracking (beats above 0.85)
+  const pairExceedanceBeats = {};
 
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
@@ -117,6 +128,22 @@ function summarizeTrace(entries) {
 
     // R17 Evo 6: Track consecutive coherent streaks and regime transitions
     if (lastRegime !== null && regime !== lastRegime) regimeTransitionCount++;
+    // R34 E6: Accumulate transition readiness metrics from per-beat data
+    if (e.transitionReadiness && typeof e.transitionReadiness === 'object') {
+      const tr = e.transitionReadiness;
+      if (typeof tr.gap === 'number' && Number.isFinite(tr.gap)) {
+        readinessGapSum += tr.gap;
+        if (tr.gap < readinessGapMin) readinessGapMin = tr.gap;
+        if (tr.gap > readinessGapMax) readinessGapMax = tr.gap;
+        readinessBeats++;
+        if (tr.velocityBlocked) readinessVelocityBlockedBeats++;
+        if (typeof tr.thresholdScale === 'number') readinessLastScale = tr.thresholdScale;
+      }
+      // R35 E5: Accumulate exploring-block diagnostic
+      if (typeof tr.exploringBlock === 'string' && exploringBlockCounts[tr.exploringBlock] !== undefined) {
+        exploringBlockCounts[tr.exploringBlock]++;
+      }
+    }
     if (regime === 'coherent') {
       currentCoherentStreak++;
       if (currentCoherentStreak > maxConsecutiveCoherent) maxConsecutiveCoherent = currentCoherentStreak;
@@ -143,6 +170,10 @@ function summarizeTrace(entries) {
       updateMinMax(couplingAbs[key], value);
       couplingSeries[key].push(value);
       couplingRawSeries[key].push(raw);
+      // R35 E6: Track beats where |r| > 0.85 per pair
+      if (value > 0.85) {
+        pairExceedanceBeats[key] = (pairExceedanceBeats[key] || 0) + 1;
+      }
     }
 
     const trust = e.trust && typeof e.trust === 'object' ? e.trust : {};
@@ -305,7 +336,11 @@ function summarizeTrace(entries) {
             rawRollingAbsCorr: ct.rawRollingAbsCorr != null ? ct.rawRollingAbsCorr : null,
             gain: ct.gain,
             heatPenalty: ct.heatPenalty,
-            effectivenessEma: ct.effectivenessEma != null ? ct.effectivenessEma : null
+            effectivenessEma: ct.effectivenessEma != null ? ct.effectivenessEma : null,
+            // R34 E3: Per-pair effectiveness temporal tracking
+            effMin: ct.effMin != null ? ct.effMin : null,
+            effMax: ct.effMax != null ? ct.effMax : null,
+            effActiveBeats: ct.effActiveBeats != null ? ct.effActiveBeats : null
           };
         }
       }
@@ -409,6 +444,20 @@ function summarizeTrace(entries) {
     couplingHomeostasis: couplingHomeostasisState,
     // R32 E5: Axis energy equilibrator per-regime telemetry
     axisEnergyEquilibrator: axisEnergyEquilibratorState,
+    // R34 E6: Regime transition readiness diagnostic
+    transitionReadiness: readinessBeats > 0 ? {
+      gapMin: Number(readinessGapMin.toFixed(4)),
+      gapMax: Number(readinessGapMax.toFixed(4)),
+      gapAvg: Number((readinessGapSum / readinessBeats).toFixed(4)),
+      velocityBlockedBeats: readinessVelocityBlockedBeats,
+      totalBeats: readinessBeats,
+      velocityBlockedRate: Number((readinessVelocityBlockedBeats / readinessBeats).toFixed(4)),
+      finalThresholdScale: readinessLastScale,
+      // R35 E5: Exploring-block diagnostic breakdown
+      exploringBlock: exploringBlockCounts
+    } : null,
+    // R35 E6: Per-pair exceedance beat counts (beats where |r| > 0.85)
+    pairExceedanceBeats,
     // R32 E6: Intra-axis pair energy distribution diagnostic
     intraAxisDistribution: (() => {
       // Compute per-axis Gini coefficient and dominant pair from coupling data

@@ -187,6 +187,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       // R33 E4: Direct snapshot bypass -- conductorState.updateFromConductor silently
       // drops state-provider fields, so axisEnergyEquilibrator never reaches snap.
       axisEnergyEquilibrator: safePreBoot.call(() => axisEnergyEquilibrator.getSnapshot(), null),
+      // R34 E6: Per-beat transition readiness for coherent entry diagnosis
+      transitionReadiness: safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null),
       iterBudget: setUnitTimingBudgetStats.getLastBeat(),
       stageTiming: stageTiming
     };

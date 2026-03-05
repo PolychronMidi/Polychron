@@ -1,3 +1,151 @@
+## R35 — Pre-Run — 6 EVOLUTIONS: AGGRESSIVE COHERENT + EXPLORING RESCUE + PHASE CAP + EVOLVING AMPLIFICATION + BLOCK DIAGNOSTIC + EXCEEDANCE TRACKING
+
+### Root Cause Analysis: Cascade Failure Pattern
+
+R31-R34 exhibited a persistent whack-a-mole cascade: fixing one subsystem destabilizes another because the regime classifier, equilibrator, and coupling manager form a tightly-coupled feedback triangle:
+
+1. **Regime governs equilibrator** — tightenScale depends on current regime (coherent=0, evolving=0.4→0.6, exploring=1.5)
+2. **Equilibrator governs coupling** — tightens/relaxes pair baselines, controlling decorrelation pressure
+3. **Coupling governs regime** — couplingStrength is the primary input to coherent entry threshold
+
+When exploring disappears (R34), the equilibrator loses its primary tightening regime (1.5x), coupling runs unchecked (severe pairs 1→5), and the increased coupling should help coherent entry — but hysteresis and the velocity dead-zone prevent it. The system locks in evolving.
+
+**The fundamental fix is not parameter tuning — it's ensuring all three regime paths remain accessible.** R35 addresses this with:
+- Lower exploring velocity threshold (0.015) to close the dead-zone
+- Higher evolving tightenScale (0.6) so the equilibrator works adequately even without exploring
+- Aggressive coherent threshold convergence (scale 0.75, floor 0.55, nudge 0.006) so the self-balancer converges within ~45 beats
+- Phase-pair gain cap to prevent the EMA rescue from creating new severe pairs
+
+### Evolutions Applied (from R34)
+- E1: **Aggressive coherent threshold** — scale 0.90→0.75, floor 0.70→0.55, nudge 0.004→0.006. R34 showed scale dropped to 0.792 but gapAvg was still +0.15. With floor 0.55, baseThreshold can drop to 0.14 (from 0.20). Combined with evolving proximity bonus (0.07), effective threshold reaches 0.07, well below any typical couplingStrength. — `src/conductor/signal/regimeClassifier.js`
+- E2: **Exploring velocity threshold 0.02→0.015** — R34 had 0% exploring: velocity was consistently in the 0.008-0.02 dead-zone. Lowering to 0.015 closes the gap. R34 velocities averaged above 0.008 (velocityBlockedBeats=0 for coherent) so exploring should fire for beats with velocity 0.015-0.02 that were previously trapped. — `src/conductor/signal/regimeClassifier.js`
+- E3: **Phase-pair gain cap at 0.35 when |r| > 0.85** — R34 E2's running EMA rescued phase (share 0→0.147) but enabled sustained phase-pair coupling (flicker-phase p95=0.997, density-phase p95=0.958). Caps max gain for ALL phase pairs when their absolute correlation exceeds 0.85 — stronger than existing flicker/density product guards because it's based on the pair's own |r|, not a pipeline product proxy. — `src/conductor/signal/pipelineCouplingManager.js`
+- E4: **Evolving tightenScale 0.4→0.6** — R34 had 83.7% evolving at 0.4x scale producing only 13.7 tighten budget (R33: 35). Raising to 0.6 gives 50% more tightening per evolving beat, ensuring adequate decorrelation even when exploring is absent. — `src/conductor/signal/axisEnergyEquilibrator.js`
+- E5: **Exploring-block diagnostic** — Per-beat tracking of which condition blocks exploring entry: velocity (>0.015), dimension (>2.5), or coupling (<=0.40). Accumulated in trace-summary as `exploringBlock: { velocity, dimension, coupling, none }`. Confirms the velocity dead-zone hypothesis from R34. — `src/conductor/signal/regimeClassifier.js`, `scripts/trace-summary.js`
+- E6: **Per-pair exceedance beat tracking** — Counts beats each pair spends above |r|>0.85 in trace-summary. Replaces the opaque p95 metric with a direct count of how many beats are problematic per pair. — `scripts/trace-summary.js`
+
+### Hypotheses to Track
+- H1: Coherent ∈ [15-35%] with initial scale 0.75, floor 0.55, nudge 0.006. If still 0%, the coherent entry mechanism needs structural rework (not parameters).
+- H2: Exploring > 10% with velocity threshold 0.015. If still 0%, coupling or dimension is the blocker (E5 diagnostic will confirm).
+- H3: Phase-pair gain cap reduces flicker-phase p95 below 0.90 and density-phase p95 below 0.90.
+- H4: Evolving tightenScale 0.6 produces total tighten budget > 20 even without exploring.
+- H5: Severe pair count ≤ 2 with combined E3 cap + restored equilibrator budget.
+- H6: Exploring-block diagnostic reveals velocity as primary blocker (>80% of non-exploring beats), confirming R34 dead-zone hypothesis.
+- H7: axisGini remains < 0.15 (sustainability of phase EMA rescue).
+
+---
+
+## R34 — 2026-03-05 — EVOLVED (COHERENT ZERO, EXPLORING ZERO)
+
+**Profile:** explosive | **Beats:** 282 | **Duration:** 49.7s | **Notes:** 10,348
+**Fingerprint:** 7/8 stable, 1 drifted (regimeDistribution) | Verdict: EVOLVED
+
+### Key Observations
+- **COHERENT STILL 0% — FOURTH CONSECUTIVE ZERO (H1 REFUTED).** Despite lowering initial coherentThresholdScale to 0.90 and doubling nudge to 0.004, the system never entered coherent. Transition readiness diagnostic (E6) reveals this is **threshold-dominated, not velocity-dominated**: velocityBlockedBeats=0, gapAvg=+0.1519 (coupling 0.15 below threshold on average), gapMin=-0.0627 (coupling briefly exceeded threshold by 0.06). The self-balancer IS working — scale dropped from 0.90 to finalThresholdScale=0.792 — but not aggressively enough. The coherent entry was marginal at best (gapMin=-0.06) and hysteresis (REGIME_HOLD=5) prevented the fleeting touch from becoming a sustained transition.
+- **EXPLORING COMPLETELY DISAPPEARED: 48% → 0% (CRITICAL REGRESSION).** R33 had 48% exploring; R34 has 0%. Only 1 transition total (init→evolving). System spent 83.7% of its beats in evolving. Exploring requires `avgVelocity > 0.02` — a threshold 2.5-4x higher than coherent's velThreshold (0.005-0.008). With velocityBlockedBeats=0 for coherent, the velocity was consistently above 0.008 but below 0.02, trapping the system in the evolving-cohertent dead zone: too fast for default-to-evolving to stop, but too slow for exploring. This is the primary cascade failure — without exploring, the equilibrator tightening budget collapsed.
+- **PHASE AXIS SPECTACULARLY RESCUED (H2 CONFIRMED).** Phase share: 0.1467 (R33: 0). axisGini: 0.0958 (R33: 0.272, −64.8%). Phase went from collapsed-to-zero to near fair-share (0.167). The running EMA (E2, alpha=0.15) worked exactly as designed — cross-beat memory preserves phase pair correlations that were lost in per-beat snapshots. axisGini of 0.096 is the best value ever recorded.
+- **EQUILIBRATOR SEVERELY WEAKENED — TIGHTENING BUDGET COLLAPSED.** beatCount 41 (R33: 62), pairAdj 10 (R33: 48, −79%), axisAdj 41 (R33: 75, −45%). regimeTightenBudget: evolving=9.2 + exploring=4.5 = **13.7 total (R33: 35, −61%)**. Only 3 beats in exploring (where 1.5x amplification applies). H4 REFUTED — exploring budget 4.5 (target >35), phase perAxisAdj only 3 (target >15). The 1.5x amplification (E4) works but is starved of exploring-regime beats.
+- **SEVERE PAIRS EXPLODED 1 → 5 (H5 REFUTED).** density-flicker p95: 0.98 (R33: 0.904, +8.4%). density-phase p95: 0.958 (new severe). flicker-phase p95: 0.997 (new severe, worst pair). tension-entropy p95: 0.901. tension-trust p95: 0.854. The heat-penalty cooldown (E5) couldn't overcome the cascade: without exploring→coherent regime lifecycle, the equilibrator barely operates, letting correlations run wild. Phase pairs (density-phase, flicker-phase) surged with the EMA rescue — the EMA stabilized phase share but also enables sustained phase-pair coupling that was previously invisible.
+- **effMin/effMax EXTRACTION OPERATIONAL (H3 PARTIALLY CONFIRMED).** Data visible across all active pairs. Notable effMin values: tension-trust 0.3559, tension-phase 0.3724, tension-flicker 0.3953, flicker-trust 0.4161, density-trust 0.4298. Several pairs show effMin=1/effMax=0/activeBeats=0 (density-entropy, tension-entropy, entropy-trust, entropy-phase, trust-phase) — these never triggered effectiveness tracking, indicating their gains stayed at initial values throughout.
+- **TRANSITION READINESS DIAGNOSTIC DELIVERING (H6 CONFIRMED).** gapMin=-0.0627, gapAvg=0.1519, gapMax=0.4289, velocityBlockedRate=0%, finalThresholdScale=0.792. Conclusive: threshold-dominated failure. Velocity was never the bottleneck for coherent entry. The scale self-correction mechanism works but starts too high and nudges too slowly. At 282 beats with 0.004/beat, the scale only dropped 0.108 (0.90→0.792), insufficient to close the 0.15 average gap.
+- **TRUST SHARE DECLINED BELOW TARGET (H7 BORDERLINE).** Trust share: 0.1442 (R33: 0.244, −40.9%). Just below the 0.15 sustainability target. Not critical but the R33 value was indeed partially a short-composition artifact.
+- **FLOOR DAMPENING STABLE.** floorDampen: 0.60 (R33: 0.617). redistributionScore: 0.3331 (R33: 0.861, improved). globalGainMultiplier: 0.9655. floorContactBeats: 0. ceilingContactBeats: 83 (out of 318 ticks = 26.1%, below 30% target).
+- **REGIME DISTRIBUTION DRIFTED** — regimeDistribution delta 0.32 vs tolerance 0.30. Cause: exploring 48%→0%, evolving 45.6%→83.7%. Fingerprint EVOLVED, all other 7 dimensions stable.
+- **0 critical, 0 warning. 16/16 pipeline, 10/10 invariants. 0 beat-setup spikes.**
+
+### Evolutions Applied (from R34 Pre-Run)
+- E1: **Coherent entry acceleration** — **refuted** — coherent still 0%. Scale dropped 0.90→0.792 but gapAvg=0.1519. The 10% initial reduction and 2x nudge were insufficient. Need more aggressive initial scale AND lower floor.
+- E2: **Phase axis running EMA** — **confirmed (spectacular)** — phase share 0→0.1467, axisGini 0.272→0.0958. Best axis balance ever. However, enabled phase-pair coupling surge (flicker-phase p95 0.997).
+- E3: **effMin/effMax extraction** — **confirmed** — data populating correctly for active pairs. Reveals 5 pairs with no effectiveness tracking (gains stayed at initial).
+- E4: **Exploring tighten amplification** — **not testable** — only 3 exploring beats. The 1.5x amplification produced 4.5 budget from those 3 beats (1.5/beat) but exploring never materialized.
+- E5: **Heat-penalty cooldown** — **refuted** — density-flicker p95 worsened 0.904→0.98. The cooldown mechanism is active (hp=0.45, rate reduction applied) but overwhelmed by the equilibrator collapse.
+- E6: **Transition readiness diagnostic** — **confirmed** — conclusively proves threshold-dominated (not velocity) failure for coherent entry. velocityBlockedRate=0% is the key finding.
+
+### Evolutions Proposed (for R35)
+- E1: **Aggressive coherent threshold — lower initial scale 0.90→0.75, floor 0.70→0.55, nudge 0.004→0.006** — `src/conductor/signal/regimeClassifier.js`
+- E2: **Exploring velocity threshold relaxation 0.02→0.015** — restore exploring regime entry — `src/conductor/signal/regimeClassifier.js`
+- E3: **Phase-pair gain cap at 0.35 when phase-pair |r| > 0.85** — prevent phase-pair coupling surge from EMA rescue — `src/conductor/signal/pipelineCouplingManager.js`
+- E4: **Evolving tightenScale increase 0.4→0.6** — compensate for exploring absence — `src/conductor/signal/axisEnergyEquilibrator.js`
+- E5: **Exploring-block diagnostic — per-beat tracking of which condition (velocity/coupling/dim) blocks exploring entry** — `src/conductor/signal/regimeClassifier.js`, `scripts/trace-summary.js`
+- E6: **Per-pair exceedance beat tracking in trace-summary — count beats each pair spends above 0.85** — `scripts/trace-summary.js`
+
+### Hypotheses to Track
+- H1: Coherent ∈ [15-35%] with initial scale 0.75, floor 0.55, nudge 0.006. If still 0%, the coherent entry mechanism itself needs restructuring (not just parameter tuning).
+- H2: Exploring > 10% with velocity threshold 0.015. If still 0%, coupling or dim is the blocker (E5 diagnostic will confirm).
+- H3: Phase-pair gain cap reduces flicker-phase p95 below 0.90 and density-phase p95 below 0.90.
+- H4: Evolved tightenScale (0.6) during evolving produces total tighten budget > 20 even without exploring.
+- H5: Severe pair count ≤ 2 with combined E3 cap + restored exploring equilibrator budget.
+- H6: Exploring-block diagnostic reveals velocity as primary block (>80% of blocked beats), confirming R34 dead-zone hypothesis.
+- H7: axisGini remains < 0.15 (sustainability of E2 phase rescue).
+
+---
+
+## R34 — Pre-Run — 6 EVOLUTIONS: COHERENT ACCELERATION + PHASE EMA + EXPLORING AMPLIFICATION + HEAT COOLDOWN + READINESS DIAGNOSTIC
+
+### Evolutions Applied (from R33)
+- E1: **Coherent entry acceleration** — R31-R33 all produced 0% coherent on explosive profile. Root cause: `coherentThresholdScale` starts at 1.0 and self-balancer nudge rate (0.002/beat) cannot converge in <330 beats. `_coherentShareEma` starts at 0.25 (inside target band), so nudging doesn't even start until EMA drops below 0.15 (~15 beats). Fix: lower initial scale 1.0→0.90 (immediate 10% threshold reduction) and double nudge rate 0.002→0.004 (convergence in ~165 beats vs 330). — `src/conductor/signal/regimeClassifier.js`
+- E2: **Phase axis running EMA for axisCouplingTotals** — R30 and R33 both showed phase=0. Per-beat snapshot loses phase pair correlations when they're null on the sampled beat. Fix: added `_axisSmoothedAbsR` with `_AXIS_SMOOTH_ALPHA=0.15` (~7-beat horizon). `getAxisCouplingTotals()` returns smoothed values; internal gain scaling still uses raw per-beat values. Reset dampens by 0.50 (preserves cross-section memory). — `src/conductor/signal/pipelineCouplingManager.js`
+- E3: **Extract effMin/effMax/effActiveBeats to trace-summary** — R33 confirmed effectiveness temporal data in trace.jsonl but trace-summary.js only extracted `effectivenessEma`. Added `effMin`, `effMax`, `effActiveBeats` extraction alongside existing couplingTargets block. Completes the observability chain from E5(R33). — `scripts/trace-summary.js`
+- E4: **Exploring tighten amplification (1.5x)** — R33 showed exploring contributes 77% of effective tightening budget (27/35) but was operating at 1.0x scale. Changed graduated coherent gate: exploring regime now gets 1.5x `tightenScale` (was 1.0), increasing effective tightening rate by 50% during the regime that does most of the work. — `src/conductor/signal/axisEnergyEquilibrator.js`
+- E5: **Heat-penalty escalation cooldown** — density-flicker p95 persistent at 0.904 despite velocity spike detection. Added second throttle layer: when `heatPenalty > 0.30`, gain escalation rate is scaled by `max(0.35, 1.0 - heatPenalty)`. At hp=0.50 → rate halved. At hp=1.0 → rate × 0.35 floor. Prevents oscillation recovery from immediately re-escalating. — `src/conductor/signal/pipelineCouplingManager.js`
+- E6: **Regime transition readiness diagnostic** — Added `getTransitionReadiness()` to `regimeClassifier` returning `{ gap, couplingStrength, coherentThreshold, velocity, velThreshold, thresholdScale, velocityBlocked }`. Emitted per-beat via crossLayerBeatRecord → traceDrain. trace-summary extracts gapMin/gapMax/gapAvg, velocityBlockedRate, finalThresholdScale. Answers whether coherent failure is threshold-dominated or velocity-dominated. — `src/conductor/signal/regimeClassifier.js`, `src/play/crossLayerBeatRecord.js`, `src/writer/traceDrain.js`, `scripts/trace-summary.js`
+
+### Hypotheses to Track
+- H1: Coherent ∈ [15-35%] with doubled nudge (0.004) + lower initial scale (0.90). If > 40%, reduce initial scale to 0.95.
+- H2: Phase share > 0.05, axisGini < 0.20 with running EMA. If phase dominates (> 0.25), alpha 0.15 is too low.
+- H3: effMin/effMax reveals structural coupling floors: density-phase/tension-entropy effMin < 0.35.
+- H4: Exploring tighten budget > 35 (R33: 27) and phase perAxisAdj > 15 (R33: 10).
+- H5: density-flicker p95 < 0.85 with heat-penalty cooldown. Exceedance@0.85 < 15%.
+- H6: Transition readiness diagnostic reveals threshold vs velocity bottleneck. If gapAvg < 0.05, threshold is near entry. If velocityBlockedRate > 50%, velocity is the bottleneck.
+- H7: Trust share sustainability (remains > 0.15, R33: 0.244).
+
+---
+
+## R33 — 2026-03-05 — STABLE (COHERENT ZERO)
+
+**Profile:** explosive | **Beats:** 327 | **Duration:** 40.1s | **Notes:** 12,549
+**Fingerprint:** 8/8 stable | Drifted: none
+
+### Key Observations
+- **COHERENT COLLAPSED TO 0.0% (R32: 11.8%, H6 REFUTED).** Third explosive run with zero coherent (R23, R29, R33). System spent 45.6% in evolving (R32: 19.6%, 2.3x increase) without ever transitioning to coherent. Only 2 transitions: init→evolving@21, evolving→exploring@170. 327-beat composition may be too short for the coherentThresholdScale self-balancer to converge at current 0.001/beat nudge rate. This is the most critical regression and the #1 priority for R34.
+- **TRUST AXIS MASSIVE IMPROVEMENT: share 0.244 (R32: 0.117, +109%, H2 PARTIALLY CONFIRMED).** Symmetric tighten scaling (E2) succeeded spectacularly for trust — from chronic near-threshold to the second-highest axis share. Entropy share collapsed 0.230→0.128 (−44%), confirming the overshoot path was the bottleneck. However, axisGini 0.272 (R32: 0.189, +43.5%) worsened because phase=0 destroys the 6-axis balance.
+- **PHASE AXIS COLLAPSED TO 0 (same as R30).** axisCouplingTotals.phase=0. Phase pairs have null/zero correlations on the sampled beat — per-beat snapshot loses all history. Without phase, 5-axis Gini would be ~0.14 (excellent). Phase=0 inflates axisGini by ~0.13. Structural fix needed: running EMA for axis coupling, not per-beat snapshot.
+- **FLOOR DAMPENING CHRONIC LOCK BROKEN (H3 PARTIALLY CONFIRMED).** floorDampen 0.617 (R32: 0.247, +150%). redistributionScore 0.861 (R32: 0.989, −12.9%). ceilingContactBeats 36.8% (R32: 75%, −51%). The chronic lock from R32 is decisively broken. Ceiling contact slightly above 30% target but dramatically improved.
+- **SEVERE PAIR COUNT REDUCED 4→1 (H1 REFUTED but improved).** Only density-flicker p95 0.904 exceeds 0.85 (R32: 4 pairs above 0.85). Velocity spike detection reduced tail severity across the board. But the structural density-flicker coupling floor prevents full elimination — p95 target <0.85 not met.
+- **EQUILIBRATOR EXTRACTION FIX WORKING (H4 CONFIRMED).** axisEnergyEquilibrator now populated: beatCount=62, pairAdj=48, axisAdj=75. regimeBeats: evolving=20, exploring=27. regimeTightenBudget: evolving=8, exploring=27 — exploring contributes 77% of effective tightening. Entropy axis received 40 of 75 axis adjustments (53%), confirming targeted correction.
+- **EFFECTIVENESS TEMPORAL DATA IN TRACE, NOT IN SUMMARY (H5 PARTIALLY CONFIRMED).** effMin/effMax/effActiveBeats present in trace.jsonl but trace-summary.js only extracts effectivenessEma. Low-eff pairs visible: density-phase 0.402, tension-entropy 0.408, flicker-entropy 0.434 — all confirming graduated gate engagement. Extraction gap needs fix.
+- **COUPLING ENERGY REDISTRIBUTED.** density-trust surged +34.3% (0.335→0.450), flicker-trust +30.2% (0.245→0.319), tension-trust +43.6% (0.163→0.234). Trust axis absorbed energy freed from entropy axis suppression. Classic axis-level conservation: energy migrates, doesn't disappear.
+- **CORRELATION TREND: flicker-entropy reversed (H7 from R32 addressed).** R32 flagged flicker-entropy co-movement (r=+0.308, increasing). R33: r=−0.590, decreasing — trend completely reversed without intervention. Natural decorrelation over time.
+- **8 correlation flips.** Volatile but no concerning persistent trends. density-flicker strongly decreasing (r=−0.895), indicating active decorrelation pressure.
+- **0 critical, 0 warning, 1 info. 16/16 pipeline, 10/10 invariants, 71/71 feedback, 0 beat-setup spikes.**
+
+### Evolutions Applied (from R33 Pre-Run)
+- E1: **Velocity-based preemptive spike detection** — **partially confirmed** — severe pair count 4→1. density-flicker p95 0.925→0.904 (improved but still >0.85). Worst-pair p95 target <0.85 not met. Spike detection works for transient spikes but cannot overcome structural coupling floor.
+- E2: **Symmetric tighten-rate scaling** — **confirmed (spectacular for trust/entropy)** — trust share 0.117→0.244 (+109%), entropy share 0.230→0.128 (−44%). Both targets met. axisGini failed at 0.272 due to phase=0, not scaling deficiency.
+- E3: **Floor dampening decay** — **confirmed** — floorDampen 0.247→0.617 (+150%). ceilingContactBeats 75%→36.8% (−51%). redistributionScore 0.989→0.861 (−12.9%). Chronic lock decisively broken.
+- E4: **Equilibrator trace extraction fix** — **confirmed** — axisEnergyEquilibrator non-null with all fields populated. regimeBeats, regimeTightenBudget, perAxisAdj, perPairAdj all present. Root cause (conductorState silently dropping state-provider fields) correctly bypassed.
+- E5: **Per-pair effectiveness temporal tracking** — **partially confirmed** — effMin/effMax/effActiveBeats present in trace.jsonl raw data. But trace-summary.js extraction not updated to include these fields. End-of-run effectivenessEma visible; temporal range not aggregated.
+- E6: **TUNING_MAP update** — **confirmed** — documentation updated, no behavioral validation needed.
+
+### Evolutions Proposed (for R34)
+- E1: **Coherent entry acceleration for short compositions** — double nudge rate + lower initial scale — `src/conductor/signal/regimeClassifier.js`
+- E2: **Phase axis structural fix — running EMA for axisCouplingTotals** — replace per-beat snapshot with EMA — `src/conductor/signal/pipelineCouplingManager.js`
+- E3: **Extract effMin/effMax/effActiveBeats to trace-summary** — complete observability chain — `scripts/trace-summary.js`
+- E4: **Equilibrator exploring tighten budget amplification** — 1.5x rate scaling during exploring — `src/conductor/signal/axisEnergyEquilibrator.js`
+- E5: **Extended cooldown for structurally hot pairs** — heatPenalty-gated longer dampening — `src/conductor/signal/pipelineCouplingManager.js`
+- E6: **Regime transition readiness diagnostic** — per-beat coupling gap/velocity tracking — `src/conductor/signal/systemDynamicsProfiler.js`, `scripts/trace-summary.js`
+
+### Hypotheses to Track
+- H1: Doubled nudge rate (0.002) + initial scale 0.90 produces coherent ∈ [15-35%] on explosive profile. If coherent > 40%, reduce initial scale to 0.95.
+- H2: Phase axis running EMA produces phase share > 0.05 and axisGini < 0.20. If phase dominates (>0.25), alpha is too low.
+- H3: effMin/effMax extraction reveals density-phase/tension-entropy effMin < 0.35 during active beats, confirming structural coupling floors.
+- H4: Exploring tighten amplification increases regimeTightenBudget exploring > 35 and phase perAxisAdj > 15.
+- H5: Extended cooldown for density-flicker reduces p95 below 0.85 and exceedance@0.85 below 15%.
+- H6: Transition readiness diagnostic reveals whether coherent failure is threshold-dominated or velocity-dominated, guiding R35 regime tuning.
+- H7: Trust axis share remains above 0.15 (sustainability check — R33's 0.244 may partially be short-composition artifact).
+
+---
+
 ## R33 — Pre-Run — 6 EVOLUTIONS: SPIKE TIMING + SYMMETRIC SCALING + CHRONIC LOCK + TRACE FIX + OBSERVABILITY
 
 ### Evolutions Applied (from R32)
