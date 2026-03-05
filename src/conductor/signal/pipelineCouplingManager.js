@@ -94,6 +94,12 @@ pipelineCouplingManager = (() => {
   };
   /** @type {Record<string, number>} */
   let _axisTotalAbsR = {};
+  // R34 E2: Smoothed axis coupling totals. Per-beat snapshots lose phase
+  // history when phase pairs have null correlations (phase=0 on that beat).
+  // Running EMA preserves cross-beat memory so phase never collapses.
+  /** @type {Record<string, number>} */
+  const _axisSmoothedAbsR = {};
+  const _AXIS_SMOOTH_ALPHA = 0.15; // ~7-beat horizon
   /** @type {Record<string, Record<string, number>>} */
   let _axisPairContrib = {};
 
@@ -462,6 +468,18 @@ pipelineCouplingManager = (() => {
         _axisPairContrib[dB][k] = ac;
       }
     }
+    // R34 E2: Update axis coupling EMA. Blends current per-beat totals into
+    // smoothed values so axes with transiently null pairs (phase) don't collapse.
+    for (let d = 0; d < ALL_MONITORED_DIMS.length; d++) {
+      const ax = ALL_MONITORED_DIMS[d];
+      const cur = _axisTotalAbsR[ax] || 0;
+      const prev = _axisSmoothedAbsR[ax];
+      if (prev === undefined) {
+        _axisSmoothedAbsR[ax] = cur; // seed on first beat
+      } else {
+        _axisSmoothedAbsR[ax] = prev * (1 - _AXIS_SMOOTH_ALPHA) + cur * _AXIS_SMOOTH_ALPHA;
+      }
+    }
 
     for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
       for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
@@ -542,6 +560,15 @@ pipelineCouplingManager = (() => {
             if (_eff < 0.50) {
               rate *= m.max(0.25, _eff / 0.50);
             }
+            // R34 E5: Heat-penalty escalation cooldown. Pairs with persistent
+            // overcoupling (heatPenalty > 0.30) get proportionally reduced
+            // escalation rate. At 0.50 -> 0.50x, at 1.0 -> 0.35x (floor).
+            // Prevents density-flicker from oscillating between escalation
+            // and relaxation, dampening the p95 tail.
+            const _hp = ps.heatPenalty || 0;
+            if (_hp > 0.30) {
+              rate *= m.max(0.35, 1.0 - _hp);
+            }
             // R20 E2: Apply global gain multiplier to escalation rate.
             // When homeostasis detects redistribution, slow ALL gains.
             rate *= _globalGainMultiplier;
@@ -572,6 +599,13 @@ pipelineCouplingManager = (() => {
             if ((dimA === 'density' || dimB === 'density') && _densityGuardState === 'guarding' &&
                 typeof _densityProd === 'number' && _densityProd < _DENSITY_PAIR_GAIN_CAP_THRESHOLD) {
               pairGainMax = m.min(pairGainMax, _DENSITY_PAIR_GAIN_CAP);
+            }
+            // R35 E3: Phase-pair gain cap. The EMA rescue (R34 E2) stabilized
+            // phase share but also enabled sustained phase-pair coupling that
+            // was previously invisible. flicker-phase p95=0.997, density-phase
+            // p95=0.958. Cap phase-pair gains at 0.35 when |r| > 0.85.
+            if ((dimA === 'phase' || dimB === 'phase') && absCorr > 0.85) {
+              pairGainMax = m.min(pairGainMax, 0.35);
             }
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
@@ -971,6 +1005,9 @@ pipelineCouplingManager = (() => {
     _velocityBoostActive = false;
     _couplingVelocityEma = 0;
     _prevBeatAbsCorr = {};
+    // R34 E2: Dampen smoothed axis totals (preserve cross-section memory)
+    const _smKeys = Object.keys(_axisSmoothedAbsR);
+    for (let si = 0; si < _smKeys.length; si++) _axisSmoothedAbsR[_smKeys[si]] *= 0.50;
     // R20 E5: Reset flicker guard to allow fresh assessment per section
     _flickerGuardState = 'normal';
     // R24 E4: Reset density guard per section
@@ -1012,14 +1049,17 @@ pipelineCouplingManager = (() => {
 
   /**
    * R19 E1: Return per-axis total |r| sums for trace diagnostics.
+   * R34 E2: Returns smoothed EMA values instead of raw per-beat snapshot.
+   * This prevents phase axis from collapsing to 0 when phase pairs have
+   * null correlations on the sampled beat.
    * @returns {Record<string, number>}
    */
   function getAxisCouplingTotals() {
     /** @type {Record<string, number>} */
     const result = {};
-    const axisKeys = Object.keys(_axisTotalAbsR);
+    const axisKeys = Object.keys(_axisSmoothedAbsR);
     for (let i = 0; i < axisKeys.length; i++) {
-      result[axisKeys[i]] = Number(_axisTotalAbsR[axisKeys[i]].toFixed(4));
+      result[axisKeys[i]] = Number(_axisSmoothedAbsR[axisKeys[i]].toFixed(4));
     }
     return result;
   }

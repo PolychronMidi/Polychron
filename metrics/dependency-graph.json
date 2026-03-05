@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-05T03:00:35.549Z",
+    "generated": "2026-03-05T16:22:06.364Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2671,
-    "totalEdges": 2037,
-    "crossSubsystemEdges": 1436,
+    "totalConsumes": 2676,
+    "totalEdges": 2042,
+    "crossSubsystemEdges": 1441,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 206
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 145,
         "provides": 191,
-        "consumes": 752
+        "consumes": 754
       },
       "rhythm": {
         "files": 30,
@@ -62,12 +62,12 @@
       "writer": {
         "files": 4,
         "provides": 10,
-        "consumes": 62
+        "consumes": 63
       },
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 376
+        "consumes": 378
       }
     }
   },
@@ -1230,7 +1230,8 @@
         "clamp",
         "explainabilityBus",
         "m",
-        "validator"
+        "validator",
+        "velocity"
       ]
     },
     "src/conductor/signal/systemDynamicsProfiler.js": {
@@ -1309,7 +1310,8 @@
         "safePreBoot",
         "signalHealthAnalyzer",
         "signalReader",
-        "systemDynamicsProfiler"
+        "systemDynamicsProfiler",
+        "velocity"
       ]
     },
     "src/conductor/signal/couplingHomeostasis.js": {
@@ -5923,6 +5925,7 @@
         "traceDrain"
       ],
       "consumes": [
+        "axisEnergyEquilibrator",
         "couplingHomeostasis",
         "fs",
         "path",
@@ -6174,6 +6177,7 @@
       "consumes": [
         "MAIN_LOOP_CONTROLS",
         "adaptiveTrustScores",
+        "axisEnergyEquilibrator",
         "beatCount",
         "beatIndex",
         "beatStartTime",
@@ -6202,6 +6206,7 @@
         "phaseAwareCadenceWindow",
         "pipelineCouplingManager",
         "pitchMemoryRecall",
+        "regimeClassifier",
         "rhythmicComplementEngine",
         "rhythmicPhaseLock",
         "safePreBoot",
@@ -9680,6 +9685,20 @@
       ]
     },
     {
+      "from": "src/conductor/signal/axisEnergyEquilibrator.js",
+      "to": "src/play/crossLayerBeatRecord.js",
+      "globals": [
+        "axisEnergyEquilibrator"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/axisEnergyEquilibrator.js",
+      "to": "src/writer/traceDrain.js",
+      "globals": [
+        "axisEnergyEquilibrator"
+      ]
+    },
+    {
       "from": "src/conductor/signal/coherenceMonitor.js",
       "to": "src/conductor/config.js",
       "globals": [
@@ -9871,6 +9890,13 @@
     {
       "from": "src/conductor/signal/regimeClassifier.js",
       "to": "src/conductor/signal/systemDynamicsProfiler.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/regimeClassifier.js",
+      "to": "src/play/crossLayerBeatRecord.js",
       "globals": [
         "regimeClassifier"
       ]
@@ -17163,9 +17189,23 @@
     },
     {
       "from": "src/utils/init.js",
+      "to": "src/conductor/signal/pipelineCouplingManager.js",
+      "globals": [
+        "velocity"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
       "to": "src/conductor/signal/pipelineNormalizer.js",
       "globals": [
         "beatCount"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
+      "to": "src/conductor/signal/regimeClassifier.js",
+      "globals": [
+        "velocity"
       ]
     },
     {

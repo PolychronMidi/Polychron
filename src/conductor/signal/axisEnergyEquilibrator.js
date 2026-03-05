@@ -148,8 +148,15 @@ axisEnergyEquilibrator = (() => {
     //   evolving: reduced tightening (0.4) -- allows partial axis correction
     //   coherent: frozen (0.0) -- protects coherent stability
     const currentRegime = regimeClassifier.getLastRegime();
+    // R34 E4: Exploring tighten amplification (1.5x). R33 showed exploring
+    // contributes 77% of effective tightening budget. Amplifying during
+    // exploring accelerates axis balance correction while coherent is absent.
+    // R35 E4: Evolving tightenScale 0.4->0.6. R34 had 83.7% evolving but
+    // only 13.7 total tighten budget (R33: 35). Without exploring, evolving
+    // must carry more of the tightening load.
     const tightenScale = currentRegime === 'coherent' ? 0.0
-      : currentRegime === 'evolving' ? 0.4
+      : currentRegime === 'evolving' ? 0.6
+      : currentRegime === 'exploring' ? 1.5
       : 1.0;
 
     // R32 E5: Track per-regime beats and tightening budget

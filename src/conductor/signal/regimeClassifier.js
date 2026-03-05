@@ -21,7 +21,7 @@ regimeClassifier = (() => {
   let exploringBeats = 0; // duration escalator: consecutive exploring beats
   let coherentBeats = 0;  // saturation guard: consecutive coherent beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
-  let coherentThresholdScale = 1.0; // profile-adaptive multiplier
+  let coherentThresholdScale = 0.75; // R35 E1: lowered from 0.90 for aggressive coherent convergence (R34: scale only reached 0.792 in 282 beats, gapAvg=+0.15)
   // R22 E4 / R24 E1: Evolving regime minimum dwell time. Prevents the
   // system from passing through evolving too quickly. R22 set 12 beats
   // which catastrophically disrupted bistable coherent feedback (0% coherent
@@ -45,17 +45,21 @@ regimeClassifier = (() => {
 
   // R29/R30: Self-correcting regime targeting. Auto-adjusts coherentThresholdScale
   // based on rolling coherent share. Replaces ALL manual per-profile scale tuning.
-  // Target range: 15-35% coherent. Nudge rate 0.002/beat, bounded [0.70, 1.20].
+  // Target range: 15-35% coherent. Nudge rate 0.004/beat, bounded [0.70, 1.20].
   // R30: Widened range from [0.80,1.15] -- R29 saturated at 0.80 floor in 40 beats.
-  // Faster nudge (0.001->0.002) for convergence within shorter explosive runs.
+  // R35 E1: Tripled nudge rate (0.002->0.006) and lowered floor (0.70->0.55).
+  // R34 showed scale dropped 0.90->0.792 in 282 beats (0.004/beat) but
+  // gapAvg was still +0.15. Need 0.006/beat to close gap within ~100 beats.
+  // Floor 0.55 ensures the self-balancer can reduce threshold by 45%.
   const _REGIME_TARGET_COHERENT_LO = 0.15;
   const _REGIME_TARGET_COHERENT_HI = 0.35;
-  const _REGIME_SCALE_NUDGE = 0.002;
-  const _REGIME_SCALE_MIN = 0.70;
+  const _REGIME_SCALE_NUDGE = 0.006;
+  const _REGIME_SCALE_MIN = 0.55;
   const _REGIME_SCALE_MAX = 1.20;
 
   // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
-  let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0 };
+  // R34 E6: Extended with velocity, velThreshold for transition readiness diagnostic.
+  let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0, velocity: 0, velThreshold: 0.008 };
 
   // R17 structural fix: Self-calibrating regime saturation.
   // Tracks rolling coherent share and derives penalty dynamically instead of
@@ -227,8 +231,6 @@ regimeClassifier = (() => {
     }
     _evolvingProximityBonus = evolvingProximityBonus;
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty;
-    // R25 E6: Cache classify inputs for transition diagnostics in resolve()
-    _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus };
     // R27 E5: Relax velocity threshold from 0.008 to 0.005 after 100 exploring
     // beats. In R26, coherent entry was at beat 376/439 (85.6% through) despite
     // the coupling threshold being deeply negative by beat ~200. The bottleneck
@@ -237,11 +239,18 @@ regimeClassifier = (() => {
     // 0.005-0.008 still represents meaningful state-space movement; 5-beat
     // hysteresis guards against premature entry from fleeting velocity dips.
     const _velThreshold = exploringBeats > 100 ? 0.005 : 0.008;
+    // R25 E6: Cache classify inputs for transition diagnostics in resolve()
+    // R34 E6: Include velocity + velThreshold for transition readiness
+    // R35 E5: Include effectiveDim for exploring-block diagnostic
+    _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus, velocity: avgVelocity, velThreshold: _velThreshold, effectiveDim };
     if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
-    if (avgVelocity > 0.02 && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
+    // R35 E2: Lowered velocity threshold from 0.02 to 0.015. R34 had 0%
+    // exploring because velocity was consistently in the 0.008-0.02 dead
+    // zone (too fast for evolving cutoff, too slow for exploring entry).
+    if (avgVelocity > 0.015 && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
@@ -357,5 +366,31 @@ regimeClassifier = (() => {
     _coherentShareEma = _prevCoherentShareEma * 0.5 + 0.25 * 0.5;
   }
 
-  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, getExploringBeats, getLastRegime, reset };
+  /**
+   * R34 E6: Transition readiness diagnostic. Returns coupling gap (positive =
+   * above threshold), velocity status, and whether velocity is the blocking
+   * factor. R35 E5: Adds exploring-block diagnostic.
+   * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string }}
+   */
+  function getTransitionReadiness() {
+    const li = _lastClassifyInputs;
+    // R35 E5: Determine which condition blocks exploring entry
+    // Exploring requires: velocity > 0.015, effectiveDim > 2.5, coupling <= 0.40
+    let exploringBlock = 'none';
+    if (li.velocity <= 0.015) exploringBlock = 'velocity';
+    else if ((li.effectiveDim || 0) <= 2.5) exploringBlock = 'dimension';
+    else if (li.couplingStrength > 0.40) exploringBlock = 'coupling';
+    return {
+      gap: Number((li.couplingStrength - li.coherentThreshold).toFixed(4)),
+      couplingStrength: Number(li.couplingStrength.toFixed(4)),
+      coherentThreshold: Number(li.coherentThreshold.toFixed(4)),
+      velocity: Number(li.velocity.toFixed(6)),
+      velThreshold: li.velThreshold,
+      thresholdScale: Number(coherentThresholdScale.toFixed(4)),
+      velocityBlocked: li.couplingStrength > li.coherentThreshold && li.velocity <= li.velThreshold,
+      exploringBlock
+    };
+  }
+
+  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, getExploringBeats, getLastRegime, getTransitionReadiness, reset };
 })();
