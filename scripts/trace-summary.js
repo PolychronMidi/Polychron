@@ -108,6 +108,10 @@ function summarizeTrace(entries) {
   const pairExceedanceBeats = {};
   // R36 E4: Raw regime counts (cumulative from classifier, grab last beat)
   let rawRegimeCounts = null;
+  // R37 E6: Raw regime max streak (cumulative, grab last beat)
+  let rawRegimeMaxStreak = null;
+  // R37 E5: effectiveDim histogram -- collect all values for percentile computation
+  const effectiveDimValues = [];
 
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
@@ -148,6 +152,14 @@ function summarizeTrace(entries) {
       // R36 E4: Grab cumulative raw regime counts (last beat wins)
       if (tr.rawRegimeCounts && typeof tr.rawRegimeCounts === 'object') {
         rawRegimeCounts = tr.rawRegimeCounts;
+      }
+      // R37 E6: Grab cumulative raw regime max streaks (last beat wins)
+      if (tr.rawRegimeMaxStreak && typeof tr.rawRegimeMaxStreak === 'object') {
+        rawRegimeMaxStreak = tr.rawRegimeMaxStreak;
+      }
+      // R37 E5: Collect effectiveDim for histogram
+      if (typeof tr.effectiveDim === 'number' && Number.isFinite(tr.effectiveDim)) {
+        effectiveDimValues.push(tr.effectiveDim);
       }
     }
     if (regime === 'coherent') {
@@ -462,7 +474,18 @@ function summarizeTrace(entries) {
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
       // R36 E4: Raw regime counts before hysteresis
-      rawRegimeCounts
+      rawRegimeCounts,
+      // R37 E6: Max consecutive streak per raw regime
+      rawRegimeMaxStreak,
+      // R37 E5: effectiveDim histogram (percentiles)
+      effectiveDimHistogram: effectiveDimValues.length > 0 ? (() => {
+        const sorted = effectiveDimValues.slice().sort((a, b) => a - b);
+        const pctl = (p) => {
+          const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * p)));
+          return Number(sorted[idx].toFixed(4));
+        };
+        return { p10: pctl(0.10), p25: pctl(0.25), p50: pctl(0.50), p75: pctl(0.75), p90: pctl(0.90), min: pctl(0), max: pctl(1), count: sorted.length };
+      })() : null
     } : null,
     // R35 E6: Per-pair exceedance beat counts (beats where |r| > 0.85)
     pairExceedanceBeats,

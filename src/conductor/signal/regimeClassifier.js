@@ -8,20 +8,21 @@
 regimeClassifier = (() => {
   const V = validator.create('regimeClassifier');
 
-  // Hysteresis: requires REGIME_HOLD consecutive beats of a new
-  // classification before switching.
-  // R36 E1: Reduced from 5 to 3. R35 had 639/702 beats where ALL exploring
-  // conditions were met yet neither coherent nor exploring entered. With
-  // gapAvg=+0.0985 but gapMin=-0.0149, ~5% of beats return raw!='coherent',
-  // resetting the 5-consecutive counter. P(3 consecutive|95% positive) ~ 86%.
-  const REGIME_HOLD = 3;
+  // R37 E1: Majority-window hysteresis replaces consecutive-streak.
+  // R36 proved REGIME_HOLD=3 still insufficient: 87 raw coherent beats
+  // (10.6%) were too scattered for 3 consecutive (P ~ 0.12% per window).
+  // Majority-window: if 3 of last 5 raw beats classify as the same
+  // non-current regime, transition. P(>=3 of 5 | p=0.106) ~ 4.7% per
+  // window, so over 823 beats we expect ~39 qualifying windows.
+  const _REGIME_WINDOW = 5;
+  const _REGIME_MAJORITY = 3;
 
   // Profile-adaptive oscillating curvature threshold
   const OSCILLATING_CURVATURE_DEFAULT = 0.55;
 
   let lastRegime = 'evolving';
-  let candidateRegime = 'evolving';
-  let candidateCount = 0;
+  // R37 E1: Rolling window of recent raw regimes for majority check
+  let _rawRegimeWindow = [];
   let exploringBeats = 0; // duration escalator: consecutive exploring beats
   let coherentBeats = 0;  // saturation guard: consecutive coherent beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
@@ -68,9 +69,15 @@ regimeClassifier = (() => {
   // R36 E4: Raw regime diagnostic. Tallies how many beats each raw
   // classification appears (before hysteresis). Comparing rawRegimeCounts
   // vs resolved regimeCounts reveals hysteresis deadlock: if rawCoherent
-  // is high but resolvedCoherent is 0, the 3-beat hysteresis is still
+  // is high but resolvedCoherent is 0, the hysteresis is still
   // breaking the chain.
   const _rawRegimeCounts = {};
+
+  // R37 E6: Track max consecutive streak per raw regime.
+  // Reveals whether raw coherent beats cluster (streak=5+) or scatter (streak=1-2).
+  const _rawRegimeMaxStreak = {};
+  let _rawStreakRegime = '';
+  let _rawStreakCount = 0;
 
   // R17 structural fix: Self-calibrating regime saturation.
   // Tracks rolling coherent share and derives penalty dynamically instead of
@@ -254,14 +261,12 @@ regimeClassifier = (() => {
     // R34 E6: Include velocity + velThreshold for transition readiness
     // R35 E5: Include effectiveDim for exploring-block diagnostic
     _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus, velocity: avgVelocity, velThreshold: _velThreshold, effectiveDim };
-    // R36 E2: effectiveDim gate on coherent entry. Coherent means "dimensions
-    // move together" which implies low effective dimensionality. When effectiveDim
-    // > 4.0, the system has 4+ independent degrees of freedom - that's exploring
-    // territory even if coupling exceeds the (very low) threshold. In R35, 639/702
-    // beats had ALL exploring conditions met, but coherent's low threshold (~0.07)
-    // absorbed them all. This gate opens the exploring pathway by letting high-dim
-    // beats fall through to the exploring check instead.
-    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 4.0) return 'coherent';
+    // R36 E2: effectiveDim gate on coherent entry.
+    // R37 E2: Tightened from 4.0 to 3.5. R36 data: 87 raw coherent beats
+    // vs 2 raw exploring. effectiveDim almost always > 4.0, swallowing all
+    // potential exploring beats into coherent. At 3.5, more beats with
+    // 3-4 effective dimensions redirect to exploring.
+    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 3.5) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
@@ -272,8 +277,11 @@ regimeClassifier = (() => {
     // without transition, relax from 0.015 to 0.010. In R35, 15 beats
     // were velocity-blocked at the 0.015 threshold. This recaptures them
     // during prolonged evolving locks.
+    // R37 E3: Exploring coupling gate widened 0.40->0.50. In R36 coupling
+    // averages ranged 0.19-0.44, so many beats with moderate coupling were
+    // blocked. At 0.50, midrange-coupled high-dim beats can enter exploring.
     const _exploringVelThreshold = _evolvingBeats > 100 ? 0.010 : 0.015;
-    if (avgVelocity > _exploringVelThreshold && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
+    if (avgVelocity > _exploringVelThreshold && effectiveDim > 2.5 && couplingStrength <= 0.50) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
@@ -287,16 +295,29 @@ regimeClassifier = (() => {
 
   /**
    * Apply hysteresis to regime transitions.
-   * Requires REGIME_HOLD consecutive beats of a new classification before switching.
+   * R37 E1: Majority-window replaces consecutive-streak. Transitions when
+   * >= _REGIME_MAJORITY of last _REGIME_WINDOW raw beats match a non-current regime.
    * @param {string} rawRegime - instantaneous classification from classify()
    * @returns {string} - stable regime with hysteresis
    */
   function resolve(rawRegime) {
     // R36 E4: Tally raw regime classifications before hysteresis
     _rawRegimeCounts[rawRegime] = (_rawRegimeCounts[rawRegime] || 0) + 1;
+
+    // R37 E6: Track max consecutive streak per raw regime
+    if (rawRegime === _rawStreakRegime) {
+      _rawStreakCount++;
+    } else {
+      _rawStreakRegime = rawRegime;
+      _rawStreakCount = 1;
+    }
+    _rawRegimeMaxStreak[rawRegime] = m.max(_rawRegimeMaxStreak[rawRegime] || 0, _rawStreakCount);
+
+    // R37 E1: Maintain rolling window
+    _rawRegimeWindow.push(rawRegime);
+    if (_rawRegimeWindow.length > _REGIME_WINDOW) _rawRegimeWindow.shift();
+
     if (rawRegime === lastRegime) {
-      candidateRegime = rawRegime;
-      candidateCount = 0;
       if (lastRegime === 'exploring') {
         exploringBeats++;
         coherentBeats = 0;
@@ -316,46 +337,41 @@ regimeClassifier = (() => {
       }
       return lastRegime;
     }
-    if (rawRegime === candidateRegime) {
-      candidateCount++;
-      if (candidateCount >= REGIME_HOLD) {
+
+    // R37 E1: Check if rawRegime has majority in rolling window
+    if (_rawRegimeWindow.length >= _REGIME_MAJORITY) {
+      let _windowHits = 0;
+      for (let i = 0; i < _rawRegimeWindow.length; i++) {
+        if (_rawRegimeWindow[i] === rawRegime) _windowHits++;
+      }
+      if (_windowHits >= _REGIME_MAJORITY) {
         // R22 E4: Evolving minimum dwell -- suppress evolving->coherent until
-        // at least _evolvingMinDwell beats have passed in evolving. In R22,
-        // the system passed through evolving in only 7 beats before snapping
-        // to coherent. This ensures evolving ideas develop for >= 12 beats.
+        // at least _evolvingMinDwell beats have passed in evolving.
         if (lastRegime === 'evolving' && rawRegime === 'coherent' && _evolvingBeats < _evolvingMinDwell) {
-          // Force continuation in evolving -- don't allow transition yet.
-          // Reset candidate so hysteresis re-counts from scratch after dwell.
-          candidateCount = 0;
           return lastRegime;
         }
-        // R25 E6: Regime transition diagnostic. Emits coupling/threshold/gap
-        // at the moment of transition for post-run verification of proximity
-        // seeding and coherent-entry mechanics.
+        // R25 E6: Regime transition diagnostic
         explainabilityBus.emit('REGIME_TRANSITION', 'both', {
           from: lastRegime, to: rawRegime,
           coupling: _lastClassifyInputs.couplingStrength,
           threshold: _lastClassifyInputs.coherentThreshold,
           proximityBonus: _lastClassifyInputs.evolvingProximityBonus,
           gap: _lastClassifyInputs.couplingStrength - _lastClassifyInputs.coherentThreshold,
-          exploringBeats, evolvingBeats: _evolvingBeats
+          exploringBeats, evolvingBeats: _evolvingBeats,
+          windowHits: _windowHits
         });
         if (lastRegime === 'exploring') exploringBeats = 0;
-        // R28 E5: Activate coherent momentum on coherent->non-coherent transition.
-        // Provides 15-beat decaying threshold bonus to prevent premature exit.
+        // R28 E5: Activate coherent momentum on coherent->non-coherent transition
         if (lastRegime === 'coherent') {
           coherentBeats = 0;
           _coherentMomentumBeats = _COHERENT_MOMENTUM_WINDOW;
         }
         if (lastRegime === 'evolving') _evolvingBeats = 0;
         lastRegime = rawRegime;
-        candidateCount = 0;
         return rawRegime;
       }
-    } else {
-      candidateRegime = rawRegime;
-      candidateCount = 1;
     }
+
     return lastRegime;
   }
 
@@ -376,8 +392,8 @@ regimeClassifier = (() => {
     const _prevCoherentShareEma = _coherentShareEma;
     const _prevCoherentBeats = coherentBeats;
     lastRegime = 'evolving';
-    candidateRegime = 'evolving';
-    candidateCount = 0;
+    // R37 E1: Clear majority window on section reset
+    _rawRegimeWindow = [];
     exploringBeats = 0;
     _evolvingBeats = 0;
     _evolvingProximityBonus = 0;
@@ -395,17 +411,19 @@ regimeClassifier = (() => {
    * R34 E6: Transition readiness diagnostic. Returns coupling gap (positive =
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
-  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, rawRegimeCounts: Record<string, number> }}
+   * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
+   * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, rawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, effectiveDim: number }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
     // R35 E5: Determine which condition blocks exploring entry
     // R36 E5: Use adaptive velocity threshold (0.010 after 100+ evolving beats)
+    // R37 E3: Updated coupling gate from 0.40 to 0.50
     const _expVelThresh = _evolvingBeats > 100 ? 0.010 : 0.015;
     let exploringBlock = 'none';
     if (li.velocity <= _expVelThresh) exploringBlock = 'velocity';
     else if ((li.effectiveDim || 0) <= 2.5) exploringBlock = 'dimension';
-    else if (li.couplingStrength > 0.40) exploringBlock = 'coupling';
+    else if (li.couplingStrength > 0.50) exploringBlock = 'coupling';
     return {
       gap: Number((li.couplingStrength - li.coherentThreshold).toFixed(4)),
       couplingStrength: Number(li.couplingStrength.toFixed(4)),
@@ -415,7 +433,11 @@ regimeClassifier = (() => {
       thresholdScale: Number(coherentThresholdScale.toFixed(4)),
       velocityBlocked: li.couplingStrength > li.coherentThreshold && li.velocity <= li.velThreshold,
       exploringBlock,
-      rawRegimeCounts: Object.assign({}, _rawRegimeCounts)
+      rawRegimeCounts: Object.assign({}, _rawRegimeCounts),
+      // R37 E6: Max consecutive streak per raw regime
+      rawRegimeMaxStreak: Object.assign({}, _rawRegimeMaxStreak),
+      // R37 E5: effectiveDim for histogram diagnostic
+      effectiveDim: Number(((li.effectiveDim || 0)).toFixed(4))
     };
   }
 

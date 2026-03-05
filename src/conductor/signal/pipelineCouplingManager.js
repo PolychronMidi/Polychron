@@ -611,6 +611,16 @@ pipelineCouplingManager = (() => {
             if (absCorr > 0.85) {
               pairGainMax = m.min(pairGainMax, 0.30);
             }
+            // R37 E4: Active gain decay during sustained exceedance.
+            // The 0.30 cap only limits gain GROWTH. If gain was built to 0.336
+            // during non-exceedance beats, it persists during exceedance.
+            // density-flicker had 76 exceedance beats in R36 (worst pair).
+            // When |r| > 0.85 and gain exceeds the exceedance cap, decay
+            // gain toward 0.30 at 5% per beat. This provides active pressure
+            // instead of passive growth limiting.
+            if (absCorr > 0.85 && ps.gain > 0.30) {
+              ps.gain = m.max(0.30, ps.gain * 0.95);
+            }
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
 
