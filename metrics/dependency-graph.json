@@ -1,14 +1,14 @@
 {
   "meta": {
-    "generated": "2026-03-04T18:36:31.860Z",
+    "generated": "2026-03-04T23:38:06.802Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2670,
-    "totalEdges": 2036,
+    "totalConsumes": 2671,
+    "totalEdges": 2037,
     "crossSubsystemEdges": 1436,
     "maxFanIn": {
       "file": "src/utils/validator.js",
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 145,
         "provides": 191,
-        "consumes": 751
+        "consumes": 752
       },
       "rhythm": {
         "files": 30,
@@ -1342,6 +1342,7 @@
         "m",
         "p",
         "pipelineCouplingManager",
+        "regimeClassifier",
         "validator"
       ]
     },
@@ -9856,6 +9857,13 @@
     {
       "from": "src/conductor/signal/regimeClassifier.js",
       "to": "src/conductor/conductorIntelligence.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/regimeClassifier.js",
+      "to": "src/conductor/signal/axisEnergyEquilibrator.js",
       "globals": [
         "regimeClassifier"
       ]

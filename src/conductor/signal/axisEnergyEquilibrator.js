@@ -29,12 +29,15 @@ axisEnergyEquilibrator = (() => {
   const V = validator.create('axisEnergyEquilibrator');
 
   // -- Layer 1 config: pair-level hotspot detection --
-  const _HOTSPOT_RATIO = 1.5;      // pair is hot when rolling > 1.5x baseline
-  const _HOTSPOT_ABS_MIN = 0.20;   // ignore unless rolling crosses absolute floor
-  const _COLDSPOT_RATIO = 0.3;     // pair is cold when rolling < 0.3x baseline
-  const _COLDSPOT_ABS_MAX = 0.12;  // only relax if rolling is below this absolute cap
-  const _PAIR_TIGHTEN_RATE = 0.003;
-  const _PAIR_RELAX_RATE = 0.0015;
+  // R30: Uses rawRollingAbsCorr (unattenuated) instead of rollingAbsCorr
+  // (regime-adjusted EMA). In R29, rolling was 60-70% attenuated vs actual
+  // coupling, so density-flicker at 0.602 actual only showed 0.190 rolling.
+  const _HOTSPOT_RATIO = 2.0;      // pair is hot when raw > 2.0x baseline
+  const _HOTSPOT_ABS_MIN = 0.25;   // ignore unless raw crosses absolute floor
+  const _COLDSPOT_RATIO = 0.3;     // pair is cold when raw < 0.3x baseline
+  const _COLDSPOT_ABS_MAX = 0.10;  // only relax if raw is below this absolute cap
+  const _PAIR_TIGHTEN_RATE = 0.004;
+  const _PAIR_RELAX_RATE = 0.002;
   const _PAIR_COOLDOWN = 3;
 
   // -- Layer 2 config: axis-level energy balancing --
@@ -117,6 +120,13 @@ axisEnergyEquilibrator = (() => {
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
     const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
 
+    // R30: Coherent gate -- when the system is in or near coherent regime,
+    // freeze ALL tightening. Tightening baselines widens the coupling gap
+    // and prevents coherent entry, creating a negative feedback cycle.
+    // Only relax (coldspot/undershoot) is allowed during coherent.
+    const currentRegime = regimeClassifier.getLastRegime();
+    const coherentGate = (currentRegime === 'coherent' || currentRegime === 'evolving');
+
     // ===== LAYER 1: Pair-level hotspot / coldspot detection =====
     for (let p = 0; p < _ALL_PAIRS.length; p++) {
       const pair = _ALL_PAIRS[p];
@@ -124,10 +134,10 @@ axisEnergyEquilibrator = (() => {
       const pd = snapshot[pair];
       if (!pd) continue;
       const baseline = V.optionalFinite(pd.baseline);
-      const rolling = V.optionalFinite(pd.rollingAbsCorr);
+      const rolling = V.optionalFinite(pd.rawRollingAbsCorr);
       if (baseline === undefined || rolling === undefined) continue;
 
-      if (rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) {
+      if (!coherentGate && rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) {
         // Hotspot -- tighten this pair's baseline
         const overshoot = rolling / m.max(baseline, 0.01);
         const rate = _PAIR_TIGHTEN_RATE * giniMult * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
@@ -156,7 +166,7 @@ axisEnergyEquilibrator = (() => {
       const share = _smoothedShares[axis] || 0;
       const pairs = _axisToPairs[axis];
 
-      if (share > _AXIS_OVERSHOOT) {
+      if (share > _AXIS_OVERSHOOT && !coherentGate) {
         const excess = share - _FAIR_SHARE;
         const rate = _AXIS_TIGHTEN_RATE * giniMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
