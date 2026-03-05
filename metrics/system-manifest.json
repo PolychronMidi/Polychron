@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-05T18:11:47.196Z",
+  "timestamp": "2026-03-05T20:01:06.474Z",
   "config": {
     "BPM": 72,
     "PPQ": 30000,
@@ -22,38 +22,38 @@
   "journey": [
     {
       "section": 0,
-      "key": "C",
+      "key": "A#",
       "mode": "aeolian",
       "move": "origin",
       "distance": 0
     },
     {
       "section": 1,
-      "key": "D",
+      "key": "D#",
       "mode": "aeolian",
-      "move": "step-up",
-      "distance": 2
-    },
-    {
-      "section": 2,
-      "key": "A",
-      "mode": "aeolian",
-      "move": "fifth-up",
+      "move": "fourth-up",
       "distance": 1
     },
     {
+      "section": 2,
+      "key": "G",
+      "mode": "major",
+      "move": "relative-major",
+      "distance": 4
+    },
+    {
       "section": 3,
-      "key": "A",
-      "mode": "minor",
-      "move": "parallel-minor (mode-shift)",
+      "key": "G",
+      "mode": "mixolydian",
+      "move": "parallel-mixolydian",
       "distance": 0
     },
     {
       "section": 4,
-      "key": "A",
-      "mode": "phrygian",
-      "move": "parallel-phrygian",
-      "distance": 0
+      "key": "A#",
+      "mode": "aeolian",
+      "move": "return-home",
+      "distance": 3
     }
   ],
   "registries": {
@@ -295,12 +295,12 @@
     }
   },
   "signals": {
-    "densityProduct": 0.7400398510529104,
-    "tensionProduct": 1.1728681682629643,
-    "flickerProduct": 0.9954700463168809
+    "densityProduct": 0.8013313894387191,
+    "tensionProduct": 1.1117967111786564,
+    "flickerProduct": 1.0217157385497713
   },
   "signalHealth": {
-    "beatsAnalyzed": 9,
+    "beatsAnalyzed": 12,
     "pinnedRate": {
       "density": 0,
       "tension": 0,
@@ -313,29 +313,30 @@
     "lastHealth": {
       "density": {
         "grade": "healthy",
-        "product": 0.7220878254671953,
+        "product": 0.7285385835104995,
         "pinnedModules": [],
-        "crushFactor": 0.4,
+        "crushFactor": 0.43333333333333335,
         "saturated": false
       },
       "tension": {
         "grade": "healthy",
-        "product": 1.1473057461389724,
+        "product": 1.0881610438140548,
         "pinnedModules": [],
-        "crushFactor": 0.4,
+        "crushFactor": 0.35,
         "saturated": false
       },
       "flicker": {
         "grade": "healthy",
-        "product": 0.9840036133903891,
+        "product": 1.0493682905280557,
         "pinnedModules": [],
-        "crushFactor": 0.35714285714285715
+        "crushFactor": 0.2857142857142857
       },
       "trust": {
         "grade": "healthy",
         "starvingSystems": [],
         "thrivingSystems": [
           "stutterContagion",
+          "cadenceAlignment",
           "phaseLock",
           "coherenceMonitor",
           "entropyRegulator"
@@ -346,8 +347,8 @@
   },
   "pipelineNormalizer": {
     "density": {
-      "emaRawProduct": 0.7409,
-      "beats": 277,
+      "emaRawProduct": 0.7744,
+      "beats": 393,
       "softMin": 0.5,
       "softMax": 1.4,
       "hardMin": 0.3,
@@ -356,58 +357,58 @@
       "compressedHighRate": 0
     },
     "tension": {
-      "emaRawProduct": 1.1383,
-      "beats": 277,
+      "emaRawProduct": 1.0489,
+      "beats": 393,
       "softMin": 0.7,
       "softMax": 1.4,
       "hardMin": 0.5,
       "hardMax": 1.6,
       "compressedLowRate": 0,
-      "compressedHighRate": 0.004
+      "compressedHighRate": 0
     },
     "flicker": {
-      "emaRawProduct": 1.0937,
-      "beats": 64,
+      "emaRawProduct": 1.0841,
+      "beats": 60,
       "softMin": 0.7,
       "softMax": 1.3,
       "hardMin": 0.55,
       "hardMax": 1.45,
       "compressedLowRate": 0,
-      "compressedHighRate": 0.016
+      "compressedHighRate": 0.017
     }
   },
   "systemDynamics": {
-    "beatsAnalyzed": 115,
+    "beatsAnalyzed": 94,
     "snapshot": {
-      "velocity": 0.1741,
-      "curvature": 0.672,
-      "effectiveDimensionality": 3.67,
-      "couplingStrength": 0.184,
+      "velocity": 0.2175,
+      "curvature": 0.694,
+      "effectiveDimensionality": 3.61,
+      "couplingStrength": 0.237,
       "regime": "evolving",
       "grade": "healthy",
       "couplingMatrix": {
-        "density-tension": -0.105,
-        "density-flicker": 0.172,
-        "density-entropy": 0.076,
-        "density-trust": 0.3,
-        "density-phase": -0.037,
-        "tension-flicker": 0.314,
-        "tension-entropy": -0.415,
-        "tension-trust": -0.518,
-        "tension-phase": 0.448,
-        "flicker-entropy": 0.021,
-        "flicker-trust": -0.07,
-        "flicker-phase": 0.801,
-        "entropy-trust": 0.116,
-        "entropy-phase": 0.03
+        "density-tension": 0.43,
+        "density-flicker": -0.395,
+        "density-entropy": 0.133,
+        "density-trust": -0.313,
+        "density-phase": -0.54,
+        "tension-flicker": -0.14,
+        "tension-entropy": 0.135,
+        "tension-trust": -0.069,
+        "tension-phase": -0.331,
+        "flicker-entropy": -0.187,
+        "flicker-trust": 0.166,
+        "flicker-phase": 0.576,
+        "entropy-trust": 0.408,
+        "entropy-phase": -0.76
       },
       "compositionalVariance": [
-        0.15956789859324,
-        0.19593186292791406,
-        0.5124833041288259,
-        0.13201693435001996
+        0.17681681617924258,
+        0.30215060429368024,
+        0.20197067267113172,
+        0.3190619068559454
       ],
-      "entropyAmplification": 4.47,
+      "entropyAmplification": 1.17,
       "entropySampleErrors": 0,
       "entropyRhythmErrors": 0,
       "lastEntropyError": ""
@@ -422,11 +423,11 @@
     ]
   },
   "iterationBudget": {
-    "totalBeats": 702,
-    "cappedBeats": 158,
-    "capRate": 0.22507122507122507,
-    "maxRaw": 1260,
-    "avgRaw": 220.3,
+    "totalBeats": 853,
+    "cappedBeats": 276,
+    "capRate": 0.3235638921453693,
+    "maxRaw": 1638,
+    "avgRaw": 221.4,
     "maxCapped": 450
   },
   "trustPayoffs": {
@@ -461,44 +462,44 @@
   },
   "trustScoresEndOfRun": {
     "stutterContagion": {
-      "score": 0.40463673043238724,
-      "samples": 702,
-      "weight": 1.3034775478242904
+      "score": 0.4807883896434285,
+      "samples": 853,
+      "weight": 1.3605912922325714
     },
     "cadenceAlignment": {
-      "score": 0.2776627003681685,
-      "samples": 702,
-      "weight": 1.2082470252761264
+      "score": 0.5689388191009449,
+      "samples": 853,
+      "weight": 1.4267041143257086
     },
     "phaseLock": {
-      "score": 0.426033797437162,
-      "samples": 702,
-      "weight": 1.3195253480778715
+      "score": 0.4493326878747872,
+      "samples": 853,
+      "weight": 1.3369995159060903
     },
     "convergence": {
-      "score": 0.24678963820811442,
-      "samples": 702,
-      "weight": 1.1850922286560859
+      "score": 0.2849808262208422,
+      "samples": 853,
+      "weight": 1.2137356196656317
     },
     "feedbackOscillator": {
-      "score": 0.2682199585430384,
-      "samples": 702,
-      "weight": 1.2011649689072788
+      "score": 0.299987147125779,
+      "samples": 853,
+      "weight": 1.2249903603443342
     },
     "coherenceMonitor": {
-      "score": 0.6725082506275138,
-      "samples": 702,
-      "weight": 1.5043811879706355
+      "score": 0.6264111791856077,
+      "samples": 853,
+      "weight": 1.4698083843892058
     },
     "entropyRegulator": {
-      "score": 0.6938071436279885,
-      "samples": 702,
-      "weight": 1.5203553577209914
+      "score": 0.74925,
+      "samples": 853,
+      "weight": 1.5619375
     },
     "restSynchronizer": {
-      "score": 0.24256249500937085,
-      "samples": 702,
-      "weight": 1.181921871257028
+      "score": 0.33106538485480497,
+      "samples": 853,
+      "weight": 1.2482990386411037
     }
   },
   "trustJournal": [
@@ -506,1472 +507,1751 @@
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.4235969609326051,
-      "scoreBefore": 0.4245002353791525,
-      "scoreAfter": 0.4244099079344978,
-      "ms": 90259.8039215686
+      "payoff": 0.6915082679093738,
+      "scoreBefore": 0.6715276472165109,
+      "scoreAfter": 0.6735257092857972,
+      "ms": 109272.34753550543
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.2,
-      "scoreBefore": 0.2363825788729569,
-      "scoreAfter": 0.23582590864151293,
-      "ms": 90468.13725490194
+      "scoreBefore": 0.24181774800235714,
+      "scoreAfter": 0.24167444093387425,
+      "ms": 109510.44277360066
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.3965887600493456,
-      "scoreBefore": 0.4781981700835234,
-      "scoreAfter": 0.47003722908010565,
-      "ms": 90468.13725490194
+      "payoff": 0.8654690304720258,
+      "scoreBefore": 0.6588424300435279,
+      "scoreAfter": 0.6795050900863777,
+      "ms": 109510.44277360066
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.6527604166666702,
-      "scoreBefore": 0.58230663827158,
-      "scoreAfter": 0.589352016111089,
-      "ms": 90468.13725490194
+      "payoff": 0.24625,
+      "scoreBefore": 0.26615430704884613,
+      "scoreAfter": 0.2641638763439615,
+      "ms": 109510.44277360066
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.24,
-      "scoreBefore": 0.24597981383365292,
-      "scoreAfter": 0.24538183245028763,
-      "ms": 90468.13725490194
+      "scoreBefore": 0.26119681447293824,
+      "scoreAfter": 0.25907713302564445,
+      "ms": 109510.44277360066
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.7090516202506931,
-      "scoreBefore": 0.7088622326204673,
-      "scoreAfter": 0.7088811713834899,
-      "ms": 90468.13725490194
+      "payoff": 0.7221369451057538,
+      "scoreBefore": 0.6420086747696642,
+      "scoreAfter": 0.6500215018032731,
+      "ms": 109510.44277360066
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.43722772195177884,
-      "scoreBefore": 0.42398549802656327,
-      "scoreAfter": 0.4253097204190848,
-      "ms": 90468.13725490194
+      "payoff": 0.7001203546138671,
+      "scoreBefore": 0.6728521835765114,
+      "scoreAfter": 0.675579000680247,
+      "ms": 109510.44277360066
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.2,
-      "scoreBefore": 0.23582009580790086,
-      "scoreAfter": 0.23553009639881442,
-      "ms": 90676.47058823527
+      "scoreBefore": 0.24412058343306992,
+      "scoreAfter": 0.24403259604701,
+      "ms": 109748.5380116959
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.39861795852933646,
-      "scoreBefore": 0.4695671918510255,
-      "scoreAfter": 0.46247226851885664,
-      "ms": 90676.47058823527
+      "payoff": 0.5186980008524114,
+      "scoreBefore": 0.6788255849962913,
+      "scoreAfter": 0.6628128265819033,
+      "ms": 109748.5380116959
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.341406249999995,
-      "scoreBefore": 0.5887626640949779,
-      "scoreAfter": 0.5640270226854797,
-      "ms": 90676.47058823527
+      "payoff": 0.24625,
+      "scoreBefore": 0.2638997124676175,
+      "scoreAfter": 0.2621347412208558,
+      "ms": 109748.5380116959
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.24,
-      "scoreBefore": 0.24513645061783734,
-      "scoreAfter": 0.24462280555605362,
-      "ms": 90676.47058823527
+      "scoreBefore": 0.2588180558926188,
+      "scoreAfter": 0.25693625030335693,
+      "ms": 109748.5380116959
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.6994122344679936,
-      "scoreBefore": 0.7081722902121065,
-      "scoreAfter": 0.7072962846376951,
-      "ms": 90676.47058823527
+      "payoff": 0.7589362638375932,
+      "scoreBefore": 0.6493714803014699,
+      "scoreAfter": 0.6603279586550822,
+      "ms": 109748.5380116959
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.4511749678735558,
-      "scoreBefore": 0.4248844106986657,
-      "scoreAfter": 0.4275134664161548,
-      "ms": 90676.47058823527
+      "payoff": 0.708664102339447,
+      "scoreBefore": 0.6749034216795667,
+      "scoreAfter": 0.6782794897455547,
+      "ms": 109748.5380116959
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.2,
-      "scoreBefore": 0.2352945663024156,
-      "scoreAfter": 0.2325808143813465,
-      "ms": 90884.8039215686
+      "scoreBefore": 0.24378856345096298,
+      "scoreAfter": 0.24335239874529058,
+      "ms": 109986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.4010676450005749,
-      "scoreBefore": 0.4620097962503378,
-      "scoreAfter": 0.4559155811253615,
-      "ms": 90884.8039215686
+      "payoff": 0.5218846618066056,
+      "scoreBefore": 0.6621500137553215,
+      "scoreAfter": 0.6481234785604498,
+      "ms": 109986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.7041666666666576,
-      "scoreBefore": 0.5634629956627942,
-      "scoreAfter": 0.5775333627631806,
-      "ms": 90884.8039215686
+      "payoff": 0.24625,
+      "scoreBefore": 0.26187260647963495,
+      "scoreAfter": 0.26031034583167145,
+      "ms": 109986.63324979114
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.25667931405305355,
+      "scoreAfter": 0.2550113826477482,
+      "ms": 109986.63324979114
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.7034673466635657,
+      "scoreBefore": 0.6596676306964271,
+      "scoreAfter": 0.664047602293141,
+      "ms": 109986.63324979114
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.717205737595717,
+      "scoreBefore": 0.6776012102558092,
+      "scoreAfter": 0.6815616629898,
+      "ms": 109986.63324979114
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.2431090463465453,
+      "scoreAfter": 0.24229619445120315,
+      "ms": 110224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5250158269548717,
+      "scoreBefore": 0.6474753550818894,
+      "scoreAfter": 0.6352294022691877,
+      "ms": 110224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.24625,
+      "scoreBefore": 0.26005003548583977,
+      "scoreAfter": 0.2586700319372558,
+      "ms": 110224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2547563712651004,
+      "scoreAfter": 0.25328073413859037,
+      "ms": 110224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.7421870347230421,
+      "scoreBefore": 0.6633835546908479,
+      "scoreAfter": 0.6712639026940673,
+      "ms": 110224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.7254974119086721,
+      "scoreBefore": 0.6808801013268102,
+      "scoreAfter": 0.6853418323849965,
+      "ms": 110224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.24205389825675194,
+      "scoreAfter": 0.2417416538044539,
+      "ms": 110462.82372598161
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5285717711361404,
+      "scoreBefore": 0.6345941728669184,
+      "scoreAfter": 0.6239919326938407,
+      "ms": 110462.82372598161
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.59625,
+      "scoreBefore": 0.25841136190531855,
+      "scoreAfter": 0.2921952257147867,
+      "ms": 110462.82372598161
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.25302745340445176,
+      "scoreAfter": 0.2517247080640066,
+      "ms": 110462.82372598161
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6902472584521262,
+      "scoreBefore": 0.6705926387913732,
+      "scoreAfter": 0.6725581007574485,
+      "ms": 110462.82372598161
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.7347995592251841,
+      "scoreBefore": 0.6846564905526115,
+      "scoreAfter": 0.6896707974198688,
+      "ms": 110462.82372598161
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.24430348109697728,
+      "scoreAfter": 0.24420680392999017,
+      "ms": 110700.91896407685
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5317885538203203,
+      "scoreBefore": 0.6233679407611469,
+      "scoreAfter": 0.6142100020670642,
+      "ms": 110700.91896407685
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.271875000000003,
+      "scoreBefore": 0.2919030304890719,
+      "scoreAfter": 0.289900227440165,
+      "ms": 110700.91896407685
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2514729833559426,
+      "scoreAfter": 0.25032568502034835,
+      "ms": 110700.91896407685
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6877628565469833,
+      "scoreBefore": 0.671885542656691,
+      "scoreAfter": 0.6734732740457202,
+      "ms": 110700.91896407685
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.7431156993371686,
+      "scoreBefore": 0.6889811266224489,
+      "scoreAfter": 0.694394583893921,
+      "ms": 110700.91896407685
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.24396259712606017,
+      "scoreAfter": 0.24353221449540977,
+      "ms": 110939.01420217208
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": -0.3310667038231272,
+      "scoreBefore": 0.6135957920649971,
+      "scoreAfter": 0.5191295424761847,
+      "ms": 110939.01420217208
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.6574999999999974,
+      "scoreBefore": 0.28961032721272484,
+      "scoreAfter": 0.3263992944914521,
+      "ms": 110939.01420217208
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.250075359335328,
+      "scoreAfter": 0.24906782340179517,
+      "ms": 110939.01420217208
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6603919108651573,
+      "scoreBefore": 0.6727998007716744,
+      "scoreAfter": 0.6715590117810227,
+      "ms": 110939.01420217208
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.7523993282318002,
+      "scoreBefore": 0.693700189310027,
+      "scoreAfter": 0.6995701032022044,
+      "ms": 110939.01420217208
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "restSynchronizer",
+      "payoff": 1,
+      "scoreBefore": 0.24387419358196255,
+      "scoreAfter": 0.3194867742237663,
+      "ms": 110939.01420217208
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.24502084250424527,
+      "scoreAfter": 0.24509752033386858,
+      "ms": 111177.10944026733
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5368474287863617,
+      "scoreBefore": 0.5186104129337085,
+      "scoreAfter": 0.5204341145189738,
+      "ms": 111177.10944026733
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.28479166666666617,
+      "scoreBefore": 0.32607289519696064,
+      "scoreAfter": 0.3219447723439312,
+      "ms": 111177.10944026733
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2488187555783934,
+      "scoreAfter": 0.24793688002055406,
+      "ms": 111177.10944026733
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.3562985641891889,
+      "scoreBefore": 0.6708874527692417,
+      "scoreAfter": 0.6394285639112365,
+      "ms": 111177.10944026733
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.7611918086669609,
+      "scoreBefore": 0.6988705330990022,
+      "scoreAfter": 0.7051026606557981,
+      "ms": 111177.10944026733
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.24485242281353473,
+      "scoreAfter": 0.2408584587955155,
+      "ms": 111415.20467836257
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5405420037724044,
+      "scoreBefore": 0.5199136804044548,
+      "scoreAfter": 0.5219765127412498,
+      "ms": 111415.20467836257
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.6999999999999997,
+      "scoreBefore": 0.3216228275715873,
+      "scoreAfter": 0.3594605448144286,
+      "ms": 111415.20467836257
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "cadenceAlignment",
       "payoff": 1,
-      "scoreBefore": 0.23289324972301031,
-      "scoreAfter": 0.3096039247507093,
-      "ms": 90884.8039215686
+      "scoreBefore": 0.243711484136432,
+      "scoreAfter": 0.31934033572278886,
+      "ms": 111415.20467836257
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.4825,
-      "scoreBefore": 0.24437818275049755,
-      "scoreAfter": 0.2681903644754478,
-      "ms": 90884.8039215686
+      "scoreBefore": 0.2476889431405335,
+      "scoreAfter": 0.27117004882648016,
+      "ms": 111415.20467836257
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.7053906433982093,
-      "scoreBefore": 0.7065889883530574,
-      "scoreAfter": 0.7064691538575726,
-      "ms": 90884.8039215686
+      "payoff": 0.7100094384581919,
+      "scoreBefore": 0.6387891353473253,
+      "scoreAfter": 0.645911165658412,
+      "ms": 111415.20467836257
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.46551374959803105,
-      "scoreBefore": 0.4270859529497386,
-      "scoreAfter": 0.4309287326145679,
-      "ms": 90884.8039215686
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.23787242272758313,
-      "scoreAfter": 0.23758849432447207,
-      "ms": 91093.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.40391374665731905,
-      "scoreBefore": 0.45545966554423617,
-      "scoreAfter": 0.45030507365554445,
-      "ms": 91093.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.7012499999999936,
-      "scoreBefore": 0.5769558294004173,
-      "scoreAfter": 0.5893852464603749,
-      "ms": 91093.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "cadenceAlignment",
-      "payoff": 0.85,
-      "scoreBefore": 0.3092943208259586,
-      "scoreAfter": 0.36336488874336276,
-      "ms": 91093.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.26792217411097236,
-      "scoreAfter": 0.26512995669987516,
-      "ms": 91093.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6942007840382212,
-      "scoreBefore": 0.7057626847037151,
-      "scoreAfter": 0.7046064946371657,
-      "ms": 91093.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.4801594952242535,
-      "scoreBefore": 0.4304978038819533,
-      "scoreAfter": 0.43546397301618334,
-      "ms": 91093.13725490194
+      "payoff": 0.7702022619051095,
+      "scoreBefore": 0.7043975579951423,
+      "scoreAfter": 0.710978028386139,
+      "ms": 111415.20467836257
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.2,
-      "scoreBefore": 0.24095851546832922,
-      "scoreAfter": 0.24061339295600276,
-      "ms": 91301.47058823527
+      "scoreBefore": 0.2507366154207232,
+      "scoreAfter": 0.25086428032094726,
+      "ms": 111653.29991645779
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.40717671281830414,
-      "scoreBefore": 0.4498547685818889,
-      "scoreAfter": 0.4455869630055304,
-      "ms": 91301.47058823527
+      "payoff": 0.544259414306845,
+      "scoreBefore": 0.5214545362285086,
+      "scoreAfter": 0.5237350240363422,
+      "ms": 111653.29991645779
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.6943229166666649,
-      "scoreBefore": 0.5887958612139146,
-      "scoreAfter": 0.5993485667591897,
-      "ms": 91301.47058823527
+      "payoff": 0.3147916666666605,
+      "scoreBefore": 0.3591010842696141,
+      "scoreAfter": 0.3546701425093188,
+      "ms": 111653.29991645779
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.24,
-      "scoreBefore": 0.2648648267431753,
-      "scoreAfter": 0.2623783440688578,
-      "ms": 91301.47058823527
+      "scoreBefore": 0.2708988787776537,
+      "scoreAfter": 0.2678089908998883,
+      "ms": 111653.29991645779
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.7108515441647218,
-      "scoreBefore": 0.7039018881425285,
-      "scoreAfter": 0.7045968537447479,
-      "ms": 91301.47058823527
+      "payoff": 0.6063043968379063,
+      "scoreBefore": 0.6452652544927536,
+      "scoreAfter": 0.6413691687272689,
+      "ms": 111653.29991645779
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.4952283709997205,
-      "scoreBefore": 0.43502850904316714,
-      "scoreAfter": 0.4410484952388225,
-      "ms": 91301.47058823527
+      "payoff": 0.7791382535743685,
+      "scoreBefore": 0.7102670503577528,
+      "scoreAfter": 0.7171541706794144,
+      "ms": 111653.29991645779
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.2506134160406263,
+      "scoreAfter": 0.24714175716429182,
+      "ms": 111891.39515455304
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5480532510425173,
+      "scoreBefore": 0.5232112890123058,
+      "scoreAfter": 0.525695485215327,
+      "ms": 111891.39515455304
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.6941666666666648,
+      "scoreBefore": 0.35431547236680944,
+      "scoreAfter": 0.388300591796795,
+      "ms": 111891.39515455304
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.29382477695251114,
+      "scoreAfter": 0.34944229925726006,
+      "ms": 111891.39515455304
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2675411819089884,
+      "scoreAfter": 0.2647870637180896,
+      "ms": 111891.39515455304
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.7099112350118923,
+      "scoreBefore": 0.6407277995585416,
+      "scoreAfter": 0.6476461431038767,
+      "ms": 111891.39515455304
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.7881381897572008,
+      "scoreBefore": 0.716437016508735,
+      "scoreAfter": 0.7236071338335817,
+      "ms": 111891.39515455304
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.6,
-      "scoreBefore": 0.2416019170679267,
-      "scoreAfter": 0.277441725361134,
-      "ms": 91509.80392156861
+      "scoreBefore": 0.25502519567763937,
+      "scoreAfter": 0.2895226761098755,
+      "ms": 112129.49039264828
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.39339209680319687,
-      "scoreBefore": 0.4451413760425249,
-      "scoreAfter": 0.4399664481185921,
-      "ms": 91509.80392156861
+      "payoff": 0.5518978476941869,
+      "scoreBefore": 0.5251697897301117,
+      "scoreAfter": 0.5278425955265192,
+      "ms": 112129.49039264828
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.33338541666666544,
-      "scoreBefore": 0.5987492181924305,
-      "scoreAfter": 0.572212838039854,
-      "ms": 91509.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.26211596572478896,
-      "scoreAfter": 0.2599043691523101,
-      "ms": 91509.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.7114405807711122,
-      "scoreBefore": 0.7038922568910031,
-      "scoreAfter": 0.704647089279014,
-      "ms": 91509.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.5108265589146018,
-      "scoreBefore": 0.44060744674358365,
-      "scoreAfter": 0.4476293579606855,
-      "ms": 91509.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.27716428363577283,
-      "scoreAfter": 0.26444785527219555,
-      "ms": 91718.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": -0.3985251501913536,
-      "scoreBefore": 0.4395264816704735,
-      "scoreAfter": 0.3557213184842908,
-      "ms": 91718.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.3136979166666631,
-      "scoreBefore": 0.5716406252018141,
-      "scoreAfter": 0.5458463543482991,
-      "ms": 91718.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.2596444647831578,
-      "scoreAfter": 0.257680018304842,
-      "ms": 91718.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.72768463381508,
-      "scoreBefore": 0.703942442189735,
-      "scoreAfter": 0.7063166613522696,
-      "ms": 91718.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.5265599662837308,
-      "scoreBefore": 0.4471817286027248,
-      "scoreAfter": 0.45511955237082546,
-      "ms": 91718.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "restSynchronizer",
-      "payoff": 1,
-      "scoreBefore": 0.2360908515673186,
-      "scoreAfter": 0.3124817664105868,
-      "ms": 91718.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.26418340741692337,
-      "scoreAfter": 0.252765066675231,
-      "ms": 91926.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.39700882927077374,
-      "scoreBefore": 0.3553655971658065,
-      "scoreAfter": 0.35952992037630327,
-      "ms": 91926.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.2940104166666637,
-      "scoreBefore": 0.5453005079939508,
-      "scoreAfter": 0.5201714988612222,
-      "ms": 91926.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.25742233828653716,
-      "scoreAfter": 0.2556801044578835,
-      "ms": 91926.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6478432031865942,
-      "scoreBefore": 0.7056103446909173,
-      "scoreAfter": 0.6998336305404851,
-      "ms": 91926.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.5426668796447484,
-      "scoreBefore": 0.45466443281845464,
-      "scoreAfter": 0.463464677501084,
-      "ms": 91926.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.2525123016085558,
-      "scoreAfter": 0.24226107144770026,
-      "ms": 92134.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.4022011627801856,
-      "scoreBefore": 0.35917039045592697,
-      "scoreAfter": 0.36347346768835287,
-      "ms": 92134.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.30494791666666676,
-      "scoreBefore": 0.519651327362361,
-      "scoreAfter": 0.49818098629279156,
-      "ms": 92134.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.2554244243534256,
-      "scoreAfter": 0.25388198191808303,
-      "ms": 92134.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.7409491342530852,
-      "scoreBefore": 0.6991337969099446,
-      "scoreAfter": 0.7033153306442587,
-      "ms": 92134.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.5588266451054533,
-      "scoreBefore": 0.4630012128235829,
-      "scoreAfter": 0.47258375605177,
-      "ms": 92134.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.2,
-      "scoreBefore": 0.24201881037625256,
-      "scoreAfter": 0.2378169293386273,
-      "ms": 92343.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.4078668870125811,
-      "scoreBefore": 0.36310999422066453,
-      "scoreAfter": 0.3675856834998562,
-      "ms": 92343.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.6965104166666649,
-      "scoreBefore": 0.4976828053064988,
-      "scoreAfter": 0.5175655664425154,
-      "ms": 92343.13725490194
+      "payoff": 0.33166666666666467,
+      "scoreBefore": 0.3879122912049982,
+      "scoreAfter": 0.38228772875116485,
+      "ms": 112129.49039264828
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "cadenceAlignment",
       "payoff": 0.85,
-      "scoreBefore": 0.24186498160011083,
-      "scoreAfter": 0.30267848344009973,
-      "ms": 92343.13725490194
+      "scoreBefore": 0.3490928569580028,
+      "scoreAfter": 0.39918357126220255,
+      "ms": 112129.49039264828
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2645222766543715,
+      "scoreAfter": 0.2620700489889344,
+      "ms": 112129.49039264828
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6262629218564575,
+      "scoreBefore": 0.6469984969607728,
+      "scoreAfter": 0.6449249394503414,
+      "ms": 112129.49039264828
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.7971427450186993,
+      "scoreBefore": 0.7228835266997481,
+      "scoreAfter": 0.7303094485316433,
+      "ms": 112129.49039264828
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.2892331534337656,
+      "scoreAfter": 0.28030983809038906,
+      "ms": 112367.58563074352
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.555828091642467,
+      "scoreBefore": 0.5273147529309927,
+      "scoreAfter": 0.5301660868021402,
+      "ms": 112367.58563074352
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.3279166666666661,
+      "scoreBefore": 0.3819054410224137,
+      "scoreAfter": 0.3765065635868389,
+      "ms": 112367.58563074352
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.3987843876909403,
+      "scoreAfter": 0.4439059489218463,
+      "ms": 112367.58563074352
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2622499338731604,
+      "scoreAfter": 0.2645266849015666,
+      "ms": 112367.58563074352
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6506256432997763,
+      "scoreBefore": 0.644280014510891,
+      "scoreAfter": 0.6449145773897795,
+      "ms": 112367.58563074352
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.80623954638864,
+      "scoreBefore": 0.7295791390831116,
+      "scoreAfter": 0.7372451798136643,
+      "ms": 112367.58563074352
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.15,
+      "scoreBefore": 0.28002952825229865,
+      "scoreAfter": 0.2670265754270688,
+      "ms": 112605.68086883875
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5597675875931477,
+      "scoreBefore": 0.529635920715338,
+      "scoreAfter": 0.532649087403119,
+      "ms": 112605.68086883875
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.6862499999999986,
+      "scoreBefore": 0.3761300570232521,
+      "scoreAfter": 0.4071420513209268,
+      "ms": 112605.68086883875
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.44346204297292446,
+      "scoreAfter": 0.48411583867563207,
+      "ms": 112605.68086883875
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.5825,
+      "scoreBefore": 0.26562711495042224,
+      "scoreAfter": 0.29731440345538,
+      "ms": 112605.68086883875
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6304617367106602,
+      "scoreBefore": 0.6442696628123897,
+      "scoreAfter": 0.6428888702022167,
+      "ms": 112605.68086883875
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.815248854999907,
+      "scoreBefore": 0.7365079346338507,
+      "scoreAfter": 0.7443820266704563,
+      "ms": 112605.68086883875
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.27347411803882116,
+      "scoreAfter": 0.27301262549416644,
+      "ms": 112843.776106934
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5638008090164874,
+      "scoreBefore": 0.5321164383157159,
+      "scoreAfter": 0.5352848753857931,
+      "ms": 112843.776106934
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.31083333333333446,
+      "scoreBefore": 0.40673490926960587,
+      "scoreAfter": 0.39714475167597874,
+      "ms": 112843.776106934
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.29701708905192464,
+      "scoreAfter": 0.2913153801467322,
+      "ms": 112843.776106934
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.7177395909950637,
+      "scoreBefore": 0.6422459813320145,
+      "scoreAfter": 0.6497953422983194,
+      "ms": 112843.776106934
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.8243755760948872,
+      "scoreBefore": 0.7436376446437858,
+      "scoreAfter": 0.75,
+      "ms": 112843.776106934
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.15,
+      "scoreBefore": 0.27273961286867227,
+      "scoreAfter": 0.2695373018221659,
+      "ms": 113081.87134502924
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5809189609675468,
+      "scoreBefore": 0.5347495905104073,
+      "scoreAfter": 0.5393665275561212,
+      "ms": 113081.87134502924
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.6987499999999981,
+      "scoreBefore": 0.3967476069243028,
+      "scoreAfter": 0.4269478462318723,
+      "ms": 113081.87134502924
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.44182628200270757,
+      "scoreAfter": 0.48264365380243685,
+      "ms": 113081.87134502924
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2910240647665855,
+      "scoreAfter": 0.285921658289927,
+      "ms": 113081.87134502924
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.7228950822190912,
+      "scoreBefore": 0.649145546956021,
+      "scoreAfter": 0.6565205004823281,
+      "ms": 113081.87134502924
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.8336078952606818,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 113081.87134502924
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.15,
+      "scoreBefore": 0.2764218585977693,
+      "scoreAfter": 0.27588452381340633,
+      "ms": 113319.96658312448
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5850998909299852,
+      "scoreBefore": 0.5388271610285651,
+      "scoreAfter": 0.5434544340187071,
+      "ms": 113319.96658312448
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.3154166666666664,
+      "scoreBefore": 0.42652089838564045,
+      "scoreAfter": 0.415410475213743,
+      "ms": 113319.96658312448
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.28563573663163705,
+      "scoreAfter": 0.28107216296847337,
+      "ms": 113319.96658312448
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6970033221677441,
+      "scoreBefore": 0.6558639799818458,
+      "scoreAfter": 0.6599779142004356,
+      "ms": 113319.96658312448
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.8427684469651537,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 113319.96658312448
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.15,
+      "scoreBefore": 0.27560863928959295,
+      "scoreAfter": 0.2717778724102017,
+      "ms": 113558.06182121973
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5893503908133818,
+      "scoreBefore": 0.5429109795846884,
+      "scoreAfter": 0.5475549207075577,
+      "ms": 113558.06182121973
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.69416666666666,
+      "scoreBefore": 0.41499506473852926,
+      "scoreAfter": 0.44291222493134236,
+      "ms": 113558.06182121973
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.44050396422463717,
+      "scoreAfter": 0.48145356780217347,
+      "ms": 113558.06182121973
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.4825,
-      "scoreBefore": 0.253628099936165,
-      "scoreAfter": 0.2765152899425485,
-      "ms": 92343.13725490194
+      "scoreBefore": 0.2807910908055049,
+      "scoreAfter": 0.3009619817249544,
+      "ms": 113558.06182121973
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.7082010167619059,
-      "scoreBefore": 0.7026120153136144,
-      "scoreAfter": 0.7031709154584436,
-      "ms": 92343.13725490194
+      "payoff": 0.6382324133328792,
+      "scoreBefore": 0.6593179362862351,
+      "scoreAfter": 0.6572093839908996,
+      "ms": 113558.06182121973
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.5757553278583123,
-      "scoreBefore": 0.47211117229571825,
-      "scoreAfter": 0.48247558785197764,
-      "ms": 92343.13725490194
+      "payoff": 0.8520155195882777,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 113558.06182121973
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.15,
-      "scoreBefore": 0.23757911240928867,
-      "scoreAfter": 0.2288212011683598,
-      "ms": 92551.47058823529
+      "scoreBefore": 0.2797335111270997,
+      "scoreAfter": 0.27925542436644446,
+      "ms": 113796.15705931495
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": -0.364014554592041,
-      "scoreBefore": 0.36721809781635634,
-      "scoreAfter": 0.2940948325755166,
-      "ms": 92551.47058823529
+      "payoff": 0.5936235671777476,
+      "scoreBefore": 0.5470073657868502,
+      "scoreAfter": 0.5516689859259399,
+      "ms": 113796.15705931495
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.7161979166666586,
-      "scoreBefore": 0.5170480008760728,
-      "scoreAfter": 0.5369629924551315,
-      "ms": 92551.47058823529
+      "payoff": 0.33166666666666467,
+      "scoreBefore": 0.442469312706411,
+      "scoreAfter": 0.43138904810243633,
+      "ms": 113796.15705931495
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "cadenceAlignment",
       "payoff": 0.85,
-      "scoreBefore": 0.3023758049566596,
-      "scoreAfter": 0.3571382244609937,
-      "ms": 92551.47058823529
+      "scoreBefore": 0.4809721142343713,
+      "scoreAfter": 0.5178749028109342,
+      "ms": 113796.15705931495
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.24,
-      "scoreBefore": 0.27623877465260593,
-      "scoreAfter": 0.27261489718734533,
-      "ms": 92551.47058823529
+      "scoreBefore": 0.30066101974322945,
+      "scoreAfter": 0.29459491776890656,
+      "ms": 113796.15705931495
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.6827048049974147,
-      "scoreBefore": 0.7024677445429851,
-      "scoreAfter": 0.7004914505884281,
-      "ms": 92551.47058823529
+      "payoff": 0.6854972463188453,
+      "scoreBefore": 0.6565521746069086,
+      "scoreAfter": 0.6594466817781024,
+      "ms": 113796.15705931495
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.5927207311736087,
-      "scoreBefore": 0.48199311226412567,
-      "scoreAfter": 0.49306587415507397,
-      "ms": 92551.47058823529
+      "payoff": 0.8612400927155983,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 113796.15705931495
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.15,
+      "scoreBefore": 0.2823771914857725,
+      "scoreAfter": 0.28149646692546754,
+      "ms": 114034.25229741019
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.5978602988233899,
+      "scoreBefore": 0.551117316940014,
+      "scoreAfter": 0.5557916151283515,
+      "ms": 114034.25229741019
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.32791666666666675,
+      "scoreBefore": 0.4309576590543339,
+      "scoreAfter": 0.4206535598155672,
+      "ms": 114034.25229741019
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.5173570279081232,
+      "scoreAfter": 0.5506213251173109,
+      "ms": 114034.25229741019
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.29430032285113766,
+      "scoreAfter": 0.2888702905660239,
+      "ms": 114034.25229741019
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.759564063289794,
+      "scoreBefore": 0.6587872350963243,
+      "scoreAfter": 0.6688649179156713,
+      "ms": 114034.25229741019
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.8704722759508555,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 114034.25229741019
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.15,
+      "scoreBefore": 0.2849760749290358,
+      "scoreAfter": 0.2841016086899662,
+      "ms": 114272.34753550543
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": -0.2421312439558181,
+      "scoreBefore": 0.5552358235132232,
+      "scoreAfter": 0.47549911676631906,
+      "ms": 114272.34753550543
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.6862499999999986,
+      "scoreBefore": 0.4202329062557516,
+      "scoreAfter": 0.44683461563017635,
+      "ms": 114272.34753550543
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.5500707037921936,
+      "scoreAfter": 0.5800636334129742,
+      "ms": 114272.34753550543
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.2885814202754579,
+      "scoreAfter": 0.28372327824791216,
+      "ms": 114272.34753550543
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6062423299194482,
+      "scoreBefore": 0.6681960529977556,
+      "scoreAfter": 0.6620006806899249,
+      "ms": 114272.34753550543
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.8796095437373044,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 114272.34753550543
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "restSynchronizer",
       "payoff": 1,
-      "scoreBefore": 0.24852756340026183,
-      "scoreAfter": 0.32367480706023566,
-      "ms": 92551.47058823529
+      "scoreBefore": 0.2849760749290358,
+      "scoreAfter": 0.3564784674361322,
+      "ms": 114272.34753550543
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.6,
+      "scoreBefore": 0.28381750708127623,
+      "scoreAfter": 0.31543575637314863,
+      "ms": 114510.44277360068
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.6013160770741921,
+      "scoreBefore": 0.47502361764955275,
+      "scoreAfter": 0.4876528635920167,
+      "ms": 114510.44277360068
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.3108333333333314,
+      "scoreBefore": 0.4463877810145462,
+      "scoreAfter": 0.4328323362464247,
+      "ms": 114510.44277360068
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.28365963546184325,
+      "scoreAfter": 0.27929367191565896,
+      "ms": 114510.44277360068
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.4108527825535173,
+      "scoreBefore": 0.661338680009235,
+      "scoreAfter": 0.6362900902636632,
+      "ms": 114510.44277360068
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.8890350499961748,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 114510.44277360068
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.15,
-      "scoreBefore": 0.22912369893730847,
-      "scoreAfter": 0.2290267669580795,
-      "ms": 92759.80392156861
+      "scoreBefore": 0.3151203206167755,
+      "scoreAfter": 0.29860828855509797,
+      "ms": 114748.53801169591
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.41533152055689926,
-      "scoreBefore": 0.2938007377429411,
-      "scoreAfter": 0.3059538160243369,
-      "ms": 92759.80392156861
+      "payoff": 0.6062743515956347,
+      "scoreBefore": 0.48716521072842467,
+      "scoreAfter": 0.4990761248151457,
+      "ms": 114748.53801169591
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.35234374999999707,
-      "scoreBefore": 0.5364260294626764,
-      "scoreAfter": 0.5180178015164085,
-      "ms": 92759.80392156861
+      "payoff": 0.6987499999999978,
+      "scoreBefore": 0.4323995039101783,
+      "scoreAfter": 0.4590345535191603,
+      "ms": 114748.53801169591
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "cadenceAlignment",
       "payoff": 0.85,
-      "scoreBefore": 0.3567810862365327,
-      "scoreAfter": 0.40610297761287945,
-      "ms": 92759.80392156861
+      "scoreBefore": 0.5280066775888035,
+      "scoreAfter": 0.5602060098299232,
+      "ms": 114748.53801169591
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.272342282290158,
-      "scoreAfter": 0.2691080540611422,
-      "ms": 92759.80392156861
+      "payoff": 0.5825,
+      "scoreBefore": 0.2790143782437433,
+      "scoreAfter": 0.309362940419369,
+      "ms": 114748.53801169591
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.4753307992588789,
-      "scoreBefore": 0.6997909591378396,
-      "scoreAfter": 0.6773449431499435,
-      "ms": 92759.80392156861
+      "payoff": 0.6381659948521581,
+      "scoreBefore": 0.6356538001733996,
+      "scoreAfter": 0.6359050196412754,
+      "ms": 114748.53801169591
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.6098136567168853,
-      "scoreBefore": 0.4925728082809189,
-      "scoreAfter": 0.5042968931245155,
-      "ms": 92759.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.22879774019112142,
-      "scoreAfter": 0.2246744403481063,
-      "ms": 92968.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.4221745834578269,
-      "scoreBefore": 0.3056478622083126,
-      "scoreAfter": 0.317300534333264,
-      "ms": 92968.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.6914062499999978,
-      "scoreBefore": 0.5174997837148921,
-      "scoreAfter": 0.5348904303434027,
-      "ms": 92968.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.268838946007081,
-      "scoreAfter": 0.26595505140637293,
-      "ms": 92968.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.7405923939291943,
-      "scoreBefore": 0.6766675982067936,
-      "scoreAfter": 0.6830600777790337,
-      "ms": 92968.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.6269175131574567,
-      "scoreBefore": 0.503792596231391,
-      "scoreAfter": 0.5161050879239977,
-      "ms": 92968.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.22833222412877563,
-      "scoreAfter": 0.22812317230996149,
-      "ms": 93176.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.4294965383296715,
-      "scoreBefore": 0.31698323379893073,
-      "scoreAfter": 0.3282345642520048,
-      "ms": 93176.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.6833854166666674,
-      "scoreBefore": 0.5343555399130593,
-      "scoreAfter": 0.5492585275884201,
-      "ms": 93176.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.5075000000000001,
-      "scoreBefore": 0.26568909635496657,
-      "scoreAfter": 0.2898701867194699,
-      "ms": 93176.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6952190250377706,
-      "scoreBefore": 0.6823770177012546,
-      "scoreAfter": 0.6836612184349062,
-      "ms": 93176.47058823529
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.6448873300851581,
-      "scoreBefore": 0.5155889828360737,
-      "scoreAfter": 0.5285188175609821,
-      "ms": 93176.47058823529
+      "payoff": 0.8983413547660546,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 114748.53801169591
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.2,
-      "scoreBefore": 0.23139272502906524,
-      "scoreAfter": 0.2310399856267504,
-      "ms": 93384.80392156861
+      "scoreBefore": 0.29830968026654286,
+      "scoreAfter": 0.2884787122398886,
+      "ms": 114986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.4370766958973711,
-      "scoreBefore": 0.3279063296877528,
-      "scoreAfter": 0.3388233663087146,
-      "ms": 93384.80392156861
+      "payoff": 0.6112212745199151,
+      "scoreBefore": 0.49857704869033054,
+      "scoreAfter": 0.5098414712732889,
+      "ms": 114986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.31369791666666647,
-      "scoreBefore": 0.5487092690608316,
-      "scoreAfter": 0.5252081338214152,
-      "ms": 93384.80392156861
+      "payoff": 0.3154166666666641,
+      "scoreBefore": 0.45857551896564114,
+      "scoreAfter": 0.44425963373574345,
+      "ms": 114986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.24,
-      "scoreBefore": 0.28958031653275046,
-      "scoreAfter": 0.28462228487947544,
-      "ms": 93384.80392156861
+      "scoreBefore": 0.3090535774789496,
+      "scoreAfter": 0.3021482197310547,
+      "ms": 114986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.6697015479848338,
-      "scoreBefore": 0.6829775572164714,
-      "scoreAfter": 0.6816499562933076,
-      "ms": 93384.80392156861
+      "payoff": 0.7028583825834096,
+      "scoreBefore": 0.6352691146216342,
+      "scoreAfter": 0.6420280414178118,
+      "ms": 114986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.6630905340120793,
-      "scoreBefore": 0.5279902987434211,
-      "scoreAfter": 0.5415003222702869,
-      "ms": 93384.80392156861
+      "payoff": 0.9076670837342941,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 114986.63324979114
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.15,
-      "scoreBefore": 0.23080894564112364,
-      "scoreAfter": 0.22867601206049987,
-      "ms": 93593.13725490194
+      "scoreBefore": 0.28819023352764866,
+      "scoreAfter": 0.2754961767284938,
+      "ms": 115224.72848788639
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.4501739646047541,
-      "scoreBefore": 0.33848454294240593,
-      "scoreAfter": 0.34965348510864075,
-      "ms": 93593.13725490194
+      "payoff": 0.6161607093117557,
+      "scoreBefore": 0.5093316298020156,
+      "scoreAfter": 0.5200145377529897,
+      "ms": 115224.72848788639
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.2940104166666675,
-      "scoreBefore": 0.5246829256875938,
-      "scoreAfter": 0.5016156747855012,
-      "ms": 93593.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.284337662594596,
-      "scoreAfter": 0.2799038963351364,
-      "ms": 93593.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.7136478881640933,
-      "scoreBefore": 0.6809683063370143,
-      "scoreAfter": 0.6842362645197222,
-      "ms": 93593.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.6812051562408257,
-      "scoreBefore": 0.5409588219480166,
-      "scoreAfter": 0.5549834553772975,
-      "ms": 93593.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.22844733604843936,
-      "scoreAfter": 0.22818117387978543,
-      "ms": 93801.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": -0.2996758713787959,
-      "scoreBefore": 0.3493038316235321,
-      "scoreAfter": 0.2844058613232993,
-      "ms": 93801.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.6549479166666761,
-      "scoreBefore": 0.5011140591107157,
-      "scoreAfter": 0.5164974448663118,
-      "ms": 93801.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.27962399243880126,
-      "scoreAfter": 0.2756615931949212,
-      "ms": 93801.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6983920324917263,
-      "scoreBefore": 0.6835520282552024,
-      "scoreAfter": 0.6850360286788548,
-      "ms": 93801.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.6997344438032658,
-      "scoreBefore": 0.5544284719219202,
-      "scoreAfter": 0.5689590691100548,
-      "ms": 93801.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "restSynchronizer",
-      "payoff": 1,
-      "scoreBefore": 0.22839111233808776,
-      "scoreAfter": 0.305552001104279,
-      "ms": 93801.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.2309541220812299,
-      "scoreAfter": 0.23069293349876765,
-      "ms": 94009.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.46203210103344405,
-      "scoreBefore": 0.28412145546197604,
-      "scoreAfter": 0.30191252001912283,
-      "ms": 94009.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.3465104166666688,
-      "scoreBefore": 0.5159809474214455,
-      "scoreAfter": 0.49903389434596784,
-      "ms": 94009.80392156861
+      "payoff": 0.6941666666666619,
+      "scoreBefore": 0.4438153741020077,
+      "scoreAfter": 0.4688505033584731,
+      "ms": 115224.72848788639
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "cadenceAlignment",
       "payoff": 0.85,
-      "scoreBefore": 0.26695035525395394,
-      "scoreAfter": 0.32525531972855853,
-      "ms": 94009.80392156861
+      "scoreBefore": 0.5101705422146458,
+      "scoreAfter": 0.5441534879931812,
+      "ms": 115224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.30184607151132364,
+      "scoreAfter": 0.2956614643601913,
+      "ms": 115224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6658988243146895,
+      "scoreBefore": 0.641386013376394,
+      "scoreAfter": 0.6438372944702235,
+      "ms": 115224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.917010479649041,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 115224.72848788639
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.2,
+      "scoreBefore": 0.28284104634341434,
+      "scoreAfter": 0.2823933450928386,
+      "ms": 115462.82372598162
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.6210919170897878,
+      "scoreBefore": 0.5194945232152367,
+      "scoreAfter": 0.5296542626026919,
+      "ms": 115462.82372598162
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.33166666666666356,
+      "scoreBefore": 0.4683816528551146,
+      "scoreAfter": 0.45471015423626954,
+      "ms": 115462.82372598162
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.543609334505188,
+      "scoreAfter": 0.5742484010546692,
+      "ms": 115462.82372598162
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "feedbackOscillator",
+      "payoff": 0.24,
+      "scoreBefore": 0.29536580289583114,
+      "scoreAfter": 0.28982922260624805,
+      "ms": 115462.82372598162
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "coherenceMonitor",
+      "payoff": 0.6020228240372705,
+      "scoreBefore": 0.6431934571757533,
+      "scoreAfter": 0.639076393861905,
+      "ms": 115462.82372598162
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "entropyRegulator",
+      "payoff": 0.9263608713969949,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 115462.82372598162
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "convergence",
+      "payoff": 0.15,
+      "scoreBefore": 0.28526977001564247,
+      "scoreAfter": 0.28434701092178566,
+      "ms": 115700.91896407686
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "stutterContagion",
+      "payoff": 0.6260197598098072,
+      "scoreBefore": 0.5291246083400892,
+      "scoreAfter": 0.538814123487061,
+      "ms": 115700.91896407686
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "phaseLock",
+      "payoff": 0.3279166666666656,
+      "scoreBefore": 0.4542554440820333,
+      "scoreAfter": 0.4416215663404965,
+      "ms": 115700.91896407686
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "cadenceAlignment",
+      "payoff": 0.85,
+      "scoreBefore": 0.5736741526536145,
+      "scoreAfter": 0.601306737388253,
+      "ms": 115700.91896407686
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.5449999999999999,
-      "scoreBefore": 0.27538593160172625,
-      "scoreAfter": 0.3023473384415536,
-      "ms": 94009.80392156861
+      "scoreBefore": 0.2895393933836418,
+      "scoreAfter": 0.31508545404527766,
+      "ms": 115700.91896407686
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.5926947931634168,
-      "scoreBefore": 0.684350992650176,
-      "scoreAfter": 0.6751853727015,
-      "ms": 94009.80392156861
+      "payoff": 0.6350633597369455,
+      "scoreBefore": 0.638437317468043,
+      "scoreAfter": 0.6380999216949333,
+      "ms": 115700.91896407686
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.7182550899914321,
-      "scoreBefore": 0.5683901100409448,
-      "scoreAfter": 0.5833766080359934,
-      "ms": 94009.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.2304622405652689,
-      "scoreAfter": 0.22981596478171276,
-      "ms": 94218.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.4709159731303677,
-      "scoreBefore": 0.30161060749910373,
-      "scoreAfter": 0.3185411440622301,
-      "ms": 94218.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.3661979166666552,
-      "scoreBefore": 0.4985348604516219,
-      "scoreAfter": 0.48530116607312523,
-      "ms": 94218.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "cadenceAlignment",
-      "payoff": 0.85,
-      "scoreBefore": 0.32493006440883,
-      "scoreAfter": 0.377437057967947,
-      "ms": 94218.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.30204499110311206,
-      "scoreAfter": 0.2958404919928009,
-      "ms": 94218.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6946692114714981,
-      "scoreBefore": 0.6745101873287985,
-      "scoreAfter": 0.6765260897430685,
-      "ms": 94218.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.7369972607689159,
-      "scoreBefore": 0.5827932314279575,
-      "scoreAfter": 0.5982136343620533,
-      "ms": 94218.13725490194
+      "payoff": 0.9357209288635163,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 115700.91896407686
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.2,
-      "scoreBefore": 0.2337515312725156,
-      "scoreAfter": 0.2333804410421548,
-      "ms": 94426.47058823527
+      "scoreBefore": 0.28854382980071597,
+      "scoreAfter": 0.28828809267495686,
+      "ms": 115939.0142021721
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.479975537968359,
-      "scoreBefore": 0.3182226029181679,
-      "scoreAfter": 0.334397896423187,
-      "ms": 94426.47058823527
+      "payoff": -0.19319448517563131,
+      "scoreBefore": 0.5382753093635739,
+      "scoreAfter": 0.4651283299096534,
+      "ms": 115939.0142021721
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.7023437499999917,
-      "scoreBefore": 0.4848158649070521,
-      "scoreAfter": 0.506568653416346,
-      "ms": 94426.47058823527
+      "payoff": 0.6862499999999986,
+      "scoreBefore": 0.441179944774156,
+      "scoreAfter": 0.4656869502967403,
+      "ms": 115939.0142021721
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "cadenceAlignment",
       "payoff": 0.85,
-      "scoreBefore": 0.3770596209099791,
-      "scoreAfter": 0.4243536588189812,
-      "ms": 94426.47058823527
+      "scoreBefore": 0.6007054306508648,
+      "scoreAfter": 0.6256348875857783,
+      "ms": 115939.0142021721
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.24,
-      "scoreBefore": 0.29554465150080805,
-      "scoreAfter": 0.28999018635072726,
-      "ms": 94426.47058823527
+      "scoreBefore": 0.31477036859123236,
+      "scoreAfter": 0.30729333173210915,
+      "ms": 115939.0142021721
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.6988159252433894,
-      "scoreBefore": 0.6758495636533254,
-      "scoreAfter": 0.6781461998123317,
-      "ms": 94426.47058823527
+      "payoff": 0.6283444815211263,
+      "scoreBefore": 0.6374618217732384,
+      "scoreAfter": 0.6365500877480271,
+      "ms": 115939.0142021721
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.7558969936252331,
-      "scoreBefore": 0.5976154207276912,
-      "scoreAfter": 0.6134435780174455,
-      "ms": 94426.47058823527
+      "payoff": 0.9451017722289687,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 115939.0142021721
+    },
+    {
+      "section": 4,
+      "beat": 0,
+      "systemName": "restSynchronizer",
+      "payoff": 1,
+      "scoreBefore": 0.28854382980071597,
+      "scoreAfter": 0.3596894468206444,
+      "ms": 115939.0142021721
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "convergence",
       "payoff": 0.15,
-      "scoreBefore": 0.24335807707456744,
-      "scoreAfter": 0.24296651884511256,
-      "ms": 94634.80392156861
+      "scoreBefore": 0.2879998045822819,
+      "scoreAfter": 0.28526609231315536,
+      "ms": 116177.10944026735
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "stutterContagion",
-      "payoff": 0.48917530924435804,
-      "scoreBefore": 0.3340634985267638,
-      "scoreAfter": 0.34957467959852323,
-      "ms": 94634.80392156861
+      "payoff": 0.6307277788096185,
+      "scoreBefore": 0.4646632015797438,
+      "scoreAfter": 0.48126965930273125,
+      "ms": 116177.10944026735
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "phaseLock",
-      "payoff": 0.3414062499999978,
-      "scoreBefore": 0.5060620847629297,
-      "scoreAfter": 0.4895965012866365,
-      "ms": 94634.80392156861
+      "payoff": 0.3108333333333314,
+      "scoreBefore": 0.46522126334644354,
+      "scoreAfter": 0.4497824703451323,
+      "ms": 116177.10944026735
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "feedbackOscillator",
       "payoff": 0.24,
-      "scoreBefore": 0.28970019616437653,
-      "scoreAfter": 0.2847301765479389,
-      "ms": 94634.80392156861
+      "scoreBefore": 0.306986038400377,
+      "scoreAfter": 0.30028743456033935,
+      "ms": 116177.10944026735
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "coherenceMonitor",
-      "payoff": 0.6603089945057414,
-      "scoreBefore": 0.6774680536125194,
-      "scoreAfter": 0.6757521477018417,
-      "ms": 94634.80392156861
+      "payoff": 0.5471603350875958,
+      "scoreBefore": 0.6359135376602791,
+      "scoreAfter": 0.6270382174030108,
+      "ms": 116177.10944026735
     },
     {
       "section": 4,
       "beat": 0,
       "systemName": "entropyRegulator",
-      "payoff": 0.7748656343813236,
-      "scoreBefore": 0.6128301344394281,
-      "scoreAfter": 0.6290336844336177,
-      "ms": 94634.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.6,
-      "scoreBefore": 0.24272355232626744,
-      "scoreAfter": 0.2784511970936407,
-      "ms": 94843.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.4984939729361735,
-      "scoreBefore": 0.3492251049189247,
-      "scoreAfter": 0.3641519917206496,
-      "ms": 94843.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.3333854166666635,
-      "scoreBefore": 0.48910690478534985,
-      "scoreAfter": 0.4735347559734812,
-      "ms": 94843.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.28444544637139096,
-      "scoreAfter": 0.2800009017342519,
-      "ms": 94843.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6788782874518955,
-      "scoreBefore": 0.6750763955541398,
-      "scoreAfter": 0.6754565847439153,
-      "ms": 94843.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.7938537097854861,
-      "scoreBefore": 0.6284046507491842,
-      "scoreAfter": 0.6449495566528144,
-      "ms": 94843.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.2,
-      "scoreBefore": 0.27817274589654706,
-      "scoreAfter": 0.27035547130689236,
-      "ms": 95051.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.5080643782441377,
-      "scoreBefore": 0.363787839728929,
-      "scoreAfter": 0.37821549358044987,
-      "ms": 95051.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.3136979166666625,
-      "scoreBefore": 0.4730612212175077,
-      "scoreAfter": 0.4571248907624232,
-      "ms": 95051.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.27972090083251766,
-      "scoreAfter": 0.27574881074926594,
-      "ms": 95051.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6982318559624583,
-      "scoreBefore": 0.6747811281591715,
-      "scoreAfter": 0.6771262009395002,
-      "ms": 95051.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.8131529166266911,
-      "scoreBefore": 0.6443046070961616,
-      "scoreAfter": 0.6611894380492146,
-      "ms": 95051.47058823527
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.2700851158355855,
-      "scoreAfter": 0.25807660425202694,
-      "ms": 95259.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.5177026068622022,
-      "scoreBefore": 0.3778372780868694,
-      "scoreAfter": 0.39182381096440266,
-      "ms": 95259.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.2940104166666636,
-      "scoreBefore": 0.45666776587166075,
-      "scoreAfter": 0.44040203095116104,
-      "ms": 95259.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.2754730619385167,
-      "scoreAfter": 0.27192575574466504,
-      "ms": 95259.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.6057749028303834,
-      "scoreBefore": 0.6764490747385606,
-      "scoreAfter": 0.6693816575477429,
-      "ms": 95259.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.8323531392742178,
-      "scoreBefore": 0.6605282486111653,
-      "scoreAfter": 0.6777107376774706,
-      "ms": 95259.80392156861
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "convergence",
-      "payoff": 0.15,
-      "scoreBefore": 0.2578185276477749,
-      "scoreAfter": 0.2470366748829974,
-      "ms": 95468.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "stutterContagion",
-      "payoff": 0.5275298376649741,
-      "scoreBefore": 0.39143198715343824,
-      "scoreAfter": 0.4050417722045918,
-      "ms": 95468.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "phaseLock",
-      "payoff": 0.3049479166666795,
-      "scoreBefore": 0.4399616289202099,
-      "scoreAfter": 0.4264602576948569,
-      "ms": 95468.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "feedbackOscillator",
-      "payoff": 0.24,
-      "scoreBefore": 0.2716538299889204,
-      "scoreAfter": 0.2684884469900284,
-      "ms": 95468.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "coherenceMonitor",
-      "payoff": 0.7134038375839773,
-      "scoreBefore": 0.6687122758901952,
-      "scoreAfter": 0.6731814320595734,
-      "ms": 95468.13725490194
-    },
-    {
-      "section": 4,
-      "beat": 0,
-      "systemName": "entropyRegulator",
-      "payoff": 0.8517192102744788,
-      "scoreBefore": 0.6770330269397932,
-      "scoreAfter": 0.6945016452732617,
-      "ms": 95468.13725490194
+      "payoff": 0.9544082615416098,
+      "scoreBefore": 0.74925,
+      "scoreAfter": 0.75,
+      "ms": 116177.10944026735
     }
   ],
   "attribution": {
     "density": {
-      "product": 0.7400398510529104,
-      "rawProduct": 0.7400398510529104,
+      "product": 0.8013313894387191,
+      "rawProduct": 0.8013313894387191,
       "floored": false,
       "capped": false,
       "contributions": [
         {
           "name": "coherenceMonitor",
-          "raw": 1.0778943863287618,
-          "clamped": 1.0778943863287618
+          "raw": 1.132522091634375,
+          "clamped": 1.132522091634375
         },
         {
           "name": "regimeReactiveDamping",
@@ -1980,13 +2260,13 @@
         },
         {
           "name": "pipelineBalancer",
-          "raw": 1.0355624857256134,
-          "clamped": 1.0355624857256134
+          "raw": 1.033869272129391,
+          "clamped": 1.033869272129391
         },
         {
           "name": "pipelineCouplingManager",
-          "raw": 0.9951336652551424,
-          "clamped": 0.9951336652551424
+          "raw": 1.16,
+          "clamped": 1.16
         },
         {
           "name": "structuralNarrativeAdvisor",
@@ -2025,8 +2305,8 @@
         },
         {
           "name": "intervalBalanceTracker",
-          "raw": 0.9278478478478479,
-          "clamped": 0.9278478478478479
+          "raw": 0.9188388388388389,
+          "clamped": 0.9188388388388389
         },
         {
           "name": "intervalExpansionContractor",
@@ -2045,8 +2325,8 @@
         },
         {
           "name": "voiceLeadingEfficiencyTracker",
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.94,
+          "clamped": 0.94
         },
         {
           "name": "attackDensityProfiler",
@@ -2065,8 +2345,8 @@
         },
         {
           "name": "rhythmicComplexityGradient",
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.9,
+          "clamped": 0.9
         },
         {
           "name": "rhythmicInertiaTracker",
@@ -2075,13 +2355,13 @@
         },
         {
           "name": "syncopationDensityTracker",
-          "raw": 0.88,
-          "clamped": 0.88
+          "raw": 1,
+          "clamped": 1
         },
         {
           "name": "climaxProximityPredictor",
-          "raw": 1.0789334707176683,
-          "clamped": 1.0789334707176683
+          "raw": 1.1090123764810118,
+          "clamped": 1.1090123764810118
         },
         {
           "name": "energyMomentumTracker",
@@ -2120,13 +2400,13 @@
         }
       ],
       "extraMultipliers": {
-        "emissionCorrection": 1.0616912656076596,
+        "emissionCorrection": 1.0062996008130383,
         "coherenceDensityBias": 1
       }
     },
     "tension": {
-      "product": 1.1728681682629643,
-      "rawProduct": 1.1728681682629643,
+      "product": 1.1117967111786564,
+      "rawProduct": 1.1117967111786564,
       "floored": false,
       "capped": false,
       "contributions": [
@@ -2142,8 +2422,8 @@
         },
         {
           "name": "pipelineCouplingManager",
-          "raw": 1.1081677188823649,
-          "clamped": 1.1081677188823649
+          "raw": 0.9932843221655212,
+          "clamped": 0.9932843221655212
         },
         {
           "name": "narrativeTrajectory",
@@ -2167,8 +2447,8 @@
         },
         {
           "name": "consonanceDissonanceTracker",
-          "raw": 1.1391891891891892,
-          "clamped": 1.1391891891891892
+          "raw": 1.1088588588588588,
+          "clamped": 1.1088588588588588
         },
         {
           "name": "harmonicDensityOscillator",
@@ -2177,13 +2457,13 @@
         },
         {
           "name": "harmonicPedalFieldTracker",
-          "raw": 1.0250000000000001,
-          "clamped": 1.0250000000000001
+          "raw": 1.0375,
+          "clamped": 1.0375
         },
         {
           "name": "harmonicSurpriseIndex",
-          "raw": 0.9577025703748028,
-          "clamped": 0.9577025703748028
+          "raw": 0.9228347311152524,
+          "clamped": 0.9228347311152524
         },
         {
           "name": "harmonicVelocityMonitor",
@@ -2192,13 +2472,13 @@
         },
         {
           "name": "tensionResolutionTracker",
-          "raw": 1.0555555555555556,
-          "clamped": 1.0555555555555556
+          "raw": 1.0346715328467153,
+          "clamped": 1.0346715328467153
         },
         {
           "name": "tonalAnchorDistanceTracker",
-          "raw": 0.97,
-          "clamped": 0.97
+          "raw": 1.0133333333333332,
+          "clamped": 1.0133333333333332
         },
         {
           "name": "harmonicFunctionGraph",
@@ -2212,8 +2492,8 @@
         },
         {
           "name": "climaxProximityPredictor",
-          "raw": 1.0228801442535518,
-          "clamped": 1.0228801442535518
+          "raw": 1.0544629953050624,
+          "clamped": 1.0544629953050624
         },
         {
           "name": "dynamicArchitectPlanner",
@@ -2222,19 +2502,19 @@
         },
         {
           "name": "dynamicPeakMemory",
-          "raw": 0.92,
-          "clamped": 0.92
+          "raw": 0.9340350877192982,
+          "clamped": 0.9340350877192982
         },
         {
           "name": "repetitionFatigueMonitor",
-          "raw": 1.075135406218656,
-          "clamped": 1.075135406218656
+          "raw": 1.0529889669007022,
+          "clamped": 1.0529889669007022
         }
       ]
     },
     "flicker": {
-      "product": 0.9954700463168809,
-      "rawProduct": 0.9954700463168809,
+      "product": 1.0217157385497713,
+      "rawProduct": 1.0217157385497713,
       "floored": false,
       "capped": false,
       "contributions": [
@@ -2245,8 +2525,8 @@
         },
         {
           "name": "pipelineCouplingManager",
-          "raw": 0.762624110391683,
-          "clamped": 0.762624110391683
+          "raw": 0.8307144524542225,
+          "clamped": 0.8307144524542225
         },
         {
           "name": "criticalityEngine",
@@ -2255,18 +2535,18 @@
         },
         {
           "name": "dimensionalityExpander",
-          "raw": 0.9815016937255859,
-          "clamped": 0.9815016937255859
+          "raw": 0.9979638493061066,
+          "clamped": 0.9979638493061066
         },
         {
           "name": "registralVelocityCorrelator",
-          "raw": 0.9426510376090511,
-          "clamped": 0.9426510376090511
+          "raw": 0.9531347923950225,
+          "clamped": 0.9531347923950225
         },
         {
           "name": "grooveTemplateAdvisor",
-          "raw": 1.0056,
-          "clamped": 1.0056
+          "raw": 1.0032,
+          "clamped": 1.0032
         },
         {
           "name": "interLayerRhythmAnalyzer",
@@ -2275,13 +2555,13 @@
         },
         {
           "name": "rhythmicDensityContrastTracker",
-          "raw": 1.000237788473948,
-          "clamped": 1.000237788473948
+          "raw": 1.0215788998083712,
+          "clamped": 1.0215788998083712
         },
         {
           "name": "densityWaveAnalyzer",
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.9940545719138884,
+          "clamped": 0.9940545719138884
         },
         {
           "name": "durationalContourTracker",
@@ -2290,28 +2570,33 @@
         },
         {
           "name": "dynamicRangeTracker:spread",
-          "raw": 0.9552,
-          "clamped": 0.9552
+          "raw": 0.9776,
+          "clamped": 0.9776
         },
         {
           "name": "dynamicRangeTracker:contrast",
-          "raw": 1.0167355371900826,
-          "clamped": 1.0167355371900826
-        },
-        {
-          "name": "velocityShapeAnalyzer",
           "raw": 1,
           "clamped": 1
         },
         {
+          "name": "velocityShapeAnalyzer",
+          "raw": 0.9877997044663711,
+          "clamped": 0.9877997044663711
+        },
+        {
           "name": "texturalGradientTracker",
-          "raw": 0.9801726700484178,
-          "clamped": 0.9801726700484178
+          "raw": 0.9737159146289981,
+          "clamped": 0.9737159146289981
         }
       ]
     }
   },
   "coherenceVerdicts": [
+    {
+      "severity": "warning",
+      "area": "attribution",
+      "finding": "7 density contributors suppressing with constant drag: coherenceMonitor (1.13), pipelineCouplingManager (1.16), intervalBalanceTracker (0.92), rhythmicComplexityGradient (0.90), climaxProximityPredictor (1.11), restDensityTracker (0.90), voiceDensityBalancer (0.90). Consider widening registration bounds or adding dynamic response."
+    },
     {
       "severity": "info",
       "area": "dynamics",
@@ -2320,12 +2605,17 @@
     {
       "severity": "info",
       "area": "coupling",
-      "finding": "flicker-phase strongly co-evolving (r=0.801) - governance coupling (expected, not actionable)."
+      "finding": "entropy-phase strongly anti-correlated (r=-0.760) - governance coupling (expected, not actionable)."
     },
     {
       "severity": "info",
       "area": "coupling",
-      "finding": "tension-trust strongly anti-correlated (r=-0.518) - governance coupling (expected, not actionable)."
+      "finding": "flicker-phase strongly co-evolving (r=0.576) - governance coupling (expected, not actionable)."
+    },
+    {
+      "severity": "info",
+      "area": "coupling",
+      "finding": "density-phase strongly anti-correlated (r=-0.540) - governance coupling (expected, not actionable)."
     }
   ]
 }
