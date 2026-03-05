@@ -57,7 +57,7 @@ TypeScript (^5.9.3), ESLint (^9.0.0), and related tooling are dev dependencies. 
 
 Polychron does not hardcode musical structure — it steers it. The system generates compositions through a three-layer nervous system:
 
-**Conductor** — 42 intelligence modules cast multiplicative bias votes for density, tension, and flicker. Products are dampened, normalized, and committed to state. 11 hypermeta self-calibrating controllers auto-tune constants that previously required manual adjustment; a meta-controller watchdog detects and resolves inter-controller conflicts. `signalReader` is the ONE read API for all consumers.
+**Conductor** — 42 intelligence modules cast multiplicative bias votes for density, tension, and flicker. Products are dampened, normalized, and committed to state. 13 hypermeta self-calibrating controllers auto-tune constants that previously required manual adjustment; a meta-controller watchdog detects and resolves inter-controller conflicts; whole-system coupling homeostasis and two-layer axis energy equilibration permanently eliminate coupling energy whack-a-mole. `signalReader` is the ONE read API for all consumers.
 
   v getSignals() / signalReader.*()          ^ explainabilityBus (diagnostic only)
 
@@ -146,7 +146,7 @@ The brain of the system. 42 modules register with `conductorIntelligence`, contr
 - **`melodic/`** (15) — Ambitus migration, counterpoint motion, interval balance, melodic contour, register migration, tessiture pressure, thematic recall, voice-leading efficiency
 - **`rhythmic/`** (15) — Accent patterns, attack density, onset regularity, rhythmic complexity, syncopation density, temporal proportions
 - **`texture/`** (20) — Articulation profiling, layer coherence, motivic density, orchestration weight, repetition fatigue, rest density, structural form, textural gradients, voice density
-- **`signal/`** (17 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry). Includes **`metaControllerRegistry`** — queryable topology manifest of all 11 hypermeta self-calibrating controllers (axis, file, interactors, snapshot API)
+- **`signal/`** (21 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry). Includes **`metaControllerRegistry`** — queryable topology manifest of all 13 hypermeta self-calibrating controllers (axis, file, interactors, snapshot API)
 - **`journey/`** (5) — Harmonic journey planning — key/mode selection across sections
 - **`profiles/`** (15) — Conductor config profiles (default, minimal, atmospheric, explosive, restrained, rhythmic drive) + merging/validation/tuning
 
@@ -285,7 +285,7 @@ All controllers are enrolled with `feedbackRegistry` to prevent catastrophic res
 
 ### Hypermeta Self-Calibrating Controllers
 
-11 meta-controllers auto-tune parameters that previously required manual adjustment between runs (queryable via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()` / `getInteractors()`):
+13 meta-controllers auto-tune parameters that previously required manual adjustment between runs (queryable via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()` / `getInteractors()`):
 
 1. **Self-Calibrating Coupling Targets** (`pipelineCouplingManager`) — Per-pair rolling |r| EMA. Intractable correlations relax targets upward; easily resolved pairs tighten toward baseline. Product-feedback guard freezes tightening when density product drops below 0.75.
 2. **Regime Distribution Equilibrator** (`regimeReactiveDamping`) — 64-beat rolling histogram vs target budget {exploring:35%, coherent:35%, evolving:20%}. Strength 0.25 with squared penalty when exploring exceeds 60%. Tension pin relief valve relaxes ceiling on sustained saturation.
@@ -298,6 +298,10 @@ All controllers are enrolled with `feedbackRegistry` to prevent catastrophic res
 9. **Coupling Gain Budget Manager** (`pipelineCouplingManager`) — Per-axis budget cap (0.24, flicker 0.36) prevents coupling manager from dominating any single pipeline. Product-feedback guard on density axis.
 10. **Meta-Observation Telemetry** (`conductorDampening`) — Per-beat snapshots of meta-controller state emitted to `explainabilityBus` and fed to the meta-controller watchdog.
 11. **Meta-Controller Interaction Watchdog** (`conductorMetaWatchdog`) — Runs every 50 beats, detects opposing correction patterns between controllers on the same axis. Attenuates the weaker controller by 50% when conflict exceeds 30/50 beats. Self-heals when conflict resolves.
+12. **Whole-System Coupling Energy Homeostasis** (`couplingHomeostasis`) — Tracks total |r| as a single scalar, detects redistribution (balloon effect: total stable + pair turbulent), applies global gain throttle. Gini coefficient guard penalizes energy concentration in few pairs. Self-derives energy budget from adaptive target baselines.
+13. **Axis Energy Equilibrator** (`axisEnergyEquilibrator`) — Two-layer omnipotent coupling self-correction. Layer 1: pair-level hotspot detection via `rawRollingAbsCorr` — tightens pairs exceeding 2x baseline, relaxes those below 0.3x. Layer 2: axis-level energy balancing via `getAxisEnergyShare()` — nudges all pairs on overloaded (>0.22) or suppressed (<0.12) axes. Graduated coherent gate: exploring 1.0×, evolving 0.4×, coherent 0.0× — prevents equilibrator from fighting coherent regime entry. Permanently eliminates manual whack-a-mole.
+
+The regime classifier additionally self-balances coherent share via auto-adjusting `coherentThresholdScale` (target 15–35%, nudge 0.002/beat, range [0.70, 1.20]). This is NOT a separate meta-controller — it is intrinsic regime self-regulation.
 
 For constant values, interaction partners, and cross-constant invariants, see [TUNING_MAP.md](TUNING_MAP.md).
 
@@ -346,7 +350,7 @@ conductorIntelligence.registerModule('myModule', { reset() { /* ... */ } }, ['al
 - **Melodic** (15) — Contour, intervals, register, tessiture, counterpoint, thematic recall
 - **Rhythmic** (15) — Accent, onset, syncopation, complexity, symmetry, temporal proportions
 - **Texture** (20) — Articulation, layer coherence, motivic density, rest density, structural form
-- **`Signal`** (17 + 11 meta-controllers) — Pipeline health, dynamics profiling, coupling, normalization, coherence, self-calibrating hypermeta controllers, interaction watchdog
+- **`Signal`** (21 + 13 meta-controllers) — Pipeline health, dynamics profiling, coupling, normalization, coherence, self-calibrating hypermeta controllers, interaction watchdog, coupling homeostasis, axis energy equilibration
 - **Journey** (5) — Harmonic journey planning — key/mode selection, harmonic rhythm
 
 ## Cross-Layer Coordination

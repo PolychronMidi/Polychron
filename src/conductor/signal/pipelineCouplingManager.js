@@ -44,7 +44,7 @@ pipelineCouplingManager = (() => {
     'flicker-phase':    0.08,  // R28 E3: tightened from 0.12 -- phase axis surged +81% (0.176->0.318) in R27 after trust tightening
     'density-phase':    0.06,  // R28 E3: tightened from 0.10 -- density-phase avg +65% (0.277->0.457), p95=0.734, 2.22x target
     'tension-phase':    0.20,  // R25 E4: tightened from 0.30 -- avg 0.407 far exceeded target
-    'density-trust':    0.10,  // R27 E3: tightened from 0.15 -- avg surged +30% (0.339->0.440), r=0.959, p95=0.896
+    'density-trust':    0.20,  // R32 E3: raised from 0.10 -- structural floor r=0.786, R31 avg 0.518 (#1 pair), wasting budget fighting irreducible structure
     'tension-trust':    0.15,  // R27 E3: tightened from 0.25 -- p95=0.925 (severe), 3 of 6 hotspots involve trust
     'flicker-trust':    0.12,  // R27 E3: tightened from 0.20 -- avg +19.7% (0.413->0.495), r=0.940, approaching severe
     'entropy-phase':    0.10,  // R28 E3: tightened from 0.18 -- entropy-phase avg +192% (0.132->0.385), p95=0.797, 2.85x target
@@ -178,6 +178,16 @@ pipelineCouplingManager = (() => {
   // coupling targets to break the chicken-and-egg bistability.
   let _exploringBeatCount = 0;
 
+  // R32 E8: p95 instantaneous spike dampener. Regime transitions cause
+  // rapid signal co-movement (all signals shift simultaneously), producing
+  // instantaneous coupling spikes near 1.0. These drive p95 tails even
+  // when steady-state coupling is well-controlled. Detect transitions
+  // and temporarily boost effective gain for a short window.
+  let _lastRegime = null;
+  let _transitionCooldown = 0;
+  const _TRANSITION_BOOST_BEATS = 4;
+  const _TRANSITION_GAIN_BOOST = 2.0;
+
   // R27 E2: Module-level cache for coherence gate + floor dampening diagnostics.
   // Updated in _addNudge's COUPLING_GATES emission block; exposed via
   // getCouplingGates() for inclusion in trace beat entries.
@@ -287,6 +297,13 @@ pipelineCouplingManager = (() => {
     const dynamicCoherentRelax = 1.0 + m.max(0, 0.50 - _coherentShareEma) * 1.2;
     // R25 E3: Track exploring duration for partial target relaxation.
     if (regime === 'exploring') { _exploringBeatCount++; } else { _exploringBeatCount = 0; }
+
+    // R32 E8: Detect regime transitions for spike dampening.
+    if (_lastRegime !== null && regime !== _lastRegime) {
+      _transitionCooldown = _TRANSITION_BOOST_BEATS;
+    }
+    _lastRegime = regime;
+    if (_transitionCooldown > 0) _transitionCooldown--;
     // R25 E3 / R26 E3: Partial target relaxation during sustained exploring (>40 beats).
     // Breaks the chicken-and-egg bistability: coupling stays below coherent
     // threshold because aggressive decorrelation prevents rise; coherent
@@ -491,12 +508,14 @@ pipelineCouplingManager = (() => {
               rate *= 1.15;
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.01, 1.0);
             }
-            // R20 E3: Per-pair decorrelation effectiveness gating.
-            // When effectiveness EMA < 0.20, the pair is intractable (gain is
-            // being spent without reducing |r|). Halve escalation rate to free
-            // budget for responsive pairs. Effectiveness survives section resets.
-            if ((ps.effectivenessEma || 0.5) < 0.20) {
-              rate *= 0.50;
+            // R20 E3 / R32 E1: Per-pair decorrelation effectiveness gating.
+            // Graduated: pairs with effectivenessEma < 0.50 get proportionally
+            // reduced escalation rate. At 0.40 -> 0.80x, at 0.20 -> 0.40x,
+            // at 0.10 -> 0.25x (floor). Replaces R20's binary 0.20 threshold.
+            // Also caps pairGainMax for low-effectiveness pairs to free budget.
+            const _eff = ps.effectivenessEma || 0.5;
+            if (_eff < 0.50) {
+              rate *= m.max(0.25, _eff / 0.50);
             }
             // R20 E2: Apply global gain multiplier to escalation rate.
             // When homeostasis detects redistribution, slow ALL gains.
@@ -505,6 +524,14 @@ pipelineCouplingManager = (() => {
             // energy is near its structural minimum to prevent redistribution.
             rate *= _floorDampen;
             let pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
+            // R32 E1: Effectiveness-gated gain ceiling. Low-effectiveness pairs
+            // (< 0.40) have their max gain capped to prevent budget hoarding.
+            // At eff=0.40 -> cap at GAIN_INIT + 0.40*(MAX-INIT), at eff=0.20
+            // -> cap at GAIN_INIT + 0.20*(MAX-INIT). Floor at GAIN_INIT*1.5.
+            if (_eff < 0.40) {
+              const effCap = GAIN_INIT + (pairGainMax - GAIN_INIT) * m.max(0.40, _eff);
+              pairGainMax = m.min(pairGainMax, m.max(GAIN_INIT * 1.5, effCap));
+            }
             // R23 E5: Allow promoted pair higher gain ceiling.
             if (key === _hpPromotedPair) {
               pairGainMax = m.max(pairGainMax, _HP_GAIN_MAX);
@@ -624,6 +651,10 @@ pipelineCouplingManager = (() => {
         // R24 E4: Density product floor guard scalar
         if (dimA === 'density' || dimB === 'density') {
           effectiveGain *= _densityGainScalar;
+        }
+        // R32 E8: Boost gain during regime transition window to clip p95 spikes.
+        if (_transitionCooldown > 0) {
+          effectiveGain *= _TRANSITION_GAIN_BOOST;
         }
 
         if (aIsNudgeable && bIsNudgeable) {
@@ -891,6 +922,9 @@ pipelineCouplingManager = (() => {
     _coherentShareEma = _coherentShareEma * 0.7 + 0.15 * 0.3;
     // R25 E3: Reset exploring beat counter per section
     _exploringBeatCount = 0;
+    // R32 E8: Reset transition cooldown per section
+    _transitionCooldown = 0;
+    _lastRegime = null;
     // R20 E5: Reset flicker guard to allow fresh assessment per section
     _flickerGuardState = 'normal';
     // R24 E4: Reset density guard per section

@@ -22,8 +22,8 @@ Read ALL of the following files. Do not skip any. Read them in parallel where po
 | File | What it tells you |
 |------|-------------------|
 | `metrics/pipeline-summary.json` | Pipeline health: wall time, per-step timing, pass/fail counts. Check for new failures or regressions. |
-| `metrics/trace-summary.json` | The statistical soul of the run: beat counts, regime distribution, conductor signal ranges (density/tension/flicker min/max/avg), coupling matrices (abs + tail), coupling hotspots (p95 > 0.70), coupling correlation (Pearson r + direction), trust score summaries, beat-setup budget (spike detection), **adaptiveTargets** (per-pair baseline, current, drift, rollingAbsCorr, gain, heatPenalty — reveals whether coupling surges are target-drift-driven or regime-modulated), **couplingHomeostasis** (totalEnergyEma, energyBudget, peakEnergyEma, totalEnergyFloor, floorDampen, redistributionScore, globalGainMultiplier, giniCoefficient, multiplier stats). |
-| `metrics/golden-fingerprint.json` | Current run's 8-dimension fingerprint: noteCount (per-layer), pitchEntropy, densityVariance, tensionArc (4-point: 25%/50%/75%/90%), trustConvergence, regimeDistribution, coupling (mean absolute), correlationTrend (direction flips). Also includes couplingMeans, couplingCorrelation, trustFinal, activeProfile. |
+| `metrics/trace-summary.json` | The statistical soul of the run: beat counts, regime distribution, conductor signal ranges (density/tension/flicker min/max/avg), coupling matrices (abs + tail), coupling hotspots (p95 > 0.70), coupling correlation (Pearson r + direction), trust score summaries, beat-setup budget (spike detection), **adaptiveTargets** (per-pair baseline, current, drift, rollingAbsCorr, gain, heatPenalty, effectivenessEma — reveals whether coupling surges are target-drift-driven or regime-modulated, and whether decorrelation nudges actually reduce coupling), **axisCouplingTotals** (per-axis sum of |r| across all pairs sharing that axis), **axisEnergyShare** (per-axis share of total coupling energy + axisGini), **couplingGates** (per-axis coherence gate values gateD/gateT/gateF, floorDampen, bypass magnitudes, gate EMA temporal stats), **couplingHomeostasis** (totalEnergyEma, energyBudget, peakEnergyEma, totalEnergyFloor, floorDampen, redistributionScore, globalGainMultiplier, giniCoefficient, multiplier stats). |
+| `metrics/golden-fingerprint.json` | Current run's 9-dimension fingerprint: noteCount (per-layer), pitchEntropy, densityVariance, tensionArc (4-point: 25%/50%/75%/90%), trustConvergence, regimeDistribution, coupling (mean absolute), correlationTrend (direction flips), crossProfileWarning (profile change detection). Also includes couplingMeans, couplingCorrelation, trustFinal, activeProfile. |
 | `metrics/golden-fingerprint.prev.json` | Previous run's fingerprint. Compare field-by-field against current. |
 | `metrics/fingerprint-comparison.json` | Automated comparison: verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta vs tolerance, drifted count. This is your headline. |
 | `metrics/fingerprint-drift-explainer.json` | Causal narratives for any drifted dimensions. Read the `cause`, `correlates`, and `layerShift` fields. |
@@ -58,7 +58,9 @@ When a metric raises a question, trace it to the source. Common investigation ta
 |------|-----------|
 | Coupling engine | `src/conductor/signal/pipelineCouplingManager.js` |
 | Regime damping | `src/conductor/signal/regimeReactiveDamping.js` |
-| Coherence feedback | `src/crossLayer/coherenceMonitor.js` |
+| Coherence feedback | `src/conductor/signal/coherenceMonitor.js` |
+| Axis equilibrator | `src/conductor/signal/axisEnergyEquilibrator.js` |
+| Regime classifier | `src/conductor/signal/regimeClassifier.js` |
 | Trust system | `src/crossLayer/adaptiveTrustScores.js`, `src/crossLayer/contextualTrust.js` |
 | Regime profiler | `src/conductor/signal/systemDynamicsProfiler.js` |
 | Meta-controllers | `src/conductor/signal/` (any file with `hypermeta` or `metaController` in name) |
@@ -118,7 +120,7 @@ One-line summary: `RXX: <beats> beats / <seconds>s <profile> | <VERDICT> (<stabl
 - Any meta-controller conflict detections
 
 ### Fingerprint Comparison Detail
-- For each of the 8 core dimensions: delta, tolerance (effective, including profile-adaptive), status
+- For each of the 9 dimensions: delta, tolerance (effective, including profile-adaptive), status
 - If cross-profile comparison was triggered, note the tolerance widening
 - For drifted dimensions: root cause from drift explainer
 - Tuning invariant results (any failures?)

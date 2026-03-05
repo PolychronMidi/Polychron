@@ -1,3 +1,76 @@
+## R32 — Pre-Run — 8 EVOLUTIONS: BUDGET EFFICIENCY + DIAGNOSTICS + SPIKE DAMPENING
+
+### Evolutions Applied (from R31)
+- E1: **Effectiveness-gated gain escalation** — graduated scale replaces binary 0.20 threshold. Pairs with effectivenessEma < 0.50 get rate *= max(0.25, eff/0.50). Pairs with eff < 0.40 get gain ceiling capped at GAIN_INIT + (GAIN_MAX - GAIN_INIT) * max(0.40, eff). Redirects budget from unresponsive pairs (density-trust 0.414, density-entropy 0.433, tension-flicker 0.427, flicker-phase 0.409) to responsive ones.
+- E2: **Trust-axis relaxation rate scaling** — axes with fewer nudgeable pairs get proportionally faster relaxation. _EFFECTIVE_NUDGEABLE map: density/tension/flicker=5, entropy/trust/phase=3. Layer 2 relaxation rate scaled by _RELAX_RATE_REF(5) / nudgeablePairCount, giving trust/entropy/phase 1.67x faster correction. Addresses trust share chronic near-threshold (0.1245, only 0.0045 above 0.12).
+- E3: **density-trust structural baseline raise** — PAIR_TARGETS['density-trust'] from 0.10 to 0.20. Acknowledges irreducible structural coupling floor (Pearson r=0.786, avg 0.518 in R31). Stops equilibrator from wasting tightening budget fighting structural signal. heatPenalty should drop from 0.25 to ≤ 0.10.
+- E4: **Profile-specific tensionArc tolerance** — PROFILE_TENSION_ARC_TOLERANCE: explosive/atmospheric 0.35, ambient/minimal 0.25. R31 margin was 0.006 — profile-aware tolerance prevents false-positive drift detection on fundamentally different profile characters.
+- E5: **Equilibrator per-regime telemetry** — axisEnergyEquilibrator now tracks regimeBeats, regimePairAdj, regimeAxisAdj, regimeTightenBudget per regime key. trace-summary extracts axisEnergyEquilibrator snapshot. Enables measurement of evolving vs exploring vs coherent tightening contributions.
+- E6: **Intra-axis pair energy distribution diagnostic** — trace-summary computes per-axis Gini from coupling pair averages and identifies dominant pair per axis. Reveals whether axis-level imbalance comes from one dominant pair or diffuse spread.
+- E7: **Fingerprint noteCount per-beat normalization** — noteCount comparison now uses per-beat rate (total/traceEntries) instead of raw total. Falls back to raw when beat count unavailable. Prevents false drift from composition length differences.
+- E8: **p95 instantaneous spike dampener** — detects regime transitions via _lastRegime tracking. Applies 2x gain boost (_TRANSITION_GAIN_BOOST) for 4 beats (_TRANSITION_BOOST_BEATS) after each transition. Targets regime-transition coupling spikes that drive p95 near 1.0. Reset on section boundaries.
+
+### Hypotheses to Track
+- H1: Pairs with effectivenessEma < 0.40 should show flat/declining gains (E1 ceiling cap). density-trust gain should not escalate above ~GAIN_INIT * 1.5.
+- H2: Trust axis share should increase from 0.125 to > 0.14 with E2 rate scaling. Chronic near-threshold eliminated.
+- H3: density-trust heatPenalty should drop from 0.25 to ≤ 0.10 after E3 baseline raise. avg should remain near 0.50 (structural floor unchanged, but budget freed).
+- H4: tensionArc should NOT drift on cross-profile comparison with E4 profile-specific tolerance.
+- H5: Per-regime telemetry (E5) should show evolving contributing 30-50% of total effective tightening budget. axisEnergyEquilibrator snapshot extractable from trace-summary.
+- H6: Intra-axis Gini (E6) should reveal whether density-trust dominance is concentrated or diffuse within trust axis.
+- H7: noteCount should show stable per-beat rate across profiles (E7). Raw total may differ but normalized rate should be within 0.20 delta.
+- H8: p95 worst-pair coupling should improve (E8). density-tension p95 0.872 in R31 should decrease. Spike dampener targets regime-transition windows.
+- H9: axisGini should remain ≤ 0.15 AND coherent ∈ [15-35%] for the third consecutive run (stability confirmation).
+- H10: No new whack-a-mole pair surge — E1+E3 combined should prevent budget concentration on unresponsive high-coupling pairs.
+
+---
+
+## R31 — 2026-03-05 — STABLE — LANDMARK: ALL 6 HYPOTHESES CONFIRMED
+
+**Profile:** atmospheric | **Beats:** 486 | **Duration:** 61.2s | **Notes:** 18,727
+**Fingerprint:** 9/9 stable | Drifted: none | Cross-profile: explosive→atmospheric (tolerances 1.3x)
+
+### Key Observations
+- **THE FUNDAMENTAL QUESTION IS ANSWERED: YES.** Coherent 22.4% ∈ [15-35%] AND axisGini 0.1174 < 0.25 simultaneously. First time in project history both constraints are met. The graduated coherent gate is the mechanism that makes this possible. 6/6 hypotheses from R30 confirmed.
+- **axisGini COLLAPSED: 0.382→0.1174 (-69.3%).** Best axis balance achieved WITH coherent in target. Graduated gate gave 230 evolving beats at 0.4x tightening + 112 exploring beats at 1.0x tightening = 204 effective tightening beats (vs R30's ~217 exploring-only beats, but now with evolving contributing 92 effective beats). All axis shares within [0.125, 0.208], max/min ratio 1.67x.
+- **pairGini BEST EVER: 0.3377 (R30: 0.612, -44.8%).** Coupling spread across pairs more uniformly than any previous round. Combined with axis balance, the decorrelation engine is at its most effective state.
+- **FLICKER AXIS CRUSHED: 0.326→0.142 share (-56.5%).** Flicker went from 2x fair share to BELOW fair share (0.85x). flicker-entropy avg collapsed 0.400→0.144 (-64.0%). The graduated gate allowed the equilibrator to tighten flicker-adjacent pairs during evolving, which R30's binary gate prevented.
+- **WHACK-A-MOLE REDIRECTED TO TRUST HUB.** density-trust surged +63.9% (0.316→0.518, now #1 pair), tension-entropy +78.0% (0.240→0.427). Energy migrated from flicker-axis to density-trust and tension-entropy. At axis level this is balanced (Gini 0.117), but density-trust at 0.518 is the highest single-pair avg since R29. Trust is structurally coupled to density: computed downstream from conductor signals. Pearson r: density-trust 0.786 (increasing), flicker-trust 0.918 (increasing), tension-trust 0.816 (increasing).
+- **tensionArc NEAR-DRIFT: delta 0.294, tolerance 0.300, margin 0.006.** Atmospheric late ramp [0.50, 0.49, 0.80, 0.79] vs explosive mid-arch [0.31, 0.63, 0.45, 0.38]. These are fundamentally different profile characters, not drift. Cross-profile 1.3x widening barely saved this from false-positive detection.
+- **TRUST AXIS AT THRESHOLD: share 0.1245, 0.0045 above 0.12 undershoot.** Trust has only 3 nudgeable pairs vs 5 for other axes. Relaxation rate is uniform, so trust corrects 40% slower. Chronic near-threshold behavior.
+- **Coherent regime progression HEALTHY.** 3 transitions: init→evolving@35, evolving→exploring@265, exploring→coherent@377. maxConsecutiveCoherent 109 (final phase). Clean progression without coherent loss — the atmospheric profile reached coherent at 77.6% through composition (R30 explosive: 60.1%).
+- **p95 severity IMPROVED.** Only 1 severe pair (density-tension 0.872). R30 had density-flicker 0.973, flicker-trust 0.961. Greatest improvement: flicker-trust p95 0.961→0.601 (removed from hotspot list entirely).
+- **Homeostasis HEALTHY.** totalEnergyEma 3.441 (R30: 3.102, +10.9%), within budget 3.385. globalGainMultiplier 0.858 (less aggressive than R30's 0.792). floorContactBeats 0, ceilingContactBeats 19.
+- **Trust system HEALTHY.** coherenceMonitor 0.709 (top), convergence 0.232 (bottom). No starvation (>0.15), no dominance (<0.75). Convergence +0.014.
+- **Effectiveness reveals structural floors.** density-trust effectivenessEma 0.414, density-entropy 0.433, tension-flicker 0.427, flicker-phase 0.409 — all below 0.45, meaning decorrelation nudges fail >55% of the time. Gain budget spent on these pairs is partially wasted.
+- **0 critical, 0 warning, 2 info. 16/16 pipeline, 10/10 invariants, 71/71 feedback, 0 beat-setup spikes.**
+
+### Evolutions Applied (from R30)
+- E1: **Graduated coherent gate** (evolving 0.4x, coherent 0.0) — **CONFIRMED (spectacular)** — axisGini 0.382→0.1174 (-69.3%), coherent 17.6%→22.4% (still in target). pairGini 0.612→0.338. Flicker share 0.326→0.142. ALL 6 HYPOTHESES CONFIRMED. This is the most successful single evolution in the project's history.
+- E2: Phase axis running EMA in axisCouplingTotals — **not implemented** — phase axis reports 0.128 share (finite, healthy). Issue resolved by trace-summary extraction fix in R28.
+- E3: Raise flicker-entropy structural baseline to 0.30 — **not implemented (self-resolved)** — flicker-entropy avg collapsed 0.400→0.144 without manual baseline change. Graduated gate allowed natural equilibrator tightening to handle it.
+- E4: Fingerprint noteCount per-beat normalization — **not implemented** — noteCount delta 0.261 within widened tolerance 0.520. Cross-profile 1.3x saves it.
+- E5: Equilibrator telemetry extraction — **not implemented** — axisCouplingTotals/axisEnergyShare present in trace-summary, but per-regime equilibrator breakdown still missing.
+- E6: p95 instantaneous spike dampening — **not implemented (partially self-resolved)** — worst p95 improved: density-flicker 0.973→0.840, flicker-trust 0.961→0.601. Only density-tension 0.872 severe.
+
+### Evolutions Proposed (for R32)
+- E1: **Equilibrator per-regime telemetry** — trace-summary extraction of tightenScale regime breakdown, pair/axis adjustments per regime
+- E2: **Profile-specific tensionArc tolerance** — wider tolerance on cross-profile comparisons (margin 0.006 is dangerous)
+- E3: **Effectiveness-gated gain escalation** — cap gain escalation for pairs with effectivenessEma < 0.40
+- E4: **density-trust structural baseline raise** — from ~0.10 to 0.20 to stop wasting budget on irreducible structural floor
+- E5: **Intra-axis pair energy distribution diagnostic** — per-axis Gini and dominant pair tracking
+- E6: **Trust-axis relaxation rate scaling** — scale by inverse nudgeable pair count (trust has 3 vs 5)
+
+### Hypotheses to Track
+- H1: Equilibrator telemetry should show evolving contributing 30-50% of effective tightening budget (currently unmeasured)
+- H2: tensionArc should NOT drift on next cross-profile run (E2 profile-specific tolerance)
+- H3: Pairs with effectivenessEma < 0.40 should show flat/declining gains after E3
+- H4: density-trust heatPenalty should drop from 0.25 to ≤ 0.10 after E4 baseline raise
+- H5: Trust axis share should increase from 0.125 to > 0.14 with E6 rate scaling
+- H6: axisGini should remain ≤ 0.15 AND coherent ∈ [15-35%] for the third consecutive run (confirmation of stability)
+- H7: The pair-level whack-a-mole (density-trust surge) — will E3+E4 prevent further energy concentration, or will a new pair surge emerge?
+
+---
+
 ## R30 — 2026-03-04 — EVOLVED
 
 **Profile:** explosive | **Beats:** 676 | **Duration:** 95.8s | **Notes:** 25,329
@@ -26,22 +99,20 @@
 - E5: **Remove ALL manual coherentThresholdScale + preserve across resets** — **confirmed** — No manual overrides, scale accumulated normally across 4 sections. Self-balancing controls all profiles.
 
 ### Evolutions Proposed (for R31)
-- E1: **Graduated coherent gate** — evolving: 0.5x tightening, coherent: 0.0 (full freeze) — src/conductor/signal/axisEnergyEquilibrator.js
-- E2: **Phase axis running EMA in axisCouplingTotals** — replace per-beat reset with EMA to eliminate null-phase issue — src/conductor/signal/pipelineCouplingManager.js
-- E3: **Raise flicker-entropy structural baseline to 0.30** — acknowledge irreducible structural floor, stop wasting max heat on unsuppressible pair — src/conductor/signal/pipelineCouplingManager.js
-- E4: **Fingerprint noteCount per-beat normalization** — compare per-beat note rate instead of absolute count — scripts/golden-fingerprint.js
-- E5: **Equilibrator telemetry extraction in trace-summary** — pairAdjustments, axisAdjustments, perAxisAdj, coherentThresholdScale — scripts/trace-summary.js
-- E6: **p95 instantaneous spike dampening** — 2x nudge when current-beat |r| > 0.90, addressing persistent density-flicker 0.973 and flicker-trust 0.961 tails — src/conductor/signal/pipelineCouplingManager.js
+- E1: **Graduated coherent gate** -- evolving: 0.4x tightening, coherent: 0.0 (full freeze). R30's binary gate froze 61% of beats; graduated allows partial axis correction during the 295-beat evolving phase while protecting 119-beat coherent. IMPLEMENTED.
+- E2: Phase axis running EMA in axisCouplingTotals -- replace per-beat reset with EMA to eliminate null-phase issue
+- E3: Raise flicker-entropy structural baseline to 0.30 -- acknowledge irreducible structural floor
+- E4: Fingerprint noteCount per-beat normalization
+- E5: Equilibrator telemetry extraction in trace-summary
+- E6: p95 instantaneous spike dampening
 
 ### Hypotheses to Track
-- H1: Graduated gate (evolving 0.5x) should restore axisGini < 0.25 while keeping coherent in [15-35%]. If coherent drops below 10%, evolving multiplier too aggressive.
-- H2: Phase axis should report non-zero in axisCouplingTotals with running EMA. If still zero, the coupling matrix genuinely lacks phase correlations (different root cause).
-- H3: flicker-entropy heatPenalty should drop below 0.50 with raised baseline 0.30. Freed gain budget should improve suppression of other pairs.
-- H4: noteCount should be STABLE across runs with varying beat counts after per-beat normalization.
-- H5: density-flicker p95 should drop below 0.90 with spike dampening. If it doesn't, spikes persist for 3+ beats (not instantaneous) and need a different approach.
-- H6: Equilibrator telemetry should reveal per-regime adjustment counts: exploring adjustments >> evolving adjustments >> coherent adjustments (zero).
-- H7: pairGini should decrease below 0.50 as axis balance improves and gain budget is better allocated.
-- H8: The fundamental question: can the system maintain coherent 15-35% AND axisGini < 0.25 simultaneously? R29 had axisGini 0.137 / coherent 0%. R30 has axisGini 0.382 / coherent 17.6%. R31 needs the middle ground.
+- H1: Graduated gate (evolving 0.4x) should restore axisGini < 0.25 while keeping coherent in [15-35%]. If coherent drops below 10%, evolving multiplier too aggressive -- try 0.3.
+- H2: pairGini should decrease below 0.50 as axis balance improves.
+- H3: flicker axis share should drop below 0.25 (was 0.326) with partial correction during evolving.
+- H4: No pair should have avg > 0.45 AND p95 > 0.85 (maintained from R30).
+- H5: Trust axis share should remain above 0.12.
+- H6: The fundamental question: can the system maintain coherent 15-35% AND axisGini < 0.25 simultaneously?
 
 ---
 

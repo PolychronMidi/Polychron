@@ -1,6 +1,6 @@
 // metaControllerRegistry.js - Central manifest of all hypermeta self-calibrating controllers.
 // Provides a single inspectable registry of every meta-controller in the system,
-// replacing the scattered #1-#11 comment convention with a queryable data structure.
+// replacing the scattered #1-#13 comment convention with a queryable data structure.
 //
 // Every controller declares its axis, correction mechanism, gain, source file,
 // and interaction partners. The conductorMetaWatchdog consumes this registry
@@ -149,8 +149,8 @@ metaControllerRegistry = (() => {
       name: 'axisEnergyEquilibrator',
       file: 'conductor/signal/axisEnergyEquilibrator.js',
       axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
-      mechanism: 'Two-layer omnipotent coupling self-correction. Layer 1: pair-level hotspot detection via rollingAbsCorr -- tightens pairs exceeding 1.5x baseline, relaxes pairs below 0.3x baseline. Layer 2: axis-level energy balancing via getAxisEnergyShare() -- nudges all pairs on overloaded (>0.22) or suppressed (<0.12) axes. Gini-escalated rates. Permanently eliminates manual whack-a-mole.',
-      gain: 'L1: _PAIR_TIGHTEN_RATE=0.003, _PAIR_RELAX_RATE=0.0015, _PAIR_COOLDOWN=3. L2: _AXIS_TIGHTEN_RATE=0.002, _AXIS_RELAX_RATE=0.0012, _AXIS_COOLDOWN=4, _GINI_ESCALATION=0.40',
+      mechanism: 'Two-layer omnipotent coupling self-correction. Layer 1: pair-level hotspot detection via rollingAbsCorr -- tightens pairs exceeding 1.5x baseline, relaxes pairs below 0.3x baseline. Layer 2: axis-level energy balancing via getAxisEnergyShare() -- nudges all pairs on overloaded (>0.22) or suppressed (<0.12) axes. Gini-escalated rates. Trust-axis rate scaling: axes with fewer nudgeable pairs (trust/entropy/phase=3) get proportionally faster relaxation via _EFFECTIVE_NUDGEABLE map. Per-regime telemetry tracks regimeBeats, regimePairAdj, regimeAxisAdj, regimeTightenBudget for diagnostic extraction. Permanently eliminates manual whack-a-mole.',
+      gain: 'L1: _PAIR_TIGHTEN_RATE=0.003, _PAIR_RELAX_RATE=0.0015, _PAIR_COOLDOWN=3. L2: _AXIS_TIGHTEN_RATE=0.002, _AXIS_RELAX_RATE=0.0012, _AXIS_COOLDOWN=4, _GINI_ESCALATION=0.40, _RELAX_RATE_REF=5, _EFFECTIVE_NUDGEABLE={density:5,tension:5,flicker:5,entropy:3,trust:3,phase:3}',
       interactsWith: [1, 9, 12],
       interactionNotes: '#1 self-calibrating targets: this controller modifies the same pair baselines that #1 adapts. #9 budget manager: changed baselines affect gain allocation. #12 homeostasis: energy redistribution changes trigger/relax the global multiplier.'
     }
@@ -171,7 +171,7 @@ metaControllerRegistry = (() => {
   }
 
   /**
-   * Get a controller by its numeric ID (1-12).
+   * Get a controller by its numeric ID (1-13).
    * @param {number} id
    * @returns {MetaControllerEntry|undefined}
    */

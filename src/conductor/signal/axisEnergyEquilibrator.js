@@ -55,6 +55,16 @@ axisEnergyEquilibrator = (() => {
   const _BASELINE_MAX = 0.40;
   const _WARMUP = 16;
 
+  // R32 E2: Effective nudgeable pair count per axis. Trust/entropy/phase have
+  // only 3 nudgeable pairs (both partners must include density/tension/flicker)
+  // vs 5 for density/tension/flicker. This causes 40% slower correction for
+  // disadvantaged axes. Scale relaxation rate by 5/count to compensate.
+  const _EFFECTIVE_NUDGEABLE = {
+    density: 5, tension: 5, flicker: 5,
+    entropy: 3, trust: 3, phase: 3
+  };
+  const _RELAX_RATE_REF = 5; // reference pair count (density/tension/flicker)
+
   // -- State --
   /** @type {Record<string, number>} */
   const _smoothedShares = {};
@@ -69,6 +79,17 @@ axisEnergyEquilibrator = (() => {
   const _perPairAdj = {};
   /** @type {Record<string, number>} */
   let _lastBaselines = {};
+
+  // R32 E5: Per-regime telemetry tracking. Records tightenScale regime
+  // breakdown and adjustments per regime for trace-summary extraction.
+  /** @type {Record<string, number>} */
+  const _regimeBeats = {};
+  /** @type {Record<string, number>} */
+  const _regimePairAdj = {};
+  /** @type {Record<string, number>} */
+  const _regimeAxisAdj = {};
+  /** @type {Record<string, number>} */
+  const _regimeTightenBudget = {};
 
   // Dimensions + pair mapping (precomputed)
   const _ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
@@ -120,12 +141,21 @@ axisEnergyEquilibrator = (() => {
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
     const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
 
-    // R30: Coherent gate -- when the system is in or near coherent regime,
-    // freeze ALL tightening. Tightening baselines widens the coupling gap
-    // and prevents coherent entry, creating a negative feedback cycle.
-    // Only relax (coldspot/undershoot) is allowed during coherent.
+    // R31: Graduated coherent gate. R30's binary gate (freeze during evolving
+    // + coherent = 61% of beats) caused axisGini to triple (0.137->0.382)
+    // because tightening was blocked for too long. Graduated approach:
+    //   exploring/initializing: full tightening (1.0)
+    //   evolving: reduced tightening (0.4) -- allows partial axis correction
+    //   coherent: frozen (0.0) -- protects coherent stability
     const currentRegime = regimeClassifier.getLastRegime();
-    const coherentGate = (currentRegime === 'coherent' || currentRegime === 'evolving');
+    const tightenScale = currentRegime === 'coherent' ? 0.0
+      : currentRegime === 'evolving' ? 0.4
+      : 1.0;
+
+    // R32 E5: Track per-regime beats and tightening budget
+    const rKey = currentRegime || 'unknown';
+    _regimeBeats[rKey] = (_regimeBeats[rKey] || 0) + 1;
+    _regimeTightenBudget[rKey] = (_regimeTightenBudget[rKey] || 0) + tightenScale;
 
     // ===== LAYER 1: Pair-level hotspot / coldspot detection =====
     for (let p = 0; p < _ALL_PAIRS.length; p++) {
@@ -137,16 +167,17 @@ axisEnergyEquilibrator = (() => {
       const rolling = V.optionalFinite(pd.rawRollingAbsCorr);
       if (baseline === undefined || rolling === undefined) continue;
 
-      if (!coherentGate && rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) {
-        // Hotspot -- tighten this pair's baseline
+      if (tightenScale > 0 && rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) {
+        // Hotspot -- tighten this pair's baseline (scaled by regime gate)
         const overshoot = rolling / m.max(baseline, 0.01);
-        const rate = _PAIR_TIGHTEN_RATE * giniMult * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const rate = _PAIR_TIGHTEN_RATE * tightenScale * giniMult * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(_BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
           _pairCooldowns[pair] = _PAIR_COOLDOWN;
           _pairAdjustments++;
           _perPairAdj[pair] = (_perPairAdj[pair] || 0) + 1;
+          _regimePairAdj[rKey] = (_regimePairAdj[rKey] || 0) + 1;
         }
       } else if (rolling < _COLDSPOT_RATIO * baseline && rolling < _COLDSPOT_ABS_MAX) {
         // Coldspot -- relax this pair's baseline
@@ -156,6 +187,7 @@ axisEnergyEquilibrator = (() => {
           _pairCooldowns[pair] = _PAIR_COOLDOWN;
           _pairAdjustments++;
           _perPairAdj[pair] = (_perPairAdj[pair] || 0) + 1;
+          _regimePairAdj[rKey] = (_regimePairAdj[rKey] || 0) + 1;
         }
       }
     }
@@ -166,9 +198,9 @@ axisEnergyEquilibrator = (() => {
       const share = _smoothedShares[axis] || 0;
       const pairs = _axisToPairs[axis];
 
-      if (share > _AXIS_OVERSHOOT && !coherentGate) {
+      if (share > _AXIS_OVERSHOOT && tightenScale > 0) {
         const excess = share - _FAIR_SHARE;
-        const rate = _AXIS_TIGHTEN_RATE * giniMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
+        const rate = _AXIS_TIGHTEN_RATE * tightenScale * giniMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue; // skip Layer-1 adjusted
@@ -180,11 +212,16 @@ axisEnergyEquilibrator = (() => {
             _pairCooldowns[pair] = _AXIS_COOLDOWN;
             _axisAdjustments++;
             _perAxisAdj[axis] = (_perAxisAdj[axis] || 0) + 1;
+            _regimeAxisAdj[rKey] = (_regimeAxisAdj[rKey] || 0) + 1;
           }
         }
       } else if (share < _AXIS_UNDERSHOOT && share > 0.001) {
         const deficit = _FAIR_SHARE - share;
-        const rate = _AXIS_RELAX_RATE * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
+        // R32 E2: Scale relaxation rate by inverse nudgeable pair count.
+        // Trust/entropy/phase axes have only 3 effective nudgeable pairs vs 5,
+        // so they need 5/3 = 1.67x faster relaxation to match correction speed.
+        const pairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
+        const rate = _AXIS_RELAX_RATE * pairScale * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue;
@@ -196,6 +233,7 @@ axisEnergyEquilibrator = (() => {
             _pairCooldowns[pair] = _AXIS_COOLDOWN;
             _axisAdjustments++;
             _perAxisAdj[axis] = (_perAxisAdj[axis] || 0) + 1;
+            _regimeAxisAdj[rKey] = (_regimeAxisAdj[rKey] || 0) + 1;
           }
         }
       }
@@ -209,7 +247,7 @@ axisEnergyEquilibrator = (() => {
     });
   }
 
-  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number> }} */
+  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number> }} */
   function getSnapshot() {
     return {
       beatCount: _beatCount,
@@ -218,7 +256,12 @@ axisEnergyEquilibrator = (() => {
       smoothedShares: Object.assign({}, _smoothedShares),
       perAxisAdj: Object.assign({}, _perAxisAdj),
       perPairAdj: Object.assign({}, _perPairAdj),
-      lastBaselines: Object.assign({}, _lastBaselines)
+      lastBaselines: Object.assign({}, _lastBaselines),
+      // R32 E5: Per-regime telemetry
+      regimeBeats: Object.assign({}, _regimeBeats),
+      regimePairAdj: Object.assign({}, _regimePairAdj),
+      regimeAxisAdj: Object.assign({}, _regimeAxisAdj),
+      regimeTightenBudget: Object.assign({}, _regimeTightenBudget)
     };
   }
 

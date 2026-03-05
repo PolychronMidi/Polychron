@@ -38,7 +38,7 @@ Modules self-register at load time. Two registries:
 - **`crossLayerRegistry`** - `register(name, module, scopes)` where scopes ⊆ `['all','section','phrase']`
 - **`conductorIntelligence`** - `registerDensityBias`, `registerTensionBias`, `registerFlickerModifier`, `registerRecorder`, `registerStateProvider`, `registerModule`
 
-11 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, inter-controller conflict detection, and whole-system coupling energy homeostasis. Never manually tune constants that a meta-controller already manages.
+13 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, inter-controller conflict detection, whole-system coupling energy homeostasis, and axis-level energy equilibration (two-layer pair-hotspot + axis-balance with graduated coherent gate). The regime classifier additionally self-balances coherent share via auto-adjusting `coherentThresholdScale`. Never manually tune constants that a meta-controller already manages.
 
 To add a module: write the file, self-register at end of IIFE, require from subsystem `index.js`.
 
@@ -76,7 +76,7 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - **New feedback loops** must register with `feedbackRegistry` to prevent catastrophic resonance. Declare in `metrics/feedback_graph.json` and ensure `scripts/validate-feedback-graph.js` passes.
 - **Trust system names:** always use `trustSystems.names.*` / `trustSystems.heatMapSystems.*` constants. Never hardcode trust name strings. Boot validation asserts completeness.
 - **Cross-layer emission:** route all cross-layer buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. Never `push()` directly.
-- **Meta-controller constants** (coupling targets, coherent relaxation, progressive strength, flicker dampening base) are managed by hypermeta self-calibrating controllers. Never hand-tune these; modify the controller logic instead. Query topology via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()`.
+- **Meta-controller constants** (coupling targets, pair baselines, coherent relaxation, coherent threshold scale, progressive strength, flicker dampening base, axis energy distribution, global gain multiplier) are managed by hypermeta self-calibrating controllers. Never hand-tune these; modify the controller logic instead. Never set `coherentThresholdScale` per-profile — the regime self-balancer owns it. Query topology via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()`.
 - **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls.
 
 ## Custom ESLint Rules
