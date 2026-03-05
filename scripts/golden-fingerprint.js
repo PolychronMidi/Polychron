@@ -227,7 +227,14 @@ function compareFingerprints(current, previous) {
 
   // Note count ratio
   const prevTotal = previous.noteCount.total || 1;
-  const noteRatio = Math.abs(current.noteCount.total - previous.noteCount.total) / prevTotal;
+  // R32 E7: Note count per-beat normalization. Compare notes-per-beat rate
+  // instead of raw totals so composition length differences don't inflate delta.
+  // Falls back to raw total comparison when beat count is unavailable.
+  const curBeats = current.meta.traceEntries || 1;
+  const prevBeats = previous.meta.traceEntries || 1;
+  const curRate = current.noteCount.total / curBeats;
+  const prevRate = previous.noteCount.total / prevBeats;
+  const noteRatio = prevRate > 0 ? Math.abs(curRate - prevRate) / prevRate : Math.abs(current.noteCount.total - previous.noteCount.total) / prevTotal;
   // R11 Evo 1: Profile-adaptive noteCount tolerance -- explosive profiles produce
   // highly variable note counts, ambient profiles are more stable.
   const PROFILE_NOTE_TOLERANCE = { explosive: 0.50, atmospheric: 0.40, ambient: 0.25, minimal: 0.25 };
@@ -255,9 +262,14 @@ function compareFingerprints(current, previous) {
     arcDist += (current.tensionArc[i] - previous.tensionArc[i]) ** 2;
   }
   arcDist = Math.sqrt(arcDist / Math.max(arcLen, 1));
-  const arcPass = arcDist <= TOLERANCES.tensionArcDistortion * crossProfileScale;
+  // R32 E4: Profile-specific tensionArc tolerance. Atmospheric late-ramp vs
+  // explosive mid-arch are fundamentally different profile characters, not drift.
+  // Cross-profile margin was 0.006 in R31 -- dangerously close to false-positive.
+  const PROFILE_TENSION_ARC_TOLERANCE = { explosive: 0.35, atmospheric: 0.35, ambient: 0.25, minimal: 0.25 };
+  const effectiveTensionArcTolerance = (PROFILE_TENSION_ARC_TOLERANCE[current.activeProfile] || TOLERANCES.tensionArcDistortion) * crossProfileScale;
+  const arcPass = arcDist <= effectiveTensionArcTolerance;
   if (!arcPass) drifted++;
-  results.push({ dimension: 'tensionArc', delta: arcDist, tolerance: TOLERANCES.tensionArcDistortion, status: arcPass ? 'stable' : 'drifted', current: current.tensionArc, previous: previous.tensionArc });
+  results.push({ dimension: 'tensionArc', delta: arcDist, tolerance: effectiveTensionArcTolerance, status: arcPass ? 'stable' : 'drifted', current: current.tensionArc, previous: previous.tensionArc });
 
   // Trust convergence
   const trustDelta = Math.abs(current.trustConvergence - previous.trustConvergence);

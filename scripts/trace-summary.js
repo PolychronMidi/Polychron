@@ -280,6 +280,8 @@ function summarizeTrace(entries) {
   let axisEnergyShare = null;
   // R27 E2: Coherence gate + floor dampening state for anti-redistribution analysis
   let couplingGates = null;
+  // R32 E5: Axis energy equilibrator per-regime telemetry
+  let axisEnergyEquilibratorState = null;
   // R28 E1: Enhanced extraction - prefer the last entry where ALL monitored
   // axes have non-zero values. Phase pairs may have null correlations on the
   // very last beat (producing phase=0 in axisCouplingTotals and axisEnergyShare).
@@ -343,7 +345,12 @@ function summarizeTrace(entries) {
     if (!couplingGates && entries[i].couplingGates && typeof entries[i].couplingGates === 'object') {
       couplingGates = entries[i].couplingGates;
     }
-    if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState && axisEnergyShare && couplingGates) break;
+    // R32 E5: Extract axisEnergyEquilibrator per-regime telemetry from snap
+    if (!axisEnergyEquilibratorState && entries[i].snap && typeof entries[i].snap === 'object' &&
+        entries[i].snap.axisEnergyEquilibrator && typeof entries[i].snap.axisEnergyEquilibrator === 'object') {
+      axisEnergyEquilibratorState = entries[i].snap.axisEnergyEquilibrator;
+    }
+    if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState && axisEnergyShare && couplingGates && axisEnergyEquilibratorState) break;
   }
   // R28 E1: Use fully-populated entries when available
   if (axisCouplingTotalsBest) axisCouplingTotals = axisCouplingTotalsBest;
@@ -397,7 +404,47 @@ function summarizeTrace(entries) {
     axisCouplingTotals,
     axisEnergyShare,
     couplingGates,
-    couplingHomeostasis: couplingHomeostasisState
+    couplingHomeostasis: couplingHomeostasisState,
+    // R32 E5: Axis energy equilibrator per-regime telemetry
+    axisEnergyEquilibrator: axisEnergyEquilibratorState,
+    // R32 E6: Intra-axis pair energy distribution diagnostic
+    intraAxisDistribution: (() => {
+      // Compute per-axis Gini coefficient and dominant pair from coupling data
+      const ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
+      const result = {};
+      for (let a = 0; a < ALL_AXES.length; a++) {
+        const axis = ALL_AXES[a];
+        const pairAvgs = [];
+        for (let k = 0; k < couplingKeys.length; k++) {
+          const pair = couplingKeys[k];
+          if (pair.indexOf(axis) !== -1 && couplingSummary[pair] && couplingSummary[pair].avg !== null) {
+            pairAvgs.push({ pair, avg: couplingSummary[pair].avg });
+          }
+        }
+        if (pairAvgs.length < 2) continue;
+        // Sort by avg for Gini computation
+        pairAvgs.sort((x, y) => x.avg - y.avg);
+        const n = pairAvgs.length;
+        let rankSum = 0;
+        let total = 0;
+        for (let j = 0; j < n; j++) {
+          rankSum += (j + 1) * pairAvgs[j].avg;
+          total += pairAvgs[j].avg;
+        }
+        const gini = total > 0 && n > 1
+          ? Number(((2 * rankSum) / (n * total) - (n + 1) / n).toFixed(4))
+          : 0;
+        const dominant = pairAvgs[n - 1];
+        result[axis] = {
+          gini: Math.max(0, gini),
+          pairCount: n,
+          dominant: dominant.pair,
+          dominantAvg: dominant.avg,
+          pairs: pairAvgs.map(function(p) { return { pair: p.pair, avg: p.avg }; })
+        };
+      }
+      return Object.keys(result).length > 0 ? result : null;
+    })()
   };
 }
 
