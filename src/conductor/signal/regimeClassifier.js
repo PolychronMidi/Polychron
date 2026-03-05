@@ -10,7 +10,11 @@ regimeClassifier = (() => {
 
   // Hysteresis: requires REGIME_HOLD consecutive beats of a new
   // classification before switching.
-  const REGIME_HOLD = 5;
+  // R36 E1: Reduced from 5 to 3. R35 had 639/702 beats where ALL exploring
+  // conditions were met yet neither coherent nor exploring entered. With
+  // gapAvg=+0.0985 but gapMin=-0.0149, ~5% of beats return raw!='coherent',
+  // resetting the 5-consecutive counter. P(3 consecutive|95% positive) ~ 86%.
+  const REGIME_HOLD = 3;
 
   // Profile-adaptive oscillating curvature threshold
   const OSCILLATING_CURVATURE_DEFAULT = 0.55;
@@ -21,7 +25,7 @@ regimeClassifier = (() => {
   let exploringBeats = 0; // duration escalator: consecutive exploring beats
   let coherentBeats = 0;  // saturation guard: consecutive coherent beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
-  let coherentThresholdScale = 0.75; // R35 E1: lowered from 0.90 for aggressive coherent convergence (R34: scale only reached 0.792 in 282 beats, gapAvg=+0.15)
+  let coherentThresholdScale = 0.65; // R36 E6: lowered from 0.75. R35 self-balancer pushed scale to 0.55 floor within ~33 nudges. Starting at 0.65 reaches floor sooner, giving coherent more beats at the lowest threshold.
   // R22 E4 / R24 E1: Evolving regime minimum dwell time. Prevents the
   // system from passing through evolving too quickly. R22 set 12 beats
   // which catastrophically disrupted bistable coherent feedback (0% coherent
@@ -60,6 +64,13 @@ regimeClassifier = (() => {
   // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
   // R34 E6: Extended with velocity, velThreshold for transition readiness diagnostic.
   let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0, velocity: 0, velThreshold: 0.008 };
+
+  // R36 E4: Raw regime diagnostic. Tallies how many beats each raw
+  // classification appears (before hysteresis). Comparing rawRegimeCounts
+  // vs resolved regimeCounts reveals hysteresis deadlock: if rawCoherent
+  // is high but resolvedCoherent is 0, the 3-beat hysteresis is still
+  // breaking the chain.
+  const _rawRegimeCounts = {};
 
   // R17 structural fix: Self-calibrating regime saturation.
   // Tracks rolling coherent share and derives penalty dynamically instead of
@@ -243,14 +254,26 @@ regimeClassifier = (() => {
     // R34 E6: Include velocity + velThreshold for transition readiness
     // R35 E5: Include effectiveDim for exploring-block diagnostic
     _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus, velocity: avgVelocity, velThreshold: _velThreshold, effectiveDim };
-    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold) return 'coherent';
+    // R36 E2: effectiveDim gate on coherent entry. Coherent means "dimensions
+    // move together" which implies low effective dimensionality. When effectiveDim
+    // > 4.0, the system has 4+ independent degrees of freedom - that's exploring
+    // territory even if coupling exceeds the (very low) threshold. In R35, 639/702
+    // beats had ALL exploring conditions met, but coherent's low threshold (~0.07)
+    // absorbed them all. This gate opens the exploring pathway by letting high-dim
+    // beats fall through to the exploring check instead.
+    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 4.0) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
     // R35 E2: Lowered velocity threshold from 0.02 to 0.015. R34 had 0%
     // exploring because velocity was consistently in the 0.008-0.02 dead
     // zone (too fast for evolving cutoff, too slow for exploring entry).
-    if (avgVelocity > 0.015 && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
+    // R36 E5: Adaptive relaxation. After 100+ consecutive evolving beats
+    // without transition, relax from 0.015 to 0.010. In R35, 15 beats
+    // were velocity-blocked at the 0.015 threshold. This recaptures them
+    // during prolonged evolving locks.
+    const _exploringVelThreshold = _evolvingBeats > 100 ? 0.010 : 0.015;
+    if (avgVelocity > _exploringVelThreshold && effectiveDim > 2.5 && couplingStrength <= 0.40) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
@@ -269,6 +292,8 @@ regimeClassifier = (() => {
    * @returns {string} - stable regime with hysteresis
    */
   function resolve(rawRegime) {
+    // R36 E4: Tally raw regime classifications before hysteresis
+    _rawRegimeCounts[rawRegime] = (_rawRegimeCounts[rawRegime] || 0) + 1;
     if (rawRegime === lastRegime) {
       candidateRegime = rawRegime;
       candidateCount = 0;
@@ -370,14 +395,15 @@ regimeClassifier = (() => {
    * R34 E6: Transition readiness diagnostic. Returns coupling gap (positive =
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
-   * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string }}
+  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, rawRegimeCounts: Record<string, number> }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
     // R35 E5: Determine which condition blocks exploring entry
-    // Exploring requires: velocity > 0.015, effectiveDim > 2.5, coupling <= 0.40
+    // R36 E5: Use adaptive velocity threshold (0.010 after 100+ evolving beats)
+    const _expVelThresh = _evolvingBeats > 100 ? 0.010 : 0.015;
     let exploringBlock = 'none';
-    if (li.velocity <= 0.015) exploringBlock = 'velocity';
+    if (li.velocity <= _expVelThresh) exploringBlock = 'velocity';
     else if ((li.effectiveDim || 0) <= 2.5) exploringBlock = 'dimension';
     else if (li.couplingStrength > 0.40) exploringBlock = 'coupling';
     return {
@@ -388,7 +414,8 @@ regimeClassifier = (() => {
       velThreshold: li.velThreshold,
       thresholdScale: Number(coherentThresholdScale.toFixed(4)),
       velocityBlocked: li.couplingStrength > li.coherentThreshold && li.velocity <= li.velThreshold,
-      exploringBlock
+      exploringBlock,
+      rawRegimeCounts: Object.assign({}, _rawRegimeCounts)
     };
   }
 

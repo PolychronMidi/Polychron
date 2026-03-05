@@ -1,15 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-05T16:22:07.506Z",
-    "verdict": "EVOLVED"
+    "generated": "2026-03-05T18:11:50.751Z",
+    "verdict": "STABLE"
   },
-  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. regime balance shifted: initializing: 6.4% -> 16.3%; evolving: 45.6% -> 83.7%; exploring: 48.0% -> 0.0%.",
-  "explanations": [
-    {
-      "dimension": "regimeDistribution",
-      "delta": 0.3200815494393476,
-      "tolerance": 0.3,
-      "cause": "regime balance shifted: initializing: 6.4% -> 16.3%; evolving: 45.6% -> 83.7%; exploring: 48.0% -> 0.0%"
-    }
-  ]
+  "narrative": "The composition character is statistically stable. No significant drift detected.",
+  "explanations": []
 }

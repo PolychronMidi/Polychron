@@ -1430,7 +1430,7 @@ declare var regimeClassifier: {
   setEvolvingMinDwell(minDwell: number): void;
   getExploringBeats(): number;
   getLastRegime(): string;
-  getTransitionReadiness(): { gap: number; couplingStrength: number; coherentThreshold: number; velocity: number; velThreshold: number; thresholdScale: number; velocityBlocked: boolean; exploringBlock: string };
+  getTransitionReadiness(): { gap: number; couplingStrength: number; coherentThreshold: number; velocity: number; velThreshold: number; thresholdScale: number; velocityBlocked: boolean; exploringBlock: string; rawRegimeCounts: Record<string, number> };
   reset(): void;
 };
 declare var systemDynamicsProfiler: SystemDynamicsProfilerAPI;
