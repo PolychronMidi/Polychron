@@ -1,3 +1,73 @@
+## R33 — Pre-Run — 6 EVOLUTIONS: SPIKE TIMING + SYMMETRIC SCALING + CHRONIC LOCK + TRACE FIX + OBSERVABILITY
+
+### Evolutions Applied (from R32)
+- E1: **Velocity-based preemptive spike detection** — replaces R32 E8's regime-transition approach that fired one beat late. Tracks max beat-to-beat |delta r| across all pairs as coupling velocity. EMA (alpha=0.08, ~12-beat horizon). When instantaneous velocity > 2x EMA, triggers 2x gain boost on the spike beat PLUS 3 cooldown beats (4 total). Preemptive: detects the spike as it happens, not after. Resets on section boundaries. — `src/conductor/signal/pipelineCouplingManager.js`
+- E2: **Symmetric tighten-rate scaling for disadvantaged axes** — R32 E2 only scaled the relaxation (undershoot) path. Entropy at 0.230 overshooting but tightening at base rate. Now applies same `_EFFECTIVE_NUDGEABLE / _RELAX_RATE_REF` scaling to overshoot tightening: entropy/trust/phase axes tighten 1.67x faster (5/3 ratio), matching relaxation. — `src/conductor/signal/axisEnergyEquilibrator.js`
+- E3: **Floor dampening decay to break chronic lock** — R32 floorDampen stuck at 0.247 with 75% ceiling contact. New mechanism: tracks consecutive beats where rawDampen < 0.50. After 20+, nudges `_totalEnergyFloor` downward (0.5%/beat, floor >= 60% of EMA) AND raises effective minimum toward 0.60 (+0.01/beat). Resets on any beat where rawDampen >= 0.50. Section reset clears counter. — `src/conductor/signal/couplingHomeostasis.js`
+- E4: **Fix axisEnergyEquilibrator trace extraction** — root cause: `conductorState.updateFromConductor` only destructures explicitly-named fields; state provider fields like axisEnergyEquilibrator are silently dropped. Fix: bypass conductorState by adding direct `axisEnergyEquilibrator.getSnapshot()` to trace payload in crossLayerBeatRecord.js. traceDrain serializes as top-level field. trace-summary reads from `entries[i].axisEnergyEquilibrator` instead of `entries[i].snap.axisEnergyEquilibrator`. — `src/play/crossLayerBeatRecord.js`, `src/writer/traceDrain.js`, `scripts/trace-summary.js`
+- E5: **Per-pair effectiveness temporal tracking** — adds `effMin`, `effMax`, `effActiveBeats` to pairState. Updated alongside existing effectivenessEma computation. Exposed in `getAdaptiveTargetSnapshot()`. Reset on section boundaries. Enables observation of effectiveness range during active beats (not just final coherent snapshot). — `src/conductor/signal/pipelineCouplingManager.js`
+- E6: **TUNING_MAP update for R33 constants** — documented velocity spike dampener params, symmetric tighten scaling, chronic floor decay, effectiveness temporal tracking. Updated sensitivity notes for sections 7-9. — `doc/TUNING_MAP.md`
+
+### Hypotheses to Track
+- H1: Velocity-based spike detection (E1) reduces worst-pair p95 below 0.85. Boost triggers < 5 per section.
+- H2: Symmetric tighten scaling (E2) pushes trust share above 0.12 AND entropy share below 0.22. axisGini improves below 0.15.
+- H3: Floor dampening decay (E3) raises average floorDampen above 0.40, ceilingContactBeats < 30%.
+- H4: Equilibrator extraction fix (E4) yields non-null axisEnergyEquilibrator with regimeBeats/regimeTightenBudget populated.
+- H5: Effectiveness temporal tracking (E5) reveals E1 graduated gate engagement: density-trust/flicker-phase effMin < 0.45.
+- H6: Coherent recovers to [15-35%] as coherentThresholdScale self-corrects from 11.8%.
+
+---
+
+## R32 — 2026-03-05 — STABLE
+
+**Profile:** explosive | **Beats:** 382 | **Duration:** 55.4s | **Notes:** 14,722
+**Fingerprint:** 9/9 stable | Drifted: none | Cross-profile: atmospheric→explosive (tolerances 1.3x)
+
+### Key Observations
+- **axisGini HELD: 0.1894 (< 0.25 target).** Second consecutive run maintaining axis balance. Worse than R31's 0.1174 (+61.3%) but still comfortably within target. Entropy axis now leads at 0.230 share (R31: density-flicker dominated). The graduated coherent gate continues to deliver structural balance.
+- **COHERENT BELOW TARGET: 11.8% (45 beats), outside [15-35%].** R31 atmospheric had 22.4%, R30 explosive had 17.6%. Coherent entered at beat 337 (88.2% through composition). With only 382 total beats, insufficient runtime for sustained coherent phase. Composition length, not regime balance, is the bottleneck. coherentThresholdScale should self-correct next run.
+- **density-trust heatPenalty ZEROED: 0.25→0.00 (H3 CONFIRMED).** R32 E3's baseline raise (0.10→0.20) eliminated wasteful tightening budget on this structurally irreducible pair. Gain stabilized at 0.22 (near GAIN_INIT). Budget freed for responsive pairs.
+- **TRUST SHARE CHRONIC: 0.1165 (below 0.12 undershoot).** Worsened from R31's 0.1245 despite R32 E2's 1.67x relaxation scaling. E2 only scales the undershoot relaxation path, not overshoot tightening. Furthermore, entropy overshoots at 0.230 — its 40% slower tightening (3 nudgeable pairs vs 5) pushes energy toward trust. Asymmetric scaling.
+- **p95 TAILS NOT IMPROVED: R32 E8 spike dampener ineffective (H8 REFUTED).** density-flicker p95 0.925 (R31: 0.840, worse). 4 severe pairs (>0.85): density-flicker 0.925, tension-trust 0.879, tension-flicker 0.873, entropy-trust 0.865. The dampener fires AFTER regime detection, but coupling spikes occur AT the transition beat. The 2x boost arrives one beat too late.
+- **FLOOR DAMPENING CHRONIC LOCK: floorDampen 0.247, redistributionScore 0.989.** Coupling homeostasis permanently in dampened state (75% escalation suppression). ceilingContactBeats 50/67 (75%). The structural energy floor (2.538) is close to totalEnergyEma (2.757), preventing gain recovery. Gains cannot escalate enough to decorrelate persistent pairs.
+- **axisEnergyEquilibrator EXTRACTION BROKEN: null (H5 REFUTED).** R32 E5 added per-regime telemetry fields to getSnapshot() and trace-summary extraction code. State provider registered correctly. But trace-summary reports null — likely the trace writer doesn't serialize this state provider key. Per-regime tightening budget untestable.
+- **EFFECTIVENESS TEMPORAL BLIND SPOT: all pairs show 0.475.** End-of-run coherent snapshot masks true effectiveness during active regimes. R31's low-eff pairs (density-trust 0.414, flicker-phase 0.409) cannot be re-evaluated. R32 E1's graduated gate is unobservable without temporal tracking.
+- **Intra-axis diagnostics WORKING (E6 CONFIRMED).** Flicker axis most concentrated: gini 0.241, density-flicker dominates at 0.403 (3.1x smallest pair). Entropy axis similarly concentrated: gini 0.245, tension-entropy dominates. Density axis most uniform: gini 0.100.
+- **noteCount normalization WORKING (E7 CONFIRMED).** Per-beat rate essentially identical: 38.54 vs 38.53, delta 0.0002. Raw 21% count difference completely absorbed.
+- **tensionArc profile tolerance WORKING (E4 CONFIRMED).** Delta 0.198, tolerance 0.455 (0.35 × 1.3x cross-profile). Without E4, tolerance would have been 0.39 — still safe but with only 49% margin vs E4's 56%.
+- **6 correlation flips.** tension-trust flipped increasing→decreasing (positive: decorrelation gaining). flicker-entropy flipped decreasing→increasing (concerning: new co-movement, r=+0.308).
+- **NO NEW WHACK-A-MOLE (H10 CONFIRMED).** No pair surged dramatically. density-flicker 0.403 consistent with R30 explosive (0.415). Energy distribution more uniform within axes.
+- **0 critical, 0 warning, 2 info. 16/16 pipeline, 10/10 invariants, 71/71 feedback, 0 beat-setup spikes.**
+
+### Evolutions Applied (from R32 Pre-Run)
+- E1: **Effectiveness-gated gain escalation** — **inconclusive** — all pairs show effectivenessEma 0.475 (stale coherent snapshot). Cannot verify if graduated gate engaged during exploring/evolving. Need temporal tracking.
+- E2: **Trust-axis relaxation rate scaling** — **refuted (confounded)** — trust share 0.1165, worse than R31's 0.1245. Profile change (atmospheric→explosive) confounds evaluation. Relaxation scaling is undershoot-only; trust still below threshold.
+- E3: **density-trust structural baseline raise** — **confirmed** — heatPenalty 0.00 (R31: 0.25), gain 0.22 (stable near GAIN_INIT). Budget freed. density-trust avg 0.335 (healthy for explosive profile, R30 was 0.316).
+- E4: **Profile-specific tensionArc tolerance** — **confirmed** — delta 0.198, tolerance 0.455. No false-positive drift on cross-profile comparison.
+- E5: **Equilibrator per-regime telemetry** — **refuted** — axisEnergyEquilibrator: null in trace-summary. Extraction path broken. State provider registered but trace writer likely doesn't serialize this key.
+- E6: **Intra-axis pair energy distribution** — **confirmed** — 6 axes computed with gini and dominant pair. Flicker 0.241, entropy 0.245 most concentrated. density-flicker and tension-entropy identified as dominant.
+- E7: **Fingerprint noteCount per-beat normalization** — **confirmed** — per-beat delta 0.0002 despite 21% raw count difference. False drift eliminated.
+- E8: **p95 instantaneous spike dampener** — **refuted** — density-flicker p95 0.925 (R31: 0.840, worse). Spike dampener fires one beat late (post-regime-detection, but spikes occur at transition beat). Timing mechanism needs preemptive detection.
+
+### Evolutions Proposed (for R33)
+- E1: **Transition spike dampener timing fix** — velocity-based preemptive triggering — `src/conductor/signal/pipelineCouplingManager.js`
+- E2: **Symmetric tighten-rate scaling for disadvantaged axes** — match E2 relaxation scaling in overshoot path — `src/conductor/signal/axisEnergyEquilibrator.js`
+- E3: **Floor dampening decay to break chronic redistribution lock** — proportional floor relaxation after sustained dampening — `src/conductor/signal/couplingHomeostasis.js`
+- E4: **Fix axisEnergyEquilibrator trace extraction** — correct snap serialization/extraction path — `scripts/trace-summary.js`, trace writer
+- E5: **Per-pair effectiveness temporal tracking** — min/avg/max effectiveness across active regimes — `scripts/trace-summary.js`
+- E6: **TUNING_MAP update for R28-R32 constants** — document axisEnergyEquilibrator, floor dampening, effectiveness gating, spike dampener — `doc/TUNING_MAP.md`
+
+### Hypotheses to Track
+- H1: Velocity-based spike detection (E1) should reduce worst-pair p95 below 0.85. Track boost trigger count per section (should be < 5).
+- H2: Symmetric tighten scaling (E2) should push trust share above 0.12 AND entropy share below 0.22. axisGini should improve below 0.15.
+- H3: Floor dampening decay (E3) should raise average floorDampen above 0.40 and reduce ceilingContactBeats below 30%. redistributionScore should decrease.
+- H4: Equilibrator extraction fix (E4) should yield non-null axisEnergyEquilibrator with regimeBeats, regimeTightenBudget populated. Evolving should contribute 30-50% of effective tightening.
+- H5: Effectiveness temporal tracking (E5) should reveal whether E1's graduated gate engages: density-trust/flicker-phase effectiveness avg should be < 0.45 during exploring/evolving, with gainMax capped below 0.60.
+- H6: Coherent should recover to [15-35%] as coherentThresholdScale self-corrects from the 11.8% reading. Longer composition (>400 beats) would independently help.
+- H7: flicker-entropy co-movement trend (r=+0.308, increasing flip) — monitor whether this develops into a structural coupling requiring baseline tightening.
+
+---
+
 ## R32 — Pre-Run — 8 EVOLUTIONS: BUDGET EFFICIENCY + DIAGNOSTICS + SPIKE DAMPENING
 
 ### Evolutions Applied (from R31)

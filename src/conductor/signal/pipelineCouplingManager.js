@@ -178,15 +178,21 @@ pipelineCouplingManager = (() => {
   // coupling targets to break the chicken-and-egg bistability.
   let _exploringBeatCount = 0;
 
-  // R32 E8: p95 instantaneous spike dampener. Regime transitions cause
-  // rapid signal co-movement (all signals shift simultaneously), producing
-  // instantaneous coupling spikes near 1.0. These drive p95 tails even
-  // when steady-state coupling is well-controlled. Detect transitions
-  // and temporarily boost effective gain for a short window.
-  let _lastRegime = null;
-  let _transitionCooldown = 0;
-  const _TRANSITION_BOOST_BEATS = 4;
-  const _TRANSITION_GAIN_BOOST = 2.0;
+  // R32 E8 / R33 E1: p95 instantaneous spike dampener.
+  // R32's regime-transition approach fired one beat late (regime detected
+  // AFTER coupling spike). R33 replaces with velocity-based preemptive
+  // detection: track max beat-to-beat |delta r| across all pairs as a
+  // velocity signal. When velocity exceeds 2x its running EMA, trigger
+  // gain boost on THAT SAME BEAT (catching the spike as it happens).
+  let _couplingVelocityEma = 0;
+  const _VELOCITY_EMA_ALPHA = 0.08;     // ~12-beat horizon
+  const _VELOCITY_TRIGGER_RATIO = 2.0;  // boost when velocity > 2x EMA
+  let _velocityBoostActive = false;     // true on the beat velocity spikes
+  let _velocityBoostCooldown = 0;       // remaining beats of post-spike boost
+  const _VELOCITY_BOOST_BEATS = 3;      // 3 additional beats after spike beat (total 4 incl. spike)
+  const _VELOCITY_GAIN_BOOST = 2.0;
+  /** @type {Record<string, number>} */
+  let _prevBeatAbsCorr = {};
 
   // R27 E2: Module-level cache for coherence gate + floor dampening diagnostics.
   // Updated in _addNudge's COUPLING_GATES emission block; exposed via
@@ -225,7 +231,7 @@ pipelineCouplingManager = (() => {
   let _hpCooldownRemaining = 0;
 
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
-  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number }>} */
+  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number }>} */
   const _pairState = {};
 
   /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
@@ -235,12 +241,12 @@ pipelineCouplingManager = (() => {
   /**
    * Get or create adaptive state for a pair.
    * @param {string} key
-   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number }}
+   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number }}
    */
   function _getPairState(key) {
     if (!_pairState[key]) {
       const initGain = PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT;
-      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5 };
+      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5, effMin: 1.0, effMax: 0.0, effActiveBeats: 0 };
     }
     return _pairState[key];
   }
@@ -298,12 +304,31 @@ pipelineCouplingManager = (() => {
     // R25 E3: Track exploring duration for partial target relaxation.
     if (regime === 'exploring') { _exploringBeatCount++; } else { _exploringBeatCount = 0; }
 
-    // R32 E8: Detect regime transitions for spike dampening.
-    if (_lastRegime !== null && regime !== _lastRegime) {
-      _transitionCooldown = _TRANSITION_BOOST_BEATS;
+    // R33 E1: Coupling velocity computation for preemptive spike dampening.
+    // Compute max beat-to-beat |delta r| across all pairs as velocity signal.
+    let _maxPairDelta = 0;
+    const _prevKeys = Object.keys(_prevBeatAbsCorr);
+    if (_prevKeys.length > 0) {
+      for (let vi = 0; vi < _prevKeys.length; vi++) {
+        const vk = _prevKeys[vi];
+        const currCorr = snap.couplingMatrix[vk];
+        if (typeof currCorr !== 'number' || !Number.isFinite(currCorr)) continue;
+        const delta = m.abs(m.abs(currCorr) - (_prevBeatAbsCorr[vk] || 0));
+        if (delta > _maxPairDelta) _maxPairDelta = delta;
+      }
     }
-    _lastRegime = regime;
-    if (_transitionCooldown > 0) _transitionCooldown--;
+    // Update running velocity EMA and check for spike
+    if (_couplingVelocityEma < 0.001) {
+      _couplingVelocityEma = _maxPairDelta; // seed on first beat
+    } else {
+      _couplingVelocityEma = _couplingVelocityEma * (1 - _VELOCITY_EMA_ALPHA) + _maxPairDelta * _VELOCITY_EMA_ALPHA;
+    }
+    _velocityBoostActive = (_couplingVelocityEma > 0.01 && _maxPairDelta > _couplingVelocityEma * _VELOCITY_TRIGGER_RATIO);
+    if (_velocityBoostActive) {
+      _velocityBoostCooldown = _VELOCITY_BOOST_BEATS;
+    } else if (_velocityBoostCooldown > 0) {
+      _velocityBoostCooldown--;
+    }
     // R25 E3 / R26 E3: Partial target relaxation during sustained exploring (>40 beats).
     // Breaks the chicken-and-egg bistability: coupling stays below coherent
     // threshold because aggressive decorrelation prevents rise; coherent
@@ -585,6 +610,10 @@ pipelineCouplingManager = (() => {
         if (ps.gain > GAIN_INIT * 1.2 && absCorr > target) {
           const improved = absCorr < ps.lastAbsCorr ? 1 : 0;
           ps.effectivenessEma = (ps.effectivenessEma || 0.5) * 0.95 + improved * 0.05;
+          // R33 E5: Per-pair effectiveness temporal tracking (min/max/activeBeats)
+          ps.effActiveBeats = (ps.effActiveBeats || 0) + 1;
+          ps.effMin = m.min(ps.effMin !== undefined ? ps.effMin : 1.0, ps.effectivenessEma);
+          ps.effMax = m.max(ps.effMax !== undefined ? ps.effMax : 0.0, ps.effectivenessEma);
         }
         ps.lastAbsCorr = absCorr;
 
@@ -652,9 +681,10 @@ pipelineCouplingManager = (() => {
         if (dimA === 'density' || dimB === 'density') {
           effectiveGain *= _densityGainScalar;
         }
-        // R32 E8: Boost gain during regime transition window to clip p95 spikes.
-        if (_transitionCooldown > 0) {
-          effectiveGain *= _TRANSITION_GAIN_BOOST;
+        // R33 E1: Velocity-based spike dampener. Boost gain on the spike beat
+        // itself (velocityBoostActive) AND for _VELOCITY_BOOST_BEATS after.
+        if (_velocityBoostActive || _velocityBoostCooldown > 0) {
+          effectiveGain *= _VELOCITY_GAIN_BOOST;
         }
 
         if (aIsNudgeable && bIsNudgeable) {
@@ -682,6 +712,16 @@ pipelineCouplingManager = (() => {
           const nudgeAxis = aIsNudgeable ? dimA : dimB;
           _addNudge(nudgeAxis, direction * magnitude, isSevere);
         }
+      }
+    }
+
+    // R33 E1: Snapshot current absCorr per pair for next-beat velocity computation.
+    _prevBeatAbsCorr = {};
+    for (let va = 0; va < ALL_MONITORED_DIMS.length; va++) {
+      for (let vb = va + 1; vb < ALL_MONITORED_DIMS.length; vb++) {
+        const vk = ALL_MONITORED_DIMS[va] + '-' + ALL_MONITORED_DIMS[vb];
+        const vc = matrix[vk];
+        if (typeof vc === 'number' && Number.isFinite(vc)) _prevBeatAbsCorr[vk] = m.abs(vc);
       }
     }
 
@@ -902,6 +942,10 @@ pipelineCouplingManager = (() => {
       ps.lastAbsCorr = 0;
       ps.recentAbsCorr = [];
       ps.heatPenalty = 0;
+      // R33 E5: Reset effectiveness temporal tracking per section
+      ps.effMin = 1.0;
+      ps.effMax = 0.0;
+      ps.effActiveBeats = 0;
     }
     // #1: Cross-section coupling memory (R17 structural fix).
     // Adaptive targets are NOT reset on section boundaries. The self-calibrating
@@ -922,9 +966,11 @@ pipelineCouplingManager = (() => {
     _coherentShareEma = _coherentShareEma * 0.7 + 0.15 * 0.3;
     // R25 E3: Reset exploring beat counter per section
     _exploringBeatCount = 0;
-    // R32 E8: Reset transition cooldown per section
-    _transitionCooldown = 0;
-    _lastRegime = null;
+    // R33 E1: Reset velocity spike dampener per section
+    _velocityBoostCooldown = 0;
+    _velocityBoostActive = false;
+    _couplingVelocityEma = 0;
+    _prevBeatAbsCorr = {};
     // R20 E5: Reset flicker guard to allow fresh assessment per section
     _flickerGuardState = 'normal';
     // R24 E4: Reset density guard per section
@@ -939,7 +985,7 @@ pipelineCouplingManager = (() => {
   // Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
   // gain, heatPenalty, effectivenessEma, and per-axis totals for post-run analysis.
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number, effectivenessEma: number, hpPromoted: boolean }>} */
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
     const result = {};
     const keys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < keys.length; i++) {
@@ -954,6 +1000,10 @@ pipelineCouplingManager = (() => {
         gain: ps ? Number(ps.gain.toFixed(4)) : 0,
         heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0,
         effectivenessEma: ps ? Number((ps.effectivenessEma || 0.5).toFixed(4)) : 0.5,
+        // R33 E5: Per-pair effectiveness temporal tracking
+        effMin: ps ? Number((ps.effMin !== undefined ? ps.effMin : 1.0).toFixed(4)) : 1.0,
+        effMax: ps ? Number((ps.effMax !== undefined ? ps.effMax : 0.0).toFixed(4)) : 0.0,
+        effActiveBeats: ps ? (ps.effActiveBeats || 0) : 0,
         hpPromoted: key === _hpPromotedPair
       };
     }

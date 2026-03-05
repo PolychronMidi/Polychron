@@ -345,10 +345,12 @@ function summarizeTrace(entries) {
     if (!couplingGates && entries[i].couplingGates && typeof entries[i].couplingGates === 'object') {
       couplingGates = entries[i].couplingGates;
     }
-    // R32 E5: Extract axisEnergyEquilibrator per-regime telemetry from snap
-    if (!axisEnergyEquilibratorState && entries[i].snap && typeof entries[i].snap === 'object' &&
-        entries[i].snap.axisEnergyEquilibrator && typeof entries[i].snap.axisEnergyEquilibrator === 'object') {
-      axisEnergyEquilibratorState = entries[i].snap.axisEnergyEquilibrator;
+    // R33 E4: axisEnergyEquilibrator is now a top-level trace field
+    // (conductorState.updateFromConductor silently drops state-provider fields,
+    //  so the snap path never worked -- this is the direct bypass fix).
+    if (!axisEnergyEquilibratorState && entries[i].axisEnergyEquilibrator &&
+        typeof entries[i].axisEnergyEquilibrator === 'object') {
+      axisEnergyEquilibratorState = entries[i].axisEnergyEquilibrator;
     }
     if (adaptiveTargets && axisCouplingTotals && couplingHomeostasisState && axisEnergyShare && couplingGates && axisEnergyEquilibratorState) break;
   }

@@ -56,7 +56,7 @@ traceDrain = (() => {
   /**
    * Record one trace beat entry.
    * @param {string} layer
-   * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, stageTiming?: Record<string,number>|null, iterBudget?: any }} data
+   * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, axisEnergyEquilibrator?: any, stageTiming?: Record<string,number>|null, iterBudget?: any }} data
    */
   function record(layer, data) {
     if (!isTracing || fd === null) return;
@@ -74,6 +74,7 @@ traceDrain = (() => {
       axisEnergyShare: data.axisEnergyShare || undefined,
       couplingGates: data.couplingGates || undefined,
       couplingHomeostasis: data.couplingHomeostasis || undefined,
+      axisEnergyEquilibrator: data.axisEnergyEquilibrator || undefined,
       notes: _pendingNotes.length > 0 ? _pendingNotes.slice() : undefined,
       stageTiming: data.stageTiming || undefined,
       iterBudget: data.iterBudget || undefined

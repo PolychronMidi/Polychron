@@ -101,6 +101,14 @@ couplingHomeostasis = (() => {
   let _nudgeablePairTurbulenceEma = 0;
   let _nudgeableRedistributionScore = 0;
   let _nudgeableNonRedistBeats = 0;
+  // R33 E3: Chronic dampening decay. When floorDampen stays below 0.50
+  // for >20 consecutive beats, the structural floor is locked too close to
+  // totalEnergyEma -- gains are permanently suppressed. Gradually nudge the
+  // floor downward to break the lock while preserving minimum suppression.
+  let _chronicDampenBeats = 0;
+  const _CHRONIC_DAMPEN_THRESHOLD = 20;
+  const _CHRONIC_FLOOR_RELAX_RATE = 0.005;
+  const _CHRONIC_FLOOR_RELAX_CAP = 0.60;
   // R21 E6: Invoke tracking for beat processing diagnostics
   let _invokeCount = 0;               // every refresh() call regardless of guards
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
@@ -414,21 +422,38 @@ couplingHomeostasis = (() => {
    * When total coupling energy is near the structural minimum (the floor
    * that decorrelation cannot push below due to conservation), further gain
    * escalation only redistributes energy between pairs -- the fundamental
-   * cause of whack-a-mole. Returns 0.05 (near floor) to 1.0 (well above).
+   * cause of whack-a-mole. Returns 0.20 (near floor) to 1.0 (well above).
+   * R33 E3: Chronic dampening decay. After _CHRONIC_DAMPEN_THRESHOLD
+   * consecutive sub-0.50 beats, nudge _totalEnergyFloor downward (raising
+   * the proximity ratio) and raise the effective minimum toward 0.60.
    * @returns {number}
    */
   function getFloorDampen() {
     if (_totalEnergyFloor < 0.1 || _totalEnergyEma < 0.1) return 1.0;
     const proximity = _totalEnergyEma / _totalEnergyFloor;
-    // R26 E1: Relaxed from (window=0.20, min=0.05) to (window=0.35, min=0.20).
-    // R25 had floorDampen=0.05 at end-of-run -- 95% suppression froze ALL
-    // gain escalation, preventing targeted decorrelation of overcoupled pairs.
-    // New parameters: minimum 0.20 (4x more headroom at floor), full lift at
-    // 35% above floor (was 20%). Coherence gating handles redistribution;
-    // floor dampening only needs to provide gentle back-pressure.
-    // proximity ~1.0 = at floor -> dampening (0.20)
-    // proximity >1.35 = well above floor -> no dampening (1.0)
-    return clamp((proximity - 1.0) / 0.35, 0.20, 1.0);
+    // R26 E1: window=0.35, min=0.20
+    const rawDampen = clamp((proximity - 1.0) / 0.35, 0.20, 1.0);
+    // R33 E3: Track chronic dampening and relax floor when locked
+    if (rawDampen < 0.50) {
+      _chronicDampenBeats++;
+      if (_chronicDampenBeats > _CHRONIC_DAMPEN_THRESHOLD) {
+        // Nudge totalEnergyFloor downward (which INCREASES proximity ratio)
+        // to break the lock. Floor never drops below 60% of EMA.
+        const floorMin = _totalEnergyEma * 0.60;
+        if (_totalEnergyFloor > floorMin) {
+          _totalEnergyFloor = m.max(floorMin, _totalEnergyFloor * (1 - _CHRONIC_FLOOR_RELAX_RATE));
+        }
+      }
+    } else {
+      _chronicDampenBeats = 0;
+    }
+    // Effective dampen: if chronic decay active, raise minimum toward cap
+    if (_chronicDampenBeats > _CHRONIC_DAMPEN_THRESHOLD) {
+      const decayBeats = _chronicDampenBeats - _CHRONIC_DAMPEN_THRESHOLD;
+      const effectiveMin = m.min(_CHRONIC_FLOOR_RELAX_CAP, 0.20 + decayBeats * 0.01);
+      return m.max(rawDampen, effectiveMin);
+    }
+    return rawDampen;
   }
 
   /**
@@ -516,6 +541,7 @@ couplingHomeostasis = (() => {
     _prevPairAbsR = {};
     _nonRedistBeats = 0;
     _nudgeableNonRedistBeats = 0;
+    _chronicDampenBeats = 0;
     // Cached matrix preserved across sections (stale decay handles aging)
     // _beatCount intentionally NOT reset: tracks lifetime beats for budget recalibration
     // _invokeCount/_tickCount intentionally NOT reset: tracks total lifetime invocations

@@ -184,6 +184,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       couplingGates: pipelineCouplingManager.getCouplingGates(),
       // R20 E6: Whole-system coupling homeostasis state for governor diagnostics
       couplingHomeostasis: safePreBoot.call(() => couplingHomeostasis.getState(), null),
+      // R33 E4: Direct snapshot bypass -- conductorState.updateFromConductor silently
+      // drops state-provider fields, so axisEnergyEquilibrator never reaches snap.
+      axisEnergyEquilibrator: safePreBoot.call(() => axisEnergyEquilibrator.getSnapshot(), null),
       iterBudget: setUnitTimingBudgetStats.getLastBeat(),
       stageTiming: stageTiming
     };
