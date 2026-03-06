@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-06T20:43:48.484Z",
+    "generated": "2026-03-06T22:08:17.658Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2680,
-    "totalEdges": 2046,
-    "crossSubsystemEdges": 1445,
+    "totalConsumes": 2682,
+    "totalEdges": 2048,
+    "crossSubsystemEdges": 1446,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 207
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 145,
         "provides": 191,
-        "consumes": 757
+        "consumes": 758
       },
       "rhythm": {
         "files": 30,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 45,
         "provides": 40,
-        "consumes": 332
+        "consumes": 333
       },
       "writer": {
         "files": 4,
@@ -1274,6 +1274,7 @@
         "explainabilityBus",
         "feedbackRegistry",
         "m",
+        "regimeClassifier",
         "ri",
         "safePreBoot",
         "systemDynamicsProfiler",
@@ -5653,6 +5654,7 @@
         "explainabilityBus",
         "m",
         "p",
+        "regimeClassifier",
         "restSynchronizer",
         "safePreBoot",
         "sectionIndex",
@@ -9893,7 +9895,21 @@
     },
     {
       "from": "src/conductor/signal/regimeClassifier.js",
+      "to": "src/conductor/signal/regimeReactiveDamping.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/regimeClassifier.js",
       "to": "src/conductor/signal/systemDynamicsProfiler.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/regimeClassifier.js",
+      "to": "src/crossLayer/structure/adaptiveTrustScores.js",
       "globals": [
         "regimeClassifier"
       ]

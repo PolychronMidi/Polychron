@@ -138,16 +138,38 @@ regimeReactiveDamping = (() => {
       const evoDeficit = m.max(0, _REGIME_BUDGET.evolving - (_shares.evolving || 0));
       const cohExcess = m.max(0, cohShare - _REGIME_BUDGET.coherent);
 
+      let runCoherentShare = cohShare;
       let coherentLockPressure = 0;
+      let forcedBreakPressure = 0;
       const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
-      if (readiness && typeof readiness.coherentBeats === 'number') {
-        coherentLockPressure = clamp((readiness.coherentBeats - 48) / 96, 0, 1);
+      if (readiness) {
+        if (typeof readiness.runCoherentShare === 'number') {
+          runCoherentShare = readiness.runCoherentShare;
+        }
+        if (typeof readiness.runCoherentBeats === 'number') {
+          coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);
+        }
+        if (typeof readiness.runBeatCount === 'number' && readiness.runBeatCount > 96) {
+          const noForcedBreaks = typeof readiness.forcedBreakCount === 'number' && readiness.forcedBreakCount === 0;
+          if (noForcedBreaks && runCoherentShare > 0.55) {
+            forcedBreakPressure = clamp((readiness.runBeatCount - 96) / 192, 0, 0.35);
+          }
+        }
       }
 
       // R7 Evo 1: Squared penalty when exploring exceeds 60% - creates
       // a soft wall preventing runaway exploring domination.
       const expPenalty = expShare > 0.60 ? 1.0 + (expShare - 0.60) * (expShare - 0.60) : 1.0;
-      const coherentPressure = clamp(cohExcess * 1.5 + m.max(0, _REGIME_BUDGET.exploring - expShare) * 0.75 + coherentLockPressure * 0.6, 0, 0.6);
+      const runCoherentOvershare = m.max(0, runCoherentShare - _REGIME_BUDGET.coherent);
+      const coherentPressure = clamp(
+        cohExcess * 0.9 +
+        runCoherentOvershare * 2.4 +
+        m.max(0, _REGIME_BUDGET.exploring - expShare) * 0.75 +
+        coherentLockPressure * 0.85 +
+        forcedBreakPressure,
+        0,
+        1.15
+      );
 
       // Exploring over-budget: suppress variety-promoting biases
       _eqCorrD = -expExcess * _EQUILIB_STRENGTH * 0.5 * expPenalty;
@@ -158,9 +180,9 @@ regimeReactiveDamping = (() => {
       // R46 E2: Coherent-share reactive damping. If coherent overshoots and
       // exploring under-shoots, bias the system toward exploratory variance.
       if (coherentPressure > 0) {
-        _eqCorrD += coherentPressure * _EQUILIB_STRENGTH * 0.35;
-        _eqCorrF += coherentPressure * _EQUILIB_STRENGTH * 0.95;
-        _eqCorrT -= coherentPressure * _EQUILIB_STRENGTH * 0.85;
+        _eqCorrD += coherentPressure * _EQUILIB_STRENGTH * 0.55;
+        _eqCorrF += coherentPressure * _EQUILIB_STRENGTH * 1.35;
+        _eqCorrT -= coherentPressure * _EQUILIB_STRENGTH * 1.10;
       }
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog

@@ -89,6 +89,39 @@ function variance(arr) {
   return arr.reduce((s, v) => s + (v - m) * (v - m), 0) / (arr.length - 1);
 }
 
+function getLegacyTopPairs(fingerprint) {
+  const severity = fingerprint && fingerprint.exceedanceSeverity && typeof fingerprint.exceedanceSeverity === 'object'
+    ? fingerprint.exceedanceSeverity
+    : {};
+  return Object.entries(severity)
+    .map(function(entry) { return { pair: entry[0], beats: toNum(entry[1], 0) }; })
+    .filter(function(entry) { return entry.beats > 0; })
+    .sort(function(a, b) { return b.beats - a.beats; })
+    .slice(0, 3);
+}
+
+function getExceedanceCompositeView(fingerprint) {
+  const total = fingerprint && typeof fingerprint.totalExceedanceBeats === 'number'
+    ? fingerprint.totalExceedanceBeats
+    : 0;
+  const legacyTopPairs = getLegacyTopPairs(fingerprint);
+  if (fingerprint && fingerprint.exceedanceComposite) {
+    const composite = fingerprint.exceedanceComposite;
+    return {
+      uniqueBeats: toNum(composite.uniqueBeats, total),
+      uniqueRate: toNum(composite.uniqueRate, 0),
+      totalPairExceedanceBeats: toNum(composite.totalPairExceedanceBeats, total),
+      topPairs: Array.isArray(composite.topPairs) && composite.topPairs.length > 0 ? composite.topPairs : legacyTopPairs
+    };
+  }
+  return {
+    uniqueBeats: total,
+    uniqueRate: 0,
+    totalPairExceedanceBeats: total,
+    topPairs: legacyTopPairs
+  };
+}
+
 // ---- Parse note_on_c events from MIDI CSV files ----
 
 function parseNotesFromCSV(filePath) {
@@ -364,12 +397,12 @@ function compareFingerprints(current, previous) {
   // R39 E4 & E5: Exceedance Severity
   if (current.totalExceedanceBeats !== undefined && previous.totalExceedanceBeats !== undefined) {
     // R46 E6: Compare a composite of unique exceedance beats and top-pair severity.
-    const curUnique = current.exceedanceComposite ? current.exceedanceComposite.uniqueBeats : current.totalExceedanceBeats;
-    const prevUnique = previous.exceedanceComposite ? previous.exceedanceComposite.uniqueBeats : previous.totalExceedanceBeats;
-    const curTop = current.exceedanceComposite && current.exceedanceComposite.topPairs && current.exceedanceComposite.topPairs[0]
-      ? current.exceedanceComposite.topPairs[0].beats : current.totalExceedanceBeats;
-    const prevTop = previous.exceedanceComposite && previous.exceedanceComposite.topPairs && previous.exceedanceComposite.topPairs[0]
-      ? previous.exceedanceComposite.topPairs[0].beats : previous.totalExceedanceBeats;
+    const currentComposite = getExceedanceCompositeView(current);
+    const previousComposite = getExceedanceCompositeView(previous);
+    const curUnique = currentComposite.uniqueBeats;
+    const prevUnique = previousComposite.uniqueBeats;
+    const curTop = currentComposite.topPairs[0] ? currentComposite.topPairs[0].beats : current.totalExceedanceBeats;
+    const prevTop = previousComposite.topPairs[0] ? previousComposite.topPairs[0].beats : previous.totalExceedanceBeats;
 
     const normCurrUnique = curUnique * (500 / Math.max(1, curBeats));
     const normPrevUnique = prevUnique * (500 / Math.max(1, prevBeats));
@@ -388,8 +421,8 @@ function compareFingerprints(current, previous) {
       previousTotal: previous.totalExceedanceBeats,
       currentUnique: curUnique,
       previousUnique: prevUnique,
-      currentTopPair: current.exceedanceComposite && current.exceedanceComposite.topPairs ? current.exceedanceComposite.topPairs[0] || null : null,
-      previousTopPair: previous.exceedanceComposite && previous.exceedanceComposite.topPairs ? previous.exceedanceComposite.topPairs[0] || null : null,
+      currentTopPair: currentComposite.topPairs[0] || null,
+      previousTopPair: previousComposite.topPairs[0] || null,
       normalizedDelta: true
     });
   }
@@ -508,10 +541,10 @@ function explainDrift(comparison, current, previous) {
         break;
       }
       case 'exceedanceSeverity (beats)': {
-        const curTopPairs = current.exceedanceComposite && Array.isArray(current.exceedanceComposite.topPairs)
-          ? current.exceedanceComposite.topPairs : [];
-        const prevTopPairs = previous.exceedanceComposite && Array.isArray(previous.exceedanceComposite.topPairs)
-          ? previous.exceedanceComposite.topPairs : [];
+        const currentComposite = getExceedanceCompositeView(current);
+        const previousComposite = getExceedanceCompositeView(previous);
+        const curTopPairs = currentComposite.topPairs;
+        const prevTopPairs = previousComposite.topPairs;
         const curDesc = curTopPairs.length > 0
           ? curTopPairs.map(function(item) { return item.pair + ': ' + item.beats; }).join(', ')
           : 'none';
@@ -520,8 +553,8 @@ function explainDrift(comparison, current, previous) {
           : 'none';
         explain.cause = 'exceedance hotspots shifted from [' + prevDesc + '] to [' + curDesc + ']';
         explain.uniqueBeats = {
-          current: current.exceedanceComposite ? current.exceedanceComposite.uniqueBeats : current.totalExceedanceBeats,
-          previous: previous.exceedanceComposite ? previous.exceedanceComposite.uniqueBeats : previous.totalExceedanceBeats
+          current: currentComposite.uniqueBeats,
+          previous: previousComposite.uniqueBeats
         };
         break;
       }

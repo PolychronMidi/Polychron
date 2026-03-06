@@ -172,12 +172,18 @@ adaptiveTrustScores = (() => {
       }
       const leadScore = m.max(0, effectiveScore - runnerUpScore);
       let coherentLockPressure = 0;
+      let coherentSharePressure = 0;
       const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
-      if (readiness && typeof readiness.coherentBeats === 'number') {
-        coherentLockPressure = clamp((readiness.coherentBeats - 48) / 96, 0, 1);
+      if (readiness) {
+        if (typeof readiness.runCoherentBeats === 'number') {
+          coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);
+        }
+        if (typeof readiness.runCoherentShare === 'number') {
+          coherentSharePressure = clamp((readiness.runCoherentShare - 0.42) / 0.28, 0, 1);
+        }
       }
-      const adaptiveCap = 1.50 - m.min(0.15, leadScore * 0.35 + coherentLockPressure * 0.10);
-      maxWeight = clamp(adaptiveCap, 1.35, 1.50);
+      const adaptiveCap = 1.50 - m.min(0.22, leadScore * 0.14 + coherentLockPressure * 0.10 + coherentSharePressure * 0.08);
+      maxWeight = clamp(adaptiveCap, 1.28, 1.50);
     }
     return clamp(1 + effectiveScore * TRUST_WEIGHT_MULTIPLIER, TRUST_WEIGHT_MIN, maxWeight);
   }

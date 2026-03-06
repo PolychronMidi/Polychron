@@ -498,6 +498,7 @@ pipelineCouplingManager = (() => {
         const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
         const isDensityFlickerPair = key === 'density-flicker';
         const isPhasePair = (dimA === 'phase' || dimB === 'phase');
+        const isTrustPair = (dimA === 'trust' || dimB === 'trust');
         // R25: Skip gain escalation for non-nudgeable pairs. Neither axis has
         // a bias knob, so gains can never produce nudges. Escalating them wastes
         // budget and pollutes HP promotion candidates. Still track EMAs.
@@ -559,6 +560,19 @@ pipelineCouplingManager = (() => {
               const phasePressure = phaseCorrPressure + phaseTailPressure + phaseRatePressure;
               rate *= (1 + phasePressure);
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + phasePressure * 0.12, 1.0);
+            }
+            if (isTrustPair && (NUDGEABLE_SET.has(dimA) || NUDGEABLE_SET.has(dimB)) && (m.abs(corr) > 0.74 || p95 > 0.82)) {
+              let trustExceedCount = 0;
+              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
+                if (ps.recentAbsCorr[r] > 0.80) trustExceedCount++;
+              }
+              const trustExceedRate = ps.recentAbsCorr.length > 0 ? trustExceedCount / ps.recentAbsCorr.length : 0;
+              const trustCorrPressure = clamp((m.abs(corr) - 0.74) * 1.7, 0, 0.40);
+              const trustTailPressure = clamp((p95 - 0.82) * 2.0, 0, 0.35);
+              const trustRatePressure = clamp((trustExceedRate - 0.20) * 1.0, 0, 0.25);
+              const trustPressure = trustCorrPressure + trustTailPressure + trustRatePressure;
+              rate *= (1 + trustPressure);
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + trustPressure * 0.14, 1.0);
             }
             // R17 Evo 3 / R18 E3: Universal high-correlation escalation.
             // Catch ANY pair with |r| > 0.85 that has no pair-specific escalator.

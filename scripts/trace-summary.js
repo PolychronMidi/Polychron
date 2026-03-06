@@ -104,10 +104,16 @@ function summarizeTrace(entries) {
   let readinessLastScale = null;
   let evolvingBeats = 0;
   let coherentBeats = 0;
+  let runCoherentBeats = 0;
   let maxCoherentBeats = 0;
+  let runBeatCount = 0;
+  let runCoherentShare = 0;
   let forcedBreakCount = 0;
   let forcedRegime = '';
   let forcedRegimeBeatsRemaining = 0;
+  let forcedOverrideBeats = 0;
+  let lastForcedTriggerStreak = 0;
+  let lastForcedTriggerBeat = 0;
   let lastForcedReason = '';
   // R35 E5: Exploring-block diagnostic accumulators
   const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
@@ -118,6 +124,7 @@ function summarizeTrace(entries) {
   // R36 E4: Raw regime counts (cumulative from classifier, grab last beat)
   let rawRegimeCounts = null;
   let runRawRegimeCounts = null;
+  let runResolvedRegimeCounts = null;
   // R37 E6: Raw regime max streak (cumulative, grab last beat)
   // R38 E6: Track max rawRollingAbsCorr across the run
   const rawEmaMaxSeries = {};
@@ -158,10 +165,20 @@ function summarizeTrace(entries) {
         if (typeof tr.thresholdScale === 'number') readinessLastScale = tr.thresholdScale;
         if (typeof tr.evolvingBeats === 'number') evolvingBeats = tr.evolvingBeats;
         if (typeof tr.coherentBeats === 'number') coherentBeats = tr.coherentBeats;
+        if (typeof tr.runCoherentBeats === 'number') runCoherentBeats = tr.runCoherentBeats;
         if (typeof tr.maxCoherentBeats === 'number' && tr.maxCoherentBeats > maxCoherentBeats) maxCoherentBeats = tr.maxCoherentBeats;
+        if (typeof tr.runBeatCount === 'number') runBeatCount = tr.runBeatCount;
+        if (typeof tr.runCoherentShare === 'number') runCoherentShare = tr.runCoherentShare;
         if (typeof tr.forcedBreakCount === 'number') forcedBreakCount = tr.forcedBreakCount;
         if (typeof tr.forcedRegime === 'string') forcedRegime = tr.forcedRegime;
         if (typeof tr.forcedRegimeBeatsRemaining === 'number') forcedRegimeBeatsRemaining = tr.forcedRegimeBeatsRemaining;
+        if (typeof tr.forcedOverrideBeats === 'number') {
+          if (tr.forcedOverrideBeats > forcedOverrideBeats) forcedOverrideBeats = tr.forcedOverrideBeats;
+        } else if (tr.forcedOverrideActive) {
+          forcedOverrideBeats++;
+        }
+        if (typeof tr.lastForcedTriggerStreak === 'number') lastForcedTriggerStreak = tr.lastForcedTriggerStreak;
+        if (typeof tr.lastForcedTriggerBeat === 'number') lastForcedTriggerBeat = tr.lastForcedTriggerBeat;
         if (typeof tr.lastForcedReason === 'string') lastForcedReason = tr.lastForcedReason;
       }
       // R35 E5: Accumulate exploring-block diagnostic
@@ -177,6 +194,9 @@ function summarizeTrace(entries) {
       }
       if (tr.runRawRegimeCounts && typeof tr.runRawRegimeCounts === 'object') {
         runRawRegimeCounts = tr.runRawRegimeCounts;
+      }
+      if (tr.runResolvedRegimeCounts && typeof tr.runResolvedRegimeCounts === 'object') {
+        runResolvedRegimeCounts = tr.runResolvedRegimeCounts;
       }
       // R37 E6: Grab cumulative raw regime max streaks (last beat wins)
       if (tr.rawRegimeMaxStreak && typeof tr.rawRegimeMaxStreak === 'object') {
@@ -530,17 +550,24 @@ function summarizeTrace(entries) {
       finalThresholdScale: readinessLastScale,
       evolvingBeats,
       coherentBeats,
+      runCoherentBeats,
       maxCoherentBeats,
+      runBeatCount,
+      runCoherentShare: Number(runCoherentShare.toFixed(4)),
       forcedBreakCount,
       forcedRegime,
       forcedRegimeBeatsRemaining,
+      forcedOverrideBeats,
       lastForcedReason,
+      lastForcedTriggerStreak,
+      lastForcedTriggerBeat,
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
       coherentBlock: coherentBlockCounts,
       // R36 E4: Raw regime counts before hysteresis
       rawRegimeCounts,
       runRawRegimeCounts,
+      runResolvedRegimeCounts,
       // R37 E6: Max consecutive streak per raw regime
       rawRegimeMaxStreak,
       // R37 E5: effectiveDim histogram (percentiles)
