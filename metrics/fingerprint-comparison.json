@@ -1,11 +1,11 @@
 {
   "meta": {
-    "generated": "2026-03-05T20:01:10.429Z",
-    "currentRun": "2026-03-05T20:01:10.425Z",
-    "previousRun": "2026-03-05T18:11:50.746Z"
+    "generated": "2026-03-05T23:36:07.339Z",
+    "currentRun": "2026-03-05T23:36:07.331Z",
+    "previousRun": "2026-03-05T20:01:10.425Z"
   },
-  "verdict": "STABLE",
-  "driftedDimensions": 0,
+  "verdict": "EVOLVED",
+  "driftedDimensions": 1,
   "totalDimensions": 8,
   "tolerances": {
     "noteCountRatio": 0.35,
@@ -19,105 +19,90 @@
   "dimensions": [
     {
       "dimension": "noteCount",
-      "delta": 0.009050958357442643,
+      "delta": 0.04703354625886471,
       "tolerance": 0.4,
       "status": "stable",
-      "current": 31527,
-      "previous": 26183,
+      "current": 26205,
+      "previous": 31527,
       "perLayer": {
-        "currentL1": 15760,
-        "currentL2": 15767,
-        "previousL1": 10482,
-        "previousL2": 15701
+        "currentL1": 11392,
+        "currentL2": 14813,
+        "previousL1": 15760,
+        "previousL2": 15767
       }
     },
     {
       "dimension": "pitchEntropy",
-      "delta": 0.014597003692594868,
+      "delta": 0.02563245245419754,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.410854275773504,
-      "previous": 6.425451279466099
+      "current": 6.436486728227702,
+      "previous": 6.410854275773504
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.002734385084674388,
+      "delta": 0.0035671572960200362,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.014190657365628181,
-      "previous": 0.011456272280953793
+      "current": 0.010623500069608145,
+      "previous": 0.014190657365628181
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.26520085747547256,
+      "delta": 0.24756294538630746,
       "tolerance": 0.35,
       "status": "stable",
       "current": [
+        0.3044867741045,
+        0.37625020451981117,
+        0.43129266799512017,
+        0.5625787773866322
+      ],
+      "previous": [
         0.4923959247663022,
         0.75732223133472,
         0.6377151525142932,
         0.7109488116760557
-      ],
-      "previous": [
-        0.42882680568415155,
-        0.5999735626206101,
-        0.3491026622476696,
-        0.29957407589611207
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.006399999999999961,
+      "delta": 0.006149999999999989,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.3744,
-      "previous": 0.38079999999999997
+      "current": 0.36825,
+      "previous": 0.3744
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.01380246690914921,
+      "delta": 0.2707214574745679,
       "tolerance": 0.25,
-      "status": "stable"
+      "status": "drifted"
     },
     {
       "dimension": "coupling",
-      "delta": 0.07604999999999998,
+      "delta": 0.09532142857142857,
       "tolerance": 0.25,
       "status": "stable"
     },
     {
       "dimension": "correlationTrend",
-      "delta": 0.42857142857142855,
+      "delta": 0.21428571428571427,
       "tolerance": 1,
       "status": "stable",
       "flipDetails": [
         {
-          "pair": "density-entropy",
+          "pair": "entropy-phase",
           "from": "stable",
-          "to": "increasing"
-        },
-        {
-          "pair": "density-phase",
-          "from": "stable",
-          "to": "increasing"
-        },
-        {
-          "pair": "density-tension",
-          "from": "decreasing",
-          "to": "stable"
+          "to": "decreasing"
         },
         {
           "pair": "entropy-trust",
-          "from": "stable",
-          "to": "increasing"
+          "from": "increasing",
+          "to": "stable"
         },
         {
-          "pair": "flicker-phase",
-          "from": "stable",
-          "to": "increasing"
-        },
-        {
-          "pair": "tension-flicker",
+          "pair": "tension-phase",
           "from": "increasing",
           "to": "stable"
         }

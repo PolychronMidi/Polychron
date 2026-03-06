@@ -109,6 +109,8 @@ function summarizeTrace(entries) {
   // R36 E4: Raw regime counts (cumulative from classifier, grab last beat)
   let rawRegimeCounts = null;
   // R37 E6: Raw regime max streak (cumulative, grab last beat)
+  // R38 E6: Track max rawRollingAbsCorr across the run
+  const rawEmaMaxSeries = {};
   let rawRegimeMaxStreak = null;
   // R37 E5: effectiveDim histogram -- collect all values for percentile computation
   const effectiveDimValues = [];
@@ -191,6 +193,20 @@ function summarizeTrace(entries) {
       // R35 E6: Track beats where |r| > 0.85 per pair
       if (value > 0.85) {
         pairExceedanceBeats[key] = (pairExceedanceBeats[key] || 0) + 1;
+      }
+    }
+
+    // R38 E6: Populate rawEmaMaxSeries from couplingTargets
+    if (e.couplingTargets && typeof e.couplingTargets === 'object') {
+      const ctKeys = Object.keys(e.couplingTargets);
+      for (let j = 0; j < ctKeys.length; j++) {
+        const pair = ctKeys[j];
+        const ct = e.couplingTargets[pair];
+        if (ct && typeof ct === 'object' && typeof ct.rawRollingAbsCorr === 'number') {
+          if (!rawEmaMaxSeries[pair]) rawEmaMaxSeries[pair] = { max: -Infinity, count: 0 };
+          if (ct.rawRollingAbsCorr > rawEmaMaxSeries[pair].max) rawEmaMaxSeries[pair].max = ct.rawRollingAbsCorr;
+          rawEmaMaxSeries[pair].count++;
+        }
       }
     }
 
@@ -410,6 +426,17 @@ function summarizeTrace(entries) {
   // R28 E1: Use fully-populated entries when available
   if (axisCouplingTotalsBest) axisCouplingTotals = axisCouplingTotalsBest;
   if (axisEnergyShareBest) axisEnergyShare = axisEnergyShareBest;
+
+  // R38 E6: Inject rawEmaMax into adaptiveTargets
+  if (adaptiveTargets) {
+    const rawKeys = Object.keys(rawEmaMaxSeries);
+    for (let c = 0; c < rawKeys.length; c++) {
+      const pair = rawKeys[c];
+      if (adaptiveTargets[pair] && rawEmaMaxSeries[pair].count > 0) {
+        adaptiveTargets[pair].rawEmaMax = Number(rawEmaMaxSeries[pair].max.toFixed(4));
+      }
+    }
+  }
 
   return {
     generatedAt: new Date().toISOString(),

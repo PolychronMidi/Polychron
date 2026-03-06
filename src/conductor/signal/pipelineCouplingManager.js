@@ -611,16 +611,10 @@ pipelineCouplingManager = (() => {
             if (absCorr > 0.85) {
               pairGainMax = m.min(pairGainMax, 0.30);
             }
-            // R37 E4: Active gain decay during sustained exceedance.
-            // The 0.30 cap only limits gain GROWTH. If gain was built to 0.336
-            // during non-exceedance beats, it persists during exceedance.
-            // density-flicker had 76 exceedance beats in R36 (worst pair).
-            // When |r| > 0.85 and gain exceeds the exceedance cap, decay
-            // gain toward 0.30 at 5% per beat. This provides active pressure
-            // instead of passive growth limiting.
-            if (absCorr > 0.85 && ps.gain > 0.30) {
-              ps.gain = m.max(0.30, ps.gain * 0.95);
-            }
+            // R38 E4: Removed active gain decay. Decaying the gain when |r|>0.85
+            // actually REMOVES decorrelation pressure exactly when the pair is
+            // worst. The 0.30 cap above is sufficient to prevent catastrophic
+            // oscillation; we shouldn't dynamically weaken existing pressure.
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
 
@@ -680,15 +674,17 @@ pipelineCouplingManager = (() => {
         // calibration. During coherent regime, dynamicCoherentRelax masks structural
         // coupling from the effective EMA (rollingAbsCorr). The raw EMA captures
         // true coupling magnitude regardless of regime, enabling timely target
-        // tightening/relaxation. Apply 0.8x scaling during coherent to avoid
-        // over-aggressive tightening (still captures 80% of structural info).
-        const rawEmaInput = regime === 'coherent' ? absCorr * 0.8 : absCorr;
+// R38 E2: Removed the 0.8x coherent attenuation. rawRollingAbsCorr must
+// represent the UNCORRUPTED structural magnitude for valid intractability detection.
+const rawEmaInput = absCorr;
         at.rawRollingAbsCorr = at.rawRollingAbsCorr * (1 - adaptEma) + rawEmaInput * adaptEma;
 
         // Intractable: raw rolling avg far above target despite near-max gain - relax.
         // R19 E2: Use rawRollingAbsCorr instead of rollingAbsCorr so coherent
         // relaxation cannot mask structural coupling from target calibration.
-        if (at.rawRollingAbsCorr > at.current * 1.8 && ps.gain > GAIN_MAX * 0.85) {
+        // R38 E1: Resolve exceedance cap deadlock. If |r| > 0.85, gain maxes at 0.30.
+        const effectiveGainCap = absCorr > 0.85 ? 0.30 : GAIN_MAX;
+        if (at.rawRollingAbsCorr > at.current * 1.8 && ps.gain >= effectiveGainCap * 0.85) {
           at.current = clamp(at.current + _TARGET_RELAX_RATE, _TARGET_MIN, _getTargetMax(key));
         // Easily resolved: raw rolling avg well below target - tighten toward baseline
         // R19 E4: Density product guard sigmoid. Binary <0.75 gate was blocking ALL
@@ -742,9 +738,9 @@ pipelineCouplingManager = (() => {
           const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
           const magnitude = effectiveGain * excess * heatMulti;
           // R26 E4: Bypass coherence gate for severely overcoupled pairs.
-          // When |r| > 2x target, this pair is genuinely problematic and its
-          // nudge should not be suppressed by disagreement from milder pairs.
-          const isSevere = absCorr > target * 2.0;
+          // When |r| > 2x baseline, this pair is genuinely problematic and its
+          // nudge should not be suppressed. R38 E3: Check against baseline, not adapted target.
+          const isSevere = absCorr > at.baseline * targetScale * 2.0;
 
           const half = magnitude * 0.5;
           _addNudge(dimA, -direction * half, isSevere);
@@ -755,7 +751,7 @@ pipelineCouplingManager = (() => {
           // R14 Evo 5: Escalate magnitude via exponential heat penalty curve
           const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
           const magnitude = effectiveGain * excess * heatMulti;
-          const isSevere = absCorr > target * 2.0;
+          const isSevere = absCorr > at.baseline * targetScale * 2.0;
 
           const nudgeAxis = aIsNudgeable ? dimA : dimB;
           _addNudge(nudgeAxis, direction * magnitude, isSevere);

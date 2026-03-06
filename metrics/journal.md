@@ -1,3 +1,40 @@
+## R37 — 2026-03-05 — EVOLVED
+
+**Profile:** atmospheric | **Beats:** 744 | **Duration:** 90.2s | **Notes:** 26,205
+**Fingerprint:** 7/8 stable | Drifted: regimeDistribution
+
+### Key Observations
+- **COHERENT AND EXPLORING RESTORED (H1 & H2 PASS).** 22.6% coherent, 27.0% exploring. The majority-window hysteresis (3-of-5) definitively solved the regime lockout. The system is no longer trapped in evolving.
+- **4 REGIME TRANSITIONS (H3 PASS).** Flowed beautifully from initializing -> evolving -> exploring -> coherent -> exploring. Sustained a 168-beat coherent phase.
+- **EXCEEDANCE DEADLOCK (H4 FAIL).** density-flicker had 165 exceedance beats (> 0.85). The active gain decay (R37 E4) completely failed because the exceedance threshold inherently forces a 0.30 gain cap, meaning gain never reaches the `> 0.30` requirement to apply active pressure. Furthermore, a low gain cap creates a deadlock where target relaxation (which requires `gain > 0.51`) can never trigger.
+- **RAW EMA SUPPRESSION.** The `rawRollingAbsCorr` for density-flicker fell to 0.096 despite extreme coupling. This is because the EMA artificially multiplied inputs by 0.8 during the 168-beat coherent regime, artificially compressing the "unscaled" signal and blinding target adaptation to the true structural severity.
+- **BYPASS THRESHOLD OFFSET.** Phase and flicker hotspots bypassed the cohesion gate exactly 0 times (`bypassF: 0`), because the bypass threshold used the *adaptive* target (`2.0 * target`). Since the adaptive target had relaxed, `0.85` was no longer considered "> 2.0x target".
+- **LOW-STDEV CORRELATION ZERO-OUT.** variance gating in phaseSpaceMath set low-stdev correlations to `0` instead of `NaN`, polluting `trace-summary` averages and EMA calculations with artificial zeros during quiet periods.
+
+### Evolutions Applied (from R36)
+- E1: **Majority-window hysteresis (3 of 5)** — **confirmed** — Coherent jumped to 22.6%, exploring to 27.0%, transitions = 4.
+- E2: **effectiveDim coherent gate 4.0->3.5** — **confirmed** — histogram shows p50=3.34, p75=3.56. Perfect gate.
+- E3: **Exploring coupling gate 0.40->0.50** — **confirmed** — Exploring activated.
+- E4: **Active gain decay during exceedance** — **refuted** — Active gain decay actually reduces decorrelation pressure during severe coupling. Furthermore, it never fired due to the 0.30 gain cap.
+- E5: **effectiveDim histogram** — **confirmed** — Diagnostics fully populated.
+- E6: **Raw regime max streak** — **confirmed** — Shows coherent max string was 31, justifying the majority window necessity.
+
+### Evolutions Proposed (for R38)
+- E1: **Fix Target Relaxation Deadlock** — A pair pinned by the 0.30 exceedance gain cap could never satisfy the `gain > GAIN_MAX * 0.85` requirement for target relaxation. Relaxation now triggers if gain is pinned at its effective cap. (`pipelineCouplingManager.js`)
+- E2: **True Raw EMA** — Removed the 0.8x scaler on `rawEmaInput` during coherent regime so it strictly tracks unadorned structural correlation magnitude. (`pipelineCouplingManager.js`)
+- E3: **Fix Bypass Threshold Baseline Offset** — `isSevere` (which skips the cohesion gate) now checks `absCorr > at.baseline * targetScale * 2.0` instead of the current (possibly relaxed) adapter target, guaranteeing severe pairs always receive pressure. (`pipelineCouplingManager.js`)
+- E4: **Remove Counterproductive Active Gain Decay** — Deployed in R37, this *lowered* gain (to 0.30) precisely when it was most needed, protecting structurally defective correlations. The static 0.30 gain cap prevents catastrophic oscillation perfectly fine. (`pipelineCouplingManager.js`)
+- E5: **PhaseSpace NaN Propagation Fix** — Low variance (stdev < 0.005) now correctly outputs `NaN` instead of `0` to prevent false zeroes from poisoning EMAs and correlation averages. (`phaseSpaceMath.js`)
+- E6: **Historical Peak Observability** — Replaced end-of-run `rawRollingAbsCorr` snapshots in `trace-summary.js` with run-time `rawEmaMax` aggregation so short-burst exceedances can be detected post-run. (`trace-summary.js`)
+
+### Hypotheses to Track
+- H1: Target relaxation correctly disengages density-flicker exceedance without requiring `gain > 0.51`.
+- H2: `rawEmaMax` correctly reflects historical > 0.85 spikes instead of terminating at 0.096.
+- H3: `bypassF` consistently tracks non-zero value during severe exceedance segments.
+- H4: Eliminate pairs with > 100 exceedance beats. (density-flicker dropped from 165).
+
+---
+
 ## R36 -- Post-Run -- CONSECUTIVE-STREAK HYSTERESIS PROVEN BROKEN, MAJORITY-WINDOW REPLACEMENT
 
 ### Results: 853 beats, 116.2s, 31,527 notes, STABLE (0/8 drifted)
