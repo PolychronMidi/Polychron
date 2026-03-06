@@ -1,3 +1,37 @@
+## R46 — 2026-03-06 — EVOLVED
+
+**Profile:** explosive | **Beats:** 296 | **Duration:** 39.8s | **Notes:** 10,028
+**Fingerprint:** 8/9 stable | Drifted: exceedanceSeverity
+
+### Key Observations
+- **EXCEEDANCE CONTROL IMPROVED SHARPLY, BUT THE RUN COLLAPSED HARDER INTO COHERENCE.** Total exceedance severity dropped from 340 to 39, unique exceedance beats fell to 33, and the previous phase hotspots were neutralized (`density-phase` 104 -> 0, `flicker-phase` 104 -> 0). However, regime balance regressed further: `coherent` climbed from 79.5% to 93.9%, `exploring` remained at 0.0%, and `maxConsecutiveCoherent` still reached 278 beats.
+- **THE STICKY FORCED EXIT NEVER ARMED.** The new telemetry is clear: `forcedBreakCount = 0`, `forcedRegime = ''`, and `lastForcedReason = ''`. At the same time, `transitionReadiness.maxCoherentBeats` only reached 44, even though the visible trace shows a 278-beat coherent streak. The forced latch exists in source, but the section-scoped/reset-adjacent coherent counter feeding it is still not tracking the full run the way the trace does.
+- **COHERENT-SHARE REACTIVE DAMPING WAS EFFECTIVELY INERT.** `regimeReactiveDamping` ended exactly neutral on all axes (`density=1.0000`, `tension=1.0000`, `flicker=1.0000`) despite a 93.9% coherent run. The self-correcting coherent-pressure branch did not produce sustained bias away from coherence.
+- **THE PRESSURE MIGRATED INTO TRUST-LINKED COUPLING.** The dominant hotspots are now `flicker-trust` (avg 0.6665, p95 0.809), `density-flicker` (avg 0.6309, p95 0.915), and `density-trust` (avg 0.5350, p95 0.767). Trust coupling, not phase coupling, became the active stress surface after the R46 controller changes.
+
+### Evolutions Applied (from R45)
+- E1: **Sticky Forced-Exit Regime** — **refuted** — no forced regime ever triggered (`forcedBreakCount=0`) and the run still contained a single 278-beat coherent block.
+- E2: **Coherent-Share Reactive Damping** — **refuted** — `regimeReactiveDamping` closed at exactly neutral outputs, so the new coherent-share pressure path did not materially influence the run.
+- E3: **Phase Pair Hotspot Controller** — **confirmed** — `density-phase` and `flicker-phase` exceedance beats collapsed from 104 each to 0, and their mean coupling also fell substantially.
+- E4: **Trust Anti-Monopoly Feedback** — **confirmed (partial)** — `coherenceMonitor` average weight fell from 1.4899 to 1.4349, but it still remained the most dominant trust driver by a wide margin.
+- E5: **Run-Level Regime Telemetry** — **partially confirmed** — the new fields now exist and expose the non-firing forced-break path, but `maxCoherentBeats` still under-reports the visible trace (44 vs 278), so the run-level counter source is not yet aligned with the actual regime output.
+- E6: **Exceedance Composite Fingerprint** — **confirmed (with calibration issue)** — the explainer now names the hotspot pairs instead of reporting `unknown dimension`, but the comparison still drifted because the previous run lacked the new composite fields and therefore compared against a degraded baseline (`previousTopPair: null`).
+
+### Evolutions Proposed (for R47)
+- E1: **Resolved-Regime Run Counter** — Move the run-level coherent streak accounting in `regimeClassifier.js` out of the section-reset path and derive `maxCoherentBeats` directly from resolved regime continuity, not the section-local `coherentBeats` counter used for threshold shaping. This must become the single source of truth for forced-break triggering telemetry. (src/conductor/signal/regimeClassifier.js)
+- E2: **Forced-Exit Preemption Path** — Add a self-correcting preemption branch in `resolve()` that short-circuits immediately to `exploring` when run-level coherent streak exceeds the cap, rather than relying on the section-scoped shaping counter. Emit a dedicated trace field when this branch fires so it is impossible to miss in summary output. (src/conductor/signal/regimeClassifier.js)
+- E3: **Coherent-Overshare Damping Gain Lift** — Increase the coherent-pressure gain in `regimeReactiveDamping.js` and derive it from run-level coherent share plus transition scarcity, not just ring-buffer share. The controller should produce visibly non-neutral flicker/density lift when coherent share breaches target for extended windows. (src/conductor/signal/regimeReactiveDamping.js)
+- E4: **Trust-Pair Hotspot Controller** — Extend the generalized hotspot logic in `pipelineCouplingManager.js` from phase pairs to trust-linked pairs (`density-trust`, `flicker-trust`, `tension-trust`) using the same self-correcting p95/exceedance-rate heat path now that trust coupling is the active stress domain. (src/conductor/signal/pipelineCouplingManager.js)
+- E5: **Anti-Monopoly Trust Feedback Strengthening** — Tighten the adaptive spread-aware trust cap in `adaptiveTrustScores.js` so the coherenceMonitor cap contracts faster when it leads the runner-up by a large score margin and when coherent share remains above target. (src/crossLayer/structure/adaptiveTrustScores.js)
+- E6: **Composite Fingerprint Baseline Migration** — Make `golden-fingerprint.js` backward-compatible with previous runs that lack `exceedanceComposite` by reconstructing the prior top-pair fallback from `exceedanceSeverity` instead of leaving `previousTopPair` null, so the composite comparison does not produce artificial first-run drift. (scripts/golden-fingerprint.js)
+
+### Hypotheses to Track
+- H1: `forcedBreakCount` becomes non-zero and `maxConsecutiveCoherent` drops below 180 once run-level coherent streak tracking drives the exit logic directly.
+- H2: `regimeReactiveDamping` closes with non-neutral exploratory pressure during over-coherent runs instead of finishing at 1.000/1.000/1.000.
+- H3: Trust-linked hotspots (`flicker-trust`, `density-trust`) fall materially while exceedance composite comparison stops producing migration noise from old-format baselines.
+
+---
+
 ## R45 — 2026-03-06 — EVOLVED
 
 **Profile:** explosive | **Beats:** 400 | **Duration:** 53.1s | **Notes:** 15,625

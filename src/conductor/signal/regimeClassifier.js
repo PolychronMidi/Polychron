@@ -41,6 +41,15 @@ regimeClassifier = (() => {
   let _forcedBreakCount = 0;
   let _lastForcedReason = '';
   let _runMaxCoherentBeats = 0;
+  let _runCoherentBeats = 0;
+  let _runBeatCount = 0;
+  let _runCoherentShare = 0;
+  let _runLastResolvedRegime = 'evolving';
+  let _forcedOverrideActive = false;
+  let _forcedOverrideBeats = 0;
+  let _lastForcedTriggerStreak = 0;
+  let _lastForcedTriggerBeat = 0;
+  const _runResolvedRegimeCounts = {};
 
   // R26 E2: Persistent proximity bonus across regime transitions.
   // During exploring, bonus accumulates at 0.001/beat. Without persistence,
@@ -331,23 +340,50 @@ regimeClassifier = (() => {
    * @param {string} regime
    * @param {string} reason
    * @param {number} beatsRemaining
+   * @param {number} [triggerStreak]
    */
-  function activateForcedRegime(regime, reason, beatsRemaining) {
+  function activateForcedRegime(regime, reason, beatsRemaining, triggerStreak) {
     _forcedRegime = regime;
     _forcedRegimeBeatsRemaining = beatsRemaining;
     _forcedBreakCount++;
     _lastForcedReason = reason;
+    _lastForcedTriggerStreak = V.optionalFinite(triggerStreak, 0);
+    _lastForcedTriggerBeat = _runBeatCount + 1;
     _rawRegimeWindow.length = 0;
     explainabilityBus.emit('REGIME_FORCED_TRANSITION', 'both', {
       from: lastRegime,
       to: regime,
       reason,
       coherentBeats,
+      runCoherentBeats: _runCoherentBeats,
+      runCoherentShare: Number(_runCoherentShare.toFixed(4)),
       exploringBeats,
       evolvingBeats: _evolvingBeats,
+      triggerStreak: _lastForcedTriggerStreak,
+      triggerBeat: _lastForcedTriggerBeat,
       forcedBeatsRemaining: beatsRemaining,
       thresholdScale: coherentThresholdScale
     });
+  }
+
+  /**
+   * @param {string} resolvedRegime
+   */
+  function updateRunResolvedTelemetry(resolvedRegime) {
+    _runBeatCount++;
+    _runResolvedRegimeCounts[resolvedRegime] = (_runResolvedRegimeCounts[resolvedRegime] || 0) + 1;
+
+    if (resolvedRegime === 'coherent') {
+      _runCoherentBeats = _runLastResolvedRegime === 'coherent' ? _runCoherentBeats + 1 : 1;
+      _runMaxCoherentBeats = m.max(_runMaxCoherentBeats, _runCoherentBeats);
+    } else {
+      _runCoherentBeats = 0;
+    }
+
+    _runLastResolvedRegime = resolvedRegime;
+    _runCoherentShare = _runBeatCount > 0
+      ? (_runResolvedRegimeCounts.coherent || 0) / _runBeatCount
+      : 0;
   }
 
   /**
@@ -382,13 +418,6 @@ regimeClassifier = (() => {
     _rawRegimeWindow.push(rawRegime);
     while (_rawRegimeWindow.length > effectiveWindow) _rawRegimeWindow.shift();
 
-    // R43 E4 / R44 E1: Hard Coherent Max Dwell clip. (Removed rawRegime condition)
-    if (_forcedRegimeBeatsRemaining <= 0 && lastRegime === 'coherent' && coherentBeats >= _coherentMaxDwell) {
-      const coherentOvershoot = coherentBeats - _coherentMaxDwell;
-      const forcedWindow = clamp(4 + m.floor(coherentOvershoot / 24) + m.floor(_coherentShareEma * 6), 4, 12);
-      activateForcedRegime('exploring', 'coherent-max-dwell', forcedWindow);
-    }
-
     // R44 E4: Exploring Max Dwell Limit
     const _exploringMaxDwell = 180;
     if (_forcedRegimeBeatsRemaining <= 0 && lastRegime === 'exploring' && exploringBeats >= _exploringMaxDwell) {
@@ -396,9 +425,12 @@ regimeClassifier = (() => {
     }
 
     let resolvedRegime = lastRegime;
+    _forcedOverrideActive = false;
 
     if (_forcedRegimeBeatsRemaining > 0) {
       resolvedRegime = _forcedRegime;
+      _forcedOverrideActive = true;
+      _forcedOverrideBeats++;
       _forcedRegimeBeatsRemaining--;
       _rawRegimeWindow.length = 0;
       if (_forcedRegimeBeatsRemaining === 0) {
@@ -455,6 +487,23 @@ regimeClassifier = (() => {
       }
     }
 
+    if (_forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent') {
+      const projectedRunCoherentBeats = _runLastResolvedRegime === 'coherent' ? _runCoherentBeats + 1 : 1;
+      if (projectedRunCoherentBeats > _coherentMaxDwell) {
+        const coherentOvershoot = projectedRunCoherentBeats - _coherentMaxDwell;
+        const forcedWindow = clamp(4 + m.floor(coherentOvershoot / 24) + m.floor(_coherentShareEma * 6), 4, 12);
+        activateForcedRegime('exploring', 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats);
+        resolvedRegime = 'exploring';
+        _forcedOverrideActive = true;
+        _forcedOverrideBeats++;
+        _forcedRegimeBeatsRemaining = m.max(0, _forcedRegimeBeatsRemaining - 1);
+        _rawRegimeWindow.length = 0;
+        if (_forcedRegimeBeatsRemaining === 0) {
+          _forcedRegime = '';
+        }
+      }
+    }
+
     // R42 E1/E3: Hysteresis Increment Rectification / Parity
     // Increment the ACTUAL regime we resolved to this beat, unconditionally
     if (resolvedRegime === 'exploring') {
@@ -476,6 +525,7 @@ regimeClassifier = (() => {
       _evolvingBeats = 0;
     }
 
+    updateRunResolvedTelemetry(resolvedRegime);
     lastRegime = resolvedRegime;
     return resolvedRegime;
   }
@@ -501,9 +551,6 @@ regimeClassifier = (() => {
     _rawRegimeWindow = [];
     // R44 E5: Clear raw regime counts on section reset
     for (const key in _rawRegimeCounts) delete _rawRegimeCounts[key];
-    _forcedRegime = '';
-    _forcedRegimeBeatsRemaining = 0;
-    _lastForcedReason = '';
     exploringBeats = 0;
     _evolvingBeats = 0;
     _evolvingProximityBonus = 0;
@@ -522,7 +569,7 @@ regimeClassifier = (() => {
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
    * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
-  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, maxCoherentBeats: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, lastForcedReason: string, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, effectiveDim: number }}
+  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runCoherentShare: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
@@ -552,15 +599,23 @@ regimeClassifier = (() => {
       coherentBlock,
       evolvingBeats: _evolvingBeats,
       coherentBeats: coherentBeats,
+      runCoherentBeats: _runCoherentBeats,
       maxCoherentBeats: _runMaxCoherentBeats,
+      runBeatCount: _runBeatCount,
+      runCoherentShare: Number(_runCoherentShare.toFixed(4)),
       forcedBreakCount: _forcedBreakCount,
       forcedRegime: _forcedRegime,
       forcedRegimeBeatsRemaining: _forcedRegimeBeatsRemaining,
+      forcedOverrideActive: _forcedOverrideActive,
+      forcedOverrideBeats: _forcedOverrideBeats,
       lastForcedReason: _lastForcedReason,
+      lastForcedTriggerStreak: _lastForcedTriggerStreak,
+      lastForcedTriggerBeat: _lastForcedTriggerBeat,
       rawRegimeCounts: Object.assign({}, _rawRegimeCounts),
       runRawRegimeCounts: Object.assign({}, _runRawRegimeCounts),
       // R37 E6: Max consecutive streak per raw regime
       rawRegimeMaxStreak: Object.assign({}, _rawRegimeMaxStreak),
+      runResolvedRegimeCounts: Object.assign({}, _runResolvedRegimeCounts),
       // R37 E5: effectiveDim for histogram diagnostic
       effectiveDim: Number(((li.effectiveDim || 0)).toFixed(4))
     };
