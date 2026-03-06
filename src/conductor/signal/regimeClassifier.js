@@ -34,6 +34,7 @@ regimeClassifier = (() => {
   // guard that still allows coherent entry within the feedback window.
   let _evolvingBeats = 0;
   let _evolvingMinDwell = 4;  // default; profile-adaptive via setter
+  const _evolvingMaxDwell = 150; // R42 E4: Hard override max limit
 
   // R26 E2: Persistent proximity bonus across regime transitions.
   // During exploring, bonus accumulates at 0.001/beat. Without persistence,
@@ -272,16 +273,19 @@ regimeClassifier = (() => {
       _highDimVelStreak = 0;
     }
 
-    if (_highDimVelStreak >= 10) {
-      return 'exploring';
-    }
-
     // R36 E2: effectiveDim gate on coherent entry.
     // R37 E2: Tightened from 4.0 to 3.5. R36 data: 87 raw coherent beats
     // vs 2 raw exploring. effectiveDim almost always > 4.0, swallowing all
     // potential exploring beats into coherent. At 3.5, more beats with
     // 3-4 effective dimensions redirect to exploring.
-    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 3.8) return 'coherent';
+    // R41 E2: Relaxed back to 4.0 because high multi-dimensionality is healthy.
+    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 4.0) return 'coherent';
+
+    // R40 E5: Evolving-to-Exploring Escape Hatch check
+    // R41 E1: Moved *below* coherent check to prevent the escape hatch from permanently starving coherent
+    if (_highDimVelStreak >= 10) {
+      return 'exploring';
+    }
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
@@ -332,29 +336,10 @@ regimeClassifier = (() => {
     _rawRegimeWindow.push(rawRegime);
     if (_rawRegimeWindow.length > _REGIME_WINDOW) _rawRegimeWindow.shift();
 
-    if (rawRegime === lastRegime) {
-      if (lastRegime === 'exploring') {
-        exploringBeats++;
-        coherentBeats = 0;
-        _evolvingBeats = 0;
-      } else if (lastRegime === 'coherent') {
-        coherentBeats++;
-        exploringBeats = 0;
-        _evolvingBeats = 0;
-      } else if (lastRegime === 'evolving') {
-        _evolvingBeats++;
-        exploringBeats = 0;
-        coherentBeats = 0;
-      } else {
-        exploringBeats = 0;
-        coherentBeats = 0;
-        _evolvingBeats = 0;
-      }
-      return lastRegime;
-    }
+    let resolvedRegime = lastRegime;
 
     // R37 E1: Check if rawRegime has majority in rolling window
-    if (_rawRegimeWindow.length >= (_REGIME_MAJORITY - 1)) {
+    if (rawRegime !== lastRegime && _rawRegimeWindow.length >= (_REGIME_MAJORITY - 1)) {
       let _windowHits = 0;
       for (let i = 0; i < _rawRegimeWindow.length; i++) {
         if (_rawRegimeWindow[i] === rawRegime) _windowHits++;
@@ -366,32 +351,62 @@ regimeClassifier = (() => {
       if (_windowHits >= requiredHits) {
         // R22 E4: Evolving minimum dwell -- suppress evolving->coherent until
         // at least _evolvingMinDwell beats have passed in evolving.
-        if (lastRegime === 'evolving' && rawRegime === 'coherent' && _evolvingBeats < _evolvingMinDwell) {
-          return lastRegime;
+        let allowTransition = true;
+
+        // R42 E4: Hard max dwell timeout bypass
+        if (lastRegime === 'evolving' && _evolvingBeats > _evolvingMaxDwell) {
+          allowTransition = true; // explicitly force flip
+        } else if (lastRegime === 'evolving' && rawRegime === 'coherent' && _evolvingBeats < _evolvingMinDwell) {
+          allowTransition = false;
         }
-        // R25 E6: Regime transition diagnostic
-        explainabilityBus.emit('REGIME_TRANSITION', 'both', {
-          from: lastRegime, to: rawRegime,
-          coupling: _lastClassifyInputs.couplingStrength,
-          threshold: _lastClassifyInputs.coherentThreshold,
-          proximityBonus: _lastClassifyInputs.evolvingProximityBonus,
-          gap: _lastClassifyInputs.couplingStrength - _lastClassifyInputs.coherentThreshold,
-          exploringBeats, evolvingBeats: _evolvingBeats,
-          windowHits: _windowHits
-        });
-        if (lastRegime === 'exploring') exploringBeats = 0;
-        // R28 E5: Activate coherent momentum on coherent->non-coherent transition
-        if (lastRegime === 'coherent') {
-          coherentBeats = 0;
-          _coherentMomentumBeats = _COHERENT_MOMENTUM_WINDOW;
+
+        if (allowTransition) {
+          // R25 E6: Regime transition diagnostic
+          explainabilityBus.emit('REGIME_TRANSITION', 'both', {
+            from: lastRegime, to: rawRegime,
+            coupling: _lastClassifyInputs.couplingStrength,
+            threshold: _lastClassifyInputs.coherentThreshold,
+            proximityBonus: _lastClassifyInputs.evolvingProximityBonus,
+            gap: _lastClassifyInputs.couplingStrength - _lastClassifyInputs.coherentThreshold,
+            exploringBeats: lastRegime === 'exploring' ? exploringBeats + 1 : exploringBeats,
+            evolvingBeats: lastRegime === 'evolving' ? _evolvingBeats + 1 : _evolvingBeats,
+            windowHits: _windowHits
+          });
+
+          // R28 E5: Activate coherent momentum on coherent->non-coherent transition
+          if (lastRegime === 'coherent') {
+            _coherentMomentumBeats = _COHERENT_MOMENTUM_WINDOW;
+          }
+
+          // R42 E6: Raw Hysteresis Flush
+          _rawRegimeWindow.length = 0;
+          resolvedRegime = rawRegime;
         }
-        if (lastRegime === 'evolving') _evolvingBeats = 0;
-        lastRegime = rawRegime;
-        return rawRegime;
       }
     }
 
-    return lastRegime;
+    // R42 E1/E3: Hysteresis Increment Rectification / Parity
+    // Increment the ACTUAL regime we resolved to this beat, unconditionally
+    if (resolvedRegime === 'exploring') {
+      exploringBeats++;
+      coherentBeats = 0;
+      _evolvingBeats = 0;
+    } else if (resolvedRegime === 'coherent') {
+      coherentBeats++;
+      exploringBeats = 0;
+      _evolvingBeats = 0;
+    } else if (resolvedRegime === 'evolving') {
+      _evolvingBeats++;
+      exploringBeats = 0;
+      coherentBeats = 0;
+    } else {
+      exploringBeats = 0;
+      coherentBeats = 0;
+      _evolvingBeats = 0;
+    }
+
+    lastRegime = resolvedRegime;
+    return resolvedRegime;
   }
 
   /**
@@ -431,7 +446,7 @@ regimeClassifier = (() => {
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
    * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
-   * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, rawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, effectiveDim: number }}
+   * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, rawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, effectiveDim: number }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
@@ -459,6 +474,8 @@ else if ((li.effectiveDim || 0) > 3.8) coherentBlock = 'dimension';
       velocityBlocked: li.couplingStrength > li.coherentThreshold && li.velocity <= li.velThreshold,
       exploringBlock,
       coherentBlock,
+      evolvingBeats: _evolvingBeats,
+      coherentBeats: coherentBeats,
       rawRegimeCounts: Object.assign({}, _rawRegimeCounts),
       // R37 E6: Max consecutive streak per raw regime
       rawRegimeMaxStreak: Object.assign({}, _rawRegimeMaxStreak),

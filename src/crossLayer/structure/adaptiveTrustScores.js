@@ -102,7 +102,9 @@ adaptiveTrustScores = (() => {
         }
       }
     }
-    state.score = clamp(state.score * decayWeight + p * newWeight, -1, TRUST_CEILING);
+    // R41 E5: Trust Exceedance Limits (Starvation guard)
+    // Clamp bottom to 0.10 instead of -1 so aggressive exponential drops don't permanently decouple modules.
+    state.score = clamp(state.score * decayWeight + p * newWeight, 0.10, TRUST_CEILING);
     // trust ecosystem looks like, eliminating per-module floor additions.
     // R18 E1: Coefficient raised 0.30->0.50.
     // R19 E5: Self-deriving coefficient from trust score standard deviation.

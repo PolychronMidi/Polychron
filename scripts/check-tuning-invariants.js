@@ -81,8 +81,8 @@ function extractConstants() {
       extractConst(negotiation, /trustCadence\s*>=\s*([\d.]+)/),
 
     // adaptiveTrustScores
-    trust_EMA_decay: extractConst(trust, /score\s*\*\s*([\d.]+)\s*\+/),
-    trust_EMA_new: extractConst(trust, /\+\s*p\s*\*\s*([\d.]+)/),
+    trust_EMA_decay: extractConst(trust, /BASE_EMA_DECAY\s*=\s*([\d.]+)/) || extractConst(trust, /score\s*\*\s*([\d.]+)\s*\+/),
+    trust_EMA_new: extractConst(trust, /BASE_EMA_NEW\s*=\s*([\d.]+)/) || extractConst(trust, /\+\s*p\s*\*\s*([\d.]+)/),
     trust_weight_multiplier: extractConst(trust, /TRUST_WEIGHT_MULTIPLIER\s*=\s*([\d.]+)/) || extractConst(trust, /1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*([\d.]+)/),
     trust_weight_min: extractConst(trust, /TRUST_WEIGHT_MIN\s*=\s*([\d.]+)/) || (() => {
       const m = trust.match(/clamp\(\s*1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*[\d.]+\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);

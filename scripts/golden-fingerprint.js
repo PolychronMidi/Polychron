@@ -198,11 +198,11 @@ function computeFingerprint() {
   // R39 E4 & E5: Extract Exceedance Severity and Spike Trace Data
   const exceedanceSeverity = {};
   let totalExceedanceBeats = 0;
-  if (summary && summary.couplingAbs) {
-    for (const [pair, stat] of Object.entries(summary.couplingAbs)) {
-      if (stat.exceedanceBeats) {
-        exceedanceSeverity[pair] = stat.exceedanceBeats;
-        totalExceedanceBeats += stat.exceedanceBeats;
+  if (summary && summary.pairExceedanceBeats) {
+    for (const [pair, beats] of Object.entries(summary.pairExceedanceBeats)) {
+      if (beats) {
+        exceedanceSeverity[pair] = beats;
+        totalExceedanceBeats += beats;
       }
     }
   }

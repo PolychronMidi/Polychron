@@ -414,7 +414,11 @@ couplingHomeostasis = (() => {
         const rolling = V.optionalFinite(val);
         if (rolling !== undefined && m.abs(rolling) > 0.85) {
           _exceedanceTicks[pair] = (_exceedanceTicks[pair] || 0) + 1;
-          if (_exceedanceTicks[pair] >= 5) applyBrake = true;
+          // R41 E6: Total Exceedance Brake Scaling
+          // Scale structural brake bounds directly against current runtime
+          // threshold vs a hard-integer so it grows for ambient profiles.
+          const limitTicks = m.max(5, m.floor(_tickCount * 0.015));
+          if (_exceedanceTicks[pair] >= limitTicks) applyBrake = true;
         } else {
           _exceedanceTicks[pair] = 0;
         }

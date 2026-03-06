@@ -1,3 +1,72 @@
+## R41 — 2026-03-06 — DRIFTED
+
+**Profile:** adaptive | **Beats:** 770 | **Duration:** 77.0s | **Notes:** 28,142
+**Fingerprint:** 8/9 stable | Drifted: regimeDistribution
+
+### Key Observations
+- **HYSTERESIS DEADLOCK DISCOVERED (H1 FAIL).** The system entirely failed to transition out of `evolving` (89.4%) into `coherent` (0.0%) despite tracking massive raw `coherent` streaks (up to 59 uninterrupted hits, totaling 95 raw `coherent` classifications). The root cause is a systemic variable stall in `resolve(rawRegime)` inside `regimeClassifier.js`.
+- **THE EVOLVING_BEATS TRAP.** `_evolvingBeats` determines whether the system has satisfied `_evolvingMinDwell`. However, `_evolvingBeats` only increments when `rawRegime === lastRegime`. If the system is in `evolving` but the engine begins producing `coherent` frames, `_evolvingBeats` freezes entirely. This creates an inescapable bistable trap where the system generates valid `coherent` blocks but refuses to transition because the un-incremented `_evolvingBeats` stays artificially low forever.
+- **INITIALIZATION TIMING.** `initializing` accounted for 10.6% (82 beats), correctly matching the initial `MIN_WINDOW` buildup sequence without stalling.
+- **ESCAPE HATCH REDUCTION.** Relocating the `_highDimVelStreak` escape hatch below the `coherent` gate structurally succeeded in passing the signal (as evidenced by the 692 "none" `coherentBlock` beats), but exposed the deeper hysteresis mathematical flaw underlying the transition tracking arrays.
+
+### Evolutions Applied (from R40)
+- E1: **Evolving Escape Hatch Repositioning** — **confirmed** — Properly routed logic to allow the system to evaluate `coherent` blocks (95 raw `coherent` passes).
+- E2: **Coherent Dim-Gate Relaxation** — **confirmed** — Relaxed bounds successfully expanded acceptable criteria, drastically clearing `coherentBlock` counts.
+- E3: **Sub-Zero Scale Bounding** — **confirmed** — Zero-boundary calculations correctly parsed division bounds without runtime errors.
+- E4: **Phase-Axis Dampening Augment** — **inconclusive** — Phase dynamics were entirely dominated by the `evolving` lockdown behavior.
+- E5: **Trust Exceedance Limits** — **confirmed** — Starvation guards effectively kept systems bounded above 0.10.
+- E6: **Total Exceedance Brake Scaling** — **confirmed** — Dynamic percentile caps accurately replaced integer checks.
+
+### Evolutions Proposed (for R42)
+- E1: **Hysteresis Increment Rectification** — Restructure `resolve(rawRegime)` inside `regimeClassifier.js` to unconditionally increment the counter for the *actual* regime the system resolves to on that beat, regardless of whether `rawRegime === lastRegime`. (src/conductor/signal/regimeClassifier.js)
+- E2: **Diagnostic Trace Variables** — Export `_evolvingBeats` and `coherentBeats` explicit telemetry natively into `trace-summary.js` to structurally prove the tracking counts align beat-by-beat. (scripts/trace-summary.js)
+- E3: **Exploring Momentum Parity** — Apply the same exact increment restructure logic to `exploring` tracking mechanisms within `resolve()` to prevent homologous stalling scenarios when returning from `fragmented`. (src/conductor/signal/regimeClassifier.js)
+- E4: **Evolving Dwell Safety Timeout** — Institute a hard `_evolvingMaxDwell` (e.g., 150 beats) within `resolve()` that forcefully overrides the state lock and allows the longest-reigning valid `majorityRegime` to snap the system forward if stuck. (src/conductor/signal/regimeClassifier.js)
+- E5: **Transition Emission Accuracy** — Ensure `explainabilityBus.emit('REGIME_TRANSITION')` accurately passes the correctly incremented `_evolvingBeats` value *post-increment* rather than mid-stall. (src/conductor/signal/regimeClassifier.js)
+- E6: **Raw Hysteresis Flush** — Completely zero out `_rawRegimeWindow` upon an actual regime transition inside `resolve()` preventing phantom `majorityRegime` flips bleeding into adjacent states instantly. (src/conductor/signal/regimeClassifier.js)
+
+### Hypotheses to Track
+- H1: `_evolvingBeats` increments flawlessly each beat we officially remain in `evolving`, cleanly surpassing `_evolvingMinDwell`.
+- H2: `coherent` regime definitively achieves non-zero operational thresholds, capturing the 50-60+ streak segments seen in R41.
+- H3: Regime Profile fundamentally rebalances away from 90% `evolving` dominance.
+
+---
+
+## R40 — 2026-03-06 — EVOLVED
+
+**Profile:** atmospheric | **Beats:** 702 | **Duration:** 109.2s | **Notes:** 26,636
+**Fingerprint:** 8/9 stable | Drifted: regimeDistribution
+
+### Key Observations
+- **EXPLORING RECOVERY (H1 PASS).** The Evolving Escape Hatch (R40 E5) correctly forced transition into the `exploring` regime after 10 sequential beats of high dimensionality (>2.8) and velocity (>0.012). The system's regime profile flipped symmetrically: `exploring` went from 0% to 70.8%, and `evolving` plunged from 94.2% to 24.2%.
+- **COHERENT STARVATION.** Despite the abundance of `exploring` beats and favorable coupling, `coherent` registered 0 beats (0.0%). The Escape Hatch logic (`return 'exploring'`) was placed strictly *before* the `coherent` qualification check, inadvertently trapping all high-dimension/high-velocity beats into `exploring` permanently.
+- **EFFECTIVE DIMENSIONALITY COMPONENT.** `effectiveDimHistogram` logged a p50 of 3.29 and p90 of 3.74. While diverse, the previous `effectiveDim <= 3.8` gate proved slightly tight, though the primary constraint was the escape hatch loop.
+- **AXIS GINI AND EXCEEDANCE.** Phase pairs continue driving a heavy hub of exceedance. Total `flicker-phase` hit 215 exceedance beats, `density-flicker` hit 131. Total exceedance beat map climbed due to the extended run runtime lengths (`flicker-phase` heavily inflating the total). Target < 150 failed.
+
+### Evolutions Applied (from R39)
+- E1: **Exploring Majority-Window Hysteresis** — **confirmed** — Hysteresis smoothed entry, though E5 did the heavy lifting.
+- E2: **Sub-Zero Baseline Target Floor** — **confirmed** — Adaptive targets dynamically recalibrated correctly down logic bounds without negative integer crashes.
+- E3: **Exceedance Multiplier Brake** — **partially confirmed** — Tension and density capped but prolonged `flicker-phase` sustain breached threshold limits over 109.2 seconds.
+- E4: **Phase-Axis Dampening** — **refuted** — `axisGini` continued slight regression rather than normalizing under .15; redistribution force stronger than dampen clamp.
+- E5: **Evolving-to-Exploring Escape Hatch** — **confirmed (flawed)** — Succeeded in terminating the `evolving` death-loop, but starved `coherent`.
+- E6: **Trust Score Exponential Penalty** — **confirmed** — Decoupled modules adequately dropped trust scores gracefully when forced.
+
+### Evolutions Proposed (for R41)
+- E1: **Evolving Escape Hatch Repositioning** — Move `if (_highDimVelStreak >= 10) return 'exploring';` below the `coherent` gate logic in `regimeClassifier.js` to allow `coherent` graduation. (src/conductor/signal/regimeClassifier.js)
+- E2: **Coherent Dim-Gate Relaxation** — Re-loosen `effectiveDim <= 3.8` to `4.0` in `regimeClassifier.js`. High multidimensional composition should not restrict system harmony when velocity is favorable. (src/conductor/signal/regimeClassifier.js)
+- E3: **Sub-Zero Scale Bounding** — Protect current calculation scaling in `pipelineCouplingManager.js` if the adaptive `baseline` actively transitions through the zero boundary. (src/conductor/signal/pipelineCouplingManager.js)
+- E4: **Phase-Axis Dampening Augment** — Double the symmetrical `-0.05` dampen to `-0.10` in `axisEnergyEquilibrator.js` when phase structural products surge in extended lengths. (src/conductor/signal/axisEnergyEquilibrator.js)
+- E5: **Trust Exceedance Limits** — Institute an absolute floor cutoff below `0.10` penalty in `adaptiveTrustScores.js` to stop dominant starvation. (src/crossLayer/structure/adaptiveTrustScores.js)
+- E6: **Total Exceedance Brake Scaling** — Tie `flicker-phase` severity scaling non-linearly to runtime length, converting raw exceedance beat counts to percentages. (src/conductor/signal/couplingHomeostasis.js)
+
+### Hypotheses to Track
+- H1: `coherent` regime recovers to bounds [15% - 35%].
+- H2: Overwhelming `flicker-phase` exceedance beat ratios halve proportional to time.
+- H3: `effectiveDimHistogram`'s p90 sustains between 3.6 and 3.9 without bottlenecking transitions.
+- H4: Total axis energy redistribute drops `axisGini` down below 0.18 once phase pair clamping stabilizes.
+
+---
+
 ## R39 — 2026-03-06 — EVOLVED
 
 **Profile:** explosive | **Beats:** 346 | **Duration:** 47.0s | **Notes:** 13,496
