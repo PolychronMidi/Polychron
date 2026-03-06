@@ -104,6 +104,7 @@ function summarizeTrace(entries) {
   let readinessLastScale = null;
   // R35 E5: Exploring-block diagnostic accumulators
   const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
+  const coherentBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
   // R35 E6: Per-pair exceedance beat tracking (beats above 0.85)
   const pairExceedanceBeats = {};
   // R36 E4: Raw regime counts (cumulative from classifier, grab last beat)
@@ -150,6 +151,9 @@ function summarizeTrace(entries) {
       // R35 E5: Accumulate exploring-block diagnostic
       if (typeof tr.exploringBlock === 'string' && exploringBlockCounts[tr.exploringBlock] !== undefined) {
         exploringBlockCounts[tr.exploringBlock]++;
+      }
+      if (typeof tr.coherentBlock === 'string' && coherentBlockCounts[tr.coherentBlock] !== undefined) {
+        coherentBlockCounts[tr.coherentBlock]++;
       }
       // R36 E4: Grab cumulative raw regime counts (last beat wins)
       if (tr.rawRegimeCounts && typeof tr.rawRegimeCounts === 'object') {
@@ -500,6 +504,7 @@ function summarizeTrace(entries) {
       finalThresholdScale: readinessLastScale,
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
+      coherentBlock: coherentBlockCounts,
       // R36 E4: Raw regime counts before hysteresis
       rawRegimeCounts,
       // R37 E6: Max consecutive streak per raw regime

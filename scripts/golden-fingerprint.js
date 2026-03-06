@@ -49,7 +49,8 @@ const TOLERANCES = {
   tensionArcDistortion: 0.30,     // normalized arc shape distance
   trustConvergenceDelta: 0.25,    // trust score convergence rate change
   regimeDistributionDelta: 0.20,  // Jensen-Shannon divergence threshold (R9 Evo 6: tightened from 0.30)
-  couplingDelta: 0.25             // mean absolute coupling change
+  couplingDelta: 0.25,            // mean absolute coupling change
+  exceedanceSeverity: 25          // R39 E5: Max sum exceedance absolute delta
 };
 
 // ---- Utility functions ----
@@ -194,6 +195,18 @@ function computeFingerprint() {
     }
   }
 
+  // R39 E4 & E5: Extract Exceedance Severity and Spike Trace Data
+  const exceedanceSeverity = {};
+  let totalExceedanceBeats = 0;
+  if (summary && summary.couplingAbs) {
+    for (const [pair, stat] of Object.entries(summary.couplingAbs)) {
+      if (stat.exceedanceBeats) {
+        exceedanceSeverity[pair] = stat.exceedanceBeats;
+        totalExceedanceBeats += stat.exceedanceBeats;
+      }
+    }
+  }
+
   return {
     meta: {
       generated: new Date().toISOString(),
@@ -207,6 +220,8 @@ function computeFingerprint() {
     trustConvergence,
     trustFinal,
     regimeDistribution,
+    exceedanceSeverity,
+    totalExceedanceBeats,
     couplingMeans,
     couplingCorrelation,
     activeProfile: (manifest && manifest.config && manifest.config.activeProfile) || 'unknown'
@@ -326,6 +341,21 @@ function compareFingerprints(current, previous) {
     const flipRate = totalPairs > 0 ? flips / totalPairs : 0;
     // Informational dimension -- not counted toward drift verdict
     results.push({ dimension: 'correlationTrend', delta: flipRate, tolerance: 1.0, status: 'stable', flipDetails });
+  }
+
+  // R39 E4 & E5: Exceedance Severity
+  if (current.totalExceedanceBeats !== undefined && previous.totalExceedanceBeats !== undefined) {
+    const excDelta = Math.abs(current.totalExceedanceBeats - previous.totalExceedanceBeats);
+    const excPass = excDelta <= TOLERANCES.exceedanceSeverity * crossProfileScale;
+    if (!excPass) drifted++;
+    results.push({
+      dimension: 'exceedanceSeverity',
+      delta: excDelta,
+      tolerance: TOLERANCES.exceedanceSeverity * crossProfileScale,
+      status: excPass ? 'stable' : 'drifted',
+      currentTotal: current.totalExceedanceBeats,
+      previousTotal: previous.totalExceedanceBeats
+    });
   }
 
   if (crossProfile) {
