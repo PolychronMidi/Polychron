@@ -39,6 +39,7 @@
  */
 
 couplingHomeostasis = (() => {
+  const V = validator.create('couplingHomeostasis');
 
   // All monitored dimension pairs (mirrors pipelineCouplingManager.ALL_MONITORED_DIMS)
   const ALL_DIMS = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
@@ -84,6 +85,7 @@ couplingHomeostasis = (() => {
   let _peakEnergyEma = 0;             // R20 E3: trailing max of totalEnergyEma
   let _giniCoefficient = 0;
   let _beatCount = 0;                 // beats with valid coupling data (measure-level)
+  const _exceedanceTicks = {};
   // R20 E2: EMA-smoothed redistribution inputs (replace raw beat-to-beat delta).
   let _energyDeltaEma = 0;
   let _pairTurbulenceEma = 0;
@@ -402,6 +404,25 @@ couplingHomeostasis = (() => {
     // Track multiplier extremes
     _multiplierMin = m.min(_multiplierMin, _globalGainMultiplier);
     _multiplierMax = m.max(_multiplierMax, _globalGainMultiplier);
+
+    // R40 E3: Exceedance Multiplier Brake
+    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    let applyBrake = false;
+    if (dynamics && dynamics.couplingMatrix) {
+      for (const pair in dynamics.couplingMatrix) {
+        const val = dynamics.couplingMatrix[pair];
+        const rolling = V.optionalFinite(val);
+        if (rolling !== undefined && m.abs(rolling) > 0.85) {
+          _exceedanceTicks[pair] = (_exceedanceTicks[pair] || 0) + 1;
+          if (_exceedanceTicks[pair] >= 5) applyBrake = true;
+        } else {
+          _exceedanceTicks[pair] = 0;
+        }
+      }
+    }
+    if (applyBrake) {
+      _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier * 0.85);
+    }
 
     // Apply multiplier to pipelineCouplingManager
     pipelineCouplingManager.setGlobalGainMultiplier(_globalGainMultiplier);

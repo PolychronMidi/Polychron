@@ -17,6 +17,10 @@ adaptiveTrustScores = (() => {
   // accumulate ever-more influence via positive feedback (high trust -
   // more influence - more positive outcomes - higher trust).
   const TRUST_CEILING = 0.75; // max score (- max weight - 1.56)
+
+  const BASE_EMA_DECAY = 0.9;
+  const BASE_EMA_NEW = 0.1;
+
   let decayCycleCount = 0;
 
   // -- #5: Trust Starvation Auto-Nourishment (Hypermeta) --
@@ -75,11 +79,30 @@ adaptiveTrustScores = (() => {
     const state = ensure(systemName);
     const p = clamp(payoff, -1, 1);
     const scoreBefore = state.score;
-    state.score = clamp(state.score * 0.9 + p * 0.1, -1, TRUST_CEILING);
 
-    // R17 structural fix: Universal population-derived trust floor.
-    // Replaces per-module hard-coded floors (cadenceAlignment 0.20, restSynchronizer 0.20)
-    // with a floor derived from the current population mean. Adapts to whatever the
+    let newWeight = BASE_EMA_NEW;
+    let decayWeight = BASE_EMA_DECAY;
+    // R40 E6: Trust Score Exponential Penalty
+    if (p < 0) {
+      const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      if (dynamics && dynamics.couplingMatrix) {
+        let maxTrustCorr = 0;
+        const pairs = ['tension-trust', 'density-trust', 'flicker-trust', 'entropy-trust', 'trust-phase'];
+        for (let i = 0; i < pairs.length; i++) {
+          const val = dynamics.couplingMatrix[pairs[i]];
+          if (typeof val === 'number') {
+             maxTrustCorr = m.max(maxTrustCorr, m.abs(val));
+          }
+        }
+        if (maxTrustCorr > 0.70) {
+          // exponential drop scalar when locking, maximum weight approaches 0.60
+          newWeight = 0.1 * m.exp(5 * (maxTrustCorr - 0.70));
+          newWeight = clamp(newWeight, 0.1, 0.6);
+          decayWeight = 1 - newWeight;
+        }
+      }
+    }
+    state.score = clamp(state.score * decayWeight + p * newWeight, -1, TRUST_CEILING);
     // trust ecosystem looks like, eliminating per-module floor additions.
     // R18 E1: Coefficient raised 0.30->0.50.
     // R19 E5: Self-deriving coefficient from trust score standard deviation.

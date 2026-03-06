@@ -201,6 +201,8 @@ axisEnergyEquilibrator = (() => {
 
     // ===== LAYER 2: Axis-level energy balancing =====
     const entropyExploringDamp = rKey === 'exploring' ? 0.95 : 1.0;
+    // R40 E4: Phase-Axis Dampening
+    const phaseEvolvingDamp = rKey === 'evolving' ? 0.95 : 1.0;
 
     for (let a = 0; a < _ALL_AXES.length; a++) {
       const axis = _ALL_AXES[a];
@@ -210,7 +212,8 @@ axisEnergyEquilibrator = (() => {
       if (share > _AXIS_OVERSHOOT && tightenScale > 0) {
         const excess = share - _FAIR_SHARE;
         // R39 E1: Entropy Axis Soft-Throttle. Apply 0.95x dampening strictly to entropy during exploring.
-        const dampMult = (axis === 'entropy') ? entropyExploringDamp : 1.0;
+        let dampMult = (axis === 'entropy') ? entropyExploringDamp : 1.0;
+        if (axis === 'phase') dampMult *= phaseEvolvingDamp;
 
         // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
         // for disadvantaged axes (trust/entropy/phase). But overshoot tightening

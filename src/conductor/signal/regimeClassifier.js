@@ -66,6 +66,9 @@ regimeClassifier = (() => {
   // R34 E6: Extended with velocity, velThreshold for transition readiness diagnostic.
   let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0, velocity: 0, velThreshold: 0.008 };
 
+  // R40 E5: Evolving-to-Exploring Escape Hatch streak tracker
+  let _highDimVelStreak = 0;
+
   // R36 E4: Raw regime diagnostic. Tallies how many beats each raw
   // classification appears (before hysteresis). Comparing rawRegimeCounts
   // vs resolved regimeCounts reveals hysteresis deadlock: if rawCoherent
@@ -261,6 +264,18 @@ regimeClassifier = (() => {
     // R34 E6: Include velocity + velThreshold for transition readiness
     // R35 E5: Include effectiveDim for exploring-block diagnostic
     _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus, velocity: avgVelocity, velThreshold: _velThreshold, effectiveDim };
+
+    // R40 E5: Evolving-to-Exploring Escape Hatch check
+    if (effectiveDim > 2.8 && avgVelocity > 0.012) {
+      _highDimVelStreak++;
+    } else {
+      _highDimVelStreak = 0;
+    }
+
+    if (_highDimVelStreak >= 10) {
+      return 'exploring';
+    }
+
     // R36 E2: effectiveDim gate on coherent entry.
     // R37 E2: Tightened from 4.0 to 3.5. R36 data: 87 raw coherent beats
     // vs 2 raw exploring. effectiveDim almost always > 4.0, swallowing all
@@ -339,12 +354,16 @@ regimeClassifier = (() => {
     }
 
     // R37 E1: Check if rawRegime has majority in rolling window
-    if (_rawRegimeWindow.length >= _REGIME_MAJORITY) {
+    if (_rawRegimeWindow.length >= (_REGIME_MAJORITY - 1)) {
       let _windowHits = 0;
       for (let i = 0; i < _rawRegimeWindow.length; i++) {
         if (_rawRegimeWindow[i] === rawRegime) _windowHits++;
       }
-      if (_windowHits >= _REGIME_MAJORITY) {
+
+      // R40 E1: Exploring Majority-Window Hysteresis (relaxed constraint to capture valid exploring blocks)
+      const requiredHits = rawRegime === 'exploring' ? 2 : _REGIME_MAJORITY;
+
+      if (_windowHits >= requiredHits) {
         // R22 E4: Evolving minimum dwell -- suppress evolving->coherent until
         // at least _evolvingMinDwell beats have passed in evolving.
         if (lastRegime === 'evolving' && rawRegime === 'coherent' && _evolvingBeats < _evolvingMinDwell) {

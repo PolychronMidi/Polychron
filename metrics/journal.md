@@ -1,3 +1,39 @@
+## R39 — 2026-03-06 — EVOLVED
+
+**Profile:** explosive | **Beats:** 346 | **Duration:** 47.0s | **Notes:** 13,496
+**Fingerprint:** 7/8 stable | Drifted: regimeDistribution
+
+### Key Observations
+- **EXPLORING AND COHERENT DEADLOCK (H2 FAIL).** System collapsed entirely into `evolving` (94.2%) without ever successfully progressing to `exploring` (0%) or `coherent` (0%). Despite `rawRegimeCounts.coherent` hitting 45 raw beats and `exploringBlock` logging 274 "none" blockers, hysteresis and precedence strictly locked the system.
+- **PHASE PAIRS THE NEW HUB.** `flicker-phase` hit 60 exceedance beats with a p95 of 0.939, and `density-phase` peaked at 0.955. Energy aggressively redistributed into the phase hub since the entropy axis was successfully dampened.
+- **ENTROPY SOFT-THROTTLE SUCCESS (H1 PASS).** Entropy axis share successfully squeezed to 0.171 (< 0.20) as designed by the E1 maneuver, successfully unpinning it from the top rank.
+- **AXIS GINI REGRESSION.** 0.2155 (up from astoundingly tight 0.1215 in R38). Driven by phase redistribution.
+- **MASSIVE EXCEEDANCE CASCADE (H4 FAIL).** 312 total exceedance beats (Target < 100). `flicker-phase` (60) and `density-flicker` (52) led a run-away feedback effect as the `evolving` regime lock prevented any coherent-relaxation cycles.
+
+### Evolutions Applied (from R38)
+- E1: **Entropy Axis Soft-Throttle** — **confirmed** — entropy share fell to 0.171.
+- E2: **Explosive Coherent Normalization** — **refuted** — decreasing threshold to 3.8 failed to overcome hysteresis lockout; 0% coherent achieved.
+- E3: **Trust Exceedance Guard** — **partially confirmed** — `flicker-trust` exceedance fell to 29 (from 37) but missed target of 20.
+- E4: **Phase-Lock Spike Tracer** — **confirmed** — `rawEmaMax` correctly tracks historical peaks under current outputs.
+- E5: **Exceedance Severity Dimension** — **confirmed** — successfully folded into golden fingerprint metrics.
+- E6: **Relaxed Velocity Entry** — **refuted** — `exploring` totally vanished, implying velocity dead-zones aren't the single bottleneck.
+
+### Evolutions Proposed (for R40)
+- E1: **Exploring Majority-Window Hysteresis** — Replace consecutive-streak hysteresis for `exploring` entry with a 2-of-4 sliding window to prevent `evolving` black holes. (`src/conductor/signal/regimeClassifier.js`)
+- E2: **Sub-Zero Baseline Target Floor** — Allow coupling baselines to adaptively drop below 0.05 to massively escalate heatPenalty generation on structurally locked pairs. (`src/conductor/signal/pipelineCouplingManager.js`)
+- E3: **Exceedance Multiplier Brake** — Apply a global 0.85x multiplier to tension and density outputs while ANY pair has sustained `rawRollingAbsCorr > 0.85` for over 5 beats. (`src/conductor/signal/couplingHomeostasis.js`)
+- E4: **Phase-Axis Dampening** — Implement a symmetrical -0.05 fractional dampen on phase structural products during `evolving` to combat the new hot-spot migration. (`src/conductor/signal/axisEnergyEquilibrator.js`)
+- E5: **Evolving-to-Exploring Escape Hatch** — Force transition to `exploring` mechanically if `dim > 2.8` and `velocity > 0.012` for 10 sequential beats, overriding standard coupling thresholds. (`src/conductor/signal/regimeClassifier.js`)
+- E6: **Trust Score Exponential Penalty** — Severely degrade trust scores exponentially rather than linearly during exceedance periods to decouple dominant trust metrics from hot signals. (`src/crossLayer/adaptiveTrustScores.js`)
+
+### Hypotheses to Track
+- H1: `exploring` regime recovers to at least 15% presence.
+- H2: Phase-axis hot pairs (`flicker-phase`, `density-phase`) fall to under 25 exceedance beats.
+- H3: Total exceedance beats map drops by over 50% (< 150).
+- H4: `axisGini` drops back below 0.15.
+
+---
+
 ## R38 — 2026-03-05 — STABLE
 
 **Profile:** explosive | **Beats:** 629 | **Duration:** 84.3s | **Notes:** 23,089

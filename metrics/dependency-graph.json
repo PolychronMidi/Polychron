@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-06T01:14:06.806Z",
+    "generated": "2026-03-06T02:37:03.509Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2676,
-    "totalEdges": 2042,
-    "crossSubsystemEdges": 1441,
+    "totalConsumes": 2677,
+    "totalEdges": 2043,
+    "crossSubsystemEdges": 1442,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 206
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 145,
         "provides": 191,
-        "consumes": 754
+        "consumes": 755
       },
       "rhythm": {
         "files": 30,
@@ -1301,6 +1301,7 @@
         "pipelineCouplingManager"
       ],
       "consumes": [
+        "adaptiveTrustScores",
         "clamp",
         "conductorIntelligence",
         "couplingHomeostasis",
@@ -11143,6 +11144,13 @@
     {
       "from": "src/crossLayer/structure/adaptiveTrustScores.js",
       "to": "src/conductor/signal/output/systemManifest.js",
+      "globals": [
+        "adaptiveTrustScores"
+      ]
+    },
+    {
+      "from": "src/crossLayer/structure/adaptiveTrustScores.js",
+      "to": "src/conductor/signal/pipelineCouplingManager.js",
       "globals": [
         "adaptiveTrustScores"
       ]
