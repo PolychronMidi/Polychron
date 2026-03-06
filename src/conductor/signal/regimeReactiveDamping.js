@@ -132,19 +132,36 @@ regimeReactiveDamping = (() => {
       for (const rk in _shares) _shares[rk] /= _regimeRing.length;
 
       const expShare = _shares.exploring || 0;
+      const cohShare = _shares.coherent || 0;
       const expExcess = m.max(0, expShare - _REGIME_BUDGET.exploring);
-      const cohDeficit = m.max(0, _REGIME_BUDGET.coherent - (_shares.coherent || 0));
+      const cohDeficit = m.max(0, _REGIME_BUDGET.coherent - cohShare);
       const evoDeficit = m.max(0, _REGIME_BUDGET.evolving - (_shares.evolving || 0));
+      const cohExcess = m.max(0, cohShare - _REGIME_BUDGET.coherent);
+
+      let coherentLockPressure = 0;
+      const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
+      if (readiness && typeof readiness.coherentBeats === 'number') {
+        coherentLockPressure = clamp((readiness.coherentBeats - 48) / 96, 0, 1);
+      }
 
       // R7 Evo 1: Squared penalty when exploring exceeds 60% - creates
       // a soft wall preventing runaway exploring domination.
       const expPenalty = expShare > 0.60 ? 1.0 + (expShare - 0.60) * (expShare - 0.60) : 1.0;
+      const coherentPressure = clamp(cohExcess * 1.5 + m.max(0, _REGIME_BUDGET.exploring - expShare) * 0.75 + coherentLockPressure * 0.6, 0, 0.6);
 
       // Exploring over-budget: suppress variety-promoting biases
       _eqCorrD = -expExcess * _EQUILIB_STRENGTH * 0.5 * expPenalty;
       _eqCorrF = -expExcess * _EQUILIB_STRENGTH * expPenalty;
       // Coherent/evolving deficit: boost tension (encourages coupling/convergence)
       _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH;
+
+      // R46 E2: Coherent-share reactive damping. If coherent overshoots and
+      // exploring under-shoots, bias the system toward exploratory variance.
+      if (coherentPressure > 0) {
+        _eqCorrD += coherentPressure * _EQUILIB_STRENGTH * 0.35;
+        _eqCorrF += coherentPressure * _EQUILIB_STRENGTH * 0.95;
+        _eqCorrT -= coherentPressure * _EQUILIB_STRENGTH * 0.85;
+      }
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog
       safePreBoot.call(() => {

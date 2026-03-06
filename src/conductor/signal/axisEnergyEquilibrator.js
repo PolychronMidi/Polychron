@@ -221,6 +221,11 @@ axisEnergyEquilibrator = (() => {
            dampMult *= (1.0 - m.min(0.15, (share - 0.20) * 1.5)); // max 0.85 dampening
         }
 
+        // E2: Density Axis Dampening
+        if (axis === 'density' && share > 0.25) {
+          dampMult -= 0.05;
+        }
+
         // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
         // for disadvantaged axes (trust/entropy/phase). But overshoot tightening
         // also needs scaling: entropy at 0.230 share pushes energy toward trust,

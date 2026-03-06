@@ -1,3 +1,71 @@
+## R45 — 2026-03-06 — EVOLVED
+
+**Profile:** explosive | **Beats:** 400 | **Duration:** 53.1s | **Notes:** 15,625
+**Fingerprint:** 8/9 stable | Drifted: exceedanceSeverity
+
+### Key Observations
+- **H1 FAIL: HARD-BREAK STILL DID NOT MATERIALIZE IN THE TRACE.** The run stayed in `coherent` for 318 of 400 beats (79.5%) with a single uninterrupted 318-beat streak and only 2 total transitions. The source now contains both a pre-window `_coherentMaxDwell` override and a post-hysteresis hard-break, but the emitted regime trace still shows no `exploring` beats at all.
+- **H2 FAIL: DENSITY DID NOT REMAIN THE DOMINANT AXIS.** The persisted axis-energy map contradicts the prior density-surge hypothesis: `density` closed at 13.39% share, while `flicker` (21.87%) and `trust` (19.79%) carried the largest coupling loads. The density dampener likely did not activate materially because the overshoot threshold was not sustained.
+- **H3 FAIL: DENSITY-FLICKER IMPROVED, BUT PHASE HOTSPOTS TOOK OVER.** `density-flicker` exceedance beats fell from 107 to 73, but `density-phase` and `flicker-phase` each reached 104 exceedance beats, with p95 values of 0.950 and 0.997 respectively. Total exceedance severity rose sharply to 340 and remained the only drifted fingerprint dimension.
+- **TELEMETRY HAS A BLIND SPOT.** `transitionReadiness` finished with `evolvingBeats=0` and `coherentBeats=0` despite the 318-beat coherent lock, `rawRegimeCounts` only reflected the final section (`coherent`: 54, `exploring`: 5), and the drift explainer still reports `exceedanceSeverity (beats)` as `unknown dimension`.
+
+### Evolutions Applied (from R44)
+- E1: **Coherent Max Dwell Hard-Break** — **refuted** — `maxConsecutiveCoherent` still reached 318 and the run logged no `exploring` regime after beat 82.
+- E2: **Density Axis Dampening** — **inconclusive** — the current run closed with `density` at 13.39% axis share, so the new dampener does not appear to have been a meaningful active constraint.
+- E3: **Density-Flicker Hotspot Heat Penalty** — **inconclusive** — `density-flicker` exceedance beats improved from 107 to 73, but p95 stayed at 0.967 and the stress migrated into `density-phase` and `flicker-phase`.
+- E4: **Coherence Monitor Trust Cap** — **confirmed** — `coherenceMonitor` weight now hard-clips at 1.50 instead of exceeding the cap (previous journal: 1.519; current trace avg weight 1.4899, max 1.5).
+- E5: **Dynamic Regime Window Flush** — **confirmed** — `_rawRegimeCounts` is now section-scoped instead of run-scoped, exposing final-section raw classifications (`coherent`: 54, `exploring`: 5) rather than an accumulated lifetime total.
+- E6: **Exceedance Multiplier Tolerance Shift** — **refuted** — normalized exceedance drift still blew past tolerance (`delta` 264.85 vs `tolerance` 35), so the comparison remains too sensitive to simultaneous multi-pair spikes.
+
+### Evolutions Proposed (for R46)
+- E1: **Sticky Forced-Exit Regime** — Add a self-correcting forced regime latch in `regimeClassifier.js`: when `coherentBeats` breaches `_coherentMaxDwell`, set a bounded `_forcedRegime='exploring'` countdown that bypasses coherent re-entry for a few beats and emits an explicit forced-transition diagnostic. (src/conductor/signal/regimeClassifier.js)
+- E2: **Coherent-Share Reactive Damping** — Extend `regimeReactiveDamping.js` so the controller responds to persistent coherent overshare and low transition count, not just nominal regime labels, by adaptively increasing exploration-friendly damping when coherent share stays above target. (src/conductor/signal/regimeReactiveDamping.js)
+- E3: **Phase Pair Hotspot Controller** — Generalize the special-case hotspot logic in `pipelineCouplingManager.js` from `density-flicker` to the current dominant phase pairs (`density-phase`, `flicker-phase`, `tension-phase`) using self-correcting heat and p95/exceedance-rate feedback rather than a fixed pair list. (src/conductor/signal/pipelineCouplingManager.js)
+- E4: **Trust Anti-Monopoly Feedback** — Replace the static `coherenceMonitor` cap in `adaptiveTrustScores.js` with a self-correcting spread-aware cap that tightens when `coherenceMonitor`'s weight lead over the runner-up grows too large or coherent share remains above target. (src/crossLayer/structure/adaptiveTrustScores.js)
+- E5: **Run-Level Regime Telemetry** — Separate section-scoped diagnostics from run-scoped counters in `regimeClassifier.js` and `trace-summary.js`, recording `maxCoherentBeats`, `forcedBreakCount`, run-level raw regime totals, and the reason for any forced override. (src/conductor/signal/regimeClassifier.js, scripts/trace-summary.js)
+- E6: **Exceedance Composite Fingerprint** — Rework exceedance comparison to use a self-correcting composite of unique exceedance beats plus top-pair severity, and add a dedicated explainer case for `exceedanceSeverity (beats)` so the drift narrative identifies the actual hotspot pairs instead of falling back to `unknown dimension`. (scripts/trace-summary.js, scripts/golden-fingerprint.js)
+
+### Hypotheses to Track
+- H1: `maxConsecutiveCoherent` drops below 140 because forced exits become sticky and observable in the trace.
+- H2: Phase-driven exceedance (`density-phase` and `flicker-phase`) falls below 60 beats each without re-inflating `density-flicker`.
+- H3: The next drift explainer names the real exceedance drivers explicitly, and run-level regime counters match the visible regime trace.
+
+---
+
+## R44 — 2026-03-06 — EVOLVED
+
+**Profile:** explosive | **Beats:** 409 | **Duration:** 48.4s | **Notes:** 16,866
+**Fingerprint:** 8/9 stable | Drifted: exceedanceSeverity
+
+### Key Observations
+- **COHERENT MAX DWELL BYPASS (H1 FAIL).** As requested, specifically tracked if `coherent` maxed out strictly at 120. It did not. The system accumulated a `maxConsecutiveCoherent` streak of 289 beats (70.7% total coherent share). While the `_coherentMaxDwell` force-exit logic was executed in `regimeClassifier.js` to fill `_rawRegimeWindow` with `exploring`, the hysteresis block failed to permanently break the lock because returning variables were instantly overwritten by engine velocity vectors.
+- **FLICKER DAMPENING SUCCESS (H2 PASS).** As requested, checked if `flicker` dampening worked. It worked flawlessly. `flicker` energy share dropped from 21.06% down to a very healthy 14.54% after E3 was applied.
+- **EXCEEDANCE SEVERITY DRIFT.** The `density-flicker` pair accumulated 107 exceedance beats and `totalExceedanceBeats` hit 131, causing the single `exceedanceSeverity` fingerprint drift. `density` has ballooned into the dominant axis (28.9% energy share) to compensate.
+- **TRUST SCORING CONVERGENCE.** `coherenceMonitor` is dominating the trust governance with a weight of 1.519 (score 0.69) while structural modules like `cadenceAlignment` dropped to 0.23.
+
+### Evolutions Applied (from R43)
+- E1: **Coherent Max Dwell Fix** — **refuted** — Mathematical logic bypassed by hysteresis window reconstruction, failing to clamp at 120 (streak reached 289).
+- E2: **Uncapped Saturation Acceleration** — **confirmed** — Allowed the eventual 289-beat escape, terminating the composition correctly.
+- E3: **Flicker Axis Dampening Core** — **confirmed** — Perfectly suppressed `flicker` energy dominance down to 14.5%.
+- E4: **Exploring Max Dwell Limit** — **inconclusive** — `exploring` hit 84 beats, well below the 180 trigger.
+- E5: **Exceedance Severity Scaling Adjustment** — **refuted** — Metric drifted again due to run length and `density-flicker` dominance.
+- E6: **Hysteresis Smoothing Relaxation** — **confirmed** — Smoothed the `exploring` re-entry.
+
+### Evolutions Proposed (for R45)
+- E1: **Coherent Max Dwell Hard-Break** — Enforce a severe late-stage clamp in `regimeClassifier.js`. If `coherentBeats > _coherentMaxDwell`, override the final `resolvedRegime = 'exploring'` *after* all hysteresis checks are complete to guarantee structural eviction. (src/conductor/signal/regimeClassifier.js)
+- E2: **Density Axis Dampening** — Since `flicker` was successfully tamed, energy migrated into `density` (28.9%). Introduce a `-0.05` energy dampen hook for `density` inside `axisEnergyEquilibrator.js` when it exceeds 25%. (src/conductor/signal/axisEnergyEquilibrator.js)
+- E3: **Density-Flicker Hotspot Heat Penalty** — Increase the `heatPenalty` severity on `density-flicker` in `pipelineCouplingManager.js` to structurally combat its 107 exceedance beat dominance, dragging its ceiling off the 0.955 p95 plateau. (src/conductor/signal/pipelineCouplingManager.js)
+- E4: **Coherence Monitor Trust Cap** — Limit the maximum trust weight cap for `coherenceMonitor` in `crossLayer/adaptiveTrustScores.js` to mathematically prevent a single metric from dictating >1.50 multiplier weight, preventing starvation of rhythm synchronizers. (src/crossLayer/adaptiveTrustScores.js)
+- E5: **Dynamic Regime Window Flush** — Ensure `_rawRegimeCounts` accurately accumulates over entire section blocks in `regimeClassifier.js` without being bypassed by instantaneous window shifts, maintaining exact true-beat diagnostic accuracy. (src/conductor/signal/regimeClassifier.js)
+- E6: **Exceedance Multiplier Tolerance Shift** — Broaden the effective threshold for `exceedanceSeverity` inside `trace-summary.js` to account for the current naturally long explosive profile runtimes (400+ beats), preventing continuous fingerprint drift alerts. (scripts/trace-summary.js)
+
+### Hypotheses to Track
+- H1: `maxConsecutiveCoherent` unequivocally clamps at or below 120.
+- H2: `density` energy share falls from 28.9% down into the [18% - 22%] range.
+- H3: `density-flicker` exceedance beats drop by >50%.
+
+---
+
 ## R43 — 2026-03-06 — EVOLVED
 
 **Profile:** explosive | **Beats:** 640 | **Duration:** 104.5s | **Notes:** 25,304

@@ -497,6 +497,7 @@ pipelineCouplingManager = (() => {
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
         const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
         const isDensityFlickerPair = key === 'density-flicker';
+        const isPhasePair = (dimA === 'phase' || dimB === 'phase');
         // R25: Skip gain escalation for non-nudgeable pairs. Neither axis has
         // a bias knob, so gains can never produce nudges. Escalating them wastes
         // budget and pollutes HP promotion candidates. Still track EMAs.
@@ -534,13 +535,30 @@ pipelineCouplingManager = (() => {
               rate *= 1.2;
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.03, 1.0);
             }
-            // R16 Evo 5 / R17 Evo 5: Graduated density-flicker escalation.
+            // R16 Evo 5 / R17 Evo 5 / E3: Graduated density-flicker escalation.
             // Binary threshold at 0.7 over-crushed flicker product to 0.845. Graduated
             // function applies proportional pressure: mild at |r|=0.81, full at |r|=0.95.
+            // E3: Increased heat penalty severity (0.1 -> 0.25) to structurally combat exceedance lock.
             if (isDensityFlickerPair && m.abs(corr) > 0.80) {
               const dfGrad = (m.abs(corr) - 0.80) * 2.0;
               rate *= (1 + dfGrad);
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfGrad * 0.1, 1.0);
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfGrad * 0.25, 1.0);
+            }
+            // R46 E3: Self-correcting phase-pair hotspot controller.
+            // Use current |r|, p95, and exceedance rate from the recent ring
+            // so active phase hotspots are penalized without hardcoding one pair.
+            if (isPhasePair && (m.abs(corr) > 0.78 || p95 > 0.88)) {
+              let phaseExceedCount = 0;
+              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
+                if (ps.recentAbsCorr[r] > 0.85) phaseExceedCount++;
+              }
+              const phaseExceedRate = ps.recentAbsCorr.length > 0 ? phaseExceedCount / ps.recentAbsCorr.length : 0;
+              const phaseCorrPressure = clamp((m.abs(corr) - 0.78) * 1.8, 0, 0.45);
+              const phaseTailPressure = clamp((p95 - 0.88) * 2.0, 0, 0.35);
+              const phaseRatePressure = clamp((phaseExceedRate - 0.25) * 0.9, 0, 0.25);
+              const phasePressure = phaseCorrPressure + phaseTailPressure + phaseRatePressure;
+              rate *= (1 + phasePressure);
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + phasePressure * 0.12, 1.0);
             }
             // R17 Evo 3 / R18 E3: Universal high-correlation escalation.
             // Catch ANY pair with |r| > 0.85 that has no pair-specific escalator.
