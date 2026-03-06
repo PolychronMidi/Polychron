@@ -59,7 +59,7 @@ pipelineCouplingManager = (() => {
   const _TARGET_ADAPT_EMA = 0.02;        // ~50-beat horizon for rolling |r|
   const _TARGET_RELAX_RATE = 0.0015;     // per-beat relaxation when intractable (R7 equalized)
   const _TARGET_TIGHTEN_RATE = 0.0015;   // per-beat tightening when resolved (R7 equalized)
-  const _TARGET_MIN = 0.08;
+  const _TARGET_MIN = -0.05;             // R40 E2: Sub-Zero Baseline Target Floor
   const _TARGET_MAX = 0.45;
   const _DENSITY_FLICKER_TARGET_MAX = 0.55;
   /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number }>} */
