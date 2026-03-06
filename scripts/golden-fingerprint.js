@@ -50,7 +50,7 @@ const TOLERANCES = {
   trustConvergenceDelta: 0.25,    // trust score convergence rate change
   regimeDistributionDelta: 0.20,  // Jensen-Shannon divergence threshold (R9 Evo 6: tightened from 0.30)
   couplingDelta: 0.25,            // mean absolute coupling change
-  exceedanceSeverity: 25          // R39 E5: Max sum exceedance absolute delta
+  exceedanceSeverity: 35          // R44 E6: Max sum exceedance absolute delta (Broadened from 25)
 };
 
 // ---- Utility functions ----
@@ -207,6 +207,23 @@ function computeFingerprint() {
     }
   }
 
+  const exceedanceComposite = summary && summary.exceedanceComposite
+    ? {
+      uniqueBeats: toNum(summary.exceedanceComposite.uniqueBeats, 0),
+      uniqueRate: toNum(summary.exceedanceComposite.uniqueRate, 0),
+      totalPairExceedanceBeats: toNum(summary.exceedanceComposite.totalPairExceedanceBeats, totalExceedanceBeats),
+      topPairs: Array.isArray(summary.exceedanceComposite.topPairs) ? summary.exceedanceComposite.topPairs : []
+    }
+    : {
+      uniqueBeats: totalExceedanceBeats,
+      uniqueRate: totalBeats > 0 ? totalExceedanceBeats / totalBeats : 0,
+      totalPairExceedanceBeats: totalExceedanceBeats,
+      topPairs: Object.entries(exceedanceSeverity)
+        .map(function(entry) { return { pair: entry[0], beats: entry[1] }; })
+        .sort(function(a, b) { return b.beats - a.beats; })
+        .slice(0, 3)
+    };
+
   return {
     meta: {
       generated: new Date().toISOString(),
@@ -222,6 +239,7 @@ function computeFingerprint() {
     regimeDistribution,
     exceedanceSeverity,
     totalExceedanceBeats,
+    exceedanceComposite,
     couplingMeans,
     couplingCorrelation,
     activeProfile: (manifest && manifest.config && manifest.config.activeProfile) || 'unknown'
@@ -345,10 +363,19 @@ function compareFingerprints(current, previous) {
 
   // R39 E4 & E5: Exceedance Severity
   if (current.totalExceedanceBeats !== undefined && previous.totalExceedanceBeats !== undefined) {
-    // R44 E5: Self-correcting Exceedance Severity Scaling Adjustment (normalize to 500-beat standard length)
-    const normCurrExc = current.totalExceedanceBeats * (500 / Math.max(1, curBeats));
-    const normPrevExc = previous.totalExceedanceBeats * (500 / Math.max(1, prevBeats));
-    const excDelta = Math.abs(normCurrExc - normPrevExc);
+    // R46 E6: Compare a composite of unique exceedance beats and top-pair severity.
+    const curUnique = current.exceedanceComposite ? current.exceedanceComposite.uniqueBeats : current.totalExceedanceBeats;
+    const prevUnique = previous.exceedanceComposite ? previous.exceedanceComposite.uniqueBeats : previous.totalExceedanceBeats;
+    const curTop = current.exceedanceComposite && current.exceedanceComposite.topPairs && current.exceedanceComposite.topPairs[0]
+      ? current.exceedanceComposite.topPairs[0].beats : current.totalExceedanceBeats;
+    const prevTop = previous.exceedanceComposite && previous.exceedanceComposite.topPairs && previous.exceedanceComposite.topPairs[0]
+      ? previous.exceedanceComposite.topPairs[0].beats : previous.totalExceedanceBeats;
+
+    const normCurrUnique = curUnique * (500 / Math.max(1, curBeats));
+    const normPrevUnique = prevUnique * (500 / Math.max(1, prevBeats));
+    const normCurrTop = curTop * (500 / Math.max(1, curBeats));
+    const normPrevTop = prevTop * (500 / Math.max(1, prevBeats));
+    const excDelta = Math.abs(normCurrUnique - normPrevUnique) * 0.65 + Math.abs(normCurrTop - normPrevTop) * 0.35;
 
     const excPass = excDelta <= TOLERANCES.exceedanceSeverity * crossProfileScale;
     if (!excPass) drifted++;
@@ -359,6 +386,10 @@ function compareFingerprints(current, previous) {
       status: excPass ? 'stable' : 'drifted',
       currentTotal: current.totalExceedanceBeats,
       previousTotal: previous.totalExceedanceBeats,
+      currentUnique: curUnique,
+      previousUnique: prevUnique,
+      currentTopPair: current.exceedanceComposite && current.exceedanceComposite.topPairs ? current.exceedanceComposite.topPairs[0] || null : null,
+      previousTopPair: previous.exceedanceComposite && previous.exceedanceComposite.topPairs ? previous.exceedanceComposite.topPairs[0] || null : null,
       normalizedDelta: true
     });
   }
@@ -474,6 +505,24 @@ function explainDrift(comparison, current, previous) {
       }
       case 'coupling': {
         explain.cause = `mean coupling deviation: ${dim.delta.toFixed(4)}`;
+        break;
+      }
+      case 'exceedanceSeverity (beats)': {
+        const curTopPairs = current.exceedanceComposite && Array.isArray(current.exceedanceComposite.topPairs)
+          ? current.exceedanceComposite.topPairs : [];
+        const prevTopPairs = previous.exceedanceComposite && Array.isArray(previous.exceedanceComposite.topPairs)
+          ? previous.exceedanceComposite.topPairs : [];
+        const curDesc = curTopPairs.length > 0
+          ? curTopPairs.map(function(item) { return item.pair + ': ' + item.beats; }).join(', ')
+          : 'none';
+        const prevDesc = prevTopPairs.length > 0
+          ? prevTopPairs.map(function(item) { return item.pair + ': ' + item.beats; }).join(', ')
+          : 'none';
+        explain.cause = 'exceedance hotspots shifted from [' + prevDesc + '] to [' + curDesc + ']';
+        explain.uniqueBeats = {
+          current: current.exceedanceComposite ? current.exceedanceComposite.uniqueBeats : current.totalExceedanceBeats,
+          previous: previous.exceedanceComposite ? previous.exceedanceComposite.uniqueBeats : previous.totalExceedanceBeats
+        };
         break;
       }
       default:

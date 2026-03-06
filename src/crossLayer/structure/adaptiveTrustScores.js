@@ -161,7 +161,25 @@ adaptiveTrustScores = (() => {
     if (systemName === trustSystems.names.CADENCE_ALIGNMENT && effectiveScore < 0.20) effectiveScore = 0.20;
     // R13 Evo 5: Stutter Weight Dampening
     if (systemName === trustSystems.names.STUTTER_CONTAGION && effectiveScore > 0.55) effectiveScore = 0.55;
-    return clamp(1 + effectiveScore * TRUST_WEIGHT_MULTIPLIER, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
+
+    let maxWeight = TRUST_WEIGHT_MAX;
+    // R46 E4: Self-correcting trust anti-monopoly cap for coherenceMonitor.
+    if (systemName === trustSystems.names.COHERENCE_MONITOR) {
+      let runnerUpScore = 0;
+      for (const [otherName, otherState] of scoreBySystem.entries()) {
+        if (otherName === systemName) continue;
+        runnerUpScore = m.max(runnerUpScore, otherState.score);
+      }
+      const leadScore = m.max(0, effectiveScore - runnerUpScore);
+      let coherentLockPressure = 0;
+      const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
+      if (readiness && typeof readiness.coherentBeats === 'number') {
+        coherentLockPressure = clamp((readiness.coherentBeats - 48) / 96, 0, 1);
+      }
+      const adaptiveCap = 1.50 - m.min(0.15, leadScore * 0.35 + coherentLockPressure * 0.10);
+      maxWeight = clamp(adaptiveCap, 1.35, 1.50);
+    }
+    return clamp(1 + effectiveScore * TRUST_WEIGHT_MULTIPLIER, TRUST_WEIGHT_MIN, maxWeight);
   }
 
   let lastTensionForExploration = 1.0;

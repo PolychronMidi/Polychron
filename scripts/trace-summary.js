@@ -104,13 +104,20 @@ function summarizeTrace(entries) {
   let readinessLastScale = null;
   let evolvingBeats = 0;
   let coherentBeats = 0;
+  let maxCoherentBeats = 0;
+  let forcedBreakCount = 0;
+  let forcedRegime = '';
+  let forcedRegimeBeatsRemaining = 0;
+  let lastForcedReason = '';
   // R35 E5: Exploring-block diagnostic accumulators
   const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
   const coherentBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
-  // R35 E6: Per-pair exceedance beat tracking (beats above 0.85)
+  // R35 E6: Per-pair exceedance beat tracking (beats above 0.90)
   const pairExceedanceBeats = {};
+  let uniqueExceedanceBeats = 0;
   // R36 E4: Raw regime counts (cumulative from classifier, grab last beat)
   let rawRegimeCounts = null;
+  let runRawRegimeCounts = null;
   // R37 E6: Raw regime max streak (cumulative, grab last beat)
   // R38 E6: Track max rawRollingAbsCorr across the run
   const rawEmaMaxSeries = {};
@@ -151,6 +158,11 @@ function summarizeTrace(entries) {
         if (typeof tr.thresholdScale === 'number') readinessLastScale = tr.thresholdScale;
         if (typeof tr.evolvingBeats === 'number') evolvingBeats = tr.evolvingBeats;
         if (typeof tr.coherentBeats === 'number') coherentBeats = tr.coherentBeats;
+        if (typeof tr.maxCoherentBeats === 'number' && tr.maxCoherentBeats > maxCoherentBeats) maxCoherentBeats = tr.maxCoherentBeats;
+        if (typeof tr.forcedBreakCount === 'number') forcedBreakCount = tr.forcedBreakCount;
+        if (typeof tr.forcedRegime === 'string') forcedRegime = tr.forcedRegime;
+        if (typeof tr.forcedRegimeBeatsRemaining === 'number') forcedRegimeBeatsRemaining = tr.forcedRegimeBeatsRemaining;
+        if (typeof tr.lastForcedReason === 'string') lastForcedReason = tr.lastForcedReason;
       }
       // R35 E5: Accumulate exploring-block diagnostic
       if (typeof tr.exploringBlock === 'string' && exploringBlockCounts[tr.exploringBlock] !== undefined) {
@@ -162,6 +174,9 @@ function summarizeTrace(entries) {
       // R36 E4: Grab cumulative raw regime counts (last beat wins)
       if (tr.rawRegimeCounts && typeof tr.rawRegimeCounts === 'object') {
         rawRegimeCounts = tr.rawRegimeCounts;
+      }
+      if (tr.runRawRegimeCounts && typeof tr.runRawRegimeCounts === 'object') {
+        runRawRegimeCounts = tr.runRawRegimeCounts;
       }
       // R37 E6: Grab cumulative raw regime max streaks (last beat wins)
       if (tr.rawRegimeMaxStreak && typeof tr.rawRegimeMaxStreak === 'object') {
@@ -188,6 +203,7 @@ function summarizeTrace(entries) {
 
     const cm = e.coupling && typeof e.coupling === 'object' ? e.coupling : {};
     const couplingKeys = Object.keys(cm);
+    let beatHadExceedance = false;
     for (let j = 0; j < couplingKeys.length; j++) {
       const key = couplingKeys[j];
       const raw = toNum(cm[key], 0);
@@ -198,11 +214,13 @@ function summarizeTrace(entries) {
       updateMinMax(couplingAbs[key], value);
       couplingSeries[key].push(value);
       couplingRawSeries[key].push(raw);
-      // R35 E6: Track beats where |r| > 0.85 per pair
-      if (value > 0.85) {
+      // R44 E6: Track beats where |r| > 0.90 per pair (broadened from 0.85 for 400+ beat runtimes)
+      if (value > 0.90) {
         pairExceedanceBeats[key] = (pairExceedanceBeats[key] || 0) + 1;
+        beatHadExceedance = true;
       }
     }
+    if (beatHadExceedance) uniqueExceedanceBeats++;
 
     // R38 E6: Populate rawEmaMaxSeries from couplingTargets
     if (e.couplingTargets && typeof e.couplingTargets === 'object') {
@@ -294,6 +312,10 @@ function summarizeTrace(entries) {
       couplingHotspots.push({ pair: key, p95: tail.p95, avg: couplingSummary[key].avg });
     }
   }
+
+  const exceedancePairsSorted = Object.entries(pairExceedanceBeats)
+    .map(function(entry) { return { pair: entry[0], beats: entry[1] }; })
+    .sort(function(a, b) { return b.beats - a.beats; });
 
   // R10 Evo 6: Pearson correlation direction for each coupling pair
   const couplingCorrelation = {};
@@ -508,11 +530,17 @@ function summarizeTrace(entries) {
       finalThresholdScale: readinessLastScale,
       evolvingBeats,
       coherentBeats,
+      maxCoherentBeats,
+      forcedBreakCount,
+      forcedRegime,
+      forcedRegimeBeatsRemaining,
+      lastForcedReason,
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
       coherentBlock: coherentBlockCounts,
       // R36 E4: Raw regime counts before hysteresis
       rawRegimeCounts,
+      runRawRegimeCounts,
       // R37 E6: Max consecutive streak per raw regime
       rawRegimeMaxStreak,
       // R37 E5: effectiveDim histogram (percentiles)
@@ -529,6 +557,12 @@ function summarizeTrace(entries) {
     pairExceedanceBeats: Object.fromEntries(
       Object.entries(pairExceedanceBeats).map(([pair, count]) => [pair, count])
     ),
+    exceedanceComposite: {
+      uniqueBeats: uniqueExceedanceBeats,
+      uniqueRate: entries.length > 0 ? Number((uniqueExceedanceBeats / entries.length).toFixed(4)) : 0,
+      totalPairExceedanceBeats: Object.values(pairExceedanceBeats).reduce((sum, value) => sum + value, 0),
+      topPairs: exceedancePairsSorted.slice(0, 3)
+    },
     // R32 E6: Intra-axis pair energy distribution diagnostic
     intraAxisDistribution: (() => {
       // Compute per-axis Gini coefficient and dominant pair from coupling data

@@ -1,14 +1,14 @@
 {
   "meta": {
-    "generated": "2026-03-06T17:26:12.796Z",
+    "generated": "2026-03-06T20:43:50.173Z",
     "verdict": "EVOLVED"
   },
   "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. unknown dimension.",
   "explanations": [
     {
-      "dimension": "exceedanceSeverity",
-      "delta": 72,
-      "tolerance": 25,
+      "dimension": "exceedanceSeverity (beats)",
+      "delta": 264.85,
+      "tolerance": 35,
       "cause": "unknown dimension"
     }
   ]
