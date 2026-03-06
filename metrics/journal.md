@@ -1,3 +1,71 @@
+## R43 — 2026-03-06 — EVOLVED
+
+**Profile:** explosive | **Beats:** 640 | **Duration:** 104.5s | **Notes:** 25,304
+**Fingerprint:** 8/9 stable | Drifted: exceedanceSeverity
+
+### Key Observations
+- **EXPLORING RECOVERY (H3 PASS).** The regime distribution successfully captured the transition gaps, landing at `exploring` for 34.2% (219 beats) without dropping immediately into `evolving` (which successfully plummeted to only 3.6%). The relaxed `effectiveDim` gate and the Dynamic Momentum Expansion flawlessly held the exploring state active.
+- **COHERENT MAX DWELL BYPASS (H1 FAIL).** Coherent dominance remained slightly high at 54.5%, despite the introduction of `_coherentMaxDwell = 120`. A logic flaw in the override condition (`rawRegime === lastRegime`) caused the hard-clip to fail if the instantaneous signal was noisy, allowing the system to rack up a massive 349-beat consecutive `coherent` streak before the escalating penalty forcefully evicted it.
+- **UNCAPPED SATURATION PENALTY SUCCESS.** Even though the max dwell clamp failed, the Uncapped Coherent Saturation Penalty (E1) correctly worked in the background. It mathematically skyrocketed the `coherentThreshold` by ~+2.49 (from 349 dwell beats), eventually crushing the bistable lock completely and snapping the system cleanly into `exploring`.
+- **FLICKER DOMINANCE.** `flicker` pair coupling severity peaked, resulting in a spike of `exceedanceSeverity` that caused the sole fingerprint drift dimension. The `axisGini` expanded slightly to 0.1451, as the `flicker` energy share ballooned to 21.06%.
+
+### Evolutions Applied (from R42)
+- E1: **Uncapped Coherent Saturation Penalty** — **confirmed** — Eventually forced the natural system breakout after the hard-clamp failed.
+- E2: **Re-elevated Escape Hatch Precedence** — **confirmed** — Cleanly prevented early `evolving` starvation while escaping deadzones.
+- E3: **Exploring Dimension Relief** — **confirmed** — Allowed `exploring` to catch the heavy system momentum, successfully maintaining 34.2%.
+- E4: **Coherent Max Dwell Clamp** — **refuted (bugged)** — Failed to trigger at 120 due to `rawRegime` strictness bypassing the constraint loop.
+- E5: **Phase-Axis Re-Amplification** — **confirmed** — Safely normalized phase energy (10.7%).
+- E6: **Dynamic Momentum Expansion** — **confirmed** — Powered the prolonged `exploring` recovery streak successfully.
+
+### Evolutions Proposed (for R44)
+- E1: **Coherent Max Dwell Fix** — Remove the redundant `rawRegime === lastRegime` condition from the `_coherentMaxDwell` force-exit block inside `resolve()` so that a timeout guarantees an exit regardless of the noisy raw regime state. (src/conductor/signal/regimeClassifier.js)
+- E2: **Uncapped Saturation Acceleration** — Double the uncapped boundary penalty scale from `0.01` to `0.02` per beat after 100 beats to ensure the natural breakout happens much faster. (src/conductor/signal/regimeClassifier.js)
+- E3: **Flicker Axis Dampening Core** — Introduce a structural `flicker` dampening variable (`flickerDamp = 0.85`) within `axisEnergyEquilibrator.js` restricting the axis when it over-saturates past the 20% mark. (src/conductor/signal/axisEnergyEquilibrator.js)
+- E4: **Exploring Max Dwell Limit** — Institute an `_exploringMaxDwell = 180` to prevent exactly what just happened (a 219-beat `exploring` streak) enforcing a structural cycle return back to `evolving` or `coherent`. (src/conductor/signal/regimeClassifier.js)
+- E5: **Exceedance Severity Scaling Adjustment** — Rework the trace exceedance evaluator logic to prevent massive track lengths (104 seconds) from instantly artificially inflating the exceedance Severity baseline without proportional adjustment. (scripts/trace-summary.js)
+- E6: **Hysteresis Smoothing Relaxation** — Drop the `_REGIME_WINDOW` dynamically if `lastRegime === 'exploring'` to speed up entry into new domains without bouncing structurally against the threshold arrays. (src/conductor/signal/regimeClassifier.js)
+
+### Hypotheses to Track
+- H1: `coherent` max streak mathematically clamps correctly at 120.
+- H2: `flicker` energy share drops below 18.0%, narrowing `axisGini` back towards 0.12.
+- H3: Regime transitions increase substantially (targeting > 8) as max dwells dynamically limit all long-tail states.
+
+---
+
+## R42 — 2026-03-06 — EVOLVED
+
+**Profile:** explosive | **Beats:** 405 | **Duration:** 58.5s | **Notes:** ~15,000
+**Fingerprint:** 8/9 stable | Drifted: regimeDistribution
+
+### Key Observations
+- **HYSTERESIS RECOVERY (H1 PASS).** The mathematical flaw was fully resolved via E1/E3. `_evolvingBeats` incremented correctly, breaking the bistable lock that previously trapped the system in `evolving`. Consequently, `evolving` dropped to just 13.8%.
+- **COHERENT OVER-SATURATION (H2 PASS).** `coherent` successfully engaged but became hyper-dominant, capturing 65.1% of the runtime with an unbroken maximum streak of 245 beats. The engine generated a `finalThresholdScale` of `0.944` and high systemic stability, making the `coherent` gates too easy to continuously clear.
+- **AXIS GINI BALANCE.** The system achieved an extraordinarily healthy `axisGini` of 0.1065, proving systemic energy is routing symmetrically across all pairs without extreme tension variance. `flicker` (20.1%) and `phase` (19.7%) normalized alongside `density` without exceeding safe thresholds.
+- **LIMITED TRANSITIONS.** Due to the stability of the `explosive` track configuration coupled with the static `_dynamicPenaltyCap` (0.28) sitting too low, the system only transitioned 4 times total. If `couplingStrength` remains naturally high (> 0.50), the structural penalties never accrue enough leverage to snap back into `exploring`.
+
+### Evolutions Applied (from R41)
+- E1: **Hysteresis Increment Rectification** — **confirmed** — Reconfigured `resolve()` correctly accounted internal progression beats without array starvation.
+- E2: **Diagnostic Trace Variables** — **confirmed** — JSDoc properly cleared TS linting and telemetry verified the counter arrays natively aligned.
+- E3: **Exploring Momentum Parity** — **confirmed** — Extracted identical structural alignment into reciprocal array bounds protecting symmetric regimes.
+- E4: **Evolving Dwell Safety Timeout** — **confirmed** — Snap bypass successfully parsed evaluation but wasn't strictly necessary given E1's fix.
+- E5: **Transition Emission Accuracy** — **confirmed** — Diagnostic payloads perfectly delivered without truncation delays.
+- E6: **Raw Hysteresis Flush** — **confirmed** — Flush correctly zeroed tracking without corrupting subsequent logic limits.
+
+### Evolutions Proposed (for R43)
+- E1: **Uncapped Coherent Saturation Penalty** — Replace the hard `_dynamicPenaltyCap` limit in `regimeClassifier.js` with an escalating multiplicative penalty that progressively breaks the `coherent` lock unconditionally if `coherentBeats > 100`, forcing a transition regardless of internal `couplingStrength`. (src/conductor/signal/regimeClassifier.js)
+- E2: **Re-elevated Escape Hatch Precedence** — Move the `_highDimVelStreak >= 10` escape hatch back above the `coherent` gate, but add `lastRegime !== 'coherent'` to ensure it escapes `evolving` deadzones without starving early `coherent` accumulation. (src/conductor/signal/regimeClassifier.js)
+- E3: **Exploring Dimension Relief** — Lower the `effectiveDim > 2.5` standard exploring gate to `2.2` specifically when `couplingStrength < 0.50` to ease the threshold requirements when velocity dictates movement. (src/conductor/signal/regimeClassifier.js)
+- E4: **Coherent Max Dwell Clamp** — Institute a hard `_coherentMaxDwell = 120` snap override inside the `resolve()` transition hysteresis loop to guarantee no segment ever exceeds two continuous minutes of the same state. (src/conductor/signal/regimeClassifier.js)
+- E5: **Phase-Axis Re-Amplification** — Relax the `phaseEvolvingDamp` dampening boundaries back outward inside `axisEnergyEquilibrator.js` since overall energy Gini is successfully anchored (0.1065). (src/conductor/signal/axisEnergyEquilibrator.js)
+- E6: **Dynamic Momentum Expansion** — Map `_COHERENT_MOMENTUM_WINDOW` proportionately to the time the system was structurally stuck in `coherent` to guarantee sufficient momentum is granted upon breakout. (src/conductor/signal/regimeClassifier.js)
+
+### Hypotheses to Track
+- H1: `coherent` dominance falls from 65% down into the strict [25%-40%] target range.
+- H2: Regime Transitions double from 4 -> ~10+ events over a standard 60-second execution.
+- H3: Exploring duration effectively normalizes to capture the transition gaps without dropping directly to `evolving`.
+
+---
+
 ## R41 — 2026-03-06 — DRIFTED
 
 **Profile:** adaptive | **Beats:** 770 | **Duration:** 77.0s | **Notes:** 28,142

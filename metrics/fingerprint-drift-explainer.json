@@ -1,20 +1,14 @@
 {
   "meta": {
-    "generated": "2026-03-06T12:03:05.467Z",
+    "generated": "2026-03-06T17:26:12.796Z",
     "verdict": "EVOLVED"
   },
-  "narrative": "The composition has evolved in 2 dimension(s). This is within normal creative variation range. regime balance shifted: initializing: 5.0% -> 10.6%; evolving: 24.2% -> 89.4%; exploring: 70.8% -> 0.0%. unknown dimension.",
+  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. unknown dimension.",
   "explanations": [
     {
-      "dimension": "regimeDistribution",
-      "delta": 0.47198480531813863,
-      "tolerance": 0.39,
-      "cause": "regime balance shifted: initializing: 5.0% -> 10.6%; evolving: 24.2% -> 89.4%; exploring: 70.8% -> 0.0%"
-    },
-    {
       "dimension": "exceedanceSeverity",
-      "delta": 138,
-      "tolerance": 32.5,
+      "delta": 72,
+      "tolerance": 25,
       "cause": "unknown dimension"
     }
   ]

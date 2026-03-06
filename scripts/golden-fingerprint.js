@@ -345,16 +345,21 @@ function compareFingerprints(current, previous) {
 
   // R39 E4 & E5: Exceedance Severity
   if (current.totalExceedanceBeats !== undefined && previous.totalExceedanceBeats !== undefined) {
-    const excDelta = Math.abs(current.totalExceedanceBeats - previous.totalExceedanceBeats);
+    // R44 E5: Self-correcting Exceedance Severity Scaling Adjustment (normalize to 500-beat standard length)
+    const normCurrExc = current.totalExceedanceBeats * (500 / Math.max(1, curBeats));
+    const normPrevExc = previous.totalExceedanceBeats * (500 / Math.max(1, prevBeats));
+    const excDelta = Math.abs(normCurrExc - normPrevExc);
+
     const excPass = excDelta <= TOLERANCES.exceedanceSeverity * crossProfileScale;
     if (!excPass) drifted++;
     results.push({
-      dimension: 'exceedanceSeverity',
-      delta: excDelta,
+      dimension: 'exceedanceSeverity (beats)',
+      delta: Number(excDelta.toFixed(2)),
       tolerance: TOLERANCES.exceedanceSeverity * crossProfileScale,
       status: excPass ? 'stable' : 'drifted',
       currentTotal: current.totalExceedanceBeats,
-      previousTotal: previous.totalExceedanceBeats
+      previousTotal: previous.totalExceedanceBeats,
+      normalizedDelta: true
     });
   }
 

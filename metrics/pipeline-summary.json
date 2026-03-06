@@ -1,15 +1,15 @@
 {
-  "generated": "2026-03-06T12:03:07.340Z",
-  "wallTimeSeconds": 5140,
+  "generated": "2026-03-06T17:26:14.470Z",
+  "wallTimeSeconds": 5278.9,
   "steps": [
     {
       "label": "generate-globals-dts",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 0.9,
+      "elapsedSeconds": 1.5,
       "ok": true
     },
     {
@@ -19,27 +19,27 @@
     },
     {
       "label": "generate-feedback-graph",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
       "label": "validate-feedback-graph",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
       "label": "lint",
-      "elapsedSeconds": 18.6,
+      "elapsedSeconds": 17.4,
       "ok": true
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 14.5,
+      "elapsedSeconds": 17.6,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 5099.5,
+      "elapsedSeconds": 5236.2,
       "ok": true
     },
     {
@@ -49,37 +49,37 @@
     },
     {
       "label": "check-manifest-health",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.1,
       "ok": true
     },
     {
       "label": "generate-dependency-graph",
-      "elapsedSeconds": 0.8,
+      "elapsedSeconds": 0.7,
       "ok": true
     },
     {
       "label": "generate-conductor-map",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0.2,
       "ok": true
     },
     {
       "label": "generate-crosslayer-map",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.1,
       "ok": true
     },
     {
       "label": "golden-fingerprint",
-      "elapsedSeconds": 1.9,
+      "elapsedSeconds": 1.8,
       "ok": true
     },
     {
       "label": "narrative-digest",
-      "elapsedSeconds": 1.6,
+      "elapsedSeconds": 1.5,
       "ok": true
     },
     {
       "label": "visualize-feedback-graph",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.1,
       "ok": true
     }
   ],

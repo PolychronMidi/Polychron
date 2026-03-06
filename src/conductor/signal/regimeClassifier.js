@@ -35,6 +35,7 @@ regimeClassifier = (() => {
   let _evolvingBeats = 0;
   let _evolvingMinDwell = 4;  // default; profile-adaptive via setter
   const _evolvingMaxDwell = 150; // R42 E4: Hard override max limit
+  const _coherentMaxDwell = 120; // R43 E4: Hard coherent max dwell override
 
   // R26 E2: Persistent proximity bonus across regime transitions.
   // During exploring, bonus accumulates at 0.001/beat. Without persistence,
@@ -227,9 +228,15 @@ regimeClassifier = (() => {
 
     const _dynamicPenaltyCap = 0.08 + clamp((_coherentShareEma - 0.60) * 1.0, 0, 0.20);
     const _dynamicPenaltyRate = 0.003 + clamp((_coherentShareEma - 0.50) * 0.004, 0, 0.004);
-    const coherentDurationPenalty = lastRegime === 'coherent' && coherentBeats > 35
-      ? clamp((coherentBeats - 35) * _dynamicPenaltyRate, 0, _dynamicPenaltyCap)
-      : 0;
+    let coherentDurationPenalty = 0;
+    if (lastRegime === 'coherent' && coherentBeats > 35) {
+      coherentDurationPenalty = clamp((coherentBeats - 35) * _dynamicPenaltyRate, 0, _dynamicPenaltyCap);
+      // R43 E1 / R44 E2: Uncapped Saturation Acceleration (self-correcting scale)
+      if (coherentBeats > 100) {
+        const dynamicSaturationScale = 0.02 + m.max(0, (_coherentShareEma - _REGIME_TARGET_COHERENT_HI) * 0.05);
+        coherentDurationPenalty += (coherentBeats - 100) * dynamicSaturationScale;
+      }
+    }
 
     const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
     // R24 E1: Evolving proximity seeding. When system has been in evolving
@@ -273,6 +280,11 @@ regimeClassifier = (() => {
       _highDimVelStreak = 0;
     }
 
+    // R43 E2: Re-elevated Escape Hatch Precedence with coherent guard
+    if (_highDimVelStreak >= 10 && lastRegime !== 'coherent') {
+      return 'exploring';
+    }
+
     // R36 E2: effectiveDim gate on coherent entry.
     // R37 E2: Tightened from 4.0 to 3.5. R36 data: 87 raw coherent beats
     // vs 2 raw exploring. effectiveDim almost always > 4.0, swallowing all
@@ -281,11 +293,6 @@ regimeClassifier = (() => {
     // R41 E2: Relaxed back to 4.0 because high multi-dimensionality is healthy.
     if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 4.0) return 'coherent';
 
-    // R40 E5: Evolving-to-Exploring Escape Hatch check
-    // R41 E1: Moved *below* coherent check to prevent the escape hatch from permanently starving coherent
-    if (_highDimVelStreak >= 10) {
-      return 'exploring';
-    }
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
@@ -300,7 +307,9 @@ regimeClassifier = (() => {
     // averages ranged 0.19-0.44, so many beats with moderate coupling were
     // blocked. At 0.50, midrange-coupled high-dim beats can enter exploring.
     const _exploringVelThreshold = _evolvingBeats > 100 ? 0.010 : 0.012;
-    if (avgVelocity > _exploringVelThreshold && effectiveDim > 2.5 && couplingStrength <= 0.50) return 'exploring';
+    // R43 E3: Exploring Dimension Relief
+    const _exploringDimThreshold = couplingStrength < 0.50 ? 2.2 : 2.5;
+    if (avgVelocity > _exploringVelThreshold && effectiveDim > _exploringDimThreshold && couplingStrength <= 0.50) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
@@ -332,9 +341,29 @@ regimeClassifier = (() => {
     }
     _rawRegimeMaxStreak[rawRegime] = m.max(_rawRegimeMaxStreak[rawRegime] || 0, _rawStreakCount);
 
+    // R44 E6: Self-correcting Hysteresis Smoothing Relaxation
+    // Drop the window dynamically to speed up entry into new domains if locked in exploring.
+    let effectiveWindow = _REGIME_WINDOW;
+    if (lastRegime === 'exploring') {
+      effectiveWindow = m.max(3, _REGIME_WINDOW - m.floor(exploringBeats / 40));
+    }
+
     // R37 E1: Maintain rolling window
     _rawRegimeWindow.push(rawRegime);
-    if (_rawRegimeWindow.length > _REGIME_WINDOW) _rawRegimeWindow.shift();
+    while (_rawRegimeWindow.length > effectiveWindow) _rawRegimeWindow.shift();
+
+    // R43 E4 / R44 E1: Hard Coherent Max Dwell clip. (Removed rawRegime condition)
+    if (lastRegime === 'coherent' && coherentBeats >= _coherentMaxDwell) {
+      rawRegime = 'exploring'; // Force an exit regardless of raw instantaneous noise
+      for (let i = 0; i < _rawRegimeWindow.length; i++) _rawRegimeWindow[i] = rawRegime; // Force hysteresis pass
+    }
+
+    // R44 E4: Exploring Max Dwell Limit
+    const _exploringMaxDwell = 180;
+    if (lastRegime === 'exploring' && exploringBeats >= _exploringMaxDwell) {
+      rawRegime = 'evolving'; // Force an exit
+      for (let i = 0; i < _rawRegimeWindow.length; i++) _rawRegimeWindow[i] = rawRegime;
+    }
 
     let resolvedRegime = lastRegime;
 
@@ -374,8 +403,9 @@ regimeClassifier = (() => {
           });
 
           // R28 E5: Activate coherent momentum on coherent->non-coherent transition
+          // R43 E6: Dynamic Momentum Expansion mapped to time stuck
           if (lastRegime === 'coherent') {
-            _coherentMomentumBeats = _COHERENT_MOMENTUM_WINDOW;
+            _coherentMomentumBeats = m.max(_COHERENT_MOMENTUM_WINDOW, m.floor(coherentBeats * 0.25));
           }
 
           // R42 E6: Raw Hysteresis Flush
