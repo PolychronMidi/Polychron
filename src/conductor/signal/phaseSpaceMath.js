@@ -103,13 +103,13 @@ phaseSpaceMath = (() => {
         const stdA = m.sqrt(varA / n);
         const stdB = m.sqrt(varB / n);
         if (stdA < 0.005 || stdB < 0.005) {
-          matrix[key] = 0;
+          matrix[key] = NaN;
           continue;
         }
         const denom = m.sqrt(varA * varB);
-        const corr = denom > 1e-10 ? covAB / denom : 0;
-        matrix[key] = m.round(corr * 1000) / 1000;
-        if (a < nCompositional && b < nCompositional) {
+        const corr = denom > 1e-10 ? covAB / denom : NaN;
+        matrix[key] = !Number.isNaN(corr) ? m.round(corr * 1000) / 1000 : NaN;
+        if (!Number.isNaN(corr) && a < nCompositional && b < nCompositional) {
           totalAbs += m.abs(corr);
           pairCount++;
         }

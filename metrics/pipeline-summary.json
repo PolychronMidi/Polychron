@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-05T20:01:12.450Z",
-  "wallTimeSeconds": 4989.1,
+  "generated": "2026-03-05T23:36:09.929Z",
+  "wallTimeSeconds": 4920.5,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -9,7 +9,7 @@
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 0.9,
+      "elapsedSeconds": 1,
       "ok": true
     },
     {
@@ -19,62 +19,62 @@
     },
     {
       "label": "generate-feedback-graph",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0.4,
       "ok": true
     },
     {
       "label": "validate-feedback-graph",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
       "label": "lint",
-      "elapsedSeconds": 12.4,
+      "elapsedSeconds": 9.1,
       "ok": true
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 12,
+      "elapsedSeconds": 10,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 4957.4,
+      "elapsedSeconds": 4892.2,
       "ok": true
     },
     {
       "label": "trace-summary",
-      "elapsedSeconds": 0.5,
+      "elapsedSeconds": 0.7,
       "ok": true
     },
     {
       "label": "check-manifest-health",
-      "elapsedSeconds": 0.3,
-      "ok": true
-    },
-    {
-      "label": "generate-dependency-graph",
-      "elapsedSeconds": 0.5,
-      "ok": true
-    },
-    {
-      "label": "generate-conductor-map",
-      "elapsedSeconds": 0.3,
-      "ok": true
-    },
-    {
-      "label": "generate-crosslayer-map",
       "elapsedSeconds": 0.2,
       "ok": true
     },
     {
+      "label": "generate-dependency-graph",
+      "elapsedSeconds": 0.8,
+      "ok": true
+    },
+    {
+      "label": "generate-conductor-map",
+      "elapsedSeconds": 0.4,
+      "ok": true
+    },
+    {
+      "label": "generate-crosslayer-map",
+      "elapsedSeconds": 0.4,
+      "ok": true
+    },
+    {
       "label": "golden-fingerprint",
-      "elapsedSeconds": 1.7,
+      "elapsedSeconds": 2.1,
       "ok": true
     },
     {
       "label": "narrative-digest",
-      "elapsedSeconds": 1.7,
+      "elapsedSeconds": 2.1,
       "ok": true
     },
     {
