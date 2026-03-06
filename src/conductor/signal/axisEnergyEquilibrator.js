@@ -202,7 +202,8 @@ axisEnergyEquilibrator = (() => {
     // ===== LAYER 2: Axis-level energy balancing =====
     const entropyExploringDamp = rKey === 'exploring' ? 0.95 : 1.0;
     // R40 E4: Phase-Axis Dampening
-    const phaseEvolvingDamp = rKey === 'evolving' ? 0.95 : 1.0;
+    // Safely doubled dampening (1.0 - (1.0 - 0.95) * 2 = 0.90) to manage flicker-phase exceedances
+    const phaseEvolvingDamp = rKey === 'evolving' ? 0.90 : 1.0;
 
     for (let a = 0; a < _ALL_AXES.length; a++) {
       const axis = _ALL_AXES[a];

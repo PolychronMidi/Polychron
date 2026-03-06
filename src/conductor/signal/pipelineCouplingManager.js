@@ -1162,8 +1162,15 @@ const rawEmaInput = absCorr;
   function setPairBaseline(pairKey, newBaseline) {
     const clamped = clamp(newBaseline, _TARGET_MIN, _TARGET_MAX);
     const at = _getAdaptiveTarget(pairKey);
-    // Scale current target proportionally to baseline change
-    const ratio = at.baseline > 0 ? at.current / at.baseline : 1;
+    // R41 E3: Sub-Zero Scale Bounding
+    // Scale current target proportionally to baseline change with zero-crossing protection
+    let ratio = 1.0;
+    if (m.abs(at.baseline) > 0.02) {
+      ratio = at.current / at.baseline;
+    }
+    // Prevent wild spikes or sign-flips if at.current and baseline crossed 0 at different times.
+    ratio = clamp(ratio, -1.0, 3.0);
+
     at.baseline = clamped;
     at.current = clamp(clamped * ratio, _TARGET_MIN, _getTargetMax(pairKey));
   }

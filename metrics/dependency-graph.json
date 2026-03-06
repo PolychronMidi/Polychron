@@ -1,18 +1,18 @@
 {
   "meta": {
-    "generated": "2026-03-06T02:37:03.509Z",
+    "generated": "2026-03-06T12:03:03.103Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2677,
-    "totalEdges": 2043,
-    "crossSubsystemEdges": 1442,
+    "totalConsumes": 2680,
+    "totalEdges": 2046,
+    "crossSubsystemEdges": 1445,
     "maxFanIn": {
       "file": "src/utils/validator.js",
-      "count": 206
+      "count": 207
     },
     "maxFanOut": {
       "file": "src/play/mainBootstrap.js",
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 145,
         "provides": 191,
-        "consumes": 755
+        "consumes": 757
       },
       "rhythm": {
         "files": 30,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 45,
         "provides": 40,
-        "consumes": 331
+        "consumes": 332
       },
       "writer": {
         "files": 4,
@@ -1328,7 +1328,9 @@
         "explainabilityBus",
         "m",
         "pipelineCouplingManager",
-        "systemDynamicsProfiler"
+        "safePreBoot",
+        "systemDynamicsProfiler",
+        "validator"
       ]
     },
     "src/conductor/signal/axisEnergyEquilibrator.js": {
@@ -5656,6 +5658,7 @@
         "sectionIndex",
         "signalHealthAnalyzer",
         "signalReader",
+        "systemDynamicsProfiler",
         "trustSystems",
         "validator",
         "velocity"
@@ -10094,6 +10097,13 @@
     {
       "from": "src/conductor/signal/systemDynamicsProfiler.js",
       "to": "src/conductor/signal/regimeReactiveDamping.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/structure/adaptiveTrustScores.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -19405,6 +19415,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/couplingHomeostasis.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/pipelineCouplingManager.js",
       "globals": [
         "safePreBoot"
@@ -20099,6 +20116,13 @@
     {
       "from": "src/utils/validator.js",
       "to": "src/conductor/signal/coherenceMonitor.js",
+      "globals": [
+        "validator"
+      ]
+    },
+    {
+      "from": "src/utils/validator.js",
+      "to": "src/conductor/signal/couplingHomeostasis.js",
       "globals": [
         "validator"
       ]

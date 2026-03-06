@@ -102,6 +102,8 @@ function summarizeTrace(entries) {
   let readinessVelocityBlockedBeats = 0;
   let readinessBeats = 0;
   let readinessLastScale = null;
+  let evolvingBeats = 0;
+  let coherentBeats = 0;
   // R35 E5: Exploring-block diagnostic accumulators
   const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
   const coherentBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
@@ -147,6 +149,8 @@ function summarizeTrace(entries) {
         readinessBeats++;
         if (tr.velocityBlocked) readinessVelocityBlockedBeats++;
         if (typeof tr.thresholdScale === 'number') readinessLastScale = tr.thresholdScale;
+        if (typeof tr.evolvingBeats === 'number') evolvingBeats = tr.evolvingBeats;
+        if (typeof tr.coherentBeats === 'number') coherentBeats = tr.coherentBeats;
       }
       // R35 E5: Accumulate exploring-block diagnostic
       if (typeof tr.exploringBlock === 'string' && exploringBlockCounts[tr.exploringBlock] !== undefined) {
@@ -502,6 +506,8 @@ function summarizeTrace(entries) {
       totalBeats: readinessBeats,
       velocityBlockedRate: Number((readinessVelocityBlockedBeats / readinessBeats).toFixed(4)),
       finalThresholdScale: readinessLastScale,
+      evolvingBeats,
+      coherentBeats,
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
       coherentBlock: coherentBlockCounts,
