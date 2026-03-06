@@ -1,3 +1,39 @@
+## R38 — 2026-03-05 — STABLE
+
+**Profile:** explosive | **Beats:** 629 | **Duration:** 84.3s | **Notes:** 23,089
+**Fingerprint:** 9/9 stable | Drifted: none
+
+### Key Observations
+- **EXCEEDANCE DEADLOCK BROKEN (H1 PASS).** `density-flicker` exceedance beats (>0.85) collapsed from 165 to exactly 42. Target relaxation correctly triggered after the `effectiveGainCap` logic was implemented, successfully disengaging the pressure loop that was artificially enforcing high magnitudes.
+- **BYPASS COHERENCE GATE ONLINE (H3 PASS).** For the first time, `bypassF` registered a non-zero value during an extreme exceedance (-0.012739). Correcting `isSevere` to rely on the static structural `baseline` rather than the heavily-inflated adaptive target has successfully pierced the coherence gate.
+- **TRUE UNADORNED EMA MEASUREMENT (H2 PASS).** `rawEmaMax` correctly logged a historically accurate max value of `0.2274` for `density-flicker` (vs the final suppressed `0.1416`), completely confirming the removal of the 0.8x coherent scaler allowed uncorrupted mathematical visibility into structural magnitude levels.
+- **ASTONISHING AXIS GINI:** 0.1215. The 6-axis distribution equilibrium is the single tightest balance logged, spreading energy almost perfectly evenly. (`density`: 0.141, `tension`: 0.126, `flicker`: 0.143, `entropy`: 0.248, `trust`: 0.172, `phase`: 0.168).
+- **REGIME EXPLORATION:** 77.6% of the track was spent `exploring` (488 beats). The `explosive` profile is naturally predisposed to high volatility, prohibiting consecutive `coherent` streaks, but remaining solidly locked into the `exploring` band safely guards against recursive feedback loops.
+
+### Evolutions Applied (from R37)
+- E1: **Fix Target Relaxation Deadlock** — **confirmed** — Allowed `density-flicker` to finally relax target baseline past the 0.30 cap block.
+- E2: **True Raw EMA** — **confirmed** — `rawEmaMax` peaked precisely.
+- E3: **Fix Bypass Threshold Baseline** — **confirmed** — `bypassF` broke through the gate successfully.
+- E4: **Remove Active Gain Decay** — **confirmed** — Exceedance dropping from 165 down to 42 confirmed decreasing decorrelation actually caused worse metrics.
+- E5: **PhaseSpace NaN Propagation Fix** — **confirmed** — Clean correlation pipeline outputs.
+- E6: **Historical Peak Observability** — **confirmed** — New `trace-summary` field successfully mapped `0.2274` max.
+
+### Evolutions Proposed (for R39)
+- E1: **Entropy Axis Soft-Throttle** — `entropy` share sits slightly high at `0.248`. Apply a fractional `-0.05` nudgeable dampening exclusively to entropy products during `exploring`.
+- E2: **Explosive Coherent Normalization** — With `explosive` profile securing 77.6% `exploring`, slightly reduce explosive `effectiveDim` threshold to `3.8` to gracefully allow `coherent` entry.
+- E3: **Trust Exceedance Guard** — `flicker-trust` hit 37 exceedance beats. Implement specific cross-profile adaptive relaxation logic linking trust variables to primary signals.
+- E4: **Phase-Lock Spike Tracer** — Cross-reference `rawEmaMax` spikes with standard `phaseLock` scores in trace telemetry.
+- E5: **Exceedance Severity Dimension** — Track total exceedance (>0.85) beats natively in `golden-fingerprint.json` to flag catastrophic coupling locks during fast CI runs.
+- E6: **Relaxed Velocity Entry** — Decrease `exploring` entry velocity guard from `0.015` back down to `0.012` to slightly widen early entry access out of `evolving`.
+
+### Hypotheses to Track
+- H1: Entropy axis share drops below `0.20` while preserving `axisGini < 0.15`.
+- H2: `explosive` profile reaches at least 5% `coherent` regime via relaxed `effectiveDim`.
+- H3: `flicker-trust` exceedance falls below 20 beats.
+- H4: Total exceedance beats globally stay under `100` cumulatively.
+
+---
+
 ## R37 — 2026-03-05 — EVOLVED
 
 **Profile:** atmospheric | **Beats:** 744 | **Duration:** 90.2s | **Notes:** 26,205

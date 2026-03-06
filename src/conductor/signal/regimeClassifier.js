@@ -266,7 +266,7 @@ regimeClassifier = (() => {
     // vs 2 raw exploring. effectiveDim almost always > 4.0, swallowing all
     // potential exploring beats into coherent. At 3.5, more beats with
     // 3-4 effective dimensions redirect to exploring.
-    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 3.5) return 'coherent';
+    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 3.8) return 'coherent';
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
@@ -280,7 +280,7 @@ regimeClassifier = (() => {
     // R37 E3: Exploring coupling gate widened 0.40->0.50. In R36 coupling
     // averages ranged 0.19-0.44, so many beats with moderate coupling were
     // blocked. At 0.50, midrange-coupled high-dim beats can enter exploring.
-    const _exploringVelThreshold = _evolvingBeats > 100 ? 0.010 : 0.015;
+    const _exploringVelThreshold = _evolvingBeats > 100 ? 0.010 : 0.012;
     if (avgVelocity > _exploringVelThreshold && effectiveDim > 2.5 && couplingStrength <= 0.50) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
@@ -412,7 +412,7 @@ regimeClassifier = (() => {
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
    * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
-   * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, rawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, effectiveDim: number }}
+   * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, rawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, effectiveDim: number }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
@@ -424,6 +424,12 @@ regimeClassifier = (() => {
     if (li.velocity <= _expVelThresh) exploringBlock = 'velocity';
     else if ((li.effectiveDim || 0) <= 2.5) exploringBlock = 'dimension';
     else if (li.couplingStrength > 0.50) exploringBlock = 'coupling';
+
+    let coherentBlock = 'none';
+    if (li.couplingStrength <= li.coherentThreshold) coherentBlock = 'coupling';
+    else if (li.velocity <= li.velThreshold) coherentBlock = 'velocity';
+else if ((li.effectiveDim || 0) > 3.8) coherentBlock = 'dimension';
+
     return {
       gap: Number((li.couplingStrength - li.coherentThreshold).toFixed(4)),
       couplingStrength: Number(li.couplingStrength.toFixed(4)),
@@ -433,6 +439,7 @@ regimeClassifier = (() => {
       thresholdScale: Number(coherentThresholdScale.toFixed(4)),
       velocityBlocked: li.couplingStrength > li.coherentThreshold && li.velocity <= li.velThreshold,
       exploringBlock,
+      coherentBlock,
       rawRegimeCounts: Object.assign({}, _rawRegimeCounts),
       // R37 E6: Max consecutive streak per raw regime
       rawRegimeMaxStreak: Object.assign({}, _rawRegimeMaxStreak),

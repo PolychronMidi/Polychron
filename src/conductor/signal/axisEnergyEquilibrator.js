@@ -200,6 +200,8 @@ axisEnergyEquilibrator = (() => {
     }
 
     // ===== LAYER 2: Axis-level energy balancing =====
+    const entropyExploringDamp = rKey === 'exploring' ? 0.95 : 1.0;
+
     for (let a = 0; a < _ALL_AXES.length; a++) {
       const axis = _ALL_AXES[a];
       const share = _smoothedShares[axis] || 0;
@@ -207,12 +209,15 @@ axisEnergyEquilibrator = (() => {
 
       if (share > _AXIS_OVERSHOOT && tightenScale > 0) {
         const excess = share - _FAIR_SHARE;
+        // R39 E1: Entropy Axis Soft-Throttle. Apply 0.95x dampening strictly to entropy during exploring.
+        const dampMult = (axis === 'entropy') ? entropyExploringDamp : 1.0;
+
         // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
         // for disadvantaged axes (trust/entropy/phase). But overshoot tightening
         // also needs scaling: entropy at 0.230 share pushes energy toward trust,
         // and its 3-pair axis needs 1.67x faster tightening to match 5-pair axes.
         const tightenPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
-        const rate = _AXIS_TIGHTEN_RATE * tightenPairScale * tightenScale * giniMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
+        const rate = _AXIS_TIGHTEN_RATE * tightenPairScale * tightenScale * giniMult * dampMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue; // skip Layer-1 adjusted

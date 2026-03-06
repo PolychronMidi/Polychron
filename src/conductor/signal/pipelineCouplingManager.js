@@ -699,6 +699,23 @@ const rawEmaInput = absCorr;
             const _sigScalar = 1 / (1 + m.exp(-25 * (sig.densityProduct - 0.72)));
             tightenRate *= _sigScalar;
           }
+          if (sig && (dimA === 'flicker' || dimB === 'flicker') && (dimA === 'trust' || dimB === 'trust')) {
+            // R39 E3: Trust Exceedance Guard explicitly targets flicker-trust exceedances
+            // by squashing the target tightening rate if structural limits are approached.
+            const ts = safePreBoot.call(() => adaptiveTrustScores.getSnapshot(), {});
+            let avgTrust = 0;
+            let tCount = 0;
+            const entries = Object.values(ts || {});
+            for (let i = 0; i < entries.length; i++) {
+              if (entries[i] && typeof entries[i].score === 'number') {
+                avgTrust += entries[i].score;
+                tCount++;
+              }
+            }
+            if (tCount > 0) avgTrust /= tCount;
+            const _flickerTrustScalar = 1 / (1 + m.exp(-25 * ((sig.flickerProduct + avgTrust)/2 - 0.70)));
+            tightenRate *= _flickerTrustScalar;
+          }
           if (tightenRate > 0.0001) {
             at.current = clamp(at.current - tightenRate, _TARGET_MIN, at.baseline);
           }
