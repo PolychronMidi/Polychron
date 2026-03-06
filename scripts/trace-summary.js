@@ -525,8 +525,10 @@ function summarizeTrace(entries) {
         return { p10: pctl(0.10), p25: pctl(0.25), p50: pctl(0.50), p75: pctl(0.75), p90: pctl(0.90), min: pctl(0), max: pctl(1), count: sorted.length };
       })() : null
     } : null,
-    // R35 E6: Per-pair exceedance beat counts (beats where |r| > 0.85)
-    pairExceedanceBeats,
+    // R35 E6: Per-pair exceedance beat counts
+    pairExceedanceBeats: Object.fromEntries(
+      Object.entries(pairExceedanceBeats).map(([pair, count]) => [pair, count])
+    ),
     // R32 E6: Intra-axis pair energy distribution diagnostic
     intraAxisDistribution: (() => {
       // Compute per-axis Gini coefficient and dominant pair from coupling data

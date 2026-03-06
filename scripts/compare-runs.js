@@ -123,6 +123,14 @@ function compareRuns(runA, runB) {
       fpSection.metrics.push({ metric: 'tensionArc', A: fa.tensionArc.map(v => v.toFixed(3)), B: fb.tensionArc.map(v => v.toFixed(3)) });
     }
 
+    if (fa.exceedanceSeverity || fb.exceedanceSeverity) {
+      fpSection.metrics.push({
+        metric: 'exceedanceSeverity (beats)',
+        A: toNum(fa.exceedanceSeverity && Object.values(fa.exceedanceSeverity).reduce((sum, v) => sum + v, 0), 0),
+        B: toNum(fb.exceedanceSeverity && Object.values(fb.exceedanceSeverity).reduce((sum, v) => sum + v, 0), 0)
+      });
+    }
+
     report.sections.push(fpSection);
   }
 
