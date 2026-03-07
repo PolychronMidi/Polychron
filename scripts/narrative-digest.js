@@ -181,6 +181,27 @@ function generateNarrative() {
     lines.push('');
   }
 
+  if (summary && summary.sectionCoverage) {
+    const sectionCoverage = summary.sectionCoverage;
+    lines.push('## Section Coverage');
+    lines.push('');
+    if (sectionCoverage.expectedSections !== null) {
+      lines.push(`The trace covered **${sectionCoverage.observedCount}** of **${sectionCoverage.expectedSections}** planned sections.`);
+    } else {
+      lines.push(`The trace covered **${sectionCoverage.observedCount}** distinct section indices.`);
+    }
+    if (Array.isArray(sectionCoverage.missingSections) && sectionCoverage.missingSections.length > 0) {
+      lines.push(`Missing section indices: **${sectionCoverage.missingSections.join(', ')}**.`);
+    }
+    if (Array.isArray(sectionCoverage.sections) && sectionCoverage.sections.length > 0) {
+      lines.push('');
+      for (const section of sectionCoverage.sections) {
+        lines.push(`- **Section ${section.section}**: ${section.uniqueBeatKeys} unique traced beats across ${section.entryCount} entries`);
+      }
+    }
+    lines.push('');
+  }
+
   // ---- Regime Story ----
   lines.push('## The System\'s Inner Life');
   lines.push('');
@@ -249,6 +270,19 @@ function generateNarrative() {
         if (monopoly.reason) {
           lines.push(`Dominant monopoly mode: **${monopoly.reason}**.`);
         }
+      }
+      if (summary.phaseTelemetry) {
+        const phaseTelemetry = summary.phaseTelemetry;
+        lines.push(`Phase telemetry closed **${phaseTelemetry.integrity}** with **${pct(toNum(phaseTelemetry.validRate, 0))}** valid samples, **${pct(toNum(phaseTelemetry.changedRate, 0))}** changing samples, and average phase-coupling coverage **${pct(toNum(phaseTelemetry.avgCouplingCoverage, 0))}**.`);
+        if (phaseTelemetry.maxStaleBeats > 0 || phaseTelemetry.zeroCouplingCoverageEntries > 0) {
+          lines.push(`The longest stale phase run was **${phaseTelemetry.maxStaleBeats}** beats, and **${phaseTelemetry.zeroCouplingCoverageEntries}** entries reported zero phase-coupling coverage.`);
+        }
+      } else if (summary.telemetryHealth) {
+        lines.push('Phase telemetry was **missing from the trace payload**, so phase-surface diagnostics remain untrusted for this run.');
+      }
+      if (summary.telemetryHealth) {
+        const telemetryHealth = summary.telemetryHealth;
+        lines.push(`Telemetry health scored **${dec(toNum(telemetryHealth.score, 0), 3)}** with **${toNum(telemetryHealth.underSeenPairCount, 0)}** under-seen controller pairs and reconciliation gap **${dec(toNum(telemetryHealth.maxGap, 0), 3)}**.`);
       }
       lines.push('');
     }
@@ -396,10 +430,21 @@ function generateNarrative() {
     const n1 = countNotes(csv1);
     const n2 = countNotes(csv2);
     if (n1 > 0 || n2 > 0) {
+      const totalNotes = n1 + n2;
+      const uniqueBeatKeys = summary && summary.beats ? toNum(summary.beats.uniqueBeatKeys, 0) : 0;
+      const spanMs = summary && summary.beats ? toNum(summary.beats.spanMs, 0) : 0;
       lines.push('## Output');
       lines.push('');
       lines.push(`- **Layer 1:** ${n1} notes`);
       lines.push(`- **Layer 2:** ${n2} notes`);
+      if (uniqueBeatKeys > 0) {
+        lines.push(`- **Load:** ${totalNotes} total notes, ${dec(totalNotes / uniqueBeatKeys, 2)} notes per traced beat${spanMs > 0 ? `, ${dec(totalNotes / (spanMs / 1000), 2)} notes per second` : ''}`);
+      } else {
+        lines.push(`- **Load:** ${totalNotes} total notes`);
+      }
+      if (summary && summary.sectionCoverage && Array.isArray(summary.sectionCoverage.missingSections) && summary.sectionCoverage.missingSections.length > 0) {
+        lines.push(`- **Coverage warning:** output was generated while sections ${summary.sectionCoverage.missingSections.join(', ')} were absent from the trace coverage summary`);
+      }
       lines.push('');
     }
   }

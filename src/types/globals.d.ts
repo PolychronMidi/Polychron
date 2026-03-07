@@ -134,6 +134,7 @@ interface ValidatorInstance {
   optionalType(value: unknown, type: 'string'): string | undefined;
   optionalType(value: unknown, type: 'boolean'): boolean | undefined;
   optionalType(value: unknown, type: 'object'): object | undefined;
+  optionalType(value: unknown, type: 'function'): (...args: any[]) => any | undefined;
   optionalType(value: unknown, type: string): unknown | undefined;
   optionalType<T>(value: unknown, type: string, fallback: T): T;
   requireDefined(value: unknown, label: string): unknown;
@@ -259,10 +260,20 @@ interface ExplainabilityBusAPI {
 
 interface AdaptiveTrustScoresAPI {
   registerOutcome(systemName: string, payoff: number): number;
+  getBaseWeight(systemName: string): number;
   getWeight(systemName: string): number;
   decayAll(rate?: number): void;
   getSnapshot(): Record<string, any>;
   getJournal(): { section: number; beat: number; systemName: string; payoff: number; scoreBefore: number; scoreAfter: number; ms: number }[];
+  reset(): void;
+}
+
+interface ContextualTrustAPI {
+  record(moduleName: string, payoff: number): void;
+  getScore(moduleName: string): number | null;
+  getContextualWeight(moduleName: string): number | null;
+  getWeight(moduleName: string): number;
+  getScoreCount(): number;
   reset(): void;
 }
 
@@ -347,9 +358,18 @@ interface SystemDynamicsSnapshot {
   entropySampleErrors: number;
   entropyRhythmErrors: number;
   lastEntropyError: string;
+  phaseValue: number;
+  phaseDelta: number;
+  phaseChanged: boolean;
+  phaseStaleBeats: number;
+  phaseSignalValid: boolean;
+  phaseCouplingCoverage: number;
+  phaseCouplingAvailablePairs: number;
+  phaseCouplingMissingPairs: number;
   profilerTick: number;
   regimeTick: number;
   trajectorySamples: number;
+  telemetryBeatSpan: number;
   warmupTicksRemaining: number;
   profilerCadence: string;
 }
@@ -1458,8 +1478,8 @@ declare var regimeReactiveDamping: { densityBias(): number; tensionBias(): numbe
 declare var pipelineBalancer: { densityBias(): number; reset(): void };
 declare var pipelineNormalizer: { normalize(pipeline: string, rawProduct: number): number; reset(): void; getSnapshot(): Record<string, object> };
 declare var pipelineCouplingManager: { densityBias(): number; tensionBias(): number; flickerBias(): number; setDensityFlickerGainScale(scale: number): void; setGlobalGainMultiplier(scale: number): void; setPairBaseline(pairKey: string, newBaseline: number): void; getPairBaselines(): Record<string, number>; getAdaptiveTargetSnapshot(): Record<string, { baseline: number; current: number; rollingAbsCorr: number; rawRollingAbsCorr: number; p95AbsCorr: number; hotspotRate: number; severeRate: number; recentP95AbsCorr: number; recentHotspotRate: number; recentSevereRate: number; telemetryWindowBeats: number; residualPressure: number; gain: number; effectiveGain: number; nudgeable: boolean; budgetScore: number; budgetBoost: number; budgetRank: number | null; heatPenalty: number; effectivenessEma: number; effMin: number; effMax: number; effActiveBeats: number; hpPromoted: boolean }>; getAxisCouplingTotals(): Record<string, number>; getAxisEnergyShare(): { shares: Record<string, number>; axisGini: number }; getCouplingGates(): { gateD: number; gateT: number; gateF: number; floorDampen: number; bypassD: number; bypassT: number; bypassF: number; gateMinD: number; gateMinT: number; gateMinF: number; gateEmaD: number; gateEmaT: number; gateEmaF: number; gateBeatCount: number }; reset(): void };
-declare var couplingHomeostasis: { getState(): { totalEnergyEma: number; energyBudget: number; peakEnergyEma: number; redistributionScore: number; nudgeableRedistributionScore: number; budgetConstraintActive: boolean; budgetConstraintPressure: number; globalGainMultiplier: number; giniCoefficient: number; energyDeltaEma: number; pairTurbulenceEma: number; beatCount: number; invokeCount: number; tickCount: number; emptyMatrixBeats: number; multiplierMin: number; multiplierMax: number; multiplierStdDev: number; floorContactBeats: number; ceilingContactBeats: number; avgRecoveryDuration: number; totalEnergyFloor: number; floorDampen: number; floorRecoveryActive: boolean; floorRecoveryTicksRemaining: number; densityFlickerTailPressure: number; stickyTailPressure: number; tailRecoveryDrive: number; tailRecoveryTrigger: number; tailRecoveryHandshake: number; tailRecoveryCap: number; tailRecoveryCeilingPressure: number; dominantTailPair: string; tailHotspotCount: number; tailPressureByPair: Record<string, number> }; reset(): void; tick(): void; getFloorDampen(): number };
-declare var axisEnergyEquilibrator: { getSnapshot(): { beatCount: number; pairAdjustments: number; axisAdjustments: number; smoothedShares: Record<string, number>; perAxisAdj: Record<string, number>; perPairAdj: Record<string, number>; lastBaselines: Record<string, number>; regimeBeats: Record<string, number>; regimePairAdj: Record<string, number>; regimeAxisAdj: Record<string, number>; regimeTightenBudget: Record<string, number>; coherentFreezeBeats: number; skippedColdspotRelaxations: number; phaseSurfaceHotBeats: number; trustSurfaceHotBeats: number; coherentHotspotActuationBeats: number; coherentHotspotPairAdj: number; coherentHotspotAxisAdj: number }; reset(): void };
+declare var couplingHomeostasis: { getState(): { totalEnergyEma: number; energyBudget: number; peakEnergyEma: number; redistributionScore: number; nudgeableRedistributionScore: number; budgetConstraintActive: boolean; budgetConstraintPressure: number; globalGainMultiplier: number; giniCoefficient: number; energyDeltaEma: number; pairTurbulenceEma: number; beatCount: number; invokeCount: number; tickCount: number; emptyMatrixBeats: number; multiplierMin: number; multiplierMax: number; multiplierStdDev: number; floorContactBeats: number; ceilingContactBeats: number; avgRecoveryDuration: number; totalEnergyFloor: number; floorDampen: number; floorRecoveryActive: boolean; floorRecoveryTicksRemaining: number; densityFlickerTailPressure: number; densityFlickerOverridePressure: number; recoveryAxisHandOffPressure: number; recoveryDominantAxes: string[]; stickyTailPressure: number; tailRecoveryDrive: number; tailRecoveryTrigger: number; tailRecoveryHandshake: number; tailRecoveryCap: number; tailRecoveryCeilingPressure: number; densityFlickerClampPressure: number; dominantTailPair: string; tailHotspotCount: number; tailPressureByPair: Record<string, number> }; reset(): void; tick(): void; getFloorDampen(): number };
+declare var axisEnergyEquilibrator: { getSnapshot(): { beatCount: number; pairAdjustments: number; axisAdjustments: number; smoothedShares: Record<string, number>; perAxisAdj: Record<string, number>; perPairAdj: Record<string, number>; lastBaselines: Record<string, number>; regimeBeats: Record<string, number>; regimePairAdj: Record<string, number>; regimeAxisAdj: Record<string, number>; regimeTightenBudget: Record<string, number>; coherentFreezeBeats: number; skippedColdspotRelaxations: number; phaseSurfaceHotBeats: number; trustSurfaceHotBeats: number; entropySurfaceHotBeats: number; coherentHotspotActuationBeats: number; coherentHotspotPairAdj: number; coherentHotspotAxisAdj: number }; reset(): void };
 declare var narrativeTrajectory: { getTrajectory(): { point: { t: number; n: number; d: number }; velocity: number; curvature: number; length: number }; tensionBias(): number; reset(): void };
 declare var structuralNarrativeAdvisor: { recordFamily(family: string): void; getHistory(): string[]; getVarietyPressure(): number; densityBias(): number; reset(): void };
 declare var criticalityEngine: { densityBias(): number; tensionBias(): number; flickerMod(): number; getState(): { threshold: number; avalancheCount: number; totalBeats: number; rate: number; inAvalanche: boolean; recentEnergy: number }; reset(): void };
@@ -1804,7 +1824,7 @@ declare var metaControllerRegistry: MetaControllerRegistryAPI;
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 declare var verticalIntervalMonitor: { process(ctx: any): number; getCollisionCount(): number; reset(): void };
 declare var polyrhythmicPhasePredictor: { process(ctx: any): number; predictConvergences(): void; reset(): void };
-declare var contextualTrust: { record(moduleName: string, payoff: number): void; getWeight(moduleName: string): number; getScoreCount(): number; reset(): void };
+declare var contextualTrust: ContextualTrustAPI;
 declare var beatInterleavedProcessor: { recordLayerBeat(layer: number, outcome: any): void; getOtherLayerOutcome(myLayer: number): any; getBeatSnapshot(): { layer1: any; layer2: any }; reset(): void };
 declare var harmonicFunctionGraph: { classify(chordRoot: number, keyRoot: number): string; getFunction(): string; tensionBias(): number; reset(): void };
 

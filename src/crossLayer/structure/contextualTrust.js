@@ -45,18 +45,28 @@ contextualTrust = (() => {
     scores.set(k, next);
   }
 
+  function getScore(moduleName) {
+    V.assertNonEmptyString(moduleName, 'moduleName');
+    const k = _key(moduleName);
+    return scores.has(k) ? /** @type {number} */ (scores.get(k)) : null;
+  }
+
+  function getContextualWeight(moduleName) {
+    const contextualScore = getScore(moduleName);
+    if (contextualScore === null) return null;
+    return m.max(W_LO, m.min(W_HI, 1 + contextualScore * W_SCALE));
+  }
+
   /**
    * Get trust weight for a module in the current regime.
    * Falls back to global adaptiveTrustScores if no contextual data.
    */
   function getWeight(moduleName) {
-    const k = _key(moduleName);
-    if (scores.has(k)) {
-      const s = /** @type {number} */ (scores.get(k));
-      return m.max(W_LO, m.min(W_HI, 1 + s * W_SCALE));
-    }
-    // Fallback to global trust
-    return adaptiveTrustScores.getWeight(moduleName);
+    const contextualWeight = getContextualWeight(moduleName);
+    if (contextualWeight !== null) return contextualWeight;
+    return typeof adaptiveTrustScores.getBaseWeight === 'function'
+      ? adaptiveTrustScores.getBaseWeight(moduleName)
+      : adaptiveTrustScores.getWeight(moduleName);
   }
 
   function getScoreCount() { return scores.size; }
@@ -65,7 +75,7 @@ contextualTrust = (() => {
     scores = new Map();
   }
 
-  const mod = { record, getWeight, getScoreCount, reset };
+  const mod = { record, getScore, getContextualWeight, getWeight, getScoreCount, reset };
 
   crossLayerRegistry.register('contextualTrust', mod, ['all']);
 

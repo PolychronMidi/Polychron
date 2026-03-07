@@ -13,6 +13,7 @@
 //   - Regime distribution
 //   - Coupling correlation summary
 //   - Hotspot migration surface
+//   - Telemetry health
 //
 // Output: metrics/golden-fingerprint.json (current run)
 //         metrics/golden-fingerprint.prev.json (previous run, for diff)
@@ -52,7 +53,8 @@ const TOLERANCES = {
   regimeDistributionDelta: 0.20,  // Jensen-Shannon divergence threshold (R9 Evo 6: tightened from 0.30)
   couplingDelta: 0.25,            // mean absolute coupling change
   exceedanceSeverity: 35,         // R44 E6: Max sum exceedance absolute delta (Broadened from 25)
-  hotspotMigration: 0.55
+  hotspotMigration: 0.55,
+  telemetryHealthDelta: 0.35
 };
 
 // ---- Utility functions ----
@@ -192,6 +194,7 @@ function computeFingerprint() {
   }
   const noteCountL1 = notesPerLayer[0] || 0;
   const noteCountL2 = notesPerLayer[1] || 0;
+  const totalNotes = noteCountL1 + noteCountL2;
   const pitchEntropy = entropy(pitchCounts);
 
   // Density variance across beats
@@ -304,6 +307,36 @@ function computeFingerprint() {
       phase: axisShares.phase != null ? Number(toNum(axisShares.phase, 0).toFixed(4)) : null
     }
   };
+  const uniqueBeatKeys = summary && summary.beats && typeof summary.beats.uniqueBeatKeys === 'number'
+    ? summary.beats.uniqueBeatKeys
+    : entries.length;
+  const spanMs = summary && summary.beats && typeof summary.beats.spanMs === 'number'
+    ? summary.beats.spanMs
+    : 0;
+  const outputLoad = {
+    traceEntries: entries.length,
+    uniqueBeatKeys,
+    spanMs,
+    notesPerTraceEntry: entries.length > 0 ? Number((totalNotes / entries.length).toFixed(4)) : 0,
+    notesPerUniqueBeat: uniqueBeatKeys > 0 ? Number((totalNotes / uniqueBeatKeys).toFixed(4)) : 0,
+    notesPerSecond: spanMs > 0 ? Number((totalNotes / (spanMs / 1000)).toFixed(4)) : 0,
+    sectionCoverage: summary && summary.sectionCoverage ? summary.sectionCoverage : null
+  };
+  const telemetryHealth = summary && summary.telemetryHealth
+    ? {
+      score: toNum(summary.telemetryHealth.score, 0),
+      phaseTelemetryPresent: Boolean(summary.telemetryHealth.phaseTelemetryPresent),
+      phaseIntegrity: typeof summary.telemetryHealth.phaseIntegrity === 'string' ? summary.telemetryHealth.phaseIntegrity : 'healthy',
+      underSeenPairCount: toNum(summary.telemetryHealth.underSeenPairCount, 0),
+      maxGap: toNum(summary.telemetryHealth.maxGap, 0)
+    }
+    : {
+      score: 0,
+      phaseTelemetryPresent: false,
+      phaseIntegrity: 'critical',
+      underSeenPairCount: 0,
+      maxGap: 0
+    };
 
   return {
     meta: {
@@ -311,7 +344,8 @@ function computeFingerprint() {
       traceEntries: entries.length,
       version: 1
     },
-    noteCount: { L1: noteCountL1, L2: noteCountL2, total: noteCountL1 + noteCountL2 },
+    noteCount: { L1: noteCountL1, L2: noteCountL2, total: totalNotes },
+    outputLoad,
     pitchEntropy,
     density: { mean: densityMean, variance: densityVariance },
     tensionArc,
@@ -322,6 +356,7 @@ function computeFingerprint() {
     totalExceedanceBeats,
     exceedanceComposite,
     hotspotMigration,
+    telemetryHealth,
     couplingMeans,
     couplingCorrelation,
     activeProfile: (manifest && manifest.config && manifest.config.activeProfile) || 'unknown'
@@ -345,10 +380,14 @@ function compareFingerprints(current, previous) {
   // R32 E7: Note count per-beat normalization. Compare notes-per-beat rate
   // instead of raw totals so composition length differences don't inflate delta.
   // Falls back to raw total comparison when beat count is unavailable.
-  const curBeats = current.meta.traceEntries || 1;
-  const prevBeats = previous.meta.traceEntries || 1;
-  const curRate = current.noteCount.total / curBeats;
-  const prevRate = previous.noteCount.total / prevBeats;
+  const curBeats = current.outputLoad && current.outputLoad.uniqueBeatKeys ? current.outputLoad.uniqueBeatKeys : (current.meta.traceEntries || 1);
+  const prevBeats = previous.outputLoad && previous.outputLoad.uniqueBeatKeys ? previous.outputLoad.uniqueBeatKeys : (previous.meta.traceEntries || 1);
+  const curRate = current.outputLoad && typeof current.outputLoad.notesPerUniqueBeat === 'number'
+    ? current.outputLoad.notesPerUniqueBeat
+    : current.noteCount.total / curBeats;
+  const prevRate = previous.outputLoad && typeof previous.outputLoad.notesPerUniqueBeat === 'number'
+    ? previous.outputLoad.notesPerUniqueBeat
+    : previous.noteCount.total / prevBeats;
   const noteRatio = prevRate > 0 ? Math.abs(curRate - prevRate) / prevRate : Math.abs(current.noteCount.total - previous.noteCount.total) / prevTotal;
   // R11 Evo 1: Profile-adaptive noteCount tolerance -- explosive profiles produce
   // highly variable note counts, ambient profiles are more stable.
@@ -356,7 +395,7 @@ function compareFingerprints(current, previous) {
   const effectiveNoteTolerance = (PROFILE_NOTE_TOLERANCE[current.activeProfile] || TOLERANCES.noteCountRatio) * crossProfileScale;
   const notePass = noteRatio <= effectiveNoteTolerance;
   if (!notePass) drifted++;
-  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: effectiveNoteTolerance, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
+  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: effectiveNoteTolerance, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, currentNotesPerBeat: curRate, previousNotesPerBeat: prevRate, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
 
   // Pitch entropy
   const pitchDelta = Math.abs(current.pitchEntropy - previous.pitchEntropy);
@@ -519,6 +558,26 @@ function compareFingerprints(current, previous) {
     });
   }
 
+  const currentTelemetry = current.telemetryHealth || {};
+  const previousTelemetry = previous.telemetryHealth || {};
+  let telemetryHealthDelta = Math.abs(toNum(currentTelemetry.score, 0) - toNum(previousTelemetry.score, 0));
+  if (Boolean(currentTelemetry.phaseTelemetryPresent) !== Boolean(previousTelemetry.phaseTelemetryPresent)) {
+    telemetryHealthDelta += 0.25;
+  }
+  if ((currentTelemetry.phaseIntegrity || 'healthy') !== (previousTelemetry.phaseIntegrity || 'healthy')) {
+    telemetryHealthDelta += 0.12;
+  }
+  const telemetryPass = telemetryHealthDelta <= TOLERANCES.telemetryHealthDelta;
+  if (!telemetryPass) drifted++;
+  results.push({
+    dimension: 'telemetryHealth',
+    delta: Number(telemetryHealthDelta.toFixed(4)),
+    tolerance: TOLERANCES.telemetryHealthDelta,
+    status: telemetryPass ? 'stable' : 'drifted',
+    current: currentTelemetry,
+    previous: previousTelemetry
+  });
+
   if (crossProfile) {
     results.push({ dimension: 'crossProfileWarning', delta: 0, tolerance: 0, status: 'stable',
       note: 'Profiles differ (' + previous.activeProfile + ' -> ' + current.activeProfile + '); tolerances widened 1.3x' });
@@ -661,6 +720,14 @@ function explainDrift(comparison, current, previous) {
           previous: previousHotspot.axisShares
         };
         explain.meaning = 'stress redistributed across hotspot surfaces rather than being removed outright';
+        break;
+      }
+      case 'telemetryHealth': {
+        const curTelemetry = current.telemetryHealth || {};
+        const prevTelemetry = previous.telemetryHealth || {};
+        explain.cause = 'telemetry health shifted from phase=' + (prevTelemetry.phaseIntegrity || 'unknown') + ', underSeen=' + toNum(prevTelemetry.underSeenPairCount, 0) + ' to phase=' + (curTelemetry.phaseIntegrity || 'unknown') + ', underSeen=' + toNum(curTelemetry.underSeenPairCount, 0);
+        explain.correlates = 'max reconciliation gap moved ' + toNum(prevTelemetry.maxGap, 0).toFixed(3) + ' -> ' + toNum(curTelemetry.maxGap, 0).toFixed(3);
+        explain.meaning = 'observability changed enough to affect how confidently hotspot and phase diagnostics can be trusted';
         break;
       }
       default:

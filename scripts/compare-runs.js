@@ -140,6 +140,14 @@ function compareRuns(runA, runB) {
       fpSection.metrics.push({ metric: 'hotspotPhaseAxisShare', A: toNum(hotA.axisShares && hotA.axisShares.phase, 0).toFixed(4), B: toNum(hotB.axisShares && hotB.axisShares.phase, 0).toFixed(4) });
     }
 
+    if (fa.telemetryHealth || fb.telemetryHealth) {
+      const telA = fa.telemetryHealth || {};
+      const telB = fb.telemetryHealth || {};
+      fpSection.metrics.push({ metric: 'telemetryHealthScore', A: toNum(telA.score, 0).toFixed(4), B: toNum(telB.score, 0).toFixed(4) });
+      fpSection.metrics.push({ metric: 'telemetryPhaseIntegrity', A: telA.phaseIntegrity || 'unknown', B: telB.phaseIntegrity || 'unknown' });
+      fpSection.metrics.push({ metric: 'telemetryUnderSeenPairs', A: toNum(telA.underSeenPairCount, 0), B: toNum(telB.underSeenPairCount, 0) });
+    }
+
     report.sections.push(fpSection);
   }
 

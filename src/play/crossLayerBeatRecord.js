@@ -173,17 +173,32 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       analysisTick: Number.isFinite(_traceCachedDynamicsSnap.profilerTick) ? _traceCachedDynamicsSnap.profilerTick : 0,
       regimeTick: Number.isFinite(_traceCachedDynamicsSnap.regimeTick) ? _traceCachedDynamicsSnap.regimeTick : 0,
       trajectorySamples: Number.isFinite(_traceCachedDynamicsSnap.trajectorySamples) ? _traceCachedDynamicsSnap.trajectorySamples : 0,
+      telemetryBeatSpan: Number.isFinite(_traceCachedDynamicsSnap.telemetryBeatSpan) ? _traceCachedDynamicsSnap.telemetryBeatSpan : 1,
       warmupTicksRemaining: Number.isFinite(_traceCachedDynamicsSnap.warmupTicksRemaining) ? _traceCachedDynamicsSnap.warmupTicksRemaining : 0,
       cadence: typeof _traceCachedDynamicsSnap.profilerCadence === 'string' ? _traceCachedDynamicsSnap.profilerCadence : 'unknown'
     } : null;
     const tracePayload = {
       beatKey: clBeatKey,
+      sectionIndex,
+      phraseIndex,
+      measureIndex,
+      beatIndex,
       timeMs: clAbsMs,
       conductorSnap: _traceCachedConductorSnap,
       negotiation: clNegotiation,
       trustScores: adaptiveTrustScores.getSnapshot(),
       regime: _traceCachedDynamicsSnap.regime,
       couplingMatrix: _traceCachedDynamicsSnap.couplingMatrix,
+      phaseTelemetry: _traceCachedDynamicsSnap ? {
+        phaseValue: Number.isFinite(_traceCachedDynamicsSnap.phaseValue) ? _traceCachedDynamicsSnap.phaseValue : 0,
+        phaseDelta: Number.isFinite(_traceCachedDynamicsSnap.phaseDelta) ? _traceCachedDynamicsSnap.phaseDelta : 0,
+        phaseChanged: Boolean(_traceCachedDynamicsSnap.phaseChanged),
+        phaseStaleBeats: Number.isFinite(_traceCachedDynamicsSnap.phaseStaleBeats) ? _traceCachedDynamicsSnap.phaseStaleBeats : 0,
+        phaseSignalValid: Boolean(_traceCachedDynamicsSnap.phaseSignalValid),
+        phaseCouplingCoverage: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingCoverage) ? _traceCachedDynamicsSnap.phaseCouplingCoverage : 0,
+        phaseCouplingAvailablePairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingAvailablePairs) ? _traceCachedDynamicsSnap.phaseCouplingAvailablePairs : 0,
+        phaseCouplingMissingPairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingMissingPairs) ? _traceCachedDynamicsSnap.phaseCouplingMissingPairs : 0
+      } : null,
       // R18 E5: Adaptive target state for coupling drift diagnostics
       couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
       // R19 E1: Per-axis total |r| sums for axis-centric conservation diagnostics

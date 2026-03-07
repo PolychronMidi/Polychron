@@ -20,6 +20,10 @@ function toNum(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function clamp(value, lo, hi) {
+  return Math.max(lo, Math.min(hi, value));
+}
+
 function updateMinMax(stat, value) {
   stat.min = value < stat.min ? value : stat.min;
   stat.max = value > stat.max ? value : stat.max;
@@ -67,7 +71,7 @@ function summarizeTail(values, thresholds) {
   };
 }
 
-function summarizeTrace(entries) {
+function summarizeTrace(entries, manifest) {
   const byLayer = { L1: 0, L2: 0, other: 0 };
   const regimeCounts = {};
   const playProb = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
@@ -100,12 +104,27 @@ function summarizeTrace(entries) {
   let firstTimeMs = null;
   let lastTimeMs = null;
   const uniqueBeatKeys = new Set();
+  const sectionEntryCounts = {};
+  const sectionBeatKeys = {};
   const uniqueProfilerAnalysisTicks = new Set();
   const uniqueProfilerRegimeTicks = new Set();
   let profilerCadence = '';
   let profilerSnapshotReuseEntries = 0;
   let profilerWarmupEntries = 0;
   let lastProfilerAnalysisTick = null;
+  let profilerTelemetryBeatSpanSum = 0;
+  let profilerTelemetryBeatSpanCount = 0;
+  let profilerTelemetryBeatSpanMax = 0;
+  let phaseTelemetryEntries = 0;
+  let phaseTelemetryValidEntries = 0;
+  let phaseTelemetryChangedEntries = 0;
+  let phaseSignalInvalidEntries = 0;
+  let phaseTelemetryMaxStaleBeats = 0;
+  let phaseCouplingCoverageSum = 0;
+  let phaseCouplingCoverageCount = 0;
+  let phaseZeroCoverageEntries = 0;
+  let phaseCouplingAvailablePairsMax = 0;
+  let phaseCouplingMissingPairsMax = 0;
   const forcedTransitionEventIds = new Set();
   const forcedTransitionEvents = [];
   // R34 E6: Transition readiness accumulators (per-beat gap + velocity tracking)
@@ -163,6 +182,14 @@ function summarizeTrace(entries) {
     if (firstBeatKey === null && typeof e.beatKey === 'string') firstBeatKey = e.beatKey;
     if (typeof e.beatKey === 'string') lastBeatKey = e.beatKey;
     if (typeof e.beatKey === 'string') uniqueBeatKeys.add(e.beatKey);
+    if (typeof e.beatKey === 'string' && e.beatKey.indexOf(':') !== -1) {
+      const parsedSection = parseInt(e.beatKey.split(':')[0], 10);
+      if (Number.isFinite(parsedSection)) {
+        sectionEntryCounts[parsedSection] = (sectionEntryCounts[parsedSection] || 0) + 1;
+        if (!sectionBeatKeys[parsedSection]) sectionBeatKeys[parsedSection] = new Set();
+        sectionBeatKeys[parsedSection].add(e.beatKey);
+      }
+    }
 
     const timeMs = toNum(e.timeMs, NaN);
     if (Number.isFinite(timeMs)) {
@@ -189,6 +216,32 @@ function summarizeTrace(entries) {
       }
       if (typeof pt.warmupTicksRemaining === 'number' && pt.warmupTicksRemaining > 0) {
         profilerWarmupEntries++;
+      }
+      if (typeof pt.telemetryBeatSpan === 'number' && Number.isFinite(pt.telemetryBeatSpan) && pt.telemetryBeatSpan > 0) {
+        profilerTelemetryBeatSpanSum += pt.telemetryBeatSpan;
+        profilerTelemetryBeatSpanCount++;
+        if (pt.telemetryBeatSpan > profilerTelemetryBeatSpanMax) profilerTelemetryBeatSpanMax = pt.telemetryBeatSpan;
+      }
+    }
+    if (e.phaseTelemetry && typeof e.phaseTelemetry === 'object') {
+      const phaseTelemetry = e.phaseTelemetry;
+      phaseTelemetryEntries++;
+      if (phaseTelemetry.phaseSignalValid) phaseTelemetryValidEntries++;
+      else phaseSignalInvalidEntries++;
+      if (phaseTelemetry.phaseChanged) phaseTelemetryChangedEntries++;
+      if (typeof phaseTelemetry.phaseStaleBeats === 'number') {
+        phaseTelemetryMaxStaleBeats = Math.max(phaseTelemetryMaxStaleBeats, phaseTelemetry.phaseStaleBeats);
+      }
+      if (typeof phaseTelemetry.phaseCouplingCoverage === 'number') {
+        phaseCouplingCoverageSum += phaseTelemetry.phaseCouplingCoverage;
+        phaseCouplingCoverageCount++;
+        if (phaseTelemetry.phaseCouplingCoverage <= 0.01) phaseZeroCoverageEntries++;
+      }
+      if (typeof phaseTelemetry.phaseCouplingAvailablePairs === 'number') {
+        phaseCouplingAvailablePairsMax = Math.max(phaseCouplingAvailablePairsMax, phaseTelemetry.phaseCouplingAvailablePairs);
+      }
+      if (typeof phaseTelemetry.phaseCouplingMissingPairs === 'number') {
+        phaseCouplingMissingPairsMax = Math.max(phaseCouplingMissingPairsMax, phaseTelemetry.phaseCouplingMissingPairs);
       }
     }
 
@@ -758,6 +811,81 @@ function summarizeTrace(entries) {
     opportunityGap: Number(opportunityGap.toFixed(4))
   } : null;
 
+  const expectedSections = manifest && Array.isArray(manifest.journey)
+    ? manifest.journey.length
+    : null;
+  const observedSections = Object.keys(sectionEntryCounts)
+    .map(function(key) { return Number(key); })
+    .filter(function(value) { return Number.isFinite(value); })
+    .sort(function(a, b) { return a - b; });
+  const missingSections = expectedSections !== null
+    ? Array.from({ length: expectedSections }, function(_, index) { return index; }).filter(function(index) {
+      return observedSections.indexOf(index) === -1;
+    })
+    : [];
+  const sectionCoverage = observedSections.length > 0 || expectedSections !== null
+    ? {
+      expectedSections,
+      observedSections,
+      observedCount: observedSections.length,
+      missingSections,
+      coverageRatio: expectedSections && expectedSections > 0 ? Number((observedSections.length / expectedSections).toFixed(4)) : null,
+      sections: observedSections.map(function(section) {
+        return {
+          section,
+          entryCount: sectionEntryCounts[section] || 0,
+          uniqueBeatKeys: sectionBeatKeys[section] ? sectionBeatKeys[section].size : 0
+        };
+      })
+    }
+    : null;
+  const phaseTelemetry = phaseTelemetryEntries > 0
+    ? {
+      entries: phaseTelemetryEntries,
+      validEntries: phaseTelemetryValidEntries,
+      invalidEntries: phaseSignalInvalidEntries,
+      validRate: Number((phaseTelemetryValidEntries / phaseTelemetryEntries).toFixed(4)),
+      changedEntries: phaseTelemetryChangedEntries,
+      changedRate: Number((phaseTelemetryChangedEntries / phaseTelemetryEntries).toFixed(4)),
+      maxStaleBeats: phaseTelemetryMaxStaleBeats,
+      avgCouplingCoverage: phaseCouplingCoverageCount > 0 ? Number((phaseCouplingCoverageSum / phaseCouplingCoverageCount).toFixed(4)) : 0,
+      zeroCouplingCoverageEntries: phaseZeroCoverageEntries,
+      maxAvailablePairs: phaseCouplingAvailablePairsMax,
+      maxMissingPairs: phaseCouplingMissingPairsMax,
+      integrity: phaseSignalInvalidEntries > 0 || phaseZeroCoverageEntries === phaseTelemetryEntries
+        ? 'critical'
+        : (phaseTelemetryMaxStaleBeats > 32 || phaseZeroCoverageEntries > 0 ? 'warning' : 'healthy')
+    }
+    : null;
+  const telemetryHealth = (() => {
+    const phaseTelemetryPresent = phaseTelemetry !== null;
+    const phaseIntegrity = phaseTelemetryPresent ? phaseTelemetry.integrity : 'critical';
+    const underSeenPairCount = adaptiveTelemetryReconciliation ? adaptiveTelemetryReconciliation.underSeenPairCount : 0;
+    const maxGap = adaptiveTelemetryReconciliation ? adaptiveTelemetryReconciliation.maxGap : 0;
+    const sectionCoverageRatio = sectionCoverage && typeof sectionCoverage.coverageRatio === 'number'
+      ? sectionCoverage.coverageRatio
+      : 1;
+    const score = clamp(
+      (phaseTelemetryPresent ? 0 : 0.45) +
+      (phaseIntegrity === 'critical' ? 0.25 : phaseIntegrity === 'warning' ? 0.12 : 0) +
+      clamp(underSeenPairCount / 4, 0, 1) * 0.20 +
+      clamp(maxGap / 0.5, 0, 1) * 0.08 +
+      clamp((1 - sectionCoverageRatio) / 0.34, 0, 1) * 0.02,
+      0,
+      1
+    );
+    return {
+      score: Number(score.toFixed(4)),
+      phaseTelemetryPresent,
+      phaseIntegrity,
+      underSeenPairCount,
+      maxGap: Number(toNum(maxGap, 0).toFixed(4)),
+      sectionCoverageRatio: Number(toNum(sectionCoverageRatio, 1).toFixed(4)),
+      profilerBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
+      profilerBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
+    };
+  })();
+
   return {
     generatedAt: new Date().toISOString(),
     beats: {
@@ -831,7 +959,9 @@ function summarizeTrace(entries) {
       analysisTicks: uniqueProfilerAnalysisTicks.size,
       regimeTicks: uniqueProfilerRegimeTicks.size,
       snapshotReuseEntries: profilerSnapshotReuseEntries,
-      warmupEntries: profilerWarmupEntries
+      warmupEntries: profilerWarmupEntries,
+      telemetryBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
+      telemetryBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
     },
     regimeCadence: {
       traceEntries: entries.length,
@@ -910,6 +1040,9 @@ function summarizeTrace(entries) {
     },
     tailRecovery,
     cadenceMonopoly,
+    phaseTelemetry,
+    telemetryHealth,
+    sectionCoverage,
     adaptiveTelemetryReconciliation,
     nonNudgeableGains,
     trustDominance,
@@ -957,6 +1090,7 @@ function summarizeTrace(entries) {
 function main() {
   const tracePath = path.join(process.cwd(), 'metrics', 'trace.jsonl');
   const summaryPath = path.join(process.cwd(), 'metrics', 'trace-summary.json');
+  const manifestPath = path.join(process.cwd(), 'metrics', 'system-manifest.json');
 
   if (!fs.existsSync(tracePath)) {
     console.log('trace-summary: trace file not found, skipping (run with --trace to generate metrics/trace.jsonl).');
@@ -981,7 +1115,10 @@ function main() {
     return;
   }
 
-  const summary = summarizeTrace(entries);
+  const manifest = fs.existsSync(manifestPath)
+    ? JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    : null;
+  const summary = summarizeTrace(entries, manifest);
   fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + '\n');
   console.log(`trace-summary: ${entries.length} entries -> metrics/trace-summary.json`);
 }
