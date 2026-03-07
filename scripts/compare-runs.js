@@ -131,6 +131,15 @@ function compareRuns(runA, runB) {
       });
     }
 
+    if (fa.hotspotMigration || fb.hotspotMigration) {
+      const hotA = fa.hotspotMigration || {};
+      const hotB = fb.hotspotMigration || {};
+      fpSection.metrics.push({ metric: 'hotspotTopPair', A: hotA.topPair || 'none', B: hotB.topPair || 'none' });
+      fpSection.metrics.push({ metric: 'hotspotTop2Concentration', A: toNum(hotA.top2Concentration, 0).toFixed(4), B: toNum(hotB.top2Concentration, 0).toFixed(4) });
+      fpSection.metrics.push({ metric: 'hotspotTrustAxisShare', A: toNum(hotA.axisShares && hotA.axisShares.trust, 0).toFixed(4), B: toNum(hotB.axisShares && hotB.axisShares.trust, 0).toFixed(4) });
+      fpSection.metrics.push({ metric: 'hotspotPhaseAxisShare', A: toNum(hotA.axisShares && hotA.axisShares.phase, 0).toFixed(4), B: toNum(hotB.axisShares && hotB.axisShares.phase, 0).toFixed(4) });
+    }
+
     report.sections.push(fpSection);
   }
 

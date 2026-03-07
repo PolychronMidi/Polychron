@@ -52,6 +52,9 @@ regimeReactiveDamping = (() => {
   const MAX_DENSITY = 0.12;  // - range 0.88-1.12
   const MAX_TENSION = 0.06;  // - range 0.94-1.06
   const MAX_FLICKER = 0.15;  // - range 0.85-1.15
+  const _DENSITY_RANGE = [0.88, 1.12];
+  const _TENSION_RANGE = [0.92, 1.18];
+  const _FLICKER_RANGE = [0.85, 1.18];
 
   // Curvature scaling: bias = 1 + dir * max * curvatureGain
   // At curvature 0 - bias = 1.0 (neutral). At curvature 1.0 - full magnitude.
@@ -162,6 +165,47 @@ regimeReactiveDamping = (() => {
         }
       }
 
+      let phaseHotspotPressure = 0;
+      let trustHotspotPressure = 0;
+      let densityFlickerPressure = 0;
+      let stickyTailPressure = 0;
+      if (snap && snap.couplingMatrix) {
+        const cm = snap.couplingMatrix;
+        const phasePairs = ['density-phase', 'flicker-phase', 'tension-phase'];
+        const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust'];
+        let phaseMax = 0;
+        let trustMax = 0;
+        for (let pi = 0; pi < phasePairs.length; pi++) {
+          phaseMax = m.max(phaseMax, m.abs(cm[phasePairs[pi]] || 0));
+        }
+        for (let ti = 0; ti < trustPairs.length; ti++) {
+          trustMax = m.max(trustMax, m.abs(cm[trustPairs[ti]] || 0));
+        }
+        phaseHotspotPressure = clamp((phaseMax - 0.78) / 0.20, 0, 1);
+        trustHotspotPressure = clamp((trustMax - 0.74) / 0.20, 0, 1);
+        densityFlickerPressure = clamp((m.abs(cm['density-flicker'] || 0) - 0.82) / 0.16, 0, 1);
+      }
+      const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+      if (homeostasis && typeof homeostasis.stickyTailPressure === 'number') {
+        stickyTailPressure = clamp(homeostasis.stickyTailPressure / 0.55, 0, 1);
+      }
+      const hotspotCounterpressure = clamp(
+        phaseHotspotPressure * 0.40 +
+        trustHotspotPressure * 0.32 +
+        densityFlickerPressure * 0.10 +
+        stickyTailPressure * 0.58,
+        0,
+        1.20
+      );
+      const flickerPenalty = clamp(
+        phaseHotspotPressure * 0.60 +
+        trustHotspotPressure * 0.35 +
+        stickyTailPressure * 0.40 +
+        clamp((_smoothedFlicker - 1.10) / 0.08, 0, 0.40),
+        0,
+        0.95
+      );
+
       // R7 Evo 1: Squared penalty when exploring exceeds 60% - creates
       // a soft wall preventing runaway exploring domination.
       const expPenalty = expShare > 0.60 ? 1.0 + (expShare - 0.60) * (expShare - 0.60) : 1.0;
@@ -186,12 +230,12 @@ regimeReactiveDamping = (() => {
       // R46 E2: Coherent-share reactive damping. If coherent overshoots and
       // exploring under-shoots, bias the system toward exploratory variance.
       if (coherentPressure > 0) {
-        _eqCorrD += coherentPressure * _EQUILIB_STRENGTH * 0.75;
+        _eqCorrD += coherentPressure * (_EQUILIB_STRENGTH * 0.75 + hotspotCounterpressure * 0.11);
         if (transitionScarcity > 0.25 && runCoherentShare > _REGIME_BUDGET.coherent) {
           _eqCorrD += coherentPressure * 0.04;
         }
-        _eqCorrF += coherentPressure * _EQUILIB_STRENGTH * 1.45;
-        _eqCorrT -= coherentPressure * _EQUILIB_STRENGTH * 1.15;
+        _eqCorrF += coherentPressure * m.max(0, _EQUILIB_STRENGTH * (1.45 + hotspotCounterpressure * 0.55 - flickerPenalty * 0.70));
+        _eqCorrT -= coherentPressure * (_EQUILIB_STRENGTH * 1.15 + hotspotCounterpressure * 0.14);
       }
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog
@@ -244,9 +288,9 @@ regimeReactiveDamping = (() => {
     const effectiveMaxTension = MAX_TENSION + _tensionCeilingRelax;
     const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + _driftT + _eqCorrT;
     const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + _driftF + _eqCorrF;
-    _smoothedDensity = _smoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING;
-    _smoothedTension = _smoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING;
-    _smoothedFlicker = _smoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING;
+    _smoothedDensity = clamp(_smoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
+    _smoothedTension = clamp(_smoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
+    _smoothedFlicker = clamp(_smoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);
 
     // #7 (R7): Update tension pin relief valve state
     const tensionAtPin = m.abs(_smoothedTension - (1.0 + effectiveMaxTension)) < 0.005
@@ -313,11 +357,9 @@ regimeReactiveDamping = (() => {
   }
 
   // --- Self-registration ---
-  conductorIntelligence.registerDensityBias('regimeReactiveDamping', densityBias, 0.88, 1.12);
-  // R11 Evo 3: Widen tension bias upper bound from 1.06 to 1.15 -- raw values
-  // routinely reached 1.11 via drift+equilibrator, clipping against old ceiling.
-  conductorIntelligence.registerTensionBias('regimeReactiveDamping', tensionBias, 0.94, 1.15);
-  conductorIntelligence.registerFlickerModifier('regimeReactiveDamping', flickerMod, 0.85, 1.15);
+  conductorIntelligence.registerDensityBias('regimeReactiveDamping', densityBias, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
+  conductorIntelligence.registerTensionBias('regimeReactiveDamping', tensionBias, _TENSION_RANGE[0], _TENSION_RANGE[1]);
+  conductorIntelligence.registerFlickerModifier('regimeReactiveDamping', flickerMod, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);
   conductorIntelligence.registerRecorder('regimeReactiveDamping', refresh);
   conductorIntelligence.registerModule('regimeReactiveDamping', { reset }, ['section']);
 

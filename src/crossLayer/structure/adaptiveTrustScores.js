@@ -121,6 +121,10 @@ adaptiveTrustScores = (() => {
       const _universalFloor = m.max(0.05, _mean * _coeff);
       if (state.score < _universalFloor) state.score = _universalFloor;
     }
+    const adaptiveCaps = getAdaptiveDominanceCaps(systemName, state.score);
+    if (state.score > adaptiveCaps.scoreCeiling) {
+      state.score = adaptiveCaps.scoreCeiling;
+    }
 
     state.samples += 1;
     state.lastMs = beatStartTime * 1000;
@@ -152,6 +156,91 @@ adaptiveTrustScores = (() => {
   const TRUST_WEIGHT_MULTIPLIER = 0.75;
   const TRUST_WEIGHT_MIN = 0.4;
   const TRUST_WEIGHT_MAX = 1.8;
+  const _DOMINANCE_CAP_PROFILE = {
+    [trustSystems.names.COHERENCE_MONITOR]: { scoreFloor: 0.54, scorePenalty: 0.16, weightFloor: 1.22, weightPenalty: 0.34 },
+    [trustSystems.names.PHASE_LOCK]: { scoreFloor: 0.50, scorePenalty: 0.10, weightFloor: 1.24, weightPenalty: 0.22 },
+    [trustSystems.names.ENTROPY_REGULATOR]: { scoreFloor: 0.50, scorePenalty: 0.10, weightFloor: 1.24, weightPenalty: 0.22 }
+  };
+
+  /** @param {string} systemName @param {number} effectiveScore */
+  function getAdaptiveDominanceCaps(systemName, effectiveScore) {
+    const profile = _DOMINANCE_CAP_PROFILE[systemName];
+    if (!profile) {
+      return { scoreCeiling: TRUST_CEILING, weightCap: TRUST_WEIGHT_MAX };
+    }
+
+    let runnerUpScore = 0;
+    for (const [otherName, otherState] of scoreBySystem.entries()) {
+      if (otherName === systemName) continue;
+      runnerUpScore = m.max(runnerUpScore, otherState.score);
+    }
+    const leadScore = m.max(0, effectiveScore - runnerUpScore);
+
+    let coherentLockPressure = 0;
+    let coherentSharePressure = 0;
+    const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
+    if (readiness) {
+      if (typeof readiness.runCoherentBeats === 'number') {
+        coherentLockPressure = clamp((readiness.runCoherentBeats - 36) / 96, 0, 1);
+      }
+      if (typeof readiness.runCoherentShare === 'number') {
+        coherentSharePressure = clamp((readiness.runCoherentShare - 0.46) / 0.22, 0, 1);
+      }
+    }
+
+    let trustHotspotPressure = 0;
+    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const couplingMatrix = dynamics ? V.optionalType(dynamics.couplingMatrix, 'object') : undefined;
+    if (couplingMatrix) {
+      const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust'];
+      let maxTrustCorr = 0;
+      let sumTrustCorr = 0;
+      let trustPairCount = 0;
+      for (let i = 0; i < trustPairs.length; i++) {
+        const corr = V.optionalFinite(couplingMatrix[trustPairs[i]]);
+        if (corr === undefined) continue;
+        const absCorr = m.abs(corr);
+        maxTrustCorr = m.max(maxTrustCorr, absCorr);
+        sumTrustCorr += absCorr;
+        trustPairCount++;
+      }
+      const avgTrustCorr = trustPairCount > 0 ? sumTrustCorr / trustPairCount : 0;
+      trustHotspotPressure = clamp(
+        clamp((maxTrustCorr - 0.72) / 0.18, 0, 1) * 0.65 +
+        clamp((avgTrustCorr - 0.55) / 0.20, 0, 1) * 0.35,
+        0,
+        1
+      );
+    }
+
+    let trustAxisPressure = 0;
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    if (axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number') {
+      trustAxisPressure = clamp((axisEnergy.shares.trust - 0.19) / 0.09, 0, 1);
+    }
+
+    let stickyTailPressure = 0;
+    const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    if (homeostasis && typeof homeostasis.stickyTailPressure === 'number') {
+      stickyTailPressure = clamp(homeostasis.stickyTailPressure / 0.55, 0, 1);
+    }
+
+    const dominancePressure = clamp(
+      leadScore * 1.35 +
+      coherentLockPressure * 0.30 +
+      coherentSharePressure * 0.28 +
+      trustHotspotPressure * 0.52 +
+      trustAxisPressure * 0.36 +
+      stickyTailPressure * 0.22,
+      0,
+      1.40
+    );
+
+    return {
+      scoreCeiling: clamp(TRUST_CEILING - dominancePressure * profile.scorePenalty, profile.scoreFloor, TRUST_CEILING),
+      weightCap: clamp(TRUST_WEIGHT_MAX - dominancePressure * profile.weightPenalty, profile.weightFloor, TRUST_WEIGHT_MAX)
+    };
+  }
 
   /** @param {string} systemName */
   function getWeight(systemName) {
@@ -162,53 +251,7 @@ adaptiveTrustScores = (() => {
     // R13 Evo 5: Stutter Weight Dampening
     if (systemName === trustSystems.names.STUTTER_CONTAGION && effectiveScore > 0.55) effectiveScore = 0.55;
 
-    let maxWeight = TRUST_WEIGHT_MAX;
-    // R46 E4: Self-correcting trust anti-monopoly cap for coherenceMonitor.
-    if (systemName === trustSystems.names.COHERENCE_MONITOR) {
-      let runnerUpScore = 0;
-      for (const [otherName, otherState] of scoreBySystem.entries()) {
-        if (otherName === systemName) continue;
-        runnerUpScore = m.max(runnerUpScore, otherState.score);
-      }
-      const leadScore = m.max(0, effectiveScore - runnerUpScore);
-      let coherentLockPressure = 0;
-      let coherentSharePressure = 0;
-      let trustHotspotPressure = 0;
-      const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
-      if (readiness) {
-        if (typeof readiness.runCoherentBeats === 'number') {
-          coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);
-        }
-        if (typeof readiness.runCoherentShare === 'number') {
-          coherentSharePressure = clamp((readiness.runCoherentShare - 0.42) / 0.28, 0, 1);
-        }
-      }
-      const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-      const couplingMatrix = dynamics ? V.optionalType(dynamics.couplingMatrix, 'object') : undefined;
-      if (couplingMatrix) {
-        const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust'];
-        let maxTrustCorr = 0;
-        let sumTrustCorr = 0;
-        let trustPairCount = 0;
-        for (let i = 0; i < trustPairs.length; i++) {
-          const corr = V.optionalFinite(couplingMatrix[trustPairs[i]]);
-          if (corr === undefined) continue;
-          const absCorr = m.abs(corr);
-          maxTrustCorr = m.max(maxTrustCorr, absCorr);
-          sumTrustCorr += absCorr;
-          trustPairCount++;
-        }
-        const avgTrustCorr = trustPairCount > 0 ? sumTrustCorr / trustPairCount : 0;
-        trustHotspotPressure = clamp(
-          clamp((maxTrustCorr - 0.72) / 0.18, 0, 1) * 0.7 +
-          clamp((avgTrustCorr - 0.55) / 0.20, 0, 1) * 0.3,
-          0,
-          1
-        );
-      }
-      const adaptiveCap = 1.50 - m.min(0.28, leadScore * 0.14 + coherentLockPressure * 0.10 + coherentSharePressure * 0.08 + trustHotspotPressure * 0.10);
-      maxWeight = clamp(adaptiveCap, 1.24, 1.50);
-    }
+    const maxWeight = getAdaptiveDominanceCaps(systemName, effectiveScore).weightCap;
     return clamp(1 + effectiveScore * TRUST_WEIGHT_MULTIPLIER, TRUST_WEIGHT_MIN, maxWeight);
   }
 
