@@ -1,3 +1,39 @@
+## R47 — 2026-03-06 — STABLE
+
+**Profile:** explosive | **Beats:** 464 | **Duration:** 60.2s | **Notes:** 16,862
+**Fingerprint:** 9/9 stable | Drifted: none
+
+### Key Observations
+- **REGIME BALANCE RECOVERED MATERIALLY.** The system moved from the R46 lock (`coherent` 93.9%, `exploring` 0.0%) to a much healthier distribution: `coherent` 60.3%, `exploring` 23.3%, `evolving` 7.8%, `initializing` 8.6%. The run also extended to 464 beats across 60.2s and regained a visible late transition back out of coherence at beat 356.
+- **THE FORCED-BREAK TELEMETRY IS STILL NOT TRULY RUN-SCOPED.** The emitted regime trace shows a 280-beat coherent streak, but `transitionReadiness.maxCoherentBeats` only reports 42, `runBeatCount` only reports 67, and `forcedBreakCount` remains 0. Source inspection confirms the new "run" counters are still effectively section-scoped because `reset()` does not preserve the counters that the forced-break path depends on.
+- **REGIME DAMPING FINALLY ENGAGED, BUT IT DID NOT BREAK THE LONG COHERENT BLOCK.** `regimeReactiveDamping` no longer finished neutral: end-of-run tension was 1.0277 and flicker 1.0694. This correlates with the recovered `exploring` share, but it still did not prevent a single 280-beat coherent segment.
+- **TRUST-LINKED AND DENSITY-FLICKER TAILS REMAIN THE DOMINANT STRESS SURFACE.** `density-flicker` remained the top exceedance pair at 78 beats with p95 0.988, while `density-trust` and `flicker-trust` each reached 31 exceedance beats with severe peaks of 0.934 and 0.952. The fingerprint stayed stable only because the new exceedance comparison is now normalized and backward-compatible.
+- **PIPELINE HEALTH STAYED CLEAN BUT PERFORMANCE SPIKES APPEARED.** All 16 pipeline steps passed, but beat-setup exceeded the 200ms budget 7 times, including a 793.3ms spike at beat 113. This is a runtime concern rather than a musical regression, but it is now large enough to warrant explicit tracking.
+
+### Evolutions Applied (from R46)
+- E1: **Resolved-Regime Run Counter** — **partially confirmed** — the new fields (`runCoherentBeats`, `runBeatCount`, `runResolvedRegimeCounts`) exist, but they still under-report the visible trace (`maxCoherentBeats=42` vs `maxConsecutiveCoherent=280`, `runBeatCount=67` vs 464 total beats).
+- E2: **Forced-Exit Preemption Path** — **refuted** — no forced transition fired (`forcedBreakCount=0`, `forcedOverrideBeats=0`) even though the run still accumulated a 280-beat coherent block.
+- E3: **Coherent-Overshare Damping Gain Lift** — **confirmed (partial)** — `regimeReactiveDamping` ended non-neutral (`tension=1.0277`, `flicker=1.0694`) and `exploring` recovered to 23.3%, but the controller still allowed a single very long coherent segment.
+- E4: **Trust-Pair Hotspot Controller** — **inconclusive** — average trust-linked coupling improved (`density-trust` 0.5350 -> 0.3706, `flicker-trust` 0.6665 -> 0.2846), but the severe tails remained and both trust-linked pairs still accumulated 31 exceedance beats.
+- E5: **Anti-Monopoly Trust Feedback Strengthening** — **confirmed (partial)** — `coherenceMonitor` average weight fell from 1.4349 to 1.4114, but it remained the dominant trust system at score 0.6997.
+- E6: **Composite Fingerprint Baseline Migration** — **confirmed** — the comparison is now backward-compatible (`previousTopPair` is populated), the exceedance dimension no longer reports artificial migration from `[none]`, and the overall verdict stabilized to `STABLE`.
+
+### Evolutions Proposed (for R48)
+- E1: **True Run-Scope Regime Counters** — Split section-reset state from whole-run state in `regimeClassifier.js` so `runBeatCount`, `runCoherentBeats`, `runResolvedRegimeCounts`, and `maxCoherentBeats` survive section boundaries. Keep section-local counters only for shaping/hysteresis. (src/conductor/signal/regimeClassifier.js)
+- E2: **Forced-Break Trigger On All-Scope Streak** — Rewire the coherent max-dwell override to use the preserved all-scope resolved streak, and emit a dedicated trace flag that can be counted directly by `trace-summary.js` rather than inferred from readiness snapshots. (src/conductor/signal/regimeClassifier.js, scripts/trace-summary.js)
+- E3: **Transition-Scarcity Damping Integrator** — Extend `regimeReactiveDamping.js` so coherent-break pressure accumulates across sections and uses both all-scope coherent streak and transition scarcity. Keep flicker lift, but stop letting density remain neutral when `density-flicker` is already the dominant tail hotspot. (src/conductor/signal/regimeReactiveDamping.js)
+- E4: **Budget-Aware Hotspot Prioritization** — When coupling homeostasis is globally throttled (`globalGainMultiplier=0.8251`, `floorDampen=1`), prioritize decorrelation budget toward the current severe pairs (`density-flicker`, `density-trust`, `flicker-trust`) instead of spreading the remaining gain too evenly. (src/conductor/signal/pipelineCouplingManager.js, src/conductor/signal/couplingHomeostasis.js)
+- E5: **Coupling-Aware Trust Caps** — Tighten `adaptiveTrustScores.js` further by making the `coherenceMonitor` cap respond not only to coherent-share pressure but also to live trust-linked hotspot severity, so trust dominance contracts faster when trust coupling is the active stress surface. (src/crossLayer/structure/adaptiveTrustScores.js)
+- E6: **Beat-Setup Spike Attribution** — Add an explicit top-stage spike summary to `trace-summary.js` and `narrative-digest.js` so future runs report which stage dominated each >200ms beat-setup overrun; the current spikes show large silhouette/emission/beat-setup bursts that are otherwise buried in raw entries. (scripts/trace-summary.js, scripts/narrative-digest.js)
+
+### Hypotheses to Track
+- H1: All-scope readiness counters match the visible regime trace, with `runBeatCount` ~= total beats and `maxCoherentBeats` ~= `maxConsecutiveCoherent`.
+- H2: At least one forced coherent break is recorded once the all-scope counter drives the override, reducing the next run's max coherent streak below 220.
+- H3: Severe tail hotspots (`density-flicker`, `density-trust`, `flicker-trust`) fall without losing the recovered `exploring` share.
+- H4: Beat-setup spike summaries identify a repeatable dominant stage instead of leaving the runtime overruns as opaque one-off events.
+
+---
+
 ## R46 — 2026-03-06 — EVOLVED
 
 **Profile:** explosive | **Beats:** 296 | **Duration:** 39.8s | **Notes:** 10,028

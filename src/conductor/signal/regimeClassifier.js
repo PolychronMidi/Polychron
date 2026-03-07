@@ -44,7 +44,9 @@ regimeClassifier = (() => {
   let _runCoherentBeats = 0;
   let _runBeatCount = 0;
   let _runCoherentShare = 0;
+  let _runTransitionCount = 0;
   let _runLastResolvedRegime = 'evolving';
+  let _lastObservedBeatCount = 0;
   let _forcedOverrideActive = false;
   let _forcedOverrideBeats = 0;
   let _lastForcedTriggerStreak = 0;
@@ -348,7 +350,8 @@ regimeClassifier = (() => {
     _forcedBreakCount++;
     _lastForcedReason = reason;
     _lastForcedTriggerStreak = V.optionalFinite(triggerStreak, 0);
-    _lastForcedTriggerBeat = _runBeatCount + 1;
+    const triggerBeat = V.optionalFinite(beatCount, 0);
+    _lastForcedTriggerBeat = triggerBeat > 0 ? triggerBeat : _runBeatCount + 1;
     _rawRegimeWindow.length = 0;
     explainabilityBus.emit('REGIME_FORCED_TRANSITION', 'both', {
       from: lastRegime,
@@ -367,14 +370,37 @@ regimeClassifier = (() => {
   }
 
   /**
-   * @param {string} resolvedRegime
+   * Align run-level regime telemetry with visible beat cadence.
+   * systemDynamicsProfiler can analyze at a coarser cadence than trace emission,
+   * so run counters must advance by beat delta rather than by analyzer invocation.
+   * @returns {number}
    */
-  function updateRunResolvedTelemetry(resolvedRegime) {
-    _runBeatCount++;
-    _runResolvedRegimeCounts[resolvedRegime] = (_runResolvedRegimeCounts[resolvedRegime] || 0) + 1;
+  function getBeatSpan() {
+    const currentBeat = V.optionalFinite(beatCount, 0);
+    if (currentBeat <= 0) return 1;
+    if (_lastObservedBeatCount <= 0) {
+      _lastObservedBeatCount = currentBeat;
+      return 1;
+    }
+    const delta = currentBeat - _lastObservedBeatCount;
+    _lastObservedBeatCount = currentBeat;
+    return delta > 0 ? delta : 1;
+  }
+
+  /**
+   * @param {string} resolvedRegime
+   * @param {number} beatSpan
+   */
+  function updateRunResolvedTelemetry(resolvedRegime, beatSpan) {
+    const span = m.max(1, V.optionalFinite(beatSpan, 1));
+    if (_runBeatCount > 0 && resolvedRegime !== _runLastResolvedRegime) {
+      _runTransitionCount++;
+    }
+    _runBeatCount += span;
+    _runResolvedRegimeCounts[resolvedRegime] = (_runResolvedRegimeCounts[resolvedRegime] || 0) + span;
 
     if (resolvedRegime === 'coherent') {
-      _runCoherentBeats = _runLastResolvedRegime === 'coherent' ? _runCoherentBeats + 1 : 1;
+      _runCoherentBeats = _runLastResolvedRegime === 'coherent' ? _runCoherentBeats + span : span;
       _runMaxCoherentBeats = m.max(_runMaxCoherentBeats, _runCoherentBeats);
     } else {
       _runCoherentBeats = 0;
@@ -394,9 +420,10 @@ regimeClassifier = (() => {
    * @returns {string} - stable regime with hysteresis
    */
   function resolve(rawRegime) {
+    const beatSpan = getBeatSpan();
     // R36 E4: Tally raw regime classifications before hysteresis
     _rawRegimeCounts[rawRegime] = (_rawRegimeCounts[rawRegime] || 0) + 1;
-    _runRawRegimeCounts[rawRegime] = (_runRawRegimeCounts[rawRegime] || 0) + 1;
+    _runRawRegimeCounts[rawRegime] = (_runRawRegimeCounts[rawRegime] || 0) + beatSpan;
 
     // R37 E6: Track max consecutive streak per raw regime
     if (rawRegime === _rawStreakRegime) {
@@ -488,7 +515,7 @@ regimeClassifier = (() => {
     }
 
     if (_forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent') {
-      const projectedRunCoherentBeats = _runLastResolvedRegime === 'coherent' ? _runCoherentBeats + 1 : 1;
+      const projectedRunCoherentBeats = _runLastResolvedRegime === 'coherent' ? _runCoherentBeats + beatSpan : beatSpan;
       if (projectedRunCoherentBeats > _coherentMaxDwell) {
         const coherentOvershoot = projectedRunCoherentBeats - _coherentMaxDwell;
         const forcedWindow = clamp(4 + m.floor(coherentOvershoot / 24) + m.floor(_coherentShareEma * 6), 4, 12);
@@ -512,7 +539,6 @@ regimeClassifier = (() => {
       _evolvingBeats = 0;
     } else if (resolvedRegime === 'coherent') {
       coherentBeats++;
-      _runMaxCoherentBeats = m.max(_runMaxCoherentBeats, coherentBeats);
       exploringBeats = 0;
       _evolvingBeats = 0;
     } else if (resolvedRegime === 'evolving') {
@@ -525,7 +551,7 @@ regimeClassifier = (() => {
       _evolvingBeats = 0;
     }
 
-    updateRunResolvedTelemetry(resolvedRegime);
+    updateRunResolvedTelemetry(resolvedRegime, beatSpan);
     lastRegime = resolvedRegime;
     return resolvedRegime;
   }
@@ -544,24 +570,37 @@ regimeClassifier = (() => {
   }
 
   function reset() {
-    const _prevCoherentShareEma = _coherentShareEma;
-    const _prevCoherentBeats = coherentBeats;
     lastRegime = 'evolving';
-    // R37 E1: Clear majority window on section reset
     _rawRegimeWindow = [];
-    // R44 E5: Clear raw regime counts on section reset
     for (const key in _rawRegimeCounts) delete _rawRegimeCounts[key];
+    for (const key in _runRawRegimeCounts) delete _runRawRegimeCounts[key];
+    for (const key in _rawRegimeMaxStreak) delete _rawRegimeMaxStreak[key];
+    for (const key in _runResolvedRegimeCounts) delete _runResolvedRegimeCounts[key];
+    _rawStreakRegime = '';
+    _rawStreakCount = 0;
     exploringBeats = 0;
     _evolvingBeats = 0;
     _evolvingProximityBonus = 0;
-    // R28 E5: Preserve momentum across section resets (damped to 50%)
-    _coherentMomentumBeats = m.floor(_coherentMomentumBeats * 0.5);
-    coherentBeats = m.floor(_prevCoherentBeats * 0.3);
+    _coherentMomentumBeats = 0;
+    coherentBeats = 0;
     oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
-    // R30: Do NOT reset coherentThresholdScale on section reset. The self-
-    // balancing loop's accumulated adjustment must persist across sections.
-    // Resetting to 1.0 destroyed R29's adjustments every section boundary.
-    _coherentShareEma = _prevCoherentShareEma * 0.5 + 0.25 * 0.5;
+    coherentThresholdScale = 0.65;
+    _coherentShareEma = 0.25;
+    _forcedRegime = '';
+    _forcedRegimeBeatsRemaining = 0;
+    _forcedBreakCount = 0;
+    _lastForcedReason = '';
+    _runMaxCoherentBeats = 0;
+    _runCoherentBeats = 0;
+    _runBeatCount = 0;
+    _runCoherentShare = 0;
+    _runTransitionCount = 0;
+    _runLastResolvedRegime = 'evolving';
+    _lastObservedBeatCount = 0;
+    _forcedOverrideActive = false;
+    _forcedOverrideBeats = 0;
+    _lastForcedTriggerStreak = 0;
+    _lastForcedTriggerBeat = 0;
   }
 
   /**
@@ -569,7 +608,7 @@ regimeClassifier = (() => {
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
    * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
-  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runCoherentShare: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number }}
+  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runCoherentShare: number, runTransitionCount: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
@@ -603,6 +642,7 @@ regimeClassifier = (() => {
       maxCoherentBeats: _runMaxCoherentBeats,
       runBeatCount: _runBeatCount,
       runCoherentShare: Number(_runCoherentShare.toFixed(4)),
+      runTransitionCount: _runTransitionCount,
       forcedBreakCount: _forcedBreakCount,
       forcedRegime: _forcedRegime,
       forcedRegimeBeatsRemaining: _forcedRegimeBeatsRemaining,

@@ -83,6 +83,8 @@ function summarizeTrace(entries) {
   const BEAT_SETUP_BUDGET_MS = 200; // R9 Evo 5: flag beats where beat-setup exceeds this
   let beatSetupExceeded = 0;
   const beatSetupSpikeIndices = []; // R10 Evo 3: record which beats exceeded the budget
+  const beatSetupSpikeStageAgg = {};
+  let worstBeatSetupSpike = null;
   const couplingRawSeries = {}; // R10 Evo 6: signed coupling values for Pearson correlation
 
   // R17 Evo 6: Regime transition depth tracking
@@ -108,6 +110,7 @@ function summarizeTrace(entries) {
   let maxCoherentBeats = 0;
   let runBeatCount = 0;
   let runCoherentShare = 0;
+  let runTransitionCount = 0;
   let forcedBreakCount = 0;
   let forcedRegime = '';
   let forcedRegimeBeatsRemaining = 0;
@@ -164,12 +167,13 @@ function summarizeTrace(entries) {
         if (tr.velocityBlocked) readinessVelocityBlockedBeats++;
         if (typeof tr.thresholdScale === 'number') readinessLastScale = tr.thresholdScale;
         if (typeof tr.evolvingBeats === 'number') evolvingBeats = tr.evolvingBeats;
-        if (typeof tr.coherentBeats === 'number') coherentBeats = tr.coherentBeats;
-        if (typeof tr.runCoherentBeats === 'number') runCoherentBeats = tr.runCoherentBeats;
+        if (typeof tr.coherentBeats === 'number') coherentBeats = Math.max(coherentBeats, tr.coherentBeats);
+        if (typeof tr.runCoherentBeats === 'number') runCoherentBeats = Math.max(runCoherentBeats, tr.runCoherentBeats);
         if (typeof tr.maxCoherentBeats === 'number' && tr.maxCoherentBeats > maxCoherentBeats) maxCoherentBeats = tr.maxCoherentBeats;
-        if (typeof tr.runBeatCount === 'number') runBeatCount = tr.runBeatCount;
+        if (typeof tr.runBeatCount === 'number') runBeatCount = Math.max(runBeatCount, tr.runBeatCount);
         if (typeof tr.runCoherentShare === 'number') runCoherentShare = tr.runCoherentShare;
-        if (typeof tr.forcedBreakCount === 'number') forcedBreakCount = tr.forcedBreakCount;
+        if (typeof tr.runTransitionCount === 'number') runTransitionCount = Math.max(runTransitionCount, tr.runTransitionCount);
+        if (typeof tr.forcedBreakCount === 'number') forcedBreakCount = Math.max(forcedBreakCount, tr.forcedBreakCount);
         if (typeof tr.forcedRegime === 'string') forcedRegime = tr.forcedRegime;
         if (typeof tr.forcedRegimeBeatsRemaining === 'number') forcedRegimeBeatsRemaining = tr.forcedRegimeBeatsRemaining;
         if (typeof tr.forcedOverrideBeats === 'number') {
@@ -301,11 +305,33 @@ function summarizeTrace(entries) {
         // R10 Evo 3: record index and timing of spike beats
         // R16 Evo 6: include per-stage timing breakdown for spike diagnosis
         const stages = {};
+        let dominantSubstage = 'beat-setup';
+        let dominantSubstageMs = setupMs;
         for (let k = 0; k < stKeys.length; k++) {
           const stageMs = toNum(st[stKeys[k]], NaN);
-          if (Number.isFinite(stageMs)) stages[stKeys[k]] = Number(stageMs.toFixed(4));
+          if (!Number.isFinite(stageMs)) continue;
+          stages[stKeys[k]] = Number(stageMs.toFixed(4));
+          if (stKeys[k] !== 'beat-setup' && stageMs > dominantSubstageMs) {
+            dominantSubstage = stKeys[k];
+            dominantSubstageMs = stageMs;
+          }
         }
-        beatSetupSpikeIndices.push({ index: i, ms: Number(setupMs.toFixed(4)), stages });
+        if (dominantSubstage === 'beat-setup') dominantSubstageMs = setupMs;
+        if (!beatSetupSpikeStageAgg[dominantSubstage]) {
+          beatSetupSpikeStageAgg[dominantSubstage] = { count: 0, totalMs: 0, maxMs: 0 };
+        }
+        beatSetupSpikeStageAgg[dominantSubstage].count++;
+        beatSetupSpikeStageAgg[dominantSubstage].totalMs += dominantSubstageMs;
+        beatSetupSpikeStageAgg[dominantSubstage].maxMs = Math.max(beatSetupSpikeStageAgg[dominantSubstage].maxMs, dominantSubstageMs);
+        const spike = {
+          index: i,
+          ms: Number(setupMs.toFixed(4)),
+          dominantSubstage,
+          dominantSubstageMs: Number(dominantSubstageMs.toFixed(4)),
+          stages
+        };
+        beatSetupSpikeIndices.push(spike);
+        if (!worstBeatSetupSpike || spike.ms > worstBeatSetupSpike.ms) worstBeatSetupSpike = spike;
       }
     }
   }
@@ -530,7 +556,23 @@ function summarizeTrace(entries) {
       exceededCount: beatSetupExceeded,
       totalBeats: entries.length,
       exceededRate: entries.length > 0 ? Number((beatSetupExceeded / entries.length).toFixed(4)) : 0,
-      spikeIndices: beatSetupSpikeIndices
+      spikeIndices: beatSetupSpikeIndices,
+      worstSpike: worstBeatSetupSpike,
+      topSubstages: Object.entries(beatSetupSpikeStageAgg)
+        .map(function(entry) {
+          return {
+            stage: entry[0],
+            count: entry[1].count,
+            avgMs: Number((entry[1].totalMs / entry[1].count).toFixed(4)),
+            maxMs: Number(entry[1].maxMs.toFixed(4)),
+            share: beatSetupExceeded > 0 ? Number((entry[1].count / beatSetupExceeded).toFixed(4)) : 0
+          };
+        })
+        .sort(function(a, b) {
+          if (b.count !== a.count) return b.count - a.count;
+          return b.maxMs - a.maxMs;
+        })
+        .slice(0, 5)
     },
     adaptiveTargets,
     axisCouplingTotals,
@@ -554,6 +596,7 @@ function summarizeTrace(entries) {
       maxCoherentBeats,
       runBeatCount,
       runCoherentShare: Number(runCoherentShare.toFixed(4)),
+      runTransitionCount,
       forcedBreakCount,
       forcedRegime,
       forcedRegimeBeatsRemaining,

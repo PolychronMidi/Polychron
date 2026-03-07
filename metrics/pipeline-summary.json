@@ -1,20 +1,20 @@
 {
-  "generated": "2026-03-06T22:08:20.511Z",
-  "wallTimeSeconds": 2425.2,
+  "generated": "2026-03-06T23:40:18.074Z",
+  "wallTimeSeconds": 4093.7,
   "steps": [
     {
       "label": "generate-globals-dts",
-      "elapsedSeconds": 0.4,
+      "elapsedSeconds": 0.2,
       "ok": true
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 2,
+      "elapsedSeconds": 1.2,
       "ok": true
     },
     {
       "label": "check-tuning-invariants",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0.2,
       "ok": true
     },
     {
@@ -29,17 +29,17 @@
     },
     {
       "label": "lint",
-      "elapsedSeconds": 19.7,
+      "elapsedSeconds": 12.9,
       "ok": true
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 20.6,
+      "elapsedSeconds": 16.6,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 2377.8,
+      "elapsedSeconds": 4057.3,
       "ok": true
     },
     {
@@ -49,12 +49,12 @@
     },
     {
       "label": "check-manifest-health",
-      "elapsedSeconds": 0.1,
+      "elapsedSeconds": 0.2,
       "ok": true
     },
     {
       "label": "generate-dependency-graph",
-      "elapsedSeconds": 0.7,
+      "elapsedSeconds": 0.5,
       "ok": true
     },
     {
@@ -74,12 +74,12 @@
     },
     {
       "label": "narrative-digest",
-      "elapsedSeconds": 1.1,
+      "elapsedSeconds": 1.9,
       "ok": true
     },
     {
       "label": "visualize-feedback-graph",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0.2,
       "ok": true
     }
   ],

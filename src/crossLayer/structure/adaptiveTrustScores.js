@@ -173,6 +173,7 @@ adaptiveTrustScores = (() => {
       const leadScore = m.max(0, effectiveScore - runnerUpScore);
       let coherentLockPressure = 0;
       let coherentSharePressure = 0;
+      let trustHotspotPressure = 0;
       const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
       if (readiness) {
         if (typeof readiness.runCoherentBeats === 'number') {
@@ -182,8 +183,31 @@ adaptiveTrustScores = (() => {
           coherentSharePressure = clamp((readiness.runCoherentShare - 0.42) / 0.28, 0, 1);
         }
       }
-      const adaptiveCap = 1.50 - m.min(0.22, leadScore * 0.14 + coherentLockPressure * 0.10 + coherentSharePressure * 0.08);
-      maxWeight = clamp(adaptiveCap, 1.28, 1.50);
+      const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const couplingMatrix = dynamics ? V.optionalType(dynamics.couplingMatrix, 'object') : undefined;
+      if (couplingMatrix) {
+        const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust'];
+        let maxTrustCorr = 0;
+        let sumTrustCorr = 0;
+        let trustPairCount = 0;
+        for (let i = 0; i < trustPairs.length; i++) {
+          const corr = V.optionalFinite(couplingMatrix[trustPairs[i]]);
+          if (corr === undefined) continue;
+          const absCorr = m.abs(corr);
+          maxTrustCorr = m.max(maxTrustCorr, absCorr);
+          sumTrustCorr += absCorr;
+          trustPairCount++;
+        }
+        const avgTrustCorr = trustPairCount > 0 ? sumTrustCorr / trustPairCount : 0;
+        trustHotspotPressure = clamp(
+          clamp((maxTrustCorr - 0.72) / 0.18, 0, 1) * 0.7 +
+          clamp((avgTrustCorr - 0.55) / 0.20, 0, 1) * 0.3,
+          0,
+          1
+        );
+      }
+      const adaptiveCap = 1.50 - m.min(0.28, leadScore * 0.14 + coherentLockPressure * 0.10 + coherentSharePressure * 0.08 + trustHotspotPressure * 0.10);
+      maxWeight = clamp(adaptiveCap, 1.24, 1.50);
     }
     return clamp(1 + effectiveScore * TRUST_WEIGHT_MULTIPLIER, TRUST_WEIGHT_MIN, maxWeight);
   }

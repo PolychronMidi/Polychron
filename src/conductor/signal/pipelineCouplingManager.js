@@ -178,6 +178,14 @@ pipelineCouplingManager = (() => {
   let _densityGuardBeats = 0;
   const _DENSITY_PAIR_GAIN_CAP = 0.45;
   const _DENSITY_PAIR_GAIN_CAP_THRESHOLD = 0.72;
+  const _BUDGET_PRIORITY_GAIN = {
+    'density-flicker': 1.35,
+    'density-trust': 1.25,
+    'flicker-trust': 1.25,
+    'tension-flicker': 1.10,
+    'tension-trust': 1.10
+  };
+  const _BUDGET_DEPRIORITIZED_GAIN = 0.82;
 
   // R25 E3: Exploring beat counter for partial target relaxation.
   // When system is stuck in exploring for >40 beats, partially relax
@@ -401,6 +409,11 @@ pipelineCouplingManager = (() => {
     // pairs -- the fundamental cause of whack-a-mole. Dampen all gains
     // proportionally to proximity to floor.
     const _floorDampen = safePreBoot.call(() => couplingHomeostasis.getFloorDampen(), 1.0) || 1.0;
+    const _homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    const _budgetConstraintActive = Boolean(_homeostasisState && _homeostasisState.budgetConstraintActive);
+    const _budgetConstraintPressure = _homeostasisState && typeof _homeostasisState.budgetConstraintPressure === 'number'
+      ? _homeostasisState.budgetConstraintPressure
+      : 0;
 
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
     let nudgeD = 0;
@@ -774,6 +787,12 @@ const rawEmaInput = absCorr;
         if (dimA === 'density' || dimB === 'density') {
           effectiveGain *= _densityGainScalar;
         }
+        if (_budgetConstraintActive) {
+          const budgetFocus = _BUDGET_PRIORITY_GAIN[key] !== undefined
+            ? _BUDGET_PRIORITY_GAIN[key]
+            : _BUDGET_DEPRIORITIZED_GAIN;
+          effectiveGain *= 1 + (budgetFocus - 1) * _budgetConstraintPressure;
+        }
         // R33 E1: Velocity-based spike dampener. Boost gain on the spike beat
         // itself (velocityBoostActive) AND for _VELOCITY_BOOST_BEATS after.
         if (_velocityBoostActive || _velocityBoostCooldown > 0) {
@@ -936,7 +955,6 @@ const rawEmaInput = absCorr;
     // coupling energy so budget auto-scales across profiles. Uses homeostasis
     // totalEnergyEma when available, else falls back to static default.
     let _dynAxisBudget = _AXIS_BUDGET;
-    const _homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
     if (_homeostasisState && _homeostasisState.totalEnergyEma > 0.1) {
       // Budget = totalEnergy / (3 nudgeable axes * normalizing factor)
       _dynAxisBudget = clamp(_homeostasisState.totalEnergyEma / 15.0, 0.12, 0.36);
