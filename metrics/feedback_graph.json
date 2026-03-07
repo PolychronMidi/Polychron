@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Polychron Feedback Topology",
+  "description": "A machine-readable map of the closed loops, firewalls, and emergence boundaries governing the polychron composition engine.",
+  "firewalls": {
+    "CONDUCTOR_BLINDNESS": {
+      "description": "Cross-layer coordination affects local probability but cannot inject signals directly into the conductor. Conductor is insulated from structural micro-adjustments.",
+      "boundaryType": "isolating-membrane"
+    },
+    "SIGNAL_DELAY": {
+      "description": "Cross-layer queries the conductor via conductorSignalBridge, introducing a mandatory, one-beat delayed snapshot requirement.",
+      "boundaryType": "latency-barrier"
+    },
+    "REGISTRY_DAMPENING": {
+      "description": "All closed-loop feedback mechanisms must enroll through feedbackRegistry and pipelineCouplingManager to prevent resonant feedback cascades.",
+      "boundaryType": "dampener"
+    }
+  },
+  "feedbackLoops": [
+    {
+      "id": "dynamic-architect-planner",
+      "module": "dynamicArchitectPlanner",
+      "sourceDomain": "intensity",
+      "targetDomain": "tension",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "TODO: describe feedback mechanism"
+    },
+    {
+      "id": "coherence-monitor",
+      "module": "coherenceMonitor",
+      "sourceDomain": "notes_emitted",
+      "targetDomain": "density",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "TODO: describe feedback mechanism"
+    },
+    {
+      "id": "pipeline-balancer-tension",
+      "module": "pipelineBalancer.tension",
+      "sourceDomain": "tension_product",
+      "targetDomain": "tension",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "TODO: describe feedback mechanism"
+    },
+    {
+      "id": "pipeline-coupling-manager",
+      "module": "pipelineCouplingManager",
+      "sourceDomain": "coupling_matrix",
+      "targetDomain": "density_tension_flicker",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "TODO: describe feedback mechanism"
+    },
+    {
+      "id": "regime-reactive-damping",
+      "module": "regimeReactiveDamping",
+      "sourceDomain": "regime",
+      "targetDomain": "density",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "TODO: describe feedback mechanism"
+    },
+    {
+      "id": "entropy-regulator",
+      "module": "entropyRegulator",
+      "sourceDomain": "entropy",
+      "targetDomain": "cross_layer_prob",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "TODO: describe feedback mechanism"
+    }
+  ]
+}
