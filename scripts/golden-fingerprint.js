@@ -320,7 +320,9 @@ function computeFingerprint() {
     notesPerTraceEntry: entries.length > 0 ? Number((totalNotes / entries.length).toFixed(4)) : 0,
     notesPerUniqueBeat: uniqueBeatKeys > 0 ? Number((totalNotes / uniqueBeatKeys).toFixed(4)) : 0,
     notesPerSecond: spanMs > 0 ? Number((totalNotes / (spanMs / 1000)).toFixed(4)) : 0,
-    sectionCoverage: summary && summary.sectionCoverage ? summary.sectionCoverage : null
+    sectionCoverage: summary && summary.sectionCoverage ? summary.sectionCoverage : null,
+    guard: summary && summary.outputLoadGuard ? summary.outputLoadGuard : null,
+    progressIntegrity: summary && summary.progressIntegrity ? summary.progressIntegrity : null
   };
   const telemetryHealth = summary && summary.telemetryHealth
     ? {
@@ -389,13 +391,21 @@ function compareFingerprints(current, previous) {
     ? previous.outputLoad.notesPerUniqueBeat
     : previous.noteCount.total / prevBeats;
   const noteRatio = prevRate > 0 ? Math.abs(curRate - prevRate) / prevRate : Math.abs(current.noteCount.total - previous.noteCount.total) / prevTotal;
+  const currentGuardedRate = current.outputLoad && current.outputLoad.guard ? toNum(current.outputLoad.guard.guardedRate, 0) : 0;
+  const previousGuardedRate = previous.outputLoad && previous.outputLoad.guard ? toNum(previous.outputLoad.guard.guardedRate, 0) : 0;
+  const currentAvgGuardScale = current.outputLoad && current.outputLoad.guard && current.outputLoad.guard.scale
+    ? toNum(current.outputLoad.guard.scale.avg, 1)
+    : 1;
+  const previousAvgGuardScale = previous.outputLoad && previous.outputLoad.guard && previous.outputLoad.guard.scale
+    ? toNum(previous.outputLoad.guard.scale.avg, 1)
+    : 1;
   // R11 Evo 1: Profile-adaptive noteCount tolerance -- explosive profiles produce
   // highly variable note counts, ambient profiles are more stable.
   const PROFILE_NOTE_TOLERANCE = { explosive: 0.50, atmospheric: 0.40, ambient: 0.25, minimal: 0.25 };
   const effectiveNoteTolerance = (PROFILE_NOTE_TOLERANCE[current.activeProfile] || TOLERANCES.noteCountRatio) * crossProfileScale;
   const notePass = noteRatio <= effectiveNoteTolerance;
   if (!notePass) drifted++;
-  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: effectiveNoteTolerance, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, currentNotesPerBeat: curRate, previousNotesPerBeat: prevRate, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
+  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: effectiveNoteTolerance, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, currentNotesPerBeat: curRate, previousNotesPerBeat: prevRate, currentGuardedRate, previousGuardedRate, currentAvgGuardScale, previousAvgGuardScale, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
 
   // Pitch entropy
   const pitchDelta = Math.abs(current.pitchEntropy - previous.pitchEntropy);
@@ -623,6 +633,16 @@ function explainDrift(comparison, current, previous) {
         const currBalance = current.noteCount.L1 / Math.max(1, current.noteCount.total);
         if (Math.abs(prevBalance - currBalance) > 0.1) {
           explain.layerShift = `L1/L2 balance shifted: ${(prevBalance * 100).toFixed(0)}%/${((1 - prevBalance) * 100).toFixed(0)}% -> ${(currBalance * 100).toFixed(0)}%/${((1 - currBalance) * 100).toFixed(0)}%`;
+        }
+        const currentGuard = current.outputLoad && current.outputLoad.guard ? current.outputLoad.guard : null;
+        const previousGuard = previous.outputLoad && previous.outputLoad.guard ? previous.outputLoad.guard : null;
+        if (currentGuard || previousGuard) {
+          explain.outputLoadGuard = `guarded entry rate ${(toNum(previousGuard && previousGuard.guardedRate, 0) * 100).toFixed(1)}% -> ${(toNum(currentGuard && currentGuard.guardedRate, 0) * 100).toFixed(1)}%, avg guard scale ${toNum(previousGuard && previousGuard.scale && previousGuard.scale.avg, 1).toFixed(3)} -> ${toNum(currentGuard && currentGuard.scale && currentGuard.scale.avg, 1).toFixed(3)}`;
+        }
+        const currentProgress = current.outputLoad && current.outputLoad.progressIntegrity ? current.outputLoad.progressIntegrity : null;
+        const previousProgress = previous.outputLoad && previous.outputLoad.progressIntegrity ? previous.outputLoad.progressIntegrity : null;
+        if ((currentProgress && currentProgress.integrity !== 'healthy') || (previousProgress && previousProgress.integrity !== 'healthy')) {
+          explain.progressIntegrity = `trace progress integrity ${previousProgress ? previousProgress.integrity : 'healthy'} -> ${currentProgress ? currentProgress.integrity : 'healthy'}`;
         }
         break;
       }

@@ -199,6 +199,11 @@ function generateNarrative() {
         lines.push(`- **Section ${section.section}**: ${section.uniqueBeatKeys} unique traced beats across ${section.entryCount} entries`);
       }
     }
+    if (summary.progressIntegrity) {
+      const progressIntegrity = summary.progressIntegrity;
+      lines.push('');
+      lines.push(`Trace progress integrity closed **${progressIntegrity.integrity}** with **${progressIntegrity.pairedBeatKeys}** paired beat keys, **${progressIntegrity.duplicateLayerBeatKeys}** duplicate layer-key collisions, and **${progressIntegrity.l1ProgressRegressions + progressIntegrity.l1TimeRegressions}** L1 ordering regressions.`);
+    }
     lines.push('');
   }
 
@@ -251,6 +256,9 @@ function generateNarrative() {
       lines.push('');
       lines.push(`The emitted trace contains **${totalTraceEntries} beat entries**, but the regime controller advanced on only **${cadence.analysisTicks} ${cadence.cadence || 'analysis'} ticks**.`);
       lines.push(`**${cadence.snapshotReuseEntries}** entries reused an existing profiler snapshot and **${cadence.warmupEntries}** entries landed during warmup.`);
+      if (toNum(cadence.escalatedEntries, 0) > 0) {
+        lines.push(`Beat-level escalation refreshed the profiler on **${toNum(cadence.escalatedEntries, 0)}** traced entries.`);
+      }
       if (readiness.runResolvedRegimeCounts && typeof readiness.runResolvedRegimeCounts === 'object') {
         const resolvedCounts = Object.entries(readiness.runResolvedRegimeCounts)
           .sort((a, b) => b[1] - a[1])
@@ -277,12 +285,22 @@ function generateNarrative() {
         if (phaseTelemetry.maxStaleBeats > 0 || phaseTelemetry.zeroCouplingCoverageEntries > 0) {
           lines.push(`The longest stale phase run was **${phaseTelemetry.maxStaleBeats}** beats, and **${phaseTelemetry.zeroCouplingCoverageEntries}** entries reported zero phase-coupling coverage.`);
         }
+        if (phaseTelemetry.pairStateCounts) {
+          const available = toNum(phaseTelemetry.pairStateCounts.available, 0);
+          const varianceGated = toNum(phaseTelemetry.pairStateCounts['variance-gated'], 0);
+          const missing = toNum(phaseTelemetry.pairStateCounts.missing, 0);
+          lines.push(`Phase-surface availability resolved to **${available} available**, **${varianceGated} variance-gated**, and **${missing} missing** pair observations across the trace.`);
+        }
       } else if (summary.telemetryHealth) {
         lines.push('Phase telemetry was **missing from the trace payload**, so phase-surface diagnostics remain untrusted for this run.');
       }
       if (summary.telemetryHealth) {
         const telemetryHealth = summary.telemetryHealth;
         lines.push(`Telemetry health scored **${dec(toNum(telemetryHealth.score, 0), 3)}** with **${toNum(telemetryHealth.underSeenPairCount, 0)}** under-seen controller pairs and reconciliation gap **${dec(toNum(telemetryHealth.maxGap, 0), 3)}**.`);
+      }
+      if (summary.outputLoadGuard) {
+        const outputLoadGuard = summary.outputLoadGuard;
+        lines.push(`The output-load governor intervened on **${toNum(outputLoadGuard.guardedEntries, 0)}** entries (${pct(toNum(outputLoadGuard.guardedRate, 0))}), with average guard scale **${dec(toNum(outputLoadGuard.scale && outputLoadGuard.scale.avg, 1), 3)}** and **${toNum(outputLoadGuard.hardGuardEntries, 0)}** hard clamps.`);
       }
       lines.push('');
     }

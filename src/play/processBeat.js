@@ -4,6 +4,30 @@ const _PROFILE = process.argv.includes('--trace');
 const _STAGE_NAMES = ['beat-setup','intent','entropy','phase','climax','envelope','silhouette','rest','complement','tension-cadence','negotiation','probability-adjust','emission','post-beat'];
 const _marks = new Array(15); // 15 boundaries for 14 stages
 
+function _getOutputLoadGuardConfig() {
+  let profile = null;
+  try {
+    profile = conductorConfig.getActiveProfile();
+  } catch {
+    profile = null;
+  }
+  const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
+  return {
+    windowSeconds: analysis && Number.isFinite(analysis.outputLoadWindowSeconds) ? analysis.outputLoadWindowSeconds : 1.25,
+    softNotesPerSecond: analysis && Number.isFinite(analysis.outputLoadSoftNotesPerSecond) ? analysis.outputLoadSoftNotesPerSecond : 90,
+    hardNotesPerSecond: analysis && Number.isFinite(analysis.outputLoadHardNotesPerSecond) ? analysis.outputLoadHardNotesPerSecond : 140,
+    softScale: analysis && Number.isFinite(analysis.outputLoadSoftScale) ? analysis.outputLoadSoftScale : 0.88,
+    hardScale: analysis && Number.isFinite(analysis.outputLoadHardScale) ? analysis.outputLoadHardScale : 0.72,
+    softBeatCap: analysis && Number.isFinite(analysis.outputLoadSoftBeatCap) ? analysis.outputLoadSoftBeatCap : 44,
+    hardBeatCap: analysis && Number.isFinite(analysis.outputLoadHardBeatCap) ? analysis.outputLoadHardBeatCap : 64
+  };
+}
+
+function _mergeGuardSeverity(left, right) {
+  const severityOrder = { normal: 0, soft: 1, hard: 2 };
+  return severityOrder[right] > severityOrder[left] ? right : left;
+}
+
 /**
  * Process one beat for the given layer. Handles setup, cross-layer orchestration,
  * post-beat recording, and trust-score updates. Returns final probabilities for micro-unit loop.
@@ -134,9 +158,41 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     stutterProb = clamp(stutterProb * 1.04, 0, 1);
   }
 
+  const outputLoadGuardConfig = _getOutputLoadGuardConfig();
+  const recentPrimaryNoteCount = absoluteTimeWindow.countNotes({ layer, windowSeconds: outputLoadGuardConfig.windowSeconds });
+  const recentPrimaryNotesPerSecond = outputLoadGuardConfig.windowSeconds > 0
+    ? recentPrimaryNoteCount / outputLoadGuardConfig.windowSeconds
+    : recentPrimaryNoteCount;
+  let outputLoadSeverity = 'normal';
+  let preEmissionGuardScale = 1;
+  if (recentPrimaryNotesPerSecond >= outputLoadGuardConfig.hardNotesPerSecond) {
+    preEmissionGuardScale = outputLoadGuardConfig.hardScale;
+    outputLoadSeverity = 'hard';
+  } else if (recentPrimaryNotesPerSecond >= outputLoadGuardConfig.softNotesPerSecond) {
+    preEmissionGuardScale = outputLoadGuardConfig.softScale;
+    outputLoadSeverity = 'soft';
+  }
+  if (preEmissionGuardScale < 1) {
+    playProb = clamp(playProb * preEmissionGuardScale, 0, 1);
+    stutterProb = clamp(stutterProb * m.max(0.75, preEmissionGuardScale * 0.95), 0, 1);
+  }
+
   // -- [stage: emission] -----------------------------------------
   if (_PROFILE) _marks[12] = process.hrtime.bigint();
-  playNotes('beat', { playProb, stutterProb });
+  const beatScheduledEvents = playNotes('beat', { playProb, stutterProb });
+  const beatScheduledNotes = Number.isFinite(beatScheduledEvents) ? m.max(0, m.round(beatScheduledEvents / 2)) : 0;
+  let beatGuardScale = 1;
+  if (beatScheduledNotes >= outputLoadGuardConfig.hardBeatCap) {
+    beatGuardScale = outputLoadGuardConfig.hardScale;
+    outputLoadSeverity = _mergeGuardSeverity(outputLoadSeverity, 'hard');
+  } else if (beatScheduledNotes >= outputLoadGuardConfig.softBeatCap) {
+    beatGuardScale = outputLoadGuardConfig.softScale;
+    outputLoadSeverity = _mergeGuardSeverity(outputLoadSeverity, 'soft');
+  }
+  if (beatGuardScale < 1) {
+    playProb = clamp(playProb * beatGuardScale, 0, 1);
+    stutterProb = clamp(stutterProb * m.max(0.75, beatGuardScale * 0.95), 0, 1);
+  }
 
   // -- [stage: post-beat] ----------------------------------------
   if (_PROFILE) _marks[13] = process.hrtime.bigint();
@@ -150,6 +206,20 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   crossLayerBeatRecord({
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
     clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1,
+    outputLoadGuard: {
+      windowSeconds: Number(outputLoadGuardConfig.windowSeconds.toFixed(3)),
+      recentPrimaryNoteCount,
+      recentPrimaryNotesPerSecond: Number(recentPrimaryNotesPerSecond.toFixed(4)),
+      beatScheduledNotes,
+      preEmissionScale: Number(preEmissionGuardScale.toFixed(4)),
+      beatScale: Number(beatGuardScale.toFixed(4)),
+      scale: Number(m.min(preEmissionGuardScale, beatGuardScale).toFixed(4)),
+      severity: outputLoadSeverity,
+      softNotesPerSecond: outputLoadGuardConfig.softNotesPerSecond,
+      hardNotesPerSecond: outputLoadGuardConfig.hardNotesPerSecond,
+      softBeatCap: outputLoadGuardConfig.softBeatCap,
+      hardBeatCap: outputLoadGuardConfig.hardBeatCap
+    },
     stageTiming: /** @type {Record<string, number> | null} */ (_PROFILE ? (() => { _marks[14] = process.hrtime.bigint(); const t = {}; for (let i = 0; i < 14; i++) t[_STAGE_NAMES[i]] = Number(_marks[i + 1] - _marks[i]) / 1e6; return t; })() : null)
   });
 

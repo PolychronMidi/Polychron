@@ -50,6 +50,13 @@ function percentile(sortedValues, p) {
   return sortedValues[lo] * (1 - frac) + sortedValues[hi] * frac;
 }
 
+function compareProgress(left, right) {
+  if (left.section !== right.section) return left.section - right.section;
+  if (left.phrase !== right.phrase) return left.phrase - right.phrase;
+  if (left.measure !== right.measure) return left.measure - right.measure;
+  return left.beat - right.beat;
+}
+
 function summarizeTail(values, thresholds) {
   if (!Array.isArray(values) || values.length === 0) {
     return { p90: null, p95: null, exceedanceRate: {} };
@@ -125,6 +132,22 @@ function summarizeTrace(entries, manifest) {
   let phaseZeroCoverageEntries = 0;
   let phaseCouplingAvailablePairsMax = 0;
   let phaseCouplingMissingPairsMax = 0;
+  const phasePairStateCounts = {};
+  let phaseVarianceGatedEntries = 0;
+  const layerBeatKeySets = { L1: new Set(), L2: new Set() };
+  const beatKeyCounts = {};
+  let duplicateLayerBeatKeys = 0;
+  let l1ProgressRegressions = 0;
+  let l1TimeRegressions = 0;
+  let lastL1Progress = null;
+  let lastL1TimeMs = null;
+  let profilerEscalatedEntries = 0;
+  const profilerAnalysisSources = {};
+  const outputLoadGuardScale = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const outputLoadGuardRecentRate = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  const outputLoadGuardBeatScheduled = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+  let outputLoadGuardedEntries = 0;
+  let outputLoadHardEntries = 0;
   const forcedTransitionEventIds = new Set();
   const forcedTransitionEvents = [];
   // R34 E6: Transition readiness accumulators (per-beat gap + velocity tracking)
@@ -182,6 +205,13 @@ function summarizeTrace(entries, manifest) {
     if (firstBeatKey === null && typeof e.beatKey === 'string') firstBeatKey = e.beatKey;
     if (typeof e.beatKey === 'string') lastBeatKey = e.beatKey;
     if (typeof e.beatKey === 'string') uniqueBeatKeys.add(e.beatKey);
+    if (typeof e.beatKey === 'string' && e.beatKey) {
+      beatKeyCounts[e.beatKey] = (beatKeyCounts[e.beatKey] || 0) + 1;
+      if (layer === 'L1' || layer === 'L2') {
+        if (layerBeatKeySets[layer].has(e.beatKey)) duplicateLayerBeatKeys++;
+        else layerBeatKeySets[layer].add(e.beatKey);
+      }
+    }
     if (typeof e.beatKey === 'string' && e.beatKey.indexOf(':') !== -1) {
       const parsedSection = parseInt(e.beatKey.split(':')[0], 10);
       if (Number.isFinite(parsedSection)) {
@@ -195,6 +225,18 @@ function summarizeTrace(entries, manifest) {
     if (Number.isFinite(timeMs)) {
       if (firstTimeMs === null || timeMs < firstTimeMs) firstTimeMs = timeMs;
       if (lastTimeMs === null || timeMs > lastTimeMs) lastTimeMs = timeMs;
+      if (layer === 'L1') {
+        if (lastL1TimeMs !== null && timeMs + 0.001 < lastL1TimeMs) l1TimeRegressions++;
+        lastL1TimeMs = timeMs;
+      }
+    }
+    if (layer === 'L1' && typeof e.beatKey === 'string' && e.beatKey.indexOf(':') !== -1) {
+      const parts = e.beatKey.split(':').map(function(part) { return parseInt(part, 10); });
+      if (parts.length >= 4 && parts.every(function(value) { return Number.isFinite(value); })) {
+        const progress = { section: parts[0], phrase: parts[1], measure: parts[2], beat: parts[3] };
+        if (lastL1Progress && compareProgress(progress, lastL1Progress) <= 0) l1ProgressRegressions++;
+        lastL1Progress = progress;
+      }
     }
 
     const snap = e.snap && typeof e.snap === 'object' ? e.snap : {};
@@ -204,6 +246,10 @@ function summarizeTrace(entries, manifest) {
     if (e.profilerTelemetry && typeof e.profilerTelemetry === 'object') {
       const pt = e.profilerTelemetry;
       if (typeof pt.cadence === 'string' && pt.cadence) profilerCadence = pt.cadence;
+      if (pt.cadenceEscalated) profilerEscalatedEntries++;
+      if (typeof pt.analysisSource === 'string' && pt.analysisSource) {
+        profilerAnalysisSources[pt.analysisSource] = (profilerAnalysisSources[pt.analysisSource] || 0) + 1;
+      }
       if (typeof pt.analysisTick === 'number' && Number.isFinite(pt.analysisTick) && pt.analysisTick > 0) {
         uniqueProfilerAnalysisTicks.add(pt.analysisTick);
         if (lastProfilerAnalysisTick !== null && pt.analysisTick === lastProfilerAnalysisTick) {
@@ -225,6 +271,7 @@ function summarizeTrace(entries, manifest) {
     }
     if (e.phaseTelemetry && typeof e.phaseTelemetry === 'object') {
       const phaseTelemetry = e.phaseTelemetry;
+      let varianceGated = false;
       phaseTelemetryEntries++;
       if (phaseTelemetry.phaseSignalValid) phaseTelemetryValidEntries++;
       else phaseSignalInvalidEntries++;
@@ -243,6 +290,30 @@ function summarizeTrace(entries, manifest) {
       if (typeof phaseTelemetry.phaseCouplingMissingPairs === 'number') {
         phaseCouplingMissingPairsMax = Math.max(phaseCouplingMissingPairsMax, phaseTelemetry.phaseCouplingMissingPairs);
       }
+      if (phaseTelemetry.pairStates && typeof phaseTelemetry.pairStates === 'object') {
+        const pairStateKeys = Object.keys(phaseTelemetry.pairStates);
+        for (let pairIndex = 0; pairIndex < pairStateKeys.length; pairIndex++) {
+          const state = phaseTelemetry.pairStates[pairStateKeys[pairIndex]];
+          if (typeof state !== 'string' || !state) continue;
+          phasePairStateCounts[state] = (phasePairStateCounts[state] || 0) + 1;
+          if (state === 'variance-gated') varianceGated = true;
+        }
+      }
+      if (varianceGated) phaseVarianceGatedEntries++;
+    }
+
+    if (e.outputLoadGuard && typeof e.outputLoadGuard === 'object') {
+      const guard = e.outputLoadGuard;
+      const scale = toNum(guard.scale, NaN);
+      const recentRate = toNum(guard.recentPrimaryNotesPerSecond, NaN);
+      const beatScheduledNotes = toNum(guard.beatScheduledNotes, NaN);
+      if (Number.isFinite(scale)) {
+        updateMinMax(outputLoadGuardScale, scale);
+        if (scale < 0.999) outputLoadGuardedEntries++;
+      }
+      if (Number.isFinite(recentRate)) updateMinMax(outputLoadGuardRecentRate, recentRate);
+      if (Number.isFinite(beatScheduledNotes)) updateMinMax(outputLoadGuardBeatScheduled, beatScheduledNotes);
+      if (guard.severity === 'hard') outputLoadHardEntries++;
     }
 
     if (e.forcedTransitionEvent && typeof e.forcedTransitionEvent === 'object') {
@@ -839,6 +910,30 @@ function summarizeTrace(entries, manifest) {
       })
     }
     : null;
+  const overfullBeatKeys = Object.keys(beatKeyCounts).filter(function(key) { return beatKeyCounts[key] > 2; }).length;
+  const pairedBeatKeys = Object.keys(beatKeyCounts).filter(function(key) { return beatKeyCounts[key] === 2; }).length;
+  const progressIntegrity = {
+    duplicateLayerBeatKeys,
+    overfullBeatKeys,
+    l1ProgressRegressions,
+    l1TimeRegressions,
+    pairedBeatKeys,
+    pairedBeatKeyRatio: uniqueBeatKeys.size > 0 ? Number((pairedBeatKeys / uniqueBeatKeys.size).toFixed(4)) : null,
+    integrity: duplicateLayerBeatKeys > 0 || overfullBeatKeys > 0 || l1ProgressRegressions > 0 || l1TimeRegressions > 0
+      ? 'critical'
+      : (uniqueBeatKeys.size > 0 && pairedBeatKeys < uniqueBeatKeys.size * 0.75 ? 'warning' : 'healthy')
+  };
+  const outputLoadGuard = outputLoadGuardScale.count > 0
+    ? {
+      guardedEntries: outputLoadGuardedEntries,
+      guardedRate: entries.length > 0 ? Number((outputLoadGuardedEntries / entries.length).toFixed(4)) : 0,
+      hardGuardEntries: outputLoadHardEntries,
+      hardGuardRate: entries.length > 0 ? Number((outputLoadHardEntries / entries.length).toFixed(4)) : 0,
+      scale: finalizeMinMax(outputLoadGuardScale),
+      recentPrimaryNotesPerSecond: finalizeMinMax(outputLoadGuardRecentRate),
+      beatScheduledNotes: finalizeMinMax(outputLoadGuardBeatScheduled)
+    }
+    : null;
   const phaseTelemetry = phaseTelemetryEntries > 0
     ? {
       entries: phaseTelemetryEntries,
@@ -852,9 +947,12 @@ function summarizeTrace(entries, manifest) {
       zeroCouplingCoverageEntries: phaseZeroCoverageEntries,
       maxAvailablePairs: phaseCouplingAvailablePairsMax,
       maxMissingPairs: phaseCouplingMissingPairsMax,
+      varianceGatedEntries: phaseVarianceGatedEntries,
+      varianceGatedRate: Number((phaseVarianceGatedEntries / phaseTelemetryEntries).toFixed(4)),
+      pairStateCounts: Object.keys(phasePairStateCounts).length > 0 ? phasePairStateCounts : null,
       integrity: phaseSignalInvalidEntries > 0 || phaseZeroCoverageEntries === phaseTelemetryEntries
         ? 'critical'
-        : (phaseTelemetryMaxStaleBeats > 32 || phaseZeroCoverageEntries > 0 ? 'warning' : 'healthy')
+        : (phaseTelemetryMaxStaleBeats > 32 || phaseZeroCoverageEntries > 0 || phaseVarianceGatedEntries > 0 ? 'warning' : 'healthy')
     }
     : null;
   const telemetryHealth = (() => {
@@ -865,12 +963,18 @@ function summarizeTrace(entries, manifest) {
     const sectionCoverageRatio = sectionCoverage && typeof sectionCoverage.coverageRatio === 'number'
       ? sectionCoverage.coverageRatio
       : 1;
+    const progressPenalty = progressIntegrity.integrity === 'critical' ? 0.12 : progressIntegrity.integrity === 'warning' ? 0.05 : 0;
+    const phaseAvailabilityPenalty = phaseTelemetry && typeof phaseTelemetry.varianceGatedRate === 'number'
+      ? clamp(phaseTelemetry.varianceGatedRate / 0.85, 0, 1) * 0.04
+      : 0;
     const score = clamp(
       (phaseTelemetryPresent ? 0 : 0.45) +
       (phaseIntegrity === 'critical' ? 0.25 : phaseIntegrity === 'warning' ? 0.12 : 0) +
       clamp(underSeenPairCount / 4, 0, 1) * 0.20 +
       clamp(maxGap / 0.5, 0, 1) * 0.08 +
-      clamp((1 - sectionCoverageRatio) / 0.34, 0, 1) * 0.02,
+      clamp((1 - sectionCoverageRatio) / 0.34, 0, 1) * 0.02 +
+      progressPenalty +
+      phaseAvailabilityPenalty,
       0,
       1
     );
@@ -881,6 +985,7 @@ function summarizeTrace(entries, manifest) {
       underSeenPairCount,
       maxGap: Number(toNum(maxGap, 0).toFixed(4)),
       sectionCoverageRatio: Number(toNum(sectionCoverageRatio, 1).toFixed(4)),
+      progressIntegrity: progressIntegrity.integrity,
       profilerBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
       profilerBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
     };
@@ -954,12 +1059,15 @@ function summarizeTrace(entries, manifest) {
     couplingHomeostasis: couplingHomeostasisState,
     // R32 E5: Axis energy equilibrator per-regime telemetry
     axisEnergyEquilibrator: axisEnergyEquilibratorState,
+    outputLoadGuard,
     profilerCadence: {
       cadence: profilerCadence || 'unknown',
       analysisTicks: uniqueProfilerAnalysisTicks.size,
       regimeTicks: uniqueProfilerRegimeTicks.size,
       snapshotReuseEntries: profilerSnapshotReuseEntries,
       warmupEntries: profilerWarmupEntries,
+      escalatedEntries: profilerEscalatedEntries,
+      analysisSources: Object.keys(profilerAnalysisSources).length > 0 ? profilerAnalysisSources : null,
       telemetryBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
       telemetryBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
     },
@@ -1042,6 +1150,7 @@ function summarizeTrace(entries, manifest) {
     cadenceMonopoly,
     phaseTelemetry,
     telemetryHealth,
+    progressIntegrity,
     sectionCoverage,
     adaptiveTelemetryReconciliation,
     nonNudgeableGains,

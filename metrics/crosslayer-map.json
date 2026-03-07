@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-07T22:15:39.431Z",
+    "generated": "2026-03-07T23:43:38.614Z",
     "moduleCount": 40,
-    "edgeCount": 54,
+    "edgeCount": 55,
     "atgChannelCount": 15
   },
   "modules": [
@@ -528,6 +528,7 @@
       "atgChannels": [],
       "interactions": [
         "cadenceAlignment",
+        "contextualTrust",
         "explainabilityBus",
         "negotiationEngine",
         "restSynchronizer"
@@ -866,6 +867,10 @@
     {
       "from": "adaptiveTrustScores",
       "to": "cadenceAlignment"
+    },
+    {
+      "from": "adaptiveTrustScores",
+      "to": "contextualTrust"
     },
     {
       "from": "adaptiveTrustScores",

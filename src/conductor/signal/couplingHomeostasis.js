@@ -141,6 +141,7 @@ couplingHomeostasis = (() => {
   let _densityFlickerClampPressure = 0;
   let _densityFlickerOverridePressure = 0;
   let _recoveryAxisHandOffPressure = 0;
+  let _shortRunRecoveryBias = 0;
   /** @type {string[]} */
   let _recoveryDominantAxes = [];
   // R21 E6: Invoke tracking for beat processing diagnostics
@@ -521,6 +522,17 @@ couplingHomeostasis = (() => {
       0,
       1
     );
+    _shortRunRecoveryBias = Number((Number.isFinite(totalSections) && totalSections > 0 && totalSections <= 5 && _tickCount <= 96
+      ? clamp(
+        _tailRecoveryHandshake * 0.40 +
+        _densityFlickerClampPressure * 0.32 +
+        (_floorRecoveryTicksRemaining > 0 ? 0.18 : 0) +
+        clamp((_tailHotspotCount - 1) / 5, 0, 1) * 0.10,
+        0,
+        0.65
+      )
+      : 0).toFixed(4));
+    _recoveryAxisHandOffPressure = clamp(_recoveryAxisHandOffPressure + _shortRunRecoveryBias * 0.45, 0, 1);
     _recoveryDominantAxes = _dominantTailPair && _dominantTailPair.indexOf('-') !== -1
       ? _dominantTailPair.split('-')
       : [];
@@ -752,6 +764,7 @@ couplingHomeostasis = (() => {
       densityFlickerClampPressure: Number(_densityFlickerClampPressure.toFixed(4)),
       densityFlickerOverridePressure: Number(_densityFlickerOverridePressure.toFixed(4)),
       recoveryAxisHandOffPressure: Number(_recoveryAxisHandOffPressure.toFixed(4)),
+      shortRunRecoveryBias: Number(_shortRunRecoveryBias.toFixed(4)),
       recoveryDominantAxes: _recoveryDominantAxes.slice(),
       dominantTailPair: _dominantTailPair,
       tailHotspotCount: _tailHotspotCount,
@@ -788,6 +801,7 @@ couplingHomeostasis = (() => {
     _densityFlickerClampPressure = 0;
     _densityFlickerOverridePressure = 0;
     _recoveryAxisHandOffPressure = 0;
+    _shortRunRecoveryBias = 0;
     _tailRecoveryCeilingPressure = 0;
     _dominantTailPair = '';
     _recoveryDominantAxes = [];

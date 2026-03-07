@@ -43,6 +43,7 @@ layerPass = (() => {
   function runLayerPass(layerId, phraseFamily, { withConductorTick = false } = {}, deps) {
     const { boot, composerCtx } = deps;
     timeStream.setBounds('measure', measuresPerPhrase);
+    let processedBeatCount = 0;
 
     for (measureIndex = 0; measureIndex < measuresPerPhrase; measureIndex++) {
       timeStream.setPosition('measure', measureIndex);
@@ -73,6 +74,7 @@ layerPass = (() => {
       let measureConductorCtx = null;
 
       for (beatIndex = 0; beatIndex < numerator; beatIndex++) {
+        processedBeatCount++;
         timeStream.setPosition('beat', beatIndex);
         if (!measureConductorCtx) {
           measureConductorCtx = mainBootstrap.getConductorProbabilities();
@@ -121,6 +123,8 @@ layerPass = (() => {
       }
       process.stderr.write('[main]     M' + measureIndex + ' done (' + ((Date.now() - _mT) / 1000).toFixed(1) + 's)\n');
     }
+
+    return processedBeatCount;
   }
 
   return {

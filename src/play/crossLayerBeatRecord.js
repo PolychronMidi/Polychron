@@ -8,6 +8,7 @@
  * @param {{ layer: string, clAbsMs: number, clIntent: any, clPhase: any, clNegotiation: any,
  *           clBreathing: any, clTension: number, clCadence: any, clPhaseSnapshot: any,
  *           clRest: any, clEntropy: any, stutterProb: number, isL1: boolean,
+ *           outputLoadGuard?: any,
  *           stageTiming: Object|null }} opts
  */
 const _traceEnabled = process.argv.includes('--trace');
@@ -15,6 +16,10 @@ let _traceSnapBeatKey = '';
 let _traceCachedConductorSnap = null;
 let _traceCachedDynamicsSnap = null;
 let _traceCachedForcedTransitionEvent = null;
+let _traceLastL1Progress = null;
+let _traceLastL1TimeMs = null;
+const _traceLayerBeatKeys = new Set();
+const _traceBeatKeyCounts = {};
 
 // Cadence alignment drought tracker: counts consecutive beats without a
 // successful cadence result. After DROUGHT_THRESHOLD beats of gatedNoResult/
@@ -25,10 +30,45 @@ const CADENCE_DROUGHT_THRESHOLD = 20;
 let _restDroughtBeats = 0;
 const REST_DROUGHT_THRESHOLD = 16;
 
+function _compareTraceProgress(left, right) {
+  if (left.section !== right.section) return left.section - right.section;
+  if (left.phrase !== right.phrase) return left.phrase - right.phrase;
+  if (left.measure !== right.measure) return left.measure - right.measure;
+  return left.beat - right.beat;
+}
+
+function _validateTraceProgress(layer, beatKey, timeMs) {
+  const layerBeatKey = layer + ':' + beatKey;
+  if (_traceLayerBeatKeys.has(layerBeatKey)) {
+    throw new Error('crossLayerBeatRecord: duplicate trace payload for ' + layerBeatKey);
+  }
+  _traceLayerBeatKeys.add(layerBeatKey);
+  _traceBeatKeyCounts[beatKey] = (_traceBeatKeyCounts[beatKey] || 0) + 1;
+  if (_traceBeatKeyCounts[beatKey] > 2) {
+    throw new Error('crossLayerBeatRecord: beat key ' + beatKey + ' exceeded expected layer coverage');
+  }
+  if (layer !== 'L1') return;
+  const currentProgress = {
+    section: sectionIndex,
+    phrase: phraseIndex,
+    measure: measureIndex,
+    beat: beatIndex
+  };
+  if (_traceLastL1Progress && _compareTraceProgress(currentProgress, _traceLastL1Progress) <= 0) {
+    throw new Error('crossLayerBeatRecord: non-monotonic L1 trace progress at ' + beatKey);
+  }
+  if (_traceLastL1TimeMs !== null && Number.isFinite(timeMs) && timeMs + 0.001 < _traceLastL1TimeMs) {
+    throw new Error('crossLayerBeatRecord: regressive L1 trace timestamp at ' + beatKey);
+  }
+  _traceLastL1Progress = currentProgress;
+  if (Number.isFinite(timeMs)) _traceLastL1TimeMs = timeMs;
+}
+
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const {
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
     clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1,
+    outputLoadGuard,
     stageTiming
   } = opts;
   const { requireFiniteNumber, requireUnitInterval } = mainBootstrap;
@@ -163,9 +203,10 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   // Conductor + dynamics snapshots are identical for L1 and L2 within the
   // same beat, so cache them on the L1 pass and reuse for L2.
   if (_traceEnabled) {
+    _validateTraceProgress(layer, clBeatKey, clAbsMs);
     if (_traceSnapBeatKey !== clBeatKey) {
       _traceCachedConductorSnap = conductorState.getSnapshot();
-      _traceCachedDynamicsSnap = systemDynamicsProfiler.getSnapshot();
+      _traceCachedDynamicsSnap = systemDynamicsProfiler.ensureBeatAnalysis(Boolean(isL1));
       _traceCachedForcedTransitionEvent = safePreBoot.call(() => regimeClassifier.consumeForcedTransitionEvent(), null);
       _traceSnapBeatKey = clBeatKey;
     }
@@ -175,7 +216,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       trajectorySamples: Number.isFinite(_traceCachedDynamicsSnap.trajectorySamples) ? _traceCachedDynamicsSnap.trajectorySamples : 0,
       telemetryBeatSpan: Number.isFinite(_traceCachedDynamicsSnap.telemetryBeatSpan) ? _traceCachedDynamicsSnap.telemetryBeatSpan : 1,
       warmupTicksRemaining: Number.isFinite(_traceCachedDynamicsSnap.warmupTicksRemaining) ? _traceCachedDynamicsSnap.warmupTicksRemaining : 0,
-      cadence: typeof _traceCachedDynamicsSnap.profilerCadence === 'string' ? _traceCachedDynamicsSnap.profilerCadence : 'unknown'
+      cadence: typeof _traceCachedDynamicsSnap.profilerCadence === 'string' ? _traceCachedDynamicsSnap.profilerCadence : 'unknown',
+      cadenceEscalated: Boolean(_traceCachedDynamicsSnap.cadenceEscalated),
+      analysisSource: typeof _traceCachedDynamicsSnap.analysisSource === 'string' ? _traceCachedDynamicsSnap.analysisSource : 'unknown'
     } : null;
     const tracePayload = {
       beatKey: clBeatKey,
@@ -197,7 +240,10 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
         phaseSignalValid: Boolean(_traceCachedDynamicsSnap.phaseSignalValid),
         phaseCouplingCoverage: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingCoverage) ? _traceCachedDynamicsSnap.phaseCouplingCoverage : 0,
         phaseCouplingAvailablePairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingAvailablePairs) ? _traceCachedDynamicsSnap.phaseCouplingAvailablePairs : 0,
-        phaseCouplingMissingPairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingMissingPairs) ? _traceCachedDynamicsSnap.phaseCouplingMissingPairs : 0
+        phaseCouplingMissingPairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingMissingPairs) ? _traceCachedDynamicsSnap.phaseCouplingMissingPairs : 0,
+        pairStates: _traceCachedDynamicsSnap.phasePairStates && typeof _traceCachedDynamicsSnap.phasePairStates === 'object'
+          ? _traceCachedDynamicsSnap.phasePairStates
+          : null
       } : null,
       // R18 E5: Adaptive target state for coupling drift diagnostics
       couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
@@ -215,6 +261,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       // R34 E6: Per-beat transition readiness for coherent entry diagnosis
       transitionReadiness: safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null),
       profilerTelemetry,
+      outputLoadGuard: outputLoadGuard || null,
       forcedTransitionEvent: _traceCachedForcedTransitionEvent,
       iterBudget: setUnitTimingBudgetStats.getLastBeat(),
       stageTiming: stageTiming

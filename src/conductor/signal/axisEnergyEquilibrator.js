@@ -59,7 +59,7 @@ axisEnergyEquilibrator = (() => {
   // -- Shared config --
   const _BASELINE_MIN = 0.04;
   const _BASELINE_MAX = 0.40;
-  const _WARMUP = 16;
+  const _WARMUP_DEFAULT = 16;
   const _PHASE_SURFACE_RATIO = 1.6;
   const _PHASE_SURFACE_ABS_MIN = 0.18;
   const _TRUST_SURFACE_RATIO = 1.45;
@@ -112,6 +112,7 @@ axisEnergyEquilibrator = (() => {
   let _coherentHotspotActuationBeats = 0;
   let _coherentHotspotPairAdj = 0;
   let _coherentHotspotAxisAdj = 0;
+  let _lastWarmupTicks = _WARMUP_DEFAULT;
 
   // Dimensions + pair mapping (precomputed)
   const _ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
@@ -129,6 +130,21 @@ axisEnergyEquilibrator = (() => {
     for (let p = 0; p < _ALL_PAIRS.length; p++) {
       if (_ALL_PAIRS[p].indexOf(axis) !== -1) _axisToPairs[axis].push(_ALL_PAIRS[p]);
     }
+  }
+
+  function _getWarmupTicks() {
+    let profile = null;
+    try {
+      profile = conductorConfig.getActiveProfile();
+    } catch {
+      profile = null;
+    }
+    const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
+    const configuredWarmup = analysis && Number.isFinite(analysis.warmupTicks)
+      ? m.round(analysis.warmupTicks)
+      : 6;
+    const shortRunCompression = Number.isFinite(totalSections) && totalSections > 0 && totalSections <= 5 ? 2 : 0;
+    return clamp(configuredWarmup + 2 - shortRunCompression, 4, _WARMUP_DEFAULT);
   }
 
   function refresh() {
@@ -157,12 +173,16 @@ axisEnergyEquilibrator = (() => {
       }
     }
 
-    if (_beatCount < _WARMUP) return;
+    _lastWarmupTicks = _getWarmupTicks();
+    if (_beatCount < _lastWarmupTicks) return;
 
     const giniMult = axisGini > _GINI_ESCALATION ? 1.5 : 1.0;
     const homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
     const recoveryAxisHandOffPressure = homeostasisState && typeof homeostasisState.recoveryAxisHandOffPressure === 'number'
       ? homeostasisState.recoveryAxisHandOffPressure
+      : 0;
+    const shortRunRecoveryBias = homeostasisState && typeof homeostasisState.shortRunRecoveryBias === 'number'
+      ? homeostasisState.shortRunRecoveryBias
       : 0;
     const recoveryDominantAxes = homeostasisState && Array.isArray(homeostasisState.recoveryDominantAxes)
       ? homeostasisState.recoveryDominantAxes
@@ -319,7 +339,10 @@ axisEnergyEquilibrator = (() => {
         const entropySurfaceBoost = isEntropySurfacePair ? 1.28 : 1.0;
         const rankBoost = budgetRank <= 1 ? 1.30 : budgetRank <= 3 ? 1.16 : 1.0;
         const coherentHotBoost = currentRegime === 'coherent' && coherentPairEligible ? (isEntropySurfacePair ? 1.18 : 1.10) : 1.0;
-        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const shortRunHandOffBoost = recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && (pair === 'density-flicker' || isPhaseSurfacePair)
+          ? 1 + recoveryAxisHandOffPressure * (0.22 + shortRunRecoveryBias * 0.25)
+          : 1.0;
+        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(_BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
@@ -382,7 +405,7 @@ axisEnergyEquilibrator = (() => {
           dampMult -= 0.05;
         }
         if (recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && (axis === 'density' || axis === 'flicker')) {
-          dampMult *= 1 + recoveryAxisHandOffPressure * 0.40;
+          dampMult *= 1 + recoveryAxisHandOffPressure * (0.40 + shortRunRecoveryBias * 0.35);
         }
 
         // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
@@ -417,7 +440,7 @@ axisEnergyEquilibrator = (() => {
         // so they need 5/3 = 1.67x faster relaxation to match correction speed.
         const pairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
         const handOffRelaxBoost = recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && axis !== 'density' && axis !== 'flicker'
-          ? 1 + recoveryAxisHandOffPressure * 0.55
+          ? 1 + recoveryAxisHandOffPressure * (0.55 + shortRunRecoveryBias * 0.40)
           : 1.0;
         const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
@@ -445,7 +468,7 @@ axisEnergyEquilibrator = (() => {
     });
   }
 
-  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, entropySurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number }} */
+  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, entropySurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number, warmupTicks: number, warmupRemaining: number }} */
   function getSnapshot() {
     return {
       beatCount: _beatCount,
@@ -467,7 +490,9 @@ axisEnergyEquilibrator = (() => {
       entropySurfaceHotBeats: _entropySurfaceHotBeats,
       coherentHotspotActuationBeats: _coherentHotspotActuationBeats,
       coherentHotspotPairAdj: _coherentHotspotPairAdj,
-      coherentHotspotAxisAdj: _coherentHotspotAxisAdj
+      coherentHotspotAxisAdj: _coherentHotspotAxisAdj,
+      warmupTicks: _lastWarmupTicks,
+      warmupRemaining: m.max(0, _lastWarmupTicks - _beatCount)
     };
   }
 
