@@ -11,9 +11,10 @@
  *           stageTiming: Object|null }} opts
  */
 const _traceEnabled = process.argv.includes('--trace');
-let _traceSnapBeatCount = -1;
+let _traceSnapBeatKey = '';
 let _traceCachedConductorSnap = null;
 let _traceCachedDynamicsSnap = null;
+let _traceCachedForcedTransitionEvent = null;
 
 // Cadence alignment drought tracker: counts consecutive beats without a
 // successful cadence result. After DROUGHT_THRESHOLD beats of gatedNoResult/
@@ -31,6 +32,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     stageTiming
   } = opts;
   const { requireFiniteNumber, requireUnitInterval } = mainBootstrap;
+  const clBeatKey = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
 
   // --- Post-beat recording ---
   stutterContagion.postStutter(clAbsMs, layer, clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
@@ -161,13 +163,21 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   // Conductor + dynamics snapshots are identical for L1 and L2 within the
   // same beat, so cache them on the L1 pass and reuse for L2.
   if (_traceEnabled) {
-    if (_traceSnapBeatCount !== beatCount) {
+    if (_traceSnapBeatKey !== clBeatKey) {
       _traceCachedConductorSnap = conductorState.getSnapshot();
       _traceCachedDynamicsSnap = systemDynamicsProfiler.getSnapshot();
-      _traceSnapBeatCount = beatCount;
+      _traceCachedForcedTransitionEvent = safePreBoot.call(() => regimeClassifier.consumeForcedTransitionEvent(), null);
+      _traceSnapBeatKey = clBeatKey;
     }
+    const profilerTelemetry = _traceCachedDynamicsSnap ? {
+      analysisTick: Number.isFinite(_traceCachedDynamicsSnap.profilerTick) ? _traceCachedDynamicsSnap.profilerTick : 0,
+      regimeTick: Number.isFinite(_traceCachedDynamicsSnap.regimeTick) ? _traceCachedDynamicsSnap.regimeTick : 0,
+      trajectorySamples: Number.isFinite(_traceCachedDynamicsSnap.trajectorySamples) ? _traceCachedDynamicsSnap.trajectorySamples : 0,
+      warmupTicksRemaining: Number.isFinite(_traceCachedDynamicsSnap.warmupTicksRemaining) ? _traceCachedDynamicsSnap.warmupTicksRemaining : 0,
+      cadence: typeof _traceCachedDynamicsSnap.profilerCadence === 'string' ? _traceCachedDynamicsSnap.profilerCadence : 'unknown'
+    } : null;
     const tracePayload = {
-      beatKey: `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`,
+      beatKey: clBeatKey,
       timeMs: clAbsMs,
       conductorSnap: _traceCachedConductorSnap,
       negotiation: clNegotiation,
@@ -189,6 +199,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       axisEnergyEquilibrator: safePreBoot.call(() => axisEnergyEquilibrator.getSnapshot(), null),
       // R34 E6: Per-beat transition readiness for coherent entry diagnosis
       transitionReadiness: safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null),
+      profilerTelemetry,
+      forcedTransitionEvent: _traceCachedForcedTransitionEvent,
       iterBudget: setUnitTimingBudgetStats.getLastBeat(),
       stageTiming: stageTiming
     };
@@ -197,7 +209,6 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   }
 
   // --- Beat key handling (L1 defers, L2 flushes pair + telemetry) ---
-  const clBeatKey = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
   if (isL1) {
     interactionHeatMap.deferBeat(clBeatKey);
   } else {

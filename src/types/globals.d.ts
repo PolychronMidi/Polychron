@@ -347,6 +347,11 @@ interface SystemDynamicsSnapshot {
   entropySampleErrors: number;
   entropyRhythmErrors: number;
   lastEntropyError: string;
+  profilerTick: number;
+  regimeTick: number;
+  trajectorySamples: number;
+  warmupTicksRemaining: number;
+  profilerCadence: string;
 }
 
 interface SystemDynamicsSummary {
@@ -356,10 +361,24 @@ interface SystemDynamicsSummary {
 }
 
 interface SystemDynamicsProfilerAPI {
-  analyze(): void;
+  analyze(): SystemDynamicsSnapshot;
   getSnapshot(): SystemDynamicsSnapshot;
   getSummary(): SystemDynamicsSummary;
   reset(): void;
+}
+
+interface ForcedTransitionEvent {
+  eventId: number;
+  from: string;
+  to: string;
+  reason: string;
+  triggerStreak: number;
+  triggerTick: number;
+  runTickCount: number;
+  runTransitionCount: number;
+  runCoherentBeats: number;
+  runCoherentShare: number;
+  forcedBeatsRemaining: number;
 }
 
 interface JourneyStop {
@@ -1421,7 +1440,7 @@ declare var entropyAmplificationController: {
 };
 declare var regimeClassifier: {
   classify(avgVelocity: number, avgCurvature: number, effectiveDim: number, couplingStrength: number): string;
-  resolve(rawRegime: string): string;
+  resolve(rawRegime: string, tickId?: number): string;
   grade(regime: string): string;
   setOscillatingThreshold(threshold: number): void;
   getOscillatingThreshold(): number;
@@ -1430,7 +1449,8 @@ declare var regimeClassifier: {
   setEvolvingMinDwell(minDwell: number): void;
   getExploringBeats(): number;
   getLastRegime(): string;
-  getTransitionReadiness(): { gap: number; couplingStrength: number; coherentThreshold: number; velocity: number; velThreshold: number; thresholdScale: number; velocityBlocked: boolean; exploringBlock: string; coherentBlock: string; evolvingBeats: number; coherentBeats: number; runCoherentBeats: number; maxCoherentBeats: number; runBeatCount: number; runCoherentShare: number; runTransitionCount: number; forcedBreakCount: number; forcedRegime: string; forcedRegimeBeatsRemaining: number; forcedOverrideActive: boolean; forcedOverrideBeats: number; lastForcedReason: string; lastForcedTriggerStreak: number; lastForcedTriggerBeat: number; rawRegimeCounts: Record<string, number>; runRawRegimeCounts: Record<string, number>; rawRegimeMaxStreak: Record<string, number>; runResolvedRegimeCounts: Record<string, number>; effectiveDim: number };
+  getTransitionReadiness(): { gap: number; couplingStrength: number; coherentThreshold: number; velocity: number; velThreshold: number; thresholdScale: number; velocityBlocked: boolean; exploringBlock: string; coherentBlock: string; evolvingBeats: number; coherentBeats: number; runCoherentBeats: number; maxCoherentBeats: number; runBeatCount: number; runTickCount: number; runCoherentShare: number; runTransitionCount: number; forcedBreakCount: number; forcedRegime: string; forcedRegimeBeatsRemaining: number; forcedOverrideActive: boolean; forcedOverrideBeats: number; lastForcedReason: string; lastForcedTriggerStreak: number; lastForcedTriggerBeat: number; lastForcedTriggerTick: number; tickSource: string; rawRegimeCounts: Record<string, number>; runRawRegimeCounts: Record<string, number>; rawRegimeMaxStreak: Record<string, number>; runResolvedRegimeCounts: Record<string, number>; effectiveDim: number };
+  consumeForcedTransitionEvent(): ForcedTransitionEvent | null;
   reset(): void;
 };
 declare var systemDynamicsProfiler: SystemDynamicsProfilerAPI;

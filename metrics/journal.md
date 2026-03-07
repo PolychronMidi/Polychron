@@ -1,3 +1,40 @@
+## R48 — 2026-03-06 — STABLE
+
+**Profile:** explosive | **Beats:** 474 | **Duration:** 69.7s | **Notes:** 17,577
+**Fingerprint:** 9/9 stable | Drifted: none
+
+### Key Observations
+- **REGIME BALANCE IMPROVED AGAIN, BUT IT OVERSHOT INTO EXPLORING.** The run shifted from R47's 60.3% coherent / 23.3% exploring split to 38.6% coherent / 53.8% exploring, with only 3.4% evolving. `regimeReactiveDamping` was clearly active at close (`density=0.9631`, `tension=1.0753`, `flicker=1.0053`), but the system now spends most of the run searching rather than settling.
+- **THE RUN-LEVEL REGIME TELEMETRY IS STILL ON THE WRONG CADENCE.** `transitionReadiness` finished at `runBeatCount=83`, `maxCoherentBeats=31`, and `forcedBreakCount=0`, while the emitted trace still shows a 183-entry coherent streak. Source inspection now shows the issue is no longer reset scope alone: `beatCount` advances only on L1 and the profiler snapshot is cached across trace writes, so the current run counters are not measuring the same beat domain as the trace.
+- **HOTSPOT PRESSURE FELL, BUT DENSITY-FLICKER IS STILL THE DOMINANT STRESS SURFACE.** Total pair exceedance beats dropped from 146 to 88 and the old trust-linked severe hotspot set collapsed, but `density-flicker` still carried `avg=0.4895`, `p95=0.932`, and 76 exceedance beats. `density-trust` improved to `p95=0.768`, yet `tension-entropy` emerged as a persistent high-tail pair at `p95=0.896`.
+- **HOMEOSTASIS IS THROTTLING, BUT FLOOR DAMPENING IS NOT YET BITING.** `couplingHomeostasis` ended with `budgetConstraintActive=true`, `budgetConstraintPressure=0.4781`, `globalGainMultiplier=0.8101`, and `redistributionScore=0.9652`, while also spending 63 beats in floor contact with `floorDampen=1`. That combination says the governor is detecting redistribution pressure but still not materially damping floor-contact churn.
+- **THE NEW PERFORMANCE DIAGNOSTICS WORKED AND SHOWED A REAL IMPROVEMENT.** Beat-setup overruns fell from 7 to 6 and the worst spike dropped from 793.3ms to 417.6ms. The new attribution path also proved useful immediately: all 6 spikes were dominated by the `beat-setup` stage.
+
+### Evolutions Applied (from R47)
+- E1: **True Run-Scope Regime Counters** — **refuted** — the counters now survive reset differently, but they still finish at `runBeatCount=83` and `maxCoherentBeats=31` against a 183-entry coherent streak, so the cadence source is still wrong.
+- E2: **Forced-Break Trigger On All-Scope Streak** — **refuted** — `forcedBreakCount` remained 0 and no forced regime was recorded despite the long coherent block.
+- E3: **Transition-Scarcity Damping Integrator** — **confirmed (partial)** — coherent share dropped from 60.3% to 38.6% and exploring rose from 23.3% to 53.8%, with `regimeReactiveDamping` closing non-neutral on all three axes.
+- E4: **Budget-Aware Hotspot Prioritization** — **confirmed (partial)** — total pair exceedance beats fell from 146 to 88 and `density-trust` dropped out of the p95 hotspot set, but `density-flicker` still held `p95=0.932` with 76 exceedance beats.
+- E5: **Coupling-Aware Trust Caps** — **inconclusive** — trust-linked severe tails improved, but the end-of-run trust hierarchy remained top-heavy (`entropyRegulator=0.749`, `coherenceMonitor=0.675`, `stutterContagion=0.606`).
+- E6: **Beat-Setup Spike Attribution** — **confirmed** — `trace-summary.json` now exposes `worstSpike` and `topSubstages`, and `narrative-digest.md` now reports the new Performance section.
+
+### Evolutions Proposed (for R49)
+- E1: **Canonical Regime Tick Alignment** — src/conductor/signal/regimeClassifier.js, src/conductor/signal/systemDynamicsProfiler.js, src/play/crossLayerBeatRecord.js
+- E2: **Forced-Break Event Trace** — src/conductor/signal/regimeClassifier.js, src/play/crossLayerBeatRecord.js, scripts/trace-summary.js, scripts/narrative-digest.js
+- E3: **Profiler Cadence Telemetry** — src/conductor/signal/systemDynamicsProfiler.js, src/play/crossLayerBeatRecord.js, scripts/trace-summary.js
+- E4: **Density-Flicker Severe-Tail Clamp** — src/conductor/signal/pipelineCouplingManager.js, src/conductor/signal/couplingHomeostasis.js
+- E5: **Non-Nudgeable Gain Zeroing** — src/conductor/signal/pipelineCouplingManager.js, scripts/trace-summary.js
+- E6: **Floor-Contact Homeostasis Escalation** — src/conductor/signal/couplingHomeostasis.js, src/conductor/signal/pipelineCouplingManager.js
+
+### Hypotheses to Track
+- H1: `transitionReadiness.runBeatCount` and `maxCoherentBeats` align with the declared regime cadence once a canonical tick source replaces the current `beatCount` delta logic.
+- H2: A dedicated forced-break trace event appears if coherent dwell truly exceeds the cap, or the next run proves that the cap is no longer breached.
+- H3: `density-flicker` falls below `p95=0.88` and below 50 exceedance beats without re-inflating trust-linked hotspots.
+- H4: `entropy-trust` and `entropy-phase` report zero effective gain on the next run, reducing wasted budget under `budgetConstraintActive`.
+- H5: `floorDampen` finally drops below 1.0 during persistent floor-contact windows, and `redistributionScore` declines from the current 0.9652.
+
+---
+
 ## R47 — 2026-03-06 — STABLE
 
 **Profile:** explosive | **Beats:** 464 | **Duration:** 60.2s | **Notes:** 16,862

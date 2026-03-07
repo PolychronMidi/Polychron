@@ -46,12 +46,16 @@ regimeClassifier = (() => {
   let _runCoherentShare = 0;
   let _runTransitionCount = 0;
   let _runLastResolvedRegime = 'evolving';
-  let _lastObservedBeatCount = 0;
+  let _lastObservedTickId = 0;
   let _forcedOverrideActive = false;
   let _forcedOverrideBeats = 0;
   let _lastForcedTriggerStreak = 0;
   let _lastForcedTriggerBeat = 0;
+  let _lastForcedTriggerTick = 0;
   const _runResolvedRegimeCounts = {};
+  let _forcedTransitionEventSerial = 0;
+  let _pendingForcedTransitionEvent = null;
+  const _tickSource = 'profiler-recorder';
 
   // R26 E2: Persistent proximity bonus across regime transitions.
   // During exploring, bonus accumulates at 0.001/beat. Without persistence,
@@ -343,16 +347,31 @@ regimeClassifier = (() => {
    * @param {string} reason
    * @param {number} beatsRemaining
    * @param {number} [triggerStreak]
+    * @param {number} [triggerTickId]
    */
-  function activateForcedRegime(regime, reason, beatsRemaining, triggerStreak) {
+  function activateForcedRegime(regime, reason, beatsRemaining, triggerStreak, triggerTickId) {
     _forcedRegime = regime;
     _forcedRegimeBeatsRemaining = beatsRemaining;
     _forcedBreakCount++;
     _lastForcedReason = reason;
     _lastForcedTriggerStreak = V.optionalFinite(triggerStreak, 0);
-    const triggerBeat = V.optionalFinite(beatCount, 0);
-    _lastForcedTriggerBeat = triggerBeat > 0 ? triggerBeat : _runBeatCount + 1;
+    const triggerTick = V.optionalFinite(triggerTickId, 0);
+    _lastForcedTriggerTick = triggerTick > 0 ? triggerTick : _runBeatCount + 1;
+    _lastForcedTriggerBeat = _lastForcedTriggerTick;
     _rawRegimeWindow.length = 0;
+    _pendingForcedTransitionEvent = {
+      eventId: ++_forcedTransitionEventSerial,
+      from: lastRegime,
+      to: regime,
+      reason,
+      triggerStreak: _lastForcedTriggerStreak,
+      triggerTick: _lastForcedTriggerTick,
+      runTickCount: _runBeatCount,
+      runTransitionCount: _runTransitionCount,
+      runCoherentBeats: _runCoherentBeats,
+      runCoherentShare: Number(_runCoherentShare.toFixed(4)),
+      forcedBeatsRemaining: beatsRemaining
+    };
     explainabilityBus.emit('REGIME_FORCED_TRANSITION', 'both', {
       from: lastRegime,
       to: regime,
@@ -364,26 +383,29 @@ regimeClassifier = (() => {
       evolvingBeats: _evolvingBeats,
       triggerStreak: _lastForcedTriggerStreak,
       triggerBeat: _lastForcedTriggerBeat,
+      triggerTick: _lastForcedTriggerTick,
       forcedBeatsRemaining: beatsRemaining,
       thresholdScale: coherentThresholdScale
     });
   }
 
   /**
-   * Align run-level regime telemetry with visible beat cadence.
-   * systemDynamicsProfiler can analyze at a coarser cadence than trace emission,
-   * so run counters must advance by beat delta rather than by analyzer invocation.
+   * Align run-level regime telemetry with profiler cadence.
+   * systemDynamicsProfiler runs from the recorder path, so profiler ticks are
+   * the canonical regime cadence. beatCount is not safe here because it is
+   * L1-only and resets on binaural shifts.
+   * @param {number} [tickId]
    * @returns {number}
    */
-  function getBeatSpan() {
-    const currentBeat = V.optionalFinite(beatCount, 0);
-    if (currentBeat <= 0) return 1;
-    if (_lastObservedBeatCount <= 0) {
-      _lastObservedBeatCount = currentBeat;
+  function getTickSpan(tickId) {
+    const currentTick = V.optionalFinite(tickId, 0);
+    if (currentTick <= 0) return 1;
+    if (_lastObservedTickId <= 0) {
+      _lastObservedTickId = currentTick;
       return 1;
     }
-    const delta = currentBeat - _lastObservedBeatCount;
-    _lastObservedBeatCount = currentBeat;
+    const delta = currentTick - _lastObservedTickId;
+    _lastObservedTickId = currentTick;
     return delta > 0 ? delta : 1;
   }
 
@@ -417,10 +439,11 @@ regimeClassifier = (() => {
    * R37 E1: Majority-window replaces consecutive-streak. Transitions when
    * >= _REGIME_MAJORITY of last _REGIME_WINDOW raw beats match a non-current regime.
    * @param {string} rawRegime - instantaneous classification from classify()
+   * @param {number} [tickId]
    * @returns {string} - stable regime with hysteresis
    */
-  function resolve(rawRegime) {
-    const beatSpan = getBeatSpan();
+  function resolve(rawRegime, tickId) {
+    const beatSpan = getTickSpan(tickId);
     // R36 E4: Tally raw regime classifications before hysteresis
     _rawRegimeCounts[rawRegime] = (_rawRegimeCounts[rawRegime] || 0) + 1;
     _runRawRegimeCounts[rawRegime] = (_runRawRegimeCounts[rawRegime] || 0) + beatSpan;
@@ -519,7 +542,7 @@ regimeClassifier = (() => {
       if (projectedRunCoherentBeats > _coherentMaxDwell) {
         const coherentOvershoot = projectedRunCoherentBeats - _coherentMaxDwell;
         const forcedWindow = clamp(4 + m.floor(coherentOvershoot / 24) + m.floor(_coherentShareEma * 6), 4, 12);
-        activateForcedRegime('exploring', 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats);
+        activateForcedRegime('exploring', 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats, tickId);
         resolvedRegime = 'exploring';
         _forcedOverrideActive = true;
         _forcedOverrideBeats++;
@@ -596,11 +619,20 @@ regimeClassifier = (() => {
     _runCoherentShare = 0;
     _runTransitionCount = 0;
     _runLastResolvedRegime = 'evolving';
-    _lastObservedBeatCount = 0;
+    _lastObservedTickId = 0;
     _forcedOverrideActive = false;
     _forcedOverrideBeats = 0;
     _lastForcedTriggerStreak = 0;
     _lastForcedTriggerBeat = 0;
+    _lastForcedTriggerTick = 0;
+    _pendingForcedTransitionEvent = null;
+  }
+
+  function consumeForcedTransitionEvent() {
+    if (!_pendingForcedTransitionEvent) return null;
+    const event = Object.assign({}, _pendingForcedTransitionEvent);
+    _pendingForcedTransitionEvent = null;
+    return event;
   }
 
   /**
@@ -608,7 +640,7 @@ regimeClassifier = (() => {
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
    * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
-  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runCoherentShare: number, runTransitionCount: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number }}
+  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runTickCount: number, runCoherentShare: number, runTransitionCount: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, lastForcedTriggerTick: number, tickSource: string, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
@@ -641,6 +673,7 @@ regimeClassifier = (() => {
       runCoherentBeats: _runCoherentBeats,
       maxCoherentBeats: _runMaxCoherentBeats,
       runBeatCount: _runBeatCount,
+      runTickCount: _runBeatCount,
       runCoherentShare: Number(_runCoherentShare.toFixed(4)),
       runTransitionCount: _runTransitionCount,
       forcedBreakCount: _forcedBreakCount,
@@ -651,6 +684,8 @@ regimeClassifier = (() => {
       lastForcedReason: _lastForcedReason,
       lastForcedTriggerStreak: _lastForcedTriggerStreak,
       lastForcedTriggerBeat: _lastForcedTriggerBeat,
+      lastForcedTriggerTick: _lastForcedTriggerTick,
+      tickSource: _tickSource,
       rawRegimeCounts: Object.assign({}, _rawRegimeCounts),
       runRawRegimeCounts: Object.assign({}, _runRawRegimeCounts),
       // R37 E6: Max consecutive streak per raw regime
@@ -661,5 +696,5 @@ regimeClassifier = (() => {
     };
   }
 
-  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, getExploringBeats, getLastRegime, getTransitionReadiness, reset };
+  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, getExploringBeats, getLastRegime, getTransitionReadiness, consumeForcedTransitionEvent, reset };
 })();
