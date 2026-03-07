@@ -156,6 +156,7 @@ adaptiveTrustScores = (() => {
   const TRUST_WEIGHT_MULTIPLIER = 0.75;
   const TRUST_WEIGHT_MIN = 0.4;
   const TRUST_WEIGHT_MAX = 1.8;
+  const _GENERIC_DOMINANCE_CAP_PROFILE = { scoreFloor: 0.60, scorePenalty: 0.08, weightFloor: 1.28, weightPenalty: 0.12 };
   const _DOMINANCE_CAP_PROFILE = {
     [trustSystems.names.COHERENCE_MONITOR]: { scoreFloor: 0.54, scorePenalty: 0.16, weightFloor: 1.22, weightPenalty: 0.34 },
     [trustSystems.names.PHASE_LOCK]: { scoreFloor: 0.50, scorePenalty: 0.10, weightFloor: 1.24, weightPenalty: 0.22 },
@@ -164,20 +165,31 @@ adaptiveTrustScores = (() => {
 
   /** @param {string} systemName @param {number} effectiveScore */
   function getAdaptiveDominanceCaps(systemName, effectiveScore) {
-    const profile = _DOMINANCE_CAP_PROFILE[systemName];
-    if (!profile) {
-      return { scoreCeiling: TRUST_CEILING, weightCap: TRUST_WEIGHT_MAX };
-    }
+    const specificProfile = _DOMINANCE_CAP_PROFILE[systemName];
+    const profile = specificProfile || _GENERIC_DOMINANCE_CAP_PROFILE;
 
     let runnerUpScore = 0;
+    let meanScore = 0;
+    let systemCount = 0;
+    let dominantCountAbove06 = effectiveScore > 0.60 ? 1 : 0;
     for (const [otherName, otherState] of scoreBySystem.entries()) {
       if (otherName === systemName) continue;
       runnerUpScore = m.max(runnerUpScore, otherState.score);
+      meanScore += otherState.score;
+      systemCount++;
+      if (otherState.score > 0.60) dominantCountAbove06++;
     }
+    meanScore = systemCount > 0 ? meanScore / systemCount : effectiveScore;
     const leadScore = m.max(0, effectiveScore - runnerUpScore);
+    const dominanceSpread = m.max(0, effectiveScore - meanScore);
+
+    if (!specificProfile && effectiveScore < 0.58 && leadScore < 0.12) {
+      return { scoreCeiling: TRUST_CEILING, weightCap: TRUST_WEIGHT_MAX };
+    }
 
     let coherentLockPressure = 0;
     let coherentSharePressure = 0;
+    let lateRunPressure = 0;
     const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
     if (readiness) {
       if (typeof readiness.runCoherentBeats === 'number') {
@@ -185,6 +197,9 @@ adaptiveTrustScores = (() => {
       }
       if (typeof readiness.runCoherentShare === 'number') {
         coherentSharePressure = clamp((readiness.runCoherentShare - 0.46) / 0.22, 0, 1);
+      }
+      if (typeof readiness.runBeatCount === 'number') {
+        lateRunPressure = clamp((readiness.runBeatCount - 48) / 96, 0, 1);
       }
     }
 
@@ -225,15 +240,26 @@ adaptiveTrustScores = (() => {
       stickyTailPressure = clamp(homeostasis.stickyTailPressure / 0.55, 0, 1);
     }
 
-    const dominancePressure = clamp(
-      leadScore * 1.35 +
-      coherentLockPressure * 0.30 +
-      coherentSharePressure * 0.28 +
-      trustHotspotPressure * 0.52 +
-      trustAxisPressure * 0.36 +
-      stickyTailPressure * 0.22,
+    const settlementPressure = clamp(
+      lateRunPressure *
+      clamp((leadScore - 0.10) / 0.16, 0, 1) *
+      (1 - clamp(trustHotspotPressure * 0.9 + trustAxisPressure * 0.7 + stickyTailPressure * 0.4, 0, 1)),
       0,
-      1.40
+      1
+    );
+
+    const dominancePressure = clamp(
+      leadScore * 1.75 +
+      dominanceSpread * 0.65 +
+      coherentLockPressure * 0.30 +
+      coherentSharePressure * 0.38 +
+      trustHotspotPressure * 0.38 +
+      trustAxisPressure * 0.24 +
+      stickyTailPressure * 0.16 +
+      settlementPressure * 0.70 +
+      clamp((dominantCountAbove06 - 1) / 2, 0, 1) * 0.18,
+      0,
+      1.60
     );
 
     return {

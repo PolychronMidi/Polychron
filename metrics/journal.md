@@ -1,3 +1,41 @@
+## R51 — 2026-03-07 — EVOLVED
+
+**Profile:** explosive | **Beats:** 450 | **Duration:** 60.3s | **Notes:** 17,487
+**Fingerprint:** 8/10 stable | Drifted: exceedanceSeverity (beats), hotspotMigration
+
+### Key Observations
+- **COUPLING SEVERITY COLLAPSED WITHOUT A TRUST OR PHASE REBOUND.** Total pair exceedance beats fell from `166` to `15`, unique exceedance beats fell from `58` to `12`, and the only remaining exceedance pairs were `density-flicker=6`, `flicker-entropy=6`, and `tension-flicker=3`.
+- **REGIME BALANCE RECOVERED, BUT EVOLVING NEARLY DISAPPEARED.** Trace-level share moved from `coherent=53.2% / exploring=22.3% / evolving=17.3%` to `coherent=46.2% / exploring=44.9% / evolving=2.7%`, while controller-cadence `runCoherentShare` improved from `0.5902` to `0.4795` with `forcedBreakCount=0`.
+- **PHASE AND TRUST STOPPED BEING THE DOMINANT HOTSPOT SURFACES.** `density-phase` and `flicker-phase` dropped out of the exceedance list entirely, `trustPairExceedanceBeats` fell to `0`, and `trustAxisShare` contracted from `0.2128` to `0.1299`, but `coherenceMonitor` still closed as the dominant trust system at `0.6753` with weight `1.5065`.
+- **THE STICKY RECOVERY OUTCOME LOOKS GOOD, BUT THE MECHANISM STILL DID NOT FIRE.** `floorContactBeats` improved from `46` to `35`, yet `floorRecoveryActive=false`, `floorDampen=1`, `stickyTailPressure=0.0001`, and `tailHotspotCount=0` show the new tail-pressure driver never became a meaningful governor.
+- **DIAGNOSTIC INTEGRITY STILL HAS TWO ROUGH EDGES.** `narrative-digest.md` claims all pairs maintained healthy decorrelation while also reporting `11` hotspot pairs and `6` severe peaks, and `feedback-graph.html` renders an `Invariants: 0/10 FAIL` badge even though `tuning-invariants.json` passed `10/10` and `feedback-graph-validation.json` has zero failures.
+
+### Evolutions Applied (from R50)
+- E1: **Hotspot-Surface Budget Arbitration** — **confirmed** — pair exceedance beats collapsed `166 -> 15`, and `adaptiveTargets` now ranks `tension-entropy`, `tension-phase`, `flicker-trust`, and `density-flicker` as the top budget surfaces instead of letting static phase/trust stress dominate by default.
+- E2: **Coherent-Regime Coldspot Freeze** — **confirmed** — `coherentFreezeBeats=19` and `skippedColdspotRelaxations=26`, while the old phase leaders `density-phase=38` and `flicker-phase=38` disappeared from the exceedance set.
+- E3: **Sticky Tail-Pressure Recovery Driver** — **refuted** — the run finished with `stickyTailPressure=0.0001`, `tailHotspotCount=0`, `floorRecoveryActive=false`, and `floorDampen=1`, so the proposed recovery path did not materially engage.
+- E4: **Coherent-Overshare Hotspot Counterpressure** — **confirmed** — controller-cadence `runCoherentShare` fell from `0.5902` to `0.4795` and trace-level exploring share rose from `22.3%` to `44.9%` without any forced transition.
+- E5: **Trust-Axis Dominance Caps** — **confirmed** — trust-linked severe pairs fell from the old `density-trust`, `flicker-trust`, and `tension-trust` trio at `20` beats each to `trustPairExceedanceBeats=0`, and trust-axis energy share contracted to `0.1299`, even though `coherenceMonitor` remains individually dominant.
+- E6: **Hotspot-Migration Fingerprint Dimension** — **confirmed** — the new fingerprint dimension registered `hotspotMigration` drift at `0.7513`, correctly classifying the run as `EVOLVED` rather than silently stable despite the major surface redistribution.
+
+### Evolutions Proposed (for R52)
+- E1: **Persistent Tail-Pressure Memory Calibration** — src/conductor/signal/couplingHomeostasis.js, scripts/trace-summary.js
+- E2: **P95-Sensitive Residual Hotspot Prioritization** — src/conductor/signal/pipelineCouplingManager.js, src/conductor/signal/axisEnergyEquilibrator.js
+- E3: **Evolving-Regime Reintroduction** — src/conductor/signal/regimeReactiveDamping.js, src/conductor/signal/regimeClassifier.js, src/conductor/signal/systemDynamicsProfiler.js
+- E4: **Trust-Dominance Ceiling Follow-Through** — src/crossLayer/structure/adaptiveTrustScores.js, scripts/trace-summary.js
+- E5: **Narrative Hotspot Severity Reconciliation** — scripts/narrative-digest.js
+- E6: **Feedback Visualization Invariant Badge Wiring** — scripts/visualize-feedback-graph.js
+
+### Hypotheses to Track
+- A broader tail-memory trigger will lift `stickyTailPressure` above `0.05` during residual hotspot windows and make `floorRecoveryActive` observable without re-inflating total exceedance beats.
+- P95-sensitive ranking will cut the severe hotspot set below the current six-pair level and push `density-flicker`, `flicker-entropy`, `density-entropy`, and `tension-trust` under `p95=0.85`.
+- Reintroducing an explicit evolving corridor will raise controller-cadence evolving share above the current `4/73` resolved ticks while keeping `runCoherentShare` at or below `0.50`.
+- A stronger late-run trust ceiling will pull `coherenceMonitor` below `0.62` average trust and reduce `dominanceSpread` below `0.12` without destabilizing trust convergence.
+- The narrative digest will stop reporting fully healthy decorrelation whenever hotspot or severe-tail counts remain non-zero.
+- The feedback graph badge will match the real invariant state on the next run instead of reporting a false `0/10 FAIL` condition.
+
+---
+
 ## R50 — 2026-03-07 — STABLE
 
 **Profile:** explosive | **Beats:** 278 | **Duration:** 46.3s | **Notes:** 11,293

@@ -465,11 +465,13 @@ pipelineCouplingManager = (() => {
           const target = _getTarget(key) * targetScale;
           const ps = _getPairState(key);
           const p95 = _computeP95(ps.recentAbsCorr);
-          const exceedRate = _computeExceedanceRate(ps.recentAbsCorr, 0.85);
+          const hotspotRate = _computeExceedanceRate(ps.recentAbsCorr, 0.70);
+          const severeRate = _computeExceedanceRate(ps.recentAbsCorr, 0.85);
           const previousEffectiveGain = ps.lastEffectiveGain || 0;
           const gainBase = m.max(ps.gain, GAIN_INIT);
           const effectiveShortfall = clamp((gainBase - m.min(gainBase, previousEffectiveGain)) / gainBase, 0, 1);
           const exceedPressure = clamp((absCorr - m.max(target, 0.06)) / 0.45, 0, 1);
+          const residualP95Pressure = clamp((p95 - m.max(target + 0.28, 0.72)) / 0.18, 0, 1);
           const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
             ? clamp(_tailPressureByPair[key], 0, 1)
             : 0;
@@ -477,15 +479,16 @@ pipelineCouplingManager = (() => {
             ? clamp((_BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1)
             : 0;
           const score = clamp(
-            tailPressure * 0.38 +
-            clamp(ps.heatPenalty || 0, 0, 1) * 0.22 +
-            exceedRate * 0.16 +
-            effectiveShortfall * 0.14 +
-            clamp((p95 - 0.80) / 0.20, 0, 1) * 0.08 +
+            tailPressure * 0.28 +
+            clamp(ps.heatPenalty || 0, 0, 1) * 0.18 +
+            severeRate * 0.18 +
+            hotspotRate * 0.12 +
+            residualP95Pressure * 0.16 +
+            effectiveShortfall * 0.10 +
             exceedPressure * 0.08 +
-            staticBias * 0.06,
+            staticBias * 0.04,
             0,
-            1.4
+            1.45
           );
           if (score > 0.04) {
             rankedPairs.push({
@@ -1240,7 +1243,7 @@ const rawEmaInput = absCorr;
    * effectivenessEma, and per-axis totals for post-run analysis.
    */
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, effectiveGain: number, nudgeable: boolean, budgetScore: number, budgetBoost: number, budgetRank: number | null, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, p95AbsCorr: number, hotspotRate: number, severeRate: number, residualPressure: number, gain: number, effectiveGain: number, nudgeable: boolean, budgetScore: number, budgetBoost: number, budgetRank: number | null, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
     const result = {};
     const keys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < keys.length; i++) {
@@ -1248,11 +1251,25 @@ const rawEmaInput = absCorr;
       const at = _adaptiveTargets[key];
       const ps = _pairState[key];
       const nudgeable = !_NON_NUDGEABLE_SET.has(key);
+      const pairP95 = ps ? _computeP95(ps.recentAbsCorr) : 0;
+      const hotspotRate = ps ? _computeExceedanceRate(ps.recentAbsCorr, 0.70) : 0;
+      const severeRate = ps ? _computeExceedanceRate(ps.recentAbsCorr, 0.85) : 0;
+      const residualPressure = clamp(
+        clamp((pairP95 - m.max(at.current + 0.28, 0.72)) / 0.18, 0, 1) * 0.60 +
+        clamp((hotspotRate - 0.12) / 0.22, 0, 1) * 0.25 +
+        clamp((severeRate - 0.03) / 0.12, 0, 1) * 0.15,
+        0,
+        1
+      );
       result[key] = {
         baseline: at.baseline,
         current: Number(at.current.toFixed(4)),
         rollingAbsCorr: Number(at.rollingAbsCorr.toFixed(4)),
         rawRollingAbsCorr: Number(at.rawRollingAbsCorr.toFixed(4)),
+        p95AbsCorr: Number(pairP95.toFixed(4)),
+        hotspotRate: Number(hotspotRate.toFixed(4)),
+        severeRate: Number(severeRate.toFixed(4)),
+        residualPressure: Number(residualPressure.toFixed(4)),
         gain: ps ? Number(ps.gain.toFixed(4)) : 0,
         effectiveGain: ps ? Number(((ps.lastEffectiveGain || 0)).toFixed(4)) : 0,
         nudgeable,

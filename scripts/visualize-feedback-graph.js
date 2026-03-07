@@ -17,6 +17,33 @@ const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');
 const INVARIANTS_PATH = path.join(OUTPUT_DIR, 'tuning-invariants.json');
 
+function getInvariantStatus(invariants) {
+  if (!invariants || typeof invariants !== 'object') return null;
+
+  if (Array.isArray(invariants.results) && invariants.results.length > 0) {
+    let passed = 0;
+    for (let i = 0; i < invariants.results.length; i++) {
+      const result = invariants.results[i];
+      if (result && (result.pass === true || result.status === 'PASS')) passed++;
+    }
+    return {
+      passed,
+      total: invariants.results.length,
+      allPass: passed === invariants.results.length
+    };
+  }
+
+  if (invariants.meta && typeof invariants.meta.passed === 'number' && typeof invariants.meta.total === 'number') {
+    return {
+      passed: invariants.meta.passed,
+      total: invariants.meta.total,
+      allPass: invariants.meta.passed === invariants.meta.total
+    };
+  }
+
+  return null;
+}
+
 function main() {
   if (!fs.existsSync(GRAPH_PATH)) {
     console.warn('Acceptable warning: visualize-feedback-graph: feedback_graph.json not found, skipping.');
@@ -132,13 +159,11 @@ function main() {
   svgParts.push('</g>');
 
   // Tuning invariant status badge
-  if (invariants && invariants.results) {
-    const passed = invariants.results.filter(r => r.status === 'PASS').length;
-    const total = invariants.results.length;
-    const allPass = passed === total;
+  const invariantStatus = getInvariantStatus(invariants);
+  if (invariantStatus) {
     svgParts.push(`<g transform="translate(750, 20)">`);
-    svgParts.push(`<rect x="0" y="0" width="220" height="30" rx="6" fill="${allPass ? '#4CAF50' : '#F44336'}" opacity="0.9"/>`);
-    svgParts.push(`<text x="110" y="20" text-anchor="middle" font-size="12" fill="white" font-weight="bold">Invariants: ${passed}/${total} ${allPass ? 'PASS' : 'FAIL'}</text>`);
+    svgParts.push(`<rect x="0" y="0" width="220" height="30" rx="6" fill="${invariantStatus.allPass ? '#4CAF50' : '#F44336'}" opacity="0.9"/>`);
+    svgParts.push(`<text x="110" y="20" text-anchor="middle" font-size="12" fill="white" font-weight="bold">Invariants: ${invariantStatus.passed}/${invariantStatus.total} ${invariantStatus.allPass ? 'PASS' : 'FAIL'}</text>`);
     svgParts.push('</g>');
   }
 

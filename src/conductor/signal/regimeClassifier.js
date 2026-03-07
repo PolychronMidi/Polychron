@@ -80,6 +80,7 @@ regimeClassifier = (() => {
   // Floor 0.55 ensures the self-balancer can reduce threshold by 45%.
   const _REGIME_TARGET_COHERENT_LO = 0.15;
   const _REGIME_TARGET_COHERENT_HI = 0.35;
+  const _REGIME_TARGET_EVOLVING_LO = 0.10;
   const _REGIME_SCALE_NUDGE = 0.006;
   const _REGIME_SCALE_MIN = 0.55;
   const _REGIME_SCALE_MAX = 1.20;
@@ -281,6 +282,14 @@ regimeClassifier = (() => {
     }
     _evolvingProximityBonus = evolvingProximityBonus;
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty;
+    const evolvingShare = _runBeatCount > 0
+      ? ((_runResolvedRegimeCounts.evolving || 0) / _runBeatCount)
+      : 0;
+    const evolvingDeficit = clamp((_REGIME_TARGET_EVOLVING_LO - evolvingShare) / _REGIME_TARGET_EVOLVING_LO, 0, 1);
+    const coherentExitWindow = 0.06 + evolvingDeficit * 0.10;
+    const evolvingEntryVelMin = 0.006;
+    const evolvingEntryVelMax = 0.028 + evolvingDeficit * 0.018;
+    const evolvingEntryDimMin = 1.9 + evolvingDeficit * 0.35;
     // R27 E5: Relax velocity threshold from 0.008 to 0.005 after 100 exploring
     // beats. In R26, coherent entry was at beat 376/439 (85.6% through) despite
     // the coupling threshold being deeply negative by beat ~200. The bottleneck
@@ -314,6 +323,25 @@ regimeClassifier = (() => {
     // R41 E2: Relaxed back to 4.0 because high multi-dimensionality is healthy.
     if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 4.0) return 'coherent';
 
+    const recentlyCoherent = lastRegime === 'coherent' || _coherentMomentumBeats > 0;
+    const coherentGap = couplingStrength - coherentThreshold;
+    if (recentlyCoherent &&
+        coherentGap > -coherentExitWindow &&
+        avgVelocity > evolvingEntryVelMin &&
+        avgVelocity < evolvingEntryVelMax &&
+        effectiveDim > evolvingEntryDimMin &&
+        couplingStrength > 0.09) {
+      return 'evolving';
+    }
+    if (lastRegime === 'evolving' &&
+        avgVelocity > evolvingEntryVelMin &&
+        avgVelocity < evolvingEntryVelMax + 0.010 &&
+        effectiveDim > 1.8 &&
+        couplingStrength > 0.08 &&
+        couplingStrength < coherentThreshold + 0.12 + evolvingDeficit * 0.06) {
+      return 'evolving';
+    }
+
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
@@ -334,7 +362,7 @@ regimeClassifier = (() => {
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
-    if (lastRegime === 'exploring' && avgVelocity > 0.008 && couplingStrength > 0.10) return 'evolving';
+    if (lastRegime === 'exploring' && avgVelocity > 0.008 && avgVelocity < 0.055 && couplingStrength > 0.10 + evolvingDeficit * 0.02) return 'evolving';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
@@ -496,7 +524,13 @@ regimeClassifier = (() => {
         }
 
         // R40 E1: Exploring Majority-Window Hysteresis (relaxed constraint to capture valid exploring blocks)
-        const requiredHits = rawRegime === 'exploring' ? 2 : _REGIME_MAJORITY;
+        const evolvingShare = _runBeatCount > 0
+          ? ((_runResolvedRegimeCounts.evolving || 0) / _runBeatCount)
+          : 0;
+        const evolvingDeficit = clamp((_REGIME_TARGET_EVOLVING_LO - evolvingShare) / _REGIME_TARGET_EVOLVING_LO, 0, 1);
+        const requiredHits = rawRegime === 'exploring'
+          ? 2
+          : (rawRegime === 'evolving' && evolvingDeficit > 0.30 ? 2 : _REGIME_MAJORITY);
 
         if (_windowHits >= requiredHits) {
           // R22 E4: Evolving minimum dwell -- suppress evolving->coherent until

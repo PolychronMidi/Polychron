@@ -39,6 +39,12 @@ axisEnergyEquilibrator = (() => {
   const _PAIR_TIGHTEN_RATE = 0.004;
   const _PAIR_RELAX_RATE = 0.002;
   const _PAIR_COOLDOWN = 3;
+  const _RESIDUAL_P95_RATIO = 1.7;
+  const _RESIDUAL_P95_ABS_MIN = 0.72;
+  const _RESIDUAL_HOTSPOT_RATE = 0.14;
+  const _RESIDUAL_SEVERE_RATE = 0.04;
+  const _RESIDUAL_COLDSPOT_P95_MAX = 0.66;
+  const _RESIDUAL_TIGHTEN_BONUS = 1.35;
 
   // -- Layer 2 config: axis-level energy balancing --
   const _FAIR_SHARE = 1.0 / 6.0;
@@ -156,7 +162,15 @@ axisEnergyEquilibrator = (() => {
       if (!pd) continue;
       const baseline = V.optionalFinite(pd.baseline, 0);
       const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
-      if (rolling > m.max(_PHASE_SURFACE_ABS_MIN, baseline * _PHASE_SURFACE_RATIO)) {
+      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
+      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
+      const severeRate = V.optionalFinite(pd.severeRate, 0);
+      if (
+        rolling > m.max(_PHASE_SURFACE_ABS_MIN, baseline * _PHASE_SURFACE_RATIO) ||
+        pairP95 > m.max(_PHASE_SURFACE_ABS_MIN + 0.12, baseline * (_PHASE_SURFACE_RATIO + 0.25)) ||
+        hotspotRate > 0.18 ||
+        severeRate > 0.03
+      ) {
         phaseSurfaceHot = true;
         break;
       }
@@ -169,7 +183,15 @@ axisEnergyEquilibrator = (() => {
       if (!pd) continue;
       const baseline = V.optionalFinite(pd.baseline, 0);
       const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
-      if (rolling > m.max(_TRUST_SURFACE_ABS_MIN, baseline * _TRUST_SURFACE_RATIO)) {
+      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
+      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
+      const severeRate = V.optionalFinite(pd.severeRate, 0);
+      if (
+        rolling > m.max(_TRUST_SURFACE_ABS_MIN, baseline * _TRUST_SURFACE_RATIO) ||
+        pairP95 > m.max(_TRUST_SURFACE_ABS_MIN + 0.10, baseline * (_TRUST_SURFACE_RATIO + 0.20)) ||
+        hotspotRate > 0.16 ||
+        severeRate > 0.03
+      ) {
         trustSurfaceHot = true;
         break;
       }
@@ -211,13 +233,26 @@ axisEnergyEquilibrator = (() => {
       const baseline = V.optionalFinite(pd.baseline);
       const rolling = V.optionalFinite(pd.rawRollingAbsCorr);
       if (baseline === undefined || rolling === undefined) continue;
+      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
+      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
+      const severeRate = V.optionalFinite(pd.severeRate, 0);
+      const residualTailHot = pairP95 > m.max(_RESIDUAL_P95_ABS_MIN, baseline * _RESIDUAL_P95_RATIO)
+        || hotspotRate > _RESIDUAL_HOTSPOT_RATE
+        || severeRate > _RESIDUAL_SEVERE_RATE;
 
-      if (tightenScale > 0 && rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) {
+      if (tightenScale > 0 && ((rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) || residualTailHot)) {
         // Hotspot -- tighten this pair's baseline (scaled by regime gate)
-        const overshoot = rolling / m.max(baseline, 0.01);
+        const overshoot = m.max(rolling / m.max(baseline, 0.01), pairP95 / m.max(baseline, 0.01));
+        const residualPressure = clamp(
+          clamp((pairP95 - m.max(_RESIDUAL_P95_ABS_MIN, baseline * _RESIDUAL_P95_RATIO)) / 0.18, 0, 1) * 0.55 +
+          clamp((hotspotRate - _RESIDUAL_HOTSPOT_RATE) / 0.20, 0, 1) * 0.25 +
+          clamp((severeRate - _RESIDUAL_SEVERE_RATE) / 0.12, 0, 1) * 0.20,
+          0,
+          1
+        );
         const isPhaseSurfacePair = pair === 'density-phase' || pair === 'flicker-phase' || pair === 'tension-phase';
         const phaseSurfaceBoost = isPhaseSurfacePair ? 1.35 : 1.0;
-        const rate = _PAIR_TIGHTEN_RATE * tightenScale * giniMult * phaseSurfaceBoost * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const rate = _PAIR_TIGHTEN_RATE * tightenScale * giniMult * phaseSurfaceBoost * (1 + residualPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(_BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
@@ -227,7 +262,7 @@ axisEnergyEquilibrator = (() => {
           _regimePairAdj[rKey] = (_regimePairAdj[rKey] || 0) + 1;
         }
       } else if (rolling < _COLDSPOT_RATIO * baseline && rolling < _COLDSPOT_ABS_MAX) {
-        if (coherentColdspotFreeze) {
+        if (coherentColdspotFreeze || pairP95 > _RESIDUAL_COLDSPOT_P95_MAX || hotspotRate > 0.06 || severeRate > 0.02) {
           _skippedColdspotRelaxations++;
           continue;
         }
