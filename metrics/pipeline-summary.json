@@ -1,50 +1,50 @@
 {
-  "generated": "2026-03-07T17:44:17.074Z",
-  "wallTimeSeconds": 6051.4,
+  "generated": "2026-03-07T15:26:12.176Z",
+  "wallTimeSeconds": 3274.6,
   "steps": [
     {
       "label": "generate-globals-dts",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0.4,
       "ok": true
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 1.1,
+      "elapsedSeconds": 3.2,
       "ok": true
     },
     {
       "label": "check-tuning-invariants",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 2,
       "ok": true
     },
     {
       "label": "generate-feedback-graph",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0.4,
       "ok": true
     },
     {
       "label": "validate-feedback-graph",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
       "label": "lint",
-      "elapsedSeconds": 12.2,
+      "elapsedSeconds": 11.1,
       "ok": true
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 13,
+      "elapsedSeconds": 17.8,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 6017.6,
+      "elapsedSeconds": 3235.2,
       "ok": true
     },
     {
       "label": "trace-summary",
-      "elapsedSeconds": 0.6,
+      "elapsedSeconds": 0.4,
       "ok": true
     },
     {
@@ -54,7 +54,7 @@
     },
     {
       "label": "generate-dependency-graph",
-      "elapsedSeconds": 0.7,
+      "elapsedSeconds": 0.5,
       "ok": true
     },
     {
@@ -64,17 +64,17 @@
     },
     {
       "label": "generate-crosslayer-map",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
       "label": "golden-fingerprint",
-      "elapsedSeconds": 2,
+      "elapsedSeconds": 1.1,
       "ok": true
     },
     {
       "label": "narrative-digest",
-      "elapsedSeconds": 2.3,
+      "elapsedSeconds": 1.1,
       "ok": true
     },
     {
