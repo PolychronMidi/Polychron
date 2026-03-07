@@ -23,7 +23,8 @@ systemDynamicsProfiler = (() => {
   const N_DIMS = DIM_NAMES.length;
   const N_COMPOSITIONAL_DIMS = 4; // density, tension, flicker, entropy
   const WINDOW = 32; // rolling window for statistics
-  const MIN_WINDOW = 6; // minimum beats before meaningful analysis
+  const MIN_WINDOW_DEFAULT = 6; // minimum beats before meaningful analysis
+  const PHASE_COUPLING_PAIRS = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
 
   // -- State --
   /** @type {Array<number[]>} smoothed ring buffer for velocity/curvature */
@@ -122,6 +123,42 @@ systemDynamicsProfiler = (() => {
   /** @type {SystemDynamicsSnapshot} */
   let _lastSnapshot = _emptySnapshot();
 
+  function _getAnalysisSettings() {
+    let profile = null;
+    try {
+      profile = conductorConfig.getActiveProfile();
+    } catch {
+      profile = null;
+    }
+    const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
+    const configuredWarmup = analysis && Number.isFinite(analysis.warmupTicks)
+      ? m.round(analysis.warmupTicks)
+      : MIN_WINDOW_DEFAULT;
+    const configuredReuse = analysis && Number.isFinite(analysis.snapshotReuseBeats)
+      ? m.round(analysis.snapshotReuseBeats)
+      : 3;
+    const shortRunCompression = Number.isFinite(totalSections) && totalSections > 0 && totalSections <= 5 ? 1 : 0;
+    return {
+      warmupTicks: clamp(configuredWarmup - shortRunCompression, 3, 10),
+      snapshotReuseBeats: clamp(configuredReuse, 1, 8)
+    };
+  }
+
+  function _getPhasePairStates(matrix) {
+    /** @type {Record<string, string>} */
+    const states = {};
+    for (let i = 0; i < PHASE_COUPLING_PAIRS.length; i++) {
+      const pair = PHASE_COUPLING_PAIRS[i];
+      const value = matrix && Object.prototype.hasOwnProperty.call(matrix, pair)
+        ? matrix[pair]
+        : undefined;
+      if (typeof value === 'number' && Number.isFinite(value)) states[pair] = 'available';
+      else if (typeof value === 'number' && Number.isNaN(value)) states[pair] = 'variance-gated';
+      else states[pair] = 'missing';
+    }
+    return states;
+  }
+
   /** @returns {SystemDynamicsSnapshot} */
   function _emptySnapshot() {
     return {
@@ -145,12 +182,20 @@ systemDynamicsProfiler = (() => {
       phaseCouplingCoverage: 0,
       phaseCouplingAvailablePairs: 0,
       phaseCouplingMissingPairs: 4,
+      phasePairStates: {
+        'density-phase': 'warmup',
+        'tension-phase': 'warmup',
+        'flicker-phase': 'warmup',
+        'entropy-phase': 'warmup'
+      },
       profilerTick: 0,
       regimeTick: 0,
       trajectorySamples: 0,
       telemetryBeatSpan: 1,
-      warmupTicksRemaining: MIN_WINDOW,
-      profilerCadence: 'measure-recorder'
+      warmupTicksRemaining: MIN_WINDOW_DEFAULT,
+      profilerCadence: 'measure-recorder',
+      cadenceEscalated: false,
+      analysisSource: 'measure-recorder'
     };
   }
 
@@ -258,7 +303,9 @@ systemDynamicsProfiler = (() => {
   // _classifyRegime, _resolveRegime, _grade are now in regimeClassifier global.
 
   /** Run per-beat analysis. Called via conductorIntelligence recorder. */
-  function analyze() {
+  function analyze(analysisSourceInput) {
+    const analysisSource = typeof analysisSourceInput === 'string' && analysisSourceInput ? analysisSourceInput : 'measure-recorder';
+    const analysisSettings = _getAnalysisSettings();
     beatsSeen++;
     _analysisTick++;
     const rawState = _sampleState();
@@ -317,7 +364,7 @@ systemDynamicsProfiler = (() => {
     }
 
     // Need minimum history for meaningful analysis
-    if (trajectory.length < MIN_WINDOW) {
+    if (trajectory.length < analysisSettings.warmupTicks) {
       _lastSnapshot = Object.assign({}, _lastSnapshot, {
         phaseValue: _lastPhaseSample !== null ? Number(_lastPhaseSample.toFixed(4)) : 0,
         phaseDelta: Number(_lastPhaseDelta.toFixed(4)),
@@ -326,13 +373,21 @@ systemDynamicsProfiler = (() => {
         phaseSignalValid: _lastPhaseSignalValid,
         phaseCouplingCoverage: 0,
         phaseCouplingAvailablePairs: 0,
-        phaseCouplingMissingPairs: 4,
+        phaseCouplingMissingPairs: PHASE_COUPLING_PAIRS.length,
+        phasePairStates: {
+          'density-phase': 'warmup',
+          'tension-phase': 'warmup',
+          'flicker-phase': 'warmup',
+          'entropy-phase': 'warmup'
+        },
         profilerTick: _analysisTick,
         regimeTick: _analysisTick,
         trajectorySamples: trajectory.length,
         telemetryBeatSpan,
-        warmupTicksRemaining: m.max(0, MIN_WINDOW - trajectory.length),
-        profilerCadence: 'measure-recorder'
+        warmupTicksRemaining: m.max(0, analysisSettings.warmupTicks - trajectory.length),
+        profilerCadence: analysisSource === 'measure-recorder' ? 'measure-recorder' : 'measure-recorder+beat-escalation',
+        cadenceEscalated: analysisSource !== 'measure-recorder',
+        analysisSource
       });
       return _lastSnapshot;
     }
@@ -365,14 +420,13 @@ systemDynamicsProfiler = (() => {
     const { mean, variance } = phaseSpaceMath.stats(rawTrajectory, N_DIMS);
     const { matrix, strength } = phaseSpaceMath.coupling(rawTrajectory, mean, DIM_NAMES, N_DIMS, N_COMPOSITIONAL_DIMS);
     const effDim = phaseSpaceMath.effectiveDimensionality(rawTrajectory, mean, N_COMPOSITIONAL_DIMS);
-    const phaseCouplingPairs = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
+    const phasePairStates = _getPhasePairStates(matrix);
     let phaseCouplingAvailablePairs = 0;
-    for (let i = 0; i < phaseCouplingPairs.length; i++) {
-      const pairValue = matrix[phaseCouplingPairs[i]];
-      if (typeof pairValue === 'number' && Number.isFinite(pairValue)) phaseCouplingAvailablePairs++;
+    for (let i = 0; i < PHASE_COUPLING_PAIRS.length; i++) {
+      if (phasePairStates[PHASE_COUPLING_PAIRS[i]] === 'available') phaseCouplingAvailablePairs++;
     }
-    const phaseCouplingCoverage = phaseCouplingPairs.length > 0
-      ? phaseCouplingAvailablePairs / phaseCouplingPairs.length
+    const phaseCouplingCoverage = PHASE_COUPLING_PAIRS.length > 0
+      ? phaseCouplingAvailablePairs / PHASE_COUPLING_PAIRS.length
       : 0;
     // per-axis variance ratios for dead-axis detection.
     // Normalized so they sum to 1.0 - a value near 0 means that axis
@@ -408,13 +462,16 @@ systemDynamicsProfiler = (() => {
       phaseSignalValid: _lastPhaseSignalValid,
       phaseCouplingCoverage: Number(phaseCouplingCoverage.toFixed(4)),
       phaseCouplingAvailablePairs,
-      phaseCouplingMissingPairs: phaseCouplingPairs.length - phaseCouplingAvailablePairs,
+      phaseCouplingMissingPairs: PHASE_COUPLING_PAIRS.length - phaseCouplingAvailablePairs,
+      phasePairStates,
       profilerTick: _analysisTick,
       regimeTick: _analysisTick,
       trajectorySamples: trajectory.length,
       telemetryBeatSpan,
       warmupTicksRemaining: 0,
-      profilerCadence: 'measure-recorder'
+      profilerCadence: analysisSource === 'measure-recorder' ? 'measure-recorder' : 'measure-recorder+beat-escalation',
+      cadenceEscalated: analysisSource !== 'measure-recorder',
+      analysisSource
     };
 
     // Emit real-time telemetry on every beat for observability
@@ -440,6 +497,20 @@ systemDynamicsProfiler = (() => {
       }, beatStartTime * 1000);
     }
 
+    return _lastSnapshot;
+  }
+
+  function ensureBeatAnalysis(force) {
+    const analysisSettings = _getAnalysisSettings();
+    const currentBeatCounter = Number.isFinite(beatCount) ? beatCount : beatsSeen;
+    const beatDelta = currentBeatCounter - _lastBeatCountAtAnalysis;
+    const warmupActive = _lastSnapshot.warmupTicksRemaining > 0;
+    const phaseUnavailable = _lastSnapshot.phaseCouplingAvailablePairs === 0;
+    const snapshotStale = beatDelta >= analysisSettings.snapshotReuseBeats;
+    if (beatDelta <= 0) return _lastSnapshot;
+    if (force || warmupActive || phaseUnavailable || snapshotStale) {
+      return analyze('beat-escalation');
+    }
     return _lastSnapshot;
   }
 
@@ -473,6 +544,7 @@ systemDynamicsProfiler = (() => {
     _lastPhaseChanged = false;
     _lastPhaseSignalValid = false;
     _phaseStaleBeats = 0;
+    _lastBeatCountAtAnalysis = 0;
     entropyAmplificationController.reset();
     regimeClassifier.reset();
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {
@@ -483,7 +555,7 @@ systemDynamicsProfiler = (() => {
   }
 
   // -- Self-register --
-  conductorIntelligence.registerRecorder('systemDynamicsProfiler', () => { systemDynamicsProfiler.analyze(); });
+  conductorIntelligence.registerRecorder('systemDynamicsProfiler', () => { systemDynamicsProfiler.analyze('measure-recorder'); });
   conductorIntelligence.registerStateProvider('systemDynamicsProfiler', () => ({
     dynamicsRegime: _lastSnapshot.regime,
     dynamicsGrade: _lastSnapshot.grade,
@@ -498,5 +570,5 @@ systemDynamicsProfiler = (() => {
   // sparse statistics and unreliable regime classification.
   conductorIntelligence.registerModule('systemDynamicsProfiler', { reset }, ['all']);
 
-  return { analyze, getSnapshot, getSummary, reset };
+  return { analyze, ensureBeatAnalysis, getSnapshot, getSummary, reset };
 })();

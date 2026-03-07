@@ -60,6 +60,7 @@ timeStream.setBounds('section', totalSections);
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   timeStream.setPosition('section', sectionIndex);
+  let sectionL1BeatCount = 0;
   // Snapshot conductor state before section reset for cross-section narrative memory
   if (sectionIndex > 0) sectionMemory.snapshot();
   crossLayerLifecycleManager.resetSection();
@@ -126,7 +127,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     phaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
     measuresPerPhrase = measuresPerPhrase1;
     setUnitTiming('phrase');
-    layerPass.runLayerPass('L1', phraseFamily, { withConductorTick: true }, { boot, composerCtx });
+    sectionL1BeatCount += layerPass.runLayerPass('L1', phraseFamily, { withConductorTick: true }, { boot, composerCtx });
 
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L1);
@@ -162,6 +163,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     playMotifs.resetLayerState(L2);
     LM.advance('L2', 'phrase');
     interactionHeatMap.flushDeferredOrphans(mainBootstrap.requireFiniteNumber('beatStartTime', beatStartTime) * 1000);
+  }
+
+  if (sectionL1BeatCount <= 0) {
+    throw new Error('main: section ' + sectionIndex + ' produced no L1 beats');
   }
 
   // Record section in structuralFormTracker for form-level awareness

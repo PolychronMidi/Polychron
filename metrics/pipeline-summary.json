@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-07T22:15:39.823Z",
-  "wallTimeSeconds": 373.1,
+  "generated": "2026-03-07T23:43:39.060Z",
+  "wallTimeSeconds": 495.6,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -9,7 +9,7 @@
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0.1,
       "ok": true
     },
     {
@@ -34,12 +34,12 @@
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 1.8,
+      "elapsedSeconds": 1.7,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 368.8,
+      "elapsedSeconds": 491.4,
       "ok": true
     },
     {

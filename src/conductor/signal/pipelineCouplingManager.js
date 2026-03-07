@@ -480,6 +480,9 @@ pipelineCouplingManager = (() => {
     const _recoveryAxisHandOffPressure = _homeostasisState && typeof _homeostasisState.recoveryAxisHandOffPressure === 'number'
       ? _homeostasisState.recoveryAxisHandOffPressure
       : 0;
+    const _shortRunRecoveryBias = _homeostasisState && typeof _homeostasisState.shortRunRecoveryBias === 'number'
+      ? _homeostasisState.shortRunRecoveryBias
+      : 0;
     const _telemetryBeatSpan = snap && typeof snap.telemetryBeatSpan === 'number'
       ? clamp(m.round(snap.telemetryBeatSpan), 1, 8)
       : 1;
@@ -1066,7 +1069,7 @@ const rawEmaInput = absCorr;
           effectiveGain *= 1 + _densityFlickerOverridePressure * (_floorRecoveryActive ? 1.30 : 0.95);
         }
         if (_recoveryAxisHandOffPressure > 0 && (dimA === 'density' || dimA === 'flicker' || dimB === 'density' || dimB === 'flicker')) {
-          effectiveGain *= 1 + _recoveryAxisHandOffPressure * 0.18;
+          effectiveGain *= 1 + _recoveryAxisHandOffPressure * (0.18 + _shortRunRecoveryBias * 0.30);
         }
         if (_tailRecoveryHandshake > 0 && tailPressure > 0.03) {
           effectiveGain *= 1 + _tailRecoveryHandshake * clamp(tailPressure * 1.25, 0, 1) * 0.75;

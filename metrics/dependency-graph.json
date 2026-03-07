@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-07T22:15:39.365Z",
+    "generated": "2026-03-07T23:43:38.559Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2686,
-    "totalEdges": 2052,
-    "crossSubsystemEdges": 1448,
+    "totalConsumes": 2697,
+    "totalEdges": 2062,
+    "crossSubsystemEdges": 1455,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 207
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 145,
         "provides": 191,
-        "consumes": 759
+        "consumes": 766
       },
       "rhythm": {
         "files": 30,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 45,
         "provides": 40,
-        "consumes": 335
+        "consumes": 336
       },
       "writer": {
         "files": 4,
@@ -67,7 +67,7 @@
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 379
+        "consumes": 382
       }
     }
   },
@@ -1243,6 +1243,7 @@
       "consumes": [
         "absoluteTimeWindow",
         "adaptiveTrustScores",
+        "beatCount",
         "beatStartTime",
         "clamp",
         "conductorConfig",
@@ -1258,6 +1259,7 @@
         "regimeClassifier",
         "signalReader",
         "timeStream",
+        "totalSections",
         "velocity"
       ]
     },
@@ -1332,6 +1334,7 @@
         "pipelineCouplingManager",
         "safePreBoot",
         "systemDynamicsProfiler",
+        "totalSections",
         "validator"
       ]
     },
@@ -1344,12 +1347,16 @@
       "consumes": [
         "beatCount",
         "clamp",
+        "conductorConfig",
         "conductorIntelligence",
+        "couplingHomeostasis",
         "explainabilityBus",
         "m",
         "p",
         "pipelineCouplingManager",
         "regimeClassifier",
+        "safePreBoot",
+        "totalSections",
         "validator"
       ]
     },
@@ -5651,6 +5658,7 @@
         "beatStartTime",
         "cadenceAlignment",
         "clamp",
+        "contextualTrust",
         "couplingHomeostasis",
         "crossLayerRegistry",
         "explainabilityBus",
@@ -5985,6 +5993,7 @@
         "MIDI_MAX_VALUE",
         "absoluteTimeWindow",
         "clamp",
+        "conductorConfig",
         "convergenceDetector",
         "crossModulation",
         "entropyRegulator",
@@ -6242,6 +6251,7 @@
         "processBeat"
       ],
       "consumes": [
+        "absoluteTimeWindow",
         "balOffset",
         "bassVar",
         "beatCount",
@@ -6251,6 +6261,7 @@
         "binauralFreqOffset",
         "cadenceAdvisor",
         "clamp",
+        "conductorConfig",
         "conductorState",
         "couplingHomeostasis",
         "crossLayerBeatRecord",
@@ -9416,6 +9427,13 @@
     },
     {
       "from": "src/conductor/profiles/conductorConfig.js",
+      "to": "src/conductor/signal/axisEnergyEquilibrator.js",
+      "globals": [
+        "conductorConfig"
+      ]
+    },
+    {
+      "from": "src/conductor/profiles/conductorConfig.js",
       "to": "src/conductor/signal/output/systemManifest.js",
       "globals": [
         "conductorConfig"
@@ -9465,6 +9483,13 @@
     },
     {
       "from": "src/conductor/profiles/conductorConfig.js",
+      "to": "src/play/emitPickCrossLayerRecord.js",
+      "globals": [
+        "conductorConfig"
+      ]
+    },
+    {
+      "from": "src/conductor/profiles/conductorConfig.js",
       "to": "src/play/layerPass.js",
       "globals": [
         "conductorConfig"
@@ -9494,6 +9519,13 @@
     {
       "from": "src/conductor/profiles/conductorConfig.js",
       "to": "src/play/playNotes.js",
+      "globals": [
+        "conductorConfig"
+      ]
+    },
+    {
+      "from": "src/conductor/profiles/conductorConfig.js",
+      "to": "src/play/processBeat.js",
       "globals": [
         "conductorConfig"
       ]
@@ -9748,6 +9780,13 @@
       "to": "src/conductor/signal/regimeReactiveDamping.js",
       "globals": [
         "conductorMetaWatchdog"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/couplingHomeostasis.js",
+      "to": "src/conductor/signal/axisEnergyEquilibrator.js",
+      "globals": [
+        "couplingHomeostasis"
       ]
     },
     {
@@ -11270,6 +11309,13 @@
       ]
     },
     {
+      "from": "src/crossLayer/structure/contextualTrust.js",
+      "to": "src/crossLayer/structure/adaptiveTrustScores.js",
+      "globals": [
+        "contextualTrust"
+      ]
+    },
+    {
       "from": "src/crossLayer/structure/crossLayerClimaxEngine.js",
       "to": "src/play/crossLayerBeatRecord.js",
       "globals": [
@@ -12321,7 +12367,28 @@
     },
     {
       "from": "src/play/main.js",
+      "to": "src/conductor/signal/axisEnergyEquilibrator.js",
+      "globals": [
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
+      "to": "src/conductor/signal/couplingHomeostasis.js",
+      "globals": [
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
       "to": "src/conductor/signal/output/systemManifest.js",
+      "globals": [
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
+      "to": "src/conductor/signal/systemDynamicsProfiler.js",
       "globals": [
         "totalSections"
       ]
@@ -13564,6 +13631,13 @@
     {
       "from": "src/time/absoluteTimeWindow.js",
       "to": "src/play/playNotesEmitPick.js",
+      "globals": [
+        "absoluteTimeWindow"
+      ]
+    },
+    {
+      "from": "src/time/absoluteTimeWindow.js",
+      "to": "src/play/processBeat.js",
       "globals": [
         "absoluteTimeWindow"
       ]
@@ -17292,6 +17366,7 @@
       "from": "src/utils/init.js",
       "to": "src/conductor/signal/systemDynamicsProfiler.js",
       "globals": [
+        "beatCount",
         "beatStartTime",
         "velocity"
       ]
@@ -19450,6 +19525,13 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/conductorIntelligence.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/axisEnergyEquilibrator.js",
       "globals": [
         "safePreBoot"
       ]
