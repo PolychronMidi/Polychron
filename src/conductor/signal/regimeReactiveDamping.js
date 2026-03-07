@@ -220,6 +220,14 @@ regimeReactiveDamping = (() => {
         0,
         1.25
       );
+      const evolvingPressure = clamp(
+        evoDeficit * 1.75 +
+        m.max(0, expShare - _REGIME_BUDGET.exploring) * 0.35 +
+        m.max(0, runCoherentShare - 0.30) * 0.25 -
+        coherentPressure * 0.20,
+        0,
+        1
+      );
 
       // Exploring over-budget: suppress variety-promoting biases
       _eqCorrD = -expExcess * _EQUILIB_STRENGTH * 0.5 * expPenalty;
@@ -236,6 +244,11 @@ regimeReactiveDamping = (() => {
         }
         _eqCorrF += coherentPressure * m.max(0, _EQUILIB_STRENGTH * (1.45 + hotspotCounterpressure * 0.55 - flickerPenalty * 0.70));
         _eqCorrT -= coherentPressure * (_EQUILIB_STRENGTH * 1.15 + hotspotCounterpressure * 0.14);
+      }
+      if (currentRegime !== 'coherent' && evolvingPressure > 0) {
+        _eqCorrT += evolvingPressure * (_EQUILIB_STRENGTH * 0.55);
+        _eqCorrD += evolvingPressure * (_EQUILIB_STRENGTH * 0.18);
+        _eqCorrF -= evolvingPressure * (_EQUILIB_STRENGTH * 0.24);
       }
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog

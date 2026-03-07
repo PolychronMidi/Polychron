@@ -330,6 +330,11 @@ function generateNarrative() {
     const pairs = Object.entries(summary.couplingAbs)
       .map(([pair, stat]) => ({ pair, avg: toNum(stat.avg, 0), max: toNum(stat.max, 0) }))
       .sort((a, b) => b.avg - a.avg);
+    const hotspotPairs = Array.isArray(summary.couplingHotspots)
+      ? summary.couplingHotspots
+        .map((p) => ({ pair: p.pair, p95: toNum(p.p95, 0), avg: toNum(p.avg, 0) }))
+        .sort((a, b) => b.p95 - a.p95)
+      : [];
 
     if (pairs.length > 0) {
       const highCoupling = pairs.filter(p => p.avg > 0.5);
@@ -340,23 +345,25 @@ function generateNarrative() {
           lines.push(`- **${p.pair}**: avg |r| = ${dec(p.avg, 3)}, peak |r| = ${dec(p.max, 3)}`);
         }
         lines.push('');
+      } else if (hotspotPairs.length > 0) {
+        lines.push('Average pairwise decorrelation stayed controlled, but the tail still carried residual hotspot pressure.');
+        lines.push('');
       } else {
-        lines.push('All compositional dimension pairs maintained healthy decorrelation levels.');
+        lines.push('All compositional dimension pairs maintained healthy decorrelation levels in both average and tail behavior.');
         lines.push('');
       }
 
-      // R24 E6: Coupling health assessment. Count pairs with extreme tails
-      // and provide honest severity rating in the narrative.
-      const hotspots = pairs.filter(p => p.max > 0.70);
+      // R52 E5: Use p95 tail telemetry instead of beat-local maxima.
+      const hotspots = hotspotPairs;
       if (hotspots.length === 0) {
-        lines.push('**Coupling health:** All pairs within normal bounds (peak < 0.70).');
+        lines.push('**Coupling health:** All pairs within normal bounds (p95 < 0.70).');
         lines.push('');
       } else {
         const stress = hotspots.length <= 2 ? 'manageable' : hotspots.length <= 5 ? 'elevated' : 'stressed';
-        lines.push(`**Coupling health:** ${hotspots.length} hotspot pair${hotspots.length !== 1 ? 's' : ''} (peak > 0.70) -- system ${stress}.`);
-        const severe = hotspots.filter(p => p.max > 0.85);
+        lines.push(`**Coupling health:** ${hotspots.length} hotspot pair${hotspots.length !== 1 ? 's' : ''} (p95 > 0.70) -- system ${stress}.`);
+        const severe = hotspots.filter(p => p.p95 > 0.85);
         if (severe.length > 0) {
-          lines.push('Severe (peak > 0.85): ' + severe.map(p => `**${p.pair}** (${dec(p.max, 3)})`).join(', ') + '.');
+          lines.push('Severe (p95 > 0.85): ' + severe.map(p => `**${p.pair}** (${dec(p.p95, 3)})`).join(', ') + '.');
         }
         lines.push('');
       }

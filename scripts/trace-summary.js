@@ -505,6 +505,10 @@ function summarizeTrace(entries) {
             gain: ct.gain,
             effectiveGain: ct.effectiveGain != null ? ct.effectiveGain : null,
             nudgeable: ct.nudgeable !== false,
+            p95AbsCorr: ct.p95AbsCorr != null ? ct.p95AbsCorr : null,
+            hotspotRate: ct.hotspotRate != null ? ct.hotspotRate : null,
+            severeRate: ct.severeRate != null ? ct.severeRate : null,
+            residualPressure: ct.residualPressure != null ? ct.residualPressure : null,
             budgetScore: ct.budgetScore != null ? ct.budgetScore : 0,
             budgetBoost: ct.budgetBoost != null ? ct.budgetBoost : 1,
             budgetRank: ct.budgetRank != null ? ct.budgetRank : null,
@@ -604,6 +608,8 @@ function summarizeTrace(entries) {
     ? {
       stickyTailPressure: toNum(couplingHomeostasisState.stickyTailPressure, 0),
       densityFlickerTailPressure: toNum(couplingHomeostasisState.densityFlickerTailPressure, 0),
+      tailRecoveryDrive: toNum(couplingHomeostasisState.tailRecoveryDrive, 0),
+      tailRecoveryTrigger: toNum(couplingHomeostasisState.tailRecoveryTrigger, 0),
       dominantTailPair: typeof couplingHomeostasisState.dominantTailPair === 'string' ? couplingHomeostasisState.dominantTailPair : '',
       tailHotspotCount: toNum(couplingHomeostasisState.tailHotspotCount, 0),
       topPairs: Object.entries(couplingHomeostasisState.tailPressureByPair)

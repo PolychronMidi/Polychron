@@ -118,15 +118,20 @@ couplingHomeostasis = (() => {
   let _dominantTailPair = '';
   let _tailHotspotCount = 0;
   const _TAIL_PRESSURE_EMA_ALPHA = 0.18;
-  const _TAIL_PRESSURE_TRIGGER = 0.32;
+  const _TAIL_PRESSURE_TRIGGER_MIN = 0.18;
   /** @type {Record<string, number>} */
   const _tailPressureByPair = {};
-  const _TAIL_PRIORITY_PAIRS = [
-    'density-flicker', 'density-phase', 'flicker-phase', 'density-trust',
-    'flicker-trust', 'tension-trust', 'tension-flicker', 'tension-phase'
-  ];
+  const _TAIL_TRACKED_PAIRS = [];
+  for (let ta = 0; ta < ALL_DIMS.length; ta++) {
+    for (let tb = ta + 1; tb < ALL_DIMS.length; tb++) {
+      _TAIL_TRACKED_PAIRS.push(ALL_DIMS[ta] + '-' + ALL_DIMS[tb]);
+    }
+  }
+  const _TAIL_MEMORY_TOP_K = 5;
   const _FLOOR_RECOVERY_TRIGGER = 10;
   const _FLOOR_RECOVERY_HOLD = 18;
+  let _tailRecoveryDrive = 0;
+  let _tailRecoveryTrigger = _TAIL_PRESSURE_TRIGGER_MIN;
   // R21 E6: Invoke tracking for beat processing diagnostics
   let _invokeCount = 0;               // every refresh() call regardless of guards
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
@@ -212,14 +217,37 @@ couplingHomeostasis = (() => {
       }
     }
 
+    const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
+    /** @type {Array<{ pair: string, pressure: number }>} */
+    const rankedTailPairs = [];
     let tailSum = 0;
     let strongestTail = 0;
     let strongestPair = '';
     let activeTailCount = 0;
-    for (let i = 0; i < _TAIL_PRIORITY_PAIRS.length; i++) {
-      const pair = _TAIL_PRIORITY_PAIRS[i];
+    for (let i = 0; i < _TAIL_TRACKED_PAIRS.length; i++) {
+      const pair = _TAIL_TRACKED_PAIRS[i];
       const pairAbs = _pairAbsR[pair] || 0;
-      const rawTailPressure = clamp((pairAbs - 0.82) / 0.18, 0, 1) * 0.45 + clamp((pairAbs - 0.90) / 0.10, 0, 1) * 0.55;
+      const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
+        ? adaptiveSnapshot[pair]
+        : null;
+      const baseline = adaptiveEntry && typeof adaptiveEntry.baseline === 'number' ? adaptiveEntry.baseline : 0.25;
+      const targetAnchor = adaptiveEntry && typeof adaptiveEntry.current === 'number' ? adaptiveEntry.current : baseline;
+      const pairP95 = adaptiveEntry && typeof adaptiveEntry.p95AbsCorr === 'number' ? adaptiveEntry.p95AbsCorr : pairAbs;
+      const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
+      const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
+      const adaptiveHotThreshold = clamp(m.max(0.54, targetAnchor + 0.26, baseline * 1.9), 0.54, 0.82);
+      const overshootPressure = clamp((pairAbs - adaptiveHotThreshold) / 0.26, 0, 1);
+      const persistentPressure = clamp((pairP95 - adaptiveHotThreshold) / 0.18, 0, 1);
+      const hotspotPressure = clamp(hotspotRate / 0.18, 0, 1);
+      const severePressure = clamp(severeRate / 0.08, 0, 1);
+      const rawTailPressure = clamp(
+        overshootPressure * 0.30 +
+        persistentPressure * 0.34 +
+        hotspotPressure * 0.22 +
+        severePressure * 0.14,
+        0,
+        1
+      );
       const nextTailPressure = (_tailPressureByPair[pair] || 0) * (1 - _TAIL_PRESSURE_EMA_ALPHA) + rawTailPressure * _TAIL_PRESSURE_EMA_ALPHA;
       _tailPressureByPair[pair] = Number(nextTailPressure.toFixed(4));
       tailSum += nextTailPressure;
@@ -227,14 +255,38 @@ couplingHomeostasis = (() => {
         strongestTail = nextTailPressure;
         strongestPair = pair;
       }
-      if (nextTailPressure > 0.25) activeTailCount++;
+      if (nextTailPressure > 0.12) activeTailCount++;
+      if (nextTailPressure > 0.05) rankedTailPairs.push({ pair, pressure: nextTailPressure });
     }
+    rankedTailPairs.sort(function(a, b) { return b.pressure - a.pressure; });
     _dominantTailPair = strongestPair;
     _tailHotspotCount = activeTailCount;
-    const tailAverage = _TAIL_PRIORITY_PAIRS.length > 0 ? tailSum / _TAIL_PRIORITY_PAIRS.length : 0;
-    const tailAggregate = m.max(strongestTail, tailAverage * 1.35);
+    const tailAverage = _TAIL_TRACKED_PAIRS.length > 0 ? tailSum / _TAIL_TRACKED_PAIRS.length : 0;
+    let topTailMean = 0;
+    const topCount = m.min(_TAIL_MEMORY_TOP_K, rankedTailPairs.length);
+    for (let i = 0; i < topCount; i++) topTailMean += rankedTailPairs[i].pressure;
+    topTailMean = topCount > 0 ? topTailMean / topCount : 0;
+    const tailCoverage = _TAIL_TRACKED_PAIRS.length > 0 ? activeTailCount / _TAIL_TRACKED_PAIRS.length : 0;
+    const structuralTailPressure = clamp(
+      clamp((_redistributionScore - 0.18) / 0.45, 0, 1) * 0.40 +
+      clamp((_nudgeableRedistributionScore - 0.18) / 0.45, 0, 1) * 0.20 +
+      clamp((_giniCoefficient - 0.34) / 0.16, 0, 1) * 0.20 +
+      clamp((_totalEnergyEma - _energyBudget) / m.max(_energyBudget, 0.1), 0, 1) * 0.20,
+      0,
+      1
+    );
+    const tailAggregate = clamp(
+      strongestTail * 0.45 +
+      m.max(tailAverage, topTailMean) * 0.35 +
+      tailCoverage * 0.10 +
+      structuralTailPressure * 0.10,
+      0,
+      1
+    );
     _stickyTailPressure = _stickyTailPressure * (1 - _TAIL_PRESSURE_EMA_ALPHA) + tailAggregate * _TAIL_PRESSURE_EMA_ALPHA;
     _densityFlickerTailPressure = _tailPressureByPair['density-flicker'] || 0;
+    _tailRecoveryDrive = Number(clamp(tailAggregate * 0.72 + structuralTailPressure * 0.28, 0, 1).toFixed(4));
+    _tailRecoveryTrigger = Number(clamp(_TAIL_PRESSURE_TRIGGER_MIN + structuralTailPressure * 0.10 + m.max(0, tailCoverage - 0.20) * 0.08, _TAIL_PRESSURE_TRIGGER_MIN, 0.32).toFixed(4));
 
     if (pairCount === 0) return;
 
@@ -441,9 +493,14 @@ couplingHomeostasis = (() => {
       _globalGainMultiplier = _globalGainMultiplier * 0.95 + targetMultiplier * 0.05;
     }
 
-    const tailRecoveryPressure = m.max(_stickyTailPressure, _densityFlickerTailPressure);
+    const tailRecoveryPressure = m.max(_stickyTailPressure, _densityFlickerTailPressure, _tailRecoveryDrive);
     const floorContactNow = _globalGainMultiplier <= 0.22 || getFloorDampen() < 0.60;
-    const persistentTailNow = tailRecoveryPressure > _TAIL_PRESSURE_TRIGGER && _redistributionScore > 0.35;
+    const persistentTailNow = tailRecoveryPressure > _tailRecoveryTrigger && (
+      _redistributionScore > 0.25 ||
+      _nudgeableRedistributionScore > 0.20 ||
+      _giniCoefficient > (_GINI_THRESHOLD - 0.05) ||
+      _overBudget
+    );
     if (floorContactNow || persistentTailNow) {
       _floorRecoveryContactTicks += persistentTailNow && !floorContactNow ? 2 : 1;
       if (_floorRecoveryContactTicks > _FLOOR_RECOVERY_TRIGGER) {
@@ -453,7 +510,7 @@ couplingHomeostasis = (() => {
       _floorRecoveryContactTicks = 0;
     }
     if (_floorRecoveryTicksRemaining > 0) {
-      const recoveryFloor = clamp(0.30 + tailRecoveryPressure * 0.14, _GAIN_FLOOR, 0.46);
+      const recoveryFloor = clamp(0.30 + tailRecoveryPressure * 0.16 + m.max(0, _tailHotspotCount - 1) * 0.01, _GAIN_FLOOR, 0.52);
       _globalGainMultiplier = _globalGainMultiplier * 0.88 + m.max(_globalGainMultiplier, recoveryFloor) * 0.12;
       _floorRecoveryTicksRemaining--;
     }
@@ -482,7 +539,7 @@ couplingHomeostasis = (() => {
       }
     }
     if (applyBrake) {
-      const brakeScale = _floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > 0.25 ? 0.92 : 0.85;
+      const brakeScale = _floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > _tailRecoveryTrigger ? 0.92 : 0.85;
       _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier * brakeScale);
     }
 
@@ -544,7 +601,7 @@ couplingHomeostasis = (() => {
     const floorPressure = clamp((0.85 - getFloorDampen()) / 0.65, 0, 1);
     const gainPressure = clamp((0.95 - _globalGainMultiplier) / 0.55, 0, 1);
     const redistributionPressure = clamp(_nudgeableRedistributionScore / 0.50, 0, 1);
-    const tailPressure = clamp(_stickyTailPressure / 0.55, 0, 1);
+    const tailPressure = clamp(m.max(_stickyTailPressure, _tailRecoveryDrive) / 0.60, 0, 1);
     return clamp(m.max(floorPressure, gainPressure, tailPressure) * 0.65 + redistributionPressure * 0.25 + tailPressure * 0.10, 0, 1);
   }
 
@@ -620,6 +677,8 @@ couplingHomeostasis = (() => {
       floorRecoveryTicksRemaining: _floorRecoveryTicksRemaining,
       densityFlickerTailPressure: Number(_densityFlickerTailPressure.toFixed(4)),
       stickyTailPressure: Number(_stickyTailPressure.toFixed(4)),
+      tailRecoveryDrive: Number(_tailRecoveryDrive.toFixed(4)),
+      tailRecoveryTrigger: Number(_tailRecoveryTrigger.toFixed(4)),
       dominantTailPair: _dominantTailPair,
       tailHotspotCount: _tailHotspotCount,
       tailPressureByPair: Object.assign({}, _tailPressureByPair)
@@ -648,6 +707,8 @@ couplingHomeostasis = (() => {
     _floorRecoveryTicksRemaining = 0;
     _densityFlickerTailPressure *= 0.50;
     _stickyTailPressure *= 0.50;
+    _tailRecoveryDrive *= 0.50;
+    _tailRecoveryTrigger = _TAIL_PRESSURE_TRIGGER_MIN;
     _dominantTailPair = '';
     _tailHotspotCount = 0;
     const tailKeys = Object.keys(_tailPressureByPair);
