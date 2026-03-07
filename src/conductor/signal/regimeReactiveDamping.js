@@ -141,6 +141,7 @@ regimeReactiveDamping = (() => {
       let runCoherentShare = cohShare;
       let coherentLockPressure = 0;
       let forcedBreakPressure = 0;
+      let transitionScarcity = 0;
       const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
       if (readiness) {
         if (typeof readiness.runCoherentShare === 'number') {
@@ -148,6 +149,10 @@ regimeReactiveDamping = (() => {
         }
         if (typeof readiness.runCoherentBeats === 'number') {
           coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);
+        }
+        if (typeof readiness.runTransitionCount === 'number' && typeof readiness.runBeatCount === 'number' && readiness.runBeatCount > 64) {
+          const transitionRate = readiness.runTransitionCount / readiness.runBeatCount;
+          transitionScarcity = clamp((0.035 - transitionRate) / 0.035, 0, 1);
         }
         if (typeof readiness.runBeatCount === 'number' && readiness.runBeatCount > 96) {
           const noForcedBreaks = typeof readiness.forcedBreakCount === 'number' && readiness.forcedBreakCount === 0;
@@ -166,9 +171,10 @@ regimeReactiveDamping = (() => {
         runCoherentOvershare * 2.4 +
         m.max(0, _REGIME_BUDGET.exploring - expShare) * 0.75 +
         coherentLockPressure * 0.85 +
+        transitionScarcity * 0.55 +
         forcedBreakPressure,
         0,
-        1.15
+        1.25
       );
 
       // Exploring over-budget: suppress variety-promoting biases
@@ -180,9 +186,12 @@ regimeReactiveDamping = (() => {
       // R46 E2: Coherent-share reactive damping. If coherent overshoots and
       // exploring under-shoots, bias the system toward exploratory variance.
       if (coherentPressure > 0) {
-        _eqCorrD += coherentPressure * _EQUILIB_STRENGTH * 0.55;
-        _eqCorrF += coherentPressure * _EQUILIB_STRENGTH * 1.35;
-        _eqCorrT -= coherentPressure * _EQUILIB_STRENGTH * 1.10;
+        _eqCorrD += coherentPressure * _EQUILIB_STRENGTH * 0.75;
+        if (transitionScarcity > 0.25 && runCoherentShare > _REGIME_BUDGET.coherent) {
+          _eqCorrD += coherentPressure * 0.04;
+        }
+        _eqCorrF += coherentPressure * _EQUILIB_STRENGTH * 1.45;
+        _eqCorrT -= coherentPressure * _EQUILIB_STRENGTH * 1.15;
       }
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog

@@ -481,6 +481,14 @@ couplingHomeostasis = (() => {
     return rawDampen;
   }
 
+  /** @returns {number} */
+  function getBudgetConstraintPressure() {
+    const floorPressure = clamp((0.85 - getFloorDampen()) / 0.65, 0, 1);
+    const gainPressure = clamp((0.95 - _globalGainMultiplier) / 0.55, 0, 1);
+    const redistributionPressure = clamp(_nudgeableRedistributionScore / 0.50, 0, 1);
+    return clamp(m.max(floorPressure, gainPressure) * 0.7 + redistributionPressure * 0.3, 0, 1);
+  }
+
   /**
    * Diagnostic snapshot for trace pipeline.
    * R22: Extended with tickCount, time-series derived metrics, and per-beat diagnostics.
@@ -520,6 +528,7 @@ couplingHomeostasis = (() => {
     const avgRecoveryDuration = recoveryDurations.length > 0
       ? recoveryDurations.reduce((a, b) => a + b, 0) / recoveryDurations.length
       : 0;
+    const budgetConstraintPressure = getBudgetConstraintPressure();
 
     return {
       totalEnergyEma: Number(_totalEnergyEma.toFixed(4)),
@@ -531,6 +540,8 @@ couplingHomeostasis = (() => {
       // R27 E6: Nudgeable-only redistribution score (excludes entropy-trust,
       // entropy-phase, trust-phase phantom turbulence)
       nudgeableRedistributionScore: Number(_nudgeableRedistributionScore.toFixed(4)),
+      budgetConstraintActive: budgetConstraintPressure > 0.25,
+      budgetConstraintPressure: Number(budgetConstraintPressure.toFixed(4)),
       globalGainMultiplier: Number(_globalGainMultiplier.toFixed(4)),
       giniCoefficient: Number(_giniCoefficient.toFixed(4)),
       energyDeltaEma: Number(_energyDeltaEma.toFixed(4)),

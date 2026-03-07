@@ -251,6 +251,26 @@ function generateNarrative() {
     lines.push('');
   }
 
+  if (summary && summary.beatSetupBudget && summary.beatSetupBudget.exceededCount > 0) {
+    const budget = summary.beatSetupBudget;
+    lines.push('## Performance');
+    lines.push('');
+    lines.push(`Beat setup exceeded the **${budget.thresholdMs}ms** budget on **${budget.exceededCount}** beats ` +
+      `(${pct(budget.exceededRate)} of the run).`);
+    if (budget.worstSpike) {
+      lines.push(`The worst spike landed at beat ${budget.worstSpike.index} with **${dec(budget.worstSpike.ms)}ms**, ` +
+        `dominated by **${budget.worstSpike.dominantSubstage}** (${dec(budget.worstSpike.dominantSubstageMs)}ms).`);
+    }
+    if (Array.isArray(budget.topSubstages) && budget.topSubstages.length > 0) {
+      lines.push('The most common spike drivers were:');
+      lines.push('');
+      for (const stage of budget.topSubstages.slice(0, 3)) {
+        lines.push(`- **${stage.stage}**: ${stage.count} spikes (avg ${dec(stage.avgMs)}ms, peak ${dec(stage.maxMs)}ms)`);
+      }
+      lines.push('');
+    }
+  }
+
   // ---- Trust Governance ----
   lines.push('## Trust Governance');
   lines.push('');
