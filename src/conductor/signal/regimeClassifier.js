@@ -320,11 +320,15 @@ regimeClassifier = (() => {
       0,
       1
     );
-    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty + cadenceMonopolyPressure * 0.055;
+    const opportunityPressure = clamp(opportunityGap / 0.18, 0, 1);
+    const coherentGateTightening = cadenceMonopolyPressure * 0.080 + opportunityPressure * 0.050 + evolvingDeficit * 0.015;
+    const coherentEntryMargin = cadenceMonopolyPressure * 0.050 + opportunityPressure * 0.040 + (lastRegime === 'coherent' ? 0.010 : 0);
+    const coherentDimMax = 4.0 - cadenceMonopolyPressure * 0.55 - opportunityPressure * 0.35;
+    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty + coherentGateTightening;
     const coherentExitWindow = 0.08 + evolvingDeficit * 0.12;
     const evolvingEntryVelMin = 0.006;
-    const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.016;
-    const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.20;
+    const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.020 + opportunityPressure * 0.016;
+    const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.22 - opportunityPressure * 0.12;
     // R27 E5: Relax velocity threshold from 0.008 to 0.005 after 100 exploring
     // beats. In R26, coherent entry was at beat 376/439 (85.6% through) despite
     // the coupling threshold being deeply negative by beat ~200. The bottleneck
@@ -363,13 +367,22 @@ regimeClassifier = (() => {
       return 'exploring';
     }
 
+    if (cadenceMonopolyPressure > 0.40 &&
+        avgVelocity > evolvingEntryVelMin &&
+        avgVelocity < evolvingEntryVelMax + 0.012 &&
+        effectiveDim > evolvingEntryDimMin - 0.10 &&
+        couplingStrength > coherentThreshold - 0.02 &&
+        couplingStrength < coherentThreshold + 0.10) {
+      return 'evolving';
+    }
+
     // R36 E2: effectiveDim gate on coherent entry.
     // R37 E2: Tightened from 4.0 to 3.5. R36 data: 87 raw coherent beats
     // vs 2 raw exploring. effectiveDim almost always > 4.0, swallowing all
     // potential exploring beats into coherent. At 3.5, more beats with
     // 3-4 effective dimensions redirect to exploring.
     // R41 E2: Relaxed back to 4.0 because high multi-dimensionality is healthy.
-    if (couplingStrength > coherentThreshold && avgVelocity > _velThreshold && effectiveDim <= 4.0) return 'coherent';
+    if (couplingStrength > coherentThreshold + coherentEntryMargin && avgVelocity > _velThreshold && effectiveDim <= coherentDimMax) return 'coherent';
 
     const recentlyCoherent = lastRegime === 'coherent' || _coherentMomentumBeats > 0;
     const coherentGap = couplingStrength - coherentThreshold;
@@ -403,14 +416,15 @@ regimeClassifier = (() => {
     // R37 E3: Exploring coupling gate widened 0.40->0.50. In R36 coupling
     // averages ranged 0.19-0.44, so many beats with moderate coupling were
     // blocked. At 0.50, midrange-coupled high-dim beats can enter exploring.
-    const _exploringVelThreshold = (_evolvingBeats > 100 ? 0.010 : 0.012) - cadenceMonopolyPressure * 0.002;
+    const _exploringVelThreshold = (_evolvingBeats > 100 ? 0.010 : 0.012) - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001;
     // R43 E3: Exploring Dimension Relief
-    const _exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - cadenceMonopolyPressure * 0.20;
-    if (avgVelocity > _exploringVelThreshold && effectiveDim > _exploringDimThreshold && couplingStrength <= 0.50) return 'exploring';
+    const _exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10;
+    const _exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06;
+    if (avgVelocity > _exploringVelThreshold && effectiveDim > _exploringDimThreshold && couplingStrength <= _exploringCouplingGate) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
-    if (lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 && effectiveDim > 1.6 && couplingStrength > 0.08 + evolvingDeficit * 0.015) return 'evolving';
+    if (lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 + opportunityPressure * 0.010 && effectiveDim > 1.6 && couplingStrength > 0.08 + evolvingDeficit * 0.015 - opportunityPressure * 0.010) return 'evolving';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
@@ -539,12 +553,14 @@ regimeClassifier = (() => {
     const transitionScarcity = projectedRunBeatCount > 24
       ? clamp((0.055 - (projectedTransitionCount / projectedRunBeatCount)) / 0.055, 0, 1)
       : 0;
+    const rawOpportunityPressure = clamp(rawNonCoherentOpportunityShare / 0.20, 0, 1);
     const monopolyPressure = clamp(
       clamp((projectedCoherentShare - 0.58) / 0.18, 0, 1) * 0.44 +
       clamp(opportunityGap / 0.22, 0, 1) * 0.34 +
       transitionScarcity * 0.12 +
       (projectedRunBeatCount > 18 && (projectedResolvedCounts['exploring'] || 0) === 0 ? 0.10 : 0) +
-      clamp((0.08 - rawExploringShare) / 0.08, 0, 1) * 0.08,
+      clamp((0.08 - rawExploringShare) / 0.08, 0, 1) * 0.04 +
+      rawOpportunityPressure * 0.06,
       0,
       1
     );
@@ -555,7 +571,7 @@ regimeClassifier = (() => {
 
     return {
       pressure: Number(monopolyPressure.toFixed(4)),
-      active: projectedRunBeatCount > 18 && monopolyPressure > 0.55,
+      active: projectedRunBeatCount > 16 && monopolyPressure > 0.48,
       reason,
       preferredRegime: rawExploringShare >= rawEvolvingShare ? 'exploring' : 'evolving',
       rawExploringShare: Number(rawExploringShare.toFixed(4)),
@@ -696,9 +712,10 @@ regimeClassifier = (() => {
     if (_forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent' && monopolyState.active && (
       rawRegime === 'exploring' ||
       rawRegime === 'evolving' ||
-      monopolyState.rawNonCoherentOpportunityShare > 0.20
+      monopolyState.rawNonCoherentOpportunityShare > 0.16 ||
+      monopolyState.opportunityGap > 0.10
     )) {
-      const forcedWindow = clamp(4 + m.floor(monopolyState.pressure * 4), 4, 8);
+      const forcedWindow = clamp(5 + m.floor(monopolyState.pressure * 5), 5, 9);
       activateForcedRegime(monopolyState.preferredRegime, 'coherent-cadence-monopoly', forcedWindow, _runCoherentBeats + beatSpan, tickId);
       resolvedRegime = monopolyState.preferredRegime;
       _forcedOverrideActive = true;
@@ -811,16 +828,17 @@ regimeClassifier = (() => {
     // R35 E5: Determine which condition blocks exploring entry
     // R36 E5: Use adaptive velocity threshold (0.010 after 100+ evolving beats)
     // R37 E3: Updated coupling gate from 0.40 to 0.50
-    const _expVelThresh = _evolvingBeats > 100 ? 0.010 : 0.015;
+    const cadenceOpportunityPressure = clamp((li.opportunityGap || 0) / 0.20, 0, 1);
+    const _expVelThresh = (_evolvingBeats > 100 ? 0.010 : 0.012) - (li.cadenceMonopolyPressure || 0) * 0.003 - cadenceOpportunityPressure * 0.001;
     let exploringBlock = 'none';
     if (li.velocity <= _expVelThresh) exploringBlock = 'velocity';
     else if ((li.effectiveDim || 0) <= 2.5) exploringBlock = 'dimension';
-    else if (li.couplingStrength > 0.50) exploringBlock = 'coupling';
+    else if (li.couplingStrength > 0.50 + (li.cadenceMonopolyPressure || 0) * 0.08 + cadenceOpportunityPressure * 0.06) exploringBlock = 'coupling';
 
     let coherentBlock = 'none';
     if (li.couplingStrength <= li.coherentThreshold) coherentBlock = 'coupling';
     else if (li.velocity <= li.velThreshold) coherentBlock = 'velocity';
-    else if ((li.effectiveDim || 0) > 3.8) coherentBlock = 'dimension';
+    else if ((li.effectiveDim || 0) > 4.0 - (li.cadenceMonopolyPressure || 0) * 0.55 - cadenceOpportunityPressure * 0.35) coherentBlock = 'dimension';
 
     return {
       gap: Number((li.couplingStrength - li.coherentThreshold).toFixed(4)),

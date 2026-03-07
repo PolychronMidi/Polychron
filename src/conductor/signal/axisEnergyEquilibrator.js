@@ -64,6 +64,8 @@ axisEnergyEquilibrator = (() => {
   const _PHASE_SURFACE_ABS_MIN = 0.18;
   const _TRUST_SURFACE_RATIO = 1.45;
   const _TRUST_SURFACE_ABS_MIN = 0.20;
+  const _ENTROPY_SURFACE_RATIO = 1.35;
+  const _ENTROPY_SURFACE_ABS_MIN = 0.18;
   const _COHERENT_HOTSPOT_MIN_SCALE = 0.18;
   const _COHERENT_HOTSPOT_MAX_SCALE = 0.42;
 
@@ -106,6 +108,7 @@ axisEnergyEquilibrator = (() => {
   let _skippedColdspotRelaxations = 0;
   let _phaseSurfaceHotBeats = 0;
   let _trustSurfaceHotBeats = 0;
+  let _entropySurfaceHotBeats = 0;
   let _coherentHotspotActuationBeats = 0;
   let _coherentHotspotPairAdj = 0;
   let _coherentHotspotAxisAdj = 0;
@@ -157,6 +160,14 @@ axisEnergyEquilibrator = (() => {
     if (_beatCount < _WARMUP) return;
 
     const giniMult = axisGini > _GINI_ESCALATION ? 1.5 : 1.0;
+    const homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    const recoveryAxisHandOffPressure = homeostasisState && typeof homeostasisState.recoveryAxisHandOffPressure === 'number'
+      ? homeostasisState.recoveryAxisHandOffPressure
+      : 0;
+    const recoveryDominantAxes = homeostasisState && Array.isArray(homeostasisState.recoveryDominantAxes)
+      ? homeostasisState.recoveryDominantAxes
+      : [];
+    const densityFlickerAxisLock = recoveryDominantAxes.indexOf('density') !== -1 && recoveryDominantAxes.indexOf('flicker') !== -1;
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
     const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
     let phaseSurfaceHot = false;
@@ -211,6 +222,32 @@ axisEnergyEquilibrator = (() => {
     }
     if (phaseSurfaceHot) _phaseSurfaceHotBeats++;
     if (trustSurfaceHot) _trustSurfaceHotBeats++;
+    let entropySurfaceHot = false;
+    let entropySurfacePressure = 0;
+    const entropySurfacePairs = ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'];
+    for (let p = 0; p < entropySurfacePairs.length; p++) {
+      const pair = entropySurfacePairs[p];
+      const pd = snapshot[pair];
+      if (!pd) continue;
+      const baseline = V.optionalFinite(pd.baseline, 0);
+      const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
+      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
+      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
+      const severeRate = V.optionalFinite(pd.severeRate, 0);
+      const pairPressure = clamp(
+        clamp((rolling - m.max(_ENTROPY_SURFACE_ABS_MIN, baseline * _ENTROPY_SURFACE_RATIO)) / 0.18, 0, 1) * 0.30 +
+        clamp((pairP95 - m.max(_ENTROPY_SURFACE_ABS_MIN + 0.10, baseline * (_ENTROPY_SURFACE_RATIO + 0.20))) / 0.16, 0, 1) * 0.40 +
+        clamp((hotspotRate - 0.16) / 0.18, 0, 1) * 0.18 +
+        clamp((severeRate - 0.04) / 0.10, 0, 1) * 0.12,
+        0,
+        1
+      );
+      if (pairPressure > 0) {
+        entropySurfaceHot = true;
+        entropySurfacePressure = m.max(entropySurfacePressure, pairPressure);
+      }
+    }
+    if (entropySurfaceHot) _entropySurfaceHotBeats++;
 
     // R31: Graduated coherent gate. R30's binary gate (freeze during evolving
     // + coherent = 61% of beats) caused axisGini to triple (0.137->0.382)
@@ -226,14 +263,14 @@ axisEnergyEquilibrator = (() => {
     // only 13.7 total tighten budget (R33: 35). Without exploring, evolving
     // must carry more of the tightening load.
     const coherentHotspotScale = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot)
-      ? clamp(_COHERENT_HOTSPOT_MIN_SCALE + phaseSurfacePressure * 0.14 + trustSurfacePressure * 0.12, _COHERENT_HOTSPOT_MIN_SCALE, _COHERENT_HOTSPOT_MAX_SCALE)
+      ? clamp(_COHERENT_HOTSPOT_MIN_SCALE + phaseSurfacePressure * 0.14 + trustSurfacePressure * 0.12 + entropySurfacePressure * 0.10, _COHERENT_HOTSPOT_MIN_SCALE, _COHERENT_HOTSPOT_MAX_SCALE)
       : 0;
     if (coherentHotspotScale > 0) _coherentHotspotActuationBeats++;
     const tightenScale = currentRegime === 'coherent' ? 0.0
       : currentRegime === 'evolving' ? 0.6
       : currentRegime === 'exploring' ? 1.5
       : 1.0;
-    const coherentColdspotFreeze = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot);
+    const coherentColdspotFreeze = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot || entropySurfaceHot);
     if (coherentColdspotFreeze) _coherentFreezeBeats++;
 
     // R32 E5: Track per-regime beats and tightening budget
@@ -262,7 +299,8 @@ axisEnergyEquilibrator = (() => {
 
       const isPhaseSurfacePair = pair === 'density-phase' || pair === 'flicker-phase' || pair === 'tension-phase';
       const isTrustSurfacePair = pair === 'density-trust' || pair === 'flicker-trust' || pair === 'tension-trust';
-      const coherentPairEligible = isPhaseSurfacePair || isTrustSurfacePair || pair === 'density-flicker';
+      const isEntropySurfacePair = pair === 'density-entropy' || pair === 'tension-entropy' || pair === 'flicker-entropy' || pair === 'entropy-trust' || pair === 'entropy-phase';
+      const coherentPairEligible = isPhaseSurfacePair || isTrustSurfacePair || isEntropySurfacePair || pair === 'density-flicker';
       const pairTightenScale = currentRegime === 'coherent'
         ? (coherentPairEligible && (residualTailHot || rolling > _HOTSPOT_RATIO * baseline) ? coherentHotspotScale : 0)
         : tightenScale;
@@ -278,9 +316,10 @@ axisEnergyEquilibrator = (() => {
           1
         );
         const phaseSurfaceBoost = isPhaseSurfacePair ? 1.35 : 1.0;
+        const entropySurfaceBoost = isEntropySurfacePair ? 1.28 : 1.0;
         const rankBoost = budgetRank <= 1 ? 1.30 : budgetRank <= 3 ? 1.16 : 1.0;
-        const coherentHotBoost = currentRegime === 'coherent' && coherentPairEligible ? 1.10 : 1.0;
-        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * rankBoost * coherentHotBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const coherentHotBoost = currentRegime === 'coherent' && coherentPairEligible ? (isEntropySurfacePair ? 1.18 : 1.10) : 1.0;
+        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(_BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
@@ -321,6 +360,7 @@ axisEnergyEquilibrator = (() => {
       const axisTightenScale = currentRegime === 'coherent'
         ? ((((axis === 'phase' || axis === 'density' || axis === 'flicker') && phaseSurfaceHot) ||
             ((axis === 'trust' || axis === 'density' || axis === 'tension' || axis === 'flicker') && trustSurfaceHot))
+          || (((axis === 'entropy' || axis === 'density' || axis === 'tension' || axis === 'flicker') && entropySurfaceHot))
           ? coherentHotspotScale
           : 0)
         : tightenScale;
@@ -330,6 +370,7 @@ axisEnergyEquilibrator = (() => {
         // R39 E1: Entropy Axis Soft-Throttle. Apply 0.95x dampening strictly to entropy during exploring.
         let dampMult = (axis === 'entropy') ? entropyExploringDamp : 1.0;
         if (axis === 'phase') dampMult *= phaseEvolvingDamp;
+        if (axis === 'entropy' && entropySurfaceHot) dampMult *= 1 + entropySurfacePressure * 0.35;
 
         // R44 E3: Flicker Axis Dampening Core (self-correcting relative to overshoot)
         if (axis === 'flicker' && share > 0.20) {
@@ -339,6 +380,9 @@ axisEnergyEquilibrator = (() => {
         // E2: Density Axis Dampening
         if (axis === 'density' && share > 0.25) {
           dampMult -= 0.05;
+        }
+        if (recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && (axis === 'density' || axis === 'flicker')) {
+          dampMult *= 1 + recoveryAxisHandOffPressure * 0.40;
         }
 
         // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
@@ -372,7 +416,10 @@ axisEnergyEquilibrator = (() => {
         // Trust/entropy/phase axes have only 3 effective nudgeable pairs vs 5,
         // so they need 5/3 = 1.67x faster relaxation to match correction speed.
         const pairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
-        const rate = _AXIS_RELAX_RATE * pairScale * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
+        const handOffRelaxBoost = recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && axis !== 'density' && axis !== 'flicker'
+          ? 1 + recoveryAxisHandOffPressure * 0.55
+          : 1.0;
+        const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue;
@@ -398,7 +445,7 @@ axisEnergyEquilibrator = (() => {
     });
   }
 
-  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number }} */
+  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, entropySurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number }} */
   function getSnapshot() {
     return {
       beatCount: _beatCount,
@@ -417,6 +464,7 @@ axisEnergyEquilibrator = (() => {
       skippedColdspotRelaxations: _skippedColdspotRelaxations,
       phaseSurfaceHotBeats: _phaseSurfaceHotBeats,
       trustSurfaceHotBeats: _trustSurfaceHotBeats,
+      entropySurfaceHotBeats: _entropySurfaceHotBeats,
       coherentHotspotActuationBeats: _coherentHotspotActuationBeats,
       coherentHotspotPairAdj: _coherentHotspotPairAdj,
       coherentHotspotAxisAdj: _coherentHotspotAxisAdj

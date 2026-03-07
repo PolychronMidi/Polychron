@@ -38,6 +38,12 @@ systemDynamicsProfiler = (() => {
   let _lastEntropyError = '';
   // R13 Evo 6: Velocity EMA
   let _velocityEma = null;
+  let _lastPhaseSample = null;
+  let _lastPhaseDelta = 0;
+  let _lastPhaseChanged = false;
+  let _lastPhaseSignalValid = false;
+  let _phaseStaleBeats = 0;
+  let _lastBeatCountAtAnalysis = 0;
 
   // -- Per-dimension z-score normalization --
   // Pipeline products (density/tension/flicker) are multiplicative products of
@@ -131,9 +137,18 @@ systemDynamicsProfiler = (() => {
       entropySampleErrors: 0,
       entropyRhythmErrors: 0,
       lastEntropyError: '',
+      phaseValue: 0,
+      phaseDelta: 0,
+      phaseChanged: false,
+      phaseStaleBeats: 0,
+      phaseSignalValid: false,
+      phaseCouplingCoverage: 0,
+      phaseCouplingAvailablePairs: 0,
+      phaseCouplingMissingPairs: 4,
       profilerTick: 0,
       regimeTick: 0,
       trajectorySamples: 0,
+      telemetryBeatSpan: 1,
       warmupTicksRemaining: MIN_WINDOW,
       profilerCadence: 'measure-recorder'
     };
@@ -204,7 +219,29 @@ systemDynamicsProfiler = (() => {
     }
 
     let phase = 0;
-    try { phase = timeStream.normalizedProgress('section'); } catch { /* non-fatal */ }
+    _lastPhaseSignalValid = false;
+    _lastPhaseChanged = false;
+    _lastPhaseDelta = 0;
+    try {
+      const sampledPhase = timeStream.normalizedProgress('section');
+      if (typeof sampledPhase === 'number' && Number.isFinite(sampledPhase)) {
+        phase = clamp(sampledPhase, 0, 1);
+        _lastPhaseSignalValid = true;
+      }
+    } catch { /* non-fatal */ }
+
+    if (_lastPhaseSignalValid) {
+      if (_lastPhaseSample !== null) {
+        _lastPhaseDelta = m.abs(phase - _lastPhaseSample);
+        _lastPhaseChanged = _lastPhaseDelta > 0.0005;
+        _phaseStaleBeats = _lastPhaseChanged ? 0 : _phaseStaleBeats + 1;
+      } else {
+        _phaseStaleBeats = 0;
+      }
+      _lastPhaseSample = phase;
+    } else {
+      _phaseStaleBeats++;
+    }
 
     return [
       snap.densityProduct,
@@ -225,6 +262,11 @@ systemDynamicsProfiler = (() => {
     beatsSeen++;
     _analysisTick++;
     const rawState = _sampleState();
+    const currentBeatCounter = Number.isFinite(beatCount) ? beatCount : beatsSeen;
+    const telemetryBeatSpan = _analysisTick > 1
+      ? m.max(1, currentBeatCounter - _lastBeatCountAtAnalysis)
+      : 1;
+    _lastBeatCountAtAnalysis = currentBeatCounter;
 
     // -- Z-score normalize compositional dimensions --
     // Update Welford accumulators then normalize. Non-compositional dims
@@ -277,9 +319,18 @@ systemDynamicsProfiler = (() => {
     // Need minimum history for meaningful analysis
     if (trajectory.length < MIN_WINDOW) {
       _lastSnapshot = Object.assign({}, _lastSnapshot, {
+        phaseValue: _lastPhaseSample !== null ? Number(_lastPhaseSample.toFixed(4)) : 0,
+        phaseDelta: Number(_lastPhaseDelta.toFixed(4)),
+        phaseChanged: _lastPhaseChanged,
+        phaseStaleBeats: _phaseStaleBeats,
+        phaseSignalValid: _lastPhaseSignalValid,
+        phaseCouplingCoverage: 0,
+        phaseCouplingAvailablePairs: 0,
+        phaseCouplingMissingPairs: 4,
         profilerTick: _analysisTick,
         regimeTick: _analysisTick,
         trajectorySamples: trajectory.length,
+        telemetryBeatSpan,
         warmupTicksRemaining: m.max(0, MIN_WINDOW - trajectory.length),
         profilerCadence: 'measure-recorder'
       });
@@ -314,6 +365,15 @@ systemDynamicsProfiler = (() => {
     const { mean, variance } = phaseSpaceMath.stats(rawTrajectory, N_DIMS);
     const { matrix, strength } = phaseSpaceMath.coupling(rawTrajectory, mean, DIM_NAMES, N_DIMS, N_COMPOSITIONAL_DIMS);
     const effDim = phaseSpaceMath.effectiveDimensionality(rawTrajectory, mean, N_COMPOSITIONAL_DIMS);
+    const phaseCouplingPairs = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
+    let phaseCouplingAvailablePairs = 0;
+    for (let i = 0; i < phaseCouplingPairs.length; i++) {
+      const pairValue = matrix[phaseCouplingPairs[i]];
+      if (typeof pairValue === 'number' && Number.isFinite(pairValue)) phaseCouplingAvailablePairs++;
+    }
+    const phaseCouplingCoverage = phaseCouplingPairs.length > 0
+      ? phaseCouplingAvailablePairs / phaseCouplingPairs.length
+      : 0;
     // per-axis variance ratios for dead-axis detection.
     // Normalized so they sum to 1.0 - a value near 0 means that axis
     // contributes negligible variance to the phase-space trajectory.
@@ -341,9 +401,18 @@ systemDynamicsProfiler = (() => {
       entropySampleErrors: _entropySampleErrors,
       entropyRhythmErrors: entropyRegulator.getRhythmErrors(),
       lastEntropyError: _lastEntropyError,
+      phaseValue: _lastPhaseSample !== null ? Number(_lastPhaseSample.toFixed(4)) : 0,
+      phaseDelta: Number(_lastPhaseDelta.toFixed(4)),
+      phaseChanged: _lastPhaseChanged,
+      phaseStaleBeats: _phaseStaleBeats,
+      phaseSignalValid: _lastPhaseSignalValid,
+      phaseCouplingCoverage: Number(phaseCouplingCoverage.toFixed(4)),
+      phaseCouplingAvailablePairs,
+      phaseCouplingMissingPairs: phaseCouplingPairs.length - phaseCouplingAvailablePairs,
       profilerTick: _analysisTick,
       regimeTick: _analysisTick,
       trajectorySamples: trajectory.length,
+      telemetryBeatSpan,
       warmupTicksRemaining: 0,
       profilerCadence: 'measure-recorder'
     };
@@ -399,6 +468,11 @@ systemDynamicsProfiler = (() => {
     _stateSmoothingResolved = false;
     _stateSmoothing = 0.30;
     _lastSnapshot = _emptySnapshot();
+    _lastPhaseSample = null;
+    _lastPhaseDelta = 0;
+    _lastPhaseChanged = false;
+    _lastPhaseSignalValid = false;
+    _phaseStaleBeats = 0;
     entropyAmplificationController.reset();
     regimeClassifier.reset();
     for (let d = 0; d < N_COMPOSITIONAL_DIMS; d++) {

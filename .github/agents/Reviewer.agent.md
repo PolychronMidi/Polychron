@@ -23,7 +23,7 @@ Read ALL of the following files. Do not skip any. Read them in parallel where po
 |------|-------------------|
 | `metrics/pipeline-summary.json` | Pipeline health: wall time, per-step timing, pass/fail counts. Check for new failures or regressions. |
 | `metrics/trace-summary.json` | The statistical soul of the run: beat counts, regime distribution, conductor signal ranges (density/tension/flicker min/max/avg), coupling matrices (abs + tail), coupling hotspots (p95 > 0.70), coupling correlation (Pearson r + direction), trust score summaries, beat-setup budget (spike detection), **adaptiveTargets** (per-pair baseline, current, drift, rollingAbsCorr, gain, heatPenalty, effectivenessEma — reveals whether coupling surges are target-drift-driven or regime-modulated, and whether decorrelation nudges actually reduce coupling), **axisCouplingTotals** (per-axis sum of |r| across all pairs sharing that axis), **axisEnergyShare** (per-axis share of total coupling energy + axisGini), **couplingGates** (per-axis coherence gate values gateD/gateT/gateF, floorDampen, bypass magnitudes, gate EMA temporal stats), **couplingHomeostasis** (totalEnergyEma, energyBudget, peakEnergyEma, totalEnergyFloor, floorDampen, redistributionScore, globalGainMultiplier, giniCoefficient, multiplier stats), **regimeCadence** (trace-entry counts vs profiler/controller tick counts, snapshot reuse, warmup share), and **nonNudgeableGains** (verifies that structurally non-nudgeable pairs stay at zero gain and zero effective gain). |
-| `metrics/golden-fingerprint.json` | Current run's 9-dimension fingerprint: noteCount (per-layer), pitchEntropy, densityVariance, tensionArc (4-point: 25%/50%/75%/90%), trustConvergence, regimeDistribution, coupling (mean absolute), correlationTrend (direction flips), crossProfileWarning (profile change detection). Also includes couplingMeans, couplingCorrelation, trustFinal, activeProfile. |
+| `metrics/golden-fingerprint.json` | Current run's 11-dimension fingerprint: noteCount (per-layer), pitchEntropy, densityVariance, tensionArc (4-point: 25%/50%/75%/90%), trustConvergence, regimeDistribution, coupling (mean absolute), correlationTrend (direction flips), exceedanceSeverity, hotspotMigration, and telemetryHealth. Also includes couplingMeans, couplingCorrelation, trustFinal, activeProfile, and crossProfileWarning metadata when profile change detection applies. |
 | `metrics/golden-fingerprint.prev.json` | Previous run's fingerprint. Compare field-by-field against current. |
 | `metrics/fingerprint-comparison.json` | Automated comparison: verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta vs tolerance, drifted count. This is your headline. |
 | `metrics/fingerprint-drift-explainer.json` | Causal narratives for any drifted dimensions. Read the `cause`, `correlates`, and `layerShift` fields. |
@@ -124,7 +124,7 @@ One-line summary: `RXX: <beats> beats / <seconds>s <profile> | <VERDICT> (<stabl
 - Any meta-controller conflict detections
 
 ### Fingerprint Comparison Detail
-- For each of the 9 dimensions: delta, tolerance (effective, including profile-adaptive), status
+- For each of the 11 dimensions: delta, tolerance (effective, including profile-adaptive), status
 - If cross-profile comparison was triggered, note the tolerance widening
 - For drifted dimensions: root cause from drift explainer
 - Tuning invariant results (any failures?)

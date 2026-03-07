@@ -138,6 +138,11 @@ couplingHomeostasis = (() => {
   let _tailRecoveryHandshake = 0;
   let _tailRecoveryCap = 1.0;
   let _tailRecoveryCeilingPressure = 0;
+  let _densityFlickerClampPressure = 0;
+  let _densityFlickerOverridePressure = 0;
+  let _recoveryAxisHandOffPressure = 0;
+  /** @type {string[]} */
+  let _recoveryDominantAxes = [];
   // R21 E6: Invoke tracking for beat processing diagnostics
   let _invokeCount = 0;               // every refresh() call regardless of guards
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
@@ -480,16 +485,46 @@ couplingHomeostasis = (() => {
     // If refresh() already ran on this tick's recorder invocation, skip the
     // multiplier update here (refresh -> tick already called above).
     const tailRecoveryPressure = m.max(_stickyTailPressure, _densityFlickerTailPressure, _tailRecoveryDrive);
+    const dynamicsSnapshot = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const densityFlickerAbs = dynamicsSnapshot && dynamicsSnapshot.couplingMatrix && typeof dynamicsSnapshot.couplingMatrix['density-flicker'] === 'number'
+      ? m.abs(dynamicsSnapshot.couplingMatrix['density-flicker'])
+      : 0;
+    _densityFlickerClampPressure = clamp(
+      _densityFlickerTailPressure * 0.65 +
+      clamp((densityFlickerAbs - 0.88) / 0.10, 0, 1) * 0.35,
+      0,
+      1
+    );
     _tailRecoveryCeilingPressure = clamp((_globalGainMultiplier - 0.94) / 0.06, 0, 1);
     _tailRecoveryHandshake = clamp(
       tailRecoveryPressure * 0.70 +
       m.max(0, _tailHotspotCount - 1) * 0.05 +
       (_floorRecoveryTicksRemaining > 0 ? 0.12 : 0) +
-      _tailRecoveryCeilingPressure * 0.22,
+      _tailRecoveryCeilingPressure * 0.22 +
+      _densityFlickerClampPressure * 0.18,
       0,
       1
     );
-    _tailRecoveryCap = clamp(0.96 - _tailRecoveryHandshake * 0.22 - m.max(0, _tailHotspotCount - 2) * 0.01, _GAIN_FLOOR, 0.96);
+    _densityFlickerOverridePressure = clamp(
+      (_dominantTailPair === 'density-flicker' ? 0.34 : 0) +
+      _densityFlickerTailPressure * 0.34 +
+      _densityFlickerClampPressure * 0.22 +
+      (_floorRecoveryTicksRemaining > 0 ? 0.10 : 0),
+      0,
+      1
+    );
+    _recoveryAxisHandOffPressure = clamp(
+      (_floorRecoveryTicksRemaining > 0 ? 0.24 : 0) +
+      _densityFlickerClampPressure * 0.28 +
+      _tailRecoveryHandshake * 0.24 +
+      clamp((_tailHotspotCount - 1) / 5, 0, 1) * 0.12,
+      0,
+      1
+    );
+    _recoveryDominantAxes = _dominantTailPair && _dominantTailPair.indexOf('-') !== -1
+      ? _dominantTailPair.split('-')
+      : [];
+    _tailRecoveryCap = clamp(0.96 - _tailRecoveryHandshake * 0.22 - m.max(0, _tailHotspotCount - 2) * 0.01 - _densityFlickerClampPressure * 0.09, _GAIN_FLOOR, 0.94);
 
     if (_refreshedThisTick) {
       _refreshedThisTick = false;
@@ -514,6 +549,9 @@ couplingHomeostasis = (() => {
       }
       if (tailRecoveryPressure > _tailRecoveryTrigger * 0.85) {
         targetMultiplier = m.min(targetMultiplier, _tailRecoveryCap);
+      }
+      if (_densityFlickerClampPressure > 0.20) {
+        targetMultiplier = m.min(targetMultiplier, 0.90 - _densityFlickerClampPressure * 0.18);
       }
       // EMA smooth toward target: alpha=0.05 gives ~20-beat convergence
       _globalGainMultiplier = _globalGainMultiplier * 0.95 + targetMultiplier * 0.05;
@@ -547,11 +585,10 @@ couplingHomeostasis = (() => {
     _multiplierMax = m.max(_multiplierMax, _globalGainMultiplier);
 
     // R40 E3: Exceedance Multiplier Brake
-    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     let applyBrake = false;
-    if (dynamics && dynamics.couplingMatrix) {
-      for (const pair in dynamics.couplingMatrix) {
-        const val = dynamics.couplingMatrix[pair];
+    if (dynamicsSnapshot && dynamicsSnapshot.couplingMatrix) {
+      for (const pair in dynamicsSnapshot.couplingMatrix) {
+        const val = dynamicsSnapshot.couplingMatrix[pair];
         const rolling = V.optionalFinite(val);
         if (rolling !== undefined && m.abs(rolling) > 0.85) {
           _exceedanceTicks[pair] = (_exceedanceTicks[pair] || 0) + 1;
@@ -566,7 +603,8 @@ couplingHomeostasis = (() => {
       }
     }
     if (applyBrake) {
-      const brakeScale = _floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > _tailRecoveryTrigger
+      const brakeScale = _densityFlickerClampPressure > 0.35 ? 0.76
+        : _floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > _tailRecoveryTrigger
         ? 0.86
         : (_tailRecoveryHandshake > 0.25 ? 0.80 : 0.85);
       _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier * brakeScale);
@@ -711,6 +749,10 @@ couplingHomeostasis = (() => {
       tailRecoveryHandshake: Number(_tailRecoveryHandshake.toFixed(4)),
       tailRecoveryCap: Number(_tailRecoveryCap.toFixed(4)),
       tailRecoveryCeilingPressure: Number(_tailRecoveryCeilingPressure.toFixed(4)),
+      densityFlickerClampPressure: Number(_densityFlickerClampPressure.toFixed(4)),
+      densityFlickerOverridePressure: Number(_densityFlickerOverridePressure.toFixed(4)),
+      recoveryAxisHandOffPressure: Number(_recoveryAxisHandOffPressure.toFixed(4)),
+      recoveryDominantAxes: _recoveryDominantAxes.slice(),
       dominantTailPair: _dominantTailPair,
       tailHotspotCount: _tailHotspotCount,
       tailPressureByPair: Object.assign({}, _tailPressureByPair)
@@ -743,8 +785,12 @@ couplingHomeostasis = (() => {
     _tailRecoveryTrigger = _TAIL_PRESSURE_TRIGGER_MIN;
     _tailRecoveryHandshake *= 0.50;
     _tailRecoveryCap = 1.0;
+    _densityFlickerClampPressure = 0;
+    _densityFlickerOverridePressure = 0;
+    _recoveryAxisHandOffPressure = 0;
     _tailRecoveryCeilingPressure = 0;
     _dominantTailPair = '';
+    _recoveryDominantAxes = [];
     _tailHotspotCount = 0;
     const tailKeys = Object.keys(_tailPressureByPair);
     for (let i = 0; i < tailKeys.length; i++) {

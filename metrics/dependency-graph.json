@@ -1,21 +1,21 @@
 {
   "meta": {
-    "generated": "2026-03-07T21:02:45.517Z",
+    "generated": "2026-03-07T22:15:39.365Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2684,
-    "totalEdges": 2051,
+    "totalConsumes": 2686,
+    "totalEdges": 2052,
     "crossSubsystemEdges": 1448,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 207
     },
     "maxFanOut": {
-      "file": "src/play/mainBootstrap.js",
+      "file": "src/play/crossLayerBeatRecord.js",
       "count": 39
     },
     "subsystems": {
@@ -67,7 +67,7 @@
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 377
+        "consumes": 379
       }
     }
   },
@@ -6212,12 +6212,14 @@
         "negotiationEngine",
         "numerator",
         "phaseAwareCadenceWindow",
+        "phraseIndex",
         "pipelineCouplingManager",
         "pitchMemoryRecall",
         "regimeClassifier",
         "rhythmicComplementEngine",
         "rhythmicPhaseLock",
         "safePreBoot",
+        "sectionIndex",
         "sectionIntentCurves",
         "setFeedbackPitchBias",
         "setUnitTimingBudgetStats",
@@ -12347,6 +12349,13 @@
     },
     {
       "from": "src/play/main.js",
+      "to": "src/play/crossLayerBeatRecord.js",
+      "globals": [
+        "sectionIndex"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
       "to": "src/play/emitPickCrossLayerRecord.js",
       "globals": [
         "sectionIndex"
@@ -17699,6 +17708,7 @@
         "flipBinT3",
         "measureIndex",
         "numerator",
+        "phraseIndex",
         "tpBeat",
         "tpSec",
         "velocity"

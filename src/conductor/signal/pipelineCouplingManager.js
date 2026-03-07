@@ -23,6 +23,7 @@ pipelineCouplingManager = (() => {
   const NUDGEABLE_SET = new Set(NUDGEABLE);
   const _NON_NUDGEABLE_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
   const _PHASE_SURFACE_SET = new Set(['density-phase', 'flicker-phase', 'tension-phase']);
+  const _ENTROPY_SURFACE_SET = new Set(['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase']);
 
   // The 4 compositional dimensions whose pairs we monitor, plus 2 observable-
   // only dimensions (trust, phase) that are not nudgeable but whose coupling
@@ -181,11 +182,14 @@ pipelineCouplingManager = (() => {
   const _DENSITY_PAIR_GAIN_CAP = 0.45;
   const _DENSITY_PAIR_GAIN_CAP_THRESHOLD = 0.72;
   const _BUDGET_PRIORITY_GAIN = {
-    'density-flicker': 1.55,
+    'density-flicker': 1.75,
+    'density-entropy': 1.28,
     'density-phase': 1.35,
     'density-trust': 1.25,
+    'flicker-entropy': 1.42,
     'flicker-phase': 1.45,
     'flicker-trust': 1.25,
+    'tension-entropy': 1.18,
     'tension-phase': 1.15,
     'tension-flicker': 1.10,
     'tension-trust': 1.10
@@ -470,6 +474,15 @@ pipelineCouplingManager = (() => {
     const _tailRecoveryHandshake = _homeostasisState && typeof _homeostasisState.tailRecoveryHandshake === 'number'
       ? _homeostasisState.tailRecoveryHandshake
       : 0;
+    const _densityFlickerOverridePressure = _homeostasisState && typeof _homeostasisState.densityFlickerOverridePressure === 'number'
+      ? _homeostasisState.densityFlickerOverridePressure
+      : 0;
+    const _recoveryAxisHandOffPressure = _homeostasisState && typeof _homeostasisState.recoveryAxisHandOffPressure === 'number'
+      ? _homeostasisState.recoveryAxisHandOffPressure
+      : 0;
+    const _telemetryBeatSpan = snap && typeof snap.telemetryBeatSpan === 'number'
+      ? clamp(m.round(snap.telemetryBeatSpan), 1, 8)
+      : 1;
     const matrix = snap.couplingMatrix;
 
     _budgetPriorityScore = {};
@@ -493,12 +506,34 @@ pipelineCouplingManager = (() => {
           const p95 = tailTelemetry.p95;
           const hotspotRate = tailTelemetry.hotspotRate;
           const severeRate = tailTelemetry.severeRate;
+          const isDensityFlickerPair = key === 'density-flicker';
+          const isEntropySurfacePair = _ENTROPY_SURFACE_SET.has(key);
           const previousEffectiveGain = ps.lastEffectiveGain || 0;
           const gainBase = m.max(ps.gain, GAIN_INIT);
           const effectiveShortfall = clamp((gainBase - m.min(gainBase, previousEffectiveGain)) / gainBase, 0, 1);
           const exceedPressure = clamp((absCorr - m.max(target, 0.06)) / 0.45, 0, 1);
           const residualP95Pressure = clamp((p95 - m.max(target + 0.22, 0.68)) / 0.16, 0, 1);
           const residualTailPressure = clamp((p95 - m.max(target + 0.18, 0.64)) / 0.14, 0, 1);
+          const densityFlickerClampPressure = isDensityFlickerPair
+            ? clamp(
+              clamp((p95 - 0.90) / 0.08, 0, 1) * 0.40 +
+              severeRate * 0.28 +
+              hotspotRate * 0.18 +
+              clamp((absCorr - 0.88) / 0.10, 0, 1) * 0.14,
+              0,
+              1
+            )
+            : 0;
+          const entropySpilloverPressure = isEntropySurfacePair
+            ? clamp(
+              clamp((p95 - 0.78) / 0.14, 0, 1) * 0.40 +
+              hotspotRate * 0.20 +
+              severeRate * 0.20 +
+              clamp((absCorr - 0.72) / 0.16, 0, 1) * 0.20,
+              0,
+              1
+            )
+            : 0;
           const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
             ? clamp(_tailPressureByPair[key], 0, 1)
             : 0;
@@ -506,12 +541,14 @@ pipelineCouplingManager = (() => {
             ? clamp((_BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1)
             : 0;
           const score = clamp(
-            residualTailPressure * 0.24 +
-            tailPressure * (0.20 + _tailRecoveryHandshake * 0.08) +
-            clamp(ps.heatPenalty || 0, 0, 1) * 0.14 +
-            severeRate * 0.14 +
-            hotspotRate * 0.10 +
-            residualP95Pressure * 0.12 +
+            residualTailPressure * 0.18 +
+            tailPressure * (0.15 + _tailRecoveryHandshake * 0.08) +
+            clamp(ps.heatPenalty || 0, 0, 1) * 0.12 +
+            severeRate * 0.10 +
+            hotspotRate * 0.08 +
+            residualP95Pressure * 0.10 +
+            densityFlickerClampPressure * 0.18 +
+            entropySpilloverPressure * 0.16 +
             effectiveShortfall * 0.08 +
             exceedPressure * 0.08 +
             clamp(_tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
@@ -523,7 +560,7 @@ pipelineCouplingManager = (() => {
             rankedPairs.push({
               key,
               score,
-              boost: 1 + clamp(score, 0, 1.2) * 0.28
+              boost: 1 + clamp(score + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40, 0, 1.4) * 0.28
             });
           }
         }
@@ -645,6 +682,7 @@ pipelineCouplingManager = (() => {
         const isPhasePair = (dimA === 'phase' || dimB === 'phase');
         const isPhaseSurfacePair = _PHASE_SURFACE_SET.has(key);
         const isTrustPair = (dimA === 'trust' || dimB === 'trust');
+        const isEntropySurfacePair = _ENTROPY_SURFACE_SET.has(key);
         const isNonNudgeablePair = _NON_NUDGEABLE_SET.has(key);
         const tailTelemetry = _getPairTailTelemetry(ps);
         const p95 = tailTelemetry.p95;
@@ -662,8 +700,19 @@ pipelineCouplingManager = (() => {
             1
           )
           : 0;
-        if (coherentSurfacePressure > 0 && targetScale > 1.0) {
-          const reducedRelaxScale = 1 + (targetScale - 1.0) * m.max(0.15, 1 - coherentSurfacePressure * 0.85);
+        const entropySurfacePressure = isEntropySurfacePair
+          ? clamp(
+            clamp((p95 - 0.78) / 0.14, 0, 1) * 0.45 +
+            telemetryHotspotRate * 0.20 +
+            telemetrySevereRate * 0.20 +
+            clamp((absCorr - 0.72) / 0.16, 0, 1) * 0.15,
+            0,
+            1
+          )
+          : 0;
+        if ((coherentSurfacePressure > 0 || entropySurfacePressure > 0) && targetScale > 1.0) {
+          const surfacePressure = m.max(coherentSurfacePressure, entropySurfacePressure);
+          const reducedRelaxScale = 1 + (targetScale - 1.0) * m.max(0.15, 1 - surfacePressure * 0.85);
           target = _getTarget(key) * reducedRelaxScale;
         }
         // R25: Skip gain escalation for non-nudgeable pairs. Neither axis has
@@ -720,12 +769,29 @@ pipelineCouplingManager = (() => {
                 if (ps.recentAbsCorr[r] > 0.85) dfSevereCount++;
               }
               const dfSevereRate = ps.recentAbsCorr.length > 0 ? dfSevereCount / ps.recentAbsCorr.length : 0;
-              const dfTailPressure = clamp((m.max(p95, recentP95) - 0.90) * 2.4, 0, 0.40)
-                + clamp((dfSevereRate - 0.18) * 1.2, 0, 0.30)
-                + clamp((m.abs(corr) - 0.92) * 1.5, 0, 0.20);
+              const dfTailPressure = clamp((m.max(p95, recentP95) - 0.88) * 2.8, 0, 0.48)
+                + clamp((dfSevereRate - 0.15) * 1.4, 0, 0.34)
+                + clamp((telemetrySevereRate - 0.12) * 1.6, 0, 0.28)
+                + clamp((m.abs(corr) - 0.90) * 1.8, 0, 0.24);
               if (dfTailPressure > 0) {
                 rate *= 1 + dfTailPressure;
                 ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfTailPressure * 0.18, 1.0);
+              }
+            }
+            if (isEntropySurfacePair && (m.abs(corr) > 0.70 || p95 > 0.78)) {
+              let entropyExceedCount = 0;
+              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
+                if (ps.recentAbsCorr[r] > 0.78) entropyExceedCount++;
+              }
+              const entropyExceedRate = ps.recentAbsCorr.length > 0 ? entropyExceedCount / ps.recentAbsCorr.length : 0;
+              const entropyPressure = clamp((m.abs(corr) - 0.70) * 1.5, 0, 0.34)
+                + clamp((p95 - 0.78) * 1.9, 0, 0.36)
+                + clamp((telemetryHotspotRate - 0.16) * 0.9, 0, 0.18)
+                + clamp((telemetrySevereRate - 0.04) * 1.2, 0, 0.24)
+                + clamp((entropyExceedRate - 0.18) * 0.8, 0, 0.18);
+              if (entropyPressure > 0) {
+                rate *= 1 + entropyPressure;
+                ps.heatPenalty = m.min((ps.heatPenalty || 0) + entropyPressure * 0.14, 1.0);
               }
             }
             // R46 E3: Self-correcting phase-pair hotspot controller.
@@ -882,7 +948,10 @@ pipelineCouplingManager = (() => {
 
         // R11 Evo 2: Update rolling |r| window for persistent hotspot tracking
         _pushWindowValue(ps.recentAbsCorr, absCorr, _P95_WINDOW);
-        _pushWindowValue(ps.telemetryAbsCorr, absCorr, _TELEMETRY_WINDOW);
+        const telemetryWeight = isTrustPair ? m.min(_TELEMETRY_WINDOW, _telemetryBeatSpan + 1) : _telemetryBeatSpan;
+        for (let tw = 0; tw < telemetryWeight; tw++) {
+          _pushWindowValue(ps.telemetryAbsCorr, absCorr, _TELEMETRY_WINDOW);
+        }
 
         // -- #1: Self-calibrate coupling target --
         const at = _getAdaptiveTarget(key);
@@ -980,8 +1049,24 @@ const rawEmaInput = absCorr;
         if (coherentSurfacePressure > 0) {
           effectiveGain *= 1 + coherentSurfacePressure * 0.45;
         }
+        if (isEntropySurfacePair && entropySurfacePressure > 0) {
+          effectiveGain *= 1 + entropySurfacePressure * 0.55;
+        }
         if (isDensityFlickerPair && _densityFlickerTailPressure > 0) {
-          effectiveGain *= 1 + _densityFlickerTailPressure * (_floorRecoveryActive ? 0.9 : 0.6);
+          const densityFlickerClampPressure = clamp(
+            _densityFlickerTailPressure * 0.75 +
+            clamp((p95 - 0.88) / 0.10, 0, 1) * 0.25 +
+            telemetrySevereRate * 0.30,
+            0,
+            1.4
+          );
+          effectiveGain *= 1 + densityFlickerClampPressure * (_floorRecoveryActive ? 1.10 : 0.85);
+        }
+        if (isDensityFlickerPair && _densityFlickerOverridePressure > 0) {
+          effectiveGain *= 1 + _densityFlickerOverridePressure * (_floorRecoveryActive ? 1.30 : 0.95);
+        }
+        if (_recoveryAxisHandOffPressure > 0 && (dimA === 'density' || dimA === 'flicker' || dimB === 'density' || dimB === 'flicker')) {
+          effectiveGain *= 1 + _recoveryAxisHandOffPressure * 0.18;
         }
         if (_tailRecoveryHandshake > 0 && tailPressure > 0.03) {
           effectiveGain *= 1 + _tailRecoveryHandshake * clamp(tailPressure * 1.25, 0, 1) * 0.75;

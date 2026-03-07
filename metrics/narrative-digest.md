@@ -1,63 +1,73 @@
 # Composition Narrative Digest
 
 > Auto-generated per run by `narrative-digest.js`. A human-readable story of what the system did.
-> Generated: 2026-03-07T21:02:45.814Z | Trace data from: 2026-03-07T21:02:45.428Z
+> Generated: 2026-03-07T22:15:39.672Z | Trace data from: 2026-03-07T22:15:39.278Z
 
 ## Overview
 
 The composition was generated at **72 BPM** with a tuning reference of **432 Hz**, using the **explosive** conductor profile.
 
-The system processed **244 beats** spanning **37.8 seconds** of musical time.
-Layer 1 experienced 108 beats; Layer 2 experienced 136 beats.
+The system processed **302 beats** spanning **39.1 seconds** of musical time.
+Layer 1 experienced 148 beats; Layer 2 experienced 154 beats.
 
 ## Harmonic Journey
 
-- **Section 1:** G# lydian (origin)
-- **Section 2:** A# lydian (step-down)
-- **Section 3:** D major (relative-major (diversity))
+- **Section 1:** C# minor (origin)
+- **Section 2:** C# dorian (parallel-dorian)
+- **Section 3:** G dorian (tritone-sub)
+
+## Section Coverage
+
+The trace covered **3** of **3** planned sections.
+
+- **Section 0**: 148 unique traced beats across 192 entries
+- **Section 1**: 58 unique traced beats across 78 entries
+- **Section 2**: 28 unique traced beats across 32 entries
 
 ## The System's Inner Life
 
-The system spent most of its time **operating in harmony** (69.7% of beats in the `coherent` regime).
+The system spent most of its time **operating in harmony** (49.7% of beats in the `coherent` regime).
 
 Regime breakdown:
 
-- **`coherent`** - 170 beats (69.7%) - operating in harmony
-- **`evolving`** - 54 beats (22.1%) - developing new musical ideas
-- **`initializing`** - 20 beats (8.2%) - warming up
+- **`coherent`** - 150 beats (49.7%) - operating in harmony
+- **`exploring`** - 76 beats (25.2%) - searching for coherence
+- **`evolving`** - 46 beats (15.2%) - developing new musical ideas
+- **`initializing`** - 30 beats (9.9%) - warming up
 
 ### Regime Transitions
 
-The system underwent **2 regime transitions** during the composition.
+The system underwent **3 regime transitions** during the composition.
 
-- Beat 20: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
-- Beat 74: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
+- Beat 30: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
+- Beat 76: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
+- Beat 226: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
 
 ### Controller Cadence
 
-The emitted trace contains **244 beat entries**, but the regime controller advanced on only **37 measure-recorder ticks**.
-**207** entries reused an existing profiler snapshot and **20** entries landed during warmup.
-On the controller cadence, resolved regime time was: `coherent` 28, `evolving` 4.
-No forced regime transition fired on the controller cadence.
+The emitted trace contains **302 beat entries**, but the regime controller advanced on only **53 measure-recorder ticks**.
+**249** entries reused an existing profiler snapshot and **30** entries landed during warmup.
+On the controller cadence, resolved regime time was: `coherent` 24, `exploring` 20, `evolving` 4.
+The controller recorded **1 forced transition event**.
 
 ## Signal Landscape
 
-**Density** ranged from 0.34 to 0.76 (avg 0.52). The density was balanced.
-**Tension** ranged from 0.06 to 0.78 (avg 0.42). The composition maintained a relaxed tension profile.
-**Flicker** ranged from 0.96 to 1.22 (avg 1.09). Rhythmic variation was moderate.
+**Density** ranged from 0.34 to 0.81 (avg 0.46). The density was balanced.
+**Tension** ranged from 0.07 to 0.71 (avg 0.48). The composition maintained a relaxed tension profile.
+**Flicker** ranged from 0.86 to 1.19 (avg 0.98). Rhythmic variation was moderate.
 
 ## Trust Governance
 
 The trust system governed cross-layer module influence through EMA-weighted scores:
 
-- **coherenceMonitor**: average score 0.55 (weight 1.42, trusted)
-- **stutterContagion**: average score 0.46 (weight 1.35, trusted)
+- **coherenceMonitor**: average score 0.50 (weight 1.38, trusted)
 - **phaseLock**: average score 0.44 (weight 1.33, trusted)
-- **entropyRegulator**: average score 0.41 (weight 1.30, trusted)
-- **restSynchronizer**: average score 0.25 (weight 1.19, neutral)
-- **feedbackOscillator**: average score 0.24 (weight 1.18, neutral)
-- **convergence**: average score 0.22 (weight 1.16, neutral)
-- **cadenceAlignment**: average score 0.21 (weight 1.15, neutral)
+- **entropyRegulator**: average score 0.41 (weight 1.31, trusted)
+- **stutterContagion**: average score 0.33 (weight 1.25, trusted)
+- **feedbackOscillator**: average score 0.25 (weight 1.19, neutral)
+- **restSynchronizer**: average score 0.23 (weight 1.17, neutral)
+- **convergence**: average score 0.20 (weight 1.15, neutral)
+- **cadenceAlignment**: average score 0.19 (weight 1.14, neutral)
 
 The system placed the most faith in **coherenceMonitor** and was most skeptical of **cadenceAlignment**.
 
@@ -65,23 +75,21 @@ The system placed the most faith in **coherenceMonitor** and was most skeptical 
 
 The decorrelation engine flagged elevated coupling in:
 
-- **flicker-phase**: avg |r| = 0.611, peak |r| = 0.969
-- **density-trust**: avg |r| = 0.605, peak |r| = 0.949
-- **density-flicker**: avg |r| = 0.571, peak |r| = 0.992
-- **flicker-trust**: avg |r| = 0.556, peak |r| = 0.945
-- **tension-entropy**: avg |r| = 0.514, peak |r| = 0.888
+- **density-flicker**: avg |r| = 0.669, peak |r| = 0.975
+- **density-entropy**: avg |r| = 0.531, peak |r| = 0.772
 
-**Coupling health:** 11 hotspot pairs (p95 > 0.70) -- system stressed.
-Severe (p95 > 0.85): **density-flicker** (0.973), **flicker-phase** (0.959), **density-trust** (0.949), **tension-trust** (0.883).
+**Coupling health:** 6 hotspot pairs (p95 > 0.70) -- system stressed.
+Severe (p95 > 0.85): **density-flicker** (0.975), **density-trust** (0.945), **flicker-trust** (0.921).
 
 ## Output
 
-- **Layer 1:** 4248 notes
-- **Layer 2:** 5238 notes
+- **Layer 1:** 4745 notes
+- **Layer 2:** 5123 notes
+- **Load:** 9868 total notes, 42.17 notes per traced beat, 252.63 notes per second
 
 ## Coherence Verdicts
 
-The system issued **0 critical**, **0 warning**, and **2 informational** findings.
+The system issued **0 critical**, **0 warning**, and **5 informational** findings.
 
 ---
 
