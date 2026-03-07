@@ -30,7 +30,7 @@ const owner = process.env.RUN_WITH_LOG_OWNER ? Number(process.env.RUN_WITH_LOG_O
 let wroteLock = false;
 try {
   // Ensure lock directory exists
-  mkdir(lockDir, { recursive: true }).catch(() => {});
+  fs.mkdirSync(lockDir, { recursive: true });
   // If an owner is present and it's **not** us, skip lock handling (we're a nested child)
   if (!owner || owner === process.pid) {
     if (fs.existsSync(lockPath)) {

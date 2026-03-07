@@ -158,10 +158,69 @@ adaptiveTrustScores = (() => {
   const TRUST_WEIGHT_MAX = 1.8;
   const _GENERIC_DOMINANCE_CAP_PROFILE = { scoreFloor: 0.60, scorePenalty: 0.08, weightFloor: 1.28, weightPenalty: 0.12 };
   const _DOMINANCE_CAP_PROFILE = {
-    [trustSystems.names.COHERENCE_MONITOR]: { scoreFloor: 0.54, scorePenalty: 0.16, weightFloor: 1.22, weightPenalty: 0.34 },
-    [trustSystems.names.PHASE_LOCK]: { scoreFloor: 0.50, scorePenalty: 0.10, weightFloor: 1.24, weightPenalty: 0.22 },
-    [trustSystems.names.ENTROPY_REGULATOR]: { scoreFloor: 0.50, scorePenalty: 0.10, weightFloor: 1.24, weightPenalty: 0.22 }
+    [trustSystems.names.COHERENCE_MONITOR]: { scoreFloor: 0.48, scorePenalty: 0.22, weightFloor: 1.16, weightPenalty: 0.44 },
+    [trustSystems.names.PHASE_LOCK]: { scoreFloor: 0.48, scorePenalty: 0.12, weightFloor: 1.20, weightPenalty: 0.26 },
+    [trustSystems.names.ENTROPY_REGULATOR]: { scoreFloor: 0.48, scorePenalty: 0.12, weightFloor: 1.20, weightPenalty: 0.26 }
   };
+  const _PAIR_AWARE_HOTSPOT_PAIRS = {
+    [trustSystems.names.COHERENCE_MONITOR]: ['density-trust', 'flicker-trust', 'tension-trust'],
+    [trustSystems.names.PHASE_LOCK]: ['density-phase', 'flicker-phase', 'tension-phase', 'trust-phase'],
+    [trustSystems.names.CADENCE_ALIGNMENT]: ['density-trust', 'tension-trust', 'density-phase'],
+    [trustSystems.names.STUTTER_CONTAGION]: ['flicker-trust', 'density-flicker', 'flicker-phase'],
+    [trustSystems.names.FEEDBACK_OSCILLATOR]: ['tension-flicker', 'flicker-trust', 'flicker-phase'],
+    [trustSystems.names.ENTROPY_REGULATOR]: ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'],
+    [trustSystems.names.CONVERGENCE]: ['density-trust', 'tension-trust', 'density-phase', 'tension-phase'],
+    [trustSystems.names.REST_SYNCHRONIZER]: ['density-trust', 'flicker-trust']
+  };
+
+  /** @param {string} systemName */
+  function getSystemPairHotspotProfile(systemName) {
+    const pairList = _PAIR_AWARE_HOTSPOT_PAIRS[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
+    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const couplingMatrix = dynamics ? V.optionalType(dynamics.couplingMatrix, 'object') : undefined;
+    const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
+    if (!couplingMatrix) {
+      return { pressure: 0, dominantPair: '', hotspotPairs: [] };
+    }
+
+    /** @type {Array<{ pair: string, pressure: number }>} */
+    const hotspotPairs = [];
+    let maxPressure = 0;
+    let pressureSum = 0;
+    let pressureCount = 0;
+    for (let i = 0; i < pairList.length; i++) {
+      const pair = pairList[i];
+      const rawCorr = V.optionalFinite(couplingMatrix[pair]);
+      if (rawCorr === undefined) continue;
+      const absCorr = m.abs(rawCorr);
+      const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
+        ? adaptiveSnapshot[pair]
+        : null;
+      const pairP95 = adaptiveEntry && typeof adaptiveEntry.p95AbsCorr === 'number' ? adaptiveEntry.p95AbsCorr : absCorr;
+      const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
+      const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
+      const pairPressure = clamp(
+        clamp((absCorr - 0.72) / 0.18, 0, 1) * 0.40 +
+        clamp((pairP95 - 0.82) / 0.16, 0, 1) * 0.35 +
+        hotspotRate * 0.15 +
+        severeRate * 0.10,
+        0,
+        1
+      );
+      if (pairPressure <= 0.02) continue;
+      hotspotPairs.push({ pair, pressure: Number(pairPressure.toFixed(4)) });
+      maxPressure = m.max(maxPressure, pairPressure);
+      pressureSum += pairPressure;
+      pressureCount++;
+    }
+    hotspotPairs.sort(function(a, b) { return b.pressure - a.pressure; });
+    const meanPressure = pressureCount > 0 ? pressureSum / pressureCount : 0;
+    return {
+      pressure: Number(clamp(maxPressure * 0.60 + meanPressure * 0.40, 0, 1).toFixed(4)),
+      dominantPair: hotspotPairs.length > 0 ? hotspotPairs[0].pair : '',
+      hotspotPairs: hotspotPairs.slice(0, 3)
+    };
+  }
 
   /** @param {string} systemName @param {number} effectiveScore */
   function getAdaptiveDominanceCaps(systemName, effectiveScore) {
@@ -239,11 +298,13 @@ adaptiveTrustScores = (() => {
     if (homeostasis && typeof homeostasis.stickyTailPressure === 'number') {
       stickyTailPressure = clamp(homeostasis.stickyTailPressure / 0.55, 0, 1);
     }
+    const pairAwareProfile = getSystemPairHotspotProfile(systemName);
+    const pairAwarePressure = pairAwareProfile.pressure;
 
     const settlementPressure = clamp(
       lateRunPressure *
       clamp((leadScore - 0.10) / 0.16, 0, 1) *
-      (1 - clamp(trustHotspotPressure * 0.9 + trustAxisPressure * 0.7 + stickyTailPressure * 0.4, 0, 1)),
+      (1 - clamp(trustHotspotPressure * 0.9 + trustAxisPressure * 0.7 + stickyTailPressure * 0.4 + pairAwarePressure * 0.5, 0, 1)),
       0,
       1
     );
@@ -253,18 +314,23 @@ adaptiveTrustScores = (() => {
       dominanceSpread * 0.65 +
       coherentLockPressure * 0.30 +
       coherentSharePressure * 0.38 +
-      trustHotspotPressure * 0.38 +
-      trustAxisPressure * 0.24 +
-      stickyTailPressure * 0.16 +
-      settlementPressure * 0.70 +
+      trustHotspotPressure * 0.48 +
+      pairAwarePressure * 0.52 +
+      trustAxisPressure * 0.32 +
+      stickyTailPressure * 0.24 +
+      settlementPressure * 0.85 +
       clamp((dominantCountAbove06 - 1) / 2, 0, 1) * 0.18,
       0,
       1.60
     );
 
+    const coherencePenalty = specificProfile && systemName === trustSystems.names.COHERENCE_MONITOR
+      ? clamp(trustHotspotPressure * 0.25 + pairAwarePressure * 0.22 + trustAxisPressure * 0.20 + settlementPressure * 0.20 + stickyTailPressure * 0.12, 0, 0.45)
+      : 0;
+
     return {
-      scoreCeiling: clamp(TRUST_CEILING - dominancePressure * profile.scorePenalty, profile.scoreFloor, TRUST_CEILING),
-      weightCap: clamp(TRUST_WEIGHT_MAX - dominancePressure * profile.weightPenalty, profile.weightFloor, TRUST_WEIGHT_MAX)
+      scoreCeiling: clamp(TRUST_CEILING - (dominancePressure + coherencePenalty) * profile.scorePenalty, profile.scoreFloor, TRUST_CEILING),
+      weightCap: clamp(TRUST_WEIGHT_MAX - (dominancePressure + coherencePenalty) * profile.weightPenalty, profile.weightFloor, TRUST_WEIGHT_MAX)
     };
   }
 
@@ -408,10 +474,14 @@ adaptiveTrustScores = (() => {
   function getSnapshot() {
     const snapshot = {};
     for (const [name, state] of scoreBySystem.entries()) {
+      const pairAwareProfile = getSystemPairHotspotProfile(name);
       snapshot[name] = {
         score: state.score,
         samples: state.samples,
-        weight: getWeight(name)
+        weight: getWeight(name),
+        hotspotPressure: pairAwareProfile.pressure,
+        dominantPair: pairAwareProfile.dominantPair,
+        hotspotPairs: pairAwareProfile.hotspotPairs
       };
     }
     return snapshot;

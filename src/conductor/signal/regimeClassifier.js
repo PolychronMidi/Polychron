@@ -56,6 +56,9 @@ regimeClassifier = (() => {
   let _forcedTransitionEventSerial = 0;
   let _pendingForcedTransitionEvent = null;
   const _tickSource = 'profiler-recorder';
+  let _cadenceMonopolyPressure = 0;
+  let _cadenceMonopolyActive = false;
+  let _cadenceMonopolyReason = '';
 
   // R26 E2: Persistent proximity bonus across regime transitions.
   // During exploring, bonus accumulates at 0.001/beat. Without persistence,
@@ -80,14 +83,27 @@ regimeClassifier = (() => {
   // Floor 0.55 ensures the self-balancer can reduce threshold by 45%.
   const _REGIME_TARGET_COHERENT_LO = 0.15;
   const _REGIME_TARGET_COHERENT_HI = 0.35;
-  const _REGIME_TARGET_EVOLVING_LO = 0.10;
+  const _REGIME_TARGET_EVOLVING_LO = 0.14;
   const _REGIME_SCALE_NUDGE = 0.006;
   const _REGIME_SCALE_MIN = 0.55;
   const _REGIME_SCALE_MAX = 1.20;
 
   // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
   // R34 E6: Extended with velocity, velThreshold for transition readiness diagnostic.
-  let _lastClassifyInputs = { couplingStrength: 0, coherentThreshold: 0, evolvingProximityBonus: 0, velocity: 0, velThreshold: 0.008 };
+  let _lastClassifyInputs = {
+    couplingStrength: 0,
+    coherentThreshold: 0,
+    evolvingProximityBonus: 0,
+    velocity: 0,
+    velThreshold: 0.008,
+    effectiveDim: 0,
+    cadenceMonopolyPressure: 0,
+    rawExploringShare: 0,
+    rawEvolvingShare: 0,
+    rawNonCoherentOpportunityShare: 0,
+    resolvedNonCoherentShare: 0,
+    opportunityGap: 0
+  };
 
   // R40 E5: Evolving-to-Exploring Escape Hatch streak tracker
   let _highDimVelStreak = 0;
@@ -281,15 +297,34 @@ regimeClassifier = (() => {
       evolvingProximityBonus = clamp(_evolvingProximityBonus + 0.001, 0, 0.07);
     }
     _evolvingProximityBonus = evolvingProximityBonus;
-    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty;
     const evolvingShare = _runBeatCount > 0
       ? ((_runResolvedRegimeCounts.evolving || 0) / _runBeatCount)
       : 0;
     const evolvingDeficit = clamp((_REGIME_TARGET_EVOLVING_LO - evolvingShare) / _REGIME_TARGET_EVOLVING_LO, 0, 1);
-    const coherentExitWindow = 0.06 + evolvingDeficit * 0.10;
+    const rawExploringShare = _runBeatCount > 0
+      ? ((_runRawRegimeCounts.exploring || 0) / _runBeatCount)
+      : 0;
+    const rawEvolvingShare = _runBeatCount > 0
+      ? ((_runRawRegimeCounts.evolving || 0) / _runBeatCount)
+      : 0;
+    const rawNonCoherentOpportunityShare = rawExploringShare + rawEvolvingShare;
+    const resolvedNonCoherentShare = _runBeatCount > 0
+      ? (((_runResolvedRegimeCounts.exploring || 0) + (_runResolvedRegimeCounts.evolving || 0)) / _runBeatCount)
+      : 0;
+    const opportunityGap = m.max(0, rawNonCoherentOpportunityShare - resolvedNonCoherentShare);
+    const cadenceMonopolyPressure = clamp(
+      clamp((_runCoherentShare - 0.58) / 0.18, 0, 1) * 0.48 +
+      clamp(opportunityGap / 0.22, 0, 1) * 0.32 +
+      clamp((0.05 - (_runTransitionCount / m.max(_runBeatCount, 1))) / 0.05, 0, 1) * 0.12 +
+      clamp((0.08 - rawExploringShare) / 0.08, 0, 1) * 0.08,
+      0,
+      1
+    );
+    const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty + cadenceMonopolyPressure * 0.055;
+    const coherentExitWindow = 0.08 + evolvingDeficit * 0.12;
     const evolvingEntryVelMin = 0.006;
-    const evolvingEntryVelMax = 0.028 + evolvingDeficit * 0.018;
-    const evolvingEntryDimMin = 1.9 + evolvingDeficit * 0.35;
+    const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.016;
+    const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.20;
     // R27 E5: Relax velocity threshold from 0.008 to 0.005 after 100 exploring
     // beats. In R26, coherent entry was at beat 376/439 (85.6% through) despite
     // the coupling threshold being deeply negative by beat ~200. The bottleneck
@@ -301,7 +336,20 @@ regimeClassifier = (() => {
     // R25 E6: Cache classify inputs for transition diagnostics in resolve()
     // R34 E6: Include velocity + velThreshold for transition readiness
     // R35 E5: Include effectiveDim for exploring-block diagnostic
-    _lastClassifyInputs = { couplingStrength, coherentThreshold, evolvingProximityBonus, velocity: avgVelocity, velThreshold: _velThreshold, effectiveDim };
+    _lastClassifyInputs = {
+      couplingStrength,
+      coherentThreshold,
+      evolvingProximityBonus,
+      velocity: avgVelocity,
+      velThreshold: _velThreshold,
+      effectiveDim,
+      cadenceMonopolyPressure,
+      rawExploringShare,
+      rawEvolvingShare,
+      rawNonCoherentOpportunityShare,
+      resolvedNonCoherentShare,
+      opportunityGap
+    };
 
     // R40 E5: Evolving-to-Exploring Escape Hatch check
     if (effectiveDim > 2.8 && avgVelocity > 0.012) {
@@ -336,9 +384,9 @@ regimeClassifier = (() => {
     if (lastRegime === 'evolving' &&
         avgVelocity > evolvingEntryVelMin &&
         avgVelocity < evolvingEntryVelMax + 0.010 &&
-        effectiveDim > 1.8 &&
+        effectiveDim > 1.65 &&
         couplingStrength > 0.08 &&
-        couplingStrength < coherentThreshold + 0.12 + evolvingDeficit * 0.06) {
+        couplingStrength < coherentThreshold + 0.16 + evolvingDeficit * 0.08) {
       return 'evolving';
     }
 
@@ -355,14 +403,14 @@ regimeClassifier = (() => {
     // R37 E3: Exploring coupling gate widened 0.40->0.50. In R36 coupling
     // averages ranged 0.19-0.44, so many beats with moderate coupling were
     // blocked. At 0.50, midrange-coupled high-dim beats can enter exploring.
-    const _exploringVelThreshold = _evolvingBeats > 100 ? 0.010 : 0.012;
+    const _exploringVelThreshold = (_evolvingBeats > 100 ? 0.010 : 0.012) - cadenceMonopolyPressure * 0.002;
     // R43 E3: Exploring Dimension Relief
-    const _exploringDimThreshold = couplingStrength < 0.50 ? 2.2 : 2.5;
+    const _exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - cadenceMonopolyPressure * 0.20;
     if (avgVelocity > _exploringVelThreshold && effectiveDim > _exploringDimThreshold && couplingStrength <= 0.50) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while
     // exploring triggers evolving rather than jumping straight to coherent.
     // This creates richer regime lifecycle: exploring -> evolving -> coherent.
-    if (lastRegime === 'exploring' && avgVelocity > 0.008 && avgVelocity < 0.055 && couplingStrength > 0.10 + evolvingDeficit * 0.02) return 'evolving';
+    if (lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 && effectiveDim > 1.6 && couplingStrength > 0.08 + evolvingDeficit * 0.015) return 'evolving';
     // Fragmented: weak coupling + multi-dimensional (dimensions independent + noisy)
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     // Drifting: moderate velocity, low curvature (slow one-directional change)
@@ -463,6 +511,62 @@ regimeClassifier = (() => {
   }
 
   /**
+   * Project controller-cadence monopoly pressure after applying a candidate resolution.
+   * @param {string} resolvedRegime
+   * @param {number} beatSpan
+   * @returns {{ pressure: number, active: boolean, reason: string, preferredRegime: string, rawExploringShare: number, rawEvolvingShare: number, rawNonCoherentOpportunityShare: number, resolvedNonCoherentShare: number, opportunityGap: number }}
+   */
+  function computeCadenceMonopolyProjection(resolvedRegime, beatSpan) {
+    const span = m.max(1, V.optionalFinite(beatSpan, 1));
+    const projectedRunBeatCount = _runBeatCount + span;
+    const projectedResolvedCounts = Object.assign({}, _runResolvedRegimeCounts);
+    projectedResolvedCounts[resolvedRegime] = (projectedResolvedCounts[resolvedRegime] || 0) + span;
+    const projectedCoherentShare = projectedRunBeatCount > 0
+      ? (projectedResolvedCounts['coherent'] || 0) / projectedRunBeatCount
+      : 0;
+    const rawExploringShare = projectedRunBeatCount > 0
+      ? ((_runRawRegimeCounts.exploring || 0) / projectedRunBeatCount)
+      : 0;
+    const rawEvolvingShare = projectedRunBeatCount > 0
+      ? ((_runRawRegimeCounts.evolving || 0) / projectedRunBeatCount)
+      : 0;
+    const rawNonCoherentOpportunityShare = rawExploringShare + rawEvolvingShare;
+    const resolvedNonCoherentShare = projectedRunBeatCount > 0
+      ? (((projectedResolvedCounts['exploring'] || 0) + (projectedResolvedCounts['evolving'] || 0)) / projectedRunBeatCount)
+      : 0;
+    const opportunityGap = m.max(0, rawNonCoherentOpportunityShare - resolvedNonCoherentShare);
+    const projectedTransitionCount = _runTransitionCount + (_runBeatCount > 0 && resolvedRegime !== _runLastResolvedRegime ? 1 : 0);
+    const transitionScarcity = projectedRunBeatCount > 24
+      ? clamp((0.055 - (projectedTransitionCount / projectedRunBeatCount)) / 0.055, 0, 1)
+      : 0;
+    const monopolyPressure = clamp(
+      clamp((projectedCoherentShare - 0.58) / 0.18, 0, 1) * 0.44 +
+      clamp(opportunityGap / 0.22, 0, 1) * 0.34 +
+      transitionScarcity * 0.12 +
+      (projectedRunBeatCount > 18 && (projectedResolvedCounts['exploring'] || 0) === 0 ? 0.10 : 0) +
+      clamp((0.08 - rawExploringShare) / 0.08, 0, 1) * 0.08,
+      0,
+      1
+    );
+    let reason = '';
+    if (opportunityGap > 0.12) reason = 'raw-noncoherent-suppressed';
+    else if (projectedCoherentShare > 0.64) reason = 'coherent-share-monopoly';
+    else if (transitionScarcity > 0.60) reason = 'transition-scarcity';
+
+    return {
+      pressure: Number(monopolyPressure.toFixed(4)),
+      active: projectedRunBeatCount > 18 && monopolyPressure > 0.55,
+      reason,
+      preferredRegime: rawExploringShare >= rawEvolvingShare ? 'exploring' : 'evolving',
+      rawExploringShare: Number(rawExploringShare.toFixed(4)),
+      rawEvolvingShare: Number(rawEvolvingShare.toFixed(4)),
+      rawNonCoherentOpportunityShare: Number(rawNonCoherentOpportunityShare.toFixed(4)),
+      resolvedNonCoherentShare: Number(resolvedNonCoherentShare.toFixed(4)),
+      opportunityGap: Number(opportunityGap.toFixed(4))
+    };
+  }
+
+  /**
    * Apply hysteresis to regime transitions.
    * R37 E1: Majority-window replaces consecutive-streak. Transitions when
    * >= _REGIME_MAJORITY of last _REGIME_WINDOW raw beats match a non-current regime.
@@ -530,7 +634,7 @@ regimeClassifier = (() => {
         const evolvingDeficit = clamp((_REGIME_TARGET_EVOLVING_LO - evolvingShare) / _REGIME_TARGET_EVOLVING_LO, 0, 1);
         const requiredHits = rawRegime === 'exploring'
           ? 2
-          : (rawRegime === 'evolving' && evolvingDeficit > 0.30 ? 2 : _REGIME_MAJORITY);
+          : (rawRegime === 'evolving' && evolvingDeficit > 0.15 ? 2 : _REGIME_MAJORITY);
 
         if (_windowHits >= requiredHits) {
           // R22 E4: Evolving minimum dwell -- suppress evolving->coherent until
@@ -587,6 +691,29 @@ regimeClassifier = (() => {
         }
       }
     }
+
+    let monopolyState = computeCadenceMonopolyProjection(resolvedRegime, beatSpan);
+    if (_forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent' && monopolyState.active && (
+      rawRegime === 'exploring' ||
+      rawRegime === 'evolving' ||
+      monopolyState.rawNonCoherentOpportunityShare > 0.20
+    )) {
+      const forcedWindow = clamp(4 + m.floor(monopolyState.pressure * 4), 4, 8);
+      activateForcedRegime(monopolyState.preferredRegime, 'coherent-cadence-monopoly', forcedWindow, _runCoherentBeats + beatSpan, tickId);
+      resolvedRegime = monopolyState.preferredRegime;
+      _forcedOverrideActive = true;
+      _forcedOverrideBeats++;
+      _forcedRegimeBeatsRemaining = m.max(0, _forcedRegimeBeatsRemaining - 1);
+      _rawRegimeWindow.length = 0;
+      if (_forcedRegimeBeatsRemaining === 0) {
+        _forcedRegime = '';
+      }
+      monopolyState = computeCadenceMonopolyProjection(resolvedRegime, beatSpan);
+    }
+
+    _cadenceMonopolyPressure = monopolyState.pressure;
+    _cadenceMonopolyActive = monopolyState.active;
+    _cadenceMonopolyReason = monopolyState.reason;
 
     // R42 E1/E3: Hysteresis Increment Rectification / Parity
     // Increment the ACTUAL regime we resolved to this beat, unconditionally
@@ -660,6 +787,9 @@ regimeClassifier = (() => {
     _lastForcedTriggerBeat = 0;
     _lastForcedTriggerTick = 0;
     _pendingForcedTransitionEvent = null;
+    _cadenceMonopolyPressure = 0;
+    _cadenceMonopolyActive = false;
+    _cadenceMonopolyReason = '';
   }
 
   function consumeForcedTransitionEvent() {
@@ -674,7 +804,7 @@ regimeClassifier = (() => {
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
    * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
-  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runTickCount: number, runCoherentShare: number, runTransitionCount: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, lastForcedTriggerTick: number, tickSource: string, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number }}
+  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runTickCount: number, runCoherentShare: number, runTransitionCount: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, lastForcedTriggerTick: number, tickSource: string, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number, cadenceMonopolyPressure: number, cadenceMonopolyActive: boolean, cadenceMonopolyReason: string, rawExploringShare: number, rawEvolvingShare: number, rawNonCoherentOpportunityShare: number, resolvedNonCoherentShare: number, opportunityGap: number }}
    */
   function getTransitionReadiness() {
     const li = _lastClassifyInputs;
@@ -726,7 +856,15 @@ regimeClassifier = (() => {
       rawRegimeMaxStreak: Object.assign({}, _rawRegimeMaxStreak),
       runResolvedRegimeCounts: Object.assign({}, _runResolvedRegimeCounts),
       // R37 E5: effectiveDim for histogram diagnostic
-      effectiveDim: Number(((li.effectiveDim || 0)).toFixed(4))
+      effectiveDim: Number(((li.effectiveDim || 0)).toFixed(4)),
+      cadenceMonopolyPressure: Number(_cadenceMonopolyPressure.toFixed(4)),
+      cadenceMonopolyActive: _cadenceMonopolyActive,
+      cadenceMonopolyReason: _cadenceMonopolyReason,
+      rawExploringShare: Number((li.rawExploringShare || 0).toFixed(4)),
+      rawEvolvingShare: Number((li.rawEvolvingShare || 0).toFixed(4)),
+      rawNonCoherentOpportunityShare: Number((li.rawNonCoherentOpportunityShare || 0).toFixed(4)),
+      resolvedNonCoherentShare: Number((li.resolvedNonCoherentShare || 0).toFixed(4)),
+      opportunityGap: Number((li.opportunityGap || 0).toFixed(4))
     };
   }
 

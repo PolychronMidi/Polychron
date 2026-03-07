@@ -145,6 +145,9 @@ regimeReactiveDamping = (() => {
       let coherentLockPressure = 0;
       let forcedBreakPressure = 0;
       let transitionScarcity = 0;
+      let cadenceMonopolyPressure = 0;
+      let rawNonCoherentOpportunityShare = 0;
+      let opportunityGap = 0;
       const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
       if (readiness) {
         if (typeof readiness.runCoherentShare === 'number') {
@@ -162,6 +165,15 @@ regimeReactiveDamping = (() => {
           if (noForcedBreaks && runCoherentShare > 0.55) {
             forcedBreakPressure = clamp((readiness.runBeatCount - 96) / 192, 0, 0.35);
           }
+        }
+        if (typeof readiness.cadenceMonopolyPressure === 'number') {
+          cadenceMonopolyPressure = clamp(readiness.cadenceMonopolyPressure, 0, 1);
+        }
+        if (typeof readiness.rawNonCoherentOpportunityShare === 'number') {
+          rawNonCoherentOpportunityShare = clamp(readiness.rawNonCoherentOpportunityShare, 0, 1);
+        }
+        if (typeof readiness.opportunityGap === 'number') {
+          opportunityGap = clamp(readiness.opportunityGap, 0, 1);
         }
       }
 
@@ -216,15 +228,19 @@ regimeReactiveDamping = (() => {
         m.max(0, _REGIME_BUDGET.exploring - expShare) * 0.75 +
         coherentLockPressure * 0.85 +
         transitionScarcity * 0.55 +
+        cadenceMonopolyPressure * 0.95 +
+        opportunityGap * 0.65 +
         forcedBreakPressure,
         0,
         1.25
       );
       const evolvingPressure = clamp(
-        evoDeficit * 1.75 +
-        m.max(0, expShare - _REGIME_BUDGET.exploring) * 0.35 +
-        m.max(0, runCoherentShare - 0.30) * 0.25 -
-        coherentPressure * 0.20,
+        evoDeficit * 2.10 +
+        m.max(0, expShare - _REGIME_BUDGET.exploring) * 0.50 +
+        m.max(0, runCoherentShare - 0.28) * 0.35 -
+        coherentPressure * 0.15 +
+        cadenceMonopolyPressure * 0.18 +
+        opportunityGap * 0.25,
         0,
         1
       );
@@ -245,10 +261,28 @@ regimeReactiveDamping = (() => {
         _eqCorrF += coherentPressure * m.max(0, _EQUILIB_STRENGTH * (1.45 + hotspotCounterpressure * 0.55 - flickerPenalty * 0.70));
         _eqCorrT -= coherentPressure * (_EQUILIB_STRENGTH * 1.15 + hotspotCounterpressure * 0.14);
       }
+      if (cadenceMonopolyPressure > 0) {
+        const monopolyCounterpressure = cadenceMonopolyPressure * (
+          0.20 +
+          hotspotCounterpressure * 0.08 +
+          clamp(rawNonCoherentOpportunityShare / 0.25, 0, 1) * 0.05
+        );
+        _eqCorrD += monopolyCounterpressure;
+        _eqCorrF += monopolyCounterpressure * m.max(0.90, 1.20 - flickerPenalty * 0.35);
+        _eqCorrT -= monopolyCounterpressure * 1.15;
+        if (currentRegime === 'coherent') {
+          _eqCorrD += cadenceMonopolyPressure * 0.05;
+          _eqCorrF += cadenceMonopolyPressure * 0.07;
+        }
+      }
       if (currentRegime !== 'coherent' && evolvingPressure > 0) {
-        _eqCorrT += evolvingPressure * (_EQUILIB_STRENGTH * 0.55);
-        _eqCorrD += evolvingPressure * (_EQUILIB_STRENGTH * 0.18);
-        _eqCorrF -= evolvingPressure * (_EQUILIB_STRENGTH * 0.24);
+        _eqCorrT += evolvingPressure * (_EQUILIB_STRENGTH * 0.80 + 0.04);
+        _eqCorrD += evolvingPressure * (_EQUILIB_STRENGTH * 0.24);
+        _eqCorrF -= evolvingPressure * (_EQUILIB_STRENGTH * 0.34);
+        if (currentRegime === 'exploring') {
+          _eqCorrT += evolvingPressure * 0.03;
+          _eqCorrF -= evolvingPressure * 0.05;
+        }
       }
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog

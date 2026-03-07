@@ -191,7 +191,7 @@ pipelineCouplingManager = (() => {
     'tension-trust': 1.10
   };
   const _BUDGET_DEPRIORITIZED_GAIN = 0.82;
-  const _BUDGET_PRIORITY_TOP_K = 4;
+  const _BUDGET_PRIORITY_TOP_K = 5;
   /** @type {Record<string, number>} */
   let _budgetPriorityScore = {};
   /** @type {Record<string, number>} */
@@ -257,7 +257,7 @@ pipelineCouplingManager = (() => {
   let _hpCooldownRemaining = 0;
 
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
-  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }>} */
+  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], telemetryAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }>} */
   const _pairState = {};
 
   /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
@@ -267,20 +267,21 @@ pipelineCouplingManager = (() => {
   /**
    * Get or create adaptive state for a pair.
    * @param {string} key
-   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }}
+  * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], telemetryAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }}
    */
   function _getPairState(key) {
     if (!_pairState[key]) {
       const initGain = _NON_NUDGEABLE_SET.has(key)
         ? 0
         : (PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT);
-      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5, effMin: 1.0, effMax: 0.0, effActiveBeats: 0, lastEffectiveGain: 0 };
+      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], telemetryAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5, effMin: 1.0, effMax: 0.0, effActiveBeats: 0, lastEffectiveGain: 0 };
     }
     return _pairState[key];
   }
 
   // R11 Evo 2: Rolling p95 for persistent hotspot detection
   const _P95_WINDOW = 16;
+  const _TELEMETRY_WINDOW = 96;
   function _computeP95(arr) {
     if (arr.length < 4) return 0;
     const sorted = arr.slice().sort((a, b) => a - b);
@@ -296,6 +297,27 @@ pipelineCouplingManager = (() => {
       if (arr[i] > threshold) count++;
     }
     return count / arr.length;
+  }
+
+  /** @param {number[]} arr @param {number} value @param {number} limit */
+  function _pushWindowValue(arr, value, limit) {
+    arr.push(value);
+    if (arr.length > limit) arr.shift();
+  }
+
+  /** @param {{ recentAbsCorr: number[], telemetryAbsCorr: number[] } | undefined} pairState */
+  function _getPairTailTelemetry(pairState) {
+    const recent = pairState ? pairState.recentAbsCorr : [];
+    const telemetry = pairState ? pairState.telemetryAbsCorr : [];
+    return {
+      recentP95: _computeP95(recent),
+      recentHotspotRate: _computeExceedanceRate(recent, 0.70),
+      recentSevereRate: _computeExceedanceRate(recent, 0.85),
+      p95: _computeP95(telemetry),
+      hotspotRate: _computeExceedanceRate(telemetry, 0.70),
+      severeRate: _computeExceedanceRate(telemetry, 0.85),
+      telemetryBeats: telemetry.length
+    };
   }
 
   /**
@@ -445,6 +467,9 @@ pipelineCouplingManager = (() => {
     const _tailPressureByPair = _homeostasisState && _homeostasisState.tailPressureByPair && typeof _homeostasisState.tailPressureByPair === 'object'
       ? _homeostasisState.tailPressureByPair
       : null;
+    const _tailRecoveryHandshake = _homeostasisState && typeof _homeostasisState.tailRecoveryHandshake === 'number'
+      ? _homeostasisState.tailRecoveryHandshake
+      : 0;
     const matrix = snap.couplingMatrix;
 
     _budgetPriorityScore = {};
@@ -464,14 +489,16 @@ pipelineCouplingManager = (() => {
           const absCorr = m.abs(corr);
           const target = _getTarget(key) * targetScale;
           const ps = _getPairState(key);
-          const p95 = _computeP95(ps.recentAbsCorr);
-          const hotspotRate = _computeExceedanceRate(ps.recentAbsCorr, 0.70);
-          const severeRate = _computeExceedanceRate(ps.recentAbsCorr, 0.85);
+          const tailTelemetry = _getPairTailTelemetry(ps);
+          const p95 = tailTelemetry.p95;
+          const hotspotRate = tailTelemetry.hotspotRate;
+          const severeRate = tailTelemetry.severeRate;
           const previousEffectiveGain = ps.lastEffectiveGain || 0;
           const gainBase = m.max(ps.gain, GAIN_INIT);
           const effectiveShortfall = clamp((gainBase - m.min(gainBase, previousEffectiveGain)) / gainBase, 0, 1);
           const exceedPressure = clamp((absCorr - m.max(target, 0.06)) / 0.45, 0, 1);
-          const residualP95Pressure = clamp((p95 - m.max(target + 0.28, 0.72)) / 0.18, 0, 1);
+          const residualP95Pressure = clamp((p95 - m.max(target + 0.22, 0.68)) / 0.16, 0, 1);
+          const residualTailPressure = clamp((p95 - m.max(target + 0.18, 0.64)) / 0.14, 0, 1);
           const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
             ? clamp(_tailPressureByPair[key], 0, 1)
             : 0;
@@ -479,13 +506,15 @@ pipelineCouplingManager = (() => {
             ? clamp((_BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1)
             : 0;
           const score = clamp(
-            tailPressure * 0.28 +
-            clamp(ps.heatPenalty || 0, 0, 1) * 0.18 +
-            severeRate * 0.18 +
-            hotspotRate * 0.12 +
-            residualP95Pressure * 0.16 +
-            effectiveShortfall * 0.10 +
+            residualTailPressure * 0.24 +
+            tailPressure * (0.20 + _tailRecoveryHandshake * 0.08) +
+            clamp(ps.heatPenalty || 0, 0, 1) * 0.14 +
+            severeRate * 0.14 +
+            hotspotRate * 0.10 +
+            residualP95Pressure * 0.12 +
+            effectiveShortfall * 0.08 +
             exceedPressure * 0.08 +
+            clamp(_tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
             staticBias * 0.04,
             0,
             1.45
@@ -510,7 +539,7 @@ pipelineCouplingManager = (() => {
           ? 1 + (_BUDGET_PRIORITY_GAIN[entry.key] - 1.0) * 0.35
           : _BUDGET_DEPRIORITIZED_GAIN;
         if (i < _BUDGET_PRIORITY_TOP_K) {
-          const rankBoost = i === 0 ? 1.60 : i === 1 ? 1.45 : i === 2 ? 1.30 : 1.18;
+          const rankBoost = i === 0 ? 1.68 : i === 1 ? 1.54 : i === 2 ? 1.40 : i === 3 ? 1.26 : 1.18;
           _budgetPriorityBoost[entry.key] = Number(m.max(staticBoost, rankBoost, entry.boost).toFixed(4));
           _budgetPriorityRank[entry.key] = i + 1;
         } else {
@@ -604,7 +633,7 @@ pipelineCouplingManager = (() => {
         const corr = matrix[key];
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
 
-        const target = _getTarget(key) * targetScale;
+        let target = _getTarget(key) * targetScale;
         const absCorr = m.abs(corr);
         const ps = _getPairState(key);
         ps.lastEffectiveGain = 0;
@@ -617,6 +646,26 @@ pipelineCouplingManager = (() => {
         const isPhaseSurfacePair = _PHASE_SURFACE_SET.has(key);
         const isTrustPair = (dimA === 'trust' || dimB === 'trust');
         const isNonNudgeablePair = _NON_NUDGEABLE_SET.has(key);
+        const tailTelemetry = _getPairTailTelemetry(ps);
+        const p95 = tailTelemetry.p95;
+        const telemetryHotspotRate = tailTelemetry.hotspotRate;
+        const telemetrySevereRate = tailTelemetry.severeRate;
+        const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
+          ? clamp(_tailPressureByPair[key], 0, 1)
+          : 0;
+        const coherentSurfacePressure = regime === 'coherent'
+          ? clamp(
+            (isPhaseSurfacePair ? clamp((p95 - 0.82) / 0.14, 0, 1) * 0.55 + telemetryHotspotRate * 0.20 : 0) +
+            (isTrustPair ? clamp((p95 - 0.80) / 0.16, 0, 1) * 0.45 + telemetrySevereRate * 0.18 : 0) +
+            (isDensityFlickerPair ? clamp((p95 - 0.88) / 0.10, 0, 1) * 0.25 + tailPressure * 0.10 : 0),
+            0,
+            1
+          )
+          : 0;
+        if (coherentSurfacePressure > 0 && targetScale > 1.0) {
+          const reducedRelaxScale = 1 + (targetScale - 1.0) * m.max(0.15, 1 - coherentSurfacePressure * 0.85);
+          target = _getTarget(key) * reducedRelaxScale;
+        }
         // R25: Skip gain escalation for non-nudgeable pairs. Neither axis has
         // a bias knob, so gains can never produce nudges. Escalating them wastes
         // budget and pollutes HP promotion candidates. Still track EMAs.
@@ -624,8 +673,8 @@ pipelineCouplingManager = (() => {
           ps.gain = 0;
           ps.lastEffectiveGain = 0;
           ps.lastAbsCorr = absCorr;
-          ps.recentAbsCorr.push(absCorr);
-          if (ps.recentAbsCorr.length > _P95_WINDOW) ps.recentAbsCorr.shift();
+          _pushWindowValue(ps.recentAbsCorr, absCorr, _P95_WINDOW);
+          _pushWindowValue(ps.telemetryAbsCorr, absCorr, _TELEMETRY_WINDOW);
           const at = _getAdaptiveTarget(key);
           const adaptEma = isEntropyPair ? _TARGET_ADAPT_EMA * 2.5 : _TARGET_ADAPT_EMA;
           at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
@@ -642,7 +691,7 @@ pipelineCouplingManager = (() => {
             // Emergency escalation: when |r| > 2x target, escalate 3x faster
             let rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
             // R11 Evo 2: Persistent hotspot escalation
-            const p95 = _computeP95(ps.recentAbsCorr);
+            const recentP95 = tailTelemetry.recentP95;
             if (p95 > target * 1.5) {
               rate *= 1.5;
               // R14 Evo 5: Hotspot Heat Penalty Tracking
@@ -671,7 +720,7 @@ pipelineCouplingManager = (() => {
                 if (ps.recentAbsCorr[r] > 0.85) dfSevereCount++;
               }
               const dfSevereRate = ps.recentAbsCorr.length > 0 ? dfSevereCount / ps.recentAbsCorr.length : 0;
-              const dfTailPressure = clamp((p95 - 0.90) * 2.4, 0, 0.40)
+              const dfTailPressure = clamp((m.max(p95, recentP95) - 0.90) * 2.4, 0, 0.40)
                 + clamp((dfSevereRate - 0.18) * 1.2, 0, 0.30)
                 + clamp((m.abs(corr) - 0.92) * 1.5, 0, 0.20);
               if (dfTailPressure > 0) {
@@ -832,8 +881,8 @@ pipelineCouplingManager = (() => {
         ps.lastAbsCorr = absCorr;
 
         // R11 Evo 2: Update rolling |r| window for persistent hotspot tracking
-        ps.recentAbsCorr.push(absCorr);
-        if (ps.recentAbsCorr.length > _P95_WINDOW) ps.recentAbsCorr.shift();
+        _pushWindowValue(ps.recentAbsCorr, absCorr, _P95_WINDOW);
+        _pushWindowValue(ps.telemetryAbsCorr, absCorr, _TELEMETRY_WINDOW);
 
         // -- #1: Self-calibrate coupling target --
         const at = _getAdaptiveTarget(key);
@@ -928,8 +977,14 @@ const rawEmaInput = absCorr;
         if (isPhaseSurfacePair && absCorr > target * 1.4) {
           effectiveGain *= 1.18;
         }
+        if (coherentSurfacePressure > 0) {
+          effectiveGain *= 1 + coherentSurfacePressure * 0.45;
+        }
         if (isDensityFlickerPair && _densityFlickerTailPressure > 0) {
           effectiveGain *= 1 + _densityFlickerTailPressure * (_floorRecoveryActive ? 0.9 : 0.6);
+        }
+        if (_tailRecoveryHandshake > 0 && tailPressure > 0.03) {
+          effectiveGain *= 1 + _tailRecoveryHandshake * clamp(tailPressure * 1.25, 0, 1) * 0.75;
         }
         // R33 E1: Velocity-based spike dampener. Boost gain on the spike beat
         // itself (velocityBoostActive) AND for _VELOCITY_BOOST_BEATS after.
@@ -1239,11 +1294,12 @@ const rawEmaInput = absCorr;
   /**
    * R18 E5 / R19 E1+E2 / R20 E6: Expose adaptive target state for trace diagnostics.
    * Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
-   * gain, effectiveGain, nudgeability, dynamic budget focus, heatPenalty,
-   * effectivenessEma, and per-axis totals for post-run analysis.
+   * tactical and long-window tail telemetry, gain, effectiveGain, nudgeability,
+   * dynamic budget focus, heatPenalty, effectivenessEma, and per-axis totals
+   * for post-run analysis.
    */
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, p95AbsCorr: number, hotspotRate: number, severeRate: number, residualPressure: number, gain: number, effectiveGain: number, nudgeable: boolean, budgetScore: number, budgetBoost: number, budgetRank: number | null, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, p95AbsCorr: number, hotspotRate: number, severeRate: number, recentP95AbsCorr: number, recentHotspotRate: number, recentSevereRate: number, telemetryWindowBeats: number, residualPressure: number, gain: number, effectiveGain: number, nudgeable: boolean, budgetScore: number, budgetBoost: number, budgetRank: number | null, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
     const result = {};
     const keys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < keys.length; i++) {
@@ -1251,13 +1307,14 @@ const rawEmaInput = absCorr;
       const at = _adaptiveTargets[key];
       const ps = _pairState[key];
       const nudgeable = !_NON_NUDGEABLE_SET.has(key);
-      const pairP95 = ps ? _computeP95(ps.recentAbsCorr) : 0;
-      const hotspotRate = ps ? _computeExceedanceRate(ps.recentAbsCorr, 0.70) : 0;
-      const severeRate = ps ? _computeExceedanceRate(ps.recentAbsCorr, 0.85) : 0;
+      const tailTelemetry = _getPairTailTelemetry(ps);
+      const pairP95 = tailTelemetry.p95;
+      const hotspotRate = tailTelemetry.hotspotRate;
+      const severeRate = tailTelemetry.severeRate;
       const residualPressure = clamp(
-        clamp((pairP95 - m.max(at.current + 0.28, 0.72)) / 0.18, 0, 1) * 0.60 +
-        clamp((hotspotRate - 0.12) / 0.22, 0, 1) * 0.25 +
-        clamp((severeRate - 0.03) / 0.12, 0, 1) * 0.15,
+        clamp((pairP95 - m.max(at.current + 0.22, 0.68)) / 0.16, 0, 1) * 0.65 +
+        clamp((hotspotRate - 0.10) / 0.20, 0, 1) * 0.20 +
+        clamp((severeRate - 0.02) / 0.10, 0, 1) * 0.15,
         0,
         1
       );
@@ -1269,6 +1326,10 @@ const rawEmaInput = absCorr;
         p95AbsCorr: Number(pairP95.toFixed(4)),
         hotspotRate: Number(hotspotRate.toFixed(4)),
         severeRate: Number(severeRate.toFixed(4)),
+        recentP95AbsCorr: Number(tailTelemetry.recentP95.toFixed(4)),
+        recentHotspotRate: Number(tailTelemetry.recentHotspotRate.toFixed(4)),
+        recentSevereRate: Number(tailTelemetry.recentSevereRate.toFixed(4)),
+        telemetryWindowBeats: tailTelemetry.telemetryBeats,
         residualPressure: Number(residualPressure.toFixed(4)),
         gain: ps ? Number(ps.gain.toFixed(4)) : 0,
         effectiveGain: ps ? Number(((ps.lastEffectiveGain || 0)).toFixed(4)) : 0,

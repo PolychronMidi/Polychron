@@ -1,80 +1,83 @@
 # Composition Narrative Digest
 
 > Auto-generated per run by `narrative-digest.js`. A human-readable story of what the system did.
-> Generated: 2026-03-07T15:26:11.145Z | Trace data from: 2026-03-07T15:26:08.407Z
+> Generated: 2026-03-07T21:02:45.814Z | Trace data from: 2026-03-07T21:02:45.428Z
 
 ## Overview
 
 The composition was generated at **72 BPM** with a tuning reference of **432 Hz**, using the **explosive** conductor profile.
 
-The system processed **450 beats** spanning **60.3 seconds** of musical time.
-Layer 1 experienced 196 beats; Layer 2 experienced 254 beats.
+The system processed **244 beats** spanning **37.8 seconds** of musical time.
+Layer 1 experienced 108 beats; Layer 2 experienced 136 beats.
 
 ## Harmonic Journey
 
-- **Section 1:** F dorian (origin)
-- **Section 2:** A major (relative-major)
-- **Section 3:** C minor (relative-minor)
-- **Section 4:** C dorian (parallel-dorian (mode-shift))
+- **Section 1:** G# lydian (origin)
+- **Section 2:** A# lydian (step-down)
+- **Section 3:** D major (relative-major (diversity))
 
 ## The System's Inner Life
 
-The system spent most of its time **operating in harmony** (46.2% of beats in the `coherent` regime).
+The system spent most of its time **operating in harmony** (69.7% of beats in the `coherent` regime).
 
 Regime breakdown:
 
-- **`coherent`** - 208 beats (46.2%) - operating in harmony
-- **`exploring`** - 202 beats (44.9%) - searching for coherence
-- **`initializing`** - 28 beats (6.2%) - warming up
-- **`evolving`** - 12 beats (2.7%) - developing new musical ideas
+- **`coherent`** - 170 beats (69.7%) - operating in harmony
+- **`evolving`** - 54 beats (22.1%) - developing new musical ideas
+- **`initializing`** - 20 beats (8.2%) - warming up
 
 ### Regime Transitions
 
-The system underwent **3 regime transitions** during the composition.
+The system underwent **2 regime transitions** during the composition.
 
-- Beat 28: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
-- Beat 40: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
-- Beat 248: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 20: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
+- Beat 74: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
 
 ### Controller Cadence
 
-The emitted trace contains **450 beat entries**, but the regime controller advanced on only **78 measure-recorder ticks**.
-**372** entries reused an existing profiler snapshot and **28** entries landed during warmup.
-On the controller cadence, resolved regime time was: `coherent` 35, `exploring` 34, `evolving` 4.
+The emitted trace contains **244 beat entries**, but the regime controller advanced on only **37 measure-recorder ticks**.
+**207** entries reused an existing profiler snapshot and **20** entries landed during warmup.
+On the controller cadence, resolved regime time was: `coherent` 28, `evolving` 4.
 No forced regime transition fired on the controller cadence.
 
 ## Signal Landscape
 
-**Density** ranged from 0.31 to 0.79 (avg 0.56). The density was balanced.
-**Tension** ranged from 0.07 to 0.77 (avg 0.49). The composition maintained a relaxed tension profile.
-**Flicker** ranged from 0.89 to 1.24 (avg 0.99). Rhythmic variation was moderate.
+**Density** ranged from 0.34 to 0.76 (avg 0.52). The density was balanced.
+**Tension** ranged from 0.06 to 0.78 (avg 0.42). The composition maintained a relaxed tension profile.
+**Flicker** ranged from 0.96 to 1.22 (avg 1.09). Rhythmic variation was moderate.
 
 ## Trust Governance
 
 The trust system governed cross-layer module influence through EMA-weighted scores:
 
-- **coherenceMonitor**: average score 0.68 (weight 1.51, highly trusted)
-- **stutterContagion**: average score 0.52 (weight 1.39, trusted)
-- **phaseLock**: average score 0.43 (weight 1.33, trusted)
-- **entropyRegulator**: average score 0.34 (weight 1.26, trusted)
-- **feedbackOscillator**: average score 0.26 (weight 1.19, neutral)
+- **coherenceMonitor**: average score 0.55 (weight 1.42, trusted)
+- **stutterContagion**: average score 0.46 (weight 1.35, trusted)
+- **phaseLock**: average score 0.44 (weight 1.33, trusted)
+- **entropyRegulator**: average score 0.41 (weight 1.30, trusted)
 - **restSynchronizer**: average score 0.25 (weight 1.19, neutral)
-- **convergence**: average score 0.23 (weight 1.17, neutral)
-- **cadenceAlignment**: average score 0.22 (weight 1.16, neutral)
+- **feedbackOscillator**: average score 0.24 (weight 1.18, neutral)
+- **convergence**: average score 0.22 (weight 1.16, neutral)
+- **cadenceAlignment**: average score 0.21 (weight 1.15, neutral)
 
 The system placed the most faith in **coherenceMonitor** and was most skeptical of **cadenceAlignment**.
 
 ## Pipeline Coupling
 
-All compositional dimension pairs maintained healthy decorrelation levels.
+The decorrelation engine flagged elevated coupling in:
 
-**Coupling health:** 11 hotspot pairs (peak > 0.70) -- system stressed.
-Severe (peak > 0.85): **tension-flicker** (0.963), **density-flicker** (0.988), **flicker-entropy** (0.911), **density-tension** (0.893), **density-entropy** (0.877), **tension-trust** (0.890).
+- **flicker-phase**: avg |r| = 0.611, peak |r| = 0.969
+- **density-trust**: avg |r| = 0.605, peak |r| = 0.949
+- **density-flicker**: avg |r| = 0.571, peak |r| = 0.992
+- **flicker-trust**: avg |r| = 0.556, peak |r| = 0.945
+- **tension-entropy**: avg |r| = 0.514, peak |r| = 0.888
+
+**Coupling health:** 11 hotspot pairs (p95 > 0.70) -- system stressed.
+Severe (p95 > 0.85): **density-flicker** (0.973), **flicker-phase** (0.959), **density-trust** (0.949), **tension-trust** (0.883).
 
 ## Output
 
-- **Layer 1:** 7765 notes
-- **Layer 2:** 9722 notes
+- **Layer 1:** 4248 notes
+- **Layer 2:** 5238 notes
 
 ## Coherence Verdicts
 

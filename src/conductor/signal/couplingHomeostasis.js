@@ -118,7 +118,10 @@ couplingHomeostasis = (() => {
   let _dominantTailPair = '';
   let _tailHotspotCount = 0;
   const _TAIL_PRESSURE_EMA_ALPHA = 0.18;
-  const _TAIL_PRESSURE_TRIGGER_MIN = 0.18;
+  const _TAIL_PRESSURE_DECAY = 0.97;
+  const _TAIL_ACTIVE_THRESHOLD = 0.08;
+  const _TAIL_RANKED_THRESHOLD = 0.03;
+  const _TAIL_PRESSURE_TRIGGER_MIN = 0.14;
   /** @type {Record<string, number>} */
   const _tailPressureByPair = {};
   const _TAIL_TRACKED_PAIRS = [];
@@ -128,10 +131,13 @@ couplingHomeostasis = (() => {
     }
   }
   const _TAIL_MEMORY_TOP_K = 5;
-  const _FLOOR_RECOVERY_TRIGGER = 10;
-  const _FLOOR_RECOVERY_HOLD = 18;
+  const _FLOOR_RECOVERY_TRIGGER = 7;
+  const _FLOOR_RECOVERY_HOLD = 22;
   let _tailRecoveryDrive = 0;
   let _tailRecoveryTrigger = _TAIL_PRESSURE_TRIGGER_MIN;
+  let _tailRecoveryHandshake = 0;
+  let _tailRecoveryCap = 1.0;
+  let _tailRecoveryCeilingPressure = 0;
   // R21 E6: Invoke tracking for beat processing diagnostics
   let _invokeCount = 0;               // every refresh() call regardless of guards
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
@@ -248,15 +254,18 @@ couplingHomeostasis = (() => {
         0,
         1
       );
-      const nextTailPressure = (_tailPressureByPair[pair] || 0) * (1 - _TAIL_PRESSURE_EMA_ALPHA) + rawTailPressure * _TAIL_PRESSURE_EMA_ALPHA;
+      const prevTailPressure = _tailPressureByPair[pair] || 0;
+      const nextTailPressure = rawTailPressure >= prevTailPressure
+        ? prevTailPressure * (1 - _TAIL_PRESSURE_EMA_ALPHA) + rawTailPressure * _TAIL_PRESSURE_EMA_ALPHA
+        : prevTailPressure * _TAIL_PRESSURE_DECAY + rawTailPressure * (1 - _TAIL_PRESSURE_DECAY);
       _tailPressureByPair[pair] = Number(nextTailPressure.toFixed(4));
       tailSum += nextTailPressure;
       if (nextTailPressure > strongestTail) {
         strongestTail = nextTailPressure;
         strongestPair = pair;
       }
-      if (nextTailPressure > 0.12) activeTailCount++;
-      if (nextTailPressure > 0.05) rankedTailPairs.push({ pair, pressure: nextTailPressure });
+      if (nextTailPressure > _TAIL_ACTIVE_THRESHOLD) activeTailCount++;
+      if (nextTailPressure > _TAIL_RANKED_THRESHOLD) rankedTailPairs.push({ pair, pressure: nextTailPressure });
     }
     rankedTailPairs.sort(function(a, b) { return b.pressure - a.pressure; });
     _dominantTailPair = strongestPair;
@@ -283,10 +292,12 @@ couplingHomeostasis = (() => {
       0,
       1
     );
-    _stickyTailPressure = _stickyTailPressure * (1 - _TAIL_PRESSURE_EMA_ALPHA) + tailAggregate * _TAIL_PRESSURE_EMA_ALPHA;
+    _stickyTailPressure = tailAggregate >= _stickyTailPressure
+      ? _stickyTailPressure * (1 - _TAIL_PRESSURE_EMA_ALPHA) + tailAggregate * _TAIL_PRESSURE_EMA_ALPHA
+      : _stickyTailPressure * _TAIL_PRESSURE_DECAY + tailAggregate * (1 - _TAIL_PRESSURE_DECAY);
     _densityFlickerTailPressure = _tailPressureByPair['density-flicker'] || 0;
-    _tailRecoveryDrive = Number(clamp(tailAggregate * 0.72 + structuralTailPressure * 0.28, 0, 1).toFixed(4));
-    _tailRecoveryTrigger = Number(clamp(_TAIL_PRESSURE_TRIGGER_MIN + structuralTailPressure * 0.10 + m.max(0, tailCoverage - 0.20) * 0.08, _TAIL_PRESSURE_TRIGGER_MIN, 0.32).toFixed(4));
+    _tailRecoveryDrive = Number(clamp(tailAggregate * 0.52 + structuralTailPressure * 0.20 + strongestTail * 0.28, 0, 1).toFixed(4));
+    _tailRecoveryTrigger = Number(clamp(_TAIL_PRESSURE_TRIGGER_MIN + structuralTailPressure * 0.06 + m.max(0, tailCoverage - 0.15) * 0.06, _TAIL_PRESSURE_TRIGGER_MIN, 0.26).toFixed(4));
 
     if (pairCount === 0) return;
 
@@ -468,6 +479,18 @@ couplingHomeostasis = (() => {
 
     // If refresh() already ran on this tick's recorder invocation, skip the
     // multiplier update here (refresh -> tick already called above).
+    const tailRecoveryPressure = m.max(_stickyTailPressure, _densityFlickerTailPressure, _tailRecoveryDrive);
+    _tailRecoveryCeilingPressure = clamp((_globalGainMultiplier - 0.94) / 0.06, 0, 1);
+    _tailRecoveryHandshake = clamp(
+      tailRecoveryPressure * 0.70 +
+      m.max(0, _tailHotspotCount - 1) * 0.05 +
+      (_floorRecoveryTicksRemaining > 0 ? 0.12 : 0) +
+      _tailRecoveryCeilingPressure * 0.22,
+      0,
+      1
+    );
+    _tailRecoveryCap = clamp(0.96 - _tailRecoveryHandshake * 0.22 - m.max(0, _tailHotspotCount - 2) * 0.01, _GAIN_FLOOR, 0.96);
+
     if (_refreshedThisTick) {
       _refreshedThisTick = false;
       // Multiplier was already applied inside this refresh -> tick() path.
@@ -489,11 +512,12 @@ couplingHomeostasis = (() => {
         const giniPenalty = clamp((_giniCoefficient - _GINI_THRESHOLD) * 0.3, 0, 0.08);
         targetMultiplier = m.max(_GAIN_FLOOR, targetMultiplier - giniPenalty);
       }
+      if (tailRecoveryPressure > _tailRecoveryTrigger * 0.85) {
+        targetMultiplier = m.min(targetMultiplier, _tailRecoveryCap);
+      }
       // EMA smooth toward target: alpha=0.05 gives ~20-beat convergence
       _globalGainMultiplier = _globalGainMultiplier * 0.95 + targetMultiplier * 0.05;
     }
-
-    const tailRecoveryPressure = m.max(_stickyTailPressure, _densityFlickerTailPressure, _tailRecoveryDrive);
     const floorContactNow = _globalGainMultiplier <= 0.22 || getFloorDampen() < 0.60;
     const persistentTailNow = tailRecoveryPressure > _tailRecoveryTrigger && (
       _redistributionScore > 0.25 ||
@@ -513,6 +537,9 @@ couplingHomeostasis = (() => {
       const recoveryFloor = clamp(0.30 + tailRecoveryPressure * 0.16 + m.max(0, _tailHotspotCount - 1) * 0.01, _GAIN_FLOOR, 0.52);
       _globalGainMultiplier = _globalGainMultiplier * 0.88 + m.max(_globalGainMultiplier, recoveryFloor) * 0.12;
       _floorRecoveryTicksRemaining--;
+    }
+    if (_tailRecoveryHandshake > 0.18 && tailRecoveryPressure > _tailRecoveryTrigger * 0.85 && _globalGainMultiplier > _tailRecoveryCap) {
+      _globalGainMultiplier = _globalGainMultiplier * 0.80 + _tailRecoveryCap * 0.20;
     }
 
     // Track multiplier extremes
@@ -539,7 +566,9 @@ couplingHomeostasis = (() => {
       }
     }
     if (applyBrake) {
-      const brakeScale = _floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > _tailRecoveryTrigger ? 0.92 : 0.85;
+      const brakeScale = _floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > _tailRecoveryTrigger
+        ? 0.86
+        : (_tailRecoveryHandshake > 0.25 ? 0.80 : 0.85);
       _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier * brakeScale);
     }
 
@@ -602,7 +631,7 @@ couplingHomeostasis = (() => {
     const gainPressure = clamp((0.95 - _globalGainMultiplier) / 0.55, 0, 1);
     const redistributionPressure = clamp(_nudgeableRedistributionScore / 0.50, 0, 1);
     const tailPressure = clamp(m.max(_stickyTailPressure, _tailRecoveryDrive) / 0.60, 0, 1);
-    return clamp(m.max(floorPressure, gainPressure, tailPressure) * 0.65 + redistributionPressure * 0.25 + tailPressure * 0.10, 0, 1);
+    return clamp(m.max(floorPressure, gainPressure, tailPressure, _tailRecoveryHandshake) * 0.65 + redistributionPressure * 0.20 + tailPressure * 0.08 + _tailRecoveryHandshake * 0.07, 0, 1);
   }
 
   /**
@@ -679,6 +708,9 @@ couplingHomeostasis = (() => {
       stickyTailPressure: Number(_stickyTailPressure.toFixed(4)),
       tailRecoveryDrive: Number(_tailRecoveryDrive.toFixed(4)),
       tailRecoveryTrigger: Number(_tailRecoveryTrigger.toFixed(4)),
+      tailRecoveryHandshake: Number(_tailRecoveryHandshake.toFixed(4)),
+      tailRecoveryCap: Number(_tailRecoveryCap.toFixed(4)),
+      tailRecoveryCeilingPressure: Number(_tailRecoveryCeilingPressure.toFixed(4)),
       dominantTailPair: _dominantTailPair,
       tailHotspotCount: _tailHotspotCount,
       tailPressureByPair: Object.assign({}, _tailPressureByPair)
@@ -709,6 +741,9 @@ couplingHomeostasis = (() => {
     _stickyTailPressure *= 0.50;
     _tailRecoveryDrive *= 0.50;
     _tailRecoveryTrigger = _TAIL_PRESSURE_TRIGGER_MIN;
+    _tailRecoveryHandshake *= 0.50;
+    _tailRecoveryCap = 1.0;
+    _tailRecoveryCeilingPressure = 0;
     _dominantTailPair = '';
     _tailHotspotCount = 0;
     const tailKeys = Object.keys(_tailPressureByPair);

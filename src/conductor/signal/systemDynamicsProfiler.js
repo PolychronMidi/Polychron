@@ -85,7 +85,7 @@ systemDynamicsProfiler = (() => {
         // dwell disrupted bistable coherent feedback loop (0% coherent in R23).
         // 4-beat dwell still prevents 7-beat snap but allows coherent entry
         // within the coupling feedback window.
-        regimeClassifier.setEvolvingMinDwell(4);
+        regimeClassifier.setEvolvingMinDwell(5);
         // R8 Evo 4: widen flicker target range for explosive depthScale 1.8
         conductorDampening.setFlickerTargetRange(0.15 * 1.8);
         // R9 Evo 3: give density-flicker pair 30% extra gain ceiling for decorrelation
@@ -100,7 +100,7 @@ systemDynamicsProfiler = (() => {
         // R22 E4 / R24 E1: Atmospheric evolving dwell -- reduced from 8 to 6
         // to match regime bistability fix. Longer sections need slightly more
         // dwell than explosive but still within the coherent feedback window.
-        regimeClassifier.setEvolvingMinDwell(6);
+        regimeClassifier.setEvolvingMinDwell(7);
       } else if (profileName === 'minimal') {
         regimeClassifier.setOscillatingThreshold(0.45);
       }

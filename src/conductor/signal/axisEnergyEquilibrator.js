@@ -39,10 +39,10 @@ axisEnergyEquilibrator = (() => {
   const _PAIR_TIGHTEN_RATE = 0.004;
   const _PAIR_RELAX_RATE = 0.002;
   const _PAIR_COOLDOWN = 3;
-  const _RESIDUAL_P95_RATIO = 1.7;
-  const _RESIDUAL_P95_ABS_MIN = 0.72;
-  const _RESIDUAL_HOTSPOT_RATE = 0.14;
-  const _RESIDUAL_SEVERE_RATE = 0.04;
+  const _RESIDUAL_P95_RATIO = 1.55;
+  const _RESIDUAL_P95_ABS_MIN = 0.68;
+  const _RESIDUAL_HOTSPOT_RATE = 0.12;
+  const _RESIDUAL_SEVERE_RATE = 0.03;
   const _RESIDUAL_COLDSPOT_P95_MAX = 0.66;
   const _RESIDUAL_TIGHTEN_BONUS = 1.35;
 
@@ -64,6 +64,8 @@ axisEnergyEquilibrator = (() => {
   const _PHASE_SURFACE_ABS_MIN = 0.18;
   const _TRUST_SURFACE_RATIO = 1.45;
   const _TRUST_SURFACE_ABS_MIN = 0.20;
+  const _COHERENT_HOTSPOT_MIN_SCALE = 0.18;
+  const _COHERENT_HOTSPOT_MAX_SCALE = 0.42;
 
   // R32 E2: Effective nudgeable pair count per axis. Trust/entropy/phase have
   // only 3 nudgeable pairs (both partners must include density/tension/flicker)
@@ -104,6 +106,9 @@ axisEnergyEquilibrator = (() => {
   let _skippedColdspotRelaxations = 0;
   let _phaseSurfaceHotBeats = 0;
   let _trustSurfaceHotBeats = 0;
+  let _coherentHotspotActuationBeats = 0;
+  let _coherentHotspotPairAdj = 0;
+  let _coherentHotspotAxisAdj = 0;
 
   // Dimensions + pair mapping (precomputed)
   const _ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
@@ -155,6 +160,7 @@ axisEnergyEquilibrator = (() => {
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
     const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
     let phaseSurfaceHot = false;
+    let phaseSurfacePressure = 0;
     const phaseSurfacePairs = ['density-phase', 'flicker-phase', 'tension-phase'];
     for (let p = 0; p < phaseSurfacePairs.length; p++) {
       const pair = phaseSurfacePairs[p];
@@ -165,17 +171,21 @@ axisEnergyEquilibrator = (() => {
       const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
       const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
       const severeRate = V.optionalFinite(pd.severeRate, 0);
-      if (
-        rolling > m.max(_PHASE_SURFACE_ABS_MIN, baseline * _PHASE_SURFACE_RATIO) ||
-        pairP95 > m.max(_PHASE_SURFACE_ABS_MIN + 0.12, baseline * (_PHASE_SURFACE_RATIO + 0.25)) ||
-        hotspotRate > 0.18 ||
-        severeRate > 0.03
-      ) {
+      const pairPressure = clamp(
+        clamp((rolling - m.max(_PHASE_SURFACE_ABS_MIN, baseline * _PHASE_SURFACE_RATIO)) / 0.18, 0, 1) * 0.30 +
+        clamp((pairP95 - m.max(_PHASE_SURFACE_ABS_MIN + 0.12, baseline * (_PHASE_SURFACE_RATIO + 0.25))) / 0.16, 0, 1) * 0.40 +
+        clamp((hotspotRate - 0.18) / 0.18, 0, 1) * 0.18 +
+        clamp((severeRate - 0.03) / 0.10, 0, 1) * 0.12,
+        0,
+        1
+      );
+      if (pairPressure > 0) {
         phaseSurfaceHot = true;
-        break;
+        phaseSurfacePressure = m.max(phaseSurfacePressure, pairPressure);
       }
     }
     let trustSurfaceHot = false;
+    let trustSurfacePressure = 0;
     const trustSurfacePairs = ['density-trust', 'flicker-trust', 'tension-trust'];
     for (let p = 0; p < trustSurfacePairs.length; p++) {
       const pair = trustSurfacePairs[p];
@@ -186,14 +196,17 @@ axisEnergyEquilibrator = (() => {
       const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
       const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
       const severeRate = V.optionalFinite(pd.severeRate, 0);
-      if (
-        rolling > m.max(_TRUST_SURFACE_ABS_MIN, baseline * _TRUST_SURFACE_RATIO) ||
-        pairP95 > m.max(_TRUST_SURFACE_ABS_MIN + 0.10, baseline * (_TRUST_SURFACE_RATIO + 0.20)) ||
-        hotspotRate > 0.16 ||
-        severeRate > 0.03
-      ) {
+      const pairPressure = clamp(
+        clamp((rolling - m.max(_TRUST_SURFACE_ABS_MIN, baseline * _TRUST_SURFACE_RATIO)) / 0.18, 0, 1) * 0.30 +
+        clamp((pairP95 - m.max(_TRUST_SURFACE_ABS_MIN + 0.10, baseline * (_TRUST_SURFACE_RATIO + 0.20))) / 0.16, 0, 1) * 0.40 +
+        clamp((hotspotRate - 0.16) / 0.18, 0, 1) * 0.18 +
+        clamp((severeRate - 0.03) / 0.10, 0, 1) * 0.12,
+        0,
+        1
+      );
+      if (pairPressure > 0) {
         trustSurfaceHot = true;
-        break;
+        trustSurfacePressure = m.max(trustSurfacePressure, pairPressure);
       }
     }
     if (phaseSurfaceHot) _phaseSurfaceHotBeats++;
@@ -212,6 +225,10 @@ axisEnergyEquilibrator = (() => {
     // R35 E4: Evolving tightenScale 0.4->0.6. R34 had 83.7% evolving but
     // only 13.7 total tighten budget (R33: 35). Without exploring, evolving
     // must carry more of the tightening load.
+    const coherentHotspotScale = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot)
+      ? clamp(_COHERENT_HOTSPOT_MIN_SCALE + phaseSurfacePressure * 0.14 + trustSurfacePressure * 0.12, _COHERENT_HOTSPOT_MIN_SCALE, _COHERENT_HOTSPOT_MAX_SCALE)
+      : 0;
+    if (coherentHotspotScale > 0) _coherentHotspotActuationBeats++;
     const tightenScale = currentRegime === 'coherent' ? 0.0
       : currentRegime === 'evolving' ? 0.6
       : currentRegime === 'exploring' ? 1.5
@@ -236,28 +253,40 @@ axisEnergyEquilibrator = (() => {
       const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
       const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
       const severeRate = V.optionalFinite(pd.severeRate, 0);
+      const residualPressure = V.optionalFinite(pd.residualPressure, 0);
+      const budgetRank = V.optionalFinite(pd.budgetRank, 99);
       const residualTailHot = pairP95 > m.max(_RESIDUAL_P95_ABS_MIN, baseline * _RESIDUAL_P95_RATIO)
         || hotspotRate > _RESIDUAL_HOTSPOT_RATE
-        || severeRate > _RESIDUAL_SEVERE_RATE;
+        || severeRate > _RESIDUAL_SEVERE_RATE
+        || residualPressure > 0.28;
 
-      if (tightenScale > 0 && ((rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) || residualTailHot)) {
+      const isPhaseSurfacePair = pair === 'density-phase' || pair === 'flicker-phase' || pair === 'tension-phase';
+      const isTrustSurfacePair = pair === 'density-trust' || pair === 'flicker-trust' || pair === 'tension-trust';
+      const coherentPairEligible = isPhaseSurfacePair || isTrustSurfacePair || pair === 'density-flicker';
+      const pairTightenScale = currentRegime === 'coherent'
+        ? (coherentPairEligible && (residualTailHot || rolling > _HOTSPOT_RATIO * baseline) ? coherentHotspotScale : 0)
+        : tightenScale;
+
+      if (pairTightenScale > 0 && ((rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) || residualTailHot)) {
         // Hotspot -- tighten this pair's baseline (scaled by regime gate)
         const overshoot = m.max(rolling / m.max(baseline, 0.01), pairP95 / m.max(baseline, 0.01));
-        const residualPressure = clamp(
+        const residualTightenPressure = clamp(
           clamp((pairP95 - m.max(_RESIDUAL_P95_ABS_MIN, baseline * _RESIDUAL_P95_RATIO)) / 0.18, 0, 1) * 0.55 +
           clamp((hotspotRate - _RESIDUAL_HOTSPOT_RATE) / 0.20, 0, 1) * 0.25 +
           clamp((severeRate - _RESIDUAL_SEVERE_RATE) / 0.12, 0, 1) * 0.20,
           0,
           1
         );
-        const isPhaseSurfacePair = pair === 'density-phase' || pair === 'flicker-phase' || pair === 'tension-phase';
         const phaseSurfaceBoost = isPhaseSurfacePair ? 1.35 : 1.0;
-        const rate = _PAIR_TIGHTEN_RATE * tightenScale * giniMult * phaseSurfaceBoost * (1 + residualPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const rankBoost = budgetRank <= 1 ? 1.30 : budgetRank <= 3 ? 1.16 : 1.0;
+        const coherentHotBoost = currentRegime === 'coherent' && coherentPairEligible ? 1.10 : 1.0;
+        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * rankBoost * coherentHotBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(_BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
           _pairCooldowns[pair] = _PAIR_COOLDOWN;
           _pairAdjustments++;
+          if (currentRegime === 'coherent' && pairTightenScale > 0) _coherentHotspotPairAdj++;
           _perPairAdj[pair] = (_perPairAdj[pair] || 0) + 1;
           _regimePairAdj[rKey] = (_regimePairAdj[rKey] || 0) + 1;
         }
@@ -289,7 +318,14 @@ axisEnergyEquilibrator = (() => {
       const share = _smoothedShares[axis] || 0;
       const pairs = _axisToPairs[axis];
 
-      if (share > _AXIS_OVERSHOOT && tightenScale > 0) {
+      const axisTightenScale = currentRegime === 'coherent'
+        ? ((((axis === 'phase' || axis === 'density' || axis === 'flicker') && phaseSurfaceHot) ||
+            ((axis === 'trust' || axis === 'density' || axis === 'tension' || axis === 'flicker') && trustSurfaceHot))
+          ? coherentHotspotScale
+          : 0)
+        : tightenScale;
+
+      if (share > _AXIS_OVERSHOOT && axisTightenScale > 0) {
         const excess = share - _FAIR_SHARE;
         // R39 E1: Entropy Axis Soft-Throttle. Apply 0.95x dampening strictly to entropy during exploring.
         let dampMult = (axis === 'entropy') ? entropyExploringDamp : 1.0;
@@ -310,7 +346,7 @@ axisEnergyEquilibrator = (() => {
         // also needs scaling: entropy at 0.230 share pushes energy toward trust,
         // and its 3-pair axis needs 1.67x faster tightening to match 5-pair axes.
         const tightenPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
-        const rate = _AXIS_TIGHTEN_RATE * tightenPairScale * tightenScale * giniMult * dampMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
+        const rate = _AXIS_TIGHTEN_RATE * tightenPairScale * axisTightenScale * giniMult * dampMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue; // skip Layer-1 adjusted
@@ -321,6 +357,7 @@ axisEnergyEquilibrator = (() => {
             pipelineCouplingManager.setPairBaseline(pair, nb);
             _pairCooldowns[pair] = _AXIS_COOLDOWN;
             _axisAdjustments++;
+            if (currentRegime === 'coherent' && axisTightenScale > 0) _coherentHotspotAxisAdj++;
             _perAxisAdj[axis] = (_perAxisAdj[axis] || 0) + 1;
             _regimeAxisAdj[rKey] = (_regimeAxisAdj[rKey] || 0) + 1;
           }
@@ -361,7 +398,7 @@ axisEnergyEquilibrator = (() => {
     });
   }
 
-  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number }} */
+  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number }} */
   function getSnapshot() {
     return {
       beatCount: _beatCount,
@@ -379,7 +416,10 @@ axisEnergyEquilibrator = (() => {
       coherentFreezeBeats: _coherentFreezeBeats,
       skippedColdspotRelaxations: _skippedColdspotRelaxations,
       phaseSurfaceHotBeats: _phaseSurfaceHotBeats,
-      trustSurfaceHotBeats: _trustSurfaceHotBeats
+      trustSurfaceHotBeats: _trustSurfaceHotBeats,
+      coherentHotspotActuationBeats: _coherentHotspotActuationBeats,
+      coherentHotspotPairAdj: _coherentHotspotPairAdj,
+      coherentHotspotAxisAdj: _coherentHotspotAxisAdj
     };
   }
 
