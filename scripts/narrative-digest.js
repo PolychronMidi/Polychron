@@ -243,6 +243,13 @@ function generateNarrative() {
       lines.push(forcedCount > 0
         ? `The controller recorded **${forcedCount} forced transition event${forcedCount !== 1 ? 's' : ''}**.`
         : 'No forced regime transition fired on the controller cadence.');
+      if (summary.cadenceMonopoly && (summary.cadenceMonopoly.active || toNum(summary.cadenceMonopoly.opportunityGap, 0) > 0.08)) {
+        const monopoly = summary.cadenceMonopoly;
+        lines.push(`The cadence monopoly diagnostic stayed active at **${dec(monopoly.pressure, 3)}**: raw non-coherent opportunity reached **${pct(toNum(monopoly.rawNonCoherentOpportunityShare, 0))}**, but resolved non-coherent share closed at **${pct(toNum(monopoly.resolvedNonCoherentShare, 0))}** (gap **${pct(toNum(monopoly.opportunityGap, 0))}**).`);
+        if (monopoly.reason) {
+          lines.push(`Dominant monopoly mode: **${monopoly.reason}**.`);
+        }
+      }
       lines.push('');
     }
   }
@@ -347,6 +354,9 @@ function generateNarrative() {
         lines.push('');
       } else if (hotspotPairs.length > 0) {
         lines.push('Average pairwise decorrelation stayed controlled, but the tail still carried residual hotspot pressure.');
+        lines.push('');
+      } else if (summary.exceedanceComposite && toNum(summary.exceedanceComposite.totalPairExceedanceBeats, 0) > 0) {
+        lines.push('Average pairwise decorrelation stayed controlled, but transient exceedance beats still appeared and should not be described as fully healthy.');
         lines.push('');
       } else {
         lines.push('All compositional dimension pairs maintained healthy decorrelation levels in both average and tail behavior.');

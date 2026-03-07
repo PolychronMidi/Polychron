@@ -119,6 +119,7 @@ grandFinale = () => {
     }
     composition += `1,${finalTick},end_track`;
     const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
+    fs.mkdirSync('output', { recursive: true });
     fs.writeFileSync(outputFilename, composition);
     console.log(`Wrote file: ${outputFilename}`);
 

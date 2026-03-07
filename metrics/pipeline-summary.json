@@ -1,85 +1,85 @@
 {
-  "generated": "2026-03-07T15:26:12.176Z",
-  "wallTimeSeconds": 3274.6,
+  "generated": "2026-03-07T21:02:45.948Z",
+  "wallTimeSeconds": 338.2,
   "steps": [
     {
       "label": "generate-globals-dts",
-      "elapsedSeconds": 0.4,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 3.2,
+      "elapsedSeconds": 0.2,
       "ok": true
     },
     {
       "label": "check-tuning-invariants",
-      "elapsedSeconds": 2,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {
       "label": "generate-feedback-graph",
-      "elapsedSeconds": 0.4,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {
       "label": "validate-feedback-graph",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {
       "label": "lint",
-      "elapsedSeconds": 11.1,
+      "elapsedSeconds": 1.6,
       "ok": true
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 17.8,
+      "elapsedSeconds": 1.6,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 3235.2,
+      "elapsedSeconds": 334.1,
       "ok": true
     },
     {
       "label": "trace-summary",
-      "elapsedSeconds": 0.4,
+      "elapsedSeconds": 0.1,
       "ok": true
     },
     {
       "label": "check-manifest-health",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {
       "label": "generate-dependency-graph",
-      "elapsedSeconds": 0.5,
+      "elapsedSeconds": 0.1,
       "ok": true
     },
     {
       "label": "generate-conductor-map",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {
       "label": "generate-crosslayer-map",
-      "elapsedSeconds": 0.3,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {
       "label": "golden-fingerprint",
-      "elapsedSeconds": 1.1,
+      "elapsedSeconds": 0.2,
       "ok": true
     },
     {
       "label": "narrative-digest",
-      "elapsedSeconds": 1.1,
+      "elapsedSeconds": 0.1,
       "ok": true
     },
     {
       "label": "visualize-feedback-graph",
-      "elapsedSeconds": 0.2,
+      "elapsedSeconds": 0,
       "ok": true
     }
   ],

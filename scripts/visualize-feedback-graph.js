@@ -20,13 +20,16 @@ const INVARIANTS_PATH = path.join(OUTPUT_DIR, 'tuning-invariants.json');
 function getInvariantStatus(invariants) {
   if (!invariants || typeof invariants !== 'object') return null;
 
+  let resultsStatus = null;
+  let metaStatus = null;
+
   if (Array.isArray(invariants.results) && invariants.results.length > 0) {
     let passed = 0;
     for (let i = 0; i < invariants.results.length; i++) {
       const result = invariants.results[i];
-      if (result && (result.pass === true || result.status === 'PASS')) passed++;
+      if (result && (result.pass === true || result.passed === true || result.status === 'PASS')) passed++;
     }
-    return {
+    resultsStatus = {
       passed,
       total: invariants.results.length,
       allPass: passed === invariants.results.length
@@ -34,12 +37,22 @@ function getInvariantStatus(invariants) {
   }
 
   if (invariants.meta && typeof invariants.meta.passed === 'number' && typeof invariants.meta.total === 'number') {
-    return {
+    metaStatus = {
       passed: invariants.meta.passed,
       total: invariants.meta.total,
       allPass: invariants.meta.passed === invariants.meta.total
     };
   }
+
+  if (metaStatus && resultsStatus) {
+    if (resultsStatus.total !== metaStatus.total || (resultsStatus.passed === 0 && metaStatus.passed > 0)) {
+      return metaStatus;
+    }
+    return resultsStatus;
+  }
+
+  if (metaStatus) return metaStatus;
+  if (resultsStatus) return resultsStatus;
 
   return null;
 }

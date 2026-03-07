@@ -1,3 +1,41 @@
+## R52 — 2026-03-07 — EVOLVED
+
+**Profile:** explosive | **Beats:** 244 | **Duration:** 37.8s | **Notes:** 9,486
+**Fingerprint:** 8/10 stable | Drifted: exceedanceSeverity (beats), hotspotMigration
+
+### Key Observations
+- **COHERENT LOCK RETURNED EVEN THOUGH EVOLVING REAPPEARED.** Trace-level regime share closed at `coherent=69.7% / evolving=22.1% / initializing=8.2% / exploring=0.0%`, while controller cadence resolved only `coherent=28` and `evolving=4` ticks with `runCoherentShare=0.875`, `maxCoherentBeats=28`, and `forcedBreakCount=0`.
+- **HOTSPOT PRESSURE RE-EXPLODED INTO PHASE AND TRUST.** Total pair exceedance beats jumped `15 -> 154`, unique exceedance beats jumped `12 -> 146`, and the dominant surface became `flicker-phase=102` beats with secondary spikes at `density-flicker=24` and `density-trust=24`.
+- **TAIL MEMORY AND TRUST CEILING IMPROVED, BUT THE ACTUATORS DID NOT CASH IT IN.** `stickyTailPressure=0.4398`, `tailHotspotCount=8`, and `floorRecoveryActive=true` confirm the new tail memory finally engaged, while `coherenceMonitor` fell to `0.5548` with `dominanceSpread=0.0935`; however `axisEnergyEquilibrator` still logged `pairAdjustments=0` / `axisAdjustments=0`, and `globalGainMultiplier` finished near open at `0.9837`.
+- **ADAPTIVE-TARGET TELEMETRY IS UNDER-SEEING SOME TRUE TAILS.** Snapshot `p95AbsCorr` still understates key stressed pairs versus trace tails: `density-flicker 0.457 vs 0.973`, `density-trust 0.544 vs 0.949`, while `flicker-phase 0.896 vs 0.959` is much closer. That mismatch likely blinded the budget-priority path to the full density/trust tail severity.
+- **THE DIAGNOSTIC CLEANUP WORKED.** `narrative-digest.md` now reports `11` hotspot pairs and `4` severe peaks without claiming universal healthy decorrelation, and `feedback-graph.html` now shows `Invariants: 10/10 PASS` in sync with `tuning-invariants.json` and `feedback-graph-validation.json`.
+
+### Evolutions Applied (from R51)
+- E1: **Persistent Tail-Pressure Memory Calibration** — **confirmed** — `stickyTailPressure` rose from `0.0001` to `0.4398`, `tailHotspotCount` rose to `8`, and `floorRecoveryActive=true` with `24` recovery ticks remaining.
+- E2: **P95-Sensitive Residual Hotspot Prioritization** — **refuted** — the severe set did not contract cleanly; `flicker-phase` exploded to `102` exceedance beats with `p95=0.959`, while `density-trust` finished at `p95=0.949`.
+- E3: **Evolving-Regime Reintroduction** — **inconclusive** — evolving regained `22.1%` of trace beats and `4/32` resolved profiler ticks, but exploring disappeared entirely and coherent overshare worsened to `69.7%` trace / `87.5%` controller cadence.
+- E4: **Trust-Dominance Ceiling Follow-Through** — **confirmed** — `coherenceMonitor` dropped to `0.5548` average trust and `dominanceSpread` contracted to `0.0935`, meeting the prior ceiling targets.
+- E5: **Narrative Hotspot Severity Reconciliation** — **confirmed** — the digest now labels coupling as `stressed` with `11` hotspot pairs and enumerates the four severe tails explicitly.
+- E6: **Feedback Visualization Invariant Badge Wiring** — **confirmed** — `feedback-graph.html` now renders `Invariants: 10/10 PASS`, matching `tuning-invariants.json` and `feedback-graph-validation.json`.
+
+### Evolutions Proposed (for R53)
+- E1: **Controller-Cadence Coherent Escape Hatch** — src/conductor/signal/regimeClassifier.js, src/conductor/signal/regimeReactiveDamping.js
+- E2: **Adaptive-Target Tail Telemetry Reconciliation** — src/conductor/signal/pipelineCouplingManager.js, scripts/trace-summary.js
+- E3: **Coherent-Mode Phase/Trust Hotspot Actuation** — src/conductor/signal/axisEnergyEquilibrator.js, src/conductor/signal/pipelineCouplingManager.js
+- E4: **Tail-Recovery Multiplier Handshake** — src/conductor/signal/couplingHomeostasis.js, src/conductor/signal/pipelineCouplingManager.js
+- E5: **Pair-Aware Trust Hotspot Response** — src/crossLayer/structure/adaptiveTrustScores.js, scripts/trace-summary.js
+- E6: **Cadence Monopoly Diagnostics** — scripts/trace-summary.js, scripts/narrative-digest.js
+
+### Hypotheses to Track
+- Aligning adaptive-target tail telemetry with trace-domain tails will make `p95AbsCorr` and hotspot-rate snapshots for `density-flicker`, `density-trust`, and `flicker-phase` approximate the true trace-summary p95 values.
+- A controller-cadence coherent escape hatch will bring `runCoherentShare` below `0.60` and produce non-zero post-warmup exploring counts without collapsing evolving share.
+- Allowing limited coherent-mode actuation for hot phase/trust surfaces will cut `flicker-phase` below `40` exceedance beats and `density-trust` below `15` without re-inflating entropy or tension tails.
+- A stronger tail-recovery handshake will reduce `ceilingContactBeats` from `21` and pull `globalGainMultiplier` materially below `0.95` while severe hotspots persist.
+- Pair-aware trust hotspot response will cut `trustPairExceedanceBeats` below `10` while keeping all trust systems above `0.15`.
+- If regime monopoly persists, the cadence diagnostics will make the raw-vs-resolved lock explicit in both `trace-summary.json` and `narrative-digest.md` rather than requiring manual cross-file reconstruction.
+
+---
+
 ## R51 — 2026-03-07 — EVOLVED
 
 **Profile:** explosive | **Beats:** 450 | **Duration:** 60.3s | **Notes:** 17,487

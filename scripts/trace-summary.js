@@ -79,6 +79,8 @@ function summarizeTrace(entries) {
   const couplingSeries = {};
   const trustScoreAbs = {};
   const trustWeightAbs = {};
+  const trustHotspotPressureAbs = {};
+  const trustDominantPairsBySystem = {};
   const stageTimingAgg = {}; // per-stage min/max/avg across all beats
   const BEAT_SETUP_BUDGET_MS = 200; // R9 Evo 5: flag beats where beat-setup exceeds this
   let beatSetupExceeded = 0;
@@ -127,6 +129,14 @@ function summarizeTrace(entries) {
   let lastForcedTriggerStreak = 0;
   let lastForcedTriggerBeat = 0;
   let lastForcedReason = '';
+  let cadenceMonopolyPressure = 0;
+  let cadenceMonopolyActive = false;
+  let cadenceMonopolyReason = '';
+  let rawExploringShare = 0;
+  let rawEvolvingShare = 0;
+  let rawNonCoherentOpportunityShare = 0;
+  let resolvedNonCoherentShare = 0;
+  let opportunityGap = 0;
   // R35 E5: Exploring-block diagnostic accumulators
   const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
   const coherentBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
@@ -235,6 +245,14 @@ function summarizeTrace(entries) {
         if (typeof tr.lastForcedTriggerStreak === 'number') lastForcedTriggerStreak = tr.lastForcedTriggerStreak;
         if (typeof tr.lastForcedTriggerBeat === 'number') lastForcedTriggerBeat = tr.lastForcedTriggerBeat;
         if (typeof tr.lastForcedReason === 'string') lastForcedReason = tr.lastForcedReason;
+        if (typeof tr.cadenceMonopolyPressure === 'number') cadenceMonopolyPressure = tr.cadenceMonopolyPressure;
+        if (typeof tr.cadenceMonopolyActive === 'boolean') cadenceMonopolyActive = tr.cadenceMonopolyActive;
+        if (typeof tr.cadenceMonopolyReason === 'string') cadenceMonopolyReason = tr.cadenceMonopolyReason;
+        if (typeof tr.rawExploringShare === 'number') rawExploringShare = tr.rawExploringShare;
+        if (typeof tr.rawEvolvingShare === 'number') rawEvolvingShare = tr.rawEvolvingShare;
+        if (typeof tr.rawNonCoherentOpportunityShare === 'number') rawNonCoherentOpportunityShare = tr.rawNonCoherentOpportunityShare;
+        if (typeof tr.resolvedNonCoherentShare === 'number') resolvedNonCoherentShare = tr.resolvedNonCoherentShare;
+        if (typeof tr.opportunityGap === 'number') opportunityGap = tr.opportunityGap;
       }
       // R35 E5: Accumulate exploring-block diagnostic
       if (typeof tr.exploringBlock === 'string' && exploringBlockCounts[tr.exploringBlock] !== undefined) {
@@ -328,6 +346,17 @@ function summarizeTrace(entries) {
         if (Number.isFinite(weight)) {
           if (!trustWeightAbs[key]) trustWeightAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
           updateMinMax(trustWeightAbs[key], weight);
+        }
+
+        const hotspotPressure = Math.abs(toNum(entry.hotspotPressure, NaN));
+        if (Number.isFinite(hotspotPressure)) {
+          if (!trustHotspotPressureAbs[key]) trustHotspotPressureAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
+          updateMinMax(trustHotspotPressureAbs[key], hotspotPressure);
+        }
+
+        if (typeof entry.dominantPair === 'string' && entry.dominantPair) {
+          if (!trustDominantPairsBySystem[key]) trustDominantPairsBySystem[key] = {};
+          trustDominantPairsBySystem[key][entry.dominantPair] = (trustDominantPairsBySystem[key][entry.dominantPair] || 0) + 1;
         }
       } else {
         const scalar = Math.abs(toNum(entry, NaN));
@@ -461,6 +490,13 @@ function summarizeTrace(entries) {
     trustWeightSummary[key] = finalizeMinMax(trustWeightAbs[key]);
   }
 
+  const trustHotspotPressureSummary = {};
+  const trustHotspotKeys = Object.keys(trustHotspotPressureAbs).sort();
+  for (let i = 0; i < trustHotspotKeys.length; i++) {
+    const key = trustHotspotKeys[i];
+    trustHotspotPressureSummary[key] = finalizeMinMax(trustHotspotPressureAbs[key]);
+  }
+
   const trustSummary = {};
   const trustKeys = Object.keys(trustScoreSummary).sort();
   for (let i = 0; i < trustKeys.length; i++) {
@@ -508,6 +544,10 @@ function summarizeTrace(entries) {
             p95AbsCorr: ct.p95AbsCorr != null ? ct.p95AbsCorr : null,
             hotspotRate: ct.hotspotRate != null ? ct.hotspotRate : null,
             severeRate: ct.severeRate != null ? ct.severeRate : null,
+            recentP95AbsCorr: ct.recentP95AbsCorr != null ? ct.recentP95AbsCorr : null,
+            recentHotspotRate: ct.recentHotspotRate != null ? ct.recentHotspotRate : null,
+            recentSevereRate: ct.recentSevereRate != null ? ct.recentSevereRate : null,
+            telemetryWindowBeats: ct.telemetryWindowBeats != null ? ct.telemetryWindowBeats : null,
             residualPressure: ct.residualPressure != null ? ct.residualPressure : null,
             budgetScore: ct.budgetScore != null ? ct.budgetScore : 0,
             budgetBoost: ct.budgetBoost != null ? ct.budgetBoost : 1,
@@ -610,8 +650,16 @@ function summarizeTrace(entries) {
       densityFlickerTailPressure: toNum(couplingHomeostasisState.densityFlickerTailPressure, 0),
       tailRecoveryDrive: toNum(couplingHomeostasisState.tailRecoveryDrive, 0),
       tailRecoveryTrigger: toNum(couplingHomeostasisState.tailRecoveryTrigger, 0),
+      tailRecoveryHandshake: toNum(couplingHomeostasisState.tailRecoveryHandshake, 0),
+      tailRecoveryCap: toNum(couplingHomeostasisState.tailRecoveryCap, 1),
+      tailRecoveryCeilingPressure: toNum(couplingHomeostasisState.tailRecoveryCeilingPressure, 0),
       dominantTailPair: typeof couplingHomeostasisState.dominantTailPair === 'string' ? couplingHomeostasisState.dominantTailPair : '',
       tailHotspotCount: toNum(couplingHomeostasisState.tailHotspotCount, 0),
+      floorRecoveryActive: Boolean(couplingHomeostasisState.floorRecoveryActive),
+      floorRecoveryTicksRemaining: toNum(couplingHomeostasisState.floorRecoveryTicksRemaining, 0),
+      floorContactBeats: toNum(couplingHomeostasisState.floorContactBeats, 0),
+      persistentPairCount: Object.values(couplingHomeostasisState.tailPressureByPair).filter(function(value) { return toNum(value, 0) > 0.03; }).length,
+      activePairCount: Object.values(couplingHomeostasisState.tailPressureByPair).filter(function(value) { return toNum(value, 0) > 0.08; }).length,
       topPairs: Object.entries(couplingHomeostasisState.tailPressureByPair)
         .map(function(entry) { return { pair: entry[0], pressure: Number(toNum(entry[1], 0).toFixed(4)) }; })
         .sort(function(a, b) { return b.pressure - a.pressure; })
@@ -637,15 +685,78 @@ function summarizeTrace(entries) {
     const trustAxisShare = axisEnergyShare && axisEnergyShare.shares && typeof axisEnergyShare.shares.trust === 'number'
       ? Number(axisEnergyShare.shares.trust.toFixed(4))
       : null;
+    const coherenceMonitor = dominantSystems.find(function(entry) { return entry.system === 'coherenceMonitor'; }) || null;
+    const pairAwareSystems = Object.keys(trustHotspotPressureSummary)
+      .map(function(system) {
+        const dominantPairs = trustDominantPairsBySystem[system] || {};
+        const sortedPairs = Object.entries(dominantPairs).sort(function(a, b) { return b[1] - a[1]; });
+        return {
+          system,
+          hotspotPressure: Number(toNum(trustHotspotPressureSummary[system] && trustHotspotPressureSummary[system].avg, 0).toFixed(4)),
+          dominantPair: sortedPairs.length > 0 ? sortedPairs[0][0] : '',
+          dominantPairCount: sortedPairs.length > 0 ? sortedPairs[0][1] : 0
+        };
+      })
+      .sort(function(a, b) { return b.hotspotPressure - a.hotspotPressure; })
+      .slice(0, 5);
     return {
       dominantSystems: dominantSystems.slice(0, 3),
       dominantCountAbove06: dominantSystems.filter(function(entry) { return entry.score > 0.60; }).length,
       dominanceSpread: dominantSystems.length > 1 ? Number((dominantSystems[0].score - dominantSystems[1].score).toFixed(4)) : 0,
+      dominantWeightSpread: dominantSystems.length > 1 ? Number((dominantSystems[0].weight - dominantSystems[1].weight).toFixed(4)) : 0,
+      dominantSystem: dominantSystems.length > 0 ? dominantSystems[0].system : '',
+      dominantScore: dominantSystems.length > 0 ? dominantSystems[0].score : 0,
+      dominantWeight: dominantSystems.length > 0 ? dominantSystems[0].weight : 0,
+      coherenceMonitor,
+      pairAwareSystems,
       trustAxisShare,
       trustPairExceedanceBeats: trustHotspotPairs.reduce(function(sum, entry) { return sum + entry.beats; }, 0),
       trustHotspotPairs: trustHotspotPairs.slice(0, 5)
     };
   })();
+
+  const adaptiveTelemetryReconciliation = adaptiveTargets
+    ? (() => {
+      const mismatchedPairs = Object.keys(adaptiveTargets)
+        .map(function(pair) {
+          const controller = adaptiveTargets[pair];
+          const traceTail = couplingTail[pair];
+          const traceP95 = traceTail && typeof traceTail.p95 === 'number' ? traceTail.p95 : null;
+          if (traceP95 === null) return null;
+          const controllerP95 = toNum(controller.p95AbsCorr, 0);
+          const recentP95 = toNum(controller.recentP95AbsCorr, controllerP95);
+          const gap = Number((traceP95 - controllerP95).toFixed(4));
+          const recentGap = Number((traceP95 - recentP95).toFixed(4));
+          return {
+            pair,
+            traceP95: Number(traceP95.toFixed(4)),
+            controllerP95: Number(controllerP95.toFixed(4)),
+            recentP95: Number(recentP95.toFixed(4)),
+            gap,
+            recentGap,
+            telemetryWindowBeats: controller.telemetryWindowBeats != null ? controller.telemetryWindowBeats : null
+          };
+        })
+        .filter(function(entry) { return entry && entry.gap > 0.08; })
+        .sort(function(a, b) { return b.gap - a.gap; });
+      return {
+        underSeenPairCount: mismatchedPairs.length,
+        maxGap: mismatchedPairs.length > 0 ? mismatchedPairs[0].gap : 0,
+        pairs: mismatchedPairs.slice(0, 5)
+      };
+    })()
+    : null;
+
+  const cadenceMonopoly = readinessBeats > 0 ? {
+    pressure: Number(cadenceMonopolyPressure.toFixed(4)),
+    active: cadenceMonopolyActive,
+    reason: cadenceMonopolyReason,
+    rawExploringShare: Number(rawExploringShare.toFixed(4)),
+    rawEvolvingShare: Number(rawEvolvingShare.toFixed(4)),
+    rawNonCoherentOpportunityShare: Number(rawNonCoherentOpportunityShare.toFixed(4)),
+    resolvedNonCoherentShare: Number(resolvedNonCoherentShare.toFixed(4)),
+    opportunityGap: Number(opportunityGap.toFixed(4))
+  } : null;
 
   return {
     generatedAt: new Date().toISOString(),
@@ -759,6 +870,14 @@ function summarizeTrace(entries) {
       lastForcedReason,
       lastForcedTriggerStreak,
       lastForcedTriggerBeat,
+      cadenceMonopolyPressure: Number(cadenceMonopolyPressure.toFixed(4)),
+      cadenceMonopolyActive,
+      cadenceMonopolyReason,
+      rawExploringShare: Number(rawExploringShare.toFixed(4)),
+      rawEvolvingShare: Number(rawEvolvingShare.toFixed(4)),
+      rawNonCoherentOpportunityShare: Number(rawNonCoherentOpportunityShare.toFixed(4)),
+      resolvedNonCoherentShare: Number(resolvedNonCoherentShare.toFixed(4)),
+      opportunityGap: Number(opportunityGap.toFixed(4)),
       tickSource: 'profiler-recorder',
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
@@ -790,6 +909,8 @@ function summarizeTrace(entries) {
       topPairs: exceedancePairsSorted.slice(0, 3)
     },
     tailRecovery,
+    cadenceMonopoly,
+    adaptiveTelemetryReconciliation,
     nonNudgeableGains,
     trustDominance,
     // R32 E6: Intra-axis pair energy distribution diagnostic
