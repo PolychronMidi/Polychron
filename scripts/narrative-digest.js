@@ -221,6 +221,32 @@ function generateNarrative() {
     lines.push('');
   }
 
+  if (summary && summary.profilerCadence && summary.transitionReadiness) {
+    const cadence = summary.profilerCadence;
+    const readiness = summary.transitionReadiness;
+    const totalTraceEntries = summary.beats && summary.beats.totalEntries ? summary.beats.totalEntries : 0;
+    if (cadence.analysisTicks > 0 && totalTraceEntries > cadence.analysisTicks) {
+      lines.push('### Controller Cadence');
+      lines.push('');
+      lines.push(`The emitted trace contains **${totalTraceEntries} beat entries**, but the regime controller advanced on only **${cadence.analysisTicks} ${cadence.cadence || 'analysis'} ticks**.`);
+      lines.push(`**${cadence.snapshotReuseEntries}** entries reused an existing profiler snapshot and **${cadence.warmupEntries}** entries landed during warmup.`);
+      if (readiness.runResolvedRegimeCounts && typeof readiness.runResolvedRegimeCounts === 'object') {
+        const resolvedCounts = Object.entries(readiness.runResolvedRegimeCounts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([regime, count]) => `\`${regime}\` ${count}`)
+          .join(', ');
+        if (resolvedCounts) {
+          lines.push(`On the controller cadence, resolved regime time was: ${resolvedCounts}.`);
+        }
+      }
+      const forcedCount = Array.isArray(summary.forcedTransitionEvents) ? summary.forcedTransitionEvents.length : 0;
+      lines.push(forcedCount > 0
+        ? `The controller recorded **${forcedCount} forced transition event${forcedCount !== 1 ? 's' : ''}**.`
+        : 'No forced regime transition fired on the controller cadence.');
+      lines.push('');
+    }
+  }
+
   // ---- Conductor Signals ----
   lines.push('## Signal Landscape');
   lines.push('');

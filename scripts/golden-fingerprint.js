@@ -12,6 +12,7 @@
 //   - Trust convergence rate
 //   - Regime distribution
 //   - Coupling correlation summary
+//   - Hotspot migration surface
 //
 // Output: metrics/golden-fingerprint.json (current run)
 //         metrics/golden-fingerprint.prev.json (previous run, for diff)
@@ -50,7 +51,8 @@ const TOLERANCES = {
   trustConvergenceDelta: 0.25,    // trust score convergence rate change
   regimeDistributionDelta: 0.20,  // Jensen-Shannon divergence threshold (R9 Evo 6: tightened from 0.30)
   couplingDelta: 0.25,            // mean absolute coupling change
-  exceedanceSeverity: 35          // R44 E6: Max sum exceedance absolute delta (Broadened from 25)
+  exceedanceSeverity: 35,         // R44 E6: Max sum exceedance absolute delta (Broadened from 25)
+  hotspotMigration: 0.55
 };
 
 // ---- Utility functions ----
@@ -119,6 +121,30 @@ function getExceedanceCompositeView(fingerprint) {
     uniqueRate: 0,
     totalPairExceedanceBeats: total,
     topPairs: legacyTopPairs
+  };
+}
+
+function getHotspotMigrationView(fingerprint) {
+  if (fingerprint && fingerprint.hotspotMigration) {
+    return fingerprint.hotspotMigration;
+  }
+  const composite = getExceedanceCompositeView(fingerprint);
+  const topPairs = Array.isArray(composite.topPairs) ? composite.topPairs : [];
+  const top2Total = topPairs.slice(0, 2).reduce(function(sum, entry) {
+    return sum + toNum(entry && entry.beats, 0);
+  }, 0);
+  return {
+    topPair: topPairs[0] ? topPairs[0].pair : '',
+    topPairs,
+    top2Concentration: composite.totalPairExceedanceBeats > 0 ? top2Total / composite.totalPairExceedanceBeats : 0,
+    axisShares: {
+      density: null,
+      tension: null,
+      flicker: null,
+      entropy: null,
+      trust: null,
+      phase: null
+    }
   };
 }
 
@@ -257,6 +283,28 @@ function computeFingerprint() {
         .slice(0, 3)
     };
 
+  const axisShares = summary && summary.axisEnergyShare && summary.axisEnergyShare.shares
+    ? summary.axisEnergyShare.shares
+    : {};
+  const hotspotTop2Beats = exceedanceComposite.topPairs.slice(0, 2).reduce(function(sum, entry) {
+    return sum + toNum(entry && entry.beats, 0);
+  }, 0);
+  const hotspotMigration = {
+    topPair: exceedanceComposite.topPairs[0] ? exceedanceComposite.topPairs[0].pair : '',
+    topPairs: exceedanceComposite.topPairs,
+    top2Concentration: exceedanceComposite.totalPairExceedanceBeats > 0
+      ? Number((hotspotTop2Beats / exceedanceComposite.totalPairExceedanceBeats).toFixed(4))
+      : 0,
+    axisShares: {
+      density: axisShares.density != null ? Number(toNum(axisShares.density, 0).toFixed(4)) : null,
+      tension: axisShares.tension != null ? Number(toNum(axisShares.tension, 0).toFixed(4)) : null,
+      flicker: axisShares.flicker != null ? Number(toNum(axisShares.flicker, 0).toFixed(4)) : null,
+      entropy: axisShares.entropy != null ? Number(toNum(axisShares.entropy, 0).toFixed(4)) : null,
+      trust: axisShares.trust != null ? Number(toNum(axisShares.trust, 0).toFixed(4)) : null,
+      phase: axisShares.phase != null ? Number(toNum(axisShares.phase, 0).toFixed(4)) : null
+    }
+  };
+
   return {
     meta: {
       generated: new Date().toISOString(),
@@ -273,6 +321,7 @@ function computeFingerprint() {
     exceedanceSeverity,
     totalExceedanceBeats,
     exceedanceComposite,
+    hotspotMigration,
     couplingMeans,
     couplingCorrelation,
     activeProfile: (manifest && manifest.config && manifest.config.activeProfile) || 'unknown'
@@ -427,6 +476,49 @@ function compareFingerprints(current, previous) {
     });
   }
 
+  const currentHotspot = getHotspotMigrationView(current);
+  const previousHotspot = getHotspotMigrationView(previous);
+  if (currentHotspot && previousHotspot) {
+    const currentPairs = Array.isArray(currentHotspot.topPairs) ? currentHotspot.topPairs.map(function(entry) { return entry.pair; }).filter(Boolean) : [];
+    const previousPairs = Array.isArray(previousHotspot.topPairs) ? previousHotspot.topPairs.map(function(entry) { return entry.pair; }).filter(Boolean) : [];
+    const union = new Set(currentPairs.concat(previousPairs));
+    let intersectionCount = 0;
+    for (const pair of union) {
+      if (currentPairs.indexOf(pair) !== -1 && previousPairs.indexOf(pair) !== -1) intersectionCount++;
+    }
+    const pairSetDelta = union.size > 0 ? 1 - intersectionCount / union.size : 0;
+    const topPairChanged = currentHotspot.topPair && previousHotspot.topPair && currentHotspot.topPair !== previousHotspot.topPair ? 1 : 0;
+    const concentrationDelta = Math.abs(toNum(currentHotspot.top2Concentration, 0) - toNum(previousHotspot.top2Concentration, 0));
+    const hotspotAxes = ['density', 'flicker', 'trust', 'phase'];
+    let axisDelta = 0;
+    let axisCount = 0;
+    for (let i = 0; i < hotspotAxes.length; i++) {
+      const axis = hotspotAxes[i];
+      const currentAxis = currentHotspot.axisShares ? currentHotspot.axisShares[axis] : null;
+      const previousAxis = previousHotspot.axisShares ? previousHotspot.axisShares[axis] : null;
+      if (currentAxis === null || previousAxis === null || currentAxis === undefined || previousAxis === undefined) continue;
+      axisDelta += Math.abs(currentAxis - previousAxis);
+      axisCount++;
+    }
+    axisDelta = axisCount > 0 ? axisDelta / axisCount : 0;
+    const hotspotMigrationDelta = topPairChanged * 0.45 + pairSetDelta * 0.25 + concentrationDelta * 0.15 + axisDelta * 0.15;
+    const hotspotPass = hotspotMigrationDelta <= TOLERANCES.hotspotMigration * crossProfileScale;
+    if (!hotspotPass) drifted++;
+    results.push({
+      dimension: 'hotspotMigration',
+      delta: Number(hotspotMigrationDelta.toFixed(4)),
+      tolerance: TOLERANCES.hotspotMigration * crossProfileScale,
+      status: hotspotPass ? 'stable' : 'drifted',
+      currentTopPair: currentHotspot.topPair,
+      previousTopPair: previousHotspot.topPair,
+      currentTop2Concentration: Number(toNum(currentHotspot.top2Concentration, 0).toFixed(4)),
+      previousTop2Concentration: Number(toNum(previousHotspot.top2Concentration, 0).toFixed(4)),
+      pairSetDelta: Number(pairSetDelta.toFixed(4)),
+      currentAxisShares: currentHotspot.axisShares,
+      previousAxisShares: previousHotspot.axisShares
+    });
+  }
+
   if (crossProfile) {
     results.push({ dimension: 'crossProfileWarning', delta: 0, tolerance: 0, status: 'stable',
       note: 'Profiles differ (' + previous.activeProfile + ' -> ' + current.activeProfile + '); tolerances widened 1.3x' });
@@ -556,6 +648,19 @@ function explainDrift(comparison, current, previous) {
           current: currentComposite.uniqueBeats,
           previous: previousComposite.uniqueBeats
         };
+        break;
+      }
+      case 'hotspotMigration': {
+        const currentHotspot = getHotspotMigrationView(current);
+        const previousHotspot = getHotspotMigrationView(previous);
+        const currentDesc = (currentHotspot.topPairs || []).map(function(entry) { return entry.pair + ': ' + entry.beats; }).join(', ') || 'none';
+        const previousDesc = (previousHotspot.topPairs || []).map(function(entry) { return entry.pair + ': ' + entry.beats; }).join(', ') || 'none';
+        explain.cause = 'hotspot surface migrated from [' + previousDesc + '] to [' + currentDesc + ']';
+        explain.axisShift = {
+          current: currentHotspot.axisShares,
+          previous: previousHotspot.axisShares
+        };
+        explain.meaning = 'stress redistributed across hotspot surfaces rather than being removed outright';
         break;
       }
       default:

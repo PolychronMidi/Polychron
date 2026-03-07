@@ -503,6 +503,11 @@ function summarizeTrace(entries) {
             rollingAbsCorr: ct.rollingAbsCorr,
             rawRollingAbsCorr: ct.rawRollingAbsCorr != null ? ct.rawRollingAbsCorr : null,
             gain: ct.gain,
+            effectiveGain: ct.effectiveGain != null ? ct.effectiveGain : null,
+            nudgeable: ct.nudgeable !== false,
+            budgetScore: ct.budgetScore != null ? ct.budgetScore : 0,
+            budgetBoost: ct.budgetBoost != null ? ct.budgetBoost : 1,
+            budgetRank: ct.budgetRank != null ? ct.budgetRank : null,
             heatPenalty: ct.heatPenalty,
             effectivenessEma: ct.effectivenessEma != null ? ct.effectivenessEma : null,
             // R34 E3: Per-pair effectiveness temporal tracking
@@ -571,6 +576,70 @@ function summarizeTrace(entries) {
       }
     }
   }
+
+  let nonNudgeableGains = null;
+  if (adaptiveTargets) {
+    const nonNudgeablePairs = Object.entries(adaptiveTargets)
+      .filter(function(entry) { return entry[1] && entry[1].nudgeable === false; })
+      .map(function(entry) {
+        return {
+          pair: entry[0],
+          gain: entry[1].gain,
+          effectiveGain: entry[1].effectiveGain,
+          rawRollingAbsCorr: entry[1].rawRollingAbsCorr,
+          rawEmaMax: entry[1].rawEmaMax != null ? entry[1].rawEmaMax : null
+        };
+      });
+    if (nonNudgeablePairs.length > 0) {
+      nonNudgeableGains = {
+        pairCount: nonNudgeablePairs.length,
+        nonZeroGainPairs: nonNudgeablePairs.filter(function(pair) { return toNum(pair.gain, 0) > 0.0001; }).length,
+        nonZeroEffectiveGainPairs: nonNudgeablePairs.filter(function(pair) { return toNum(pair.effectiveGain, 0) > 0.0001; }).length,
+        pairs: nonNudgeablePairs
+      };
+    }
+  }
+
+  const tailRecovery = couplingHomeostasisState && couplingHomeostasisState.tailPressureByPair && typeof couplingHomeostasisState.tailPressureByPair === 'object'
+    ? {
+      stickyTailPressure: toNum(couplingHomeostasisState.stickyTailPressure, 0),
+      densityFlickerTailPressure: toNum(couplingHomeostasisState.densityFlickerTailPressure, 0),
+      dominantTailPair: typeof couplingHomeostasisState.dominantTailPair === 'string' ? couplingHomeostasisState.dominantTailPair : '',
+      tailHotspotCount: toNum(couplingHomeostasisState.tailHotspotCount, 0),
+      topPairs: Object.entries(couplingHomeostasisState.tailPressureByPair)
+        .map(function(entry) { return { pair: entry[0], pressure: Number(toNum(entry[1], 0).toFixed(4)) }; })
+        .sort(function(a, b) { return b.pressure - a.pressure; })
+        .slice(0, 5)
+    }
+    : null;
+
+  const trustDominance = (() => {
+    const dominantSystems = trustKeys
+      .map(function(key) {
+        return {
+          system: key,
+          score: Number(toNum(trustScoreSummary[key] && trustScoreSummary[key].avg, 0).toFixed(4)),
+          weight: Number(toNum(trustWeightSummary[key] && trustWeightSummary[key].avg, 0).toFixed(4))
+        };
+      })
+      .sort(function(a, b) { return b.score - a.score; })
+      .slice(0, 5);
+    const trustHotspotPairs = Object.entries(pairExceedanceBeats)
+      .filter(function(entry) { return entry[0].indexOf('trust') !== -1; })
+      .map(function(entry) { return { pair: entry[0], beats: entry[1] }; })
+      .sort(function(a, b) { return b.beats - a.beats; });
+    const trustAxisShare = axisEnergyShare && axisEnergyShare.shares && typeof axisEnergyShare.shares.trust === 'number'
+      ? Number(axisEnergyShare.shares.trust.toFixed(4))
+      : null;
+    return {
+      dominantSystems: dominantSystems.slice(0, 3),
+      dominantCountAbove06: dominantSystems.filter(function(entry) { return entry.score > 0.60; }).length,
+      dominanceSpread: dominantSystems.length > 1 ? Number((dominantSystems[0].score - dominantSystems[1].score).toFixed(4)) : 0,
+      trustAxisShare,
+      trustPairExceedanceBeats: trustHotspotPairs.reduce(function(sum, entry) { return sum + entry.beats; }, 0),
+      trustHotspotPairs: trustHotspotPairs.slice(0, 5)
+    };
+  })();
 
   return {
     generatedAt: new Date().toISOString(),
@@ -647,6 +716,18 @@ function summarizeTrace(entries) {
       snapshotReuseEntries: profilerSnapshotReuseEntries,
       warmupEntries: profilerWarmupEntries
     },
+    regimeCadence: {
+      traceEntries: entries.length,
+      profilerTicks: uniqueProfilerAnalysisTicks.size,
+      traceEntriesPerProfilerTick: uniqueProfilerAnalysisTicks.size > 0
+        ? Number((entries.length / uniqueProfilerAnalysisTicks.size).toFixed(2))
+        : null,
+      traceEntryCounts: regimeCounts,
+      profilerTickResolvedCounts: runResolvedRegimeCounts,
+      profilerTickRawCounts: runRawRegimeCounts,
+      snapshotReuseEntries: profilerSnapshotReuseEntries,
+      warmupEntries: profilerWarmupEntries
+    },
     forcedTransitionEvents,
     // R34 E6: Regime transition readiness diagnostic
     transitionReadiness: readinessBeats > 0 ? {
@@ -702,6 +783,9 @@ function summarizeTrace(entries) {
       totalPairExceedanceBeats: Object.values(pairExceedanceBeats).reduce((sum, value) => sum + value, 0),
       topPairs: exceedancePairsSorted.slice(0, 3)
     },
+    tailRecovery,
+    nonNudgeableGains,
+    trustDominance,
     // R32 E6: Intra-axis pair energy distribution diagnostic
     intraAxisDistribution: (() => {
       // Compute per-axis Gini coefficient and dominant pair from coupling data

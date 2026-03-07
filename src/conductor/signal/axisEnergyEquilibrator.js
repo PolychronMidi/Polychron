@@ -54,6 +54,10 @@ axisEnergyEquilibrator = (() => {
   const _BASELINE_MIN = 0.04;
   const _BASELINE_MAX = 0.40;
   const _WARMUP = 16;
+  const _PHASE_SURFACE_RATIO = 1.6;
+  const _PHASE_SURFACE_ABS_MIN = 0.18;
+  const _TRUST_SURFACE_RATIO = 1.45;
+  const _TRUST_SURFACE_ABS_MIN = 0.20;
 
   // R32 E2: Effective nudgeable pair count per axis. Trust/entropy/phase have
   // only 3 nudgeable pairs (both partners must include density/tension/flicker)
@@ -90,6 +94,10 @@ axisEnergyEquilibrator = (() => {
   const _regimeAxisAdj = {};
   /** @type {Record<string, number>} */
   const _regimeTightenBudget = {};
+  let _coherentFreezeBeats = 0;
+  let _skippedColdspotRelaxations = 0;
+  let _phaseSurfaceHotBeats = 0;
+  let _trustSurfaceHotBeats = 0;
 
   // Dimensions + pair mapping (precomputed)
   const _ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
@@ -140,6 +148,34 @@ axisEnergyEquilibrator = (() => {
     const giniMult = axisGini > _GINI_ESCALATION ? 1.5 : 1.0;
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
     const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
+    let phaseSurfaceHot = false;
+    const phaseSurfacePairs = ['density-phase', 'flicker-phase', 'tension-phase'];
+    for (let p = 0; p < phaseSurfacePairs.length; p++) {
+      const pair = phaseSurfacePairs[p];
+      const pd = snapshot[pair];
+      if (!pd) continue;
+      const baseline = V.optionalFinite(pd.baseline, 0);
+      const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
+      if (rolling > m.max(_PHASE_SURFACE_ABS_MIN, baseline * _PHASE_SURFACE_RATIO)) {
+        phaseSurfaceHot = true;
+        break;
+      }
+    }
+    let trustSurfaceHot = false;
+    const trustSurfacePairs = ['density-trust', 'flicker-trust', 'tension-trust'];
+    for (let p = 0; p < trustSurfacePairs.length; p++) {
+      const pair = trustSurfacePairs[p];
+      const pd = snapshot[pair];
+      if (!pd) continue;
+      const baseline = V.optionalFinite(pd.baseline, 0);
+      const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
+      if (rolling > m.max(_TRUST_SURFACE_ABS_MIN, baseline * _TRUST_SURFACE_RATIO)) {
+        trustSurfaceHot = true;
+        break;
+      }
+    }
+    if (phaseSurfaceHot) _phaseSurfaceHotBeats++;
+    if (trustSurfaceHot) _trustSurfaceHotBeats++;
 
     // R31: Graduated coherent gate. R30's binary gate (freeze during evolving
     // + coherent = 61% of beats) caused axisGini to triple (0.137->0.382)
@@ -158,6 +194,8 @@ axisEnergyEquilibrator = (() => {
       : currentRegime === 'evolving' ? 0.6
       : currentRegime === 'exploring' ? 1.5
       : 1.0;
+    const coherentColdspotFreeze = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot);
+    if (coherentColdspotFreeze) _coherentFreezeBeats++;
 
     // R32 E5: Track per-regime beats and tightening budget
     const rKey = currentRegime || 'unknown';
@@ -177,7 +215,9 @@ axisEnergyEquilibrator = (() => {
       if (tightenScale > 0 && rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) {
         // Hotspot -- tighten this pair's baseline (scaled by regime gate)
         const overshoot = rolling / m.max(baseline, 0.01);
-        const rate = _PAIR_TIGHTEN_RATE * tightenScale * giniMult * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const isPhaseSurfacePair = pair === 'density-phase' || pair === 'flicker-phase' || pair === 'tension-phase';
+        const phaseSurfaceBoost = isPhaseSurfacePair ? 1.35 : 1.0;
+        const rate = _PAIR_TIGHTEN_RATE * tightenScale * giniMult * phaseSurfaceBoost * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(_BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
@@ -187,6 +227,10 @@ axisEnergyEquilibrator = (() => {
           _regimePairAdj[rKey] = (_regimePairAdj[rKey] || 0) + 1;
         }
       } else if (rolling < _COLDSPOT_RATIO * baseline && rolling < _COLDSPOT_ABS_MAX) {
+        if (coherentColdspotFreeze) {
+          _skippedColdspotRelaxations++;
+          continue;
+        }
         // Coldspot -- relax this pair's baseline
         const nb = m.min(_BASELINE_MAX, baseline + _PAIR_RELAX_RATE);
         if (nb > baseline) {
@@ -247,6 +291,10 @@ axisEnergyEquilibrator = (() => {
           }
         }
       } else if (share < _AXIS_UNDERSHOOT && share > 0.001) {
+        if (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot)) {
+          _skippedColdspotRelaxations++;
+          continue;
+        }
         const deficit = _FAIR_SHARE - share;
         // R32 E2: Scale relaxation rate by inverse nudgeable pair count.
         // Trust/entropy/phase axes have only 3 effective nudgeable pairs vs 5,
@@ -278,7 +326,7 @@ axisEnergyEquilibrator = (() => {
     });
   }
 
-  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number> }} */
+  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number }} */
   function getSnapshot() {
     return {
       beatCount: _beatCount,
@@ -292,7 +340,11 @@ axisEnergyEquilibrator = (() => {
       regimeBeats: Object.assign({}, _regimeBeats),
       regimePairAdj: Object.assign({}, _regimePairAdj),
       regimeAxisAdj: Object.assign({}, _regimeAxisAdj),
-      regimeTightenBudget: Object.assign({}, _regimeTightenBudget)
+      regimeTightenBudget: Object.assign({}, _regimeTightenBudget),
+      coherentFreezeBeats: _coherentFreezeBeats,
+      skippedColdspotRelaxations: _skippedColdspotRelaxations,
+      phaseSurfaceHotBeats: _phaseSurfaceHotBeats,
+      trustSurfaceHotBeats: _trustSurfaceHotBeats
     };
   }
 

@@ -21,6 +21,8 @@ pipelineCouplingManager = (() => {
   // Dimensions managed by conductor bias pipelines
   const NUDGEABLE = ['density', 'tension', 'flicker'];
   const NUDGEABLE_SET = new Set(NUDGEABLE);
+  const _NON_NUDGEABLE_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
+  const _PHASE_SURFACE_SET = new Set(['density-phase', 'flicker-phase', 'tension-phase']);
 
   // The 4 compositional dimensions whose pairs we monitor, plus 2 observable-
   // only dimensions (trust, phase) that are not nudgeable but whose coupling
@@ -179,13 +181,23 @@ pipelineCouplingManager = (() => {
   const _DENSITY_PAIR_GAIN_CAP = 0.45;
   const _DENSITY_PAIR_GAIN_CAP_THRESHOLD = 0.72;
   const _BUDGET_PRIORITY_GAIN = {
-    'density-flicker': 1.35,
+    'density-flicker': 1.55,
+    'density-phase': 1.35,
     'density-trust': 1.25,
+    'flicker-phase': 1.45,
     'flicker-trust': 1.25,
+    'tension-phase': 1.15,
     'tension-flicker': 1.10,
     'tension-trust': 1.10
   };
   const _BUDGET_DEPRIORITIZED_GAIN = 0.82;
+  const _BUDGET_PRIORITY_TOP_K = 4;
+  /** @type {Record<string, number>} */
+  let _budgetPriorityScore = {};
+  /** @type {Record<string, number>} */
+  let _budgetPriorityBoost = {};
+  /** @type {Record<string, number>} */
+  let _budgetPriorityRank = {};
 
   // R25 E3: Exploring beat counter for partial target relaxation.
   // When system is stuck in exploring for >40 beats, partially relax
@@ -245,7 +257,7 @@ pipelineCouplingManager = (() => {
   let _hpCooldownRemaining = 0;
 
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
-  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number }>} */
+  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }>} */
   const _pairState = {};
 
   /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
@@ -255,12 +267,14 @@ pipelineCouplingManager = (() => {
   /**
    * Get or create adaptive state for a pair.
    * @param {string} key
-   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number }}
+   * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }}
    */
   function _getPairState(key) {
     if (!_pairState[key]) {
-      const initGain = PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT;
-      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5, effMin: 1.0, effMax: 0.0, effActiveBeats: 0 };
+      const initGain = _NON_NUDGEABLE_SET.has(key)
+        ? 0
+        : (PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT);
+      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5, effMin: 1.0, effMax: 0.0, effActiveBeats: 0, lastEffectiveGain: 0 };
     }
     return _pairState[key];
   }
@@ -272,6 +286,16 @@ pipelineCouplingManager = (() => {
     const sorted = arr.slice().sort((a, b) => a - b);
     const idx = m.floor(sorted.length * 0.95);
     return sorted[m.min(idx, sorted.length - 1)];
+  }
+
+  /** @param {number[]} arr @param {number} threshold */
+  function _computeExceedanceRate(arr, threshold) {
+    if (!Array.isArray(arr) || arr.length === 0) return 0;
+    let count = 0;
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i] > threshold) count++;
+    }
+    return count / arr.length;
   }
 
   /**
@@ -414,6 +438,83 @@ pipelineCouplingManager = (() => {
     const _budgetConstraintPressure = _homeostasisState && typeof _homeostasisState.budgetConstraintPressure === 'number'
       ? _homeostasisState.budgetConstraintPressure
       : 0;
+    const _floorRecoveryActive = Boolean(_homeostasisState && _homeostasisState.floorRecoveryActive);
+    const _densityFlickerTailPressure = _homeostasisState && typeof _homeostasisState.densityFlickerTailPressure === 'number'
+      ? _homeostasisState.densityFlickerTailPressure
+      : 0;
+    const _tailPressureByPair = _homeostasisState && _homeostasisState.tailPressureByPair && typeof _homeostasisState.tailPressureByPair === 'object'
+      ? _homeostasisState.tailPressureByPair
+      : null;
+    const matrix = snap.couplingMatrix;
+
+    _budgetPriorityScore = {};
+    _budgetPriorityBoost = {};
+    _budgetPriorityRank = {};
+    if (_budgetConstraintActive) {
+      /** @type {Array<{ key: string, score: number, boost: number }>} */
+      const rankedPairs = [];
+      for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
+        for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
+          const dimA = ALL_MONITORED_DIMS[a];
+          const dimB = ALL_MONITORED_DIMS[b];
+          const key = dimA + '-' + dimB;
+          if (_NON_NUDGEABLE_SET.has(key)) continue;
+          const corr = matrix[key];
+          if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
+          const absCorr = m.abs(corr);
+          const target = _getTarget(key) * targetScale;
+          const ps = _getPairState(key);
+          const p95 = _computeP95(ps.recentAbsCorr);
+          const exceedRate = _computeExceedanceRate(ps.recentAbsCorr, 0.85);
+          const previousEffectiveGain = ps.lastEffectiveGain || 0;
+          const gainBase = m.max(ps.gain, GAIN_INIT);
+          const effectiveShortfall = clamp((gainBase - m.min(gainBase, previousEffectiveGain)) / gainBase, 0, 1);
+          const exceedPressure = clamp((absCorr - m.max(target, 0.06)) / 0.45, 0, 1);
+          const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
+            ? clamp(_tailPressureByPair[key], 0, 1)
+            : 0;
+          const staticBias = _BUDGET_PRIORITY_GAIN[key] !== undefined
+            ? clamp((_BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1)
+            : 0;
+          const score = clamp(
+            tailPressure * 0.38 +
+            clamp(ps.heatPenalty || 0, 0, 1) * 0.22 +
+            exceedRate * 0.16 +
+            effectiveShortfall * 0.14 +
+            clamp((p95 - 0.80) / 0.20, 0, 1) * 0.08 +
+            exceedPressure * 0.08 +
+            staticBias * 0.06,
+            0,
+            1.4
+          );
+          if (score > 0.04) {
+            rankedPairs.push({
+              key,
+              score,
+              boost: 1 + clamp(score, 0, 1.2) * 0.28
+            });
+          }
+        }
+      }
+      rankedPairs.sort(function(a, b) {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.key < b.key ? -1 : 1;
+      });
+      for (let i = 0; i < rankedPairs.length; i++) {
+        const entry = rankedPairs[i];
+        _budgetPriorityScore[entry.key] = Number(entry.score.toFixed(4));
+        const staticBoost = _BUDGET_PRIORITY_GAIN[entry.key] !== undefined
+          ? 1 + (_BUDGET_PRIORITY_GAIN[entry.key] - 1.0) * 0.35
+          : _BUDGET_DEPRIORITIZED_GAIN;
+        if (i < _BUDGET_PRIORITY_TOP_K) {
+          const rankBoost = i === 0 ? 1.60 : i === 1 ? 1.45 : i === 2 ? 1.30 : 1.18;
+          _budgetPriorityBoost[entry.key] = Number(m.max(staticBoost, rankBoost, entry.boost).toFixed(4));
+          _budgetPriorityRank[entry.key] = i + 1;
+        } else {
+          _budgetPriorityBoost[entry.key] = Number(staticBoost.toFixed(4));
+        }
+      }
+    }
 
     // Accumulate decorrelation nudges across all overcoupled compositional pairs
     let nudgeD = 0;
@@ -448,8 +549,6 @@ pipelineCouplingManager = (() => {
         if (amount >= 0) nudgeFPos += amount; else nudgeFNeg += amount;
       }
     }
-
-    const matrix = snap.couplingMatrix;
 
     // R19 E1: Pre-pass to compute per-axis total |r| for proportional gain allocation.
     _axisTotalAbsR = {};
@@ -505,17 +604,22 @@ pipelineCouplingManager = (() => {
         const target = _getTarget(key) * targetScale;
         const absCorr = m.abs(corr);
         const ps = _getPairState(key);
+        ps.lastEffectiveGain = 0;
 
         // -- Adaptive gain logic --
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
         const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
         const isDensityFlickerPair = key === 'density-flicker';
         const isPhasePair = (dimA === 'phase' || dimB === 'phase');
+        const isPhaseSurfacePair = _PHASE_SURFACE_SET.has(key);
         const isTrustPair = (dimA === 'trust' || dimB === 'trust');
+        const isNonNudgeablePair = _NON_NUDGEABLE_SET.has(key);
         // R25: Skip gain escalation for non-nudgeable pairs. Neither axis has
         // a bias knob, so gains can never produce nudges. Escalating them wastes
         // budget and pollutes HP promotion candidates. Still track EMAs.
-        if (!NUDGEABLE_SET.has(dimA) && !NUDGEABLE_SET.has(dimB)) {
+        if (isNonNudgeablePair) {
+          ps.gain = 0;
+          ps.lastEffectiveGain = 0;
           ps.lastAbsCorr = absCorr;
           ps.recentAbsCorr.push(absCorr);
           if (ps.recentAbsCorr.length > _P95_WINDOW) ps.recentAbsCorr.shift();
@@ -558,6 +662,20 @@ pipelineCouplingManager = (() => {
               rate *= (1 + dfGrad);
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfGrad * 0.25, 1.0);
             }
+            if (isDensityFlickerPair) {
+              let dfSevereCount = 0;
+              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
+                if (ps.recentAbsCorr[r] > 0.85) dfSevereCount++;
+              }
+              const dfSevereRate = ps.recentAbsCorr.length > 0 ? dfSevereCount / ps.recentAbsCorr.length : 0;
+              const dfTailPressure = clamp((p95 - 0.90) * 2.4, 0, 0.40)
+                + clamp((dfSevereRate - 0.18) * 1.2, 0, 0.30)
+                + clamp((m.abs(corr) - 0.92) * 1.5, 0, 0.20);
+              if (dfTailPressure > 0) {
+                rate *= 1 + dfTailPressure;
+                ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfTailPressure * 0.18, 1.0);
+              }
+            }
             // R46 E3: Self-correcting phase-pair hotspot controller.
             // Use current |r|, p95, and exceedance rate from the recent ring
             // so active phase hotspots are penalized without hardcoding one pair.
@@ -573,6 +691,12 @@ pipelineCouplingManager = (() => {
               const phasePressure = phaseCorrPressure + phaseTailPressure + phaseRatePressure;
               rate *= (1 + phasePressure);
               ps.heatPenalty = m.min((ps.heatPenalty || 0) + phasePressure * 0.12, 1.0);
+            }
+            if (isPhaseSurfacePair && (m.abs(corr) > 0.72 || p95 > 0.80)) {
+              const phaseSurfacePressure = clamp((m.abs(corr) - 0.72) * 1.4, 0, 0.28)
+                + clamp((p95 - 0.80) * 1.6, 0, 0.22);
+              rate *= 1 + phaseSurfacePressure;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + phaseSurfacePressure * 0.10, 1.0);
             }
             if (isTrustPair && (NUDGEABLE_SET.has(dimA) || NUDGEABLE_SET.has(dimB)) && (m.abs(corr) > 0.74 || p95 > 0.82)) {
               let trustExceedCount = 0;
@@ -767,7 +891,10 @@ const rawEmaInput = absCorr;
         }
 
         // Skip nudge if below target
-        if (absCorr <= target) continue;
+        if (absCorr <= target) {
+          ps.lastEffectiveGain = 0;
+          continue;
+        }
 
         // Split decorrelation nudge across BOTH nudgeable axes in opposite
         // directions. Single-axis nudging caused accidental co-movement when
@@ -788,16 +915,25 @@ const rawEmaInput = absCorr;
           effectiveGain *= _densityGainScalar;
         }
         if (_budgetConstraintActive) {
-          const budgetFocus = _BUDGET_PRIORITY_GAIN[key] !== undefined
-            ? _BUDGET_PRIORITY_GAIN[key]
-            : _BUDGET_DEPRIORITIZED_GAIN;
+          const budgetFocus = _budgetPriorityBoost[key] !== undefined
+            ? _budgetPriorityBoost[key]
+            : (_BUDGET_PRIORITY_GAIN[key] !== undefined
+              ? 1 + (_BUDGET_PRIORITY_GAIN[key] - 1.0) * 0.35
+              : _BUDGET_DEPRIORITIZED_GAIN);
           effectiveGain *= 1 + (budgetFocus - 1) * _budgetConstraintPressure;
+        }
+        if (isPhaseSurfacePair && absCorr > target * 1.4) {
+          effectiveGain *= 1.18;
+        }
+        if (isDensityFlickerPair && _densityFlickerTailPressure > 0) {
+          effectiveGain *= 1 + _densityFlickerTailPressure * (_floorRecoveryActive ? 0.9 : 0.6);
         }
         // R33 E1: Velocity-based spike dampener. Boost gain on the spike beat
         // itself (velocityBoostActive) AND for _VELOCITY_BOOST_BEATS after.
         if (_velocityBoostActive || _velocityBoostCooldown > 0) {
           effectiveGain *= _VELOCITY_GAIN_BOOST;
         }
+        ps.lastEffectiveGain = effectiveGain;
 
         if (aIsNudgeable && bIsNudgeable) {
           const excess = absCorr - target;
@@ -1093,25 +1229,36 @@ const rawEmaInput = absCorr;
     _hpPromotedPair = null;
     _hpBeats = 0;
     _hpCooldownRemaining = 0;
+    _budgetPriorityScore = {};
+    _budgetPriorityBoost = {};
+    _budgetPriorityRank = {};
   }
-
-  // R18 E5 / R19 E1+E2 / R20 E6: Expose adaptive target state for trace diagnostics.
-  // Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
-  // gain, heatPenalty, effectivenessEma, and per-axis totals for post-run analysis.
+  /**
+   * R18 E5 / R19 E1+E2 / R20 E6: Expose adaptive target state for trace diagnostics.
+   * Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
+   * gain, effectiveGain, nudgeability, dynamic budget focus, heatPenalty,
+   * effectivenessEma, and per-axis totals for post-run analysis.
+   */
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
+    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, gain: number, effectiveGain: number, nudgeable: boolean, budgetScore: number, budgetBoost: number, budgetRank: number | null, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
     const result = {};
     const keys = Object.keys(_adaptiveTargets);
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
       const at = _adaptiveTargets[key];
       const ps = _pairState[key];
+      const nudgeable = !_NON_NUDGEABLE_SET.has(key);
       result[key] = {
         baseline: at.baseline,
         current: Number(at.current.toFixed(4)),
         rollingAbsCorr: Number(at.rollingAbsCorr.toFixed(4)),
         rawRollingAbsCorr: Number(at.rawRollingAbsCorr.toFixed(4)),
         gain: ps ? Number(ps.gain.toFixed(4)) : 0,
+        effectiveGain: ps ? Number(((ps.lastEffectiveGain || 0)).toFixed(4)) : 0,
+        nudgeable,
+        budgetScore: _budgetPriorityScore[key] !== undefined ? _budgetPriorityScore[key] : 0,
+        budgetBoost: _budgetPriorityBoost[key] !== undefined ? _budgetPriorityBoost[key] : 1,
+        budgetRank: _budgetPriorityRank[key] !== undefined ? _budgetPriorityRank[key] : null,
         heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0,
         effectivenessEma: ps ? Number((ps.effectivenessEma || 0.5).toFixed(4)) : 0.5,
         // R33 E5: Per-pair effectiveness temporal tracking

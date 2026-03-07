@@ -1,3 +1,79 @@
+## R50 — 2026-03-07 — STABLE
+
+**Profile:** explosive | **Beats:** 278 | **Duration:** 46.3s | **Notes:** 11,293
+**Fingerprint:** 9/9 stable | Drifted: none
+
+### Key Observations
+- **R50 FIXED THE CADENCE STORY AND THE NON-NUDGEABLE BUDGET LEAK.** `regimeCadence` now cleanly separates `278` emitted beat entries from `66` profiler ticks, with `traceEntriesPerProfilerTick=4.21`, `snapshotReuseEntries=212`, and `warmupEntries=20`, while `nonNudgeableGains` closes at `pairCount=3`, `nonZeroGainPairs=0`, and `nonZeroEffectiveGainPairs=0`.
+- **REGIME BALANCE TILTED TOO FAR BACK INTO COHERENCE.** The run moved from R49's `coherent=42.2% / exploring=33.1% / evolving=11.1%` to `coherent=53.2% / exploring=22.3% / evolving=17.3%`, and the controller cadence closed at `runCoherentShare=0.5902` with `maxCoherentBeats=36` and `forcedBreakCount=0`.
+- **THE DENSITY-FLICKER SEVERE TAIL IMPROVED, BUT HOTSPOT ENERGY MIGRATED INTO PHASE AND TRUST.** `density-flicker` fell from `48` exceedance beats and `p95=0.9705` to `13` beats and `p95=0.9062`, yet total pair exceedance beats still rose `113 -> 166` because `density-phase=38`, `flicker-phase=38`, and the trust-linked trio `density-trust`, `flicker-trust`, and `tension-trust` each finished at `20` exceedance beats.
+- **HOMEOSTASIS LOOKS BETTER IN THE SYMPTOMS THAN IN THE MECHANISM.** `floorContactBeats` improved `109 -> 46` and `avgRecoveryDuration` improved `54.5 -> 34`, but `floorDampen` snapped back to `1.0000`, `floorRecoveryActive=false`, and `densityFlickerTailPressure=0`, so the new recovery path did not stay engaged when the run still carried severe phase and trust tails.
+- **PIPELINE HEALTH IMPROVED AGAIN.** All `16/16` steps passed, wall time fell from `1872.5s` to `1625.2s`, the composition step fell from `1849.6s` to `1594.0s`, and beat-setup overruns stayed at `0`.
+
+### Evolutions Applied (from R49)
+- E1: **Cadence-Aware Narrative Reconciliation** — **confirmed** — `narrative-digest.md` and `trace-summary.json` now report `278` trace entries versus `66` controller ticks, plus `212` reused snapshots and `20` warmup entries.
+- E2: **Phase-Surface Hotspot Rebalancing** — **refuted** — `density-phase` and `flicker-phase` became the top exceedance pairs at `38` beats each with `p95=0.9550` and `0.9662`.
+- E3: **Severe Density-Flicker Tail Suppressor** — **confirmed** — `density-flicker` dropped from `48` exceedance beats to `13` and its `p95` fell from `0.9705` to `0.9062`, even though its mean |r| rose to `0.6029`.
+- E4: **True Non-Nudgeable Gain Nulling** — **confirmed** — `entropy-trust`, `entropy-phase`, and `trust-phase` all closed with `gain=0` and `effectiveGain=0`.
+- E5: **Floor-Recovery Hysteresis** — **inconclusive** — `floorContactBeats` and `avgRecoveryDuration` both improved, but `floorRecoveryActive=false` and `floorDampen=1.0000` show the intended recovery logic did not become the dominant governor.
+- E6: **Clip-Safe Regime Damping Headroom** — **inconclusive** — `regimeReactiveDamping` stayed inside its widened ranges (`density=1.0742`, `tension=0.9213`, `flicker=1.1800`), but flicker still pinned the new ceiling and regime share drifted further into coherence.
+
+### Evolutions Proposed (for R51)
+- E1: **Hotspot-Surface Budget Arbitration** — src/conductor/signal/pipelineCouplingManager.js, src/conductor/signal/couplingHomeostasis.js
+- E2: **Coherent-Regime Coldspot Freeze** — src/conductor/signal/axisEnergyEquilibrator.js
+- E3: **Sticky Tail-Pressure Recovery Driver** — src/conductor/signal/couplingHomeostasis.js, scripts/trace-summary.js
+- E4: **Coherent-Overshare Hotspot Counterpressure** — src/conductor/signal/regimeReactiveDamping.js
+- E5: **Trust-Axis Dominance Caps** — src/crossLayer/structure/adaptiveTrustScores.js, scripts/trace-summary.js
+- E6: **Hotspot-Migration Fingerprint Dimension** — scripts/golden-fingerprint.js, scripts/compare-runs.js, scripts/fingerprint-drift-explainer.js
+
+### Hypotheses to Track
+- Dynamic budget arbitration will cut `density-phase` and `flicker-phase` below `25` exceedance beats each without letting `density-flicker` rebound above `20`.
+- Blocking coherent-regime coldspot relaxation while phase/trust surfaces are still hot will reduce `regimeAxisAdj.coherent` and `trust-phase` baseline churn, lowering phase/trust p95 tails.
+- A sticky tail-pressure EMA will make `floorRecoveryActive` observable during sustained hotspot windows and hold `floorDampen` below `0.80` when severe tails persist.
+- Coherent-overshare counterpressure will bring controller-cadence `runCoherentShare` back under `0.50` and lift `exploring` back above `0.25` without forcing a return to the old exploration excess.
+- Coupling-aware trust caps will pull `coherenceMonitor` below `0.60` final trust whenever trust-linked severe pairs remain active, contracting the trust axis share from `0.2128`.
+- A hotspot-migration fingerprint dimension will stop runs with `113 -> 166` pair exceedance growth and top-pair migration from reading as fully stable unless the surface redistribution is genuinely benign.
+
+---
+
+## R49 — 2026-03-06 — STABLE
+
+**Profile:** explosive | **Beats:** 296 | **Duration:** 39.7s | **Notes:** 12,369
+**Fingerprint:** 9/9 stable | Drifted: none
+
+### Key Observations
+- **CANONICAL CADENCE TELEMETRY IS FINALLY ALIGNED.** `profilerCadence` now reports `analysisTicks=52`, `regimeTicks=52`, `snapshotReuseEntries=244`, and `warmupEntries=40`, while `transitionReadiness` closes with `runBeatCount=52`, `runTickCount=52`, and `tickSource='profiler-recorder'`. The old mismatch between trace-entry regime counts and controller-run counters is now explained rather than broken.
+- **REGIME BALANCE IMPROVED MATERIALLY.** The run moved from R48's `exploring=53.8% / coherent=38.6% / evolving=3.4%` to `exploring=33.1% / coherent=42.2% / evolving=11.1%`, with `initializing=13.5%`. Entry-level transitions remained 3, while canonical run-level transitions finished at 2 with `forcedBreakCount=0` because coherent dwell only reached `runCoherentBeats=24` on the profiler cadence.
+- **COUPLING PRESSURE DROPPED ON DENSITY-FLICKER BUT MIGRATED INTO PHASE.** `density-flicker` improved from `avg=0.4895` and 76 exceedance beats to `avg=0.3984` and 48 beats, but its `p95` stayed extreme at `0.9705`. At the same time `flicker-phase` surged from `avg=0.0916` to `0.5120` with 35 exceedance beats and `p95=0.9100`, making phase the new dominant residual stress surface.
+- **HOMEOSTASIS IS BITING NOW, BUT FLOOR RECOVERY IS STILL TOO STICKY.** `couplingHomeostasis.floorDampen` fell from `1.0000` in R48 to `0.6525`, `globalGainMultiplier` closed at `0.8806`, and `budgetConstraintPressure` reached `0.5127`. That is real progress, but `floorContactBeats=109` and `avgRecoveryDuration=54.5` show the governor still spends too long pinned near its minimum multiplier.
+- **PIPELINE HEALTH IMPROVED SHARPLY.** All 16 pipeline steps passed in `1872.5s`, the composition step dropped to `1849.6s`, and beat-setup budget overruns fell from 6 in R48 to 0 in this run.
+
+### Evolutions Applied (from R48)
+- E1: **Canonical Regime Tick Alignment** — **confirmed** — `transitionReadiness.runBeatCount` and `runTickCount` both close at `52` with `tickSource='profiler-recorder'`, matching `profilerCadence.analysisTicks=52` and eliminating the old beat-domain mismatch.
+- E2: **Forced-Break Event Trace** — **confirmed** — the explicit event channel now exists and closes cleanly at `forcedTransitionEvents=[]`; with `runCoherentBeats=24` and `maxCoherentBeats=24`, the lack of forced breaks is now credible telemetry rather than a hidden failure.
+- E3: **Profiler Cadence Telemetry** — **confirmed** — `snapshotReuseEntries=244` and `warmupEntries=40` now quantify the recorder-vs-trace cadence difference directly.
+- E4: **Density-Flicker Severe-Tail Clamp** — **inconclusive** — `density-flicker` exceedance beats improved `76 -> 48` and avg `0.4895 -> 0.3984`, but `p95` remained severe at `0.9705`.
+- E5: **Non-Nudgeable Gain Zeroing** — **refuted** — `entropy-trust` still reports `gain=0.1600` and `entropy-phase` still reports `gain=0.2400`; only `trust-phase` is fully zeroed.
+- E6: **Floor-Contact Homeostasis Escalation** — **confirmed (partial)** — `floorDampen` improved from `1.0000` to `0.6525`, but the system still logged `109` floor-contact beats and `avgRecoveryDuration=54.5`.
+
+### Evolutions Proposed (for R50)
+- E1: **Cadence-Aware Narrative Reconciliation** — scripts/narrative-digest.js, scripts/trace-summary.js
+- E2: **Phase-Surface Hotspot Rebalancing** — src/conductor/signal/pipelineCouplingManager.js, src/conductor/signal/axisEnergyEquilibrator.js
+- E3: **Severe Density-Flicker Tail Suppressor** — src/conductor/signal/pipelineCouplingManager.js, src/conductor/signal/couplingHomeostasis.js
+- E4: **True Non-Nudgeable Gain Nulling** — src/conductor/signal/pipelineCouplingManager.js, scripts/trace-summary.js
+- E5: **Floor-Recovery Hysteresis** — src/conductor/signal/couplingHomeostasis.js, src/conductor/signal/pipelineCouplingManager.js
+- E6: **Clip-Safe Regime Damping Headroom** — src/conductor/signal/regimeReactiveDamping.js, metrics/narrative-digest.md
+
+### Hypotheses to Track
+- `narrative-digest.md` and `trace-summary.json` will report both trace-entry regime counts and profiler-tick regime counts so the 125-entry coherent block is no longer mistaken for a 125-tick controller dwell.
+- `flicker-phase` and `density-phase` will fall below `p95=0.85` without re-inflating `density-flicker` or trust-linked hotspots.
+- `density-flicker` will drop below `40` exceedance beats while keeping its `p95` under `0.92`.
+- `entropy-trust` and `entropy-phase` will expose `gain=0` or explicit `effectiveGain=0`, removing false budget usage from non-nudgeable pairs.
+- `floorContactBeats` and `avgRecoveryDuration` will both fall materially while `floorDampen` remains below `0.80`, proving the homeostasis governor is recovering instead of camping at the floor.
+- `regimeReactiveDamping` will stop clipping at the registered tension and flicker boundaries while preserving the healthier post-R49 regime balance.
+
+---
+
 ## R48 — 2026-03-06 — STABLE
 
 **Profile:** explosive | **Beats:** 474 | **Duration:** 69.7s | **Notes:** 17,577

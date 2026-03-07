@@ -111,6 +111,22 @@ couplingHomeostasis = (() => {
   const _CHRONIC_DAMPEN_THRESHOLD = 20;
   const _CHRONIC_FLOOR_RELAX_RATE = 0.005;
   const _CHRONIC_FLOOR_RELAX_CAP = 0.60;
+  let _floorRecoveryContactTicks = 0;
+  let _floorRecoveryTicksRemaining = 0;
+  let _densityFlickerTailPressure = 0;
+  let _stickyTailPressure = 0;
+  let _dominantTailPair = '';
+  let _tailHotspotCount = 0;
+  const _TAIL_PRESSURE_EMA_ALPHA = 0.18;
+  const _TAIL_PRESSURE_TRIGGER = 0.32;
+  /** @type {Record<string, number>} */
+  const _tailPressureByPair = {};
+  const _TAIL_PRIORITY_PAIRS = [
+    'density-flicker', 'density-phase', 'flicker-phase', 'density-trust',
+    'flicker-trust', 'tension-trust', 'tension-flicker', 'tension-phase'
+  ];
+  const _FLOOR_RECOVERY_TRIGGER = 10;
+  const _FLOOR_RECOVERY_HOLD = 18;
   // R21 E6: Invoke tracking for beat processing diagnostics
   let _invokeCount = 0;               // every refresh() call regardless of guards
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
@@ -195,6 +211,30 @@ couplingHomeostasis = (() => {
         pairCount++;
       }
     }
+
+    let tailSum = 0;
+    let strongestTail = 0;
+    let strongestPair = '';
+    let activeTailCount = 0;
+    for (let i = 0; i < _TAIL_PRIORITY_PAIRS.length; i++) {
+      const pair = _TAIL_PRIORITY_PAIRS[i];
+      const pairAbs = _pairAbsR[pair] || 0;
+      const rawTailPressure = clamp((pairAbs - 0.82) / 0.18, 0, 1) * 0.45 + clamp((pairAbs - 0.90) / 0.10, 0, 1) * 0.55;
+      const nextTailPressure = (_tailPressureByPair[pair] || 0) * (1 - _TAIL_PRESSURE_EMA_ALPHA) + rawTailPressure * _TAIL_PRESSURE_EMA_ALPHA;
+      _tailPressureByPair[pair] = Number(nextTailPressure.toFixed(4));
+      tailSum += nextTailPressure;
+      if (nextTailPressure > strongestTail) {
+        strongestTail = nextTailPressure;
+        strongestPair = pair;
+      }
+      if (nextTailPressure > 0.25) activeTailCount++;
+    }
+    _dominantTailPair = strongestPair;
+    _tailHotspotCount = activeTailCount;
+    const tailAverage = _TAIL_PRIORITY_PAIRS.length > 0 ? tailSum / _TAIL_PRIORITY_PAIRS.length : 0;
+    const tailAggregate = m.max(strongestTail, tailAverage * 1.35);
+    _stickyTailPressure = _stickyTailPressure * (1 - _TAIL_PRESSURE_EMA_ALPHA) + tailAggregate * _TAIL_PRESSURE_EMA_ALPHA;
+    _densityFlickerTailPressure = _tailPressureByPair['density-flicker'] || 0;
 
     if (pairCount === 0) return;
 
@@ -401,6 +441,23 @@ couplingHomeostasis = (() => {
       _globalGainMultiplier = _globalGainMultiplier * 0.95 + targetMultiplier * 0.05;
     }
 
+    const tailRecoveryPressure = m.max(_stickyTailPressure, _densityFlickerTailPressure);
+    const floorContactNow = _globalGainMultiplier <= 0.22 || getFloorDampen() < 0.60;
+    const persistentTailNow = tailRecoveryPressure > _TAIL_PRESSURE_TRIGGER && _redistributionScore > 0.35;
+    if (floorContactNow || persistentTailNow) {
+      _floorRecoveryContactTicks += persistentTailNow && !floorContactNow ? 2 : 1;
+      if (_floorRecoveryContactTicks > _FLOOR_RECOVERY_TRIGGER) {
+        _floorRecoveryTicksRemaining = _FLOOR_RECOVERY_HOLD + m.floor(tailRecoveryPressure * 8);
+      }
+    } else {
+      _floorRecoveryContactTicks = 0;
+    }
+    if (_floorRecoveryTicksRemaining > 0) {
+      const recoveryFloor = clamp(0.30 + tailRecoveryPressure * 0.14, _GAIN_FLOOR, 0.46);
+      _globalGainMultiplier = _globalGainMultiplier * 0.88 + m.max(_globalGainMultiplier, recoveryFloor) * 0.12;
+      _floorRecoveryTicksRemaining--;
+    }
+
     // Track multiplier extremes
     _multiplierMin = m.min(_multiplierMin, _globalGainMultiplier);
     _multiplierMax = m.max(_multiplierMax, _globalGainMultiplier);
@@ -425,7 +482,8 @@ couplingHomeostasis = (() => {
       }
     }
     if (applyBrake) {
-      _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier * 0.85);
+      const brakeScale = _floorRecoveryTicksRemaining > 0 && tailRecoveryPressure > 0.25 ? 0.92 : 0.85;
+      _globalGainMultiplier = m.max(_GAIN_FLOOR, _globalGainMultiplier * brakeScale);
     }
 
     // Apply multiplier to pipelineCouplingManager
@@ -486,7 +544,8 @@ couplingHomeostasis = (() => {
     const floorPressure = clamp((0.85 - getFloorDampen()) / 0.65, 0, 1);
     const gainPressure = clamp((0.95 - _globalGainMultiplier) / 0.55, 0, 1);
     const redistributionPressure = clamp(_nudgeableRedistributionScore / 0.50, 0, 1);
-    return clamp(m.max(floorPressure, gainPressure) * 0.7 + redistributionPressure * 0.3, 0, 1);
+    const tailPressure = clamp(_stickyTailPressure / 0.55, 0, 1);
+    return clamp(m.max(floorPressure, gainPressure, tailPressure) * 0.65 + redistributionPressure * 0.25 + tailPressure * 0.10, 0, 1);
   }
 
   /**
@@ -556,7 +615,14 @@ couplingHomeostasis = (() => {
       multiplierStdDev: Number(multiplierStdDev.toFixed(4)),
       floorContactBeats,
       ceilingContactBeats,
-      avgRecoveryDuration: Number(avgRecoveryDuration.toFixed(1))
+      avgRecoveryDuration: Number(avgRecoveryDuration.toFixed(1)),
+      floorRecoveryActive: _floorRecoveryTicksRemaining > 0,
+      floorRecoveryTicksRemaining: _floorRecoveryTicksRemaining,
+      densityFlickerTailPressure: Number(_densityFlickerTailPressure.toFixed(4)),
+      stickyTailPressure: Number(_stickyTailPressure.toFixed(4)),
+      dominantTailPair: _dominantTailPair,
+      tailHotspotCount: _tailHotspotCount,
+      tailPressureByPair: Object.assign({}, _tailPressureByPair)
     };
   }
 
@@ -578,6 +644,16 @@ couplingHomeostasis = (() => {
     _nonRedistBeats = 0;
     _nudgeableNonRedistBeats = 0;
     _chronicDampenBeats = 0;
+    _floorRecoveryContactTicks = 0;
+    _floorRecoveryTicksRemaining = 0;
+    _densityFlickerTailPressure *= 0.50;
+    _stickyTailPressure *= 0.50;
+    _dominantTailPair = '';
+    _tailHotspotCount = 0;
+    const tailKeys = Object.keys(_tailPressureByPair);
+    for (let i = 0; i < tailKeys.length; i++) {
+      _tailPressureByPair[tailKeys[i]] *= 0.50;
+    }
     // Cached matrix preserved across sections (stale decay handles aging)
     // _beatCount intentionally NOT reset: tracks lifetime beats for budget recalibration
     // _invokeCount/_tickCount intentionally NOT reset: tracks total lifetime invocations
