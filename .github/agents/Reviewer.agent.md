@@ -63,11 +63,14 @@ When a metric raises a question, trace it to the source. Common investigation ta
 | Regime classifier | `src/conductor/signal/regimeClassifier.js` |
 | Trust system | `src/crossLayer/adaptiveTrustScores.js`, `src/crossLayer/contextualTrust.js` |
 | Regime profiler | `src/conductor/signal/systemDynamicsProfiler.js` |
+| Trace cadence / beat indexing | `src/play/processBeat.js`, `src/play/crossLayerBeatRecord.js`, `src/writer/traceDrain.js` |
 | Meta-controllers | `src/conductor/signal/` (any file with `hypermeta` or `metaController` in name) |
 | Fingerprint logic | `scripts/golden-fingerprint.js` |
 | Trace aggregation | `scripts/trace-summary.js` |
 | Profile config | `src/conductor/conductorProfiles.js` |
 | Composer selection | `src/composers/` |
+
+If `transitionReadiness` run counters disagree sharply with the emitted regime trace, check cadence before assuming a reset bug: trace entries are written per layer, `beatCount` advances on L1 only, and profiler snapshots may be cached across multiple trace records.
 
 ---
 

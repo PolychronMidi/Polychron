@@ -33,6 +33,7 @@ systemDynamicsProfiler = (() => {
   /** @type {Array<number[]>} velocity vectors (first differences) */
   const velocities = [];
   let beatsSeen = 0;
+  let _analysisTick = 0;
   let _entropySampleErrors = 0;
   let _lastEntropyError = '';
   // R13 Evo 6: Velocity EMA
@@ -129,7 +130,12 @@ systemDynamicsProfiler = (() => {
       entropyAmplification: entropyAmplificationController.getAmp(),
       entropySampleErrors: 0,
       entropyRhythmErrors: 0,
-      lastEntropyError: ''
+      lastEntropyError: '',
+      profilerTick: 0,
+      regimeTick: 0,
+      trajectorySamples: 0,
+      warmupTicksRemaining: MIN_WINDOW,
+      profilerCadence: 'measure-recorder'
     };
   }
 
@@ -217,6 +223,7 @@ systemDynamicsProfiler = (() => {
   /** Run per-beat analysis. Called via conductorIntelligence recorder. */
   function analyze() {
     beatsSeen++;
+    _analysisTick++;
     const rawState = _sampleState();
 
     // -- Z-score normalize compositional dimensions --
@@ -268,7 +275,16 @@ systemDynamicsProfiler = (() => {
     }
 
     // Need minimum history for meaningful analysis
-    if (trajectory.length < MIN_WINDOW) return;
+    if (trajectory.length < MIN_WINDOW) {
+      _lastSnapshot = Object.assign({}, _lastSnapshot, {
+        profilerTick: _analysisTick,
+        regimeTick: _analysisTick,
+        trajectorySamples: trajectory.length,
+        warmupTicksRemaining: m.max(0, MIN_WINDOW - trajectory.length),
+        profilerCadence: 'measure-recorder'
+      });
+      return _lastSnapshot;
+    }
 
     // -- Trajectory velocity (mean magnitude of velocity vectors) --
     let avgVelocity = 0;
@@ -309,7 +325,7 @@ systemDynamicsProfiler = (() => {
     }
     // -- Regime classification (with hysteresis, delegated to regimeClassifier) --
     const rawRegime = regimeClassifier.classify(avgVelocity, avgCurvature, effDim, strength);
-    const regime = regimeClassifier.resolve(rawRegime);
+    const regime = regimeClassifier.resolve(rawRegime, _analysisTick);
     const grade = regimeClassifier.grade(regime);
 
     _lastSnapshot = {
@@ -324,7 +340,12 @@ systemDynamicsProfiler = (() => {
       entropyAmplification: m.round(entropyAmplificationController.getAmp() * 100) / 100,
       entropySampleErrors: _entropySampleErrors,
       entropyRhythmErrors: entropyRegulator.getRhythmErrors(),
-      lastEntropyError: _lastEntropyError
+      lastEntropyError: _lastEntropyError,
+      profilerTick: _analysisTick,
+      regimeTick: _analysisTick,
+      trajectorySamples: trajectory.length,
+      warmupTicksRemaining: 0,
+      profilerCadence: 'measure-recorder'
     };
 
     // Emit real-time telemetry on every beat for observability
@@ -349,6 +370,8 @@ systemDynamicsProfiler = (() => {
         couplingStrength: _lastSnapshot.couplingStrength
       }, beatStartTime * 1000);
     }
+
+    return _lastSnapshot;
   }
 
   /** @returns {SystemDynamicsSnapshot} */
@@ -371,6 +394,7 @@ systemDynamicsProfiler = (() => {
     rawTrajectory.length = 0;
     velocities.length = 0;
     beatsSeen = 0;
+    _analysisTick = 0;
     _smoothedState = null;
     _stateSmoothingResolved = false;
     _stateSmoothing = 0.30;

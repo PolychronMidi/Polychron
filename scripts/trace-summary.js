@@ -97,6 +97,15 @@ function summarizeTrace(entries) {
   let lastBeatKey = null;
   let firstTimeMs = null;
   let lastTimeMs = null;
+  const uniqueBeatKeys = new Set();
+  const uniqueProfilerAnalysisTicks = new Set();
+  const uniqueProfilerRegimeTicks = new Set();
+  let profilerCadence = '';
+  let profilerSnapshotReuseEntries = 0;
+  let profilerWarmupEntries = 0;
+  let lastProfilerAnalysisTick = null;
+  const forcedTransitionEventIds = new Set();
+  const forcedTransitionEvents = [];
   // R34 E6: Transition readiness accumulators (per-beat gap + velocity tracking)
   let readinessGapSum = 0;
   let readinessGapMin = Infinity;
@@ -143,6 +152,7 @@ function summarizeTrace(entries) {
 
     if (firstBeatKey === null && typeof e.beatKey === 'string') firstBeatKey = e.beatKey;
     if (typeof e.beatKey === 'string') lastBeatKey = e.beatKey;
+    if (typeof e.beatKey === 'string') uniqueBeatKeys.add(e.beatKey);
 
     const timeMs = toNum(e.timeMs, NaN);
     if (Number.isFinite(timeMs)) {
@@ -153,6 +163,47 @@ function summarizeTrace(entries) {
     const snap = e.snap && typeof e.snap === 'object' ? e.snap : {};
     const regime = typeof e.regime === 'string' ? e.regime : 'unknown';
     regimeCounts[regime] = (regimeCounts[regime] || 0) + 1;
+
+    if (e.profilerTelemetry && typeof e.profilerTelemetry === 'object') {
+      const pt = e.profilerTelemetry;
+      if (typeof pt.cadence === 'string' && pt.cadence) profilerCadence = pt.cadence;
+      if (typeof pt.analysisTick === 'number' && Number.isFinite(pt.analysisTick) && pt.analysisTick > 0) {
+        uniqueProfilerAnalysisTicks.add(pt.analysisTick);
+        if (lastProfilerAnalysisTick !== null && pt.analysisTick === lastProfilerAnalysisTick) {
+          profilerSnapshotReuseEntries++;
+        }
+        lastProfilerAnalysisTick = pt.analysisTick;
+      }
+      if (typeof pt.regimeTick === 'number' && Number.isFinite(pt.regimeTick) && pt.regimeTick > 0) {
+        uniqueProfilerRegimeTicks.add(pt.regimeTick);
+      }
+      if (typeof pt.warmupTicksRemaining === 'number' && pt.warmupTicksRemaining > 0) {
+        profilerWarmupEntries++;
+      }
+    }
+
+    if (e.forcedTransitionEvent && typeof e.forcedTransitionEvent === 'object') {
+      const fte = e.forcedTransitionEvent;
+      const eventId = typeof fte.eventId === 'number' && Number.isFinite(fte.eventId)
+        ? fte.eventId
+        : forcedTransitionEvents.length + 1;
+      if (!forcedTransitionEventIds.has(eventId)) {
+        forcedTransitionEventIds.add(eventId);
+        forcedTransitionEvents.push({
+          eventId,
+          from: typeof fte.from === 'string' ? fte.from : '',
+          to: typeof fte.to === 'string' ? fte.to : '',
+          reason: typeof fte.reason === 'string' ? fte.reason : '',
+          triggerTick: typeof fte.triggerTick === 'number' ? fte.triggerTick : null,
+          triggerStreak: typeof fte.triggerStreak === 'number' ? fte.triggerStreak : null,
+          runTickCount: typeof fte.runTickCount === 'number' ? fte.runTickCount : null,
+          runTransitionCount: typeof fte.runTransitionCount === 'number' ? fte.runTransitionCount : null,
+          runCoherentBeats: typeof fte.runCoherentBeats === 'number' ? fte.runCoherentBeats : null,
+          runCoherentShare: typeof fte.runCoherentShare === 'number' ? fte.runCoherentShare : null,
+          forcedBeatsRemaining: typeof fte.forcedBeatsRemaining === 'number' ? fte.forcedBeatsRemaining : null
+        });
+      }
+    }
 
     // R17 Evo 6: Track consecutive coherent streaks and regime transitions
     if (lastRegime !== null && regime !== lastRegime) regimeTransitionCount++;
@@ -334,6 +385,13 @@ function summarizeTrace(entries) {
         if (!worstBeatSetupSpike || spike.ms > worstBeatSetupSpike.ms) worstBeatSetupSpike = spike;
       }
     }
+  }
+
+  if (uniqueProfilerRegimeTicks.size > 0 && runBeatCount < uniqueProfilerRegimeTicks.size) {
+    runBeatCount = uniqueProfilerRegimeTicks.size;
+  }
+  if (forcedTransitionEvents.length > forcedBreakCount) {
+    forcedBreakCount = forcedTransitionEvents.length;
   }
 
   const couplingSummary = {};
@@ -518,6 +576,7 @@ function summarizeTrace(entries) {
     generatedAt: new Date().toISOString(),
     beats: {
       totalEntries: entries.length,
+      uniqueBeatKeys: uniqueBeatKeys.size,
       byLayer,
       firstBeatKey,
       lastBeatKey,
@@ -581,6 +640,14 @@ function summarizeTrace(entries) {
     couplingHomeostasis: couplingHomeostasisState,
     // R32 E5: Axis energy equilibrator per-regime telemetry
     axisEnergyEquilibrator: axisEnergyEquilibratorState,
+    profilerCadence: {
+      cadence: profilerCadence || 'unknown',
+      analysisTicks: uniqueProfilerAnalysisTicks.size,
+      regimeTicks: uniqueProfilerRegimeTicks.size,
+      snapshotReuseEntries: profilerSnapshotReuseEntries,
+      warmupEntries: profilerWarmupEntries
+    },
+    forcedTransitionEvents,
     // R34 E6: Regime transition readiness diagnostic
     transitionReadiness: readinessBeats > 0 ? {
       gapMin: Number(readinessGapMin.toFixed(4)),
@@ -595,6 +662,7 @@ function summarizeTrace(entries) {
       runCoherentBeats,
       maxCoherentBeats,
       runBeatCount,
+      runTickCount: runBeatCount,
       runCoherentShare: Number(runCoherentShare.toFixed(4)),
       runTransitionCount,
       forcedBreakCount,
@@ -604,6 +672,7 @@ function summarizeTrace(entries) {
       lastForcedReason,
       lastForcedTriggerStreak,
       lastForcedTriggerBeat,
+      tickSource: 'profiler-recorder',
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
       coherentBlock: coherentBlockCounts,

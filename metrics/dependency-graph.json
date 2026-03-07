@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated": "2026-03-06T23:40:14.461Z",
+    "generated": "2026-03-07T02:08:26.490Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2682,
+    "totalConsumes": 2683,
     "totalEdges": 2048,
     "crossSubsystemEdges": 1446,
     "maxFanIn": {
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 145,
         "provides": 191,
-        "consumes": 758
+        "consumes": 759
       },
       "rhythm": {
         "files": 30,
@@ -1227,6 +1227,7 @@
         "regimeClassifier"
       ],
       "consumes": [
+        "beatCount",
         "clamp",
         "explainabilityBus",
         "m",
@@ -17239,6 +17240,7 @@
       "from": "src/utils/init.js",
       "to": "src/conductor/signal/regimeClassifier.js",
       "globals": [
+        "beatCount",
         "velocity"
       ]
     },

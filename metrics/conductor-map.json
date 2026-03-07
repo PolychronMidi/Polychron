@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-06T23:40:14.679Z",
+    "generated": "2026-03-07T02:08:26.802Z",
     "description": "Conductor Intelligence Map: per-module registry of signals, biases, domains, and scopes.",
     "totalModules": 74
   },
@@ -145,8 +145,8 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.025647049828544,
-          "clamped": 1.025647049828544
+          "raw": 1.075571608105911,
+          "clamped": 1.075571608105911
         }
       }
     },
@@ -203,8 +203,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.1376876876876878,
-          "clamped": 1.1376876876876878
+          "raw": 1.1322822822822822,
+          "clamped": 1.1322822822822822
         }
       }
     },
@@ -265,16 +265,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 0.92,
-          "clamped": 0.92
+          "raw": 1,
+          "clamped": 1
         },
         "tension": {
-          "raw": 0.92,
-          "clamped": 0.92
+          "raw": 1,
+          "clamped": 1
         },
         "flicker": {
-          "raw": 0.92,
-          "clamped": 0.92
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -309,8 +309,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9603453942205543,
-          "clamped": 0.9603453942205543
+          "raw": 0.9878262436509795,
+          "clamped": 0.9878262436509795
         }
       }
     },
@@ -334,12 +334,12 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.9988134765625,
+          "clamped": 0.9988134765625
         },
         "tension": {
-          "raw": 0.9803563589602708,
-          "clamped": 0.9803563589602708
+          "raw": 1,
+          "clamped": 1
         },
         "flicker": {
           "raw": 1,
@@ -441,8 +441,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9232,
-          "clamped": 0.9232
+          "raw": 0.92,
+          "clamped": 0.92
         }
       }
     },
@@ -478,8 +478,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0038,
-          "clamped": 1.0038
+          "raw": 1.0044,
+          "clamped": 1.0044
         }
       }
     },
@@ -558,8 +558,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.025,
-          "clamped": 1.025
+          "raw": 1.0075,
+          "clamped": 1.0075
         }
       }
     },
@@ -601,8 +601,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 0.9645337226081159,
-          "clamped": 0.9645337226081159
+          "raw": 0.9618252958009975,
+          "clamped": 0.9618252958009975
         }
       }
     },
@@ -653,8 +653,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.9432113821138212,
-          "clamped": 0.9432113821138212
+          "raw": 0.9298498498498499,
+          "clamped": 0.9298498498498499
         }
       }
     },
@@ -673,8 +673,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.96,
-          "clamped": 0.96
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -855,8 +855,8 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.02947395462288,
-          "clamped": 1.02947395462288
+          "raw": 1.0404319570224008,
+          "clamped": 1.0404319570224008
         },
         "tension": {
           "raw": 1,
@@ -885,16 +885,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.1065098097547674,
-          "clamped": 1.1065098097547674
+          "raw": 1.0563625226115294,
+          "clamped": 1.0563625226115294
         },
         "tension": {
-          "raw": 1.0370126820272092,
-          "clamped": 1.0370126820272092
+          "raw": 0.9322287811886439,
+          "clamped": 0.9322287811886439
         },
         "flicker": {
-          "raw": 0.980133502892766,
-          "clamped": 0.980133502892766
+          "raw": 0.9431598673143066,
+          "clamped": 0.9431598673143066
         }
       }
     },
@@ -947,16 +947,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.9630680769759958,
+          "clamped": 0.9630680769759958
         },
         "tension": {
-          "raw": 1.0277489832501971,
-          "clamped": 1.0277489832501971
+          "raw": 1.075257723091629,
+          "clamped": 1.075257723091629
         },
         "flicker": {
-          "raw": 1.0693724581254926,
-          "clamped": 1.0693724581254926
+          "raw": 1.0052746834581965,
+          "clamped": 1.0052746834581965
         }
       }
     },
@@ -971,8 +971,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9481016980883619,
-          "clamped": 0.9481016980883619
+          "raw": 0.9433823744221989,
+          "clamped": 0.9433823744221989
         }
       }
     },
@@ -987,8 +987,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0811835506519558,
-          "clamped": 1.0811835506519558
+          "raw": 1.0793480441323973,
+          "clamped": 1.0793480441323973
         }
       }
     },
@@ -1022,8 +1022,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 1.18,
-          "clamped": 1.18
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -1042,8 +1042,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0123369884647164,
-          "clamped": 1.0123369884647164
+          "raw": 1.0036835011034209,
+          "clamped": 1.0036835011034209
         }
       }
     },
@@ -1216,8 +1216,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0365853658536586,
-          "clamped": 1.0365853658536586
+          "raw": 1.0593220338983051,
+          "clamped": 1.0593220338983051
         }
       }
     },
@@ -1233,8 +1233,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.9369926455964546,
-          "clamped": 0.9369926455964546
+          "raw": 0.94084,
+          "clamped": 0.94084
         }
       }
     },
@@ -1252,8 +1252,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9778596895273259,
-          "clamped": 0.9778596895273259
+          "raw": 0.9615059258480156,
+          "clamped": 0.9615059258480156
         }
       }
     },
@@ -1297,8 +1297,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0133333333333332,
-          "clamped": 1.0133333333333332
+          "raw": 1.0783333333333334,
+          "clamped": 1.0783333333333334
         }
       }
     },
@@ -1314,8 +1314,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.12,
-          "clamped": 1.12
+          "raw": 1.063044583044583,
+          "clamped": 1.063044583044583
         }
       }
     },
@@ -1347,8 +1347,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 1.04,
-          "clamped": 1.04
+          "raw": 0.94,
+          "clamped": 0.94
         }
       }
     }
