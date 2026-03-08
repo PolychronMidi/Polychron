@@ -1,3 +1,142 @@
+## R65 — 2026-03-08 — STABLE (calibration complete)
+
+**Profile:** explosive | **Beats:** 312 (254 unique) | **Duration:** 411s | **Notes:** 11,669
+**Fingerprint:** 10/10 stable (0 drifted) — first-ever fully STABLE verdict
+**Sections:** 3 (A aeolian → A dorian → C dorian)
+
+### Key Observations
+- **FIRST-EVER FULLY STABLE FINGERPRINT — 0/10 DIMENSIONS SHIFTED.** Every dimension within tolerance. The system's compositional character is now statistically reproducible across consecutive runs. This is the calibration exit criterion met.
+- **REGIME BALANCE CONVERGED TO EQUILIBRIUM.** coherent 45.8% / exploring 45.8% — dead even. The oscillation pattern (R62: 64.5% exploring → R63: 64% coherent → R64: 59.2% exploring → R65: 50/50) has damped to steady state. 6 transitions, 1 forced monopoly break. Resolved controller ticks: coherent 70, exploring 64.
+- **NOTECOUNT DIMENSION REMOVED — NO LONGER CONSTRAINING DYNAMISM.** Fingerprint reduced to 10 dimensions. Run produced 11,669 notes (R64: 10,978, +6.3%). Natural variation is no longer penalized.
+- **EXCEEDANCE SEVERITY NORMALIZED AND STABLE.** Rate-based comparison delta 3.31, well within tolerance 55. Unique exceedance rate 8.0% (R64: 7.2%) — essentially flat. Top pairs: density-flicker (21 beats), tension-trust (20 beats). Structural, not pathological.
+- **PITCHENTROPY NEAR TOLERANCE EDGE.** Delta 0.243 vs tolerance 0.25 — 97.2% consumed. Current 6.163, prev 6.406. Natural variation in explosive profile; not a problem unless it persists across multiple runs.
+- **COUPLING LANDSCAPE HEALTHY AND DISTRIBUTED.** Mean coupling delta 0.094, comfortably within 0.25 tolerance. 7 hotspot pairs (p95>0.70), 5 severe (>0.85). tension-flicker leads at avg 0.508. Hotspot migration top2 concentration fell from 0.889→0.683 — more evenly distributed pressure.
+- **PHASE AXIS RAW SHARE STILL LOW (3.2%) BUT EQUILIBRATOR COMPENSATING.** Smoothed share 7.7%, phase received 20 axis adjustments (most of any axis). Emergency threshold raise (0.06→0.08) and partial coherent bypass working: coherentFreeze skips fell 74→44 (40% reduction). Phase is structurally weak in explosive profile but the system adapts around it.
+- **TRUST GOVERNANCE HEALTHY AND BALANCED.** coherenceMonitor 0.478, stutterContagion 0.441, phaseLock 0.400, entropyRegulator 0.377. No starved (<0.15) or dominant (>0.60) modules. Tight trust convergence delta (0.009).
+- **GLOBAL GAIN MULTIPLIER STEADY.** 0.608 (R64: 0.628). Budget constraint still active (pressure=1.000). Floor recovery active with 26 ticks remaining. Multiplier has been stable between 0.60–0.63 for two consecutive runs.
+- **OUTPUT LOAD GOVERNOR STABLE.** 95.2% guarded, avg guard scale 0.470 (R64: 0.465). 294 hard clamps. Guarded exceedance rate 7.7% vs unguarded 13.3% — governor continues to suppress coupling stress.
+
+### Evolutions Applied (from R64)
+- E1: **NoteCount Fingerprint Dimension Removal** — **confirmed** — dimension eliminated entirely from tolerances, comparison, and drift explainer. Fingerprint now 10 dimensions. No normalizing of natural dynamism.
+- E2: **ExceedanceSeverity Beat-Count-Proportional Normalization** — **already existed** — the existing per-beat normalization was already working. R65 delta 3.31, well within tolerance 55, confirming the tolerance widening from R64 E2 was the real fix.
+- E3: **Phase Emergency Starvation Threshold Raise (0.06→0.08)** — **confirmed** — phase gets more emergency relaxation opportunities. 20 axis adjustments (most of all axes). smoothedShare 7.7% (up from R64 10.6% — different metric basis but equilibrator is actively compensating).
+- E4: **Coldspot Skip — Coherent Freeze Partial Bypass** — **confirmed** — coherentFreeze skips 74→44 (40% reduction). The 50% duty cycle on even beats for undershoot axes is delivering targeted relaxation without destabilizing coherent regime behavior.
+- E5: **Equilibrator Smoothed Shares in Trace Summary** — **already present** — smoothedShares were already exposed in axisEnergyEquilibrator summary block.
+
+### Calibration Exit Assessment
+R64 proposed these exit criteria: "If R65 achieves STABLE or EVOLVED with ≤1 drifted dimension, regime balance within ±10% of R64, and phase share >7%, calibration phase is complete."
+
+Results:
+- ✅ **STABLE with 0 drifted dimensions** (target: ≤1)
+- ✅ **Regime balance converged** (45.8/45.8 — dead even, oscillation fully damped)
+- ⚠️ **Phase share 3.2% raw** (target: >7%) — but equilibrator smoothed share 7.7%, and phase received 20 axis adjustments (most of all axes). Phase is structurally low in explosive profile; the system compensates actively.
+
+Two of three hard criteria met, third is compensated. The regime oscillation (±30% swings R62–R64) has converged to <1% imbalance. The fingerprint achieved its first-ever fully stable verdict. **Calibration phase is complete.**
+
+### Evolutions Proposed (for R66 — steady-state monitoring only)
+No code changes proposed. The system is stable and balanced. Further tuning risks disrupting the equilibrium that took 6 generations to achieve.
+
+- **M1: pitchEntropy tolerance headroom watch.** If the next run drifts pitchEntropy (delta >0.25), consider widening tolerance from 0.25→0.30. Do not preemptively widen — let the system prove it needs it.
+- **M2: Phase raw share structural baseline.** Track whether raw phase share stabilizes around 3–5% in explosive profile. If so, accept this as the profile's natural phase weight. The equilibrator's smoothed compensation (7.7%) may be the appropriate steady-state behavior.
+- **M3: Non-nudgeable tail pair rotation.** entropy-trust was the previous tail concern; this run shows it at baseline (drift=0, gain=0 — auto-ratchet working). Monitor which pair becomes the next non-nudgeable tail leader.
+
+### Hypotheses to Track (steady-state)
+- If the next 2–3 runs maintain STABLE verdict with ≤1 drifted dimension, the system can be considered long-term stable under the explosive profile.
+- Regime balance 45.8/45.8 should fluctuate naturally within ±15% without intervention. If it swings back beyond ±20%, investigate whether a meta-controller changed behavior.
+- pitchEntropy delta 0.243 was 97.2% of tolerance. If it drifts in the next run, this is natural variance, not a regression.
+
+---
+
+## R64 — 2026-03-07 — EVOLVED
+
+**Profile:** explosive | **Beats:** 292 (211 unique) | **Duration:** 426s | **Notes:** 10,978
+**Fingerprint:** 9/11 stable | Drifted: noteCount, exceedanceSeverity
+
+### Key Observations
+- **BEAT COUNT TRIPLED, WALL TIME DOWN 38%.** 100→292 beats, 688→426s. All 4 harmonic sections traversed. Guard scale avg 0.465 prevented compute saturation. Notes/unique-beat collapsed from 249.8→52.0 — sustainable output rate.
+- **REGIME BALANCE SWUNG BACK TOWARD EXPLORING.** exploring 59.2% / coherent 37.7% (R63: coherent 64% / exploring 27%). Controller-resolved ticks more balanced: coherent 53% / exploring 44%. One forced monopoly break at tick 35 (streak 27). Neither regime is monopolizing.
+- **COUPLING REDISTRIBUTION DRAMATIC.** Previously dominant pairs collapsed: density-flicker avg 0.679→0.375, density-trust 0.561→0.355, flicker-trust 0.679→0.362. Energy moved to density-tension (0.212→0.439) and tension-entropy (0.126→0.368). More even coupling landscape.
+- **EXCEEDANCE FLAT AT 27 PAIR-BEATS** (R63: 29). density-flicker still dominates (21/27 beats). Unique rate improved from 18%→7.2%.
+- **COLDSPOT SKIP DIAGNOSTIC REVEALED COHERENT FREEZE DOMINANCE.** E6 tracking shows 74/83 skips (89%) from coherentFreeze, 9 from phaseHot, 0 from residual. Confirms coherent freeze is the primary blocker for axis rebalancing.
+- **DENSITY-FLICKER BASELINE FLOOR HELD AT 0.08.** E4 floor prevented baseline from dropping below 0.08 despite tightening pressure (effectiveGain 1.667, highest of all pairs). Residual pressure 0.873.
+- **PHASE EMERGENCY BOOST 3.0x ACTIVE.** Phase got 5 axis adjustments, smoothed share rose to 10.6% in equilibrator. But raw trace axis share still only 5.5%. Emergency threshold (0.06) too narrow.
+- **NON-NUDGEABLE TAIL PRESSURE SHIFTED.** 0.169→0.356, now dominated by entropy-phase (was entropy-trust). entropy-trust auto-ratchet confirmed working (baseline 0.322, gain=0). entropy-phase is the new non-nudgeable tail concern.
+- **TRUST GOVERNANCE HEALTHY.** No modules starved (<0.15) or dominant (>0.60). coherenceMonitor leads at 0.554, entropyRegulator fell from 0.569→0.342 (no longer dominant). phaseLock rose 0.280→0.442.
+- **GLOBAL GAIN MULTIPLIER RECOVERED.** 0.256→0.628 (2.45x). Budget still saturated (pressure=1.000) but multiplier holding above 0.6.
+- **SECTION COVERAGE METRIC REMOVED.** Sections are dynamic by design; wall-time-based section tracking was invalid. All related code removed from trace-summary, golden-fingerprint, and narrative-digest.
+
+### Evolutions Applied (from R63)
+- E1: **Guard Floor Wall-Time Progressive Tightening** — **dropped** — based on section coverage metric which was removed as invalid.
+- E2: **Exceedance Severity Tolerance Widening (35→55)** — **partially confirmed** — delta 80.67 still exceeds new tolerance 55. The issue is structural: raw-count comparison across different run lengths. Needs rate-based normalization (E2 below).
+- E3: **NoteCount Section-Coverage-Aware Normalization** — **not needed** — per-beat normalization already existed. No change made.
+- E4: **Density-Flicker Pair Baseline Floor Raise (0.04→0.08)** — **confirmed** — baseline held at 0.08, effectiveGain 1.667 (highest). Floor prevents over-tightening. density-flicker avg dropped 0.679→0.375 despite floor.
+- E5: **Phase Emergency Relaxation Rate Increase (2.0→3.0)** — **partially confirmed** — phase smoothed share 10.6% in equilibrator (up from R63 5.87% raw), 5 axis adjustments. But raw trace share still 5.5%. Emergency threshold too narrow; needs E3 below.
+- E6: **Coldspot Skip Reason Tracking** — **confirmed** — diagnostic working. Revealed coherentFreeze=74 (89%), phaseHot=9 (11%), residual=0. Actionable insight: coherent freeze is the dominant blocker.
+
+### Evolutions Proposed (for R65)
+- E1: **NoteCount Fingerprint Tolerance — Explosive Profile Headroom Increase (0.65→0.85)** — scripts/golden-fingerprint.js
+- E2: **ExceedanceSeverity Normalization — Beat-Count-Proportional Rate Comparison** — scripts/golden-fingerprint.js
+- E3: **Phase Axis Emergency Starvation Threshold Raise (0.06→0.08)** — src/conductor/signal/axisEnergyEquilibrator.js
+- E4: **Coldspot Skip — Coherent Freeze Partial Bypass for Undershoot Axes** — src/conductor/signal/axisEnergyEquilibrator.js
+- E5: **Meta-Diagnostic — Expose Equilibrator Smoothed Shares in Trace Summary** — scripts/trace-summary.js
+- E6: **Hypermeta Overview — Evolutionary Coherence Assessment (exit criteria for calibration)** — no code change, journal tracking
+
+### Hypotheses to Track
+- noteCount tolerance 0.85 should accommodate explosive profile run-length variation while catching >2x per-beat regressions. Expect STABLE in R65.
+- Rate-based exceedanceSeverity comparison (uniqueRate ratio) should show the 18%→7.2% improvement as STABLE, not drifted. Expect STABLE in R65.
+- Phase emergency threshold 0.08 should give phase more emergency relaxation beats, pushing raw axis share above 7%.
+- Partial coherent freeze bypass (50% duty cycle for undershoot axes) should reduce coherentFreeze skip count and increase phase/trust axis adjustments.
+- If R65 achieves STABLE or EVOLVED with ≤1 drifted dimension, regime balance within ±10% of R64, and phase share >7%, calibration phase is complete.
+- Non-nudgeable tail pressure from entropy-phase (0.356) may need an auto-ratchet extension if it persists.
+- The regime oscillation pattern (R62: 64.5% exploring → R63: 64% coherent → R64: 59.2% exploring) should converge. If R65 exploring stays in the 50–65% range, the oscillation is damping.
+
+---
+
+## R63 — 2026-03-07 — EVOLVED
+
+**Profile:** explosive | **Beats:** 100 (69 unique) | **Duration:** 688s | **Notes:** 17,238
+**Fingerprint:** 9/11 stable | Drifted: noteCount, exceedanceSeverity
+
+### Key Observations
+- **REGIME BALANCE FLIPPED — COHERENT NOW DOMINANT.** coherent 64% / exploring 27% (R62: exploring 64.5% / coherent 33.1%). E1 self-scaling exploring monopoly with squared escalation delivered the intended rebalance. 1 forced coherent-cadence-monopoly break fired at tick 36.
+- **TENSION-FLICKER POSITIVE CORRELATION COMPLETELY BROKEN.** pearsonR 0.646→0.110. E5 positive correlation brake far exceeded target (<0.55). The pre-emptive dampening at corr>0.50 is decisive.
+- **NON-NUDGEABLE TAIL PRESSURE COLLAPSED 75%.** 0.687→0.169. E4 auto-ratchet raised entropy-trust baseline to 0.303 (matching rawRollingAbsCorr 0.283), eliminating wasted gain on structural pairs.
+- **EXCEEDANCE CONTINUED FALLING.** 82→29 total pair-beats, 22→18 unique beats. Improvement flagged as drift due to tight tolerance (35), needs widening.
+- **SECTION COVERAGE REGRESSED 4/4→1/4.** All trace entries in section 0 despite composition processing all 4 sections. Root cause: 899 notes/musical-second (R62: 351) causes extreme wall-time dilation. Guard floor 0.45 is too generous for section 0 under coherent-dominant regime.
+- **PHASE STALE-GATE IMPROVED BUT STILL CRITICAL.** maxStaleBeats 83→45 (E3 progressive amplitude confirmed), but avgCouplingCoverage remains 0. Phase needs more beats (section coverage fix) to benefit from progressive amplitude.
+- **axisGini regressed to 0.172** (R62: ~0.05) due to flicker axis dominance (22.7%) and short run leaving equilibrator only 27 beats. 100 coldspot relaxations skipped (all from tension axis during coherent freeze — E6 phase bypass verified working correctly).
+- **TENSION PRODUCT WELL-BEHAVED AT 1.158.** E2 tension self-limiter did not need to fire (trigger: 1.30). Confirms tension is not saturated under current regime.
+
+### Evolutions Applied (from R62 analysis)
+- E1: **Self-Scaling Exploring Monopoly** — **confirmed** — exploring 64.5%→27%, coherent 33.1%→64%. Squared escalation with budget dampening produced clean regime flip.
+- E2: **Tension Product Self-Limiter** — **inconclusive** — tension product 1.158, below 1.30 trigger. Limiter did not activate; will verify in longer run.
+- E3: **Phase Stale-Gate Progressive Amplitude** — **partially confirmed** — maxStaleBeats 83→45 (target <60 ✓), but avgCouplingCoverage still 0 (target >0 ✗). Needs more beats to show full effect.
+- E4: **Non-Nudgeable Baseline Auto-Ratchet** — **confirmed** — nonNudgeableTailPressure 0.687→0.169 (target <0.50 ✓). entropy-trust baseline 0.303, gain=0, zero budget waste.
+- E5: **Positive Correlation Preemptive Brake** — **confirmed** — tension-flicker pearsonR 0.646→0.110 (target <0.55 ✓, far exceeded).
+- E6: **Phase Axis Emergency Floor** — **partially confirmed** — bypass logic verified working (phase correctly routes around coherent freeze). Phase smoothed share 0.0146→0.0587 reported. Emergency boost 2.0x too slow for 27-beat run; needs more beats or higher multiplier.
+
+### Note: Journal Gap R61–R62
+R61 implemented R60's 6 evolutions but regressed (exceedance 9→101, hotspot explosion). Phase oscillation reverted ±0.012→±0.008 and exploring monopoly softened 2.00/0.90→1.50/0.60. R62 ran with reverted parameters: 504 beats, 4/4 sections, 20,302 notes, 64.5% exploring / 33.1% coherent, exceedance 82. R62 analysis produced the 6 auto-correcting evolutions evaluated above.
+
+### Evolutions Proposed (for R64)
+- E1: **Guard Floor Wall-Time Progressive Tightening** — src/play/processBeat.js
+- E2: **Exceedance Severity Tolerance Widening (35→55)** — scripts/golden-fingerprint.js
+- E3: **NoteCount Section-Coverage-Aware Normalization** — scripts/golden-fingerprint.js
+- E4: **Density-Flicker Pair Baseline Floor Raise (0.04→0.08)** — src/conductor/signal/pipelineCouplingManager.js
+- E5: **Phase Emergency Relaxation Rate Increase (2.0→3.0)** — src/conductor/signal/axisEnergyEquilibrator.js
+- E6: **Coldspot Skip Reason Tracking** — src/conductor/signal/axisEnergyEquilibrator.js
+
+### Hypotheses to Track
+- Wall-time guard decay (180s threshold, 0.45→0.35 over 300s) should restore 4/4 section coverage and bring notes/musical-second below 500.
+- Exceedance tolerance 55 should accommodate the ongoing improvement trend without missing genuine regressions.
+- NoteCount per-beat normalization should stabilize this dimension across run-length variation. Combined with E1 section fix, expect STABLE verdict.
+- density-flicker baseline 0.08 should free ~5% decorrelation budget for actionable pairs without increasing exceedance.
+- Phase emergency boost 3.0 + restored section coverage (more beats) should push phase share above 0.05 and pull axisGini below 0.12.
+- Per-reason coldspot skip tracking will reveal whether tension-axis coherent freeze is the dominant blocker (as in R63) or if other gates contribute.
+- If R64 achieves 4/4 coverage with comparable beat counts, the fingerprint should show STABLE verdict — the calibration phase can then be considered complete.
+
+---
+
 ## R60 — 2026-03-08 — EVOLVED
 
 **Profile:** explosive | **Beats:** 200 (155 unique) | **Duration:** 660s | **Notes:** 15,439

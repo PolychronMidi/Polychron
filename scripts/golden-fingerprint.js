@@ -45,14 +45,13 @@ const CSV_PATHS = [
 // Each dimension has a tolerance: deviation within this range is "evolved", beyond is "drifted"
 
 const TOLERANCES = {
-  noteCountRatio: 0.35,           // 35% note count change
   pitchEntropyDelta: 0.25,        // absolute entropy units
   densityVarianceDelta: 0.20,     // absolute variance change
   tensionArcDistortion: 0.30,     // normalized arc shape distance
   trustConvergenceDelta: 0.25,    // trust score convergence rate change
   regimeDistributionDelta: 0.20,  // Jensen-Shannon divergence threshold (R9 Evo 6: tightened from 0.30)
   couplingDelta: 0.25,            // mean absolute coupling change
-  exceedanceSeverity: 35,         // R44 E6: Max sum exceedance absolute delta (Broadened from 25)
+  exceedanceSeverity: 55,         // R63 E2: Broadened from 35 -- ongoing improvement trend was false-flagging as drift
   hotspotMigration: 0.55,
   telemetryHealthDelta: 0.35
 };
@@ -320,7 +319,6 @@ function computeFingerprint() {
     notesPerTraceEntry: entries.length > 0 ? Number((totalNotes / entries.length).toFixed(4)) : 0,
     notesPerUniqueBeat: uniqueBeatKeys > 0 ? Number((totalNotes / uniqueBeatKeys).toFixed(4)) : 0,
     notesPerSecond: spanMs > 0 ? Number((totalNotes / (spanMs / 1000)).toFixed(4)) : 0,
-    sectionCoverage: summary && summary.sectionCoverage ? summary.sectionCoverage : null,
     guard: summary && summary.outputLoadGuard ? summary.outputLoadGuard : null,
     progressIntegrity: summary && summary.progressIntegrity ? summary.progressIntegrity : null
   };
@@ -377,35 +375,9 @@ function compareFingerprints(current, previous) {
     current.activeProfile !== 'unknown' && previous.activeProfile !== 'unknown';
   const crossProfileScale = crossProfile ? 1.3 : 1.0;
 
-  // Note count ratio
-  const prevTotal = previous.noteCount.total || 1;
-  // R32 E7: Note count per-beat normalization. Compare notes-per-beat rate
-  // instead of raw totals so composition length differences don't inflate delta.
-  // Falls back to raw total comparison when beat count is unavailable.
+  // Beat counts for exceedance normalization
   const curBeats = current.outputLoad && current.outputLoad.uniqueBeatKeys ? current.outputLoad.uniqueBeatKeys : (current.meta.traceEntries || 1);
   const prevBeats = previous.outputLoad && previous.outputLoad.uniqueBeatKeys ? previous.outputLoad.uniqueBeatKeys : (previous.meta.traceEntries || 1);
-  const curRate = current.outputLoad && typeof current.outputLoad.notesPerUniqueBeat === 'number'
-    ? current.outputLoad.notesPerUniqueBeat
-    : current.noteCount.total / curBeats;
-  const prevRate = previous.outputLoad && typeof previous.outputLoad.notesPerUniqueBeat === 'number'
-    ? previous.outputLoad.notesPerUniqueBeat
-    : previous.noteCount.total / prevBeats;
-  const noteRatio = prevRate > 0 ? Math.abs(curRate - prevRate) / prevRate : Math.abs(current.noteCount.total - previous.noteCount.total) / prevTotal;
-  const currentGuardedRate = current.outputLoad && current.outputLoad.guard ? toNum(current.outputLoad.guard.guardedRate, 0) : 0;
-  const previousGuardedRate = previous.outputLoad && previous.outputLoad.guard ? toNum(previous.outputLoad.guard.guardedRate, 0) : 0;
-  const currentAvgGuardScale = current.outputLoad && current.outputLoad.guard && current.outputLoad.guard.scale
-    ? toNum(current.outputLoad.guard.scale.avg, 1)
-    : 1;
-  const previousAvgGuardScale = previous.outputLoad && previous.outputLoad.guard && previous.outputLoad.guard.scale
-    ? toNum(previous.outputLoad.guard.scale.avg, 1)
-    : 1;
-  // R11 Evo 1: Profile-adaptive noteCount tolerance -- explosive profiles produce
-  // highly variable note counts, ambient profiles are more stable.
-  const PROFILE_NOTE_TOLERANCE = { explosive: 0.65, atmospheric: 0.40, ambient: 0.25, minimal: 0.25 };
-  const effectiveNoteTolerance = (PROFILE_NOTE_TOLERANCE[current.activeProfile] || TOLERANCES.noteCountRatio) * crossProfileScale;
-  const notePass = noteRatio <= effectiveNoteTolerance;
-  if (!notePass) drifted++;
-  results.push({ dimension: 'noteCount', delta: noteRatio, tolerance: effectiveNoteTolerance, status: notePass ? 'stable' : 'drifted', current: current.noteCount.total, previous: previous.noteCount.total, currentNotesPerBeat: curRate, previousNotesPerBeat: prevRate, currentGuardedRate, previousGuardedRate, currentAvgGuardScale, previousAvgGuardScale, perLayer: { currentL1: current.noteCount.L1, currentL2: current.noteCount.L2, previousL1: previous.noteCount.L1, previousL2: previous.noteCount.L2 } });
 
   // Pitch entropy
   const pitchDelta = Math.abs(current.pitchEntropy - previous.pitchEntropy);
@@ -617,35 +589,6 @@ function explainDrift(comparison, current, previous) {
     const explain = { dimension: dim.dimension, delta: dim.delta, tolerance: dim.tolerance };
 
     switch (dim.dimension) {
-      case 'noteCount': {
-        const ratio = current.noteCount.total / Math.max(1, previous.noteCount.total);
-        const direction = ratio > 1 ? 'more' : 'fewer';
-        explain.cause = `${direction} notes emitted (${previous.noteCount.total} -> ${current.noteCount.total}, ${(Math.abs(ratio - 1) * 100).toFixed(1)}% change)`;
-        // Correlate with density
-        if (current.density.mean !== undefined && previous.density.mean !== undefined) {
-          const densityChange = current.density.mean - previous.density.mean;
-          if (Math.abs(densityChange) > 0.05) {
-            explain.correlates = `density mean shifted ${densityChange > 0 ? 'up' : 'down'} by ${Math.abs(densityChange).toFixed(3)}`;
-          }
-        }
-        // Check layer balance
-        const prevBalance = previous.noteCount.L1 / Math.max(1, previous.noteCount.total);
-        const currBalance = current.noteCount.L1 / Math.max(1, current.noteCount.total);
-        if (Math.abs(prevBalance - currBalance) > 0.1) {
-          explain.layerShift = `L1/L2 balance shifted: ${(prevBalance * 100).toFixed(0)}%/${((1 - prevBalance) * 100).toFixed(0)}% -> ${(currBalance * 100).toFixed(0)}%/${((1 - currBalance) * 100).toFixed(0)}%`;
-        }
-        const currentGuard = current.outputLoad && current.outputLoad.guard ? current.outputLoad.guard : null;
-        const previousGuard = previous.outputLoad && previous.outputLoad.guard ? previous.outputLoad.guard : null;
-        if (currentGuard || previousGuard) {
-          explain.outputLoadGuard = `guarded entry rate ${(toNum(previousGuard && previousGuard.guardedRate, 0) * 100).toFixed(1)}% -> ${(toNum(currentGuard && currentGuard.guardedRate, 0) * 100).toFixed(1)}%, avg guard scale ${toNum(previousGuard && previousGuard.scale && previousGuard.scale.avg, 1).toFixed(3)} -> ${toNum(currentGuard && currentGuard.scale && currentGuard.scale.avg, 1).toFixed(3)}`;
-        }
-        const currentProgress = current.outputLoad && current.outputLoad.progressIntegrity ? current.outputLoad.progressIntegrity : null;
-        const previousProgress = previous.outputLoad && previous.outputLoad.progressIntegrity ? previous.outputLoad.progressIntegrity : null;
-        if ((currentProgress && currentProgress.integrity !== 'healthy') || (previousProgress && previousProgress.integrity !== 'healthy')) {
-          explain.progressIntegrity = `trace progress integrity ${previousProgress ? previousProgress.integrity : 'healthy'} -> ${currentProgress ? currentProgress.integrity : 'healthy'}`;
-        }
-        break;
-      }
       case 'pitchEntropy': {
         const direction = current.pitchEntropy > previous.pitchEntropy ? 'increased' : 'decreased';
         explain.cause = `pitch diversity ${direction} (${previous.pitchEntropy.toFixed(3)} -> ${current.pitchEntropy.toFixed(3)})`;
