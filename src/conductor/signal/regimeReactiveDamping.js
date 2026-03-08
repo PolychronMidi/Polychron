@@ -256,6 +256,18 @@ regimeReactiveDamping = (() => {
       // Coherent/evolving deficit: boost tension (encourages coupling/convergence)
       _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH + postForcedRecoveryPressure * 0.08 + expExcess * postForcedRecoveryPressure * 0.05;
 
+      // R60 E4: Exploring-regime coherent floor (symmetrical monopoly break).
+      // R59 had exploring at 68.6% (target 35%). The existing expPenalty at
+      // 60% was insufficient. This block injects strong coherent-promoting
+      // corrections when exploring dominates. Self-correcting: pressure
+      // scales continuously with exploring share, stops below 55%.
+      if (expShare > 0.55) {
+        const _expMonopolyPressure = clamp((expShare - 0.55) / 0.15, 0, 1);
+        _eqCorrT += _expMonopolyPressure * _EQUILIB_STRENGTH * 1.50;
+        _eqCorrD -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.60;
+        _eqCorrF -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.85;
+      }
+
       // R46 E2: Coherent-share reactive damping. If coherent overshoots and
       // exploring under-shoots, bias the system toward exploratory variance.
       if (coherentPressure > 0) {

@@ -353,6 +353,16 @@ couplingHomeostasis = (() => {
     if (_beatCount >= 8 && _peakEnergyEma > 0.1) {
       _energyBudget = _peakEnergyEma * _BUDGET_PEAK_RATIO;
     }
+    // R60 E1: Coupling energy budget scaling for multi-section runs.
+    // Long runs accumulate more coupling energy than the static budget
+    // can accommodate (budgetConstraintPressure=1.0, multiplier=0.256 in
+    // R59). Scale the budget proportionally to beat count beyond single-
+    // section baseline (~150 beats). Self-correcting: scales dynamically
+    // with actual runtime length, max 1.5x.
+    if (_beatCount > 150) {
+      const _budgetScale = 1 + clamp((_beatCount - 150) / 300, 0, 0.50);
+      _energyBudget *= _budgetScale;
+    }
 
     // --- 3. Detect redistribution ---
     const energyDelta = totalEnergy - _prevTotalEnergy;

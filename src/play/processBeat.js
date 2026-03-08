@@ -165,6 +165,11 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     : recentPrimaryNoteCount;
   let outputLoadSeverity = 'normal';
   let preEmissionGuardScale = 1;
+  // R60 E5: Section-adaptive guard floor. Early sections (S0-S1) use a
+  // relaxed 0.50 floor for richer output; later sections (S2+) keep the
+  // tighter 0.35 floor to respect wall-time budget. Self-correcting:
+  // sectionIndex advances naturally via heartbeat.
+  const _guardFloor = sectionIndex <= 1 ? 0.50 : 0.35;
   if (recentPrimaryNotesPerSecond >= outputLoadGuardConfig.hardNotesPerSecond) {
     preEmissionGuardScale = outputLoadGuardConfig.hardScale;
     outputLoadSeverity = 'hard';
@@ -172,7 +177,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     // exceeds the hard level, continuously reduce scale proportional to the
     // excess. Self-correcting: scale eases as output drops.
     const _progressiveExcess = (recentPrimaryNotesPerSecond - outputLoadGuardConfig.hardNotesPerSecond) / m.max(1, outputLoadGuardConfig.hardNotesPerSecond);
-    preEmissionGuardScale = m.max(0.35, outputLoadGuardConfig.hardScale * (1 - clamp(_progressiveExcess * 0.35, 0, 0.50)));
+    preEmissionGuardScale = m.max(_guardFloor, outputLoadGuardConfig.hardScale * (1 - clamp(_progressiveExcess * 0.35, 0, 0.50)));
   } else if (recentPrimaryNotesPerSecond >= outputLoadGuardConfig.softNotesPerSecond) {
     preEmissionGuardScale = outputLoadGuardConfig.softScale;
     outputLoadSeverity = 'soft';
@@ -191,8 +196,9 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     beatGuardScale = outputLoadGuardConfig.hardScale;
     outputLoadSeverity = _mergeGuardSeverity(outputLoadSeverity, 'hard');
     // R59 E1: Progressive beat-cap tightening. Same principle as notes/sec gate.
+    // R60 E5: Uses same section-adaptive _guardFloor as pre-emission guard.
     const _beatExcess = (beatScheduledNotes - outputLoadGuardConfig.hardBeatCap) / m.max(1, outputLoadGuardConfig.hardBeatCap);
-    beatGuardScale = m.max(0.35, outputLoadGuardConfig.hardScale * (1 - clamp(_beatExcess * 0.35, 0, 0.50)));
+    beatGuardScale = m.max(_guardFloor, outputLoadGuardConfig.hardScale * (1 - clamp(_beatExcess * 0.35, 0, 0.50)));
   } else if (beatScheduledNotes >= outputLoadGuardConfig.softBeatCap) {
     beatGuardScale = outputLoadGuardConfig.softScale;
     outputLoadSeverity = _mergeGuardSeverity(outputLoadSeverity, 'soft');
