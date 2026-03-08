@@ -69,14 +69,20 @@ phaseSpaceMath = (() => {
    * @param {string[]} dimNames - dimension labels
    * @param {number} nDims - total dimensions
    * @param {number} nCompositional - number of compositional dims (strength uses only these)
+   * @param {number} [varianceGateThreshold] - optional variance gate threshold (default 0.005)
    * @returns {{ matrix: Record<string, number>, strength: number }}
    */
-  function coupling(data, mean, dimNames, nDims, nCompositional) {
+  function coupling(data, mean, dimNames, nDims, nCompositional, varianceGateThreshold) {
     const n = data.length;
     /** @type {Record<string, number>} */
     const matrix = {};
     let totalAbs = 0;
     let pairCount = 0;
+    // R59 E2: Configurable variance gate threshold. Default 0.005; callers can
+    // relax this to allow low-variance pairs through when they are stale.
+    const gateThreshold = typeof varianceGateThreshold === 'number' && varianceGateThreshold > 0
+      ? varianceGateThreshold
+      : 0.005;
 
     for (let a = 0; a < nDims; a++) {
       for (let b = a + 1; b < nDims; b++) {
@@ -102,7 +108,7 @@ phaseSpaceMath = (() => {
         // further compress the flat signal (death spiral).
         const stdA = m.sqrt(varA / n);
         const stdB = m.sqrt(varB / n);
-        if (stdA < 0.005 || stdB < 0.005) {
+        if (stdA < gateThreshold || stdB < gateThreshold) {
           matrix[key] = NaN;
           continue;
         }

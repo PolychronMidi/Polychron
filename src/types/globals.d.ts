@@ -1454,7 +1454,7 @@ declare var phaseSpaceMath: {
   magnitude(v: number[]): number;
   cosine(a: number[], b: number[]): number;
   stats(data: number[][], nDims: number): { mean: number[]; variance: number[] };
-  coupling(data: number[][], mean: number[], dimNames: string[], nDims: number, nCompositional: number): { matrix: Record<string, number>; strength: number };
+  coupling(data: number[][], mean: number[], dimNames: string[], nDims: number, nCompositional: number, varianceGateThreshold?: number): { matrix: Record<string, number>; strength: number };
   jacobiEigenvalues(A: number[][], K: number): number[];
   effectiveDimensionality(data: number[][], mean: number[], nCompositional: number): number;
 };

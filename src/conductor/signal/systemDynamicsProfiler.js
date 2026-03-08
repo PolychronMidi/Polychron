@@ -423,7 +423,15 @@ systemDynamicsProfiler = (() => {
 
     // Cross-coupling & effective dimensionality (from RAW trajectory)
     const { mean, variance } = phaseSpaceMath.stats(rawTrajectory, N_DIMS);
-    const { matrix, strength } = phaseSpaceMath.coupling(rawTrajectory, mean, DIM_NAMES, N_DIMS, N_COMPOSITIONAL_DIMS);
+    // R59 E2: Adaptive variance gate relaxation. When phase pairs are stale
+    // for many beats, exponentially relax the variance gate threshold so
+    // low-variance pairs can produce finite coupling values. Self-correcting:
+    // threshold tightens back when phase changes (staleBeats resets to 0).
+    const _varianceGateRelax = _phaseStaleBeats > 10
+      ? m.max(0.50, m.pow(0.85, (_phaseStaleBeats - 10) / 15))
+      : 1.0;
+    const _relaxedGateThreshold = 0.005 * _varianceGateRelax;
+    const { matrix, strength } = phaseSpaceMath.coupling(rawTrajectory, mean, DIM_NAMES, N_DIMS, N_COMPOSITIONAL_DIMS, _relaxedGateThreshold);
     const effDim = phaseSpaceMath.effectiveDimensionality(rawTrajectory, mean, N_COMPOSITIONAL_DIMS);
     const phasePairStates = _getPhasePairStates(matrix);
     let phaseCouplingAvailablePairs = 0;

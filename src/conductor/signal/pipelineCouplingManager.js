@@ -263,11 +263,13 @@ pipelineCouplingManager = (() => {
   // R58 E5: Monotonic correlation circuit breaker state.
   // Tracks consecutive same-sign beats per pair to detect structural monotonic
   // trends. When a pair maintains same-sign correlation with |r| > 0.50 for
-  // >30 consecutive beats, an emergency decorrelation impulse fires.
-  const _MONOTONE_TRIGGER = 30;
+  // >22 consecutive beats, an emergency decorrelation impulse fires.
+  // R59 E5: Sensitivity tightened (30->22 trigger), heat escalated (0.08->0.15),
+  // cumulative consecutive-trigger counter doubles impulse on repeat triggers.
+  const _MONOTONE_TRIGGER = 22;
   const _MONOTONE_ABS_THRESHOLD = 0.50;
   const _MONOTONE_IMPULSE_RATE = 2.5; // gain escalation multiplier during impulse
-  /** @type {Record<string, { sign: number, count: number }>} */
+  /** @type {Record<string, { sign: number, count: number, consecutiveTriggers: number }>} */
   const _monotoneState = {};
 
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
@@ -776,16 +778,20 @@ pipelineCouplingManager = (() => {
         // R58 E5: Monotonic correlation circuit breaker. Track consecutive
         // same-sign beats per pair. When the sign holds for >MONOTONE_TRIGGER
         // beats with |r| > threshold, the pair has structural monotonic trend.
-        if (!_monotoneState[key]) _monotoneState[key] = { sign: 0, count: 0 };
+        if (!_monotoneState[key]) _monotoneState[key] = { sign: 0, count: 0, consecutiveTriggers: 0 };
         const _mst = _monotoneState[key];
         const _corrSign = corr > 0.001 ? 1 : corr < -0.001 ? -1 : 0;
         if (_corrSign !== 0 && _corrSign === _mst.sign && absCorr > _MONOTONE_ABS_THRESHOLD) {
           _mst.count++;
         } else {
+          // R59 E5: Reset consecutive trigger counter on sign flip
+          if (_corrSign !== _mst.sign) _mst.consecutiveTriggers = 0;
           _mst.sign = _corrSign;
           _mst.count = absCorr > _MONOTONE_ABS_THRESHOLD ? 1 : 0;
         }
         const _monotoneActive = _mst.count >= _MONOTONE_TRIGGER;
+        // R59 E5: Track trigger activations for cumulative escalation
+        if (_monotoneActive && _mst.count === _MONOTONE_TRIGGER) _mst.consecutiveTriggers++;
 
         // -- Adaptive gain logic --
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
@@ -1034,9 +1040,12 @@ pipelineCouplingManager = (() => {
             // detects sustained same-sign correlation, amplify the escalation
             // rate to break the directional trend. Self-correcting: impulse
             // decays as soon as the sign flips or |r| drops below threshold.
+            // R59 E5: Cumulative escalation -- consecutive triggers double the
+            // impulse rate. Heat penalty increased 0.08->0.15 for faster response.
             if (_monotoneActive) {
-              rate *= _MONOTONE_IMPULSE_RATE;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.08, 1.0);
+              const _cumulativeScale = m.min(2.0, 1.0 + (_mst.consecutiveTriggers - 1) * 0.50);
+              rate *= _MONOTONE_IMPULSE_RATE * _cumulativeScale;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.15, 1.0);
             }
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
@@ -1224,6 +1233,14 @@ const rawEmaInput = absCorr;
         const _recentSevereRate = tailTelemetry.recentSevereRate || 0;
         if (_recentSevereRate > 0.50 && tailPressure > 0.40) {
           effectiveGain *= 1 + clamp(_recentSevereRate * 0.35 + tailPressure * 0.15, 0, 0.50);
+        }
+        // R59 E3: Anti-correlation response. When pearsonR is strongly negative
+        // (< -0.75), the decorrelation engine creates a feedback loop pushing
+        // the pair further apart. Dampen nudge proportionally to anti-correlation
+        // depth. Self-correcting: dampening eases as |pearsonR| decreases.
+        if (corr < -0.75) {
+          const _antiCorrDepth = clamp((m.abs(corr) - 0.75) / 0.25, 0, 1);
+          effectiveGain *= m.max(0.15, 1.0 - _antiCorrDepth * 0.80);
         }
         ps.lastEffectiveGain = effectiveGain;
 

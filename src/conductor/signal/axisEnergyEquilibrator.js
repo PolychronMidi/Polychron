@@ -504,6 +504,32 @@ axisEnergyEquilibrator = (() => {
       }
     }
 
+    // R59 E4: Tension axis energy floor enforcement. When tension share drops
+    // below 15%, apply targeted relaxation to tension-containing pairs regardless
+    // of coherent freeze or surface-hot guards. Self-correcting: relaxation
+    // stops as soon as tension share recovers above the floor.
+    const _TENSION_FLOOR = 0.15;
+    const _tensionSmoothed = _smoothedShares['tension'];
+    if (typeof _tensionSmoothed === 'number' && _tensionSmoothed < _TENSION_FLOOR && _tensionSmoothed > 0.001) {
+      const _tensionDeficit = _TENSION_FLOOR - _tensionSmoothed;
+      const _tensionPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE['tension'] || _RELAX_RATE_REF);
+      const _tensionFloorRate = m.min(0.03, _AXIS_RELAX_RATE * 2.5 * _tensionPairScale * clamp(_tensionDeficit / _FAIR_SHARE, 0.5, 2.0));
+      const _tensionPairs = _axisToPairs['tension'] || [];
+      for (let tp = 0; tp < _tensionPairs.length; tp++) {
+        const tPair = _tensionPairs[tp];
+        if ((_pairCooldowns[tPair] || 0) > 0) continue;
+        const tBl = V.optionalFinite(_lastBaselines[tPair]);
+        if (tBl === undefined) continue;
+        const tNb = m.min(_BASELINE_MAX, tBl + _tensionFloorRate);
+        if (tNb > tBl) {
+          pipelineCouplingManager.setPairBaseline(tPair, tNb);
+          _pairCooldowns[tPair] = _AXIS_COOLDOWN;
+          _axisAdjustments++;
+          _perAxisAdj['tension'] = (_perAxisAdj['tension'] || 0) + 1;
+        }
+      }
+    }
+
     explainabilityBus.emit('AXIS_ENERGY_EQUIL', 'all', {
       smoothedShares: Object.assign({}, _smoothedShares),
       axisGini, giniMult,

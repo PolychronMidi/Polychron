@@ -1,44 +1,18 @@
 {
   "meta": {
-    "generated": "2026-03-08T00:35:20.250Z",
+    "generated": "2026-03-08T02:18:01.320Z",
     "verdict": "EVOLVED"
   },
-  "narrative": "The composition has evolved in 2 dimension(s). This is within normal creative variation range. exceedance hotspots shifted from [density-entropy: 29, flicker-entropy: 29, density-flicker: 17] to [density-flicker: 81, flicker-phase: 63, tension-flicker: 51]. hotspot surface migrated from [density-entropy: 29, flicker-entropy: 29, density-flicker: 17] to [density-flicker: 81, flicker-phase: 63, tension-flicker: 51].",
+  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. fewer notes emitted (21447 -> 17951, 16.3% change).",
   "explanations": [
     {
-      "dimension": "exceedanceSeverity (beats)",
-      "delta": 164.4,
-      "tolerance": 35,
-      "cause": "exceedance hotspots shifted from [density-entropy: 29, flicker-entropy: 29, density-flicker: 17] to [density-flicker: 81, flicker-phase: 63, tension-flicker: 51]",
-      "uniqueBeats": {
-        "current": 148,
-        "previous": 36
-      }
-    },
-    {
-      "dimension": "hotspotMigration",
-      "delta": 0.6755,
-      "tolerance": 0.55,
-      "cause": "hotspot surface migrated from [density-entropy: 29, flicker-entropy: 29, density-flicker: 17] to [density-flicker: 81, flicker-phase: 63, tension-flicker: 51]",
-      "axisShift": {
-        "current": {
-          "density": 0.1814,
-          "tension": 0.1521,
-          "flicker": 0.2134,
-          "entropy": 0.1691,
-          "trust": 0.1655,
-          "phase": 0.1186
-        },
-        "previous": {
-          "density": 0.1121,
-          "tension": 0.1916,
-          "flicker": 0.1857,
-          "entropy": 0.2348,
-          "trust": 0.1103,
-          "phase": 0.1655
-        }
-      },
-      "meaning": "stress redistributed across hotspot surfaces rather than being removed outright"
+      "dimension": "noteCount",
+      "delta": 0.833817245577116,
+      "tolerance": 0.5,
+      "cause": "fewer notes emitted (21447 -> 17951, 16.3% change)",
+      "correlates": "density mean shifted up by 0.065",
+      "outputLoadGuard": "guarded entry rate 94.0% -> 95.3%, avg guard scale 0.740 -> 0.419",
+      "progressIntegrity": "trace progress integrity warning -> warning"
     }
   ]
 }

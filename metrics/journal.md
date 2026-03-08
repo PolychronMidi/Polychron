@@ -1,3 +1,85 @@
+## R59 — 2026-03-08 — EVOLVED
+
+**Profile:** explosive | **Beats:** 574 | **Duration:** 917.0s | **Notes:** 17,951
+**Fingerprint:** 10/11 stable | Drifted: noteCount
+
+### Key Observations
+- **SECTION COVERAGE FULLY RECOVERED FROM 1/4 TO 4/4 — THE PRIMARY R58 GOAL ACHIEVED.** E6 heartbeat fired on all 4 sections (359.3s, 263.2s, 156.0s, 137.8s), and E1 progressive guard tightened avg scale from 0.74 to 0.419, cutting notes/beat from 261.5 to 31.3. Musical time expanded from 13.1s to 71.1s across all 4 sections.
+- **ALL PERSISTENT MONOTONIC CORRELATIONS BROKEN.** density-flicker pearsonR −0.900→−0.473 (E3 anti-correlation response), density-trust 0.878→0.564 (E5 monotone breaker), flicker-entropy 0.789→−0.334 (direction flipped entirely), flicker-trust 0.868→0.400. All well below the 0.80 threshold.
+- **PHASE AXIS IS FINALLY ALIVE IN THE COUPLING LANDSCAPE.** Phase axis energy share went from 0.0% to 14.9%. Phase telemetry available entries jumped from 0 to 656, and avgCouplingCoverage rose from 0.0 to 0.286. E2 variance gate relaxation succeeded — variance-gated entries collapsed from 352 to 32.
+- **TENSION ARC RESTORED TO ASCENDING SHAPE.** Arc [0.326,0.482,0.512,0.518] → [0.363,0.606,0.658,0.621], Q4-Q1=0.258 (target >0.15 ✓). Tension axis share recovered 12.3%→16.7% (above 15% floor ✓). E4 tension floor enforcement confirmed.
+- **GLOBAL GAIN MULTIPLIER COLLAPSED TO 0.256 — CRITICAL ISSUE.** Down from R58's 0.612. budgetConstraintPressure=1.000 (fully saturated). The 574-beat multi-section run accumulates far more coupling energy than the 100-beat single-section R58 run, and the static energy budget cannot accommodate it. This throttles all coupling management.
+- **EXPLORING REGIME OVERSHOT TO 68.6%.** Regime swung from R57's coherent-heavy (53.9%) past the target 50/40/10 to exploring-heavy. Controller exploring share=52.4%, coherent=45.2%. One forced coherent-monopoly break fired at tick 36.
+- **ENTROPY AXIS DOMINATES AT 21.8% ENERGY SHARE.** Highest of all axes, 30% above equal-share. tension-entropy avg 0.487 is the strongest pair. All 11 axis adjustments went to tension; entropy received zero axis-level redistribution.
+- **STALE-GATE REPLACED VARIANCE-GATE AS PHASE TELEMETRY BLOCKER.** 1,092 stale-gated entries (vs 32 variance-gated). maxStaleBeats=82. The variance gate is fixed, but stale data blocking is the new bottleneck.
+
+### Evolutions Applied (from R58)
+- E1: **Output Load Guard Scale Progressive Tightening** — **confirmed** — avgGuardScale 0.74→0.419, minScale=0.36 (floor), notes/beat 261.5→31.3, section coverage 1/4→4/4. Wall time didn't decrease (828→917s) but musical time expanded 13.1s→71.1s across all 4 sections.
+- E2: **Phase Variance Gate Adaptive Relaxation** — **partially confirmed** — variance-gated collapsed 352→32 entries, available rose 0→656, avgCouplingCoverage 0→0.286 (target >0.15 ✓). But stale-gated now dominates (1,092) and maxStaleBeats worsened to 82 (target was <20).
+- E3: **Density-Flicker Anti-Correlation Response** — **confirmed** — pearsonR −0.900→−0.473 (target was closer to −0.70, far exceeded), avg coupling halved 0.650→0.334 without overall coupling increase.
+- E4: **Tension Axis Energy Floor Enforcement** — **confirmed** — tension share 12.3%→16.7% (above 15% floor ✓), tension arc Q4-Q1=0.258 (target >0.15 ✓), tension-pair avg coupling rose above 0.25 (tension-entropy 0.487).
+- E5: **Monotone Circuit Breaker Sensitivity and Heat Escalation** — **confirmed** — density-trust 0.878→0.564, flicker-entropy 0.789→−0.334, all previously persistent monotonic pairs broken well below 0.80.
+- E6: **Section Advancement Heartbeat** — **confirmed** — heartbeat fired on all 4 sections (359.3s, 263.2s, 156.0s, 137.8s), guaranteeing multi-section coverage as safety net.
+
+### Evolutions Proposed (for R60)
+- E1: **Coupling Energy Budget Scaling for Multi-Section Runs** — src/conductor/signal/couplingHomeostasis.js
+- E2: **Phase Stale-Gate Adaptive Expiry** — src/conductor/signal/systemDynamicsProfiler.js
+- E3: **Entropy Axis Energy Cap** — src/conductor/signal/axisEnergyEquilibrator.js
+- E4: **Exploring-Regime Coherent Floor** — src/conductor/signal/regimeReactiveDamping.js
+- E5: **Guard Scale Section-Adaptive Relaxation** — src/play/processBeat.js
+- E6: **Entropy-Trust Baseline Recalibration** — src/conductor/signal/pipelineCouplingManager.js
+
+### Hypotheses to Track
+- Scaling energy budget by beat count (1.5x for 574-beat runs) should lift globalGainMultiplier above 0.45 and reduce budgetConstraintPressure below 0.85.
+- Stale-gate expiry after 25 beats should reduce stale-gated entries below 600, lift avgCouplingCoverage above 0.40, and cut maxStaleBeats below 40.
+- Entropy axis cap at 19% should redistribute energy to density (>14.5%) and phase (>15%) while keeping axisGini below 0.07.
+- Symmetrical exploring-monopoly break should rebalance regime to 35-55% coherent without collapsing evolving below 0.5%.
+- Section-adaptive guard floor (0.50 for S0-S1, 0.35 for S2+) should reduce wall time below 750s while maintaining 4/4 coverage.
+- Raising entropy-trust baseline from 0.203 to 0.30 should reduce nonNudgeableTailPressure below 0.25 and focus recovery on actionable pairs.
+
+---
+
+## R58 — 2026-03-08 — EVOLVED
+
+**Profile:** explosive | **Beats:** 100 | **Duration:** 828.3s | **Notes:** 21,447
+**Fingerprint:** 9/11 stable | Drifted: noteCount, exceedanceSeverity
+
+### Key Observations
+- **EXCEEDANCE COLLAPSED BY 98.6% — THE STANDOUT ACHIEVEMENT.** Total pair exceedance beats fell 321→6, unique exceedance beats 148→2, unique rate 0.395→0.02. The entire exceedance surface deflated: density-flicker 81→2, flicker-phase 63→0, tension-flicker 51→1. This is the most dramatic single-generation improvement in the lineage.
+- **SECTION COVERAGE REGRESSED FROM 4/4 TO 1/4, CAUSED BY EXTREME WALL-TIME DILATION.** The composition generated 21,447 notes in 13.1s of musical time but consumed 828s of wall time (~63s per musical second). Only section 0 was reached. The 5.1x increase in notes/beat (51.6→261.5) is the root cause — each beat requires so much compute that section advancement never triggers. Same pattern as R55.
+- **FLOOR STICKINESS COMPLETELY ELIMINATED.** floorContactBeats 128→0, avgRecoveryDuration 82.5→0, globalGainMultiplier lifted from ~0.555 to 0.612. E3 (floor recovery compression) definitively solved the structural problem from R57.
+- **DENSITY-FLICKER ANTI-CORRELATION INTENSIFIED TO EXTREME LEVELS.** pearsonR went from -0.586 to -0.900. This pair now has the highest avg coupling (0.650), the only severe hotspot (p95 0.861), and the highest effectiveGain (0.867). The decorrelation engine may be creating a feedback loop that pushes density and flicker in opposing directions.
+- **TENSION ARC FLATTENED AND TENSION AXIS IS STARVED.** Arc went from ascending [0.445,0.640,0.754,0.868] to flat [0.326,0.482,0.512,0.518]. Tension axis share fell to 12.3% (lowest active axis). All tension-pair effectiveGains near zero.
+- **PHASE TELEMETRY REMAINS 100% BLIND DESPITE E4 (FRESHNESS ESCALATION).** maxStaleBeats=55, avgCouplingCoverage=0, all 4 phase pairs stuck at stale-gated (88 each). The variance gate never opens. E4's escalation mechanism was refuted — structural variance gate relaxation is needed.
+- **GUARD/COUPLING DIAGNOSTIC (E6) REVEALS GUARD DOES NOT INFLATE COUPLING.** Unguarded beats show higher raw coupling (density-flicker 0.735 vs 0.647, flicker-trust 0.596 vs 0.495). Exceedance only lands on guarded beats due to volume (94 vs 6 beats). The guard is not the coupling driver.
+- **MONOTONE CIRCUIT BREAKER PARTIALLY EFFECTIVE.** flicker-entropy pearsonR fell 0.920→0.789 (below 0.80 target ✓) but density-trust only fell 0.909→0.878. The trigger threshold of 30 beats may be too lenient for persistent pairs.
+
+### Evolutions Applied (from R57)
+- E1: **Flicker-Axis Exceedance Budget Uplift** — **partially confirmed** — exceedance collapsed 98.6% total but flicker axis share rose 0.213→0.232 (target was <0.20). The budget uplift contributed to the exceedance collapse but did not reduce axis share.
+- E2: **Flicker-Phase Late-Run Severe Window Clamp** — **inconclusive** — flicker-phase fell to avg=0 and exceedance=0, but all phase pairs are zero due to 100% stale telemetry (not clamp action).
+- E3: **Floor-Contact Recovery Duration Compression** — **confirmed** — floorContactBeats 128→0, avgRecoveryDuration 82.5→0, globalGainMultiplier rose 0.555→0.612. Floor stickiness definitively eliminated.
+- E4: **Phase Telemetry Freshness Promotion** — **refuted** — maxStaleBeats=55 (target <20), avgCouplingCoverage=0 (target >0.35). The escalation at 8 beats cannot overcome the variance gate blocking all phase pairs.
+- E5: **Monotonic Correlation Circuit Breaker** — **partially confirmed** — flicker-entropy 0.920→0.789 (below 0.80 ✓), but density-trust 0.909→0.878 (above 0.80 ✗). Trigger threshold needs tightening.
+- E6: **Load-Guard Coupling Interaction Diagnostic** — **confirmed** — guardCouplingInteraction now serialized. Key finding: guard does not inflate coupling; unguarded beats have higher raw coupling. Diagnostic question answered.
+
+### Evolutions Proposed (for R59)
+- E1: **Output Load Guard Scale Progressive Tightening** — src/play/processBeat.js (output-load governor)
+- E2: **Phase Variance Gate Adaptive Relaxation** — src/conductor/signal/systemDynamicsProfiler.js
+- E3: **Density-Flicker Anti-Correlation Response** — src/conductor/signal/pipelineCouplingManager.js
+- E4: **Tension Axis Energy Floor Enforcement** — src/conductor/signal/axisEnergyEquilibrator.js
+- E5: **Monotone Circuit Breaker Sensitivity and Heat Escalation** — src/conductor/signal/pipelineCouplingManager.js
+- E6: **Section Advancement Heartbeat** — src/play/processBeat.js
+
+### Hypotheses to Track
+- Progressive guard scale tightening when notes/sec > 400 should bring wall time below 200s and recover section coverage to ≥3/4.
+- Adaptive variance gate relaxation (0.85^(staleBeats/15) multiplier, floor 50%) should lift avgCouplingCoverage above 0.15 and break the critical phase telemetry state.
+- Anti-correlation response (nudge dampening when pearsonR < -0.75) should pull density-flicker pearsonR toward -0.70 without increasing avg coupling.
+- Tension axis floor of 15% should recover the ascending tension arc (Q4-Q1 > 0.15) and lift tension-pair avg coupling above 0.25.
+- Reducing monotone trigger 30→22 and increasing heat penalty 0.08→0.15 with cumulative escalation should break density-trust below 0.80.
+- Wall-time section heartbeat should guarantee multi-section coverage as a safety net for compute-dilation scenarios.
+
+---
+
 ## R57 — 2026-03-08 — EVOLVED
 
 **Profile:** explosive | **Beats:** 375 | **Duration:** 44.9s | **Notes:** 14,702
