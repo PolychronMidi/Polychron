@@ -11,7 +11,6 @@
  *           outputLoadGuard?: any,
  *           stageTiming: Object|null }} opts
  */
-const _traceEnabled = process.argv.includes('--trace');
 let _traceSnapBeatKey = '';
 let _traceCachedConductorSnap = null;
 let _traceCachedDynamicsSnap = null;
@@ -202,7 +201,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   // Emit a trace-beat event every beat (L1 and L2) for the trace drain.
   // Conductor + dynamics snapshots are identical for L1 and L2 within the
   // same beat, so cache them on the L1 pass and reuse for L2.
-  if (_traceEnabled) {
+  if (traceDrain.isEnabled()) {
     _validateTraceProgress(layer, clBeatKey, clAbsMs);
     if (_traceSnapBeatKey !== clBeatKey) {
       _traceCachedConductorSnap = conductorState.getSnapshot();
