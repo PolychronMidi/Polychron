@@ -27,8 +27,8 @@ systemDynamicsProfiler = (() => {
   const PHASE_COUPLING_PAIRS = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
   const PHASE_STALE_PAIR_THRESHOLD = 12;
   // R58 E4: Phase freshness escalation threshold. When phase goes stale for
-  // >8 beats, force beat-escalation analysis to keep phase coupling current.
-  const _PHASE_FRESHNESS_ESCALATION = 8;
+  // >4 beats, force beat-escalation analysis to keep phase coupling current.
+  const _PHASE_FRESHNESS_ESCALATION = 4;
 
   // -- State --
   /** @type {Array<number[]>} smoothed ring buffer for velocity/curvature */

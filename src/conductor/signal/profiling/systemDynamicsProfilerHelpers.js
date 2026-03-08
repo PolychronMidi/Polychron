@@ -134,7 +134,7 @@ systemDynamicsProfilerHelpers = (() => {
     state.lastPhaseChanged = false;
     state.lastPhaseDelta = 0;
     try {
-      const sampledPhase = timeStream.compoundProgress('section');
+      const sampledPhase = timeStream.normalizedProgress('section');
       if (typeof sampledPhase === 'number' && Number.isFinite(sampledPhase)) {
         phase = clamp(sampledPhase, 0, 1);
         state.lastPhaseSignalValid = true;
@@ -143,10 +143,19 @@ systemDynamicsProfilerHelpers = (() => {
       void 0;
     }
 
+    // Stale-phase dither applied BEFORE staleness detection so the
+    // perturbation is visible to the change detector. This resets the
+    // stale counter, keeping phase-pair coupling paths warm even when
+    // normalizedProgress('section') steps only at section boundaries.
+    if (state.phaseStaleBeats > 5 && state.lastPhaseSignalValid) {
+      const phaseAmplitude = 0.002 + clamp((state.phaseStaleBeats - 5) / 60, 0, 1) * 0.005;
+      phase = clamp(phase + ((state.phaseStaleBeats % 2 === 0) ? phaseAmplitude : -phaseAmplitude), 0, 1);
+    }
+
     if (state.lastPhaseSignalValid) {
       if (state.lastPhaseSample !== null) {
         state.lastPhaseDelta = m.abs(phase - state.lastPhaseSample);
-        state.lastPhaseChanged = state.lastPhaseDelta > 0.0001;
+        state.lastPhaseChanged = state.lastPhaseDelta > 0.0005;
         state.phaseStaleBeats = state.lastPhaseChanged ? 0 : state.phaseStaleBeats + 1;
       } else {
         state.phaseStaleBeats = 0;
@@ -154,11 +163,6 @@ systemDynamicsProfilerHelpers = (() => {
       state.lastPhaseSample = phase;
     } else {
       state.phaseStaleBeats++;
-    }
-
-    if (state.phaseStaleBeats > 25 && state.lastPhaseSignalValid) {
-      const phaseAmplitude = 0.008 + clamp((state.phaseStaleBeats - 25) / 120, 0, 1) * 0.012;
-      phase = clamp(phase + ((state.phaseStaleBeats % 2 === 0) ? phaseAmplitude : -phaseAmplitude), 0, 1);
     }
 
     return [
