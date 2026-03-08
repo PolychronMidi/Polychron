@@ -267,6 +267,7 @@ pipelineCouplingManager = (() => {
   // R59 E5: Sensitivity tightened (30->22 trigger), heat escalated (0.08->0.15),
   // cumulative consecutive-trigger counter doubles impulse on repeat triggers.
   const _MONOTONE_TRIGGER = 22;
+  const _HIGH_CORR_MONOTONE_TRIGGER = 16;
   const _MONOTONE_ABS_THRESHOLD = 0.50;
   const _MONOTONE_IMPULSE_RATE = 2.5; // gain escalation multiplier during impulse
   /** @type {Record<string, { sign: number, count: number, consecutiveTriggers: number }>} */
@@ -789,9 +790,13 @@ pipelineCouplingManager = (() => {
           _mst.sign = _corrSign;
           _mst.count = absCorr > _MONOTONE_ABS_THRESHOLD ? 1 : 0;
         }
-        const _monotoneActive = _mst.count >= _MONOTONE_TRIGGER;
+        // R61 E5: Structural high-correlation pairs in shorter runs need the
+        // circuit breaker sooner, otherwise density-trust can stay monotone
+        // for most of the piece before the impulse has time to act.
+        const _monotoneTrigger = corr > 0.85 ? _HIGH_CORR_MONOTONE_TRIGGER : _MONOTONE_TRIGGER;
+        const _monotoneActive = _mst.count >= _monotoneTrigger;
         // R59 E5: Track trigger activations for cumulative escalation
-        if (_monotoneActive && _mst.count === _MONOTONE_TRIGGER) _mst.consecutiveTriggers++;
+        if (_monotoneActive && _mst.count === _monotoneTrigger) _mst.consecutiveTriggers++;
 
         // -- Adaptive gain logic --
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
@@ -1235,12 +1240,21 @@ const rawEmaInput = absCorr;
           effectiveGain *= 1 + clamp(_recentSevereRate * 0.35 + tailPressure * 0.15, 0, 0.50);
         }
         // R59 E3: Anti-correlation response. When pearsonR is strongly negative
-        // (< -0.75), the decorrelation engine creates a feedback loop pushing
+        // (< -0.65), the decorrelation engine creates a feedback loop pushing
         // the pair further apart. Dampen nudge proportionally to anti-correlation
         // depth. Self-correcting: dampening eases as |pearsonR| decreases.
-        if (corr < -0.75) {
-          const _antiCorrDepth = clamp((m.abs(corr) - 0.75) / 0.25, 0, 1);
+        if (corr < -0.65) {
+          const _antiCorrDepth = clamp((m.abs(corr) - 0.65) / 0.35, 0, 1);
           effectiveGain *= m.max(0.15, 1.0 - _antiCorrDepth * 0.80);
+        }
+        // R63 E5: Positive correlation preemptive brake. tension-flicker hit
+        // pearsonR=0.646 (increasing) in R62. When any pair builds strong
+        // positive monotonic correlation (>0.50), dampen gain to prevent the
+        // decorrelation engine from inadvertently reinforcing the trend via
+        // coordinated nudges. Self-correcting: brake releases as |r| drops.
+        if (corr > 0.50) {
+          const _posCorrDepth = clamp((corr - 0.50) / 0.40, 0, 1);
+          effectiveGain *= m.max(0.30, 1.0 - _posCorrDepth * 0.55);
         }
         ps.lastEffectiveGain = effectiveGain;
 
@@ -1438,6 +1452,18 @@ const rawEmaInput = absCorr;
     biasDensity = 1.0 + nudgeD;
     biasTension = 1.0 + nudgeT;
     biasFlicker = 1.0 + nudgeF;
+
+    // R63 E2: Tension product self-limiter. When the aggregate tension
+    // product approaches the pipeline cap (1.42), dampen this module's
+    // tension push proportionally. Prevents saturation when regime
+    // correction (regimeReactiveDamping) and coupling correction both
+    // push tension up simultaneously. Self-correcting: dampening eases
+    // as product drops below threshold.
+    const _tensionProd = safePreBoot.call(() => signalReader.snapshot()?.tensionProduct, 1.0);
+    if (typeof _tensionProd === 'number' && _tensionProd > 1.30 && biasTension > 1.0) {
+      const _tensionSaturationDepth = clamp((_tensionProd - 1.30) / 0.12, 0, 1);
+      biasTension = 1.0 + (biasTension - 1.0) * (1.0 - _tensionSaturationDepth * 0.70);
+    }
 
     // R20 E5: While in flicker-guarding state, apply a recovery nudge toward
     // biasFlicker=1.0 to break the vicious cycle where compressed bias -> low

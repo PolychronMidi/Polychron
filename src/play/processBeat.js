@@ -166,10 +166,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   let outputLoadSeverity = 'normal';
   let preEmissionGuardScale = 1;
   // R60 E5: Section-adaptive guard floor. Early sections (S0-S1) use a
-  // relaxed 0.50 floor for richer output; later sections (S2+) keep the
+    // relaxed 0.45 floor for richer output; later sections (S2+) keep the
   // tighter 0.35 floor to respect wall-time budget. Self-correcting:
   // sectionIndex advances naturally via heartbeat.
-  const _guardFloor = sectionIndex <= 1 ? 0.50 : 0.35;
+    const _guardFloor = sectionIndex <= 1 ? 0.45 : 0.35;
   if (recentPrimaryNotesPerSecond >= outputLoadGuardConfig.hardNotesPerSecond) {
     preEmissionGuardScale = outputLoadGuardConfig.hardScale;
     outputLoadSeverity = 'hard';

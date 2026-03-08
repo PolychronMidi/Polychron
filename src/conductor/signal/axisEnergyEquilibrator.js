@@ -471,7 +471,12 @@ axisEnergyEquilibrator = (() => {
           }
         }
       } else if (share < _AXIS_UNDERSHOOT && share > 0.001) {
-        if (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot)) {
+        // R63 E6: Phase axis emergency floor. When an axis drops below 0.06
+        // (catastrophic starvation -- phase was 5.47% in R62), bypass the
+        // coherent coldspot freeze and apply 2x relaxation. Self-correcting:
+        // emergency mode deactivates when share recovers above 0.06.
+        const isEmergencyStarved = share < 0.06;
+        if (!isEmergencyStarved && (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot))) {
           _skippedColdspotRelaxations++;
           continue;
         }
@@ -486,7 +491,8 @@ axisEnergyEquilibrator = (() => {
         const nonNudgeableRelaxBoost = nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1
           ? 1 + nonNudgeableTailPressure * 0.30
           : 1.0;
-        const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
+        const emergencyBoost = isEmergencyStarved ? 2.0 : 1.0;
+        const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue;

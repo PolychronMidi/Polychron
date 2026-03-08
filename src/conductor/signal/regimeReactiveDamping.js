@@ -256,16 +256,23 @@ regimeReactiveDamping = (() => {
       // Coherent/evolving deficit: boost tension (encourages coupling/convergence)
       _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH + postForcedRecoveryPressure * 0.08 + expExcess * postForcedRecoveryPressure * 0.05;
 
-      // R60 E4: Exploring-regime coherent floor (symmetrical monopoly break).
-      // R59 had exploring at 68.6% (target 35%). The existing expPenalty at
-      // 60% was insufficient. This block injects strong coherent-promoting
-      // corrections when exploring dominates. Self-correcting: pressure
-      // scales continuously with exploring share, stops below 55%.
+      // R60 E4 / R63 E1: Self-scaling exploring monopoly correction.
+      // R61 showed static 2.00/0.90 multipliers caused hotspot explosion;
+      // R62 reverted to 1.50/0.60 but exploring stayed at 64.5%.
+      // Fix: scale multipliers with the SQUARE of excess so correction
+      // accelerates as exploring grows, and dampen when budget is saturated
+      // (budgetConstraintPressure=1.0 in R62) to avoid coupling blowout.
+      // Self-correcting: pressure is continuous, stops below 55%.
       if (expShare > 0.55) {
         const _expMonopolyPressure = clamp((expShare - 0.55) / 0.15, 0, 1);
-        _eqCorrT += _expMonopolyPressure * _EQUILIB_STRENGTH * 1.50;
-        _eqCorrD -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.60;
-        _eqCorrF -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.85;
+        const _expSquaredEscalation = 1.0 + _expMonopolyPressure * _expMonopolyPressure * 1.20;
+        const _homeo = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+        const _budgetDampen = _homeo && typeof _homeo.budgetConstraintPressure === 'number'
+          ? 1.0 - _homeo.budgetConstraintPressure * 0.35
+          : 1.0;
+        _eqCorrT += _expMonopolyPressure * _EQUILIB_STRENGTH * 1.50 * _expSquaredEscalation * _budgetDampen;
+        _eqCorrD -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.60 * _expSquaredEscalation * _budgetDampen;
+        _eqCorrF -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.85 * _expSquaredEscalation * _budgetDampen;
       }
 
       // R46 E2: Coherent-share reactive damping. If coherent overshoots and

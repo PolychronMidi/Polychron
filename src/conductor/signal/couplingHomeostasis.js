@@ -286,6 +286,25 @@ couplingHomeostasis = (() => {
     _dominantTailPair = strongestPair;
     _nonNudgeableTailPressure = strongestNonNudgeableTail;
     _nonNudgeableTailPair = strongestNonNudgeablePair;
+
+    // R63 E4: Non-nudgeable baseline auto-ratchet. When the dominant
+    // non-nudgeable pair (e.g. entropy-trust) holds high tail pressure
+    // (>0.50) for sustained periods, gradually raise its baseline toward
+    // its actual structural coupling level. This stops the budget from
+    // wasting energy on a pair that cannot be decorrelated. R62 had
+    // nonNudgeableTailPressure=0.687 on entropy-trust with baseline 0.04
+    // vs rawRollingAbsCorr=0.298. Self-correcting: ratchet stops when
+    // pressure drops below 0.50 or baseline reaches rolling average.
+    if (strongestNonNudgeableTail > 0.50 && strongestNonNudgeablePair && _beatCount > 30) {
+      const _nnAdaptive = adaptiveSnapshot && adaptiveSnapshot[strongestNonNudgeablePair];
+      if (_nnAdaptive && typeof _nnAdaptive.rawRollingAbsCorr === 'number' && typeof _nnAdaptive.baseline === 'number') {
+        const _nnTarget = clamp(_nnAdaptive.rawRollingAbsCorr * 0.85, 0.04, 0.30);
+        if (_nnAdaptive.baseline < _nnTarget) {
+          const _nnRatchetRate = 0.0008 * clamp((strongestNonNudgeableTail - 0.50) / 0.30, 0.2, 1.0);
+          pipelineCouplingManager.setPairBaseline(strongestNonNudgeablePair, clamp(_nnAdaptive.baseline + _nnRatchetRate, 0.04, _nnTarget));
+        }
+      }
+    }
     _tailHotspotCount = activeTailCount;
     const tailAverage = _TAIL_TRACKED_PAIRS.length > 0 ? tailSum / _TAIL_TRACKED_PAIRS.length : 0;
     let topTailMean = 0;

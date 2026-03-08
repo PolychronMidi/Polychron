@@ -293,14 +293,14 @@ systemDynamicsProfiler = (() => {
       _phaseStaleBeats++;
     }
 
-    // R60 E2: Phase stale-gate adaptive expiry. After 25 stale beats,
-    // inject a deterministic micro-oscillation (+-0.008) into the phase
-    // sample to create enough variance in the rolling window for the
-    // coupling gate. Breaks the zero-variance deadlock that produced
-    // 1,092 stale-gated entries in R59. Self-correcting: stops when
-    // phase changes (staleBeats resets to 0).
+    // R60 E2 / R63 E3: Phase stale-gate progressive amplitude. Static
+    // +-0.008 left maxStaleBeats=83 and avgCouplingCoverage=0.135 in R62.
+    // R61's +-0.012 caused phase-linked hotspot explosion. Fix: start at
+    // +-0.008 and progressively grow to +-0.020 over 120 stale beats.
+    // Self-correcting: amplitude resets when phase changes (staleBeats=0).
     if (_phaseStaleBeats > 25 && _lastPhaseSignalValid) {
-      phase = clamp(phase + ((_phaseStaleBeats % 2 === 0) ? 0.008 : -0.008), 0, 1);
+      const _phaseAmp = 0.008 + clamp((_phaseStaleBeats - 25) / 120, 0, 1) * 0.012;
+      phase = clamp(phase + ((_phaseStaleBeats % 2 === 0) ? _phaseAmp : -_phaseAmp), 0, 1);
     }
 
     return [

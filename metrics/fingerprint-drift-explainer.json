@@ -1,18 +1,34 @@
 {
   "meta": {
-    "generated": "2026-03-08T02:18:01.320Z",
+    "generated": "2026-03-08T03:24:18.648Z",
     "verdict": "EVOLVED"
   },
-  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. fewer notes emitted (21447 -> 17951, 16.3% change).",
+  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. hotspot surface migrated from [flicker-trust: 23, flicker-phase: 20, density-tension: 8] to [density-flicker: 22, density-entropy: 12, flicker-entropy: 12].",
   "explanations": [
     {
-      "dimension": "noteCount",
-      "delta": 0.833817245577116,
-      "tolerance": 0.5,
-      "cause": "fewer notes emitted (21447 -> 17951, 16.3% change)",
-      "correlates": "density mean shifted up by 0.065",
-      "outputLoadGuard": "guarded entry rate 94.0% -> 95.3%, avg guard scale 0.740 -> 0.419",
-      "progressIntegrity": "trace progress integrity warning -> warning"
+      "dimension": "hotspotMigration",
+      "delta": 0.7086,
+      "tolerance": 0.55,
+      "cause": "hotspot surface migrated from [flicker-trust: 23, flicker-phase: 20, density-tension: 8] to [density-flicker: 22, density-entropy: 12, flicker-entropy: 12]",
+      "axisShift": {
+        "current": {
+          "density": 0.1708,
+          "tension": 0.1979,
+          "flicker": 0.1735,
+          "entropy": 0.2046,
+          "trust": 0.1984,
+          "phase": 0.0547
+        },
+        "previous": {
+          "density": 0.1731,
+          "tension": 0.1546,
+          "flicker": 0.2367,
+          "entropy": 0.1763,
+          "trust": 0.1416,
+          "phase": 0.1177
+        }
+      },
+      "meaning": "stress redistributed across hotspot surfaces rather than being removed outright"
     }
   ]
 }
