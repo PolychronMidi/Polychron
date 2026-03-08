@@ -63,6 +63,14 @@ function loadJSON(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function getFreshSummary(entries) {
+  const summary = loadJSON(SUMMARY_PATH);
+  if (!summary || entries.length === 0) return null;
+  const totalEntries = summary && summary.beats ? Number(summary.beats.totalEntries) : NaN;
+  if (Number.isFinite(totalEntries) && totalEntries !== entries.length) return null;
+  return summary;
+}
+
 function toNum(v, fallback) {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
@@ -170,7 +178,6 @@ function parseNotesFromCSV(filePath) {
 // ---- Compute fingerprint from trace data ----
 
 function computeFingerprint() {
-  const summary = loadJSON(SUMMARY_PATH);
   const manifest = loadJSON(MANIFEST_PATH);
 
   // Parse trace entries
@@ -182,6 +189,7 @@ function computeFingerprint() {
       try { return JSON.parse(line); } catch (_) { return null; }
     }).filter(Boolean);
   }
+  const summary = getFreshSummary(entries);
 
   // Note counts and pitch distribution from output CSV files
   const pitchCounts = new Array(128).fill(0);

@@ -1,105 +1,92 @@
 # Composition Narrative Digest
 
 > Auto-generated per run by `narrative-digest.js`. A human-readable story of what the system did.
-> Generated: 2026-03-08T05:55:42.415Z | Trace data from: 2026-03-08T05:55:42.064Z
+> Generated: 2026-03-08T06:34:55.808Z | Trace data from: 2026-03-08T06:34:55.296Z
 
 ## Overview
 
 The composition was generated at **72 BPM** with a tuning reference of **432 Hz**, using the **explosive** conductor profile.
 
-The system processed **50 beats** spanning **12.2 seconds** of musical time.
-Layer 1 experienced 32 beats; Layer 2 experienced 18 beats.
+The system processed **542 beats** spanning **65.0 seconds** of musical time.
+Layer 1 experienced 225 beats; Layer 2 experienced 317 beats.
 
 ## Harmonic Journey
 
-- **Section 1:** F locrian (origin)
-- **Section 2:** G locrian (step-up)
-- **Section 3:** Bb major (mediant-flip)
+- **Section 1:** F# aeolian (origin)
+- **Section 2:** B aeolian (fourth-up)
+- **Section 3:** D# major (relative-major (mode-shift))
+- **Section 4:** F major (step-down)
 
 ## The System's Inner Life
 
-The system spent most of its time **operating in harmony** (50.0% of beats in the `coherent` regime).
+The system spent most of its time **searching for coherence** (92.3% of beats in the `exploring` regime).
 
 Regime breakdown:
 
-- **`coherent`** - 25 beats (50.0%) - operating in harmony
-- **`evolving`** - 19 beats (38.0%) - developing new musical ideas
-- **`initializing`** - 6 beats (12.0%) - warming up
+- **`exploring`** - 500 beats (92.3%) - searching for coherence
+- **`coherent`** - 29 beats (5.4%) - operating in harmony
+- **`initializing`** - 9 beats (1.7%) - warming up
+- **`evolving`** - 4 beats (0.7%) - developing new musical ideas
 
 ### Regime Transitions
 
-The system underwent **2 regime transitions** during the composition.
+The system underwent **3 regime transitions** during the composition.
 
-- Beat 6: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
-- Beat 25: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
+- Beat 9: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
+- Beat 13: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
+- Beat 42: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
 
 ### Controller Cadence
 
-The emitted trace contains **50 beat entries**, but the regime controller advanced on only **29 measure-recorder+beat-escalation ticks**.
-**21** entries reused an existing profiler snapshot and **6** entries landed during warmup.
-Beat-level escalation refreshed the profiler on **24** traced entries.
-On the controller cadence, resolved regime time was: `coherent` 28, `evolving` 4.
-No forced regime transition fired on the controller cadence.
-The cadence monopoly diagnostic stayed active at **0.632**: raw non-coherent opportunity reached **0.0%**, but resolved non-coherent share closed at **12.9%** (gap **0.0%**).
-Dominant monopoly mode: **coherent-share-monopoly**.
-Phase telemetry closed **critical** with **100.0%** valid samples, **0.0%** changing samples, and average phase-coupling coverage **0.0%**.
-The longest stale phase run was **35** beats, **69** entries carried stale pair telemetry, and **50** entries reported zero phase-coupling coverage.
-Phase-surface availability resolved to **0 available**, **96 variance-gated**, **80 stale/stale-gated**, and **0 missing** pair observations across the trace.
-The most reconciliation-starved phase pairs were **density-phase** (20 stale, 24 variance-gated), **tension-phase** (20 stale, 24 variance-gated), **flicker-phase** (20 stale, 24 variance-gated).
-Telemetry health scored **0.373** with **0** under-seen controller pairs and reconciliation gap **0.000**.
-The output-load governor intervened on **44** entries (88.0%), with average guard scale **0.546** and **44** hard clamps.
-Guard/coupling interaction: guarded beats had higher exceedance rate (54.5%) vs unguarded (50.0%), delta **0.045**.
+The emitted trace contains **542 beat entries**, but the regime controller advanced on only **137 measure-recorder ticks**.
+**405** entries reused an existing profiler snapshot and **9** entries landed during warmup.
+Beat-level escalation refreshed the profiler on **194** traced entries.
+On the controller cadence, resolved regime time was: `exploring` 120, `coherent` 23, `evolving` 4.
+The controller recorded **1 forced transition event**.
+Phase telemetry closed **warning** with **100.0%** valid samples, **0.5%** changing samples, and average phase-coupling coverage **13.8%**.
+The longest stale phase run was **51** beats, **987** entries carried stale pair telemetry, and **467** entries reported zero phase-coupling coverage.
+Phase-surface availability resolved to **300 available**, **36 variance-gated**, **1796 stale/stale-gated**, and **0 missing** pair observations across the trace.
+The most reconciliation-starved phase pairs were **density-phase** (449 stale, 9 variance-gated), **tension-phase** (449 stale, 9 variance-gated), **flicker-phase** (449 stale, 9 variance-gated).
+Telemetry health scored **0.221** with **0** under-seen controller pairs and reconciliation gap **0.000**.
+The output-load governor intervened on **527** entries (97.2%), with average guard scale **0.432** and **521** hard clamps.
 
 ## Signal Landscape
 
-**Density** ranged from 0.36 to 0.48 (avg 0.41). The density was balanced.
-**Tension** ranged from 0.07 to 0.49 (avg 0.30). The composition maintained a relaxed tension profile.
-**Flicker** ranged from 0.87 to 1.17 (avg 1.06). Rhythmic variation was moderate.
+**Density** ranged from 0.34 to 0.79 (avg 0.56). The density was balanced.
+**Tension** ranged from 0.06 to 0.82 (avg 0.50). The composition maintained a relaxed tension profile.
+**Flicker** ranged from 0.89 to 1.14 (avg 1.02). Rhythmic variation was moderate.
 
 ## Trust Governance
 
 The trust system governed cross-layer module influence through EMA-weighted scores:
 
-- **entropyRegulator**: average score 0.50 (weight 1.38, trusted)
-- **coherenceMonitor**: average score 0.44 (weight 1.33, trusted)
-- **phaseLock**: average score 0.38 (weight 1.28, trusted)
-- **restSynchronizer**: average score 0.23 (weight 1.18, neutral)
-- **feedbackOscillator**: average score 0.21 (weight 1.16, neutral)
-- **stutterContagion**: average score 0.20 (weight 1.15, neutral)
-- **convergence**: average score 0.19 (weight 1.14, neutral)
-- **cadenceAlignment**: average score 0.18 (weight 1.13, neutral)
+- **coherenceMonitor**: average score 0.57 (weight 1.43, trusted)
+- **phaseLock**: average score 0.49 (weight 1.37, trusted)
+- **stutterContagion**: average score 0.49 (weight 1.37, trusted)
+- **entropyRegulator**: average score 0.34 (weight 1.26, trusted)
+- **feedbackOscillator**: average score 0.25 (weight 1.18, neutral)
+- **restSynchronizer**: average score 0.24 (weight 1.18, neutral)
+- **convergence**: average score 0.22 (weight 1.16, neutral)
+- **cadenceAlignment**: average score 0.21 (weight 1.16, neutral)
 
-The system placed the most faith in **entropyRegulator** and was most skeptical of **cadenceAlignment**.
+The system placed the most faith in **coherenceMonitor** and was most skeptical of **cadenceAlignment**.
 
 ## Pipeline Coupling
 
-The decorrelation engine flagged elevated coupling in:
+Average pairwise decorrelation stayed controlled, but the tail still carried residual hotspot pressure.
 
-- **density-flicker**: avg |r| = 0.893, peak |r| = 0.992
-- **flicker-trust**: avg |r| = 0.713, peak |r| = 0.997
-- **density-trust**: avg |r| = 0.698, peak |r| = 0.982
-- **flicker-entropy**: avg |r| = 0.651, peak |r| = 0.922
-- **density-entropy**: avg |r| = 0.577, peak |r| = 0.889
-
-**Coupling health:** 9 hotspot pairs (p95 > 0.70) -- system stressed.
-Severe (p95 > 0.85): **flicker-trust** (0.997), **density-flicker** (0.992), **density-trust** (0.982), **tension-trust** (0.960), **tension-flicker** (0.924), **density-tension** (0.873).
+**Coupling health:** 3 hotspot pairs (p95 > 0.70) -- system elevated.
+Severe (p95 > 0.85): **entropy-trust** (0.853).
 
 ## Output
 
-- **Layer 1:** 7400 notes
-- **Layer 2:** 5998 notes
-- **Load:** 13398 total notes, 304.50 notes per traced beat, 1096.20 notes per second
+- **Layer 1:** 7599 notes
+- **Layer 2:** 10732 notes
+- **Load:** 18331 total notes, 50.64 notes per traced beat, 281.94 notes per second
 
 ## Coherence Verdicts
 
-The system issued **0 critical**, **4 warning**, and **6 informational** findings.
-
-### Warnings
-
-- flicker pipeline strained with 50% crush - multiplicative suppression eroding signal range.
-- tension-flicker strongly anti-correlated (r=-0.802) - these dimensions may be driven by a shared input or feedback loop.
-- density-flicker strongly co-evolving (r=0.786) - these dimensions may be driven by a shared input or feedback loop.
-- density-tension strongly anti-correlated (r=-0.762) - these dimensions may be driven by a shared input or feedback loop.
+The system issued **0 critical**, **0 warning**, and **2 informational** findings.
 
 ---
 

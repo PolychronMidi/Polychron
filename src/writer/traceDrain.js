@@ -7,6 +7,7 @@ traceDrain = (() => {
   let fd = null;
   const _buffer = [];
   const FLUSH_INTERVAL = 50; // flush every N records to reduce sync I/O calls
+  let _recordCount = 0;
 
   // Per-beat note accumulator: collects emitted note data between playNotes and traceDrain.record
   /** @type {Array<{pitch: number, velocity: number, channel: number}>} */
@@ -15,6 +16,8 @@ traceDrain = (() => {
   function init() {
     if (!process.argv.includes('--trace')) return;
     isTracing = true;
+    _recordCount = 0;
+    _pendingNotes = [];
 
     const outDir = path.resolve(process.cwd(), 'metrics');
     if (!fs.existsSync(outDir)) {
@@ -32,6 +35,10 @@ traceDrain = (() => {
     }
 
     fd = fs.openSync(filepath, 'a');
+  }
+
+  function isEnabled() {
+    return isTracing && fd !== null;
   }
 
   /** Flush buffered records to disk in a single write. */
@@ -88,11 +95,15 @@ traceDrain = (() => {
     _pendingNotes = [];
 
     _buffer.push(JSON.stringify(payload) + '\n');
+    _recordCount++;
     if (_buffer.length >= FLUSH_INTERVAL) _flush();
   }
 
   function shutdown() {
     _flush();
+    if (isTracing && _recordCount === 0) {
+      console.warn('Acceptable warning: traceDrain recorded zero entries during traced run.');
+    }
     if (fd !== null) {
       try {
         fs.closeSync(fd);
@@ -103,5 +114,5 @@ traceDrain = (() => {
     }
   }
 
-  return { init, record, recordNote, shutdown };
+  return { init, isEnabled, record, recordNote, shutdown };
 })();

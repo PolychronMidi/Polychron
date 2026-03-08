@@ -1239,7 +1239,14 @@ function main() {
   const summaryPath = path.join(process.cwd(), 'metrics', 'trace-summary.json');
   const manifestPath = path.join(process.cwd(), 'metrics', 'system-manifest.json');
 
+  function clearStaleSummary(reason) {
+    if (!fs.existsSync(summaryPath)) return;
+    fs.unlinkSync(summaryPath);
+    console.warn('Acceptable warning: trace-summary: ' + reason + ', removed stale trace-summary.json.');
+  }
+
   if (!fs.existsSync(tracePath)) {
+    clearStaleSummary('trace file missing');
     console.log('trace-summary: trace file not found, skipping (run with --trace to generate metrics/trace.jsonl).');
     return;
   }
@@ -1247,6 +1254,7 @@ function main() {
   const raw = fs.readFileSync(tracePath, 'utf8');
   const lines = raw.split(/\r?\n/).filter(Boolean);
   if (lines.length === 0) {
+    clearStaleSummary('trace.jsonl is empty');
     console.warn('Acceptable warning: trace-summary: trace.jsonl is empty, skipping.');
     return;
   }
@@ -1258,6 +1266,7 @@ function main() {
   }
 
   if (entries.length === 0) {
+    clearStaleSummary('trace.jsonl has no valid entries');
     console.warn('Acceptable warning: trace-summary: no valid entries in trace.jsonl, skipping.');
     return;
   }

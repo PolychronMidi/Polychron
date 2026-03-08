@@ -1848,6 +1848,7 @@ declare var grandFinale: any;
 /** @boot-advisory - trace is diagnostic, composition runs without it */
 declare var traceDrain: {
   init(): void;
+  isEnabled(): boolean;
   record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any }): void;
   recordNote(pitch: number, velocity: number, channel: number): void;
   shutdown(): void;

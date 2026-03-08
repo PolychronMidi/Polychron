@@ -1,7 +1,7 @@
 # Module Capability Matrix
 
 > Auto-generated per run by `systemManifest.js`. Do not edit by hand.
-> Generated: 2026-03-08T05:55:41.979Z
+> Generated: 2026-03-08T06:34:55.134Z
 
 ## Conductor Intelligence Modules
 
@@ -16,33 +16,33 @@ Contribution counts:
 
 ### Density Bias Attribution (end-of-run snapshot)
 
-Product: **0.7175**
+Product: **0.6993**
 
 | Module | Raw | Clamped |
 |---|---|---|
-| coherenceMonitor | 1.0401 | 1.0401 |
-| regimeReactiveDamping | 0.8800 | 0.8800 |
-| pipelineBalancer | 1.0394 | 1.0394 |
-| pipelineCouplingManager | 1.2000 | 1.2000 |
+| coherenceMonitor | 1.0517 | 1.0517 |
+| regimeReactiveDamping | 1.0000 | 1.0000 |
+| pipelineBalancer | 1.0268 | 1.0268 |
+| pipelineCouplingManager | 0.9715 | 0.9715 |
 | structuralNarrativeAdvisor | 1.0362 | 1.0362 |
-| criticalityEngine | 0.9467 | 0.9467 |
+| criticalityEngine | 1.0000 | 1.0000 |
 | dimensionalityExpander | 0.9997 | 0.9997 |
 | chromaticSaturationMonitor | 1.0000 | 1.0000 |
 | harmonicFieldDensityTracker | 0.9400 | 0.9400 |
 | harmonicRhythmDensityRatio | 1.0000 | 1.0000 |
 | ambitusMigrationTracker | 0.9400 | 0.9400 |
-| intervalBalanceTracker | 0.9272 | 0.9272 |
-| intervalExpansionContractor | 1.0000 | 1.0000 |
+| intervalBalanceTracker | 0.9435 | 0.9435 |
+| intervalExpansionContractor | 0.9600 | 0.9600 |
 | melodicContourTracker | 1.0200 | 1.0200 |
-| tessituraPressureMonitor | 0.9400 | 0.9400 |
-| voiceLeadingEfficiencyTracker | 1.0000 | 1.0000 |
+| tessituraPressureMonitor | 0.9428 | 0.9428 |
+| voiceLeadingEfficiencyTracker | 1.0400 | 1.0400 |
 | attackDensityProfiler | 1.0500 | 1.0500 |
 | onsetDensityProfiler | 0.9300 | 0.9300 |
 | onsetRegularityMonitor | 0.9200 | 0.9200 |
 | rhythmicComplexityGradient | 1.0000 | 1.0000 |
 | rhythmicInertiaTracker | 1.0000 | 1.0000 |
-| syncopationDensityTracker | 1.0000 | 1.0000 |
-| climaxProximityPredictor | 1.0000 | 1.0000 |
+| syncopationDensityTracker | 0.8800 | 0.8800 |
+| climaxProximityPredictor | 1.0858 | 1.0858 |
 | energyMomentumTracker | 1.0000 | 1.0000 |
 | crossLayerDensityBalancer | 1.0000 | 1.0000 |
 | layerCoherenceScorer | 0.9250 | 0.9250 |
@@ -53,51 +53,51 @@ Product: **0.7175**
 
 ### Tension Bias Attribution (end-of-run snapshot)
 
-Product: **1.0782**
+Product: **1.1350**
 
 | Module | Raw | Clamped |
 |---|---|---|
-| regimeReactiveDamping | 1.1800 | 1.1800 |
+| regimeReactiveDamping | 1.0177 | 1.0177 |
 | pipelineBalancer | 1.0000 | 1.0000 |
-| pipelineCouplingManager | 0.8000 | 0.8000 |
+| pipelineCouplingManager | 0.9198 | 0.9198 |
 | narrativeTrajectory | 1.0800 | 1.0800 |
-| criticalityEngine | 0.9467 | 0.9467 |
-| dimensionalityExpander | 0.9841 | 0.9841 |
+| criticalityEngine | 1.0000 | 1.0000 |
+| dimensionalityExpander | 1.0000 | 1.0000 |
 | cadentialPreparationAdvisor | 1.0000 | 1.0000 |
-| consonanceDissonanceTracker | 1.1392 | 1.1392 |
-| harmonicDensityOscillator | 1.0055 | 1.0055 |
-| harmonicPedalFieldTracker | 1.0125 | 1.0125 |
-| harmonicSurpriseIndex | 0.9713 | 0.9713 |
+| consonanceDissonanceTracker | 1.1359 | 1.1359 |
+| harmonicDensityOscillator | 1.0000 | 1.0000 |
+| harmonicPedalFieldTracker | 1.0367 | 1.0367 |
+| harmonicSurpriseIndex | 0.9599 | 0.9599 |
 | harmonicVelocityMonitor | 1.0700 | 1.0700 |
-| tensionResolutionTracker | 1.0347 | 1.0347 |
+| tensionResolutionTracker | 1.0426 | 1.0426 |
 | tonalAnchorDistanceTracker | 1.0133 | 1.0133 |
 | harmonicFunctionGraph | 1.0200 | 1.0200 |
 | counterpointMotionTracker | 1.0000 | 1.0000 |
-| climaxProximityPredictor | 1.0000 | 1.0000 |
+| climaxProximityPredictor | 1.0301 | 1.0301 |
 | dynamicArchitectPlanner | 0.9000 | 0.9000 |
-| dynamicPeakMemory | 0.9200 | 0.9200 |
-| repetitionFatigueMonitor | 1.0856 | 1.0856 |
+| dynamicPeakMemory | 0.9208 | 0.9208 |
+| repetitionFatigueMonitor | 1.0775 | 1.0775 |
 
 ### Flicker Modifier Attribution (end-of-run snapshot)
 
-Product: **0.9226**
+Product: **0.8828**
 
 | Module | Raw | Clamped |
 |---|---|---|
-| regimeReactiveDamping | 0.8500 | 0.8500 |
-| pipelineCouplingManager | 1.3000 | 1.3000 |
-| criticalityEngine | 0.9733 | 0.9733 |
+| regimeReactiveDamping | 1.0443 | 1.0443 |
+| pipelineCouplingManager | 0.8172 | 0.8172 |
+| criticalityEngine | 1.0000 | 1.0000 |
 | dimensionalityExpander | 1.0000 | 1.0000 |
-| registralVelocityCorrelator | 0.9421 | 0.9421 |
-| grooveTemplateAdvisor | 1.0048 | 1.0048 |
+| registralVelocityCorrelator | 0.9420 | 0.9420 |
+| grooveTemplateAdvisor | 1.0046 | 1.0046 |
 | interLayerRhythmAnalyzer | 0.9500 | 0.9500 |
-| rhythmicDensityContrastTracker | 1.0066 | 1.0066 |
-| densityWaveAnalyzer | 0.9788 | 0.9788 |
+| rhythmicDensityContrastTracker | 1.0019 | 1.0019 |
+| densityWaveAnalyzer | 0.9953 | 0.9953 |
 | durationalContourTracker | 1.0000 | 1.0000 |
 | dynamicRangeTracker:spread | 0.9200 | 0.9200 |
 | dynamicRangeTracker:contrast | 1.0000 | 1.0000 |
-| velocityShapeAnalyzer | 1.0000 | 1.0000 |
-| texturalGradientTracker | 0.9614 | 0.9614 |
+| velocityShapeAnalyzer | 1.1200 | 1.1200 |
+| texturalGradientTracker | 0.9669 | 0.9669 |
 
 ### Lifecycle-Registered Module Names
 
@@ -252,42 +252,43 @@ Total registered: **41**
 
 | Section | Key | Mode | Move | Distance |
 |---|---|---|---|---|
-| 0 | F | locrian | origin | 0 |
-| 1 | G | locrian | step-up | 2 |
-| 2 | Bb | major | mediant-flip | 3 |
+| 0 | F# | aeolian | origin | 0 |
+| 1 | B | aeolian | fourth-up | 1 |
+| 2 | D# | major | relative-major (mode-shift) | 4 |
+| 3 | F | major | step-down | 2 |
 
 ## Trust Scores (End of Run)
 
 | System | Score | Weight | Samples |
 |---|---|---|---|
-| stutterContagion | 0.404 | 1.294 | 336 |
-| cadenceAlignment | 0.189 | 1.113 | 336 |
-| phaseLock | 0.453 | 1.308 | 336 |
-| convergence | 0.200 | 1.134 | 336 |
-| feedbackOscillator | 0.278 | 1.178 | 336 |
-| coherenceMonitor | 0.480 | 1.160 | 336 |
-| entropyRegulator | 0.558 | 1.415 | 336 |
-| restSynchronizer | 0.225 | 1.163 | 336 |
+| stutterContagion | 0.500 | 1.376 | 542 |
+| cadenceAlignment | 0.242 | 1.158 | 542 |
+| phaseLock | 0.433 | 1.326 | 542 |
+| convergence | 0.242 | 1.177 | 542 |
+| feedbackOscillator | 0.268 | 1.201 | 542 |
+| coherenceMonitor | 0.627 | 1.483 | 542 |
+| entropyRegulator | 0.673 | 1.529 | 542 |
+| restSynchronizer | 0.242 | 1.170 | 542 |
 
 ## Config Summary
 
 - BPM: 72
 - PPQ: 30000
 - Tuning: 432 Hz
-- Total Sections: 3
+- Total Sections: 4
 - Active Profile: explosive
 
 ## Signal Health Report
 
-> Overall: **strained** | Beats analyzed: 25
+> Overall: **healthy** | Beats analyzed: 11
 
 ### Pipeline Health
 
 | Pipeline | Grade | Product | Crush Factor | Saturated | Pinned Rate |
 |---|---|---|---|---|---|
-| density | healthy | 0.6982 | 37% | no | 0% |
-| tension | healthy | 1.0448 | 30% | no | 0% |
-| flicker | strained | 0.8692 | 50% | - | 0% |
+| density | healthy | 0.7130 | 37% | no | 0% |
+| tension | healthy | 1.2161 | 35% | no | 0% |
+| flicker | healthy | 0.8615 | 36% | - | 0% |
 
 ### Trust Ecosystem Health
 
@@ -297,33 +298,30 @@ Thriving (score > 0.40): stutterContagion, phaseLock, coherenceMonitor, entropyR
 
 ## System Dynamics Report
 
-> Phase-space trajectory analysis | Regime: **coherent** | Grade: **healthy** | Beats: 178
+> Phase-space trajectory analysis | Regime: **exploring** | Grade: **healthy** | Beats: 151
 
 ### Trajectory Metrics
 
 | Metric | Value | Interpretation |
 |---|---|---|
-| Velocity | 0.2244 | Active exploration |
-| Curvature | 0.286 | Straight-line drift |
-| Effective Dimensionality | 2.25 / 6 | Moderate spread |
-| Coupling Strength | 0.633 | Strong cross-coupling |
+| Velocity | 0.2419 | Active exploration |
+| Curvature | 0.371 | Gentle winding |
+| Effective Dimensionality | 3.67 / 6 | Rich multi-dimensional |
+| Coupling Strength | 0.189 | Dimensions independent |
 
-**Regime interpretation:** Strong cross-coupling - dimensions evolving together as a unified organism.
+**Regime interpretation:** High velocity + multi-dimensional - actively discovering new territory.
 
 ### Cross-Dimensional Coupling (|r| > 0.25)
 
 | Dimension Pair | Correlation | Relationship |
 |---|---|---|
-| tension-trust | 0.903 | strong co-evolving |
-| tension-flicker | -0.802 | strong anti-correlated |
-| density-flicker | 0.786 | strong co-evolving |
-| density-tension | -0.762 | strong anti-correlated |
-| flicker-trust | -0.724 | strong anti-correlated |
-| entropy-trust | 0.707 | strong co-evolving |
-| density-trust | -0.659 | moderate anti-correlated |
-| tension-entropy | 0.629 | moderate co-evolving |
-| density-entropy | -0.454 | moderate anti-correlated |
-| flicker-entropy | -0.363 | weak anti-correlated |
+| density-trust | 0.542 | moderate co-evolving |
+| flicker-phase | 0.406 | weak co-evolving |
+| entropy-trust | -0.374 | weak anti-correlated |
+| flicker-entropy | 0.346 | weak co-evolving |
+| tension-trust | 0.321 | weak co-evolving |
+| tension-entropy | -0.316 | weak anti-correlated |
+| tension-phase | 0.252 | weak co-evolving |
 
 > Dimensions: density, tension, flicker, entropy, trust, phase
 
@@ -331,18 +329,7 @@ Thriving (score > 0.40): stutterContagion, phaseLock, coherenceMonitor, entropyR
 
 > Auto-diagnosed findings from signal health, dynamics, attribution, and trust data.
 
-### Warnings
-
-- **[pipeline]** flicker pipeline strained with 50% crush - multiplicative suppression eroding signal range.
-- **[coupling]** tension-flicker strongly anti-correlated (r=-0.802) - these dimensions may be driven by a shared input or feedback loop.
-- **[coupling]** density-flicker strongly co-evolving (r=0.786) - these dimensions may be driven by a shared input or feedback loop.
-- **[coupling]** density-tension strongly anti-correlated (r=-0.762) - these dimensions may be driven by a shared input or feedback loop.
-
 ### Info
 
-- **[dynamics]** Regime coherent - healthy compositional development.
-- **[coupling]** tension-entropy strongly co-evolving (r=0.629) - these dimensions may be driven by a shared input or feedback loop.
-- **[coupling]** tension-trust strongly co-evolving (r=0.903) - governance coupling (expected, not actionable).
-- **[coupling]** flicker-trust strongly anti-correlated (r=-0.724) - governance coupling (expected, not actionable).
-- **[coupling]** entropy-trust strongly co-evolving (r=0.707) - governance coupling (expected, not actionable).
-- **[coupling]** density-trust strongly anti-correlated (r=-0.659) - governance coupling (expected, not actionable).
+- **[dynamics]** Regime exploring - healthy compositional development.
+- **[coupling]** density-trust strongly co-evolving (r=0.542) - governance coupling (expected, not actionable).
