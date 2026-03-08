@@ -919,34 +919,6 @@ function summarizeTrace(entries, manifest) {
     opportunityGap: Number(opportunityGap.toFixed(4))
   } : null;
 
-  const expectedSections = manifest && Array.isArray(manifest.journey)
-    ? manifest.journey.length
-    : null;
-  const observedSections = Object.keys(sectionEntryCounts)
-    .map(function(key) { return Number(key); })
-    .filter(function(value) { return Number.isFinite(value); })
-    .sort(function(a, b) { return a - b; });
-  const missingSections = expectedSections !== null
-    ? Array.from({ length: expectedSections }, function(_, index) { return index; }).filter(function(index) {
-      return observedSections.indexOf(index) === -1;
-    })
-    : [];
-  const sectionCoverage = observedSections.length > 0 || expectedSections !== null
-    ? {
-      expectedSections,
-      observedSections,
-      observedCount: observedSections.length,
-      missingSections,
-      coverageRatio: expectedSections && expectedSections > 0 ? Number((observedSections.length / expectedSections).toFixed(4)) : null,
-      sections: observedSections.map(function(section) {
-        return {
-          section,
-          entryCount: sectionEntryCounts[section] || 0,
-          uniqueBeatKeys: sectionBeatKeys[section] ? sectionBeatKeys[section].size : 0
-        };
-      })
-    }
-    : null;
   const overfullBeatKeys = Object.keys(beatKeyCounts).filter(function(key) { return beatKeyCounts[key] > 2; }).length;
   const pairedBeatKeys = Object.keys(beatKeyCounts).filter(function(key) { return beatKeyCounts[key] === 2; }).length;
   const progressIntegrity = {
@@ -1000,9 +972,6 @@ function summarizeTrace(entries, manifest) {
     const phaseIntegrity = phaseTelemetryPresent ? phaseTelemetry.integrity : 'critical';
     const underSeenPairCount = adaptiveTelemetryReconciliation ? adaptiveTelemetryReconciliation.underSeenPairCount : 0;
     const maxGap = adaptiveTelemetryReconciliation ? adaptiveTelemetryReconciliation.maxGap : 0;
-    const sectionCoverageRatio = sectionCoverage && typeof sectionCoverage.coverageRatio === 'number'
-      ? sectionCoverage.coverageRatio
-      : 1;
     const progressPenalty = progressIntegrity.integrity === 'critical' ? 0.12 : progressIntegrity.integrity === 'warning' ? 0.05 : 0;
     const phaseAvailabilityPenalty = phaseTelemetry && typeof phaseTelemetry.varianceGatedRate === 'number'
       ? clamp(phaseTelemetry.varianceGatedRate / 0.85, 0, 1) * 0.04
@@ -1015,7 +984,6 @@ function summarizeTrace(entries, manifest) {
       (phaseIntegrity === 'critical' ? 0.25 : phaseIntegrity === 'warning' ? 0.12 : 0) +
       clamp(underSeenPairCount / 4, 0, 1) * 0.20 +
       clamp(maxGap / 0.5, 0, 1) * 0.08 +
-      clamp((1 - sectionCoverageRatio) / 0.34, 0, 1) * 0.02 +
       progressPenalty +
       phaseAvailabilityPenalty +
       phaseStalePenalty,
@@ -1028,7 +996,6 @@ function summarizeTrace(entries, manifest) {
       phaseIntegrity,
       underSeenPairCount,
       maxGap: Number(toNum(maxGap, 0).toFixed(4)),
-      sectionCoverageRatio: Number(toNum(sectionCoverageRatio, 1).toFixed(4)),
       progressIntegrity: progressIntegrity.integrity,
       phaseStaleRate: phaseTelemetry && typeof phaseTelemetry.staleRate === 'number' ? phaseTelemetry.staleRate : null,
       profilerBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
@@ -1223,7 +1190,6 @@ function summarizeTrace(entries, manifest) {
     phaseTelemetry,
     telemetryHealth,
     progressIntegrity,
-    sectionCoverage,
     adaptiveTelemetryReconciliation,
     nonNudgeableGains,
     trustDominance,

@@ -181,32 +181,6 @@ function generateNarrative() {
     lines.push('');
   }
 
-  if (summary && summary.sectionCoverage) {
-    const sectionCoverage = summary.sectionCoverage;
-    lines.push('## Section Coverage');
-    lines.push('');
-    if (sectionCoverage.expectedSections !== null) {
-      lines.push(`The trace covered **${sectionCoverage.observedCount}** of **${sectionCoverage.expectedSections}** planned sections.`);
-    } else {
-      lines.push(`The trace covered **${sectionCoverage.observedCount}** distinct section indices.`);
-    }
-    if (Array.isArray(sectionCoverage.missingSections) && sectionCoverage.missingSections.length > 0) {
-      lines.push(`Missing section indices: **${sectionCoverage.missingSections.join(', ')}**.`);
-    }
-    if (Array.isArray(sectionCoverage.sections) && sectionCoverage.sections.length > 0) {
-      lines.push('');
-      for (const section of sectionCoverage.sections) {
-        lines.push(`- **Section ${section.section}**: ${section.uniqueBeatKeys} unique traced beats across ${section.entryCount} entries`);
-      }
-    }
-    if (summary.progressIntegrity) {
-      const progressIntegrity = summary.progressIntegrity;
-      lines.push('');
-      lines.push(`Trace progress integrity closed **${progressIntegrity.integrity}** with **${progressIntegrity.pairedBeatKeys}** paired beat keys, **${progressIntegrity.duplicateLayerBeatKeys}** duplicate layer-key collisions, and **${progressIntegrity.l1ProgressRegressions + progressIntegrity.l1TimeRegressions}** L1 ordering regressions.`);
-    }
-    lines.push('');
-  }
-
   // ---- Regime Story ----
   lines.push('## The System\'s Inner Life');
   lines.push('');
@@ -494,9 +468,6 @@ function generateNarrative() {
         lines.push(`- **Load:** ${totalNotes} total notes, ${dec(totalNotes / uniqueBeatKeys, 2)} notes per traced beat${spanMs > 0 ? `, ${dec(totalNotes / (spanMs / 1000), 2)} notes per second` : ''}`);
       } else {
         lines.push(`- **Load:** ${totalNotes} total notes`);
-      }
-      if (summary && summary.sectionCoverage && Array.isArray(summary.sectionCoverage.missingSections) && summary.sectionCoverage.missingSections.length > 0) {
-        lines.push(`- **Coverage warning:** output was generated while sections ${summary.sectionCoverage.missingSections.join(', ')} were absent from the trace coverage summary`);
       }
       lines.push('');
     }

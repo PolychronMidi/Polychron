@@ -59,6 +59,7 @@ axisEnergyEquilibrator = (() => {
 
   // -- Shared config --
   const _BASELINE_MIN = 0.04;
+  const _DENSITY_FLICKER_BASELINE_MIN = 0.08; // R64 E4: Higher floor for structurally persistent pair
   const _BASELINE_MAX = 0.40;
   const _WARMUP_DEFAULT = 16;
   const _PHASE_SURFACE_RATIO = 1.6;
@@ -107,6 +108,8 @@ axisEnergyEquilibrator = (() => {
   const _regimeTightenBudget = {};
   let _coherentFreezeBeats = 0;
   let _skippedColdspotRelaxations = 0;
+  /** @type {{ coherentFreeze: number, phaseHot: number, trustHot: number, residual: number }} */
+  const _coldspotSkipReasons = { coherentFreeze: 0, phaseHot: 0, trustHot: 0, residual: 0 };
   let _phaseSurfaceHotBeats = 0;
   let _trustSurfaceHotBeats = 0;
   let _entropySurfaceHotBeats = 0;
@@ -358,7 +361,7 @@ axisEnergyEquilibrator = (() => {
           ? 1 + nonNudgeableTailPressure * (isEntropySurfacePair ? 0.70 : (isPhaseSurfacePair || isTrustSurfacePair ? 0.52 : 0.32))
           : 1.0;
         const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * nonNudgeableHandOffBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
-        const nb = m.max(_BASELINE_MIN, baseline - rate);
+        const nb = m.max(pair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
           _pairCooldowns[pair] = _PAIR_COOLDOWN;
@@ -370,6 +373,8 @@ axisEnergyEquilibrator = (() => {
       } else if (rolling < _COLDSPOT_RATIO * baseline && rolling < _COLDSPOT_ABS_MAX) {
         if (coherentColdspotFreeze || pairP95 > _RESIDUAL_COLDSPOT_P95_MAX || hotspotRate > 0.06 || severeRate > 0.02) {
           _skippedColdspotRelaxations++;
+          if (coherentColdspotFreeze) _coldspotSkipReasons.coherentFreeze++;
+          else _coldspotSkipReasons.residual++;
           continue;
         }
         // Coldspot -- relax this pair's baseline
@@ -460,7 +465,7 @@ axisEnergyEquilibrator = (() => {
           if ((_pairCooldowns[pair] || 0) > 0) continue; // skip Layer-1 adjusted
           const bl = V.optionalFinite(_lastBaselines[pair]);
           if (bl === undefined) continue;
-          const nb = m.max(_BASELINE_MIN, bl - rate);
+          const nb = m.max(pair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, bl - rate);
           if (nb < bl) {
             pipelineCouplingManager.setPairBaseline(pair, nb);
             _pairCooldowns[pair] = _AXIS_COOLDOWN;
@@ -471,13 +476,21 @@ axisEnergyEquilibrator = (() => {
           }
         }
       } else if (share < _AXIS_UNDERSHOOT && share > 0.001) {
-        // R63 E6: Phase axis emergency floor. When an axis drops below 0.06
-        // (catastrophic starvation -- phase was 5.47% in R62), bypass the
-        // coherent coldspot freeze and apply 2x relaxation. Self-correcting:
-        // emergency mode deactivates when share recovers above 0.06.
-        const isEmergencyStarved = share < 0.06;
-        if (!isEmergencyStarved && (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot))) {
+        // R63 E6 + R65 E3: Phase axis emergency floor. When an axis drops
+        // below 0.08 (catastrophic starvation), bypass the coherent coldspot
+        // freeze and apply emergency relaxation. Self-correcting: emergency
+        // mode deactivates when share recovers above 0.08.
+        const isEmergencyStarved = share < 0.08;
+        // R65 E4: Partial coherent freeze bypass for undershoot axes.
+        // When an axis is below _AXIS_UNDERSHOOT (0.12) but above emergency
+        // threshold, allow relaxation on even-numbered beats (50% duty cycle)
+        // so starved axes get some recovery during coherent spells.
+        const isUndershootPartialBypass = !isEmergencyStarved && share < _AXIS_UNDERSHOOT && (_beatCount % 2 === 0);
+        if (!isEmergencyStarved && !isUndershootPartialBypass && (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot))) {
           _skippedColdspotRelaxations++;
+          if (coherentColdspotFreeze) _coldspotSkipReasons.coherentFreeze++;
+          else if (axis === 'phase' && phaseSurfaceHot) _coldspotSkipReasons.phaseHot++;
+          else if (axis === 'trust' && trustSurfaceHot) _coldspotSkipReasons.trustHot++;
           continue;
         }
         const deficit = _FAIR_SHARE - share;
@@ -491,7 +504,7 @@ axisEnergyEquilibrator = (() => {
         const nonNudgeableRelaxBoost = nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1
           ? 1 + nonNudgeableTailPressure * 0.30
           : 1.0;
-        const emergencyBoost = isEmergencyStarved ? 2.0 : 1.0;
+        const emergencyBoost = isEmergencyStarved ? 3.0 : 1.0;
         const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
@@ -553,7 +566,7 @@ axisEnergyEquilibrator = (() => {
         if ((_pairCooldowns[ePair] || 0) > 0) continue;
         const eBl = V.optionalFinite(_lastBaselines[ePair]);
         if (eBl === undefined) continue;
-        const eNb = m.max(_BASELINE_MIN, eBl - _entropyCapRate);
+        const eNb = m.max(ePair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, eBl - _entropyCapRate);
         if (eNb < eBl) {
           pipelineCouplingManager.setPairBaseline(ePair, eNb);
           _pairCooldowns[ePair] = _AXIS_COOLDOWN;
@@ -571,7 +584,7 @@ axisEnergyEquilibrator = (() => {
     });
   }
 
-  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, entropySurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number, warmupTicks: number, warmupRemaining: number }} */
+  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, coldspotSkipReasons: { coherentFreeze: number, phaseHot: number, trustHot: number, residual: number }, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, entropySurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number, warmupTicks: number, warmupRemaining: number }} */
   function getSnapshot() {
     return {
       beatCount: _beatCount,
@@ -588,6 +601,7 @@ axisEnergyEquilibrator = (() => {
       regimeTightenBudget: Object.assign({}, _regimeTightenBudget),
       coherentFreezeBeats: _coherentFreezeBeats,
       skippedColdspotRelaxations: _skippedColdspotRelaxations,
+      coldspotSkipReasons: Object.assign({}, _coldspotSkipReasons),
       phaseSurfaceHotBeats: _phaseSurfaceHotBeats,
       trustSurfaceHotBeats: _trustSurfaceHotBeats,
       entropySurfaceHotBeats: _entropySurfaceHotBeats,
