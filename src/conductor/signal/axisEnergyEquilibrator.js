@@ -530,6 +530,33 @@ axisEnergyEquilibrator = (() => {
       }
     }
 
+    // R60 E3: Entropy axis energy cap at 19%. Entropy dominated at 21.8%
+    // in R59 (30% above equal share) with zero axis-level redistribution.
+    // When entropy exceeds the cap, actively tighten entropy-containing
+    // pairs to redirect energy toward density and phase. Self-correcting:
+    // tightening stops when entropy share drops below cap.
+    const _ENTROPY_CAP = 0.19;
+    const _entropySmoothed = _smoothedShares['entropy'];
+    if (typeof _entropySmoothed === 'number' && _entropySmoothed > _ENTROPY_CAP) {
+      const _entropyExcess = _entropySmoothed - _ENTROPY_CAP;
+      const _entropyPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE['entropy'] || _RELAX_RATE_REF);
+      const _entropyCapRate = m.min(0.03, _AXIS_TIGHTEN_RATE * 2.5 * _entropyPairScale * clamp(_entropyExcess / _FAIR_SHARE, 0.5, 2.0));
+      const _entropyPairs = _axisToPairs['entropy'] || [];
+      for (let ep = 0; ep < _entropyPairs.length; ep++) {
+        const ePair = _entropyPairs[ep];
+        if ((_pairCooldowns[ePair] || 0) > 0) continue;
+        const eBl = V.optionalFinite(_lastBaselines[ePair]);
+        if (eBl === undefined) continue;
+        const eNb = m.max(_BASELINE_MIN, eBl - _entropyCapRate);
+        if (eNb < eBl) {
+          pipelineCouplingManager.setPairBaseline(ePair, eNb);
+          _pairCooldowns[ePair] = _AXIS_COOLDOWN;
+          _axisAdjustments++;
+          _perAxisAdj['entropy'] = (_perAxisAdj['entropy'] || 0) + 1;
+        }
+      }
+    }
+
     explainabilityBus.emit('AXIS_ENERGY_EQUIL', 'all', {
       smoothedShares: Object.assign({}, _smoothedShares),
       axisGini, giniMult,

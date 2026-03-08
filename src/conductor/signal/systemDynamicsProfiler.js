@@ -293,6 +293,16 @@ systemDynamicsProfiler = (() => {
       _phaseStaleBeats++;
     }
 
+    // R60 E2: Phase stale-gate adaptive expiry. After 25 stale beats,
+    // inject a deterministic micro-oscillation (+-0.008) into the phase
+    // sample to create enough variance in the rolling window for the
+    // coupling gate. Breaks the zero-variance deadlock that produced
+    // 1,092 stale-gated entries in R59. Self-correcting: stops when
+    // phase changes (staleBeats resets to 0).
+    if (_phaseStaleBeats > 25 && _lastPhaseSignalValid) {
+      phase = clamp(phase + ((_phaseStaleBeats % 2 === 0) ? 0.008 : -0.008), 0, 1);
+    }
+
     return [
       snap.densityProduct,
       snap.tensionProduct,

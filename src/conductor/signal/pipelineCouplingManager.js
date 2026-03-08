@@ -51,7 +51,7 @@ pipelineCouplingManager = (() => {
     'tension-trust':    0.15,  // R27 E3: tightened from 0.25 -- p95=0.925 (severe), 3 of 6 hotspots involve trust
     'flicker-trust':    0.12,  // R27 E3: tightened from 0.20 -- avg +19.7% (0.413->0.495), r=0.940, approaching severe
     'entropy-phase':    0.10,  // R28 E3: tightened from 0.18 -- entropy-phase avg +192% (0.132->0.385), p95=0.797, 2.85x target
-    'entropy-trust':    0.25,  // tightened for tail control
+    'entropy-trust':    0.30,  // R60 E6: raised from 0.25 -- nonNudgeableTailPressure wasted budget on irreducible structure
     'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened
   };
 
