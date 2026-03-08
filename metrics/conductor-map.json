@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-08T04:41:08.827Z",
+    "generated": "2026-03-08T05:55:42.173Z",
     "description": "Conductor Intelligence Map: per-module registry of signals, biases, domains, and scopes.",
     "totalModules": 74
   },
@@ -45,7 +45,7 @@
     {
       "name": "axisEnergyEquilibrator",
       "domain": "signal",
-      "file": "src/conductor/signal/axisEnergyEquilibrator.js",
+      "file": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
       "registrations": [
         "recorder",
         "stateProvider"
@@ -130,7 +130,7 @@
     {
       "name": "coherenceMonitor",
       "domain": "signal",
-      "file": "src/conductor/signal/coherenceMonitor.js",
+      "file": "src/conductor/signal/foundations/coherenceMonitor.js",
       "registrations": [
         "density",
         "stateProvider"
@@ -145,15 +145,15 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0317338322513303,
-          "clamped": 1.0317338322513303
+          "raw": 1.0400623346894013,
+          "clamped": 1.0400623346894013
         }
       }
     },
     {
       "name": "composerFeedbackAdvisor",
       "domain": "texture",
-      "file": "src/conductor/texture/composerFeedbackAdvisor.js",
+      "file": "src/conductor/texture/form/composerFeedbackAdvisor.js",
       "registrations": [
         "stateProvider"
       ],
@@ -166,7 +166,7 @@
     {
       "name": "conductorMetaWatchdog",
       "domain": "signal",
-      "file": "src/conductor/signal/conductorMetaWatchdog.js",
+      "file": "src/conductor/signal/meta/conductorMetaWatchdog.js",
       "registrations": [
         "recorder",
         "stateProvider"
@@ -203,8 +203,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.1235735735735735,
-          "clamped": 1.1235735735735735
+          "raw": 1.1391891891891892,
+          "clamped": 1.1391891891891892
         }
       }
     },
@@ -228,7 +228,7 @@
     {
       "name": "couplingHomeostasis",
       "domain": "signal",
-      "file": "src/conductor/signal/couplingHomeostasis.js",
+      "file": "src/conductor/signal/balancing/couplingHomeostasis.js",
       "registrations": [
         "recorder"
       ],
@@ -244,7 +244,7 @@
     {
       "name": "criticalityEngine",
       "domain": "signal",
-      "file": "src/conductor/signal/criticalityEngine.js",
+      "file": "src/conductor/signal/meta/criticalityEngine.js",
       "registrations": [
         "density",
         "tension",
@@ -269,19 +269,19 @@
           "clamped": 0.9466666666666667
         },
         "tension": {
-          "raw": 1,
-          "clamped": 1
-        },
-        "flicker": {
           "raw": 0.9466666666666667,
           "clamped": 0.9466666666666667
+        },
+        "flicker": {
+          "raw": 0.9733333333333334,
+          "clamped": 0.9733333333333334
         }
       }
     },
     {
       "name": "crossLayerDensityBalancer",
       "domain": "texture",
-      "file": "src/conductor/texture/crossLayerDensityBalancer.js",
+      "file": "src/conductor/texture/layers/crossLayerDensityBalancer.js",
       "registrations": [
         "density",
         "stateProvider"
@@ -309,15 +309,15 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9845389731158802,
-          "clamped": 0.9845389731158802
+          "raw": 0.9788114861196245,
+          "clamped": 0.9788114861196245
         }
       }
     },
     {
       "name": "dimensionalityExpander",
       "domain": "signal",
-      "file": "src/conductor/signal/dimensionalityExpander.js",
+      "file": "src/conductor/signal/meta/dimensionalityExpander.js",
       "registrations": [
         "density",
         "tension",
@@ -334,16 +334,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0000054987528793,
-          "clamped": 1.0000054987528793
+          "raw": 0.9997228319197893,
+          "clamped": 0.9997228319197893
         },
         "tension": {
-          "raw": 0.999612345348567,
-          "clamped": 0.999612345348567
+          "raw": 0.9841445492008802,
+          "clamped": 0.9841445492008802
         },
         "flicker": {
-          "raw": 0.9978920104342979,
-          "clamped": 0.9978920104342979
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -478,8 +478,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0014,
-          "clamped": 1.0014
+          "raw": 1.0048,
+          "clamped": 1.0048
         }
       }
     },
@@ -498,8 +498,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 1.0055263157894736,
+          "clamped": 1.0055263157894736
         }
       }
     },
@@ -558,8 +558,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.005,
-          "clamped": 1.005
+          "raw": 1.0125,
+          "clamped": 1.0125
         }
       }
     },
@@ -601,8 +601,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 0.9778245733452378,
-          "clamped": 0.9778245733452378
+          "raw": 0.9713281558340774,
+          "clamped": 0.9713281558340774
         }
       }
     },
@@ -653,8 +653,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.9348548548548549,
-          "clamped": 0.9348548548548549
+          "raw": 0.9272472472472473,
+          "clamped": 0.9272472472472473
         }
       }
     },
@@ -673,15 +673,15 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.96,
-          "clamped": 0.96
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
     {
       "name": "layerCoherenceScorer",
       "domain": "texture",
-      "file": "src/conductor/texture/layerCoherenceScorer.js",
+      "file": "src/conductor/texture/layers/layerCoherenceScorer.js",
       "registrations": [
         "density",
         "recorder"
@@ -700,7 +700,7 @@
     {
       "name": "layerEntryExitTracker",
       "domain": "texture",
-      "file": "src/conductor/texture/layerEntryExitTracker.js",
+      "file": "src/conductor/texture/layers/layerEntryExitTracker.js",
       "registrations": [
         "recorder",
         "stateProvider"
@@ -714,7 +714,7 @@
     {
       "name": "layerIndependenceScorer",
       "domain": "texture",
-      "file": "src/conductor/texture/layerIndependenceScorer.js",
+      "file": "src/conductor/texture/layers/layerIndependenceScorer.js",
       "registrations": [
         "density"
       ],
@@ -750,7 +750,7 @@
     {
       "name": "motivicDensityTracker",
       "domain": "texture",
-      "file": "src/conductor/texture/motivicDensityTracker.js",
+      "file": "src/conductor/texture/phrasing/motivicDensityTracker.js",
       "registrations": [
         "density"
       ],
@@ -766,7 +766,7 @@
     {
       "name": "narrativeTrajectory",
       "domain": "signal",
-      "file": "src/conductor/signal/narrativeTrajectory.js",
+      "file": "src/conductor/signal/narrative/narrativeTrajectory.js",
       "registrations": [
         "tension",
         "recorder",
@@ -826,7 +826,7 @@
     {
       "name": "phraseLengthMomentumTracker",
       "domain": "texture",
-      "file": "src/conductor/texture/phraseLengthMomentumTracker.js",
+      "file": "src/conductor/texture/phrasing/phraseLengthMomentumTracker.js",
       "registrations": [
         "stateProvider"
       ],
@@ -839,7 +839,7 @@
     {
       "name": "pipelineBalancer",
       "domain": "signal",
-      "file": "src/conductor/signal/pipelineBalancer.js",
+      "file": "src/conductor/signal/balancing/pipelineBalancer.js",
       "registrations": [
         "density",
         "tension",
@@ -855,8 +855,8 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0409399196449967,
-          "clamped": 1.0409399196449967
+          "raw": 1.03935569622482,
+          "clamped": 1.03935569622482
         },
         "tension": {
           "raw": 1,
@@ -867,7 +867,7 @@
     {
       "name": "pipelineCouplingManager",
       "domain": "signal",
-      "file": "src/conductor/signal/pipelineCouplingManager.js",
+      "file": "src/conductor/signal/balancing/pipelineCouplingManager.js",
       "registrations": [
         "density",
         "tension",
@@ -885,23 +885,23 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 0.9921787171587203,
-          "clamped": 0.9921787171587203
+          "raw": 1.2,
+          "clamped": 1.2
         },
         "tension": {
-          "raw": 0.84,
-          "clamped": 0.84
+          "raw": 0.8,
+          "clamped": 0.8
         },
         "flicker": {
-          "raw": 0.8256457218044806,
-          "clamped": 0.8256457218044806
+          "raw": 1.3,
+          "clamped": 1.3
         }
       }
     },
     {
       "name": "pipelineNormalizer",
       "domain": "signal",
-      "file": "src/conductor/signal/pipelineNormalizer.js",
+      "file": "src/conductor/signal/foundations/pipelineNormalizer.js",
       "registrations": [],
       "scopes": [
         "all"
@@ -912,7 +912,7 @@
     {
       "name": "profileAdaptation",
       "domain": "signal",
-      "file": "src/conductor/signal/profileAdaptation.js",
+      "file": "src/conductor/signal/foundations/profileAdaptation.js",
       "registrations": [
         "recorder",
         "stateProvider"
@@ -931,7 +931,7 @@
     {
       "name": "regimeReactiveDamping",
       "domain": "signal",
-      "file": "src/conductor/signal/regimeReactiveDamping.js",
+      "file": "src/conductor/signal/profiling/regimeReactiveDamping.js",
       "registrations": [
         "density",
         "tension",
@@ -947,16 +947,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.12,
-          "clamped": 1.12
+          "raw": 0.88,
+          "clamped": 0.88
         },
         "tension": {
-          "raw": 0.92,
-          "clamped": 0.92
+          "raw": 1.18,
+          "clamped": 1.18
         },
         "flicker": {
-          "raw": 1.1523033553876205,
-          "clamped": 1.1523033553876205
+          "raw": 0.85,
+          "clamped": 0.85
         }
       }
     },
@@ -971,15 +971,15 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9550013376482778,
-          "clamped": 0.9550013376482778
+          "raw": 0.9421354974545707,
+          "clamped": 0.9421354974545707
         }
       }
     },
     {
       "name": "repetitionFatigueMonitor",
       "domain": "texture",
-      "file": "src/conductor/texture/repetitionFatigueMonitor.js",
+      "file": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js",
       "registrations": [
         "tension"
       ],
@@ -987,15 +987,15 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0897592778335006,
-          "clamped": 1.0897592778335006
+          "raw": 1.0855767301905717,
+          "clamped": 1.0855767301905717
         }
       }
     },
     {
       "name": "restDensityTracker",
       "domain": "texture",
-      "file": "src/conductor/texture/restDensityTracker.js",
+      "file": "src/conductor/texture/form/restDensityTracker.js",
       "registrations": [
         "density"
       ],
@@ -1042,8 +1042,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0048100972528373,
-          "clamped": 1.0048100972528373
+          "raw": 1.0065919820961169,
+          "clamped": 1.0065919820961169
         }
       }
     },
@@ -1071,7 +1071,7 @@
     {
       "name": "sectionLengthAdvisor",
       "domain": "texture",
-      "file": "src/conductor/texture/sectionLengthAdvisor.js",
+      "file": "src/conductor/texture/form/sectionLengthAdvisor.js",
       "registrations": [
         "recorder"
       ],
@@ -1084,7 +1084,7 @@
     {
       "name": "signalHealthAnalyzer",
       "domain": "signal",
-      "file": "src/conductor/signal/signalHealthAnalyzer.js",
+      "file": "src/conductor/signal/foundations/signalHealthAnalyzer.js",
       "registrations": [
         "recorder",
         "stateProvider"
@@ -1102,7 +1102,7 @@
     {
       "name": "signalTelemetry",
       "domain": "signal",
-      "file": "src/conductor/signal/signalTelemetry.js",
+      "file": "src/conductor/signal/foundations/signalTelemetry.js",
       "registrations": [
         "recorder",
         "stateProvider"
@@ -1121,7 +1121,7 @@
     {
       "name": "structuralFormTracker",
       "domain": "texture",
-      "file": "src/conductor/texture/structuralFormTracker.js",
+      "file": "src/conductor/texture/form/structuralFormTracker.js",
       "registrations": [
         "stateProvider"
       ],
@@ -1136,7 +1136,7 @@
     {
       "name": "structuralNarrativeAdvisor",
       "domain": "signal",
-      "file": "src/conductor/signal/structuralNarrativeAdvisor.js",
+      "file": "src/conductor/signal/narrative/structuralNarrativeAdvisor.js",
       "registrations": [
         "density",
         "recorder",
@@ -1167,15 +1167,15 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.88,
-          "clamped": 0.88
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
     {
       "name": "systemDynamicsProfiler",
       "domain": "signal",
-      "file": "src/conductor/signal/systemDynamicsProfiler.js",
+      "file": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "registrations": [
         "recorder",
         "stateProvider"
@@ -1186,9 +1186,7 @@
       "signalReads": [
         "entropy",
         "explainabilityBus",
-        "systemDynamics",
-        "timeStream",
-        "trust"
+        "systemDynamics"
       ],
       "biasValues": {}
     },
@@ -1216,8 +1214,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0738636363636362,
-          "clamped": 1.0738636363636362
+          "raw": 1.0347222222222223,
+          "clamped": 1.0347222222222223
         }
       }
     },
@@ -1241,7 +1239,7 @@
     {
       "name": "texturalGradientTracker",
       "domain": "texture",
-      "file": "src/conductor/texture/texturalGradientTracker.js",
+      "file": "src/conductor/texture/form/texturalGradientTracker.js",
       "registrations": [
         "flicker",
         "recorder"
@@ -1252,15 +1250,15 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9670201930753546,
-          "clamped": 0.9670201930753546
+          "raw": 0.9614470105021347,
+          "clamped": 0.9614470105021347
         }
       }
     },
     {
       "name": "texturalMemoryAdvisor",
       "domain": "texture",
-      "file": "src/conductor/texture/texturalMemoryAdvisor.js",
+      "file": "src/conductor/texture/form/texturalMemoryAdvisor.js",
       "registrations": [
         "stateProvider"
       ],
@@ -1297,8 +1295,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 0.97,
-          "clamped": 0.97
+          "raw": 1.0133333333333332,
+          "clamped": 1.0133333333333332
         }
       }
     },
@@ -1314,15 +1312,15 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0855902055902056,
-          "clamped": 1.0855902055902056
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
     {
       "name": "voiceDensityBalancer",
       "domain": "texture",
-      "file": "src/conductor/texture/voiceDensityBalancer.js",
+      "file": "src/conductor/texture/balance/voiceDensityBalancer.js",
       "registrations": [
         "density"
       ],
@@ -1347,8 +1345,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 1.04,
-          "clamped": 1.04
+          "raw": 1,
+          "clamped": 1
         }
       }
     }
