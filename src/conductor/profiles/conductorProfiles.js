@@ -8,53 +8,20 @@
 function _withAnalysisSettings(profileName, profile) {
   const analysisDefaults = {
     warmupTicks: 6,
-    snapshotReuseBeats: 3,
-    outputLoadWindowSeconds: 1.25,
-    outputLoadSoftNotesPerSecond: 90,
-    outputLoadHardNotesPerSecond: 140,
-    outputLoadSoftScale: 0.88,
-    outputLoadHardScale: 0.72,
-    outputLoadSoftBeatCap: 44,
-    outputLoadHardBeatCap: 64,
-    motifEchoSoftCount: 2,
-    motifEchoHardCount: 1
+    snapshotReuseBeats: 3
   };
   const profileAnalysis = {
     atmospheric: {
       warmupTicks: 4,
-      snapshotReuseBeats: 2,
-      outputLoadSoftNotesPerSecond: 84,
-      outputLoadHardNotesPerSecond: 124,
-      outputLoadSoftScale: 0.84,
-      outputLoadHardScale: 0.66,
-      outputLoadSoftBeatCap: 38,
-      outputLoadHardBeatCap: 56,
-      motifEchoSoftCount: 1,
-      motifEchoHardCount: 0
+      snapshotReuseBeats: 2
     },
     explosive: {
       warmupTicks: 5,
-      snapshotReuseBeats: 3,
-      outputLoadSoftNotesPerSecond: 108,
-      outputLoadHardNotesPerSecond: 168,
-      outputLoadSoftScale: 0.92,
-      outputLoadHardScale: 0.78,
-      outputLoadSoftBeatCap: 54,
-      outputLoadHardBeatCap: 78,
-      motifEchoSoftCount: 3,
-      motifEchoHardCount: 2
+      snapshotReuseBeats: 3
     },
     minimal: {
       warmupTicks: 5,
-      snapshotReuseBeats: 2,
-      outputLoadSoftNotesPerSecond: 64,
-      outputLoadHardNotesPerSecond: 96,
-      outputLoadSoftScale: 0.82,
-      outputLoadHardScale: 0.62,
-      outputLoadSoftBeatCap: 26,
-      outputLoadHardBeatCap: 40,
-      motifEchoSoftCount: 1,
-      motifEchoHardCount: 0
+      snapshotReuseBeats: 2
     }
   };
   return Object.assign({}, profile, {

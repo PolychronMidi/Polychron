@@ -58,20 +58,8 @@ if (totalSections <= 0) {
 harmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'random' });
 timeStream.setBounds('section', totalSections);
 
-// R59 E6: Wall-time budget per section. When total wall time exceeds budget,
-// the phrase loop breaks to guarantee multi-section coverage. Self-correcting:
-// remaining budget is shared equally among remaining sections, so fast sections
-// leave more time for later ones.
-const _compositionWallStart = Date.now();
-const _WALL_BUDGET_MS = 600000; // 10 minutes total wall-time budget
-
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   timeStream.setPosition('section', sectionIndex);
-  const _sectionWallStart = Date.now();
-  const _remainingSections = totalSections - sectionIndex;
-  const _elapsedTotal = _sectionWallStart - _compositionWallStart;
-  const _remainingBudget = m.max(30000, _WALL_BUDGET_MS - _elapsedTotal);
-  const _sectionBudgetMs = (_remainingBudget / _remainingSections) * 1.5;
   let sectionL1BeatCount = 0;
   // Snapshot conductor state before section reset for cross-section narrative memory
   if (sectionIndex > 0) sectionMemory.snapshot();
@@ -175,14 +163,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     playMotifs.resetLayerState(L2);
     LM.advance('L2', 'phrase');
     interactionHeatMap.flushDeferredOrphans(mainBootstrap.requireFiniteNumber('beatStartTime', beatStartTime) * 1000);
-
-    // R59 E6: Wall-time heartbeat. If this section has consumed its budget,
-    // break the phrase loop to advance to the next section.
-    if (Date.now() - _sectionWallStart > _sectionBudgetMs) {
-      process.stderr.write('[main] Section ' + sectionIndex + ' wall-time exceeded (' +
-        ((Date.now() - _sectionWallStart) / 1000).toFixed(1) + 's), advancing to next section\n');
-      break;
-    }
   }
 
   if (sectionL1BeatCount <= 0) {
