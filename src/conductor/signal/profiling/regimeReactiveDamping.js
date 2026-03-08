@@ -123,204 +123,22 @@ regimeReactiveDamping = (() => {
     const rawCurv = snap ? (snap.curvature || 0) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
 
-    // -- #2: Regime distribution equilibrator --
-    _regimeRing.push(currentRegime);
-    if (_regimeRing.length > _REGIME_RING_SIZE) _regimeRing.shift();
-    if (_regimeRing.length >= 16) {
-      /** @type {Record<string, number>} */
-      const _shares = {};
-      for (let ri = 0; ri < _regimeRing.length; ri++) {
-        _shares[_regimeRing[ri]] = (_shares[_regimeRing[ri]] || 0) + 1;
-      }
-      for (const rk in _shares) _shares[rk] /= _regimeRing.length;
-
-      const expShare = _shares.exploring || 0;
-      const cohShare = _shares.coherent || 0;
-      const expExcess = m.max(0, expShare - _REGIME_BUDGET.exploring);
-      const cohDeficit = m.max(0, _REGIME_BUDGET.coherent - cohShare);
-      const evoDeficit = m.max(0, _REGIME_BUDGET.evolving - (_shares.evolving || 0));
-      const cohExcess = m.max(0, cohShare - _REGIME_BUDGET.coherent);
-
-      let runCoherentShare = cohShare;
-      let coherentLockPressure = 0;
-      let forcedBreakPressure = 0;
-      let transitionScarcity = 0;
-      let cadenceMonopolyPressure = 0;
-      let rawNonCoherentOpportunityShare = 0;
-      let opportunityGap = 0;
-      let postForcedRecoveryPressure = 0;
-      const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
-      if (readiness) {
-        if (typeof readiness.runCoherentShare === 'number') {
-          runCoherentShare = readiness.runCoherentShare;
-        }
-        if (typeof readiness.runCoherentBeats === 'number') {
-          coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);
-        }
-        if (typeof readiness.runTransitionCount === 'number' && typeof readiness.runBeatCount === 'number' && readiness.runBeatCount > 64) {
-          const transitionRate = readiness.runTransitionCount / readiness.runBeatCount;
-          transitionScarcity = clamp((0.035 - transitionRate) / 0.035, 0, 1);
-        }
-        if (typeof readiness.runBeatCount === 'number' && readiness.runBeatCount > 96) {
-          const noForcedBreaks = typeof readiness.forcedBreakCount === 'number' && readiness.forcedBreakCount === 0;
-          if (noForcedBreaks && runCoherentShare > 0.55) {
-            forcedBreakPressure = clamp((readiness.runBeatCount - 96) / 192, 0, 0.35);
-          }
-        }
-        if (typeof readiness.cadenceMonopolyPressure === 'number') {
-          cadenceMonopolyPressure = clamp(readiness.cadenceMonopolyPressure, 0, 1);
-        }
-        if (typeof readiness.rawNonCoherentOpportunityShare === 'number') {
-          rawNonCoherentOpportunityShare = clamp(readiness.rawNonCoherentOpportunityShare, 0, 1);
-        }
-        if (typeof readiness.opportunityGap === 'number') {
-          opportunityGap = clamp(readiness.opportunityGap, 0, 1);
-        }
-        if (typeof readiness.postForcedRecoveryBeats === 'number') {
-          postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryBeats / 24, 0, 1);
-        }
-      }
-
-      let phaseHotspotPressure = 0;
-      let trustHotspotPressure = 0;
-      let densityFlickerPressure = 0;
-      let stickyTailPressure = 0;
-      if (snap && snap.couplingMatrix) {
-        const cm = snap.couplingMatrix;
-        const phasePairs = ['density-phase', 'flicker-phase', 'tension-phase'];
-        const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust'];
-        let phaseMax = 0;
-        let trustMax = 0;
-        for (let pi = 0; pi < phasePairs.length; pi++) {
-          phaseMax = m.max(phaseMax, m.abs(cm[phasePairs[pi]] || 0));
-        }
-        for (let ti = 0; ti < trustPairs.length; ti++) {
-          trustMax = m.max(trustMax, m.abs(cm[trustPairs[ti]] || 0));
-        }
-        phaseHotspotPressure = clamp((phaseMax - 0.78) / 0.20, 0, 1);
-        trustHotspotPressure = clamp((trustMax - 0.74) / 0.20, 0, 1);
-        densityFlickerPressure = clamp((m.abs(cm['density-flicker'] || 0) - 0.82) / 0.16, 0, 1);
-      }
-      const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-      if (homeostasis && typeof homeostasis.stickyTailPressure === 'number') {
-        stickyTailPressure = clamp(homeostasis.stickyTailPressure / 0.55, 0, 1);
-      }
-      const hotspotCounterpressure = clamp(
-        phaseHotspotPressure * 0.40 +
-        trustHotspotPressure * 0.32 +
-        densityFlickerPressure * 0.10 +
-        stickyTailPressure * 0.58,
-        0,
-        1.20
-      );
-      const flickerPenalty = clamp(
-        phaseHotspotPressure * 0.60 +
-        trustHotspotPressure * 0.35 +
-        stickyTailPressure * 0.40 +
-        clamp((_smoothedFlicker - 1.10) / 0.08, 0, 0.40),
-        0,
-        0.95
-      );
-
-      // R7 Evo 1: Squared penalty when exploring exceeds 60% - creates
-      // a soft wall preventing runaway exploring domination.
-      const expPenalty = expShare > 0.60 ? 1.0 + (expShare - 0.60) * (expShare - 0.60) : 1.0;
-      const runCoherentOvershare = m.max(0, runCoherentShare - _REGIME_BUDGET.coherent);
-      const coherentPressure = clamp(
-        cohExcess * 0.9 +
-        runCoherentOvershare * 2.4 +
-        m.max(0, _REGIME_BUDGET.exploring - expShare) * 0.75 +
-        coherentLockPressure * 0.85 +
-        transitionScarcity * 0.55 +
-        cadenceMonopolyPressure * 0.95 +
-        opportunityGap * 0.65 +
-        forcedBreakPressure,
-        0,
-        1.25
-      );
-      const evolvingPressure = clamp(
-        evoDeficit * 2.10 +
-        m.max(0, expShare - _REGIME_BUDGET.exploring) * 0.50 +
-        m.max(0, runCoherentShare - 0.28) * 0.35 -
-        coherentPressure * 0.15 +
-        cadenceMonopolyPressure * 0.18 +
-        opportunityGap * 0.25 +
-        postForcedRecoveryPressure * 0.42,
-        0,
-        1
-      );
-
-      // Exploring over-budget: suppress variety-promoting biases
-      _eqCorrD = -expExcess * _EQUILIB_STRENGTH * (0.5 + postForcedRecoveryPressure * 0.55) * expPenalty;
-      _eqCorrF = -expExcess * _EQUILIB_STRENGTH * (1 + postForcedRecoveryPressure * 0.70) * expPenalty;
-      // Coherent/evolving deficit: boost tension (encourages coupling/convergence)
-      _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH + postForcedRecoveryPressure * 0.08 + expExcess * postForcedRecoveryPressure * 0.05;
-
-      // R60 E4 / R63 E1: Self-scaling exploring monopoly correction.
-      // R61 showed static 2.00/0.90 multipliers caused hotspot explosion;
-      // R62 reverted to 1.50/0.60 but exploring stayed at 64.5%.
-      // Fix: scale multipliers with the SQUARE of excess so correction
-      // accelerates as exploring grows, and dampen when budget is saturated
-      // (budgetConstraintPressure=1.0 in R62) to avoid coupling blowout.
-      // Self-correcting: pressure is continuous, stops below 55%.
-      if (expShare > 0.55) {
-        const _expMonopolyPressure = clamp((expShare - 0.55) / 0.15, 0, 1);
-        const _expSquaredEscalation = 1.0 + _expMonopolyPressure * _expMonopolyPressure * 1.20;
-        const _homeo = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-        const _budgetDampen = _homeo && typeof _homeo.budgetConstraintPressure === 'number'
-          ? 1.0 - _homeo.budgetConstraintPressure * 0.35
-          : 1.0;
-        _eqCorrT += _expMonopolyPressure * _EQUILIB_STRENGTH * 1.50 * _expSquaredEscalation * _budgetDampen;
-        _eqCorrD -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.60 * _expSquaredEscalation * _budgetDampen;
-        _eqCorrF -= _expMonopolyPressure * _EQUILIB_STRENGTH * 0.85 * _expSquaredEscalation * _budgetDampen;
-      }
-
-      // R46 E2: Coherent-share reactive damping. If coherent overshoots and
-      // exploring under-shoots, bias the system toward exploratory variance.
-      if (coherentPressure > 0) {
-        _eqCorrD += coherentPressure * (_EQUILIB_STRENGTH * 0.75 + hotspotCounterpressure * 0.11);
-        if (transitionScarcity > 0.25 && runCoherentShare > _REGIME_BUDGET.coherent) {
-          _eqCorrD += coherentPressure * 0.04;
-        }
-        _eqCorrF += coherentPressure * m.max(0, _EQUILIB_STRENGTH * (1.45 + hotspotCounterpressure * 0.55 - flickerPenalty * 0.70));
-        _eqCorrT -= coherentPressure * (_EQUILIB_STRENGTH * 1.15 + hotspotCounterpressure * 0.14);
-      }
-      if (cadenceMonopolyPressure > 0) {
-        const monopolyCounterpressure = cadenceMonopolyPressure * (
-          0.20 +
-          hotspotCounterpressure * 0.08 +
-          clamp(rawNonCoherentOpportunityShare / 0.25, 0, 1) * 0.05
-        );
-        _eqCorrD += monopolyCounterpressure;
-        _eqCorrF += monopolyCounterpressure * m.max(0.90, 1.20 - flickerPenalty * 0.35);
-        _eqCorrT -= monopolyCounterpressure * 1.15;
-        if (currentRegime === 'coherent') {
-          _eqCorrD += cadenceMonopolyPressure * 0.05;
-          _eqCorrF += cadenceMonopolyPressure * 0.07;
-        }
-      }
-      if (currentRegime !== 'coherent' && evolvingPressure > 0) {
-        _eqCorrT += evolvingPressure * (_EQUILIB_STRENGTH * 0.80 + 0.04);
-        _eqCorrD += evolvingPressure * (_EQUILIB_STRENGTH * 0.24);
-        _eqCorrF -= evolvingPressure * (_EQUILIB_STRENGTH * 0.34);
-        if (currentRegime === 'exploring') {
-          _eqCorrT += evolvingPressure * 0.03;
-          _eqCorrF -= evolvingPressure * 0.05;
-        }
-      }
-      if (currentRegime === 'exploring' && postForcedRecoveryPressure > 0) {
-        _eqCorrD -= postForcedRecoveryPressure * 0.07;
-        _eqCorrF -= postForcedRecoveryPressure * 0.12;
-        _eqCorrT += postForcedRecoveryPressure * 0.09;
-      }
-
-      // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog
-      safePreBoot.call(() => {
-        if (_eqCorrD !== 0) conductorMetaWatchdog.recordCorrection('density', 'equilibrator', _eqCorrD);
-        if (_eqCorrT !== 0) conductorMetaWatchdog.recordCorrection('tension', 'equilibrator', _eqCorrT);
-        if (_eqCorrF !== 0) conductorMetaWatchdog.recordCorrection('flicker', 'equilibrator', _eqCorrF);
-      });
-    }
+    const equilibratorState = {
+      currentRegime,
+      regimeRing: _regimeRing,
+      regimeRingSize: _REGIME_RING_SIZE,
+      regimeBudget: _REGIME_BUDGET,
+      equilibStrength: _EQUILIB_STRENGTH,
+      eqCorrD: _eqCorrD,
+      eqCorrT: _eqCorrT,
+      eqCorrF: _eqCorrF,
+      snap,
+      smoothedFlicker: _smoothedFlicker,
+    };
+    regimeReactiveDampingEquilibrator.compute(equilibratorState);
+    _eqCorrD = equilibratorState.eqCorrD;
+    _eqCorrT = equilibratorState.eqCorrT;
+    _eqCorrF = equilibratorState.eqCorrF;
 
     // --- Velocity floor logic ---
     const velocity = snap ? (snap.velocity || 0) : 0;

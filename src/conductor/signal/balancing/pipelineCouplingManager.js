@@ -299,43 +299,8 @@ pipelineCouplingManager = (() => {
   // R11 Evo 2: Rolling p95 for persistent hotspot detection
   const _P95_WINDOW = 16;
   const _TELEMETRY_WINDOW = 96;
-  function _computeP95(arr) {
-    if (arr.length < 4) return 0;
-    const sorted = arr.slice().sort((a, b) => a - b);
-    const idx = m.floor(sorted.length * 0.95);
-    return sorted[m.min(idx, sorted.length - 1)];
-  }
-
-  /** @param {number[]} arr @param {number} threshold */
-  function _computeExceedanceRate(arr, threshold) {
-    if (!Array.isArray(arr) || arr.length === 0) return 0;
-    let count = 0;
-    for (let i = 0; i < arr.length; i++) {
-      if (arr[i] > threshold) count++;
-    }
-    return count / arr.length;
-  }
-
-  /** @param {number[]} arr @param {number} value @param {number} limit */
-  function _pushWindowValue(arr, value, limit) {
-    arr.push(value);
-    if (arr.length > limit) arr.shift();
-  }
-
-  /** @param {{ recentAbsCorr: number[], telemetryAbsCorr: number[] } | undefined} pairState */
-  function _getPairTailTelemetry(pairState) {
-    const recent = pairState ? pairState.recentAbsCorr : [];
-    const telemetry = pairState ? pairState.telemetryAbsCorr : [];
-    return {
-      recentP95: _computeP95(recent),
-      recentHotspotRate: _computeExceedanceRate(recent, 0.70),
-      recentSevereRate: _computeExceedanceRate(recent, 0.85),
-      p95: _computeP95(telemetry),
-      hotspotRate: _computeExceedanceRate(telemetry, 0.70),
-      severeRate: _computeExceedanceRate(telemetry, 0.85),
-      telemetryBeats: telemetry.length
-    };
-  }
+  const _pushWindowValue = pipelineCouplingManagerSnapshot.pushWindowValue;
+  const _getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
 
   /**
    * Get target for a pair key. Returns self-calibrated adaptive target (#1).
@@ -1579,54 +1544,15 @@ const rawEmaInput = absCorr;
    * for post-run analysis.
    */
   function getAdaptiveTargetSnapshot() {
-    /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number, p95AbsCorr: number, hotspotRate: number, severeRate: number, recentP95AbsCorr: number, recentHotspotRate: number, recentSevereRate: number, telemetryWindowBeats: number, residualPressure: number, gain: number, effectiveGain: number, nudgeable: boolean, budgetScore: number, budgetBoost: number, budgetRank: number | null, heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, hpPromoted: boolean }>} */
-    const result = {};
-    const keys = Object.keys(_adaptiveTargets);
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      const at = _adaptiveTargets[key];
-      const ps = _pairState[key];
-      const nudgeable = !_NON_NUDGEABLE_SET.has(key);
-      const tailTelemetry = _getPairTailTelemetry(ps);
-      const pairP95 = tailTelemetry.p95;
-      const hotspotRate = tailTelemetry.hotspotRate;
-      const severeRate = tailTelemetry.severeRate;
-      const residualPressure = clamp(
-        clamp((pairP95 - m.max(at.current + 0.22, 0.68)) / 0.16, 0, 1) * 0.65 +
-        clamp((hotspotRate - 0.10) / 0.20, 0, 1) * 0.20 +
-        clamp((severeRate - 0.02) / 0.10, 0, 1) * 0.15,
-        0,
-        1
-      );
-      result[key] = {
-        baseline: at.baseline,
-        current: Number(at.current.toFixed(4)),
-        rollingAbsCorr: Number(at.rollingAbsCorr.toFixed(4)),
-        rawRollingAbsCorr: Number(at.rawRollingAbsCorr.toFixed(4)),
-        p95AbsCorr: Number(pairP95.toFixed(4)),
-        hotspotRate: Number(hotspotRate.toFixed(4)),
-        severeRate: Number(severeRate.toFixed(4)),
-        recentP95AbsCorr: Number(tailTelemetry.recentP95.toFixed(4)),
-        recentHotspotRate: Number(tailTelemetry.recentHotspotRate.toFixed(4)),
-        recentSevereRate: Number(tailTelemetry.recentSevereRate.toFixed(4)),
-        telemetryWindowBeats: tailTelemetry.telemetryBeats,
-        residualPressure: Number(residualPressure.toFixed(4)),
-        gain: ps ? Number(ps.gain.toFixed(4)) : 0,
-        effectiveGain: ps ? Number(((ps.lastEffectiveGain || 0)).toFixed(4)) : 0,
-        nudgeable,
-        budgetScore: _budgetPriorityScore[key] !== undefined ? _budgetPriorityScore[key] : 0,
-        budgetBoost: _budgetPriorityBoost[key] !== undefined ? _budgetPriorityBoost[key] : 1,
-        budgetRank: _budgetPriorityRank[key] !== undefined ? _budgetPriorityRank[key] : null,
-        heatPenalty: ps ? Number((ps.heatPenalty || 0).toFixed(4)) : 0,
-        effectivenessEma: ps ? Number((ps.effectivenessEma || 0.5).toFixed(4)) : 0.5,
-        // R33 E5: Per-pair effectiveness temporal tracking
-        effMin: ps ? Number((ps.effMin !== undefined ? ps.effMin : 1.0).toFixed(4)) : 1.0,
-        effMax: ps ? Number((ps.effMax !== undefined ? ps.effMax : 0.0).toFixed(4)) : 0.0,
-        effActiveBeats: ps ? (ps.effActiveBeats || 0) : 0,
-        hpPromoted: key === _hpPromotedPair
-      };
-    }
-    return result;
+    return pipelineCouplingManagerSnapshot.buildAdaptiveTargetSnapshot({
+      adaptiveTargets: _adaptiveTargets,
+      pairState: _pairState,
+      nonNudgeableSet: _NON_NUDGEABLE_SET,
+      budgetPriorityScore: _budgetPriorityScore,
+      budgetPriorityBoost: _budgetPriorityBoost,
+      budgetPriorityRank: _budgetPriorityRank,
+      hpPromotedPair: _hpPromotedPair,
+    });
   }
 
   /**
@@ -1637,13 +1563,7 @@ const rawEmaInput = absCorr;
    * @returns {Record<string, number>}
    */
   function getAxisCouplingTotals() {
-    /** @type {Record<string, number>} */
-    const result = {};
-    const axisKeys = Object.keys(_axisSmoothedAbsR);
-    for (let i = 0; i < axisKeys.length; i++) {
-      result[axisKeys[i]] = Number(_axisSmoothedAbsR[axisKeys[i]].toFixed(4));
-    }
-    return result;
+    return pipelineCouplingManagerSnapshot.buildAxisCouplingTotals(_axisSmoothedAbsR);
   }
 
   /**
@@ -1655,29 +1575,7 @@ const rawEmaInput = absCorr;
    * @returns {{ shares: Record<string, number>, axisGini: number }}
    */
   function getAxisEnergyShare() {
-    const totals = getAxisCouplingTotals();
-    const keys = Object.keys(totals);
-    let sum = 0;
-    for (let i = 0; i < keys.length; i++) sum += totals[keys[i]];
-    /** @type {Record<string, number>} */
-    const shares = {};
-    if (sum < 0.001 || keys.length === 0) {
-      for (let i = 0; i < keys.length; i++) shares[keys[i]] = 0;
-      return { shares, axisGini: 0 };
-    }
-    const values = [];
-    for (let i = 0; i < keys.length; i++) {
-      const s = totals[keys[i]] / sum;
-      shares[keys[i]] = Number(s.toFixed(4));
-      values.push(s);
-    }
-    // Compute axis Gini coefficient
-    values.sort((a, b) => a - b);
-    const n = values.length;
-    let rankSum = 0;
-    for (let i = 0; i < n; i++) rankSum += (i + 1) * values[i];
-    const axisGini = n > 1 ? clamp((2 * rankSum) / n - (n + 1) / n, 0, 1) : 0;
-    return { shares, axisGini: Number(axisGini.toFixed(4)) };
+    return pipelineCouplingManagerSnapshot.buildAxisEnergyShare(_axisSmoothedAbsR);
   }
 
   /**
@@ -1687,23 +1585,22 @@ const rawEmaInput = absCorr;
    * @returns {{ gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number, gateMinD: number, gateMinT: number, gateMinF: number, gateEmaD: number, gateEmaT: number, gateEmaF: number, gateBeatCount: number }}
    */
   function getCouplingGates() {
-    return {
-      gateD: _lastGateD,
-      gateT: _lastGateT,
-      gateF: _lastGateF,
-      floorDampen: _lastFloorDampen,
-      bypassD: _lastBypassD,
-      bypassT: _lastBypassT,
-      bypassF: _lastBypassF,
-      // R28 E6: Temporal gate statistics across the run
-      gateMinD: Number(_gateMinD.toFixed(4)),
-      gateMinT: Number(_gateMinT.toFixed(4)),
-      gateMinF: Number(_gateMinF.toFixed(4)),
-      gateEmaD: Number(_gateEmaD.toFixed(4)),
-      gateEmaT: Number(_gateEmaT.toFixed(4)),
-      gateEmaF: Number(_gateEmaF.toFixed(4)),
-      gateBeatCount: _gateBeatCount
-    };
+    return pipelineCouplingManagerSnapshot.buildCouplingGates({
+      lastGateD: _lastGateD,
+      lastGateT: _lastGateT,
+      lastGateF: _lastGateF,
+      lastFloorDampen: _lastFloorDampen,
+      lastBypassD: _lastBypassD,
+      lastBypassT: _lastBypassT,
+      lastBypassF: _lastBypassF,
+      gateMinD: _gateMinD,
+      gateMinT: _gateMinT,
+      gateMinF: _gateMinF,
+      gateEmaD: _gateEmaD,
+      gateEmaT: _gateEmaT,
+      gateEmaF: _gateEmaF,
+      gateBeatCount: _gateBeatCount,
+    });
   }
 
   /**

@@ -128,80 +128,23 @@ systemDynamicsProfiler = (() => {
   let _lastSnapshot = _emptySnapshot();
 
   function _getAnalysisSettings() {
-    let profile = null;
-    try {
-      profile = conductorConfig.getActiveProfile();
-    } catch {
-      profile = null;
-    }
-    const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
-    const configuredWarmup = analysis && Number.isFinite(analysis.warmupTicks)
-      ? m.round(analysis.warmupTicks)
-      : MIN_WINDOW_DEFAULT;
-    const configuredReuse = analysis && Number.isFinite(analysis.snapshotReuseBeats)
-      ? m.round(analysis.snapshotReuseBeats)
-      : 3;
-    const shortRunCompression = Number.isFinite(totalSections) && totalSections > 0 && totalSections <= 5 ? 1 : 0;
-    return {
-      warmupTicks: clamp(configuredWarmup - shortRunCompression, 3, 10),
-      snapshotReuseBeats: clamp(configuredReuse, 1, 8)
-    };
+    return systemDynamicsProfilerHelpers.getAnalysisSettings(MIN_WINDOW_DEFAULT);
   }
 
   function _getPhasePairStates(matrix) {
-    /** @type {Record<string, string>} */
-    const states = {};
-    const phaseSignalStale = _lastPhaseSignalValid && !_lastPhaseChanged && _phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
-    for (let i = 0; i < PHASE_COUPLING_PAIRS.length; i++) {
-      const pair = PHASE_COUPLING_PAIRS[i];
-      const value = matrix && Object.prototype.hasOwnProperty.call(matrix, pair)
-        ? matrix[pair]
-        : undefined;
-      if (typeof value === 'number' && Number.isFinite(value)) states[pair] = phaseSignalStale ? 'stale' : 'available';
-      else if (typeof value === 'number' && Number.isNaN(value)) states[pair] = phaseSignalStale ? 'stale-gated' : 'variance-gated';
-      else states[pair] = 'missing';
-    }
-    return states;
+    return systemDynamicsProfilerHelpers.getPhasePairStates(
+      matrix,
+      PHASE_COUPLING_PAIRS,
+      _lastPhaseSignalValid,
+      _lastPhaseChanged,
+      _phaseStaleBeats,
+      PHASE_STALE_PAIR_THRESHOLD
+    );
   }
 
   /** @returns {SystemDynamicsSnapshot} */
   function _emptySnapshot() {
-    return {
-      velocity: 0,
-      curvature: 0,
-      effectiveDimensionality: N_COMPOSITIONAL_DIMS,
-      couplingStrength: 0,
-      regime: 'initializing',
-      grade: 'healthy',
-      couplingMatrix: {},
-      compositionalVariance: [0.25, 0.25, 0.25, 0.25],
-      entropyAmplification: entropyAmplificationController.getAmp(),
-      entropySampleErrors: 0,
-      entropyRhythmErrors: 0,
-      lastEntropyError: '',
-      phaseValue: 0,
-      phaseDelta: 0,
-      phaseChanged: false,
-      phaseStaleBeats: 0,
-      phaseSignalValid: false,
-      phaseCouplingCoverage: 0,
-      phaseCouplingAvailablePairs: 0,
-      phaseCouplingMissingPairs: 4,
-      phasePairStates: {
-        'density-phase': 'warmup',
-        'tension-phase': 'warmup',
-        'flicker-phase': 'warmup',
-        'entropy-phase': 'warmup'
-      },
-      profilerTick: 0,
-      regimeTick: 0,
-      trajectorySamples: 0,
-      telemetryBeatSpan: 1,
-      warmupTicksRemaining: MIN_WINDOW_DEFAULT,
-      profilerCadence: 'measure-recorder',
-      cadenceEscalated: false,
-      analysisSource: 'measure-recorder'
-    };
+    return systemDynamicsProfilerHelpers.emptySnapshot(N_COMPOSITIONAL_DIMS, MIN_WINDOW_DEFAULT, PHASE_COUPLING_PAIRS);
   }
 
   // -- Vector math & correlation analysis delegated to phaseSpaceMath --
@@ -210,107 +153,25 @@ systemDynamicsProfiler = (() => {
 
   /** Sample the current state vector from live signal data. @returns {number[]} */
   function _sampleState() {
-    const snap = signalReader.snapshot();
-    let avgTrust = 0;
-    let trustCount = 0;
-    try {
-      const ts = adaptiveTrustScores.getSnapshot();
-      const entries = Object.values(ts);
-      for (let i = 0; i < entries.length; i++) {
-        if (entries[i] && typeof entries[i].score === 'number') {
-          avgTrust += entries[i].score;
-          trustCount++;
-        }
-      }
-      if (trustCount > 0) avgTrust /= trustCount;
-    } catch { /* non-fatal */ }
-
-    // Compute truly instantaneous entropy directly from absoluteTimeWindow,
-    // bypassing entropyRegulator's triple-dampened pipeline (10-note sliding
-    // window - EMA smoothing - beatCache memoization) which produced variance
-    // - 0 across 3 consecutive runs. A 1-second ATW query gives real beat-to-
-    // beat content changes as notes enter/leave the window.
-    let entropy = 0.5;
-    try {
-      const atwSince = beatStartTime - 1.0;
-      const recentNotes = absoluteTimeWindow.getNotes({ since: atwSince, windowSeconds: 1.0 });
-      if (recentNotes.length >= 3) {
-        const midis = new Array(recentNotes.length);
-        const vels = new Array(recentNotes.length);
-        for (let i = 0; i < recentNotes.length; i++) {
-          midis[i] = recentNotes[i].midi;
-          vels[i] = recentNotes[i].velocity;
-        }
-        const pitchE = entropyMetrics.pitchEntropy(midis);
-        const velE = entropyMetrics.velocityVariance(vels);
-        // IOI-based rhythmic irregularity (inline - avoids per-layer ATW re-query)
-        let rhythmE = 0;
-        const iois = [];
-        for (let i = 1; i < recentNotes.length; i++) {
-          const dt = recentNotes[i].time - recentNotes[i - 1].time;
-          if (dt > 0) iois.push(dt);
-        }
-        if (iois.length >= 2) {
-          const ioiMean = iois.reduce((a, b) => a + b, 0) / iois.length;
-          const ioiStd = m.sqrt(iois.reduce((s, v) => s + (v - ioiMean) * (v - ioiMean), 0) / iois.length);
-          rhythmE = clamp(ioiStd / m.max(ioiMean, 0.001), 0, 1);
-        }
-        const combined = pitchE * 0.4 + velE * 0.3 + rhythmE * 0.3;
-        entropyAmplificationController.adapt(_lastSnapshot.compositionalVariance[3]);
-        entropy = 0.5 + (combined - 0.5) * entropyAmplificationController.getAmp();
-      }
-    } catch (e) {
-      _entropySampleErrors++;
-      _lastEntropyError = e && e.message ? e.message : 'unknown';
-      explainabilityBus.emit('entropy-sample-error', 'both', {
-        error: _lastEntropyError,
-        errorCount: _entropySampleErrors
-      });
-    }
-
-    let phase = 0;
-    _lastPhaseSignalValid = false;
-    _lastPhaseChanged = false;
-    _lastPhaseDelta = 0;
-    try {
-      const sampledPhase = timeStream.normalizedProgress('section');
-      if (typeof sampledPhase === 'number' && Number.isFinite(sampledPhase)) {
-        phase = clamp(sampledPhase, 0, 1);
-        _lastPhaseSignalValid = true;
-      }
-    } catch { /* non-fatal */ }
-
-    if (_lastPhaseSignalValid) {
-      if (_lastPhaseSample !== null) {
-        _lastPhaseDelta = m.abs(phase - _lastPhaseSample);
-        _lastPhaseChanged = _lastPhaseDelta > 0.0005;
-        _phaseStaleBeats = _lastPhaseChanged ? 0 : _phaseStaleBeats + 1;
-      } else {
-        _phaseStaleBeats = 0;
-      }
-      _lastPhaseSample = phase;
-    } else {
-      _phaseStaleBeats++;
-    }
-
-    // R60 E2 / R63 E3: Phase stale-gate progressive amplitude. Static
-    // +-0.008 left maxStaleBeats=83 and avgCouplingCoverage=0.135 in R62.
-    // R61's +-0.012 caused phase-linked hotspot explosion. Fix: start at
-    // +-0.008 and progressively grow to +-0.020 over 120 stale beats.
-    // Self-correcting: amplitude resets when phase changes (staleBeats=0).
-    if (_phaseStaleBeats > 25 && _lastPhaseSignalValid) {
-      const _phaseAmp = 0.008 + clamp((_phaseStaleBeats - 25) / 120, 0, 1) * 0.012;
-      phase = clamp(phase + ((_phaseStaleBeats % 2 === 0) ? _phaseAmp : -_phaseAmp), 0, 1);
-    }
-
-    return [
-      snap.densityProduct,
-      snap.tensionProduct,
-      snap.flickerProduct,
-      entropy,
-      avgTrust,
-      phase
-    ];
+    const helperState = {
+      entropySampleErrors: _entropySampleErrors,
+      lastEntropyError: _lastEntropyError,
+      lastSnapshot: _lastSnapshot,
+      lastPhaseSignalValid: _lastPhaseSignalValid,
+      lastPhaseChanged: _lastPhaseChanged,
+      lastPhaseDelta: _lastPhaseDelta,
+      phaseStaleBeats: _phaseStaleBeats,
+      lastPhaseSample: _lastPhaseSample,
+    };
+    const sampledState = systemDynamicsProfilerHelpers.sampleState(helperState);
+    _entropySampleErrors = helperState.entropySampleErrors;
+    _lastEntropyError = helperState.lastEntropyError;
+    _lastPhaseSignalValid = helperState.lastPhaseSignalValid;
+    _lastPhaseChanged = helperState.lastPhaseChanged;
+    _lastPhaseDelta = helperState.lastPhaseDelta;
+    _phaseStaleBeats = helperState.phaseStaleBeats;
+    _lastPhaseSample = helperState.lastPhaseSample;
+    return sampledState;
   }
 
   // _stats, _coupling, _effectiveDimensionality, _jacobiEigenvalues
