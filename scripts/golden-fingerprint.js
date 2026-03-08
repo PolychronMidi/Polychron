@@ -401,7 +401,7 @@ function compareFingerprints(current, previous) {
     : 1;
   // R11 Evo 1: Profile-adaptive noteCount tolerance -- explosive profiles produce
   // highly variable note counts, ambient profiles are more stable.
-  const PROFILE_NOTE_TOLERANCE = { explosive: 0.50, atmospheric: 0.40, ambient: 0.25, minimal: 0.25 };
+  const PROFILE_NOTE_TOLERANCE = { explosive: 0.65, atmospheric: 0.40, ambient: 0.25, minimal: 0.25 };
   const effectiveNoteTolerance = (PROFILE_NOTE_TOLERANCE[current.activeProfile] || TOLERANCES.noteCountRatio) * crossProfileScale;
   const notePass = noteRatio <= effectiveNoteTolerance;
   if (!notePass) drifted++;

@@ -1,88 +1,89 @@
 # Composition Narrative Digest
 
 > Auto-generated per run by `narrative-digest.js`. A human-readable story of what the system did.
-> Generated: 2026-03-08T02:18:01.400Z | Trace data from: 2026-03-08T02:18:00.880Z
+> Generated: 2026-03-08T03:24:18.733Z | Trace data from: 2026-03-08T03:24:18.158Z
 
 ## Overview
 
 The composition was generated at **72 BPM** with a tuning reference of **432 Hz**, using the **explosive** conductor profile.
 
-The system processed **574 beats** spanning **71.1 seconds** of musical time.
-Layer 1 experienced 248 beats; Layer 2 experienced 326 beats.
+The system processed **504 beats** spanning **57.8 seconds** of musical time.
+Layer 1 experienced 231 beats; Layer 2 experienced 273 beats.
 
 ## Harmonic Journey
 
-- **Section 1:** C# lydian (origin)
-- **Section 2:** C# mixolydian (parallel-mixolydian)
-- **Section 3:** D# mixolydian (step-down)
-- **Section 4:** D# lydian (parallel-lydian (mode-shift))
+- **Section 1:** A minor (origin)
+- **Section 2:** C# major (relative-major)
+- **Section 3:** F# major (fourth-up)
+- **Section 4:** A major (chromatic-mediant-down)
 
 ## Section Coverage
 
 The trace covered **4** of **4** planned sections.
 
-- **Section 0**: 143 unique traced beats across 212 entries
-- **Section 1**: 135 unique traced beats across 171 entries
-- **Section 2**: 65 unique traced beats across 91 entries
-- **Section 3**: 70 unique traced beats across 100 entries
+- **Section 0**: 36 unique traced beats across 44 entries
+- **Section 1**: 136 unique traced beats across 160 entries
+- **Section 2**: 91 unique traced beats across 133 entries
+- **Section 3**: 138 unique traced beats across 167 entries
 
-Trace progress integrity closed **warning** with **161** paired beat keys, **0** duplicate layer-key collisions, and **0** L1 ordering regressions.
+Trace progress integrity closed **warning** with **103** paired beat keys, **0** duplicate layer-key collisions, and **0** L1 ordering regressions.
 
 ## The System's Inner Life
 
-The system spent most of its time **searching for coherence** (68.6% of beats in the `exploring` regime).
+The system spent most of its time **searching for coherence** (64.5% of beats in the `exploring` regime).
 
 Regime breakdown:
 
-- **`exploring`** - 394 beats (68.6%) - searching for coherence
-- **`coherent`** - 171 beats (29.8%) - operating in harmony
-- **`evolving`** - 5 beats (0.9%) - developing new musical ideas
-- **`initializing`** - 4 beats (0.7%) - warming up
+- **`exploring`** - 325 beats (64.5%) - searching for coherence
+- **`coherent`** - 167 beats (33.1%) - operating in harmony
+- **`evolving`** - 8 beats (1.6%) - developing new musical ideas
+- **`initializing`** - 4 beats (0.8%) - warming up
 
 ### Regime Transitions
 
-The system underwent **5 regime transitions** during the composition.
+The system underwent **7 regime transitions** during the composition.
 
 - Beat 4: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
-- Beat 9: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
-- Beat 42: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
-- Beat 284: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
-- Beat 422: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 12: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
+- Beat 52: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 164: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
+- Beat 249: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 337: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
+- Beat 379: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
 
 ### Controller Cadence
 
-The emitted trace contains **574 beat entries**, but the regime controller advanced on only **154 measure-recorder ticks**.
-**420** entries reused an existing profiler snapshot and **4** entries landed during warmup.
-Beat-level escalation refreshed the profiler on **188** traced entries.
-On the controller cadence, resolved regime time was: `exploring` 88, `coherent` 76, `evolving` 4.
+The emitted trace contains **504 beat entries**, but the regime controller advanced on only **186 measure-recorder ticks**.
+**318** entries reused an existing profiler snapshot and **4** entries landed during warmup.
+Beat-level escalation refreshed the profiler on **167** traced entries.
+On the controller cadence, resolved regime time was: `exploring` 141, `coherent` 70, `evolving` 4.
 The controller recorded **1 forced transition event**.
-Phase telemetry closed **warning** with **100.0%** valid samples, **0.5%** changing samples, and average phase-coupling coverage **28.6%**.
-The longest stale phase run was **82** beats, **968** entries carried stale pair telemetry, and **410** entries reported zero phase-coupling coverage.
-Phase-surface availability resolved to **656 available**, **32 variance-gated**, **1592 stale/stale-gated**, and **0 missing** pair observations across the trace.
-The most reconciliation-starved phase pairs were **density-phase** (398 stale, 8 variance-gated), **tension-phase** (398 stale, 8 variance-gated), **flicker-phase** (398 stale, 8 variance-gated).
-Telemetry health scored **0.352** with **2** under-seen controller pairs and reconciliation gap **0.195**.
-The worst controller/trace reconciliation gaps remained in **entropy-trust** (gap 0.195), **density-trust** (gap 0.091).
-The output-load governor intervened on **547** entries (95.3%), with average guard scale **0.419** and **540** hard clamps.
-Guard/coupling interaction: guarded beats had higher exceedance rate (3.8%) vs unguarded (0.0%), delta **0.038**.
+Phase telemetry closed **warning** with **100.0%** valid samples, **0.8%** changing samples, and average phase-coupling coverage **13.5%**.
+The longest stale phase run was **83** beats, **918** entries carried stale pair telemetry, and **436** entries reported zero phase-coupling coverage.
+Phase-surface availability resolved to **272 available**, **52 variance-gated**, **1676 stale/stale-gated**, and **0 missing** pair observations across the trace.
+The most reconciliation-starved phase pairs were **density-phase** (419 stale, 13 variance-gated), **tension-phase** (419 stale, 13 variance-gated), **flicker-phase** (419 stale, 13 variance-gated).
+Telemetry health scored **0.221** with **0** under-seen controller pairs and reconciliation gap **0.000**.
+The output-load governor intervened on **482** entries (95.6%), with average guard scale **0.449** and **474** hard clamps.
+Guard/coupling interaction: guarded beats had higher exceedance rate (4.6%) vs unguarded (0.0%), delta **0.046**.
 
 ## Signal Landscape
 
-**Density** ranged from 0.28 to 0.67 (avg 0.46). The density was balanced.
-**Tension** ranged from 0.07 to 0.72 (avg 0.55). The composition maintained a relaxed tension profile.
-**Flicker** ranged from 0.83 to 1.12 (avg 0.94). Rhythmic variation was moderate.
+**Density** ranged from 0.35 to 0.81 (avg 0.58). The density was balanced.
+**Tension** ranged from 0.07 to 0.99 (avg 0.69). The composition maintained a relaxed tension profile.
+**Flicker** ranged from 0.83 to 1.15 (avg 0.99). Rhythmic variation was moderate.
 
 ## Trust Governance
 
 The trust system governed cross-layer module influence through EMA-weighted scores:
 
-- **coherenceMonitor**: average score 0.54 (weight 1.41, trusted)
-- **phaseLock**: average score 0.45 (weight 1.33, trusted)
-- **entropyRegulator**: average score 0.39 (weight 1.29, trusted)
-- **stutterContagion**: average score 0.32 (weight 1.24, trusted)
-- **feedbackOscillator**: average score 0.25 (weight 1.19, neutral)
-- **restSynchronizer**: average score 0.23 (weight 1.17, neutral)
+- **coherenceMonitor**: average score 0.54 (weight 1.40, trusted)
+- **stutterContagion**: average score 0.51 (weight 1.38, trusted)
+- **phaseLock**: average score 0.44 (weight 1.33, trusted)
+- **entropyRegulator**: average score 0.34 (weight 1.25, trusted)
+- **feedbackOscillator**: average score 0.27 (weight 1.20, trusted)
+- **restSynchronizer**: average score 0.23 (weight 1.18, neutral)
 - **convergence**: average score 0.21 (weight 1.16, neutral)
-- **cadenceAlignment**: average score 0.19 (weight 1.14, neutral)
+- **cadenceAlignment**: average score 0.20 (weight 1.15, neutral)
 
 The system placed the most faith in **coherenceMonitor** and was most skeptical of **cadenceAlignment**.
 
@@ -90,18 +91,26 @@ The system placed the most faith in **coherenceMonitor** and was most skeptical 
 
 Average pairwise decorrelation stayed controlled, but the tail still carried residual hotspot pressure.
 
-**Coupling health:** 7 hotspot pairs (p95 > 0.70) -- system stressed.
-Severe (p95 > 0.85): **flicker-phase** (0.881), **entropy-trust** (0.881).
+**Coupling health:** 9 hotspot pairs (p95 > 0.70) -- system stressed.
 
 ## Output
 
-- **Layer 1:** 7926 notes
-- **Layer 2:** 10025 notes
-- **Load:** 17951 total notes, 43.46 notes per traced beat, 252.50 notes per second
+- **Layer 1:** 9274 notes
+- **Layer 2:** 11028 notes
+- **Load:** 20302 total notes, 50.63 notes per traced beat, 351.44 notes per second
 
 ## Coherence Verdicts
 
-The system issued **0 critical**, **0 warning**, and **8 informational** findings.
+The system issued **1 critical**, **2 warning**, and **1 informational** findings.
+
+### Critical Findings
+
+- tension pipeline saturated - product hitting floor/ceiling.
+
+### Warnings
+
+- tension pipeline stressed - crush factor 40%.
+- tension product soft-capped at 1.4220 (raw 1.4233) - soft envelope compressing high product.
 
 ---
 

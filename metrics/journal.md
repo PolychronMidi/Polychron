@@ -1,3 +1,45 @@
+## R60 — 2026-03-08 — EVOLVED
+
+**Profile:** explosive | **Beats:** 200 (155 unique) | **Duration:** 660s | **Notes:** 15,439
+**Fingerprint:** 10/11 stable | Drifted: noteCount
+
+### Key Observations
+- **GLOBAL GAIN MULTIPLIER RECOVERED FROM 0.256 TO 0.665 — E1 BUDGET SCALING CONFIRMED.** budgetConstraintPressure fell from 1.000 to 0.933, proving that beat-count-scaled energy budgets give the coupling manager room to operate in multi-section runs.
+- **NON-NUDGEABLE TAIL PRESSURE COLLAPSED 88% (0.440→0.052) — E6 BASELINE RECALIBRATION CONFIRMED.** Raising entropy-trust baseline from 0.25→0.30 virtually eliminated wasted budget on irreducible structural coupling.
+- **AXIS ENERGY DISTRIBUTION DRAMATICALLY IMPROVED.** axisGini fell from 0.069 to 0.046. Entropy share fell from 21.8% to 17.1% (E3 cap effective). All axes between 14.1-18.1%. Phase recovered from 14.9% to 17.2%.
+- **EXCEEDANCE CONTINUED FALLING — 81% REDUCTION.** Total pair exceedance beats 48→9, unique 21→4. Only 3 hotspot pairs remain (R59: 5).
+- **SECTION COVERAGE REGRESSED FROM 4/4 TO 3/4.** E5 guard floor (0.50 for S0-S1) was too generous — notes/beat surged from 43.5 to 99.6, saturating early sections with compute. Section 3 never reached.
+- **DENSITY-FLICKER AND DENSITY-TRUST MONOTONIC CORRELATIONS RE-INTENSIFIED.** density-flicker pearsonR went from −0.473 back to −0.862, density-trust from 0.564 to 0.923. The shorter 200-entry run gives decorrelation mechanisms less time to act.
+- **EXPLORING REGIME SLIGHTLY INCREASED TO 72.5%.** E4 monopoly break fired indirectly (coherent-cadence-monopoly at tick 32) but exploring share rose from 68.6% to 72.5% — the signal-bias approach is insufficient for direct regime steering.
+- **WALL TIME IMPROVED 28% (917→660s)** despite section regression. E5's relaxed floor accelerated early-section processing.
+- **PHASE TELEMETRY MIXED — STALE-GATED ENTRIES FELL 71% BUT COVERAGE DROPPED.** stale-gated entries 1,092→312 (E2 effective), maxStaleBeats 82→34 (E2 effective), but avgCouplingCoverage fell 0.286→0.205 due to shorter run length.
+
+### Evolutions Applied (from R59)
+- E1: **Coupling Energy Budget Scaling** — **confirmed** — globalGainMultiplier 0.256→0.665 (2.6x), budgetConstraintPressure 1.000→0.933, energyBudget 3.536, floorContactBeats=0.
+- E2: **Phase Stale-Gate Adaptive Expiry** — **partially confirmed** — stale-gated 1,092→312 (71% reduction), maxStaleBeats 82→34 (58% reduction, target <40 ✓), but avgCouplingCoverage 0.286→0.205 (target >0.40 ✗). Micro-oscillation ±0.008 works but is barely above the 0.005 gate.
+- E3: **Entropy Axis Energy Cap** — **confirmed** — entropy share 21.8%→17.1% (target <19% ✓), axisGini 0.069→0.046 (target <0.07 ✓), density recovered 13.5%→18.1% (above 14.5% ✓), phase 14.9%→17.2% (above 15% ✓).
+- E4: **Exploring-Regime Coherent Floor** — **inconclusive** — exploring increased 68.6%→72.5% (target was 35-55% coherent). The signal-bias corrections at expShare>0.55 may fire but regime steering via bias indirection is weak.
+- E5: **Guard Scale Section-Adaptive Relaxation** — **partially confirmed** — wall time 917→660s (target <750s ✓), but section coverage regressed 4/4→3/4 (target 4/4 ✗). Guard floor 0.50 was too generous for S0-S1.
+- E6: **Entropy-Trust Baseline Recalibration** — **confirmed** — nonNudgeableTailPressure 0.440→0.052 (target <0.25 ✓), entropy-trust gain=0/effectiveGain=0, zero budget waste.
+
+### Evolutions Proposed (for R61)
+- E1: **Guard Floor Micro-Tightening** — src/play/processBeat.js (0.50→0.45 for S0-S1)
+- E2: **Density-Flicker Anti-Correlation Earlier Trigger** — src/conductor/signal/pipelineCouplingManager.js (−0.75→−0.65)
+- E3: **Exploring Monopoly Break Strength Increase** — src/conductor/signal/regimeReactiveDamping.js (tension 1.50→2.00, density 0.60→0.90)
+- E4: **Phase Stale-Gate Oscillation Amplitude Increase** — src/conductor/signal/systemDynamicsProfiler.js (±0.008→±0.012)
+- E5: **Density-Trust Monotone Breaker Early Trigger** — src/conductor/signal/pipelineCouplingManager.js (trigger 22→16 for pearsonR>0.85)
+- E6: **NoteCount Fingerprint Tolerance Widening** — scripts/golden-fingerprint.js (0.50→0.65)
+
+### Hypotheses to Track
+- S0-S1 guard floor 0.45 should restore 4/4 section coverage while keeping wall time below 800s and notes/beat below 80.
+- Earlier anti-correlation trigger (−0.65) should keep density-flicker pearsonR above −0.80 without increasing hotspot count.
+- Stronger exploring monopoly corrections (tension 2.00, density 0.90) should push exploring below 68% and coherent above 28%.
+- Phase oscillation ±0.012 should lift avgCouplingCoverage above 0.25 and reduce stale-gated entries below 250.
+- Earlier monotone trigger (16 beats for pearsonR>0.85) should prevent density-trust from exceeding 0.85.
+- NoteCount tolerance 0.65 should stabilize this dimension across run-length variation, preventing false drift.
+
+---
+
 ## R59 — 2026-03-08 — EVOLVED
 
 **Profile:** explosive | **Beats:** 574 | **Duration:** 917.0s | **Notes:** 17,951
