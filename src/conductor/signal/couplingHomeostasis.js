@@ -554,6 +554,13 @@ couplingHomeostasis = (() => {
       ? _dominantTailPair.split('-')
       : []);
     _tailRecoveryCap = clamp(0.96 - _tailRecoveryHandshake * 0.22 - m.max(0, _tailHotspotCount - 2) * 0.01 - _densityFlickerClampPressure * 0.09 - nonNudgeableTailPressure * 0.05, _GAIN_FLOOR, 0.94);
+    // R58 E3: Floor-contact recovery duration compression. Raise the cap floor
+    // when stickyTailPressure is high, giving the multiplier room to recover
+    // instead of being pinned by a low cap. Self-correcting: cap floor scales
+    // with inverse tailPressure so it relaxes as pressure drops.
+    if (_stickyTailPressure > 0.50) {
+      _tailRecoveryCap = m.max(_tailRecoveryCap, clamp(0.65 - (_stickyTailPressure - 0.50) * 0.20, 0.55, 0.65));
+    }
 
     if (_refreshedThisTick) {
       _refreshedThisTick = false;
@@ -583,7 +590,11 @@ couplingHomeostasis = (() => {
         targetMultiplier = m.min(targetMultiplier, 0.90 - _densityFlickerClampPressure * 0.18);
       }
       // EMA smooth toward target: alpha=0.05 gives ~20-beat convergence
-      _globalGainMultiplier = _globalGainMultiplier * 0.95 + targetMultiplier * 0.05;
+      // R58 E3: Accelerated convergence during floor recovery. When stuck in
+      // floor contact (floorRecoveryTicksRemaining > 0), use alpha=0.10 for
+      // ~10-beat convergence to compress avgRecoveryDuration.
+      const _emaAlpha = _floorRecoveryTicksRemaining > 0 ? 0.10 : 0.05;
+      _globalGainMultiplier = _globalGainMultiplier * (1 - _emaAlpha) + targetMultiplier * _emaAlpha;
     }
     const floorContactNow = _globalGainMultiplier <= 0.22 || getFloorDampen() < 0.60;
     const persistentTailNow = tailRecoveryPressure > _tailRecoveryTrigger && (
@@ -601,8 +612,10 @@ couplingHomeostasis = (() => {
       _floorRecoveryContactTicks = 0;
     }
     if (_floorRecoveryTicksRemaining > 0) {
-      const recoveryFloor = clamp(0.30 + tailRecoveryPressure * 0.16 + m.max(0, _tailHotspotCount - 1) * 0.01, _GAIN_FLOOR, 0.52);
-      _globalGainMultiplier = _globalGainMultiplier * 0.88 + m.max(_globalGainMultiplier, recoveryFloor) * 0.12;
+      // R58 E3: Raise recovery floor and accelerate blend. Wider floor (0.52->0.58)
+      // and faster blend (0.12->0.18) compress avgRecoveryDuration.
+      const recoveryFloor = clamp(0.35 + tailRecoveryPressure * 0.16 + m.max(0, _tailHotspotCount - 1) * 0.01, _GAIN_FLOOR, 0.58);
+      _globalGainMultiplier = _globalGainMultiplier * 0.82 + m.max(_globalGainMultiplier, recoveryFloor) * 0.18;
       _floorRecoveryTicksRemaining--;
     }
     if (_tailRecoveryHandshake > 0.18 && tailRecoveryPressure > _tailRecoveryTrigger * 0.85 && _globalGainMultiplier > _tailRecoveryCap) {

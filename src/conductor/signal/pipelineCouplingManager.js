@@ -260,6 +260,16 @@ pipelineCouplingManager = (() => {
   let _hpBeats = 0;
   let _hpCooldownRemaining = 0;
 
+  // R58 E5: Monotonic correlation circuit breaker state.
+  // Tracks consecutive same-sign beats per pair to detect structural monotonic
+  // trends. When a pair maintains same-sign correlation with |r| > 0.50 for
+  // >30 consecutive beats, an emergency decorrelation impulse fires.
+  const _MONOTONE_TRIGGER = 30;
+  const _MONOTONE_ABS_THRESHOLD = 0.50;
+  const _MONOTONE_IMPULSE_RATE = 2.5; // gain escalation multiplier during impulse
+  /** @type {Record<string, { sign: number, count: number }>} */
+  const _monotoneState = {};
+
   // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
   /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], telemetryAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }>} */
   const _pairState = {};
@@ -579,6 +589,20 @@ pipelineCouplingManager = (() => {
           const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
             ? clamp(_tailPressureByPair[key], 0, 1)
             : 0;
+          // R58 E2: Late-run severe window clamp. Pairs with high recentSevereRate
+          // and tailPressure represent active late-run exceedance crises that the
+          // full-run average masks. Inject a steep pressure term so these pairs
+          // get promoted into the budget top-K regardless of avg |r|.
+          const recentSevere = tailTelemetry.recentSevereRate || 0;
+          const severeWindowPressure = (recentSevere > 0.50 && tailPressure > 0.40)
+            ? clamp(
+              recentSevere * 0.55 +
+              tailPressure * 0.35 +
+              clamp((p95 - 0.85) / 0.12, 0, 1) * 0.30,
+              0,
+              1.2
+            )
+            : 0;
           const staticBias = _BUDGET_PRIORITY_GAIN[key] !== undefined
             ? clamp((_BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1)
             : 0;
@@ -596,6 +620,7 @@ pipelineCouplingManager = (() => {
             effectiveShortfall * 0.08 +
             exceedPressure * 0.08 +
             clamp(_tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
+            severeWindowPressure * 0.22 +
             staticBias * 0.04,
             0,
             1.45
@@ -604,7 +629,7 @@ pipelineCouplingManager = (() => {
             rankedPairs.push({
               key,
               score,
-              boost: 1 + clamp(score + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40 + nonNudgeableHandOffPressure * 0.45 + _entropyAxisPressure * (isEntropySurfacePair ? 0.50 : 0.15), 0, 1.6) * 0.28
+              boost: 1 + clamp(score + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40 + nonNudgeableHandOffPressure * 0.45 + _entropyAxisPressure * (isEntropySurfacePair ? 0.50 : 0.15) + severeWindowPressure * 0.50, 0, 1.6) * 0.28
             });
           }
         }
@@ -613,18 +638,47 @@ pipelineCouplingManager = (() => {
         if (b.score !== a.score) return b.score - a.score;
         return a.key < b.key ? -1 : 1;
       });
+
+      // R58 E1: Axis-dominant exceedance budget uplift. When a single axis
+      // appears in >=3 of the top-5 ranked pairs, that axis is structurally
+      // dominant in exceedance pressure. Apply a self-correcting boost to all
+      // pairs containing that axis, proportional to the dominance count.
+      const _topKForAxisCheck = m.min(_BUDGET_PRIORITY_TOP_K, rankedPairs.length);
+      /** @type {Record<string, number>} */
+      const _axisBudgetDominance = {};
+      for (let ti = 0; ti < _topKForAxisCheck; ti++) {
+        const dims = rankedPairs[ti].key.split('-');
+        for (let di = 0; di < dims.length; di++) {
+          _axisBudgetDominance[dims[di]] = (_axisBudgetDominance[dims[di]] || 0) + 1;
+        }
+      }
+      /** @type {string | null} */
+      let _dominantBudgetAxis = null;
+      let _dominantBudgetAxisCount = 0;
+      const _abdKeys = Object.keys(_axisBudgetDominance);
+      for (let ai = 0; ai < _abdKeys.length; ai++) {
+        if (_axisBudgetDominance[_abdKeys[ai]] >= 3 && _axisBudgetDominance[_abdKeys[ai]] > _dominantBudgetAxisCount) {
+          _dominantBudgetAxis = _abdKeys[ai];
+          _dominantBudgetAxisCount = _axisBudgetDominance[_abdKeys[ai]];
+        }
+      }
+
       for (let i = 0; i < rankedPairs.length; i++) {
         const entry = rankedPairs[i];
         _budgetPriorityScore[entry.key] = Number(entry.score.toFixed(4));
         const staticBoost = _BUDGET_PRIORITY_GAIN[entry.key] !== undefined
           ? 1 + (_BUDGET_PRIORITY_GAIN[entry.key] - 1.0) * 0.35
           : _BUDGET_DEPRIORITIZED_GAIN;
+        // R58 E1: Extra boost for pairs sharing the dominant axis
+        const axisDominanceBoost = _dominantBudgetAxis && entry.key.indexOf(_dominantBudgetAxis) !== -1
+          ? 1 + (_dominantBudgetAxisCount - 2) * 0.12
+          : 1.0;
         if (i < _BUDGET_PRIORITY_TOP_K) {
           const rankBoost = i === 0 ? 1.68 : i === 1 ? 1.54 : i === 2 ? 1.40 : i === 3 ? 1.26 : 1.18;
-          _budgetPriorityBoost[entry.key] = Number(m.max(staticBoost, rankBoost, entry.boost).toFixed(4));
+          _budgetPriorityBoost[entry.key] = Number((m.max(staticBoost, rankBoost, entry.boost) * axisDominanceBoost).toFixed(4));
           _budgetPriorityRank[entry.key] = i + 1;
         } else {
-          _budgetPriorityBoost[entry.key] = Number(staticBoost.toFixed(4));
+          _budgetPriorityBoost[entry.key] = Number((staticBoost * axisDominanceBoost).toFixed(4));
         }
       }
     }
@@ -718,6 +772,20 @@ pipelineCouplingManager = (() => {
         const absCorr = m.abs(corr);
         const ps = _getPairState(key);
         ps.lastEffectiveGain = 0;
+
+        // R58 E5: Monotonic correlation circuit breaker. Track consecutive
+        // same-sign beats per pair. When the sign holds for >MONOTONE_TRIGGER
+        // beats with |r| > threshold, the pair has structural monotonic trend.
+        if (!_monotoneState[key]) _monotoneState[key] = { sign: 0, count: 0 };
+        const _mst = _monotoneState[key];
+        const _corrSign = corr > 0.001 ? 1 : corr < -0.001 ? -1 : 0;
+        if (_corrSign !== 0 && _corrSign === _mst.sign && absCorr > _MONOTONE_ABS_THRESHOLD) {
+          _mst.count++;
+        } else {
+          _mst.sign = _corrSign;
+          _mst.count = absCorr > _MONOTONE_ABS_THRESHOLD ? 1 : 0;
+        }
+        const _monotoneActive = _mst.count >= _MONOTONE_TRIGGER;
 
         // -- Adaptive gain logic --
         const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
@@ -962,6 +1030,14 @@ pipelineCouplingManager = (() => {
             // actually REMOVES decorrelation pressure exactly when the pair is
             // worst. The 0.30 cap above is sufficient to prevent catastrophic
             // oscillation; we shouldn't dynamically weaken existing pressure.
+            // R58 E5: Monotonic correlation impulse. When the circuit breaker
+            // detects sustained same-sign correlation, amplify the escalation
+            // rate to break the directional trend. Self-correcting: impulse
+            // decays as soon as the sign flips or |r| drops below threshold.
+            if (_monotoneActive) {
+              rate *= _MONOTONE_IMPULSE_RATE;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.08, 1.0);
+            }
             ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
           }
 
@@ -1141,6 +1217,13 @@ const rawEmaInput = absCorr;
         // itself (velocityBoostActive) AND for _VELOCITY_BOOST_BEATS after.
         if (_velocityBoostActive || _velocityBoostCooldown > 0) {
           effectiveGain *= _VELOCITY_GAIN_BOOST;
+        }
+        // R58 E2: Late-run severe window effectiveGain escalation. Pairs with
+        // high recentSevereRate and tailPressure get 1.5x effective gain to
+        // break through late-run exceedance that the full-run average masks.
+        const _recentSevereRate = tailTelemetry.recentSevereRate || 0;
+        if (_recentSevereRate > 0.50 && tailPressure > 0.40) {
+          effectiveGain *= 1 + clamp(_recentSevereRate * 0.35 + tailPressure * 0.15, 0, 0.50);
         }
         ps.lastEffectiveGain = effectiveGain;
 
@@ -1427,6 +1510,9 @@ const rawEmaInput = absCorr;
     _velocityBoostActive = false;
     _couplingVelocityEma = 0;
     _prevBeatAbsCorr = {};
+    // R58 E5: Reset monotone circuit breaker per section
+    const _mstKeys = Object.keys(_monotoneState);
+    for (let mi = 0; mi < _mstKeys.length; mi++) { _monotoneState[_mstKeys[mi]].count = 0; _monotoneState[_mstKeys[mi]].sign = 0; }
     // R34 E2: Dampen smoothed axis totals (preserve cross-section memory)
     const _smKeys = Object.keys(_axisSmoothedAbsR);
     for (let si = 0; si < _smKeys.length; si++) _axisSmoothedAbsR[_smKeys[si]] *= 0.50;

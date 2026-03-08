@@ -327,6 +327,16 @@ function generateNarrative() {
         const outputLoadGuard = summary.outputLoadGuard;
         lines.push(`The output-load governor intervened on **${toNum(outputLoadGuard.guardedEntries, 0)}** entries (${pct(toNum(outputLoadGuard.guardedRate, 0))}), with average guard scale **${dec(toNum(outputLoadGuard.scale && outputLoadGuard.scale.avg, 1), 3)}** and **${toNum(outputLoadGuard.hardGuardEntries, 0)}** hard clamps.`);
       }
+      // R58 E6: Guard/coupling interaction diagnostic
+      if (summary.guardCouplingInteraction) {
+        const gci = summary.guardCouplingInteraction;
+        const delta = toNum(gci.exceedanceDelta, 0);
+        const absDelta = Math.abs(delta);
+        if (gci.guardedBeats > 0 && gci.unguardedBeats > 0 && absDelta > 0.03) {
+          const direction = delta > 0 ? 'higher' : 'lower';
+          lines.push(`Guard/coupling interaction: guarded beats had ${direction} exceedance rate (${pct(toNum(gci.guardedExceedanceRate, 0))}) vs unguarded (${pct(toNum(gci.unguardedExceedanceRate, 0))}), delta **${dec(absDelta, 3)}**.`);
+        }
+      }
       lines.push('');
     }
   }
