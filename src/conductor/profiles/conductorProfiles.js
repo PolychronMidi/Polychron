@@ -8,7 +8,7 @@
 function _withAnalysisSettings(profileName, profile) {
   const analysisDefaults = {
     warmupTicks: 6,
-    snapshotReuseBeats: 3
+    snapshotReuseBeats: 2
   };
   const profileAnalysis = {
     atmospheric: {
@@ -17,7 +17,7 @@ function _withAnalysisSettings(profileName, profile) {
     },
     explosive: {
       warmupTicks: 5,
-      snapshotReuseBeats: 3
+      snapshotReuseBeats: 1
     },
     minimal: {
       warmupTicks: 5,

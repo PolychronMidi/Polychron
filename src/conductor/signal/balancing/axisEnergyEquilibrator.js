@@ -59,7 +59,7 @@ axisEnergyEquilibrator = (() => {
 
   // -- Shared config --
   const _BASELINE_MIN = 0.04;
-  const _DENSITY_FLICKER_BASELINE_MIN = 0.08; // R64 E4: Higher floor for structurally persistent pair
+  const _DENSITY_FLICKER_BASELINE_MIN = 0.06; // allow tighter recovery when density-flicker becomes the dominant hotspot again
   const _BASELINE_MAX = 0.40;
   const _WARMUP_DEFAULT = 16;
   const _PHASE_SURFACE_RATIO = 1.6;

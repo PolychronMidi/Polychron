@@ -134,7 +134,7 @@ systemDynamicsProfilerHelpers = (() => {
     state.lastPhaseChanged = false;
     state.lastPhaseDelta = 0;
     try {
-      const sampledPhase = timeStream.normalizedProgress('section');
+      const sampledPhase = timeStream.compoundProgress('section');
       if (typeof sampledPhase === 'number' && Number.isFinite(sampledPhase)) {
         phase = clamp(sampledPhase, 0, 1);
         state.lastPhaseSignalValid = true;
@@ -146,7 +146,7 @@ systemDynamicsProfilerHelpers = (() => {
     if (state.lastPhaseSignalValid) {
       if (state.lastPhaseSample !== null) {
         state.lastPhaseDelta = m.abs(phase - state.lastPhaseSample);
-        state.lastPhaseChanged = state.lastPhaseDelta > 0.0005;
+        state.lastPhaseChanged = state.lastPhaseDelta > 0.0001;
         state.phaseStaleBeats = state.lastPhaseChanged ? 0 : state.phaseStaleBeats + 1;
       } else {
         state.phaseStaleBeats = 0;
