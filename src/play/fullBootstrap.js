@@ -396,7 +396,6 @@ fullBootstrap = (() => {
     'getMeterPair',
     'getPolyrhythm',
     'setUnitTiming',
-    'setUnitTimingBudgetStats',
     'bestMatch',
     'subsubsPerSub',
     'tpUnit',

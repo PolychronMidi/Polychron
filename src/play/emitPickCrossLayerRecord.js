@@ -3,23 +3,6 @@
 
 const V = validator.create('emitPickCrossLayerRecord');
 
-function _getMotifEchoLimitConfig() {
-  let profile = null;
-  try {
-    profile = conductorConfig.getActiveProfile();
-  } catch {
-    profile = null;
-  }
-  const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
-  return {
-    windowSeconds: analysis && Number.isFinite(analysis.outputLoadWindowSeconds) ? analysis.outputLoadWindowSeconds : 1.25,
-    softNotesPerSecond: analysis && Number.isFinite(analysis.outputLoadSoftNotesPerSecond) ? analysis.outputLoadSoftNotesPerSecond : 90,
-    hardNotesPerSecond: analysis && Number.isFinite(analysis.outputLoadHardNotesPerSecond) ? analysis.outputLoadHardNotesPerSecond : 140,
-    softEchoCount: analysis && Number.isFinite(analysis.motifEchoSoftCount) ? m.max(0, m.round(analysis.motifEchoSoftCount)) : 2,
-    hardEchoCount: analysis && Number.isFinite(analysis.motifEchoHardCount) ? m.max(0, m.round(analysis.motifEchoHardCount)) : 1
-  };
-}
-
 /**
  * Record a primary source note emission into all cross-layer tracking systems.
  * Delivers pending motif echoes as additional emitted notes.
@@ -53,21 +36,10 @@ emitPickCrossLayerRecord = function(ctx) {
   let additionalScheduled = 0;
   const deliveredEcho = motifEcho.deliverEcho(absMs, activeLayerName, noteToEmit);
   if (deliveredEcho && Array.isArray(deliveredEcho.notes) && deliveredEcho.notes.length > 1) {
-    const echoConfig = _getMotifEchoLimitConfig();
-    const recentPrimaryNoteCount = absoluteTimeWindow.countNotes({ layer: activeLayerName, windowSeconds: echoConfig.windowSeconds });
-    const recentPrimaryNotesPerSecond = echoConfig.windowSeconds > 0
-      ? recentPrimaryNoteCount / echoConfig.windowSeconds
-      : recentPrimaryNoteCount;
-    let echoCountCap = 3;
-    if (recentPrimaryNotesPerSecond >= echoConfig.hardNotesPerSecond) {
-      echoCountCap = echoConfig.hardEchoCount;
-    } else if (recentPrimaryNotesPerSecond >= echoConfig.softNotesPerSecond) {
-      echoCountCap = echoConfig.softEchoCount;
-    }
-    const echoCount = m.min(echoCountCap, deliveredEcho.notes.length - 1);
-    for (let echoIndex = 0; echoIndex < echoCount; echoIndex++) {
-      const echoNote = deliveredEcho.notes[echoIndex + 1];
-      const echoStagger = tpUnit * rf(0.015, 0.06) * (echoIndex + 1);
+    for (let echoIndex = 1; echoIndex < deliveredEcho.notes.length; echoIndex++) {
+      const echoNote = deliveredEcho.notes[echoIndex];
+      const echoStep = echoIndex;
+      const echoStagger = tpUnit * rf(0.015, 0.06) * echoStep;
       const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95))));
       const echoOnEvt = { tick: onTick + echoStagger, type: 'on', vals: [sourceCH, echoNote, echoVel] };
       const echoOffEvt = { tick: onTick + echoStagger + texSustain * rf(0.6, 0.95), vals: [sourceCH, echoNote] };

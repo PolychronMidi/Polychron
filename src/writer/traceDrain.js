@@ -63,7 +63,7 @@ traceDrain = (() => {
   /**
    * Record one trace beat entry.
    * @param {string} layer
-  * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, phaseTelemetry?: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, axisEnergyEquilibrator?: any, transitionReadiness?: any, profilerTelemetry?: any, outputLoadGuard?: any, forcedTransitionEvent?: any, stageTiming?: Record<string,number>|null, iterBudget?: any }} data
+  * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, phaseTelemetry?: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, axisEnergyEquilibrator?: any, transitionReadiness?: any, profilerTelemetry?: any, outputLoadGuard?: any, forcedTransitionEvent?: any, stageTiming?: Record<string,number>|null }} data
    */
   function record(layer, data) {
     if (!isTracing || fd === null) return;
@@ -88,8 +88,7 @@ traceDrain = (() => {
       outputLoadGuard: data.outputLoadGuard || undefined,
       forcedTransitionEvent: data.forcedTransitionEvent || undefined,
       notes: _pendingNotes.length > 0 ? _pendingNotes.slice() : undefined,
-      stageTiming: data.stageTiming || undefined,
-      iterBudget: data.iterBudget || undefined
+      stageTiming: data.stageTiming || undefined
     };
     // Clear accumulated notes after embedding
     _pendingNotes = [];

@@ -146,7 +146,6 @@ const manifestPath = 'metrics/system-manifest.json';
       signalHealth: _buildSignalHealth(),
       pipelineNormalizer: _buildPipelineNormalizer(),
       systemDynamics: _buildSystemDynamics(),
-      iterationBudget: _buildIterationBudget(),
       trustPayoffs,
       trustScoresEndOfRun: trustSnapshot,
       trustJournal
@@ -191,15 +190,6 @@ const manifestPath = 'metrics/system-manifest.json';
       return systemDynamicsProfiler.getSummary();
     } catch {
       return { beatsAnalyzed: 0, snapshot: {}, dimensionNames: [] };
-    }
-  }
-
-  /** @returns {object} */
-  function _buildIterationBudget() {
-    try {
-      return setUnitTimingBudgetStats.getSummary();
-    } catch {
-      return { totalBeats: 0, cappedBeats: 0, capRate: 0, maxRaw: 0, avgRaw: 0, maxCapped: 0 };
     }
   }
 
