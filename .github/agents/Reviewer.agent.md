@@ -22,8 +22,8 @@ Read ALL of the following files. Do not skip any. Read them in parallel where po
 | File | What it tells you |
 |------|-------------------|
 | `metrics/pipeline-summary.json` | Pipeline health: wall time, per-step timing, pass/fail counts. Check for new failures or regressions. |
-| `metrics/trace-summary.json` | The statistical soul of the run: beat counts, regime distribution, conductor signal ranges (density/tension/flicker min/max/avg), coupling matrices (abs + tail), coupling hotspots (p95 > 0.70), coupling correlation (Pearson r + direction), trust score summaries, beat-setup budget (spike detection), **adaptiveTargets** (per-pair baseline, current, drift, rollingAbsCorr, gain, heatPenalty, effectivenessEma — reveals whether coupling surges are target-drift-driven or regime-modulated, and whether decorrelation nudges actually reduce coupling), **axisCouplingTotals** (per-axis sum of |r| across all pairs sharing that axis), **axisEnergyShare** (per-axis share of total coupling energy + axisGini), **couplingGates** (per-axis coherence gate values gateD/gateT/gateF, floorDampen, bypass magnitudes, gate EMA temporal stats), **couplingHomeostasis** (totalEnergyEma, energyBudget, peakEnergyEma, totalEnergyFloor, floorDampen, redistributionScore, globalGainMultiplier, giniCoefficient, multiplier stats), **regimeCadence** (trace-entry counts vs profiler/controller tick counts, snapshot reuse, warmup share), and **nonNudgeableGains** (verifies that structurally non-nudgeable pairs stay at zero gain and zero effective gain). |
-| `metrics/golden-fingerprint.json` | Current run's 11-dimension fingerprint: noteCount (per-layer), pitchEntropy, densityVariance, tensionArc (4-point: 25%/50%/75%/90%), trustConvergence, regimeDistribution, coupling (mean absolute), correlationTrend (direction flips), exceedanceSeverity, hotspotMigration, and telemetryHealth. Also includes couplingMeans, couplingCorrelation, trustFinal, activeProfile, and crossProfileWarning metadata when profile change detection applies. |
+| `metrics/trace-summary.json` | Statistical soul of the run. Key sections: beat/regime counts, conductor signal ranges, coupling matrices (abs + tail + hotspots), trust scores, beat-setup budget, **adaptiveTargets** (per-pair drift/gain/effectiveness), **axisCouplingTotals** + **axisEnergyShare** (axis-level energy balance + Gini), **couplingGates** (coherence gate values + temporal stats), **couplingHomeostasis** (energy budget/floor/redistribution/global gain), **regimeCadence** (trace vs tick counts, snapshot reuse), **nonNudgeableGains** (structural zero-gain verification). |
+| `metrics/golden-fingerprint.json` | Current run's 10-dimension fingerprint: pitchEntropy, densityVariance, tensionArc (4-point: 25%/50%/75%/90%), trustConvergence, regimeDistribution, coupling (mean absolute), correlationTrend (direction flips), exceedanceSeverity, hotspotMigration, and telemetryHealth. Also includes noteCount, couplingMeans, couplingCorrelation, trustFinal, activeProfile, and crossProfileWarning metadata when profile change detection applies. |
 | `metrics/golden-fingerprint.prev.json` | Previous run's fingerprint. Compare field-by-field against current. |
 | `metrics/fingerprint-comparison.json` | Automated comparison: verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta vs tolerance, drifted count. This is your headline. |
 | `metrics/fingerprint-drift-explainer.json` | Causal narratives for any drifted dimensions. Read the `cause`, `correlates`, and `layerShift` fields. |
@@ -40,8 +40,8 @@ Read ALL of the following files. Do not skip any. Read them in parallel where po
 | `metrics/system-manifest.json` | Boot-time system configuration: active profile, module counts, registered capabilities. Verify consistency with trace data. |
 | `metrics/boot-order.json` | Global initialization sequence. Check for ordering anomalies. |
 | `metrics/dependency-graph.json` | Module dependency topology. Look for unexpected coupling or circular patterns. |
-| `metrics/feedback-graph.html` | Visual feedback loop topology. Open mentally; the raw data is in `metrics/FEEDBACK_GRAPH.json`. |
-| `metrics/FEEDBACK_GRAPH.json` | Feedback loop declarations: source, target, loop names. Cross-reference with `feedback-graph-validation.json`. |
+| `metrics/feedback-graph.html` | Visual feedback loop topology. The raw data is in `metrics/feedback_graph.json`. |
+| `metrics/feedback_graph.json` | Feedback loop declarations (auto-generated): source, target, loop names. Cross-reference with `feedback-graph-validation.json`. |
 | `metrics/feedback-graph-validation.json` | Validation results for feedback graph integrity. Any failure is critical. |
 
 ### Historical Context (required)
@@ -56,18 +56,18 @@ When a metric raises a question, trace it to the source. Common investigation ta
 
 | Area | Key files |
 |------|-----------|
-| Coupling engine | `src/conductor/signal/pipelineCouplingManager.js` |
-| Regime damping | `src/conductor/signal/regimeReactiveDamping.js` |
-| Coherence feedback | `src/conductor/signal/coherenceMonitor.js` |
-| Axis equilibrator | `src/conductor/signal/axisEnergyEquilibrator.js` |
-| Regime classifier | `src/conductor/signal/regimeClassifier.js` |
-| Trust system | `src/crossLayer/adaptiveTrustScores.js`, `src/crossLayer/contextualTrust.js` |
-| Regime profiler | `src/conductor/signal/systemDynamicsProfiler.js` |
+| Coupling engine | `src/conductor/signal/balancing/pipelineCouplingManager.js` |
+| Regime damping | `src/conductor/signal/profiling/regimeReactiveDamping.js` |
+| Coherence feedback | `src/conductor/signal/foundations/coherenceMonitor.js` |
+| Axis equilibrator | `src/conductor/signal/balancing/axisEnergyEquilibrator.js` |
+| Regime classifier | `src/conductor/signal/profiling/regimeClassifier.js` |
+| Trust system | `src/crossLayer/structure/trust/adaptiveTrustScores.js`, `src/crossLayer/structure/integration/contextualTrust.js` |
+| Regime profiler | `src/conductor/signal/profiling/systemDynamicsProfiler.js` |
 | Trace cadence / beat indexing | `src/play/processBeat.js`, `src/play/crossLayerBeatRecord.js`, `src/writer/traceDrain.js` |
 | Meta-controllers | `src/conductor/signal/` (any file with `hypermeta` or `metaController` in name) |
 | Fingerprint logic | `scripts/golden-fingerprint.js` |
 | Trace aggregation | `scripts/trace-summary.js` |
-| Profile config | `src/conductor/conductorProfiles.js` |
+| Profile config | `src/conductor/profiles/conductorProfiles.js` |
 | Composer selection | `src/composers/` |
 
 If `transitionReadiness` run counters disagree sharply with the emitted regime trace, check cadence before assuming a reset bug: trace entries are written per layer, `beatCount` advances on L1 only, and profiler snapshots may be cached across multiple trace records.
@@ -103,15 +103,12 @@ One-line summary: `RXX: <beats> beats / <seconds>s <profile> | <VERDICT> (<stabl
 - Compare each against previous run
 
 ### Coupling Analysis
-- Mean absolute coupling per pair
-- Hotspot count (p95 > 0.70): which pairs, severity
-- Coupling correlation directions (increasing/decreasing/stable)
-- Correlation trend flips vs previous (from fingerprint comparison `correlationTrend` if present)
-- Gain escalation behavior (check conductor map for pipelineCouplingManager bias values)
-- **Adaptive target diagnostics** (from trace-summary `adaptiveTargets`): baseline vs current, drift ratio, rollingAbsCorr vs full-run avg (regime-masking detection), gain/heat levels
-- **Per-axis coupling totals**: sum |r| across all pairs sharing each axis (density, tension, flicker, entropy, trust, phase). Watch for axis-level energy conservation (decorrelating one pair redistributes to others on the same axis)
-- **Structural mechanisms** (from trace-summary `couplingHomeostasis`): totalEnergyFloor and floorDampen (floor dampening aggressiveness), redistributionScore, Gini coefficient trend. Check whether floor dampening is over/under-aggressive. Non-nudgeable pairs (entropy-trust, entropy-phase) should show zero gain escalation. If coherence gate diagnostics are present, check per-axis gate values.
-- **Cadence integrity** (from trace-summary `regimeCadence` and `profilerCadence`): distinguish emitted trace counts from controller-tick counts, reused snapshots, and warmup entries so long coherent trace blocks are not mistaken for long controller dwell.
+- Per-pair mean |r|, hotspots (p95 > 0.70), correlation directions + trend flips vs previous
+- Gain escalation behavior (conductor map pipelineCouplingManager bias values)
+- Adaptive targets: baseline vs current drift, rollingAbsCorr vs full-run avg (regime-masking), gain/heat
+- Axis energy: per-axis |r| totals, energy share, Gini — watch for balloon-effect redistribution
+- Homeostasis: energyFloor, floorDampen, redistributionScore, global gain multiplier. Non-nudgeable pairs must show zero gain.
+- Cadence integrity: distinguish emitted trace counts from controller ticks and reused snapshots
 
 ### Trust Governance
 - Top 3 and bottom 3 trusted modules
@@ -124,7 +121,7 @@ One-line summary: `RXX: <beats> beats / <seconds>s <profile> | <VERDICT> (<stabl
 - Any meta-controller conflict detections
 
 ### Fingerprint Comparison Detail
-- For each of the 11 dimensions: delta, tolerance (effective, including profile-adaptive), status
+- For each of the 10 dimensions: delta, tolerance (effective, including profile-adaptive), status
 - If cross-profile comparison was triggered, note the tolerance widening
 - For drifted dimensions: root cause from drift explainer
 - Tuning invariant results (any failures?)

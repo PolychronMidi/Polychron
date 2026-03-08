@@ -38,7 +38,7 @@ npm install
 npm run main
 ```
 
-This single command runs the full 15-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, and feedback graph visualization. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
+This single command runs the full 16-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, and feedback graph visualization. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
 
 Pass `--seed N` to make composition deterministic (seeded PRNG via mulberry32 replaces `Math.random`):
 
@@ -270,7 +270,7 @@ Biases are multiplied together (not summed), dampened by `conductorDampening` (r
 
 ### Feedback Loops
 
-Eight closed-loop feedback systems maintain compositional coherence:
+Six registered feedback loops (plus two advisory systems) maintain compositional coherence:
 
 - **Density correction** (`coherenceMonitor`) — Compares actual vs intended note output; feeds dampened bias (0.60–1.30) into density product. Phase-aware bell gain peaks mid-phrase.
 - **Entropy steering** (`entropyRegulator`) — Steers cross-layer systems toward a section-position-driven entropy target. Scale clamp [0.3, 2.0].
@@ -281,7 +281,7 @@ Eight closed-loop feedback systems maintain compositional coherence:
 - **Pipeline tension homeostasis** (`pipelineBalancer`) — Closed-loop controller nudging tension product toward neutral (1.0) when divergence exceeds deadband. Attribution-driven gain.
 - **Dynamic architecture** (`dynamicArchitectPlanner`) — Macro-level dynamic curve planning from intensity snapshots. Shapes tension arc across sections.
 
-All controllers are enrolled with `feedbackRegistry` to prevent catastrophic resonance.
+The six registered loops are enrolled with `feedbackRegistry` to prevent catastrophic resonance. `profileAdaptation` and `adaptiveTrustScores` are advisory — they influence behavior but are not formally registered feedback loops.
 
 ### Hypermeta Self-Calibrating Controllers
 
@@ -299,9 +299,9 @@ All controllers are enrolled with `feedbackRegistry` to prevent catastrophic res
 10. **Meta-Observation Telemetry** (`conductorDampening`) — Per-beat snapshots of meta-controller state emitted to `explainabilityBus` and fed to the meta-controller watchdog.
 11. **Meta-Controller Interaction Watchdog** (`conductorMetaWatchdog`) — Runs every 50 beats, detects opposing correction patterns between controllers on the same axis. Attenuates the weaker controller by 50% when conflict exceeds 30/50 beats. Self-heals when conflict resolves.
 12. **Whole-System Coupling Energy Homeostasis** (`couplingHomeostasis`) — Tracks total |r| as a single scalar, detects redistribution (balloon effect: total stable + pair turbulent), applies global gain throttle. Gini coefficient guard penalizes energy concentration in few pairs. Self-derives energy budget from adaptive target baselines.
-13. **Axis Energy Equilibrator** (`axisEnergyEquilibrator`) — Two-layer omnipotent coupling self-correction. Layer 1: pair-level hotspot detection via `rawRollingAbsCorr` — tightens pairs exceeding 2x baseline, relaxes those below 0.3x. Layer 2: axis-level energy balancing via `getAxisEnergyShare()` — nudges all pairs on overloaded (>0.22) or suppressed (<0.12) axes. Graduated coherent gate: exploring 1.0×, evolving 0.4×, coherent 0.0× — prevents equilibrator from fighting coherent regime entry. Permanently eliminates manual whack-a-mole.
+13. **Axis Energy Equilibrator** (`axisEnergyEquilibrator`) — Two-layer omnipotent coupling self-correction. Layer 1: pair-level hotspot detection via `rawRollingAbsCorr` — tightens pairs exceeding 2x baseline, relaxes those below 0.3x. Layer 2: axis-level energy balancing via `getAxisEnergyShare()` — nudges all pairs on overloaded (>0.22) or suppressed (<0.12) axes. Graduated coherent gate: exploring 1.5×, evolving 0.6×, coherent 0.0× — prevents equilibrator from fighting coherent regime entry. Permanently eliminates manual whack-a-mole.
 
-The regime classifier additionally self-balances coherent share via auto-adjusting `coherentThresholdScale` (target 15–35%, nudge 0.002/beat, range [0.70, 1.20]). This is NOT a separate meta-controller — it is intrinsic regime self-regulation.
+The regime classifier additionally self-balances coherent share via auto-adjusting `coherentThresholdScale` (target 15–35%, starts at 0.65, nudge 0.006/beat, range [0.55, 1.20]). This is NOT a separate meta-controller — it is intrinsic regime self-regulation.
 
 For constant values, interaction partners, and cross-constant invariants, see [TUNING_MAP.md](TUNING_MAP.md).
 
