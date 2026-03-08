@@ -1,7 +1,5 @@
 // @ts-ignore: attribution-driven pipeline balancer (reads signalReader attribution)
 require('./pipelineBalancer');
-// @ts-ignore: config helpers for pipelineCouplingManager
-require('./pipelineCouplingManagerConfig');
 // @ts-ignore: coupling telemetry and snapshot helpers for pipelineCouplingManager
 require('./pipelineCouplingManagerSnapshot');
 // @ts-ignore: density-tension coupling manager (reads systemDynamicsProfiler coupling matrix)

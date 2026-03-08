@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-08T04:41:08.852Z",
-    "moduleCount": 40,
-    "edgeCount": 55,
+    "generated": "2026-03-08T05:55:42.201Z",
+    "moduleCount": 41,
+    "edgeCount": 57,
     "atgChannelCount": 15
   },
   "modules": [
@@ -518,60 +518,41 @@
       "feedbackEnrolled": false
     },
     {
-      "name": "adaptiveTrustScores",
+      "name": "entropyMetrics",
       "folder": "structure",
-      "path": "crossLayer/structure/adaptiveTrustScores.js",
-      "description": "",
+      "path": "crossLayer/structure/entropy/entropyMetrics.js",
+      "description": "src/crossLayer/structure/entropyMetrics.js",
+      "scopes": [],
+      "atgChannels": [],
+      "interactions": [
+        "entropyRegulator"
+      ],
+      "readsSignals": false,
+      "emitsExplain": false,
+      "feedbackEnrolled": false
+    },
+    {
+      "name": "entropyRegulator",
+      "folder": "structure",
+      "path": "crossLayer/structure/entropy/entropyRegulator.js",
+      "description": "Cross-layer entropy regulation.",
       "scopes": [
-        "all"
+        "all",
+        "section"
       ],
       "atgChannels": [],
       "interactions": [
-        "cadenceAlignment",
-        "contextualTrust",
-        "explainabilityBus",
-        "negotiationEngine",
-        "restSynchronizer"
+        "entropyMetrics",
+        "explainabilityBus"
       ],
       "readsSignals": false,
       "emitsExplain": true,
       "feedbackEnrolled": false
     },
     {
-      "name": "beatInterleavedProcessor",
-      "folder": "structure",
-      "path": "crossLayer/structure/beatInterleavedProcessor.js",
-      "description": "",
-      "scopes": [
-        "all",
-        "phrase"
-      ],
-      "atgChannels": [],
-      "interactions": [],
-      "readsSignals": false,
-      "emitsExplain": false,
-      "feedbackEnrolled": false
-    },
-    {
-      "name": "contextualTrust",
-      "folder": "structure",
-      "path": "crossLayer/structure/contextualTrust.js",
-      "description": "",
-      "scopes": [
-        "all"
-      ],
-      "atgChannels": [],
-      "interactions": [
-        "adaptiveTrustScores"
-      ],
-      "readsSignals": false,
-      "emitsExplain": false,
-      "feedbackEnrolled": false
-    },
-    {
       "name": "crossLayerClimaxEngine",
       "folder": "structure",
-      "path": "crossLayer/structure/crossLayerClimaxEngine.js",
+      "path": "crossLayer/structure/form/crossLayerClimaxEngine.js",
       "description": "Multi-parameter climax coordination.",
       "scopes": [
         "all",
@@ -590,7 +571,7 @@
     {
       "name": "crossLayerSilhouette",
       "folder": "structure",
-      "path": "crossLayer/structure/crossLayerSilhouette.js",
+      "path": "crossLayer/structure/form/crossLayerSilhouette.js",
       "description": "Holistic combined-output conductor.",
       "scopes": [
         "all",
@@ -609,41 +590,54 @@
       "feedbackEnrolled": false
     },
     {
-      "name": "entropyMetrics",
+      "name": "sectionIntentCurves",
       "folder": "structure",
-      "path": "crossLayer/structure/entropyMetrics.js",
-      "description": "src/crossLayer/structure/entropyMetrics.js",
-      "scopes": [],
+      "path": "crossLayer/structure/form/sectionIntentCurves.js",
+      "description": "",
+      "scopes": [
+        "all"
+      ],
+      "atgChannels": [],
+      "interactions": [],
+      "readsSignals": false,
+      "emitsExplain": false,
+      "feedbackEnrolled": false
+    },
+    {
+      "name": "beatInterleavedProcessor",
+      "folder": "structure",
+      "path": "crossLayer/structure/integration/beatInterleavedProcessor.js",
+      "description": "",
+      "scopes": [
+        "all",
+        "phrase"
+      ],
+      "atgChannels": [],
+      "interactions": [],
+      "readsSignals": false,
+      "emitsExplain": false,
+      "feedbackEnrolled": false
+    },
+    {
+      "name": "contextualTrust",
+      "folder": "structure",
+      "path": "crossLayer/structure/integration/contextualTrust.js",
+      "description": "",
+      "scopes": [
+        "all"
+      ],
       "atgChannels": [],
       "interactions": [
-        "entropyRegulator"
+        "adaptiveTrustScores"
       ],
       "readsSignals": false,
       "emitsExplain": false,
       "feedbackEnrolled": false
     },
     {
-      "name": "entropyRegulator",
-      "folder": "structure",
-      "path": "crossLayer/structure/entropyRegulator.js",
-      "description": "Cross-layer entropy regulation.",
-      "scopes": [
-        "all",
-        "section"
-      ],
-      "atgChannels": [],
-      "interactions": [
-        "entropyMetrics",
-        "explainabilityBus"
-      ],
-      "readsSignals": false,
-      "emitsExplain": true,
-      "feedbackEnrolled": false
-    },
-    {
       "name": "interactionHeatMap",
       "folder": "structure",
-      "path": "crossLayer/structure/interactionHeatMap.js",
+      "path": "crossLayer/structure/negotiation/interactionHeatMap.js",
       "description": "Passive cross-layer interaction observer.",
       "scopes": [
         "all",
@@ -658,7 +652,7 @@
     {
       "name": "negotiationEngine",
       "folder": "structure",
-      "path": "crossLayer/structure/negotiationEngine.js",
+      "path": "crossLayer/structure/negotiation/negotiationEngine.js",
       "description": "",
       "scopes": [
         "all"
@@ -678,15 +672,36 @@
       "feedbackEnrolled": false
     },
     {
-      "name": "sectionIntentCurves",
+      "name": "adaptiveTrustScores",
       "folder": "structure",
-      "path": "crossLayer/structure/sectionIntentCurves.js",
+      "path": "crossLayer/structure/trust/adaptiveTrustScores.js",
       "description": "",
       "scopes": [
         "all"
       ],
       "atgChannels": [],
-      "interactions": [],
+      "interactions": [
+        "cadenceAlignment",
+        "contextualTrust",
+        "explainabilityBus",
+        "negotiationEngine",
+        "restSynchronizer"
+      ],
+      "readsSignals": false,
+      "emitsExplain": true,
+      "feedbackEnrolled": false
+    },
+    {
+      "name": "adaptiveTrustScoresHelpers",
+      "folder": "structure",
+      "path": "crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "description": "",
+      "scopes": [],
+      "atgChannels": [],
+      "interactions": [
+        "adaptiveTrustScores",
+        "contextualTrust"
+      ],
       "readsSignals": false,
       "emitsExplain": false,
       "feedbackEnrolled": false
@@ -865,28 +880,16 @@
       "to": "sectionIntentCurves"
     },
     {
-      "from": "adaptiveTrustScores",
-      "to": "cadenceAlignment"
+      "from": "entropyMetrics",
+      "to": "entropyRegulator"
     },
     {
-      "from": "adaptiveTrustScores",
-      "to": "contextualTrust"
+      "from": "entropyRegulator",
+      "to": "entropyMetrics"
     },
     {
-      "from": "adaptiveTrustScores",
+      "from": "entropyRegulator",
       "to": "explainabilityBus"
-    },
-    {
-      "from": "adaptiveTrustScores",
-      "to": "negotiationEngine"
-    },
-    {
-      "from": "adaptiveTrustScores",
-      "to": "restSynchronizer"
-    },
-    {
-      "from": "contextualTrust",
-      "to": "adaptiveTrustScores"
     },
     {
       "from": "crossLayerClimaxEngine",
@@ -921,16 +924,8 @@
       "to": "spectralComplementarity"
     },
     {
-      "from": "entropyMetrics",
-      "to": "entropyRegulator"
-    },
-    {
-      "from": "entropyRegulator",
-      "to": "entropyMetrics"
-    },
-    {
-      "from": "entropyRegulator",
-      "to": "explainabilityBus"
+      "from": "contextualTrust",
+      "to": "adaptiveTrustScores"
     },
     {
       "from": "negotiationEngine",
@@ -959,6 +954,34 @@
     {
       "from": "negotiationEngine",
       "to": "sectionIntentCurves"
+    },
+    {
+      "from": "adaptiveTrustScores",
+      "to": "cadenceAlignment"
+    },
+    {
+      "from": "adaptiveTrustScores",
+      "to": "contextualTrust"
+    },
+    {
+      "from": "adaptiveTrustScores",
+      "to": "explainabilityBus"
+    },
+    {
+      "from": "adaptiveTrustScores",
+      "to": "negotiationEngine"
+    },
+    {
+      "from": "adaptiveTrustScores",
+      "to": "restSynchronizer"
+    },
+    {
+      "from": "adaptiveTrustScoresHelpers",
+      "to": "adaptiveTrustScores"
+    },
+    {
+      "from": "adaptiveTrustScoresHelpers",
+      "to": "contextualTrust"
     }
   ],
   "folderGroups": {
@@ -1001,22 +1024,23 @@
       "temporalGravity"
     ],
     "structure": [
-      "adaptiveTrustScores",
-      "beatInterleavedProcessor",
-      "contextualTrust",
-      "crossLayerClimaxEngine",
-      "crossLayerSilhouette",
       "entropyMetrics",
       "entropyRegulator",
+      "crossLayerClimaxEngine",
+      "crossLayerSilhouette",
+      "sectionIntentCurves",
+      "beatInterleavedProcessor",
+      "contextualTrust",
       "interactionHeatMap",
       "negotiationEngine",
-      "sectionIntentCurves"
+      "adaptiveTrustScores",
+      "adaptiveTrustScoresHelpers"
     ]
   },
   "scopeSummary": {
     "all": 37,
     "section": 16,
     "phrase": 8,
-    "unregistered": 3
+    "unregistered": 4
   }
 }

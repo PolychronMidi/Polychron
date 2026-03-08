@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-08T04:41:09.274Z",
-  "wallTimeSeconds": 415.2,
+  "generated": "2026-03-08T05:55:42.598Z",
+  "wallTimeSeconds": 449.9,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -39,12 +39,12 @@
     },
     {
       "label": "composition",
-      "elapsedSeconds": 411,
+      "elapsedSeconds": 445.8,
       "ok": true
     },
     {
       "label": "trace-summary",
-      "elapsedSeconds": 0.1,
+      "elapsedSeconds": 0,
       "ok": true
     },
     {

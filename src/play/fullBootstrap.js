@@ -302,7 +302,6 @@ fullBootstrap = (() => {
     'regimeReactiveDamping',
     'pipelineBalancer',
     'pipelineNormalizer',
-    'pipelineCouplingManagerConfig',
     'pipelineCouplingManagerSnapshot',
     'pipelineCouplingManager',
     'couplingHomeostasisSnapshot',
