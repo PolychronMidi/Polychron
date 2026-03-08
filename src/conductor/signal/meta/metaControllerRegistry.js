@@ -27,7 +27,7 @@ metaControllerRegistry = (() => {
     {
       id: 1,
       name: 'selfCalibratingCouplingTargets',
-      file: 'conductor/signal/pipelineCouplingManager.js',
+      file: 'conductor/signal/balancing/pipelineCouplingManager.js',
       axes: ['density', 'tension', 'flicker'],
       mechanism: 'Per-pair rolling |r| EMA. Intractable correlations relax targets upward; easily resolved pairs tighten toward baseline. Product-feedback guard freezes tightening when density product < 0.75.',
       gain: '_TARGET_RELAX_RATE = 0.0015, _TARGET_TIGHTEN_RATE = 0.0015, range [0.08, 0.45]',
@@ -37,7 +37,7 @@ metaControllerRegistry = (() => {
     {
       id: 2,
       name: 'regimeDistributionEquilibrator',
-      file: 'conductor/signal/regimeReactiveDamping.js',
+      file: 'conductor/signal/profiling/regimeReactiveDamping.js',
       axes: ['density', 'tension', 'flicker'],
       mechanism: '64-beat ring buffer tracks regime share. When exploring dominates, suppresses variety-promoting biases. Squared penalty above 60% exploring.',
       gain: '_EQUILIB_STRENGTH = 0.25',
@@ -67,7 +67,7 @@ metaControllerRegistry = (() => {
     {
       id: 5,
       name: 'trustStarvationAutoNourishment',
-      file: 'crossLayer/structure/adaptiveTrustScores.js',
+      file: 'crossLayer/structure/trust/adaptiveTrustScores.js',
       axes: ['trust'],
       mechanism: 'Per-system trust velocity EMA. When velocity stagnates >100 beats, injects synthetic payoff proportional to gap from mean trust. Hysteresis: engage at 0.001, disengage at 0.003 after 50 beats. Nourishment decays 10% per application.',
       gain: '_BASE_NOURISHMENT_STRENGTH = 0.15, _MIN_NOURISHMENT_STRENGTH = 0.05, _NOURISHMENT_DECAY = 0.90',
@@ -77,7 +77,7 @@ metaControllerRegistry = (() => {
     {
       id: 6,
       name: 'adaptiveCoherentRelaxation',
-      file: 'conductor/signal/pipelineCouplingManager.js',
+      file: 'conductor/signal/balancing/pipelineCouplingManager.js',
       axes: ['density', 'tension', 'flicker'],
       mechanism: 'EMA of coherent-regime share (~64-beat horizon). Low coherent share relaxes coupling targets (coupling IS the feature); high share tightens. Replaces static constant.',
       gain: '_COHERENT_SHARE_EMA_ALPHA = 0.015, formula 1.0 + max(0, 0.50 - share) * 1.2',
@@ -87,7 +87,7 @@ metaControllerRegistry = (() => {
     {
       id: 7,
       name: 'entropyPIController',
-      file: 'conductor/signal/systemDynamicsProfiler.js',
+      file: 'conductor/signal/profiling/systemDynamicsProfiler.js',
       axes: ['entropy'],
       mechanism: 'PI controller targeting 25% entropy variance share. Adaptive alpha for faster convergence on large error. Anti-windup clamp + integral freeze when P and I terms oppose.',
       gain: '_ENTROPY_KI = 0.05, _ENTROPY_INTEGRAL_CLAMP = 3.0, range [1.0, 15.0]',
@@ -107,7 +107,7 @@ metaControllerRegistry = (() => {
     {
       id: 9,
       name: 'couplingGainBudgetManager',
-      file: 'conductor/signal/pipelineCouplingManager.js',
+      file: 'conductor/signal/balancing/pipelineCouplingManager.js',
       axes: ['density', 'tension', 'flicker'],
       mechanism: 'Per-axis budget caps prevent coupling manager from dominating any single pipeline when many pairs overcorrelate simultaneously. Flicker gets 1.5x budget.',
       gain: '_AXIS_BUDGET = 0.24, _FLICKER_AXIS_BUDGET = 0.36',
@@ -127,7 +127,7 @@ metaControllerRegistry = (() => {
     {
       id: 11,
       name: 'interControllerConflictDetector',
-      file: 'conductor/signal/conductorMetaWatchdog.js',
+      file: 'conductor/signal/meta/conductorMetaWatchdog.js',
       axes: ['density', 'tension', 'flicker'],
       mechanism: 'Every 50 beats, checks all controller pairs per pipeline for opposing correction patterns. When >30/50 beats are opposing, attenuates the weaker controller by 50%. Relaxes attenuations when conflict subsides (+0.1/check).',
       gain: '_ATTENUATION_FACTOR = 0.50, _CONFLICT_THRESHOLD = 30, floor 0.1',
@@ -137,7 +137,7 @@ metaControllerRegistry = (() => {
     {
       id: 12,
       name: 'couplingHomeostasis',
-      file: 'conductor/signal/couplingHomeostasis.js',
+      file: 'conductor/signal/balancing/couplingHomeostasis.js',
       axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
       mechanism: 'Whole-system coupling energy governor. Tracks total |r| as single scalar, detects redistribution (total stable + pair turbulent = balloon effect), applies global gain throttle via pipelineCouplingManager.setGlobalGainMultiplier(). Gini coefficient concentration guard penalizes energy concentration in few pairs. Self-derives energy budget from adaptive target baselines.',
       gain: '_GAIN_THROTTLE_RATE = 0.01, _GAIN_RECOVERY_RATE = 0.02, _GAIN_FLOOR = 0.20, _GINI_THRESHOLD = 0.40',
@@ -147,7 +147,7 @@ metaControllerRegistry = (() => {
     {
       id: 13,
       name: 'axisEnergyEquilibrator',
-      file: 'conductor/signal/axisEnergyEquilibrator.js',
+      file: 'conductor/signal/balancing/axisEnergyEquilibrator.js',
       axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
       mechanism: 'Two-layer omnipotent coupling self-correction. Layer 1: pair-level hotspot detection via rollingAbsCorr -- tightens pairs exceeding 1.5x baseline, relaxes pairs below 0.3x baseline. Layer 2: axis-level energy balancing via getAxisEnergyShare() -- nudges all pairs on overloaded (>0.22) or suppressed (<0.12) axes. Gini-escalated rates. Trust-axis rate scaling: axes with fewer nudgeable pairs (trust/entropy/phase=3) get proportionally faster relaxation via _EFFECTIVE_NUDGEABLE map. Per-regime telemetry tracks regimeBeats, regimePairAdj, regimeAxisAdj, regimeTightenBudget for diagnostic extraction. Permanently eliminates manual whack-a-mole.',
       gain: 'L1: _PAIR_TIGHTEN_RATE=0.003, _PAIR_RELAX_RATE=0.0015, _PAIR_COOLDOWN=3. L2: _AXIS_TIGHTEN_RATE=0.002, _AXIS_RELAX_RATE=0.0012, _AXIS_COOLDOWN=4, _GINI_ESCALATION=0.40, _RELAX_RATE_REF=5, _EFFECTIVE_NUDGEABLE={density:5,tension:5,flicker:5,entropy:3,trust:3,phase:3}',

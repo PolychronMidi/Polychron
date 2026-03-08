@@ -1,22 +1,12 @@
 // src/crossLayer/structure/index.js - Section-level orchestration, meta-regulation & diagnostics.
 
-// @ts-ignore: side-effect module load
-require('./adaptiveTrustScores');
-// @ts-ignore: side-effect module load
-require('./crossLayerClimaxEngine');
-// @ts-ignore: side-effect module load
-require('./crossLayerSilhouette');
-// @ts-ignore: side-effect module load
-require('./entropyMetrics');
-// @ts-ignore: side-effect module load
-require('./entropyRegulator');
-// @ts-ignore: side-effect module load
-require('./interactionHeatMap');
-// @ts-ignore: side-effect module load
-require('./negotiationEngine');
-// @ts-ignore: side-effect module load
-require('./sectionIntentCurves');
-// @ts-ignore: regime-contextual trust learning (extends adaptiveTrustScores)
-require('./contextualTrust');
-// @ts-ignore: beat-interleaved layer processor (cross-layer beat awareness)
-require('./beatInterleavedProcessor');
+// @ts-ignore: trust scoring foundations
+require('./trust');
+// @ts-ignore: section-level shape and climax planners
+require('./form');
+// @ts-ignore: entropy diagnostics and regulation helpers
+require('./entropy');
+// @ts-ignore: interaction heat analysis and negotiation stack
+require('./negotiation');
+// @ts-ignore: contextual trust integration and beat interleaving
+require('./integration');

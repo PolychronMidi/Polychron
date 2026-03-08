@@ -1,7 +1,7 @@
 {
   "meta": {
     "script": "validate-feedback-graph.js",
-    "timestamp": "2026-03-08T04:34:14.273Z",
+    "timestamp": "2026-03-08T05:22:05.304Z",
     "graphPath": "metrics/feedback_graph.json"
   },
   "jsonLoopCount": 6,
@@ -13,28 +13,28 @@
       "type": "closedLoopController"
     },
     {
-      "name": "coherenceMonitor",
-      "file": "conductor/signal/coherenceMonitor.js",
-      "type": "registerLoop"
-    },
-    {
       "name": "pipelineBalancer.tension",
-      "file": "conductor/signal/pipelineBalancer.js",
+      "file": "conductor/signal/balancing/pipelineBalancer.js",
       "type": "closedLoopController"
     },
     {
       "name": "pipelineCouplingManager",
-      "file": "conductor/signal/pipelineCouplingManager.js",
+      "file": "conductor/signal/balancing/pipelineCouplingManager.js",
+      "type": "registerLoop"
+    },
+    {
+      "name": "coherenceMonitor",
+      "file": "conductor/signal/foundations/coherenceMonitor.js",
       "type": "registerLoop"
     },
     {
       "name": "regimeReactiveDamping",
-      "file": "conductor/signal/regimeReactiveDamping.js",
+      "file": "conductor/signal/profiling/regimeReactiveDamping.js",
       "type": "registerLoop"
     },
     {
       "name": "entropyRegulator",
-      "file": "crossLayer/structure/entropyRegulator.js",
+      "file": "crossLayer/structure/entropy/entropyRegulator.js",
       "type": "closedLoopController"
     }
   ],
