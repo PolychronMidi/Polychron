@@ -1,3 +1,40 @@
+## R56 — 2026-03-07 — DRIFTED
+
+**Profile:** explosive | **Beats:** 376 | **Duration:** 48.1s | **Notes:** 12,689
+**Fingerprint:** 7/11 stable | Drifted: noteCount, coupling, exceedanceSeverity (beats), hotspotMigration
+
+### Key Observations
+- **PIPELINE HEALTH RECOVERED FULLY AND THE STRUCTURAL TRACE IS BACK.** All `16/16` pipeline steps passed in `495.6s`, section coverage recovered from `1/5` to `4/4`, and the trace expanded from `48` unique beat keys over `9.8s` to `310` unique beat keys over `48.1s`.
+- **OUTPUT LOAD NORMALIZED SHARPLY, BUT THE GOVERNOR IS STILL DIAGNOSTICALLY BLIND.** Notes per unique beat collapsed from `323.02` to `40.93` and notes/sec from `1583.49` to `263.94`, yet `outputLoadGuard` still closes as `null`, so the run shows the load effect without proving whether the new guard actually intervened.
+- **COUPLING PRESSURE MIGRATED INTO ENTROPY SURFACES INSTEAD OF DISAPPEARING.** Total pair exceedance beats worsened `30 -> 102`, the top pairs became `density-entropy=29` and `flicker-entropy=29`, entropy now carries the largest axis energy share (`0.2348`), and `entropy-phase` finished as the dominant residual tail pair (`0.7897`).
+- **CADENCE AND WARMUP TELEMETRY IMPROVED MATERIALLY, BUT THE REGIME NOW LEANS TOO FAR INTO EXPLORATION.** Warmup entries fell `30 -> 7`, beat-level escalation refreshed `107` trace entries, and the controller recorded one forced coherent-monopoly break, yet the resolved cadence still spent `104/131` ticks in `exploring` with only `4` evolving ticks.
+- **PHASE TELEMETRY IS NOW USABLE BUT STILL PARTIALLY GATED, AND ONE TRUST PAIR REMAINS UNDER-SEEN.** Phase integrity improved from `critical` to `warning` with `avgCouplingCoverage=0.3803`, but `233` entries still reported zero coverage, `226` were variance-gated, the longest stale run reached `47` beats, and `density-trust` still shows the only reconciliation gap (`0.156`).
+
+### Evolutions Applied (from R55)
+- E1: **Section-Coverage Progress Integrity Fence** — **confirmed** — `sectionCoverage.coverageRatio` recovered `0.2 -> 1.0`, `missingSections=[]`, and both `l1ProgressRegressions` and `l1TimeRegressions` closed at `0`.
+- E2: **Warmup Compression for Short Atmospheric Runs** — **confirmed** — warmup entries fell from `30` to `7`, and the run no longer collapses into warmup-dominant telemetry.
+- E3: **Snapshot-Reuse Cadence Escalation** — **confirmed** — `escalatedEntries=107`, `analysisTicks=113`, and `traceEntriesPerProfilerTick` improved from `5.56` to `3.33`.
+- E4: **Phase-Surface Availability Reconstruction** — **confirmed** — `avgCouplingCoverage` rose from `0.0` to `0.3803`, phase telemetry now reports `available/variance-gated` pair states, and integrity improved `critical -> warning`.
+- E5: **Short-Run Axis Hand-off Actuation** — **confirmed** — `axisEnergyEquilibrator.pairAdjustments` rose `0 -> 91`, `globalGainMultiplier` recovered `0.2199 -> 0.5718`, and `floorRecoveryActive=true` with `26` ticks remaining.
+- E6: **Output-Load Parity Governor** — **inconclusive** — load normalized strongly (`notesPerUniqueBeat 538.15 -> 40.93`), but `outputLoadGuard=null` means the guard’s actual intervention rate is still unobservable.
+
+### Evolutions Proposed (for R57)
+- E1: **Trace Output-Load Guard Serialization Repair** — src/writer/traceDrain.js, scripts/trace-summary.js, scripts/narrative-digest.js
+- E2: **Entropy-Surface Budget Arbitration** — src/conductor/signal/pipelineCouplingManager.js, src/conductor/signal/axisEnergyEquilibrator.js, src/conductor/signal/couplingHomeostasis.js
+- E3: **Non-Nudgeable Tail Hand-off Dampening** — src/conductor/signal/couplingHomeostasis.js, src/conductor/signal/axisEnergyEquilibrator.js
+- E4: **Pair-Level Telemetry Reconciliation for Phase and Trust** — src/conductor/signal/systemDynamicsProfiler.js, src/play/crossLayerBeatRecord.js, scripts/trace-summary.js, scripts/narrative-digest.js
+- E5: **Exploring-Overshare Regime Rebalance** — src/conductor/signal/regimeReactiveDamping.js, src/conductor/signal/regimeClassifier.js
+- E6: **Coverage-Aware NoteCount Fingerprint Calibration** — scripts/golden-fingerprint.js, scripts/compare-runs.js, scripts/fingerprint-drift-explainer.js
+
+### Hypotheses to Track
+- Serializing `outputLoadGuard` all the way into `trace.jsonl` should surface non-null guard metrics and show whether the note-count contraction came from real governor interventions or just changed musical behavior.
+- Entropy-surface arbitration plus non-nudgeable hand-off dampening should cut `density-entropy` and `flicker-entropy` below roughly `15` exceedance beats each, reduce entropy axis share below `0.22`, and dislodge `entropy-phase` as the dominant tail pair.
+- Pair-level reconciliation should clear the last telemetry defect (`underSeenPairCount 1 -> 0`) while lifting phase coverage above `0.45` and shrinking the `47`-beat stale run.
+- Regime rebalance should pull exploring below about `60%` of resolved cadence without reintroducing warmup dominance or coherent monopoly.
+- Coverage-aware note-count fingerprinting should stop incomplete baselines from overstating drift while still flagging real load explosions.
+
+---
+
 ## R55 — 2026-03-07 — DRIFTED
 
 **Profile:** atmospheric | **Beats:** 50 | **Duration:** 9.8s | **Notes:** 25,831

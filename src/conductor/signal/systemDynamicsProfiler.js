@@ -25,6 +25,7 @@ systemDynamicsProfiler = (() => {
   const WINDOW = 32; // rolling window for statistics
   const MIN_WINDOW_DEFAULT = 6; // minimum beats before meaningful analysis
   const PHASE_COUPLING_PAIRS = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
+  const PHASE_STALE_PAIR_THRESHOLD = 12;
 
   // -- State --
   /** @type {Array<number[]>} smoothed ring buffer for velocity/curvature */
@@ -147,13 +148,14 @@ systemDynamicsProfiler = (() => {
   function _getPhasePairStates(matrix) {
     /** @type {Record<string, string>} */
     const states = {};
+    const phaseSignalStale = _lastPhaseSignalValid && !_lastPhaseChanged && _phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
     for (let i = 0; i < PHASE_COUPLING_PAIRS.length; i++) {
       const pair = PHASE_COUPLING_PAIRS[i];
       const value = matrix && Object.prototype.hasOwnProperty.call(matrix, pair)
         ? matrix[pair]
         : undefined;
-      if (typeof value === 'number' && Number.isFinite(value)) states[pair] = 'available';
-      else if (typeof value === 'number' && Number.isNaN(value)) states[pair] = 'variance-gated';
+      if (typeof value === 'number' && Number.isFinite(value)) states[pair] = phaseSignalStale ? 'stale' : 'available';
+      else if (typeof value === 'number' && Number.isNaN(value)) states[pair] = phaseSignalStale ? 'stale-gated' : 'variance-gated';
       else states[pair] = 'missing';
     }
     return states;
@@ -506,9 +508,11 @@ systemDynamicsProfiler = (() => {
     const beatDelta = currentBeatCounter - _lastBeatCountAtAnalysis;
     const warmupActive = _lastSnapshot.warmupTicksRemaining > 0;
     const phaseUnavailable = _lastSnapshot.phaseCouplingAvailablePairs === 0;
+    const phaseStale = _lastSnapshot.phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
+    const sparsePhaseCoverage = _lastSnapshot.phaseCouplingCoverage < 0.5;
     const snapshotStale = beatDelta >= analysisSettings.snapshotReuseBeats;
     if (beatDelta <= 0) return _lastSnapshot;
-    if (force || warmupActive || phaseUnavailable || snapshotStale) {
+    if (force || warmupActive || phaseUnavailable || phaseStale || (sparsePhaseCoverage && beatDelta >= m.max(1, analysisSettings.snapshotReuseBeats - 1)) || snapshotStale) {
       return analyze('beat-escalation');
     }
     return _lastSnapshot;

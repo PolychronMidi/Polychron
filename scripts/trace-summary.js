@@ -127,6 +127,7 @@ function summarizeTrace(entries, manifest) {
   let phaseTelemetryChangedEntries = 0;
   let phaseSignalInvalidEntries = 0;
   let phaseTelemetryMaxStaleBeats = 0;
+  let phaseStaleEntries = 0;
   let phaseCouplingCoverageSum = 0;
   let phaseCouplingCoverageCount = 0;
   let phaseZeroCoverageEntries = 0;
@@ -134,6 +135,7 @@ function summarizeTrace(entries, manifest) {
   let phaseCouplingMissingPairsMax = 0;
   const phasePairStateCounts = {};
   let phaseVarianceGatedEntries = 0;
+  const phasePairStateDetailCounts = {};
   const layerBeatKeySets = { L1: new Set(), L2: new Set() };
   const beatKeyCounts = {};
   let duplicateLayerBeatKeys = 0;
@@ -272,12 +274,14 @@ function summarizeTrace(entries, manifest) {
     if (e.phaseTelemetry && typeof e.phaseTelemetry === 'object') {
       const phaseTelemetry = e.phaseTelemetry;
       let varianceGated = false;
+      let stalePairObserved = false;
       phaseTelemetryEntries++;
       if (phaseTelemetry.phaseSignalValid) phaseTelemetryValidEntries++;
       else phaseSignalInvalidEntries++;
       if (phaseTelemetry.phaseChanged) phaseTelemetryChangedEntries++;
       if (typeof phaseTelemetry.phaseStaleBeats === 'number') {
         phaseTelemetryMaxStaleBeats = Math.max(phaseTelemetryMaxStaleBeats, phaseTelemetry.phaseStaleBeats);
+        if (phaseTelemetry.phaseStaleBeats > 0) phaseStaleEntries++;
       }
       if (typeof phaseTelemetry.phaseCouplingCoverage === 'number') {
         phaseCouplingCoverageSum += phaseTelemetry.phaseCouplingCoverage;
@@ -293,13 +297,18 @@ function summarizeTrace(entries, manifest) {
       if (phaseTelemetry.pairStates && typeof phaseTelemetry.pairStates === 'object') {
         const pairStateKeys = Object.keys(phaseTelemetry.pairStates);
         for (let pairIndex = 0; pairIndex < pairStateKeys.length; pairIndex++) {
-          const state = phaseTelemetry.pairStates[pairStateKeys[pairIndex]];
+          const pairKey = pairStateKeys[pairIndex];
+          const state = phaseTelemetry.pairStates[pairKey];
           if (typeof state !== 'string' || !state) continue;
           phasePairStateCounts[state] = (phasePairStateCounts[state] || 0) + 1;
+          if (!phasePairStateDetailCounts[pairKey]) phasePairStateDetailCounts[pairKey] = {};
+          phasePairStateDetailCounts[pairKey][state] = (phasePairStateDetailCounts[pairKey][state] || 0) + 1;
           if (state === 'variance-gated') varianceGated = true;
+          if (state === 'stale' || state === 'stale-gated') stalePairObserved = true;
         }
       }
       if (varianceGated) phaseVarianceGatedEntries++;
+      else if (stalePairObserved) phaseStaleEntries++;
     }
 
     if (e.outputLoadGuard && typeof e.outputLoadGuard === 'object') {
@@ -943,6 +952,8 @@ function summarizeTrace(entries, manifest) {
       changedEntries: phaseTelemetryChangedEntries,
       changedRate: Number((phaseTelemetryChangedEntries / phaseTelemetryEntries).toFixed(4)),
       maxStaleBeats: phaseTelemetryMaxStaleBeats,
+      staleEntries: phaseStaleEntries,
+      staleRate: Number((phaseStaleEntries / phaseTelemetryEntries).toFixed(4)),
       avgCouplingCoverage: phaseCouplingCoverageCount > 0 ? Number((phaseCouplingCoverageSum / phaseCouplingCoverageCount).toFixed(4)) : 0,
       zeroCouplingCoverageEntries: phaseZeroCoverageEntries,
       maxAvailablePairs: phaseCouplingAvailablePairsMax,
@@ -950,9 +961,10 @@ function summarizeTrace(entries, manifest) {
       varianceGatedEntries: phaseVarianceGatedEntries,
       varianceGatedRate: Number((phaseVarianceGatedEntries / phaseTelemetryEntries).toFixed(4)),
       pairStateCounts: Object.keys(phasePairStateCounts).length > 0 ? phasePairStateCounts : null,
+      pairStateDetailCounts: Object.keys(phasePairStateDetailCounts).length > 0 ? phasePairStateDetailCounts : null,
       integrity: phaseSignalInvalidEntries > 0 || phaseZeroCoverageEntries === phaseTelemetryEntries
         ? 'critical'
-        : (phaseTelemetryMaxStaleBeats > 32 || phaseZeroCoverageEntries > 0 || phaseVarianceGatedEntries > 0 ? 'warning' : 'healthy')
+        : (phaseTelemetryMaxStaleBeats > 32 || phaseStaleEntries > 0 || phaseZeroCoverageEntries > 0 || phaseVarianceGatedEntries > 0 ? 'warning' : 'healthy')
     }
     : null;
   const telemetryHealth = (() => {
@@ -967,6 +979,9 @@ function summarizeTrace(entries, manifest) {
     const phaseAvailabilityPenalty = phaseTelemetry && typeof phaseTelemetry.varianceGatedRate === 'number'
       ? clamp(phaseTelemetry.varianceGatedRate / 0.85, 0, 1) * 0.04
       : 0;
+    const phaseStalePenalty = phaseTelemetry && typeof phaseTelemetry.staleRate === 'number'
+      ? clamp(phaseTelemetry.staleRate / 0.35, 0, 1) * 0.05
+      : 0;
     const score = clamp(
       (phaseTelemetryPresent ? 0 : 0.45) +
       (phaseIntegrity === 'critical' ? 0.25 : phaseIntegrity === 'warning' ? 0.12 : 0) +
@@ -974,7 +989,8 @@ function summarizeTrace(entries, manifest) {
       clamp(maxGap / 0.5, 0, 1) * 0.08 +
       clamp((1 - sectionCoverageRatio) / 0.34, 0, 1) * 0.02 +
       progressPenalty +
-      phaseAvailabilityPenalty,
+      phaseAvailabilityPenalty +
+      phaseStalePenalty,
       0,
       1
     );
@@ -986,6 +1002,7 @@ function summarizeTrace(entries, manifest) {
       maxGap: Number(toNum(maxGap, 0).toFixed(4)),
       sectionCoverageRatio: Number(toNum(sectionCoverageRatio, 1).toFixed(4)),
       progressIntegrity: progressIntegrity.integrity,
+      phaseStaleRate: phaseTelemetry && typeof phaseTelemetry.staleRate === 'number' ? phaseTelemetry.staleRate : null,
       profilerBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
       profilerBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
     };

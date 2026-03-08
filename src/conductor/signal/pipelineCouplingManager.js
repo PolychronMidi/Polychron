@@ -480,13 +480,44 @@ pipelineCouplingManager = (() => {
     const _recoveryAxisHandOffPressure = _homeostasisState && typeof _homeostasisState.recoveryAxisHandOffPressure === 'number'
       ? _homeostasisState.recoveryAxisHandOffPressure
       : 0;
+    const _recoveryDominantAxes = _homeostasisState && Array.isArray(_homeostasisState.recoveryDominantAxes)
+      ? _homeostasisState.recoveryDominantAxes
+      : [];
     const _shortRunRecoveryBias = _homeostasisState && typeof _homeostasisState.shortRunRecoveryBias === 'number'
       ? _homeostasisState.shortRunRecoveryBias
       : 0;
+    const _nonNudgeableTailPressure = _homeostasisState && typeof _homeostasisState.nonNudgeableTailPressure === 'number'
+      ? _homeostasisState.nonNudgeableTailPressure
+      : 0;
+    const _nonNudgeableTailPair = _homeostasisState && typeof _homeostasisState.nonNudgeableTailPair === 'string'
+      ? _homeostasisState.nonNudgeableTailPair
+      : '';
     const _telemetryBeatSpan = snap && typeof snap.telemetryBeatSpan === 'number'
       ? clamp(m.round(snap.telemetryBeatSpan), 1, 8)
       : 1;
     const matrix = snap.couplingMatrix;
+    const _axisShareSnapshot = getAxisEnergyShare();
+    const _axisShares = _axisShareSnapshot && _axisShareSnapshot.shares ? _axisShareSnapshot.shares : {};
+    const _entropyAxisShare = typeof _axisShares.entropy === 'number' && Number.isFinite(_axisShares.entropy)
+      ? _axisShares.entropy
+      : 0;
+    const _entropyAxisPressure = clamp((_entropyAxisShare - 0.20) / 0.08, 0, 1);
+
+    function _sharesAxis(pairKey, axis) {
+      return typeof pairKey === 'string' && typeof axis === 'string' && pairKey.indexOf(axis) !== -1;
+    }
+
+    function _sharesAnyAxis(pairKey, axes) {
+      if (typeof pairKey !== 'string' || !Array.isArray(axes) || axes.length === 0) return false;
+      for (let i = 0; i < axes.length; i++) {
+        if (_sharesAxis(pairKey, axes[i])) return true;
+      }
+      return false;
+    }
+
+    const _nonNudgeableAxes = _nonNudgeableTailPair && _nonNudgeableTailPair.indexOf('-') !== -1
+      ? _nonNudgeableTailPair.split('-')
+      : (_recoveryDominantAxes.length > 0 ? _recoveryDominantAxes.slice() : []);
 
     _budgetPriorityScore = {};
     _budgetPriorityBoost = {};
@@ -537,6 +568,14 @@ pipelineCouplingManager = (() => {
               1
             )
             : 0;
+          const nonNudgeableHandOffPressure = _nonNudgeableTailPressure > 0 && _sharesAnyAxis(key, _nonNudgeableAxes)
+            ? clamp(
+              _nonNudgeableTailPressure * (isEntropySurfacePair ? 0.90 : (key.indexOf('phase') !== -1 || key.indexOf('trust') !== -1 ? 0.72 : 0.55)) +
+              _entropyAxisPressure * (isEntropySurfacePair ? 0.24 : 0.08),
+              0,
+              1.2
+            )
+            : 0;
           const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
             ? clamp(_tailPressureByPair[key], 0, 1)
             : 0;
@@ -552,6 +591,8 @@ pipelineCouplingManager = (() => {
             residualP95Pressure * 0.10 +
             densityFlickerClampPressure * 0.18 +
             entropySpilloverPressure * 0.16 +
+            _entropyAxisPressure * (isEntropySurfacePair ? 0.18 : 0.04) +
+            nonNudgeableHandOffPressure * 0.16 +
             effectiveShortfall * 0.08 +
             exceedPressure * 0.08 +
             clamp(_tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
@@ -563,7 +604,7 @@ pipelineCouplingManager = (() => {
             rankedPairs.push({
               key,
               score,
-              boost: 1 + clamp(score + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40, 0, 1.4) * 0.28
+              boost: 1 + clamp(score + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40 + nonNudgeableHandOffPressure * 0.45 + _entropyAxisPressure * (isEntropySurfacePair ? 0.50 : 0.15), 0, 1.6) * 0.28
             });
           }
         }
@@ -687,6 +728,14 @@ pipelineCouplingManager = (() => {
         const isTrustPair = (dimA === 'trust' || dimB === 'trust');
         const isEntropySurfacePair = _ENTROPY_SURFACE_SET.has(key);
         const isNonNudgeablePair = _NON_NUDGEABLE_SET.has(key);
+        const nonNudgeableHandOffPressure = !isNonNudgeablePair && _nonNudgeableTailPressure > 0 && _sharesAnyAxis(key, _nonNudgeableAxes)
+          ? clamp(
+            _nonNudgeableTailPressure * (isEntropySurfacePair ? 0.95 : (isPhaseSurfacePair || isTrustPair ? 0.78 : 0.56)) +
+            _entropyAxisPressure * (isEntropySurfacePair ? 0.30 : 0),
+            0,
+            1.25
+          )
+          : 0;
         const tailTelemetry = _getPairTailTelemetry(ps);
         const p95 = tailTelemetry.p95;
         const telemetryHotspotRate = tailTelemetry.hotspotRate;
@@ -713,8 +762,8 @@ pipelineCouplingManager = (() => {
             1
           )
           : 0;
-        if ((coherentSurfacePressure > 0 || entropySurfacePressure > 0) && targetScale > 1.0) {
-          const surfacePressure = m.max(coherentSurfacePressure, entropySurfacePressure);
+        if ((coherentSurfacePressure > 0 || entropySurfacePressure > 0 || nonNudgeableHandOffPressure > 0) && targetScale > 1.0) {
+          const surfacePressure = m.max(coherentSurfacePressure, entropySurfacePressure, nonNudgeableHandOffPressure);
           const reducedRelaxScale = 1 + (targetScale - 1.0) * m.max(0.15, 1 - surfacePressure * 0.85);
           target = _getTarget(key) * reducedRelaxScale;
         }
@@ -796,6 +845,14 @@ pipelineCouplingManager = (() => {
                 rate *= 1 + entropyPressure;
                 ps.heatPenalty = m.min((ps.heatPenalty || 0) + entropyPressure * 0.14, 1.0);
               }
+            }
+            if (isEntropySurfacePair && _entropyAxisPressure > 0) {
+              rate *= 1 + _entropyAxisPressure * 0.55;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + _entropyAxisPressure * 0.08, 1.0);
+            }
+            if (nonNudgeableHandOffPressure > 0) {
+              rate *= 1 + nonNudgeableHandOffPressure * 0.45;
+              ps.heatPenalty = m.min((ps.heatPenalty || 0) + nonNudgeableHandOffPressure * 0.08, 1.0);
             }
             // R46 E3: Self-correcting phase-pair hotspot controller.
             // Use current |r|, p95, and exceedance rate from the recent ring
@@ -1054,6 +1111,12 @@ const rawEmaInput = absCorr;
         }
         if (isEntropySurfacePair && entropySurfacePressure > 0) {
           effectiveGain *= 1 + entropySurfacePressure * 0.55;
+        }
+        if (isEntropySurfacePair && _entropyAxisPressure > 0) {
+          effectiveGain *= 1 + _entropyAxisPressure * 0.45;
+        }
+        if (nonNudgeableHandOffPressure > 0) {
+          effectiveGain *= 1 + nonNudgeableHandOffPressure * (isEntropySurfacePair ? 0.85 : 0.60);
         }
         if (isDensityFlickerPair && _densityFlickerTailPressure > 0) {
           const densityFlickerClampPressure = clamp(

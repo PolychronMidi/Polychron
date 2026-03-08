@@ -282,14 +282,32 @@ function generateNarrative() {
       if (summary.phaseTelemetry) {
         const phaseTelemetry = summary.phaseTelemetry;
         lines.push(`Phase telemetry closed **${phaseTelemetry.integrity}** with **${pct(toNum(phaseTelemetry.validRate, 0))}** valid samples, **${pct(toNum(phaseTelemetry.changedRate, 0))}** changing samples, and average phase-coupling coverage **${pct(toNum(phaseTelemetry.avgCouplingCoverage, 0))}**.`);
-        if (phaseTelemetry.maxStaleBeats > 0 || phaseTelemetry.zeroCouplingCoverageEntries > 0) {
-          lines.push(`The longest stale phase run was **${phaseTelemetry.maxStaleBeats}** beats, and **${phaseTelemetry.zeroCouplingCoverageEntries}** entries reported zero phase-coupling coverage.`);
+        if (phaseTelemetry.maxStaleBeats > 0 || phaseTelemetry.zeroCouplingCoverageEntries > 0 || toNum(phaseTelemetry.staleEntries, 0) > 0) {
+          lines.push(`The longest stale phase run was **${phaseTelemetry.maxStaleBeats}** beats, **${toNum(phaseTelemetry.staleEntries, 0)}** entries carried stale pair telemetry, and **${phaseTelemetry.zeroCouplingCoverageEntries}** entries reported zero phase-coupling coverage.`);
         }
         if (phaseTelemetry.pairStateCounts) {
           const available = toNum(phaseTelemetry.pairStateCounts.available, 0);
           const varianceGated = toNum(phaseTelemetry.pairStateCounts['variance-gated'], 0);
           const missing = toNum(phaseTelemetry.pairStateCounts.missing, 0);
-          lines.push(`Phase-surface availability resolved to **${available} available**, **${varianceGated} variance-gated**, and **${missing} missing** pair observations across the trace.`);
+          const stale = toNum(phaseTelemetry.pairStateCounts.stale, 0) + toNum(phaseTelemetry.pairStateCounts['stale-gated'], 0);
+          lines.push(`Phase-surface availability resolved to **${available} available**, **${varianceGated} variance-gated**, **${stale} stale/stale-gated**, and **${missing} missing** pair observations across the trace.`);
+        }
+        if (phaseTelemetry.pairStateDetailCounts) {
+          const stalePairs = Object.entries(phaseTelemetry.pairStateDetailCounts)
+            .map(([pair, counts]) => ({
+              pair,
+              stale: toNum(counts.stale, 0) + toNum(counts['stale-gated'], 0),
+              varianceGated: toNum(counts['variance-gated'], 0)
+            }))
+            .filter((entry) => entry.stale > 0 || entry.varianceGated > 0)
+            .sort((a, b) => {
+              if (b.stale !== a.stale) return b.stale - a.stale;
+              return b.varianceGated - a.varianceGated;
+            })
+            .slice(0, 3);
+          if (stalePairs.length > 0) {
+            lines.push(`The most reconciliation-starved phase pairs were ${stalePairs.map((entry) => `**${entry.pair}** (${entry.stale} stale, ${entry.varianceGated} variance-gated)`).join(', ')}.`);
+          }
         }
       } else if (summary.telemetryHealth) {
         lines.push('Phase telemetry was **missing from the trace payload**, so phase-surface diagnostics remain untrusted for this run.');
@@ -297,6 +315,13 @@ function generateNarrative() {
       if (summary.telemetryHealth) {
         const telemetryHealth = summary.telemetryHealth;
         lines.push(`Telemetry health scored **${dec(toNum(telemetryHealth.score, 0), 3)}** with **${toNum(telemetryHealth.underSeenPairCount, 0)}** under-seen controller pairs and reconciliation gap **${dec(toNum(telemetryHealth.maxGap, 0), 3)}**.`);
+        if (summary.adaptiveTelemetryReconciliation && Array.isArray(summary.adaptiveTelemetryReconciliation.pairs) && summary.adaptiveTelemetryReconciliation.pairs.length > 0) {
+          const underSeenPairs = summary.adaptiveTelemetryReconciliation.pairs
+            .slice(0, 3)
+            .map((entry) => `**${entry.pair}** (gap ${dec(toNum(entry.gap, 0), 3)})`)
+            .join(', ');
+          lines.push(`The worst controller/trace reconciliation gaps remained in ${underSeenPairs}.`);
+        }
       }
       if (summary.outputLoadGuard) {
         const outputLoadGuard = summary.outputLoadGuard;
