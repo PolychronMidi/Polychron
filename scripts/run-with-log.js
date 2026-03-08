@@ -79,7 +79,7 @@ const logStream = createWriteStream(`log/${logFile}`);
 // Preserve and propagate RUN_WITH_LOG_OWNER so nested run-with-log invocations are recognized as children
 const childEnv = Object.assign({}, process.env);
 if (!childEnv.RUN_WITH_LOG_OWNER) childEnv.RUN_WITH_LOG_OWNER = String(owner || process.pid);
-const proc = spawn(command[0], command.slice(1), { shell: true, stdio: 'pipe', env: childEnv });
+const proc = spawn(command[0], command.slice(1), { shell: false, stdio: 'pipe', env: childEnv });
 
 /**
  * Normalize a single line for the persistent log:

@@ -1,59 +1,31 @@
 {
   "meta": {
-    "generated": "2026-03-08T06:34:55.728Z",
-    "verdict": "DRIFTED"
+    "generated": "2026-03-08T16:42:50.260Z",
+    "verdict": "EVOLVED"
   },
-  "narrative": "WARNING: Significant character drift across 5 dimensions. This may indicate a regression or fundamental parameter change. tension arc reshaped: opening (0-25%): +0.331; middle (35-65%): +0.594; closing (75-90%): +0.425; tail (90-100%): +0.289. regime balance shifted: initializing: 600.0% -> 1.7%; evolving: 1900.0% -> 0.7%; coherent: 2500.0% -> 5.4%; exploring: 0.0% -> 92.3%. mean coupling deviation: 0.2652. exceedance hotspots shifted from [density-flicker: 26, tension-trust: 18, tension-flicker: 7] to [entropy-trust: 6, density-flicker: 5, density-tension: 3]. hotspot surface migrated from [density-flicker: 26, tension-trust: 18, tension-flicker: 7] to [entropy-trust: 6, density-flicker: 5, density-tension: 3].",
+  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. hotspot surface migrated from [entropy-trust: 6, density-flicker: 5, density-tension: 3] to [density-flicker: 10, density-tension: 8, density-trust: 8].",
   "explanations": [
     {
-      "dimension": "tensionArc",
-      "delta": 0.4263430232345913,
-      "tolerance": 0.35,
-      "cause": "tension arc reshaped: opening (0-25%): +0.331; middle (35-65%): +0.594; closing (75-90%): +0.425; tail (90-100%): +0.289"
-    },
-    {
-      "dimension": "regimeDistribution",
-      "delta": 12.711254612546124,
-      "tolerance": 0.3,
-      "cause": "regime balance shifted: initializing: 600.0% -> 1.7%; evolving: 1900.0% -> 0.7%; coherent: 2500.0% -> 5.4%; exploring: 0.0% -> 92.3%"
-    },
-    {
-      "dimension": "coupling",
-      "delta": 0.2652071428571428,
-      "tolerance": 0.25,
-      "cause": "mean coupling deviation: 0.2652"
-    },
-    {
-      "dimension": "exceedanceSeverity (beats)",
-      "delta": 288.27,
-      "tolerance": 55,
-      "cause": "exceedance hotspots shifted from [density-flicker: 26, tension-trust: 18, tension-flicker: 7] to [entropy-trust: 6, density-flicker: 5, density-tension: 3]",
-      "uniqueBeats": {
-        "current": 13,
-        "previous": 27
-      }
-    },
-    {
       "dimension": "hotspotMigration",
-      "delta": 0.6765,
+      "delta": 0.6085,
       "tolerance": 0.55,
-      "cause": "hotspot surface migrated from [density-flicker: 26, tension-trust: 18, tension-flicker: 7] to [entropy-trust: 6, density-flicker: 5, density-tension: 3]",
+      "cause": "hotspot surface migrated from [entropy-trust: 6, density-flicker: 5, density-tension: 3] to [density-flicker: 10, density-tension: 8, density-trust: 8]",
       "axisShift": {
         "current": {
+          "density": 0.1652,
+          "tension": 0.158,
+          "flicker": 0.137,
+          "entropy": 0.2081,
+          "trust": 0.1491,
+          "phase": 0.1827
+        },
+        "previous": {
           "density": 0.2011,
           "tension": 0.1688,
           "flicker": 0.1606,
           "entropy": 0.1873,
           "trust": 0.1391,
           "phase": 0.143
-        },
-        "previous": {
-          "density": 0.2261,
-          "tension": 0.1278,
-          "flicker": 0.2505,
-          "entropy": 0.2,
-          "trust": 0.1956,
-          "phase": 0
         }
       },
       "meaning": "stress redistributed across hotspot surfaces rather than being removed outright"

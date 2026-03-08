@@ -1,21 +1,21 @@
 {
   "meta": {
-    "generated": "2026-03-08T06:34:55.386Z",
+    "generated": "2026-03-08T16:42:50.051Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 411,
-    "totalGlobals": 695,
-    "totalProvides": 710,
-    "totalConsumes": 2730,
-    "totalEdges": 2094,
-    "crossSubsystemEdges": 1477,
+    "totalGlobals": 694,
+    "totalProvides": 709,
+    "totalConsumes": 2723,
+    "totalEdges": 2087,
+    "crossSubsystemEdges": 1470,
     "maxFanIn": {
-      "file": "src/utils/index.js",
+      "file": "src/utils/validator.js",
       "count": 207
     },
     "maxFanOut": {
-      "file": "src/play/crossLayerBeatRecord.js",
+      "file": "src/play/mainBootstrap.js",
       "count": 39
     },
     "subsystems": {
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 161,
         "provides": 197,
-        "consumes": 791
+        "consumes": 790
       },
       "rhythm": {
         "files": 30,
@@ -41,8 +41,8 @@
       },
       "time": {
         "files": 13,
-        "provides": 17,
-        "consumes": 145
+        "provides": 16,
+        "consumes": 144
       },
       "composers": {
         "files": 93,
@@ -67,7 +67,7 @@
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 383
+        "consumes": 378
       }
     }
   },
@@ -1623,7 +1623,6 @@
         "harmonicJourney",
         "mainBootstrap",
         "pipelineNormalizer",
-        "setUnitTimingBudgetStats",
         "signalHealthAnalyzer",
         "signalReader",
         "systemDynamicsProfiler",
@@ -3302,7 +3301,6 @@
       "order": 214,
       "subsystem": "time",
       "provides": [
-        "setUnitTimingBudgetStats",
         "setUnitTiming"
       ],
       "consumes": [
@@ -3321,7 +3319,6 @@
         "divStartTime",
         "divsPerBeat",
         "logUnit",
-        "m",
         "measureIndex",
         "measureStart",
         "measureStartTime",
@@ -6178,7 +6175,6 @@
         "MIDI_MAX_VALUE",
         "absoluteTimeWindow",
         "clamp",
-        "conductorConfig",
         "convergenceDetector",
         "crossModulation",
         "entropyRegulator",
@@ -6416,7 +6412,6 @@
         "sectionIndex",
         "sectionIntentCurves",
         "setFeedbackPitchBias",
-        "setUnitTimingBudgetStats",
         "spectralComplementarity",
         "stutterContagion",
         "systemDynamicsProfiler",
@@ -6436,7 +6431,6 @@
         "processBeat"
       ],
       "consumes": [
-        "absoluteTimeWindow",
         "balOffset",
         "bassVar",
         "beatCount",
@@ -6446,7 +6440,6 @@
         "binauralFreqOffset",
         "cadenceAdvisor",
         "clamp",
-        "conductorConfig",
         "conductorState",
         "couplingHomeostasis",
         "crossLayerBeatRecord",
@@ -6557,7 +6550,6 @@
         "harmonicJourney",
         "interactionHeatMap",
         "layerPass",
-        "m",
         "mainBootstrap",
         "measuresPerPhrase",
         "measuresPerPhrase1",
@@ -9676,13 +9668,6 @@
     },
     {
       "from": "src/conductor/profiles/conductorConfig.js",
-      "to": "src/play/emitPickCrossLayerRecord.js",
-      "globals": [
-        "conductorConfig"
-      ]
-    },
-    {
-      "from": "src/conductor/profiles/conductorConfig.js",
       "to": "src/play/layerPass.js",
       "globals": [
         "conductorConfig"
@@ -9712,13 +9697,6 @@
     {
       "from": "src/conductor/profiles/conductorConfig.js",
       "to": "src/play/playNotes.js",
-      "globals": [
-        "conductorConfig"
-      ]
-    },
-    {
-      "from": "src/conductor/profiles/conductorConfig.js",
-      "to": "src/play/processBeat.js",
       "globals": [
         "conductorConfig"
       ]
@@ -13914,13 +13892,6 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/play/processBeat.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/rhythm/getRhythm.js",
       "globals": [
         "absoluteTimeWindow"
@@ -14085,20 +14056,6 @@
       "to": "src/time/getPolyrhythm.js",
       "globals": [
         "POLYRHYTHM_PAIRS"
-      ]
-    },
-    {
-      "from": "src/time/setUnitTiming.js",
-      "to": "src/conductor/signal/output/systemManifest.js",
-      "globals": [
-        "setUnitTimingBudgetStats"
-      ]
-    },
-    {
-      "from": "src/time/setUnitTiming.js",
-      "to": "src/play/crossLayerBeatRecord.js",
-      "globals": [
-        "setUnitTimingBudgetStats"
       ]
     },
     {
@@ -16937,13 +16894,6 @@
     },
     {
       "from": "src/utils/index.js",
-      "to": "src/play/main.js",
-      "globals": [
-        "m"
-      ]
-    },
-    {
-      "from": "src/utils/index.js",
       "to": "src/play/microUnitAttenuator.js",
       "globals": [
         "m"
@@ -17099,13 +17049,6 @@
     {
       "from": "src/utils/index.js",
       "to": "src/time/midiTiming.js",
-      "globals": [
-        "m"
-      ]
-    },
-    {
-      "from": "src/utils/index.js",
-      "to": "src/time/setUnitTiming.js",
       "globals": [
         "m"
       ]

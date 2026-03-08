@@ -182,7 +182,7 @@ pipelineCouplingManager = (() => {
   const _DENSITY_PAIR_GAIN_CAP = 0.45;
   const _DENSITY_PAIR_GAIN_CAP_THRESHOLD = 0.72;
   const _BUDGET_PRIORITY_GAIN = {
-    'density-flicker': 1.75,
+    'density-flicker': 1.55,
     'density-entropy': 1.28,
     'density-phase': 1.35,
     'density-trust': 1.25,
@@ -1000,7 +1000,8 @@ pipelineCouplingManager = (() => {
             // the phase-only cap. All pairs now capped at 0.30 when |r|>0.85.
             // Phase pairs keep their tighter 0.35 cap (absorbed by the lower 0.30).
             if (absCorr > 0.85) {
-              pairGainMax = m.min(pairGainMax, 0.30);
+              const severeDensityFlicker = isDensityFlickerPair && (p95 > 0.88 || telemetrySevereRate > 0.10);
+              pairGainMax = m.min(pairGainMax, severeDensityFlicker ? 0.36 : 0.30);
             }
             // R38 E4: Removed active gain decay. Decaying the gain when |r|>0.85
             // actually REMOVES decorrelation pressure exactly when the pair is
