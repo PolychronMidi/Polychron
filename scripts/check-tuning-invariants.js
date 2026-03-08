@@ -49,12 +49,12 @@ function extractClampRange(src, varName) {
 // ---- Extract all critical constants ----
 
 function extractConstants() {
-  const coherence = readFile('conductor/signal/coherenceMonitor.js');
-  const negotiation = readFile('crossLayer/structure/negotiationEngine.js');
-  const trust = readFile('crossLayer/structure/adaptiveTrustScores.js');
-  const entropy = readFile('crossLayer/structure/entropyRegulator.js');
-  const profile = readFile('conductor/signal/profileAdaptation.js');
-  const coupling = readFile('conductor/signal/pipelineCouplingManager.js');
+  const coherence = readFile('conductor/signal/foundations/coherenceMonitor.js');
+  const negotiation = readFile('crossLayer/structure/negotiation/negotiationEngine.js');
+  const trust = readFile('crossLayer/structure/trust/adaptiveTrustScores.js');
+  const entropy = readFile('crossLayer/structure/entropy/entropyRegulator.js');
+  const profile = readFile('conductor/signal/foundations/profileAdaptation.js');
+  const coupling = readFile('conductor/signal/balancing/pipelineCouplingManager.js');
 
   return {
     // coherenceMonitor
