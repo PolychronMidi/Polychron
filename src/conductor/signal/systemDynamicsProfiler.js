@@ -26,6 +26,9 @@ systemDynamicsProfiler = (() => {
   const MIN_WINDOW_DEFAULT = 6; // minimum beats before meaningful analysis
   const PHASE_COUPLING_PAIRS = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
   const PHASE_STALE_PAIR_THRESHOLD = 12;
+  // R58 E4: Phase freshness escalation threshold. When phase goes stale for
+  // >8 beats, force beat-escalation analysis to keep phase coupling current.
+  const _PHASE_FRESHNESS_ESCALATION = 8;
 
   // -- State --
   /** @type {Array<number[]>} smoothed ring buffer for velocity/curvature */
@@ -509,10 +512,15 @@ systemDynamicsProfiler = (() => {
     const warmupActive = _lastSnapshot.warmupTicksRemaining > 0;
     const phaseUnavailable = _lastSnapshot.phaseCouplingAvailablePairs === 0;
     const phaseStale = _lastSnapshot.phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
+    // R58 E4: Phase freshness escalation. Force re-analysis when phase goes
+    // stale beyond 8 beats to keep phase coupling data flowing. This is
+    // more aggressive than PHASE_STALE_PAIR_THRESHOLD (12) and catches
+    // staleness earlier before it becomes entrenched.
+    const phaseFreshnessEscalation = _phaseStaleBeats >= _PHASE_FRESHNESS_ESCALATION && _phaseStaleBeats < PHASE_STALE_PAIR_THRESHOLD;
     const sparsePhaseCoverage = _lastSnapshot.phaseCouplingCoverage < 0.5;
     const snapshotStale = beatDelta >= analysisSettings.snapshotReuseBeats;
     if (beatDelta <= 0) return _lastSnapshot;
-    if (force || warmupActive || phaseUnavailable || phaseStale || (sparsePhaseCoverage && beatDelta >= m.max(1, analysisSettings.snapshotReuseBeats - 1)) || snapshotStale) {
+    if (force || warmupActive || phaseUnavailable || phaseStale || phaseFreshnessEscalation || (sparsePhaseCoverage && beatDelta >= m.max(1, analysisSettings.snapshotReuseBeats - 1)) || snapshotStale) {
       return analyze('beat-escalation');
     }
     return _lastSnapshot;

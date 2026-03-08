@@ -390,6 +390,20 @@ axisEnergyEquilibrator = (() => {
     // Relaxed dampening back to 0.95 since axisGini stabilized at 0.1065
     const phaseEvolvingDamp = rKey === 'evolving' ? 0.95 : 1.0;
 
+    // R58 E1: Axis-dominant coherent-gate tightening. When an axis's coupling
+    // total exceeds the median by >20%, amplify its tightening rate proportionally.
+    // Self-correcting: the amplifier scales with the excess above median.
+    const axisTotals = pipelineCouplingManager.getAxisCouplingTotals();
+    const axisTotalValues = [];
+    for (let a = 0; a < _ALL_AXES.length; a++) {
+      const av = axisTotals[_ALL_AXES[a]];
+      if (typeof av === 'number' && Number.isFinite(av)) axisTotalValues.push(av);
+    }
+    axisTotalValues.sort(function(a, b) { return a - b; });
+    const _axisTotalMedian = axisTotalValues.length > 0
+      ? axisTotalValues[m.floor(axisTotalValues.length / 2)]
+      : 0;
+
     for (let a = 0; a < _ALL_AXES.length; a++) {
       const axis = _ALL_AXES[a];
       const share = _smoothedShares[axis] || 0;
@@ -424,6 +438,15 @@ axisEnergyEquilibrator = (() => {
         }
         if (nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1) {
           dampMult *= 1 + nonNudgeableTailPressure * 0.35;
+        }
+
+        // R58 E1: Axis-dominant tightening amplifier. When this axis's coupling
+        // total exceeds the median by >20%, amplify its tightening proportional
+        // to the excess. Caps at 1.5x to prevent over-correction.
+        const _thisAxisTotal = typeof axisTotals[axis] === 'number' && Number.isFinite(axisTotals[axis]) ? axisTotals[axis] : 0;
+        if (_axisTotalMedian > 0.01 && _thisAxisTotal > _axisTotalMedian * 1.20) {
+          const _axisDominanceExcess = (_thisAxisTotal - _axisTotalMedian) / _axisTotalMedian;
+          dampMult *= 1 + clamp(_axisDominanceExcess * 0.50, 0, 0.50);
         }
 
         // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation

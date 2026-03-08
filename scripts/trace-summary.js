@@ -187,6 +187,15 @@ function summarizeTrace(entries, manifest) {
   // R35 E6: Per-pair exceedance beat tracking (beats above 0.90)
   const pairExceedanceBeats = {};
   let uniqueExceedanceBeats = 0;
+  // R58 E6: Guard/coupling interaction diagnostic. Partition coupling stats
+  // by guarded (scale < 0.999) vs unguarded beats to reveal whether the
+  // output-load guard inflates or dampens coupling through uniform suppression.
+  const guardedCouplingAbs = {};
+  const unguardedCouplingAbs = {};
+  let guardedExceedanceBeats = 0;
+  let unguardedExceedanceBeats = 0;
+  let guardedBeatCount = 0;
+  let unguardedBeatCount = 0;
   // R36 E4: Raw regime counts (cumulative from classifier, grab last beat)
   let rawRegimeCounts = null;
   let runRawRegimeCounts = null;
@@ -447,6 +456,25 @@ function summarizeTrace(entries, manifest) {
       }
     }
     if (beatHadExceedance) uniqueExceedanceBeats++;
+
+    // R58 E6: Partition coupling stats by guarded vs unguarded beat
+    const guardObj = e.outputLoadGuard && typeof e.outputLoadGuard === 'object' ? e.outputLoadGuard : null;
+    const guardScale = guardObj ? toNum(guardObj.scale, 1) : 1;
+    const beatIsGuarded = guardScale < 0.999;
+    if (beatIsGuarded) guardedBeatCount++;
+    else unguardedBeatCount++;
+    if (beatHadExceedance) {
+      if (beatIsGuarded) guardedExceedanceBeats++;
+      else unguardedExceedanceBeats++;
+    }
+    for (let j = 0; j < couplingKeys.length; j++) {
+      const key = couplingKeys[j];
+      const value = Math.abs(toNum(cm[key], 0));
+      const bucket = beatIsGuarded ? guardedCouplingAbs : unguardedCouplingAbs;
+      if (!bucket[key]) bucket[key] = { sum: 0, count: 0 };
+      bucket[key].sum += value;
+      bucket[key].count++;
+    }
 
     // R38 E6: Populate rawEmaMaxSeries from couplingTargets
     if (e.couplingTargets && typeof e.couplingTargets === 'object') {
@@ -1163,6 +1191,33 @@ function summarizeTrace(entries, manifest) {
       totalPairExceedanceBeats: Object.values(pairExceedanceBeats).reduce((sum, value) => sum + value, 0),
       topPairs: exceedancePairsSorted.slice(0, 3)
     },
+    // R58 E6: Guard/coupling interaction diagnostic
+    guardCouplingInteraction: (() => {
+      const gExcRate = guardedBeatCount > 0 ? guardedExceedanceBeats / guardedBeatCount : 0;
+      const uExcRate = unguardedBeatCount > 0 ? unguardedExceedanceBeats / unguardedBeatCount : 0;
+      const allPairKeys = [...new Set([...Object.keys(guardedCouplingAbs), ...Object.keys(unguardedCouplingAbs)])];
+      const perPair = {};
+      for (let k = 0; k < allPairKeys.length; k++) {
+        const pk = allPairKeys[k];
+        const g = guardedCouplingAbs[pk];
+        const u = unguardedCouplingAbs[pk];
+        const gAvg = g && g.count > 0 ? g.sum / g.count : 0;
+        const uAvg = u && u.count > 0 ? u.sum / u.count : 0;
+        perPair[pk] = {
+          guardedAvg: Number(gAvg.toFixed(4)),
+          unguardedAvg: Number(uAvg.toFixed(4)),
+          delta: Number((gAvg - uAvg).toFixed(4))
+        };
+      }
+      return {
+        guardedBeats: guardedBeatCount,
+        unguardedBeats: unguardedBeatCount,
+        guardedExceedanceRate: Number(gExcRate.toFixed(4)),
+        unguardedExceedanceRate: Number(uExcRate.toFixed(4)),
+        exceedanceDelta: Number((gExcRate - uExcRate).toFixed(4)),
+        perPair
+      };
+    })(),
     tailRecovery,
     cadenceMonopoly,
     phaseTelemetry,

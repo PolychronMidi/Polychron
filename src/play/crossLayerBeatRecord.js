@@ -237,6 +237,10 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
         phaseDelta: Number.isFinite(_traceCachedDynamicsSnap.phaseDelta) ? _traceCachedDynamicsSnap.phaseDelta : 0,
         phaseChanged: Boolean(_traceCachedDynamicsSnap.phaseChanged),
         phaseStaleBeats: Number.isFinite(_traceCachedDynamicsSnap.phaseStaleBeats) ? _traceCachedDynamicsSnap.phaseStaleBeats : 0,
+        // R58 E4: Phase freshness escalation flag. When phaseStaleBeats > 8,
+        // this beat triggered freshness escalation in systemDynamicsProfiler
+        // to keep phase coupling data flowing despite signal monotonicity.
+        phaseFreshnessEscalated: Number.isFinite(_traceCachedDynamicsSnap.phaseStaleBeats) && _traceCachedDynamicsSnap.phaseStaleBeats > 8,
         phaseSignalValid: Boolean(_traceCachedDynamicsSnap.phaseSignalValid),
         phaseCouplingCoverage: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingCoverage) ? _traceCachedDynamicsSnap.phaseCouplingCoverage : 0,
         phaseCouplingAvailablePairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingAvailablePairs) ? _traceCachedDynamicsSnap.phaseCouplingAvailablePairs : 0,
