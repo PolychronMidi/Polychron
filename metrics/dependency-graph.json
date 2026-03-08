@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-08T00:35:19.968Z",
+    "generated": "2026-03-08T02:18:00.977Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 389,
     "totalGlobals": 688,
     "totalProvides": 703,
-    "totalConsumes": 2697,
-    "totalEdges": 2062,
-    "crossSubsystemEdges": 1455,
+    "totalConsumes": 2698,
+    "totalEdges": 2063,
+    "crossSubsystemEdges": 1456,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 207
@@ -67,7 +67,7 @@
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 382
+        "consumes": 383
       }
     }
   },
@@ -6372,6 +6372,7 @@
         "harmonicJourney",
         "interactionHeatMap",
         "layerPass",
+        "m",
         "mainBootstrap",
         "measuresPerPhrase",
         "measuresPerPhrase1",
@@ -16563,6 +16564,13 @@
     {
       "from": "src/utils/index.js",
       "to": "src/play/emitPickTextureEmit.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
+      "to": "src/play/main.js",
       "globals": [
         "m"
       ]

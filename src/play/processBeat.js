@@ -168,6 +168,11 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (recentPrimaryNotesPerSecond >= outputLoadGuardConfig.hardNotesPerSecond) {
     preEmissionGuardScale = outputLoadGuardConfig.hardScale;
     outputLoadSeverity = 'hard';
+    // R59 E1: Progressive tightening beyond hard threshold. When notes/sec
+    // exceeds the hard level, continuously reduce scale proportional to the
+    // excess. Self-correcting: scale eases as output drops.
+    const _progressiveExcess = (recentPrimaryNotesPerSecond - outputLoadGuardConfig.hardNotesPerSecond) / m.max(1, outputLoadGuardConfig.hardNotesPerSecond);
+    preEmissionGuardScale = m.max(0.35, outputLoadGuardConfig.hardScale * (1 - clamp(_progressiveExcess * 0.35, 0, 0.50)));
   } else if (recentPrimaryNotesPerSecond >= outputLoadGuardConfig.softNotesPerSecond) {
     preEmissionGuardScale = outputLoadGuardConfig.softScale;
     outputLoadSeverity = 'soft';
@@ -185,6 +190,9 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (beatScheduledNotes >= outputLoadGuardConfig.hardBeatCap) {
     beatGuardScale = outputLoadGuardConfig.hardScale;
     outputLoadSeverity = _mergeGuardSeverity(outputLoadSeverity, 'hard');
+    // R59 E1: Progressive beat-cap tightening. Same principle as notes/sec gate.
+    const _beatExcess = (beatScheduledNotes - outputLoadGuardConfig.hardBeatCap) / m.max(1, outputLoadGuardConfig.hardBeatCap);
+    beatGuardScale = m.max(0.35, outputLoadGuardConfig.hardScale * (1 - clamp(_beatExcess * 0.35, 0, 0.50)));
   } else if (beatScheduledNotes >= outputLoadGuardConfig.softBeatCap) {
     beatGuardScale = outputLoadGuardConfig.softScale;
     outputLoadSeverity = _mergeGuardSeverity(outputLoadSeverity, 'soft');
