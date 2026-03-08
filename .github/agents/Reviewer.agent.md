@@ -67,10 +67,12 @@ When a metric raises a question, trace it to the source. Common investigation ta
 | Meta-controllers | `src/conductor/signal/` (any file with `hypermeta` or `metaController` in name) |
 | Fingerprint logic | `scripts/golden-fingerprint.js` |
 | Trace aggregation | `scripts/trace-summary.js` |
-| Profile config | `src/conductor/profiles/conductorProfiles.js` |
+| Profile config | `src/conductor/profiles/conductorProfiles.js`, `src/conductor/profiles/conductorProfileAtmospheric.js`, `src/conductor/profiles/conductorProfileExplosive.js` |
 | Composer selection | `src/composers/` |
 
 If `transitionReadiness` run counters disagree sharply with the emitted regime trace, check cadence before assuming a reset bug: trace entries are written per layer, `beatCount` advances on L1 only, and profiler snapshots may be cached across multiple trace records.
+
+**L2 trace visibility:** Check `byLayer.L2` in trace-summary. If L2 = 0 but L2 notes > 0 in the fingerprint, diagnose the recording gap — L2 may bypass `crossLayerBeatRecord` or use a different processing path. PipelineNormalizer beat count and profilerTick count reflect actual system activity beyond what the trace captures.
 
 ---
 
@@ -121,7 +123,7 @@ One-line summary: `RXX: <beats> beats / <seconds>s <profile> | <VERDICT> (<stabl
 - Any meta-controller conflict detections
 
 ### Fingerprint Comparison Detail
-- For each of the 10 dimensions: delta, tolerance (effective, including profile-adaptive), status
+- For each of the 11 dimensions (10 core + crossProfileWarning): delta, tolerance (effective, including profile-adaptive), status
 - If cross-profile comparison was triggered, note the tolerance widening
 - For drifted dimensions: root cause from drift explainer
 - Tuning invariant results (any failures?)

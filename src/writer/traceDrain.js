@@ -98,6 +98,37 @@ traceDrain = (() => {
     if (_buffer.length >= FLUSH_INTERVAL) _flush();
   }
 
+  // R66 E6: Mid-run diagnostic snapshot. Emitted periodically to capture
+  // system state evolution beyond the beat-level trace window. The snapshot
+  // includes key metrics that often diverge between early-run and end-of-run
+  // (effectiveDim, trust scores, coupling means, gain multiplier, regime).
+  let _snapshotCount = 0;
+
+  /**
+   * Record a diagnostic snapshot (non-beat).
+   * @param {{ beatKey: string, timeMs: number, effectiveDim: number, trustScores: any, couplingMeans: Record<string,number>, globalGainMultiplier: number, regime: string, couplingStrength: number, phaseIntegrity: string }} data
+   */
+  function recordSnapshot(data) {
+    if (!isTracing || fd === null) return;
+    _snapshotCount++;
+    const payload = {
+      recordType: 'snapshot',
+      snapshotIndex: _snapshotCount,
+      beatKey: data.beatKey,
+      timeMs: data.timeMs,
+      effectiveDim: data.effectiveDim,
+      trust: data.trustScores,
+      couplingMeans: data.couplingMeans,
+      globalGainMultiplier: data.globalGainMultiplier,
+      regime: data.regime,
+      couplingStrength: data.couplingStrength,
+      phaseIntegrity: data.phaseIntegrity
+    };
+    _buffer.push(JSON.stringify(payload) + '\n');
+    _recordCount++;
+    if (_buffer.length >= FLUSH_INTERVAL) _flush();
+  }
+
   function shutdown() {
     _flush();
     if (isTracing && _recordCount === 0) {
@@ -113,5 +144,5 @@ traceDrain = (() => {
     }
   }
 
-  return { init, isEnabled, record, recordNote, shutdown };
+  return { init, isEnabled, record, recordNote, recordSnapshot, flush: _flush, shutdown };
 })();

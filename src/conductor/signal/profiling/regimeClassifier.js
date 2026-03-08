@@ -424,7 +424,13 @@ regimeClassifier = (() => {
     // blocked. At 0.50, midrange-coupled high-dim beats can enter exploring.
     const _exploringVelThreshold = (_evolvingBeats > 100 ? 0.010 : 0.012) - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
     // R43 E3: Exploring Dimension Relief
-    const _exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + postForcedRecoveryPressure * 0.06;
+    // R66 E3: Profile-aware dimension gate floor. Atmospheric's tight signals
+    // collapse effectiveDim to ~2.24 (p50), making the 2.2/2.5 base gate
+    // nearly impassable. Profile exploringDimRelief (atmospheric: 0.3) lowers
+    // the base, combined with pressure-based modulation, to admit ~10-20%
+    // exploring beats when dimensionality is structurally low but non-zero.
+    const _profileDimRelief = conductorConfig.getActiveProfile().exploringDimRelief || 0;
+    const _exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - _profileDimRelief - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + postForcedRecoveryPressure * 0.06;
     const _exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06 - postForcedRecoveryPressure * 0.05;
     if (avgVelocity > _exploringVelThreshold && effectiveDim > _exploringDimThreshold && couplingStrength <= _exploringCouplingGate) return 'exploring';
     // Exploring -> evolving transition: sustained coupling increase while

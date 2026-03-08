@@ -382,6 +382,14 @@ couplingHomeostasis = (() => {
       const _budgetScale = 1 + clamp((_beatCount - 150) / 300, 0, 0.50);
       _energyBudget *= _budgetScale;
     }
+    // R66 E2: Profile-aware coupling energy budget scaling. Atmospheric's
+    // tight signal ranges (density variance 0.0006) produce structural
+    // correlations that are profile character, not pathology. Without extra
+    // headroom, globalGainMultiplier crashes to floor (0.25 in R66) and
+    // decorrelation is functionally disabled. Scale budget by profile
+    // couplingBudgetScale (atmospheric 1.5x) to restore operating room.
+    const _profileBudgetScale = conductorConfig.getActiveProfile().couplingBudgetScale || 1.0;
+    _energyBudget *= _profileBudgetScale;
 
     // --- 3. Detect redistribution ---
     const energyDelta = totalEnergy - _prevTotalEnergy;

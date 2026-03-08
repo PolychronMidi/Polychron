@@ -301,7 +301,13 @@ systemDynamicsProfiler = (() => {
     const _varianceGateRelax = _phaseStaleBeats > 10
       ? m.max(0.50, m.pow(0.85, (_phaseStaleBeats - 10) / 15))
       : 1.0;
-    const _relaxedGateThreshold = 0.005 * _varianceGateRelax;
+    // R66 E1: Profile-aware phase variance gate scaling. Atmospheric's tight
+    // signal ranges (density variance 0.0006) cause all phase pairs to be
+    // variance-gated. Apply profile phaseVarianceGateScale to the base
+    // threshold so low-variance profiles admit phase pairs that would be
+    // noise for high-variance profiles.
+    const _profileGateScale = conductorConfig.getActiveProfile().phaseVarianceGateScale || 1.0;
+    const _relaxedGateThreshold = 0.005 * _varianceGateRelax * _profileGateScale;
     const { matrix, strength } = phaseSpaceMath.coupling(rawTrajectory, mean, DIM_NAMES, N_DIMS, N_COMPOSITIONAL_DIMS, _relaxedGateThreshold);
     const effDim = phaseSpaceMath.effectiveDimensionality(rawTrajectory, mean, N_COMPOSITIONAL_DIMS);
     const phasePairStates = _getPhasePairStates(matrix);

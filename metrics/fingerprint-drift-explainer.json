@@ -1,34 +1,19 @@
 {
   "meta": {
-    "generated": "2026-03-08T18:28:21.828Z",
+    "generated": "2026-03-08T22:50:40.755Z",
     "verdict": "EVOLVED"
   },
-  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. hotspot surface migrated from [density-flicker: 24, flicker-entropy: 11, density-entropy: 10] to [entropy-phase: 16, density-flicker: 4, density-trust: 4].",
+  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. exceedance hotspots shifted from [entropy-phase: 16, density-flicker: 4, density-trust: 4] to [density-trust: 39, density-flicker: 14, density-tension: 8].",
   "explanations": [
     {
-      "dimension": "hotspotMigration",
-      "delta": 0.6653,
-      "tolerance": 0.55,
-      "cause": "hotspot surface migrated from [density-flicker: 24, flicker-entropy: 11, density-entropy: 10] to [entropy-phase: 16, density-flicker: 4, density-trust: 4]",
-      "axisShift": {
-        "current": {
-          "density": 0.1969,
-          "tension": 0.139,
-          "flicker": 0.2062,
-          "entropy": 0.227,
-          "trust": 0.1429,
-          "phase": 0.0881
-        },
-        "previous": {
-          "density": 0.1943,
-          "tension": 0.2022,
-          "flicker": 0.1721,
-          "entropy": 0.2021,
-          "trust": 0.1742,
-          "phase": 0.0552
-        }
-      },
-      "meaning": "stress redistributed across hotspot surfaces rather than being removed outright"
+      "dimension": "exceedanceSeverity (beats)",
+      "delta": 393.53,
+      "tolerance": 71.5,
+      "cause": "exceedance hotspots shifted from [entropy-phase: 16, density-flicker: 4, density-trust: 4] to [density-trust: 39, density-flicker: 14, density-tension: 8]",
+      "uniqueBeats": {
+        "current": 45,
+        "previous": 25
+      }
     }
   ]
 }
