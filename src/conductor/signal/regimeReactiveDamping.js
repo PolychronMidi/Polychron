@@ -148,6 +148,7 @@ regimeReactiveDamping = (() => {
       let cadenceMonopolyPressure = 0;
       let rawNonCoherentOpportunityShare = 0;
       let opportunityGap = 0;
+      let postForcedRecoveryPressure = 0;
       const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
       if (readiness) {
         if (typeof readiness.runCoherentShare === 'number') {
@@ -174,6 +175,9 @@ regimeReactiveDamping = (() => {
         }
         if (typeof readiness.opportunityGap === 'number') {
           opportunityGap = clamp(readiness.opportunityGap, 0, 1);
+        }
+        if (typeof readiness.postForcedRecoveryBeats === 'number') {
+          postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryBeats / 24, 0, 1);
         }
       }
 
@@ -240,16 +244,17 @@ regimeReactiveDamping = (() => {
         m.max(0, runCoherentShare - 0.28) * 0.35 -
         coherentPressure * 0.15 +
         cadenceMonopolyPressure * 0.18 +
-        opportunityGap * 0.25,
+        opportunityGap * 0.25 +
+        postForcedRecoveryPressure * 0.42,
         0,
         1
       );
 
       // Exploring over-budget: suppress variety-promoting biases
-      _eqCorrD = -expExcess * _EQUILIB_STRENGTH * 0.5 * expPenalty;
-      _eqCorrF = -expExcess * _EQUILIB_STRENGTH * expPenalty;
+      _eqCorrD = -expExcess * _EQUILIB_STRENGTH * (0.5 + postForcedRecoveryPressure * 0.55) * expPenalty;
+      _eqCorrF = -expExcess * _EQUILIB_STRENGTH * (1 + postForcedRecoveryPressure * 0.70) * expPenalty;
       // Coherent/evolving deficit: boost tension (encourages coupling/convergence)
-      _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH;
+      _eqCorrT = (cohDeficit + evoDeficit * 0.5) * _EQUILIB_STRENGTH + postForcedRecoveryPressure * 0.08 + expExcess * postForcedRecoveryPressure * 0.05;
 
       // R46 E2: Coherent-share reactive damping. If coherent overshoots and
       // exploring under-shoots, bias the system toward exploratory variance.
@@ -283,6 +288,11 @@ regimeReactiveDamping = (() => {
           _eqCorrT += evolvingPressure * 0.03;
           _eqCorrF -= evolvingPressure * 0.05;
         }
+      }
+      if (currentRegime === 'exploring' && postForcedRecoveryPressure > 0) {
+        _eqCorrD -= postForcedRecoveryPressure * 0.07;
+        _eqCorrF -= postForcedRecoveryPressure * 0.12;
+        _eqCorrT += postForcedRecoveryPressure * 0.09;
       }
 
       // R7 Evo 9: Feed equilibrator corrections to meta-controller watchdog

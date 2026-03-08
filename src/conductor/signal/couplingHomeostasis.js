@@ -122,6 +122,7 @@ couplingHomeostasis = (() => {
   const _TAIL_ACTIVE_THRESHOLD = 0.08;
   const _TAIL_RANKED_THRESHOLD = 0.03;
   const _TAIL_PRESSURE_TRIGGER_MIN = 0.14;
+  const _NON_NUDGEABLE_TAIL_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
   /** @type {Record<string, number>} */
   const _tailPressureByPair = {};
   const _TAIL_TRACKED_PAIRS = [];
@@ -142,6 +143,8 @@ couplingHomeostasis = (() => {
   let _densityFlickerOverridePressure = 0;
   let _recoveryAxisHandOffPressure = 0;
   let _shortRunRecoveryBias = 0;
+  let _nonNudgeableTailPressure = 0;
+  let _nonNudgeableTailPair = '';
   /** @type {string[]} */
   let _recoveryDominantAxes = [];
   // R21 E6: Invoke tracking for beat processing diagnostics
@@ -235,6 +238,8 @@ couplingHomeostasis = (() => {
     let tailSum = 0;
     let strongestTail = 0;
     let strongestPair = '';
+    let strongestNonNudgeableTail = 0;
+    let strongestNonNudgeablePair = '';
     let activeTailCount = 0;
     for (let i = 0; i < _TAIL_TRACKED_PAIRS.length; i++) {
       const pair = _TAIL_TRACKED_PAIRS[i];
@@ -270,11 +275,17 @@ couplingHomeostasis = (() => {
         strongestTail = nextTailPressure;
         strongestPair = pair;
       }
+      if (_NON_NUDGEABLE_TAIL_SET.has(pair) && nextTailPressure > strongestNonNudgeableTail) {
+        strongestNonNudgeableTail = nextTailPressure;
+        strongestNonNudgeablePair = pair;
+      }
       if (nextTailPressure > _TAIL_ACTIVE_THRESHOLD) activeTailCount++;
       if (nextTailPressure > _TAIL_RANKED_THRESHOLD) rankedTailPairs.push({ pair, pressure: nextTailPressure });
     }
     rankedTailPairs.sort(function(a, b) { return b.pressure - a.pressure; });
     _dominantTailPair = strongestPair;
+    _nonNudgeableTailPressure = strongestNonNudgeableTail;
+    _nonNudgeableTailPair = strongestNonNudgeablePair;
     _tailHotspotCount = activeTailCount;
     const tailAverage = _TAIL_TRACKED_PAIRS.length > 0 ? tailSum / _TAIL_TRACKED_PAIRS.length : 0;
     let topTailMean = 0;
@@ -486,6 +497,7 @@ couplingHomeostasis = (() => {
     // If refresh() already ran on this tick's recorder invocation, skip the
     // multiplier update here (refresh -> tick already called above).
     const tailRecoveryPressure = m.max(_stickyTailPressure, _densityFlickerTailPressure, _tailRecoveryDrive);
+    const nonNudgeableTailPressure = _nonNudgeableTailPressure;
     const dynamicsSnapshot = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const densityFlickerAbs = dynamicsSnapshot && dynamicsSnapshot.couplingMatrix && typeof dynamicsSnapshot.couplingMatrix['density-flicker'] === 'number'
       ? m.abs(dynamicsSnapshot.couplingMatrix['density-flicker'])
@@ -502,7 +514,8 @@ couplingHomeostasis = (() => {
       m.max(0, _tailHotspotCount - 1) * 0.05 +
       (_floorRecoveryTicksRemaining > 0 ? 0.12 : 0) +
       _tailRecoveryCeilingPressure * 0.22 +
-      _densityFlickerClampPressure * 0.18,
+      _densityFlickerClampPressure * 0.18 +
+      nonNudgeableTailPressure * 0.16,
       0,
       1
     );
@@ -518,7 +531,8 @@ couplingHomeostasis = (() => {
       (_floorRecoveryTicksRemaining > 0 ? 0.24 : 0) +
       _densityFlickerClampPressure * 0.28 +
       _tailRecoveryHandshake * 0.24 +
-      clamp((_tailHotspotCount - 1) / 5, 0, 1) * 0.12,
+      clamp((_tailHotspotCount - 1) / 5, 0, 1) * 0.12 +
+      nonNudgeableTailPressure * 0.26,
       0,
       1
     );
@@ -527,16 +541,19 @@ couplingHomeostasis = (() => {
         _tailRecoveryHandshake * 0.40 +
         _densityFlickerClampPressure * 0.32 +
         (_floorRecoveryTicksRemaining > 0 ? 0.18 : 0) +
-        clamp((_tailHotspotCount - 1) / 5, 0, 1) * 0.10,
+        clamp((_tailHotspotCount - 1) / 5, 0, 1) * 0.10 +
+        nonNudgeableTailPressure * 0.14,
         0,
         0.65
       )
       : 0).toFixed(4));
     _recoveryAxisHandOffPressure = clamp(_recoveryAxisHandOffPressure + _shortRunRecoveryBias * 0.45, 0, 1);
-    _recoveryDominantAxes = _dominantTailPair && _dominantTailPair.indexOf('-') !== -1
+    _recoveryDominantAxes = _nonNudgeableTailPressure > 0.24 && _nonNudgeableTailPair && _nonNudgeableTailPair.indexOf('-') !== -1
+      ? _nonNudgeableTailPair.split('-')
+      : (_dominantTailPair && _dominantTailPair.indexOf('-') !== -1
       ? _dominantTailPair.split('-')
-      : [];
-    _tailRecoveryCap = clamp(0.96 - _tailRecoveryHandshake * 0.22 - m.max(0, _tailHotspotCount - 2) * 0.01 - _densityFlickerClampPressure * 0.09, _GAIN_FLOOR, 0.94);
+      : []);
+    _tailRecoveryCap = clamp(0.96 - _tailRecoveryHandshake * 0.22 - m.max(0, _tailHotspotCount - 2) * 0.01 - _densityFlickerClampPressure * 0.09 - nonNudgeableTailPressure * 0.05, _GAIN_FLOOR, 0.94);
 
     if (_refreshedThisTick) {
       _refreshedThisTick = false;
@@ -765,6 +782,8 @@ couplingHomeostasis = (() => {
       densityFlickerOverridePressure: Number(_densityFlickerOverridePressure.toFixed(4)),
       recoveryAxisHandOffPressure: Number(_recoveryAxisHandOffPressure.toFixed(4)),
       shortRunRecoveryBias: Number(_shortRunRecoveryBias.toFixed(4)),
+      nonNudgeableTailPressure: Number(_nonNudgeableTailPressure.toFixed(4)),
+      nonNudgeableTailPair: _nonNudgeableTailPair,
       recoveryDominantAxes: _recoveryDominantAxes.slice(),
       dominantTailPair: _dominantTailPair,
       tailHotspotCount: _tailHotspotCount,
@@ -802,6 +821,8 @@ couplingHomeostasis = (() => {
     _densityFlickerOverridePressure = 0;
     _recoveryAxisHandOffPressure = 0;
     _shortRunRecoveryBias = 0;
+    _nonNudgeableTailPressure = 0;
+    _nonNudgeableTailPair = '';
     _tailRecoveryCeilingPressure = 0;
     _dominantTailPair = '';
     _recoveryDominantAxes = [];

@@ -55,6 +55,7 @@ axisEnergyEquilibrator = (() => {
   const _AXIS_COOLDOWN = 4;
   const _SHARE_EMA_ALPHA = 0.08;   // ~12-beat horizon (faster convergence)
   const _GINI_ESCALATION = 0.40;   // Gini above this -> 1.5x rate multiplier
+  const _NON_NUDGEABLE_TAIL_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
 
   // -- Shared config --
   const _BASELINE_MIN = 0.04;
@@ -184,9 +185,18 @@ axisEnergyEquilibrator = (() => {
     const shortRunRecoveryBias = homeostasisState && typeof homeostasisState.shortRunRecoveryBias === 'number'
       ? homeostasisState.shortRunRecoveryBias
       : 0;
+    const nonNudgeableTailPressure = homeostasisState && typeof homeostasisState.nonNudgeableTailPressure === 'number'
+      ? homeostasisState.nonNudgeableTailPressure
+      : 0;
+    const nonNudgeableTailPair = homeostasisState && typeof homeostasisState.nonNudgeableTailPair === 'string'
+      ? homeostasisState.nonNudgeableTailPair
+      : '';
     const recoveryDominantAxes = homeostasisState && Array.isArray(homeostasisState.recoveryDominantAxes)
       ? homeostasisState.recoveryDominantAxes
       : [];
+    const nonNudgeableAxes = nonNudgeableTailPair && nonNudgeableTailPair.indexOf('-') !== -1
+      ? nonNudgeableTailPair.split('-')
+      : recoveryDominantAxes;
     const densityFlickerAxisLock = recoveryDominantAxes.indexOf('density') !== -1 && recoveryDominantAxes.indexOf('flicker') !== -1;
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
     const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
@@ -342,7 +352,12 @@ axisEnergyEquilibrator = (() => {
         const shortRunHandOffBoost = recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && (pair === 'density-flicker' || isPhaseSurfacePair)
           ? 1 + recoveryAxisHandOffPressure * (0.22 + shortRunRecoveryBias * 0.25)
           : 1.0;
-        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const nonNudgeableHandOffBoost = nonNudgeableTailPressure > 0 && !_NON_NUDGEABLE_TAIL_SET.has(pair) && Array.isArray(nonNudgeableAxes) && nonNudgeableAxes.length > 0 && (
+          pair.indexOf(nonNudgeableAxes[0]) !== -1 || (nonNudgeableAxes[1] && pair.indexOf(nonNudgeableAxes[1]) !== -1)
+        )
+          ? 1 + nonNudgeableTailPressure * (isEntropySurfacePair ? 0.70 : (isPhaseSurfacePair || isTrustSurfacePair ? 0.52 : 0.32))
+          : 1.0;
+        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * nonNudgeableHandOffBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(_BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);
@@ -407,6 +422,9 @@ axisEnergyEquilibrator = (() => {
         if (recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && (axis === 'density' || axis === 'flicker')) {
           dampMult *= 1 + recoveryAxisHandOffPressure * (0.40 + shortRunRecoveryBias * 0.35);
         }
+        if (nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1) {
+          dampMult *= 1 + nonNudgeableTailPressure * 0.35;
+        }
 
         // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
         // for disadvantaged axes (trust/entropy/phase). But overshoot tightening
@@ -442,7 +460,10 @@ axisEnergyEquilibrator = (() => {
         const handOffRelaxBoost = recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && axis !== 'density' && axis !== 'flicker'
           ? 1 + recoveryAxisHandOffPressure * (0.55 + shortRunRecoveryBias * 0.40)
           : 1.0;
-        const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
+        const nonNudgeableRelaxBoost = nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1
+          ? 1 + nonNudgeableTailPressure * 0.30
+          : 1.0;
+        const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((_pairCooldowns[pair] || 0) > 0) continue;
