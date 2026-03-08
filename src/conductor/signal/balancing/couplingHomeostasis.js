@@ -748,89 +748,45 @@ couplingHomeostasis = (() => {
    * R22: Extended with tickCount, time-series derived metrics, and per-beat diagnostics.
    */
   function getState() {
-    // R22 E6: Compute time-series derived metrics
-    let floorContactBeats = 0;
-    let ceilingContactBeats = 0;
-    let multiplierSum = 0;
-    let multiplierSqSum = 0;
-    const tsLen = _multiplierTimeSeries.length;
-    const recoveryDurations = [];
-    let inFloorContact = false;
-    let floorStart = 0;
-
-    for (let i = 0; i < tsLen; i++) {
-      const mv = _multiplierTimeSeries[i].m;
-      multiplierSum += mv;
-      multiplierSqSum += mv * mv;
-      if (mv <= 0.21) {
-        floorContactBeats++;
-        if (!inFloorContact) { inFloorContact = true; floorStart = i; }
-      } else if (mv >= 0.99) {
-        ceilingContactBeats++;
-      }
-      if (inFloorContact && mv > 0.50) {
-        recoveryDurations.push(i - floorStart);
-        inFloorContact = false;
-      }
-    }
-
-    const multiplierMean = tsLen > 0 ? multiplierSum / tsLen : 0;
-    const multiplierVariance = tsLen > 1
-      ? (multiplierSqSum / tsLen - multiplierMean * multiplierMean)
-      : 0;
-    const multiplierStdDev = m.sqrt(m.max(0, multiplierVariance));
-    const avgRecoveryDuration = recoveryDurations.length > 0
-      ? recoveryDurations.reduce((a, b) => a + b, 0) / recoveryDurations.length
-      : 0;
-    const budgetConstraintPressure = getBudgetConstraintPressure();
-
-    return {
-      totalEnergyEma: Number(_totalEnergyEma.toFixed(4)),
-      energyBudget: Number(_energyBudget.toFixed(4)),
-      peakEnergyEma: Number(_peakEnergyEma.toFixed(4)),
-      totalEnergyFloor: Number(_totalEnergyFloor.toFixed(4)),
-      floorDampen: Number(getFloorDampen().toFixed(4)),
-      redistributionScore: Number(_redistributionScore.toFixed(4)),
-      // R27 E6: Nudgeable-only redistribution score (excludes entropy-trust,
-      // entropy-phase, trust-phase phantom turbulence)
-      nudgeableRedistributionScore: Number(_nudgeableRedistributionScore.toFixed(4)),
-      budgetConstraintActive: budgetConstraintPressure > 0.25,
-      budgetConstraintPressure: Number(budgetConstraintPressure.toFixed(4)),
-      globalGainMultiplier: Number(_globalGainMultiplier.toFixed(4)),
-      giniCoefficient: Number(_giniCoefficient.toFixed(4)),
-      energyDeltaEma: Number(_energyDeltaEma.toFixed(4)),
-      pairTurbulenceEma: Number(_pairTurbulenceEma.toFixed(4)),
+    return couplingHomeostasisSnapshot.buildState({
+      getBudgetConstraintPressure,
+      getFloorDampen,
+      totalEnergyEma: _totalEnergyEma,
+      energyBudget: _energyBudget,
+      peakEnergyEma: _peakEnergyEma,
+      totalEnergyFloor: _totalEnergyFloor,
+      redistributionScore: _redistributionScore,
+      nudgeableRedistributionScore: _nudgeableRedistributionScore,
+      globalGainMultiplier: _globalGainMultiplier,
+      giniCoefficient: _giniCoefficient,
+      energyDeltaEma: _energyDeltaEma,
+      pairTurbulenceEma: _pairTurbulenceEma,
       beatCount: _beatCount,
       invokeCount: _invokeCount,
       tickCount: _tickCount,
       emptyMatrixBeats: _emptyMatrixBeats,
-      multiplierMin: Number(_multiplierMin.toFixed(4)),
-      multiplierMax: Number(_multiplierMax.toFixed(4)),
-      // R22 E6: Time-series derived metrics
-      multiplierStdDev: Number(multiplierStdDev.toFixed(4)),
-      floorContactBeats,
-      ceilingContactBeats,
-      avgRecoveryDuration: Number(avgRecoveryDuration.toFixed(1)),
-      floorRecoveryActive: _floorRecoveryTicksRemaining > 0,
+      multiplierMin: _multiplierMin,
+      multiplierMax: _multiplierMax,
+      multiplierTimeSeries: _multiplierTimeSeries,
       floorRecoveryTicksRemaining: _floorRecoveryTicksRemaining,
-      densityFlickerTailPressure: Number(_densityFlickerTailPressure.toFixed(4)),
-      stickyTailPressure: Number(_stickyTailPressure.toFixed(4)),
-      tailRecoveryDrive: Number(_tailRecoveryDrive.toFixed(4)),
-      tailRecoveryTrigger: Number(_tailRecoveryTrigger.toFixed(4)),
-      tailRecoveryHandshake: Number(_tailRecoveryHandshake.toFixed(4)),
-      tailRecoveryCap: Number(_tailRecoveryCap.toFixed(4)),
-      tailRecoveryCeilingPressure: Number(_tailRecoveryCeilingPressure.toFixed(4)),
-      densityFlickerClampPressure: Number(_densityFlickerClampPressure.toFixed(4)),
-      densityFlickerOverridePressure: Number(_densityFlickerOverridePressure.toFixed(4)),
-      recoveryAxisHandOffPressure: Number(_recoveryAxisHandOffPressure.toFixed(4)),
-      shortRunRecoveryBias: Number(_shortRunRecoveryBias.toFixed(4)),
-      nonNudgeableTailPressure: Number(_nonNudgeableTailPressure.toFixed(4)),
+      densityFlickerTailPressure: _densityFlickerTailPressure,
+      stickyTailPressure: _stickyTailPressure,
+      tailRecoveryDrive: _tailRecoveryDrive,
+      tailRecoveryTrigger: _tailRecoveryTrigger,
+      tailRecoveryHandshake: _tailRecoveryHandshake,
+      tailRecoveryCap: _tailRecoveryCap,
+      tailRecoveryCeilingPressure: _tailRecoveryCeilingPressure,
+      densityFlickerClampPressure: _densityFlickerClampPressure,
+      densityFlickerOverridePressure: _densityFlickerOverridePressure,
+      recoveryAxisHandOffPressure: _recoveryAxisHandOffPressure,
+      shortRunRecoveryBias: _shortRunRecoveryBias,
+      nonNudgeableTailPressure: _nonNudgeableTailPressure,
       nonNudgeableTailPair: _nonNudgeableTailPair,
-      recoveryDominantAxes: _recoveryDominantAxes.slice(),
+      recoveryDominantAxes: _recoveryDominantAxes,
       dominantTailPair: _dominantTailPair,
       tailHotspotCount: _tailHotspotCount,
-      tailPressureByPair: Object.assign({}, _tailPressureByPair)
-    };
+      tailPressureByPair: _tailPressureByPair,
+    });
   }
 
   /**

@@ -137,18 +137,7 @@ axisEnergyEquilibrator = (() => {
   }
 
   function _getWarmupTicks() {
-    let profile = null;
-    try {
-      profile = conductorConfig.getActiveProfile();
-    } catch {
-      profile = null;
-    }
-    const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
-    const configuredWarmup = analysis && Number.isFinite(analysis.warmupTicks)
-      ? m.round(analysis.warmupTicks)
-      : 6;
-    const shortRunCompression = Number.isFinite(totalSections) && totalSections > 0 && totalSections <= 5 ? 2 : 0;
-    return clamp(configuredWarmup + 2 - shortRunCompression, 4, _WARMUP_DEFAULT);
+    return axisEnergyEquilibratorHelpers.getWarmupTicks(_WARMUP_DEFAULT);
   }
 
   function refresh() {
@@ -203,83 +192,38 @@ axisEnergyEquilibrator = (() => {
     const densityFlickerAxisLock = recoveryDominantAxes.indexOf('density') !== -1 && recoveryDominantAxes.indexOf('flicker') !== -1;
     _lastBaselines = pipelineCouplingManager.getPairBaselines();
     const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
-    let phaseSurfaceHot = false;
-    let phaseSurfacePressure = 0;
-    const phaseSurfacePairs = ['density-phase', 'flicker-phase', 'tension-phase'];
-    for (let p = 0; p < phaseSurfacePairs.length; p++) {
-      const pair = phaseSurfacePairs[p];
-      const pd = snapshot[pair];
-      if (!pd) continue;
-      const baseline = V.optionalFinite(pd.baseline, 0);
-      const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
-      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
-      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
-      const severeRate = V.optionalFinite(pd.severeRate, 0);
-      const pairPressure = clamp(
-        clamp((rolling - m.max(_PHASE_SURFACE_ABS_MIN, baseline * _PHASE_SURFACE_RATIO)) / 0.18, 0, 1) * 0.30 +
-        clamp((pairP95 - m.max(_PHASE_SURFACE_ABS_MIN + 0.12, baseline * (_PHASE_SURFACE_RATIO + 0.25))) / 0.16, 0, 1) * 0.40 +
-        clamp((hotspotRate - 0.18) / 0.18, 0, 1) * 0.18 +
-        clamp((severeRate - 0.03) / 0.10, 0, 1) * 0.12,
-        0,
-        1
-      );
-      if (pairPressure > 0) {
-        phaseSurfaceHot = true;
-        phaseSurfacePressure = m.max(phaseSurfacePressure, pairPressure);
-      }
-    }
-    let trustSurfaceHot = false;
-    let trustSurfacePressure = 0;
-    const trustSurfacePairs = ['density-trust', 'flicker-trust', 'tension-trust'];
-    for (let p = 0; p < trustSurfacePairs.length; p++) {
-      const pair = trustSurfacePairs[p];
-      const pd = snapshot[pair];
-      if (!pd) continue;
-      const baseline = V.optionalFinite(pd.baseline, 0);
-      const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
-      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
-      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
-      const severeRate = V.optionalFinite(pd.severeRate, 0);
-      const pairPressure = clamp(
-        clamp((rolling - m.max(_TRUST_SURFACE_ABS_MIN, baseline * _TRUST_SURFACE_RATIO)) / 0.18, 0, 1) * 0.30 +
-        clamp((pairP95 - m.max(_TRUST_SURFACE_ABS_MIN + 0.10, baseline * (_TRUST_SURFACE_RATIO + 0.20))) / 0.16, 0, 1) * 0.40 +
-        clamp((hotspotRate - 0.16) / 0.18, 0, 1) * 0.18 +
-        clamp((severeRate - 0.03) / 0.10, 0, 1) * 0.12,
-        0,
-        1
-      );
-      if (pairPressure > 0) {
-        trustSurfaceHot = true;
-        trustSurfacePressure = m.max(trustSurfacePressure, pairPressure);
-      }
-    }
+    const phaseSurface = axisEnergyEquilibratorHelpers.computeSurfacePressure(
+      snapshot,
+      ['density-phase', 'flicker-phase', 'tension-phase'],
+      _PHASE_SURFACE_RATIO,
+      _PHASE_SURFACE_ABS_MIN,
+      0.18,
+      0.03
+    );
+    const phaseSurfaceHot = phaseSurface.surfaceHot;
+    const phaseSurfacePressure = phaseSurface.surfacePressure;
+    const trustSurface = axisEnergyEquilibratorHelpers.computeSurfacePressure(
+      snapshot,
+      ['density-trust', 'flicker-trust', 'tension-trust'],
+      _TRUST_SURFACE_RATIO,
+      _TRUST_SURFACE_ABS_MIN,
+      0.16,
+      0.03
+    );
+    const trustSurfaceHot = trustSurface.surfaceHot;
+    const trustSurfacePressure = trustSurface.surfacePressure;
     if (phaseSurfaceHot) _phaseSurfaceHotBeats++;
     if (trustSurfaceHot) _trustSurfaceHotBeats++;
-    let entropySurfaceHot = false;
-    let entropySurfacePressure = 0;
-    const entropySurfacePairs = ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'];
-    for (let p = 0; p < entropySurfacePairs.length; p++) {
-      const pair = entropySurfacePairs[p];
-      const pd = snapshot[pair];
-      if (!pd) continue;
-      const baseline = V.optionalFinite(pd.baseline, 0);
-      const rolling = V.optionalFinite(pd.rawRollingAbsCorr, 0);
-      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
-      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
-      const severeRate = V.optionalFinite(pd.severeRate, 0);
-      const pairPressure = clamp(
-        clamp((rolling - m.max(_ENTROPY_SURFACE_ABS_MIN, baseline * _ENTROPY_SURFACE_RATIO)) / 0.18, 0, 1) * 0.30 +
-        clamp((pairP95 - m.max(_ENTROPY_SURFACE_ABS_MIN + 0.10, baseline * (_ENTROPY_SURFACE_RATIO + 0.20))) / 0.16, 0, 1) * 0.40 +
-        clamp((hotspotRate - 0.16) / 0.18, 0, 1) * 0.18 +
-        clamp((severeRate - 0.04) / 0.10, 0, 1) * 0.12,
-        0,
-        1
-      );
-      if (pairPressure > 0) {
-        entropySurfaceHot = true;
-        entropySurfacePressure = m.max(entropySurfacePressure, pairPressure);
-      }
-    }
+    const entropySurface = axisEnergyEquilibratorHelpers.computeSurfacePressure(
+      snapshot,
+      ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'],
+      _ENTROPY_SURFACE_RATIO,
+      _ENTROPY_SURFACE_ABS_MIN,
+      0.16,
+      0.04
+    );
+    const entropySurfaceHot = entropySurface.surfaceHot;
+    const entropySurfacePressure = entropySurface.surfacePressure;
     if (entropySurfaceHot) _entropySurfaceHotBeats++;
 
     // R31: Graduated coherent gate. R30's binary gate (freeze during evolving
