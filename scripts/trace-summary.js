@@ -207,8 +207,30 @@ function summarizeTrace(entries, manifest) {
   // R37 E5: effectiveDim histogram -- collect all values for percentile computation
   const effectiveDimValues = [];
 
+  // R66 E6: Mid-run diagnostic snapshots -- accumulated separately from beat entries
+  const diagnosticArc = [];
+
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
+
+    // R66 E6: Snapshot records are diagnostic, not beat entries. Accumulate
+    // them into diagnosticArc and skip normal beat processing.
+    if (e.recordType === 'snapshot') {
+      diagnosticArc.push({
+        snapshotIndex: e.snapshotIndex,
+        beatKey: e.beatKey,
+        timeMs: e.timeMs,
+        effectiveDim: e.effectiveDim,
+        globalGainMultiplier: e.globalGainMultiplier,
+        regime: e.regime,
+        couplingStrength: e.couplingStrength,
+        phaseIntegrity: e.phaseIntegrity,
+        trust: e.trust,
+        couplingMeans: e.couplingMeans
+      });
+      continue;
+    }
+
     const layer = typeof e.layer === 'string' ? e.layer : 'other';
     if (layer === 'L1' || layer === 'L2') byLayer[layer]++;
     else byLayer.other++;
@@ -1006,7 +1028,7 @@ function summarizeTrace(entries, manifest) {
   return {
     generatedAt: new Date().toISOString(),
     beats: {
-      totalEntries: entries.length,
+      totalEntries: entries.length - diagnosticArc.length,
       uniqueBeatKeys: uniqueBeatKeys.size,
       byLayer,
       firstBeatKey,
@@ -1230,7 +1252,9 @@ function summarizeTrace(entries, manifest) {
         };
       }
       return Object.keys(result).length > 0 ? result : null;
-    })()
+    })(),
+    // R66 E6: Mid-run diagnostic snapshots (section-boundary state arc)
+    diagnosticArc: diagnosticArc.length > 0 ? diagnosticArc : null
   };
 }
 

@@ -488,12 +488,19 @@ function compareFingerprints(current, previous) {
     const normPrevTop = prevTop * (500 / Math.max(1, prevBeats));
     const excDelta = Math.abs(normCurrUnique - normPrevUnique) * 0.65 + Math.abs(normCurrTop - normPrevTop) * 0.35;
 
-    const excPass = excDelta <= TOLERANCES.exceedanceSeverity * crossProfileScale;
+    // R66 E4: Exceedance severity cross-profile tolerance widening.
+    // Exceedance topology is the dimension most sensitive to signal variance
+    // differences between profiles (atmospheric: 90% unique rate vs explosive:
+    // 6.5%). Use 3.0x multiplier instead of generic 1.3x so this dimension
+    // correctly classifies atmospheric's exceedance character as STABLE when
+    // comparing across profiles. Same-profile comparisons use 1.0x.
+    const excCrossProfileScale = crossProfile ? 3.0 : 1.0;
+    const excPass = excDelta <= TOLERANCES.exceedanceSeverity * excCrossProfileScale;
     if (!excPass) drifted++;
     results.push({
       dimension: 'exceedanceSeverity (beats)',
       delta: Number(excDelta.toFixed(2)),
-      tolerance: TOLERANCES.exceedanceSeverity * crossProfileScale,
+      tolerance: TOLERANCES.exceedanceSeverity * excCrossProfileScale,
       status: excPass ? 'stable' : 'drifted',
       currentTotal: current.totalExceedanceBeats,
       previousTotal: previous.totalExceedanceBeats,

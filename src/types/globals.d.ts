@@ -1846,6 +1846,8 @@ declare var traceDrain: {
   isEnabled(): boolean;
   record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any }): void;
   recordNote(pitch: number, velocity: number, channel: number): void;
+  recordSnapshot(data: { beatKey: string; timeMs: number; effectiveDim: number; trustScores: any; couplingMeans: Record<string,number>; globalGainMultiplier: number; regime: string; couplingStrength: number; phaseIntegrity: string }): void;
+  flush(): void;
   shutdown(): void;
 };
 /** @boot-advisory */
