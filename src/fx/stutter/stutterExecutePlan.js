@@ -2,7 +2,10 @@
 
 stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   const V = validator.create('stutterExecutePlan');
-  V.assertObject(stutterMgr, 'stutterMgr');
+  const managerType = typeof stutterMgr;
+  if (!stutterMgr || (managerType !== 'object' && managerType !== 'function')) {
+    throw new Error('stutterExecutePlan: stutterMgr must be an object or function');
+  }
   const cfg = /** @type {any} */ (Object.assign({}, plan));
   V.assertNonEmptyString(cfg.profile, 'cfg.profile');
   const profile = cfg.profile;

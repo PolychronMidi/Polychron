@@ -17,9 +17,7 @@ articulationProfiler = (() => {
    * @returns {{ staccatoRatio: number, legatoRatio: number, avgDuration: number, monotonous: boolean, articulation: string }}
    */
   function getArticulationProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 3) {
       return { staccatoRatio: 0, legatoRatio: 0, avgDuration: 0, monotonous: false, articulation: 'unknown' };
     }

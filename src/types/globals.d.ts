@@ -1760,7 +1760,7 @@ declare var stutterRegistry: any;
 declare var stutterMetrics: any;
 declare var stutterConfig: any;
 declare var stutterPlanScheduler: any;
-declare var stutter: StutterManagerAPI;
+declare var StutterManager: StutterManagerAPI;
 declare var setBalanceAndFX: any;
 declare var setBinaural: any;
 declare var fbm: any;

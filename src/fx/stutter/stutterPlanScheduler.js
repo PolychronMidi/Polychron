@@ -3,8 +3,17 @@
 stutterPlanScheduler = (() => {
   const V = validator.create('stutterPlanScheduler');
 
+  function assertManagerLike(stutterMgr) {
+    const manager = V.requireDefined(stutterMgr, 'stutterMgr');
+    const type = typeof manager;
+    if (type !== 'object' && type !== 'function') {
+      throw new Error('stutterPlanScheduler: stutterMgr must be an object or function');
+    }
+    return manager;
+  }
+
   function createPlan(stutterMgr, planCfg = {}) {
-    V.assertObject(stutterMgr, 'stutterMgr');
+    assertManagerLike(stutterMgr);
     const id = `plan-${stutterMgr._nextPlanId++}`;
     const cfg = /** @type {any} */ (Object.assign({}, planCfg));
     cfg.id = id;
@@ -13,7 +22,7 @@ stutterPlanScheduler = (() => {
   }
 
   function schedulePlan(stutterMgr, planOrCfg = {}) {
-    V.assertObject(stutterMgr, 'stutterMgr');
+    assertManagerLike(stutterMgr);
     const isId = (typeof planOrCfg === 'string' && stutterMgr.plans.has(planOrCfg));
     const planId = isId ? planOrCfg : createPlan(stutterMgr, planOrCfg);
     const plan = /** @type {any} */ (stutterMgr.plans.get(planId));
@@ -37,14 +46,14 @@ stutterPlanScheduler = (() => {
   }
 
   function runPlan(stutterMgr, planIdOrCfg = {}) {
-    V.assertObject(stutterMgr, 'stutterMgr');
+    assertManagerLike(stutterMgr);
     const plan = /** @type {any} */ ((typeof planIdOrCfg === 'string') ? stutterMgr.plans.get(planIdOrCfg) : planIdOrCfg);
     V.assertObject(plan, 'plan');
     return executePlan(stutterMgr, plan);
   }
 
   function cancelPlan(stutterMgr, planId) {
-    V.assertObject(stutterMgr, 'stutterMgr');
+    assertManagerLike(stutterMgr);
     if (!stutterMgr.plans.has(planId)) return false;
     stutterMgr.plans.delete(planId);
     for (const [tick, arr] of Array.from(stutterMgr.scheduledPlans.entries())) {
@@ -55,7 +64,7 @@ stutterPlanScheduler = (() => {
   }
 
   function runDuePlans(stutterMgr, tick) {
-    V.assertObject(stutterMgr, 'stutterMgr');
+    assertManagerLike(stutterMgr);
     const key = m.round(Number(tick));
     const dueKeys = Array.from(stutterMgr.scheduledPlans.keys()).filter((k) => k <= key).sort((a, b) => a - b);
     for (const k of dueKeys) {
@@ -74,7 +83,7 @@ stutterPlanScheduler = (() => {
   }
 
   function executePlan(stutterMgr, plan = {}) {
-    V.assertObject(stutterMgr, 'stutterMgr');
+    assertManagerLike(stutterMgr);
     V.requireType(stutterExecutePlan, 'function', 'stutterExecutePlan helper');
     return stutterExecutePlan(stutterMgr, plan);
   }

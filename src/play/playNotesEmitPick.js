@@ -42,7 +42,7 @@ function assertEmitPickDeps(unit) {
   V.assertManagerShape(convergenceDetector, 'convergenceDetector', ['postOnset', 'applyIfConverged', 'wasRecent']);
   V.assertObject(harmonicContext, 'harmonicContext');
   V.requireType(harmonicContext.getField, 'function', 'harmonicContext.getField');
-  V.assertObject(stutter, 'stutter');
+  V.requireType(StutterManager, 'function', 'StutterManager');
   V.assertObject(StutterManager.beatContext, 'StutterManager.beatContext');
   if (!(StutterManager.beatContext.selectedReflectionChannels instanceof Set)) {
     throw new Error(`${unit}.playNotesEmitPick: StutterManager.beatContext.selectedReflectionChannels must be a Set`);

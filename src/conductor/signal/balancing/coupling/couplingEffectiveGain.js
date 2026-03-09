@@ -140,7 +140,10 @@ couplingEffectiveGain = (() => {
     // Anti-correlation dampening
     if (corr < -0.65) {
       const antiCorrDepth = clamp((m.abs(corr) - 0.65) / 0.35, 0, 1);
-      effectiveGain *= m.max(0.15, 1.0 - antiCorrDepth * 0.80);
+      const tensionEntropyRelief = flags.isTensionEntropyPair && (p95 > 0.82 || sp.tailPressure > 0.40)
+        ? clamp(0.55 + clamp((p95 - 0.82) / 0.12, 0, 1) * 0.12 + sp.tailPressure * 0.16, 0.55, 0.82)
+        : 0.15;
+      effectiveGain *= m.max(tensionEntropyRelief, 1.0 - antiCorrDepth * 0.80);
     }
     // Positive correlation preemptive brake (R72 E3: graduated)
     if (corr > 0.50) {

@@ -1,12 +1,10 @@
 {
   "meta": {
-    "generated": "2026-03-09T15:57:39.772Z",
+    "generated": "2026-03-09T17:37:50.950Z",
     "totalFiles": 426,
     "globalsDeclared": 706,
-    "globalsMapped": 705,
-    "orphaned": [
-      "stutter"
-    ],
+    "globalsMapped": 706,
+    "orphaned": [],
     "reassigned": [
       {
         "name": "primaryInstrument",
@@ -2700,6 +2698,7 @@
       "order": 343,
       "file": "src/fx/stutter/StutterManager.js",
       "provides": [
+        "StutterManager",
         "stutterFade",
         "stutterPan",
         "stutterFX"

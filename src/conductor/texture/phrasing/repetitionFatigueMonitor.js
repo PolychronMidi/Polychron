@@ -16,9 +16,7 @@ repetitionFatigueMonitor = (() => {
    * @returns {{ fatigueLevel: number, repeatedPatterns: number, totalPatterns: number, fatigued: boolean }}
    */
   function getRepetitionProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < MIN_PATTERN * 2) {
       return { fatigueLevel: 0, repeatedPatterns: 0, totalPatterns: 0, fatigued: false };
     }

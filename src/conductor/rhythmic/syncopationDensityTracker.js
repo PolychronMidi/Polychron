@@ -15,9 +15,7 @@ syncopationDensityTracker = (() => {
    * @returns {{ syncopationRatio: number, onBeatCount: number, offBeatCount: number, total: number, monotonous: boolean, excessive: boolean }}
    */
   function getSyncopationProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 3) {
       return { syncopationRatio: 0, onBeatCount: 0, offBeatCount: 0, total: 0, monotonous: false, excessive: false };
     }

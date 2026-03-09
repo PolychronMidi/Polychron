@@ -20,9 +20,9 @@ pedalPointDetector = (() => {
    * @returns {{ pedalNote: number|null, pedalCount: number, pedalDuration: number, active: boolean, stale: boolean }}
    */
   function getPedalProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const safeOpts = opts && typeof opts === 'object' ? opts : {};
+    const ws = V.optionalFinite(safeOpts.windowSeconds, WINDOW_SECONDS);
+    const notes = analysisHelpers.getWindowNotes(V, safeOpts, WINDOW_SECONDS);
 
     // Filter to bass register
     const bassNotes = [];
