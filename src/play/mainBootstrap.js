@@ -194,7 +194,7 @@ mainBootstrap = (() => {
     // -- Phase 5: Verify beat pipeline topological ordering --
     beatPipelineDescriptor.assertTopologicalOrder();
 
-    // -- Phase 6: moved to assertRegistryPopulation() ------------------
+    // -- Phase 6: moved to assertRegistryPopulation()
     // Registry counts are now verified later in the boot sequence after
     // conductorIntelligence.initialize() and cross-layer reset. The original
     // checks were firing too early when modules register during initialization

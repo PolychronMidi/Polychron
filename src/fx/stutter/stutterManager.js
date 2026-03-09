@@ -132,9 +132,9 @@ class StutterManager {
     return this._invokeStutter('stutterFX', this._stutterFX, 'fxCount', 'fxDuration', channels, numStutters, duration);
   }
 
-  // -----------------------------
+  // --
   // stutter plan API (explicit, opt-in)
-  // -----------------------------
+  // --
   /**
    * Create a reusable plan object and return its id (does not schedule it).
    * planCfg must include at least: profile, note, on, sustain. Optional: channels, numStutters, duration, minVelocity, maxVelocity, isFadeIn, decay

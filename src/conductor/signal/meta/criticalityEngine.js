@@ -70,7 +70,7 @@ criticalityEngine = (() => {
       currentBias = SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1 - inAvalanche / RECOVERY_BEATS);
       // Still in recovery - skip accumulation check
     } else if (accumulated > threshold && energyBuffer.length >= WINDOW / 2) {
-      // --- Avalanche ---
+      // Avalanche
       avalancheCount++;
       avalancheSizes.push(accumulated);
       if (avalancheSizes.length > 200) avalancheSizes.shift();
@@ -88,7 +88,7 @@ criticalityEngine = (() => {
       currentBias = 1.0;
     }
 
-    // --- Adaptive threshold ---
+    // Adaptive threshold
     const rate = totalBeats > 0 ? avalancheCount / totalBeats : 0;
     if (rate > TARGET_RATE) {
       threshold = m.min(THRESHOLD_MAX, threshold + ADAPT_RATE);
@@ -151,7 +151,7 @@ criticalityEngine = (() => {
     flickerSnap    = 1.0;
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerDensityBias('criticalityEngine', densityBias, 0.88, 1.05);
   conductorIntelligence.registerTensionBias('criticalityEngine', tensionBias, 0.88, 1.05);
   conductorIntelligence.registerFlickerModifier('criticalityEngine', flickerMod, 0.82, 1.12);

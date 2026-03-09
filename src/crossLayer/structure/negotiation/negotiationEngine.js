@@ -1,7 +1,7 @@
 negotiationEngine = (() => {
   const V = validator.create('negotiationEngine');
 
-  // --- Play probability scaling ---
+  // Play probability scaling
   const PLAY_DENSITY_BASE = 0.75;
   const PLAY_DENSITY_SCALE = 0.45;
   const PLAY_TRUST_BASE = 0.9;
@@ -9,7 +9,7 @@ negotiationEngine = (() => {
   const PLAY_SCALE_MIN = 0.4;
   const PLAY_SCALE_MAX = 1.8;
 
-  // --- Stutter probability scaling ---
+  // Stutter probability scaling
   const STUTTER_INTERACT_BASE = 0.6;
   const STUTTER_INTERACT_SCALE = 0.75;
   const STUTTER_TRUST_BASE = 0.85;
@@ -17,7 +17,7 @@ negotiationEngine = (() => {
   const STUTTER_SCALE_MIN = 0.25;
   const STUTTER_SCALE_MAX = 2.2;
 
-  // --- Entropy modulation ---
+  // Entropy modulation
   const PLAY_ENTROPY_BASE = 0.7;
   const PLAY_ENTROPY_SCALE = 0.3;
   const PLAY_ENTROPY_MIN = 0.5;
@@ -27,16 +27,16 @@ negotiationEngine = (() => {
   const STUTTER_ENTROPY_MIN = 0.5;
   const STUTTER_ENTROPY_MAX = 1.5;
 
-  // --- Conflict resolution ---
+  // Conflict resolution
   const CONFLICT_THRESHOLD = 0.8;
   const CONFLICT_PLAY_DAMPEN = 0.92;
   const CONFLICT_STUTTER_DAMPEN = 0.9;
 
-  // --- Cadence gating ---
+  // Cadence gating
   const CADENCE_PHASE_MIN = 0.45;
   const CADENCE_TRUST_MIN = 0.7;
 
-  // --- Convergence gating ---
+  // Convergence gating
   const CONVERGENCE_TRUST_FLOOR = 0.5;
   const CONVERGENCE_DOMINANCE = 0.8;
   const STUTTER_DOWNBEAT_CAP = 1.4;

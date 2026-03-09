@@ -1643,7 +1643,7 @@ const rawEmaInput = absCorr;
     return result;
   }
 
-  // --- Self-registration ---
+  // Self-registration
   // Registered ranges accommodate expanded SOFT_LIMIT (0.20): bias in [0.80, 1.20]
   conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.80, 1.20);
   conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.80, 1.22);

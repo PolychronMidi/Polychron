@@ -11,7 +11,7 @@ const V = validator.create('setRhythm');
 setRhythm = function setRhythm(level, ctx = null) {
   V.assertNonEmptyString(level, 'level');
   const random = (length, probOn) => { return _random(length, 1 - probOn); };
-  // -- Texture-modulated onset density (#8) --------------------------
+  // -- Texture-modulated onset density (#8) --
   // Flurry activity - denser onsets (more notes), burst activity - sparser (give chords room)
   const texProbScale = (() => {
     const metrics = drumTextureCoupler.getMetrics();

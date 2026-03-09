@@ -21,7 +21,7 @@ const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const JSON_PATH  = path.join(OUTPUT_DIR, 'crosslayer-map.json');
 const MD_PATH    = path.join(OUTPUT_DIR, 'crosslayer-map.md');
 
-// ---- Helpers ----
+// -Helpers -
 
 function walkJS(dir) {
   if (!fs.existsSync(dir)) return [];
@@ -47,7 +47,7 @@ function subfolder(absPath) {
   return parts.length > 1 ? parts[0] : '(top-level)';
 }
 
-// ---- Source Analysis ----
+// -Source Analysis -
 
 function analyzeModule(filePath) {
   const src = fs.readFileSync(filePath, 'utf8');
@@ -132,7 +132,7 @@ function analyzeModule(filePath) {
   };
 }
 
-// ---- Build Map ----
+// -Build Map -
 
 function buildMap() {
   const files = walkJS(CL_DIR);
@@ -186,7 +186,7 @@ function buildMap() {
   };
 }
 
-// ---- Markdown Rendering ----
+// -Markdown Rendering -
 
 function renderMarkdown(map) {
   const lines = [];
@@ -207,7 +207,7 @@ function renderMarkdown(map) {
     lines.push(`### ${folder === '(top-level)' ? 'Top-Level' : folder.charAt(0).toUpperCase() + folder.slice(1)}`);
     lines.push('');
     lines.push('| Module | Scopes | ATG Channels | Reads Signals | Emits Explain |');
-    lines.push('|--------|--------|-------------|---------------|---------------|');
+    lines.push('|--|--|-|||');
     for (const name of mods.sort()) {
       const mod = map.modules.find(m => m.name === name);
       if (!mod) continue;
@@ -222,7 +222,7 @@ function renderMarkdown(map) {
   lines.push('## ATG Channel Usage');
   lines.push('');
   lines.push('| Channel | Modules |');
-  lines.push('|---------|---------|');
+  lines.push('|||');
   for (const [ch, mods] of Object.entries(map.atgChannels).sort()) {
     lines.push(`| ${ch} | ${mods.join(', ')} |`);
   }
@@ -246,17 +246,17 @@ function renderMarkdown(map) {
   lines.push('## Interaction Hubs (most referenced)');
   lines.push('');
   lines.push('| Module | Referenced By |');
-  lines.push('|--------|-------------|');
+  lines.push('|--|-|');
   for (const [name, count] of topHubs) {
     lines.push(`| ${name} | ${count} modules |`);
   }
   lines.push('');
 
-  lines.push(`---\n*Generated ${map.meta.generated}*`);
+  lines.push(`\n*Generated ${map.meta.generated}*`);
   return lines.join('\n');
 }
 
-// ---- Main ----
+// -Main -
 
 function main() {
   const map = buildMap();

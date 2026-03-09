@@ -80,7 +80,7 @@ restDensityTracker = (() => {
     return { denser: 'equal', ratio };
   }
 
-  // --- Breathing analysis (merged from PhraseBreathingAdvisor) ---
+  // Breathing analysis (merged from PhraseBreathingAdvisor)
 
   /**
    * Analyze breathing density (inter-onset gaps) in recent notes.

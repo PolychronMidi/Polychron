@@ -212,7 +212,7 @@ return [
     ...bass.map(ch=>rfx('bass',ch,95,(c)=>c===cCH3)),
   ];  })  );
 
-  // -- Texture-reactive FX modulation (#5) - conductor-driven --------
+  // -- Texture-reactive FX modulation (#5) - conductor-driven --
   // When texture contrast intensity is high, boost reverb send (CC91),
   // open filter cutoff (CC74), and spike delay send (CC94) so the spatial
   // environment breathes with the texture system.

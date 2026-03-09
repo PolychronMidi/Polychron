@@ -18,7 +18,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const SRC  = path.join(ROOT, 'src');
 
-// ---- Constant extraction utilities ----
+// -Constant extraction utilities -
 
 function readFile(relPath) {
   const abs = path.join(SRC, relPath);
@@ -46,7 +46,7 @@ function extractClampRange(src, varName) {
   return null;
 }
 
-// ---- Extract all critical constants ----
+// -Extract all critical constants -
 
 function extractConstants() {
   const coherence = readFile('conductor/signal/foundations/coherenceMonitor.js');
@@ -111,7 +111,7 @@ function extractConstants() {
   };
 }
 
-// ---- Invariant definitions ----
+// -Invariant definitions -
 // Each invariant has a name, a check function, and a human-readable description.
 
 function defineInvariants(c) {
@@ -210,7 +210,7 @@ function defineInvariants(c) {
   ];
 }
 
-// ---- Main ----
+// -Main -
 
 function main() {
   const constants = extractConstants();

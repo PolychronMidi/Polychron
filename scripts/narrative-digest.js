@@ -25,7 +25,7 @@ const MANIFEST_PATH = path.join(METRICS_DIR, 'system-manifest.json');
 const TRACE_PATH = path.join(METRICS_DIR, 'trace.jsonl');
 const DIGEST_PATH = path.join(METRICS_DIR, 'narrative-digest.md');
 
-// ---- Utility ----
+// -Utility -
 
 function loadJSON(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -62,7 +62,7 @@ function describeTrustLevel(weight) {
   return 'heavily penalized';
 }
 
-// ---- Parse trace for section/regime transitions ----
+// -Parse trace for section/regime transitions -
 
 function extractNarrativeEvents(tracePath) {
   if (!fs.existsSync(tracePath)) return { sections: [], regimeTransitions: [], trustJourney: [] };
@@ -125,7 +125,7 @@ function extractNarrativeEvents(tracePath) {
   return { sections, regimeTransitions };
 }
 
-// ---- Generate the narrative ----
+// -Generate the narrative -
 
 function generateNarrative() {
   const summary = loadJSON(SUMMARY_PATH);
@@ -140,7 +140,7 @@ function generateNarrative() {
   lines.push('> Generated: ' + new Date().toISOString() + ' | Trace data from: ' + traceGeneratedAt);
   lines.push('');
 
-  // ---- Overview ----
+  // -Overview -
   lines.push('## Overview');
   lines.push('');
 
@@ -164,7 +164,7 @@ function generateNarrative() {
     lines.push('');
   }
 
-  // ---- Harmonic Journey ----
+  // -Harmonic Journey -
   if (manifest && manifest.journey) {
     lines.push('## Harmonic Journey');
     lines.push('');
@@ -181,7 +181,7 @@ function generateNarrative() {
     lines.push('');
   }
 
-  // ---- Regime Story ----
+  // -Regime Story -
   lines.push('## The System\'s Inner Life');
   lines.push('');
 
@@ -315,7 +315,7 @@ function generateNarrative() {
     }
   }
 
-  // ---- Conductor Signals ----
+  // -Conductor Signals -
   lines.push('## Signal Landscape');
   lines.push('');
 
@@ -365,7 +365,7 @@ function generateNarrative() {
     }
   }
 
-  // ---- Trust Governance ----
+  // -Trust Governance -
   lines.push('## Trust Governance');
   lines.push('');
 
@@ -390,7 +390,7 @@ function generateNarrative() {
     }
   }
 
-  // ---- Coupling Health ----
+  // -Coupling Health -
   if (summary && summary.couplingAbs) {
     lines.push('## Pipeline Coupling');
     lines.push('');
@@ -441,7 +441,7 @@ function generateNarrative() {
     }
   }
 
-  // ---- Output Summary ----
+  // -Output Summary -
   {
     const csv1 = path.join(COMPOSITION_DIR, 'output1.csv');
     const csv2 = path.join(COMPOSITION_DIR, 'output2.csv');
@@ -473,7 +473,7 @@ function generateNarrative() {
     }
   }
 
-  // ---- Coherence Verdicts ----
+  // -Coherence Verdicts -
   if (manifest && Array.isArray(manifest.coherenceVerdicts)) {
     const verdicts = manifest.coherenceVerdicts;
     const critical = verdicts.filter(v => v.severity === 'critical');
@@ -505,8 +505,8 @@ function generateNarrative() {
     }
   }
 
-  // ---- Closing ----
-  lines.push('---');
+  // -Closing -
+  lines.push('');
   lines.push('');
   lines.push('*This narrative was generated automatically from composition telemetry. ' +
     'For raw data, see `trace.jsonl`, `trace-summary.json`, and `system-manifest.json`.*');
@@ -515,7 +515,7 @@ function generateNarrative() {
   return lines.join('\n');
 }
 
-// ---- Main ----
+// -Main -
 
 function main() {
   const summary = loadJSON(SUMMARY_PATH);

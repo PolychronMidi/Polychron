@@ -9,7 +9,7 @@
 ### Top-Level
 
 | Module | Scopes | ATG Channels | Reads Signals | Emits Explain |
-|--------|--------|-------------|---------------|---------------|
+|--|--|-|||
 | conductorSignalBridge | all, section | - | Yes | Yes |
 | crossLayerEmissionGateway | (helper) | - | - | - |
 | crossLayerLifecycleManager | all, section | - | Yes | - |
@@ -19,7 +19,7 @@
 ### Structure
 
 | Module | Scopes | ATG Channels | Reads Signals | Emits Explain |
-|--------|--------|-------------|---------------|---------------|
+|--|--|-|||
 | adaptiveTrustScores | all | - | - | Yes |
 | adaptiveTrustScoresHelpers | (helper) | - | - | - |
 | beatInterleavedProcessor | all, phrase | - | - | - |
@@ -35,7 +35,7 @@
 ### Harmony
 
 | Module | Scopes | ATG Channels | Reads Signals | Emits Explain |
-|--------|--------|-------------|---------------|---------------|
+|--|--|-|||
 | cadenceAlignment | all | tension | - | - |
 | convergenceHarmonicTrigger | all, section | - | - | - |
 | harmonicIntervalGuard | all, section | - | - | - |
@@ -50,7 +50,7 @@
 ### Rhythm
 
 | Module | Scopes | ATG Channels | Reads Signals | Emits Explain |
-|--------|--------|-------------|---------------|---------------|
+|--|--|-|||
 | convergenceDetector | all, phrase | onset | - | - |
 | emergentDownbeat | all | emergentDownbeat | - | - |
 | feedbackOscillator | all | feedbackLoop | - | - |
@@ -64,7 +64,7 @@
 ### Dynamics
 
 | Module | Scopes | ATG Channels | Reads Signals | Emits Explain |
-|--------|--------|-------------|---------------|---------------|
+|--|--|-|||
 | articulationComplement | all, section | - | - | - |
 | crossLayerDynamicEnvelope | all, section | - | - | - |
 | dynamicRoleSwap | all | - | - | - |
@@ -75,7 +75,7 @@
 ## ATG Channel Usage
 
 | Channel | Modules |
-|---------|---------|
+|||
 | beatPhase | rhythmicPhaseLock |
 | density | temporalGravity |
 | emergentDownbeat | emergentDownbeat |
@@ -102,7 +102,7 @@
 ## Interaction Hubs (most referenced)
 
 | Module | Referenced By |
-|--------|-------------|
+|--|-|
 | sectionIntentCurves | 9 modules |
 | explainabilityBus | 8 modules |
 | convergenceDetector | 5 modules |
@@ -114,5 +114,5 @@
 | conductorSignalBridge | 2 modules |
 | spectralComplementarity | 2 modules |
 
----
+
 *Generated 2026-03-09T00:34:49.596Z*

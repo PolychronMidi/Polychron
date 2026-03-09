@@ -22,7 +22,7 @@ const SNAPSHOT_DIR    = path.join(ROOT, 'metrics', 'snapshots');
 const DIFF_JSON       = path.join(METRICS_DIR, 'composition-diff.json');
 const DIFF_MD         = path.join(METRICS_DIR, 'composition-diff.md');
 
-// ---- Helpers ----
+// -Helpers -
 
 function toNum(v, fallback) {
   const n = Number(v);
@@ -39,7 +39,7 @@ function parseBeatKey(beatKey) {
   return { section: parts[0] || 0, phrase: parts[1] || 0, measure: parts[2] || 0, beat: parts[3] || 0 };
 }
 
-// ---- Load Trace and Structure ----
+// -Load Trace and Structure -
 
 function loadTrace(dir) {
   const tracePath = path.join(dir, 'trace.jsonl');
@@ -70,7 +70,7 @@ function loadNotes(dir) {
   return notes;
 }
 
-// ---- Extract Structure ----
+// -Extract Structure -
 
 function extractStructure(entries) {
   const sections = [];
@@ -129,7 +129,7 @@ function extractStructure(entries) {
   return sections;
 }
 
-// ---- Compute Structural Diff ----
+// -Compute Structural Diff -
 
 function diffStructures(structA, structB) {
   const diffs = [];
@@ -236,7 +236,7 @@ function diffStructures(structA, structB) {
   return diffs;
 }
 
-// ---- Pitch Distribution Diff ----
+// -Pitch Distribution Diff -
 
 function diffPitchDistribution(notesA, notesB) {
   const diffs = [];
@@ -287,7 +287,7 @@ function diffPitchDistribution(notesA, notesB) {
   return diffs;
 }
 
-// ---- Render Markdown ----
+// -Render Markdown -
 
 function renderMarkdown(report) {
   const lines = [];
@@ -327,12 +327,12 @@ function renderMarkdown(report) {
   lines.push(`- Moderate: ${report.diffs.filter(d => d.severity === 'moderate').length}`);
   lines.push(`- Minor: ${report.diffs.filter(d => d.severity === 'minor').length}`);
   lines.push('');
-  lines.push(`---\n*Generated ${report.meta.generated}*`);
+  lines.push(`\n*Generated ${report.meta.generated}*`);
 
   return lines.join('\n');
 }
 
-// ---- Main ----
+// -Main -
 
 function main() {
   const args = process.argv.slice(2);

@@ -26,7 +26,7 @@ outputAnalyzer = (() => {
     V.assertArray(notes, 'notes');
     if (notes.length === 0) return { noteCount: 0 };
 
-    // --- Pitch-class distribution ---
+    // Pitch-class distribution
     const pcCounts = new Array(12).fill(0);
     for (const n of notes) {
       const pc = n.pitch % 12;
@@ -41,7 +41,7 @@ outputAnalyzer = (() => {
       if (p > 0) pcEntropy -= p * m.log2(p);
     }
 
-    // --- Interval histogram ---
+    // Interval histogram
     const intervals = new Map();
     const sorted = [...notes].sort((a, b) => a.startMs - b.startMs);
     for (let i = 1; i < sorted.length; i++) {
@@ -49,7 +49,7 @@ outputAnalyzer = (() => {
       intervals.set(iv, (intervals.get(iv) || 0) + 1);
     }
 
-    // --- Temporal density (notes per second, windowed) ---
+    // Temporal density (notes per second, windowed)
     const windowMs = 2000;
     const startMs  = sorted[0].startMs;
     const endMs    = sorted[sorted.length - 1].startMs;
@@ -62,7 +62,7 @@ outputAnalyzer = (() => {
     }
     const avgDensity = total / m.max(1, span / 1000);
 
-    // --- Rhythmic regularity (CV of inter-onset intervals) ---
+    // Rhythmic regularity (CV of inter-onset intervals)
     const iois = [];
     for (let i = 1; i < sorted.length; i++) {
       const dt = sorted[i].startMs - sorted[i - 1].startMs;

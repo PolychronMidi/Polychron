@@ -37,10 +37,6 @@ fullBootstrap = (() => {
 
     // -- Conductor / Composer / FX Class Interfaces --
 
-    // --  --
-
-    // --  --
-
     // -- Profile record shapes --
 
     // -- Config accessor APIs --
@@ -791,10 +787,6 @@ fullBootstrap = (() => {
     // -- Rhythm / Time / Composer Interfaces --
 
     // -- Conductor / Composer / FX Class Interfaces --
-
-    // --  --
-
-    // --  --
 
     // -- Profile record shapes --
 

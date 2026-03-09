@@ -57,7 +57,7 @@ moduleLifecycle = (() => {
     return { register, resetByScope, resetAll, resetSection, resetPhrase, getNames, getCount };
   }
 
-  // --- Global Initialization Registry ---
+  // Initialization Registry
   const initializers = new Map();
 
   /**

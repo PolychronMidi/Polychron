@@ -546,7 +546,7 @@ PHRASES_ARC_CURVES = {
 
 /** @tier-3 */ SILENT_OUTRO_SECONDS=5;
 
-// -- Deep-freeze all config objects ------------------------------------------
+// -- Deep-freeze all config objects
 // Config globals are set once and never mutated at runtime. Freezing them turns
 // any accidental mutation into an immediate crash (Principle 2: Fail Fast).
 // Lambda-bearing objects (PHRASES_ARC_CURVES, RHYTHM_PATTERNS) are safely frozen

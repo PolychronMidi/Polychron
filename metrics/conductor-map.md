@@ -6,7 +6,7 @@
 ## Summary
 
 | Domain | Modules | Density | Tension | Flicker | Recorders | State Providers |
-|---|---|---|---|---|---|---|
+||||||||
 | dynamics | 8 | 2 | 3 | 4 | 5 | 4 |
 | harmonic | 13 | 3 | 9 | 0 | 3 | 7 |
 | journey | 1 | 0 | 0 | 0 | 0 | 0 |

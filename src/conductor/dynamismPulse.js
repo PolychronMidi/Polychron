@@ -20,7 +20,7 @@ dynamismPulse = (() => {
 
     const basePulse = measureProgress * 0.35 + beatProgress * 0.35 + osc * 0.3;
 
-    // -- Micro-hyper flicker (depth-scaled, profile-driven) ---------------------
+    // -- Micro-hyper flicker (depth-scaled, profile-driven)
     // Amplitude increases for finer units: beat=0, div=small, subdiv=med, subsubdiv=large
     const baseDepthAmp = unit === 'beat' ? 0 : unit === 'div' ? 0.08 : unit === 'subdiv' ? 0.14 : 0.22;
     const flickerProfile = conductorConfig.getFlickerParams();

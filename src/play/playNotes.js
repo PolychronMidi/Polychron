@@ -103,14 +103,14 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   const resolvedPlayProb = V.requireFinite(Number(resolved.playProb), 'resolved.playProb');
   const resolvedStutterProb = V.requireFinite(Number(resolved.stutterProb), 'resolved.stutterProb');
 
-  // -- textureBlender: per-unit contrast-blend mode ------------------
+  // -- textureBlender: per-unit contrast-blend mode
   // Decides whether this unit emits normally, fires a percussive chord
   // stab, or injects a rapid scalar flurry.  Oscillation-driven so the
   // texture switching never settles into a predictable pattern.
   const textureComposite = V.requireFinite(Number(resolved.composite), 'resolved.composite');
   const textureMode = textureBlender.resolve(unit, textureComposite);
 
-  // -- Emit texture-contrast event for drum coupling (#5) ---------
+  // -- Emit texture-contrast event for drum coupling (#5)
   if (textureMode.mode !== 'single') {
     eventBus.emit(PLAY_EVENTS.TEXTURE_CONTRAST, { mode: textureMode.mode, unit, composite: textureComposite });
   }

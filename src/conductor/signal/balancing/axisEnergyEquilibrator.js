@@ -568,7 +568,7 @@ axisEnergyEquilibrator = (() => {
     for (let i = 0; i < cdKeys.length; i++) _pairCooldowns[cdKeys[i]] = 0;
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerRecorder('axisEnergyEquilibrator', refresh);
   conductorIntelligence.registerStateProvider('axisEnergyEquilibrator', () => ({
     axisEnergyEquilibrator: getSnapshot()

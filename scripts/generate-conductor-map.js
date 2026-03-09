@@ -26,7 +26,7 @@ const BOOT_ORDER_PATH = path.join(OUTPUT_DIR, 'boot-order.json');
 const JSON_OUTPUT = path.join(OUTPUT_DIR, 'conductor-map.json');
 const MD_OUTPUT = path.join(OUTPUT_DIR, 'conductor-map.md');
 
-// ---- Load data sources ----
+// -Load data sources -
 
 function loadJSON(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -41,7 +41,7 @@ function loadJSON(filePath) {
   }
 }
 
-// ---- Detect domain from file path ----
+// -Detect domain from file path -
 
 function getDomain(filePath) {
   const rel = filePath.replace(/\\/g, '/');
@@ -54,7 +54,7 @@ function getDomain(filePath) {
   return 'other';
 }
 
-// ---- Extract signal reads from source file ----
+// -Extract signal reads from source file -
 
 function extractSignalReads(src) {
   const reads = new Set();
@@ -89,7 +89,7 @@ function extractSignalReads(src) {
   return [...reads].sort();
 }
 
-// ---- Extract registration types from source file ----
+// -Extract registration types from source file -
 
 function extractRegistrations(src) {
   const regs = [];
@@ -101,7 +101,7 @@ function extractRegistrations(src) {
   return regs;
 }
 
-// ---- Extract reset scopes ----
+// -Extract reset scopes -
 
 function extractScopes(src) {
   const m = src.match(/registerModule\s*\([^,]+,\s*[^,]+,\s*\[([^\]]+)\]/);
@@ -111,7 +111,7 @@ function extractScopes(src) {
   return [];
 }
 
-// ---- Build the conductor map ----
+// -Build the conductor map -
 
 function buildMap() {
   const manifest = loadJSON(MANIFEST_PATH);
@@ -192,7 +192,7 @@ function buildMap() {
   return modules;
 }
 
-// ---- Generate Markdown ----
+// -Generate Markdown -
 
 function generateMarkdown(modules) {
   const lines = [];
@@ -204,7 +204,7 @@ function generateMarkdown(modules) {
   lines.push('## Summary');
   lines.push('');
   lines.push('| Domain | Modules | Density | Tension | Flicker | Recorders | State Providers |');
-  lines.push('|---|---|---|---|---|---|---|');
+  lines.push('||||||||');
 
   // Group by domain
   const byDomain = {};
@@ -252,7 +252,7 @@ function generateMarkdown(modules) {
   return lines.join('\n');
 }
 
-// ---- Main ----
+// -Main -
 
 function main() {
   const modules = buildMap();

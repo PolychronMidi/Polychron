@@ -92,6 +92,6 @@ The system issued **0 critical**, **1 warning**, and **4 informational** finding
 
 - 7 density contributors suppressing with constant drag: regimeReactiveDamping (0.92), pipelineCouplingManager (1.16), onsetDensityProfiler (0.90), rhythmicComplexityGradient (1.18), climaxProximityPredictor (1.10), restDensityTracker (0.90), voiceDensityBalancer (0.90). Consider widening registration bounds or adding dynamic response.
 
----
+
 
 *This narrative was generated automatically from composition telemetry. For raw data, see `trace.jsonl`, `trace-summary.json`, and `system-manifest.json`.*

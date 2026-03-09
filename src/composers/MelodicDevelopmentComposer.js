@@ -106,7 +106,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     V.assertArray(baseNotes, 'baseNotes', true);
 
     this.measureCount++;
-    // -- Texture-phase coupling (#4) --------------------------
+    // -- Texture-phase coupling (#4) --
     // Texture state biases development technique: chord bursts - transposition
     // (phases 0,1), flurries - inversion (phase 2), sustained single - retrograde (phase 3)
     const basePhase = m.floor((this.measureCount - 1) / 2) % 4;

@@ -24,7 +24,7 @@ const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const TRACE_PATH = path.join(OUTPUT_DIR, 'trace.jsonl');
 const REPLAY_JSON_PATH = path.join(OUTPUT_DIR, 'trace-replay.json');
 
-// ---- Helpers ----
+// -Helpers -
 
 function toNum(v, fallback) {
   const n = Number(v);
@@ -46,7 +46,7 @@ function mean(arr) {
   return arr.reduce((s, v) => s + v, 0) / arr.length;
 }
 
-// ---- Load Trace ----
+// -Load Trace -
 
 function loadTrace() {
   if (!fs.existsSync(TRACE_PATH)) {
@@ -65,7 +65,7 @@ function loadTrace() {
   }).filter(Boolean);
 }
 
-// ---- Timeline Rendering ----
+// -Timeline Rendering -
 
 function renderTimeline(entries) {
   const lines = [];
@@ -87,7 +87,7 @@ function renderTimeline(entries) {
 
     // Phrase header
     if (bk.phrase !== lastPhrase) {
-      lines.push(`  --- Phrase ${bk.phrase} --- profile=${snap.activeProfile || '?'} texture=${snap.textureMode || '?'}`);
+      lines.push(`  Phrase ${bk.phrase} profile=${snap.activeProfile || '?'} texture=${snap.textureMode || '?'}`);
       lastPhrase = bk.phrase;
     }
 
@@ -104,7 +104,7 @@ function renderTimeline(entries) {
   return lines.join('\n');
 }
 
-// ---- Section/Phrase Statistics ----
+// -Section/Phrase Statistics -
 
 function computeStats(entries) {
   const sections = {};
@@ -174,7 +174,7 @@ function renderStats(stats) {
   return lines.join('\n');
 }
 
-// ---- Search Filter ----
+// -Search Filter -
 
 function parseSearch(searchStr) {
   const eqIdx = searchStr.indexOf('=');
@@ -189,7 +189,7 @@ function matchesSearch(entry, search) {
   return String(val) === search.value;
 }
 
-// ---- CLI ----
+// -CLI -
 
 function main() {
   const args = process.argv.slice(2);

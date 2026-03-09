@@ -59,7 +59,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   }
 
   getCurrentChord() {
-    // -- Texture-responsive harmonic pacing (#5) --------------------------
+    // -- Texture-responsive harmonic pacing (#5) --
     // Sustained chord-burst activity - faster harmonic rhythm (reduce measuresPerChord)
     // Sustained flurry activity - slower harmonic rhythm (hold chords longer)
     let effectiveMPC = this.measuresPerChord;
