@@ -1474,6 +1474,8 @@ declare var entropyAmplificationController: {
   reset(): void;
 };
 declare var regimeClassifierHelpers: any;
+declare var regimeClassifierClassification: any;
+declare var regimeClassifierResolution: any;
 declare var regimeClassifier: {
   classify(avgVelocity: number, avgCurvature: number, effectiveDim: number, couplingStrength: number): string;
   resolve(rawRegime: string, tickId?: number): string;
@@ -1490,6 +1492,7 @@ declare var regimeClassifier: {
   reset(): void;
 };
 declare var systemDynamicsProfilerHelpers: any;
+declare var systemDynamicsProfilerAnalysis: any;
 declare var systemDynamicsProfiler: SystemDynamicsProfilerAPI;
 declare var regimeReactiveDampingEquilibrator: any;
 declare var regimeReactiveDamping: { densityBias(): number; tensionBias(): number; flickerMod(): number; reset(): void };
@@ -1512,6 +1515,9 @@ declare var homeostasisTick: any;
 declare var homeostasisRefresh: any;
 declare var couplingHomeostasis: { getState(): { totalEnergyEma: number; energyBudget: number; peakEnergyEma: number; redistributionScore: number; nudgeableRedistributionScore: number; budgetConstraintActive: boolean; budgetConstraintPressure: number; globalGainMultiplier: number; giniCoefficient: number; energyDeltaEma: number; pairTurbulenceEma: number; beatCount: number; invokeCount: number; tickCount: number; emptyMatrixBeats: number; multiplierMin: number; multiplierMax: number; multiplierStdDev: number; floorContactBeats: number; ceilingContactBeats: number; avgRecoveryDuration: number; totalEnergyFloor: number; floorDampen: number; floorRecoveryActive: boolean; floorRecoveryTicksRemaining: number; densityFlickerTailPressure: number; densityFlickerOverridePressure: number; recoveryAxisHandOffPressure: number; shortRunRecoveryBias: number; nonNudgeableTailPressure: number; nonNudgeableTailPair: string; recoveryDominantAxes: string[]; stickyTailPressure: number; tailRecoveryDrive: number; tailRecoveryTrigger: number; tailRecoveryHandshake: number; tailRecoveryCap: number; tailRecoveryCeilingPressure: number; densityFlickerClampPressure: number; dominantTailPair: string; tailHotspotCount: number; tailPressureByPair: Record<string, number> }; reset(): void; tick(): void; getFloorDampen(): number };
 declare var axisEnergyEquilibratorHelpers: any;
+declare var axisEnergyEquilibratorRefreshContext: any;
+declare var axisEnergyEquilibratorPairAdjustments: any;
+declare var axisEnergyEquilibratorAxisAdjustments: any;
 declare var axisEnergyEquilibrator: { getSnapshot(): { beatCount: number; pairAdjustments: number; axisAdjustments: number; smoothedShares: Record<string, number>; perAxisAdj: Record<string, number>; perPairAdj: Record<string, number>; lastBaselines: Record<string, number>; regimeBeats: Record<string, number>; regimePairAdj: Record<string, number>; regimeAxisAdj: Record<string, number>; regimeTightenBudget: Record<string, number>; coherentFreezeBeats: number; skippedColdspotRelaxations: number; phaseSurfaceHotBeats: number; trustSurfaceHotBeats: number; entropySurfaceHotBeats: number; coherentHotspotActuationBeats: number; coherentHotspotPairAdj: number; coherentHotspotAxisAdj: number; warmupTicks: number; warmupRemaining: number; coldspotSkipReasons: { coherentFreeze: number; phaseHot: number; trustHot: number; residual: number } }; reset(): void };
 declare var narrativeTrajectory: { getTrajectory(): { point: { t: number; n: number; d: number }; velocity: number; curvature: number; length: number }; tensionBias(): number; reset(): void };
 declare var structuralNarrativeAdvisor: { recordFamily(family: string): void; getHistory(): string[]; getVarietyPressure(): number; densityBias(): number; reset(): void };

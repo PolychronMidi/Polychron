@@ -467,7 +467,9 @@ function autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet) 
         const child = resolveRequire(req, path.dirname(f));
         children.push(child);
         fileToParentIndex.set(child, f);
-      } catch { /* skip */ }
+      } catch {
+        // skip failures resolving optional/invalid require paths
+      }
     }
     indexChildren.set(f, children);
   }
@@ -502,7 +504,9 @@ function autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet) 
           try {
             const child = resolveRequire(req, path.dirname(f));
             if (!visited.has(child)) stack.push(child);
-          } catch { /* skip */ }
+          } catch {
+            // skip if require resolution fails during transitive walk
+          }
         }
       } catch { /* skip */ }
     }
@@ -574,7 +578,9 @@ function autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet) 
         const reqMatch = lines[li].match(/require\s*\(\s*['"](\.[^'"]+)['"]\s*\)/);
         let resolvedAbs = null;
         if (reqMatch) {
-          try { resolvedAbs = resolveRequire(reqMatch[1], path.dirname(idxFile)); } catch { /* skip */ }
+          try { resolvedAbs = resolveRequire(reqMatch[1], path.dirname(idxFile)); } catch {
+            // skip optional path resolution errors
+          }
         }
         reqEntries.push({ startLine: commentStart, endLine: li, resolvedAbs });
         li++;

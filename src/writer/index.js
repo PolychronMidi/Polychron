@@ -1,8 +1,8 @@
-// @ts-ignore: side-effect module load
+
 require('./logUnit');
-// @ts-ignore: side-effect module load
+
 require('./grandFinale');
-// @ts-ignore: side-effect module load
+
 require('./traceDrain');
 
 fs = require('fs');
