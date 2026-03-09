@@ -50,7 +50,7 @@ rhythmicComplementEngine = (() => {
    */
   function analyzeOtherLayer(activeLayer, absTimeMs) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
     const notes = absoluteTimeWindow.getNotes({
       layer: otherLayer,
@@ -116,7 +116,7 @@ rhythmicComplementEngine = (() => {
 
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
-      let grooveOffset = grooveTransfer.applyOffset(layer === 'L1' ? 'L2' : 'L1', onTick, 'beat') - onTick;
+      let grooveOffset = grooveTransfer.applyOffset(crossLayerHelpers.getOtherLayer(layer), onTick, 'beat') - onTick;
       if (!Number.isFinite(grooveOffset)) grooveOffset = 0;
       return { tick: onTick + grooveOffset * strength * CANON_GROOVE_SCALE, velocityScale: CANON_VELOCITY, modified: grooveOffset !== 0 };
     }

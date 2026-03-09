@@ -1,18 +1,18 @@
 {
   "meta": {
-    "generated": "2026-03-09T08:02:13.007Z",
+    "generated": "2026-03-09T08:29:35.234Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
-    "totalFiles": 425,
-    "totalGlobals": 706,
-    "totalProvides": 721,
-    "totalConsumes": 2791,
-    "totalEdges": 2154,
-    "crossSubsystemEdges": 1493,
+    "totalFiles": 426,
+    "totalGlobals": 707,
+    "totalProvides": 722,
+    "totalConsumes": 2789,
+    "totalEdges": 2162,
+    "crossSubsystemEdges": 1486,
     "maxFanIn": {
       "file": "src/utils/index.js",
-      "count": 215
+      "count": 214
     },
     "maxFanOut": {
       "file": "src/play/main.js",
@@ -55,9 +55,9 @@
         "consumes": 240
       },
       "crossLayer": {
-        "files": 51,
-        "provides": 41,
-        "consumes": 343
+        "files": 52,
+        "provides": 42,
+        "consumes": 341
       },
       "writer": {
         "files": 4,
@@ -5470,8 +5470,24 @@
         "validator"
       ]
     },
-    "src/crossLayer/crossLayerEmissionGateway.js": {
+    "src/crossLayer/crossLayerHelpers.js": {
       "order": 357,
+      "subsystem": "crossLayer",
+      "provides": [
+        "crossLayerHelpers"
+      ],
+      "consumes": [
+        "OCTAVE",
+        "beatStartTime",
+        "m",
+        "measureStart",
+        "measureStartTime",
+        "tpSec",
+        "validator"
+      ]
+    },
+    "src/crossLayer/crossLayerEmissionGateway.js": {
+      "order": 358,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerEmissionGateway"
@@ -5481,32 +5497,30 @@
       ]
     },
     "src/crossLayer/rhythm/index.js": {
-      "order": 358,
+      "order": 359,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/rhythm/convergenceDetector.js": {
-      "order": 359,
+      "order": 360,
       "subsystem": "crossLayer",
       "provides": [
         "convergenceDetector"
       ],
       "consumes": [
         "MIDI_MAX_VALUE",
-        "OCTAVE",
         "absoluteTimeGrid",
         "c",
         "cCH1",
         "cCH2",
         "clamp",
         "crossLayerEmissionGateway",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "eventBus",
         "eventCatalog",
         "m",
-        "measureStart",
-        "measureStartTime",
         "rf",
         "ri",
         "tpSec",
@@ -5515,14 +5529,13 @@
       ]
     },
     "src/crossLayer/rhythm/emergentDownbeat.js": {
-      "order": 360,
+      "order": 361,
       "subsystem": "crossLayer",
       "provides": [
         "emergentDownbeat"
       ],
       "consumes": [
         "MIDI_MAX_VALUE",
-        "OCTAVE",
         "absoluteTimeGrid",
         "bass",
         "beatStart",
@@ -5530,6 +5543,7 @@
         "cCH3",
         "clamp",
         "crossLayerEmissionGateway",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "lCH1",
         "lCH2",
@@ -5544,7 +5558,7 @@
       ]
     },
     "src/crossLayer/rhythm/feedbackOscillator.js": {
-      "order": 361,
+      "order": 362,
       "subsystem": "crossLayer",
       "provides": [
         "feedbackOscillator"
@@ -5552,16 +5566,13 @@
       "consumes": [
         "absoluteTimeGrid",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
-        "m",
-        "measureStart",
-        "measureStartTime",
-        "tpSec",
         "validator"
       ]
     },
     "src/crossLayer/rhythm/grooveTransfer.js": {
-      "order": 362,
+      "order": 363,
       "subsystem": "crossLayer",
       "provides": [
         "grooveTransfer"
@@ -5581,7 +5592,7 @@
       ]
     },
     "src/crossLayer/rhythm/rhythmicComplementEngine.js": {
-      "order": 363,
+      "order": 364,
       "subsystem": "crossLayer",
       "provides": [
         "rhythmicComplementEngine"
@@ -5589,6 +5600,7 @@
       "consumes": [
         "absoluteTimeWindow",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "grooveTransfer",
         "restSynchronizer",
@@ -5599,13 +5611,14 @@
       ]
     },
     "src/crossLayer/rhythm/rhythmicPhaseLock.js": {
-      "order": 364,
+      "order": 365,
       "subsystem": "crossLayer",
       "provides": [
         "rhythmicPhaseLock"
       ],
       "consumes": [
         "absoluteTimeGrid",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
         "measureStart",
@@ -5615,7 +5628,7 @@
       ]
     },
     "src/crossLayer/rhythm/stutterContagion.js": {
-      "order": 365,
+      "order": 366,
       "subsystem": "crossLayer",
       "provides": [
         "stutterContagion"
@@ -5623,13 +5636,12 @@
       "consumes": [
         "absoluteTimeGrid",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "flipBin",
         "flipBinF3",
         "flipBinT3",
         "m",
-        "measureStart",
-        "measureStartTime",
         "rf",
         "ri",
         "stutterFX",
@@ -5640,7 +5652,7 @@
       ]
     },
     "src/crossLayer/rhythm/temporalGravity.js": {
-      "order": 366,
+      "order": 367,
       "subsystem": "crossLayer",
       "provides": [
         "temporalGravity"
@@ -5649,16 +5661,15 @@
         "absoluteTimeGrid",
         "absoluteTimeWindow",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
-        "measureStart",
-        "measureStartTime",
         "tpSec",
         "validator"
       ]
     },
     "src/crossLayer/rhythm/polyrhythmicPhasePredictor.js": {
-      "order": 367,
+      "order": 368,
       "subsystem": "crossLayer",
       "provides": [
         "polyrhythmicPhasePredictor"
@@ -5675,13 +5686,13 @@
       ]
     },
     "src/crossLayer/harmony/index.js": {
-      "order": 368,
+      "order": 369,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/harmony/cadenceAlignment.js": {
-      "order": 369,
+      "order": 370,
       "subsystem": "crossLayer",
       "provides": [
         "cadenceAlignment"
@@ -5689,18 +5700,15 @@
       "consumes": [
         "absoluteTimeGrid",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "eventBus",
         "eventCatalog",
-        "m",
-        "measureStart",
-        "measureStartTime",
-        "tpSec",
         "validator"
       ]
     },
     "src/crossLayer/harmony/convergenceHarmonicTrigger.js": {
-      "order": 370,
+      "order": 371,
       "subsystem": "crossLayer",
       "provides": [
         "convergenceHarmonicTrigger"
@@ -5718,15 +5726,15 @@
       ]
     },
     "src/crossLayer/harmony/harmonicIntervalGuard.js": {
-      "order": 371,
+      "order": 372,
       "subsystem": "crossLayer",
       "provides": [
         "harmonicIntervalGuard"
       ],
       "consumes": [
-        "OCTAVE",
         "absoluteTimeWindow",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
         "rf",
@@ -5735,15 +5743,15 @@
       ]
     },
     "src/crossLayer/harmony/motifEcho.js": {
-      "order": 372,
+      "order": 373,
       "subsystem": "crossLayer",
       "provides": [
         "motifEcho"
       ],
       "consumes": [
-        "OCTAVE",
         "absoluteTimeGrid",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
         "motifIdentityMemory",
@@ -5755,7 +5763,7 @@
       ]
     },
     "src/crossLayer/harmony/motifIdentityMemory.js": {
-      "order": 373,
+      "order": 374,
       "subsystem": "crossLayer",
       "provides": [
         "motifIdentityMemory"
@@ -5768,7 +5776,7 @@
       ]
     },
     "src/crossLayer/harmony/phaseAwareCadenceWindow.js": {
-      "order": 374,
+      "order": 375,
       "subsystem": "crossLayer",
       "provides": [
         "phaseAwareCadenceWindow"
@@ -5782,7 +5790,7 @@
       ]
     },
     "src/crossLayer/harmony/pitchMemoryRecall.js": {
-      "order": 375,
+      "order": 376,
       "subsystem": "crossLayer",
       "provides": [
         "pitchMemoryRecall"
@@ -5802,37 +5810,33 @@
       ]
     },
     "src/crossLayer/harmony/registerCollisionAvoider.js": {
-      "order": 376,
+      "order": 377,
       "subsystem": "crossLayer",
       "provides": [
         "registerCollisionAvoider"
       ],
       "consumes": [
-        "OCTAVE",
         "absoluteTimeGrid",
-        "beatStartTime",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "explainabilityBus",
         "m",
-        "measureStart",
-        "measureStartTime",
         "spectralComplementarity",
-        "tpSec",
         "validator"
       ]
     },
     "src/crossLayer/harmony/spectralComplementarity.js": {
-      "order": 377,
+      "order": 378,
       "subsystem": "crossLayer",
       "provides": [
         "spectralComplementarity"
       ],
       "consumes": [
-        "OCTAVE",
         "absoluteTimeGrid",
         "bass",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
         "rf",
@@ -5841,7 +5845,7 @@
       ]
     },
     "src/crossLayer/harmony/verticalIntervalMonitor.js": {
-      "order": 378,
+      "order": 379,
       "subsystem": "crossLayer",
       "provides": [
         "verticalIntervalMonitor"
@@ -5855,19 +5859,20 @@
       ]
     },
     "src/crossLayer/dynamics/index.js": {
-      "order": 379,
+      "order": 380,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/dynamics/articulationComplement.js": {
-      "order": 380,
+      "order": 381,
       "subsystem": "crossLayer",
       "provides": [
         "articulationComplement"
       ],
       "consumes": [
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "dynamicRoleSwap",
         "m",
@@ -5877,7 +5882,7 @@
       ]
     },
     "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js": {
-      "order": 381,
+      "order": 382,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerDynamicEnvelope"
@@ -5894,7 +5899,7 @@
       ]
     },
     "src/crossLayer/dynamics/dynamicRoleSwap.js": {
-      "order": 382,
+      "order": 383,
       "subsystem": "crossLayer",
       "provides": [
         "dynamicRoleSwap"
@@ -5909,7 +5914,7 @@
       ]
     },
     "src/crossLayer/dynamics/restSynchronizer.js": {
-      "order": 383,
+      "order": 384,
       "subsystem": "crossLayer",
       "provides": [
         "restSynchronizer"
@@ -5917,6 +5922,7 @@
       "consumes": [
         "absoluteTimeWindow",
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "rf",
         "tpBeat",
@@ -5925,13 +5931,14 @@
       ]
     },
     "src/crossLayer/dynamics/texturalMirror.js": {
-      "order": 384,
+      "order": 385,
       "subsystem": "crossLayer",
       "provides": [
         "texturalMirror"
       ],
       "consumes": [
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "dynamicRoleSwap",
         "m",
@@ -5940,7 +5947,7 @@
       ]
     },
     "src/crossLayer/dynamics/velocityInterference.js": {
-      "order": 385,
+      "order": 386,
       "subsystem": "crossLayer",
       "provides": [
         "velocityInterference"
@@ -5962,19 +5969,19 @@
       ]
     },
     "src/crossLayer/structure/index.js": {
-      "order": 386,
-      "subsystem": "crossLayer",
-      "provides": [],
-      "consumes": []
-    },
-    "src/crossLayer/structure/trust/index.js": {
       "order": 387,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
-    "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js": {
+    "src/crossLayer/structure/trust/index.js": {
       "order": 388,
+      "subsystem": "crossLayer",
+      "provides": [],
+      "consumes": []
+    },
+    "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js": {
+      "order": 389,
       "subsystem": "crossLayer",
       "provides": [
         "adaptiveTrustScoresHelpers"
@@ -5992,7 +5999,7 @@
       ]
     },
     "src/crossLayer/structure/trust/adaptiveTrustScores.js": {
-      "order": 389,
+      "order": 390,
       "subsystem": "crossLayer",
       "provides": [
         "adaptiveTrustScores"
@@ -6020,13 +6027,13 @@
       ]
     },
     "src/crossLayer/structure/form/index.js": {
-      "order": 390,
+      "order": 391,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/form/crossLayerClimaxEngine.js": {
-      "order": 391,
+      "order": 392,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerClimaxEngine"
@@ -6043,7 +6050,7 @@
       ]
     },
     "src/crossLayer/structure/form/crossLayerSilhouette.js": {
-      "order": 392,
+      "order": 393,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerSilhouette"
@@ -6060,7 +6067,7 @@
       ]
     },
     "src/crossLayer/structure/form/sectionIntentCurves.js": {
-      "order": 393,
+      "order": 394,
       "subsystem": "crossLayer",
       "provides": [
         "sectionIntentCurves"
@@ -6075,13 +6082,13 @@
       ]
     },
     "src/crossLayer/structure/entropy/index.js": {
-      "order": 394,
+      "order": 395,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/entropy/entropyMetrics.js": {
-      "order": 395,
+      "order": 396,
       "subsystem": "crossLayer",
       "provides": [
         "entropyMetrics"
@@ -6096,7 +6103,7 @@
       ]
     },
     "src/crossLayer/structure/entropy/entropyRegulator.js": {
-      "order": 396,
+      "order": 397,
       "subsystem": "crossLayer",
       "provides": [
         "entropyRegulator"
@@ -6115,13 +6122,13 @@
       ]
     },
     "src/crossLayer/structure/negotiation/index.js": {
-      "order": 397,
+      "order": 398,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/negotiation/interactionHeatMap.js": {
-      "order": 398,
+      "order": 399,
       "subsystem": "crossLayer",
       "provides": [
         "interactionHeatMap"
@@ -6135,7 +6142,7 @@
       ]
     },
     "src/crossLayer/structure/negotiation/negotiationEngine.js": {
-      "order": 399,
+      "order": 400,
       "subsystem": "crossLayer",
       "provides": [
         "negotiationEngine"
@@ -6152,13 +6159,13 @@
       ]
     },
     "src/crossLayer/structure/integration/index.js": {
-      "order": 400,
+      "order": 401,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/integration/contextualTrust.js": {
-      "order": 401,
+      "order": 402,
       "subsystem": "crossLayer",
       "provides": [
         "contextualTrust"
@@ -6173,7 +6180,7 @@
       ]
     },
     "src/crossLayer/structure/integration/beatInterleavedProcessor.js": {
-      "order": 402,
+      "order": 403,
       "subsystem": "crossLayer",
       "provides": [
         "beatInterleavedProcessor"
@@ -6185,7 +6192,7 @@
       ]
     },
     "src/crossLayer/conductorSignalBridge.js": {
-      "order": 403,
+      "order": 404,
       "subsystem": "crossLayer",
       "provides": [
         "conductorSignalBridge"
@@ -6199,7 +6206,7 @@
       ]
     },
     "src/crossLayer/crossLayerLifecycleManager.js": {
-      "order": 404,
+      "order": 405,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerLifecycleManager"
@@ -6212,7 +6219,7 @@
       ]
     },
     "src/writer/index.js": {
-      "order": 405,
+      "order": 406,
       "subsystem": "writer",
       "provides": [
         "fs",
@@ -6226,7 +6233,7 @@
       "consumes": []
     },
     "src/writer/logUnit.js": {
-      "order": 406,
+      "order": 407,
       "subsystem": "writer",
       "provides": [
         "logUnit"
@@ -6286,7 +6293,7 @@
       ]
     },
     "src/writer/grandFinale.js": {
-      "order": 407,
+      "order": 408,
       "subsystem": "writer",
       "provides": [
         "grandFinale"
@@ -6302,7 +6309,7 @@
       ]
     },
     "src/writer/traceDrain.js": {
-      "order": 408,
+      "order": 409,
       "subsystem": "writer",
       "provides": [
         "traceDrain"
@@ -6316,13 +6323,13 @@
       ]
     },
     "src/play/index.js": {
-      "order": 409,
+      "order": 410,
       "subsystem": "play",
       "provides": [],
       "consumes": []
     },
     "src/play/events.js": {
-      "order": 410,
+      "order": 411,
       "subsystem": "play",
       "provides": [
         "eventBus"
@@ -6333,7 +6340,7 @@
       ]
     },
     "src/play/channelCoherence.js": {
-      "order": 411,
+      "order": 412,
       "subsystem": "play",
       "provides": [
         "getChannelCoherence"
@@ -6350,7 +6357,7 @@
       ]
     },
     "src/play/emitPickCrossLayerRecord.js": {
-      "order": 412,
+      "order": 413,
       "subsystem": "play",
       "provides": [
         "emitPickCrossLayerRecord"
@@ -6378,7 +6385,7 @@
       ]
     },
     "src/play/emitPickTextureEmit.js": {
-      "order": 413,
+      "order": 414,
       "subsystem": "play",
       "provides": [
         "emitPickSourceTextures",
@@ -6398,7 +6405,7 @@
       ]
     },
     "src/play/playNotesEmitPick.js": {
-      "order": 414,
+      "order": 415,
       "subsystem": "play",
       "provides": [
         "setFeedbackPitchBias",
@@ -6460,7 +6467,7 @@
       ]
     },
     "src/play/playNotesComputeUnit.js": {
-      "order": 415,
+      "order": 416,
       "subsystem": "play",
       "provides": [
         "playNotesComputeUnit"
@@ -6491,7 +6498,7 @@
       ]
     },
     "src/play/playNotes.js": {
-      "order": 416,
+      "order": 417,
       "subsystem": "play",
       "provides": [
         "playNotes"
@@ -6537,7 +6544,7 @@
       ]
     },
     "src/play/microUnitAttenuator.js": {
-      "order": 417,
+      "order": 418,
       "subsystem": "play",
       "provides": [
         "microUnitAttenuator"
@@ -6552,7 +6559,7 @@
       ]
     },
     "src/play/crossLayerBeatRecord.js": {
-      "order": 418,
+      "order": 419,
       "subsystem": "play",
       "provides": [
         "crossLayerBeatRecord"
@@ -6609,7 +6616,7 @@
       ]
     },
     "src/play/processBeat.js": {
-      "order": 419,
+      "order": 420,
       "subsystem": "play",
       "provides": [
         "processBeat"
@@ -6670,7 +6677,7 @@
       ]
     },
     "src/play/layerPass.js": {
-      "order": 420,
+      "order": 421,
       "subsystem": "play",
       "provides": [
         "layerPass"
@@ -6704,7 +6711,7 @@
       ]
     },
     "src/play/main.js": {
-      "order": 421,
+      "order": 422,
       "subsystem": "play",
       "provides": [
         "main",
@@ -6765,7 +6772,7 @@
       ]
     },
     "src/play/beatPipelineDescriptor.js": {
-      "order": 422,
+      "order": 423,
       "subsystem": "play",
       "provides": [
         "beatPipelineDescriptor"
@@ -6773,7 +6780,7 @@
       "consumes": []
     },
     "src/play/feedbackGraphContract.js": {
-      "order": 423,
+      "order": 424,
       "subsystem": "play",
       "provides": [
         "feedbackGraphContract"
@@ -6795,7 +6802,7 @@
       ]
     },
     "src/play/mainBootstrap.js": {
-      "order": 424,
+      "order": 425,
       "subsystem": "play",
       "provides": [
         "mainBootstrap"
@@ -6843,7 +6850,7 @@
       ]
     },
     "src/play/fullBootstrap.js": {
-      "order": 425,
+      "order": 426,
       "subsystem": "play",
       "provides": [
         "fullBootstrap"
@@ -9021,14 +9028,7 @@
     },
     {
       "from": "src/conductor/config.js",
-      "to": "src/crossLayer/harmony/harmonicIntervalGuard.js",
-      "globals": [
-        "OCTAVE"
-      ]
-    },
-    {
-      "from": "src/conductor/config.js",
-      "to": "src/crossLayer/harmony/motifEcho.js",
+      "to": "src/crossLayer/crossLayerHelpers.js",
       "globals": [
         "OCTAVE"
       ]
@@ -9036,34 +9036,6 @@
     {
       "from": "src/conductor/config.js",
       "to": "src/crossLayer/harmony/pitchMemoryRecall.js",
-      "globals": [
-        "OCTAVE"
-      ]
-    },
-    {
-      "from": "src/conductor/config.js",
-      "to": "src/crossLayer/harmony/registerCollisionAvoider.js",
-      "globals": [
-        "OCTAVE"
-      ]
-    },
-    {
-      "from": "src/conductor/config.js",
-      "to": "src/crossLayer/harmony/spectralComplementarity.js",
-      "globals": [
-        "OCTAVE"
-      ]
-    },
-    {
-      "from": "src/conductor/config.js",
-      "to": "src/crossLayer/rhythm/convergenceDetector.js",
-      "globals": [
-        "OCTAVE"
-      ]
-    },
-    {
-      "from": "src/conductor/config.js",
-      "to": "src/crossLayer/rhythm/emergentDownbeat.js",
       "globals": [
         "OCTAVE"
       ]
@@ -11077,6 +11049,111 @@
       "to": "src/crossLayer/rhythm/emergentDownbeat.js",
       "globals": [
         "crossLayerEmissionGateway"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/dynamics/articulationComplement.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/dynamics/restSynchronizer.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/dynamics/texturalMirror.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/harmony/cadenceAlignment.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/harmony/harmonicIntervalGuard.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/harmony/motifEcho.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/harmony/registerCollisionAvoider.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/harmony/spectralComplementarity.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/convergenceDetector.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/emergentDownbeat.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/feedbackOscillator.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/rhythmicComplementEngine.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/rhythmicPhaseLock.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/stutterContagion.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/temporalGravity.js",
+      "globals": [
+        "crossLayerHelpers"
       ]
     },
     {
@@ -17173,6 +17250,13 @@
     },
     {
       "from": "src/utils/index.js",
+      "to": "src/crossLayer/crossLayerHelpers.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
       "to": "src/crossLayer/dynamics/articulationComplement.js",
       "globals": [
         "m"
@@ -17209,13 +17293,6 @@
     {
       "from": "src/utils/index.js",
       "to": "src/crossLayer/explainabilityBus.js",
-      "globals": [
-        "m"
-      ]
-    },
-    {
-      "from": "src/utils/index.js",
-      "to": "src/crossLayer/harmony/cadenceAlignment.js",
       "globals": [
         "m"
       ]
@@ -17279,13 +17356,6 @@
     {
       "from": "src/utils/index.js",
       "to": "src/crossLayer/rhythm/emergentDownbeat.js",
-      "globals": [
-        "m"
-      ]
-    },
-    {
-      "from": "src/utils/index.js",
-      "to": "src/crossLayer/rhythm/feedbackOscillator.js",
       "globals": [
         "m"
       ]
@@ -18394,6 +18464,16 @@
     },
     {
       "from": "src/utils/init.js",
+      "to": "src/crossLayer/crossLayerHelpers.js",
+      "globals": [
+        "beatStartTime",
+        "measureStart",
+        "measureStartTime",
+        "tpSec"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
       "to": "src/crossLayer/dynamics/articulationComplement.js",
       "globals": [
         "tpBeat"
@@ -18434,15 +18514,6 @@
     },
     {
       "from": "src/utils/init.js",
-      "to": "src/crossLayer/harmony/cadenceAlignment.js",
-      "globals": [
-        "measureStart",
-        "measureStartTime",
-        "tpSec"
-      ]
-    },
-    {
-      "from": "src/utils/init.js",
       "to": "src/crossLayer/harmony/motifEcho.js",
       "globals": [
         "tpBeat",
@@ -18454,16 +18525,6 @@
       "to": "src/crossLayer/harmony/pitchMemoryRecall.js",
       "globals": [
         "beatStartTime"
-      ]
-    },
-    {
-      "from": "src/utils/init.js",
-      "to": "src/crossLayer/harmony/registerCollisionAvoider.js",
-      "globals": [
-        "beatStartTime",
-        "measureStart",
-        "measureStartTime",
-        "tpSec"
       ]
     },
     {
@@ -18480,8 +18541,6 @@
         "MIDI_MAX_VALUE",
         "cCH1",
         "cCH2",
-        "measureStart",
-        "measureStartTime",
         "tpSec",
         "velocity"
       ]
@@ -18501,15 +18560,6 @@
         "rCH2",
         "tpBeat",
         "velocity"
-      ]
-    },
-    {
-      "from": "src/utils/init.js",
-      "to": "src/crossLayer/rhythm/feedbackOscillator.js",
-      "globals": [
-        "measureStart",
-        "measureStartTime",
-        "tpSec"
       ]
     },
     {
@@ -18555,8 +18605,6 @@
         "flipBin",
         "flipBinF3",
         "flipBinT3",
-        "measureStart",
-        "measureStartTime",
         "tpSec"
       ]
     },
@@ -18564,8 +18612,6 @@
       "from": "src/utils/init.js",
       "to": "src/crossLayer/rhythm/temporalGravity.js",
       "globals": [
-        "measureStart",
-        "measureStartTime",
         "tpSec"
       ]
     },
@@ -21447,6 +21493,13 @@
     {
       "from": "src/utils/validator.js",
       "to": "src/crossLayer/crossLayerEmissionGateway.js",
+      "globals": [
+        "validator"
+      ]
+    },
+    {
+      "from": "src/utils/validator.js",
+      "to": "src/crossLayer/crossLayerHelpers.js",
       "globals": [
         "validator"
       ]

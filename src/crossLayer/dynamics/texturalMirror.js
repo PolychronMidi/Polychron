@@ -35,7 +35,7 @@ texturalMirror = (() => {
    */
   function suggestTexture(activeLayer, absTimeMs) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
     // Get intent
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };

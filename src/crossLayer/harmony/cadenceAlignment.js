@@ -45,11 +45,7 @@ cadenceAlignment = (() => {
     if (other.tension < HIGH_TENSION_THRESHOLD) return null;
 
     // Both layers are at high tension within the same time window
-    V.requireFinite(measureStart, 'measureStart');
-    V.requireFinite(measureStartTime, 'measureStartTime');
-    V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = m.round(measureStart + ((other.timeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = m.max(0, syncTickRaw);
+    const syncTick = crossLayerHelpers.msToSyncTick(other.timeMs);
 
     return {
       aligned: true,

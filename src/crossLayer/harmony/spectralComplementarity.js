@@ -68,7 +68,7 @@ spectralComplementarity = (() => {
    * @returns {{ gaps: number[], dominant: number[], gapWeight: number }}
    */
   function analyzeComplement(activeLayer) {
-    const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
     const otherHist = getHistogram(otherLayer);
     const ourHist = getHistogram(activeLayer);
 
@@ -121,8 +121,7 @@ spectralComplementarity = (() => {
     else targetMidi = pc + 84; // treble: octave 7
 
     // Clamp to OCTAVE range
-    const lo = m.max(0, OCTAVE.min * 12 - 1);
-    const hi = OCTAVE.max * 12 - 1;
+  const { lo, hi } = crossLayerHelpers.getOctaveBounds();
     targetMidi = clamp(targetMidi, lo, hi);
 
     return { midi: targetMidi, nudged: true, targetBin };

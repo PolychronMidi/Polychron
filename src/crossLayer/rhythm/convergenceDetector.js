@@ -62,11 +62,7 @@ convergenceDetector = (() => {
     const rarity = 1 - (dist / CONVERGENCE_TOLERANCE_MS);
 
     // Convert to this layer's tick space
-    V.requireFinite(measureStart, 'measureStart');
-    V.requireFinite(measureStartTime, 'measureStartTime');
-    V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = m.round(measureStart + ((match.timeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = m.max(0, syncTickRaw);
+    const syncTick = crossLayerHelpers.msToSyncTick(match.timeMs);
 
     return {
       syncTick,
@@ -106,8 +102,7 @@ convergenceDetector = (() => {
     // Pick octave spread based on rarity: rarer = wider spread
     const octaveSpread = conv.rarity > 0.7 ? 3 : conv.rarity > 0.4 ? 2 : 1;
     const burstNotes = [];
-    const lo = m.max(0, OCTAVE.min * 12);
-    const hi = m.min(127, OCTAVE.max * 12 - 1);
+    const { lo, hi } = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true });
     for (let oi = -octaveSpread; oi <= octaveSpread; oi++) {
       const n = burstPC + (m.round(boundedCurrentMidi / 12) + oi) * 12;
       if (n >= lo && n <= hi) burstNotes.push(n);

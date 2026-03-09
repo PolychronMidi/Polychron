@@ -628,6 +628,13 @@ interface CrossLayerEmissionGatewayAPI {
   reset(): void;
 }
 
+interface CrossLayerHelpersAPI {
+  getOtherLayer(layer: string): string;
+  msToSyncTick(timeMs: number): number;
+  tickToAbsMs(tick: number, fallbackAbsMs?: number): number;
+  getOctaveBounds(options?: { lowOffset?: number; clipToMidi?: boolean; anchorMidi?: number; radius?: number }): { lo: number; hi: number };
+}
+
 // -- Cross-Layer Module Interfaces --
 
 interface SectionIntentCurvesAPI {
@@ -1816,6 +1823,7 @@ declare var entropyMetrics: EntropyMetricsAPI;
 declare var entropyRegulator: EntropyRegulatorAPI;
 declare var emergentDownbeat: EmergentDownbeatAPI;
 declare var explainabilityBus: ExplainabilityBusAPI;
+declare var crossLayerHelpers: CrossLayerHelpersAPI;
 declare var crossLayerEmissionGateway: CrossLayerEmissionGatewayAPI;
 declare var adaptiveTrustScoresHelpers: any;
 declare var adaptiveTrustScores: AdaptiveTrustScoresAPI;

@@ -73,8 +73,7 @@ emergentDownbeat = (() => {
     if (strength < 0.5) return; // only for strong downbeats
 
     const bassNote = (midi % 12) + BASS_REINFORCE_OCTAVE * 12;
-    const lo = m.max(0, OCTAVE.min * 12 - 1);
-    const hi = OCTAVE.max * 12 - 1;
+    const { lo, hi } = crossLayerHelpers.getOctaveBounds();
     if (bassNote < lo || bassNote > hi) return;
 
     const bassVel = m.round(clamp(velocity * 0.7, 1, MIDI_MAX_VALUE));

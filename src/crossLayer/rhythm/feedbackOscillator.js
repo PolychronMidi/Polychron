@@ -89,11 +89,7 @@ feedbackOscillator = (() => {
     const incomingTimeMs = V.requireFinite(incoming.timeMs, 'react.incoming.timeMs');
 
     // Convert to this layer's tick space
-    V.requireFinite(measureStart, 'measureStart');
-    V.requireFinite(measureStartTime, 'measureStartTime');
-    V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = m.round(measureStart + ((incomingTimeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = m.max(0, syncTickRaw);
+    const syncTick = crossLayerHelpers.msToSyncTick(incomingTimeMs);
 
     // Post our reaction for the other layer to pick up (with evolved pitch)
     absoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
