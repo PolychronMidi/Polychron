@@ -14,9 +14,7 @@ registerMigrationTracker = (() => {
    * @returns {{ avgPitch: number, slope: number, direction: string, static: boolean }}
    */
   function getMigrationProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 4) {
       return { avgPitch: 60, slope: 0, direction: 'insufficient', static: true };
     }

@@ -59,7 +59,7 @@ emergentDownbeat = (() => {
    */
   function accentVelocity(velocity, strength) {
     const boost = 1 + ACCENT_VELOCITY_BOOST * strength;
-    return m.round(clamp(velocity * boost, 1, MIDI_MAX_VALUE));
+    return crossLayerHelpers.scaleVelocity(velocity, boost);
   }
 
   /**
@@ -76,7 +76,7 @@ emergentDownbeat = (() => {
     const { lo, hi } = crossLayerHelpers.getOctaveBounds();
     if (bassNote < lo || bassNote > hi) return;
 
-    const bassVel = m.round(clamp(velocity * 0.7, 1, MIDI_MAX_VALUE));
+    const bassVel = crossLayerHelpers.scaleVelocity(velocity, 0.7);
     const bassSustain = tpBeat * rf(0.6, 1.2);
     crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart, type: 'on', vals: [cCH3, bassNote, bassVel] });
     crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart + bassSustain, vals: [cCH3, bassNote] });

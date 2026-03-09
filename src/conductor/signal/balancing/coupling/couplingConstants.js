@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Coupling Constants
@@ -90,8 +90,7 @@ couplingConstants = (() => {
   const P95_WINDOW = 16;
   const TELEMETRY_WINDOW = 96;
 
-  // R73 E1: Dynamic telemetry window for long runs. Fixed 96-beat window
-  // undersamples on 911-beat runs (reconciliation gaps 0.406). Scales
+  // Dynamic telemetry window for long runs. Scales
   // proportionally to run length: ~96 at 640 beats, 192 cap for very long
   // runs, 48 floor for short runs.
   function dynamicTelemetryWindow(bc) {

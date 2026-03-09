@@ -6,6 +6,34 @@
 
 analysisHelpers = (() => {
   /**
+   * Shared ATW note-window query for single-layer analysis modules.
+   * @param {{ optionalFinite: (value: unknown, fallback?: number) => number }} V
+   * @param {{ layer?: string, windowSeconds?: number } | undefined} opts
+   * @param {number} defaultWindowSeconds
+   * @returns {any[]}
+   */
+  function getWindowNotes(V, opts, defaultWindowSeconds) {
+    const safeOpts = opts && typeof opts === 'object' ? opts : {};
+    const ws = V.optionalFinite(safeOpts.windowSeconds, defaultWindowSeconds);
+    return absoluteTimeWindow.getNotes({ layer: safeOpts.layer, windowSeconds: ws });
+  }
+
+  /**
+   * Shared ATW note-window query for two-layer comparison modules.
+   * @param {{ optionalFinite: (value: unknown, fallback?: number) => number }} V
+   * @param {number | undefined} windowSeconds
+   * @param {number} defaultWindowSeconds
+   * @returns {{ l1Notes: any[], l2Notes: any[] }}
+   */
+  function getWindowLayerPairNotes(V, windowSeconds, defaultWindowSeconds) {
+    const ws = V.optionalFinite(windowSeconds, defaultWindowSeconds);
+    return {
+      l1Notes: absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws }),
+      l2Notes: absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws })
+    };
+  }
+
+  /**
    * Split an array of numbers in half and return the slope (avgSecond - avgFirst).
    * Standard half-split slope for detecting crescendo/decrescendo, acceleration, etc.
    * @param {number[]} values - array of numeric samples (velocities, durations, energies, etc.)
@@ -23,5 +51,5 @@ analysisHelpers = (() => {
     return { slope: avgSecond - avgFirst, avgFirst, avgSecond };
   }
 
-  return { halfSplitSlope };
+  return { getWindowNotes, getWindowLayerPairNotes, halfSplitSlope };
 })();

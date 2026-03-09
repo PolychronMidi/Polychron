@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-09T08:29:35.234Z",
+    "generated": "2026-03-09T15:43:18.123Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 426,
     "totalGlobals": 707,
     "totalProvides": 722,
-    "totalConsumes": 2789,
-    "totalEdges": 2162,
-    "crossSubsystemEdges": 1486,
+    "totalConsumes": 2792,
+    "totalEdges": 2165,
+    "crossSubsystemEdges": 1475,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 214
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 175,
         "provides": 209,
-        "consumes": 854
+        "consumes": 853
       },
       "rhythm": {
         "files": 30,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 341
+        "consumes": 345
       },
       "writer": {
         "files": 4,
@@ -906,6 +906,7 @@
         "analysisHelpers"
       ],
       "consumes": [
+        "absoluteTimeWindow",
         "m"
       ]
     },
@@ -1883,7 +1884,7 @@
         "consonanceDissonanceTracker"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "clamp",
         "conductorIntelligence",
         "m",
@@ -1955,7 +1956,7 @@
         "harmonicSurpriseIndex"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "clamp",
         "conductorIntelligence",
         "m",
@@ -2010,7 +2011,7 @@
         "pitchGravityCenter"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "clamp",
         "m",
         "validator"
@@ -2023,7 +2024,7 @@
         "tensionResolutionTracker"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "conductorIntelligence",
         "m",
         "pitchClassHelpers",
@@ -2086,7 +2087,7 @@
         "counterpointMotionTracker"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "c",
         "conductorIntelligence",
         "m",
@@ -2100,7 +2101,7 @@
         "intervalBalanceTracker"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "beatCache",
         "clamp",
         "conductorIntelligence",
@@ -2195,7 +2196,6 @@
         "registerMigrationTracker"
       ],
       "consumes": [
-        "absoluteTimeWindow",
         "analysisHelpers",
         "conductorIntelligence",
         "m",
@@ -2297,7 +2297,7 @@
         "accentPatternTracker"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "beatGridHelpers",
         "conductorIntelligence",
         "numerator",
@@ -2325,7 +2325,7 @@
         "grooveTemplateAdvisor"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "clamp",
         "conductorIntelligence",
         "m",
@@ -2368,7 +2368,7 @@
         "onsetDensityProfiler"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "beatCache",
         "clamp",
         "conductorIntelligence",
@@ -2384,7 +2384,7 @@
         "onsetRegularityMonitor"
       ],
       "consumes": [
-        "absoluteTimeWindow",
+        "analysisHelpers",
         "beatGridHelpers",
         "clamp",
         "conductorIntelligence",
@@ -2528,7 +2528,6 @@
         "durationalContourTracker"
       ],
       "consumes": [
-        "absoluteTimeWindow",
         "analysisHelpers",
         "beatCache",
         "beatGridHelpers",
@@ -2576,6 +2575,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "beatCache",
         "clamp",
         "conductorIntelligence",
@@ -2603,7 +2603,6 @@
         "velocityShapeAnalyzer"
       ],
       "consumes": [
-        "absoluteTimeWindow",
         "analysisHelpers",
         "beatCache",
         "clamp",
@@ -4977,11 +4976,11 @@
       "provides": [],
       "consumes": []
     },
-    "src/fx/stutter/stutterConfigStore.js": {
+    "src/fx/stutter/stutterConfig.js": {
       "order": 333,
       "subsystem": "fx",
       "provides": [
-        "stutterConfigStore",
+        "stutterConfig",
         "stutterConfig"
       ],
       "consumes": [
@@ -5160,7 +5159,7 @@
         "validator"
       ]
     },
-    "src/fx/stutter/stutterManager.js": {
+    "src/fx/stutter/StutterManager.js": {
       "order": 343,
       "subsystem": "fx",
       "provides": [
@@ -5477,13 +5476,16 @@
         "crossLayerHelpers"
       ],
       "consumes": [
+        "MIDI_MAX_VALUE",
         "OCTAVE",
         "beatStartTime",
+        "clamp",
         "m",
         "measureStart",
         "measureStartTime",
         "tpSec",
-        "validator"
+        "validator",
+        "velocity"
       ]
     },
     "src/crossLayer/crossLayerEmissionGateway.js": {
@@ -5535,7 +5537,6 @@
         "emergentDownbeat"
       ],
       "consumes": [
-        "MIDI_MAX_VALUE",
         "absoluteTimeGrid",
         "bass",
         "beatStart",
@@ -5580,6 +5581,7 @@
       "consumes": [
         "absoluteTimeGrid",
         "beatStart",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "divStart",
         "m",
@@ -5889,6 +5891,7 @@
       ],
       "consumes": [
         "clamp",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "dynamicRoleSwap",
         "interactionHeatMap",
@@ -5953,7 +5956,6 @@
         "velocityInterference"
       ],
       "consumes": [
-        "MIDI_MAX_VALUE",
         "absoluteTimeGrid",
         "absoluteTimeWindow",
         "beatStart",
@@ -5962,6 +5964,7 @@
         "cCH2",
         "clamp",
         "crossLayerEmissionGateway",
+        "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
         "validator",
@@ -8036,6 +8039,13 @@
     },
     {
       "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/dynamics/dynamicRangeTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
       "to": "src/conductor/dynamics/energyMomentumTracker.js",
       "globals": [
         "analysisHelpers"
@@ -8050,7 +8060,77 @@
     },
     {
       "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/harmonic/consonanceDissonanceTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/harmonic/harmonicSurpriseIndex.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/harmonic/pitchGravityCenter.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/harmonic/tensionResolutionTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/melodic/counterpointMotionTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/melodic/intervalBalanceTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
       "to": "src/conductor/melodic/registerMigrationTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/rhythmic/accentPatternTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/rhythmic/grooveTemplateAdvisor.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/rhythmic/onsetDensityProfiler.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/rhythmic/onsetRegularityMonitor.js",
       "globals": [
         "analysisHelpers"
       ]
@@ -9070,7 +9150,7 @@
     },
     {
       "from": "src/conductor/config.js",
-      "to": "src/fx/stutter/stutterConfigStore.js",
+      "to": "src/fx/stutter/stutterConfig.js",
       "globals": [
         "STUTTER_CROSSMOD_RULES",
         "STUTTER_DIRECTIVE_DEFAULTS",
@@ -9828,7 +9908,7 @@
     },
     {
       "from": "src/conductor/profiles/conductorConfig.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "conductorConfig"
       ]
@@ -11060,6 +11140,13 @@
     },
     {
       "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
       "to": "src/crossLayer/dynamics/restSynchronizer.js",
       "globals": [
         "crossLayerHelpers"
@@ -11068,6 +11155,13 @@
     {
       "from": "src/crossLayer/crossLayerHelpers.js",
       "to": "src/crossLayer/dynamics/texturalMirror.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/dynamics/velocityInterference.js",
       "globals": [
         "crossLayerHelpers"
       ]
@@ -11124,6 +11218,13 @@
     {
       "from": "src/crossLayer/crossLayerHelpers.js",
       "to": "src/crossLayer/rhythm/feedbackOscillator.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/crossLayer/rhythm/grooveTransfer.js",
       "globals": [
         "crossLayerHelpers"
       ]
@@ -12661,28 +12762,28 @@
       ]
     },
     {
-      "from": "src/fx/stutter/stutterConfigStore.js",
+      "from": "src/fx/stutter/stutterConfig.js",
       "to": "src/fx/stutter/stutterExecutePlan.js",
       "globals": [
         "stutterConfig"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterConfigStore.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/stutterConfig.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "stutterConfig"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterConfigStore.js",
+      "from": "src/fx/stutter/stutterConfig.js",
       "to": "src/fx/stutter/stutterNotes.js",
       "globals": [
         "stutterConfig"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterConfigStore.js",
+      "from": "src/fx/stutter/stutterConfig.js",
       "to": "src/play/channelCoherence.js",
       "globals": [
         "stutterConfig"
@@ -12717,84 +12818,84 @@
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/globalConductor.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorConfigAccessors.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorConfigTuningDefaults.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorConfigTuningOverrides.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorProfileAtmospheric.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorProfileDefault.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorProfileExplosive.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorProfileMinimal.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorProfileRestrained.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/profiles/conductorProfileRhythmicDrive.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/conductor/textureBlender.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/crossLayer/rhythm/stutterContagion.js",
       "globals": [
         "stutterFX",
@@ -12803,35 +12904,35 @@
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/play/channelCoherence.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/play/main.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/play/mainBootstrap.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/play/playNotesEmitPick.js",
       "globals": [
         "stutter"
       ]
     },
     {
-      "from": "src/fx/stutter/stutterManager.js",
+      "from": "src/fx/stutter/StutterManager.js",
       "to": "src/play/processBeat.js",
       "globals": [
         "stutter",
@@ -12849,7 +12950,7 @@
     },
     {
       "from": "src/fx/stutter/stutterMetrics.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "stutterMetrics"
       ]
@@ -12877,14 +12978,14 @@
     },
     {
       "from": "src/fx/stutter/stutterNotes.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "stutterNotes"
       ]
     },
     {
       "from": "src/fx/stutter/stutterPlanScheduler.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "stutterPlanScheduler"
       ]
@@ -13032,7 +13133,7 @@
     },
     {
       "from": "src/play/events.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "eventBus"
       ]
@@ -14080,7 +14181,7 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/dynamics/durationalContourTracker.js",
+      "to": "src/conductor/analysisHelpers.js",
       "globals": [
         "absoluteTimeWindow"
       ]
@@ -14094,21 +14195,7 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/dynamics/velocityShapeAnalyzer.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/harmonic/cadenceAdvisor.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/harmonic/consonanceDissonanceTracker.js",
       "globals": [
         "absoluteTimeWindow"
       ]
@@ -14136,13 +14223,6 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/harmonic/harmonicSurpriseIndex.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/harmonic/harmonicVelocityMonitor.js",
       "globals": [
         "absoluteTimeWindow"
@@ -14164,35 +14244,7 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/harmonic/pitchGravityCenter.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/harmonic/tensionResolutionTracker.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/melodic/ambitusMigrationTracker.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/melodic/counterpointMotionTracker.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/melodic/intervalBalanceTracker.js",
       "globals": [
         "absoluteTimeWindow"
       ]
@@ -14234,13 +14286,6 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/melodic/registerMigrationTracker.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/melodic/registralVelocityCorrelator.js",
       "globals": [
         "absoluteTimeWindow"
@@ -14269,13 +14314,6 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/rhythmic/accentPatternTracker.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/rhythmic/attackDensityProfiler.js",
       "globals": [
         "absoluteTimeWindow"
@@ -14283,28 +14321,7 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/rhythmic/grooveTemplateAdvisor.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/rhythmic/interLayerRhythmHelpers.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/rhythmic/onsetDensityProfiler.js",
-      "globals": [
-        "absoluteTimeWindow"
-      ]
-    },
-    {
-      "from": "src/time/absoluteTimeWindow.js",
-      "to": "src/conductor/rhythmic/onsetRegularityMonitor.js",
       "globals": [
         "absoluteTimeWindow"
       ]
@@ -15775,6 +15792,13 @@
     },
     {
       "from": "src/utils/clamps.js",
+      "to": "src/crossLayer/crossLayerHelpers.js",
+      "globals": [
+        "clamp"
+      ]
+    },
+    {
+      "from": "src/utils/clamps.js",
       "to": "src/crossLayer/dynamics/articulationComplement.js",
       "globals": [
         "clamp"
@@ -16015,7 +16039,7 @@
     },
     {
       "from": "src/utils/clamps.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "clamp"
       ]
@@ -17530,7 +17554,7 @@
     },
     {
       "from": "src/utils/index.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "m"
       ]
@@ -18466,10 +18490,12 @@
       "from": "src/utils/init.js",
       "to": "src/crossLayer/crossLayerHelpers.js",
       "globals": [
+        "MIDI_MAX_VALUE",
         "beatStartTime",
         "measureStart",
         "measureStartTime",
-        "tpSec"
+        "tpSec",
+        "velocity"
       ]
     },
     {
@@ -18498,7 +18524,6 @@
       "from": "src/utils/init.js",
       "to": "src/crossLayer/dynamics/velocityInterference.js",
       "globals": [
-        "MIDI_MAX_VALUE",
         "beatStart",
         "cCH1",
         "cCH2",
@@ -18549,7 +18574,6 @@
       "from": "src/utils/init.js",
       "to": "src/crossLayer/rhythm/emergentDownbeat.js",
       "globals": [
-        "MIDI_MAX_VALUE",
         "bass",
         "beatStart",
         "cCH3",
@@ -18748,7 +18772,7 @@
     },
     {
       "from": "src/utils/init.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "bass",
         "beatIndex",
@@ -20369,7 +20393,7 @@
     },
     {
       "from": "src/utils/randoms.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "rf",
         "ri"
@@ -21779,7 +21803,7 @@
     },
     {
       "from": "src/utils/validator.js",
-      "to": "src/fx/stutter/stutterConfigStore.js",
+      "to": "src/fx/stutter/stutterConfig.js",
       "globals": [
         "validator"
       ]
@@ -21800,7 +21824,7 @@
     },
     {
       "from": "src/utils/validator.js",
-      "to": "src/fx/stutter/stutterManager.js",
+      "to": "src/fx/stutter/StutterManager.js",
       "globals": [
         "validator"
       ]

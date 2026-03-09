@@ -1,9 +1,9 @@
 // fx/StutterManager.js - Audio effects manager
 
 const SC = stutterConfig;
-const V = validator.create('stutterManager');
+const V = validator.create('StutterManager');
 
-class StutterManager {
+StutterManager = class StutterManager {
   constructor() {
     // Channel tracking - one pool per effect type (no collision)
     this.lastUsedCHs = new Set();      // for stutterFade
@@ -274,10 +274,7 @@ class StutterManager {
   }
 }
 
-// Export StutterManager instance and class to global namespace
-stutter = new StutterManager();
-
 // Delegator wrappers for runtime/tests (minimal and fail-fast).
-stutterFade = (...args) => stutter.stutterFade(...args);
-stutterPan = (...args) => stutter.stutterPan(...args);
-stutterFX = (...args) => stutter.stutterFX(...args);
+stutterFade = (...args) => StutterManager.stutterFade(...args);
+stutterPan = (...args) => StutterManager.stutterPan(...args);
+stutterFX = (...args) => StutterManager.stutterFX(...args);

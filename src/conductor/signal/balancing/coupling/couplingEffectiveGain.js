@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Coupling Effective Gain

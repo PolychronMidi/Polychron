@@ -15,9 +15,7 @@ pitchGravityCenter = (() => {
    * @returns {{ center: number, drift: number, anchored: boolean }}
    */
   function getGravityCenter(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length === 0) {
       return { center: ANCHOR_PITCH, drift: 0, anchored: true };
     }

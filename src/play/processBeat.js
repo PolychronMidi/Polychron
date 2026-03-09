@@ -33,7 +33,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     flipBin: Boolean(flipBin)
   });
   setBalanceAndFX();
-  stutter.prepareBeat(beatStart);
+  StutterManager.prepareBeat(beatStart);
   const fxStereoPan = m.abs(requireFiniteNumber('balOffset', balOffset)) / boot.fxStereoPanDenominator;
   const fxVelocityShift = m.abs(requireFiniteNumber('refVar', refVar) + requireFiniteNumber('bassVar', bassVar)) / boot.fxVelocityShiftDenominator;
   eventBus.emit(EVENTS.BEAT_FX_APPLIED, { beatIndex, sectionIndex, phraseIndex, measureIndex, layer, stereoPan: fxStereoPan, velocityShift: fxVelocityShift });
@@ -41,7 +41,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   stutterFX(flipBin ? flipBinT3 : flipBinF3);
   stutterFade(flipBin ? flipBinT3 : flipBinF3);
   rf() < boot.stutterPanJitterChance ? stutterPan(flipBin ? flipBinT3 : flipBinF3) : stutterPan(stutterPanCHs);
-  stutter.runDuePlans(beatStart);
+  StutterManager.runDuePlans(beatStart);
 
   // -- [stage: intent] -
   if (_PROFILE) _marks[1] = process.hrtime.bigint();

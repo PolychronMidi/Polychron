@@ -145,7 +145,7 @@ globalConductor = (() => {
 
     // 6. Drive stutter behavior
     const stutterParams = conductorConfig.getStutterParams(compositeIntensity);
-    stutter.setDefaultDirective({
+    StutterManager.setDefaultDirective({
       rate: stutterParams.rate,
       rateCurve: stutterParams.rateCurve,
       phase: {

@@ -16,9 +16,7 @@ consonanceDissonanceTracker = (() => {
    * @returns {{ consonanceRatio: number, dissonanceRatio: number, bland: boolean, harsh: boolean }}
    */
   function getConsonanceProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 3) {
       return { consonanceRatio: 0.5, dissonanceRatio: 0.5, bland: false, harsh: false };
     }

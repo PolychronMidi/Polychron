@@ -1,10 +1,9 @@
-﻿// stutterConfigStore.js - config storage and validation
-// Exports the stutterConfig global directly (no wrapper needed).
+﻿// stutterConfig.js - config storage and validation
 
-const V = validator.create('stutterConfigStore');
+const V = validator.create('stutterConfig');
 
 if (!STUTTER_PROFILES) {
-  throw new Error('stutterConfigStore.js: missing STUTTER_PROFILES global');
+  throw new Error('stutterConfig.js: missing STUTTER_PROFILES global');
 }
 
 const STUTTER_REQUIRED_PROFILES = ['source', 'reflection', 'bass'];
@@ -73,11 +72,11 @@ function assertDirectiveDefaultsOrFail(value) {
 }
 
 function validateConfig() {
-  V.assertPlainObject(_stutterStore, 'stutterConfigStore');
-  V.assertPlainObject(_stutterStore.profiles, 'stutterConfigStore.profiles');
+  V.assertPlainObject(_stutterStore, 'stutterConfig');
+  V.assertPlainObject(_stutterStore.profiles, 'stutterConfig.profiles');
   for (const prof of STUTTER_REQUIRED_PROFILES) {
     if (!_stutterStore.profiles[prof]) {
-      throw new Error(`stutterConfigStore.validateConfig: missing required profile "${prof}"`);
+      throw new Error(`stutterConfig.validateConfig: missing required profile "${prof}"`);
     }
     assertProfileOrFail(prof, _stutterStore.profiles[prof]);
   }
@@ -86,7 +85,7 @@ function validateConfig() {
 
 function getConfig() { return validateConfig(); }
 function setConfig(partial = {}) {
-  V.assertPlainObject(partial, 'stutterConfigStore.setConfig.partial');
+  V.assertPlainObject(partial, 'stutterConfig.setConfig.partial');
   Object.assign(_stutterStore, partial);
   _profilesValidated = false;
   return validateConfig();
@@ -98,14 +97,14 @@ function getProfileConfig(profile = 'source') {
   }
   const profileName = String(profile);
   if (!_stutterStore.profiles[profileName]) {
-    throw new Error(`stutterConfigStore.getProfileConfig: unknown profile "${profileName}"`);
+    throw new Error(`stutterConfig.getProfileConfig: unknown profile "${profileName}"`);
   }
   return _stutterStore.profiles[profileName];
 }
 
 function getVelocityRange(profile = 'source', isPrimary = true) {
   if (!STUTTER_VELOCITY_RANGES) {
-    throw new Error('stutterConfigStore.getVelocityRange: STUTTER_VELOCITY_RANGES global not found');
+    throw new Error('stutterConfig.getVelocityRange: STUTTER_VELOCITY_RANGES global not found');
   }
   const profileName = String(profile);
   const ranges = STUTTER_VELOCITY_RANGES[profileName];
@@ -115,7 +114,7 @@ function getVelocityRange(profile = 'source', isPrimary = true) {
 }
 function getCrossModRules() {
   if (!STUTTER_CROSSMOD_RULES) {
-    throw new Error('stutterConfigStore.getCrossModRules: STUTTER_CROSSMOD_RULES global is not defined');
+    throw new Error('stutterConfig.getCrossModRules: STUTTER_CROSSMOD_RULES global is not defined');
   }
   if (_crossModValidated) return STUTTER_CROSSMOD_RULES;
   const result = assertCrossModRulesOrFail(STUTTER_CROSSMOD_RULES);
@@ -130,7 +129,7 @@ function getPreset(name = 'default') {
 
 function getDirectiveDefaults() {
   if (!STUTTER_DIRECTIVE_DEFAULTS) {
-    throw new Error('stutterConfigStore.getDirectiveDefaults: STUTTER_DIRECTIVE_DEFAULTS global is required');
+    throw new Error('stutterConfig.getDirectiveDefaults: STUTTER_DIRECTIVE_DEFAULTS global is required');
   }
   const defaults = assertDirectiveDefaultsOrFail(STUTTER_DIRECTIVE_DEFAULTS);
   return {
@@ -144,16 +143,6 @@ function getDirectiveDefaults() {
   };
 }
 
-stutterConfigStore = {
-  getConfig,
-  setConfig,
-  validateConfig,
-  getProfileConfig,
-  getVelocityRange,
-  getCrossModRules,
-  getPreset,
-  getDirectiveDefaults
-};// Assign directly as stutterConfig (replaces the old stutterConfigStore + stutterConfig double)
 stutterConfig = {
   getConfig,
   setConfig,

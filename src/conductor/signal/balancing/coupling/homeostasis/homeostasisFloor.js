@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Homeostasis Floor

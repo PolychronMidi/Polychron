@@ -12,9 +12,7 @@ counterpointMotionTracker = (() => {
    * @returns {{ parallel: number, contrary: number, oblique: number, similar: number, total: number, dominant: string }}
    */
   function getMotionProfile(windowSeconds) {
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const l1Notes = absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
-    const l2Notes = absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
+    const { l1Notes, l2Notes } = analysisHelpers.getWindowLayerPairNotes(V, windowSeconds, WINDOW_SECONDS);
     if (l1Notes.length < 3 || l2Notes.length < 3) {
       return { parallel: 0, contrary: 0, oblique: 0, similar: 0, total: 0, dominant: 'insufficient' };
     }

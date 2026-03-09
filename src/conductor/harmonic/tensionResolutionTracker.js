@@ -15,9 +15,7 @@ tensionResolutionTracker = (() => {
    * @returns {{ resolvedRatio: number, unresolvedCount: number, total: number, danglingTension: boolean }}
    */
   function getResolutionProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 4) {
       return { resolvedRatio: 1, unresolvedCount: 0, total: 0, danglingTension: false };
     }

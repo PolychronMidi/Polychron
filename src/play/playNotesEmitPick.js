@@ -43,12 +43,12 @@ function assertEmitPickDeps(unit) {
   V.assertObject(harmonicContext, 'harmonicContext');
   V.requireType(harmonicContext.getField, 'function', 'harmonicContext.getField');
   V.assertObject(stutter, 'stutter');
-  V.assertObject(stutter.beatContext, 'stutter.beatContext');
-  if (!(stutter.beatContext.selectedReflectionChannels instanceof Set)) {
-    throw new Error(`${unit}.playNotesEmitPick: stutter.beatContext.selectedReflectionChannels must be a Set`);
+  V.assertObject(StutterManager.beatContext, 'StutterManager.beatContext');
+  if (!(StutterManager.beatContext.selectedReflectionChannels instanceof Set)) {
+    throw new Error(`${unit}.playNotesEmitPick: StutterManager.beatContext.selectedReflectionChannels must be a Set`);
   }
-  if (!(stutter.beatContext.selectedBassChannels instanceof Set)) {
-    throw new Error(`${unit}.playNotesEmitPick: stutter.beatContext.selectedBassChannels must be a Set`);
+  if (!(StutterManager.beatContext.selectedBassChannels instanceof Set)) {
+    throw new Error(`${unit}.playNotesEmitPick: StutterManager.beatContext.selectedBassChannels must be a Set`);
   }
   _emitPickDepsValidated = true;
 }
@@ -220,7 +220,7 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
     const { perProbScaled: perProbScaledRefl, onVel: onVelRefl } = getChannelCoherence(reflectionCH, 'reflection', reflectionNoiseBase, reflectionVoiceId, currentTime);
 
-    const reflectSelected = stutter.beatContext.selectedReflectionChannels.has(reflectionCH);
+    const reflectSelected = StutterManager.beatContext.selectedReflectionChannels.has(reflectionCH);
     const reflectApplyShift = reflectSelected && selectedShift !== 0 && rf() < perProbScaledRefl;
     const reflectionEmitNoteBase = reflectApplyShift
       ? modClamp(pickNote + selectedShift, minMidi, maxMidi)
@@ -266,7 +266,7 @@ playNotesEmitPick = function(opts = {}) {
       const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
       const { perProbScaled: perProbScaledBass, onVel } = getChannelCoherence(bassCH, 'bass', bassNoiseBase, bassVoiceId, currentTime);
 
-      const bassSelected = stutter.beatContext.selectedBassChannels.has(bassCH);
+      const bassSelected = StutterManager.beatContext.selectedBassChannels.has(bassCH);
       const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
       const bassEmitBase = bassApplyShift ? pickNote + selectedShift : pickNote;
       const bassNoteBase = modClamp(bassEmitBase, minMidi, m.min(59, maxMidi));

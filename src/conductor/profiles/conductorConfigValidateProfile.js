@@ -57,19 +57,19 @@ conductorConfigValidateProfile = (profile, label) => {
   }
 
   for (const key of REQUIRED_STUTTER_KEYS) {
-    if (profile.stutter[key] === undefined) throw new Error(`conductorConfig: ${label}.stutter.${key} is required`);
+    if (profile.stutter[key] === undefined) throw new Error(`conductorConfig: ${label}.StutterManager.${key} is required`);
   }
-  V.assertArray(profile.stutter.rateTiers, 'profile.stutter.rateTiers', true);
-  for (let index = 0; index < profile.stutter.rateTiers.length; index++) {
-    const tier = profile.stutter.rateTiers[index];
-    if (!tier) throw new Error(`conductorConfig: ${label}.stutter.rateTiers[${index}] must be an object`);
+  V.assertArray(profile.StutterManager.rateTiers, 'profile.StutterManager.rateTiers', true);
+  for (let index = 0; index < profile.StutterManager.rateTiers.length; index++) {
+    const tier = profile.StutterManager.rateTiers[index];
+    if (!tier) throw new Error(`conductorConfig: ${label}.StutterManager.rateTiers[${index}] must be an object`);
     V.assertObject(tier, `tier[${index}]`);
-    assertFiniteRange(tier.threshold, 0, 1, `${label}.stutter.rateTiers[${index}].threshold`);
+    assertFiniteRange(tier.threshold, 0, 1, `${label}.StutterManager.rateTiers[${index}].threshold`);
     V.requireFinite(tier.rate, `tier.rate`);
-    if (Number(tier.rate) <= 0) throw new Error(`conductorConfig: ${label}.stutter.rateTiers[${index}].rate must be positive`);
+    if (Number(tier.rate) <= 0) throw new Error(`conductorConfig: ${label}.StutterManager.rateTiers[${index}].rate must be positive`);
   }
-  assertFiniteRange(profile.stutter.coherenceFlip, 0, 1, `${label}.stutter.coherenceFlip`);
-  assertFiniteRange(profile.stutter.rateCurveFlip, 0, 1, `${label}.stutter.rateCurveFlip`);
+  assertFiniteRange(profile.StutterManager.coherenceFlip, 0, 1, `${label}.StutterManager.coherenceFlip`);
+  assertFiniteRange(profile.StutterManager.rateCurveFlip, 0, 1, `${label}.StutterManager.rateCurveFlip`);
 
   for (const key of REQUIRED_ENERGY_KEYS) {
     if (profile.energyWeights[key] === undefined) throw new Error(`conductorConfig: ${label}.energyWeights.${key} is required`);

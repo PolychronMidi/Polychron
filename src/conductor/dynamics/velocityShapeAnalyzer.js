@@ -15,9 +15,7 @@ velocityShapeAnalyzer = (() => {
    * @returns {{ slope: number, shape: string, avgVelocity: number, flat: boolean, punchiness: number }}
    */
   function _computeVelocityShape(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 4) {
       return { slope: 0, shape: 'insufficient', avgVelocity: 64, flat: true, punchiness: 0.5 };
     }
