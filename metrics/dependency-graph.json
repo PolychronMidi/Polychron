@@ -1,22 +1,22 @@
 {
   "meta": {
-    "generated": "2026-03-08T22:50:40.301Z",
+    "generated": "2026-03-08T23:58:37.809Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 411,
     "totalGlobals": 694,
     "totalProvides": 709,
-    "totalConsumes": 2723,
-    "totalEdges": 2087,
-    "crossSubsystemEdges": 1470,
+    "totalConsumes": 2728,
+    "totalEdges": 2092,
+    "crossSubsystemEdges": 1473,
     "maxFanIn": {
       "file": "src/utils/validator.js",
       "count": 207
     },
     "maxFanOut": {
-      "file": "src/play/mainBootstrap.js",
-      "count": 39
+      "file": "src/play/main.js",
+      "count": 40
     },
     "subsystems": {
       "index.js": {
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 161,
         "provides": 197,
-        "consumes": 790
+        "consumes": 792
       },
       "rhythm": {
         "files": 30,
@@ -67,7 +67,7 @@
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 378
+        "consumes": 381
       }
     }
   },
@@ -1252,6 +1252,7 @@
       ],
       "consumes": [
         "clamp",
+        "conductorConfig",
         "explainabilityBus",
         "m",
         "regimeClassifierHelpers",
@@ -1412,6 +1413,7 @@
       "consumes": [
         "beatCount",
         "clamp",
+        "conductorConfig",
         "conductorIntelligence",
         "couplingHomeostasisSnapshot",
         "explainabilityBus",
@@ -6538,6 +6540,7 @@
         "composer",
         "conductorConfig",
         "conductorState",
+        "couplingHomeostasis",
         "crossLayerLifecycleManager",
         "dynamicRoleSwap",
         "eventBus",
@@ -6550,6 +6553,7 @@
         "harmonicJourney",
         "interactionHeatMap",
         "layerPass",
+        "m",
         "mainBootstrap",
         "measuresPerPhrase",
         "measuresPerPhrase1",
@@ -6570,6 +6574,7 @@
         "setUnitTiming",
         "structuralFormTracker",
         "stutter",
+        "systemDynamicsProfiler",
         "systemManifest",
         "timeStream",
         "traceDrain",
@@ -9612,7 +9617,21 @@
     },
     {
       "from": "src/conductor/profiles/conductorConfig.js",
+      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "globals": [
+        "conductorConfig"
+      ]
+    },
+    {
+      "from": "src/conductor/profiles/conductorConfig.js",
       "to": "src/conductor/signal/output/systemManifest.js",
+      "globals": [
+        "conductorConfig"
+      ]
+    },
+    {
+      "from": "src/conductor/profiles/conductorConfig.js",
+      "to": "src/conductor/signal/profiling/regimeClassifier.js",
       "globals": [
         "conductorConfig"
       ]
@@ -9949,6 +9968,13 @@
     {
       "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
       "to": "src/play/crossLayerBeatRecord.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/play/main.js",
       "globals": [
         "couplingHomeostasis"
       ]
@@ -10418,6 +10444,13 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/play/crossLayerBeatRecord.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/play/main.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -16888,6 +16921,13 @@
     {
       "from": "src/utils/index.js",
       "to": "src/play/emitPickTextureEmit.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
+      "to": "src/play/main.js",
       "globals": [
         "m"
       ]

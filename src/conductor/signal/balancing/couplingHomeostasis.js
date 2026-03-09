@@ -390,6 +390,13 @@ couplingHomeostasis = (() => {
     // couplingBudgetScale (atmospheric 1.5x) to restore operating room.
     const _profileBudgetScale = conductorConfig.getActiveProfile().couplingBudgetScale || 1.0;
     _energyBudget *= _profileBudgetScale;
+    // R67 E3: Exploring-regime budget relaxation. When the system spends
+    // sustained time in exploring, coupling pressure is structural (many
+    // unsettled pairs), not pathological. A 1.15x boost gives the homeostasis
+    // loop extra headroom so density-tension exceedances don't accumulate.
+    if (snap.regime === 'exploring' && _beatCount > 30) {
+      _energyBudget *= 1.15;
+    }
 
     // --- 3. Detect redistribution ---
     const energyDelta = totalEnergy - _prevTotalEnergy;
