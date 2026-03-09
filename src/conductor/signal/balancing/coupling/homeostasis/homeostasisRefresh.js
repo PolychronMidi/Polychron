@@ -17,7 +17,7 @@ homeostasisRefresh = (() => {
     REDIST_RELATIVE_THRESHOLD, REDIST_COOLDOWN_BEATS, REDIST_COOLDOWN_DECAY,
     TAIL_PRESSURE_EMA_ALPHA, TAIL_PRESSURE_DECAY, TAIL_ACTIVE_THRESHOLD,
     TAIL_RANKED_THRESHOLD, TAIL_PRESSURE_TRIGGER_MIN, TAIL_MEMORY_TOP_K,
-    NON_NUDGEABLE_SET, NON_NUDGEABLE_TAIL_SET, TAIL_TRACKED_PAIRS } = homeostasisConstants;
+    NON_NUDGEABLE_SET, TAIL_TRACKED_PAIRS } = homeostasisConstants;
 
   function refresh() {
     const S = homeostasisState;
@@ -114,7 +114,7 @@ homeostasisRefresh = (() => {
         strongestTail = nextTailPressure;
         strongestPair = pair;
       }
-      if (NON_NUDGEABLE_TAIL_SET.has(pair) && nextTailPressure > strongestNonNudgeableTail) {
+      if (NON_NUDGEABLE_SET.has(pair) && nextTailPressure > strongestNonNudgeableTail) {
         strongestNonNudgeableTail = nextTailPressure;
         strongestNonNudgeablePair = pair;
       }

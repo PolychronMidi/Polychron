@@ -1,3 +1,40 @@
+## R74 — 2026-03-09 — EVOLVED
+
+**Profile:** explosive | **Beats:** 511 | **Duration:** 67.1s | **Notes:** 21371
+**Fingerprint:** 9/10 stable | Drifted: hotspotMigration
+
+### Key Observations
+- Pipeline health remained clean: 16/16 steps passed, composition completed in 735.0s, total wall time 739.7s.
+- Same-profile comparison stayed mostly stable, but hotspotMigration drifted as hotspot surface concentrated from a flat three-way tie into a flicker-entropy dominant cluster: flicker-entropy 38 beats, density-flicker 20, tension-trust 18.
+- ExceedanceSeverity did not formally drift, but it came within 0.38 beats of the tolerance edge: delta 54.62 vs tolerance 55. Total exceedance beats rose 57 -> 96 and unique exceedance beats 18 -> 65.
+- Telemetry improved materially: max reconciliation gap fell 0.4399 -> 0.2567 and underSeenPairCount improved 6 -> 4. The worst gaps rotated back to density-linked pairs instead of the trust-linked blind spot seen in R73.
+- Gate engagement is now real rather than nominal: end-state gateD/gateT/gateF = 0.8948 with gate EMAs 0.889 / 0.877 / 0.888. The previous fully-open 1.0 terminal state is gone.
+- Phase support improved modestly for explosive but remains weak: phase axis share rose 0.0029 -> 0.0131, yet phaseIntegrity is still warning and average phase-coupling coverage is only 30.9%.
+- Homeostasis still shows a chronic recovery bottleneck: tailRecoveryHandshake remains pinned at 1.0 and tailRecoveryCap sits at 0.6053 while dominant tail pressure is flicker-entropy.
+
+### Evolutions Applied (from R73)
+- E1: Trust-pair reconciliation routing — confirmed — telemetry maxGap dropped 0.4399 -> 0.2567 and underSeenPairCount improved 6 -> 4; trust-linked blind spots no longer dominate the reconciliation table.
+- E2: Real gate engagement under budget pressure — confirmed — end-of-run gates now settle at 0.8948 with sub-0.89 gate EMAs instead of the fully-open 1.0 / 0.97+ pattern from R73.
+- E3: Explosive phase-axis floor recovery — partially confirmed — phase axis share increased 0.0029 -> 0.0131, but phaseIntegrity remains warning and coverage stays near 31%.
+- E4: Tail-handshake saturation relief — refuted — tailRecoveryHandshake is still pinned at 1.0 and recovery cap remains tight at 0.6053.
+- E5: Trust-surface budget prioritization — partially confirmed — trust-linked reconciliation gaps improved, but tension-trust still lands among the top hotspot pairs at 18 exceedance beats.
+- E6: Cross-profile reconciliation reporting split — confirmed for same-profile behavior — the run compares explosive -> explosive with 10 dimensions only; no cross-profile warning dimension was emitted.
+
+### Evolutions Proposed (for R75)
+- E1: Flicker-entropy concentration breaker — src/conductor/signal/balancing/coupling/couplingBudgetScoring.js, src/conductor/signal/balancing/coupling/couplingEffectiveGain.js
+- E2: Tail-handshake de-saturation redesign — src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js
+- E3: Non-nudgeable entropy-trust tail bleed-off — src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js
+- E4: Exceedance guard for flicker/trust hotspot clusters — src/conductor/signal/balancing/coupling/couplingGainEscalation.js
+- E5: Explosive phase recovery continuation — src/conductor/signal/balancing/axisEnergyEquilibrator.js
+- E6: Hotspot migration de-concentration diagnostics — scripts/trace-summary.js, scripts/golden-fingerprint.js
+
+### Hypotheses to Track
+- If E1 works, hotspotMigration should return to stable and top2Concentration should fall below 0.45.
+- If E2 works, tailRecoveryHandshake should stop pinning at 1.0 and tailRecoveryCap should rise above 0.65 during late-run recovery.
+- If E3/E4 work together, flicker-entropy and tension-trust should stop dominating exceedance totals and ExceedanceSeverity should move comfortably below the 55-beat tolerance edge.
+- If E5 works, phase axis share should exceed 0.02 without degrading phaseIntegrity below warning.
+
+
 ## R73 — 2026-03-09 — STABLE
 
 **Profile:** explosive | **Beats:** 596 | **Duration:** 83.3s | **Notes:** 25,208

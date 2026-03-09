@@ -10,7 +10,7 @@
 
 homeostasisConstants = (() => {
 
-  const ALL_DIMS = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
+  const ALL_DIMS = couplingConstants.ALL_MONITORED_DIMS;
 
   // Energy EMA and redistribution
   const ENERGY_EMA_ALPHA = 0.10;
@@ -44,17 +44,13 @@ homeostasisConstants = (() => {
   // Diagnostics
   const MAX_TIME_SERIES = 2000;
 
-  // Non-nudgeable pair sets
+  // Non-nudgeable pair set (includes entropy-phase which was removed from
+  // couplingConstants.NON_NUDGEABLE_SET in R70 but is still non-nudgeable
+  // for homeostasis turbulence calculations)
   const NON_NUDGEABLE_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
-  const NON_NUDGEABLE_TAIL_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
 
-  // Pre-computed pair list
-  const TAIL_TRACKED_PAIRS = [];
-  for (let ta = 0; ta < ALL_DIMS.length; ta++) {
-    for (let tb = ta + 1; tb < ALL_DIMS.length; tb++) {
-      TAIL_TRACKED_PAIRS.push(ALL_DIMS[ta] + '-' + ALL_DIMS[tb]);
-    }
-  }
+  // Reuse precomputed pair list from couplingConstants
+  const TAIL_TRACKED_PAIRS = couplingConstants.ALL_PAIRS;
 
   return {
     ALL_DIMS, ENERGY_EMA_ALPHA, REDISTRIBUTION_EMA_ALPHA,
@@ -64,6 +60,6 @@ homeostasisConstants = (() => {
     TAIL_PRESSURE_EMA_ALPHA, TAIL_PRESSURE_DECAY, TAIL_ACTIVE_THRESHOLD,
     TAIL_RANKED_THRESHOLD, TAIL_PRESSURE_TRIGGER_MIN, TAIL_MEMORY_TOP_K,
     FLOOR_RECOVERY_TRIGGER, FLOOR_RECOVERY_HOLD, MAX_TIME_SERIES,
-    NON_NUDGEABLE_SET, NON_NUDGEABLE_TAIL_SET, TAIL_TRACKED_PAIRS,
+    NON_NUDGEABLE_SET, TAIL_TRACKED_PAIRS,
   };
 })();

@@ -10,7 +10,7 @@
  */
 
 couplingBudgetScoring = (() => {
-  const { ALL_MONITORED_DIMS, NON_NUDGEABLE_SET, ENTROPY_SURFACE_SET,
+  const { ALL_MONITORED_DIMS, NON_NUDGEABLE_SET,
     BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN, BUDGET_PRIORITY_TOP_K } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
 
@@ -33,6 +33,8 @@ couplingBudgetScoring = (() => {
         const dimB = ALL_MONITORED_DIMS[b];
         const key = dimA + '-' + dimB;
         if (NON_NUDGEABLE_SET.has(key)) continue;
+        const flags = couplingConstants.classifyPair(key, dimA, dimB);
+        const { isDensityFlickerPair, isEntropySurfacePair, isTrustPair, isPhasePair } = flags;
         const corr = matrix[key];
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
         const absCorr = m.abs(corr);
@@ -42,8 +44,6 @@ couplingBudgetScoring = (() => {
         const p95 = tailTelemetry.p95;
         const hotspotRate = tailTelemetry.hotspotRate;
         const severeRate = tailTelemetry.severeRate;
-        const isDensityFlickerPair = key === 'density-flicker';
-        const isEntropySurfacePair = ENTROPY_SURFACE_SET.has(key);
         const previousEffectiveGain = ps.lastEffectiveGain || 0;
         const gainBase = m.max(ps.gain, couplingConstants.GAIN_INIT);
         const effectiveShortfall = clamp((gainBase - m.min(gainBase, previousEffectiveGain)) / gainBase, 0, 1);
@@ -57,7 +57,6 @@ couplingBudgetScoring = (() => {
             clamp((absCorr - 0.88) / 0.10, 0, 1) * 0.14,
             0, 1)
           : 0;
-        const isTrustPair = key.indexOf('trust') !== -1;
         const recentP95 = tailTelemetry.recentP95 || 0;
         const entropySpilloverPressure = isEntropySurfacePair
           ? clamp(
@@ -75,7 +74,7 @@ couplingBudgetScoring = (() => {
           : 0;
         const nonNudgeableHandOffPressure = setup.nonNudgeableTailPressure > 0 && couplingConstants.sharesAnyAxis(key, setup.nonNudgeableAxes)
           ? clamp(
-            setup.nonNudgeableTailPressure * (isEntropySurfacePair ? 0.90 : (key.indexOf('phase') !== -1 || key.indexOf('trust') !== -1 ? 0.72 : 0.55)) +
+            setup.nonNudgeableTailPressure * (isEntropySurfacePair ? 0.90 : (isPhasePair || isTrustPair ? 0.72 : 0.55)) +
             setup.entropyAxisPressure * (isEntropySurfacePair ? 0.24 : 0.08),
             0, 1.2)
           : 0;
@@ -106,7 +105,6 @@ couplingBudgetScoring = (() => {
           severeWindowPressure * 0.22 + telemetryGapPressure * 0.14 + staticBias * 0.04,
           0, 1.45);
         // R72 E4: Phase-pair budget floor
-        const isPhasePair = key.indexOf('phase') !== -1;
         const budgetScore = (isPhasePair && p95 > 0.60 && hotspotRate > 0.01) ? m.max(score, 0.08) : score;
         if (budgetScore > 0.04) {
           rankedPairs.push({

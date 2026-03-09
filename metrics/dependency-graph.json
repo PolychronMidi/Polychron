@@ -1,14 +1,14 @@
 {
   "meta": {
-    "generated": "2026-03-09T07:16:54.057Z",
+    "generated": "2026-03-09T08:02:13.007Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 425,
     "totalGlobals": 706,
     "totalProvides": 721,
-    "totalConsumes": 2789,
-    "totalEdges": 2152,
+    "totalConsumes": 2791,
+    "totalEdges": 2154,
     "crossSubsystemEdges": 1493,
     "maxFanIn": {
       "file": "src/utils/index.js",
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 175,
         "provides": 209,
-        "consumes": 852
+        "consumes": 854
       },
       "rhythm": {
         "files": 30,
@@ -1523,7 +1523,9 @@
       "provides": [
         "homeostasisConstants"
       ],
-      "consumes": []
+      "consumes": [
+        "couplingConstants"
+      ]
     },
     "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js": {
       "order": 89,
@@ -1627,6 +1629,7 @@
         "beatCount",
         "clamp",
         "conductorIntelligence",
+        "couplingConstants",
         "couplingHomeostasis",
         "explainabilityBus",
         "homeostasisState",
@@ -10133,6 +10136,13 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingConstants.js",
+      "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
+      "globals": [
+        "couplingConstants"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/couplingConstants.js",
       "to": "src/conductor/signal/balancing/coupling/couplingBiasAccumulator.js",
       "globals": [
         "couplingConstants"
@@ -10169,6 +10179,13 @@
     {
       "from": "src/conductor/signal/balancing/coupling/couplingConstants.js",
       "to": "src/conductor/signal/balancing/coupling/couplingState.js",
+      "globals": [
+        "couplingConstants"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/couplingConstants.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisConstants.js",
       "globals": [
         "couplingConstants"
       ]

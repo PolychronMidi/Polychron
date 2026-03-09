@@ -1,31 +1,41 @@
 {
   "meta": {
-    "generated": "2026-03-09T07:16:54.435Z",
+    "generated": "2026-03-09T08:02:13.424Z",
     "verdict": "EVOLVED"
   },
-  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. hotspot surface migrated from [density-flicker: 7, tension-trust: 7, entropy-phase: 7] to [flicker-entropy: 38, density-flicker: 20, tension-trust: 18].",
+  "narrative": "The composition has evolved in 2 dimension(s). This is within normal creative variation range. exceedance hotspots shifted from [flicker-entropy: 38, density-flicker: 20, tension-trust: 18] to [density-flicker: 8, tension-flicker: 8, tension-trust: 2]. hotspot surface migrated from [flicker-entropy: 38, density-flicker: 20, tension-trust: 18] to [density-flicker: 8, tension-flicker: 8, tension-trust: 2].",
   "explanations": [
     {
+      "dimension": "exceedanceSeverity (beats)",
+      "delta": 58.96,
+      "tolerance": 55,
+      "cause": "exceedance hotspots shifted from [flicker-entropy: 38, density-flicker: 20, tension-trust: 18] to [density-flicker: 8, tension-flicker: 8, tension-trust: 2]",
+      "uniqueBeats": {
+        "current": 12,
+        "previous": 65
+      }
+    },
+    {
       "dimension": "hotspotMigration",
-      "delta": 0.6329,
+      "delta": 0.6096,
       "tolerance": 0.55,
-      "cause": "hotspot surface migrated from [density-flicker: 7, tension-trust: 7, entropy-phase: 7] to [flicker-entropy: 38, density-flicker: 20, tension-trust: 18]",
+      "cause": "hotspot surface migrated from [flicker-entropy: 38, density-flicker: 20, tension-trust: 18] to [density-flicker: 8, tension-flicker: 8, tension-trust: 2]",
       "axisShift": {
         "current": {
+          "density": 0.2166,
+          "tension": 0.1776,
+          "flicker": 0.2383,
+          "entropy": 0.2073,
+          "trust": 0.1575,
+          "phase": 0.0027
+        },
+        "previous": {
           "density": 0.1548,
           "tension": 0.2138,
           "flicker": 0.2328,
           "entropy": 0.1656,
           "trust": 0.2199,
           "phase": 0.0131
-        },
-        "previous": {
-          "density": 0.178,
-          "tension": 0.2062,
-          "flicker": 0.1854,
-          "entropy": 0.237,
-          "trust": 0.1905,
-          "phase": 0.0029
         }
       },
       "meaning": "stress redistributed across hotspot surfaces rather than being removed outright"
