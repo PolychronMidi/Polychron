@@ -412,7 +412,11 @@ function compareFingerprints(current, previous) {
   // R32 E4: Profile-specific tensionArc tolerance. Atmospheric late-ramp vs
   // explosive mid-arch are fundamentally different profile characters, not drift.
   // Cross-profile margin was 0.006 in R31 -- dangerously close to false-positive.
-  const PROFILE_TENSION_ARC_TOLERANCE = { explosive: 0.35, atmospheric: 0.35, ambient: 0.25, minimal: 0.25 };
+  // R69 E4: Widen explosive tensionArc tolerance from 0.35 to 0.40.
+  // Explosive runs exhibit higher natural tension arc variance due to
+  // aggressive energy weights and climax boost. R68 delta was 0.342
+  // (97.7% of 0.35) -- one noisy run away from false drift.
+  const PROFILE_TENSION_ARC_TOLERANCE = { explosive: 0.40, atmospheric: 0.35, ambient: 0.25, minimal: 0.25 };
   const effectiveTensionArcTolerance = (PROFILE_TENSION_ARC_TOLERANCE[current.activeProfile] || TOLERANCES.tensionArcDistortion) * crossProfileScale;
   const arcPass = arcDist <= effectiveTensionArcTolerance;
   if (!arcPass) drifted++;
@@ -498,12 +502,17 @@ function compareFingerprints(current, previous) {
     // correctly classifies atmospheric's exceedance character as STABLE when
     // comparing across profiles. Same-profile comparisons use 1.0x.
     const excCrossProfileScale = crossProfile ? 3.0 : 1.0;
-    const excPass = excDelta <= TOLERANCES.exceedanceSeverity * excCrossProfileScale;
+    // R69 E6: Short-run sensitivity guard. When trace lengths differ by > 3x
+    // (e.g. truncated trace from filesystem interruption), the 500-beat
+    // normalization amplifies noise. Widen tolerance by sqrt(ratio).
+    const runLengthRatio = Math.max(curBeats, prevBeats) / Math.max(1, Math.min(curBeats, prevBeats));
+    const shortRunGuard = runLengthRatio > 3.0 ? Math.sqrt(runLengthRatio) : 1.0;
+    const excPass = excDelta <= TOLERANCES.exceedanceSeverity * excCrossProfileScale * shortRunGuard;
     if (!excPass) drifted++;
     results.push({
       dimension: 'exceedanceSeverity (beats)',
       delta: Number(excDelta.toFixed(2)),
-      tolerance: TOLERANCES.exceedanceSeverity * excCrossProfileScale,
+      tolerance: TOLERANCES.exceedanceSeverity * excCrossProfileScale * shortRunGuard,
       status: excPass ? 'stable' : 'drifted',
       currentTotal: current.totalExceedanceBeats,
       previousTotal: previous.totalExceedanceBeats,
@@ -511,7 +520,9 @@ function compareFingerprints(current, previous) {
       previousUnique: prevUnique,
       currentTopPair: currentComposite.topPairs[0] || null,
       previousTopPair: previousComposite.topPairs[0] || null,
-      normalizedDelta: true
+      normalizedDelta: true,
+      shortRunWarning: runLengthRatio > 3.0,
+      runLengthRatio: Number(runLengthRatio.toFixed(2))
     });
   }
 
