@@ -8,8 +8,8 @@
 regimeClassifier = (() => {
   const V = validator.create('regimeClassifier');
 
-  // R37 E1: Majority-window hysteresis replaces consecutive-streak.
-  // R36 proved REGIME_HOLD=3 still insufficient: 87 raw coherent beats
+  // Majority-window hysteresis replaces consecutive-streak.
+  // proved REGIME_HOLD=3 still insufficient: 87 raw coherent beats
   // (10.6%) were too scattered for 3 consecutive (P ~ 0.12% per window).
   // Majority-window: if 3 of last 5 raw beats classify as the same
   // non-current regime, transition. P(>=3 of 5 | p=0.106) ~ 4.7% per
@@ -21,13 +21,13 @@ regimeClassifier = (() => {
   const OSCILLATING_CURVATURE_DEFAULT = 0.55;
 
   let lastRegime = 'evolving';
-  // R37 E1: Rolling window of recent raw regimes for majority check
+  //  Rolling window of recent raw regimes for majority check
   let _rawRegimeWindow = [];
   let exploringBeats = 0; // duration escalator: consecutive exploring beats
   let coherentBeats = 0;  // saturation guard: consecutive coherent beats
   let oscillatingCurvatureThreshold = OSCILLATING_CURVATURE_DEFAULT;
   let coherentThresholdScale = 0.65; // R36 E6: lowered from 0.75. R35 self-balancer pushed scale to 0.55 floor within ~33 nudges. Starting at 0.65 reaches floor sooner, giving coherent more beats at the lowest threshold.
-  // R22 E4 / R24 E1: Evolving regime minimum dwell time. Prevents the
+  // E4 / R24 E1: Evolving regime minimum dwell time. Prevents the
   // system from passing through evolving too quickly. R22 set 12 beats
   // which catastrophically disrupted bistable coherent feedback (0% coherent
   // in R23). R24 reduces to 4 (explosive) / 6 (atmospheric) as minimal
@@ -62,25 +62,25 @@ regimeClassifier = (() => {
   let _postForcedRecoveryBeats = 0;
   const _POST_FORCED_RECOVERY_WINDOW = 24;
 
-  // R26 E2: Persistent proximity bonus across regime transitions.
+  //  Persistent proximity bonus across regime transitions.
   // During exploring, bonus accumulates at 0.001/beat. Without persistence,
   // bonus was lost on evolving->exploring transition since the old formula
   // only computed from _evolvingBeats (which resets on regime change).
   let _evolvingProximityBonus = 0;
 
-  // R28 E5: Coherent momentum persistence. When coherent is lost, provide
+  //  Coherent momentum persistence. When coherent is lost, provide
   // a linearly-decaying threshold bonus to prevent premature exit during
   // brief coupling dips. Reduced from 15 to 8 beats -- regime self-balancing
   // now handles macro-level coherent targeting via coherentThresholdScale.
   const _COHERENT_MOMENTUM_WINDOW = 8;
   let _coherentMomentumBeats = 0;
 
-  // R29/R30: Self-correcting regime targeting. Auto-adjusts coherentThresholdScale
+  // /R30: Self-correcting regime targeting. Auto-adjusts coherentThresholdScale
   // based on rolling coherent share. Replaces ALL manual per-profile scale tuning.
   // Target range: 15-35% coherent. Nudge rate 0.004/beat, bounded [0.70, 1.20].
-  // R30: Widened range from [0.80,1.15] -- R29 saturated at 0.80 floor in 40 beats.
-  // R35 E1: Tripled nudge rate (0.002->0.006) and lowered floor (0.70->0.55).
-  // R34 showed scale dropped 0.90->0.792 in 282 beats (0.004/beat) but
+  //  Widened range from [0.80,1.15] -- R29 saturated at 0.80 floor in 40 beats.
+  //  Tripled nudge rate (0.002->0.006) and lowered floor (0.70->0.55).
+  // showed scale dropped 0.90->0.792 in 282 beats (0.004/beat) but
   // gapAvg was still +0.15. Need 0.006/beat to close gap within ~100 beats.
   // Floor 0.55 ensures the self-balancer can reduce threshold by 45%.
   const _REGIME_TARGET_COHERENT_LO = 0.15;
@@ -90,8 +90,8 @@ regimeClassifier = (() => {
   const _REGIME_SCALE_MIN = 0.55;
   const _REGIME_SCALE_MAX = 1.20;
 
-  // R25 E6: Cached classify() inputs for transition diagnostics in resolve().
-  // R34 E6: Extended with velocity, velThreshold for transition readiness diagnostic.
+  //  Cached classify() inputs for transition diagnostics in resolve().
+  //  Extended with velocity, velThreshold for transition readiness diagnostic.
   let _lastClassifyInputs = {
     couplingStrength: 0,
     coherentThreshold: 0,
@@ -107,10 +107,10 @@ regimeClassifier = (() => {
     opportunityGap: 0
   };
 
-  // R40 E5: Evolving-to-Exploring Escape Hatch streak tracker
+  //  Evolving-to-Exploring Escape Hatch streak tracker
   let _highDimVelStreak = 0;
 
-  // R36 E4: Raw regime diagnostic. Tallies how many beats each raw
+  //  Raw regime diagnostic. Tallies how many beats each raw
   // classification appears (before hysteresis). Comparing rawRegimeCounts
   // vs resolved regimeCounts reveals hysteresis deadlock: if rawCoherent
   // is high but resolvedCoherent is 0, the hysteresis is still
@@ -118,27 +118,27 @@ regimeClassifier = (() => {
   const _rawRegimeCounts = {};
   const _runRawRegimeCounts = {};
 
-  // R37 E6: Track max consecutive streak per raw regime.
+  //  Track max consecutive streak per raw regime.
   // Reveals whether raw coherent beats cluster (streak=5+) or scatter (streak=1-2).
   const _rawRegimeMaxStreak = {};
   let _rawStreakRegime = '';
   let _rawStreakCount = 0;
 
-  // R17 structural fix: Self-calibrating regime saturation.
+  //  Self-calibrating regime saturation.
   // Tracks rolling coherent share and derives penalty dynamically instead of
   // using static cap/rate constants. When coherent share > 60%, penalty
   // escalates proportionally. Eliminates manual cap tuning between rounds.
-  // R19 E3: Profile-adaptive convergence. Fixed alpha=0.01 (~100-beat horizon)
+  //  Profile-adaptive convergence. Fixed alpha=0.01 (~100-beat horizon)
   // converged too slowly for atmospheric profile (326 consecutive coherent
   // beats). Adaptive alpha: starts at 0.05 (~20 beats), decays exponentially
   // to floor by ~160 beats. Gives 5x faster initial convergence while
   // maintaining stable long-horizon behavior.
-  // R20 E4: Raised floor from 0.01 to 0.025. At 0.01 (~100-beat), 426
+  //  Raised floor from 0.01 to 0.025. At 0.01 (~100-beat), 426
   // consecutive coherent beats in R20 atmospheric created a regime lock
   // (69.7% coherent, maxConsecutive=426). floor 0.025 (~40 beats) ensures
   // the coherent share EMA tracks recent regime distribution accurately
   // enough that the penalty function can actually fire escape transitions.
-  // R21 E3: Made profile-adaptive via setter. Explosive=0.04 (~25-beat),
+  //  Made profile-adaptive via setter. Explosive=0.04 (~25-beat),
   // atmospheric=0.02 (~50-beat), default=0.025 (~40-beat). Explosive's
   // shorter sections (~138 beats) need faster convergence to prevent
   // the 74.2% coherent lock observed in R21.
@@ -222,14 +222,14 @@ regimeClassifier = (() => {
     // Exploring-duration escalator: the longer the system stays in exploring,
     // the easier it becomes to escape into coherent (self-healing). Every 50
     // exploring beats lowers the threshold by 0.02, down to 0.18 minimum.
-    // R7 Evo 5: Coherent entry threshold lowered by 15% to make
+    //  Coherent entry threshold lowered by 15% to make
     // coherent regime more accessible. Coherent floor: when system has
     // been in exploring for extended periods, further lower the threshold
     // by up to 0.05 based on exploring duration (adds to duration bonus).
     const coherentFloorBonus = exploringBeats > 100 ? clamp((exploringBeats - 100) * 0.0005, 0, 0.05) : 0;
     const durationBonus = lastRegime === 'exploring' ? clamp(m.floor(exploringBeats / 50) * 0.02, 0, 0.12) : 0;
 
-    // R28 E5: Coherent momentum. When system was recently coherent (within
+    //  Coherent momentum. When system was recently coherent (within
     // 15 beats), provide a linearly-decaying threshold bonus. This makes
     // regime exit bidirectionally asymmetric: hard to enter but also hard
     // to leave. The bonus decays from 0.05 to 0 over 15 beats.
@@ -239,25 +239,25 @@ regimeClassifier = (() => {
     // Decrement momentum counter each beat (active even during non-coherent)
     if (_coherentMomentumBeats > 0) _coherentMomentumBeats--;
 
-    // R14 Evo 2: Exploring Convergence Acceleration
+    //  Exploring Convergence Acceleration
     // Force transition to evolving or coherent faster if stuck exploring for > 32 beats
     let convergenceBonus = 0;
     if (lastRegime === 'exploring' && exploringBeats > 32) {
       convergenceBonus = clamp((exploringBeats - 32) * 0.005, 0, 0.15);
     }
 
-    // R17 structural fix: Self-calibrating coherent saturation.
+    //  Self-calibrating coherent saturation.
     // Penalty derived from rolling coherent-share EMA instead of static cap.
     // When coherent share > 60%, penalty cap scales up proportionally (0.08 base
     // + up to 0.20 extra). This auto-adjusts across profiles without manual tuning.
-    // R19 E3: Adaptive alpha for faster initial convergence.
+    //  Adaptive alpha for faster initial convergence.
     // alpha = max(0.01, 0.05 * exp(-coherentBeats / 80))
     // At beat 0: alpha=0.05 (~20 horizon). Beat 80: alpha~0.018. Beat 160: alpha->0.01.
     const _adaptiveAlpha = m.max(_coherentShareAlphaMin,
       _COHERENT_SHARE_ALPHA_INIT * m.exp(-coherentBeats / _COHERENT_SHARE_ALPHA_DECAY));
     _coherentShareEma = _coherentShareEma * (1 - _adaptiveAlpha) + (lastRegime === 'coherent' ? 1 : 0) * _adaptiveAlpha;
 
-    // R29: Self-correcting regime balance. When coherent share exceeds target
+    //  Self-correcting regime balance. When coherent share exceeds target
     // range, tighten entry (raise scale). When below, ease entry (lower scale).
     // This permanently replaces manual per-profile coherentThresholdScale tuning.
     if (_coherentShareEma > _REGIME_TARGET_COHERENT_HI) {
@@ -271,7 +271,7 @@ regimeClassifier = (() => {
     let coherentDurationPenalty = 0;
     if (lastRegime === 'coherent' && coherentBeats > 35) {
       coherentDurationPenalty = clamp((coherentBeats - 35) * _dynamicPenaltyRate, 0, _dynamicPenaltyCap);
-      // R43 E1 / R44 E2: Uncapped Saturation Acceleration (self-correcting scale)
+      // E1 / R44 E2: Uncapped Saturation Acceleration (self-correcting scale)
       if (coherentBeats > 100) {
         const dynamicSaturationScale = 0.02 + m.max(0, (_coherentShareEma - _REGIME_TARGET_COHERENT_HI) * 0.05);
         coherentDurationPenalty += (coherentBeats - 100) * dynamicSaturationScale;
@@ -279,16 +279,16 @@ regimeClassifier = (() => {
     }
 
     const baseCoherentThreshold = (lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * coherentThresholdScale; // R7 Evo 5: 15% reduction, profile-scaled
-    // R24 E1: Evolving proximity seeding. When system has been in evolving
+    //  Evolving proximity seeding. When system has been in evolving
     // past the minimum dwell, progressively lower the coherent threshold.
     // Breaks bistability where coupling (0.214 in R23) sits just below
     // threshold (~0.255) indefinitely because coherent relaxation never
     // activates. Max bonus 0.05 (~20% of base threshold) after 50 beats.
-    // R25 E1: Rate doubled 0.001->0.002, cap raised 0.05->0.07.
-    // R24 missed coherent by 0.003 with 44 beats at 0.001/beat (bonus=0.044).
+    //  Rate doubled 0.001->0.002, cap raised 0.05->0.07.
+    // missed coherent by 0.003 with 44 beats at 0.001/beat (bonus=0.044).
     // At 0.002/beat, 0.07 cap reached at 35+dwell beats instead of 54.
-    // R26 E2: Extend proximity seeding to exploring regime at half rate.
-    // R25 spent 302 exploring beats (122-424) with zero seeding. System
+    //  Extend proximity seeding to exploring regime at half rate.
+    // spent 302 exploring beats (122-424) with zero seeding. System
     // had to reach coherent purely through natural dynamics + partial
     // relaxation. Adding 0.001/beat during exploring provides continuous
     // threshold assistance, ensuring cap (0.07) is reached and maintained.
@@ -335,7 +335,7 @@ regimeClassifier = (() => {
     const evolvingEntryVelMin = 0.006;
     const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.020 + opportunityPressure * 0.016 + postForcedRecoveryPressure * 0.014;
     const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.22 - opportunityPressure * 0.12 - postForcedRecoveryPressure * 0.16;
-    // R27 E5: Relax velocity threshold from 0.008 to 0.005 after 100 exploring
+    //  Relax velocity threshold from 0.008 to 0.005 after 100 exploring
     // beats. In R26, coherent entry was at beat 376/439 (85.6% through) despite
     // the coupling threshold being deeply negative by beat ~200. The bottleneck
     // is the velocity condition: transient velocity dips below 0.008 prevent
@@ -343,9 +343,9 @@ regimeClassifier = (() => {
     // 0.005-0.008 still represents meaningful state-space movement; 5-beat
     // hysteresis guards against premature entry from fleeting velocity dips.
     const _velThreshold = exploringBeats > 100 ? 0.005 : 0.008;
-    // R25 E6: Cache classify inputs for transition diagnostics in resolve()
-    // R34 E6: Include velocity + velThreshold for transition readiness
-    // R35 E5: Include effectiveDim for exploring-block diagnostic
+    //  Cache classify inputs for transition diagnostics in resolve()
+    //  Include velocity + velThreshold for transition readiness
+    //  Include effectiveDim for exploring-block diagnostic
     _lastClassifyInputs = {
       couplingStrength,
       coherentThreshold,
@@ -361,14 +361,14 @@ regimeClassifier = (() => {
       opportunityGap
     };
 
-    // R40 E5: Evolving-to-Exploring Escape Hatch check
+    //  Evolving-to-Exploring Escape Hatch check
     if (effectiveDim > 2.8 && avgVelocity > 0.012) {
       _highDimVelStreak++;
     } else {
       _highDimVelStreak = 0;
     }
 
-    // R43 E2: Re-elevated Escape Hatch Precedence with coherent guard
+    //  Re-elevated Escape Hatch Precedence with coherent guard
     if (_highDimVelStreak >= 10 && lastRegime !== 'coherent') {
       return 'exploring';
     }
@@ -382,12 +382,12 @@ regimeClassifier = (() => {
       return 'evolving';
     }
 
-    // R36 E2: effectiveDim gate on coherent entry.
-    // R37 E2: Tightened from 4.0 to 3.5. R36 data: 87 raw coherent beats
+    //  effectiveDim gate on coherent entry.
+    //  Tightened from 4.0 to 3.5. R36 data: 87 raw coherent beats
     // vs 2 raw exploring. effectiveDim almost always > 4.0, swallowing all
     // potential exploring beats into coherent. At 3.5, more beats with
     // 3-4 effective dimensions redirect to exploring.
-    // R41 E2: Relaxed back to 4.0 because high multi-dimensionality is healthy.
+    //  Relaxed back to 4.0 because high multi-dimensionality is healthy.
     if (couplingStrength > coherentThreshold + coherentEntryMargin && avgVelocity > _velThreshold && effectiveDim <= coherentDimMax) return 'coherent';
 
     const recentlyCoherent = lastRegime === 'coherent' || _coherentMomentumBeats > 0;
@@ -412,19 +412,19 @@ regimeClassifier = (() => {
     // Exploring: high velocity + multi-dimensional + weak coupling.
     // Gate widened (0.30 -> 0.40) so moderately-coupled systems can escape
     // exploring into coherent more easily.
-    // R35 E2: Lowered velocity threshold from 0.02 to 0.015. R34 had 0%
+    //  Lowered velocity threshold from 0.02 to 0.015. R34 had 0%
     // exploring because velocity was consistently in the 0.008-0.02 dead
     // zone (too fast for evolving cutoff, too slow for exploring entry).
-    // R36 E5: Adaptive relaxation. After 100+ consecutive evolving beats
+    //  Adaptive relaxation. After 100+ consecutive evolving beats
     // without transition, relax from 0.015 to 0.010. In R35, 15 beats
     // were velocity-blocked at the 0.015 threshold. This recaptures them
     // during prolonged evolving locks.
-    // R37 E3: Exploring coupling gate widened 0.40->0.50. In R36 coupling
+    //  Exploring coupling gate widened 0.40->0.50. In R36 coupling
     // averages ranged 0.19-0.44, so many beats with moderate coupling were
     // blocked. At 0.50, midrange-coupled high-dim beats can enter exploring.
     const _exploringVelThreshold = (_evolvingBeats > 100 ? 0.010 : 0.012) - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
-    // R43 E3: Exploring Dimension Relief
-    // R66 E3: Profile-aware dimension gate floor. Atmospheric's tight signals
+    //  Exploring Dimension Relief
+    //  Profile-aware dimension gate floor. Atmospheric's tight signals
     // collapse effectiveDim to ~2.24 (p50), making the 2.2/2.5 base gate
     // nearly impassable. Profile exploringDimRelief (atmospheric: 0.3) lowers
     // the base, combined with pressure-based modulation, to admit ~10-20%
@@ -563,11 +563,11 @@ regimeClassifier = (() => {
    */
   function resolve(rawRegime, tickId) {
     const beatSpan = getTickSpan(tickId);
-    // R36 E4: Tally raw regime classifications before hysteresis
+    //  Tally raw regime classifications before hysteresis
     _rawRegimeCounts[rawRegime] = (_rawRegimeCounts[rawRegime] || 0) + 1;
     _runRawRegimeCounts[rawRegime] = (_runRawRegimeCounts[rawRegime] || 0) + beatSpan;
 
-    // R37 E6: Track max consecutive streak per raw regime
+    //  Track max consecutive streak per raw regime
     if (rawRegime === _rawStreakRegime) {
       _rawStreakCount++;
     } else {
@@ -576,18 +576,18 @@ regimeClassifier = (() => {
     }
     _rawRegimeMaxStreak[rawRegime] = m.max(_rawRegimeMaxStreak[rawRegime] || 0, _rawStreakCount);
 
-    // R44 E6: Self-correcting Hysteresis Smoothing Relaxation
+    //  Self-correcting Hysteresis Smoothing Relaxation
     // Drop the window dynamically to speed up entry into new domains if locked in exploring.
     let effectiveWindow = _REGIME_WINDOW;
     if (lastRegime === 'exploring') {
       effectiveWindow = m.max(3, _REGIME_WINDOW - m.floor(exploringBeats / 40));
     }
 
-    // R37 E1: Maintain rolling window
+    //  Maintain rolling window
     _rawRegimeWindow.push(rawRegime);
     while (_rawRegimeWindow.length > effectiveWindow) _rawRegimeWindow.shift();
 
-    // R44 E4: Exploring Max Dwell Limit
+    //  Exploring Max Dwell Limit
     const _exploringMaxDwell = 180;
     if (_forcedRegimeBeatsRemaining <= 0 && lastRegime === 'exploring' && exploringBeats >= _exploringMaxDwell) {
       activateForcedRegime('evolving', 'exploring-max-dwell', 3);
@@ -607,14 +607,14 @@ regimeClassifier = (() => {
       }
     } else {
 
-      // R37 E1: Check if rawRegime has majority in rolling window
+      //  Check if rawRegime has majority in rolling window
       if (rawRegime !== lastRegime && _rawRegimeWindow.length >= (_REGIME_MAJORITY - 1)) {
         let _windowHits = 0;
         for (let i = 0; i < _rawRegimeWindow.length; i++) {
           if (_rawRegimeWindow[i] === rawRegime) _windowHits++;
         }
 
-        // R40 E1: Exploring Majority-Window Hysteresis (relaxed constraint to capture valid exploring blocks)
+        //  Exploring Majority-Window Hysteresis (relaxed constraint to capture valid exploring blocks)
         const evolvingShare = _runBeatCount > 0
           ? ((_runResolvedRegimeCounts.evolving || 0) / _runBeatCount)
           : 0;
@@ -624,11 +624,11 @@ regimeClassifier = (() => {
           : (rawRegime === 'evolving' && evolvingDeficit > 0.15 ? 2 : _REGIME_MAJORITY);
 
         if (_windowHits >= requiredHits) {
-          // R22 E4: Evolving minimum dwell -- suppress evolving->coherent until
+          //  Evolving minimum dwell -- suppress evolving->coherent until
           // at least _evolvingMinDwell beats have passed in evolving.
           let allowTransition = true;
 
-          // R42 E4: Hard max dwell timeout bypass
+          //  Hard max dwell timeout bypass
           if (lastRegime === 'evolving' && _evolvingBeats > _evolvingMaxDwell) {
             allowTransition = true; // explicitly force flip
           } else if (lastRegime === 'evolving' && rawRegime === 'coherent' && _evolvingBeats < _evolvingMinDwell) {
@@ -636,7 +636,7 @@ regimeClassifier = (() => {
           }
 
           if (allowTransition) {
-            // R25 E6: Regime transition diagnostic
+            //  Regime transition diagnostic
             explainabilityBus.emit('REGIME_TRANSITION', 'both', {
               from: lastRegime, to: rawRegime,
               coupling: _lastClassifyInputs.couplingStrength,
@@ -648,13 +648,13 @@ regimeClassifier = (() => {
               windowHits: _windowHits
             });
 
-            // R28 E5: Activate coherent momentum on coherent->non-coherent transition
-            // R43 E6: Dynamic Momentum Expansion mapped to time stuck
+            //  Activate coherent momentum on coherent->non-coherent transition
+            //  Dynamic Momentum Expansion mapped to time stuck
             if (lastRegime === 'coherent') {
               _coherentMomentumBeats = m.max(_COHERENT_MOMENTUM_WINDOW, m.floor(coherentBeats * 0.25));
             }
 
-            // R42 E6: Raw Hysteresis Flush
+            //  Raw Hysteresis Flush
             _rawRegimeWindow.length = 0;
             resolvedRegime = rawRegime;
           }
@@ -703,7 +703,7 @@ regimeClassifier = (() => {
     _cadenceMonopolyActive = monopolyState.active;
     _cadenceMonopolyReason = monopolyState.reason;
 
-    // R42 E1/E3: Hysteresis Increment Rectification / Parity
+    // E1/E3: Hysteresis Increment Rectification / Parity
     // Increment the ACTUAL regime we resolved to this beat, unconditionally
     if (resolvedRegime === 'exploring') {
       exploringBeats++;

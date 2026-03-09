@@ -171,7 +171,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const entropyOutcome = clamp(1 - entropyError * 3, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.ENTROPY_REGULATOR, entropyOutcome);
 
-  // R14 Evo 6: Rest Synchronizer Weight Escalation
+  // Rest Synchronizer Weight Escalation
   // Boost reward dynamically past prior 0.8 limit up to 1.0 when rest density is high
   let restOutcome = 0.08;
   if (clRest.shouldRest) {
@@ -236,7 +236,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
         phaseDelta: Number.isFinite(_traceCachedDynamicsSnap.phaseDelta) ? _traceCachedDynamicsSnap.phaseDelta : 0,
         phaseChanged: Boolean(_traceCachedDynamicsSnap.phaseChanged),
         phaseStaleBeats: Number.isFinite(_traceCachedDynamicsSnap.phaseStaleBeats) ? _traceCachedDynamicsSnap.phaseStaleBeats : 0,
-        // R58 E4: Phase freshness escalation flag. When phaseStaleBeats > 8,
+        // Phase freshness escalation flag. When phaseStaleBeats > 8,
         // this beat triggered freshness escalation in systemDynamicsProfiler
         // to keep phase coupling data flowing despite signal monotonicity.
         phaseFreshnessEscalated: Number.isFinite(_traceCachedDynamicsSnap.phaseStaleBeats) && _traceCachedDynamicsSnap.phaseStaleBeats > 8,
@@ -248,20 +248,20 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
           ? _traceCachedDynamicsSnap.phasePairStates
           : null
       } : null,
-      // R18 E5: Adaptive target state for coupling drift diagnostics
+      // Adaptive target state for coupling drift diagnostics
       couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
-      // R19 E1: Per-axis total |r| sums for axis-centric conservation diagnostics
+      // Per-axis total |r| sums for axis-centric conservation diagnostics
       axisCouplingTotals: pipelineCouplingManager.getAxisCouplingTotals(),
-      // R27 E4: Per-axis energy share for axis-level redistribution detection
+      // Per-axis energy share for axis-level redistribution detection
       axisEnergyShare: pipelineCouplingManager.getAxisEnergyShare(),
-      // R27 E2: Coherence gate + floor dampening state for anti-redistribution analysis
+      // Coherence gate + floor dampening state for anti-redistribution analysis
       couplingGates: pipelineCouplingManager.getCouplingGates(),
-      // R20 E6: Whole-system coupling homeostasis state for governor diagnostics
+      // Whole-system coupling homeostasis state for governor diagnostics
       couplingHomeostasis: safePreBoot.call(() => couplingHomeostasis.getState(), null),
-      // R33 E4: Direct snapshot bypass -- conductorState.updateFromConductor silently
+      // Direct snapshot bypass -- conductorState.updateFromConductor silently
       // drops state-provider fields, so axisEnergyEquilibrator never reaches snap.
       axisEnergyEquilibrator: safePreBoot.call(() => axisEnergyEquilibrator.getSnapshot(), null),
-      // R34 E6: Per-beat transition readiness for coherent entry diagnosis
+      // Per-beat transition readiness for coherent entry diagnosis
       transitionReadiness: safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null),
       profilerTelemetry,
       outputLoadGuard: outputLoadGuard || null,

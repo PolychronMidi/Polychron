@@ -206,7 +206,7 @@ conductorDampening = (() => {
    */
   function _applyCentroidCorrection(product, pipelineName) {
     if (!pipelineName) return product;
-    // R7 Evo 3: Skip flicker axis entirely - centroid pull suppresses
+    // Skip flicker axis entirely - centroid pull suppresses
     // needed flicker variance and fights elasticity controller (#4).
     if (pipelineName === 'flicker') return product;
     const prev = _centroidEma.get(pipelineName) || 1.0;
@@ -236,7 +236,7 @@ conductorDampening = (() => {
     const range = fMax - fMin;
     if (range < _targetFlickerRange * 0.6) {
       // Range compressed: reduce dampening to allow more expression
-      // R7 Evo 2: Tripled adjustment rate (0.005->0.015) for faster response
+      // Tripled adjustment rate (0.005->0.015) for faster response
       _flickerDampeningBaseAdj = clamp(_flickerDampeningBaseAdj + 0.015, 0, 0.15);
     } else if (range > _targetFlickerRange * 2.0) {
       // Range too wide: increase dampening to rein it in
@@ -265,7 +265,7 @@ conductorDampening = (() => {
         flickerDampeningBaseAdj: pipelineName === 'flicker' ? _flickerDampeningBaseAdj : 0,
         activeCount: _activeCountByPipeline.get(pipelineName) || 0
       });
-      // R7 Evo 9: Feed correction signs to meta-controller watchdog
+      // Feed correction signs to meta-controller watchdog
       if (centroidCorr !== 0) {
         conductorMetaWatchdog.recordCorrection(pipelineName, 'centroid', centroidCorr);
       }

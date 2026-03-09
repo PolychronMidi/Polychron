@@ -150,7 +150,7 @@ conductorIntelligence = (() => {
   /** @returns {number} product of all flicker modifiers (dampened + soft-envelope normalized) */
   function collectFlickerModifier() {
     let raw = _collectDampened(flickerModifiers, 'flicker');
-    // R14 Evo 3: Flicker Target Expansion in Evolving Regime
+    // Flicker Target Expansion in Evolving Regime
     const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);
     if (isEvolving) {
       raw *= 1.15;
@@ -162,7 +162,7 @@ conductorIntelligence = (() => {
   function collectFlickerModifierWithAttribution() {
     const result = _collectDampenedWithAttribution(flickerModifiers, 'flicker');
     let rawProduct = result.product;
-    // R14 Evo 3: Flicker Target Expansion in Evolving Regime
+    //  Flicker Target Expansion in Evolving Regime
     const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);
     if (isEvolving) {
       rawProduct *= 1.15;

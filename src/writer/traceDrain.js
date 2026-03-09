@@ -98,7 +98,7 @@ traceDrain = (() => {
     if (_buffer.length >= FLUSH_INTERVAL) _flush();
   }
 
-  // R66 E6: Mid-run diagnostic snapshot. Emitted periodically to capture
+  // Mid-run diagnostic snapshot. Emitted periodically to capture
   // system state evolution beyond the beat-level trace window. The snapshot
   // includes key metrics that often diverge between early-run and end-of-run
   // (effectiveDim, trust scores, coupling means, gain multiplier, regime).

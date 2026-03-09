@@ -29,7 +29,7 @@ axisEnergyEquilibrator = (() => {
   const V = validator.create('axisEnergyEquilibrator');
 
   // -- Layer 1 config: pair-level hotspot detection --
-  // R30: Uses rawRollingAbsCorr (unattenuated) instead of rollingAbsCorr
+  //  Uses rawRollingAbsCorr (unattenuated) instead of rollingAbsCorr
   // (regime-adjusted EMA). In R29, rolling was 60-70% attenuated vs actual
   // coupling, so density-flicker at 0.602 actual only showed 0.190 rolling.
   const _HOTSPOT_RATIO = 2.0;      // pair is hot when raw > 2.0x baseline
@@ -71,7 +71,7 @@ axisEnergyEquilibrator = (() => {
   const _COHERENT_HOTSPOT_MIN_SCALE = 0.18;
   const _COHERENT_HOTSPOT_MAX_SCALE = 0.42;
 
-  // R32 E2: Effective nudgeable pair count per axis. Trust/entropy/phase have
+  //  Effective nudgeable pair count per axis. Trust/entropy/phase have
   // only 3 nudgeable pairs (both partners must include density/tension/flicker)
   // vs 5 for density/tension/flicker. This causes 40% slower correction for
   // disadvantaged axes. Scale relaxation rate by 5/count to compensate.
@@ -96,7 +96,7 @@ axisEnergyEquilibrator = (() => {
   /** @type {Record<string, number>} */
   let _lastBaselines = {};
 
-  // R32 E5: Per-regime telemetry tracking. Records tightenScale regime
+  //  Per-regime telemetry tracking. Records tightenScale regime
   // breakdown and adjustments per regime for trace-summary extraction.
   /** @type {Record<string, number>} */
   const _regimeBeats = {};
@@ -226,17 +226,17 @@ axisEnergyEquilibrator = (() => {
     const entropySurfacePressure = entropySurface.surfacePressure;
     if (entropySurfaceHot) _entropySurfaceHotBeats++;
 
-    // R31: Graduated coherent gate. R30's binary gate (freeze during evolving
+    //  Graduated coherent gate. R30's binary gate (freeze during evolving
     // + coherent = 61% of beats) caused axisGini to triple (0.137->0.382)
     // because tightening was blocked for too long. Graduated approach:
     //   exploring/initializing: full tightening (1.0)
     //   evolving: reduced tightening (0.4) -- allows partial axis correction
     //   coherent: frozen (0.0) -- protects coherent stability
     const currentRegime = regimeClassifier.getLastRegime();
-    // R34 E4: Exploring tighten amplification (1.5x). R33 showed exploring
+    //  Exploring tighten amplification (1.5x). R33 showed exploring
     // contributes 77% of effective tightening budget. Amplifying during
     // exploring accelerates axis balance correction while coherent is absent.
-    // R35 E4: Evolving tightenScale 0.4->0.6. R34 had 83.7% evolving but
+    //  Evolving tightenScale 0.4->0.6. R34 had 83.7% evolving but
     // only 13.7 total tighten budget (R33: 35). Without exploring, evolving
     // must carry more of the tightening load.
     const coherentHotspotScale = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot)
@@ -250,7 +250,7 @@ axisEnergyEquilibrator = (() => {
     const coherentColdspotFreeze = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot || entropySurfaceHot);
     if (coherentColdspotFreeze) _coherentFreezeBeats++;
 
-    // R32 E5: Track per-regime beats and tightening budget
+    //  Track per-regime beats and tightening budget
     const rKey = currentRegime || 'unknown';
     _regimeBeats[rKey] = (_regimeBeats[rKey] || 0) + 1;
     _regimeTightenBudget[rKey] = (_regimeTightenBudget[rKey] || 0) + tightenScale;
@@ -335,11 +335,11 @@ axisEnergyEquilibrator = (() => {
 
     // ===== LAYER 2: Axis-level energy balancing =====
     const entropyExploringDamp = rKey === 'exploring' ? 0.95 : 1.0;
-    // R43 E5: Phase-Axis Re-Amplification
+    //  Phase-Axis Re-Amplification
     // Relaxed dampening back to 0.95 since axisGini stabilized at 0.1065
     const phaseEvolvingDamp = rKey === 'evolving' ? 0.95 : 1.0;
 
-    // R58 E1: Axis-dominant coherent-gate tightening. When an axis's coupling
+    //  Axis-dominant coherent-gate tightening. When an axis's coupling
     // total exceeds the median by >20%, amplify its tightening rate proportionally.
     // Self-correcting: the amplifier scales with the excess above median.
     const axisTotals = pipelineCouplingManager.getAxisCouplingTotals();
@@ -368,12 +368,12 @@ axisEnergyEquilibrator = (() => {
 
       if (share > _AXIS_OVERSHOOT && axisTightenScale > 0) {
         const excess = share - _FAIR_SHARE;
-        // R39 E1: Entropy Axis Soft-Throttle. Apply 0.95x dampening strictly to entropy during exploring.
+        //  Entropy Axis Soft-Throttle. Apply 0.95x dampening strictly to entropy during exploring.
         let dampMult = (axis === 'entropy') ? entropyExploringDamp : 1.0;
         if (axis === 'phase') dampMult *= phaseEvolvingDamp;
         if (axis === 'entropy' && entropySurfaceHot) dampMult *= 1 + entropySurfacePressure * 0.35;
 
-        // R44 E3: Flicker Axis Dampening Core (self-correcting relative to overshoot)
+        //  Flicker Axis Dampening Core (self-correcting relative to overshoot)
         if (axis === 'flicker' && share > 0.20) {
            dampMult *= (1.0 - m.min(0.15, (share - 0.20) * 1.5)); // max 0.85 dampening
         }
@@ -389,7 +389,7 @@ axisEnergyEquilibrator = (() => {
           dampMult *= 1 + nonNudgeableTailPressure * 0.35;
         }
 
-        // R58 E1: Axis-dominant tightening amplifier. When this axis's coupling
+        //  Axis-dominant tightening amplifier. When this axis's coupling
         // total exceeds the median by >20%, amplify its tightening proportional
         // to the excess. Caps at 1.5x to prevent over-correction.
         const _thisAxisTotal = typeof axisTotals[axis] === 'number' && Number.isFinite(axisTotals[axis]) ? axisTotals[axis] : 0;
@@ -398,7 +398,7 @@ axisEnergyEquilibrator = (() => {
           dampMult *= 1 + clamp(_axisDominanceExcess * 0.50, 0, 0.50);
         }
 
-        // R33 E2: Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
+        //  Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
         // for disadvantaged axes (trust/entropy/phase). But overshoot tightening
         // also needs scaling: entropy at 0.230 share pushes energy toward trust,
         // and its 3-pair axis needs 1.67x faster tightening to match 5-pair axes.
@@ -420,12 +420,12 @@ axisEnergyEquilibrator = (() => {
           }
         }
       } else if (share < _AXIS_UNDERSHOOT && share > 0.001) {
-        // R63 E6 + R65 E3: Phase axis emergency floor. When an axis drops
+        // E6 + R65 E3: Phase axis emergency floor. When an axis drops
         // below 0.08 (catastrophic starvation), bypass the coherent coldspot
         // freeze and apply emergency relaxation. Self-correcting: emergency
         // mode deactivates when share recovers above 0.08.
         const isEmergencyStarved = share < 0.08;
-        // R65 E4: Partial coherent freeze bypass for undershoot axes.
+        //  Partial coherent freeze bypass for undershoot axes.
         // When an axis is below _AXIS_UNDERSHOOT (0.12) but above emergency
         // threshold, allow relaxation on even-numbered beats (50% duty cycle)
         // so starved axes get some recovery during coherent spells.
@@ -438,7 +438,7 @@ axisEnergyEquilibrator = (() => {
           continue;
         }
         const deficit = _FAIR_SHARE - share;
-        // R32 E2: Scale relaxation rate by inverse nudgeable pair count.
+        //  Scale relaxation rate by inverse nudgeable pair count.
         // Trust/entropy/phase axes have only 3 effective nudgeable pairs vs 5,
         // so they need 5/3 = 1.67x faster relaxation to match correction speed.
         const pairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
@@ -467,7 +467,7 @@ axisEnergyEquilibrator = (() => {
       }
     }
 
-    // R59 E4: Tension axis energy floor enforcement. When tension share drops
+    //  Tension axis energy floor enforcement. When tension share drops
     // below 15%, apply targeted relaxation to tension-containing pairs regardless
     // of coherent freeze or surface-hot guards. Self-correcting: relaxation
     // stops as soon as tension share recovers above the floor.
@@ -493,7 +493,7 @@ axisEnergyEquilibrator = (() => {
       }
     }
 
-    // R60 E3: Entropy axis energy cap at 19%. Entropy dominated at 21.8%
+    //  Entropy axis energy cap at 19%. Entropy dominated at 21.8%
     // in R59 (30% above equal share) with zero axis-level redistribution.
     // When entropy exceeds the cap, actively tighten entropy-containing
     // pairs to redirect energy toward density and phase. Self-correcting:
@@ -538,7 +538,7 @@ axisEnergyEquilibrator = (() => {
       perAxisAdj: Object.assign({}, _perAxisAdj),
       perPairAdj: Object.assign({}, _perPairAdj),
       lastBaselines: Object.assign({}, _lastBaselines),
-      // R32 E5: Per-regime telemetry
+      //  Per-regime telemetry
       regimeBeats: Object.assign({}, _regimeBeats),
       regimePairAdj: Object.assign({}, _regimePairAdj),
       regimeAxisAdj: Object.assign({}, _regimeAxisAdj),
