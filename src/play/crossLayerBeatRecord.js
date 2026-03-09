@@ -73,7 +73,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const { requireFiniteNumber, requireUnitInterval } = mainBootstrap;
   const clBeatKey = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
 
-  // --- Post-beat recording ---
+  // Post-beat recording
   stutterContagion.postStutter(clAbsMs, layer, clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
   stutterContagion.apply(clAbsMs, layer);
   const clDensity = temporalGravity.measureDensity(layer, beatStartTime);
@@ -99,7 +99,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
 
   spectralComplementarity.postSpectralState(clAbsMs, layer);
 
-  // --- Interaction heat map ---
+  // Interaction heat map
   interactionHeatMap.record(trustSystems.heatMapSystems.STUTTER_CONTAGION, clamp(stutterProb, 0, 1));
   interactionHeatMap.record(trustSystems.heatMapSystems.TEMPORAL_GRAVITY, clDensity);
   interactionHeatMap.record(trustSystems.heatMapSystems.CADENCE_ALIGNMENT, clCadResult ? 0.8 : 0);
@@ -120,7 +120,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   interactionHeatMap.record(trustSystems.heatMapSystems.CLIMAX_ENGINE, crossLayerClimaxEngine.isApproaching() ? clamp(crossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
   interactionHeatMap.record(trustSystems.heatMapSystems.REST_SYNC, clRest.shouldRest ? 0.9 : 0);
 
-  // --- Emergent downbeat ---
+  // Emergent downbeat
   const edSignals = {
     convergence: clConvergenceGate.allowDownbeat,
     cadenceAlign: Boolean(clCadResult && clCadResult.shouldResolve),
@@ -131,7 +131,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   interactionHeatMap.record(trustSystems.heatMapSystems.EMERGENT_DOWNBEAT, clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
   if (clDownbeat) feedbackOscillator.inject(clAbsMs, layer, clamp(clDownbeat.strength, 0, 1), 'downbeat');
 
-  // --- Trust scores (payoff constants from MAIN_LOOP_CONTROLS.trustPayoffs) ---
+  // Trust scores (payoff constants from MAIN_LOOP_CONTROLS.trustPayoffs)
   const tp = MAIN_LOOP_CONTROLS.trustPayoffs;
   const stutterOutcome = clamp(1 - m.abs(stutterProb - clIntent.interactionTarget) * tp.stutterContagion.targetScale, -1, 1);
   const plp = tp.phaseLock;
@@ -188,7 +188,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
 
-  // --- Explainability ---
+  // Explainability
   explainabilityBus.emit('beat-decision', layer, {
     intent: clIntent,
     phaseConfidence: clPhase.confidence,
@@ -197,7 +197,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     breathing: clBreathing.recommendation
   }, clAbsMs);
 
-  // --- Visual Diagnostic Mode (--trace) ---
+  // Visual Diagnostic Mode (--trace)
   // Emit a trace-beat event every beat (L1 and L2) for the trace drain.
   // Conductor + dynamics snapshots are identical for L1 and L2 within the
   // same beat, so cache them on the L1 pass and reuse for L2.
@@ -272,7 +272,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     traceDrain.record(layer, tracePayload);
   }
 
-  // --- Beat key handling (L1 defers, L2 flushes pair + telemetry) ---
+  // Beat key handling (L1 defers, L2 flushes pair + telemetry)
   if (isL1) {
     interactionHeatMap.deferBeat(clBeatKey);
   } else {

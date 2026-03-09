@@ -48,7 +48,7 @@ function findJsFiles(dir) {
   return results;
 }
 
-// ---- Load feedback_graph.json ----
+// -Load feedback_graph.json -
 
 const graphPath = path.join(METRICS, 'feedback_graph.json');
 if (!fs.existsSync(graphPath)) {
@@ -64,14 +64,14 @@ try {
   process.exit(1);
 }
 
-// ---- Extract loop declarations from JSON ----
+// -Extract loop declarations from JSON -
 
 const jsonLoops = graph.feedbackLoops || [];
 const jsonLoopModules = new Set(jsonLoops.map(l => l.module));
 const jsonLoopIds = new Set(jsonLoops.map(l => l.id));
 const jsonFirewallKeys = new Set(Object.keys(graph.firewalls || {}));
 
-// ---- Scan source for runtime loop registrations ----
+// -Scan source for runtime loop registrations -
 
 const allJsFiles = findJsFiles(SRC);
 const sourceLoops = []; // { name, file, type: 'registerLoop'|'closedLoopController' }
@@ -101,7 +101,7 @@ for (const filePath of allJsFiles) {
 
 const sourceLoopNames = new Set(sourceLoops.map(l => l.name));
 
-// ---- Build module-name-to-loop-id mapping from JSON ----
+// -Build module-name-to-loop-id mapping from JSON -
 // JSON uses descriptive IDs (e.g., 'density-correction') while source uses module names
 // (e.g., 'coherenceMonitor'). The JSON 'module' field bridges this.
 const jsonModuleToId = {};
@@ -109,7 +109,7 @@ for (const loop of jsonLoops) {
   jsonModuleToId[loop.module] = loop.id;
 }
 
-// ---- Validation ----
+// -Validation -
 
 const failures = [];
 const warnings = [];
@@ -220,7 +220,7 @@ for (const [firewallName, ruleNames] of Object.entries(FIREWALL_ESLINT_MAP)) {
   }
 }
 
-// ---- Output ----
+// -Output -
 
 const results = {
   meta: {
@@ -240,7 +240,7 @@ const results = {
 const outputPath = path.join(ROOT, 'metrics', 'feedback-graph-validation.json');
 fs.writeFileSync(outputPath, JSON.stringify(results, null, 2) + '\n');
 
-// ---- Report ----
+// -Report -
 
 if (warnings.length > 0) {
   console.log('validate-feedback-graph: WARNINGS (' + warnings.length + '):');

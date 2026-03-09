@@ -21,7 +21,7 @@ const SRC    = path.join(ROOT, 'src');
 const OUTPUT = path.join(ROOT, 'metrics', 'dependency-graph.json');
 const BOOT_ORDER_PATH = path.join(ROOT, 'metrics', 'boot-order.json');
 
-// ---- Load boot-order.json for provider data ----
+// -Load boot-order.json for provider data -
 
 function loadBootOrder() {
   if (!fs.existsSync(BOOT_ORDER_PATH)) {
@@ -36,7 +36,7 @@ function loadBootOrder() {
   }
 }
 
-// ---- Detect subsystem from file path ----
+// -Detect subsystem from file path -
 
 function getSubsystem(relPath) {
   const parts = relPath.replace(/\\/g, '/').split('/');
@@ -45,7 +45,7 @@ function getSubsystem(relPath) {
   return 'root';
 }
 
-// ---- Build a set of all known globals and their providers ----
+// -Build a set of all known globals and their providers -
 
 function buildProviderMap(bootOrder) {
   const globalToProvider = new Map();
@@ -57,7 +57,7 @@ function buildProviderMap(bootOrder) {
   return globalToProvider;
 }
 
-// ---- Scan a JS file for global references (consumption) ----
+// -Scan a JS file for global references (consumption) -
 
 // We look for all identifiers that match known globals, excluding:
 // - Lines that are assignments at column 0 (those are PROVIDERS, not consumers)
@@ -108,7 +108,7 @@ function scanFragment(fragment, knownGlobals, consumed) {
   }
 }
 
-// ---- Build dependency edges ----
+// -Build dependency edges -
 
 function buildGraph(bootOrder, globalToProvider) {
   const knownGlobals = new Set(globalToProvider.keys());
@@ -154,7 +154,7 @@ function buildGraph(bootOrder, globalToProvider) {
   return { nodes, edges };
 }
 
-// ---- Compute summary statistics ----
+// -Compute summary statistics -
 
 function computeSummary(nodes, edges, globalToProvider) {
   const subsystems = {};
@@ -209,7 +209,7 @@ function computeSummary(nodes, edges, globalToProvider) {
   };
 }
 
-// ---- Main ----
+// -Main -
 
 function main() {
   const bootOrder = loadBootOrder();

@@ -79,7 +79,7 @@ harmonicFunctionGraph = (() => {
     tensionVal = 1.0;
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerTensionBias('harmonicFunctionGraph', tensionBias, 0.92, 1.10);
   conductorIntelligence.registerRecorder('harmonicFunctionGraph', refresh);
   conductorIntelligence.registerStateProvider('harmonicFunctionGraph', () => ({

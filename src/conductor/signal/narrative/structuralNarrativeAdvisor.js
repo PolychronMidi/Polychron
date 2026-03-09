@@ -64,7 +64,7 @@ structuralNarrativeAdvisor = (() => {
     varietyPressure = 1.0;
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerDensityBias('structuralNarrativeAdvisor', densityBias, 0.96, 1.12);
   conductorIntelligence.registerRecorder('structuralNarrativeAdvisor', refresh);
   conductorIntelligence.registerStateProvider('structuralNarrativeAdvisor', () => ({

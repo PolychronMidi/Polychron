@@ -99,7 +99,7 @@ narrativeTrajectory = (() => {
     steerBias  = 1.0;
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerTensionBias('narrativeTrajectory', tensionBias, 0.94, 1.12);
   conductorIntelligence.registerRecorder('narrativeTrajectory', refresh);
   conductorIntelligence.registerStateProvider('narrativeTrajectory', () => ({

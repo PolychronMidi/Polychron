@@ -51,7 +51,7 @@ systemManifestMarkdown = (() => {
     lines.push('### Lifecycle-Registered Module Names');
     lines.push('');
     lines.push('| # | Module Name |');
-    lines.push('|---|---|');
+    lines.push('|||');
     manifest.registries.conductorIntelligence.moduleNames.forEach((name, i) => {
       lines.push(`| ${i + 1} | ${name} |`);
     });
@@ -65,7 +65,7 @@ systemManifestMarkdown = (() => {
       lines.push('> but are stateless or beatCache-only - no section reset needed.');
       lines.push('');
       lines.push('| # | Module Name |');
-      lines.push('|---|---|');
+      lines.push('|||');
       unreg.forEach((name, i) => {
         lines.push(`| ${i + 1} | ${name} |`);
       });
@@ -80,7 +80,7 @@ systemManifestMarkdown = (() => {
     lines.push(`Total registered: **${manifest.registries.crossLayer.moduleCount}**`);
     lines.push('');
     lines.push('| # | Module Name |');
-    lines.push('|---|---|');
+    lines.push('|||');
     manifest.registries.crossLayer.moduleNames.forEach((name, i) => {
       lines.push(`| ${i + 1} | ${name} |`);
     });
@@ -93,7 +93,7 @@ systemManifestMarkdown = (() => {
     lines.push('## Harmonic Journey');
     lines.push('');
     lines.push('| Section | Key | Mode | Move | Distance |');
-    lines.push('|---|---|---|---|---|');
+    lines.push('||||||');
     manifest.journey.forEach(stop => {
       lines.push(`| ${stop.section} | ${stop.key} | ${stop.mode} | ${stop.move} | ${stop.distance} |`);
     });
@@ -107,7 +107,7 @@ systemManifestMarkdown = (() => {
     lines.push('## Trust Scores (End of Run)');
     lines.push('');
     lines.push('| System | Score | Weight | Samples |');
-    lines.push('|---|---|---|---|');
+    lines.push('|||||');
     trustEntries.forEach(([name, data]) => {
       if (data && typeof data === 'object') {
         const score = typeof data.score === 'number' ? data.score.toFixed(3) : '?';
@@ -141,7 +141,7 @@ systemManifestMarkdown = (() => {
     lines.push('');
     if (attr.contributions.length > 0) {
       lines.push('| Module | Raw | Clamped |');
-      lines.push('|---|---|---|');
+      lines.push('||||');
       attr.contributions.forEach(c => {
         lines.push(`| ${c.name} | ${c.raw.toFixed(4)} | ${c.clamped.toFixed(4)} |`);
       });
@@ -162,7 +162,7 @@ systemManifestMarkdown = (() => {
     lines.push('### Pipeline Health');
     lines.push('');
     lines.push('| Pipeline | Grade | Product | Crush Factor | Saturated | Pinned Rate |');
-    lines.push('|---|---|---|---|---|---|');
+    lines.push('|||||||');
     const pipelines = ['density', 'tension', 'flicker'];
     for (let i = 0; i < pipelines.length; i++) {
       const p = pipelines[i];
@@ -194,7 +194,7 @@ systemManifestMarkdown = (() => {
       lines.push('> These modules\' raw values exceeded their registered clamp range.');
       lines.push('');
       lines.push('| Module | Pipeline |');
-      lines.push('|---|---|');
+      lines.push('|||');
       allPinned.forEach(p => {
         lines.push(`| ${p.module} | ${p.pipeline} |`);
       });
@@ -246,7 +246,7 @@ systemManifestMarkdown = (() => {
     lines.push('### Trajectory Metrics');
     lines.push('');
     lines.push('| Metric | Value | Interpretation |');
-    lines.push('|---|---|---|');
+    lines.push('||||');
     lines.push(`| Velocity | ${s.velocity} | ${s.velocity < 0.01 ? 'Barely moving - stuck in attractor' : s.velocity < 0.05 ? 'Slow evolution' : 'Active exploration'} |`);
     lines.push(`| Curvature | ${s.curvature} | ${s.curvature < 0.3 ? 'Straight-line drift' : s.curvature < 0.7 ? 'Gentle winding' : 'Frequent reversals'} |`);
     lines.push(`| Effective Dimensionality | ${s.effectiveDimensionality} / ${(sd.dimensionNames || []).length} | ${s.effectiveDimensionality < 2 ? 'Collapsed to ~1 axis' : s.effectiveDimensionality < 3.5 ? 'Moderate spread' : 'Rich multi-dimensional'} |`);
@@ -278,7 +278,7 @@ systemManifestMarkdown = (() => {
         lines.push('### Cross-Dimensional Coupling (|r| > 0.25)');
         lines.push('');
         lines.push('| Dimension Pair | Correlation | Relationship |');
-        lines.push('|---|---|---|');
+        lines.push('||||');
         pairs.forEach(([pair, corr]) => {
           const direction = corr > 0 ? 'co-evolving' : 'anti-correlated';
           const strength = m.abs(corr) > 0.7 ? 'strong' : m.abs(corr) > 0.45 ? 'moderate' : 'weak';

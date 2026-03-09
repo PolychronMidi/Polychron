@@ -22,7 +22,7 @@ const SRC         = path.join(ROOT, 'src');
 const GLOBALS_DTS = path.join(SRC, 'types', 'globals.d.ts');
 const OUTPUT      = path.join(ROOT, 'metrics', 'boot-order.json');
 
-// ---- Parse globals.d.ts for every `declare var NAME:` entry ----
+// -Parse globals.d.ts for every `declare var NAME:` entry -
 
 function parseDeclaredGlobals() {
   const src = fs.readFileSync(GLOBALS_DTS, 'utf8');
@@ -34,7 +34,7 @@ function parseDeclaredGlobals() {
   return names;
 }
 
-// ---- Resolve a relative require path to an absolute .js file ----
+// -Resolve a relative require path to an absolute .js file -
 
 function resolveRequire(reqPath, fromDir) {
   const abs = path.resolve(fromDir, reqPath);
@@ -48,7 +48,7 @@ function resolveRequire(reqPath, fromDir) {
   );
 }
 
-// ---- Extract require('...') calls from source, skipping comment lines ----
+// -Extract require('...') calls from source, skipping comment lines -
 
 function extractRequires(source) {
   const out = [];
@@ -61,7 +61,7 @@ function extractRequires(source) {
   return out;
 }
 
-// ---- Walk the require tree depth-first, recording boot order ----
+// -Walk the require tree depth-first, recording boot order -
 // Files are recorded when first entered (pre-order) - matching CommonJS
 // execution semantics where a module's top-level code runs before control
 // returns to the parent.
@@ -96,7 +96,7 @@ function walkBootOrder(entryAbs) {
   return order;
 }
 
-// ---- Map each file to the declared globals it provides ----
+// -Map each file to the declared globals it provides -
 // A global is "provided" when its name appears as a bare assignment at the
 // start of a line (column 0): `NAME = ...` but NOT `NAME ==` or ` NAME = `.
 // Also handles destructuring: `[a, b] = ...` at column 0.
@@ -165,7 +165,7 @@ function mapProviders(bootOrder, globalSet) {
   return { globalToFile, fileToGlobals, reassigned };
 }
 
-// ---- Scan consumed globals at LOAD TIME only ----
+// -Scan consumed globals at LOAD TIME only -
 // Only top-level code runs during require(). References inside function
 // bodies, method definitions, and arrow-function expressions are deferred
 // to runtime — by which point every global has been assigned. We track
@@ -296,7 +296,7 @@ function scanConsumed(filePath, globalSet) {
   return consumed;
 }
 
-// ---- Derive subsystem from relative path ----
+// -Derive subsystem from relative path -
 
 function subsystemOf(relPath) {
   // src/<subsystem>/... - subsystem
@@ -304,7 +304,7 @@ function subsystemOf(relPath) {
   return match ? match[1] : null;
 }
 
-// ---- Intra-subsystem dependency ordering check ----
+// -Intra-subsystem dependency ordering check -
 // For each subsystem, verify that every global consumed by a module
 // that is provided within the SAME subsystem was provided by an
 // earlier-loaded file.
@@ -378,7 +378,7 @@ function checkIntraSubsystemOrder(bootOrder, fileToGlobals, globalToFile, global
   return { violations, subsystemCount: subsystems.size };
 }
 
-// ---- Cross-subsystem dependency ordering check ----
+// -Cross-subsystem dependency ordering check -
 // Verify that globals consumed by a module in subsystem A, provided by a file
 // in subsystem B, respect the mandated subsystem load order.
 // Mandated order: utils -> conductor -> rhythm -> time -> composers -> fx -> crossLayer -> writer -> play
@@ -436,13 +436,13 @@ function checkCrossSubsystemOrder(bootOrder, fileToGlobals, globalToFile, global
   return violations;
 }
 
-// ---- Helpers ----
+// -Helpers -
 
 function rel(absPath) {
   return path.relative(ROOT, absPath).replace(/\\/g, '/');
 }
 
-// ---- Auto-fix: rewrite index.js require order based on violations ----
+// -Auto-fix: rewrite index.js require order based on violations -
 // Strategy: use the already-computed violations to know exactly which files
 // need to move before which. For each index.js, build a constraint graph
 // from violations where both consumer and provider are direct children of
@@ -722,7 +722,7 @@ function autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet) 
   return totalRewrites;
 }
 
-// ---- Main verification ----
+// -Main verification -
 
 const FIX_MODE = process.argv.includes('--fix');
 

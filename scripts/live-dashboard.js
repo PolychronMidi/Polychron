@@ -20,7 +20,7 @@ const TRACE_FILE = path.join(ROOT, 'metrics', 'trace.jsonl');
 const HTML_FILE  = path.join(__dirname, 'dashboard.html');
 const DEFAULT_PORT = 3377;
 
-// ---- Parse CLI args ----
+// -Parse CLI args -
 
 function parsePort() {
   const idx = process.argv.indexOf('--port');
@@ -31,7 +31,7 @@ function parsePort() {
   return DEFAULT_PORT;
 }
 
-// ---- Minimal WebSocket handshake (RFC 6455) ----
+// -Minimal WebSocket handshake (RFC 6455) -
 // No external dependencies — just raw sockets.
 
 const crypto = require('crypto');
@@ -79,7 +79,7 @@ function wsSend(socket, data) {
   try { socket.write(wsFrame(data)); } catch (_e) { /* client gone */ }
 }
 
-// ---- Tail trace.jsonl and broadcast to connected clients ----
+// -Tail trace.jsonl and broadcast to connected clients -
 
 function startTailing(clients) {
   let offset = 0;
@@ -133,7 +133,7 @@ function broadcast(clients, message) {
   }
 }
 
-// ---- HTTP server ----
+// -HTTP server -
 
 function startServer(port) {
   const clients = new Set();

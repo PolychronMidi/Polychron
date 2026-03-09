@@ -44,7 +44,7 @@ couplingHomeostasis = (() => {
   // All monitored dimension pairs (mirrors pipelineCouplingManager.ALL_MONITORED_DIMS)
   const ALL_DIMS = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
 
-  // --- Structural constants ---
+  // Structural constants
   //  Tripled alpha (0.03->0.10) for ~10-beat convergence.
   const _ENERGY_EMA_ALPHA = 0.10;
   //  Matched to energy alpha for consistent responsiveness.
@@ -69,7 +69,7 @@ couplingHomeostasis = (() => {
   const _REDIST_COOLDOWN_BEATS = 20;
   const _REDIST_COOLDOWN_DECAY = 0.95;      // per-beat decay during cooldown
 
-  // --- State ---
+  // State
   let _totalEnergyEma = 0;
   let _prevTotalEnergy = 0;
   //  Structural energy floor tracking. The minimum achievable coupling
@@ -212,7 +212,7 @@ couplingHomeostasis = (() => {
 
     _beatCount++;
 
-    // --- 1. Compute total coupling energy ---
+    // 1. Compute total coupling energy
     _prevPairAbsR = _pairAbsR;
     _pairAbsR = {};
     let totalEnergy = 0;
@@ -354,7 +354,7 @@ couplingHomeostasis = (() => {
       _totalEnergyFloor = _totalEnergyFloor * 0.998 + _totalEnergyEma * 0.002;
     }
 
-    // --- 2. Self-derive energy budget from observed peak ---
+    // 2. Self-derive energy budget from observed peak
     _peakEnergyEma = m.max(_totalEnergyEma, _peakEnergyEma * _PEAK_DECAY);
     //  Cap peak at 1.5x current EMA to prevent runaway from early volatility.
     // In R22, peakEnergyEma=6.015 while totalEnergyEma=3.784 (59% gap). This cap
@@ -403,7 +403,7 @@ couplingHomeostasis = (() => {
       _energyBudget *= 1.15;
     }
 
-    // --- 3. Detect redistribution ---
+    // 3. Detect redistribution
     const energyDelta = totalEnergy - _prevTotalEnergy;
     _energyDeltaEma = _energyDeltaEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + energyDelta * _REDISTRIBUTION_EMA_ALPHA;
 
@@ -487,10 +487,10 @@ couplingHomeostasis = (() => {
 
     _prevTotalEnergy = totalEnergy;
 
-    // --- 4. Cache state for diagnostics ---
+    // 4. Cache state for diagnostics
     _overBudget = _totalEnergyEma > _energyBudget;
 
-    // --- 5. Coupling concentration guard (Gini coefficient) ---
+    // 5. Coupling concentration guard (Gini coefficient)
     const pairKeys = Object.keys(_pairAbsR);
     if (pairKeys.length > 4) {
       const values = [];
@@ -515,7 +515,7 @@ couplingHomeostasis = (() => {
     // Run tick() to apply multiplier changes (will use freshly computed state)
     tick();
 
-    // --- Diagnostics ---
+    // Diagnostics
     explainabilityBus.emit('COUPLING_HOMEOSTASIS', 'both', {
       totalEnergy: Number(totalEnergy.toFixed(3)),
       ema: Number(_totalEnergyEma.toFixed(3)),
@@ -616,7 +616,7 @@ couplingHomeostasis = (() => {
       // Multiplier was already applied inside this refresh -> tick() path.
       // Fall through to time-series recording below.
     } else {
-      // --- R24 E3: Proportional multiplier control ---
+      // R24 E3: Proportional multiplier control
       // Replace incremental throttle/recovery (R21 E5) that caused bang-bang
       // oscillation (67.1% of ticks at floor/ceiling in R23). Target multiplier
       // is derived directly from energy/budget ratio, EMA-smoothed for stability.
@@ -854,7 +854,7 @@ couplingHomeostasis = (() => {
     // _invokeCount/_tickCount intentionally NOT reset: tracks total lifetime invocations
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerRecorder('couplingHomeostasis', refresh);
   conductorIntelligence.registerModule('couplingHomeostasis', { reset }, ['section']);
 

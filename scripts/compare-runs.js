@@ -27,7 +27,7 @@ const COMPOSITION_DIR = path.join(ROOT, 'output');
 const SNAPSHOT_DIR    = path.join(ROOT, 'metrics', 'snapshots');
 const COMPARISON_PATH = path.join(METRICS_DIR, 'run-comparison.json');
 
-// ---- Helpers ----
+// -Helpers -
 
 function loadJSON(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -86,7 +86,7 @@ function loadRun(dir, csvDir) {
   return run;
 }
 
-// ---- Comparison Logic ----
+// -Comparison Logic -
 
 function compareRuns(runA, runB) {
   const report = {
@@ -235,7 +235,7 @@ function compareRuns(runA, runB) {
   return report;
 }
 
-// ---- Snapshot Management ----
+// -Snapshot Management -
 
 function saveSnapshot(name) {
   const snapDir = path.join(SNAPSHOT_DIR, name);
@@ -263,7 +263,7 @@ function saveSnapshot(name) {
   console.log(`compare-runs: snapshot '${name}' saved (${copied} files) -> metrics/snapshots/${name}/`);
 }
 
-// ---- CLI ----
+// -CLI -
 
 function main() {
   const args = process.argv.slice(2);

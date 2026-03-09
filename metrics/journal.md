@@ -38,7 +38,7 @@
 - H4: Exploring at 75% may be too high for musical coherence — consider reducing exploringDimRelief if composition feels aimless
 - H5: fingerprint telemetryHealth extraction bug: trace-summary shows score 0.394 but fingerprint reads 0.0 — must fix before it becomes a persistent false-drift source
 
----
+
 
 ## R66 — 2026-03-08 — EVOLVED
 
@@ -76,7 +76,7 @@
 - H4: Once atmospheric has its own .prev.json baseline, same-profile comparison should resolve exceedanceSeverity drift without E4's tolerance widening
 - H5: The density-trust-flicker coupling triangle may be a stable feature of atmospheric (not pathological) — if it persists after E2, treat it as profile character rather than defect
 
----
+
 
 ## Run History Summary
 

@@ -1,7 +1,7 @@
 sectionIntentCurves = (() => {
   const V = validator.create('sectionIntentCurves');
 
-  // --- Intent curve shaping constants ---
+  // Intent curve shaping constants
   const PHRASE_PHASE_SCALE = 0.3;     // phrase contribution to wave phase
   const WAVE_PHASE_SPEED = 0.07;      // section+phrase modulation speed
   const DENSITY_BASE = 0.25;

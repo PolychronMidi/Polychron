@@ -17,7 +17,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-// -- Read limits from config.js ------------------------------------------------
+// -- Read limits from config.js
 const CONFIG_PATH = path.join(__dirname, '..', 'src', 'conductor', 'config.js');
 const configSrc   = fs.readFileSync(CONFIG_PATH, 'utf8');
 
@@ -31,7 +31,7 @@ function readConfigBlock(name) {
 const { min: N_MIN, max: N_MAX } = readConfigBlock('NUMERATOR');
 const { min: D_MIN, max: D_MAX } = readConfigBlock('DENOMINATOR');
 
-// -- CLI args ------------------------------------------------------------------
+// -- CLI args
 const LENGTH_MIN = 1.5;   // shortest allowed phrase length (whole-note units)
 const LENGTH_MAX = 5;  // longest allowed phrase length (whole-note units)
 
@@ -43,10 +43,10 @@ const OUT_PATH = outArg !== -1
   ? args[outArg + 1]
   : path.join(__dirname, '..', 'src', 'time', 'polyrhythmPairs.js');
 
-// -- Helpers -------------------------------------------------------------------
+// -- Helpers -
 function gcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
 
-// -- Generate ------------------------------------------------------------------
+// -- Generate
 /** @type {Array<{n1:number, d1:number, pm1:number, n2:number, d2:number, pm2:number, length:number}>} */
 const pairs = [];
 const seen = new Set();
@@ -95,7 +95,7 @@ for (let n1 = N_MIN; n1 <= N_MAX; n1++) {
 
 pairs.sort((a, b) => a.length - b.length);
 
-// -- Output - JS global file ---------------------------------------------------
+// -- Output - JS global file
 const pad = (s, n) => String(s).padStart(n);
 const fmt = p => {
   const len = p.length % 1 === 0

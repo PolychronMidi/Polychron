@@ -4,7 +4,7 @@ Polychron generates music through **emergent coherence**—an evolutionary proce
 
 To understand Polychron, you must understand the lifecycle of a single beat. This document traces the signal flow from the initial context gathering to the final emission of notes, illuminating the strict boundaries that keep the system musical instead of chaotic.
 
----
+
 
 ## 1. The Conductor Pipeline (`globalConductor.update`)
 At the start of every beat, before any layer knows what it will play, the **Conductor** re-evaluates the state of the composition.
@@ -16,13 +16,13 @@ At the start of every beat, before any layer knows what it will play, the **Cond
 5. **Dampening & Normalization:** `conductorDampening` limits extreme deviation based on system regimes, preventing runaway feedback. `pipelineNormalizer` smooths these into actionable targets.
 6. **State Snapshot:** The final resolved signals—`playProb`, `stutterProb`, `density`, `tension`, `flicker`—are committed to `conductorState`.
 
----
+
 
 ## 2. The Signal Bridge (`conductorSignalBridge`)
 **Firewall Boundary 1: The Conductor is Blind to Cross-Layer Negotiation.**
 The conductor signals are cached beat-by-beat in the `conductorSignalBridge`. Cross-layer modules *cannot* directly read raw conductor signals. They query this bridge. This is an explicit, load-bearing firewall: it prevents the microscopic interplay of rhythm from polluting the macroscopic trajectories of the composition, imposing a minimal beat-delayed latency.
 
----
+
 
 ## 3. The Play Loop (`processBeat`)
 With the conductor's intent crystallized, the structural components prepare the beat across an interleaved, 14-stage topological sequence.
@@ -33,14 +33,14 @@ With the conductor's intent crystallized, the structural components prepare the 
 4. **Rest Sync:** The `restSynchronizer` forces emergent rests, aligning layer absences based on thermal load (heatMap).
 5. **Cadence & Tension:** The system probes whether a harmonic cadence is biologically due, guided by systemic tension.
 
----
+
 
 ## 4. Negotiation (`negotiationEngine`)
 **Firewall Boundary 2: Trust-Weighted Intent.**
 Even though the conductor declares an intent and the initial cross-layer stages suggest a path, these are not directly executed. They pass through the `negotiationEngine`.
 Here, `adaptiveTrustScores` applies moving average weights (0.4 to 1.8) to the recommendations of various cross-layer actors. A module the system "trusts" gets more sway over the final `playProb` and `stutterProb` for the specific layer and beat. This forces consensus through compromise.
 
----
+
 
 ## 5. Emission (`playNotes` & `playNotesEmitPick`)
 With the probabilities finalized, the system finally iterates through the micro-units (divisions, subdivisions).
@@ -50,7 +50,7 @@ The actual MIDI/CSV event is pushed to the buffer.
 
 Cross-layer modules that emit notes (e.g., `emergentDownbeat`, `convergenceDetector`, `velocityInterference`) route all buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. This provides attributed emission counting and a centralized boundary for future buffer guards.
 
----
+
 
 ## 6. Closing the Loop (`crossLayerBeatRecord` & `coherenceMonitor`)
 After the notes are emitted, the system enters the post-beat phase. It has generated music, but it needs to know *what* it generated to inform the next beat.
@@ -63,7 +63,7 @@ After the notes are emitted, the system enters the post-beat phase. It has gener
 
 When `--trace` is enabled, each beat also writes a JSONL diagnostic entry to `metrics/trace.jsonl` (via `traceDrain`), including per-stage timing data (14 named stages, nanosecond precision via `process.hrtime.bigint()`), making this full loop replayable and profilable over time.
 
----
+
 
 ## The Emergence Boundaries (Membranes)
 

@@ -67,7 +67,7 @@ pipelineBalancer = (() => {
     return counterBias;
   }
 
-  // --- Tension homeostasis via closedLoopController ---
+  // Tension homeostasis via closedLoopController
   // When tension product diverges from neutral (1.0) by more than the deadband,
   // nudge it back. Gain = TENSION_LIFT / 0.5 = 0.28 matches the original scaling.
   const _tensionCtrl = closedLoopController.create({
@@ -95,7 +95,7 @@ pipelineBalancer = (() => {
     _tensionCtrl.reset();
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerDensityBias('pipelineBalancer', densityBias, 0.92, 1.15);
   conductorIntelligence.registerTensionBias('pipelineBalancer', tensionBias, 0.86, 1.14);
   conductorIntelligence.registerRecorder('pipelineBalancer', () => { refresh(); refreshTension(); });

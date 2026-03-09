@@ -1063,10 +1063,10 @@ interface StutterManagerAPI {
   resetChannelTracking(channels?: number[] | null): { cleared: number; lastUsedCHs?: number; lastUsedCHs2?: number; lastUsedCHs3?: number };
 }
 
-// ---------------------------------------------------------------------------
+//
 // Gradient typing: config shapes, profile records, accessor APIs, conductor
 // intelligence module surfaces, and feedback infrastructure
-// ---------------------------------------------------------------------------
+//
 
 /** Config-level range used by SECTIONS, DIVISIONS, VOICES, etc. */
 interface WeightedRange {

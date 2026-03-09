@@ -19,7 +19,7 @@ Contribution counts:
 Product: **0.8038**
 
 | Module | Raw | Clamped |
-|---|---|---|
+||||
 | coherenceMonitor | 1.0000 | 1.0000 |
 | regimeReactiveDamping | 0.9194 | 0.9194 |
 | pipelineBalancer | 1.0285 | 1.0285 |
@@ -56,7 +56,7 @@ Product: **0.8038**
 Product: **1.2852**
 
 | Module | Raw | Clamped |
-|---|---|---|
+||||
 | regimeReactiveDamping | 1.1800 | 1.1800 |
 | pipelineBalancer | 0.9582 | 0.9582 |
 | pipelineCouplingManager | 1.1050 | 1.1050 |
@@ -83,7 +83,7 @@ Product: **1.2852**
 Product: **0.8374**
 
 | Module | Raw | Clamped |
-|---|---|---|
+||||
 | regimeReactiveDamping | 0.8500 | 0.8500 |
 | pipelineCouplingManager | 0.8827 | 0.8827 |
 | criticalityEngine | 1.0000 | 1.0000 |
@@ -102,7 +102,7 @@ Product: **0.8374**
 ### Lifecycle-Registered Module Names
 
 | # | Module Name |
-|---|---|
+|||
 | 1 | pipelineNormalizer |
 | 2 | coherenceMonitor |
 | 3 | signalTelemetry |
@@ -155,7 +155,7 @@ Product: **0.8374**
 > but are stateless or beatCache-only - no section reset needed.
 
 | # | Module Name |
-|---|---|
+|||
 | 1 | accentPatternTracker |
 | 2 | articulationProfiler |
 | 3 | attackDensityProfiler |
@@ -205,7 +205,7 @@ Product: **0.8374**
 Total registered: **41**
 
 | # | Module Name |
-|---|---|
+|||
 | 1 | explainabilityBus |
 | 2 | convergenceDetector |
 | 3 | emergentDownbeat |
@@ -251,7 +251,7 @@ Total registered: **41**
 ## Harmonic Journey
 
 | Section | Key | Mode | Move | Distance |
-|---|---|---|---|---|
+||||||
 | 0 | G# | locrian | origin | 0 |
 | 1 | A# | locrian | step-down | 2 |
 | 2 | A# | aeolian | parallel-aeolian | 0 |
@@ -260,7 +260,7 @@ Total registered: **41**
 ## Trust Scores (End of Run)
 
 | System | Score | Weight | Samples |
-|---|---|---|---|
+|||||
 | stutterContagion | 0.218 | 1.158 | 601 |
 | cadenceAlignment | 0.219 | 1.144 | 601 |
 | phaseLock | 0.347 | 1.261 | 601 |
@@ -285,7 +285,7 @@ Total registered: **41**
 ### Pipeline Health
 
 | Pipeline | Grade | Product | Crush Factor | Saturated | Pinned Rate |
-|---|---|---|---|---|---|
+|||||||
 | density | healthy | 0.7611 | 43% | no | 0% |
 | tension | healthy | 1.3993 | 40% | no | 0% |
 | flicker | healthy | 0.8546 | 43% | - | 0% |
@@ -303,7 +303,7 @@ Thriving (score > 0.40): coherenceMonitor, entropyRegulator, restSynchronizer
 ### Trajectory Metrics
 
 | Metric | Value | Interpretation |
-|---|---|---|
+||||
 | Velocity | 0.1887 | Active exploration |
 | Curvature | 0.422 | Gentle winding |
 | Effective Dimensionality | 3.48 / 6 | Moderate spread |
@@ -314,7 +314,7 @@ Thriving (score > 0.40): coherenceMonitor, entropyRegulator, restSynchronizer
 ### Cross-Dimensional Coupling (|r| > 0.25)
 
 | Dimension Pair | Correlation | Relationship |
-|---|---|---|
+||||
 | density-tension | 0.647 | moderate co-evolving |
 | density-trust | -0.617 | moderate anti-correlated |
 | tension-trust | -0.557 | moderate anti-correlated |

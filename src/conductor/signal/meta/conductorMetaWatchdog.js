@@ -174,7 +174,7 @@ conductorMetaWatchdog = (() => {
     _attenuations.clear();
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerRecorder('conductorMetaWatchdog', tick);
   conductorIntelligence.registerStateProvider('conductorMetaWatchdog', () => ({
     watchdogAttenuations: getSnapshot()

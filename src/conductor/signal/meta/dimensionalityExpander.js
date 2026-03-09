@@ -115,7 +115,7 @@ dimensionalityExpander = (() => {
 
     _urgency = _computeUrgency(snap.effectiveDimensionality);
 
-    // --- Variance balance (runs EVERY beat, independent of urgency) ---
+    // Variance balance (runs EVERY beat, independent of urgency)
     // Dead-axis revival + dominant-axis suppression. These fire even when
     // effectiveDimensionality looks healthy (e.g., 3.09) because individual
     // axis imbalance is invisible to overall dimensionality.
@@ -199,7 +199,7 @@ dimensionalityExpander = (() => {
     _urgency = 0;
   }
 
-  // --- Self-registration (conductor-side: bias registration is permitted here) ---
+  // Self-registration (conductor-side: bias registration is permitted here)
   conductorIntelligence.registerDensityBias('dimensionalityExpander', densityBias, 0.85, 1.15);
   conductorIntelligence.registerTensionBias('dimensionalityExpander', tensionBias, 0.85, 1.15);
   conductorIntelligence.registerFlickerModifier('dimensionalityExpander', flickerBias, 0.85, 1.15);

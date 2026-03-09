@@ -41,7 +41,7 @@ const CSV_PATHS = [
   path.join(COMPOSITION_DIR, 'output2.csv')
 ];
 
-// ---- Tolerance bands for comparison ----
+// -Tolerance bands for comparison -
 // Each dimension has a tolerance: deviation within this range is "evolved", beyond is "drifted"
 
 const TOLERANCES = {
@@ -56,7 +56,7 @@ const TOLERANCES = {
   telemetryHealthDelta: 0.35
 };
 
-// ---- Utility functions ----
+// -Utility functions -
 
 function loadJSON(filePath) {
   if (!fs.existsSync(filePath)) return null;
@@ -157,7 +157,7 @@ function getHotspotMigrationView(fingerprint) {
   };
 }
 
-// ---- Parse note_on_c events from MIDI CSV files ----
+// -Parse note_on_c events from MIDI CSV files -
 
 function parseNotesFromCSV(filePath) {
   if (!fs.existsSync(filePath)) return [];
@@ -175,7 +175,7 @@ function parseNotesFromCSV(filePath) {
   return pitches;
 }
 
-// ---- Compute fingerprint from trace data ----
+// -Compute fingerprint from trace data -
 
 function computeFingerprint() {
   const manifest = loadJSON(MANIFEST_PATH);
@@ -374,7 +374,7 @@ function computeFingerprint() {
   };
 }
 
-// ---- Compare two fingerprints ----
+// -Compare two fingerprints -
 
 function compareFingerprints(current, previous) {
   const results = [];
@@ -595,7 +595,7 @@ function compareFingerprints(current, previous) {
   };
 }
 
-// ---- Drift Explainer ----
+// -Drift Explainer -
 // When dimensions shift, correlate the change to structural causes in the trace data
 
 function explainDrift(comparison, current, previous) {

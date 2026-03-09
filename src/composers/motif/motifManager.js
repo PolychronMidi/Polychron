@@ -4,7 +4,7 @@
 // motifModulator to produce coherent, parent-derived motif content at every level.
 
 class MotifManager_ {
-  // --- Registry / value proxy helpers (existing API) -----------------------
+  // Registry / value proxy helpers (existing API) --
 
   static listGenerators() { return motifRegistry.list(); }
   static getGenerator(name) { return motifRegistry.get(name); }
@@ -25,7 +25,7 @@ class MotifManager_ {
   static offsetPattern(pattern, offsetSteps) { return motifValues.offsetPattern(pattern, offsetSteps); }
   static scaleDurations(pattern, scale) { return motifValues.scaleDurations(pattern, scale); }
 
-  // --- Hierarchical planning API (new) -------------------------------------
+  // Hierarchical planning API (new) -
 
   /**
    * Plan the full measure-level hierarchy (measure + beat motifs).
@@ -34,7 +34,7 @@ class MotifManager_ {
   static planMeasure(layer, composer) {
     if (!layer) throw new Error('motifManager.planMeasure: no layer');
     if (!composer) throw new Error('motifManager.planMeasure: no composer');
-    // -- Texture-guided motif variation (#10) --------------------------
+    // -- Texture-guided motif variation (#10) --
     // Bursts - higher density (harmonic motifs), flurries - lower density (scalar)
     if (drumTextureCoupler) {
       const texMetrics = drumTextureCoupler.getMetrics();
@@ -82,7 +82,7 @@ class MotifManager_ {
     const absBeat = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
     const parentBucket = (layer.beatMotifs && Array.isArray(layer.beatMotifs[absBeat]))
       ? layer.beatMotifs[absBeat] : null;
-    // -- Texture-guided div motif variation (#10) --------------------------
+    // -- Texture-guided div motif variation (#10) --
     // During bursts: derive from parent (coherent harmonic content)
     // During flurries: weaken parent derivation (independent scalar motion)
     let effectiveParentBucket = parentBucket;

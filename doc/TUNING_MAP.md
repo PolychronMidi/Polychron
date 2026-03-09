@@ -5,7 +5,7 @@
 > interaction partner - changing one in isolation **will** shift the system's
 > emergent behavior.
 
----
+
 
 ## 1. Density Correction - `coherenceMonitor`
 
@@ -13,7 +13,7 @@ Compares actual vs intended note output. Feeds a correction bias back into
 the density product so the system listens to its own song.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | `SMOOTHING` | 0.55 | EMA factor for `coherenceBias` - higher = slower adaptation | `BIAS_FLOOR/CEILING`, `phaseGain` |
 | `BIAS_FLOOR` | 0.60 | Min density correction multiplier | `SMOOTHING`, conductorConfig density range |
 | `BIAS_CEILING` | 1.3 | Max density correction multiplier | `SMOOTHING`, profileAdaptation restrained hint |
@@ -26,7 +26,7 @@ the density product so the system listens to its own song.
 
 **Sensitivity:** `SMOOTHING` is the single most impactful constant - current value 0.55 provides responsive correction with moderate oscillation risk. Raising above 0.85 makes correction sluggish; lowering below 0.4 causes visible density oscillation. `BIAS_CEILING` must stay below the negotiation `playScale` upper clamp (1.8) to avoid runaway density gain.
 
----
+
 
 ## 2. Entropy Steering - `entropyRegulator`
 
@@ -34,7 +34,7 @@ Measures combined pitch/velocity/rhythmic entropy. Steers cross-layer
 systems toward a target curve driven by section position.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | `SMOOTHING` | 0.3 | EMA factor for smoothed entropy | Pitch/velocity/rhythm weights |
 | `WINDOW_NOTES` | 10 | Max note history per layer (halved for faster turnover) | Pitch entropy uniqueness calc |
 | Pitch weight | 0.4 | Contribution of pitch diversity to combined entropy | Velocity weight (0.3), rhythm weight (0.3) |
@@ -48,7 +48,7 @@ systems toward a target curve driven by section position.
 
 **Sensitivity:** The 0.3/0.7 arc-intent blend is a critical mixing ratio. Raising arc weight above 0.5 makes section shape dominate, reducing intent responsiveness. The PID gain of 2 is aggressive - lowering to 1.5 yields smoother but slower correction.
 
----
+
 
 ## 3. Sustained-Condition Hints - `profileAdaptation`
 
@@ -56,7 +56,7 @@ Watches for sustained low-density / high-tension / flat-flicker streaks.
 Produces advisory hints consumed by `conductorConfig`.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | `DENSITY_LOW_THRESHOLD` | 0.55 | Density below this increments low-density streak | `STREAK_TRIGGER`, coherenceMonitor bias |
 | `TENSION_HIGH_THRESHOLD` | 1.4 | Tension above this increments high-tension streak | `STREAK_TRIGGER`, negotiation conflict threshold |
 | `FLICKER_FLAT_THRESHOLD` | 1.05 | Flicker within 0.05 of 1.0 counts as flat | `STREAK_TRIGGER` |
@@ -67,7 +67,7 @@ Produces advisory hints consumed by `conductorConfig`.
 
 **Sensitivity:** `STREAK_TRIGGER` = 6 at default tempo (72 BPM) means ~5 seconds of sustained condition before hints activate. The ramp divisor of 8 means full hint intensity at streak = 14 (~12 sec). Lowering `STREAK_TRIGGER` below 4 risks false positives from momentary lulls.
 
----
+
 
 ## 4. Negotiation - `negotiationEngine`
 
@@ -75,7 +75,7 @@ Integrates trust scores, entropy regulation, and intent targets to produce
 final `playProb` / `stutterProb` values.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | Play scale formula | (0.75 + density·0.45) * (0.9 + trust·0.08) | Computes play probability scale from intent + trust | `playScale` clamp, adaptiveTrustScores |
 | `playScale` clamp | [0.4, 1.8] | Prevents play probability extinction or saturation | coherenceMonitor `BIAS_CEILING` (1.3) |
 | stutter scale formula | (0.6 + interaction·0.75) * (0.85 + trust·0.1) | Computes stutter scale from interaction target + trust | `stutterScale` clamp |
@@ -90,7 +90,7 @@ final `playProb` / `stutterProb` values.
 
 **Sensitivity:** The play scale clamp [0.4, 1.8] is the single most important range in the system. If `BIAS_CEILING` (1.3) * `playScale` max (1.8) were to compound, density could exceed 2.3×. The cadence gate thresholds (0.45/0.7) determine how often cadences fire - lowering them increases cadence frequency dramatically.
 
----
+
 
 ## 5. Trust Governance - `adaptiveTrustScores`
 
@@ -101,7 +101,7 @@ systems in `trustSystems.names`, 13 heat-map systems in
 `trustSystems.heatMapSystems`. Never hardcode trust name strings.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | EMA decay | 0.9 | Weight on previous score: `score = score·0.9 + payoff·0.1` | Weight formula, payoff clamp |
 | EMA new-data | 0.1 | Weight on new payoff observation | EMA decay |
 | Score clamp | [−1, 1] | Trust score range | Weight formula |
@@ -111,21 +111,21 @@ systems in `trustSystems.names`, 13 heat-map systems in
 
 **Sensitivity:** The weight multiplier 0.75 means a score of 1.0 yields weight 1.75, and score −0.8 yields weight 0.4 (floor). The EMA rate 0.9/0.1 means ~10 observations to converge halfway. Lowering to 0.8/0.2 doubles learning speed but risks oscillation.
 
----
+
 
 ## 6. Breathing & Probability Adjust - `processBeat`
 
 Final probability adjustments applied in the `probability-adjust` pipeline stage.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | Complement fill urgency | 0.3 | `playProb *= (1 + fillUrgency * 0.3)` - max 30% boost | restSynchronizer complementary rest |
 | Breathing decrease: play | 0.96 | 4% play reduction on heat-map breathing decrease | interactionHeatMap heat level |
 | Breathing decrease: stutter | 0.94 | 6% stutter reduction on decrease | interactionHeatMap heat level |
 | Breathing increase: play | 1.03 | 3% play boost on breathing increase | interactionHeatMap heat level |
 | Breathing increase: stutter | 1.04 | 4% stutter boost on increase | interactionHeatMap heat level |
 
----
+
 
 ## 7. Pipeline Coupling Management - `pipelineCouplingManager`
 
@@ -133,7 +133,7 @@ Self-tuning decorrelation engine for all 15 compositional dimension pairs.
 Nudges density/tension/flicker biases to reduce inter-signal correlation.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | `DEFAULT_TARGET` | 0.25 | Default coupling target for any pair | Per-pair overrides in `PAIR_TARGETS` |
 | `GAIN_INIT` | 0.16 | Starting gain for new pairs | `GAIN_MIN`, `GAIN_MAX`, effectiveness gate |
 | `GAIN_MIN` | 0.08 | Minimum gain floor | `GAIN_INIT` |
@@ -163,7 +163,7 @@ Nudges density/tension/flicker biases to reduce inter-signal correlation.
 
 **Sensitivity:** `GAIN_ESCALATE_RATE` (0.02) and `_globalGainMultiplier` (controlled by homeostasis) together determine effective escalation speed. The effectiveness gate (R32 E1) reduces rate for low-eff pairs to max 25% of normal. Floor dampening (from homeostasis) is multiplicative and can suppress 75%+ of all escalation. Product guards cap gains at 0.45 when pipeline products are severely compressed. R33 velocity-based spike dampener detects the spike beat itself (not the beat after), providing preemptive 2x gain boost for 4 beats total (trigger + 3 cooldown). R34 E2: Axis coupling totals are now returned as a running EMA (alpha=0.15) rather than per-beat snapshots, preventing phase axis collapse when phase pair correlations are intermittently null. Internal gain scaling still uses raw per-beat values. R34 E5: Heat-penalty escalation cooldown adds a second throttle layer: when hp > 0.30, the gain escalation rate is scaled by max(0.35, 1.0 - hp), creating graduated suppression that prevents density-flicker oscillation cycles from persisting.
 
----
+
 
 ## 8. Axis Energy Equilibrator - `axisEnergyEquilibrator` (#13)
 
@@ -172,7 +172,7 @@ Layer 2 balances axis-level energy shares. Interacts with #1 (targets),
 #9 (gain budget), #12 (homeostasis).
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | `_HOTSPOT_RATIO` | 2.0 | Pair hot when raw > 2.0x baseline | `_HOTSPOT_ABS_MIN`, Layer 1 tighten |
 | `_HOTSPOT_ABS_MIN` | 0.25 | Ignore hotspot unless raw crosses this floor | `_HOTSPOT_RATIO` |
 | `_COLDSPOT_RATIO` | 0.3 | Pair cold when raw < 0.3x baseline | `_COLDSPOT_ABS_MAX` |
@@ -193,7 +193,7 @@ Layer 2 balances axis-level energy shares. Interacts with #1 (targets),
 
 **Sensitivity:** The graduated coherent gate is the most critical interaction. R35 E4: Evolving tightenScale raised from 0.4 to 0.6 to compensate for exploring absence (R34: 0% exploring, tighten budget collapsed 35→14). R34 E4: Exploring 1.5x amplification. It prevents tightening from destabilizing coherent regime (0.0 during coherent) while allowing partial correction during evolving (0.4). The `_AXIS_OVERSHOOT`/`_UNDERSHOOT` thresholds (0.22/0.12) with fair share at 0.167 create a +/-33% deadband. `_RELAX_RATE_REF` scaling gives trust/entropy/phase 1.67x faster undershoot relaxation to compensate for fewer nudgeable pairs. R33 E2: Symmetric tighten-rate scaling applies the same `_EFFECTIVE_NUDGEABLE` / `_RELAX_RATE_REF` ratio to the overshoot tightening path. Entropy/trust/phase axes now tighten 1.67x faster (matching relaxation), preventing asymmetric response where overshoot persists because tightening is slower than relaxation.
 
----
+
 
 ## 9. Coupling Homeostasis - `couplingHomeostasis` (#12)
 
@@ -201,7 +201,7 @@ Global coupling energy governance. Tracks total energy, detects
 redistribution, controls gain multiplier and floor dampening.
 
 | Constant | Value | Role | Interaction Partners |
-|---|---|---|---|
+|||||
 | `_GAIN_FLOOR` | 0.20 | Minimum global gain multiplier | `_globalGainMultiplier` in coupling manager |
 | `_GINI_THRESHOLD` | 0.40 | Gini above this triggers redistribution detection | Pair-level Gini coefficient |
 | `_REDIST_RELATIVE_THRESHOLD` | 0.008 | Redistribution detection: \|deltaEma\| < 0.008 AND turbulence > 0.008 | `pairTurbulenceEma` |
@@ -215,7 +215,7 @@ redistribution, controls gain multiplier and floor dampening.
 
 **Sensitivity:** Floor dampening is the dominant throttle mechanism. When `totalEnergyEma` is close to `_totalEnergyFloor` (ratio < 1.35), `floorDampen` drops below 0.50, suppressing >50% of all gain escalation. The asymmetric floor tracking (fast up 0.04, slow down 0.005) means the floor quickly captures energy minima but very slowly releases them -- this can create chronic dampening lock. R33 E3 chronic decay breaks this lock: after 20 consecutive sub-0.50 beats, the floor is nudged downward (0.5%/beat) and the effective minimum rises toward 0.60 (0.01/beat). The floor never drops below 60% of EMA, maintaining minimum 40% suppression. Any energy surge that raises rawDampen above 0.50 resets the counter.
 
----
+
 
 ## Cross-Constant Invariants
 

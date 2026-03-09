@@ -157,7 +157,7 @@ function assertManifestHealth(manifest, manifestPath) {
     failures.push(`critical coherence verdicts present: ${criticalFindings.join(' | ')}`);
   }
 
-  // --- Coupling tail risk gate (reads trace-summary.json if available) ---
+  // Coupling tail risk gate (reads trace-summary.json if available)
   const traceSummaryPath = path.join(path.dirname(manifestPath), 'trace-summary.json');
   let tailP90Max = null;
   let tailExceedanceMax = null;

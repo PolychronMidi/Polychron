@@ -16,7 +16,7 @@
 
 regimeReactiveDamping = (() => {
 
-  // --- Base bias per regime (direction only; magnitude scales with curvature) ---
+  // Base bias per regime (direction only; magnitude scales with curvature)
   const REGIME_DENSITY_DIR = {
     stagnant: 1,     // boost
     fragmented: 0,   // neutral
@@ -64,7 +64,7 @@ regimeReactiveDamping = (() => {
   // transitions that feed back as self-induced oscillation via the profiler.
   const BIAS_SMOOTHING = 0.20;
 
-  // --- Velocity floor: detect phase-space stasis and inject directional drift ---
+  // Velocity floor: detect phase-space stasis and inject directional drift
   // When velocity stays below threshold for LOW_VEL_BEATS, nudge the least-active
   // axis to restart trajectory movement. This addresses the "near-zero velocity
   // despite evolving regime" problem - the system equilibrates too fast.
@@ -140,7 +140,7 @@ regimeReactiveDamping = (() => {
     _eqCorrT = equilibratorState.eqCorrT;
     _eqCorrF = equilibratorState.eqCorrF;
 
-    // --- Velocity floor logic ---
+    // Velocity floor logic
     const velocity = snap ? (snap.velocity || 0) : 0;
     if (velocity < LOW_VEL_THRESHOLD) {
       lowVelStreak++;
@@ -250,7 +250,7 @@ regimeReactiveDamping = (() => {
     _tensionCeilingRelax = 0;
   }
 
-  // --- Self-registration ---
+  // Self-registration
   conductorIntelligence.registerDensityBias('regimeReactiveDamping', densityBias, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
   conductorIntelligence.registerTensionBias('regimeReactiveDamping', tensionBias, _TENSION_RANGE[0], _TENSION_RANGE[1]);
   conductorIntelligence.registerFlickerModifier('regimeReactiveDamping', flickerMod, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);

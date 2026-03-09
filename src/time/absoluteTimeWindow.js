@@ -218,7 +218,7 @@ absoluteTimeWindow = (() => {
   /** @param {Object} [opts] */
   function getChords(opts) { return getEntries('chord', opts); }
 
-  // --- Fast-path query methods (zero array allocation) ---
+  // Fast-path query methods (zero array allocation)
 
   /**
    * Parse note query opts and compute binary-search start index.

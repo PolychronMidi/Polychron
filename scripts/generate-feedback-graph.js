@@ -24,7 +24,7 @@ const GRAPH_PATH = path.join(METRICS, 'feedback_graph.json');
 
 const CHECK_MODE = process.argv.includes('--check');
 
-// ---- Filesystem helpers ----
+// -Filesystem helpers -
 
 function findJsFiles(dir) {
   const results = [];
@@ -48,7 +48,7 @@ function isInsideJSDoc(src, matchIndex) {
   return lastDocOpen > lastDocClose;
 }
 
-// ---- Source scanning ----
+// -Source scanning -
 
 /**
  * Scan all .js files under src/ for feedback loop registrations.
@@ -62,7 +62,7 @@ function scanSourceLoops() {
     const src = fs.readFileSync(filePath, 'utf8');
     const relPath = path.relative(SRC, filePath).replace(/\\/g, '/');
 
-    // --- feedbackRegistry.registerLoop('name', 'sourceDomain', 'targetDomain', ...) ---
+    // feedbackRegistry.registerLoop('name', 'sourceDomain', 'targetDomain', ...)
     const regLoopRe = /feedbackRegistry\.registerLoop\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'/g;
     for (const match of src.matchAll(regLoopRe)) {
       loops.set(match[1], {
@@ -74,7 +74,7 @@ function scanSourceLoops() {
       });
     }
 
-    // --- closedLoopController.create({ name: '...', ... sourceDomain: '...', targetDomain: '...' }) ---
+    // closedLoopController.create({ name: '...', ... sourceDomain: '...', targetDomain: '...' })
     const clcRe = /closedLoopController\.create\(\s*\{([^}]*)\}/gs;
     for (const match of src.matchAll(clcRe)) {
       if (isInsideJSDoc(src, match.index)) continue;
@@ -99,7 +99,7 @@ function scanSourceLoops() {
   return loops;
 }
 
-// ---- Load existing JSON ----
+// -Load existing JSON -
 
 function loadExistingGraph() {
   if (!fs.existsSync(GRAPH_PATH)) {
@@ -116,7 +116,7 @@ function loadExistingGraph() {
   }
 }
 
-// ---- Merge logic ----
+// -Merge logic -
 
 /**
  * Merge source-scanned loops with existing JSON annotations.
@@ -167,7 +167,7 @@ function mergeLoops(existingLoops, sourceLoops) {
   return merged;
 }
 
-// ---- Build output ----
+// -Build output -
 
 function buildGraph(existingGraph, sourceLoops) {
   const mergedLoops = mergeLoops(existingGraph.feedbackLoops || [], sourceLoops);
@@ -182,7 +182,7 @@ function buildGraph(existingGraph, sourceLoops) {
   };
 }
 
-// ---- Main ----
+// -Main -
 
 const sourceLoops = scanSourceLoops();
 const existingGraph = loadExistingGraph();

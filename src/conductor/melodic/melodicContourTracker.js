@@ -91,7 +91,7 @@ melodicContourTracker = (() => {
   // Beat-level cache: getDirectionalitySignal is called 2x per beat (densityBias + stateProvider)
   const _dirCache = beatCache.create(() => _getDirectionalitySignal());
 
-  // --- Directionality analysis (merged from MelodicDirectionalityTracker) ---
+  // Directionality analysis (merged from MelodicDirectionalityTracker)
 
   /**
    * Analyze predominant melodic direction from recent notes (cached per beat).

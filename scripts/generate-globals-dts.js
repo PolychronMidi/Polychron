@@ -15,7 +15,7 @@ const ROOT             = path.join(__dirname, '..');
 const GLOBALS_DTS_PATH = path.join(ROOT, 'src/types/globals.d.ts');
 const BOOTSTRAP_PATH   = path.join(ROOT, 'src/play/fullBootstrap.js');
 
-// -- Parse globals.d.ts -------------------------------------------------------
+// -- Parse globals.d.ts -
 
 const dtsSrc = fs.readFileSync(GLOBALS_DTS_PATH, 'utf8');
 
@@ -42,7 +42,7 @@ for (const line of dtsSrc.split(/\r?\n/)) {
 const names = entries.filter(e => e.type === 'name').map(e => e.name);
 if (names.length === 0) throw new Error('generate-globals-dts: no declarations found in ' + GLOBALS_DTS_PATH);
 
-// -- Deduplicate - keep last occurrence (typed beats untyped) -----------------
+// -- Deduplicate - keep last occurrence (typed beats untyped) --
 
 const seen = new Set();
 const deduped = [];
@@ -61,7 +61,7 @@ if (uniqueNames.length < names.length) {
   console.log(`generate-globals-dts: deduplicated ${names.length - uniqueNames.length} duplicate declaration(s): ${[...seen].filter(n => names.indexOf(n) !== names.lastIndexOf(n)).join(', ')}`);
 }
 
-// -- Build replacement array body ---------------------------------------------
+// -- Build replacement array body
 // Separate critical globals from advisory (warn-only) globals
 
 const criticalLines = [];
@@ -104,7 +104,7 @@ for (let i = 0; i < advisoryLines.length; i++) {
 const advisoryCount = deduped.filter(e => e.type === 'name' && e.advisory).length;
 const criticalCount = uniqueNames.length - advisoryCount;
 
-// -- Patch VALIDATED_GLOBALS and ADVISORY_GLOBALS in fullBootstrap.js ----------
+// -- Patch VALIDATED_GLOBALS and ADVISORY_GLOBALS in fullBootstrap.js -
 
 const bootstrapSrc = fs.readFileSync(BOOTSTRAP_PATH, 'utf8');
 const srcLines = bootstrapSrc.split(/\r?\n/);
