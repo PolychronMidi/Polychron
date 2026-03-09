@@ -1392,6 +1392,7 @@ declare var temporalProportionTracker: any;
 declare var chromaticSaturationMonitor: any;
 declare var fragmentHelpers: any;
 declare var analysisHelpers: any;
+declare var propertyExtractors: any;
 declare var rhythmicSymmetryDetector: any;
 declare var texturalGradientTracker: any;
 declare var cadentialPreparationAdvisor: any;

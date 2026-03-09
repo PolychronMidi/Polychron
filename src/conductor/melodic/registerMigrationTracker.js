@@ -20,11 +20,7 @@ registerMigrationTracker = (() => {
     }
 
     // Extract MIDI pitches and use shared half-split slope
-    /** @type {number[]} */
-    const midis = [];
-    for (let i = 0; i < notes.length; i++) {
-      midis.push((typeof notes[i].midi === 'number') ? notes[i].midi : 60);
-    }
+    const midis = analysisHelpers.extractMidiArray(notes, 60);
     const { slope, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(midis);
     const avgPitch = (avgFirst + avgSecond) / 2;
 

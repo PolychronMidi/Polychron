@@ -34,6 +34,53 @@ analysisHelpers = (() => {
   }
 
   /**
+   * @param {any[]} notes
+   * @param {number} [defaultValue=-1]
+   * @returns {number[]}
+   */
+  function extractMidiArray(notes, defaultValue = -1) {
+    /** @type {number[]} */
+    const midis = [];
+    for (let i = 0; i < notes.length; i++) {
+      midis.push(propertyExtractors.extractNumberOrDefault(notes[i], 'midi', defaultValue));
+    }
+    return midis;
+  }
+
+  /**
+   * @param {any[]} notes
+   * @param {number} [defaultValue=64]
+   * @returns {number[]}
+   */
+  function extractVelocityArray(notes, defaultValue = 64) {
+    /** @type {number[]} */
+    const velocities = [];
+    for (let i = 0; i < notes.length; i++) {
+      velocities.push(propertyExtractors.extractFiniteOrDefault(notes[i], 'velocity', defaultValue));
+    }
+    return velocities;
+  }
+
+  /**
+   * @param {number[]} values
+   * @param {number} [defaultValue=0]
+   * @returns {number[]}
+   */
+  function extractPCArray(values, defaultValue = 0) {
+    /** @type {number[]} */
+    const pitchClasses = [];
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i];
+      if (!Number.isFinite(value)) {
+        pitchClasses.push(defaultValue);
+        continue;
+      }
+      pitchClasses.push(((value % 12) + 12) % 12);
+    }
+    return pitchClasses;
+  }
+
+  /**
    * Split an array of numbers in half and return the slope (avgSecond - avgFirst).
    * Standard half-split slope for detecting crescendo/decrescendo, acceleration, etc.
    * @param {number[]} values - array of numeric samples (velocities, durations, energies, etc.)
@@ -51,5 +98,12 @@ analysisHelpers = (() => {
     return { slope: avgSecond - avgFirst, avgFirst, avgSecond };
   }
 
-  return { getWindowNotes, getWindowLayerPairNotes, halfSplitSlope };
+  return {
+    getWindowNotes,
+    getWindowLayerPairNotes,
+    extractMidiArray,
+    extractVelocityArray,
+    extractPCArray,
+    halfSplitSlope
+  };
 })();

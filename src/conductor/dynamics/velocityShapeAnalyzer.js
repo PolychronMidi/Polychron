@@ -21,11 +21,7 @@ velocityShapeAnalyzer = (() => {
     }
 
     // Extract velocities
-    /** @type {number[]} */
-    const velocities = [];
-    for (let i = 0; i < notes.length; i++) {
-      velocities.push((typeof notes[i].velocity === 'number') ? notes[i].velocity : 64);
-    }
+    const velocities = analysisHelpers.extractVelocityArray(notes, 64);
 
     // Half-split slope
     const { slope, avgFirst, avgSecond } = analysisHelpers.halfSplitSlope(velocities);

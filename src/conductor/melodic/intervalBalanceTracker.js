@@ -29,6 +29,7 @@ intervalBalanceTracker = (() => {
     if (notes.length < 3) {
       return { avgInterval: 0, maxInterval: 0, stepRatio: 0, leapRatio: 0, unisonRatio: 0, variety: 0, rut: null, monotonous: false, erratic: false };
     }
+    const midis = analysisHelpers.extractMidiArray(notes, 60);
 
     let sumInterval = 0;
     let maxInterval = 0;
@@ -38,9 +39,9 @@ intervalBalanceTracker = (() => {
     let other = 0;   // 3-4 semitones (sub-leap)
     const count = notes.length - 1;
 
-    for (let i = 1; i < notes.length; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : 60;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : 60;
+    for (let i = 1; i < midis.length; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
       const interval = m.abs(curr - prev);
       sumInterval += interval;
       if (interval > maxInterval) maxInterval = interval;

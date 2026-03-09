@@ -252,6 +252,7 @@ fullBootstrap = (() => {
     'chromaticSaturationMonitor',
     'fragmentHelpers',
     'analysisHelpers',
+    'propertyExtractors',
     'rhythmicSymmetryDetector',
     'texturalGradientTracker',
     'cadentialPreparationAdvisor',

@@ -52,7 +52,7 @@ melodicContourTracker = (() => {
   function update() {
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 4 });
     if (notes.length < 3) return;
-    const pitches = notes.map(n => n.midi);
+    const pitches = analysisHelpers.extractMidiArray(notes, 60);
     currentContour = _computeContour(pitches);
   }
 
@@ -85,7 +85,7 @@ melodicContourTracker = (() => {
   function getLayerContour(layer) {
     const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: 4 });
     if (notes.length < 3) return DEFAULT_CONTOUR;
-    return _computeContour(notes.map(n => n.midi));
+    return _computeContour(analysisHelpers.extractMidiArray(notes, 60));
   }
 
   // Beat-level cache: getDirectionalitySignal is called 2x per beat (densityBias + stateProvider)
@@ -105,14 +105,15 @@ melodicContourTracker = (() => {
     if (notes.length < 4) {
       return { direction: 'undulating', ascendRatio: 0.5, descendRatio: 0.5, densityBias: 1 };
     }
+    const midis = analysisHelpers.extractMidiArray(notes, -1);
 
     let ascends = 0;
     let descends = 0;
     let total = 0;
 
-    for (let i = 1; i < notes.length; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : -1;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
+    for (let i = 1; i < midis.length; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
       if (prev < 0 || curr < 0) continue;
       const diff = curr - prev;
       if (diff > 0) ascends++;

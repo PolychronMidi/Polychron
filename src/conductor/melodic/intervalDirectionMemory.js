@@ -16,15 +16,16 @@ intervalDirectionMemory = (() => {
     if (notes.length < 5) {
       return { overusedIntervals: [], freshness: 1, suggestion: 'maintain' };
     }
+    const midis = analysisHelpers.extractMidiArray(notes, -1);
 
     // Build interval+direction histogram
     /** @type {Object.<string, number>} */
     const histogram = {};
     let totalIntervals = 0;
 
-    for (let i = 1; i < notes.length; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : -1;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
+    for (let i = 1; i < midis.length; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
       if (prev < 0 || curr < 0) continue;
       const diff = curr - prev;
       if (diff === 0) continue; // skip unisons

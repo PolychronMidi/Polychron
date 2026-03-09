@@ -23,11 +23,12 @@ pedalPointDetector = (() => {
     const safeOpts = opts && typeof opts === 'object' ? opts : {};
     const ws = V.optionalFinite(safeOpts.windowSeconds, WINDOW_SECONDS);
     const notes = analysisHelpers.getWindowNotes(V, safeOpts, WINDOW_SECONDS);
+    const noteMidis = analysisHelpers.extractMidiArray(notes, 60);
 
     // Filter to bass register
     const bassNotes = [];
     for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : 60;
+      const midi = noteMidis[i];
       if (midi <= BASS_CEILING) {
         bassNotes.push(notes[i]);
       }
@@ -39,8 +40,9 @@ pedalPointDetector = (() => {
 
     // Count repetitions of each bass pitch class
     const pcCounts = /** @type {Object.<number, number>} */ ({});
-    for (let i = 0; i < bassNotes.length; i++) {
-      const pc = (typeof bassNotes[i].midi === 'number') ? bassNotes[i].midi % 12 : 0;
+    const bassPcs = analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(bassNotes, 0), 0);
+    for (let i = 0; i < bassPcs.length; i++) {
+      const pc = bassPcs[i];
       pcCounts[pc] = (pcCounts[pc] || 0) + 1;
     }
 

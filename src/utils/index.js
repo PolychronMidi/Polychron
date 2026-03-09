@@ -18,6 +18,8 @@ require('./priorsHelpers');
 // @ts-ignore: side-effect module load
 require('./clamps');
 // @ts-ignore: side-effect module load
+require('./propertyExtractors');
+// @ts-ignore: side-effect module load
 require('./init');
 require('./midiData');
 // @ts-ignore: side-effect module load

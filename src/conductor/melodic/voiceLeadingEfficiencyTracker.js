@@ -16,6 +16,7 @@ voiceLeadingEfficiencyTracker = (() => {
     if (notes.length < 4) {
       return { efficiency: 0.5, avgDisplacement: 3, densityBias: 1 };
     }
+    const midis = analysisHelpers.extractMidiArray(notes, -1);
 
     // Group notes by approximate onset time (within 0.05s = "same beat")
     /** @type {number[][]} */
@@ -26,7 +27,7 @@ voiceLeadingEfficiencyTracker = (() => {
 
     for (let i = 0; i < notes.length; i++) {
       const t = (typeof notes[i].time === 'number') ? notes[i].time : 0;
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
+      const midi = midis[i];
       if (midi < 0) continue;
 
       if (t - lastTime > 0.05 && currentChord.length > 0) {
