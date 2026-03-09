@@ -128,9 +128,18 @@ couplingBiasAccumulator = (() => {
     const gateD = coherenceGate(nudges.DPos, nudges.DNeg);
     const gateT = coherenceGate(nudges.TPos, nudges.TNeg);
     const gateF = coherenceGate(nudges.FPos, nudges.FNeg);
-    let nudgeD = nudges.D * gateD + nudges.DBypass;
-    let nudgeT = nudges.T * gateT + nudges.TBypass;
-    let nudgeF = nudges.F * gateF + nudges.FBypass;
+    // R73 E5: Gate fatigue dampening. When gates stay fully open (EMA > 0.95)
+    // and budget constraint is active, apply modest dampening (0.92 ceiling) to
+    // provide selective pressure on high-coupling beats. Self-correcting:
+    // disengages when gate EMA drops below 0.95 or budget pressure relaxes.
+    const hs = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    const gateFatigueActive = hs && hs.budgetConstraintActive;
+    const fatigueD = gateFatigueActive && S.gateEmaD > 0.95 ? 0.92 : 1.0;
+    const fatigueT = gateFatigueActive && S.gateEmaT > 0.95 ? 0.92 : 1.0;
+    const fatigueF = gateFatigueActive && S.gateEmaF > 0.95 ? 0.92 : 1.0;
+    let nudgeD = nudges.D * m.min(gateD, fatigueD) + nudges.DBypass;
+    let nudgeT = nudges.T * m.min(gateT, fatigueT) + nudges.TBypass;
+    let nudgeF = nudges.F * m.min(gateF, fatigueF) + nudges.FBypass;
 
     // Gate diagnostics
     S.lastGateD = Number(gateD.toFixed(4));
@@ -155,7 +164,6 @@ couplingBiasAccumulator = (() => {
 
     // Dynamic axis budget
     let dynAxisBudget = AXIS_BUDGET;
-    const hs = safePreBoot.call(() => couplingHomeostasis.getState(), null);
     if (hs && hs.totalEnergyEma > 0.1) {
       dynAxisBudget = clamp(hs.totalEnergyEma / 15.0, 0.12, 0.36);
     }

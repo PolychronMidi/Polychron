@@ -121,6 +121,10 @@ couplingRefreshSetup = (() => {
       ? nonNudgeableTailPair.split('-')
       : (recoveryDominantAxes.length > 0 ? recoveryDominantAxes.slice() : []);
 
+    // R73 E1: Dynamic telemetry window based on homeostasis beat count
+    const hsBeatCount = hs && typeof hs.beatCount === 'number' ? hs.beatCount : 0;
+    const dynTelemetryWindow = couplingConstants.dynamicTelemetryWindow(hsBeatCount);
+
     return {
       regime, targetScale, flickerGainScalar, densityGainScalar,
       floorDampen, flickerProd, densityProd,
@@ -131,6 +135,7 @@ couplingRefreshSetup = (() => {
       shortRunRecoveryBias, nonNudgeableTailPressure,
       nonNudgeableAxes, entropyAxisPressure,
       telemetryBeatSpan, matrix: snap.couplingMatrix,
+      dynTelemetryWindow,
     };
   }
 

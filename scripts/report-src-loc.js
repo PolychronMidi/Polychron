@@ -77,7 +77,8 @@ async function main() {
     return { file: rel, lines: counts[i] };
   });
 
-  report.sort((a, b) => b.lines - a.lines || a.file.localeCompare(b.file));
+  // Sort ascending by line count, then alphabetically by file path for ties
+  report.sort((a, b) => a.lines - b.lines || a.file.localeCompare(b.file));
 
   for (const r of report) {
     console.log(`${r.file} - ${r.lines} ${r.lines === 1 ? 'line' : 'lines'}`);

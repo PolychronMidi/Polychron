@@ -1,3 +1,40 @@
+## R73 — 2026-03-09 — STABLE
+
+**Profile:** explosive | **Beats:** 596 | **Duration:** 83.3s | **Notes:** 25,208
+**Fingerprint:** 11/11 stable | Drifted: none
+
+### Key Observations
+- Pipeline health remained clean after the coupling evolutions and couplingHomeostasis split: 16/16 steps passed, lint/typecheck/composition all green, wall time 868.8s.
+- Fingerprint stayed STABLE at 0/11 drifted dimensions despite a cross-profile comparison (atmospheric -> explosive). Exceedance severity improved sharply: 127 -> 57 total pair-exceedance beats and 53 -> 18 unique exceedance beats.
+- Entropy-heavy severe concentration relaxed materially: density-entropy fell from top hotspot status (50 beats) to 4 beats; flicker-entropy fell 28 -> 6. Top exceedance pressure rotated to density-flicker, tension-trust, and entropy-phase at 7 beats each.
+- Tuning invariant extraction fix is confirmed: 10/10 checked, 0 skipped, with coupling_DEFAULT_TARGET=0.25 and coupling_GAIN_MAX=0.6 now captured from couplingConstants.js.
+- Telemetry reconciliation remains the main residual risk. Max controller/trace gap widened slightly 0.406 -> 0.4399 and shifted to trust-linked pairs: density-trust 0.440, flicker-trust 0.339, tension-trust 0.142.
+- Coherence gate end-state is still effectively open: gateD/gateT/gateF all end at 1.0 with gate EMA values 0.9746 / 0.9917 / 0.9929. The new fatigue logic records nontrivial gate minima but did not materially change the terminal gate state.
+- Phase telemetry did not break, but explosive returned phase share to a near-zero axis footprint (0.0748 -> 0.0029 prev->current) with warning-grade integrity and 32.0% average phase coupling coverage.
+
+### Evolutions Applied (from R72)
+- E1: Telemetry window scaling for long runs — inconclusive — controller telemetry windows now emit 48-beat spans, but this shorter run sat on the floor value and overall max reconciliation gap worsened to 0.4399.
+- E2: Entropy-axis severe pair decorrelation boost — confirmed — density-entropy exceedance beats fell 50 -> 4 and flicker-entropy 28 -> 6; entropy no longer monopolizes severe hotspots.
+- E3: Phase variance gate atmospheric 0.15 -> 0.12 — untested — current run used explosive, so the atmospheric-only change was not exercised.
+- E4: Fix check-tuning-invariants extraction for refactored coupling constants — confirmed — tuning invariants now pass 10/10 with 0 skipped and both coupling constants extracted.
+- E5: Coherence gate activation threshold review — inconclusive — gate minima exist, but end-of-run gateD/gateT/gateF remain 1.0 and EMAs stay above 0.97.
+- E6: Adaptive reconciliation gap pressure amplification — partially confirmed — density-flicker gap is no longer dominant (gap 0.131), but trust-linked reconciliation gaps now dominate and maxGap increased slightly overall.
+
+### Evolutions Proposed (for R74)
+- E1: Trust-pair reconciliation routing — scripts/trace-summary.js, src/conductor/signal/balancing/coupling/couplingEffectiveGain.js
+- E2: Real gate engagement under budget pressure — src/conductor/signal/balancing/coupling/couplingBiasAccumulator.js
+- E3: Explosive phase-axis floor recovery — src/conductor/signal/balancing/axisEnergyEquilibrator.js
+- E4: Tail-handshake saturation relief — src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js
+- E5: Trust-surface budget prioritization — src/conductor/signal/balancing/coupling/couplingBudgetScoring.js
+- E6: Cross-profile reconciliation reporting split — scripts/trace-summary.js, scripts/golden-fingerprint.js
+
+### Hypotheses to Track
+- Trust-linked pairs are now the dominant reconciliation blind spot; if E1/E5 work, maxGap should fall below 0.30 and underSeenPairCount should drop below 4.
+- If E2 engages real gate pressure, end-of-run gates should settle below 0.95 on at least one axis during budget-constrained runs.
+- If E4 reduces handshake saturation, tailRecoveryHandshake should stop pinning at 1.0 and globalGainMultiplier should spend less time near its recovery cap.
+- Explosive may need its own phase-support floor; if E3 works, phase axis share should recover above 0.02 without reintroducing critical phase warnings.
+
+
 ## R72 — 2026-03-09 — STABLE
 
 **Profile:** atmospheric | **Beats:** 911 (L1 358, L2 553) | **Duration:** 1505s | **Notes:** 38,141
