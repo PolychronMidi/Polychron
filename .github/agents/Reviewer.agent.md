@@ -56,7 +56,7 @@ When a metric raises a question, trace it to the source. Common investigation ta
 
 | Area | Key files |
 ||--|
-| Coupling engine | `src/conductor/signal/balancing/pipelineCouplingManager.js` |
+| Coupling engine | `src/conductor/signal/balancing/pipelineCouplingManager.js` (orchestrator), `src/conductor/signal/balancing/coupling/` (helpers: couplingConstants, couplingState, couplingRefreshSetup, couplingBudgetScoring, couplingGainEscalation, couplingEffectiveGain, couplingBiasAccumulator) |
 | Regime damping | `src/conductor/signal/profiling/regimeReactiveDamping.js` |
 | Coherence feedback | `src/conductor/signal/foundations/coherenceMonitor.js` |
 | Axis equilibrator | `src/conductor/signal/balancing/axisEnergyEquilibrator.js` |
@@ -64,6 +64,7 @@ When a metric raises a question, trace it to the source. Common investigation ta
 | Trust system | `src/crossLayer/structure/trust/adaptiveTrustScores.js`, `src/crossLayer/structure/integration/contextualTrust.js` |
 | Regime profiler | `src/conductor/signal/profiling/systemDynamicsProfiler.js` |
 | Trace cadence / beat indexing | `src/play/processBeat.js`, `src/play/crossLayerBeatRecord.js`, `src/writer/traceDrain.js` |
+| Trace snapshot serialization | `src/writer/traceDrain.js` — `recordSnapshot()` builds a fixed-field payload. New diagnostic fields (e.g. trustVelocity) must be added to the payload explicitly; the function does not forward unknown keys from the input data object. |
 | Meta-controllers | `src/conductor/signal/` (any file with `hypermeta` or `metaController` in name) |
 | Fingerprint logic | `scripts/golden-fingerprint.js` |
 | Trace aggregation | `scripts/trace-summary.js` |

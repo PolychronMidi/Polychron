@@ -1,3 +1,93 @@
+## R72 — 2026-03-09 — STABLE
+
+**Profile:** atmospheric | **Beats:** 911 (L1 358, L2 553) | **Duration:** 1505s | **Notes:** 38,141
+**Fingerprint:** 11/11 stable | Drifted: none | Cross-profile: explosive → atmospheric (1.3x tolerance)
+**Structural:** pipelineCouplingManager.js refactored from 1698 lines → 9 files in `coupling/` subdirectory. Zero regression.
+
+### Key Observations
+- Fifth consecutive STABLE verdict (R65→R69→R70→R71→R72). All 11 dimensions pass including crossProfileWarning (1.3x widening for explosive→atmospheric). This is also the **first run after the pipelineCouplingManager structural refactoring** (1698-line monolith split into 9 files at 140-240 LOC each). The STABLE verdict confirms functional equivalence of the refactored code.
+- pipelineCouplingManager bias products validate refactoring: density=0.934, tension=1.124, flicker=0.982. Non-trivial, asymmetric biases confirm the full coupling logic (gain escalation, coherence gate, budget scoring, effectiveness EMA, surface pressures, axis energy) executes correctly through the new helper chain.
+- Phase axis recovered 10x: energy share 2.7% → 7.5% (prev→current fingerprint). axisCouplingTotals.phase = 0.565. The axisEnergyEquilibrator made 103 phase-axis adjustments (most of any axis). R71 E2 (phase axis energy recovery via equilibrator floor) **confirmed**.
+- trustVelocity pipeline fully operational: diagnosticArc shows trustVelocity at all 5 section-end snapshots plus 1 periodic. 10 trust turbulence events detected, including stutterContagion -0.536 crash at 3:periodic:140 and entropyRegulator +0.448 surge at 4:end. R71 E1 **confirmed**.
+- density-trust effectiveGain restored: 0.282 (was 0 in R71). budgetRank 1, gain 0.45. The graduated positive-correlation brake allows partial decorrelation. p95 0.771 — still a hotspot but no longer stuck. R71 E3 **confirmed**.
+- Phase-pair budget ranking operational: density-phase now has budgetRank 2, budgetScore 0.507 (was null in R71). Phase pairs can compete for budget allocation. R71 E4 **confirmed**.
+- DiagnosticArc activeProfile field reveals mid-run profile cycling: restrained → default → default → explosive → explosive → atmospheric. Invaluable for understanding section-level dynamics. R71 E6 **confirmed**.
+- Regime balance healthy: 54.9% exploring / 43.5% coherent (vs R71's 85.9% / 12.4% overshoot). thresholdScale 0.92. 1 forced cadence-monopoly break at tick 37. R71 H3 confirmed: exploring overshoot oscillated back without intervention, though profile change confounds this.
+- Coupling hotspot topology rotated: 7 hotspots (p95 > 0.70), 3 severe (density-entropy 0.922, density-flicker 0.893, flicker-entropy 0.868). Entropy axis now dominates severe pairs (3/3 involve entropy or density-entropy links). Trust-linked pairs demoted to non-severe hotspots.
+- Reconciliation gaps persist: density-flicker gap 0.406, density-entropy gap 0.296, flicker-entropy gap 0.251. The 96-beat telemetry window underrepresents full-run coupling dynamics on 911-beat runs.
+- Coherence gates fully open: gateD=1, gateT=1, gateF=1. No gating modulation — the coherence gate provides no selective pressure in current configuration.
+- check-tuning-invariants: 10/10 passed but WARNING "could not extract 2 constant(s): coupling_DEFAULT_TARGET, coupling_GAIN_MAX" — extraction script doesn't find constants in their new refactored locations (couplingConstants.js).
+
+### Evolutions Applied (from R71)
+- E1: Fix trustVelocity pipeline through traceDrain — **confirmed** — diagnosticArc now has trustVelocity at all snapshots (was null in R71). 10 trust turbulence events detected. stutterContagion -0.536, entropyRegulator +0.448 — previously invisible.
+- E2: Phase axis energy recovery via equilibrator floor — **confirmed** — phase energy share recovered 2.7% → 7.5% (prev→current). 103 phase-axis adjustments by equilibrator. phaseSurfaceHotBeats: 107. Phase is alive and competing.
+- E3: density-trust effectiveGain zero fix — **confirmed** — effectiveGain 0.282 (was 0). budgetRank 1. The graduated positive-correlation brake (pearsonR 0.772) no longer fully suppresses decorrelation.
+- E4: Phase-pair budget ranking eligibility — **confirmed** — density-phase budgetRank 2, budgetScore 0.507 (was null). Phase pairs can now compete for budget. Other phase pairs (entropy-phase, flicker-phase) still unranked but density-phase proves the mechanism works.
+- E5: Regime exploring overshoot dampening — **inconclusive (profile confounded)** — exploring dropped 85.9% → 54.9% but atmospheric profile inherently favors exploring vs explosive. Cannot separate E5's effect from the profile change.
+- E6: DiagnosticArc active profile annotation — **confirmed** — activeProfile field present at all 6 snapshots. Profile cycling visible: restrained → default → default → explosive → explosive → atmospheric. First empirical evidence of mid-run profile switching.
+
+### Evolutions Proposed (for R73)
+- E1: Telemetry window scaling for long runs — scripts/trace-summary.js, src/conductor/signal/balancing/coupling/couplingGainEscalation.js
+- E2: Entropy-axis severe pair decorrelation boost — src/conductor/signal/balancing/coupling/couplingGainEscalation.js, src/conductor/signal/balancing/coupling/couplingBudgetScoring.js
+- E3: Phase variance gate atmospheric 0.15 → 0.12 — src/conductor/profiles/conductorProfileAtmospheric.js
+- E4: Fix check-tuning-invariants extraction for refactored coupling constants — scripts/check-tuning-invariants.js
+- E5: Coherence gate activation threshold review — src/conductor/signal/balancing/coupling/couplingBiasAccumulator.js
+- E6: Adaptive reconciliation gap pressure amplification — src/conductor/signal/balancing/coupling/couplingEffectiveGain.js
+
+### Hypotheses to Track
+- H1: Reconciliation gaps (density-flicker 0.406, density-entropy 0.296) are caused by 96-beat fixed window undersampling 911-beat runs. If E1 scales the window, gaps should narrow below 0.20. If gaps persist, the root cause is regime-masking, not window size.
+- H2: Entropy-axis severe concentration (3/3 severe pairs involve entropy) is a structural atmospheric-profile characteristic. If it persists across R73 atmospheric, entropy gains may need dedicated pair-class treatment.
+- H3: Coherence gates at 1.0 (fully open, no gating) suggest the gate bypass thresholds are too permissive. If E5 tightens the activation threshold, gates should start providing selective pressure on high-coupling beats, reducing tail severity.
+- H4: Phase variance gate 0.12 (E3) should push variance-gated rate below 40% (currently 52.7%) and improve phase integrity from "warning" to "healthy" in more sections. Track across R73.
+- H5: density-trust effectiveGain 0.282 is active but p95 0.771 is still a hotspot. The graduated brake may need further relaxation if p95 doesn't decrease toward 0.70 by R74.
+- H6: Profile cycling (restrained→default→explosive→atmospheric) visible via E6's diagnosticArc annotation creates a diagnostic opportunity: track per-profile-segment coupling means to identify which profile contributes most to aggregate hotspot severity.
+
+
+
+## R71 — 2026-03-08 — STABLE
+
+**Profile:** explosive | **Beats:** 573 (L1 189, L2 384) | **Duration:** 790s | **Notes:** 24,097
+**Fingerprint:** 10/10 stable | Drifted: none | Same-profile: explosive → explosive
+
+### Key Observations
+- Fourth consecutive STABLE verdict (R65→R69→R70→R71). All 10 dimensions pass. Same-profile explosive vs explosive comparison with no tolerance widening.
+- Regime balance overcorrected: 85.9% exploring / 12.4% coherent (vs R70's 53.8% / 43.2%). thresholdScale dropped from 0.812 to 0.55. The regime self-balancer drove exploring dominance after R70's coherent-heavy run. regimeDistribution delta 0.160 at 53.3% tolerance — approaching drift.
+- Phase axis collapsed 10x: 7.7% → 0.78% energy share. The axisEnergyEquilibrator made 16 phase-pair adjustments but 47 coldspot relaxations were skipped (38 coherentFreeze, 9 phaseHot). Trust axis absorbed phase energy: 16.9% → 20.7%. This is the most significant structural regression.
+- E1 density-flicker ceiling confirmed effective: avg |r| dropped 0.554→0.433, p95 dropped 0.914→0.852, exceedance beats 21→12. residualPressure dropped from 0.966 to 0.492. The ceiling triggered during early-run spikes; recent window (recentP95 0.614, recentSevereRate 0) shows strong recovery.
+- E2 entropy-phase gain raised to 0.16 — partially effective. Gain reached 0.4794 from cumulative learning, but effectiveGain stays 0 and budgetRank=null. ALL 4 phase pairs have budgetScore=0, budgetRank=null — phase pairs are systematically excluded from budget ranking.
+- E3 telemetryGapPressure added but density-entropy no longer the target concern. density-entropy avg dropped 0.364→0.174 (resolved by profile dynamics). The gap pressure mechanism contributed to density-flicker's budgetScore (0.783) via p95-recentP95 divergence.
+- E4 PHASE_PROFILE_MAP resolution/conclusion→atmospheric confirmed in code. System manifest reads "explosive" (boot profile). Sections 2-3 may run atmospheric but no diagnosticArc field to verify this.
+- E5 trustVelocity pipeline INCOMPLETE: main.js computes trustVelocity, but traceDrain.js recordSnapshot() doesn't include it in the payload. All 4 diagnosticArc entries show trustVelocity: null. trustTurbulenceEvents: null. A 0.479-point entropyRegulator surge (snapshots 3→4) was invisible to the turbulence detector.
+- E6 correlationTrend crossProfileScale untested: same-profile comparison produces crossProfileScale=1.0. correlationTrend delta 0.643 at 64.3% tolerance (9/14 flips) — elevated but stable.
+- density-trust anomaly: budgetRank 2, budgetScore 0.751, gain 0.43 — but effectiveGain=0. The effectiveGain modifier chain (likely positive-correlation brake with pearsonR 0.543) completely suppresses decorrelation despite #2 budget priority.
+- Trust governance healthy: coherenceMonitor 0.562 leads, no starvation (min 0.207), no dominance (max 0.562). DiagnosticArc reveals entropyRegulator late-run surge 0.185→0.664 (snapshots 3→4).
+
+### Evolutions Applied (from R70)
+- E1: Density-flicker decorrelation ceiling — **confirmed** — p95 dropped 0.914→0.852, avg 0.554→0.433, exceedance beats 21→12, residualPressure 0.966→0.492. The 0.20 effectiveGain cap activated during early-run severe episodes.
+- E2: Entropy-phase gain activation — **partially confirmed** — gain reached 0.4794 (functional learning) but effectiveGain=0, budgetRank=null. The PAIR_GAIN_INIT raise to 0.16 enabled cumulative gain learning but phase pairs are systematically excluded from budget allocation. Root cause: budget scoring excludes short-window phase pairs.
+- E3: Telemetry reconciliation gap correction — **inconclusive** — density-entropy is no longer a reconciliation concern (avg 0.174, p95 0.345). The telemetryGapPressure mechanism is active but its primary beneficiary rotated to density-flicker (p95 0.793 vs recentP95 0.614, gap 0.179). No direct density-entropy reconciliation improvement observable.
+- E4: Revert profile to atmospheric — **partially confirmed** — PHASE_PROFILE_MAP resolution/conclusion set to 'atmospheric'. System manifest still reads "explosive" (boot profile). No diagnostic field to confirm mid-run profile switch. effectiveDim drop in section 3 (3.48→3.16) and coupling strength increase (0.211→0.329) may indicate atmospheric influence but inconclusive.
+- E5: DiagnosticArc trust velocity — **blocked** — main.js correctly computes trustVelocity and passes to traceDrain.recordSnapshot(). But traceDrain.js builds a fixed-field payload that omits trustVelocity. All diagnosticArc entries have trustVelocity: null. trustTurbulenceEvents: null. The 0.479 entropyRegulator surge went undetected.
+- E6: correlationTrend cross-profile tolerance scaling — **untested (same profile)** — both runs are explosive, so crossProfileScale=1.0. correlationTrend tolerance remains 1.0. Will test when cross-profile comparison resumes.
+
+### Evolutions Proposed (for R72)
+- E1: Fix trustVelocity pipeline through traceDrain — src/writer/traceDrain.js
+- E2: Phase axis energy recovery via equilibrator floor — src/conductor/signal/balancing/axisEnergyEquilibrator.js
+- E3: density-trust effectiveGain zero fix (graduated positive-correlation brake) — src/conductor/signal/balancing/pipelineCouplingManager.js
+- E4: Phase-pair budget ranking eligibility — src/conductor/signal/balancing/pipelineCouplingManager.js
+- E5: Regime exploring overshoot dampening — src/conductor/signal/profiling/regimeClassifier.js or systemDynamicsProfiler.js
+- E6: DiagnosticArc active profile annotation — src/play/main.js, scripts/trace-summary.js, src/writer/traceDrain.js
+
+### Hypotheses to Track
+- H1: Phase axis collapse (7.7% → 0.78%) may be a one-run outlier (random seed) vs structural regression from E4's profile switch. Track phase share across R72-R73; if E2 recovers it above 3%, it was correctable.
+- H2: density-trust effectiveGain=0 is caused by the positive-correlation brake (pearsonR 0.543). If E3's graduated brake is applied, density-trust should get partial decorrelation and p95 should decrease toward 0.75.
+- H3: Regime exploring overshoot (85.9%) will oscillate back toward coherent in R72 without intervention. If it does, E5's damping is unnecessary. If exploring stays above 75%, E5 is confirmed needed.
+- H4: E1's trustVelocity fix should reveal the entropyRegulator 0.479-point surge as a turbulence event. If turbulence events are frequent (>5 per run), consider adding trust velocity as a fingerprint dimension.
+- H5: Phase-pair budget exclusion (E4) is the structural root cause of the phase collapse (E2). If phase pairs can compete for budget, the equilibrator floor (E2) may become unnecessary — track both in parallel.
+- H6: The trust-pair balloon (density-trust, flicker-trust emerging as hotspots) may self-correct if phase energy recovers (energy would redistribute from trust to phase). Track trust axis share alongside phase recovery.
+
+
+
 ## R70 — 2026-03-09 — STABLE
 
 **Profile:** explosive | **Beats:** 403 (L1 161, L2 242) | **Duration:** 603.5s | **Notes:** 16,404

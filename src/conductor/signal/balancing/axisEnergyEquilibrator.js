@@ -433,12 +433,17 @@ axisEnergyEquilibrator = (() => {
         // freeze and apply emergency relaxation. Self-correcting: emergency
         // mode deactivates when share recovers above 0.08.
         const isEmergencyStarved = share < 0.08;
+        // R72 E2: Phase-collapse emergency floor. When phase share drops
+        // below 2%, the axis is in catastrophic collapse (R71: 7.7% -> 0.78%).
+        // Override all skip conditions and apply 3x emergency relaxation.
+        // Self-correcting: deactivates when share recovers above 0.02.
+        const isPhaseCollapse = axis === 'phase' && share < 0.02;
         //  Partial coherent freeze bypass for undershoot axes.
         // When an axis is below _AXIS_UNDERSHOOT (0.12) but above emergency
         // threshold, allow relaxation on even-numbered beats (50% duty cycle)
         // so starved axes get some recovery during coherent spells.
         const isUndershootPartialBypass = !isEmergencyStarved && share < _AXIS_UNDERSHOOT && (_beatCount % 2 === 0);
-        if (!isEmergencyStarved && !isUndershootPartialBypass && (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot))) {
+        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot))) {
           _skippedColdspotRelaxations++;
           if (coherentColdspotFreeze) _coldspotSkipReasons.coherentFreeze++;
           else if (axis === 'phase' && phaseSurfaceHot) _coldspotSkipReasons.phaseHot++;
@@ -456,7 +461,7 @@ axisEnergyEquilibrator = (() => {
         const nonNudgeableRelaxBoost = nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1
           ? 1 + nonNudgeableTailPressure * 0.30
           : 1.0;
-        const emergencyBoost = isEmergencyStarved ? 3.0 : 1.0;
+        const emergencyBoost = isPhaseCollapse ? 4.0 : (isEmergencyStarved ? 3.0 : 1.0);
         const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];

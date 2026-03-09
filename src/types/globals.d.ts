@@ -1486,6 +1486,13 @@ declare var regimeReactiveDamping: { densityBias(): number; tensionBias(): numbe
 declare var pipelineBalancer: { densityBias(): number; reset(): void };
 declare var pipelineNormalizer: { normalize(pipeline: string, rawProduct: number): number; reset(): void; getSnapshot(): Record<string, object> };
 declare var pipelineCouplingManagerSnapshot: any;
+declare var couplingConstants: any;
+declare var couplingState: any;
+declare var couplingRefreshSetup: any;
+declare var couplingBudgetScoring: any;
+declare var couplingGainEscalation: any;
+declare var couplingEffectiveGain: any;
+declare var couplingBiasAccumulator: any;
 declare var pipelineCouplingManager: { densityBias(): number; tensionBias(): number; flickerBias(): number; setDensityFlickerGainScale(scale: number): void; setGlobalGainMultiplier(scale: number): void; setPairBaseline(pairKey: string, newBaseline: number): void; getPairBaselines(): Record<string, number>; getAdaptiveTargetSnapshot(): Record<string, { baseline: number; current: number; rollingAbsCorr: number; rawRollingAbsCorr: number; p95AbsCorr: number; hotspotRate: number; severeRate: number; recentP95AbsCorr: number; recentHotspotRate: number; recentSevereRate: number; telemetryWindowBeats: number; residualPressure: number; gain: number; effectiveGain: number; nudgeable: boolean; budgetScore: number; budgetBoost: number; budgetRank: number | null; heatPenalty: number; effectivenessEma: number; effMin: number; effMax: number; effActiveBeats: number; hpPromoted: boolean }>; getAxisCouplingTotals(): Record<string, number>; getAxisEnergyShare(): { shares: Record<string, number>; axisGini: number }; getCouplingGates(): { gateD: number; gateT: number; gateF: number; floorDampen: number; bypassD: number; bypassT: number; bypassF: number; gateMinD: number; gateMinT: number; gateMinF: number; gateEmaD: number; gateEmaT: number; gateEmaF: number; gateBeatCount: number }; reset(): void };
 declare var couplingHomeostasisSnapshot: any;
 declare var couplingHomeostasis: { getState(): { totalEnergyEma: number; energyBudget: number; peakEnergyEma: number; redistributionScore: number; nudgeableRedistributionScore: number; budgetConstraintActive: boolean; budgetConstraintPressure: number; globalGainMultiplier: number; giniCoefficient: number; energyDeltaEma: number; pairTurbulenceEma: number; beatCount: number; invokeCount: number; tickCount: number; emptyMatrixBeats: number; multiplierMin: number; multiplierMax: number; multiplierStdDev: number; floorContactBeats: number; ceilingContactBeats: number; avgRecoveryDuration: number; totalEnergyFloor: number; floorDampen: number; floorRecoveryActive: boolean; floorRecoveryTicksRemaining: number; densityFlickerTailPressure: number; densityFlickerOverridePressure: number; recoveryAxisHandOffPressure: number; shortRunRecoveryBias: number; nonNudgeableTailPressure: number; nonNudgeableTailPair: string; recoveryDominantAxes: string[]; stickyTailPressure: number; tailRecoveryDrive: number; tailRecoveryTrigger: number; tailRecoveryHandshake: number; tailRecoveryCap: number; tailRecoveryCeilingPressure: number; densityFlickerClampPressure: number; dominantTailPair: string; tailHotspotCount: number; tailPressureByPair: Record<string, number> }; reset(): void; tick(): void; getFloorDampen(): number };
@@ -1846,7 +1853,7 @@ declare var traceDrain: {
   isEnabled(): boolean;
   record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any }): void;
   recordNote(pitch: number, velocity: number, channel: number): void;
-  recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string }): void;
+  recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string }): void;
   flush(): void;
   shutdown(): void;
 };
