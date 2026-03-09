@@ -106,7 +106,7 @@ traceDrain = (() => {
 
   /**
    * Record a diagnostic snapshot (non-beat).
-   * @param {{ beatKey: string, timeMs: number, effectiveDim: number, trustScores: any, couplingMeans: Record<string,number>, globalGainMultiplier: number, regime: string, couplingStrength: number, phaseIntegrity: string }} data
+   * @param {{ beatKey: string, timeMs: number, effectiveDim: number, trustScores: any, trustVelocity?: Record<string,number>, couplingMeans: Record<string,number>, globalGainMultiplier: number, regime: string, couplingStrength: number, phaseIntegrity: string, activeProfile?: string }} data
    */
   function recordSnapshot(data) {
     if (!isTracing || fd === null) return;
@@ -118,6 +118,8 @@ traceDrain = (() => {
       timeMs: data.timeMs,
       effectiveDim: data.effectiveDim,
       trust: data.trustScores,
+      trustVelocity: data.trustVelocity || null,
+      activeProfile: data.activeProfile || 'unknown',
       couplingMeans: data.couplingMeans,
       globalGainMultiplier: data.globalGainMultiplier,
       regime: data.regime,

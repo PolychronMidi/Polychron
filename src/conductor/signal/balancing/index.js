@@ -2,6 +2,8 @@
 require('./pipelineBalancer');
 // @ts-ignore: coupling telemetry and snapshot helpers for pipelineCouplingManager
 require('./pipelineCouplingManagerSnapshot');
+// @ts-ignore: coupling subsystem helpers (constants, state, gain, effectiveGain, bias)
+require('./coupling');
 // @ts-ignore: density-tension coupling manager (reads systemDynamicsProfiler coupling matrix)
 require('./pipelineCouplingManager');
 // @ts-ignore: state snapshot helper for couplingHomeostasis

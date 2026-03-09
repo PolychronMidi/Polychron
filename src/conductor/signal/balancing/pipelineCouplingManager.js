@@ -1,1672 +1,172 @@
 // @ts-check
 
 /**
- * Pipeline Coupling Manager (E6)
+ * Pipeline Coupling Manager
  *
- * Self-tuning decorrelation engine for ALL compositional dimension pairs.
- * Reads the full coupling matrix from systemDynamicsProfiler each beat
- * and applies decorrelation nudges to any pair whose |r| exceeds its
- * target. Gains are adaptive: they escalate when nudging fails to reduce
- * coupling (the pair is structurally persistent) and relax when coupling
- * responds. This eliminates the need for manual per-pair gain tuning
- * between runs.
+ * Thin orchestrator for the self-tuning decorrelation engine. Reads the
+ * full coupling matrix from systemDynamicsProfiler each beat, delegates
+ * to coupling helpers for gain adaptation, effective gain computation,
+ * and bias accumulation. All state lives in couplingState; all constants
+ * in couplingConstants.
  *
  * Nudgeable axes: density, tension, flicker (conductor biases exist).
- * Entropy has no conductor bias - for pairs involving entropy, the
- * non-entropy partner is nudged.
+ * Entropy/trust/phase have no conductor bias -- for pairs involving them,
+ * the nudgeable partner is nudged.
  */
 
 pipelineCouplingManager = (() => {
+  const { ALL_MONITORED_DIMS } = couplingConstants;
+  const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
+  const S = couplingState;
 
-  // Dimensions managed by conductor bias pipelines
-  const NUDGEABLE = ['density', 'tension', 'flicker'];
-  const NUDGEABLE_SET = new Set(NUDGEABLE);
-  // R70 E2: entropy-phase removed -- now nudgeable with low initial gain.
-  // R69 showed 63.6% recent hotspot rate rising, gain=0 meant no self-correction.
-  const _NON_NUDGEABLE_SET = new Set(['entropy-trust', 'trust-phase']);
-  const _PHASE_SURFACE_SET = new Set(['density-phase', 'flicker-phase', 'tension-phase']);
-  const _ENTROPY_SURFACE_SET = new Set(['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase']);
-
-  // The 4 compositional dimensions whose pairs we monitor, plus 2 observable-
-  // only dimensions (trust, phase) that are not nudgeable but whose coupling
-  // with nudgeable dims must be managed. Phase in particular co-evolves
-  // strongly with flicker (r=0.86 observed) and needs active decorrelation.
-  const COMPOSITIONAL_DIMS = ['density', 'tension', 'flicker', 'entropy'];
-  const OBSERVABLE_DIMS = ['trust', 'phase'];
-  const ALL_MONITORED_DIMS = COMPOSITIONAL_DIMS.concat(OBSERVABLE_DIMS);
-
-  // Default coupling target for any compositional pair.
-  const DEFAULT_TARGET = 0.25;
-
-  // Per-pair target overrides (targets are structural, not gains).
-  const PAIR_TARGETS = {
-    'density-tension':  0.15,  // structurally persistent -- needs aggressive target
-    'density-flicker':  0.12,  // high tail exceedance (22.8% @0.85) -- aggressive
-    'density-entropy':  0.12,  // R16 Evo 1: tightened from 0.20 -- surged to avg 0.338 in R15
-    'tension-flicker':  0.15,  // shared compositeIntensity upstream -- aggressive
-    'tension-entropy':  0.25,
-    'flicker-entropy':  0.18,  // elevated tail (8.8% @0.85) -- tightened
-    'flicker-phase':    0.08,  // R28 E3: tightened from 0.12 -- phase axis surged +81% (0.176->0.318) in R27 after trust tightening
-    'density-phase':    0.06,  // R28 E3: tightened from 0.10 -- density-phase avg +65% (0.277->0.457), p95=0.734, 2.22x target
-    'tension-phase':    0.20,  // R25 E4: tightened from 0.30 -- avg 0.407 far exceeded target
-    'density-trust':    0.20,  // R32 E3: raised from 0.10 -- structural floor r=0.786, R31 avg 0.518 (#1 pair), wasting budget fighting irreducible structure
-    'tension-trust':    0.15,  // R27 E3: tightened from 0.25 -- p95=0.925 (severe), 3 of 6 hotspots involve trust
-    'flicker-trust':    0.12,  // R27 E3: tightened from 0.20 -- avg +19.7% (0.413->0.495), r=0.940, approaching severe
-    'entropy-phase':    0.10,  // R28 E3: tightened from 0.18 -- entropy-phase avg +192% (0.132->0.385), p95=0.797, 2.85x target
-    'entropy-trust':    0.30,  // R60 E6: raised from 0.25 -- nonNudgeableTailPressure wasted budget on irreducible structure
-    'trust-phase':      0.25,  // high tail (7.5% @0.85) -- tightened
-  };
-
-  // -- #1: Self-Calibrating Coupling Targets (Hypermeta) --
-  // Instead of static PAIR_TARGETS, track rolling |r| per pair and adjust
-  // targets upward when correlations are intractable (gain near max) or
-  // downward when easily resolved. Eliminates manual target re-tuning.
-  const _TARGET_ADAPT_EMA = 0.02;        // ~50-beat horizon for rolling |r|
-  const _TARGET_RELAX_RATE = 0.0015;     // per-beat relaxation when intractable (R7 equalized)
-  const _TARGET_TIGHTEN_RATE = 0.0015;   // per-beat tightening when resolved (R7 equalized)
-  const _TARGET_MIN = -0.05;             // R40 E2: Sub-Zero Baseline Target Floor
-  const _TARGET_MAX = 0.45;
-  const _DENSITY_FLICKER_TARGET_MAX = 0.55;
-  /** @type {Record<string, { baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number }>} */
-  const _adaptiveTargets = {};
-
-  /**
-   * Get or create adaptive target state for a pair.
-   * @param {string} key
-   * @returns {{ baseline: number, current: number, rollingAbsCorr: number, rawRollingAbsCorr: number }}
-   */
-  function _getAdaptiveTarget(key) {
-    if (!_adaptiveTargets[key]) {
-      const baseline = PAIR_TARGETS[key] !== undefined ? PAIR_TARGETS[key] : DEFAULT_TARGET;
-      _adaptiveTargets[key] = { baseline, current: baseline, rollingAbsCorr: 0, rawRollingAbsCorr: 0 };
-    }
-    return _adaptiveTargets[key];
-  }
-
-  // -- R19 E1: Axis-Centric Coupling Energy Conservation --
-  // Per-pair decorrelation is structurally incapable of solving aggregate
-  // axis-level coupling because correlation energy is conserved across pairs
-  // sharing an axis. Track total |r| per axis; when above ceiling, scale
-  // each pair's effective gain proportionally so the dominant pair on each
-  // axis receives more decorrelation budget. Prevents whack-a-mole.
-  const _AXIS_COUPLING_CEILING = {
-    density: 2.0,   // 5 pairs: avg |r|=0.40 per pair at ceiling
-    tension: 2.0,
-    flicker: 2.0,
-    entropy: 2.0,   // entropy is the conservation bottleneck (5 pairs)
-    trust:   2.5,   // trust pairs are structurally high, allow more room
-    phase:   2.0
-  };
-  /** @type {Record<string, number>} */
-  let _axisTotalAbsR = {};
-  //  Smoothed axis coupling totals. Per-beat snapshots lose phase
-  // history when phase pairs have null correlations (phase=0 on that beat).
-  // Running EMA preserves cross-beat memory so phase never collapses.
-  /** @type {Record<string, number>} */
-  const _axisSmoothedAbsR = {};
-  const _AXIS_SMOOTH_ALPHA = 0.15; // ~7-beat horizon
-  /** @type {Record<string, Record<string, number>>} */
-  let _axisPairContrib = {};
-
-  // -- Adaptive gain parameters --
-  // Every pair starts at GAIN_INIT. Each beat, if |r| > target, we check
-  // whether the pair is *improving* (|r| dropped since last beat) or
-  // *stuck* (|r| stayed or grew). Stuck - escalate gain. Improving - hold.
-  // Below target - relax gain toward GAIN_INIT.
-  const GAIN_INIT = 0.16;
-  const GAIN_MIN  = 0.08;
-  const GAIN_MAX  = 0.60;
-
-  //  Profile-aware gain ceiling for density-flicker pair.
-  // Explosive profile's flickerTargetRange=0.27 saturates the decorrelation
-  // engine (peak |r|=0.951, 14% exceedance >0.85). Allow 30% extra GAIN_MAX
-  // for this pair so the engine can actually bring it down.
-  let _densityFlickerGainCeiling = GAIN_MAX;
   /** @param {number} scale */
   function setDensityFlickerGainScale(scale) {
-    _densityFlickerGainCeiling = GAIN_MAX * scale;
+    S.densityFlickerGainCeiling = couplingConstants.GAIN_MAX * scale;
   }
 
-  // -- R20 E2: Global Gain Multiplier (controlled by couplingHomeostasis #12) --
-  // Applied to all effective gains and escalation rates. When the whole-system
-  // governor detects redistribution (total energy stable while pairs churn),
-  // it throttles this multiplier to break the conservation barrier.
-  let _globalGainMultiplier = 1.0;
   /** @param {number} scale */
   function setGlobalGainMultiplier(scale) {
-    _globalGainMultiplier = clamp(scale, 0.10, 1.0);
+    S.globalGainMultiplier = clamp(scale, 0.10, 1.0);
   }
-
-  const GAIN_ESCALATE_RATE = 0.02; // per-beat gain increase when stuck
-  const GAIN_EMERGENCY_RATE = 0.06; // 3x escalation when |r| > 2x target
-  const GAIN_RELAX_RATE    = 0.02; // per-beat gain decrease when resolved (raised from 0.01 to prevent gain saturation on intractable pairs)
-
-  // Per-pair initial gain overrides for structurally persistent pairs.
-  // density-tension shares many upstream contributors so it starts hotter.
-  const PAIR_GAIN_INIT = {
-    'density-tension': 0.24,
-    // R70 E2 / R71 E2: Initial gain for entropy-phase. R70 set 0.10
-    // (conservative) but pair never qualified for budget ranking.
-    // R71: Raise to 0.16 (default core level) so the pair can compete
-    // for budget allocation and receive actual decorrelation effort.
-    'entropy-phase': 0.16
-  };
-
-  // Regime-aware target relaxation: in 'coherent' regime, pairwise coupling
-  // IS the feature - dimensions deliberately co-evolve. Relax targets so
-  // the coupling manager preserves its gain budget for regimes where
-  // decorrelation is genuinely needed (exploring, drifting, fragmented).
-  // -- #6: Adaptive Coherent Relaxation (Hypermeta) --
-  // Derive COHERENT_RELAXATION dynamically from rolling coherent-regime
-  // share. When coherent share is below 50%, relax more (coupling IS the
-  // feature during scarce coherent); when above 50%, tighten. Supersedes
-  // the static constant that required manual tuning every round.
-  const _COHERENT_SHARE_EMA_ALPHA = 0.015; // ~64-beat horizon
-  let _coherentShareEma = 0.15;            // R25 E5: reduced from 0.35 -- 0% coherent in R23+R24, assume low
-
-  // -- #9: Coupling Gain Budget Manager (Hypermeta) --
-  // Per-axis budget cap prevents coupling manager from dominating any
-  // single pipeline when many pairs simultaneously overcorrelate.
-  //  Reduced density-flicker and tension-flicker budgets to
-  // 0.24 each to accommodate flicker-trust as 4th axis.
-  const _AXIS_BUDGET = 0.24;
-
-  //  Flicker product sigmoid hysteresis state.
-  // 'normal' -> 'guarding' at product < 0.90, 'guarding' -> 'normal' at > 0.96.
-  let _flickerGuardState = 'normal';
-  //  Consecutive beats in guarding state for escalated recovery.
-  let _flickerGuardBeats = 0;
-  //  Flicker-pair gain cap when product is severely compressed.
-  const _FLICKER_PAIR_GAIN_CAP = 0.45;
-  const _FLICKER_PAIR_GAIN_CAP_THRESHOLD = 0.88;
-
-  //  Density product sigmoid hysteresis state.
-  // Mirrors flicker guard pattern. 'normal' -> 'guarding' at product < 0.75,
-  // 'guarding' -> 'normal' at product > 0.82. Addresses R23 density product
-  // drop to 0.707 that went unmitigated.
-  let _densityGuardState = 'normal';
-  let _densityGuardBeats = 0;
-  const _DENSITY_PAIR_GAIN_CAP = 0.45;
-  const _DENSITY_PAIR_GAIN_CAP_THRESHOLD = 0.72;
-  const _BUDGET_PRIORITY_GAIN = {
-    'density-flicker': 1.75,
-    'density-entropy': 1.28,
-    'density-phase': 1.35,
-    'density-trust': 1.25,
-    'flicker-entropy': 1.42,
-    'flicker-phase': 1.45,
-    'flicker-trust': 1.35,
-    'tension-entropy': 1.18,
-    'tension-phase': 1.15,
-    'tension-flicker': 1.10,
-    'tension-trust': 1.10
-  };
-  const _BUDGET_DEPRIORITIZED_GAIN = 0.82;
-  const _BUDGET_PRIORITY_TOP_K = 5;
-  /** @type {Record<string, number>} */
-  let _budgetPriorityScore = {};
-  /** @type {Record<string, number>} */
-  let _budgetPriorityBoost = {};
-  /** @type {Record<string, number>} */
-  let _budgetPriorityRank = {};
-
-  //  Exploring beat counter for partial target relaxation.
-  // When system is stuck in exploring for >40 beats, partially relax
-  // coupling targets to break the chicken-and-egg bistability.
-  let _exploringBeatCount = 0;
-
-  // E8 / R33 E1: p95 instantaneous spike dampener.
-  // 's regime-transition approach fired one beat late (regime detected
-  // AFTER coupling spike). R33 replaces with velocity-based preemptive
-  // detection: track max beat-to-beat |delta r| across all pairs as a
-  // velocity signal. When velocity exceeds 2x its running EMA, trigger
-  // gain boost on THAT SAME BEAT (catching the spike as it happens).
-  let _couplingVelocityEma = 0;
-  const _VELOCITY_EMA_ALPHA = 0.08;     // ~12-beat horizon
-  const _VELOCITY_TRIGGER_RATIO = 2.0;  // boost when velocity > 2x EMA
-  let _velocityBoostActive = false;     // true on the beat velocity spikes
-  let _velocityBoostCooldown = 0;       // remaining beats of post-spike boost
-  const _VELOCITY_BOOST_BEATS = 3;      // 3 additional beats after spike beat (total 4 incl. spike)
-  const _VELOCITY_GAIN_BOOST = 2.0;
-  /** @type {Record<string, number>} */
-  let _prevBeatAbsCorr = {};
-
-  //  Module-level cache for coherence gate + floor dampening diagnostics.
-  // Updated in _addNudge's COUPLING_GATES emission block; exposed via
-  // getCouplingGates() for inclusion in trace beat entries.
-  let _lastGateD = 1.0;
-  let _lastGateT = 1.0;
-  let _lastGateF = 1.0;
-  let _lastFloorDampen = 1.0;
-  let _lastBypassD = 0;
-  let _lastBypassT = 0;
-  let _lastBypassF = 0;
-
-  //  Per-axis gate temporal statistics. Single-beat snapshots reveal
-  // nothing about gate behavior during active evolving/exploring phases.
-  // Running min and EMA average across the run show whether gates are
-  // periodically closing (confirming coherence gate mechanism is engaging)
-  // or always open (redistribution is temporal, not intra-beat).
-  let _gateMinD = 1.0, _gateMinT = 1.0, _gateMinF = 1.0;
-  let _gateEmaD = 1.0, _gateEmaT = 1.0, _gateEmaF = 1.0;
-  const _GATE_EMA_ALPHA = 0.05; // ~20-beat horizon
-  let _gateBeatCount = 0;
-
-  //  High-priority pair gain promotion.
-  // When a pair's rawRollingAbsCorr stays above threshold while at GAIN_MAX,
-  // temporarily promote it to a higher ceiling. This breaks persistent
-  // overcorrelation that the standard ceiling cannot resolve (e.g. density-
-  // tension +292% in R22). Only one pair promoted at a time to prevent
-  // cascading gain inflation.
-  const _HP_GAIN_MAX = 0.80;
-  const _HP_ROLLING_THRESHOLD = 0.35;
-  const _HP_MAX_BEATS = 50;
-  const _HP_COOLDOWN_BEATS = 30;
-  /** @type {string | null} */
-  let _hpPromotedPair = null;
-  let _hpBeats = 0;
-  let _hpCooldownRemaining = 0;
-
-  //  Monotonic correlation circuit breaker state.
-  // Tracks consecutive same-sign beats per pair to detect structural monotonic
-  // trends. When a pair maintains same-sign correlation with |r| > 0.50 for
-  // >22 consecutive beats, an emergency decorrelation impulse fires.
-  //  Sensitivity tightened (30->22 trigger), heat escalated (0.08->0.15),
-  // cumulative consecutive-trigger counter doubles impulse on repeat triggers.
-  const _MONOTONE_TRIGGER = 22;
-  const _HIGH_CORR_MONOTONE_TRIGGER = 16;
-  const _MONOTONE_ABS_THRESHOLD = 0.50;
-  const _MONOTONE_IMPULSE_RATE = 2.5; // gain escalation multiplier during impulse
-  /** @type {Record<string, { sign: number, count: number, consecutiveTriggers: number }>} */
-  const _monotoneState = {};
-
-  // Per-pair adaptive state: gain, last-observed |r|, and rolling window for p95
-  /** @type {Record<string, { gain: number, lastAbsCorr: number, recentAbsCorr: number[], telemetryAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }>} */
-  const _pairState = {};
-
-  /** Axes where raw nudge hit the soft limit last beat (gain freeze). */
-  /** @type {Set<string>} */
-  const _saturatedAxes = new Set();
-
-  /**
-   * Get or create adaptive state for a pair.
-   * @param {string} key
-  * @returns {{ gain: number, lastAbsCorr: number, recentAbsCorr: number[], telemetryAbsCorr: number[], heatPenalty: number, effectivenessEma: number, effMin: number, effMax: number, effActiveBeats: number, lastEffectiveGain: number }}
-   */
-  function _getPairState(key) {
-    if (!_pairState[key]) {
-      const initGain = _NON_NUDGEABLE_SET.has(key)
-        ? 0
-        : (PAIR_GAIN_INIT[key] !== undefined ? PAIR_GAIN_INIT[key] : GAIN_INIT);
-      _pairState[key] = { gain: initGain, lastAbsCorr: 0, recentAbsCorr: [], telemetryAbsCorr: [], heatPenalty: 0, effectivenessEma: 0.5, effMin: 1.0, effMax: 0.0, effActiveBeats: 0, lastEffectiveGain: 0 };
-    }
-    return _pairState[key];
-  }
-
-  //  Rolling p95 for persistent hotspot detection
-  const _P95_WINDOW = 16;
-  const _TELEMETRY_WINDOW = 96;
-  const _pushWindowValue = pipelineCouplingManagerSnapshot.pushWindowValue;
-  const _getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
-
-  /**
-   * Get target for a pair key. Returns self-calibrated adaptive target (#1).
-   * @param {string} key
-   * @returns {number}
-   */
-  function _getTarget(key) {
-    return _getAdaptiveTarget(key).current;
-  }
-
-  /** @param {string} key */
-  function _getTargetMax(key) {
-    //  Bound target relaxation proportional to baseline.
-    // Prevents adaptive targets from drifting to uselessness. density-flicker
-    // baseline=0.12 was relaxing up to 0.55 (4.6x), gutting decorrelation.
-    // Capping at baseline*2.5 bounds density-flicker to 0.30, density-entropy
-    // to 0.30, etc. while leaving higher-baseline pairs unconstrained.
-    const globalMax = key === 'density-flicker' ? _DENSITY_FLICKER_TARGET_MAX : _TARGET_MAX;
-    const at = _adaptiveTargets[key];
-    return at ? m.min(globalMax, at.baseline * 2.5) : globalMax;
-  }
-
-  // Per-pipeline accumulators
-  let biasDensity = 1.0;
-  let biasTension = 1.0;
-  let biasFlicker = 1.0;
 
   function refresh() {
     const snap = systemDynamicsProfiler.getSnapshot();
     if (!snap || !snap.couplingMatrix) {
-      biasDensity = 1.0;
-      biasTension = 1.0;
-      biasFlicker = 1.0;
+      S.biasDensity = 1.0;
+      S.biasTension = 1.0;
+      S.biasFlicker = 1.0;
       explainabilityBus.emit('COUPLING_SKIP', 'both', { reason: 'no profiler snapshot yet' });
       return;
     }
 
-    // #6: Adaptive coherent relaxation - dynamically derived from regime share
-    const regime = snap.regime;
-    const isCoherent = regime === 'coherent' ? 1 : 0;
-    _coherentShareEma = _coherentShareEma * (1 - _COHERENT_SHARE_EMA_ALPHA) + isCoherent * _COHERENT_SHARE_EMA_ALPHA;
-    const dynamicCoherentRelax = 1.0 + m.max(0, 0.50 - _coherentShareEma) * 1.2;
-    //  Track exploring duration for partial target relaxation.
-    if (regime === 'exploring') { _exploringBeatCount++; } else { _exploringBeatCount = 0; }
+    const setup = couplingRefreshSetup.run(snap);
+    if (setup.budgetConstraintActive) couplingBudgetScoring.compute(setup);
+    couplingBiasAccumulator.computeAxisTotals(setup.matrix);
 
-    //  Coupling velocity computation for preemptive spike dampening.
-    // Compute max beat-to-beat |delta r| across all pairs as velocity signal.
-    let _maxPairDelta = 0;
-    const _prevKeys = Object.keys(_prevBeatAbsCorr);
-    if (_prevKeys.length > 0) {
-      for (let vi = 0; vi < _prevKeys.length; vi++) {
-        const vk = _prevKeys[vi];
-        const currCorr = snap.couplingMatrix[vk];
-        if (typeof currCorr !== 'number' || !Number.isFinite(currCorr)) continue;
-        const delta = m.abs(m.abs(currCorr) - (_prevBeatAbsCorr[vk] || 0));
-        if (delta > _maxPairDelta) _maxPairDelta = delta;
-      }
-    }
-    // Update running velocity EMA and check for spike
-    if (_couplingVelocityEma < 0.001) {
-      _couplingVelocityEma = _maxPairDelta; // seed on first beat
-    } else {
-      _couplingVelocityEma = _couplingVelocityEma * (1 - _VELOCITY_EMA_ALPHA) + _maxPairDelta * _VELOCITY_EMA_ALPHA;
-    }
-    _velocityBoostActive = (_couplingVelocityEma > 0.01 && _maxPairDelta > _couplingVelocityEma * _VELOCITY_TRIGGER_RATIO);
-    if (_velocityBoostActive) {
-      _velocityBoostCooldown = _VELOCITY_BOOST_BEATS;
-    } else if (_velocityBoostCooldown > 0) {
-      _velocityBoostCooldown--;
-    }
-    // E3 / R26 E3: Partial target relaxation during sustained exploring (>40 beats).
-    // Breaks the chicken-and-egg bistability: coupling stays below coherent
-    // threshold because aggressive decorrelation prevents rise; coherent
-    // relaxation never activates because threshold never crossed.
-    //  Increased from 25% to 40% of coherent relaxation. R25 entry at
-    // beat 424/500 was too late; 25% gave targetScale~1.105, insufficient to
-    // produce timely coupling rise. 40% gives targetScale~1.168.
-    let targetScale = 1.0;
-    if (regime === 'coherent') {
-      targetScale = dynamicCoherentRelax;
-    } else if (regime === 'exploring' && _exploringBeatCount > 40) {
-      targetScale = 1.0 + (dynamicCoherentRelax - 1.0) * 0.40;
-    }
-
-    //  Flicker product floor constraint with R20 E5 hysteresis.
-    // When flicker product drops below 0.90 -> enter 'guarding' state.
-    // Exit 'guarding' only when product recovers above 0.96.
-    // While guarding: apply sigmoid gain reduction AND +0.002/beat recovery
-    // nudge toward biasFlicker=1.0 to break the feedback loop.
-    //  Old threshold 0.92 was too tight (entered immediately at
-    // product=0.825 with scalar=0.15, killing 85% of flicker gains while
-    // the existing compressed bias persisted -> vicious cycle).
-    const _flickerProd = safePreBoot.call(() => signalReader.snapshot()?.flickerProduct, 1.0);
-    if (typeof _flickerProd === 'number') {
-      if (_flickerGuardState === 'normal' && _flickerProd < 0.90) {
-        _flickerGuardState = 'guarding';
-        _flickerGuardBeats = 0;
-      } else if (_flickerGuardState === 'guarding' && _flickerProd > 0.96) {
-        _flickerGuardState = 'normal';
-        _flickerGuardBeats = 0;
-      }
-      //  Track consecutive guarding beats for escalation
-      if (_flickerGuardState === 'guarding') {
-        _flickerGuardBeats++;
-      }
-    }
-    const _flickerGainScalar = _flickerGuardState === 'guarding' && typeof _flickerProd === 'number'
-      ? clamp((_flickerProd - 0.80) / 0.12, 0.25, 1.0)
-      : 1.0;
-
-    //  Density product floor guard (mirrors flicker guard).
-    // When density product drops below 0.75, enter guarding state that
-    // reduces density-pair gains and nudges biasDensity toward 1.0.
-    const _densityProd = safePreBoot.call(() => signalReader.snapshot()?.densityProduct, 1.0);
-    if (typeof _densityProd === 'number') {
-      if (_densityGuardState === 'normal' && _densityProd < 0.75) {
-        _densityGuardState = 'guarding';
-        _densityGuardBeats = 0;
-      } else if (_densityGuardState === 'guarding' && _densityProd > 0.82) {
-        _densityGuardState = 'normal';
-        _densityGuardBeats = 0;
-      }
-      if (_densityGuardState === 'guarding') {
-        _densityGuardBeats++;
-      }
-    }
-    const _densityGainScalar = _densityGuardState === 'guarding' && typeof _densityProd === 'number'
-      ? clamp((_densityProd - 0.65) / 0.12, 0.25, 1.0)
-      : 1.0;
-
-    //  Structural floor dampening. When total coupling energy is near its
-    // structural minimum (the floor that decorrelation cannot push below due to
-    // conservation), further gain escalation only redistributes energy between
-    // pairs -- the fundamental cause of whack-a-mole. Dampen all gains
-    // proportionally to proximity to floor.
-    const _floorDampen = safePreBoot.call(() => couplingHomeostasis.getFloorDampen(), 1.0) || 1.0;
-    const _homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-    const _budgetConstraintActive = Boolean(_homeostasisState && _homeostasisState.budgetConstraintActive);
-    const _budgetConstraintPressure = _homeostasisState && typeof _homeostasisState.budgetConstraintPressure === 'number'
-      ? _homeostasisState.budgetConstraintPressure
-      : 0;
-    const _floorRecoveryActive = Boolean(_homeostasisState && _homeostasisState.floorRecoveryActive);
-    const _densityFlickerTailPressure = _homeostasisState && typeof _homeostasisState.densityFlickerTailPressure === 'number'
-      ? _homeostasisState.densityFlickerTailPressure
-      : 0;
-    const _tailPressureByPair = _homeostasisState && _homeostasisState.tailPressureByPair && typeof _homeostasisState.tailPressureByPair === 'object'
-      ? _homeostasisState.tailPressureByPair
-      : null;
-    const _tailRecoveryHandshake = _homeostasisState && typeof _homeostasisState.tailRecoveryHandshake === 'number'
-      ? _homeostasisState.tailRecoveryHandshake
-      : 0;
-    const _densityFlickerOverridePressure = _homeostasisState && typeof _homeostasisState.densityFlickerOverridePressure === 'number'
-      ? _homeostasisState.densityFlickerOverridePressure
-      : 0;
-    const _recoveryAxisHandOffPressure = _homeostasisState && typeof _homeostasisState.recoveryAxisHandOffPressure === 'number'
-      ? _homeostasisState.recoveryAxisHandOffPressure
-      : 0;
-    const _recoveryDominantAxes = _homeostasisState && Array.isArray(_homeostasisState.recoveryDominantAxes)
-      ? _homeostasisState.recoveryDominantAxes
-      : [];
-    const _shortRunRecoveryBias = _homeostasisState && typeof _homeostasisState.shortRunRecoveryBias === 'number'
-      ? _homeostasisState.shortRunRecoveryBias
-      : 0;
-    const _nonNudgeableTailPressure = _homeostasisState && typeof _homeostasisState.nonNudgeableTailPressure === 'number'
-      ? _homeostasisState.nonNudgeableTailPressure
-      : 0;
-    const _nonNudgeableTailPair = _homeostasisState && typeof _homeostasisState.nonNudgeableTailPair === 'string'
-      ? _homeostasisState.nonNudgeableTailPair
-      : '';
-    const _telemetryBeatSpan = snap && typeof snap.telemetryBeatSpan === 'number'
-      ? clamp(m.round(snap.telemetryBeatSpan), 1, 8)
-      : 1;
-    const matrix = snap.couplingMatrix;
-    const _axisShareSnapshot = getAxisEnergyShare();
-    const _axisShares = _axisShareSnapshot && _axisShareSnapshot.shares ? _axisShareSnapshot.shares : {};
-    const _entropyAxisShare = typeof _axisShares.entropy === 'number' && Number.isFinite(_axisShares.entropy)
-      ? _axisShares.entropy
-      : 0;
-    const _entropyAxisPressure = clamp((_entropyAxisShare - 0.20) / 0.08, 0, 1);
-
-    function _sharesAxis(pairKey, axis) {
-      return typeof pairKey === 'string' && typeof axis === 'string' && pairKey.indexOf(axis) !== -1;
-    }
-
-    function _sharesAnyAxis(pairKey, axes) {
-      if (typeof pairKey !== 'string' || !Array.isArray(axes) || axes.length === 0) return false;
-      for (let i = 0; i < axes.length; i++) {
-        if (_sharesAxis(pairKey, axes[i])) return true;
-      }
-      return false;
-    }
-
-    const _nonNudgeableAxes = _nonNudgeableTailPair && _nonNudgeableTailPair.indexOf('-') !== -1
-      ? _nonNudgeableTailPair.split('-')
-      : (_recoveryDominantAxes.length > 0 ? _recoveryDominantAxes.slice() : []);
-
-    _budgetPriorityScore = {};
-    _budgetPriorityBoost = {};
-    _budgetPriorityRank = {};
-    if (_budgetConstraintActive) {
-      /** @type {Array<{ key: string, score: number, boost: number }>} */
-      const rankedPairs = [];
-      for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
-        for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
-          const dimA = ALL_MONITORED_DIMS[a];
-          const dimB = ALL_MONITORED_DIMS[b];
-          const key = dimA + '-' + dimB;
-          if (_NON_NUDGEABLE_SET.has(key)) continue;
-          const corr = matrix[key];
-          if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
-          const absCorr = m.abs(corr);
-          const target = _getTarget(key) * targetScale;
-          const ps = _getPairState(key);
-          const tailTelemetry = _getPairTailTelemetry(ps);
-          const p95 = tailTelemetry.p95;
-          const hotspotRate = tailTelemetry.hotspotRate;
-          const severeRate = tailTelemetry.severeRate;
-          const isDensityFlickerPair = key === 'density-flicker';
-          const isEntropySurfacePair = _ENTROPY_SURFACE_SET.has(key);
-          const previousEffectiveGain = ps.lastEffectiveGain || 0;
-          const gainBase = m.max(ps.gain, GAIN_INIT);
-          const effectiveShortfall = clamp((gainBase - m.min(gainBase, previousEffectiveGain)) / gainBase, 0, 1);
-          const exceedPressure = clamp((absCorr - m.max(target, 0.06)) / 0.45, 0, 1);
-          const residualP95Pressure = clamp((p95 - m.max(target + 0.22, 0.68)) / 0.16, 0, 1);
-          const residualTailPressure = clamp((p95 - m.max(target + 0.18, 0.64)) / 0.14, 0, 1);
-          const densityFlickerClampPressure = isDensityFlickerPair
-            ? clamp(
-              clamp((p95 - 0.90) / 0.08, 0, 1) * 0.40 +
-              severeRate * 0.28 +
-              hotspotRate * 0.18 +
-              clamp((absCorr - 0.88) / 0.10, 0, 1) * 0.14,
-              0,
-              1
-            )
-            : 0;
-          const entropySpilloverPressure = isEntropySurfacePair
-            ? clamp(
-              clamp((p95 - 0.78) / 0.14, 0, 1) * 0.40 +
-              hotspotRate * 0.20 +
-              severeRate * 0.20 +
-              clamp((absCorr - 0.72) / 0.16, 0, 1) * 0.20,
-              0,
-              1
-            )
-            : 0;
-          const nonNudgeableHandOffPressure = _nonNudgeableTailPressure > 0 && _sharesAnyAxis(key, _nonNudgeableAxes)
-            ? clamp(
-              _nonNudgeableTailPressure * (isEntropySurfacePair ? 0.90 : (key.indexOf('phase') !== -1 || key.indexOf('trust') !== -1 ? 0.72 : 0.55)) +
-              _entropyAxisPressure * (isEntropySurfacePair ? 0.24 : 0.08),
-              0,
-              1.2
-            )
-            : 0;
-          const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
-            ? clamp(_tailPressureByPair[key], 0, 1)
-            : 0;
-          //  Late-run severe window clamp. Pairs with high recentSevereRate
-          // and tailPressure represent active late-run exceedance crises that the
-          // full-run average masks. Inject a steep pressure term so these pairs
-          // get promoted into the budget top-K regardless of avg |r|.
-          const recentSevere = tailTelemetry.recentSevereRate || 0;
-          const severeWindowPressure = (recentSevere > 0.50 && tailPressure > 0.40)
-            ? clamp(
-              recentSevere * 0.55 +
-              tailPressure * 0.35 +
-              clamp((p95 - 0.85) / 0.12, 0, 1) * 0.30,
-              0,
-              1.2
-            )
-            : 0;
-          const staticBias = _BUDGET_PRIORITY_GAIN[key] !== undefined
-            ? clamp((_BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1)
-            : 0;
-          // R71 E3: Telemetry gap pressure. When full-window p95 diverges
-          // from recent-window p95 by >0.10, the pair experienced a historical
-          // burst that cadence aliasing may cause the controller to underestimate.
-          // Boost budget score so pairs with stale heat get decorrelation budget.
-          const recentP95 = tailTelemetry.recentP95 || 0;
-          const telemetryGapPressure = clamp((p95 - recentP95 - 0.10) / 0.20, 0, 0.5);
-          const score = clamp(
-            residualTailPressure * 0.18 +
-            tailPressure * (0.15 + _tailRecoveryHandshake * 0.08) +
-            clamp(ps.heatPenalty || 0, 0, 1) * 0.12 +
-            severeRate * 0.10 +
-            hotspotRate * 0.08 +
-            residualP95Pressure * 0.10 +
-            densityFlickerClampPressure * 0.18 +
-            entropySpilloverPressure * 0.16 +
-            _entropyAxisPressure * (isEntropySurfacePair ? 0.18 : 0.04) +
-            nonNudgeableHandOffPressure * 0.16 +
-            effectiveShortfall * 0.08 +
-            exceedPressure * 0.08 +
-            clamp(_tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
-            severeWindowPressure * 0.22 +
-            telemetryGapPressure * 0.14 +
-            staticBias * 0.04,
-            0,
-            1.45
-          );
-          if (score > 0.04) {
-            rankedPairs.push({
-              key,
-              score,
-              boost: 1 + clamp(score + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40 + nonNudgeableHandOffPressure * 0.45 + _entropyAxisPressure * (isEntropySurfacePair ? 0.50 : 0.15) + severeWindowPressure * 0.50, 0, 1.6) * 0.28
-            });
-          }
-        }
-      }
-      rankedPairs.sort(function(a, b) {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.key < b.key ? -1 : 1;
-      });
-
-      //  Axis-dominant exceedance budget uplift. When a single axis
-      // appears in >=3 of the top-5 ranked pairs, that axis is structurally
-      // dominant in exceedance pressure. Apply a self-correcting boost to all
-      // pairs containing that axis, proportional to the dominance count.
-      const _topKForAxisCheck = m.min(_BUDGET_PRIORITY_TOP_K, rankedPairs.length);
-      /** @type {Record<string, number>} */
-      const _axisBudgetDominance = {};
-      for (let ti = 0; ti < _topKForAxisCheck; ti++) {
-        const dims = rankedPairs[ti].key.split('-');
-        for (let di = 0; di < dims.length; di++) {
-          _axisBudgetDominance[dims[di]] = (_axisBudgetDominance[dims[di]] || 0) + 1;
-        }
-      }
-      /** @type {string | null} */
-      let _dominantBudgetAxis = null;
-      let _dominantBudgetAxisCount = 0;
-      const _abdKeys = Object.keys(_axisBudgetDominance);
-      for (let ai = 0; ai < _abdKeys.length; ai++) {
-        if (_axisBudgetDominance[_abdKeys[ai]] >= 3 && _axisBudgetDominance[_abdKeys[ai]] > _dominantBudgetAxisCount) {
-          _dominantBudgetAxis = _abdKeys[ai];
-          _dominantBudgetAxisCount = _axisBudgetDominance[_abdKeys[ai]];
-        }
-      }
-
-      for (let i = 0; i < rankedPairs.length; i++) {
-        const entry = rankedPairs[i];
-        _budgetPriorityScore[entry.key] = Number(entry.score.toFixed(4));
-        const staticBoost = _BUDGET_PRIORITY_GAIN[entry.key] !== undefined
-          ? 1 + (_BUDGET_PRIORITY_GAIN[entry.key] - 1.0) * 0.35
-          : _BUDGET_DEPRIORITIZED_GAIN;
-        //  Extra boost for pairs sharing the dominant axis
-        const axisDominanceBoost = _dominantBudgetAxis && entry.key.indexOf(_dominantBudgetAxis) !== -1
-          ? 1 + (_dominantBudgetAxisCount - 2) * 0.12
-          : 1.0;
-        if (i < _BUDGET_PRIORITY_TOP_K) {
-          const rankBoost = i === 0 ? 1.68 : i === 1 ? 1.54 : i === 2 ? 1.40 : i === 3 ? 1.26 : 1.18;
-          _budgetPriorityBoost[entry.key] = Number((m.max(staticBoost, rankBoost, entry.boost) * axisDominanceBoost).toFixed(4));
-          _budgetPriorityRank[entry.key] = i + 1;
-        } else {
-          _budgetPriorityBoost[entry.key] = Number((staticBoost * axisDominanceBoost).toFixed(4));
-        }
-      }
-    }
-
-    // Accumulate decorrelation nudges across all overcoupled compositional pairs
-    let nudgeD = 0;
-    let nudgeT = 0;
-    let nudgeF = 0;
-    //  Per-axis positive/negative tracking for coherence-gated accumulation.
-    // When pairs sharing an axis disagree on nudge direction, the opposing forces
-    // represent whack-a-mole redistribution (decorrelating one pair inflates
-    // another). Tracking directional agreement enables gating after accumulation.
-    let nudgeDPos = 0, nudgeDNeg = 0;
-    let nudgeTPos = 0, nudgeTNeg = 0;
-    let nudgeFPos = 0, nudgeFNeg = 0;
-    //  Bypass accumulators for severely overcoupled pairs (>2x target).
-    // Coherence gating suppresses ALL redistributive nudges equally, including
-    // those targeting severe outliers. Bypassed nudges skip the gate.
-    let nudgeDBypass = 0, nudgeTBypass = 0, nudgeFBypass = 0;
-
+    // Nudge accumulators
+    const nudges = {
+      D: 0, T: 0, F: 0,
+      DPos: 0, DNeg: 0, TPos: 0, TNeg: 0, FPos: 0, FNeg: 0,
+      DBypass: 0, TBypass: 0, FBypass: 0,
+    };
     /** @param {string} axis  @param {number} amount  @param {boolean} [bypass] */
-    function _addNudge(axis, amount, bypass) {
+    function addNudge(axis, amount, bypass) {
       if (bypass) {
-        if (axis === 'density') nudgeDBypass += amount;
-        else if (axis === 'tension') nudgeTBypass += amount;
-        else nudgeFBypass += amount;
+        if (axis === 'density') nudges.DBypass += amount;
+        else if (axis === 'tension') nudges.TBypass += amount;
+        else nudges.FBypass += amount;
       } else if (axis === 'density') {
-        nudgeD += amount;
-        if (amount >= 0) nudgeDPos += amount; else nudgeDNeg += amount;
+        nudges.D += amount;
+        if (amount >= 0) nudges.DPos += amount; else nudges.DNeg += amount;
       } else if (axis === 'tension') {
-        nudgeT += amount;
-        if (amount >= 0) nudgeTPos += amount; else nudgeTNeg += amount;
+        nudges.T += amount;
+        if (amount >= 0) nudges.TPos += amount; else nudges.TNeg += amount;
       } else {
-        nudgeF += amount;
-        if (amount >= 0) nudgeFPos += amount; else nudgeFNeg += amount;
+        nudges.F += amount;
+        if (amount >= 0) nudges.FPos += amount; else nudges.FNeg += amount;
       }
     }
 
-    //  Pre-pass to compute per-axis total |r| for proportional gain allocation.
-    _axisTotalAbsR = {};
-    //  Initialize all monitored axes to 0 so getAxisCouplingTotals()
-    // always returns all 6 axes. Previously trust/phase reported null when
-    // their pairs had null/NaN correlations on the first captured snapshot.
-    for (let d = 0; d < ALL_MONITORED_DIMS.length; d++) {
-      _axisTotalAbsR[ALL_MONITORED_DIMS[d]] = 0;
-    }
-    _axisPairContrib = {};
-    for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
-      for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
-        const dA = ALL_MONITORED_DIMS[a];
-        const dB = ALL_MONITORED_DIMS[b];
-        const k = dA + '-' + dB;
-        const cv = matrix[k];
-        //  Explicit undefined check alongside null and NaN. The trust-phase
-        // pair is absent from the coupling matrix (14 of 15 pairs computed).
-        // matrix['trust-phase'] returns undefined, which strict === null misses.
-        // m.abs(undefined) = NaN contaminates both trust and phase axis totals.
-        if (cv === null || cv === undefined || cv !== cv) continue;
-        const ac = m.abs(cv);
-        // Attribute to both axes
-        _axisTotalAbsR[dA] = (_axisTotalAbsR[dA] || 0) + ac;
-        _axisTotalAbsR[dB] = (_axisTotalAbsR[dB] || 0) + ac;
-        if (!_axisPairContrib[dA]) _axisPairContrib[dA] = {};
-        if (!_axisPairContrib[dB]) _axisPairContrib[dB] = {};
-        _axisPairContrib[dA][k] = ac;
-        _axisPairContrib[dB][k] = ac;
-      }
-    }
-    //  Update axis coupling EMA. Blends current per-beat totals into
-    // smoothed values so axes with transiently null pairs (phase) don't collapse.
-    for (let d = 0; d < ALL_MONITORED_DIMS.length; d++) {
-      const ax = ALL_MONITORED_DIMS[d];
-      const cur = _axisTotalAbsR[ax] || 0;
-      const prev = _axisSmoothedAbsR[ax];
-      if (prev === undefined) {
-        _axisSmoothedAbsR[ax] = cur; // seed on first beat
-      } else {
-        _axisSmoothedAbsR[ax] = prev * (1 - _AXIS_SMOOTH_ALPHA) + cur * _AXIS_SMOOTH_ALPHA;
-      }
-    }
-
+    // Per-pair loop
     for (let a = 0; a < ALL_MONITORED_DIMS.length; a++) {
       for (let b = a + 1; b < ALL_MONITORED_DIMS.length; b++) {
         const dimA = ALL_MONITORED_DIMS[a];
         const dimB = ALL_MONITORED_DIMS[b];
         const key = dimA + '-' + dimB;
-        const corr = matrix[key];
+        const corr = setup.matrix[key];
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
 
-        let target = _getTarget(key) * targetScale;
         const absCorr = m.abs(corr);
-        const ps = _getPairState(key);
+        const target0 = S.getTarget(key) * setup.targetScale;
+        const ps = S.getPairState(key);
         ps.lastEffectiveGain = 0;
 
-        //  Monotonic correlation circuit breaker. Track consecutive
-        // same-sign beats per pair. When the sign holds for >MONOTONE_TRIGGER
-        // beats with |r| > threshold, the pair has structural monotonic trend.
-        if (!_monotoneState[key]) _monotoneState[key] = { sign: 0, count: 0, consecutiveTriggers: 0 };
-        const _mst = _monotoneState[key];
-        const _corrSign = corr > 0.001 ? 1 : corr < -0.001 ? -1 : 0;
-        if (_corrSign !== 0 && _corrSign === _mst.sign && absCorr > _MONOTONE_ABS_THRESHOLD) {
-          _mst.count++;
-        } else {
-          //  Reset consecutive trigger counter on sign flip
-          if (_corrSign !== _mst.sign) _mst.consecutiveTriggers = 0;
-          _mst.sign = _corrSign;
-          _mst.count = absCorr > _MONOTONE_ABS_THRESHOLD ? 1 : 0;
-        }
-        //  Structural high-correlation pairs in shorter runs need the
-        // circuit breaker sooner, otherwise density-trust can stay monotone
-        // for most of the piece before the impulse has time to act.
-        const _monotoneTrigger = corr > 0.85 ? _HIGH_CORR_MONOTONE_TRIGGER : _MONOTONE_TRIGGER;
-        const _monotoneActive = _mst.count >= _monotoneTrigger;
-        //  Track trigger activations for cumulative escalation
-        if (_monotoneActive && _mst.count === _monotoneTrigger) _mst.consecutiveTriggers++;
+        const flags = couplingConstants.classifyPair(key, dimA, dimB);
+        const tailTelemetry = getPairTailTelemetry(ps);
+        const sp = couplingEffectiveGain.computeSurfacePressures(
+          key, absCorr, tailTelemetry.p95, tailTelemetry, target0, setup, flags);
+        const target = sp.adjustedTarget;
 
-        // -- Adaptive gain logic --
-        const isEntropyPair = (dimA === 'entropy' || dimB === 'entropy');
-        const isTensionEntropyPair = (dimA === 'tension' && dimB === 'entropy') || (dimA === 'entropy' && dimB === 'tension');
-        const isDensityFlickerPair = key === 'density-flicker';
-        const isPhasePair = (dimA === 'phase' || dimB === 'phase');
-        const isPhaseSurfacePair = _PHASE_SURFACE_SET.has(key);
-        const isTrustPair = (dimA === 'trust' || dimB === 'trust');
-        const isEntropySurfacePair = _ENTROPY_SURFACE_SET.has(key);
-        const isNonNudgeablePair = _NON_NUDGEABLE_SET.has(key);
-        const nonNudgeableHandOffPressure = !isNonNudgeablePair && _nonNudgeableTailPressure > 0 && _sharesAnyAxis(key, _nonNudgeableAxes)
-          ? clamp(
-            _nonNudgeableTailPressure * (isEntropySurfacePair ? 0.95 : (isPhaseSurfacePair || isTrustPair ? 0.78 : 0.56)) +
-            _entropyAxisPressure * (isEntropySurfacePair ? 0.30 : 0),
-            0,
-            1.25
-          )
-          : 0;
-        const tailTelemetry = _getPairTailTelemetry(ps);
-        const p95 = tailTelemetry.p95;
-        const telemetryHotspotRate = tailTelemetry.hotspotRate;
-        const telemetrySevereRate = tailTelemetry.severeRate;
-        const tailPressure = _tailPressureByPair && typeof _tailPressureByPair[key] === 'number'
-          ? clamp(_tailPressureByPair[key], 0, 1)
-          : 0;
-        const coherentSurfacePressure = regime === 'coherent'
-          ? clamp(
-            (isPhaseSurfacePair ? clamp((p95 - 0.82) / 0.14, 0, 1) * 0.55 + telemetryHotspotRate * 0.20 : 0) +
-            (isTrustPair ? clamp((p95 - 0.80) / 0.16, 0, 1) * 0.45 + telemetrySevereRate * 0.18 : 0) +
-            (isDensityFlickerPair ? clamp((p95 - 0.88) / 0.10, 0, 1) * 0.25 + tailPressure * 0.10 : 0),
-            0,
-            1
-          )
-          : 0;
-        const entropySurfacePressure = isEntropySurfacePair
-          ? clamp(
-            clamp((p95 - 0.78) / 0.14, 0, 1) * 0.45 +
-            telemetryHotspotRate * 0.20 +
-            telemetrySevereRate * 0.20 +
-            clamp((absCorr - 0.72) / 0.16, 0, 1) * 0.15,
-            0,
-            1
-          )
-          : 0;
-        if ((coherentSurfacePressure > 0 || entropySurfacePressure > 0 || nonNudgeableHandOffPressure > 0) && targetScale > 1.0) {
-          const surfacePressure = m.max(coherentSurfacePressure, entropySurfacePressure, nonNudgeableHandOffPressure);
-          const reducedRelaxScale = 1 + (targetScale - 1.0) * m.max(0.15, 1 - surfacePressure * 0.85);
-          target = _getTarget(key) * reducedRelaxScale;
-        }
-        //  Skip gain escalation for non-nudgeable pairs. Neither axis has
-        // a bias knob, so gains can never produce nudges. Escalating them wastes
-        // budget and pollutes HP promotion candidates. Still track EMAs.
-        if (isNonNudgeablePair) {
-          ps.gain = 0;
-          ps.lastEffectiveGain = 0;
-          ps.lastAbsCorr = absCorr;
-          _pushWindowValue(ps.recentAbsCorr, absCorr, _P95_WINDOW);
-          _pushWindowValue(ps.telemetryAbsCorr, absCorr, _TELEMETRY_WINDOW);
-          const at = _getAdaptiveTarget(key);
-          const adaptEma = isEntropyPair ? _TARGET_ADAPT_EMA * 2.5 : _TARGET_ADAPT_EMA;
-          at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
-          at.rawRollingAbsCorr = at.rawRollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
-          continue;
-        }
-        let _axisGainScale = 1.0;
-        if (absCorr > target) {
-          const improving = absCorr < ps.lastAbsCorr - 0.005; // 0.005 deadband
-          // Freeze gain if either axis in this pair is saturated -
-          // escalating against the soft-limit ceiling wastes the mechanism.
-          const pairSaturated = _saturatedAxes.has(dimA) || _saturatedAxes.has(dimB);
-          if (!improving && !pairSaturated) {
-            // Emergency escalation: when |r| > 2x target, escalate 3x faster
-            let rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
-            //  Persistent hotspot escalation
-            const recentP95 = tailTelemetry.recentP95;
-            if (p95 > target * 1.5) {
-              rate *= 1.5;
-              //  Hotspot Heat Penalty Tracking
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.05, 1.0);
-            } else {
-              ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.01);
-            }
-            //  Escalate anti-correlation handling for tension-entropy.
-            // This pair tends to pin negative; add extra pressure while anti-correlated.
-            if (isTensionEntropyPair && corr < 0) {
-              rate *= 1.2;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.03, 1.0);
-            }
-            // Evo 5 / R17 Evo 5 / E3: Graduated density-flicker escalation.
-            // Binary threshold at 0.7 over-crushed flicker product to 0.845. Graduated
-            // function applies proportional pressure: mild at |r|=0.81, full at |r|=0.95.
-            // E3: Increased heat penalty severity (0.1 -> 0.25) to structurally combat exceedance lock.
-            if (isDensityFlickerPair && m.abs(corr) > 0.80) {
-              const dfGrad = (m.abs(corr) - 0.80) * 2.0;
-              rate *= (1 + dfGrad);
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfGrad * 0.25, 1.0);
-            }
-            if (isDensityFlickerPair) {
-              let dfSevereCount = 0;
-              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
-                if (ps.recentAbsCorr[r] > 0.85) dfSevereCount++;
-              }
-              const dfSevereRate = ps.recentAbsCorr.length > 0 ? dfSevereCount / ps.recentAbsCorr.length : 0;
-              const dfTailPressure = clamp((m.max(p95, recentP95) - 0.88) * 2.8, 0, 0.48)
-                + clamp((dfSevereRate - 0.15) * 1.4, 0, 0.34)
-                + clamp((telemetrySevereRate - 0.12) * 1.6, 0, 0.28)
-                + clamp((m.abs(corr) - 0.90) * 1.8, 0, 0.24);
-              if (dfTailPressure > 0) {
-                rate *= 1 + dfTailPressure;
-                ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfTailPressure * 0.18, 1.0);
-              }
-            }
-            if (isEntropySurfacePair && (m.abs(corr) > 0.70 || p95 > 0.78)) {
-              let entropyExceedCount = 0;
-              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
-                if (ps.recentAbsCorr[r] > 0.78) entropyExceedCount++;
-              }
-              const entropyExceedRate = ps.recentAbsCorr.length > 0 ? entropyExceedCount / ps.recentAbsCorr.length : 0;
-              const entropyPressure = clamp((m.abs(corr) - 0.70) * 1.5, 0, 0.34)
-                + clamp((p95 - 0.78) * 1.9, 0, 0.36)
-                + clamp((telemetryHotspotRate - 0.16) * 0.9, 0, 0.18)
-                + clamp((telemetrySevereRate - 0.04) * 1.2, 0, 0.24)
-                + clamp((entropyExceedRate - 0.18) * 0.8, 0, 0.18);
-              if (entropyPressure > 0) {
-                rate *= 1 + entropyPressure;
-                ps.heatPenalty = m.min((ps.heatPenalty || 0) + entropyPressure * 0.14, 1.0);
-              }
-            }
-            if (isEntropySurfacePair && _entropyAxisPressure > 0) {
-              rate *= 1 + _entropyAxisPressure * 0.55;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + _entropyAxisPressure * 0.08, 1.0);
-            }
-            if (nonNudgeableHandOffPressure > 0) {
-              rate *= 1 + nonNudgeableHandOffPressure * 0.45;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + nonNudgeableHandOffPressure * 0.08, 1.0);
-            }
-            //  Self-correcting phase-pair hotspot controller.
-            // Use current |r|, p95, and exceedance rate from the recent ring
-            // so active phase hotspots are penalized without hardcoding one pair.
-            if (isPhasePair && (m.abs(corr) > 0.78 || p95 > 0.88)) {
-              let phaseExceedCount = 0;
-              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
-                if (ps.recentAbsCorr[r] > 0.85) phaseExceedCount++;
-              }
-              const phaseExceedRate = ps.recentAbsCorr.length > 0 ? phaseExceedCount / ps.recentAbsCorr.length : 0;
-              const phaseCorrPressure = clamp((m.abs(corr) - 0.78) * 1.8, 0, 0.45);
-              const phaseTailPressure = clamp((p95 - 0.88) * 2.0, 0, 0.35);
-              const phaseRatePressure = clamp((phaseExceedRate - 0.25) * 0.9, 0, 0.25);
-              const phasePressure = phaseCorrPressure + phaseTailPressure + phaseRatePressure;
-              rate *= (1 + phasePressure);
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + phasePressure * 0.12, 1.0);
-            }
-            if (isPhaseSurfacePair && (m.abs(corr) > 0.72 || p95 > 0.80)) {
-              const phaseSurfacePressure = clamp((m.abs(corr) - 0.72) * 1.4, 0, 0.28)
-                + clamp((p95 - 0.80) * 1.6, 0, 0.22);
-              rate *= 1 + phaseSurfacePressure;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + phaseSurfacePressure * 0.10, 1.0);
-            }
-            if (isTrustPair && (NUDGEABLE_SET.has(dimA) || NUDGEABLE_SET.has(dimB)) && (m.abs(corr) > 0.74 || p95 > 0.82)) {
-              let trustExceedCount = 0;
-              for (let r = 0; r < ps.recentAbsCorr.length; r++) {
-                if (ps.recentAbsCorr[r] > 0.80) trustExceedCount++;
-              }
-              const trustExceedRate = ps.recentAbsCorr.length > 0 ? trustExceedCount / ps.recentAbsCorr.length : 0;
-              const trustCorrPressure = clamp((m.abs(corr) - 0.74) * 1.7, 0, 0.40);
-              const trustTailPressure = clamp((p95 - 0.82) * 2.0, 0, 0.35);
-              const trustRatePressure = clamp((trustExceedRate - 0.20) * 1.0, 0, 0.25);
-              const trustPressure = trustCorrPressure + trustTailPressure + trustRatePressure;
-              rate *= (1 + trustPressure);
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + trustPressure * 0.14, 1.0);
-            }
-            // Evo 3 / R18 E3: Universal high-correlation escalation.
-            // Catch ANY pair with |r| > 0.85 that has no pair-specific escalator.
-            //  Removed tension-entropy exclusion. With r=-0.815 resurgence,
-            // the pair-specific 1.2x was insufficient; stacking universal 1.15x
-            // gives total 1.38x when |r| > 0.85 AND anti-correlated.
-            if (!isDensityFlickerPair && m.abs(corr) > 0.85) {
-              rate *= 1.15;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.01, 1.0);
-            }
-            // E3 / R32 E1: Per-pair decorrelation effectiveness gating.
-            // Graduated: pairs with effectivenessEma < 0.50 get proportionally
-            // reduced escalation rate. At 0.40 -> 0.80x, at 0.20 -> 0.40x,
-            // at 0.10 -> 0.25x (floor). Replaces R20's binary 0.20 threshold.
-            // Also caps pairGainMax for low-effectiveness pairs to free budget.
-            const _eff = ps.effectivenessEma || 0.5;
-            if (_eff < 0.50) {
-              rate *= m.max(0.25, _eff / 0.50);
-            }
-            //  Heat-penalty escalation cooldown. Pairs with persistent
-            // overcoupling (heatPenalty > 0.30) get proportionally reduced
-            // escalation rate. At 0.50 -> 0.50x, at 1.0 -> 0.35x (floor).
-            // Prevents density-flicker from oscillating between escalation
-            // and relaxation, dampening the p95 tail.
-            const _hp = ps.heatPenalty || 0;
-            if (_hp > 0.30) {
-              rate *= m.max(0.35, 1.0 - _hp);
-            }
-            //  Apply global gain multiplier to escalation rate.
-            // When homeostasis detects redistribution, slow ALL gains.
-            rate *= _globalGainMultiplier;
-            //  Structural floor dampening. Reduces escalation when coupling
-            // energy is near its structural minimum to prevent redistribution.
-            rate *= _floorDampen;
-            let pairGainMax = (key === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
-            //  Effectiveness-gated gain ceiling. Low-effectiveness pairs
-            // (< 0.40) have their max gain capped to prevent budget hoarding.
-            // At eff=0.40 -> cap at GAIN_INIT + 0.40*(MAX-INIT), at eff=0.20
-            // -> cap at GAIN_INIT + 0.20*(MAX-INIT). Floor at GAIN_INIT*1.5.
-            if (_eff < 0.40) {
-              const effCap = GAIN_INIT + (pairGainMax - GAIN_INIT) * m.max(0.40, _eff);
-              pairGainMax = m.min(pairGainMax, m.max(GAIN_INIT * 1.5, effCap));
-            }
-            //  Allow promoted pair higher gain ceiling.
-            if (key === _hpPromotedPair) {
-              pairGainMax = m.max(pairGainMax, _HP_GAIN_MAX);
-            }
-            //  Cap flicker-pair gains when product severely compressed.
-            // 3 pairs at GAIN_MAX with heat 0.60-0.65 were compressing flicker
-            // from multiple directions simultaneously (axis total 1.953).
-            if ((dimA === 'flicker' || dimB === 'flicker') && _flickerGuardState === 'guarding' &&
-                typeof _flickerProd === 'number' && _flickerProd < _FLICKER_PAIR_GAIN_CAP_THRESHOLD) {
-              pairGainMax = m.min(pairGainMax, _FLICKER_PAIR_GAIN_CAP);
-            }
-            //  Density pair gain cap when product severely compressed
-            if ((dimA === 'density' || dimB === 'density') && _densityGuardState === 'guarding' &&
-                typeof _densityProd === 'number' && _densityProd < _DENSITY_PAIR_GAIN_CAP_THRESHOLD) {
-              pairGainMax = m.min(pairGainMax, _DENSITY_PAIR_GAIN_CAP);
-            }
-            //  Phase-pair gain cap. The EMA rescue (R34 E2) stabilized
-            // phase share but also enabled sustained phase-pair coupling that
-            // was previously invisible. flicker-phase p95=0.997, density-phase
-            // p95=0.958. Cap phase-pair gains at 0.35 when |r| > 0.85.
-            //  Universal exceedance gain cap. density-flicker (p95=0.8898,
-            // 35 exceedance beats) was the worst offender in R35 but escaped
-            // the phase-only cap. All pairs now capped at 0.30 when |r|>0.85.
-            // Phase pairs keep their tighter 0.35 cap (absorbed by the lower 0.30).
-            if (absCorr > 0.85) {
-              const severeDensityFlicker = isDensityFlickerPair && (p95 > 0.88 || telemetrySevereRate > 0.10);
-              pairGainMax = m.min(pairGainMax, severeDensityFlicker ? 0.34 : 0.30);
-            }
-            //  Removed active gain decay. Decaying the gain when |r|>0.85
-            // actually REMOVES decorrelation pressure exactly when the pair is
-            // worst. The 0.30 cap above is sufficient to prevent catastrophic
-            // oscillation; we shouldn't dynamically weaken existing pressure.
-            //  Monotonic correlation impulse. When the circuit breaker
-            // detects sustained same-sign correlation, amplify the escalation
-            // rate to break the directional trend. Self-correcting: impulse
-            // decays as soon as the sign flips or |r| drops below threshold.
-            //  Cumulative escalation -- consecutive triggers double the
-            // impulse rate. Heat penalty increased 0.08->0.15 for faster response.
-            if (_monotoneActive) {
-              const _cumulativeScale = m.min(2.0, 1.0 + (_mst.consecutiveTriggers - 1) * 0.50);
-              rate *= _MONOTONE_IMPULSE_RATE * _cumulativeScale;
-              ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.15, 1.0);
-            }
-            ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
-          }
-
-          //  Axis-centric proportional gain scaling.
-          // When an axis's total |r| exceeds its ceiling, scale this pair's
-          // effective gain by its contribution share. Pairs contributing more
-          // coupling get more budget; pairs contributing less get throttled.
-          // This prevents decorrelating one pair from pumping energy into others.
-          _axisGainScale = 1.0;
-          const _dimATotal = _axisTotalAbsR[dimA] || 0;
-          const _dimBTotal = _axisTotalAbsR[dimB] || 0;
-          const _dimACeiling = _AXIS_COUPLING_CEILING[dimA] || 2.0;
-          const _dimBCeiling = _AXIS_COUPLING_CEILING[dimB] || 2.0;
-          if (_dimATotal > _dimACeiling && _axisPairContrib[dimA]) {
-            const pairShare = (_axisPairContrib[dimA][key] || 0) / _dimATotal;
-            _axisGainScale = m.min(_axisGainScale, pairShare * (Object.keys(_axisPairContrib[dimA]).length));
-          }
-          if (_dimBTotal > _dimBCeiling && _axisPairContrib[dimB]) {
-            const pairShare = (_axisPairContrib[dimB][key] || 0) / _dimBTotal;
-            _axisGainScale = m.min(_axisGainScale, pairShare * (Object.keys(_axisPairContrib[dimB]).length));
-          }
-          _axisGainScale = clamp(_axisGainScale, 0.15, 1.5);
-        } else {
-          // Below target - relax gain back toward initial
-          //  Entropy-Coupling Penalty - faster deadband relaxation rate for entropy
-          let relaxRate = isEntropyPair ? GAIN_RELAX_RATE * 2 : GAIN_RELAX_RATE;
-          if (isTensionEntropyPair) relaxRate *= 0.35;
-          ps.gain = clamp(ps.gain - relaxRate, GAIN_INIT, GAIN_MAX);
-          ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.05);
-        }
-        //  Update per-pair decorrelation effectiveness EMA.
-        // Track whether spending gain actually reduced |r|. When a pair has
-        // above-average gain and |r| still exceeds target, check if |r| decreased.
-        // effectiveness = 1 when |r| decreasing under active gain, 0 when stuck.
-        if (ps.gain > GAIN_INIT * 1.2 && absCorr > target) {
-          const improved = absCorr < ps.lastAbsCorr ? 1 : 0;
-          ps.effectivenessEma = (ps.effectivenessEma || 0.5) * 0.95 + improved * 0.05;
-          //  Per-pair effectiveness temporal tracking (min/max/activeBeats)
-          ps.effActiveBeats = (ps.effActiveBeats || 0) + 1;
-          ps.effMin = m.min(ps.effMin !== undefined ? ps.effMin : 1.0, ps.effectivenessEma);
-          ps.effMax = m.max(ps.effMax !== undefined ? ps.effMax : 0.0, ps.effectivenessEma);
-        }
-        ps.lastAbsCorr = absCorr;
-
-        //  Update rolling |r| window for persistent hotspot tracking
-        _pushWindowValue(ps.recentAbsCorr, absCorr, _P95_WINDOW);
-        const telemetryWeight = isTrustPair ? m.min(_TELEMETRY_WINDOW, _telemetryBeatSpan + 1) : _telemetryBeatSpan;
-        for (let tw = 0; tw < telemetryWeight; tw++) {
-          _pushWindowValue(ps.telemetryAbsCorr, absCorr, _TELEMETRY_WINDOW);
-        }
-
-        // -- #1: Self-calibrate coupling target --
-        const at = _getAdaptiveTarget(key);
-        //  Modulate adapt EMA for entropy pairs tighter to limit runaway phase velocity
-        const adaptEma = isEntropyPair ? _TARGET_ADAPT_EMA * 2.5 : _TARGET_ADAPT_EMA;
-        at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
-
-        //  Regime-transparent target adaptation (dual-EMA).
-        // Maintain a raw rolling |r| EMA (unscaled by regime) for target self-
-        // calibration. During coherent regime, dynamicCoherentRelax masks structural
-        // coupling from the effective EMA (rollingAbsCorr). The raw EMA captures
-        // true coupling magnitude regardless of regime, enabling timely target
-//  Removed the 0.8x coherent attenuation. rawRollingAbsCorr must
-// represent the UNCORRUPTED structural magnitude for valid intractability detection.
-const rawEmaInput = absCorr;
-        at.rawRollingAbsCorr = at.rawRollingAbsCorr * (1 - adaptEma) + rawEmaInput * adaptEma;
-
-        // Intractable: raw rolling avg far above target despite near-max gain - relax.
-        //  Use rawRollingAbsCorr instead of rollingAbsCorr so coherent
-        // relaxation cannot mask structural coupling from target calibration.
-        //  Resolve exceedance cap deadlock. If |r| > 0.85, gain maxes at 0.30.
-        const effectiveGainCap = absCorr > 0.85 ? 0.30 : GAIN_MAX;
-        if (at.rawRollingAbsCorr > at.current * 1.8 && ps.gain >= effectiveGainCap * 0.85) {
-          at.current = clamp(at.current + _TARGET_RELAX_RATE, _TARGET_MIN, _getTargetMax(key));
-        // Easily resolved: raw rolling avg well below target - tighten toward baseline
-        //  Density product guard sigmoid. Binary <0.75 gate was blocking ALL
-        // density pair tightening when product was 0.7357 (barely below threshold),
-        // preventing density-entropy from recovering toward baseline even when resolved.
-        // Sigmoid transition allows proportional tightening as product approaches healthy.
-        } else if (at.rawRollingAbsCorr < at.current * 0.5) {
-          let tightenRate = _TARGET_TIGHTEN_RATE;
-          const sig = safePreBoot.call(() => signalReader.snapshot(), null);
-          if (sig && (dimA === 'density' || dimB === 'density')) {
-            // Sigmoid: at 0.68 -> scalar~0.12, at 0.72 -> 0.50, at 0.75 -> 0.82, at 0.80 -> 0.98
-            const _sigScalar = 1 / (1 + m.exp(-25 * (sig.densityProduct - 0.72)));
-            tightenRate *= _sigScalar;
-          }
-          if (sig && (dimA === 'flicker' || dimB === 'flicker') && (dimA === 'trust' || dimB === 'trust')) {
-            //  Trust Exceedance Guard explicitly targets flicker-trust exceedances
-            // by squashing the target tightening rate if structural limits are approached.
-            const ts = safePreBoot.call(() => adaptiveTrustScores.getSnapshot(), {});
-            let avgTrust = 0;
-            let tCount = 0;
-            const entries = Object.values(ts || {});
-            for (let i = 0; i < entries.length; i++) {
-              if (entries[i] && typeof entries[i].score === 'number') {
-                avgTrust += entries[i].score;
-                tCount++;
-              }
-            }
-            if (tCount > 0) avgTrust /= tCount;
-            const _flickerTrustScalar = 1 / (1 + m.exp(-25 * ((sig.flickerProduct + avgTrust)/2 - 0.70)));
-            tightenRate *= _flickerTrustScalar;
-          }
-          if (tightenRate > 0.0001) {
-            at.current = clamp(at.current - tightenRate, _TARGET_MIN, at.baseline);
-          }
-        }
-
-        // Skip nudge if below target
-        if (absCorr <= target) {
-          ps.lastEffectiveGain = 0;
+        if (flags.isNonNudgeablePair) {
+          couplingGainEscalation.handleNonNudgeable(key, ps, absCorr, flags.isEntropyPair);
           continue;
         }
 
-        // Split decorrelation nudge across BOTH nudgeable axes in opposite
-        // directions. Single-axis nudging caused accidental co-movement when
-        // multiple pairs pushed the same axis the same way.
-        const aIsNudgeable = NUDGEABLE_SET.has(dimA);
-        const bIsNudgeable = NUDGEABLE_SET.has(dimB);
-        if (!aIsNudgeable && !bIsNudgeable) continue;
+        const { axisGainScale } = couplingGainEscalation.processGain(
+          key, dimA, dimB, corr, absCorr, target, ps, tailTelemetry, setup, flags, sp.nonNudgeableHandOffPressure);
 
-        //  Apply axis-centric gain scaling to effective gain
-        //  Apply flicker product floor scalar to pairs involving flicker
-        //  Apply global gain multiplier from couplingHomeostasis
-        let effectiveGain = ps.gain * _axisGainScale * _globalGainMultiplier;
-        if (dimA === 'flicker' || dimB === 'flicker') {
-          effectiveGain *= _flickerGainScalar;
-        }
-        //  Density product floor guard scalar
-        if (dimA === 'density' || dimB === 'density') {
-          effectiveGain *= _densityGainScalar;
-        }
-        if (_budgetConstraintActive) {
-          const budgetFocus = _budgetPriorityBoost[key] !== undefined
-            ? _budgetPriorityBoost[key]
-            : (_BUDGET_PRIORITY_GAIN[key] !== undefined
-              ? 1 + (_BUDGET_PRIORITY_GAIN[key] - 1.0) * 0.35
-              : _BUDGET_DEPRIORITIZED_GAIN);
-          effectiveGain *= 1 + (budgetFocus - 1) * _budgetConstraintPressure;
-        }
-        if (isPhaseSurfacePair && absCorr > target * 1.4) {
-          effectiveGain *= 1.18;
-        }
-        if (coherentSurfacePressure > 0) {
-          effectiveGain *= 1 + coherentSurfacePressure * 0.45;
-        }
-        if (isEntropySurfacePair && entropySurfacePressure > 0) {
-          effectiveGain *= 1 + entropySurfacePressure * 0.55;
-        }
-        if (isEntropySurfacePair && _entropyAxisPressure > 0) {
-          effectiveGain *= 1 + _entropyAxisPressure * 0.45;
-        }
-        if (nonNudgeableHandOffPressure > 0) {
-          effectiveGain *= 1 + nonNudgeableHandOffPressure * (isEntropySurfacePair ? 0.85 : 0.60);
-        }
-        if (isDensityFlickerPair && _densityFlickerTailPressure > 0) {
-          const densityFlickerClampPressure = clamp(
-            _densityFlickerTailPressure * 0.75 +
-            clamp((p95 - 0.88) / 0.10, 0, 1) * 0.25 +
-            telemetrySevereRate * 0.30,
-            0,
-            1.4
-          );
-          effectiveGain *= 1 + densityFlickerClampPressure * (_floorRecoveryActive ? 1.10 : 0.85);
-        }
-        if (isDensityFlickerPair && _densityFlickerOverridePressure > 0) {
-          effectiveGain *= 1 + _densityFlickerOverridePressure * (_floorRecoveryActive ? 1.30 : 0.95);
-        }
-        if (_recoveryAxisHandOffPressure > 0 && (dimA === 'density' || dimA === 'flicker' || dimB === 'density' || dimB === 'flicker')) {
-          effectiveGain *= 1 + _recoveryAxisHandOffPressure * (0.18 + _shortRunRecoveryBias * 0.30);
-        }
-        if (_tailRecoveryHandshake > 0 && tailPressure > 0.03) {
-          effectiveGain *= 1 + _tailRecoveryHandshake * clamp(tailPressure * 1.25, 0, 1) * 0.75;
-        }
-        //  Velocity-based spike dampener. Boost gain on the spike beat
-        // itself (velocityBoostActive) AND for _VELOCITY_BOOST_BEATS after.
-        if (_velocityBoostActive || _velocityBoostCooldown > 0) {
-          effectiveGain *= _VELOCITY_GAIN_BOOST;
-        }
-        //  Late-run severe window effectiveGain escalation. Pairs with
-        // high recentSevereRate and tailPressure get 1.5x effective gain to
-        // break through late-run exceedance that the full-run average masks.
-        const _recentSevereRate = tailTelemetry.recentSevereRate || 0;
-        if (_recentSevereRate > 0.50 && tailPressure > 0.40) {
-          effectiveGain *= 1 + clamp(_recentSevereRate * 0.35 + tailPressure * 0.15, 0, 0.50);
-        }
-        //  Anti-correlation response. When pearsonR is strongly negative
-        // (< -0.65), the decorrelation engine creates a feedback loop pushing
-        // the pair further apart. Dampen nudge proportionally to anti-correlation
-        // depth. Self-correcting: dampening eases as |pearsonR| decreases.
-        if (corr < -0.65) {
-          const _antiCorrDepth = clamp((m.abs(corr) - 0.65) / 0.35, 0, 1);
-          effectiveGain *= m.max(0.15, 1.0 - _antiCorrDepth * 0.80);
-        }
-        //  Positive correlation preemptive brake. tension-flicker hit
-        // pearsonR=0.646 (increasing) in R62. When any pair builds strong
-        // positive monotonic correlation (>0.50), dampen gain to prevent the
-        // decorrelation engine from inadvertently reinforcing the trend via
-        // coordinated nudges. Self-correcting: brake releases as |r| drops.
-        if (corr > 0.50) {
-          const _posCorrDepth = clamp((corr - 0.50) / 0.40, 0, 1);
-          effectiveGain *= m.max(0.30, 1.0 - _posCorrDepth * 0.55);
-        }
-        // R71 E1: Density-flicker decorrelation ceiling. When the pair is
-        // severely overcoupled (p95 > 0.88, severe rate > 0.08), cap
-        // effective gain to prevent runaway budget consumption on a
-        // structurally irreducible pair. Frees budget for rising pairs
-        // (density-entropy, entropy-phase).
-        if (isDensityFlickerPair && p95 > 0.88 && telemetrySevereRate > 0.08) {
-          effectiveGain = m.min(effectiveGain, 0.20);
-        }
-        ps.lastEffectiveGain = effectiveGain;
+        if (absCorr <= target) { ps.lastEffectiveGain = 0; continue; }
 
-        if (aIsNudgeable && bIsNudgeable) {
-          const excess = absCorr - target;
-          const direction = -m.sign(corr);
-          //  Escalate magnitude via exponential heat penalty curve
-          const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
-          const magnitude = effectiveGain * excess * heatMulti;
-          //  Bypass coherence gate for severely overcoupled pairs.
-          // When |r| > 2x baseline, this pair is genuinely problematic and its
-          // nudge should not be suppressed. R38 E3: Check against baseline, not adapted target.
-          const isSevere = absCorr > at.baseline * targetScale * 2.0;
-
-          const half = magnitude * 0.5;
-          _addNudge(dimA, -direction * half, isSevere);
-          _addNudge(dimB, direction * half, isSevere);
-        } else {
-          const excess = absCorr - target;
-          const direction = -m.sign(corr);
-          //  Escalate magnitude via exponential heat penalty curve
-          const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
-          const magnitude = effectiveGain * excess * heatMulti;
-          const isSevere = absCorr > at.baseline * targetScale * 2.0;
-
-          const nudgeAxis = aIsNudgeable ? dimA : dimB;
-          _addNudge(nudgeAxis, direction * magnitude, isSevere);
-        }
+        couplingEffectiveGain.computeAndNudge(
+          key, dimA, dimB, corr, absCorr, target, ps, tailTelemetry, setup, flags, sp, axisGainScale, addNudge);
       }
     }
 
-    //  Snapshot current absCorr per pair for next-beat velocity computation.
-    _prevBeatAbsCorr = {};
-    for (let va = 0; va < ALL_MONITORED_DIMS.length; va++) {
-      for (let vb = va + 1; vb < ALL_MONITORED_DIMS.length; vb++) {
-        const vk = ALL_MONITORED_DIMS[va] + '-' + ALL_MONITORED_DIMS[vb];
-        const vc = matrix[vk];
-        if (typeof vc === 'number' && Number.isFinite(vc)) _prevBeatAbsCorr[vk] = m.abs(vc);
-      }
-    }
-
-    //  High-priority pair promotion / demotion / cooldown.
-    // After processing all pairs, evaluate whether to promote, maintain, or
-    // demote a pair. Only one pair may be promoted at a time.
-    if (_hpCooldownRemaining > 0) {
-      _hpCooldownRemaining--;
-    }
-    if (_hpPromotedPair !== null) {
-      _hpBeats++;
-      const hpAt = _adaptiveTargets[_hpPromotedPair];
-      const hpPs = _pairState[_hpPromotedPair];
-      // Demote if: beats exceeded, pair resolved, or pair state missing
-      const hpResolved = hpAt && hpAt.rawRollingAbsCorr < _HP_ROLLING_THRESHOLD * 0.8;
-      //  Early demotion when effectiveness drops below threshold.
-      // Prevents wasting promotion on intractable pairs.
-      const hpLowEffectiveness = hpPs && (hpPs.effectivenessEma || 0.5) < 0.30;
-      if (_hpBeats >= _HP_MAX_BEATS || hpResolved || hpLowEffectiveness || !hpAt || !hpPs) {
-        // Cap gain back to normal ceiling on demotion
-        if (hpPs) {
-          const normalMax = (_hpPromotedPair === 'density-flicker') ? _densityFlickerGainCeiling : GAIN_MAX;
-          hpPs.gain = m.min(hpPs.gain, normalMax);
-        }
-        _hpPromotedPair = null;
-        _hpBeats = 0;
-        _hpCooldownRemaining = _HP_COOLDOWN_BEATS;
-      }
-    } else if (_hpCooldownRemaining <= 0) {
-      // Find worst eligible pair: at GAIN_MAX, rawRollingAbsCorr above threshold
-      let worstKey = null;
-      let worstRolling = 0;
-      const atKeys = Object.keys(_adaptiveTargets);
-      for (let i = 0; i < atKeys.length; i++) {
-        const ak = atKeys[i];
-        const at = _adaptiveTargets[ak];
-        const ps = _pairState[ak];
-        if (!at || !ps) continue;
-        // Must be at or near GAIN_MAX and above rolling threshold
-        if (ps.gain >= GAIN_MAX * 0.95 && at.rawRollingAbsCorr > _HP_ROLLING_THRESHOLD) {
-          //  Only promote nudgeable pairs. In R23, entropy-phase was
-          // promoted (gain=0.690) but neither axis is nudgeable -- gain ceiling
-          // boost had zero effect since nudge is skipped for non-nudgeable pairs.
-          const hpDims = ak.split('-');
-          if (!NUDGEABLE_SET.has(hpDims[0]) && !NUDGEABLE_SET.has(hpDims[1])) continue;
-          //  Require minimum effectiveness before promotion.
-          if ((ps.effectivenessEma || 0.5) < 0.35) continue;
-          if (at.rawRollingAbsCorr > worstRolling) {
-            worstRolling = at.rawRollingAbsCorr;
-            worstKey = ak;
-          }
-        }
-      }
-      if (worstKey !== null) {
-        _hpPromotedPair = worstKey;
-        _hpBeats = 0;
-      }
-    }
-
-    //  Coherence-gated nudge accumulation. The structural cause of
-    // whack-a-mole is that pairs sharing an axis often disagree on nudge
-    // direction (pair A wants density UP, pair B wants density DOWN).
-    // The arithmetic sum partially cancels, but BOTH pairs' gains escalate
-    // because neither sees improvement -- a positive feedback loop that
-    // drives total energy up while shuffling it between pairs.
-    // Coherence = |net nudge| / (|positive| + |negative|). When pairs
-    // fully agree (coherence=1), the nudge passes through. When they
-    // disagree (coherence->0), the nudge is suppressed because it would
-    // only redistribute, not reduce, total coupling energy.
-    function _coherenceGate(pos, neg) {
-      const total = pos + m.abs(neg);
-      if (total < 0.001) return 1.0;
-      return m.abs(pos + neg) / total;
-    }
-    const _gateD = _coherenceGate(nudgeDPos, nudgeDNeg);
-    const _gateT = _coherenceGate(nudgeTPos, nudgeTNeg);
-    const _gateF = _coherenceGate(nudgeFPos, nudgeFNeg);
-    //  Apply coherence gate to gated nudges, then add bypass nudges.
-    // Bypass nudges from severely overcoupled pairs (>2x target) skip the
-    // gate to ensure extreme outliers always receive decorrelation pressure.
-    nudgeD = nudgeD * _gateD + nudgeDBypass;
-    nudgeT = nudgeT * _gateT + nudgeTBypass;
-    nudgeF = nudgeF * _gateF + nudgeFBypass;
-
-    //  Emit coherence gate + floor dampening diagnostics for trace.
-    // Per-axis gate values reveal how much nudge suppression is occurring
-    // and which axes are most contested. Combined with floorDampen, enables
-    // quantitative analysis of the anti-redistribution mechanisms.
-    //  Also cache values at module level for getCouplingGates() getter,
-    // enabling inclusion in trace beat entries (not just explainabilityBus).
-    _lastGateD = Number(_gateD.toFixed(4));
-    _lastGateT = Number(_gateT.toFixed(4));
-    _lastGateF = Number(_gateF.toFixed(4));
-    _lastFloorDampen = Number(_floorDampen.toFixed(4));
-    _lastBypassD = Number(nudgeDBypass.toFixed(6));
-    _lastBypassT = Number(nudgeTBypass.toFixed(6));
-    _lastBypassF = Number(nudgeFBypass.toFixed(6));
-    //  Update gate temporal statistics
-    _gateMinD = m.min(_gateMinD, _gateD);
-    _gateMinT = m.min(_gateMinT, _gateT);
-    _gateMinF = m.min(_gateMinF, _gateF);
-    _gateEmaD = _gateEmaD * (1 - _GATE_EMA_ALPHA) + _gateD * _GATE_EMA_ALPHA;
-    _gateEmaT = _gateEmaT * (1 - _GATE_EMA_ALPHA) + _gateT * _GATE_EMA_ALPHA;
-    _gateEmaF = _gateEmaF * (1 - _GATE_EMA_ALPHA) + _gateF * _GATE_EMA_ALPHA;
-    _gateBeatCount++;
-    explainabilityBus.emit('COUPLING_GATES', 'all', {
-      gateD: _lastGateD,
-      gateT: _lastGateT,
-      gateF: _lastGateF,
-      floorDampen: _lastFloorDampen,
-      bypassD: _lastBypassD,
-      bypassT: _lastBypassT,
-      bypassF: _lastBypassF,
-    });
-
-    // #9: Budget enforcement - cap per-axis accumulation before soft-limiting
-    // to prevent coupling manager from dominating ANY single pipeline.
-    //  Dynamic axis budget self-calibration. Derive from live total
-    // coupling energy so budget auto-scales across profiles. Uses homeostasis
-    // totalEnergyEma when available, else falls back to static default.
-    let _dynAxisBudget = _AXIS_BUDGET;
-    if (_homeostasisState && _homeostasisState.totalEnergyEma > 0.1) {
-      // Budget = totalEnergy / (3 nudgeable axes * normalizing factor)
-      _dynAxisBudget = clamp(_homeostasisState.totalEnergyEma / 15.0, 0.12, 0.36);
-    }
-    const _dynFlickerBudget = _dynAxisBudget * 1.5;
-    if (m.abs(nudgeD) > _dynAxisBudget) nudgeD = m.sign(nudgeD) * _dynAxisBudget;
-    if (m.abs(nudgeT) > _dynAxisBudget) nudgeT = m.sign(nudgeT) * _dynAxisBudget;
-    if (m.abs(nudgeF) > _dynFlickerBudget) nudgeF = m.sign(nudgeF) * _dynFlickerBudget;
-
-    // Soft-limit: scale accumulated nudges so raw bias stays within the
-    // pipeline's clamp envelope. Health-aware: when signalHealthAnalyzer
-    // reports strained or worse overall health, expand bandwidth by 0.04
-    // to give the coupling manager more room to decorrelate.
-    // Without this, the conductor clips silently and the gain keeps
-    // escalating against a ceiling, producing max-clamp bias every beat.
-    let _softLimit = 0.16; // base max deviation from 1.0 per axis
-    const healthGrade = safePreBoot.call(() => signalHealthAnalyzer.getHealth().overall, 'healthy');
-    if (healthGrade === 'strained' || healthGrade === 'stressed' || healthGrade === 'critical') {
-      _softLimit = 0.20; // expanded bandwidth under system stress
-    }
-
-    // Flicker gets wider soft limit (1.5x) to give decorrelation genuine room;
-    // its coupling is highest (0.571/0.622) and hits the base ceiling every beat.
-    const _flickerSoftLimit = _softLimit * 1.5;
-
-    // Detect saturation BEFORE clamping - used next beat to freeze gains
-    _saturatedAxes.clear();
-    if (m.abs(nudgeD) >= _softLimit * 0.9) _saturatedAxes.add('density');
-    if (m.abs(nudgeT) >= _softLimit * 0.9) _saturatedAxes.add('tension');
-    if (m.abs(nudgeF) >= _flickerSoftLimit * 0.9) _saturatedAxes.add('flicker');
-
-    nudgeD = clamp(nudgeD, -_softLimit, _softLimit);
-    nudgeT = clamp(nudgeT, -_softLimit, _softLimit);
-    nudgeF = clamp(nudgeF, -_flickerSoftLimit, _flickerSoftLimit);
-
-    biasDensity = 1.0 + nudgeD;
-    biasTension = 1.0 + nudgeT;
-    biasFlicker = 1.0 + nudgeF;
-
-    //  Tension product self-limiter. When the aggregate tension
-    // product approaches the pipeline cap (1.42), dampen this module's
-    // tension push proportionally. Prevents saturation when regime
-    // correction (regimeReactiveDamping) and coupling correction both
-    // push tension up simultaneously. Self-correcting: dampening eases
-    // as product drops below threshold.
-    const _tensionProd = safePreBoot.call(() => signalReader.snapshot()?.tensionProduct, 1.0);
-    if (typeof _tensionProd === 'number' && _tensionProd > 1.30 && biasTension > 1.0) {
-      const _tensionSaturationDepth = clamp((_tensionProd - 1.30) / 0.12, 0, 1);
-      biasTension = 1.0 + (biasTension - 1.0) * (1.0 - _tensionSaturationDepth * 0.70);
-    }
-
-    //  While in flicker-guarding state, apply a recovery nudge toward
-    // biasFlicker=1.0 to break the vicious cycle where compressed bias -> low
-    // product -> gain kill -> compressed bias persists.
-    //  Escalated nudge rate based on consecutive guarding beats.
-    // At 0-30 beats: 0.002/beat (original). 30-60: 0.005/beat. 60+: 0.008/beat.
-    // showed product=0.847 after full run -- nudge too slow to overcome
-    // multi-pair flicker compression from 3 pairs at GAIN_MAX.
-    if (_flickerGuardState === 'guarding' && biasFlicker < 0.98) {
-      let nudgeRate = 0.002;
-      if (_flickerGuardBeats > 60) {
-        nudgeRate = 0.008;
-      } else if (_flickerGuardBeats > 30) {
-        nudgeRate = 0.005;
-      }
-      biasFlicker = m.min(biasFlicker + nudgeRate, 1.0);
-    }
-    //  Density guard recovery nudge (mirrors flicker guard pattern).
-    if (_densityGuardState === 'guarding' && biasDensity < 0.98) {
-      let densityNudgeRate = 0.002;
-      if (_densityGuardBeats > 60) {
-        densityNudgeRate = 0.008;
-      } else if (_densityGuardBeats > 30) {
-        densityNudgeRate = 0.005;
-      }
-      biasDensity = m.min(biasDensity + densityNudgeRate, 1.0);
-    }
+    couplingBiasAccumulator.snapshotPrevBeat(setup.matrix);
+    couplingBiasAccumulator.processHPPromotion();
+    couplingBiasAccumulator.finalize(nudges, setup);
   }
 
-  function densityBias() { return biasDensity; }
-  function tensionBias() { return biasTension; }
-  function flickerBias() { return biasFlicker; }
+  function densityBias() { return S.biasDensity; }
+  function tensionBias() { return S.biasTension; }
+  function flickerBias() { return S.biasFlicker; }
 
-  function reset() {
-    biasDensity = 1.0;
-    biasTension = 1.0;
-    biasFlicker = 1.0;
-    _saturatedAxes.clear();
-    //  Warm-start section gains for chronically elevated pairs.
-    // For pairs where pre-reset median |r| exceeds target * 2, start
-    // the new section at initGain * 1.5 to close the "gift window"
-    // where coupling spikes before gain escalation catches up.
-    const keys = Object.keys(_pairState);
-    for (let i = 0; i < keys.length; i++) {
-      const initGain = PAIR_GAIN_INIT[keys[i]] !== undefined ? PAIR_GAIN_INIT[keys[i]] : GAIN_INIT;
-      const ps = _pairState[keys[i]];
-      let warmGain = initGain;
-      if (ps.recentAbsCorr.length >= 4) {
-        const sorted = ps.recentAbsCorr.slice().sort((a, b) => a - b);
-        const mid = m.floor(sorted.length / 2);
-        const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-        const pairTarget = _getAdaptiveTarget(keys[i]).current;
-        if (median > pairTarget * 2) {
-          warmGain = m.min(initGain * 1.5, GAIN_MAX * 0.6);
-        }
-      }
-      ps.gain = warmGain;
-      ps.lastAbsCorr = 0;
-      ps.recentAbsCorr = [];
-      ps.heatPenalty = 0;
-      //  Reset effectiveness temporal tracking per section
-      ps.effMin = 1.0;
-      ps.effMax = 0.0;
-      ps.effActiveBeats = 0;
-    }
-    // #1: Cross-section coupling memory (R17 structural fix).
-    // Adaptive targets are NOT reset on section boundaries. The self-calibrating
-    // system (#1 hypermeta) accumulates structural knowledge across the full
-    // composition. Only tactical state (gains, heatPenalty) resets per section.
-    //  Graduated dampening by pair drift. Pairs that drifted far above
-    // baseline (e.g. density-flicker at 2x+) get heavier dampening (0.3x) to
-    // curtail relaxation drift, while well-controlled pairs retain more memory (0.7x).
-    const targetKeys = Object.keys(_adaptiveTargets);
-    for (let i = 0; i < targetKeys.length; i++) {
-      const at = _adaptiveTargets[targetKeys[i]];
-      const driftRatio = at.baseline > 0 ? at.current / at.baseline : 1;
-      const dampen = driftRatio > 1.5 ? 0.3 : 0.7;
-      at.rollingAbsCorr *= dampen;
-      at.rawRollingAbsCorr *= dampen;
-    }
-    // #6: Dampen (not reset) coherent share EMA -- preserves cross-section regime memory
-    _coherentShareEma = _coherentShareEma * 0.7 + 0.15 * 0.3;
-    //  Reset exploring beat counter per section
-    _exploringBeatCount = 0;
-    //  Reset velocity spike dampener per section
-    _velocityBoostCooldown = 0;
-    _velocityBoostActive = false;
-    _couplingVelocityEma = 0;
-    _prevBeatAbsCorr = {};
-    //  Reset monotone circuit breaker per section
-    const _mstKeys = Object.keys(_monotoneState);
-    for (let mi = 0; mi < _mstKeys.length; mi++) { _monotoneState[_mstKeys[mi]].count = 0; _monotoneState[_mstKeys[mi]].sign = 0; }
-    //  Dampen smoothed axis totals (preserve cross-section memory)
-    const _smKeys = Object.keys(_axisSmoothedAbsR);
-    for (let si = 0; si < _smKeys.length; si++) _axisSmoothedAbsR[_smKeys[si]] *= 0.50;
-    //  Reset flicker guard to allow fresh assessment per section
-    _flickerGuardState = 'normal';
-    //  Reset density guard per section
-    _densityGuardState = 'normal';
-    //  Reset high-priority promotion state per section
-    _hpPromotedPair = null;
-    _hpBeats = 0;
-    _hpCooldownRemaining = 0;
-    _budgetPriorityScore = {};
-    _budgetPriorityBoost = {};
-    _budgetPriorityRank = {};
-  }
-  /**
-   * R18 E5 / R19 E1+E2 / R20 E6: Expose adaptive target state for trace diagnostics.
-   * Returns per-pair baseline, current, rollingAbsCorr, rawRollingAbsCorr,
-   * tactical and long-window tail telemetry, gain, effectiveGain, nudgeability,
-   * dynamic budget focus, heatPenalty, effectivenessEma, and per-axis totals
-   * for post-run analysis.
-   */
   function getAdaptiveTargetSnapshot() {
     return pipelineCouplingManagerSnapshot.buildAdaptiveTargetSnapshot({
-      adaptiveTargets: _adaptiveTargets,
-      pairState: _pairState,
-      nonNudgeableSet: _NON_NUDGEABLE_SET,
-      budgetPriorityScore: _budgetPriorityScore,
-      budgetPriorityBoost: _budgetPriorityBoost,
-      budgetPriorityRank: _budgetPriorityRank,
-      hpPromotedPair: _hpPromotedPair,
+      adaptiveTargets: S.adaptiveTargets,
+      pairState: S.pairState,
+      nonNudgeableSet: couplingConstants.NON_NUDGEABLE_SET,
+      budgetPriorityScore: S.budgetPriorityScore,
+      budgetPriorityBoost: S.budgetPriorityBoost,
+      budgetPriorityRank: S.budgetPriorityRank,
+      hpPromotedPair: S.hpPromotedPair,
     });
   }
 
-  /**
-   * R19 E1: Return per-axis total |r| sums for trace diagnostics.
-   * R34 E2: Returns smoothed EMA values instead of raw per-beat snapshot.
-   * This prevents phase axis from collapsing to 0 when phase pairs have
-   * null correlations on the sampled beat.
-   * @returns {Record<string, number>}
-   */
   function getAxisCouplingTotals() {
-    return pipelineCouplingManagerSnapshot.buildAxisCouplingTotals(_axisSmoothedAbsR);
+    return pipelineCouplingManagerSnapshot.buildAxisCouplingTotals(S.axisSmoothedAbsR);
   }
 
-  /**
-   * R27 E4: Return per-axis energy share (fraction of total axis energy).
-   * Enables detection of axis-level redistribution: when one axis consumes
-   * a disproportionate share (>0.30), decorrelation on that axis may be
-   * causing compensating increases on other axes sharing pairs.
-   * Also computes axis-level Gini coefficient for concentration monitoring.
-   * @returns {{ shares: Record<string, number>, axisGini: number }}
-   */
   function getAxisEnergyShare() {
-    return pipelineCouplingManagerSnapshot.buildAxisEnergyShare(_axisSmoothedAbsR);
+    return pipelineCouplingManagerSnapshot.buildAxisEnergyShare(S.axisSmoothedAbsR);
   }
 
-  /**
-   * R27 E2: Return cached coherence gate + floor dampening diagnostics.
-   * Updated each time the recorder runs. Enables per-beat trace capture
-   * of gate state that was previously only emitted to explainabilityBus.
-   * @returns {{ gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number, gateMinD: number, gateMinT: number, gateMinF: number, gateEmaD: number, gateEmaT: number, gateEmaF: number, gateBeatCount: number }}
-   */
   function getCouplingGates() {
     return pipelineCouplingManagerSnapshot.buildCouplingGates({
-      lastGateD: _lastGateD,
-      lastGateT: _lastGateT,
-      lastGateF: _lastGateF,
-      lastFloorDampen: _lastFloorDampen,
-      lastBypassD: _lastBypassD,
-      lastBypassT: _lastBypassT,
-      lastBypassF: _lastBypassF,
-      gateMinD: _gateMinD,
-      gateMinT: _gateMinT,
-      gateMinF: _gateMinF,
-      gateEmaD: _gateEmaD,
-      gateEmaT: _gateEmaT,
-      gateEmaF: _gateEmaF,
-      gateBeatCount: _gateBeatCount,
+      lastGateD: S.lastGateD, lastGateT: S.lastGateT, lastGateF: S.lastGateF,
+      lastFloorDampen: S.lastFloorDampen,
+      lastBypassD: S.lastBypassD, lastBypassT: S.lastBypassT, lastBypassF: S.lastBypassF,
+      gateMinD: S.gateMinD, gateMinT: S.gateMinT, gateMinF: S.gateMinF,
+      gateEmaD: S.gateEmaD, gateEmaT: S.gateEmaT, gateEmaF: S.gateEmaF,
+      gateBeatCount: S.gateBeatCount,
     });
   }
 
-  /**
-   * R28 E7: Programmatic pair baseline adjustment for hypermeta controllers.
-   * Allows dynamic tightening/relaxation of pair targets without manual
-   * PAIR_TARGETS edits. The new baseline is clamped to [_TARGET_MIN, _TARGET_MAX]
-   * and the adaptive current target is proportionally scaled.
-   * @param {string} pairKey - e.g. 'density-phase'
-   * @param {number} newBaseline - new baseline target value
-   */
+  /** @param {string} pairKey  @param {number} newBaseline */
   function setPairBaseline(pairKey, newBaseline) {
-    const clamped = clamp(newBaseline, _TARGET_MIN, _TARGET_MAX);
-    const at = _getAdaptiveTarget(pairKey);
-    //  Sub-Zero Scale Bounding
-    // Scale current target proportionally to baseline change with zero-crossing protection
+    const clamped = clamp(newBaseline, couplingConstants.TARGET_MIN, couplingConstants.TARGET_MAX);
+    const at = S.getAdaptiveTarget(pairKey);
     let ratio = 1.0;
-    if (m.abs(at.baseline) > 0.02) {
-      ratio = at.current / at.baseline;
-    }
-    // Prevent wild spikes or sign-flips if at.current and baseline crossed 0 at different times.
+    if (m.abs(at.baseline) > 0.02) ratio = at.current / at.baseline;
     ratio = clamp(ratio, -1.0, 3.0);
-
     at.baseline = clamped;
-    at.current = clamp(clamped * ratio, _TARGET_MIN, _getTargetMax(pairKey));
+    at.current = clamp(clamped * ratio, couplingConstants.TARGET_MIN, S.getTargetMax(pairKey));
   }
 
-  /**
-   * R28 E7: Return all current pair baselines for diagnostic snapshots.
-   * @returns {Record<string, number>}
-   */
   function getPairBaselines() {
     /** @type {Record<string, number>} */
     const result = {};
-    const keys = Object.keys(PAIR_TARGETS);
+    const keys = Object.keys(couplingConstants.PAIR_TARGETS);
     for (let i = 0; i < keys.length; i++) {
-      const at = _getAdaptiveTarget(keys[i]);
+      const at = S.getAdaptiveTarget(keys[i]);
       result[keys[i]] = at.baseline;
     }
     return result;
   }
 
+  function reset() { S.reset(); }
+
   // Self-registration
-  // Registered ranges accommodate expanded SOFT_LIMIT (0.20): bias in [0.80, 1.20]
   conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.80, 1.20);
   conductorIntelligence.registerTensionBias('pipelineCouplingManager', tensionBias, 0.80, 1.22);
   conductorIntelligence.registerFlickerModifier('pipelineCouplingManager', flickerBias, 0.70, 1.30);
@@ -1677,9 +177,15 @@ const rawEmaInput = absCorr;
     'pipelineCouplingManager',
     'coupling_matrix',
     'density_tension_flicker',
-    () => (m.abs(biasDensity - 1.0) + m.abs(biasTension - 1.0) + m.abs(biasFlicker - 1.0)) / 0.60,
-    () => m.sign(biasTension - 1.0)
+    () => (m.abs(S.biasDensity - 1.0) + m.abs(S.biasTension - 1.0) + m.abs(S.biasFlicker - 1.0)) / 0.60,
+    () => m.sign(S.biasTension - 1.0)
   );
 
-  return { densityBias, tensionBias, flickerBias, setDensityFlickerGainScale, setGlobalGainMultiplier, setPairBaseline, getPairBaselines, getAdaptiveTargetSnapshot, getAxisCouplingTotals, getAxisEnergyShare, getCouplingGates, reset };
+  return {
+    densityBias, tensionBias, flickerBias,
+    setDensityFlickerGainScale, setGlobalGainMultiplier,
+    setPairBaseline, getPairBaselines,
+    getAdaptiveTargetSnapshot, getAxisCouplingTotals, getAxisEnergyShare, getCouplingGates,
+    reset,
+  };
 })();

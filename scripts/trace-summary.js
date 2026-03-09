@@ -227,6 +227,7 @@ function summarizeTrace(entries, manifest) {
         phaseIntegrity: e.phaseIntegrity,
         trust: e.trust,
         trustVelocity: e.trustVelocity || null,
+        activeProfile: e.activeProfile || null,
         couplingMeans: e.couplingMeans
       });
       continue;

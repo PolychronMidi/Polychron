@@ -260,10 +260,17 @@ regimeClassifier = (() => {
     //  Self-correcting regime balance. When coherent share exceeds target
     // range, tighten entry (raise scale). When below, ease entry (lower scale).
     // This permanently replaces manual per-profile coherentThresholdScale tuning.
+    // R72 E5: Momentum damping. When coherent share is near equilibrium
+    // (10-40%), apply 0.5x nudge rate to prevent ping-pong oscillation.
+    // R71 saw thresholdScale drop 0.812 -> 0.55 (floor), overcorrecting
+    // from 43.2% coherent to 85.9% exploring. Self-correcting: full nudge
+    // rate resumes when share moves far from equilibrium.
+    const _nearEquilibrium = _coherentShareEma > 0.10 && _coherentShareEma < 0.40;
+    const _dampedNudge = _REGIME_SCALE_NUDGE * (_nearEquilibrium ? 0.5 : 1.0);
     if (_coherentShareEma > _REGIME_TARGET_COHERENT_HI) {
-      coherentThresholdScale = m.min(_REGIME_SCALE_MAX, coherentThresholdScale + _REGIME_SCALE_NUDGE);
+      coherentThresholdScale = m.min(_REGIME_SCALE_MAX, coherentThresholdScale + _dampedNudge);
     } else if (_coherentShareEma < _REGIME_TARGET_COHERENT_LO) {
-      coherentThresholdScale = m.max(_REGIME_SCALE_MIN, coherentThresholdScale - _REGIME_SCALE_NUDGE);
+      coherentThresholdScale = m.max(_REGIME_SCALE_MIN, coherentThresholdScale - _dampedNudge);
     }
 
     const _dynamicPenaltyCap = 0.08 + clamp((_coherentShareEma - 0.60) * 1.0, 0, 0.20);
