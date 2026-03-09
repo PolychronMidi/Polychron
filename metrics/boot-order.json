@@ -1,9 +1,9 @@
 {
   "meta": {
-    "generated": "2026-03-09T07:46:50.769Z",
-    "totalFiles": 425,
-    "globalsDeclared": 706,
-    "globalsMapped": 706,
+    "generated": "2026-03-09T08:15:09.629Z",
+    "totalFiles": 426,
+    "globalsDeclared": 707,
+    "globalsMapped": 707,
     "orphaned": [],
     "reassigned": [
       {
@@ -2827,324 +2827,331 @@
     },
     {
       "order": 357,
+      "file": "src/crossLayer/crossLayerHelpers.js",
+      "provides": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "order": 358,
       "file": "src/crossLayer/crossLayerEmissionGateway.js",
       "provides": [
         "crossLayerEmissionGateway"
       ]
     },
     {
-      "order": 358,
+      "order": 359,
       "file": "src/crossLayer/rhythm/index.js",
       "provides": []
     },
     {
-      "order": 359,
+      "order": 360,
       "file": "src/crossLayer/rhythm/convergenceDetector.js",
       "provides": [
         "convergenceDetector"
       ]
     },
     {
-      "order": 360,
+      "order": 361,
       "file": "src/crossLayer/rhythm/emergentDownbeat.js",
       "provides": [
         "emergentDownbeat"
       ]
     },
     {
-      "order": 361,
+      "order": 362,
       "file": "src/crossLayer/rhythm/feedbackOscillator.js",
       "provides": [
         "feedbackOscillator"
       ]
     },
     {
-      "order": 362,
+      "order": 363,
       "file": "src/crossLayer/rhythm/grooveTransfer.js",
       "provides": [
         "grooveTransfer"
       ]
     },
     {
-      "order": 363,
+      "order": 364,
       "file": "src/crossLayer/rhythm/rhythmicComplementEngine.js",
       "provides": [
         "rhythmicComplementEngine"
       ]
     },
     {
-      "order": 364,
+      "order": 365,
       "file": "src/crossLayer/rhythm/rhythmicPhaseLock.js",
       "provides": [
         "rhythmicPhaseLock"
       ]
     },
     {
-      "order": 365,
+      "order": 366,
       "file": "src/crossLayer/rhythm/stutterContagion.js",
       "provides": [
         "stutterContagion"
       ]
     },
     {
-      "order": 366,
+      "order": 367,
       "file": "src/crossLayer/rhythm/temporalGravity.js",
       "provides": [
         "temporalGravity"
       ]
     },
     {
-      "order": 367,
+      "order": 368,
       "file": "src/crossLayer/rhythm/polyrhythmicPhasePredictor.js",
       "provides": [
         "polyrhythmicPhasePredictor"
       ]
     },
     {
-      "order": 368,
+      "order": 369,
       "file": "src/crossLayer/harmony/index.js",
       "provides": []
     },
     {
-      "order": 369,
+      "order": 370,
       "file": "src/crossLayer/harmony/cadenceAlignment.js",
       "provides": [
         "cadenceAlignment"
       ]
     },
     {
-      "order": 370,
+      "order": 371,
       "file": "src/crossLayer/harmony/convergenceHarmonicTrigger.js",
       "provides": [
         "convergenceHarmonicTrigger"
       ]
     },
     {
-      "order": 371,
+      "order": 372,
       "file": "src/crossLayer/harmony/harmonicIntervalGuard.js",
       "provides": [
         "harmonicIntervalGuard"
       ]
     },
     {
-      "order": 372,
+      "order": 373,
       "file": "src/crossLayer/harmony/motifEcho.js",
       "provides": [
         "motifEcho"
       ]
     },
     {
-      "order": 373,
+      "order": 374,
       "file": "src/crossLayer/harmony/motifIdentityMemory.js",
       "provides": [
         "motifIdentityMemory"
       ]
     },
     {
-      "order": 374,
+      "order": 375,
       "file": "src/crossLayer/harmony/phaseAwareCadenceWindow.js",
       "provides": [
         "phaseAwareCadenceWindow"
       ]
     },
     {
-      "order": 375,
+      "order": 376,
       "file": "src/crossLayer/harmony/pitchMemoryRecall.js",
       "provides": [
         "pitchMemoryRecall"
       ]
     },
     {
-      "order": 376,
+      "order": 377,
       "file": "src/crossLayer/harmony/registerCollisionAvoider.js",
       "provides": [
         "registerCollisionAvoider"
       ]
     },
     {
-      "order": 377,
+      "order": 378,
       "file": "src/crossLayer/harmony/spectralComplementarity.js",
       "provides": [
         "spectralComplementarity"
       ]
     },
     {
-      "order": 378,
+      "order": 379,
       "file": "src/crossLayer/harmony/verticalIntervalMonitor.js",
       "provides": [
         "verticalIntervalMonitor"
       ]
     },
     {
-      "order": 379,
+      "order": 380,
       "file": "src/crossLayer/dynamics/index.js",
       "provides": []
     },
     {
-      "order": 380,
+      "order": 381,
       "file": "src/crossLayer/dynamics/articulationComplement.js",
       "provides": [
         "articulationComplement"
       ]
     },
     {
-      "order": 381,
+      "order": 382,
       "file": "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js",
       "provides": [
         "crossLayerDynamicEnvelope"
       ]
     },
     {
-      "order": 382,
+      "order": 383,
       "file": "src/crossLayer/dynamics/dynamicRoleSwap.js",
       "provides": [
         "dynamicRoleSwap"
       ]
     },
     {
-      "order": 383,
+      "order": 384,
       "file": "src/crossLayer/dynamics/restSynchronizer.js",
       "provides": [
         "restSynchronizer"
       ]
     },
     {
-      "order": 384,
+      "order": 385,
       "file": "src/crossLayer/dynamics/texturalMirror.js",
       "provides": [
         "texturalMirror"
       ]
     },
     {
-      "order": 385,
+      "order": 386,
       "file": "src/crossLayer/dynamics/velocityInterference.js",
       "provides": [
         "velocityInterference"
       ]
     },
     {
-      "order": 386,
+      "order": 387,
       "file": "src/crossLayer/structure/index.js",
       "provides": []
     },
     {
-      "order": 387,
+      "order": 388,
       "file": "src/crossLayer/structure/trust/index.js",
       "provides": []
     },
     {
-      "order": 388,
+      "order": 389,
       "file": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
       "provides": [
         "adaptiveTrustScoresHelpers"
       ]
     },
     {
-      "order": 389,
+      "order": 390,
       "file": "src/crossLayer/structure/trust/adaptiveTrustScores.js",
       "provides": [
         "adaptiveTrustScores"
       ]
     },
     {
-      "order": 390,
+      "order": 391,
       "file": "src/crossLayer/structure/form/index.js",
       "provides": []
     },
     {
-      "order": 391,
+      "order": 392,
       "file": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
       "provides": [
         "crossLayerClimaxEngine"
       ]
     },
     {
-      "order": 392,
+      "order": 393,
       "file": "src/crossLayer/structure/form/crossLayerSilhouette.js",
       "provides": [
         "crossLayerSilhouette"
       ]
     },
     {
-      "order": 393,
+      "order": 394,
       "file": "src/crossLayer/structure/form/sectionIntentCurves.js",
       "provides": [
         "sectionIntentCurves"
       ]
     },
     {
-      "order": 394,
+      "order": 395,
       "file": "src/crossLayer/structure/entropy/index.js",
       "provides": []
     },
     {
-      "order": 395,
+      "order": 396,
       "file": "src/crossLayer/structure/entropy/entropyMetrics.js",
       "provides": [
         "entropyMetrics"
       ]
     },
     {
-      "order": 396,
+      "order": 397,
       "file": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "provides": [
         "entropyRegulator"
       ]
     },
     {
-      "order": 397,
+      "order": 398,
       "file": "src/crossLayer/structure/negotiation/index.js",
       "provides": []
     },
     {
-      "order": 398,
+      "order": 399,
       "file": "src/crossLayer/structure/negotiation/interactionHeatMap.js",
       "provides": [
         "interactionHeatMap"
       ]
     },
     {
-      "order": 399,
+      "order": 400,
       "file": "src/crossLayer/structure/negotiation/negotiationEngine.js",
       "provides": [
         "negotiationEngine"
       ]
     },
     {
-      "order": 400,
+      "order": 401,
       "file": "src/crossLayer/structure/integration/index.js",
       "provides": []
     },
     {
-      "order": 401,
+      "order": 402,
       "file": "src/crossLayer/structure/integration/contextualTrust.js",
       "provides": [
         "contextualTrust"
       ]
     },
     {
-      "order": 402,
+      "order": 403,
       "file": "src/crossLayer/structure/integration/beatInterleavedProcessor.js",
       "provides": [
         "beatInterleavedProcessor"
       ]
     },
     {
-      "order": 403,
+      "order": 404,
       "file": "src/crossLayer/conductorSignalBridge.js",
       "provides": [
         "conductorSignalBridge"
       ]
     },
     {
-      "order": 404,
+      "order": 405,
       "file": "src/crossLayer/crossLayerLifecycleManager.js",
       "provides": [
         "crossLayerLifecycleManager"
       ]
     },
     {
-      "order": 405,
+      "order": 406,
       "file": "src/writer/index.js",
       "provides": [
         "fs",
@@ -3157,54 +3164,54 @@
       ]
     },
     {
-      "order": 406,
+      "order": 407,
       "file": "src/writer/logUnit.js",
       "provides": [
         "logUnit"
       ]
     },
     {
-      "order": 407,
+      "order": 408,
       "file": "src/writer/grandFinale.js",
       "provides": [
         "grandFinale"
       ]
     },
     {
-      "order": 408,
+      "order": 409,
       "file": "src/writer/traceDrain.js",
       "provides": [
         "traceDrain"
       ]
     },
     {
-      "order": 409,
+      "order": 410,
       "file": "src/play/index.js",
       "provides": []
     },
     {
-      "order": 410,
+      "order": 411,
       "file": "src/play/events.js",
       "provides": [
         "eventBus"
       ]
     },
     {
-      "order": 411,
+      "order": 412,
       "file": "src/play/channelCoherence.js",
       "provides": [
         "getChannelCoherence"
       ]
     },
     {
-      "order": 412,
+      "order": 413,
       "file": "src/play/emitPickCrossLayerRecord.js",
       "provides": [
         "emitPickCrossLayerRecord"
       ]
     },
     {
-      "order": 413,
+      "order": 414,
       "file": "src/play/emitPickTextureEmit.js",
       "provides": [
         "emitPickSourceTextures",
@@ -3212,7 +3219,7 @@
       ]
     },
     {
-      "order": 414,
+      "order": 415,
       "file": "src/play/playNotesEmitPick.js",
       "provides": [
         "setFeedbackPitchBias",
@@ -3221,49 +3228,49 @@
       ]
     },
     {
-      "order": 415,
+      "order": 416,
       "file": "src/play/playNotesComputeUnit.js",
       "provides": [
         "playNotesComputeUnit"
       ]
     },
     {
-      "order": 416,
+      "order": 417,
       "file": "src/play/playNotes.js",
       "provides": [
         "playNotes"
       ]
     },
     {
-      "order": 417,
+      "order": 418,
       "file": "src/play/microUnitAttenuator.js",
       "provides": [
         "microUnitAttenuator"
       ]
     },
     {
-      "order": 418,
+      "order": 419,
       "file": "src/play/crossLayerBeatRecord.js",
       "provides": [
         "crossLayerBeatRecord"
       ]
     },
     {
-      "order": 419,
+      "order": 420,
       "file": "src/play/processBeat.js",
       "provides": [
         "processBeat"
       ]
     },
     {
-      "order": 420,
+      "order": 421,
       "file": "src/play/layerPass.js",
       "provides": [
         "layerPass"
       ]
     },
     {
-      "order": 421,
+      "order": 422,
       "file": "src/play/main.js",
       "provides": [
         "main",
@@ -3272,28 +3279,28 @@
       ]
     },
     {
-      "order": 422,
+      "order": 423,
       "file": "src/play/beatPipelineDescriptor.js",
       "provides": [
         "beatPipelineDescriptor"
       ]
     },
     {
-      "order": 423,
+      "order": 424,
       "file": "src/play/feedbackGraphContract.js",
       "provides": [
         "feedbackGraphContract"
       ]
     },
     {
-      "order": 424,
+      "order": 425,
       "file": "src/play/mainBootstrap.js",
       "provides": [
         "mainBootstrap"
       ]
     },
     {
-      "order": 425,
+      "order": 426,
       "file": "src/play/fullBootstrap.js",
       "provides": [
         "fullBootstrap"

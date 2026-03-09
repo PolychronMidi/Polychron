@@ -90,11 +90,7 @@ stutterContagion = (() => {
     if (decayedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space
-    V.requireFinite(measureStart, 'measureStart');
-    V.requireFinite(measureStartTime, 'measureStartTime');
-    V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = m.round(measureStart + ((matchTimeMs / 1000) - measureStartTime) * tpSec);
-    const syncTick = m.max(0, syncTickRaw);
+  const syncTick = crossLayerHelpers.msToSyncTick(matchTimeMs);
 
     return {
       syncTick,

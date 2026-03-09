@@ -1,7 +1,7 @@
 {
   "meta": {
-    "generated": "2026-03-09T08:02:13.062Z",
-    "moduleCount": 41,
+    "generated": "2026-03-09T08:29:35.290Z",
+    "moduleCount": 42,
     "edgeCount": 57,
     "atgChannelCount": 15
   },
@@ -36,6 +36,18 @@
         "explainabilityBus",
         "velocityInterference"
       ],
+      "readsSignals": false,
+      "emitsExplain": false,
+      "feedbackEnrolled": false
+    },
+    {
+      "name": "crossLayerHelpers",
+      "folder": "(top-level)",
+      "path": "crossLayer/crossLayerHelpers.js",
+      "description": "Shared layer, timing, and MIDI helpers.",
+      "scopes": [],
+      "atgChannels": [],
+      "interactions": [],
       "readsSignals": false,
       "emitsExplain": false,
       "feedbackEnrolled": false
@@ -988,6 +1000,7 @@
     "(top-level)": [
       "conductorSignalBridge",
       "crossLayerEmissionGateway",
+      "crossLayerHelpers",
       "crossLayerLifecycleManager",
       "crossLayerRegistry",
       "explainabilityBus"
@@ -1041,6 +1054,6 @@
     "all": 37,
     "section": 16,
     "phrase": 8,
-    "unregistered": 4
+    "unregistered": 5
   }
 }

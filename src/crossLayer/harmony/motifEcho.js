@@ -120,7 +120,7 @@ motifEcho = (() => {
     // Find the first pending echo whose delivery time has passed and targets this layer
     for (let i = 0; i < pendingEchoes.length; i++) {
       const echo = pendingEchoes[i];
-      const targetLayer = echo.originLayer === 'L1' ? 'L2' : 'L1';
+      const targetLayer = crossLayerHelpers.getOtherLayer(echo.originLayer);
       if (targetLayer !== activeLayer) continue;
       if (absTimeMs < echo.deliverMs) continue;
 
@@ -130,8 +130,7 @@ motifEcho = (() => {
       const transformed = applyTransform(echo.intervals, echo.transform);
 
       // Convert intervals to absolute MIDI notes anchored on currentMidi
-      const lo = m.max(0, OCTAVE.min * 12 - 1);
-      const hi = OCTAVE.max * 12 - 1;
+  const { lo, hi } = crossLayerHelpers.getOctaveBounds();
       const notes = [currentMidi];
       let cursor = currentMidi;
       for (let j = 0; j < transformed.length; j++) {

@@ -78,14 +78,14 @@ rhythmicPhaseLock = (() => {
       lastLockMs = absTimeMs;
       lockCount++;
       // Quantize: pull toward the other layer's beat grid position
-      const otherTick = m.round(measureStart + ((phase.otherBeatMs / 1000) - measureStartTime) * tpSec);
+      const otherTick = crossLayerHelpers.msToSyncTick(phase.otherBeatMs);
       const pull = m.round((otherTick - originalTick) * LOCK_STRENGTH);
       return { tick: originalTick + pull, mode: 'lock', phaseDiff: phase.phaseDiff };
     }
 
     if (phase.mode === 'repel') {
       // Push away from the other layer's grid
-      const otherTick = m.round(measureStart + ((phase.otherBeatMs / 1000) - measureStartTime) * tpSec);
+      const otherTick = crossLayerHelpers.msToSyncTick(phase.otherBeatMs);
       const direction = originalTick >= otherTick ? 1 : -1;
       const push = m.round(tpSec * REPEL_STRENGTH * phase.phaseDiff * 0.1);
       return { tick: originalTick + direction * push, mode: 'repel', phaseDiff: phase.phaseDiff };

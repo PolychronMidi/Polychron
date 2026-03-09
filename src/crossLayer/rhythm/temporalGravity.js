@@ -73,10 +73,7 @@ temporalGravity = (() => {
     const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO;
 
     // Direction: pull toward the gravity well's ms in tick space
-    V.requireFinite(measureStart, 'measureStart');
-    V.requireFinite(measureStartTime, 'measureStartTime');
-    V.requireFinite(tpSec, 'tpSec');
-    const wellTick = m.round(measureStart + ((wellTimeMs / 1000) - measureStartTime) * tpSec);
+    const wellTick = crossLayerHelpers.msToSyncTick(wellTimeMs);
     const direction = wellTick > originalTickN ? 1 : -1;
     const maxPull = tpSec * pullStrength;
     const pull = m.min(maxPull, m.abs(wellTick - originalTickN) * 0.5);

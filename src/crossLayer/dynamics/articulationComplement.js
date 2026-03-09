@@ -53,7 +53,7 @@ articulationComplement = (() => {
    * @returns {{ sustainScale: number, preferredStutterType: string }}
    */
   function getSustainModifier(activeLayer) {
-    const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
     const otherProfile = getArticulationProfile(otherLayer);
     const selfProfile = getArticulationProfile(activeLayer);
 

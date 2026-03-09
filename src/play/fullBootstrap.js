@@ -629,6 +629,7 @@ fullBootstrap = (() => {
     'entropyRegulator',
     'emergentDownbeat',
     'explainabilityBus',
+    'crossLayerHelpers',
     'crossLayerEmissionGateway',
     'adaptiveTrustScoresHelpers',
     'adaptiveTrustScores',

@@ -6,10 +6,7 @@ registerCollisionAvoider = (() => {
 
   /** @param {number} tick */
   function tickToMs(tick) {
-    if (Number.isFinite(measureStart) && Number.isFinite(measureStartTime) && Number.isFinite(tpSec)) {
-      return (measureStartTime + (tick - measureStart) / tpSec) * 1000;
-    }
-    return beatStartTime * 1000;
+    return crossLayerHelpers.tickToAbsMs(tick);
   }
 
   /**
@@ -34,8 +31,7 @@ registerCollisionAvoider = (() => {
     V.requireFinite(midi, 'midi');
     V.requireFinite(tick, 'tick');
 
-    const lo = m.max(0, OCTAVE.min * 12);
-    const hi = m.min(127, OCTAVE.max * 12 - 1);
+    const { lo, hi } = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true });
     const boundedMidi = clamp(midi, lo, hi);
 
     const absMs = tickToMs(tick);

@@ -74,7 +74,7 @@ harmonicIntervalGuard = (() => {
       : -1;
 
     // Find other layer's most recent note from ATW
-    const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
     let otherRecentMidi = -1;
     const lastNote = absoluteTimeWindow.getLastNote({
       layer: otherLayer,
@@ -101,8 +101,7 @@ harmonicIntervalGuard = (() => {
     // Find best candidate within 3 semitones
     let bestNote = midi;
     let bestScore = Infinity;
-    const lo = m.max(0, OCTAVE.min * 12, midi - 3);
-    const hi = m.min(127, OCTAVE.max * 12 - 1, midi + 3);
+    const { lo, hi } = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true, anchorMidi: midi, radius: 3 });
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;

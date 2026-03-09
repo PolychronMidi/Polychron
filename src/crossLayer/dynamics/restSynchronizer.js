@@ -70,7 +70,7 @@ restSynchronizer = (() => {
    */
   function evaluateComplementaryRest(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
     // If other layer is resting, this layer should fill
     if (isResting[otherLayer]) {
