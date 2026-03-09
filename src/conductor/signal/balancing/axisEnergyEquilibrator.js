@@ -55,7 +55,10 @@ axisEnergyEquilibrator = (() => {
   const _AXIS_COOLDOWN = 4;
   const _SHARE_EMA_ALPHA = 0.08;   // ~12-beat horizon (faster convergence)
   const _GINI_ESCALATION = 0.40;   // Gini above this -> 1.5x rate multiplier
-  const _NON_NUDGEABLE_TAIL_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
+  // R70 E2: entropy-phase removed -- now nudgeable (see pipelineCouplingManager).
+  // Persistent 63.6% recent hotspot rate with gain=0 meant the system could
+  // not self-correct. Low-gain nudgeability allows gradual decorrelation.
+  const _NON_NUDGEABLE_TAIL_SET = new Set(['entropy-trust', 'trust-phase']);
 
   // -- Shared config --
   const _BASELINE_MIN = 0.04;
@@ -77,7 +80,7 @@ axisEnergyEquilibrator = (() => {
   // disadvantaged axes. Scale relaxation rate by 5/count to compensate.
   const _EFFECTIVE_NUDGEABLE = {
     density: 5, tension: 5, flicker: 5,
-    entropy: 3, trust: 3, phase: 3
+    entropy: 4, trust: 3, phase: 4
   };
   const _RELAX_RATE_REF = 5; // reference pair count (density/tension/flicker)
 
@@ -293,6 +296,11 @@ axisEnergyEquilibrator = (() => {
           1
         );
         const phaseSurfaceBoost = isPhaseSurfacePair ? 1.35 : 1.0;
+        // R70 E1: Flicker-phase decorrelation relief. flicker-phase dominated
+        // R69 exceedance (48/70 beats, p95 0.920) due to early-run spike.
+        // Boost tightening when residualPressure > 0.7 to compress baseline
+        // faster during the initial spike, reducing aggregate exceedance.
+        const flickerPhaseBoost = pair === 'flicker-phase' && residualPressure > 0.7 ? 1 + (residualPressure - 0.7) * 1.5 : 1.0;
         const entropySurfaceBoost = isEntropySurfacePair ? 1.28 : 1.0;
         const rankBoost = budgetRank <= 1 ? 1.30 : budgetRank <= 3 ? 1.16 : 1.0;
         const coherentHotBoost = currentRegime === 'coherent' && coherentPairEligible ? (isEntropySurfacePair ? 1.18 : 1.10) : 1.0;
@@ -304,7 +312,7 @@ axisEnergyEquilibrator = (() => {
         )
           ? 1 + nonNudgeableTailPressure * (isEntropySurfacePair ? 0.70 : (isPhaseSurfacePair || isTrustSurfacePair ? 0.52 : 0.32))
           : 1.0;
-        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * nonNudgeableHandOffBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
+        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * flickerPhaseBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * nonNudgeableHandOffBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
         const nb = m.max(pair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, baseline - rate);
         if (nb < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nb);

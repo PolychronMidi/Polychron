@@ -34,6 +34,9 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
         exposition: 'default',
         development: 'default',
         climax: 'explosive',
+        // R71 E4: Reverted to atmospheric (was explosive in R70 E6).
+        // Tests R70 E4 phaseVarianceGateScale 0.12 and gives same-profile
+        // .prev comparison against R69 atmospheric.
         resolution: 'atmospheric',
         conclusion: 'atmospheric',
         coda: 'minimal'

@@ -58,6 +58,25 @@ if (totalSections <= 0) {
 harmonicJourney.planJourney(totalSections, { startKey: 'random', startMode: 'random' });
 timeStream.setBounds('section', totalSections);
 
+// R71 E5: Trust velocity tracking across diagnostic snapshots.
+// Compares trust scores between consecutive snapshots to detect
+// rapid trust swings (e.g. stutterContagion -0.403 in one interval).
+let _previousSnapshotTrust = null;
+function _computeTrustVelocity(trustSnapshot) {
+  const velocity = /** @type {Record<string, number>} */ ({});
+  if (_previousSnapshotTrust) {
+    const keys = Object.keys(trustSnapshot);
+    for (let i = 0; i < keys.length; i++) {
+      const sys = keys[i];
+      const cur = trustSnapshot[sys] && typeof trustSnapshot[sys].score === 'number' ? trustSnapshot[sys].score : 0;
+      const prev = _previousSnapshotTrust[sys] && typeof _previousSnapshotTrust[sys].score === 'number' ? _previousSnapshotTrust[sys].score : 0;
+      velocity[sys] = Number((cur - prev).toFixed(4));
+    }
+  }
+  _previousSnapshotTrust = trustSnapshot;
+  return velocity;
+}
+
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   timeStream.setPosition('section', sectionIndex);
   let sectionL1BeatCount = 0;
@@ -133,13 +152,31 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // snapshots give 3-7 data points per run. Periodic snapshots every 20 L1
     // beats add intra-section resolution for diagnosing mid-section dynamics
     // (e.g. phase collapse, trust balloon) that section snapshots miss.
+    // R70 E3: Periodic snapshots promoted to full telemetry format
+    // (parity with section-boundary snapshots). R69 periodic snapshots
+    // had sparse format, missing trust/coupling detail needed to diagnose
+    // mid-section flicker-phase spikes and trust shifts.
     if (traceDrain.isEnabled() && sectionL1BeatCount > 0 && sectionL1BeatCount % 20 === 0) {
       const _pSnap = systemDynamicsProfiler.getSnapshot();
+      const _pHome = couplingHomeostasis.getState();
+      const _pCouplingMeans = /** @type {Record<string, number>} */ ({});
+      if (_pSnap && _pSnap.couplingMatrix) {
+        for (const pair in _pSnap.couplingMatrix) {
+          const val = _pSnap.couplingMatrix[pair];
+          if (Number.isFinite(val)) _pCouplingMeans[pair] = m.abs(val);
+        }
+      }
+      const _pTrust = adaptiveTrustScores.getSnapshot();
+      const _pTrustVel = _computeTrustVelocity(_pTrust);
       traceDrain.recordSnapshot({
         beatKey: sectionIndex + ':periodic:' + sectionL1BeatCount,
         timeMs: beatStartTime * 1000,
         trigger: 'periodic',
         effectiveDim: _pSnap ? _pSnap.effectiveDimensionality : 0,
+        trustScores: _pTrust,
+        trustVelocity: _pTrustVel,
+        couplingMeans: _pCouplingMeans,
+        globalGainMultiplier: _pHome ? _pHome.globalGainMultiplier : 0,
         regime: _pSnap ? _pSnap.regime : 'unknown',
         couplingStrength: _pSnap ? _pSnap.couplingStrength : 0,
         phaseIntegrity: _pSnap ? (_pSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
@@ -213,12 +250,15 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         if (Number.isFinite(val)) _couplingMeans[pair] = m.abs(val);
       }
     }
+    const _secTrust = adaptiveTrustScores.getSnapshot();
+    const _secTrustVel = _computeTrustVelocity(_secTrust);
     traceDrain.recordSnapshot({
       beatKey: sectionIndex + ':end',
       timeMs: beatStartTime * 1000,
       trigger: 'section-boundary',
       effectiveDim: _dynSnap ? _dynSnap.effectiveDimensionality : 0,
-      trustScores: adaptiveTrustScores.getSnapshot(),
+      trustScores: _secTrust,
+      trustVelocity: _secTrustVel,
       couplingMeans: _couplingMeans,
       globalGainMultiplier: _homeSnap ? _homeSnap.globalGainMultiplier : 0,
       regime: _dynSnap ? _dynSnap.regime : 'unknown',

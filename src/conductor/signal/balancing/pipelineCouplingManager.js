@@ -21,7 +21,9 @@ pipelineCouplingManager = (() => {
   // Dimensions managed by conductor bias pipelines
   const NUDGEABLE = ['density', 'tension', 'flicker'];
   const NUDGEABLE_SET = new Set(NUDGEABLE);
-  const _NON_NUDGEABLE_SET = new Set(['entropy-trust', 'entropy-phase', 'trust-phase']);
+  // R70 E2: entropy-phase removed -- now nudgeable with low initial gain.
+  // R69 showed 63.6% recent hotspot rate rising, gain=0 meant no self-correction.
+  const _NON_NUDGEABLE_SET = new Set(['entropy-trust', 'trust-phase']);
   const _PHASE_SURFACE_SET = new Set(['density-phase', 'flicker-phase', 'tension-phase']);
   const _ENTROPY_SURFACE_SET = new Set(['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase']);
 
@@ -142,7 +144,12 @@ pipelineCouplingManager = (() => {
   // Per-pair initial gain overrides for structurally persistent pairs.
   // density-tension shares many upstream contributors so it starts hotter.
   const PAIR_GAIN_INIT = {
-    'density-tension': 0.24
+    'density-tension': 0.24,
+    // R70 E2 / R71 E2: Initial gain for entropy-phase. R70 set 0.10
+    // (conservative) but pair never qualified for budget ranking.
+    // R71: Raise to 0.16 (default core level) so the pair can compete
+    // for budget allocation and receive actual decorrelation effort.
+    'entropy-phase': 0.16
   };
 
   // Regime-aware target relaxation: in 'coherent' regime, pairwise coupling
@@ -574,6 +581,12 @@ pipelineCouplingManager = (() => {
           const staticBias = _BUDGET_PRIORITY_GAIN[key] !== undefined
             ? clamp((_BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1)
             : 0;
+          // R71 E3: Telemetry gap pressure. When full-window p95 diverges
+          // from recent-window p95 by >0.10, the pair experienced a historical
+          // burst that cadence aliasing may cause the controller to underestimate.
+          // Boost budget score so pairs with stale heat get decorrelation budget.
+          const recentP95 = tailTelemetry.recentP95 || 0;
+          const telemetryGapPressure = clamp((p95 - recentP95 - 0.10) / 0.20, 0, 0.5);
           const score = clamp(
             residualTailPressure * 0.18 +
             tailPressure * (0.15 + _tailRecoveryHandshake * 0.08) +
@@ -589,6 +602,7 @@ pipelineCouplingManager = (() => {
             exceedPressure * 0.08 +
             clamp(_tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
             severeWindowPressure * 0.22 +
+            telemetryGapPressure * 0.14 +
             staticBias * 0.04,
             0,
             1.45
@@ -1221,6 +1235,14 @@ const rawEmaInput = absCorr;
         if (corr > 0.50) {
           const _posCorrDepth = clamp((corr - 0.50) / 0.40, 0, 1);
           effectiveGain *= m.max(0.30, 1.0 - _posCorrDepth * 0.55);
+        }
+        // R71 E1: Density-flicker decorrelation ceiling. When the pair is
+        // severely overcoupled (p95 > 0.88, severe rate > 0.08), cap
+        // effective gain to prevent runaway budget consumption on a
+        // structurally irreducible pair. Frees budget for rising pairs
+        // (density-entropy, entropy-phase).
+        if (isDensityFlickerPair && p95 > 0.88 && telemetrySevereRate > 0.08) {
+          effectiveGain = m.min(effectiveGain, 0.20);
         }
         ps.lastEffectiveGain = effectiveGain;
 

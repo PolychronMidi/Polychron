@@ -475,8 +475,14 @@ function compareFingerprints(current, previous) {
       }
     }
     const flipRate = totalPairs > 0 ? flips / totalPairs : 0;
-    // Informational dimension -- not counted toward drift verdict
-    results.push({ dimension: 'correlationTrend', delta: flipRate, tolerance: 1.0, status: 'stable', flipDetails });
+    // Informational dimension -- not counted toward drift verdict.
+    // R71 E6: Apply crossProfileScale to correlationTrend tolerance.
+    // Correlation direction is inherently profile-dependent — atmospheric
+    // shows "stable" directions while explosive shows directional. Without
+    // scaling, cross-profile runs consume 85%+ of tolerance on structural
+    // profile differences, not meaningful regression.
+    const corrTrendTolerance = 1.0 * crossProfileScale;
+    results.push({ dimension: 'correlationTrend', delta: flipRate, tolerance: corrTrendTolerance, status: 'stable', flipDetails });
   }
 
   // R39 E4 & E5: Exceedance Severity
@@ -552,12 +558,17 @@ function compareFingerprints(current, previous) {
     }
     axisDelta = axisCount > 0 ? axisDelta / axisCount : 0;
     const hotspotMigrationDelta = topPairChanged * 0.45 + pairSetDelta * 0.25 + concentrationDelta * 0.15 + axisDelta * 0.15;
-    const hotspotPass = hotspotMigrationDelta <= TOLERANCES.hotspotMigration * crossProfileScale;
+    // R70 E5: Cross-profile hotspot migration needs wider tolerance than
+    // generic 1.3x. Migration from trust-triangle (explosive) to flicker-phase
+    // (atmospheric) is structurally expected. R69 delta 0.6245 consumed 87.4%
+    // of tolerance. Use 1.8x for cross-profile to prevent false drift.
+    const hotspotCrossProfileScale = crossProfile ? 1.8 : 1.0;
+    const hotspotPass = hotspotMigrationDelta <= TOLERANCES.hotspotMigration * hotspotCrossProfileScale;
     if (!hotspotPass) drifted++;
     results.push({
       dimension: 'hotspotMigration',
       delta: Number(hotspotMigrationDelta.toFixed(4)),
-      tolerance: TOLERANCES.hotspotMigration * crossProfileScale,
+      tolerance: TOLERANCES.hotspotMigration * hotspotCrossProfileScale,
       status: hotspotPass ? 'stable' : 'drifted',
       currentTopPair: currentHotspot.topPair,
       previousTopPair: previousHotspot.topPair,

@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated": "2026-03-09T00:56:20.311Z",
+    "generated": "2026-03-09T04:06:41.140Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 411,
     "totalGlobals": 694,
     "totalProvides": 709,
-    "totalConsumes": 2728,
+    "totalConsumes": 2729,
     "totalEdges": 2092,
     "crossSubsystemEdges": 1473,
     "maxFanIn": {
@@ -67,7 +67,7 @@
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 381
+        "consumes": 382
       }
     }
   },
@@ -6578,7 +6578,8 @@
         "systemManifest",
         "timeStream",
         "traceDrain",
-        "trustSystems"
+        "trustSystems",
+        "velocity"
       ]
     },
     "src/play/beatPipelineDescriptor.js": {
@@ -18215,7 +18216,8 @@
         "measuresPerPhrase1",
         "measuresPerPhrase2",
         "phraseIndex",
-        "phrasesPerSection"
+        "phrasesPerSection",
+        "velocity"
       ]
     },
     {

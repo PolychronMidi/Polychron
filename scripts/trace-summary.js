@@ -226,6 +226,7 @@ function summarizeTrace(entries, manifest) {
         couplingStrength: e.couplingStrength,
         phaseIntegrity: e.phaseIntegrity,
         trust: e.trust,
+        trustVelocity: e.trustVelocity || null,
         couplingMeans: e.couplingMeans
       });
       continue;
@@ -1254,7 +1255,29 @@ function summarizeTrace(entries, manifest) {
       return Object.keys(result).length > 0 ? result : null;
     })(),
     // R66 E6: Mid-run diagnostic snapshots (section-boundary state arc)
-    diagnosticArc: diagnosticArc.length > 0 ? diagnosticArc : null
+    diagnosticArc: diagnosticArc.length > 0 ? diagnosticArc : null,
+    // R71 E5: Trust turbulence events — snapshots where any trust system
+    // velocity exceeded +/-0.10 per snapshot interval.
+    trustTurbulenceEvents: (() => {
+      const events = [];
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const arc = diagnosticArc[di];
+        if (!arc.trustVelocity) continue;
+        const velKeys = Object.keys(arc.trustVelocity);
+        for (let vi = 0; vi < velKeys.length; vi++) {
+          const vel = arc.trustVelocity[velKeys[vi]];
+          if (typeof vel === 'number' && (vel > 0.10 || vel < -0.10)) {
+            events.push({
+              snapshotIndex: arc.snapshotIndex,
+              beatKey: arc.beatKey,
+              system: velKeys[vi],
+              velocity: vel
+            });
+          }
+        }
+      }
+      return events.length > 0 ? events : null;
+    })()
   };
 }
 
