@@ -245,7 +245,7 @@ validator = (() => {
       assertArrayLength: _wrapWithFrom(assertArrayLength, from),
       assertKeysPresent: _wrapWithFrom(assertKeysPresent, from),
       assertAllowedKeys: _wrapWithFrom(assertAllowedKeys, from),
-        assertInSet: _wrapWithFrom(assertInSet, from),
+      assertInSet: _wrapWithFrom(assertInSet, from),
       requireDefined: _wrapWithFrom(requireDefined, from),
       requireFinite: _wrapWithFrom(requireFinite, from),
       optionalFinite,

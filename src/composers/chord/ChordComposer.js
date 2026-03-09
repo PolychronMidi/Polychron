@@ -58,7 +58,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
       // Case B: raw invalid but normalization produced a valid chord -> acceptable
       if (chordRaw.empty && !chordNorm.empty) {
         if (!_warnedInvalidChordSymbols.has(asRaw)) {
-          try { console.warn(`Acceptable warning: ChordComposer.noteSet: normalized chord symbol from "${asRaw}" -> "${normalized}"`); } catch { /* swallow logging errors */ }
+          try { console.warn(`Acceptable warning: ChordComposer.noteSet: normalized chord symbol from "${asRaw}" -> "${normalized}"`); } catch { /* swallow logging errors - logging should never crash */ }
           _warnedInvalidChordSymbols.add(asRaw);
         }
         return normalized;
@@ -66,7 +66,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
 
       // Case C: both raw and normalized are invalid -> real warning (not labeled acceptable)
       if (!_warnedInvalidChordSymbols.has(asRaw)) {
-        try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch { /* swallow */ }
+        try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch { /* swallow logging errors - noncritical */ }
         _warnedInvalidChordSymbols.add(asRaw);
       }
       return null;

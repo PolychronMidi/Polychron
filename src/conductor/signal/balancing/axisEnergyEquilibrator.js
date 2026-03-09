@@ -1,605 +1,141 @@
-
-
-/**
- * Axis Energy Equilibrator -- Hypermeta Self-Calibrating Controller #13
- *
- * Two-layer omnipotent coupling self-correction that permanently eliminates
- * whack-a-mole. Manual pair-target tuning is never needed again.
- *
- * LAYER 1 -- PAIR-LEVEL HOTSPOT DETECTION
- * Reads per-pair rollingAbsCorr from getAdaptiveTargetSnapshot(). When any
- * pair's measured coupling exceeds HOTSPOT_RATIO x its baseline, that pair
- * is tightened directly. When a pair is over-suppressed (< COLDSPOT_RATIO),
- * it relaxes. This catches within-axis redistribution that axis-level
- * balancing cannot see (e.g. density-tension surging +104% while both axes
- * are near fair-share).
- *
- * LAYER 2 -- AXIS-LEVEL ENERGY BALANCING
- * Monitors per-axis energy shares (getAxisEnergyShare). Nudges ALL pairs on
- * overloaded/suppressed axes. Fires after Layer 1 and skips pairs already
- * adjusted (via cooldown).
- *
- * Hypermeta controller #13: axisEnergyEquilibrator
- * Axes: density, tension, flicker, entropy, trust, phase
- * Interacts with: #1 (selfCalibratingCouplingTargets), #9 (gainBudget),
- *                 #12 (couplingHomeostasis)
- */
+// axisEnergyEquilibrator.js - Hypermeta controller facade for coupling-energy redistribution.
 
 axisEnergyEquilibrator = (() => {
   const V = validator.create('axisEnergyEquilibrator');
-
-  // -- Layer 1 config: pair-level hotspot detection --
-  //  Uses rawRollingAbsCorr (unattenuated) instead of rollingAbsCorr
-  // (regime-adjusted EMA). In R29, rolling was 60-70% attenuated vs actual
-  // coupling, so density-flicker at 0.602 actual only showed 0.190 rolling.
-  const _HOTSPOT_RATIO = 2.0;      // pair is hot when raw > 2.0x baseline
-  const _HOTSPOT_ABS_MIN = 0.25;   // ignore unless raw crosses absolute floor
-  const _COLDSPOT_RATIO = 0.3;     // pair is cold when raw < 0.3x baseline
-  const _COLDSPOT_ABS_MAX = 0.10;  // only relax if raw is below this absolute cap
-  const _PAIR_TIGHTEN_RATE = 0.004;
-  const _PAIR_RELAX_RATE = 0.002;
-  const _PAIR_COOLDOWN = 3;
-  const _RESIDUAL_P95_RATIO = 1.55;
-  const _RESIDUAL_P95_ABS_MIN = 0.68;
-  const _RESIDUAL_HOTSPOT_RATE = 0.12;
-  const _RESIDUAL_SEVERE_RATE = 0.03;
-  const _RESIDUAL_COLDSPOT_P95_MAX = 0.66;
-  const _RESIDUAL_TIGHTEN_BONUS = 1.35;
-
-  // -- Layer 2 config: axis-level energy balancing --
-  const _FAIR_SHARE = 1.0 / 6.0;
-  const _AXIS_OVERSHOOT = 0.22;    // share > 0.22 triggers tightening
-  const _AXIS_UNDERSHOOT = 0.12;   // share < 0.12 triggers relaxation
-  const _AXIS_TIGHTEN_RATE = 0.002;
-  const _AXIS_RELAX_RATE = 0.0012;
-  const _AXIS_COOLDOWN = 4;
-  const _SHARE_EMA_ALPHA = 0.08;   // ~12-beat horizon (faster convergence)
-  const _GINI_ESCALATION = 0.40;   // Gini above this -> 1.5x rate multiplier
-  // R70 E2: entropy-phase removed -- now nudgeable (see pipelineCouplingManager).
-  // Persistent 63.6% recent hotspot rate with gain=0 meant the system could
-  // not self-correct. Low-gain nudgeability allows gradual decorrelation.
-  const _NON_NUDGEABLE_TAIL_SET = couplingConstants.NON_NUDGEABLE_SET;
-
-  // -- Shared config --
-  const _BASELINE_MIN = 0.04;
-  const _DENSITY_FLICKER_BASELINE_MIN = 0.08; // preserve some structural floor to avoid over-redistributing density/flicker energy
-  const _BASELINE_MAX = 0.40;
-  const _WARMUP_DEFAULT = 16;
-  const _PHASE_SURFACE_RATIO = 1.6;
-  const _PHASE_SURFACE_ABS_MIN = 0.18;
-  const _TRUST_SURFACE_RATIO = 1.45;
-  const _TRUST_SURFACE_ABS_MIN = 0.20;
-  const _ENTROPY_SURFACE_RATIO = 1.35;
-  const _ENTROPY_SURFACE_ABS_MIN = 0.18;
-  const _COHERENT_HOTSPOT_MIN_SCALE = 0.18;
-  const _COHERENT_HOTSPOT_MAX_SCALE = 0.42;
-
-  //  Effective nudgeable pair count per axis. Trust/entropy/phase have
-  // only 3 nudgeable pairs (both partners must include density/tension/flicker)
-  // vs 5 for density/tension/flicker. This causes 40% slower correction for
-  // disadvantaged axes. Scale relaxation rate by 5/count to compensate.
-  const _EFFECTIVE_NUDGEABLE = {
-    density: 5, tension: 5, flicker: 5,
-    entropy: 4, trust: 3, phase: 4
+  const _config = {
+    HOTSPOT_RATIO: 2.0,
+    HOTSPOT_ABS_MIN: 0.25,
+    COLDSPOT_RATIO: 0.3,
+    COLDSPOT_ABS_MAX: 0.10,
+    PAIR_TIGHTEN_RATE: 0.004,
+    PAIR_RELAX_RATE: 0.002,
+    PAIR_COOLDOWN: 3,
+    RESIDUAL_P95_RATIO: 1.55,
+    RESIDUAL_P95_ABS_MIN: 0.68,
+    RESIDUAL_HOTSPOT_RATE: 0.12,
+    RESIDUAL_SEVERE_RATE: 0.03,
+    RESIDUAL_COLDSPOT_P95_MAX: 0.66,
+    RESIDUAL_TIGHTEN_BONUS: 1.35,
+    FAIR_SHARE: 1.0 / 6.0,
+    AXIS_OVERSHOOT: 0.22,
+    AXIS_UNDERSHOOT: 0.12,
+    AXIS_TIGHTEN_RATE: 0.002,
+    AXIS_RELAX_RATE: 0.0012,
+    AXIS_COOLDOWN: 4,
+    SHARE_EMA_ALPHA: 0.08,
+    GINI_ESCALATION: 0.40,
+    NON_NUDGEABLE_TAIL_SET: couplingConstants.NON_NUDGEABLE_SET,
+    BASELINE_MIN: 0.04,
+    DENSITY_FLICKER_BASELINE_MIN: 0.08,
+    BASELINE_MAX: 0.40,
+    WARMUP_DEFAULT: 16,
+    PHASE_SURFACE_RATIO: 1.6,
+    PHASE_SURFACE_ABS_MIN: 0.18,
+    TRUST_SURFACE_RATIO: 1.45,
+    TRUST_SURFACE_ABS_MIN: 0.20,
+    ENTROPY_SURFACE_RATIO: 1.35,
+    ENTROPY_SURFACE_ABS_MIN: 0.18,
+    COHERENT_HOTSPOT_MIN_SCALE: 0.18,
+    COHERENT_HOTSPOT_MAX_SCALE: 0.42,
+    EFFECTIVE_NUDGEABLE: {
+      density: 5,
+      tension: 5,
+      flicker: 5,
+      entropy: 4,
+      trust: 3,
+      phase: 4
+    },
+    RELAX_RATE_REF: 5,
+    ALL_AXES: couplingConstants.ALL_MONITORED_DIMS,
+    ALL_PAIRS: couplingConstants.ALL_PAIRS,
+    axisToPairs: couplingConstants.AXIS_TO_PAIRS,
+    PHASE_SURFACE_SET: couplingConstants.PHASE_SURFACE_SET,
+    TRUST_SURFACE_SET: couplingConstants.TRUST_SURFACE_SET,
+    ENTROPY_SURFACE_SET: couplingConstants.ENTROPY_SURFACE_SET
   };
-  const _RELAX_RATE_REF = 5; // reference pair count (density/tension/flicker)
 
-  // -- State --
-  /** @type {Record<string, number>} */
-  const _smoothedShares = {};
-  /** @type {Record<string, number>} */
-  const _pairCooldowns = {};
-  let _beatCount = 0;
-  let _pairAdjustments = 0;
-  let _axisAdjustments = 0;
-  /** @type {Record<string, number>} */
-  const _perAxisAdj = {};
-  /** @type {Record<string, number>} */
-  const _perPairAdj = {};
-  /** @type {Record<string, number>} */
-  let _lastBaselines = {};
-
-  //  Per-regime telemetry tracking. Records tightenScale regime
-  // breakdown and adjustments per regime for trace-summary extraction.
-  /** @type {Record<string, number>} */
-  const _regimeBeats = {};
-  /** @type {Record<string, number>} */
-  const _regimePairAdj = {};
-  /** @type {Record<string, number>} */
-  const _regimeAxisAdj = {};
-  /** @type {Record<string, number>} */
-  const _regimeTightenBudget = {};
-  let _coherentFreezeBeats = 0;
-  let _skippedColdspotRelaxations = 0;
-  /** @type {{ coherentFreeze: number, phaseHot: number, trustHot: number, residual: number }} */
-  const _coldspotSkipReasons = { coherentFreeze: 0, phaseHot: 0, trustHot: 0, residual: 0 };
-  let _phaseSurfaceHotBeats = 0;
-  let _trustSurfaceHotBeats = 0;
-  let _entropySurfaceHotBeats = 0;
-  let _coherentHotspotActuationBeats = 0;
-  let _coherentHotspotPairAdj = 0;
-  let _coherentHotspotAxisAdj = 0;
-  let _lastWarmupTicks = _WARMUP_DEFAULT;
-
-  // Shared pair topology from couplingConstants
-  const _ALL_AXES = couplingConstants.ALL_MONITORED_DIMS;
-  const _ALL_PAIRS = couplingConstants.ALL_PAIRS;
-  const _axisToPairs = couplingConstants.AXIS_TO_PAIRS;
-  const { PHASE_SURFACE_SET, TRUST_SURFACE_SET, ENTROPY_SURFACE_SET } = couplingConstants;
-
-  function _getWarmupTicks() {
-    return axisEnergyEquilibratorHelpers.getWarmupTicks(_WARMUP_DEFAULT);
+  function _createState() {
+    return {
+      smoothedShares: {},
+      pairCooldowns: {},
+      beatCount: 0,
+      pairAdjustments: 0,
+      axisAdjustments: 0,
+      perAxisAdj: {},
+      perPairAdj: {},
+      lastBaselines: {},
+      regimeBeats: {},
+      regimePairAdj: {},
+      regimeAxisAdj: {},
+      regimeTightenBudget: {},
+      coherentFreezeBeats: 0,
+      skippedColdspotRelaxations: 0,
+      coldspotSkipReasons: { coherentFreeze: 0, phaseHot: 0, trustHot: 0, residual: 0 },
+      phaseSurfaceHotBeats: 0,
+      trustSurfaceHotBeats: 0,
+      entropySurfaceHotBeats: 0,
+      coherentHotspotActuationBeats: 0,
+      coherentHotspotPairAdj: 0,
+      coherentHotspotAxisAdj: 0,
+      lastWarmupTicks: _config.WARMUP_DEFAULT
+    };
   }
 
+  const _state = _createState();
+
   function refresh() {
-    _beatCount++;
-
-    // Tick cooldowns
-    const cdKeys = Object.keys(_pairCooldowns);
-    for (let i = 0; i < cdKeys.length; i++) {
-      if (_pairCooldowns[cdKeys[i]] > 0) _pairCooldowns[cdKeys[i]]--;
-    }
-
-    // Read axis energy + pair snapshots
-    const energyData = pipelineCouplingManager.getAxisEnergyShare();
-    if (!energyData || !energyData.shares) return;
-    const shares = energyData.shares;
-    const axisGini = V.optionalFinite(energyData.axisGini, 0);
-
-    // Update smoothed axis shares
-    for (let a = 0; a < _ALL_AXES.length; a++) {
-      const axis = _ALL_AXES[a];
-      const raw = V.optionalFinite(shares[axis], 0);
-      if (_smoothedShares[axis] === undefined) {
-        _smoothedShares[axis] = raw;
-      } else {
-        _smoothedShares[axis] += (raw - _smoothedShares[axis]) * _SHARE_EMA_ALPHA;
-      }
-    }
-
-    _lastWarmupTicks = _getWarmupTicks();
-    if (_beatCount < _lastWarmupTicks) return;
-
-    const giniMult = axisGini > _GINI_ESCALATION ? 1.5 : 1.0;
-    const homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-    const recoveryAxisHandOffPressure = homeostasisState && typeof homeostasisState.recoveryAxisHandOffPressure === 'number'
-      ? homeostasisState.recoveryAxisHandOffPressure
-      : 0;
-    const shortRunRecoveryBias = homeostasisState && typeof homeostasisState.shortRunRecoveryBias === 'number'
-      ? homeostasisState.shortRunRecoveryBias
-      : 0;
-    const nonNudgeableTailPressure = homeostasisState && typeof homeostasisState.nonNudgeableTailPressure === 'number'
-      ? homeostasisState.nonNudgeableTailPressure
-      : 0;
-    const nonNudgeableTailPair = homeostasisState && typeof homeostasisState.nonNudgeableTailPair === 'string'
-      ? homeostasisState.nonNudgeableTailPair
-      : '';
-    const recoveryDominantAxes = homeostasisState && Array.isArray(homeostasisState.recoveryDominantAxes)
-      ? homeostasisState.recoveryDominantAxes
-      : [];
-    const nonNudgeableAxes = nonNudgeableTailPair && nonNudgeableTailPair.indexOf('-') !== -1
-      ? nonNudgeableTailPair.split('-')
-      : recoveryDominantAxes;
-    const densityFlickerAxisLock = recoveryDominantAxes.indexOf('density') !== -1 && recoveryDominantAxes.indexOf('flicker') !== -1;
-    _lastBaselines = pipelineCouplingManager.getPairBaselines();
-    const snapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
-    const phaseSurface = axisEnergyEquilibratorHelpers.computeSurfacePressure(
-      snapshot,
-      ['density-phase', 'flicker-phase', 'tension-phase'],
-      _PHASE_SURFACE_RATIO,
-      _PHASE_SURFACE_ABS_MIN,
-      0.18,
-      0.03
-    );
-    const phaseSurfaceHot = phaseSurface.surfaceHot;
-    const phaseSurfacePressure = phaseSurface.surfacePressure;
-    const trustSurface = axisEnergyEquilibratorHelpers.computeSurfacePressure(
-      snapshot,
-      ['density-trust', 'flicker-trust', 'tension-trust'],
-      _TRUST_SURFACE_RATIO,
-      _TRUST_SURFACE_ABS_MIN,
-      0.16,
-      0.03
-    );
-    const trustSurfaceHot = trustSurface.surfaceHot;
-    const trustSurfacePressure = trustSurface.surfacePressure;
-    if (phaseSurfaceHot) _phaseSurfaceHotBeats++;
-    if (trustSurfaceHot) _trustSurfaceHotBeats++;
-    const entropySurface = axisEnergyEquilibratorHelpers.computeSurfacePressure(
-      snapshot,
-      ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'],
-      _ENTROPY_SURFACE_RATIO,
-      _ENTROPY_SURFACE_ABS_MIN,
-      0.16,
-      0.04
-    );
-    const entropySurfaceHot = entropySurface.surfaceHot;
-    const entropySurfacePressure = entropySurface.surfacePressure;
-    if (entropySurfaceHot) _entropySurfaceHotBeats++;
-
-    //  Graduated coherent gate. R30's binary gate (freeze during evolving
-    // + coherent = 61% of beats) caused axisGini to triple (0.137->0.382)
-    // because tightening was blocked for too long. Graduated approach:
-    //   exploring/initializing: full tightening (1.0)
-    //   evolving: reduced tightening (0.4) -- allows partial axis correction
-    //   coherent: frozen (0.0) -- protects coherent stability
-    const currentRegime = regimeClassifier.getLastRegime();
-    //  Exploring tighten amplification (1.5x). R33 showed exploring
-    // contributes 77% of effective tightening budget. Amplifying during
-    // exploring accelerates axis balance correction while coherent is absent.
-    //  Evolving tightenScale 0.4->0.6. R34 had 83.7% evolving but
-    // only 13.7 total tighten budget (R33: 35). Without exploring, evolving
-    // must carry more of the tightening load.
-    const coherentHotspotScale = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot)
-      ? clamp(_COHERENT_HOTSPOT_MIN_SCALE + phaseSurfacePressure * 0.14 + trustSurfacePressure * 0.12 + entropySurfacePressure * 0.10, _COHERENT_HOTSPOT_MIN_SCALE, _COHERENT_HOTSPOT_MAX_SCALE)
-      : 0;
-    if (coherentHotspotScale > 0) _coherentHotspotActuationBeats++;
-    const tightenScale = currentRegime === 'coherent' ? 0.0
-      : currentRegime === 'evolving' ? 0.6
-      : currentRegime === 'exploring' ? 1.5
-      : 1.0;
-    const coherentColdspotFreeze = currentRegime === 'coherent' && (phaseSurfaceHot || trustSurfaceHot || entropySurfaceHot);
-    if (coherentColdspotFreeze) _coherentFreezeBeats++;
-
-    //  Track per-regime beats and tightening budget
-    const rKey = currentRegime || 'unknown';
-    _regimeBeats[rKey] = (_regimeBeats[rKey] || 0) + 1;
-    _regimeTightenBudget[rKey] = (_regimeTightenBudget[rKey] || 0) + tightenScale;
-
-    // ===== LAYER 1: Pair-level hotspot / coldspot detection =====
-    for (let p = 0; p < _ALL_PAIRS.length; p++) {
-      const pair = _ALL_PAIRS[p];
-      if ((_pairCooldowns[pair] || 0) > 0) continue;
-      const pd = snapshot[pair];
-      if (!pd) continue;
-      const baseline = V.optionalFinite(pd.baseline);
-      const rolling = V.optionalFinite(pd.rawRollingAbsCorr);
-      if (baseline === undefined || rolling === undefined) continue;
-      const pairP95 = V.optionalFinite(pd.p95AbsCorr, rolling);
-      const hotspotRate = V.optionalFinite(pd.hotspotRate, 0);
-      const severeRate = V.optionalFinite(pd.severeRate, 0);
-      const residualPressure = V.optionalFinite(pd.residualPressure, 0);
-      const budgetRank = V.optionalFinite(pd.budgetRank, 99);
-      const residualTailHot = pairP95 > m.max(_RESIDUAL_P95_ABS_MIN, baseline * _RESIDUAL_P95_RATIO)
-        || hotspotRate > _RESIDUAL_HOTSPOT_RATE
-        || severeRate > _RESIDUAL_SEVERE_RATE
-        || residualPressure > 0.28;
-
-      const isPhaseSurfacePair = PHASE_SURFACE_SET.has(pair);
-      const isTrustSurfacePair = TRUST_SURFACE_SET.has(pair);
-      const isEntropySurfacePair = ENTROPY_SURFACE_SET.has(pair);
-      const coherentPairEligible = isPhaseSurfacePair || isTrustSurfacePair || isEntropySurfacePair || pair === 'density-flicker';
-      const pairTightenScale = currentRegime === 'coherent'
-        ? (coherentPairEligible && (residualTailHot || rolling > _HOTSPOT_RATIO * baseline) ? coherentHotspotScale : 0)
-        : tightenScale;
-
-      if (pairTightenScale > 0 && ((rolling > _HOTSPOT_RATIO * baseline && rolling > _HOTSPOT_ABS_MIN) || residualTailHot)) {
-        // Hotspot -- tighten this pair's baseline (scaled by regime gate)
-        const overshoot = m.max(rolling / m.max(baseline, 0.01), pairP95 / m.max(baseline, 0.01));
-        const residualTightenPressure = clamp(
-          clamp((pairP95 - m.max(_RESIDUAL_P95_ABS_MIN, baseline * _RESIDUAL_P95_RATIO)) / 0.18, 0, 1) * 0.55 +
-          clamp((hotspotRate - _RESIDUAL_HOTSPOT_RATE) / 0.20, 0, 1) * 0.25 +
-          clamp((severeRate - _RESIDUAL_SEVERE_RATE) / 0.12, 0, 1) * 0.20,
-          0,
-          1
-        );
-        const phaseSurfaceBoost = isPhaseSurfacePair ? 1.35 : 1.0;
-        // R70 E1: Flicker-phase decorrelation relief. flicker-phase dominated
-        // R69 exceedance (48/70 beats, p95 0.920) due to early-run spike.
-        // Boost tightening when residualPressure > 0.7 to compress baseline
-        // faster during the initial spike, reducing aggregate exceedance.
-        const flickerPhaseBoost = pair === 'flicker-phase' && residualPressure > 0.7 ? 1 + (residualPressure - 0.7) * 1.5 : 1.0;
-        const entropySurfaceBoost = isEntropySurfacePair ? 1.28 : 1.0;
-        const rankBoost = budgetRank <= 1 ? 1.30 : budgetRank <= 3 ? 1.16 : 1.0;
-        const coherentHotBoost = currentRegime === 'coherent' && coherentPairEligible ? (isEntropySurfacePair ? 1.18 : 1.10) : 1.0;
-        const shortRunHandOffBoost = recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && (pair === 'density-flicker' || isPhaseSurfacePair)
-          ? 1 + recoveryAxisHandOffPressure * (0.22 + shortRunRecoveryBias * 0.25)
-          : 1.0;
-        const nonNudgeableHandOffBoost = nonNudgeableTailPressure > 0 && !_NON_NUDGEABLE_TAIL_SET.has(pair) && Array.isArray(nonNudgeableAxes) && nonNudgeableAxes.length > 0 && (
-          pair.indexOf(nonNudgeableAxes[0]) !== -1 || (nonNudgeableAxes[1] && pair.indexOf(nonNudgeableAxes[1]) !== -1)
-        )
-          ? 1 + nonNudgeableTailPressure * (isEntropySurfacePair ? 0.70 : (isPhaseSurfacePair || isTrustSurfacePair ? 0.52 : 0.32))
-          : 1.0;
-        const rate = _PAIR_TIGHTEN_RATE * pairTightenScale * giniMult * phaseSurfaceBoost * flickerPhaseBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * nonNudgeableHandOffBoost * (1 + residualTightenPressure * _RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - _HOTSPOT_RATIO, 0.5, 3.0);
-        const nb = m.max(pair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, baseline - rate);
-        if (nb < baseline) {
-          pipelineCouplingManager.setPairBaseline(pair, nb);
-          _pairCooldowns[pair] = _PAIR_COOLDOWN;
-          _pairAdjustments++;
-          if (currentRegime === 'coherent' && pairTightenScale > 0) _coherentHotspotPairAdj++;
-          _perPairAdj[pair] = (_perPairAdj[pair] || 0) + 1;
-          _regimePairAdj[rKey] = (_regimePairAdj[rKey] || 0) + 1;
-        }
-      } else if (rolling < _COLDSPOT_RATIO * baseline && rolling < _COLDSPOT_ABS_MAX) {
-        if (coherentColdspotFreeze || pairP95 > _RESIDUAL_COLDSPOT_P95_MAX || hotspotRate > 0.06 || severeRate > 0.02) {
-          _skippedColdspotRelaxations++;
-          if (coherentColdspotFreeze) _coldspotSkipReasons.coherentFreeze++;
-          else _coldspotSkipReasons.residual++;
-          continue;
-        }
-        // Coldspot -- relax this pair's baseline
-        const nb = m.min(_BASELINE_MAX, baseline + _PAIR_RELAX_RATE);
-        if (nb > baseline) {
-          pipelineCouplingManager.setPairBaseline(pair, nb);
-          _pairCooldowns[pair] = _PAIR_COOLDOWN;
-          _pairAdjustments++;
-          _perPairAdj[pair] = (_perPairAdj[pair] || 0) + 1;
-          _regimePairAdj[rKey] = (_regimePairAdj[rKey] || 0) + 1;
-        }
-      }
-    }
-
-    // ===== LAYER 2: Axis-level energy balancing =====
-    const entropyExploringDamp = rKey === 'exploring' ? 0.95 : 1.0;
-    //  Phase-Axis Re-Amplification
-    // Relaxed dampening back to 0.95 since axisGini stabilized at 0.1065
-    const phaseEvolvingDamp = rKey === 'evolving' ? 0.95 : 1.0;
-
-    //  Axis-dominant coherent-gate tightening. When an axis's coupling
-    // total exceeds the median by >20%, amplify its tightening rate proportionally.
-    // Self-correcting: the amplifier scales with the excess above median.
-    const axisTotals = pipelineCouplingManager.getAxisCouplingTotals();
-    const axisTotalValues = [];
-    for (let a = 0; a < _ALL_AXES.length; a++) {
-      const av = axisTotals[_ALL_AXES[a]];
-      if (typeof av === 'number' && Number.isFinite(av)) axisTotalValues.push(av);
-    }
-    axisTotalValues.sort(function(a, b) { return a - b; });
-    const _axisTotalMedian = axisTotalValues.length > 0
-      ? axisTotalValues[m.floor(axisTotalValues.length / 2)]
-      : 0;
-
-    for (let a = 0; a < _ALL_AXES.length; a++) {
-      const axis = _ALL_AXES[a];
-      const share = _smoothedShares[axis] || 0;
-      const pairs = _axisToPairs[axis];
-
-      const axisTightenScale = currentRegime === 'coherent'
-        ? ((((axis === 'phase' || axis === 'density' || axis === 'flicker') && phaseSurfaceHot) ||
-            ((axis === 'trust' || axis === 'density' || axis === 'tension' || axis === 'flicker') && trustSurfaceHot))
-          || (((axis === 'entropy' || axis === 'density' || axis === 'tension' || axis === 'flicker') && entropySurfaceHot))
-          ? coherentHotspotScale
-          : 0)
-        : tightenScale;
-
-      if (share > _AXIS_OVERSHOOT && axisTightenScale > 0) {
-        const excess = share - _FAIR_SHARE;
-        //  Entropy Axis Soft-Throttle. Apply 0.95x dampening strictly to entropy during exploring.
-        let dampMult = (axis === 'entropy') ? entropyExploringDamp : 1.0;
-        if (axis === 'phase') dampMult *= phaseEvolvingDamp;
-        if (axis === 'entropy' && entropySurfaceHot) dampMult *= 1 + entropySurfacePressure * 0.35;
-
-        //  Flicker Axis Dampening Core (self-correcting relative to overshoot)
-        if (axis === 'flicker' && share > 0.20) {
-           dampMult *= (1.0 - m.min(0.15, (share - 0.20) * 1.5)); // max 0.85 dampening
-        }
-
-        // E2: Density Axis Dampening
-        if (axis === 'density' && share > 0.25) {
-          dampMult -= 0.05;
-        }
-        if (recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && (axis === 'density' || axis === 'flicker')) {
-          dampMult *= 1 + recoveryAxisHandOffPressure * (0.40 + shortRunRecoveryBias * 0.35);
-        }
-        if (nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1) {
-          dampMult *= 1 + nonNudgeableTailPressure * 0.35;
-        }
-
-        //  Axis-dominant tightening amplifier. When this axis's coupling
-        // total exceeds the median by >20%, amplify its tightening proportional
-        // to the excess. Caps at 1.5x to prevent over-correction.
-        const _thisAxisTotal = typeof axisTotals[axis] === 'number' && Number.isFinite(axisTotals[axis]) ? axisTotals[axis] : 0;
-        if (_axisTotalMedian > 0.01 && _thisAxisTotal > _axisTotalMedian * 1.20) {
-          const _axisDominanceExcess = (_thisAxisTotal - _axisTotalMedian) / _axisTotalMedian;
-          dampMult *= 1 + clamp(_axisDominanceExcess * 0.50, 0, 0.50);
-        }
-
-        //  Symmetric tighten-rate scaling. R32 E2 only scaled relaxation
-        // for disadvantaged axes (trust/entropy/phase). But overshoot tightening
-        // also needs scaling: entropy at 0.230 share pushes energy toward trust,
-        // and its 3-pair axis needs 1.67x faster tightening to match 5-pair axes.
-        const tightenPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
-        const rate = _AXIS_TIGHTEN_RATE * tightenPairScale * axisTightenScale * giniMult * dampMult * clamp(excess / _FAIR_SHARE, 0.5, 2.0);
-        for (let p = 0; p < pairs.length; p++) {
-          const pair = pairs[p];
-          if ((_pairCooldowns[pair] || 0) > 0) continue; // skip Layer-1 adjusted
-          const bl = V.optionalFinite(_lastBaselines[pair]);
-          if (bl === undefined) continue;
-          const nb = m.max(pair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, bl - rate);
-          if (nb < bl) {
-            pipelineCouplingManager.setPairBaseline(pair, nb);
-            _pairCooldowns[pair] = _AXIS_COOLDOWN;
-            _axisAdjustments++;
-            if (currentRegime === 'coherent' && axisTightenScale > 0) _coherentHotspotAxisAdj++;
-            _perAxisAdj[axis] = (_perAxisAdj[axis] || 0) + 1;
-            _regimeAxisAdj[rKey] = (_regimeAxisAdj[rKey] || 0) + 1;
-          }
-        }
-      } else if (share < _AXIS_UNDERSHOOT && share > 0.001) {
-        // E6 + R65 E3: Phase axis emergency floor. When an axis drops
-        // below 0.08 (catastrophic starvation), bypass the coherent coldspot
-        // freeze and apply emergency relaxation. Self-correcting: emergency
-        // mode deactivates when share recovers above 0.08.
-        const isEmergencyStarved = share < 0.08;
-        // R72 E2: Phase-collapse emergency floor. When phase share drops
-        // below 2%, the axis is in catastrophic collapse (R71: 7.7% -> 0.78%).
-        // Override all skip conditions and apply 3x emergency relaxation.
-        // Self-correcting: deactivates when share recovers above 0.02.
-        const isPhaseCollapse = axis === 'phase' && share < 0.02;
-        //  Partial coherent freeze bypass for undershoot axes.
-        // When an axis is below _AXIS_UNDERSHOOT (0.12) but above emergency
-        // threshold, allow relaxation on even-numbered beats (50% duty cycle)
-        // so starved axes get some recovery during coherent spells.
-        const isUndershootPartialBypass = !isEmergencyStarved && share < _AXIS_UNDERSHOOT && (_beatCount % 2 === 0);
-        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && (coherentColdspotFreeze || (axis === 'phase' && phaseSurfaceHot) || (axis === 'trust' && trustSurfaceHot))) {
-          _skippedColdspotRelaxations++;
-          if (coherentColdspotFreeze) _coldspotSkipReasons.coherentFreeze++;
-          else if (axis === 'phase' && phaseSurfaceHot) _coldspotSkipReasons.phaseHot++;
-          else if (axis === 'trust' && trustSurfaceHot) _coldspotSkipReasons.trustHot++;
-          continue;
-        }
-        const deficit = _FAIR_SHARE - share;
-        //  Scale relaxation rate by inverse nudgeable pair count.
-        // Trust/entropy/phase axes have only 3 effective nudgeable pairs vs 5,
-        // so they need 5/3 = 1.67x faster relaxation to match correction speed.
-        const pairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE[axis] || _RELAX_RATE_REF);
-        const handOffRelaxBoost = recoveryAxisHandOffPressure > 0 && densityFlickerAxisLock && axis !== 'density' && axis !== 'flicker'
-          ? 1 + recoveryAxisHandOffPressure * (0.55 + shortRunRecoveryBias * 0.40)
-          : 1.0;
-        const nonNudgeableRelaxBoost = nonNudgeableTailPressure > 0 && nonNudgeableAxes.indexOf(axis) !== -1
-          ? 1 + nonNudgeableTailPressure * 0.30
-          : 1.0;
-        const emergencyBoost = isPhaseCollapse ? 4.0 : (isEmergencyStarved ? 3.0 : 1.0);
-        const rate = _AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / _FAIR_SHARE, 0.5, 2.0);
-        for (let p = 0; p < pairs.length; p++) {
-          const pair = pairs[p];
-          if ((_pairCooldowns[pair] || 0) > 0) continue;
-          const bl = V.optionalFinite(_lastBaselines[pair]);
-          if (bl === undefined) continue;
-          const nb = m.min(_BASELINE_MAX, bl + rate);
-          if (nb > bl) {
-            pipelineCouplingManager.setPairBaseline(pair, nb);
-            _pairCooldowns[pair] = _AXIS_COOLDOWN;
-            _axisAdjustments++;
-            _perAxisAdj[axis] = (_perAxisAdj[axis] || 0) + 1;
-            _regimeAxisAdj[rKey] = (_regimeAxisAdj[rKey] || 0) + 1;
-          }
-        }
-      }
-    }
-
-    //  Tension axis energy floor enforcement. When tension share drops
-    // below 15%, apply targeted relaxation to tension-containing pairs regardless
-    // of coherent freeze or surface-hot guards. Self-correcting: relaxation
-    // stops as soon as tension share recovers above the floor.
-    const _TENSION_FLOOR = 0.15;
-    const _tensionSmoothed = _smoothedShares['tension'];
-    if (typeof _tensionSmoothed === 'number' && _tensionSmoothed < _TENSION_FLOOR && _tensionSmoothed > 0.001) {
-      const _tensionDeficit = _TENSION_FLOOR - _tensionSmoothed;
-      const _tensionPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE['tension'] || _RELAX_RATE_REF);
-      const _tensionFloorRate = m.min(0.03, _AXIS_RELAX_RATE * 2.5 * _tensionPairScale * clamp(_tensionDeficit / _FAIR_SHARE, 0.5, 2.0));
-      const _tensionPairs = _axisToPairs['tension'] || [];
-      for (let tp = 0; tp < _tensionPairs.length; tp++) {
-        const tPair = _tensionPairs[tp];
-        if ((_pairCooldowns[tPair] || 0) > 0) continue;
-        const tBl = V.optionalFinite(_lastBaselines[tPair]);
-        if (tBl === undefined) continue;
-        const tNb = m.min(_BASELINE_MAX, tBl + _tensionFloorRate);
-        if (tNb > tBl) {
-          pipelineCouplingManager.setPairBaseline(tPair, tNb);
-          _pairCooldowns[tPair] = _AXIS_COOLDOWN;
-          _axisAdjustments++;
-          _perAxisAdj['tension'] = (_perAxisAdj['tension'] || 0) + 1;
-        }
-      }
-    }
-
-    //  Entropy axis energy cap at 19%. Entropy dominated at 21.8%
-    // in R59 (30% above equal share) with zero axis-level redistribution.
-    // When entropy exceeds the cap, actively tighten entropy-containing
-    // pairs to redirect energy toward density and phase. Self-correcting:
-    // tightening stops when entropy share drops below cap.
-    const _ENTROPY_CAP = 0.19;
-    const _entropySmoothed = _smoothedShares['entropy'];
-    if (typeof _entropySmoothed === 'number' && _entropySmoothed > _ENTROPY_CAP) {
-      const _entropyExcess = _entropySmoothed - _ENTROPY_CAP;
-      const _entropyPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE['entropy'] || _RELAX_RATE_REF);
-      const _entropyCapRate = m.min(0.03, _AXIS_TIGHTEN_RATE * 2.5 * _entropyPairScale * clamp(_entropyExcess / _FAIR_SHARE, 0.5, 2.0));
-      const _entropyPairs = _axisToPairs['entropy'] || [];
-      for (let ep = 0; ep < _entropyPairs.length; ep++) {
-        const ePair = _entropyPairs[ep];
-        if ((_pairCooldowns[ePair] || 0) > 0) continue;
-        const eBl = V.optionalFinite(_lastBaselines[ePair]);
-        if (eBl === undefined) continue;
-        const eNb = m.max(ePair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, eBl - _entropyCapRate);
-        if (eNb < eBl) {
-          pipelineCouplingManager.setPairBaseline(ePair, eNb);
-          _pairCooldowns[ePair] = _AXIS_COOLDOWN;
-          _axisAdjustments++;
-          _perAxisAdj['entropy'] = (_perAxisAdj['entropy'] || 0) + 1;
-        }
-      }
-    }
-
-    // R69 E3: Trust-axis dampening when phase collapses. When the phase axis
-    // share drops near zero (< 0.01) while trust exceeds its fair share by
-    // 30%+, trust-linked pairs absorb the energy the phase axis lost. This
-    // "balloon effect" concentrates coupling heat in trust pairs. Graduated
-    // tightening on trust-containing pairs bleeds excess trust energy back
-    // toward equilibrium. Self-correcting: stops when trust share normalizes.
-    const _TRUST_BALLOON_CAP = _FAIR_SHARE * 1.3;
-    const _phaseSmoothed = _smoothedShares['phase'];
-    const _trustSmoothed = _smoothedShares['trust'];
-    if (typeof _phaseSmoothed === 'number' && _phaseSmoothed < 0.01 &&
-        typeof _trustSmoothed === 'number' && _trustSmoothed > _TRUST_BALLOON_CAP) {
-      const _trustExcess = _trustSmoothed - _TRUST_BALLOON_CAP;
-      const _trustPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE['trust'] || _RELAX_RATE_REF);
-      const _trustCapRate = m.min(0.03, _AXIS_TIGHTEN_RATE * 2.0 * _trustPairScale * clamp(_trustExcess / _FAIR_SHARE, 0.5, 2.0));
-      const _trustPairs = _axisToPairs['trust'] || [];
-      for (let tp = 0; tp < _trustPairs.length; tp++) {
-        const tPair = _trustPairs[tp];
-        if ((_pairCooldowns[tPair] || 0) > 0) continue;
-        const tBl = V.optionalFinite(_lastBaselines[tPair]);
-        if (tBl === undefined) continue;
-        const tNb = m.max(tPair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, tBl - _trustCapRate);
-        if (tNb < tBl) {
-          pipelineCouplingManager.setPairBaseline(tPair, tNb);
-          _pairCooldowns[tPair] = _AXIS_COOLDOWN;
-          _axisAdjustments++;
-          _perAxisAdj['trust'] = (_perAxisAdj['trust'] || 0) + 1;
-        }
-      }
-    }
-
+    const context = axisEnergyEquilibratorRefreshContext.build(_state, _config, V);
+    if (!context) return;
+    axisEnergyEquilibratorPairAdjustments.apply(_state, _config, context, V);
+    axisEnergyEquilibratorAxisAdjustments.apply(_state, _config, context, V);
     explainabilityBus.emit('AXIS_ENERGY_EQUIL', 'all', {
-      smoothedShares: Object.assign({}, _smoothedShares),
-      axisGini, giniMult,
-      pairAdj: _pairAdjustments, axisAdj: _axisAdjustments,
-      beat: _beatCount
+      smoothedShares: Object.assign({}, _state.smoothedShares),
+      axisGini: context.axisGini,
+      giniMult: context.giniMult,
+      pairAdj: _state.pairAdjustments,
+      axisAdj: _state.axisAdjustments,
+      beat: _state.beatCount
     });
   }
 
-  /** @returns {{ beatCount: number, pairAdjustments: number, axisAdjustments: number, smoothedShares: Record<string, number>, perAxisAdj: Record<string, number>, perPairAdj: Record<string, number>, lastBaselines: Record<string, number>, regimeBeats: Record<string, number>, regimePairAdj: Record<string, number>, regimeAxisAdj: Record<string, number>, regimeTightenBudget: Record<string, number>, coherentFreezeBeats: number, skippedColdspotRelaxations: number, coldspotSkipReasons: { coherentFreeze: number, phaseHot: number, trustHot: number, residual: number }, phaseSurfaceHotBeats: number, trustSurfaceHotBeats: number, entropySurfaceHotBeats: number, coherentHotspotActuationBeats: number, coherentHotspotPairAdj: number, coherentHotspotAxisAdj: number, warmupTicks: number, warmupRemaining: number }} */
   function getSnapshot() {
     return {
-      beatCount: _beatCount,
-      pairAdjustments: _pairAdjustments,
-      axisAdjustments: _axisAdjustments,
-      smoothedShares: Object.assign({}, _smoothedShares),
-      perAxisAdj: Object.assign({}, _perAxisAdj),
-      perPairAdj: Object.assign({}, _perPairAdj),
-      lastBaselines: Object.assign({}, _lastBaselines),
-      //  Per-regime telemetry
-      regimeBeats: Object.assign({}, _regimeBeats),
-      regimePairAdj: Object.assign({}, _regimePairAdj),
-      regimeAxisAdj: Object.assign({}, _regimeAxisAdj),
-      regimeTightenBudget: Object.assign({}, _regimeTightenBudget),
-      coherentFreezeBeats: _coherentFreezeBeats,
-      skippedColdspotRelaxations: _skippedColdspotRelaxations,
-      coldspotSkipReasons: Object.assign({}, _coldspotSkipReasons),
-      phaseSurfaceHotBeats: _phaseSurfaceHotBeats,
-      trustSurfaceHotBeats: _trustSurfaceHotBeats,
-      entropySurfaceHotBeats: _entropySurfaceHotBeats,
-      coherentHotspotActuationBeats: _coherentHotspotActuationBeats,
-      coherentHotspotPairAdj: _coherentHotspotPairAdj,
-      coherentHotspotAxisAdj: _coherentHotspotAxisAdj,
-      warmupTicks: _lastWarmupTicks,
-      warmupRemaining: m.max(0, _lastWarmupTicks - _beatCount)
+      beatCount: _state.beatCount,
+      pairAdjustments: _state.pairAdjustments,
+      axisAdjustments: _state.axisAdjustments,
+      smoothedShares: Object.assign({}, _state.smoothedShares),
+      perAxisAdj: Object.assign({}, _state.perAxisAdj),
+      perPairAdj: Object.assign({}, _state.perPairAdj),
+      lastBaselines: Object.assign({}, _state.lastBaselines),
+      regimeBeats: Object.assign({}, _state.regimeBeats),
+      regimePairAdj: Object.assign({}, _state.regimePairAdj),
+      regimeAxisAdj: Object.assign({}, _state.regimeAxisAdj),
+      regimeTightenBudget: Object.assign({}, _state.regimeTightenBudget),
+      coherentFreezeBeats: _state.coherentFreezeBeats,
+      skippedColdspotRelaxations: _state.skippedColdspotRelaxations,
+      coldspotSkipReasons: Object.assign({}, _state.coldspotSkipReasons),
+      phaseSurfaceHotBeats: _state.phaseSurfaceHotBeats,
+      trustSurfaceHotBeats: _state.trustSurfaceHotBeats,
+      entropySurfaceHotBeats: _state.entropySurfaceHotBeats,
+      coherentHotspotActuationBeats: _state.coherentHotspotActuationBeats,
+      coherentHotspotPairAdj: _state.coherentHotspotPairAdj,
+      coherentHotspotAxisAdj: _state.coherentHotspotAxisAdj,
+      warmupTicks: _state.lastWarmupTicks,
+      warmupRemaining: m.max(0, _state.lastWarmupTicks - _state.beatCount)
     };
   }
 
   function reset() {
-    for (let a = 0; a < _ALL_AXES.length; a++) {
-      const axis = _ALL_AXES[a];
-      if (_smoothedShares[axis] !== undefined) {
-        _smoothedShares[axis] = _smoothedShares[axis] * 0.7 + _FAIR_SHARE * 0.3;
+    for (let i = 0; i < _config.ALL_AXES.length; i++) {
+      const axis = _config.ALL_AXES[i];
+      if (_state.smoothedShares[axis] !== undefined) {
+        _state.smoothedShares[axis] = _state.smoothedShares[axis] * 0.7 + _config.FAIR_SHARE * 0.3;
       }
     }
-    const cdKeys = Object.keys(_pairCooldowns);
-    for (let i = 0; i < cdKeys.length; i++) _pairCooldowns[cdKeys[i]] = 0;
+    const cooldownKeys = Object.keys(_state.pairCooldowns);
+    for (let i = 0; i < cooldownKeys.length; i++) _state.pairCooldowns[cooldownKeys[i]] = 0;
   }
 
-  // Self-registration
   conductorIntelligence.registerRecorder('axisEnergyEquilibrator', refresh);
   conductorIntelligence.registerStateProvider('axisEnergyEquilibrator', () => ({
     axisEnergyEquilibrator: getSnapshot()

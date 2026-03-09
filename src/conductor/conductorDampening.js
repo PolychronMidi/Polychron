@@ -69,7 +69,10 @@ conductorDampening = (() => {
       } else if (snap.regime === 'exploring' || snap.regime === 'coherent') {
         base *= 1.2; // Loosen gravity (more pass-through) when coherent
       }
-    } catch { /* ignore */ }
+    } catch {
+      // profiler snapshot may not be available during early boot or testing;
+      // absence is non-fatal, so just ignore and proceed with default base.
+    }
     // Use effective active count instead of raw registry length when available.
     // This prevents dormant contributors from inflating the dampening calibration.
     const activeCount = pipelineName ? (_activeCountByPipeline.get(pipelineName) || registryLength) : registryLength;
@@ -101,7 +104,9 @@ conductorDampening = (() => {
       if (snap.effectiveDimensionality < 2.0) {
         progStrength *= 1.5; // Stronger resistance to crush if dimensionality is collapsing
       }
-    } catch { /* ignore */ }
+    } catch {
+      // snapshot retrieval could fail early in boot; safe to ignore
+    }
 
     const productDeviation = runningProduct - 1.0;
     const sameDirection = (deviation < 0 && productDeviation < 0) || (deviation > 0 && productDeviation > 0);
