@@ -1,19 +1,45 @@
 {
   "meta": {
-    "generated": "2026-03-08T22:50:40.755Z",
-    "verdict": "EVOLVED"
+    "generated": "2026-03-08T23:58:38.326Z",
+    "verdict": "DRIFTED"
   },
-  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. exceedance hotspots shifted from [entropy-phase: 16, density-flicker: 4, density-trust: 4] to [density-trust: 39, density-flicker: 14, density-tension: 8].",
+  "narrative": "WARNING: Significant character drift across 4 dimensions. This may indicate a regression or fundamental parameter change. average trust convergence lower (0.326 -> 0.000). regime balance shifted: initializing: 8.7% -> 0.0%; evolving: 8.7% -> 0.0%; coherent: 82.6% -> 0.0%. mean coupling deviation: 0.4137. telemetry health shifted from phase=critical, underSeen=1 to phase=critical, underSeen=0.",
   "explanations": [
     {
-      "dimension": "exceedanceSeverity (beats)",
-      "delta": 393.53,
-      "tolerance": 71.5,
-      "cause": "exceedance hotspots shifted from [entropy-phase: 16, density-flicker: 4, density-trust: 4] to [density-trust: 39, density-flicker: 14, density-tension: 8]",
-      "uniqueBeats": {
-        "current": 45,
-        "previous": 25
-      }
+      "dimension": "trustConvergence",
+      "delta": 0.32565,
+      "tolerance": 0.25,
+      "cause": "average trust convergence lower (0.326 -> 0.000)",
+      "modulesShifted": [
+        "cadenceAlignment: 0.20 -> 0.00",
+        "coherenceMonitor: 0.44 -> 0.00",
+        "convergence: 0.20 -> 0.00",
+        "entropyRegulator: 0.55 -> 0.00",
+        "feedbackOscillator: 0.21 -> 0.00",
+        "phaseLock: 0.30 -> 0.00",
+        "restSynchronizer: 0.24 -> 0.00",
+        "stutterContagion: 0.47 -> 0.00"
+      ]
+    },
+    {
+      "dimension": "regimeDistribution",
+      "delta": 0.3333333333333333,
+      "tolerance": 0.325,
+      "cause": "regime balance shifted: initializing: 8.7% -> 0.0%; evolving: 8.7% -> 0.0%; coherent: 82.6% -> 0.0%"
+    },
+    {
+      "dimension": "coupling",
+      "delta": 0.41369999999999996,
+      "tolerance": 0.325,
+      "cause": "mean coupling deviation: 0.4137"
+    },
+    {
+      "dimension": "telemetryHealth",
+      "delta": 0.7037,
+      "tolerance": 0.35,
+      "cause": "telemetry health shifted from phase=critical, underSeen=1 to phase=critical, underSeen=0",
+      "correlates": "max reconciliation gap moved 0.085 -> 0.000",
+      "meaning": "observability changed enough to affect how confidently hotspot and phase diagnostics can be trusted"
     }
   ]
 }

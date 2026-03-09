@@ -205,7 +205,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       globalGainMultiplier: _homeSnap ? _homeSnap.globalGainMultiplier : 0,
       regime: _dynSnap ? _dynSnap.regime : 'unknown',
       couplingStrength: _dynSnap ? _dynSnap.couplingStrength : 0,
-      phaseIntegrity: _dynSnap ? (_dynSnap.phaseCouplingCoverage > 0.5 ? 'healthy' : _dynSnap.phaseCouplingCoverage > 0 ? 'warning' : 'critical') : 'unknown'
+      phaseIntegrity: _dynSnap ? (_dynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : _dynSnap.phaseChanged || _dynSnap.phaseCouplingAvailablePairs > 0 ? 'warning' : 'critical') : 'unknown'
     });
   }
 

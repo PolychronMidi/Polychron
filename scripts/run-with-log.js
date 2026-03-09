@@ -81,6 +81,29 @@ const childEnv = Object.assign({}, process.env);
 if (!childEnv.RUN_WITH_LOG_OWNER) childEnv.RUN_WITH_LOG_OWNER = String(owner || process.pid);
 const proc = spawn(command[0], command.slice(1), { shell: false, stdio: 'pipe', env: childEnv });
 
+// ── Persistent single-line spinner ──────────────────────────────────────────
+// One status line pinned at the bottom. Overwrites itself in place so it never
+// adds extra lines. Cleared before child output, redrawn after.
+const _SPIN = ['|', '/', '-', '\\'];
+let _spinIdx = 0;
+let _statusShown = false;
+const _STATUS_MSG = ' script in progress, wait. do not abandon this process, or enter new commands or terminals until this line is replaced with the text "script exited"';
+
+function _writeStatus() {
+  const ch = _SPIN[_spinIdx++ & 3];
+  process.stderr.write('\x1b[2K\r' + ch + _STATUS_MSG);
+  _statusShown = true;
+}
+function _clearStatus() {
+  if (_statusShown) {
+    process.stderr.write('\x1b[2K\r');
+    _statusShown = false;
+  }
+}
+_writeStatus();
+const _spinTimer = setInterval(_writeStatus, 500);
+_spinTimer.unref();
+
 /**
  * Normalize a single line for the persistent log:
  * - Strip ANSI escapes
@@ -117,22 +140,25 @@ function writeNormalized(streamLabel, chunk) {
 }
 
 proc.stdout.on('data', (data) => {
-  // Mirror colored output to console for developer convenience
+  _clearStatus();
   process.stdout.write(data);
-  // Write a cleaned, timestamped copy to the persistent log
   writeNormalized('STDOUT', data);
+  _writeStatus();
 });
 
 proc.stderr.on('data', (data) => {
-  // Mirror colored output to console
+  _clearStatus();
   process.stderr.write(data);
-  // Clean and write to the persistent log, labeled STDERR
   writeNormalized('STDERR', data);
+  _writeStatus();
 });
 
 proc.on('close', (code) => {
+  clearInterval(_spinTimer);
+  _clearStatus();
   const summary = `[${new Date().toISOString()}] PROCESS EXIT: code=${code}\n`;
   logStream.write(summary);
   logStream.end();
+  process.stderr.write('script exited (code=' + code + ')\n');
   process.exit(code);
 });

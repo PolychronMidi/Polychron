@@ -90,7 +90,7 @@ conductorProfileAtmospheric = () => ({
   // variance-gated observations, 0% coupling coverage, phase axis energy 0).
   // Scale 0.4 lowers the 0.005 base threshold to 0.002, admitting phase pairs
   // that explosive's wider variance would correctly ignore.
-  phaseVarianceGateScale: 0.4,
+  phaseVarianceGateScale: 0.15,
   // R66 E2: Profile-aware coupling energy budget scaling. Atmospheric's
   // structural correlations need 1.5x energy budget headroom to prevent
   // globalGainMultiplier from crashing to floor.

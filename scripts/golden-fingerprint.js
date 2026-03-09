@@ -189,6 +189,9 @@ function computeFingerprint() {
       try { return JSON.parse(line); } catch (_) { return null; }
     }).filter(Boolean);
   }
+  // R67 E1: Filter out diagnostic snapshot records so that entries.length
+  // matches trace-summary's totalEntries (which excludes snapshots).
+  entries = entries.filter(e => e.recordType !== 'snapshot');
   const summary = getFreshSummary(entries);
 
   // Note counts and pitch distribution from output CSV files
