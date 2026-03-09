@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Dimensionality Expander - prevents phase-space collapse.

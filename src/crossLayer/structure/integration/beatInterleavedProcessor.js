@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Beat-Interleaved Layer Processor (E9)

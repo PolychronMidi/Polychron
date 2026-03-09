@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Vertical Interval Monitor (E2)

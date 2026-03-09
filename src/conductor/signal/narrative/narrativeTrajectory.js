@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Narrative Trajectory Engine (E10)

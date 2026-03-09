@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Regime-Reactive Damping (E4)

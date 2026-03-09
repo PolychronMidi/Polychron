@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Harmonic Function Graph (E1)

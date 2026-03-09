@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Output Analyzer - Post-Hoc Musical Coherence Analysis (E12)

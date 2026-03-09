@@ -123,38 +123,47 @@ couplingBiasAccumulator = (() => {
    */
   function finalize(nudges, setup) {
     const S = couplingState;
+    const hs = safePreBoot.call(() => couplingHomeostasis.getState(), null);
 
     // Coherence gate
     const gateD = coherenceGate(nudges.DPos, nudges.DNeg);
     const gateT = coherenceGate(nudges.TPos, nudges.TNeg);
     const gateF = coherenceGate(nudges.FPos, nudges.FNeg);
-    // R73 E5: Gate fatigue dampening. When gates stay fully open (EMA > 0.95)
-    // and budget constraint is active, apply modest dampening (0.92 ceiling) to
-    // provide selective pressure on high-coupling beats. Self-correcting:
-    // disengages when gate EMA drops below 0.95 or budget pressure relaxes.
-    const hs = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-    const gateFatigueActive = hs && hs.budgetConstraintActive;
-    const fatigueD = gateFatigueActive && S.gateEmaD > 0.95 ? 0.92 : 1.0;
-    const fatigueT = gateFatigueActive && S.gateEmaT > 0.95 ? 0.92 : 1.0;
-    const fatigueF = gateFatigueActive && S.gateEmaF > 0.95 ? 0.92 : 1.0;
-    let nudgeD = nudges.D * m.min(gateD, fatigueD) + nudges.DBypass;
-    let nudgeT = nudges.T * m.min(gateT, fatigueT) + nudges.TBypass;
-    let nudgeF = nudges.F * m.min(gateF, fatigueF) + nudges.FBypass;
+    const gateEngagePressure = hs && hs.budgetConstraintActive
+      ? clamp(
+        hs.budgetConstraintPressure * 0.50 +
+        hs.tailRecoveryHandshake * 0.20 +
+        clamp((0.72 - hs.globalGainMultiplier) / 0.42, 0, 1) * 0.15,
+        0,
+        1)
+      : 0;
+    function engageGate(rawGate, gateEma) {
+      if (gateEngagePressure <= 0 || rawGate < 0.98) return rawGate;
+      const emaPressure = clamp((gateEma - 0.92) / 0.08, 0, 1);
+      const engagedCeiling = clamp(1 - gateEngagePressure * 0.14 - emaPressure * 0.10, 0.78, 1);
+      return m.min(rawGate, engagedCeiling);
+    }
+    const engagedGateD = engageGate(gateD, S.gateEmaD);
+    const engagedGateT = engageGate(gateT, S.gateEmaT);
+    const engagedGateF = engageGate(gateF, S.gateEmaF);
+    let nudgeD = nudges.D * engagedGateD + nudges.DBypass;
+    let nudgeT = nudges.T * engagedGateT + nudges.TBypass;
+    let nudgeF = nudges.F * engagedGateF + nudges.FBypass;
 
     // Gate diagnostics
-    S.lastGateD = Number(gateD.toFixed(4));
-    S.lastGateT = Number(gateT.toFixed(4));
-    S.lastGateF = Number(gateF.toFixed(4));
+    S.lastGateD = Number(engagedGateD.toFixed(4));
+    S.lastGateT = Number(engagedGateT.toFixed(4));
+    S.lastGateF = Number(engagedGateF.toFixed(4));
     S.lastFloorDampen = Number(setup.floorDampen.toFixed(4));
     S.lastBypassD = Number(nudges.DBypass.toFixed(6));
     S.lastBypassT = Number(nudges.TBypass.toFixed(6));
     S.lastBypassF = Number(nudges.FBypass.toFixed(6));
-    S.gateMinD = m.min(S.gateMinD, gateD);
-    S.gateMinT = m.min(S.gateMinT, gateT);
-    S.gateMinF = m.min(S.gateMinF, gateF);
-    S.gateEmaD = S.gateEmaD * (1 - GATE_EMA_ALPHA) + gateD * GATE_EMA_ALPHA;
-    S.gateEmaT = S.gateEmaT * (1 - GATE_EMA_ALPHA) + gateT * GATE_EMA_ALPHA;
-    S.gateEmaF = S.gateEmaF * (1 - GATE_EMA_ALPHA) + gateF * GATE_EMA_ALPHA;
+    S.gateMinD = m.min(S.gateMinD, engagedGateD);
+    S.gateMinT = m.min(S.gateMinT, engagedGateT);
+    S.gateMinF = m.min(S.gateMinF, engagedGateF);
+    S.gateEmaD = S.gateEmaD * (1 - GATE_EMA_ALPHA) + engagedGateD * GATE_EMA_ALPHA;
+    S.gateEmaT = S.gateEmaT * (1 - GATE_EMA_ALPHA) + engagedGateT * GATE_EMA_ALPHA;
+    S.gateEmaF = S.gateEmaF * (1 - GATE_EMA_ALPHA) + engagedGateF * GATE_EMA_ALPHA;
     S.gateBeatCount++;
     explainabilityBus.emit('COUPLING_GATES', 'all', {
       gateD: S.lastGateD, gateT: S.lastGateT, gateF: S.lastGateF,

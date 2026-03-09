@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Structural Narrative Advisor - Compositional Strategy Memory (E3)

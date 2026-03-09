@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Fractal Arc Generator - Multi-Scale Arc Embedding (E8)

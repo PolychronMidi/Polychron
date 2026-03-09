@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Polyrhythmic Phase Predictor (E7)

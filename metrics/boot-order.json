@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-09T06:25:09.510Z",
+    "generated": "2026-03-09T07:04:35.188Z",
     "totalFiles": 425,
     "globalsDeclared": 706,
     "globalsMapped": 706,
@@ -856,22 +856,22 @@
     },
     {
       "order": 75,
-      "file": "src/conductor/signal/balancing/pipelineBalancer.js",
+      "file": "src/conductor/signal/balancing/coupling/index.js",
+      "provides": []
+    },
+    {
+      "order": 76,
+      "file": "src/conductor/signal/balancing/coupling/pipelineBalancer.js",
       "provides": [
         "pipelineBalancer"
       ]
     },
     {
-      "order": 76,
-      "file": "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js",
+      "order": 77,
+      "file": "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js",
       "provides": [
         "pipelineCouplingManagerSnapshot"
       ]
-    },
-    {
-      "order": 77,
-      "file": "src/conductor/signal/balancing/coupling/index.js",
-      "provides": []
     },
     {
       "order": 78,
@@ -924,22 +924,22 @@
     },
     {
       "order": 85,
-      "file": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "file": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "provides": [
         "pipelineCouplingManager"
       ]
     },
     {
       "order": 86,
-      "file": "src/conductor/signal/balancing/couplingHomeostasisSnapshot.js",
-      "provides": [
-        "couplingHomeostasisSnapshot"
-      ]
+      "file": "src/conductor/signal/balancing/coupling/homeostasis/index.js",
+      "provides": []
     },
     {
       "order": 87,
-      "file": "src/conductor/signal/balancing/coupling/homeostasis/index.js",
-      "provides": []
+      "file": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasisSnapshot.js",
+      "provides": [
+        "couplingHomeostasisSnapshot"
+      ]
     },
     {
       "order": 88,
@@ -978,7 +978,7 @@
     },
     {
       "order": 93,
-      "file": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "file": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
       "provides": [
         "couplingHomeostasis"
       ]

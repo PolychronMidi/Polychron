@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Axis Energy Equilibrator -- Hypermeta Self-Calibrating Controller #13
