@@ -40,12 +40,21 @@ couplingEffectiveGain = (() => {
         tailTelemetry.severeRate * 0.20 + clamp((absCorr - 0.72) / 0.16, 0, 1) * 0.15,
         0, 1)
       : 0;
+    const trustSurfacePressure = flags.isTrustPair
+      ? clamp(
+        clamp((p95 - 0.74) / 0.16, 0, 1) * 0.28 +
+        clamp((absCorr - 0.70) / 0.18, 0, 1) * 0.12 +
+        tailTelemetry.hotspotRate * 0.20 +
+        tailTelemetry.severeRate * 0.12 +
+        clamp((p95 - (tailTelemetry.recentP95 || 0) - 0.08) / 0.18, 0, 1) * 0.28,
+        0, 1.05)
+      : 0;
 
     // Target adjustment for surface pressure
     let adjustedTarget = target0;
-    if ((coherentSurfacePressure > 0 || entropySurfacePressure > 0 || nonNudgeableHandOffPressure > 0) && setup.targetScale > 1.0) {
+    if ((coherentSurfacePressure > 0 || entropySurfacePressure > 0 || trustSurfacePressure > 0 || nonNudgeableHandOffPressure > 0) && setup.targetScale > 1.0) {
       const baseTarget = couplingState.getTarget(key);
-      const surfacePressure = m.max(coherentSurfacePressure, entropySurfacePressure, nonNudgeableHandOffPressure);
+      const surfacePressure = m.max(coherentSurfacePressure, entropySurfacePressure, trustSurfacePressure, nonNudgeableHandOffPressure);
       const reducedRelaxScale = 1 + (setup.targetScale - 1.0) * m.max(0.15, 1 - surfacePressure * 0.85);
       adjustedTarget = baseTarget * reducedRelaxScale;
     }
@@ -56,9 +65,19 @@ couplingEffectiveGain = (() => {
     // the stale-window tail contribution.
     const recentP95 = tailTelemetry.recentP95 || 0;
     const reconciliationGap = m.max(0, p95 - recentP95 - 0.15);
-    const gapPressure = clamp(reconciliationGap * 1.5, 0, 0.50);
+    const gapPressure = flags.isTrustPair
+      ? clamp(reconciliationGap * 1.9 + clamp((p95 - 0.70) / 0.18, 0, 1) * 0.10, 0, 0.70)
+      : clamp(reconciliationGap * 1.5, 0, 0.50);
 
-    return { adjustedTarget, coherentSurfacePressure, entropySurfacePressure, nonNudgeableHandOffPressure, tailPressure, gapPressure };
+    return {
+      adjustedTarget,
+      coherentSurfacePressure,
+      entropySurfacePressure,
+      trustSurfacePressure,
+      nonNudgeableHandOffPressure,
+      tailPressure,
+      gapPressure,
+    };
   }
 
   /**
@@ -88,6 +107,7 @@ couplingEffectiveGain = (() => {
     if (flags.isPhaseSurfacePair && absCorr > target * 1.4) effectiveGain *= 1.18;
     if (sp.coherentSurfacePressure > 0) effectiveGain *= 1 + sp.coherentSurfacePressure * 0.45;
     if (flags.isEntropySurfacePair && sp.entropySurfacePressure > 0) effectiveGain *= 1 + sp.entropySurfacePressure * 0.55;
+    if (flags.isTrustPair && sp.trustSurfacePressure > 0) effectiveGain *= 1 + sp.trustSurfacePressure * 0.72;
     if (flags.isEntropySurfacePair && setup.entropyAxisPressure > 0) effectiveGain *= 1 + setup.entropyAxisPressure * 0.45;
     if (sp.nonNudgeableHandOffPressure > 0) {
       effectiveGain *= 1 + sp.nonNudgeableHandOffPressure * (flags.isEntropySurfacePair ? 0.85 : 0.60);
@@ -109,7 +129,7 @@ couplingEffectiveGain = (() => {
     }
     // R73 E6: Gap pressure amplification for reconciliation divergence
     if (sp.gapPressure > 0) {
-      effectiveGain *= 1 + sp.gapPressure * 0.60;
+      effectiveGain *= 1 + sp.gapPressure * (flags.isTrustPair ? 0.95 : 0.60);
     }
     if (S.velocityBoostActive || S.velocityBoostCooldown > 0) effectiveGain *= VELOCITY_GAIN_BOOST;
     // Late-run severe window escalation

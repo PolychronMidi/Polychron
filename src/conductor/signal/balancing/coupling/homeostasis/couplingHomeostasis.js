@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Coupling Homeostasis Governor (Hypermeta #12)

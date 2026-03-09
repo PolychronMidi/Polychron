@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Self-Organized Criticality Engine (E13)

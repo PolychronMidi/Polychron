@@ -1,4 +1,4 @@
-// @ts-check
+
 
 /**
  * Pipeline Coupling Manager

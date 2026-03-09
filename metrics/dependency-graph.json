@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-09T06:39:37.377Z",
+    "generated": "2026-03-09T07:16:54.057Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
@@ -1346,8 +1346,14 @@
       "provides": [],
       "consumes": []
     },
-    "src/conductor/signal/balancing/pipelineBalancer.js": {
+    "src/conductor/signal/balancing/coupling/index.js": {
       "order": 75,
+      "subsystem": "conductor",
+      "provides": [],
+      "consumes": []
+    },
+    "src/conductor/signal/balancing/coupling/pipelineBalancer.js": {
+      "order": 76,
       "subsystem": "conductor",
       "provides": [
         "pipelineBalancer"
@@ -1360,8 +1366,8 @@
         "signalReader"
       ]
     },
-    "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js": {
-      "order": 76,
+    "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js": {
+      "order": 77,
       "subsystem": "conductor",
       "provides": [
         "pipelineCouplingManagerSnapshot"
@@ -1370,12 +1376,6 @@
         "clamp",
         "m"
       ]
-    },
-    "src/conductor/signal/balancing/coupling/index.js": {
-      "order": 77,
-      "subsystem": "conductor",
-      "provides": [],
-      "consumes": []
     },
     "src/conductor/signal/balancing/coupling/couplingConstants.js": {
       "order": 78,
@@ -1477,7 +1477,7 @@
         "signalReader"
       ]
     },
-    "src/conductor/signal/balancing/pipelineCouplingManager.js": {
+    "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js": {
       "order": 85,
       "subsystem": "conductor",
       "provides": [
@@ -1500,8 +1500,14 @@
         "systemDynamicsProfiler"
       ]
     },
-    "src/conductor/signal/balancing/couplingHomeostasisSnapshot.js": {
+    "src/conductor/signal/balancing/coupling/homeostasis/index.js": {
       "order": 86,
+      "subsystem": "conductor",
+      "provides": [],
+      "consumes": []
+    },
+    "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasisSnapshot.js": {
+      "order": 87,
       "subsystem": "conductor",
       "provides": [
         "couplingHomeostasisSnapshot"
@@ -1510,12 +1516,6 @@
         "beatCount",
         "m"
       ]
-    },
-    "src/conductor/signal/balancing/coupling/homeostasis/index.js": {
-      "order": 87,
-      "subsystem": "conductor",
-      "provides": [],
-      "consumes": []
     },
     "src/conductor/signal/balancing/coupling/homeostasis/homeostasisConstants.js": {
       "order": 88,
@@ -1587,7 +1587,7 @@
         "systemDynamicsProfiler"
       ]
     },
-    "src/conductor/signal/balancing/couplingHomeostasis.js": {
+    "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js": {
       "order": 93,
       "subsystem": "conductor",
       "provides": [
@@ -8460,21 +8460,21 @@
     },
     {
       "from": "src/conductor/conductorIntelligence.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
       "globals": [
         "conductorIntelligence"
       ]
     },
     {
       "from": "src/conductor/conductorIntelligence.js",
-      "to": "src/conductor/signal/balancing/pipelineBalancer.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineBalancer.js",
       "globals": [
         "conductorIntelligence"
       ]
     },
     {
       "from": "src/conductor/conductorIntelligence.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "conductorIntelligence"
       ]
@@ -10119,14 +10119,14 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingBiasAccumulator.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "couplingBiasAccumulator"
       ]
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingBudgetScoring.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "couplingBudgetScoring"
       ]
@@ -10175,28 +10175,28 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingConstants.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "couplingConstants"
       ]
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingEffectiveGain.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "couplingEffectiveGain"
       ]
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingGainEscalation.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "couplingGainEscalation"
       ]
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingRefreshSetup.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "couplingRefreshSetup"
       ]
@@ -10238,9 +10238,79 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/couplingState.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "couplingState"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/couplingBiasAccumulator.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/couplingRefreshSetup.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/conductor/signal/profiling/regimeReactiveDampingEquilibrator.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/play/crossLayerBeatRecord.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/play/main.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/play/processBeat.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "to": "src/writer/traceDrain.js",
+      "globals": [
+        "couplingHomeostasis"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasisSnapshot.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "globals": [
+        "couplingHomeostasisSnapshot"
       ]
     },
     {
@@ -10273,21 +10343,21 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
-      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
       "globals": [
         "homeostasisFloor"
       ]
     },
     {
       "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "homeostasisFloor"
       ]
     },
     {
       "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
       "globals": [
         "homeostasisRefresh"
       ]
@@ -10295,6 +10365,13 @@
     {
       "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
       "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
+      "globals": [
+        "homeostasisState"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
       "globals": [
         "homeostasisState"
       ]
@@ -10321,10 +10398,10 @@
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
       "globals": [
-        "homeostasisState"
+        "homeostasisTick"
       ]
     },
     {
@@ -10335,162 +10412,85 @@
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "globals": [
-        "homeostasisTick"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/conductor/signal/balancing/coupling/couplingBiasAccumulator.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/conductor/signal/balancing/coupling/couplingRefreshSetup.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/conductor/signal/profiling/regimeReactiveDampingEquilibrator.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/play/crossLayerBeatRecord.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/play/main.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/play/processBeat.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "to": "src/writer/traceDrain.js",
-      "globals": [
-        "couplingHomeostasis"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/couplingHomeostasisSnapshot.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "globals": [
-        "couplingHomeostasisSnapshot"
-      ]
-    },
-    {
-      "from": "src/conductor/signal/balancing/pipelineBalancer.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineBalancer.js",
       "to": "src/play/feedbackGraphContract.js",
       "globals": [
         "pipelineBalancer"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
       "globals": [
         "pipelineCouplingManager"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
       "globals": [
         "pipelineCouplingManager"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "pipelineCouplingManager"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "globals": [
         "pipelineCouplingManager"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
       "globals": [
         "pipelineCouplingManager"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/play/crossLayerBeatRecord.js",
       "globals": [
         "pipelineCouplingManager"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/play/feedbackGraphContract.js",
       "globals": [
         "pipelineCouplingManager"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js",
       "to": "src/conductor/signal/balancing/coupling/couplingBudgetScoring.js",
       "globals": [
         "pipelineCouplingManagerSnapshot"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js",
       "to": "src/conductor/signal/balancing/coupling/couplingGainEscalation.js",
       "globals": [
         "pipelineCouplingManagerSnapshot"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js",
       "to": "src/conductor/signal/balancing/coupling/couplingRefreshSetup.js",
       "globals": [
         "pipelineCouplingManagerSnapshot"
       ]
     },
     {
-      "from": "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "pipelineCouplingManagerSnapshot"
       ]
@@ -10637,7 +10637,7 @@
     },
     {
       "from": "src/conductor/signal/foundations/signalReader.js",
-      "to": "src/conductor/signal/balancing/pipelineBalancer.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineBalancer.js",
       "globals": [
         "signalReader"
       ]
@@ -10854,7 +10854,7 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -11512,7 +11512,7 @@
     },
     {
       "from": "src/crossLayer/explainabilityBus.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "explainabilityBus"
       ]
@@ -15478,21 +15478,21 @@
     },
     {
       "from": "src/utils/clamps.js",
-      "to": "src/conductor/signal/balancing/pipelineBalancer.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineBalancer.js",
       "globals": [
         "clamp"
       ]
     },
     {
       "from": "src/utils/clamps.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "clamp"
       ]
     },
     {
       "from": "src/utils/clamps.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js",
       "globals": [
         "clamp"
       ]
@@ -16120,7 +16120,7 @@
     },
     {
       "from": "src/utils/closedLoopController.js",
-      "to": "src/conductor/signal/balancing/pipelineBalancer.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineBalancer.js",
       "globals": [
         "closedLoopController"
       ]
@@ -16204,7 +16204,7 @@
     },
     {
       "from": "src/utils/feedbackRegistry.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "feedbackRegistry"
       ]
@@ -16890,6 +16890,13 @@
     },
     {
       "from": "src/utils/index.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasisSnapshot.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
       "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
       "globals": [
         "m"
@@ -16911,28 +16918,21 @@
     },
     {
       "from": "src/utils/index.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasisSnapshot.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineBalancer.js",
       "globals": [
         "m"
       ]
     },
     {
       "from": "src/utils/index.js",
-      "to": "src/conductor/signal/balancing/pipelineBalancer.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "globals": [
         "m"
       ]
     },
     {
       "from": "src/utils/index.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManager.js",
-      "globals": [
-        "m"
-      ]
-    },
-    {
-      "from": "src/utils/index.js",
-      "to": "src/conductor/signal/balancing/pipelineCouplingManagerSnapshot.js",
+      "to": "src/conductor/signal/balancing/coupling/pipelineCouplingManagerSnapshot.js",
       "globals": [
         "m"
       ]
@@ -18245,21 +18245,21 @@
     },
     {
       "from": "src/utils/init.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasis.js",
+      "globals": [
+        "beatCount"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/couplingHomeostasisSnapshot.js",
+      "globals": [
+        "beatCount"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
       "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
-      "globals": [
-        "beatCount"
-      ]
-    },
-    {
-      "from": "src/utils/init.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
-      "globals": [
-        "beatCount"
-      ]
-    },
-    {
-      "from": "src/utils/init.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasisSnapshot.js",
       "globals": [
         "beatCount"
       ]

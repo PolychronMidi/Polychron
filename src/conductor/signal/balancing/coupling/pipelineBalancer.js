@@ -1,4 +1,3 @@
-// @ts-check
 
 /**
  * Pipeline Balancer - Attribution-Driven Self-Regulation (E5)

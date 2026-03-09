@@ -1,7 +1,7 @@
 {
   "meta": {
     "script": "validate-feedback-graph.js",
-    "timestamp": "2026-03-09T06:25:09.578Z",
+    "timestamp": "2026-03-09T07:04:35.263Z",
     "graphPath": "metrics/feedback_graph.json"
   },
   "jsonLoopCount": 6,
@@ -14,12 +14,12 @@
     },
     {
       "name": "pipelineBalancer.tension",
-      "file": "conductor/signal/balancing/pipelineBalancer.js",
+      "file": "conductor/signal/balancing/coupling/pipelineBalancer.js",
       "type": "closedLoopController"
     },
     {
       "name": "pipelineCouplingManager",
-      "file": "conductor/signal/balancing/pipelineCouplingManager.js",
+      "file": "conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "type": "registerLoop"
     },
     {

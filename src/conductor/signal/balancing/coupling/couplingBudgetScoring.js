@@ -57,6 +57,8 @@ couplingBudgetScoring = (() => {
             clamp((absCorr - 0.88) / 0.10, 0, 1) * 0.14,
             0, 1)
           : 0;
+        const isTrustPair = key.indexOf('trust') !== -1;
+        const recentP95 = tailTelemetry.recentP95 || 0;
         const entropySpilloverPressure = isEntropySurfacePair
           ? clamp(
             clamp((p95 - 0.78) / 0.14, 0, 1) * 0.40 +
@@ -79,18 +81,25 @@ couplingBudgetScoring = (() => {
           : 0;
         const tailPressure = setup.tailPressureByPair && typeof setup.tailPressureByPair[key] === 'number'
           ? clamp(setup.tailPressureByPair[key], 0, 1) : 0;
+        const trustReconciliationPressure = isTrustPair
+          ? clamp(
+            clamp((p95 - m.max(target + 0.16, 0.68)) / 0.18, 0, 1) * 0.22 +
+            clamp((p95 - recentP95 - 0.08) / 0.18, 0, 1) * 0.48 +
+            hotspotRate * 0.15 + severeRate * 0.15,
+            0, 1.1)
+          : 0;
         const recentSevere = tailTelemetry.recentSevereRate || 0;
         const severeWindowPressure = (recentSevere > 0.50 && tailPressure > 0.40)
           ? clamp(recentSevere * 0.55 + tailPressure * 0.35 + clamp((p95 - 0.85) / 0.12, 0, 1) * 0.30, 0, 1.2) : 0;
         const staticBias = BUDGET_PRIORITY_GAIN[key] !== undefined
           ? clamp((BUDGET_PRIORITY_GAIN[key] - 1.0) / 0.60, 0, 1) : 0;
-        const recentP95 = tailTelemetry.recentP95 || 0;
         const telemetryGapPressure = clamp((p95 - recentP95 - 0.10) / 0.20, 0, 0.5);
         const score = clamp(
           residualTailPressure * 0.18 + tailPressure * (0.15 + setup.tailRecoveryHandshake * 0.08) +
           clamp(ps.heatPenalty || 0, 0, 1) * 0.12 + severeRate * 0.10 + hotspotRate * 0.08 +
           residualP95Pressure * 0.10 + densityFlickerClampPressure * 0.18 +
           entropySpilloverPressure * 0.16 + entropySevereUplift * 0.20 +
+          trustReconciliationPressure * 0.22 +
           setup.entropyAxisPressure * (isEntropySurfacePair ? 0.18 : 0.04) +
           nonNudgeableHandOffPressure * 0.16 + effectiveShortfall * 0.08 +
           exceedPressure * 0.08 + clamp(setup.tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
@@ -104,6 +113,7 @@ couplingBudgetScoring = (() => {
             key, score: budgetScore,
             boost: 1 + clamp(budgetScore + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40 +
               entropySevereUplift * 0.35 +
+              trustReconciliationPressure * 0.40 +
               nonNudgeableHandOffPressure * 0.45 + setup.entropyAxisPressure * (isEntropySurfacePair ? 0.50 : 0.15) +
               severeWindowPressure * 0.50, 0, 1.6) * 0.28,
           });
