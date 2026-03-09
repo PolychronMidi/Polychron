@@ -54,7 +54,7 @@ function extractConstants() {
   const trust = readFile('crossLayer/structure/trust/adaptiveTrustScores.js');
   const entropy = readFile('crossLayer/structure/entropy/entropyRegulator.js');
   const profile = readFile('conductor/signal/foundations/profileAdaptation.js');
-  const coupling = readFile('conductor/signal/balancing/pipelineCouplingManager.js');
+const coupling = readFile('conductor/signal/balancing/coupling/couplingConstants.js');
 
   return {
     // coherenceMonitor

@@ -49,7 +49,16 @@ couplingEffectiveGain = (() => {
       const reducedRelaxScale = 1 + (setup.targetScale - 1.0) * m.max(0.15, 1 - surfacePressure * 0.85);
       adjustedTarget = baseTarget * reducedRelaxScale;
     }
-    return { adjustedTarget, coherentSurfacePressure, entropySurfacePressure, nonNudgeableHandOffPressure, tailPressure };
+
+    // R73 E6: Reconciliation gap pressure. When telemetry p95 diverges from
+    // recent p95 by more than 0.15 (the gap observed in density-flicker 0.406),
+    // inject additional surface pressure to amplify decorrelation effort on
+    // the stale-window tail contribution.
+    const recentP95 = tailTelemetry.recentP95 || 0;
+    const reconciliationGap = m.max(0, p95 - recentP95 - 0.15);
+    const gapPressure = clamp(reconciliationGap * 1.5, 0, 0.50);
+
+    return { adjustedTarget, coherentSurfacePressure, entropySurfacePressure, nonNudgeableHandOffPressure, tailPressure, gapPressure };
   }
 
   /**
@@ -97,6 +106,10 @@ couplingEffectiveGain = (() => {
     }
     if (setup.tailRecoveryHandshake > 0 && sp.tailPressure > 0.03) {
       effectiveGain *= 1 + setup.tailRecoveryHandshake * clamp(sp.tailPressure * 1.25, 0, 1) * 0.75;
+    }
+    // R73 E6: Gap pressure amplification for reconciliation divergence
+    if (sp.gapPressure > 0) {
+      effectiveGain *= 1 + sp.gapPressure * 0.60;
     }
     if (S.velocityBoostActive || S.velocityBoostCooldown > 0) effectiveGain *= VELOCITY_GAIN_BOOST;
     // Late-run severe window escalation

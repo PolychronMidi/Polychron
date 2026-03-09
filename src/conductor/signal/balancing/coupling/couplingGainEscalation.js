@@ -20,12 +20,13 @@ couplingGainEscalation = (() => {
   const pushWindowValue = pipelineCouplingManagerSnapshot.pushWindowValue;
 
   /** Process non-nudgeable pair: update EMA and windows only. */
-  function handleNonNudgeable(key, ps, absCorr, isEntropyPair) {
+  function handleNonNudgeable(key, ps, absCorr, isEntropyPair, dynTelemetryWindow) {
+    const telWin = dynTelemetryWindow || TELEMETRY_WINDOW;
     ps.gain = 0;
     ps.lastEffectiveGain = 0;
     ps.lastAbsCorr = absCorr;
     pushWindowValue(ps.recentAbsCorr, absCorr, P95_WINDOW);
-    pushWindowValue(ps.telemetryAbsCorr, absCorr, TELEMETRY_WINDOW);
+    pushWindowValue(ps.telemetryAbsCorr, absCorr, telWin);
     const at = couplingState.getAdaptiveTarget(key);
     const adaptEma = isEntropyPair ? TARGET_ADAPT_EMA * 2.5 : TARGET_ADAPT_EMA;
     at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
@@ -115,6 +116,15 @@ couplingGainEscalation = (() => {
         if (flags.isEntropySurfacePair && setup.entropyAxisPressure > 0) {
           rate *= 1 + setup.entropyAxisPressure * 0.55;
           ps.heatPenalty = m.min((ps.heatPenalty || 0) + setup.entropyAxisPressure * 0.08, 1.0);
+        }
+        // R73 E2: Entropy-cluster severe escalation. When an entropy-surface
+        // pair is severe (p95 > 0.80) and telemetry confirms persistent
+        // hotspot activity, apply 1.3x multiplier to break structural
+        // entropy-axis coupling concentration (3/3 severe in R72).
+        if (flags.isEntropySurfacePair && p95 > 0.80 && telemetrySevereRate > 0.06) {
+          const entropySevereBoost = 1.3 * clamp((p95 - 0.80) / 0.12, 0.5, 1.0);
+          rate *= entropySevereBoost;
+          ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.06, 1.0);
         }
         if (nonNudgeableHandOffPressure > 0) {
           rate *= 1 + nonNudgeableHandOffPressure * 0.45;
@@ -220,9 +230,10 @@ couplingGainEscalation = (() => {
 
     // Window push
     pushWindowValue(ps.recentAbsCorr, absCorr, P95_WINDOW);
-    const telemetryWeight = flags.isTrustPair ? m.min(TELEMETRY_WINDOW, setup.telemetryBeatSpan + 1) : setup.telemetryBeatSpan;
+    const telWin = setup.dynTelemetryWindow || TELEMETRY_WINDOW;
+    const telemetryWeight = flags.isTrustPair ? m.min(telWin, setup.telemetryBeatSpan + 1) : setup.telemetryBeatSpan;
     for (let tw = 0; tw < telemetryWeight; tw++) {
-      pushWindowValue(ps.telemetryAbsCorr, absCorr, TELEMETRY_WINDOW);
+      pushWindowValue(ps.telemetryAbsCorr, absCorr, telWin);
     }
 
     // Adaptive target EMA

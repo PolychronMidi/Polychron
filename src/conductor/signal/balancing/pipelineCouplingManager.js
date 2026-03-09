@@ -88,7 +88,7 @@ pipelineCouplingManager = (() => {
         const target = sp.adjustedTarget;
 
         if (flags.isNonNudgeablePair) {
-          couplingGainEscalation.handleNonNudgeable(key, ps, absCorr, flags.isEntropyPair);
+          couplingGainEscalation.handleNonNudgeable(key, ps, absCorr, flags.isEntropyPair, setup.dynTelemetryWindow);
           continue;
         }
 

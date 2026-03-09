@@ -64,6 +64,13 @@ couplingBudgetScoring = (() => {
             clamp((absCorr - 0.72) / 0.16, 0, 1) * 0.20,
             0, 1)
           : 0;
+        // R73 E2: Entropy-surface severe uplift. When an entropy-surface pair
+        // has persistent severe tail (p95 > 0.80, severeRate > 0.06), boost
+        // its spillover pressure to elevate budget priority. Breaks entropy-
+        // axis concentration monopoly on severe pairs.
+        const entropySevereUplift = isEntropySurfacePair && p95 > 0.80 && severeRate > 0.06
+          ? clamp((p95 - 0.80) / 0.12, 0, 1) * 0.35 + clamp(severeRate / 0.15, 0, 1) * 0.25
+          : 0;
         const nonNudgeableHandOffPressure = setup.nonNudgeableTailPressure > 0 && couplingConstants.sharesAnyAxis(key, setup.nonNudgeableAxes)
           ? clamp(
             setup.nonNudgeableTailPressure * (isEntropySurfacePair ? 0.90 : (key.indexOf('phase') !== -1 || key.indexOf('trust') !== -1 ? 0.72 : 0.55)) +
@@ -83,7 +90,7 @@ couplingBudgetScoring = (() => {
           residualTailPressure * 0.18 + tailPressure * (0.15 + setup.tailRecoveryHandshake * 0.08) +
           clamp(ps.heatPenalty || 0, 0, 1) * 0.12 + severeRate * 0.10 + hotspotRate * 0.08 +
           residualP95Pressure * 0.10 + densityFlickerClampPressure * 0.18 +
-          entropySpilloverPressure * 0.16 +
+          entropySpilloverPressure * 0.16 + entropySevereUplift * 0.20 +
           setup.entropyAxisPressure * (isEntropySurfacePair ? 0.18 : 0.04) +
           nonNudgeableHandOffPressure * 0.16 + effectiveShortfall * 0.08 +
           exceedPressure * 0.08 + clamp(setup.tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
@@ -96,6 +103,7 @@ couplingBudgetScoring = (() => {
           rankedPairs.push({
             key, score: budgetScore,
             boost: 1 + clamp(budgetScore + densityFlickerClampPressure * 0.60 + entropySpilloverPressure * 0.40 +
+              entropySevereUplift * 0.35 +
               nonNudgeableHandOffPressure * 0.45 + setup.entropyAxisPressure * (isEntropySurfacePair ? 0.50 : 0.15) +
               severeWindowPressure * 0.50, 0, 1.6) * 0.28,
           });

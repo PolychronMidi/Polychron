@@ -90,6 +90,15 @@ couplingConstants = (() => {
   const P95_WINDOW = 16;
   const TELEMETRY_WINDOW = 96;
 
+  // R73 E1: Dynamic telemetry window for long runs. Fixed 96-beat window
+  // undersamples on 911-beat runs (reconciliation gaps 0.406). Scales
+  // proportionally to run length: ~96 at 640 beats, 192 cap for very long
+  // runs, 48 floor for short runs.
+  function dynamicTelemetryWindow(bc) {
+    if (!Number.isFinite(bc) || bc < 1) return TELEMETRY_WINDOW;
+    return m.max(48, m.min(m.floor(bc * 0.15), 192));
+  }
+
   // Velocity spike detection
   const VELOCITY_EMA_ALPHA = 0.08;
   const VELOCITY_TRIGGER_RATIO = 2.0;
@@ -150,7 +159,7 @@ couplingConstants = (() => {
     FLICKER_PAIR_GAIN_CAP, FLICKER_PAIR_GAIN_CAP_THRESHOLD,
     DENSITY_PAIR_GAIN_CAP, DENSITY_PAIR_GAIN_CAP_THRESHOLD,
     BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN, BUDGET_PRIORITY_TOP_K,
-    P95_WINDOW, TELEMETRY_WINDOW,
+    P95_WINDOW, TELEMETRY_WINDOW, dynamicTelemetryWindow,
     VELOCITY_EMA_ALPHA, VELOCITY_TRIGGER_RATIO, VELOCITY_BOOST_BEATS, VELOCITY_GAIN_BOOST,
     GATE_EMA_ALPHA,
     HP_GAIN_MAX, HP_ROLLING_THRESHOLD, HP_MAX_BEATS, HP_COOLDOWN_BEATS,

@@ -1,18 +1,18 @@
 {
   "meta": {
-    "generated": "2026-03-09T05:50:21.918Z",
+    "generated": "2026-03-09T06:39:37.377Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
-    "totalFiles": 419,
-    "totalGlobals": 701,
-    "totalProvides": 716,
-    "totalConsumes": 2766,
-    "totalEdges": 2129,
-    "crossSubsystemEdges": 1486,
+    "totalFiles": 425,
+    "totalGlobals": 706,
+    "totalProvides": 721,
+    "totalConsumes": 2789,
+    "totalEdges": 2152,
+    "crossSubsystemEdges": 1493,
     "maxFanIn": {
       "file": "src/utils/index.js",
-      "count": 212
+      "count": 215
     },
     "maxFanOut": {
       "file": "src/play/main.js",
@@ -30,9 +30,9 @@
         "consumes": 67
       },
       "conductor": {
-        "files": 169,
-        "provides": 204,
-        "consumes": 829
+        "files": 175,
+        "provides": 209,
+        "consumes": 852
       },
       "rhythm": {
         "files": 30,
@@ -1383,7 +1383,9 @@
       "provides": [
         "couplingConstants"
       ],
-      "consumes": []
+      "consumes": [
+        "m"
+      ]
     },
     "src/conductor/signal/balancing/coupling/couplingState.js": {
       "order": 79,
@@ -1509,19 +1511,55 @@
         "m"
       ]
     },
-    "src/conductor/signal/balancing/couplingHomeostasis.js": {
+    "src/conductor/signal/balancing/coupling/homeostasis/index.js": {
       "order": 87,
       "subsystem": "conductor",
+      "provides": [],
+      "consumes": []
+    },
+    "src/conductor/signal/balancing/coupling/homeostasis/homeostasisConstants.js": {
+      "order": 88,
+      "subsystem": "conductor",
       "provides": [
-        "couplingHomeostasis"
+        "homeostasisConstants"
+      ],
+      "consumes": []
+    },
+    "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js": {
+      "order": 89,
+      "subsystem": "conductor",
+      "provides": [
+        "homeostasisState"
       ],
       "consumes": [
         "beatCount",
+        "homeostasisConstants"
+      ]
+    },
+    "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js": {
+      "order": 90,
+      "subsystem": "conductor",
+      "provides": [
+        "homeostasisFloor"
+      ],
+      "consumes": [
         "clamp",
-        "conductorConfig",
-        "conductorIntelligence",
-        "couplingHomeostasisSnapshot",
-        "explainabilityBus",
+        "homeostasisConstants",
+        "homeostasisState",
+        "m"
+      ]
+    },
+    "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js": {
+      "order": 91,
+      "subsystem": "conductor",
+      "provides": [
+        "homeostasisTick"
+      ],
+      "consumes": [
+        "clamp",
+        "homeostasisConstants",
+        "homeostasisFloor",
+        "homeostasisState",
         "m",
         "pipelineCouplingManager",
         "safePreBoot",
@@ -1530,8 +1568,43 @@
         "validator"
       ]
     },
+    "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js": {
+      "order": 92,
+      "subsystem": "conductor",
+      "provides": [
+        "homeostasisRefresh"
+      ],
+      "consumes": [
+        "clamp",
+        "conductorConfig",
+        "explainabilityBus",
+        "homeostasisConstants",
+        "homeostasisState",
+        "homeostasisTick",
+        "m",
+        "pipelineCouplingManager",
+        "safePreBoot",
+        "systemDynamicsProfiler"
+      ]
+    },
+    "src/conductor/signal/balancing/couplingHomeostasis.js": {
+      "order": 93,
+      "subsystem": "conductor",
+      "provides": [
+        "couplingHomeostasis"
+      ],
+      "consumes": [
+        "beatCount",
+        "conductorIntelligence",
+        "couplingHomeostasisSnapshot",
+        "homeostasisFloor",
+        "homeostasisRefresh",
+        "homeostasisState",
+        "homeostasisTick"
+      ]
+    },
     "src/conductor/signal/balancing/axisEnergyEquilibratorHelpers.js": {
-      "order": 88,
+      "order": 94,
       "subsystem": "conductor",
       "provides": [
         "axisEnergyEquilibratorHelpers"
@@ -1544,7 +1617,7 @@
       ]
     },
     "src/conductor/signal/balancing/axisEnergyEquilibrator.js": {
-      "order": 89,
+      "order": 95,
       "subsystem": "conductor",
       "provides": [
         "axisEnergyEquilibrator"
@@ -1556,6 +1629,7 @@
         "conductorIntelligence",
         "couplingHomeostasis",
         "explainabilityBus",
+        "homeostasisState",
         "m",
         "p",
         "pipelineCouplingManager",
@@ -1565,13 +1639,13 @@
       ]
     },
     "src/conductor/signal/narrative/index.js": {
-      "order": 90,
+      "order": 96,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/signal/narrative/narrativeTrajectory.js": {
-      "order": 91,
+      "order": 97,
       "subsystem": "conductor",
       "provides": [
         "narrativeTrajectory"
@@ -1588,7 +1662,7 @@
       ]
     },
     "src/conductor/signal/narrative/structuralNarrativeAdvisor.js": {
-      "order": 92,
+      "order": 98,
       "subsystem": "conductor",
       "provides": [
         "structuralNarrativeAdvisor"
@@ -1600,13 +1674,13 @@
       ]
     },
     "src/conductor/signal/meta/index.js": {
-      "order": 93,
+      "order": 99,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/signal/meta/criticalityEngine.js": {
-      "order": 94,
+      "order": 100,
       "subsystem": "conductor",
       "provides": [
         "criticalityEngine"
@@ -1622,7 +1696,7 @@
       ]
     },
     "src/conductor/signal/meta/dimensionalityExpander.js": {
-      "order": 95,
+      "order": 101,
       "subsystem": "conductor",
       "provides": [
         "dimensionalityExpander"
@@ -1636,7 +1710,7 @@
       ]
     },
     "src/conductor/signal/meta/conductorMetaWatchdog.js": {
-      "order": 96,
+      "order": 102,
       "subsystem": "conductor",
       "provides": [
         "conductorMetaWatchdog"
@@ -1650,7 +1724,7 @@
       ]
     },
     "src/conductor/signal/meta/metaControllerRegistry.js": {
-      "order": 97,
+      "order": 103,
       "subsystem": "conductor",
       "provides": [
         "metaControllerRegistry"
@@ -1661,13 +1735,13 @@
       ]
     },
     "src/conductor/signal/output/index.js": {
-      "order": 98,
+      "order": 104,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/signal/output/coherenceVerdicts.js": {
-      "order": 99,
+      "order": 105,
       "subsystem": "conductor",
       "provides": [
         "coherenceVerdicts"
@@ -1680,7 +1754,7 @@
       ]
     },
     "src/conductor/signal/output/systemManifestMarkdown.js": {
-      "order": 100,
+      "order": 106,
       "subsystem": "conductor",
       "provides": [
         "systemManifestMarkdown"
@@ -1693,7 +1767,7 @@
       ]
     },
     "src/conductor/signal/output/outputAnalyzer.js": {
-      "order": 101,
+      "order": 107,
       "subsystem": "conductor",
       "provides": [
         "outputAnalyzer"
@@ -1707,7 +1781,7 @@
       ]
     },
     "src/conductor/signal/output/systemManifest.js": {
-      "order": 102,
+      "order": 108,
       "subsystem": "conductor",
       "provides": [
         "systemManifest"
@@ -1739,13 +1813,13 @@
       ]
     },
     "src/conductor/harmonic/index.js": {
-      "order": 103,
+      "order": 109,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/harmonic/pitchClassHelpers.js": {
-      "order": 104,
+      "order": 110,
       "subsystem": "conductor",
       "provides": [
         "pitchClassHelpers"
@@ -1756,7 +1830,7 @@
       ]
     },
     "src/conductor/harmonic/cadenceAdvisor.js": {
-      "order": 105,
+      "order": 111,
       "subsystem": "conductor",
       "provides": [
         "cadenceAdvisor"
@@ -1774,7 +1848,7 @@
       ]
     },
     "src/conductor/harmonic/cadentialPreparationAdvisor.js": {
-      "order": 106,
+      "order": 112,
       "subsystem": "conductor",
       "provides": [
         "cadentialPreparationAdvisor"
@@ -1789,7 +1863,7 @@
       ]
     },
     "src/conductor/harmonic/chromaticSaturationMonitor.js": {
-      "order": 107,
+      "order": 113,
       "subsystem": "conductor",
       "provides": [
         "chromaticSaturationMonitor"
@@ -1800,7 +1874,7 @@
       ]
     },
     "src/conductor/harmonic/consonanceDissonanceTracker.js": {
-      "order": 108,
+      "order": 114,
       "subsystem": "conductor",
       "provides": [
         "consonanceDissonanceTracker"
@@ -1815,7 +1889,7 @@
       ]
     },
     "src/conductor/harmonic/harmonicDensityOscillator.js": {
-      "order": 109,
+      "order": 115,
       "subsystem": "conductor",
       "provides": [
         "harmonicDensityOscillator"
@@ -1828,7 +1902,7 @@
       ]
     },
     "src/conductor/harmonic/harmonicFieldDensityTracker.js": {
-      "order": 110,
+      "order": 116,
       "subsystem": "conductor",
       "provides": [
         "harmonicFieldDensityTracker"
@@ -1842,7 +1916,7 @@
       ]
     },
     "src/conductor/harmonic/harmonicPedalFieldTracker.js": {
-      "order": 111,
+      "order": 117,
       "subsystem": "conductor",
       "provides": [
         "harmonicPedalFieldTracker"
@@ -1857,7 +1931,7 @@
       ]
     },
     "src/conductor/harmonic/harmonicRhythmDensityRatio.js": {
-      "order": 112,
+      "order": 118,
       "subsystem": "conductor",
       "provides": [
         "harmonicRhythmDensityRatio"
@@ -1872,7 +1946,7 @@
       ]
     },
     "src/conductor/harmonic/harmonicSurpriseIndex.js": {
-      "order": 113,
+      "order": 119,
       "subsystem": "conductor",
       "provides": [
         "harmonicSurpriseIndex"
@@ -1887,7 +1961,7 @@
       ]
     },
     "src/conductor/harmonic/harmonicVelocityMonitor.js": {
-      "order": 114,
+      "order": 120,
       "subsystem": "conductor",
       "provides": [
         "harmonicVelocityMonitor"
@@ -1901,7 +1975,7 @@
       ]
     },
     "src/conductor/harmonic/modalColorTracker.js": {
-      "order": 115,
+      "order": 121,
       "subsystem": "conductor",
       "provides": [
         "modalColorTracker"
@@ -1913,7 +1987,7 @@
       ]
     },
     "src/conductor/harmonic/pitchClassGravityMap.js": {
-      "order": 116,
+      "order": 122,
       "subsystem": "conductor",
       "provides": [
         "pitchClassGravityMap"
@@ -1927,7 +2001,7 @@
       ]
     },
     "src/conductor/harmonic/pitchGravityCenter.js": {
-      "order": 117,
+      "order": 123,
       "subsystem": "conductor",
       "provides": [
         "pitchGravityCenter"
@@ -1940,7 +2014,7 @@
       ]
     },
     "src/conductor/harmonic/tensionResolutionTracker.js": {
-      "order": 118,
+      "order": 124,
       "subsystem": "conductor",
       "provides": [
         "tensionResolutionTracker"
@@ -1954,7 +2028,7 @@
       ]
     },
     "src/conductor/harmonic/tonalAnchorDistanceTracker.js": {
-      "order": 119,
+      "order": 125,
       "subsystem": "conductor",
       "provides": [
         "tonalAnchorDistanceTracker"
@@ -1968,7 +2042,7 @@
       ]
     },
     "src/conductor/harmonic/harmonicFunctionGraph.js": {
-      "order": 120,
+      "order": 126,
       "subsystem": "conductor",
       "provides": [
         "harmonicFunctionGraph"
@@ -1982,13 +2056,13 @@
       ]
     },
     "src/conductor/melodic/index.js": {
-      "order": 121,
+      "order": 127,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/melodic/ambitusMigrationTracker.js": {
-      "order": 122,
+      "order": 128,
       "subsystem": "conductor",
       "provides": [
         "ambitusMigrationTracker"
@@ -2003,7 +2077,7 @@
       ]
     },
     "src/conductor/melodic/counterpointMotionTracker.js": {
-      "order": 123,
+      "order": 129,
       "subsystem": "conductor",
       "provides": [
         "counterpointMotionTracker"
@@ -2017,7 +2091,7 @@
       ]
     },
     "src/conductor/melodic/intervalBalanceTracker.js": {
-      "order": 124,
+      "order": 130,
       "subsystem": "conductor",
       "provides": [
         "intervalBalanceTracker"
@@ -2032,7 +2106,7 @@
       ]
     },
     "src/conductor/melodic/intervalDirectionMemory.js": {
-      "order": 125,
+      "order": 131,
       "subsystem": "conductor",
       "provides": [
         "intervalDirectionMemory"
@@ -2045,7 +2119,7 @@
       ]
     },
     "src/conductor/melodic/intervalExpansionContractor.js": {
-      "order": 126,
+      "order": 132,
       "subsystem": "conductor",
       "provides": [
         "intervalExpansionContractor"
@@ -2059,7 +2133,7 @@
       ]
     },
     "src/conductor/melodic/melodicContourTracker.js": {
-      "order": 127,
+      "order": 133,
       "subsystem": "conductor",
       "provides": [
         "melodicContourTracker"
@@ -2074,7 +2148,7 @@
       ]
     },
     "src/conductor/melodic/octaveHelpers.js": {
-      "order": 128,
+      "order": 134,
       "subsystem": "conductor",
       "provides": [
         "octaveHelpers"
@@ -2087,7 +2161,7 @@
       ]
     },
     "src/conductor/melodic/octaveSpreadMonitor.js": {
-      "order": 129,
+      "order": 135,
       "subsystem": "conductor",
       "provides": [
         "octaveSpreadMonitor"
@@ -2099,7 +2173,7 @@
       ]
     },
     "src/conductor/melodic/phraseContourArchetypeDetector.js": {
-      "order": 130,
+      "order": 136,
       "subsystem": "conductor",
       "provides": [
         "phraseContourArchetypeDetector"
@@ -2112,7 +2186,7 @@
       ]
     },
     "src/conductor/melodic/registerMigrationTracker.js": {
-      "order": 131,
+      "order": 137,
       "subsystem": "conductor",
       "provides": [
         "registerMigrationTracker"
@@ -2126,7 +2200,7 @@
       ]
     },
     "src/conductor/melodic/registerPressureMonitor.js": {
-      "order": 132,
+      "order": 138,
       "subsystem": "conductor",
       "provides": [
         "registerPressureMonitor"
@@ -2139,7 +2213,7 @@
       ]
     },
     "src/conductor/melodic/registralVelocityCorrelator.js": {
-      "order": 133,
+      "order": 139,
       "subsystem": "conductor",
       "provides": [
         "registralVelocityCorrelator"
@@ -2152,7 +2226,7 @@
       ]
     },
     "src/conductor/melodic/tessituraPressureMonitor.js": {
-      "order": 134,
+      "order": 140,
       "subsystem": "conductor",
       "provides": [
         "tessituraPressureMonitor"
@@ -2166,7 +2240,7 @@
       ]
     },
     "src/conductor/melodic/thematicRecallDetector.js": {
-      "order": 135,
+      "order": 141,
       "subsystem": "conductor",
       "provides": [
         "thematicRecallDetector"
@@ -2179,7 +2253,7 @@
       ]
     },
     "src/conductor/melodic/voiceLeadingEfficiencyTracker.js": {
-      "order": 136,
+      "order": 142,
       "subsystem": "conductor",
       "provides": [
         "voiceLeadingEfficiencyTracker"
@@ -2195,13 +2269,13 @@
       ]
     },
     "src/conductor/rhythmic/index.js": {
-      "order": 137,
+      "order": 143,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/rhythmic/beatGridHelpers.js": {
-      "order": 138,
+      "order": 144,
       "subsystem": "conductor",
       "provides": [
         "beatGridHelpers"
@@ -2214,7 +2288,7 @@
       ]
     },
     "src/conductor/rhythmic/accentPatternTracker.js": {
-      "order": 139,
+      "order": 145,
       "subsystem": "conductor",
       "provides": [
         "accentPatternTracker"
@@ -2229,7 +2303,7 @@
       ]
     },
     "src/conductor/rhythmic/attackDensityProfiler.js": {
-      "order": 140,
+      "order": 146,
       "subsystem": "conductor",
       "provides": [
         "attackDensityProfiler"
@@ -2242,7 +2316,7 @@
       ]
     },
     "src/conductor/rhythmic/grooveTemplateAdvisor.js": {
-      "order": 141,
+      "order": 147,
       "subsystem": "conductor",
       "provides": [
         "grooveTemplateAdvisor"
@@ -2259,7 +2333,7 @@
       ]
     },
     "src/conductor/rhythmic/interLayerRhythmHelpers.js": {
-      "order": 142,
+      "order": 148,
       "subsystem": "conductor",
       "provides": [
         "interLayerRhythmHelpers"
@@ -2273,7 +2347,7 @@
       ]
     },
     "src/conductor/rhythmic/interLayerRhythmAnalyzer.js": {
-      "order": 143,
+      "order": 149,
       "subsystem": "conductor",
       "provides": [
         "interLayerRhythmAnalyzer"
@@ -2285,7 +2359,7 @@
       ]
     },
     "src/conductor/rhythmic/onsetDensityProfiler.js": {
-      "order": 144,
+      "order": 150,
       "subsystem": "conductor",
       "provides": [
         "onsetDensityProfiler"
@@ -2301,7 +2375,7 @@
       ]
     },
     "src/conductor/rhythmic/onsetRegularityMonitor.js": {
-      "order": 145,
+      "order": 151,
       "subsystem": "conductor",
       "provides": [
         "onsetRegularityMonitor"
@@ -2316,7 +2390,7 @@
       ]
     },
     "src/conductor/rhythmic/rhythmicComplexityGradient.js": {
-      "order": 146,
+      "order": 152,
       "subsystem": "conductor",
       "provides": [
         "rhythmicComplexityGradient"
@@ -2329,7 +2403,7 @@
       ]
     },
     "src/conductor/rhythmic/rhythmicDensityContrastTracker.js": {
-      "order": 147,
+      "order": 153,
       "subsystem": "conductor",
       "provides": [
         "rhythmicDensityContrastTracker"
@@ -2342,7 +2416,7 @@
       ]
     },
     "src/conductor/rhythmic/rhythmicGroupingAnalyzer.js": {
-      "order": 148,
+      "order": 154,
       "subsystem": "conductor",
       "provides": [
         "rhythmicGroupingAnalyzer"
@@ -2355,7 +2429,7 @@
       ]
     },
     "src/conductor/rhythmic/rhythmicInertiaTracker.js": {
-      "order": 149,
+      "order": 155,
       "subsystem": "conductor",
       "provides": [
         "rhythmicInertiaTracker"
@@ -2370,7 +2444,7 @@
       ]
     },
     "src/conductor/rhythmic/rhythmicSymmetryDetector.js": {
-      "order": 150,
+      "order": 156,
       "subsystem": "conductor",
       "provides": [
         "rhythmicSymmetryDetector"
@@ -2383,7 +2457,7 @@
       ]
     },
     "src/conductor/rhythmic/syncopationDensityTracker.js": {
-      "order": 151,
+      "order": 157,
       "subsystem": "conductor",
       "provides": [
         "syncopationDensityTracker"
@@ -2398,7 +2472,7 @@
       ]
     },
     "src/conductor/rhythmic/temporalProportionTracker.js": {
-      "order": 152,
+      "order": 158,
       "subsystem": "conductor",
       "provides": [
         "temporalProportionTracker"
@@ -2411,13 +2485,13 @@
       ]
     },
     "src/conductor/dynamics/index.js": {
-      "order": 153,
+      "order": 159,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/dynamics/climaxProximityPredictor.js": {
-      "order": 154,
+      "order": 160,
       "subsystem": "conductor",
       "provides": [
         "climaxProximityPredictor"
@@ -2433,7 +2507,7 @@
       ]
     },
     "src/conductor/dynamics/densityWaveAnalyzer.js": {
-      "order": 155,
+      "order": 161,
       "subsystem": "conductor",
       "provides": [
         "densityWaveAnalyzer"
@@ -2445,7 +2519,7 @@
       ]
     },
     "src/conductor/dynamics/durationalContourTracker.js": {
-      "order": 156,
+      "order": 162,
       "subsystem": "conductor",
       "provides": [
         "durationalContourTracker"
@@ -2463,7 +2537,7 @@
       ]
     },
     "src/conductor/dynamics/dynamicArchitectPlanner.js": {
-      "order": 157,
+      "order": 163,
       "subsystem": "conductor",
       "provides": [
         "dynamicArchitectPlanner"
@@ -2478,7 +2552,7 @@
       ]
     },
     "src/conductor/dynamics/dynamicPeakMemory.js": {
-      "order": 158,
+      "order": 164,
       "subsystem": "conductor",
       "provides": [
         "dynamicPeakMemory"
@@ -2492,7 +2566,7 @@
       ]
     },
     "src/conductor/dynamics/dynamicRangeTracker.js": {
-      "order": 159,
+      "order": 165,
       "subsystem": "conductor",
       "provides": [
         "dynamicRangeTracker"
@@ -2506,7 +2580,7 @@
       ]
     },
     "src/conductor/dynamics/energyMomentumTracker.js": {
-      "order": 160,
+      "order": 166,
       "subsystem": "conductor",
       "provides": [
         "energyMomentumTracker"
@@ -2520,7 +2594,7 @@
       ]
     },
     "src/conductor/dynamics/velocityShapeAnalyzer.js": {
-      "order": 161,
+      "order": 167,
       "subsystem": "conductor",
       "provides": [
         "velocityShapeAnalyzer"
@@ -2536,19 +2610,19 @@
       ]
     },
     "src/conductor/texture/index.js": {
-      "order": 162,
+      "order": 168,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/texture/articulation/index.js": {
-      "order": 163,
+      "order": 169,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/texture/articulation/articulationProfiler.js": {
-      "order": 164,
+      "order": 170,
       "subsystem": "conductor",
       "provides": [
         "articulationProfiler"
@@ -2561,13 +2635,13 @@
       ]
     },
     "src/conductor/texture/layers/index.js": {
-      "order": 165,
+      "order": 171,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/texture/layers/crossLayerDensityBalancer.js": {
-      "order": 166,
+      "order": 172,
       "subsystem": "conductor",
       "provides": [
         "crossLayerDensityBalancer"
@@ -2580,7 +2654,7 @@
       ]
     },
     "src/conductor/texture/layers/layerCoherenceScorer.js": {
-      "order": 167,
+      "order": 173,
       "subsystem": "conductor",
       "provides": [
         "layerCoherenceScorer"
@@ -2593,7 +2667,7 @@
       ]
     },
     "src/conductor/texture/layers/layerEntryExitTracker.js": {
-      "order": 168,
+      "order": 174,
       "subsystem": "conductor",
       "provides": [
         "layerEntryExitTracker"
@@ -2606,7 +2680,7 @@
       ]
     },
     "src/conductor/texture/layers/layerIndependenceScorer.js": {
-      "order": 169,
+      "order": 175,
       "subsystem": "conductor",
       "provides": [
         "layerIndependenceScorer"
@@ -2621,13 +2695,13 @@
       ]
     },
     "src/conductor/texture/phrasing/index.js": {
-      "order": 170,
+      "order": 176,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/texture/phrasing/fragmentHelpers.js": {
-      "order": 171,
+      "order": 177,
       "subsystem": "conductor",
       "provides": [
         "fragmentHelpers"
@@ -2638,7 +2712,7 @@
       ]
     },
     "src/conductor/texture/phrasing/motivicDensityTracker.js": {
-      "order": 172,
+      "order": 178,
       "subsystem": "conductor",
       "provides": [
         "motivicDensityTracker"
@@ -2651,7 +2725,7 @@
       ]
     },
     "src/conductor/texture/phrasing/orchestrationWeightTracker.js": {
-      "order": 173,
+      "order": 179,
       "subsystem": "conductor",
       "provides": [
         "orchestrationWeightTracker"
@@ -2664,7 +2738,7 @@
       ]
     },
     "src/conductor/texture/phrasing/pedalPointDetector.js": {
-      "order": 174,
+      "order": 180,
       "subsystem": "conductor",
       "provides": [
         "pedalPointDetector"
@@ -2678,7 +2752,7 @@
       ]
     },
     "src/conductor/texture/phrasing/phraseLengthMomentumTracker.js": {
-      "order": 175,
+      "order": 181,
       "subsystem": "conductor",
       "provides": [
         "phraseLengthMomentumTracker"
@@ -2691,7 +2765,7 @@
       ]
     },
     "src/conductor/texture/phrasing/repetitionFatigueMonitor.js": {
-      "order": 176,
+      "order": 182,
       "subsystem": "conductor",
       "provides": [
         "repetitionFatigueMonitor"
@@ -2705,13 +2779,13 @@
       ]
     },
     "src/conductor/texture/form/index.js": {
-      "order": 177,
+      "order": 183,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/texture/form/restDensityTracker.js": {
-      "order": 178,
+      "order": 184,
       "subsystem": "conductor",
       "provides": [
         "restDensityTracker"
@@ -2726,7 +2800,7 @@
       ]
     },
     "src/conductor/texture/form/sectionLengthAdvisor.js": {
-      "order": 179,
+      "order": 185,
       "subsystem": "conductor",
       "provides": [
         "sectionLengthAdvisor"
@@ -2739,7 +2813,7 @@
       ]
     },
     "src/conductor/texture/form/silenceDistributionTracker.js": {
-      "order": 180,
+      "order": 186,
       "subsystem": "conductor",
       "provides": [
         "silenceDistributionTracker"
@@ -2753,7 +2827,7 @@
       ]
     },
     "src/conductor/texture/form/structuralFormTracker.js": {
-      "order": 181,
+      "order": 187,
       "subsystem": "conductor",
       "provides": [
         "structuralFormTracker"
@@ -2767,7 +2841,7 @@
       ]
     },
     "src/conductor/texture/form/texturalGradientTracker.js": {
-      "order": 182,
+      "order": 188,
       "subsystem": "conductor",
       "provides": [
         "texturalGradientTracker"
@@ -2780,7 +2854,7 @@
       ]
     },
     "src/conductor/texture/form/texturalMemoryAdvisor.js": {
-      "order": 183,
+      "order": 189,
       "subsystem": "conductor",
       "provides": [
         "texturalMemoryAdvisor"
@@ -2791,7 +2865,7 @@
       ]
     },
     "src/conductor/texture/form/composerFeedbackAdvisor.js": {
-      "order": 184,
+      "order": 190,
       "subsystem": "conductor",
       "provides": [
         "composerFeedbackAdvisor"
@@ -2809,13 +2883,13 @@
       ]
     },
     "src/conductor/texture/balance/index.js": {
-      "order": 185,
+      "order": 191,
       "subsystem": "conductor",
       "provides": [],
       "consumes": []
     },
     "src/conductor/texture/balance/timbreBalanceTracker.js": {
-      "order": 186,
+      "order": 192,
       "subsystem": "conductor",
       "provides": [
         "timbreBalanceTracker"
@@ -2827,7 +2901,7 @@
       ]
     },
     "src/conductor/texture/balance/voiceDensityBalancer.js": {
-      "order": 187,
+      "order": 193,
       "subsystem": "conductor",
       "provides": [
         "voiceDensityBalancer"
@@ -2841,7 +2915,7 @@
       ]
     },
     "src/conductor/sectionMemory.js": {
-      "order": 188,
+      "order": 194,
       "subsystem": "conductor",
       "provides": [
         "sectionMemory"
@@ -2855,7 +2929,7 @@
       ]
     },
     "src/rhythm/index.js": {
-      "order": 189,
+      "order": 195,
       "subsystem": "rhythm",
       "provides": [
         "rhythmMethods"
@@ -2865,7 +2939,7 @@
       ]
     },
     "src/rhythm/rhythmValues.js": {
-      "order": 190,
+      "order": 196,
       "subsystem": "rhythm",
       "provides": [
         "rhythmValues"
@@ -2877,7 +2951,7 @@
       ]
     },
     "src/rhythm/rhythmModulator.js": {
-      "order": 191,
+      "order": 197,
       "subsystem": "rhythm",
       "provides": [
         "rhythmModulator"
@@ -2890,7 +2964,7 @@
       ]
     },
     "src/rhythm/rhythmConfig.js": {
-      "order": 192,
+      "order": 198,
       "subsystem": "rhythm",
       "provides": [
         "rhythmConfig"
@@ -2903,7 +2977,7 @@
       ]
     },
     "src/rhythm/rhythmPriorsData.js": {
-      "order": 193,
+      "order": 199,
       "subsystem": "rhythm",
       "provides": [
         "RHYTHM_PRIOR_TABLES"
@@ -2911,7 +2985,7 @@
       "consumes": []
     },
     "src/rhythm/rhythmRegistry.js": {
-      "order": 194,
+      "order": 200,
       "subsystem": "rhythm",
       "provides": [
         "rhythmRegistry"
@@ -2921,7 +2995,7 @@
       ]
     },
     "src/rhythm/RhythmManager.js": {
-      "order": 195,
+      "order": 201,
       "subsystem": "rhythm",
       "provides": [
         "RhythmManager"
@@ -2939,13 +3013,13 @@
       ]
     },
     "src/rhythm/drums/index.js": {
-      "order": 196,
+      "order": 202,
       "subsystem": "rhythm",
       "provides": [],
       "consumes": []
     },
     "src/rhythm/drums/drumMap.js": {
-      "order": 197,
+      "order": 203,
       "subsystem": "rhythm",
       "provides": [
         "drumMap"
@@ -2956,7 +3030,7 @@
       ]
     },
     "src/rhythm/drums/drummer.js": {
-      "order": 198,
+      "order": 204,
       "subsystem": "rhythm",
       "provides": [
         "drummer"
@@ -2979,7 +3053,7 @@
       ]
     },
     "src/rhythm/drums/drumTextureCoupler.js": {
-      "order": 199,
+      "order": 205,
       "subsystem": "rhythm",
       "provides": [
         "drumTextureCoupler"
@@ -2993,7 +3067,7 @@
       ]
     },
     "src/rhythm/drums/playDrums.js": {
-      "order": 200,
+      "order": 206,
       "subsystem": "rhythm",
       "provides": [
         "playDrums"
@@ -3015,7 +3089,7 @@
       ]
     },
     "src/rhythm/drums/playDrums2.js": {
-      "order": 201,
+      "order": 207,
       "subsystem": "rhythm",
       "provides": [
         "playDrums2"
@@ -3037,7 +3111,7 @@
       ]
     },
     "src/rhythm/makeOnsets.js": {
-      "order": 202,
+      "order": 208,
       "subsystem": "rhythm",
       "provides": [
         "makeOnsets"
@@ -3048,7 +3122,7 @@
       ]
     },
     "src/rhythm/patternLength.js": {
-      "order": 203,
+      "order": 209,
       "subsystem": "rhythm",
       "provides": [
         "patternLength"
@@ -3058,7 +3132,7 @@
       ]
     },
     "src/rhythm/getRhythm.js": {
-      "order": 204,
+      "order": 210,
       "subsystem": "rhythm",
       "provides": [
         "getRhythm"
@@ -3082,7 +3156,7 @@
       ]
     },
     "src/rhythm/setRhythm.js": {
-      "order": 205,
+      "order": 211,
       "subsystem": "rhythm",
       "provides": [
         "setRhythm"
@@ -3105,7 +3179,7 @@
       ]
     },
     "src/rhythm/trackRhythm.js": {
-      "order": 206,
+      "order": 212,
       "subsystem": "rhythm",
       "provides": [
         "trackRhythm"
@@ -3123,7 +3197,7 @@
       ]
     },
     "src/rhythm/patterns.js": {
-      "order": 207,
+      "order": 213,
       "subsystem": "rhythm",
       "provides": [
         "rhythms",
@@ -3157,13 +3231,13 @@
       ]
     },
     "src/rhythm/feedback/index.js": {
-      "order": 208,
+      "order": 214,
       "subsystem": "rhythm",
       "provides": [],
       "consumes": []
     },
     "src/rhythm/feedback/feedbackAccumulator.js": {
-      "order": 209,
+      "order": 215,
       "subsystem": "rhythm",
       "provides": [
         "feedbackAccumulator"
@@ -3175,7 +3249,7 @@
       ]
     },
     "src/rhythm/feedback/fXFeedbackListener.js": {
-      "order": 210,
+      "order": 216,
       "subsystem": "rhythm",
       "provides": [
         "FXFeedbackListener"
@@ -3199,7 +3273,7 @@
       ]
     },
     "src/rhythm/feedback/stutterFeedbackListener.js": {
-      "order": 211,
+      "order": 217,
       "subsystem": "rhythm",
       "provides": [
         "stutterFeedbackListener"
@@ -3216,7 +3290,7 @@
       ]
     },
     "src/rhythm/feedback/emissionFeedbackListener.js": {
-      "order": 212,
+      "order": 218,
       "subsystem": "rhythm",
       "provides": [
         "emissionFeedbackListener"
@@ -3231,7 +3305,7 @@
       ]
     },
     "src/rhythm/feedback/journeyRhythmCoupler.js": {
-      "order": 213,
+      "order": 219,
       "subsystem": "rhythm",
       "provides": [
         "journeyRhythmCoupler"
@@ -3246,7 +3320,7 @@
       ]
     },
     "src/rhythm/feedback/conductorRegulationListener.js": {
-      "order": 214,
+      "order": 220,
       "subsystem": "rhythm",
       "provides": [
         "conductorRegulationListener"
@@ -3261,7 +3335,7 @@
       ]
     },
     "src/rhythm/rhythmHistoryTracker.js": {
-      "order": 215,
+      "order": 221,
       "subsystem": "rhythm",
       "provides": [
         "rhythmHistoryTracker"
@@ -3271,7 +3345,7 @@
       ]
     },
     "src/rhythm/phaseLockedRhythmGenerator.js": {
-      "order": 216,
+      "order": 222,
       "subsystem": "rhythm",
       "provides": [
         "phaseLockedRhythmGenerator"
@@ -3287,7 +3361,7 @@
       ]
     },
     "src/rhythm/rhythmPriors.js": {
-      "order": 217,
+      "order": 223,
       "subsystem": "rhythm",
       "provides": [
         "rhythmPriors"
@@ -3304,7 +3378,7 @@
       ]
     },
     "src/rhythm/crossModulateRhythms.js": {
-      "order": 218,
+      "order": 224,
       "subsystem": "rhythm",
       "provides": [
         "crossModulateRhythms"
@@ -3341,13 +3415,13 @@
       ]
     },
     "src/time/index.js": {
-      "order": 219,
+      "order": 225,
       "subsystem": "time",
       "provides": [],
       "consumes": []
     },
     "src/time/LayerManager.js": {
-      "order": 220,
+      "order": 226,
       "subsystem": "time",
       "provides": [
         "LM",
@@ -3378,7 +3452,7 @@
       ]
     },
     "src/time/midiTiming.js": {
-      "order": 221,
+      "order": 227,
       "subsystem": "time",
       "provides": [
         "isPowerOf2",
@@ -3405,7 +3479,7 @@
       ]
     },
     "src/time/setUnitTiming.js": {
-      "order": 222,
+      "order": 228,
       "subsystem": "time",
       "provides": [
         "setUnitTiming"
@@ -3477,7 +3551,7 @@
       ]
     },
     "src/time/polyrhythmPairs.js": {
-      "order": 223,
+      "order": 229,
       "subsystem": "time",
       "provides": [
         "POLYRHYTHM_PAIRS"
@@ -3485,7 +3559,7 @@
       "consumes": []
     },
     "src/time/getPolyrhythm.js": {
-      "order": 224,
+      "order": 230,
       "subsystem": "time",
       "provides": [
         "getPolyrhythm"
@@ -3506,7 +3580,7 @@
       ]
     },
     "src/time/getMeterPair.js": {
-      "order": 225,
+      "order": 231,
       "subsystem": "time",
       "provides": [
         "getMeterPair"
@@ -3525,7 +3599,7 @@
       ]
     },
     "src/time/timeGridHelpers.js": {
-      "order": 226,
+      "order": 232,
       "subsystem": "time",
       "provides": [
         "timeGridPrune",
@@ -3534,7 +3608,7 @@
       "consumes": []
     },
     "src/time/absoluteTimeWindow.js": {
-      "order": 227,
+      "order": 233,
       "subsystem": "time",
       "provides": [
         "absoluteTimeWindow"
@@ -3548,7 +3622,7 @@
       ]
     },
     "src/time/absoluteTimeGrid.js": {
-      "order": 228,
+      "order": 234,
       "subsystem": "time",
       "provides": [
         "absoluteTimeGrid"
@@ -3561,7 +3635,7 @@
       ]
     },
     "src/time/tempoFeelEngine.js": {
-      "order": 229,
+      "order": 235,
       "subsystem": "time",
       "provides": [
         "tempoFeelEngine"
@@ -3575,7 +3649,7 @@
       ]
     },
     "src/time/timeStream.js": {
-      "order": 230,
+      "order": 236,
       "subsystem": "time",
       "provides": [
         "timeStream"
@@ -3588,7 +3662,7 @@
       ]
     },
     "src/time/fractalArcGenerator.js": {
-      "order": 231,
+      "order": 237,
       "subsystem": "time",
       "provides": [
         "fractalArcGenerator"
@@ -3601,7 +3675,7 @@
       ]
     },
     "src/composers/index.js": {
-      "order": 232,
+      "order": 238,
       "subsystem": "composers",
       "provides": [],
       "consumes": [
@@ -3611,7 +3685,7 @@
       ]
     },
     "src/composers/intervalComposer.js": {
-      "order": 233,
+      "order": 239,
       "subsystem": "composers",
       "provides": [
         "intervalComposer"
@@ -3624,7 +3698,7 @@
       ]
     },
     "src/composers/measureNotePool.js": {
-      "order": 234,
+      "order": 240,
       "subsystem": "composers",
       "provides": [
         "measureNotePool"
@@ -3637,7 +3711,7 @@
       ]
     },
     "src/composers/MeasureComposer.js": {
-      "order": 235,
+      "order": 241,
       "subsystem": "composers",
       "provides": [
         "MeasureComposer"
@@ -3662,7 +3736,7 @@
       ]
     },
     "src/composers/composerCapabilities.js": {
-      "order": 236,
+      "order": 242,
       "subsystem": "composers",
       "provides": [
         "assertComposerCapabilities"
@@ -3672,13 +3746,13 @@
       ]
     },
     "src/composers/utils/index.js": {
-      "order": 237,
+      "order": 243,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
     "src/composers/utils/degreeUtils.js": {
-      "order": 238,
+      "order": 244,
       "subsystem": "composers",
       "provides": [
         "resolveScalePC",
@@ -3696,7 +3770,7 @@
       ]
     },
     "src/composers/utils/scaleNormalization.js": {
-      "order": 239,
+      "order": 245,
       "subsystem": "composers",
       "provides": [
         "scaleNormalization"
@@ -3713,7 +3787,7 @@
       ]
     },
     "src/composers/utils/scaleDegreeTranspose.js": {
-      "order": 240,
+      "order": 246,
       "subsystem": "composers",
       "provides": [
         "scaleDegreeTranspose"
@@ -3723,7 +3797,7 @@
       ]
     },
     "src/composers/noiseComposer.js": {
-      "order": 241,
+      "order": 247,
       "subsystem": "composers",
       "provides": [
         "applyComposerPitchNoise",
@@ -3744,7 +3818,7 @@
       ]
     },
     "src/composers/ScaleComposer.js": {
-      "order": 242,
+      "order": 248,
       "subsystem": "composers",
       "provides": [
         "ScaleComposer",
@@ -3763,7 +3837,7 @@
       ]
     },
     "src/composers/chord/index.js": {
-      "order": 243,
+      "order": 249,
       "subsystem": "composers",
       "provides": [],
       "consumes": [
@@ -3771,7 +3845,7 @@
       ]
     },
     "src/composers/chord/chordValues.js": {
-      "order": 244,
+      "order": 250,
       "subsystem": "composers",
       "provides": [
         "chordValues"
@@ -3782,7 +3856,7 @@
       ]
     },
     "src/composers/chord/chordModulator.js": {
-      "order": 245,
+      "order": 251,
       "subsystem": "composers",
       "provides": [
         "chordModulator"
@@ -3795,7 +3869,7 @@
       ]
     },
     "src/composers/chord/chordConfig.js": {
-      "order": 246,
+      "order": 252,
       "subsystem": "composers",
       "provides": [
         "chordConfig"
@@ -3807,7 +3881,7 @@
       ]
     },
     "src/composers/chord/chordRegistry.js": {
-      "order": 247,
+      "order": 253,
       "subsystem": "composers",
       "provides": [
         "chordRegistry"
@@ -3815,7 +3889,7 @@
       "consumes": []
     },
     "src/composers/chord/ChordManager.js": {
-      "order": 248,
+      "order": 254,
       "subsystem": "composers",
       "provides": [
         "ChordManager"
@@ -3831,7 +3905,7 @@
       ]
     },
     "src/composers/chord/chordUtils.js": {
-      "order": 249,
+      "order": 255,
       "subsystem": "composers",
       "provides": [
         "normalizeChordSymbol"
@@ -3842,7 +3916,7 @@
       ]
     },
     "src/composers/chord/harmonicPriorsData.js": {
-      "order": 250,
+      "order": 256,
       "subsystem": "composers",
       "provides": [
         "HARMONIC_PRIOR_TABLES"
@@ -3850,7 +3924,7 @@
       "consumes": []
     },
     "src/composers/chord/harmonicPriors.js": {
-      "order": 251,
+      "order": 257,
       "subsystem": "composers",
       "provides": [
         "harmonicPriors"
@@ -3865,7 +3939,7 @@
       ]
     },
     "src/composers/chord/ChordComposer.js": {
-      "order": 252,
+      "order": 258,
       "subsystem": "composers",
       "provides": [
         "ChordComposer",
@@ -3890,7 +3964,7 @@
       ]
     },
     "src/composers/chord/ProgressionGenerator.js": {
-      "order": 253,
+      "order": 259,
       "subsystem": "composers",
       "provides": [
         "ProgressionGenerator"
@@ -3906,7 +3980,7 @@
       ]
     },
     "src/composers/chord/pivotChordBridge.js": {
-      "order": 254,
+      "order": 260,
       "subsystem": "composers",
       "provides": [
         "pivotChordBridge"
@@ -3919,7 +3993,7 @@
       ]
     },
     "src/composers/PentatonicComposer.js": {
-      "order": 255,
+      "order": 261,
       "subsystem": "composers",
       "provides": [
         "PentatonicComposer",
@@ -3937,7 +4011,7 @@
       ]
     },
     "src/composers/BluesComposer.js": {
-      "order": 256,
+      "order": 262,
       "subsystem": "composers",
       "provides": [
         "BluesComposer",
@@ -3957,7 +4031,7 @@
       ]
     },
     "src/composers/ChromaticComposer.js": {
-      "order": 257,
+      "order": 263,
       "subsystem": "composers",
       "provides": [
         "ChromaticComposer",
@@ -3977,7 +4051,7 @@
       ]
     },
     "src/composers/QuartalComposer.js": {
-      "order": 258,
+      "order": 264,
       "subsystem": "composers",
       "provides": [
         "QuartalComposer",
@@ -3998,7 +4072,7 @@
       ]
     },
     "src/composers/TensionReleaseComposer.js": {
-      "order": 259,
+      "order": 265,
       "subsystem": "composers",
       "provides": [
         "TensionReleaseComposer"
@@ -4017,7 +4091,7 @@
       ]
     },
     "src/composers/ModeComposer.js": {
-      "order": 260,
+      "order": 266,
       "subsystem": "composers",
       "provides": [
         "ModeComposer",
@@ -4034,7 +4108,7 @@
       ]
     },
     "src/composers/ModalInterchangeComposer.js": {
-      "order": 261,
+      "order": 267,
       "subsystem": "composers",
       "provides": [
         "ModalInterchangeComposer"
@@ -4055,7 +4129,7 @@
       ]
     },
     "src/composers/HarmonicRhythmComposer.js": {
-      "order": 262,
+      "order": 268,
       "subsystem": "composers",
       "provides": [
         "HarmonicRhythmComposer"
@@ -4077,7 +4151,7 @@
       ]
     },
     "src/composers/melodicDevelopmentVoicingIntent.js": {
-      "order": 263,
+      "order": 269,
       "subsystem": "composers",
       "provides": [
         "melodicDevelopmentVoicingIntent"
@@ -4088,7 +4162,7 @@
       ]
     },
     "src/composers/MelodicDevelopmentComposer.js": {
-      "order": 264,
+      "order": 270,
       "subsystem": "composers",
       "provides": [
         "MelodicDevelopmentComposer"
@@ -4117,13 +4191,13 @@
       ]
     },
     "src/composers/voice/index.js": {
-      "order": 265,
+      "order": 271,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
     "src/composers/voice/voiceValues.js": {
-      "order": 266,
+      "order": 272,
       "subsystem": "composers",
       "provides": [
         "voiceValues"
@@ -4131,7 +4205,7 @@
       "consumes": []
     },
     "src/composers/voice/voiceModulator.js": {
-      "order": 267,
+      "order": 273,
       "subsystem": "composers",
       "provides": [
         "voiceModulator"
@@ -4147,7 +4221,7 @@
       ]
     },
     "src/composers/voice/voiceConfig.js": {
-      "order": 268,
+      "order": 274,
       "subsystem": "composers",
       "provides": [
         "voiceConfig"
@@ -4160,7 +4234,7 @@
       ]
     },
     "src/composers/voice/voiceRegistry.js": {
-      "order": 269,
+      "order": 275,
       "subsystem": "composers",
       "provides": [
         "voiceRegistry"
@@ -4174,7 +4248,7 @@
       ]
     },
     "src/composers/voice/registerBiasing.js": {
-      "order": 270,
+      "order": 276,
       "subsystem": "composers",
       "provides": [
         "registerBiasing"
@@ -4187,7 +4261,7 @@
       ]
     },
     "src/composers/voice/voiceLeadingPriorsData.js": {
-      "order": 271,
+      "order": 277,
       "subsystem": "composers",
       "provides": [
         "VOICE_LEADING_PRIOR_TABLES"
@@ -4195,7 +4269,7 @@
       "consumes": []
     },
     "src/composers/voice/voiceLeadingPriors.js": {
-      "order": 272,
+      "order": 278,
       "subsystem": "composers",
       "provides": [
         "voiceLeadingPriors"
@@ -4212,7 +4286,7 @@
       ]
     },
     "src/composers/voice/melodicPriorsData.js": {
-      "order": 273,
+      "order": 279,
       "subsystem": "composers",
       "provides": [
         "MELODIC_PRIOR_TABLES"
@@ -4220,7 +4294,7 @@
       "consumes": []
     },
     "src/composers/voice/melodicPriors.js": {
-      "order": 274,
+      "order": 280,
       "subsystem": "composers",
       "provides": [
         "melodicPriors"
@@ -4236,7 +4310,7 @@
       ]
     },
     "src/composers/voice/voiceLeadingCore.js": {
-      "order": 275,
+      "order": 281,
       "subsystem": "composers",
       "provides": [
         "voiceLeadingCore"
@@ -4254,7 +4328,7 @@
       ]
     },
     "src/composers/voice/voiceLeadingAnalyzeQuality.js": {
-      "order": 276,
+      "order": 282,
       "subsystem": "composers",
       "provides": [
         "voiceLeadingAnalyzeQuality"
@@ -4265,7 +4339,7 @@
       ]
     },
     "src/composers/voice/VoiceLeadingComposer.js": {
-      "order": 277,
+      "order": 283,
       "subsystem": "composers",
       "provides": [
         "VoiceLeadingComposer"
@@ -4282,7 +4356,7 @@
       ]
     },
     "src/composers/voice/VoiceLeadingScore.js": {
-      "order": 278,
+      "order": 284,
       "subsystem": "composers",
       "provides": [
         "VoiceLeadingScore"
@@ -4299,7 +4373,7 @@
       ]
     },
     "src/composers/voice/voiceLeadingScorers.js": {
-      "order": 279,
+      "order": 285,
       "subsystem": "composers",
       "provides": [
         "voiceLeadingScorers"
@@ -4310,7 +4384,7 @@
       ]
     },
     "src/composers/voice/voiceLeadingSelectNextNote.js": {
-      "order": 280,
+      "order": 286,
       "subsystem": "composers",
       "provides": [
         "voiceLeadingSelectNextNote"
@@ -4323,7 +4397,7 @@
       ]
     },
     "src/composers/voice/VoiceManager.js": {
-      "order": 281,
+      "order": 287,
       "subsystem": "composers",
       "provides": [
         "VoiceManager"
@@ -4345,7 +4419,7 @@
       ]
     },
     "src/composers/motif/index.js": {
-      "order": 282,
+      "order": 288,
       "subsystem": "composers",
       "provides": [],
       "consumes": [
@@ -4353,7 +4427,7 @@
       ]
     },
     "src/composers/motif/motifValues.js": {
-      "order": 283,
+      "order": 289,
       "subsystem": "composers",
       "provides": [
         "motifValues"
@@ -4361,7 +4435,7 @@
       "consumes": []
     },
     "src/composers/motif/motifModulator.js": {
-      "order": 284,
+      "order": 290,
       "subsystem": "composers",
       "provides": [
         "motifModulator"
@@ -4372,7 +4446,7 @@
       ]
     },
     "src/composers/motif/motifConfig.js": {
-      "order": 285,
+      "order": 291,
       "subsystem": "composers",
       "provides": [
         "motifConfig"
@@ -4385,7 +4459,7 @@
       ]
     },
     "src/composers/motif/motifRegistry.js": {
-      "order": 286,
+      "order": 292,
       "subsystem": "composers",
       "provides": [
         "motifRegistry"
@@ -4393,7 +4467,7 @@
       "consumes": []
     },
     "src/composers/motif/motifManager.js": {
-      "order": 287,
+      "order": 293,
       "subsystem": "composers",
       "provides": [
         "motifManager"
@@ -4415,7 +4489,7 @@
       ]
     },
     "src/composers/motif/motifValidators.js": {
-      "order": 288,
+      "order": 294,
       "subsystem": "composers",
       "provides": [
         "motifValidators"
@@ -4428,7 +4502,7 @@
       ]
     },
     "src/composers/motif/MotifComposer.js": {
-      "order": 289,
+      "order": 295,
       "subsystem": "composers",
       "provides": [
         "MotifComposer"
@@ -4450,7 +4524,7 @@
       ]
     },
     "src/composers/motif/Motif.js": {
-      "order": 290,
+      "order": 296,
       "subsystem": "composers",
       "provides": [
         "Motif",
@@ -4467,7 +4541,7 @@
       ]
     },
     "src/composers/motif/motifChain.js": {
-      "order": 291,
+      "order": 297,
       "subsystem": "composers",
       "provides": [
         "motifChain"
@@ -4483,7 +4557,7 @@
       ]
     },
     "src/composers/motif/motifTransformAdvisor.js": {
-      "order": 292,
+      "order": 298,
       "subsystem": "composers",
       "provides": [
         "motifTransformAdvisor"
@@ -4497,7 +4571,7 @@
       ]
     },
     "src/composers/motif/motifSpreader.js": {
-      "order": 293,
+      "order": 299,
       "subsystem": "composers",
       "provides": [
         "motifSpreader"
@@ -4522,7 +4596,7 @@
       ]
     },
     "src/composers/motif/motifTransforms.js": {
-      "order": 294,
+      "order": 300,
       "subsystem": "composers",
       "provides": [
         "motifTransforms"
@@ -4537,7 +4611,7 @@
       ]
     },
     "src/composers/motif/candidateExpansion.js": {
-      "order": 295,
+      "order": 301,
       "subsystem": "composers",
       "provides": [
         "candidateExpansion"
@@ -4547,7 +4621,7 @@
       ]
     },
     "src/composers/motif/playMotifsResolveBucket.js": {
-      "order": 296,
+      "order": 302,
       "subsystem": "composers",
       "provides": [
         "playMotifsResolveBucket"
@@ -4564,7 +4638,7 @@
       ]
     },
     "src/composers/motif/playMotifsBuildCandidateNotes.js": {
-      "order": 297,
+      "order": 303,
       "subsystem": "composers",
       "provides": [
         "playMotifsBuildCandidateNotes"
@@ -4579,7 +4653,7 @@
       ]
     },
     "src/composers/motif/playMotifsApplyCycleTransforms.js": {
-      "order": 298,
+      "order": 304,
       "subsystem": "composers",
       "provides": [
         "playMotifsApplyCycleTransforms"
@@ -4590,7 +4664,7 @@
       ]
     },
     "src/composers/motif/playMotifs.js": {
-      "order": 299,
+      "order": 305,
       "subsystem": "composers",
       "provides": [
         "playMotifs"
@@ -4609,91 +4683,91 @@
       ]
     },
     "src/composers/profiles/index.js": {
-      "order": 300,
-      "subsystem": "composers",
-      "provides": [],
-      "consumes": []
-    },
-    "src/composers/profiles/measureProfiles.js": {
-      "order": 301,
-      "subsystem": "composers",
-      "provides": [],
-      "consumes": []
-    },
-    "src/composers/profiles/scaleProfiles.js": {
-      "order": 302,
-      "subsystem": "composers",
-      "provides": [],
-      "consumes": []
-    },
-    "src/composers/profiles/chordsProfiles.js": {
-      "order": 303,
-      "subsystem": "composers",
-      "provides": [],
-      "consumes": []
-    },
-    "src/composers/profiles/modeProfiles.js": {
-      "order": 304,
-      "subsystem": "composers",
-      "provides": [],
-      "consumes": []
-    },
-    "src/composers/profiles/pentatonicProfiles.js": {
-      "order": 305,
-      "subsystem": "composers",
-      "provides": [],
-      "consumes": []
-    },
-    "src/composers/profiles/bluesProfiles.js": {
       "order": 306,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/chromaticProfiles.js": {
+    "src/composers/profiles/measureProfiles.js": {
       "order": 307,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/quartalProfiles.js": {
+    "src/composers/profiles/scaleProfiles.js": {
       "order": 308,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/tensionReleaseProfiles.js": {
+    "src/composers/profiles/chordsProfiles.js": {
       "order": 309,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/modalInterchangeProfiles.js": {
+    "src/composers/profiles/modeProfiles.js": {
       "order": 310,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/melodicDevelopmentProfiles.js": {
+    "src/composers/profiles/pentatonicProfiles.js": {
       "order": 311,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/voiceLeadingProfiles.js": {
+    "src/composers/profiles/bluesProfiles.js": {
       "order": 312,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/harmonicRhythmProfiles.js": {
+    "src/composers/profiles/chromaticProfiles.js": {
       "order": 313,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
-    "src/composers/profiles/profileUtils.js": {
+    "src/composers/profiles/quartalProfiles.js": {
       "order": 314,
+      "subsystem": "composers",
+      "provides": [],
+      "consumes": []
+    },
+    "src/composers/profiles/tensionReleaseProfiles.js": {
+      "order": 315,
+      "subsystem": "composers",
+      "provides": [],
+      "consumes": []
+    },
+    "src/composers/profiles/modalInterchangeProfiles.js": {
+      "order": 316,
+      "subsystem": "composers",
+      "provides": [],
+      "consumes": []
+    },
+    "src/composers/profiles/melodicDevelopmentProfiles.js": {
+      "order": 317,
+      "subsystem": "composers",
+      "provides": [],
+      "consumes": []
+    },
+    "src/composers/profiles/voiceLeadingProfiles.js": {
+      "order": 318,
+      "subsystem": "composers",
+      "provides": [],
+      "consumes": []
+    },
+    "src/composers/profiles/harmonicRhythmProfiles.js": {
+      "order": 319,
+      "subsystem": "composers",
+      "provides": [],
+      "consumes": []
+    },
+    "src/composers/profiles/profileUtils.js": {
+      "order": 320,
       "subsystem": "composers",
       "provides": [
         "COMPOSER_TYPES",
@@ -4709,7 +4783,7 @@
       ]
     },
     "src/composers/profiles/validateProfiles.js": {
-      "order": 315,
+      "order": 321,
       "subsystem": "composers",
       "provides": [
         "composerProfileValidation"
@@ -4719,7 +4793,7 @@
       ]
     },
     "src/composers/profiles/runtimeProfileAdapter.js": {
-      "order": 316,
+      "order": 322,
       "subsystem": "composers",
       "provides": [
         "composerRuntimeProfileAdapter"
@@ -4734,7 +4808,7 @@
       ]
     },
     "src/composers/profiles/profileRegistry.js": {
-      "order": 317,
+      "order": 323,
       "subsystem": "composers",
       "provides": [
         "COMPOSER_TYPE_PROFILES",
@@ -4756,13 +4830,13 @@
       ]
     },
     "src/composers/factory/index.js": {
-      "order": 318,
+      "order": 324,
       "subsystem": "composers",
       "provides": [],
       "consumes": []
     },
     "src/composers/factory/factoryProfiles.js": {
-      "order": 319,
+      "order": 325,
       "subsystem": "composers",
       "provides": [
         "factoryProfiles"
@@ -4776,7 +4850,7 @@
       ]
     },
     "src/composers/factory/factoryProgression.js": {
-      "order": 320,
+      "order": 326,
       "subsystem": "composers",
       "provides": [
         "factoryProgression"
@@ -4788,7 +4862,7 @@
       ]
     },
     "src/composers/factory/factoryPoolResolver.js": {
-      "order": 321,
+      "order": 327,
       "subsystem": "composers",
       "provides": [
         "factoryPoolResolver"
@@ -4802,7 +4876,7 @@
       ]
     },
     "src/composers/factory/factoryFamilies.js": {
-      "order": 322,
+      "order": 328,
       "subsystem": "composers",
       "provides": [
         "factoryFamilies"
@@ -4834,7 +4908,7 @@
       ]
     },
     "src/composers/factory/factoryConstructors.js": {
-      "order": 323,
+      "order": 329,
       "subsystem": "composers",
       "provides": [
         "factoryConstructors"
@@ -4868,7 +4942,7 @@
       ]
     },
     "src/composers/factory/FactoryManager.js": {
-      "order": 324,
+      "order": 330,
       "subsystem": "composers",
       "provides": [
         "FactoryManager"
@@ -4889,19 +4963,19 @@
       ]
     },
     "src/fx/index.js": {
-      "order": 325,
+      "order": 331,
       "subsystem": "fx",
       "provides": [],
       "consumes": []
     },
     "src/fx/stutter/index.js": {
-      "order": 326,
+      "order": 332,
       "subsystem": "fx",
       "provides": [],
       "consumes": []
     },
     "src/fx/stutter/stutterConfigStore.js": {
-      "order": 327,
+      "order": 333,
       "subsystem": "fx",
       "provides": [
         "stutterConfigStore",
@@ -4917,7 +4991,7 @@
       ]
     },
     "src/fx/stutter/stutterRegistry.js": {
-      "order": 328,
+      "order": 334,
       "subsystem": "fx",
       "provides": [
         "stutterRegistry"
@@ -4925,7 +4999,7 @@
       "consumes": []
     },
     "src/fx/stutter/stutterMetrics.js": {
-      "order": 329,
+      "order": 335,
       "subsystem": "fx",
       "provides": [
         "stutterMetrics"
@@ -4935,7 +5009,7 @@
       ]
     },
     "src/fx/stutter/stutterChannels.js": {
-      "order": 330,
+      "order": 336,
       "subsystem": "fx",
       "provides": [
         "pickStutterChannels"
@@ -4945,7 +5019,7 @@
       ]
     },
     "src/fx/stutter/stutterFailFast.js": {
-      "order": 331,
+      "order": 337,
       "subsystem": "fx",
       "provides": [
         "stutterFailFast"
@@ -4957,7 +5031,7 @@
       ]
     },
     "src/fx/stutter/stutterFade.js": {
-      "order": 332,
+      "order": 338,
       "subsystem": "fx",
       "provides": [
         "stutterFade"
@@ -4982,7 +5056,7 @@
       ]
     },
     "src/fx/stutter/stutterPan.js": {
-      "order": 333,
+      "order": 339,
       "subsystem": "fx",
       "provides": [
         "stutterPan"
@@ -5005,7 +5079,7 @@
       ]
     },
     "src/fx/stutter/stutterFX.js": {
-      "order": 334,
+      "order": 340,
       "subsystem": "fx",
       "provides": [
         "stutterFX"
@@ -5031,7 +5105,7 @@
       ]
     },
     "src/fx/stutter/stutterExecutePlan.js": {
-      "order": 335,
+      "order": 341,
       "subsystem": "fx",
       "provides": [
         "stutterExecutePlan"
@@ -5070,7 +5144,7 @@
       ]
     },
     "src/fx/stutter/stutterPlanScheduler.js": {
-      "order": 336,
+      "order": 342,
       "subsystem": "fx",
       "provides": [
         "stutterPlanScheduler"
@@ -5084,7 +5158,7 @@
       ]
     },
     "src/fx/stutter/stutterManager.js": {
-      "order": 337,
+      "order": 343,
       "subsystem": "fx",
       "provides": [
         "stutter",
@@ -5115,7 +5189,7 @@
       ]
     },
     "src/fx/stutter/stutterNotes.js": {
-      "order": 338,
+      "order": 344,
       "subsystem": "fx",
       "provides": [
         "stutterNotes"
@@ -5145,13 +5219,13 @@
       ]
     },
     "src/fx/noise/index.js": {
-      "order": 339,
+      "order": 345,
       "subsystem": "fx",
       "provides": [],
       "consumes": []
     },
     "src/fx/noise/metaRecursive.js": {
-      "order": 340,
+      "order": 346,
       "subsystem": "fx",
       "provides": [
         "easeInOut",
@@ -5176,7 +5250,7 @@
       ]
     },
     "src/fx/noise/SimplexNoise.js": {
-      "order": 341,
+      "order": 347,
       "subsystem": "fx",
       "provides": [
         "SimplexNoise",
@@ -5192,7 +5266,7 @@
       ]
     },
     "src/fx/noise/noiseRegistry.js": {
-      "order": 342,
+      "order": 348,
       "subsystem": "fx",
       "provides": [
         "defaultSimplex",
@@ -5220,7 +5294,7 @@
       ]
     },
     "src/fx/noise/noiseValues.js": {
-      "order": 343,
+      "order": 349,
       "subsystem": "fx",
       "provides": [
         "getNoiseValue",
@@ -5245,7 +5319,7 @@
       ]
     },
     "src/fx/noise/noiseManager.js": {
-      "order": 344,
+      "order": 350,
       "subsystem": "fx",
       "provides": [
         "applyNoiseToVelocity",
@@ -5262,7 +5336,7 @@
       ]
     },
     "src/fx/noise/noiseConfig.js": {
-      "order": 345,
+      "order": 351,
       "subsystem": "fx",
       "provides": [
         "getNoiseProfile"
@@ -5277,7 +5351,7 @@
       ]
     },
     "src/fx/setBalanceAndFX.js": {
-      "order": 346,
+      "order": 352,
       "subsystem": "fx",
       "provides": [
         "setBalanceAndFX",
@@ -5319,7 +5393,7 @@
       ]
     },
     "src/fx/setBinaural.js": {
-      "order": 347,
+      "order": 353,
       "subsystem": "fx",
       "provides": [
         "setBinaural"
@@ -5363,13 +5437,13 @@
       ]
     },
     "src/crossLayer/index.js": {
-      "order": 348,
+      "order": 354,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/crossLayerRegistry.js": {
-      "order": 349,
+      "order": 355,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerRegistry"
@@ -5379,7 +5453,7 @@
       ]
     },
     "src/crossLayer/explainabilityBus.js": {
-      "order": 350,
+      "order": 356,
       "subsystem": "crossLayer",
       "provides": [
         "explainabilityBus"
@@ -5394,7 +5468,7 @@
       ]
     },
     "src/crossLayer/crossLayerEmissionGateway.js": {
-      "order": 351,
+      "order": 357,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerEmissionGateway"
@@ -5404,13 +5478,13 @@
       ]
     },
     "src/crossLayer/rhythm/index.js": {
-      "order": 352,
+      "order": 358,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/rhythm/convergenceDetector.js": {
-      "order": 353,
+      "order": 359,
       "subsystem": "crossLayer",
       "provides": [
         "convergenceDetector"
@@ -5438,7 +5512,7 @@
       ]
     },
     "src/crossLayer/rhythm/emergentDownbeat.js": {
-      "order": 354,
+      "order": 360,
       "subsystem": "crossLayer",
       "provides": [
         "emergentDownbeat"
@@ -5467,7 +5541,7 @@
       ]
     },
     "src/crossLayer/rhythm/feedbackOscillator.js": {
-      "order": 355,
+      "order": 361,
       "subsystem": "crossLayer",
       "provides": [
         "feedbackOscillator"
@@ -5484,7 +5558,7 @@
       ]
     },
     "src/crossLayer/rhythm/grooveTransfer.js": {
-      "order": 356,
+      "order": 362,
       "subsystem": "crossLayer",
       "provides": [
         "grooveTransfer"
@@ -5504,7 +5578,7 @@
       ]
     },
     "src/crossLayer/rhythm/rhythmicComplementEngine.js": {
-      "order": 357,
+      "order": 363,
       "subsystem": "crossLayer",
       "provides": [
         "rhythmicComplementEngine"
@@ -5522,7 +5596,7 @@
       ]
     },
     "src/crossLayer/rhythm/rhythmicPhaseLock.js": {
-      "order": 358,
+      "order": 364,
       "subsystem": "crossLayer",
       "provides": [
         "rhythmicPhaseLock"
@@ -5538,7 +5612,7 @@
       ]
     },
     "src/crossLayer/rhythm/stutterContagion.js": {
-      "order": 359,
+      "order": 365,
       "subsystem": "crossLayer",
       "provides": [
         "stutterContagion"
@@ -5563,7 +5637,7 @@
       ]
     },
     "src/crossLayer/rhythm/temporalGravity.js": {
-      "order": 360,
+      "order": 366,
       "subsystem": "crossLayer",
       "provides": [
         "temporalGravity"
@@ -5581,7 +5655,7 @@
       ]
     },
     "src/crossLayer/rhythm/polyrhythmicPhasePredictor.js": {
-      "order": 361,
+      "order": 367,
       "subsystem": "crossLayer",
       "provides": [
         "polyrhythmicPhasePredictor"
@@ -5598,13 +5672,13 @@
       ]
     },
     "src/crossLayer/harmony/index.js": {
-      "order": 362,
+      "order": 368,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/harmony/cadenceAlignment.js": {
-      "order": 363,
+      "order": 369,
       "subsystem": "crossLayer",
       "provides": [
         "cadenceAlignment"
@@ -5623,7 +5697,7 @@
       ]
     },
     "src/crossLayer/harmony/convergenceHarmonicTrigger.js": {
-      "order": 364,
+      "order": 370,
       "subsystem": "crossLayer",
       "provides": [
         "convergenceHarmonicTrigger"
@@ -5641,7 +5715,7 @@
       ]
     },
     "src/crossLayer/harmony/harmonicIntervalGuard.js": {
-      "order": 365,
+      "order": 371,
       "subsystem": "crossLayer",
       "provides": [
         "harmonicIntervalGuard"
@@ -5658,7 +5732,7 @@
       ]
     },
     "src/crossLayer/harmony/motifEcho.js": {
-      "order": 366,
+      "order": 372,
       "subsystem": "crossLayer",
       "provides": [
         "motifEcho"
@@ -5678,7 +5752,7 @@
       ]
     },
     "src/crossLayer/harmony/motifIdentityMemory.js": {
-      "order": 367,
+      "order": 373,
       "subsystem": "crossLayer",
       "provides": [
         "motifIdentityMemory"
@@ -5691,7 +5765,7 @@
       ]
     },
     "src/crossLayer/harmony/phaseAwareCadenceWindow.js": {
-      "order": 368,
+      "order": 374,
       "subsystem": "crossLayer",
       "provides": [
         "phaseAwareCadenceWindow"
@@ -5705,7 +5779,7 @@
       ]
     },
     "src/crossLayer/harmony/pitchMemoryRecall.js": {
-      "order": 369,
+      "order": 375,
       "subsystem": "crossLayer",
       "provides": [
         "pitchMemoryRecall"
@@ -5725,7 +5799,7 @@
       ]
     },
     "src/crossLayer/harmony/registerCollisionAvoider.js": {
-      "order": 370,
+      "order": 376,
       "subsystem": "crossLayer",
       "provides": [
         "registerCollisionAvoider"
@@ -5746,7 +5820,7 @@
       ]
     },
     "src/crossLayer/harmony/spectralComplementarity.js": {
-      "order": 371,
+      "order": 377,
       "subsystem": "crossLayer",
       "provides": [
         "spectralComplementarity"
@@ -5764,7 +5838,7 @@
       ]
     },
     "src/crossLayer/harmony/verticalIntervalMonitor.js": {
-      "order": 372,
+      "order": 378,
       "subsystem": "crossLayer",
       "provides": [
         "verticalIntervalMonitor"
@@ -5778,13 +5852,13 @@
       ]
     },
     "src/crossLayer/dynamics/index.js": {
-      "order": 373,
+      "order": 379,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/dynamics/articulationComplement.js": {
-      "order": 374,
+      "order": 380,
       "subsystem": "crossLayer",
       "provides": [
         "articulationComplement"
@@ -5800,7 +5874,7 @@
       ]
     },
     "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js": {
-      "order": 375,
+      "order": 381,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerDynamicEnvelope"
@@ -5817,7 +5891,7 @@
       ]
     },
     "src/crossLayer/dynamics/dynamicRoleSwap.js": {
-      "order": 376,
+      "order": 382,
       "subsystem": "crossLayer",
       "provides": [
         "dynamicRoleSwap"
@@ -5832,7 +5906,7 @@
       ]
     },
     "src/crossLayer/dynamics/restSynchronizer.js": {
-      "order": 377,
+      "order": 383,
       "subsystem": "crossLayer",
       "provides": [
         "restSynchronizer"
@@ -5848,7 +5922,7 @@
       ]
     },
     "src/crossLayer/dynamics/texturalMirror.js": {
-      "order": 378,
+      "order": 384,
       "subsystem": "crossLayer",
       "provides": [
         "texturalMirror"
@@ -5863,7 +5937,7 @@
       ]
     },
     "src/crossLayer/dynamics/velocityInterference.js": {
-      "order": 379,
+      "order": 385,
       "subsystem": "crossLayer",
       "provides": [
         "velocityInterference"
@@ -5885,19 +5959,19 @@
       ]
     },
     "src/crossLayer/structure/index.js": {
-      "order": 380,
+      "order": 386,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/trust/index.js": {
-      "order": 381,
+      "order": 387,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js": {
-      "order": 382,
+      "order": 388,
       "subsystem": "crossLayer",
       "provides": [
         "adaptiveTrustScoresHelpers"
@@ -5915,7 +5989,7 @@
       ]
     },
     "src/crossLayer/structure/trust/adaptiveTrustScores.js": {
-      "order": 383,
+      "order": 389,
       "subsystem": "crossLayer",
       "provides": [
         "adaptiveTrustScores"
@@ -5943,13 +6017,13 @@
       ]
     },
     "src/crossLayer/structure/form/index.js": {
-      "order": 384,
+      "order": 390,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/form/crossLayerClimaxEngine.js": {
-      "order": 385,
+      "order": 391,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerClimaxEngine"
@@ -5966,7 +6040,7 @@
       ]
     },
     "src/crossLayer/structure/form/crossLayerSilhouette.js": {
-      "order": 386,
+      "order": 392,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerSilhouette"
@@ -5983,7 +6057,7 @@
       ]
     },
     "src/crossLayer/structure/form/sectionIntentCurves.js": {
-      "order": 387,
+      "order": 393,
       "subsystem": "crossLayer",
       "provides": [
         "sectionIntentCurves"
@@ -5998,13 +6072,13 @@
       ]
     },
     "src/crossLayer/structure/entropy/index.js": {
-      "order": 388,
+      "order": 394,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/entropy/entropyMetrics.js": {
-      "order": 389,
+      "order": 395,
       "subsystem": "crossLayer",
       "provides": [
         "entropyMetrics"
@@ -6019,7 +6093,7 @@
       ]
     },
     "src/crossLayer/structure/entropy/entropyRegulator.js": {
-      "order": 390,
+      "order": 396,
       "subsystem": "crossLayer",
       "provides": [
         "entropyRegulator"
@@ -6038,13 +6112,13 @@
       ]
     },
     "src/crossLayer/structure/negotiation/index.js": {
-      "order": 391,
+      "order": 397,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/negotiation/interactionHeatMap.js": {
-      "order": 392,
+      "order": 398,
       "subsystem": "crossLayer",
       "provides": [
         "interactionHeatMap"
@@ -6058,7 +6132,7 @@
       ]
     },
     "src/crossLayer/structure/negotiation/negotiationEngine.js": {
-      "order": 393,
+      "order": 399,
       "subsystem": "crossLayer",
       "provides": [
         "negotiationEngine"
@@ -6075,13 +6149,13 @@
       ]
     },
     "src/crossLayer/structure/integration/index.js": {
-      "order": 394,
+      "order": 400,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/integration/contextualTrust.js": {
-      "order": 395,
+      "order": 401,
       "subsystem": "crossLayer",
       "provides": [
         "contextualTrust"
@@ -6096,7 +6170,7 @@
       ]
     },
     "src/crossLayer/structure/integration/beatInterleavedProcessor.js": {
-      "order": 396,
+      "order": 402,
       "subsystem": "crossLayer",
       "provides": [
         "beatInterleavedProcessor"
@@ -6108,7 +6182,7 @@
       ]
     },
     "src/crossLayer/conductorSignalBridge.js": {
-      "order": 397,
+      "order": 403,
       "subsystem": "crossLayer",
       "provides": [
         "conductorSignalBridge"
@@ -6122,7 +6196,7 @@
       ]
     },
     "src/crossLayer/crossLayerLifecycleManager.js": {
-      "order": 398,
+      "order": 404,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerLifecycleManager"
@@ -6135,7 +6209,7 @@
       ]
     },
     "src/writer/index.js": {
-      "order": 399,
+      "order": 405,
       "subsystem": "writer",
       "provides": [
         "fs",
@@ -6149,7 +6223,7 @@
       "consumes": []
     },
     "src/writer/logUnit.js": {
-      "order": 400,
+      "order": 406,
       "subsystem": "writer",
       "provides": [
         "logUnit"
@@ -6209,7 +6283,7 @@
       ]
     },
     "src/writer/grandFinale.js": {
-      "order": 401,
+      "order": 407,
       "subsystem": "writer",
       "provides": [
         "grandFinale"
@@ -6225,7 +6299,7 @@
       ]
     },
     "src/writer/traceDrain.js": {
-      "order": 402,
+      "order": 408,
       "subsystem": "writer",
       "provides": [
         "traceDrain"
@@ -6239,13 +6313,13 @@
       ]
     },
     "src/play/index.js": {
-      "order": 403,
+      "order": 409,
       "subsystem": "play",
       "provides": [],
       "consumes": []
     },
     "src/play/events.js": {
-      "order": 404,
+      "order": 410,
       "subsystem": "play",
       "provides": [
         "eventBus"
@@ -6256,7 +6330,7 @@
       ]
     },
     "src/play/channelCoherence.js": {
-      "order": 405,
+      "order": 411,
       "subsystem": "play",
       "provides": [
         "getChannelCoherence"
@@ -6273,7 +6347,7 @@
       ]
     },
     "src/play/emitPickCrossLayerRecord.js": {
-      "order": 406,
+      "order": 412,
       "subsystem": "play",
       "provides": [
         "emitPickCrossLayerRecord"
@@ -6301,7 +6375,7 @@
       ]
     },
     "src/play/emitPickTextureEmit.js": {
-      "order": 407,
+      "order": 413,
       "subsystem": "play",
       "provides": [
         "emitPickSourceTextures",
@@ -6321,7 +6395,7 @@
       ]
     },
     "src/play/playNotesEmitPick.js": {
-      "order": 408,
+      "order": 414,
       "subsystem": "play",
       "provides": [
         "setFeedbackPitchBias",
@@ -6383,7 +6457,7 @@
       ]
     },
     "src/play/playNotesComputeUnit.js": {
-      "order": 409,
+      "order": 415,
       "subsystem": "play",
       "provides": [
         "playNotesComputeUnit"
@@ -6414,7 +6488,7 @@
       ]
     },
     "src/play/playNotes.js": {
-      "order": 410,
+      "order": 416,
       "subsystem": "play",
       "provides": [
         "playNotes"
@@ -6460,7 +6534,7 @@
       ]
     },
     "src/play/microUnitAttenuator.js": {
-      "order": 411,
+      "order": 417,
       "subsystem": "play",
       "provides": [
         "microUnitAttenuator"
@@ -6475,7 +6549,7 @@
       ]
     },
     "src/play/crossLayerBeatRecord.js": {
-      "order": 412,
+      "order": 418,
       "subsystem": "play",
       "provides": [
         "crossLayerBeatRecord"
@@ -6532,7 +6606,7 @@
       ]
     },
     "src/play/processBeat.js": {
-      "order": 413,
+      "order": 419,
       "subsystem": "play",
       "provides": [
         "processBeat"
@@ -6593,7 +6667,7 @@
       ]
     },
     "src/play/layerPass.js": {
-      "order": 414,
+      "order": 420,
       "subsystem": "play",
       "provides": [
         "layerPass"
@@ -6627,7 +6701,7 @@
       ]
     },
     "src/play/main.js": {
-      "order": 415,
+      "order": 421,
       "subsystem": "play",
       "provides": [
         "main",
@@ -6688,7 +6762,7 @@
       ]
     },
     "src/play/beatPipelineDescriptor.js": {
-      "order": 416,
+      "order": 422,
       "subsystem": "play",
       "provides": [
         "beatPipelineDescriptor"
@@ -6696,7 +6770,7 @@
       "consumes": []
     },
     "src/play/feedbackGraphContract.js": {
-      "order": 417,
+      "order": 423,
       "subsystem": "play",
       "provides": [
         "feedbackGraphContract"
@@ -6718,7 +6792,7 @@
       ]
     },
     "src/play/mainBootstrap.js": {
-      "order": 418,
+      "order": 424,
       "subsystem": "play",
       "provides": [
         "mainBootstrap"
@@ -6766,7 +6840,7 @@
       ]
     },
     "src/play/fullBootstrap.js": {
-      "order": 419,
+      "order": 425,
       "subsystem": "play",
       "provides": [
         "fullBootstrap"
@@ -9723,7 +9797,7 @@
     },
     {
       "from": "src/conductor/profiles/conductorConfig.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
       "globals": [
         "conductorConfig"
       ]
@@ -10170,6 +10244,104 @@
       ]
     },
     {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisConstants.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
+      "globals": [
+        "homeostasisConstants"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisConstants.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "homeostasisConstants"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisConstants.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
+      "globals": [
+        "homeostasisConstants"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisConstants.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
+      "globals": [
+        "homeostasisConstants"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
+      "globals": [
+        "homeostasisFloor"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
+      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "globals": [
+        "homeostasisFloor"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "globals": [
+        "homeostasisRefresh"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
+      "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
+      "globals": [
+        "homeostasisState"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
+      "globals": [
+        "homeostasisState"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "homeostasisState"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
+      "globals": [
+        "homeostasisState"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
+      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "globals": [
+        "homeostasisState"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "homeostasisTick"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
+      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "globals": [
+        "homeostasisTick"
+      ]
+    },
+    {
       "from": "src/conductor/signal/balancing/couplingHomeostasis.js",
       "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
       "globals": [
@@ -10255,7 +10427,14 @@
     },
     {
       "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "pipelineCouplingManager"
       ]
@@ -10661,7 +10840,14 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -11319,7 +11505,7 @@
     },
     {
       "from": "src/crossLayer/explainabilityBus.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
       "globals": [
         "explainabilityBus"
       ]
@@ -12943,7 +13129,7 @@
     },
     {
       "from": "src/play/main.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "totalSections"
       ]
@@ -15271,7 +15457,21 @@
     },
     {
       "from": "src/utils/clamps.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
+      "globals": [
+        "clamp"
+      ]
+    },
+    {
+      "from": "src/utils/clamps.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "clamp"
+      ]
+    },
+    {
+      "from": "src/utils/clamps.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "clamp"
       ]
@@ -16655,6 +16855,13 @@
     },
     {
       "from": "src/utils/index.js",
+      "to": "src/conductor/signal/balancing/coupling/couplingConstants.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
       "to": "src/conductor/signal/balancing/coupling/couplingEffectiveGain.js",
       "globals": [
         "m"
@@ -16683,7 +16890,21 @@
     },
     {
       "from": "src/utils/index.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisFloor.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "m"
       ]
@@ -18018,6 +18239,13 @@
     {
       "from": "src/utils/init.js",
       "to": "src/conductor/signal/balancing/axisEnergyEquilibrator.js",
+      "globals": [
+        "beatCount"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisState.js",
       "globals": [
         "beatCount"
       ]
@@ -20284,7 +20512,14 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "safePreBoot"
       ]
@@ -21005,7 +21240,7 @@
     },
     {
       "from": "src/utils/validator.js",
-      "to": "src/conductor/signal/balancing/couplingHomeostasis.js",
+      "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js",
       "globals": [
         "validator"
       ]
