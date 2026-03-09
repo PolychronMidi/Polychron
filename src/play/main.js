@@ -159,7 +159,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     layerPass.runLayerPass('L2', phraseFamily, {}, { boot, composerCtx });
 
-    // R66 E5: Flush trace after L2 pass to guarantee L2 entries are persisted.
+    // Flush trace after L2 pass to guarantee L2 entries are persisted.
     // Without this, L2 entries remain in _buffer and can be lost if a later
     // step throws before traceDrain.shutdown(). Also forces the trace file
     // to contain L2 entries interleaved with L1 for diagnostic visibility.
@@ -182,7 +182,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   const sEnergy = mainBootstrap.requireUnitInterval('conductorState.compositeIntensity', conductorState.getField('compositeIntensity'));
   structuralFormTracker.recordSection(sectionIndex, sFamily, sKey, sMode, sEnergy);
 
-  // R66 E6: Mid-run diagnostic snapshot at section boundary. Captures system
+  // Mid-run diagnostic snapshot at section boundary. Captures system
   // state evolution that beat-level traces miss (effectiveDim recovery, trust
   // convergence, gain multiplier trajectory). One snapshot per section gives
   // 3-7 data points for the system's evolutionary arc.
@@ -205,7 +205,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       globalGainMultiplier: _homeSnap ? _homeSnap.globalGainMultiplier : 0,
       regime: _dynSnap ? _dynSnap.regime : 'unknown',
       couplingStrength: _dynSnap ? _dynSnap.couplingStrength : 0,
-      phaseIntegrity: _dynSnap ? (_dynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : _dynSnap.phaseChanged || _dynSnap.phaseCouplingAvailablePairs > 0 ? 'warning' : 'critical') : 'unknown'
+      phaseIntegrity: _dynSnap ? (_dynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
     });
   }
 

@@ -78,7 +78,7 @@ phaseSpaceMath = (() => {
     const matrix = {};
     let totalAbs = 0;
     let pairCount = 0;
-    // R59 E2: Configurable variance gate threshold. Default 0.005; callers can
+    // Configurable variance gate threshold. Default 0.005; callers can
     // relax this to allow low-variance pairs through when they are stale.
     const gateThreshold = typeof varianceGateThreshold === 'number' && varianceGateThreshold > 0
       ? varianceGateThreshold

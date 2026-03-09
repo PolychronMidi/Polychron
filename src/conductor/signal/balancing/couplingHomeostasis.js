@@ -45,26 +45,26 @@ couplingHomeostasis = (() => {
   const ALL_DIMS = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
 
   // --- Structural constants ---
-  // R20 E1: Tripled alpha (0.03->0.10) for ~10-beat convergence.
+  //  Tripled alpha (0.03->0.10) for ~10-beat convergence.
   const _ENERGY_EMA_ALPHA = 0.10;
-  // R20 E2: Matched to energy alpha for consistent responsiveness.
+  //  Matched to energy alpha for consistent responsiveness.
   const _REDISTRIBUTION_EMA_ALPHA = 0.10;
-  // R21 E5 / R24 E3: Proportional control constants (replaces incremental
+  // E5 / R24 E3: Proportional control constants (replaces incremental
   // throttle that caused bang-bang oscillation in R23: 67.1% at floor/ceiling).
   const _GAIN_FLOOR = 0.20;                 // never fully disable coupling management
   const _GINI_THRESHOLD = 0.40;             // concentration guard activates above this
-  // R22 E2: Faster peak decay (0.999->0.995, ~200-beat half-life).
+  //  Faster peak decay (0.999->0.995, ~200-beat half-life).
   // At 78 invocations/run: 0.995^78 = 0.676 (32% decay vs 7.5% at 0.999).
   const _PEAK_DECAY = 0.995;
   const _BUDGET_PEAK_RATIO = 0.90;          // budget = 90% of observed peak
-  // R22 E2: Cap peak at 1.5x current EMA to prevent runaway from early volatility.
+  //  Cap peak at 1.5x current EMA to prevent runaway from early volatility.
   const _PEAK_EMA_CAP_RATIO = 1.5;
-  // R22 E3 / R24 E2: Relative redistribution turbulence threshold.
+  // E3 / R24 E2: Relative redistribution turbulence threshold.
   // Turbulence is normalized by total energy for scale-invariant detection.
-  // R23: 0.012 was too high (actual ratio 0.0111, redistributionScore=0 entire
+  //  0.012 was too high (actual ratio 0.0111, redistributionScore=0 entire
   // run despite trust axis +48.7% and Gini=0.354). Lowered to 0.008.
   const _REDIST_RELATIVE_THRESHOLD = 0.008;
-  // R21 E2: Redistribution cooldown -- consecutive non-redistributing beats
+  //  Redistribution cooldown -- consecutive non-redistributing beats
   // before accelerated score decay kicks in.
   const _REDIST_COOLDOWN_BEATS = 20;
   const _REDIST_COOLDOWN_DECAY = 0.95;      // per-beat decay during cooldown
@@ -72,7 +72,7 @@ couplingHomeostasis = (() => {
   // --- State ---
   let _totalEnergyEma = 0;
   let _prevTotalEnergy = 0;
-  // R25: Structural energy floor tracking. The minimum achievable coupling
+  //  Structural energy floor tracking. The minimum achievable coupling
   // given structural correlations between dimensions. Asymmetric adaptation:
   // fast downward (discovering new minimum), very slow upward (floor relaxation).
   // When energy is near the floor, the decorrelation engine is at its
@@ -86,16 +86,16 @@ couplingHomeostasis = (() => {
   let _giniCoefficient = 0;
   let _beatCount = 0;                 // beats with valid coupling data (measure-level)
   const _exceedanceTicks = {};
-  // R20 E2: EMA-smoothed redistribution inputs (replace raw beat-to-beat delta).
+  //  EMA-smoothed redistribution inputs (replace raw beat-to-beat delta).
   let _energyDeltaEma = 0;
   let _pairTurbulenceEma = 0;
-  // R21 E1: Matrix caching - use last valid matrix when profiler returns empty
+  //  Matrix caching - use last valid matrix when profiler returns empty
   /** @type {Record<string, number>} */
   let _cachedMatrix = {};
   let _cachedMatrixAge = 0;           // beats since last real matrix update (stale count)
-  // R21 E2: Redistribution cooldown tracker
+  //  Redistribution cooldown tracker
   let _nonRedistBeats = 0;
-  // R27 E6: Nudgeable-only redistribution tracking. Non-nudgeable pairs
+  //  Nudgeable-only redistribution tracking. Non-nudgeable pairs
   // (entropy-trust, entropy-phase, trust-phase) always contribute opposing
   // "phantom" forces that inflate redistributionScore. Tracking nudgeable-
   // only turbulence reveals whether the 3 nudge axes are genuinely contested.
@@ -103,7 +103,7 @@ couplingHomeostasis = (() => {
   let _nudgeablePairTurbulenceEma = 0;
   let _nudgeableRedistributionScore = 0;
   let _nudgeableNonRedistBeats = 0;
-  // R33 E3: Chronic dampening decay. When floorDampen stays below 0.50
+  //  Chronic dampening decay. When floorDampen stays below 0.50
   // for >20 consecutive beats, the structural floor is locked too close to
   // totalEnergyEma -- gains are permanently suppressed. Gradually nudge the
   // floor downward to break the lock while preserving minimum suppression.
@@ -147,18 +147,18 @@ couplingHomeostasis = (() => {
   let _nonNudgeableTailPair = '';
   /** @type {string[]} */
   let _recoveryDominantAxes = [];
-  // R21 E6: Invoke tracking for beat processing diagnostics
+  //  Invoke tracking for beat processing diagnostics
   let _invokeCount = 0;               // every refresh() call regardless of guards
   let _emptyMatrixBeats = 0;          // beats where profiler returned empty matrix
   let _multiplierMin = 1.0;
   let _multiplierMax = 0.0;
-  // R22 E1: Per-beat tick counter (tracks tick() calls from processBeat)
+  //  Per-beat tick counter (tracks tick() calls from processBeat)
   let _tickCount = 0;
-  // R22 E1: Flag to skip redundant multiplier update when refresh() already ran
+  //  Flag to skip redundant multiplier update when refresh() already ran
   let _refreshedThisTick = false;
-  // R22 E1: Cached throttle state from refresh() for use in tick()
+  //  Cached throttle state from refresh() for use in tick()
   let _overBudget = false;
-  // R22 E6: Multiplier time-series for throttle behavior analysis
+  //  Multiplier time-series for throttle behavior analysis
   /** @type {{ beat: number, m: number, e: number, r: number }[]} */
   const _multiplierTimeSeries = [];
   const _MAX_TIME_SERIES = 2000;
@@ -173,17 +173,17 @@ couplingHomeostasis = (() => {
    * Runs AFTER pipelineCouplingManager.refresh() due to registration order.
    */
   function refresh() {
-    // R21 E6: Track every invocation for diagnostics
+    //  Track every invocation for diagnostics
     _invokeCount++;
 
-    // R20 E1: Direct call (no safePreBoot). systemDynamicsProfiler boots before
+    //  Direct call (no safePreBoot). systemDynamicsProfiler boots before
     // this module in signal/index.js, so the global is always available.
     const snap = systemDynamicsProfiler.getSnapshot();
     if (!snap || !snap.couplingMatrix) {
       throw new Error('couplingHomeostasis: systemDynamicsProfiler snapshot unavailable');
     }
 
-    // R21 E1: Matrix caching -- check if profiler has real data or empty {}
+    //  Matrix caching -- check if profiler has real data or empty {}
     const rawMatrix = snap.couplingMatrix;
     let matrix = rawMatrix;
     let hasRealData = false;
@@ -217,7 +217,7 @@ couplingHomeostasis = (() => {
     _pairAbsR = {};
     let totalEnergy = 0;
     let pairCount = 0;
-    // R21 E1: Stale decay factor -- reduces cached values to avoid false readings
+    //  Stale decay factor -- reduces cached values to avoid false readings
     const staleFactor = hasRealData ? 1.0 : m.pow(0.95, _cachedMatrixAge);
 
     for (let a = 0; a < ALL_DIMS.length; a++) {
@@ -287,7 +287,7 @@ couplingHomeostasis = (() => {
     _nonNudgeableTailPressure = strongestNonNudgeableTail;
     _nonNudgeableTailPair = strongestNonNudgeablePair;
 
-    // R63 E4: Non-nudgeable baseline auto-ratchet. When the dominant
+    //  Non-nudgeable baseline auto-ratchet. When the dominant
     // non-nudgeable pair (e.g. entropy-trust) holds high tail pressure
     // (>0.50) for sustained periods, gradually raise its baseline toward
     // its actual structural coupling level. This stops the budget from
@@ -344,7 +344,7 @@ couplingHomeostasis = (() => {
       _totalEnergyEma = _totalEnergyEma * (1 - _ENERGY_EMA_ALPHA) + totalEnergy * _ENERGY_EMA_ALPHA;
     }
 
-    // R25: Update structural floor (asymmetric: fast down, slow up).
+    //  Update structural floor (asymmetric: fast down, slow up).
     // When energy reaches a new low, the floor adapts quickly (alpha=0.20).
     // When energy rises above floor, the floor drifts up very slowly
     // (alpha=0.002, ~500-beat horizon) to account for section changes.
@@ -356,13 +356,13 @@ couplingHomeostasis = (() => {
 
     // --- 2. Self-derive energy budget from observed peak ---
     _peakEnergyEma = m.max(_totalEnergyEma, _peakEnergyEma * _PEAK_DECAY);
-    // R22 E2: Cap peak at 1.5x current EMA to prevent runaway from early volatility.
+    //  Cap peak at 1.5x current EMA to prevent runaway from early volatility.
     // In R22, peakEnergyEma=6.015 while totalEnergyEma=3.784 (59% gap). This cap
     // ensures budget tracks actual energy within 50% even during section transitions.
     if (_totalEnergyEma > 0.1) {
       _peakEnergyEma = m.min(_peakEnergyEma, _totalEnergyEma * _PEAK_EMA_CAP_RATIO);
     }
-    // R25 E2: Accelerated peak decay when budget diverges from energy by >25%.
+    //  Accelerated peak decay when budget diverges from energy by >25%.
     // Fixed 0.995 decay needed ~140 beats for a 47% gap. With only 42 measure
     // beats in R24, budget stayed at 4.349 vs energy 3.280 (32.6% gap), making
     // proportional control passive. Combined 0.975/beat closes gap in ~35 beats.
@@ -372,17 +372,17 @@ couplingHomeostasis = (() => {
     if (_beatCount >= 8 && _peakEnergyEma > 0.1) {
       _energyBudget = _peakEnergyEma * _BUDGET_PEAK_RATIO;
     }
-    // R60 E1: Coupling energy budget scaling for multi-section runs.
+    //  Coupling energy budget scaling for multi-section runs.
     // Long runs accumulate more coupling energy than the static budget
     // can accommodate (budgetConstraintPressure=1.0, multiplier=0.256 in
-    // R59). Scale the budget proportionally to beat count beyond single-
+    // ). Scale the budget proportionally to beat count beyond single-
     // section baseline (~150 beats). Self-correcting: scales dynamically
     // with actual runtime length, max 1.5x.
     if (_beatCount > 150) {
       const _budgetScale = 1 + clamp((_beatCount - 150) / 300, 0, 0.50);
       _energyBudget *= _budgetScale;
     }
-    // R66 E2: Profile-aware coupling energy budget scaling. Atmospheric's
+    //  Profile-aware coupling energy budget scaling. Atmospheric's
     // tight signal ranges (density variance 0.0006) produce structural
     // correlations that are profile character, not pathology. Without extra
     // headroom, globalGainMultiplier crashes to floor (0.25 in R66) and
@@ -390,7 +390,12 @@ couplingHomeostasis = (() => {
     // couplingBudgetScale (atmospheric 1.5x) to restore operating room.
     const _profileBudgetScale = conductorConfig.getActiveProfile().couplingBudgetScale || 1.0;
     _energyBudget *= _profileBudgetScale;
-    // R67 E3: Exploring-regime budget relaxation. When the system spends
+    // R68 E3 extension: boost budget during exploring regime to ease decorrelation
+    const _dynSnap = systemDynamicsProfiler.getSnapshot();
+    if (_dynSnap && _dynSnap.regime === 'exploring') {
+      _energyBudget *= 1.15; // 15% extra headroom when exploration is active
+    }
+    //  Exploring-regime budget relaxation. When the system spends
     // sustained time in exploring, coupling pressure is structural (many
     // unsettled pairs), not pathological. A 1.15x boost gives the homeostasis
     // loop extra headroom so density-tension exceedances don't accumulate.
@@ -403,7 +408,7 @@ couplingHomeostasis = (() => {
     _energyDeltaEma = _energyDeltaEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + energyDelta * _REDISTRIBUTION_EMA_ALPHA;
 
     let pairTurbulence = 0;
-    // R27 E6: Separate turbulence for nudgeable-only pairs
+    //  Separate turbulence for nudgeable-only pairs
     let nudgeablePairTurbulence = 0;
     let nudgeablePairCount = 0;
     const prevKeys = Object.keys(_prevPairAbsR);
@@ -426,7 +431,7 @@ couplingHomeostasis = (() => {
     _pairTurbulenceEma = _pairTurbulenceEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + pairTurbulence * _REDISTRIBUTION_EMA_ALPHA;
     _nudgeablePairTurbulenceEma = _nudgeablePairTurbulenceEma * (1 - _REDISTRIBUTION_EMA_ALPHA) + nudgeablePairTurbulence * _REDISTRIBUTION_EMA_ALPHA;
 
-    // R22 E3: Relative turbulence threshold (replaces absolute 0.02).
+    //  Relative turbulence threshold (replaces absolute 0.02).
     // Turbulence normalized by total energy is scale-invariant. In R22,
     // pairTurbulenceEma=0.035 and totalEnergyEma=3.784 -> relative=0.0092.
     // At absolute threshold 0.02, this was always triggered. At relative
@@ -437,7 +442,7 @@ couplingHomeostasis = (() => {
     const isPrimaryRedistributing = _prevTotalEnergy > 0.1 &&
       m.abs(_energyDeltaEma) / _totalEnergyEma < 0.05 &&
       relativeTurbulence > _REDIST_RELATIVE_THRESHOLD;
-    // R24 E2: Gini-based secondary trigger. When coupling energy is highly
+    //  Gini-based secondary trigger. When coupling energy is highly
     // concentrated (Gini > 0.35 from previous refresh), treat as redistribution
     // even without turbulence signal. In R23, Gini=0.354 + trust axis +48.7%
     // was undetected because turbulence ratio (0.0111) missed the 0.012 threshold.
@@ -446,7 +451,7 @@ couplingHomeostasis = (() => {
     const redistTarget = isRedistributing ? 1.0 : 0.0;
     _redistributionScore = _redistributionScore * (1 - _REDISTRIBUTION_EMA_ALPHA) + redistTarget * _REDISTRIBUTION_EMA_ALPHA;
 
-    // R27 E6: Nudgeable-only redistribution detection. Same formula but using
+    //  Nudgeable-only redistribution detection. Same formula but using
     // nudgeable pair turbulence. Non-nudgeable pairs (entropy-trust, etc.)
     // contribute structural noise that inflates the total score.
     const nudgeableRelativeTurbulence = _totalEnergyEma > 0.1
@@ -459,7 +464,7 @@ couplingHomeostasis = (() => {
     const nudgeableRedistTarget = isNudgeableRedist ? 1.0 : 0.0;
     _nudgeableRedistributionScore = _nudgeableRedistributionScore * (1 - _REDISTRIBUTION_EMA_ALPHA) + nudgeableRedistTarget * _REDISTRIBUTION_EMA_ALPHA;
 
-    // R21 E2: Accelerated redistribution cooldown. When not redistributing for
+    //  Accelerated redistribution cooldown. When not redistributing for
     // _REDIST_COOLDOWN_BEATS consecutive beats, apply faster decay to break
     // the score out of the 0.959 permanent-lock observed in R21.
     if (!isRedistributing) {
@@ -470,7 +475,7 @@ couplingHomeostasis = (() => {
     } else {
       _nonRedistBeats = 0;
     }
-    // R27 E6: Nudgeable redistribution cooldown (mirrors total)
+    //  Nudgeable redistribution cooldown (mirrors total)
     if (!isNudgeableRedist) {
       _nudgeableNonRedistBeats++;
       if (_nudgeableNonRedistBeats > _REDIST_COOLDOWN_BEATS) {
@@ -504,7 +509,7 @@ couplingHomeostasis = (() => {
       }
     }
 
-    // R22 E1: Mark that refresh ran on this tick so tick() skips redundant update
+    //  Mark that refresh ran on this tick so tick() skips redundant update
     _refreshedThisTick = true;
 
     // Run tick() to apply multiplier changes (will use freshly computed state)
@@ -598,7 +603,7 @@ couplingHomeostasis = (() => {
       ? _dominantTailPair.split('-')
       : []);
     _tailRecoveryCap = clamp(0.96 - _tailRecoveryHandshake * 0.22 - m.max(0, _tailHotspotCount - 2) * 0.01 - _densityFlickerClampPressure * 0.09 - nonNudgeableTailPressure * 0.05, _GAIN_FLOOR, 0.94);
-    // R58 E3: Floor-contact recovery duration compression. Raise the cap floor
+    //  Floor-contact recovery duration compression. Raise the cap floor
     // when stickyTailPressure is high, giving the multiplier room to recover
     // instead of being pinned by a low cap. Self-correcting: cap floor scales
     // with inverse tailPressure so it relaxes as pressure drops.
@@ -634,7 +639,7 @@ couplingHomeostasis = (() => {
         targetMultiplier = m.min(targetMultiplier, 0.90 - _densityFlickerClampPressure * 0.18);
       }
       // EMA smooth toward target: alpha=0.05 gives ~20-beat convergence
-      // R58 E3: Accelerated convergence during floor recovery. When stuck in
+      //  Accelerated convergence during floor recovery. When stuck in
       // floor contact (floorRecoveryTicksRemaining > 0), use alpha=0.10 for
       // ~10-beat convergence to compress avgRecoveryDuration.
       const _emaAlpha = _floorRecoveryTicksRemaining > 0 ? 0.10 : 0.05;
@@ -656,7 +661,7 @@ couplingHomeostasis = (() => {
       _floorRecoveryContactTicks = 0;
     }
     if (_floorRecoveryTicksRemaining > 0) {
-      // R58 E3: Raise recovery floor and accelerate blend. Wider floor (0.52->0.58)
+      //  Raise recovery floor and accelerate blend. Wider floor (0.52->0.58)
       // and faster blend (0.12->0.18) compress avgRecoveryDuration.
       const recoveryFloor = clamp(0.35 + tailRecoveryPressure * 0.16 + m.max(0, _tailHotspotCount - 1) * 0.01, _GAIN_FLOOR, 0.58);
       _globalGainMultiplier = _globalGainMultiplier * 0.82 + m.max(_globalGainMultiplier, recoveryFloor) * 0.18;
@@ -670,7 +675,7 @@ couplingHomeostasis = (() => {
     _multiplierMin = m.min(_multiplierMin, _globalGainMultiplier);
     _multiplierMax = m.max(_multiplierMax, _globalGainMultiplier);
 
-    // R40 E3: Exceedance Multiplier Brake
+    //  Exceedance Multiplier Brake
     let applyBrake = false;
     if (dynamicsSnapshot && dynamicsSnapshot.couplingMatrix) {
       for (const pair in dynamicsSnapshot.couplingMatrix) {
@@ -678,7 +683,7 @@ couplingHomeostasis = (() => {
         const rolling = V.optionalFinite(val);
         if (rolling !== undefined && m.abs(rolling) > 0.85) {
           _exceedanceTicks[pair] = (_exceedanceTicks[pair] || 0) + 1;
-          // R41 E6: Total Exceedance Brake Scaling
+          //  Total Exceedance Brake Scaling
           // Scale structural brake bounds directly against current runtime
           // threshold vs a hard-integer so it grows for ambient profiles.
           const limitTicks = m.max(5, m.floor(_tickCount * 0.015));
@@ -699,7 +704,7 @@ couplingHomeostasis = (() => {
     // Apply multiplier to pipelineCouplingManager
     pipelineCouplingManager.setGlobalGainMultiplier(_globalGainMultiplier);
 
-    // R22 E6: Record time-series entry for throttle behavior analysis
+    //  Record time-series entry for throttle behavior analysis
     if (_multiplierTimeSeries.length < _MAX_TIME_SERIES) {
       _multiplierTimeSeries.push({
         beat: _tickCount,
@@ -724,9 +729,9 @@ couplingHomeostasis = (() => {
   function getFloorDampen() {
     if (_totalEnergyFloor < 0.1 || _totalEnergyEma < 0.1) return 1.0;
     const proximity = _totalEnergyEma / _totalEnergyFloor;
-    // R26 E1: window=0.35, min=0.20
+    //  window=0.35, min=0.20
     const rawDampen = clamp((proximity - 1.0) / 0.35, 0.20, 1.0);
-    // R33 E3: Track chronic dampening and relax floor when locked
+    //  Track chronic dampening and relax floor when locked
     if (rawDampen < 0.50) {
       _chronicDampenBeats++;
       if (_chronicDampenBeats > _CHRONIC_DAMPEN_THRESHOLD) {

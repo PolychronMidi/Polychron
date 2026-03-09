@@ -26,7 +26,7 @@ systemDynamicsProfiler = (() => {
   const MIN_WINDOW_DEFAULT = 6; // minimum beats before meaningful analysis
   const PHASE_COUPLING_PAIRS = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
   const PHASE_STALE_PAIR_THRESHOLD = 12;
-  // R58 E4: Phase freshness escalation threshold. When phase goes stale for
+  //  Phase freshness escalation threshold. When phase goes stale for
   // >4 beats, force beat-escalation analysis to keep phase coupling current.
   const _PHASE_FRESHNESS_ESCALATION = 4;
 
@@ -41,7 +41,7 @@ systemDynamicsProfiler = (() => {
   let _analysisTick = 0;
   let _entropySampleErrors = 0;
   let _lastEntropyError = '';
-  // R13 Evo 6: Velocity EMA
+  //  Velocity EMA
   let _velocityEma = null;
   let _lastPhaseSample = null;
   let _lastPhaseDelta = 0;
@@ -85,30 +85,30 @@ systemDynamicsProfiler = (() => {
       const profileName = conductorConfig.getActiveProfileName();
       if (profileName === 'explosive') {
         regimeClassifier.setOscillatingThreshold(0.65);
-        // R30: Removed manual coherentThresholdScale (was 0.84). The regime
+        //  Removed manual coherentThresholdScale (was 0.84). The regime
         // self-balancing in regimeClassifier now controls this automatically
         // for ALL profiles. In R29, starting at 0.84 with EMA=0.50 caused
         // immediate downward drift to floor (0.80) and 0% coherent.
-        // R21 E3: Faster alpha floor for explosive -- shorter sections need
+        //  Faster alpha floor for explosive -- shorter sections need
         // ~25-beat convergence to prevent 74.2% coherent lock.
         regimeClassifier.setCoherentShareAlphaMin(0.04);
-        // R22 E4 / R24 E1: Evolving min dwell for explosive -- R22's 12-beat
+        // E4 / R24 E1: Evolving min dwell for explosive -- R22's 12-beat
         // dwell disrupted bistable coherent feedback loop (0% coherent in R23).
         // 4-beat dwell still prevents 7-beat snap but allows coherent entry
         // within the coupling feedback window.
         regimeClassifier.setEvolvingMinDwell(5);
-        // R8 Evo 4: widen flicker target range for explosive depthScale 1.8
+        //  widen flicker target range for explosive depthScale 1.8
         conductorDampening.setFlickerTargetRange(0.15 * 1.8);
-        // R9 Evo 3: give density-flicker pair 30% extra gain ceiling for decorrelation
+        //  give density-flicker pair 30% extra gain ceiling for decorrelation
         pipelineCouplingManager.setDensityFlickerGainScale(1.3);
       } else if (profileName === 'atmospheric') {
-        // R29: Removed manual coherentThresholdScale (was 0.90). The regime
+        //  Removed manual coherentThresholdScale (was 0.90). The regime
         // self-balancing in regimeClassifier now auto-adjusts the scale to
         // target 15-35% coherent share, replacing manual per-profile tuning.
-        // R28 E4: Alpha floor 0.03 retained -- faster EMA convergence helps
+        //  Alpha floor 0.03 retained -- faster EMA convergence helps
         // the self-balancing loop track coherent share more accurately.
         regimeClassifier.setCoherentShareAlphaMin(0.03);
-        // R22 E4 / R24 E1: Atmospheric evolving dwell -- reduced from 8 to 6
+        // E4 / R24 E1: Atmospheric evolving dwell -- reduced from 8 to 6
         // to match regime bistability fix. Longer sections need slightly more
         // dwell than explosive but still within the coherent feedback window.
         regimeClassifier.setEvolvingMinDwell(7);
@@ -275,7 +275,7 @@ systemDynamicsProfiler = (() => {
     }
     avgVelocity /= m.max(1, velocities.length);
 
-    // R13 Evo 6: Profiler Tension Velocity Smoothing
+    //  Profiler Tension Velocity Smoothing
     // Apply EMA to lower mid-curve velocity jitter, giving the arc more definition
     if (_velocityEma === null) _velocityEma = avgVelocity;
     _velocityEma = _velocityEma * 0.85 + avgVelocity * 0.15;
@@ -294,14 +294,14 @@ systemDynamicsProfiler = (() => {
 
     // Cross-coupling & effective dimensionality (from RAW trajectory)
     const { mean, variance } = phaseSpaceMath.stats(rawTrajectory, N_DIMS);
-    // R59 E2: Adaptive variance gate relaxation. When phase pairs are stale
+    //  Adaptive variance gate relaxation. When phase pairs are stale
     // for many beats, exponentially relax the variance gate threshold so
     // low-variance pairs can produce finite coupling values. Self-correcting:
     // threshold tightens back when phase changes (staleBeats resets to 0).
     const _varianceGateRelax = _phaseStaleBeats > 10
       ? m.max(0.50, m.pow(0.85, (_phaseStaleBeats - 10) / 15))
       : 1.0;
-    // R66 E1: Profile-aware phase variance gate scaling. Atmospheric's tight
+    //  Profile-aware phase variance gate scaling. Atmospheric's tight
     // signal ranges (density variance 0.0006) cause all phase pairs to be
     // variance-gated. Apply profile phaseVarianceGateScale to the base
     // threshold so low-variance profiles admit phase pairs that would be
@@ -397,7 +397,7 @@ systemDynamicsProfiler = (() => {
     const warmupActive = _lastSnapshot.warmupTicksRemaining > 0;
     const phaseUnavailable = _lastSnapshot.phaseCouplingAvailablePairs === 0;
     const phaseStale = _lastSnapshot.phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
-    // R58 E4: Phase freshness escalation. Force re-analysis when phase goes
+    //  Phase freshness escalation. Force re-analysis when phase goes
     // stale beyond 8 beats to keep phase coupling data flowing. This is
     // more aggressive than PHASE_STALE_PAIR_THRESHOLD (12) and catches
     // staleness earlier before it becomes entrenched.

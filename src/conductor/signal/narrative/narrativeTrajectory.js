@@ -71,7 +71,7 @@ narrativeTrajectory = (() => {
       steerBias = 1.0;
     }
 
-    // R16 Evo 3: Tension tail sustain floor.
+    //  Tension tail sustain floor.
     // Prevent the tension arc from collapsing in the final quarter of a section.
     // When section progress exceeds 75%, ensure a minimum tension bias of 1.02.
     const secProgress = timeStream.normalizedProgress('section');

@@ -31,12 +31,12 @@ adaptiveTrustScores = (() => {
   // threshold tweaking.
   const _VELOCITY_EMA_ALPHA = 0.02;         // ~50-beat horizon
   const _STAGNATION_THRESHOLD = 0.001;      // velocity below this is "stagnant"
-  const _DISENGAGE_THRESHOLD = 0.003;       // R7 Evo 10: 3x threshold for hysteresis disengage
-  const _DISENGAGE_BEATS = 50;              // R7 Evo 10: beats above disengage threshold before stopping
+  const _DISENGAGE_THRESHOLD = 0.003;       // 3x threshold for hysteresis disengage
+  const _DISENGAGE_BEATS = 50;              // beats above disengage threshold before stopping
   const _STAGNATION_BEATS_TRIGGER = 100;    // beats of stagnation before nourishment
   const _BASE_NOURISHMENT_STRENGTH = 0.15;  // max synthetic payoff scaling
-  const _MIN_NOURISHMENT_STRENGTH = 0.05;   // R7 Evo 10: floor after decay
-  const _NOURISHMENT_DECAY = 0.90;          // R7 Evo 10: 10% decay per application
+  const _MIN_NOURISHMENT_STRENGTH = 0.05;   // floor after decay
+  const _NOURISHMENT_DECAY = 0.90;          // 10% decay per application
   /** @type {Map<string, { velocityEma: number, stagnantBeats: number, lastScore: number, disengageBeats: number, nourishmentCount: number, effectiveStrength: number }>} */
   const _velocityState = new Map();
 
@@ -51,11 +51,11 @@ adaptiveTrustScores = (() => {
   // flooding the journal with routine micro-adjustments.
   const JOURNAL_PAYOFF_THRESHOLD = 0.15;
 
-  // R9 Evo 4: Warm-start overrides for systems that need early trust to
+  // Warm-start overrides for systems that need early trust to
   // accumulate signal (e.g. cadenceAlignment needs phrase boundaries).
   const WARM_START = {
     cadenceAlignment: 0.25,
-    restSynchronizer: 0.25  // R16 Evo 4: break 3-generation stagnation at ~0.199
+    restSynchronizer: 0.25  // break 3-generation stagnation at ~0.199
   };
 
   /** @param {string} systemName */
@@ -82,7 +82,7 @@ adaptiveTrustScores = (() => {
 
     let newWeight = BASE_EMA_NEW;
     let decayWeight = BASE_EMA_DECAY;
-    // R40 E6: Trust Score Exponential Penalty
+    // Trust Score Exponential Penalty
     if (p < 0) {
       const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
       if (dynamics && dynamics.couplingMatrix) {
@@ -102,12 +102,12 @@ adaptiveTrustScores = (() => {
         }
       }
     }
-    // R41 E5: Trust Exceedance Limits (Starvation guard)
+    // Trust Exceedance Limits (Starvation guard)
     // Clamp bottom to 0.10 instead of -1 so aggressive exponential drops don't permanently decouple modules.
     state.score = clamp(state.score * decayWeight + p * newWeight, 0.10, TRUST_CEILING);
     // trust ecosystem looks like, eliminating per-module floor additions.
-    // R18 E1: Coefficient raised 0.30->0.50.
-    // R19 E5: Self-deriving coefficient from trust score standard deviation.
+    // Coefficient raised 0.30->0.50.
+    //  Self-deriving coefficient from trust score standard deviation.
     // Widely dispersed scores (high stddev) get higher coefficient for stronger floor;
     // converged scores (low stddev) get lower coefficient for more differentiation.
     // coeff = clamp(0.30 + stddev * 1.8, 0.30, 0.60)
@@ -173,9 +173,9 @@ adaptiveTrustScores = (() => {
   function getBaseWeight(systemName) {
     const state = ensure(systemName);
     let effectiveScore = state.score;
-    // R13 Evo 1: Cadence Alignment Trust Minimum
+    // Cadence Alignment Trust Minimum
     if (systemName === trustSystems.names.CADENCE_ALIGNMENT && effectiveScore < 0.20) effectiveScore = 0.20;
-    // R13 Evo 5: Stutter Weight Dampening
+    // Stutter Weight Dampening
     if (systemName === trustSystems.names.STUTTER_CONTAGION && effectiveScore > 0.55) effectiveScore = 0.55;
 
     const maxWeight = getAdaptiveDominanceCaps(systemName, effectiveScore).weightCap;
@@ -211,7 +211,7 @@ adaptiveTrustScores = (() => {
     lastTensionForExploration = resolvedTension;
 
     let applyExploration = false;
-    // R14 Evo 4: Tension auto-nourishment triggers explore when tension shifts significantly
+    // Tension auto-nourishment triggers explore when tension shifts significantly
     if (accumulatedTensionDelta >= 0.15 || decayCycleCount % 16 === 0) {
       applyExploration = true;
       accumulatedTensionDelta = 0;
@@ -227,10 +227,10 @@ adaptiveTrustScores = (() => {
       effectiveNudge = EXPLORATION_NUDGE * 2;
     }
 
-    // R17 structural fix: Compute universal trust floor from population mean
+    // Structural fix: Compute universal trust floor from population mean
     // before applying per-system decay. Replaces per-module hard-coded floors.
-    // R18 E1: Coefficient raised 0.30->0.50 (matches registerOutcome change).
-    // R19 E5: Self-deriving coefficient from trust score standard deviation.
+    // Coefficient raised 0.30->0.50 (matches registerOutcome change).
+    // Self-deriving coefficient from trust score standard deviation.
     let _universalDecayFloor = 0.05;
     if (scoreBySystem.size > 2) {
       const _dScores = [];
@@ -250,7 +250,7 @@ adaptiveTrustScores = (() => {
         state.score = DECAY_FLOOR;
       }
 
-      // R17 structural fix: Universal population-derived trust floor (decay phase).
+      // Structural fix: Universal population-derived trust floor (decay phase).
       // Computed once per decayAll call (above), applied per system.
       if (state.score < _universalDecayFloor) {
         state.score = _universalDecayFloor;
@@ -284,7 +284,7 @@ adaptiveTrustScores = (() => {
       vs.velocityEma = vs.velocityEma * (1 - _VELOCITY_EMA_ALPHA) + scoreDelta * _VELOCITY_EMA_ALPHA;
       vs.lastScore = state.score;
 
-      // R7 Evo 10: Hysteresis - engage at threshold, disengage at 3x threshold
+      // Hysteresis - engage at threshold, disengage at 3x threshold
       if (vs.velocityEma < _STAGNATION_THRESHOLD) {
         vs.stagnantBeats++;
         vs.disengageBeats = 0;
@@ -305,7 +305,7 @@ adaptiveTrustScores = (() => {
           const syntheticPayoff = clamp(gap * vs.effectiveStrength, 0, 0.10);
           state.score = clamp(state.score + syntheticPayoff, -1, TRUST_CEILING);
           vs.stagnantBeats = 0;
-          // R7 Evo 10: Decay nourishment strength per application to prevent trust inflation
+          // Decay nourishment strength per application to prevent trust inflation
           vs.nourishmentCount++;
           vs.effectiveStrength = m.max(_MIN_NOURISHMENT_STRENGTH, vs.effectiveStrength * _NOURISHMENT_DECAY);
           explainabilityBus.emit('trust-nourishment', 'both', {

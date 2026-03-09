@@ -85,17 +85,17 @@ conductorProfileAtmospheric = () => ({
     rhythmicDrive: 0.4
   },
   journeyBoldness: 0.6,
-  // R66 E1: Profile-aware phase variance gate scaling. Atmospheric's tight
+  // Profile-aware phase variance gate scaling. Atmospheric's tight
   // signal ranges cause 100% variance-gating on all phase pairs (R66: 184
   // variance-gated observations, 0% coupling coverage, phase axis energy 0).
   // Scale 0.4 lowers the 0.005 base threshold to 0.002, admitting phase pairs
   // that explosive's wider variance would correctly ignore.
   phaseVarianceGateScale: 0.15,
-  // R66 E2: Profile-aware coupling energy budget scaling. Atmospheric's
+  // Profile-aware coupling energy budget scaling. Atmospheric's
   // structural correlations need 1.5x energy budget headroom to prevent
   // globalGainMultiplier from crashing to floor.
   couplingBudgetScale: 1.5,
-  // R66 E3: Profile-aware exploring dimension gate relief. Lowers the
+  // Profile-aware exploring dimension gate relief. Lowers the
   // effectiveDim threshold for exploring classification by 0.3, so the
   // 2.2/2.5 base becomes 1.9/2.2 -- admitting exploring on beats where
   // dimensional collapse is profile-structural (not pathological).
