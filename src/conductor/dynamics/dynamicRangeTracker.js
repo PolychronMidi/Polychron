@@ -29,9 +29,7 @@ dynamicRangeTracker = (() => {
 
   /** @private */
   function _getVelocityProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 3) {
       return { min: 64, max: 64, mean: 64, spread: 0, compressed: false };
     }

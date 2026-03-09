@@ -1,10 +1,12 @@
 {
   "meta": {
-    "generated": "2026-03-09T08:15:09.629Z",
+    "generated": "2026-03-09T15:57:39.772Z",
     "totalFiles": 426,
-    "globalsDeclared": 707,
-    "globalsMapped": 707,
-    "orphaned": [],
+    "globalsDeclared": 706,
+    "globalsMapped": 705,
+    "orphaned": [
+      "stutter"
+    ],
     "reassigned": [
       {
         "name": "primaryInstrument",
@@ -54,17 +56,17 @@
       {
         "name": "stutterFade",
         "from": "src/fx/stutter/stutterFade.js",
-        "to": "src/fx/stutter/stutterManager.js"
+        "to": "src/fx/stutter/StutterManager.js"
       },
       {
         "name": "stutterPan",
         "from": "src/fx/stutter/stutterPan.js",
-        "to": "src/fx/stutter/stutterManager.js"
+        "to": "src/fx/stutter/StutterManager.js"
       },
       {
         "name": "stutterFX",
         "from": "src/fx/stutter/stutterFX.js",
-        "to": "src/fx/stutter/stutterManager.js"
+        "to": "src/fx/stutter/StutterManager.js"
       },
       {
         "name": "firstLoop",
@@ -2626,9 +2628,8 @@
     },
     {
       "order": 333,
-      "file": "src/fx/stutter/stutterConfigStore.js",
+      "file": "src/fx/stutter/stutterConfig.js",
       "provides": [
-        "stutterConfigStore",
         "stutterConfig"
       ]
     },
@@ -2697,9 +2698,8 @@
     },
     {
       "order": 343,
-      "file": "src/fx/stutter/stutterManager.js",
+      "file": "src/fx/stutter/StutterManager.js",
       "provides": [
-        "stutter",
         "stutterFade",
         "stutterPan",
         "stutterFX"

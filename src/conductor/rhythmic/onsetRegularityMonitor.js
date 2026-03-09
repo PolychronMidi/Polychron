@@ -14,9 +14,7 @@ onsetRegularityMonitor = (() => {
    * @returns {{ avgIOI: number, ioiCV: number, regularity: number, uniform: boolean, chaotic: boolean }}
    */
   function getRegularityProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 4) {
       return { avgIOI: 0, ioiCV: 0, regularity: 0.5, uniform: false, chaotic: false };
     }

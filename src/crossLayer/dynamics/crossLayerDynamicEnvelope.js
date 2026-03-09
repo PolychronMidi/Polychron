@@ -13,7 +13,7 @@ crossLayerDynamicEnvelope = (() => {
   const SMOOTHING = 0.2;
 
   /** @type {Record<string, number>} per-layer smoothed velocity scale */
-  const smoothedScale = { L1: 1.0, L2: 1.0 };
+  let smoothedScale = crossLayerHelpers.createLayerPair(1.0);
 
   /**
    * Tick the envelope generator each beat.
@@ -111,8 +111,7 @@ crossLayerDynamicEnvelope = (() => {
     arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
     phraseProgress = 0;
     sectionProgress = 0;
-    smoothedScale.L1 = 1.0;
-    smoothedScale.L2 = 1.0;
+    smoothedScale = crossLayerHelpers.createLayerPair(1.0);
   }
 
   return { tick, getVelocityScale, setArcType, getArcType, autoSelectArcType, reset };

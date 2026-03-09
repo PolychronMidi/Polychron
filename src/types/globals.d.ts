@@ -629,7 +629,9 @@ interface CrossLayerEmissionGatewayAPI {
 }
 
 interface CrossLayerHelpersAPI {
+  createLayerPair<T>(l1Value: T, l2Value?: T): { L1: T; L2: T };
   getOtherLayer(layer: string): string;
+  scaleVelocity(velocity: number, factor: number): number;
   msToSyncTick(timeMs: number): number;
   tickToAbsMs(tick: number, fallbackAbsMs?: number): number;
   getOctaveBounds(options?: { lowOffset?: number; clipToMidi?: boolean; anchorMidi?: number; radius?: number }): { lo: number; hi: number };
@@ -1742,7 +1744,6 @@ declare var applyMotifToNotes: any;
 declare var motifTransformAdvisor: any;
 
 // -- fx --
-declare var stutterConfig: any;
 declare var lBal: number;
 declare var rBal: number;
 declare var cBal: number;
@@ -1757,7 +1758,7 @@ declare var stutterNotes: any;
 declare var pickStutterChannels: any;
 declare var stutterRegistry: any;
 declare var stutterMetrics: any;
-declare var stutterConfigStore: any;
+declare var stutterConfig: any;
 declare var stutterPlanScheduler: any;
 declare var stutter: StutterManagerAPI;
 declare var setBalanceAndFX: any;

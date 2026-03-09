@@ -83,7 +83,7 @@ grooveTransfer = (() => {
     const tickN = V.requireFinite(tick, 'applyOffset.tick');
     V.assertNonEmptyString(unit, 'applyOffset.unit');
 
-    const otherLayer = layer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(layer);
     const other = ensure(otherLayer);
     if (other.length === 0) return tickN;
 

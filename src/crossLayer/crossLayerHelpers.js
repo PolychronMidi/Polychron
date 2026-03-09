@@ -3,8 +3,21 @@
 crossLayerHelpers = (() => {
   const V = validator.create('crossLayerHelpers');
 
+  function createLayerPair(l1Value, l2Value) {
+    return {
+      L1: l1Value,
+      L2: l2Value === undefined ? l1Value : l2Value
+    };
+  }
+
   function getOtherLayer(layer) {
     return layer === 'L1' ? 'L2' : 'L1';
+  }
+
+  function scaleVelocity(velocity, factor) {
+    V.requireFinite(velocity, 'velocity');
+    V.requireFinite(factor, 'factor');
+    return m.round(clamp(velocity * factor, 1, MIDI_MAX_VALUE));
   }
 
   function msToSyncTick(timeMs) {
@@ -41,5 +54,5 @@ crossLayerHelpers = (() => {
     return { lo, hi };
   }
 
-  return { getOtherLayer, msToSyncTick, tickToAbsMs, getOctaveBounds };
+  return { createLayerPair, getOtherLayer, scaleVelocity, msToSyncTick, tickToAbsMs, getOctaveBounds };
 })();

@@ -21,9 +21,9 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
   V.requireType(conductorConfig.getEmissionScaling, 'function', 'conductorConfig.getEmissionScaling');
 
   // 1. Channel mod from stutter beat-context
-  const chMod = (stutter && stutter.beatContext &&
-    stutter.beatContext.mod && stutter.beatContext.mod[ch])
-    ? stutter.beatContext.mod[ch]
+  const chMod = (stutter && StutterManager.beatContext &&
+    StutterManager.beatContext.mod && StutterManager.beatContext.mod[ch])
+    ? StutterManager.beatContext.mod[ch]
     : null;
 
   // 2. Cross-modulation rules from stutterConfig

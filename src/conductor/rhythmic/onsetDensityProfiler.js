@@ -25,9 +25,7 @@ onsetDensityProfiler = (() => {
 
   /** @private */
   function _getDensity(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 2) return { nps: 0, trend: 'sparse' };
 
     const first = notes[0];

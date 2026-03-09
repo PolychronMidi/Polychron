@@ -10,9 +10,9 @@ restSynchronizer = (() => {
   const COMPLEMENT_FILL_THRESHOLD = 0.6;
 
   /** @type {Record<string, number>} last rest timestamp per layer */
-  const lastRestMs = { L1: -Infinity, L2: -Infinity };
+  let lastRestMs = crossLayerHelpers.createLayerPair(-Infinity);
   /** @type {Record<string, boolean>} whether layer is currently resting */
-  const isResting = { L1: false, L2: false };
+  let isResting = crossLayerHelpers.createLayerPair(false);
   let sharedRestCount = 0;
 
   /**
@@ -108,10 +108,8 @@ restSynchronizer = (() => {
   function isLayerResting(layer) { return Boolean(isResting[layer]); }
 
   function reset() {
-    lastRestMs.L1 = -Infinity;
-    lastRestMs.L2 = -Infinity;
-    isResting.L1 = false;
-    isResting.L2 = false;
+    lastRestMs = crossLayerHelpers.createLayerPair(-Infinity);
+    isResting = crossLayerHelpers.createLayerPair(false);
     sharedRestCount = 0;
   }
 

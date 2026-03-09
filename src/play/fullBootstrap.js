@@ -548,7 +548,6 @@ fullBootstrap = (() => {
     'motifTransformAdvisor',
 
     // -- fx --
-    'stutterConfig',
     'lBal',
     'rBal',
     'cBal',
@@ -563,7 +562,7 @@ fullBootstrap = (() => {
     'pickStutterChannels',
     'stutterRegistry',
     'stutterMetrics',
-    'stutterConfigStore',
+    'stutterConfig',
     'stutterPlanScheduler',
     'stutter',
     'setBalanceAndFX',
