@@ -14,17 +14,18 @@ thematicRecallDetector = (() => {
    */
   function recordSectionFingerprint(section) {
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 8 });
-    if (notes.length < FINGERPRINT_LENGTH) {
+    const midis = analysisHelpers.extractMidiArray(notes, 60);
+    if (midis.length < FINGERPRINT_LENGTH) {
       sectionFingerprints.push({ section, fingerprint: '' });
       return;
     }
 
     // Build interval fingerprint from last N notes
     const intervals = [];
-    const start = notes.length - FINGERPRINT_LENGTH;
-    for (let i = start + 1; i < notes.length; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : 60;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : 60;
+    const start = midis.length - FINGERPRINT_LENGTH;
+    for (let i = start + 1; i < midis.length; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
       intervals.push(curr - prev);
     }
 
@@ -41,16 +42,17 @@ thematicRecallDetector = (() => {
     }
 
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 4 });
-    if (notes.length < FINGERPRINT_LENGTH) {
+    const midis = analysisHelpers.extractMidiArray(notes, 60);
+    if (midis.length < FINGERPRINT_LENGTH) {
       return { recallOpportunity: false, similarSection: null, similarity: 0 };
     }
 
     // Current fingerprint
     const intervals = [];
-    const start = notes.length - FINGERPRINT_LENGTH;
-    for (let i = start + 1; i < notes.length; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : 60;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : 60;
+    const start = midis.length - FINGERPRINT_LENGTH;
+    for (let i = start + 1; i < midis.length; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
       intervals.push(curr - prev);
     }
 

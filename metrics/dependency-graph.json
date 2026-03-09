@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-09T20:29:44.528Z",
+    "generated": "2026-03-09T21:24:20.664Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 427,
     "totalGlobals": 707,
     "totalProvides": 722,
-    "totalConsumes": 2796,
-    "totalEdges": 2168,
-    "crossSubsystemEdges": 1462,
+    "totalConsumes": 2805,
+    "totalEdges": 2177,
+    "crossSubsystemEdges": 1463,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 214
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 175,
         "provides": 209,
-        "consumes": 853
+        "consumes": 862
       },
       "rhythm": {
         "files": 30,
@@ -1910,9 +1910,11 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "beatCache",
         "clamp",
         "conductorIntelligence",
+        "propertyExtractors",
         "t"
       ]
     },
@@ -1924,6 +1926,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "bass",
         "beatCache",
         "clamp",
@@ -1995,6 +1998,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "clamp",
         "conductorIntelligence",
         "m",
@@ -2070,6 +2074,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "beatCache",
         "clamp",
         "conductorIntelligence",
@@ -2128,6 +2133,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "beatCache",
         "conductorIntelligence",
         "m",
@@ -2183,6 +2189,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "clamp",
         "conductorIntelligence",
         "m"
@@ -2251,6 +2258,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "conductorIntelligence",
         "m",
         "note"
@@ -2738,6 +2746,7 @@
       ],
       "consumes": [
         "absoluteTimeWindow",
+        "analysisHelpers",
         "bass",
         "conductorIntelligence",
         "m"
@@ -8073,7 +8082,28 @@
     },
     {
       "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/harmonic/harmonicFieldDensityTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/harmonic/harmonicPedalFieldTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
       "to": "src/conductor/harmonic/harmonicSurpriseIndex.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/harmonic/pitchClassGravityMap.js",
       "globals": [
         "analysisHelpers"
       ]
@@ -8088,6 +8118,13 @@
     {
       "from": "src/conductor/analysisHelpers.js",
       "to": "src/conductor/harmonic/tensionResolutionTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/melodic/ambitusMigrationTracker.js",
       "globals": [
         "analysisHelpers"
       ]
@@ -8115,7 +8152,21 @@
     },
     {
       "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/melodic/intervalExpansionContractor.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
       "to": "src/conductor/melodic/melodicContourTracker.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/melodic/phraseContourArchetypeDetector.js",
       "globals": [
         "analysisHelpers"
       ]
@@ -8137,6 +8188,13 @@
     {
       "from": "src/conductor/analysisHelpers.js",
       "to": "src/conductor/melodic/tessituraPressureMonitor.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/melodic/thematicRecallDetector.js",
       "globals": [
         "analysisHelpers"
       ]
@@ -8242,6 +8300,13 @@
     {
       "from": "src/conductor/analysisHelpers.js",
       "to": "src/conductor/texture/layers/layerIndependenceScorer.js",
+      "globals": [
+        "analysisHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/analysisHelpers.js",
+      "to": "src/conductor/texture/phrasing/orchestrationWeightTracker.js",
       "globals": [
         "analysisHelpers"
       ]
@@ -19962,6 +20027,13 @@
     {
       "from": "src/utils/propertyExtractors.js",
       "to": "src/conductor/analysisHelpers.js",
+      "globals": [
+        "propertyExtractors"
+      ]
+    },
+    {
+      "from": "src/utils/propertyExtractors.js",
+      "to": "src/conductor/harmonic/harmonicFieldDensityTracker.js",
       "globals": [
         "propertyExtractors"
       ]

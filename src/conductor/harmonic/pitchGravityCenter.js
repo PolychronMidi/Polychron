@@ -19,13 +19,15 @@ pitchGravityCenter = (() => {
     if (notes.length === 0) {
       return { center: ANCHOR_PITCH, drift: 0, anchored: true };
     }
+    const velocities = analysisHelpers.extractVelocityArray(notes, 64);
+    const midis = analysisHelpers.extractMidiArray(notes, ANCHOR_PITCH);
 
     // Velocity-weighted average pitch
     let weightedSum = 0;
     let totalWeight = 0;
-    for (let i = 0; i < notes.length; i++) {
-      const vel = (typeof notes[i].velocity === 'number') ? notes[i].velocity : 64;
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : ANCHOR_PITCH;
+    for (let i = 0; i < midis.length; i++) {
+      const vel = velocities[i];
+      const midi = midis[i];
       weightedSum += midi * vel;
       totalWeight += vel;
     }

@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-09T20:29:45.615Z",
-  "wallTimeSeconds": 1324.1,
+  "generated": "2026-03-09T21:24:21.353Z",
+  "wallTimeSeconds": 778.5,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -39,7 +39,7 @@
     },
     {
       "label": "composition",
-      "elapsedSeconds": 1319.2,
+      "elapsedSeconds": 774,
       "ok": true
     },
     {
@@ -69,12 +69,12 @@
     },
     {
       "label": "golden-fingerprint",
-      "elapsedSeconds": 0.5,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {
       "label": "narrative-digest",
-      "elapsedSeconds": 0.5,
+      "elapsedSeconds": 0.3,
       "ok": true
     },
     {

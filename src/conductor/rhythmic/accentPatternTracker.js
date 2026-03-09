@@ -18,14 +18,15 @@ accentPatternTracker = (() => {
     if (notes.length < 4) {
       return { downbeatRatio: 0, backbeatRatio: 0, offbeatRatio: 0, accentShape: 'unknown' };
     }
+    const velocities = analysisHelpers.extractVelocityArray(notes, 64);
 
     // Beat duration in seconds
     const beatDur = beatGridHelpers.getBeatDuration();
 
     // Find velocity mean for accent detection
     let velSum = 0;
-    for (let i = 0; i < notes.length; i++) {
-      velSum += (typeof notes[i].velocity === 'number' ? notes[i].velocity : 64);
+    for (let i = 0; i < velocities.length; i++) {
+      velSum += velocities[i];
     }
     const velMean = velSum / notes.length;
     const accentThreshold = velMean * 1.15; // 15% above mean = accent
@@ -40,7 +41,7 @@ accentPatternTracker = (() => {
     const measureDur = beatDur * num;
 
     for (let i = 0; i < notes.length; i++) {
-      const vel = (typeof notes[i].velocity === 'number' ? notes[i].velocity : 64);
+      const vel = velocities[i];
       if (vel < accentThreshold) continue;
       accentCount++;
 

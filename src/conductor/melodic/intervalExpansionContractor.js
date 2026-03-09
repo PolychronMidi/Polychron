@@ -21,16 +21,17 @@ intervalExpansionContractor = (() => {
     V.requireFinite(absTime, 'absTime');
 
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 4 });
+    const midis = analysisHelpers.extractMidiArray(notes);
 
-    if (notes.length < 3) return;
+    if (midis.length < 3) return;
 
     let totalInterval = 0;
     let maxInterval = 0;
     let count = 0;
 
-    for (let i = 1; i < notes.length; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : -1;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
+    for (let i = 1; i < midis.length; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
       if (prev < 0 || curr < 0) continue;
       const interval = m.abs(curr - prev);
       if (interval > 0) {

@@ -18,12 +18,7 @@ phraseContourArchetypeDetector = (() => {
     }
 
     // Extract MIDI pitches
-    /** @type {number[]} */
-    const pitches = [];
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      if (midi >= 0) pitches.push(midi);
-    }
+    const pitches = analysisHelpers.extractMidiArray(notes).filter((midi) => midi >= 0);
 
     if (pitches.length < 5) {
       return { archetype: 'undefined', confidence: 0, suggestion: 'maintain' };

@@ -26,11 +26,12 @@ harmonicPedalFieldTracker = (() => {
     V.requireFinite(absTime, 'absTime');
 
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 2 });
+    const midis = analysisHelpers.extractMidiArray(notes, 127);
 
     // Find lowest recent note as "bass"
     let lowestMidi = 127;
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : 127;
+    for (let i = 0; i < midis.length; i++) {
+      const midi = midis[i];
       if (midi < lowestMidi) lowestMidi = midi;
     }
 

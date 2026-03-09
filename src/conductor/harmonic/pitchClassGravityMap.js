@@ -34,14 +34,17 @@ pitchClassGravityMap = (() => {
 
     // Drift: check if recent notes (last quarter) shift away from center
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
-    const recentStart = m.floor(notes.length * 0.75);
+    const recentPitchClasses = analysisHelpers.extractPCArray(
+      analysisHelpers.extractMidiArray(notes).slice(m.floor(notes.length * 0.75)),
+      -1
+    );
     let recentCenterCount = 0;
     let recentTotal = 0;
-    for (let i = recentStart; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      if (midi < 0) continue;
+    for (let i = 0; i < recentPitchClasses.length; i++) {
+      const pitchClass = recentPitchClasses[i];
+      if (pitchClass < 0) continue;
       recentTotal++;
-      if (midi % 12 === center) recentCenterCount++;
+      if (pitchClass === center) recentCenterCount++;
     }
     const recentCenterWeight = recentTotal > 0 ? recentCenterCount / recentTotal : centerWeight;
     const driftFromCenter = clamp(centerWeight - recentCenterWeight, -0.5, 0.5);

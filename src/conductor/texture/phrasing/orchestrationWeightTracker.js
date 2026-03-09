@@ -21,14 +21,15 @@ orchestrationWeightTracker = (() => {
       return { bassWeight: 0.33, midWeight: 0.34, trebleWeight: 0.33, suggestion: 'balanced', dominantBand: 'none' };
     }
 
+    const midis = analysisHelpers.extractMidiArray(notes).filter((midi) => midi >= 0);
+
     let bass = 0;
     let mid = 0;
     let treble = 0;
     let total = 0;
 
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      if (midi < 0) continue;
+    for (let i = 0; i < midis.length; i++) {
+      const midi = midis[i];
       total++;
       if (midi <= BASS_CEIL) bass++;
       else if (midi <= MID_CEIL) mid++;
