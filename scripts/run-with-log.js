@@ -87,7 +87,7 @@ const proc = spawn(command[0], command.slice(1), { shell: false, stdio: 'pipe', 
 const _SPIN = ['|', '/', '-', '\\'];
 let _spinIdx = 0;
 let _statusShown = false;
-const _STATUS_MSG = ' script in progress, wait. do not abandon this process, or enter new commands or terminals until this line is replaced with the text "script exited"';
+const _STATUS_MSG = ' script in progress, wait...';
 
 function _writeStatus() {
   const ch = _SPIN[_spinIdx++ & 3];

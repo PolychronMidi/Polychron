@@ -520,6 +520,36 @@ axisEnergyEquilibrator = (() => {
       }
     }
 
+    // R69 E3: Trust-axis dampening when phase collapses. When the phase axis
+    // share drops near zero (< 0.01) while trust exceeds its fair share by
+    // 30%+, trust-linked pairs absorb the energy the phase axis lost. This
+    // "balloon effect" concentrates coupling heat in trust pairs. Graduated
+    // tightening on trust-containing pairs bleeds excess trust energy back
+    // toward equilibrium. Self-correcting: stops when trust share normalizes.
+    const _TRUST_BALLOON_CAP = _FAIR_SHARE * 1.3;
+    const _phaseSmoothed = _smoothedShares['phase'];
+    const _trustSmoothed = _smoothedShares['trust'];
+    if (typeof _phaseSmoothed === 'number' && _phaseSmoothed < 0.01 &&
+        typeof _trustSmoothed === 'number' && _trustSmoothed > _TRUST_BALLOON_CAP) {
+      const _trustExcess = _trustSmoothed - _TRUST_BALLOON_CAP;
+      const _trustPairScale = _RELAX_RATE_REF / (_EFFECTIVE_NUDGEABLE['trust'] || _RELAX_RATE_REF);
+      const _trustCapRate = m.min(0.03, _AXIS_TIGHTEN_RATE * 2.0 * _trustPairScale * clamp(_trustExcess / _FAIR_SHARE, 0.5, 2.0));
+      const _trustPairs = _axisToPairs['trust'] || [];
+      for (let tp = 0; tp < _trustPairs.length; tp++) {
+        const tPair = _trustPairs[tp];
+        if ((_pairCooldowns[tPair] || 0) > 0) continue;
+        const tBl = V.optionalFinite(_lastBaselines[tPair]);
+        if (tBl === undefined) continue;
+        const tNb = m.max(tPair === 'density-flicker' ? _DENSITY_FLICKER_BASELINE_MIN : _BASELINE_MIN, tBl - _trustCapRate);
+        if (tNb < tBl) {
+          pipelineCouplingManager.setPairBaseline(tPair, tNb);
+          _pairCooldowns[tPair] = _AXIS_COOLDOWN;
+          _axisAdjustments++;
+          _perAxisAdj['trust'] = (_perAxisAdj['trust'] || 0) + 1;
+        }
+      }
+    }
+
     explainabilityBus.emit('AXIS_ENERGY_EQUIL', 'all', {
       smoothedShares: Object.assign({}, _smoothedShares),
       axisGini, giniMult,

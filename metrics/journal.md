@@ -1,3 +1,46 @@
+## R68 — 2026-03-09 — EVOLVED
+
+**Profile:** explosive | **Beats:** 50 (L1 48, L2 2) | **Duration:** 790.9s | **Notes:** 22,882
+**Fingerprint:** 9/10 stable | Drifted: exceedanceSeverity
+
+### Key Observations
+- Profile switched from atmospheric (R66-R67) back to explosive. Atmospheric-specific evolutions (E2: phaseVarianceGateScale 0.15, E3: exploring budget relaxation) remain in the atmospheric profile but had no effect on this run.
+- Trace coverage collapse: only 50 entries covering section 0 phrase 0 (8.2s). The .prev explosive run had 291 entries spanning 50.5s. 99% of the composition (4 sections, 22,882 notes) is diagnostically invisible. Same pathology as R66 atmospheric, unfixed for explosive.
+- Fingerprint telemetry extraction now works (E1 confirmed): telemetryHealth score 0.39 (was 0.0 in R67 due to snapshot-record count mismatch). The golden-fingerprint.js fix correctly filters diagnostic snapshots from entry counts.
+- exceedanceSeverity drifted (delta 114.91 vs tolerance 55, 2.09x). Unique beat exceedance rate 26% (vs .prev 2.05%). Hotspot topology shifted decisively to trust-linked pairs: density-trust 9, tension-trust 8, flicker-trust 8 (64% of all pair-exceedance beats).
+- Tension arc nearly drifted (delta 0.342 vs tolerance 0.35, 97.7% consumed). Arc shape [0.30, 0.19, 0.35, 0.32] is flat/dipping — may be artifact of trace covering only the setup section before harmonic modulation begins.
+- Phase telemetry CRITICAL: 92% variance-gated, 0% coupling coverage, phase axis energy = 0. Explosive profile has no phaseVarianceGateScale parameter — same blindness as R66 atmospheric before the fix.
+- 10 hotspot pairs (7 severe p95 > 0.85). density-trust avg 0.804 is the dominant coupling — structurally locked. Trust axis absorbed phase's energy collapse: share 16.5% → 21.6% (balloon effect).
+- Coupling homeostasis healthy: globalGainMultiplier 0.567, 0 floor-contact beats, Gini 0.657. Tail recovery active with density-trust as dominant pair (pressure 0.720).
+- diagnosticArc: null — section-boundary snapshots can't fire when trace covers only 1 section. Need periodic snapshots.
+- Forced cadence-monopoly break at tick 35: 27-beat coherent streak. Exploring share 28% (down from .prev 52.2%) with 14 dimension-blocked exploring attempts.
+- Short-run fingerprint sensitivity: 50 vs 291 trace entry disparity amplifies normalized exceedance deltas. Need run-length-aware tolerance scaling.
+
+### Evolutions Applied (from R67)
+- E1: Fix fingerprint telemetry health extraction — **confirmed** — telemetryHealth score reads 0.39 (was 0.0 in R67 fingerprint). Snapshot filtering works correctly.
+- E2: Reduce phase variance gate (0.4→0.15) — **inconclusive** — atmospheric-only parameter, explosive profile not affected
+- E3: Exploring-regime budget relaxation — **inconclusive** — exploring share 28% never exceeds the 60% threshold; relaxation never triggered
+- E4: Verify cross-profile tolerance auto-disables — **confirmed** — same-profile (explosive vs explosive) comparison used, no tolerance widening, no crossProfileWarning
+- E5: Diagnostic arc phaseIntegrity refinement — **inconclusive** — diagnosticArc is null because trace covers only 1 section (no section boundaries to trigger snapshots)
+- E6: Hypermeta coherence documentation — **N/A** — documentation-only, no measurable metric impact
+
+### Evolutions Proposed (for R69)
+- E1: Investigate explosive trace coverage collapse — src/play/processBeat.js, src/play/main.js, src/play/crossLayerBeatRecord.js
+- E2: Phase variance gate for explosive profile — src/conductor/profiles/conductorProfileExplosive.js
+- E3: Trust-pair exceedance dampening via axis equilibrator — src/conductor/signal/balancing/axisEnergyEquilibrator.js
+- E4: Tension arc shape resilience — src/conductor/signal/balancing/pipelineCouplingManager.js
+- E5: Beat-interval diagnostic snapshots — src/play/main.js, scripts/trace-summary.js
+- E6: Fingerprint short-run sensitivity guard — scripts/golden-fingerprint.js
+
+### Hypotheses to Track
+- H1: Explosive trace coverage collapse is the same root cause as R66 atmospheric (L2 path bypass) — fixing it should push entries to 200+ and resolve diagnosticArc, tension arc, and exceedance sensitivity issues
+- H2: Phase variance gate 0.20 for explosive should unlock phase without flooding the coupling matrix — watch for phase axis energy between 3-10% share
+- H3: Trust-pair exceedance surge is a balloon effect from phase's total energy collapse — restoring phase (E2) may naturally reduce trust-pair stress without explicit dampening
+- H4: Tension arc flatness is an artifact of single-section trace coverage — if E1 restores multi-section trace, the arc should naturally recover to rising shape
+- H5: density-trust (avg 0.804) and flicker-trust (avg 0.723) as persistent hotspot topology may be structural to explosive (similar to atmospheric's density-trust/flicker-trust pattern from R67) — track across R69-R71 to determine if this is profile character vs pathology
+
+
+
 ## R67 — 2026-03-08 — DRIFTED
 
 **Profile:** atmospheric | **Beats:** 870 (L1 352, L2 518) | **Duration:** 1135.1s | **Notes:** 33,228

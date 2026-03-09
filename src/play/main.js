@@ -129,6 +129,23 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     setUnitTiming('phrase');
     sectionL1BeatCount += layerPass.runLayerPass('L1', phraseFamily, { withConductorTick: true }, { boot, composerCtx });
 
+    // R69 E5: Periodic beat-interval diagnostic snapshots. Section-boundary
+    // snapshots give 3-7 data points per run. Periodic snapshots every 20 L1
+    // beats add intra-section resolution for diagnosing mid-section dynamics
+    // (e.g. phase collapse, trust balloon) that section snapshots miss.
+    if (traceDrain.isEnabled() && sectionL1BeatCount > 0 && sectionL1BeatCount % 20 === 0) {
+      const _pSnap = systemDynamicsProfiler.getSnapshot();
+      traceDrain.recordSnapshot({
+        beatKey: sectionIndex + ':periodic:' + sectionL1BeatCount,
+        timeMs: beatStartTime * 1000,
+        trigger: 'periodic',
+        effectiveDim: _pSnap ? _pSnap.effectiveDimensionality : 0,
+        regime: _pSnap ? _pSnap.regime : 'unknown',
+        couplingStrength: _pSnap ? _pSnap.couplingStrength : 0,
+        phaseIntegrity: _pSnap ? (_pSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
+      });
+    }
+
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L1);
     LM.advance('L1', 'phrase');
@@ -199,6 +216,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     traceDrain.recordSnapshot({
       beatKey: sectionIndex + ':end',
       timeMs: beatStartTime * 1000,
+      trigger: 'section-boundary',
       effectiveDim: _dynSnap ? _dynSnap.effectiveDimensionality : 0,
       trustScores: adaptiveTrustScores.getSnapshot(),
       couplingMeans: _couplingMeans,
