@@ -58,7 +58,7 @@ axisEnergyEquilibrator = (() => {
   // R70 E2: entropy-phase removed -- now nudgeable (see pipelineCouplingManager).
   // Persistent 63.6% recent hotspot rate with gain=0 meant the system could
   // not self-correct. Low-gain nudgeability allows gradual decorrelation.
-  const _NON_NUDGEABLE_TAIL_SET = new Set(['entropy-trust', 'trust-phase']);
+  const _NON_NUDGEABLE_TAIL_SET = couplingConstants.NON_NUDGEABLE_SET;
 
   // -- Shared config --
   const _BASELINE_MIN = 0.04;
@@ -121,23 +121,11 @@ axisEnergyEquilibrator = (() => {
   let _coherentHotspotAxisAdj = 0;
   let _lastWarmupTicks = _WARMUP_DEFAULT;
 
-  // Dimensions + pair mapping (precomputed)
-  const _ALL_AXES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
-  const _ALL_PAIRS = [
-    'density-tension', 'density-flicker', 'density-entropy', 'density-phase', 'density-trust',
-    'tension-flicker', 'tension-entropy', 'tension-phase', 'tension-trust',
-    'flicker-entropy', 'flicker-phase', 'flicker-trust',
-    'entropy-phase', 'entropy-trust', 'trust-phase'
-  ];
-  /** @type {Record<string, string[]>} */
-  const _axisToPairs = {};
-  for (let a = 0; a < _ALL_AXES.length; a++) {
-    const axis = _ALL_AXES[a];
-    _axisToPairs[axis] = [];
-    for (let p = 0; p < _ALL_PAIRS.length; p++) {
-      if (_ALL_PAIRS[p].indexOf(axis) !== -1) _axisToPairs[axis].push(_ALL_PAIRS[p]);
-    }
-  }
+  // Shared pair topology from couplingConstants
+  const _ALL_AXES = couplingConstants.ALL_MONITORED_DIMS;
+  const _ALL_PAIRS = couplingConstants.ALL_PAIRS;
+  const _axisToPairs = couplingConstants.AXIS_TO_PAIRS;
+  const { PHASE_SURFACE_SET, TRUST_SURFACE_SET, ENTROPY_SURFACE_SET } = couplingConstants;
 
   function _getWarmupTicks() {
     return axisEnergyEquilibratorHelpers.getWarmupTicks(_WARMUP_DEFAULT);
@@ -277,9 +265,9 @@ axisEnergyEquilibrator = (() => {
         || severeRate > _RESIDUAL_SEVERE_RATE
         || residualPressure > 0.28;
 
-      const isPhaseSurfacePair = pair === 'density-phase' || pair === 'flicker-phase' || pair === 'tension-phase';
-      const isTrustSurfacePair = pair === 'density-trust' || pair === 'flicker-trust' || pair === 'tension-trust';
-      const isEntropySurfacePair = pair === 'density-entropy' || pair === 'tension-entropy' || pair === 'flicker-entropy' || pair === 'entropy-trust' || pair === 'entropy-phase';
+      const isPhaseSurfacePair = PHASE_SURFACE_SET.has(pair);
+      const isTrustSurfacePair = TRUST_SURFACE_SET.has(pair);
+      const isEntropySurfacePair = ENTROPY_SURFACE_SET.has(pair);
       const coherentPairEligible = isPhaseSurfacePair || isTrustSurfacePair || isEntropySurfacePair || pair === 'density-flicker';
       const pairTightenScale = currentRegime === 'coherent'
         ? (coherentPairEligible && (residualTailHot || rolling > _HOTSPOT_RATIO * baseline) ? coherentHotspotScale : 0)

@@ -133,6 +133,26 @@ couplingConstants = (() => {
     return false;
   }
 
+  const TRUST_SURFACE_SET = new Set(['density-trust', 'flicker-trust', 'tension-trust']);
+
+  // Precomputed pair topology reused across balancing subsystem
+  const ALL_PAIRS = [];
+  for (let pa = 0; pa < ALL_MONITORED_DIMS.length; pa++) {
+    for (let pb = pa + 1; pb < ALL_MONITORED_DIMS.length; pb++) {
+      ALL_PAIRS.push(ALL_MONITORED_DIMS[pa] + '-' + ALL_MONITORED_DIMS[pb]);
+    }
+  }
+
+  /** @type {Record<string, string[]>} */
+  const AXIS_TO_PAIRS = {};
+  for (let pa = 0; pa < ALL_MONITORED_DIMS.length; pa++) {
+    const axis = ALL_MONITORED_DIMS[pa];
+    AXIS_TO_PAIRS[axis] = [];
+    for (let pb = 0; pb < ALL_PAIRS.length; pb++) {
+      if (ALL_PAIRS[pb].indexOf(axis) !== -1) AXIS_TO_PAIRS[axis].push(ALL_PAIRS[pb]);
+    }
+  }
+
   /** Classify a pair key into boolean flags used throughout the pipeline. */
   function classifyPair(key, dimA, dimB) {
     return {
@@ -142,14 +162,16 @@ couplingConstants = (() => {
       isPhasePair: dimA === 'phase' || dimB === 'phase',
       isPhaseSurfacePair: PHASE_SURFACE_SET.has(key),
       isTrustPair: dimA === 'trust' || dimB === 'trust',
+      isTrustSurfacePair: TRUST_SURFACE_SET.has(key),
       isEntropySurfacePair: ENTROPY_SURFACE_SET.has(key),
       isNonNudgeablePair: NON_NUDGEABLE_SET.has(key),
     };
   }
 
   return {
-    NUDGEABLE, NUDGEABLE_SET, NON_NUDGEABLE_SET, PHASE_SURFACE_SET, ENTROPY_SURFACE_SET,
-    COMPOSITIONAL_DIMS, OBSERVABLE_DIMS, ALL_MONITORED_DIMS,
+    NUDGEABLE, NUDGEABLE_SET, NON_NUDGEABLE_SET,
+    PHASE_SURFACE_SET, ENTROPY_SURFACE_SET, TRUST_SURFACE_SET,
+    COMPOSITIONAL_DIMS, OBSERVABLE_DIMS, ALL_MONITORED_DIMS, ALL_PAIRS, AXIS_TO_PAIRS,
     DEFAULT_TARGET, PAIR_TARGETS,
     TARGET_ADAPT_EMA, TARGET_RELAX_RATE, TARGET_TIGHTEN_RATE, TARGET_MIN, TARGET_MAX, DENSITY_FLICKER_TARGET_MAX,
     AXIS_COUPLING_CEILING, AXIS_SMOOTH_ALPHA,
