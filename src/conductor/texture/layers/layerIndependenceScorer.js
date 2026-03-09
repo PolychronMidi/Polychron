@@ -13,9 +13,7 @@ layerIndependenceScorer = (() => {
    * @returns {{ rhythmIndependence: number, pitchIndependence: number, combined: number, tooLocked: boolean, tooDiverged: boolean }}
    */
   function getIndependenceProfile(windowSeconds) {
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const l1Notes = absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
-    const l2Notes = absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
+    const { l1Notes, l2Notes } = analysisHelpers.getWindowLayerPairNotes(V, windowSeconds, WINDOW_SECONDS);
     if (l1Notes.length < 3 || l2Notes.length < 3) {
       return { rhythmIndependence: 0.5, pitchIndependence: 0.5, combined: 0.5, tooLocked: false, tooDiverged: false };
     }

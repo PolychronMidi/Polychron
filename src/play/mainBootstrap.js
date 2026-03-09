@@ -142,7 +142,7 @@ mainBootstrap = (() => {
       ['LayerManager', LM, 'register'],
       ['FactoryManager', FactoryManager, 'getPhraseArcManager'],
       ['conductorConfig', conductorConfig, 'applyPhaseProfile'],
-      ['stutter', stutter, 'prepareBeat'],
+      ['StutterManager', StutterManager, 'prepareBeat'],
       ['conductorState', conductorState, 'initialize'],
       ['conductorState', conductorState, 'getField'],
       ['globalConductor', globalConductor, 'update'],

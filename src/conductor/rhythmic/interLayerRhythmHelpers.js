@@ -39,9 +39,7 @@ interLayerRhythmHelpers = (() => {
    * @returns {{ phase: string, coincidence: number, complementarity: number }}
    */
   function computePhaseRelationship(windowSeconds) {
-    const ws = V.optionalFinite(windowSeconds, 2);
-    const l1Notes = absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
-    const l2Notes = absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
+    const { l1Notes, l2Notes } = analysisHelpers.getWindowLayerPairNotes(V, windowSeconds, 2);
 
     if (l1Notes.length < 2 || l2Notes.length < 2) {
       return { phase: 'unknown', coincidence: 0, complementarity: 0 };
@@ -167,9 +165,7 @@ interLayerRhythmHelpers = (() => {
    * @returns {{ displacementRatio: number, hemiola: boolean, phaseOffset: number, intentional: boolean }}
    */
   function computeDisplacementProfile(windowSeconds) {
-    const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const l1Notes = absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws });
-    const l2Notes = absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws });
+    const { l1Notes, l2Notes } = analysisHelpers.getWindowLayerPairNotes(V, windowSeconds, WINDOW_SECONDS);
 
     if (l1Notes.length < 4 || l2Notes.length < 4) {
       return { displacementRatio: 0, hemiola: false, phaseOffset: 0, intentional: false };

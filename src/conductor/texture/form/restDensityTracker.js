@@ -90,9 +90,7 @@ restDensityTracker = (() => {
    * @returns {{ breathCount: number, avgGap: number, maxGap: number, breathless: boolean, airy: boolean }}
    */
   function getBreathingProfile(opts = {}) {
-    const { layer, windowSeconds } = opts;
-    const ws = V.optionalFinite(windowSeconds, 6);
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: ws });
+    const notes = analysisHelpers.getWindowNotes(V, opts, 6);
     if (notes.length < 4) {
       return { breathCount: 0, avgGap: 0, maxGap: 0, breathless: false, airy: false };
     }

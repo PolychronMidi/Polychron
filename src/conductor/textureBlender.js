@@ -64,7 +64,7 @@ textureBlender = (() => {
    * @returns {{ burstSuppression: number, flurryBoost: number }}
    */
   function getStutterCoupling() {
-    if (stutter && StutterManager.beatContext) {
+    if (StutterManager && StutterManager.beatContext) {
       const bc = StutterManager.beatContext;
       const hasReflection = bc.selectedReflectionChannels && bc.selectedReflectionChannels.size > 0;
       const hasBass = bc.selectedBassChannels && bc.selectedBassChannels.size > 0;

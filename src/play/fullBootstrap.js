@@ -564,7 +564,7 @@ fullBootstrap = (() => {
     'stutterMetrics',
     'stutterConfig',
     'stutterPlanScheduler',
-    'stutter',
+    'StutterManager',
     'setBalanceAndFX',
     'setBinaural',
     'fbm',

@@ -15,7 +15,7 @@ const composerCtx = {
   phraseArc: FactoryManager.getPhraseArcManager(),
   layerMgr: LM,
   rhythmMgr: rhythmRegistry,
-  stutterMgr: stutter,
+  stutterMgr: StutterManager,
   eventBus: eventBus,
   harmonicCtx: harmonicContext,
   motifChain: motifChain,
