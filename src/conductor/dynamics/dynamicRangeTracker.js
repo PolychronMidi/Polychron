@@ -33,17 +33,18 @@ dynamicRangeTracker = (() => {
     if (notes.length < 3) {
       return { min: 64, max: 64, mean: 64, spread: 0, compressed: false };
     }
+    const velocities = analysisHelpers.extractVelocityArray(notes, 64);
 
     let lo = 127;
     let hi = 0;
     let sum = 0;
-    for (let i = 0; i < notes.length; i++) {
-      const v = (typeof notes[i].velocity === 'number') ? notes[i].velocity : 64;
+    for (let i = 0; i < velocities.length; i++) {
+      const v = velocities[i];
       if (v < lo) lo = v;
       if (v > hi) hi = v;
       sum += v;
     }
-    const mean = sum / notes.length;
+    const mean = sum / velocities.length;
     const spread = hi - lo;
     return { min: lo, max: hi, mean, spread, compressed: spread < 20 };
   }
@@ -76,11 +77,12 @@ dynamicRangeTracker = (() => {
 
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 2 });
     if (notes.length < 2) return;
+    const velocities = analysisHelpers.extractVelocityArray(notes, 64);
 
     let windowMin = 127;
     let windowMax = 0;
-    for (let i = 0; i < notes.length; i++) {
-      const vel = (typeof notes[i].velocity === 'number') ? notes[i].velocity : 64;
+    for (let i = 0; i < velocities.length; i++) {
+      const vel = velocities[i];
       if (vel < windowMin) windowMin = vel;
       if (vel > windowMax) windowMax = vel;
     }

@@ -21,10 +21,7 @@ repetitionFatigueMonitor = (() => {
       return { fatigueLevel: 0, repeatedPatterns: 0, totalPatterns: 0, fatigued: false };
     }
 
-    const pitches = [];
-    for (let i = 0; i < notes.length; i++) {
-      pitches.push((typeof notes[i].midi === 'number') ? notes[i].midi % 12 : 0);
-    }
+    const pitches = analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(notes, 0), 0);
 
     // Check for exact n-gram repetitions
     let repeatedCount = 0;

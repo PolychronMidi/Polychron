@@ -17,6 +17,8 @@ registralVelocityCorrelator = (() => {
     if (notes.length < 6) {
       return { correlation: 0, flickerMod: 1, suggestion: 'maintain' };
     }
+    const noteMidis = analysisHelpers.extractMidiArray(notes, -1);
+    const noteVelocities = analysisHelpers.extractVelocityArray(notes, -1);
 
     // Collect paired data
     /** @type {number[]} */
@@ -25,8 +27,8 @@ registralVelocityCorrelator = (() => {
     const velocities = [];
 
     for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      const vel = (typeof notes[i].velocity === 'number') ? notes[i].velocity : -1;
+      const midi = noteMidis[i];
+      const vel = noteVelocities[i];
       if (midi < 0 || vel < 0) continue;
       pitches.push(midi);
       velocities.push(vel);

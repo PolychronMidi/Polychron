@@ -16,6 +16,8 @@ counterpointMotionTracker = (() => {
     if (l1Notes.length < 3 || l2Notes.length < 3) {
       return { parallel: 0, contrary: 0, oblique: 0, similar: 0, total: 0, dominant: 'insufficient' };
     }
+    const l1Midis = analysisHelpers.extractMidiArray(l1Notes, 60);
+    const l2Midis = analysisHelpers.extractMidiArray(l2Notes, 60);
 
     // Build time-aligned motion pairs using nearest-neighbor matching
     let parallel = 0;
@@ -25,8 +27,8 @@ counterpointMotionTracker = (() => {
     let l2Idx = 0;
 
     for (let i = 1; i < l1Notes.length; i++) {
-      const l1Prev = (typeof l1Notes[i - 1].midi === 'number') ? l1Notes[i - 1].midi : 60;
-      const l1Curr = (typeof l1Notes[i].midi === 'number') ? l1Notes[i].midi : 60;
+      const l1Prev = l1Midis[i - 1];
+      const l1Curr = l1Midis[i];
       const l1Dir = l1Curr - l1Prev;
 
       // Find closest L2 note pair near this time
@@ -35,8 +37,8 @@ counterpointMotionTracker = (() => {
       }
       if (l2Idx >= l2Notes.length - 1) break;
 
-      const l2Prev = (typeof l2Notes[l2Idx].midi === 'number') ? l2Notes[l2Idx].midi : 60;
-      const l2Curr = (typeof l2Notes[l2Idx + 1].midi === 'number') ? l2Notes[l2Idx + 1].midi : 60;
+      const l2Prev = l2Midis[l2Idx];
+      const l2Curr = l2Midis[l2Idx + 1];
       const l2Dir = l2Curr - l2Prev;
 
       if (l1Dir === 0 || l2Dir === 0) {

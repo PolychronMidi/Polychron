@@ -18,13 +18,14 @@ tessituraPressureMonitor = (() => {
     if (notes.length < 3) {
       return { extremeRatio: 0, region: 'comfortable', densityBias: 1 };
     }
+    const midis = analysisHelpers.extractMidiArray(notes, -1);
 
     let extremeLowCount = 0;
     let extremeHighCount = 0;
     let totalValid = 0;
 
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
+    for (let i = 0; i < midis.length; i++) {
+      const midi = midis[i];
       if (midi < 0) continue;
       totalValid++;
       if (midi <= EXTREME_LOW) extremeLowCount++;

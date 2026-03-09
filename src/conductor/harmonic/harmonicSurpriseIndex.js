@@ -19,14 +19,15 @@ harmonicSurpriseIndex = (() => {
     if (notes.length < 4) {
       return { entropy: 0, surpriseIndex: 0.5, stale: false, fresh: false };
     }
+    const pitchClasses = analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(notes, 0), 0);
 
     // Build pitch-class bigram transition counts
     const transitionCounts = /** @type {Object.<string, number>} */ ({});
     let totalTransitions = 0;
 
-    for (let i = 1; i < notes.length; i++) {
-      const prevPC = (typeof notes[i - 1].midi === 'number') ? ((notes[i - 1].midi % 12) + 12) % 12 : 0;
-      const currPC = (typeof notes[i].midi === 'number') ? ((notes[i].midi % 12) + 12) % 12 : 0;
+    for (let i = 1; i < pitchClasses.length; i++) {
+      const prevPC = pitchClasses[i - 1];
+      const currPC = pitchClasses[i];
       const key = prevPC + '->' + currPC;
       transitionCounts[key] = (transitionCounts[key] || 0) + 1;
       totalTransitions++;

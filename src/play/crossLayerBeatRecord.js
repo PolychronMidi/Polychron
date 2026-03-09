@@ -29,6 +29,39 @@ const CADENCE_DROUGHT_THRESHOLD = 20;
 let _restDroughtBeats = 0;
 const REST_DROUGHT_THRESHOLD = 16;
 
+function _buildProfilerTelemetry(dynamicsSnapshot) {
+  if (!dynamicsSnapshot || typeof dynamicsSnapshot !== 'object') return null;
+  return {
+    analysisTick: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'profilerTick', 0),
+    regimeTick: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'regimeTick', 0),
+    trajectorySamples: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'trajectorySamples', 0),
+    telemetryBeatSpan: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'telemetryBeatSpan', 1),
+    warmupTicksRemaining: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'warmupTicksRemaining', 0),
+    cadence: propertyExtractors.extractStringOrDefault(dynamicsSnapshot, 'profilerCadence', 'unknown'),
+    cadenceEscalated: Boolean(dynamicsSnapshot.cadenceEscalated),
+    analysisSource: propertyExtractors.extractStringOrDefault(dynamicsSnapshot, 'analysisSource', 'unknown')
+  };
+}
+
+function _buildPhaseTelemetry(dynamicsSnapshot) {
+  if (!dynamicsSnapshot || typeof dynamicsSnapshot !== 'object') return null;
+  const phaseStaleBeats = propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseStaleBeats', 0);
+  return {
+    phaseValue: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseValue', 0),
+    phaseDelta: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseDelta', 0),
+    phaseChanged: Boolean(dynamicsSnapshot.phaseChanged),
+    phaseStaleBeats,
+    phaseFreshnessEscalated: phaseStaleBeats > 8,
+    phaseSignalValid: Boolean(dynamicsSnapshot.phaseSignalValid),
+    phaseCouplingCoverage: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseCouplingCoverage', 0),
+    phaseCouplingAvailablePairs: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseCouplingAvailablePairs', 0),
+    phaseCouplingMissingPairs: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseCouplingMissingPairs', 0),
+    pairStates: dynamicsSnapshot.phasePairStates && typeof dynamicsSnapshot.phasePairStates === 'object'
+      ? dynamicsSnapshot.phasePairStates
+      : null
+  };
+}
+
 function _compareTraceProgress(left, right) {
   if (left.section !== right.section) return left.section - right.section;
   if (left.phrase !== right.phrase) return left.phrase - right.phrase;
@@ -152,7 +185,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   }
   const fop = tp.feedbackOscillator;
   const dynamicsSnapshot = systemDynamicsProfiler.getSnapshot();
-  const velocityForFeedback = (dynamicsSnapshot && Number.isFinite(dynamicsSnapshot.velocity)) ? dynamicsSnapshot.velocity : 0;
+  const velocityForFeedback = propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'velocity', 0);
   const velocitySupport = clamp(velocityForFeedback * 4, 0, 0.12);
   // feedbackOscillator: idle beats get readiness payoff; active gets base + energy
   const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)
@@ -209,16 +242,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       _traceCachedForcedTransitionEvent = safePreBoot.call(() => regimeClassifier.consumeForcedTransitionEvent(), null);
       _traceSnapBeatKey = clBeatKey;
     }
-    const profilerTelemetry = _traceCachedDynamicsSnap ? {
-      analysisTick: Number.isFinite(_traceCachedDynamicsSnap.profilerTick) ? _traceCachedDynamicsSnap.profilerTick : 0,
-      regimeTick: Number.isFinite(_traceCachedDynamicsSnap.regimeTick) ? _traceCachedDynamicsSnap.regimeTick : 0,
-      trajectorySamples: Number.isFinite(_traceCachedDynamicsSnap.trajectorySamples) ? _traceCachedDynamicsSnap.trajectorySamples : 0,
-      telemetryBeatSpan: Number.isFinite(_traceCachedDynamicsSnap.telemetryBeatSpan) ? _traceCachedDynamicsSnap.telemetryBeatSpan : 1,
-      warmupTicksRemaining: Number.isFinite(_traceCachedDynamicsSnap.warmupTicksRemaining) ? _traceCachedDynamicsSnap.warmupTicksRemaining : 0,
-      cadence: typeof _traceCachedDynamicsSnap.profilerCadence === 'string' ? _traceCachedDynamicsSnap.profilerCadence : 'unknown',
-      cadenceEscalated: Boolean(_traceCachedDynamicsSnap.cadenceEscalated),
-      analysisSource: typeof _traceCachedDynamicsSnap.analysisSource === 'string' ? _traceCachedDynamicsSnap.analysisSource : 'unknown'
-    } : null;
+    const profilerTelemetry = _buildProfilerTelemetry(_traceCachedDynamicsSnap);
     const tracePayload = {
       beatKey: clBeatKey,
       sectionIndex,
@@ -231,23 +255,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       trustScores: adaptiveTrustScores.getSnapshot(),
       regime: _traceCachedDynamicsSnap.regime,
       couplingMatrix: _traceCachedDynamicsSnap.couplingMatrix,
-      phaseTelemetry: _traceCachedDynamicsSnap ? {
-        phaseValue: Number.isFinite(_traceCachedDynamicsSnap.phaseValue) ? _traceCachedDynamicsSnap.phaseValue : 0,
-        phaseDelta: Number.isFinite(_traceCachedDynamicsSnap.phaseDelta) ? _traceCachedDynamicsSnap.phaseDelta : 0,
-        phaseChanged: Boolean(_traceCachedDynamicsSnap.phaseChanged),
-        phaseStaleBeats: Number.isFinite(_traceCachedDynamicsSnap.phaseStaleBeats) ? _traceCachedDynamicsSnap.phaseStaleBeats : 0,
-        // Phase freshness escalation flag. When phaseStaleBeats > 8,
-        // this beat triggered freshness escalation in systemDynamicsProfiler
-        // to keep phase coupling data flowing despite signal monotonicity.
-        phaseFreshnessEscalated: Number.isFinite(_traceCachedDynamicsSnap.phaseStaleBeats) && _traceCachedDynamicsSnap.phaseStaleBeats > 8,
-        phaseSignalValid: Boolean(_traceCachedDynamicsSnap.phaseSignalValid),
-        phaseCouplingCoverage: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingCoverage) ? _traceCachedDynamicsSnap.phaseCouplingCoverage : 0,
-        phaseCouplingAvailablePairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingAvailablePairs) ? _traceCachedDynamicsSnap.phaseCouplingAvailablePairs : 0,
-        phaseCouplingMissingPairs: Number.isFinite(_traceCachedDynamicsSnap.phaseCouplingMissingPairs) ? _traceCachedDynamicsSnap.phaseCouplingMissingPairs : 0,
-        pairStates: _traceCachedDynamicsSnap.phasePairStates && typeof _traceCachedDynamicsSnap.phasePairStates === 'object'
-          ? _traceCachedDynamicsSnap.phasePairStates
-          : null
-      } : null,
+      phaseTelemetry: _buildPhaseTelemetry(_traceCachedDynamicsSnap),
       // Adaptive target state for coupling drift diagnostics
       couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
       // Per-axis total |r| sums for axis-centric conservation diagnostics

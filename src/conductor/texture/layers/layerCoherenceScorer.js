@@ -3,6 +3,7 @@
 // their intervallic compatibility. Pure query API for conductor decisions.
 
 layerCoherenceScorer = (() => {
+  const V = validator.create('layerCoherenceScorer');
   let lastCoherence = 0.5;
 
   // Shared consonant intervals from pitchClassHelpers
@@ -14,7 +15,7 @@ layerCoherenceScorer = (() => {
    * @returns {number} - 0 (fully dissonant) to 1 (fully consonant)
    */
   function computeCoherence(windowSeconds) {
-    const { l1Notes, l2Notes } = analysisHelpers.getWindowLayerPairNotes({ optionalFinite: (value, fallback) => value ?? fallback }, windowSeconds, 2);
+    const { l1Notes, l2Notes } = analysisHelpers.getWindowLayerPairNotes(V, windowSeconds, 2);
 
     if (l1Notes.length < 2 || l2Notes.length < 2) {
       lastCoherence = 0.5;
@@ -22,10 +23,8 @@ layerCoherenceScorer = (() => {
     }
 
     // Extract unique pitch classes
-    const l1Pcs = new Set();
-    for (let i = 0; i < l1Notes.length; i++) l1Pcs.add(l1Notes[i].midi % 12);
-    const l2Pcs = new Set();
-    for (let i = 0; i < l2Notes.length; i++) l2Pcs.add(l2Notes[i].midi % 12);
+    const l1Pcs = new Set(analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(l1Notes, 0), 0));
+    const l2Pcs = new Set(analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(l2Notes, 0), 0));
 
     let consonantCount = 0;
     let totalPairs = 0;
