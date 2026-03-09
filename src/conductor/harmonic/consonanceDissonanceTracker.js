@@ -20,14 +20,15 @@ consonanceDissonanceTracker = (() => {
     if (notes.length < 3) {
       return { consonanceRatio: 0.5, dissonanceRatio: 0.5, bland: false, harsh: false };
     }
+    const midis = analysisHelpers.extractMidiArray(notes, 60);
 
     let consonant = 0;
     let dissonant = 0;
 
     // Compare all adjacent note pairs (melodic intervals as proxy)
-    for (let i = 1; i < notes.length; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : 60;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : 60;
+    for (let i = 1; i < midis.length; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
       const interval = m.abs(curr - prev) % 12;
 
       if (CONSONANT_INTERVALS.has(interval)) {

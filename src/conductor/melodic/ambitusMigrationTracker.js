@@ -21,11 +21,11 @@ ambitusMigrationTracker = (() => {
       return { low: 60, high: 72, range: 12, center: 66 };
     }
 
+    const midis = analysisHelpers.extractMidiArray(notes).filter((midi) => midi >= 0);
     let low = 127;
     let high = 0;
-    for (let i = 0; i < notes.length; i++) {
-      const midi = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
-      if (midi < 0) continue;
+    for (let i = 0; i < midis.length; i++) {
+      const midi = midis[i];
       if (midi < low) low = midi;
       if (midi > high) high = midi;
     }

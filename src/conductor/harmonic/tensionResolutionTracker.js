@@ -19,14 +19,15 @@ tensionResolutionTracker = (() => {
     if (notes.length < 4) {
       return { resolvedRatio: 1, unresolvedCount: 0, total: 0, danglingTension: false };
     }
+    const midis = analysisHelpers.extractMidiArray(notes, 60);
 
     let resolved = 0;
     let unresolved = 0;
 
-    for (let i = 1; i < notes.length - 1; i++) {
-      const prev = (typeof notes[i - 1].midi === 'number') ? notes[i - 1].midi : 60;
-      const curr = (typeof notes[i].midi === 'number') ? notes[i].midi : 60;
-      const next = (typeof notes[i + 1].midi === 'number') ? notes[i + 1].midi : 60;
+    for (let i = 1; i < midis.length - 1; i++) {
+      const prev = midis[i - 1];
+      const curr = midis[i];
+      const next = midis[i + 1];
 
       const intervalIn = m.abs(curr - prev) % 12;
       const intervalOut = m.abs(next - curr) % 12;
@@ -42,10 +43,10 @@ tensionResolutionTracker = (() => {
     }
 
     // Check last interval pair - if dissonant, it's dangling
-    if (notes.length >= 2) {
+    if (midis.length >= 2) {
       const lastInterval = m.abs(
-        ((typeof notes[notes.length - 1].midi === 'number') ? notes[notes.length - 1].midi : 60) -
-        ((typeof notes[notes.length - 2].midi === 'number') ? notes[notes.length - 2].midi : 60)
+        midis[midis.length - 1] -
+        midis[midis.length - 2]
       ) % 12;
       if (!CONSONANT.has(lastInterval)) unresolved++;
     }

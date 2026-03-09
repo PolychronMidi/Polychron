@@ -26,9 +26,10 @@ harmonicFieldDensityTracker = (() => {
     // Sort by time
     /** @type {Array<{ time: number, midi: number }>} */
     const sorted = [];
+    const midis = analysisHelpers.extractMidiArray(notes);
     for (let i = 0; i < notes.length; i++) {
-      const t = (typeof notes[i].time === 'number') ? notes[i].time : 0;
-      const mid = (typeof notes[i].midi === 'number') ? notes[i].midi : -1;
+      const t = propertyExtractors.extractFiniteOrDefault(notes[i], 'time', 0);
+      const mid = midis[i];
       if (mid >= 0) sorted.push({ time: t, midi: mid });
     }
     sorted.sort((a, b) => a.time - b.time);
