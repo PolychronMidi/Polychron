@@ -2,7 +2,7 @@
 
 regimeClassifier = (() => {
   const V = validator.create('regimeClassifier');
-  const _config = {
+  const regimeClassifierConfig = {
     REGIME_WINDOW: 5,
     REGIME_MAJORITY: 3,
     OSCILLATING_CURVATURE_DEFAULT: 0.55,
@@ -22,14 +22,14 @@ regimeClassifier = (() => {
     tickSource: 'profiler-recorder'
   };
 
-  function _createState() {
+  function regimeClassifierCreateState() {
     return {
       V,
       lastRegime: 'evolving',
       rawRegimeWindow: [],
       exploringBeats: 0,
       coherentBeats: 0,
-      oscillatingCurvatureThreshold: _config.OSCILLATING_CURVATURE_DEFAULT,
+      oscillatingCurvatureThreshold: regimeClassifierConfig.OSCILLATING_CURVATURE_DEFAULT,
       coherentThresholdScale: 0.65,
       evolvingBeats: 0,
       evolvingMinDwell: 4,
@@ -83,10 +83,10 @@ regimeClassifier = (() => {
     };
   }
 
-  const _state = _createState();
+  const regimeClassifierState = regimeClassifierCreateState();
 
   function setOscillatingThreshold(threshold) {
-    _state.oscillatingCurvatureThreshold = V.requireFinite(threshold, 'threshold');
+    regimeClassifierState.oscillatingCurvatureThreshold = V.requireFinite(threshold, 'threshold');
   }
 
   /**
@@ -95,7 +95,7 @@ regimeClassifier = (() => {
    * @param {number} scale
    */
   function setCoherentThresholdScale(scale) {
-    _state.coherentThresholdScale = V.requireFinite(scale, 'coherentThresholdScale');
+    regimeClassifierState.coherentThresholdScale = V.requireFinite(scale, 'coherentThresholdScale');
   }
 
   /**
@@ -106,7 +106,7 @@ regimeClassifier = (() => {
    * @param {number} alphaMin
    */
   function setCoherentShareAlphaMin(alphaMin) {
-    _state.coherentShareAlphaMin = V.requireFinite(alphaMin, 'alphaMin');
+    regimeClassifierState.coherentShareAlphaMin = V.requireFinite(alphaMin, 'alphaMin');
   }
 
   /**
@@ -116,17 +116,17 @@ regimeClassifier = (() => {
    * @param {number} minDwell
    */
   function setEvolvingMinDwell(minDwell) {
-    _state.evolvingMinDwell = V.requireFinite(minDwell, 'minDwell');
+    regimeClassifierState.evolvingMinDwell = V.requireFinite(minDwell, 'minDwell');
   }
 
   /** @returns {number} */
-  function getOscillatingThreshold() { return _state.oscillatingCurvatureThreshold; }
+  function getOscillatingThreshold() { return regimeClassifierState.oscillatingCurvatureThreshold; }
 
   /** @returns {number} */
-  function getExploringBeats() { return _state.exploringBeats; }
+  function getExploringBeats() { return regimeClassifierState.exploringBeats; }
 
   /** @returns {string} */
-  function getLastRegime() { return _state.lastRegime; }
+  function getLastRegime() { return regimeClassifierState.lastRegime; }
 
   /**
    * Classify the current operating regime based on velocity and curvature patterns.
@@ -137,7 +137,7 @@ regimeClassifier = (() => {
    * @returns {string}
    */
   function classify(avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
-    return regimeClassifierClassification.classify(_state, _config, avgVelocity, avgCurvature, effectiveDim, couplingStrength);
+    return regimeClassifierClassification.classify(regimeClassifierState, regimeClassifierConfig, avgVelocity, avgCurvature, effectiveDim, couplingStrength);
   }
 
   /**
@@ -148,7 +148,7 @@ regimeClassifier = (() => {
     * @param {number} [triggerTickId]
    */
   function activateForcedRegime(regime, reason, beatsRemaining, triggerStreak, triggerTickId) {
-    regimeClassifierResolution.activateForcedRegime(_state, _config, regime, reason, beatsRemaining, triggerStreak, triggerTickId);
+    regimeClassifierResolution.activateForcedRegime(regimeClassifierState, regimeClassifierConfig, regime, reason, beatsRemaining, triggerStreak, triggerTickId);
   }
 
   /**
@@ -165,7 +165,7 @@ regimeClassifier = (() => {
    * @returns {string}
    */
   function resolve(rawRegime, tickId) {
-    return /** @type {string} */ (regimeClassifierResolution.resolve(_state, _config, rawRegime, tickId, activateForcedRegime));
+    return /** @type {string} */ (regimeClassifierResolution.resolve(regimeClassifierState, regimeClassifierConfig, rawRegime, tickId, activateForcedRegime));
   }
 
   /**
@@ -182,15 +182,15 @@ regimeClassifier = (() => {
   }
 
   function reset() {
-    const fresh = _createState();
+    const fresh = regimeClassifierCreateState();
     const keys = Object.keys(fresh);
-    for (let i = 0; i < keys.length; i++) _state[keys[i]] = fresh[keys[i]];
+    for (let i = 0; i < keys.length; i++) regimeClassifierState[keys[i]] = fresh[keys[i]];
   }
 
   function consumeForcedTransitionEvent() {
-    if (!_state.pendingForcedTransitionEvent) return null;
-    const event = Object.assign({}, _state.pendingForcedTransitionEvent);
-    _state.pendingForcedTransitionEvent = null;
+    if (!regimeClassifierState.pendingForcedTransitionEvent) return null;
+    const event = Object.assign({}, regimeClassifierState.pendingForcedTransitionEvent);
+    regimeClassifierState.pendingForcedTransitionEvent = null;
     return event;
   }
 
@@ -203,33 +203,33 @@ regimeClassifier = (() => {
    */
   function getTransitionReadiness() {
     return regimeClassifierHelpers.buildTransitionReadiness({
-      lastClassifyInputs: _state.lastClassifyInputs,
-      coherentThresholdScale: _state.coherentThresholdScale,
-      evolvingBeats: _state.evolvingBeats,
-      coherentBeats: _state.coherentBeats,
-      runCoherentBeats: _state.runCoherentBeats,
-      runMaxCoherentBeats: _state.runMaxCoherentBeats,
-      runBeatCount: _state.runBeatCount,
-      runCoherentShare: _state.runCoherentShare,
-      runTransitionCount: _state.runTransitionCount,
-      forcedBreakCount: _state.forcedBreakCount,
-      forcedRegime: _state.forcedRegime,
-      forcedRegimeBeatsRemaining: _state.forcedRegimeBeatsRemaining,
-      forcedOverrideActive: _state.forcedOverrideActive,
-      forcedOverrideBeats: _state.forcedOverrideBeats,
-      lastForcedReason: _state.lastForcedReason,
-      lastForcedTriggerStreak: _state.lastForcedTriggerStreak,
-      lastForcedTriggerBeat: _state.lastForcedTriggerBeat,
-      lastForcedTriggerTick: _state.lastForcedTriggerTick,
-      postForcedRecoveryBeats: _state.postForcedRecoveryBeats,
-      tickSource: _config.tickSource,
-      rawRegimeCounts: _state.rawRegimeCounts,
-      runRawRegimeCounts: _state.runRawRegimeCounts,
-      rawRegimeMaxStreak: _state.rawRegimeMaxStreak,
-      runResolvedRegimeCounts: _state.runResolvedRegimeCounts,
-      cadenceMonopolyPressure: _state.cadenceMonopolyPressure,
-      cadenceMonopolyActive: _state.cadenceMonopolyActive,
-      cadenceMonopolyReason: _state.cadenceMonopolyReason,
+      lastClassifyInputs: regimeClassifierState.lastClassifyInputs,
+      coherentThresholdScale: regimeClassifierState.coherentThresholdScale,
+      evolvingBeats: regimeClassifierState.evolvingBeats,
+      coherentBeats: regimeClassifierState.coherentBeats,
+      runCoherentBeats: regimeClassifierState.runCoherentBeats,
+      runMaxCoherentBeats: regimeClassifierState.runMaxCoherentBeats,
+      runBeatCount: regimeClassifierState.runBeatCount,
+      runCoherentShare: regimeClassifierState.runCoherentShare,
+      runTransitionCount: regimeClassifierState.runTransitionCount,
+      forcedBreakCount: regimeClassifierState.forcedBreakCount,
+      forcedRegime: regimeClassifierState.forcedRegime,
+      forcedRegimeBeatsRemaining: regimeClassifierState.forcedRegimeBeatsRemaining,
+      forcedOverrideActive: regimeClassifierState.forcedOverrideActive,
+      forcedOverrideBeats: regimeClassifierState.forcedOverrideBeats,
+      lastForcedReason: regimeClassifierState.lastForcedReason,
+      lastForcedTriggerStreak: regimeClassifierState.lastForcedTriggerStreak,
+      lastForcedTriggerBeat: regimeClassifierState.lastForcedTriggerBeat,
+      lastForcedTriggerTick: regimeClassifierState.lastForcedTriggerTick,
+      postForcedRecoveryBeats: regimeClassifierState.postForcedRecoveryBeats,
+      tickSource: regimeClassifierConfig.tickSource,
+      rawRegimeCounts: regimeClassifierState.rawRegimeCounts,
+      runRawRegimeCounts: regimeClassifierState.runRawRegimeCounts,
+      rawRegimeMaxStreak: regimeClassifierState.rawRegimeMaxStreak,
+      runResolvedRegimeCounts: regimeClassifierState.runResolvedRegimeCounts,
+      cadenceMonopolyPressure: regimeClassifierState.cadenceMonopolyPressure,
+      cadenceMonopolyActive: regimeClassifierState.cadenceMonopolyActive,
+      cadenceMonopolyReason: regimeClassifierState.cadenceMonopolyReason,
     });
   }
 

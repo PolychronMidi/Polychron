@@ -50,6 +50,12 @@ VoiceLeadingScore = class VoiceLeadingScore {
       directionalBias: config.directionalBiasWeight ?? 0.2, // Register-based directional preference
       maxLeap: config.maxLeapWeight ?? 0.9, // Penalize very large leaps
     };
+    // install a bound alias for the routine used by voiceRegistry
+    // the method redirects to the internal scoring helper with the correct
+    // `this` binding so that external callers can treat it as a plain function
+    // without worrying about context loss (also satisfies the TypeScript
+    // interface).
+    this.voiceRegistryScoreCandidate = this.VoiceLeadingScoreScoreCandidate.bind(this);
 
     // Dynamism: 0-1 scale controlling rule-breaking frequency (higher = more variation)
     this.dynamism = V.optionalFinite(config.dynamism, 0.3);
@@ -100,8 +106,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {VoiceLeadingScoreOpts} opts - Additional options
    * @returns {number} Total weighted cost (lower is better)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreCandidate in other modules
-  _scoreCandidate(candidate, lastNotes, registerRange, constraints, opts = {}) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreCandidate in other modules
+  VoiceLeadingScoreScoreCandidate(candidate, lastNotes, registerRange, constraints, opts = {}) {
     return voiceLeadingCore.computeCandidateScore(this, candidate, lastNotes, registerRange, constraints, opts);
   }
 
@@ -113,8 +119,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number} toNote - Candidate note
    * @returns {number} Motion cost (0-10)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreVoiceMotion in other modules
-  _scoreVoiceMotion(interval, fromNote, toNote) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreVoiceMotion in other modules
+  VoiceLeadingScoreScoreVoiceMotion(interval, fromNote, toNote) {
     return voiceLeadingScorers.scoreVoiceMotion(interval, fromNote, toNote);
   }
 
@@ -125,8 +131,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} range - [min, max] register bounds
    * @returns {number} Range cost (0-8)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreVoiceRange in other modules
-  _scoreVoiceRange(note, range) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreVoiceRange in other modules
+  VoiceLeadingScoreScoreVoiceRange(note, range) {
     return voiceLeadingScorers.scoreVoiceRange(note, range);
   }
 
@@ -138,8 +144,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} lastNotes - [n-1, n-2, ...] to check direction
    * @returns {number} Recovery cost (0-5)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreLeapRecovery in other modules
-  _scoreLeapRecovery(currentInterval, prevInterval, lastNotes, candidate) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreLeapRecovery in other modules
+  VoiceLeadingScoreScoreLeapRecovery(currentInterval, prevInterval, lastNotes, candidate) {
     return voiceLeadingScorers.scoreLeapRecovery(this, currentInterval, prevInterval, lastNotes, candidate);
   }
 
@@ -150,8 +156,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} lastNotes - Last notes [soprano, alto, tenor, bass]
    * @returns {number} Crossing cost (0-6)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreVoiceCrossing in other modules
-  _scoreVoiceCrossing(candidate, lastNotes) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreVoiceCrossing in other modules
+  VoiceLeadingScoreScoreVoiceCrossing(candidate, lastNotes) {
     return voiceLeadingScorers.scoreVoiceCrossing(candidate, lastNotes);
   }
 
@@ -162,8 +168,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number} lastMotion - Previous interval from history
    * @returns {number} Parallel motion cost (0-3)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreParallelMotion in other modules
-  _scoreParallelMotion(currentMotion, lastMotion) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreParallelMotion in other modules
+  VoiceLeadingScoreScoreParallelMotion(currentMotion, lastMotion) {
     return voiceLeadingScorers.scoreParallelMotion(currentMotion, lastMotion);
   }
 
@@ -175,8 +181,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number} toNote - Candidate note
    * @returns {number} Interval quality cost (0-6)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreIntervalQuality in other modules
-  _scoreIntervalQuality(interval, fromNote, toNote) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreIntervalQuality in other modules
+  VoiceLeadingScoreScoreIntervalQuality(interval, fromNote, toNote) {
     return voiceLeadingScorers.scoreIntervalQuality(interval, fromNote, toNote, this.dynamism);
   }
 
@@ -187,8 +193,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number[]} lastNotes - Previous notes for history check
    * @returns {number} Consecutive leap cost (0-8)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreConsecutiveLeaps in other modules
-  _scoreConsecutiveLeaps(currentInterval, lastNotes) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreConsecutiveLeaps in other modules
+  VoiceLeadingScoreScoreConsecutiveLeaps(currentInterval, lastNotes) {
     return voiceLeadingScorers.scoreConsecutiveLeaps(currentInterval, lastNotes, this.dynamism);
   }
 
@@ -200,8 +206,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {string} register - Voice register
    * @returns {number} Directional bias cost (0-2)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreDirectionalBias in other modules
-  _scoreDirectionalBias(candidate, lastNote, register) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreDirectionalBias in other modules
+  VoiceLeadingScoreScoreDirectionalBias(candidate, lastNote, register) {
     return voiceLeadingScorers.scoreDirectionalBias(candidate, lastNote, register);
   }
 
@@ -212,8 +218,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {string} register - Voice register
    * @returns {number} Max leap cost (0-10)
    */
-  // @ts-ignore: referenced dynamically via vls._scoreMaxLeap in other modules
-  _scoreMaxLeap(interval, register) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreScoreMaxLeap in other modules
+  VoiceLeadingScoreScoreMaxLeap(interval, register) {
     return voiceLeadingScorers.scoreMaxLeap(interval, register, this.maxLeapSize, this.dynamism);
   }
 
@@ -223,8 +229,8 @@ VoiceLeadingScore = class VoiceLeadingScore {
    * @param {number} note - Current note selected
    * @param {string} register - Voice register
    */
-  // @ts-ignore: referenced dynamically via vls._updateHistory in other modules
-  _updateHistory(note, register) {
+  // @ts-ignore: referenced dynamically via vls.VoiceLeadingScoreUpdateHistory in other modules
+  VoiceLeadingScoreUpdateHistory(note, register) {
     const lastNote = this.history.length > 0
       ? this.history[this.history.length - 1].note
       : note;

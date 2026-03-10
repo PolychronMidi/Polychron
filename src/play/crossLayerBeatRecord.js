@@ -11,25 +11,25 @@
  *           outputLoadGuard?: any,
  *           stageTiming: Object|null }} opts
  */
-let _traceSnapBeatKey = '';
-let _traceCachedConductorSnap = null;
-let _traceCachedDynamicsSnap = null;
-let _traceCachedForcedTransitionEvent = null;
-let _traceLastL1Progress = null;
-let _traceLastL1TimeMs = null;
-const _traceLayerBeatKeys = new Set();
-const _traceBeatKeyCounts = {};
+let crossLayerBeatRecordTraceSnapBeatKey = '';
+let crossLayerBeatRecordTraceCachedConductorSnap = null;
+let crossLayerBeatRecordTraceCachedDynamicsSnap = null;
+let crossLayerBeatRecordTraceCachedForcedTransitionEvent = null;
+let crossLayerBeatRecordTraceLastL1Progress = null;
+let crossLayerBeatRecordTraceLastL1TimeMs = null;
+const crossLayerBeatRecordTraceLayerBeatKeys = new Set();
+const crossLayerBeatRecordTraceBeatKeyCounts = {};
 
 // Cadence alignment drought tracker: counts consecutive beats without a
 // successful cadence result. After DROUGHT_THRESHOLD beats of gatedNoResult/
 // ungated, the next successful fire gets a 2x payoff multiplier to accelerate
 // trust recovery from the cold-start deficit.
-let _cadenceDroughtBeats = 0;
+let crossLayerBeatRecordCadenceDroughtBeats = 0;
 const CADENCE_DROUGHT_THRESHOLD = 20;
-let _restDroughtBeats = 0;
+let crossLayerBeatRecordRestDroughtBeats = 0;
 const REST_DROUGHT_THRESHOLD = 16;
 
-function _buildProfilerTelemetry(dynamicsSnapshot) {
+function crossLayerBeatRecordBuildProfilerTelemetry(dynamicsSnapshot) {
   if (!dynamicsSnapshot || typeof dynamicsSnapshot !== 'object') return null;
   return {
     analysisTick: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'profilerTick', 0),
@@ -43,7 +43,7 @@ function _buildProfilerTelemetry(dynamicsSnapshot) {
   };
 }
 
-function _buildPhaseTelemetry(dynamicsSnapshot) {
+function crossLayerBeatRecordBuildPhaseTelemetry(dynamicsSnapshot) {
   if (!dynamicsSnapshot || typeof dynamicsSnapshot !== 'object') return null;
   const phaseStaleBeats = propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseStaleBeats', 0);
   return {
@@ -62,21 +62,21 @@ function _buildPhaseTelemetry(dynamicsSnapshot) {
   };
 }
 
-function _compareTraceProgress(left, right) {
+function crossLayerBeatRecordCompareTraceProgress(left, right) {
   if (left.section !== right.section) return left.section - right.section;
   if (left.phrase !== right.phrase) return left.phrase - right.phrase;
   if (left.measure !== right.measure) return left.measure - right.measure;
   return left.beat - right.beat;
 }
 
-function _validateTraceProgress(layer, beatKey, timeMs) {
+function crossLayerBeatRecordValidateTraceProgress(layer, beatKey, timeMs) {
   const layerBeatKey = layer + ':' + beatKey;
-  if (_traceLayerBeatKeys.has(layerBeatKey)) {
+  if (crossLayerBeatRecordTraceLayerBeatKeys.has(layerBeatKey)) {
     throw new Error('crossLayerBeatRecord: duplicate trace payload for ' + layerBeatKey);
   }
-  _traceLayerBeatKeys.add(layerBeatKey);
-  _traceBeatKeyCounts[beatKey] = (_traceBeatKeyCounts[beatKey] || 0) + 1;
-  if (_traceBeatKeyCounts[beatKey] > 2) {
+  crossLayerBeatRecordTraceLayerBeatKeys.add(layerBeatKey);
+  crossLayerBeatRecordTraceBeatKeyCounts[beatKey] = (crossLayerBeatRecordTraceBeatKeyCounts[beatKey] || 0) + 1;
+  if (crossLayerBeatRecordTraceBeatKeyCounts[beatKey] > 2) {
     throw new Error('crossLayerBeatRecord: beat key ' + beatKey + ' exceeded expected layer coverage');
   }
   if (layer !== 'L1') return;
@@ -86,14 +86,14 @@ function _validateTraceProgress(layer, beatKey, timeMs) {
     measure: measureIndex,
     beat: beatIndex
   };
-  if (_traceLastL1Progress && _compareTraceProgress(currentProgress, _traceLastL1Progress) <= 0) {
+  if (crossLayerBeatRecordTraceLastL1Progress && crossLayerBeatRecordCompareTraceProgress(currentProgress, crossLayerBeatRecordTraceLastL1Progress) <= 0) {
     throw new Error('crossLayerBeatRecord: non-monotonic L1 trace progress at ' + beatKey);
   }
-  if (_traceLastL1TimeMs !== null && Number.isFinite(timeMs) && timeMs + 0.001 < _traceLastL1TimeMs) {
+  if (crossLayerBeatRecordTraceLastL1TimeMs !== null && Number.isFinite(timeMs) && timeMs + 0.001 < crossLayerBeatRecordTraceLastL1TimeMs) {
     throw new Error('crossLayerBeatRecord: regressive L1 trace timestamp at ' + beatKey);
   }
-  _traceLastL1Progress = currentProgress;
-  if (Number.isFinite(timeMs)) _traceLastL1TimeMs = timeMs;
+  crossLayerBeatRecordTraceLastL1Progress = currentProgress;
+  if (Number.isFinite(timeMs)) crossLayerBeatRecordTraceLastL1TimeMs = timeMs;
 }
 
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
@@ -176,12 +176,12 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   // Drought bonus: if cadenceAlignment fires after a long drought, double
   // the payoff to accelerate trust recovery from cold-start deficit.
   if (clCadResult) {
-    if (_cadenceDroughtBeats >= CADENCE_DROUGHT_THRESHOLD) {
+    if (crossLayerBeatRecordCadenceDroughtBeats >= CADENCE_DROUGHT_THRESHOLD) {
       cadenceOutcome = clamp(cadenceOutcome * 2.0, -1, 1);
     }
-    _cadenceDroughtBeats = 0;
+    crossLayerBeatRecordCadenceDroughtBeats = 0;
   } else {
-    _cadenceDroughtBeats++;
+    crossLayerBeatRecordCadenceDroughtBeats++;
   }
   const fop = tp.feedbackOscillator;
   const dynamicsSnapshot = systemDynamicsProfiler.getSnapshot();
@@ -210,13 +210,13 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   if (clRest.shouldRest) {
     const restDensityTarget = clIntent ? clIntent.densityTarget : 0.5;
     const scarcityBonus = clamp(1.0 - restDensityTarget, 0, 0.2); // rewards rests more when density is meant to be sparse
-    const droughtBonus = _restDroughtBeats >= REST_DROUGHT_THRESHOLD
-      ? clamp((_restDroughtBeats - REST_DROUGHT_THRESHOLD + 1) * 0.01, 0, 0.12)
+    const droughtBonus = crossLayerBeatRecordRestDroughtBeats >= REST_DROUGHT_THRESHOLD
+      ? clamp((crossLayerBeatRecordRestDroughtBeats - REST_DROUGHT_THRESHOLD + 1) * 0.01, 0, 0.12)
       : 0;
     restOutcome = clamp(0.8 + scarcityBonus + droughtBonus, 0, 1.0);
-    _restDroughtBeats = 0;
+    crossLayerBeatRecordRestDroughtBeats = 0;
   } else {
-    _restDroughtBeats++;
+    crossLayerBeatRecordRestDroughtBeats++;
   }
   adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
   adaptiveTrustScores.decayAll(tp.decayRate);
@@ -235,14 +235,14 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   // Conductor + dynamics snapshots are identical for L1 and L2 within the
   // same beat, so cache them on the L1 pass and reuse for L2.
   if (traceDrain.isEnabled()) {
-    _validateTraceProgress(layer, clBeatKey, clAbsMs);
-    if (_traceSnapBeatKey !== clBeatKey) {
-      _traceCachedConductorSnap = conductorState.getSnapshot();
-      _traceCachedDynamicsSnap = systemDynamicsProfiler.ensureBeatAnalysis(Boolean(isL1));
-      _traceCachedForcedTransitionEvent = safePreBoot.call(() => regimeClassifier.consumeForcedTransitionEvent(), null);
-      _traceSnapBeatKey = clBeatKey;
+    crossLayerBeatRecordValidateTraceProgress(layer, clBeatKey, clAbsMs);
+    if (crossLayerBeatRecordTraceSnapBeatKey !== clBeatKey) {
+      crossLayerBeatRecordTraceCachedConductorSnap = conductorState.getSnapshot();
+      crossLayerBeatRecordTraceCachedDynamicsSnap = systemDynamicsProfiler.ensureBeatAnalysis(Boolean(isL1));
+      crossLayerBeatRecordTraceCachedForcedTransitionEvent = safePreBoot.call(() => regimeClassifier.consumeForcedTransitionEvent(), null);
+      crossLayerBeatRecordTraceSnapBeatKey = clBeatKey;
     }
-    const profilerTelemetry = _buildProfilerTelemetry(_traceCachedDynamicsSnap);
+    const profilerTelemetry = crossLayerBeatRecordBuildProfilerTelemetry(crossLayerBeatRecordTraceCachedDynamicsSnap);
     const tracePayload = {
       beatKey: clBeatKey,
       sectionIndex,
@@ -250,12 +250,12 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       measureIndex,
       beatIndex,
       timeMs: clAbsMs,
-      conductorSnap: _traceCachedConductorSnap,
+      conductorSnap: crossLayerBeatRecordTraceCachedConductorSnap,
       negotiation: clNegotiation,
       trustScores: adaptiveTrustScores.getSnapshot(),
-      regime: _traceCachedDynamicsSnap.regime,
-      couplingMatrix: _traceCachedDynamicsSnap.couplingMatrix,
-      phaseTelemetry: _buildPhaseTelemetry(_traceCachedDynamicsSnap),
+      regime: crossLayerBeatRecordTraceCachedDynamicsSnap.regime,
+      couplingMatrix: crossLayerBeatRecordTraceCachedDynamicsSnap.couplingMatrix,
+      phaseTelemetry: crossLayerBeatRecordBuildPhaseTelemetry(crossLayerBeatRecordTraceCachedDynamicsSnap),
       // Adaptive target state for coupling drift diagnostics
       couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
       // Per-axis total |r| sums for axis-centric conservation diagnostics
@@ -273,7 +273,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       transitionReadiness: safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null),
       profilerTelemetry,
       outputLoadGuard: outputLoadGuard || null,
-      forcedTransitionEvent: _traceCachedForcedTransitionEvent,
+      forcedTransitionEvent: crossLayerBeatRecordTraceCachedForcedTransitionEvent,
       stageTiming: stageTiming
     };
     explainabilityBus.emit('trace-beat', layer, tracePayload, clAbsMs);

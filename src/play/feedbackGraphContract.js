@@ -13,7 +13,7 @@ feedbackGraphContract = (() => {
    * Maps module name -> global reference, and module name -> required methods.
    * @returns {{ refs: Record<string, object>, methods: Record<string, string[]> }}
    */
-  function _getModuleContracts() {
+  function feedbackGraphContractGetModuleContracts() {
     return {
       refs: {
         coherenceMonitor,
@@ -70,7 +70,7 @@ feedbackGraphContract = (() => {
       throw new Error('feedbackGraphContract: feedback_graph.json feedbackLoops must be a non-empty array');
     }
 
-    const { refs: moduleRefs, methods: moduleMethodContracts } = _getModuleContracts();
+    const { refs: moduleRefs, methods: moduleMethodContracts } = feedbackGraphContractGetModuleContracts();
 
     for (let i = 0; i < loops.length; i++) {
       const loop = loops[i];

@@ -3,7 +3,7 @@
 voiceRegistry = function voiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, opts = {}) {
   const V = validator.create('voiceRegistry');
   V.assertObject(scorer, 'scorer');
-  V.requireType(scorer._scoreCandidate, 'function', 'scorer._scoreCandidate');
+  V.requireType(scorer.voiceRegistryScoreCandidate, 'function', 'scorer.voiceRegistryScoreCandidate');
   V.assertArray(candidatesPerVoice, 'candidatesPerVoice', true);
   const voices = candidatesPerVoice.length;
   V.assertArray(lastNotesByVoice, 'lastNotesByVoice');
@@ -67,7 +67,7 @@ voiceRegistry = function voiceRegistry(scorer, lastNotesByVoice, candidatesPerVo
           : melodicWeight;
       const scoringLastNotes = lastNotes.length > 0 ? lastNotes : [Number(candidate)];
       // Base single-voice cost from VoiceLeadingScore
-      const baseCost = scorer._scoreCandidate(
+      const baseCost = scorer.voiceRegistryScoreCandidate(
         Number(candidate),
         scoringLastNotes,
         registerRange,

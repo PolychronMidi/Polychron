@@ -50,16 +50,16 @@ grandFinale = () => {
           throw new Error(`grandFinale: event tick must be >= 0, received ${tickVal}`);
         }
         tickVal = m.round(tickVal);
-        return { ...i, tick: tickVal, _tickSortKey: tickVal, _tickRaw: rawTick };
+        return { ...i, tick: tickVal, grandFinaleTickSortKey: tickVal, grandFinaleTickRaw: rawTick };
       })
       .sort((a, b) => {
         try {
-          V.requireFinite(a._tickSortKey, 'a._tickSortKey');
-          V.requireFinite(b._tickSortKey, 'b._tickSortKey');
+          V.requireFinite(a.grandFinaleTickSortKey, 'a.grandFinaleTickSortKey');
+          V.requireFinite(b.grandFinaleTickSortKey, 'b.grandFinaleTickSortKey');
         } catch {
           throw new Error('grandFinale: sort keys must be finite numbers');
         }
-        return a._tickSortKey - b._tickSortKey;
+        return a.grandFinaleTickSortKey - b.grandFinaleTickSortKey;
       });
 
     // Generate CSV

@@ -11,7 +11,7 @@ systemDynamicsProfiler = (() => {
   const PHASE_FRESHNESS_ESCALATION = 4;
   const STATE_SMOOTHING_BASELINE = 0.12;
   const ZSCORE_MIN_SAMPLES = 8;
-  const _config = {
+  const systemDynamicsProfilerConfig = {
     DIM_NAMES,
     N_DIMS,
     N_COMPOSITIONAL_DIMS,
@@ -24,7 +24,7 @@ systemDynamicsProfiler = (() => {
     ZSCORE_MIN_SAMPLES
   };
 
-  function _createState() {
+  function systemDynamicsProfilerCreateState() {
     return {
       trajectory: [],
       rawTrajectory: [],
@@ -50,35 +50,35 @@ systemDynamicsProfiler = (() => {
     };
   }
 
-  const _state = _createState();
+  const systemDynamicsProfilerState = systemDynamicsProfilerCreateState();
 
   function analyze(analysisSourceInput) {
-    return systemDynamicsProfilerAnalysis.analyze(_state, _config, analysisSourceInput);
+    return systemDynamicsProfilerAnalysis.analyze(systemDynamicsProfilerState, systemDynamicsProfilerConfig, analysisSourceInput);
   }
 
   function ensureBeatAnalysis(force) {
     const analysisSettings = systemDynamicsProfilerHelpers.getAnalysisSettings(MIN_WINDOW_DEFAULT);
-    const currentBeatCounter = Number.isFinite(beatCount) ? beatCount : _state.beatsSeen;
-    const beatDelta = currentBeatCounter - _state.lastBeatCountAtAnalysis;
-    const warmupActive = _state.lastSnapshot.warmupTicksRemaining > 0;
-    const phaseUnavailable = _state.lastSnapshot.phaseCouplingAvailablePairs === 0;
-    const phaseStale = _state.lastSnapshot.phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
+    const currentBeatCounter = Number.isFinite(beatCount) ? beatCount : systemDynamicsProfilerState.beatsSeen;
+    const beatDelta = currentBeatCounter - systemDynamicsProfilerState.lastBeatCountAtAnalysis;
+    const warmupActive = systemDynamicsProfilerState.lastSnapshot.warmupTicksRemaining > 0;
+    const phaseUnavailable = systemDynamicsProfilerState.lastSnapshot.phaseCouplingAvailablePairs === 0;
+    const phaseStale = systemDynamicsProfilerState.lastSnapshot.phaseStaleBeats >= PHASE_STALE_PAIR_THRESHOLD;
     //  Phase freshness escalation. Force re-analysis when phase goes
     // stale beyond 8 beats to keep phase coupling data flowing. This is
     // more aggressive than PHASE_STALE_PAIR_THRESHOLD (12) and catches
     // staleness earlier before it becomes entrenched.
-    const phaseFreshnessEscalation = _state.phaseStaleBeats >= PHASE_FRESHNESS_ESCALATION && _state.phaseStaleBeats < PHASE_STALE_PAIR_THRESHOLD;
-    const sparsePhaseCoverage = _state.lastSnapshot.phaseCouplingCoverage < 0.5;
+    const phaseFreshnessEscalation = systemDynamicsProfilerState.phaseStaleBeats >= PHASE_FRESHNESS_ESCALATION && systemDynamicsProfilerState.phaseStaleBeats < PHASE_STALE_PAIR_THRESHOLD;
+    const sparsePhaseCoverage = systemDynamicsProfilerState.lastSnapshot.phaseCouplingCoverage < 0.5;
     const snapshotStale = beatDelta >= analysisSettings.snapshotReuseBeats;
-    if (beatDelta <= 0) return _state.lastSnapshot;
+    if (beatDelta <= 0) return systemDynamicsProfilerState.lastSnapshot;
     if (force || warmupActive || phaseUnavailable || phaseStale || phaseFreshnessEscalation || (sparsePhaseCoverage && beatDelta >= m.max(1, analysisSettings.snapshotReuseBeats - 1)) || snapshotStale) {
       return analyze('beat-escalation');
     }
-    return _state.lastSnapshot;
+    return systemDynamicsProfilerState.lastSnapshot;
   }
 
   /** @returns {SystemDynamicsSnapshot} */
-  function getSnapshot() { return _state.lastSnapshot; }
+  function getSnapshot() { return systemDynamicsProfilerState.lastSnapshot; }
 
   /**
    * End-of-run summary for system manifest.
@@ -86,8 +86,8 @@ systemDynamicsProfiler = (() => {
    */
   function getSummary() {
     return {
-      beatsAnalyzed: _state.beatsSeen,
-      snapshot: _state.lastSnapshot,
+      beatsAnalyzed: systemDynamicsProfilerState.beatsSeen,
+      snapshot: systemDynamicsProfilerState.lastSnapshot,
       dimensionNames: DIM_NAMES.slice()
     };
   }
@@ -95,20 +95,20 @@ systemDynamicsProfiler = (() => {
   function reset() {
     entropyAmplificationController.reset();
     regimeClassifier.reset();
-    const fresh = _createState();
+    const fresh = systemDynamicsProfilerCreateState();
     const keys = Object.keys(fresh);
-    for (let i = 0; i < keys.length; i++) _state[keys[i]] = fresh[keys[i]];
+    for (let i = 0; i < keys.length; i++) systemDynamicsProfilerState[keys[i]] = fresh[keys[i]];
   }
 
   // -- Self-register --
   conductorIntelligence.registerRecorder('systemDynamicsProfiler', () => { systemDynamicsProfiler.analyze('measure-recorder'); });
   conductorIntelligence.registerStateProvider('systemDynamicsProfiler', () => ({
-    dynamicsRegime: _state.lastSnapshot.regime,
-    dynamicsGrade: _state.lastSnapshot.grade,
-    dynamicsVelocity: _state.lastSnapshot.velocity,
-    dynamicsCurvature: _state.lastSnapshot.curvature,
-    dynamicsEffectiveDim: _state.lastSnapshot.effectiveDimensionality,
-    dynamicsCouplingStrength: _state.lastSnapshot.couplingStrength
+    dynamicsRegime: systemDynamicsProfilerState.lastSnapshot.regime,
+    dynamicsGrade: systemDynamicsProfilerState.lastSnapshot.grade,
+    dynamicsVelocity: systemDynamicsProfilerState.lastSnapshot.velocity,
+    dynamicsCurvature: systemDynamicsProfilerState.lastSnapshot.curvature,
+    dynamicsEffectiveDim: systemDynamicsProfilerState.lastSnapshot.effectiveDimensionality,
+    dynamicsCouplingStrength: systemDynamicsProfilerState.lastSnapshot.couplingStrength
   }));
   conductorIntelligence.registerModule('systemDynamicsProfiler', { reset }, ['all']);
 

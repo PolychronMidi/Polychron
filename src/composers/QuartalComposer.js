@@ -38,7 +38,7 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
       throw new Error(`QuartalComposer.noteSet: scale "${root} ${scaleName}" not found`);
     }
     this.notes = scale.notes;
-    this._scalePCs = scale.notes.map(n => t.Note.chroma(n)).filter(c => Number.isFinite(c));
+    this.QuartalComposerScalePCs = scale.notes.map(n => t.Note.chroma(n)).filter(c => Number.isFinite(c));
 
     this.intervalOptions = {
       style: 'even',
@@ -73,7 +73,7 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
     // Build a sorted set of scale MIDI notes across available octaves for snapping
     const scaleMidiSet = [];
     for (let oct = 2; oct <= 7; oct++) {
-      for (const pc of this._scalePCs) {
+      for (const pc of this.QuartalComposerScalePCs) {
         const midi = pc + oct * 12;
         if (midi >= 0 && midi <= 127) scaleMidiSet.push(midi);
       }

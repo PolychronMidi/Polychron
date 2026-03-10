@@ -15,7 +15,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     this.root = root;
     this.type = type;
     this.blueNoteProb = clamp(blueNoteProb, 0, 1);
-    this._phraseCount = 0;
+    this.BluesComposerPhraseCount = 0;
     this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(root, type);
   }
@@ -42,7 +42,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
 
     // Identify blue notes (notes in blues scale but not in pentatonic)
     const pentatonicSet = new Set(pentatonic.notes);
-    this._blueNotes = bluesNotes.filter(n => !pentatonicSet.has(n));
+    this.BluesComposerBlueNotes = bluesNotes.filter(n => !pentatonicSet.has(n));
 
     // Use the full blues scale as the note pool
     this.notes = bluesNotes;
@@ -71,8 +71,8 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     const baseNotes = super.getNotes(octaveRange);
     V.assertArray(baseNotes, 'baseNotes', true);
 
-    this._phraseCount++;
-    const isResponse = this._phraseCount % 2 === 0;
+    this.BluesComposerPhraseCount++;
+    const isResponse = this.BluesComposerPhraseCount % 2 === 0;
 
     // Sort notes for directional shaping
     const sorted = [...baseNotes].sort((a, b) => {
@@ -85,8 +85,8 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     const shaped = isResponse ? sorted.reverse() : sorted;
 
     // Blue note injection: probabilistically add chromatic approach tones
-    if (this._blueNotes.length > 0 && rf() < this.blueNoteProb) {
-      const bluePC = this._blueNotes[ri(this._blueNotes.length - 1)];
+    if (this.BluesComposerBlueNotes.length > 0 && rf() < this.blueNoteProb) {
+      const bluePC = this.BluesComposerBlueNotes[ri(this.BluesComposerBlueNotes.length - 1)];
       const blueMidi = t.Note.midi(`${bluePC}4`);
       if (Number.isFinite(blueMidi)) {
         // Insert blue note before a random position (chromatic approach)
@@ -96,14 +96,14 @@ BluesComposer = class BluesComposer extends MeasureComposer {
       }
     }
 
-    // Ghost notes: quiet grace notes at low velocity (marked via _ghost flag)
+    // Ghost notes: quiet grace notes at low velocity (marked via BluesComposerGhost flag)
     const result = shaped.map(n => {
       const note = typeof n === 'number' ? n : (n && typeof n.note === 'number' ? n.note : null);
       BluesComposer.V.requireFinite(note, 'output note');
       if (rf() < this.blueNoteProb * 0.3) {
         // Ghost note: shift by 1 semitone as grace
         const ghostNote = note + (rf() < 0.5 ? -1 : 1);
-        return { note: clamp(ghostNote, 0, 127), _ghost: true };
+        return { note: clamp(ghostNote, 0, 127), BluesComposerGhost: true };
       }
       return typeof n === 'number' ? { note: n } : n;
     });

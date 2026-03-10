@@ -3,7 +3,7 @@
 // Coordinates motifConfig, intervalComposer, motifSpreader, motifChain, and
 // motifModulator to produce coherent, parent-derived motif content at every level.
 
-class MotifManager_ {
+class MotifManagerClass {
   // Registry / value proxy helpers (existing API) --
 
   static listGenerators() { return motifRegistry.list(); }
@@ -67,9 +67,9 @@ class MotifManager_ {
    * Invalidate a child unit's VoiceManager so it re-seeds from parent on next use.
    * Called at parent boundaries to ensure child voice-leading stays coherent.
    */
-  static _resetChildVM(layer, childUnit) {
-    if (layer._voiceManagers && layer._voiceManagers[childUnit]) {
-      delete layer._voiceManagers[childUnit];
+  static motifManagerResetChildVM(layer, childUnit) {
+    if (layer.motifManagerVoiceManagers && layer.motifManagerVoiceManagers[childUnit]) {
+      delete layer.motifManagerVoiceManagers[childUnit];
     }
   }
 
@@ -93,7 +93,7 @@ class MotifManager_ {
       }
     }
     // Reset child VM so it re-seeds from beat-level history
-    MotifManager_._resetChildVM(layer, 'div');
+    MotifManagerClass.motifManagerResetChildVM(layer, 'div');
     motifSpreader.spreadDivs({ layer, divsPerBeat: dpb, beats, composer, parentBucket: effectiveParentBucket });
   }
 
@@ -104,7 +104,7 @@ class MotifManager_ {
    */
   static planSubdivs(layer, absDivIdx, sPerDiv) {
     if (!Number.isFinite(Number(sPerDiv)) || Number(sPerDiv) <= 0) return;
-    MotifManager_._resetChildVM(layer, 'subdiv');
+    MotifManagerClass.motifManagerResetChildVM(layer, 'subdiv');
     const profile = motifConfig.getUnitProfile('subdiv');
     motifSpreader.spreadSubunits({ layer, unit: 'subdiv', parentIndex: absDivIdx, count: Number(sPerDiv), bucketKey: 'subdivMotifs', parentBucketKey: 'divMotifs', profile });
   }
@@ -116,10 +116,12 @@ class MotifManager_ {
    */
   static planSubsubdivs(layer, absSubdivIdx, ssPerSub) {
     if (!Number.isFinite(Number(ssPerSub)) || Number(ssPerSub) <= 0) return;
-    MotifManager_._resetChildVM(layer, 'subsubdiv');
+    MotifManagerClass.motifManagerResetChildVM(layer, 'subsubdiv');
     const profile = motifConfig.getUnitProfile('subsubdiv');
     motifSpreader.spreadSubunits({ layer, unit: 'subsubdiv', parentIndex: absSubdivIdx, count: Number(ssPerSub), bucketKey: 'subsubdivMotifs', parentBucketKey: 'subdivMotifs', profile });
   }
 }
 
-motifManager = MotifManager_;
+// preserve legacy API surface required by MotifManagerAPI
+MotifManagerClass._resetChildVM = MotifManagerClass.motifManagerResetChildVM;
+motifManager = MotifManagerClass;

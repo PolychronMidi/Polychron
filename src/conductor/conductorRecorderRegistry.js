@@ -17,7 +17,7 @@ conductorRecorderRegistry = (() => {
   const recorders = [];
 
   /** @param {string} name */
-  function _assertNoDup(name) {
+  function conductorRecorderRegistryAssertNoDup(name) {
     if (recorders.some(e => e.name === name)) {
       throw new Error(`conductorRecorderRegistry.registerRecorder: duplicate name "${name}"`);
     }
@@ -30,7 +30,7 @@ conductorRecorderRegistry = (() => {
    */
   function registerRecorder(name, fn) {
     V.assertNonEmptyString(name, 'name');
-    _assertNoDup(name);
+    conductorRecorderRegistryAssertNoDup(name);
     V.requireType(fn, 'function', 'fn');
     recorders.push({ name, fn });
   }

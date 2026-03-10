@@ -2,10 +2,10 @@
 const V = validator.create('motifValidators');
 
 motifValidators = {
-  _toPCSet(scaleLike, label = 'scale') {
+  motifValidatorsToPCSet(scaleLike, label = 'scale') {
     V.assertArray(scaleLike, label);
     if (scaleLike.length === 0) {
-      throw new Error(`motifValidators._toPCSet: ${label} must be a non-empty array`);
+      throw new Error(`motifValidators.motifValidatorsToPCSet: ${label} must be a non-empty array`);
     }
 
     const pcs = resolveScalePC(scaleLike);
@@ -69,7 +69,7 @@ motifValidators = {
     let expectedPCs = null;
     if (mode === 'strict-global') {
       if (!caps.notesReflectOutputSet || !Array.isArray(developer.notes) || developer.notes.length === 0) return;
-      expectedPCs = this._toPCSet(developer.notes, 'developer.notes');
+      expectedPCs = this.motifValidatorsToPCSet(developer.notes, 'developer.notes');
     } else {
       const maybeWindowScale = opts && /** @type {any} */ (opts).windowScale;
       let windowScale = Array.isArray(maybeWindowScale) && maybeWindowScale.length > 0 ? /** @type {(string|number)[]} */ (maybeWindowScale) : null;
@@ -88,7 +88,7 @@ motifValidators = {
         const context = opts && opts.context ? JSON.stringify(opts.context) : '{}';
         throw new Error(`motifValidators: local-window mode requires window scale context (context=${context})`);
       }
-      expectedPCs = this._toPCSet(windowScale, 'windowScale');
+      expectedPCs = this.motifValidatorsToPCSet(windowScale, 'windowScale');
     }
 
     const scalePCs = new Set();

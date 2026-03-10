@@ -207,10 +207,10 @@ FactoryManager = class FactoryManager {
         const notes = composer.getNotes();
         V.assertArray(notes, 'notes', true);
 
-        composer._factoryType = cfg.type;
-        composer._profileFamily = familyName;
-        composer._profilePool = poolName;
-        composer._layerTarget = layerName;
+        composer.FactoryManagerFactoryType = cfg.type;
+        composer.FactoryManagerProfileFamily = familyName;
+        composer.FactoryManagerProfilePool = poolName;
+        composer.FactoryManagerLayerTarget = layerName;
         return composer;
       } catch (e) {
         lastError = e;

@@ -5,19 +5,19 @@ traceDrain = (() => {
 
   let isTracing = false;
   let fd = null;
-  const _buffer = [];
+  const traceDrainBuffer = [];
   const FLUSH_INTERVAL = 50; // flush every N records to reduce sync I/O calls
-  let _recordCount = 0;
+  let traceDrainRecordCount = 0;
 
   // Per-beat note accumulator: collects emitted note data between playNotes and traceDrain.record
   /** @type {Array<{pitch: number, velocity: number, channel: number}>} */
-  let _pendingNotes = [];
+  let traceDrainPendingNotes = [];
 
   function init() {
     if (!process.argv.includes('--trace')) return;
     isTracing = true;
-    _recordCount = 0;
-    _pendingNotes = [];
+    traceDrainRecordCount = 0;
+    traceDrainPendingNotes = [];
 
     const outDir = path.resolve(process.cwd(), 'metrics');
     if (!fs.existsSync(outDir)) {
@@ -42,10 +42,10 @@ traceDrain = (() => {
   }
 
   /** Flush buffered records to disk in a single write. */
-  function _flush() {
-    if (_buffer.length === 0 || fd === null) return;
-    fs.writeSync(fd, _buffer.join(''));
-    _buffer.length = 0;
+  function traceDrainFlush() {
+    if (traceDrainBuffer.length === 0 || fd === null) return;
+    fs.writeSync(fd, traceDrainBuffer.join(''));
+    traceDrainBuffer.length = 0;
   }
 
   /**
@@ -57,7 +57,7 @@ traceDrain = (() => {
    */
   function recordNote(pitch, velocity, channel) {
     if (!isTracing) return;
-    _pendingNotes.push({ pitch, velocity, channel });
+    traceDrainPendingNotes.push({ pitch, velocity, channel });
   }
 
   /**
@@ -87,22 +87,22 @@ traceDrain = (() => {
       profilerTelemetry: data.profilerTelemetry || undefined,
       outputLoadGuard: data.outputLoadGuard || undefined,
       forcedTransitionEvent: data.forcedTransitionEvent || undefined,
-      notes: _pendingNotes.length > 0 ? _pendingNotes.slice() : undefined,
+      notes: traceDrainPendingNotes.length > 0 ? traceDrainPendingNotes.slice() : undefined,
       stageTiming: data.stageTiming || undefined
     };
     // Clear accumulated notes after embedding
-    _pendingNotes = [];
+    traceDrainPendingNotes = [];
 
-    _buffer.push(JSON.stringify(payload) + '\n');
-    _recordCount++;
-    if (_buffer.length >= FLUSH_INTERVAL) _flush();
+    traceDrainBuffer.push(JSON.stringify(payload) + '\n');
+    traceDrainRecordCount++;
+    if (traceDrainBuffer.length >= FLUSH_INTERVAL) traceDrainFlush();
   }
 
   // Mid-run diagnostic snapshot. Emitted periodically to capture
   // system state evolution beyond the beat-level trace window. The snapshot
   // includes key metrics that often diverge between early-run and end-of-run
   // (effectiveDim, trust scores, coupling means, gain multiplier, regime).
-  let _snapshotCount = 0;
+  let traceDrainSnapshotCount = 0;
 
   /**
    * Record a diagnostic snapshot (non-beat).
@@ -110,10 +110,10 @@ traceDrain = (() => {
    */
   function recordSnapshot(data) {
     if (!isTracing || fd === null) return;
-    _snapshotCount++;
+    traceDrainSnapshotCount++;
     const payload = {
       recordType: 'snapshot',
-      snapshotIndex: _snapshotCount,
+      snapshotIndex: traceDrainSnapshotCount,
       beatKey: data.beatKey,
       timeMs: data.timeMs,
       effectiveDim: data.effectiveDim,
@@ -126,15 +126,15 @@ traceDrain = (() => {
       couplingStrength: data.couplingStrength,
       phaseIntegrity: data.phaseIntegrity
     };
-    _buffer.push(JSON.stringify(payload) + '\n');
-    _recordCount++;
-    if (_buffer.length >= FLUSH_INTERVAL) _flush();
+    traceDrainBuffer.push(JSON.stringify(payload) + '\n');
+    traceDrainRecordCount++;
+    if (traceDrainBuffer.length >= FLUSH_INTERVAL) traceDrainFlush();
   }
 
   function shutdown() {
-    _flush();
-    if (isTracing && _recordCount === 0) {
-      console.warn('Acceptable warning: traceDrain recorded zero entries during traced run.');
+    traceDrainFlush();
+    if (isTracing && traceDrainRecordCount === 0) {
+      throw new Error('traceDrain.shutdown: no trace entries were recorded during traced run');
     }
     if (fd !== null) {
       try {
@@ -146,5 +146,5 @@ traceDrain = (() => {
     }
   }
 
-  return { init, isEnabled, record, recordNote, recordSnapshot, flush: _flush, shutdown };
+  return { init, isEnabled, record, recordNote, recordSnapshot, flush: traceDrainFlush, shutdown };
 })();

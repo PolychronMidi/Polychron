@@ -73,10 +73,10 @@ regimeReactiveDamping = (() => {
   const DRIFT_MAGNITUDE   = 0.09;
   const DRIFT_DECAY       = 0.93; // drift decays each beat, replaced when velocity recovers
   let lowVelStreak = 0;
-  let _driftD = 0;
-  let _driftT = 0;
-  let _driftF = 0;
-  let _injectionCount = 0; // persistent counter for sign alternation (survives streak resets)
+  let regimeReactiveDampingDriftD = 0;
+  let regimeReactiveDampingDriftT = 0;
+  let regimeReactiveDampingDriftF = 0;
+  let regimeReactiveDampingInjectionCount = 0; // persistent counter for sign alternation (survives streak resets)
 
   // -- #2: Regime Distribution Equilibrator (Hypermeta) --
   // Tracks regime occurrences in a rolling window and auto-modulates bias
@@ -85,7 +85,7 @@ regimeReactiveDamping = (() => {
   // encourage it, eliminating manual regime-bias re-tuning between rounds.
   const _REGIME_RING_SIZE = 64;
   /** @type {string[]} */
-  const _regimeRing = [];
+  const regimeReactiveDampingRegimeRing = [];
   const _REGIME_BUDGET = {
     exploring: 0.35,
     coherent: 0.35,
@@ -96,26 +96,26 @@ regimeReactiveDamping = (() => {
     drifting: 0.02,
   };
   const _EQUILIB_STRENGTH = 0.25;
-  let _eqCorrD = 0;
-  let _eqCorrT = 0;
-  let _eqCorrF = 0;
+  let regimeReactiveDampingEqCorrD = 0;
+  let regimeReactiveDampingEqCorrT = 0;
+  let regimeReactiveDampingEqCorrF = 0;
 
   // -- #7 (R7): Tension Pin Relief Valve --
   // When tension bias pins at its ceiling for >10 consecutive beats,
   // temporarily relax the ceiling by 5% to prevent sustained saturation.
   // Resets after 5 beats of non-pinned output.
-  let _tensionPinStreak = 0;
-  let _tensionUnpinStreak = 0;
-  let _tensionCeilingRelax = 0;  // additive relaxation on MAX_TENSION
+  let regimeReactiveDampingTensionPinStreak = 0;
+  let regimeReactiveDampingTensionUnpinStreak = 0;
+  let regimeReactiveDampingTensionCeilingRelax = 0;  // additive relaxation on MAX_TENSION
   const _PIN_STREAK_TRIGGER = 10;
   const _UNPIN_RESET_BEATS = 5;
   const _PIN_RELAX_STEP = 0.05;  // 5% of MAX_TENSION per trigger
 
   let currentRegime = 'evolving';
   let curvatureGain = 0;
-  let _smoothedDensity = 1.0;
-  let _smoothedTension = 1.0;
-  let _smoothedFlicker = 1.0;
+  let regimeReactiveDampingSmoothedDensity = 1.0;
+  let regimeReactiveDampingSmoothedTension = 1.0;
+  let regimeReactiveDampingSmoothedFlicker = 1.0;
 
   function refresh() {
     const snap = systemDynamicsProfiler.getSnapshot();
@@ -125,20 +125,20 @@ regimeReactiveDamping = (() => {
 
     const equilibratorState = {
       currentRegime,
-      regimeRing: _regimeRing,
+      regimeRing: regimeReactiveDampingRegimeRing,
       regimeRingSize: _REGIME_RING_SIZE,
       regimeBudget: _REGIME_BUDGET,
       equilibStrength: _EQUILIB_STRENGTH,
-      eqCorrD: _eqCorrD,
-      eqCorrT: _eqCorrT,
-      eqCorrF: _eqCorrF,
+      eqCorrD: regimeReactiveDampingEqCorrD,
+      eqCorrT: regimeReactiveDampingEqCorrT,
+      eqCorrF: regimeReactiveDampingEqCorrF,
       snap,
-      smoothedFlicker: _smoothedFlicker,
+      smoothedFlicker: regimeReactiveDampingSmoothedFlicker,
     };
     regimeReactiveDampingEquilibrator.compute(equilibratorState);
-    _eqCorrD = equilibratorState.eqCorrD;
-    _eqCorrT = equilibratorState.eqCorrT;
-    _eqCorrF = equilibratorState.eqCorrF;
+    regimeReactiveDampingEqCorrD = equilibratorState.eqCorrD;
+    regimeReactiveDampingEqCorrT = equilibratorState.eqCorrT;
+    regimeReactiveDampingEqCorrF = equilibratorState.eqCorrF;
 
     // Velocity floor logic
     const velocity = snap ? (snap.velocity || 0) : 0;
@@ -146,9 +146,9 @@ regimeReactiveDamping = (() => {
       lowVelStreak++;
     } else {
       lowVelStreak = 0;
-      _driftD *= DRIFT_DECAY;
-      _driftT *= DRIFT_DECAY;
-      _driftF *= DRIFT_DECAY;
+      regimeReactiveDampingDriftD *= DRIFT_DECAY;
+      regimeReactiveDampingDriftT *= DRIFT_DECAY;
+      regimeReactiveDampingDriftF *= DRIFT_DECAY;
     }
 
     if (lowVelStreak >= LOW_VEL_BEATS && snap && snap.couplingMatrix) {
@@ -160,79 +160,79 @@ regimeReactiveDamping = (() => {
       const fCoup = m.abs(cm['density-flicker'] || 0) + m.abs(cm['tension-flicker'] || 0);
 
       // Directional: alternate sign using persistent counter to prevent
-      // monotonic drift. _injectionCount survives streak resets and section
+      // monotonic drift. regimeReactiveDampingInjectionCount survives streak resets and section
       // resets, ensuring true alternation across the full composition.
-      _injectionCount++;
-      const sign = (_injectionCount % 2 === 0) ? 1 : -1;
+      regimeReactiveDampingInjectionCount++;
+      const sign = (regimeReactiveDampingInjectionCount % 2 === 0) ? 1 : -1;
 
       if (dCoup <= tCoup && dCoup <= fCoup) {
-        _driftD = sign * DRIFT_MAGNITUDE;
+        regimeReactiveDampingDriftD = sign * DRIFT_MAGNITUDE;
       } else if (tCoup <= fCoup) {
-        _driftT = sign * DRIFT_MAGNITUDE;
+        regimeReactiveDampingDriftT = sign * DRIFT_MAGNITUDE;
       } else {
-        _driftF = sign * DRIFT_MAGNITUDE;
+        regimeReactiveDampingDriftF = sign * DRIFT_MAGNITUDE;
       }
       // Reset streak so drift is injected once per LOW_VEL_BEATS window
       lowVelStreak = 0;
     }
 
     // Compute raw bias values with equilibrator corrections (#2)
-    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + _driftD + _eqCorrD;
+    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD;
     // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
-    const effectiveMaxTension = MAX_TENSION + _tensionCeilingRelax;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + _driftT + _eqCorrT;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + _driftF + _eqCorrF;
-    _smoothedDensity = clamp(_smoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
-    _smoothedTension = clamp(_smoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
-    _smoothedFlicker = clamp(_smoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);
+    const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF;
+    regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
+    regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
+    regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);
 
     // #7 (R7): Update tension pin relief valve state
-    const tensionAtPin = m.abs(_smoothedTension - (1.0 + effectiveMaxTension)) < 0.005
-                      || m.abs(_smoothedTension - (1.0 - effectiveMaxTension)) < 0.005;
+    const tensionAtPin = m.abs(regimeReactiveDampingSmoothedTension - (1.0 + effectiveMaxTension)) < 0.005
+                      || m.abs(regimeReactiveDampingSmoothedTension - (1.0 - effectiveMaxTension)) < 0.005;
     if (tensionAtPin) {
-      _tensionPinStreak++;
-      _tensionUnpinStreak = 0;
-      if (_tensionPinStreak > _PIN_STREAK_TRIGGER) {
-        _tensionCeilingRelax = clamp(_tensionCeilingRelax + MAX_TENSION * _PIN_RELAX_STEP, 0, MAX_TENSION * 0.30);
-        _tensionPinStreak = 0; // reset so next trigger needs another streak
+      regimeReactiveDampingTensionPinStreak++;
+      regimeReactiveDampingTensionUnpinStreak = 0;
+      if (regimeReactiveDampingTensionPinStreak > _PIN_STREAK_TRIGGER) {
+        regimeReactiveDampingTensionCeilingRelax = clamp(regimeReactiveDampingTensionCeilingRelax + MAX_TENSION * _PIN_RELAX_STEP, 0, MAX_TENSION * 0.30);
+        regimeReactiveDampingTensionPinStreak = 0; // reset so next trigger needs another streak
         safePreBoot.call(() => explainabilityBus.emit('tension-pin-relief', 'both', {
-          newCeiling: MAX_TENSION + _tensionCeilingRelax,
+          newCeiling: MAX_TENSION + regimeReactiveDampingTensionCeilingRelax,
           baseCeiling: MAX_TENSION
         }));
       }
     } else {
-      _tensionUnpinStreak++;
-      _tensionPinStreak = 0;
-      if (_tensionUnpinStreak > _UNPIN_RESET_BEATS) {
-        _tensionCeilingRelax = 0;
-        _tensionUnpinStreak = 0;
+      regimeReactiveDampingTensionUnpinStreak++;
+      regimeReactiveDampingTensionPinStreak = 0;
+      if (regimeReactiveDampingTensionUnpinStreak > _UNPIN_RESET_BEATS) {
+        regimeReactiveDampingTensionCeilingRelax = 0;
+        regimeReactiveDampingTensionUnpinStreak = 0;
       }
     }
 
     // Decay drift contribution
-    _driftD *= DRIFT_DECAY;
-    _driftT *= DRIFT_DECAY;
-    _driftF *= DRIFT_DECAY;
+    regimeReactiveDampingDriftD *= DRIFT_DECAY;
+    regimeReactiveDampingDriftT *= DRIFT_DECAY;
+    regimeReactiveDampingDriftF *= DRIFT_DECAY;
   }
 
   function densityBias() {
-    return _smoothedDensity;
+    return regimeReactiveDampingSmoothedDensity;
   }
 
   function tensionBias() {
-    return _smoothedTension;
+    return regimeReactiveDampingSmoothedTension;
   }
 
   function flickerMod() {
-    return _smoothedFlicker;
+    return regimeReactiveDampingSmoothedFlicker;
   }
 
   function reset() {
     currentRegime = 'evolving';
     curvatureGain = 0;
-    _smoothedDensity = 1.0;
-    _smoothedTension = 1.0;
-    _smoothedFlicker = 1.0;
+    regimeReactiveDampingSmoothedDensity = 1.0;
+    regimeReactiveDampingSmoothedTension = 1.0;
+    regimeReactiveDampingSmoothedFlicker = 1.0;
     // Drift state intentionally NOT reset on section boundaries.
     // The profiler (scope 'all') retains trajectory history across sections,
     // so drift must persist to maintain momentum. lowVelStreak resets to
@@ -240,14 +240,14 @@ regimeReactiveDamping = (() => {
     // injection count carry forward.
     lowVelStreak = 0;
     // #2: Reset equilibrator ring buffer on section boundary
-    _regimeRing.length = 0;
-    _eqCorrD = 0;
-    _eqCorrT = 0;
-    _eqCorrF = 0;
+    regimeReactiveDampingRegimeRing.length = 0;
+    regimeReactiveDampingEqCorrD = 0;
+    regimeReactiveDampingEqCorrT = 0;
+    regimeReactiveDampingEqCorrF = 0;
     // #7: Reset relief valve
-    _tensionPinStreak = 0;
-    _tensionUnpinStreak = 0;
-    _tensionCeilingRelax = 0;
+    regimeReactiveDampingTensionPinStreak = 0;
+    regimeReactiveDampingTensionUnpinStreak = 0;
+    regimeReactiveDampingTensionCeilingRelax = 0;
   }
 
   // Self-registration
@@ -261,8 +261,8 @@ regimeReactiveDamping = (() => {
     'regimeReactiveDamping',
     'regime',
     'density',
-    () => m.abs(_smoothedDensity - 1.0) / MAX_DENSITY,
-    () => m.sign(_smoothedDensity - 1.0)
+    () => m.abs(regimeReactiveDampingSmoothedDensity - 1.0) / MAX_DENSITY,
+    () => m.sign(regimeReactiveDampingSmoothedDensity - 1.0)
   );
 
   return { densityBias, tensionBias, flickerMod, reset };

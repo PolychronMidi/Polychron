@@ -13,7 +13,7 @@ conductorDampening = (() => {
   // Track how many contributors produced non-1.0 values last beat per pipeline.
   // When dormant contributors inflate registryLength, dampening is miscalibrated.
   /** @type {Map<string, number>} */
-  const _activeCountByPipeline = new Map();
+  const conductorDampeningActiveCountByPipeline = new Map();
 
   // -- #3: Pipeline Product Centroid Controller (Hypermeta) --
   // Tracks rolling product EMA per pipeline and applies slow centroid-
@@ -22,19 +22,19 @@ conductorDampening = (() => {
   const _CENTROID_EMA = 0.05;               // ~20-beat horizon
   const _CENTROID_MAX_CORRECTION = 0.25;    // max 25% correction (raised R7 Evo 3)
   /** @type {Map<string, number>} */
-  const _centroidEma = new Map();
+  const conductorDampeningCentroidEma = new Map();
   /** @type {Map<string, number>} */
-  const _lastCentroidCorrection = new Map();
+  const conductorDampeningLastCentroidCorrection = new Map();
 
   // -- #4: Flicker Range Elasticity Controller (Hypermeta) --
   // Tracks 32-beat rolling flicker range and adjusts dampening base
   // dynamically. Compressed range -> reduce dampening; excessive range
   // -> increase dampening. Self-heals flicker range compression.
   const _FLICKER_RANGE_WINDOW = 32;
-  let _targetFlickerRange = 0.15;
+  let conductorDampeningTargetFlickerRange = 0.15;
   /** @type {number[]} */
-  const _flickerRingBuffer = [];
-  let _flickerDampeningBaseAdj = 0;
+  const conductorDampeningFlickerRingBuffer = [];
+  let conductorDampeningFlickerDampeningBaseAdj = 0;
 
   // Progressive strength: as the running product diverges from 1.0,
   // subsequent deviations in the same direction face stronger dampening.
@@ -51,7 +51,7 @@ conductorDampening = (() => {
   const PINNED_WIDEN_THRESHOLD = 0.60;  // >60% pinned triggers widening
   const MAX_WIDEN_FACTOR = 0.15;        // max 15% range extension
   /** @type {Map<string, { pinnedEma: number, widenLo: number, widenHi: number }>} */
-  const _adaptiveState = new Map();
+  const conductorDampeningAdaptiveState = new Map();
 
   /**
    * Effective damping scaled by pipeline contributor count and system dynamics.
@@ -61,7 +61,7 @@ conductorDampening = (() => {
    */
   function scaledDamping(registryLength, pipelineName) {
     // Flicker pipeline gets lighter dampening (0.85) plus #4 elasticity adjustment
-    let base = pipelineName === 'flicker' ? 0.85 + _flickerDampeningBaseAdj : BASE_DEVIATION_DAMPING;
+    let base = pipelineName === 'flicker' ? 0.85 + conductorDampeningFlickerDampeningBaseAdj : BASE_DEVIATION_DAMPING;
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
@@ -75,7 +75,7 @@ conductorDampening = (() => {
     }
     // Use effective active count instead of raw registry length when available.
     // This prevents dormant contributors from inflating the dampening calibration.
-    const activeCount = pipelineName ? (_activeCountByPipeline.get(pipelineName) || registryLength) : registryLength;
+    const activeCount = pipelineName ? (conductorDampeningActiveCountByPipeline.get(pipelineName) || registryLength) : registryLength;
     const effectiveLength = m.max(activeCount, registryLength * 0.5);
     return clamp(base * clamp(effectiveLength / REF_PIPELINE_SIZE, 0.3, 1.0), 0.1, 1.0);
   }
@@ -97,7 +97,7 @@ conductorDampening = (() => {
     // contributors need weaker per-contributor progressive dampening (they
     // self-cancel via the product dynamics). Replaces the hardcoded 0.5x
     // flicker special case with a general data-driven formula.
-    const pipelineActiveCount = pipelineName ? (_activeCountByPipeline.get(pipelineName) || REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
+    const pipelineActiveCount = pipelineName ? (conductorDampeningActiveCountByPipeline.get(pipelineName) || REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
     let progStrength = PROGRESSIVE_STRENGTH * clamp(pipelineActiveCount / REF_PIPELINE_SIZE, 0.3, 1.5);
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
@@ -131,13 +131,13 @@ conductorDampening = (() => {
       if (m.abs(raw - 1.0) > 1e-6) activeCount++;
       product *= progressiveDampen(clamp(raw, registry[i].lo, registry[i].hi), damping, product, pipelineName);
     }
-    if (pipelineName) _activeCountByPipeline.set(pipelineName, activeCount);
+    if (pipelineName) conductorDampeningActiveCountByPipeline.set(pipelineName, activeCount);
     // #3: Apply centroid correction
-    product = _applyCentroidCorrection(product, pipelineName);
+    product = conductorDampeningApplyCentroidCorrection(product, pipelineName);
     // #4: Track flicker range for elasticity controller
-    if (pipelineName === 'flicker') _updateFlickerRange(product);
+    if (pipelineName === 'flicker') conductorDampeningUpdateFlickerRange(product);
     // #10: Meta-observation telemetry
-    _emitMetaTelemetry(product, pipelineName);
+    conductorDampeningEmitMetaTelemetry(product, pipelineName);
     return product;
   }
 
@@ -162,10 +162,10 @@ conductorDampening = (() => {
       // -- Adaptive clamp widening --
       let lo = entry.lo;
       let hi = entry.hi;
-      let as = _adaptiveState.get(entry.name);
+      let as = conductorDampeningAdaptiveState.get(entry.name);
       if (!as) {
         as = { pinnedEma: 0, widenLo: 0, widenHi: 0 };
-        _adaptiveState.set(entry.name, as);
+        conductorDampeningAdaptiveState.set(entry.name, as);
       }
       const isPinned = (raw < lo || raw > hi) ? 1 : 0;
       as.pinnedEma = as.pinnedEma * (1 - PINNED_EMA_ALPHA) + isPinned * PINNED_EMA_ALPHA;
@@ -190,13 +190,13 @@ conductorDampening = (() => {
       product *= progressiveDampen(clamped, damping, product, pipelineName);
       contributions.push({ name: entry.name, raw, clamped });
     }
-    if (pipelineName) _activeCountByPipeline.set(pipelineName, activeCount);
+    if (pipelineName) conductorDampeningActiveCountByPipeline.set(pipelineName, activeCount);
     // #3: Apply centroid correction to attribution product
-    const correctedProduct = _applyCentroidCorrection(product, pipelineName);
+    const correctedProduct = conductorDampeningApplyCentroidCorrection(product, pipelineName);
     // #4: Track flicker range for elasticity controller
-    if (pipelineName === 'flicker') _updateFlickerRange(correctedProduct);
+    if (pipelineName === 'flicker') conductorDampeningUpdateFlickerRange(correctedProduct);
     // #10: Meta-observation telemetry
-    _emitMetaTelemetry(correctedProduct, pipelineName);
+    conductorDampeningEmitMetaTelemetry(correctedProduct, pipelineName);
     return { product: correctedProduct, contributions };
   }
 
@@ -209,17 +209,17 @@ conductorDampening = (() => {
    * @param {string} [pipelineName]
    * @returns {number}
    */
-  function _applyCentroidCorrection(product, pipelineName) {
+  function conductorDampeningApplyCentroidCorrection(product, pipelineName) {
     if (!pipelineName) return product;
     // Skip flicker axis entirely - centroid pull suppresses
     // needed flicker variance and fights elasticity controller (#4).
     if (pipelineName === 'flicker') return product;
-    const prev = _centroidEma.get(pipelineName) || 1.0;
+    const prev = conductorDampeningCentroidEma.get(pipelineName) || 1.0;
     const updated = prev * (1 - _CENTROID_EMA) + product * _CENTROID_EMA;
-    _centroidEma.set(pipelineName, updated);
+    conductorDampeningCentroidEma.set(pipelineName, updated);
     const drift = updated - 1.0;
     const correction = clamp(-drift, -_CENTROID_MAX_CORRECTION, _CENTROID_MAX_CORRECTION);
-    _lastCentroidCorrection.set(pipelineName, correction);
+    conductorDampeningLastCentroidCorrection.set(pipelineName, correction);
     return product * (1.0 + correction);
   }
 
@@ -228,27 +228,27 @@ conductorDampening = (() => {
    * Updates the flicker dampening base adjustment based on rolling range.
    * @param {number} flickerProduct
    */
-  function _updateFlickerRange(flickerProduct) {
-    _flickerRingBuffer.push(flickerProduct);
-    if (_flickerRingBuffer.length > _FLICKER_RANGE_WINDOW) _flickerRingBuffer.shift();
-    if (_flickerRingBuffer.length < 8) return;
+  function conductorDampeningUpdateFlickerRange(flickerProduct) {
+    conductorDampeningFlickerRingBuffer.push(flickerProduct);
+    if (conductorDampeningFlickerRingBuffer.length > _FLICKER_RANGE_WINDOW) conductorDampeningFlickerRingBuffer.shift();
+    if (conductorDampeningFlickerRingBuffer.length < 8) return;
     let fMin = Infinity;
     let fMax = -Infinity;
-    for (let i = 0; i < _flickerRingBuffer.length; i++) {
-      if (_flickerRingBuffer[i] < fMin) fMin = _flickerRingBuffer[i];
-      if (_flickerRingBuffer[i] > fMax) fMax = _flickerRingBuffer[i];
+    for (let i = 0; i < conductorDampeningFlickerRingBuffer.length; i++) {
+      if (conductorDampeningFlickerRingBuffer[i] < fMin) fMin = conductorDampeningFlickerRingBuffer[i];
+      if (conductorDampeningFlickerRingBuffer[i] > fMax) fMax = conductorDampeningFlickerRingBuffer[i];
     }
     const range = fMax - fMin;
-    if (range < _targetFlickerRange * 0.6) {
+    if (range < conductorDampeningTargetFlickerRange * 0.6) {
       // Range compressed: reduce dampening to allow more expression
       // Tripled adjustment rate (0.005->0.015) for faster response
-      _flickerDampeningBaseAdj = clamp(_flickerDampeningBaseAdj + 0.015, 0, 0.15);
-    } else if (range > _targetFlickerRange * 2.0) {
+      conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj + 0.015, 0, 0.15);
+    } else if (range > conductorDampeningTargetFlickerRange * 2.0) {
       // Range too wide: increase dampening to rein it in
-      _flickerDampeningBaseAdj = clamp(_flickerDampeningBaseAdj - 0.015, -0.15, 0);
+      conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj - 0.015, -0.15, 0);
     } else {
       // In target range: relax adjustment toward zero
-      _flickerDampeningBaseAdj *= 0.95;
+      conductorDampeningFlickerDampeningBaseAdj *= 0.95;
     }
   }
 
@@ -258,24 +258,24 @@ conductorDampening = (() => {
    * @param {number} product
    * @param {string} [pipelineName]
    */
-  function _emitMetaTelemetry(product, pipelineName) {
+  function conductorDampeningEmitMetaTelemetry(product, pipelineName) {
     if (!pipelineName) return;
     safePreBoot.call(() => {
-      const centroidCorr = _lastCentroidCorrection.get(pipelineName) || 0;
+      const centroidCorr = conductorDampeningLastCentroidCorrection.get(pipelineName) || 0;
       explainabilityBus.emit('meta-dampening-telemetry', 'both', {
         pipeline: pipelineName,
         product,
-        centroidEma: _centroidEma.get(pipelineName) || 1.0,
+        centroidEma: conductorDampeningCentroidEma.get(pipelineName) || 1.0,
         centroidCorrection: centroidCorr,
-        flickerDampeningBaseAdj: pipelineName === 'flicker' ? _flickerDampeningBaseAdj : 0,
-        activeCount: _activeCountByPipeline.get(pipelineName) || 0
+        flickerDampeningBaseAdj: pipelineName === 'flicker' ? conductorDampeningFlickerDampeningBaseAdj : 0,
+        activeCount: conductorDampeningActiveCountByPipeline.get(pipelineName) || 0
       });
       // Feed correction signs to meta-controller watchdog
       if (centroidCorr !== 0) {
         conductorMetaWatchdog.recordCorrection(pipelineName, 'centroid', centroidCorr);
       }
-      if (pipelineName === 'flicker' && _flickerDampeningBaseAdj !== 0) {
-        conductorMetaWatchdog.recordCorrection('flicker', 'elasticity', _flickerDampeningBaseAdj);
+      if (pipelineName === 'flicker' && conductorDampeningFlickerDampeningBaseAdj !== 0) {
+        conductorMetaWatchdog.recordCorrection('flicker', 'elasticity', conductorDampeningFlickerDampeningBaseAdj);
       }
     });
   }
@@ -288,7 +288,7 @@ conductorDampening = (() => {
    * @param {number} target
    */
   function setFlickerTargetRange(target) {
-    _targetFlickerRange = V.requireFinite(target, 'setFlickerTargetRange.target');
+    conductorDampeningTargetFlickerRange = V.requireFinite(target, 'setFlickerTargetRange.target');
   }
 
   return { scaledDamping, progressiveDampen, collectDampened, collectDampenedWithAttribution, setFlickerTargetRange };

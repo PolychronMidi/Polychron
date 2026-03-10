@@ -53,6 +53,9 @@ MotifComposer = class MotifComposer {
         throw new Error('MotifComposer: options.VoiceLeadingScore provided but invalid');
       }
       V.requireType(opts.VoiceLeadingScore.selectNextNote, 'function', 'opts.VoiceLeadingScore.selectNextNote');
+      if (!V.optionalType(opts.VoiceLeadingScore.voiceRegistryScoreCandidate, 'function')) {
+        throw new Error('MotifComposer: options.VoiceLeadingScore object is missing voiceRegistryScoreCandidate');
+      }
       this.VoiceLeadingScore = opts.VoiceLeadingScore;
     } else {
       this.VoiceLeadingScore = this.useVoiceLeading ? new VoiceLeadingScore() : null;
@@ -80,8 +83,8 @@ MotifComposer = class MotifComposer {
       this.measureComposer = null;
     }
 
-    this._motifInstanceId = (typeof opts.motifInstanceId === 'string' && opts.motifInstanceId) ? opts.motifInstanceId : ('motif-' + ri(1e9 - 1));
-    this._motifSequenceId = 0;
+    this.MotifComposerMotifInstanceId = (typeof opts.motifInstanceId === 'string' && opts.motifInstanceId) ? opts.motifInstanceId : ('motif-' + ri(1e9 - 1));
+    this.MotifComposerMotifSequenceId = 0;
   }
 
   /**
@@ -171,7 +174,7 @@ MotifComposer = class MotifComposer {
     const VC = (VoiceManager)
       ? new VoiceManager()
       : (() => { throw new Error('MotifComposer.generate: VoiceManager not available'); })();
-    const motifLayer = VC ? { id: `${this._motifInstanceId}-${this._motifSequenceId++}` } : null;
+    const motifLayer = VC ? { id: `${this.MotifComposerMotifInstanceId}-${this.MotifComposerMotifSequenceId++}` } : null;
 
     for (let i = 0; i < length; i++) {
       let chosen;
@@ -189,7 +192,15 @@ MotifComposer = class MotifComposer {
         const mc = optsAny.measureComposer || this.measureComposer;
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);
         if (VC && typeof VC.pickNotesForBeat === 'function') {
-          const scorer = mc && mc.VoiceLeadingScore ? mc.VoiceLeadingScore : null;
+          let scorer = null;
+          if (mc && mc.VoiceLeadingScore) {
+            if (typeof mc.VoiceLeadingScore.voiceRegistryScoreCandidate === 'function') {
+              scorer = mc.VoiceLeadingScore;
+            } else {
+              const compName = mc.constructor && mc.constructor.name ? mc.constructor.name : '<anonymous>';
+              throw new Error(`MotifComposer.generate: measureComposer ${compName} supplied invalid VoiceLeadingScore`);
+            }
+          }
           const intent = mc && typeof mc.getVoicingIntent === 'function' ? mc.getVoicingIntent(avail) : null;
           if (intent !== null) {
             V.requireType(intent, 'object', 'intent');

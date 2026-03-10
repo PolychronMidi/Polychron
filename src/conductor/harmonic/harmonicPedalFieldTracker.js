@@ -16,7 +16,7 @@ harmonicPedalFieldTracker = (() => {
   const bassSamples = [];
 
   // Beat-level cache: getPedalFieldSignal is called 2x per beat (tensionBias + stateProvider)
-  const _cache = beatCache.create(() => _getPedalFieldSignal());
+  const harmonicPedalFieldTrackerCache = beatCache.create(() => harmonicPedalFieldTrackerGetPedalFieldSignal());
 
   /**
    * Record the current bass pitch class.
@@ -44,10 +44,10 @@ harmonicPedalFieldTracker = (() => {
    * Detect pedal field duration and get tension bias.
    * @returns {{ pedalDuration: number, tensionBias: number, fieldStable: boolean }}
    */
-  function getPedalFieldSignal() { return _cache.get(); }
+  function getPedalFieldSignal() { return harmonicPedalFieldTrackerCache.get(); }
 
   /** @private */
-  function _getPedalFieldSignal() {
+  function harmonicPedalFieldTrackerGetPedalFieldSignal() {
     if (bassSamples.length < 3) {
       return { pedalDuration: 0, tensionBias: 1, fieldStable: false };
     }

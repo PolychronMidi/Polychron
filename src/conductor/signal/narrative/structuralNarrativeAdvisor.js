@@ -27,10 +27,10 @@ structuralNarrativeAdvisor = (() => {
     familyHistory.push(family);
     if (familyHistory.length > MAX_HISTORY) familyHistory.shift();
     familyCounts.set(family, (familyCounts.get(family) || 0) + 1);
-    _recompute();
+    structuralNarrativeAdvisorRecompute();
   }
 
-  function _recompute() {
+  function structuralNarrativeAdvisorRecompute() {
     if (familyHistory.length < 2) {
       varietyPressure = 1.0;
     } else {

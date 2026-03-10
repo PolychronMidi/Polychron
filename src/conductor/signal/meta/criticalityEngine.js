@@ -45,7 +45,7 @@ criticalityEngine = (() => {
   let tensionSnap = 1.0;
   let flickerSnap = 1.0;
 
-  function _energy() {
+  function criticalityEngineEnergy() {
     const d = signalReader.density() - 0.5;
     const t = signalReader.tension() - 1.0;
     const f = signalReader.flicker() - 0.5;
@@ -54,7 +54,7 @@ criticalityEngine = (() => {
 
   function refresh() {
     totalBeats++;
-    const e = _energy();
+    const e = criticalityEngineEnergy();
     energyBuffer.push(e);
     if (energyBuffer.length > WINDOW) energyBuffer.shift();
 
@@ -103,7 +103,7 @@ criticalityEngine = (() => {
   // Original binary gates preserved as first pass.
 
   /** @param {string} grade @returns {number} */
-  function _healthScale(grade) {
+  function criticalityEngineHealthScale(grade) {
     if (grade === 'healthy') return 1.0;
     if (grade === 'strained') return 0.5;
     return 0; // stressed or critical - skip damping entirely
@@ -111,17 +111,17 @@ criticalityEngine = (() => {
 
   function densityBias() {
     if (densitySnap < 0.65) return 1.0;
-    const scale = _healthScale(signalHealthAnalyzer.getHealth().density.grade);
+    const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().density.grade);
     return 1.0 + (currentBias - 1.0) * scale;
   }
   function tensionBias() {
     if (tensionSnap < 1.0) return 1.0;
-    const scale = _healthScale(signalHealthAnalyzer.getHealth().tension.grade);
+    const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().tension.grade);
     return 1.0 + (currentBias - 1.0) * scale;
   }
   function flickerMod() {
     if (flickerSnap < 0.70) return 1.0;
-    const scale = _healthScale(signalHealthAnalyzer.getHealth().flicker.grade);
+    const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().flicker.grade);
     return 1.0 + (currentBias - 1.0) * scale;
   }
 

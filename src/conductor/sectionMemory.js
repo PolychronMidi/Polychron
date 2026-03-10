@@ -7,7 +7,7 @@ sectionMemory = (() => {
   const CARRYOVER = 0.30; // fraction of previous state seeded into new section
 
   /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string } | null} */
-  let _prev = null;
+  let sectionMemoryPrev = null;
 
   /**
    * Snapshot current conductor state before section reset.
@@ -15,7 +15,7 @@ sectionMemory = (() => {
    */
   function snapshot() {
     const mom = energyMomentumTracker.getMomentum();
-    _prev = {
+    sectionMemoryPrev = {
       energy: clamp(conductorState.getField('compositeIntensity') || 0.5, 0, 1),
       tension: clamp(signalReader.tension(), 0.4, 1.6),
       density: clamp(currentDensity, 0, 1),
@@ -31,9 +31,9 @@ sectionMemory = (() => {
    * pick up the seeded density naturally through their EMA/recorder paths.
    */
   function seed() {
-    if (!_prev) return;
+    if (!sectionMemoryPrev) return;
     // Blend previous density into the freshly-reset currentDensity
-    currentDensity = currentDensity * (1 - CARRYOVER) + _prev.density * CARRYOVER;
+    currentDensity = currentDensity * (1 - CARRYOVER) + sectionMemoryPrev.density * CARRYOVER;
   }
 
   /**
@@ -41,11 +41,11 @@ sectionMemory = (() => {
    * @returns {{ energy: number, tension: number, density: number, flicker: number, trend: string } | null}
    */
   function getPrevious() {
-    return _prev ? Object.assign({}, _prev) : null;
+    return sectionMemoryPrev ? Object.assign({}, sectionMemoryPrev) : null;
   }
 
   function reset() {
-    _prev = null;
+    sectionMemoryPrev = null;
   }
 
   return { snapshot, seed, getPrevious, reset };

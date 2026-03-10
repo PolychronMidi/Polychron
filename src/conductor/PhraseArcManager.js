@@ -31,25 +31,25 @@ PhraseArcManager = class PhraseArcManager {
       }
       this.arcType = opts.arcType;
     }
-    this._registerRangeOverride = (opts.registerRange !== undefined) ? V.requireFinite(Number(opts.registerRange), 'opts.registerRange') : null;
+    this.PhraseArcManagerRegisterRangeOverride = (opts.registerRange !== undefined) ? V.requireFinite(Number(opts.registerRange), 'opts.registerRange') : null;
     if (opts.densityRange !== undefined) {
       if (!opts.densityRange) throw new Error('PhraseArcManager: densityRange must be an object with {min,max}');
       V.assertObject(opts.densityRange, 'opts.densityRange');
       if (!('min' in opts.densityRange && 'max' in opts.densityRange)) {
         throw new Error('PhraseArcManager: densityRange must be an object with {min,max}');
       }
-      this._densityRangeOverride = opts.densityRange;
+      this.PhraseArcManagerDensityRangeOverride = opts.densityRange;
     } else {
-      this._densityRangeOverride = null;
+      this.PhraseArcManagerDensityRangeOverride = null;
     }
 
     const breath = phraseArcProfiler.getBreathProfile();
-    this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
-    this.densityRange = this._densityRangeOverride || breath.densityRange;
+    this.registerRange = this.PhraseArcManagerRegisterRangeOverride !== null ? this.PhraseArcManagerRegisterRangeOverride : breath.registerRange;
+    this.densityRange = this.PhraseArcManagerDensityRangeOverride || breath.densityRange;
 
     // Arc profiles cache; per-beat context cache (keyed on beatCount)
-    this._arcProfiles = phraseArcProfiler.generateArcProfiles();
-    this._contextCache = beatCache.create(() => this._computePhraseContext());
+    this.PhraseArcManagerArcProfiles = phraseArcProfiler.generateArcProfiles();
+    this.PhraseArcManagerContextCache = beatCache.create(() => this.PhraseArcManagerComputePhraseContext());
   }
 
   /**
@@ -58,13 +58,13 @@ PhraseArcManager = class PhraseArcManager {
    * @returns {Object} { position, phase, registerBias, densityMultiplier, voiceIndependence, dynamism, atBoundary }
    */
   getPhraseContext() {
-    return this._contextCache.get();
+    return this.PhraseArcManagerContextCache.get();
   }
 
-  _computePhraseContext() {
+  PhraseArcManagerComputePhraseContext() {
     const breath = phraseArcProfiler.getBreathProfile();
-    this.registerRange = this._registerRangeOverride !== null ? this._registerRangeOverride : breath.registerRange;
-    this.densityRange = this._densityRangeOverride || breath.densityRange;
+    this.registerRange = this.PhraseArcManagerRegisterRangeOverride !== null ? this.PhraseArcManagerRegisterRangeOverride : breath.registerRange;
+    this.densityRange = this.PhraseArcManagerDensityRangeOverride || breath.densityRange;
 
     const pos = timeStream.normalizedProgress('measure');
     const phase = phraseArcProfiler.getPhase(pos);
@@ -73,7 +73,7 @@ PhraseArcManager = class PhraseArcManager {
     const sectionPhase = harmonicContext.getField('sectionPhase');
     currentArcType = conductorConfig.getArcMapping(sectionPhase);
 
-    const profile = this._arcProfiles[currentArcType] || this._arcProfiles[this.arcType];
+    const profile = this.PhraseArcManagerArcProfiles[currentArcType] || this.PhraseArcManagerArcProfiles[this.arcType];
 
     return {
       position: pos,

@@ -33,9 +33,9 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     this.measuresPerChord = clamp(measuresPerChord, 1, 8);
     this.measureCount = 0;
     this.generator = generator;
-    this._lastChord = null;
-    this._isChordChange = false;
-    this._measuresSinceChange = 0;
+    this.HarmonicRhythmComposerLastChord = null;
+    this.HarmonicRhythmComposerIsChordChange = false;
+    this.HarmonicRhythmComposerMeasuresSinceChange = 0;
     // Harmonic rhythm emphasis parameters
     this.changeEmphasis = opts.changeEmphasis ?? 2.0; // Weight multiplier during chord changes
     this.anticipation = opts.anticipation ?? false; // Pre-change activity boost
@@ -93,16 +93,16 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
 
     // Detect chord change
     const currentSymbol = typeof currentChord === 'string' ? currentChord : (currentChord.symbol || currentChord);
-    const lastSymbol = this._lastChord;
-    this._isChordChange = (lastSymbol !== null && lastSymbol !== currentSymbol);
+    const lastSymbol = this.HarmonicRhythmComposerLastChord;
+    this.HarmonicRhythmComposerIsChordChange = (lastSymbol !== null && lastSymbol !== currentSymbol);
 
-    if (this._isChordChange) {
-      this._measuresSinceChange = 0;
+    if (this.HarmonicRhythmComposerIsChordChange) {
+      this.HarmonicRhythmComposerMeasuresSinceChange = 0;
     } else {
-      this._measuresSinceChange++;
+      this.HarmonicRhythmComposerMeasuresSinceChange++;
     }
 
-    this._lastChord = currentSymbol;
+    this.HarmonicRhythmComposerLastChord = currentSymbol;
 
     // Calculate and push harmonic tension based on chord quality
     let tension = 0.3; // Default low-medium
@@ -160,7 +160,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     let emphasisFactor = 1.0;
 
     // Chord change: maximum emphasis
-    if (this._isChordChange) {
+    if (this.HarmonicRhythmComposerIsChordChange) {
       emphasisFactor = this.changeEmphasis;
       // Extra emphasis if chord change aligns with phrase boundary (cadence!)
       if (atPhraseBoundary) {
@@ -168,12 +168,12 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       }
     }
     // Anticipation: slight boost 1 measure before change
-    else if (this.anticipation && this._measuresSinceChange === this.measuresPerChord - 1) {
+    else if (this.anticipation && this.HarmonicRhythmComposerMeasuresSinceChange === this.measuresPerChord - 1) {
       emphasisFactor = 1.0 + (this.changeEmphasis - 1.0) * 0.3; // 30% of change emphasis
     }
     // Settling: gradual reduction after change
-    else if (this.settling && this._measuresSinceChange <= 2) {
-      const settleProgress = this._measuresSinceChange / 2; // 0 to 1 over 2 measures
+    else if (this.settling && this.HarmonicRhythmComposerMeasuresSinceChange <= 2) {
+      const settleProgress = this.HarmonicRhythmComposerMeasuresSinceChange / 2; // 0 to 1 over 2 measures
       emphasisFactor = this.changeEmphasis - (this.changeEmphasis - 1.0) * settleProgress * 0.7;
     }
     // Phrase boundary emphasis even without chord change (cadential feeling)
@@ -200,9 +200,9 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     return {
       candidateWeights: emphasizedWeights,
       // Register bias: higher during changes, lower at phrase end (cadence resolution)
-      registerBias: this._isChordChange ? 'higher' : (atPhraseEnd ? 'lower' : undefined),
+      registerBias: this.HarmonicRhythmComposerIsChordChange ? 'higher' : (atPhraseEnd ? 'lower' : undefined),
       // Voice count: increased during changes, potentially reduced at phrase end for clarity
-      voiceCountMultiplier: this._isChordChange ? 1.2 : (atPhraseEnd ? 0.9 : 1.0)
+      voiceCountMultiplier: this.HarmonicRhythmComposerIsChordChange ? 1.2 : (atPhraseEnd ? 0.9 : 1.0)
     };
   }
 }

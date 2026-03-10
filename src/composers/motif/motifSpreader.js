@@ -20,11 +20,11 @@ motifSpreader = {
     if (!measureMotif || !measureMotif.sequence) throw new Error('motifSpreader.spreadMeasure: motif generation failed');
 
     layer.measureMotifs = { motif: measureMotif, groupId: `msr-${measureCount}` };
-    layer._plannedBeats = Number(beats);
+    layer.motifSpreaderPlannedBeats = Number(beats);
 
     // Init sibling voice tracking for the new measure
-    layer._siblingVoicePCs = { beat: new Set(), div: new Set(), subdiv: new Set(), subsubdiv: new Set() };
-    layer._siblingVoiceLimits = {
+    layer.motifSpreaderSiblingVoicePCs = { beat: new Set(), div: new Set(), subdiv: new Set(), subsubdiv: new Set() };
+    layer.motifSpreaderSiblingVoiceLimits = {
       beat: rw(BEAT_SIBLING_VOICES.min, BEAT_SIBLING_VOICES.max, BEAT_SIBLING_VOICES.weights),
       div: rw(DIV_SIBLING_VOICES.min, DIV_SIBLING_VOICES.max, DIV_SIBLING_VOICES.weights),
       subdiv: rw(SUBDIV_SIBLING_VOICES.min, SUBDIV_SIBLING_VOICES.max, SUBDIV_SIBLING_VOICES.weights),
@@ -33,7 +33,7 @@ motifSpreader = {
 
     // Derive beat-level buckets from the measure motif
     layer.beatMotifs = [];
-    this._deriveChildBuckets({ layer, parentMotif: measureMotif, count: Number(beats), bucketKey: 'beatMotifs', unit: 'beat', profile });
+    this.motifSpreaderDeriveChildBuckets({ layer, parentMotif: measureMotif, count: Number(beats), bucketKey: 'beatMotifs', unit: 'beat', profile });
   },
 
   /**
@@ -46,12 +46,12 @@ motifSpreader = {
     if (!Number.isFinite(Number(beats)) || Number(beats) <= 0) throw new Error(`motifSpreader.spreadDivs: invalid beats=${beats} - fail-fast`);
 
     const divCount = Number(planDivsPerBeat) * Number(beats);
-    layer._plannedDivsPerBeat = Number(planDivsPerBeat);
-    layer._plannedBeats = Number(beats);
-    layer._plannedDivCount = divCount;
+    layer.motifSpreaderPlannedDivsPerBeat = Number(planDivsPerBeat);
+    layer.motifSpreaderPlannedBeats = Number(beats);
+    layer.motifSpreaderPlannedDivCount = divCount;
 
     // Reset div-level sibling voices for this beat cycle
-    if (layer._siblingVoicePCs) layer._siblingVoicePCs.div = new Set();
+    if (layer.motifSpreaderSiblingVoicePCs) layer.motifSpreaderSiblingVoicePCs.div = new Set();
 
     // If parent bucket available, create a proxy composer for parent-derived generation
     const pb = Array.isArray(parentBucket) ? parentBucket : [];
@@ -134,23 +134,23 @@ motifSpreader = {
       throw new Error(`motifSpreader.spreadSubunits(${unit}): missing parent bucket at ${parentBucketKey}[${parentIndex}]`);
     }
     // Reset sibling voices for this sub-unit cycle
-    if (layer._siblingVoicePCs && layer._siblingVoicePCs[unit]) layer._siblingVoicePCs[unit] = new Set();
+    if (layer.motifSpreaderSiblingVoicePCs && layer.motifSpreaderSiblingVoicePCs[unit]) layer.motifSpreaderSiblingVoicePCs[unit] = new Set();
 
     const parentBucket = parentBuckets[parentIndex];
     const parentSeq = parentBucket.map(e => ({ note: e.note, duration: 1 }));
     const parentMotif = new Motif(parentSeq);
     const baseIndex = parentIndex * Number(count);
     if (!layer[bucketKey]) layer[bucketKey] = [];
-    this._deriveChildBuckets({ layer, parentMotif, count: Number(count), bucketKey, unit, profile, baseIndex });
+    this.motifSpreaderDeriveChildBuckets({ layer, parentMotif, count: Number(count), bucketKey, unit, profile, baseIndex });
   },
 
   /**
    * Generic derivation of child buckets from a parent motif.
    * Uses motifChain for transforms and intervalComposer for degree subsets.
    */
-  _deriveChildBuckets({ layer, parentMotif, count, bucketKey, unit, profile, baseIndex = 0 }) {
+  motifSpreaderDeriveChildBuckets({ layer, parentMotif, count, bucketKey, unit, profile, baseIndex = 0 }) {
     const seq = parentMotif.sequence || parentMotif.events;
-    if (!Array.isArray(seq) || seq.length === 0) throw new Error(`motifSpreader._deriveChildBuckets(${unit}): empty parent sequence`);
+    if (!Array.isArray(seq) || seq.length === 0) throw new Error(`motifSpreader.motifSpreaderDeriveChildBuckets(${unit}): empty parent sequence`);
 
     for (let i = 0; i < count; i++) {
       const idx = baseIndex + i;
@@ -180,7 +180,7 @@ motifSpreader = {
     // Sibling palette enforcement at planning time: constrain total unique PCs
     // across all child buckets to the sibling limit for this unit level.
     // Each child can still freely pick from the constrained palette at runtime.
-    const sibLimit = layer._siblingVoiceLimits && layer._siblingVoiceLimits[unit];
+    const sibLimit = layer.motifSpreaderSiblingVoiceLimits && layer.motifSpreaderSiblingVoiceLimits[unit];
     if (typeof sibLimit === 'number' && sibLimit > 0) {
       // Collect PC frequency across all generated buckets
       const pcFreq = new Map();

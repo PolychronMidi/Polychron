@@ -58,7 +58,7 @@ VoiceManager = class VoiceManager {
     return rw(min, max, weights);
   }
 
-  _normalizeCandidates(candidateNotes = []) {
+  VoiceManagerNormalizeCandidates(candidateNotes = []) {
     const notes = [];
     const weights = {};
 
@@ -79,8 +79,8 @@ VoiceManager = class VoiceManager {
     return { notes, weights: Object.keys(weights).length > 0 ? weights : null };
   }
 
-  _weightedPick(notes, weights) {
-    this.V.assertArray(notes, '_weightedPick.notes', true);
+  VoiceManagerWeightedPick(notes, weights) {
+    this.V.assertArray(notes, 'VoiceManagerWeightedPick.notes', true);
     if (!weights) return notes[ri(notes.length - 1)];
 
     let total = 0;
@@ -114,7 +114,7 @@ VoiceManager = class VoiceManager {
     this.V.assertObject(layer, 'pickNotesForBeat.layer');
     this.V.assertArray(candidateNotes, 'pickNotesForBeat.candidateNotes');
 
-    const normalized = this._normalizeCandidates(candidateNotes);
+    const normalized = this.VoiceManagerNormalizeCandidates(candidateNotes);
     let notePool = normalized.notes;
     const weightMap = (opts && opts.candidateWeights !== undefined) ? opts.candidateWeights : normalized.weights;
 
@@ -162,7 +162,14 @@ VoiceManager = class VoiceManager {
     const voiceHistory = this.voiceHistoryByLayer.get(layerId);
 
     // If we have a scorer and multiple voices, use joint selection
-    if (scorer && maxVoices > 1 && notePool.length >= maxVoices) {
+    // stash into an any-typed local so we can null/undef it without TypeScript
+    // complaining, and also inspect dynamic members safely.
+    /** @type {any} */ const actualScorer = scorer;
+    // validate scorer before attempting joint optimization
+    if (actualScorer && !this.V.optionalType(actualScorer.voiceRegistryScoreCandidate, 'function')) {
+      throw new Error('VoiceManager.pickNotesForBeat: invalid VoiceLeadingScore supplied (missing voiceRegistryScoreCandidate)');
+    }
+    if (actualScorer && maxVoices > 1 && notePool.length >= maxVoices) {
       // Build per-voice candidate arrays from the pool
       const candidatesPerVoice = [];
       const lastNotesByVoice = [];
@@ -180,7 +187,7 @@ VoiceManager = class VoiceManager {
         voiceIndependence: voiceIndependence, // Pass to scorer for contrapuntal vs homophonic tendency
         minSemitones: opts.minSemitones  // Pass voice spacing constraint
       });
-      const selected = voiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
+      const selected = voiceRegistry(actualScorer, lastNotesByVoice, candidatesPerVoice, scorerOpts);
       this.V.assertArray(selected, 'voiceRegistry.selected');
       if (selected.length !== maxVoices) {
         throw new Error(`VoiceManager.pickNotesForBeat: voiceRegistry returned invalid selection for layer ${layerId}`);
@@ -211,7 +218,7 @@ VoiceManager = class VoiceManager {
         note = scorer.selectNextNote(voiceHistory[i], notePool, Object.assign({}, opts, { candidateWeights: weightMap }));
       } else {
         // Random selection from available candidates
-        note = this._weightedPick(notePool, weightMap);
+        note = this.VoiceManagerWeightedPick(notePool, weightMap);
       }
 
       // CRITICAL CHECK: note must be a valid number

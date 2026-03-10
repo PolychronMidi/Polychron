@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-09T22:28:20.695Z",
+    "generated": "2026-03-10T02:06:47.136Z",
     "totalFiles": 433,
     "globalsDeclared": 713,
     "globalsMapped": 713,
@@ -1825,20 +1825,13 @@
     },
     {
       "order": 218,
-      "file": "src/rhythm/setRhythm.js",
-      "provides": [
-        "setRhythm"
-      ]
-    },
-    {
-      "order": 219,
       "file": "src/rhythm/trackRhythm.js",
       "provides": [
         "trackRhythm"
       ]
     },
     {
-      "order": 220,
+      "order": 219,
       "file": "src/rhythm/patterns.js",
       "provides": [
         "rhythms",
@@ -1859,6 +1852,13 @@
         "rotate",
         "morph",
         "closestDivisor"
+      ]
+    },
+    {
+      "order": 220,
+      "file": "src/rhythm/setRhythm.js",
+      "provides": [
+        "setRhythm"
       ]
     },
     {

@@ -1,6 +1,6 @@
 // stutterMetrics.js - lightweight metrics for stutter scheduling/emission
 
-const _m = {
+const stutterMetricsState = {
   scheduledCount: 0,
   emittedCount: 0,
   scheduledByProfile: {},
@@ -10,43 +10,43 @@ const _m = {
 
 function getMetrics() {
   return {
-    scheduledCount: _m.scheduledCount,
-    emittedCount: _m.emittedCount,
-    scheduledByProfile: Object.assign({}, _m.scheduledByProfile),
-    emittedByProfile: Object.assign({}, _m.emittedByProfile),
-    pendingByTick: new Map(_m.pendingByTick)
+    scheduledCount: stutterMetricsState.scheduledCount,
+    emittedCount: stutterMetricsState.emittedCount,
+    scheduledByProfile: Object.assign({}, stutterMetricsState.scheduledByProfile),
+    emittedByProfile: Object.assign({}, stutterMetricsState.emittedByProfile),
+    pendingByTick: new Map(stutterMetricsState.pendingByTick)
   };
 }
 
 function resetMetrics() {
-  _m.scheduledCount = 0;
-  _m.emittedCount = 0;
-  _m.scheduledByProfile = {};
-  _m.emittedByProfile = {};
-  _m.pendingByTick = new Map();
+  stutterMetricsState.scheduledCount = 0;
+  stutterMetricsState.emittedCount = 0;
+  stutterMetricsState.scheduledByProfile = {};
+  stutterMetricsState.emittedByProfile = {};
+  stutterMetricsState.pendingByTick = new Map();
   return true;
 }
 
 function incScheduled(n = 1, profile = 'unknown') {
-  _m.scheduledCount += n;
-  _m.scheduledByProfile[profile] = (_m.scheduledByProfile[profile] || 0) + n;
+  stutterMetricsState.scheduledCount += n;
+  stutterMetricsState.scheduledByProfile[profile] = (stutterMetricsState.scheduledByProfile[profile] || 0) + n;
 }
 
 function incEmitted(n = 1, profile = 'unknown') {
-  _m.emittedCount += n;
-  _m.emittedByProfile[profile] = (_m.emittedByProfile[profile] || 0) + n;
+  stutterMetricsState.emittedCount += n;
+  stutterMetricsState.emittedByProfile[profile] = (stutterMetricsState.emittedByProfile[profile] || 0) + n;
 }
 
 function incPendingForTick(tick, n = 1) {
   const key = m.round(tick);
-  _m.pendingByTick.set(key, (_m.pendingByTick.get(key) || 0) + n);
+  stutterMetricsState.pendingByTick.set(key, (stutterMetricsState.pendingByTick.get(key) || 0) + n);
 }
 
 function decPendingForTick(tick, n = 1) {
   const key = m.round(tick);
-  const cur = _m.pendingByTick.get(key) || 0;
+  const cur = stutterMetricsState.pendingByTick.get(key) || 0;
   const next = m.max(0, cur - n);
-  if (next === 0) _m.pendingByTick.delete(key); else _m.pendingByTick.set(key, next);
+  if (next === 0) stutterMetricsState.pendingByTick.delete(key); else stutterMetricsState.pendingByTick.set(key, next);
 }
 
 stutterMetrics = {

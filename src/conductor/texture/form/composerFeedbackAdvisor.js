@@ -25,7 +25,7 @@ composerFeedbackAdvisor = (() => {
    * to composer selection. Each signal is read from its authoritative source.
    * @returns {ComposerQualitySnapshot}
    */
-  function _collectSignals() {
+  function composerFeedbackAdvisorCollectSignals() {
     // Repetition fatigue: how stale is the recent melodic content?
     const fatigueProfile = repetitionFatigueMonitor.getRepetitionProfile();
     const fatigueSignal = fatigueProfile.fatigueLevel;
@@ -60,7 +60,7 @@ composerFeedbackAdvisor = (() => {
     V.assertArray(availableFamilies, 'availableFamilies');
     if (availableFamilies.length === 0) return {};
 
-    const signals = _collectSignals();
+    const signals = composerFeedbackAdvisorCollectSignals();
     /** @type {Record<string, number>} */
     const weights = {};
 
@@ -150,7 +150,7 @@ composerFeedbackAdvisor = (() => {
     const type = candidateConfig.type;
     if (!V.optionalType(type, 'string') || (type && type.length === 0)) return 1.0;
 
-    const signals = _collectSignals();
+    const signals = composerFeedbackAdvisorCollectSignals();
     let adjustment = 1.0;
 
     // If fatigued, penalize the same type we've been using heavily
@@ -181,7 +181,7 @@ composerFeedbackAdvisor = (() => {
    * @returns {ComposerQualitySnapshot}
    */
   function getQualitySnapshot() {
-    return _collectSignals();
+    return composerFeedbackAdvisorCollectSignals();
   }
 
   /** No-op reset - stateless query module. Kept explicit per project convention. */
@@ -191,7 +191,7 @@ composerFeedbackAdvisor = (() => {
 
   // Self-register: state provider exposes quality signals in system-manifest
   conductorIntelligence.registerStateProvider('composerFeedbackAdvisor', () => {
-    const snap = _collectSignals();
+    const snap = composerFeedbackAdvisorCollectSignals();
     return {
       composerFatigueSignal: snap.fatigueSignal,
       composerVarietyPressure: snap.varietyPressure,

@@ -42,12 +42,12 @@ signalTelemetry = (() => {
       rollingTensionSum -= evicted.tension;
     }
 
-    _detectAnomaly();
-    _updateTrend();
+    signalTelemetryDetectAnomaly();
+    signalTelemetryUpdateTrend();
   }
 
   /** Check if latest beat deviates >30% from rolling mean. */
-  function _detectAnomaly() {
+  function signalTelemetryDetectAnomaly() {
     anomalyDetected = false;
     if (history.length < 8) return;
 
@@ -62,7 +62,7 @@ signalTelemetry = (() => {
   }
 
   /** Compute trend from recent compositeIntensity slope. */
-  function _updateTrend() {
+  function signalTelemetryUpdateTrend() {
     if (history.length < 6) {
       trend = 'stable';
     } else {

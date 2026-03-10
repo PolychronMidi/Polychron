@@ -1,13 +1,13 @@
 // motifRegistry.js - registry for motif-related generators and helpers (fail-fast)
 
 motifRegistry = (function() {
-  const _map = {};
+  const motifRegistryMap = {};
 
   function register(name, fn) {
     if (!name || typeof name !== 'string') throw new Error('motifRegistry.register: invalid name');
     if (typeof fn !== 'function') throw new Error(`motifRegistry.register: generator for "${name}" must be a function`);
-    if (_map[name]) throw new Error(`motifRegistry.register: generator "${name}" already registered`);
-    _map[name] = fn;
+    if (motifRegistryMap[name]) throw new Error(`motifRegistry.register: generator "${name}" already registered`);
+    motifRegistryMap[name] = fn;
     return fn;
   }
 
@@ -18,14 +18,14 @@ motifRegistry = (function() {
 
   function get(name) {
     if (!name || typeof name !== 'string') throw new Error('motifRegistry.get: invalid name');
-    const fn = _map[name];
+    const fn = motifRegistryMap[name];
     if (!fn) throw new Error(`motifRegistry.get: unknown generator "${name}"`);
     return fn;
   }
 
-  function list() { return Object.keys(_map); }
+  function list() { return Object.keys(motifRegistryMap); }
 
-  function getAll() { return Object.assign({}, _map); }
+  function getAll() { return Object.assign({}, motifRegistryMap); }
 
   return { register, registerMany, get, list, getAll };
 })();

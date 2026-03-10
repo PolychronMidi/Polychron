@@ -13,16 +13,16 @@ conductorMetaWatchdog = (() => {
   const _ATTENUATION_FACTOR = 0.50; // weaker controller attenuated by this factor
   const _RING_SIZE = 50;
 
-  let _beatCounter = 0;
+  let conductorMetaWatchdogBeatCounter = 0;
 
   // Track per-axis correction signs from different meta-controllers.
   // Key: "pipeline:controller", Value: ring buffer of correction signs (-1, 0, +1)
   /** @type {Map<string, number[]>} */
-  const _correctionRings = new Map();
+  const conductorMetaWatchdogCorrectionRings = new Map();
 
   // Active attenuations: pipeline -> controller name -> attenuation multiplier
   /** @type {Map<string, Map<string, number>>} */
-  const _attenuations = new Map();
+  const conductorMetaWatchdogAttenuations = new Map();
 
   /**
    * Get the current attenuation multiplier for a given pipeline + controller.
@@ -32,7 +32,7 @@ conductorMetaWatchdog = (() => {
    * @returns {number} multiplier 0..1 (1.0 = no attenuation)
    */
   function getAttenuation(pipeline, controllerName) {
-    const pipelineMap = _attenuations.get(pipeline);
+    const pipelineMap = conductorMetaWatchdogAttenuations.get(pipeline);
     if (!pipelineMap) return 1.0;
     return pipelineMap.get(controllerName) || 1.0;
   }
@@ -46,21 +46,21 @@ conductorMetaWatchdog = (() => {
    */
   function recordCorrection(pipeline, controllerName, correctionSign) {
     const key = pipeline + ':' + controllerName;
-    let ring = _correctionRings.get(key);
+    let ring = conductorMetaWatchdogCorrectionRings.get(key);
     if (!ring) {
       ring = [];
-      _correctionRings.set(key, ring);
+      conductorMetaWatchdogCorrectionRings.set(key, ring);
     }
     ring.push(m.sign(correctionSign));
     if (ring.length > _RING_SIZE) ring.shift();
   }
 
   /** Run the conflict detection analysis. */
-  function _analyze() {
+  function conductorMetaWatchdogAnalyze() {
     // Group corrections by pipeline
     /** @type {Map<string, string[]>} */
     const controllersByPipeline = new Map();
-    for (const key of _correctionRings.keys()) {
+    for (const key of conductorMetaWatchdogCorrectionRings.keys()) {
       const parts = key.split(':');
       const pipeline = parts[0];
       const controller = parts[1];
@@ -78,8 +78,8 @@ conductorMetaWatchdog = (() => {
       // Check all pairs of controllers on this pipeline for opposing corrections
       for (let i = 0; i < controllers.length; i++) {
         for (let j = i + 1; j < controllers.length; j++) {
-          const ringA = _correctionRings.get(pipeline + ':' + controllers[i]);
-          const ringB = _correctionRings.get(pipeline + ':' + controllers[j]);
+          const ringA = conductorMetaWatchdogCorrectionRings.get(pipeline + ':' + controllers[i]);
+          const ringB = conductorMetaWatchdogCorrectionRings.get(pipeline + ':' + controllers[j]);
           if (!ringA || !ringB) continue;
 
           const len = m.min(ringA.length, ringB.length, _RING_SIZE);
@@ -104,10 +104,10 @@ conductorMetaWatchdog = (() => {
             const weakerController = sumMagA <= sumMagB ? controllers[i] : controllers[j];
             const strongerController = sumMagA > sumMagB ? controllers[i] : controllers[j];
 
-            let pipelineMap = _attenuations.get(pipeline);
+            let pipelineMap = conductorMetaWatchdogAttenuations.get(pipeline);
             if (!pipelineMap) {
               pipelineMap = new Map();
-              _attenuations.set(pipeline, pipelineMap);
+              conductorMetaWatchdogAttenuations.set(pipeline, pipelineMap);
             }
             const currentAtten = pipelineMap.get(weakerController) || 1.0;
             const newAtten = clamp(currentAtten * _ATTENUATION_FACTOR, 0.1, 1.0);
@@ -124,7 +124,7 @@ conductorMetaWatchdog = (() => {
             }));
           } else {
             // No conflict: relax attenuations toward 1.0
-            const pipelineMap = _attenuations.get(pipeline);
+            const pipelineMap = conductorMetaWatchdogAttenuations.get(pipeline);
             if (pipelineMap) {
               for (const ctrl of [controllers[i], controllers[j]]) {
                 const current = pipelineMap.get(ctrl);
@@ -143,7 +143,7 @@ conductorMetaWatchdog = (() => {
 
   /** Called each beat via conductor recorder. */
   function tick() {
-    _beatCounter++;
+    conductorMetaWatchdogBeatCounter++;
 
     // Read telemetry from explainabilityBus meta-dampening events to
     // auto-populate correction records. This is passive - controllers
@@ -151,15 +151,15 @@ conductorMetaWatchdog = (() => {
     // The centroid correction sign tells us the direction per pipeline.
     // The flicker dampening adj sign tells us elasticity direction.
 
-    if (_beatCounter % _CHECK_INTERVAL === 0) {
-      _analyze();
+    if (conductorMetaWatchdogBeatCounter % _CHECK_INTERVAL === 0) {
+      conductorMetaWatchdogAnalyze();
     }
   }
 
   function getSnapshot() {
     /** @type {Record<string, Record<string, number>>} */
     const snapshot = {};
-    for (const [pipeline, pipelineMap] of _attenuations.entries()) {
+    for (const [pipeline, pipelineMap] of conductorMetaWatchdogAttenuations.entries()) {
       snapshot[pipeline] = {};
       for (const [ctrl, atten] of pipelineMap.entries()) {
         snapshot[pipeline][ctrl] = atten;
@@ -169,9 +169,9 @@ conductorMetaWatchdog = (() => {
   }
 
   function reset() {
-    _beatCounter = 0;
-    _correctionRings.clear();
-    _attenuations.clear();
+    conductorMetaWatchdogBeatCounter = 0;
+    conductorMetaWatchdogCorrectionRings.clear();
+    conductorMetaWatchdogAttenuations.clear();
   }
 
   // Self-registration

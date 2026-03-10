@@ -10,7 +10,7 @@ voiceLeadingEfficiencyTracker = (() => {
    * Compute voice-leading efficiency from recent note pairs.
    * @returns {{ efficiency: number, avgDisplacement: number, densityBias: number }}
    */
-  function _computeEfficiencySignal() {
+  function voiceLeadingEfficiencyTrackerComputeEfficiencySignal() {
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 4) {
@@ -80,13 +80,13 @@ voiceLeadingEfficiencyTracker = (() => {
     return { efficiency, avgDisplacement, densityBias };
   }
 
-  const _cache = beatCache.create(_computeEfficiencySignal);
+  const voiceLeadingEfficiencyTrackerCache = beatCache.create(voiceLeadingEfficiencyTrackerComputeEfficiencySignal);
 
   /**
    * Compute voice-leading efficiency from recent note pairs (cached per beat).
    * @returns {{ efficiency: number, avgDisplacement: number, densityBias: number }}
    */
-  function getEfficiencySignal() { return _cache.get(); }
+  function getEfficiencySignal() { return voiceLeadingEfficiencyTrackerCache.get(); }
 
   /**
    * Get density multiplier for the targetDensity chain.

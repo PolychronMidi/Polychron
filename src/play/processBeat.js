@@ -1,8 +1,8 @@
 // processBeat.js - Shared per-beat body for L1 and L2, extracted from main.js to eliminate duplication.
 const V_processBeat = validator.create('processBeat');
-const _PROFILE = process.argv.includes('--trace');
-const _STAGE_NAMES = ['beat-setup','intent','entropy','phase','climax','envelope','silhouette','rest','complement','tension-cadence','negotiation','probability-adjust','emission','post-beat'];
-const _marks = new Array(15); // 15 boundaries for 14 stages
+const PROFILE = process.argv.includes('--trace');
+const STAGE_NAMES = ['beat-setup','intent','entropy','phase','climax','envelope','silhouette','rest','complement','tension-cadence','negotiation','probability-adjust','emission','post-beat'];
+const marks = new Array(15); // 15 boundaries for 14 stages
 
 /**
  * Process one beat for the given layer. Handles setup, cross-layer orchestration,
@@ -22,7 +22,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   let stutterProb = stutterProbIn;
 
   // -- [stage: beat-setup] --
-  if (_PROFILE) _marks[0] = process.hrtime.bigint();
+  if (PROFILE) marks[0] = process.hrtime.bigint();
   if (isL1) beatCount++;
   setUnitTiming('beat');
   setOtherInstruments();
@@ -44,12 +44,12 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   StutterManager.runDuePlans(beatStart);
 
   // -- [stage: intent] -
-  if (_PROFILE) _marks[1] = process.hrtime.bigint();
+  if (PROFILE) marks[1] = process.hrtime.bigint();
   const clAbsMs = beatStartTime * 1000;
   const clIntent = sectionIntentCurves.getIntent();
 
   // -- [stage: entropy]
-  if (_PROFILE) _marks[2] = process.hrtime.bigint();
+  if (PROFILE) marks[2] = process.hrtime.bigint();
   // Blend section-shape arc (30%) with intent entropy target (70%)
   const clArcTarget = entropyRegulator.getArcTarget(timeStream.normalizedProgress('section'));
   entropyRegulator.setTarget(clIntent.entropyTarget, clArcTarget);
@@ -60,28 +60,28 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clEntropy = entropyRegulator.getRegulation();
 
   // -- [stage: phase] --
-  if (_PROFILE) _marks[3] = process.hrtime.bigint();
+  if (PROFILE) marks[3] = process.hrtime.bigint();
   const clPhase = phaseAwareCadenceWindow.update(clAbsMs, layer);
 
   // -- [stage: climax] -
-  if (_PROFILE) _marks[4] = process.hrtime.bigint();
+  if (PROFILE) marks[4] = process.hrtime.bigint();
   crossLayerClimaxEngine.tick(clAbsMs);
   const clClimaxMods = crossLayerClimaxEngine.getModifiers(layer);
   // Stash climax modifiers for playNotesEmitPick (avoids re-calling getModifiers per pick)
   setClimaxMods(clClimaxMods);
 
   // -- [stage: envelope] --
-  if (_PROFILE) _marks[5] = process.hrtime.bigint();
+  if (PROFILE) marks[5] = process.hrtime.bigint();
   crossLayerDynamicEnvelope.tick(clAbsMs, layer);
   if (isL1) crossLayerDynamicEnvelope.autoSelectArcType();
 
   // -- [stage: silhouette]
-  if (_PROFILE) _marks[6] = process.hrtime.bigint();
+  if (PROFILE) marks[6] = process.hrtime.bigint();
   crossLayerSilhouette.tick(clAbsMs, layer);
   const clSilhouetteCorrections = crossLayerSilhouette.getCorrections();
 
   // -- [stage: rest]
-  if (_PROFILE) _marks[7] = process.hrtime.bigint();
+  if (PROFILE) marks[7] = process.hrtime.bigint();
   const clRestSignals = {
     heatLevel: interactionHeatMap.getDensity(),
     densityTarget: clIntent.densityTarget,
@@ -91,11 +91,11 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clComplementRest = restSynchronizer.evaluateComplementaryRest(clAbsMs, layer);
 
   // -- [stage: complement]
-  if (_PROFILE) _marks[8] = process.hrtime.bigint();
+  if (PROFILE) marks[8] = process.hrtime.bigint();
   rhythmicComplementEngine.autoSelectMode(clAbsMs);
 
   // -- [stage: tension-cadence] -
-  if (_PROFILE) _marks[9] = process.hrtime.bigint();
+  if (PROFILE) marks[9] = process.hrtime.bigint();
   const clTension = requireUnitInterval('conductorState.compositeIntensity', conductorState.getField('compositeIntensity'));
   const clCadence = cadenceAdvisor.shouldCadence();
   V_processBeat.assertPlainObject(clCadence, 'cadenceAdvisor.shouldCadence()');
@@ -103,7 +103,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clPhaseSnapshot = { timeMs: clAbsMs, phaseDiff: clPhase.phaseDiff, mode: clPhase.mode, confidence: clPhase.confidence };
 
   // -- [stage: negotiation] --
-  if (_PROFILE) _marks[10] = process.hrtime.bigint();
+  if (PROFILE) marks[10] = process.hrtime.bigint();
   const clNegotiation = negotiationEngine.apply(layer, {
     playProb: dynamicRoleSwap.modifyPlayProb(layer, playProb),
     stutterProb,
@@ -117,7 +117,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // negotiationEngine.apply already incorporates entropyScale - do not re-apply via regulate()
 
   // -- [stage: probability-adjust] -
-  if (_PROFILE) _marks[11] = process.hrtime.bigint();
+  if (PROFILE) marks[11] = process.hrtime.bigint();
   if (clClimaxMods.playProbScale !== 1.0) playProb = clamp(playProb * clClimaxMods.playProbScale, 0, 1);
   playProb = clamp(playProb + clSilhouetteCorrections.densityBias, 0, 1);
   // Suppress shared rests during climax approach to protect musical buildup
@@ -135,11 +135,11 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   }
 
   // -- [stage: emission] --
-  if (_PROFILE) _marks[12] = process.hrtime.bigint();
+  if (PROFILE) marks[12] = process.hrtime.bigint();
   playNotes('beat', { playProb, stutterProb });
 
   // -- [stage: post-beat] -
-  if (_PROFILE) _marks[13] = process.hrtime.bigint();
+  if (PROFILE) marks[13] = process.hrtime.bigint();
   if (clRest.shouldRest) restSynchronizer.postRest(clAbsMs, layer);
 
   // Per-beat homeostasis multiplier update. Coupling data is analysed
@@ -150,7 +150,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   crossLayerBeatRecord({
     layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
     clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1,
-    stageTiming: /** @type {Record<string, number> | null} */ (_PROFILE ? (() => { _marks[14] = process.hrtime.bigint(); const t = {}; for (let i = 0; i < 14; i++) t[_STAGE_NAMES[i]] = Number(_marks[i + 1] - _marks[i]) / 1e6; return t; })() : null)
+    stageTiming: /** @type {Record<string, number> | null} */ (PROFILE ? (() => { marks[14] = process.hrtime.bigint(); const t = {}; for (let i = 0; i < 14; i++) t[STAGE_NAMES[i]] = Number(marks[i + 1] - marks[i]) / 1e6; return t; })() : null)
   });
 
   return { playProb, stutterProb };

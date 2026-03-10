@@ -14,7 +14,7 @@ velocityShapeAnalyzer = (() => {
    * @param {number} [opts.windowSeconds]
    * @returns {{ slope: number, shape: string, avgVelocity: number, flat: boolean, punchiness: number }}
    */
-  function _computeVelocityShape(opts = {}) {
+  function velocityShapeAnalyzerComputeVelocityShape(opts = {}) {
     const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 4) {
       return { slope: 0, shape: 'insufficient', avgVelocity: 64, flat: true, punchiness: 0.5 };
@@ -83,7 +83,7 @@ velocityShapeAnalyzer = (() => {
     };
   }
 
-  const _defaultShapeCache = beatCache.create(() => _computeVelocityShape());
+  const velocityShapeAnalyzerDefaultShapeCache = beatCache.create(() => velocityShapeAnalyzerComputeVelocityShape());
 
   /**
    * Analyze velocity trajectory and envelope shape.
@@ -94,8 +94,8 @@ velocityShapeAnalyzer = (() => {
    * @returns {{ slope: number, shape: string, avgVelocity: number, flat: boolean, punchiness: number }}
    */
   function getVelocityShape(opts) {
-    if (opts === undefined) return _defaultShapeCache.get();
-    return _computeVelocityShape(opts);
+    if (opts === undefined) return velocityShapeAnalyzerDefaultShapeCache.get();
+    return velocityShapeAnalyzerComputeVelocityShape(opts);
   }
 
   /**

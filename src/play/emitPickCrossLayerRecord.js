@@ -80,7 +80,7 @@ emitPickCrossLayerRecord = function(ctx) {
   if (memIdentity && typeof memIdentity.intervalDna === 'string' && memIdentity.intervalDna.length > 0) {
     // Cache parsed intervals on the identity object to avoid split/map/filter per pick
     /** @type {any} */ const memI = memIdentity;
-    let memIntervals = memI._parsedIntervals;
+    let memIntervals = memI.emitPickCrossLayerRecordParsedIntervals;
     if (memIntervals === undefined) {
       const parts = memIdentity.intervalDna.split(',');
       memIntervals = [];
@@ -88,7 +88,7 @@ emitPickCrossLayerRecord = function(ctx) {
         const n = Number(parts[pi]);
         if (Number.isFinite(n)) memIntervals.push(n);
       }
-      memI._parsedIntervals = memIntervals;
+      memI.emitPickCrossLayerRecordParsedIntervals = memIntervals;
     }
     if (memIntervals.length >= 2) {
       const memConvergence = convergenceDetector.wasRecent(absMs, activeLayerName, 500);

@@ -61,19 +61,19 @@ timeStream.setBounds('section', totalSections);
 // R71 E5: Trust velocity tracking across diagnostic snapshots.
 // Compares trust scores between consecutive snapshots to detect
 // rapid trust swings (e.g. stutterContagion -0.403 in one interval).
-let _previousSnapshotTrust = null;
-function _computeTrustVelocity(trustSnapshot) {
+let mainPreviousSnapshotTrust = null;
+function mainComputeTrustVelocity(trustSnapshot) {
   const velocity = /** @type {Record<string, number>} */ ({});
-  if (_previousSnapshotTrust) {
+  if (mainPreviousSnapshotTrust) {
     const keys = Object.keys(trustSnapshot);
     for (let i = 0; i < keys.length; i++) {
       const sys = keys[i];
       const cur = trustSnapshot[sys] && typeof trustSnapshot[sys].score === 'number' ? trustSnapshot[sys].score : 0;
-      const prev = _previousSnapshotTrust[sys] && typeof _previousSnapshotTrust[sys].score === 'number' ? _previousSnapshotTrust[sys].score : 0;
+      const prev = mainPreviousSnapshotTrust[sys] && typeof mainPreviousSnapshotTrust[sys].score === 'number' ? mainPreviousSnapshotTrust[sys].score : 0;
       velocity[sys] = Number((cur - prev).toFixed(4));
     }
   }
-  _previousSnapshotTrust = trustSnapshot;
+  mainPreviousSnapshotTrust = trustSnapshot;
   return velocity;
 }
 
@@ -157,30 +157,30 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // had sparse format, missing trust/coupling detail needed to diagnose
     // mid-section flicker-phase spikes and trust shifts.
     if (traceDrain.isEnabled() && sectionL1BeatCount > 0 && sectionL1BeatCount % 20 === 0) {
-      const _pSnap = systemDynamicsProfiler.getSnapshot();
-      const _pHome = couplingHomeostasis.getState();
-      const _pCouplingMeans = /** @type {Record<string, number>} */ ({});
-      if (_pSnap && _pSnap.couplingMatrix) {
-        for (const pair in _pSnap.couplingMatrix) {
-          const val = _pSnap.couplingMatrix[pair];
-          if (Number.isFinite(val)) _pCouplingMeans[pair] = m.abs(val);
+      const mainPSnap = systemDynamicsProfiler.getSnapshot();
+      const mainPHome = couplingHomeostasis.getState();
+      const mainPCouplingMeans = /** @type {Record<string, number>} */ ({});
+      if (mainPSnap && mainPSnap.couplingMatrix) {
+        for (const pair in mainPSnap.couplingMatrix) {
+          const val = mainPSnap.couplingMatrix[pair];
+          if (Number.isFinite(val)) mainPCouplingMeans[pair] = m.abs(val);
         }
       }
-      const _pTrust = adaptiveTrustScores.getSnapshot();
-      const _pTrustVel = _computeTrustVelocity(_pTrust);
+      const mainPTrust = adaptiveTrustScores.getSnapshot();
+      const mainPTrustVel = mainComputeTrustVelocity(mainPTrust);
       traceDrain.recordSnapshot({
         beatKey: sectionIndex + ':periodic:' + sectionL1BeatCount,
         timeMs: beatStartTime * 1000,
         trigger: 'periodic',
-        effectiveDim: _pSnap ? _pSnap.effectiveDimensionality : 0,
-        trustScores: _pTrust,
-        trustVelocity: _pTrustVel,
+        effectiveDim: mainPSnap ? mainPSnap.effectiveDimensionality : 0,
+        trustScores: mainPTrust,
+        trustVelocity: mainPTrustVel,
         activeProfile: conductorConfig.getActiveProfileName(),
-        couplingMeans: _pCouplingMeans,
-        globalGainMultiplier: _pHome ? _pHome.globalGainMultiplier : 0,
-        regime: _pSnap ? _pSnap.regime : 'unknown',
-        couplingStrength: _pSnap ? _pSnap.couplingStrength : 0,
-        phaseIntegrity: _pSnap ? (_pSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
+        couplingMeans: mainPCouplingMeans,
+        globalGainMultiplier: mainPHome ? mainPHome.globalGainMultiplier : 0,
+        regime: mainPSnap ? mainPSnap.regime : 'unknown',
+        couplingStrength: mainPSnap ? mainPSnap.couplingStrength : 0,
+        phaseIntegrity: mainPSnap ? (mainPSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
       });
     }
 
@@ -215,7 +215,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     layerPass.runLayerPass('L2', phraseFamily, {}, { boot, composerCtx });
 
     // Flush trace after L2 pass to guarantee L2 entries are persisted.
-    // Without this, L2 entries remain in _buffer and can be lost if a later
+    // Without this, L2 entries remain in mainBuffer and can be lost if a later
     // step throws before traceDrain.shutdown(). Also forces the trace file
     // to contain L2 entries interleaved with L1 for diagnostic visibility.
     traceDrain.flush();
@@ -242,30 +242,30 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // convergence, gain multiplier trajectory). One snapshot per section gives
   // 3-7 data points for the system's evolutionary arc.
   if (traceDrain.isEnabled()) {
-    const _dynSnap = systemDynamicsProfiler.getSnapshot();
-    const _homeSnap = couplingHomeostasis.getState();
-    const _couplingMeans = /** @type {Record<string, number>} */ ({});
-    if (_dynSnap && _dynSnap.couplingMatrix) {
-      for (const pair in _dynSnap.couplingMatrix) {
-        const val = _dynSnap.couplingMatrix[pair];
-        if (Number.isFinite(val)) _couplingMeans[pair] = m.abs(val);
+    const mainDynSnap = systemDynamicsProfiler.getSnapshot();
+    const mainHomeSnap = couplingHomeostasis.getState();
+    const mainCouplingMeans = /** @type {Record<string, number>} */ ({});
+    if (mainDynSnap && mainDynSnap.couplingMatrix) {
+      for (const pair in mainDynSnap.couplingMatrix) {
+        const val = mainDynSnap.couplingMatrix[pair];
+        if (Number.isFinite(val)) mainCouplingMeans[pair] = m.abs(val);
       }
     }
-    const _secTrust = adaptiveTrustScores.getSnapshot();
-    const _secTrustVel = _computeTrustVelocity(_secTrust);
+    const mainSecTrust = adaptiveTrustScores.getSnapshot();
+    const mainSecTrustVel = mainComputeTrustVelocity(mainSecTrust);
     traceDrain.recordSnapshot({
       beatKey: sectionIndex + ':end',
       timeMs: beatStartTime * 1000,
       trigger: 'section-boundary',
-      effectiveDim: _dynSnap ? _dynSnap.effectiveDimensionality : 0,
-      trustScores: _secTrust,
-      trustVelocity: _secTrustVel,
+      effectiveDim: mainDynSnap ? mainDynSnap.effectiveDimensionality : 0,
+      trustScores: mainSecTrust,
+      trustVelocity: mainSecTrustVel,
       activeProfile: conductorConfig.getActiveProfileName(),
-      couplingMeans: _couplingMeans,
-      globalGainMultiplier: _homeSnap ? _homeSnap.globalGainMultiplier : 0,
-      regime: _dynSnap ? _dynSnap.regime : 'unknown',
-      couplingStrength: _dynSnap ? _dynSnap.couplingStrength : 0,
-      phaseIntegrity: _dynSnap ? (_dynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
+      couplingMeans: mainCouplingMeans,
+      globalGainMultiplier: mainHomeSnap ? mainHomeSnap.globalGainMultiplier : 0,
+      regime: mainDynSnap ? mainDynSnap.regime : 'unknown',
+      couplingStrength: mainDynSnap ? mainDynSnap.couplingStrength : 0,
+      phaseIntegrity: mainDynSnap ? (mainDynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
     });
   }
 

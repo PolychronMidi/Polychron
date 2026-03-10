@@ -3,7 +3,7 @@
 
 pivotChordBridge = (() => {
   /** @type {string[]|null} */
-  let _pendingBridge = null;
+  let pivotChordBridgePendingBridge = null;
 
   /**
    * Map mode names to major/minor quality for Tonal.js Key API
@@ -152,7 +152,7 @@ pivotChordBridge = (() => {
    * @param {number} sectionIndex
    */
   function prepareBridge(sectionIndex) {
-    _pendingBridge = null;
+    pivotChordBridgePendingBridge = null;
 
     if (sectionIndex <= 0) return; // No bridge for the first section
 
@@ -164,7 +164,7 @@ pivotChordBridge = (() => {
     if (keyChanged) {
       const bridge = generateBridge(previousStop.key, previousStop.mode, currentStop.key, currentStop.mode);
       if (bridge.length > 0) {
-        _pendingBridge = bridge;
+        pivotChordBridgePendingBridge = bridge;
       }
     }
   }
@@ -174,7 +174,7 @@ pivotChordBridge = (() => {
    * @returns {boolean}
    */
   function hasBridge() {
-    return _pendingBridge !== null && _pendingBridge.length > 0;
+    return pivotChordBridgePendingBridge !== null && pivotChordBridgePendingBridge.length > 0;
   }
 
   /**
@@ -183,8 +183,8 @@ pivotChordBridge = (() => {
    * @returns {string[]|null}
    */
   function consumeBridge() {
-    const bridge = _pendingBridge;
-    _pendingBridge = null;
+    const bridge = pivotChordBridgePendingBridge;
+    pivotChordBridgePendingBridge = null;
     return bridge;
   }
 
@@ -192,7 +192,7 @@ pivotChordBridge = (() => {
    * Reset state.
    */
   function reset() {
-    _pendingBridge = null;
+    pivotChordBridgePendingBridge = null;
   }
 
   return {

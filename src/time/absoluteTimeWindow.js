@@ -27,20 +27,20 @@ absoluteTimeWindow = (() => {
   // Per-beat query cache: avoids re-scanning the same window for identical params.
   // Cleared on every record() call (new data invalidates cached results).
   /** @type {Map<string, ATWEntry[]>} */
-  const _queryCache = new Map();
-  // Separate caches for countNotes / getNoteBounds: same invalidation as _queryCache.
+  const absoluteTimeWindowQueryCache = new Map();
+  // Separate caches for countNotes / getNoteBounds: same invalidation as absoluteTimeWindowQueryCache.
   // These methods bypass getEntries so need their own cache.
   /** @type {Map<string, number>} */
-  const _countCache = new Map();
+  const absoluteTimeWindowCountCache = new Map();
   /** @type {Map<string, {count:number,first:ATWEntry|null,last:ATWEntry|null}>} */
-  const _boundsCache = new Map();
+  const absoluteTimeWindowBoundsCache = new Map();
 
   // Per-layer running note count. Avoids scanning the full note array for
   // the common pattern countNotes({ layer }). Decremented on prune, so
   // it always reflects in-window counts.
   /** @type {Map<string, number>} */
-  const _layerCounts = new Map();
-  let _totalNoteCount = 0;
+  const absoluteTimeWindowLayerCounts = new Map();
+  let absoluteTimeWindowTotalNoteCount = 0;
 
   /** Prune via shared helper. Track layer count decrements for notes. */
   function prune(arr, currentTime, windowSeconds) {
@@ -50,11 +50,11 @@ absoluteTimeWindow = (() => {
     // Update per-layer running counts when note array is pruned
     if (arr === entries.note && arr.length < prevLen) {
       // Rebuild counts from surviving entries (prune is infrequent)
-      _layerCounts.clear();
-      _totalNoteCount = arr.length;
+      absoluteTimeWindowLayerCounts.clear();
+      absoluteTimeWindowTotalNoteCount = arr.length;
       for (let i = 0; i < arr.length; i++) {
         const layer = arr[i].layer;
-        if (layer) _layerCounts.set(layer, (_layerCounts.get(layer) || 0) + 1);
+        if (layer) absoluteTimeWindowLayerCounts.set(layer, (absoluteTimeWindowLayerCounts.get(layer) || 0) + 1);
       }
     }
   }
@@ -74,9 +74,9 @@ absoluteTimeWindow = (() => {
     if (Array.isArray(arr)) {
       arr.push(e);
       // Invalidate query cache - new data makes cached results stale
-      if (_queryCache.size > 0) _queryCache.clear();
-      if (_countCache.size > 0) _countCache.clear();
-      if (_boundsCache.size > 0) _boundsCache.clear();
+      if (absoluteTimeWindowQueryCache.size > 0) absoluteTimeWindowQueryCache.clear();
+      if (absoluteTimeWindowCountCache.size > 0) absoluteTimeWindowCountCache.clear();
+      if (absoluteTimeWindowBoundsCache.size > 0) absoluteTimeWindowBoundsCache.clear();
       // Only prune when over capacity to avoid O(n) splice on every record
       if (arr.length > MAX_ENTRIES) {
         prune(arr, e.time, DEFAULT_WINDOW_SECONDS);
@@ -99,11 +99,11 @@ absoluteTimeWindow = (() => {
     const arr = entries.note;
     arr.push({ time, layer, midi, velocity, unit: unitLabel });
     // Update running layer counts
-    _totalNoteCount++;
-    if (layer) _layerCounts.set(layer, (_layerCounts.get(layer) || 0) + 1);
-    if (_queryCache.size > 0) _queryCache.clear();
-    if (_countCache.size > 0) _countCache.clear();
-    if (_boundsCache.size > 0) _boundsCache.clear();
+    absoluteTimeWindowTotalNoteCount++;
+    if (layer) absoluteTimeWindowLayerCounts.set(layer, (absoluteTimeWindowLayerCounts.get(layer) || 0) + 1);
+    if (absoluteTimeWindowQueryCache.size > 0) absoluteTimeWindowQueryCache.clear();
+    if (absoluteTimeWindowCountCache.size > 0) absoluteTimeWindowCountCache.clear();
+    if (absoluteTimeWindowBoundsCache.size > 0) absoluteTimeWindowBoundsCache.clear();
     if (arr.length > MAX_ENTRIES) {
       prune(arr, time, DEFAULT_WINDOW_SECONDS);
     }
@@ -194,7 +194,7 @@ absoluteTimeWindow = (() => {
 
     // Query cache: identical (type, layer, cutoff) - reuse prior result array
     const cacheKey = type + ':' + (layer || '') + ':' + cutoff;
-    const cached = _queryCache.get(cacheKey);
+    const cached = absoluteTimeWindowQueryCache.get(cacheKey);
     if (cached) return cached;
 
     // Binary search for cutoff position - O(log n)
@@ -207,7 +207,7 @@ absoluteTimeWindow = (() => {
       if (layer && entry.layer !== layer) continue;
       result.push(entry);
     }
-    _queryCache.set(cacheKey, result);
+    absoluteTimeWindowQueryCache.set(cacheKey, result);
     return result;
   }
 
@@ -226,7 +226,7 @@ absoluteTimeWindow = (() => {
    * @param {Object} [opts] - { layer?, since?, windowSeconds? }
    * @returns {{ layer: string|undefined, startIdx: number, cutoff: number }|null}
    */
-  function _parseNoteQuery(opts) {
+  function absoluteTimeWindowParseNoteQuery(opts) {
     const arr = entries.note;
     if (!Array.isArray(arr) || arr.length === 0) return null;
     let layer, since, windowSeconds;
@@ -255,15 +255,15 @@ absoluteTimeWindow = (() => {
   function countNotes(opts) {
     // Fast-path: default-window, no custom since/windowSeconds - use running counts.
     // This avoids scanning the full note array on every beat-setup call.
-    if (opts === undefined) return _totalNoteCount;
+    if (opts === undefined) return absoluteTimeWindowTotalNoteCount;
     if (typeof opts === 'object' && opts !== null &&
         opts.since === undefined && opts.windowSeconds === undefined && opts.layer) {
-      return _layerCounts.get(opts.layer) || 0;
+      return absoluteTimeWindowLayerCounts.get(opts.layer) || 0;
     }
-    const q = _parseNoteQuery(opts);
+    const q = absoluteTimeWindowParseNoteQuery(opts);
     if (!q) return 0;
     const cacheKey = 'count:' + (q.layer || '') + ':' + q.cutoff;
-    const cached = _countCache.get(cacheKey);
+    const cached = absoluteTimeWindowCountCache.get(cacheKey);
     if (cached !== undefined) return cached;
     const arr = entries.note;
     const { layer, startIdx } = q;
@@ -274,7 +274,7 @@ absoluteTimeWindow = (() => {
       if (layer && entry.layer !== layer) continue;
       count++;
     }
-    _countCache.set(cacheKey, count);
+    absoluteTimeWindowCountCache.set(cacheKey, count);
     return count;
   }
 
@@ -286,7 +286,7 @@ absoluteTimeWindow = (() => {
    * @returns {ATWEntry|null}
    */
   function getLastNote(opts) {
-    const q = _parseNoteQuery(opts);
+    const q = absoluteTimeWindowParseNoteQuery(opts);
     if (!q) return null;
     const arr = entries.note;
     const { layer, cutoff } = q;
@@ -307,10 +307,10 @@ absoluteTimeWindow = (() => {
    * @returns {{ count: number, first: ATWEntry|null, last: ATWEntry|null }}
    */
   function getNoteBounds(opts) {
-    const q = _parseNoteQuery(opts);
+    const q = absoluteTimeWindowParseNoteQuery(opts);
     if (!q) return { count: 0, first: null, last: null };
     const cacheKey = 'bounds:' + (q.layer || '') + ':' + q.cutoff;
-    const cached = _boundsCache.get(cacheKey);
+    const cached = absoluteTimeWindowBoundsCache.get(cacheKey);
     if (cached) return cached;
     const arr = entries.note;
     const { layer, startIdx } = q;
@@ -326,7 +326,7 @@ absoluteTimeWindow = (() => {
       count++;
     }
     const result = { count, first, last };
-    _boundsCache.set(cacheKey, result);
+    absoluteTimeWindowBoundsCache.set(cacheKey, result);
     return result;
   }
 
@@ -338,11 +338,11 @@ absoluteTimeWindow = (() => {
     if (entries.note) entries.note.length = 0;
     if (entries.rhythm) entries.rhythm.length = 0;
     if (entries.chord) entries.chord.length = 0;
-    _queryCache.clear();
-    _countCache.clear();
-    _boundsCache.clear();
-    _layerCounts.clear();
-    _totalNoteCount = 0;
+    absoluteTimeWindowQueryCache.clear();
+    absoluteTimeWindowCountCache.clear();
+    absoluteTimeWindowBoundsCache.clear();
+    absoluteTimeWindowLayerCounts.clear();
+    absoluteTimeWindowTotalNoteCount = 0;
   }
 
   return {

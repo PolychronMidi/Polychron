@@ -2,7 +2,7 @@
 
 axisEnergyEquilibrator = (() => {
   const V = validator.create('axisEnergyEquilibrator');
-  const _config = {
+  const axisEnergyEquilibratorConfig = {
     HOTSPOT_RATIO: 2.0,
     HOTSPOT_ABS_MIN: 0.25,
     COLDSPOT_RATIO: 0.3,
@@ -54,7 +54,7 @@ axisEnergyEquilibrator = (() => {
     ENTROPY_SURFACE_SET: couplingConstants.ENTROPY_SURFACE_SET
   };
 
-  function _createState() {
+  function axisEnergyEquilibratorCreateState() {
     return {
       smoothedShares: {},
       pairCooldowns: {},
@@ -77,63 +77,63 @@ axisEnergyEquilibrator = (() => {
       coherentHotspotActuationBeats: 0,
       coherentHotspotPairAdj: 0,
       coherentHotspotAxisAdj: 0,
-      lastWarmupTicks: _config.WARMUP_DEFAULT
+      lastWarmupTicks: axisEnergyEquilibratorConfig.WARMUP_DEFAULT
     };
   }
 
-  const _state = _createState();
+  const axisEnergyEquilibratorState = axisEnergyEquilibratorCreateState();
 
   function refresh() {
-    const context = axisEnergyEquilibratorRefreshContext.build(_state, _config, V);
+    const context = axisEnergyEquilibratorRefreshContext.build(axisEnergyEquilibratorState, axisEnergyEquilibratorConfig, V);
     if (!context) return;
-    axisEnergyEquilibratorPairAdjustments.apply(_state, _config, context, V);
-    axisEnergyEquilibratorAxisAdjustments.apply(_state, _config, context, V);
+    axisEnergyEquilibratorPairAdjustments.apply(axisEnergyEquilibratorState, axisEnergyEquilibratorConfig, context, V);
+    axisEnergyEquilibratorAxisAdjustments.apply(axisEnergyEquilibratorState, axisEnergyEquilibratorConfig, context, V);
     explainabilityBus.emit('AXIS_ENERGY_EQUIL', 'all', {
-      smoothedShares: Object.assign({}, _state.smoothedShares),
+      smoothedShares: Object.assign({}, axisEnergyEquilibratorState.smoothedShares),
       axisGini: context.axisGini,
       giniMult: context.giniMult,
-      pairAdj: _state.pairAdjustments,
-      axisAdj: _state.axisAdjustments,
-      beat: _state.beatCount
+      pairAdj: axisEnergyEquilibratorState.pairAdjustments,
+      axisAdj: axisEnergyEquilibratorState.axisAdjustments,
+      beat: axisEnergyEquilibratorState.beatCount
     });
   }
 
   function getSnapshot() {
     return {
-      beatCount: _state.beatCount,
-      pairAdjustments: _state.pairAdjustments,
-      axisAdjustments: _state.axisAdjustments,
-      smoothedShares: Object.assign({}, _state.smoothedShares),
-      perAxisAdj: Object.assign({}, _state.perAxisAdj),
-      perPairAdj: Object.assign({}, _state.perPairAdj),
-      lastBaselines: Object.assign({}, _state.lastBaselines),
-      regimeBeats: Object.assign({}, _state.regimeBeats),
-      regimePairAdj: Object.assign({}, _state.regimePairAdj),
-      regimeAxisAdj: Object.assign({}, _state.regimeAxisAdj),
-      regimeTightenBudget: Object.assign({}, _state.regimeTightenBudget),
-      coherentFreezeBeats: _state.coherentFreezeBeats,
-      skippedColdspotRelaxations: _state.skippedColdspotRelaxations,
-      coldspotSkipReasons: Object.assign({}, _state.coldspotSkipReasons),
-      phaseSurfaceHotBeats: _state.phaseSurfaceHotBeats,
-      trustSurfaceHotBeats: _state.trustSurfaceHotBeats,
-      entropySurfaceHotBeats: _state.entropySurfaceHotBeats,
-      coherentHotspotActuationBeats: _state.coherentHotspotActuationBeats,
-      coherentHotspotPairAdj: _state.coherentHotspotPairAdj,
-      coherentHotspotAxisAdj: _state.coherentHotspotAxisAdj,
-      warmupTicks: _state.lastWarmupTicks,
-      warmupRemaining: m.max(0, _state.lastWarmupTicks - _state.beatCount)
+      beatCount: axisEnergyEquilibratorState.beatCount,
+      pairAdjustments: axisEnergyEquilibratorState.pairAdjustments,
+      axisAdjustments: axisEnergyEquilibratorState.axisAdjustments,
+      smoothedShares: Object.assign({}, axisEnergyEquilibratorState.smoothedShares),
+      perAxisAdj: Object.assign({}, axisEnergyEquilibratorState.perAxisAdj),
+      perPairAdj: Object.assign({}, axisEnergyEquilibratorState.perPairAdj),
+      lastBaselines: Object.assign({}, axisEnergyEquilibratorState.lastBaselines),
+      regimeBeats: Object.assign({}, axisEnergyEquilibratorState.regimeBeats),
+      regimePairAdj: Object.assign({}, axisEnergyEquilibratorState.regimePairAdj),
+      regimeAxisAdj: Object.assign({}, axisEnergyEquilibratorState.regimeAxisAdj),
+      regimeTightenBudget: Object.assign({}, axisEnergyEquilibratorState.regimeTightenBudget),
+      coherentFreezeBeats: axisEnergyEquilibratorState.coherentFreezeBeats,
+      skippedColdspotRelaxations: axisEnergyEquilibratorState.skippedColdspotRelaxations,
+      coldspotSkipReasons: Object.assign({}, axisEnergyEquilibratorState.coldspotSkipReasons),
+      phaseSurfaceHotBeats: axisEnergyEquilibratorState.phaseSurfaceHotBeats,
+      trustSurfaceHotBeats: axisEnergyEquilibratorState.trustSurfaceHotBeats,
+      entropySurfaceHotBeats: axisEnergyEquilibratorState.entropySurfaceHotBeats,
+      coherentHotspotActuationBeats: axisEnergyEquilibratorState.coherentHotspotActuationBeats,
+      coherentHotspotPairAdj: axisEnergyEquilibratorState.coherentHotspotPairAdj,
+      coherentHotspotAxisAdj: axisEnergyEquilibratorState.coherentHotspotAxisAdj,
+      warmupTicks: axisEnergyEquilibratorState.lastWarmupTicks,
+      warmupRemaining: m.max(0, axisEnergyEquilibratorState.lastWarmupTicks - axisEnergyEquilibratorState.beatCount)
     };
   }
 
   function reset() {
-    for (let i = 0; i < _config.ALL_AXES.length; i++) {
-      const axis = _config.ALL_AXES[i];
-      if (_state.smoothedShares[axis] !== undefined) {
-        _state.smoothedShares[axis] = _state.smoothedShares[axis] * 0.7 + _config.FAIR_SHARE * 0.3;
+    for (let i = 0; i < axisEnergyEquilibratorConfig.ALL_AXES.length; i++) {
+      const axis = axisEnergyEquilibratorConfig.ALL_AXES[i];
+      if (axisEnergyEquilibratorState.smoothedShares[axis] !== undefined) {
+        axisEnergyEquilibratorState.smoothedShares[axis] = axisEnergyEquilibratorState.smoothedShares[axis] * 0.7 + axisEnergyEquilibratorConfig.FAIR_SHARE * 0.3;
       }
     }
-    const cooldownKeys = Object.keys(_state.pairCooldowns);
-    for (let i = 0; i < cooldownKeys.length; i++) _state.pairCooldowns[cooldownKeys[i]] = 0;
+    const cooldownKeys = Object.keys(axisEnergyEquilibratorState.pairCooldowns);
+    for (let i = 0; i < cooldownKeys.length; i++) axisEnergyEquilibratorState.pairCooldowns[cooldownKeys[i]] = 0;
   }
 
   conductorIntelligence.registerRecorder('axisEnergyEquilibrator', refresh);

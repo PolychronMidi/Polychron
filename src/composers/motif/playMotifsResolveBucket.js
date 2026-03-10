@@ -1,7 +1,7 @@
 // playMotifsResolveBucket.js - resolve unit bucket/cursor context for playMotifs
 
 playMotifsResolveBucket = function playMotifsResolveBucket(unit, layer) {
-  const plannedDivsPerBeat = (layer && Number.isFinite(layer._plannedDivsPerBeat)) ? Number(layer._plannedDivsPerBeat) : Number(divsPerBeat);
+  const plannedDivsPerBeat = (layer && Number.isFinite(layer.playMotifsResolveBucketPlannedDivsPerBeat)) ? Number(layer.playMotifsResolveBucketPlannedDivsPerBeat) : Number(divsPerBeat);
   const absBeatIdx = Number.isFinite(Number(beatIndex)) ? Number(beatIndex) : 0;
   const absDivOff = Number.isFinite(Number(divIndex)) ? Number(divIndex) : 0;
   const absDivIdx = m.max(0, absBeatIdx * plannedDivsPerBeat + absDivOff);
@@ -58,9 +58,9 @@ playMotifsResolveBucket = function playMotifsResolveBucket(unit, layer) {
     throw new Error(`${unit}.playMotifs: empty ${bucketLabel} bucket at index ${targetIndex} - fail-fast`);
   }
 
-  if (!layer._bucketCursors) layer._bucketCursors = {};
-  if (!layer._bucketCursors[unit]) layer._bucketCursors[unit] = new Map();
-  const cursorMap = layer._bucketCursors[unit];
+  if (!layer.playMotifsResolveBucketBucketCursors) layer.playMotifsResolveBucketBucketCursors = {};
+  if (!layer.playMotifsResolveBucketBucketCursors[unit]) layer.playMotifsResolveBucketBucketCursors[unit] = new Map();
+  const cursorMap = layer.playMotifsResolveBucketBucketCursors[unit];
 
   return { targetIndex, bucket, bucketLabel, cursorMap };
 };

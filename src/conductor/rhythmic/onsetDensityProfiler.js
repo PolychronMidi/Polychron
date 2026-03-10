@@ -9,7 +9,7 @@ onsetDensityProfiler = (() => {
 
   // Beat-level cache: getDensity() with default opts is called 2-3x per beat
   // (getDensityBias + getCrossModBias via stateProvider)
-  const _defaultDensityCache = beatCache.create(() => _getDensity());
+  const onsetDensityProfilerDefaultDensityCache = beatCache.create(() => onsetDensityProfilerGetDensity());
 
   /**
    * Get precise onset density (notes per second) from ATW.
@@ -19,12 +19,12 @@ onsetDensityProfiler = (() => {
    * @returns {{ nps: number, trend: string }}
    */
   function getDensity(opts) {
-    if (opts === undefined) return _defaultDensityCache.get();
-    return _getDensity(opts);
+    if (opts === undefined) return onsetDensityProfilerDefaultDensityCache.get();
+    return onsetDensityProfilerGetDensity(opts);
   }
 
   /** @private */
-  function _getDensity(opts = {}) {
+  function onsetDensityProfilerGetDensity(opts = {}) {
     const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 2) return { nps: 0, trend: 'sparse' };
 

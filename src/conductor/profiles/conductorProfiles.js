@@ -5,7 +5,7 @@
 // The factories (e.g. `conductorProfileDefault`) are expected to be present as
 // naked globals by the time this module runs.
 
-function _withAnalysisSettings(profileName, profile) {
+function conductorProfilesWithAnalysisSettings(profileName, profile) {
   const analysisDefaults = {
     warmupTicks: 6,
     snapshotReuseBeats: 3
@@ -30,10 +30,10 @@ function _withAnalysisSettings(profileName, profile) {
 }
 
 CONDUCTOR_PROFILE_SOURCES = {
-  default: _withAnalysisSettings('default', conductorProfileDefault()),
-  restrained: _withAnalysisSettings('restrained', conductorProfileRestrained()),
-  explosive: _withAnalysisSettings('explosive', conductorProfileExplosive()),
-  atmospheric: _withAnalysisSettings('atmospheric', conductorProfileAtmospheric()),
-  rhythmicDrive: _withAnalysisSettings('rhythmicDrive', conductorProfileRhythmicDrive()),
-  minimal: _withAnalysisSettings('minimal', conductorProfileMinimal())
+  default: conductorProfilesWithAnalysisSettings('default', conductorProfileDefault()),
+  restrained: conductorProfilesWithAnalysisSettings('restrained', conductorProfileRestrained()),
+  explosive: conductorProfilesWithAnalysisSettings('explosive', conductorProfileExplosive()),
+  atmospheric: conductorProfilesWithAnalysisSettings('atmospheric', conductorProfileAtmospheric()),
+  rhythmicDrive: conductorProfilesWithAnalysisSettings('rhythmicDrive', conductorProfileRhythmicDrive()),
+  minimal: conductorProfilesWithAnalysisSettings('minimal', conductorProfileMinimal())
 };

@@ -13,7 +13,7 @@ dynamicRangeTracker = (() => {
   const MAX_SNAPSHOTS = 32;
 
   // Beat-level cache: getVelocityProfile is called 2x per beat (getSpreadBias via flickerModifier + suggestDynamicShift)
-  const _velocityCache = beatCache.create(() => _getVelocityProfile());
+  const dynamicRangeTrackerVelocityCache = beatCache.create(() => dynamicRangeTrackerGetVelocityProfile());
 
   /**
    * Analyze the velocity distribution of recent notes (instantaneous view).
@@ -23,12 +23,12 @@ dynamicRangeTracker = (() => {
    * @returns {{ min: number, max: number, mean: number, spread: number, compressed: boolean }}
    */
   function getVelocityProfile(opts) {
-    if (opts === undefined) return _velocityCache.get();
-    return _getVelocityProfile(opts);
+    if (opts === undefined) return dynamicRangeTrackerVelocityCache.get();
+    return dynamicRangeTrackerGetVelocityProfile(opts);
   }
 
   /** @private */
-  function _getVelocityProfile(opts = {}) {
+  function dynamicRangeTrackerGetVelocityProfile(opts = {}) {
     const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 3) {
       return { min: 64, max: 64, mean: 64, spread: 0, compressed: false };

@@ -48,7 +48,7 @@ coherenceMonitor = (() => {
       cumulativeActual += actual;
       cumulativeIntended += m.max(1, intended);
 
-      _updateBias();
+      coherenceMonitorUpdateBias();
     });
 
     // stutter notes contribute to actual density but bypass the normal note path.
@@ -59,7 +59,7 @@ coherenceMonitor = (() => {
       if (window.length > 0) {
         window[window.length - 1].actual += 1;
         window[window.length - 1].intended += 1;
-        _updateBias();
+        coherenceMonitorUpdateBias();
       }
     });
 
@@ -71,7 +71,7 @@ coherenceMonitor = (() => {
       if (window.length > 0) {
         window[window.length - 1].actual += extra;
         window[window.length - 1].intended += extra;
-        _updateBias();
+        coherenceMonitorUpdateBias();
       }
     });
 
@@ -113,7 +113,7 @@ coherenceMonitor = (() => {
   }
 
   /** Recompute coherence bias from the rolling window. */
-  function _updateBias() {
+  function coherenceMonitorUpdateBias() {
     if (window.length === 0) return;
 
     // Window-level emission ratio

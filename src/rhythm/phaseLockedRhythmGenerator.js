@@ -35,7 +35,7 @@ phaseLockedRhythmGenerator = (() => {
     // Phase offset based on ratio: layer2 offset = (ratio1 / (ratio1 + ratio2)) * pattern_length
     // This is computed dynamically per pattern to maintain polyrhythmic coherence
     // Store coupling metadata for reference
-    phases.set(`_coupling:${layer1}:${layer2}`, { ratio1, ratio2 });
+    phases.set(`phaseLockedRhythmGeneratorCoupling:${layer1}:${layer2}`, { ratio1, ratio2 });
   }
 
   /**
@@ -73,7 +73,7 @@ phaseLockedRhythmGenerator = (() => {
       offset = phases.get(phaseKey);
     } else if (activeLayer) {
       for (const [key, meta] of phases.entries()) {
-        if (!V.optionalType(key, 'string') || !key.startsWith('_coupling:')) continue;
+        if (!V.optionalType(key, 'string') || !key.startsWith('phaseLockedRhythmGeneratorCoupling:')) continue;
         const parts = key.split(':');
         const layer1 = parts[1];
         const layer2 = parts[2];

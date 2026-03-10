@@ -11,22 +11,22 @@ globalConductor = (() => {
 
   // Flicker modifier EMA state - smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
-  let _prevFlickerMod = 1;
+  let globalConductorPrevFlickerMod = 1;
   const FLICKER_SMOOTHING = 0.30; // raised from 0.15 - doubles tracking responsiveness to widen effective output range
 
   // Density-flicker additive decorrelation: tracks rolling correlation
   // between density direction and flicker amplitude direction. When both
   // move together (high positive correlation), the additive densityFlicker
   // term is scaled down to break the structural coupling path.
-  let _dfCorrEma = 0; // EMA of sign-agreement (range [-1, 1])
+  let globalConductorDfCorrEma = 0; // EMA of sign-agreement (range [-1, 1])
   const DF_CORR_ALPHA = 0.12;
 
   // Flicker variance floor: when registryFlickerMod has near-zero variance,
   // inject small independent noise to prevent statistical lock from inflating
   // coupling measurements. Uses Welford's online algorithm for rolling std.
-  let _fVarN = 0;
-  let _fVarMean = 1.0;
-  let _fVarM2 = 0;
+  let globalConductorFVarN = 0;
+  let globalConductorFVarMean = 1.0;
+  let globalConductorFVarM2 = 0;
   const FLICKER_VARIANCE_FLOOR_STD = 0.008; // inject when rolling std < this
   const FLICKER_VARIANCE_INJECT = 0.02;     // noise amplitude when below floor
 
@@ -101,16 +101,16 @@ globalConductor = (() => {
     // beat-to-beat reversals that inflate trajectory curvature, while
     // preserving the per-beat noise pattern (sine + random terms below).
     const rawFlickerMod = flickerAttr.product;
-    const prevFlickerSnapshot = _prevFlickerMod; // snapshot BEFORE update for direction calc
-    const registryFlickerMod = _prevFlickerMod * (1 - FLICKER_SMOOTHING) + rawFlickerMod * FLICKER_SMOOTHING;
-    _prevFlickerMod = registryFlickerMod;
+    const prevFlickerSnapshot = globalConductorPrevFlickerMod; // snapshot BEFORE update for direction calc
+    const registryFlickerMod = globalConductorPrevFlickerMod * (1 - FLICKER_SMOOTHING) + rawFlickerMod * FLICKER_SMOOTHING;
+    globalConductorPrevFlickerMod = registryFlickerMod;
 
     // Flicker variance floor: inject independent noise when rolling std is too low
-    _fVarN++;
-    const fDelta = registryFlickerMod - _fVarMean;
-    _fVarMean += fDelta / _fVarN;
-    _fVarM2 += fDelta * (registryFlickerMod - _fVarMean);
-    const rollingFlickerStd = _fVarN > 4 ? m.sqrt(_fVarM2 / _fVarN) : 1;
+    globalConductorFVarN++;
+    const fDelta = registryFlickerMod - globalConductorFVarMean;
+    globalConductorFVarMean += fDelta / globalConductorFVarN;
+    globalConductorFVarM2 += fDelta * (registryFlickerMod - globalConductorFVarMean);
+    const rollingFlickerStd = globalConductorFVarN > 4 ? m.sqrt(globalConductorFVarM2 / globalConductorFVarN) : 1;
     const flickerVarianceInject = rollingFlickerStd < FLICKER_VARIANCE_FLOOR_STD
       ? rf(-FLICKER_VARIANCE_INJECT, FLICKER_VARIANCE_INJECT)
       : 0;
@@ -127,10 +127,10 @@ globalConductor = (() => {
     const densityDir = targetDensity - currentDensity;
     const flickerDir = registryFlickerMod - prevFlickerSnapshot; // use pre-update snapshot (fixes R4 bug: was always 0)
     const signAgreement = (densityDir > 0 && flickerDir > 0) || (densityDir < 0 && flickerDir < 0) ? 1 : -1;
-    _dfCorrEma = _dfCorrEma * (1 - DF_CORR_ALPHA) + signAgreement * DF_CORR_ALPHA;
+    globalConductorDfCorrEma = globalConductorDfCorrEma * (1 - DF_CORR_ALPHA) + signAgreement * DF_CORR_ALPHA;
     // When correlation is positive (co-moving), attenuate the additive flicker;
     // when negative or zero, pass through fully. Range: [0.5, 1.0].
-    const dfDecorrelScale = clamp(1.0 - m.max(0, _dfCorrEma) * 0.5, 0.5, 1.0);
+    const dfDecorrelScale = clamp(1.0 - m.max(0, globalConductorDfCorrEma) * 0.5, 0.5, 1.0);
 
     const densityFlicker = (m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude

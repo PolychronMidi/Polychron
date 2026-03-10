@@ -28,17 +28,17 @@ StutterManager = class StutterManager {
   static lastUsedCHs;
   static lastUsedCHs2;
   static lastUsedCHs3;
-  static _nextPlanId;
-  static _stutterFade;
-  static _stutterPan;
-  static _stutterFX;
-  static _textureIntensity;
-  static _lastTextureMode;
-  static _textureDecay;
-  static _textureListenerAttached;
+  static StutterManagerNextPlanId;
+  static StutterManagerStutterFade;
+  static StutterManagerStutterPan;
+  static StutterManagerStutterFX;
+  static StutterManagerTextureIntensity;
+  static StutterManagerLastTextureMode;
+  static StutterManagerTextureDecay;
+  static StutterManagerTextureListenerAttached;
 
-  static _attachTextureListener() {
-    if (this._textureListenerAttached) return true;
+  static StutterManagerAttachTextureListener() {
+    if (this.StutterManagerTextureListenerAttached) return true;
     const EVENTS = V.getEventsOrThrow();
     const eventName = EVENTS.TEXTURE_CONTRAST;
 
@@ -46,8 +46,8 @@ StutterManager = class StutterManager {
       const composite = Number(data.composite);
       const mode = data.mode;
       const weight = mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
-      this._textureIntensity = this._textureIntensity * this._textureDecay + weight * (1 - this._textureDecay);
-      this._lastTextureMode = mode;
+      this.StutterManagerTextureIntensity = this.StutterManagerTextureIntensity * this.StutterManagerTextureDecay + weight * (1 - this.StutterManagerTextureDecay);
+      this.StutterManagerLastTextureMode = mode;
 
       if (mode === 'chordBurst' && composite > 0.3) {
         V.assertArray(reflection, 'reflection');
@@ -55,12 +55,12 @@ StutterManager = class StutterManager {
         if (reflChs.length > 0) {
           const microRate = clamp(m.round(24 + composite * 16), 24, 48);
           const microDuration = tpUnit * rf(0.3, 0.6);
-          this._stutterPan.call(this, reflChs, microRate, microDuration);
+          this.StutterManagerStutterPan.call(this, reflChs, microRate, microDuration);
         }
       }
     });
 
-    this._textureListenerAttached = true;
+    this.StutterManagerTextureListenerAttached = true;
     return true;
   }
 
@@ -71,7 +71,7 @@ StutterManager = class StutterManager {
     return this.defaultDirective;
   }
 
-  static _getStutterGrainParams() {
+  static StutterManagerGetStutterGrainParams() {
     const grain = conductorConfig.getStutterGrainParams();
     V.assertObject(grain, 'grain');
     return grain;
@@ -87,8 +87,8 @@ StutterManager = class StutterManager {
    * @param {number|undefined} numStutters
    * @param {number|undefined} duration
    */
-  static _invokeStutter(label, impl, grainCountKey, grainDurationKey, channels, numStutters, duration) {
-    const grain = this._getStutterGrainParams();
+  static StutterManagerInvokeStutter(label, impl, grainCountKey, grainDurationKey, channels, numStutters, duration) {
+    const grain = this.StutterManagerGetStutterGrainParams();
     const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain[grainCountKey][0], grain[grainCountKey][1]));
     const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain[grainDurationKey][0], grain[grainDurationKey][1]));
     if (!channels || (Array.isArray(channels) && channels.length === 0)) {
@@ -101,15 +101,15 @@ StutterManager = class StutterManager {
   }
 
   static stutterFade(channels, numStutters = undefined, duration = undefined) {
-    return this._invokeStutter('stutterFade', this._stutterFade, 'fadeCount', 'fadeDuration', channels, numStutters, duration);
+    return this.StutterManagerInvokeStutter('stutterFade', this.StutterManagerStutterFade, 'fadeCount', 'fadeDuration', channels, numStutters, duration);
   }
 
   static stutterPan(channels, numStutters = undefined, duration = undefined) {
-    return this._invokeStutter('stutterPan', this._stutterPan, 'panCount', 'panDuration', channels, numStutters, duration);
+    return this.StutterManagerInvokeStutter('stutterPan', this.StutterManagerStutterPan, 'panCount', 'panDuration', channels, numStutters, duration);
   }
 
   static stutterFX(channels, numStutters = undefined, duration = undefined) {
-    return this._invokeStutter('stutterFX', this._stutterFX, 'fxCount', 'fxDuration', channels, numStutters, duration);
+    return this.StutterManagerInvokeStutter('stutterFX', this.StutterManagerStutterFX, 'fxCount', 'fxDuration', channels, numStutters, duration);
   }
 
   static createPlan(planCfg = {}) {
@@ -132,7 +132,7 @@ StutterManager = class StutterManager {
     return stutterPlanScheduler.runDuePlans(this, tick);
   }
 
-  static _executePlan(plan = {}) {
+  static StutterManagerExecutePlan(plan = {}) {
     return stutterPlanScheduler.executePlan(this, plan);
   }
 
@@ -162,18 +162,18 @@ StutterManager = class StutterManager {
 
   static prepareBeat(beatStart) {
     void beatStart;
-    this._attachTextureListener();
+    this.StutterManagerAttachTextureListener();
     if (!this.beatContext) this.beatContext = {};
 
     const beatContext = this.beatContext;
     const currentBeatIndexLocal = beatIndex;
-    if (beatContext._lastBeatIndex !== currentBeatIndexLocal) {
-      beatContext._lastBeatIndex = currentBeatIndexLocal;
+    if (beatContext.StutterManagerLastBeatIndex !== currentBeatIndexLocal) {
+      beatContext.StutterManagerLastBeatIndex = currentBeatIndexLocal;
       beatContext.selectedReflectionChannels = new Set();
       beatContext.selectedBassChannels = new Set();
 
-      const textureSuppression = (this._lastTextureMode === 'flurry' && this._textureIntensity > 0.15)
-        ? clamp(1 - this._textureIntensity * 1.5, 0.1, 0.5)
+      const textureSuppression = (this.StutterManagerLastTextureMode === 'flurry' && this.StutterManagerTextureIntensity > 0.15)
+        ? clamp(1 - this.StutterManagerTextureIntensity * 1.5, 0.1, 0.5)
         : 0.5;
 
       V.assertArray(reflection, 'reflection');
@@ -240,14 +240,14 @@ stutterManagerStatic.plans = new Map();
 stutterManagerStatic.scheduledPlans = new Map();
 stutterManagerStatic.config = config;
 stutterManagerStatic.defaultDirective = defaultDirective;
-stutterManagerStatic._nextPlanId = 1;
-stutterManagerStatic._stutterFade = stutterFadeImpl;
-stutterManagerStatic._stutterPan = stutterPanImpl;
-stutterManagerStatic._stutterFX = stutterFXImpl;
-stutterManagerStatic._textureIntensity = 0;
-stutterManagerStatic._lastTextureMode = 'single';
-stutterManagerStatic._textureDecay = 0.85;
-stutterManagerStatic._textureListenerAttached = false;
+stutterManagerStatic.StutterManagerNextPlanId = 1;
+stutterManagerStatic.StutterManagerStutterFade = stutterFadeImpl;
+stutterManagerStatic.StutterManagerStutterPan = stutterPanImpl;
+stutterManagerStatic.StutterManagerStutterFX = stutterFXImpl;
+stutterManagerStatic.StutterManagerTextureIntensity = 0;
+stutterManagerStatic.StutterManagerLastTextureMode = 'single';
+stutterManagerStatic.StutterManagerTextureDecay = 0.85;
+stutterManagerStatic.StutterManagerTextureListenerAttached = false;
 
 stutterFade = (...args) => StutterManager.stutterFade(...args);
 stutterPan = (...args) => StutterManager.stutterPan(...args);

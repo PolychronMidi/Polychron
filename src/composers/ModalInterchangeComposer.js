@@ -35,7 +35,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
       ? MODAL_BORROWING[primaryMode]
       : (primaryMode === 'major' ? ['minor', 'dorian', 'mixolydian', 'lydian'] : ['major', 'dorian', 'phrygian', 'locrian']);
     this.borrowModes = borrowConfig;
-    this._lastBorrowed = null;
+    this.ModalInterchangeComposerLastBorrowed = null;
   }
 
   borrowChord() {
@@ -84,10 +84,10 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
       const modifiedProgression = [...this.progression.map(c => c.symbol)];
       modifiedProgression[this.currentChordIndex % modifiedProgression.length] = borrowedChord;
       super.noteSet(modifiedProgression, direction);
-      this._lastBorrowed = borrowedChord;
+      this.ModalInterchangeComposerLastBorrowed = borrowedChord;
     } else {
       super.noteSet(this.progression.map(c => c.symbol), direction);
-      this._lastBorrowed = null;
+      this.ModalInterchangeComposerLastBorrowed = null;
     }
   }
 
@@ -102,7 +102,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     if (!base || !base.candidateWeights) return base;
 
     // Emphasize borrowed chord tones (modal color)
-    if (this._lastBorrowed) {
+    if (this.ModalInterchangeComposerLastBorrowed) {
       for (const note of candidateNotes) {
         const key = String(note);
         const existing = typeof base.candidateWeights[key] === 'number' ? base.candidateWeights[key] : 0;

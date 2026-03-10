@@ -61,7 +61,7 @@ layerPass = (() => {
 
       let playProb, stutterProb;
       timeStream.setBounds('beat', numerator);
-      const _measureWallStart = Date.now();
+      const layerPassMeasureWallStart = Date.now();
 
       // Conductor update is expensive (~147 function calls). The EMA smoothing
       // on density/tension/flicker means beat-to-beat resolution adds minimal
@@ -107,7 +107,7 @@ layerPass = (() => {
         }
         microUnitAttenuator.flush();
       }
-      process.stderr.write('[main]     M' + measureIndex + ' done (' + ((Date.now() - _measureWallStart) / 1000).toFixed(1) + 's)\n');
+      process.stderr.write('[main]     M' + measureIndex + ' done (' + ((Date.now() - layerPassMeasureWallStart) / 1000).toFixed(1) + 's)\n');
     }
 
     return processedBeatCount;

@@ -22,8 +22,10 @@ if (RHYTHM_PATTERNS) {
   Object.assign(rhythms, RHYTHM_PATTERNS);
 }
 
+// bootstrap global rp contains the required rhythm-pattern module
 _rp = require('@tonaljs/rhythm-pattern');
 _binary = _rp.binary; _hex = _rp.hex; _onsets = _rp.onsets; _random = _rp.random; _probability = _rp.probability; _euclid = _rp.euclid; _rotate = _rp.rotate;
+
 
 binary = (length) => { let pattern = [];
   while (pattern.length < length) { pattern = pattern.concat(_binary(ri(99))); }

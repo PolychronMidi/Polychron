@@ -17,20 +17,20 @@ systemManifestMarkdown = (() => {
     lines.push(`> Generated: ${manifest.timestamp}`);
     lines.push('');
 
-    _appendConductorModules(lines, manifest, attribution);
-    _appendCrossLayerModules(lines, manifest);
-    _appendJourney(lines, manifest);
-    _appendTrustScores(lines, manifest);
-    _appendConfig(lines, manifest);
-    _appendSignalHealth(lines, manifest);
-    _appendSystemDynamics(lines, manifest);
-    _appendCoherenceVerdicts(lines, manifest);
+    systemManifestMarkdownAppendConductorModules(lines, manifest, attribution);
+    systemManifestMarkdownAppendCrossLayerModules(lines, manifest);
+    systemManifestMarkdownAppendJourney(lines, manifest);
+    systemManifestMarkdownAppendTrustScores(lines, manifest);
+    systemManifestMarkdownAppendConfig(lines, manifest);
+    systemManifestMarkdownAppendSignalHealth(lines, manifest);
+    systemManifestMarkdownAppendSystemDynamics(lines, manifest);
+    systemManifestMarkdownAppendCoherenceVerdicts(lines, manifest);
 
     return lines.join('\n');
   }
 
   /** @param {string[]} lines */
-  function _appendConductorModules(lines, manifest, attribution) {
+  function systemManifestMarkdownAppendConductorModules(lines, manifest, attribution) {
     lines.push('## Conductor Intelligence Modules');
     lines.push('');
     lines.push(`Total lifecycle-registered: **${manifest.registries.conductorIntelligence.moduleCount}** | Total signal contributors: **${manifest.registries.conductorIntelligence.contributorNames.length}**`);
@@ -44,9 +44,9 @@ systemManifestMarkdown = (() => {
     lines.push(`- State providers: ${counts.stateProviders}`);
     lines.push('');
 
-    _appendAttributionTable(lines, 'Density Bias', attribution.density);
-    _appendAttributionTable(lines, 'Tension Bias', attribution.tension);
-    _appendAttributionTable(lines, 'Flicker Modifier', attribution.flicker);
+    systemManifestMarkdownAppendAttributionTable(lines, 'Density Bias', attribution.density);
+    systemManifestMarkdownAppendAttributionTable(lines, 'Tension Bias', attribution.tension);
+    systemManifestMarkdownAppendAttributionTable(lines, 'Flicker Modifier', attribution.flicker);
 
     lines.push('### Lifecycle-Registered Module Names');
     lines.push('');
@@ -74,7 +74,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendCrossLayerModules(lines, manifest) {
+  function systemManifestMarkdownAppendCrossLayerModules(lines, manifest) {
     lines.push('## Cross-Layer Modules');
     lines.push('');
     lines.push(`Total registered: **${manifest.registries.crossLayer.moduleCount}**`);
@@ -88,7 +88,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendJourney(lines, manifest) {
+  function systemManifestMarkdownAppendJourney(lines, manifest) {
     if (manifest.journey.length === 0) return;
     lines.push('## Harmonic Journey');
     lines.push('');
@@ -101,7 +101,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendTrustScores(lines, manifest) {
+  function systemManifestMarkdownAppendTrustScores(lines, manifest) {
     const trustEntries = Object.entries(manifest.trustScoresEndOfRun);
     if (trustEntries.length === 0) return;
     lines.push('## Trust Scores (End of Run)');
@@ -120,7 +120,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendConfig(lines, manifest) {
+  function systemManifestMarkdownAppendConfig(lines, manifest) {
     lines.push('## Config Summary');
     lines.push('');
     lines.push(`- BPM: ${manifest.config.BPM}`);
@@ -132,7 +132,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendAttributionTable(lines, title, attr) {
+  function systemManifestMarkdownAppendAttributionTable(lines, title, attr) {
     lines.push(`### ${title} Attribution (end-of-run snapshot)`);
     lines.push('');
     const flooredNote = (attr.floored && attr.rawProduct !== undefined) ? ` (floored from ${attr.rawProduct.toFixed(4)})` : '';
@@ -150,7 +150,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendSignalHealth(lines, manifest) {
+  function systemManifestMarkdownAppendSignalHealth(lines, manifest) {
     const sh = manifest.signalHealth;
     if (!sh || !sh.lastHealth) return;
 
@@ -233,7 +233,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendSystemDynamics(lines, manifest) {
+  function systemManifestMarkdownAppendSystemDynamics(lines, manifest) {
     const sd = manifest.systemDynamics;
     if (!sd || !sd.snapshot || !sd.snapshot.regime) return;
 
@@ -295,7 +295,7 @@ systemManifestMarkdown = (() => {
   }
 
   /** @param {string[]} lines */
-  function _appendCoherenceVerdicts(lines, manifest) {
+  function systemManifestMarkdownAppendCoherenceVerdicts(lines, manifest) {
     const verdicts = manifest.coherenceVerdicts;
     if (!verdicts || verdicts.length === 0) return;
 

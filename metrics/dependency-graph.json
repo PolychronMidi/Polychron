@@ -1,14 +1,14 @@
 {
   "meta": {
-    "generated": "2026-03-09T22:08:09.015Z",
+    "generated": "2026-03-10T00:16:48.046Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 433,
     "totalGlobals": 713,
     "totalProvides": 728,
-    "totalConsumes": 2827,
-    "totalEdges": 2199,
+    "totalConsumes": 2829,
+    "totalEdges": 2200,
     "crossSubsystemEdges": 1473,
     "maxFanIn": {
       "file": "src/utils/index.js",
@@ -47,7 +47,7 @@
       "composers": {
         "files": 93,
         "provides": 96,
-        "consumes": 492
+        "consumes": 494
       },
       "fx": {
         "files": 23,
@@ -3247,31 +3247,8 @@
         "validator"
       ]
     },
-    "src/rhythm/setRhythm.js": {
-      "order": 218,
-      "subsystem": "rhythm",
-      "provides": [
-        "setRhythm"
-      ],
-      "consumes": [
-        "_random",
-        "beatRhythm",
-        "clamp",
-        "divRhythm",
-        "divsPerBeat",
-        "drumTextureCoupler",
-        "getRhythm",
-        "numerator",
-        "random",
-        "subdivRhythm",
-        "subdivsPerDiv",
-        "subsubdivRhythm",
-        "subsubsPerSub",
-        "validator"
-      ]
-    },
     "src/rhythm/trackRhythm.js": {
-      "order": 219,
+      "order": 218,
       "subsystem": "rhythm",
       "provides": [
         "trackRhythm"
@@ -3289,7 +3266,7 @@
       ]
     },
     "src/rhythm/patterns.js": {
-      "order": 220,
+      "order": 219,
       "subsystem": "rhythm",
       "provides": [
         "rhythms",
@@ -3320,6 +3297,29 @@
         "rhythmRegistry",
         "ri",
         "rv"
+      ]
+    },
+    "src/rhythm/setRhythm.js": {
+      "order": 220,
+      "subsystem": "rhythm",
+      "provides": [
+        "setRhythm"
+      ],
+      "consumes": [
+        "_random",
+        "beatRhythm",
+        "clamp",
+        "divRhythm",
+        "divsPerBeat",
+        "drumTextureCoupler",
+        "getRhythm",
+        "numerator",
+        "random",
+        "subdivRhythm",
+        "subdivsPerDiv",
+        "subsubdivRhythm",
+        "subsubsPerSub",
+        "validator"
       ]
     },
     "src/rhythm/feedback/index.js": {
@@ -4764,7 +4764,9 @@
       "consumes": [
         "FactoryManager",
         "LM",
+        "VoiceLeadingScore",
         "VoiceManager",
+        "composer",
         "composerRuntimeProfileAdapter",
         "note",
         "playMotifsApplyCycleTransforms",
@@ -8033,6 +8035,13 @@
     {
       "from": "src/composers/voice/VoiceLeadingScore.js",
       "to": "src/composers/motif/motifSpreader.js",
+      "globals": [
+        "VoiceLeadingScore"
+      ]
+    },
+    {
+      "from": "src/composers/voice/VoiceLeadingScore.js",
+      "to": "src/composers/motif/playMotifs.js",
       "globals": [
         "VoiceLeadingScore"
       ]
@@ -18330,6 +18339,7 @@
       "from": "src/utils/init.js",
       "to": "src/composers/motif/playMotifs.js",
       "globals": [
+        "composer",
         "note"
       ]
     },

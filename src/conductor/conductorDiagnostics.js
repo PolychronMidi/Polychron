@@ -13,7 +13,7 @@ conductorDiagnostics = (() => {
   function create(biasArrays, collectors) {
 
     /** @param {Array<{name:string}>} arr @returns {string[]} colon-normalized sorted */
-    function _normalizedNames(arr) {
+    function conductorDiagnosticsNormalizedNames(arr) {
       const out = new Set();
       for (let i = 0; i < arr.length; i++) {
         out.add(arr[i].name.split(':')[0]);
@@ -22,7 +22,7 @@ conductorDiagnostics = (() => {
     }
 
     /** @param {string[]} rawNames @returns {string[]} colon-normalized sorted */
-    function _normalizedRaw(rawNames) {
+    function conductorDiagnosticsNormalizedRaw(rawNames) {
       const out = new Set();
       for (let i = 0; i < rawNames.length; i++) {
         out.add(rawNames[i].split(':')[0]);
@@ -66,11 +66,11 @@ conductorDiagnostics = (() => {
      */
     function getRegistryNames() {
       return {
-        density: _normalizedNames(biasArrays.density),
-        tension: _normalizedNames(biasArrays.tension),
-        flicker: _normalizedNames(biasArrays.flicker),
-        recorders: _normalizedRaw(conductorRecorderRegistry.getNames()),
-        stateProviders: _normalizedRaw(conductorStateProviderRegistry.getNames())
+        density: conductorDiagnosticsNormalizedNames(biasArrays.density),
+        tension: conductorDiagnosticsNormalizedNames(biasArrays.tension),
+        flicker: conductorDiagnosticsNormalizedNames(biasArrays.flicker),
+        recorders: conductorDiagnosticsNormalizedRaw(conductorRecorderRegistry.getNames()),
+        stateProviders: conductorDiagnosticsNormalizedRaw(conductorStateProviderRegistry.getNames())
       };
     }
 
