@@ -1,3 +1,48 @@
+## R75 — 2026-03-09 — EVOLVED
+
+**Profile:** default | **Beats:** 434 | **Duration:** 60.1s | **Notes:** 14613
+**Fingerprint:** 9/10 stable | Drifted: hotspotMigration
+
+### Key Observations
+- First journal-tracked **default profile** run. Pipeline health clean: 16/16 steps passed, composition 443.9s, total wall time 448.3s. Tuning invariants 10/10, feedback graph 6/6.
+- Same-profile default-vs-default comparison: EVOLVED with 1/10 drifted (hotspotMigration). Hotspot surface migrated from density-flicker dominance (10 beats) to tension-flicker dominance (31 beats, p95 0.922 severe). Pair set delta 0.80 — high rotation.
+- **tension-flicker** is the critical hotspot: 31 of 69 pair-exceedance beats (45%), p95 0.922 (only severe pair), pearsonR 0.775. DiagnosticArc snapshot 4 (2:periodic:80) pinpoints the spike: coupling mean 0.916, effectiveDim crashed to 2.56, gain dropped to 0.518 during coherent regime. This is a regime-transition-induced coupling lock.
+- exceedanceSeverity at 77% tolerance consumption (delta 42.4 vs 55, 19→69 total beats). Not drifted but at risk. The 3.6x increase is almost entirely driven by the single tension-flicker pair.
+- Phase axis near-collapsed: share 0.4% (prev 3.6%), variance-gated rate 69.8%. Default profile lacks explicit phaseVarianceGateScale — the base threshold is too restrictive for default signal dynamics. Equilibrator made 44 phase-pair adjustments but 44 coldspot relaxations were skipped (27 coherentFreeze, 17 phaseHot).
+- Flicker pipeline strained: flicker product 0.768 with 50% crush warning. 14 modifiers multiply down, led by regimeReactiveDamping at 0.850 (single largest suppressor).
+- tailRecoveryHandshake still pinned at 1.0 (third consecutive round). tailRecoveryCap 0.605. Chronic recovery bottleneck persists.
+- Trust governance balanced: coherenceMonitor 0.547 leads, cadenceAlignment 0.177 lowest. No starvation or dominance. 8 trust turbulence events — stutterContagion volatile (0.140→0.663→0.314), phaseLock oscillating inversely with coupling strength.
+- Coupling gates active at 0.896 (symmetric gateD/gateT/gateF), gateEMA 0.861-0.891. Real engagement confirmed (not fully open).
+- DiagnosticArc shows profile cycling: default→restrained (section 1)→default (sections 2-end). effectiveDim ranged 2.56-3.72. Gain trajectory 0.616→0.595→0.599→0.518→0.602 with the mid-run dip at the tension-flicker spike.
+- Reconciliation gaps improved: maxGap 0.303 (density-flicker), down from previous 0.369. underSeenPairCount 4 (down from 5).
+- Regime balance improving: exploring 68% / coherent 30% (prev 78% / 20%). 1 forced cadence-monopoly break at tick 38. Healthy regime dynamics for default profile.
+
+### Evolutions Applied (from R74)
+- E1: Flicker-entropy concentration breaker — **inconclusive (profile confounded)** — R74 was explosive, R75 is default. Flicker-entropy exceedance dropped 38→5 beats, but the profile change makes isolation impossible.
+- E2: Tail-handshake de-saturation redesign — **refuted (3rd consecutive)** — tailRecoveryHandshake still pinned at 1.0, tailRecoveryCap 0.605 (< 0.65 target). The current mechanism lacks a decay term.
+- E3: Non-nudgeable entropy-trust tail bleed-off — **inconclusive (profile confounded)** — entropy-trust has 0 exceedance beats under default, but this may be profile character rather than fix effect.
+- E4: Exceedance guard for flicker/trust hotspot clusters — **inconclusive (profile confounded)** — flicker-trust and tension-trust exceedance both at 4 beats (down from R74's explosive), but topology has completely rotated to tension-flicker under default.
+- E5: Explosive phase recovery continuation — **untested (different profile)** — default profile exhibits its own phase collapse (0.4% share), separate from the explosive-specific axisEnergyEquilibrator work.
+- E6: Hotspot migration de-concentration diagnostics — **inconclusive** — hotspotMigration still drifted (delta 0.665 > 0.55), top2Concentration 0.565 (above 0.45 target). The cross-profile rotation confounds evaluation.
+
+### Evolutions Proposed (for R76)
+- E1: Tension-flicker late-run coherent spike suppression — src/conductor/signal/balancing/coupling/couplingGainEscalation.js
+- E2: tailRecoveryHandshake de-saturation via exponential decay — src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js
+- E3: Default profile phase variance gate calibration — src/conductor/profiles/conductorProfiles.js
+- E4: Flicker pipeline strain relief via registration bound widening — src/conductor/signal/profiling/regimeReactiveDamping.js
+- E5: Exceedance severity tolerance buffer via beat-normalized smoothing — scripts/golden-fingerprint.js
+- E6: Reconciliation gap pressure for density-flicker pair — src/conductor/signal/balancing/coupling/couplingGainEscalation.js
+
+### Hypotheses to Track
+- H1: If E1 works, tension-flicker p95 should drop below 0.85 and exceedance beats should fall below 15. exceedanceSeverity should move below 50% tolerance consumption.
+- H2: If E2 works, tailRecoveryHandshake should dip below 0.95 at least once during the run and tailRecoveryCap should reach above 0.65.
+- H3: If E3 works, phase axis share should rise above 0.02 and variance-gated rate should drop below 55%. Watch for flicker-phase and tension-phase exceedance spikes (balloon effect from phase activation, as seen in R69).
+- H4: If E4 works, flicker product should rise above 0.80 and the 50% crush warning should disappear.
+- H5: The default profile exhibits different hotspot topology than explosive (tension-flicker dominant vs flicker-entropy dominant). Track whether this is stable default character across R76-R78.
+- H6: stutterContagion trust volatility (0.140→0.663→0.314 in one run) may be a default-profile feature due to less aggressive regime damping. Track whether it correlates with coupling spike timing.
+
+
+
 ## R74 — 2026-03-09 — EVOLVED
 
 **Profile:** explosive | **Beats:** 511 | **Duration:** 67.1s | **Notes:** 21371

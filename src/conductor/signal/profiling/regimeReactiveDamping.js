@@ -54,7 +54,7 @@ regimeReactiveDamping = (() => {
   const MAX_FLICKER = 0.15;  // - range 0.85-1.15
   const _DENSITY_RANGE = [0.88, 1.12];
   const _TENSION_RANGE = [0.92, 1.18];
-  const _FLICKER_RANGE = [0.85, 1.18];
+  const _FLICKER_RANGE = [0.88, 1.18];
 
   // Curvature scaling: bias = 1 + dir * max * curvatureGain
   // At curvature 0 - bias = 1.0 (neutral). At curvature 1.0 - full magnitude.
