@@ -18,8 +18,8 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
 
   // Populate beat-scoped reflection/bass selection sets (up to 2 channels each).
   // These are consulted by `playNotes` so mirrored channels only stutter when selected.
-  if (this.beatContext._lastBeatIndex !== beatIndex) {
-    this.beatContext._lastBeatIndex = beatIndex;
+  if (this.beatContext.stutterFadeLastBeatIndex !== beatIndex) {
+    this.beatContext.stutterFadeLastBeatIndex = beatIndex;
     this.beatContext.selectedReflectionChannels = new Set();
     this.beatContext.selectedBassChannels = new Set();
     const reflCandidates = reflectionChannels.slice();

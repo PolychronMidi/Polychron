@@ -7,10 +7,10 @@
 interLayerRhythmAnalyzer = (() => {
   // Beat-level caches - each analysis function is called 2+ times per beat
   // (once from flicker/bias registration, once from stateProvider).
-  const _phaseCache = beatCache.create(() => interLayerRhythmHelpers.computePhaseRelationship());
-  const _driftCache = beatCache.create(() => interLayerRhythmHelpers.computeDriftSignal());
-  const _alignCache = beatCache.create(() => interLayerRhythmHelpers.computeAlignmentSignal());
-  const _dispCache  = beatCache.create(() => interLayerRhythmHelpers.computeDisplacementProfile());
+  const interLayerRhythmAnalyzerPhaseCache = beatCache.create(() => interLayerRhythmHelpers.computePhaseRelationship());
+  const interLayerRhythmAnalyzerDriftCache = beatCache.create(() => interLayerRhythmHelpers.computeDriftSignal());
+  const interLayerRhythmAnalyzerAlignCache = beatCache.create(() => interLayerRhythmHelpers.computeAlignmentSignal());
+  const interLayerRhythmAnalyzerDispCache  = beatCache.create(() => interLayerRhythmHelpers.computeDisplacementProfile());
 
   /**
    * Phase relationship between L1 and L2 onsets (cached per beat for default window).
@@ -18,7 +18,7 @@ interLayerRhythmAnalyzer = (() => {
    * @returns {{ phase: string, coincidence: number, complementarity: number }}
    */
   function getPhaseRelationship(windowSeconds) {
-    if (windowSeconds === undefined) return _phaseCache.get();
+    if (windowSeconds === undefined) return interLayerRhythmAnalyzerPhaseCache.get();
     return interLayerRhythmHelpers.computePhaseRelationship(windowSeconds);
   }
 
@@ -39,13 +39,13 @@ interLayerRhythmAnalyzer = (() => {
    * Measure timing coherence between layers (cached per beat).
    * @returns {{ avgDrift: number, tightness: number, suggestion: string }}
    */
-  function getDriftSignal() { return _driftCache.get(); }
+  function getDriftSignal() { return interLayerRhythmAnalyzerDriftCache.get(); }
 
   /**
    * Analyze layer alignment for convergence detection (cached per beat).
    * @returns {{ alignmentScore: number, convergencePoint: boolean, flickerMod: number }}
    */
-  function getAlignmentSignal() { return _alignCache.get(); }
+  function getAlignmentSignal() { return interLayerRhythmAnalyzerAlignCache.get(); }
 
   /**
    * Get flicker modifier for the flickerAmplitude chain.
@@ -61,7 +61,7 @@ interLayerRhythmAnalyzer = (() => {
    * @returns {{ displacementRatio: number, hemiola: boolean, phaseOffset: number, intentional: boolean }}
    */
   function getDisplacementProfile(windowSeconds) {
-    if (windowSeconds === undefined) return _dispCache.get();
+    if (windowSeconds === undefined) return interLayerRhythmAnalyzerDispCache.get();
     return interLayerRhythmHelpers.computeDisplacementProfile(windowSeconds);
   }
 

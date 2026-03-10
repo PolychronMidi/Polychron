@@ -17,7 +17,7 @@ voiceLeadingAnalyzeQuality = function voiceLeadingAnalyzeQuality(vls, noteSequen
 
   for (let i = 1; i < noteSequence.length; i++) {
     const interval = m.abs(noteSequence[i] - noteSequence[i - 1]);
-    const motionCost = vls._scoreVoiceMotion(interval, noteSequence[i - 1], noteSequence[i]);
+    const motionCost = vls.voiceLeadingAnalyzeQualityScoreVoiceMotion(interval, noteSequence[i - 1], noteSequence[i]);
     totalCost += motionCost;
 
     if (interval > 2) leapCount++;

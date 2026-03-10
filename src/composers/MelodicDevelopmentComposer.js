@@ -18,8 +18,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.responseMode = false;
     this.transpositionOffset = 0;
     this.currentPhase = 0;
-    this._lastBaseNotes = [];
-    this._lastDevelopedNotes = [];
+    this.MelodicDevelopmentComposerLastBaseNotes = [];
+    this.MelodicDevelopmentComposerLastDevelopedNotes = [];
     const inversionMode = (opts.inversionMode === undefined) ? 'diatonic' : String(opts.inversionMode).toLowerCase();
     if (!['diatonic', 'chromatic'].includes(inversionMode)) {
       throw new Error(`MelodicDevelopmentComposer: invalid inversionMode "${opts.inversionMode}" (expected diatonic|chromatic)`);
@@ -223,8 +223,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         break;
     }
 
-    this._lastBaseNotes = baseNotes;
-    this._lastDevelopedNotes = developedNotes;
+    this.MelodicDevelopmentComposerLastBaseNotes = baseNotes;
+    this.MelodicDevelopmentComposerLastDevelopedNotes = developedNotes;
     return developedNotes;
   }
 
@@ -238,8 +238,8 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     this.responseMode = false;
     this.transpositionOffset = 0;
     this.currentPhase = 0;
-    this._lastBaseNotes = [];
-    this._lastDevelopedNotes = [];
+    this.MelodicDevelopmentComposerLastBaseNotes = [];
+    this.MelodicDevelopmentComposerLastDevelopedNotes = [];
   }
 
   /**
@@ -249,7 +249,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
    */
   getVoicingIntent(candidateNotes = []) {
     return melodicDevelopmentVoicingIntent(
-      candidateNotes, this._lastBaseNotes, this._lastDevelopedNotes,
+      candidateNotes, this.MelodicDevelopmentComposerLastBaseNotes, this.MelodicDevelopmentComposerLastDevelopedNotes,
       this.developmentBias, this.intensity, this.currentPhase
     );
   }

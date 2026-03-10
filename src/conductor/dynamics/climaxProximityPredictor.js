@@ -6,16 +6,16 @@
 climaxProximityPredictor = (() => {
   // Beat-level cache: predict() queries 4 external modules but is called twice
   // per beat (via getDensityRampBias + getTensionBias).
-  const _cache = beatCache.create(() => _predict());
+  const climaxProximityPredictorCache = beatCache.create(() => climaxProximityPredictorPredict());
 
   /**
    * Predict climax proximity from multiple conductor signals (cached per beat).
    * @returns {{ proximity: number, phase: string, premature: boolean, density: number, tension: number }}
    */
-  function predict() { return _cache.get(); }
+  function predict() { return climaxProximityPredictorCache.get(); }
 
   /** @private */
-  function _predict() {
+  function climaxProximityPredictorPredict() {
     // Gather signals with safe fallbacks
     const energyMomentum = energyMomentumTracker.getMomentum();
 

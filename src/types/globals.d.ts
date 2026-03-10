@@ -116,6 +116,17 @@ interface VoiceLeadingScoreAPI {
   analyzeQuality(noteSequence: number[]): { smoothness: number; avgRange: number; leapRecoveries: number };
   updateConfig(cfg?: any): void;
   reset(): void;
+  // Required by voiceRegistry for multi-voice scoring.  Caller-side
+  // validation often checks for this property to guard against invalid
+  // objects.  The constructor now installs a bound alias so it is always
+  // present on real instances.
+  voiceRegistryScoreCandidate(
+    candidate: number,
+    lastNotes: number[],
+    registerRange: number[],
+    constraints: string[],
+    opts?: any
+  ): number;
 }
 
 interface SimplexNoiseAPI {

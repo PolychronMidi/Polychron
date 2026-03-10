@@ -8,16 +8,16 @@ attackDensityProfiler = (() => {
   const SHORT_THRESHOLD = 0.15; // seconds - notes shorter than this are "attacks"
 
   // Beat-level cache: getAttackSignal is called 2x per beat (densityBias + stateProvider)
-  const _cache = beatCache.create(() => _getAttackSignal());
+  const attackDensityProfilerCache = beatCache.create(() => attackDensityProfilerGetAttackSignal());
 
   /**
    * Analyze attack/sustain ratio from recent notes.
    * @returns {{ attackRatio: number, sustainRatio: number, densityBias: number, suggestion: string }}
    */
-  function getAttackSignal() { return _cache.get(); }
+  function getAttackSignal() { return attackDensityProfilerCache.get(); }
 
   /** @private */
-  function _getAttackSignal() {
+  function attackDensityProfilerGetAttackSignal() {
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 4) {

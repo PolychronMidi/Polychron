@@ -164,19 +164,43 @@ MeasureComposer = class MeasureComposer {
    * @returns {VoiceLeadingScoreAPI} the active scorer
    */
   enableVoiceLeading(scorerOrConfig) {
+    // Accept either a VoiceLeadingScore instance or a configuration object.
+    // We validate more thoroughly than before to ensure the scorer has the
+    // additional method required by `voiceRegistry` and `VoiceManager`.
+    const validateInstance = (obj) => {
+      V.assertObject(obj, 'scorer');
+      V.requireType(obj.selectNextNote, 'function', 'scorer.selectNextNote');
+      // voiceRegistryScoreCandidate is added via prototype helpers in
+      // VoiceLeadingScore.js and is mandatory for multi-voice selection.  If
+      // a caller mistakenly passes a partial object (e.g. just a config) it
+      // will lack this method.  Validate here so we never cache an invalid
+      // scorer and subsequently spam warnings.
+      if (!V.optionalType(obj.voiceRegistryScoreCandidate, 'function')) {
+        throw new Error('enableVoiceLeading: candidate object is missing voiceRegistryScoreCandidate');
+      }
+    };
+
     if (!scorerOrConfig) {
       this.VoiceLeadingScore = new VoiceLeadingScore();
     } else if (typeof scorerOrConfig === 'object') {
       try {
-        V.requireType(scorerOrConfig.selectNextNote, 'function', 'scorerOrConfig.selectNextNote');
-        // Assume an instance
+        validateInstance(scorerOrConfig);
+        // looks like a real instance
         this.VoiceLeadingScore = scorerOrConfig;
       } catch {
-        // Treat as config
+        // treat as configuration and build a new scorer
         this.VoiceLeadingScore = new VoiceLeadingScore(scorerOrConfig);
       }
     } else {
-      // Assume an instance
+      // non-object values are assumed to be instances (could still be invalid,
+      // but our downstream callers will guard again).
+      try {
+        validateInstance(scorerOrConfig);
+      } catch {
+        // fall back to default scorer if validation fails
+        this.VoiceLeadingScore = new VoiceLeadingScore();
+        return /** @type {VoiceLeadingScoreAPI} */ (this.VoiceLeadingScore);
+      }
       this.VoiceLeadingScore = scorerOrConfig;
     }
 
@@ -191,8 +215,17 @@ MeasureComposer = class MeasureComposer {
    * @returns {VoiceLeadingScoreAPI}
    */
   setVoiceLeadingConfig(cfg = {}) {
-    if (!this.VoiceLeadingScore) this.enableVoiceLeading(cfg);
-    else if (typeof this.VoiceLeadingScore.updateConfig === 'function') this.VoiceLeadingScore.updateConfig(cfg);
+    if (!this.VoiceLeadingScore) {
+      // if no scorer exists, treat config as basis for a new one
+      this.enableVoiceLeading(cfg);
+    } else if (typeof this.VoiceLeadingScore.updateConfig === 'function') {
+      // update existing scorer in-place
+      this.VoiceLeadingScore.updateConfig(cfg);
+      // ensure update didn't somehow corrupt the object
+      if (!this.VoiceLeadingScore || !this.VoiceLeadingScore.voiceRegistryScoreCandidate) {
+        this.VoiceLeadingScore = new VoiceLeadingScore(cfg);
+      }
+    }
     return /** @type {VoiceLeadingScoreAPI} */ (this.VoiceLeadingScore);
   }
 

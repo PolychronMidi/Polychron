@@ -24,7 +24,7 @@ narrativeTrajectory = (() => {
   let curvature  = 0;
   let steerBias  = 1.0;
 
-  function _novelty() {
+  function narrativeTrajectoryNovelty() {
     // Derive novelty from flicker (maps to textural change rate)
     return signalReader.flicker();
   }
@@ -32,7 +32,7 @@ narrativeTrajectory = (() => {
   function refresh() {
     const t = signalReader.tension();
     const d = signalReader.density();
-    const n = _novelty();
+    const n = narrativeTrajectoryNovelty();
 
     const prev = { ...smoothed };
     smoothed.t = smoothed.t * (1 - SMOOTHING) + t * SMOOTHING;

@@ -100,8 +100,8 @@ homeostasisTick = (() => {
       if (S.densityFlickerClampPressure > 0.20) {
         targetMultiplier = m.min(targetMultiplier, 0.90 - S.densityFlickerClampPressure * 0.18);
       }
-      const _emaAlpha = S.floorRecoveryTicksRemaining > 0 ? 0.10 : 0.05;
-      S.globalGainMultiplier = S.globalGainMultiplier * (1 - _emaAlpha) + targetMultiplier * _emaAlpha;
+      const homeostasisTickEmaAlpha = S.floorRecoveryTicksRemaining > 0 ? 0.10 : 0.05;
+      S.globalGainMultiplier = S.globalGainMultiplier * (1 - homeostasisTickEmaAlpha) + targetMultiplier * homeostasisTickEmaAlpha;
     }
     const floorContactNow = S.globalGainMultiplier <= 0.22 || homeostasisFloor.getFloorDampen() < 0.60;
     const persistentTailNow = tailRecoveryPressure > S.tailRecoveryTrigger && (

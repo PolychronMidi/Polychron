@@ -7,7 +7,7 @@ crossLayerDensityBalancer = (() => {
   const WINDOW_SECONDS = 6;
 
   /** @private */
-  function _computeBalanceSignal() {
+  function crossLayerDensityBalancerComputeBalanceSignal() {
     const entries = absoluteTimeWindow.getEntries(WINDOW_SECONDS);
 
     if (entries.length < 6) {
@@ -59,13 +59,13 @@ crossLayerDensityBalancer = (() => {
     return { imbalance, dominantLayer, densityBias };
   }
 
-  const _cache = beatCache.create(_computeBalanceSignal);
+  const crossLayerDensityBalancerCache = beatCache.create(crossLayerDensityBalancerComputeBalanceSignal);
 
   /**
    * Compare density across layers.
    * @returns {{ imbalance: number, dominantLayer: string, densityBias: number }}
    */
-  function getBalanceSignal() { return _cache.get(); }
+  function getBalanceSignal() { return crossLayerDensityBalancerCache.get(); }
 
   /**
    * Get density multiplier for the targetDensity chain.

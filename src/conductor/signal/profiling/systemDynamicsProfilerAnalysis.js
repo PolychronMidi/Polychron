@@ -1,5 +1,5 @@
 systemDynamicsProfilerAnalysis = (() => {
-  function _resolveStateSmoothing(state, config) {
+  function systemDynamicsProfilerAnalysisResolveStateSmoothing(state, config) {
     if (state.stateSmoothingResolved) return;
     try {
       const profileSmoothing = conductorConfig.getDensitySmoothing();
@@ -66,7 +66,7 @@ systemDynamicsProfilerAnalysis = (() => {
       }
     }
 
-    _resolveStateSmoothing(state, config);
+    systemDynamicsProfilerAnalysisResolveStateSmoothing(state, config);
     if (!state.smoothedState) state.smoothedState = normalizedState.slice();
     else {
       for (let d = 0; d < config.N_DIMS; d++) {

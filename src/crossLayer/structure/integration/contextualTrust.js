@@ -27,7 +27,7 @@ contextualTrust = (() => {
   /** @type {Map<string, number>} */
   let scores = new Map();
 
-  function _key(moduleName) {
+  function contextualTrustKey(moduleName) {
     const snap = systemDynamicsProfiler.getSnapshot();
     const regime = snap ? snap.regime : 'evolving';
     return `${moduleName}::${regime}`;
@@ -39,7 +39,7 @@ contextualTrust = (() => {
   function record(moduleName, payoff) {
     V.assertNonEmptyString(moduleName, 'moduleName');
     const p = V.requireFinite(payoff, 'payoff');
-    const k = _key(moduleName);
+    const k = contextualTrustKey(moduleName);
     const prev = scores.get(k) || 0;
     const next = m.max(LO, m.min(HI, prev * DECAY + p * (1 - DECAY)));
     scores.set(k, next);
@@ -47,7 +47,7 @@ contextualTrust = (() => {
 
   function getScore(moduleName) {
     V.assertNonEmptyString(moduleName, 'moduleName');
-    const k = _key(moduleName);
+    const k = contextualTrustKey(moduleName);
     return scores.has(k) ? /** @type {number} */ (scores.get(k)) : null;
   }
 

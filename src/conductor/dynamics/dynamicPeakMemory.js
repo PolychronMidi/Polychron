@@ -39,7 +39,7 @@ dynamicPeakMemory = (() => {
    * Get peak spacing signal.
    * @returns {{ tensionBias: number, timeSinceLastPeak: number, peakRecency: string }}
    */
-  function _computePeakSignal() {
+  function dynamicPeakMemoryComputePeakSignal() {
     if (peaks.length === 0) {
       return { tensionBias: 1, timeSinceLastPeak: Infinity, peakRecency: 'none' };
     }
@@ -73,13 +73,13 @@ dynamicPeakMemory = (() => {
     return { tensionBias, timeSinceLastPeak: timeSince, peakRecency };
   }
 
-  const _cache = beatCache.create(_computePeakSignal);
+  const dynamicPeakMemoryCache = beatCache.create(dynamicPeakMemoryComputePeakSignal);
 
   /**
    * Get peak spacing signal (cached per beat).
    * @returns {{ tensionBias: number, timeSinceLastPeak: number, peakRecency: string }}
    */
-  function getPeakSignal() { return _cache.get(); }
+  function getPeakSignal() { return dynamicPeakMemoryCache.get(); }
 
   /**
    * Get tension multiplier for the derivedTension chain.

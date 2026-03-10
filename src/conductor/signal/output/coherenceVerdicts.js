@@ -7,7 +7,7 @@ coherenceVerdicts = (() => {
 
   /**
    * Compute coherence verdicts from a fully-built manifest.
-   * @param {object} manifest - The manifest object from _buildManifest()
+   * @param {object} manifest - The manifest object from coherenceVerdictsBuildManifest()
    * @param {{ density: object, tension: object, flicker: object }} attribution
    * @returns {Array<{ severity: string, area: string, finding: string }>}
    */
@@ -15,13 +15,13 @@ coherenceVerdicts = (() => {
     /** @type {Array<{ severity: string, area: string, finding: string }>} */
     const verdicts = [];
 
-    _checkPipelineHealth(manifest, verdicts);
-    _checkDynamicsRegime(manifest, verdicts);
-    _checkCoupling(manifest, verdicts);
-    _checkTrustEcosystem(manifest, verdicts);
-    _checkAttributionExtremes(attribution, verdicts);
-    _checkCoherenceMonitorFloor(attribution, verdicts);
-    _checkStaleContributors(attribution, verdicts);
+    coherenceVerdictsCheckPipelineHealth(manifest, verdicts);
+    coherenceVerdictsCheckDynamicsRegime(manifest, verdicts);
+    coherenceVerdictsCheckCoupling(manifest, verdicts);
+    coherenceVerdictsCheckTrustEcosystem(manifest, verdicts);
+    coherenceVerdictsCheckAttributionExtremes(attribution, verdicts);
+    coherenceVerdictsCheckCoherenceMonitorFloor(attribution, verdicts);
+    coherenceVerdictsCheckStaleContributors(attribution, verdicts);
 
     // Sort by severity: critical > warning > info
     const order = { critical: 0, warning: 1, info: 2 };
@@ -31,7 +31,7 @@ coherenceVerdicts = (() => {
   }
 
   /** Check each pipeline's health grade and crush factor. */
-  function _checkPipelineHealth(manifest, verdicts) {
+  function coherenceVerdictsCheckPipelineHealth(manifest, verdicts) {
     const sh = manifest.signalHealth;
     if (!sh || !sh.lastHealth) return;
 
@@ -64,7 +64,7 @@ coherenceVerdicts = (() => {
   }
 
   /** Check dynamics regime for compositional health. */
-  function _checkDynamicsRegime(manifest, verdicts) {
+  function coherenceVerdictsCheckDynamicsRegime(manifest, verdicts) {
     const sd = manifest.systemDynamics;
     if (!sd || !sd.snapshot) return;
     const s = sd.snapshot;
@@ -91,7 +91,7 @@ coherenceVerdicts = (() => {
   }
 
   /** Check cross-dimensional coupling for concerning correlations. */
-  function _checkCoupling(manifest, verdicts) {
+  function coherenceVerdictsCheckCoupling(manifest, verdicts) {
     const sd = manifest.systemDynamics;
     if (!sd || !sd.snapshot || !sd.snapshot.couplingMatrix) return;
 
@@ -128,7 +128,7 @@ coherenceVerdicts = (() => {
   }
 
   /** Check trust ecosystem for starvation or anomalies. */
-  function _checkTrustEcosystem(manifest, verdicts) {
+  function coherenceVerdictsCheckTrustEcosystem(manifest, verdicts) {
     const trust = manifest.trustScoresEndOfRun;
     if (!trust || typeof trust !== 'object') return;
 
@@ -154,7 +154,7 @@ coherenceVerdicts = (() => {
    * Check attribution tables for modules at extreme values.
    * Detects floor/ceiling pinning and near-constant modules.
    */
-  function _checkAttributionExtremes(attribution, verdicts) {
+  function coherenceVerdictsCheckAttributionExtremes(attribution, verdicts) {
     if (!attribution) return;
     const tables = [
       { name: 'density', data: attribution.density },
@@ -190,11 +190,11 @@ coherenceVerdicts = (() => {
   }
 
   /** Special check for coherenceMonitor permanent floor state. */
-  function _checkCoherenceMonitorFloor(attribution, verdicts) {
+  function coherenceVerdictsCheckCoherenceMonitorFloor(attribution, verdicts) {
     if (!attribution || !attribution.density || !attribution.density.contributions) return;
     const cm = attribution.density.contributions.find(c => c.name === 'coherenceMonitor');
     if (!cm) return;
-    // Already handled in _checkAttributionExtremes - but check if it's the
+    // Already handled in coherenceVerdictsCheckAttributionExtremes - but check if it's the
     // single largest density suppressor
     const sorted = attribution.density.contributions
       .filter(c => c.clamped < 1.0)
@@ -211,7 +211,7 @@ coherenceVerdicts = (() => {
    * stuck at a boundary. End-of-run snapshot only captures the final state,
    * but persistent boundary values indicate chronic static drag.
    */
-  function _checkStaleContributors(attribution, verdicts) {
+  function coherenceVerdictsCheckStaleContributors(attribution, verdicts) {
     if (!attribution) return;
     const STALE_THRESHOLD = 0.08; // >8% deviation from neutral (was 5% - too many false positives)
     const tables = [

@@ -14,7 +14,7 @@ stutterPlanScheduler = (() => {
 
   function createPlan(stutterMgr, planCfg = {}) {
     assertManagerLike(stutterMgr);
-    const id = `plan-${stutterMgr._nextPlanId++}`;
+    const id = `plan-${stutterMgr.stutterPlanSchedulerNextPlanId++}`;
     const cfg = /** @type {any} */ (Object.assign({}, planCfg));
     cfg.id = id;
     stutterMgr.plans.set(id, cfg);

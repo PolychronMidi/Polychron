@@ -4,10 +4,10 @@
 journeyRhythmCoupler = (() => {
   const V = validator.create('journeyRhythmCoupler');
 
-  let _boldness = 0;
-  let _externalBias = 1;
-  const _decayRate = 0.85;
-  let _initialized = false;
+  let journeyRhythmCouplerBoldness = 0;
+  let journeyRhythmCouplerExternalBias = 1;
+  const journeyRhythmCouplerDecayRate = 0.85;
+  let journeyRhythmCouplerInitialized = false;
 
   /**
    * Map journey move distance + type to a boldness score (0-1).
@@ -35,7 +35,7 @@ journeyRhythmCoupler = (() => {
    * @throws {Error} if eventBus not available
    */
   function initialize() {
-    if (_initialized) return;
+    if (journeyRhythmCouplerInitialized) return;
     V.requireDefined(eventBus, 'eventBus');
     const EVENTS = V.getEventsOrThrow();
 
@@ -44,11 +44,11 @@ journeyRhythmCoupler = (() => {
       const distance = V.requireFinite(data.distance, 'journey-move.distance');
       V.assertNonEmptyString(data.move, 'journey-move.move');
       const move = data.move;
-      _boldness = moveToBoldness(distance, move);
+      journeyRhythmCouplerBoldness = moveToBoldness(distance, move);
     });
 
     crossLayerRegistry.register('journeyRhythmCoupler', { reset: resetSection }, ['section']);
-    _initialized = true;
+    journeyRhythmCouplerInitialized = true;
   }
 
   /**
@@ -56,13 +56,13 @@ journeyRhythmCoupler = (() => {
    * @returns {number}
    */
   function getBoldness() {
-    return clamp(_boldness * _externalBias, 0, 1);
+    return clamp(journeyRhythmCouplerBoldness * journeyRhythmCouplerExternalBias, 0, 1);
   }
 
   function setExternalBias(value) {
     const num = Number(value);
     V.requireFinite(num, 'num');
-    _externalBias = clamp(num, 0.5, 1.5);
+    journeyRhythmCouplerExternalBias = clamp(num, 0.5, 1.5);
   }
 
   /**
@@ -103,23 +103,23 @@ journeyRhythmCoupler = (() => {
    * Manual decay (for periodic non-eventBus contexts).
    */
   function decay() {
-    _boldness *= _decayRate;
+    journeyRhythmCouplerBoldness *= journeyRhythmCouplerDecayRate;
   }
 
   /**
    * Partial boldness decay at section boundaries (not full reset - let it linger).
    */
   function resetSection() {
-    _boldness *= 0.5;
+    journeyRhythmCouplerBoldness *= 0.5;
   }
 
   /**
    * Reset state.
    */
   function reset() {
-    _boldness = 0;
-    _externalBias = 1;
-    _initialized = false;
+    journeyRhythmCouplerBoldness = 0;
+    journeyRhythmCouplerExternalBias = 1;
+    journeyRhythmCouplerInitialized = false;
   }
 
   moduleLifecycle.registerInitializer('journeyRhythmCoupler', initialize);

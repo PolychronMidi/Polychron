@@ -1,9 +1,9 @@
 // src/rhythm/getRhythm.js - Rhythm pattern retrieval with dynamic method selection.
 
-let _getRhythmDepsValidated = false;
+let getRhythmGetRhythmDepsValidated = false;
 
 function assertGetRhythmDeps() {
-  if (_getRhythmDepsValidated) return;
+  if (getRhythmGetRhythmDepsValidated) return;
   if (!FXFeedbackListener || !FXFeedbackListener.biasRhythmWeights) {
     throw new Error('getRhythm: FXFeedbackListener.biasRhythmWeights is required');
   }
@@ -16,7 +16,7 @@ function assertGetRhythmDeps() {
   if (!phaseLockedRhythmGenerator || !phaseLockedRhythmGenerator.generate) {
     throw new Error('getRhythm: phaseLockedRhythmGenerator.generate is required');
   }
-  _getRhythmDepsValidated = true;
+  getRhythmGetRhythmDepsValidated = true;
 }
 
 const V = validator.create('getRhythm');

@@ -16,10 +16,10 @@ signalHealthAnalyzer = (() => {
   const saturationCounts = { density: 0, tension: 0 };
 
   // -- Per-beat health snapshot (cached for stateProvider) --
-  let _lastHealth = _emptyHealth();
+  let signalHealthAnalyzerLastHealth = signalHealthAnalyzerEmptyHealth();
 
   /** @returns {SignalHealthSnapshot} */
-  function _emptyHealth() {
+  function signalHealthAnalyzerEmptyHealth() {
     return {
       density: { grade: 'healthy', product: 1, pinnedModules: [], crushFactor: 0, saturated: false },
       tension: { grade: 'healthy', product: 1, pinnedModules: [], crushFactor: 0, saturated: false },
@@ -34,7 +34,7 @@ signalHealthAnalyzer = (() => {
    * @param {{ product: number, rawProduct?: number, floored?: boolean, capped?: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} attr
    * @returns {{ grade: string, product: number, pinnedModules: string[], crushFactor: number, saturated: boolean }}
    */
-  function _analyzePipeline(attr) {
+  function signalHealthAnalyzerAnalyzePipeline(attr) {
     const pinnedModules = [];
     let suppressorCount = 0;
     let boosterCount = 0;
@@ -78,7 +78,7 @@ signalHealthAnalyzer = (() => {
    * Analyze trust ecosystem health.
    * @returns {{ grade: string, starvingSystems: string[], thrivingSystems: string[] }}
    */
-  function _analyzeTrust() {
+  function signalHealthAnalyzerAnalyzeTrust() {
     let snapshot;
     try {
       snapshot = adaptiveTrustScores.getSnapshot();
@@ -110,7 +110,7 @@ signalHealthAnalyzer = (() => {
    * @param {Array<string>} grades
    * @returns {string}
    */
-  function _overallGrade(grades) {
+  function signalHealthAnalyzerOverallGrade(grades) {
     if (grades.includes('critical')) return 'critical';
     if (grades.includes('stressed')) return 'stressed';
     if (grades.includes('strained')) return 'strained';
@@ -127,16 +127,16 @@ signalHealthAnalyzer = (() => {
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const flickerAttr = conductorIntelligence.collectFlickerModifierWithAttribution();
 
-    const density = _analyzePipeline(densityAttr);
-    const tension = _analyzePipeline(tensionAttr);
+    const density = signalHealthAnalyzerAnalyzePipeline(densityAttr);
+    const tension = signalHealthAnalyzerAnalyzePipeline(tensionAttr);
     // Flicker has no floor/ceiling so force saturated=false
-    const flickerRaw = _analyzePipeline(flickerAttr);
+    const flickerRaw = signalHealthAnalyzerAnalyzePipeline(flickerAttr);
     const flicker = { grade: flickerRaw.grade, product: flickerRaw.product, pinnedModules: flickerRaw.pinnedModules, crushFactor: flickerRaw.crushFactor };
-    const trust = _analyzeTrust();
+    const trust = signalHealthAnalyzerAnalyzeTrust();
 
-    const overall = _overallGrade([density.grade, tension.grade, flicker.grade, trust.grade]);
+    const overall = signalHealthAnalyzerOverallGrade([density.grade, tension.grade, flicker.grade, trust.grade]);
 
-    _lastHealth = { density, tension, flicker, trust, overall };
+    signalHealthAnalyzerLastHealth = { density, tension, flicker, trust, overall };
 
     // Track cumulative saturation / pinning for end-of-run summary
     if (density.pinnedModules.length > 0) pinnedCounts.density++;
@@ -159,7 +159,7 @@ signalHealthAnalyzer = (() => {
 
   /** @returns {SignalHealthSnapshot} */
   function getHealth() {
-    return _lastHealth;
+    return signalHealthAnalyzerLastHealth;
   }
 
   /**
@@ -169,14 +169,14 @@ signalHealthAnalyzer = (() => {
    */
   function getSummary() {
     const b = m.max(1, beatsSeen);
-    // Recompute trust from the final trust scores - the per-beat _lastHealth.trust
+    // Recompute trust from the final trust scores - the per-beat signalHealthAnalyzerLastHealth.trust
     // can be stale because the recorder runs before crossLayerBeatRecord registers
     // the current beat's outcomes.
-    const freshTrust = _analyzeTrust();
-    const freshOverall = _overallGrade([
-      _lastHealth.density.grade,
-      _lastHealth.tension.grade,
-      _lastHealth.flicker.grade,
+    const freshTrust = signalHealthAnalyzerAnalyzeTrust();
+    const freshOverall = signalHealthAnalyzerOverallGrade([
+      signalHealthAnalyzerLastHealth.density.grade,
+      signalHealthAnalyzerLastHealth.tension.grade,
+      signalHealthAnalyzerLastHealth.flicker.grade,
       freshTrust.grade
     ]);
     return {
@@ -191,9 +191,9 @@ signalHealthAnalyzer = (() => {
         tension: saturationCounts.tension / b
       },
       lastHealth: {
-        density: _lastHealth.density,
-        tension: _lastHealth.tension,
-        flicker: _lastHealth.flicker,
+        density: signalHealthAnalyzerLastHealth.density,
+        tension: signalHealthAnalyzerLastHealth.tension,
+        flicker: signalHealthAnalyzerLastHealth.flicker,
         trust: freshTrust,
         overall: freshOverall
       }
@@ -208,17 +208,17 @@ signalHealthAnalyzer = (() => {
     pinnedCounts.flicker = 0;
     saturationCounts.density = 0;
     saturationCounts.tension = 0;
-    _lastHealth = _emptyHealth();
+    signalHealthAnalyzerLastHealth = signalHealthAnalyzerEmptyHealth();
   }
 
   // -- Self-register --
   conductorIntelligence.registerRecorder('signalHealthAnalyzer', () => { signalHealthAnalyzer.analyze(); });
   conductorIntelligence.registerStateProvider('signalHealthAnalyzer', () => ({
-    signalHealthOverall: _lastHealth.overall,
-    signalHealthDensityGrade: _lastHealth.density.grade,
-    signalHealthTensionGrade: _lastHealth.tension.grade,
-    signalHealthFlickerGrade: _lastHealth.flicker.grade,
-    signalHealthTrustGrade: _lastHealth.trust.grade
+    signalHealthOverall: signalHealthAnalyzerLastHealth.overall,
+    signalHealthDensityGrade: signalHealthAnalyzerLastHealth.density.grade,
+    signalHealthTensionGrade: signalHealthAnalyzerLastHealth.tension.grade,
+    signalHealthFlickerGrade: signalHealthAnalyzerLastHealth.flicker.grade,
+    signalHealthTrustGrade: signalHealthAnalyzerLastHealth.trust.grade
   }));
   conductorIntelligence.registerModule('signalHealthAnalyzer', { reset }, ['section']);
 

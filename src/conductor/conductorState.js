@@ -72,13 +72,13 @@
     V.assertObject(data, 'data');
 
     // Cast to any to satisfy TS/CheckJS when reading dynamically-shaped payloads
-    const _data = /** @type {any} */ (data);
+    const conductorStateData = /** @type {any} */ (data);
 
     writeHarmonicFromContext();
     writeRegulationFromConductor();
 
-    const phraseCtx = (_data.phraseCtx && typeof _data.phraseCtx === 'object')
-      ? _data.phraseCtx
+    const phraseCtx = (conductorStateData.phraseCtx && typeof conductorStateData.phraseCtx === 'object')
+      ? conductorStateData.phraseCtx
       : FactoryManager.sharedPhraseArcManager.getPhraseContext();
 
     if (phraseCtx) {
@@ -90,14 +90,14 @@
       snapshot.voiceIndependence = clamp(V.optionalFinite(Number(phraseCtx.voiceIndependence), snapshot.voiceIndependence), 0, 1);
     }
 
-    snapshot.compositeIntensity = clamp(V.optionalFinite(Number(_data.compositeIntensity), snapshot.compositeIntensity), 0, 1);
-    snapshot.harmonicRhythm = clamp(V.optionalFinite(Number(_data.harmonicRhythm), snapshot.harmonicRhythm), 0, 1);
-    snapshot.emissionRatio = clamp(V.optionalFinite(Number(_data.emissionRatio), snapshot.emissionRatio), 0, 2);
-    snapshot.extraDensityCorrection = V.optionalFinite(Number(_data.extraDensityCorrection), snapshot.extraDensityCorrection);
-    snapshot.extraCoherenceDensityBias = V.optionalFinite(Number(_data.extraCoherenceDensityBias), snapshot.extraCoherenceDensityBias);
-    snapshot.playProb = clamp(V.optionalFinite(Number(_data.playProb), snapshot.playProb), 0, 1);
-    snapshot.stutterProb = clamp(V.optionalFinite(Number(_data.stutterProb), snapshot.stutterProb), 0, 1);
-    snapshot.flicker = clamp(V.optionalFinite(Number(_data.flicker), snapshot.flicker), 0.4, 1.6);
+    snapshot.compositeIntensity = clamp(V.optionalFinite(Number(conductorStateData.compositeIntensity), snapshot.compositeIntensity), 0, 1);
+    snapshot.harmonicRhythm = clamp(V.optionalFinite(Number(conductorStateData.harmonicRhythm), snapshot.harmonicRhythm), 0, 1);
+    snapshot.emissionRatio = clamp(V.optionalFinite(Number(conductorStateData.emissionRatio), snapshot.emissionRatio), 0, 2);
+    snapshot.extraDensityCorrection = V.optionalFinite(Number(conductorStateData.extraDensityCorrection), snapshot.extraDensityCorrection);
+    snapshot.extraCoherenceDensityBias = V.optionalFinite(Number(conductorStateData.extraCoherenceDensityBias), snapshot.extraCoherenceDensityBias);
+    snapshot.playProb = clamp(V.optionalFinite(Number(conductorStateData.playProb), snapshot.playProb), 0, 1);
+    snapshot.stutterProb = clamp(V.optionalFinite(Number(conductorStateData.stutterProb), snapshot.stutterProb), 0, 1);
+    snapshot.flicker = clamp(V.optionalFinite(Number(conductorStateData.flicker), snapshot.flicker), 0.4, 1.6);
 
     snapshot.textureFatigue = clamp(Number(textureBlender.getRecentDensity()), 0, 1);
 

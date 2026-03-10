@@ -128,12 +128,12 @@ homeostasisRefresh = (() => {
 
     // Non-nudgeable baseline auto-ratchet
     if (strongestNonNudgeableTail > 0.50 && strongestNonNudgeablePair && S.beatCount > 30) {
-      const _nnAdaptive = adaptiveSnapshot && adaptiveSnapshot[strongestNonNudgeablePair];
-      if (_nnAdaptive && typeof _nnAdaptive.rawRollingAbsCorr === 'number' && typeof _nnAdaptive.baseline === 'number') {
-        const _nnTarget = clamp(_nnAdaptive.rawRollingAbsCorr * 0.85, 0.04, 0.30);
-        if (_nnAdaptive.baseline < _nnTarget) {
-          const _nnRatchetRate = 0.0008 * clamp((strongestNonNudgeableTail - 0.50) / 0.30, 0.2, 1.0);
-          pipelineCouplingManager.setPairBaseline(strongestNonNudgeablePair, clamp(_nnAdaptive.baseline + _nnRatchetRate, 0.04, _nnTarget));
+      const homeostasisRefreshNnAdaptive = adaptiveSnapshot && adaptiveSnapshot[strongestNonNudgeablePair];
+      if (homeostasisRefreshNnAdaptive && typeof homeostasisRefreshNnAdaptive.rawRollingAbsCorr === 'number' && typeof homeostasisRefreshNnAdaptive.baseline === 'number') {
+        const homeostasisRefreshNnTarget = clamp(homeostasisRefreshNnAdaptive.rawRollingAbsCorr * 0.85, 0.04, 0.30);
+        if (homeostasisRefreshNnAdaptive.baseline < homeostasisRefreshNnTarget) {
+          const homeostasisRefreshNnRatchetRate = 0.0008 * clamp((strongestNonNudgeableTail - 0.50) / 0.30, 0.2, 1.0);
+          pipelineCouplingManager.setPairBaseline(strongestNonNudgeablePair, clamp(homeostasisRefreshNnAdaptive.baseline + homeostasisRefreshNnRatchetRate, 0.04, homeostasisRefreshNnTarget));
         }
       }
     }
@@ -195,13 +195,13 @@ homeostasisRefresh = (() => {
       S.energyBudget = S.peakEnergyEma * BUDGET_PEAK_RATIO;
     }
     if (S.beatCount > 150) {
-      const _budgetScale = 1 + clamp((S.beatCount - 150) / 300, 0, 0.50);
-      S.energyBudget *= _budgetScale;
+      const homeostasisRefreshBudgetScale = 1 + clamp((S.beatCount - 150) / 300, 0, 0.50);
+      S.energyBudget *= homeostasisRefreshBudgetScale;
     }
-    const _profileBudgetScale = conductorConfig.getActiveProfile().couplingBudgetScale || 1.0;
-    S.energyBudget *= _profileBudgetScale;
-    const _dynSnap = systemDynamicsProfiler.getSnapshot();
-    if (_dynSnap && _dynSnap.regime === 'exploring') {
+    const homeostasisRefreshProfileBudgetScale = conductorConfig.getActiveProfile().couplingBudgetScale || 1.0;
+    S.energyBudget *= homeostasisRefreshProfileBudgetScale;
+    const homeostasisRefreshDynSnap = systemDynamicsProfiler.getSnapshot();
+    if (homeostasisRefreshDynSnap && homeostasisRefreshDynSnap.regime === 'exploring') {
       S.energyBudget *= 1.15;
     }
     if (snap.regime === 'exploring' && S.beatCount > 30) {

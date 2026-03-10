@@ -49,7 +49,7 @@ ambitusMigrationTracker = (() => {
    * Get the ambitus signal with migration analysis.
    * @returns {{ range: number, trend: string, densityBias: number, registerSuggestion: string }}
    */
-  function _computeAmbitusSignal() {
+  function ambitusMigrationTrackerComputeAmbitusSignal() {
     const amb = getCurrentAmbitus();
 
     // Determine trend from history
@@ -82,13 +82,13 @@ ambitusMigrationTracker = (() => {
     return { range: amb.range, trend, densityBias, registerSuggestion };
   }
 
-  const _cache = beatCache.create(_computeAmbitusSignal);
+  const ambitusMigrationTrackerCache = beatCache.create(ambitusMigrationTrackerComputeAmbitusSignal);
 
   /**
    * Get the ambitus signal with migration analysis (cached per beat).
    * @returns {{ range: number, trend: string, densityBias: number, registerSuggestion: string }}
    */
-  function getAmbitusSignal() { return _cache.get(); }
+  function getAmbitusSignal() { return ambitusMigrationTrackerCache.get(); }
 
   /**
    * Get density multiplier for the targetDensity chain.

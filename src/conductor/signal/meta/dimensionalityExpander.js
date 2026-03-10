@@ -46,10 +46,10 @@ dimensionalityExpander = (() => {
   // Mapping from variance index to axis name
   const VARIANCE_AXES = ['density', 'tension', 'flicker']; // entropy (idx 3) has no bias
 
-  let _densityBias = 1.0;
-  let _tensionBias = 1.0;
-  let _flickerBias = 1.0;
-  let _urgency = 0;
+  let dimensionalityExpanderDensityBias = 1.0;
+  let dimensionalityExpanderTensionBias = 1.0;
+  let dimensionalityExpanderFlickerBias = 1.0;
+  let dimensionalityExpanderUrgency = 0;
 
   /**
    * Compute the perturbation urgency from effective dimensionality.
@@ -57,7 +57,7 @@ dimensionalityExpander = (() => {
    * @param {number} dim
    * @returns {number}
    */
-  function _computeUrgency(dim) {
+  function dimensionalityExpanderComputeUrgency(dim) {
     if (dim >= DIM_THRESHOLD) return 0;
     if (dim <= DIM_CRITICAL) return 1;
     return (DIM_THRESHOLD - dim) / (DIM_THRESHOLD - DIM_CRITICAL);
@@ -70,7 +70,7 @@ dimensionalityExpander = (() => {
    * @param {number} urgency
    * @returns {{ density: number, tension: number, flicker: number }}
    */
-  function _computePerturbations(matrix, urgency) {
+  function dimensionalityExpanderComputePerturbations(matrix, urgency) {
     const dPert = 0;
     let tPert = 0;
     let fPert = 0;
@@ -105,15 +105,15 @@ dimensionalityExpander = (() => {
   function refresh() {
     const snap = systemDynamicsProfiler.getSnapshot();
     if (!snap || !snap.couplingMatrix) {
-      _densityBias = 1.0;
-      _tensionBias = 1.0;
-      _flickerBias = 1.0;
-      _urgency = 0;
+      dimensionalityExpanderDensityBias = 1.0;
+      dimensionalityExpanderTensionBias = 1.0;
+      dimensionalityExpanderFlickerBias = 1.0;
+      dimensionalityExpanderUrgency = 0;
       explainabilityBus.emit('dimensionality-expansion', 'both', { urgency: 0, noData: true });
       return;
     }
 
-    _urgency = _computeUrgency(snap.effectiveDimensionality);
+    dimensionalityExpanderUrgency = dimensionalityExpanderComputeUrgency(snap.effectiveDimensionality);
 
     // Variance balance (runs EVERY beat, independent of urgency)
     // Dead-axis revival + dominant-axis suppression. These fire even when
@@ -145,12 +145,12 @@ dimensionalityExpander = (() => {
     }
 
     // If dimensionality is healthy and no variance imbalance, smooth toward 1.0
-    if (_urgency < 0.01 && varD === 0 && varT === 0 && varF === 0) {
-      _densityBias = _densityBias * (1 - SMOOTHING) + SMOOTHING;
-      _tensionBias = _tensionBias * (1 - SMOOTHING) + SMOOTHING;
-      _flickerBias = _flickerBias * (1 - SMOOTHING) + SMOOTHING;
+    if (dimensionalityExpanderUrgency < 0.01 && varD === 0 && varT === 0 && varF === 0) {
+      dimensionalityExpanderDensityBias = dimensionalityExpanderDensityBias * (1 - SMOOTHING) + SMOOTHING;
+      dimensionalityExpanderTensionBias = dimensionalityExpanderTensionBias * (1 - SMOOTHING) + SMOOTHING;
+      dimensionalityExpanderFlickerBias = dimensionalityExpanderFlickerBias * (1 - SMOOTHING) + SMOOTHING;
       explainabilityBus.emit('dimensionality-expansion', 'both', {
-        urgency: _urgency,
+        urgency: dimensionalityExpanderUrgency,
         effectiveDim: snap.effectiveDimensionality,
         regime: snap.regime,
         status: 'healthy'
@@ -160,43 +160,43 @@ dimensionalityExpander = (() => {
 
     // Coupling-based perturbations (only when dimensionality is collapsed)
     let pert = { density: 0, tension: 0, flicker: 0 };
-    if (_urgency >= 0.01) {
-      pert = _computePerturbations(snap.couplingMatrix, _urgency);
+    if (dimensionalityExpanderUrgency >= 0.01) {
+      pert = dimensionalityExpanderComputePerturbations(snap.couplingMatrix, dimensionalityExpanderUrgency);
     }
 
     const rawD = 1.0 + pert.density + varD;
     const rawT = 1.0 + pert.tension + varT;
     const rawF = 1.0 + pert.flicker + varF;
 
-    _densityBias = _densityBias * (1 - SMOOTHING) + rawD * SMOOTHING;
-    _tensionBias = _tensionBias * (1 - SMOOTHING) + rawT * SMOOTHING;
-    _flickerBias = _flickerBias * (1 - SMOOTHING) + rawF * SMOOTHING;
+    dimensionalityExpanderDensityBias = dimensionalityExpanderDensityBias * (1 - SMOOTHING) + rawD * SMOOTHING;
+    dimensionalityExpanderTensionBias = dimensionalityExpanderTensionBias * (1 - SMOOTHING) + rawT * SMOOTHING;
+    dimensionalityExpanderFlickerBias = dimensionalityExpanderFlickerBias * (1 - SMOOTHING) + rawF * SMOOTHING;
 
     explainabilityBus.emit('dimensionality-expansion', 'both', {
-      urgency: _urgency,
+      urgency: dimensionalityExpanderUrgency,
       effectiveDim: snap.effectiveDimensionality,
       regime: snap.regime,
-      densityBias: _densityBias,
-      tensionBias: _tensionBias,
-      flickerBias: _flickerBias,
+      densityBias: dimensionalityExpanderDensityBias,
+      tensionBias: dimensionalityExpanderTensionBias,
+      flickerBias: dimensionalityExpanderFlickerBias,
       varianceNudges: { density: varD, tension: varT, flicker: varF }
     });
   }
 
-  function densityBias() { return _densityBias; }
-  function tensionBias() { return _tensionBias; }
-  function flickerBias() { return _flickerBias; }
+  function densityBias() { return dimensionalityExpanderDensityBias; }
+  function tensionBias() { return dimensionalityExpanderTensionBias; }
+  function flickerBias() { return dimensionalityExpanderFlickerBias; }
 
   /** @returns {{ urgency: number, densityBias: number, tensionBias: number, flickerBias: number }} */
   function getSnapshot() {
-    return { urgency: _urgency, densityBias: _densityBias, tensionBias: _tensionBias, flickerBias: _flickerBias };
+    return { urgency: dimensionalityExpanderUrgency, densityBias: dimensionalityExpanderDensityBias, tensionBias: dimensionalityExpanderTensionBias, flickerBias: dimensionalityExpanderFlickerBias };
   }
 
   function reset() {
-    _densityBias = 1.0;
-    _tensionBias = 1.0;
-    _flickerBias = 1.0;
-    _urgency = 0;
+    dimensionalityExpanderDensityBias = 1.0;
+    dimensionalityExpanderTensionBias = 1.0;
+    dimensionalityExpanderFlickerBias = 1.0;
+    dimensionalityExpanderUrgency = 0;
   }
 
   // Self-registration (conductor-side: bias registration is permitted here)

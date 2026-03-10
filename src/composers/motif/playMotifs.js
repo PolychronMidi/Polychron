@@ -29,8 +29,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   const cursorMap = resolvedBucket.cursorMap;
 
   // Track motif cycle completion per groupId and apply transformations after each cycle
-  if (!layer._motifCycleTracking) layer._motifCycleTracking = new Map();
-  const cycleTracker = layer._motifCycleTracking;
+  if (!layer.playMotifsMotifCycleTracking) layer.playMotifsMotifCycleTracking = new Map();
+  const cycleTracker = layer.playMotifsMotifCycleTracking;
 
   // Register any new groups - avoids .map()/.filter()/Set allocation per micro-unit
   for (let bi = 0; bi < bucket.length; bi++) {
@@ -50,8 +50,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   V.requireFinite(bucketEntry.note, 'bucketEntry.note');
   // Apply working overrides (non-destructive cycle transforms) if available
   const overrideKey = bucketEntry.groupId && Number.isFinite(bucketEntry.seqIndex) ? `${bucketEntry.groupId}:${bucketEntry.seqIndex}` : null;
-  const resolvedNote = (overrideKey && layer._workingOverrides && layer._workingOverrides.has(overrideKey))
-    ? layer._workingOverrides.get(overrideKey)
+  const resolvedNote = (overrideKey && layer.playMotifsWorkingOverrides && layer.playMotifsWorkingOverrides.has(overrideKey))
+    ? layer.playMotifsWorkingOverrides.get(overrideKey)
     : bucketEntry.note;
 
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
@@ -72,23 +72,28 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Per-unit VoiceManager: maintain separate voice histories per unit level
   // so subdiv voice-leading doesn't pollute beat-level motion.
   // Parent histories seed children for coherence at each new parent boundary.
-  if (!layer._voiceManagers) layer._voiceManagers = {};
-  if (!layer._voiceManagers[unit]) {
-    layer._voiceManagers[unit] = new VoiceManager();
+  if (!layer.playMotifsVoiceManagers) layer.playMotifsVoiceManagers = {};
+  if (!layer.playMotifsVoiceManagers[unit]) {
+    layer.playMotifsVoiceManagers[unit] = new VoiceManager();
     // Seed from parent unit's history for coherence
     const parentUnit = unit === 'subsubdiv' ? 'subdiv' : unit === 'subdiv' ? 'div' : unit === 'div' ? 'beat' : null;
-    if (parentUnit && layer._voiceManagers[parentUnit]) {
-      const parentVM = layer._voiceManagers[parentUnit];
+    if (parentUnit && layer.playMotifsVoiceManagers[parentUnit]) {
+      const parentVM = layer.playMotifsVoiceManagers[parentUnit];
       const layerId = (layer && typeof layer.id === 'string' && layer.id.length > 0) ? layer.id : 'default';
       const parentHistory = parentVM.voiceHistoryByLayer.get(layerId);
       if (Array.isArray(parentHistory) && parentHistory.length > 0) {
-        layer._voiceManagers[unit].voiceHistoryByLayer.set(layerId, parentHistory.map(h => Array.isArray(h) ? [...h] : []));
+        layer.playMotifsVoiceManagers[unit].voiceHistoryByLayer.set(layerId, parentHistory.map(h => Array.isArray(h) ? [...h] : []));
       }
     }
   }
-  const VC = layer._voiceManagers[unit];
+  const VC = layer.playMotifsVoiceManagers[unit];
   const voiceCount = VC.getVoiceCount(unit);
+  // scorer may come from active composer or cached on layer; validate before use
   const scorer = activeComposer?.VoiceLeadingScore || layer.VoiceLeadingScore;
+  if (scorer && !V.optionalType(scorer.voiceRegistryScoreCandidate, 'function')) {
+    const compName = activeComposer ? (activeComposer.constructor && activeComposer.constructor.name) || '<anonymous>' : '<none>';
+    throw new Error(`playMotifs: composer ${compName} supplied invalid VoiceLeadingScore to layer ${layer && layer.id}`);
+  }
   const runtimeProfile = (activeComposer && V.optionalType(activeComposer.runtimeProfile, 'object'))
     ? activeComposer.runtimeProfile
     : null;
@@ -127,7 +132,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     playedGroupIndices.set(bucketEntry.groupId, [bucketEntry.seqIndex]);
   }
 
-  playMotifsApplyCycleTransforms(layer, bucket, playedGroupIndices, cycleTracker, /** @type {any} */ (playMotifs)._cloneBucketEntry);
+  playMotifsApplyCycleTransforms(layer, bucket, playedGroupIndices, cycleTracker, /** @type {any} */ (playMotifs).playMotifsCloneBucketEntry);
 
   // Filter duplicate notes only within this unit call (do not gate later subunits in same beat)
   const seenNotesThisUnit = new Set();
@@ -143,7 +148,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
 /**
  * Deep clone a bucket entry (preserve original, transform copy)
  */
-/** @type {any} */ (playMotifs)._cloneBucketEntry = function(entry) {
+/** @type {any} */ (playMotifs).playMotifsCloneBucketEntry = function(entry) {
   return {
     note: entry.note,
     duration: entry.duration,
@@ -159,10 +164,10 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
  */
 /** @type {any} */ (playMotifs).resetLayerState = function(layer) {
   if (!layer) return;
-  layer._motifCycleTracking = null;
-  layer._emptyBucketCaptured = null;
-  layer._bucketCursors = null;
-  layer._workingOverrides = null;
+  layer.playMotifsMotifCycleTracking = null;
+  layer.playMotifsEmptyBucketCaptured = null;
+  layer.playMotifsBucketCursors = null;
+  layer.playMotifsWorkingOverrides = null;
   // Clear all hierarchical motif buckets to avoid stale notes across phrases
   layer.measureMotifs = null;
   layer.beatMotifs = [];
@@ -170,8 +175,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   layer.subdivMotifs = [];
   layer.subsubdivMotifs = [];
   // Clear sibling voice tracking
-  layer._siblingVoicePCs = null;
-  layer._siblingVoiceLimits = null;
-  // DO NOT reset _voiceManagers here; they maintain voice leading continuity within a phrase
+  layer.playMotifsSiblingVoicePCs = null;
+  layer.playMotifsSiblingVoiceLimits = null;
+  // DO NOT reset playMotifsVoiceManagers here; they maintain voice leading continuity within a phrase
   // Sub-unit VMs are re-seeded from parent at each parent boundary automatically
 };

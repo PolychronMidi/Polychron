@@ -7,7 +7,7 @@ durationalContourTracker = (() => {
   const WINDOW_SECONDS = 4;
 
   // Beat-level cache: getDurationBias is called 2x per beat (flickerModifier + stateProvider)
-  const _biasCache = beatCache.create(() => _getDurationBias());
+  const durationalContourTrackerBiasCache = beatCache.create(() => durationalContourTrackerGetDurationBias());
 
   /**
    * Analyze duration contour in recent notes.
@@ -58,12 +58,12 @@ durationalContourTracker = (() => {
    * @returns {{ durationBias: number, flickerMod: number }}
    */
   function getDurationBias(opts) {
-    if (opts === undefined) return _biasCache.get();
-    return _getDurationBias(opts);
+    if (opts === undefined) return durationalContourTrackerBiasCache.get();
+    return durationalContourTrackerGetDurationBias(opts);
   }
 
   /** @private */
-  function _getDurationBias(opts) {
+  function durationalContourTrackerGetDurationBias(opts) {
     const contour = getDurationContour(opts);
     // Continuous ramp based on normalizedSlope magnitude.
     // slope is normalized: negative = accelerating, positive = decelerating.

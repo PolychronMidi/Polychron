@@ -87,7 +87,7 @@ setUnitTiming = (unitType) => {
 
       // DIVS-only planner invocation (use DIV API and run once per measure)
       const plannedDivCount = Number(divsPerBeat) * Number(numerator);
-      if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer._plannedDivCount !== plannedDivCount) {
+      if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer.setUnitTimingPlannedDivCount !== plannedDivCount) {
         motifManager.planDivs(activeLayer, Number(divsPerBeat), Number(numerator), activeComposer);
       }
       V.assertArray(activeLayer.divMotifs, 'activeLayer.divMotifs');
@@ -114,8 +114,8 @@ setUnitTiming = (unitType) => {
       unitsPerParent = divsPerBeat;
 
       // Plan subdiv-level motifs derived from the current div's divMotifs bucket
-      { const _absDivIdx = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
-        motifManager.planSubdivs(activeLayer, _absDivIdx, Number(subdivsPerDiv)); }
+      { const setUnitTimingAbsDivIdx = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
+        motifManager.planSubdivs(activeLayer, setUnitTimingAbsDivIdx, Number(subdivsPerDiv)); }
 
       break;
 
@@ -136,9 +136,9 @@ setUnitTiming = (unitType) => {
       unitsPerParent = subdivsPerDiv;
 
       // Plan subsubdiv-level motifs derived from the current subdiv's subdivMotifs bucket
-      { const _absDivIdx2 = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
-        const _absSubIdx = _absDivIdx2 * Number(subdivsPerDiv) + Number(subdivIndex);
-        motifManager.planSubsubdivs(activeLayer, _absSubIdx, Number(subsubsPerSub)); }
+      { const setUnitTimingAbsDivIdx2 = Number(beatIndex) * Number(divsPerBeat) + Number(divIndex);
+        const setUnitTimingAbsSubIdx = setUnitTimingAbsDivIdx2 * Number(subdivsPerDiv) + Number(subdivIndex);
+        motifManager.planSubsubdivs(activeLayer, setUnitTimingAbsSubIdx, Number(subsubsPerSub)); }
 
       break;
 

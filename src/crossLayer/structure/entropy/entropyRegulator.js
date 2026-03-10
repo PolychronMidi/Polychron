@@ -60,13 +60,13 @@ entropyRegulator = (() => {
   }
 
   /**
-   * Core entropy computation (runs at most once per beat via _measureCache).
+   * Core entropy computation (runs at most once per beat via entropyRegulatorMeasureCache).
    * @private
    * @returns {number} combined 0-1
    */
-  let _rhythmIrregErrors = 0;
+  let entropyRegulatorRhythmIrregErrors = 0;
 
-  function _computeEntropy() {
+  function entropyRegulatorComputeEntropy() {
     const layers = ['L1', 'L2'];
     let totalPitch = 0, totalVel = 0, totalRhythm = 0, count = 0;
     for (const layer of layers) {
@@ -85,11 +85,11 @@ entropyRegulator = (() => {
       try {
         totalRhythm += entropyMetrics.rhythmicIrregularity(layer);
       } catch (e) {
-        _rhythmIrregErrors++;
+        entropyRegulatorRhythmIrregErrors++;
         explainabilityBus.emit('entropy-rhythm-error', 'both', {
           layer,
           error: e && e.message ? e.message : 'unknown',
-          errorCount: _rhythmIrregErrors
+          errorCount: entropyRegulatorRhythmIrregErrors
         });
       }
     }
@@ -107,14 +107,14 @@ entropyRegulator = (() => {
     return smoothedEntropy;
   }
 
-  const _measureCache = beatCache.create(_computeEntropy);
+  const entropyRegulatorMeasureCache = beatCache.create(entropyRegulatorComputeEntropy);
 
   /**
    * Measure combined entropy of both layers (EMA-smoothed).
    * @returns {number} combined 0-1
    */
   function measureEntropy() {
-    return _measureCache.get();
+    return entropyRegulatorMeasureCache.get();
   }
 
   /**
@@ -124,7 +124,7 @@ entropyRegulator = (() => {
    * @returns {number} 0-1
    */
   function measureRawEntropy() {
-    _measureCache.get(); // ensure computation has run this beat
+    entropyRegulatorMeasureCache.get(); // ensure computation has run this beat
     return lastRawEntropy;
   }
 
@@ -156,7 +156,7 @@ entropyRegulator = (() => {
   }
 
   // Closed-loop controller: steer combined entropy toward target via dynamic gain
-  const _regulationCtrl = closedLoopController.create({
+  const entropyRegulatorRegulationCtrl = closedLoopController.create({
     name: 'entropyRegulator',
     observe: measureEntropy,
     target: () => targetEntropy,
@@ -175,8 +175,8 @@ entropyRegulator = (() => {
   function getRegulation() {
     const current = measureEntropy();
     const error = targetEntropy - current;
-    _regulationCtrl.refresh();
-    return { scale: _regulationCtrl.getBias(), currentEntropy: current, targetEntropy, error };
+    entropyRegulatorRegulationCtrl.refresh();
+    return { scale: entropyRegulatorRegulationCtrl.getBias(), currentEntropy: current, targetEntropy, error };
   }
 
   /**
@@ -201,12 +201,12 @@ entropyRegulator = (() => {
     regulationStrength = 0.5;
     noteHistory.clear();
     velHistory.clear();
-    _regulationCtrl.reset();
-    // _rhythmIrregErrors intentionally NOT reset - accumulates across run for diagnostic
+    entropyRegulatorRegulationCtrl.reset();
+    // entropyRegulatorRhythmIrregErrors intentionally NOT reset - accumulates across run for diagnostic
   }
 
   /** @returns {number} total rhythmicIrregularity failures across the run */
-  function getRhythmErrors() { return _rhythmIrregErrors; }
+  function getRhythmErrors() { return entropyRegulatorRhythmIrregErrors; }
 
   return {
     recordSample, measureEntropy, measureRawEntropy, setTarget, getArcTarget,

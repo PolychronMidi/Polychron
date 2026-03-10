@@ -9,7 +9,7 @@ intervalBalanceTracker = (() => {
 
   // Beat-level cache: getIntervalProfile is called 2-3x per beat
   // (densityBias + getIntervalBias via stateProvider + getLeapPenaltyBias)
-  const _profileCache = beatCache.create(() => _getIntervalProfile());
+  const intervalBalanceTrackerProfileCache = beatCache.create(() => intervalBalanceTrackerGetIntervalProfile());
 
   /**
    * Analyze interval distribution from recent notes.
@@ -19,12 +19,12 @@ intervalBalanceTracker = (() => {
    * @returns {{ avgInterval: number, maxInterval: number, stepRatio: number, leapRatio: number, unisonRatio: number, variety: number, rut: string|null, monotonous: boolean, erratic: boolean }}
    */
   function getIntervalProfile(opts) {
-    if (opts === undefined) return _profileCache.get();
-    return _getIntervalProfile(opts);
+    if (opts === undefined) return intervalBalanceTrackerProfileCache.get();
+    return intervalBalanceTrackerGetIntervalProfile(opts);
   }
 
   /** @private */
-  function _getIntervalProfile(opts = {}) {
+  function intervalBalanceTrackerGetIntervalProfile(opts = {}) {
     const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
     if (notes.length < 3) {
       return { avgInterval: 0, maxInterval: 0, stepRatio: 0, leapRatio: 0, unisonRatio: 0, variety: 0, rut: null, monotonous: false, erratic: false };

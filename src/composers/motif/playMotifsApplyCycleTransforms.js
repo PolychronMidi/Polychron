@@ -22,10 +22,10 @@ playMotifsApplyCycleTransforms = function playMotifsApplyCycleTransforms(layer, 
           }
         }
 
-        if (!layer._workingOverrides) layer._workingOverrides = new Map();
+        if (!layer.playMotifsApplyCycleTransformsWorkingOverrides) layer.playMotifsApplyCycleTransformsWorkingOverrides = new Map();
         for (let i = 0; i < groupEntries.length; i++) {
           const ge = groupEntries[i];
-          layer._workingOverrides.set(`${ge.groupId}:${ge.seqIndex}`, ge.note);
+          layer.playMotifsApplyCycleTransformsWorkingOverrides.set(`${ge.groupId}:${ge.seqIndex}`, ge.note);
         }
       }
     }

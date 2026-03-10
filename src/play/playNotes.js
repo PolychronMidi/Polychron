@@ -2,15 +2,15 @@
 // Implements a focused subset of stage.js note emission logic and delegates
 // stutter scheduling to the naked global `noteCascade` when available.
 
-let _playNotesDepsValidated = false;
-let _measureContextValidated = -1; // beatCount at last validation
+let playNotesPlayNotesDepsValidated = false;
+let playNotesMeasureContextValidated = -1; // beatCount at last validation
 const V = validator.create('playNotes');
 V.assertObject(eventCatalog, 'eventCatalog');
 V.assertObject(eventCatalog.names, 'eventCatalog.names');
 const PLAY_EVENTS = eventCatalog.names;
 
 function assertPlayNotesDeps() {
-  if (_playNotesDepsValidated) return;
+  if (playNotesPlayNotesDepsValidated) return;
   V.assertManagerShape(motifConfig, 'motifConfig', ['getUnitProfile']);
   V.assertManagerShape(voiceConfig, 'voiceConfig', ['getProfile']);
   V.assertManagerShape(conductorConfig, 'conductorConfig', ['getEmissionScaling', 'getNoiseProfileForSection']);
@@ -20,7 +20,7 @@ function assertPlayNotesDeps() {
   V.assertManagerShape(dynamismEngine, 'dynamismEngine', ['resolve']);
   V.assertManagerShape(tempoFeelEngine, 'tempoFeelEngine', ['getTickOffset']);
   V.assertManagerShape(voiceModulator, 'voiceModulator', ['distribute']);
-  _playNotesDepsValidated = true;
+  playNotesPlayNotesDepsValidated = true;
 }
 
 
@@ -37,11 +37,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   } = opts;
 
   // Validate LM shape once per beat (globals don't change within a beat)
-  if (_measureContextValidated !== beatCount) {
+  if (playNotesMeasureContextValidated !== beatCount) {
     V.requireDefined(LM, 'LayerManager');
     V.assertManagerShape(LM, 'LayerManager', ['getComposerFor']);
     V.assertObject(LM.layers, 'LayerManager.layers');
-    _measureContextValidated = beatCount;
+    playNotesMeasureContextValidated = beatCount;
   }
   V.assertNonEmptyString(LM.activeLayer, 'LayerManager.activeLayer');
   const activeLayer = /** @type {string} */ (LM.activeLayer);
@@ -159,7 +159,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   if (Array.isArray(picks) && picks.length > 0) {
     const distributed = voiceModulator.distribute(picks.map(p => p.note), { baseVelocity: velocity, textureMode: textureMode.mode });
     for (let di = 0; di < m.min(distributed.length, picks.length); di++) {
-      if (Number.isFinite(distributed[di].velocity)) picks[di]._distributedVelocity = distributed[di].velocity;
+      if (Number.isFinite(distributed[di].velocity)) picks[di].playNotesDistributedVelocity = distributed[di].velocity;
     }
   }
 

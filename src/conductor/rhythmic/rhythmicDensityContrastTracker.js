@@ -23,7 +23,7 @@ rhythmicDensityContrastTracker = (() => {
    * Compute contrast between dense and sparse passages.
    * @returns {{ contrast: number, flickerMod: number, suggestion: string }}
    */
-  function _computeContrastSignal() {
+  function rhythmicDensityContrastTrackerComputeContrastSignal() {
     if (densitySamples.length < 4) {
       return { contrast: 0.5, flickerMod: 1, suggestion: 'maintain' };
     }
@@ -59,13 +59,13 @@ rhythmicDensityContrastTracker = (() => {
     return { contrast, flickerMod, suggestion };
   }
 
-  const _cache = beatCache.create(_computeContrastSignal);
+  const rhythmicDensityContrastTrackerCache = beatCache.create(rhythmicDensityContrastTrackerComputeContrastSignal);
 
   /**
    * Compute contrast between dense and sparse passages (cached per beat).
    * @returns {{ contrast: number, flickerMod: number, suggestion: string }}
    */
-  function getContrastSignal() { return _cache.get(); }
+  function getContrastSignal() { return rhythmicDensityContrastTrackerCache.get(); }
 
   /**
    * Get flicker modifier for the flickerAmplitude chain.

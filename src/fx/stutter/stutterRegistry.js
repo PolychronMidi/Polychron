@@ -1,18 +1,18 @@
 // stutterRegistry.js - allow tests/plugins to register a custom stutterNotes helper
 
-let _registeredHelper = null;
+let stutterRegistryRegisteredHelper = null;
 
 function registerHelper(fn) {
   if (typeof fn === 'function') {
-    _registeredHelper = fn;
-    _registeredHelper._isStutterNotesHelper = true;
+    stutterRegistryRegisteredHelper = fn;
+    stutterRegistryRegisteredHelper.stutterRegistryIsStutterNotesHelper = true;
     return true;
   }
-  _registeredHelper = null;
+  stutterRegistryRegisteredHelper = null;
   return false;
 }
 
-function getHelper() { return _registeredHelper; }
+function getHelper() { return stutterRegistryRegisteredHelper; }
 
 stutterRegistry = {
   registerHelper,

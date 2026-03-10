@@ -12,10 +12,10 @@ dynamicArchitectPlanner = (() => {
   let estimatedPieceDuration = 180; // default 3 min estimate
 
   // Beat-level cache: getDynamicPlanSignal is called 2x per beat (tensionBias + stateProvider)
-  const _planCache = beatCache.create(() => _getDynamicPlanSignal());
+  const dynamicArchitectPlannerPlanCache = beatCache.create(() => dynamicArchitectPlannerGetDynamicPlanSignal());
 
   /** Windowed average intensity from recent snapshots. */
-  function _recentAvgIntensity() {
+  function dynamicArchitectPlannerRecentAvgIntensity() {
     if (snapshots.length < 3) return 0.5;
     const recent = snapshots.slice(-5);
     let sum = 0;
@@ -24,9 +24,9 @@ dynamicArchitectPlanner = (() => {
   }
 
   // Closed-loop controller: observe recent avg intensity, target the ideal curve
-  const _ctrl = closedLoopController.create({
+  const dynamicArchitectPlannerCtrl = closedLoopController.create({
     name: 'dynamicArchitectPlanner',
-    observe: _recentAvgIntensity,
+    observe: dynamicArchitectPlannerRecentAvgIntensity,
     target: () => idealDynamicCurve(getMacroPosition()),
     gain: 0.25,
     smoothing: 0,
@@ -93,14 +93,14 @@ dynamicArchitectPlanner = (() => {
    * Get tension bias to nudge the piece toward the macro dynamic plan.
    * @returns {{ tensionBias: number, macroPosition: number, targetIntensity: number }}
    */
-  function getDynamicPlanSignal() { return _planCache.get(); }
+  function getDynamicPlanSignal() { return dynamicArchitectPlannerPlanCache.get(); }
 
   /** @private */
-  function _getDynamicPlanSignal() {
+  function dynamicArchitectPlannerGetDynamicPlanSignal() {
     const pos = getMacroPosition();
     const target = idealDynamicCurve(pos);
-    _ctrl.refresh();
-    return { tensionBias: _ctrl.getBias(), macroPosition: pos, targetIntensity: target };
+    dynamicArchitectPlannerCtrl.refresh();
+    return { tensionBias: dynamicArchitectPlannerCtrl.getBias(), macroPosition: pos, targetIntensity: target };
   }
 
   /**
@@ -116,7 +116,7 @@ dynamicArchitectPlanner = (() => {
     snapshots.length = 0;
     pieceStartTime = -1;
     estimatedPieceDuration = 180;
-    _ctrl.reset();
+    dynamicArchitectPlannerCtrl.reset();
   }
 
   conductorIntelligence.registerTensionBias('dynamicArchitectPlanner', () => dynamicArchitectPlanner.getTensionBias(), 0.9, 1.15);

@@ -12,7 +12,7 @@ const V = validator.create('playNotesComputeUnit');
  * @param {string} unit - 'beat' | 'div' | 'subdiv' | 'subsubdiv'
  * @param {any} emissionAdjustments - from composerRuntimeProfileAdapter
  * @param {any} emissionCfg - emissionScaling merged with noiseProfile
- * @param {any} layer - active layer object (mutated to cache _cachedLayerIdSeed)
+ * @param {any} layer - active layer object (mutated to cache cachedLayerIdSeed)
  * @returns {{ on: number, sustain: number, binVel: number, noiseInfluence: number, currentTime: number, voiceIdSeed: number }}
  */
 playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, emissionCfg, layer) {
@@ -70,7 +70,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
 
   // Layer ID seed - cached on layer object to avoid recomputing per micro-unit
-  let layerIdSeed = layer._cachedLayerIdSeed;
+  let layerIdSeed = layer.cachedLayerIdSeed;
   if (layerIdSeed === undefined) {
     const layerIdValue = layer && Object.prototype.hasOwnProperty.call(layer, 'id') ? layer.id : null;
     if (typeof layerIdValue === 'number' && Number.isFinite(layerIdValue)) {
@@ -86,7 +86,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
       for (let ci = 0; ci < activeLayerName.length; ci++) sum += activeLayerName.charCodeAt(ci);
       layerIdSeed = sum;
     }
-    layer._cachedLayerIdSeed = layerIdSeed;
+    layer.cachedLayerIdSeed = layerIdSeed;
   }
   const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + V.requireFinite(measureCount, 'measureCount'));
 

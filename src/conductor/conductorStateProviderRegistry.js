@@ -9,7 +9,7 @@ conductorStateProviderRegistry = (() => {
   const stateProviders = [];
 
   /** @param {string} name */
-  function _assertNoDup(name) {
+  function conductorStateProviderRegistryAssertNoDup(name) {
     if (stateProviders.some(e => e.name === name)) {
       throw new Error(`conductorStateProviderRegistry.registerStateProvider: duplicate name "${name}"`);
     }
@@ -44,7 +44,7 @@ conductorStateProviderRegistry = (() => {
    */
   function registerStateProvider(name, getter) {
     V.assertNonEmptyString(name, 'name');
-    _assertNoDup(name);
+    conductorStateProviderRegistryAssertNoDup(name);
     V.requireType(getter, 'function', 'getter');
     stateProviders.push({ name, getter });
   }

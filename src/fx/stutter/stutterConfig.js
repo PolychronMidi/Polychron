@@ -8,13 +8,13 @@ if (!STUTTER_PROFILES) {
 
 const STUTTER_REQUIRED_PROFILES = ['source', 'reflection', 'bass'];
 
-const _stutterStore = {
+const stutterConfigStutterStore = {
   profiles: Object.assign({}, STUTTER_PROFILES)
 };
 
 // Validation caches - these globals are static within a run, so re-validation is redundant.
-let _crossModValidated = false;
-let _profilesValidated = false;
+let stutterConfigCrossModValidated = false;
+let stutterConfigProfilesValidated = false;
 
 function assertProfileOrFail(profileName, profileObj) {
   V.assertPlainObject(profileObj, `stutterConfig.profiles.${profileName}`);
@@ -72,34 +72,34 @@ function assertDirectiveDefaultsOrFail(value) {
 }
 
 function validateConfig() {
-  V.assertPlainObject(_stutterStore, 'stutterConfig');
-  V.assertPlainObject(_stutterStore.profiles, 'stutterConfig.profiles');
+  V.assertPlainObject(stutterConfigStutterStore, 'stutterConfig');
+  V.assertPlainObject(stutterConfigStutterStore.profiles, 'stutterConfig.profiles');
   for (const prof of STUTTER_REQUIRED_PROFILES) {
-    if (!_stutterStore.profiles[prof]) {
+    if (!stutterConfigStutterStore.profiles[prof]) {
       throw new Error(`stutterConfig.validateConfig: missing required profile "${prof}"`);
     }
-    assertProfileOrFail(prof, _stutterStore.profiles[prof]);
+    assertProfileOrFail(prof, stutterConfigStutterStore.profiles[prof]);
   }
-  return _stutterStore;
+  return stutterConfigStutterStore;
 }
 
 function getConfig() { return validateConfig(); }
 function setConfig(partial = {}) {
   V.assertPlainObject(partial, 'stutterConfig.setConfig.partial');
-  Object.assign(_stutterStore, partial);
-  _profilesValidated = false;
+  Object.assign(stutterConfigStutterStore, partial);
+  stutterConfigProfilesValidated = false;
   return validateConfig();
 }
 function getProfileConfig(profile = 'source') {
-  if (!_profilesValidated) {
+  if (!stutterConfigProfilesValidated) {
     validateConfig();
-    _profilesValidated = true;
+    stutterConfigProfilesValidated = true;
   }
   const profileName = String(profile);
-  if (!_stutterStore.profiles[profileName]) {
+  if (!stutterConfigStutterStore.profiles[profileName]) {
     throw new Error(`stutterConfig.getProfileConfig: unknown profile "${profileName}"`);
   }
-  return _stutterStore.profiles[profileName];
+  return stutterConfigStutterStore.profiles[profileName];
 }
 
 function getVelocityRange(profile = 'source', isPrimary = true) {
@@ -116,9 +116,9 @@ function getCrossModRules() {
   if (!STUTTER_CROSSMOD_RULES) {
     throw new Error('stutterConfig.getCrossModRules: STUTTER_CROSSMOD_RULES global is not defined');
   }
-  if (_crossModValidated) return STUTTER_CROSSMOD_RULES;
+  if (stutterConfigCrossModValidated) return STUTTER_CROSSMOD_RULES;
   const result = assertCrossModRulesOrFail(STUTTER_CROSSMOD_RULES);
-  _crossModValidated = true;
+  stutterConfigCrossModValidated = true;
   return result;
 }
 

@@ -1,5 +1,5 @@
 axisEnergyEquilibratorAxisAdjustments = (() => {
-  function _applyAxisLoop(state, config, context, V) {
+  function axisEnergyEquilibratorAxisAdjustmentsApplyAxisLoop(state, config, context, V) {
     const entropyExploringDamp = context.regimeKey === 'exploring' ? 0.95 : 1.0;
     const phaseEvolvingDamp = context.regimeKey === 'evolving' ? 0.95 : 1.0;
 
@@ -91,7 +91,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
     }
   }
 
-  function _applySpecialCaps(state, config, V) {
+  function axisEnergyEquilibratorAxisAdjustmentsApplySpecialCaps(state, config, V) {
     const tensionSmoothed = state.smoothedShares.tension;
     if (typeof tensionSmoothed === 'number' && tensionSmoothed < 0.15 && tensionSmoothed > 0.001) {
       const tensionDeficit = 0.15 - tensionSmoothed;
@@ -158,8 +158,8 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
   }
 
   function apply(state, config, context, V) {
-    _applyAxisLoop(state, config, context, V);
-    _applySpecialCaps(state, config, V);
+    axisEnergyEquilibratorAxisAdjustmentsApplyAxisLoop(state, config, context, V);
+    axisEnergyEquilibratorAxisAdjustmentsApplySpecialCaps(state, config, V);
   }
 
   return { apply };

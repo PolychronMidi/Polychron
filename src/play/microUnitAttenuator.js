@@ -13,7 +13,7 @@
 microUnitAttenuator = (() => {
   const V = validator.create('microUnitAttenuator');
   /** @type {Array<{ unit: string, limit: number, pairs: Array<{ on: object, off: object, score: number }> }>} */
-  const _stack = [];
+  const microUnitAttenuatorStack = [];
 
   return {
     /**
@@ -38,7 +38,7 @@ microUnitAttenuator = (() => {
       const unitMultiplier = unit === 'subsubdiv' ? rf(attCfg.subsubdivRange[0], attCfg.subsubdivRange[1])
         : unit === 'subdiv' ? rf(attCfg.subdivRange[0], attCfg.subdivRange[1])
         : rf(attCfg.divRange[0], attCfg.divRange[1]); // div or beat - widest allowance
-      _stack.push({
+      microUnitAttenuatorStack.push({
         unit,
         limit: m.round(unitMultiplier * n),
         pairs: []
@@ -46,7 +46,7 @@ microUnitAttenuator = (() => {
     },
 
     /** @returns {boolean} true when at least one buffering frame is active */
-    isActive() { return _stack.length > 0; },
+    isActive() { return microUnitAttenuatorStack.length > 0; },
 
     /**
      * Record a note-on/off pair with its crossModulation score.
@@ -61,12 +61,12 @@ microUnitAttenuator = (() => {
       V.assertObject(offEvt, 'record.offEvt');
       V.requireFinite(onEvt.tick, 'record.onEvt.tick');
       V.requireFinite(offEvt.tick, 'record.offEvt.tick');
-      if (_stack.length === 0) {
+      if (microUnitAttenuatorStack.length === 0) {
         // No active attenuation - write through immediately
         c.push(onEvt, offEvt);
         return;
       }
-      _stack[_stack.length - 1].pairs.push({ on: onEvt, off: offEvt, score: V.optionalFinite(score, 0) });
+      microUnitAttenuatorStack[microUnitAttenuatorStack.length - 1].pairs.push({ on: onEvt, off: offEvt, score: V.optionalFinite(score, 0) });
     },
 
     /**
@@ -76,8 +76,8 @@ microUnitAttenuator = (() => {
      * @returns {number} number of note-on events that survived
      */
     flush() {
-      if (_stack.length === 0) return 0;
-      const frame = _stack.pop();
+      if (microUnitAttenuatorStack.length === 0) return 0;
+      const frame = microUnitAttenuatorStack.pop();
       if (!frame) return 0;
       const { limit, pairs } = frame;
 
@@ -98,8 +98,8 @@ microUnitAttenuator = (() => {
       }
 
       // Write survivors to the next outer frame or directly to `c`
-      if (_stack.length > 0) {
-        const outer = _stack[_stack.length - 1];
+      if (microUnitAttenuatorStack.length > 0) {
+        const outer = microUnitAttenuatorStack[microUnitAttenuatorStack.length - 1];
         for (const pair of survivors) outer.pairs.push(pair);
       } else {
         for (const pair of survivors) {
@@ -113,7 +113,7 @@ microUnitAttenuator = (() => {
      * Abort all frames without flushing (e.g. on error).
      */
     abort() {
-      _stack.length = 0;
+      microUnitAttenuatorStack.length = 0;
     }
   };
 })();

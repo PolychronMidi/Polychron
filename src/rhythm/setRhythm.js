@@ -1,4 +1,4 @@
-// _random provided by patterns.js (same module) - no duplicate assignment needed
+// _random global provided by patterns.js (same module) - use directly
 
 const V = validator.create('setRhythm');
 

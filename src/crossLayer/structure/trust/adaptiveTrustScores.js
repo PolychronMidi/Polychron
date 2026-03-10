@@ -38,7 +38,7 @@ adaptiveTrustScores = (() => {
   const _MIN_NOURISHMENT_STRENGTH = 0.05;   // floor after decay
   const _NOURISHMENT_DECAY = 0.90;          // 10% decay per application
   /** @type {Map<string, { velocityEma: number, stagnantBeats: number, lastScore: number, disengageBeats: number, nourishmentCount: number, effectiveStrength: number }>} */
-  const _velocityState = new Map();
+  const adaptiveTrustScoresVelocityState = new Map();
 
   // -- Trust journal: ring buffer of significant trust changes --
   // Modeled after explainabilityBus. Keeps the most impactful trust
@@ -112,14 +112,14 @@ adaptiveTrustScores = (() => {
     // converged scores (low stddev) get lower coefficient for more differentiation.
     // coeff = clamp(0.30 + stddev * 1.8, 0.30, 0.60)
     if (scoreBySystem.size > 2) {
-      const _scores = [];
-      for (const s of scoreBySystem.values()) _scores.push(s.score);
-      const _mean = _scores.reduce((a, b) => a + b, 0) / _scores.length;
-      const _variance = _scores.reduce((a, b) => a + (b - _mean) * (b - _mean), 0) / _scores.length;
-      const _stddev = m.sqrt(_variance);
-      const _coeff = clamp(0.30 + _stddev * 1.8, 0.30, 0.60);
-      const _universalFloor = m.max(0.05, _mean * _coeff);
-      if (state.score < _universalFloor) state.score = _universalFloor;
+      const adaptiveTrustScoresScores = [];
+      for (const s of scoreBySystem.values()) adaptiveTrustScoresScores.push(s.score);
+      const adaptiveTrustScoresMean = adaptiveTrustScoresScores.reduce((a, b) => a + b, 0) / adaptiveTrustScoresScores.length;
+      const adaptiveTrustScoresVariance = adaptiveTrustScoresScores.reduce((a, b) => a + (b - adaptiveTrustScoresMean) * (b - adaptiveTrustScoresMean), 0) / adaptiveTrustScoresScores.length;
+      const adaptiveTrustScoresStddev = m.sqrt(adaptiveTrustScoresVariance);
+      const adaptiveTrustScoresCoeff = clamp(0.30 + adaptiveTrustScoresStddev * 1.8, 0.30, 0.60);
+      const adaptiveTrustScoresUniversalFloor = m.max(0.05, adaptiveTrustScoresMean * adaptiveTrustScoresCoeff);
+      if (state.score < adaptiveTrustScoresUniversalFloor) state.score = adaptiveTrustScoresUniversalFloor;
     }
     const adaptiveCaps = getAdaptiveDominanceCaps(systemName, state.score);
     if (state.score > adaptiveCaps.scoreCeiling) {
@@ -231,15 +231,15 @@ adaptiveTrustScores = (() => {
     // before applying per-system decay. Replaces per-module hard-coded floors.
     // Coefficient raised 0.30->0.50 (matches registerOutcome change).
     // Self-deriving coefficient from trust score standard deviation.
-    let _universalDecayFloor = 0.05;
+    let adaptiveTrustScoresUniversalDecayFloor = 0.05;
     if (scoreBySystem.size > 2) {
-      const _dScores = [];
-      for (const s of scoreBySystem.values()) _dScores.push(s.score);
-      const _dMean = _dScores.reduce((a, b) => a + b, 0) / _dScores.length;
-      const _dVariance = _dScores.reduce((a, b) => a + (b - _dMean) * (b - _dMean), 0) / _dScores.length;
-      const _dStddev = m.sqrt(_dVariance);
-      const _dCoeff = clamp(0.30 + _dStddev * 1.8, 0.30, 0.60);
-      _universalDecayFloor = m.max(0.05, _dMean * _dCoeff);
+      const adaptiveTrustScoresDScores = [];
+      for (const s of scoreBySystem.values()) adaptiveTrustScoresDScores.push(s.score);
+      const adaptiveTrustScoresDMean = adaptiveTrustScoresDScores.reduce((a, b) => a + b, 0) / adaptiveTrustScoresDScores.length;
+      const adaptiveTrustScoresDVariance = adaptiveTrustScoresDScores.reduce((a, b) => a + (b - adaptiveTrustScoresDMean) * (b - adaptiveTrustScoresDMean), 0) / adaptiveTrustScoresDScores.length;
+      const adaptiveTrustScoresDStddev = m.sqrt(adaptiveTrustScoresDVariance);
+      const adaptiveTrustScoresDCoeff = clamp(0.30 + adaptiveTrustScoresDStddev * 1.8, 0.30, 0.60);
+      adaptiveTrustScoresUniversalDecayFloor = m.max(0.05, adaptiveTrustScoresDMean * adaptiveTrustScoresDCoeff);
     }
 
     for (const [, state] of scoreBySystem.entries()) {
@@ -252,8 +252,8 @@ adaptiveTrustScores = (() => {
 
       // Structural fix: Universal population-derived trust floor (decay phase).
       // Computed once per decayAll call (above), applied per system.
-      if (state.score < _universalDecayFloor) {
-        state.score = _universalDecayFloor;
+      if (state.score < adaptiveTrustScoresUniversalDecayFloor) {
+        state.score = adaptiveTrustScoresUniversalDecayFloor;
       }
 
       // Exploration bonus: periodically nudge starving systems toward neutral
@@ -275,10 +275,10 @@ adaptiveTrustScores = (() => {
     meanTrust = trustCountForMean > 0 ? meanTrust / trustCountForMean : 0;
 
     for (const [name, state] of scoreBySystem.entries()) {
-      let vs = _velocityState.get(name);
+      let vs = adaptiveTrustScoresVelocityState.get(name);
       if (!vs) {
         vs = { velocityEma: 0, stagnantBeats: 0, lastScore: state.score, disengageBeats: 0, nourishmentCount: 0, effectiveStrength: _BASE_NOURISHMENT_STRENGTH };
-        _velocityState.set(name, vs);
+        adaptiveTrustScoresVelocityState.set(name, vs);
       }
       const scoreDelta = m.abs(state.score - vs.lastScore);
       vs.velocityEma = vs.velocityEma * (1 - _VELOCITY_EMA_ALPHA) + scoreDelta * _VELOCITY_EMA_ALPHA;
@@ -348,7 +348,7 @@ adaptiveTrustScores = (() => {
     scoreBySystem.clear();
     decayCycleCount = 0;
     journal.length = 0;
-    _velocityState.clear();
+    adaptiveTrustScoresVelocityState.clear();
   }
 
   return { registerOutcome, getBaseWeight, getWeight, decayAll, getSnapshot, getJournal, reset };

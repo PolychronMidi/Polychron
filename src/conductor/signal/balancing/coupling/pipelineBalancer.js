@@ -69,7 +69,7 @@ pipelineBalancer = (() => {
   // Tension homeostasis via closedLoopController
   // When tension product diverges from neutral (1.0) by more than the deadband,
   // nudge it back. Gain = TENSION_LIFT / 0.5 = 0.28 matches the original scaling.
-  const _tensionCtrl = closedLoopController.create({
+  const pipelineBalancerTensionCtrl = closedLoopController.create({
     name: 'pipelineBalancer.tension',
     observe: () => signalReader.tension(),
     target: () => 1.0,
@@ -82,16 +82,16 @@ pipelineBalancer = (() => {
   });
 
   function refreshTension() {
-    _tensionCtrl.refresh();
+    pipelineBalancerTensionCtrl.refresh();
   }
 
   function tensionBias() {
-    return _tensionCtrl.getBias();
+    return pipelineBalancerTensionCtrl.getBias();
   }
 
   function reset() {
     counterBias = 1.0;
-    _tensionCtrl.reset();
+    pipelineBalancerTensionCtrl.reset();
   }
 
   // Self-registration

@@ -40,10 +40,10 @@ c = c1; // current active buffer (reassigned per-layer pass)
  */
 // Wrap writeFileSync to log errors centrally
 try {
-  const _origWriteFileSync = fs.writeFileSync;
+  const indexOrigWriteFileSync = fs.writeFileSync;
   fs.writeFileSync = function(...args) {
     try {
-      return _origWriteFileSync.apply(fs, args);
+      return indexOrigWriteFileSync.apply(fs, args);
     } catch (err) {
       throw new Error('Failed to write ' + (args[0] || '') + ': ' + (err && err.stack ? err.stack : String(err)));
     }

@@ -27,7 +27,7 @@ pipelineNormalizer = (() => {
   const WARMUP_BEATS   = 6;
   const WARMUP_ALPHA   = 0.25;
 
-  const _state = {
+  const pipelineNormalizerState = {
     density: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 },
     tension: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 },
     flicker: { emaRaw: 1.0, beats: 0, lastBeat: -1, compressedLow: 0, compressedHigh: 0 }
@@ -42,7 +42,7 @@ pipelineNormalizer = (() => {
    * @param {number} range
    * @returns {number}
    */
-  function _softEnvelope(value, softMin, softMax, range) {
+  function pipelineNormalizerSoftEnvelope(value, softMin, softMax, range) {
     if (value >= softMin && value <= softMax) return value;
     if (value < softMin) {
       const d = softMin - value;
@@ -55,7 +55,7 @@ pipelineNormalizer = (() => {
   /**
    * Normalize a pipeline product through the soft envelope.
    * @param {'density'|'tension'|'flicker'} pipeline
-   * @param {number} rawProduct - from _collectDampened
+   * @param {number} rawProduct - from pipelineNormalizerCollectDampened
    * @returns {number}
    */
   function normalize(pipeline, rawProduct) {
@@ -63,7 +63,7 @@ pipelineNormalizer = (() => {
     const bounds = BOUNDS[pipeline];
     if (!bounds) throw new Error(`pipelineNormalizer: unknown pipeline "${pipeline}"`);
 
-    const s = _state[pipeline];
+    const s = pipelineNormalizerState[pipeline];
     const bc = beatCount;
     if (bc !== s.lastBeat) {
       s.lastBeat = bc;
@@ -74,23 +74,23 @@ pipelineNormalizer = (() => {
       else if (rawProduct > bounds.softMax) s.compressedHigh++;
     }
 
-    return _softEnvelope(rawProduct, bounds.softMin, bounds.softMax, bounds.range);
+    return pipelineNormalizerSoftEnvelope(rawProduct, bounds.softMin, bounds.softMax, bounds.range);
   }
 
   function reset() {
-    for (const key of Object.keys(_state)) {
-      _state[key].emaRaw = 1.0;
-      _state[key].beats = 0;
-      _state[key].lastBeat = -1;
-      _state[key].compressedLow = 0;
-      _state[key].compressedHigh = 0;
+    for (const key of Object.keys(pipelineNormalizerState)) {
+      pipelineNormalizerState[key].emaRaw = 1.0;
+      pipelineNormalizerState[key].beats = 0;
+      pipelineNormalizerState[key].lastBeat = -1;
+      pipelineNormalizerState[key].compressedLow = 0;
+      pipelineNormalizerState[key].compressedHigh = 0;
     }
   }
 
   /** @returns {Record<string, object>} */
   function getSnapshot() {
     const result = {};
-    for (const [pipeline, s] of Object.entries(_state)) {
+    for (const [pipeline, s] of Object.entries(pipelineNormalizerState)) {
       const b = BOUNDS[pipeline];
       const total = s.beats || 1;
       result[pipeline] = {

@@ -21,10 +21,10 @@ require('./patternLength');
 require('./getRhythm');
 
 
-require('./setRhythm');
-
 require('./trackRhythm');
+
 require('./patterns');
+require('./setRhythm');
 require('./feedback');
 
 require('./rhythmHistoryTracker');

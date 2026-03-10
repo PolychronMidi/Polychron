@@ -2,13 +2,13 @@
 
 rhythmRegistry = (function() {
   const V = validator.create('rhythmRegistry');
-  const _map = {};
+  const rhythmRegistryMap = {};
 
   function register(name, fn) {
     V.assertNonEmptyString(name, 'register.name');
     V.requireType(fn, 'function', 'register.fn');
-    if (_map[name]) throw new Error(`rhythmRegistry.register: generator "${name}" already registered`);
-    _map[name] = fn;
+    if (rhythmRegistryMap[name]) throw new Error(`rhythmRegistry.register: generator "${name}" already registered`);
+    rhythmRegistryMap[name] = fn;
     return fn;
   }
 
@@ -19,14 +19,14 @@ rhythmRegistry = (function() {
 
   function get(name) {
     V.assertNonEmptyString(name, 'get.name');
-    const fn = _map[name];
+    const fn = rhythmRegistryMap[name];
     if (!fn) throw new Error(`rhythmRegistry.get: unknown generator "${name}"`);
     return fn;
   }
 
-  function list() { return Object.keys(_map); }
+  function list() { return Object.keys(rhythmRegistryMap); }
 
-  function getAll() { return Object.assign({}, _map); }
+  function getAll() { return Object.assign({}, rhythmRegistryMap); }
 
   function execute(name, ...args) {
     const fn = get(name); // Will throw if name not found

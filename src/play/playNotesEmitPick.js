@@ -1,39 +1,39 @@
 const V = validator.create('playNotesEmitPick');
-let _emitPickDepsValidated = false;
+let playNotesEmitPickEmitPickDepsValidated = false;
 
 // Beat-level channel cache - flipBin/source/reflection/bass don't change within a beat
-let _chCacheBeat = -1;
-let _chCacheFlip = /** @type {boolean|null} */ (null);
-/** @type {any[]} */ let _cachedSourceChs = [];
-/** @type {any[]} */ let _cachedReflectionChs = [];
-/** @type {any[]} */ let _cachedBassChs = [];
+let playNotesEmitPickChCacheBeat = -1;
+let playNotesEmitPickChCacheFlip = /** @type {boolean|null} */ (null);
+/** @type {any[]} */ let playNotesEmitPickCachedSourceChs = [];
+/** @type {any[]} */ let playNotesEmitPickCachedReflectionChs = [];
+/** @type {any[]} */ let playNotesEmitPickCachedBassChs = [];
 
 // Beat-level feedback pitch bias - set once from processBeat, read per-pick
-let _beatFeedbackPitchBias = -1;
+let playNotesEmitPickBeatFeedbackPitchBias = -1;
 /** @param {number} bias */
-setFeedbackPitchBias = function(bias) { _beatFeedbackPitchBias = V.optionalFinite(bias, -1); };
+setFeedbackPitchBias = function(bias) { playNotesEmitPickBeatFeedbackPitchBias = V.optionalFinite(bias, -1); };
 
 // Beat-level climax modifiers cache - set once from processBeat, read per-pick
 /** @type {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} */
-let _beatClimaxMods = { playProbScale: 1, velocityScale: 1, registerBias: 0, entropyTarget: -1 };
+let playNotesEmitPickBeatClimaxMods = { playProbScale: 1, velocityScale: 1, registerBias: 0, entropyTarget: -1 };
 /** @param {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} mods */
-setClimaxMods = function(mods) { _beatClimaxMods = mods; };
+setClimaxMods = function(mods) { playNotesEmitPickBeatClimaxMods = mods; };
 
-function _refreshChannelCache() {
+function playNotesEmitPickRefreshChannelCache() {
   const key = beatStart;
   const flip = flipBin;
-  if (_chCacheBeat === key && _chCacheFlip === flip) return;
-  _chCacheBeat = key;
-  _chCacheFlip = flip;
+  if (playNotesEmitPickChCacheBeat === key && playNotesEmitPickChCacheFlip === flip) return;
+  playNotesEmitPickChCacheBeat = key;
+  playNotesEmitPickChCacheFlip = flip;
   const pool = flip ? flipBinT : flipBinF;
   const poolSet = new Set(pool);
-  _cachedSourceChs = source.filter(ch => poolSet.has(ch));
-  _cachedReflectionChs = reflection.filter(ch => poolSet.has(ch));
-  _cachedBassChs = bass.filter(ch => poolSet.has(ch));
+  playNotesEmitPickCachedSourceChs = source.filter(ch => poolSet.has(ch));
+  playNotesEmitPickCachedReflectionChs = reflection.filter(ch => poolSet.has(ch));
+  playNotesEmitPickCachedBassChs = bass.filter(ch => poolSet.has(ch));
 }
 
 function assertEmitPickDeps(unit) {
-  if (_emitPickDepsValidated) return;
+  if (playNotesEmitPickEmitPickDepsValidated) return;
   V.assertManagerShape(LM, 'LM', ['activate']);
   V.assertObject(LM.layers, 'LM.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
@@ -50,7 +50,7 @@ function assertEmitPickDeps(unit) {
   if (!(StutterManager.beatContext.selectedBassChannels instanceof Set)) {
     throw new Error(`${unit}.playNotesEmitPick: StutterManager.beatContext.selectedBassChannels must be a Set`);
   }
-  _emitPickDepsValidated = true;
+  playNotesEmitPickEmitPickDepsValidated = true;
 }
 
 playNotesEmitPick = function(opts = {}) {
@@ -83,13 +83,13 @@ playNotesEmitPick = function(opts = {}) {
   const activeLayerName = /** @type {string} */ (LM.activeLayer);
 
   // Cache timing globals once per call (they don't change within a beat)
-  const _mStart = V.requireFinite(measureStart, 'measureStart');
-  const _mStartTime = V.requireFinite(measureStartTime, 'measureStartTime');
-  const _tpSec = V.requireFinite(tpSec, 'tpSec');
+  const playNotesEmitPickMStart = V.requireFinite(measureStart, 'measureStart');
+  const playNotesEmitPickMStartTime = V.requireFinite(measureStartTime, 'measureStartTime');
+  const playNotesEmitPickTpSec = V.requireFinite(tpSec, 'tpSec');
 
   /** @param {number} tick */
   const tickToAbsMs = (tick) => {
-    return (_mStartTime + (tick - _mStart) / _tpSec) * 1000;
+    return (playNotesEmitPickMStartTime + (tick - playNotesEmitPickMStart) / playNotesEmitPickTpSec) * 1000;
   };
 
   /** @param {number} tick @param {string} label */
@@ -114,12 +114,12 @@ playNotesEmitPick = function(opts = {}) {
     }
   }
 
-  const pickVelScale = Number.isFinite(pick._distributedVelocity)
-    ? clamp(pick._distributedVelocity / m.max(1, velocity), 0.5, 1.5)
+  const pickVelScale = Number.isFinite(pick.playNotesEmitPickDistributedVelocity)
+    ? clamp(pick.playNotesEmitPickDistributedVelocity / m.max(1, velocity), 0.5, 1.5)
     : 1;
 
-  _refreshChannelCache();
-  const activeSourceChannels = _cachedSourceChs;
+  playNotesEmitPickRefreshChannelCache();
+  const activeSourceChannels = playNotesEmitPickCachedSourceChs;
   const maxTickShift = tpSec * 0.1; // cap cumulative tick displacement to 10% of tpSec
   for (let sourceIndex = 0; sourceIndex < activeSourceChannels.length; sourceIndex++) {
     const sourceCH = activeSourceChannels[sourceIndex];
@@ -150,7 +150,7 @@ playNotesEmitPick = function(opts = {}) {
       : pickNote;
     const noteAfterSpectral = spectralComplementarity.nudgeToFillGap(noteToEmitBase, activeLayerName).midi;
     // Pass pre-computed pitchBias from processBeat's feedbackOscillator call to avoid double-react
-    const feedbackPitchBias = _beatFeedbackPitchBias;
+    const feedbackPitchBias = playNotesEmitPickBeatFeedbackPitchBias;
     const harmonicResult = harmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, absMsAtOnTick, feedbackPitchBias);
     const noteAfterHarmonic = harmonicResult.midi;
     const noteToEmit = registerCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTick).midi;
@@ -160,7 +160,7 @@ playNotesEmitPick = function(opts = {}) {
     const texVelInterference = velocityInterference.applyInterference(absMsAtOnTick, activeLayerName, texVelRole).velocity;
     // Apply dynamic envelope and climax velocity scaling (cached per beat)
     const envelopeScale = crossLayerDynamicEnvelope.getVelocityScale(activeLayerName);
-    const texVel = V.requireFinite(m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVelInterference * envelopeScale * _beatClimaxMods.velocityScale))), 'texVel');
+    const texVel = V.requireFinite(m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVelInterference * envelopeScale * playNotesEmitPickBeatClimaxMods.velocityScale))), 'texVel');
     // Apply articulation complement sustain modifier
     const articulationMod = articulationComplement.getSustainModifier(activeLayerName);
     const texSustain = sustain * textureMode.sustainScale * articulationMod.sustainScale;
@@ -200,7 +200,7 @@ playNotesEmitPick = function(opts = {}) {
     }
   }
 
-  const activeReflectionChannels = _cachedReflectionChs;
+  const activeReflectionChannels = playNotesEmitPickCachedReflectionChs;
   for (let reflectionIndex = 0; reflectionIndex < activeReflectionChannels.length; reflectionIndex++) {
     const reflectionCH = activeReflectionChannels[reflectionIndex];
     const isPrimary = reflectionCH === cCH2;
@@ -246,7 +246,7 @@ playNotesEmitPick = function(opts = {}) {
   }
 
   if (rf() < clamp(0.75 * bpmRatio3, 0.2, 0.7)) {
-    const activeBassChannels = _cachedBassChs;
+    const activeBassChannels = playNotesEmitPickCachedBassChs;
     for (let bassIndex = 0; bassIndex < activeBassChannels.length; bassIndex++) {
       const bassCH = activeBassChannels[bassIndex];
       const isPrimary = bassCH === cCH3;

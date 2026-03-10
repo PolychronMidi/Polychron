@@ -4,7 +4,7 @@
 // add its own probability layers or burst multiple events.
 // Cooperates with CC effects via beatContext (pan-register, fade-velocity).
 
-const _clampStutterNote = (n, isBassLocal) => {
+const stutterNotesClampStutterNote = (n, isBassLocal) => {
   if (isBassLocal) return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), 59);
   return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
 };
@@ -13,7 +13,7 @@ const _clampStutterNote = (n, isBassLocal) => {
  * Pick a random octave shift with optional pan-position bias.
  * panBias: -1 (hard left) to +1 (hard right), 0 = no bias.
  */
-const _pickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = null, panBias = 0) => {
+const stutterNotesPickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = null, panBias = 0) => {
   const minNote = m.max(0, OCTAVE.min * 12 - 1);
   const maxNote = isBassLocal ? 59 : (OCTAVE.max * 12 - 1);
   const candidates = [];
@@ -98,9 +98,9 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // Reset shift history and selection sets at beat boundary for variety
   const currentBeatIndex = beatIndex;
-  if (globalState._lastBeatIndex !== currentBeatIndex) {
+  if (globalState.stutterNotesLastBeatIndex !== currentBeatIndex) {
     localShared.shifts.clear();
-    globalState._lastBeatIndex = currentBeatIndex;
+    globalState.stutterNotesLastBeatIndex = currentBeatIndex;
     // selection sets (reflection/bass) - limit stutter to a small random subset of mirror channels
     globalState.selectedReflectionChannels = new Set();
     globalState.selectedBassChannels = new Set();
@@ -168,10 +168,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   const lastShift = localShared.shifts.get(channel) || null;
   const baseShiftRange = isBass ? 2 : 3;
   const shiftRange = m.max(1, baseShiftRange + shiftRangeBias);
-  const shift = _pickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastShift, panBias);
+  const shift = stutterNotesPickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastShift, panBias);
   localShared.shifts.set(channel, shift);
 
-  const stutterNote = m.round(_clampStutterNote(baseMidiNote + shift, isBass));
+  const stutterNote = m.round(stutterNotesClampStutterNote(baseMidiNote + shift, isBass));
 
   // Velocity: scaled version of the original, with fade-direction coherence
   const velRanges = stutterConfig.getVelocityRange(profile, isPrimary);

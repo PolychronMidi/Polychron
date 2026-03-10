@@ -15,9 +15,9 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
     this.root = root;
     this.chromaticDensity = clamp(chromaticDensity, 0, 1);
     /** @type {Set<number>} */
-    this._targetPCs = new Set();
+    this.ChromaticComposerTargetPCs = new Set();
     /** @type {string[]} */
-    this._targetNotes = [];
+    this.ChromaticComposerTargetNotes = [];
     this.enableVoiceLeading(new VoiceLeadingScore());
     this.noteSet(targetScaleName, root);
   }
@@ -40,10 +40,10 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
     if (!targetScale || !Array.isArray(targetScale.notes) || targetScale.notes.length === 0) {
       throw new Error(`ChromaticComposer.noteSet: scale "${root} ${targetScaleName}" not found`);
     }
-    this._targetNotes = targetScale.notes;
+    this.ChromaticComposerTargetNotes = targetScale.notes;
 
     // Build the target pitch-class set for enclosure detection
-    this._targetPCs = new Set(targetScale.notes.map(n => t.Note.chroma(n)).filter(c => Number.isFinite(c)));
+    this.ChromaticComposerTargetPCs = new Set(targetScale.notes.map(n => t.Note.chroma(n)).filter(c => Number.isFinite(c)));
 
     // Use full chromatic as the available note pool
     const chromatic = t.Scale.get(`${root} chromatic`);
@@ -83,7 +83,7 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
       if (!Number.isFinite(midiRaw)) throw new Error('ChromaticComposer.getNotes: invalid note in base pool');
       /** @type {number} */
       const midi = /** @type {number} */ (midiRaw);
-      const isTargetTone = this._targetPCs.has(midi % 12);
+      const isTargetTone = this.ChromaticComposerTargetPCs.has(midi % 12);
       const wrapped = typeof n === 'number' ? { note: n } : n;
 
       if (rf() < this.chromaticDensity) {
@@ -92,41 +92,41 @@ ChromaticComposer = class ChromaticComposer extends MeasureComposer {
           const pattern = rf();
           if (pattern < 0.35) {
             // Enclosure: chromatic above + below - target
-            result.push({ note: clamp(midi + 1, 0, 127), _approach: 'enclosure-upper' });
-            result.push({ note: clamp(midi - 1, 0, 127), _approach: 'enclosure-lower' });
+            result.push({ note: clamp(midi + 1, 0, 127), ChromaticComposerApproach: 'enclosure-upper' });
+            result.push({ note: clamp(midi - 1, 0, 127), ChromaticComposerApproach: 'enclosure-lower' });
             result.push(wrapped);
           } else if (pattern < 0.6) {
             // Upper neighbor: target - step up - back
             result.push(wrapped);
-            result.push({ note: clamp(midi + 1, 0, 127), _approach: 'upper-neighbor' });
+            result.push({ note: clamp(midi + 1, 0, 127), ChromaticComposerApproach: 'upper-neighbor' });
             result.push(wrapped);
           } else if (pattern < 0.8) {
             // Lower approach: chromatic step from below
-            result.push({ note: clamp(midi - 1, 0, 127), _approach: 'lower-approach' });
+            result.push({ note: clamp(midi - 1, 0, 127), ChromaticComposerApproach: 'lower-approach' });
             result.push(wrapped);
           } else {
             // Double chromatic approach from above
-            result.push({ note: clamp(midi + 2, 0, 127), _approach: 'double-upper' });
-            result.push({ note: clamp(midi + 1, 0, 127), _approach: 'upper-approach' });
+            result.push({ note: clamp(midi + 2, 0, 127), ChromaticComposerApproach: 'double-upper' });
+            result.push({ note: clamp(midi + 1, 0, 127), ChromaticComposerApproach: 'upper-approach' });
             result.push(wrapped);
           }
         } else {
           // Note is already chromatic - resolve toward nearest scale tone
-          const below = this._targetPCs.has((midi - 1) % 12) ? midi - 1 : null;
-          const above = this._targetPCs.has((midi + 1) % 12) ? midi + 1 : null;
+          const below = this.ChromaticComposerTargetPCs.has((midi - 1) % 12) ? midi - 1 : null;
+          const above = this.ChromaticComposerTargetPCs.has((midi + 1) % 12) ? midi + 1 : null;
           if (below !== null && above !== null) {
             // Both neighbors are scale tones - chromatic passing tone between them
-            result.push({ note: clamp(below, 0, 127), _approach: 'resolve-below' });
+            result.push({ note: clamp(below, 0, 127), ChromaticComposerApproach: 'resolve-below' });
             result.push(wrapped);
-            result.push({ note: clamp(above, 0, 127), _approach: 'resolve-above' });
+            result.push({ note: clamp(above, 0, 127), ChromaticComposerApproach: 'resolve-above' });
           } else if (below !== null) {
             // Approach from below, land on chromatic, resolve down
             result.push(wrapped);
-            result.push({ note: clamp(below, 0, 127), _approach: 'resolve-down' });
+            result.push({ note: clamp(below, 0, 127), ChromaticComposerApproach: 'resolve-down' });
           } else if (above !== null) {
             // Chromatic leads up into scale tone
             result.push(wrapped);
-            result.push({ note: clamp(above, 0, 127), _approach: 'resolve-up' });
+            result.push({ note: clamp(above, 0, 127), ChromaticComposerApproach: 'resolve-up' });
           } else {
             // Isolated chromatic - pass through as color
             result.push(wrapped);

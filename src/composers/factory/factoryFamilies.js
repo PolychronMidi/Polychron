@@ -126,8 +126,8 @@ factoryFamilies = {
 
   inferComposerType(composerInstance) {
     V.assertObject(composerInstance, 'composerInstance');
-    if (composerInstance._factoryType) {
-      return composerInstance._factoryType;
+    if (composerInstance.factoryFamiliesFactoryType) {
+      return composerInstance.factoryFamiliesFactoryType;
     }
     const ctorName = composerInstance.constructor && composerInstance.constructor.name;
     const byCtorName = {

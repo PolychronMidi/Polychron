@@ -15,7 +15,7 @@ melodicContourTracker = (() => {
    * @param {number[]} pitches
    * @returns {{ shape: string, direction: number, range: number, avgPitch: number }}
    */
-  function _computeContour(pitches) {
+  function melodicContourTrackerComputeContour(pitches) {
     const thirdLen = m.max(1, m.ceil(pitches.length / 3));
     let sumFirst = 0;
     let sumLast = 0;
@@ -53,7 +53,7 @@ melodicContourTracker = (() => {
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 4 });
     if (notes.length < 3) return;
     const pitches = analysisHelpers.extractMidiArray(notes, 60);
-    currentContour = _computeContour(pitches);
+    currentContour = melodicContourTrackerComputeContour(pitches);
   }
 
   /**
@@ -85,11 +85,11 @@ melodicContourTracker = (() => {
   function getLayerContour(layer) {
     const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: 4 });
     if (notes.length < 3) return DEFAULT_CONTOUR;
-    return _computeContour(analysisHelpers.extractMidiArray(notes, 60));
+    return melodicContourTrackerComputeContour(analysisHelpers.extractMidiArray(notes, 60));
   }
 
   // Beat-level cache: getDirectionalitySignal is called 2x per beat (densityBias + stateProvider)
-  const _dirCache = beatCache.create(() => _getDirectionalitySignal());
+  const melodicContourTrackerDirCache = beatCache.create(() => melodicContourTrackerGetDirectionalitySignal());
 
   // Directionality analysis (merged from MelodicDirectionalityTracker)
 
@@ -97,10 +97,10 @@ melodicContourTracker = (() => {
    * Analyze predominant melodic direction from recent notes (cached per beat).
    * @returns {{ direction: string, ascendRatio: number, descendRatio: number, densityBias: number }}
    */
-  function getDirectionalitySignal() { return _dirCache.get(); }
+  function getDirectionalitySignal() { return melodicContourTrackerDirCache.get(); }
 
   /** @private */
-  function _getDirectionalitySignal() {
+  function melodicContourTrackerGetDirectionalitySignal() {
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: 8 });
     if (notes.length < 4) {
       return { direction: 'undulating', ascendRatio: 0.5, descendRatio: 0.5, densityBias: 1 };

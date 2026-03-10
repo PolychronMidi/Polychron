@@ -9,11 +9,11 @@ getMeterPair = (() => {
   const FIRST_HI = 3;
   const DRIFT = 0.1;
 
-  let _lastLength = null;
+  let getMeterPairLastLength = null;
 
   function pick() {
-    const lo = _lastLength === null ? FIRST_LO : _lastLength * (1 - DRIFT);
-    const hi = _lastLength === null ? FIRST_HI : _lastLength * (1 + DRIFT);
+    const lo = getMeterPairLastLength === null ? FIRST_LO : getMeterPairLastLength * (1 - DRIFT);
+    const hi = getMeterPairLastLength === null ? FIRST_HI : getMeterPairLastLength * (1 + DRIFT);
 
     let pool = [];
     for (let i = 0; i < POLYRHYTHM_PAIRS.length; i++) {
@@ -23,7 +23,7 @@ getMeterPair = (() => {
 
     if (pool.length === 0) {
       // Fallback: pick the pair with the closest length to the midpoint
-      const target = (_lastLength === null ? (FIRST_LO + FIRST_HI) / 2 : _lastLength);
+      const target = (getMeterPairLastLength === null ? (FIRST_LO + FIRST_HI) / 2 : getMeterPairLastLength);
       let best = POLYRHYTHM_PAIRS[0];
       let bestDist = m.abs(best.length - target);
       for (let i = 1; i < POLYRHYTHM_PAIRS.length; i++) {
@@ -34,7 +34,7 @@ getMeterPair = (() => {
     }
 
     const p = pool[m.floor(m.random() * pool.length)];
-    _lastLength = p.length;
+    getMeterPairLastLength = p.length;
 
     numerator = p.n1;
     denominator = p.d1;
@@ -46,7 +46,7 @@ getMeterPair = (() => {
   }
 
   function reset() {
-    _lastLength = null;
+    getMeterPairLastLength = null;
   }
 
   return { pick, reset };

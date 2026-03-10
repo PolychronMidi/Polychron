@@ -10,7 +10,7 @@ systemManifest = (() => {
    * Call after grandFinale() - all registries are fully populated at this point.
    */
   function emit() {
-    const manifest = _buildManifest();
+    const manifest = systemManifestBuildManifest();
 
     // -- Attribution (live call - not cached in manifest) --
     const attribution = {
@@ -28,9 +28,9 @@ systemManifest = (() => {
     };
 
     manifest.attribution = {
-      density: Object.assign(_serializeAttribution(attribution.density), { extraMultipliers: extraDensityMultipliers }),
-      tension: _serializeAttribution(attribution.tension),
-      flicker: _serializeAttribution(attribution.flicker)
+      density: Object.assign(systemManifestSerializeAttribution(attribution.density), { extraMultipliers: extraDensityMultipliers }),
+      tension: systemManifestSerializeAttribution(attribution.tension),
+      flicker: systemManifestSerializeAttribution(attribution.flicker)
     };
 
     // -- Coherence verdicts --
@@ -52,7 +52,7 @@ const manifestPath = 'metrics/system-manifest.json';
    * @param {object} attr
    * @returns {object}
    */
-  function _serializeAttribution(attr) {
+  function systemManifestSerializeAttribution(attr) {
     return {
       product: attr.product,
       rawProduct: attr.rawProduct,
@@ -65,7 +65,7 @@ const manifestPath = 'metrics/system-manifest.json';
   }
 
   /** @returns {object} */
-  function _buildManifest() {
+  function systemManifestBuildManifest() {
     // -- Registry topology --
     const registryManifest = mainBootstrap.getRegistryManifest();
 
@@ -131,7 +131,7 @@ const manifestPath = 'metrics/system-manifest.json';
           moduleNames: registryManifest.conductorIntelligence.moduleNames,
           contributions: registryManifest.conductorIntelligence.counts,
           contributorNames: conductorIntelligence.getContributorNames(),
-          unregisteredContributors: _computeUnregisteredContributors(registryManifest)
+          unregisteredContributors: systemManifestComputeUnregisteredContributors(registryManifest)
         },
         crossLayer: {
           moduleCount: registryManifest.crossLayer.moduleCount,
@@ -143,9 +143,9 @@ const manifestPath = 'metrics/system-manifest.json';
         tensionProduct: signalSnapshot.tensionProduct,
         flickerProduct: signalSnapshot.flickerProduct
       },
-      signalHealth: _buildSignalHealth(),
-      pipelineNormalizer: _buildPipelineNormalizer(),
-      systemDynamics: _buildSystemDynamics(),
+      signalHealth: systemManifestBuildSignalHealth(),
+      pipelineNormalizer: systemManifestBuildPipelineNormalizer(),
+      systemDynamics: systemManifestBuildSystemDynamics(),
       trustPayoffs,
       trustScoresEndOfRun: trustSnapshot,
       trustJournal
@@ -157,7 +157,7 @@ const manifestPath = 'metrics/system-manifest.json';
    * @param {{ conductorIntelligence: { moduleNames: string[] }, crossLayer: { moduleNames: string[] } }} registryManifest
    * @returns {string[]}
    */
-  function _computeUnregisteredContributors(registryManifest) {
+  function systemManifestComputeUnregisteredContributors(registryManifest) {
     const lifecycleSet = new Set([
       ...registryManifest.conductorIntelligence.moduleNames,
       ...registryManifest.crossLayer.moduleNames
@@ -167,7 +167,7 @@ const manifestPath = 'metrics/system-manifest.json';
   }
 
   /** @returns {object} */
-  function _buildSignalHealth() {
+  function systemManifestBuildSignalHealth() {
     try {
       return signalHealthAnalyzer.getSummary();
     } catch {
@@ -176,7 +176,7 @@ const manifestPath = 'metrics/system-manifest.json';
   }
 
   /** @returns {object} */
-  function _buildPipelineNormalizer() {
+  function systemManifestBuildPipelineNormalizer() {
     try {
       return pipelineNormalizer.getSnapshot();
     } catch {
@@ -185,7 +185,7 @@ const manifestPath = 'metrics/system-manifest.json';
   }
 
   /** @returns {object} */
-  function _buildSystemDynamics() {
+  function systemManifestBuildSystemDynamics() {
     try {
       return systemDynamicsProfiler.getSummary();
     } catch {

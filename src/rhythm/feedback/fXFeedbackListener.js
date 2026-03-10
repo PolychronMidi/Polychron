@@ -105,7 +105,7 @@ FXFeedbackListener = (() => {
       const score = clamp(baseComplexity * intensity + (1 - baseComplexity) * (1 - intensity), 0, 1);
 
       // Attach non-enumerable metadata so callers can inspect bias without changing method behavior.
-      Object.defineProperty(method, '_fxIntensityScore', {
+      Object.defineProperty(method, 'fXFeedbackListenerFxIntensityScore', {
         value: score,
         writable: true,
         configurable: true,
@@ -120,7 +120,7 @@ FXFeedbackListener = (() => {
 
   /**
    * Adjust rhythm weights directly (when rhythms patterns are dynamic)
-   * This now factors in per-method `_fxIntensityScore` (from `biasRhythmMethods`) so
+   * This now factors in per-method `fXFeedbackListenerFxIntensityScore` (from `biasRhythmMethods`) so
    * methods like `euclid`/`onsets` are favored at high FX intensity while `random`/`binary`
    * are favored at low intensity. The original complexity-based tweak is preserved and
    * combined with the method multiplier for predictable, low-risk behavior changes.
@@ -133,12 +133,12 @@ FXFeedbackListener = (() => {
     const intensity = getIntensity();
     const modified = {};
 
-    // Build a small map of method -> _fxIntensityScore (defaults to 0.5 neutral)
+    // Build a small map of method -> fXFeedbackListenerFxIntensityScore (defaults to 0.5 neutral)
     const methodScores = {};
     const allMethods = rhythmRegistry.getAll();
     const biasedMethods = biasRhythmMethods(allMethods);
     for (const [mName, fn] of Object.entries(biasedMethods)) {
-      methodScores[mName] = (fn && typeof fn._fxIntensityScore === 'number') ? fn._fxIntensityScore : 0.5;
+      methodScores[mName] = (fn && typeof fn.fXFeedbackListenerFxIntensityScore === 'number') ? fn.fXFeedbackListenerFxIntensityScore : 0.5;
     }
 
     for (const [key, spec] of Object.entries(rhythmsObj)) {

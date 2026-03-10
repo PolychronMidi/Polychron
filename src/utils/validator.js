@@ -3,7 +3,7 @@
 validator = (() => {
   function assertObject(value, label) {
     if (!value || typeof value !== 'object') {
-      throw new Error(`${_fromLabel()}: ${label} must be an object`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be an object`);
     }
     return value;
   }
@@ -11,21 +11,21 @@ validator = (() => {
   function assertPlainObject(value, label) {
     assertObject(value, label);
     if (Array.isArray(value)) {
-      throw new Error(`${_fromLabel()}: ${label} must be a plain object`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be a plain object`);
     }
     return value;
   }
 
   function assertBoolean(value, label) {
     if (typeof value !== 'boolean') {
-      throw new Error(`${_fromLabel()}: ${label} must be a boolean`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be a boolean`);
     }
     return value;
   }
 
   function assertNonEmptyString(value, label) {
     if (typeof value !== 'string' || value.length === 0) {
-      throw new Error(`${_fromLabel()}: ${label} must be a non-empty string`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be a non-empty string`);
     }
     return value;
   }
@@ -33,7 +33,7 @@ validator = (() => {
   function assertFinite(value, label) {
     const num = Number(value);
     if (!Number.isFinite(num)) {
-      throw new Error(`${_fromLabel()}: ${label} must be finite`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be finite`);
     }
     return num;
   }
@@ -41,7 +41,7 @@ validator = (() => {
   function assertRange(value, min, max, label) {
     const num = assertFinite(value, label);
     if (num < min || num > max) {
-      throw new Error(`${_fromLabel()}: ${label} must be in [${min}, ${max}]`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be in [${min}, ${max}]`);
     }
     return num;
   }
@@ -49,17 +49,17 @@ validator = (() => {
   function assertIntegerRange(value, min, max, label) {
     const num = assertFinite(value, label);
     if (!Number.isInteger(num) || num < min || num > max) {
-      throw new Error(`${_fromLabel()}: ${label} must be an integer in [${min}, ${max}]`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be an integer in [${min}, ${max}]`);
     }
     return num;
   }
 
   function assertArray(value, label, checkNonEmpty = false) {
     if (!Array.isArray(value)) {
-      throw new Error(`${_fromLabel()}: ${label} must be an array`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be an array`);
     }
     if (checkNonEmpty && value.length === 0) {
-      throw new Error(`${_fromLabel()}: ${label} must be a non-empty array`);
+      throw new Error(`${validatorFromLabel()}: ${label} must be a non-empty array`);
     }
     return value;
   }
@@ -67,7 +67,7 @@ validator = (() => {
   function assertArrayLength(value, length, label) {
     const arr = assertArray(value, label);
     if (arr.length !== length) {
-      throw new Error(`${_fromLabel()}: ${label} must have length ${length}`);
+      throw new Error(`${validatorFromLabel()}: ${label} must have length ${length}`);
     }
     return arr;
   }
@@ -76,7 +76,7 @@ validator = (() => {
     const target = assertPlainObject(obj, label);
     for (const key of requiredKeys) {
       if (!Object.prototype.hasOwnProperty.call(target, key)) {
-        throw new Error(`${_fromLabel()}: ${label}.${key} is required`);
+        throw new Error(`${validatorFromLabel()}: ${label}.${key} is required`);
       }
     }
     return target;
@@ -86,7 +86,7 @@ validator = (() => {
     const target = assertPlainObject(obj, label);
     for (const key of Object.keys(target)) {
       if (!allowedSet.has(key)) {
-        throw new Error(`${_fromLabel()}: ${label}.${key} is not allowed`);
+        throw new Error(`${validatorFromLabel()}: ${label}.${key} is not allowed`);
       }
     }
     return target;
@@ -94,14 +94,14 @@ validator = (() => {
 
   function assertInSet(value, allowedSet, label) {
     if (!allowedSet.has(value)) {
-      throw new Error(`${_fromLabel()}: ${label} has invalid value "${value}"`);
+      throw new Error(`${validatorFromLabel()}: ${label} has invalid value "${value}"`);
     }
     return value;
   }
 
   function requireDefined(value, name, from) {
     if (value === undefined || value === null) {
-      throw new Error(`${_fromLabel(from)}: ${name} is required`);
+      throw new Error(`${validatorFromLabel(from)}: ${name} is required`);
     }
     return value;
   }
@@ -109,7 +109,7 @@ validator = (() => {
   function requireFinite(value, name, from) {
     const n = Number(value);
     if (!Number.isFinite(n)) {
-      throw new Error(`${_fromLabel(from)}: ${name} must be a finite number`);
+      throw new Error(`${validatorFromLabel(from)}: ${name} must be a finite number`);
     }
     return n;
   }
@@ -117,13 +117,13 @@ validator = (() => {
   function requireType(value, type, name, from) {
     if (type === 'array') {
       if (!Array.isArray(value)) {
-        throw new Error(`${_fromLabel(from)}: ${name} must be an array`);
+        throw new Error(`${validatorFromLabel(from)}: ${name} must be an array`);
       }
       return value;
     }
 
     if (typeof value !== type) {
-      throw new Error(`${_fromLabel(from)}: ${name} must be of type ${type}`);
+      throw new Error(`${validatorFromLabel(from)}: ${name} must be of type ${type}`);
     }
     return value;
   }
@@ -151,12 +151,12 @@ validator = (() => {
    */
   function assertManagerShape(mgr, label, methods) {
     if (mgr === undefined || mgr === null) {
-      throw new Error(`${_fromLabel()}: ${label} is not defined`);
+      throw new Error(`${validatorFromLabel()}: ${label} is not defined`);
     }
     for (let i = 0; i < methods.length; i++) {
       const m = methods[i];
       if (typeof mgr[m] !== 'function') {
-        throw new Error(`${_fromLabel()}: ${label}.${m} must be a function`);
+        throw new Error(`${validatorFromLabel()}: ${label}.${m} must be a function`);
       }
     }
     return mgr;
@@ -164,22 +164,22 @@ validator = (() => {
 
   function requireEnum(value, allowedValues, name, from) {
     if (!allowedValues) {
-      throw new Error(`${_fromLabel(from)}: allowedValues must be provided for ${name}`);
+      throw new Error(`${validatorFromLabel(from)}: allowedValues must be provided for ${name}`);
     }
 
     let ok = false;
     if (Array.isArray(allowedValues)) ok = allowedValues.includes(value);
     else if (allowedValues instanceof Set) ok = allowedValues.has(value);
     else if (allowedValues && typeof allowedValues === 'object') ok = Object.prototype.hasOwnProperty.call(allowedValues, value);
-    else throw new Error(`${_fromLabel(from)}: allowedValues must be Array|Set|Object for ${name}`);
+    else throw new Error(`${validatorFromLabel(from)}: allowedValues must be Array|Set|Object for ${name}`);
 
     if (!ok) {
-      throw new Error(`${_fromLabel(from)}: ${name} has invalid value "${value}"`);
+      throw new Error(`${validatorFromLabel(from)}: ${name} has invalid value "${value}"`);
     }
     return value;
   }
 
-  function _fromLabel(from) {
+  function validatorFromLabel(from) {
     if (from && String(from).length) return String(from);
 
     // best-effort: infer caller name from stack so missing `from` doesn't produce a useless message
@@ -208,13 +208,13 @@ validator = (() => {
 
   function getEventsOrThrow(from) {
     if (!eventCatalog || !eventCatalog.names) {
-      throw new Error(`${_fromLabel(from)}: eventCatalog.names is required`);
+      throw new Error(`${validatorFromLabel(from)}: eventCatalog.names is required`);
     }
     return eventCatalog.names;
   }
 
-  function _wrapWithFrom(fn, from) {
-    const fromLabel = _fromLabel(from);
+  function validatorWrapWithFrom(fn, from) {
+    const fromLabel = validatorFromLabel(from);
     // Avoid rest/spread (...args) to eliminate per-call array allocation on the hot path.
     // All validator methods take at most 4 arguments.
     return function wrapped(a, b, c, d) {
@@ -233,26 +233,26 @@ validator = (() => {
 
   function create(from) {
     return {
-      assertObject: _wrapWithFrom(assertObject, from),
-      assertPlainObject: _wrapWithFrom(assertPlainObject, from),
-      assertBoolean: _wrapWithFrom(assertBoolean, from),
-      assertNonEmptyString: _wrapWithFrom(assertNonEmptyString, from),
-      assertString: _wrapWithFrom(assertNonEmptyString, from),
-      assertFinite: _wrapWithFrom(assertFinite, from),
-      assertRange: _wrapWithFrom(assertRange, from),
-      assertIntegerRange: _wrapWithFrom(assertIntegerRange, from),
-      assertArray: _wrapWithFrom(assertArray, from),
-      assertArrayLength: _wrapWithFrom(assertArrayLength, from),
-      assertKeysPresent: _wrapWithFrom(assertKeysPresent, from),
-      assertAllowedKeys: _wrapWithFrom(assertAllowedKeys, from),
-      assertInSet: _wrapWithFrom(assertInSet, from),
-      requireDefined: _wrapWithFrom(requireDefined, from),
-      requireFinite: _wrapWithFrom(requireFinite, from),
+      assertObject: validatorWrapWithFrom(assertObject, from),
+      assertPlainObject: validatorWrapWithFrom(assertPlainObject, from),
+      assertBoolean: validatorWrapWithFrom(assertBoolean, from),
+      assertNonEmptyString: validatorWrapWithFrom(assertNonEmptyString, from),
+      assertString: validatorWrapWithFrom(assertNonEmptyString, from),
+      assertFinite: validatorWrapWithFrom(assertFinite, from),
+      assertRange: validatorWrapWithFrom(assertRange, from),
+      assertIntegerRange: validatorWrapWithFrom(assertIntegerRange, from),
+      assertArray: validatorWrapWithFrom(assertArray, from),
+      assertArrayLength: validatorWrapWithFrom(assertArrayLength, from),
+      assertKeysPresent: validatorWrapWithFrom(assertKeysPresent, from),
+      assertAllowedKeys: validatorWrapWithFrom(assertAllowedKeys, from),
+      assertInSet: validatorWrapWithFrom(assertInSet, from),
+      requireDefined: validatorWrapWithFrom(requireDefined, from),
+      requireFinite: validatorWrapWithFrom(requireFinite, from),
       optionalFinite,
       optionalType,
-      assertManagerShape: _wrapWithFrom(assertManagerShape, from),
-      requireType: _wrapWithFrom(requireType, from),
-      requireEnum: _wrapWithFrom(requireEnum, from),
+      assertManagerShape: validatorWrapWithFrom(assertManagerShape, from),
+      requireType: validatorWrapWithFrom(requireType, from),
+      requireEnum: validatorWrapWithFrom(requireEnum, from),
       getEventsOrThrow: (/*optional*/ ) => getEventsOrThrow(from)
     };
   }

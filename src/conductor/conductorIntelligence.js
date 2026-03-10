@@ -11,7 +11,7 @@ conductorIntelligence = (() => {
 
   // Lifecycle (shared with crossLayerRegistry via moduleLifecycle)
   const lifecycle = moduleLifecycle.create('conductorIntelligence');
-  let _initialized = false;
+  let conductorIntelligenceInitialized = false;
 
   /**
    * Register a module for scoped lifecycle resets (section, phrase, all).
@@ -27,8 +27,8 @@ conductorIntelligence = (() => {
 
   /** Subscribe lifecycle resets to SECTION_BOUNDARY. Call once from main.js. */
   function initialize() {
-    if (_initialized) return;
-    _initialized = true;
+    if (conductorIntelligenceInitialized) return;
+    conductorIntelligenceInitialized = true;
     const EVENTS = V.getEventsOrThrow();
     eventBus.on(EVENTS.SECTION_BOUNDARY, () => lifecycle.resetSection());
   }
@@ -37,17 +37,17 @@ conductorIntelligence = (() => {
   // Dampening engine - conductorDampening global
 
   /** @returns {number} */
-  function _collectDampened(registry, pipelineName) {
+  function conductorIntelligenceCollectDampened(registry, pipelineName) {
     return conductorDampening.collectDampened(registry, pipelineName);
   }
 
   /** @returns {{ product: number, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
-  function _collectDampenedWithAttribution(registry, pipelineName) {
+  function conductorIntelligenceCollectDampenedWithAttribution(registry, pipelineName) {
     return conductorDampening.collectDampenedWithAttribution(registry, pipelineName);
   }
 
   /** @param {Array<{ name: string }>} registry @param {string} name @param {string} kind */
-  function _assertNoDuplicateName(registry, name, kind) {
+  function conductorIntelligenceAssertNoDuplicateName(registry, name, kind) {
     if (registry.some(e => e.name === name)) {
       throw new Error(`conductorIntelligence.register${kind}: duplicate name "${name}"`);
     }
@@ -66,7 +66,7 @@ conductorIntelligence = (() => {
    */
   function registerDensityBias(name, getter, lo, hi) {
     V.assertNonEmptyString(name, 'name');
-    _assertNoDuplicateName(densityBiases, name, 'densityBias');
+    conductorIntelligenceAssertNoDuplicateName(densityBiases, name, 'densityBias');
     V.requireType(getter, 'function', 'getter');
     V.requireFinite(lo, 'lo');
     V.requireFinite(hi, 'hi');
@@ -75,12 +75,12 @@ conductorIntelligence = (() => {
 
   /** @returns {number} product of all density biases (dampened + soft-envelope normalized) */
   function collectDensityBias() {
-    return pipelineNormalizer.normalize('density', _collectDampened(densityBiases));
+    return pipelineNormalizer.normalize('density', conductorIntelligenceCollectDampened(densityBiases));
   }
 
   /** @returns {{ product: number, rawProduct: number, floored: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectDensityBiasWithAttribution() {
-    const result = _collectDampenedWithAttribution(densityBiases);
+    const result = conductorIntelligenceCollectDampenedWithAttribution(densityBiases);
     const rawProduct = result.product;
     const product = pipelineNormalizer.normalize('density', rawProduct);
     return {
@@ -104,7 +104,7 @@ conductorIntelligence = (() => {
    */
   function registerTensionBias(name, getter, lo, hi) {
     V.assertNonEmptyString(name, 'name');
-    _assertNoDuplicateName(tensionBiases, name, 'tensionBias');
+    conductorIntelligenceAssertNoDuplicateName(tensionBiases, name, 'tensionBias');
     V.requireType(getter, 'function', 'getter');
     V.requireFinite(lo, 'lo');
     V.requireFinite(hi, 'hi');
@@ -112,11 +112,11 @@ conductorIntelligence = (() => {
   }
 
   /** @returns {number} product of all tension biases (dampened + soft-envelope normalized) */
-  function collectTensionBias() { return pipelineNormalizer.normalize('tension', _collectDampened(tensionBiases)); }
+  function collectTensionBias() { return pipelineNormalizer.normalize('tension', conductorIntelligenceCollectDampened(tensionBiases)); }
 
   /** @returns {{ product: number, rawProduct: number, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectTensionBiasWithAttribution() {
-    const result = _collectDampenedWithAttribution(tensionBiases);
+    const result = conductorIntelligenceCollectDampenedWithAttribution(tensionBiases);
     const rawProduct = result.product;
     const product = pipelineNormalizer.normalize('tension', rawProduct);
     return {
@@ -140,7 +140,7 @@ conductorIntelligence = (() => {
    */
   function registerFlickerModifier(name, getter, lo, hi) {
     V.assertNonEmptyString(name, 'name');
-    _assertNoDuplicateName(flickerModifiers, name, 'flickerModifier');
+    conductorIntelligenceAssertNoDuplicateName(flickerModifiers, name, 'flickerModifier');
     V.requireType(getter, 'function', 'getter');
     V.requireFinite(lo, 'lo');
     V.requireFinite(hi, 'hi');
@@ -149,7 +149,7 @@ conductorIntelligence = (() => {
 
   /** @returns {number} product of all flicker modifiers (dampened + soft-envelope normalized) */
   function collectFlickerModifier() {
-    let raw = _collectDampened(flickerModifiers, 'flicker');
+    let raw = conductorIntelligenceCollectDampened(flickerModifiers, 'flicker');
     // Flicker Target Expansion in Evolving Regime
     const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);
     if (isEvolving) {
@@ -160,7 +160,7 @@ conductorIntelligence = (() => {
 
   /** @returns {{ product: number, rawProduct: number, floored: boolean, capped: boolean, contributions: Array<{ name: string, raw: number, clamped: number }> }} */
   function collectFlickerModifierWithAttribution() {
-    const result = _collectDampenedWithAttribution(flickerModifiers, 'flicker');
+    const result = conductorIntelligenceCollectDampenedWithAttribution(flickerModifiers, 'flicker');
     let rawProduct = result.product;
     //  Flicker Target Expansion in Evolving Regime
     const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);

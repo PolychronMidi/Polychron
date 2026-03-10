@@ -78,10 +78,10 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     }
 
     // Apply noise-based pitch variation via helper
-    if (typeof this._noiseCallCount === 'undefined') this._noiseCallCount = 0;
-    this._noiseCallCount++;
+    if (typeof this.ScaleComposerNoiseCallCount === 'undefined') this.ScaleComposerNoiseCallCount = 0;
+    this.ScaleComposerNoiseCallCount++;
     const voiceId = this.root ? this.root.charCodeAt(0) : 60;
-    return applyComposerPitchNoise(selectedNote, { voiceId, callCount: this._noiseCallCount });
+    return applyComposerPitchNoise(selectedNote, { voiceId, callCount: this.ScaleComposerNoiseCallCount });
   }
 }
 

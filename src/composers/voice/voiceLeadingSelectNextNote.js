@@ -48,7 +48,7 @@ voiceLeadingSelectNextNote = function voiceLeadingSelectNextNote(vls, lastNotes,
         : melodicWeight;
     return {
       note,
-      score: vls._scoreCandidate(note, lastNotes, registerRange, constraints, {
+      score: vls.VoiceLeadingScoreScoreCandidate(note, lastNotes, registerRange, constraints, {
         register,
         commonToneWeight: config.commonToneWeight,
         weight,
@@ -64,6 +64,6 @@ voiceLeadingSelectNextNote = function voiceLeadingSelectNextNote(vls, lastNotes,
 
   scores.sort((a, b) => a.score - b.score);
   const bestNote = scores[0].note;
-  vls._updateHistory(bestNote, register);
+  vls.VoiceLeadingScoreUpdateHistory(bestNote, register);
   return bestNote;
 };
