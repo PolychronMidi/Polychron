@@ -68,7 +68,7 @@ When a metric raises a question, trace it to the source. Common investigation ta
 | Meta-controllers | `src/conductor/signal/` (any file with `hypermeta` or `metaController` in name) |
 | Fingerprint logic | `scripts/golden-fingerprint.js` |
 | Trace aggregation | `scripts/trace-summary.js` |
-| Profile config | `src/conductor/profiles/conductorProfiles.js`, `src/conductor/profiles/conductorProfileAtmospheric.js`, `src/conductor/profiles/conductorProfileExplosive.js` |
+| Profile config | `src/conductor/profiles/conductorProfiles.js`, `src/conductor/profiles/conductorProfileDefault.js`, `src/conductor/profiles/conductorProfileAtmospheric.js`, `src/conductor/profiles/conductorProfileExplosive.js`, `src/conductor/profiles/conductorProfileRestrained.js` |
 | Composer selection | `src/composers/` |
 
 If `transitionReadiness` run counters disagree sharply with the emitted regime trace, check cadence before assuming a reset bug: trace entries are written per layer, `beatCount` advances on L1 only, and profiler snapshots may be cached across multiple trace records.

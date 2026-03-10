@@ -499,7 +499,18 @@ function compareFingerprints(current, previous) {
     const normPrevUnique = prevUnique * (500 / Math.max(1, prevBeats));
     const normCurrTop = curTop * (500 / Math.max(1, curBeats));
     const normPrevTop = prevTop * (500 / Math.max(1, prevBeats));
-    const excDelta = Math.abs(normCurrUnique - normPrevUnique) * 0.65 + Math.abs(normCurrTop - normPrevTop) * 0.35;
+    let excDelta = Math.abs(normCurrUnique - normPrevUnique) * 0.65 + Math.abs(normCurrTop - normPrevTop) * 0.35;
+
+    // R75 E5: Exceedance severity concentration buffer.
+    // When a single top pair dominates > 40% of total exceedance beats,
+    // the excDelta over-weights pair-specific topology noise. Attenuate
+    // the delta proportional to concentration above the 40% threshold.
+    if (curUnique > 0 && curTop > 0) {
+      const topPairShare = curTop / Math.max(1, curUnique);
+      if (topPairShare > 0.40) {
+        excDelta *= Math.max(0.70, 1 - 0.30 * (topPairShare - 0.40));
+      }
+    }
 
     // R66 E4: Exceedance severity cross-profile tolerance widening.
     // Exceedance topology is the dimension most sensitive to signal variance

@@ -1,7 +1,7 @@
 # Module Capability Matrix
 
 > Auto-generated per run by `systemManifest.js`. Do not edit by hand.
-> Generated: 2026-03-10T00:16:47.828Z
+> Generated: 2026-03-10T03:18:21.198Z
 
 ## Conductor Intelligence Modules
 
@@ -16,14 +16,14 @@ Contribution counts:
 
 ### Density Bias Attribution (end-of-run snapshot)
 
-Product: **0.7278**
+Product: **0.7407**
 
 | Module | Raw | Clamped |
 ||||
 | coherenceMonitor | 1.0000 | 1.0000 |
-| regimeReactiveDamping | 0.9003 | 0.9003 |
-| pipelineBalancer | 1.0362 | 1.0362 |
-| pipelineCouplingManager | 1.1600 | 1.1600 |
+| regimeReactiveDamping | 1.0598 | 1.0598 |
+| pipelineBalancer | 1.0324 | 1.0324 |
+| pipelineCouplingManager | 0.9433 | 0.9433 |
 | structuralNarrativeAdvisor | 1.0388 | 1.0388 |
 | criticalityEngine | 0.9467 | 0.9467 |
 | dimensionalityExpander | 1.0000 | 1.0000 |
@@ -31,18 +31,18 @@ Product: **0.7278**
 | harmonicFieldDensityTracker | 0.9400 | 0.9400 |
 | harmonicRhythmDensityRatio | 0.8800 | 0.8800 |
 | ambitusMigrationTracker | 0.9400 | 0.9400 |
-| intervalBalanceTracker | 0.9682 | 0.9682 |
-| intervalExpansionContractor | 1.0400 | 1.0400 |
+| intervalBalanceTracker | 0.9575 | 0.9575 |
+| intervalExpansionContractor | 0.9600 | 0.9600 |
 | melodicContourTracker | 1.0200 | 1.0200 |
-| tessituraPressureMonitor | 0.9400 | 0.9400 |
-| voiceLeadingEfficiencyTracker | 1.0000 | 1.0000 |
+| tessituraPressureMonitor | 0.9923 | 0.9923 |
+| voiceLeadingEfficiencyTracker | 0.9400 | 0.9400 |
 | attackDensityProfiler | 1.0500 | 1.0500 |
 | onsetDensityProfiler | 0.9300 | 0.9300 |
 | onsetRegularityMonitor | 0.9200 | 0.9200 |
-| rhythmicComplexityGradient | 1.0000 | 1.0000 |
+| rhythmicComplexityGradient | 1.1800 | 1.1800 |
 | rhythmicInertiaTracker | 1.0000 | 1.0000 |
 | syncopationDensityTracker | 1.0000 | 1.0000 |
-| climaxProximityPredictor | 1.1071 | 1.1071 |
+| climaxProximityPredictor | 1.0898 | 1.0898 |
 | energyMomentumTracker | 1.0000 | 1.0000 |
 | crossLayerDensityBalancer | 1.0000 | 1.0000 |
 | layerCoherenceScorer | 0.9250 | 0.9250 |
@@ -53,51 +53,51 @@ Product: **0.7278**
 
 ### Tension Bias Attribution (end-of-run snapshot)
 
-Product: **1.2680**
+Product: **1.2883**
 
 | Module | Raw | Clamped |
 ||||
 | regimeReactiveDamping | 1.1800 | 1.1800 |
-| pipelineBalancer | 1.0000 | 1.0000 |
-| pipelineCouplingManager | 1.1600 | 1.1600 |
+| pipelineBalancer | 0.9865 | 0.9865 |
+| pipelineCouplingManager | 1.0159 | 1.0159 |
 | narrativeTrajectory | 1.0800 | 1.0800 |
 | criticalityEngine | 0.9467 | 0.9467 |
 | dimensionalityExpander | 1.0000 | 1.0000 |
 | cadentialPreparationAdvisor | 1.0000 | 1.0000 |
-| consonanceDissonanceTracker | 1.1323 | 1.1323 |
+| consonanceDissonanceTracker | 1.1242 | 1.1242 |
 | harmonicDensityOscillator | 1.0800 | 1.0800 |
 | harmonicPedalFieldTracker | 0.9531 | 0.9531 |
-| harmonicSurpriseIndex | 0.9777 | 0.9777 |
-| harmonicVelocityMonitor | 0.8813 | 0.8813 |
-| tensionResolutionTracker | 1.0975 | 1.0975 |
-| tonalAnchorDistanceTracker | 0.9917 | 0.9917 |
+| harmonicSurpriseIndex | 0.9574 | 0.9574 |
+| harmonicVelocityMonitor | 0.8800 | 0.8800 |
+| tensionResolutionTracker | 1.1105 | 1.1105 |
+| tonalAnchorDistanceTracker | 1.1000 | 1.1000 |
 | harmonicFunctionGraph | 1.0200 | 1.0200 |
 | counterpointMotionTracker | 1.0000 | 1.0000 |
-| climaxProximityPredictor | 1.0525 | 1.0525 |
-| dynamicArchitectPlanner | 0.9223 | 0.9223 |
-| dynamicPeakMemory | 0.9200 | 0.9200 |
-| repetitionFatigueMonitor | 1.0921 | 1.0921 |
+| climaxProximityPredictor | 1.0342 | 1.0342 |
+| dynamicArchitectPlanner | 0.9776 | 0.9776 |
+| dynamicPeakMemory | 0.9367 | 0.9367 |
+| repetitionFatigueMonitor | 1.0849 | 1.0849 |
 
 ### Flicker Modifier Attribution (end-of-run snapshot)
 
-Product: **0.8928**
+Product: **0.8269**
 
 | Module | Raw | Clamped |
 ||||
-| regimeReactiveDamping | 0.8500 | 0.8500 |
-| pipelineCouplingManager | 1.1282 | 1.1282 |
+| regimeReactiveDamping | 1.0135 | 1.0135 |
+| pipelineCouplingManager | 0.8322 | 0.8322 |
 | criticalityEngine | 0.9467 | 0.9467 |
-| dimensionalityExpander | 0.9999 | 0.9999 |
-| registralVelocityCorrelator | 0.9480 | 0.9480 |
-| grooveTemplateAdvisor | 1.0028 | 1.0028 |
+| dimensionalityExpander | 0.9968 | 0.9968 |
+| registralVelocityCorrelator | 0.9438 | 0.9438 |
+| grooveTemplateAdvisor | 1.0054 | 1.0054 |
 | interLayerRhythmAnalyzer | 1.0000 | 1.0000 |
-| rhythmicDensityContrastTracker | 1.0105 | 1.0105 |
-| densityWaveAnalyzer | 0.9921 | 0.9921 |
+| rhythmicDensityContrastTracker | 1.0197 | 1.0197 |
+| densityWaveAnalyzer | 0.9860 | 0.9860 |
 | durationalContourTracker | 1.0000 | 1.0000 |
-| dynamicRangeTracker:spread | 0.9744 | 0.9744 |
+| dynamicRangeTracker:spread | 0.9504 | 0.9504 |
 | dynamicRangeTracker:contrast | 1.0000 | 1.0000 |
-| velocityShapeAnalyzer | 0.9953 | 0.9953 |
-| texturalGradientTracker | 0.9654 | 0.9654 |
+| velocityShapeAnalyzer | 1.0000 | 1.0000 |
+| texturalGradientTracker | 0.9625 | 0.9625 |
 
 ### Lifecycle-Registered Module Names
 
@@ -252,23 +252,23 @@ Total registered: **41**
 
 | Section | Key | Mode | Move | Distance |
 ||||||
-| 0 | F# | minor | origin | 0 |
-| 1 | A# | major | relative-major | 4 |
-| 2 | C# | minor | relative-minor | 3 |
-| 3 | F | minor | chromatic-mediant-up | 4 |
+| 0 | D | aeolian | origin | 0 |
+| 1 | F# | major | relative-major | 4 |
+| 2 | A | minor | relative-minor | 3 |
+| 3 | A | aeolian | parallel-aeolian (mode-shift) | 0 |
 
 ## Trust Scores (End of Run)
 
 | System | Score | Weight | Samples |
 |||||
-| stutterContagion | 0.471 | 1.354 | 395 |
-| cadenceAlignment | 0.226 | 1.148 | 395 |
-| phaseLock | 0.432 | 1.325 | 395 |
-| convergence | 0.226 | 1.164 | 395 |
-| feedbackOscillator | 0.258 | 1.194 | 395 |
-| coherenceMonitor | 0.617 | 1.484 | 395 |
-| entropyRegulator | 0.609 | 1.458 | 395 |
-| restSynchronizer | 0.226 | 1.158 | 395 |
+| stutterContagion | 0.332 | 1.191 | 393 |
+| cadenceAlignment | 0.194 | 1.132 | 393 |
+| phaseLock | 0.580 | 1.433 | 393 |
+| convergence | 0.242 | 1.181 | 393 |
+| feedbackOscillator | 0.274 | 1.203 | 393 |
+| coherenceMonitor | 0.609 | 1.479 | 393 |
+| entropyRegulator | 0.206 | 1.140 | 393 |
+| restSynchronizer | 0.251 | 1.185 | 393 |
 
 ## Config Summary
 
@@ -280,34 +280,34 @@ Total registered: **41**
 
 ## Signal Health Report
 
-> Overall: **healthy** | Beats analyzed: 73
+> Overall: **healthy** | Beats analyzed: 57
 
 ### Pipeline Health
 
 | Pipeline | Grade | Product | Crush Factor | Saturated | Pinned Rate |
 |||||||
-| density | healthy | 0.7181 | 40% | no | 0% |
-| tension | healthy | 1.2168 | 40% | no | 0% |
-| flicker | healthy | 0.8439 | 36% | - | 0% |
+| density | healthy | 0.6929 | 43% | no | 2% |
+| tension | healthy | 1.2934 | 45% | no | 0% |
+| flicker | healthy | 0.7924 | 36% | - | 0% |
 
 ### Trust Ecosystem Health
 
 Grade: **healthy**
 
-Thriving (score > 0.40): stutterContagion, phaseLock, coherenceMonitor, entropyRegulator
+Thriving (score > 0.40): phaseLock, coherenceMonitor
 
 ## System Dynamics Report
 
-> Phase-space trajectory analysis | Regime: **exploring** | Grade: **healthy** | Beats: 197
+> Phase-space trajectory analysis | Regime: **exploring** | Grade: **healthy** | Beats: 149
 
 ### Trajectory Metrics
 
 | Metric | Value | Interpretation |
 ||||
-| Velocity | 0.1946 | Active exploration |
-| Curvature | 0.43 | Gentle winding |
-| Effective Dimensionality | 3.35 / 6 | Moderate spread |
-| Coupling Strength | 0.279 | Moderate coupling |
+| Velocity | 0.2511 | Active exploration |
+| Curvature | 0.346 | Gentle winding |
+| Effective Dimensionality | 3.22 / 6 | Moderate spread |
+| Coupling Strength | 0.3 | Moderate coupling |
 
 **Regime interpretation:** High velocity + multi-dimensional - actively discovering new territory.
 
@@ -315,10 +315,13 @@ Thriving (score > 0.40): stutterContagion, phaseLock, coherenceMonitor, entropyR
 
 | Dimension Pair | Correlation | Relationship |
 ||||
-| density-entropy | -0.690 | moderate anti-correlated |
-| flicker-entropy | -0.297 | weak anti-correlated |
-| density-flicker | 0.295 | weak co-evolving |
-| entropy-trust | -0.285 | weak anti-correlated |
+| tension-phase | 0.679 | moderate co-evolving |
+| tension-entropy | -0.600 | moderate anti-correlated |
+| flicker-entropy | 0.575 | moderate co-evolving |
+| entropy-phase | -0.564 | moderate anti-correlated |
+| flicker-trust | 0.510 | moderate co-evolving |
+| entropy-trust | 0.304 | weak co-evolving |
+| density-flicker | -0.281 | weak anti-correlated |
 
 > Dimensions: density, tension, flicker, entropy, trust, phase
 
@@ -328,9 +331,13 @@ Thriving (score > 0.40): stutterContagion, phaseLock, coherenceMonitor, entropyR
 
 ### Warnings
 
-- **[attribution]** 8 tension contributors boosting with constant drag: regimeReactiveDamping (1.18), pipelineCouplingManager (1.16), narrativeTrajectory (1.08), consonanceDissonanceTracker (1.13), harmonicDensityOscillator (1.08), harmonicVelocityMonitor (0.88), tensionResolutionTracker (1.10), repetitionFatigueMonitor (1.09). Consider widening registration bounds or adding dynamic response.
+- **[attribution]** 8 tension contributors boosting with constant drag: regimeReactiveDamping (1.18), narrativeTrajectory (1.08), consonanceDissonanceTracker (1.12), harmonicDensityOscillator (1.08), harmonicVelocityMonitor (0.88), tensionResolutionTracker (1.11), tonalAnchorDistanceTracker (1.10), repetitionFatigueMonitor (1.08). Consider widening registration bounds or adding dynamic response.
 
 ### Info
 
 - **[dynamics]** Regime exploring - healthy compositional development.
-- **[coupling]** density-entropy strongly anti-correlated (r=-0.690) - these dimensions may be driven by a shared input or feedback loop.
+- **[coupling]** tension-entropy strongly anti-correlated (r=-0.600) - these dimensions may be driven by a shared input or feedback loop.
+- **[coupling]** flicker-entropy strongly co-evolving (r=0.575) - these dimensions may be driven by a shared input or feedback loop.
+- **[coupling]** tension-phase strongly co-evolving (r=0.679) - governance coupling (expected, not actionable).
+- **[coupling]** entropy-phase strongly anti-correlated (r=-0.564) - governance coupling (expected, not actionable).
+- **[coupling]** flicker-trust strongly co-evolving (r=0.510) - governance coupling (expected, not actionable).

@@ -1,14 +1,14 @@
 {
   "meta": {
-    "generated": "2026-03-10T00:16:48.046Z",
+    "generated": "2026-03-10T03:18:21.405Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 433,
     "totalGlobals": 713,
     "totalProvides": 728,
-    "totalConsumes": 2829,
-    "totalEdges": 2200,
+    "totalConsumes": 2827,
+    "totalEdges": 2199,
     "crossSubsystemEdges": 1473,
     "maxFanIn": {
       "file": "src/utils/index.js",
@@ -47,7 +47,7 @@
       "composers": {
         "files": 93,
         "provides": 96,
-        "consumes": 494
+        "consumes": 492
       },
       "fx": {
         "files": 23,
@@ -4764,9 +4764,7 @@
       "consumes": [
         "FactoryManager",
         "LM",
-        "VoiceLeadingScore",
         "VoiceManager",
-        "composer",
         "composerRuntimeProfileAdapter",
         "note",
         "playMotifsApplyCycleTransforms",
@@ -8035,13 +8033,6 @@
     {
       "from": "src/composers/voice/VoiceLeadingScore.js",
       "to": "src/composers/motif/motifSpreader.js",
-      "globals": [
-        "VoiceLeadingScore"
-      ]
-    },
-    {
-      "from": "src/composers/voice/VoiceLeadingScore.js",
-      "to": "src/composers/motif/playMotifs.js",
       "globals": [
         "VoiceLeadingScore"
       ]
@@ -18339,7 +18330,6 @@
       "from": "src/utils/init.js",
       "to": "src/composers/motif/playMotifs.js",
       "globals": [
-        "composer",
         "note"
       ]
     },

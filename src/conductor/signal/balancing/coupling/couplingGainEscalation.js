@@ -160,6 +160,18 @@ couplingGainEscalation = (() => {
           rate *= (1 + trustPressure);
           ps.heatPenalty = m.min((ps.heatPenalty || 0) + trustPressure * 0.14, 1.0);
         }
+        // R75 E1: Tension-flicker coherent spike suppression.
+        // When regime is coherent and a tension-flicker pair shows high
+        // absCorr with persistent severe exceedance, apply 1.5x escalation
+        // to break the late-run coupling lock observed in R75 (p95 0.922).
+        const isTensionFlickerPair = (dimA === 'tension' && dimB === 'flicker') || (dimA === 'flicker' && dimB === 'tension');
+        if (isTensionFlickerPair && setup.regime === 'coherent' &&
+            absCorr > 0.85 && tailTelemetry.recentSevereRate > 0.20) {
+          const coherentSpikePressure = clamp((absCorr - 0.85) * 3.0, 0, 0.50)
+            + clamp((tailTelemetry.recentSevereRate - 0.20) * 1.5, 0, 0.40);
+          rate *= 1 + coherentSpikePressure;
+          ps.heatPenalty = m.min((ps.heatPenalty || 0) + coherentSpikePressure * 0.15, 1.0);
+        }
         if (!flags.isDensityFlickerPair && m.abs(corr) > 0.85) {
           rate *= 1.15;
           ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.01, 1.0);
@@ -230,7 +242,18 @@ couplingGainEscalation = (() => {
 
     // Window push
     pushWindowValue(ps.recentAbsCorr, absCorr, P95_WINDOW);
-    const telWin = setup.dynTelemetryWindow || TELEMETRY_WINDOW;
+    // R75 E6: Reconciliation gap pressure for density-flicker pair.
+    // When the pair's long-window p95 diverges from short-window p95 by > 0.20,
+    // widen the telemetry window to accelerate reconciliation (cap at 2x base).
+    let telWin = setup.dynTelemetryWindow || TELEMETRY_WINDOW;
+    if (flags.isDensityFlickerPair && ps.telemetryAbsCorr.length > 0 && ps.recentAbsCorr.length > 0) {
+      const longP95 = tailTelemetry.p95;
+      const shortP95 = tailTelemetry.recentP95;
+      const reconGap = m.abs(longP95 - shortP95);
+      if (reconGap > 0.20) {
+        telWin = m.min(telWin * 2, m.floor(telWin * (1 + m.min(reconGap / 0.40, 1.0))));
+      }
+    }
     const telemetryWeight = flags.isTrustPair ? m.min(telWin, setup.telemetryBeatSpan + 1) : setup.telemetryBeatSpan;
     for (let tw = 0; tw < telemetryWeight; tw++) {
       pushWindowValue(ps.telemetryAbsCorr, absCorr, telWin);
