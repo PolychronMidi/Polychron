@@ -40,6 +40,8 @@ const POST_COMPOSITION = [
   { label: 'generate-crosslayer-map',  cmd: 'node scripts/generate-crosslayer-map.js' },
   { label: 'golden-fingerprint',       cmd: 'node scripts/golden-fingerprint.js' },
   { label: 'narrative-digest',         cmd: 'node scripts/narrative-digest.js' },
+  { label: 'compare-runs',             cmd: 'node scripts/compare-runs.js --against baseline' },
+  { label: 'diff-compositions',        cmd: 'node scripts/diff-compositions.js --against baseline' },
   { label: 'visualize-feedback-graph', cmd: 'node scripts/visualize-feedback-graph.js' },
 ];
 

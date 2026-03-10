@@ -1,34 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-10T03:18:21.658Z",
-    "verdict": "EVOLVED"
+    "generated": "2026-03-10T14:27:27.011Z",
+    "verdict": "STABLE"
   },
-  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. hotspot surface migrated from [tension-flicker: 31, flicker-phase: 8, density-flicker: 7] to [density-flicker: 59, tension-entropy: 25, tension-trust: 3].",
-  "explanations": [
-    {
-      "dimension": "hotspotMigration",
-      "delta": 0.7066,
-      "tolerance": 0.55,
-      "cause": "hotspot surface migrated from [tension-flicker: 31, flicker-phase: 8, density-flicker: 7] to [density-flicker: 59, tension-entropy: 25, tension-trust: 3]",
-      "axisShift": {
-        "current": {
-          "density": 0.1284,
-          "tension": 0.2065,
-          "flicker": 0.1977,
-          "entropy": 0.2037,
-          "trust": 0.1521,
-          "phase": 0.1115
-        },
-        "previous": {
-          "density": 0.2335,
-          "tension": 0.2042,
-          "flicker": 0.2162,
-          "entropy": 0.1917,
-          "trust": 0.1505,
-          "phase": 0.004
-        }
-      },
-      "meaning": "stress redistributed across hotspot surfaces rather than being removed outright"
-    }
-  ]
+  "narrative": "The composition character is statistically stable. No significant drift detected.",
+  "explanations": []
 }

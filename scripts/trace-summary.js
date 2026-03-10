@@ -1278,6 +1278,29 @@ function summarizeTrace(entries, manifest) {
         }
       }
       return events.length > 0 ? events : null;
+    })(),
+    // R76 E6: Trust velocity range per system across all diagnosticArc snapshots.
+    // Compact overview of trust dynamics without reading full diagnosticArc.
+    // First snapshot has empty velocity (cold-start: no prior snapshot to diff).
+    trustVelocityRange: (() => {
+      const ranges = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const arc = diagnosticArc[di];
+        if (!arc.trustVelocity || typeof arc.trustVelocity !== 'object') continue;
+        const velKeys = Object.keys(arc.trustVelocity);
+        for (let vi = 0; vi < velKeys.length; vi++) {
+          const sys = velKeys[vi];
+          const vel = arc.trustVelocity[sys];
+          if (typeof vel !== 'number') continue;
+          if (!ranges[sys]) ranges[sys] = { min: vel, max: vel, snapshots: 1 };
+          else {
+            if (vel < ranges[sys].min) ranges[sys].min = vel;
+            if (vel > ranges[sys].max) ranges[sys].max = vel;
+            ranges[sys].snapshots++;
+          }
+        }
+      }
+      return Object.keys(ranges).length > 0 ? ranges : null;
     })()
   };
 }

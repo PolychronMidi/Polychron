@@ -85,7 +85,7 @@ conductorProfileDefault = () => ({
     rhythmicDrive: 1.0
   },
   journeyBoldness: 1.0,
-  phaseVarianceGateScale: 0.18,
+  phaseVarianceGateScale: 0.16,
   emission: {
     noiseProfile: 'subtle',
     sourceNoiseInfluence: 0.12,

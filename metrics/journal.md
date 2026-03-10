@@ -1,3 +1,46 @@
+## R76 — 2026-03-10 — STABLE
+
+**Profile:** default | **Beats:** 367 | **Duration:** 53.5s | **Notes:** 12727
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- First fully STABLE default-profile run. All 10 fingerprint dimensions within tolerance. 18/18 pipeline steps passed (including new compare-runs and diff-compositions steps). Wall time 382.3s.
+- **tension-flicker exceedance eliminated:** 31→2 beats, p95 0.922→0.781. E1 (coherent spike suppression) is the most successful single evolution in recent lineage.
+- **Phase axis recovered:** share 0.4%→11.2%, variance-gated rate 69.8%→61.3%. E3 (phaseVarianceGateScale 0.18) worked cleanly with no balloon-effect coupling spikes. Phase pair p95 all below 0.46.
+- **Flicker crush warning eliminated:** product 0.768→0.951. E4 (floor raised 0.85→0.88) resolved the 50% crush warning. regimeReactiveDamping flicker modifier at 0.880.
+- **hotspotMigration stabilized** — was drifted in R75 (delta 0.665), now within tolerance. Hotspot surface now density-flicker dominant (38 beats), replacing R75's tension-flicker dominance.
+- density-flicker remains the chronic structural hotspot: p95 0.944, 38 exceedance beats (52%), pearsonR -0.935. This pair is structurally anti-correlated and resists decorrelation.
+- flicker-trust has runaway effectiveGain 1.604 (highest in system), driftRatio 1.36, residualPressure 0.908. Over-investment by the decorrelation mechanism.
+- tailRecoveryHandshake 0.995 — barely moved from 1.0. Decay rate too conservative to overcome stickyTailPressure 0.748.
+- tension-entropy reconciliation gap 0.407 (worst, up from R75's 0.303 maxGap). Controller p95 0.48 vs trace p95 0.887 — 48-beat window misses early spikes.
+- Trust turbulence collapsed: 8→1 events. stutterContagion velocity 0.511 at section boundary only.
+- Composition: 3 sections (baseline had 4), all harmonic keys rotated, exploring-dominant regime per section. 1 forced coherent-cadence-monopoly break at tick 31.
+
+### Evolutions Applied (from R75)
+- E1: Tension-flicker coherent spike suppression — **confirmed** — tension-flicker 31→2 exceedance beats, p95 0.922→0.781. Coherent coupling lock broken.
+- E2: tailRecoveryHandshake exponential decay — **inconclusive** — handshake 1.0→0.995, negligible. Decay rate too weak vs stickyTailPressure 0.748.
+- E3: Default profile phaseVarianceGateScale 0.18 — **confirmed** — phase axis 0.4%→11.2%, no balloon-effect. Gini 0.087 (excellent).
+- E4: Flicker range floor 0.85→0.88 — **confirmed** — product 0.768→0.951, crush warning eliminated.
+- E5: Exceedance concentration buffer — **inconclusive** — hotspotMigration stabilized but cannot isolate from E1's tension-flicker reduction.
+- E6: Reconciliation gap telemetry window scaling — **inconclusive** — density-flicker gap improved but tension-entropy gap regressed to 0.407. Worst pair rotated.
+
+### Evolutions Proposed (for R77)
+- E1: Density-flicker structural decorrelation via gain ceiling — src/conductor/signal/balancing/coupling/couplingEffectiveGain.js
+- E2: Tail recovery handshake decay rate amplification (2x) — src/conductor/signal/balancing/coupling/homeostasis/homeostasisTick.js
+- E3: Telemetry window adaptive scaling for high-gap pairs — src/conductor/signal/balancing/coupling/couplingGainEscalation.js
+- E4: Phase pair warmup acceleration + variance gate relaxation (0.18→0.16) — src/conductor/profiles/conductorProfileDefault.js
+- E5: Flicker-trust adaptive target deceleration (effectiveGain cap) — src/conductor/signal/balancing/coupling/couplingEffectiveGain.js
+- E6: DiagnosticArc trust velocity tracking in trace-summary — scripts/trace-summary.js
+
+### Hypotheses to Track
+- H1: density-flicker's pearsonR -0.935 represents structural signal, not accidental coupling. If E1 works, its p95 should drop below 0.85 while the pearsonR remains strongly negative (confirming the ceiling doesn't break the underlying dynamics).
+- H2: flicker-trust's effectiveGain 1.604 is over-investment. If E5 caps it, tail pressure should decrease and density-flicker should not absorb the budget (no balloon effect).
+- H3: tension-entropy reconciliation gap 0.407 is a window width problem. If E3 works, maxGap should fall below 0.30 without increasing any pair's telemetryWindowBeats above 80.
+- H4: Three consecutive default-profile runs (R75-R77) will establish stable default character: exploring ~70%, coherent ~27%, density-flicker dominant hotspot. Track for confirmation.
+- H5: Trust turbulence collapse (8→1 events) may be transient or reflect the shorter run. Track across R77-R78.
+
+
+
 ## R75 — 2026-03-09 — EVOLVED
 
 **Profile:** default | **Beats:** 434 | **Duration:** 60.1s | **Notes:** 14613
