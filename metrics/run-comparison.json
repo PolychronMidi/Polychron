@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "generated": "2026-03-10T14:27:27.899Z",
+    "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
+    "dirB": "/home/jah/Polychron/metrics"
+  },
+  "sections": [
+    {
+      "name": "Note Output",
+      "metrics": [
+        {
+          "metric": "output1 notes",
+          "A": 6052,
+          "B": 10918,
+          "change": "80.4%"
+        },
+        {
+          "metric": "output2 notes",
+          "A": 6675,
+          "B": 15864,
+          "change": "137.7%"
+        }
+      ]
+    },
+    {
+      "name": "Fingerprint Dimensions",
+      "metrics": [
+        {
+          "metric": "pitchEntropy",
+          "A": "6.329",
+          "B": "6.390"
+        },
+        {
+          "metric": "densityMean",
+          "A": "0.450",
+          "B": "0.465"
+        },
+        {
+          "metric": "densityVariance",
+          "A": "0.0024",
+          "B": "0.0067"
+        },
+        {
+          "metric": "trustConvergence",
+          "A": "0.314",
+          "B": "0.333"
+        },
+        {
+          "metric": "tensionArc",
+          "A": [
+            "0.300",
+            "0.608",
+            "0.689",
+            "0.688"
+          ],
+          "B": [
+            "0.470",
+            "0.603",
+            "0.674",
+            "0.685"
+          ]
+        },
+        {
+          "metric": "exceedanceSeverity (beats)",
+          "A": 73,
+          "B": 64
+        },
+        {
+          "metric": "hotspotTopPair",
+          "A": "density-flicker",
+          "B": "flicker-trust"
+        },
+        {
+          "metric": "hotspotTop2Concentration",
+          "A": "0.6986",
+          "B": "0.6719"
+        },
+        {
+          "metric": "hotspotTrustAxisShare",
+          "A": "0.1880",
+          "B": "0.2476"
+        },
+        {
+          "metric": "hotspotPhaseAxisShare",
+          "A": "0.1116",
+          "B": "0.0076"
+        },
+        {
+          "metric": "telemetryHealthScore",
+          "A": "0.5139",
+          "B": "0.5038"
+        },
+        {
+          "metric": "telemetryPhaseIntegrity",
+          "A": "warning",
+          "B": "warning"
+        },
+        {
+          "metric": "telemetryUnderSeenPairs",
+          "A": 6,
+          "B": 8
+        }
+      ]
+    },
+    {
+      "name": "Regime Distribution",
+      "metrics": [
+        {
+          "metric": "coherent",
+          "A": "27.2%",
+          "B": "35.6%"
+        },
+        {
+          "metric": "evolving",
+          "A": "1.1%",
+          "B": "0.6%"
+        },
+        {
+          "metric": "exploring",
+          "A": "70.6%",
+          "B": "63.0%"
+        },
+        {
+          "metric": "initializing",
+          "A": "1.1%",
+          "B": "0.9%"
+        }
+      ]
+    },
+    {
+      "name": "Trust Scores (final avg)",
+      "metrics": [
+        {
+          "metric": "cadenceAlignment",
+          "A": "0.177",
+          "B": "0.192"
+        },
+        {
+          "metric": "coherenceMonitor",
+          "A": "0.507",
+          "B": "0.523"
+        },
+        {
+          "metric": "convergence",
+          "A": "0.205",
+          "B": "0.212"
+        },
+        {
+          "metric": "entropyRegulator",
+          "A": "0.291",
+          "B": "0.339"
+        },
+        {
+          "metric": "feedbackOscillator",
+          "A": "0.264",
+          "B": "0.262"
+        },
+        {
+          "metric": "phaseLock",
+          "A": "0.409",
+          "B": "0.440"
+        },
+        {
+          "metric": "restSynchronizer",
+          "A": "0.238",
+          "B": "0.240"
+        },
+        {
+          "metric": "stutterContagion",
+          "A": "0.418",
+          "B": "0.458"
+        }
+      ]
+    },
+    {
+      "name": "Trace Statistics",
+      "metrics": [
+        {
+          "metric": "traceEntries",
+          "A": 370,
+          "B": 692
+        },
+        {
+          "metric": "avgTension",
+          "A": "0.555",
+          "B": "0.591"
+        },
+        {
+          "metric": "avgPlayProb",
+          "A": "0.339",
+          "B": "0.386"
+        },
+        {
+          "metric": "traceEmbeddedNotes",
+          "A": 79102,
+          "B": 149580
+        }
+      ]
+    },
+    {
+      "name": "System Manifest",
+      "metrics": [
+        {
+          "metric": "CI modules",
+          "A": 45,
+          "B": 45
+        },
+        {
+          "metric": "CL modules",
+          "A": 41,
+          "B": 41
+        }
+      ]
+    }
+  ],
+  "verdict": "DIVERGENT"
+}

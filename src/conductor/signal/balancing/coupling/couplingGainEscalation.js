@@ -242,15 +242,19 @@ couplingGainEscalation = (() => {
 
     // Window push
     pushWindowValue(ps.recentAbsCorr, absCorr, P95_WINDOW);
-    // R75 E6: Reconciliation gap pressure for density-flicker pair.
-    // When the pair's long-window p95 diverges from short-window p95 by > 0.20,
-    // widen the telemetry window to accelerate reconciliation (cap at 2x base).
+    // R75 E6 + R76 E3: Adaptive telemetry window scaling.
+    // Originally density-flicker only. Now applies to any pair whose
+    // reconciliation gap exceeds 0.30 (tension-entropy gap was 0.407).
+    // Scale factor: 1 + max(0, (gap - 0.30) * 2.0), capped at 80 beats.
     let telWin = setup.dynTelemetryWindow || TELEMETRY_WINDOW;
-    if (flags.isDensityFlickerPair && ps.telemetryAbsCorr.length > 0 && ps.recentAbsCorr.length > 0) {
+    if (ps.telemetryAbsCorr.length > 0 && ps.recentAbsCorr.length > 0) {
       const longP95 = tailTelemetry.p95;
       const shortP95 = tailTelemetry.recentP95;
       const reconGap = m.abs(longP95 - shortP95);
-      if (reconGap > 0.20) {
+      if (reconGap > 0.30) {
+        const scale = 1 + m.min((reconGap - 0.30) * 2.0, 0.6);
+        telWin = m.min(80, m.floor(telWin * scale));
+      } else if (flags.isDensityFlickerPair && reconGap > 0.20) {
         telWin = m.min(telWin * 2, m.floor(telWin * (1 + m.min(reconGap / 0.40, 1.0))));
       }
     }

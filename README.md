@@ -38,7 +38,7 @@ npm install
 npm run main
 ```
 
-This single command runs the full 16-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, and feedback graph visualization. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
+This single command runs the full 18-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, run comparison, composition diff, and feedback graph visualization. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
 
 Pass `--seed N` to make composition deterministic (seeded PRNG via mulberry32 replaces `Math.random`):
 

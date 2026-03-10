@@ -145,6 +145,13 @@ couplingEffectiveGain = (() => {
         : 0.15;
       effectiveGain *= m.max(tensionEntropyRelief, 1.0 - antiCorrDepth * 0.80);
     }
+    // R76 E1: Structural anti-correlation gain ceiling. When a pair's pearsonR
+    // is below -0.80 (strong structural anti-correlation, e.g. density-flicker
+    // r=-0.935), cap gain at 0.6x. Anti-correlated pairs represent structural
+    // signal -- excessive gain amplifies the lock rather than breaking it.
+    if (corr < -0.80) {
+      effectiveGain *= 0.6;
+    }
     // Positive correlation preemptive brake (R72 E3: graduated)
     if (corr > 0.50) {
       const posCorrDepth = clamp((corr - 0.50) / 0.40, 0, 1);
@@ -154,6 +161,17 @@ couplingEffectiveGain = (() => {
     // R71 E1: Density-flicker decorrelation ceiling
     if (flags.isDensityFlickerPair && p95 > 0.88 && telemetrySevereRate > 0.08) {
       effectiveGain = m.min(effectiveGain, 0.20);
+    }
+    // R76 E5: Flicker-trust adaptive target deceleration. When a pair has
+    // both high residual pressure (>0.80) and upward target drift (>1.20),
+    // the decorrelation mechanism is over-investing. Cap effectiveGain at 1.0
+    // to prevent runaway target drift (flicker-trust effectiveGain was 1.604).
+    if (sp.tailPressure > 0.80 && ps.gain > 0) {
+      const at = couplingState.getAdaptiveTarget(key);
+      const driftRatio = at.baseline > 0 ? at.current / at.baseline : 1;
+      if (driftRatio > 1.20) {
+        effectiveGain = m.min(effectiveGain, 1.0);
+      }
     }
     ps.lastEffectiveGain = effectiveGain;
 

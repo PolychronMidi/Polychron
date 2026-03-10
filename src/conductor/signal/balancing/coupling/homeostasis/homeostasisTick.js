@@ -42,11 +42,12 @@ homeostasisTick = (() => {
       0,
       1
     );
-    // R75 E2: Exponential decay to prevent chronic saturation at 1.0.
-    // Without decay, tailRecoveryHandshake pins at ceiling for entire runs
-    // (observed 3 consecutive rounds at 1.0). 0.995 per tick = ~60% after
-    // 100 ticks of zero pressure, allowing recovery to breathe.
-    S.tailRecoveryHandshake *= 0.995;
+    // R75 E2 + R76 E2: Exponential decay to prevent chronic saturation.
+    // Original 0.995/tick was too weak (produced only 0.005 drop from 1.0).
+    // Doubled to 0.990/tick = ~36% after 100 ticks of zero pressure,
+    // shifting the equilibrium to 0.90-0.95 range under persistent tail
+    // pressure (stickyTailPressure 0.748).
+    S.tailRecoveryHandshake *= 0.990;
     S.densityFlickerOverridePressure = clamp(
       (S.dominantTailPair === 'density-flicker' ? 0.34 : 0) +
       S.densityFlickerTailPressure * 0.34 +
