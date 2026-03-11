@@ -646,6 +646,15 @@ All steps log to `log/` via `scripts/run-with-log.js`.
 - **`metrics/composition-diff.json`** + **`composition-diff.md`** — Structural composition diff (when `npm run diff` is used)
 - **`metrics/trace-replay.json`** — Trace replay output (when `npm run replay -- --json` is used)
 
+## Community & Resources
+
+- **[Tonal.js](https://github.com/tonaljs/tonal)**: Music theory library
+- **[CSV Maestro](https://github.com/i1li/csv_maestro)**: Custom MIDI CSV converter
+- **[Soundfont File](https://musical-artifacts.com/artifacts/855)**: Free soundfont file used by Polychron
+- **[Soundfont MIDI Player](https://soundfont-midi-player.en.softonic.com)**: Recommended player
+- **[Virtual MIDI Synth](https://coolsoft.altervista.org/virtualmidisynth)**: Audio rendering
+- **[LibreOffice](https://libreoffice.org/)**: CSV file editing
+
 ## Music21 & Priors
 
 `scripts/music21/` contains Python scripts for musicological analysis via the Music21 library. Run via `npm run music21-data`.
