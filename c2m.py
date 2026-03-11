@@ -12,36 +12,52 @@ from csv_maestro import py_midicsv as x
 import os
 import sys
 import argparse
+from pathlib import Path
 
 
 def convert_csv_to_midi(csv_path):
+    """Convert a single CSV file to MIDI.
+
+    The input path is normalized (user expansion and absolute) before
+    being processed. The output MIDI file uses the same base name and
+    the same directory as the CSV file, with a ``.mid`` suffix.
+    """
+
+    csv_path = os.path.abspath(os.path.expanduser(csv_path))
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"c2m.py: input CSV not found: {csv_path}")
-    midi_path = os.path.splitext(csv_path)[0] + '.mid'
+    midi_path = str(Path(csv_path).with_suffix('.mid'))
     with open(midi_path, 'wb') as midi:
         x.FileWriter(midi).write(x.csv_to_midi(csv_path))
     print(f"{csv_path} converted to {midi_path}")
 
 
 def resolve_input_path(raw):
-    # Accept bare names without extension and try sensible fallbacks
-    candidate = raw
-    base, ext = os.path.splitext(candidate)
-    if ext == '':
-        # try with .csv
-        if os.path.exists(candidate + '.csv'):
-            return candidate + '.csv'
-        if os.path.exists(os.path.join('output', candidate + '.csv')):
-            return os.path.join('output', candidate + '.csv')
-    else:
-        if os.path.exists(candidate):
-            return candidate
-        # try output/ basename fallback
-        if os.path.exists(os.path.join('output', os.path.basename(candidate))):
-            return os.path.join('output', os.path.basename(candidate))
-    # final attempt: if provided string looks like a basename, try output/<basename>.csv
-    if not os.path.isabs(candidate) and os.path.exists(os.path.join('output', candidate)):
-        return os.path.join('output', candidate)
+    # Accept bare names without extension and try sensible fallbacks.  This
+    # function expands ``~`` and returns an absolute path if a file exists.
+    candidate = os.path.expanduser(raw)
+    path = Path(candidate)
+
+    # direct hit
+    if path.is_file():
+        return str(path)
+
+    # add .csv extension if missing
+    if not path.suffix:
+        maybe = Path(str(path) + '.csv')
+        if maybe.is_file():
+            return str(maybe)
+
+    # try in the ``output`` directory (mirrors legacy behaviour)
+    outdir = Path('output')
+    tentative = outdir / path.name
+    if tentative.is_file():
+        return str(tentative)
+    if not path.suffix:
+        tentative = outdir / (path.name + '.csv')
+        if tentative.is_file():
+            return str(tentative)
+
     return None
 
 
@@ -51,6 +67,9 @@ def main(argv=None):
     args = p.parse_args(argv)
 
     targets = args.csvfile if args.csvfile and len(args.csvfile) > 0 else ['output/output1.csv', 'output/output2.csv']
+    # expand user/home markers in CLI arguments because Windows and Linux
+    # shells behave differently; this keeps behaviour consistent.
+    targets = [os.path.expanduser(t) for t in targets]
 
     for raw in targets:
         path = resolve_input_path(raw)
