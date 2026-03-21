@@ -1,55 +1,44 @@
 {
   "meta": {
-    "generated": "2026-03-20T23:42:07.219Z",
-    "verdict": "DRIFTED"
+    "generated": "2026-03-21T04:06:58.228Z",
+    "verdict": "EVOLVED"
   },
-  "narrative": "WARNING: Significant character drift across 5 dimensions. This may indicate a regression or fundamental parameter change. average trust convergence higher (0.000 -> 0.306). regime balance shifted: coherent: 0.0% -> 30.4%; exploring: 0.0% -> 67.5%. mean coupling deviation: 0.2820. exceedance hotspots shifted from [none] to [density-flicker: 59, density-entropy: 6, flicker-entropy: 5]. telemetry health shifted from phase=critical, underSeen=0 to phase=warning, underSeen=2.",
+  "narrative": "The composition has evolved in 2 dimension(s). This is within normal creative variation range. exceedance hotspots shifted from [flicker-trust: 62, density-flicker: 21, density-tension: 9] to [density-flicker: 25, tension-flicker: 15, density-tension: 5]. hotspot surface migrated from [flicker-trust: 62, density-flicker: 21, density-tension: 9] to [density-flicker: 25, tension-flicker: 15, density-tension: 5].",
   "explanations": [
     {
-      "dimension": "trustConvergence",
-      "delta": 0.30641250000000003,
-      "tolerance": 0.25,
-      "cause": "average trust convergence higher (0.000 -> 0.306)",
-      "modulesShifted": [
-        "cadenceAlignment: 0.00 -> 0.17",
-        "coherenceMonitor: 0.00 -> 0.53",
-        "convergence: 0.00 -> 0.20",
-        "entropyRegulator: 0.00 -> 0.30",
-        "feedbackOscillator: 0.00 -> 0.26",
-        "phaseLock: 0.00 -> 0.40",
-        "restSynchronizer: 0.00 -> 0.22",
-        "stutterContagion: 0.00 -> 0.37"
-      ]
-    },
-    {
-      "dimension": "regimeDistribution",
-      "delta": 0.25,
-      "tolerance": 0.2,
-      "cause": "regime balance shifted: coherent: 0.0% -> 30.4%; exploring: 0.0% -> 67.5%"
-    },
-    {
-      "dimension": "coupling",
-      "delta": 0.282,
-      "tolerance": 0.25,
-      "cause": "mean coupling deviation: 0.2820"
-    },
-    {
       "dimension": "exceedanceSeverity (beats)",
-      "delta": 90.6,
+      "delta": 63.11,
       "tolerance": 55,
-      "cause": "exceedance hotspots shifted from [none] to [density-flicker: 59, density-entropy: 6, flicker-entropy: 5]",
+      "cause": "exceedance hotspots shifted from [flicker-trust: 62, density-flicker: 21, density-tension: 9] to [density-flicker: 25, tension-flicker: 15, density-tension: 5]",
       "uniqueBeats": {
-        "current": 59,
-        "previous": 0
+        "current": 33,
+        "previous": 81
       }
     },
     {
-      "dimension": "telemetryHealth",
-      "delta": 0.7579,
-      "tolerance": 0.35,
-      "cause": "telemetry health shifted from phase=critical, underSeen=0 to phase=warning, underSeen=2",
-      "correlates": "max reconciliation gap moved 0.000 -> 0.223",
-      "meaning": "observability changed enough to affect how confidently hotspot and phase diagnostics can be trusted"
+      "dimension": "hotspotMigration",
+      "delta": 0.6059,
+      "tolerance": 0.55,
+      "cause": "hotspot surface migrated from [flicker-trust: 62, density-flicker: 21, density-tension: 9] to [density-flicker: 25, tension-flicker: 15, density-tension: 5]",
+      "axisShift": {
+        "current": {
+          "density": 0.2078,
+          "tension": 0.1843,
+          "flicker": 0.1535,
+          "entropy": 0.206,
+          "trust": 0.2361,
+          "phase": 0.0123
+        },
+        "previous": {
+          "density": 0.1233,
+          "tension": 0.2276,
+          "flicker": 0.2071,
+          "entropy": 0.1322,
+          "trust": 0.1777,
+          "phase": 0.1321
+        }
+      },
+      "meaning": "stress redistributed across hotspot surfaces rather than being removed outright"
     }
   ]
 }

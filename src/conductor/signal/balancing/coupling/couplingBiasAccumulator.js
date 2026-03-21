@@ -202,6 +202,10 @@ couplingBiasAccumulator = (() => {
     S.biasDensity = 1.0 + nudgeD;
     S.biasTension = 1.0 + nudgeT;
     S.biasFlicker = 1.0 + nudgeF;
+    // R81 E3: Flicker crush floor. At 50% pipeline crush the coupling
+    // manager's flicker contribution is the dominant suppressor. Cap the
+    // maximum suppression at 5% to keep the feedback loop active.
+    S.biasFlicker = m.max(S.biasFlicker, 0.95);
 
     // Tension product self-limiter
     const tensionProd = safePreBoot.call(() => signalReader.snapshot()?.tensionProduct, 1.0);

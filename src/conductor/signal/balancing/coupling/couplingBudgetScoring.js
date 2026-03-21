@@ -70,6 +70,13 @@ couplingBudgetScoring = (() => {
             0, 1)
           : 0;
         const recentP95 = tailTelemetry.recentP95 || 0;
+        // R82 E2: recent-deterioration bonus. When recentHotspotRate is
+        // worsening relative to overall hotspotRate, the pair is actively
+        // deteriorating and needs higher budget priority.
+        const recentHotspotRate = tailTelemetry.recentHotspotRate || 0;
+        const recentDeteriorationBonus = recentHotspotRate > hotspotRate * 2.0 && recentHotspotRate > 0.15
+          ? clamp((recentHotspotRate - hotspotRate) / 0.20, 0, 0.5) * 0.18
+          : 0;
         const entropySpilloverPressure = isEntropySurfacePair
           ? clamp(
             clamp((p95 - 0.78) / 0.14, 0, 1) * 0.40 +
@@ -114,10 +121,17 @@ couplingBudgetScoring = (() => {
           setup.entropyAxisPressure * (isEntropySurfacePair ? 0.18 : 0.04) +
           nonNudgeableHandOffPressure * 0.16 + effectiveShortfall * 0.08 +
           exceedPressure * 0.08 + clamp(setup.tailRecoveryHandshake * tailPressure, 0, 1) * 0.10 +
-          severeWindowPressure * 0.22 + telemetryGapPressure * 0.14 + staticBias * 0.04,
+          severeWindowPressure * 0.22 + telemetryGapPressure * 0.14 + staticBias * 0.04 +
+          recentDeteriorationBonus,
           0, 1.45);
         // R72 E4: Phase-pair budget floor
-        const budgetScore = (isPhasePair && p95 > 0.60 && hotspotRate > 0.01) ? m.max(score, 0.08) : score;
+        let budgetScore = (isPhasePair && p95 > 0.60 && hotspotRate > 0.01) ? m.max(score, 0.08) : score;
+        // R82 E6: Temporal discount. When recent tail has cooled well below
+        // lifetime p95, the pair no longer needs aggressive budget priority.
+        // Prevent stale scoring from keeping gain maxed on recovered pairs.
+        if (recentP95 > 0 && p95 > 0 && recentP95 < p95 * 0.60) {
+          budgetScore = m.max(budgetScore - 0.10, 0);
+        }
         if (budgetScore > 0.04) {
           rankedPairs.push({
             key, score: budgetScore,

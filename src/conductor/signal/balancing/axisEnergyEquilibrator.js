@@ -29,8 +29,8 @@ axisEnergyEquilibrator = (() => {
     DENSITY_FLICKER_BASELINE_MIN: 0.08,
     BASELINE_MAX: 0.40,
     WARMUP_DEFAULT: 16,
-    PHASE_SURFACE_RATIO: 1.6,
-    PHASE_SURFACE_ABS_MIN: 0.18,
+    PHASE_SURFACE_RATIO: 1.8,       // R81 E2: widened from 1.6 to reduce phaseSurfaceHotBeats
+    PHASE_SURFACE_ABS_MIN: 0.22,    // R81 E2: widened from 0.18 to allow more coldspot relaxation
     TRUST_SURFACE_RATIO: 1.45,
     TRUST_SURFACE_ABS_MIN: 0.20,
     ENTROPY_SURFACE_RATIO: 1.35,
@@ -77,6 +77,7 @@ axisEnergyEquilibrator = (() => {
       coherentHotspotActuationBeats: 0,
       coherentHotspotPairAdj: 0,
       coherentHotspotAxisAdj: 0,
+      phaseCollapseStreak: 0,
       lastWarmupTicks: axisEnergyEquilibratorConfig.WARMUP_DEFAULT
     };
   }

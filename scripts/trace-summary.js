@@ -191,6 +191,10 @@ function summarizeTrace(entries, manifest) {
   let uniqueExceedanceBeats = 0;
   // R78 E6: Collect beat keys with exceedance for trust velocity correlation
   const exceedanceBeatKeys = new Set();
+  // R80 E5: Per-section exceedance beat counts
+  const sectionExceedanceCounts = {};
+  // R85 E4: Per-section per-pair exceedance for targeted follow-up
+  const sectionPairExceedance = {};
   // R58 E6: Guard/coupling interaction diagnostic. Partition coupling stats
   // by guarded (scale < 0.999) vs unguarded beats to reveal whether the
   // output-load guard inflates or dampens coupling through uniform suppression.
@@ -213,6 +217,13 @@ function summarizeTrace(entries, manifest) {
 
   // R66 E6: Mid-run diagnostic snapshots -- accumulated separately from beat entries
   const diagnosticArc = [];
+
+  // R82 E4: Per-beat tailRecoveryHandshake saturation diagnostic
+  let handshakeSatBeats = 0;
+  let handshakeBeatToSat = -1;
+  let handshakeMin = 1;
+  let handshakeMax = 0;
+  let handshakeBeatCount = 0;
 
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
@@ -240,6 +251,20 @@ function summarizeTrace(entries, manifest) {
     const layer = typeof e.layer === 'string' ? e.layer : 'other';
     if (layer === 'L1' || layer === 'L2') byLayer[layer]++;
     else byLayer.other++;
+
+    // R82 E4: Per-beat handshake saturation tracking
+    if (e.couplingHomeostasis && typeof e.couplingHomeostasis === 'object') {
+      const hs = toNum(e.couplingHomeostasis.tailRecoveryHandshake, -1);
+      if (hs >= 0) {
+        handshakeBeatCount++;
+        if (hs < handshakeMin) handshakeMin = hs;
+        if (hs > handshakeMax) handshakeMax = hs;
+        if (hs > 0.98) {
+          handshakeSatBeats++;
+          if (handshakeBeatToSat < 0) handshakeBeatToSat = handshakeBeatCount;
+        }
+      }
+    }
 
     if (firstBeatKey === null && typeof e.beatKey === 'string') firstBeatKey = e.beatKey;
     if (typeof e.beatKey === 'string') lastBeatKey = e.beatKey;
@@ -477,19 +502,46 @@ function summarizeTrace(entries, manifest) {
       updateMinMax(couplingAbs[key], value);
       couplingSeries[key].push(value);
       couplingRawSeries[key].push(raw);
-      // R44 E6: Track beats where |r| > 0.90 per pair (broadened from 0.85 for 400+ beat runtimes)
-      if (value > 0.90) {
+      // R81 E5: Warmup-aware exceedance threshold. First 10% of beats
+      // use 0.92 to filter initialization transients that inflate S0
+      // exceedance counts. Remainder uses 0.90 (unchanged from R44 E6).
+      const exceedThresh = i < entries.length * 0.10 ? 0.92 : 0.90;
+      if (value > exceedThresh) {
         pairExceedanceBeats[key] = (pairExceedanceBeats[key] || 0) + 1;
         beatHadExceedance = true;
+        // R85 E4: Track per-section per-pair exceedance
+        if (typeof e.beatKey === 'string') {
+          const pairSec = parseInt(e.beatKey.split(':')[0], 10);
+          if (Number.isFinite(pairSec)) {
+            if (!sectionPairExceedance[pairSec]) sectionPairExceedance[pairSec] = {};
+            sectionPairExceedance[pairSec][key] = (sectionPairExceedance[pairSec][key] || 0) + 1;
+          }
+        }
       }
     }
     if (beatHadExceedance) uniqueExceedanceBeats++;
-    if (beatHadExceedance && typeof e.beatKey === 'string') exceedanceBeatKeys.add(e.beatKey);
-    // R79 E6: Attribute coupling pairs on coherent-blocked beats
+    if (beatHadExceedance && typeof e.beatKey === 'string') {
+      exceedanceBeatKeys.add(e.beatKey);
+      // R80 E5: Track per-section exceedance
+      const sec = parseInt(e.beatKey.split(':')[0], 10);
+      if (Number.isFinite(sec)) sectionExceedanceCounts[sec] = (sectionExceedanceCounts[sec] || 0) + 1;
+    }
+    // R79 E6 + R80 E4: Attribute coupling pairs on coherent-blocked beats.
+    // R80 E4: Use adaptive target from couplingTargets when available,
+    // threshold at target * 1.5. Fall back to 0.50 when no target exists.
+    // R79's 0.80 was too high -- 90 blocked beats had zero pairs above it.
     if (e.transitionReadiness && e.transitionReadiness.coherentBlock === 'coupling') {
+      const ct = e.couplingTargets && typeof e.couplingTargets === 'object' ? e.couplingTargets : null;
       for (let j = 0; j < couplingKeys.length; j++) {
-        if (Math.abs(toNum(cm[couplingKeys[j]], 0)) > 0.80) {
-          coherentBlockPairs[couplingKeys[j]] = (coherentBlockPairs[couplingKeys[j]] || 0) + 1;
+        const pairKey = couplingKeys[j];
+        const absVal = Math.abs(toNum(cm[pairKey], 0));
+        const pairTarget = ct && ct[pairKey] && typeof ct[pairKey].target === 'number' ? ct[pairKey].target : null;
+        const threshold = pairTarget !== null ? pairTarget * 1.5 : 0.50;
+        // R81 E6: Dual-threshold. Adaptive threshold (target * 1.5)
+        // missed all pairs when adaptive targets are high. Absolute
+        // floor at 0.40 ensures attribution even during coherent blocking.
+        if (absVal > threshold || absVal > 0.40) {
+          coherentBlockPairs[pairKey] = (coherentBlockPairs[pairKey] || 0) + 1;
         }
       }
     }
@@ -849,6 +901,11 @@ function summarizeTrace(entries, manifest) {
       tailRecoveryDrive: toNum(couplingHomeostasisState.tailRecoveryDrive, 0),
       tailRecoveryTrigger: toNum(couplingHomeostasisState.tailRecoveryTrigger, 0),
       tailRecoveryHandshake: toNum(couplingHomeostasisState.tailRecoveryHandshake, 0),
+      // R82 E4: Handshake saturation diagnostic -- tracks how quickly the
+      // handshake reaches 0.98+ and how much of the run it stays saturated.
+      handshakeSaturationBeats: handshakeSatBeats,
+      handshakeBeatToSaturation: handshakeBeatToSat,
+      handshakeEffectiveRange: Number((handshakeMax - handshakeMin).toFixed(4)),
       tailRecoveryCap: toNum(couplingHomeostasisState.tailRecoveryCap, 1),
       tailRecoveryCeilingPressure: toNum(couplingHomeostasisState.tailRecoveryCeilingPressure, 0),
       dominantTailPair: typeof couplingHomeostasisState.dominantTailPair === 'string' ? couplingHomeostasisState.dominantTailPair : '',
@@ -1195,7 +1252,11 @@ function summarizeTrace(entries, manifest) {
       uniqueBeats: uniqueExceedanceBeats,
       uniqueRate: entries.length > 0 ? Number((uniqueExceedanceBeats / entries.length).toFixed(4)) : 0,
       totalPairExceedanceBeats: Object.values(pairExceedanceBeats).reduce((sum, value) => sum + value, 0),
-      topPairs: exceedancePairsSorted.slice(0, 3)
+      topPairs: exceedancePairsSorted.slice(0, 3),
+      // R80 E5: Per-section exceedance beat counts
+      bySection: Object.keys(sectionExceedanceCounts).length > 0 ? sectionExceedanceCounts : null,
+      // R85 E4: Per-section per-pair exceedance breakdown
+      bySectionPair: Object.keys(sectionPairExceedance).length > 0 ? sectionPairExceedance : null
     },
     // R58 E6: Guard/coupling interaction diagnostic
     guardCouplingInteraction: (() => {
@@ -1349,6 +1410,29 @@ function summarizeTrace(entries, manifest) {
             if (vel > ranges[sys].max) ranges[sys].max = vel;
             ranges[sys].snapshots++;
           }
+        }
+      }
+      // R80 E3: Nearest-snapshot fallback. When all exceedance is in S0
+      // whose diagnosticArc snapshots have empty trustVelocity, fall back
+      // to the nearest snapshot from any section with populated velocity.
+      if (Object.keys(ranges).length === 0) {
+        for (let di = 0; di < diagnosticArc.length; di++) {
+          const arc = diagnosticArc[di];
+          if (!arc.trustVelocity || typeof arc.trustVelocity !== 'object') continue;
+          const velKeys = Object.keys(arc.trustVelocity);
+          if (velKeys.length === 0) continue;
+          for (let vi = 0; vi < velKeys.length; vi++) {
+            const sys = velKeys[vi];
+            const vel = arc.trustVelocity[sys];
+            if (typeof vel !== 'number') continue;
+            if (!ranges[sys]) ranges[sys] = { min: vel, max: vel, snapshots: 1, fallback: true };
+            else {
+              if (vel < ranges[sys].min) ranges[sys].min = vel;
+              if (vel > ranges[sys].max) ranges[sys].max = vel;
+              ranges[sys].snapshots++;
+            }
+          }
+          break;
         }
       }
       return Object.keys(ranges).length > 0 ? ranges : null;

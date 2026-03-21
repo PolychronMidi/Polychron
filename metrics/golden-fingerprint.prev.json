@@ -1,67 +1,209 @@
 {
   "meta": {
-    "generated": "2026-03-20T23:34:22.496Z",
-    "traceEntries": 463,
+    "generated": "2026-03-21T03:17:39.802Z",
+    "traceEntries": 462,
     "version": 1
   },
   "noteCount": {
-    "L1": 7478,
-    "L2": 9720,
-    "total": 17198
+    "L1": 8077,
+    "L2": 8490,
+    "total": 16567
   },
   "outputLoad": {
-    "traceEntries": 463,
-    "uniqueBeatKeys": 463,
-    "spanMs": 0,
-    "notesPerTraceEntry": 37.1447,
-    "notesPerUniqueBeat": 37.1447,
-    "notesPerSecond": 0,
+    "traceEntries": 462,
+    "uniqueBeatKeys": 341,
+    "spanMs": 69666.667,
+    "notesPerTraceEntry": 35.8593,
+    "notesPerUniqueBeat": 48.5836,
+    "notesPerSecond": 237.8038,
     "guard": null,
-    "progressIntegrity": null
+    "progressIntegrity": {
+      "duplicateLayerBeatKeys": 0,
+      "overfullBeatKeys": 0,
+      "l1ProgressRegressions": 0,
+      "l1TimeRegressions": 0,
+      "pairedBeatKeys": 121,
+      "pairedBeatKeyRatio": 0.3548,
+      "integrity": "warning"
+    }
   },
-  "pitchEntropy": 6.348647033076132,
+  "pitchEntropy": 6.257912221431208,
   "density": {
-    "mean": 0.4922470930249746,
-    "variance": 0.0030172779291600532
+    "mean": 0.44927840714473294,
+    "variance": 0.001325197495358839
   },
   "tensionArc": [
-    0.4724755689949405,
-    0.7227157918577946,
-    0.740672298219006,
-    0.749745627795323
+    0.3852863304702559,
+    0.5460431667411596,
+    0.6144395692516392,
+    0.6348985377490843
   ],
-  "trustConvergence": 0,
-  "trustFinal": {},
-  "regimeDistribution": {},
-  "exceedanceSeverity": {},
-  "totalExceedanceBeats": 0,
+  "trustConvergence": 0.31155,
+  "trustFinal": {
+    "cadenceAlignment": 0.1758,
+    "coherenceMonitor": 0.4801,
+    "convergence": 0.1996,
+    "entropyRegulator": 0.3143,
+    "feedbackOscillator": 0.2535,
+    "phaseLock": 0.4556,
+    "restSynchronizer": 0.2374,
+    "stutterContagion": 0.3761
+  },
+  "regimeDistribution": {
+    "initializing": 0.008658008658008658,
+    "evolving": 0.017316017316017316,
+    "coherent": 0.47619047619047616,
+    "exploring": 0.49783549783549785
+  },
+  "exceedanceSeverity": {
+    "density-tension": 9,
+    "density-flicker": 21,
+    "density-trust": 8,
+    "tension-flicker": 9,
+    "tension-trust": 8,
+    "flicker-trust": 62,
+    "flicker-entropy": 6
+  },
+  "totalExceedanceBeats": 123,
   "exceedanceComposite": {
-    "uniqueBeats": 0,
-    "uniqueRate": 0,
-    "totalPairExceedanceBeats": 0,
-    "topPairs": []
+    "uniqueBeats": 81,
+    "uniqueRate": 0.1738,
+    "totalPairExceedanceBeats": 123,
+    "topPairs": [
+      {
+        "pair": "flicker-trust",
+        "beats": 62
+      },
+      {
+        "pair": "density-flicker",
+        "beats": 21
+      },
+      {
+        "pair": "density-tension",
+        "beats": 9
+      }
+    ]
   },
   "hotspotMigration": {
-    "topPair": "",
-    "topPairs": [],
-    "top2Concentration": 0,
+    "topPair": "flicker-trust",
+    "topPairs": [
+      {
+        "pair": "flicker-trust",
+        "beats": 62
+      },
+      {
+        "pair": "density-flicker",
+        "beats": 21
+      },
+      {
+        "pair": "density-tension",
+        "beats": 9
+      }
+    ],
+    "top2Concentration": 0.6748,
     "axisShares": {
-      "density": null,
-      "tension": null,
-      "flicker": null,
-      "entropy": null,
-      "trust": null,
-      "phase": null
+      "density": 0.1233,
+      "tension": 0.2276,
+      "flicker": 0.2071,
+      "entropy": 0.1322,
+      "trust": 0.1777,
+      "phase": 0.1321
     }
   },
   "telemetryHealth": {
-    "score": 0,
-    "phaseTelemetryPresent": false,
-    "phaseIntegrity": "critical",
-    "underSeenPairCount": 0,
-    "maxGap": 0
+    "score": 0.3885,
+    "phaseTelemetryPresent": true,
+    "phaseIntegrity": "warning",
+    "underSeenPairCount": 2,
+    "maxGap": 0.2324
   },
-  "couplingMeans": {},
-  "couplingCorrelation": {},
+  "couplingMeans": {
+    "density-entropy": 0.2405,
+    "density-flicker": 0.301,
+    "density-phase": 0.0802,
+    "density-tension": 0.3278,
+    "density-trust": 0.2547,
+    "entropy-phase": 0.1017,
+    "entropy-trust": 0.283,
+    "flicker-entropy": 0.3828,
+    "flicker-phase": 0.1873,
+    "flicker-trust": 0.5062,
+    "tension-entropy": 0.365,
+    "tension-flicker": 0.3265,
+    "tension-phase": 0.1026,
+    "tension-trust": 0.3948
+  },
+  "couplingCorrelation": {
+    "density-entropy": {
+      "pearsonR": 0.4631,
+      "meanSigned": -0.1588,
+      "direction": "increasing"
+    },
+    "density-flicker": {
+      "pearsonR": -0.7706,
+      "meanSigned": 0.1113,
+      "direction": "decreasing"
+    },
+    "density-phase": {
+      "pearsonR": -0.2985,
+      "meanSigned": -0.0415,
+      "direction": "stable"
+    },
+    "density-tension": {
+      "pearsonR": 0.0904,
+      "meanSigned": 0.0957,
+      "direction": "stable"
+    },
+    "density-trust": {
+      "pearsonR": 0.3324,
+      "meanSigned": 0.0122,
+      "direction": "increasing"
+    },
+    "entropy-phase": {
+      "pearsonR": 0.0594,
+      "meanSigned": 0.0143,
+      "direction": "stable"
+    },
+    "entropy-trust": {
+      "pearsonR": 0.0065,
+      "meanSigned": -0.0825,
+      "direction": "stable"
+    },
+    "flicker-entropy": {
+      "pearsonR": 0.3355,
+      "meanSigned": 0.1377,
+      "direction": "increasing"
+    },
+    "flicker-phase": {
+      "pearsonR": -0.6324,
+      "meanSigned": -0.1869,
+      "direction": "decreasing"
+    },
+    "flicker-trust": {
+      "pearsonR": 0.0313,
+      "meanSigned": -0.3854,
+      "direction": "stable"
+    },
+    "tension-entropy": {
+      "pearsonR": -0.079,
+      "meanSigned": -0.3346,
+      "direction": "stable"
+    },
+    "tension-flicker": {
+      "pearsonR": -0.1714,
+      "meanSigned": 0.0154,
+      "direction": "stable"
+    },
+    "tension-phase": {
+      "pearsonR": -0.384,
+      "meanSigned": -0.0692,
+      "direction": "decreasing"
+    },
+    "tension-trust": {
+      "pearsonR": -0.5952,
+      "meanSigned": -0.1439,
+      "direction": "decreasing"
+    }
+  },
   "activeProfile": "default"
 }
