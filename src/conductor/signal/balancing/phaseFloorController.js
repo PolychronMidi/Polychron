@@ -101,8 +101,10 @@ phaseFloorController = (() => {
     }
 
     // Extreme collapse: share < 1% -- emergency override
+    // E1: boost ceiling managed by hyperMetaOrchestrator (#17)
     if (share < getExtremeCollapseShare() && phaseLowShareStreak > getExtremeCollapseStreak()) {
-      phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor, 14.0, 25.0);
+      const boostCeiling = safePreBoot.call(() => hyperMetaOrchestrator.getPhaseBoostCeiling(), 25.0) || 25.0;
+      phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor, 14.0, boostCeiling);
     }
 
     return { phaseCollapseBoost, phaseFloorBoost };

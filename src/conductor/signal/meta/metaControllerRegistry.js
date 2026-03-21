@@ -181,8 +181,18 @@ metaControllerRegistry = (() => {
       axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
       mechanism: 'Self-calibrating per-pair section-0 warmup ramp. Derives warmup beat count from historical S0 exceedance EMA and section length EMA. Pairs that historically spike during S0 get longer ramps; pairs needing immediate decorrelation get shorter ramps. Replaces hardcoded 12-beat (density-flicker) and 36-beat (others) warmup constants.',
       gain: 'Per-pair warmup range: density-flicker [6, 24] base 12; others [16, 48] base 30. Section length scaling [0.5, 1.5].',
-      interactsWith: [12, 15],
-      interactionNotes: '#15 pairGainCeilingController: warmup ramp interacts with ceiling during S0 -- both affect early-section gain. #12 homeostasis: warmup ramp duration affects early energy budget pressure.'
+      interactsWith: [12, 15, 17],
+      interactionNotes: '#15 pairGainCeilingController: warmup ramp interacts with ceiling during S0 -- both affect early-section gain. #12 homeostasis: warmup ramp duration affects early energy budget pressure. #17 orchestrator: manages rate multipliers and S0 tightening authority.'
+    },
+    {
+      id: 17,
+      name: 'hyperMetaOrchestrator',
+      file: 'conductor/signal/meta/hyperMetaOrchestrator.js',
+      axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
+      mechanism: 'Hyperhypermeta master orchestrator. Centralizes all 16 hypermeta controllers into a unified dynamic self-corrector. Every 25 beats: gathers controller snapshots, computes system health composite, detects cross-controller contradictions, derives adaptive rate multipliers, tracks controller effectiveness, and manages axis exceedance concentration diagnostics. Subsumes R98 evolutions E1 (phase boost ceiling), E3 (p95 alpha scaling), E4 (S0 tightening), E6 (axis concentration).',
+      gain: '_ORCHESTRATE_INTERVAL = 25, _HEALTH_EMA_ALPHA = 0.08, _INTERVENTION_BUDGET = 0.60, phase boost ceiling [25.0, 35.0], p95 alpha multiplier [1.0, 1.8], S0 tightening multiplier [1.0, 1.4]',
+      interactsWith: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      interactionNotes: 'Supervisory master orchestrator. Reads state from all 16 controllers. Provides rate multipliers queryable via getRateMultiplier(). Detects contradictions beyond watchdog (#11) scope. Manages phase boost authority (#14), p95 EMA scaling (#15), S0 tightening (#15/#16), axis concentration diagnostics.'
     }
   ]);
 

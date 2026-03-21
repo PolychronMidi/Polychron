@@ -225,6 +225,12 @@ function summarizeTrace(entries, manifest) {
   let handshakeMax = 0;
   let handshakeBeatCount = 0;
 
+  // R99 E2: Coupling gate engagement tracking
+  let gateEngagedBeats = 0;
+  let gateTrackingBeats = 0;
+  const gateEngagedCounts = { gateD: 0, gateT: 0, gateF: 0 };
+  let gateMinObserved = { gateD: 1, gateT: 1, gateF: 1 };
+
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
 
@@ -264,6 +270,21 @@ function summarizeTrace(entries, manifest) {
           if (handshakeBeatToSat < 0) handshakeBeatToSat = handshakeBeatCount;
         }
       }
+    }
+
+    // R99 E2: Per-beat coupling gate engagement tracking
+    if (e.couplingGates && typeof e.couplingGates === 'object') {
+      gateTrackingBeats++;
+      const gD = toNum(e.couplingGates.gateD, 1);
+      const gT = toNum(e.couplingGates.gateT, 1);
+      const gF = toNum(e.couplingGates.gateF, 1);
+      if (gD < 0.999) gateEngagedCounts.gateD++;
+      if (gT < 0.999) gateEngagedCounts.gateT++;
+      if (gF < 0.999) gateEngagedCounts.gateF++;
+      if (gD < 0.999 || gT < 0.999 || gF < 0.999) gateEngagedBeats++;
+      if (gD < gateMinObserved.gateD) gateMinObserved.gateD = gD;
+      if (gT < gateMinObserved.gateT) gateMinObserved.gateT = gT;
+      if (gF < gateMinObserved.gateF) gateMinObserved.gateF = gF;
     }
 
     if (firstBeatKey === null && typeof e.beatKey === 'string') firstBeatKey = e.beatKey;
@@ -1163,6 +1184,17 @@ function summarizeTrace(entries, manifest) {
     axisCouplingTotals,
     axisEnergyShare,
     couplingGates,
+    // R99 E2: Coupling gate engagement diagnostic
+    couplingGateEngagement: gateTrackingBeats > 0 ? {
+      trackedBeats: gateTrackingBeats,
+      engagedBeats: gateEngagedBeats,
+      engagementRate: Number((gateEngagedBeats / gateTrackingBeats).toFixed(4)),
+      perGate: {
+        gateD: { engaged: gateEngagedCounts.gateD, rate: Number((gateEngagedCounts.gateD / gateTrackingBeats).toFixed(4)), min: Number(gateMinObserved.gateD.toFixed(4)) },
+        gateT: { engaged: gateEngagedCounts.gateT, rate: Number((gateEngagedCounts.gateT / gateTrackingBeats).toFixed(4)), min: Number(gateMinObserved.gateT.toFixed(4)) },
+        gateF: { engaged: gateEngagedCounts.gateF, rate: Number((gateEngagedCounts.gateF / gateTrackingBeats).toFixed(4)), min: Number(gateMinObserved.gateF.toFixed(4)) }
+      }
+    } : null,
     couplingHomeostasis: couplingHomeostasisState,
     // R32 E5: Axis energy equilibrator per-regime telemetry
     axisEnergyEquilibrator: axisEnergyEquilibratorState,
@@ -1259,6 +1291,33 @@ function summarizeTrace(entries, manifest) {
       // R85 E4: Per-section per-pair exceedance breakdown
       bySectionPair: Object.keys(sectionPairExceedance).length > 0 ? sectionPairExceedance : null
     },
+    // R99 E6: Axis exceedance concentration diagnostic
+    axisExceedanceConcentration: (() => {
+      const axisCounts = {};
+      const pairKeys = Object.keys(pairExceedanceBeats);
+      for (let k = 0; k < pairKeys.length; k++) {
+        const axes = pairKeys[k].split('-');
+        for (let a = 0; a < axes.length; a++) {
+          axisCounts[axes[a]] = (axisCounts[axes[a]] || 0) + pairExceedanceBeats[pairKeys[k]];
+        }
+      }
+      const axisNames = Object.keys(axisCounts);
+      let total = 0;
+      let maxCount = 0;
+      let dominantAxis = 'none';
+      for (let a = 0; a < axisNames.length; a++) {
+        total += axisCounts[axisNames[a]];
+        if (axisCounts[axisNames[a]] > maxCount) {
+          maxCount = axisCounts[axisNames[a]];
+          dominantAxis = axisNames[a];
+        }
+      }
+      return {
+        axisCounts,
+        concentration: total > 0 ? Number((maxCount / total).toFixed(4)) : 0,
+        dominantAxis
+      };
+    })(),
     // R58 E6: Guard/coupling interaction diagnostic
     guardCouplingInteraction: (() => {
       const gExcRate = guardedBeatCount > 0 ? guardedExceedanceBeats / guardedBeatCount : 0;

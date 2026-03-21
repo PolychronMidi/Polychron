@@ -121,9 +121,13 @@ warmupRampController = (() => {
         : 0;
       ps.s0ExceedanceEma += (s0Rate - ps.s0ExceedanceEma) * _S0_EXCEEDANCE_EMA_ALPHA;
       ps.currentS0Exceedance = 0;
-      // Update section length EMA
+      // E5: Section length EMA initialization fix.
+      // First section uses high alpha (0.5) to snap to actual length instead
+      // of slowly converging from the arbitrary initial value of 60.
       if (warmupRampControllerCurrentSectionBeats > 0) {
-        ps.sectionLengthEma += (warmupRampControllerCurrentSectionBeats - ps.sectionLengthEma) * _SECTION_LENGTH_EMA_ALPHA;
+        const isFirstSection = warmupRampControllerBeatCount <= warmupRampControllerCurrentSectionBeats + 1;
+        const alpha = isFirstSection ? 0.5 : _SECTION_LENGTH_EMA_ALPHA;
+        ps.sectionLengthEma += (warmupRampControllerCurrentSectionBeats - ps.sectionLengthEma) * alpha;
       }
     }
     warmupRampControllerCurrentSectionBeats = 0;
