@@ -1,9 +1,9 @@
 {
   "meta": {
-    "generated": "2026-03-10T14:15:03.729Z",
+    "generated": "2026-03-20T23:34:58.685Z",
     "totalFiles": 433,
-    "globalsDeclared": 713,
-    "globalsMapped": 713,
+    "globalsDeclared": 712,
+    "globalsMapped": 712,
     "orphaned": [],
     "reassigned": [
       {
@@ -237,7 +237,6 @@
         "subsubsPerSub",
         "measureStart",
         "measureStartTime",
-        "beatsUntilBinauralShift",
         "beatCount",
         "beatsOn",
         "beatsOff",

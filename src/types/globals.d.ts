@@ -1820,7 +1820,6 @@ declare var applyNoiseToParameter: any;
 declare var getNoiseProfileOrFail: any;
 declare var flipBin: any;
 declare var binauralFreqOffset: any;
-declare var beatsUntilBinauralShift: number;
 declare var beatCount: number;
 declare var sideBias: number;
 declare var stutterFailFast: any;

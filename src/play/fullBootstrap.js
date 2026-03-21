@@ -613,7 +613,6 @@ fullBootstrap = (() => {
     'getNoiseProfileOrFail',
     'flipBin',
     'binauralFreqOffset',
-    'beatsUntilBinauralShift',
     'beatCount',
     'sideBias',
     'stutterFailFast',

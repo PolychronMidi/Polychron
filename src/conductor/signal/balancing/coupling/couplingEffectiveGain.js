@@ -105,6 +105,8 @@ couplingEffectiveGain = (() => {
       effectiveGain *= 1 + (budgetFocus - 1) * setup.budgetConstraintPressure;
     }
     if (flags.isPhaseSurfacePair && absCorr > target * 1.4) effectiveGain *= 1.18;
+    // R79 E2: Phase-pair exceedance gain escalation for persistent hotspots
+    if (flags.isPhaseSurfacePair && p95 > 0.85 && sp.tailPressure > 0.40) effectiveGain *= 1 + sp.tailPressure * 0.60;
     if (sp.coherentSurfacePressure > 0) effectiveGain *= 1 + sp.coherentSurfacePressure * 0.45;
     if (flags.isEntropySurfacePair && sp.entropySurfacePressure > 0) effectiveGain *= 1 + sp.entropySurfacePressure * 0.55;
     if (flags.isTrustPair && sp.trustSurfacePressure > 0) effectiveGain *= 1 + sp.trustSurfacePressure * 0.72;
@@ -158,18 +160,27 @@ couplingEffectiveGain = (() => {
       const posCorrFloor = (sp.tailPressure > 0.50) ? 0.50 : 0.30;
       effectiveGain *= m.max(posCorrFloor, 1.0 - posCorrDepth * 0.55);
     }
-    // R71 E1: Density-flicker decorrelation ceiling
+    // R78 E1: Strong positive co-evolution gain ceiling. When pearsonR > 0.80
+    // (e.g. tension-flicker r=0.829), the pair is structurally co-evolving.
+    // Cap gain at 0.7x to break the lock without eliminating the signal.
+    if (corr > 0.80) {
+      effectiveGain *= 0.7;
+    }
+    // R71 E1 + R79 E3: Density-flicker decorrelation ceiling (broadened)
     if (flags.isDensityFlickerPair && p95 > 0.88 && telemetrySevereRate > 0.08) {
       effectiveGain = m.min(effectiveGain, 0.20);
+    } else if (flags.isDensityFlickerPair && p95 > 0.82 && tailTelemetry.hotspotRate > 0.01) {
+      effectiveGain = m.min(effectiveGain, 0.15);
     }
-    // R76 E5: Flicker-trust adaptive target deceleration. When a pair has
-    // both high residual pressure (>0.80) and upward target drift (>1.20),
+    // R76 E5 + R79 E4: Flicker-trust adaptive target deceleration. When a
+    // pair has residual pressure (>0.50) and any upward target drift (>1.01),
     // the decorrelation mechanism is over-investing. Cap effectiveGain at 1.0
-    // to prevent runaway target drift (flicker-trust effectiveGain was 1.604).
-    if (sp.tailPressure > 0.80 && ps.gain > 0) {
+    // to prevent runaway target drift. Thresholds relaxed from 0.80/1.20
+    // after flicker-trust evaded the original gate (tailP 0.566, drift 1.02).
+    if (sp.tailPressure > 0.50 && ps.gain > 0) {
       const at = couplingState.getAdaptiveTarget(key);
       const driftRatio = at.baseline > 0 ? at.current / at.baseline : 1;
-      if (driftRatio > 1.20) {
+      if (driftRatio > 1.01) {
         effectiveGain = m.min(effectiveGain, 1.0);
       }
     }

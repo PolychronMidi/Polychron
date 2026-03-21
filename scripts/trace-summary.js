@@ -184,9 +184,13 @@ function summarizeTrace(entries, manifest) {
   // R35 E5: Exploring-block diagnostic accumulators
   const exploringBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
   const coherentBlockCounts = { velocity: 0, dimension: 0, coupling: 0, none: 0 };
+  // R79 E6: Per-pair attribution for coherent-block coupling beats
+  const coherentBlockPairs = {};
   // R35 E6: Per-pair exceedance beat tracking (beats above 0.90)
   const pairExceedanceBeats = {};
   let uniqueExceedanceBeats = 0;
+  // R78 E6: Collect beat keys with exceedance for trust velocity correlation
+  const exceedanceBeatKeys = new Set();
   // R58 E6: Guard/coupling interaction diagnostic. Partition coupling stats
   // by guarded (scale < 0.999) vs unguarded beats to reveal whether the
   // output-load guard inflates or dampens coupling through uniform suppression.
@@ -480,6 +484,15 @@ function summarizeTrace(entries, manifest) {
       }
     }
     if (beatHadExceedance) uniqueExceedanceBeats++;
+    if (beatHadExceedance && typeof e.beatKey === 'string') exceedanceBeatKeys.add(e.beatKey);
+    // R79 E6: Attribute coupling pairs on coherent-blocked beats
+    if (e.transitionReadiness && e.transitionReadiness.coherentBlock === 'coupling') {
+      for (let j = 0; j < couplingKeys.length; j++) {
+        if (Math.abs(toNum(cm[couplingKeys[j]], 0)) > 0.80) {
+          coherentBlockPairs[couplingKeys[j]] = (coherentBlockPairs[couplingKeys[j]] || 0) + 1;
+        }
+      }
+    }
 
     // R58 E6: Partition coupling stats by guarded vs unguarded beat
     const guardObj = e.outputLoadGuard && typeof e.outputLoadGuard === 'object' ? e.outputLoadGuard : null;
@@ -1156,6 +1169,8 @@ function summarizeTrace(entries, manifest) {
       // R35 E5: Exploring-block diagnostic breakdown
       exploringBlock: exploringBlockCounts,
       coherentBlock: coherentBlockCounts,
+      // R79 E6: Per-pair attribution for coupling-blocked coherent beats
+      coherentBlockPairs: Object.keys(coherentBlockPairs).length > 0 ? coherentBlockPairs : null,
       // R36 E4: Raw regime counts before hysteresis
       rawRegimeCounts,
       runRawRegimeCounts,
@@ -1287,6 +1302,42 @@ function summarizeTrace(entries, manifest) {
       for (let di = 0; di < diagnosticArc.length; di++) {
         const arc = diagnosticArc[di];
         if (!arc.trustVelocity || typeof arc.trustVelocity !== 'object') continue;
+        const velKeys = Object.keys(arc.trustVelocity);
+        for (let vi = 0; vi < velKeys.length; vi++) {
+          const sys = velKeys[vi];
+          const vel = arc.trustVelocity[sys];
+          if (typeof vel !== 'number') continue;
+          if (!ranges[sys]) ranges[sys] = { min: vel, max: vel, snapshots: 1 };
+          else {
+            if (vel < ranges[sys].min) ranges[sys].min = vel;
+            if (vel > ranges[sys].max) ranges[sys].max = vel;
+            ranges[sys].snapshots++;
+          }
+        }
+      }
+      return Object.keys(ranges).length > 0 ? ranges : null;
+    })(),
+    // R78 E6 + R79 E5: Trust velocity at exceedance beats. Filters
+    // diagnosticArc snapshots to sections with coupling exceedance
+    // (|r| > 0.90) and reports per-system velocity range at those beats.
+    // R79 E5: Section-bracket matching. Snapshot beatKeys use N:end or
+    // N:periodic:M format while beat entries use S:P:M:B, so exact match
+    // fails. Extract section index from both and match by section.
+    trustVelocityAtExceedance: (() => {
+      if (exceedanceBeatKeys.size === 0) return null;
+      const exceedanceSections = {};
+      const bkArr = Array.from(exceedanceBeatKeys);
+      for (let bi = 0; bi < bkArr.length; bi++) {
+        const sec = parseInt(bkArr[bi].split(':')[0], 10);
+        if (Number.isFinite(sec)) exceedanceSections[sec] = true;
+      }
+      if (Object.keys(exceedanceSections).length === 0) return null;
+      const ranges = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const arc = diagnosticArc[di];
+        if (!arc.trustVelocity || typeof arc.trustVelocity !== 'object') continue;
+        const arcSec = typeof arc.beatKey === 'string' ? parseInt(arc.beatKey.split(':')[0], 10) : -1;
+        if (!Number.isFinite(arcSec) || !exceedanceSections[arcSec]) continue;
         const velKeys = Object.keys(arc.trustVelocity);
         for (let vi = 0; vi < velKeys.length; vi++) {
           const sys = velKeys[vi];

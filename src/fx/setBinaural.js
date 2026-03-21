@@ -36,7 +36,7 @@ setBinaural = () => {
 
   if (shouldShift) {
     beatCount = 0;
-    nextBinauralShiftMs = absTimeMs + rf(.5, 3) * 1000;
+    nextBinauralShiftMs = absTimeMs + rf(2, 5) * 1000;
 
     // Cross-layer ms-precision sync via absoluteTimeGrid
     const crossLayerShift = absoluteTimeGrid.findClosest(
@@ -67,7 +67,6 @@ setBinaural = () => {
 
     V.requireFinite(numerator, 'numerator');
     V.requireFinite(measuresPerPhrase, 'measuresPerPhrase');
-    beatsUntilBinauralShift = m.max(1, numerator * measuresPerPhrase);
 
     // Recompute pitch bend values from updated offset - stale values cause audible detune
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);

@@ -20,7 +20,9 @@ setTuningAndInstruments = () => {
  * @returns {void}
  */
 setOtherInstruments = () => {
-  if (rf() < .3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop<1 ) {
+  const absTimeMs = beatStartTime * 1000;
+  const nextInstrumentShiftMs = absTimeMs + rf(2, 5) * 1000;
+  if (rf() < .3 || absTimeMs >= nextInstrumentShiftMs || firstLoop<1 ) {
 p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' };
   return [
     ...reflectionBinaural.map(ch=>({...tmp,vals:[ch,ra(otherInstruments)]})),

@@ -13,6 +13,8 @@ couplingBudgetScoring = (() => {
   const { ALL_MONITORED_DIMS, NON_NUDGEABLE_SET,
     BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN, BUDGET_PRIORITY_TOP_K } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
+  // R78 E3: Track consecutive zero-effectiveGain beats per pair
+  const zeroGainStreaks = {};
 
   /**
    * Compute budget priority scores and assign gain boosts.
@@ -45,6 +47,16 @@ couplingBudgetScoring = (() => {
         const hotspotRate = tailTelemetry.hotspotRate;
         const severeRate = tailTelemetry.severeRate;
         const previousEffectiveGain = ps.lastEffectiveGain || 0;
+        // R78 E3: Track consecutive near-zero-effectiveGain beats per pair.
+        // Pairs with zeroed gain (density-flicker, flicker-trust) waste
+        // budget slots. Decay their boost after 10 consecutive zero beats.
+        // R79 E1: Near-zero threshold (was === 0, but modifier chain
+        // produces small positive values that never hit exact zero).
+        if (previousEffectiveGain < 0.01 && absCorr > target) {
+          zeroGainStreaks[key] = (zeroGainStreaks[key] || 0) + 1;
+        } else if (previousEffectiveGain >= 0.01) {
+          zeroGainStreaks[key] = 0;
+        }
         const gainBase = m.max(ps.gain, couplingConstants.GAIN_INIT);
         const effectiveShortfall = clamp((gainBase - m.min(gainBase, previousEffectiveGain)) / gainBase, 0, 1);
         const exceedPressure = clamp((absCorr - m.max(target, 0.06)) / 0.45, 0, 1);
@@ -150,12 +162,17 @@ couplingBudgetScoring = (() => {
       const axisDominanceBoost = dominantBudgetAxis && entry.key.indexOf(dominantBudgetAxis) !== -1
         ? 1 + (dominantBudgetAxisCount - 2) * 0.12
         : 1.0;
+      // R78 E3: Decay budget boost for prolonged zero-effectiveGain pairs.
+      // After 10 consecutive zero-gain beats, decay by 0.95^(count-10),
+      // floored at 0.5. Frees budget from density-flicker/flicker-trust.
+      const zgs = zeroGainStreaks[entry.key] || 0;
+      const zeroGainDecay = zgs > 10 ? m.max(m.pow(0.95, zgs - 10), 0.5) : 1;
       if (i < BUDGET_PRIORITY_TOP_K) {
         const rankBoost = i === 0 ? 1.68 : i === 1 ? 1.54 : i === 2 ? 1.40 : i === 3 ? 1.26 : 1.18;
-        S.budgetPriorityBoost[entry.key] = Number((m.max(staticBoost, rankBoost, entry.boost) * axisDominanceBoost).toFixed(4));
+        S.budgetPriorityBoost[entry.key] = Number((m.max(staticBoost, rankBoost, entry.boost) * axisDominanceBoost * zeroGainDecay).toFixed(4));
         S.budgetPriorityRank[entry.key] = i + 1;
       } else {
-        S.budgetPriorityBoost[entry.key] = Number((staticBoost * axisDominanceBoost).toFixed(4));
+        S.budgetPriorityBoost[entry.key] = Number((staticBoost * axisDominanceBoost * zeroGainDecay).toFixed(4));
       }
     }
   }
