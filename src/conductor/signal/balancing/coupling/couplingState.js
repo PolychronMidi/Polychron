@@ -60,6 +60,7 @@ couplingState = (() => {
     hpPromotedPair: null,
     hpBeats: 0,
     hpCooldownRemaining: 0,
+    sectionResetCount: 0,
   };
 
   function getAdaptiveTarget(key) {
@@ -94,6 +95,7 @@ couplingState = (() => {
   }
 
   function reset() {
+    S.sectionResetCount++;
     S.biasDensity = 1.0;
     S.biasTension = 1.0;
     S.biasFlicker = 1.0;

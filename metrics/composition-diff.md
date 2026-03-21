@@ -5,29 +5,36 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
+## Major Changes (3)
+
+- !!! **section-count**: Section count: 3 -> 4
+- !!! **section-added**: Section 3 added (key=Db minor)
+- !!! **note-count**: output1: 5819 notes -> 9543 notes (64.0% change)
+
 ## Notable Changes (3)
 
-- !! **harmonic-change**: Section 0: G mixolydian -> Db aeolian
-- !! **harmonic-change**: Section 1: C mixolydian -> G major
-- !! **harmonic-change**: Section 2: E major -> Bb minor
+- !! **harmonic-change**: Section 0: A mixolydian -> C# minor
+- !! **harmonic-change**: Section 1: Bb mixolydian -> F major
+- !! **harmonic-change**: Section 2: Bb dorian -> Bb major
 
-## Moderate Changes (2)
+## Moderate Changes (3)
 
-- ! **phrase-count**: Section 1: 3 phrases -> 1 phrases
-- ! **phrase-count**: Section 2: 3 phrases -> 4 phrases
+- ! **phrase-count**: Section 1: 3 phrases -> 2 phrases
+- ! **tension-shift**: Section 2 avg tension: 0.546 -> 0.685
+- ! **pitch-center**: output1 mean pitch: 36.0 -> 42.2 (6.2 semitones)
 
 ## Minor Changes (2)
 
-- ~ **regime-shift**: Section 1 regime 'coherent': 14.7% -> 57.1%
-- ~ **regime-shift**: Section 1 regime 'exploring': 85.3% -> 42.9%
+- ~ **regime-shift**: Section 0 regime 'coherent': 34.2% -> 71.0%
+- ~ **regime-shift**: Section 0 regime 'exploring': 47.4% -> 18.3%
 
 ## Summary
 
-- Total differences: 7
-- Major: 0
+- Total differences: 11
+- Major: 3
 - Notable: 3
-- Moderate: 2
+- Moderate: 3
 - Minor: 2
 
 
-*Generated 2026-03-20T23:42:08.106Z*
+*Generated 2026-03-21T04:06:59.319Z*

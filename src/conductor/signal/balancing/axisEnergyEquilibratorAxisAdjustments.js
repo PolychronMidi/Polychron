@@ -56,7 +56,21 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         const isEmergencyStarved = share < 0.08;
         const isPhaseCollapse = axis === 'phase' && share < 0.02;
         const isUndershootPartialBypass = !isEmergencyStarved && share < config.AXIS_UNDERSHOOT && (state.beatCount % 2 === 0);
-        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
+        // R82 E3 + R83 E3: Graduated coherentFreeze coldspot bypass.
+        // R83 E3: Widened threshold 0.12->0.18 and removed duty-cycle
+        // constraint (was even-beat-only). R82's 50% duty cycle at
+        // 0.08-0.12 was too narrow -- phase collapsed to 0.51%.
+        const isCoherentFreezePartialBypass = !isEmergencyStarved && share < 0.18 && context.coherentColdspotFreeze;
+        // R83 E2: Phase axis emergency gate bypass. When phase share
+        // stays below 0.02 for >8 consecutive beats, the phase axis is
+        // in sustained collapse. Force-bypass ALL coldspot gates to
+        // allow emergency relaxation regardless of surface conditions.
+        if (axis === 'phase') {
+          if (share < 0.02) { state.phaseCollapseStreak++; }
+          else { state.phaseCollapseStreak = 0; }
+        }
+        const isPhaseEmergencyBypass = axis === 'phase' && state.phaseCollapseStreak > 8;
+        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
           state.skippedColdspotRelaxations++;
           if (context.coherentColdspotFreeze) state.coldspotSkipReasons.coherentFreeze++;
           else if (axis === 'phase' && context.phaseSurfaceHot) state.coldspotSkipReasons.phaseHot++;
@@ -71,7 +85,11 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         const nonNudgeableRelaxBoost = context.nonNudgeableTailPressure > 0 && context.nonNudgeableAxes.indexOf(axis) !== -1
           ? 1 + context.nonNudgeableTailPressure * 0.30
           : 1.0;
-        const emergencyBoost = isPhaseCollapse ? 4.0 : (isEmergencyStarved ? 3.0 : 1.0);
+        // R84 E2: Phase relaxation rate boost. When phaseCollapseStreak > 8,
+        // the 4.0x emergencyBoost is insufficient against 95-beat coherent
+        // streaks. Boost to 6.0x during sustained phase collapse.
+        const phaseCollapseBoost = isPhaseCollapse && state.phaseCollapseStreak > 8 ? 6.0 : 4.0;
+        const emergencyBoost = isPhaseCollapse ? phaseCollapseBoost : (isEmergencyStarved ? 3.0 : 1.0);
         const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];

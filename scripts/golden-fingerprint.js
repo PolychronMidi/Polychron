@@ -789,6 +789,24 @@ function main() {
   // Compare with previous if it exists
   const previous = loadJSON(PREV_PATH);
   if (previous && previous.meta && previous.meta.version === 1) {
+    // R80 E6: Degenerate .prev guard. When a previous run crashed mid-
+    // composition, the .prev fingerprint has zero beats and empty
+    // distributions. Comparing against it produces false DRIFTED verdicts.
+    const prevDegenerate = previous.trustConvergence === 0 &&
+      Object.keys(previous.regimeDistribution || {}).length === 0 &&
+      (previous.totalExceedanceBeats === 0 || previous.totalExceedanceBeats === undefined);
+    if (prevDegenerate) {
+      const degComparison = {
+        meta: { generated: new Date().toISOString(), currentRun: fingerprint.meta.generated, previousRun: previous.meta.generated },
+        verdict: 'BASELINE_MISSING',
+        driftedDimensions: 0,
+        totalDimensions: 0,
+        note: 'Previous fingerprint is degenerate (crashed run). Drift comparison skipped.',
+        dimensions: []
+      };
+      fs.writeFileSync(COMPARISON_PATH, JSON.stringify(degComparison, null, 2), 'utf8');
+      console.log('golden-fingerprint: BASELINE_MISSING (previous run degenerate) -> metrics/fingerprint-comparison.json');
+    } else {
     const comparison = compareFingerprints(fingerprint, previous);
     fs.writeFileSync(COMPARISON_PATH, JSON.stringify(comparison, null, 2), 'utf8');
 
@@ -810,6 +828,7 @@ function main() {
       console.warn('golden-fingerprint: WARNING - significant character drift detected across ' +
         comparison.driftedDimensions + ' dimensions. Review metrics/fingerprint-comparison.json.');
       console.warn('golden-fingerprint: ' + explainer.narrative);
+    }
     }
   } else {
     console.log('golden-fingerprint: first run - baseline established -> metrics/golden-fingerprint.json');

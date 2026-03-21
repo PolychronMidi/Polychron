@@ -166,11 +166,28 @@ couplingEffectiveGain = (() => {
     if (corr > 0.80) {
       effectiveGain *= 0.7;
     }
-    // R71 E1 + R79 E3: Density-flicker decorrelation ceiling (broadened)
+    // R71 E1 + R79 E3 + R80 E1 + R85 E3: Density-flicker decorrelation
+    // ceiling chain. R85 E3: Unified into single else-if to prevent
+    // stacking (R84 had severe + p90 + anti-corr triple-zeroing gain).
     if (flags.isDensityFlickerPair && p95 > 0.88 && telemetrySevereRate > 0.08) {
-      effectiveGain = m.min(effectiveGain, 0.20);
+      effectiveGain = m.min(effectiveGain, 0.08);
+    } else if (flags.isDensityFlickerPair && telemetrySevereRate > 0.10) {
+      effectiveGain = m.min(effectiveGain, 0.10);
     } else if (flags.isDensityFlickerPair && p95 > 0.82 && tailTelemetry.hotspotRate > 0.01) {
       effectiveGain = m.min(effectiveGain, 0.15);
+    }
+    // R83 E5: Tension-flicker exceedance ceiling. When tension-flicker
+    // p95 > 0.85, cap effectiveGain to prevent runaway exceedance.
+    // R82 saw tension-flicker emerge as dominant hotspot (p95 0.904,
+    // 41 exceedance beats) with no dedicated ceiling.
+    if (key === 'tension-flicker' && p95 > 0.85 && tailTelemetry.hotspotRate > 0.02) {
+      effectiveGain = m.min(effectiveGain, 0.12);
+    }
+    // R85 E2: Flicker-trust exceedance ceiling. R84 saw flicker-trust
+    // emerge as dominant hotspot (p95 0.924, 62 exceedance beats,
+    // severeRate 0.162) with no pair-specific ceiling.
+    if (key === 'flicker-trust' && p95 > 0.88) {
+      effectiveGain = m.min(effectiveGain, 0.10);
     }
     // R76 E5 + R79 E4: Flicker-trust adaptive target deceleration. When a
     // pair has residual pressure (>0.50) and any upward target drift (>1.01),
@@ -183,6 +200,25 @@ couplingEffectiveGain = (() => {
       if (driftRatio > 1.01) {
         effectiveGain = m.min(effectiveGain, 1.0);
       }
+    }
+    // R81 E1 + R82 E5 + R84 E3: Section-0 exceedance warmup ramp.
+    // R84 E3: Extended 12->24 beats. R83 had all 22 exceedance beats
+    // in S0, suggesting 12 beats was insufficient initialization coverage.
+    const warmupBeats = 24;
+    const gbc = couplingState.gateBeatCount;
+    if (gbc < warmupBeats && couplingState.sectionResetCount === 0) {
+      effectiveGain *= gbc / warmupBeats;
+    }
+    // R80 E2: Universal high-gain safety cap. R79 flicker-trust hit
+    // effectiveGain 1.714 (budgetBoost 1.882). Cap all pairs at 1.2 to
+    // prevent runaway gain regardless of modifier chain outcome.
+    effectiveGain = m.min(effectiveGain, 1.2);
+    // R81 E4: Budget-ranked effectiveGain floor. When stacked ceilings
+    // zero a pair (density-flicker: anti-corr 0.6x + severe 0.08 = 0),
+    // budgetRank 1 priority is wasted on an inert pair. Preserve minimum
+    // feedback loop activity for budget-prioritized pairs.
+    if (effectiveGain < 0.01 && S.budgetPriorityRank && S.budgetPriorityRank[key] !== undefined) {
+      effectiveGain = 0.01;
     }
     ps.lastEffectiveGain = effectiveGain;
 
