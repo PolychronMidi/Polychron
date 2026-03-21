@@ -1,78 +1,73 @@
 {
   "meta": {
-    "generated": "2026-03-21T04:06:59.319Z",
+    "generated": "2026-03-21T06:00:27.242Z",
     "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
     "dirB": "/home/jah/Polychron/metrics",
     "traceSizeA": 426,
-    "traceSizeB": 526,
+    "traceSizeB": 345,
     "sectionsA": 3,
-    "sectionsB": 4
+    "sectionsB": 3
   },
   "diffs": [
     {
-      "type": "section-count",
-      "severity": "major",
-      "detail": "Section count: 3 -> 4"
-    },
-    {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 0,
-      "detail": "Section 0: A mixolydian -> C# minor"
-    },
-    {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 0,
-      "detail": "Section 0 regime 'coherent': 34.2% -> 71.0%"
-    },
-    {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 0,
-      "detail": "Section 0 regime 'exploring': 47.4% -> 18.3%"
-    },
-    {
-      "type": "harmonic-change",
-      "severity": "notable",
-      "section": 1,
-      "detail": "Section 1: Bb mixolydian -> F major"
+      "detail": "Section 0: A mixolydian -> F lydian"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
+      "section": 0,
+      "detail": "Section 0: 2 phrases -> 1 phrases"
+    },
+    {
+      "type": "harmonic-change",
+      "severity": "notable",
       "section": 1,
-      "detail": "Section 1: 3 phrases -> 2 phrases"
+      "detail": "Section 1: Bb mixolydian -> F ionian"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 1,
+      "detail": "Section 1 regime 'exploring': 83.7% -> 50.0%"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 1,
+      "detail": "Section 1 regime 'coherent': 16.3% -> 50.0%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 2,
-      "detail": "Section 2: Bb dorian -> Bb major"
+      "detail": "Section 2: Bb dorian -> F mixolydian"
     },
     {
-      "type": "tension-shift",
+      "type": "phrase-count",
       "severity": "moderate",
       "section": 2,
-      "detail": "Section 2 avg tension: 0.546 -> 0.685"
+      "detail": "Section 2: 3 phrases -> 2 phrases"
     },
     {
-      "type": "section-added",
-      "severity": "major",
-      "section": 3,
-      "detail": "Section 3 added (key=Db minor)"
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 2,
+      "detail": "Section 2 regime 'coherent': 13.0% -> 80.0%"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 2,
+      "detail": "Section 2 regime 'exploring': 87.0% -> 20.0%"
     },
     {
       "type": "note-count",
-      "severity": "major",
-      "layer": "output1",
-      "detail": "output1: 5819 notes -> 9543 notes (64.0% change)"
-    },
-    {
-      "type": "pitch-center",
       "severity": "moderate",
-      "layer": "output1",
-      "detail": "output1 mean pitch: 36.0 -> 42.2 (6.2 semitones)"
+      "layer": "output2",
+      "detail": "output2: 8339 notes -> 6569 notes (21.2% change)"
     }
   ]
 }
