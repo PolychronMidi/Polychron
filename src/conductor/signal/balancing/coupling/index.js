@@ -5,6 +5,8 @@ require('./couplingState');
 require('./couplingRefreshSetup');
 require('./couplingBudgetScoring');
 require('./couplingGainEscalation');
+require('./pairGainCeilingController');
+require('./warmupRampController');
 require('./couplingEffectiveGain');
 require('./couplingBiasAccumulator');
 require('./pipelineCouplingManager');

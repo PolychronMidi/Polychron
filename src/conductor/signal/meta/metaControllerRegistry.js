@@ -153,6 +153,36 @@ metaControllerRegistry = (() => {
       gain: 'L1: _PAIR_TIGHTEN_RATE=0.003, _PAIR_RELAX_RATE=0.0015, _PAIR_COOLDOWN=3. L2: _AXIS_TIGHTEN_RATE=0.002, _AXIS_RELAX_RATE=0.0012, _AXIS_COOLDOWN=4, _GINI_ESCALATION=0.40, _RELAX_RATE_REF=5, _EFFECTIVE_NUDGEABLE={density:5,tension:5,flicker:5,entropy:3,trust:3,phase:3}',
       interactsWith: [1, 9, 12],
       interactionNotes: '#1 self-calibrating targets: this controller modifies the same pair baselines that #1 adapts. #9 budget manager: changed baselines affect gain allocation. #12 homeostasis: energy redistribution changes trigger/relax the global multiplier.'
+    },
+    {
+      id: 14,
+      name: 'phaseFloorController',
+      file: 'conductor/signal/balancing/phaseFloorController.js',
+      axes: ['phase'],
+      mechanism: 'Self-calibrating phase energy floor. Derives collapse thresholds from rolling phase volatility EMA, streak activation counts from coherent regime duration EMA, and boost multipliers from continuous graduated formula (deficit severity x recovery success). Replaces hardcoded 0.01/0.02/0.03 share thresholds, 8/12/20 streak counts, and 4.0/6.0/8.0/12.0/20.0 boost step-function with adaptive logic.',
+      gain: 'Continuous boost range [3.0, 25.0] graduated by deficit ratio and recovery EMA. Collapse threshold range [0.01, 0.04]. Floor activation streak range [6, 20]. Extreme collapse streak range [4, 14].',
+      interactsWith: [12, 13],
+      interactionNotes: '#13 axisEnergyEquilibrator consumes phaseFloorController outputs for phase axis relaxation boosts and gate bypass decisions. #12 homeostasis: phase recovery changes affect total energy budget.'
+    },
+    {
+      id: 15,
+      name: 'pairGainCeilingController',
+      file: 'conductor/signal/balancing/coupling/pairGainCeilingController.js',
+      axes: ['density', 'tension', 'flicker', 'trust'],
+      mechanism: 'Self-calibrating per-pair gain ceilings. Per-pair rolling p95 EMA and exceedance rate EMA drive adaptive ceiling that tightens when tail pressure exceeds sensitivity threshold and relaxes when pressure subsides. Instant overrides for extreme current-beat telemetry. Replaces hardcoded density-flicker (0.08/0.10/0.15), tension-flicker (0.08), flicker-trust (0.10), tension-trust (0.10) ceiling chains.',
+      gain: 'Per-pair ceiling range from minCeiling (0.04-0.06) to maxCeiling (0.25-0.40). Tighten rate 0.008, relax rate 0.003. Sensitivity profiles per pair.',
+      interactsWith: [9, 12, 13],
+      interactionNotes: '#9 budget manager: ceiling limits interact with budget-ranked gain. #12 homeostasis: ceilings prevent pairs from consuming disproportionate energy. #13 axisEnergyEquilibrator: ceiling-limited nudges affect axis energy distribution.'
+    },
+    {
+      id: 16,
+      name: 'warmupRampController',
+      file: 'conductor/signal/balancing/coupling/warmupRampController.js',
+      axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
+      mechanism: 'Self-calibrating per-pair section-0 warmup ramp. Derives warmup beat count from historical S0 exceedance EMA and section length EMA. Pairs that historically spike during S0 get longer ramps; pairs needing immediate decorrelation get shorter ramps. Replaces hardcoded 12-beat (density-flicker) and 36-beat (others) warmup constants.',
+      gain: 'Per-pair warmup range: density-flicker [6, 24] base 12; others [16, 48] base 30. Section length scaling [0.5, 1.5].',
+      interactsWith: [12, 15],
+      interactionNotes: '#15 pairGainCeilingController: warmup ramp interacts with ceiling during S0 -- both affect early-section gain. #12 homeostasis: warmup ramp duration affects early energy budget pressure.'
     }
   ]);
 
@@ -171,7 +201,7 @@ metaControllerRegistry = (() => {
   }
 
   /**
-   * Get a controller by its numeric ID (1-13).
+   * Get a controller by its numeric ID (1-16).
    * @param {number} id
    * @returns {MetaControllerEntry|undefined}
    */

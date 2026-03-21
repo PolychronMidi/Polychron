@@ -166,38 +166,13 @@ couplingEffectiveGain = (() => {
     if (corr > 0.80) {
       effectiveGain *= 0.7;
     }
-    // R71 E1 + R79 E3 + R80 E1 + R85 E3 + R88 E1: Density-flicker
-    // decorrelation ceiling chain. R88: Added p95-only branch (>0.85)
-    // to catch cases where p95 is high but severeRate/hotspotRate are
-    // near-zero (R87: p95=0.896, p90=0.884, severeRate=0, hotspotRate=0
-    // caused manifest health FAIL).
-    if (flags.isDensityFlickerPair && p95 > 0.88 && telemetrySevereRate > 0.08) {
-      effectiveGain = m.min(effectiveGain, 0.08);
-    } else if (flags.isDensityFlickerPair && p95 > 0.85) {
-      effectiveGain = m.min(effectiveGain, 0.10);
-    } else if (flags.isDensityFlickerPair && telemetrySevereRate > 0.10) {
-      effectiveGain = m.min(effectiveGain, 0.10);
-    } else if (flags.isDensityFlickerPair && p95 > 0.82 && tailTelemetry.hotspotRate > 0.01) {
-      effectiveGain = m.min(effectiveGain, 0.15);
-    }
-    // R83 E5 + R86 E3: Tension-flicker exceedance ceiling. R86: tightened
-    // cap 0.12->0.08. R85 tension-flicker rebounded 4->15 beats despite
-    // the 0.12 cap (residualPressure 0.807, rank 1 budget priority).
-    if (key === 'tension-flicker' && p95 > 0.85 && tailTelemetry.hotspotRate > 0.02) {
-      effectiveGain = m.min(effectiveGain, 0.08);
-    }
-    // R85 E2: Flicker-trust exceedance ceiling. R84 saw flicker-trust
-    // emerge as dominant hotspot (p95 0.924, 62 exceedance beats,
-    // severeRate 0.162) with no pair-specific ceiling.
-    if (key === 'flicker-trust' && p95 > 0.88) {
-      effectiveGain = m.min(effectiveGain, 0.10);
-    }
-    // R87 E1: Tension-trust exceedance ceiling. R86 saw tension-trust
-    // emerge as dominant hotspot (p95 0.935, 26 exceedance beats) with
-    // no pair-specific ceiling. Same pattern as other pair ceilings.
-    if (key === 'tension-trust' && p95 > 0.88) {
-      effectiveGain = m.min(effectiveGain, 0.10);
-    }
+    // R71-R88 + R97 E2: Pair gain ceiling via pairGainCeilingController (#15).
+    // Replaces hardcoded per-pair if/else ceiling chains with adaptive ceilings
+    // that self-calibrate from rolling p95 EMA and exceedance history.
+    // Feed current-beat telemetry to the controller for EMA updates.
+    pairGainCeilingController.updatePair(key, p95, tailTelemetry.hotspotRate, telemetrySevereRate);
+    const adaptiveCeiling = pairGainCeilingController.getInstantCeiling(key, p95, telemetrySevereRate, tailTelemetry.hotspotRate);
+    effectiveGain = m.min(effectiveGain, adaptiveCeiling);
     // R76 E5 + R79 E4: Flicker-trust adaptive target deceleration. When a
     // pair has residual pressure (>0.50) and any upward target drift (>1.01),
     // the decorrelation mechanism is over-investing. Cap effectiveGain at 1.0
@@ -210,16 +185,16 @@ couplingEffectiveGain = (() => {
         effectiveGain = m.min(effectiveGain, 1.0);
       }
     }
-    // R81 E1 + R82 E5 + R84 E3 + R87 E3 + R91 E1 + R94 E1: Section-0
-    // warmup ramp. R94: density-flicker gets a shorter 12-beat ramp
-    // instead of full exemption. R93 showed full exemption destabilized
-    // flicker-axis pairs (flicker-phase:32, flicker-entropy:13) via
-    // excessive S0 nudges. 12 beats balances early decorrelation with
-    // cross-axis stability.
-    const warmupBeats = flags.isDensityFlickerPair ? 12 : 36;
+    // R81-R94 + R97 E3: Section-0 warmup ramp via warmupRampController (#16).
+    // Adaptive per-pair ramps derived from historical S0 exceedance and
+    // section length. Pairs that spike during S0 get shorter ramps for
+    // faster decorrelation; stable pairs get longer ramps for stability.
+    const warmupBeats = warmupRampController.getWarmupBeats(key);
     const gbc = couplingState.gateBeatCount;
     if (gbc < warmupBeats && couplingState.sectionResetCount === 0) {
       effectiveGain *= gbc / warmupBeats;
+      // Feed S0 exceedance data back to the controller
+      if (absCorr > target * 1.5) warmupRampController.recordS0Exceedance(key);
     }
     // R80 E2: Universal high-gain safety cap. R79 flicker-trust hit
     // effectiveGain 1.714 (budgetBoost 1.882). Cap all pairs at 1.2 to
