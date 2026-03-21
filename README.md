@@ -57,7 +57,7 @@ TypeScript (^5.9.3), ESLint (^9.0.0), and related tooling are dev dependencies. 
 
 Polychron does not hardcode musical structure — it steers it. The system generates compositions through a three-layer nervous system:
 
-**Conductor** — 42 intelligence modules cast multiplicative bias votes for density, tension, and flicker. Products are dampened, normalized, and committed to state. 13 hypermeta self-calibrating controllers auto-tune constants that previously required manual adjustment; a meta-controller watchdog detects and resolves inter-controller conflicts; whole-system coupling homeostasis and two-layer axis energy equilibration permanently eliminate coupling energy whack-a-mole. `signalReader` is the ONE read API for all consumers.
+**Conductor** — 42 intelligence modules cast multiplicative bias votes for density, tension, and flicker. Products are dampened, normalized, and committed to state. 16 hypermeta self-calibrating controllers auto-tune constants that previously required manual adjustment; a meta-controller watchdog detects and resolves inter-controller conflicts; whole-system coupling homeostasis and two-layer axis energy equilibration permanently eliminate coupling energy whack-a-mole. `signalReader` is the ONE read API for all consumers.
 
   v getSignals() / signalReader.*()          ^ explainabilityBus (diagnostic only)
 
@@ -146,7 +146,7 @@ The brain of the system. 42 modules register with `conductorIntelligence`, contr
 - **`melodic/`** (15) — Ambitus migration, counterpoint motion, interval balance, melodic contour, register migration, tessiture pressure, thematic recall, voice-leading efficiency
 - **`rhythmic/`** (15) — Accent patterns, attack density, onset regularity, rhythmic complexity, syncopation density, temporal proportions
 - **`texture/`** (20) — Articulation profiling, layer coherence, motivic density, orchestration weight, repetition fatigue, rest density, structural form, textural gradients, voice density
-- **`signal/`** (21 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry). Includes **`metaControllerRegistry`** — queryable topology manifest of all 13 hypermeta self-calibrating controllers (axis, file, interactors, snapshot API)
+- **`signal/`** (21 + `output/`) — Pipeline infrastructure — see [Diagnostic & Telemetry](#diagnostic--telemetry). Includes **`metaControllerRegistry`** — queryable topology manifest of all 16 hypermeta self-calibrating controllers (axis, file, interactors, snapshot API)
 - **`journey/`** (5) — Harmonic journey planning — key/mode selection across sections
 - **`profiles/`** (15) — Conductor config profiles (default, minimal, atmospheric, explosive, restrained, rhythmic drive) + merging/validation/tuning
 

@@ -61,22 +61,22 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // constraint (was even-beat-only). R82's 50% duty cycle at
         // 0.08-0.12 was too narrow -- phase collapsed to 0.51%.
         const isCoherentFreezePartialBypass = !isEmergencyStarved && share < 0.18 && context.coherentColdspotFreeze;
-        // R83 E2: Phase axis emergency gate bypass. When phase share
-        // stays below 0.02 for >8 consecutive beats, the phase axis is
-        // in sustained collapse. Force-bypass ALL coldspot gates to
-        // allow emergency relaxation regardless of surface conditions.
+        // R83 E2 + R97 E1: Phase collapse detection with adaptive thresholds
+        // from phaseFloorController (#14). Thresholds self-calibrate based on
+        // rolling phase volatility and coherent regime duration.
         if (axis === 'phase') {
-          if (share < 0.02) { state.phaseCollapseStreak++; }
+          const collapseThreshold = phaseFloorController.getCollapseThreshold();
+          const lowShareThreshold = phaseFloorController.getLowShareThreshold();
+          if (share < collapseThreshold) { state.phaseCollapseStreak++; }
           else { state.phaseCollapseStreak = 0; }
-          if (share < 0.03) { state.phaseLowShareStreak++; }
+          if (share < lowShareThreshold) { state.phaseLowShareStreak++; }
           else { state.phaseLowShareStreak = 0; }
         }
         const isPhaseEmergencyBypass = axis === 'phase' && state.phaseCollapseStreak > 8;
-        // R86 E1 + R87 E2 + R89 E1: Phase axis energy floor. Graduated
-        // boost when phase share stays below 3%. R89: added 20.0x extreme
-        // collapse boost when share<1% (R88 phase=0.98% despite 12.0x).
-        const isPhaseFloorActive = axis === 'phase' && state.phaseLowShareStreak > 12;
-        const isPhaseExtremeCollapse = axis === 'phase' && share < 0.01 && state.phaseLowShareStreak > 8;
+        // R86-R89 + R97 E1: Phase axis energy floor via phaseFloorController.
+        // Adaptive thresholds replace hardcoded 12/8 streak counts.
+        const isPhaseFloorActive = axis === 'phase' && phaseFloorController.isFloorActive(state.phaseLowShareStreak);
+        const isPhaseExtremeCollapse = axis === 'phase' && phaseFloorController.isExtremeCollapse(share, state.phaseLowShareStreak);
         if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && !isPhaseFloorActive && !isPhaseExtremeCollapse && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
           state.skippedColdspotRelaxations++;
           if (context.coherentColdspotFreeze) state.coldspotSkipReasons.coherentFreeze++;
@@ -92,12 +92,15 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         const nonNudgeableRelaxBoost = context.nonNudgeableTailPressure > 0 && context.nonNudgeableAxes.indexOf(axis) !== -1
           ? 1 + context.nonNudgeableTailPressure * 0.30
           : 1.0;
-        // R84 E2: Phase relaxation rate boost. When phaseCollapseStreak > 8,
-        // the 4.0x emergencyBoost is insufficient against 95-beat coherent
-        // streaks. Boost to 6.0x during sustained phase collapse.
-        const phaseCollapseBoost = isPhaseCollapse && state.phaseCollapseStreak > 8 ? 6.0 : 4.0;
-        const phaseFloorBoost = isPhaseExtremeCollapse ? 20.0 : (isPhaseFloorActive ? (state.phaseLowShareStreak > 20 ? 12.0 : 8.0) : 1.0);
-        const emergencyBoost = isPhaseCollapse ? phaseCollapseBoost : (isEmergencyStarved ? 3.0 : m.max(1.0, phaseFloorBoost));
+        // R84 E2 + R97 E1: Phase boost multipliers via phaseFloorController (#14).
+        // Continuous graduated formula replaces hardcoded 4.0/6.0/8.0/12.0/20.0
+        // step-function. Self-calibrates based on deficit severity, coherent
+        // regime duration, and recovery success history.
+        const phaseBoosts = axis === 'phase'
+          ? phaseFloorController.computeBoosts(share, state.phaseLowShareStreak, state.phaseCollapseStreak)
+          : { phaseCollapseBoost: 4.0, phaseFloorBoost: 1.0 };
+        const emergencyBoost = isPhaseCollapse ? phaseBoosts.phaseCollapseBoost : (isEmergencyStarved ? 3.0 : m.max(1.0, phaseBoosts.phaseFloorBoost));
+        if (axis === 'phase') phaseFloorController.recordBoostApplied(emergencyBoost);
         const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];

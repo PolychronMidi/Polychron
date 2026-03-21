@@ -1,3 +1,26 @@
+## R97 -- 2026-03-21 -- STABLE
+
+**Fingerprint:** 10/10 stable, 0 drifted | **STABLE on first run after major structural refactor**
+**Manifest health:** PASS (tailP90Max=0.932, tailExcMax=0.512, warningCount=2)
+
+### Evolutions Applied
+- **E1 (structural): phaseFloorController (#14)** -- new hypermeta self-calibrating controller replacing ~15 hardcoded phase collapse constants (thresholds 0.02/0.03, streak counts 8/12/20, boost multipliers 4.0/6.0/8.0/12.0/20.0) with continuous adaptive formulas derived from rolling phase share volatility EMA, coherent streak EMA, and recovery success tracking.
+- **E2 (structural): pairGainCeilingController (#15)** -- new hypermeta self-calibrating controller replacing the 4-pair hardcoded ceiling chain (density-flicker multi-branch if/else + tension-flicker + flicker-trust + tension-trust) with per-pair adaptive ceilings derived from rolling p95 EMA, exceedance EMA, and severity EMA. Tighten rate 0.008, relax rate 0.003.
+- **E3 (structural): warmupRampController (#16)** -- new hypermeta self-calibrating controller replacing hardcoded per-pair section-0 warmup beat counts (12 for density-flicker, 36 for others) with adaptive ramps derived from S0 exceedance history and section length EMA.
+- **E4: Baseline snapshot updated** -- baseline snapshot updated from R81 to R96 (3 consecutive STABLE).
+
+### Key Observations
+- All 18 pipeline steps passed. Lint/typecheck clean after fixing globals registration, non-ASCII characters, and unused variables.
+- Manifest health now PASS (was FAIL last 3 runs due to density-flicker p90). The adaptive pairGainCeilingController successfully self-calibrated density-flicker ceilings in its first run.
+- Golden fingerprint STABLE (0/10 dimensions shifted) despite replacing 50+ hardcoded magic numbers with adaptive EMA-driven logic. The controllers' initial calibration points were well-chosen.
+- Exceedance severity: 90 total beats (up from 26), 56 unique (up from 25). density-flicker still dominant at 39 beats. The ceiling controller is learning but hasn't fully converged yet.
+- regime=exploring for this run. Compare-runs found 6 section differences (2 major) vs baseline.
+- 3 new globals registered (phaseFloorController, pairGainCeilingController, warmupRampController), total globals 715 (was 712).
+
+### R98 Proposals
+- **E1: No changes -- stability test.** Run unchanged to verify controllers converge and fingerprint remains STABLE. The EMA-based controllers should self-calibrate further with continued use.
+- **E2: If exceedance severity increases, review pairGainCeilingController initial baseCeiling values** -- density-flicker baseCeiling=0.10 may need lowering if p95Ema settles above sensitivity threshold (0.82).
+
 ## R96 -- 2026-03-21 -- STABLE
 
 **Fingerprint:** 11/11 stable, 0 drifted | **STABLE #3 of 3 -- TARGET ACHIEVED**

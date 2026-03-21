@@ -5,32 +5,38 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
+## Major Changes (2)
+
+- !!! **section-count**: Section count: 3 -> 4
+- !!! **section-added**: Section 3 added (key=Eb major)
+
 ## Notable Changes (3)
 
-- !! **harmonic-change**: Section 0: A mixolydian -> F lydian
-- !! **harmonic-change**: Section 1: Bb mixolydian -> F ionian
-- !! **harmonic-change**: Section 2: Bb dorian -> F mixolydian
+- !! **harmonic-change**: Section 0: F lydian -> G# lydian
+- !! **harmonic-change**: Section 1: F ionian -> Ab mixolydian
+- !! **harmonic-change**: Section 2: F mixolydian -> C major
 
-## Moderate Changes (3)
+## Moderate Changes (4)
 
-- ! **phrase-count**: Section 0: 2 phrases -> 1 phrases
-- ! **phrase-count**: Section 2: 3 phrases -> 2 phrases
-- ! **note-count**: output2: 8339 notes -> 6569 notes (21.2% change)
+- ! **phrase-count**: Section 1: 3 phrases -> 2 phrases
+- ! **phrase-count**: Section 2: 2 phrases -> 1 phrases
+- ! **note-count**: output1: 4914 notes -> 6581 notes (33.9% change)
+- ! **note-count**: output2: 6569 notes -> 8328 notes (26.8% change)
 
 ## Minor Changes (4)
 
-- ~ **regime-shift**: Section 1 regime 'exploring': 83.7% -> 50.0%
-- ~ **regime-shift**: Section 1 regime 'coherent': 16.3% -> 50.0%
-- ~ **regime-shift**: Section 2 regime 'coherent': 13.0% -> 80.0%
-- ~ **regime-shift**: Section 2 regime 'exploring': 87.0% -> 20.0%
+- ~ **regime-shift**: Section 0 regime 'coherent': 44.4% -> 82.6%
+- ~ **regime-shift**: Section 0 regime 'exploring': 38.9% -> 0.0%
+- ~ **regime-shift**: Section 2 regime 'exploring': 20.0% -> 100.0%
+- ~ **regime-shift**: Section 2 regime 'coherent': 80.0% -> 0.0%
 
 ## Summary
 
-- Total differences: 10
-- Major: 0
+- Total differences: 13
+- Major: 2
 - Notable: 3
-- Moderate: 3
+- Moderate: 4
 - Minor: 4
 
 
-*Generated 2026-03-21T06:00:27.242Z*
+*Generated 2026-03-21T13:15:22.772Z*
