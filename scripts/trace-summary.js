@@ -502,10 +502,11 @@ function summarizeTrace(entries, manifest) {
       updateMinMax(couplingAbs[key], value);
       couplingSeries[key].push(value);
       couplingRawSeries[key].push(raw);
-      // R81 E5: Warmup-aware exceedance threshold. First 10% of beats
-      // use 0.92 to filter initialization transients that inflate S0
-      // exceedance counts. Remainder uses 0.90 (unchanged from R44 E6).
-      const exceedThresh = i < entries.length * 0.10 ? 0.92 : 0.90;
+      // R81 E5 + R86 E2: Warmup-aware exceedance threshold. First 10%
+      // of beats use 0.95 to filter initialization transients that inflate
+      // S0 exceedance counts. R86: raised from 0.92 after S0 accounted
+      // for 76% of exceedance beats (25/33) in R85.
+      const exceedThresh = i < entries.length * 0.10 ? 0.95 : 0.90;
       if (value > exceedThresh) {
         pairExceedanceBeats[key] = (pairExceedanceBeats[key] || 0) + 1;
         beatHadExceedance = true;

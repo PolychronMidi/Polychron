@@ -166,27 +166,36 @@ couplingEffectiveGain = (() => {
     if (corr > 0.80) {
       effectiveGain *= 0.7;
     }
-    // R71 E1 + R79 E3 + R80 E1 + R85 E3: Density-flicker decorrelation
-    // ceiling chain. R85 E3: Unified into single else-if to prevent
-    // stacking (R84 had severe + p90 + anti-corr triple-zeroing gain).
+    // R71 E1 + R79 E3 + R80 E1 + R85 E3 + R88 E1: Density-flicker
+    // decorrelation ceiling chain. R88: Added p95-only branch (>0.85)
+    // to catch cases where p95 is high but severeRate/hotspotRate are
+    // near-zero (R87: p95=0.896, p90=0.884, severeRate=0, hotspotRate=0
+    // caused manifest health FAIL).
     if (flags.isDensityFlickerPair && p95 > 0.88 && telemetrySevereRate > 0.08) {
       effectiveGain = m.min(effectiveGain, 0.08);
+    } else if (flags.isDensityFlickerPair && p95 > 0.85) {
+      effectiveGain = m.min(effectiveGain, 0.10);
     } else if (flags.isDensityFlickerPair && telemetrySevereRate > 0.10) {
       effectiveGain = m.min(effectiveGain, 0.10);
     } else if (flags.isDensityFlickerPair && p95 > 0.82 && tailTelemetry.hotspotRate > 0.01) {
       effectiveGain = m.min(effectiveGain, 0.15);
     }
-    // R83 E5: Tension-flicker exceedance ceiling. When tension-flicker
-    // p95 > 0.85, cap effectiveGain to prevent runaway exceedance.
-    // R82 saw tension-flicker emerge as dominant hotspot (p95 0.904,
-    // 41 exceedance beats) with no dedicated ceiling.
+    // R83 E5 + R86 E3: Tension-flicker exceedance ceiling. R86: tightened
+    // cap 0.12->0.08. R85 tension-flicker rebounded 4->15 beats despite
+    // the 0.12 cap (residualPressure 0.807, rank 1 budget priority).
     if (key === 'tension-flicker' && p95 > 0.85 && tailTelemetry.hotspotRate > 0.02) {
-      effectiveGain = m.min(effectiveGain, 0.12);
+      effectiveGain = m.min(effectiveGain, 0.08);
     }
     // R85 E2: Flicker-trust exceedance ceiling. R84 saw flicker-trust
     // emerge as dominant hotspot (p95 0.924, 62 exceedance beats,
     // severeRate 0.162) with no pair-specific ceiling.
     if (key === 'flicker-trust' && p95 > 0.88) {
+      effectiveGain = m.min(effectiveGain, 0.10);
+    }
+    // R87 E1: Tension-trust exceedance ceiling. R86 saw tension-trust
+    // emerge as dominant hotspot (p95 0.935, 26 exceedance beats) with
+    // no pair-specific ceiling. Same pattern as other pair ceilings.
+    if (key === 'tension-trust' && p95 > 0.88) {
       effectiveGain = m.min(effectiveGain, 0.10);
     }
     // R76 E5 + R79 E4: Flicker-trust adaptive target deceleration. When a
@@ -201,10 +210,13 @@ couplingEffectiveGain = (() => {
         effectiveGain = m.min(effectiveGain, 1.0);
       }
     }
-    // R81 E1 + R82 E5 + R84 E3: Section-0 exceedance warmup ramp.
-    // R84 E3: Extended 12->24 beats. R83 had all 22 exceedance beats
-    // in S0, suggesting 12 beats was insufficient initialization coverage.
-    const warmupBeats = 24;
+    // R81 E1 + R82 E5 + R84 E3 + R87 E3 + R91 E1 + R94 E1: Section-0
+    // warmup ramp. R94: density-flicker gets a shorter 12-beat ramp
+    // instead of full exemption. R93 showed full exemption destabilized
+    // flicker-axis pairs (flicker-phase:32, flicker-entropy:13) via
+    // excessive S0 nudges. 12 beats balances early decorrelation with
+    // cross-axis stability.
+    const warmupBeats = flags.isDensityFlickerPair ? 12 : 36;
     const gbc = couplingState.gateBeatCount;
     if (gbc < warmupBeats && couplingState.sectionResetCount === 0) {
       effectiveGain *= gbc / warmupBeats;

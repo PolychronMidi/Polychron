@@ -78,6 +78,7 @@ axisEnergyEquilibrator = (() => {
       coherentHotspotPairAdj: 0,
       coherentHotspotAxisAdj: 0,
       phaseCollapseStreak: 0,
+      phaseLowShareStreak: 0,
       lastWarmupTicks: axisEnergyEquilibratorConfig.WARMUP_DEFAULT
     };
   }

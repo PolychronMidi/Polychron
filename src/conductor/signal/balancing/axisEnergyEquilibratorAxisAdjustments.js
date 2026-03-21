@@ -68,9 +68,16 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         if (axis === 'phase') {
           if (share < 0.02) { state.phaseCollapseStreak++; }
           else { state.phaseCollapseStreak = 0; }
+          if (share < 0.03) { state.phaseLowShareStreak++; }
+          else { state.phaseLowShareStreak = 0; }
         }
         const isPhaseEmergencyBypass = axis === 'phase' && state.phaseCollapseStreak > 8;
-        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
+        // R86 E1 + R87 E2 + R89 E1: Phase axis energy floor. Graduated
+        // boost when phase share stays below 3%. R89: added 20.0x extreme
+        // collapse boost when share<1% (R88 phase=0.98% despite 12.0x).
+        const isPhaseFloorActive = axis === 'phase' && state.phaseLowShareStreak > 12;
+        const isPhaseExtremeCollapse = axis === 'phase' && share < 0.01 && state.phaseLowShareStreak > 8;
+        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && !isPhaseFloorActive && !isPhaseExtremeCollapse && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
           state.skippedColdspotRelaxations++;
           if (context.coherentColdspotFreeze) state.coldspotSkipReasons.coherentFreeze++;
           else if (axis === 'phase' && context.phaseSurfaceHot) state.coldspotSkipReasons.phaseHot++;
@@ -89,11 +96,13 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // the 4.0x emergencyBoost is insufficient against 95-beat coherent
         // streaks. Boost to 6.0x during sustained phase collapse.
         const phaseCollapseBoost = isPhaseCollapse && state.phaseCollapseStreak > 8 ? 6.0 : 4.0;
-        const emergencyBoost = isPhaseCollapse ? phaseCollapseBoost : (isEmergencyStarved ? 3.0 : 1.0);
+        const phaseFloorBoost = isPhaseExtremeCollapse ? 20.0 : (isPhaseFloorActive ? (state.phaseLowShareStreak > 20 ? 12.0 : 8.0) : 1.0);
+        const emergencyBoost = isPhaseCollapse ? phaseCollapseBoost : (isEmergencyStarved ? 3.0 : m.max(1.0, phaseFloorBoost));
         const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
-          if ((state.pairCooldowns[pair] || 0) > 0) continue;
+          // R86 E1: Bypass pair cooldowns when phase floor/extreme collapse is active
+          if (!isPhaseFloorActive && !isPhaseExtremeCollapse && (state.pairCooldowns[pair] || 0) > 0) continue;
           const baseline = V.optionalFinite(state.lastBaselines[pair]);
           if (baseline === undefined) continue;
           const nextBaseline = m.min(config.BASELINE_MAX, baseline + rate);
