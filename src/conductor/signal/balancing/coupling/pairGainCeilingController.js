@@ -54,8 +54,12 @@ pairGainCeilingController = (() => {
     const ps = getPairState(pair);
     ps.activeBeats++;
 
+    // E3: p95 EMA alpha scaled by hyperMetaOrchestrator to reduce reconciliation gap
+    const p95AlphaMultiplier = safePreBoot.call(() => hyperMetaOrchestrator.getP95AlphaMultiplier(), 1.0) || 1.0;
+    const effectiveP95Alpha = _P95_EMA_ALPHA * p95AlphaMultiplier;
+
     // EMA tracking
-    ps.p95Ema += (p95 - ps.p95Ema) * _P95_EMA_ALPHA;
+    ps.p95Ema += (p95 - ps.p95Ema) * effectiveP95Alpha;
     ps.exceedanceEma += (hotspotRate - ps.exceedanceEma) * _EXCEEDANCE_EMA_ALPHA;
     ps.severityEma += (severeRate - ps.severityEma) * _EXCEEDANCE_EMA_ALPHA;
 
@@ -65,19 +69,27 @@ pairGainCeilingController = (() => {
     const p95Excess = ps.p95Ema - profile.p95Sensitivity;
     const exceedanceExcess = ps.exceedanceEma - profile.exceedanceSensitivity;
 
+    // E4: S0 tightening multiplier from hyperMetaOrchestrator for Section 0 exceedance reduction
+    const s0Multiplier = safePreBoot.call(() => hyperMetaOrchestrator.getS0TighteningMultiplier(), 1.0) || 1.0;
+
     if (p95Excess > 0 || exceedanceExcess > 0) {
       // Tighten: pressure proportional to severity
       const tightenPressure = clamp(
         p95Excess * 2.0 + exceedanceExcess * 4.0 + ps.severityEma * 6.0,
         0, 1
       );
-      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure;
+      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * s0Multiplier;
       ps.ceiling = m.max(profile.minCeiling, ps.ceiling - tightenAmount);
     } else if (p95Excess < -0.05 && ps.exceedanceEma < profile.exceedanceSensitivity * 0.5) {
       // Relax: only when well below threshold AND exceedance is low
       const relaxPressure = clamp(m.abs(p95Excess) * 1.5, 0, 1);
       const relaxAmount = _CEILING_RELAX_RATE * relaxPressure;
       ps.ceiling = m.min(profile.maxCeiling, ps.ceiling + relaxAmount);
+    }
+
+    // E6: Report exceedance to orchestrator for axis-concentration tracking
+    if (hotspotRate > 0) {
+      safePreBoot.call(() => hyperMetaOrchestrator.recordExceedance(pair));
     }
   }
 
