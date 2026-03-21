@@ -1,108 +1,55 @@
 {
   "meta": {
-    "generated": "2026-03-10T14:27:28.427Z",
+    "generated": "2026-03-20T23:42:08.106Z",
     "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
     "dirB": "/home/jah/Polychron/metrics",
     "traceSizeA": 370,
-    "traceSizeB": 692,
+    "traceSizeB": 384,
     "sectionsA": 3,
-    "sectionsB": 5
+    "sectionsB": 3
   },
   "diffs": [
     {
-      "type": "section-count",
-      "severity": "major",
-      "detail": "Section count: 3 -> 5"
-    },
-    {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 0,
-      "detail": "Section 0: G mixolydian -> G aeolian"
-    },
-    {
-      "type": "phrase-count",
-      "severity": "moderate",
-      "section": 0,
-      "detail": "Section 0: 2 phrases -> 1 phrases"
-    },
-    {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 0,
-      "detail": "Section 0 regime 'coherent': 56.4% -> 82.1%"
-    },
-    {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 0,
-      "detail": "Section 0 regime 'exploring': 33.3% -> 0.0%"
+      "detail": "Section 0: G mixolydian -> Db aeolian"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 1,
-      "detail": "Section 1: C mixolydian -> B major"
+      "detail": "Section 1: C mixolydian -> G major"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
       "section": 1,
-      "detail": "Section 1: 3 phrases -> 2 phrases"
+      "detail": "Section 1: 3 phrases -> 1 phrases"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 1,
-      "detail": "Section 1 regime 'coherent': 14.7% -> 71.4%"
+      "detail": "Section 1 regime 'coherent': 14.7% -> 57.1%"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 1,
-      "detail": "Section 1 regime 'exploring': 85.3% -> 28.6%"
+      "detail": "Section 1 regime 'exploring': 85.3% -> 42.9%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 2,
-      "detail": "Section 2: E major -> B lydian"
+      "detail": "Section 2: E major -> Bb minor"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
       "section": 2,
       "detail": "Section 2: 3 phrases -> 4 phrases"
-    },
-    {
-      "type": "section-added",
-      "severity": "major",
-      "section": 3,
-      "detail": "Section 3 added (key=Gb mixolydian)"
-    },
-    {
-      "type": "section-added",
-      "severity": "major",
-      "section": 4,
-      "detail": "Section 4 added (key=G aeolian)"
-    },
-    {
-      "type": "note-count",
-      "severity": "major",
-      "layer": "output1",
-      "detail": "output1: 6052 notes -> 10918 notes (80.4% change)"
-    },
-    {
-      "type": "note-count",
-      "severity": "major",
-      "layer": "output2",
-      "detail": "output2: 6675 notes -> 15864 notes (137.7% change)"
-    },
-    {
-      "type": "pitch-center",
-      "severity": "moderate",
-      "layer": "output2",
-      "detail": "output2 mean pitch: 44.0 -> 36.6 (7.4 semitones)"
     }
   ]
 }

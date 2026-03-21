@@ -1,212 +1,67 @@
 {
   "meta": {
-    "generated": "2026-03-10T13:47:39.894Z",
-    "traceEntries": 367,
+    "generated": "2026-03-20T23:34:22.496Z",
+    "traceEntries": 463,
     "version": 1
   },
   "noteCount": {
-    "L1": 6052,
-    "L2": 6675,
-    "total": 12727
+    "L1": 7478,
+    "L2": 9720,
+    "total": 17198
   },
   "outputLoad": {
-    "traceEntries": 367,
-    "uniqueBeatKeys": 269,
-    "spanMs": 53500,
-    "notesPerTraceEntry": 34.6785,
-    "notesPerUniqueBeat": 47.3123,
-    "notesPerSecond": 237.8879,
+    "traceEntries": 463,
+    "uniqueBeatKeys": 463,
+    "spanMs": 0,
+    "notesPerTraceEntry": 37.1447,
+    "notesPerUniqueBeat": 37.1447,
+    "notesPerSecond": 0,
     "guard": null,
-    "progressIntegrity": {
-      "duplicateLayerBeatKeys": 0,
-      "overfullBeatKeys": 0,
-      "l1ProgressRegressions": 0,
-      "l1TimeRegressions": 0,
-      "pairedBeatKeys": 98,
-      "pairedBeatKeyRatio": 0.3643,
-      "integrity": "warning"
-    }
+    "progressIntegrity": null
   },
-  "pitchEntropy": 6.3291066390526804,
+  "pitchEntropy": 6.348647033076132,
   "density": {
-    "mean": 0.44959491549265695,
-    "variance": 0.002351923929509373
+    "mean": 0.4922470930249746,
+    "variance": 0.0030172779291600532
   },
   "tensionArc": [
-    0.2997449086736228,
-    0.6075411141264182,
-    0.6887635732634937,
-    0.6884340469836312
+    0.4724755689949405,
+    0.7227157918577946,
+    0.740672298219006,
+    0.749745627795323
   ],
-  "trustConvergence": 0.31382499999999997,
-  "trustFinal": {
-    "cadenceAlignment": 0.1775,
-    "coherenceMonitor": 0.5071,
-    "convergence": 0.2055,
-    "entropyRegulator": 0.2908,
-    "feedbackOscillator": 0.2641,
-    "phaseLock": 0.4093,
-    "restSynchronizer": 0.238,
-    "stutterContagion": 0.4183
-  },
-  "regimeDistribution": {
-    "initializing": 0.010899182561307902,
-    "evolving": 0.010899182561307902,
-    "coherent": 0.2724795640326976,
-    "exploring": 0.7057220708446866
-  },
-  "exceedanceSeverity": {
-    "density-tension": 2,
-    "density-flicker": 38,
-    "density-entropy": 3,
-    "density-trust": 3,
-    "tension-trust": 3,
-    "flicker-entropy": 3,
-    "flicker-trust": 4,
-    "entropy-trust": 2,
-    "tension-flicker": 2,
-    "tension-entropy": 13
-  },
-  "totalExceedanceBeats": 73,
+  "trustConvergence": 0,
+  "trustFinal": {},
+  "regimeDistribution": {},
+  "exceedanceSeverity": {},
+  "totalExceedanceBeats": 0,
   "exceedanceComposite": {
-    "uniqueBeats": 39,
-    "uniqueRate": 0.1054,
-    "totalPairExceedanceBeats": 73,
-    "topPairs": [
-      {
-        "pair": "density-flicker",
-        "beats": 38
-      },
-      {
-        "pair": "tension-entropy",
-        "beats": 13
-      },
-      {
-        "pair": "flicker-trust",
-        "beats": 4
-      }
-    ]
+    "uniqueBeats": 0,
+    "uniqueRate": 0,
+    "totalPairExceedanceBeats": 0,
+    "topPairs": []
   },
   "hotspotMigration": {
-    "topPair": "density-flicker",
-    "topPairs": [
-      {
-        "pair": "density-flicker",
-        "beats": 38
-      },
-      {
-        "pair": "tension-entropy",
-        "beats": 13
-      },
-      {
-        "pair": "flicker-trust",
-        "beats": 4
-      }
-    ],
-    "top2Concentration": 0.6986,
+    "topPair": "",
+    "topPairs": [],
+    "top2Concentration": 0,
     "axisShares": {
-      "density": 0.1887,
-      "tension": 0.1684,
-      "flicker": 0.1529,
-      "entropy": 0.1903,
-      "trust": 0.188,
-      "phase": 0.1116
+      "density": null,
+      "tension": null,
+      "flicker": null,
+      "entropy": null,
+      "trust": null,
+      "phase": null
     }
   },
   "telemetryHealth": {
-    "score": 0.5139,
-    "phaseTelemetryPresent": true,
-    "phaseIntegrity": "warning",
-    "underSeenPairCount": 6,
-    "maxGap": 0.4067
+    "score": 0,
+    "phaseTelemetryPresent": false,
+    "phaseIntegrity": "critical",
+    "underSeenPairCount": 0,
+    "maxGap": 0
   },
-  "couplingMeans": {
-    "density-entropy": 0.2958,
-    "density-flicker": 0.4187,
-    "density-phase": 0.1303,
-    "density-tension": 0.261,
-    "density-trust": 0.4256,
-    "entropy-phase": 0.0666,
-    "entropy-trust": 0.3746,
-    "flicker-entropy": 0.2422,
-    "flicker-phase": 0.0521,
-    "flicker-trust": 0.4389,
-    "tension-entropy": 0.2878,
-    "tension-flicker": 0.2773,
-    "tension-phase": 0.0805,
-    "tension-trust": 0.2212
-  },
-  "couplingCorrelation": {
-    "density-entropy": {
-      "pearsonR": -0.335,
-      "meanSigned": 0.0086,
-      "direction": "decreasing"
-    },
-    "density-flicker": {
-      "pearsonR": -0.9353,
-      "meanSigned": 0.2691,
-      "direction": "decreasing"
-    },
-    "density-phase": {
-      "pearsonR": -0.6406,
-      "meanSigned": -0.1225,
-      "direction": "decreasing"
-    },
-    "density-tension": {
-      "pearsonR": -0.2488,
-      "meanSigned": 0.1162,
-      "direction": "stable"
-    },
-    "density-trust": {
-      "pearsonR": 0.4889,
-      "meanSigned": -0.3354,
-      "direction": "increasing"
-    },
-    "entropy-phase": {
-      "pearsonR": 0.4572,
-      "meanSigned": 0.0462,
-      "direction": "increasing"
-    },
-    "entropy-trust": {
-      "pearsonR": 0.3963,
-      "meanSigned": -0.0122,
-      "direction": "increasing"
-    },
-    "flicker-entropy": {
-      "pearsonR": -0.5546,
-      "meanSigned": 0.0473,
-      "direction": "decreasing"
-    },
-    "flicker-phase": {
-      "pearsonR": 0.4714,
-      "meanSigned": 0.0401,
-      "direction": "increasing"
-    },
-    "flicker-trust": {
-      "pearsonR": 0.5849,
-      "meanSigned": -0.1623,
-      "direction": "increasing"
-    },
-    "tension-entropy": {
-      "pearsonR": -0.6934,
-      "meanSigned": -0.104,
-      "direction": "decreasing"
-    },
-    "tension-flicker": {
-      "pearsonR": -0.4386,
-      "meanSigned": 0.2056,
-      "direction": "decreasing"
-    },
-    "tension-phase": {
-      "pearsonR": -0.2613,
-      "meanSigned": -0.0767,
-      "direction": "stable"
-    },
-    "tension-trust": {
-      "pearsonR": -0.3745,
-      "meanSigned": -0.1313,
-      "direction": "decreasing"
-    }
-  },
+  "couplingMeans": {},
+  "couplingCorrelation": {},
   "activeProfile": "default"
 }

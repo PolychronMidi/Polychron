@@ -1,13 +1,13 @@
 {
   "meta": {
-    "generated": "2026-03-10T14:27:26.588Z",
+    "generated": "2026-03-20T23:42:06.975Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 433,
-    "totalGlobals": 713,
-    "totalProvides": 728,
-    "totalConsumes": 2827,
+    "totalGlobals": 712,
+    "totalProvides": 727,
+    "totalConsumes": 2826,
     "totalEdges": 2199,
     "crossSubsystemEdges": 1473,
     "maxFanIn": {
@@ -26,8 +26,8 @@
       },
       "utils": {
         "files": 19,
-        "provides": 227,
-        "consumes": 69
+        "provides": 226,
+        "consumes": 68
       },
       "conductor": {
         "files": 181,
@@ -282,7 +282,6 @@
         "subsubsPerSub",
         "measureStart",
         "measureStartTime",
-        "beatsUntilBinauralShift",
         "beatCount",
         "beatsOn",
         "beatsOff",
@@ -462,9 +461,8 @@
       "consumes": [
         "bassInstrument",
         "bassInstrument2",
-        "beatCount",
         "beatStart",
-        "beatsUntilBinauralShift",
+        "beatStartTime",
         "c",
         "cCH1",
         "cCH2",
@@ -5456,6 +5454,7 @@
         "bass",
         "bassVar",
         "beatStart",
+        "beatStartTime",
         "c",
         "cBal",
         "cBal2",
@@ -5498,7 +5497,6 @@
         "beatCount",
         "beatIndex",
         "beatStartTime",
-        "beatsUntilBinauralShift",
         "binauralFreqOffset",
         "binauralMinus",
         "binauralOffset",
@@ -18965,6 +18963,7 @@
         "bass",
         "bassVar",
         "beatStart",
+        "beatStartTime",
         "cBal",
         "cBal2",
         "cBal3",
@@ -18988,7 +18987,6 @@
         "beatCount",
         "beatIndex",
         "beatStartTime",
-        "beatsUntilBinauralShift",
         "flipBin",
         "flipBinF2",
         "flipBinT2",
@@ -19560,9 +19558,8 @@
       "from": "src/utils/init.js",
       "to": "src/utils/instrumentation.js",
       "globals": [
-        "beatCount",
         "beatStart",
-        "beatsUntilBinauralShift",
+        "beatStartTime",
         "cCH1",
         "cCH2",
         "cCH3",

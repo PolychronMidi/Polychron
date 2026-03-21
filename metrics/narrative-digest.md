@@ -1,78 +1,74 @@
 # Composition Narrative Digest
 
 > Auto-generated per run by `narrative-digest.js`. A human-readable story of what the system did.
-> Generated: 2026-03-10T14:27:27.110Z | Trace data from: 2026-03-10T14:27:26.496Z
+> Generated: 2026-03-20T23:42:07.279Z | Trace data from: 2026-03-20T23:42:06.882Z
 
 ## Overview
 
-The composition was generated at **72 BPM** with a tuning reference of **432 Hz**, using the **explosive** conductor profile.
+The composition was generated at **72 BPM** with a tuning reference of **432 Hz**, using the **default** conductor profile.
 
-The system processed **686 beats** spanning **101.1 seconds** of musical time.
-Layer 1 experienced 288 beats; Layer 2 experienced 398 beats.
+The system processed **381 beats** spanning **59.3 seconds** of musical time.
+Layer 1 experienced 172 beats; Layer 2 experienced 209 beats.
 
 ## Harmonic Journey
 
-- **Section 1:** G aeolian (origin)
-- **Section 2:** B major (relative-major)
-- **Section 3:** B lydian (parallel-lydian)
-- **Section 4:** B mixolydian (parallel-mixolydian (mode-shift))
-- **Section 5:** G aeolian (return-home)
+- **Section 1:** D# aeolian (origin)
+- **Section 2:** G major (relative-major)
+- **Section 3:** Bb minor (mediant-flip)
 
 ## The System's Inner Life
 
-The system spent most of its time **searching for coherence** (63.0% of beats in the `exploring` regime).
+The system spent most of its time **searching for coherence** (67.5% of beats in the `exploring` regime).
 
 Regime breakdown:
 
-- **`exploring`** - 432 beats (63.0%) - searching for coherence
-- **`coherent`** - 244 beats (35.6%) - operating in harmony
-- **`initializing`** - 6 beats (0.9%) - warming up
-- **`evolving`** - 4 beats (0.6%) - developing new musical ideas
+- **`exploring`** - 257 beats (67.5%) - searching for coherence
+- **`coherent`** - 116 beats (30.4%) - operating in harmony
+- **`initializing`** - 4 beats (1.0%) - warming up
+- **`evolving`** - 4 beats (1.0%) - developing new musical ideas
 
 ### Regime Transitions
 
-The system underwent **7 regime transitions** during the composition.
+The system underwent **5 regime transitions** during the composition.
 
-- Beat 6: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
-- Beat 10: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
-- Beat 140: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
-- Beat 157: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
-- Beat 224: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
-- Beat 508: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
-- Beat 557: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 4: transitioned from **initializing** to **evolving** (the system went from warming up to developing new musical ideas)
+- Beat 8: transitioned from **evolving** to **coherent** (the system went from developing new musical ideas to operating in harmony)
+- Beat 104: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
+- Beat 182: transitioned from **exploring** to **coherent** (the system went from searching for coherence to operating in harmony)
+- Beat 202: transitioned from **coherent** to **exploring** (the system went from operating in harmony to searching for coherence)
 
 ### Controller Cadence
 
-The emitted trace contains **686 beat entries**, but the regime controller advanced on only **251 measure-recorder ticks**.
-**435** entries reused an existing profiler snapshot and **6** entries landed during warmup.
-Beat-level escalation refreshed the profiler on **214** traced entries.
-On the controller cadence, resolved regime time was: `exploring` 166, `coherent` 121, `evolving` 4.
-The controller recorded **2 forced transition events**.
-Phase telemetry closed **warning** with **100.0%** valid samples, **28.3%** changing samples, and average phase-coupling coverage **37.8%**.
-The longest stale phase run was **6** beats, **491** entries carried stale pair telemetry, and **427** entries reported zero phase-coupling coverage.
-Phase-surface availability resolved to **1036 available**, **1684 variance-gated**, **0 stale/stale-gated**, and **0 missing** pair observations across the trace.
-The most reconciliation-starved phase pairs were **density-phase** (0 stale, 421 variance-gated), **tension-phase** (0 stale, 421 variance-gated), **flicker-phase** (0 stale, 421 variance-gated).
-Telemetry health scored **0.504** with **8** under-seen controller pairs and reconciliation gap **0.343**.
-The worst controller/trace reconciliation gaps remained in **tension-trust** (gap 0.343), **tension-flicker** (gap 0.332), **density-tension** (gap 0.184).
+The emitted trace contains **381 beat entries**, but the regime controller advanced on only **132 measure-recorder ticks**.
+**249** entries reused an existing profiler snapshot and **4** entries landed during warmup.
+Beat-level escalation refreshed the profiler on **122** traced entries.
+On the controller cadence, resolved regime time was: `exploring` 88, `coherent` 49, `evolving` 4.
+The controller recorded **1 forced transition event**.
+Phase telemetry closed **warning** with **100.0%** valid samples, **26.0%** changing samples, and average phase-coupling coverage **30.4%**.
+The longest stale phase run was **6** beats, **281** entries carried stale pair telemetry, and **265** entries reported zero phase-coupling coverage.
+Phase-surface availability resolved to **464 available**, **1044 variance-gated**, **0 stale/stale-gated**, and **0 missing** pair observations across the trace.
+The most reconciliation-starved phase pairs were **density-phase** (0 stale, 261 variance-gated), **tension-phase** (0 stale, 261 variance-gated), **flicker-phase** (0 stale, 261 variance-gated).
+Telemetry health scored **0.388** with **2** under-seen controller pairs and reconciliation gap **0.223**.
+The worst controller/trace reconciliation gaps remained in **tension-entropy** (gap 0.223), **density-trust** (gap 0.201).
 
 ## Signal Landscape
 
-**Density** ranged from 0.26 to 0.66 (avg 0.47). The density was balanced.
-**Tension** ranged from 0.05 to 0.74 (avg 0.59). The composition maintained a relaxed tension profile.
-**Flicker** ranged from 0.77 to 1.17 (avg 0.93). Rhythmic variation was moderate.
+**Density** ranged from 0.34 to 0.65 (avg 0.47). The density was balanced.
+**Tension** ranged from 0.05 to 0.66 (avg 0.48). The composition maintained a relaxed tension profile.
+**Flicker** ranged from 0.86 to 1.11 (avg 1.03). Rhythmic variation was moderate.
 
 ## Trust Governance
 
 The trust system governed cross-layer module influence through EMA-weighted scores:
 
-- **coherenceMonitor**: average score 0.52 (weight 1.39, trusted)
-- **stutterContagion**: average score 0.46 (weight 1.34, trusted)
-- **phaseLock**: average score 0.44 (weight 1.33, trusted)
-- **entropyRegulator**: average score 0.34 (weight 1.25, trusted)
-- **feedbackOscillator**: average score 0.26 (weight 1.20, neutral)
-- **restSynchronizer**: average score 0.24 (weight 1.18, neutral)
-- **convergence**: average score 0.21 (weight 1.16, neutral)
-- **cadenceAlignment**: average score 0.19 (weight 1.14, neutral)
+- **coherenceMonitor**: average score 0.53 (weight 1.40, trusted)
+- **phaseLock**: average score 0.40 (weight 1.30, trusted)
+- **stutterContagion**: average score 0.37 (weight 1.28, trusted)
+- **entropyRegulator**: average score 0.30 (weight 1.23, trusted)
+- **feedbackOscillator**: average score 0.26 (weight 1.19, neutral)
+- **restSynchronizer**: average score 0.22 (weight 1.17, neutral)
+- **convergence**: average score 0.20 (weight 1.15, neutral)
+- **cadenceAlignment**: average score 0.17 (weight 1.13, neutral)
 
 The system placed the most faith in **coherenceMonitor** and was most skeptical of **cadenceAlignment**.
 
@@ -81,21 +77,23 @@ The system placed the most faith in **coherenceMonitor** and was most skeptical 
 Average pairwise decorrelation stayed controlled, but the tail still carried residual hotspot pressure.
 
 **Coupling health:** 9 hotspot pairs (p95 > 0.70) -- system stressed.
-Severe (p95 > 0.85): **entropy-trust** (0.877), **flicker-trust** (0.858).
+Severe (p95 > 0.85): **density-flicker** (0.946).
 
 ## Output
 
-- **Layer 1:** 10918 notes
-- **Layer 2:** 15864 notes
-- **Load:** 26782 total notes, 49.97 notes per traced beat, 264.94 notes per second
+- **Layer 1:** 6474 notes
+- **Layer 2:** 7598 notes
+- **Load:** 14072 total notes, 52.70 notes per traced beat, 237.25 notes per second
 
 ## Coherence Verdicts
 
-The system issued **0 critical**, **1 warning**, and **5 informational** findings.
+The system issued **0 critical**, **3 warning**, and **4 informational** findings.
 
 ### Warnings
 
-- 7 tension contributors boosting with constant drag: regimeReactiveDamping (1.18), pipelineCouplingManager (0.84), narrativeTrajectory (1.08), consonanceDissonanceTracker (1.14), harmonicDensityOscillator (1.08), harmonicVelocityMonitor (0.88), repetitionFatigueMonitor (1.08). Consider widening registration bounds or adding dynamic response.
+- flicker pipeline strained with 57% crush - multiplicative suppression eroding signal range.
+- 7 density contributors suppressing with constant drag: regimeReactiveDamping (0.91), pipelineCouplingManager (0.90), harmonicRhythmDensityRatio (0.88), syncopationDensityTracker (0.88), climaxProximityPredictor (0.90), restDensityTracker (0.90), voiceDensityBalancer (0.90). Consider widening registration bounds or adding dynamic response.
+- 8 tension contributors boosting with constant drag: regimeReactiveDamping (1.18), pipelineCouplingManager (1.13), narrativeTrajectory (1.08), consonanceDissonanceTracker (1.10), harmonicDensityOscillator (1.08), harmonicVelocityMonitor (0.88), tensionResolutionTracker (1.10), climaxProximityPredictor (0.80). Consider widening registration bounds or adding dynamic response.
 
 
 

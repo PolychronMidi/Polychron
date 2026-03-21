@@ -131,7 +131,9 @@ const rfx = (groupName, ch, effectNum, condition = undefined, overrides = undefi
 };
 // Respect both instance state and legacy naked global `firstLoop` set by tests
 const setBalanceAndFXCLenBeforeFX = c.length;
-if (rf() < .5*bpmRatio3 || beatCount % beatsUntilBinauralShift < 1 || firstLoop < 1) { firstLoop = 1; firstLoop = 1;
+const absTimeMs = beatStartTime * 1000;
+const nextBalanceAndFXShiftMs = absTimeMs + rf(2, 5) * 1000;
+if (rf() < .5*bpmRatio3 || absTimeMs >= nextBalanceAndFXShiftMs || firstLoop < 1) { firstLoop = 1;
   // Apply a limited change to balance offset: use rl() but cap per-iteration change to 4 ticks for stability
   const prevBal = balOffset;
   const balMin = Number(spatialCanvas.balOffset[0]);

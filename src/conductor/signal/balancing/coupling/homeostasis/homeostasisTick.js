@@ -20,7 +20,16 @@ homeostasisTick = (() => {
     S.tickCount++;
 
     const tailRecoveryPressure = m.max(S.stickyTailPressure, S.densityFlickerTailPressure, S.tailRecoveryDrive);
-    const nonNudgeableTailPressure = S.nonNudgeableTailPressure;
+    let nonNudgeableTailPressure = S.nonNudgeableTailPressure;
+    // R78 E5: Age non-nudgeable tail pressure. Persistent non-zero pressure
+    // (entropy-trust p95 0.896) drags budget without correction. Decay after
+    // 1 tick, floored at 85% of raw value (75 ticks to reach floor).
+    if (nonNudgeableTailPressure > 0) {
+      S.nonNudgeableTailIdleTicks = (S.nonNudgeableTailIdleTicks || 0) + 1;
+      nonNudgeableTailPressure *= m.max(0.85, 1.0 - S.nonNudgeableTailIdleTicks * 0.002);
+    } else {
+      S.nonNudgeableTailIdleTicks = 0;
+    }
     const dynamicsSnapshot = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const densityFlickerAbs = dynamicsSnapshot && dynamicsSnapshot.couplingMatrix && typeof dynamicsSnapshot.couplingMatrix['density-flicker'] === 'number'
       ? m.abs(dynamicsSnapshot.couplingMatrix['density-flicker'])
