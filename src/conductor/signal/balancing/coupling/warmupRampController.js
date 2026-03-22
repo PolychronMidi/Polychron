@@ -18,8 +18,11 @@ warmupRampController = (() => {
   let warmupRampControllerBeatCount = 0;
 
   // Default warmup ranges per pair category
+  // R10 E2: density-flicker base 12->16, min 6->8 to extend S0 ceiling coverage.
+  // R9a proved shorter ramp backfires (exceedance 8->61). Longer ramp = more
+  // protective ceiling window. Keep max=24 to cap adaptive upper bound.
   const _WARMUP_DEFAULTS = {
-    'density-flicker': { base: 12, min: 6, max: 24 },
+    'density-flicker': { base: 16, min: 8, max: 24 },
     _default: { base: 30, min: 16, max: 48 }
   };
 
@@ -87,7 +90,9 @@ warmupRampController = (() => {
 
   /**
    * R2 E1: Get a tighter ceiling for a pair during S0 warmup.
-   * Ramps linearly from minCeiling to baseCeiling over the warmup window.
+   * R11 E2: Changed from linear to quadratic ramp for faster early ceiling
+   * coverage. Linear ramp left first ~30% of warmup at very low ceiling,
+   * allowing exceedance spikes. Quadratic provides 2x ceiling at 50% progress.
    * Returns Infinity outside warmup (no ceiling override).
    * @param {string} pair
    * @param {number} sectionBeat - current beat index within the section
@@ -104,7 +109,9 @@ warmupRampController = (() => {
     const minC = profile ? clamp(profile.ceiling * 0.5, 0.02, 0.08) : 0.04;
     const maxC = profile ? profile.ceiling : 0.10;
     const t = ps.lastWarmupBeats > 0 ? sectionBeat / ps.lastWarmupBeats : 1;
-    return minC + (maxC - minC) * t;
+    // Quadratic: sqrt(t) gives faster early rise (at t=0.25 -> 0.50 vs linear 0.25)
+    const tCurve = m.sqrt(t);
+    return minC + (maxC - minC) * tCurve;
   }
 
   function tick() {

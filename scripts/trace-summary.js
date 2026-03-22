@@ -1556,6 +1556,81 @@ function summarizeTrace(entries, manifest) {
     })(),
     // R66 E6: Mid-run diagnostic snapshots (section-boundary state arc)
     diagnosticArc: diagnosticArc.length > 0 ? diagnosticArc : null,
+    // R9 E2: Per-section phase share arc for cross-run phase stability tracking
+    phaseShareArc: diagnosticArc.length > 0 ? (() => {
+      const arc = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null) {
+          arc[snap.section] = snap.phaseShare;
+        }
+      }
+      return Object.keys(arc).length > 0 ? arc : null;
+    })() : null,
+    // R10 E3: Record which profile was active (for cross-profile stability tracking)
+    profileUsed: diagnosticArc.length > 0 ? (() => {
+      for (let di = diagnosticArc.length - 1; di >= 0; di--) {
+        if (diagnosticArc[di].activeProfile) return diagnosticArc[di].activeProfile;
+      }
+      return null;
+    })() : null,
+    // R10 E5: Per-section phase context for S2 dip investigation
+    phaseShareContext: diagnosticArc.length > 0 ? (() => {
+      const ctx = {};
+      for (let di = 0; di < diagnosticArc.length; di++) {
+        const snap = diagnosticArc[di];
+        if (typeof snap.section !== 'number') continue;
+        ctx[snap.section] = {
+          phase: snap.phaseShare,
+          regime: snap.regime || null,
+          coupling: snap.couplingStrength || null,
+          gain: snap.globalGainMultiplier || null
+        };
+      }
+      return Object.keys(ctx).length > 0 ? ctx : null;
+    })() : null,
+    // R11 E1: Phase-regime correlation — confirms coherent suppresses phase share
+    phaseRegimeCorrelation: diagnosticArc.length > 0 ? (() => {
+      var coherentPhase = [], exploringPhase = [];
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (snap.phaseShare === null || typeof snap.phaseShare !== 'number') continue;
+        if (snap.regime === 'coherent') coherentPhase.push(snap.phaseShare);
+        else if (snap.regime === 'exploring') exploringPhase.push(snap.phaseShare);
+      }
+      var avgC = coherentPhase.length > 0 ? coherentPhase.reduce(function(a, b) { return a + b; }, 0) / coherentPhase.length : null;
+      var avgE = exploringPhase.length > 0 ? exploringPhase.reduce(function(a, b) { return a + b; }, 0) / exploringPhase.length : null;
+      return {
+        coherentAvgPhase: avgC !== null ? Number(avgC.toFixed(4)) : null,
+        exploringAvgPhase: avgE !== null ? Number(avgE.toFixed(4)) : null,
+        coherentSections: coherentPhase.length,
+        exploringSections: exploringPhase.length,
+        suppressionRatio: avgC !== null && avgE !== null && avgE > 0 ? Number((avgC / avgE).toFixed(3)) : null
+      };
+    })() : null,
+    // R11 E3: Regime distribution by profile for cross-run divergence tracking
+    regimeByProfile: diagnosticArc.length > 0 ? (() => {
+      var prof = null;
+      for (var di = diagnosticArc.length - 1; di >= 0; di--) {
+        if (diagnosticArc[di].activeProfile) { prof = diagnosticArc[di].activeProfile; break; }
+      }
+      if (!prof) return null;
+      var regC = 0, regE = 0, regOther = 0;
+      for (var ri = 0; ri < diagnosticArc.length; ri++) {
+        var r = diagnosticArc[ri].regime;
+        if (r === 'coherent') regC++;
+        else if (r === 'exploring') regE++;
+        else regOther++;
+      }
+      var total = regC + regE + regOther;
+      return total > 0 ? {
+        profile: prof,
+        coherentShare: Number((regC / total).toFixed(4)),
+        exploringShare: Number((regE / total).toFixed(4)),
+        otherShare: Number((regOther / total).toFixed(4)),
+        snapshotCount: total
+      } : null;
+    })() : null,
     // R71 E5: Trust turbulence events — snapshots where any trust system
     // velocity exceeded +/-0.10 per snapshot interval.
     trustTurbulenceEvents: (() => {

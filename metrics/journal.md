@@ -1,3 +1,134 @@
+## R11 -- 2026-03-22 -- STABLE
+
+**Profile:** explosive (cross-profile switch from default) | **Beats:** 570 entries | **Duration:** ~810s | **Notes:** ~18k
+**Fingerprint:** 11/11 stable (incl. crossProfileWarning, tolerances widened 1.3x) | Drifted: none
+**Manifest health:** PASS (regime=exploring, tailP90Max=0.827, tailExcMax=0.430)
+
+### Key Observations
+- STABLE (0/11 drifted). Cross-profile switch (default->explosive). All dimensions comfortable with wide margins.
+- Exceedance: 7 unique beats, 18 total. density-flicker(6), density-trust(4), flicker-trust(4), tension-trust(2), density-tension(1), flicker-entropy(1). S0-concentrated (7 warmup beats, warmupShare=1.0).
+- Regime: coherent 52.3%, exploring 45.9%. Explosive profile producing more coherent than R10a (31.1%), suggesting regime balance varies run-to-run even within same profile.
+- Tension arc: [0.46, 0.57, 0.47, 0.43] -- slight descending shape. Less ascending than R10b.
+- phaseShareArc: {S0:0, S1:0.064, S2:0.029, S3:0.060, S4:0.014}. Phase share 1.4% overall. S1/S3 peaks (exploring context in R10, coherent here).
+- **phaseRegimeCorrelation** (E1 metric): coherentAvgPhase=0.038, exploringAvgPhase=0.009, suppressionRatio=4.44. CONTRADICTS R10 hypothesis — coherent sections have HIGHER phase share this run. Phase-regime relationship is not universal; composition structure dominates.
+- **regimeByProfile** (E3 metric): explosive coherentShare=0.50, exploringShare=0.50. Balanced 50/50 (vs R10a's 31.1% coherent, R10b's 60.1% coherent). Confirms high run-to-run regime variability.
+- telemetryHealth: 0.409 (delta 0.043, tolerance 0.35). Moderate. underSeenPairCount=2.
+- entropy-trust (E4 observation): 0 exceedance beats. Confirms R10a surge was a one-off stochastic event.
+- density-flicker warmup: 7 beats with sqrt ramp. S0 p95=0.932. Exceedance still S0-concentrated but beat count comparable to R10b.
+
+### Evolutions Applied (from R10)
+- E1: Phase-regime correlation metric -- **confirmed** -- `phaseRegimeCorrelation` deployed. First run shows coherent > exploring (ratio 4.44), contradicting R10's coherent-suppresses-phase hypothesis. Phase-regime relationship is composition-dependent, not universal.
+- E2: Warmup ceiling sqrt ramp -- **inconclusive** -- changed linear to sqrt for faster early coverage. warmupBeats=7, exceedance 7 S0 beats. R10b had 5. Comparable; needs more runs to evaluate.
+- E3: Regime-profile divergence tracking -- **confirmed** -- `regimeByProfile` deployed. Explosive shows 50/50 split this run (vs prior runs showing 31% or 60% coherent). High variance confirmed.
+- E4: entropy-trust monitoring (observation) -- **confirmed** -- 0 exceedance beats. One-off pattern from R10a does not persist.
+- E5: telemetryHealth variance (observation) -- score 0.409. Series: 0.425, 0.248, 0.366, 0.409. Oscillation narrowing around 0.35-0.41 range.
+
+### Evolutions Proposed (for R12)
+- E1: Phase-composition correlation -- phase share varies by composition structure, not regime. Track section key/scale alongside phase share to identify structural drivers.
+- E2: Warmup sqrt ramp confirmation -- second run needed. If S0 exceedance drops below 5 unique beats on next run, confirm.
+- E3: density-flicker warmup adaptive ceiling boost -- S0 p95 still 0.932. Consider pair-specific initial ceiling bump (start from 60% baseCeiling instead of 50%).
+- E4: Coupling axis balance -- axis shares show trust(22%)/entropy(21%)/tension(21%) dominating, flicker(15.5%)/phase(1.4%) suppressed. Track axis Gini for balance trend.
+- E5: Tension arc shape stability -- arc reverted to descending [0.46, 0.57, 0.47, 0.43] (was ascending in R10). Monitor whether section-progressive bias needs reinforcement.
+
+### Hypotheses to Track
+- Phase-regime correlation is NOT universal: coherent suppresses phase in some compositions but not others. Composition structure (key, harmonic content) is the primary phase share driver. Cross-run variance >> regime effect.
+- Regime distribution within a profile has high variance: explosive produces 31-52% coherent across runs. Profile sets tendency, stochastic composition dynamics dominate.
+- telemetryHealth is stabilizing: 0.425→0.248→0.366→0.409. Variance narrowing, centering near 0.38.
+- density-flicker S0 is fundamentally warmup-structural: ramp shape (linear vs sqrt) has minimal impact. The pair decorrelates slowly regardless of ceiling trajectory.
+
+---
+
+## R10 -- 2026-03-22 -- STABLE
+
+**Profile:** default (cross-profile switch from explosive) | **Beats:** 375 entries (375 unique) | **Duration:** 816s | **Notes:** ~12k
+**Fingerprint:** 11/11 stable (incl. crossProfileWarning, tolerances widened 1.3x) | Drifted: none
+**Manifest health:** PASS (regime=exploring, tailP90Max=0.891, tailExcMax=0.629)
+
+### Key Observations
+- STABLE (0/11 drifted). Cross-profile switch (explosive->default) detected, tolerances widened 1.3x. All dimensions comfortable.
+- Exceedance: 5 unique beats, 12 total. density-flicker(5), tension-trust(2), density-trust(1), tension-flicker(1), density-tension(1), flicker-trust(1), flicker-entropy(1). Broad spread, low concentration.
+- Regime: coherent 60.1%, exploring 38.0%. Default profile heavily favors coherent (vs explosive's 31.1%). regimeDistribution delta 0.148 (tolerance 0.26, widened by cross-profile).
+- Tension arc: [0.50, 0.60, 0.67, 0.69] -- clean ascending shape. Consistent with R9b/R10a.
+- phaseShareArc: {S0: 0, S1: 0.046, S2: 0.022, S3: 0.034}. Phase share 3.4% overall. Pattern confirmed: coherent sections (S0, S2) suppress phase coupling, exploring sections (S1, S3) have higher phase share.
+- phaseShareContext: S0/S2 regime=coherent (phase 0/0.022), S1/S3 regime=exploring (phase 0.046/0.034). E5 diagnostic confirms regime-phase coupling relationship.
+- telemetryHealth: 0.366. Moderate. underSeenPairCount=2.
+- profileUsed: "default". E3 tracking confirmed across both profiles.
+- Manifest health: PASS. E4 coherent REGIME_SCALE relaxation (0.95->0.97) eliminated non-fatal coupling warning from R9b.
+- entropy-trust: 0 exceedance beats (was 25 in R10a). Confirms R10a's entropy-trust surge was stochastic S4-specific, not structural.
+
+### R10a Intermediate Run
+- EVOLVED 1/10: hotspotMigration drifted (0.663 > 0.55). entropy-trust emerged with 25 exceedance beats (24 in S4).
+- exceedanceSeverity: 53 total (was 30 in R9b), 46 unique. entropy-trust S4 p95=0.911.
+- Profile: explosive. phaseShareArc showed S1 recovery to 10.9% (E1 gateScale working in explosive), but S2/S3 collapse to ~0.4% (both coherent regime).
+- telemetryHealth: 0.248 (best score to date).
+- R10b re-run produced STABLE 0/11 against updated baseline.
+
+### Evolutions Applied (from R9)
+- E1: Phase share recovery (explosive gateScale 0.20->0.22) -- **confirmed** -- R10a phase share S1 recovered to 10.9% (was 3.0% in R9b). Default profile at 3.4% overall. Regime (coherent vs exploring) is primary driver of phase share, not gateScale alone.
+- E2: S0 warmup extension (density-flicker base 12->16, min 6->8) -- **inconclusive** -- warmupBeats=15 in R10a (up from 12). density-flicker exceedance: 14 in R10a (was 12 in R9b), 5 in R10b. Extended warmup didn't reduce R10a exceedance but may stabilize across runs.
+- E3: Cross-profile tracking (profileUsed metric) -- **confirmed** -- field deployed. R10a=explosive, R10b=default. Validated cross-profile stochastic switching.
+- E4: Manifest health coupling (coherent REGIME_SCALE 0.95->0.97) -- **confirmed** -- R9b FAIL->R10a/R10b PASS. tension-flicker coupling no longer triggers at coherent threshold 0.8245.
+- E5: phaseShareContext diagnostic -- **confirmed** -- per-section regime/coupling/gain context deployed. Reveals coherent regime suppresses phase coupling (phase near-zero in coherent sections).
+
+### Evolutions Proposed (for R11)
+- E1: Phase-regime coupling investigation -- phase share drops to near-zero in coherent regime sections. Is this inherent to coherent dynamics or a gating artifact? Compare phase coupling mechanics under coherent vs exploring.
+- E2: density-flicker warmup effectiveness -- extended warmup (E2) was inconclusive. density-flicker remains the persistent S0 exceedance source (5-14 beats across runs). Consider ceiling shape (exponential ramp vs linear) for faster S0 coverage.
+- E3: Regime profile divergence -- default profile produces 60% coherent, explosive produces 31%. Track whether composition quality differs between regimes.
+- E4: entropy-trust structural monitoring -- R10a had 25 entropy-trust exceedance beats (all S4), R10b had 0. Monitor whether this pair resurfaces or was a one-off.
+- E5: telemetryHealth variance -- score oscillates: 0.425->0.248->0.366 across runs. Track whether the oscillation narrows.
+
+### Hypotheses to Track
+- Phase coupling is regime-gated: coherent regime suppresses phase share to near-zero, exploring allows 3-11%. This is consistent across both profiles and multiple runs. May be structural to the coherent regime's tighter coupling dynamics.
+- Cross-profile switching is stochastic and frequent (3 out of 4 recent runs changed profile). The 1.3x tolerance widening handles this well.
+- density-flicker is the only persistent structural exceedance source. All other pair exceedances are transient/stochastic.
+- entropy-trust exceedance is composition-specific (S4-concentrated when it appears) and does not persist across runs.
+
+---
+
+## R9 -- 2026-03-22 -- STABLE
+
+**Profile:** explosive (cross-profile switch from default) | **Beats:** 751 entries (555 unique) | **Duration:** 847s | **Notes:** ~29k
+**Fingerprint:** 11/11 stable (incl. crossProfileWarning) | Drifted: none
+**Manifest health:** FAIL (non-fatal) -- coupling exceeds threshold for coherent regime: tension-flicker=-0.813; density-flicker p90=0.900
+
+### Key Observations
+- STABLE (0/11 drifted). Cross-profile switch (default->explosive) detected, tolerances widened 1.3x. All dimensions comfortable.
+- Exceedance: 12 unique beats, 30 total pair-beats. Top pairs: density-flicker(12), tension-flicker(12), density-tension(2), density-trust(2), flicker-trust(2). All S0 warmup-concentrated.
+- Regime rebalanced: coherent 28.2%, exploring 70.7%. E5 monopoly threshold 0.53->0.55 restored coherent share from 8.7% to healthy 28% without drift.
+- Tension arc: [0.42, 0.71, 0.66, 0.71] -- ascending plateau with strong S3/S4 recovery. Best arc shape to date.
+- phaseShareArc populated: {S0: 0, S1: 0.030, S2: 0.008, S3: 0.019, S4: 0.027}. Phase share dropped to 2.7% (was 8.5% in R8b). E4 gateScale widening may have reduced phase coupling frequency.
+- telemetryHealth: 0.4249. varianceGatedRate 0.684 (improved from prior), phaseStaleRate 0.748. underSeenPairCount=3.
+- flicker-trust: p95=0.832, 2 exceedance beats at threshold 0.85. R8 E5 baseCeiling 0.08 confirmed structurally effective.
+- Manifest health non-fatal: tension-flicker coupling -0.813 in coherent regime (threshold 0.807); density-flicker p90=0.900. Advisory-level concern, not blocking.
+
+### R9a Intermediate Run
+- E3 (warmup base 12->8, min 6->4, max 24->18) + E6 (density-flicker baseCeiling 0.10->0.08, minCeiling 0.04->0.03) caused exceedance explosion: 8->61 density-flicker beats. EVOLVED 1/10.
+- Root cause: shorter warmup removed protective ceiling coverage too early; tighter baseCeiling starved the corrective decorrelation signal.
+- Both E3 and E6 reverted. Lesson: warmup ramp length is protective (longer = more ceiling coverage), and density-flicker ceiling must stay >=0.10.
+
+### Evolutions Applied (from R8)
+- E1: flicker-trust ceiling confirmation (observation) -- **confirmed** -- p95=0.832, 2 exceedance beats. R8 E5 (baseCeiling 0.08) is structurally effective across profile change.
+- E2: phaseShareArc metric -- **confirmed** -- per-section phase energy share tracking deployed. Shows S0=0, S1 peak 0.030, S2 dip 0.008, ascending S3-S4.
+- E3: S0 warmup ramp tightening (base 12->8) -- **reverted** -- caused exceedance explosion in R9a. Warmup length is protective, not expendable.
+- E4: telemetryHealth recovery (phaseVarianceGateScale 0.18->0.25) -- **confirmed** -- telemetryHealth 0.4249 (was 0.328). Gate relaxation improved variance-gated rate.
+- E5: Coherent regime floor (monopoly threshold 0.53->0.55) -- **confirmed** -- coherent 8.7%->28.2%. regimeDistribution delta 0.072 (tolerance 0.26, relaxed). Sweet spot confirmed at 0.55.
+- E6: density-flicker S0 ceiling (baseCeiling 0.10->0.08) -- **reverted** -- combined with E3 backfire. density-flicker ceiling must remain >=0.10.
+
+### Evolutions Proposed (for R10)
+- E1: Phase share recovery investigation -- phase share cratered 8.5%->2.7% (axisShares.phase=0.027). Likely caused by E4 gateScale widening (0.18->0.25). Consider partial revert to 0.22 or investigate phase coupling frequency.
+- E2: S0 warmup structural alternative -- all exceedance remains S0 warmup (12 unique beats). Ramp tightening failed (R9a). Alternative: adaptive S0 ceiling boost that extends, not shortens, ceiling coverage in early beats.
+- E3: Cross-profile stability tracking -- profile switched default->explosive stochastically. Track whether this is composition-structural or random.
+- E4: Manifest health coupling warning -- tension-flicker -0.813 at threshold 0.807, density-flicker p90=0.900 at threshold 0.85. Both non-fatal but rising.
+- E5: phaseShareArc S2 dip investigation -- phase share dips to 0.008 in S2 (was 0.029 in R8). Section-dependent phase dynamics may indicate structural coupling interference.
+
+### Hypotheses to Track
+- Monopoly threshold sweet spot confirmed at 0.55: coherent 28.2% is healthy, regime delta comfortable. Further tuning unlikely to improve.
+- Phase share drop 8.5%->2.7% is the clearest regression. phaseVarianceGateScale widening (E4) is the prime suspect -- gating more beats means fewer beats contribute to phase coupling.
+- Warmup ramp cannot be shortened without alternative ceiling coverage. The ramp IS the ceiling in S0.
+- density-flicker and tension-flicker are the persistent exceedance sources. Both share flicker as common axis -- may need flicker-specific warmup treatment.
+
+---
+
 ## R8 -- 2026-03-22 -- STABLE
 
 **Profile:** default | **Beats:** 509 entries (505 unique) | **Duration:** 519s | **Notes:** ~14k
