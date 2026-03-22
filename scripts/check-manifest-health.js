@@ -43,7 +43,10 @@ const REGIME_SCALE = {
   initializing: 1.15,
   exploring:    1.10,
   evolving:     1.00,
-  coherent:     0.95,
+  // R10 E4: raised 0.95->0.97; coherent regime naturally has tighter coupling
+  // and tension-flicker at -0.813 barely exceeded 0.8075 (0.85*0.95).
+  // New threshold: 0.85*0.97 = 0.8245, giving structural room.
+  coherent:     0.97,
   drifting:     1.00,
   fragmented:   0.90,
   stagnant:     0.90,

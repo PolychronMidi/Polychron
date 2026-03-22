@@ -86,9 +86,10 @@ conductorProfileExplosive = () => ({
   },
   // R69 E2: Phase variance gate. Without this, explosive defaults to 1.0
   // (no gating), letting 92% of phase variance events through and starving
-  // the phase axis of energy. 0.20 matches the aggressive character while
-  // still providing meaningful gating (atmospheric uses 0.15).
-  phaseVarianceGateScale: 0.20,
+  // the phase axis of energy. R10 E1: raised 0.20->0.22 to recover phase share
+  // (cratered 8.5%->2.7% during explosive profile run; wider gate admits more
+  // phase pairs while preserving aggressive character).
+  phaseVarianceGateScale: 0.22,
   journeyBoldness: 1.8,
   emission: {
     noiseProfile: 'dramatic',

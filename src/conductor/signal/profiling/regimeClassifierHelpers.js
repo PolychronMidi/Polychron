@@ -57,11 +57,10 @@ regimeClassifierHelpers = (() => {
       : 0;
     const rawOpportunityPressure = clamp(rawNonCoherentOpportunityShare / 0.20, 0, 1);
     const monopolyPressure = clamp(
-      // R8 E4: Lowered coherent share threshold 0.58->0.53 to fire monopoly
-      // detector sooner. Coherent share has risen 3 consecutive runs to 53.6%.
-      // Moderated from 0.50 (R8a) to 0.53 -- 0.50 caused coherent to crater
-      // to 15.1% with regimeDistribution delta 0.196/0.200 (near-drift).
-      clamp((projectedCoherentShare - 0.53) / 0.18, 0, 1) * 0.44 +
+      // R9 E5: Raised coherent share threshold 0.53->0.55 to allow more coherent
+      // regime. R8b coherent was 8.7% (too low). 0.55 should target ~15-20%.
+      // History: 0.58 (original) -> 0.50 (R8a, too aggressive) -> 0.53 (R8b) -> 0.55 (R9).
+      clamp((projectedCoherentShare - 0.55) / 0.18, 0, 1) * 0.44 +
       clamp(opportunityGap / 0.22, 0, 1) * 0.34 +
       transitionScarcity * 0.12 +
       (projectedRunBeatCount > 18 && (projectedResolvedCounts.exploring || 0) === 0 ? 0.10 : 0) +

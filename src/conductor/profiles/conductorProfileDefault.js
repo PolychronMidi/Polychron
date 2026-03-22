@@ -85,7 +85,9 @@ conductorProfileDefault = () => ({
     rhythmicDrive: 1.0
   },
   journeyBoldness: 1.0,
-  phaseVarianceGateScale: 0.18,
+  // R9 E4: Raised from 0.18 to 0.25 to admit more phase pairs past variance gate,
+  // reducing varianceGatedRate and improving telemetry health score (0.328->target 0.40+)
+  phaseVarianceGateScale: 0.25,
   emission: {
     noiseProfile: 'subtle',
     sourceNoiseInfluence: 0.12,
