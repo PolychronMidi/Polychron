@@ -198,6 +198,8 @@ function summarizeTrace(entries, manifest) {
   // R6 E4: S0 warmup vs post-warmup exceedance beat counters
   let s0WarmupExceedance = 0;
   let s0PostWarmupExceedance = 0;
+  // R8 E6: Per-section coupling values for dominant exceedance pair p95 computation
+  const sectionCouplingSeries = {};
   // R58 E6: Guard/coupling interaction diagnostic. Partition coupling stats
   // by guarded (scale < 0.999) vs unguarded beats to reveal whether the
   // output-load guard inflates or dampens coupling through uniform suppression.
@@ -526,6 +528,15 @@ function summarizeTrace(entries, manifest) {
       if (!couplingAbs[key]) couplingAbs[key] = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
       if (!couplingSeries[key]) couplingSeries[key] = [];
       if (!couplingRawSeries[key]) couplingRawSeries[key] = [];
+      // R8 E6: Accumulate per-section coupling values for section p95
+      if (typeof e.beatKey === 'string') {
+        const coupSec = parseInt(e.beatKey.split(':')[0], 10);
+        if (Number.isFinite(coupSec)) {
+          if (!sectionCouplingSeries[coupSec]) sectionCouplingSeries[coupSec] = {};
+          if (!sectionCouplingSeries[coupSec][key]) sectionCouplingSeries[coupSec][key] = [];
+          sectionCouplingSeries[coupSec][key].push(value);
+        }
+      }
       updateMinMax(couplingAbs[key], value);
       couplingSeries[key].push(value);
       couplingRawSeries[key].push(raw);
@@ -1418,6 +1429,29 @@ function summarizeTrace(entries, manifest) {
           warmupShare: Number((s0WarmupExceedance / total).toFixed(3)),
           concentration: s0WarmupExceedance > s0PostWarmupExceedance * 2 ? 'warmup-concentrated' : (s0PostWarmupExceedance > s0WarmupExceedance * 2 ? 'post-warmup-concentrated' : 'distributed')
         };
+      })(),
+      // R8 E6: Per-section p95 for top exceedance pairs. Reveals whether section
+      // concentration reflects structurally elevated coupling or transient spikes.
+      sectionP95: (() => {
+        if (exceedancePairsSorted.length === 0 || Object.keys(sectionCouplingSeries).length === 0) return null;
+        const topPairs = exceedancePairsSorted.slice(0, 3).map(function(p) { return p.pair; });
+        const result = {};
+        const secKeys = Object.keys(sectionCouplingSeries);
+        for (let s = 0; s < secKeys.length; s++) {
+          const secData = sectionCouplingSeries[secKeys[s]];
+          const secResult = {};
+          for (let p = 0; p < topPairs.length; p++) {
+            const pair = topPairs[p];
+            const vals = secData[pair];
+            if (vals && vals.length >= 3) {
+              const sorted = vals.slice().sort(function(a, b) { return a - b; });
+              const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95)));
+              secResult[pair] = Number(sorted[idx].toFixed(4));
+            }
+          }
+          if (Object.keys(secResult).length > 0) result[secKeys[s]] = secResult;
+        }
+        return Object.keys(result).length > 0 ? result : null;
       })()
     },
     // R99 E6: Axis exceedance concentration diagnostic

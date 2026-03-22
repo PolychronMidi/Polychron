@@ -180,7 +180,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         globalGainMultiplier: mainPHome ? mainPHome.globalGainMultiplier : 0,
         regime: mainPSnap ? mainPSnap.regime : 'unknown',
         couplingStrength: mainPSnap ? mainPSnap.couplingStrength : 0,
-        phaseIntegrity: mainPSnap ? (mainPSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
+        phaseIntegrity: mainPSnap ? (mainPSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown',
+        axisEnergyShare: pipelineCouplingManager.getAxisEnergyShare()
       });
     }
 
@@ -265,7 +266,8 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       globalGainMultiplier: mainHomeSnap ? mainHomeSnap.globalGainMultiplier : 0,
       regime: mainDynSnap ? mainDynSnap.regime : 'unknown',
       couplingStrength: mainDynSnap ? mainDynSnap.couplingStrength : 0,
-      phaseIntegrity: mainDynSnap ? (mainDynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown'
+      phaseIntegrity: mainDynSnap ? (mainDynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown',
+      axisEnergyShare: pipelineCouplingManager.getAxisEnergyShare()
     });
   }
 

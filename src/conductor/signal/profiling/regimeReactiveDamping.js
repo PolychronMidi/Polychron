@@ -182,7 +182,12 @@ regimeReactiveDamping = (() => {
     const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD;
     // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
     const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT;
+    // R8 E3: Section-progressive tension bias. Adds a small ascending nudge
+    // across sections to prevent V-shaped tension arc [0.44, 0.62, 0.43, 0.43].
+    // Max nudge +0.03 at final section. Does not depend on regime.
+    const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
+    const sectionTensionNudge = sectionProgress * 0.03;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge;
     const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);

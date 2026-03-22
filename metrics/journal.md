@@ -1,3 +1,47 @@
+## R8 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 509 entries (505 unique) | **Duration:** 519s | **Notes:** ~14k
+**Fingerprint:** 10/10 stable | Drifted: none
+**Manifest health:** PASS (tailP90Max=0.733, tailExcMax=0.491) | **vs baseline:** DIVERGENT (6 sections, 3 major diffs)
+
+### Key Observations
+- STABLE (0/10 drifted). First STABLE since R6. All dimensions within tolerance with healthy margins.
+- Exceedance collapsed: 42→8 total (81% drop), 35→8 unique. Only density-flicker remains, all in S0 warmup.
+- density-tension neutralized: 22→0 exceedance beats, p95 0.564 (was 0.677 in R8a). E2 ceiling profile fully effective.
+- Tension arc: plateau [0.46, 0.68, 0.59, 0.58] — E3 section-progressive bias confirmed. No more S3/S4 collapse.
+- Regime: coherent 8.7%, exploring 89.5%. E4 monopoly tightening (0.58→0.53) prevents coherent accumulation. No forced breaks in R8b.
+- phaseShare populated: [0, 0.131, 0.029, 0.085] — E1 traceDrain fix confirmed. Phase axis share 8.5% (was near-zero in R7).
+- regimeDistribution delta 0.040 (tolerance 0.20) — comfortable margin after E4 moderation from 0.50→0.53.
+- hotspotMigration delta 0.192 (tolerance 0.55) — well within bounds. Top pair density-flicker stable between R8a→R8b.
+- telemetryHealth 0.328 (delta 0.165, tolerance 0.35). Under-seen pair count improved 4→1.
+
+### R8a Intermediate Run
+- E4 initially set to 0.50 (too aggressive). Coherent cratered to 15.1%, regimeDistribution delta 0.196 (tolerance 0.20, only 0.004 margin).
+- hotspotMigration drifted (0.584 > 0.55) due to density-tension→density-flicker shift. EVOLVED 1/10.
+- Moderated E4 to 0.53, producing R8b STABLE.
+
+### Evolutions Applied (from R7)
+- E1: traceDrain phaseShare fix — **confirmed** — phaseShare populated in diagnosticArc, values [0, 0.131, 0.029, 0.085]
+- E2: density-tension ceiling profile (baseCeiling 0.12) — **confirmed** — exceedance 22→0, p95 0.564
+- E3: Tension section-progressive bias (+0.03/section) — **confirmed** — arc V-shape→plateau [0.46, 0.68, 0.59, 0.58]
+- E4: Coherent monopoly tightening (0.58→0.53) — **confirmed** — coherent 53.6%→8.7%, regime balanced
+- E5: flicker-trust baseCeiling (0.10→0.08) — **inconclusive** — flicker-trust 0 exceedance in R8b (was 8 in R8a), confounded by regime shift
+- E6: sectionP95 exceedance metric — **confirmed** — metric populated, shows S0-concentration pattern
+
+### Evolutions Proposed (for R9)
+- E1: flicker-trust ceiling confirmation — re-evaluate E5 next run; if exceedance remains 0, confirm
+- E2: Phase axis share stability tracking — phase share fluctuates [0→0.13→0.03→0.08]; investigate S2 dip
+- E3: S0 warmup exceedance reduction — all 8 remaining exceedance beats are S0 warmup (density-flicker p95 0.957); tighten warmup ramp
+- E4: Telemetry health score recovery — score 0.328, down from 0.493; investigate phase stale rate and variance gating
+- E5: Coherent regime floor investigation — 8.7% coherent may be too low; monitor whether 0.53 threshold needs further tuning
+- E6: density-flicker S0 p95 ceiling — S0 p95 0.957 vs S1 0.257; cold-start ceiling profile for density-flicker
+
+### Hypotheses to Track
+- E4 regime balance is sensitive to threshold: 0.50 gives 15.1% coherent (near-drift), 0.53 gives 8.7% (stable). Sweet spot may be closer to 0.55.
+- flicker-trust E5 may be working but masked by regime redistribution. Track across multiple runs.
+- density-flicker cold-start is the last remaining structural exceedance source. All 8 beats are S0 warmup.
+- Phase share variation across sections (0→0.13→0.03→0.08) suggests phase coupling has section-dependent dynamics worth understanding.
+
 ## R7 -- 2026-03-21 -- EVOLVED
 
 **Profile:** default | **Beats:** 343 entries (269 unique) | **Duration:** 385s | **Notes:** 12,245

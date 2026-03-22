@@ -22,7 +22,9 @@ pairGainCeilingController = (() => {
   const _PAIR_PROFILES = {
     'density-flicker': { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.25, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
     'tension-flicker': { baseCeiling: 0.10, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.83, exceedanceSensitivity: 0.06 },
-    'flicker-trust':   { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.30, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
+    'flicker-trust':   { baseCeiling: 0.08, minCeiling: 0.04, maxCeiling: 0.30, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
+    // R8 E2: density-tension ceiling -- dominant hotspot pair (p95 0.911, 22 exceedance beats)
+    'density-tension': { baseCeiling: 0.12, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.08 },
     'density-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
     'tension-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
     // R5 E1: flicker-phase profile to contain balloon-effect displacement
