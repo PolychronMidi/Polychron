@@ -267,6 +267,14 @@ function computeFingerprint() {
     }
   }
 
+  // R5 E4: Coupling correlation extremity flag -- pairs with |pearsonR| > 0.85
+  const couplingExtremes = [];
+  for (const [pair, corr] of Object.entries(couplingCorrelation)) {
+    if (corr && typeof corr.pearsonR === 'number' && Math.abs(corr.pearsonR) > 0.85) {
+      couplingExtremes.push({ pair, pearsonR: corr.pearsonR, direction: corr.direction || 'stable' });
+    }
+  }
+
   // R39 E4 & E5: Extract Exceedance Severity and Spike Trace Data
   const exceedanceSeverity = {};
   let totalExceedanceBeats = 0;
@@ -370,6 +378,10 @@ function computeFingerprint() {
     telemetryHealth,
     couplingMeans,
     couplingCorrelation,
+    // R5 E4: Pairs with extreme correlation (|pearsonR| > 0.85)
+    couplingExtremes: couplingExtremes.length > 0 ? couplingExtremes : null,
+    // R7 E3: Count of extreme-correlation pairs for cross-run tracking
+    correlationExtremeCount: couplingExtremes.length,
     activeProfile: (manifest && manifest.config && manifest.config.activeProfile) || 'unknown'
   };
 }

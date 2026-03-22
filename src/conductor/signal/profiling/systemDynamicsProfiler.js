@@ -5,10 +5,11 @@ systemDynamicsProfiler = (() => {
   const N_DIMS = DIM_NAMES.length;
   const N_COMPOSITIONAL_DIMS = 4;
   const WINDOW = 32;
-  const MIN_WINDOW_DEFAULT = 6;
+  // R5 E5: Reduced from 6 to 4 to accelerate phase warmup and bring phase pairs online sooner
+  const MIN_WINDOW_DEFAULT = 4;
   const PHASE_COUPLING_PAIRS = ['density-phase', 'tension-phase', 'flicker-phase', 'entropy-phase'];
   const PHASE_STALE_PAIR_THRESHOLD = 12;
-  const PHASE_FRESHNESS_ESCALATION = 4;
+  const PHASE_FRESHNESS_ESCALATION = 3;
   const STATE_SMOOTHING_BASELINE = 0.12;
   const ZSCORE_MIN_SAMPLES = 8;
   const systemDynamicsProfilerConfig = {

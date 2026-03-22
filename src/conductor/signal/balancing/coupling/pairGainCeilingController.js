@@ -6,7 +6,8 @@
 
 pairGainCeilingController = (() => {
 
-  const _P95_EMA_ALPHA = 0.06;
+  // R6 E2: Increased from 0.06 to 0.08 to accelerate EMA convergence for flicker-trust reconciliation
+  const _P95_EMA_ALPHA = 0.08;
   const _EXCEEDANCE_EMA_ALPHA = 0.04;
   const _CEILING_ADAPT_RATE = 0.008;
   const _CEILING_RELAX_RATE = 0.003;
@@ -20,9 +21,14 @@ pairGainCeilingController = (() => {
   // The ceiling adapts around this anchor, never straying too far.
   const _PAIR_PROFILES = {
     'density-flicker': { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.25, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
-    'tension-flicker': { baseCeiling: 0.12, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.83, exceedanceSensitivity: 0.06 },
-    'flicker-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
+    'tension-flicker': { baseCeiling: 0.10, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.83, exceedanceSensitivity: 0.06 },
+    'flicker-trust':   { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.30, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
+    'density-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
     'tension-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
+    // R5 E1: flicker-phase profile to contain balloon-effect displacement
+    'flicker-phase':   { baseCeiling: 0.16, minCeiling: 0.06, maxCeiling: 0.45, p95Sensitivity: 0.80, exceedanceSensitivity: 0.06 },
+    // R7 E5: flicker-entropy profile -- sole underseen pair (lagIndex 0.116, p95 0.841)
+    'flicker-entropy': { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.82, exceedanceSensitivity: 0.06 },
   };
 
   function getPairState(pair) {
@@ -72,18 +78,21 @@ pairGainCeilingController = (() => {
     // E4: S0 tightening multiplier from hyperMetaOrchestrator for Section 0 exceedance reduction
     const s0Multiplier = safePreBoot.call(() => hyperMetaOrchestrator.getS0TighteningMultiplier(), 1.0) || 1.0;
 
+    // E4 (R100): Phase-aware rate scaling from orchestrator system phase
+    const globalMultiplier = safePreBoot.call(() => hyperMetaOrchestrator.getRateMultiplier('global'), 1.0) || 1.0;
+
     if (p95Excess > 0 || exceedanceExcess > 0) {
       // Tighten: pressure proportional to severity
       const tightenPressure = clamp(
         p95Excess * 2.0 + exceedanceExcess * 4.0 + ps.severityEma * 6.0,
         0, 1
       );
-      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * s0Multiplier;
+      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * s0Multiplier * globalMultiplier;
       ps.ceiling = m.max(profile.minCeiling, ps.ceiling - tightenAmount);
     } else if (p95Excess < -0.05 && ps.exceedanceEma < profile.exceedanceSensitivity * 0.5) {
       // Relax: only when well below threshold AND exceedance is low
       const relaxPressure = clamp(m.abs(p95Excess) * 1.5, 0, 1);
-      const relaxAmount = _CEILING_RELAX_RATE * relaxPressure;
+      const relaxAmount = _CEILING_RELAX_RATE * relaxPressure * globalMultiplier;
       ps.ceiling = m.min(profile.maxCeiling, ps.ceiling + relaxAmount);
     }
 

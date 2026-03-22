@@ -16,13 +16,15 @@ setTuningAndInstruments = () => {
 }
 
 /**
- * Randomly updates binaural beat instruments and FX on beat shifts
+ * Randomly updates binaural beat instruments and FX on timed shifts
  * @returns {void}
  */
+let nextInstrumentShiftMs = 0;
 setOtherInstruments = () => {
   const absTimeMs = beatStartTime * 1000;
-  const nextInstrumentShiftMs = absTimeMs + rf(2, 5) * 1000;
-  if (rf() < .3 || absTimeMs >= nextInstrumentShiftMs || firstLoop<1 ) {
+  const timedShift = absTimeMs >= nextInstrumentShiftMs;
+  if (firstLoop < 1 || timedShift) {
+    nextInstrumentShiftMs = absTimeMs + rf(2, 5) * 1000;
 p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' };
   return [
     ...reflectionBinaural.map(ch=>({...tmp,vals:[ch,ra(otherInstruments)]})),

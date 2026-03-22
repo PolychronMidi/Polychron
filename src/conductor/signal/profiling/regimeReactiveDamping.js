@@ -27,13 +27,15 @@ regimeReactiveDamping = (() => {
     drifting: -1,    // suppress
   };
 
+  // R6 E3 + R7 E1: Tension regime biases. Coherent reverted to 0 (R6 coherent=-0.5
+  // flattened ascending arc to plateau). Stagnant/evolving +0.5 retained but rare.
   const REGIME_TENSION_DIR = {
-    stagnant: 0,
+    stagnant: 0.5,     // mild boost to break stagnation
     fragmented: 0,
     oscillating: 0,
     exploring: 1,
-    coherent: 0,
-    evolving: 0,
+    coherent: 0,       // neutral -- R6's -0.5 flattened tension arc
+    evolving: 0.5,     // mild boost to support musical evolution
     drifting: 1,
   };
 

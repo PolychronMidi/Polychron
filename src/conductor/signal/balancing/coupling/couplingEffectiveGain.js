@@ -191,9 +191,15 @@ couplingEffectiveGain = (() => {
     // faster decorrelation; stable pairs get longer ramps for stability.
     const warmupBeats = warmupRampController.getWarmupBeats(key);
     const gbc = couplingState.gateBeatCount;
-    if (gbc < warmupBeats && couplingState.sectionResetCount === 0) {
+    if (gbc < warmupBeats) {
       effectiveGain *= gbc / warmupBeats;
-      // Feed S0 exceedance data back to the controller
+      // R2 E1: Tighter ceiling during warmup to reduce section-start exceedance
+      const warmupCeiling = warmupRampController.getWarmupCeiling(key, gbc);
+      // R5 E2 + R6 E1: Two-tier flicker warmup ceiling. density-flicker gets 0.50x
+      // (tightened from 0.60) to target persistent S0 exceedance; other flicker pairs 0.60x.
+      const flickerMul = key === 'density-flicker' ? 0.50 : (key.indexOf('flicker') !== -1 ? 0.60 : 1.0);
+      effectiveGain = m.min(effectiveGain, warmupCeiling * flickerMul);
+      // Feed exceedance data back to the controller
       if (absCorr > target * 1.5) warmupRampController.recordS0Exceedance(key);
     }
     // R80 E2: Universal high-gain safety cap. R79 flicker-trust hit

@@ -1,6 +1,7 @@
 /**
  * Manages binaural beat pitch shifts and volume crossfades at beat boundaries,
  * synced across layers via absoluteTimeGrid using ms-precision timestamps.
+ * This should not be a perceptible effect, allNoteOff is used to prevent detune artifacts.
  * @returns {void}
  */
 const V = validator.create('setBinaural');
@@ -46,11 +47,9 @@ setBinaural = () => {
     // Derive the sync ms: either the other layer's exact timestamp or our own
     const syncMs = crossLayerShift ? crossLayerShift.timeMs : absTimeMs;
 
-    // Convert ms sync point to this layer's tick space (unit-independent)
-    V.requireFinite(measureStart, 'measureStart');
-    V.requireFinite(measureStartTime, 'measureStartTime');
+    // Convert ms sync point to absolute tick space
     V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = m.round(measureStart + ((syncMs / 1000) - measureStartTime) * tpSec);
+    const syncTickRaw = m.round((syncMs / 1000) * tpSec);
     const syncTick = m.max(0, syncTickRaw);
 
     allNotesOff(syncTick);
@@ -64,9 +63,6 @@ setBinaural = () => {
       flipBin = !flipBin;
       binauralFreqOffset = rl(binauralFreqOffset, -1, 1, BINAURAL.min, BINAURAL.max);
     }
-
-    V.requireFinite(numerator, 'numerator');
-    V.requireFinite(measuresPerPhrase, 'measuresPerPhrase');
 
     // Recompute pitch bend values from updated offset - stale values cause audible detune
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
@@ -92,7 +88,7 @@ setBinaural = () => {
       const tick = startTick + (tickIncrement * i);
       const currentVolumeF2 = flipBin ? m.floor(100 * (1 - (i / steps))) : m.floor(100 * (i / steps));
       const currentVolumeT2 = flipBin ? m.floor(100 * (i / steps)) : m.floor(100 * (1 - (i / steps)));
-      const maxVol = rf(.9, 1.2);
+      const maxVol = rf(.9, 1.1);
       flipBinF2.forEach(ch => {
         p(c, { tick: tick, type: 'control_c', vals: [ch, 7, m.round(currentVolumeF2 * maxVol)] });
       });

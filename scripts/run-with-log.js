@@ -109,9 +109,8 @@ _spinTimer.unref();
  * - Strip ANSI escapes
  * - Replace absolute repo paths with relative ones
  * - Shorten node_modules references
- * - Prefix with a timestamp and stream label (STDOUT/STDERR)
  */
-function normalizeForLog(line, label = 'STDOUT') {
+function normalizeForLog(line) {
   let s = String(line || '');
   s = stripAnsi(s);
   // Collapse file:// prefixes that appear in stack traces
@@ -123,8 +122,8 @@ function normalizeForLog(line, label = 'STDOUT') {
   }
   // Collapse repetitive node_modules paths to a concise token
   s = s.replace(new RegExp('node_modules[\\/](@?[^\\/\\s]+)[\\/]?', 'g'), 'node_modules/$1/...');
-  // Omit timestamps for a cleaner persistent log
-  return `${label}: ${s}`;
+  // Omit timestamps and stream labels for a cleaner persistent log
+  return s;
 }
 
 function writeNormalized(streamLabel, chunk) {
@@ -134,7 +133,9 @@ function writeNormalized(streamLabel, chunk) {
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
     if (l === '' && i === lines.length - 1) continue; // trailing newline
-    const normalized = normalizeForLog(l, streamLabel) + '\n';
+    // Skip spinner status lines from the log
+    if (l.indexOf('script in progress') !== -1) continue;
+    const normalized = normalizeForLog(l) + '\n';
     logStream.write(normalized);
   }
 }
