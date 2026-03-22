@@ -85,6 +85,28 @@ warmupRampController = (() => {
     return ps.lastWarmupBeats;
   }
 
+  /**
+   * R2 E1: Get a tighter ceiling for a pair during S0 warmup.
+   * Ramps linearly from minCeiling to baseCeiling over the warmup window.
+   * Returns Infinity outside warmup (no ceiling override).
+   * @param {string} pair
+   * @param {number} sectionBeat - current beat index within the section
+   * @returns {number}
+   */
+  function getWarmupCeiling(pair, sectionBeat) {
+    const ps = getPairState(pair);
+    if (sectionBeat >= ps.lastWarmupBeats) return 1 / 0; // Infinity
+    const profile = safePreBoot.call(() => {
+      const snap = pairGainCeilingController.getSnapshot();
+      return snap && snap[pair] ? snap[pair] : null;
+    }, null);
+    // Fall back to hardcoded defaults if controller not ready
+    const minC = profile ? clamp(profile.ceiling * 0.5, 0.02, 0.08) : 0.04;
+    const maxC = profile ? profile.ceiling : 0.10;
+    const t = ps.lastWarmupBeats > 0 ? sectionBeat / ps.lastWarmupBeats : 1;
+    return minC + (maxC - minC) * t;
+  }
+
   function tick() {
     warmupRampControllerBeatCount++;
     warmupRampControllerCurrentSectionBeats++;
@@ -143,6 +165,7 @@ warmupRampController = (() => {
   return {
     recordS0Exceedance,
     getWarmupBeats,
+    getWarmupCeiling,
     getSnapshot,
     reset
   };

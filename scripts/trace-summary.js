@@ -195,6 +195,9 @@ function summarizeTrace(entries, manifest) {
   const sectionExceedanceCounts = {};
   // R85 E4: Per-section per-pair exceedance for targeted follow-up
   const sectionPairExceedance = {};
+  // R6 E4: S0 warmup vs post-warmup exceedance beat counters
+  let s0WarmupExceedance = 0;
+  let s0PostWarmupExceedance = 0;
   // R58 E6: Guard/coupling interaction diagnostic. Partition coupling stats
   // by guarded (scale < 0.999) vs unguarded beats to reveal whether the
   // output-load guard inflates or dampens coupling through uniform suppression.
@@ -240,6 +243,7 @@ function summarizeTrace(entries, manifest) {
       diagnosticArc.push({
         snapshotIndex: e.snapshotIndex,
         beatKey: e.beatKey,
+        section: parseInt(e.beatKey.split(':')[0], 10),
         timeMs: e.timeMs,
         effectiveDim: e.effectiveDim,
         globalGainMultiplier: e.globalGainMultiplier,
@@ -249,7 +253,9 @@ function summarizeTrace(entries, manifest) {
         trust: e.trust,
         trustVelocity: e.trustVelocity || null,
         activeProfile: e.activeProfile || null,
-        couplingMeans: e.couplingMeans
+        couplingMeans: e.couplingMeans,
+        // R7 E6: Section-level phase share for cross-run phase recovery tracking
+        phaseShare: e.axisEnergyShare && e.axisEnergyShare.shares ? e.axisEnergyShare.shares.phase : null,
       });
       continue;
     }
@@ -547,6 +553,11 @@ function summarizeTrace(entries, manifest) {
       // R80 E5: Track per-section exceedance
       const sec = parseInt(e.beatKey.split(':')[0], 10);
       if (Number.isFinite(sec)) sectionExceedanceCounts[sec] = (sectionExceedanceCounts[sec] || 0) + 1;
+      // R6 E4: Track S0 warmup vs post-warmup exceedance
+      if (sec === 0) {
+        if (i < entries.length * 0.10) s0WarmupExceedance++;
+        else s0PostWarmupExceedance++;
+      }
     }
     // R79 E6 + R80 E4: Attribute coupling pairs on coherent-blocked beats.
     // R80 E4: Use adaptive target from couplingTargets when available,
@@ -988,7 +999,13 @@ function summarizeTrace(entries, manifest) {
       pairAwareSystems,
       trustAxisShare,
       trustPairExceedanceBeats: trustHotspotPairs.reduce(function(sum, entry) { return sum + entry.beats; }, 0),
-      trustHotspotPairs: trustHotspotPairs.slice(0, 5)
+      trustHotspotPairs: trustHotspotPairs.slice(0, 5),
+      // R6 E6: Track trust systems that never activated (score stayed 0)
+      missingTrustSystems: (() => {
+        const expected = ['stutterContagion', 'cadenceAlignment', 'phaseLock', 'convergence', 'feedbackOscillator', 'coherenceMonitor', 'entropyRegulator', 'restSynchronizer', 'roleSwap'];
+        const missing = expected.filter(function(sys) { return trustKeys.indexOf(sys) === -1 || (trustScoreSummary[sys] && trustScoreSummary[sys].avg === 0); });
+        return missing.length > 0 ? missing : null;
+      })()
     };
   })();
 
@@ -1004,6 +1021,7 @@ function summarizeTrace(entries, manifest) {
           const recentP95 = toNum(controller.recentP95AbsCorr, controllerP95);
           const gap = Number((traceP95 - controllerP95).toFixed(4));
           const recentGap = Number((traceP95 - recentP95).toFixed(4));
+          const controllerLagIndex = Number(Math.max(0, recentP95 - controllerP95).toFixed(4));
           return {
             pair,
             traceP95: Number(traceP95.toFixed(4)),
@@ -1011,6 +1029,7 @@ function summarizeTrace(entries, manifest) {
             recentP95: Number(recentP95.toFixed(4)),
             gap,
             recentGap,
+            controllerLagIndex,
             telemetryWindowBeats: controller.telemetryWindowBeats != null ? controller.telemetryWindowBeats : null
           };
         })
@@ -1018,6 +1037,7 @@ function summarizeTrace(entries, manifest) {
         .sort(function(a, b) { return b.gap - a.gap; });
       return {
         underSeenPairCount: mismatchedPairs.length,
+        activelyUnderseenCount: mismatchedPairs.filter(function(e) { return e.controllerLagIndex > 0.08; }).length,
         maxGap: mismatchedPairs.length > 0 ? mismatchedPairs[0].gap : 0,
         pairs: mismatchedPairs.slice(0, 5)
       };
@@ -1114,6 +1134,7 @@ function summarizeTrace(entries, manifest) {
       maxGap: Number(toNum(maxGap, 0).toFixed(4)),
       progressIntegrity: progressIntegrity.integrity,
       phaseStaleRate: phaseTelemetry && typeof phaseTelemetry.staleRate === 'number' ? phaseTelemetry.staleRate : null,
+      varianceGatedRate: phaseTelemetry && typeof phaseTelemetry.varianceGatedRate === 'number' ? phaseTelemetry.varianceGatedRate : null,
       profilerBeatSpanAvg: profilerTelemetryBeatSpanCount > 0 ? Number((profilerTelemetryBeatSpanSum / profilerTelemetryBeatSpanCount).toFixed(4)) : null,
       profilerBeatSpanMax: profilerTelemetryBeatSpanCount > 0 ? profilerTelemetryBeatSpanMax : null
     };
@@ -1183,6 +1204,62 @@ function summarizeTrace(entries, manifest) {
     adaptiveTargets,
     axisCouplingTotals,
     axisEnergyShare,
+    // R5 E6: Axis share floor monitoring -- flag axes with share < 0.10 and track trend
+    axisShareFloor: (() => {
+      if (!axisEnergyShare || !axisEnergyShare.shares) return null;
+      const shares = axisEnergyShare.shares;
+      const axisNames = Object.keys(shares);
+      const belowFloorAxes = [];
+      for (let i = 0; i < axisNames.length; i++) {
+        if (typeof shares[axisNames[i]] === 'number' && shares[axisNames[i]] < 0.10) {
+          belowFloorAxes.push({ axis: axisNames[i], share: Number(shares[axisNames[i]].toFixed(4)) });
+        }
+      }
+      // Compute per-axis share trend from per-beat coupling data
+      const shareTrend = {};
+      const axisTotals = {};
+      const axisCounts = {};
+      for (let b = 0; b < entries.length; b++) {
+        const coupling = entries[b].couplingAbs || entries[b].coupling;
+        if (!coupling) continue;
+        const cKeys = Object.keys(coupling);
+        let beatTotal = 0;
+        const beatAxisSums = {};
+        for (let k = 0; k < cKeys.length; k++) {
+          const val = Math.abs(typeof coupling[cKeys[k]] === 'number' ? coupling[cKeys[k]] : 0);
+          beatTotal += val;
+          const axes = cKeys[k].split('-');
+          for (let a = 0; a < axes.length; a++) {
+            beatAxisSums[axes[a]] = (beatAxisSums[axes[a]] || 0) + val;
+          }
+        }
+        if (beatTotal > 0) {
+          const bAxes = Object.keys(beatAxisSums);
+          for (let a = 0; a < bAxes.length; a++) {
+            if (!axisTotals[bAxes[a]]) { axisTotals[bAxes[a]] = []; axisCounts[bAxes[a]] = 0; }
+            axisTotals[bAxes[a]].push(beatAxisSums[bAxes[a]] / beatTotal);
+            axisCounts[bAxes[a]]++;
+          }
+        }
+      }
+      const trendAxes = Object.keys(axisTotals);
+      for (let a = 0; a < trendAxes.length; a++) {
+        const series = axisTotals[trendAxes[a]];
+        if (series.length < 4) { shareTrend[trendAxes[a]] = 'insufficient'; continue; }
+        const half = Math.floor(series.length / 2);
+        let firstHalf = 0, secondHalf = 0;
+        for (let j = 0; j < half; j++) firstHalf += series[j];
+        for (let j = half; j < series.length; j++) secondHalf += series[j];
+        firstHalf /= half;
+        secondHalf /= (series.length - half);
+        const delta = secondHalf - firstHalf;
+        shareTrend[trendAxes[a]] = delta > 0.03 ? 'rising' : delta < -0.03 ? 'falling' : 'stable';
+      }
+      return {
+        belowFloorAxes: belowFloorAxes.length > 0 ? belowFloorAxes : null,
+        shareTrend: Object.keys(shareTrend).length > 0 ? shareTrend : null
+      };
+    })(),
     couplingGates,
     // R99 E2: Coupling gate engagement diagnostic
     couplingGateEngagement: gateTrackingBeats > 0 ? {
@@ -1289,7 +1366,59 @@ function summarizeTrace(entries, manifest) {
       // R80 E5: Per-section exceedance beat counts
       bySection: Object.keys(sectionExceedanceCounts).length > 0 ? sectionExceedanceCounts : null,
       // R85 E4: Per-section per-pair exceedance breakdown
-      bySectionPair: Object.keys(sectionPairExceedance).length > 0 ? sectionPairExceedance : null
+      bySectionPair: Object.keys(sectionPairExceedance).length > 0 ? sectionPairExceedance : null,
+      // R100 E3: Section-shift metric -- detect S0->S1 exceedance displacement
+      sectionShift: (() => {
+        const s0 = sectionExceedanceCounts[0] || 0;
+        const s1 = sectionExceedanceCounts[1] || 0;
+        if (s0 + s1 === 0) return null;
+        return {
+          s0, s1,
+          s1Ratio: Number((s1 / (s0 + s1)).toFixed(3)),
+          displacement: s1 >= s0 ? 'S1-dominant' : s0 > s1 * 2 ? 'S0-concentrated' : 'balanced'
+        };
+      })(),
+      // R5 E3: Displacement indicator -- flag pairs whose exceedance sections differ from the dominant pair
+      displacementIndicator: (() => {
+        const topPair = exceedancePairsSorted.length > 0 ? exceedancePairsSorted[0].pair : null;
+        if (!topPair || Object.keys(sectionPairExceedance).length === 0) return null;
+        // Find dominant section for top pair
+        let topDominantSection = null;
+        let topMax = 0;
+        const secKeys = Object.keys(sectionPairExceedance);
+        for (let s = 0; s < secKeys.length; s++) {
+          const count = sectionPairExceedance[secKeys[s]][topPair] || 0;
+          if (count > topMax) { topMax = count; topDominantSection = secKeys[s]; }
+        }
+        // Check other pairs for displacement (exceedance in different sections)
+        const displaced = [];
+        for (let p = 1; p < exceedancePairsSorted.length; p++) {
+          const pair = exceedancePairsSorted[p].pair;
+          let pairDomSection = null;
+          let pairMax = 0;
+          for (let s = 0; s < secKeys.length; s++) {
+            const count = sectionPairExceedance[secKeys[s]][pair] || 0;
+            if (count > pairMax) { pairMax = count; pairDomSection = secKeys[s]; }
+          }
+          if (pairDomSection !== null && pairDomSection !== topDominantSection) {
+            displaced.push({ pair, dominantSection: Number(pairDomSection), beats: exceedancePairsSorted[p].beats });
+          }
+        }
+        return displaced.length > 0
+          ? { topPair, topDominantSection: Number(topDominantSection), displacedPairs: displaced }
+          : null;
+      })(),
+      // R6 E4: S0 exceedance timing -- warmup vs post-warmup beat breakdown
+      s0Timing: (() => {
+        const total = s0WarmupExceedance + s0PostWarmupExceedance;
+        if (total === 0) return null;
+        return {
+          warmupBeats: s0WarmupExceedance,
+          postWarmupBeats: s0PostWarmupExceedance,
+          warmupShare: Number((s0WarmupExceedance / total).toFixed(3)),
+          concentration: s0WarmupExceedance > s0PostWarmupExceedance * 2 ? 'warmup-concentrated' : (s0PostWarmupExceedance > s0WarmupExceedance * 2 ? 'post-warmup-concentrated' : 'distributed')
+        };
+      })()
     },
     // R99 E6: Axis exceedance concentration diagnostic
     axisExceedanceConcentration: (() => {

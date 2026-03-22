@@ -53,11 +53,16 @@ hyperMetaOrchestrator = (() => {
   /** @type {Record<string, number>} */
   const hyperMetaOrchestratorAxisExceedanceCounts = {};
 
+  // R2 E5: Correlation trend monitoring -- track sign flips across ticks
+  /** @type {Record<string, number>} previous correlation sign per pair (+1/-1/0) */
+  const hyperMetaOrchestratorPrevCorrSign = {};
+  let hyperMetaOrchestratorLastFlipCount = 0;
+
   // ===== CONTROLLER STATE SAMPLING =====
 
   /**
    * Gather snapshots from all queryable controllers.
-   * @returns {{ phaseFloor: any, pairCeiling: any, warmupRamp: any, watchdog: any, homeostasis: any, registry: any }}
+   * @returns {{ phaseFloor: any, pairCeiling: any, warmupRamp: any, watchdog: any, homeostasis: any, registry: any, profiler: any }}
    */
   function gatherControllerState() {
     const phaseFloor = safePreBoot.call(() => phaseFloorController.getSnapshot(), null);
@@ -66,7 +71,8 @@ hyperMetaOrchestrator = (() => {
     const watchdog = safePreBoot.call(() => conductorMetaWatchdog.getSnapshot(), null);
     const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
     const registry = safePreBoot.call(() => metaControllerRegistry.getSnapshot(), null);
-    return { phaseFloor, pairCeiling, warmupRamp, watchdog, homeostasis, registry };
+    const profiler = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    return { phaseFloor, pairCeiling, warmupRamp, watchdog, homeostasis, registry, profiler };
   }
 
   // ===== SYSTEM HEALTH =====
@@ -184,11 +190,19 @@ hyperMetaOrchestrator = (() => {
     if (state.pairCeiling) {
       const dfState = state.pairCeiling['density-flicker'];
       if (dfState && dfState.p95Ema < 0.70 && dfState.activeBeats > 50) {
-        // Large gap: controller EMA is sluggish, speed it up
         p95AlphaMultiplier = 1.8;
       } else if (dfState && dfState.p95Ema > 0.85) {
-        // Controller is tracking well: standard rate
         p95AlphaMultiplier = 1.0;
+      }
+      // R3 E2: Extend to flicker-trust when reconciliation gap is large
+      const ftState = state.pairCeiling['flicker-trust'];
+      if (ftState && ftState.p95Ema < 0.70 && ftState.activeBeats > 50) {
+        p95AlphaMultiplier = m.max(p95AlphaMultiplier, 1.8);
+      }
+      // R4 E2: Extend to tension-flicker (new #1 tail pair)
+      const tfState = state.pairCeiling['tension-flicker'];
+      if (tfState && tfState.p95Ema < 0.70 && tfState.activeBeats > 50) {
+        p95AlphaMultiplier = m.max(p95AlphaMultiplier, 1.8);
       }
     }
 
@@ -207,6 +221,19 @@ hyperMetaOrchestrator = (() => {
     hyperMetaOrchestratorRateMultipliers.phaseBoostCeiling = hyperMetaOrchestratorPhaseBoostCeiling;
     hyperMetaOrchestratorRateMultipliers.p95Alpha = p95AlphaMultiplier;
     hyperMetaOrchestratorRateMultipliers.s0Tightening = s0TighteningMultiplier;
+
+    // E2 (R100): Variance gate relaxation for phase axis
+    // When phase share is chronically near-zero, the variance gate is structural.
+    // Relax the gate threshold to admit more phase pairs into coupling.
+    let varianceGateRelaxMultiplier = 1.0;
+    if (state.phaseFloor && state.phaseFloor.shareEma < 0.03) {
+      // Phase share near zero -- gate is structural, relax it
+      varianceGateRelaxMultiplier = clamp(
+        1.0 + (0.03 - state.phaseFloor.shareEma) * 40, // up to 2.2x at share=0
+        1.0, 2.5
+      );
+    }
+    hyperMetaOrchestratorRateMultipliers.varianceGateRelax = varianceGateRelaxMultiplier;
 
     // Per-controller multipliers (effectiveness-weighted)
     const controllerNames = Object.keys(hyperMetaOrchestratorControllerStats);
@@ -263,7 +290,30 @@ hyperMetaOrchestrator = (() => {
             ['pairGainCeilingController', 'warmupRampController'],
             'Both ceiling and warmup at minimum for ' + pair + ' -- may cause oscillation'
           );
+          // E5 (R100): Resolution -- relax the ceiling slightly since warmup is already minimal
+          hyperMetaOrchestratorRateMultipliers['ceilingRelax_' + pair] = 1.3;
+        } else {
+          // Clear relaxation when contradiction resolves
+          hyperMetaOrchestratorRateMultipliers['ceilingRelax_' + pair] = 1.0;
         }
+      }
+    }
+
+    // E5 (R100) Contradiction 3: Phase floor boosting while pair ceiling tightening on phase pairs
+    // When phaseFloorController is actively boosting phase energy but pairGainCeilingController
+    // is tightening phase-related pairs, the system fights itself
+    if (state.phaseFloor && state.pairCeiling) {
+      const phaseActive = state.phaseFloor.shareEma < state.phaseFloor.lowShareThreshold;
+      const ftState = state.pairCeiling['flicker-trust'];
+      if (phaseActive && ftState && ftState.ceiling < 0.08) {
+        recordContradiction(
+          ['phaseFloorController', 'pairGainCeilingController'],
+          'Phase floor boosting while flicker-trust ceiling very tight -- energy conflict'
+        );
+        // Resolution: ease ceiling pressure on phase-related pairs
+        hyperMetaOrchestratorRateMultipliers.phasePairCeilingRelax = 1.4;
+      } else {
+        hyperMetaOrchestratorRateMultipliers.phasePairCeilingRelax = 1.0;
       }
     }
   }
@@ -340,6 +390,40 @@ hyperMetaOrchestrator = (() => {
   }
 
   // ===== AXIS CONCENTRATION TRACKING (E6) =====
+
+  // ===== R2 E5: CORRELATION TREND MONITORING =====
+
+  /**
+   * Detect simultaneous sign flips in the coupling correlation matrix.
+   * When >= 3 pairs flip sign in the same orchestration window, dampen
+   * global rate by 10% to prevent multi-axis oscillation.
+   * @param {ReturnType<typeof gatherControllerState>} state
+   * @returns {number} flip count this tick
+   */
+  function detectCorrelationFlips(state) {
+    if (!state.profiler || !state.profiler.couplingMatrix) return 0;
+
+    const matrix = state.profiler.couplingMatrix;
+    const pairs = Object.keys(matrix);
+    let flipCount = 0;
+
+    for (let i = 0; i < pairs.length; i++) {
+      const pair = pairs[i];
+      const corr = matrix[pair];
+      if (Number.isNaN(corr)) continue;
+
+      const sign = corr > 0.05 ? 1 : (corr < -0.05 ? -1 : 0);
+      const prev = hyperMetaOrchestratorPrevCorrSign[pair];
+
+      if (prev !== undefined && prev !== 0 && sign !== 0 && prev !== sign) {
+        flipCount++;
+      }
+      hyperMetaOrchestratorPrevCorrSign[pair] = sign;
+    }
+
+    hyperMetaOrchestratorLastFlipCount = flipCount;
+    return flipCount;
+  }
 
   /**
    * Track exceedance per axis for concentration diagnostic.
@@ -424,7 +508,13 @@ hyperMetaOrchestrator = (() => {
     // 7. Update effectiveness tracking
     updateEffectiveness(healthBefore, hyperMetaOrchestratorHealthEma, state);
 
-    // 8. Emit diagnostics
+    // 8. R2 E5: Correlation trend monitoring -- detect simultaneous sign flips
+    const corrFlips = detectCorrelationFlips(state);
+    if (corrFlips >= 2) {
+      hyperMetaOrchestratorRateMultipliers.global *= 0.90;
+    }
+
+    // 9. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
       beat: hyperMetaOrchestratorBeatCount,
       health: hyperMetaOrchestratorHealthEma,
@@ -433,7 +523,8 @@ hyperMetaOrchestrator = (() => {
       phaseTrend: hyperMetaOrchestratorPhaseTrendEma,
       rateMultipliers: Object.assign({}, hyperMetaOrchestratorRateMultipliers),
       contradictionCount: hyperMetaOrchestratorContradictions.length,
-      axisConcentration: getAxisConcentration()
+      axisConcentration: getAxisConcentration(),
+      correlationFlips: corrFlips
     }));
   }
 
@@ -483,6 +574,16 @@ hyperMetaOrchestrator = (() => {
     return hyperMetaOrchestratorSystemPhase;
   }
 
+  /**
+   * Get the variance gate relaxation multiplier (E2 R100).
+   * systemDynamicsProfilerAnalysis multiplies the variance gate threshold by this
+   * to admit more phase pairs when phase is chronically near-zero.
+   * @returns {number}
+   */
+  function getVarianceGateRelaxMultiplier() {
+    return hyperMetaOrchestratorRateMultipliers.varianceGateRelax || 1.0;
+  }
+
   function getSnapshot() {
     return {
       beatCount: hyperMetaOrchestratorBeatCount,
@@ -496,7 +597,8 @@ hyperMetaOrchestrator = (() => {
       rateMultipliers: Object.assign({}, hyperMetaOrchestratorRateMultipliers),
       controllerStats: Object.assign({}, hyperMetaOrchestratorControllerStats),
       contradictions: hyperMetaOrchestratorContradictions.slice(-5),
-      axisConcentration: getAxisConcentration()
+      axisConcentration: getAxisConcentration(),
+      correlationFlips: hyperMetaOrchestratorLastFlipCount
     };
   }
 
@@ -522,6 +624,7 @@ hyperMetaOrchestrator = (() => {
     getP95AlphaMultiplier,
     getS0TighteningMultiplier,
     getSystemPhase,
+    getVarianceGateRelaxMultiplier,
     recordExceedance,
     getAxisConcentration,
     getSnapshot,

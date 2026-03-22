@@ -5,42 +5,37 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
-## Major Changes (5)
+## Major Changes (2)
 
-- !!! **section-count**: Section count: 3 -> 5
-- !!! **section-added**: Section 3 added (key=B minor)
-- !!! **section-added**: Section 4 added (key=Bb major)
-- !!! **note-count**: output1: 7341 notes -> 17172 notes (133.9% change)
-- !!! **note-count**: output2: 6999 notes -> 18356 notes (162.3% change)
+- !!! **section-count**: Section count: 3 -> 4
+- !!! **section-added**: Section 3 added (key=B aeolian)
 
 ## Notable Changes (3)
 
-- !! **harmonic-change**: Section 0: A# locrian -> A ionian
-- !! **harmonic-change**: Section 1: D major -> B ionian
-- !! **harmonic-change**: Section 2: E major -> B lydian
+- !! **harmonic-change**: Section 0: A# dorian -> A locrian
+- !! **harmonic-change**: Section 1: C dorian -> B locrian
+- !! **harmonic-change**: Section 2: Eb major -> B phrygian
 
-## Moderate Changes (5)
+## Moderate Changes (3)
 
-- ! **phrase-count**: Section 0: 0 phrases -> 1 phrases
-- ! **tension-shift**: Section 0 avg tension: 0.149 -> 0.405
-- ! **phrase-count**: Section 1: 2 phrases -> 3 phrases
-- ! **phrase-count**: Section 2: 5 phrases -> 4 phrases
-- ! **tension-shift**: Section 2 avg tension: 0.669 -> 0.559
+- ! **phrase-count**: Section 0: 1 phrases -> 0 phrases
+- ! **phrase-count**: Section 1: 3 phrases -> 2 phrases
+- ! **pitch-center**: output2 mean pitch: 47.6 -> 40.5 (7.2 semitones)
 
 ## Minor Changes (4)
 
-- ~ **regime-shift**: Section 0 regime 'coherent': 80.0% -> 40.0%
-- ~ **regime-shift**: Section 0 regime 'exploring': 0.0% -> 46.3%
-- ~ **regime-shift**: Section 2 regime 'exploring': 100.0% -> 36.4%
-- ~ **regime-shift**: Section 2 regime 'coherent': 0.0% -> 63.6%
+- ~ **regime-shift**: Section 1 regime 'coherent': 37.7% -> 11.1%
+- ~ **regime-shift**: Section 1 regime 'exploring': 62.3% -> 88.9%
+- ~ **regime-shift**: Section 2 regime 'exploring': 98.3% -> 76.2%
+- ~ **regime-shift**: Section 2 regime 'coherent': 1.7% -> 23.8%
 
 ## Summary
 
-- Total differences: 17
-- Major: 5
+- Total differences: 12
+- Major: 2
 - Notable: 3
-- Moderate: 5
+- Moderate: 3
 - Minor: 4
 
 
-*Generated 2026-03-21T18:40:44.936Z*
+*Generated 2026-03-22T04:06:24.689Z*

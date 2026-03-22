@@ -31,6 +31,15 @@ couplingGainEscalation = (() => {
     const adaptEma = isEntropyPair ? TARGET_ADAPT_EMA * 2.5 : TARGET_ADAPT_EMA;
     at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
     at.rawRollingAbsCorr = at.rawRollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
+    // R3 E3: non-nudgeable overflow monitoring -- when rolling correlation
+    // exceeds 1.3x baseline, record overflow ratio for downstream consumers
+    const overflowRatio = at.baseline > 0 ? at.rawRollingAbsCorr / at.baseline : 0;
+    at.nonNudgeableOverflow = overflowRatio > 1.3 ? overflowRatio : 0;
+    if (at.nonNudgeableOverflow > 0) {
+      safePreBoot.call(() => explainabilityBus.emit('non-nudgeable-overflow', 'both', {
+        pair: key, overflow: overflowRatio, rolling: at.rawRollingAbsCorr, baseline: at.baseline
+      }));
+    }
   }
 
   /**

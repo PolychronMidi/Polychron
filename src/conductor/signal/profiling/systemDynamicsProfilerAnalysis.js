@@ -138,16 +138,24 @@ systemDynamicsProfilerAnalysis = (() => {
       ? m.max(0.50, m.pow(0.85, (state.phaseStaleBeats - 10) / 15))
       : 1.0;
     const profileGateScale = conductorConfig.getActiveProfile().phaseVarianceGateScale || 1.0;
-    const relaxedGateThreshold = 0.005 * varianceGateRelax * profileGateScale;
+    // E2 (R100): orchestrator relaxes variance gate when phase is chronically near-zero
+    const orchestratorGateRelax = safePreBoot.call(() => hyperMetaOrchestrator.getVarianceGateRelaxMultiplier(), 1.0) || 1.0;
+    const relaxedGateThreshold = 0.005 * varianceGateRelax * profileGateScale * orchestratorGateRelax;
     const coupling = phaseSpaceMath.coupling(state.rawTrajectory, stats.mean, config.DIM_NAMES, config.N_DIMS, config.N_COMPOSITIONAL_DIMS, relaxedGateThreshold);
     const effDim = phaseSpaceMath.effectiveDimensionality(state.rawTrajectory, stats.mean, config.N_COMPOSITIONAL_DIMS);
+    // R2 E3: Relax stale threshold when orchestrator is relaxing variance gate.
+    // When phase is chronically near-zero and gate is relaxed, newly-admitted
+    // pairs shouldn't immediately be marked stale. Scale threshold up to 2x.
+    const staleRelax = orchestratorGateRelax > 1.0
+      ? m.round(config.PHASE_STALE_PAIR_THRESHOLD * clamp(orchestratorGateRelax, 1.0, 2.0))
+      : config.PHASE_STALE_PAIR_THRESHOLD;
     const phasePairStates = systemDynamicsProfilerHelpers.getPhasePairStates(
       coupling.matrix,
       config.PHASE_COUPLING_PAIRS,
       state.lastPhaseSignalValid,
       state.lastPhaseChanged,
       state.phaseStaleBeats,
-      config.PHASE_STALE_PAIR_THRESHOLD
+      staleRelax
     );
 
     let phaseCouplingAvailablePairs = 0;

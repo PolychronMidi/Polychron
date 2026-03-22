@@ -82,10 +82,18 @@ phaseFloorController = (() => {
     // Recovery failure amplifies boost (if previous boosts didn't work, push harder)
     const recoveryFactor = clamp(2.0 - phaseFloorControllerRecoverySuccessEma * 1.5, 0.8, 2.0);
 
+    // E4 (R100): Phase-aware boost scaling from orchestrator system phase
+    // When oscillating, dampen boosts to avoid amplifying instability
+    // When stabilized, reduce boost urgency since system is healthy
+    const systemPhase = safePreBoot.call(() => hyperMetaOrchestrator.getSystemPhase(), 'converging') || 'converging';
+    const phaseScaling = systemPhase === 'oscillating' ? 0.6
+      : systemPhase === 'stabilized' ? 0.85
+      : 1.0;
+
     // Phase collapse boost: when share < collapseThreshold AND streak > 8 -> stronger
     // Base range: [3.0, 8.0]. Graduates with streak duration.
     const collapseStreakFactor = clamp((phaseCollapseStreak - 4) / 12, 0, 1);
-    const phaseCollapseBoost = clamp(3.0 + collapseStreakFactor * 5.0 * recoveryFactor, 3.0, 10.0);
+    const phaseCollapseBoost = clamp(3.0 + collapseStreakFactor * 5.0 * recoveryFactor * phaseScaling, 3.0, 10.0);
 
     // Phase floor boost: graduated from streak duration and deficit severity
     // Replaces the 8.0/12.0/20.0 step-function with continuous curve
@@ -97,14 +105,14 @@ phaseFloorController = (() => {
       const streakDepth = clamp((phaseLowShareStreak - floorStreak) / m.max(1, escalatedStreak - floorStreak), 0, 1);
       // Base boost range: [6.0, 14.0] graduated by streak depth
       const baseBoost = 6.0 + streakDepth * 8.0;
-      phaseFloorBoost = clamp(baseBoost * deficitRatio * recoveryFactor, 4.0, 18.0);
+      phaseFloorBoost = clamp(baseBoost * deficitRatio * recoveryFactor * phaseScaling, 4.0, 18.0);
     }
 
     // Extreme collapse: share < 1% -- emergency override
     // E1: boost ceiling managed by hyperMetaOrchestrator (#17)
     if (share < getExtremeCollapseShare() && phaseLowShareStreak > getExtremeCollapseStreak()) {
       const boostCeiling = safePreBoot.call(() => hyperMetaOrchestrator.getPhaseBoostCeiling(), 25.0) || 25.0;
-      phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor, 14.0, boostCeiling);
+      phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor * phaseScaling, 14.0, boostCeiling);
     }
 
     return { phaseCollapseBoost, phaseFloorBoost };

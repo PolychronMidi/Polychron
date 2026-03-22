@@ -53,7 +53,7 @@ couplingConstants = (() => {
 
   // Axis coupling ceilings and smoothing
   const AXIS_COUPLING_CEILING = {
-    density: 2.0, tension: 2.0, flicker: 2.0, entropy: 2.0, trust: 2.5, phase: 2.0,
+    density: 2.0, tension: 2.0, flicker: 2.0, entropy: 2.0, trust: 2.2, phase: 2.0,
   };
   const AXIS_SMOOTH_ALPHA = 0.15;
 

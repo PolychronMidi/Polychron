@@ -194,6 +194,17 @@ homeostasisRefresh = (() => {
     if (S.beatCount >= 8 && S.peakEnergyEma > 0.1) {
       S.energyBudget = S.peakEnergyEma * BUDGET_PEAK_RATIO;
     }
+    // R2 E2: Ceiling-aware budget relaxation. When pairGainCeilingController
+    // is actively managing multiple pairs, homeostasis can afford a higher
+    // budget since ceilings already prevent runaway coupling energy.
+    const ceilingSnap = safePreBoot.call(() => pairGainCeilingController.getSnapshot(), null);
+    if (ceilingSnap) {
+      const managedPairs = Object.keys(ceilingSnap).length;
+      if (managedPairs >= 3) {
+        // 3+ managed pairs: relax budget by up to 15%
+        S.energyBudget *= 1 + clamp((managedPairs - 2) * 0.05, 0, 0.15);
+      }
+    }
     if (S.beatCount > 150) {
       const homeostasisRefreshBudgetScale = 1 + clamp((S.beatCount - 150) / 300, 0, 0.50);
       S.energyBudget *= homeostasisRefreshBudgetScale;

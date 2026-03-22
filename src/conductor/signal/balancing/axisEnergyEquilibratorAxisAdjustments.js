@@ -61,6 +61,10 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // constraint (was even-beat-only). R82's 50% duty cycle at
         // 0.08-0.12 was too narrow -- phase collapsed to 0.51%.
         const isCoherentFreezePartialBypass = !isEmergencyStarved && share < 0.18 && context.coherentColdspotFreeze;
+        // R7 E4: Phase coherent-freeze bypass. When phase share < 0.10 during
+        // coherent freeze, allow coldspot relaxation to prevent phase collapse.
+        // R6 saw 47 skipped relaxations (45 coherent-freeze), phase 16.1%->4.6%.
+        const isPhaseLowShareCoherentBypass = axis === 'phase' && share < 0.10 && context.coherentColdspotFreeze;
         // R83 E2 + R97 E1: Phase collapse detection with adaptive thresholds
         // from phaseFloorController (#14). Thresholds self-calibrate based on
         // rolling phase volatility and coherent regime duration.
@@ -77,7 +81,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // Adaptive thresholds replace hardcoded 12/8 streak counts.
         const isPhaseFloorActive = axis === 'phase' && phaseFloorController.isFloorActive(state.phaseLowShareStreak);
         const isPhaseExtremeCollapse = axis === 'phase' && phaseFloorController.isExtremeCollapse(share, state.phaseLowShareStreak);
-        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && !isPhaseFloorActive && !isPhaseExtremeCollapse && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
+        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && !isPhaseFloorActive && !isPhaseExtremeCollapse && !isPhaseLowShareCoherentBypass && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
           state.skippedColdspotRelaxations++;
           if (context.coherentColdspotFreeze) state.coldspotSkipReasons.coherentFreeze++;
           else if (axis === 'phase' && context.phaseSurfaceHot) state.coldspotSkipReasons.phaseHot++;
@@ -178,6 +182,29 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         if (baseline === undefined) continue;
         const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - trustCapRate);
         if (nextBaseline < baseline) {
+          pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
+          state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
+          state.axisAdjustments++;
+          state.perAxisAdj.trust = (state.perAxisAdj.trust || 0) + 1;
+        }
+      }
+    }
+
+    // R6 E5 + R7 E2: Trust-axis share floor enforcement. When trust share drops
+    // below 0.14, apply gentle bias to trust-pair baselines. R7: reduced from
+    // 1.05x to 0.50x -- R6's 1.05x over-corrected (trust 12.2%->19.4%, phase displaced).
+    if (typeof trustSmoothed === 'number' && trustSmoothed < 0.14 && trustSmoothed > 0.001) {
+      const trustDeficit = 0.14 - trustSmoothed;
+      const trustFloorPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
+      const trustFloorRate = m.min(0.03, config.AXIS_RELAX_RATE * 0.50 * trustFloorPairScale * clamp(trustDeficit / config.FAIR_SHARE, 0.5, 2.0));
+      const trustFloorPairs = config.axisToPairs.trust || [];
+      for (let i = 0; i < trustFloorPairs.length; i++) {
+        const pair = trustFloorPairs[i];
+        if ((state.pairCooldowns[pair] || 0) > 0) continue;
+        const baseline = V.optionalFinite(state.lastBaselines[pair]);
+        if (baseline === undefined) continue;
+        const nextBaseline = m.min(config.BASELINE_MAX, baseline + trustFloorRate);
+        if (nextBaseline > baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
