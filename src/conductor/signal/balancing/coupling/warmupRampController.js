@@ -106,7 +106,10 @@ warmupRampController = (() => {
       return snap && snap[pair] ? snap[pair] : null;
     }, null);
     // Fall back to hardcoded defaults if controller not ready
-    const minC = profile ? clamp(profile.ceiling * 0.5, 0.02, 0.08) : 0.04;
+    // R12 E3: Raised initial floor from 50% to 60% of baseCeiling for faster
+    // S0 coverage. density-flicker S0 p95 ~0.93 with 50%; 60% starts higher.
+    // R25 E3: Raised from 60% to 65%. S0 exceedance still 100% warmup-concentrated.
+    const minC = profile ? clamp(profile.ceiling * 0.65, 0.03, 0.08) : 0.05;
     const maxC = profile ? profile.ceiling : 0.10;
     const t = ps.lastWarmupBeats > 0 ? sectionBeat / ps.lastWarmupBeats : 1;
     // Quadratic: sqrt(t) gives faster early rise (at t=0.25 -> 0.50 vs linear 0.25)

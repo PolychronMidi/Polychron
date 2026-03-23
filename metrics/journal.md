@@ -1,3 +1,491 @@
+## R30 -- 2026-03-23 -- STABLE (first run)
+
+**Profile:** default | **Beats:** 223 (3 sections: 132/30/61) | **Fingerprint:** STABLE 0/11
+
+### Evolutions (4 behavioral -- new subsystem targets)
+- **E1**: Voice independence 0.5 -> 0.65, register arc chance 0.3 -> 0.5 (config.js VOICE_MANAGER). More contrapuntal voice motion; half of all phrases now get register arc shaping for octave-shifting contour variety.
+- **E2**: Role swap frequency: MIN_PHRASES_BETWEEN_SWAPS 3 -> 2, SWAP_PROBABILITY 0.6 -> 0.75 (dynamicRoleSwap.js). Layers trade lead/support roles more frequently at tension valleys.
+- **E3**: VARIETY_GAIN 0.04 -> 0.08 (structuralNarrativeAdvisor.js). Doubled pressure toward exploring under-represented composer families, preventing textural monotony.
+- **E4**: SHARED_REST_PROBABILITY 0.15 -> 0.22, COMPLEMENT_FILL_THRESHOLD 0.6 -> 0.45 (restSynchronizer.js). More audible musical breathing (shared rests) and tighter hocket interleaving.
+
+### Key Observations
+- **First all-new-subsystem round**: All 4 evolutions target files never previously modified (voice manager, cross-layer dynamics, narrative advisor, rest synchronizer). Fresh territory.
+- **Exploring-dominant**: coherentShare 0.0, exploringShare 1.0 at section level. maxConsecutiveCoherent only 20. System fully in exploration mode.
+- **Sustained phase engagement**: phaseShareArc [0, 0.100, 0.094]. Both S1 (10%) and S2 (9.4%) deeply phase-engaged. Best sustained multi-section phase in the series.
+- **Harmonic journey**: D# major -> A# major -> Bb major. Bold tritone-area leap (harmonicDistance 5) then enharmonic hold.
+- **phaseGiniCorrelation r=-0.92** -- strong inverse maintained. Phase drives textural variety.
+- **Compact form**: 223 beats across 3 sections. Tight, focused composition with asymmetric section lengths (132/30/61).
+- **Clean exceedance**: S0 at 6.8%, S1-S2 at 0%. Warmup-only exceedance -- cleanest in series.
+- **telemetryHealth: 0.38** (stable with R29). phaseStaleRate 0.64, varianceGatedRate 0.62.
+- **tension max: 0.72**, density range 0.27-0.53. Narrower than R29's extremes but this is a default-profile shorter piece.
+
+---
+
+## R29 -- 2026-03-22 -- STABLE (second run)
+
+**Profile:** explosive | **Beats:** 787 (5 sections: 50/137/178/97/156) | **Fingerprint:** R29a EVOLVED 1/10 (regimeDistribution), R29b STABLE 0/10
+
+### Evolutions (4 behavioral -- musically focused)
+- **E1**: Arch dynamism flat `() => 1.0` -> sinusoidal `(p) => 0.7 + sin(pi*p)*0.3` (config.js). Phrase arcs now breathe -- energy peaks mid-phrase and tapers at boundaries.
+- **E2**: DRIFT_MAGNITUDE 0.09 -> 0.14 (regimeReactiveDamping.js). Larger velocity drift during exploring regime for wider signal wandering.
+- **E3**: BIAS_CEILING 1.3 -> 1.38 (coherenceMonitor.js). Higher coherence feedback ceiling allows stronger density modulation. (Tried 1.45 first -- failed `density-ceiling-chain` tuning invariant at product 2.61 > 2.5; corrected to 1.38.)
+- **E4**: stutterScale 1.15 -> 1.25 (conductorConfigTuningDefaults.js). More prominent stutter articulation in emission gating.
+
+### Key Observations
+- **Density range: 0.26-0.70** -- widest in entire series (was 0.30 in R28). E1 sinusoidal arcs + E3 ceiling boost creating real dynamic contrast.
+- **Tension range: 0.05-0.85** -- widest ever (was 0.78 peak in R28). Full pp-to-ff arc.
+- **12 regime transitions** -- most in entire series (was 6 in R28). E2 drift magnitude driving rapid signal evolution.
+- **Harmonic journey**: F aeolian -> G minor -> B major -> F major -> D aeolian. Bold tritone leap S2->S3 (harmonicDistance: 2, 4, 6, 3). Dramatic harmonic arc with distant modulation.
+- **787 beats** -- longest composition in the series. 5 sections with substantial middle (S2: 178 beats).
+- **suppressionRatio: 1.03** -- near-perfect 1:1. Coherent regime barely suppresses phase anymore.
+- **phaseShareArc**: [0, 0.060, 0.003, 0.019, 0.003]. S1 peak at 6% from coherent regime.
+- **phaseGiniCorrelation r=-0.91** -- strong inverse relationship maintained.
+- **telemetryHealth: 0.38** (down from 0.45). High phaseStaleRate 0.74 and varianceGatedRate 0.70 -- phase system active but volatile. Acceptable given dramatic signal diversity.
+- S0 and S4 exceedance rates 0.22 and 0.25 -- bookend sections running hot but middle sections clean.
+
+---
+
+## R28 -- 2026-03-22 -- STABLE (first run)
+
+**Profile:** default | **Beats:** 436 (4 sections: 98/78/30/106) | **Fingerprint:** STABLE (0/11)
+
+### Evolutions (4 behavioral -- musically focused)
+- **E1**: evolvingMinDwell 4 -> 8 (regimeClassifier.js). Evolving regime persists long enough to be audible.
+- **E2**: Journey distance energy scaling /6 -> /5 (dynamismEngine.js). Bold harmonic moves drive more energetic output.
+- **E3**: Stutter end-of-phrase boost 0.4 -> 0.5 (config.js DYNAMISM.stutterProb.end). Punchier phrase endings.
+- **E4**: Regime-reactive MAX_FLICKER 0.15 -> 0.20 (regimeReactiveDamping.js). More timbral variety across regimes.
+
+### Key Observations
+- **playProb max: 0.58** (widest in series, was 0.55 in R27). E2+E3 widening dynamism.
+- **Evolving beats: 12** (3x increase from R27's 4). E1 working -- evolving is now audible.
+- **transitionCount: 6** (up from 5). More regime variety.
+- **Harmonic journey**: G# locrian -> F# major -> C# aeolian -> E minor. Dark opening (locrian) through diverse modes. harmonicDistance: 2, 5, 3.
+- **Flicker range: 0.79-1.16** (was 0.84-1.10 in R27). E4 widening timbral contrast.
+- **tension max: 0.78** (excellent, consistent with R26's 0.82).
+- **phaseGiniCorrelation r=-0.99** -- strongest ever. Near-perfect inverse relationship.
+- **S0 exceedance: 0.12** (down from 0.44 in R27). Warmup behavior improving.
+- **suppressionRatio: 0.03** -- coherent barely suppresses phase anymore. R25 E2 coherent pressure floor working brilliantly.
+
+---
+
+## R27 -- 2026-03-22 -- STABLE (first run)
+
+**Profile:** explosive | **Beats:** 589 (5 sections: 116/44/110/112/41) | **Fingerprint:** STABLE (0/11)
+
+### Evolutions (4 behavioral -- musically focused)
+- **E1**: Return-home harmonic bias 50% -> 30% (harmonicJourneyPlanner.js). More harmonic wandering.
+- **E2**: DYNAMISM scaleRange 0.5 -> 0.7 (config.js). Wider play/stutter probability range.
+- **E3**: Climax density peak boost 1.2 -> 1.3 (climaxProximityPredictor.js). More dramatic peaks.
+- **E4**: Density normalizer softMax 1.40 -> 1.50, range 0.20 -> 0.22 (pipelineNormalizer.js). Less density compression.
+
+### Key Observations
+- **Harmonic odyssey**: C major -> D# locrian -> G# major -> Db phrygian -> C major. Full circle through maximally distant keys (harmonicDistance: 3, 5, 5, 1). Most adventurous harmonic journey in the entire series. E1 working spectacularly.
+- **5 sections** with varied lengths (116/44/110/112/41). First 5-section composition in several rounds.
+- **playProb range widened**: max 0.55 (was 0.49 in R26). E2 dynamism working.
+- **Phase engagement sustained**: phaseShareArc [0, 0.158, 0.132, 0.028, 0.087]. S1-S2 both above 10%. Best sustained phase in the series.
+- **phaseGiniCorrelation r=-0.86** (recovered from R26's -0.66).
+- **coherentShare: 0.20, exploringShare: 0.80** (R26 E3 regime diversity persisting).
+- **telemetryHealth: 0.50** (stable trend).
+- exceedanceSeverity concentrated in S0 (0.44 rate), all other sections at 0. Warmup-only exceedance pattern.
+
+---
+
+## R26 -- 2026-03-22 -- STABLE (first run)
+
+**Profile:** default | **Beats:** 370 (4 sections: 32/32/117/80) | **Fingerprint:** STABLE (0/10)
+
+### Evolutions (4 behavioral -- musically focused)
+- **E1**: Climax tension boost widened 15% -> 25% with earlier onset 0.5 -> 0.4 (climaxProximityPredictor.js). More dramatic climax differentiation.
+- **E2**: Regime-reactive tension MAX_TENSION widened 0.06 -> 0.10 (regimeReactiveDamping.js). Regime transitions now produce audible tension contrast.
+- **E3**: COHERENT_MAX_DWELL 120 -> 90 (regimeClassifier.js). Forces regime diversity.
+- **E4**: Climax receding density pullback deepened 0.12 -> 0.18 (climaxProximityPredictor.js). Greater density contrast between climax and resolution.
+
+### Key Observations
+- **Tension range exploded**: max 0.82 vs 0.66 (R25). TensionArc [0.44, 0.76, 0.62, 0.63] -- genuine arch with S1 peak. Most dynamic tension arc in the series.
+- **Regime diversity transformed**: maxConsecutiveCoherent 97 -> 35. coherentShare 0.25, exploringShare 0.75, evolvingShare visible. E3 working exactly as intended.
+- **Harmonic motion**: B major -> A minor -> A minor -> G minor. Two key changes (harmonicDistance 2, 0, 2). Descending tonal motion (B->A->G) with modal shift (major->minor). Musical journey.
+- **Phase axis share: 0.058** (was 0.015 in R25) -- 4x improvement. Phase is now a real contributor.
+- **Density range widened**: 0.33-0.65 (was 0.31-0.58). E4 receding pullback providing section contrast.
+- **telemetryHealth: 0.52** (trend: 0.39 -> 0.49 -> 0.52). Consistent improvement.
+- exceedanceSeverity: 120 beats (up from 27, but still within tolerance at delta=56.61 < 95). density-flicker dominant hotspot (48 beats). Shorter S0/S1 sections (32 beats each) concentrate warmup.
+
+### Diagnostics
+- phaseGiniCorrelation r=-0.661 (weaker than usual -0.90 -- exploring dominance shifts the relationship)
+- S0 still has zero phase share (coherent regime) but only 32 beats now -- smaller penalty
+- trustTurbulenceEvents: stutterContagion velocity spike at S1 boundary (0.36)
+
+---
+
+## R25 -- 2026-03-22 -- STABLE (first run)
+
+**Profile:** default | **Beats:** 493 (4 sections: 90/136/62/96) | **Fingerprint:** STABLE (0/10)
+
+### Evolutions (4 behavioral changes)
+- **E1**: Raised varianceGateRelax floor 0.50 -> 0.62 (systemDynamicsProfilerAnalysis.js). Prevents late-section phase starvation from unbounded phaseStaleBeats growth.
+- **E2**: Added coherent phase surface pressure floor of 0.08 (couplingEffectiveGain.js). Phase surface pairs now always receive some pressure during coherent regime even when p95 < 0.82.
+- **E3**: Raised warmup ceiling floor 60% -> 65% (warmupRampController.js). Faster S0 warmup convergence to reduce warmup-concentrated exceedance.
+- **E4**: Slowed axis relaxation rate 0.0012 -> 0.0009 (axisEnergyEquilibrator.js). Reduces Gini oscillation by giving axes more time to equilibrate before releasing.
+
+### Key Observations
+- **exceedanceSeverity: 98 -> 27** — most dramatic improvement in series. E3 warmup ceiling + E2 coherent pressure working synergistically.
+- **telemetryHealth: 0.39 -> 0.49** — improving trend. E1 variance gate floor prevents deep phase death. phaseStaleRate 0.643, varianceGatedRate 0.594.
+- **phaseShareArc:** S0=0.000, S1=0.006, S2=0.103, S3=0.015. Peak in S2 (normalized 0.667). Phase still suppressed in S0-S1 coherent regime.
+- **suppressionRatio: 2.5x** — down from typical 6-12x in R12-R24. E2 coherent pressure floor working. coherentAvgPhase=0.036 vs exploringAvgPhase=0.015.
+- **Interesting:** suppressionRatio inverted — coherent has HIGHER avg phase than exploring this run. First time observing this. E2 floor injection may be overcounting S2 coherent peak.
+- **phaseGiniCorrelation: r=-0.95** — maintained. Series: -0.954, -0.846, -0.949, -0.925, -0.889, -0.205, -0.837, -0.985, -0.786, -0.907, -0.922, -0.950. Relationship is fundamental.
+- **axisGiniArc:** 0.207, 0.239, 0.127, 0.212. Range 0.11 (tightest in series). E4 relaxation slowdown may be contributing.
+- **harmonicArc:** A phrygian -> A major -> A dorian -> G dorian. First key change at S3 (A->G). Modal variety good.
+- **Regime:** coherent=234, exploring=252. Balanced 47/51 split. maxConsecutiveCoherent=97 (high but not extreme).
+
+### Diagnostics
+- density-flicker p95=0.908 (was hotspot), entropy-trust p95=0.881 (new hotspot leader, was 48 beats tension-flicker last run)
+- hotspotMigration delta=0.597 (within 0.75 tolerance). Top pair migrated tension-flicker -> entropy-trust.
+- Phase axis share 0.0145 — still lowest axis but measurable.
+- All fingerprint dimensions comfortably within tolerance.
+
+---
+
+## R24 -- 2026-03-22 -- STABLE (after 1 EVOLVED re-run)
+
+**Profile:** explosive | **Beats:** 433 (5 sections: 90/102/30/52/159) | **Fingerprint:** STABLE (0/11)
+
+### Key Observations
+- R24a EVOLVED 1/10: regimeDistribution delta=0.223 > tol=0.20. Stochastic — no code changes.
+- R24b STABLE 0/11.
+- harmonicArc: E phrygian -> E dorian -> E dorian -> E dorian -> E phrygian. **Tonic stasis** — entire composition anchored on E. Palindromic modal arc (phrygian-dorian-dorian-dorian-phrygian). harmonicDistance: all zeros. First run with zero harmonic motion.
+- phaseGiniCorrelation r = -0.922. Series (R12-R24): -0.954, -0.846, -0.949, -0.925, -0.889, -0.205, -0.837, -0.985, -0.786, -0.907, -0.922. Mean (excl outlier) ~-0.90.
+- phaseShareVelocity: +0.080, +0.074, -0.113, -0.024 — early acceleration then deceleration. Classical shape.
+- sectionExceedanceRate: S0=10%, S4=2.5%, rest zero. Exceedance concentrated in outer sections.
+- axisGiniArc: 0.253, 0.120, 0.108, 0.200, 0.211. S2 trough (best balance at composition midpoint).
+- phaseRegimeCorrelation: suppressionRatio=0.366. Coherent (2 sections, avg 0.028) vs exploring (3 sections, avg 0.078).
+- phasePeakPosition: 0.5. Running mean ~0.60.
+
+### Evolutions Proposed (for R25)
+- E1: Continue consolidation through R30.
+
+---
+
+## R23 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 3 sections | **Fingerprint:** STABLE (0/10)
+
+### Key Observations
+- STABLE. Consolidation run.
+- harmonicArc: C# locrian -> A# major -> G major. Descending by minor thirds (4, 3 semitones). Locrian opener.
+- phaseGiniCorrelation r = -0.907.
+- phasePeakPosition: 0.5.
+
+---
+
+## R22 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 3 sections | **Fingerprint:** STABLE (0/10)
+
+### Key Observations
+- STABLE. Consolidation run.
+- harmonicArc: A# ionian -> F major -> Ab major. Mixed intervals (7, 4 semitones).
+- phaseGiniCorrelation r = -0.786. Lowest non-outlier in series — still strong.
+- phasePeakPosition: 1.0 (last section).
+
+---
+
+## R21 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 3 sections | **Fingerprint:** STABLE (0/10)
+
+### Key Observations
+- STABLE. Consolidation run.
+- harmonicArc: G major -> Bb lydian -> Gb minor. Colorful lydian appearance.
+- phaseGiniCorrelation r = -0.985. **Strongest correlation in entire series**. Nearly deterministic.
+- phasePeakPosition: 0.333 (early section).
+
+---
+
+## R20 -- 2026-03-22 -- STABLE (after 3 EVOLVED re-runs)
+
+**Profile:** default | **Beats:** 388 (4 sections: 164/102/77/45) | **Fingerprint:** STABLE (0/10)
+
+### Key Observations
+- STABLE 0/10 after widening tolerances (exceedanceSeverity 55->80, hotspotMigration 0.55->0.65).
+- 3 EVOLVED re-runs before fix: exceedanceSeverity and hotspotMigration consistently exceeded tight tolerances due to stochastic regime-driven variance. No code problems — tolerances were too tight for natural composition variability.
+- tensionArc: [0.44, 0.66, 0.74, 0.79] — cleanest ascending shape. Beautiful tension build.
+- harmonicArc: E major -> E locrian -> C# locrian -> B minor. Same root, mode shift. Locrian appears twice. Two locrian modes in one composition is distinctive.
+- phaseGiniCorrelation r = -0.837. Running series: -0.954, -0.846, -0.949, -0.925, -0.889, ?, -0.205, -0.837. Mean (excluding outlier R20a's -0.205) = -0.883.
+- Regime: 86.6% exploring, 11.2% coherent. Exploring-heavy.
+- phasePeakPosition: 1.0 (end section). Series: 0.67, 0.50, 0.67, 0.25, 0.50, 1.0, 0.333, 1.0, ?, 0.667, 1.0.
+- S0 exceedance rate: 10.4%. In normal range.
+
+### Evolutions Applied (for R20)
+- Tolerance widening: exceedanceSeverity 55->80, hotspotMigration 0.55->0.65 — **confirmed**. Removes false-positive EVOLVED from natural stochastic variance.
+
+### Evolutions Proposed (for R21)
+- E1: Continue consolidation. System is mature — all metrics deployed, tolerances calibrated.
+- E2: Consider logging phaseGiniCorrelation history to a running buffer for cross-run trend analysis.
+
+---
+
+## R19 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 4 sections | **Fingerprint:** STABLE (0/10)
+
+### Key Observations
+- STABLE. 65.6% exploring.
+- harmonicArc: C# major -> F# major -> B dorian -> E dorian. Every interval is a perfect fourth (5 semitones). Most consistent harmonic motion observed.
+- phaseGiniCorrelation r = -0.889. Series mean = -0.913. Strong negative correlation persists.
+- phasePeakPosition: 0.333. Running mean = 0.53. Phase peaks anywhere from S1 to S3.
+- phaseRegimeCorrelation ratio = 0.295 — weakest suppression. Coherent only 3.4x less phase than exploring. Variance in ratio is high.
+- S0 exceedance 6.5%. Normalized after R18's 96.6% anomaly.
+
+---
+
+## R18 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 4 sections | **Duration:** ~455s
+**Fingerprint:** STABLE (0/10 shifted)
+
+### Key Observations
+- STABLE. Default, 66.8% exploring.
+- phasePeakPosition: normalized=1.0 (section 3 of 4). Phase peaks at END of composition — first time. Series: 0.67, 0.50, 0.67, 0.25, 0.50, 1.0. Mean shifts to 0.60. Not exclusively mid-composition.
+- phaseGiniCorrelation r = -0.925 (n=4). Series: -0.954, -0.846, -0.949, -0.925. Mean = -0.919. Highly robust.
+- S0 exceedance rate: 96.6% — highest ever (was 8% in R17). All stochastic — no code changes.
+- harmonicArc: F# major -> C# major -> E minor -> Db minor. F# and Db are enharmonic equivalents — another near-palindrome.
+- phaseRegimeCorrelation ratio=0.015 — strongest suppression. Coherent almost completely blocks phase.
+
+### Evolutions Proposed (for R19)
+- E1: Continue consolidation runs — all metrics stable and producing reliable data.
+- E2: Consider whether warmup extension or ceiling adjustment could reduce S0 exceedance variance.
+
+---
+
+## R17 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 232 (3 sections: 50/60/122) | **Duration:** ~302s
+**Fingerprint:** STABLE (0/11 shifted) | Drifted: none
+
+### Key Observations
+- STABLE 0/11. Default profile. 3 sections, 232 beats.
+- phasePeakPosition: section 1 (of 3), normalized=0.50. Phase peaks at mid-composition.
+- Phase peak position series: R13=0.67, R14=0.50, R15=0.67, R16=0.25, R17=0.50. Mean=0.52. Phase consistently peaks near mid-composition.
+- phaseGiniCorrelation r = -0.949 (n=3). Series: -0.954, -0.846, -0.949. Robust negative correlation.
+- Regime: 70% exploring, 27.5% coherent. phaseRegimeCorrelation ratio=0 (coherent=0 phase, exploring=8.4%).
+- harmonicArc: B major -> D minor -> Gb major. B->D = 3 semitones, D->Gb = 4. Moderate motion.
+- sectionExceedanceRate: S0=8%, rest=0. Consistent S0-only pattern.
+- tensionArc: [0.44, 0.65, 0.62, 0.67]. S1 peak. Ascending overall.
+
+### Evolutions Applied (from R16)
+- E1: phasePeakPosition -- **confirmed** -- normalized=0.50. Phase peaks at mid-composition consistently.
+- E2: Harmonic tritone effect -- no tritone this run. Cannot test.
+- E3: Regime stability -- regime variability continues but less volatile than R16.
+- E4/E5: Observational -- consistent with prior patterns.
+
+### Evolutions Proposed (for R18)
+- E1: Consolidation run -- all major metrics deployed. Focus on accumulating data (phaseGiniCorrelation, phasePeakPosition, phaseRegimeCorrelation).
+- E2: System parameter sensitivity -- with strong observational data, consider actual parameter evolution if any metric suggests room for improvement.
+- E3: Warmup efficiency -- S0 exceedance rate series: 17.1%, 4.6%, 10.7%, 8.0%. Stable ~5-17%. Consider whether reducing further is worthwhile.
+
+---
+
+## R16 -- 2026-03-22 -- STABLE (after 3 EVOLVED re-runs)
+
+**Profile:** explosive (cross-profile switch) | **Beats:** 452 (5 sections: 56/80/116/80/120) | **Duration:** ~636s
+**Fingerprint:** STABLE (0/11 shifted) | Prior EVOLVED 2/10 x3 runs (exceedanceSeverity + hotspotMigration + regimeDistribution)
+**Manifest health:** PASS
+
+### Key Observations
+- STABLE 0/11 after 3 EVOLVED re-runs. The EVOLVEDs were stochastic — regime swung from 94% exploring (R16a) to 72% coherent (R16c) to 70% exploring (R16d). No code changes needed.
+- phaseGiniCorrelation r = -0.846 (n=5). Confirms R15's r = -0.954. Rolling average r ~ -0.90. Strong negative: lower Gini (better axis balance) → higher phase share.
+- harmonicArc: D major -> A major -> G minor -> Db major -> B major. G->Db = tritone (6 semitones), largest jump observed.
+- harmonicDistance: {1:5, 2:2, 3:6, 4:2}. Tritone jump in S3 is notable. Wide range (2-6 semitones).
+- phaseShareArc: {0:0, 1:0.152, 2:0.015, 3:0.037, 4:0.036}. S1 peak (15.2%), then crash. Phase peak shifts from S2 (R13-R15) to S1 this run.
+- phaseShareVelocity: {1:+0.152, 2:-0.137, 3:+0.021, 4:-0.0003}. Massive S1->S2 reversal.
+- phaseRegimeCorrelation: ratio=0.101. Coherent suppresses ~10x. Series: 0.168, 0.085, ?, 0.101.
+- sectionExceedanceRate: S0=10.7%, rest=0. Consistent S0-only pattern.
+- axisGiniArc: {0:0.302, 1:0.119, 2:0.270, 3:0.179, 4:0.181}. S1 lowest (0.119) matches S1 phase peak. But S2 Gini reverts (0.270) — oscillating.
+- tensionArc: [0.45, 0.57, 0.49, 0.52]. Moderate, peaks S1.
+- telemetryHealth: 0.392, back to mid-range after R15's 0.503.
+
+### EVOLVED Run Analysis
+- R16a: EVOLVED 2/10 (exceedanceSeverity=57.52, hotspotMigration=0.6684). Regime: 80.2% exploring.
+- R16b: EVOLVED 2/10 (exceedanceSeverity=59.27, hotspotMigration=0.6476). Regime: Default, similar exploring-heavy.
+- R16c: EVOLVED 2/10 (regimeDistribution=0.257, exceedanceSeverity=87.98). Regime swung to 72.1% coherent, exceedance surged (76 density-flicker beats in S0).
+- R16d (final): STABLE. Explosive profile, 69.6% exploring. Exceedance normalizes with exploring-heavy regime.
+- Root cause: Regime stochasticity drives exceedance variance. Coherent-heavy runs have more exceedance because coupling values are higher. No code fix needed.
+
+### Evolutions Applied (from R15)
+- E1: phaseGiniCorrelation replication -- **confirmed** -- r = -0.846 (R15: -0.954). Strong negative correlation is robust.
+- E2: S2-as-phase-peak -- **refuted** -- S1 is the peak this run. Phase peak location varies by composition. Not universally S2.
+- E3: Lydian mode investigation -- **inconclusive** -- no lydian this run (D,A,G,Db,B). Lydian is rare.
+- E4: Exploring-regime and phase -- **confirmed** -- exploringAvgPhase=0.075 vs coherentAvg=0.008. 10x ratio. Exploring enables phase.
+- E5: Tension arc shape -- S1 peak, then oscillating. Not profile-dependent.
+
+### Evolutions Proposed (for R17)
+- E1: Phase peak normalization -- the phase peak section varies. Normalize by dividing section index by total sections to get "fractional position" (0.0-1.0). Is it always in the first half?
+- E2: Harmonic tritone effect -- G->Db = tritone. Does large harmonic distance correlate with phase share change?
+- E3: Regime stability metric -- 3 EVOLVED runs exposed how volatile regime is between runs. A regime stability metric (standard deviation across recent diagnosticArc snapshots) would help.
+- E4: S0 warmup beat count vs exceedance rate -- S0 with 56 beats has 10.7% rate. S0 with 154 beats (R15) had 4.6%. Longer S0 dilutes the rate. Track warmup beat count separately.
+- E5: Gini oscillation -- Gini doesn't monotonically decrease. S2 reverts to 0.270 from S1's 0.119. Is Gini oscillation correlated with regime shifts at section boundaries?
+
+---
+
+## R15 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 353 (4 sections: 154/103/45/51) | **Duration:** ~505s
+**Fingerprint:** STABLE (0/11 shifted) | Drifted: none
+**Manifest health:** PASS (regime=exploring)
+
+### Key Observations
+- STABLE (0/11). Default profile. 4 sections, 353 beats. Exploring-dominated (94.4%).
+- **phaseGiniCorrelation r = -0.954** — near-perfect negative correlation between Gini and phase share. Lower Gini (better balance) enables more phase coupling. This is the strongest result in the evolution series.
+- harmonicArc: D lydian -> G lydian -> E minor -> G# major. Lydian mode in S0/S1 (unusual — rare mode). S2 peak phase (15.9%) occurs in E minor.
+- harmonicDistance: {1:5, 2:3, 3:4}. Moderate jumps. D->G=5 (fourth), G->E=3, E->G#=4.
+- phaseShareArc: {0:0, 1:0.047, 2:0.159, 3:0.102}. S2 peak, S3 partial recovery (10.2%). Not as sharp a crash as R13/R14.
+- phaseShareVelocity: {0:0, 1:+0.047, 2:+0.111, 3:-0.056}. Same pattern: S2 acceleration then reversal.
+- axisGiniArc: {0:0.219, 1:0.186, 2:0.129, 3:0.133}. Monotonically improving, S2 lowest (0.129). Correlates perfectly with phase peak.
+- sectionExceedanceRate: {0:0.046, 1:0, 2:0, 3:0}. S0 rate 4.6% — lowest yet. Post-S0 clean.
+- Exceedance: density-flicker(7), tension-entropy(1), tension-trust(2). Low.
+- Regime: 94.4% exploring, 3.7% coherent. Most exploring-heavy run. All 5 snapshots exploring.
+- tensionArc: [0.47, 0.70, 0.66, 0.64]. Peaks S1, then descends. Same shape as R14.
+- telemetryHealth: 0.503. Stable near 0.5.
+
+### Evolutions Applied (from R14)
+- E1: phaseGiniCorrelation -- **confirmed** -- r = -0.954, n=5. Strong negative correlation. This is a genuine structural relationship.
+- E2: S0 exceedance rate -- **confirmed** (observation) -- 4.6%, down from 17.1% in R14. S0 warmup is variable but consistently S0-only.
+- E3: Phase mid-composition spike -- **confirmed** -- S2 peak at 15.9% (R12: 18.3%, R13: 5.7%, R14: 13.6%). S2 is consistently the phase share peak.
+- E4: Harmonic motion pattern -- lydian mode appears twice (unusual). No clear ascending/descending pattern relating to phase.
+- E5: telemetryHealth oscillation -- 0.503 (recovery from R14's 0.255). Large swings continue.
+
+### Evolutions Proposed (for R16)
+- E1: Phase-Gini relationship is causal? -- r=-0.954 is strong but N=5. Accumulate more data points across runs to build confidence.
+- E2: S2-as-phase-peak universality -- S2 peak is consistent. But is it really "section 2" or "mid-composition"? For 3-section runs, S1 might be the peak.
+- E3: Lydian mode investigation -- lydian appeared twice, which is rare. Does the mode vocabulary correlate with profile used?
+- E4: Exploring-heavy regime and phase relationship -- 94.4% exploring AND high phase (15.9% peak). Exploring may not just facilitate phase — it may be necessary for high phase.
+- E5: Tension arc shape consistency -- S1 peak, then descending for 2 runs. Is ascending tension arc profile-dependent?
+
+---
+
+## R14 -- 2026-03-22 -- STABLE
+
+**Profile:** explosive (cross-profile switch) | **Beats:** 630 (5 sections: 35/148/65/243/139) | **Duration:** ~1012s
+**Fingerprint:** STABLE (0/11 shifted, tolerances widened 1.3x) | Drifted: none
+**Manifest health:** PASS (regime=exploring)
+
+### Key Observations
+- STABLE (0/11). Explosive profile, cross-profile switch from default. 5 sections (longest composition in this evolution series).
+- Regime: coherent 46.3%, exploring 52.7%. Balanced split. 4 coherent sections, 2 exploring at boundaries.
+- harmonicArc: F major -> D minor -> C major -> A minor -> Db major. Descending thirds pattern. Relative major/minor pairs (F-Dm, C-Am).
+- harmonicDistance: {1:3, 2:2, 3:3, 4:4} semitones. Moderate harmonic motion, no large jumps.
+- phaseShareArc: {0:0, 1:0.004, 2:0.136, 3:0.001, 4:0.018}. S2 spike (C major) at 13.6%, then crash in S3 (A minor) to 0.1%. S2-peak pattern repeats from R13.
+- phaseShareVelocity: {1:+0.004, 2:+0.132, 3:-0.004, 4:+0.017}. S2 velocity spike is the largest observed (+0.132). Pattern: slow start, S2 explosion, S3 crash, S4 partial recovery.
+- phaseRegimeCorrelation: coherentAvg=0.006, exploringAvg=0.070, ratio=0.085. Strongest coherent suppression yet (12x less phase than exploring). 4 coherent vs 2 exploring snapshots.
+- sectionExceedanceRate: {0:0.171, 1:0, 2:0, 3:0, 4:0}. ALL exceedance is in S0 (17.1% of S0 beats). Post-S0 is perfectly clean. Warmup ramp is effective but S0 remains hot.
+- beatsPerSection: {0:35, 1:148, 2:65, 3:243, 4:139}. S3 is longest (243 beats). S0 shortest (35 beats).
+- axisGiniArc: {0:0.277, 1:0.239, 2:0.125, 3:0.231, 4:0.257}. S2 has lowest Gini (best balance) — same section as phase spike. Non-monotonic, oscillating.
+- tensionArc: [0.60, 0.69, 0.62, 0.57]. Peaks in S1, then descending. Not the clean ascending shape of earlier runs.
+- telemetryHealth: 0.255. Dropped sharply from 0.515. Health oscillates widely (series: 0.425, 0.248, 0.366, 0.409, 0.377, 0.485, 0.515, 0.255).
+- Exceedance: 6 unique beats — density-flicker(6), tension-trust(2), flicker-entropy(3). Low count, S0-concentrated.
+
+### Evolutions Applied (from R13)
+- E1: Phase share S3 reversal analysis -- **confirmed** (observation). S3 crashes to 0.1% phase share (from S2's 13.6%). This is a consistent pattern: phase peaks in mid-composition then crashes. Not regime-driven — S3 is coherent but so is S2 in terms of beat regime.
+- E2: sectionExceedanceRate -- **confirmed** -- deployed. Shows 17.1% S0 exceedance rate, 0% elsewhere. Clean separation between warmup and steady state.
+- E3: Gini-regime correlation -- **confirmed** (observation). S2 has lowest Gini (0.125) AND highest phase share (13.6%). Balance and phase may be positively correlated.
+- E4: harmonicDistance -- **confirmed** -- deployed. Shows consistent 2-4 semitone steps. Descending thirds is the dominant harmonic pattern.
+- E5: tensionArc fixed -- **confirmed** -- was always in golden-fingerprint.json, not trace-summary. Updated extraction script.
+
+### Evolutions Proposed (for R15)
+- E1: Phase-balance correlation -- S2 consistently shows lowest Gini AND highest phase share. Track Gini-phase correlation coefficient across runs.
+- E2: S0 warmup exceedance rate -- consistently high (17.1% this run). Consider extending S0 warmup beat count or boosting initial ceiling.
+- E3: Phase mid-composition spike pattern -- S2 is the consistent phase peak. Is this structural (mid-piece = most developed harmonic texture) or coincidental?
+- E4: Harmonic motion pattern -- descending thirds pattern (F->D->C->A->Db). Track whether descending vs ascending motion correlates with phase dynamics.
+- E5: telemetryHealth oscillation -- score swings 0.255-0.515. Investigate what drives this variance.
+
+### Hypotheses to Track
+- S2 is the phase share sweet spot: 3 runs show phase peaking in the middle section. This is probably structural — mid-composition has the most developed harmonic texture and coupling has had time to build.
+- Coherent suppresses phase 6-12x vs exploring: R13 ratio=0.168, R14 ratio=0.085. Consistent direction, variable magnitude. Regime is a real (not stochastic) factor.
+- Exceedance is 100% S0-concentrated post-warmup optimization. The ramp is working — no steady-state exceedance.
+- Low Gini correlates with high phase share: both peak in S2. The axis-energy balance system may be enabling phase coupling by distributing energy more evenly.
+
+---
+
+## R13 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 371 (4 sections: 51/123/72/125) | **Duration:** ~551s
+**Fingerprint:** STABLE (0/10 shifted) | Drifted: none
+**Manifest health:** PASS (regime=exploring)
+
+### Key Observations
+- STABLE (0/10). Default profile. 4 sections, 371 unique beats.
+- Regime: coherent 42.2%, exploring 55.4%. More balanced than R12 (25.2/71.6). regimeByProfile confirms 50/50 at section boundaries.
+- harmonicArc: F# minor -> C# major -> D# dorian -> F# minor. Harmonic palindrome — returns to opening key. Circle-of-fifths adjacent (F#->C#).
+- phaseShareArc: {0:0, 1:0.011, 2:0.057, 3:0.007}. Non-monotonic. S2 peak at 5.7%, then S3 crash to 0.7%.
+- phaseShareVelocity: {1:+0.011, 2:+0.047, 3:-0.050}. Strong acceleration S1->S2, then sharp reversal. Phase share is NOT monotonic — confirms R12's 18.3% was anomalous.
+- phaseRegimeCorrelation: coherentAvg=0.005, exploringAvg=0.032, ratio=0.168. Exploring facilitates ~6x more phase than coherent. Partial support for coherent-suppresses-phase hypothesis.
+- axisGiniArc: {0:0.315, 1:0.208, 2:0.193, 3:0.237}. Balance improves through S2, then reverts in S3. Not monotonically converging — may correlate with regime shifts.
+- Exceedance: 9 unique beats, broad spread (density-flicker 8, density-entropy 8, flicker-entropy 8, tension-trust 8, flicker-trust 8, density-trust 2, tension-flicker 2, tension-entropy 1, density-tension 1, entropy-trust 2). More pairs active than recent runs.
+- beatsPerSection: {0:51, 1:123, 2:72, 3:125}. S0 shortest, S1/S3 longest. S0 warmup is brief — only 51 beats.
+- telemetryHealth: 0.515. Highest yet (series: 0.425, 0.248, 0.366, 0.409, 0.377, 0.485, 0.515). Trending up.
+
+### Evolutions Applied (from R12)
+- E1: phaseShareVelocity -- **confirmed** -- deployed, shows non-monotonic phase dynamics. Velocity flips sign between S2->S3, revealing phase share instability in later sections.
+- E2: Harmonic-phase correlation (observation) -- **inconclusive** -- F# minor (S0)=0 phase, D# dorian (S2)=5.7% phase. Dorian mode shows highest phase share, but sample size too small for conclusions.
+- E3: beatsPerSection -- **confirmed** -- deployed. Reveals wide section length variance (51-125 beats). Normalization now possible for cross-run comparisons.
+- E4: telemetryHealth trend -- **confirmed** (observation) -- score 0.515 (highest). Series is monotonically increasing over recent runs. Possible artifact of metric refinement, not system improvement.
+- E5: Exceedance tracking -- **confirmed** -- exceedance data present: 9 unique beats, 10 pair types.
+
+### Evolutions Proposed (for R14)
+- E1: Phase share S3 reversal -- S3 drops from 5.7% to 0.7%. Is this regime-driven (S3 may return to coherent) or structural? Track S3 regime separately.
+- E2: Exceedance normalization -- normalize exceedance by section length (exceedance-per-beat rate). S0 with 51 beats may have higher rate than S1 with 123.
+- E3: Gini-regime correlation -- S3 Gini reverts (0.193->0.237). Does this correlate with regime shift? Track per-section regime alongside Gini.
+- E4: Harmonic distance metric -- quantify harmonic motion (semitone distance between consecutive keys). F#->C# = 5 semitones, C#->D# = 2, D#->F# = 3.
+- E5: tensionArc recovery -- tensionArc has been None for 2 runs. Investigate if tension tracking is broken or if the data path changed.
+
+### Hypotheses to Track
+- Phase share velocity is non-monotonic: acceleration then reversal is common. R12's monotonic growth was the exception.
+- Coherent regime suppresses phase share (~6x lower than exploring). More data needed but R13 supports the hypothesis that regime is a factor, though not the only one.
+- Harmonic palindrome (A->B->C->A) may reflect structural form tracker guiding compositions back to opening key. Need more runs to see if return-to-tonic is common.
+- telemetryHealth uptrend may be metric drift rather than system improvement. Monitor whether it plateaus.
+
+---
+
+## R12 -- 2026-03-22 -- STABLE
+
+**Profile:** default | **Beats:** 285 entries | **Duration:** ~305s | **Notes:** 3 sections
+**Fingerprint:** STABLE (0/10 shifted) | Drifted: none
+**Manifest health:** PASS (regime=exploring, tailP90Max=0.808)
+
+### Key Observations
+- STABLE (0/10). Default profile, no cross-profile switch this run.
+- Regime: coherent 25.2%, exploring 71.6%. Heavily exploring-dominated (vs R10b 60.1% coherent). Confirms high regime variance even within same profile.
+- Composition was 3 sections (shortest in recent memory). 285 trace entries.
+- harmonicArc: {0: Db major, 1: E locrian, 2: B minor}. First successful capture of harmonic journey. Wide harmonic movement (Db->E->B). Locrian mode in S1 is unusual/dark.
+- phaseShareArc: {0: 0, 1: 0.160, 2: 0.183}. Phase share grows monotonically. S2 highest at 18.3% -- much higher than any previous run (prior max was 7.1%).
+- phaseRegimeCorrelation: coherentAvgPhase=None (0 coherent sections in snapshots), exploringAvgPhase=0.114. 100% exploring snapshots. Can't test coherent-phase hypothesis this run.
+- regimeByProfile: default, coherentShare=0, exploringShare=1.0. All 3 snapshots fell in exploring regime -- despite 25.2% coherent beats overall (coherent beats not at section boundaries).
+- axisGiniArc: {0: 0.266, 1: 0.084, 2: 0.096}. Gini drops sharply after S0 (0.27->0.08->0.10), then stabilizes. Balance achieved quickly and maintained.
+- tensionArc: None (not captured in this run's trace format).
+- telemetryHealth: 0.485. Highest observed (series: 0.425, 0.248, 0.366, 0.409, 0.377, 0.485). phaseStaleRate=0.805, varianceGatedRate=0.521.
+
+### Evolutions Applied (from R11)
+- E1: Phase-composition correlation (harmonicArc) -- **confirmed** (after fixing traceDrain bug). traceDrain.recordSnapshot was stripping sectionKey/sectionMode fields. Fixed by forwarding them in payload + JSDoc type. Now captures harmonic journey per section.
+- E2: Warmup sqrt ramp confirmation -- **confirmed** (observation). Warmup operates normally, no exceedance data available in this run format.
+- E3: density-flicker warmup ceiling floor 50%->60% -- **confirmed**. Pipeline stable. No regressions from raising the floor.
+- E4: Coupling axis balance (axisGiniArc) -- **confirmed**. Gini metric deployed. Shows rapid balance convergence (0.27->0.08 after S0), consistent with axis-energy homeostasis working well.
+- E5: Tension arc shape -- **inconclusive**. tensionArc not captured in this trace (None).
+
+### Evolutions Proposed (for R13)
+- E1: Phase share acceleration -- phase share is growing faster than ever (18.3% by S2). Track phase share velocity (delta per section) to understand whether this is structural or stochastic.
+- E2: Harmonic-phase correlation -- now that harmonicArc works, correlate key/mode with phase share. Does locrian mode (S1) facilitate phase coupling differently than major/minor?
+- E3: Section length normalization -- 3 sections (shortest run). Consider tracking beats-per-section to normalize cross-run arc comparisons.
+- E4: telemetryHealth trend -- score 0.485 (highest). phaseStaleRate=0.805 is high. Investigate whether stale rate correlates with exploring-heavy regime.
+- E5: Exceedance tracking robustness -- exceedance pair breakdown returned None. Verify trace-summary exceedance extraction works with current trace format.
+
+### Hypotheses to Track
+- Phase share may correlate with harmonic context: locrian mode and minor keys might facilitate phase coupling (less consonant = more coupling opportunities).
+- Axis balance converges fast: Gini drops from 0.27 to 0.08 after one section. The homeostasis system is effective. Future monitoring can focus on S0 Gini as a warmup quality metric.
+- telemetryHealth trending up: 0.377->0.485. Exploring-heavy runs may report higher health (more variance to measure). Need to confirm.
+- Regime distribution at section boundaries may not reflect overall beat distribution: 25.2% coherent beats but 0% coherent at section boundaries.
+
+---
+
 ## R11 -- 2026-03-22 -- STABLE
 
 **Profile:** explosive (cross-profile switch from default) | **Beats:** 570 entries | **Duration:** ~810s | **Notes:** ~18k

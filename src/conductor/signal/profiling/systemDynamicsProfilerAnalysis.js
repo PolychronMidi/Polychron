@@ -134,8 +134,11 @@ systemDynamicsProfilerAnalysis = (() => {
     if (curvCount > 0) avgCurvature /= curvCount;
 
     const stats = phaseSpaceMath.stats(state.rawTrajectory, config.N_DIMS);
+    // R25 E1: Raised floor from 0.50 to 0.62 to prevent late-section phase
+    // starvation. phaseStaleBeats grows linearly without cap; floor of 0.50
+    // crushed variance gate too far, starving phase in S3-S4.
     const varianceGateRelax = state.phaseStaleBeats > 10
-      ? m.max(0.50, m.pow(0.85, (state.phaseStaleBeats - 10) / 15))
+      ? m.max(0.62, m.pow(0.85, (state.phaseStaleBeats - 10) / 15))
       : 1.0;
     const profileGateScale = conductorConfig.getActiveProfile().phaseVarianceGateScale || 1.0;
     // E2 (R100): orchestrator relaxes variance gate when phase is chronically near-zero

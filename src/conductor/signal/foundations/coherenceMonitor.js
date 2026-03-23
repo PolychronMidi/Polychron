@@ -18,7 +18,7 @@ coherenceMonitor = (() => {
   // Feedback signal
   let coherenceBias = 1.0;   // multiplier fed into density pipeline
   const BIAS_FLOOR = 0.60;
-  const BIAS_CEILING = 1.3;
+  const BIAS_CEILING = 1.38;  // R29 E3: Raised from 1.3 (max per tuning invariant: 2.5/playScale_max=1.8 -> 1.38)
   const SMOOTHING = 0.55;    // exponential smoothing factor (higher = slower response)
 
   // Entropy tracking

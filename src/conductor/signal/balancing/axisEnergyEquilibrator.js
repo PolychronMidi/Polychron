@@ -20,7 +20,7 @@ axisEnergyEquilibrator = (() => {
     AXIS_OVERSHOOT: 0.22,
     AXIS_UNDERSHOOT: 0.12,
     AXIS_TIGHTEN_RATE: 0.002,
-    AXIS_RELAX_RATE: 0.0012,
+    AXIS_RELAX_RATE: 0.0009,  // R25 E4: Slowed from 0.0012 to reduce Gini oscillation
     AXIS_COOLDOWN: 4,
     SHARE_EMA_ALPHA: 0.08,
     GINI_ESCALATION: 0.40,

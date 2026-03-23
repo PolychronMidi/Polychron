@@ -11,7 +11,7 @@
 
 structuralNarrativeAdvisor = (() => {
 
-  const VARIETY_GAIN = 0.04;
+  const VARIETY_GAIN = 0.08;
   const MAX_HISTORY  = 32;
 
   /** @type {string[]} */

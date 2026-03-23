@@ -106,7 +106,7 @@ traceDrain = (() => {
 
   /**
    * Record a diagnostic snapshot (non-beat).
-   * @param {{ beatKey: string, timeMs: number, effectiveDim: number, trustScores: any, trustVelocity?: Record<string,number>, couplingMeans: Record<string,number>, globalGainMultiplier: number, regime: string, couplingStrength: number, phaseIntegrity: string, activeProfile?: string, axisEnergyShare?: any }} data
+   * @param {{ beatKey: string, timeMs: number, effectiveDim: number, trustScores: any, trustVelocity?: Record<string,number>, couplingMeans: Record<string,number>, globalGainMultiplier: number, regime: string, couplingStrength: number, phaseIntegrity: string, activeProfile?: string, axisEnergyShare?: any, sectionKey?: string, sectionMode?: string }} data
    */
   function recordSnapshot(data) {
     if (!isTracing || fd === null) return;
@@ -126,7 +126,10 @@ traceDrain = (() => {
       couplingStrength: data.couplingStrength,
       phaseIntegrity: data.phaseIntegrity,
       // R8 E1: Forward axis energy shares for section-level phase tracking
-      axisEnergyShare: data.axisEnergyShare || null
+      axisEnergyShare: data.axisEnergyShare || null,
+      // R12 E1: section harmonic context for harmonicArc metric
+      sectionKey: data.sectionKey || null,
+      sectionMode: data.sectionMode || null
     };
     traceDrainBuffer.push(JSON.stringify(payload) + '\n');
     traceDrainRecordCount++;

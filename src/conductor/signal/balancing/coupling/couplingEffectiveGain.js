@@ -29,7 +29,9 @@ couplingEffectiveGain = (() => {
       ? clamp(setup.tailPressureByPair[key], 0, 1) : 0;
     const coherentSurfacePressure = setup.regime === 'coherent'
       ? clamp(
-        (flags.isPhaseSurfacePair ? clamp((p95 - 0.82) / 0.14, 0, 1) * 0.55 + tailTelemetry.hotspotRate * 0.20 : 0) +
+        // R25 E2: Floor of 0.08 ensures phase surface pairs always receive some
+        // coherent pressure even when p95 < 0.82 (common in coherent regime).
+        (flags.isPhaseSurfacePair ? m.max(0.08, clamp((p95 - 0.82) / 0.14, 0, 1) * 0.55) + tailTelemetry.hotspotRate * 0.20 : 0) +
         (flags.isTrustPair ? clamp((p95 - 0.80) / 0.16, 0, 1) * 0.45 + tailTelemetry.severeRate * 0.18 : 0) +
         (flags.isDensityFlickerPair ? clamp((p95 - 0.88) / 0.10, 0, 1) * 0.25 + tailPressure * 0.10 : 0),
         0, 1)

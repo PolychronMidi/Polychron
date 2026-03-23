@@ -52,11 +52,11 @@ regimeReactiveDamping = (() => {
 
   // Max bias magnitude per signal (how far from 1.0 we can go)
   const MAX_DENSITY = 0.12;  // - range 0.88-1.12
-  const MAX_TENSION = 0.06;  // - range 0.94-1.06
-  const MAX_FLICKER = 0.15;  // - range 0.85-1.15
+  const MAX_TENSION = 0.10;  // R26 E2: Widened from 0.06 for audible tension contrast (range 0.90-1.10)
+  const MAX_FLICKER = 0.20;  // R28 E4: Widened from 0.15 for more timbral variety across regimes
   const _DENSITY_RANGE = [0.88, 1.12];
-  const _TENSION_RANGE = [0.92, 1.18];
-  const _FLICKER_RANGE = [0.88, 1.18];
+  const _TENSION_RANGE = [0.88, 1.22];  // R26 E2: widened to match MAX_TENSION=0.10
+  const _FLICKER_RANGE = [0.82, 1.22];  // R28 E4: widened to match MAX_FLICKER=0.20
 
   // Curvature scaling: bias = 1 + dir * max * curvatureGain
   // At curvature 0 - bias = 1.0 (neutral). At curvature 1.0 - full magnitude.
@@ -72,7 +72,7 @@ regimeReactiveDamping = (() => {
   // despite evolving regime" problem - the system equilibrates too fast.
   const LOW_VEL_THRESHOLD = 0.015;
   const LOW_VEL_BEATS     = 8;
-  const DRIFT_MAGNITUDE   = 0.09;
+  const DRIFT_MAGNITUDE   = 0.14;   // R29 E2: Raised from 0.09 for more dramatic stasis breakouts
   const DRIFT_DECAY       = 0.93; // drift decays each beat, replaced when velocity recovers
   let lowVelStreak = 0;
   let regimeReactiveDampingDriftD = 0;
