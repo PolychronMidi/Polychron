@@ -75,8 +75,30 @@ narrativeTrajectory = (() => {
     // Prevent the tension arc from collapsing in the final quarter of a section.
     // When section progress exceeds 75%, ensure a minimum tension bias of 1.02.
     const secProgress = timeStream.normalizedProgress('section');
-    if (typeof secProgress === 'number' && secProgress > 0.75) {
-      steerBias = m.max(steerBias, 1.02);
+    if (typeof secProgress === 'number' && Number.isFinite(secProgress)) {
+      const edgeDistance = m.min(clamp(secProgress, 0, 1), clamp(1 - secProgress, 0, 1));
+      const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
+      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+        ? axisEnergy.shares.phase
+        : 1.0 / 6.0;
+      const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
+        ? axisEnergy.shares.trust
+        : 1.0 / 6.0;
+      const lowPhasePressure = clamp((0.12 - phaseShare) / 0.12, 0, 1);
+      const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
+      const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
+      const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
+        ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
+        : 0;
+      const hotspotRelief = clamp(densityFlickerPressure * 0.45 + trustSharePressure * 0.25 + lowPhasePressure * 0.30, 0, 1);
+      if (edgePressure > 0) {
+        steerBias = 1.0 + (steerBias - 1.0) * (1 - hotspotRelief * (0.35 + edgePressure * 0.35));
+      }
+      if (secProgress > 0.75) {
+        steerBias = m.max(steerBias, 1.0 + 0.02 * (1 - hotspotRelief));
+      }
     }
   }
 

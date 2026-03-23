@@ -6,10 +6,13 @@
 ## Run
 
 ```bash
-npm run main   # the ONE command - lint, typecheck, generate output, analyze metrics
+npm run main   # primary pipeline command - lint, typecheck, generate output, analyze metrics
+npm run render # generate MIDI, render both layers to WAV, and mix output/combined.wav
 ```
 
 Wait for script completion and always reuse the open terminal instead of opening a new one. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
+
+Only use `npm run render` when audio rendering is needed and the render toolchain is installed (`python3`, `fluidsynth`, `ffmpeg`, plus the configured SoundFont).
 
 ## Five Core Principles
 

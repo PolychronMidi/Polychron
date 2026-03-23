@@ -67,8 +67,10 @@ conductorDampening = (() => {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
         base *= 0.8; // Thicken gravity (less pass-through) when fragmented
-      } else if (snap.regime === 'exploring' || snap.regime === 'coherent') {
-        base *= 1.2; // Loosen gravity (more pass-through) when coherent
+      } else if (snap.regime === 'coherent') {
+        base *= 1.18;
+      } else if (snap.regime === 'exploring') {
+        base *= 1.14;
       }
     } catch {
       // profiler snapshot may not be available during early boot or testing;
@@ -116,6 +118,8 @@ conductorDampening = (() => {
     let effectiveDamping = clamp(baseDamping - extraDampening, 0.15, baseDamping);
     if (pipelineName === 'flicker' && deviation > 0) {
       let phaseCollapsePressure = 0;
+      let edgePressure = 0;
+      let densityEntropyPressure = 0;
       try {
         const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
         const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
@@ -123,10 +127,19 @@ conductorDampening = (() => {
           : 1.0 / 6.0;
         const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
         phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
+        const sectionProgress = timeStream.normalizedProgress('section');
+        if (typeof sectionProgress === 'number' && Number.isFinite(sectionProgress)) {
+          const edgeDistance = m.min(clamp(sectionProgress, 0, 1), clamp(1 - sectionProgress, 0, 1));
+          edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
+        }
+        const snap = systemDynamicsProfiler.getSnapshot();
+        if (snap && snap.couplingMatrix && typeof snap.couplingMatrix['density-entropy'] === 'number' && Number.isFinite(snap.couplingMatrix['density-entropy'])) {
+          densityEntropyPressure = clamp((m.abs(snap.couplingMatrix['density-entropy']) - 0.50) / 0.20, 0, 1);
+        }
       } catch {
         // Axis energy is not always available during early boot.
       }
-      const hotspotPressure = clamp(m.max(0, productDeviation) + deviation + phaseCollapsePressure * 0.35, 0, 0.75);
+      const hotspotPressure = clamp(m.max(0, productDeviation) + deviation + phaseCollapsePressure * 0.35 + edgePressure * 0.08 + densityEntropyPressure * 0.06, 0, 0.80);
       effectiveDamping = clamp(effectiveDamping - hotspotPressure * 0.20, 0.15, baseDamping);
     }
     return 1.0 + deviation * effectiveDamping;

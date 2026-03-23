@@ -67,7 +67,25 @@ repetitionFatigueMonitor = (() => {
     // max to ease tension crush - output 1.143 consuming 95% of [1, 1.15] range.
     if (profile.fatigueLevel <= 0.20) return 1.0;
     const ramp = clamp((profile.fatigueLevel - 0.20) / 0.80, 0, 1);
-    return 1.0 + ramp * 0.12;
+    let penalty = 1.0 + ramp * 0.12;
+    const secProgress = safePreBoot.call(() => timeStream.normalizedProgress('section'), 0.5);
+    const edgeDistance = typeof secProgress === 'number' && Number.isFinite(secProgress)
+      ? m.min(clamp(secProgress, 0, 1), clamp(1 - secProgress, 0, 1))
+      : 0.5;
+    const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const lowPhasePressure = clamp((0.12 - phaseShare) / 0.12, 0, 1);
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
+    const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
+      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
+      : 0;
+    const relief = clamp(edgePressure * 0.40 + lowPhasePressure * 0.30 + densityFlickerPressure * 0.30, 0, 0.75);
+    penalty = 1.0 + (penalty - 1.0) * (1 - relief);
+    return penalty;
   }
 
   conductorIntelligence.registerTensionBias('repetitionFatigueMonitor', () => repetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.12);

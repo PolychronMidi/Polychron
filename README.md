@@ -40,6 +40,21 @@ npm run main
 
 This single command runs the full 18-stage pipeline: global generation, boot-order verification, tuning invariant checks, feedback graph validation, linting, type-checking, composition, trace summary, health check, dependency graph, conductor map, cross-layer map, golden fingerprint, narrative digest, run comparison, composition diff, and feedback graph visualization. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
 
+### Render Audio
+
+```bash
+npm run render
+```
+
+This command runs `python3 c2m.py`, renders `output/output1.mid` and `output/output2.mid` to WAV via `fluidsynth`, and then mixes them into `output/combined.wav` via `ffmpeg`.
+
+Render prerequisites:
+
+- `python3`
+- `fluidsynth`
+- `ffmpeg`
+- A valid SoundFont at `~/Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2`
+
 Pass `--seed N` to make composition deterministic (seeded PRNG via mulberry32 replaces `Math.random`):
 
 ```bash
@@ -78,7 +93,7 @@ Every beat follows this sequence:
 5. **Emission** — Notes are picked via the assigned composer, stutter effects apply, MIDI/CSV events push to the buffer.
 6. **Closing the loop** — `crossLayerBeatRecord` captures output, `coherenceMonitor` compares actual vs intended density and feeds a dampened bias correction back to the conductor for the next beat.
 
-For a deep-dive, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For a deep-dive, see [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md).
 
 ### Emergence Boundaries
 

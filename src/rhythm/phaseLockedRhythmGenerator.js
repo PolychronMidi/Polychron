@@ -112,11 +112,15 @@ phaseLockedRhythmGenerator = (() => {
       const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
         ? axisEnergy.shares.phase
         : 1.0 / 6.0;
+      const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
+        ? axisEnergy.shares.trust
+        : 1.0 / 6.0;
       const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
       const collapseThreshold = phaseFloorController.getCollapseThreshold();
       const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1.5);
       const needsPhaseRescue = phaseShare < lowPhaseThreshold;
       const deepPhaseCollapse = phaseShare < collapseThreshold;
+      const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
       const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
       const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number'
         ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.74) / 0.18, 0, 1)
@@ -132,6 +136,7 @@ phaseLockedRhythmGenerator = (() => {
         : 0;
       const phaseRecoveryCredit = clamp((phaseShare - 0.09) / 0.05, 0, 1);
       const phaseContainmentPressure = clamp((flickerPhasePressure * 0.60 + densityFlickerPressure * 0.40) * phaseRecoveryCredit, 0, 1);
+      const phaseLanePriority = clamp((1 - densityFlickerPressure) * 0.55 + trustSharePressure * 0.45, 0, 1);
       if (textureDrift !== 0) {
         const scaledDrift = m.round(textureDrift * (1 - phaseContainmentPressure * 0.55));
         if ((textureDrift > 0 && scaledDrift > 0) || (textureDrift < 0 && scaledDrift < 0)) {
@@ -139,14 +144,15 @@ phaseLockedRhythmGenerator = (() => {
         }
       }
       const rescueContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.25 + flickerTrustPressure * 0.15, 0, 1);
-      if (activeLayer === 'L2' && ((snap && snap.regime === 'exploring' && (sectionProgress > 0.25 || textureStarved)) || needsPhaseRescue) && (deepPhaseCollapse || rescueContainmentPressure < 0.75)) {
-        const rescueTrim = 1 - rescueContainmentPressure * (deepPhaseCollapse ? 0.30 : 0.60);
-        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + (deepPhaseCollapse ? 0.35 : 0)) * rescueTrim * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.10 : 0.45))));
+      const regimeAllowsPhaseRescue = snap && (snap.regime === 'exploring' || (snap.regime === 'coherent' && trustSharePressure > 0.35));
+      if (activeLayer === 'L2' && ((regimeAllowsPhaseRescue && (sectionProgress > 0.25 || textureStarved)) || needsPhaseRescue) && (deepPhaseCollapse || rescueContainmentPressure < 0.75 || phaseLanePriority > 0.55)) {
+        const rescueTrim = clamp(1 - rescueContainmentPressure * (deepPhaseCollapse ? 0.30 : 0.60), 0.25, 1);
+        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + trustSharePressure * 0.45 + phaseLanePriority * 0.25 + (deepPhaseCollapse ? 0.35 : 0)) * rescueTrim * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.10 : 0.45))));
         offset += phasePush;
       } else if (activeLayer === 'L1' && needsPhaseRescue && sectionProgress > 0.08) {
         const phasePush = m.max(
           1 + (deepPhaseCollapse ? 1 : 0),
-          m.round((0.45 + sectionProgress * 0.55) * (1 + lowPhasePressure * 0.8 + rescueContainmentPressure * 0.30 + (deepPhaseCollapse ? 0.25 : 0)) * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.08 : 0.35)))
+          m.round((0.45 + sectionProgress * 0.55) * (1 + lowPhasePressure * 0.8 + rescueContainmentPressure * 0.30 + trustSharePressure * 0.30 + phaseLanePriority * 0.20 + (deepPhaseCollapse ? 0.25 : 0)) * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.08 : 0.35)))
         );
         offset += phasePush;
       }

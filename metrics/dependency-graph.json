@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-23T22:56:10.665Z",
+    "generated": "2026-03-23T23:51:36.382Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2944,
-    "totalEdges": 2309,
-    "crossSubsystemEdges": 1541,
+    "totalConsumes": 2958,
+    "totalEdges": 2323,
+    "crossSubsystemEdges": 1549,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 965
+        "consumes": 975
       },
       "rhythm": {
         "files": 30,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 356
+        "consumes": 360
       },
       "writer": {
         "files": 4,
@@ -873,6 +873,7 @@
         "pipelineCouplingManager",
         "safePreBoot",
         "systemDynamicsProfiler",
+        "timeStream",
         "validator"
       ]
     },
@@ -1400,6 +1401,7 @@
         "regimeReactiveDampingEquilibrator",
         "safePreBoot",
         "sectionIndex",
+        "signalHealthAnalyzer",
         "systemDynamicsProfiler",
         "totalSections",
         "velocity"
@@ -1812,7 +1814,10 @@
         "clamp",
         "conductorIntelligence",
         "m",
+        "pipelineCouplingManager",
+        "safePreBoot",
         "signalReader",
+        "systemDynamicsProfiler",
         "t",
         "timeStream",
         "velocity"
@@ -2711,6 +2716,7 @@
         "phaseFloorController",
         "pipelineCouplingManager",
         "safePreBoot",
+        "signalHealthAnalyzer",
         "systemDynamicsProfiler"
       ]
     },
@@ -2977,6 +2983,10 @@
         "clamp",
         "conductorIntelligence",
         "m",
+        "pipelineCouplingManager",
+        "safePreBoot",
+        "systemDynamicsProfiler",
+        "timeStream",
         "validator"
       ]
     },
@@ -6293,7 +6303,11 @@
         "entropyMetrics",
         "explainabilityBus",
         "m",
+        "pipelineCouplingManager",
         "prob",
+        "safePreBoot",
+        "systemDynamicsProfiler",
+        "timeStream",
         "validator",
         "velocity"
       ]
@@ -11077,6 +11091,13 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/narrative/narrativeTrajectory.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/profiling/regimeClassifierResolution.js",
       "globals": [
         "pipelineCouplingManager"
@@ -11098,7 +11119,21 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "globals": [
         "pipelineCouplingManager"
       ]
@@ -11343,6 +11378,13 @@
     },
     {
       "from": "src/conductor/signal/foundations/signalHealthAnalyzer.js",
+      "to": "src/conductor/dynamics/densityWaveAnalyzer.js",
+      "globals": [
+        "signalHealthAnalyzer"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/foundations/signalHealthAnalyzer.js",
       "to": "src/conductor/signal/balancing/coupling/couplingBiasAccumulator.js",
       "globals": [
         "signalHealthAnalyzer"
@@ -11358,6 +11400,13 @@
     {
       "from": "src/conductor/signal/foundations/signalHealthAnalyzer.js",
       "to": "src/conductor/signal/output/systemManifest.js",
+      "globals": [
+        "signalHealthAnalyzer"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/foundations/signalHealthAnalyzer.js",
+      "to": "src/conductor/signal/profiling/regimeReactiveDamping.js",
       "globals": [
         "signalHealthAnalyzer"
       ]
@@ -11763,6 +11812,13 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/signal/narrative/narrativeTrajectory.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/conductor/signal/output/systemManifest.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -11771,6 +11827,20 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/conductor/signal/profiling/regimeReactiveDamping.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -15580,6 +15650,13 @@
     },
     {
       "from": "src/time/timeStream.js",
+      "to": "src/conductor/conductorDampening.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
       "to": "src/conductor/dynamismPulse.js",
       "globals": [
         "timeStream"
@@ -15629,6 +15706,13 @@
     },
     {
       "from": "src/time/timeStream.js",
+      "to": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
       "to": "src/crossLayer/crossLayerLifecycleManager.js",
       "globals": [
         "timeStream"
@@ -15651,6 +15735,13 @@
     {
       "from": "src/time/timeStream.js",
       "to": "src/crossLayer/rhythm/polyrhythmicPhasePredictor.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
+      "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "globals": [
         "timeStream"
       ]
@@ -21811,6 +21902,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/narrative/narrativeTrajectory.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/profiling/regimeClassifierResolution.js",
       "globals": [
         "safePreBoot"
@@ -21840,6 +21938,20 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/texture/form/sectionLengthAdvisor.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "globals": [
         "safePreBoot"
       ]
