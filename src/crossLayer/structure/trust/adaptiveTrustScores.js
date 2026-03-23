@@ -18,8 +18,8 @@ adaptiveTrustScores = (() => {
   // more influence - more positive outcomes - higher trust).
   const TRUST_CEILING = 0.75; // max score (- max weight - 1.56)
 
-  const BASE_EMA_DECAY = 0.9;
-  const BASE_EMA_NEW = 0.1;
+  const BASE_EMA_DECAY = 0.85; // R33 E2: 0.9->0.85 faster trust adaptation
+  const BASE_EMA_NEW = 0.15;  // R33 E2: 0.1->0.15 faster learning rate
 
   let decayCycleCount = 0;
 
@@ -33,7 +33,7 @@ adaptiveTrustScores = (() => {
   const _STAGNATION_THRESHOLD = 0.001;      // velocity below this is "stagnant"
   const _DISENGAGE_THRESHOLD = 0.003;       // 3x threshold for hysteresis disengage
   const _DISENGAGE_BEATS = 50;              // beats above disengage threshold before stopping
-  const _STAGNATION_BEATS_TRIGGER = 100;    // beats of stagnation before nourishment
+  const _STAGNATION_BEATS_TRIGGER = 70;     // R33 E2: 100->70 faster recovery of stuck systems
   const _BASE_NOURISHMENT_STRENGTH = 0.15;  // max synthetic payoff scaling
   const _MIN_NOURISHMENT_STRENGTH = 0.05;   // floor after decay
   const _NOURISHMENT_DECAY = 0.90;          // 10% decay per application

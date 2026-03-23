@@ -3,7 +3,7 @@ conductorProfileDefault = () => ({
   density: {
     floor: 0.15,
     ceiling: 0.95,
-    range: [0.3, 0.8],
+    range: [0.22, 0.88],
     smoothing: 0.8
   },
   phaseMultipliers: {
@@ -11,7 +11,7 @@ conductorProfileDefault = () => ({
     opening: 0.8,
     exposition: 1.0,
     development: 1.0,
-    climax: 1.3,
+    climax: 1.5,
     resolution: 0.7,
     conclusion: 0.7,
     coda: 0.7

@@ -6,10 +6,10 @@
 ## Run
 
 ```bash
-npm run main   # the ONE command - lint, typecheck, generate output
+npm run main   # the ONE command - lint, typecheck, generate output, analyze metrics
 ```
 
-Wait for completion before acting on results. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
+Wait for script completion and always reuse the open terminal instead of opening a new one. Composition files land in `output/`, metrics in `metrics/`, logs in `log/`.
 
 ## Five Core Principles
 

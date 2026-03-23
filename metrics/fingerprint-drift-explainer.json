@@ -1,8 +1,19 @@
 {
   "meta": {
-    "generated": "2026-03-23T00:09:43.907Z",
-    "verdict": "STABLE"
+    "generated": "2026-03-23T02:22:21.141Z",
+    "verdict": "EVOLVED"
   },
-  "narrative": "The composition character is statistically stable. No significant drift detected.",
-  "explanations": []
+  "narrative": "The composition has evolved in 1 dimension(s). This is within normal creative variation range. exceedance hotspots shifted from [density-flicker: 53, flicker-trust: 36, density-tension: 9] to [flicker-phase: 33, density-flicker: 11, flicker-trust: 8].",
+  "explanations": [
+    {
+      "dimension": "exceedanceSeverity (beats)",
+      "delta": 119.13,
+      "tolerance": 95,
+      "cause": "exceedance hotspots shifted from [density-flicker: 53, flicker-trust: 36, density-tension: 9] to [flicker-phase: 33, density-flicker: 11, flicker-trust: 8]",
+      "uniqueBeats": {
+        "current": 44,
+        "previous": 90
+      }
+    }
+  ]
 }
