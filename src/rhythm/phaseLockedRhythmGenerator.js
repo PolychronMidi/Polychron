@@ -95,13 +95,13 @@ phaseLockedRhythmGenerator = (() => {
     // Chord bursts - advance phase (layers drift apart - polyrhythmic tension)
     // Flurries - negative drift (layers re-align - convergence)
     const texMetrics = drumTextureCoupler.getMetrics();
+    let textureDrift = 0;
     if (texMetrics.intensity > 0.2) {
       const driftParams = conductorConfig.getRhythmDriftParams();
       const burstDom = texMetrics.burstCount > texMetrics.flurryCount;
-      const drift = burstDom
+      textureDrift = burstDom
         ? m.round(texMetrics.intensity * rf(driftParams.burst[0], driftParams.burst[1]))    // divergence
         : -m.round(texMetrics.intensity * rf(driftParams.flurry[0], driftParams.flurry[1])); // convergence
-      offset += drift;
     }
 
     try {
@@ -127,20 +127,32 @@ phaseLockedRhythmGenerator = (() => {
       const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number'
         ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
         : 0;
+      const flickerPhasePressure = couplingMatrix && typeof couplingMatrix['flicker-phase'] === 'number'
+        ? clamp((m.abs(couplingMatrix['flicker-phase']) - 0.72) / 0.16, 0, 1)
+        : 0;
+      const phaseRecoveryCredit = clamp((phaseShare - 0.09) / 0.05, 0, 1);
+      const phaseContainmentPressure = clamp((flickerPhasePressure * 0.60 + densityFlickerPressure * 0.40) * phaseRecoveryCredit, 0, 1);
+      if (textureDrift !== 0) {
+        const scaledDrift = m.round(textureDrift * (1 - phaseContainmentPressure * 0.55));
+        if ((textureDrift > 0 && scaledDrift > 0) || (textureDrift < 0 && scaledDrift < 0)) {
+          offset += scaledDrift;
+        }
+      }
       const rescueContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.25 + flickerTrustPressure * 0.15, 0, 1);
       if (activeLayer === 'L2' && ((snap && snap.regime === 'exploring' && (sectionProgress > 0.25 || textureStarved)) || needsPhaseRescue) && (deepPhaseCollapse || rescueContainmentPressure < 0.75)) {
         const rescueTrim = 1 - rescueContainmentPressure * (deepPhaseCollapse ? 0.30 : 0.60);
-        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + (deepPhaseCollapse ? 0.35 : 0)) * rescueTrim));
+        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + (deepPhaseCollapse ? 0.35 : 0)) * rescueTrim * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.10 : 0.45))));
         offset += phasePush;
       } else if (activeLayer === 'L1' && needsPhaseRescue && sectionProgress > 0.08) {
         const phasePush = m.max(
           1 + (deepPhaseCollapse ? 1 : 0),
-          m.round((0.45 + sectionProgress * 0.55) * (1 + lowPhasePressure * 0.8 + rescueContainmentPressure * 0.30 + (deepPhaseCollapse ? 0.25 : 0)))
+          m.round((0.45 + sectionProgress * 0.55) * (1 + lowPhasePressure * 0.8 + rescueContainmentPressure * 0.30 + (deepPhaseCollapse ? 0.25 : 0)) * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.08 : 0.35)))
         );
         offset += phasePush;
       }
     } catch {
       // Snapshot access is optional during early boot and tests.
+      offset += textureDrift;
     }
 
     offset = ((offset % length) + length) % length; // Normalize to [0, length)

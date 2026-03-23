@@ -207,15 +207,15 @@ adaptiveTrustScores = (() => {
       : 1.0 / 6.0;
     if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE)
       && regime === 'exploring'
-      && pairAwareProfile.dominantPair === 'density-trust') {
-      const densityTrustBrake = clamp(pairAwareProfile.pressure * 0.22 + pairAwareProfile.severePressure * 0.18, 0.10, 0.30);
+      && (pairAwareProfile.dominantPair === 'density-trust' || (pairAwareProfile.dominantPair === 'density-flicker' && trustShare > 0.17))) {
+      const densityTrustBrake = clamp(pairAwareProfile.pressure * 0.24 + pairAwareProfile.severePressure * 0.20 + clamp((trustShare - 0.17) / 0.07, 0, 1) * 0.10, 0.10, 0.34);
       hotspotAwareWeight *= 1 - densityTrustBrake;
     }
     if ((systemName === trustSystems.names.STUTTER_CONTAGION || systemName === trustSystems.names.REST_SYNCHRONIZER || systemName === trustSystems.names.COHERENCE_MONITOR)
       && (pairAwareProfile.dominantPair === 'flicker-trust' || pairAwareProfile.dominantPair === 'density-flicker' || pairAwareProfile.dominantPair === 'density-trust')) {
       const lowPhasePressure = clamp((0.05 - phaseShare) / 0.05, 0, 1);
-      const trustAxisPressure = clamp((trustShare - 0.19) / 0.09, 0, 1);
-      const flickerTrustBrake = clamp(pairAwareProfile.pressure * 0.18 + pairAwareProfile.severePressure * 0.18 + lowPhasePressure * 0.14 + trustAxisPressure * 0.12, 0.08, 0.32);
+      const trustAxisPressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
+      const flickerTrustBrake = clamp(pairAwareProfile.pressure * 0.20 + pairAwareProfile.severePressure * 0.20 + lowPhasePressure * 0.14 + trustAxisPressure * 0.16, 0.08, 0.34);
       hotspotAwareWeight *= 1 - flickerTrustBrake;
     }
     if (systemName === trustSystems.names.ENTROPY_REGULATOR

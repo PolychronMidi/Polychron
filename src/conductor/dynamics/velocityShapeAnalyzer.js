@@ -98,6 +98,34 @@ velocityShapeAnalyzer = (() => {
     return velocityShapeAnalyzerComputeVelocityShape(opts);
   }
 
+  function velocityShapeAnalyzerGetContainmentPressure() {
+    const phaseContainmentTarget = 0.09;
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
+      ? axisEnergy.shares.trust
+      : 1.0 / 6.0;
+    const phaseRecoveryCredit = clamp((phaseShare - phaseContainmentTarget) / 0.05, 0, 1);
+    if (phaseRecoveryCredit <= 0) {
+      return 0;
+    }
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
+    if (!couplingMatrix) {
+      return 0;
+    }
+    const densityFlickerPressure = typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
+      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.76) / 0.16, 0, 1)
+      : 0;
+    const flickerPhasePressure = typeof couplingMatrix['flicker-phase'] === 'number' && Number.isFinite(couplingMatrix['flicker-phase'])
+      ? clamp((m.abs(couplingMatrix['flicker-phase']) - 0.74) / 0.16, 0, 1)
+      : 0;
+    const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
+    return clamp((densityFlickerPressure * 0.55 + flickerPhasePressure * 0.25 + trustSharePressure * 0.20) * phaseRecoveryCredit, 0, 1);
+  }
+
   /**
    * Get combined flicker modifier from velocity shape.
    * Continuous ramp based on punchiness and flatness:
@@ -110,21 +138,25 @@ velocityShapeAnalyzer = (() => {
    */
   function getFlickerModifier(opts) {
     const shape = getVelocityShape(opts);
+    const containmentPressure = velocityShapeAnalyzerGetContainmentPressure();
     if (shape.shape === 'terraced') {
       // Ramp from 1.0 toward 0.92 based on punchiness (higher punchiness = more terraced)
-      return 1.0 - clamp(shape.punchiness, 0, 1) * 0.08;
+      return 1.0 - clamp(shape.punchiness, 0, 1) * (0.08 + containmentPressure * 0.03);
     }
     if (shape.flat) {
       // Flat: ramp 1.0-1.15 based on how flat (inverse of punchiness)
-      return 1.0 + clamp((0.2 - shape.punchiness) / 0.2, 0, 1) * 0.15;
+      const flatBoost = clamp((0.2 - shape.punchiness) / 0.2, 0, 1) * 0.15;
+      return 1.0 + flatBoost * (1 - containmentPressure * 0.55);
     }
     if (shape.punchiness > 0.35) {
       // Punchy: ramp 1.0-1.12 over punchiness 0.35-1.0
-      return 1.0 + clamp((shape.punchiness - 0.35) / 0.65, 0, 1) * 0.12;
+      const punchBoost = clamp((shape.punchiness - 0.35) / 0.65, 0, 1) * 0.12;
+      return 1.0 + punchBoost * (1 - containmentPressure * 0.65);
     }
     if (shape.punchiness < 0.28) {
       // Smooth: ramp 1.0-0.95 over punchiness 0.28-0
-      return 1.0 - clamp((0.28 - shape.punchiness) / 0.28, 0, 1) * 0.05;
+      const smoothCut = clamp((0.28 - shape.punchiness) / 0.28, 0, 1) * 0.05;
+      return 1.0 - smoothCut * (1 + containmentPressure * 0.25);
     }
     return 1.0;
   }

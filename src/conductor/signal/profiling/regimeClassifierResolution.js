@@ -52,6 +52,10 @@ regimeClassifierResolution = (() => {
       ? ((state.runResolvedRegimeCounts.exploring || 0) / state.runBeatCount)
       : 0;
     const shortFormPressure = state.V.optionalFinite(totalSections, 0) > 0 && totalSections <= 4 ? 1 : 0;
+    const evolvingShare = state.runBeatCount > 0
+      ? ((state.runResolvedRegimeCounts.evolving || 0) / state.runBeatCount)
+      : 0;
+    const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
     state.rawRegimeCounts[rawRegime] = (state.rawRegimeCounts[rawRegime] || 0) + 1;
     state.runRawRegimeCounts[rawRegime] = (state.runRawRegimeCounts[rawRegime] || 0) + beatSpan;
 
@@ -100,10 +104,6 @@ regimeClassifierResolution = (() => {
         if (state.rawRegimeWindow[i] === rawRegime) windowHits++;
       }
 
-      const evolvingShare = state.runBeatCount > 0
-        ? ((state.runResolvedRegimeCounts.evolving || 0) / state.runBeatCount)
-        : 0;
-      const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
       const phaseHealthyExploringPressure = phaseShare > 0.06
         ? clamp((runExploringShare - 0.68) / 0.12, 0, 1)
         : 0;

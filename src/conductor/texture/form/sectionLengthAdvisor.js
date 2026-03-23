@@ -27,7 +27,13 @@ sectionLengthAdvisor = (() => {
   function advisePhraseCount(baseCount) {
     let effectiveBaseCount = baseCount;
     const shortFormPressure = V.optionalFinite(totalSections, 0) > 0 && totalSections <= 4 ? 1 : 0;
+    const longFormPressure = V.optionalFinite(totalSections, 0) >= 5 ? 1 : 0;
+    const protectedLongFormSection = longFormPressure > 0 && V.optionalFinite(sectionIndex, -1) >= 0 && sectionIndex < totalSections - 1 ? 1 : 0;
+    const middleSectionPressure = longFormPressure > 0 && V.optionalFinite(sectionIndex, -1) > 0 && sectionIndex < totalSections - 1 ? 1 : 0;
     if (shortFormPressure > 0 && effectiveBaseCount < 2) {
+      effectiveBaseCount = 2;
+    }
+    if (protectedLongFormSection > 0 && effectiveBaseCount < 2) {
       effectiveBaseCount = 2;
     }
     if (energyHistory.length < 4) return effectiveBaseCount;
@@ -35,6 +41,10 @@ sectionLengthAdvisor = (() => {
     const recent = energyHistory.slice(-4);
     const trend = (recent[3] - recent[0]) / 3;
     const currentEnergy = recent[3];
+    const momentumSuggestion = safePreBoot.call(() => phraseLengthMomentumTracker.suggestAdjustment(), null);
+    const momentumAdjustment = momentumSuggestion && Number.isFinite(momentumSuggestion.adjustment)
+      ? momentumSuggestion.adjustment
+      : 0;
 
     // Building energy - extend (up to +2)
     if (trend > 0.05 && currentEnergy > 0.36) {
@@ -42,8 +52,16 @@ sectionLengthAdvisor = (() => {
     }
 
     // High sustained energy - keep extended
-    if ((currentEnergy > 0.75 && trend > -0.02) || (shortFormPressure > 0 && currentEnergy > 0.55 && trend > -0.04)) {
+    if ((currentEnergy > 0.75 && trend > -0.02) || ((shortFormPressure > 0 || protectedLongFormSection > 0) && currentEnergy > 0.55 && trend > -0.04)) {
       return m.min(effectiveBaseCount + 1, effectiveBaseCount + 2);
+    }
+
+    if (middleSectionPressure > 0 && momentumAdjustment > 0 && currentEnergy > 0.40 && trend > -0.05) {
+      return m.min(effectiveBaseCount + 1, effectiveBaseCount + 2);
+    }
+
+    if (middleSectionPressure > 0 && momentumAdjustment < 0 && V.optionalFinite(sectionIndex, 0) >= 2 && currentEnergy < 0.26 && trend < -0.06) {
+      return m.max(effectiveBaseCount - 1, 2);
     }
 
     // Low and declining energy - truncate (at least 2 phrases)

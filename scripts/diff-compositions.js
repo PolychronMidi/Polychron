@@ -85,6 +85,10 @@ function extractStructure(entries) {
     const snap = e.snap || {};
 
     if (bk.section !== currentSection) {
+      if (ph && sec) {
+        sec.phrases.push(ph);
+        ph = null;
+      }
       if (sec) sections.push(sec);
       sec = {
         index: bk.section,

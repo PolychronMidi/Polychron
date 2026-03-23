@@ -47,6 +47,7 @@ dynamicPeakMemory = (() => {
     const lastPeak = peaks[peaks.length - 1];
     const now = V.requireFinite(beatStartTime, 'beatStartTime');
     const timeSince = now - lastPeak.time;
+    const longFormBuildPressure = totalSections >= 5 && sectionIndex > 0 && sectionIndex < totalSections - 1 ? 1 : 0;
 
     let peakRecency = 'distant';
     if (timeSince < 5) peakRecency = 'very-recent';
@@ -60,14 +61,14 @@ dynamicPeakMemory = (() => {
     if (lastPeak.type === 'peak') {
       if (timeSince < 8) {
         // Recent peak: ramp 0.92-0.96 over 0-8s
-        tensionBias = 0.92 + clamp(timeSince / 8, 0, 1) * 0.04;
+        tensionBias = 0.92 + clamp(timeSince / 8, 0, 1) * 0.04 + longFormBuildPressure * 0.015;
       } else {
         // Post-cooldown: ramp 0.96-1.06 over 8-40s
-        tensionBias = 0.96 + clamp((timeSince - 8) / 32, 0, 1) * 0.1;
+        tensionBias = 0.96 + clamp((timeSince - 8) / 32, 0, 1) * 0.1 + longFormBuildPressure * 0.015;
       }
     } else {
       // After trough: ramp 1.04-1.0 over 0-10s
-      tensionBias = 1.04 - clamp(timeSince / 10, 0, 1) * 0.04;
+      tensionBias = 1.04 + longFormBuildPressure * 0.015 - clamp(timeSince / 10, 0, 1) * 0.04;
     }
 
     return { tensionBias, timeSinceLastPeak: timeSince, peakRecency };

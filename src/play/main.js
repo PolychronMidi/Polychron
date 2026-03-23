@@ -95,6 +95,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
   // Let sectionLengthAdvisor adjust phrase count based on energy trajectory
   phrasesPerSection = sectionLengthAdvisor.advisePhraseCount(phrasesPerSection);
+  if (totalSections >= 5 && sectionIndex === 0 && phrasesPerSection < 2) {
+    phrasesPerSection = 2;
+  }
   mainBootstrap.requireFiniteNumber('sectionLengthAdvisor.advisePhraseCount result', phrasesPerSection);
   if (phrasesPerSection <= 0) {
     throw new Error('main: sectionLengthAdvisor.advisePhraseCount must return a value > 0');
@@ -146,6 +149,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Activate L1 layer first so activation doesn't overwrite freshly computed timing
     LM.activate('L1', false);
     getMidiTiming();
+    phraseLengthMomentumTracker.recordPhraseLength(sectionIndex, phraseIndex, measuresPerPhrase1);
     // Initialize polyrhythmic phase coupling after alignment is computed
     phaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
     measuresPerPhrase = measuresPerPhrase1;

@@ -1,133 +1,105 @@
 {
   "meta": {
-    "generated": "2026-03-23T14:49:06.307Z",
-    "entryCount": 562
+    "generated": "2026-03-23T17:26:21.845Z",
+    "entryCount": 579
   },
   "stats": [
     {
       "section": "S0",
-      "key": "E",
-      "mode": "major",
-      "beats": 105,
-      "avgTension": "0.383",
-      "avgPlayProb": "0.419",
+      "key": "A",
+      "mode": "dorian",
+      "beats": 188,
+      "avgTension": "0.399",
+      "avgPlayProb": "0.387",
       "dominantRegime": "exploring",
       "phrases": [
         {
           "phrase": "S0:P0",
-          "beats": 29,
-          "avgTension": "0.199",
-          "noteCount": 5754,
+          "beats": 78,
+          "avgTension": "0.223",
+          "noteCount": 15947,
           "profile": "default"
         },
         {
           "phrase": "S0:P1",
           "beats": 30,
-          "avgTension": "0.406",
-          "noteCount": 7055,
+          "avgTension": "0.464",
+          "noteCount": 6628,
           "profile": "default"
         },
         {
           "phrase": "S0:P2",
-          "beats": 46,
-          "avgTension": "0.484",
-          "noteCount": 10160,
+          "beats": 80,
+          "avgTension": "0.545",
+          "noteCount": 18875,
           "profile": "default"
         }
       ]
     },
     {
       "section": "S1",
-      "key": "Eb",
-      "mode": "major",
-      "beats": 105,
-      "avgTension": "0.838",
-      "avgPlayProb": "0.608",
-      "dominantRegime": "exploring",
+      "key": "B",
+      "mode": "dorian",
+      "beats": 57,
+      "avgTension": "0.610",
+      "avgPlayProb": "0.492",
+      "dominantRegime": "coherent",
       "phrases": [
         {
           "phrase": "S1:P0",
-          "beats": 51,
-          "avgTension": "0.749",
-          "noteCount": 8376,
-          "profile": "restrained"
-        },
-        {
-          "phrase": "S1:P1",
-          "beats": 54,
-          "avgTension": "0.922",
-          "noteCount": 11292,
+          "beats": 57,
+          "avgTension": "0.610",
+          "noteCount": 10203,
           "profile": "restrained"
         }
       ]
     },
     {
       "section": "S2",
-      "key": "D#",
+      "key": "A",
       "mode": "major",
-      "beats": 102,
-      "avgTension": "0.837",
-      "avgPlayProb": "0.537",
+      "beats": 125,
+      "avgTension": "0.609",
+      "avgPlayProb": "0.513",
       "dominantRegime": "exploring",
       "phrases": [
         {
           "phrase": "S2:P0",
-          "beats": 37,
-          "avgTension": "0.863",
-          "noteCount": 7986,
+          "beats": 61,
+          "avgTension": "0.577",
+          "noteCount": 12644,
           "profile": "default"
         },
         {
           "phrase": "S2:P1",
-          "beats": 45,
-          "avgTension": "0.838",
-          "noteCount": 11710,
-          "profile": "default"
-        },
-        {
-          "phrase": "S2:P2",
-          "beats": 20,
-          "avgTension": "0.788",
-          "noteCount": 4132,
+          "beats": 64,
+          "avgTension": "0.638",
+          "noteCount": 14636,
           "profile": "default"
         }
       ]
     },
     {
       "section": "S3",
-      "key": "A",
+      "key": "Ab",
       "mode": "minor",
-      "beats": 195,
-      "avgTension": "0.640",
-      "avgPlayProb": "0.486",
-      "dominantRegime": "coherent",
+      "beats": 90,
+      "avgTension": "0.729",
+      "avgPlayProb": "0.448",
+      "dominantRegime": "exploring",
       "phrases": [
         {
           "phrase": "S3:P0",
-          "beats": 53,
-          "avgTension": "0.761",
-          "noteCount": 12557,
+          "beats": 66,
+          "avgTension": "0.727",
+          "noteCount": 15058,
           "profile": "default"
         },
         {
           "phrase": "S3:P1",
-          "beats": 50,
-          "avgTension": "0.604",
-          "noteCount": 11843,
-          "profile": "default"
-        },
-        {
-          "phrase": "S3:P2",
-          "beats": 26,
-          "avgTension": "0.510",
-          "noteCount": 6243,
-          "profile": "default"
-        },
-        {
-          "phrase": "S3:P3",
-          "beats": 66,
-          "avgTension": "0.622",
-          "noteCount": 13673,
+          "beats": 24,
+          "avgTension": "0.734",
+          "noteCount": 5375,
           "profile": "default"
         }
       ]
@@ -135,17 +107,24 @@
     {
       "section": "S4",
       "key": "A",
-      "mode": "mixolydian",
-      "beats": 55,
-      "avgTension": "0.501",
-      "avgPlayProb": "0.483",
+      "mode": "dorian",
+      "beats": 119,
+      "avgTension": "0.425",
+      "avgPlayProb": "0.414",
       "dominantRegime": "coherent",
       "phrases": [
         {
           "phrase": "S4:P0",
-          "beats": 55,
-          "avgTension": "0.501",
-          "noteCount": 12653,
+          "beats": 71,
+          "avgTension": "0.516",
+          "noteCount": 15472,
+          "profile": "explosive"
+        },
+        {
+          "phrase": "S4:P1",
+          "beats": 48,
+          "avgTension": "0.291",
+          "noteCount": 11225,
           "profile": "explosive"
         }
       ]
