@@ -2,6 +2,23 @@
 
 const V = validator.create('grandFinale');
 
+function grandFinaleResolveType(event) {
+  return event.type === 'on' ? 'note_on_c' : (event.type ? event.type : 'note_off_c');
+}
+
+function grandFinaleEventPriority(event) {
+  const type = grandFinaleResolveType(event);
+  if (type === 'control_c' && Array.isArray(event.vals)) {
+    const controlNumber = Number(event.vals[1]);
+    if (controlNumber === 64 || controlNumber === 123 || controlNumber === 120) return 0;
+    if (controlNumber === 7) return 3;
+  }
+  if (type === 'note_off_c') return 1;
+  if (type === 'pitch_bend_c') return 2;
+  if (type === 'note_on_c') return 4;
+  return 3;
+}
+
 grandFinale = () => {
   if (!LM.layers) throw new Error('grandFinale: LM.layers must be a defined object');
   V.assertObject(LM.layers, 'LM.layers');
@@ -32,7 +49,7 @@ grandFinale = () => {
       buffer = buffer.rows;
     }
     buffer = buffer.filter(i => i !== null)
-      .map(i => {
+      .map((i, index) => {
         if (!i) throw new Error(`grandFinale: layer "${name}" contains non-object event entry`);
         V.assertObject(i, 'i');
         const rawTick = i.tick;
@@ -50,7 +67,14 @@ grandFinale = () => {
           throw new Error(`grandFinale: event tick must be >= 0, received ${tickVal}`);
         }
         tickVal = m.round(tickVal);
-        return { ...i, tick: tickVal, grandFinaleTickSortKey: tickVal, grandFinaleTickRaw: rawTick };
+        return {
+          ...i,
+          tick: tickVal,
+          grandFinaleTickSortKey: tickVal,
+          grandFinalePriority: grandFinaleEventPriority(i),
+          grandFinaleStableIndex: index,
+          grandFinaleTickRaw: rawTick
+        };
       })
       .sort((a, b) => {
         try {
@@ -59,7 +83,13 @@ grandFinale = () => {
         } catch {
           throw new Error('grandFinale: sort keys must be finite numbers');
         }
-        return a.grandFinaleTickSortKey - b.grandFinaleTickSortKey;
+        if (a.grandFinaleTickSortKey !== b.grandFinaleTickSortKey) {
+          return a.grandFinaleTickSortKey - b.grandFinaleTickSortKey;
+        }
+        if (a.grandFinalePriority !== b.grandFinalePriority) {
+          return a.grandFinalePriority - b.grandFinalePriority;
+        }
+        return a.grandFinaleStableIndex - b.grandFinaleStableIndex;
       });
 
     // Generate CSV
@@ -68,7 +98,7 @@ grandFinale = () => {
 
     buffer.forEach(_ => {
       if (!isNaN(_.tick)) {
-        const type = _.type === 'on' ? 'note_on_c' : (_.type ? _.type : 'note_off_c');
+        const type = grandFinaleResolveType(_);
         const tickNum = _.tick;
         V.requireFinite(tickNum, 'tickNum');
         const tickInt = m.round(Number(tickNum));

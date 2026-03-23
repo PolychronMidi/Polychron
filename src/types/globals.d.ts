@@ -1890,6 +1890,8 @@ declare var traceDrain: {
   recordNote(pitch: number, velocity: number, channel: number): void;
   recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string; axisEnergyShare?: any; sectionKey?: string; sectionMode?: string }): void;
   recordRuntimeMetric(name: string, durationMs: number): void;
+  recordFamilyVelocity(family: string, velocity: number): void;
+  recordBinauralShift(data: { layer: string; absTimeMs: number; syncMs: number; syncTick: number; silenceTick: number; usedCrossLayerShift: boolean; syncDeltaMs: number; nearTrackEnd: boolean; freqOffset: number; targetOffset: number; toleranceMs: number; flip: boolean }): void;
   flush(): void;
   shutdown(): void;
 };

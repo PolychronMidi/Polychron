@@ -31,6 +31,11 @@ function playNotesComputeUnitGetNoiseProfile(profileName) {
   return playNotesComputeUnitNoiseProfile;
 }
 
+function playNotesComputeUnitGetVelocityAnchor() {
+  const compositeIntensity = V.optionalFinite(Number(conductorState.getField('compositeIntensity')), 0.5);
+  return clamp(m.round(95 + compositeIntensity * 10), 90, 108);
+}
+
 /**
  * Compute note timing, velocity, and noise context for one emission unit.
  * Side effect: sets the global `velocity`.
@@ -69,7 +74,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   const sustain = (useShort ? shortSustain : longSustain) * rv(rf(.8, 1.3));
 
   // Build velocity through successive profile passes (sets global `velocity`)
-  velocity = rl(baseVelocitySeed, -3, 3, 95, 105);
+  velocity = rl(baseVelocitySeed, -1, 1, 98, 102);
   velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
 
   // Unit-level velocity scaling (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 - finer units play softer)
@@ -84,7 +89,10 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
     velocity = m.max(1, m.min(127, m.round(velocity * (1 - emissionCfg.voiceConfigBlend) + vcProfile.baseVelocity * emissionCfg.voiceConfigBlend)));
   }
 
-  const binVel = rv(velocity * rf(.4, .9));
+  const velocityAnchor = playNotesComputeUnitGetVelocityAnchor();
+  velocity = m.max(1, m.min(127, m.round(velocity * 0.48 + velocityAnchor * 0.52)));
+
+  const binVel = rv(velocity * rf(.72, .82));
 
   // Noise influence for organic velocity modulation
   V.requireType(getNoiseProfile, 'function', 'getNoiseProfile');

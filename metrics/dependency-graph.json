@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-23T20:54:15.071Z",
+    "generated": "2026-03-23T22:56:10.665Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2935,
-    "totalEdges": 2304,
-    "crossSubsystemEdges": 1536,
+    "totalConsumes": 2944,
+    "totalEdges": 2309,
+    "crossSubsystemEdges": 1541,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -37,7 +37,7 @@
       "rhythm": {
         "files": 30,
         "provides": 45,
-        "consumes": 213
+        "consumes": 214
       },
       "time": {
         "files": 13,
@@ -52,7 +52,7 @@
       "fx": {
         "files": 23,
         "provides": 56,
-        "consumes": 239
+        "consumes": 244
       },
       "crossLayer": {
         "files": 52,
@@ -62,12 +62,12 @@
       "writer": {
         "files": 4,
         "provides": 10,
-        "consumes": 64
+        "consumes": 66
       },
       "play": {
         "files": 18,
         "provides": 22,
-        "consumes": 394
+        "consumes": 395
       }
     }
   },
@@ -3256,6 +3256,7 @@
         "ri",
         "rv",
         "tpBeat",
+        "traceDrain",
         "validator"
       ]
     },
@@ -5618,7 +5619,7 @@
         "LM",
         "absoluteTimeGrid",
         "allCHs",
-        "allNotesOff",
+        "bass",
         "beatCount",
         "beatIndex",
         "beatStartTime",
@@ -5628,7 +5629,9 @@
         "binauralPlus",
         "c",
         "conductorState",
+        "crossLayerHelpers",
         "drumCH",
+        "finalTime",
         "firstLoop",
         "flipBin",
         "flipBinF2",
@@ -5642,9 +5645,12 @@
         "rCH1",
         "rCH3",
         "rCH5",
+        "reflection",
         "rf",
         "rl",
-        "tpSec",
+        "source",
+        "tpBeat",
+        "traceDrain",
         "validator"
       ]
     },
@@ -6539,7 +6545,9 @@
         "traceDrain"
       ],
       "consumes": [
+        "MIDI_MAX_VALUE",
         "axisEnergyEquilibrator",
+        "clamp",
         "couplingHomeostasis",
         "fs",
         "m",
@@ -6721,6 +6729,7 @@
         "beatIndex",
         "beatStart",
         "clamp",
+        "conductorState",
         "getNoiseProfile",
         "m",
         "measureCount",
@@ -9361,6 +9370,13 @@
     {
       "from": "src/conductor/conductorState.js",
       "to": "src/play/playNotes.js",
+      "globals": [
+        "conductorState"
+      ]
+    },
+    {
+      "from": "src/conductor/conductorState.js",
+      "to": "src/play/playNotesComputeUnit.js",
       "globals": [
         "conductorState"
       ]
@@ -12098,6 +12114,13 @@
     {
       "from": "src/crossLayer/crossLayerHelpers.js",
       "to": "src/crossLayer/rhythm/temporalGravity.js",
+      "globals": [
+        "crossLayerHelpers"
+      ]
+    },
+    {
+      "from": "src/crossLayer/crossLayerHelpers.js",
+      "to": "src/fx/setBinaural.js",
       "globals": [
         "crossLayerHelpers"
       ]
@@ -17164,6 +17187,13 @@
       ]
     },
     {
+      "from": "src/utils/clamps.js",
+      "to": "src/writer/traceDrain.js",
+      "globals": [
+        "clamp"
+      ]
+    },
+    {
       "from": "src/utils/closedLoopController.js",
       "to": "src/conductor/dynamics/dynamicArchitectPlanner.js",
       "globals": [
@@ -19753,10 +19783,12 @@
       "to": "src/fx/setBinaural.js",
       "globals": [
         "allCHs",
+        "bass",
         "beatCount",
         "beatIndex",
         "beatStartTime",
         "drumCH",
+        "finalTime",
         "flipBin",
         "flipBinF2",
         "flipBinT2",
@@ -19767,7 +19799,9 @@
         "rCH1",
         "rCH3",
         "rCH5",
-        "tpSec"
+        "reflection",
+        "source",
+        "tpBeat"
       ]
     },
     {
@@ -20433,6 +20467,7 @@
       "from": "src/utils/init.js",
       "to": "src/writer/traceDrain.js",
       "globals": [
+        "MIDI_MAX_VALUE",
         "velocity"
       ]
     },
@@ -20468,7 +20503,6 @@
       "from": "src/utils/instrumentation.js",
       "to": "src/fx/setBinaural.js",
       "globals": [
-        "allNotesOff",
         "binauralFreqOffset",
         "binauralMinus",
         "binauralOffset",
@@ -23824,6 +23858,13 @@
     },
     {
       "from": "src/writer/traceDrain.js",
+      "to": "src/fx/setBinaural.js",
+      "globals": [
+        "traceDrain"
+      ]
+    },
+    {
+      "from": "src/writer/traceDrain.js",
       "to": "src/play/crossLayerBeatRecord.js",
       "globals": [
         "traceDrain"
@@ -23860,6 +23901,13 @@
     {
       "from": "src/writer/traceDrain.js",
       "to": "src/play/playNotesEmitPick.js",
+      "globals": [
+        "traceDrain"
+      ]
+    },
+    {
+      "from": "src/writer/traceDrain.js",
+      "to": "src/rhythm/drums/drummer.js",
       "globals": [
         "traceDrain"
       ]

@@ -38,7 +38,7 @@
 /** @tier-3 */ bassInstrument = getMidiValue('program', 'Acoustic Bass');
 /** @tier-3 */ bassInstrument2 = getMidiValue('program', 'Synth Bass 2');
 /** @tier-3 */ otherBassInstruments=[32,33,34,35,36,37,38,39,40,41,43,44,45,46,48,49,50,51,89,98,98,98,98,98,98,98,98,98,98];
-/** @tier-3 */ drumSets=[0,8,16,24,25,32,40,48,127];
+/** @tier-3 */ drumSets=[0,1,2,8,9,10,11,13,16,24,25,26,27,29,30,32,40,48,49,50,56];
 /** @tier-3 */ LOG='section,phrase,measure';
 /** @tier-2 */ TUNING_FREQ=432;
 /** @tier-2 - binaural beat frequency range (Hz) */

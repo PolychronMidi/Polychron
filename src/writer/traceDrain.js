@@ -14,6 +14,131 @@ traceDrain = (() => {
   let traceDrainPendingNotes = [];
   /** @type {Record<string, { totalMs: number, count: number, maxMs: number }>} */
   let traceDrainRuntimeBuckets = {};
+  /** @type {Record<string, { count: number, min: number, max: number, sum: number, histogram: number[] }>} */
+  let traceDrainFamilyVelocityStats = {};
+  /** @type {Array<{ layer: string, absTimeMs: number, syncMs: number, syncTick: number, silenceTick: number, usedCrossLayerShift: boolean, syncDeltaMs: number, nearTrackEnd: boolean, freqOffset: number, targetOffset: number, toleranceMs: number, flip: boolean }>} */
+  let traceDrainBinauralShifts = [];
+
+  function traceDrainResetFamilyVelocityStats() {
+    traceDrainFamilyVelocityStats = {};
+  }
+
+  function traceDrainResetBinauralShifts() {
+    traceDrainBinauralShifts = [];
+  }
+
+  function traceDrainEnsureFamilyBucket(family) {
+    const familyName = String(family || 'unknown');
+    if (!Object.prototype.hasOwnProperty.call(traceDrainFamilyVelocityStats, familyName)) {
+      traceDrainFamilyVelocityStats[familyName] = {
+        count: 0,
+        min: MIDI_MAX_VALUE,
+        max: 0,
+        sum: 0,
+        histogram: new Array(MIDI_MAX_VALUE + 1).fill(0)
+      };
+    }
+    return traceDrainFamilyVelocityStats[familyName];
+  }
+
+  function traceDrainRecordFamilyVelocity(family, velocity) {
+    if (!isTracing) return;
+    const vel = Number(velocity);
+    if (!Number.isFinite(vel)) return;
+    const clamped = clamp(m.round(vel), 0, MIDI_MAX_VALUE);
+    const bucket = traceDrainEnsureFamilyBucket(family);
+    bucket.count += 1;
+    bucket.sum += clamped;
+    if (clamped < bucket.min) bucket.min = clamped;
+    if (clamped > bucket.max) bucket.max = clamped;
+    bucket.histogram[clamped] += 1;
+  }
+
+  function traceDrainResolvePercentile(histogram, count, percentile) {
+    if (count <= 0) return 0;
+    const threshold = m.max(1, m.ceil(count * percentile));
+    let seen = 0;
+    for (let value = 0; value < histogram.length; value++) {
+      seen += histogram[value];
+      if (seen >= threshold) return value;
+    }
+    return histogram.length - 1;
+  }
+
+  function traceDrainWriteFamilyVelocityProfile() {
+    if (!isTracing || fd === null) return;
+    const familyNames = Object.keys(traceDrainFamilyVelocityStats).sort();
+    const families = {};
+    for (let index = 0; index < familyNames.length; index++) {
+      const familyName = familyNames[index];
+      const bucket = traceDrainFamilyVelocityStats[familyName];
+      families[familyName] = {
+        count: bucket.count,
+        min: bucket.count > 0 ? bucket.min : 0,
+        max: bucket.count > 0 ? bucket.max : 0,
+        avg: bucket.count > 0 ? Number((bucket.sum / bucket.count).toFixed(3)) : 0,
+        p10: traceDrainResolvePercentile(bucket.histogram, bucket.count, 0.10),
+        p50: traceDrainResolvePercentile(bucket.histogram, bucket.count, 0.50),
+        p90: traceDrainResolvePercentile(bucket.histogram, bucket.count, 0.90)
+      };
+    }
+    const outDir = path.resolve(process.cwd(), 'metrics');
+    fs.writeFileSync(path.join(outDir, 'family-loudness.json'), JSON.stringify({
+      generated: new Date().toISOString(),
+      traced: true,
+      families
+    }, null, 2) + '\n');
+  }
+
+  function traceDrainRecordBinauralShift(data) {
+    if (!isTracing) return;
+    traceDrainBinauralShifts.push({
+      layer: String(data.layer || 'unknown'),
+      absTimeMs: Number(data.absTimeMs),
+      syncMs: Number(data.syncMs),
+      syncTick: Number(data.syncTick),
+      silenceTick: Number(data.silenceTick),
+      usedCrossLayerShift: data.usedCrossLayerShift === true,
+      syncDeltaMs: Number(data.syncDeltaMs),
+      nearTrackEnd: data.nearTrackEnd === true,
+      freqOffset: Number(data.freqOffset),
+      targetOffset: Number(data.targetOffset),
+      toleranceMs: Number(data.toleranceMs),
+      flip: data.flip === true
+    });
+  }
+
+  function traceDrainWriteBinauralShiftProfile() {
+    if (!isTracing || fd === null) return;
+    let maxSyncDeltaMs = 0;
+    let nearTrackEndCount = 0;
+    let crossLayerSyncedCount = 0;
+    let minCutoffLeadTicks = Infinity;
+    let maxCutoffLeadTicks = 0;
+    for (let index = 0; index < traceDrainBinauralShifts.length; index++) {
+      const shift = traceDrainBinauralShifts[index];
+      if (shift.syncDeltaMs > maxSyncDeltaMs) maxSyncDeltaMs = shift.syncDeltaMs;
+      if (shift.nearTrackEnd) nearTrackEndCount++;
+      if (shift.usedCrossLayerShift) crossLayerSyncedCount++;
+      const cutoffLeadTicks = m.max(0, shift.syncTick - shift.silenceTick);
+      if (cutoffLeadTicks < minCutoffLeadTicks) minCutoffLeadTicks = cutoffLeadTicks;
+      if (cutoffLeadTicks > maxCutoffLeadTicks) maxCutoffLeadTicks = cutoffLeadTicks;
+    }
+    const outDir = path.resolve(process.cwd(), 'metrics');
+    fs.writeFileSync(path.join(outDir, 'binaural-shifts.json'), JSON.stringify({
+      generated: new Date().toISOString(),
+      traced: true,
+      summary: {
+        shiftCount: traceDrainBinauralShifts.length,
+        crossLayerSyncedCount,
+        nearTrackEndCount,
+        minCutoffLeadTicks: Number.isFinite(minCutoffLeadTicks) ? minCutoffLeadTicks : 0,
+        maxCutoffLeadTicks,
+        maxSyncDeltaMs: Number(maxSyncDeltaMs.toFixed(3))
+      },
+      shifts: traceDrainBinauralShifts
+    }, null, 2) + '\n');
+  }
 
   function traceDrainResetRuntimeBuckets() {
     traceDrainRuntimeBuckets = {};
@@ -59,6 +184,8 @@ traceDrain = (() => {
     traceDrainRecordCount = 0;
     traceDrainPendingNotes = [];
     traceDrainResetRuntimeBuckets();
+    traceDrainResetFamilyVelocityStats();
+    traceDrainResetBinauralShifts();
 
     const outDir = path.resolve(process.cwd(), 'metrics');
     if (!fs.existsSync(outDir)) {
@@ -187,6 +314,8 @@ traceDrain = (() => {
   function shutdown() {
     traceDrainFlush();
     traceDrainWriteRuntimeProfile();
+    traceDrainWriteFamilyVelocityProfile();
+    traceDrainWriteBinauralShiftProfile();
     if (isTracing && traceDrainRecordCount === 0) {
       throw new Error('traceDrain.shutdown: no trace entries were recorded during traced run');
     }
@@ -200,5 +329,16 @@ traceDrain = (() => {
     }
   }
 
-  return { init, isEnabled, record, recordNote, recordSnapshot, recordRuntimeMetric: traceDrainRecordRuntimeMetric, flush: traceDrainFlush, shutdown };
+  return {
+    init,
+    isEnabled,
+    record,
+    recordNote,
+    recordSnapshot,
+    recordRuntimeMetric: traceDrainRecordRuntimeMetric,
+    recordFamilyVelocity: traceDrainRecordFamilyVelocity,
+    recordBinauralShift: traceDrainRecordBinauralShift,
+    flush: traceDrainFlush,
+    shutdown
+  };
 })();

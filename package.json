@@ -16,6 +16,7 @@
   },
   "scripts": {
     "main": "node scripts/run-with-log.js pipeline.log node scripts/main-pipeline.js",
+    "render": "bash scripts/render.sh",
     "dashboard": "node scripts/live-dashboard.js",
     "replay": "node scripts/trace-replay.js",
     "snapshot": "node scripts/compare-runs.js --snapshot",

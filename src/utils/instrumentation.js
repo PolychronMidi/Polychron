@@ -12,7 +12,12 @@ setTuningAndInstruments = () => {
   p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
     type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
     { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
-  p(c,{type:'control_c', vals:[drumCH, 7, 127]});
+  p(c,
+    ...source.map(ch => ({ type: 'control_c', vals: [ch, 7, 104] })),
+    ...reflection.map(ch => ({ type: 'control_c', vals: [ch, 7, 100] })),
+    ...bass.map(ch => ({ type: 'control_c', vals: [ch, 7, 102] })),
+    { type:'control_c', vals:[drumCH, 7, 104] }
+  );
 }
 
 /**
@@ -77,7 +82,7 @@ const centsToTuningFreq = 1200 * m.log2(TUNING_FREQ / 440);
  */
 tuningPitchBend=m.round(neutralPitchBend + (semitone * (centsToTuningFreq / 100)));
 
-BINAURAL={min:0.5,max:3}; // Binaural beat frequency range in Hz (can be overridden by conductor profile)
+BINAURAL={min:0.75,max:2.25}; // Binaural beat frequency range in Hz (can be overridden by conductor profile)
 /**
  * Generate binaural frequency offset.
  * @type {number}
