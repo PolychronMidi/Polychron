@@ -12,6 +12,16 @@ const BINAURAL_SYNC_TOLERANCE_MS = 10;
 /** Next absolute ms at which a timed binaural shift should fire */
 let nextBinauralShiftMs = 0;
 
+function setBinauralBuildRetuneSilenceEvents(syncTick) {
+  const silenceTick = m.max(0, syncTick - 2);
+  const pitchedChannels = allCHs.filter(ch => ch !== drumCH);
+  return [
+    ...pitchedChannels.map(ch => ({ tick: silenceTick, type: 'control_c', vals: [ch, 64, 0] })),
+    ...pitchedChannels.map(ch => ({ tick: silenceTick, type: 'control_c', vals: [ch, 123, 0] })),
+    ...pitchedChannels.map(ch => ({ tick: silenceTick, type: 'control_c', vals: [ch, 120, 0] }))
+  ];
+}
+
 setBinaural = () => {
   V.requireFinite(beatIndex, 'beatIndex');
   V.requireFinite(measureIndex, 'measureIndex');
@@ -53,6 +63,7 @@ setBinaural = () => {
     const syncTick = m.max(0, syncTickRaw);
 
     allNotesOff(syncTick);
+    p(c, ...setBinauralBuildRetuneSilenceEvents(syncTick));
 
     if (crossLayerShift) {
       // Sync: adopt the offset and flip state from the other layer's shift

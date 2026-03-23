@@ -1,18 +1,18 @@
 {
   "meta": {
-    "generated": "2026-03-23T18:47:30.563Z",
+    "generated": "2026-03-23T20:54:15.071Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
-    "totalFiles": 437,
-    "totalGlobals": 716,
-    "totalProvides": 731,
-    "totalConsumes": 2922,
-    "totalEdges": 2294,
-    "crossSubsystemEdges": 1529,
+    "totalFiles": 438,
+    "totalGlobals": 717,
+    "totalProvides": 732,
+    "totalConsumes": 2935,
+    "totalEdges": 2304,
+    "crossSubsystemEdges": 1536,
     "maxFanIn": {
       "file": "src/utils/index.js",
-      "count": 223
+      "count": 225
     },
     "maxFanOut": {
       "file": "src/play/main.js",
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 964
+        "consumes": 965
       },
       "rhythm": {
         "files": 30,
@@ -52,7 +52,7 @@
       "fx": {
         "files": 23,
         "provides": 56,
-        "consumes": 237
+        "consumes": 239
       },
       "crossLayer": {
         "files": 52,
@@ -62,12 +62,12 @@
       "writer": {
         "files": 4,
         "provides": 10,
-        "consumes": 63
+        "consumes": 64
       },
       "play": {
-        "files": 17,
-        "provides": 21,
-        "consumes": 385
+        "files": 18,
+        "provides": 22,
+        "consumes": 394
       }
     }
   },
@@ -903,7 +903,8 @@
         "rf",
         "safePreBoot",
         "systemDynamicsProfiler",
-        "timeStream"
+        "timeStream",
+        "validator"
       ]
     },
     "src/conductor/analysisHelpers.js": {
@@ -5616,6 +5617,7 @@
         "BINAURAL",
         "LM",
         "absoluteTimeGrid",
+        "allCHs",
         "allNotesOff",
         "beatCount",
         "beatIndex",
@@ -5626,6 +5628,7 @@
         "binauralPlus",
         "c",
         "conductorState",
+        "drumCH",
         "firstLoop",
         "flipBin",
         "flipBinF2",
@@ -6539,6 +6542,7 @@
         "axisEnergyEquilibrator",
         "couplingHomeostasis",
         "fs",
+        "m",
         "path",
         "velocity"
       ]
@@ -6570,6 +6574,7 @@
         "MIDI_MAX_VALUE",
         "StutterManager",
         "applyNoiseToVelocity",
+        "beatStart",
         "clamp",
         "conductorConfig",
         "m",
@@ -6577,8 +6582,21 @@
         "validator"
       ]
     },
-    "src/play/emitPickCrossLayerRecord.js": {
+    "src/play/minimumNoteDuration.js": {
       "order": 424,
+      "subsystem": "play",
+      "provides": [
+        "minimumNoteDuration"
+      ],
+      "consumes": [
+        "m",
+        "tpSec",
+        "tpUnit",
+        "validator"
+      ]
+    },
+    "src/play/emitPickCrossLayerRecord.js": {
+      "order": 425,
       "subsystem": "play",
       "provides": [
         "emitPickCrossLayerRecord"
@@ -6594,6 +6612,7 @@
         "harmonicIntervalGuard",
         "m",
         "microUnitAttenuator",
+        "minimumNoteDuration",
         "motifEcho",
         "motifIdentityMemory",
         "pitchMemoryRecall",
@@ -6601,12 +6620,13 @@
         "sectionIndex",
         "spectralComplementarity",
         "tpUnit",
+        "traceDrain",
         "validator",
         "velocityInterference"
       ]
     },
     "src/play/emitPickTextureEmit.js": {
-      "order": 425,
+      "order": 426,
       "subsystem": "play",
       "provides": [
         "emitPickSourceTextures",
@@ -6618,15 +6638,17 @@
         "harmonicContext",
         "m",
         "microUnitAttenuator",
+        "minimumNoteDuration",
         "modClamp",
         "note",
         "rf",
         "ri",
-        "tpUnit"
+        "tpUnit",
+        "traceDrain"
       ]
     },
     "src/play/playNotesEmitPick.js": {
-      "order": 426,
+      "order": 427,
       "subsystem": "play",
       "provides": [
         "setFeedbackPitchBias",
@@ -6665,6 +6687,7 @@
         "measureStart",
         "measureStartTime",
         "microUnitAttenuator",
+        "minimumNoteDuration",
         "modClamp",
         "motifIdentityMemory",
         "note",
@@ -6673,7 +6696,6 @@
         "rf",
         "rhythmicComplementEngine",
         "rhythmicPhaseLock",
-        "ri",
         "rv",
         "source",
         "spectralComplementarity",
@@ -6688,7 +6710,7 @@
       ]
     },
     "src/play/playNotesComputeUnit.js": {
-      "order": 427,
+      "order": 428,
       "subsystem": "play",
       "provides": [
         "playNotesComputeUnit"
@@ -6719,7 +6741,7 @@
       ]
     },
     "src/play/playNotes.js": {
-      "order": 428,
+      "order": 429,
       "subsystem": "play",
       "provides": [
         "playNotes"
@@ -6745,7 +6767,6 @@
         "lastVoiceBudgetKeyByLayer",
         "m",
         "motifConfig",
-        "p",
         "playMotifs",
         "playNotesComputeUnit",
         "playNotesEmitPick",
@@ -6756,6 +6777,7 @@
         "tempoFeelEngine",
         "textureBlender",
         "tpUnit",
+        "traceDrain",
         "trackRhythm",
         "unitStart",
         "validator",
@@ -6765,7 +6787,7 @@
       ]
     },
     "src/play/microUnitAttenuator.js": {
-      "order": 429,
+      "order": 430,
       "subsystem": "play",
       "provides": [
         "microUnitAttenuator"
@@ -6780,7 +6802,7 @@
       ]
     },
     "src/play/crossLayerBeatRecord.js": {
-      "order": 430,
+      "order": 431,
       "subsystem": "play",
       "provides": [
         "crossLayerBeatRecord"
@@ -6838,7 +6860,7 @@
       ]
     },
     "src/play/processBeat.js": {
-      "order": 431,
+      "order": 432,
       "subsystem": "play",
       "provides": [
         "processBeat"
@@ -6899,7 +6921,7 @@
       ]
     },
     "src/play/layerPass.js": {
-      "order": 432,
+      "order": 433,
       "subsystem": "play",
       "provides": [
         "layerPass"
@@ -6933,7 +6955,7 @@
       ]
     },
     "src/play/main.js": {
-      "order": 433,
+      "order": 434,
       "subsystem": "play",
       "provides": [
         "main",
@@ -6996,7 +7018,7 @@
       ]
     },
     "src/play/beatPipelineDescriptor.js": {
-      "order": 434,
+      "order": 435,
       "subsystem": "play",
       "provides": [
         "beatPipelineDescriptor"
@@ -7004,7 +7026,7 @@
       "consumes": []
     },
     "src/play/feedbackGraphContract.js": {
-      "order": 435,
+      "order": 436,
       "subsystem": "play",
       "provides": [
         "feedbackGraphContract"
@@ -7026,7 +7048,7 @@
       ]
     },
     "src/play/mainBootstrap.js": {
-      "order": 436,
+      "order": 437,
       "subsystem": "play",
       "provides": [
         "mainBootstrap"
@@ -7074,7 +7096,7 @@
       ]
     },
     "src/play/fullBootstrap.js": {
-      "order": 437,
+      "order": 438,
       "subsystem": "play",
       "provides": [
         "fullBootstrap"
@@ -14306,6 +14328,27 @@
       ]
     },
     {
+      "from": "src/play/minimumNoteDuration.js",
+      "to": "src/play/emitPickCrossLayerRecord.js",
+      "globals": [
+        "minimumNoteDuration"
+      ]
+    },
+    {
+      "from": "src/play/minimumNoteDuration.js",
+      "to": "src/play/emitPickTextureEmit.js",
+      "globals": [
+        "minimumNoteDuration"
+      ]
+    },
+    {
+      "from": "src/play/minimumNoteDuration.js",
+      "to": "src/play/playNotesEmitPick.js",
+      "globals": [
+        "minimumNoteDuration"
+      ]
+    },
+    {
       "from": "src/play/playNotes.js",
       "to": "src/play/layerPass.js",
       "globals": [
@@ -18585,6 +18628,13 @@
     },
     {
       "from": "src/utils/index.js",
+      "to": "src/play/minimumNoteDuration.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
       "to": "src/play/playNotes.js",
       "globals": [
         "m"
@@ -18803,6 +18853,13 @@
     {
       "from": "src/utils/index.js",
       "to": "src/writer/grandFinale.js",
+      "globals": [
+        "m"
+      ]
+    },
+    {
+      "from": "src/utils/index.js",
+      "to": "src/writer/traceDrain.js",
       "globals": [
         "m"
       ]
@@ -19695,9 +19752,11 @@
       "from": "src/utils/init.js",
       "to": "src/fx/setBinaural.js",
       "globals": [
+        "allCHs",
         "beatCount",
         "beatIndex",
         "beatStartTime",
+        "drumCH",
         "flipBin",
         "flipBinF2",
         "flipBinT2",
@@ -19808,7 +19867,8 @@
       "from": "src/utils/init.js",
       "to": "src/play/channelCoherence.js",
       "globals": [
-        "MIDI_MAX_VALUE"
+        "MIDI_MAX_VALUE",
+        "beatStart"
       ]
     },
     {
@@ -19883,6 +19943,14 @@
       "to": "src/play/microUnitAttenuator.js",
       "globals": [
         "unitsPerParent"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
+      "to": "src/play/minimumNoteDuration.js",
+      "globals": [
+        "tpSec",
+        "tpUnit"
       ]
     },
     {
@@ -21495,7 +21563,6 @@
       "to": "src/play/playNotesEmitPick.js",
       "globals": [
         "rf",
-        "ri",
         "rv"
       ]
     },
@@ -22145,6 +22212,13 @@
     {
       "from": "src/utils/validator.js",
       "to": "src/conductor/dynamismEngine.js",
+      "globals": [
+        "validator"
+      ]
+    },
+    {
+      "from": "src/utils/validator.js",
+      "to": "src/conductor/globalConductor.js",
       "globals": [
         "validator"
       ]
@@ -23012,6 +23086,13 @@
     },
     {
       "from": "src/utils/validator.js",
+      "to": "src/play/minimumNoteDuration.js",
+      "globals": [
+        "validator"
+      ]
+    },
+    {
+      "from": "src/utils/validator.js",
       "to": "src/play/playNotes.js",
       "globals": [
         "validator"
@@ -23626,13 +23707,6 @@
     },
     {
       "from": "src/writer/index.js",
-      "to": "src/play/playNotes.js",
-      "globals": [
-        "p"
-      ]
-    },
-    {
-      "from": "src/writer/index.js",
       "to": "src/rhythm/drums/drummer.js",
       "globals": [
         "c",
@@ -23757,7 +23831,28 @@
     },
     {
       "from": "src/writer/traceDrain.js",
+      "to": "src/play/emitPickCrossLayerRecord.js",
+      "globals": [
+        "traceDrain"
+      ]
+    },
+    {
+      "from": "src/writer/traceDrain.js",
+      "to": "src/play/emitPickTextureEmit.js",
+      "globals": [
+        "traceDrain"
+      ]
+    },
+    {
+      "from": "src/writer/traceDrain.js",
       "to": "src/play/main.js",
+      "globals": [
+        "traceDrain"
+      ]
+    },
+    {
+      "from": "src/writer/traceDrain.js",
+      "to": "src/play/playNotes.js",
       "globals": [
         "traceDrain"
       ]

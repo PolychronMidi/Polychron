@@ -25,10 +25,16 @@ setOtherInstruments = () => {
   const timedShift = absTimeMs >= nextInstrumentShiftMs;
   if (firstLoop < 1 || timedShift) {
     nextInstrumentShiftMs = absTimeMs + rf(2, 5) * 1000;
+const bassProgramPool = Array.isArray(otherBassInstruments)
+  ? otherBassInstruments.filter(program => Number.isFinite(Number(program)) && ((Number(program) >= 32 && Number(program) <= 39) || Number(program) === 43))
+  : [];
+const resolvedBassProgramPool = bassProgramPool.length > 0
+  ? bassProgramPool
+  : [bassInstrument, bassInstrument2].filter(program => Number.isFinite(Number(program)));
 p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' };
   return [
     ...reflectionBinaural.map(ch=>({...tmp,vals:[ch,ra(otherInstruments)]})),
-    ...bassBinaural.map(ch=>({...tmp,vals:[ch,ra(otherBassInstruments)]})),
+    ...bassBinaural.map(ch=>({...tmp,vals:[ch,ra(resolvedBassProgramPool)]})),
     { ...tmp,vals:[drumCH,ra(drumSets)] }
   ];  })  );  }
 }

@@ -2,6 +2,48 @@
 // Shared by source, reflection, and bass emission blocks in playNotes.
 
 const V = validator.create('channelCoherence');
+let channelCoherenceDepsValidated = false;
+let channelCoherenceBeatKey = -1;
+let channelCoherenceCrossRules = null;
+let channelCoherenceEmissionNoiseProfile = 'default';
+let channelCoherenceProfileCfgCache = new Map();
+
+function channelCoherenceValidateDeps() {
+  if (channelCoherenceDepsValidated) return;
+  V.assertObject(stutterConfig, 'stutterConfig');
+  V.requireType(stutterConfig.getCrossModRules, 'function', 'stutterConfig.getCrossModRules');
+  V.requireType(stutterConfig.getProfileConfig, 'function', 'stutterConfig.getProfileConfig');
+  V.assertObject(conductorConfig, 'conductorConfig');
+  V.requireType(conductorConfig.getEmissionScaling, 'function', 'conductorConfig.getEmissionScaling');
+  channelCoherenceDepsValidated = true;
+}
+
+function channelCoherenceRefreshBeatCache() {
+  const beatKey = V.optionalFinite(Number(beatStart), -1);
+  if (channelCoherenceBeatKey === beatKey) return;
+  channelCoherenceBeatKey = beatKey;
+  channelCoherenceProfileCfgCache = new Map();
+
+  const crossRules = stutterConfig.getCrossModRules();
+  V.assertObject(crossRules, 'crossRules');
+  V.assertObject(crossRules.pan, 'crossRules.pan');
+  V.assertObject(crossRules.fade, 'crossRules.fade');
+  V.assertObject(crossRules.fx, 'crossRules.fx');
+  channelCoherenceCrossRules = crossRules;
+
+  const emissionScaling = conductorConfig.getEmissionScaling();
+  V.assertObject(emissionScaling, 'conductorConfig.getEmissionScaling()');
+  channelCoherenceEmissionNoiseProfile = V.assertNonEmptyString(emissionScaling.noiseProfile, 'conductorConfig.getEmissionScaling().noiseProfile');
+}
+
+function channelCoherenceGetProfileCfg(profile) {
+  const cached = channelCoherenceProfileCfgCache.get(profile);
+  if (cached) return cached;
+  const profileCfg = stutterConfig.getProfileConfig(profile);
+  V.assertObject(profileCfg, `profileCfg.${profile}`);
+  channelCoherenceProfileCfgCache.set(profile, profileCfg);
+  return profileCfg;
+}
 
 /**
  * Computes per-channel stutter coherence adjustments and noise-shaped velocity.
@@ -14,11 +56,8 @@ const V = validator.create('channelCoherence');
  * @returns {{ perProbScaled: number, onVel: number, velocityScaleBias: number }}
  */
 getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
-  V.assertObject(stutterConfig, 'stutterConfig');
-  V.requireType(stutterConfig.getCrossModRules, 'function', 'stutterConfig.getCrossModRules');
-  V.requireType(stutterConfig.getProfileConfig, 'function', 'stutterConfig.getProfileConfig');
-  V.assertObject(conductorConfig, 'conductorConfig');
-  V.requireType(conductorConfig.getEmissionScaling, 'function', 'conductorConfig.getEmissionScaling');
+  channelCoherenceValidateDeps();
+  channelCoherenceRefreshBeatCache();
 
   // 1. Channel mod from stutter beat-context
   const chMod = (StutterManager && StutterManager.beatContext &&
@@ -27,11 +66,8 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
     : null;
 
   // 2. Cross-modulation rules from stutterConfig
-  const crossRules = stutterConfig.getCrossModRules();
+  const crossRules = channelCoherenceCrossRules;
   V.assertObject(crossRules, 'crossRules');
-  V.assertObject(crossRules.pan, 'crossRules.pan');
-  V.assertObject(crossRules.fade, 'crossRules.fade');
-  V.assertObject(crossRules.fx, 'crossRules.fx');
 
   // 3. Accumulate per-prob scale and velocity bias from pan/fade/fx modifiers
   let perProbScale = 1;
@@ -47,15 +83,11 @@ getChannelCoherence = function(ch, profile, noiseBase, voiceId, time) {
   }
 
   // 4. Profile-specific per-prob from stutterConfig
-  const profileCfg = stutterConfig.getProfileConfig(profile);
-  V.assertObject(profileCfg, `profileCfg.${profile}`);
+  const profileCfg = channelCoherenceGetProfileCfg(profile);
   const perProbScaled = clamp(V.requireFinite(profileCfg.perProb, `profileCfg.${profile}.perProb`) * perProbScale, 0, 1);
 
   // 5. Noise-shaped velocity with bias (noise profile from conductor)
-  const emissionScaling = conductorConfig.getEmissionScaling();
-  V.assertObject(emissionScaling, 'conductorConfig.getEmissionScaling()');
-  const emissionNoiseProfile = V.assertNonEmptyString(emissionScaling.noiseProfile, 'conductorConfig.getEmissionScaling().noiseProfile');
-  const onVelBase = applyNoiseToVelocity(noiseBase, voiceId, time, emissionNoiseProfile);
+  const onVelBase = applyNoiseToVelocity(noiseBase, voiceId, time, channelCoherenceEmissionNoiseProfile);
   const onVel = clamp(m.round(onVelBase * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);
 
   return { perProbScaled, onVel, velocityScaleBias };

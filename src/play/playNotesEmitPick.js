@@ -1,4 +1,5 @@
 const V = validator.create('playNotesEmitPick');
+const PLAY_NOTES_EMIT_PICK_PROFILE = process.argv.includes('--trace');
 let playNotesEmitPickEmitPickDepsValidated = false;
 
 // Beat-level channel cache - flipBin/source/reflection/bass don't change within a beat
@@ -7,6 +8,8 @@ let playNotesEmitPickChCacheFlip = /** @type {boolean|null} */ (null);
 /** @type {any[]} */ let playNotesEmitPickCachedSourceChs = [];
 /** @type {any[]} */ let playNotesEmitPickCachedReflectionChs = [];
 /** @type {any[]} */ let playNotesEmitPickCachedBassChs = [];
+let playNotesEmitPickChannelPoolsTrue = null;
+let playNotesEmitPickChannelPoolsFalse = null;
 
 // Beat-level feedback pitch bias - set once from processBeat, read per-pick
 let playNotesEmitPickBeatFeedbackPitchBias = -1;
@@ -19,17 +22,46 @@ let playNotesEmitPickBeatClimaxMods = { playProbScale: 1, velocityScale: 1, regi
 /** @param {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} mods */
 setClimaxMods = function(mods) { playNotesEmitPickBeatClimaxMods = mods; };
 
+function playNotesEmitPickBuildChannelPools(flip) {
+  const pool = flip ? flipBinT : flipBinF;
+  const poolSet = new Set(pool);
+  return {
+    source: source.filter(ch => poolSet.has(ch)),
+    reflection: reflection.filter(ch => poolSet.has(ch)),
+    bass: bass.filter(ch => poolSet.has(ch))
+  };
+}
+
 function playNotesEmitPickRefreshChannelCache() {
   const key = beatStart;
   const flip = flipBin;
   if (playNotesEmitPickChCacheBeat === key && playNotesEmitPickChCacheFlip === flip) return;
   playNotesEmitPickChCacheBeat = key;
   playNotesEmitPickChCacheFlip = flip;
-  const pool = flip ? flipBinT : flipBinF;
-  const poolSet = new Set(pool);
-  playNotesEmitPickCachedSourceChs = source.filter(ch => poolSet.has(ch));
-  playNotesEmitPickCachedReflectionChs = reflection.filter(ch => poolSet.has(ch));
-  playNotesEmitPickCachedBassChs = bass.filter(ch => poolSet.has(ch));
+  const cachedPools = flip
+    ? (playNotesEmitPickChannelPoolsTrue || (playNotesEmitPickChannelPoolsTrue = playNotesEmitPickBuildChannelPools(true)))
+    : (playNotesEmitPickChannelPoolsFalse || (playNotesEmitPickChannelPoolsFalse = playNotesEmitPickBuildChannelPools(false)));
+  playNotesEmitPickCachedSourceChs = cachedPools.source;
+  playNotesEmitPickCachedReflectionChs = cachedPools.reflection;
+  playNotesEmitPickCachedBassChs = cachedPools.bass;
+}
+
+function playNotesEmitPickChooseShift(pickNote, minNote, maxNote) {
+  let selectedShift = 0;
+  let candidateCount = 0;
+  for (let mag = 1; mag <= 3; mag++) {
+    const upShift = mag * 12;
+    if (pickNote + upShift <= maxNote) {
+      candidateCount++;
+      if (candidateCount === 1 || rf() < (1 / candidateCount)) selectedShift = upShift;
+    }
+    const downShift = -mag * 12;
+    if (pickNote + downShift >= minNote) {
+      candidateCount++;
+      if (candidateCount === 1 || rf() < (1 / candidateCount)) selectedShift = downShift;
+    }
+  }
+  return candidateCount > 0 ? selectedShift : 0;
 }
 
 function assertEmitPickDeps(unit) {
@@ -54,6 +86,7 @@ function assertEmitPickDeps(unit) {
 }
 
 playNotesEmitPick = function(opts = {}) {
+  const playNotesEmitPickStartedAt = PLAY_NOTES_EMIT_PICK_PROFILE ? process.hrtime.bigint() : 0n;
   V.assertPlainObject(opts, 'opts');
   const {
     unit,
@@ -100,19 +133,7 @@ playNotesEmitPick = function(opts = {}) {
 
   const resolvedStutterProbValue = V.requireFinite(resolvedStutterProb, 'resolvedStutterProb');
   const shouldStutter = resolvedStutterProbValue > rf();
-  let selectedShift = 0;
-  if (shouldStutter) {
-    const minNote = minMidi;
-    const maxNote = maxMidi;
-    const octaveCandidates = [];
-    for (let mag = 1; mag <= 3; mag++) {
-      if (pickNote + mag * 12 <= maxNote) octaveCandidates.push(mag * 12);
-      if (pickNote - mag * 12 >= minNote) octaveCandidates.push(-mag * 12);
-    }
-    if (octaveCandidates.length > 0) {
-      selectedShift = octaveCandidates[ri(octaveCandidates.length - 1)];
-    }
-  }
+  const selectedShift = shouldStutter ? playNotesEmitPickChooseShift(pickNote, minMidi, maxMidi) : 0;
 
   const pickVelScale = Number.isFinite(pick.playNotesEmitPickDistributedVelocity)
     ? clamp(pick.playNotesEmitPickDistributedVelocity / m.max(1, velocity), 0.5, 1.5)
@@ -120,7 +141,7 @@ playNotesEmitPick = function(opts = {}) {
 
   playNotesEmitPickRefreshChannelCache();
   const activeSourceChannels = playNotesEmitPickCachedSourceChs;
-  const maxTickShift = tpSec * 0.1; // cap cumulative tick displacement to 10% of tpSec
+  const maxTickShift = playNotesEmitPickTpSec * 0.1; // cap cumulative tick displacement to 10% of tpSec
   for (let sourceIndex = 0; sourceIndex < activeSourceChannels.length; sourceIndex++) {
     const sourceCH = activeSourceChannels[sourceIndex];
     const isPrimary = sourceCH === cCH1;
@@ -153,7 +174,7 @@ playNotesEmitPick = function(opts = {}) {
     const feedbackPitchBias = playNotesEmitPickBeatFeedbackPitchBias;
     const harmonicResult = harmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, absMsAtOnTick, feedbackPitchBias);
     const noteAfterHarmonic = harmonicResult.midi;
-    const noteToEmit = registerCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTick).midi;
+    const noteToEmit = registerCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTick, absMsAtOnTick).midi;
 
     const texVelBase = m.max(1, m.min(MIDI_MAX_VALUE, m.round(onVel * textureMode.velocityScale)));
     const texVelRole = dynamicRoleSwap.modifyVelocity(activeLayerName, texVelBase);
@@ -166,12 +187,16 @@ playNotesEmitPick = function(opts = {}) {
     const texSustain = sustain * textureMode.sustainScale * articulationMod.sustainScale;
 
     const srcOnEvt = { tick: onTick, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
-    const sourceOffTick = ensureNonNegativeTick(on + texSustain * (isPrimary ? 1 : rv(rf(0.92, 1.03))), `${unit}.source.offTick`);
+    const sourceOffTickRaw = onTick + texSustain * (isPrimary ? 1 : rv(rf(0.92, 1.03)));
+    const sourceOffTick = ensureNonNegativeTick(
+      minimumNoteDuration.resolveOffTick(onTick, sourceOffTickRaw, 'core', tpUnit, `${unit}.source.offTickRaw`),
+      `${unit}.source.offTick`
+    );
     const srcOffEvt = { tick: sourceOffTick, vals: [sourceCH, noteToEmit] };
     microUnitAttenuator.record(srcOnEvt, srcOffEvt, crossModulation);
     scheduled += 2;
     if (isPrimary) {
-      registerCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTick);
+      registerCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTick, absMsAtOnTick);
       grooveTransfer.recordTiming(activeLayerName, onTick, unit);
       // Embed emitted note into trace for downstream analytics (evolution #1)
       traceDrain.recordNote(noteToEmit, texVel, sourceCH);
@@ -215,6 +240,7 @@ playNotesEmitPick = function(opts = {}) {
       onTick = reflPreShiftTick + m.sign(onTick - reflPreShiftTick) * maxTickShift;
     }
     onTick = ensureNonNegativeTick(onTick, `${unit}.reflection.onTick`);
+    const reflectionAbsMsAtOnTick = tickToAbsMs(onTick);
     const baseOnVel = (isPrimary ? velocity * rf(0.7, 1.2) : binVel * rf(0.55, 1.1)) * pickVelScale;
     const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pickIndex * 131 + reflectionIndex;
     const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
@@ -225,15 +251,19 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionEmitNoteBase = reflectApplyShift
       ? modClamp(pickNote + selectedShift, minMidi, maxMidi)
       : pickNote;
-    const reflectionEmitNote = registerCollisionAvoider.avoid(activeLayerName, reflectionEmitNoteBase, onTick).midi;
+    const reflectionEmitNote = registerCollisionAvoider.avoid(activeLayerName, reflectionEmitNoteBase, onTick, reflectionAbsMsAtOnTick).midi;
 
     const reflOnEvt = { tick: onTick, type: 'on', vals: [reflectionCH, reflectionEmitNote, onVelRefl] };
-    const reflectionOffTick = ensureNonNegativeTick(on + sustain * (isPrimary ? rf(0.7, 1.2) : rv(rf(0.65, 1.3))), `${unit}.reflection.offTick`);
+    const reflectionOffTickRaw = onTick + sustain * (isPrimary ? rf(0.7, 1.2) : rv(rf(0.65, 1.3)));
+    const reflectionOffTick = ensureNonNegativeTick(
+      minimumNoteDuration.resolveOffTick(onTick, reflectionOffTickRaw, 'core', tpUnit, `${unit}.reflection.offTickRaw`),
+      `${unit}.reflection.offTick`
+    );
     const reflOffEvt = { tick: reflectionOffTick, vals: [reflectionCH, reflectionEmitNote] };
     microUnitAttenuator.record(reflOnEvt, reflOffEvt, crossModulation);
     scheduled += 2;
     if (isPrimary) {
-      registerCollisionAvoider.recordNote(activeLayerName, reflectionEmitNote, onTick);
+      registerCollisionAvoider.recordNote(activeLayerName, reflectionEmitNote, onTick, reflectionAbsMsAtOnTick);
       grooveTransfer.recordTiming(activeLayerName, onTick, unit);
     }
 
@@ -261,6 +291,7 @@ playNotesEmitPick = function(opts = {}) {
         onTick = bassPreShiftTick + m.sign(onTick - bassPreShiftTick) * maxTickShift;
       }
       onTick = ensureNonNegativeTick(onTick, `${unit}.bass.onTick`);
+      const bassAbsMsAtOnTick = tickToAbsMs(onTick);
       const onVelRaw = (isPrimary ? velocity * rf(1.15, 1.5) : binVel * rf(1.85, 2.5)) * pickVelScale;
       const bassVoiceId = voiceIdSeed + bassCH * 23 + pickIndex * 151 + bassIndex;
       const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
@@ -270,22 +301,27 @@ playNotesEmitPick = function(opts = {}) {
       const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
       const bassEmitBase = bassApplyShift ? pickNote + selectedShift : pickNote;
       const bassNoteBase = modClamp(bassEmitBase, minMidi, m.min(59, maxMidi));
-      const bassNote = registerCollisionAvoider.avoid(activeLayerName, bassNoteBase, onTick).midi;
+      const bassNote = registerCollisionAvoider.avoid(activeLayerName, bassNoteBase, onTick, bassAbsMsAtOnTick).midi;
 
       const bassOnEvt = { tick: onTick, type: 'on', vals: [bassCH, bassNote, onVel] };
       const bassSustainScale = textureMode.mode === 'chordBurst' ? textureMode.sustainScale * rf(1.2, 1.6)
         : textureMode.mode === 'flurry' ? rf(1.3, 1.8)
         : 1;
-      const bassOffTick = ensureNonNegativeTick(on + sustain * bassSustainScale * (isPrimary ? rf(1.1, 3) : rv(rf(0.8, 3.5))), `${unit}.bass.offTick`);
+      const bassOffTickRaw = onTick + sustain * bassSustainScale * (isPrimary ? rf(1.1, 3) : rv(rf(0.8, 3.5)));
+      const bassOffTick = ensureNonNegativeTick(
+        minimumNoteDuration.resolveOffTick(onTick, bassOffTickRaw, 'core', tpUnit, `${unit}.bass.offTickRaw`),
+        `${unit}.bass.offTick`
+      );
       const bassOffEvt = { tick: bassOffTick, vals: [bassCH, bassNote] };
       microUnitAttenuator.record(bassOnEvt, bassOffEvt, crossModulation);
       scheduled += 2;
       if (isPrimary) {
-        registerCollisionAvoider.recordNote(activeLayerName, bassNote, onTick);
+        registerCollisionAvoider.recordNote(activeLayerName, bassNote, onTick, bassAbsMsAtOnTick);
         grooveTransfer.recordTiming(activeLayerName, onTick, unit);
       }
     }
   }
 
+  if (PLAY_NOTES_EMIT_PICK_PROFILE) traceDrain.recordRuntimeMetric(`playNotesEmitPick.${unit}`, Number(process.hrtime.bigint() - playNotesEmitPickStartedAt) / 1e6);
   return scheduled;
 };

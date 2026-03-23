@@ -19,9 +19,21 @@
 // 10. Register picked PCs in sibling voice tracking
 // 11. Track cycle completion and apply motifTransforms after each full cycle
 
+const playMotifsV = validator.create('playMotifs');
+const playMotifsRuntimeVoiceOptionsCache = new WeakMap();
+
+function playMotifsGetRuntimeVoiceOptions(runtimeProfile) {
+  if (!runtimeProfile) return null;
+  const cached = playMotifsRuntimeVoiceOptionsCache.get(runtimeProfile);
+  if (cached) return cached;
+  const options = composerRuntimeProfileAdapter.getVoiceSelectionOptions(runtimeProfile);
+  playMotifsRuntimeVoiceOptionsCache.set(runtimeProfile, options);
+  return options;
+}
+
 playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   // Validate layer
-  const V = validator.create('playMotifs');
+  const V = playMotifsV;
   if (!layer) throw new Error(`${unit}.playMotifs missing layer`);
   const resolvedBucket = playMotifsResolveBucket(unit, layer);
   const targetIndex = resolvedBucket.targetIndex;
@@ -98,8 +110,8 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     ? activeComposer.runtimeProfile
     : null;
   const runtimeVoiceOptions = (runtimeProfile && composerRuntimeProfileAdapter && V.optionalType(composerRuntimeProfileAdapter.getVoiceSelectionOptions, 'function'))
-    ? composerRuntimeProfileAdapter.getVoiceSelectionOptions(runtimeProfile)
-    : {};
+    ? playMotifsGetRuntimeVoiceOptions(runtimeProfile)
+    : null;
 
   // Get phrase context from PhraseArcManager if available
   let phraseContext = null;
@@ -108,22 +120,28 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   // Pass voicing options from composer for voice spacing constraints
-  const voicingOptions = (activeComposer && typeof activeComposer.voicingOptions === 'object') ? activeComposer.voicingOptions : {};
-  const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, Object.assign({ phraseContext }, voicingOptions, runtimeVoiceOptions, runtimeProfile ? { runtimeProfile } : {}));
+  const voicingOptions = (activeComposer && typeof activeComposer.voicingOptions === 'object') ? activeComposer.voicingOptions : null;
+  const selectionOptions = { phraseContext };
+  if (voicingOptions) Object.assign(selectionOptions, voicingOptions);
+  if (runtimeVoiceOptions) Object.assign(selectionOptions, runtimeVoiceOptions);
+  if (runtimeProfile) selectionOptions.runtimeProfile = runtimeProfile;
+  const rawPicks = VC.pickNotesForBeat(layer, candidateNotes, voiceCount, scorer, selectionOptions);
   V.assertArray(rawPicks, 'rawPicks');
-  const picks = rawPicks.map((note) => {
-    V.requireFinite(note, 'note');
-    return { note: Number(note) };
-  });
+  const filteredPicks = [];
+  const seenNotesThisUnit = new Set();
 
-  // VALIDATE all picks before proceeding - catch VoiceManager returning invalid notes
-  if (composerValidPCs.size > 0) {
-    for (let pi = 0; pi < picks.length; pi++) {
-      const pickPC = ((picks[pi].note % 12) + 12) % 12;
+  for (let pi = 0; pi < rawPicks.length; pi++) {
+    const note = Number(rawPicks[pi]);
+    V.requireFinite(note, 'note');
+    if (composerValidPCs.size > 0) {
+      const pickPC = ((note % 12) + 12) % 12;
       if (!composerValidPCs.has(pickPC)) {
-        throw new Error(`${unit}.playMotifs: VoiceManager returned invalid pick note ${picks[pi].note} (PC ${pickPC}) not in composer PCs [${Array.from(composerValidPCs).sort((a,b)=>a-b).join(',')}]`);
+        throw new Error(`${unit}.playMotifs: VoiceManager returned invalid pick note ${note} (PC ${pickPC}) not in composer PCs [${Array.from(composerValidPCs).sort((a,b)=>a-b).join(',')}]`);
       }
     }
+    if (seenNotesThisUnit.has(note)) continue;
+    seenNotesThisUnit.add(note);
+    filteredPicks.push({ note });
   }
 
   // Track which motif indices are being played this beat
@@ -133,14 +151,6 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   playMotifsApplyCycleTransforms(layer, bucket, playedGroupIndices, cycleTracker, /** @type {any} */ (playMotifs).playMotifsCloneBucketEntry);
-
-  // Filter duplicate notes only within this unit call (do not gate later subunits in same beat)
-  const seenNotesThisUnit = new Set();
-  const filteredPicks = picks.filter(s => {
-    if (seenNotesThisUnit.has(s.note)) return false;
-    seenNotesThisUnit.add(s.note);
-    return true;
-  });
 
   return filteredPicks;
 });

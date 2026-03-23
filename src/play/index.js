@@ -2,6 +2,7 @@
 require('./events');
 
 require('./channelCoherence');
+require('./minimumNoteDuration');
 require('./emitPickCrossLayerRecord');
 require('./emitPickTextureEmit');
 

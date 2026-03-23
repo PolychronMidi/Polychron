@@ -1,16 +1,19 @@
 // playMotifsBuildCandidateNotes.js - candidate pool generation for playMotifs
 
-playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, resolvedNote, composerValidPCs) {
-  const minMidi = m.max(0, OCTAVE.min * 12);
-  const maxMidi = m.min(127, OCTAVE.max * 12 - 1);
+const playMotifsBuildCandidateNotesMinMidi = m.max(0, OCTAVE.min * 12);
+const playMotifsBuildCandidateNotesMaxMidi = m.min(127, OCTAVE.max * 12 - 1);
 
-  let candidateNotes = (() => {
-    const note = Number(resolvedNote);
-    if (!Number.isFinite(note) || note < minMidi || note > maxMidi) {
-      return [modClamp(note, minMidi, maxMidi)];
-    }
-    return [note];
-  })();
+playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, resolvedNote, composerValidPCs) {
+  const minMidi = playMotifsBuildCandidateNotesMinMidi;
+  const maxMidi = playMotifsBuildCandidateNotesMaxMidi;
+
+  const note = Number(resolvedNote);
+  let candidateNotes;
+  if (!Number.isFinite(note) || note < minMidi || note > maxMidi) {
+    candidateNotes = [modClamp(note, minMidi, maxMidi)];
+  } else {
+    candidateNotes = [note];
+  }
 
   if (candidateNotes.length < 3) {
     const minNote = minMidi;
@@ -20,10 +23,13 @@ playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, res
 
   if (composerValidPCs.size > 0) {
     const beforeLen = candidateNotes.length;
-    candidateNotes = candidateNotes.filter(note => {
-      const pc = ((note % 12) + 12) % 12;
-      return composerValidPCs.has(pc);
-    });
+    const filteredNotes = [];
+    for (let index = 0; index < candidateNotes.length; index++) {
+      const candidateNote = candidateNotes[index];
+      const pc = ((candidateNote % 12) + 12) % 12;
+      if (composerValidPCs.has(pc)) filteredNotes.push(candidateNote);
+    }
+    candidateNotes = filteredNotes;
     if (candidateNotes.length === 0 && beforeLen > 0) {
       throw new Error(`${unit}.playMotifs: All bucket notes were filtered out - bucket contains stale notes from previous composer (beforeLen=${beforeLen}, composerValidPCs=[${Array.from(composerValidPCs).sort((a,b)=>a-b).join(',')}])`);
     }
@@ -32,9 +38,16 @@ playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, res
   if (harmonicContext) {
     const scale = harmonicContext.getField('scale');
     if (Array.isArray(scale) && scale.length > 0) {
-      const filtered = candidateNotes.filter(note => harmonicContext.isNoteInScale(note));
+      const filtered = [];
+      for (let index = 0; index < candidateNotes.length; index++) {
+        const candidateNote = candidateNotes[index];
+        if (harmonicContext.isNoteInScale(candidateNote)) filtered.push(candidateNote);
+      }
       if (filtered.length > 0) {
-        const filteredPCs = new Set(filtered.map(n => ((n % 12) + 12) % 12));
+        const filteredPCs = new Set();
+        for (let index = 0; index < filtered.length; index++) {
+          filteredPCs.add(((filtered[index] % 12) + 12) % 12);
+        }
         let allValid = true;
         for (const pc of filteredPCs) {
           if (composerValidPCs.size > 0 && !composerValidPCs.has(pc)) {
