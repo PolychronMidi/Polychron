@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-23T22:56:11.128Z",
-    "currentRun": "2026-03-23T22:56:11.127Z",
-    "previousRun": "2026-03-23T22:21:14.247Z"
+    "generated": "2026-03-23T23:51:36.748Z",
+    "currentRun": "2026-03-23T23:51:36.748Z",
+    "previousRun": "2026-03-23T23:49:19.344Z"
   },
   "verdict": "STABLE",
   "driftedDimensions": 0,
@@ -21,157 +21,167 @@
   "dimensions": [
     {
       "dimension": "pitchEntropy",
-      "delta": 0.07260184887940202,
+      "delta": 0.0050107659896463375,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 6.384105534224039,
-      "previous": 6.456707383103441
+      "current": 6.3572242931006375,
+      "previous": 6.362235059090284
     },
     {
       "dimension": "densityVariance",
-      "delta": 0.0027729426404854212,
+      "delta": 0.0029391738168790624,
       "tolerance": 0.2,
       "status": "stable",
-      "current": 0.007693071518593559,
-      "previous": 0.004920128878108138
+      "current": 0.005061971211777601,
+      "previous": 0.008001145028656663
     },
     {
       "dimension": "tensionArc",
-      "delta": 0.32960958723430217,
+      "delta": 0.10263055776250599,
       "tolerance": 0.4,
       "status": "stable",
       "current": [
-        0.37811185077799797,
-        0.7073187483811431,
-        0.8787900195222459,
-        0.8104073304145456
+        0.43070973993260897,
+        0.6166215534185475,
+        0.5849600502787868,
+        0.4173355227009815
       ],
       "previous": [
-        0.48836897802210616,
-        0.5813616840693373,
-        0.3951815587498645,
-        0.394870375982976
+        0.3693324575512474,
+        0.8050311679735714,
+        0.5315764304429477,
+        0.4214538998693365
       ]
     },
     {
       "dimension": "trustConvergence",
-      "delta": 0.0008666666666667378,
+      "delta": 0.010866666666666636,
       "tolerance": 0.25,
       "status": "stable",
-      "current": 0.3064111111111111,
-      "previous": 0.3072777777777778
+      "current": 0.28746666666666665,
+      "previous": 0.2983333333333333
     },
     {
       "dimension": "regimeDistribution",
-      "delta": 0.00744643651853264,
+      "delta": 0.16954022988505746,
       "tolerance": 0.3,
       "status": "stable"
     },
     {
       "dimension": "coupling",
-      "delta": 0.05813571428571429,
+      "delta": 0.05419285714285715,
       "tolerance": 0.25,
       "status": "stable"
     },
     {
       "dimension": "correlationTrend",
-      "delta": 0.35714285714285715,
+      "delta": 0.5,
       "tolerance": 1,
       "status": "stable",
       "flipDetails": [
         {
-          "pair": "density-phase",
-          "from": "stable",
-          "to": "increasing"
-        },
-        {
           "pair": "density-tension",
-          "from": "stable",
-          "to": "increasing"
+          "from": "decreasing",
+          "to": "stable"
         },
         {
-          "pair": "flicker-phase",
+          "pair": "density-trust",
+          "from": "increasing",
+          "to": "stable"
+        },
+        {
+          "pair": "entropy-phase",
+          "from": "stable",
+          "to": "decreasing"
+        },
+        {
+          "pair": "entropy-trust",
+          "from": "stable",
+          "to": "decreasing"
+        },
+        {
+          "pair": "flicker-trust",
           "from": "stable",
           "to": "increasing"
         },
         {
           "pair": "tension-entropy",
           "from": "stable",
-          "to": "decreasing"
+          "to": "increasing"
         },
         {
           "pair": "tension-flicker",
-          "from": "increasing",
-          "to": "stable"
+          "from": "stable",
+          "to": "increasing"
         }
       ]
     },
     {
       "dimension": "exceedanceSeverity (beats)",
-      "delta": 17.88,
+      "delta": 3.34,
       "tolerance": 95,
       "status": "stable",
-      "currentTotal": 86,
-      "previousTotal": 5,
-      "currentUnique": 31,
-      "previousUnique": 4,
+      "currentTotal": 6,
+      "previousTotal": 10,
+      "currentUnique": 4,
+      "previousUnique": 9,
       "currentTopPair": {
         "pair": "density-flicker",
-        "beats": 29
+        "beats": 2
       },
       "previousTopPair": {
         "pair": "density-flicker",
-        "beats": 3
+        "beats": 9
       },
       "normalizedDelta": true,
       "shortRunWarning": false,
-      "runLengthRatio": 1.35
+      "runLengthRatio": 1.36
     },
     {
       "dimension": "hotspotMigration",
-      "delta": 0.2583,
+      "delta": 0.1408,
       "tolerance": 0.75,
       "status": "stable",
       "currentTopPair": "density-flicker",
       "previousTopPair": "density-flicker",
-      "currentTop2Concentration": 0.5698,
+      "currentTop2Concentration": 0.6667,
       "previousTop2Concentration": 1,
-      "pairSetDelta": 0.75,
+      "pairSetDelta": 0.3333,
       "currentAxisShares": {
-        "density": 0.222,
-        "tension": 0.1986,
-        "flicker": 0.1932,
-        "entropy": 0.1995,
-        "trust": 0.1204,
-        "phase": 0.0663
+        "density": 0.1831,
+        "tension": 0.1742,
+        "flicker": 0.178,
+        "entropy": 0.1917,
+        "trust": 0.1601,
+        "phase": 0.1128
       },
       "previousAxisShares": {
-        "density": 0.2229,
-        "tension": 0.1635,
-        "flicker": 0.1652,
-        "entropy": 0.2509,
-        "trust": 0.1945,
-        "phase": 0.0029
+        "density": 0.2231,
+        "tension": 0.1622,
+        "flicker": 0.208,
+        "entropy": 0.2155,
+        "trust": 0.1839,
+        "phase": 0.0073
       }
     },
     {
       "dimension": "telemetryHealth",
-      "delta": 0.1877,
+      "delta": 0.0892,
       "tolerance": 0.35,
       "status": "stable",
       "current": {
-        "score": 0.5038,
+        "score": 0.4968,
         "phaseTelemetryPresent": true,
         "phaseIntegrity": "warning",
-        "underSeenPairCount": 5,
-        "maxGap": 0.312
+        "underSeenPairCount": 6,
+        "maxGap": 0.302
       },
       "previous": {
-        "score": 0.3161,
+        "score": 0.4076,
         "phaseTelemetryPresent": true,
         "phaseIntegrity": "warning",
-        "underSeenPairCount": 1,
-        "maxGap": 0.084
+        "underSeenPairCount": 2,
+        "maxGap": 0.329
       }
     }
   ]

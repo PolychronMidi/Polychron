@@ -136,8 +136,32 @@ entropyRegulator = (() => {
    */
   function setTarget(target, arcTarget) {
     if (typeof arcTarget === 'number' && Number.isFinite(arcTarget)) {
-      // Blend section-shape arc with intent target
-      targetEntropy = clamp(arcTarget * ARC_BLEND_WEIGHT + target * INTENT_BLEND_WEIGHT, 0, 1);
+      let arcWeight = ARC_BLEND_WEIGHT;
+      let intentWeight = INTENT_BLEND_WEIGHT;
+      let targetTrim = 0;
+      const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
+      const sectionProgress = safePreBoot.call(() => timeStream.normalizedProgress('section'), 0.5);
+      const edgeDistance = typeof sectionProgress === 'number' && Number.isFinite(sectionProgress)
+        ? m.min(clamp(sectionProgress, 0, 1), clamp(1 - sectionProgress, 0, 1))
+        : 0.5;
+      const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
+      const densityEntropyPressure = couplingMatrix && typeof couplingMatrix['density-entropy'] === 'number' && Number.isFinite(couplingMatrix['density-entropy'])
+        ? clamp((m.abs(couplingMatrix['density-entropy']) - 0.50) / 0.20, 0, 1)
+        : 0;
+      const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
+        ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
+        : 0;
+      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+        ? axisEnergy.shares.phase
+        : 1.0 / 6.0;
+      const phaseProtection = clamp((phaseShare - 0.12) / 0.05, 0, 1);
+      const entropyContainment = clamp(densityEntropyPressure * 0.55 + densityFlickerPressure * 0.45, 0, 1);
+      arcWeight = clamp(ARC_BLEND_WEIGHT + entropyContainment * 0.10 + edgePressure * 0.05, ARC_BLEND_WEIGHT, 0.48);
+      intentWeight = 1 - arcWeight;
+      targetTrim = entropyContainment * (0.02 + edgePressure * 0.03) * (0.25 + phaseProtection * 0.45);
+      targetEntropy = clamp(arcTarget * arcWeight + target * intentWeight - targetTrim, 0, 1);
     } else {
       targetEntropy = clamp(target, 0, 1);
     }

@@ -229,6 +229,11 @@ adaptiveTrustScores = (() => {
       const tensionTrustBrake = clamp(pairAwareProfile.pressure * 0.20 + pairAwareProfile.severePressure * 0.18 + clamp((tensionShare - 0.18) / 0.08, 0, 1) * 0.12, 0.10, 0.32);
       hotspotAwareWeight *= 1 - tensionTrustBrake;
     }
+    if (trustShare > 0.17 && pairAwareProfile.pressure > 0.15) {
+      const phaseLaneNeed = clamp((0.07 - phaseShare) / 0.07, 0, 1);
+      const dominanceBrake = clamp(clamp((trustShare - 0.17) / 0.08, 0, 1) * 0.10 + phaseLaneNeed * 0.12 + pairAwareProfile.pressure * 0.08 + pairAwareProfile.severePressure * 0.08, 0, 0.28);
+      hotspotAwareWeight *= 1 - dominanceBrake;
+    }
     return clamp(hotspotAwareWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
   }
 
@@ -308,12 +313,26 @@ adaptiveTrustScores = (() => {
       trustCountForMean++;
     }
     meanTrust = trustCountForMean > 0 ? meanTrust / trustCountForMean : 0;
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
+      ? axisEnergy.shares.trust
+      : 1.0 / 6.0;
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
+    const phaseLaneNeed = clamp((0.07 - phaseShare) / 0.07, 0, 1);
 
     for (const [name, state] of scoreBySystem.entries()) {
       let vs = adaptiveTrustScoresVelocityState.get(name);
       if (!vs) {
         vs = { velocityEma: 0, stagnantBeats: 0, lastScore: state.score, disengageBeats: 0, nourishmentCount: 0, effectiveStrength: _BASE_NOURISHMENT_STRENGTH };
         adaptiveTrustScoresVelocityState.set(name, vs);
+      }
+      if (trustSharePressure > 0 && state.score > meanTrust) {
+        const dominanceSurplus = clamp((state.score - meanTrust) / m.max(meanTrust, 0.05), 0, 1);
+        const dominanceDecay = clamp(trustSharePressure * 0.025 + phaseLaneNeed * 0.03 + dominanceSurplus * 0.02, 0, 0.06);
+        state.score *= 1 - dominanceDecay;
       }
       const scoreDelta = m.abs(state.score - vs.lastScore);
       vs.velocityEma = vs.velocityEma * (1 - _VELOCITY_EMA_ALPHA) + scoreDelta * _VELOCITY_EMA_ALPHA;

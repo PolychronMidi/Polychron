@@ -72,21 +72,24 @@ densityWaveAnalyzer = (() => {
       : 1.0 / 6.0;
     const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
     const phaseRecoveryCredit = clamp((phaseShare - lowPhaseThreshold) / 0.08, 0, 1);
-    if (phaseRecoveryCredit <= 0) {
-      return 0;
-    }
     const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
     if (!couplingMatrix) {
       return 0;
     }
+    const signalHealth = safePreBoot.call(() => signalHealthAnalyzer.getHealth(), null);
+    const densityHealth = signalHealth && signalHealth.density ? signalHealth.density : null;
     const densityFlickerPressure = typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
       ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.78) / 0.16, 0, 1)
       : 0;
     const densityPhasePressure = typeof couplingMatrix['density-phase'] === 'number' && Number.isFinite(couplingMatrix['density-phase'])
       ? clamp((m.abs(couplingMatrix['density-phase']) - 0.68) / 0.16, 0, 1)
       : 0;
-    return clamp((densityFlickerPressure * 0.7 + densityPhasePressure * 0.3) * phaseRecoveryCredit, 0, 1);
+    const densitySaturationPressure = densityHealth
+      ? clamp((densityHealth.saturated ? 0.45 : 0) + clamp((densityHealth.crushFactor - 0.35) / 0.40, 0, 1) * 0.55, 0, 1)
+      : 0;
+    const containmentCredit = 0.35 + phaseRecoveryCredit * 0.65;
+    return clamp((densityFlickerPressure * 0.55 + densityPhasePressure * 0.20 + densitySaturationPressure * 0.25) * containmentCredit, 0, 1);
   }
 
   /**

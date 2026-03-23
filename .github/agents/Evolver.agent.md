@@ -282,6 +282,8 @@ If the journal already has entries, review the most recent entry's "Evolutions P
 
 When the journal exceeds **500 lines**, compact entries older than 5 rounds into the "Run History Summary" section at the bottom. Preserve the full entries for the 5 most recent rounds. The compacted summary should retain per-round: round number, date, verdict, profile, beat count, and a one-line synopsis of what was learned. This prevents unbounded growth (~45 lines/round).
 
+If the user explicitly requests a full-history compaction, you may replace the full entry history with a single lineage summary instead of preserving the 5 newest full entries. In that case, preserve the current headline, active blockers, durable lessons, and snapshot policy so the next round still has usable institutional memory.
+
 
 
 ## Phase 6: Self-Maintenance & Loop
