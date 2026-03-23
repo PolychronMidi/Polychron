@@ -64,7 +64,7 @@ DENOMINATOR={
 OCTAVE={
   min: 0,
   max: 9,
-  weights: [11,27,33,35,33,35,30,5,2]
+  weights: [8,22,30,35,35,38,35,12,5]
 };
 /** @tier-2 - per-beat polyphonic voice count */
 BEAT_VOICES = {
@@ -168,9 +168,9 @@ COMPOSER_FAMILIES={
 };
 /** @tier-2 - per-channel stutter probability */
 STUTTER_PROFILES={
-  source: { perProb: 0.07 },
+  source: { perProb: 0.12 },  // R33 E5: 0.07->0.12 more occasional melodic stutter
   reflection: { perProb: 0.2 },
-  bass: { perProb: 0.7 }
+  bass: { perProb: 0.55 }     // R33 E5: 0.70->0.55 less fragmentation, more bass coherence
 };
 /** @tier-2 - stutter velocity ranges per channel */
 STUTTER_VELOCITY_RANGES = {
@@ -523,7 +523,7 @@ DRUM_MAP = {
 /** @tier-2 - phrase-level arc shape functions (register, density, dynamism) */
 PHRASES_ARC_CURVES = {
   'arch': {
-    register: (p) => m.sin(Number(p) * m.PI) * 12 - 6,
+    register: (p) => m.sin(Number(p) * m.PI) * 12 - 2,
     density: (p) => m.sin(Number(p) * m.PI) * 0.4 + 0.8,
     // R29 E1: Mid-phrase intensification (was flat 1.0). Arch shape now peaks
     // dynamism at phrase midpoint (0.7 + sin(pi*p)*0.3 = 0.7..1.0)
@@ -535,12 +535,12 @@ PHRASES_ARC_CURVES = {
     dynamism: (p) => 0.8 + Number(p) * 0.4
   },
   'rise-fall': {
-    register: (p) => (Number(p) < 0.7 ? Number(p) * 15 : (1 - Number(p)) * 30) - 5,
+    register: (p) => (Number(p) < 0.7 ? Number(p) * 15 : (1 - Number(p)) * 30) - 1,
     density: (p) => Number(p) * 0.5 + 0.5,
     dynamism: (p) => 1.0 + Number(p) * 0.2
   },
   'build-resolve': {
-    register: (p) => Number(p) * 24 - 12,
+    register: (p) => Number(p) * 24 - 8,
     density: (p) => Number(p) * 0.8 + 0.4,
     dynamism: (p) => 0.5 + Number(p) * 1.0
   }

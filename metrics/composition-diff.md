@@ -5,32 +5,39 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
-## Notable Changes (3)
+## Notable Changes (4)
 
-- !! **harmonic-change**: Section 0: A# dorian -> D# minor
-- !! **harmonic-change**: Section 1: C dorian -> A# minor
-- !! **harmonic-change**: Section 2: Eb major -> D aeolian
+- !! **harmonic-change**: Section 0: Eb dorian -> E dorian
+- !! **harmonic-change**: Section 1: C# major -> E dorian
+- !! **harmonic-change**: Section 2: D# major -> F# minor
+- !! **harmonic-change**: Section 3: D# mixolydian -> C minor
 
-## Moderate Changes (3)
+## Moderate Changes (7)
 
-- ! **phrase-count**: Section 1: 3 phrases -> 1 phrases
-- ! **tension-shift**: Section 2 avg tension: 0.510 -> 0.646
-- ! **pitch-center**: output2 mean pitch: 47.6 -> 38.5 (9.1 semitones)
+- ! **phrase-count**: Section 0: 0 phrases -> 1 phrases
+- ! **tension-shift**: Section 0 avg tension: 0.220 -> 0.339
+- ! **tension-shift**: Section 2 avg tension: 0.719 -> 0.615
+- ! **phrase-count**: Section 3: 4 phrases -> 3 phrases
+- ! **tension-shift**: Section 3 avg tension: 0.767 -> 0.894
+- ! **note-count**: output1: 7591 notes -> 9301 notes (22.5% change)
+- ! **note-count**: output2: 9778 notes -> 12593 notes (28.8% change)
 
-## Minor Changes (4)
+## Minor Changes (6)
 
-- ~ **regime-shift**: Section 0 regime 'coherent': 61.1% -> 30.3%
-- ~ **regime-shift**: Section 0 regime 'exploring': 0.0% -> 50.0%
-- ~ **regime-shift**: Section 1 regime 'coherent': 37.7% -> 0.0%
-- ~ **regime-shift**: Section 1 regime 'exploring': 62.3% -> 100.0%
+- ~ **regime-shift**: Section 0 regime 'initializing': 33.3% -> 6.3%
+- ~ **regime-shift**: Section 0 regime 'coherent': 33.3% -> 70.3%
+- ~ **regime-shift**: Section 1 regime 'coherent': 77.0% -> 11.1%
+- ~ **regime-shift**: Section 1 regime 'exploring': 23.0% -> 88.9%
+- ~ **regime-shift**: Section 3 regime 'exploring': 32.7% -> 93.1%
+- ~ **regime-shift**: Section 3 regime 'coherent': 67.3% -> 0.0%
 
 ## Summary
 
-- Total differences: 10
+- Total differences: 17
 - Major: 0
-- Notable: 3
-- Moderate: 3
-- Minor: 4
+- Notable: 4
+- Moderate: 7
+- Minor: 6
 
 
-*Generated 2026-03-23T00:09:44.589Z*
+*Generated 2026-03-23T02:22:22.369Z*

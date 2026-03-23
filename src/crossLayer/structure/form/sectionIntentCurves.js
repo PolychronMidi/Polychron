@@ -4,7 +4,7 @@ sectionIntentCurves = (() => {
   // Intent curve shaping constants
   const PHRASE_PHASE_SCALE = 0.3;     // phrase contribution to wave phase
   const WAVE_PHASE_SPEED = 0.07;      // section+phrase modulation speed
-  const DENSITY_BASE = 0.25;
+  const DENSITY_BASE = 0.33;
   const DENSITY_ARC_SCALE = 0.55;
   const DISSONANCE_BASE = 0.2;
   const DISSONANCE_WAVE_BASE = 0.35;

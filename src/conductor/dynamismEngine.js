@@ -153,7 +153,7 @@ dynamismEngine = (() => {
 
     const emissionGate = conductorConfig.getEmissionGateParams();
 
-    const layerBias = (LM && LM.activeLayer === 'L2') ? 0.04 : 0;
+    const layerBias = (LM && LM.activeLayer === 'L2') ? 0.10 : 0;
     const playOut = clamp(
       inputPlay * (emissionGate.playBase + composite * emissionGate.playScale) +
       layerBias * 0.5 * emissionGate.layerBiasScale,

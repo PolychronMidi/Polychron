@@ -35,7 +35,7 @@ regimeReactiveDamping = (() => {
     oscillating: 0,
     exploring: 1,
     coherent: 0,       // neutral -- R6's -0.5 flattened tension arc
-    evolving: 0.5,     // mild boost to support musical evolution
+    evolving: 1.0,     // R33 E4: 0.5->1.0 stronger tension identity for evolving regime
     drifting: 1,
   };
 
@@ -46,7 +46,7 @@ regimeReactiveDamping = (() => {
                      //   created mechanical anti-correlation r=-0.7 via shared causal path)
     exploring: 1,    // boost variation - inject independent flicker to reduce density-flicker coupling
     coherent: 0,     // neutral - suppression (was -1) compressed flicker range and inflated coupling via near-zero variance
-    evolving: 0,
+    evolving: 0.5,  // R33 E4: 0->0.5 give evolving regime distinct timbral character
     drifting: 0,
   };
 
