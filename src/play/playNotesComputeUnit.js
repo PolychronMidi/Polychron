@@ -4,6 +4,32 @@
 // Mutates the global `velocity` as a side effect.
 
 const V = validator.create('playNotesComputeUnit');
+const playNotesComputeUnitProfileCache = {};
+let playNotesComputeUnitVoiceConfigDefault = undefined;
+let playNotesComputeUnitNoiseProfileName = '';
+let playNotesComputeUnitNoiseProfile = undefined;
+
+function playNotesComputeUnitGetUnitProfile(unit) {
+  if (!Object.prototype.hasOwnProperty.call(playNotesComputeUnitProfileCache, unit)) {
+    playNotesComputeUnitProfileCache[unit] = motifConfig.getUnitProfile(unit) || null;
+  }
+  return playNotesComputeUnitProfileCache[unit];
+}
+
+function playNotesComputeUnitGetVoiceConfigDefault() {
+  if (playNotesComputeUnitVoiceConfigDefault === undefined) {
+    playNotesComputeUnitVoiceConfigDefault = voiceConfig.getProfile('default') || null;
+  }
+  return playNotesComputeUnitVoiceConfigDefault;
+}
+
+function playNotesComputeUnitGetNoiseProfile(profileName) {
+  if (playNotesComputeUnitNoiseProfileName !== profileName || playNotesComputeUnitNoiseProfile === undefined) {
+    playNotesComputeUnitNoiseProfileName = profileName;
+    playNotesComputeUnitNoiseProfile = getNoiseProfile(profileName);
+  }
+  return playNotesComputeUnitNoiseProfile;
+}
 
 /**
  * Compute note timing, velocity, and noise context for one emission unit.
@@ -47,13 +73,13 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   velocity = m.max(1, m.min(127, m.round(velocity * combinedVelocityScale)));
 
   // Unit-level velocity scaling (beat=1.0, div=0.9, subdiv=0.85, subsubdiv=0.8 - finer units play softer)
-  const unitProfile = motifConfig.getUnitProfile(unit);
+  const unitProfile = playNotesComputeUnitGetUnitProfile(unit);
   if (unitProfile && Number.isFinite(unitProfile.velocityScale)) {
     velocity = m.max(1, m.min(127, m.round(velocity * unitProfile.velocityScale)));
   }
 
   // voiceConfig blend for additional velocity shaping
-  const vcProfile = voiceConfig.getProfile('default');
+  const vcProfile = playNotesComputeUnitGetVoiceConfigDefault();
   if (vcProfile && Number.isFinite(vcProfile.baseVelocity)) {
     velocity = m.max(1, m.min(127, m.round(velocity * (1 - emissionCfg.voiceConfigBlend) + vcProfile.baseVelocity * emissionCfg.voiceConfigBlend)));
   }
@@ -62,7 +88,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
 
   // Noise influence for organic velocity modulation
   V.requireType(getNoiseProfile, 'function', 'getNoiseProfile');
-  const noiseProfile = getNoiseProfile(emissionCfg.noiseProfile);
+  const noiseProfile = playNotesComputeUnitGetNoiseProfile(emissionCfg.noiseProfile);
   V.assertObject(noiseProfile, `getNoiseProfile(${emissionCfg.noiseProfile})`);
   const influenceX = V.requireFinite(Number(noiseProfile.influenceX), 'noiseProfile.influenceX');
   const influenceY = V.requireFinite(Number(noiseProfile.influenceY), 'noiseProfile.influenceY');

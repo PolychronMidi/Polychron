@@ -2,6 +2,7 @@
 // Extracted from playNotesEmitPick to keep the emission orchestrator focused.
 
 const V = validator.create('emitPickCrossLayerRecord');
+const EMIT_PICK_CROSS_LAYER_PROFILE = process.argv.includes('--trace');
 
 /**
  * Record a primary source note emission into all cross-layer tracking systems.
@@ -10,6 +11,7 @@ const V = validator.create('emitPickCrossLayerRecord');
  * @returns {number} additional scheduled event count from echo delivery
  */
 emitPickCrossLayerRecord = function(ctx) {
+  const emitPickCrossLayerStartedAt = EMIT_PICK_CROSS_LAYER_PROFILE ? process.hrtime.bigint() : 0n;
   V.assertPlainObject(ctx, 'ctx');
   const { noteToEmit, texVel, activeLayerName, absMsAtOnTick, unit, onTick, sourceCH, tpUnit, texSustain, harmonicOtherMidi } = ctx;
 
@@ -41,8 +43,16 @@ emitPickCrossLayerRecord = function(ctx) {
       const echoStep = echoIndex;
       const echoStagger = tpUnit * rf(0.015, 0.06) * echoStep;
       const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95))));
-      const echoOnEvt = { tick: onTick + echoStagger, type: 'on', vals: [sourceCH, echoNote, echoVel] };
-      const echoOffEvt = { tick: onTick + echoStagger + texSustain * rf(0.6, 0.95), vals: [sourceCH, echoNote] };
+      const echoOnTick = onTick + echoStagger;
+      const echoOffTick = minimumNoteDuration.resolveOffTick(
+        echoOnTick,
+        echoOnTick + texSustain * rf(0.6, 0.95),
+        'ornament',
+        tpUnit,
+        'emitPickCrossLayerRecord.echoOffTick'
+      );
+      const echoOnEvt = { tick: echoOnTick, type: 'on', vals: [sourceCH, echoNote, echoVel] };
+      const echoOffEvt = { tick: echoOffTick, vals: [sourceCH, echoNote] };
       microUnitAttenuator.record(echoOnEvt, echoOffEvt, crossModulation);
       additionalScheduled += 2;
     }
@@ -101,5 +111,6 @@ emitPickCrossLayerRecord = function(ctx) {
     }
   }
 
+  if (EMIT_PICK_CROSS_LAYER_PROFILE) traceDrain.recordRuntimeMetric(`emitPickCrossLayerRecord.${unit}`, Number(process.hrtime.bigint() - emitPickCrossLayerStartedAt) / 1e6);
   return additionalScheduled;
 };

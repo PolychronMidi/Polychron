@@ -12,12 +12,53 @@ traceDrain = (() => {
   // Per-beat note accumulator: collects emitted note data between playNotes and traceDrain.record
   /** @type {Array<{pitch: number, velocity: number, channel: number}>} */
   let traceDrainPendingNotes = [];
+  /** @type {Record<string, { totalMs: number, count: number, maxMs: number }>} */
+  let traceDrainRuntimeBuckets = {};
+
+  function traceDrainResetRuntimeBuckets() {
+    traceDrainRuntimeBuckets = {};
+  }
+
+  function traceDrainRecordRuntimeMetric(name, durationMs) {
+    if (!isTracing) return;
+    const metricName = String(name || 'unknown');
+    const duration = Number(durationMs);
+    if (!Number.isFinite(duration) || duration < 0) return;
+    const bucket = traceDrainRuntimeBuckets[metricName] || { totalMs: 0, count: 0, maxMs: 0 };
+    bucket.totalMs += duration;
+    bucket.count += 1;
+    if (duration > bucket.maxMs) bucket.maxMs = duration;
+    traceDrainRuntimeBuckets[metricName] = bucket;
+  }
+
+  function traceDrainWriteRuntimeProfile() {
+    if (!isTracing || fd === null) return;
+    const metricNames = Object.keys(traceDrainRuntimeBuckets).sort((a, b) => traceDrainRuntimeBuckets[b].totalMs - traceDrainRuntimeBuckets[a].totalMs);
+    const metrics = {};
+    for (let i = 0; i < metricNames.length; i++) {
+      const name = metricNames[i];
+      const bucket = traceDrainRuntimeBuckets[name];
+      metrics[name] = {
+        totalMs: Number(bucket.totalMs.toFixed(3)),
+        count: bucket.count,
+        avgMs: Number((bucket.totalMs / m.max(1, bucket.count)).toFixed(6)),
+        maxMs: Number(bucket.maxMs.toFixed(6))
+      };
+    }
+    const outDir = path.resolve(process.cwd(), 'metrics');
+    fs.writeFileSync(path.join(outDir, 'play-runtime-profile.json'), JSON.stringify({
+      generated: new Date().toISOString(),
+      traced: true,
+      metrics
+    }, null, 2) + '\n');
+  }
 
   function init() {
     if (!process.argv.includes('--trace')) return;
     isTracing = true;
     traceDrainRecordCount = 0;
     traceDrainPendingNotes = [];
+    traceDrainResetRuntimeBuckets();
 
     const outDir = path.resolve(process.cwd(), 'metrics');
     if (!fs.existsSync(outDir)) {
@@ -67,6 +108,13 @@ traceDrain = (() => {
    */
   function record(layer, data) {
     if (!isTracing || fd === null) return;
+    if (data.stageTiming) {
+      const stageNames = Object.keys(data.stageTiming);
+      for (let i = 0; i < stageNames.length; i++) {
+        const stageName = stageNames[i];
+        traceDrainRecordRuntimeMetric(`stage.${stageName}`, data.stageTiming[stageName]);
+      }
+    }
     const payload = {
       layer,
       beatKey: data.beatKey,
@@ -138,6 +186,7 @@ traceDrain = (() => {
 
   function shutdown() {
     traceDrainFlush();
+    traceDrainWriteRuntimeProfile();
     if (isTracing && traceDrainRecordCount === 0) {
       throw new Error('traceDrain.shutdown: no trace entries were recorded during traced run');
     }
@@ -151,5 +200,5 @@ traceDrain = (() => {
     }
   }
 
-  return { init, isEnabled, record, recordNote, recordSnapshot, flush: traceDrainFlush, shutdown };
+  return { init, isEnabled, record, recordNote, recordSnapshot, recordRuntimeMetric: traceDrainRecordRuntimeMetric, flush: traceDrainFlush, shutdown };
 })();

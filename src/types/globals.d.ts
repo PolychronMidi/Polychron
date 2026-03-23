@@ -833,8 +833,8 @@ interface CadenceAlignmentAPI {
 }
 
 interface RegisterCollisionAvoiderAPI {
-  recordNote(layer: string, midi: number, tick: number): void;
-  avoid(activeLayer: string, midi: number, tick: number): { midi: number; adjusted: boolean };
+  recordNote(layer: string, midi: number, tick: number, absTimeMs?: number): void;
+  avoid(activeLayer: string, midi: number, tick: number, absTimeMs?: number): { midi: number; adjusted: boolean };
   reset(): void;
 }
 
@@ -1889,6 +1889,7 @@ declare var traceDrain: {
   record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any }): void;
   recordNote(pitch: number, velocity: number, channel: number): void;
   recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string; axisEnergyShare?: any; sectionKey?: string; sectionMode?: string }): void;
+  recordRuntimeMetric(name: string, durationMs: number): void;
   flush(): void;
   shutdown(): void;
 };
@@ -1948,6 +1949,10 @@ declare var beatPipelineDescriptor: {
 };
 declare var processBeat: any;
 declare var layerPass: any;
+declare var minimumNoteDuration: {
+  floorTicks(kind: string, unitTicks?: number): number;
+  resolveOffTick(onTick: number, desiredOffTick: number, kind: string, unitTicks?: number, label?: string): number;
+};
 declare var playNotesEmitPick: any;
 declare var setFeedbackPitchBias: (bias: number) => void;
 declare var setClimaxMods: (mods: { playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }) => void;

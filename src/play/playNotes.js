@@ -5,9 +5,15 @@
 let playNotesPlayNotesDepsValidated = false;
 let playNotesMeasureContextValidated = -1; // beatCount at last validation
 const V = validator.create('playNotes');
+const PLAY_NOTES_PROFILE = process.argv.includes('--trace');
 V.assertObject(eventCatalog, 'eventCatalog');
 V.assertObject(eventCatalog.names, 'eventCatalog.names');
 const PLAY_EVENTS = eventCatalog.names;
+
+function playNotesRecordProfileMetric(name, startedAt) {
+  if (!PLAY_NOTES_PROFILE) return;
+  traceDrain.recordRuntimeMetric(name, Number(process.hrtime.bigint() - startedAt) / 1e6);
+}
 
 function assertPlayNotesDeps() {
   if (playNotesPlayNotesDepsValidated) return;
@@ -29,6 +35,7 @@ function assertPlayNotesDeps() {
  * @param {Object} opts
  */
 playNotes = function(unit = 'subdiv', opts = {}) {
+  const playNotesStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
   assertPlayNotesDeps();
   V.assertPlainObject(opts, 'opts');
   const {
@@ -85,7 +92,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   V.assertNonEmptyString(phaseNoiseProfile, 'conductorConfig.getNoiseProfileForSection()');
   const emissionCfg = Object.assign({}, emissionScaling, { noiseProfile: phaseNoiseProfile });
 
+  const computeStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
   const { on, sustain, binVel, noiseInfluence, currentTime, voiceIdSeed } = playNotesComputeUnit(unit, emissionAdjustments, emissionCfg, layer);
+  playNotesRecordProfileMetric(`playNotes.compute.${unit}`, computeStartedAt);
 
   let scheduled = 0;
   let intendedCount = 1;
@@ -97,9 +106,11 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // Only invoke dynamismEngine directly for sub-beat units (div/subdiv/subsubdiv)
   // that need per-unit pulse refinement.
   const needsPerUnitResolve = (unit !== 'beat');
+  const resolveStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
   const resolved = (needsPerUnitResolve)
     ? dynamismEngine.resolve(unit, { playProb, stutterProb })
     : { playProb, stutterProb, composite: clamp(conductorState.getField('compositeIntensity'), 0, 1) };
+  playNotesRecordProfileMetric(`playNotes.resolve.${unit}`, resolveStartedAt);
   const resolvedPlayProb = V.requireFinite(Number(resolved.playProb), 'resolved.playProb');
   const resolvedStutterProb = V.requireFinite(Number(resolved.stutterProb), 'resolved.stutterProb');
 
@@ -108,7 +119,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // stab, or injects a rapid scalar flurry.  Oscillation-driven so the
   // texture switching never settles into a predictable pattern.
   const textureComposite = V.requireFinite(Number(resolved.composite), 'resolved.composite');
+  const textureStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
   const textureMode = textureBlender.resolve(unit, textureComposite);
+  playNotesRecordProfileMetric(`playNotes.texture.${unit}`, textureStartedAt);
 
   // -- Emit texture-contrast event for drum coupling (#5)
   if (textureMode.mode !== 'single') {
@@ -146,21 +159,31 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   // Gate play invocation with playProb and crossModulation
   if (V.optionalFinite(resolvedPlayProb) !== undefined && (rf() > resolvedPlayProb * rf(1,2)) && (crossModulation < rv(rf(1.8,2.2), [-.2, -.3], .05))) {
     emitNotesEmitted(0, intendedCount, 'probability-gate');
-    return trackRhythm(unit, layer, false);
+    const gatedResult = trackRhythm(unit, layer, false);
+    if (PLAY_NOTES_PROFILE) traceDrain.recordRuntimeMetric(`playNotes.${unit}`, Number(process.hrtime.bigint() - playNotesStartedAt) / 1e6);
+    return gatedResult;
   }
 
   // Delegate motif selection and transformation to playMotifs
+  const motifStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
   const picks = playMotifs(unit, layer);
+  playNotesRecordProfileMetric(`playNotes.motifs.${unit}`, motifStartedAt);
   V.assertArray(picks, 'picks');
   intendedCount = picks.length;
 
   // Apply voiceModulator to get per-pick velocity distribution
   // This gives each voice a slightly different velocity for natural ensemble feel
   if (Array.isArray(picks) && picks.length > 0) {
-    const distributed = voiceModulator.distribute(picks.map(p => p.note), { baseVelocity: velocity, textureMode: textureMode.mode });
+    const velocityDistStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
+    const pickNotes = new Array(picks.length);
+    for (let pickIndex = 0; pickIndex < picks.length; pickIndex++) {
+      pickNotes[pickIndex] = picks[pickIndex].note;
+    }
+    const distributed = voiceModulator.distribute(pickNotes, { baseVelocity: velocity, textureMode: textureMode.mode });
     for (let di = 0; di < m.min(distributed.length, picks.length); di++) {
       if (Number.isFinite(distributed[di].velocity)) picks[di].playNotesDistributedVelocity = distributed[di].velocity;
     }
+    playNotesRecordProfileMetric(`playNotes.voiceDistribute.${unit}`, velocityDistStartedAt);
   }
 
   // Enforce per-layer, per-unit remaining voice slots - trim picks if necessary
@@ -170,7 +193,9 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     if (allowed <= 0) {
       // no budget available for this layer/unit - skip emission
       emitNotesEmitted(0, intendedCount, 'voice-budget');
-      return trackRhythm(unit, layer, false);
+      const budgetResult = trackRhythm(unit, layer, false);
+      if (PLAY_NOTES_PROFILE) traceDrain.recordRuntimeMetric(`playNotes.${unit}`, Number(process.hrtime.bigint() - playNotesStartedAt) / 1e6);
+      return budgetResult;
     }
     if (allowed < picks.length) picks.length = allowed; // truncate in-place
 
@@ -182,6 +207,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
   try {
     V.requireType(playNotesEmitPick, 'function', `${unit}.playNotes: playNotesEmitPick helper`);
 
+    const emitStartedAt = PLAY_NOTES_PROFILE ? process.hrtime.bigint() : 0n;
     let picksEmitted = 0;
     for (let pi = 0; pi < picks.length; pi++) {
       const events = playNotesEmitPick({
@@ -203,6 +229,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
       scheduled += events;
       if (events > 0) picksEmitted++;
     }
+    playNotesRecordProfileMetric(`playNotes.emitLoop.${unit}`, emitStartedAt);
     emitNotesEmitted(picksEmitted, intendedCount, 'scheduled');
     trackRhythm(unit, layer, true);
   } catch (e) {
@@ -211,5 +238,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     throw new Error(`${unit}.playNotes: error while playing notes: ${e && e.stack ? e.stack : String(e)}`);
   }
 
+  if (PLAY_NOTES_PROFILE) traceDrain.recordRuntimeMetric(`playNotes.${unit}`, Number(process.hrtime.bigint() - playNotesStartedAt) / 1e6);
   return scheduled;
 };

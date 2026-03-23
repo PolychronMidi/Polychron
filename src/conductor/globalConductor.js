@@ -8,6 +8,7 @@
 currentDensity = 0.5;
 
 globalConductor = (() => {
+  const V = validator.create('globalConductor');
 
   // Flicker modifier EMA state - smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
@@ -42,7 +43,8 @@ globalConductor = (() => {
     // 1. gather context (all globals boot-validated - no typeof guards needed)
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
 
-    const harmonicTension = harmonicContext.getField('tension');
+    const safeCurrentDensity = clamp(V.optionalFinite(Number(currentDensity), 0.5), 0, 1);
+    const harmonicTension = V.optionalFinite(Number(harmonicContext.getField('tension')), 0);
 
     const sectionPhase = harmonicContext.getField('sectionPhase');
     const excursion = harmonicContext.getField('excursion');
@@ -84,17 +86,17 @@ globalConductor = (() => {
     ) * endRelease * midSectionCooloff;
 
     // 2. derive composite intensity (0-1)
-    const phaseMult = conductorConfig.getPhaseMultiplier(sectionPhase);
-    const arcIntensity = phraseCtx.dynamism * phaseMult;
-    const excursionTension = m.min(excursion, 6) * 0.05;
+    const phaseMult = V.optionalFinite(Number(conductorConfig.getPhaseMultiplier(sectionPhase)), 1);
+    const arcIntensity = V.optionalFinite(Number(phraseCtx.dynamism), 0.5) * phaseMult;
+    const excursionTension = m.min(V.optionalFinite(Number(excursion), 0), 6) * 0.05;
     const tensionIntensity = harmonicTension + excursionTension;
 
-    const harmonicRhythm = clamp(Number(harmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
+    const harmonicRhythm = clamp(V.optionalFinite(Number(harmonicRhythmTracker.getHarmonicRhythm()), 0.5), 0, 1);
     const harmonicRhythmParams = conductorConfig.getHarmonicRhythmParams();
-    const harmonicRhythmWeight = clamp(Number(harmonicRhythmParams.blendWeight), 0, 0.5);
+    const harmonicRhythmWeight = clamp(V.optionalFinite(Number(harmonicRhythmParams.blendWeight), 0), 0, 0.5);
     const intensityBlend = conductorConfig.getGlobalIntensityBlend();
     const baseCompositeIntensity = clamp(
-      arcIntensity * intensityBlend.arc + tensionIntensity * intensityBlend.tension,
+      arcIntensity * V.optionalFinite(Number(intensityBlend.arc), 0.5) + tensionIntensity * V.optionalFinite(Number(intensityBlend.tension), 0.5),
       0,
       1
     );
@@ -108,29 +110,29 @@ globalConductor = (() => {
     conductorIntelligence.runRecorders({
       absTime,
       compositeIntensity,
-      currentDensity,
+      currentDensity: safeCurrentDensity,
       harmonicRhythm
     });
 
     // 4. Collect density bias from registry (attributed for signal decomposition)
     const densityAttr = conductorIntelligence.collectDensityBiasWithAttribution();
-    const registryDensityBias = densityAttr.product;
+    const registryDensityBias = V.optionalFinite(Number(densityAttr.product), 1);
 
     // Coherence + emission density corrections (boot-validated globals - direct calls)
     // layerCoherenceScorer.getDensityBias() now registered in the density registry
     // (attributed, dampened). Only emission correction remains extra-pipeline.
-    const emissionRatio = clamp(Number(emissionFeedbackListener.getEmissionRatio()), 0, 2);
+    const emissionRatio = clamp(V.optionalFinite(Number(emissionFeedbackListener.getEmissionRatio()), 1), 0, 2);
     const densityCorrection = clamp(1 + clamp(1 - emissionRatio, -1, 1) * 0.2, 0.8, 1.25);
 
     // Drive motif density
     const densityRecoverySupport = phaseRecoveryPressure * 0.04 * (1 - clamp(hotspotContainmentPressure * 0.75, 0, 0.75));
     const densityHotspotTrim = 1 - hotspotContainmentPressure * 0.08;
     const targetDensity = clamp(
-      conductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * (1 + densityRecoverySupport),
+      V.optionalFinite(Number(conductorConfig.getTargetDensity(compositeIntensity)), safeCurrentDensity) * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * (1 + densityRecoverySupport),
       0, 1
     );
-    const smooth = conductorConfig.getDensitySmoothing();
-    currentDensity = currentDensity * (1 - smooth) + targetDensity * smooth;
+    const smooth = clamp(V.optionalFinite(Number(conductorConfig.getDensitySmoothing()), 0.2), 0, 1);
+    currentDensity = clamp(safeCurrentDensity * (1 - smooth) + targetDensity * smooth, 0, 1);
 
     // 5. Micro-hyper density flicker (attributed)
     const textureDensityBoost = clamp(Number(drumTextureCoupler.getIntensity()), 0, 1) * 0.5;

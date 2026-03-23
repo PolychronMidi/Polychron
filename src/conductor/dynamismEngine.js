@@ -4,6 +4,8 @@
 dynamismEngine = (() => {
   const V = validator.create('dynamismEngine');
   let dependenciesValidated = false;
+  let dynamismEngineResolveCacheKey = '';
+  let dynamismEngineResolveCacheValue = null;
 
   const moveBias = {
     origin: 0,
@@ -79,26 +81,26 @@ dynamismEngine = (() => {
    */
   function getFeedbackEnergy() {
     assertDependencies();
-    const fxEnergy = clamp(Number(FXFeedbackListener.getIntensity()), 0, 1);
+    const fxEnergy = clamp(V.optionalFinite(Number(FXFeedbackListener.getIntensity()), 0), 0, 1);
 
     // Use layer-aware stutter intensity (map L1->source, L2->reflection)
     const layerMap = { L1: 'source', L2: 'reflection' };
     const layerProfile = layerMap[LM.activeLayer] || null;
     const stutterLayerIntensity = layerProfile
-      ? clamp(Number(stutterFeedbackListener.getIntensity(layerProfile)), 0, 1)
+      ? clamp(V.optionalFinite(Number(stutterFeedbackListener.getIntensity(layerProfile)), 0), 0, 1)
       : 0;
 
-    const stutterOverall = clamp(Number(stutterFeedbackListener.getIntensity()), 0, 1);
+    const stutterOverall = clamp(V.optionalFinite(Number(stutterFeedbackListener.getIntensity()), 0), 0, 1);
 
     const stutterEnergy = clamp(stutterLayerIntensity * 0.7 + stutterOverall * 0.3, 0, 1);
 
-    const journeyRhythmEnergy = clamp(Number(journeyRhythmCoupler.getBoldness()), 0, 1);
+    const journeyRhythmEnergy = clamp(V.optionalFinite(Number(journeyRhythmCoupler.getBoldness()), 0), 0, 1);
 
-    const textureEnergy = clamp(Number(textureBlender.getRecentDensity()), 0, 1) * 0.15;
+    const textureEnergy = clamp(V.optionalFinite(Number(textureBlender.getRecentDensity()), 0), 0, 1) * 0.15;
 
     const harmonicRhythmParams = conductorConfig.getHarmonicRhythmParams();
     const harmonicRhythmWeight = clamp(Number(harmonicRhythmParams.feedbackWeight), 0, 0.5);
-    const harmonicRhythmEnergy = clamp(Number(harmonicRhythmTracker.getHarmonicRhythm()), 0, 1) * harmonicRhythmWeight;
+    const harmonicRhythmEnergy = clamp(V.optionalFinite(Number(harmonicRhythmTracker.getHarmonicRhythm()), 0), 0, 1) * harmonicRhythmWeight;
 
     const mixWeights = conductorConfig.getFeedbackMixWeights();
 
@@ -120,40 +122,30 @@ dynamismEngine = (() => {
    * @returns {number} 0-1
    */
   function getUnitPulse(unit) {
-    return dynamismPulse.compute(unit);
+    return clamp(V.optionalFinite(dynamismPulse.compute(unit), 0.5), 0, 1);
   }
 
-  /**
-   * Resolve per-unit play/stutter probabilities.
-   * @param {'beat'|'div'|'subdiv'|'subsubdiv'} unit
-   * @param {{playProb?:number, stutterProb?:number}} [opts]
-   * @returns {{playProb:number, stutterProb:number, composite:number}}
-   */
-  function resolve(unit, opts = {}) {
-    assertDependencies();
-    V.assertNonEmptyString(unit, 'unit');
+  function getBeatStableResolveContext() {
+    const activeLayerName = LM && typeof LM.activeLayer === 'string' ? LM.activeLayer : 'unknown';
+    const cacheKey = `${activeLayerName}:${Number(beatStart)}`;
+    if (dynamismEngineResolveCacheKey === cacheKey && dynamismEngineResolveCacheValue) {
+      return dynamismEngineResolveCacheValue;
+    }
 
     const phraseCtx = getPhraseContext();
     const base = getBaseProbs(phraseCtx);
-    const inputPlay = V.optionalFinite(opts.playProb, base.playProb);
-    const inputStutter = V.optionalFinite(opts.stutterProb, base.stutterProb);
-
-    const phraseEnergy = clamp(Number(phraseCtx.dynamism), 0, 1);
+    const phraseEnergy = clamp(V.optionalFinite(Number(phraseCtx.dynamism), 0.5), 0, 1);
     const journeyEnergy = getJourneyEnergy();
     const feedbackEnergy = getFeedbackEnergy();
-    const pulseEnergy = getUnitPulse(unit);
-
     const weights = conductorConfig.getHintBlendedEnergyWeights();
-    const composite = clamp(
-      phraseEnergy * weights.phrase +
-      journeyEnergy * weights.journey +
-      feedbackEnergy * weights.feedback +
-      pulseEnergy * weights.pulse,
-      0,
-      1
-    );
-
     const emissionGate = conductorConfig.getEmissionGateParams();
+    const playBase = V.optionalFinite(Number(emissionGate.playBase), 0.72);
+    const playScale = V.optionalFinite(Number(emissionGate.playScale), 0.9);
+    const stutterBase = V.optionalFinite(Number(emissionGate.stutterBase), 0.6);
+    const stutterScale = V.optionalFinite(Number(emissionGate.stutterScale), 1.25);
+    const journeyBoost = V.optionalFinite(Number(emissionGate.journeyBoost), 0.08);
+    const feedbackBoost = V.optionalFinite(Number(emissionGate.feedbackBoost), 0.08);
+    const layerBiasScale = V.optionalFinite(Number(emissionGate.layerBiasScale), 1.0);
     const activeRegime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
     const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
@@ -170,7 +162,7 @@ dynamismEngine = (() => {
     const recoveryContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.40, 0, 1);
     const activeProfileName = conductorConfig.getActiveProfileName();
     let l2Overhang = 0;
-    if (LM && LM.activeLayer === 'L2') {
+    if (activeLayerName === 'L2') {
       const recentL1 = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: 8 });
       const recentL2 = absoluteTimeWindow.countNotes({ layer: 'L2', windowSeconds: 8 });
       if (recentL2 > recentL1) {
@@ -178,26 +170,65 @@ dynamismEngine = (() => {
       }
     }
     const lowPhasePressure = clamp((0.05 - phaseShare) / 0.05, 0, 1);
-
-    const layerBias = (LM && LM.activeLayer === 'L2')
+    const layerBias = (activeLayerName === 'L2')
       ? (0.10 + (!dynamicRoleSwap.getIsSwapped() && activeRegime === 'exploring' ? 0.03 : 0)) * (1 - clamp(l2Overhang * 0.22 + lowPhasePressure * 0.08 + recoveryContainmentPressure * 0.16, 0, 0.44))
-      : (LM && LM.activeLayer === 'L1' && activeProfileName === 'explosive'
+      : (activeLayerName === 'L1' && activeProfileName === 'explosive'
         ? clamp(0.04 + lowPhasePressure * 0.10 + recoveryContainmentPressure * 0.03 + (activeRegime === 'exploring' ? 0.01 : 0), 0, 0.18)
         : 0);
-    const playOut = clamp(
-      inputPlay * (emissionGate.playBase + composite * emissionGate.playScale) +
-      layerBias * 0.5 * emissionGate.layerBiasScale,
-      0.02,
-      0.98
-    );
-    const stutterOut = clamp(
-      inputStutter * (emissionGate.stutterBase + composite * emissionGate.stutterScale) +
-      journeyEnergy * emissionGate.journeyBoost +
-      feedbackEnergy * emissionGate.feedbackBoost +
-      layerBias * emissionGate.layerBiasScale,
-      0.01,
-      0.98
-    );
+
+    dynamismEngineResolveCacheKey = cacheKey;
+    dynamismEngineResolveCacheValue = {
+      phraseCtx,
+      base,
+      phraseEnergy,
+      journeyEnergy,
+      feedbackEnergy,
+      weights,
+      playBase,
+      playScale,
+      stutterBase,
+      stutterScale,
+      journeyBoost,
+      feedbackBoost,
+      layerBiasScale,
+      layerBias
+    };
+    return dynamismEngineResolveCacheValue;
+  }
+
+  /**
+   * Resolve per-unit play/stutter probabilities.
+   * @param {'beat'|'div'|'subdiv'|'subsubdiv'} unit
+   * @param {{playProb?:number, stutterProb?:number}} [opts]
+   * @returns {{playProb:number, stutterProb:number, composite:number}}
+   */
+  function resolve(unit, opts = {}) {
+    assertDependencies();
+    V.assertNonEmptyString(unit, 'unit');
+
+    const ctx = getBeatStableResolveContext();
+    const base = ctx.base;
+    const inputPlay = V.optionalFinite(opts.playProb, base.playProb);
+    const inputStutter = V.optionalFinite(opts.stutterProb, base.stutterProb);
+
+    const phraseEnergy = ctx.phraseEnergy;
+    const journeyEnergy = ctx.journeyEnergy;
+    const feedbackEnergy = ctx.feedbackEnergy;
+    const pulseEnergy = getUnitPulse(unit);
+
+    const weights = ctx.weights;
+    const composite = clamp(V.optionalFinite(
+      phraseEnergy * weights.phrase +
+      journeyEnergy * weights.journey +
+      feedbackEnergy * weights.feedback +
+      pulseEnergy * weights.pulse,
+      phraseEnergy
+    ), 0, 1);
+
+    const rawPlayOut = inputPlay * (ctx.playBase + composite * ctx.playScale) + ctx.layerBias * 0.5 * ctx.layerBiasScale;
+    const rawStutterOut = inputStutter * (ctx.stutterBase + composite * ctx.stutterScale) + journeyEnergy * ctx.journeyBoost + feedbackEnergy * ctx.feedbackBoost + ctx.layerBias * ctx.layerBiasScale;
+    const playOut = clamp(V.optionalFinite(rawPlayOut, inputPlay), 0.02, 0.98);
+    const stutterOut = clamp(V.optionalFinite(rawStutterOut, inputStutter), 0.01, 0.98);
 
     return {
       playProb: playOut,

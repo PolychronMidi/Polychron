@@ -709,6 +709,7 @@ fullBootstrap = (() => {
     'crossLayerBeatRecord',
     'processBeat',
     'layerPass',
+    'minimumNoteDuration',
     'playNotesEmitPick',
     'setFeedbackPitchBias',
     'setClimaxMods',

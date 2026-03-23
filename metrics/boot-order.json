@@ -1,9 +1,9 @@
 {
   "meta": {
-    "generated": "2026-03-23T18:36:22.988Z",
-    "totalFiles": 437,
-    "globalsDeclared": 716,
-    "globalsMapped": 716,
+    "generated": "2026-03-23T20:53:04.304Z",
+    "totalFiles": 438,
+    "globalsDeclared": 717,
+    "globalsMapped": 717,
     "orphaned": [],
     "reassigned": [
       {
@@ -3280,13 +3280,20 @@
     },
     {
       "order": 424,
+      "file": "src/play/minimumNoteDuration.js",
+      "provides": [
+        "minimumNoteDuration"
+      ]
+    },
+    {
+      "order": 425,
       "file": "src/play/emitPickCrossLayerRecord.js",
       "provides": [
         "emitPickCrossLayerRecord"
       ]
     },
     {
-      "order": 425,
+      "order": 426,
       "file": "src/play/emitPickTextureEmit.js",
       "provides": [
         "emitPickSourceTextures",
@@ -3294,7 +3301,7 @@
       ]
     },
     {
-      "order": 426,
+      "order": 427,
       "file": "src/play/playNotesEmitPick.js",
       "provides": [
         "setFeedbackPitchBias",
@@ -3303,49 +3310,49 @@
       ]
     },
     {
-      "order": 427,
+      "order": 428,
       "file": "src/play/playNotesComputeUnit.js",
       "provides": [
         "playNotesComputeUnit"
       ]
     },
     {
-      "order": 428,
+      "order": 429,
       "file": "src/play/playNotes.js",
       "provides": [
         "playNotes"
       ]
     },
     {
-      "order": 429,
+      "order": 430,
       "file": "src/play/microUnitAttenuator.js",
       "provides": [
         "microUnitAttenuator"
       ]
     },
     {
-      "order": 430,
+      "order": 431,
       "file": "src/play/crossLayerBeatRecord.js",
       "provides": [
         "crossLayerBeatRecord"
       ]
     },
     {
-      "order": 431,
+      "order": 432,
       "file": "src/play/processBeat.js",
       "provides": [
         "processBeat"
       ]
     },
     {
-      "order": 432,
+      "order": 433,
       "file": "src/play/layerPass.js",
       "provides": [
         "layerPass"
       ]
     },
     {
-      "order": 433,
+      "order": 434,
       "file": "src/play/main.js",
       "provides": [
         "main",
@@ -3354,28 +3361,28 @@
       ]
     },
     {
-      "order": 434,
+      "order": 435,
       "file": "src/play/beatPipelineDescriptor.js",
       "provides": [
         "beatPipelineDescriptor"
       ]
     },
     {
-      "order": 435,
+      "order": 436,
       "file": "src/play/feedbackGraphContract.js",
       "provides": [
         "feedbackGraphContract"
       ]
     },
     {
-      "order": 436,
+      "order": 437,
       "file": "src/play/mainBootstrap.js",
       "provides": [
         "mainBootstrap"
       ]
     },
     {
-      "order": 437,
+      "order": 438,
       "file": "src/play/fullBootstrap.js",
       "provides": [
         "fullBootstrap"
