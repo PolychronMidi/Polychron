@@ -155,6 +155,20 @@ dynamismEngine = (() => {
 
     const emissionGate = conductorConfig.getEmissionGateParams();
     const activeRegime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
+    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const couplingMatrix = dynamics && dynamics.couplingMatrix ? dynamics.couplingMatrix : null;
+    const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number'
+      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.74) / 0.18, 0, 1)
+      : 0;
+    const densityTrustPressure = couplingMatrix && typeof couplingMatrix['density-trust'] === 'number'
+      ? clamp((m.abs(couplingMatrix['density-trust']) - 0.72) / 0.18, 0, 1)
+      : 0;
+    const recoveryContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.40, 0, 1);
+    const activeProfileName = conductorConfig.getActiveProfileName();
     let l2Overhang = 0;
     if (LM && LM.activeLayer === 'L2') {
       const recentL1 = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: 8 });
@@ -163,10 +177,13 @@ dynamismEngine = (() => {
         l2Overhang = clamp((recentL2 - recentL1) / m.max(recentL1, 1), 0, 1.5);
       }
     }
+    const lowPhasePressure = clamp((0.05 - phaseShare) / 0.05, 0, 1);
 
     const layerBias = (LM && LM.activeLayer === 'L2')
-      ? (0.10 + (!dynamicRoleSwap.getIsSwapped() && activeRegime === 'exploring' ? 0.03 : 0)) * (1 - clamp(l2Overhang * 0.22, 0, 0.28))
-      : 0;
+      ? (0.10 + (!dynamicRoleSwap.getIsSwapped() && activeRegime === 'exploring' ? 0.03 : 0)) * (1 - clamp(l2Overhang * 0.22 + lowPhasePressure * 0.08 + recoveryContainmentPressure * 0.16, 0, 0.44))
+      : (LM && LM.activeLayer === 'L1' && activeProfileName === 'explosive'
+        ? clamp(0.04 + lowPhasePressure * 0.10 + recoveryContainmentPressure * 0.03 + (activeRegime === 'exploring' ? 0.01 : 0), 0, 0.18)
+        : 0);
     const playOut = clamp(
       inputPlay * (emissionGate.playBase + composite * emissionGate.playScale) +
       layerBias * 0.5 * emissionGate.layerBiasScale,

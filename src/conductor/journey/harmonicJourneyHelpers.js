@@ -75,7 +75,8 @@ harmonicJourneyHelpers = (() => {
 
   const getSectionPhase = (sectionIndex, totalSections) => {
     if (totalSections <= 0) return 'development';
-    const pos = sectionIndex / totalSections;
+    const denominator = m.max(totalSections - 1, 1);
+    const pos = clamp(sectionIndex / denominator, 0, 1);
     if (pos < 0.2) return 'opening';
     if (pos < 0.55) return 'development';
     if (pos < 0.8) return 'climax';

@@ -1,88 +1,152 @@
 {
   "meta": {
-    "generated": "2026-03-21T01:07:17.472Z",
-    "entryCount": 384
+    "generated": "2026-03-23T14:49:06.307Z",
+    "entryCount": 562
   },
   "stats": [
     {
       "section": "S0",
-      "key": "D#",
+      "key": "E",
       "mode": "major",
-      "beats": 182,
-      "avgTension": "0.360",
-      "avgPlayProb": "0.344",
-      "dominantRegime": "coherent",
+      "beats": 105,
+      "avgTension": "0.383",
+      "avgPlayProb": "0.419",
+      "dominantRegime": "exploring",
       "phrases": [
         {
           "phrase": "S0:P0",
-          "beats": 82,
-          "avgTension": "0.194",
-          "noteCount": 17890,
+          "beats": 29,
+          "avgTension": "0.199",
+          "noteCount": 5754,
           "profile": "default"
         },
         {
           "phrase": "S0:P1",
-          "beats": 84,
-          "avgTension": "0.486",
-          "noteCount": 20739,
+          "beats": 30,
+          "avgTension": "0.406",
+          "noteCount": 7055,
           "profile": "default"
         },
         {
           "phrase": "S0:P2",
-          "beats": 16,
-          "avgTension": "0.544",
-          "noteCount": 3639,
+          "beats": 46,
+          "avgTension": "0.484",
+          "noteCount": 10160,
           "profile": "default"
         }
       ]
     },
     {
       "section": "S1",
-      "key": "G",
-      "mode": "minor",
-      "beats": 66,
-      "avgTension": "0.584",
-      "avgPlayProb": "0.478",
+      "key": "Eb",
+      "mode": "major",
+      "beats": 105,
+      "avgTension": "0.838",
+      "avgPlayProb": "0.608",
       "dominantRegime": "exploring",
       "phrases": [
         {
           "phrase": "S1:P0",
-          "beats": 66,
-          "avgTension": "0.584",
-          "noteCount": 14769,
+          "beats": 51,
+          "avgTension": "0.749",
+          "noteCount": 8376,
+          "profile": "restrained"
+        },
+        {
+          "phrase": "S1:P1",
+          "beats": 54,
+          "avgTension": "0.922",
+          "noteCount": 11292,
           "profile": "restrained"
         }
       ]
     },
     {
       "section": "S2",
-      "key": "Bb",
-      "mode": "minor",
-      "beats": 136,
-      "avgTension": "0.590",
-      "avgPlayProb": "0.376",
+      "key": "D#",
+      "mode": "major",
+      "beats": 102,
+      "avgTension": "0.837",
+      "avgPlayProb": "0.537",
       "dominantRegime": "exploring",
       "phrases": [
         {
           "phrase": "S2:P0",
-          "beats": 26,
-          "avgTension": "0.533",
-          "noteCount": 5335,
+          "beats": 37,
+          "avgTension": "0.863",
+          "noteCount": 7986,
           "profile": "default"
         },
         {
           "phrase": "S2:P1",
-          "beats": 54,
-          "avgTension": "0.579",
-          "noteCount": 13648,
+          "beats": 45,
+          "avgTension": "0.838",
+          "noteCount": 11710,
           "profile": "default"
         },
         {
           "phrase": "S2:P2",
-          "beats": 56,
-          "avgTension": "0.626",
-          "noteCount": 13049,
+          "beats": 20,
+          "avgTension": "0.788",
+          "noteCount": 4132,
           "profile": "default"
+        }
+      ]
+    },
+    {
+      "section": "S3",
+      "key": "A",
+      "mode": "minor",
+      "beats": 195,
+      "avgTension": "0.640",
+      "avgPlayProb": "0.486",
+      "dominantRegime": "coherent",
+      "phrases": [
+        {
+          "phrase": "S3:P0",
+          "beats": 53,
+          "avgTension": "0.761",
+          "noteCount": 12557,
+          "profile": "default"
+        },
+        {
+          "phrase": "S3:P1",
+          "beats": 50,
+          "avgTension": "0.604",
+          "noteCount": 11843,
+          "profile": "default"
+        },
+        {
+          "phrase": "S3:P2",
+          "beats": 26,
+          "avgTension": "0.510",
+          "noteCount": 6243,
+          "profile": "default"
+        },
+        {
+          "phrase": "S3:P3",
+          "beats": 66,
+          "avgTension": "0.622",
+          "noteCount": 13673,
+          "profile": "default"
+        }
+      ]
+    },
+    {
+      "section": "S4",
+      "key": "A",
+      "mode": "mixolydian",
+      "beats": 55,
+      "avgTension": "0.501",
+      "avgPlayProb": "0.483",
+      "dominantRegime": "coherent",
+      "phrases": [
+        {
+          "phrase": "S4:P0",
+          "beats": 55,
+          "avgTension": "0.501",
+          "noteCount": 12653,
+          "profile": "explosive"
         }
       ]
     }

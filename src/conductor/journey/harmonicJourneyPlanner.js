@@ -244,12 +244,13 @@ harmonicJourneyPlanner = (() => {
       }
     }
 
-    if (totalSections >= 5 && steps.length > 0) {
+    if (totalSections >= 4 && steps.length > 0) {
       const lastIdx = steps.length - 1;
       const lastStep = steps[lastIdx];
       const lastHomeDistance = HJ.harmonicDistance(lastStep.key, originKey);
       const hasLateClosure = steps.some(function(step) { return typeof step.move === 'string' && step.move.indexOf('return-home') === 0; });
-      if (lastHomeDistance >= 4 && !hasLateClosure) {
+      const lateClosureDistance = totalSections >= 5 ? 4 : 3;
+      if (lastHomeDistance >= lateClosureDistance && !hasLateClosure) {
         const prevKey = lastIdx > 0 ? steps[lastIdx - 1].key : originKey;
         lastStep.key = originKey;
         lastStep.mode = originMode;

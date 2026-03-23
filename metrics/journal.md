@@ -1,3 +1,235 @@
+## R46 — 2026-03-23 — STABLE
+
+**Profile:** explosive | **Beats:** 487 | **Duration:** 96.5s | **Notes:** 21972
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- The form-length intervention worked: the run returned to 5 sections, recovered to 96.5s, and note output rebounded to 8282 / 13690, effectively restoring the R43 surface.
+- This is the first post-R43 run to come back as `SIMILAR` rather than `DIVERGENT` against the R43 baseline snapshot.
+- Exceedance pressure is now controlled again: total exceedance fell 44 -> 18 and current total sits slightly below the R43 baseline's 20.
+- Density-flicker remains the top pair at 10 beats and p95 0.888, so the old sharp tail is still the main unresolved hotspot.
+- Trust pressure stayed reasonable after the form recovery: trust-axis share settled at 0.1704, better than R45 and only modestly above the R43 baseline's 0.1485.
+- Phase recovered enough to avoid collapse but not quite back to the R43 level: hotspot phase share landed at 0.0462, just below the 5% target and below the R43 baseline's 0.0686.
+- Regime balance improved materially from R45: exploring fell 75.6% -> 60.6% and coherent rose 17.6% -> 37.1%, though evolving remains low at 1.6%.
+- The section-count / phrase-count fix is real: `sectionLengthAdvisor` was previously reset at section scope, which meant it could not influence the next section's phrase count at all.
+
+### Evolutions Applied (from R45)
+- E1: Trace and stabilize section-count / form-length selection so the run can stay in the healthier 5-section neighborhood — confirmed — 5 sections returned and the run length recovered to 96.5s.
+- E2: Recover note density from the sparse R45 surface without reopening trust or phase regressions — confirmed — note output and trace volume returned near the R43 surface while trust stayed controlled.
+- E3: Keep entropy-trust detection, but stop density-flicker from reclaiming the field — inconclusive — entropy-trust stayed secondary, but density-flicker remained the top pair.
+- E4: Pull exploring back below 70% without collapsing phase share — confirmed — exploring fell to 60.6%; phase improved versus R45, though it is still slightly under the 5% target.
+- E5: Preserve the R45 crash fix and do not touch the new finite guard in regimeReactiveDamping — confirmed — the run completed cleanly with no recurrence of the flicker NaN path.
+- E6: Keep true home return, but only after restoring enough sections and phrases for the closure to matter musically — confirmed — the long-form shape and home-return closure both returned together.
+
+### Evolutions Proposed (for R47)
+- E1: Push phase back above 5% without giving back the restored five-section density surface — phase-bearing and conductor-local modules
+- E2: Reduce density-flicker p95 below 0.85 while keeping note output near the new recovered surface — local density/flicker containment modules
+- E3: Recover evolving share above 3% without reopening exploring monopoly — regime-resolution and profiling modules
+- E4: Keep entropy-trust secondary while preventing trust-axis creep above the R43 level — trust weighting modules only
+- E5: Preserve the section-length fix as a hard constraint — do not reintroduce section-scope reset on sectionLengthAdvisor
+- E6: Consider a new snapshot only if phase clears target and the restored surface holds for another healthy explosive run
+
+### Hypotheses to Track
+- The biggest structural bug in this block was the sectionLengthAdvisor reset scope; fixing that restored the musical surface more effectively than the earlier local redistributions.
+- The next gains should be incremental again: phase nudging, density-flicker tail reduction, and slightly more evolving share.
+- R46 is close to the R43 baseline shape but not yet clearly better because phase is still slightly under target and density-flicker remains sharp.
+
+---
+
+## R45 — 2026-03-23 — STABLE
+
+**Profile:** explosive | **Beats:** 179 | **Duration:** 40.3s | **Notes:** 9227
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- The runtime failure was fixed: `regimeReactiveDamping` was letting profiler-emitted `NaN` coupling values poison the flicker pipeline, and the finite-value guard removed that crash path.
+- The rollback improved the pressure field relative to R44: phase share rebounded 0.0351 -> 0.1614, trust-axis share fell 0.2341 -> 0.1765, and hotspot top-2 concentration fell 0.875 -> 0.500.
+- The musical surface is still unacceptable: output collapsed further to 4628 / 4599 notes, the run shortened to 40.3s, and the form remained at 4 sections instead of returning to the healthier 5-section R43 shape.
+- Exploring monopoly got worse again: exploring rose to 75.6% while coherent fell to 17.6%.
+- Density-flicker remains the primary blocker: top pair 12 beats, p95 0.949, and total exceedance climbed back to 44.
+- Trust rebound was moderated compared with R44, and entropy-trust no longer dominated the field, so the entropy-trust trust-detection change appears directionally useful.
+- The run kept true home return, but long-form closure quality is still degraded because the piece contracts before that return can do enough structural work.
+- This run is intentionally not snapshotted because it is even sparser than R44 and materially worse than the R43 baseline despite the crash fix and pressure recovery.
+
+### Evolutions Applied (from R44)
+- E1: Revert the over-tightened R44 musical redistribution while keeping entropy-trust visible to trust logic — inconclusive — the crash path is gone and pressure balance improved, but the musical surface stayed too sparse.
+- E2: Recover the R43 five-section / above-target phase shape before attempting any new expressive lift — refuted — phase recovered strongly, but the form stayed at 4 sections and never returned to the R43 long-form shape.
+- E3: Keep entropy-trust as an explicit trust hotspot, but avoid broad trust-axis rebound — confirmed — entropy-trust stopped monopolizing the field and trust-axis share fell 0.2341 -> 0.1765.
+- E4: Restore the healthier L1/L2 output balance from R43 before trying to add more contrast — refuted — the layers equalized only by collapsing both outputs.
+- E5: Re-test density-flicker containment from the R43 baseline without adding new global suppression — refuted — density-flicker p95 rose to 0.949 and total exceedance returned to 44.
+- E6: Preserve true home return and long-form closure as hard constraints — refuted — home return survived, but the long-form closure condition failed because the piece stayed at 4 sections.
+
+### Evolutions Proposed (for R46)
+- E1: Trace and stabilize section-count / form-length selection so the run can stay in the healthier 5-section neighborhood — form / section planning modules
+- E2: Recover note density from the sparse R45 surface without reopening trust or phase regressions — profile/form and emission-shaping modules
+- E3: Keep entropy-trust detection, but stop density-flicker from reclaiming the field — local density/flicker containment modules only
+- E4: Pull exploring back below 70% without collapsing phase share — regime-resolution and form-pressure interaction
+- E5: Preserve the R45 crash fix and do not touch the new finite guard in regimeReactiveDamping
+- E6: Keep true home return, but only after restoring enough sections and phrases for the closure to matter musically
+
+### Hypotheses to Track
+- The remaining blocker is now structural form length more than trust weighting: short runs are starving note count and forcing unstable regime balance.
+- Entropy-trust recognition is worth keeping, but it is not sufficient to recover the overall musical surface.
+- The next useful step is to find where section count and phrase count are being decided, then bias that mechanism back toward the R43 long-form shape.
+
+---
+
+## R44 — 2026-03-23 — STABLE
+
+**Profile:** explosive | **Beats:** 240 | **Duration:** 52.9s | **Notes:** 11774
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- This round is a structural regression despite fingerprint stability: section count fell 5 -> 4, the run shortened to 52.9s, and output collapsed to 5533 / 6241 notes.
+- The new localized redistribution failed to preserve the R43 health gains: phase share fell 0.0686 -> 0.0351 and trust-axis share rebounded 0.1485 -> 0.2341.
+- Density-flicker immediately reclaimed top-pair status at 15 beats, and hotspot top-2 concentration rose 0.700 -> 0.875.
+- Entropy-trust concentration was reduced, but only by flattening the surface and shifting pressure back into density/flicker/trust interactions.
+- Regime balance stayed statistically acceptable, but evolving share fell 5.0% -> 1.9% and transition count dropped to 3.
+- Late closure still held via return-home (late-closure), but the journey contracted into a four-section form and lost the healthier long-form shape from R43.
+- Telemetry score improved numerically to 0.4811, but coverage quality actually worsened in the ways that matter here: under-seen pairs rose 1 -> 4 and max gap rose 0.1107 -> 0.23.
+- This run is intentionally not snapshotted because it gives back the R43 musical gains while re-concentrating hotspot pressure.
+
+### Evolutions Applied (from R43)
+- E1: Lift L1 output further without restoring the old trust/flicker hotspot field — refuted — output1 fell 8271 -> 5533 and the hotspot field worsened.
+- E2: Bring density-flicker p95 back under 0.85 while preserving the new phase share — refuted — density-flicker p95 stayed at 0.895 and phase share fell to 0.0351.
+- E3: Defuse the new entropy-trust concentration without flattening the texture — refuted — entropy-trust lost top-pair status, but the texture flattened and trust share spiked back up.
+- E4: Keep phase above target as note counts rise, especially through late sections — refuted — phase fell below target and both layer outputs dropped sharply.
+- E5: Raise explosive section contrast without losing the healthier release shape — refuted — the run shortened, section count collapsed, and the arc cooled too far to [0.394, 0.594, 0.482, 0.378].
+- E6: Continue widening modal travel while keeping a true home return — inconclusive — home return survived, but the form contracted and the late closure became more fragile.
+
+### Evolutions Proposed (for R45)
+- E1: Revert the over-tightened R44 musical redistribution while keeping entropy-trust visible to trust logic — conductorConfigDynamics.js, sectionIntentCurves.js, crossLayerClimaxEngine.js, dynamicRoleSwap.js
+- E2: Recover the R43 five-section / above-target phase shape before attempting any new expressive lift — profile selection and phase-bearing modules
+- E3: Keep entropy-trust as an explicit trust hotspot, but avoid broad trust-axis rebound — adaptiveTrustScores helpers and weighting only
+- E4: Restore the healthier L1/L2 output balance from R43 before trying to add more contrast — dynamismEngine.js or softer late-section profile logic if needed
+- E5: Re-test density-flicker containment from the R43 baseline without adding new global suppression — conductor-free local musical changes only
+- E6: Preserve true home return and long-form closure as hard constraints — no new harmonic contraction changes until the surface is healthy again
+
+### Hypotheses to Track
+- The late-development explosive override and cross-layer contrast lifts were too strong together and collapsed the healthier long-form pacing from R43.
+- Entropy-trust recognition should stay, but the surrounding musical redistribution needs to be rolled back toward the R43 shape.
+- The next useful move is a narrow rollback, not another fresh set of aggressive redistributions.
+- R43 remains the correct behavioral anchor until a cleaner successor is demonstrated.
+
+---
+
+## R43 — 2026-03-23 — STABLE
+
+**Profile:** explosive | **Beats:** 440 | **Duration:** 84.1s | **Notes:** 21311
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- The containment round worked: total exceedance beats collapsed 82 -> 20, unique exceedance beats fell 34 -> 16, and check-manifest-health returned PASS.
+- Phase finally recovered into the target zone: hotspot phase share rose 0.0170 -> 0.0686, above the 5% floor, while trust-axis share fell 0.2056 -> 0.1485.
+- The worst R42 pairs were contained: density-trust p95 fell 0.789 -> 0.769, flicker-trust p95 fell 0.809 -> 0.671, and the top pair moved off density-flicker onto entropy-trust at 8 beats.
+- Structural gains held: the run stayed explosive, stayed five-section, and still resolved via a true return-home path.
+- Regime balance stayed healthy after the containment pass: coherent 35.7%, exploring 58.3%, evolving 5.0%.
+- Output recovered unevenly: output1 improved 7257 -> 8271 and output2 improved 10310 -> 13040, but L1 is still well below the explosive baseline and L2 still leads too heavily.
+- Density-flicker no longer dominates the exceedance field, but it remains the sharpest tail risk with p95 0.8947.
+- Telemetry quality became cleaner in coverage terms (under-seen pairs 5 -> 1, max gap 0.2809 -> 0.1107), even though the aggregate telemetry score fell to 0.3173.
+
+### Evolutions Applied (from R42)
+- E1: Re-lift phase above 5% without re-opening the broad coupling field — confirmed — phase share rose to 0.0686 while total exceedance fell 82 -> 20.
+- E2: Keep the R42 regime rebalance while sharply containing density-flicker and density-trust — confirmed — regime balance stayed diverse and the hotspot field compressed sharply, even though density-flicker p95 remains high.
+- E3: Recover L1 specifically while cutting L2 dominance instead of adding general density — inconclusive — output1 improved from 7257 to 8271, but output2 also rose and still dominates the surface.
+- E4: Stop trust-axis rebound under explosive profile once density rises — confirmed — trust-axis share dropped 0.2056 -> 0.1485 under the explosive profile.
+- E5: Preserve the cool final release while preventing early coherent coupling collapses — inconclusive — manifest health passed and the ending remained controlled, but the overall arc reheated to [0.477, 0.833, 0.564, 0.517].
+- E6: Maintain true return-home closure while widening modal color away from the final tonic — confirmed — the route returned home while shifting the tonal path toward a D mixolydian frame.
+
+### Evolutions Proposed (for R44)
+- E1: Lift L1 output further without restoring the old trust/flicker hotspot field — dynamismEngine.js and role-swap interplay
+- E2: Bring density-flicker p95 back under 0.85 while preserving the new phase share — globalConductor.js and regimeReactiveDamping.js
+- E3: Defuse the new entropy-trust concentration without flattening the texture — trust weighting and entropy-shaping modules
+- E4: Keep phase above target as note counts rise, especially through late sections — phaseLockedRhythmGenerator.js and cross-layer intent/climax modules
+- E5: Raise explosive section contrast without losing the healthier release shape — sectionIntentCurves.js and crossLayerClimaxEngine.js
+- E6: Continue widening modal travel while keeping a true home return — harmonicJourneyPlanner.js or helpers
+
+### Hypotheses to Track
+- The conductor-level containment logic is now strong enough; the next gains should come from more specific musical redistribution rather than more global trimming.
+- L1 recovery still needs a direct melodic/emission push, because broad surface recovery still favors L2 too much.
+- Entropy-trust is the next likely monopoly candidate now that density-flicker and density-trust are contained.
+- The structural closure fix appears stable enough to preserve while pushing for stronger section contrast.
+
+---
+
+## R42 — 2026-03-23 — STABLE
+
+**Profile:** explosive | **Beats:** 343 | **Duration:** 60.3s | **Notes:** 23115
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- The structural win held: the run stayed explosive, stayed five-section, and still closed with a true return-home path (C aeolian -> E major -> G minor -> B minor -> C aeolian).
+- Exploring monopoly was corrected: exploring fell 85.6% -> 54.7%, coherent rose 12.5% -> 39.3%, and evolving rose to 4.7%.
+- The fix blew open the hotspot field: total exceedance beats jumped 10 -> 82, density-flicker rose 5 -> 18 beats, density-trust p95 reached 0.789, and check-manifest-health flagged coherent flicker-entropy at -0.847.
+- Phase did not recover: hotspot phase share slipped 0.0189 -> 0.0170, still far below the 5% target.
+- Trust-axis pressure came back with the surface expansion: trust share rebounded 0.2211 -> 0.2056 instead of continuing down.
+- The run became denser in conductor state (density mean 0.430 -> 0.524), but not in useful output balance: L1 remained weak relative to L2 and the note surface stayed structurally imbalanced.
+- Final-release shape remained controlled: the arc stayed cool at [0.454, 0.618, 0.396, 0.443], much better than the pre-R41 hot ending.
+- This run is intentionally not snapshotted because it traded regime health for a severe coupling rebound while still missing the phase target.
+
+### Evolutions Applied (from R41)
+- E1: Restore phase above 5% without giving back the new final-release shape — refuted — the release shape stayed cool, but phase share remained stuck at 0.0170.
+- E2: Pull exploring share back from monopoly now that four-/five-section resolution works structurally — confirmed — exploring dropped 85.6% -> 54.7% and coherent rose 12.5% -> 39.3%.
+- E3: Recover L1 density specifically instead of raising the whole surface indiscriminately — refuted — the surface expanded through conductor density, but L1 still did not recover into a healthy explosive lead role.
+- E4: Prevent trust-axis rebound while density-flicker stays low — refuted — trust share rebounded to 0.2056 and density-flicker jumped to 18 exceedance beats.
+- E5: Fix the density-pipeline crush verdict without reopening the old hotspot field — refuted — the density crush symptom moved into a broad compositional coupling rebound instead of resolving.
+- E6: Preserve late-closure behavior while avoiding locrian over-concentration across the route — confirmed — the route stayed varied and closed home without the previous locrian lock.
+
+### Evolutions Proposed (for R43)
+- E1: Re-lift phase above 5% without re-opening the broad coupling field — phaseLockedRhythmGenerator.js and phaseFloorController.js
+- E2: Keep the R42 regime rebalance while sharply containing density-flicker and density-trust — conductorDampening.js, globalConductor.js, or trust helpers
+- E3: Recover L1 specifically while cutting L2 dominance instead of adding general density — dynamismEngine.js and role-swap interplay
+- E4: Stop trust-axis rebound under explosive profile once density rises — adaptiveTrustScores.js or adaptiveTrustScoresHelpers.js
+- E5: Preserve the cool final release while preventing early coherent coupling collapses — conductor density/tension shaping modules
+- E6: Maintain true return-home closure while widening modal color away from the final tonic — harmonic journey modules
+
+### Hypotheses to Track
+- The R42 regime correction was real, but the recovery lane was too broad and fed hotspot pairs instead of phase.
+- Density-flicker and density-trust are now the main blockers; fixing them cleanly should allow phase rescue without another exploring monopoly.
+- L1 still needs a dedicated recovery path, because raising overall conductor density mostly benefits the wrong layer.
+- The structural resolution and closure fixes are now stable enough to treat as constraints rather than open questions.
+
+---
+
+## R41 — 2026-03-23 — STABLE
+
+**Profile:** explosive | **Beats:** 510 | **Duration:** 95.2s | **Notes:** 23115
+**Fingerprint:** 11/11 stable | Drifted: none
+
+### Key Observations
+- The structural fixes worked: the run stayed explosive, totalSections returned to 5, and the route finally closed home with C# locrian -> G# locrian -> D# locrian -> F# major -> C# locrian.
+- Final release is materially better than R40: the arc cooled to [0.492, 0.734, 0.469, 0.315], section-4 avg tension fell to 0.455, and total exceedance dropped 30 -> 10.
+- The cost was a new phase regression: hotspot phase share fell 0.1397 -> 0.0189, below the 5% target again.
+- Exploring monopolized the run: exploring rose to 85.6% and coherent fell to 12.5%, even though max consecutive coherent shrank to 64.
+- Density-flicker stayed as top pair but softened further to 5 beats; however trust-axis share rebounded to 0.2211 and density pipeline coherence emitted a critical verdict.
+- Output shape is still too sparse for the explosive lineage on L1: output1 fell to 8128 (-48.8% vs the explosive baseline), while L2 remained comparatively high at 14987.
+- Telemetry remained usable with under-seen pairs down at 2, but health score slipped back to 0.386 as phase weakened.
+- This run is intentionally not snapshotted because the structural fixes landed, but phase share and regime balance regressed too far.
+
+### Evolutions Applied (from R40)
+- E1: Reduce cross-profile variance so explosive rounds stay comparable to the explosive baseline — confirmed — the run stayed on explosive profile and removed the default-profile confound from R40.
+- E2: Recover explosive output density without reintroducing the old L2 overshoot — refuted — L1 output collapsed to 8128 and the surface stayed too sparse despite explosive profile context.
+- E3: Preserve the R40 regime rebalance while restoring a true final release — confirmed — the ending cooled sharply and the final section behaved like a real release.
+- E4: Keep tension-trust subdued and cut density-flicker without flattening the surface — inconclusive — tension-trust fell to 2 beats, density-flicker held at 5, but the overall surface flattened too much and trust-axis share rebounded.
+- E5: Make late closure logic work for both four-section and five-section forms — confirmed — the five-section journey ended with return-home (late-closure).
+- E6: Hold phase above target while note density comes back up — refuted — phase share fell 0.1397 -> 0.0189 while exploring surged.
+
+### Evolutions Proposed (for R42)
+- E1: Restore phase above 5% without giving back the new final-release shape — phaseLockedRhythmGenerator.js and phaseFloorController.js
+- E2: Pull exploring share back from monopoly now that four-/five-section resolution works structurally — regimeClassifierResolution.js
+- E3: Recover L1 density specifically instead of raising the whole surface indiscriminately — dynamismEngine.js or role-swap interplay
+- E4: Prevent trust-axis rebound while density-flicker stays low — adaptiveTrustScores helpers or axis-energy modules
+- E5: Fix the density-pipeline crush verdict without reopening the old hotspot field — conductor density shaping modules
+- E6: Preserve late-closure behavior while avoiding locrian over-concentration across the route — harmonic journey modules
+
+### Hypotheses to Track
+- The four-section phase bug and late-closure gap were real root causes, and both are now corrected.
+- The new sparse explosive surface is starving phase-bearing events again; this time the fix should target L1 recovery and phase lanes directly, not global density.
+- Exploring monopoly appears to be a reaction to the thinner density field rather than a direct consequence of the release fix itself.
+- Trust-axis rebound is now secondary pressure caused by the new density crush path, not by the old tension-trust monopoly.
+
+---
+
 ## R40 — 2026-03-23 — STABLE
 
 **Profile:** default | **Beats:** 507 | **Duration:** 99.2s | **Notes:** 21478

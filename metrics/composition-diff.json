@@ -1,114 +1,121 @@
 {
   "meta": {
-    "generated": "2026-03-23T12:02:56.599Z",
+    "generated": "2026-03-23T15:30:23.729Z",
     "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
     "dirB": "/home/jah/Polychron/metrics",
-    "traceSizeA": 894,
-    "traceSizeB": 637,
+    "traceSizeA": 562,
+    "traceSizeB": 579,
     "sectionsA": 5,
-    "sectionsB": 4
+    "sectionsB": 5
   },
   "diffs": [
-    {
-      "type": "section-count",
-      "severity": "major",
-      "detail": "Section count: 5 -> 4"
-    },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 0,
-      "detail": "Section 0: A# dorian -> G phrygian"
+      "detail": "Section 0: D mixolydian -> Gb dorian"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 0,
+      "detail": "Section 0 regime 'coherent': 61.8% -> 35.8%"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 0,
+      "detail": "Section 0 regime 'exploring': 11.8% -> 44.8%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 1,
-      "detail": "Section 1: B major -> A phrygian"
+      "detail": "Section 1: G# major -> E dorian"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
       "section": 1,
-      "detail": "Section 1: 2 phrases -> 3 phrases"
+      "detail": "Section 1: 2 phrases -> 1 phrases"
     },
     {
       "type": "tension-shift",
       "severity": "moderate",
       "section": 1,
-      "detail": "Section 1 avg tension: 0.937 -> 0.645"
+      "detail": "Section 1 avg tension: 0.771 -> 0.606"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 1,
+      "detail": "Section 1 regime 'exploring': 100.0% -> 0.0%"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 1,
+      "detail": "Section 1 regime 'coherent': 0.0% -> 100.0%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 2,
-      "detail": "Section 2: A major -> D phrygian"
+      "detail": "Section 2: A# major -> A dorian"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
       "section": 2,
-      "detail": "Section 2: 4 phrases -> 3 phrases"
+      "detail": "Section 2: 3 phrases -> 2 phrases"
     },
     {
       "type": "tension-shift",
       "severity": "moderate",
       "section": 2,
-      "detail": "Section 2 avg tension: 0.901 -> 0.680"
-    },
-    {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 2,
-      "detail": "Section 2 regime 'exploring': 60.9% -> 97.1%"
-    },
-    {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 2,
-      "detail": "Section 2 regime 'coherent': 39.1% -> 2.9%"
+      "detail": "Section 2 avg tension: 0.849 -> 0.593"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 3,
-      "detail": "Section 3: G major -> Ab major"
+      "detail": "Section 3: C major -> C# major"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
       "section": 3,
-      "detail": "Section 3: 2 phrases -> 3 phrases"
+      "detail": "Section 3: 4 phrases -> 2 phrases"
+    },
+    {
+      "type": "tension-shift",
+      "severity": "moderate",
+      "section": 3,
+      "detail": "Section 3 avg tension: 0.602 -> 0.714"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 3,
-      "detail": "Section 3 regime 'coherent': 5.0% -> 100.0%"
+      "detail": "Section 3 regime 'exploring': 64.7% -> 86.5%"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 3,
-      "detail": "Section 3 regime 'exploring': 95.0% -> 0.0%"
+      "detail": "Section 3 regime 'coherent': 35.3% -> 13.5%"
     },
     {
-      "type": "section-removed",
-      "severity": "major",
+      "type": "harmonic-change",
+      "severity": "notable",
       "section": 4,
-      "detail": "Section 4 removed (was key=F dorian)"
+      "detail": "Section 4: D mixolydian -> B dorian"
     },
     {
-      "type": "note-count",
+      "type": "phrase-count",
       "severity": "moderate",
-      "layer": "output1",
-      "detail": "output1: 15890 notes -> 9912 notes (37.6% change)"
-    },
-    {
-      "type": "note-count",
-      "severity": "moderate",
-      "layer": "output2",
-      "detail": "output2: 18203 notes -> 11566 notes (36.5% change)"
+      "section": 4,
+      "detail": "Section 4: 2 phrases -> 3 phrases"
     }
   ]
 }

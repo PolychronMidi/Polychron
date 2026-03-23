@@ -152,10 +152,19 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
 
   const applyPhaseProfile = (opts = {}) => {
     const phase = harmonicContext.getField('sectionPhase');
-
-    const profileName = PHASE_PROFILE_MAP[phase] || 'default';
     const outgoing = getActiveProfile();
     const outgoingName = getActiveProfileName();
+    const finalSection = V.optionalFinite(totalSections, 0) > 0 && V.optionalFinite(sectionIndex, -1) === totalSections - 1;
+    const hints = safePreBoot.call(() => profileAdaptation.getHints(), null);
+    const explosiveHint = hints && typeof hints.explosiveHint === 'number' ? hints.explosiveHint : 0;
+    const restrainedHint = hints && typeof hints.restrainedHint === 'number' ? hints.restrainedHint : 0;
+    let profileName = PHASE_PROFILE_MAP[phase] || 'default';
+
+    if ((phase === 'resolution' || phase === 'conclusion') && finalSection) {
+      profileName = explosiveHint > 0.2
+        ? 'explosive'
+        : (outgoingName === 'explosive' && restrainedHint < 0.45 ? 'explosive' : profileName);
+    }
 
     setActiveProfile(profileName);
 

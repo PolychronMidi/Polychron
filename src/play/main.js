@@ -48,7 +48,8 @@ traceDrain.init();
 // After initialization, validate that registries are sensibly populated.
 mainBootstrap.assertRegistryPopulation();
 
-totalSections = ri(SECTIONS.min, SECTIONS.max);
+const preferLongForm = SECTIONS.max > SECTIONS.min && SECTIONS.max >= 5 && rf() < 0.72;
+totalSections = preferLongForm ? SECTIONS.max : ri(SECTIONS.min, SECTIONS.max);
 mainBootstrap.requireFiniteNumber('totalSections', totalSections);
 if (totalSections <= 0) {
   throw new Error('main: totalSections must be > 0');
@@ -87,6 +88,9 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   mainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
   if (phrasesPerSection <= 0) {
     throw new Error('main: phrasesPerSection must be > 0');
+  }
+  if (totalSections <= 4 && phrasesPerSection < 2) {
+    phrasesPerSection = 2;
   }
 
   // Let sectionLengthAdvisor adjust phrase count based on energy trajectory

@@ -38,7 +38,7 @@ phaseFloorController = (() => {
   function getLowShareThreshold() {
     const persistentLowSharePressure = clamp((0.04 - phaseFloorControllerShareEma) / 0.04, 0, 1);
     return clamp(
-      m.max(getCollapseThreshold() + 0.007, phaseFloorControllerShareEma * 0.28, 0.028 + persistentLowSharePressure * 0.024),
+      m.max(getCollapseThreshold() + 0.008, phaseFloorControllerShareEma * 0.30, 0.03 + persistentLowSharePressure * 0.024),
       0.015, 0.08
     );
   }
@@ -53,7 +53,7 @@ phaseFloorController = (() => {
     const coherentPressure = clamp((phaseFloorControllerCoherentStreakEma - 20) / 40, 0, 1);
     const persistentLowSharePressure = clamp((0.035 - phaseFloorControllerShareEma) / 0.035, 0, 1);
     // When coherent streaks are long (>40), activate faster (fewer beats)
-    return m.round(clamp(12 - coherentPressure * 8 - persistentLowSharePressure * 4, 4, 18));
+    return m.round(clamp(11 - coherentPressure * 8 - persistentLowSharePressure * 5, 4, 18));
   }
 
   function getExtremeCollapseStreak() {

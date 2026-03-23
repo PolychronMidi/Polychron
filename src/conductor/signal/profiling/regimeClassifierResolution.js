@@ -51,6 +51,7 @@ regimeClassifierResolution = (() => {
     const runExploringShare = state.runBeatCount > 0
       ? ((state.runResolvedRegimeCounts.exploring || 0) / state.runBeatCount)
       : 0;
+    const shortFormPressure = state.V.optionalFinite(totalSections, 0) > 0 && totalSections <= 4 ? 1 : 0;
     state.rawRegimeCounts[rawRegime] = (state.rawRegimeCounts[rawRegime] || 0) + 1;
     state.runRawRegimeCounts[rawRegime] = (state.runRawRegimeCounts[rawRegime] || 0) + beatSpan;
 
@@ -75,6 +76,13 @@ regimeClassifierResolution = (() => {
     if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && state.exploringBeats >= config.EXPLORING_MAX_DWELL) {
       forceRegimeTransition('evolving', 'exploring-max-dwell', 3);
     }
+    const exploringMonopolyThreshold = shortFormPressure > 0 ? 0.68 : 0.74;
+    const exploringMonopolyMinDwell = shortFormPressure > 0
+      ? m.max(12, m.floor(config.EXPLORING_MAX_DWELL * 0.45))
+      : m.max(16, m.floor(config.EXPLORING_MAX_DWELL * 0.55));
+    if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && runExploringShare > exploringMonopolyThreshold && state.exploringBeats >= exploringMonopolyMinDwell) {
+      forceRegimeTransition('evolving', 'exploring-share-monopoly', 4, state.exploringBeats, tickId);
+    }
 
     let resolvedRegime = state.lastRegime;
     state.forcedOverrideActive = false;
@@ -96,11 +104,11 @@ regimeClassifierResolution = (() => {
         ? ((state.runResolvedRegimeCounts.evolving || 0) / state.runBeatCount)
         : 0;
       const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
-      const phaseHealthyExploringPressure = phaseShare > 0.08
+      const phaseHealthyExploringPressure = phaseShare > 0.06
         ? clamp((runExploringShare - 0.68) / 0.12, 0, 1)
         : 0;
       const requiredHits = rawRegime === 'exploring'
-        ? (phaseHealthyExploringPressure > 0 ? 3 : 2)
+        ? (phaseHealthyExploringPressure > 0 || shortFormPressure > 0 ? 3 : 2)
         : (rawRegime === 'evolving' && evolvingDeficit > 0.15 ? 2 : config.REGIME_MAJORITY);
 
       if (windowHits >= requiredHits) {

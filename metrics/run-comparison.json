@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-23T12:02:55.949Z",
+    "generated": "2026-03-23T15:30:23.252Z",
     "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
     "dirB": "/home/jah/Polychron/metrics"
   },
@@ -10,15 +10,15 @@
       "metrics": [
         {
           "metric": "output1 notes",
-          "A": 15890,
-          "B": 9912,
-          "change": "-37.6%"
+          "A": 8271,
+          "B": 8282,
+          "change": "0.1%"
         },
         {
           "metric": "output2 notes",
-          "A": 18203,
-          "B": 11566,
-          "change": "-36.5%"
+          "A": 13040,
+          "B": 13690,
+          "change": "5.0%"
         }
       ]
     },
@@ -27,68 +27,68 @@
       "metrics": [
         {
           "metric": "pitchEntropy",
-          "A": "6.464",
-          "B": "6.408"
+          "A": "6.453",
+          "B": "6.369"
         },
         {
           "metric": "densityMean",
-          "A": "0.485",
-          "B": "0.466"
+          "A": "0.481",
+          "B": "0.437"
         },
         {
           "metric": "densityVariance",
-          "A": "0.0119",
-          "B": "0.0048"
+          "A": "0.0128",
+          "B": "0.0072"
         },
         {
           "metric": "trustConvergence",
-          "A": "0.307",
-          "B": "0.286"
+          "A": "0.318",
+          "B": "0.315"
         },
         {
           "metric": "tensionArc",
           "A": [
-            "0.568",
-            "0.953",
-            "0.716",
-            "0.604"
+            "0.477",
+            "0.833",
+            "0.564",
+            "0.517"
           ],
           "B": [
-            "0.507",
-            "0.636",
-            "0.834",
-            "0.821"
+            "0.350",
+            "0.619",
+            "0.483",
+            "0.309"
           ]
         },
         {
           "metric": "exceedanceSeverity (beats)",
-          "A": 45,
-          "B": 30
+          "A": 20,
+          "B": 18
         },
         {
           "metric": "hotspotTopPair",
-          "A": "density-flicker",
+          "A": "entropy-trust",
           "B": "density-flicker"
         },
         {
           "metric": "hotspotTop2Concentration",
-          "A": "0.4222",
-          "B": "0.4667"
+          "A": "0.7000",
+          "B": "0.6667"
         },
         {
           "metric": "hotspotTrustAxisShare",
-          "A": "0.2045",
-          "B": "0.1145"
+          "A": "0.1485",
+          "B": "0.1704"
         },
         {
           "metric": "hotspotPhaseAxisShare",
-          "A": "0.0500",
-          "B": "0.1397"
+          "A": "0.0686",
+          "B": "0.0462"
         },
         {
           "metric": "telemetryHealthScore",
-          "A": "0.4983",
-          "B": "0.5128"
+          "A": "0.3173",
+          "B": "0.4693"
         },
         {
           "metric": "telemetryPhaseIntegrity",
@@ -97,8 +97,8 @@
         },
         {
           "metric": "telemetryUnderSeenPairs",
-          "A": 6,
-          "B": 4
+          "A": 1,
+          "B": 3
         }
       ]
     },
@@ -107,23 +107,23 @@
       "metrics": [
         {
           "metric": "coherent",
-          "A": "34.0%",
-          "B": "42.2%"
+          "A": "35.7%",
+          "B": "37.1%"
         },
         {
           "metric": "evolving",
-          "A": "1.4%",
-          "B": "1.4%"
+          "A": "5.0%",
+          "B": "1.6%"
         },
         {
           "metric": "exploring",
-          "A": "64.2%",
-          "B": "55.8%"
+          "A": "58.3%",
+          "B": "60.6%"
         },
         {
           "metric": "initializing",
-          "A": "0.5%",
-          "B": "0.6%"
+          "A": "0.9%",
+          "B": "0.7%"
         }
       ]
     },
@@ -132,48 +132,48 @@
       "metrics": [
         {
           "metric": "cadenceAlignment",
-          "A": "0.180",
-          "B": "0.162"
+          "A": "0.186",
+          "B": "0.183"
         },
         {
           "metric": "coherenceMonitor",
-          "A": "0.534",
-          "B": "0.525"
+          "A": "0.549",
+          "B": "0.540"
         },
         {
           "metric": "convergence",
-          "A": "0.205",
-          "B": "0.202"
+          "A": "0.209",
+          "B": "0.207"
         },
         {
           "metric": "entropyRegulator",
-          "A": "0.282",
-          "B": "0.196"
+          "A": "0.267",
+          "B": "0.348"
         },
         {
           "metric": "feedbackOscillator",
-          "A": "0.252",
-          "B": "0.256"
+          "A": "0.275",
+          "B": "0.261"
         },
         {
           "metric": "phaseLock",
-          "A": "0.457",
-          "B": "0.433"
+          "A": "0.476",
+          "B": "0.467"
         },
         {
           "metric": "restSynchronizer",
-          "A": "0.244",
-          "B": "0.239"
+          "A": "0.248",
+          "B": "0.261"
         },
         {
           "metric": "roleSwap",
-          "A": "0.210",
-          "B": "0.184"
+          "A": "0.221",
+          "B": "0.201"
         },
         {
           "metric": "stutterContagion",
-          "A": "0.401",
-          "B": "0.372"
+          "A": "0.430",
+          "B": "0.367"
         }
       ]
     },
@@ -182,23 +182,23 @@
       "metrics": [
         {
           "metric": "traceEntries",
-          "A": 894,
-          "B": 637
+          "A": 562,
+          "B": 579
         },
         {
           "metric": "avgTension",
-          "A": "0.784",
-          "B": "0.657"
+          "A": "0.657",
+          "B": "0.526"
         },
         {
           "metric": "avgPlayProb",
-          "A": "0.432",
-          "B": "0.408"
+          "A": "0.433",
+          "B": "0.406"
         },
         {
           "metric": "traceEmbeddedNotes",
-          "A": 198971,
-          "B": 134832
+          "A": 123434,
+          "B": 126063
         }
       ]
     },
@@ -218,5 +218,5 @@
       ]
     }
   ],
-  "verdict": "DIVERGENT"
+  "verdict": "SIMILAR"
 }

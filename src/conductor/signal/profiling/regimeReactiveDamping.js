@@ -178,6 +178,25 @@ regimeReactiveDamping = (() => {
       lowVelStreak = 0;
     }
 
+    const couplingMatrix = snap ? snap.couplingMatrix : null;
+    const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
+      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.76) / 0.18, 0, 1)
+      : 0;
+    const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number' && Number.isFinite(couplingMatrix['flicker-trust'])
+      ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
+      : 0;
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
+    const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
+    const regimeFlickerHotspotBrake = clamp(
+      (densityFlickerPressure * 0.10 + flickerTrustPressure * 0.08 + lowPhasePressure * 0.05) * ((currentRegime === 'exploring' || currentRegime === 'coherent') ? 1 : 0.6),
+      0,
+      0.18
+    );
+
     // Compute raw bias values with equilibrator corrections (#2)
     const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD;
     // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
@@ -188,7 +207,7 @@ regimeReactiveDamping = (() => {
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
     const sectionTensionNudge = sectionProgress * 0.03;
     const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - regimeFlickerHotspotBrake;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
     regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);
