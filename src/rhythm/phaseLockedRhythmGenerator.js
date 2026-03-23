@@ -117,11 +117,26 @@ phaseLockedRhythmGenerator = (() => {
       const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1.5);
       const needsPhaseRescue = phaseShare < lowPhaseThreshold;
       const deepPhaseCollapse = phaseShare < collapseThreshold;
-      if (activeLayer === 'L2' && ((snap && snap.regime === 'exploring' && (sectionProgress > 0.25 || textureStarved)) || needsPhaseRescue)) {
-        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + (deepPhaseCollapse ? 0.35 : 0))));
+      const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
+      const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number'
+        ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.74) / 0.18, 0, 1)
+        : 0;
+      const densityTrustPressure = couplingMatrix && typeof couplingMatrix['density-trust'] === 'number'
+        ? clamp((m.abs(couplingMatrix['density-trust']) - 0.72) / 0.18, 0, 1)
+        : 0;
+      const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number'
+        ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
+        : 0;
+      const rescueContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.25 + flickerTrustPressure * 0.15, 0, 1);
+      if (activeLayer === 'L2' && ((snap && snap.regime === 'exploring' && (sectionProgress > 0.25 || textureStarved)) || needsPhaseRescue) && (deepPhaseCollapse || rescueContainmentPressure < 0.75)) {
+        const rescueTrim = 1 - rescueContainmentPressure * (deepPhaseCollapse ? 0.30 : 0.60);
+        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + (deepPhaseCollapse ? 0.35 : 0)) * rescueTrim));
         offset += phasePush;
-      } else if (activeLayer === 'L1' && deepPhaseCollapse && sectionProgress > 0.12) {
-        const phasePush = m.max(1, m.round((0.35 + sectionProgress * 0.5) * (1 + lowPhasePressure * 0.5)));
+      } else if (activeLayer === 'L1' && needsPhaseRescue && sectionProgress > 0.08) {
+        const phasePush = m.max(
+          1 + (deepPhaseCollapse ? 1 : 0),
+          m.round((0.45 + sectionProgress * 0.55) * (1 + lowPhasePressure * 0.8 + rescueContainmentPressure * 0.30 + (deepPhaseCollapse ? 0.25 : 0)))
+        );
         offset += phasePush;
       }
     } catch {

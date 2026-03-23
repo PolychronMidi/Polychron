@@ -25,28 +25,33 @@ sectionLengthAdvisor = (() => {
    * @returns {number} - adjusted phrase count (always >= 2)
    */
   function advisePhraseCount(baseCount) {
-    if (energyHistory.length < 4) return baseCount;
+    let effectiveBaseCount = baseCount;
+    const shortFormPressure = V.optionalFinite(totalSections, 0) > 0 && totalSections <= 4 ? 1 : 0;
+    if (shortFormPressure > 0 && effectiveBaseCount < 2) {
+      effectiveBaseCount = 2;
+    }
+    if (energyHistory.length < 4) return effectiveBaseCount;
 
     const recent = energyHistory.slice(-4);
     const trend = (recent[3] - recent[0]) / 3;
     const currentEnergy = recent[3];
 
     // Building energy - extend (up to +2)
-    if (trend > 0.06 && currentEnergy > 0.4) {
-      return m.min(baseCount + m.round(trend * 15), baseCount + 2);
+    if (trend > 0.05 && currentEnergy > 0.36) {
+      return m.min(effectiveBaseCount + m.round(trend * 15) + shortFormPressure, effectiveBaseCount + 2);
     }
 
     // High sustained energy - keep extended
-    if (currentEnergy > 0.75 && trend > -0.02) {
-      return m.min(baseCount + 1, baseCount + 2);
+    if ((currentEnergy > 0.75 && trend > -0.02) || (shortFormPressure > 0 && currentEnergy > 0.55 && trend > -0.04)) {
+      return m.min(effectiveBaseCount + 1, effectiveBaseCount + 2);
     }
 
     // Low and declining energy - truncate (at least 2 phrases)
     if (trend < -0.06 && currentEnergy < 0.3) {
-      return m.max(baseCount - 1, 2);
+      return m.max(effectiveBaseCount - 1, 2);
     }
 
-    return baseCount;
+    return effectiveBaseCount;
   }
 
   /**
@@ -72,7 +77,7 @@ sectionLengthAdvisor = (() => {
   }
 
   conductorIntelligence.registerRecorder('sectionLengthAdvisor', (ctx) => { sectionLengthAdvisor.recordEnergy(ctx.compositeIntensity); });
-  conductorIntelligence.registerModule('sectionLengthAdvisor', { reset }, ['section']);
+  conductorIntelligence.registerModule('sectionLengthAdvisor', { reset }, ['all']);
 
   return {
     recordEnergy,

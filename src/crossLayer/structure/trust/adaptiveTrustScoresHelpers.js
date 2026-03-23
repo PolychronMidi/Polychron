@@ -21,7 +21,7 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.CADENCE_ALIGNMENT]: { 'tension-trust': 1.25, 'density-trust': 1.10, 'density-phase': 1.05 },
     [trustSystems.names.STUTTER_CONTAGION]: { 'density-flicker': 1.25, 'flicker-phase': 1.10, 'flicker-trust': 1.10 },
     [trustSystems.names.FEEDBACK_OSCILLATOR]: { 'tension-flicker': 1.18, 'flicker-trust': 1.12, 'flicker-phase': 1.08 },
-    [trustSystems.names.ENTROPY_REGULATOR]: { 'flicker-entropy': 1.22, 'density-entropy': 1.18, 'tension-entropy': 1.10, 'entropy-trust': 1.08, 'entropy-phase': 1.08 },
+    [trustSystems.names.ENTROPY_REGULATOR]: { 'flicker-entropy': 1.22, 'density-entropy': 1.18, 'tension-entropy': 1.10, 'entropy-trust': 1.22, 'entropy-phase': 1.08 },
     [trustSystems.names.CONVERGENCE]: { 'tension-trust': 1.18, 'density-trust': 1.12, 'tension-phase': 1.06, 'density-phase': 1.04 },
     [trustSystems.names.REST_SYNCHRONIZER]: { 'density-trust': 1.15, 'flicker-trust': 1.10 },
   };
@@ -133,7 +133,7 @@ adaptiveTrustScoresHelpers = (() => {
     const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const couplingMatrix = dynamics ? dynamics.couplingMatrix : undefined;
     if (couplingMatrix) {
-      const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust'];
+      const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust', 'entropy-trust'];
       let maxTrustCorrelation = 0;
       let sumTrustCorrelation = 0;
       let trustPairCount = 0;
