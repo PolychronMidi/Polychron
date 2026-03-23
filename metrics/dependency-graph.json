@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-23T02:22:20.788Z",
+    "generated": "2026-03-23T02:58:08.098Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 437,
     "totalGlobals": 716,
     "totalProvides": 731,
-    "totalConsumes": 2865,
-    "totalEdges": 2241,
-    "crossSubsystemEdges": 1494,
+    "totalConsumes": 2867,
+    "totalEdges": 2243,
+    "crossSubsystemEdges": 1496,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 223
@@ -37,7 +37,7 @@
       "rhythm": {
         "files": 30,
         "provides": 45,
-        "consumes": 206
+        "consumes": 208
       },
       "time": {
         "files": 13,
@@ -3556,6 +3556,7 @@
         "beatRhythm",
         "beatsOff",
         "beatsOn",
+        "clamp",
         "conductorConfig",
         "crossModulation",
         "divIndex",
@@ -3579,6 +3580,7 @@
         "subsubdivsOff",
         "subsubdivsOn",
         "subsubsPerSub",
+        "timeStream",
         "validator"
       ]
     },
@@ -15292,6 +15294,13 @@
     },
     {
       "from": "src/time/timeStream.js",
+      "to": "src/rhythm/crossModulateRhythms.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
       "to": "src/time/fractalArcGenerator.js",
       "globals": [
         "timeStream"
@@ -16628,6 +16637,13 @@
     {
       "from": "src/utils/clamps.js",
       "to": "src/play/processBeat.js",
+      "globals": [
+        "clamp"
+      ]
+    },
+    {
+      "from": "src/utils/clamps.js",
+      "to": "src/rhythm/crossModulateRhythms.js",
       "globals": [
         "clamp"
       ]

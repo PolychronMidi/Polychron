@@ -117,7 +117,7 @@ PHRASES_PER_SECTION={
 };
 /** @tier-2 - section count range */
 SECTIONS={
-  min: 3,
+  min: 4,
   max: 5
 };
 /** @tier-2 - beat division count range and weight distribution */
