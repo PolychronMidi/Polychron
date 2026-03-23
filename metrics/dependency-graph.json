@@ -1,22 +1,22 @@
 {
   "meta": {
-    "generated": "2026-03-23T15:30:22.174Z",
+    "generated": "2026-03-23T18:47:30.563Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 437,
     "totalGlobals": 716,
     "totalProvides": 731,
-    "totalConsumes": 2908,
-    "totalEdges": 2282,
-    "crossSubsystemEdges": 1524,
+    "totalConsumes": 2922,
+    "totalEdges": 2294,
+    "crossSubsystemEdges": 1529,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 223
     },
     "maxFanOut": {
       "file": "src/play/main.js",
-      "count": 41
+      "count": 42
     },
     "subsystems": {
       "index.js": {
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 951
+        "consumes": 964
       },
       "rhythm": {
         "files": 30,
@@ -67,7 +67,7 @@
       "play": {
         "files": 17,
         "provides": 21,
-        "consumes": 384
+        "consumes": 385
       }
     }
   },
@@ -1390,6 +1390,7 @@
       "consumes": [
         "clamp",
         "conductorIntelligence",
+        "conductorState",
         "explainabilityBus",
         "feedbackRegistry",
         "m",
@@ -2705,7 +2706,11 @@
       "consumes": [
         "clamp",
         "conductorIntelligence",
-        "m"
+        "m",
+        "phaseFloorController",
+        "pipelineCouplingManager",
+        "safePreBoot",
+        "systemDynamicsProfiler"
       ]
     },
     "src/conductor/dynamics/durationalContourTracker.js": {
@@ -2751,6 +2756,8 @@
         "beatStartTime",
         "clamp",
         "conductorIntelligence",
+        "sectionIndex",
+        "totalSections",
         "validator"
       ]
     },
@@ -2795,6 +2802,9 @@
         "clamp",
         "conductorIntelligence",
         "m",
+        "pipelineCouplingManager",
+        "safePreBoot",
+        "systemDynamicsProfiler",
         "validator"
       ]
     },
@@ -3001,6 +3011,9 @@
         "clamp",
         "conductorIntelligence",
         "m",
+        "phraseLengthMomentumTracker",
+        "safePreBoot",
+        "sectionIndex",
         "totalSections",
         "validator"
       ]
@@ -6961,6 +6974,7 @@
         "motifChain",
         "phaseLockedRhythmGenerator",
         "phraseIndex",
+        "phraseLengthMomentumTracker",
         "phrasesPerSection",
         "pipelineCouplingManager",
         "pivotChordBridge",
@@ -9282,6 +9296,13 @@
     },
     {
       "from": "src/conductor/conductorState.js",
+      "to": "src/conductor/signal/profiling/regimeReactiveDamping.js",
+      "globals": [
+        "conductorState"
+      ]
+    },
+    {
+      "from": "src/conductor/conductorState.js",
       "to": "src/conductor/textureBlender.js",
       "globals": [
         "conductorState"
@@ -10948,6 +10969,20 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/dynamics/densityWaveAnalyzer.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/dynamics/velocityShapeAnalyzer.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/dynamismEngine.js",
       "globals": [
         "pipelineCouplingManager"
@@ -11131,6 +11166,13 @@
     {
       "from": "src/conductor/signal/balancing/phaseFloorController.js",
       "to": "src/conductor/conductorDampening.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/conductor/dynamics/densityWaveAnalyzer.js",
       "globals": [
         "phaseFloorController"
       ]
@@ -11620,6 +11662,20 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/dynamics/densityWaveAnalyzer.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/dynamics/velocityShapeAnalyzer.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/conductor/dynamismEngine.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -11812,6 +11868,20 @@
       "to": "src/conductor/texture/phrasing/motivicDensityTracker.js",
       "globals": [
         "fragmentHelpers"
+      ]
+    },
+    {
+      "from": "src/conductor/texture/phrasing/phraseLengthMomentumTracker.js",
+      "to": "src/conductor/texture/form/sectionLengthAdvisor.js",
+      "globals": [
+        "phraseLengthMomentumTracker"
+      ]
+    },
+    {
+      "from": "src/conductor/texture/phrasing/phraseLengthMomentumTracker.js",
+      "to": "src/play/main.js",
+      "globals": [
+        "phraseLengthMomentumTracker"
       ]
     },
     {
@@ -13991,6 +14061,14 @@
     },
     {
       "from": "src/play/main.js",
+      "to": "src/conductor/dynamics/dynamicPeakMemory.js",
+      "globals": [
+        "sectionIndex",
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
       "to": "src/conductor/dynamismEngine.js",
       "globals": [
         "sectionIndex"
@@ -14088,6 +14166,7 @@
       "from": "src/play/main.js",
       "to": "src/conductor/texture/form/sectionLengthAdvisor.js",
       "globals": [
+        "sectionIndex",
         "totalSections"
       ]
     },
@@ -21519,6 +21598,20 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/dynamics/densityWaveAnalyzer.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/dynamics/velocityShapeAnalyzer.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/dynamismEngine.js",
       "globals": [
         "safePreBoot"
@@ -21639,6 +21732,13 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/profiling/systemDynamicsProfilerAnalysis.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/texture/form/sectionLengthAdvisor.js",
       "globals": [
         "safePreBoot"
       ]

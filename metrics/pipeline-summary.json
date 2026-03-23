@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-23T15:30:23.764Z",
-  "wallTimeSeconds": 627,
+  "generated": "2026-03-23T18:47:32.233Z",
+  "wallTimeSeconds": 669.4,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -9,7 +9,7 @@
     },
     {
       "label": "verify-boot-order",
-      "elapsedSeconds": 0.1,
+      "elapsedSeconds": 0.2,
       "ok": true
     },
     {
@@ -29,17 +29,17 @@
     },
     {
       "label": "lint",
-      "elapsedSeconds": 1.6,
-      "ok": true
-    },
-    {
-      "label": "typecheck",
       "elapsedSeconds": 1.7,
       "ok": true
     },
     {
+      "label": "typecheck",
+      "elapsedSeconds": 1.8,
+      "ok": true
+    },
+    {
       "label": "composition",
-      "elapsedSeconds": 621.7,
+      "elapsedSeconds": 663.9,
       "ok": true
     },
     {

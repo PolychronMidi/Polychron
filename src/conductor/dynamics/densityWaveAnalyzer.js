@@ -65,6 +65,30 @@ densityWaveAnalyzer = (() => {
     };
   }
 
+  function densityWaveAnalyzerGetContainmentPressure() {
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
+    const phaseRecoveryCredit = clamp((phaseShare - lowPhaseThreshold) / 0.08, 0, 1);
+    if (phaseRecoveryCredit <= 0) {
+      return 0;
+    }
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
+    if (!couplingMatrix) {
+      return 0;
+    }
+    const densityFlickerPressure = typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
+      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.78) / 0.16, 0, 1)
+      : 0;
+    const densityPhasePressure = typeof couplingMatrix['density-phase'] === 'number' && Number.isFinite(couplingMatrix['density-phase'])
+      ? clamp((m.abs(couplingMatrix['density-phase']) - 0.68) / 0.16, 0, 1)
+      : 0;
+    return clamp((densityFlickerPressure * 0.7 + densityPhasePressure * 0.3) * phaseRecoveryCredit, 0, 1);
+  }
+
   /**
    * Get a flicker amplitude modifier based on density wave patterns.
    * Continuous ramp: flat (amplitude 0-0.05) - 1.15-1.0,
@@ -73,13 +97,16 @@ densityWaveAnalyzer = (() => {
    */
   function getFlickerModifier() {
     const profile = getWaveProfile();
+    const containmentPressure = densityWaveAnalyzerGetContainmentPressure();
     if (profile.waveAmplitude < 0.05) {
       // Flat: ramp 1.15-1.0 over amplitude 0-0.05
-      return 1.15 - clamp(profile.waveAmplitude / 0.05, 0, 1) * 0.15;
+      const flatBoost = 0.15 - clamp(profile.waveAmplitude / 0.05, 0, 1) * 0.15;
+      return 1.0 + flatBoost * (1 - containmentPressure * 0.65);
     }
     if (profile.waveAmplitude > 0.15) {
       // Waving: ramp 1.0-0.9 over amplitude 0.15-0.5
-      return 1.0 - clamp((profile.waveAmplitude - 0.15) / 0.35, 0, 1) * 0.1;
+      const waveCut = clamp((profile.waveAmplitude - 0.15) / 0.35, 0, 1) * 0.1;
+      return 1.0 - waveCut * (1 + containmentPressure * 0.25);
     }
     return 1.0;
   }
