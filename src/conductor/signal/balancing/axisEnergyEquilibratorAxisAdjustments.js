@@ -2,6 +2,9 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
   function axisEnergyEquilibratorAxisAdjustmentsApplyAxisLoop(state, config, context, V) {
     const entropyExploringDamp = context.regimeKey === 'exploring' ? 0.95 : 1.0;
     const phaseEvolvingDamp = context.regimeKey === 'evolving' ? 0.95 : 1.0;
+    // R34 E2: Phase relaxation boost under exploring regime to prevent phase starvation
+    // Exploring-heavy runs (77.8% under explosive) starve phase; this gives 1.3x relaxation rate
+    const phaseExploringRelaxBoost = context.regimeKey === 'exploring' ? 1.3 : 1.0;
 
     for (let i = 0; i < config.ALL_AXES.length; i++) {
       const axis = config.ALL_AXES[i];
@@ -105,7 +108,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           : { phaseCollapseBoost: 4.0, phaseFloorBoost: 1.0 };
         const emergencyBoost = isPhaseCollapse ? phaseBoosts.phaseCollapseBoost : (isEmergencyStarved ? 3.0 : m.max(1.0, phaseBoosts.phaseFloorBoost));
         if (axis === 'phase') phaseFloorController.recordBoostApplied(emergencyBoost);
-        const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
+        const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * (axis === 'phase' ? phaseExploringRelaxBoost : 1.0) * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           // R86 E1: Bypass pair cooldowns when phase floor/extreme collapse is active

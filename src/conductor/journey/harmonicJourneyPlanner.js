@@ -100,11 +100,60 @@ harmonicJourneyPlanner = (() => {
         }
       }
 
+      // R34 E3: Key diversity guard - avoid consecutive same-tonic sections.
+      // If the next key matches the current key, retry once with a different move.
+      if (nextKey === currentKey && effectivePool.length > 1) {
+        for (let keyRetry = 0; keyRetry < 3; keyRetry++) {
+          const altFn = effectivePool[ri(effectivePool.length - 1)];
+          const altResult = altFn(currentKey, currentMode);
+          const altSimplified = t.Note.simplify(altResult.key);
+          const altKey = t.Note.pitchClass(altSimplified || altResult.key);
+          if (altKey && altKey !== currentKey) {
+            const altDist = HJ.harmonicDistance(currentKey, altKey);
+            currentKey = altKey;
+            currentMode = altResult.mode;
+            steps.push({ key: currentKey, mode: currentMode, move: altResult.move + ' (key-shift)', distance: altDist });
+            break;
+          }
+          if (keyRetry === 2) {
+            // All retries landed on same key - accept and move on
+            const fallbackDist = HJ.harmonicDistance(currentKey, nextKey);
+            currentKey = nextKey;
+            currentMode = result.mode;
+            steps.push({ key: currentKey, mode: currentMode, move: result.move, distance: fallbackDist });
+          }
+        }
+        continue;
+      }
+
       const dist = HJ.harmonicDistance(currentKey, nextKey);
       currentKey = nextKey;
       currentMode = result.mode;
 
       steps.push({ key: currentKey, mode: currentMode, move: result.move, distance: dist });
+    }
+
+    // Post-hoc tonic diversity check: ensure at least 2 distinct tonics.
+    // R35 E1: The key diversity guard (R34 E3) only retries from the same
+    // move pool, which often lands on the same tonic. This post-hoc check
+    // forces a transposition when all sections share one tonic.
+    if (steps.length >= 2) {
+      const tonics = new Set([originKey]);
+      for (let i = 0; i < steps.length; i++) tonics.add(steps[i].key);
+      if (tonics.size < 2) {
+        const midIdx = m.floor(steps.length / 2);
+        const prevKey = midIdx > 0 ? steps[midIdx - 1].key : originKey;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const candidate = allNotes[ri(allNotes.length - 1)];
+          const candidatePC = t.Note.pitchClass(candidate);
+          if (candidatePC && candidatePC !== originKey) {
+            steps[midIdx].key = candidatePC;
+            steps[midIdx].move = steps[midIdx].move + ' (tonic-shift)';
+            steps[midIdx].distance = HJ.harmonicDistance(prevKey, candidatePC);
+            break;
+          }
+        }
+      }
     }
 
     // Post-hoc diversity check: ensure mode variety across the journey.

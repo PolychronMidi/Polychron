@@ -37,7 +37,9 @@ sectionIntentCurves = (() => {
     const s = timeStream.getPosition('section');
     const ph = timeStream.getPosition('phrase');
 
-    const arc = m.sin(p * m.PI);
+    // R35 E3: Asymmetric arc - shift peak later (~62% through piece) for
+    // building tension with late climax. pow(p, 0.8) skews the sine peak.
+    const arc = m.sin(m.pow(p, 0.8) * m.PI);
     const wave = 0.5 + 0.5 * m.sin((p + (s + ph * PHRASE_PHASE_SCALE) * WAVE_PHASE_SPEED) * m.PI * 2);
 
     const densityTarget = clamp(DENSITY_BASE + arc * DENSITY_ARC_SCALE, 0, 1);

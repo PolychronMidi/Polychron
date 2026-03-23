@@ -60,8 +60,9 @@ conductorDampening = (() => {
    * @returns {number}
    */
   function scaledDamping(registryLength, pipelineName) {
-    // Flicker pipeline gets lighter dampening (0.85) plus #4 elasticity adjustment
-    let base = pipelineName === 'flicker' ? 0.85 + conductorDampeningFlickerDampeningBaseAdj : BASE_DEVIATION_DAMPING;
+    // Flicker pipeline gets lighter dampening (0.78) plus #4 elasticity adjustment
+    // R34 E1: 0.85->0.78 to reduce 57% crush factor under explosive profile
+    let base = pipelineName === 'flicker' ? 0.78 + conductorDampeningFlickerDampeningBaseAdj : BASE_DEVIATION_DAMPING;
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
@@ -243,8 +244,9 @@ conductorDampening = (() => {
       // Range compressed: reduce dampening to allow more expression
       // Tripled adjustment rate (0.005->0.015) for faster response
       conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj + 0.015, 0, 0.15);
-    } else if (range > conductorDampeningTargetFlickerRange * 2.0) {
+    } else if (range > conductorDampeningTargetFlickerRange * 2.5) {
       // Range too wide: increase dampening to rein it in
+      // R34 E1: 2.0x->2.5x allows wider flicker expression before tightening
       conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj - 0.015, -0.15, 0);
     } else {
       // In target range: relax adjustment toward zero

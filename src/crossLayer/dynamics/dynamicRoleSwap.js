@@ -6,7 +6,7 @@
 dynamicRoleSwap = (() => {
   const V = validator.create('dynamicRoleSwap');
   const MIN_PHRASES_BETWEEN_SWAPS = 2;
-  const TENSION_VALLEY_THRESHOLD = 0.3; // only swap when tension is low
+  const TENSION_VALLEY_THRESHOLD = 0.45; // R34 E4: 0.3->0.45 allow swaps during moderate tension valleys (was never triggering at 0.3 with avg tension 0.5-0.7)
   const SWAP_PROBABILITY = 0.75; // probability of actually swapping when conditions met
 
   let phrasesSinceLastSwap = 0;

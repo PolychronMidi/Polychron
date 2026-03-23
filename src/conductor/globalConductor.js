@@ -27,8 +27,8 @@ globalConductor = (() => {
   let globalConductorFVarN = 0;
   let globalConductorFVarMean = 1.0;
   let globalConductorFVarM2 = 0;
-  const FLICKER_VARIANCE_FLOOR_STD = 0.008; // inject when rolling std < this
-  const FLICKER_VARIANCE_INJECT = 0.02;     // noise amplitude when below floor
+  const FLICKER_VARIANCE_FLOOR_STD = 0.015; // R35 E4: raised from 0.008 to trigger injection more often
+  const FLICKER_VARIANCE_INJECT = 0.04;     // R35 E4: raised from 0.02 to break coupling monopoly
 
   /**
    * Update all dynamic systems based on current musical context.

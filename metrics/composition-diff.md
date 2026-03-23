@@ -5,39 +5,39 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
+## Major Changes (1)
+
+- !!! **note-count**: output1: 7591 notes -> 14122 notes (86.0% change)
+
 ## Notable Changes (4)
 
-- !! **harmonic-change**: Section 0: Eb dorian -> E dorian
-- !! **harmonic-change**: Section 1: C# major -> E dorian
-- !! **harmonic-change**: Section 2: D# major -> F# minor
-- !! **harmonic-change**: Section 3: D# mixolydian -> C minor
+- !! **harmonic-change**: Section 0: Eb dorian -> Ab lydian
+- !! **harmonic-change**: Section 1: C# major -> Bb lydian
+- !! **harmonic-change**: Section 2: D# major -> A ionian
+- !! **harmonic-change**: Section 3: D# mixolydian -> A lydian
 
-## Moderate Changes (7)
+## Moderate Changes (4)
 
-- ! **phrase-count**: Section 0: 0 phrases -> 1 phrases
-- ! **tension-shift**: Section 0 avg tension: 0.220 -> 0.339
-- ! **tension-shift**: Section 2 avg tension: 0.719 -> 0.615
-- ! **phrase-count**: Section 3: 4 phrases -> 3 phrases
-- ! **tension-shift**: Section 3 avg tension: 0.767 -> 0.894
-- ! **note-count**: output1: 7591 notes -> 9301 notes (22.5% change)
-- ! **note-count**: output2: 9778 notes -> 12593 notes (28.8% change)
+- ! **tension-shift**: Section 1 avg tension: 0.763 -> 0.628
+- ! **tension-shift**: Section 3 avg tension: 0.767 -> 0.873
+- ! **pitch-center**: output1 mean pitch: 36.5 -> 43.5 (7.0 semitones)
+- ! **note-count**: output2: 9778 notes -> 13164 notes (34.6% change)
 
-## Minor Changes (6)
+## Minor Changes (5)
 
-- ~ **regime-shift**: Section 0 regime 'initializing': 33.3% -> 6.3%
-- ~ **regime-shift**: Section 0 regime 'coherent': 33.3% -> 70.3%
-- ~ **regime-shift**: Section 1 regime 'coherent': 77.0% -> 11.1%
-- ~ **regime-shift**: Section 1 regime 'exploring': 23.0% -> 88.9%
-- ~ **regime-shift**: Section 3 regime 'exploring': 32.7% -> 93.1%
-- ~ **regime-shift**: Section 3 regime 'coherent': 67.3% -> 0.0%
+- ~ **regime-shift**: Section 0 regime 'coherent': 33.3% -> 60.0%
+- ~ **regime-shift**: Section 1 regime 'coherent': 77.0% -> 43.8%
+- ~ **regime-shift**: Section 1 regime 'exploring': 23.0% -> 56.3%
+- ~ **regime-shift**: Section 3 regime 'exploring': 32.7% -> 64.3%
+- ~ **regime-shift**: Section 3 regime 'coherent': 67.3% -> 35.7%
 
 ## Summary
 
-- Total differences: 17
-- Major: 0
+- Total differences: 14
+- Major: 1
 - Notable: 4
-- Moderate: 7
-- Minor: 6
+- Moderate: 4
+- Minor: 5
 
 
-*Generated 2026-03-23T02:22:22.369Z*
+*Generated 2026-03-23T02:58:09.933Z*

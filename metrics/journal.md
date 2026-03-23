@@ -1,3 +1,41 @@
+## R33 — 2026-03-23 — EVOLVED 1/10 (accepted after re-run)
+
+**Profile:** default (run 1, 278.8s) + explosive (run 2, 644.6s) | **Notes:** 9,689 / 21,894
+**Fingerprint:** 9/10 stable | Drifted: exceedanceSeverity (both runs) — accepted per re-run protocol
+
+### Key Observations
+- **Phase axis breakthrough under default**: share 0.6% -> 11.15% (run 1). PHASE_STALE_PAIR_THRESHOLD 12->8 was the cause. axisGini improved 0.215->0.100. But under explosive, only 0.89% — highly profile-dependent.
+- **Evolving regime activated under default**: 1.3% -> 19.2% (run 1). evolving tension dir 0.5->1.0 and flicker dir 0->0.5 gave the evolving regime a distinct identity. Under explosive, only 3.2%.
+- **Tension arc ascending under explosive**: [0.467, 0.669, 0.944, 0.969] — first genuine ascending arc with strong climax. Tension max reached 0.997.
+- **Exceedance severity spiked**: run 1 had 90 unique exceedance beats (hotspots: density-flicker 53, flicker-trust 36). Run 2 improved to 44 unique (hotspots shifted to flicker-phase 33, density-flicker 11). Both exceeded tolerance=95 delta.
+- **Flicker crush critical under explosive**: 57% crush factor, manifest-health FAIL. targetFlickerRange 0.22 creates wider flicker excursions that the dampening system aggressively crushes.
+- **density-tension re-correlated under default**: pearsonR 0.742 (was -0.286 in R32). Under explosive: 0.162 — decorrelation holds. The R32 tension rebalancing is profile-sensitive.
+- **Harmonic journey**: E dorian -> E dorian -> F# minor -> C minor. S0-S1 share tonic (regression in harmonic variety). S2-S3 provide contrast.
+- **roleSwap trust still 0.000** across both runs. Module not contributing.
+- **Trust convergence**: 0.310 (run 1), 0.328 (run 2). Slight improvement from faster EMA learning.
+
+### Evolutions Applied (from R32)
+- E1: Flicker range expansion (targetFlickerRange 0.15->0.22) — **partially confirmed** — wider range achieved but caused exceedance spike and 57% crush under explosive. Flicker range is wider (0.754-1.148 under explosive vs 0.925-1.166 under default) but dampening fights it.
+- E2: Trust learning acceleration (EMA_NEW 0.10->0.15, DECAY 0.9->0.85, stagnation 100->70) — **inconclusive** — trust convergence improved modestly (0.302->0.328) but roleSwap still 0.000. Faster learning alone insufficient.
+- E3: Phase stale detection (threshold 12->8) — **confirmed under default** — phase share exploded 0.6%->11.15%, axisGini halved. Profile-dependent: explosive shows only 0.89%.
+- E4: Evolving regime identity (tension dir 0.5->1.0, flicker dir 0->0.5) — **confirmed under default** — evolving jumped 1.3%->19.2%. Under explosive only 3.2%. Clear causal mechanism.
+- E5: Stutter profile rebalancing (source 0.07->0.12, bass 0.70->0.55) — **inconclusive** — cannot isolate from profile effects across the two runs.
+
+### Evolutions Proposed (for R34)
+- E1: Flicker dampening relief — reduce flicker base dampening to mitigate 57% crush factor — conductorDampening.js
+- E2: Phase engagement stabilization — make phase coupling responsive in exploring regime — phaseLockCoupling.js or phaseSignal modules
+- E3: Harmonic variety enforcement — diversify key selection to avoid same-tonic consecutive sections — key/mode selection in composers
+- E4: Coupling decorrelation persistence — investigate density-tension re-correlation under default profile — globalConductor.js composite weights
+- E5: Exploring-regime phase injection — feed phase signal activity during exploring to prevent phase starvation under exploring-heavy runs
+
+### Hypotheses to Track
+- Phase engagement is regime-gated: high-exploring profiles (explosive) starve phase because phase stale detection fires less when coupling pairs rarely stabilize.
+- Flicker crush is a positive-feedback trap: wider targetFlickerRange -> more coupling exceedance -> more dampening -> crush. The crush factor should be addressed at the dampening level, not the range level.
+- density-tension re-correlation under default may stem from shorter compositions where the composite weights don't have enough beats to decorrelate.
+- roleSwap trust at 0.000 may require structural activation — the module might need a minimum engagement threshold or bootstrapping mechanism.
+
+---
+
 ## R32 — 2026-03-23 — STABLE (second run)
 
 **Profile:** explosive | **Beats:** 476 | **Duration:** 494.4s | **Notes:** 17,369 (L1=7591, L2=9778)
