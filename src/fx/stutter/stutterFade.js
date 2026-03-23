@@ -33,7 +33,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
   }
 
   channelsArray.forEach(channelToStutter => {
-    const maxVol = ri(90, 120);
+    const maxVol = ri(96, 106);
     const isFadeIn = isFadeInGlobal;
 
     // Use moderate noise profile for stutter fades (more interesting than subtle)
@@ -72,7 +72,8 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { fade: norm });
       lastNorm = norm;
 
-      p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, m.round(volume / rf(1.5, 5))] });
+      const dipVolume = clamp(m.round(volume * rf(0.74, 0.88)), 52, maxVol);
+      p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, dipVolume] });
       p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
     }
     if (tick === undefined) throw new Error('stutterFade: for-loop produced no iterations');

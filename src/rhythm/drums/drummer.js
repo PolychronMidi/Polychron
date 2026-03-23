@@ -2,6 +2,15 @@
 
 const V = validator.create('drummer');
 
+function drummerCoupleVelocityRange(minVelocity, maxVelocity, anchorVelocity) {
+  const center = (minVelocity + maxVelocity) * 0.5;
+  const halfSpan = ((maxVelocity - minVelocity) * 0.5) * 0.32;
+  const coupledCenter = clamp(m.round(center * 0.52 + anchorVelocity * 0.48), 1, MIDI_MAX_VALUE);
+  const coupledMin = clamp(m.round(coupledCenter - halfSpan), 1, MIDI_MAX_VALUE);
+  const coupledMax = clamp(m.round(coupledCenter + halfSpan), coupledMin, MIDI_MAX_VALUE);
+  return [coupledMin, coupledMax];
+}
+
 drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRange=[2,m.round(rv(11,[2,3],.3))],stutterDecayFactor=rf(.9,1.1),conductorContext={})=>{
   V.requireDefined(drumNames, 'drumNames');
   V.requireFinite(stutterChance, 'stutterChance');
@@ -39,7 +48,8 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
     : conductorSnapshot.phrasePhase;
   const accentBoost = conductorContext.accent ? 0.12 : 0;
   const phaseBoost = (phrasePhase === 'climax' || phrasePhase === 'peak') ? 0.12 : (phrasePhase === 'resolution' ? -0.05 : 0);
-  const velocityScale = clamp(0.8 + contextIntensity * 0.45 + accentBoost + phaseBoost, 0.55, 1.4);
+  const velocityScale = clamp(0.9 + contextIntensity * 0.14 + accentBoost * 0.28 + phaseBoost * 0.22, 0.84, 1.08);
+  const sharedVelocityAnchor = clamp(m.round(90 + contextIntensity * 12 + (conductorContext.accent ? 3 : 0)), 84, 108);
 
   const adjustedOffsets = combined.map(({ offset }) => {
     // Preserve large/offbeat integer offsets (e.g., 10 beats) rather than reducing them to
@@ -71,6 +81,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         const [baseMinVelocity, baseMaxVelocity] = drumInfo.velocityRange;
         const minVelocity = clamp(m.round(baseMinVelocity * velocityScale), 1, MIDI_MAX_VALUE);
         const maxVelocity = clamp(m.round(baseMaxVelocity * velocityScale), minVelocity, MIDI_MAX_VALUE);
+        const [coupledMinVelocity, coupledMaxVelocity] = drummerCoupleVelocityRange(minVelocity, maxVelocity, sharedVelocityAnchor);
         const isFadeIn = rf() < 0.7;
         for (let i = 0; i < numStutters; i++) {
           // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
@@ -81,12 +92,14 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
           if (isFadeIn) {
             const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
             // Anchor stutter velocities to the drum's declared range and scale across [min,max]
-            currentVelocity = clamp(m.min(maxVelocity, minVelocity + (maxVelocity - minVelocity) * fadeInMultiplier), 0, MIDI_MAX_VALUE);
+            currentVelocity = clamp(m.min(coupledMaxVelocity, coupledMinVelocity + (coupledMaxVelocity - coupledMinVelocity) * fadeInMultiplier), 0, MIDI_MAX_VALUE);
           } else {
             const fadeOutMultiplier = 1 - (stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1)));
-            currentVelocity = clamp(m.max(0, minVelocity + (maxVelocity - minVelocity) * fadeOutMultiplier), 0, MIDI_MAX_VALUE);
+            currentVelocity = clamp(m.max(0, coupledMinVelocity + (coupledMaxVelocity - coupledMinVelocity) * fadeOutMultiplier), 0, MIDI_MAX_VALUE);
           }
-          p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, m.floor(currentVelocity)] });
+          const emittedVelocity = m.floor(currentVelocity);
+          p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, emittedVelocity] });
+          traceDrain.recordFamilyVelocity('drums', emittedVelocity);
         }
       } else {
         const tickVal = beatStart + useOffset * tpBeat;
@@ -95,7 +108,10 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         const baseMax = Number(drumInfo.velocityRange[1]);
         const scaledMin = clamp(m.round(baseMin * velocityScale), 1, MIDI_MAX_VALUE);
         const scaledMax = clamp(m.round(baseMax * velocityScale), scaledMin, MIDI_MAX_VALUE);
-        p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, ri(scaledMin, scaledMax)] });
+        const [coupledMin, coupledMax] = drummerCoupleVelocityRange(scaledMin, scaledMax, sharedVelocityAnchor);
+        const emittedVelocity = ri(coupledMin, coupledMax);
+        p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, emittedVelocity] });
+        traceDrain.recordFamilyVelocity('drums', emittedVelocity);
       }
     }
   });
