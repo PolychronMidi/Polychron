@@ -155,9 +155,13 @@ adaptiveTrustScoresHelpers = (() => {
     }
 
     let trustAxisPressure = 0;
+    let phaseStarvationPressure = 0;
     const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
     if (axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number') {
       trustAxisPressure = clamp((axisEnergy.shares.trust - 0.19) / 0.09, 0, 1);
+      if (typeof axisEnergy.shares.phase === 'number') {
+        phaseStarvationPressure = clamp((0.04 - axisEnergy.shares.phase) / 0.04, 0, 1);
+      }
     }
 
     let stickyTailPressure = 0;
@@ -168,6 +172,7 @@ adaptiveTrustScoresHelpers = (() => {
     const pairAwareProfile = getSystemPairHotspotProfile(systemName);
     const pairAwarePressure = pairAwareProfile.pressure;
     const pairAwareSeverePressure = pairAwareProfile.severePressure || 0;
+    const trustSurfaceSystem = (pairAwareHotspotPairs[systemName] || []).some(function(pair) { return pair.indexOf('trust') >= 0; });
     const contextualScoreGetter = contextualTrust ? contextualTrust.getScore : undefined;
     const contextualScore = contextualScoreGetter ? contextualScoreGetter(systemName) : null;
     const contextualGap = contextualScore !== null
@@ -177,7 +182,7 @@ adaptiveTrustScoresHelpers = (() => {
     const settlementPressure = clamp(
       lateRunPressure *
       clamp((leadScore - 0.10) / 0.16, 0, 1) *
-      (1 - clamp(trustHotspotPressure * 0.9 + trustAxisPressure * 0.7 + stickyTailPressure * 0.4 + pairAwarePressure * 0.55 + pairAwareSeverePressure * 0.48 + contextualGap * 0.35, 0, 1)),
+      (1 - clamp(trustHotspotPressure * 0.9 + trustAxisPressure * 0.7 + stickyTailPressure * 0.4 + pairAwarePressure * 0.55 + pairAwareSeverePressure * 0.48 + contextualGap * 0.35 + (trustSurfaceSystem ? phaseStarvationPressure * 0.30 : 0), 0, 1)),
       0,
       1
     );
@@ -191,6 +196,7 @@ adaptiveTrustScoresHelpers = (() => {
       pairAwarePressure * 0.60 +
       pairAwareSeverePressure * 0.50 +
       trustAxisPressure * 0.32 +
+      (trustSurfaceSystem ? phaseStarvationPressure * 0.30 : 0) +
       stickyTailPressure * 0.24 +
       contextualGap * 0.24 +
       settlementPressure * 0.85 +
@@ -200,7 +206,7 @@ adaptiveTrustScoresHelpers = (() => {
     );
 
     const coherencePenalty = specificProfile && systemName === trustSystems.names.COHERENCE_MONITOR
-      ? clamp(trustHotspotPressure * 0.25 + pairAwarePressure * 0.24 + pairAwareSeverePressure * 0.22 + trustAxisPressure * 0.20 + settlementPressure * 0.20 + stickyTailPressure * 0.12 + contextualGap * 0.12, 0, 0.45)
+      ? clamp(trustHotspotPressure * 0.25 + pairAwarePressure * 0.24 + pairAwareSeverePressure * 0.22 + trustAxisPressure * 0.20 + settlementPressure * 0.20 + stickyTailPressure * 0.12 + contextualGap * 0.12 + phaseStarvationPressure * 0.16, 0, 0.45)
       : 0;
 
     return {

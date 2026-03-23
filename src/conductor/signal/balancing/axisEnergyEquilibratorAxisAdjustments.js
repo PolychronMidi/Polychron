@@ -173,10 +173,13 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
 
     const phaseSmoothed = state.smoothedShares.phase;
     const trustSmoothed = state.smoothedShares.trust;
-    if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.01 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * 1.3) {
-      const trustExcess = trustSmoothed - config.FAIR_SHARE * 1.3;
+    if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.03 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.01 ? 1.3 : 1.15)) {
+      const trustThreshold = config.FAIR_SHARE * (phaseSmoothed < 0.01 ? 1.3 : 1.15);
+      const phaseShortfall = clamp((0.03 - phaseSmoothed) / 0.03, 0, 1);
+      const trustExcess = trustSmoothed - trustThreshold;
       const trustPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
-      const trustCapRate = m.min(0.03, config.AXIS_TIGHTEN_RATE * 2.0 * trustPairScale * clamp(trustExcess / config.FAIR_SHARE, 0.5, 2.0));
+      const trustCapStrength = phaseSmoothed < 0.01 ? 2.0 : 1.25;
+      const trustCapRate = m.min(0.03, config.AXIS_TIGHTEN_RATE * trustCapStrength * trustPairScale * (1 + phaseShortfall * 0.75) * clamp(trustExcess / config.FAIR_SHARE, 0.5, 2.0));
       const trustPairs = config.axisToPairs.trust || [];
       for (let i = 0; i < trustPairs.length; i++) {
         const pair = trustPairs[i];

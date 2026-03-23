@@ -191,9 +191,26 @@ adaptiveTrustScores = (() => {
     if (contextualWeight === null) return baseWeight;
     const blend = clamp(0.18 + pairAwareProfile.pressure * 0.32 + pairAwareProfile.severePressure * 0.28, 0.18, 0.65);
     const blendedWeight = baseWeight * (1 - blend) + contextualWeight * blend;
-    const hotspotAwareWeight = pairAwareProfile.severePressure > 0.10
+    let hotspotAwareWeight = pairAwareProfile.severePressure > 0.10
       ? m.min(baseWeight, blendedWeight)
       : blendedWeight;
+    const regime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
+    if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE)
+      && regime === 'exploring'
+      && pairAwareProfile.dominantPair === 'density-trust') {
+      const densityTrustBrake = clamp(pairAwareProfile.pressure * 0.22 + pairAwareProfile.severePressure * 0.18, 0.10, 0.30);
+      hotspotAwareWeight *= 1 - densityTrustBrake;
+    }
+    if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE || systemName === trustSystems.names.COHERENCE_MONITOR)
+      && regime === 'exploring'
+      && pairAwareProfile.dominantPair === 'tension-trust') {
+      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
+        ? axisEnergy.shares.tension
+        : 1.0 / 6.0;
+      const tensionTrustBrake = clamp(pairAwareProfile.pressure * 0.20 + pairAwareProfile.severePressure * 0.18 + clamp((tensionShare - 0.18) / 0.08, 0, 1) * 0.12, 0.10, 0.32);
+      hotspotAwareWeight *= 1 - tensionTrustBrake;
+    }
     return clamp(hotspotAwareWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
   }
 

@@ -113,7 +113,22 @@ conductorDampening = (() => {
     const sameDirection = (deviation < 0 && productDeviation < 0) || (deviation > 0 && productDeviation > 0);
     const drift = m.abs(productDeviation);
     const extraDampening = sameDirection ? progStrength * clamp(drift, 0, 0.5) : 0;
-    const effectiveDamping = clamp(baseDamping - extraDampening, 0.15, baseDamping);
+    let effectiveDamping = clamp(baseDamping - extraDampening, 0.15, baseDamping);
+    if (pipelineName === 'flicker' && deviation > 0) {
+      let phaseCollapsePressure = 0;
+      try {
+        const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
+        const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+          ? axisEnergy.shares.phase
+          : 1.0 / 6.0;
+        const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
+        phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
+      } catch {
+        // Axis energy is not always available during early boot.
+      }
+      const hotspotPressure = clamp(m.max(0, productDeviation) + deviation + phaseCollapsePressure * 0.35, 0, 0.75);
+      effectiveDamping = clamp(effectiveDamping - hotspotPressure * 0.20, 0.15, baseDamping);
+    }
     return 1.0 + deviation * effectiveDamping;
   }
 

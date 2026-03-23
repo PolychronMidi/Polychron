@@ -35,6 +35,7 @@ crossLayerClimaxEngine = (() => {
   let smoothedClimax = 0;
   let peakReached = false;
   let climaxCount = 0;
+  let climaxPlayAllowance = 1;
 
   /**
    * Tick the climax detector each beat.
@@ -44,13 +45,27 @@ crossLayerClimaxEngine = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
     // Gather signals
-    const sectionArc = m.sin(clamp(timeStream.compoundProgress('section'), 0, 1) * m.PI); // peaks mid-section
+    const sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);
+    const sectionIndex = timeStream.getPosition('section');
+    const totalSections = timeStream.getBounds('section');
+    const journeyProgress = totalSections > 1 ? sectionIndex / (totalSections - 1) : 1;
+    const longFormPressure = clamp(totalSections - 4, 0, 1);
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
+    const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
+    const sectionArc = m.sin(m.pow(sectionProgress, 1.2) * m.PI);
+    const earlySectionDamp = 1 - clamp((0.35 - sectionProgress) / 0.35, 0, 1) * 0.20;
+    const preClimaxHold = 1 - longFormPressure * clamp((0.62 - journeyProgress) / 0.62, 0, 1) * 0.22 * (1 - lowPhasePressure * 0.75);
+    climaxPlayAllowance = 1 - longFormPressure * clamp((0.68 - journeyProgress) / 0.68, 0, 1) * 0.30 * (1 - lowPhasePressure * 0.75);
 
     const sigs = conductorSignalBridge.getSignals();
     // Blend compositeIntensity with elevated density/tension products for richer peak detection
     const densityPressure = clamp((sigs.density - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
     const tensionPressure = clamp((sigs.tension - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
-    const conductorIntensity = clamp(sigs.compositeIntensity * COMPOSITE_WEIGHT + densityPressure * DENSITY_PRESSURE_WEIGHT + tensionPressure * TENSION_PRESSURE_WEIGHT, 0, 1);
+    const conductorIntensity = clamp((sigs.compositeIntensity * COMPOSITE_WEIGHT + densityPressure * DENSITY_PRESSURE_WEIGHT + tensionPressure * TENSION_PRESSURE_WEIGHT) * earlySectionDamp, 0, 1);
 
     const heatLevel = clamp(interactionHeatMap.getDensity(), 0, 1);
 
@@ -58,7 +73,7 @@ crossLayerClimaxEngine = (() => {
     const intentPressure = (intent.densityTarget + intent.interactionTarget) / 2;
 
     // Composite climax signal
-    const raw = sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT;
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing
@@ -83,7 +98,7 @@ crossLayerClimaxEngine = (() => {
     const intensity = clamp((smoothedClimax - APPROACH_THRESHOLD) / (1 - APPROACH_THRESHOLD), 0, 1);
 
     return {
-      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST,
+      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance,
       velocityScale: 1.0 + intensity * MAX_VELOCITY_BOOST,
       registerBias: intensity * MAX_REGISTER_WIDEN,
       entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST
@@ -111,6 +126,7 @@ crossLayerClimaxEngine = (() => {
     smoothedClimax = 0;
     peakReached = false;
     climaxCount = 0;
+    climaxPlayAllowance = 1;
   }
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };
