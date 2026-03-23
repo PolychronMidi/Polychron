@@ -46,6 +46,18 @@ globalConductor = (() => {
 
     const sectionPhase = harmonicContext.getField('sectionPhase');
     const excursion = harmonicContext.getField('excursion');
+    const sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
+    const phaseShare = axisEnergy && axisEnergy.shares ? Number(axisEnergy.shares.phase) : 0;
+    const phaseEstablished = clamp((phaseShare - 0.045) / 0.04, 0, 1);
+    const lateSectionSplit = clamp((sectionProgress - 0.55) / 0.45, 0, 1);
+    const midSectionPocket = m.sin(clamp((sectionProgress - 0.18) / 0.64, 0, 1) * m.PI);
+    const endRelease = sectionPhase === 'resolution'
+      ? 1 - clamp((sectionProgress - 0.68) / 0.32, 0, 1) * (0.22 + phaseEstablished * 0.16)
+      : 1;
+    const densityLateRelief = 1 - lateSectionSplit * 0.08;
+    const midSectionCooloff = sectionPhase === 'resolution' ? 1 : 1 - midSectionPocket * 0.06;
+    const tensionLateLift = (1 + lateSectionSplit * (sectionPhase === 'resolution' ? 0.01 : 0.08)) * endRelease * midSectionCooloff * (sectionPhase === 'resolution' ? 1 - phaseEstablished * 0.10 : 1);
 
     // 2. derive composite intensity (0-1)
     const phaseMult = conductorConfig.getPhaseMultiplier(sectionPhase);
@@ -88,7 +100,7 @@ globalConductor = (() => {
 
     // Drive motif density
     const targetDensity = clamp(
-      conductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * registryDensityBias,
+      conductorConfig.getTargetDensity(compositeIntensity) * densityCorrection * registryDensityBias * densityLateRelief,
       0, 1
     );
     const smooth = conductorConfig.getDensitySmoothing();
@@ -128,9 +140,12 @@ globalConductor = (() => {
     const flickerDir = registryFlickerMod - prevFlickerSnapshot; // use pre-update snapshot (fixes R4 bug: was always 0)
     const signAgreement = (densityDir > 0 && flickerDir > 0) || (densityDir < 0 && flickerDir < 0) ? 1 : -1;
     globalConductorDfCorrEma = globalConductorDfCorrEma * (1 - DF_CORR_ALPHA) + signAgreement * DF_CORR_ALPHA;
+    const flickerShare = axisEnergy && axisEnergy.shares ? Number(axisEnergy.shares.flicker) : 0;
+    const flickerAxisPressure = clamp((flickerShare - 0.16) / 0.10, 0, 1);
+    const phaseSafeTrim = 1 - phaseEstablished * flickerAxisPressure * 0.18;
     // When correlation is positive (co-moving), attenuate the additive flicker;
     // when negative or zero, pass through fully. Range: [0.5, 1.0].
-    const dfDecorrelScale = clamp(1.0 - m.max(0, globalConductorDfCorrEma) * 0.5, 0.5, 1.0);
+    const dfDecorrelScale = clamp((1.0 - m.max(0, globalConductorDfCorrEma) * 0.5) * phaseSafeTrim, 0.45, 1.0);
 
     const densityFlicker = (m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -169,7 +184,7 @@ globalConductor = (() => {
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
     const rawTension = clamp(
-      (Number(resolved.composite) * 0.55 + Number(harmonicTension) * 0.45) * registryTensionBias,
+      (Number(resolved.composite) * 0.55 + Number(harmonicTension) * 0.45) * registryTensionBias * tensionLateLift,
       0, 1
     );
     const TENSION_SMOOTHING = 0.38;

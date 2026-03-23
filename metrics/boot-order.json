@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-23T02:44:09.014Z",
+    "generated": "2026-03-23T11:51:59.451Z",
     "totalFiles": 437,
     "globalsDeclared": 716,
     "globalsMapped": 716,
@@ -3111,104 +3111,104 @@
     },
     {
       "order": 399,
-      "file": "src/crossLayer/structure/trust/index.js",
-      "provides": []
-    },
-    {
-      "order": 400,
-      "file": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
-      "provides": [
-        "adaptiveTrustScoresHelpers"
-      ]
-    },
-    {
-      "order": 401,
-      "file": "src/crossLayer/structure/trust/adaptiveTrustScores.js",
-      "provides": [
-        "adaptiveTrustScores"
-      ]
-    },
-    {
-      "order": 402,
       "file": "src/crossLayer/structure/form/index.js",
       "provides": []
     },
     {
-      "order": 403,
+      "order": 400,
       "file": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
       "provides": [
         "crossLayerClimaxEngine"
       ]
     },
     {
-      "order": 404,
+      "order": 401,
       "file": "src/crossLayer/structure/form/crossLayerSilhouette.js",
       "provides": [
         "crossLayerSilhouette"
       ]
     },
     {
-      "order": 405,
+      "order": 402,
       "file": "src/crossLayer/structure/form/sectionIntentCurves.js",
       "provides": [
         "sectionIntentCurves"
       ]
     },
     {
-      "order": 406,
+      "order": 403,
       "file": "src/crossLayer/structure/entropy/index.js",
       "provides": []
     },
     {
-      "order": 407,
+      "order": 404,
       "file": "src/crossLayer/structure/entropy/entropyMetrics.js",
       "provides": [
         "entropyMetrics"
       ]
     },
     {
-      "order": 408,
+      "order": 405,
       "file": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "provides": [
         "entropyRegulator"
       ]
     },
     {
-      "order": 409,
+      "order": 406,
       "file": "src/crossLayer/structure/negotiation/index.js",
       "provides": []
     },
     {
-      "order": 410,
+      "order": 407,
       "file": "src/crossLayer/structure/negotiation/interactionHeatMap.js",
       "provides": [
         "interactionHeatMap"
       ]
     },
     {
-      "order": 411,
+      "order": 408,
       "file": "src/crossLayer/structure/negotiation/negotiationEngine.js",
       "provides": [
         "negotiationEngine"
       ]
     },
     {
-      "order": 412,
+      "order": 409,
       "file": "src/crossLayer/structure/integration/index.js",
       "provides": []
     },
     {
-      "order": 413,
+      "order": 410,
       "file": "src/crossLayer/structure/integration/contextualTrust.js",
       "provides": [
         "contextualTrust"
       ]
     },
     {
-      "order": 414,
+      "order": 411,
       "file": "src/crossLayer/structure/integration/beatInterleavedProcessor.js",
       "provides": [
         "beatInterleavedProcessor"
+      ]
+    },
+    {
+      "order": 412,
+      "file": "src/crossLayer/structure/trust/index.js",
+      "provides": []
+    },
+    {
+      "order": 413,
+      "file": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "provides": [
+        "adaptiveTrustScoresHelpers"
+      ]
+    },
+    {
+      "order": 414,
+      "file": "src/crossLayer/structure/trust/adaptiveTrustScores.js",
+      "provides": [
+        "adaptiveTrustScores"
       ]
     },
     {

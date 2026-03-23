@@ -8,6 +8,13 @@ dynamicRoleSwap = (() => {
   const MIN_PHRASES_BETWEEN_SWAPS = 2;
   const TENSION_VALLEY_THRESHOLD = 0.45; // R34 E4: 0.3->0.45 allow swaps during moderate tension valleys (was never triggering at 0.3 with avg tension 0.5-0.7)
   const SWAP_PROBABILITY = 0.75; // probability of actually swapping when conditions met
+  const SWAP_DROUGHT_TRIGGER = 4;
+  const MODERATE_TENSION_THRESHOLD = 0.62;
+  const DROUGHT_SWAP_PROBABILITY = 0.55;
+  const SWAPPED_L2_WINDOW_SECONDS = 12;
+  const SWAPPED_L2_IMBALANCE_OFFSET = 4;
+  const SWAPPED_L2_IMBALANCE_RANGE = 18;
+  const SWAPPED_L2_MAX_RELIEF = 0.32;
 
   let phrasesSinceLastSwap = 0;
   let swapCount = 0;
@@ -28,12 +35,13 @@ dynamicRoleSwap = (() => {
     if (phrasesSinceLastSwap < MIN_PHRASES_BETWEEN_SWAPS) {
       return { swapped: false, swapCount };
     }
-    // Only swap in tension valleys
-    if (currentTension > TENSION_VALLEY_THRESHOLD) {
+    const inValley = currentTension <= TENSION_VALLEY_THRESHOLD;
+    const droughtRelease = phrasesSinceLastSwap >= SWAP_DROUGHT_TRIGGER && currentTension <= MODERATE_TENSION_THRESHOLD;
+    if (!inValley && !droughtRelease) {
       return { swapped: false, swapCount };
     }
-    // Probabilistic gate
-    if (rf() > SWAP_PROBABILITY) {
+    const gate = inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY;
+    if (rf() > gate) {
       return { swapped: false, swapCount };
     }
 
@@ -66,7 +74,21 @@ dynamicRoleSwap = (() => {
       return { densityScale: 0.6, chordalBias: 0.3, melodicBias: -0.2, isSwapped: true };
     }
     // L2 takes on L1 characteristics: denser, more melodic
-    return { densityScale: 1.4, chordalBias: -0.2, melodicBias: 0.3, isSwapped: true };
+    const recentL2Count = absoluteTimeWindow.countNotes({ layer: 'L2', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
+    const recentL1Count = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
+    const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
+    const imbalancePressure = clamp((recentL2Count - recentL1Count - SWAPPED_L2_IMBALANCE_OFFSET) / SWAPPED_L2_IMBALANCE_RANGE, 0, 1) * (1 - lowPhasePressure * 0.65);
+    return {
+      densityScale: 1.4 - imbalancePressure * SWAPPED_L2_MAX_RELIEF,
+      chordalBias: -0.2,
+      melodicBias: 0.3 - imbalancePressure * 0.08,
+      isSwapped: true
+    };
   }
 
   /**

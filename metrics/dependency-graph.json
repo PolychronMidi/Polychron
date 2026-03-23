@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-23T02:58:08.098Z",
+    "generated": "2026-03-23T12:02:54.686Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 437,
     "totalGlobals": 716,
     "totalProvides": 731,
-    "totalConsumes": 2867,
-    "totalEdges": 2243,
-    "crossSubsystemEdges": 1496,
+    "totalConsumes": 2895,
+    "totalEdges": 2270,
+    "crossSubsystemEdges": 1517,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 223
@@ -32,12 +32,12 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 926
+        "consumes": 938
       },
       "rhythm": {
         "files": 30,
         "provides": 45,
-        "consumes": 208
+        "consumes": 213
       },
       "time": {
         "files": 13,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 345
+        "consumes": 356
       },
       "writer": {
         "files": 4,
@@ -587,6 +587,7 @@
       ],
       "consumes": [
         "allNotes",
+        "clamp",
         "m",
         "rf",
         "ri",
@@ -862,6 +863,8 @@
         "conductorMetaWatchdog",
         "explainabilityBus",
         "m",
+        "phaseFloorController",
+        "pipelineCouplingManager",
         "safePreBoot",
         "systemDynamicsProfiler",
         "validator"
@@ -890,7 +893,9 @@
         "harmonicRhythmTracker",
         "m",
         "motifConfig",
-        "rf"
+        "pipelineCouplingManager",
+        "rf",
+        "timeStream"
       ]
     },
     "src/conductor/analysisHelpers.js": {
@@ -1014,15 +1019,19 @@
         "FXFeedbackListener",
         "FactoryManager",
         "LM",
+        "absoluteTimeWindow",
         "clamp",
         "conductorConfig",
+        "dynamicRoleSwap",
         "dynamismPulse",
         "harmonicJourney",
         "harmonicRhythmTracker",
         "journeyRhythmCoupler",
         "m",
+        "safePreBoot",
         "sectionIndex",
         "stutterFeedbackListener",
+        "systemDynamicsProfiler",
         "textureBlender",
         "validator"
       ]
@@ -1263,7 +1272,10 @@
         "clamp",
         "explainabilityBus",
         "m",
-        "regimeClassifierHelpers"
+        "phaseFloorController",
+        "pipelineCouplingManager",
+        "regimeClassifierHelpers",
+        "safePreBoot"
       ]
     },
     "src/conductor/signal/profiling/regimeClassifier.js": {
@@ -3519,12 +3531,17 @@
         "phaseLockedRhythmGenerator"
       ],
       "consumes": [
+        "clamp",
         "conductorConfig",
         "drumTextureCoupler",
         "m",
+        "phaseFloorController",
+        "pipelineCouplingManager",
         "rf",
         "rhythmRegistry",
         "rotate",
+        "systemDynamicsProfiler",
+        "timeStream",
         "validator"
       ]
     },
@@ -6073,9 +6090,12 @@
       ],
       "consumes": [
         "MIDI_MAX_VALUE",
+        "absoluteTimeWindow",
         "clamp",
         "crossLayerRegistry",
         "m",
+        "phaseFloorController",
+        "pipelineCouplingManager",
         "rf",
         "validator"
       ]
@@ -6141,66 +6161,14 @@
       "provides": [],
       "consumes": []
     },
-    "src/crossLayer/structure/trust/index.js": {
+    "src/crossLayer/structure/form/index.js": {
       "order": 399,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
-    "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js": {
-      "order": 400,
-      "subsystem": "crossLayer",
-      "provides": [
-        "adaptiveTrustScoresHelpers"
-      ],
-      "consumes": [
-        "clamp",
-        "contextualTrust",
-        "couplingHomeostasis",
-        "m",
-        "pipelineCouplingManager",
-        "regimeClassifier",
-        "safePreBoot",
-        "systemDynamicsProfiler",
-        "trustSystems"
-      ]
-    },
-    "src/crossLayer/structure/trust/adaptiveTrustScores.js": {
-      "order": 401,
-      "subsystem": "crossLayer",
-      "provides": [
-        "adaptiveTrustScores"
-      ],
-      "consumes": [
-        "adaptiveTrustScoresHelpers",
-        "beatCount",
-        "beatStartTime",
-        "cadenceAlignment",
-        "clamp",
-        "contextualTrust",
-        "crossLayerRegistry",
-        "explainabilityBus",
-        "m",
-        "p",
-        "restSynchronizer",
-        "safePreBoot",
-        "sectionIndex",
-        "signalHealthAnalyzer",
-        "signalReader",
-        "systemDynamicsProfiler",
-        "trustSystems",
-        "validator",
-        "velocity"
-      ]
-    },
-    "src/crossLayer/structure/form/index.js": {
-      "order": 402,
-      "subsystem": "crossLayer",
-      "provides": [],
-      "consumes": []
-    },
     "src/crossLayer/structure/form/crossLayerClimaxEngine.js": {
-      "order": 403,
+      "order": 400,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerClimaxEngine"
@@ -6211,13 +6179,17 @@
         "crossLayerRegistry",
         "interactionHeatMap",
         "m",
+        "phaseFloorController",
+        "pipelineCouplingManager",
+        "sectionIndex",
         "sectionIntentCurves",
         "timeStream",
+        "totalSections",
         "validator"
       ]
     },
     "src/crossLayer/structure/form/crossLayerSilhouette.js": {
-      "order": 404,
+      "order": 401,
       "subsystem": "crossLayer",
       "provides": [
         "crossLayerSilhouette"
@@ -6234,7 +6206,7 @@
       ]
     },
     "src/crossLayer/structure/form/sectionIntentCurves.js": {
-      "order": 405,
+      "order": 402,
       "subsystem": "crossLayer",
       "provides": [
         "sectionIntentCurves"
@@ -6244,18 +6216,21 @@
         "crossLayerRegistry",
         "m",
         "p",
+        "phaseFloorController",
+        "pipelineCouplingManager",
         "timeStream",
+        "totalSections",
         "validator"
       ]
     },
     "src/crossLayer/structure/entropy/index.js": {
-      "order": 406,
+      "order": 403,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/entropy/entropyMetrics.js": {
-      "order": 407,
+      "order": 404,
       "subsystem": "crossLayer",
       "provides": [
         "entropyMetrics"
@@ -6270,7 +6245,7 @@
       ]
     },
     "src/crossLayer/structure/entropy/entropyRegulator.js": {
-      "order": 408,
+      "order": 405,
       "subsystem": "crossLayer",
       "provides": [
         "entropyRegulator"
@@ -6289,13 +6264,13 @@
       ]
     },
     "src/crossLayer/structure/negotiation/index.js": {
-      "order": 409,
+      "order": 406,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/negotiation/interactionHeatMap.js": {
-      "order": 410,
+      "order": 407,
       "subsystem": "crossLayer",
       "provides": [
         "interactionHeatMap"
@@ -6309,7 +6284,7 @@
       ]
     },
     "src/crossLayer/structure/negotiation/negotiationEngine.js": {
-      "order": 411,
+      "order": 408,
       "subsystem": "crossLayer",
       "provides": [
         "negotiationEngine"
@@ -6326,13 +6301,13 @@
       ]
     },
     "src/crossLayer/structure/integration/index.js": {
-      "order": 412,
+      "order": 409,
       "subsystem": "crossLayer",
       "provides": [],
       "consumes": []
     },
     "src/crossLayer/structure/integration/contextualTrust.js": {
-      "order": 413,
+      "order": 410,
       "subsystem": "crossLayer",
       "provides": [
         "contextualTrust"
@@ -6347,7 +6322,7 @@
       ]
     },
     "src/crossLayer/structure/integration/beatInterleavedProcessor.js": {
-      "order": 414,
+      "order": 411,
       "subsystem": "crossLayer",
       "provides": [
         "beatInterleavedProcessor"
@@ -6356,6 +6331,59 @@
         "beatCount",
         "crossLayerRegistry",
         "validator"
+      ]
+    },
+    "src/crossLayer/structure/trust/index.js": {
+      "order": 412,
+      "subsystem": "crossLayer",
+      "provides": [],
+      "consumes": []
+    },
+    "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js": {
+      "order": 413,
+      "subsystem": "crossLayer",
+      "provides": [
+        "adaptiveTrustScoresHelpers"
+      ],
+      "consumes": [
+        "clamp",
+        "contextualTrust",
+        "couplingHomeostasis",
+        "m",
+        "pipelineCouplingManager",
+        "regimeClassifier",
+        "safePreBoot",
+        "systemDynamicsProfiler",
+        "trustSystems"
+      ]
+    },
+    "src/crossLayer/structure/trust/adaptiveTrustScores.js": {
+      "order": 414,
+      "subsystem": "crossLayer",
+      "provides": [
+        "adaptiveTrustScores"
+      ],
+      "consumes": [
+        "adaptiveTrustScoresHelpers",
+        "beatCount",
+        "beatStartTime",
+        "cadenceAlignment",
+        "clamp",
+        "contextualTrust",
+        "crossLayerRegistry",
+        "explainabilityBus",
+        "m",
+        "p",
+        "pipelineCouplingManager",
+        "restSynchronizer",
+        "safePreBoot",
+        "sectionIndex",
+        "signalHealthAnalyzer",
+        "signalReader",
+        "systemDynamicsProfiler",
+        "trustSystems",
+        "validator",
+        "velocity"
       ]
     },
     "src/crossLayer/conductorSignalBridge.js": {
@@ -10900,6 +10928,20 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/conductorDampening.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/globalConductor.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/balancing/axisEnergyEquilibratorAxisAdjustments.js",
       "globals": [
         "pipelineCouplingManager"
@@ -10942,7 +10984,42 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/profiling/regimeClassifierResolution.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/profiling/systemDynamicsProfilerAnalysis.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/crossLayer/structure/form/sectionIntentCurves.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/crossLayer/structure/trust/adaptiveTrustScores.js",
       "globals": [
         "pipelineCouplingManager"
       ]
@@ -10971,6 +11048,13 @@
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/play/main.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/rhythm/phaseLockedRhythmGenerator.js",
       "globals": [
         "pipelineCouplingManager"
       ]
@@ -11019,6 +11103,13 @@
     },
     {
       "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/conductor/conductorDampening.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
       "to": "src/conductor/signal/balancing/axisEnergyEquilibratorAxisAdjustments.js",
       "globals": [
         "phaseFloorController"
@@ -11027,6 +11118,41 @@
     {
       "from": "src/conductor/signal/balancing/phaseFloorController.js",
       "to": "src/conductor/signal/meta/hyperMetaOrchestrator.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/conductor/signal/profiling/regimeClassifierResolution.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/crossLayer/structure/form/sectionIntentCurves.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/rhythm/phaseLockedRhythmGenerator.js",
       "globals": [
         "phaseFloorController"
       ]
@@ -11453,6 +11579,13 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/dynamismEngine.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -11531,6 +11664,13 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/play/main.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/rhythm/phaseLockedRhythmGenerator.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -12142,6 +12282,13 @@
       "to": "src/play/processBeat.js",
       "globals": [
         "crossLayerDynamicEnvelope"
+      ]
+    },
+    {
+      "from": "src/crossLayer/dynamics/dynamicRoleSwap.js",
+      "to": "src/conductor/dynamismEngine.js",
+      "globals": [
+        "dynamicRoleSwap"
       ]
     },
     {
@@ -13883,6 +14030,21 @@
     },
     {
       "from": "src/play/main.js",
+      "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
+      "globals": [
+        "sectionIndex",
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
+      "to": "src/crossLayer/structure/form/sectionIntentCurves.js",
+      "globals": [
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
       "to": "src/crossLayer/structure/trust/adaptiveTrustScores.js",
       "globals": [
         "sectionIndex"
@@ -14719,6 +14881,13 @@
     },
     {
       "from": "src/time/absoluteTimeWindow.js",
+      "to": "src/conductor/dynamismEngine.js",
+      "globals": [
+        "absoluteTimeWindow"
+      ]
+    },
+    {
+      "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/harmonic/cadenceAdvisor.js",
       "globals": [
         "absoluteTimeWindow"
@@ -14909,6 +15078,13 @@
     {
       "from": "src/time/absoluteTimeWindow.js",
       "to": "src/conductor/texture/phrasing/orchestrationWeightTracker.js",
+      "globals": [
+        "absoluteTimeWindow"
+      ]
+    },
+    {
+      "from": "src/time/absoluteTimeWindow.js",
+      "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
       "globals": [
         "absoluteTimeWindow"
       ]
@@ -15196,6 +15372,13 @@
     },
     {
       "from": "src/time/timeStream.js",
+      "to": "src/conductor/globalConductor.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
       "to": "src/conductor/PhraseArcManager.js",
       "globals": [
         "timeStream"
@@ -15295,6 +15478,13 @@
     {
       "from": "src/time/timeStream.js",
       "to": "src/rhythm/crossModulateRhythms.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
+      "to": "src/rhythm/phaseLockedRhythmGenerator.js",
       "globals": [
         "timeStream"
       ]
@@ -15827,6 +16017,13 @@
     {
       "from": "src/utils/clamps.js",
       "to": "src/conductor/harmonic/tonalAnchorDistanceTracker.js",
+      "globals": [
+        "clamp"
+      ]
+    },
+    {
+      "from": "src/utils/clamps.js",
+      "to": "src/conductor/journey/harmonicJourneyPlanner.js",
       "globals": [
         "clamp"
       ]
@@ -16714,6 +16911,13 @@
     {
       "from": "src/utils/clamps.js",
       "to": "src/rhythm/feedback/stutterFeedbackListener.js",
+      "globals": [
+        "clamp"
+      ]
+    },
+    {
+      "from": "src/utils/clamps.js",
+      "to": "src/rhythm/phaseLockedRhythmGenerator.js",
       "globals": [
         "clamp"
       ]
@@ -21231,6 +21435,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/dynamismEngine.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/balancing/axisEnergyEquilibratorRefreshContext.js",
       "globals": [
         "safePreBoot"
@@ -21302,6 +21513,13 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/meta/hyperMetaOrchestrator.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/profiling/regimeClassifierResolution.js",
       "globals": [
         "safePreBoot"
       ]

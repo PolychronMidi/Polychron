@@ -8,6 +8,7 @@ cadenceAlignment = (() => {
   const CHANNEL = 'tension';
   const SYNC_TOLERANCE_MS = 400;
   const HIGH_TENSION_THRESHOLD = 0.55;
+  const STRONG_TENSION_THRESHOLD = 0.72;
   const EVENTS = eventCatalog.names;
 
   /**
@@ -30,9 +31,10 @@ cadenceAlignment = (() => {
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
    * @param {number} ourTension - this layer's current tension
-   * @returns {{ aligned: boolean, syncTick: number, combinedTension: number, otherCadenceSuggested: boolean } | null}
+   * @param {boolean} [ourCadenceSuggested]
+   * @returns {{ aligned: boolean, syncTick: number, combinedTension: number, otherCadenceSuggested: boolean, sharedCadenceIntent: boolean, consensus: boolean } | null}
    */
-  function checkAlignment(absTimeMs, activeLayer, ourTension) {
+  function checkAlignment(absTimeMs, activeLayer, ourTension, ourCadenceSuggested) {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.requireFinite(ourTension, 'ourTension');
 
@@ -43,6 +45,11 @@ cadenceAlignment = (() => {
     );
     if (!other || !Number.isFinite(other.tension)) return null;
     if (other.tension < HIGH_TENSION_THRESHOLD) return null;
+    const localCadenceSuggested = Boolean(ourCadenceSuggested);
+    const otherCadenceSuggested = Boolean(other.cadenceSuggested);
+    const sharedCadenceIntent = localCadenceSuggested || otherCadenceSuggested;
+    const consensus = localCadenceSuggested && otherCadenceSuggested;
+    if (!sharedCadenceIntent && (ourTension < STRONG_TENSION_THRESHOLD || other.tension < STRONG_TENSION_THRESHOLD)) return null;
 
     // Both layers are at high tension within the same time window
     const syncTick = crossLayerHelpers.msToSyncTick(other.timeMs);
@@ -51,7 +58,9 @@ cadenceAlignment = (() => {
       aligned: true,
       syncTick,
       combinedTension: (ourTension + other.tension) / 2,
-      otherCadenceSuggested: Boolean(other.cadenceSuggested)
+      otherCadenceSuggested,
+      sharedCadenceIntent,
+      consensus
     };
   }
 
@@ -61,14 +70,16 @@ cadenceAlignment = (() => {
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
    * @param {number} ourTension - this layer's current tension
-   * @returns {{ shouldResolve: boolean, tonicBias: number, dominantBias: number, syncTick: number } | null}
+   * @param {boolean} [ourCadenceSuggested]
+   * @returns {{ shouldResolve: boolean, tonicBias: number, dominantBias: number, syncTick: number, consensus: boolean, sharedCadenceIntent: boolean } | null}
    */
-  function applyAlignment(absTimeMs, activeLayer, ourTension) {
-    const alignment = checkAlignment(absTimeMs, activeLayer, ourTension);
+  function applyAlignment(absTimeMs, activeLayer, ourTension, ourCadenceSuggested) {
+    const alignment = checkAlignment(absTimeMs, activeLayer, ourTension, ourCadenceSuggested);
     if (!alignment) return null;
 
     // Both layers at high tension - strongly bias toward cadential resolution
     const intensityBoost = alignment.combinedTension;
+    const supportScale = alignment.consensus ? 1.0 : 0.72;
 
     // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
@@ -80,10 +91,12 @@ cadenceAlignment = (() => {
     });
 
     return {
-      shouldResolve: alignment.otherCadenceSuggested || alignment.combinedTension > 0.85,
-      tonicBias: 0.5 + intensityBoost * 0.4,
-      dominantBias: 0.3 + intensityBoost * 0.5,
-      syncTick: alignment.syncTick
+      shouldResolve: alignment.consensus || alignment.combinedTension > 0.88,
+      tonicBias: 0.5 + intensityBoost * 0.4 * supportScale,
+      dominantBias: 0.3 + intensityBoost * 0.5 * supportScale,
+      syncTick: alignment.syncTick,
+      consensus: alignment.consensus,
+      sharedCadenceIntent: alignment.sharedCadenceIntent
     };
   }
 

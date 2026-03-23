@@ -120,7 +120,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const clCadenceGate = phaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, layer, Boolean(clCadence.suggest), clPhaseSnapshot);
   cadenceAlignment.postTension(clAbsMs, layer, clTension, clCadence.suggest);
   const clCadResult = (clCadenceGate && clNegotiation.allowCadence)
-    ? cadenceAlignment.applyAlignment(clAbsMs, layer, clTension)
+    ? cadenceAlignment.applyAlignment(clAbsMs, layer, clTension, Boolean(clCadence.suggest))
     : null;
   if (clCadResult) feedbackOscillator.inject(clAbsMs, layer, clamp(clTension, 0, 1), 'cadence');
 
@@ -171,7 +171,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const phaseOutcome = clamp((clPhaseMode === 'lock' ? plp.lock : clPhaseMode === 'drift' ? plp.drift : plp.other) + clPhase.confidence * plp.confidenceScale, -1, 1);
   const cap = tp.cadenceAlignment;
   let cadenceOutcome = clCadResult
-    ? (clCadResult.shouldResolve ? cap.resolved : cap.unresolved)
+    ? (clCadResult.consensus ? cap.resolved : cap.unresolved * 0.5)
     : (clCadenceGate ? cap.gatedNoResult : cap.ungated);
   // Drought bonus: if cadenceAlignment fires after a long drought, double
   // the payoff to accelerate trust recovery from cold-start deficit.

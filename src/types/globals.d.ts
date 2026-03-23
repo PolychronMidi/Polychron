@@ -827,8 +827,8 @@ interface HarmonicIntervalGuardAPI {
 
 interface CadenceAlignmentAPI {
   postTension(absTimeMs: number, layer: string, tension: number, cadenceSuggested: boolean): void;
-  checkAlignment(absTimeMs: number, activeLayer: string, ourTension: number): { aligned: boolean; syncTick: number; combinedTension: number; otherCadenceSuggested: boolean } | null;
-  applyAlignment(absTimeMs: number, activeLayer: string, ourTension: number): { shouldResolve: boolean; tonicBias: number; dominantBias: number; syncTick: number } | null;
+  checkAlignment(absTimeMs: number, activeLayer: string, ourTension: number, ourCadenceSuggested?: boolean): { aligned: boolean; syncTick: number; combinedTension: number; otherCadenceSuggested: boolean; sharedCadenceIntent: boolean; consensus: boolean } | null;
+  applyAlignment(absTimeMs: number, activeLayer: string, ourTension: number, ourCadenceSuggested?: boolean): { shouldResolve: boolean; tonicBias: number; dominantBias: number; syncTick: number; consensus: boolean; sharedCadenceIntent: boolean } | null;
   reset(): void;
 }
 

@@ -21,6 +21,8 @@ dynamismEngine = (() => {
     V.assertManagerShape(journeyRhythmCoupler, 'journeyRhythmCoupler', ['getBoldness']);
     V.assertManagerShape(textureBlender, 'textureBlender', ['getRecentDensity']);
     V.assertManagerShape(harmonicJourney, 'harmonicJourney', ['getStop']);
+    V.assertManagerShape(dynamicRoleSwap, 'dynamicRoleSwap', ['getIsSwapped']);
+    V.assertManagerShape(absoluteTimeWindow, 'absoluteTimeWindow', ['countNotes']);
     V.assertManagerShape(LM, 'LM', ['register', 'activate']);
     V.assertObject(LM.layers, 'LM.layers');
 
@@ -152,8 +154,19 @@ dynamismEngine = (() => {
     );
 
     const emissionGate = conductorConfig.getEmissionGateParams();
+    const activeRegime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
+    let l2Overhang = 0;
+    if (LM && LM.activeLayer === 'L2') {
+      const recentL1 = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: 8 });
+      const recentL2 = absoluteTimeWindow.countNotes({ layer: 'L2', windowSeconds: 8 });
+      if (recentL2 > recentL1) {
+        l2Overhang = clamp((recentL2 - recentL1) / m.max(recentL1, 1), 0, 1.5);
+      }
+    }
 
-    const layerBias = (LM && LM.activeLayer === 'L2') ? 0.10 : 0;
+    const layerBias = (LM && LM.activeLayer === 'L2')
+      ? (0.10 + (!dynamicRoleSwap.getIsSwapped() && activeRegime === 'exploring' ? 0.03 : 0)) * (1 - clamp(l2Overhang * 0.22, 0, 0.28))
+      : 0;
     const playOut = clamp(
       inputPlay * (emissionGate.playBase + composite * emissionGate.playScale) +
       layerBias * 0.5 * emissionGate.layerBiasScale,

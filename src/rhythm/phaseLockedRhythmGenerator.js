@@ -104,6 +104,30 @@ phaseLockedRhythmGenerator = (() => {
       offset += drift;
     }
 
+    try {
+      const snap = systemDynamicsProfiler.getSnapshot();
+      const sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);
+      const textureStarved = texMetrics.intensity < 0.15;
+      const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
+      const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+        ? axisEnergy.shares.phase
+        : 1.0 / 6.0;
+      const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
+      const collapseThreshold = phaseFloorController.getCollapseThreshold();
+      const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1.5);
+      const needsPhaseRescue = phaseShare < lowPhaseThreshold;
+      const deepPhaseCollapse = phaseShare < collapseThreshold;
+      if (activeLayer === 'L2' && ((snap && snap.regime === 'exploring' && (sectionProgress > 0.25 || textureStarved)) || needsPhaseRescue)) {
+        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + (deepPhaseCollapse ? 0.35 : 0))));
+        offset += phasePush;
+      } else if (activeLayer === 'L1' && deepPhaseCollapse && sectionProgress > 0.12) {
+        const phasePush = m.max(1, m.round((0.35 + sectionProgress * 0.5) * (1 + lowPhasePressure * 0.5)));
+        offset += phasePush;
+      }
+    } catch {
+      // Snapshot access is optional during early boot and tests.
+    }
+
     offset = ((offset % length) + length) % length; // Normalize to [0, length)
 
     // Rotate pattern by offset

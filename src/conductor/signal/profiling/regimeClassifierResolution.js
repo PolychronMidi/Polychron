@@ -44,6 +44,13 @@ regimeClassifierResolution = (() => {
 
   function resolve(state, config, rawRegime, tickId, forceRegimeTransition) {
     const beatSpan = regimeClassifierHelpers.getTickSpan(state, tickId);
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 0;
+    const runExploringShare = state.runBeatCount > 0
+      ? ((state.runResolvedRegimeCounts.exploring || 0) / state.runBeatCount)
+      : 0;
     state.rawRegimeCounts[rawRegime] = (state.rawRegimeCounts[rawRegime] || 0) + 1;
     state.runRawRegimeCounts[rawRegime] = (state.runRawRegimeCounts[rawRegime] || 0) + beatSpan;
 
@@ -56,7 +63,10 @@ regimeClassifierResolution = (() => {
 
     let effectiveWindow = config.REGIME_WINDOW;
     if (state.lastRegime === 'exploring') {
-      effectiveWindow = m.max(3, config.REGIME_WINDOW - m.floor(state.exploringBeats / 40));
+      const exploringWindowReduction = phaseShare > 0.08 && runExploringShare > 0.68
+        ? 0
+        : m.floor(state.exploringBeats / 40);
+      effectiveWindow = m.max(3, config.REGIME_WINDOW - exploringWindowReduction);
     }
 
     state.rawRegimeWindow.push(rawRegime);
@@ -86,8 +96,11 @@ regimeClassifierResolution = (() => {
         ? ((state.runResolvedRegimeCounts.evolving || 0) / state.runBeatCount)
         : 0;
       const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
+      const phaseHealthyExploringPressure = phaseShare > 0.08
+        ? clamp((runExploringShare - 0.68) / 0.12, 0, 1)
+        : 0;
       const requiredHits = rawRegime === 'exploring'
-        ? 2
+        ? (phaseHealthyExploringPressure > 0 ? 3 : 2)
         : (rawRegime === 'evolving' && evolvingDeficit > 0.15 ? 2 : config.REGIME_MAJORITY);
 
       if (windowHits >= requiredHits) {
@@ -121,8 +134,14 @@ regimeClassifierResolution = (() => {
 
     if (state.forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent') {
       const projectedRunCoherentBeats = state.runLastResolvedRegime === 'coherent' ? state.runCoherentBeats + beatSpan : beatSpan;
-      if (projectedRunCoherentBeats > config.COHERENT_MAX_DWELL) {
-        const coherentOvershoot = projectedRunCoherentBeats - config.COHERENT_MAX_DWELL;
+      let coherentMaxDwell = config.COHERENT_MAX_DWELL;
+      const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
+      if (phaseShare < lowPhaseThreshold) {
+        const phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
+        coherentMaxDwell = m.max(48, m.round(config.COHERENT_MAX_DWELL * (1 - phaseCollapsePressure * 0.35)));
+      }
+      if (projectedRunCoherentBeats > coherentMaxDwell) {
+        const coherentOvershoot = projectedRunCoherentBeats - coherentMaxDwell;
         const forcedWindow = clamp(4 + m.floor(coherentOvershoot / 24) + m.floor(state.coherentShareEma * 6), 4, 12);
         forceRegimeTransition('exploring', 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats, tickId);
         resolvedRegime = 'exploring';
