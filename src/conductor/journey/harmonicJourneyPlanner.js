@@ -60,7 +60,8 @@ harmonicJourneyPlanner = (() => {
       }
 
       // Resolution sections bias toward returning home
-      if (phase === 'resolution' && rf() < 0.5) {
+      // R27 E1: Reduced from 50% to 30% to encourage more harmonic wandering
+      if (phase === 'resolution' && rf() < 0.3) {
         const dist = HJ.harmonicDistance(currentKey, originKey);
         if (dist > 0) {
           currentKey = originKey;

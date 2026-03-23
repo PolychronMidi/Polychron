@@ -6,8 +6,8 @@
 restSynchronizer = (() => {
   const V = validator.create('restSynchronizer');
   const MIN_REST_INTERVAL_MS = 800;
-  const SHARED_REST_PROBABILITY = 0.15;
-  const COMPLEMENT_FILL_THRESHOLD = 0.6;
+  const SHARED_REST_PROBABILITY = 0.22;
+  const COMPLEMENT_FILL_THRESHOLD = 0.45;
 
   /** @type {Record<string, number>} last rest timestamp per layer */
   let lastRestMs = crossLayerHelpers.createLayerPair(-Infinity);

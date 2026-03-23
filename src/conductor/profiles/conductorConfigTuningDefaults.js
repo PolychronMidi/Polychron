@@ -3,7 +3,7 @@ conductorConfigTuningDefaults = () => ({
     playBase: 0.72,
     playScale: 0.9,
     stutterBase: 0.6,
-    stutterScale: 1.15,
+    stutterScale: 1.25,       // R29 E4: Raised from 1.15 for more dramatic stutter articulation
     journeyBoost: 0.08,
     feedbackBoost: 0.08,
     layerBiasScale: 1.0

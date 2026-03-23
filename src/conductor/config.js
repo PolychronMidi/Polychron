@@ -139,9 +139,9 @@ DIVISIONS={
 /** @tier-1 - dynamism engine parameters - affects play/stutter probability scaling */
 DYNAMISM={
   scaleBase: 0.75,
-  scaleRange: 0.5,
+  scaleRange: 0.7,  // R27 E2: Widened from 0.5 for wider play/stutter probability range
   playProb: { start: 0.22, mid: 0.28 },
-  stutterProb: { end: 0.4, mid: 0.2 }
+  stutterProb: { end: 0.5, mid: 0.2 }  // R28 E3: end raised from 0.4 for punchier phrase endings
 };
 /** @tier-2 - composer family weights and member types */
 COMPOSER_FAMILIES={
@@ -249,9 +249,9 @@ NOISE_PROFILES = {
 
 /** @tier-2 - voice manager parameters */
 VOICE_MANAGER = {
-  voiceIndependenceDefault: 0.5, // 0-1 scale (contrapuntal vs homophonic)
+  voiceIndependenceDefault: 0.65, // 0-1 scale (contrapuntal vs homophonic)
   arcDensityChance: 0.5,         // Probability of applying arc density multiplier
-  arcRegisterBiasChance: 0.3,    // Probability of applying arc register bias
+  arcRegisterBiasChance: 0.5,    // Probability of applying arc register bias
   arcRegisterBiasThreshold: 5    // Minimum semitone shift to trigger arc bias
 };
 
@@ -525,7 +525,9 @@ PHRASES_ARC_CURVES = {
   'arch': {
     register: (p) => m.sin(Number(p) * m.PI) * 12 - 6,
     density: (p) => m.sin(Number(p) * m.PI) * 0.4 + 0.8,
-    dynamism: () => 1.0
+    // R29 E1: Mid-phrase intensification (was flat 1.0). Arch shape now peaks
+    // dynamism at phrase midpoint (0.7 + sin(pi*p)*0.3 = 0.7..1.0)
+    dynamism: (p) => 0.7 + m.sin(Number(p) * m.PI) * 0.3
   },
   'wave': {
     register: (p) => m.sin(Number(p) * m.PI * 2) * 8,

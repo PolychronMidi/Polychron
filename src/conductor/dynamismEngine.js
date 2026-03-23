@@ -61,7 +61,9 @@ dynamismEngine = (() => {
     const stop = harmonicJourney.getStop(Number(sectionIndex));
     V.assertObject(stop, 'harmonicJourney stop');
 
-    const distanceEnergy = clamp(Number(stop.distance) / 6, 0, 1);
+    // R28 E2: Sharper distance energy scaling (/ 5 vs / 6) so bold harmonic
+    // moves translate to more energetic output
+    const distanceEnergy = clamp(Number(stop.distance) / 5, 0, 1);
     const moveEnergy = Object.prototype.hasOwnProperty.call(moveBias, stop.move)
       ? moveBias[stop.move]
       : clamp(0.2 + distanceEnergy * 0.6, 0, 1);

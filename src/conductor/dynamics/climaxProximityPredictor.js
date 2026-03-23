@@ -64,36 +64,39 @@ climaxProximityPredictor = (() => {
    *   0-0.3 = normal (1.0), 0.3-0.5 = building (ramp to 1.08),
    *   0.5-0.75 = approaching (ramp to 1.15), 0.75-1.0 = climax (ramp to 1.2).
    * Receding (falling energy) pulls back proportionally.
-   * @returns {number} - 0.85 to 1.25
+   * @returns {number} - 0.82 to 1.35
    */
   function getDensityRampBias() {
     const pred = predict();
     if (pred.premature) return 0.9;
     if (pred.phase === 'receding') {
-      // Pull back proportional to how far proximity has dropped
-      return 1.0 - clamp((1.0 - pred.proximity) * 0.24, 0, 0.12);
+      // R26 E4: Deepened pullback (0.36/0.18 vs 0.24/0.12) for greater
+      // density contrast between climax and resolution sections.
+      return 1.0 - clamp((1.0 - pred.proximity) * 0.36, 0, 0.18);
     }
-    // Continuous ramp: proximity 0.3-1.0 maps to bias 1.0-1.2
+    // R27 E3: Boosted climax ceiling from 1.2 to 1.3 for more dramatic peaks
     if (pred.proximity <= 0.3) return 1.0;
-    return 1.0 + clamp((pred.proximity - 0.3) / 0.7, 0, 1) * 0.2;
+    return 1.0 + clamp((pred.proximity - 0.3) / 0.7, 0, 1) * 0.3;
   }
 
   /**
    * Get a tension bias based on climax proximity.
-   * Continuous ramp: proximity 0.5-1.0 maps to 1.0-1.15.
+   * R26 E1: Widened from 15% to 25% swing with earlier onset (0.4 vs 0.5)
+   * for more dramatic climax tension arc.
+   * Continuous ramp: proximity 0.4-1.0 maps to 1.0-1.25.
    * Premature climax suppresses to 0.8.
-   * @returns {number} - 0.8 to 1.2
+   * @returns {number} - 0.8 to 1.3
    */
   function getTensionBias() {
     const pred = predict();
     if (pred.premature) return 0.8;
-    // Ramp: proximity 0.5-1.0 - bias 1.0-1.15
-    if (pred.proximity <= 0.5) return 1.0;
-    return 1.0 + clamp((pred.proximity - 0.5) / 0.5, 0, 1) * 0.15;
+    // Ramp: proximity 0.4-1.0 - bias 1.0-1.25
+    if (pred.proximity <= 0.4) return 1.0;
+    return 1.0 + clamp((pred.proximity - 0.4) / 0.6, 0, 1) * 0.25;
   }
 
-  conductorIntelligence.registerDensityBias('climaxProximityPredictor', () => climaxProximityPredictor.getDensityRampBias(), 0.85, 1.25);
-  conductorIntelligence.registerTensionBias('climaxProximityPredictor', () => climaxProximityPredictor.getTensionBias(), 0.8, 1.2);
+  conductorIntelligence.registerDensityBias('climaxProximityPredictor', () => climaxProximityPredictor.getDensityRampBias(), 0.82, 1.35);
+  conductorIntelligence.registerTensionBias('climaxProximityPredictor', () => climaxProximityPredictor.getTensionBias(), 0.8, 1.3);
 
   return {
     predict,

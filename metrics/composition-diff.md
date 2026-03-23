@@ -5,40 +5,32 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
-## Major Changes (5)
-
-- !!! **section-count**: Section count: 3 -> 5
-- !!! **section-added**: Section 3 added (key=B minor)
-- !!! **section-added**: Section 4 added (key=B aeolian)
-- !!! **note-count**: output1: 4578 notes -> 9820 notes (114.5% change)
-- !!! **note-count**: output2: 7521 notes -> 11721 notes (55.8% change)
-
 ## Notable Changes (3)
 
-- !! **harmonic-change**: Section 0: A# dorian -> E aeolian
-- !! **harmonic-change**: Section 1: C dorian -> E minor
-- !! **harmonic-change**: Section 2: Eb major -> G# major
+- !! **harmonic-change**: Section 0: A# dorian -> D# minor
+- !! **harmonic-change**: Section 1: C dorian -> A# minor
+- !! **harmonic-change**: Section 2: Eb major -> D aeolian
 
 ## Moderate Changes (3)
 
-- ! **phrase-count**: Section 0: 1 phrases -> 2 phrases
 - ! **phrase-count**: Section 1: 3 phrases -> 1 phrases
-- ! **phrase-count**: Section 2: 3 phrases -> 2 phrases
+- ! **tension-shift**: Section 2 avg tension: 0.510 -> 0.646
+- ! **pitch-center**: output2 mean pitch: 47.6 -> 38.5 (9.1 semitones)
 
 ## Minor Changes (4)
 
-- ~ **regime-shift**: Section 0 regime 'coherent': 61.1% -> 36.7%
-- ~ **regime-shift**: Section 0 regime 'exploring': 0.0% -> 46.7%
-- ~ **regime-shift**: Section 2 regime 'exploring': 98.3% -> 39.6%
-- ~ **regime-shift**: Section 2 regime 'coherent': 1.7% -> 60.4%
+- ~ **regime-shift**: Section 0 regime 'coherent': 61.1% -> 30.3%
+- ~ **regime-shift**: Section 0 regime 'exploring': 0.0% -> 50.0%
+- ~ **regime-shift**: Section 1 regime 'coherent': 37.7% -> 0.0%
+- ~ **regime-shift**: Section 1 regime 'exploring': 62.3% -> 100.0%
 
 ## Summary
 
-- Total differences: 15
-- Major: 5
+- Total differences: 10
+- Major: 0
 - Notable: 3
 - Moderate: 3
 - Minor: 4
 
 
-*Generated 2026-03-22T17:20:31.668Z*
+*Generated 2026-03-23T00:09:44.589Z*

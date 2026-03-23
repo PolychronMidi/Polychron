@@ -267,7 +267,10 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       regime: mainDynSnap ? mainDynSnap.regime : 'unknown',
       couplingStrength: mainDynSnap ? mainDynSnap.couplingStrength : 0,
       phaseIntegrity: mainDynSnap ? (mainDynSnap.phaseCouplingCoverage > 0.2 ? 'healthy' : 'warning') : 'unknown',
-      axisEnergyShare: pipelineCouplingManager.getAxisEnergyShare()
+      axisEnergyShare: pipelineCouplingManager.getAxisEnergyShare(),
+      // R12 E1: section harmonic context for phase-composition correlation
+      sectionKey: sKey,
+      sectionMode: sMode
     });
   }
 

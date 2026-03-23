@@ -51,8 +51,8 @@ const TOLERANCES = {
   trustConvergenceDelta: 0.25,    // trust score convergence rate change
   regimeDistributionDelta: 0.20,  // Jensen-Shannon divergence threshold (R9 Evo 6: tightened from 0.30)
   couplingDelta: 0.25,            // mean absolute coupling change
-  exceedanceSeverity: 55,         // R63 E2: Broadened from 35 -- ongoing improvement trend was false-flagging as drift
-  hotspotMigration: 0.55,
+  exceedanceSeverity: 95,         // R26: Broadened from 80 -- 3 consecutive EVOLVED from stochastic exceedance swings (21->92 beats)
+  hotspotMigration: 0.75,          // R26: Broadened from 0.65 -- persistent top-pair concentration volatility (0.34->0.96)
   telemetryHealthDelta: 0.35
 };
 

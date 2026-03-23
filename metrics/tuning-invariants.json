@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-22T17:10:23.101Z",
+    "generated": "2026-03-23T00:04:58.173Z",
     "total": 10,
     "passed": 10,
     "failed": 0,
@@ -8,7 +8,7 @@
   },
   "constants": {
     "coherence_BIAS_FLOOR": 0.6,
-    "coherence_BIAS_CEILING": 1.3,
+    "coherence_BIAS_CEILING": 1.38,
     "coherence_SMOOTHING": 0.55,
     "coherence_WINDOW_SIZE": 16,
     "coherence_ENTROPY_DECAY": 0.92,
@@ -38,7 +38,7 @@
       "name": "density-ceiling-chain",
       "description": "coherenceMonitor.BIAS_CEILING * negotiation.playScale_max must not exceed 2.5 (prevents audible note-cramming)",
       "pass": true,
-      "actual": 2.3400000000000003,
+      "actual": 2.484,
       "limit": 2.5
     },
     {
@@ -72,7 +72,7 @@
       "name": "bias-ceiling-below-play-scale",
       "description": "coherenceMonitor BIAS_CEILING must be < negotiation playScale max to prevent density runaway",
       "pass": true,
-      "biasCeiling": 1.3,
+      "biasCeiling": 1.38,
       "playScaleMax": 1.8
     },
     {

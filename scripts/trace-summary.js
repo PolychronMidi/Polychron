@@ -258,6 +258,11 @@ function summarizeTrace(entries, manifest) {
         couplingMeans: e.couplingMeans,
         // R7 E6: Section-level phase share for cross-run phase recovery tracking
         phaseShare: e.axisEnergyShare && e.axisEnergyShare.shares ? e.axisEnergyShare.shares.phase : null,
+        // R12 E4: Per-section axis Gini for balance tracking
+        axisGini: e.axisEnergyShare && typeof e.axisEnergyShare.axisGini === 'number' ? e.axisEnergyShare.axisGini : null,
+        // R12 E1: Section harmonic context
+        sectionKey: e.sectionKey || null,
+        sectionMode: e.sectionMode || null,
       });
       continue;
     }
@@ -1630,6 +1635,123 @@ function summarizeTrace(entries, manifest) {
         otherShare: Number((regOther / total).toFixed(4)),
         snapshotCount: total
       } : null;
+    })() : null,
+    // R12 E4: Per-section axis Gini for coupling balance trend tracking
+    axisGiniArc: diagnosticArc.length > 0 ? (() => {
+      var gArc = {};
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.axisGini !== null) {
+          gArc[snap.section] = snap.axisGini;
+        }
+      }
+      return Object.keys(gArc).length > 0 ? gArc : null;
+    })() : null,
+    // R12 E1: Per-section harmonic context for phase-composition correlation
+    harmonicArc: diagnosticArc.length > 0 ? (() => {
+      var hArc = {};
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && (snap.sectionKey || snap.sectionMode)) {
+          hArc[snap.section] = { key: snap.sectionKey, mode: snap.sectionMode };
+        }
+      }
+      return Object.keys(hArc).length > 0 ? hArc : null;
+    })() : null,
+    // R13 E1: Phase share velocity — delta between consecutive sections
+    phaseShareVelocity: diagnosticArc.length > 0 ? (() => {
+      var psvArc = {};
+      var prevPhase = null;
+      var prevSec = null;
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null) {
+          if (prevPhase !== null && prevSec !== null) {
+            psvArc[snap.section] = Number((snap.phaseShare - prevPhase).toFixed(4));
+          }
+          prevPhase = snap.phaseShare;
+          prevSec = snap.section;
+        }
+      }
+      return Object.keys(psvArc).length > 0 ? psvArc : null;
+    })() : null,
+    // R17 E1: Phase peak position — which section has highest phase share
+    // normalized to [0,1] by total sections for cross-run comparison
+    phasePeakPosition: diagnosticArc.length > 0 ? (() => {
+      var maxPhase = -1;
+      var peakSec = -1;
+      var totalSections = 0;
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null) {
+          if (snap.section + 1 > totalSections) totalSections = snap.section + 1;
+          if (snap.phaseShare > maxPhase) { maxPhase = snap.phaseShare; peakSec = snap.section; }
+        }
+      }
+      if (peakSec < 0 || totalSections < 2) return null;
+      return { section: peakSec, totalSections: totalSections, normalized: Number((peakSec / (totalSections - 1)).toFixed(3)), peakPhaseShare: maxPhase };
+    })() : null,
+    // R13 E3: Beats per section for cross-run normalization
+    beatsPerSection: (() => {
+      var bps = {};
+      var secKeys = Object.keys(sectionBeatKeys);
+      for (var si = 0; si < secKeys.length; si++) {
+        bps[secKeys[si]] = sectionBeatKeys[secKeys[si]].size;
+      }
+      return Object.keys(bps).length > 0 ? bps : null;
+    })(),
+    // R14 E4: Harmonic distance — semitone distance between consecutive section keys
+    harmonicDistance: diagnosticArc.length > 0 ? (() => {
+      var noteMap = { 'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'Fb': 4, 'F': 5, 'E#': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11 };
+      var keys = [];
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.sectionKey) {
+          keys.push({ section: snap.section, note: noteMap[snap.sectionKey] });
+        }
+      }
+      if (keys.length < 2) return null;
+      var dists = {};
+      for (var ki = 1; ki < keys.length; ki++) {
+        var raw = Math.abs(keys[ki].note - keys[ki - 1].note);
+        dists[keys[ki].section] = Math.min(raw, 12 - raw);
+      }
+      return Object.keys(dists).length > 0 ? dists : null;
+    })() : null,
+    // R14 E2: Per-section exceedance rate (exceedance beats / total beats)
+    sectionExceedanceRate: (() => {
+      var rates = {};
+      var secKeys = Object.keys(sectionBeatKeys);
+      for (var si = 0; si < secKeys.length; si++) {
+        var sk = secKeys[si];
+        var total = sectionBeatKeys[sk].size;
+        var exc = sectionExceedanceCounts[sk] || 0;
+        if (total > 0) rates[sk] = Number((exc / total).toFixed(4));
+      }
+      return Object.keys(rates).length > 0 ? rates : null;
+    })(),
+    // R15 E1: Phase-Gini correlation — per-section pairing of phase share and axis Gini
+    phaseGiniCorrelation: diagnosticArc.length > 0 ? (() => {
+      var pairs = [];
+      for (var di = 0; di < diagnosticArc.length; di++) {
+        var snap = diagnosticArc[di];
+        if (typeof snap.section === 'number' && snap.phaseShare !== null && snap.axisGini !== null) {
+          pairs.push({ section: snap.section, phase: snap.phaseShare, gini: snap.axisGini });
+        }
+      }
+      if (pairs.length < 2) return null;
+      // Pearson correlation between phase and gini
+      var n = pairs.length;
+      var sumP = 0, sumG = 0, sumPG = 0, sumP2 = 0, sumG2 = 0;
+      for (var pi = 0; pi < n; pi++) {
+        sumP += pairs[pi].phase; sumG += pairs[pi].gini;
+        sumPG += pairs[pi].phase * pairs[pi].gini;
+        sumP2 += pairs[pi].phase * pairs[pi].phase;
+        sumG2 += pairs[pi].gini * pairs[pi].gini;
+      }
+      var denom = Math.sqrt((n * sumP2 - sumP * sumP) * (n * sumG2 - sumG * sumG));
+      var r = denom > 0 ? (n * sumPG - sumP * sumG) / denom : 0;
+      return { r: Number(r.toFixed(4)), n: n, pairs: pairs };
     })() : null,
     // R71 E5: Trust turbulence events — snapshots where any trust system
     // velocity exceeded +/-0.10 per snapshot interval.

@@ -7,7 +7,7 @@ regimeClassifier = (() => {
     REGIME_MAJORITY: 3,
     OSCILLATING_CURVATURE_DEFAULT: 0.55,
     EVOLVING_MAX_DWELL: 150,
-    COHERENT_MAX_DWELL: 120,
+    COHERENT_MAX_DWELL: 90,  // R26 E3: Reduced from 120 for greater regime diversity
     POST_FORCED_RECOVERY_WINDOW: 24,
     COHERENT_MOMENTUM_WINDOW: 8,
     REGIME_TARGET_COHERENT_LO: 0.15,
@@ -32,7 +32,7 @@ regimeClassifier = (() => {
       oscillatingCurvatureThreshold: regimeClassifierConfig.OSCILLATING_CURVATURE_DEFAULT,
       coherentThresholdScale: 0.65,
       evolvingBeats: 0,
-      evolvingMinDwell: 4,
+      evolvingMinDwell: 8,  // R28 E1: Raised from 4 for musically audible evolving regime presence
       forcedRegime: '',
       forcedRegimeBeatsRemaining: 0,
       forcedBreakCount: 0,
