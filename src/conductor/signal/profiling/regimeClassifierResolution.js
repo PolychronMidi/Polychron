@@ -101,15 +101,24 @@ regimeClassifierResolution = (() => {
       forceRegimeTransition('evolving', 'exploring-share-monopoly', 4, state.exploringBeats, tickId);
     }
 
-    // R68 E5: Evolving starvation injector from exploring blocks.
-    // When evolving is critically low (<0.02) and we have been exploring
-    // for at least 12 beats, inject a brief evolving window. This fires
-    // at lower exploring shares than the monopoly pathway (no share
-    // threshold) and creates evolving beats from shorter exploring runs.
-    if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring'
-        && evolvingShare < 0.02 && evolvingDeficit > 0.80
-        && state.exploringBeats >= 12) {
-      forceRegimeTransition('evolving', 'evolving-starvation-inject', 3, state.exploringBeats, tickId);
+    // R68 E5 / R70 E2 / R72 E2: Evolving starvation injector.
+    // R71 showed evolving re-collapsed to 2.5% in a 950-beat run despite
+    // threshold raise to 0.04. Three improvements:
+    // 1) Threshold raised 0.04->0.06 to keep injector active longer
+    // 2) Window widened 3->5 beats for more impactful evolving blocks
+    // 3) Now fires from coherent blocks too (not just exploring), since
+    //    coherent dominated at 62% in R71 -- most beats never saw exploring
+    // R74 E1: Lowered coherent threshold 20->15 beats. Evolving dropped
+    // to 4.7% (from 7.9%) because coherent dominates at 55% and the
+    // old 20-beat threshold rarely triggers. 15 beats allows more
+    // frequent injection from shorter coherent runs.
+    if (state.forcedRegimeBeatsRemaining <= 0
+        && (state.lastRegime === 'exploring' || state.lastRegime === 'coherent')
+        && evolvingShare < 0.06 && evolvingDeficit > 0.50
+        && ((state.lastRegime === 'exploring' && state.exploringBeats >= 12)
+            || (state.lastRegime === 'coherent' && state.coherentBeats >= 15))) {
+      forceRegimeTransition('evolving', 'evolving-starvation-inject', 5,
+        state.lastRegime === 'exploring' ? state.exploringBeats : state.coherentBeats, tickId);
     }
 
     let resolvedRegime = state.lastRegime;
@@ -205,6 +214,11 @@ regimeClassifierResolution = (() => {
         const coherentSharePressure = clamp((state.runCoherentShare - 0.40) / 0.20, 0, 1);
         coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - coherentSharePressure * 0.25)));
       }
+      // R69 E2 / R72 E5 / R75 E4: Hard absolute cap on consecutive coherent beats.
+      // R74 still showed maxConsecutiveCoherent at 110 trace entries.
+      // Reduced cap 60->50 to create shorter coherent stretches and
+      // more regime transition opportunities.
+      coherentMaxDwell = m.min(coherentMaxDwell, 50);
       if (projectedRunCoherentBeats > coherentMaxDwell) {
         const coherentOvershoot = projectedRunCoherentBeats - coherentMaxDwell;
         const forcedWindow = clamp(5 + m.floor(coherentOvershoot / 22) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? m.round(1 + phaseStableRecoveryStrength) : 0), 5, 15);

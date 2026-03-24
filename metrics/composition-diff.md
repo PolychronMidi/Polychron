@@ -7,34 +7,35 @@
 
 ## Notable Changes (5)
 
-- !! **harmonic-change**: Section 0: D aeolian -> D# ionian
-- !! **harmonic-change**: Section 1: F# major -> F minor
-- !! **harmonic-change**: Section 2: A minor -> Ab minor
-- !! **harmonic-change**: Section 3: Bb lydian -> Bb minor
-- !! **harmonic-change**: Section 4: G minor -> D# ionian
+- !! **harmonic-change**: Section 0: Ab minor -> F major
+- !! **harmonic-change**: Section 1: F# lydian -> C# minor
+- !! **harmonic-change**: Section 2: B major -> D# minor
+- !! **harmonic-change**: Section 3: C major -> Ab minor
+- !! **harmonic-change**: Section 4: G minor -> G major
 
-## Moderate Changes (6)
+## Moderate Changes (3)
 
-- ! **tension-shift**: Section 0 avg tension: 0.379 -> 0.257
-- ! **tension-shift**: Section 1 avg tension: 0.749 -> 0.605
 - ! **phrase-count**: Section 2: 3 phrases -> 4 phrases
-- ! **phrase-count**: Section 3: 4 phrases -> 2 phrases
-- ! **tension-shift**: Section 4 avg tension: 0.553 -> 0.378
-- ! **pitch-center**: output2 mean pitch: 36.6 -> 42.7 (6.2 semitones)
+- ! **phrase-count**: Section 4: 3 phrases -> 1 phrases
+- ! **tension-shift**: Section 4 avg tension: 0.439 -> 0.624
 
-## Minor Changes (3)
+## Minor Changes (7)
 
-- ~ **regime-shift**: Section 0 regime 'exploring': 22.9% -> 0.0%
-- ~ **regime-shift**: Section 4 regime 'coherent': 74.5% -> 6.3%
-- ~ **regime-shift**: Section 4 regime 'exploring': 25.5% -> 93.8%
+- ~ **regime-shift**: Section 1 regime 'coherent': 28.8% -> 50.0%
+- ~ **regime-shift**: Section 1 regime 'exploring': 71.2% -> 44.4%
+- ~ **regime-shift**: Section 2 regime 'coherent': 77.8% -> 57.1%
+- ~ **regime-shift**: Section 3 regime 'exploring': 28.0% -> 88.4%
+- ~ **regime-shift**: Section 3 regime 'coherent': 66.7% -> 11.6%
+- ~ **regime-shift**: Section 4 regime 'exploring': 54.9% -> 93.8%
+- ~ **regime-shift**: Section 4 regime 'coherent': 37.8% -> 6.3%
 
 ## Summary
 
-- Total differences: 14
+- Total differences: 15
 - Major: 0
 - Notable: 5
-- Moderate: 6
-- Minor: 3
+- Moderate: 3
+- Minor: 7
 
 
-*Generated 2026-03-24T04:36:59.951Z*
+*Generated 2026-03-24T05:57:33.973Z*

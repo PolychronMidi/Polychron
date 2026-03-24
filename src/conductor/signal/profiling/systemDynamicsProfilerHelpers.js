@@ -142,10 +142,13 @@ systemDynamicsProfilerHelpers = (() => {
         // with oscillating compositional dimensions (density, tension, flicker,
         // entropy), suppressing phase axis coupling energy to ~0.08 share.
         //
-        // Enrich with phrase-level nesting: blend section progress (60%) with
-        // phrase progress oscillation (30%) and a sinusoidal harmonic (10%).
-        // This gives the phase signal variance at multiple time scales,
-        // creating meaningful coupling opportunities with other dimensions.
+        // Enrich with phrase-level nesting: blend section progress (45%) with
+        // phrase progress oscillation (25%), measure progress (15%) for beat-
+        // level variation, and a sinusoidal harmonic (15%).
+        // R71 E2: Added measure-level component (15%) and rebalanced weights
+        // to increase beat-to-beat phase variance. Phase share dropped from
+        // 0.1398 to 0.1014 with the old 60/30/10 split; the measure oscillation
+        // creates faster coupling opportunities with other dimensions.
         const sectionPart = sampledSectionProgress;
         let phrasePart = 0;
         try {
@@ -156,8 +159,21 @@ systemDynamicsProfilerHelpers = (() => {
         } catch {
           void 0;
         }
+        let measurePart = 0;
+        try {
+          const measureProgress = timeStream.normalizedProgress('measure');
+          if (typeof measureProgress === 'number' && Number.isFinite(measureProgress)) {
+            measurePart = measureProgress;
+          }
+        } catch {
+          void 0;
+        }
         const harmonicPart = 0.5 + 0.5 * m.sin(sampledSectionProgress * m.PI * 2);
-        phase = clamp(sectionPart * 0.60 + phrasePart * 0.30 + harmonicPart * 0.10, 0, 1);
+        // R74 E3: Rebalanced phase weights -- section 0.45->0.40,
+        // harmonic 0.15->0.20. Stronger harmonic oscillation creates
+        // more beat-to-beat phase signal motion, keeping phase coupling
+        // paths warmer and reducing stale-phase dither reliance.
+        phase = clamp(sectionPart * 0.40 + phrasePart * 0.25 + measurePart * 0.15 + harmonicPart * 0.20, 0, 1);
         state.lastPhaseSignalValid = true;
       }
     } catch {

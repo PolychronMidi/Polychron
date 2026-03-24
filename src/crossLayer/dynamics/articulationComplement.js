@@ -6,7 +6,11 @@
 articulationComplement = (() => {
   const V = validator.create('articulationComplement');
   const WINDOW_SIZE = 16;
-  const CONTRAST_STRENGTH = 0.6;
+  // R73 E4: Section-progressive contrast. Base 0.5 grows to 0.8 across
+  // sections via sectionRoute, creating stronger articulation contrast
+  // in mid/late sections for richer coupling texture variety.
+  const CONTRAST_BASE = 0.5;
+  const CONTRAST_GROWTH = 0.3;
 
   /** @type {Map<string, number[]>} recent sustain durations per layer (in ticks) */
   const sustainHistory = new Map();
@@ -64,6 +68,12 @@ articulationComplement = (() => {
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
     const interactionTarget = V.optionalFinite(intent.interactionTarget, 0.5);
 
+    // R73 E4: Section-progressive contrast strength
+    const sectionBounds = timeStream.getBounds('section');
+    const sectionPos = timeStream.getPosition('section');
+    const sectionRoute = sectionBounds > 1 ? sectionPos / (sectionBounds - 1) : 0;
+    const contrastStrength = CONTRAST_BASE + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * CONTRAST_GROWTH;
+
     // Check role swap state
     const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
 
@@ -73,11 +83,11 @@ articulationComplement = (() => {
 
     if (otherProfile.isLegato) {
       // Other is legato - we should be staccato (modulated by own profile)
-      sustainScale = clamp(1.0 - CONTRAST_STRENGTH * interactionTarget + selfLegatoBias, 0.3, 1.0);
+      sustainScale = clamp(1.0 - contrastStrength * interactionTarget + selfLegatoBias, 0.3, 1.0);
       preferredStutterType = 'chop';
     } else if (otherProfile.isStaccato) {
       // Other is staccato - we should be legato
-      sustainScale = clamp(1.0 + CONTRAST_STRENGTH * interactionTarget, 1.0, 2.0);
+      sustainScale = clamp(1.0 + contrastStrength * interactionTarget, 1.0, 2.0);
       preferredStutterType = 'fade';
     }
 

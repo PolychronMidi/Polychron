@@ -6,7 +6,17 @@
 restSynchronizer = (() => {
   const V = validator.create('restSynchronizer');
   const MIN_REST_INTERVAL_MS = 800;
-  const SHARED_REST_PROBABILITY = 0.22;
+  // R73 E5: Regime-responsive base rest probability. Coherent regime
+  // gets more shared rests (breathing room in unified sections),
+  // exploring gets fewer (keeping energy up). Creates density variance
+  // through structurally motivated rest placement.
+  // R74 E5: Moderated base 0.18->0.14 and coherent bonus 0.08->0.05.
+  // R73 showed 24% note count drop after rest sync introduction.
+  // The combined coherent rest probability was 0.26 -- too aggressive
+  // for a system that already has density regulation elsewhere.
+  const SHARED_REST_BASE = 0.14;
+  const SHARED_REST_COHERENT_BONUS = 0.05;
+  const SHARED_REST_EXPLORING_PENALTY = 0.06;
   const COMPLEMENT_FILL_THRESHOLD = 0.45;
 
   /** @type {Record<string, number>} last rest timestamp per layer */
@@ -40,7 +50,14 @@ restSynchronizer = (() => {
     // Shared rests are more likely when heat is high (need breathing room)
     // and density target is low
     const restUrgency = clamp((heatLevel - 0.5) * 2 + (1 - densityTarget) * 0.5, 0, 1);
-    const restProb = SHARED_REST_PROBABILITY * (1 + restUrgency);
+
+    // R73 E5: Regime-responsive rest probability
+    const snap = systemDynamicsProfiler.getSnapshot();
+    const regime = snap ? snap.regime : 'exploring';
+    const regimeBonus = regime === 'coherent' ? SHARED_REST_COHERENT_BONUS
+      : regime === 'exploring' ? -SHARED_REST_EXPLORING_PENALTY
+      : 0;
+    const restProb = (SHARED_REST_BASE + regimeBonus) * (1 + restUrgency);
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';

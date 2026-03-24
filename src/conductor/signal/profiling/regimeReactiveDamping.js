@@ -222,6 +222,17 @@ regimeReactiveDamping = (() => {
       0,
       0.20
     );
+    // R69 E3 / R70 E1: Flicker axis recovery relief. When flicker is below
+    // fair share, reduce the hotspot brake proportionally to how far below
+    // fair share flicker is. R69 used a binary 0.60 threshold at 0.155
+    // which overcorrected (flicker spiked 0.1486 -> 0.2367). Now uses
+    // proportional scaling: up to 25% brake reduction, scaled by deficit.
+    const flickerShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.flicker === 'number'
+      ? axisEnergy.shares.flicker
+      : 1.0 / 6.0;
+    const flickerDeficit = clamp((1.0 / 6.0 - flickerShare) / 0.05, 0, 1);
+    const flickerRecoveryRelief = 1.0 - flickerDeficit * 0.25;
+    const adjustedFlickerHotspotBrake = regimeFlickerHotspotBrake * flickerRecoveryRelief;
     const densityHotspotBrake = clamp((densityFlickerPressure * (0.010 + phaseRecoveryCredit * 0.015) + trustSharePressure * 0.015 + densitySaturationPressure * (0.030 + lowPhasePressure * 0.020)) * (0.45 + phaseRecoveryCredit * 0.55), 0, 0.07);
     const tensionSignal = safePreBoot.call(() => conductorState.getField('tension'), null);
     const tensionValue = typeof tensionSignal === 'number' && Number.isFinite(tensionSignal)
@@ -237,7 +248,11 @@ regimeReactiveDamping = (() => {
     const coherentToEvolvingReheat = currentRegime === 'coherent'
       ? clamp(evolvingRecoveryPressure * 0.03 + phaseRecoveryCredit * 0.015 - densityFlickerPressure * 0.01 - tensionFlickerPressure * 0.018, 0, 0.04)
       : 0;
-    const tensionFlickerRelease = clamp(tensionFlickerPressure * (0.045 + evolvingRecoveryPressure * 0.02 + phaseRecoveryCredit * 0.015) * ((currentRegime === 'coherent' || currentRegime === 'evolving') ? 1 : 0.7), 0, 0.08);
+    // R72 E4: Tension-flicker monopoly relief. R71 showed tension-flicker
+    // at 55/60 exceedance beats (92%), worst hotspot concentration ever.
+    // Raised ceiling 0.08->0.12 and added monopoly penalty when top pair
+    // concentration > 0.80 AND tension-flicker is the pressured pair.
+    const tensionFlickerRelease = clamp(tensionFlickerPressure * (0.045 + evolvingRecoveryPressure * 0.02 + phaseRecoveryCredit * 0.015) * ((currentRegime === 'coherent' || currentRegime === 'evolving') ? 1 : 0.7) + clamp((topPairConcentration - 0.80) / 0.15, 0, 1) * tensionFlickerPressure * 0.04, 0, 0.12);
     const densityRebalanceLift = clamp(tensionFlickerPressure * (0.015 + phaseRecoveryCredit * 0.01) * (1 - densityFlickerPressure * 0.6), 0, 0.03);
 
     // Compute raw bias values with equilibrator corrections (#2)
@@ -250,7 +265,7 @@ regimeReactiveDamping = (() => {
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
     const sectionTensionNudge = sectionProgress * 0.03;
     const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - regimeFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
     regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);
