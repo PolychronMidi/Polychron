@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-24T01:49:09.056Z",
+    "generated": "2026-03-24T03:02:32.441Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2964,
-    "totalEdges": 2325,
-    "crossSubsystemEdges": 1551,
+    "totalConsumes": 2968,
+    "totalEdges": 2329,
+    "crossSubsystemEdges": 1553,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 975
+        "consumes": 979
       },
       "rhythm": {
         "files": 30,
@@ -1270,6 +1270,8 @@
         "clamp",
         "conductorConfig",
         "m",
+        "pipelineCouplingManager",
+        "safePreBoot",
         "velocity"
       ]
     },
@@ -1554,8 +1556,10 @@
         "clamp",
         "couplingConstants",
         "couplingState",
+        "hyperMetaOrchestrator",
         "m",
         "pairGainCeilingController",
+        "safePreBoot",
         "warmupRampController"
       ]
     },
@@ -11104,6 +11108,13 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/signal/profiling/regimeClassifierClassification.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/signal/profiling/regimeClassifierResolution.js",
       "globals": [
         "pipelineCouplingManager"
@@ -11569,6 +11580,13 @@
       "to": "src/conductor/signal/profiling/regimeReactiveDampingEquilibrator.js",
       "globals": [
         "conductorMetaWatchdog"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/meta/hyperMetaOrchestrator.js",
+      "to": "src/conductor/signal/balancing/coupling/couplingEffectiveGain.js",
+      "globals": [
+        "hyperMetaOrchestrator"
       ]
     },
     {
@@ -21863,6 +21881,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/balancing/coupling/couplingEffectiveGain.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/balancing/coupling/couplingGainEscalation.js",
       "globals": [
         "safePreBoot"
@@ -21927,6 +21952,13 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/signal/narrative/narrativeTrajectory.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/profiling/regimeClassifierClassification.js",
       "globals": [
         "safePreBoot"
       ]

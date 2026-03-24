@@ -96,6 +96,17 @@ couplingEffectiveGain = (() => {
     const telemetrySevereRate = tailTelemetry.severeRate;
 
     let effectiveGain = ps.gain * axisGainScale * S.globalGainMultiplier;
+    // R63 E4: Phase exemption from homeostasis throttling. When the orchestrator
+    // detects phase-floor-vs-homeostasis contradiction, it emits phaseExemption > 1.
+    // Phase pairs partially bypass global gain throttling to let phaseFloorController
+    // boosts actually reach the coupling output.
+    if ((dimA === 'phase' || dimB === 'phase') && S.globalGainMultiplier < 0.85) {
+      const phaseExemption = safePreBoot.call(() => hyperMetaOrchestrator.getRateMultiplier('phaseExemption'), 1.0) || 1.0;
+      if (phaseExemption > 1.0) {
+        const exemptionLift = clamp((phaseExemption - 1.0) * (0.85 - S.globalGainMultiplier), 0, 0.15);
+        effectiveGain = ps.gain * axisGainScale * m.min(1.0, S.globalGainMultiplier + exemptionLift);
+      }
+    }
     if (dimA === 'flicker' || dimB === 'flicker') effectiveGain *= setup.flickerGainScalar;
     if (dimA === 'density' || dimB === 'density') effectiveGain *= setup.densityGainScalar;
     if (setup.budgetConstraintActive) {

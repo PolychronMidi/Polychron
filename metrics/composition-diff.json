@@ -1,10 +1,10 @@
 {
   "meta": {
-    "generated": "2026-03-24T01:49:11.250Z",
+    "generated": "2026-03-24T03:02:34.341Z",
     "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
     "dirB": "/home/jah/Polychron/metrics",
-    "traceSizeA": 562,
-    "traceSizeB": 771,
+    "traceSizeA": 789,
+    "traceSizeB": 550,
     "sectionsA": 5,
     "sectionsB": 5
   },
@@ -13,85 +13,109 @@
       "type": "harmonic-change",
       "severity": "notable",
       "section": 0,
-      "detail": "Section 0: D mixolydian -> A minor"
+      "detail": "Section 0: B major -> D minor"
     },
     {
-      "type": "phrase-count",
+      "type": "tension-shift",
       "severity": "moderate",
       "section": 0,
-      "detail": "Section 0: 3 phrases -> 2 phrases"
+      "detail": "Section 0 avg tension: 0.355 -> 0.183"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 0,
-      "detail": "Section 0 regime 'coherent': 61.8% -> 29.2%"
+      "detail": "Section 0 regime 'evolving': 20.0% -> 42.4%"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 0,
-      "detail": "Section 0 regime 'exploring': 11.8% -> 48.6%"
+      "detail": "Section 0 regime 'exploring': 30.0% -> 0.0%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 1,
-      "detail": "Section 1: G# major -> D major"
+      "detail": "Section 1: B minor -> A minor"
+    },
+    {
+      "type": "tension-shift",
+      "severity": "moderate",
+      "section": 1,
+      "detail": "Section 1 avg tension: 0.667 -> 0.551"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 2,
-      "detail": "Section 2: A# major -> F minor"
+      "detail": "Section 2: D minor -> C# major"
+    },
+    {
+      "type": "phrase-count",
+      "severity": "moderate",
+      "section": 2,
+      "detail": "Section 2: 4 phrases -> 3 phrases"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 2,
+      "detail": "Section 2 regime 'exploring': 50.5% -> 86.7%"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 2,
+      "detail": "Section 2 regime 'coherent': 45.4% -> 0.0%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 3,
-      "detail": "Section 3: C major -> G# lydian"
-    },
-    {
-      "type": "phrase-count",
-      "severity": "moderate",
-      "section": 3,
-      "detail": "Section 3: 4 phrases -> 3 phrases"
+      "detail": "Section 3: A lydian -> B minor"
     },
     {
       "type": "tension-shift",
       "severity": "moderate",
       "section": 3,
-      "detail": "Section 3 avg tension: 0.602 -> 0.909"
+      "detail": "Section 3 avg tension: 0.796 -> 0.910"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 4,
-      "detail": "Section 4: D mixolydian -> Ab major"
+      "detail": "Section 4: Gb major -> G major"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
       "section": 4,
-      "detail": "Section 4: 1 phrases -> 2 phrases"
+      "detail": "Section 4: 2 phrases -> 1 phrases"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 4,
-      "detail": "Section 4 regime 'coherent': 100.0% -> 26.9%"
+      "detail": "Section 4 regime 'exploring': 36.7% -> 0.0%"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 4,
-      "detail": "Section 4 regime 'exploring': 0.0% -> 73.1%"
+      "detail": "Section 4 regime 'coherent': 63.3% -> 100.0%"
     },
     {
       "type": "note-count",
-      "severity": "major",
+      "severity": "moderate",
       "layer": "output1",
-      "detail": "output1: 8271 notes -> 14497 notes (75.3% change)"
+      "detail": "output1: 13887 notes -> 8445 notes (39.2% change)"
+    },
+    {
+      "type": "note-count",
+      "severity": "moderate",
+      "layer": "output2",
+      "detail": "output2: 15677 notes -> 11316 notes (27.8% change)"
     }
   ]
 }

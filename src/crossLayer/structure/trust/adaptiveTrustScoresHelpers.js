@@ -26,14 +26,14 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.REST_SYNCHRONIZER]: ['density-trust', 'flicker-trust'],
   };
   const pairAwarePairWeights = {
-    [trustSystems.names.COHERENCE_MONITOR]: { 'density-trust': 1.26, 'flicker-trust': 1.22, 'tension-trust': 1.08 },
+    [trustSystems.names.COHERENCE_MONITOR]: { 'density-trust': 1.26, 'flicker-trust': 1.28, 'tension-trust': 1.08 },
     [trustSystems.names.PHASE_LOCK]: { 'flicker-phase': 1.20, 'density-phase': 1.10, 'tension-phase': 1.05, 'trust-phase': 1.05 },
     [trustSystems.names.CADENCE_ALIGNMENT]: { 'tension-trust': 1.25, 'density-trust': 1.16, 'density-phase': 1.08 },
-    [trustSystems.names.STUTTER_CONTAGION]: { 'density-flicker': 1.25, 'flicker-phase': 1.10, 'flicker-trust': 1.16 },
-    [trustSystems.names.FEEDBACK_OSCILLATOR]: { 'tension-flicker': 1.18, 'flicker-trust': 1.18, 'flicker-phase': 1.08 },
+    [trustSystems.names.STUTTER_CONTAGION]: { 'density-flicker': 1.25, 'flicker-phase': 1.10, 'flicker-trust': 1.22 },
+    [trustSystems.names.FEEDBACK_OSCILLATOR]: { 'tension-flicker': 1.18, 'flicker-trust': 1.24, 'flicker-phase': 1.08 },
     [trustSystems.names.ENTROPY_REGULATOR]: { 'flicker-entropy': 1.22, 'density-entropy': 1.18, 'tension-entropy': 1.10, 'entropy-trust': 1.22, 'entropy-phase': 1.08 },
     [trustSystems.names.CONVERGENCE]: { 'tension-trust': 1.22, 'density-trust': 1.18, 'tension-phase': 1.06, 'density-phase': 1.04 },
-    [trustSystems.names.REST_SYNCHRONIZER]: { 'density-trust': 1.20, 'flicker-trust': 1.15 },
+    [trustSystems.names.REST_SYNCHRONIZER]: { 'density-trust': 1.20, 'flicker-trust': 1.22 },
   };
 
   function getSystemPairHotspotProfile(systemName) {
