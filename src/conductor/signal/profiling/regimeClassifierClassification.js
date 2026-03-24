@@ -54,9 +54,11 @@ regimeClassifierClassification = (() => {
     const rawExploringShare = state.runBeatCount > 0
       ? ((state.runRawRegimeCounts.exploring || 0) / state.runBeatCount)
       : 0;
+    const exploringSharePressure = clamp((rawExploringShare - 0.62) / 0.14, 0, 1);
     const rawEvolvingShare = state.runBeatCount > 0
       ? ((state.runRawRegimeCounts.evolving || 0) / state.runBeatCount)
       : 0;
+    const evolvingRecoveryBoost = clamp((0.05 - rawEvolvingShare) / 0.05, 0, 1);
     const rawNonCoherentOpportunityShare = rawExploringShare + rawEvolvingShare;
     const resolvedNonCoherentShare = state.runBeatCount > 0
       ? (((state.runResolvedRegimeCounts.exploring || 0) + (state.runResolvedRegimeCounts.evolving || 0)) / state.runBeatCount)
@@ -66,7 +68,8 @@ regimeClassifierClassification = (() => {
       clamp((state.runCoherentShare - 0.58) / 0.18, 0, 1) * 0.48 +
       clamp(opportunityGap / 0.22, 0, 1) * 0.32 +
       clamp((0.05 - (state.runTransitionCount / m.max(state.runBeatCount, 1))) / 0.05, 0, 1) * 0.12 +
-      clamp((0.08 - rawExploringShare) / 0.08, 0, 1) * 0.08,
+      clamp((0.08 - rawExploringShare) / 0.08, 0, 1) * 0.08 +
+      exploringSharePressure * 0.12,
       0,
       1
     );
@@ -76,14 +79,14 @@ regimeClassifierClassification = (() => {
       : 0;
     if (state.postForcedRecoveryBeats > 0) state.postForcedRecoveryBeats--;
 
-    const coherentGateTightening = cadenceMonopolyPressure * 0.080 + opportunityPressure * 0.050 + evolvingDeficit * 0.015 - postForcedRecoveryPressure * 0.045;
+    const coherentGateTightening = cadenceMonopolyPressure * 0.080 + opportunityPressure * 0.050 + exploringSharePressure * 0.020 + evolvingDeficit * 0.015 + evolvingRecoveryBoost * 0.020 - postForcedRecoveryPressure * 0.045;
     const coherentEntryMargin = cadenceMonopolyPressure * 0.050 + opportunityPressure * 0.040 + (state.lastRegime === 'coherent' ? 0.010 : 0) - postForcedRecoveryPressure * 0.028;
     const coherentDimMax = 4.0 - cadenceMonopolyPressure * 0.55 - opportunityPressure * 0.35;
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty + coherentGateTightening - postForcedRecoveryPressure * 0.035;
     const coherentExitWindow = 0.08 + evolvingDeficit * 0.12;
     const evolvingEntryVelMin = 0.006;
-    const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.020 + opportunityPressure * 0.016 + postForcedRecoveryPressure * 0.014;
-    const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.22 - opportunityPressure * 0.12 - postForcedRecoveryPressure * 0.16;
+    const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.020 + opportunityPressure * 0.016 + exploringSharePressure * 0.012 + evolvingRecoveryBoost * 0.010 + postForcedRecoveryPressure * 0.014;
+    const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.22 - opportunityPressure * 0.12 - exploringSharePressure * 0.12 - evolvingRecoveryBoost * 0.10 - postForcedRecoveryPressure * 0.16;
     const velThreshold = state.exploringBeats > 100 ? 0.005 : 0.008;
 
     state.lastClassifyInputs = {
@@ -122,27 +125,27 @@ regimeClassifierClassification = (() => {
     if (recentlyCoherent &&
         coherentGap > -coherentExitWindow &&
         avgVelocity > evolvingEntryVelMin &&
-        avgVelocity < evolvingEntryVelMax &&
-        effectiveDim > evolvingEntryDimMin &&
-        couplingStrength > 0.09) {
+        avgVelocity < evolvingEntryVelMax + evolvingRecoveryBoost * 0.008 &&
+        effectiveDim > evolvingEntryDimMin - evolvingRecoveryBoost * 0.08 &&
+        couplingStrength > 0.09 - evolvingRecoveryBoost * 0.015) {
       return 'evolving';
     }
 
     if (state.lastRegime === 'evolving' &&
         avgVelocity > evolvingEntryVelMin &&
-        avgVelocity < evolvingEntryVelMax + 0.010 &&
+        avgVelocity < evolvingEntryVelMax + 0.010 + evolvingRecoveryBoost * 0.006 &&
         effectiveDim > 1.65 &&
         couplingStrength > 0.08 &&
         couplingStrength < coherentThreshold + 0.16 + evolvingDeficit * 0.08) {
       return 'evolving';
     }
 
-    const exploringVelThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
+    const exploringVelThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) + exploringSharePressure * 0.004 - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
     const profileDimRelief = conductorConfig.getActiveProfile().exploringDimRelief || 0;
-    const exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - profileDimRelief - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + postForcedRecoveryPressure * 0.06;
-    const exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06 - postForcedRecoveryPressure * 0.05;
+    const exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - profileDimRelief - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + exploringSharePressure * 0.12 + postForcedRecoveryPressure * 0.06;
+    const exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06 - exploringSharePressure * 0.06 - postForcedRecoveryPressure * 0.05;
     if (avgVelocity > exploringVelThreshold && effectiveDim > exploringDimThreshold && couplingStrength <= exploringCouplingGate) return 'exploring';
-    if (state.lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 + opportunityPressure * 0.010 && effectiveDim > 1.6 && couplingStrength > 0.08 + evolvingDeficit * 0.015 - opportunityPressure * 0.010) return 'evolving';
+    if (state.lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 + opportunityPressure * 0.010 + exploringSharePressure * 0.008 + evolvingRecoveryBoost * 0.008 && effectiveDim > 1.6 - exploringSharePressure * 0.08 - evolvingRecoveryBoost * 0.06 && couplingStrength > 0.08 + evolvingDeficit * 0.015 - opportunityPressure * 0.010 - exploringSharePressure * 0.012 - evolvingRecoveryBoost * 0.012) return 'evolving';
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
     return 'evolving';

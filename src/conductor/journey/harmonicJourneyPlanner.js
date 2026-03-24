@@ -4,6 +4,15 @@
 
 harmonicJourneyPlanner = (() => {
   const VALID_MODES = ['major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian', 'ionian'];
+  const START_MODE_POOL = ['major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'aeolian'];
+  const DARK_MODES = new Set(['locrian', 'phrygian', 'aeolian']);
+  const BRIGHTEN_MODE_MAP = {
+    locrian: 'dorian',
+    phrygian: 'dorian',
+    aeolian: 'mixolydian',
+    minor: 'dorian',
+    dorian: 'mixolydian'
+  };
 
   /**
    * Resolve starting key and mode from planJourney opts.
@@ -20,7 +29,7 @@ harmonicJourneyPlanner = (() => {
     if (!startKey) throw new Error(`harmonicJourney.planJourney: invalid startKey "${opts.startKey}"`);
 
     let startMode = opts.startMode || 'random';
-    if (startMode === 'random') startMode = VALID_MODES[ri(VALID_MODES.length - 1)];
+    if (startMode === 'random') startMode = START_MODE_POOL[ri(START_MODE_POOL.length - 1)];
     if (!VALID_MODES.includes(startMode)) {
       throw new Error(`harmonicJourney.planJourney: invalid startMode "${startMode}"`);
     }
@@ -256,6 +265,82 @@ harmonicJourneyPlanner = (() => {
         lastStep.mode = originMode;
         lastStep.move = 'return-home (late-closure)';
         lastStep.distance = HJ.harmonicDistance(prevKey, originKey);
+      }
+    }
+
+    if (steps.length >= 2) {
+      const journeyModes = [originMode];
+      for (let i = 0; i < steps.length; i++) journeyModes.push(steps[i].mode);
+      let darkModeCount = 0;
+      let locrianCount = 0;
+      for (let i = 0; i < journeyModes.length; i++) {
+        const mode = journeyModes[i];
+        if (DARK_MODES.has(mode)) darkModeCount++;
+        if (mode === 'locrian') locrianCount++;
+      }
+      const needsBrightening = darkModeCount >= journeyModes.length - 1 || locrianCount >= 2;
+      if (needsBrightening) {
+        const preferredIndexes = [m.floor(steps.length / 2)];
+        if (steps.length >= 4) preferredIndexes.push(steps.length - 2);
+        let appliedBrightening = 0;
+        for (let i = 0; i < preferredIndexes.length; i++) {
+          const idx = preferredIndexes[i];
+          const step = steps[idx];
+          if (!step || (typeof step.move === 'string' && step.move.indexOf('return-home') === 0)) continue;
+          const brightMode = BRIGHTEN_MODE_MAP[step.mode] || 'lydian';
+          if (brightMode === step.mode) continue;
+          step.mode = brightMode;
+          step.move = `parallel-${brightMode} (anti-drift)`;
+          appliedBrightening++;
+          if ((locrianCount >= 2 && appliedBrightening >= 2) || (darkModeCount >= journeyModes.length - 1 && appliedBrightening >= 1)) {
+            break;
+          }
+        }
+      }
+    }
+
+    if (steps.length > 0) {
+      const firstStep = steps[0];
+      if (firstStep && DARK_MODES.has(firstStep.mode)) {
+        const brighterOpeningMode = BRIGHTEN_MODE_MAP[firstStep.mode] || 'lydian';
+        firstStep.mode = brighterOpeningMode;
+        firstStep.move = `parallel-${brighterOpeningMode} (frame-brighten)`;
+      }
+      const lastStep = steps[steps.length - 1];
+      if (lastStep && DARK_MODES.has(lastStep.mode) && !(typeof lastStep.move === 'string' && lastStep.move.indexOf('return-home') === 0)) {
+        const brighterClosingMode = BRIGHTEN_MODE_MAP[lastStep.mode] || 'mixolydian';
+        lastStep.mode = brighterClosingMode;
+        lastStep.move = `parallel-${brighterClosingMode} (frame-brighten)`;
+      }
+    }
+
+    if (steps.length >= 2) {
+      const modeCounts = new Map([[originMode, 1]]);
+      for (let i = 0; i < steps.length; i++) {
+        modeCounts.set(steps[i].mode, (modeCounts.get(steps[i].mode) || 0) + 1);
+      }
+      let dominantMode = '';
+      let dominantCount = 0;
+      for (const [mode, count] of modeCounts.entries()) {
+        if (count > dominantCount) {
+          dominantMode = mode;
+          dominantCount = count;
+        }
+      }
+      if (dominantCount >= 3) {
+        const paletteBreakMode = dominantMode === 'dorian'
+          ? 'mixolydian'
+          : (dominantMode === 'major' || dominantMode === 'ionian' ? 'minor' : 'lydian');
+        const targetIdx = m.floor(steps.length / 2);
+        for (let offset = 0; offset < steps.length; offset++) {
+          const idx = clamp(targetIdx + (offset % 2 === 0 ? offset : -offset), 0, steps.length - 1);
+          const step = steps[idx];
+          if (!step || step.mode !== dominantMode) continue;
+          if (typeof step.move === 'string' && step.move.indexOf('return-home') === 0) continue;
+          step.mode = paletteBreakMode;
+          step.move = `parallel-${paletteBreakMode} (palette-break)`;
+          break;
+        }
       }
     }
 

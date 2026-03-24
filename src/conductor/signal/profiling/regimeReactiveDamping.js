@@ -121,6 +121,7 @@ regimeReactiveDamping = (() => {
 
   function refresh() {
     const snap = systemDynamicsProfiler.getSnapshot();
+    const dynamicSnap = /** @type {any} */ (snap);
     currentRegime = snap ? snap.regime : 'evolving';
     const rawCurv = snap ? (snap.curvature || 0) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
@@ -182,6 +183,9 @@ regimeReactiveDamping = (() => {
     const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
       ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.76) / 0.18, 0, 1)
       : 0;
+    const tensionFlickerPressure = couplingMatrix && typeof couplingMatrix['tension-flicker'] === 'number' && Number.isFinite(couplingMatrix['tension-flicker'])
+      ? clamp((m.abs(couplingMatrix['tension-flicker']) - 0.76) / 0.16, 0, 1)
+      : 0;
     const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number' && Number.isFinite(couplingMatrix['flicker-trust'])
       ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
       : 0;
@@ -205,9 +209,16 @@ regimeReactiveDamping = (() => {
     const densitySaturationPressure = densityHealth
       ? clamp((densityHealth.saturated ? 0.45 : 0) + clamp((densityHealth.crushFactor - 0.35) / 0.40, 0, 1) * 0.55, 0, 1)
       : 0;
+    const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
+      ? dynamicSnap.evolvingShare
+      : 0;
+    const evolvingRecoveryPressure = clamp((0.055 - evolvingShare) / 0.055, 0, 1);
+    const topPairConcentration = dynamicSnap && typeof dynamicSnap.hotspotTop2Concentration === 'number'
+      ? dynamicSnap.hotspotTop2Concentration
+      : 0;
     const longFormBuildPressure = totalSections >= 5 && sectionIndex > 0 && sectionIndex < totalSections - 1 ? 1 : 0;
     const regimeFlickerHotspotBrake = clamp(
-      (densityFlickerPressure * 0.11 + flickerTrustPressure * 0.07 + lowPhasePressure * 0.02 + trustSharePressure * 0.03 + densitySaturationPressure * 0.04 + flickerPhasePressure * (0.03 + phaseRecoveryCredit * 0.07)) * ((currentRegime === 'exploring' || currentRegime === 'coherent') ? 1 : 0.6),
+      (densityFlickerPressure * 0.08 + tensionFlickerPressure * 0.10 + flickerTrustPressure * 0.07 + lowPhasePressure * 0.02 + trustSharePressure * 0.03 + densitySaturationPressure * 0.04 + flickerPhasePressure * (0.03 + phaseRecoveryCredit * 0.07) + clamp((topPairConcentration - 0.72) / 0.20, 0, 1) * 0.04) * ((currentRegime === 'exploring' || currentRegime === 'coherent') ? 1 : 0.6),
       0,
       0.20
     );
@@ -216,16 +227,21 @@ regimeReactiveDamping = (() => {
     const tensionValue = typeof tensionSignal === 'number' && Number.isFinite(tensionSignal)
       ? tensionSignal
       : 0.5;
-    const tensionRecoveryNudge = longFormBuildPressure * phaseRecoveryCredit * clamp((0.58 - tensionValue) / 0.22, 0, 1) * 0.02;
+    const tensionRecoveryNudge = longFormBuildPressure * phaseRecoveryCredit * clamp((0.58 - tensionValue) / 0.22, 0, 1) * (1 - tensionFlickerPressure * 0.45) * 0.02;
     const exploringBiasBrake = currentRegime === 'exploring'
-      ? clamp(trustSharePressure * 0.04 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03, 0, 0.10)
+      ? clamp(trustSharePressure * 0.04 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05, 0, 0.12)
       : 0;
     const evolvingLift = currentRegime === 'evolving'
-      ? clamp((1 - densityFlickerPressure) * 0.02 + lowPhasePressure * 0.04 + trustSharePressure * 0.02, 0, 0.06)
+      ? clamp((1 - densityFlickerPressure) * 0.02 + lowPhasePressure * 0.04 + trustSharePressure * 0.02 + evolvingRecoveryPressure * 0.04 + phaseRecoveryCredit * 0.02, 0, 0.08)
       : 0;
+    const coherentToEvolvingReheat = currentRegime === 'coherent'
+      ? clamp(evolvingRecoveryPressure * 0.03 + phaseRecoveryCredit * 0.015 - densityFlickerPressure * 0.01 - tensionFlickerPressure * 0.018, 0, 0.04)
+      : 0;
+    const tensionFlickerRelease = clamp(tensionFlickerPressure * (0.045 + evolvingRecoveryPressure * 0.02 + phaseRecoveryCredit * 0.015) * ((currentRegime === 'coherent' || currentRegime === 'evolving') ? 1 : 0.7), 0, 0.08);
+    const densityRebalanceLift = clamp(tensionFlickerPressure * (0.015 + phaseRecoveryCredit * 0.01) * (1 - densityFlickerPressure * 0.6), 0, 0.03);
 
     // Compute raw bias values with equilibrator corrections (#2)
-    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5;
+    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift;
     // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
     const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
     // R8 E3: Section-progressive tension bias. Adds a small ascending nudge
@@ -233,8 +249,8 @@ regimeReactiveDamping = (() => {
     // Max nudge +0.03 at final section. Does not depend on regime.
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
     const sectionTensionNudge = sectionProgress * 0.03;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift - exploringBiasBrake;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - regimeFlickerHotspotBrake + evolvingLift - exploringBiasBrake;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - regimeFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
     regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);

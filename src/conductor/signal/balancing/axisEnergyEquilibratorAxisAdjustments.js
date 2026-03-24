@@ -4,7 +4,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
     const phaseEvolvingDamp = context.regimeKey === 'evolving' ? 0.95 : 1.0;
     // R34 E2: Phase relaxation boost under exploring regime to prevent phase starvation
     // Exploring-heavy runs (77.8% under explosive) starve phase; this gives 1.3x relaxation rate
-    const phaseExploringRelaxBoost = context.regimeKey === 'exploring' ? 1.3 : 1.0;
+    const phaseExploringRelaxBoost = context.regimeKey === 'exploring' ? 1.4 : 1.0;
 
     for (let i = 0; i < config.ALL_AXES.length; i++) {
       const axis = config.ALL_AXES[i];
@@ -67,7 +67,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // R7 E4: Phase coherent-freeze bypass. When phase share < 0.10 during
         // coherent freeze, allow coldspot relaxation to prevent phase collapse.
         // R6 saw 47 skipped relaxations (45 coherent-freeze), phase 16.1%->4.6%.
-        const isPhaseLowShareCoherentBypass = axis === 'phase' && share < 0.10 && context.coherentColdspotFreeze;
+        const isPhaseLowShareCoherentBypass = axis === 'phase' && share < 0.12 && context.coherentColdspotFreeze;
         // R83 E2 + R97 E1: Phase collapse detection with adaptive thresholds
         // from phaseFloorController (#14). Thresholds self-calibrate based on
         // rolling phase volatility and coherent regime duration.
@@ -173,13 +173,13 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
 
     const phaseSmoothed = state.smoothedShares.phase;
     const trustSmoothed = state.smoothedShares.trust;
-    if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.03 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.01 ? 1.3 : 1.15)) {
-      const trustThreshold = config.FAIR_SHARE * (phaseSmoothed < 0.01 ? 1.3 : 1.15);
-      const phaseShortfall = clamp((0.03 - phaseSmoothed) / 0.03, 0, 1);
+    if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.06 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.25 : (phaseSmoothed < 0.04 ? 1.10 : 1.0))) {
+      const trustThreshold = config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.25 : (phaseSmoothed < 0.04 ? 1.10 : 1.0));
+      const phaseShortfall = clamp((0.06 - phaseSmoothed) / 0.06, 0, 1);
       const trustExcess = trustSmoothed - trustThreshold;
       const trustPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
-      const trustCapStrength = phaseSmoothed < 0.01 ? 2.0 : 1.25;
-      const trustCapRate = m.min(0.03, config.AXIS_TIGHTEN_RATE * trustCapStrength * trustPairScale * (1 + phaseShortfall * 0.75) * clamp(trustExcess / config.FAIR_SHARE, 0.5, 2.0));
+      const trustCapStrength = phaseSmoothed < 0.02 ? 2.0 : (phaseSmoothed < 0.04 ? 1.6 : 1.25);
+      const trustCapRate = m.min(0.035, config.AXIS_TIGHTEN_RATE * trustCapStrength * trustPairScale * (1 + phaseShortfall * 0.95 + clamp((trustSmoothed - config.FAIR_SHARE) / config.FAIR_SHARE, 0, 1) * 0.35) * clamp(trustExcess / config.FAIR_SHARE, 0.5, 2.0));
       const trustPairs = config.axisToPairs.trust || [];
       for (let i = 0; i < trustPairs.length; i++) {
         const pair = trustPairs[i];

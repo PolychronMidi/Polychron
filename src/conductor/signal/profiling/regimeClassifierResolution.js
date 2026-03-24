@@ -59,8 +59,14 @@ regimeClassifierResolution = (() => {
       ? ((state.runResolvedRegimeCounts.evolving || 0) / state.runBeatCount)
       : 0;
     const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
+    const coherentOvershare = clamp((state.runCoherentShare - config.REGIME_TARGET_COHERENT_HI) / 0.18, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
     const phaseWeakness = clamp((0.07 - phaseShare) / 0.07, 0, 1);
+    const phaseRecoveryCredit = clamp((phaseShare - 0.10) / 0.06, 0, 1);
+    const phaseStableRecoveryWindow = phaseShare > 0.08 && trustSharePressure < 0.18 && evolvingDeficit > 0.25;
+    const evolvingRecoveryPriority = phaseShare > 0.05
+      ? clamp(evolvingDeficit * (0.6 + phaseRecoveryCredit * 0.25 + coherentOvershare * 0.3 + (phaseStableRecoveryWindow ? 0.18 : 0)) - trustSharePressure * 0.08, 0, 1)
+      : 0;
     state.rawRegimeCounts[rawRegime] = (state.rawRegimeCounts[rawRegime] || 0) + 1;
     state.runRawRegimeCounts[rawRegime] = (state.runRawRegimeCounts[rawRegime] || 0) + beatSpan;
 
@@ -85,10 +91,10 @@ regimeClassifierResolution = (() => {
     if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && state.exploringBeats >= config.EXPLORING_MAX_DWELL) {
       forceRegimeTransition('evolving', 'exploring-max-dwell', 3);
     }
-    const exploringMonopolyThreshold = clamp((shortFormPressure > 0 ? 0.68 : 0.74) - trustSharePressure * 0.04 - evolvingDeficit * 0.04 - phaseWeakness * 0.03, 0.60, 0.74);
+    const exploringMonopolyThreshold = clamp((shortFormPressure > 0 ? 0.68 : 0.74) - trustSharePressure * 0.04 - evolvingDeficit * 0.06 - phaseWeakness * 0.03 + phaseRecoveryCredit * 0.01 - (phaseStableRecoveryWindow ? 0.03 : 0), 0.56, 0.74);
     const exploringMonopolyMinDwell = shortFormPressure > 0
       ? m.max(10, m.floor(config.EXPLORING_MAX_DWELL * (0.45 - evolvingDeficit * 0.08)))
-      : m.max(14, m.floor(config.EXPLORING_MAX_DWELL * (0.55 - trustSharePressure * 0.06 - evolvingDeficit * 0.06)));
+      : m.max(10, m.floor(config.EXPLORING_MAX_DWELL * (0.52 - trustSharePressure * 0.06 - evolvingDeficit * 0.08 - phaseRecoveryCredit * 0.04 - (phaseStableRecoveryWindow ? 0.06 : 0))));
     if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && runExploringShare > exploringMonopolyThreshold && state.exploringBeats >= exploringMonopolyMinDwell) {
       forceRegimeTransition('evolving', 'exploring-share-monopoly', 4, state.exploringBeats, tickId);
     }
@@ -114,7 +120,9 @@ regimeClassifierResolution = (() => {
         : 0;
       const requiredHits = rawRegime === 'exploring'
         ? (phaseHealthyExploringPressure > 0 || shortFormPressure > 0 ? 3 : 2)
-        : (rawRegime === 'evolving' && state.lastRegime === 'exploring' && evolvingDeficit > 0.35 && (trustSharePressure > 0.20 || phaseWeakness > 0.25) ? 1 : (rawRegime === 'evolving' && evolvingDeficit > 0.15 ? 2 : config.REGIME_MAJORITY));
+        : (rawRegime === 'evolving' && evolvingRecoveryPriority > 0.45 && (state.lastRegime === 'exploring' || state.lastRegime === 'coherent')
+          ? 1
+          : (rawRegime === 'evolving' && evolvingDeficit > 0.10 ? 2 : config.REGIME_MAJORITY));
 
       if (windowHits >= requiredHits) {
         let allowTransition = true;
@@ -122,6 +130,13 @@ regimeClassifierResolution = (() => {
           allowTransition = true;
         } else if (state.lastRegime === 'evolving' && rawRegime === 'coherent' && state.evolvingBeats < state.evolvingMinDwell) {
           allowTransition = false;
+        } else if (state.lastRegime === 'evolving' && rawRegime === 'coherent') {
+          const evolvingHoldFloor = evolvingRecoveryPriority > 0.40
+            ? state.evolvingMinDwell + (phaseStableRecoveryWindow ? 4 : 2)
+            : state.evolvingMinDwell;
+          if (state.evolvingBeats < evolvingHoldFloor) {
+            allowTransition = false;
+          }
         }
 
         if (allowTransition) {
@@ -153,10 +168,13 @@ regimeClassifierResolution = (() => {
         const phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
         coherentMaxDwell = m.max(48, m.round(config.COHERENT_MAX_DWELL * (1 - phaseCollapsePressure * 0.35)));
       }
+      if (evolvingRecoveryPriority > 0.35) {
+        coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - evolvingRecoveryPriority * 0.28)));
+      }
       if (projectedRunCoherentBeats > coherentMaxDwell) {
         const coherentOvershoot = projectedRunCoherentBeats - coherentMaxDwell;
-        const forcedWindow = clamp(4 + m.floor(coherentOvershoot / 24) + m.floor(state.coherentShareEma * 6), 4, 12);
-        const recoveryRegime = evolvingDeficit > 0.20 && (trustSharePressure > 0.15 || phaseWeakness > 0.20) ? 'evolving' : 'exploring';
+        const forcedWindow = clamp(5 + m.floor(coherentOvershoot / 22) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? 2 : 0), 5, 15);
+        const recoveryRegime = evolvingRecoveryPriority > 0.35 ? 'evolving' : 'exploring';
         forceRegimeTransition(recoveryRegime, 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats, tickId);
         resolvedRegime = recoveryRegime;
         state.forcedOverrideActive = true;
@@ -174,8 +192,8 @@ regimeClassifierResolution = (() => {
       monopolyState.rawNonCoherentOpportunityShare > 0.16 ||
       monopolyState.opportunityGap > 0.10
     )) {
-      const forcedWindow = clamp(5 + m.floor(monopolyState.pressure * 5), 5, 9);
-      const recoveryRegime = evolvingDeficit > 0.20 && (trustSharePressure > 0.15 || phaseWeakness > 0.20) ? 'evolving' : monopolyState.preferredRegime;
+      const forcedWindow = clamp(6 + m.floor(monopolyState.pressure * 5) + m.floor(evolvingRecoveryPriority * 2) + (phaseStableRecoveryWindow ? 1 : 0), 6, 11);
+      const recoveryRegime = evolvingRecoveryPriority > 0.30 ? 'evolving' : monopolyState.preferredRegime;
       forceRegimeTransition(recoveryRegime, 'coherent-cadence-monopoly', forcedWindow, state.runCoherentBeats + beatSpan, tickId);
       resolvedRegime = recoveryRegime;
       state.forcedOverrideActive = true;

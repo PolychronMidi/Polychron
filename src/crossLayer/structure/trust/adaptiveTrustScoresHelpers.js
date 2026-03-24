@@ -26,14 +26,14 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.REST_SYNCHRONIZER]: ['density-trust', 'flicker-trust'],
   };
   const pairAwarePairWeights = {
-    [trustSystems.names.COHERENCE_MONITOR]: { 'density-trust': 1.20, 'flicker-trust': 1.15, 'tension-trust': 1.05 },
+    [trustSystems.names.COHERENCE_MONITOR]: { 'density-trust': 1.26, 'flicker-trust': 1.22, 'tension-trust': 1.08 },
     [trustSystems.names.PHASE_LOCK]: { 'flicker-phase': 1.20, 'density-phase': 1.10, 'tension-phase': 1.05, 'trust-phase': 1.05 },
-    [trustSystems.names.CADENCE_ALIGNMENT]: { 'tension-trust': 1.25, 'density-trust': 1.10, 'density-phase': 1.05 },
-    [trustSystems.names.STUTTER_CONTAGION]: { 'density-flicker': 1.25, 'flicker-phase': 1.10, 'flicker-trust': 1.10 },
-    [trustSystems.names.FEEDBACK_OSCILLATOR]: { 'tension-flicker': 1.18, 'flicker-trust': 1.12, 'flicker-phase': 1.08 },
+    [trustSystems.names.CADENCE_ALIGNMENT]: { 'tension-trust': 1.25, 'density-trust': 1.16, 'density-phase': 1.08 },
+    [trustSystems.names.STUTTER_CONTAGION]: { 'density-flicker': 1.25, 'flicker-phase': 1.10, 'flicker-trust': 1.16 },
+    [trustSystems.names.FEEDBACK_OSCILLATOR]: { 'tension-flicker': 1.18, 'flicker-trust': 1.18, 'flicker-phase': 1.08 },
     [trustSystems.names.ENTROPY_REGULATOR]: { 'flicker-entropy': 1.22, 'density-entropy': 1.18, 'tension-entropy': 1.10, 'entropy-trust': 1.22, 'entropy-phase': 1.08 },
-    [trustSystems.names.CONVERGENCE]: { 'tension-trust': 1.18, 'density-trust': 1.12, 'tension-phase': 1.06, 'density-phase': 1.04 },
-    [trustSystems.names.REST_SYNCHRONIZER]: { 'density-trust': 1.15, 'flicker-trust': 1.10 },
+    [trustSystems.names.CONVERGENCE]: { 'tension-trust': 1.22, 'density-trust': 1.18, 'tension-phase': 1.06, 'density-phase': 1.04 },
+    [trustSystems.names.REST_SYNCHRONIZER]: { 'density-trust': 1.20, 'flicker-trust': 1.15 },
   };
 
   function getSystemPairHotspotProfile(systemName) {
@@ -182,7 +182,7 @@ adaptiveTrustScoresHelpers = (() => {
     if (axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number') {
       trustAxisPressure = clamp((axisEnergy.shares.trust - 0.19) / 0.09, 0, 1);
       if (typeof axisEnergy.shares.phase === 'number') {
-        phaseStarvationPressure = clamp((0.04 - axisEnergy.shares.phase) / 0.04, 0, 1);
+        phaseStarvationPressure = clamp((0.08 - axisEnergy.shares.phase) / 0.08, 0, 1);
       }
     }
 
@@ -204,7 +204,7 @@ adaptiveTrustScoresHelpers = (() => {
     const settlementPressure = clamp(
       lateRunPressure *
       clamp((leadScore - 0.10) / 0.16, 0, 1) *
-      (1 - clamp(trustHotspotPressure * 0.9 + trustAxisPressure * 0.7 + stickyTailPressure * 0.4 + pairAwarePressure * 0.55 + pairAwareSeverePressure * 0.48 + contextualGap * 0.35 + (trustSurfaceSystem ? phaseStarvationPressure * 0.30 : 0), 0, 1)),
+      (1 - clamp(trustHotspotPressure * 0.9 + trustAxisPressure * 0.7 + stickyTailPressure * 0.4 + pairAwarePressure * 0.55 + pairAwareSeverePressure * 0.48 + contextualGap * 0.35 + (trustSurfaceSystem ? phaseStarvationPressure * 0.45 : 0), 0, 1)),
       0,
       1
     );
@@ -218,7 +218,7 @@ adaptiveTrustScoresHelpers = (() => {
       pairAwarePressure * 0.60 +
       pairAwareSeverePressure * 0.50 +
       trustAxisPressure * 0.32 +
-      (trustSurfaceSystem ? phaseStarvationPressure * 0.30 : 0) +
+      (trustSurfaceSystem ? phaseStarvationPressure * 0.42 : 0) +
       stickyTailPressure * 0.24 +
       contextualGap * 0.24 +
       settlementPressure * 0.85 +
@@ -228,7 +228,7 @@ adaptiveTrustScoresHelpers = (() => {
     );
 
     const coherencePenalty = specificProfile && systemName === trustSystems.names.COHERENCE_MONITOR
-      ? clamp(trustHotspotPressure * 0.25 + pairAwarePressure * 0.24 + pairAwareSeverePressure * 0.22 + trustAxisPressure * 0.20 + settlementPressure * 0.20 + stickyTailPressure * 0.12 + contextualGap * 0.12 + phaseStarvationPressure * 0.16, 0, 0.45)
+      ? clamp(trustHotspotPressure * 0.25 + pairAwarePressure * 0.24 + pairAwareSeverePressure * 0.22 + trustAxisPressure * 0.20 + settlementPressure * 0.20 + stickyTailPressure * 0.12 + contextualGap * 0.12 + phaseStarvationPressure * 0.24, 0, 0.50)
       : 0;
 
     return {

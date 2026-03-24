@@ -86,18 +86,50 @@ narrativeTrajectory = (() => {
         ? axisEnergy.shares.trust
         : 1.0 / 6.0;
       const lowPhasePressure = clamp((0.12 - phaseShare) / 0.12, 0, 1);
+      const phaseRecoveryCredit = clamp((phaseShare - 0.10) / 0.06, 0, 1);
       const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
       const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const dynamicSnap = /** @type {any} */ (snap);
       const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
       const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
         ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
         : 0;
+      const tensionFlickerPressure = couplingMatrix && typeof couplingMatrix['tension-flicker'] === 'number' && Number.isFinite(couplingMatrix['tension-flicker'])
+        ? clamp((m.abs(couplingMatrix['tension-flicker']) - 0.78) / 0.16, 0, 1)
+        : 0;
+      const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
+        ? dynamicSnap.evolvingShare
+        : 0;
+      const coherentShare = dynamicSnap && typeof dynamicSnap.runCoherentShare === 'number'
+        ? dynamicSnap.runCoherentShare
+        : 0;
+      const evolvingRecoveryPressure = clamp((0.055 - evolvingShare) / 0.055, 0, 1);
+      const coherentOvershare = clamp((coherentShare - 0.34) / 0.18, 0, 1);
       const hotspotRelief = clamp(densityFlickerPressure * 0.45 + trustSharePressure * 0.25 + lowPhasePressure * 0.30, 0, 1);
       if (edgePressure > 0) {
         steerBias = 1.0 + (steerBias - 1.0) * (1 - hotspotRelief * (0.35 + edgePressure * 0.35));
       }
+      const midSectionDrive = clamp(1 - edgePressure * 2.2, 0, 1);
+      const arcReheat = midSectionDrive * clamp(phaseRecoveryCredit * 0.014 + evolvingRecoveryPressure * 0.02 + coherentOvershare * 0.012 - densityFlickerPressure * 0.01 - tensionFlickerPressure * 0.012, 0, 0.032);
+      if (arcReheat > 0) {
+        steerBias += arcReheat;
+      }
+      const backHalfRecovery = secProgress > 0.52
+        ? clamp((secProgress - 0.52) / 0.30, 0, 1) * clamp(evolvingRecoveryPressure * 0.018 + coherentOvershare * 0.014 + phaseRecoveryCredit * 0.01 - tensionFlickerPressure * 0.01, 0, 0.026)
+        : 0;
+      if (backHalfRecovery > 0) {
+        steerBias += backHalfRecovery;
+      }
+      const finalRelease = secProgress > 0.76
+        ? clamp((secProgress - 0.76) / 0.20, 0, 1) * clamp(phaseRecoveryCredit * 0.018 + coherentOvershare * 0.006 + (1 - evolvingRecoveryPressure) * 0.01 - tensionFlickerPressure * 0.006, 0, 0.024)
+        : 0;
+      if (finalRelease > 0) {
+        steerBias = m.max(0.985, steerBias - finalRelease);
+      }
       if (secProgress > 0.75) {
         steerBias = m.max(steerBias, 1.0 + 0.02 * (1 - hotspotRelief));
+      } else if (secProgress > 0.68) {
+        steerBias = m.max(steerBias, 1.0 + clamp(backHalfRecovery + coherentOvershare * 0.008 - hotspotRelief * 0.01, 0, 0.028));
       }
     }
   }
