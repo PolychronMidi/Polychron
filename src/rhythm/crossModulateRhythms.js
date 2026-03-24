@@ -45,4 +45,17 @@ crossModulateRhythms = () => {
   if (sectionProg > 0.4) {
     crossModulation += (sectionProg - 0.4) * rf(0.2, 0.6) * rs;
   }
+
+  // R68 E3: Regime-responsive cross-modulation scaling.
+  // Coherent regimes get tighter rhythmic texture (less cross-mod variance).
+  // Evolving regimes get wilder rhythmic interaction (more cross-mod).
+  // This is the rhythm subsystem's first regime-aware behavior.
+  const profSnap = systemDynamicsProfiler.getSnapshot();
+  if (profSnap && profSnap.regime) {
+    if (profSnap.regime === 'coherent') {
+      crossModulation *= 0.85;
+    } else if (profSnap.regime === 'evolving') {
+      crossModulation *= 1.20;
+    }
+  }
 }

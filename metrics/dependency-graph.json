@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-24T04:21:31.504Z",
+    "generated": "2026-03-24T04:36:57.991Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2973,
-    "totalEdges": 2333,
-    "crossSubsystemEdges": 1555,
+    "totalConsumes": 2974,
+    "totalEdges": 2334,
+    "crossSubsystemEdges": 1556,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -37,7 +37,7 @@
       "rhythm": {
         "files": 30,
         "provides": 45,
-        "consumes": 214
+        "consumes": 215
       },
       "time": {
         "files": 13,
@@ -3644,6 +3644,7 @@
         "subsubdivsOff",
         "subsubdivsOn",
         "subsubsPerSub",
+        "systemDynamicsProfiler",
         "timeStream",
         "validator"
       ]
@@ -11919,6 +11920,13 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/play/main.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/rhythm/crossModulateRhythms.js",
       "globals": [
         "systemDynamicsProfiler"
       ]

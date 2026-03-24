@@ -7,33 +7,34 @@
 
 ## Notable Changes (5)
 
-- !! **harmonic-change**: Section 0: E minor -> D aeolian
-- !! **harmonic-change**: Section 1: A lydian -> F# major
-- !! **harmonic-change**: Section 2: C# major -> A minor
-- !! **harmonic-change**: Section 3: D# major -> Bb lydian
-- !! **harmonic-change**: Section 4: E minor -> G minor
+- !! **harmonic-change**: Section 0: D aeolian -> D# ionian
+- !! **harmonic-change**: Section 1: F# major -> F minor
+- !! **harmonic-change**: Section 2: A minor -> Ab minor
+- !! **harmonic-change**: Section 3: Bb lydian -> Bb minor
+- !! **harmonic-change**: Section 4: G minor -> D# ionian
 
 ## Moderate Changes (6)
 
-- ! **phrase-count**: Section 1: 3 phrases -> 2 phrases
-- ! **tension-shift**: Section 1 avg tension: 0.597 -> 0.749
-- ! **phrase-count**: Section 3: 3 phrases -> 4 phrases
-- ! **phrase-count**: Section 4: 1 phrases -> 2 phrases
-- ! **note-count**: output2: 18261 notes -> 13707 notes (24.9% change)
-- ! **pitch-center**: output2 mean pitch: 43.7 -> 36.6 (7.2 semitones)
+- ! **tension-shift**: Section 0 avg tension: 0.379 -> 0.257
+- ! **tension-shift**: Section 1 avg tension: 0.749 -> 0.605
+- ! **phrase-count**: Section 2: 3 phrases -> 4 phrases
+- ! **phrase-count**: Section 3: 4 phrases -> 2 phrases
+- ! **tension-shift**: Section 4 avg tension: 0.553 -> 0.378
+- ! **pitch-center**: output2 mean pitch: 36.6 -> 42.7 (6.2 semitones)
 
-## Minor Changes (2)
+## Minor Changes (3)
 
-- ~ **regime-shift**: Section 3 regime 'exploring': 14.1% -> 60.2%
-- ~ **regime-shift**: Section 3 regime 'coherent': 73.7% -> 39.8%
+- ~ **regime-shift**: Section 0 regime 'exploring': 22.9% -> 0.0%
+- ~ **regime-shift**: Section 4 regime 'coherent': 74.5% -> 6.3%
+- ~ **regime-shift**: Section 4 regime 'exploring': 25.5% -> 93.8%
 
 ## Summary
 
-- Total differences: 13
+- Total differences: 14
 - Major: 0
 - Notable: 5
 - Moderate: 6
-- Minor: 2
+- Minor: 3
 
 
-*Generated 2026-03-24T04:21:33.811Z*
+*Generated 2026-03-24T04:36:59.951Z*
