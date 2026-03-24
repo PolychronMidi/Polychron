@@ -20,6 +20,9 @@ absoluteTimeGrid = (() => {
   /** @type {Object.<string, Map<number, ATGEntry[]>>} */
   const channels = {};
 
+  /** Latest absolute ms posted across all channels */
+  let latestMs = 0;
+
   /**
    * Ensure a channel exists.
    * @param {string} name
@@ -43,6 +46,8 @@ absoluteTimeGrid = (() => {
     V.assertNonEmptyString(layer, 'post.layer');
     const t = V.requireFinite(timeMs, 'post.timeMs');
     if (data !== undefined) V.assertPlainObject(data, 'post.data');
+
+    if (t > latestMs) latestMs = t;
 
     const channelMap = ensureChannel(channel);
     const entry = typeof data === 'undefined' ? { timeMs: t, layer } : data;
@@ -200,11 +205,20 @@ absoluteTimeGrid = (() => {
     }
   }
 
+  /**
+   * Return the latest absolute ms posted to any channel.
+   * @returns {number}
+   */
+  function now() {
+    return latestMs;
+  }
+
   return {
     post,
     query,
     findClosest,
     getChannels,
-    reset
+    reset,
+    now
   };
 })();

@@ -16,7 +16,9 @@ entropyRegulator = (() => {
 
   // Arc target range
   const ARC_TARGET_FLOOR = 0.2;
-  const ARC_TARGET_RANGE = 0.6;
+  // R76 E5: Widen arc range 0.6->0.7 for greater entropy dynamic range,
+  // creating more contrast between low-entropy and high-entropy sections.
+  const ARC_TARGET_RANGE = 0.7;
 
   // Target blending (arc vs intent)
   // R75 E2: Raised arc weight 0.3->0.45 to strengthen structural entropy

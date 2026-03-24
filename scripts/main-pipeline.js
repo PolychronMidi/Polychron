@@ -5,7 +5,7 @@
  * runs every step sequentially, logs timing per step, and distinguishes
  * fatal pre-composition steps from non-fatal post-composition diagnostics.
  *
- * Invoked via: node scripts/run-with-log.js pipeline.log node scripts/main-pipeline.js
+ * Invoked via: npm run main
  *
  * @module scripts/main-pipeline
  */
@@ -15,7 +15,7 @@ const { execSync } = require('child_process');
 const fs   = require('fs');
 const path = require('path');
 
-// ── step definitions ────────────────────────────────────────────────
+// step definitions
 
 const PRE_COMPOSITION = [
   { label: 'generate-globals-dts',    cmd: 'node scripts/generate-globals-dts.js' },
@@ -29,7 +29,7 @@ const PRE_COMPOSITION = [
 
 const COMPOSITION = {
   label: 'composition',
-  cmd:   'node scripts/run-with-log.js main.log node --max-old-space-size=16384 src/play/main.js --trace',
+  cmd:   'node scripts/run-with-log.js main.log node src/play/main.js',
 };
 
 const POST_COMPOSITION = [
@@ -45,7 +45,7 @@ const POST_COMPOSITION = [
   { label: 'visualize-feedback-graph', cmd: 'node scripts/visualize-feedback-graph.js' },
 ];
 
-// ── runner ───────────────────────────────────────────────────────────
+// runner
 
 const timings = [];
 
@@ -111,7 +111,7 @@ function writeSummaryJSON(wallTime) {
   }
 }
 
-// ── main ─────────────────────────────────────────────────────────────
+// main
 
 function main() {
   var pipelineStart = Date.now();

@@ -91,11 +91,13 @@ velocityInterference = (() => {
     // As the piece progresses, interference strengthens (boost 20%, separation 12%),
     // creating more dynamic cross-layer interplay and coupling texture in later
     // sections (S1-S3 had zero exceedance in R70).
+    // R77 E4: Increase base from 0.10/0.06 to 0.13/0.08 for stronger cross-layer
+    // velocity interaction across all sections, improving dynamic range contrast.
     const sectionProg = totalSections > 1
       ? clamp(sectionIndex / (totalSections - 1), 0, 1)
       : 0.5;
-    const boostCeiling = 0.10 + sectionProg * 0.10;
-    const reductionCeiling = 0.06 + sectionProg * 0.06;
+    const boostCeiling = 0.13 + sectionProg * 0.10;
+    const reductionCeiling = 0.08 + sectionProg * 0.06;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength

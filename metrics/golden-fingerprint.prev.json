@@ -1,205 +1,206 @@
 {
   "meta": {
-    "generated": "2026-03-24T05:52:56.494Z",
-    "traceEntries": 815,
+    "generated": "2026-03-24T13:41:08.147Z",
+    "traceEntries": 722,
     "version": 1
   },
   "noteCount": {
-    "L1": 14692,
-    "L2": 16412,
-    "total": 31104
+    "L1": 11101,
+    "L2": 11361,
+    "total": 22462
   },
   "outputLoad": {
-    "traceEntries": 815,
-    "uniqueBeatKeys": 620,
-    "spanMs": 129372.294,
-    "notesPerTraceEntry": 38.1644,
-    "notesPerUniqueBeat": 50.1677,
-    "notesPerSecond": 240.4224,
+    "traceEntries": 722,
+    "uniqueBeatKeys": 578,
+    "spanMs": 86111.111,
+    "notesPerTraceEntry": 31.1108,
+    "notesPerUniqueBeat": 38.8616,
+    "notesPerSecond": 260.849,
     "guard": null,
     "progressIntegrity": {
       "duplicateLayerBeatKeys": 0,
       "overfullBeatKeys": 0,
       "l1ProgressRegressions": 0,
       "l1TimeRegressions": 0,
-      "pairedBeatKeys": 195,
-      "pairedBeatKeyRatio": 0.3145,
+      "pairedBeatKeys": 144,
+      "pairedBeatKeyRatio": 0.2491,
       "integrity": "warning"
     }
   },
-  "pitchEntropy": 6.4686240293909005,
+  "pitchEntropy": 6.506334310860615,
   "density": {
-    "mean": 0.4962394434533906,
-    "variance": 0.007732315397932984
+    "mean": 0.5361278339418704,
+    "variance": 0.007697718160016354
   },
   "tensionArc": [
-    0.5053102503129604,
-    0.7828348444939339,
-    0.47960481587023956,
-    0.39937558447277755
+    0.49949442062475446,
+    0.6361464633280584,
+    0.7153195524918602,
+    0.5629395579519081
   ],
-  "trustConvergence": 0.30285555555555554,
+  "trustConvergence": 0.2826777777777778,
   "trustFinal": {
-    "cadenceAlignment": 0.1744,
-    "coherenceMonitor": 0.5296,
-    "convergence": 0.2033,
-    "entropyRegulator": 0.215,
-    "feedbackOscillator": 0.2572,
-    "phaseLock": 0.4431,
-    "restSynchronizer": 0.2412,
-    "roleSwap": 0.2083,
-    "stutterContagion": 0.4536
+    "cadenceAlignment": 0.1633,
+    "coherenceMonitor": 0.5235,
+    "convergence": 0.2007,
+    "entropyRegulator": 0.2075,
+    "feedbackOscillator": 0.2647,
+    "phaseLock": 0.4134,
+    "restSynchronizer": 0.2129,
+    "roleSwap": 0.1862,
+    "stutterContagion": 0.3719
   },
   "regimeDistribution": {
-    "initializing": 0.0049079754601227,
-    "evolving": 0.09447852760736196,
-    "coherent": 0.47484662576687114,
-    "exploring": 0.42576687116564416
+    "initializing": 0.00554016620498615,
+    "evolving": 0.11911357340720222,
+    "coherent": 0.44182825484764543,
+    "exploring": 0.43351800554016623
   },
   "exceedanceSeverity": {
-    "density-flicker": 20,
-    "density-trust": 2,
-    "flicker-trust": 8,
-    "flicker-entropy": 10
+    "density-flicker": 1,
+    "flicker-trust": 3,
+    "flicker-phase": 49,
+    "density-phase": 6,
+    "density-tension": 3
   },
-  "totalExceedanceBeats": 40,
+  "totalExceedanceBeats": 62,
   "exceedanceComposite": {
-    "uniqueBeats": 30,
-    "uniqueRate": 0.0365,
-    "totalPairExceedanceBeats": 40,
+    "uniqueBeats": 59,
+    "uniqueRate": 0.081,
+    "totalPairExceedanceBeats": 62,
     "topPairs": [
       {
-        "pair": "density-flicker",
-        "beats": 20
+        "pair": "flicker-phase",
+        "beats": 49
       },
       {
-        "pair": "flicker-entropy",
-        "beats": 10
+        "pair": "density-phase",
+        "beats": 6
       },
       {
         "pair": "flicker-trust",
-        "beats": 8
+        "beats": 3
       }
     ]
   },
   "hotspotMigration": {
-    "topPair": "density-flicker",
+    "topPair": "flicker-phase",
     "topPairs": [
       {
-        "pair": "density-flicker",
-        "beats": 20
+        "pair": "flicker-phase",
+        "beats": 49
       },
       {
-        "pair": "flicker-entropy",
-        "beats": 10
+        "pair": "density-phase",
+        "beats": 6
       },
       {
         "pair": "flicker-trust",
-        "beats": 8
+        "beats": 3
       }
     ],
-    "top2Concentration": 0.75,
+    "top2Concentration": 0.8871,
     "axisShares": {
-      "density": 0.1491,
-      "tension": 0.1526,
-      "flicker": 0.1979,
-      "entropy": 0.203,
-      "trust": 0.1495,
-      "phase": 0.148
+      "density": 0.2048,
+      "tension": 0.1334,
+      "flicker": 0.2044,
+      "entropy": 0.1526,
+      "trust": 0.1403,
+      "phase": 0.1644
     }
   },
   "telemetryHealth": {
-    "score": 0.4589,
+    "score": 0.466,
     "phaseTelemetryPresent": true,
     "phaseIntegrity": "warning",
-    "underSeenPairCount": 4,
-    "maxGap": 0.257
+    "underSeenPairCount": 7,
+    "maxGap": 0.286
   },
   "couplingMeans": {
-    "density-entropy": 0.2515,
-    "density-flicker": 0.3657,
-    "density-phase": 0.2939,
-    "density-tension": 0.3887,
-    "density-trust": 0.3344,
-    "entropy-phase": 0.3025,
-    "entropy-trust": 0.2899,
-    "flicker-entropy": 0.2326,
-    "flicker-phase": 0.3586,
-    "flicker-trust": 0.4243,
-    "tension-entropy": 0.3184,
-    "tension-flicker": 0.2992,
-    "tension-phase": 0.2667,
-    "tension-trust": 0.3304
+    "density-entropy": 0.2792,
+    "density-flicker": 0.3448,
+    "density-phase": 0.2941,
+    "density-tension": 0.3529,
+    "density-trust": 0.3008,
+    "entropy-phase": 0.3434,
+    "entropy-trust": 0.2818,
+    "flicker-entropy": 0.2614,
+    "flicker-phase": 0.5052,
+    "flicker-trust": 0.5193,
+    "tension-entropy": 0.3126,
+    "tension-flicker": 0.2511,
+    "tension-phase": 0.2631,
+    "tension-trust": 0.2642
   },
   "couplingCorrelation": {
     "density-entropy": {
-      "pearsonR": -0.1422,
-      "meanSigned": -0.2027,
+      "pearsonR": -0.0691,
+      "meanSigned": -0.1727,
       "direction": "stable"
     },
     "density-flicker": {
-      "pearsonR": -0.2106,
-      "meanSigned": 0.1896,
-      "direction": "stable"
+      "pearsonR": -0.3557,
+      "meanSigned": 0.2558,
+      "direction": "decreasing"
     },
     "density-phase": {
-      "pearsonR": -0.0218,
-      "meanSigned": -0.1824,
+      "pearsonR": 0.1545,
+      "meanSigned": 0.0969,
       "direction": "stable"
     },
     "density-tension": {
-      "pearsonR": 0.1593,
-      "meanSigned": 0.2151,
+      "pearsonR": 0.2275,
+      "meanSigned": 0.1097,
       "direction": "stable"
     },
     "density-trust": {
-      "pearsonR": 0.0666,
-      "meanSigned": 0.0547,
-      "direction": "stable"
+      "pearsonR": 0.4498,
+      "meanSigned": -0.1874,
+      "direction": "increasing"
     },
     "entropy-phase": {
-      "pearsonR": -0.0387,
-      "meanSigned": -0.036,
+      "pearsonR": -0.2104,
+      "meanSigned": -0.0045,
       "direction": "stable"
     },
     "entropy-trust": {
-      "pearsonR": -0.4126,
-      "meanSigned": -0.0588,
-      "direction": "decreasing"
+      "pearsonR": -0.2404,
+      "meanSigned": 0.0263,
+      "direction": "stable"
     },
     "flicker-entropy": {
-      "pearsonR": 0.2086,
-      "meanSigned": 0.0253,
+      "pearsonR": -0.024,
+      "meanSigned": 0.0331,
       "direction": "stable"
     },
     "flicker-phase": {
-      "pearsonR": 0.0791,
-      "meanSigned": 0.2162,
+      "pearsonR": 0.1802,
+      "meanSigned": 0.2128,
       "direction": "stable"
     },
     "flicker-trust": {
-      "pearsonR": 0.0911,
-      "meanSigned": -0.1227,
-      "direction": "stable"
+      "pearsonR": 0.5894,
+      "meanSigned": -0.1027,
+      "direction": "increasing"
     },
     "tension-entropy": {
-      "pearsonR": 0.1304,
-      "meanSigned": -0.1967,
+      "pearsonR": 0.2969,
+      "meanSigned": -0.1352,
       "direction": "stable"
     },
     "tension-flicker": {
-      "pearsonR": 0.3206,
-      "meanSigned": -0.1038,
-      "direction": "increasing"
+      "pearsonR": -0.116,
+      "meanSigned": 0.0541,
+      "direction": "stable"
     },
     "tension-phase": {
-      "pearsonR": 0.091,
-      "meanSigned": 0.014,
+      "pearsonR": 0.0753,
+      "meanSigned": 0.0885,
       "direction": "stable"
     },
     "tension-trust": {
-      "pearsonR": -0.1909,
-      "meanSigned": -0.0523,
+      "pearsonR": 0.1366,
+      "meanSigned": -0.0233,
       "direction": "stable"
     }
   },

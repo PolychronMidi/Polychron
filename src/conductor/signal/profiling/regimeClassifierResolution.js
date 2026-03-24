@@ -115,9 +115,12 @@ regimeClassifierResolution = (() => {
     if (state.forcedRegimeBeatsRemaining <= 0
         && (state.lastRegime === 'exploring' || state.lastRegime === 'coherent')
         && evolvingShare < 0.06 && evolvingDeficit > 0.50
-        && ((state.lastRegime === 'exploring' && state.exploringBeats >= 12)
+        && ((state.lastRegime === 'exploring' && state.exploringBeats >= 8)
             || (state.lastRegime === 'coherent' && state.coherentBeats >= 15))) {
-      forceRegimeTransition('evolving', 'evolving-starvation-inject', 5,
+      // R76 E2: Exploring trigger 12->8 beats. Wider injection from
+      // exploring since exploring surged to 52.9% in R75 but evolving
+      // only gets forced injection, not organic classification.
+      forceRegimeTransition('evolving', 'evolving-starvation-inject', 6,
         state.lastRegime === 'exploring' ? state.exploringBeats : state.coherentBeats, tickId);
     }
 

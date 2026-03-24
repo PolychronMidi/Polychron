@@ -168,10 +168,13 @@ composerFeedbackAdvisor = (() => {
         }
       }
     } else if (signals.currentRegime === 'exploring') {
+      // R76 E3: Boost exploring family weight 1.15->1.22 and add blues
+      // to encourage wider timbral exploration during exploring regime.
+      // R78 E4: Add 'tension' family for harmonic tension variety during exploring.
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
-        if (fam.includes('rhythmic') || fam.includes('chromatic') || fam.includes('quartal') || fam.includes('pentatonic')) {
-          weights[fam] = clamp((weights[fam] || 1.0) * 1.15, 0.3, 2.0);
+        if (fam.includes('rhythmic') || fam.includes('chromatic') || fam.includes('quartal') || fam.includes('pentatonic') || fam.includes('blues') || fam.includes('tension')) {
+          weights[fam] = clamp((weights[fam] || 1.0) * 1.22, 0.3, 2.0);
         }
       }
     }

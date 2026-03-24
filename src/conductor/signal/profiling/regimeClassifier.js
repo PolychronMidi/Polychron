@@ -32,7 +32,7 @@ regimeClassifier = (() => {
       oscillatingCurvatureThreshold: regimeClassifierConfig.OSCILLATING_CURVATURE_DEFAULT,
       coherentThresholdScale: 0.65,
       evolvingBeats: 0,
-      evolvingMinDwell: 8,  // R28 E1: Raised from 4 for musically audible evolving regime presence
+      evolvingMinDwell: 10, // R78 E2: Raised from 8 for longer evolving blocks. 7.8% evolving in R77 but each block is short (6 beats avg). 10-beat minimum creates more musically impactful evolving passages.
       forcedRegime: '',
       forcedRegimeBeatsRemaining: 0,
       forcedBreakCount: 0,

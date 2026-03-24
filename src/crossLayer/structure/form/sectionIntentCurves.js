@@ -4,12 +4,21 @@ sectionIntentCurves = (() => {
   // Intent curve shaping constants
   const PHRASE_PHASE_SCALE = 0.3;     // phrase contribution to wave phase
   const WAVE_PHASE_SPEED = 0.07;      // section+phrase modulation speed
-  const DENSITY_BASE = 0.33;
-  const DENSITY_ARC_SCALE = 0.55;
+  // R77 E2: Raise density base 0.33->0.36 to recover note count. R76
+  // showed -37% note drop (29258->18361) with L1 halved. Higher base
+  // lifts the density floor across all sections.
+  const DENSITY_BASE = 0.36;
+  // R76 E4: Widen density arc scale 0.55->0.62 to amplify section-level
+  // density contrast. Creates bigger density swings between section peaks
+  // and troughs, improving densityVariance and musical section differentiation.
+  const DENSITY_ARC_SCALE = 0.62;
   const DENSITY_LATE_TAPER = 0.12;
   const DISSONANCE_BASE = 0.2;
   const DISSONANCE_WAVE_BASE = 0.35;
-  const DISSONANCE_WAVE_SCALE = 0.45;
+  // R77 E5: Widen dissonance wave scale 0.45->0.52 for greater harmonic
+  // tension variety across phrases. This amplifies the wave-based dissonance
+  // modulation, creating more contrast between phrase peaks and troughs.
+  const DISSONANCE_WAVE_SCALE = 0.52;
   const DISSONANCE_LATE_SURGE = 0.10;
   const INTERACTION_BASE = 0.2;
   const INTERACTION_WAVE_BASE = 0.25;

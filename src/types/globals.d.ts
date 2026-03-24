@@ -251,6 +251,7 @@ interface AbsoluteTimeGridAPI {
   findClosest(channel: string, aroundMs: number, toleranceMs: number, excludeLayer?: string): ATGEntry | null;
   getChannels(): string[];
   reset(channel?: string): void;
+  now(): number;
 }
 
 // -- Explainability / Trust / Coherence --
@@ -1892,7 +1893,7 @@ declare var traceDrain: {
   recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string; axisEnergyShare?: any; sectionKey?: string; sectionMode?: string }): void;
   recordRuntimeMetric(name: string, durationMs: number): void;
   recordFamilyVelocity(family: string, velocity: number): void;
-  recordBinauralShift(data: { layer: string; absTimeMs: number; syncMs: number; syncTick: number; silenceTick: number; usedCrossLayerShift: boolean; syncDeltaMs: number; nearTrackEnd: boolean; freqOffset: number; targetOffset: number; toleranceMs: number; flip: boolean }): void;
+  recordBinauralShift(data: { layer: string; absTimeMs: number; syncMs: number; syncTick: number; silenceTick: number; usedCrossLayerShift: boolean; syncDeltaMs: number; freqOffset: number; toleranceMs: number; flip: boolean }): void;
   flush(): void;
   shutdown(): void;
 };
