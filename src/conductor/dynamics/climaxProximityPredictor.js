@@ -82,9 +82,12 @@ climaxProximityPredictor = (() => {
     const pred = predict();
     if (pred.premature) return 0.9;
     if (pred.phase === 'receding') {
-      // R26 E4: Deepened pullback (0.36/0.18 vs 0.24/0.12) for greater
-      // density contrast between climax and resolution sections.
-      return 1.0 - clamp((1.0 - pred.proximity) * 0.36, 0, 0.18);
+      // R68 E4: Moderate the pullback from R26 E4's deep values (0.36/0.18)
+      // back toward the original (0.24/0.12). R67 showed S4 tension
+      // collapsing to 0.35. The receding pullback over-suppresses density
+      // in late sections, which starves the tension signal chain.
+      // New min density: 0.88 (was 0.82).
+      return 1.0 - clamp((1.0 - pred.proximity) * 0.24, 0, 0.12);
     }
     // R27 E3: Boosted climax ceiling from 1.2 to 1.3 for more dramatic peaks
     if (pred.proximity <= 0.3) return 1.0;

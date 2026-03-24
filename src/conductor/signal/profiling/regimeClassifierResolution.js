@@ -101,6 +101,17 @@ regimeClassifierResolution = (() => {
       forceRegimeTransition('evolving', 'exploring-share-monopoly', 4, state.exploringBeats, tickId);
     }
 
+    // R68 E5: Evolving starvation injector from exploring blocks.
+    // When evolving is critically low (<0.02) and we have been exploring
+    // for at least 12 beats, inject a brief evolving window. This fires
+    // at lower exploring shares than the monopoly pathway (no share
+    // threshold) and creates evolving beats from shorter exploring runs.
+    if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring'
+        && evolvingShare < 0.02 && evolvingDeficit > 0.80
+        && state.exploringBeats >= 12) {
+      forceRegimeTransition('evolving', 'evolving-starvation-inject', 3, state.exploringBeats, tickId);
+    }
+
     let resolvedRegime = state.lastRegime;
     state.forcedOverrideActive = false;
 
