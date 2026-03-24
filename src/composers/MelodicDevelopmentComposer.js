@@ -104,6 +104,11 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     }
 
     V.assertArray(baseNotes, 'baseNotes', true);
+    const normalizedBaseNotes = baseNotes.map((item) => {
+      const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+      V.requireFinite(midi, 'normalizedBaseNotes.midi');
+      return { item, midi };
+    });
 
     this.measureCount++;
     // -- Texture-phase coupling (#4) --
@@ -145,12 +150,10 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         }
         degreeOffset0 = clamp(m.round(degreeOffset0), -4, 4);
         if (degreeOffset0 !== 0) {
-          developedNotes = baseNotes.map((n) => {
-            const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
-            V.requireFinite(midi, 'midi');
+          developedNotes = normalizedBaseNotes.map(({ item, midi }) => {
             const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset0, { clampToMidi: false });
             const transposed = fitMidi(transposedRaw);
-            return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
+            return (typeof item === 'number') ? transposed : Object.assign({}, item, { note: transposed });
           });
         }
         break;
@@ -162,12 +165,10 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
         }
         degreeOffset1 = clamp(m.round(degreeOffset1), -5, 5);
         if (degreeOffset1 !== 0) {
-          developedNotes = baseNotes.map((n) => {
-            const midi = (typeof n === 'number') ? n : (n && typeof n.note === 'number' ? n.note : null);
-            V.requireFinite(midi, 'midi');
+          developedNotes = normalizedBaseNotes.map(({ item, midi }) => {
             const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset1, { clampToMidi: false });
             const transposed = fitMidi(transposedRaw);
-            return (typeof n === 'number') ? transposed : Object.assign({}, n, { note: transposed });
+            return (typeof item === 'number') ? transposed : Object.assign({}, item, { note: transposed });
           });
         }
         break;
@@ -178,8 +179,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
           let pivotSeed;
           if (this.inversionPivotMode === 'median') {
-            const baseMidi = baseNotes.map((item) => (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN));
-            const valid = baseMidi.filter(v => Number.isFinite(v)).sort((a, b) => a - b);
+            const valid = normalizedBaseNotes.map(({ midi }) => midi).sort((a, b) => a - b);
             if (valid.length === 0) throw new Error('MelodicDevelopmentComposer.getNotes phase 2: no valid base notes for median pivot');
             pivotSeed = valid[m.floor(valid.length / 2)];
           } else {

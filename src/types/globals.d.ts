@@ -274,6 +274,7 @@ interface AdaptiveTrustScoresAPI {
   registerOutcome(systemName: string, payoff: number): number;
   getBaseWeight(systemName: string): number;
   getWeight(systemName: string): number;
+  getWeightBatch(systemNames: string[]): Record<string, number>;
   decayAll(rate?: number): void;
   getSnapshot(): Record<string, any>;
   getJournal(): { section: number; beat: number; systemName: string; payoff: number; scoreBefore: number; scoreAfter: number; ms: number }[];

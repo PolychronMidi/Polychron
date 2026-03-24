@@ -18,6 +18,19 @@ pipelineCouplingManager = (() => {
   const { ALL_MONITORED_DIMS } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
   const S = couplingState;
+  const pipelineCouplingManagerCache = {
+    adaptiveTargetSnapshot: null,
+    axisCouplingTotals: null,
+    axisEnergyShare: null,
+    couplingGates: null,
+  };
+
+  function pipelineCouplingManagerInvalidateCache() {
+    pipelineCouplingManagerCache.adaptiveTargetSnapshot = null;
+    pipelineCouplingManagerCache.axisCouplingTotals = null;
+    pipelineCouplingManagerCache.axisEnergyShare = null;
+    pipelineCouplingManagerCache.couplingGates = null;
+  }
 
   /** @param {number} scale */
   function setDensityFlickerGainScale(scale) {
@@ -30,6 +43,7 @@ pipelineCouplingManager = (() => {
   }
 
   function refresh() {
+    pipelineCouplingManagerInvalidateCache();
     const snap = systemDynamicsProfiler.getSnapshot();
     if (!snap || !snap.couplingMatrix) {
       S.biasDensity = 1.0;
@@ -115,35 +129,51 @@ pipelineCouplingManager = (() => {
   function tensionBias() { return S.biasTension; }
   function flickerBias() { return S.biasFlicker; }
 
+  /** @returns {any} */
   function getAdaptiveTargetSnapshot() {
-    return pipelineCouplingManagerSnapshot.buildAdaptiveTargetSnapshot({
-      adaptiveTargets: S.adaptiveTargets,
-      pairState: S.pairState,
-      nonNudgeableSet: couplingConstants.NON_NUDGEABLE_SET,
-      budgetPriorityScore: S.budgetPriorityScore,
-      budgetPriorityBoost: S.budgetPriorityBoost,
-      budgetPriorityRank: S.budgetPriorityRank,
-      hpPromotedPair: S.hpPromotedPair,
-    });
+    if (!pipelineCouplingManagerCache.adaptiveTargetSnapshot) {
+      pipelineCouplingManagerCache.adaptiveTargetSnapshot = pipelineCouplingManagerSnapshot.buildAdaptiveTargetSnapshot({
+        adaptiveTargets: S.adaptiveTargets,
+        pairState: S.pairState,
+        nonNudgeableSet: couplingConstants.NON_NUDGEABLE_SET,
+        budgetPriorityScore: S.budgetPriorityScore,
+        budgetPriorityBoost: S.budgetPriorityBoost,
+        budgetPriorityRank: S.budgetPriorityRank,
+        hpPromotedPair: S.hpPromotedPair,
+      });
+    }
+    return pipelineCouplingManagerCache.adaptiveTargetSnapshot;
   }
 
+  /** @returns {any} */
   function getAxisCouplingTotals() {
-    return pipelineCouplingManagerSnapshot.buildAxisCouplingTotals(S.axisSmoothedAbsR);
+    if (!pipelineCouplingManagerCache.axisCouplingTotals) {
+      pipelineCouplingManagerCache.axisCouplingTotals = pipelineCouplingManagerSnapshot.buildAxisCouplingTotals(S.axisSmoothedAbsR);
+    }
+    return pipelineCouplingManagerCache.axisCouplingTotals;
   }
 
+  /** @returns {any} */
   function getAxisEnergyShare() {
-    return pipelineCouplingManagerSnapshot.buildAxisEnergyShare(S.axisSmoothedAbsR);
+    if (!pipelineCouplingManagerCache.axisEnergyShare) {
+      pipelineCouplingManagerCache.axisEnergyShare = pipelineCouplingManagerSnapshot.buildAxisEnergyShare(S.axisSmoothedAbsR);
+    }
+    return pipelineCouplingManagerCache.axisEnergyShare;
   }
 
+  /** @returns {any} */
   function getCouplingGates() {
-    return pipelineCouplingManagerSnapshot.buildCouplingGates({
-      lastGateD: S.lastGateD, lastGateT: S.lastGateT, lastGateF: S.lastGateF,
-      lastFloorDampen: S.lastFloorDampen,
-      lastBypassD: S.lastBypassD, lastBypassT: S.lastBypassT, lastBypassF: S.lastBypassF,
-      gateMinD: S.gateMinD, gateMinT: S.gateMinT, gateMinF: S.gateMinF,
-      gateEmaD: S.gateEmaD, gateEmaT: S.gateEmaT, gateEmaF: S.gateEmaF,
-      gateBeatCount: S.gateBeatCount,
-    });
+    if (!pipelineCouplingManagerCache.couplingGates) {
+      pipelineCouplingManagerCache.couplingGates = pipelineCouplingManagerSnapshot.buildCouplingGates({
+        lastGateD: S.lastGateD, lastGateT: S.lastGateT, lastGateF: S.lastGateF,
+        lastFloorDampen: S.lastFloorDampen,
+        lastBypassD: S.lastBypassD, lastBypassT: S.lastBypassT, lastBypassF: S.lastBypassF,
+        gateMinD: S.gateMinD, gateMinT: S.gateMinT, gateMinF: S.gateMinF,
+        gateEmaD: S.gateEmaD, gateEmaT: S.gateEmaT, gateEmaF: S.gateEmaF,
+        gateBeatCount: S.gateBeatCount,
+      });
+    }
+    return pipelineCouplingManagerCache.couplingGates;
   }
 
   /** @param {string} pairKey  @param {number} newBaseline */
@@ -155,6 +185,7 @@ pipelineCouplingManager = (() => {
     ratio = clamp(ratio, -1.0, 3.0);
     at.baseline = clamped;
     at.current = clamp(clamped * ratio, couplingConstants.TARGET_MIN, S.getTargetMax(pairKey));
+    pipelineCouplingManagerInvalidateCache();
   }
 
   function getPairBaselines() {
@@ -168,7 +199,10 @@ pipelineCouplingManager = (() => {
     return result;
   }
 
-  function reset() { S.reset(); }
+  function reset() {
+    S.reset();
+    pipelineCouplingManagerInvalidateCache();
+  }
 
   // Self-registration
   conductorIntelligence.registerDensityBias('pipelineCouplingManager', densityBias, 0.80, 1.20);

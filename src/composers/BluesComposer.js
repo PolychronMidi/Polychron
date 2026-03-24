@@ -43,6 +43,9 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     // Identify blue notes (notes in blues scale but not in pentatonic)
     const pentatonicSet = new Set(pentatonic.notes);
     this.BluesComposerBlueNotes = bluesNotes.filter(n => !pentatonicSet.has(n));
+    this.BluesComposerBlueMidis = this.BluesComposerBlueNotes
+      .map(note => t.Note.midi(`${note}4`))
+      .filter(midi => Number.isFinite(midi));
 
     // Use the full blues scale as the note pool
     this.notes = bluesNotes;
@@ -74,20 +77,19 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     this.BluesComposerPhraseCount++;
     const isResponse = this.BluesComposerPhraseCount % 2 === 0;
 
-    // Sort notes for directional shaping
-    const sorted = [...baseNotes].sort((a, b) => {
-      const aN = typeof a === 'number' ? a : BluesComposer.V.requireFinite(a && a.note, 'BluesComposer.getNotes.sortEntry.note');
-      const bN = typeof b === 'number' ? b : BluesComposer.V.requireFinite(b && b.note, 'BluesComposer.getNotes.sortEntry.note');
-      return aN - bN;
+    const normalized = baseNotes.map((entry) => {
+      const midi = typeof entry === 'number' ? entry : BluesComposer.V.requireFinite(entry && entry.note, 'BluesComposer.getNotes.sortEntry.note');
+      return { entry, midi };
     });
+    normalized.sort((a, b) => a.midi - b.midi);
+    const sorted = normalized.map(item => item.entry);
 
     // Call-and-response: responses reverse (descend)
     const shaped = isResponse ? sorted.reverse() : sorted;
 
     // Blue note injection: probabilistically add chromatic approach tones
-    if (this.BluesComposerBlueNotes.length > 0 && rf() < this.blueNoteProb) {
-      const bluePC = this.BluesComposerBlueNotes[ri(this.BluesComposerBlueNotes.length - 1)];
-      const blueMidi = t.Note.midi(`${bluePC}4`);
+    if (this.BluesComposerBlueMidis.length > 0 && rf() < this.blueNoteProb) {
+      const blueMidi = this.BluesComposerBlueMidis[ri(this.BluesComposerBlueMidis.length - 1)];
       if (Number.isFinite(blueMidi)) {
         // Insert blue note before a random position (chromatic approach)
         const insertIdx = ri(0, m.max(0, shaped.length - 1));

@@ -17,6 +17,9 @@
 harmonicContext = (() => {
   const V = validator.create('harmonicContext');
 
+  /** @type {Set<number>} */
+  let scaleChromaSet = new Set();
+
   /** @type {HarmonicState} */
   let state = {
     key: 'C',           // Root note
@@ -30,6 +33,17 @@ harmonicContext = (() => {
     mutationCount: 0,   // Count of harmonic mutations for rhythm-rate tracking
     modifiedAt: 0       // Timestamp of last update
   };
+
+  function rebuildScaleChromaSet() {
+    scaleChromaSet = new Set();
+    for (let i = 0; i < state.scale.length; i++) {
+      const scaleNote = state.scale[i];
+      const chroma = typeof scaleNote === 'number' ? scaleNote : (t && t.Note) ? t.Note.chroma(scaleNote) : -1;
+      if (Number.isFinite(chroma) && chroma >= 0) {
+        scaleChromaSet.add(chroma);
+      }
+    }
+  }
 
   /**
    * Set harmonic context state
@@ -67,6 +81,7 @@ harmonicContext = (() => {
       V.assertArray(scale, 'scale', true);
       if (JSON.stringify(state.scale) !== JSON.stringify(scale)) changedFields.push('scale');
       state.scale = scale;
+      rebuildScaleChromaSet();
     }
 
     if (chords !== undefined) {
@@ -138,9 +153,12 @@ harmonicContext = (() => {
    * @throws {Error} if field unknown
    */
   function getField(field) {
-    const snapshot = conductorState.getSnapshot();
-    if (snapshot && Object.prototype.hasOwnProperty.call(snapshot, field)) {
-      return snapshot[field];
+    try {
+      return conductorState.getField(/** @type {keyof ConductorStateSnapshot} */ (field));
+    } catch (error) {
+      if (!(error instanceof Error) || !error.message.startsWith('conductorState.getField: unknown field')) {
+        throw error;
+      }
     }
 
     if (!Object.prototype.hasOwnProperty.call(state, field)) {
@@ -168,6 +186,7 @@ harmonicContext = (() => {
       state.scale = scaleNotes;
       state.key = key;
       state.mode = mode;
+      rebuildScaleChromaSet();
     } catch (e) {
       throw new Error(`harmonicContext.updateScaleFromMode: failed to generate scale "${scaleName}": ${e && e.message ? e.message : e}`);
     }
@@ -181,7 +200,7 @@ harmonicContext = (() => {
   function isNoteInScale(noteInput) {
     const chroma = typeof noteInput === 'number' ? noteInput % 12 : (t && t.Note) ? t.Note.chroma(noteInput) : -1;
     if (!Number.isFinite(chroma) || chroma < 0) return false;
-    return state.scale.some(n => (typeof n === 'number' ? n : (t && t.Note) ? t.Note.chroma(n) : -1) === chroma);
+    return scaleChromaSet.has(chroma);
   }
 
   /**
@@ -200,6 +219,7 @@ harmonicContext = (() => {
       mutationCount: 0,
       modifiedAt: 0
     };
+    scaleChromaSet = new Set();
   }
 
   /**

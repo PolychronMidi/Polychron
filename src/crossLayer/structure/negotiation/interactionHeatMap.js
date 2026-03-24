@@ -17,11 +17,42 @@ interactionHeatMap = (() => {
 
   /** @type {BeatSnapshot[]} */
   const history = [];
+  let historyTotalFirings = 0;
+  /** @type {Record<string, number>} */
+  let systemHeatTotals = /** @type {Record<string, number>} */ ({});
+  for (let i = 0; i < SYSTEMS.length; i++) {
+    systemHeatTotals[SYSTEMS[i]] = 0;
+  }
 
   /** @type {Record<string, number>} current beat accumulator */
   let currentBeat = /** @type {Record<string, number>} */ ({});
+  let currentBeatTotalFirings = 0;
   /** @type {Map<string, { systems: Record<string, number>, totalFirings: number }>} */
   const deferredByKey = new Map();
+
+  /**
+   * @param {BeatSnapshot} snapshot
+   */
+  function pushHistorySnapshot(snapshot) {
+    history.push(snapshot);
+    historyTotalFirings += snapshot.totalFirings;
+    const names = Object.keys(snapshot.systems);
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
+      systemHeatTotals[name] = (systemHeatTotals[name] || 0) + snapshot.systems[name];
+    }
+    if (history.length > WINDOW_SIZE) {
+      const removed = history.shift();
+      if (removed) {
+        historyTotalFirings -= removed.totalFirings;
+        const removedNames = Object.keys(removed.systems);
+        for (let i = 0; i < removedNames.length; i++) {
+          const name = removedNames[i];
+          systemHeatTotals[name] = (systemHeatTotals[name] || 0) - removed.systems[name];
+        }
+      }
+    }
+  }
 
   /**
    * Record a system firing in the current beat.
@@ -29,8 +60,10 @@ interactionHeatMap = (() => {
    * @param {number} intensity - 0-1 normalized strength of the interaction
    */
   function record(systemName, intensity) {
+    const clampedIntensity = clamp(intensity, 0, 1);
     if (!currentBeat[systemName]) currentBeat[systemName] = 0;
-    currentBeat[systemName] += clamp(intensity, 0, 1);
+    currentBeat[systemName] += clampedIntensity;
+    currentBeatTotalFirings += clampedIntensity;
   }
 
   /**
@@ -38,10 +71,9 @@ interactionHeatMap = (() => {
    * @param {number} absTimeMs
    */
   function flushBeat(absTimeMs) {
-    const totalFirings = Object.values(currentBeat).reduce((s, v) => s + v, 0);
-    history.push({ systems: { ...currentBeat }, totalFirings, absTimeMs });
-    if (history.length > WINDOW_SIZE) history.shift();
+    pushHistorySnapshot({ systems: { ...currentBeat }, totalFirings: currentBeatTotalFirings, absTimeMs });
     currentBeat = /** @type {Record<string, number>} */ ({});
+    currentBeatTotalFirings = 0;
   }
 
   /**
@@ -51,9 +83,9 @@ interactionHeatMap = (() => {
   function deferBeat(beatKey) {
     V.assertNonEmptyString(beatKey, 'beatKey');
     const systems = { ...currentBeat };
-    const totalFirings = Object.values(systems).reduce((s, v) => s + v, 0);
-    deferredByKey.set(beatKey, { systems, totalFirings });
+    deferredByKey.set(beatKey, { systems, totalFirings: currentBeatTotalFirings });
     currentBeat = /** @type {Record<string, number>} */ ({});
+    currentBeatTotalFirings = 0;
   }
 
   /**
@@ -65,21 +97,26 @@ interactionHeatMap = (() => {
     V.assertNonEmptyString(beatKey, 'beatKey');
     const deferred = deferredByKey.get(beatKey);
     const merged = /** @type {Record<string, number>} */ ({});
+    let totalFirings = currentBeatTotalFirings;
 
     if (deferred) {
-      Object.keys(deferred.systems).forEach((name) => {
+      const deferredNames = Object.keys(deferred.systems);
+      for (let i = 0; i < deferredNames.length; i++) {
+        const name = deferredNames[i];
         merged[name] = (merged[name] || 0) + deferred.systems[name];
-      });
+      }
+      totalFirings += deferred.totalFirings;
       deferredByKey.delete(beatKey);
     }
-    Object.keys(currentBeat).forEach((name) => {
+    const currentNames = Object.keys(currentBeat);
+    for (let i = 0; i < currentNames.length; i++) {
+      const name = currentNames[i];
       merged[name] = (merged[name] || 0) + currentBeat[name];
-    });
+    }
 
-    const totalFirings = Object.values(merged).reduce((s, v) => s + v, 0);
-    history.push({ systems: merged, totalFirings, absTimeMs });
-    if (history.length > WINDOW_SIZE) history.shift();
+    pushHistorySnapshot({ systems: merged, totalFirings, absTimeMs });
     currentBeat = /** @type {Record<string, number>} */ ({});
+    currentBeatTotalFirings = 0;
   }
 
   /**
@@ -88,8 +125,7 @@ interactionHeatMap = (() => {
    */
   function flushDeferredOrphans(absTimeMs) {
     for (const [beatKey, deferred] of deferredByKey.entries()) {
-      history.push({ systems: { ...deferred.systems }, totalFirings: deferred.totalFirings, absTimeMs });
-      if (history.length > WINDOW_SIZE) history.shift();
+      pushHistorySnapshot({ systems: { ...deferred.systems }, totalFirings: deferred.totalFirings, absTimeMs });
       deferredByKey.delete(beatKey);
     }
   }
@@ -101,8 +137,7 @@ interactionHeatMap = (() => {
   function getDensity() {
     if (history.length === 0) return 0;
     const maxPossible = SYSTEMS.length * history.length;
-    const total = history.reduce((s, snap) => s + snap.totalFirings, 0);
-    return clamp(total / maxPossible, 0, 1);
+    return clamp(historyTotalFirings / maxPossible, 0, 1);
   }
 
   /**
@@ -113,13 +148,11 @@ interactionHeatMap = (() => {
     const heat = /** @type {Record<string, number>} */ ({});
     for (const sys of SYSTEMS) heat[sys] = 0;
     if (history.length === 0) return heat;
-    for (const snap of history) {
-      for (const sys of SYSTEMS) {
-        if (snap.systems[sys]) heat[sys] += snap.systems[sys];
-      }
-    }
     const len = history.length;
-    for (const sys of SYSTEMS) heat[sys] = clamp(heat[sys] / len, 0, 1);
+    for (let i = 0; i < SYSTEMS.length; i++) {
+      const sys = SYSTEMS[i];
+      heat[sys] = clamp((systemHeatTotals[sys] || 0) / len, 0, 1);
+    }
     return heat;
   }
 
@@ -146,10 +179,14 @@ interactionHeatMap = (() => {
   function getTrend() {
     if (history.length < 8) return { trend: 'stable', slope: 0 };
     const half = m.floor(history.length / 2);
-    const firstHalf = history.slice(0, half);
-    const secondHalf = history.slice(half);
-    const avgFirst = firstHalf.reduce((s, snap) => s + snap.totalFirings, 0) / firstHalf.length;
-    const avgSecond = secondHalf.reduce((s, snap) => s + snap.totalFirings, 0) / secondHalf.length;
+    let firstSum = 0;
+    let secondSum = 0;
+    for (let i = 0; i < history.length; i++) {
+      if (i < half) firstSum += history[i].totalFirings;
+      else secondSum += history[i].totalFirings;
+    }
+    const avgFirst = firstSum / half;
+    const avgSecond = secondSum / (history.length - half);
     const slope = avgSecond - avgFirst;
     if (slope > 0.3) return { trend: 'rising', slope };
     if (slope < -0.3) return { trend: 'falling', slope };
@@ -159,6 +196,12 @@ interactionHeatMap = (() => {
   function reset() {
     history.length = 0;
     currentBeat = /** @type {Record<string, number>} */ ({});
+    currentBeatTotalFirings = 0;
+    historyTotalFirings = 0;
+    systemHeatTotals = /** @type {Record<string, number>} */ ({});
+    for (let i = 0; i < SYSTEMS.length; i++) {
+      systemHeatTotals[SYSTEMS[i]] = 0;
+    }
     deferredByKey.clear();
   }
 

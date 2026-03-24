@@ -56,9 +56,14 @@ negotiationEngine = (() => {
     V.requireFinite(context.playProb, 'context.playProb');
     V.requireFinite(context.stutterProb, 'context.stutterProb');
 
-    const trustStutter = adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION);
-    const trustCadence = adaptiveTrustScores.getWeight(trustSystems.names.CADENCE_ALIGNMENT);
-    const trustPhase = adaptiveTrustScores.getWeight(trustSystems.names.PHASE_LOCK);
+    const trustWeights = adaptiveTrustScores.getWeightBatch([
+      trustSystems.names.STUTTER_CONTAGION,
+      trustSystems.names.CADENCE_ALIGNMENT,
+      trustSystems.names.PHASE_LOCK
+    ]);
+    const trustStutter = trustWeights[trustSystems.names.STUTTER_CONTAGION];
+    const trustCadence = trustWeights[trustSystems.names.CADENCE_ALIGNMENT];
+    const trustPhase = trustWeights[trustSystems.names.PHASE_LOCK];
 
     const intent = context.intent || sectionIntentCurves.getLastIntent();
 
@@ -103,9 +108,14 @@ negotiationEngine = (() => {
    * @returns {{ allowHarmonicTrigger: boolean, allowDownbeat: boolean }}
    */
   function gateConvergence(layer) {
-    const trustConvergence = adaptiveTrustScores.getWeight(trustSystems.names.CONVERGENCE);
-    const trustCadence = adaptiveTrustScores.getWeight(trustSystems.names.CADENCE_ALIGNMENT);
-    const trustStutter = adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION);
+    const trustWeights = adaptiveTrustScores.getWeightBatch([
+      trustSystems.names.CONVERGENCE,
+      trustSystems.names.CADENCE_ALIGNMENT,
+      trustSystems.names.STUTTER_CONTAGION
+    ]);
+    const trustConvergence = trustWeights[trustSystems.names.CONVERGENCE];
+    const trustCadence = trustWeights[trustSystems.names.CADENCE_ALIGNMENT];
+    const trustStutter = trustWeights[trustSystems.names.STUTTER_CONTAGION];
 
     // If convergence trust is low, suppress both secondary responders
     if (trustConvergence < CONVERGENCE_TRUST_FLOOR) {

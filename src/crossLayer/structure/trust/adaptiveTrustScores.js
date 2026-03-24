@@ -58,6 +58,61 @@ adaptiveTrustScores = (() => {
     restSynchronizer: 0.25  // break 3-generation stagnation at ~0.199
   };
 
+  let adaptiveTrustScoresCacheVersion = 0;
+  let adaptiveTrustScoresContextCacheKey = '';
+  let adaptiveTrustScoresContextCache = null;
+  let adaptiveTrustScoresWeightCacheKey = '';
+  const adaptiveTrustScoresWeightCache = new Map();
+  let adaptiveTrustScoresSnapshotCacheKey = '';
+  let adaptiveTrustScoresSnapshotCache = null;
+
+  function adaptiveTrustScoresGetBeatKey() {
+    const safeSection = Number.isFinite(sectionIndex) ? sectionIndex : -1;
+    const safePhrase = Number.isFinite(phraseIndex) ? phraseIndex : -1;
+    const safeBeat = Number.isFinite(beatStart) ? beatStart : (Number.isFinite(beatCount) ? beatCount : -1);
+    return safeSection + ':' + safePhrase + ':' + safeBeat;
+  }
+
+  function adaptiveTrustScoresGetCacheKey() {
+    return adaptiveTrustScoresGetBeatKey() + ':' + adaptiveTrustScoresCacheVersion;
+  }
+
+  function adaptiveTrustScoresInvalidateValueCaches() {
+    adaptiveTrustScoresCacheVersion++;
+    adaptiveTrustScoresWeightCacheKey = '';
+    adaptiveTrustScoresWeightCache.clear();
+    adaptiveTrustScoresSnapshotCacheKey = '';
+    adaptiveTrustScoresSnapshotCache = null;
+  }
+
+  function adaptiveTrustScoresResolveContext() {
+    const beatKey = adaptiveTrustScoresGetBeatKey();
+    if (adaptiveTrustScoresContextCacheKey === beatKey && adaptiveTrustScoresContextCache) {
+      return adaptiveTrustScoresContextCache;
+    }
+    const regime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
+    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
+      ? axisEnergy.shares.tension
+      : 1.0 / 6.0;
+    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
+      ? axisEnergy.shares.trust
+      : 1.0 / 6.0;
+    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+      ? axisEnergy.shares.phase
+      : 1.0 / 6.0;
+    adaptiveTrustScoresContextCacheKey = beatKey;
+    adaptiveTrustScoresContextCache = {
+      regime,
+      tensionShare,
+      trustShare,
+      phaseShare,
+      trustAxisPressure: clamp((trustShare - 0.17) / 0.08, 0, 1),
+      phaseLaneNeed: clamp((0.07 - phaseShare) / 0.07, 0, 1)
+    };
+    return adaptiveTrustScoresContextCache;
+  }
+
   /** @param {string} systemName */
   function ensure(systemName) {
     V.assertNonEmptyString(systemName, 'systemName');
@@ -159,6 +214,8 @@ adaptiveTrustScores = (() => {
       samples: state.samples
     }, state.lastMs);
 
+    adaptiveTrustScoresInvalidateValueCaches();
+
     return state.score;
   }
 
@@ -184,27 +241,32 @@ adaptiveTrustScores = (() => {
 
   /** @param {string} systemName */
   function getWeight(systemName) {
+    const cacheKey = adaptiveTrustScoresGetCacheKey();
+    if (adaptiveTrustScoresWeightCacheKey !== cacheKey) {
+      adaptiveTrustScoresWeightCacheKey = cacheKey;
+      adaptiveTrustScoresWeightCache.clear();
+    }
+    if (adaptiveTrustScoresWeightCache.has(systemName)) {
+      return adaptiveTrustScoresWeightCache.get(systemName);
+    }
     const baseWeight = getBaseWeight(systemName);
     const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(systemName);
     const contextualWeightGetter = contextualTrust ? V.optionalType(contextualTrust.getContextualWeight, 'function') : undefined;
     const contextualWeight = contextualWeightGetter ? contextualWeightGetter(systemName) : null;
-    if (contextualWeight === null) return baseWeight;
+    if (contextualWeight === null) {
+      adaptiveTrustScoresWeightCache.set(systemName, baseWeight);
+      return baseWeight;
+    }
     const blend = clamp(0.18 + pairAwareProfile.pressure * 0.32 + pairAwareProfile.severePressure * 0.28, 0.18, 0.65);
     const blendedWeight = baseWeight * (1 - blend) + contextualWeight * blend;
     let hotspotAwareWeight = pairAwareProfile.severePressure > 0.10
       ? m.min(baseWeight, blendedWeight)
       : blendedWeight;
-    const regime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
-    const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
-      ? axisEnergy.shares.tension
-      : 1.0 / 6.0;
-    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
-      ? axisEnergy.shares.trust
-      : 1.0 / 6.0;
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
-      : 1.0 / 6.0;
+    const context = adaptiveTrustScoresResolveContext();
+    const regime = context.regime;
+    const tensionShare = context.tensionShare;
+    const trustShare = context.trustShare;
+    const phaseShare = context.phaseShare;
     if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE)
       && regime === 'exploring'
       && (pairAwareProfile.dominantPair === 'density-trust' || (pairAwareProfile.dominantPair === 'density-flicker' && trustShare > 0.17))) {
@@ -230,11 +292,26 @@ adaptiveTrustScores = (() => {
       hotspotAwareWeight *= 1 - tensionTrustBrake;
     }
     if (trustShare > 0.17 && pairAwareProfile.pressure > 0.15) {
-      const phaseLaneNeed = clamp((0.07 - phaseShare) / 0.07, 0, 1);
-      const dominanceBrake = clamp(clamp((trustShare - 0.17) / 0.08, 0, 1) * 0.10 + phaseLaneNeed * 0.12 + pairAwareProfile.pressure * 0.08 + pairAwareProfile.severePressure * 0.08, 0, 0.28);
+      const dominanceBrake = clamp(context.trustAxisPressure * 0.10 + context.phaseLaneNeed * 0.12 + pairAwareProfile.pressure * 0.08 + pairAwareProfile.severePressure * 0.08, 0, 0.28);
       hotspotAwareWeight *= 1 - dominanceBrake;
     }
-    return clamp(hotspotAwareWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
+    const resolvedWeight = clamp(hotspotAwareWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
+    adaptiveTrustScoresWeightCache.set(systemName, resolvedWeight);
+    return resolvedWeight;
+  }
+
+  /** @param {string[]} systemNames
+   *  @returns {Record<string, number>}
+   */
+  function getWeightBatch(systemNames) {
+    V.assertArray(systemNames, 'systemNames');
+    const result = /** @type {Record<string, number>} */ ({});
+    for (let i = 0; i < systemNames.length; i++) {
+      const systemName = systemNames[i];
+      V.assertNonEmptyString(systemName, 'systemNames[' + i + ']');
+      result[systemName] = getWeight(systemName);
+    }
+    return result;
   }
 
   let lastTensionForExploration = 1.0;
@@ -313,15 +390,9 @@ adaptiveTrustScores = (() => {
       trustCountForMean++;
     }
     meanTrust = trustCountForMean > 0 ? meanTrust / trustCountForMean : 0;
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
-    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
-      ? axisEnergy.shares.trust
-      : 1.0 / 6.0;
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
-      : 1.0 / 6.0;
-    const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
-    const phaseLaneNeed = clamp((0.07 - phaseShare) / 0.07, 0, 1);
+    const context = adaptiveTrustScoresResolveContext();
+    const trustSharePressure = context.trustAxisPressure;
+    const phaseLaneNeed = context.phaseLaneNeed;
 
     for (const [name, state] of scoreBySystem.entries()) {
       let vs = adaptiveTrustScoresVelocityState.get(name);
@@ -373,24 +444,47 @@ adaptiveTrustScores = (() => {
         }
       }
     }
+
+    adaptiveTrustScoresInvalidateValueCaches();
   }
 
   function getSnapshot() {
-    const snapshot = {};
-    for (const [name, state] of scoreBySystem.entries()) {
-      const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(name);
-      snapshot[name] = {
-        score: state.score,
-        samples: state.samples,
-        weight: getWeight(name),
-        hotspotPressure: pairAwareProfile.pressure,
-        dominantPair: pairAwareProfile.dominantPair,
-        hotspotPairs: pairAwareProfile.hotspotPairs,
-        severePressure: pairAwareProfile.severePressure,
-        severePair: pairAwareProfile.severePair
+    const cacheKey = adaptiveTrustScoresGetCacheKey();
+    if (adaptiveTrustScoresSnapshotCacheKey !== cacheKey || !adaptiveTrustScoresSnapshotCache) {
+      const snapshot = {};
+      for (const [name, state] of scoreBySystem.entries()) {
+        const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(name);
+        snapshot[name] = {
+          score: state.score,
+          samples: state.samples,
+          weight: getWeight(name),
+          hotspotPressure: pairAwareProfile.pressure,
+          dominantPair: pairAwareProfile.dominantPair,
+          hotspotPairs: pairAwareProfile.hotspotPairs,
+          severePressure: pairAwareProfile.severePressure,
+          severePair: pairAwareProfile.severePair
+        };
+      }
+      adaptiveTrustScoresSnapshotCacheKey = cacheKey;
+      adaptiveTrustScoresSnapshotCache = snapshot;
+    }
+    const snapshotCopy = {};
+    const names = Object.keys(adaptiveTrustScoresSnapshotCache);
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
+      const cached = adaptiveTrustScoresSnapshotCache[name];
+      snapshotCopy[name] = {
+        score: cached.score,
+        samples: cached.samples,
+        weight: cached.weight,
+        hotspotPressure: cached.hotspotPressure,
+        dominantPair: cached.dominantPair,
+        hotspotPairs: cached.hotspotPairs,
+        severePressure: cached.severePressure,
+        severePair: cached.severePair
       };
     }
-    return snapshot;
+    return snapshotCopy;
   }
 
   /** @returns {{ section: number, beat: number, systemName: string, payoff: number, scoreBefore: number, scoreAfter: number, ms: number }[]} */
@@ -403,8 +497,11 @@ adaptiveTrustScores = (() => {
     decayCycleCount = 0;
     journal.length = 0;
     adaptiveTrustScoresVelocityState.clear();
+    adaptiveTrustScoresContextCacheKey = '';
+    adaptiveTrustScoresContextCache = null;
+    adaptiveTrustScoresInvalidateValueCaches();
   }
 
-  return { registerOutcome, getBaseWeight, getWeight, decayAll, getSnapshot, getJournal, reset };
+  return { registerOutcome, getBaseWeight, getWeight, getWeightBatch, decayAll, getSnapshot, getJournal, reset };
 })();
 crossLayerRegistry.register('adaptiveTrustScores', adaptiveTrustScores, ['all']);
