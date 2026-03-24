@@ -249,18 +249,34 @@ globalConductor = (() => {
     // R73 E1: Moderated descending slope 0.35->0.25 so S2/S3 sustain
     // tension after the p=0.6 peak. R72 showed spike-then-decline shape
     // [0.52,0.69,0.39,0.33] -- steep descent killed S2/S3.
-    // New shape: 0.35 at p=0, 0.59 at p=0.6, 0.49 at p=1.0.
+    // R78 E1: Moderate descent further 0.25->0.18. R77 showed S2/S3 dropping
+    // to 0.55/0.44 -- the 0.25 slope creates too steep a decline after p=0.6.
+    // With 0.18: 0.40 at p=0, 0.64 at p=0.6, 0.568 at p=1.0. This preserves
+    // more tension through S3 while still providing compositional resolution.
     const tensionArchTarget = macroProgress < 0.6
-      ? 0.35 + macroProgress * 0.40
-      : 0.59 - (macroProgress - 0.6) * 0.25;
+      ? 0.40 + macroProgress * 0.40
+      : 0.64 - (macroProgress - 0.6) * 0.18;
     const rawTensionBase = (Number(resolved.composite) * 0.55 + Number(harmonicTension) * 0.45) * registryTensionBias * tensionLateLift;
+    // R78 E3: Section-boundary tension breathing. Brief 5% dip in the first
+    // 5% of each section (after S0) creates audible section articulation
+    // at the tension level, complementing density relief from sectionIntentCurves.
+    const sectionBoundaryTensionDip = sectionIndex > 0 && sectionProgress < 0.05
+      ? 1.0 - (1.0 - sectionProgress / 0.05) * 0.05
+      : 1.0;
     // R74 E2: Raised max boost 0.15->0.20. The arch floor shape is
     // correct but the boost ceiling limits actual lift especially
     // during the mid-composition peak where tensionArchTarget=0.59.
-    const tensionArchBoost = rawTensionBase < tensionArchTarget
-      ? clamp((tensionArchTarget - rawTensionBase) * 0.5, 0, 0.20)
+    const tensionArchBoost = rawTensionBase * sectionBoundaryTensionDip < tensionArchTarget
+      ? clamp((tensionArchTarget - rawTensionBase * sectionBoundaryTensionDip) * 0.5, 0, 0.20)
       : 0;
-    const rawTension = clamp(rawTensionBase + tensionArchBoost, 0, 1);
+    // R77 E3: Regime-responsive tension warmth. Evolving regime gets a gentle
+    // tension floor lift (+0.04) to differentiate it sonically from exploring.
+    // Coherent stays neutral. This adds musical character differentiation at
+    // the tension signal level rather than just stutter/density.
+    const regimeTensionWarmth = currentRegime === 'evolving' ? 0.04
+      : currentRegime === 'coherent' ? 0.02
+      : 0;
+    const rawTension = clamp(rawTensionBase * sectionBoundaryTensionDip + tensionArchBoost + regimeTensionWarmth, 0, 1);
     // R75 E1: Reduced smoothing 0.38->0.30 for faster tension response.
     // R74 showed S1 peaking at 0.783 but smoothing delays arch shape
     // propagation, blurring section-boundary tension transitions.

@@ -7,18 +7,10 @@
 const V = validator.create('setBinaural');
 
 /** Millisecond tolerance for treating two layer shifts as the same event */
-const BINAURAL_SYNC_TOLERANCE_MS = 24;
-const BINAURAL_END_GUARD_MS = 2600;
-const BINAURAL_MEAN_REVERSION = 0.28;
-const BINAURAL_STEP_MIN = 0.2;
-const BINAURAL_STEP_MAX = 0.55;
-const BINAURAL_INACTIVE_HOLD_STEP_DIVISOR = 16;
-const BINAURAL_SOURCE_RESTORE_VOL = 104;
-const BINAURAL_REFLECTION_RESTORE_VOL = 100;
-const BINAURAL_BASS_RESTORE_VOL = 102;
+const BINAURAL_SYNC_TOLERANCE_MS = 1;
 
-/** Next absolute ms at which a timed binaural shift should fire */
-let nextBinauralShiftMs = 0;
+/** Next absolute ms at which a timed binaural shift should fire, per layer */
+const nextBinauralShiftMsByLayer = { L1: 0, L2: 0 };
 
 function setBinauralBuildRetuneSilenceEvents(syncTick) {
   const silenceTick = m.max(0, syncTick);
@@ -37,7 +29,7 @@ function setBinauralBuildRetuneSilenceEvents(syncTick) {
 function setBinauralBuildInactiveHoldEvents(startTick, endTick, channels) {
   const holdStartTick = m.max(0, m.round(startTick));
   const holdEndTick = m.max(holdStartTick, m.round(endTick));
-  const holdStep = m.max(1, m.round(tpBeat / BINAURAL_INACTIVE_HOLD_STEP_DIVISOR));
+  const holdStep = m.max(1, m.round(tpSec * 0.5));
   const events = [];
   for (let tick = holdStartTick; tick <= holdEndTick; tick += holdStep) {
     for (let channelIndex = 0; channelIndex < channels.length; channelIndex++) {
@@ -52,17 +44,11 @@ function setBinauralBuildInactiveHoldEvents(startTick, endTick, channels) {
   return events;
 }
 
-function setBinauralResolveRestoreVolume(channel) {
-  if (source.includes(channel)) return BINAURAL_SOURCE_RESTORE_VOL;
-  if (reflection.includes(channel)) return BINAURAL_REFLECTION_RESTORE_VOL;
-  if (bass.includes(channel)) return BINAURAL_BASS_RESTORE_VOL;
-  return BINAURAL_SOURCE_RESTORE_VOL;
+function setBinauralResolveRestoreVolume() {
+  return velocity;
 }
 
 setBinaural = () => {
-  V.requireFinite(beatIndex, 'beatIndex');
-  V.requireFinite(measureIndex, 'measureIndex');
-  V.requireDefined(conductorState, 'conductorState');
   V.requireDefined(BINAURAL, 'BINAURAL');
   V.requireDefined(binauralOffset, 'binauralOffset');
   V.requireDefined(absoluteTimeGrid, 'absoluteTimeGrid');
@@ -72,19 +58,12 @@ setBinaural = () => {
   const activeLayer = /** @type {string} */ (LM.activeLayer);
   const absTimeMs = beatStartTime * 1000;
 
-  const phraseBoundary = beatIndex === 0 && measureIndex === 0;
-  const statePhraseBoundary = (() => {
-    const phrasePosition = V.requireFinite(conductorState.get('phrasePosition'), 'conductorState.phrasePosition');
-    return phrasePosition <= 0.001 && beatIndex === 0;
-  })();
-  const timedShift = absTimeMs >= nextBinauralShiftMs;
-  const finalTimeMs = V.optionalFinite(Number(finalTime), 0) * 1000;
-  const nearTrackEnd = finalTimeMs > 0 && absTimeMs >= m.max(0, finalTimeMs - BINAURAL_END_GUARD_MS);
-  const shouldShift = firstLoop < 1 || phraseBoundary || statePhraseBoundary || (timedShift && !nearTrackEnd);
+  const timedShift = absTimeMs >= nextBinauralShiftMsByLayer[activeLayer];
+  const shouldShift = firstLoop < 1 || timedShift;
 
   if (shouldShift) {
     beatCount = 0;
-    nextBinauralShiftMs = absTimeMs + rf(2.5, 5.5) * 1000;
+    nextBinauralShiftMsByLayer[activeLayer] = absTimeMs + rf(2.5, 5.5) * 1000;
 
     // Cross-layer ms-precision sync via absoluteTimeGrid
     const crossLayerShift = absoluteTimeGrid.findClosest(
@@ -108,10 +87,7 @@ setBinaural = () => {
     } else {
       // New shift: flip and compute a fresh offset
       flipBin = !flipBin;
-      const currentOffset = V.optionalFinite(Number(binauralFreqOffset), (BINAURAL.min + BINAURAL.max) * 0.5);
-      const targetOffset = (BINAURAL.min + BINAURAL.max) * 0.5;
-      const recenteredOffset = currentOffset + (targetOffset - currentOffset) * BINAURAL_MEAN_REVERSION;
-      binauralFreqOffset = rl(recenteredOffset, -BINAURAL_STEP_MAX, BINAURAL_STEP_MAX, BINAURAL.min + BINAURAL_STEP_MIN, BINAURAL.max - BINAURAL_STEP_MIN);
+      binauralFreqOffset = rl(binauralFreqOffset, -.5, .5, BINAURAL.min, BINAURAL.max);
     }
 
     // Recompute pitch bend values from updated offset - stale values cause audible detune
@@ -133,9 +109,7 @@ setBinaural = () => {
         silenceTick: retuneSilence.silenceTick,
         usedCrossLayerShift: Boolean(crossLayerShift),
         syncDeltaMs: crossLayerShift ? m.abs(absTimeMs - syncMs) : 0,
-        nearTrackEnd,
         freqOffset: binauralFreqOffset,
-        targetOffset: (BINAURAL.min + BINAURAL.max) * 0.5,
         toleranceMs: BINAURAL_SYNC_TOLERANCE_MS,
         flip: flipBin
       });
@@ -147,7 +121,7 @@ setBinaural = () => {
     );
 
     const restoreTick = syncTick + 1;
-    const nextShiftTick = m.max(restoreTick, crossLayerHelpers.msToSyncTick(nextBinauralShiftMs));
+    const nextShiftTick = m.max(restoreTick, crossLayerHelpers.msToSyncTick(nextBinauralShiftMsByLayer[activeLayer]));
     const activeChannels = flipBin ? flipBinT2 : flipBinF2;
     const inactiveChannels = flipBin ? flipBinF2 : flipBinT2;
     const muteChannels = Array.from(new Set([...flipBinF2, ...flipBinT2]));
@@ -156,7 +130,7 @@ setBinaural = () => {
       ...muteChannels.map(ch => ({ tick: syncTick, type: 'control_c', vals: [ch, 7, 0] })),
       // Hold the inactive flip group at zero until the next scheduled flip so delayed fade writes cannot reopen it.
       ...inactiveHoldEvents,
-      ...activeChannels.map(ch => ({ tick: restoreTick, type: 'control_c', vals: [ch, 7, setBinauralResolveRestoreVolume(ch)] }))
+      ...activeChannels.map(ch => ({ tick: restoreTick, type: 'control_c', vals: [ch, 7, setBinauralResolveRestoreVolume()] }))
     );
   }
 };

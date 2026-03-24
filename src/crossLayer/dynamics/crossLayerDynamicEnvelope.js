@@ -111,9 +111,12 @@ crossLayerDynamicEnvelope = (() => {
         interaction > 0.45 ? 'parallel' : 'complementary'
       );
     } else if (regime === 'evolving') {
-      // Evolving: bias toward complementary/independent (contrast)
+      // Evolving: bias toward independent (maximum differentiation)
+      // R78 E5: Widen range -- lower threshold from 0.55 to 0.45 so
+      // more evolving beats get independent arcs, creating stronger
+      // layer autonomy during transitional passages.
       arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
-        interaction > 0.55 ? 'complementary' : 'independent'
+        interaction > 0.45 ? 'complementary' : 'independent'
       );
     } else {
       // Exploring: use intent directly (original behavior)

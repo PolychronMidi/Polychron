@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-24T05:57:31.710Z",
+    "generated": "2026-03-24T13:46:29.223Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2981,
-    "totalEdges": 2340,
-    "crossSubsystemEdges": 1562,
+    "totalConsumes": 2975,
+    "totalEdges": 2339,
+    "crossSubsystemEdges": 1561,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -52,7 +52,7 @@
       "fx": {
         "files": 23,
         "provides": 56,
-        "consumes": 244
+        "consumes": 238
       },
       "crossLayer": {
         "files": 52,
@@ -5640,19 +5640,15 @@
         "LM",
         "absoluteTimeGrid",
         "allCHs",
-        "bass",
         "beatCount",
-        "beatIndex",
         "beatStartTime",
         "binauralFreqOffset",
         "binauralMinus",
         "binauralOffset",
         "binauralPlus",
         "c",
-        "conductorState",
         "crossLayerHelpers",
         "drumCH",
-        "finalTime",
         "firstLoop",
         "flipBin",
         "flipBinF2",
@@ -5661,18 +5657,16 @@
         "lCH3",
         "lCH5",
         "m",
-        "measureIndex",
         "p",
         "rCH1",
         "rCH3",
         "rCH5",
-        "reflection",
         "rf",
         "rl",
-        "source",
-        "tpBeat",
+        "tpSec",
         "traceDrain",
-        "validator"
+        "validator",
+        "velocity"
       ]
     },
     "src/crossLayer/index.js": {
@@ -9372,13 +9366,6 @@
     {
       "from": "src/conductor/conductorState.js",
       "to": "src/conductor/textureBlender.js",
-      "globals": [
-        "conductorState"
-      ]
-    },
-    {
-      "from": "src/conductor/conductorState.js",
-      "to": "src/fx/setBinaural.js",
       "globals": [
         "conductorState"
       ]
@@ -20008,25 +19995,20 @@
       "to": "src/fx/setBinaural.js",
       "globals": [
         "allCHs",
-        "bass",
         "beatCount",
-        "beatIndex",
         "beatStartTime",
         "drumCH",
-        "finalTime",
         "flipBin",
         "flipBinF2",
         "flipBinT2",
         "lCH1",
         "lCH3",
         "lCH5",
-        "measureIndex",
         "rCH1",
         "rCH3",
         "rCH5",
-        "reflection",
-        "source",
-        "tpBeat"
+        "tpSec",
+        "velocity"
       ]
     },
     {

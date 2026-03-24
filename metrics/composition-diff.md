@@ -5,37 +5,42 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
+## Major Changes (2)
+
+- !!! **note-count**: output1: 11655 notes -> 17854 notes (53.2% change)
+- !!! **note-count**: output2: 14568 notes -> 25648 notes (76.1% change)
+
 ## Notable Changes (5)
 
-- !! **harmonic-change**: Section 0: Ab minor -> F major
-- !! **harmonic-change**: Section 1: F# lydian -> C# minor
-- !! **harmonic-change**: Section 2: B major -> D# minor
-- !! **harmonic-change**: Section 3: C major -> Ab minor
-- !! **harmonic-change**: Section 4: G minor -> G major
+- !! **harmonic-change**: Section 0: G minor -> G# minor
+- !! **harmonic-change**: Section 1: Eb minor -> A# minor
+- !! **harmonic-change**: Section 2: C major -> C lydian
+- !! **harmonic-change**: Section 3: A# phrygian -> E major
+- !! **harmonic-change**: Section 4: G dorian -> D minor
 
-## Moderate Changes (3)
+## Moderate Changes (4)
 
-- ! **phrase-count**: Section 2: 3 phrases -> 4 phrases
-- ! **phrase-count**: Section 4: 3 phrases -> 1 phrases
-- ! **tension-shift**: Section 4 avg tension: 0.439 -> 0.624
+- ! **phrase-count**: Section 1: 3 phrases -> 2 phrases
+- ! **phrase-count**: Section 3: 3 phrases -> 4 phrases
+- ! **tension-shift**: Section 3 avg tension: 0.613 -> 0.732
+- ! **tension-shift**: Section 4 avg tension: 0.481 -> 0.591
 
-## Minor Changes (7)
+## Minor Changes (6)
 
-- ~ **regime-shift**: Section 1 regime 'coherent': 28.8% -> 50.0%
-- ~ **regime-shift**: Section 1 regime 'exploring': 71.2% -> 44.4%
-- ~ **regime-shift**: Section 2 regime 'coherent': 77.8% -> 57.1%
-- ~ **regime-shift**: Section 3 regime 'exploring': 28.0% -> 88.4%
-- ~ **regime-shift**: Section 3 regime 'coherent': 66.7% -> 11.6%
-- ~ **regime-shift**: Section 4 regime 'exploring': 54.9% -> 93.8%
-- ~ **regime-shift**: Section 4 regime 'coherent': 37.8% -> 6.3%
+- ~ **regime-shift**: Section 1 regime 'exploring': 11.9% -> 33.3%
+- ~ **regime-shift**: Section 2 regime 'exploring': 38.0% -> 83.8%
+- ~ **regime-shift**: Section 2 regime 'coherent': 62.0% -> 11.8%
+- ~ **regime-shift**: Section 3 regime 'exploring': 66.7% -> 40.5%
+- ~ **regime-shift**: Section 4 regime 'coherent': 22.7% -> 57.7%
+- ~ **regime-shift**: Section 4 regime 'exploring': 77.3% -> 42.3%
 
 ## Summary
 
-- Total differences: 15
-- Major: 0
+- Total differences: 17
+- Major: 2
 - Notable: 5
-- Moderate: 3
-- Minor: 7
+- Moderate: 4
+- Minor: 6
 
 
-*Generated 2026-03-24T05:57:33.973Z*
+*Generated 2026-03-24T13:46:31.795Z*

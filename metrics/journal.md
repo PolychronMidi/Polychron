@@ -1,3 +1,118 @@
+## R77 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 701 | **Duration:** 95.9s | **Notes:** 26223
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- AXIS BALANCE BEST EVER: axisGini 0.0575 (from 0.0953). All 6 axes within 0.14-0.19 share range. Phase rising trend.
+- Notes recovered +43%: 18361->26223, L1 +75% (6659->11655). E2 density base 0.33->0.36 confirmed.
+- Tension S0 lifted: 0.39->0.47 (E1 confirmed). But S2/S3 softened: 0.67/0.58->0.55/0.44. Arch shape degraded — peak shifted from S2 to S1.
+- Evolving settled at 7.8% (down from 13.3% but up from pre-R76 baseline 4.7%). 55 evolving beats. Organic evolving still working.
+- Harmonic diversity: G minor, Eb minor, C major, A# phrygian, G dorian — 5 unique tonics, 5 unique modes (best modal variety ever).
+- S4 coherent monopoly broken: 100%->22.7%. S0 now has exploring (20.4%). 21 transitions (up from 11).
+- Exceedance improved: 48->36 beats. 10 pairs contributing (excellent spread). density-tension and flicker-trust top at 8 each.
+- Trust recovered: 0.124->0.160 (back toward fair share). Phase still low at 0.142 but trend rising.
+- densityVariance nearly doubled: 0.0072->0.0100. E4 density arc scale + E5 dissonance wave widening working.
+
+### Evolutions Applied (from R76)
+- E1: Tension arch early floor 0.35->0.40 -- confirmed -- S0 tension 0.39->0.47
+- E2: Density base 0.33->0.36 -- confirmed -- notes +43%, L1 +75%
+- E3: Regime-responsive tension warmth -- inconclusive -- evolving at 7.8% too few beats to isolate
+- E4: Velocity interference boost 0.10/0.06->0.13/0.08 -- inconclusive -- no direct metric
+- E5: Dissonance wave scale 0.45->0.52 -- inconclusive -- densityVariance improved but multiple factors
+
+### Evolutions Proposed (for R78)
+- E1: Tension arch S2/S3 sustain -- globalConductor.js -- S2/S3 dropped, need descending slope moderation
+- E2: Phase share recovery -- systemDynamicsProfilerHelpers.js or coupling -- phase at 0.142, below fair share
+- E3: Evolving holding power -- regimeClassifierResolution.js -- evolving minDwell or window adjustment
+- E4: Rhythmic subdivision variety -- getRhythm.js -- untouched since R69
+- E5: Composer exploring palette expansion -- composerFeedbackAdvisor.js or factoryFamilies
+
+### Hypotheses to Track
+- Tension arch S2/S3 regression may be from profile-specific harmonic tension patterns rather than arch enforcement degradation.
+- axisGini at 0.0575 suggests the equilibrator is functioning optimally. Monitor for stability across rounds.
+- Phase below fair share despite rising trend — may need structural attention if it doesn't self-correct.
+- 21 transitions suggests the regime classifier is producing dynamic movement. This is healthy.
+
+---
+
+## R76 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 490 | **Duration:** 80.1s | **Notes:** 18361
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- EVOLVING BREAKTHROUGH: 4.7% -> 13.3% (nearly tripled). R76 E1 velocity ceiling widening (0.060->0.090) enabled organic evolving classification for the first time since R67 phase enrichment.
+- Regime balance best ever: coherent 41.0%, exploring 44.9%, evolving 13.3%. All three regimes meaningfully represented.
+- maxConsecutiveCoherent 79->74 (still within cap 50 influence). 11 transitions.
+- Tension arc softened: [0.48, 0.71, 0.70, 0.63] -> [0.39, 0.61, 0.67, 0.58]. S0/S1 dropped ~10pts. Arch shape preserved (S2 peak).
+- Phase dropped: 0.1771 -> 0.1430 (below fair share 0.1667). The evolving regime may redistribute coupling energy away from phase pairs. Monitor.
+- AxisGini 0.0889 -> 0.0953 (slight increase from phase drop but still excellent).
+- Note count dropped significantly: 29258 -> 18361 (-37%). L1 especially: 13651 -> 6659 (-51%). Density arc widening (E4) and stochastic profile differences.
+- Harmonic journey: F mixolydian, G# mixolydian, C# lydian, F major, E minor -- 4 unique tonics (F repeated) with good modal variety (2 mixolydian, 1 lydian, 1 major, 1 minor).
+- trust axis stable at 0.1243 (was 0.1258). Still slightly below fair share.
+- Exceedance rose: 31 -> 48 beats. density-trust p90=0.874 triggered manifest health warning. density-flicker remains top hotspot.
+- avgTension 0.654 -> 0.575 (-12%). Consistent with tension arc softening.
+
+### Evolutions Applied (from R75)
+- E1: Evolving velocity ceiling 0.060->0.090 -- confirmed -- evolving surged 4.7%->13.3%, rawEvolvingShare no longer zero
+- E2: Exploring starvation trigger 12->8, window 5->6 -- inconclusive -- evolving gains likely from E1 not E2
+- E3: Exploring family boost 1.15->1.22 + blues -- inconclusive -- no isolated metric for composer family selection
+- E4: Density arc scale 0.55->0.62 -- inconclusive -- densityVariance 0.0077->0.0072, slight decrease (stochastic)
+- E5: Entropy ARC_TARGET_RANGE 0.6->0.7 -- inconclusive -- no isolated entropy motion metric
+
+### Evolutions Proposed (for R77)
+- E1: Tension arch S0 floor enforcement -- globalConductor.js -- S0 dropped to 0.39, add early-section minimum
+- E2: Note count recovery via density base lift -- sectionIntentCurves.js -- L1 halved, may need DENSITY_BASE nudge
+- E3: Trust axis gentle lift -- contextualTrust.js or adaptiveTrustScores.js -- trust at 0.1243 below fair share
+- E4: Regime-responsive pitch range variation -- composers/ or conductor/ -- expand pitch range during exploring
+- E5: Flicker-phase decorrelation improvement -- coupling surface -- flicker-phase avg 0.51 is highest pair
+
+### Hypotheses to Track
+- Evolving recovery may be sustainable now that velocity ceiling (0.090) better matches actual trajectory velocity range (0.11-0.21 with compound phase signal).
+- Note count drop (-37%) may be stochastic or profile-dependent. If persistent, DENSITY_BASE increase from 0.33 to 0.36 could help.
+- Phase regression from 0.1771 to 0.143 may correlate with higher evolving share. Evolving regime may produce different coupling dynamics than coherent/exploring.
+- Tension softening across all sections suggests the arch enforcement may need recalibration for current regime mix.
+
+---
+
+## R75 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 767 | **Duration:** 88.4s | **Notes:** 29258
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- TENSION ARC SUSTAINED HIGH: [0.48, 0.71, 0.70, 0.63] -- best sustained arc ever. S2+S3 both above 0.69, S4 strongest at 0.63. E1 tension smoothing (0.38->0.30) confirmed.
+- Phase BEST EVER: 0.1771 axis share (up from 0.148). Above fair share (0.1667). Phase signal enrichment lineage paying off.
+- maxConsecutiveCoherent: 79 (down from 110). E4 coherent cap 60->50 working. 26 transitions.
+- Exploring surged to 52.9% (from 42.6%) -- coherent dwell reduction pushed time to exploring, not evolving.
+- Evolving halved: 9.4% -> 4.7% -- regression. Shorter coherent runs don't create evolving windows; they create exploring rebounds.
+- Hotspot concentration shattered: 0.75 -> 0.35 top2. 7 exceedance pairs all at 4-6 beats. Excellent diversity.
+- 5 unique tonics: F, C#, D#, Ab, G. Strong modal variety (major, minor, minor, minor, major).
+- Trust slightly low 0.1258 (below fair share). phaseLock trust 0.4617 highest.
+- avgTension 0.654 (up from 0.608) -- tension smoothing + arch enforcement compounding.
+
+### Evolutions Applied (from R74)
+- E1: Tension smoothing 0.38->0.30 -- confirmed -- S2/S3/S4 all sustained high (0.70, 0.70, 0.63 vs 0.48, 0.70, 0.40)
+- E2: Entropy arc blend 0.3->0.45 -- inconclusive -- no isolated entropy motion metric
+- E3: Evolving melodic family boost -- inconclusive -- evolving at 4.7% too few beats to measure
+- E4: Coherent cap 60->50 -- confirmed -- maxConsecutiveCoherent 110->79, coherent share 47.5%->41.9%
+- E5: Section boundary depth by position -- inconclusive -- S4 has deeper dip but density data shows minimal variance change
+
+### Evolutions Proposed (for R76)
+- E1: Evolving recovery via longer forced injection windows -- regimeClassifierResolution.js -- starvation injector window 6->8
+- E2: Density variance boost via section-level density target curve -- sectionIntentCurves.js -- add ascending/descending density arc per section
+- E3: Trust floor activation -- explore trust axis is 0.1258 (below fair share) -- monitor or nudge
+- E4: Regime-responsive harmonic complexity -- composerFeedbackAdvisor.js -- exploring regime should favor more dissonant families
+- E5: Rhythm subdivision variety -- getRhythm.js -- add section-progressive subdivision complexity
+
+### Hypotheses to Track
+- Coherent cap reduction creates exploring, not evolving. The exploring->evolving transition pathway needs strengthening independent of coherent dwell.
+- Phase at 0.1771 is above fair share -- this is the first time phase has been "healthy" across many rounds. The R67 compound signal + R71 measure oscillation is the durable fix.
+- Tension smoothing 0.30 creates smoother but potentially less dynamic arc. Monitor whether beat-to-beat tension variance declines.
+
+---
+
 ## R74 -- 2026-03-24 -- STABLE
 
 **Profile:** evolving | **Beats:** 815 | **Duration:** 80.9s | **Notes:** 31104

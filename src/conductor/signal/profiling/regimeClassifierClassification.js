@@ -181,8 +181,14 @@ regimeClassifierClassification = (() => {
     // above the old 0.076 ceiling into exploring, preventing evolving entry.
     // Also widened the dim floor coefficient from 0.15 to 0.22 to match the
     // higher-dimensional coupling landscape.
-    const evolvingCriticalBoost = rawEvolvingShare < 0.02 ? 0.014 : 0;
-    if (state.lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 + opportunityPressure * 0.010 + exploringSharePressure * 0.008 + evolvingRecoveryBoost * 0.030 + evolvingCriticalBoost && effectiveDim > 1.6 - exploringSharePressure * 0.08 - evolvingRecoveryBoost * 0.22 && couplingStrength > 0.08 + evolvingDeficit * 0.015 - opportunityPressure * 0.010 - exploringSharePressure * 0.012 - evolvingRecoveryBoost * 0.020) return 'evolving';
+    // R76 E1: Widen evolving velocity ceiling from 0.060 to 0.090.
+    // R67 enriched phase signal raised trajectory velocity systemically
+    // (avg 0.11-0.21), pushing ALL beats above the old 0.060 ceiling.
+    // rawEvolvingShare=0 in R75 -- the raw classifier never produces
+    // evolving. Raising ceiling to 0.090 with expanded boost range
+    // allows some beats to qualify organically.
+    const evolvingCriticalBoost = rawEvolvingShare < 0.02 ? 0.020 : 0;
+    if (state.lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.090 + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
     return 'evolving';
