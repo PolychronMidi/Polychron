@@ -169,8 +169,6 @@ dynamismEngine = (() => {
       ? dynamicSnap.evolvingShare
       : 0;
     const evolvingRecoveryPressure = clamp((0.05 - evolvingShare) / 0.05, 0, 1);
-    const phaseRecoveryCredit = clamp((phaseShare - 0.08) / 0.05, 0, 1);
-    const trustSlack = clamp((0.18 - trustShare) / 0.08, 0, 1);
     let l2Overhang = 0;
     if (activeLayerName === 'L2') {
       const recentL1 = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: 8 });
@@ -185,10 +183,13 @@ dynamismEngine = (() => {
       : (activeLayerName === 'L1' && activeProfileName === 'explosive'
         ? clamp(0.04 + lowPhasePressure * 0.10 + recoveryContainmentPressure * 0.03 + (activeRegime === 'exploring' ? 0.01 : 0), 0, 0.18)
         : 0);
-    if (activeLayerName === 'L2' && phaseRecoveryCredit > 0.15 && evolvingRecoveryPressure > 0.25) {
-      layerBias += clamp((0.02 + phaseRecoveryCredit * 0.035 + trustSlack * 0.015 + evolvingRecoveryPressure * 0.04) * (1 - recoveryContainmentPressure * 0.55), 0, 0.08);
-    } else if (activeLayerName === 'L1' && activeRegime === 'coherent' && phaseRecoveryCredit > 0.20 && evolvingRecoveryPressure > 0.25) {
-      layerBias += clamp(0.01 + evolvingRecoveryPressure * 0.025 + trustSlack * 0.01 - recoveryContainmentPressure * 0.015, 0, 0.04);
+    const flickerTrustPressureDyn = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number'
+      ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.72) / 0.18, 0, 1)
+      : 0;
+    if (activeLayerName === 'L2' && trustShare < 0.20 && evolvingRecoveryPressure > 0.25 && flickerTrustPressureDyn < 0.50) {
+      layerBias += clamp((0.018 + evolvingRecoveryPressure * 0.030 + (1 - trustShare / 0.20) * 0.015) * (1 - recoveryContainmentPressure * 0.55 - flickerTrustPressureDyn * 0.20), 0, 0.06);
+    } else if (activeLayerName === 'L1' && activeRegime === 'coherent' && trustShare < 0.20 && evolvingRecoveryPressure > 0.25) {
+      layerBias += clamp(0.008 + evolvingRecoveryPressure * 0.020 - recoveryContainmentPressure * 0.012 - flickerTrustPressureDyn * 0.008, 0, 0.03);
     }
 
     dynamismEngineResolveCacheKey = cacheKey;

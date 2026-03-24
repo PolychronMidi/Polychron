@@ -2,9 +2,6 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
   function axisEnergyEquilibratorAxisAdjustmentsApplyAxisLoop(state, config, context, V) {
     const entropyExploringDamp = context.regimeKey === 'exploring' ? 0.95 : 1.0;
     const phaseEvolvingDamp = context.regimeKey === 'evolving' ? 0.95 : 1.0;
-    // R34 E2: Phase relaxation boost under exploring regime to prevent phase starvation
-    // Exploring-heavy runs (77.8% under explosive) starve phase; this gives 1.3x relaxation rate
-    const phaseExploringRelaxBoost = context.regimeKey === 'exploring' ? 1.4 : 1.0;
 
     for (let i = 0; i < config.ALL_AXES.length; i++) {
       const axis = config.ALL_AXES[i];
@@ -84,7 +81,12 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // Adaptive thresholds replace hardcoded 12/8 streak counts.
         const isPhaseFloorActive = axis === 'phase' && phaseFloorController.isFloorActive(state.phaseLowShareStreak);
         const isPhaseExtremeCollapse = axis === 'phase' && phaseFloorController.isExtremeCollapse(share, state.phaseLowShareStreak);
-        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && !isPhaseFloorActive && !isPhaseExtremeCollapse && !isPhaseLowShareCoherentBypass && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
+        // R61 E1: Override phaseHot skip when phase share is critically low.
+        // Phase surface ratio can flag "hot" from p95/baseline inflation even at
+        // 0.6% share. When phase < 0.04, the "hot" classification is an artifact
+        // of low baselines, not real energy -- allow coldspot relaxation.
+        const isPhaseHotOverride = axis === 'phase' && share < 0.04;
+        if (!isEmergencyStarved && !isPhaseCollapse && !isUndershootPartialBypass && !isCoherentFreezePartialBypass && !isPhaseEmergencyBypass && !isPhaseFloorActive && !isPhaseExtremeCollapse && !isPhaseLowShareCoherentBypass && !isPhaseHotOverride && (context.coherentColdspotFreeze || (axis === 'phase' && context.phaseSurfaceHot) || (axis === 'trust' && context.trustSurfaceHot))) {
           state.skippedColdspotRelaxations++;
           if (context.coherentColdspotFreeze) state.coldspotSkipReasons.coherentFreeze++;
           else if (axis === 'phase' && context.phaseSurfaceHot) state.coldspotSkipReasons.phaseHot++;
@@ -108,7 +110,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           : { phaseCollapseBoost: 4.0, phaseFloorBoost: 1.0 };
         const emergencyBoost = isPhaseCollapse ? phaseBoosts.phaseCollapseBoost : (isEmergencyStarved ? 3.0 : m.max(1.0, phaseBoosts.phaseFloorBoost));
         if (axis === 'phase') phaseFloorController.recordBoostApplied(emergencyBoost);
-        const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * (axis === 'phase' ? phaseExploringRelaxBoost : 1.0) * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
+        const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           // R86 E1: Bypass pair cooldowns when phase floor/extreme collapse is active
@@ -173,12 +175,12 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
 
     const phaseSmoothed = state.smoothedShares.phase;
     const trustSmoothed = state.smoothedShares.trust;
-    if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.06 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.25 : (phaseSmoothed < 0.04 ? 1.10 : 1.0))) {
-      const trustThreshold = config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.25 : (phaseSmoothed < 0.04 ? 1.10 : 1.0));
+    if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.08 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.20 : (phaseSmoothed < 0.04 ? 1.05 : 0.95))) {
+      const trustThreshold = config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.20 : (phaseSmoothed < 0.04 ? 1.05 : 0.95));
       const phaseShortfall = clamp((0.06 - phaseSmoothed) / 0.06, 0, 1);
       const trustExcess = trustSmoothed - trustThreshold;
       const trustPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
-      const trustCapStrength = phaseSmoothed < 0.02 ? 2.0 : (phaseSmoothed < 0.04 ? 1.6 : 1.25);
+      const trustCapStrength = phaseSmoothed < 0.02 ? 2.4 : (phaseSmoothed < 0.04 ? 1.9 : 1.5);
       const trustCapRate = m.min(0.035, config.AXIS_TIGHTEN_RATE * trustCapStrength * trustPairScale * (1 + phaseShortfall * 0.95 + clamp((trustSmoothed - config.FAIR_SHARE) / config.FAIR_SHARE, 0, 1) * 0.35) * clamp(trustExcess / config.FAIR_SHARE, 0.5, 2.0));
       const trustPairs = config.axisToPairs.trust || [];
       for (let i = 0; i < trustPairs.length; i++) {

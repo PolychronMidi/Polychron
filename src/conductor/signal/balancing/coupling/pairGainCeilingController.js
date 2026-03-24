@@ -85,17 +85,34 @@ pairGainCeilingController = (() => {
 
     if (p95Excess > 0 || exceedanceExcess > 0) {
       // Tighten: pressure proportional to severity
+      // R63 E6: Non-linear tighten rate -- when exceedance EMA is high, the
+      // ceiling adapts quadratically faster. Addresses concentrated bursts
+      // (e.g., 108 tension-flicker exceedance beats in a single section)
+      // where the linear 0.008 rate could not keep up.
+      const exceedanceAccelerator = 1.0 + clamp(ps.exceedanceEma / m.max(0.01, profile.exceedanceSensitivity), 0, 3) * 0.5;
       const tightenPressure = clamp(
         p95Excess * 2.0 + exceedanceExcess * 4.0 + ps.severityEma * 6.0,
         0, 1
       );
-      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * s0Multiplier * globalMultiplier;
+      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * exceedanceAccelerator * s0Multiplier * globalMultiplier;
       ps.ceiling = m.max(profile.minCeiling, ps.ceiling - tightenAmount);
     } else if (p95Excess < -0.05 && ps.exceedanceEma < profile.exceedanceSensitivity * 0.5) {
       // Relax: only when well below threshold AND exceedance is low
       const relaxPressure = clamp(m.abs(p95Excess) * 1.5, 0, 1);
       const relaxAmount = _CEILING_RELAX_RATE * relaxPressure * globalMultiplier;
       ps.ceiling = m.min(profile.maxCeiling, ps.ceiling + relaxAmount);
+    }
+
+    // R63 E5: Orchestrator-directed phase pair ceiling relaxation.
+    // When the orchestrator detects phase-floor-vs-pair-ceiling contradiction,
+    // it emits phasePairCeilingRelax > 1.0. Apply additional relaxation to
+    // phase-related pairs so ceiling doesn't block phaseFloorController boosts.
+    if (pair.indexOf('phase') !== -1 || pair === 'flicker-trust') {
+      const ceilingRelaxSignal = safePreBoot.call(() => hyperMetaOrchestrator.getRateMultiplier('phasePairCeilingRelax'), 1.0) || 1.0;
+      if (ceilingRelaxSignal > 1.0 && ps.ceiling < profile.baseCeiling) {
+        const relaxLift = _CEILING_RELAX_RATE * (ceilingRelaxSignal - 1.0) * 3.0;
+        ps.ceiling = m.min(profile.baseCeiling, ps.ceiling + relaxLift);
+      }
     }
 
     // E6: Report exceedance to orchestrator for axis-concentration tracking

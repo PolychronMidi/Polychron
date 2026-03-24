@@ -58,7 +58,12 @@ regimeClassifierClassification = (() => {
     const rawEvolvingShare = state.runBeatCount > 0
       ? ((state.runRawRegimeCounts.evolving || 0) / state.runBeatCount)
       : 0;
-    const evolvingRecoveryBoost = clamp((0.05 - rawEvolvingShare) / 0.05, 0, 1);
+    const axisEnergyC = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const trustShareC = axisEnergyC && axisEnergyC.shares && typeof axisEnergyC.shares.trust === 'number'
+      ? axisEnergyC.shares.trust
+      : 1.0 / 6.0;
+    const trustHealthDamper = clamp((trustShareC - 0.18) / 0.08, 0, 1);
+    const evolvingRecoveryBoost = clamp(((0.05 - rawEvolvingShare) / 0.05) * (1 - trustHealthDamper * 0.55), 0, 1);
     const rawNonCoherentOpportunityShare = rawExploringShare + rawEvolvingShare;
     const resolvedNonCoherentShare = state.runBeatCount > 0
       ? (((state.runResolvedRegimeCounts.exploring || 0) + (state.runResolvedRegimeCounts.evolving || 0)) / state.runBeatCount)
