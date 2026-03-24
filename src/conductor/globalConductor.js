@@ -243,15 +243,28 @@ globalConductor = (() => {
     // 0.10 to 0.15. R67 showed S4 collapsing to 0.35 partly due to the
     // climaxProximityPredictor's receding pullback. The stronger arch floor
     // counteracts this by providing more headroom for late-section sustain.
-    const tensionArchTarget = macroProgress < 0.5
-      ? 0.30 + macroProgress * 0.40
-      : 0.50 - (macroProgress - 0.5) * 0.20;
+    // R69 E5: Raised arch floor from 0.30 to 0.35 at macroProgress=0.
+    // R72 E1: Shift peak from p=0.5 to p=0.6, creating a delayed climax
+    // that reinforces S3 tension.
+    // R73 E1: Moderated descending slope 0.35->0.25 so S2/S3 sustain
+    // tension after the p=0.6 peak. R72 showed spike-then-decline shape
+    // [0.52,0.69,0.39,0.33] -- steep descent killed S2/S3.
+    // New shape: 0.35 at p=0, 0.59 at p=0.6, 0.49 at p=1.0.
+    const tensionArchTarget = macroProgress < 0.6
+      ? 0.35 + macroProgress * 0.40
+      : 0.59 - (macroProgress - 0.6) * 0.25;
     const rawTensionBase = (Number(resolved.composite) * 0.55 + Number(harmonicTension) * 0.45) * registryTensionBias * tensionLateLift;
+    // R74 E2: Raised max boost 0.15->0.20. The arch floor shape is
+    // correct but the boost ceiling limits actual lift especially
+    // during the mid-composition peak where tensionArchTarget=0.59.
     const tensionArchBoost = rawTensionBase < tensionArchTarget
-      ? clamp((tensionArchTarget - rawTensionBase) * 0.5, 0, 0.15)
+      ? clamp((tensionArchTarget - rawTensionBase) * 0.5, 0, 0.20)
       : 0;
     const rawTension = clamp(rawTensionBase + tensionArchBoost, 0, 1);
-    const TENSION_SMOOTHING = 0.38;
+    // R75 E1: Reduced smoothing 0.38->0.30 for faster tension response.
+    // R74 showed S1 peaking at 0.783 but smoothing delays arch shape
+    // propagation, blurring section-boundary tension transitions.
+    const TENSION_SMOOTHING = 0.30;
     const prevTension = harmonicContext.getField('tension');
     const derivedTension = prevTension * (1 - TENSION_SMOOTHING) + rawTension * TENSION_SMOOTHING;
     harmonicContext.set({ tension: derivedTension });

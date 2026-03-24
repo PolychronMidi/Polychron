@@ -19,8 +19,11 @@ entropyRegulator = (() => {
   const ARC_TARGET_RANGE = 0.6;
 
   // Target blending (arc vs intent)
-  const ARC_BLEND_WEIGHT = 0.3;
-  const INTENT_BLEND_WEIGHT = 0.7;
+  // R75 E2: Raised arc weight 0.3->0.45 to strengthen structural entropy
+  // motion across the composition. The arc target drives entropy to follow
+  // the tension contour, creating correlated entropy-tension dynamics.
+  const ARC_BLEND_WEIGHT = 0.45;
+  const INTENT_BLEND_WEIGHT = 0.55;
 
   // PID regulation
   const GAIN_SCALE = 2.0;

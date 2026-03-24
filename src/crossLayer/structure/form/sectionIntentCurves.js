@@ -65,15 +65,36 @@ sectionIntentCurves = (() => {
     // variance (currently 0.0089) and clarifying section boundaries musically.
     // The dip is gentle (up to 0.12 reduction) and ramps linearly back to full.
     // Only applies after S0 to preserve the opening statement.
-    const sectionBoundaryRelief = s > 0 ? clamp(1.0 - (1.0 - p / 0.08) * 0.12, 0.88, 1.0) : 1.0;
+    // R69 E1 / R75 E5: Graduate relief depth by section position.
+    // S1 gets 6% (protect opening), middle sections 12%, final sections
+    // 15% for stronger resolution breathing. R74 densityVariance at 0.0077
+    // could benefit from bigger late-section density dips.
+    const reliefDepth = s === 1 ? 0.06 : sectionRoute > 0.7 ? 0.15 : 0.12;
+    const sectionBoundaryRelief = s > 0 ? clamp(1.0 - (1.0 - p / 0.08) * reliefDepth, 1.0 - reliefDepth, 1.0) : 1.0;
 
     const densityTarget = clamp(
-      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF) * sectionBoundaryRelief,
+      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF) * sectionBoundaryRelief
+      // R70 E3: Per-phrase density perturbation. Density variance declined
+      // steadily (0.0139 -> 0.0100 -> 0.0055) as section-level smoothing
+      // dominates. Adding a phrase-level sine wave creates mid-phrase
+      // density peaks that inject variance below the section arc level.
+      // R72 E3: Phrase-alternating density perturbation. R71 showed that
+      // amplifying the smooth sine (0.06->0.10) didn't improve density
+      // variance (0.0071->0.0060) -- symmetric per-phrase arches average
+      // out. Alternating sign by phrase index creates genuine inter-phrase
+      // density contrast: even phrases get +0.08 boost, odd phrases get
+      // -0.03 dip, breaking the averaging symmetry.
+      + m.sin(clamp(timeStream.compoundProgress('phrase'), 0, 1) * m.PI) * 0.08 * (ph % 2 === 0 ? 1.0 : -0.4) * (1.0 + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * 0.3),
       0,
       1
     );
     const dissonanceTarget = clamp(
-      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF,
+      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF
+      // R70 E5: Section-route dissonance escalation. Middle sections get
+      // more dissonance (up to +0.08) than edge sections, creating harmonic
+      // contrast across the piece. This complements the per-section key
+      // changes with varying harmonic tension density.
+      + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * 0.08,
       0,
       1
     );

@@ -92,18 +92,38 @@ crossLayerDynamicEnvelope = (() => {
   function getArcType() { return arcType; }
 
   /**
-   * Auto-select arc type based on intent and section position.
+   * Auto-select arc type based on intent, section position, and regime.
+   * R73 E2: Added regime-awareness. Coherent regime favors parallel arcs
+   * (unified layers), exploring favors complementary (layer contrast),
+   * evolving favors independent (maximum differentiation). Regime input
+   * blends with intent-based selection rather than overriding it.
    */
   function autoSelectArcType() {
     const intent = sectionIntentCurves.getLastIntent();
-
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
-    if (interaction > 0.65) {
-      arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
-    } else if (interaction > 0.35) {
-      arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('complementary');
+
+    const snap = systemDynamicsProfiler.getSnapshot();
+    const regime = snap ? snap.regime : 'exploring';
+
+    if (regime === 'coherent') {
+      // Coherent: bias toward parallel (unified crescendo/decrescendo)
+      arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
+        interaction > 0.45 ? 'parallel' : 'complementary'
+      );
+    } else if (regime === 'evolving') {
+      // Evolving: bias toward complementary/independent (contrast)
+      arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
+        interaction > 0.55 ? 'complementary' : 'independent'
+      );
     } else {
-      arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('independent');
+      // Exploring: use intent directly (original behavior)
+      if (interaction > 0.65) {
+        arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
+      } else if (interaction > 0.35) {
+        arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('complementary');
+      } else {
+        arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('independent');
+      }
     }
   }
 

@@ -199,6 +199,39 @@ harmonicJourneyPlanner = (() => {
       }
     }
 
+    // R71 E1 / R73 E3: Tonic max-repeat cap. R72 had 4 unique tonics
+    // with A repeated (S1 dorian, S2 major). Tightened from ceil(n/2)
+    // to ceil(n/3) to enforce stronger tonic diversity: for 5 stops,
+    // max 2 appearances of any tonic instead of 3.
+    if (steps.length >= 3) {
+      const totalStops = 1 + steps.length;
+      const maxAllowed = m.max(1, m.ceil(totalStops / 3));
+      const tonicCounts = new Map([[originKey, 1]]);
+      for (let i = 0; i < steps.length; i++) {
+        const k = steps[i].key;
+        tonicCounts.set(k, (tonicCounts.get(k) || 0) + 1);
+      }
+      for (const [tonic, count] of tonicCounts) {
+        if (count <= maxAllowed) continue;
+        let excess = count - maxAllowed;
+        for (let i = steps.length - 1; i >= 0 && excess > 0; i--) {
+          if (steps[i].key !== tonic) continue;
+          const prevKey = i > 0 ? steps[i - 1].key : originKey;
+          for (let attempt = 0; attempt < 6; attempt++) {
+            const candidate = allNotes[ri(allNotes.length - 1)];
+            const candidatePC = t.Note.pitchClass(candidate);
+            if (candidatePC && candidatePC !== tonic) {
+              steps[i].key = candidatePC;
+              steps[i].move = steps[i].move + ' (tonic-cap)';
+              steps[i].distance = HJ.harmonicDistance(prevKey, candidatePC);
+              excess--;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     // Post-hoc diversity check: ensure mode variety across the journey.
     // For any journey, require at least 2 distinct modes.
     if (steps.length >= 1) {
@@ -232,11 +265,15 @@ harmonicJourneyPlanner = (() => {
       }
     }
 
-    if (steps.length >= 2) {
-      for (let i = 1; i < steps.length; i++) {
-        if (steps[i].key !== steps[i - 1].key) continue;
-        const prevKey = steps[i - 1].key;
-        const prevMode = steps[i - 1].mode;
+    // R74 E4: Extended repeat-escape to check S0->S1 transition too.
+    // Previously only compared steps[i] vs steps[i-1] starting at i=1,
+    // missing the origin-key to first-step adjacency. R73 had Db->Db
+    // for S0->S1, producing only 3 unique tonics across 5 sections.
+    if (steps.length >= 1) {
+      for (let i = 0; i < steps.length; i++) {
+        const prevKey = i > 0 ? steps[i - 1].key : originKey;
+        const prevMode = i > 0 ? steps[i - 1].mode : originMode;
+        if (steps[i].key !== prevKey) continue;
         const replacementPool = HJ.getMovePoolForPhase('development');
         for (let attempt = 0; attempt < 6; attempt++) {
           const moveFn = replacementPool[ri(replacementPool.length - 1)];

@@ -86,10 +86,21 @@ velocityInterference = (() => {
     // Same direction = reinforcement, opposite = separation
     const sameDirection = (ourDelta >= 0 && otherDelta >= 0) || (ourDelta < 0 && otherDelta < 0);
 
+    // R71 E5: Section-progressive interference strength. In earlier sections,
+    // cross-layer velocity interference is gentler (boost 10%, separation 6%).
+    // As the piece progresses, interference strengthens (boost 20%, separation 12%),
+    // creating more dynamic cross-layer interplay and coupling texture in later
+    // sections (S1-S3 had zero exceedance in R70).
+    const sectionProg = totalSections > 1
+      ? clamp(sectionIndex / (totalSections - 1), 0, 1)
+      : 0.5;
+    const boostCeiling = 0.10 + sectionProg * 0.10;
+    const reductionCeiling = 0.06 + sectionProg * 0.06;
+
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength
       const alignment = m.min(m.abs(ourDelta), m.abs(otherDelta));
-      const boost = clamp(alignment / 30, 0, 0.15); // max 15% boost
+      const boost = clamp(alignment / 30, 0, boostCeiling);
       const reinforced = crossLayerHelpers.scaleVelocity(baseVelocityN, 1 + boost);
       writeVizCC(activeLayer, 'reinforce');
       return { velocity: reinforced, mode: 'reinforce' };
@@ -97,7 +108,7 @@ velocityInterference = (() => {
 
     // Opposing dynamics: reduce velocity to create spectral space
     const opposition = m.min(m.abs(ourDelta), m.abs(otherDelta));
-    const reduction = clamp(opposition / 50, 0, 0.1); // max 10% reduction
+    const reduction = clamp(opposition / 50, 0, reductionCeiling);
     const separated = crossLayerHelpers.scaleVelocity(baseVelocityN, 1 - reduction);
     writeVizCC(activeLayer, 'separate');
     return { velocity: separated, mode: 'separate' };

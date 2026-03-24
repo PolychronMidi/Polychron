@@ -47,6 +47,14 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // Apply rhythm history novelty penalty to discourage repetition
     rhythmSource = rhythmHistoryTracker.penalizeRepetition(rhythmSource);
 
+    // R69 E4: Regime-responsive rhythm novelty. During evolving, apply
+    // an extra novelty boost (double the penalty) to push rhythmic variety.
+    // During coherent, reduce the penalty (more repetition is OK for stability).
+    const profSnap = systemDynamicsProfiler.getSnapshot();
+    if (profSnap && profSnap.regime === 'evolving') {
+      rhythmSource = rhythmHistoryTracker.penalizeRepetition(rhythmSource);
+    }
+
     V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
     const activeLayerName = /** @type {string} */ (LM.activeLayer);
     const activeComposer = LM.getComposerFor(activeLayerName);

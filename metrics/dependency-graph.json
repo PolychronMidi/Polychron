@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-24T04:36:57.991Z",
+    "generated": "2026-03-24T05:57:31.710Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2974,
-    "totalEdges": 2334,
-    "crossSubsystemEdges": 1556,
+    "totalConsumes": 2981,
+    "totalEdges": 2340,
+    "crossSubsystemEdges": 1562,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -37,7 +37,7 @@
       "rhythm": {
         "files": 30,
         "provides": 45,
-        "consumes": 215
+        "consumes": 216
       },
       "time": {
         "files": 13,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 366
+        "consumes": 371
       },
       "writer": {
         "files": 4,
@@ -67,7 +67,7 @@
       "play": {
         "files": 18,
         "provides": 22,
-        "consumes": 395
+        "consumes": 396
       }
     }
   },
@@ -3379,6 +3379,7 @@
         "rhythmRegistry",
         "rhythms",
         "stutterFeedbackListener",
+        "systemDynamicsProfiler",
         "validator"
       ]
     },
@@ -6115,6 +6116,7 @@
         "dynamicRoleSwap",
         "m",
         "sectionIntentCurves",
+        "timeStream",
         "tpBeat",
         "validator"
       ]
@@ -6133,6 +6135,7 @@
         "interactionHeatMap",
         "m",
         "sectionIntentCurves",
+        "systemDynamicsProfiler",
         "timeStream",
         "validator"
       ]
@@ -6167,6 +6170,7 @@
         "crossLayerHelpers",
         "crossLayerRegistry",
         "rf",
+        "systemDynamicsProfiler",
         "tpBeat",
         "tpSec",
         "validator"
@@ -6206,6 +6210,8 @@
         "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
+        "sectionIndex",
+        "totalSections",
         "validator",
         "velocity"
       ]
@@ -6617,6 +6623,7 @@
         "conductorConfig",
         "m",
         "stutterConfig",
+        "systemDynamicsProfiler",
         "validator"
       ]
     },
@@ -11884,6 +11891,20 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/dynamics/restSynchronizer.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -11912,6 +11933,13 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/play/channelCoherence.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/play/crossLayerBeatRecord.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -11927,6 +11955,13 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/rhythm/crossModulateRhythms.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/rhythm/getRhythm.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -14353,6 +14388,14 @@
     },
     {
       "from": "src/play/main.js",
+      "to": "src/crossLayer/dynamics/velocityInterference.js",
+      "globals": [
+        "sectionIndex",
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
       "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
       "globals": [
         "sectionIndex",
@@ -15787,6 +15830,13 @@
     {
       "from": "src/time/timeStream.js",
       "to": "src/crossLayer/crossLayerLifecycleManager.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
+      "to": "src/crossLayer/dynamics/articulationComplement.js",
       "globals": [
         "timeStream"
       ]

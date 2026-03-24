@@ -148,10 +148,15 @@ composerFeedbackAdvisor = (() => {
     // R64 E4: Layer 6 - Regime-responsive weight adjustment
     // During evolving: boost families with harmonic variety character
     // During coherent: boost families with tonal stability character
+    // R70 E4: During exploring: boost rhythmic and chromatic families
+    // to create more intervallic variety in exploratory passages
+    // R75 E3: Added 'melodic' to evolving family boost. Evolving regime
+    // now doubled to 9.4% -- melodic development composers during evolving
+    // create intervallic richness in transitional passages.
     if (signals.currentRegime === 'evolving') {
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
-        if (fam.includes('chromatic') || fam.includes('tension') || fam.includes('blues') || fam.includes('quartal')) {
+        if (fam.includes('chromatic') || fam.includes('tension') || fam.includes('blues') || fam.includes('quartal') || fam.includes('melodic')) {
           weights[fam] = clamp((weights[fam] || 1.0) * 1.25, 0.3, 2.0);
         }
       }
@@ -160,6 +165,13 @@ composerFeedbackAdvisor = (() => {
         const fam = availableFamilies[i];
         if (fam.includes('harmonic') || fam.includes('modal') || fam.includes('tonal') || fam.includes('melodic')) {
           weights[fam] = clamp((weights[fam] || 1.0) * 1.20, 0.3, 2.0);
+        }
+      }
+    } else if (signals.currentRegime === 'exploring') {
+      for (let i = 0; i < availableFamilies.length; i++) {
+        const fam = availableFamilies[i];
+        if (fam.includes('rhythmic') || fam.includes('chromatic') || fam.includes('quartal') || fam.includes('pentatonic')) {
+          weights[fam] = clamp((weights[fam] || 1.0) * 1.15, 0.3, 2.0);
         }
       }
     }
