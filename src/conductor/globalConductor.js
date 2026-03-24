@@ -31,6 +31,9 @@ globalConductor = (() => {
   const FLICKER_VARIANCE_FLOOR_STD = 0.015; // R35 E4: raised from 0.008 to trigger injection more often
   const FLICKER_VARIANCE_INJECT = 0.04;     // R35 E4: raised from 0.02 to break coupling monopoly
 
+  // R65 E2: Running EMA of exploring regime share for tension arc sustain.
+  let globalConductorExploringEma = 0.5;
+
   /**
    * Update all dynamic systems based on current musical context.
    * Call once per beat (or measure) from main loop.
@@ -78,8 +81,17 @@ globalConductor = (() => {
     const lateSectionSplit = clamp((sectionProgress - 0.55) / 0.45, 0, 1);
     const midSectionPocket = m.sin(clamp((sectionProgress - 0.18) / 0.64, 0, 1) * m.PI);
     const resolutionRelease = 1 - lateSectionSplit * (0.06 + phaseEstablished * 0.10);
+    // R65 E2: Regime-aware resolution suppression. When exploring dominates,
+    // the tension arc already decays due to diffuse exploring output. Applying
+    // full endRelease on top creates the front-loaded collapse seen in R64.
+    // Scale the endRelease suppression by (1 - exploringDominance) so it's
+    // weaker when exploring is already doing the suppression work. This is a
+    // structural feedback from the regime classifier, not a constant tweak.
+    const currentRegime = dynamics && dynamics.regime ? dynamics.regime : '';
+    globalConductorExploringEma = globalConductorExploringEma * 0.98 + (currentRegime === 'exploring' ? 1 : 0) * 0.02;
+    const exploringDominance = clamp((globalConductorExploringEma - 0.50) / 0.25, 0, 0.6);
     const endRelease = sectionPhase === 'resolution'
-      ? 1 - clamp((sectionProgress - 0.64) / 0.36, 0, 1) * (0.28 + phaseEstablished * 0.18)
+      ? 1 - clamp((sectionProgress - 0.64) / 0.36, 0, 1) * (0.28 + phaseEstablished * 0.18) * (1 - exploringDominance)
       : 1;
     const densityLateRelief = 1 - lateSectionSplit * 0.08;
     const midSectionCooloff = sectionPhase === 'resolution' ? 1 : 1 - midSectionPocket * 0.06;
@@ -219,10 +231,26 @@ globalConductor = (() => {
     // Small smoothing factor (0.25) reduces beat-to-beat reversals.
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
-    const rawTension = clamp(
-      (Number(resolved.composite) * 0.55 + Number(harmonicTension) * 0.45) * registryTensionBias * tensionLateLift,
-      0, 1
-    );
+    // R66 E5: Tension arch enforcement. The tension arc lacks section-level
+    // shaping -- it relies entirely on upstream signal products which can
+    // flatten when exploring dominates or endRelease suppresses. This adds
+    // a macro-progress-aware floor that ensures an ascending-then-descending
+    // arch shape across the composition. The floor is gentle (max 0.10 boost)
+    // and only activates when the raw tension would otherwise collapse.
+    const macroProgress = clamp((sectionIndex + sectionProgress) / m.max(totalSections, 1), 0, 1);
+    // R68 E2: Raised arch tail from (0.50 - 0.30*(p-0.5)) = 0.35 at p=1.0
+    // to (0.50 - 0.20*(p-0.5)) = 0.40 at p=1.0. Also raised max boost from
+    // 0.10 to 0.15. R67 showed S4 collapsing to 0.35 partly due to the
+    // climaxProximityPredictor's receding pullback. The stronger arch floor
+    // counteracts this by providing more headroom for late-section sustain.
+    const tensionArchTarget = macroProgress < 0.5
+      ? 0.30 + macroProgress * 0.40
+      : 0.50 - (macroProgress - 0.5) * 0.20;
+    const rawTensionBase = (Number(resolved.composite) * 0.55 + Number(harmonicTension) * 0.45) * registryTensionBias * tensionLateLift;
+    const tensionArchBoost = rawTensionBase < tensionArchTarget
+      ? clamp((tensionArchTarget - rawTensionBase) * 0.5, 0, 0.15)
+      : 0;
+    const rawTension = clamp(rawTensionBase + tensionArchBoost, 0, 1);
     const TENSION_SMOOTHING = 0.38;
     const prevTension = harmonicContext.getField('tension');
     const derivedTension = prevTension * (1 - TENSION_SMOOTHING) + rawTension * TENSION_SMOOTHING;
@@ -230,6 +258,22 @@ globalConductor = (() => {
 
     let playOut = resolved.playProb;
     let stutterOut = resolved.stutterProb;
+
+    // R65 E4: Regime-responsive stutter shaping. During coherent regime,
+    // reduce stutter for cleaner rhythmic structure. During exploring,
+    // boost stutter for more chaotic textural variety. This creates audible
+    // regime contrast without touching constants -- the regime classifier's
+    // output drives the behavior structurally.
+    // R67 E5: Added evolving regime -- boost stutter 1.15x for percussive
+    // rhythmic interest during transitional passages, further differentiating
+    // the three active regimes sonically.
+    if (currentRegime === 'coherent') {
+      stutterOut = clamp(stutterOut * 0.88, 0, 1);
+    } else if (currentRegime === 'exploring') {
+      stutterOut = clamp(stutterOut * 1.08, 0, 1);
+    } else if (currentRegime === 'evolving') {
+      stutterOut = clamp(stutterOut * 1.15, 0, 1);
+    }
 
     if (sectionPhase === 'climax') {
       const boost = conductorConfig.getClimaxBoost();

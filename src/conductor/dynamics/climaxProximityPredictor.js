@@ -36,6 +36,18 @@ climaxProximityPredictor = (() => {
     if (onsetProfile > 1.1) climaxSignal += 0.1;
     // High tension
     climaxSignal += currentTension * 0.25;
+    // R67 E3: Section-progress awareness. Add a section position component
+    // so climax prediction engages earlier in later sections (where musical
+    // peaks are more likely). This activates the density ramp (up to 1.3x)
+    // and tension ramp (up to 1.25x) that are currently dormant because
+    // proximity rarely exceeds 0.3. Section progress * 0.12 max contribution.
+    let sectionProg = 0;
+    try {
+      sectionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
+    } catch {
+      void 0;
+    }
+    climaxSignal += sectionProg * 0.12;
 
     const proximity = clamp(climaxSignal, 0, 1);
 

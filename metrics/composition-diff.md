@@ -7,38 +7,33 @@
 
 ## Notable Changes (5)
 
-- !! **harmonic-change**: Section 0: B major -> D minor
-- !! **harmonic-change**: Section 1: B minor -> A minor
-- !! **harmonic-change**: Section 2: D minor -> C# major
-- !! **harmonic-change**: Section 3: A lydian -> B minor
-- !! **harmonic-change**: Section 4: Gb major -> G major
+- !! **harmonic-change**: Section 0: E minor -> D aeolian
+- !! **harmonic-change**: Section 1: A lydian -> F# major
+- !! **harmonic-change**: Section 2: C# major -> A minor
+- !! **harmonic-change**: Section 3: D# major -> Bb lydian
+- !! **harmonic-change**: Section 4: E minor -> G minor
 
-## Moderate Changes (7)
+## Moderate Changes (6)
 
-- ! **tension-shift**: Section 0 avg tension: 0.355 -> 0.183
-- ! **tension-shift**: Section 1 avg tension: 0.667 -> 0.551
-- ! **phrase-count**: Section 2: 4 phrases -> 3 phrases
-- ! **tension-shift**: Section 3 avg tension: 0.796 -> 0.910
-- ! **phrase-count**: Section 4: 2 phrases -> 1 phrases
-- ! **note-count**: output1: 13887 notes -> 8445 notes (39.2% change)
-- ! **note-count**: output2: 15677 notes -> 11316 notes (27.8% change)
+- ! **phrase-count**: Section 1: 3 phrases -> 2 phrases
+- ! **tension-shift**: Section 1 avg tension: 0.597 -> 0.749
+- ! **phrase-count**: Section 3: 3 phrases -> 4 phrases
+- ! **phrase-count**: Section 4: 1 phrases -> 2 phrases
+- ! **note-count**: output2: 18261 notes -> 13707 notes (24.9% change)
+- ! **pitch-center**: output2 mean pitch: 43.7 -> 36.6 (7.2 semitones)
 
-## Minor Changes (6)
+## Minor Changes (2)
 
-- ~ **regime-shift**: Section 0 regime 'evolving': 20.0% -> 42.4%
-- ~ **regime-shift**: Section 0 regime 'exploring': 30.0% -> 0.0%
-- ~ **regime-shift**: Section 2 regime 'exploring': 50.5% -> 86.7%
-- ~ **regime-shift**: Section 2 regime 'coherent': 45.4% -> 0.0%
-- ~ **regime-shift**: Section 4 regime 'exploring': 36.7% -> 0.0%
-- ~ **regime-shift**: Section 4 regime 'coherent': 63.3% -> 100.0%
+- ~ **regime-shift**: Section 3 regime 'exploring': 14.1% -> 60.2%
+- ~ **regime-shift**: Section 3 regime 'coherent': 73.7% -> 39.8%
 
 ## Summary
 
-- Total differences: 18
+- Total differences: 13
 - Major: 0
 - Notable: 5
-- Moderate: 7
-- Minor: 6
+- Moderate: 6
+- Minor: 2
 
 
-*Generated 2026-03-24T03:02:34.341Z*
+*Generated 2026-03-24T04:21:33.811Z*

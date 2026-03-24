@@ -16,7 +16,8 @@ composerFeedbackAdvisor = (() => {
    *   fatigueSignal: number,
    *   varietyPressure: number,
    *   thematicStatus: string,
-   *   profileHints: { restrainedHint: number, explosiveHint: number, atmosphericHint: number }
+   *   profileHints: { restrainedHint: number, explosiveHint: number, atmosphericHint: number },
+   *   currentRegime: string
    * }} ComposerQualitySnapshot
    */
 
@@ -40,11 +41,21 @@ composerFeedbackAdvisor = (() => {
     // Profile adaptation hints: sustained conditions suggesting character shift
     const profileHints = profileAdaptation.getHints();
 
+    // R64 E4: Current regime for regime-responsive composer selection
+    let currentRegime = 'exploring';
+    try {
+      const snap = systemDynamicsProfiler.getSnapshot();
+      if (snap && typeof snap.regime === 'string') currentRegime = snap.regime;
+    } catch {
+      // profiler may not be available during early boot
+    }
+
     return {
       fatigueSignal,
       varietyPressure,
       thematicStatus: thematic.thematicStatus,
-      profileHints
+      profileHints,
+      currentRegime
     };
   }
 
@@ -132,6 +143,25 @@ composerFeedbackAdvisor = (() => {
       }
 
       weights[family] = clamp(w, 0.3, 2.0);
+    }
+
+    // R64 E4: Layer 6 - Regime-responsive weight adjustment
+    // During evolving: boost families with harmonic variety character
+    // During coherent: boost families with tonal stability character
+    if (signals.currentRegime === 'evolving') {
+      for (let i = 0; i < availableFamilies.length; i++) {
+        const fam = availableFamilies[i];
+        if (fam.includes('chromatic') || fam.includes('tension') || fam.includes('blues') || fam.includes('quartal')) {
+          weights[fam] = clamp((weights[fam] || 1.0) * 1.25, 0.3, 2.0);
+        }
+      }
+    } else if (signals.currentRegime === 'coherent') {
+      for (let i = 0; i < availableFamilies.length; i++) {
+        const fam = availableFamilies[i];
+        if (fam.includes('harmonic') || fam.includes('modal') || fam.includes('tonal') || fam.includes('melodic')) {
+          weights[fam] = clamp((weights[fam] || 1.0) * 1.20, 0.3, 2.0);
+        }
+      }
     }
 
     return weights;

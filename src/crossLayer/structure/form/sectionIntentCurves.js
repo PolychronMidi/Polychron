@@ -60,9 +60,15 @@ sectionIntentCurves = (() => {
     const midSectionPocket = m.sin(clamp((p - 0.18) / 0.64, 0, 1) * m.PI);
     const middleSectionPressure = m.sin(clamp(sectionRoute, 0, 1) * m.PI);
     const longFormRelief = longFormPressure * middleSectionPressure * midSectionPocket * (1 - lowPhasePressure * 0.75);
+    // R67 E4: Section-boundary density relief. Brief density dip in the first
+    // 8% of each section creates textural breathing space, improving density
+    // variance (currently 0.0089) and clarifying section boundaries musically.
+    // The dip is gentle (up to 0.12 reduction) and ramps linearly back to full.
+    // Only applies after S0 to preserve the opening statement.
+    const sectionBoundaryRelief = s > 0 ? clamp(1.0 - (1.0 - p / 0.08) * 0.12, 0.88, 1.0) : 1.0;
 
     const densityTarget = clamp(
-      DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF,
+      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF) * sectionBoundaryRelief,
       0,
       1
     );

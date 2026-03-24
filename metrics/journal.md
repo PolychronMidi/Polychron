@@ -1,3 +1,162 @@
+## R67 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 691 | **Duration:** 81.6s | **Notes:** 26688
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- PHASE SHARE BREAKTHROUGH: 0.0796 -> 0.1774 (+123%). The compound phase signal (E1) transforms phase from an intrinsically weak monotonic ramp into a multi-scale oscillatory signal with phrase-level nesting. Phase coupling totals jumped 0.5662 -> 1.7995 (3.2x). Phase pairs avg coupling: density-phase 0.075->0.331, tension-phase 0.067->0.274, entropy-phase 0.044->0.255, flicker-phase 0.100->0.364. No axis is now below the floor threshold (belowFloorAxes: null, first time ever).
+- Axis Gini improved: 0.1899 -> 0.1251. Best axis balance since R64 (0.0487). All 6 axes in 0.105-0.213 range.
+- Density variance improved: 0.0089 -> 0.0139 (+56%). Section-boundary density relief (E4) creates textural breathing space.
+- Exceedance resolved: 107 -> 33 (-69%). Tension-entropy exceedance (64 beats in R66) completely disappeared. New top pair is flicker-phase (31 beats) -- natural consequence of enriched phase signal creating real coupling.
+- climaxProximityPredictor ACTIVATED: end-of-run density bias 0.82 (was 1.0 in R66). Section-progress awareness (E3) successfully engages the predictor mechanism.
+- Tension arc weakened: [0.48, 0.70, 0.60, 0.53] -> [0.55, 0.61, 0.53, 0.35]. More front-loaded, weaker S2 peak, steeper S4 decline. The climaxProximityPredictor's "receding" phase pullback may be creating excess late-section damping.
+- Evolving COLLAPSED: 6.5% -> 0.9% (only 6 beats). Not directly caused by evolutions -- likely second-order effect of changed coupling matrix dynamics. The enriched phase signal significantly altered the coupling landscape.
+- Harmonic journey: D aeolian -> F# major -> A minor -> Bb lydian -> G minor. 5 sections, strong modal variety including aeolian and lydian.
+
+### Evolutions Applied (from R66)
+- E1: Phase signal enrichment (compound phrase-nested oscillation) -- confirmed -- phase 0.0796 -> 0.1774. The most impactful single evolution in the lineage. Compound signal: 60% section progress + 30% phrase progress + 10% sinusoidal harmonic. Creates multi-scale variance that correlates meaningfully with other dimensions.
+- E2: criticalityEngine energy neutralization and gate adjustment -- inconclusive -- density bias still 1.0 at end-of-run snapshot, but this only captures one moment. The engine may be triggering avalanches during the run. Energy neutral points adjusted from (0.5, 1.0, 0.5) to (0.6, 0.95, 1.0). Density gate lowered 0.65 -> 0.52.
+- E3: climaxProximityPredictor section-progress awareness -- confirmed -- end-of-run density bias 0.82 (was 1.0). The predictor now engages due to section-progress contribution to climax signal. However, this may be contributing to the tension arc front-loading.
+- E4: Section-boundary density relief pulse -- confirmed -- density variance 0.0089 -> 0.0139 (+56%). 12% density dip in first 8% of each section (after S0).
+- E5: Evolving stutter boost (1.15x) -- inconclusive -- evolving collapsed to 0.9%, too few beats (6) to evaluate stutter impact.
+
+### Evolutions Proposed (for R68)
+- E1: Evolving regime recovery -- evolving collapsed to 0.9%. Investigate whether the enriched phase signal changes effectiveDim distribution or coupling thresholds. May need to adjust evolving entry conditions to account for the new coupling landscape -- regimeClassifierClassification.js
+- E2: Tension arc late-section sustain -- S4 tension dropped to 0.35 (was 0.53). The climaxProximityPredictor's receding phase pullback may be over-damping late sections. Need to balance the section-progress contribution with late-section tension sustain -- climaxProximityPredictor or globalConductor tension arch
+- E3: Flicker-phase exceedance monitoring -- 31 beats on flicker-phase is the new hotspot from enriched phase. The coupling pipeline may need to adapt phase pair baselines to the new coupling reality -- monitor for self-correction
+- E4: Tension axis share decline -- tension dropped from 0.1251 to 0.1051 (now lowest axis). The coupling budget may be redistributing energy toward the newly active phase axis at tension's expense -- coupling pipeline or axis equilibrator
+- E5: Harmonic motion at section boundaries -- ensure adjacent sections have contrasting key centers for maximum harmonic journey -- composer or key assignment logic
+
+### Hypotheses to Track
+- The compound phase signal fundamentally changes the coupling landscape: phase pairs now have real correlations (avg 0.25-0.36), which means the coupling pipeline has genuine phase pair activity to manage. This is a qualitative system shift, not a quantitative tuning.
+- The evolving collapse may self-correct as the regime classifier adapts to the new coupling matrix. If not, the evolving entry conditions need recalibration for the new coupling reality.
+- Tension axis decline (0.1051) may trigger axis equilibrator intervention. Tension is now the weakest axis, which inverts the R63-R66 phase-as-weakest dynamic.
+- The climaxProximityPredictor's section-progress contribution (0.12 max) may need dampening to prevent over-engagement in late sections where the "receding" phase creates excess tension pullback.
+
+---
+
+## R66 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 903 | **Duration:** 87.6s | **Notes:** 33765
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- TENSION ARC BREAKTHROUGH: [0.37, 0.64, 0.43, 0.38] -> [0.48, 0.70, 0.60, 0.53]. Beautiful ascending arch with S2 peak at 0.70, strong S3/S4 sustain. E5's macro-progress-aware tension floor enforces the arch shape without flattening dynamism. Best tension arc since R63's [0.37, 0.69, 0.81, 0.61].
+- Phase recovering: 0.0551 -> 0.0796 (+44%). E2 (reduced decorrelation gain for phase pairs via phaseExemption) and E3 (raised target for phase pairs to prevent tightening) are both working in the correct direction. First run with corrected logic -- initial attempt had E2/E3 backwards (boosting decorrelation instead of reducing it), causing phase to drop to 0.028.
+- Evolving recovered: 3.7% -> 6.5%. E4's coherent-share-aware dwell shortening creates more frequent evolving windows. Above R63 baseline (7.9%) trajectory.
+- Trust normalized: 0.1997 -> 0.1233. The reduced coherent decorrelation on phase pairs apparently frees trust from coupling pressure. Trust was elevated because coherent regime stabilizes coupling which accumulates trust share.
+- Exploring declined further: 48.3% -> 41.9%. Coherent rose to 51.2%. The regime balance is now coherent-dominant rather than exploring-dominant -- a qualitative shift.
+- Exceedance spiked: 39 -> 107 with tension-entropy dominating at 64 beats. HotspotMigration 0.7282 near tolerance (0.75). This is concerning but may be partly stochastic (longer run: 87.6s vs 62.5s, 903 vs 649 beats).
+- Harmonic journey: E minor -> A lydian -> C# major -> D# major -> E minor. 5 sections with return-to-tonic (E minor bookends). Modal variety includes lydian and major.
+- Note count increased 39.1% (24269 -> 33765). Longer run with more sections.
+
+### Evolutions Applied (from R65)
+- E1: Orchestrator Contradiction 4 (coherent-phase conflict detection) -- confirmed -- phaseExemption now fires during coherent regime when phase < 0.08, regardless of homeostasis state. Phase recovered 0.0551 -> 0.0796.
+- E2: Phase exemption as gain dampening (decorrelation reduction) -- confirmed -- initial version BOOSTED gain (backwards), causing phase to drop to 0.028. Corrected version REDUCES decorrelation gain for phase pairs when phaseExemption active. Phase 0.028 -> 0.0796.
+- E3: Phase-pair target scale increase -- confirmed -- raises target for phase pairs so fewer trigger decorrelation. Initial version LOWERED target (backwards). Corrected version RAISES it by up to 40%.
+- E4: Coherent-aware evolving injection -- confirmed -- evolving 3.7% -> 6.5%. coherentMaxDwell shortened when coherentShare > 0.40 AND evolving < 0.05.
+- E5: Tension arch enforcement -- confirmed -- tension arc improved from flat [0.37, 0.64, 0.43, 0.38] to arch [0.48, 0.70, 0.60, 0.53]. Macro-progress-aware floor with max 0.10 boost.
+
+### Evolutions Proposed (for R67)
+- E1: Tension-entropy exceedance containment -- tension-entropy at 64 beats is the new hotspot. Investigate whether the pairGainCeilingController is tracking this pair, or if it needs attention -- coupling pipeline / pairGainCeilingController
+- E2: Phase share continuation -- 0.0796 is recovering but still below fair share (0.1667). The corrected E2/E3 mechanisms need time to compound. Monitor and potentially strengthen the phaseExemption dampening if plateau observed
+- E3: Coherent-exploring balance -- coherent at 51.2% is now dominant. The regime self-balancer should be managing this via coherentThresholdScale. Monitor for coherent overshooting R63 baseline (28.9%) target
+- E4: Density variance and dynamic range -- densityVariance at 0.0089 is low. More dynamic density contrasts between sections would improve musical interest -- composer or conductor density logic
+- E5: Stutter textural variety -- the E4 stutter shaping from R65 (coherent 0.88x, exploring 1.08x) is confirmed working. Extend to evolving regime with a distinct stutter character
+
+### Hypotheses to Track
+- The coupling pipeline direction is now correct for phase: reducing decorrelation gain and raising targets for phase pairs lets phase correlations persist, increasing phase energy. The question is whether the rate of recovery (0.0551 -> 0.0796 per round) will reach fair share or plateau.
+- Tension-entropy exceedance at 64 beats may be an artifact of the reduced phase pair tightening -- less tightening on phase pairs may have shifted coupling pressure to tension-entropy. Need to check if this pair was previously controlled.
+- The coherent-dominant regime (51.2%) is a new territory. R63 baseline was 28.9%, R65 was 47.4%. If coherent continues rising, the exploring-coherent oscillation may emerge. The threshold self-balancer should handle this.
+- Trust normalization (0.1233) happened naturally from the coupling pipeline changes. The trust axis didn't need direct intervention -- reducing phase pair decorrelation reduced overall coupling energy displacement.
+
+---
+
+## R65 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 649 | **Duration:** 62.5s | **Notes:** 24269
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- REGIME DIVERSITY BREAKTHROUGH: exploring 68.8% -> 48.3% (-20.5pp), coherent 25.3% -> 47.4% (+22.1pp). The distribution-adaptive highDimVelStreak (E1), coherent block relaxation (E3), and evolving crossover widening (E5) collectively broke the exploring monopoly. 17 regime transitions (was 7).
+- Phase REGRESSED: 0.1528 -> 0.0551 (-64%). Root cause: coherent at 47.4% triggers coherentColdspotFreeze on 32/82 beats. Although bypass mechanisms fire (phaseLowShareCoherentBypass, isFloorActive, isEmergencyStarved), phaseSurfaceHot=66 beats reflects baseline inflation artifacts. The structural conflict: more coherent regime presence means more coupling dampening via regimeReactiveDamping, reducing phase pair coupling energy at source.
+- AxisGini worsened: 0.0487 -> 0.1685. Axis shares: density 0.2205, tension 0.2003, trust 0.1997, entropy 0.1782, flicker 0.1462, phase 0.0551. Phase is the clear outlier dragging Gini up.
+- Tension arc: [0.39, 0.78, 0.54, 0.28] -> [0.37, 0.63, 0.43, 0.38]. Flatter overall but S3/S4 better sustained (0.38 vs 0.28). E2's regime-aware endRelease suppression moderately improved late-section tension.
+- Exceedance: 80 -> 39 (-51%). Top pairs now distributed evenly: density-flicker 8, density-entropy 8, flicker-entropy 8. No pair dominates. Hotspot concentration 0.46 -> 0.41.
+- Evolving: 5.2% -> 3.7%. Still declining. The evolving pathway is systemically weak -- it gets squeezed between coherent and exploring.
+- Trust: 0.1679 -> 0.1997. Elevated but not critical. Coherent regimes produce trust stability which accumulates share.
+- Section count dropped 5 -> 4 vs baseline. All 4 sections have distinct keys: A# minor, C lydian, E major, Eb minor. Strong modal variety.
+- S1 coherent share jumped to 77.3% (was 15.6%) with exploring dropping to 9.3% (was 84.4%). The regime rebalancing is section-specific, not uniform.
+
+### Evolutions Applied (from R64)
+- E1: Distribution-adaptive highDimVelStreak -- confirmed -- exploring dropped 68.8% -> 48.3%. The dimEma+dimStdEma*1.5 formula adapts to the actual effectiveDim distribution, and the share gate (disabled when rawExploringShare > 0.40) prevents self-reinforcing exploring lock.
+- E2: Regime-aware endRelease tension suppression -- inconclusive -- S3/S4 tension improved (0.28 -> 0.38) but S2 peak dropped (0.78 -> 0.63). Net effect is flatter arc, not the intended sustain.
+- E3: Coherent coupling block adaptive relaxation -- confirmed -- coherent rose 25.3% -> 47.4%. The streak-based margin reduction lets coupling gradually relax toward coherent entry threshold.
+- E4: Regime-responsive stutter shaping -- inconclusive -- stutter avg changed but attribution difficult. Coherent 0.88x and exploring 1.08x modifiers are small and confounded by regime distribution shift.
+- E5: Widened exploring-to-evolving crossover -- refuted -- evolving dropped 5.2% -> 3.7%. Despite widened coefficients (velocity ceiling 0.016, dim floor 0.15, coupling floor 0.020), the exploring->evolving rescue pathway fires too rarely.
+
+### Evolutions Proposed (for R66)
+- E1: Coherent-aware coupling dampening bypass for phase -- regimeReactiveDamping suppresses ALL coupling during coherent, including phase pairs that need energy. Add phase-share-aware dampening reduction so phase pairs retain coupling when phase share is low -- regimeReactiveDamping.js
+- E2: Orchestrator coherent-phase tension detection -- hyperMetaOrchestrator should detect when coherent share is high AND phase share is declining, and emit a stronger phaseExemption resolution. This is a controller wiring enhancement, not constant tuning -- hyperMetaOrchestrator.js
+- E3: Section-level tension envelope -- the tension arc lacks an explicit section-level shaping layer. Add a tension multiplier that ensures ascending/arch shape at the macro level, independent of regime -- tensionLift or conductor tension chain
+- E4: Evolving transition injection during coherent dwell -- coherent exits rarely produce evolving because the velocity/dim conditions aren't met. Add a coherent-dwell-duration pathway: after N coherent beats without transition, attempt evolving -- regimeClassifierResolution.js
+- E5: Harmonic motion via section-boundary key contrast -- ensure consecutive sections avoid same key center, increasing harmonic journey quality -- composer selection or key assignment logic
+
+### Hypotheses to Track
+- The coherent-phase structural conflict is the top priority: more coherent = more coupling dampening = less phase energy. The fix must be structural -- either exempt phase from coherent dampening or have controllers detect and compensate.
+- Trust creep (0.1997) correlates with coherent share (0.4735). Coherent stability lets trust accumulate. If coherent rises further, trust will exceed 0.20 and may need controller attention.
+- The exploring->evolving crossover is fundamentally underpowered. The rescue pathway fires too rarely because velocity and dim conditions are almost never simultaneously met during exploring-dominant periods. A different mechanism (coherent-exit-to-evolving) may work better.
+- Section-level coherent concentration (S1 at 77.3%) suggests the regime diversity improvement is unevenly distributed. Individual sections may still have regime monopolies.
+
+---
+
+## R64 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 600 | **Duration:** 68.5s | **Notes:** 23532
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- Phase share 0.1131 -> 0.1528 (+35%), best ever. Trend "rising". The R63 controller wiring fix continues to pay dividends.
+- AxisGini 0.1069 -> 0.0487 — near-perfect axis balance. All 6 axes in 0.145-0.191 range (closest to equitable distribution ever).
+- Exploring 62.5% -> 68.8% — WORSE despite E1 exploring lock. effectiveDim p10=3.04 means the threshold adjustment (2.8 + 0.213*0.4 = 2.885) is too weak; nearly every beat still exceeds it. The scaling range is fundamentally insufficient.
+- Evolving 7.9% -> 5.2% — declined. Only 14 resolved evolving ticks. E3's flicker dampening during evolving had few beats to act on.
+- Tension arc shape changed: [0.37, 0.69, 0.81, 0.61] -> [0.39, 0.78, 0.54, 0.28]. Front-loaded with S1 peak, dramatic S3-S4 collapse. Musically weaker — feels like the composition gives up in the second half.
+- Exceedance 33 -> 80 (+142%). Top 3 pairs are primary-axis: density-flicker (19), density-tension (18), tension-flicker (18). Coupling pressure redistributed from flicker-trust (was 15, now 6) to primary axes.
+- Coherent blocked by coupling on 43 beats (tension-flicker: 32 blocks). High coupling values prevent coherent entry, contributing to exploring monopoly.
+- Harmonic journey: 4 key changes across 5 sections (D minor, Bb major, E major, Eb aeolian, Eb mixolydian). Modal variety includes aeolian and mixolydian modes.
+- Note count +19% vs baseline (23532 vs 19761). Output2 pitch center dropped 7.5 semitones (47.0 -> 39.5).
+- E5 (flicker centroid correction) was implemented then REVERTED after catastrophic phase collapse (0.1131 -> 0.0009). Empirically confirmed: flicker centroid must remain disabled — inflating flicker product squeezes phase via axis energy competition.
+
+### Evolutions Applied (from R63)
+- E1: Harmonic variety — confirmed — 4 out of 5 sections changed keys with modal diversity (aeolian, mixolydian, minor, major).
+- E2: Phase share rise monitoring — confirmed — phase rose 0.1131 -> 0.1528, equilibrator containing naturally via AXIS_OVERSHOOT.
+- E3: Flicker-trust hotspot — confirmed — flicker-trust dropped 15 -> 6 beats, but exceedance migrated to primary-axis pairs (density-flicker/tension leading).
+- E4: Coherent decline monitoring — confirmed — coherent continued declining 28.9% -> 25.3%. High coupling blocking coherent entry on 43 beats.
+- E5: Density-flicker decorrelation — inconclusive — pearsonR improved slightly (-0.507 -> -0.435) but still strongly negative.
+- E6: Note count variance — inconclusive — count normalized somewhat (19761 -> 23532, +19% vs the 47% swing in prior rounds).
+
+### R64 Evolutions Implemented
+- E1: Regime-aware exploring lock via exploringSharePressure (regimeClassifierClassification.js) — refuted — highDimThreshold scaling 2.8+pressure*0.4 too weak when effectiveDim p10=3.04. exploring rose 62.5% -> 68.8%.
+- E2: Elasticity controller boost: rate 0.015->0.025, cap 0.15->0.22 (conductorDampening.js) — inconclusive — flicker range 0.355 (was ~0.28 in R63). Moderate improvement.
+- E3: Regime-responsive flicker dampening: progStrength*0.65 during evolving (conductorDampening.js) — inconclusive — evolving dropped to 5.2%, too few beats to measure effect.
+- E4: Regime-responsive composer family weighting (composerFeedbackAdvisor.js) — inconclusive — 4 harmonic changes observed but attribution unclear vs stochastic.
+- E5: Flicker centroid correction at 50% strength (conductorDampening.js) — REVERTED — caused catastrophic phase collapse (0.1131 -> 0.0009). Flicker centroid must remain disabled.
+
+### Evolutions Proposed (for R65)
+- E1: Adaptive effectiveDim threshold for exploring classification — use running effectiveDim distribution (p25/p50) to set the highDimVelStreak threshold instead of fixed 2.8+pressure*0.4 — regimeClassifierClassification.js
+- E2: Late-section tension sustain — investigate and address the S3-S4 tension collapse (0.54/0.28). Tension signal shaping or section-level minimum — tension signal chain files
+- E3: Coherent coupling block reduction — tension-flicker blocks coherent entry 32 times. The coherent coupling threshold may need regime-aware adjustment — regimeClassifier / coupling threshold logic
+- E4: Evolving pathway strengthening — evolving at 5.2% needs more runway. Investigate why evolving resolution is so rare — regimeClassifierResolution.js
+- E5: Stutter regime contrast — stutterProb avg 0.56 with range [0.24, 1.0]. Regime-responsive stutter shaping for musical contrast — play/processBeat or conductor stutter logic
+
+### Hypotheses to Track
+- E1's exploring lock failure is structural: effectiveDim is systemically high (p10=3.04). A fixed threshold approach can't work when the entire distribution is above the threshold. Need distribution-adaptive approach.
+- The tension arc front-loading may be coupled to exploring dominance — exploring regime produces more diffuse, lower-energy output. As exploring lock-in deepens through the composition, tension decays.
+- Coherent coupling blocks (43 beats, mostly tension-flicker at 32) form a feedback loop: high coupling -> blocks coherent entry -> stays in exploring -> exploring produces more coupling volatility -> prevents coherent.
+- Flicker centroid correction is a PERMANENTLY refuted evolution. The flicker signal's natural drift below 1.0 is load-bearing for axis energy balance.
+
+---
+
 ## R63 -- 2026-03-24 -- STABLE
 
 **Profile:** explosive | **Beats:** 544 | **Duration:** 57.3s | **Notes:** 19761

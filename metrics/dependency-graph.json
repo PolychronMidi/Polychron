@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-24T03:02:32.441Z",
+    "generated": "2026-03-24T04:21:31.504Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2968,
-    "totalEdges": 2329,
-    "crossSubsystemEdges": 1553,
+    "totalConsumes": 2973,
+    "totalEdges": 2333,
+    "crossSubsystemEdges": 1555,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 979
+        "consumes": 984
       },
       "rhythm": {
         "files": 30,
@@ -903,8 +903,10 @@
         "pipelineCouplingManager",
         "rf",
         "safePreBoot",
+        "sectionIndex",
         "systemDynamicsProfiler",
         "timeStream",
+        "totalSections",
         "validator"
       ]
     },
@@ -1479,6 +1481,7 @@
         "couplingHomeostasis",
         "couplingState",
         "m",
+        "phaseFloorController",
         "pipelineCouplingManagerSnapshot",
         "safePreBoot",
         "signalReader"
@@ -2704,7 +2707,8 @@
         "energyMomentumTracker",
         "harmonicContext",
         "onsetDensityProfiler",
-        "registerPressureMonitor"
+        "registerPressureMonitor",
+        "timeStream"
       ]
     },
     "src/conductor/dynamics/densityWaveAnalyzer.js": {
@@ -3098,6 +3102,7 @@
         "repetitionFatigueMonitor",
         "sectionIndex",
         "structuralNarrativeAdvisor",
+        "systemDynamicsProfiler",
         "texturalMemoryAdvisor",
         "thematicRecallDetector",
         "validator"
@@ -11276,6 +11281,13 @@
     },
     {
       "from": "src/conductor/signal/balancing/phaseFloorController.js",
+      "to": "src/conductor/signal/balancing/coupling/couplingRefreshSetup.js",
+      "globals": [
+        "phaseFloorController"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/phaseFloorController.js",
       "to": "src/conductor/signal/meta/hyperMetaOrchestrator.js",
       "globals": [
         "phaseFloorController"
@@ -11851,6 +11863,13 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/conductor/signal/profiling/regimeReactiveDamping.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/texture/form/composerFeedbackAdvisor.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -14215,6 +14234,14 @@
     },
     {
       "from": "src/play/main.js",
+      "to": "src/conductor/globalConductor.js",
+      "globals": [
+        "sectionIndex",
+        "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
       "to": "src/conductor/journey/harmonicJourney.js",
       "globals": [
         "sectionIndex",
@@ -15682,6 +15709,13 @@
     {
       "from": "src/time/timeStream.js",
       "to": "src/conductor/conductorDampening.js",
+      "globals": [
+        "timeStream"
+      ]
+    },
+    {
+      "from": "src/time/timeStream.js",
+      "to": "src/conductor/dynamics/climaxProximityPredictor.js",
       "globals": [
         "timeStream"
       ]

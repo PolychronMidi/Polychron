@@ -91,7 +91,12 @@ pipelineCouplingManager = (() => {
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
 
         const absCorr = m.abs(corr);
-        const target0 = S.getTarget(key) * setup.targetScale;
+        // R66 E3: Use phaseTargetScale for phase pairs to exempt them from
+        // full coherent target relaxation when phase share is low.
+        const pairTargetScale = (dimA === 'phase' || dimB === 'phase') && setup.phaseTargetScale !== undefined
+          ? setup.phaseTargetScale
+          : setup.targetScale;
+        const target0 = S.getTarget(key) * pairTargetScale;
         const ps = S.getPairState(key);
         ps.lastEffectiveGain = 0;
 

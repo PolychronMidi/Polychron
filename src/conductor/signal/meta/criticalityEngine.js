@@ -46,9 +46,16 @@ criticalityEngine = (() => {
   let flickerSnap = 1.0;
 
   function criticalityEngineEnergy() {
-    const d = signalReader.density() - 0.5;
-    const t = signalReader.tension() - 1.0;
-    const f = signalReader.flicker() - 0.5;
+    // R67 E2: The original neutral points (density=0.5, tension=1.0, flicker=0.5)
+    // assumed density/flicker products center at 0.5 and tension at 1.0. In
+    // practice, density product is ~0.6, tension product is ~0.98, flicker ~1.0.
+    // Tension offset (-0.387 avg) created a constant energy floor of ~0.15 per
+    // beat, inflating threshold and making the engine insensitive to actual
+    // deviations. Adjust neutral points to match actual signal ranges so the
+    // engine responds to genuine departures from equilibrium.
+    const d = signalReader.density() - 0.6;
+    const t = signalReader.tension() - 0.95;
+    const f = signalReader.flicker() - 1.0;
     return d * d + t * t + f * f;
   }
 
@@ -110,7 +117,9 @@ criticalityEngine = (() => {
   }
 
   function densityBias() {
-    if (densitySnap < 0.65) return 1.0;
+    // R67 E2: Gate lowered from 0.65 to 0.52 -- density product averages ~0.62,
+    // so the old 0.65 gate prevented the engine from ever modulating density.
+    if (densitySnap < 0.52) return 1.0;
     const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().density.grade);
     return 1.0 + (currentBias - 1.0) * scale;
   }

@@ -75,6 +75,9 @@ regimeClassifier = (() => {
         opportunityGap: 0
       },
       highDimVelStreak: 0,
+      dimEma: 3.0,
+      dimStdEma: 0.3,
+      coherentBlockStreak: 0,
       rawRegimeCounts: {},
       runRawRegimeCounts: {},
       rawRegimeMaxStreak: {},

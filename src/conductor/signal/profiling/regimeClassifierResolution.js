@@ -184,6 +184,16 @@ regimeClassifierResolution = (() => {
         const evolvingStarvationPressure = clamp((0.03 - evolvingShare) / 0.03, 0, 1);
         coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - evolvingStarvationPressure * 0.20)));
       }
+      // R66 E4: Coherent-aware evolving injection. When coherent share is
+      // already high (> 0.40) AND evolving is starved (< 0.05), shorten
+      // coherent dwell further. The existing pathways create evolving windows
+      // too infrequently -- this adds coherent-share pressure to the dwell.
+      const coherentHighShare = state.runCoherentShare > 0.40;
+      const evolvingStarved = evolvingShare < 0.05;
+      if (coherentHighShare && evolvingStarved) {
+        const coherentSharePressure = clamp((state.runCoherentShare - 0.40) / 0.20, 0, 1);
+        coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - coherentSharePressure * 0.25)));
+      }
       if (projectedRunCoherentBeats > coherentMaxDwell) {
         const coherentOvershoot = projectedRunCoherentBeats - coherentMaxDwell;
         const forcedWindow = clamp(5 + m.floor(coherentOvershoot / 22) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? m.round(1 + phaseStableRecoveryStrength) : 0), 5, 15);
