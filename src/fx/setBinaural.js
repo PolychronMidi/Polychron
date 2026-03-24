@@ -74,10 +74,8 @@ setBinaural = () => {
 
   const phraseBoundary = beatIndex === 0 && measureIndex === 0;
   const statePhraseBoundary = (() => {
-    const state = conductorState.getSnapshot();
-    V.requireDefined(state, 'conductorState.getSnapshot()');
-    V.requireFinite(state.phrasePosition, 'state.phrasePosition');
-    return state.phrasePosition <= 0.001 && beatIndex === 0;
+    const phrasePosition = V.requireFinite(conductorState.get('phrasePosition'), 'conductorState.phrasePosition');
+    return phrasePosition <= 0.001 && beatIndex === 0;
   })();
   const timedShift = absTimeMs >= nextBinauralShiftMs;
   const finalTimeMs = V.optionalFinite(Number(finalTime), 0) * 1000;

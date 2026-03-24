@@ -54,16 +54,15 @@ harmonicFunctionGraph = (() => {
   }
 
   function refresh() {
-    const snap = conductorState.getSnapshot();
-    const chordRoot = V.optionalFinite(snap.tension, 0);
-    const keyStr    = snap.key || 'C';
+    const chordRoot = V.optionalFinite(conductorState.get('tension'), 0);
+    const keyStr = conductorState.get('key') || 'C';
     // Derive numeric root from key name via tonal
-    const keyRoot   = V.optionalFinite(t.Note.chroma(keyStr), 0);
+    const keyRoot = V.optionalFinite(t.Note.chroma(keyStr), 0);
 
     currentFunction = classify(chordRoot, keyRoot);
     tensionVal = FUNCTION_TENSION[currentFunction] || 1.0;
 
-    const nowMs = V.optionalFinite(snap.tick, 0);
+    const nowMs = V.optionalFinite(conductorState.get('tick'), 0);
     absoluteTimeGrid.post(CHANNEL, '0', nowMs, {
       fn: currentFunction,
       chordRoot,

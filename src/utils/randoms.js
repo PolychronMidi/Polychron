@@ -198,34 +198,52 @@ rv=randomVariation=(value,boostRange=[.05,.10],frequency=.05,deboostRange=boostR
  */
 normalizeWeights = (weights, min, max, variationLow=.7, variationHigh=1.3) => {
   // Validate weights are non-negative
-  if (!weights.every(w => w >= 0)) {
-    throw new Error('normalizeWeights: negative weights detected - weights must be non-negative');
+  for (let i = 0; i < weights.length; i++) {
+    if (weights[i] < 0) {
+      throw new Error('normalizeWeights: negative weights detected - weights must be non-negative');
+    }
   }
   const range = max - min + 1;
-  let w = weights.map(weight => weight * rf(variationLow, variationHigh));
+  let w = new Array(weights.length);
+  for (let i = 0; i < weights.length; i++) {
+    w[i] = weights[i] * rf(variationLow, variationHigh);
+  }
   if (w.length !== range) {
     if (w.length < range) {
-      const newWeights = [];
+      const newWeights = new Array(range);
       for (let i = 0; i < range; i++) {
         const fraction = i / (range - 1);
         const lowerIndex = m.floor(fraction * (w.length - 1));
         const upperIndex = m.min(lowerIndex + 1, w.length - 1);
         const weightDiff = w[upperIndex] - w[lowerIndex];
         const interpolatedWeight = w[lowerIndex] + (fraction * (w.length - 1) - lowerIndex) * weightDiff;
-        newWeights.push(interpolatedWeight);
+        newWeights[i] = interpolatedWeight;
       }
       w = newWeights;
     } else {
       const groupSize = m.floor(w.length / range);
-      w = Array(range).fill(0).map((_, i) => {
+      const groupedWeights = new Array(range);
+      for (let i = 0; i < range; i++) {
         const startIndex = i * groupSize;
         const endIndex = m.min(startIndex + groupSize, w.length);
-        return w.slice(startIndex, endIndex).reduce((sum, v) => sum + v, 0) / (endIndex - startIndex);
-      });
+        let sum = 0;
+        for (let j = startIndex; j < endIndex; j++) {
+          sum += w[j];
+        }
+        groupedWeights[i] = sum / (endIndex - startIndex);
+      }
+      w = groupedWeights;
     }
   }
-  const totalWeight = w.reduce((acc, v) => acc + v, 0);
-  return w.map(v => v / totalWeight);
+  let totalWeight = 0;
+  for (let i = 0; i < w.length; i++) {
+    totalWeight += w[i];
+  }
+  const normalized = new Array(w.length);
+  for (let i = 0; i < w.length; i++) {
+    normalized[i] = w[i] / totalWeight;
+  }
+  return normalized;
 };
 
 /**

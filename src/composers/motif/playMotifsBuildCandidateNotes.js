@@ -44,18 +44,7 @@ playMotifsBuildCandidateNotes = function playMotifsBuildCandidateNotes(unit, res
         if (harmonicContext.isNoteInScale(candidateNote)) filtered.push(candidateNote);
       }
       if (filtered.length > 0) {
-        const filteredPCs = new Set();
-        for (let index = 0; index < filtered.length; index++) {
-          filteredPCs.add(((filtered[index] % 12) + 12) % 12);
-        }
-        let allValid = true;
-        for (const pc of filteredPCs) {
-          if (composerValidPCs.size > 0 && !composerValidPCs.has(pc)) {
-            allValid = false;
-            break;
-          }
-        }
-        if (allValid) candidateNotes = filtered;
+        candidateNotes = filtered;
       }
     }
   }

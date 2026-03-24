@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-23T23:51:36.382Z",
+    "generated": "2026-03-24T00:53:40.626Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2958,
-    "totalEdges": 2323,
-    "crossSubsystemEdges": 1549,
+    "totalConsumes": 2964,
+    "totalEdges": 2325,
+    "crossSubsystemEdges": 1551,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 360
+        "consumes": 366
       },
       "writer": {
         "files": 4,
@@ -6395,13 +6395,17 @@
         "adaptiveTrustScoresHelpers"
       ],
       "consumes": [
+        "beatCount",
+        "beatStart",
         "clamp",
         "contextualTrust",
         "couplingHomeostasis",
         "m",
+        "phraseIndex",
         "pipelineCouplingManager",
         "regimeClassifier",
         "safePreBoot",
+        "sectionIndex",
         "systemDynamicsProfiler",
         "trustSystems"
       ]
@@ -6415,6 +6419,7 @@
       "consumes": [
         "adaptiveTrustScoresHelpers",
         "beatCount",
+        "beatStart",
         "beatStartTime",
         "cadenceAlignment",
         "clamp",
@@ -6423,6 +6428,7 @@
         "explainabilityBus",
         "m",
         "p",
+        "phraseIndex",
         "pipelineCouplingManager",
         "restSynchronizer",
         "safePreBoot",
@@ -14316,6 +14322,13 @@
     },
     {
       "from": "src/play/main.js",
+      "to": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "globals": [
+        "sectionIndex"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
       "to": "src/play/crossLayerBeatRecord.js",
       "globals": [
         "sectionIndex"
@@ -19839,8 +19852,19 @@
       "to": "src/crossLayer/structure/trust/adaptiveTrustScores.js",
       "globals": [
         "beatCount",
+        "beatStart",
         "beatStartTime",
+        "phraseIndex",
         "velocity"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
+      "to": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "globals": [
+        "beatCount",
+        "beatStart",
+        "phraseIndex"
       ]
     },
     {

@@ -39,6 +39,14 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
     }
     this.notes = scale.notes;
     this.QuartalComposerScalePCs = scale.notes.map(n => t.Note.chroma(n)).filter(c => Number.isFinite(c));
+    this.QuartalComposerScaleMidiPool = [];
+    for (let oct = 2; oct <= 7; oct++) {
+      for (let i = 0; i < this.QuartalComposerScalePCs.length; i++) {
+        const midi = this.QuartalComposerScalePCs[i] + oct * 12;
+        if (midi >= 0 && midi <= 127) this.QuartalComposerScaleMidiPool.push(midi);
+      }
+    }
+    this.QuartalComposerScaleMidiPool.sort((a, b) => a - b);
 
     this.intervalOptions = {
       style: 'even',
@@ -70,15 +78,10 @@ QuartalComposer = class QuartalComposer extends MeasureComposer {
     const startMidi = typeof startNote === 'number' ? startNote : (startNote && startNote.note);
     if (!Number.isFinite(startMidi)) throw new Error('QuartalComposer.getNotes: start note must resolve to a finite MIDI number');
 
-    // Build a sorted set of scale MIDI notes across available octaves for snapping
-    const scaleMidiSet = [];
-    for (let oct = 2; oct <= 7; oct++) {
-      for (const pc of this.QuartalComposerScalePCs) {
-        const midi = pc + oct * 12;
-        if (midi >= 0 && midi <= 127) scaleMidiSet.push(midi);
-      }
+    const scaleMidiSet = this.QuartalComposerScaleMidiPool;
+    if (!Array.isArray(scaleMidiSet) || scaleMidiSet.length === 0) {
+      throw new Error('QuartalComposer.getNotes: scale MIDI pool not initialized');
     }
-    scaleMidiSet.sort((a, b) => a - b);
 
     /**
      * Snap a MIDI note to the nearest scale tone.

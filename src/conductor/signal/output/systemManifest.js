@@ -21,10 +21,9 @@ systemManifest = (() => {
 
     // Extra-pipeline density multipliers (outside the registry product).
     // Captured from conductorState so the manifest reveals the full picture.
-    const snap = conductorState.getSnapshot();
     const extraDensityMultipliers = {
-      emissionCorrection: snap.extraDensityCorrection,
-      coherenceDensityBias: snap.extraCoherenceDensityBias
+      emissionCorrection: conductorState.get('extraDensityCorrection'),
+      coherenceDensityBias: conductorState.get('extraCoherenceDensityBias')
     };
 
     manifest.attribution = {

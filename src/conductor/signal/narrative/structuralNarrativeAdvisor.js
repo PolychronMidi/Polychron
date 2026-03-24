@@ -47,8 +47,7 @@ structuralNarrativeAdvisor = (() => {
    * Called each beat via recorder - reads current composer from state.
    */
   function refresh() {
-    const snap = conductorState.getSnapshot();
-    const family = snap.textureMode || snap.activeProfile || null;
+    const family = conductorState.get('textureMode') || conductorState.get('activeProfile') || null;
     if (family) recordFamily(String(family));
   }
 

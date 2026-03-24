@@ -38,7 +38,10 @@ voiceLeadingSelectNextNote = function voiceLeadingSelectNextNote(vls, lastNotes,
     });
   }
 
-  const scores = availableNotes.map((note) => {
+  let bestNote = availableNotes[0];
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < availableNotes.length; i++) {
+    const note = availableNotes[i];
     const baseWeight = V.optionalFinite(config.candidateWeights && Number(config.candidateWeights[note]), 0);
     const melodicWeight = V.optionalFinite(melodicPriorWeights && Number(melodicPriorWeights[note]), 0);
     const weight = (baseWeight > 0 && melodicWeight > 0)
@@ -46,24 +49,23 @@ voiceLeadingSelectNextNote = function voiceLeadingSelectNextNote(vls, lastNotes,
       : (baseWeight > 0)
         ? baseWeight
         : melodicWeight;
-    return {
-      note,
-      score: vls.VoiceLeadingScoreScoreCandidate(note, lastNotes, registerRange, constraints, {
-        register,
-        commonToneWeight: config.commonToneWeight,
-        weight,
-        useCorpusVoiceLeadingPriors: config.useCorpusVoiceLeadingPriors === true,
-        corpusVoiceLeadingStrength: config.corpusVoiceLeadingStrength,
-        phase: V.optionalType(config.phase, 'string') || undefined,
-        phraseContext: V.optionalType(config.phraseContext, 'object') || undefined,
-        quality: V.optionalType(config.quality, 'string') || undefined,
-        tonic: V.optionalType(config.tonic, 'string') || undefined,
-      }),
-    };
-  });
+    const score = vls.VoiceLeadingScoreScoreCandidate(note, lastNotes, registerRange, constraints, {
+      register,
+      commonToneWeight: config.commonToneWeight,
+      weight,
+      useCorpusVoiceLeadingPriors: config.useCorpusVoiceLeadingPriors === true,
+      corpusVoiceLeadingStrength: config.corpusVoiceLeadingStrength,
+      phase: V.optionalType(config.phase, 'string') || undefined,
+      phraseContext: V.optionalType(config.phraseContext, 'object') || undefined,
+      quality: V.optionalType(config.quality, 'string') || undefined,
+      tonic: V.optionalType(config.tonic, 'string') || undefined,
+    });
+    if (score < bestScore) {
+      bestScore = score;
+      bestNote = note;
+    }
+  }
 
-  scores.sort((a, b) => a.score - b.score);
-  const bestNote = scores[0].note;
   vls.VoiceLeadingScoreUpdateHistory(bestNote, register);
   return bestNote;
 };

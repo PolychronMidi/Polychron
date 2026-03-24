@@ -15,6 +15,12 @@ let crossLayerBeatRecordTraceSnapBeatKey = '';
 let crossLayerBeatRecordTraceCachedConductorSnap = null;
 let crossLayerBeatRecordTraceCachedDynamicsSnap = null;
 let crossLayerBeatRecordTraceCachedForcedTransitionEvent = null;
+let crossLayerBeatRecordTraceCachedTrustScores = null;
+let crossLayerBeatRecordTraceCachedCouplingTargets = null;
+let crossLayerBeatRecordTraceCachedAxisCouplingTotals = null;
+let crossLayerBeatRecordTraceCachedAxisEnergyShare = null;
+let crossLayerBeatRecordTraceCachedCouplingGates = null;
+let crossLayerBeatRecordTraceCachedAxisEnergyEquilibrator = null;
 let crossLayerBeatRecordTraceLastL1Progress = null;
 let crossLayerBeatRecordTraceLastL1TimeMs = null;
 const crossLayerBeatRecordTraceLayerBeatKeys = new Set();
@@ -240,6 +246,12 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       crossLayerBeatRecordTraceCachedConductorSnap = conductorState.getSnapshot();
       crossLayerBeatRecordTraceCachedDynamicsSnap = systemDynamicsProfiler.ensureBeatAnalysis(Boolean(isL1));
       crossLayerBeatRecordTraceCachedForcedTransitionEvent = safePreBoot.call(() => regimeClassifier.consumeForcedTransitionEvent(), null);
+      crossLayerBeatRecordTraceCachedTrustScores = adaptiveTrustScores.getSnapshot();
+      crossLayerBeatRecordTraceCachedCouplingTargets = pipelineCouplingManager.getAdaptiveTargetSnapshot();
+      crossLayerBeatRecordTraceCachedAxisCouplingTotals = pipelineCouplingManager.getAxisCouplingTotals();
+      crossLayerBeatRecordTraceCachedAxisEnergyShare = pipelineCouplingManager.getAxisEnergyShare();
+      crossLayerBeatRecordTraceCachedCouplingGates = pipelineCouplingManager.getCouplingGates();
+      crossLayerBeatRecordTraceCachedAxisEnergyEquilibrator = safePreBoot.call(() => axisEnergyEquilibrator.getSnapshot(), null);
       crossLayerBeatRecordTraceSnapBeatKey = clBeatKey;
     }
     const profilerTelemetry = crossLayerBeatRecordBuildProfilerTelemetry(crossLayerBeatRecordTraceCachedDynamicsSnap);
@@ -252,23 +264,23 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       timeMs: clAbsMs,
       conductorSnap: crossLayerBeatRecordTraceCachedConductorSnap,
       negotiation: clNegotiation,
-      trustScores: adaptiveTrustScores.getSnapshot(),
+      trustScores: crossLayerBeatRecordTraceCachedTrustScores,
       regime: crossLayerBeatRecordTraceCachedDynamicsSnap.regime,
       couplingMatrix: crossLayerBeatRecordTraceCachedDynamicsSnap.couplingMatrix,
       phaseTelemetry: crossLayerBeatRecordBuildPhaseTelemetry(crossLayerBeatRecordTraceCachedDynamicsSnap),
       // Adaptive target state for coupling drift diagnostics
-      couplingTargets: pipelineCouplingManager.getAdaptiveTargetSnapshot(),
+      couplingTargets: crossLayerBeatRecordTraceCachedCouplingTargets,
       // Per-axis total |r| sums for axis-centric conservation diagnostics
-      axisCouplingTotals: pipelineCouplingManager.getAxisCouplingTotals(),
+      axisCouplingTotals: crossLayerBeatRecordTraceCachedAxisCouplingTotals,
       // Per-axis energy share for axis-level redistribution detection
-      axisEnergyShare: pipelineCouplingManager.getAxisEnergyShare(),
+      axisEnergyShare: crossLayerBeatRecordTraceCachedAxisEnergyShare,
       // Coherence gate + floor dampening state for anti-redistribution analysis
-      couplingGates: pipelineCouplingManager.getCouplingGates(),
+      couplingGates: crossLayerBeatRecordTraceCachedCouplingGates,
       // Whole-system coupling homeostasis state for governor diagnostics
       couplingHomeostasis: safePreBoot.call(() => couplingHomeostasis.getState(), null),
       // Direct snapshot bypass -- conductorState.updateFromConductor silently
       // drops state-provider fields, so axisEnergyEquilibrator never reaches snap.
-      axisEnergyEquilibrator: safePreBoot.call(() => axisEnergyEquilibrator.getSnapshot(), null),
+      axisEnergyEquilibrator: crossLayerBeatRecordTraceCachedAxisEnergyEquilibrator,
       // Per-beat transition readiness for coherent entry diagnosis
       transitionReadiness: safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null),
       profilerTelemetry,
@@ -292,7 +304,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
         intent: sectionIntentCurves.getLastIntent(),
         heat: interactionHeatMap.getSystemHeat(),
         trend: interactionHeatMap.getTrend(),
-        trust: adaptiveTrustScores.getSnapshot(),
+        trust: crossLayerBeatRecordTraceSnapBeatKey === clBeatKey && crossLayerBeatRecordTraceCachedTrustScores
+          ? crossLayerBeatRecordTraceCachedTrustScores
+          : adaptiveTrustScores.getSnapshot(),
         silhouette: crossLayerSilhouette.getSilhouette(),
         climaxLevel: crossLayerClimaxEngine.getClimaxLevel(),
         rhythmicMode: rhythmicComplementEngine.getMode(),

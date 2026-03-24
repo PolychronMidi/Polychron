@@ -1,4 +1,14 @@
 adaptiveTrustScoresHelpers = (() => {
+  let adaptiveTrustScoresHelpersHotspotCacheBeatKey = '';
+  const adaptiveTrustScoresHelpersHotspotCache = new Map();
+
+  function adaptiveTrustScoresHelpersGetBeatKey() {
+    const safeSection = Number.isFinite(sectionIndex) ? sectionIndex : -1;
+    const safePhrase = Number.isFinite(phraseIndex) ? phraseIndex : -1;
+    const safeBeat = Number.isFinite(beatStart) ? beatStart : (Number.isFinite(beatCount) ? beatCount : -1);
+    return safeSection + ':' + safePhrase + ':' + safeBeat;
+  }
+
   const genericDominanceCapProfile = { scoreFloor: 0.60, scorePenalty: 0.08, weightFloor: 1.28, weightPenalty: 0.12 };
   const dominanceCapProfile = {
     [trustSystems.names.COHERENCE_MONITOR]: { scoreFloor: 0.48, scorePenalty: 0.22, weightFloor: 1.16, weightPenalty: 0.44 },
@@ -27,13 +37,23 @@ adaptiveTrustScoresHelpers = (() => {
   };
 
   function getSystemPairHotspotProfile(systemName) {
+    const beatKey = adaptiveTrustScoresHelpersGetBeatKey();
+    if (adaptiveTrustScoresHelpersHotspotCacheBeatKey !== beatKey) {
+      adaptiveTrustScoresHelpersHotspotCacheBeatKey = beatKey;
+      adaptiveTrustScoresHelpersHotspotCache.clear();
+    }
+    if (adaptiveTrustScoresHelpersHotspotCache.has(systemName)) {
+      return adaptiveTrustScoresHelpersHotspotCache.get(systemName);
+    }
     const pairList = pairAwareHotspotPairs[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
     const pairWeights = pairAwarePairWeights[systemName] || {};
     const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const couplingMatrix = dynamics ? dynamics.couplingMatrix : undefined;
     const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
     if (!couplingMatrix) {
-      return { pressure: 0, dominantPair: '', hotspotPairs: [], severePressure: 0, severePair: '' };
+      const emptyProfile = { pressure: 0, dominantPair: '', hotspotPairs: [], severePressure: 0, severePair: '' };
+      adaptiveTrustScoresHelpersHotspotCache.set(systemName, emptyProfile);
+      return emptyProfile;
     }
 
     const hotspotPairs = [];
@@ -81,13 +101,15 @@ adaptiveTrustScoresHelpers = (() => {
     }
     hotspotPairs.sort(function(a, b) { return b.pressure - a.pressure; });
     const meanPressure = pressureCount > 0 ? pressureSum / pressureCount : 0;
-    return {
+    const profile = {
       pressure: Number(clamp(maxPressure * 0.60 + meanPressure * 0.40, 0, 1).toFixed(4)),
       dominantPair: hotspotPairs.length > 0 ? hotspotPairs[0].pair : '',
       hotspotPairs: hotspotPairs.slice(0, 3),
       severePressure: Number(clamp(severePressure, 0, 1).toFixed(4)),
       severePair,
     };
+    adaptiveTrustScoresHelpersHotspotCache.set(systemName, profile);
+    return profile;
   }
 
   function getAdaptiveDominanceCaps(scoreBySystem, systemName, effectiveScore, trustCeiling, trustWeightMax) {

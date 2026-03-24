@@ -53,10 +53,13 @@ intervalComposer = {
     count = clamp(count, minNotes, maxNotes);
 
     const preferRaw = Array.isArray(options.preferIndices) ? options.preferIndices : [];
-    const preferIndices = preferRaw
-      .map(val => V.optionalFinite(val, NaN))
-      .filter(val => Number.isFinite(val))
-      .map(val => clamp(m.round(val), 0, len - 1));
+    const preferIndices = [];
+    for (let i = 0; i < preferRaw.length; i++) {
+      const normalized = V.optionalFinite(preferRaw[i], NaN);
+      if (Number.isFinite(normalized)) {
+        preferIndices.push(clamp(m.round(normalized), 0, len - 1));
+      }
+    }
 
     if (preferIndices.length > maxNotes) {
       throw new Error(`intervalComposer.selectIntervals: preferIndices length ${preferIndices.length} exceeds maxNotes ${maxNotes}`);
@@ -114,7 +117,9 @@ intervalComposer = {
       }
       case 'rising': {
         baseIndices = buildEven(m.min(len, m.max(3, count)));
-        baseIndices = baseIndices.map((val, i) => (i === 0 || i === baseIndices.length - 1 ? val : jitterIndex(val)));
+        for (let i = 1; i < baseIndices.length - 1; i++) {
+          baseIndices[i] = jitterIndex(baseIndices[i]);
+        }
         break;
       }
       case 'even': {
@@ -145,10 +150,18 @@ intervalComposer = {
     let intervals = pickFromPool(baseIndices, count, preferredSet);
 
     // Clamp, dedupe, sort for consistency
-    intervals = intervals
-      .map(interval => clamp(V.optionalFinite(interval, 0), 0, len - 1));
+    const normalizedIntervals = [];
+    const seenIntervals = new Set();
+    for (let i = 0; i < intervals.length; i++) {
+      const interval = clamp(V.optionalFinite(intervals[i], 0), 0, len - 1);
+      if (!seenIntervals.has(interval)) {
+        seenIntervals.add(interval);
+        normalizedIntervals.push(interval);
+      }
+    }
 
-    intervals = Array.from(new Set(intervals)).sort((a, b) => a - b);
+    normalizedIntervals.sort((a, b) => a - b);
+    intervals = normalizedIntervals;
 
     if (intervals.length === 0) {
       throw new Error(`intervalComposer.selectIntervals: no valid intervals produced for scaleLength=${scaleLength}`);
