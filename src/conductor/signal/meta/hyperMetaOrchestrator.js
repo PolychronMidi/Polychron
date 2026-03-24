@@ -299,6 +299,32 @@ hyperMetaOrchestrator = (() => {
       }
     }
 
+    // R66 E1 Contradiction 4: Coherent regime suppresses phase coupling energy.
+    // When coherent regime is present and phase share is low, the coherent
+    // target scale relaxation in couplingRefreshSetup raises the bar for ALL
+    // pairs, but phase pairs with weak correlations fall below the relaxed
+    // target and get fewer nudges. Contradiction 1 only fires when homeostasis
+    // is throttling (globalGainMultiplier < 0.7), which doesn't happen here.
+    // This new contradiction detects the coherent-phase conflict directly.
+    if (state.phaseFloor && state.profiler) {
+      const currentRegime = state.profiler.regime || '';
+      const phaseShareLow = state.phaseFloor.shareEma < 0.08;
+      const isCoherentRegime = currentRegime === 'coherent';
+      const homeostasisNotThrottling = !state.homeostasis || state.homeostasis.globalGainMultiplier >= 0.7;
+      if (phaseShareLow && isCoherentRegime && homeostasisNotThrottling) {
+        recordContradiction(
+          ['phaseFloorController', 'couplingRefreshSetup'],
+          'Coherent regime suppresses phase coupling via target relaxation while phase share < 0.08'
+        );
+        // Emit phaseExemption so downstream gain logic can boost phase pairs
+        const phaseSeverity = clamp((0.08 - state.phaseFloor.shareEma) / 0.06, 0, 1);
+        hyperMetaOrchestratorRateMultipliers.phaseExemption = m.max(
+          hyperMetaOrchestratorRateMultipliers.phaseExemption || 1.0,
+          1.0 + phaseSeverity * 1.2
+        );
+      }
+    }
+
     // E5 (R100) Contradiction 3: Phase floor boosting while pair ceiling tightening on phase pairs
     // When phaseFloorController is actively boosting phase energy but pairGainCeilingController
     // is tightening phase-related pairs, the system fights itself

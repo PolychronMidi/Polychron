@@ -40,7 +40,11 @@ couplingBudgetScoring = (() => {
         const corr = matrix[key];
         if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
         const absCorr = m.abs(corr);
-        const target = S.getTarget(key) * setup.targetScale;
+        // R66 E3: Use phaseTargetScale for phase pairs
+        const pairTargetScale = isPhasePair && setup.phaseTargetScale !== undefined
+          ? setup.phaseTargetScale
+          : setup.targetScale;
+        const target = S.getTarget(key) * pairTargetScale;
         const ps = S.getPairState(key);
         const tailTelemetry = getPairTailTelemetry(ps);
         const p95 = tailTelemetry.p95;

@@ -134,9 +134,30 @@ systemDynamicsProfilerHelpers = (() => {
     state.lastPhaseChanged = false;
     state.lastPhaseDelta = 0;
     try {
-      const sampledPhase = timeStream.normalizedProgress('section');
-      if (typeof sampledPhase === 'number' && Number.isFinite(sampledPhase)) {
-        phase = clamp(sampledPhase, 0, 1);
+      const sampledSectionProgress = timeStream.normalizedProgress('section');
+      if (typeof sampledSectionProgress === 'number' && Number.isFinite(sampledSectionProgress)) {
+        // R67 E1: Compound phase signal. Pure section-progress ramp (0->1)
+        // is monotonically increasing within each section -- a sawtooth with
+        // no oscillatory character. This creates intrinsically low correlation
+        // with oscillating compositional dimensions (density, tension, flicker,
+        // entropy), suppressing phase axis coupling energy to ~0.08 share.
+        //
+        // Enrich with phrase-level nesting: blend section progress (60%) with
+        // phrase progress oscillation (30%) and a sinusoidal harmonic (10%).
+        // This gives the phase signal variance at multiple time scales,
+        // creating meaningful coupling opportunities with other dimensions.
+        const sectionPart = sampledSectionProgress;
+        let phrasePart = 0;
+        try {
+          const phraseProgress = timeStream.normalizedProgress('phrase');
+          if (typeof phraseProgress === 'number' && Number.isFinite(phraseProgress)) {
+            phrasePart = phraseProgress;
+          }
+        } catch {
+          void 0;
+        }
+        const harmonicPart = 0.5 + 0.5 * m.sin(sampledSectionProgress * m.PI * 2);
+        phase = clamp(sectionPart * 0.60 + phrasePart * 0.30 + harmonicPart * 0.10, 0, 1);
         state.lastPhaseSignalValid = true;
       }
     } catch {

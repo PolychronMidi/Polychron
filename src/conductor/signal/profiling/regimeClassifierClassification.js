@@ -109,10 +109,19 @@ regimeClassifierClassification = (() => {
       opportunityGap
     };
 
-    if (effectiveDim > 2.8 && avgVelocity > 0.012) state.highDimVelStreak++;
-    else state.highDimVelStreak = 0;
+    // R65 E1: Distribution-adaptive highDimVelStreak. Track running EMA of
+    // effectiveDim and its standard deviation. Set threshold relative to the
+    // observed distribution instead of static 2.8. Gate the streak entirely
+    // when exploring already dominates (rawExploringShare > 0.40).
+    state.dimEma = state.dimEma * 0.97 + effectiveDim * 0.03;
+    state.dimStdEma = state.dimStdEma * 0.97 + m.abs(effectiveDim - state.dimEma) * 0.03;
+    const highDimStreakEnabled = rawExploringShare < 0.40;
+    const highDimThreshold = state.dimEma + state.dimStdEma * 1.5 + exploringSharePressure * 0.3;
+    const highDimStreakLimit = 10 + m.round(exploringSharePressure * 8);
+    if (highDimStreakEnabled && effectiveDim > highDimThreshold && avgVelocity > 0.012) state.highDimVelStreak++;
+    else state.highDimVelStreak = m.max(0, state.highDimVelStreak - 1);
 
-    if (state.highDimVelStreak >= 10 && state.lastRegime !== 'coherent') return 'exploring';
+    if (state.highDimVelStreak >= highDimStreakLimit && state.lastRegime !== 'coherent') return 'exploring';
 
     if (cadenceMonopolyPressure > 0.40 &&
         avgVelocity > evolvingEntryVelMin &&
@@ -123,7 +132,18 @@ regimeClassifierClassification = (() => {
       return 'evolving';
     }
 
-    if (couplingStrength > coherentThreshold + coherentEntryMargin && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) return 'coherent';
+    // R65 E3: Adaptive coherent entry relaxation. When coherent is repeatedly
+    // blocked (coupling just below threshold), progressively relax the entry
+    // margin so coherent can eventually break through the coupling barrier.
+    const coherentGapToEntry = couplingStrength - (coherentThreshold + coherentEntryMargin);
+    if (coherentGapToEntry > -0.06 && coherentGapToEntry < 0 && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) {
+      state.coherentBlockStreak++;
+    } else if (state.lastRegime === 'coherent' || coherentGapToEntry >= 0) {
+      state.coherentBlockStreak = 0;
+    }
+    const coherentBlockRelax = clamp(state.coherentBlockStreak * 0.004, 0, 0.04);
+
+    if (couplingStrength > coherentThreshold + coherentEntryMargin - coherentBlockRelax && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) return 'coherent';
 
     const recentlyCoherent = state.lastRegime === 'coherent' || state.coherentMomentumBeats > 0;
     const coherentGap = couplingStrength - coherentThreshold;
@@ -150,7 +170,19 @@ regimeClassifierClassification = (() => {
     const exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - profileDimRelief - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + exploringSharePressure * 0.12 + postForcedRecoveryPressure * 0.06;
     const exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06 - exploringSharePressure * 0.06 - postForcedRecoveryPressure * 0.05;
     if (avgVelocity > exploringVelThreshold && effectiveDim > exploringDimThreshold && couplingStrength <= exploringCouplingGate) return 'exploring';
-    if (state.lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 + opportunityPressure * 0.010 + exploringSharePressure * 0.008 + evolvingRecoveryBoost * 0.008 && effectiveDim > 1.6 - exploringSharePressure * 0.08 - evolvingRecoveryBoost * 0.06 && couplingStrength > 0.08 + evolvingDeficit * 0.015 - opportunityPressure * 0.010 - exploringSharePressure * 0.012 - evolvingRecoveryBoost * 0.012) return 'evolving';
+    // R65 E5: Widened exploring->evolving crossover. When evolving is starved
+    // (evolvingRecoveryBoost > 0), structurally widen the velocity ceiling and
+    // lower the dimension floor to create more evolving-eligible beats from
+    // the exploring pool. This is self-limiting: evolvingRecoveryBoost goes to
+    // 0 as rawEvolvingShare approaches 0.05, naturally disengaging the widening.
+    // R68 E1: Increased velocity ceiling coefficient from 0.016 to 0.030 when
+    // evolving is critically starved. The enriched phase signal (R67) raises
+    // trajectory velocity by adding phrase-level oscillation. This pushes beats
+    // above the old 0.076 ceiling into exploring, preventing evolving entry.
+    // Also widened the dim floor coefficient from 0.15 to 0.22 to match the
+    // higher-dimensional coupling landscape.
+    const evolvingCriticalBoost = rawEvolvingShare < 0.02 ? 0.014 : 0;
+    if (state.lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.060 + opportunityPressure * 0.010 + exploringSharePressure * 0.008 + evolvingRecoveryBoost * 0.030 + evolvingCriticalBoost && effectiveDim > 1.6 - exploringSharePressure * 0.08 - evolvingRecoveryBoost * 0.22 && couplingStrength > 0.08 + evolvingDeficit * 0.015 - opportunityPressure * 0.010 - exploringSharePressure * 0.012 - evolvingRecoveryBoost * 0.020) return 'evolving';
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
     return 'evolving';

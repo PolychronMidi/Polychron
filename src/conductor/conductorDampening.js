@@ -107,6 +107,12 @@ conductorDampening = (() => {
       if (snap.effectiveDimensionality < 2.0) {
         progStrength *= 1.5; // Stronger resistance to crush if dimensionality is collapsing
       }
+      // R64 E3: Regime-responsive flicker dampening - evolving regime needs
+      // wider flicker range for rhythmic texture variety. Reduce progressive
+      // compounding so flicker deviations pass through more freely.
+      if (pipelineName === 'flicker' && snap.regime === 'evolving') {
+        progStrength *= 0.65;
+      }
     } catch {
       // snapshot retrieval could fail early in boot; safe to ignore
     }
@@ -242,6 +248,9 @@ conductorDampening = (() => {
     if (!pipelineName) return product;
     // Skip flicker axis entirely - centroid pull suppresses
     // needed flicker variance and fights elasticity controller (#4).
+    // R64: Confirmed empirically - enabling centroid for flicker inflates
+    // the flicker product, expanding flicker axis energy share and
+    // catastrophically collapsing phase (0.1131 -> 0.0009).
     if (pipelineName === 'flicker') return product;
     const prev = conductorDampeningCentroidEma.get(pipelineName) || 1.0;
     const updated = prev * (1 - _CENTROID_EMA) + product * _CENTROID_EMA;
@@ -270,12 +279,12 @@ conductorDampening = (() => {
     const range = fMax - fMin;
     if (range < conductorDampeningTargetFlickerRange * 0.6) {
       // Range compressed: reduce dampening to allow more expression
-      // Tripled adjustment rate (0.005->0.015) for faster response
-      conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj + 0.015, 0, 0.15);
+      // R64 E2: 0.015->0.025 rate, 0.15->0.22 cap for faster self-healing
+      conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj + 0.025, 0, 0.22);
     } else if (range > conductorDampeningTargetFlickerRange * 2.5) {
       // Range too wide: increase dampening to rein it in
       // R34 E1: 2.0x->2.5x allows wider flicker expression before tightening
-      conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj - 0.015, -0.15, 0);
+      conductorDampeningFlickerDampeningBaseAdj = clamp(conductorDampeningFlickerDampeningBaseAdj - 0.025, -0.22, 0);
     } else {
       // In target range: relax adjustment toward zero
       conductorDampeningFlickerDampeningBaseAdj *= 0.95;

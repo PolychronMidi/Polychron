@@ -62,6 +62,20 @@ couplingRefreshSetup = (() => {
       targetScale = 1.0 + (dynamicCoherentRelax - 1.0) * 0.40;
     }
 
+    // R66 E3: Phase-pair target scale increase. When phase share is low,
+    // RAISE the target for phase pairs so fewer of them exceed the threshold
+    // and trigger decorrelation. Higher target = less tightening = phase
+    // correlations persist longer = more phase axis energy.
+    const phaseFloorSnap = safePreBoot.call(() => phaseFloorController.getSnapshot(), null);
+    const phaseShareEma = phaseFloorSnap && typeof phaseFloorSnap.shareEma === 'number'
+      ? phaseFloorSnap.shareEma : 0.1667;
+    const phaseTargetScaleIncrease = phaseShareEma < 0.10 && targetScale > 0
+      ? clamp((0.10 - phaseShareEma) / 0.08, 0, 1)
+      : 0;
+    const phaseTargetScale = phaseTargetScaleIncrease > 0
+      ? targetScale * (1 + phaseTargetScaleIncrease * 0.4)
+      : targetScale;
+
     // Flicker product guard with hysteresis
     const flickerProd = safePreBoot.call(() => signalReader.snapshot()?.flickerProduct, 1.0);
     if (typeof flickerProd === 'number') {
@@ -126,7 +140,7 @@ couplingRefreshSetup = (() => {
     const dynTelemetryWindow = couplingConstants.dynamicTelemetryWindow(hsBeatCount);
 
     return {
-      regime, targetScale, flickerGainScalar, densityGainScalar,
+      regime, targetScale, phaseTargetScale, flickerGainScalar, densityGainScalar,
       floorDampen, flickerProd, densityProd,
       budgetConstraintActive, budgetConstraintPressure,
       floorRecoveryActive, densityFlickerTailPressure,
