@@ -36,10 +36,10 @@ phaseFloorController = (() => {
    * Adapts to the phase share's natural operating range.
    */
   function getLowShareThreshold() {
-    const persistentLowSharePressure = clamp((0.04 - phaseFloorControllerShareEma) / 0.04, 0, 1);
+    const persistentLowSharePressure = clamp((0.06 - phaseFloorControllerShareEma) / 0.06, 0, 1);
     return clamp(
-      m.max(getCollapseThreshold() + 0.008, phaseFloorControllerShareEma * 0.30, 0.03 + persistentLowSharePressure * 0.024),
-      0.015, 0.08
+      m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030),
+      0.02, 0.10
     );
   }
 
@@ -51,9 +51,9 @@ phaseFloorController = (() => {
   function getFloorActivationStreak() {
     // Base: 12 beats. Range: [6, 20].
     const coherentPressure = clamp((phaseFloorControllerCoherentStreakEma - 20) / 40, 0, 1);
-    const persistentLowSharePressure = clamp((0.035 - phaseFloorControllerShareEma) / 0.035, 0, 1);
+    const persistentLowSharePressure = clamp((0.05 - phaseFloorControllerShareEma) / 0.05, 0, 1);
     // When coherent streaks are long (>40), activate faster (fewer beats)
-    return m.round(clamp(11 - coherentPressure * 8 - persistentLowSharePressure * 5, 4, 18));
+    return m.round(clamp(10 - coherentPressure * 8 - persistentLowSharePressure * 6, 4, 16));
   }
 
   function getExtremeCollapseStreak() {
@@ -80,10 +80,11 @@ phaseFloorController = (() => {
   function computeBoosts(share, phaseLowShareStreak, phaseCollapseStreak) {
     const fairShare = 1.0 / 6.0;
     const deficitRatio = clamp((fairShare - share) / fairShare, 0, 1);
-    const persistentLowSharePressure = clamp((0.035 - phaseFloorControllerShareEma) / 0.035, 0, 1);
+    const persistentLowSharePressure = clamp((0.05 - phaseFloorControllerShareEma) / 0.05, 0, 1);
+    const severeLowSharePressure = clamp((0.06 - share) / 0.06, 0, 1);
     // Recovery success dampens boost (if previous boosts recovered phase, be less aggressive)
     // Recovery failure amplifies boost (if previous boosts didn't work, push harder)
-    const recoveryFactor = clamp(2.05 - phaseFloorControllerRecoverySuccessEma * 1.45 + persistentLowSharePressure * 0.45, 0.9, 2.4);
+    const recoveryFactor = clamp(2.2 - phaseFloorControllerRecoverySuccessEma * 1.5 + persistentLowSharePressure * 0.55, 1.0, 2.6);
 
     // E4 (R100): Phase-aware boost scaling from orchestrator system phase
     // When oscillating, dampen boosts to avoid amplifying instability
@@ -96,7 +97,7 @@ phaseFloorController = (() => {
     // Phase collapse boost: when share < collapseThreshold AND streak > 8 -> stronger
     // Base range: [3.0, 8.0]. Graduates with streak duration.
     const collapseStreakFactor = clamp((phaseCollapseStreak - 4) / 12, 0, 1);
-    const phaseCollapseBoost = clamp(3.0 + collapseStreakFactor * 5.0 * recoveryFactor * phaseScaling, 3.0, 10.0);
+    const phaseCollapseBoost = clamp(3.5 + collapseStreakFactor * 5.5 * recoveryFactor * phaseScaling, 3.5, 11.0);
 
     // Phase floor boost: graduated from streak duration and deficit severity
     // Replaces the 8.0/12.0/20.0 step-function with continuous curve
@@ -107,8 +108,8 @@ phaseFloorController = (() => {
     if (phaseLowShareStreak > floorStreak) {
       const streakDepth = clamp((phaseLowShareStreak - floorStreak) / m.max(1, escalatedStreak - floorStreak), 0, 1);
       // Base boost range: [6.0, 14.0] graduated by streak depth
-      const baseBoost = 7.0 + streakDepth * 9.0 + persistentLowSharePressure * 3.0;
-      phaseFloorBoost = clamp(baseBoost * deficitRatio * recoveryFactor * phaseScaling, 5.0, 20.0);
+      const baseBoost = 8.0 + streakDepth * 10.0 + persistentLowSharePressure * 4.0;
+      phaseFloorBoost = clamp(baseBoost * (deficitRatio * 0.75 + severeLowSharePressure * 0.55) * recoveryFactor * phaseScaling, 6.0, 22.0);
     }
 
     // Extreme collapse: share < 1% -- emergency override

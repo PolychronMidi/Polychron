@@ -7,38 +7,37 @@
 
 ## Major Changes (1)
 
-- !!! **note-count**: output1: 8271 notes -> 12448 notes (50.5% change)
+- !!! **note-count**: output1: 8271 notes -> 14497 notes (75.3% change)
 
 ## Notable Changes (5)
 
-- !! **harmonic-change**: Section 0: D mixolydian -> F ionian
-- !! **harmonic-change**: Section 1: G# major -> Ab minor
-- !! **harmonic-change**: Section 2: A# major -> Eb minor
-- !! **harmonic-change**: Section 3: C major -> B phrygian
-- !! **harmonic-change**: Section 4: D mixolydian -> B ionian
+- !! **harmonic-change**: Section 0: D mixolydian -> A minor
+- !! **harmonic-change**: Section 1: G# major -> D major
+- !! **harmonic-change**: Section 2: A# major -> F minor
+- !! **harmonic-change**: Section 3: C major -> G# lydian
+- !! **harmonic-change**: Section 4: D mixolydian -> Ab major
 
 ## Moderate Changes (4)
 
-- ! **tension-shift**: Section 2 avg tension: 0.849 -> 0.735
+- ! **phrase-count**: Section 0: 3 phrases -> 2 phrases
 - ! **phrase-count**: Section 3: 4 phrases -> 3 phrases
-- ! **tension-shift**: Section 3 avg tension: 0.602 -> 0.750
-- ! **note-count**: output2: 13040 notes -> 17180 notes (31.7% change)
+- ! **tension-shift**: Section 3 avg tension: 0.602 -> 0.909
+- ! **phrase-count**: Section 4: 1 phrases -> 2 phrases
 
-## Minor Changes (5)
+## Minor Changes (4)
 
-- ~ **regime-shift**: Section 0 regime 'exploring': 11.8% -> 40.0%
-- ~ **regime-shift**: Section 1 regime 'exploring': 100.0% -> 79.2%
-- ~ **regime-shift**: Section 1 regime 'coherent': 0.0% -> 20.8%
-- ~ **regime-shift**: Section 4 regime 'coherent': 100.0% -> 64.3%
-- ~ **regime-shift**: Section 4 regime 'exploring': 0.0% -> 35.7%
+- ~ **regime-shift**: Section 0 regime 'coherent': 61.8% -> 29.2%
+- ~ **regime-shift**: Section 0 regime 'exploring': 11.8% -> 48.6%
+- ~ **regime-shift**: Section 4 regime 'coherent': 100.0% -> 26.9%
+- ~ **regime-shift**: Section 4 regime 'exploring': 0.0% -> 73.1%
 
 ## Summary
 
-- Total differences: 15
+- Total differences: 14
 - Major: 1
 - Notable: 5
 - Moderate: 4
-- Minor: 5
+- Minor: 4
 
 
-*Generated 2026-03-24T00:53:42.786Z*
+*Generated 2026-03-24T01:49:11.250Z*

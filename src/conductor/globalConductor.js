@@ -53,8 +53,12 @@ globalConductor = (() => {
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 0;
-    const phaseEstablished = clamp((phaseShare - 0.045) / 0.04, 0, 1);
-    const phaseRecoveryPressure = clamp((0.05 - phaseShare) / 0.05, 0, 1);
+    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
+      ? axisEnergy.shares.trust
+      : 0;
+    const phaseEstablished = clamp((phaseShare - 0.06) / 0.05, 0, 1);
+    const phaseRecoveryPressure = clamp((0.08 - phaseShare) / 0.08, 0, 1);
+    const trustSharePressure = clamp((trustShare - 0.18) / 0.08, 0, 1);
     const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const couplingMatrix = dynamics && dynamics.couplingMatrix ? dynamics.couplingMatrix : null;
     const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number'
@@ -67,7 +71,7 @@ globalConductor = (() => {
       ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
       : 0;
     const hotspotContainmentPressure = clamp(
-      densityFlickerPressure * 0.52 + densityTrustPressure * 0.32 + flickerTrustPressure * 0.26 + phaseRecoveryPressure * 0.18,
+      densityFlickerPressure * 0.48 + densityTrustPressure * 0.34 + flickerTrustPressure * 0.28 + phaseRecoveryPressure * 0.24 + trustSharePressure * 0.22,
       0,
       1
     );
@@ -125,10 +129,11 @@ globalConductor = (() => {
     const densityCorrection = clamp(1 + clamp(1 - emissionRatio, -1, 1) * 0.2, 0.8, 1.25);
 
     // Drive motif density
-    const densityRecoverySupport = phaseRecoveryPressure * 0.04 * (1 - clamp(hotspotContainmentPressure * 0.75, 0, 0.75));
+    const densityRecoverySupport = phaseRecoveryPressure * 0.03 * (1 - clamp(hotspotContainmentPressure * 0.75, 0, 0.75));
     const densityHotspotTrim = 1 - hotspotContainmentPressure * 0.08;
+    const phaseProtectionTrim = 1 - clamp(phaseRecoveryPressure * 0.10 + trustSharePressure * 0.08 + densityTrustPressure * 0.06, 0, 0.18);
     const targetDensity = clamp(
-      V.optionalFinite(Number(conductorConfig.getTargetDensity(compositeIntensity)), safeCurrentDensity) * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * (1 + densityRecoverySupport),
+      V.optionalFinite(Number(conductorConfig.getTargetDensity(compositeIntensity)), safeCurrentDensity) * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * phaseProtectionTrim * (1 + densityRecoverySupport),
       0, 1
     );
     const smooth = clamp(V.optionalFinite(Number(conductorConfig.getDensitySmoothing()), 0.2), 0, 1);
@@ -160,7 +165,7 @@ globalConductor = (() => {
     const densitySeed = Number(beatStart);
     const flickerCarrier = 0.5 + 0.5 * m.sin(densitySeed * 0.0017 + harmonicRhythm * m.PI);
     const flickerBase = clamp(compositeIntensity * 0.35 + harmonicRhythm * 0.25 + flickerCarrier * 0.40, 0, 1.2);
-    const flickerHotspotTrim = 1 - clamp(densityFlickerPressure * 0.16 + flickerTrustPressure * 0.12 + densityTrustPressure * 0.08, 0, 0.26);
+    const flickerHotspotTrim = 1 - clamp(densityFlickerPressure * 0.16 + flickerTrustPressure * 0.12 + densityTrustPressure * 0.08 + trustSharePressure * 0.08 + phaseRecoveryPressure * 0.10, 0, 0.34);
     const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod * flickerHotspotTrim;
 
     // Density-flicker additive decorrelation: scale down the additive term

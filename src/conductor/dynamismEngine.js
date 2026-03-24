@@ -152,7 +152,11 @@ dynamismEngine = (() => {
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
+    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
+      ? axisEnergy.shares.trust
+      : 1.0 / 6.0;
     const couplingMatrix = dynamics && dynamics.couplingMatrix ? dynamics.couplingMatrix : null;
+    const dynamicSnap = /** @type {any} */ (dynamics);
     const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number'
       ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.74) / 0.18, 0, 1)
       : 0;
@@ -161,6 +165,12 @@ dynamismEngine = (() => {
       : 0;
     const recoveryContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.40, 0, 1);
     const activeProfileName = conductorConfig.getActiveProfileName();
+    const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
+      ? dynamicSnap.evolvingShare
+      : 0;
+    const evolvingRecoveryPressure = clamp((0.05 - evolvingShare) / 0.05, 0, 1);
+    const phaseRecoveryCredit = clamp((phaseShare - 0.08) / 0.05, 0, 1);
+    const trustSlack = clamp((0.18 - trustShare) / 0.08, 0, 1);
     let l2Overhang = 0;
     if (activeLayerName === 'L2') {
       const recentL1 = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: 8 });
@@ -170,11 +180,16 @@ dynamismEngine = (() => {
       }
     }
     const lowPhasePressure = clamp((0.05 - phaseShare) / 0.05, 0, 1);
-    const layerBias = (activeLayerName === 'L2')
+    let layerBias = (activeLayerName === 'L2')
       ? (0.10 + (!dynamicRoleSwap.getIsSwapped() && activeRegime === 'exploring' ? 0.03 : 0)) * (1 - clamp(l2Overhang * 0.22 + lowPhasePressure * 0.08 + recoveryContainmentPressure * 0.16, 0, 0.44))
       : (activeLayerName === 'L1' && activeProfileName === 'explosive'
         ? clamp(0.04 + lowPhasePressure * 0.10 + recoveryContainmentPressure * 0.03 + (activeRegime === 'exploring' ? 0.01 : 0), 0, 0.18)
         : 0);
+    if (activeLayerName === 'L2' && phaseRecoveryCredit > 0.15 && evolvingRecoveryPressure > 0.25) {
+      layerBias += clamp((0.02 + phaseRecoveryCredit * 0.035 + trustSlack * 0.015 + evolvingRecoveryPressure * 0.04) * (1 - recoveryContainmentPressure * 0.55), 0, 0.08);
+    } else if (activeLayerName === 'L1' && activeRegime === 'coherent' && phaseRecoveryCredit > 0.20 && evolvingRecoveryPressure > 0.25) {
+      layerBias += clamp(0.01 + evolvingRecoveryPressure * 0.025 + trustSlack * 0.01 - recoveryContainmentPressure * 0.015, 0, 0.04);
+    }
 
     dynamismEngineResolveCacheKey = cacheKey;
     dynamismEngineResolveCacheValue = {

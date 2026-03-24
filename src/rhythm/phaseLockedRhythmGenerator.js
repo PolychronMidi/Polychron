@@ -106,6 +106,7 @@ phaseLockedRhythmGenerator = (() => {
 
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
+      const dynamicSnap = /** @type {any} */ (snap);
       const sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);
       const textureStarved = texMetrics.intensity < 0.15;
       const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
@@ -117,7 +118,9 @@ phaseLockedRhythmGenerator = (() => {
         : 1.0 / 6.0;
       const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
       const collapseThreshold = phaseFloorController.getCollapseThreshold();
+      const softPhaseTarget = 0.10;
       const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1.5);
+      const softPhaseDeficit = clamp((softPhaseTarget - phaseShare) / softPhaseTarget, 0, 1);
       const needsPhaseRescue = phaseShare < lowPhaseThreshold;
       const deepPhaseCollapse = phaseShare < collapseThreshold;
       const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
@@ -135,8 +138,13 @@ phaseLockedRhythmGenerator = (() => {
         ? clamp((m.abs(couplingMatrix['flicker-phase']) - 0.72) / 0.16, 0, 1)
         : 0;
       const phaseRecoveryCredit = clamp((phaseShare - 0.09) / 0.05, 0, 1);
-      const phaseContainmentPressure = clamp((flickerPhasePressure * 0.60 + densityFlickerPressure * 0.40) * phaseRecoveryCredit, 0, 1);
-      const phaseLanePriority = clamp((1 - densityFlickerPressure) * 0.55 + trustSharePressure * 0.45, 0, 1);
+      const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
+        ? dynamicSnap.evolvingShare
+        : 0;
+      const evolvingRecoveryPressure = clamp((0.055 - evolvingShare) / 0.055, 0, 1);
+      const needsSoftPhaseRecovery = softPhaseDeficit > 0 && evolvingRecoveryPressure > 0.15;
+      const phaseContainmentPressure = clamp((flickerPhasePressure * 0.55 + densityFlickerPressure * 0.35 + softPhaseDeficit * 0.10) * phaseRecoveryCredit, 0, 1);
+      const phaseLanePriority = clamp((1 - densityFlickerPressure) * 0.45 + trustSharePressure * 0.35 + softPhaseDeficit * 0.20, 0, 1);
       if (textureDrift !== 0) {
         const scaledDrift = m.round(textureDrift * (1 - phaseContainmentPressure * 0.55));
         if ((textureDrift > 0 && scaledDrift > 0) || (textureDrift < 0 && scaledDrift < 0)) {
@@ -144,17 +152,22 @@ phaseLockedRhythmGenerator = (() => {
         }
       }
       const rescueContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.25 + flickerTrustPressure * 0.15, 0, 1);
-      const regimeAllowsPhaseRescue = snap && (snap.regime === 'exploring' || (snap.regime === 'coherent' && trustSharePressure > 0.35));
-      if (activeLayer === 'L2' && ((regimeAllowsPhaseRescue && (sectionProgress > 0.25 || textureStarved)) || needsPhaseRescue) && (deepPhaseCollapse || rescueContainmentPressure < 0.75 || phaseLanePriority > 0.55)) {
+      const regimeAllowsPhaseRescue = snap && (snap.regime === 'exploring' || snap.regime === 'evolving' || (snap.regime === 'coherent' && (trustSharePressure > 0.35 || evolvingRecoveryPressure > 0.20)));
+      const evolvingDecorrelateWindow = activeLayer === 'L2' && (phaseRecoveryCredit > 0.35 || softPhaseDeficit > 0.18) && evolvingRecoveryPressure > 0.20 && (densityFlickerPressure > 0.25 || flickerTrustPressure > 0.20);
+      if (activeLayer === 'L2' && ((regimeAllowsPhaseRescue && (sectionProgress > 0.20 || textureStarved)) || needsPhaseRescue || needsSoftPhaseRecovery) && (deepPhaseCollapse || rescueContainmentPressure < 0.75 || phaseLanePriority > 0.55)) {
         const rescueTrim = clamp(1 - rescueContainmentPressure * (deepPhaseCollapse ? 0.30 : 0.60), 0.25, 1);
-        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + trustSharePressure * 0.45 + phaseLanePriority * 0.25 + (deepPhaseCollapse ? 0.35 : 0)) * rescueTrim * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.10 : 0.45))));
+        const phasePush = m.max(1 + (deepPhaseCollapse ? 1 : 0), m.round((0.5 + sectionProgress) * rf(1.0, textureStarved ? 2.0 : 1.5) * (1 + lowPhasePressure * 0.75 + softPhaseDeficit * 0.55 + trustSharePressure * 0.45 + phaseLanePriority * 0.25 + (deepPhaseCollapse ? 0.35 : 0)) * rescueTrim * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.10 : 0.45))));
         offset += phasePush;
-      } else if (activeLayer === 'L1' && needsPhaseRescue && sectionProgress > 0.08) {
+      } else if (activeLayer === 'L1' && (needsPhaseRescue || (needsSoftPhaseRecovery && sectionProgress > 0.20)) && sectionProgress > 0.08) {
         const phasePush = m.max(
           1 + (deepPhaseCollapse ? 1 : 0),
-          m.round((0.45 + sectionProgress * 0.55) * (1 + lowPhasePressure * 0.8 + rescueContainmentPressure * 0.30 + trustSharePressure * 0.30 + phaseLanePriority * 0.20 + (deepPhaseCollapse ? 0.25 : 0)) * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.08 : 0.35)))
+          m.round((0.45 + sectionProgress * 0.55) * (1 + lowPhasePressure * 0.8 + softPhaseDeficit * 0.45 + rescueContainmentPressure * 0.30 + trustSharePressure * 0.30 + phaseLanePriority * 0.20 + (deepPhaseCollapse ? 0.25 : 0)) * (1 - phaseContainmentPressure * (deepPhaseCollapse ? 0.08 : 0.35)))
         );
         offset += phasePush;
+      }
+      if (evolvingDecorrelateWindow) {
+        const decorrelationPush = m.max(1, m.round((0.5 + phaseRecoveryCredit * 0.6 + softPhaseDeficit * 0.45 + evolvingRecoveryPressure * 0.5) * (1 - rescueContainmentPressure * 0.55)));
+        offset += decorrelationPush;
       }
     } catch {
       // Snapshot access is optional during early boot and tests.
