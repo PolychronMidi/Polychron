@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-24T13:46:29.223Z",
+    "generated": "2026-03-25T00:53:48.836Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2975,
-    "totalEdges": 2339,
-    "crossSubsystemEdges": 1561,
+    "totalConsumes": 2985,
+    "totalEdges": 2353,
+    "crossSubsystemEdges": 1573,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 984
+        "consumes": 987
       },
       "rhythm": {
         "files": 30,
@@ -52,12 +52,12 @@
       "fx": {
         "files": 23,
         "provides": 56,
-        "consumes": 238
+        "consumes": 234
       },
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 371
+        "consumes": 382
       },
       "writer": {
         "files": 4,
@@ -1274,6 +1274,7 @@
         "m",
         "pipelineCouplingManager",
         "safePreBoot",
+        "sectionIndex",
         "velocity"
       ]
     },
@@ -1324,6 +1325,8 @@
         "entropyMetrics",
         "explainabilityBus",
         "m",
+        "regimeClassifier",
+        "safePreBoot",
         "signalReader",
         "timeStream",
         "totalSections",
@@ -5639,8 +5642,6 @@
         "BINAURAL",
         "LM",
         "absoluteTimeGrid",
-        "allCHs",
-        "beatCount",
         "beatStartTime",
         "binauralFreqOffset",
         "binauralMinus",
@@ -5648,7 +5649,6 @@
         "binauralPlus",
         "c",
         "crossLayerHelpers",
-        "drumCH",
         "firstLoop",
         "flipBin",
         "flipBinF2",
@@ -5663,7 +5663,6 @@
         "rCH5",
         "rf",
         "rl",
-        "tpSec",
         "traceDrain",
         "validator",
         "velocity"
@@ -6110,6 +6109,7 @@
         "dynamicRoleSwap",
         "m",
         "sectionIntentCurves",
+        "systemDynamicsProfiler",
         "timeStream",
         "tpBeat",
         "validator"
@@ -6148,7 +6148,9 @@
         "m",
         "phaseFloorController",
         "pipelineCouplingManager",
+        "regimeClassifier",
         "rf",
+        "safePreBoot",
         "validator"
       ]
     },
@@ -6161,6 +6163,7 @@
       "consumes": [
         "absoluteTimeWindow",
         "clamp",
+        "conductorSignalBridge",
         "crossLayerHelpers",
         "crossLayerRegistry",
         "rf",
@@ -6183,6 +6186,7 @@
         "dynamicRoleSwap",
         "m",
         "sectionIntentCurves",
+        "systemDynamicsProfiler",
         "validator"
       ]
     },
@@ -6204,6 +6208,8 @@
         "crossLayerHelpers",
         "crossLayerRegistry",
         "m",
+        "regimeClassifier",
+        "safePreBoot",
         "sectionIndex",
         "totalSections",
         "validator",
@@ -6236,8 +6242,10 @@
         "m",
         "phaseFloorController",
         "pipelineCouplingManager",
+        "safePreBoot",
         "sectionIndex",
         "sectionIntentCurves",
+        "systemDynamicsProfiler",
         "timeStream",
         "totalSections",
         "validator"
@@ -6273,6 +6281,8 @@
         "p",
         "phaseFloorController",
         "pipelineCouplingManager",
+        "safePreBoot",
+        "systemDynamicsProfiler",
         "timeStream",
         "totalSections",
         "validator"
@@ -11717,6 +11727,27 @@
     },
     {
       "from": "src/conductor/signal/profiling/regimeClassifier.js",
+      "to": "src/conductor/signal/profiling/systemDynamicsProfilerHelpers.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/regimeClassifier.js",
+      "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/regimeClassifier.js",
+      "to": "src/crossLayer/dynamics/velocityInterference.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/regimeClassifier.js",
       "to": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
       "globals": [
         "regimeClassifier"
@@ -11878,6 +11909,13 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/dynamics/articulationComplement.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -11892,7 +11930,28 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/dynamics/texturalMirror.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/structure/form/sectionIntentCurves.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -12103,6 +12162,13 @@
     {
       "from": "src/crossLayer/conductorSignalBridge.js",
       "to": "src/crossLayer/crossLayerLifecycleManager.js",
+      "globals": [
+        "conductorSignalBridge"
+      ]
+    },
+    {
+      "from": "src/crossLayer/conductorSignalBridge.js",
+      "to": "src/crossLayer/dynamics/restSynchronizer.js",
       "globals": [
         "conductorSignalBridge"
       ]
@@ -14327,6 +14393,13 @@
       "to": "src/conductor/signal/output/systemManifest.js",
       "globals": [
         "totalSections"
+      ]
+    },
+    {
+      "from": "src/play/main.js",
+      "to": "src/conductor/signal/profiling/regimeClassifierClassification.js",
+      "globals": [
+        "sectionIndex"
       ]
     },
     {
@@ -19994,10 +20067,7 @@
       "from": "src/utils/init.js",
       "to": "src/fx/setBinaural.js",
       "globals": [
-        "allCHs",
-        "beatCount",
         "beatStartTime",
-        "drumCH",
         "flipBin",
         "flipBinF2",
         "flipBinT2",
@@ -20007,7 +20077,6 @@
         "rCH1",
         "rCH3",
         "rCH5",
-        "tpSec",
         "velocity"
       ]
     },
@@ -22067,6 +22136,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/signal/profiling/systemDynamicsProfilerHelpers.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/texture/form/sectionLengthAdvisor.js",
       "globals": [
         "safePreBoot"
@@ -22081,7 +22157,35 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/dynamics/velocityInterference.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/structure/form/sectionIntentCurves.js",
       "globals": [
         "safePreBoot"
       ]

@@ -61,6 +61,18 @@ crossLayerDynamicEnvelope = (() => {
     // Modulate by interaction trend (hot system - slightly louder)
     targetScale += clamp(trend.slope, -0.5, 0.5) * 0.15;
 
+    // R92 E3: Regime-responsive envelope amplitude. Exploring passages
+    // benefit from wider dynamic swings (more dramatic crescendo/decrescendo),
+    // coherent passages from tighter, more unified dynamics. This creates
+    // distinct dynamic characters per regime without changing arc type.
+    const snap = systemDynamicsProfiler.getSnapshot();
+    const envelopeRegime = snap ? snap.regime : 'exploring';
+    const regimeAmplitude = envelopeRegime === 'exploring' ? 1.20
+      : envelopeRegime === 'coherent' ? 0.85
+      : 1.0;
+    // Scale the deviation from neutral (1.0) by regime amplitude
+    targetScale = 1.0 + (targetScale - 1.0) * regimeAmplitude;
+
     targetScale = clamp(targetScale, 0.4, 1.6);
 
     // Smooth the transition (initialize on first call per layer)

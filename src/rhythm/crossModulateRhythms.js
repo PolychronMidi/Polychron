@@ -55,7 +55,15 @@ crossModulateRhythms = () => {
     if (profSnap.regime === 'coherent') {
       crossModulation *= 0.85;
     } else if (profSnap.regime === 'evolving') {
-      crossModulation *= 1.20;
+      // R94 E5: Evolving cross-mod 1.20->1.30. Evolving starved at 7.5%.
+      // Stronger rhythmic contrast during evolving passages makes them
+      // more musically distinct, improving regime perceptibility.
+      crossModulation *= 1.30;
+    } else if (profSnap.regime === 'exploring') {
+      // R89 E4: Exploring rhythmic cross-mod boost. Exploring is 36% of
+      // beats but had no rhythmic regime response. Mild boost increases
+      // polyrhythmic variety during exploratory passages.
+      crossModulation *= 1.15;
     }
   }
 }

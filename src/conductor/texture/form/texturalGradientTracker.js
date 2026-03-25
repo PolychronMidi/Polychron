@@ -57,6 +57,10 @@ texturalGradientTracker = (() => {
     // flickerMod: rapid changes - widen flicker to accommodate transition,
     // stable - narrow flicker for consistency (continuous ramp, no step)
     let flickerMod = 1;
+    // R93 E4 REVERTED (R94 E2): Regime-responsive flickerMod contributed
+    // to regime collapse (exploring 41.1%->17.7%) by double-reducing flicker
+    // during exploring (combined with regimeReactiveDamping E1). Gradient
+    // tracker's natural flickerMod behavior is already well-calibrated.
     if (absGradient > 0.15) {
       flickerMod = clamp(1 + absGradient * 0.3, 1, 1.15);
     } else if (absGradient < 0.03) {

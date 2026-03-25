@@ -57,7 +57,18 @@ restSynchronizer = (() => {
     const regimeBonus = regime === 'coherent' ? SHARED_REST_COHERENT_BONUS
       : regime === 'exploring' ? -SHARED_REST_EXPLORING_PENALTY
       : 0;
-    const restProb = (SHARED_REST_BASE + regimeBonus) * (1 + restUrgency);
+    // R93 E3: Conductor density interaction. Real-time conductor density
+    // (0.3-0.7 range) drives rest probability: higher density increases
+    // rest likelihood, creating natural breathing room in dense passages.
+    // This is a negative-feedback path: density -> rests -> effective density
+    // reduction. Contributes to density-trust decorrelation since rest
+    // events affect trust payoffs independently of flicker behavior.
+    const conductorSigs = conductorSignalBridge.getSignals();
+    const conductorDensity = V.optionalFinite(conductorSigs.density, 1.0);
+    // densityProduct is a multiplicative modifier centered around 1.0 (range ~0.5-1.8).
+    // Above 1.0 = denser, below 1.0 = sparser. Scale modestly.
+    const densityRestBoost = clamp((conductorDensity - 1.0) * 0.08, -0.04, 0.04);
+    const restProb = (SHARED_REST_BASE + regimeBonus + densityRestBoost) * (1 + restUrgency);
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';

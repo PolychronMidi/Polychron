@@ -50,8 +50,13 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // R69 E4: Regime-responsive rhythm novelty. During evolving, apply
     // an extra novelty boost (double the penalty) to push rhythmic variety.
     // During coherent, reduce the penalty (more repetition is OK for stability).
+    // R79 E2: Add exploring-specific variety boost. Exploring regime now also
+    // gets a novelty penalty pass, creating rhythmic diversity during exploratory
+    // passages. This untouched subsystem (since R69) now differentiates all 3
+    // active regimes rhythmically: evolving=double penalty, exploring=single
+    // extra penalty, coherent=baseline repetition allowed.
     const profSnap = systemDynamicsProfiler.getSnapshot();
-    if (profSnap && profSnap.regime === 'evolving') {
+    if (profSnap && (profSnap.regime === 'evolving' || profSnap.regime === 'exploring')) {
       rhythmSource = rhythmHistoryTracker.penalizeRepetition(rhythmSource);
     }
 

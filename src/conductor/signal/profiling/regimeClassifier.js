@@ -13,9 +13,15 @@ regimeClassifier = (() => {
     REGIME_TARGET_COHERENT_LO: 0.10,
     REGIME_TARGET_COHERENT_HI: 0.35,
     REGIME_TARGET_EVOLVING_LO: 0.14,
-    REGIME_SCALE_NUDGE: 0.008,
+    // R85 E3: Expand coherent self-balancer headroom. coherentThresholdScale
+    // auto-adjusts to steer coherent share toward [0.10, 0.35] target. At
+    // cap 1.20, the balancer maxes out at +20% threshold which is insufficient
+    // when coupling strength is inflated (R83 E2 trust velocity amplification
+    // added a 6th responsive dimension). Cap 1.40 gives 40% headroom.
+    // Nudge 0.008->0.012 for faster convergence toward target.
+    REGIME_SCALE_NUDGE: 0.012,
     REGIME_SCALE_MIN: 0.55,
-    REGIME_SCALE_MAX: 1.20,
+    REGIME_SCALE_MAX: 1.40,
     COHERENT_SHARE_ALPHA_INIT: 0.05,
     COHERENT_SHARE_ALPHA_DECAY: 80,
     EXPLORING_MAX_DWELL: 180,
@@ -56,6 +62,7 @@ regimeClassifier = (() => {
       cadenceMonopolyActive: false,
       cadenceMonopolyReason: '',
       postForcedRecoveryBeats: 0,
+      postForcedCooldown: 0,
       evolvingProximityBonus: 0,
       coherentMomentumBeats: 0,
       coherentShareAlphaMin: 0.025,
@@ -77,6 +84,8 @@ regimeClassifier = (() => {
       highDimVelStreak: 0,
       dimEma: 3.0,
       dimStdEma: 0.3,
+      velocityEma: 0.05,
+      velocityStdEma: 0.02,
       coherentBlockStreak: 0,
       rawRegimeCounts: {},
       runRawRegimeCounts: {},

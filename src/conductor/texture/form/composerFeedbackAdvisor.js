@@ -161,20 +161,32 @@ composerFeedbackAdvisor = (() => {
         }
       }
     } else if (signals.currentRegime === 'coherent') {
+      // R89 E5: Coherent composer palette expansion. Coherent is 48.5% of
+      // beats. Adding pentatonic at 1.15x injects exotic intervallic color
+      // into the dominant regime, complementing existing harmonic/modal/tonal/
+      // melodic emphasis (1.20x). This creates richer harmonic motion during
+      // coherent passages without destabilizing their stable character.
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
         if (fam.includes('harmonic') || fam.includes('modal') || fam.includes('tonal') || fam.includes('melodic')) {
           weights[fam] = clamp((weights[fam] || 1.0) * 1.20, 0.3, 2.0);
+        } else if (fam.includes('pentatonic')) {
+          weights[fam] = clamp((weights[fam] || 1.0) * 1.15, 0.3, 2.0);
         }
       }
     } else if (signals.currentRegime === 'exploring') {
-      // R76 E3: Boost exploring family weight 1.15->1.22 and add blues
-      // to encourage wider timbral exploration during exploring regime.
-      // R78 E4: Add 'tension' family for harmonic tension variety during exploring.
+      // R76 E3 / R87 E4: Exploring composer distinctiveness. Previously
+      // exploring and evolving shared chromatic/tension families (1.22x).
+      // Now exploring emphasizes exotic interval families (pentatonic,
+      // quartal, blues) at 1.30x while dropping chromatic/tension overlap
+      // with evolving. This gives exploring a distinct exotic/modal color
+      // vs evolving's chromatic/tension intensity.
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
-        if (fam.includes('rhythmic') || fam.includes('chromatic') || fam.includes('quartal') || fam.includes('pentatonic') || fam.includes('blues') || fam.includes('tension')) {
-          weights[fam] = clamp((weights[fam] || 1.0) * 1.22, 0.3, 2.0);
+        if (fam.includes('pentatonic') || fam.includes('quartal') || fam.includes('blues') || fam.includes('modal')) {
+          weights[fam] = clamp((weights[fam] || 1.0) * 1.30, 0.3, 2.0);
+        } else if (fam.includes('rhythmic')) {
+          weights[fam] = clamp((weights[fam] || 1.0) * 1.15, 0.3, 2.0);
         }
       }
     }

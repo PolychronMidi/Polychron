@@ -29,7 +29,7 @@ const PRE_COMPOSITION = [
 
 const COMPOSITION = {
   label: 'composition',
-  cmd:   'node scripts/run-with-log.js main.log node src/play/main.js',
+  cmd:   'node scripts/run-with-log.js main.log node src/play/main.js --trace',
 };
 
 const POST_COMPOSITION = [
