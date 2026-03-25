@@ -37,17 +37,24 @@ phaseFloorController = (() => {
    */
   function getLowShareThreshold() {
     const fairShare = 1.0 / 6.0;
-    const persistentLowSharePressure = clamp((0.06 - phaseFloorControllerShareEma) / 0.06, 0, 1);
-    // R5 E3: Add fair-share-relative floor (fairShare * 0.65 = 0.108) to
-    // prevent adaptive threshold from decaying below moderate-suppression
-    // detection. Without this, shareEma * 0.45 tracks the declining share
-    // downward, creating a self-reinforcing blind spot: phase drops -> EMA
-    // drops -> threshold drops -> controller never fires -> phase drops further.
-    // The fairShare anchor ensures the controller always detects shares below
-    // ~65% of fair share regardless of how low the EMA has adapted.
+    // R17 E1: Raised threshold 0.06->0.12 to match computeBoosts widening.
+    // Ensures the lowShareThreshold formula also responds to moderate
+    // phase deficit, not just extreme collapse.
+    const persistentLowSharePressure = clamp((0.12 - phaseFloorControllerShareEma) / 0.12, 0, 1);
+    // R5 E3: Add fair-share-relative floor to prevent adaptive threshold from
+    // decaying below moderate-suppression detection. Without this, shareEma *
+    // 0.45 tracks the declining share downward, creating a self-reinforcing
+    // blind spot: phase drops -> EMA drops -> threshold drops -> controller
+    // never fires -> phase drops further.
+    // R8 E1: Raised anchor from fairShare * 0.65 (0.108) to fairShare * 0.80
+    // (0.133) and upper clamp from 0.12 to 0.14. Phase at 0.132 was in a
+    // blind zone: above the 0.108 threshold but well below fair share (0.167).
+    // The controller never fired, allowing chronic mid-suppression. The new
+    // anchor detects shares below ~80% of fair share; the raised clamp allows
+    // the threshold to reach the necessary level.
     return clamp(
-      m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030, fairShare * 0.65),
-      0.02, 0.12
+      m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030, fairShare * 0.80),
+      0.02, 0.14
     );
   }
 
@@ -88,8 +95,12 @@ phaseFloorController = (() => {
   function computeBoosts(share, phaseLowShareStreak, phaseCollapseStreak) {
     const fairShare = 1.0 / 6.0;
     const deficitRatio = clamp((fairShare - share) / fairShare, 0, 1);
-    const persistentLowSharePressure = clamp((0.05 - phaseFloorControllerShareEma) / 0.05, 0, 1);
-    const severeLowSharePressure = clamp((0.06 - share) / 0.06, 0, 1);
+    // R17 E1: Raised persistent threshold 0.05->0.10 and severe threshold
+    // 0.06->0.12. Phase at 0.101 gave zero contribution from both terms
+    // (both below their thresholds). Wider detection catches moderate
+    // deficit (8-12% share range) and strengthens the boost formula.
+    const persistentLowSharePressure = clamp((0.10 - phaseFloorControllerShareEma) / 0.10, 0, 1);
+    const severeLowSharePressure = clamp((0.12 - share) / 0.12, 0, 1);
     // Recovery success dampens boost (if previous boosts recovered phase, be less aggressive)
     // Recovery failure amplifies boost (if previous boosts didn't work, push harder)
     const recoveryFactor = clamp(2.2 - phaseFloorControllerRecoverySuccessEma * 1.5 + persistentLowSharePressure * 0.55, 1.0, 2.6);

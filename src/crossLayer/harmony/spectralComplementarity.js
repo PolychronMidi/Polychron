@@ -8,7 +8,10 @@ spectralComplementarity = (() => {
   const CHANNEL = 'spectral';
   const REGISTER_BINS = 4; // bass(0-35), low-mid(36-59), high-mid(60-83), treble(84-108)
   const WINDOW_NOTES = 30; // rolling window size
-  const NUDGE_STRENGTH = 0.4; // max probability of register nudge
+  // R10 E4: Raised from 0.4 to 0.55 for stronger spectral gap filling.
+  // Wider register separation between layers enriches harmonic texture by
+  // ensuring combined output covers bass-to-treble more completely.
+  const NUDGE_STRENGTH = 0.55; // max probability of register nudge
 
   /** @type {Map<string, number[]>} recent MIDI notes per layer */
   const noteHistory = new Map();

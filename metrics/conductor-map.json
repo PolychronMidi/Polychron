@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-25T05:14:10.998Z",
+    "generated": "2026-03-25T07:53:50.672Z",
     "description": "Conductor Intelligence Map: per-module registry of signals, biases, domains, and scopes.",
     "totalModules": 78
   },
@@ -11,6 +11,7 @@
       "file": "src/conductor/melodic/ambitusMigrationTracker.js",
       "registrations": [
         "density",
+        "flicker",
         "recorder",
         "stateProvider"
       ],
@@ -22,6 +23,10 @@
         "density": {
           "raw": 0.94,
           "clamped": 0.94
+        },
+        "flicker": {
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -85,8 +90,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 1.075,
+          "clamped": 1.075
         }
       }
     },
@@ -124,8 +129,8 @@
           "clamped": 0.88
         },
         "tension": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.9,
+          "clamped": 0.9
         }
       }
     },
@@ -207,8 +212,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.146996996996997,
-          "clamped": 1.146996996996997
+          "raw": 1.181981981981982,
+          "clamped": 1.181981981981982
         }
       }
     },
@@ -313,8 +318,8 @@
       ],
       "biasValues": {
         "flicker": {
-          "raw": 0.9864159797350945,
-          "clamped": 0.9864159797350945
+          "raw": 0.9726008117075614,
+          "clamped": 0.9726008117075614
         }
       }
     },
@@ -338,16 +343,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0002501879778705,
-          "clamped": 1.0002501879778705
+          "raw": 1.003165865384831,
+          "clamped": 1.003165865384831
         },
         "tension": {
-          "raw": 0.9888151373154587,
-          "clamped": 0.9888151373154587
+          "raw": 1.0000000805445208,
+          "clamped": 1.0000000805445208
         },
         "flicker": {
-          "raw": 0.9979915281979106,
-          "clamped": 0.9979915281979106
+          "raw": 0.9792279417273857,
+          "clamped": 0.9792279417273857
         }
       }
     },
@@ -356,12 +361,17 @@
       "domain": "dynamics",
       "file": "src/conductor/dynamics/durationalContourTracker.js",
       "registrations": [
+        "tension",
         "flicker",
         "stateProvider"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        },
         "flicker": {
           "raw": 1,
           "clamped": 1
@@ -383,8 +393,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0840722870218498,
-          "clamped": 1.0840722870218498
+          "raw": 1.0674305549299332,
+          "clamped": 1.0674305549299332
         }
       }
     },
@@ -403,8 +413,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0407291666666667,
-          "clamped": 1.0407291666666667
+          "raw": 1.1199999999999999,
+          "clamped": 1.1199999999999999
         }
       }
     },
@@ -413,6 +423,8 @@
       "domain": "dynamics",
       "file": "src/conductor/dynamics/dynamicRangeTracker.js",
       "registrations": [
+        "density",
+        "tension",
         "flicker",
         "recorder"
       ],
@@ -420,7 +432,16 @@
         "section"
       ],
       "signalReads": [],
-      "biasValues": {}
+      "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
     },
     {
       "name": "dynamicRangeTracker:contrast",
@@ -431,8 +452,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0144230769230769,
-          "clamped": 1.0144230769230769
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -445,8 +466,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.984,
-          "clamped": 0.984
+          "raw": 0.9904,
+          "clamped": 0.9904
         }
       }
     },
@@ -456,6 +477,7 @@
       "file": "src/conductor/dynamics/energyMomentumTracker.js",
       "registrations": [
         "density",
+        "tension",
         "recorder"
       ],
       "scopes": [
@@ -466,6 +488,10 @@
       ],
       "biasValues": {
         "density": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "tension": {
           "raw": 1,
           "clamped": 1
         }
@@ -482,8 +508,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0066,
-          "clamped": 1.0066
+          "raw": 1.0026,
+          "clamped": 1.0026
         }
       }
     },
@@ -562,8 +588,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.025,
-          "clamped": 1.025
+          "raw": 0.953125,
+          "clamped": 0.953125
         }
       }
     },
@@ -605,8 +631,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 0.9773654204007676,
-          "clamped": 0.9773654204007676
+          "raw": 0.9457895704611722,
+          "clamped": 0.9457895704611722
         }
       }
     },
@@ -623,8 +649,8 @@
       ],
       "biasValues": {
         "tension": {
-          "raw": 0.88,
-          "clamped": 0.88
+          "raw": 1.12,
+          "clamped": 1.12
         }
       }
     },
@@ -674,8 +700,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.9354554554554555,
-          "clamped": 0.9354554554554555
+          "raw": 0.9294494494494494,
+          "clamped": 0.9294494494494494
         }
       }
     },
@@ -694,8 +720,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.92,
-          "clamped": 0.92
+          "raw": 1.08,
+          "clamped": 1.08
         }
       }
     },
@@ -754,6 +780,7 @@
       "file": "src/conductor/melodic/melodicContourTracker.js",
       "registrations": [
         "density",
+        "flicker",
         "recorder",
         "stateProvider"
       ],
@@ -765,6 +792,10 @@
         "density": {
           "raw": 1.02,
           "clamped": 1.02
+        },
+        "flicker": {
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -805,8 +836,8 @@
       ],
       "biasValues": {
         "tension": {
-          "raw": 1.099647375177211,
-          "clamped": 1.099647375177211
+          "raw": 1.1536978201058203,
+          "clamped": 1.1470000000000002
         }
       }
     },
@@ -905,12 +936,12 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.045298988607398,
-          "clamped": 1.045298988607398
+          "raw": 1.0439583174442653,
+          "clamped": 1.0439583174442653
         },
         "tension": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.9252691253418239,
+          "clamped": 0.9252691253418239
         }
       }
     },
@@ -933,12 +964,12 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0868138942855698,
-          "clamped": 1.0868138942855698
+          "raw": 1.0167861004763412,
+          "clamped": 1.0167861004763412
         },
         "tension": {
-          "raw": 0.9339911385668394,
-          "clamped": 0.9339911385668394
+          "raw": 1.06,
+          "clamped": 1.06
         },
         "flicker": {
           "raw": 0.95,
@@ -997,16 +1028,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.12,
-          "clamped": 1.12
+          "raw": 1.0782040449753914,
+          "clamped": 1.0782040449753914
         },
         "tension": {
-          "raw": 0.88,
-          "clamped": 0.88
+          "raw": 1.0635512092435697,
+          "clamped": 1.0635512092435697
         },
         "flicker": {
-          "raw": 1.22,
-          "clamped": 1.22
+          "raw": 1.1130774298021742,
+          "clamped": 1.1130774298021742
         }
       }
     },
@@ -1021,8 +1052,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9405053320017246,
-          "clamped": 0.9405053320017246
+          "raw": 0.9606251680550083,
+          "clamped": 0.9606251680550083
         }
       }
     },
@@ -1040,8 +1071,8 @@
       ],
       "biasValues": {
         "tension": {
-          "raw": 1.083316807565554,
-          "clamped": 1.083316807565554
+          "raw": 1.076194297177246,
+          "clamped": 1.076194297177246
         }
       }
     },
@@ -1075,8 +1106,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.9,
+          "clamped": 0.9
         }
       }
     },
@@ -1095,8 +1126,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0177958002864684,
-          "clamped": 1.0177958002864684
+          "raw": 1.0721028264679684,
+          "clamped": 1.0721028264679684
         }
       }
     },
@@ -1203,8 +1234,8 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0775,
-          "clamped": 1.0775
+          "raw": 1.135625,
+          "clamped": 1.135625
         }
       }
     },
@@ -1214,14 +1245,19 @@
       "file": "src/conductor/rhythmic/syncopationDensityTracker.js",
       "registrations": [
         "density",
+        "flicker",
         "stateProvider"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.88,
-          "clamped": 0.88
+          "raw": 1,
+          "clamped": 1
+        },
+        "flicker": {
+          "raw": 1.07101,
+          "clamped": 1.07101
         }
       }
     },
@@ -1265,8 +1301,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.025,
-          "clamped": 1.025
+          "raw": 1.0611111111111111,
+          "clamped": 1.0611111111111111
         }
       }
     },
@@ -1282,8 +1318,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.94,
-          "clamped": 0.94
+          "raw": 0.95692,
+          "clamped": 0.95692
         }
       }
     },
@@ -1301,8 +1337,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9701141130027483,
-          "clamped": 0.9701141130027483
+          "raw": 0.9608715236828115,
+          "clamped": 0.9608715236828115
         }
       }
     },
@@ -1346,8 +1382,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 0.9916666666666667,
-          "clamped": 0.9916666666666667
+          "raw": 1.0783333333333334,
+          "clamped": 1.0783333333333334
         }
       }
     },
@@ -1356,6 +1392,7 @@
       "domain": "dynamics",
       "file": "src/conductor/dynamics/velocityShapeAnalyzer.js",
       "registrations": [
+        "tension",
         "flicker",
         "stateProvider"
       ],
@@ -1364,9 +1401,13 @@
         "systemDynamics"
       ],
       "biasValues": {
-        "flicker": {
+        "tension": {
           "raw": 1,
           "clamped": 1
+        },
+        "flicker": {
+          "raw": 0.9927272510605843,
+          "clamped": 0.9927272510605843
         }
       }
     },

@@ -134,8 +134,13 @@ phaseLockedRhythmGenerator = (() => {
       const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number'
         ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
         : 0;
+      // R8 E4: Lowered FP containment threshold from 0.72 to 0.45 and widened
+      // divisor from 0.16 to 0.25. FP correlation was the only persistent
+      // increasing correlation (R6: 0.421, R7: 0.473) with no containment
+      // activating until 0.72. The new threshold begins gentle containment at
+      // FP > 0.45, graduating to full pressure at 0.70.
       const flickerPhasePressure = couplingMatrix && typeof couplingMatrix['flicker-phase'] === 'number'
-        ? clamp((m.abs(couplingMatrix['flicker-phase']) - 0.72) / 0.16, 0, 1)
+        ? clamp((m.abs(couplingMatrix['flicker-phase']) - 0.45) / 0.25, 0, 1)
         : 0;
       const phaseRecoveryCredit = clamp((phaseShare - 0.09) / 0.05, 0, 1);
       const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'

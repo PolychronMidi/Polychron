@@ -36,8 +36,10 @@ adaptiveTrustScores = (() => {
   const _DISENGAGE_THRESHOLD = 0.003;       // 3x threshold for hysteresis disengage
   const _DISENGAGE_BEATS = 50;              // beats above disengage threshold before stopping
   const _STAGNATION_BEATS_TRIGGER = 70;     // R33 E2: 100->70 faster recovery of stuck systems
-  // R95 E4: Regime-responsive stagnation trigger -- nurture starved systems faster during exploring
-  const STAGNATION_BEATS_REGIME = { exploring: 50, evolving: 70, coherent: 100 };
+  // R16 E4: Lower coherent trigger 100->70. With coherent at 50.7% in R15,
+  // trust starvation is waiting too long to nourish during coherent passages.
+  // maxConsecutiveCoherent was 72 beats -- barely exceeds old 100 threshold.
+  const STAGNATION_BEATS_REGIME = { exploring: 50, evolving: 70, coherent: 70 };
   const _BASE_NOURISHMENT_STRENGTH = 0.15;  // max synthetic payoff scaling
   const _MIN_NOURISHMENT_STRENGTH = 0.05;   // floor after decay
   const _NOURISHMENT_DECAY = 0.90;          // 10% decay per application

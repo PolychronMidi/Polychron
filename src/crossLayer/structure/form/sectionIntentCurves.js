@@ -39,7 +39,11 @@ sectionIntentCurves = (() => {
   // sections. During coherent, lower it to allow tighter entropy ranges.
   // This creates regime-dependent entropy variety at the intent level,
   // helping recover entropy axis share (collapsed 0.193->0.114 in R93).
-  const ENTROPY_FLOOR_REGIME = { exploring: 0.22, evolving: 0.20, coherent: 0.12 };
+  // R18 E2: Raised all floors (exploring 0.22->0.28, evolving 0.20->0.25,
+  // coherent 0.12->0.18). Entropy axis share dropped to 0.123 in R17,
+  // lowest recent. Higher intent floors prevent entropy from being crushed
+  // in any regime, particularly during coherent passages (46.6% of beats).
+  const ENTROPY_FLOOR_REGIME = { exploring: 0.28, evolving: 0.25, coherent: 0.18 };
 
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
   let lastIntent = {

@@ -80,6 +80,18 @@ syncopationDensityTracker = (() => {
     const b = syncopationDensityTracker.getRhythmBias();
     return b.syncopationBias > 1.0 ? 1.12 : (b.syncopationBias < 1.0 ? 0.88 : 1.0);
   }, 0.88, 1.12);
+  // R13 E3: Flicker bias from syncopation. Syncopated passages (off-beat
+  // dominant) inject flicker variation (1.08) -- rhythmic displacement
+  // pairs with timbral excitement. Monotonous patterns (all on-beat)
+  // get flicker reduction (0.94) -- steady rhythm with simpler timbre.
+  // This couples rhythmic character to timbral texture.
+  conductorIntelligence.registerFlickerModifier('syncopationDensityTracker', () => {
+    const p = syncopationDensityTracker.getSyncopationProfile();
+    if (p.excessive) return 1.08;
+    if (p.monotonous) return 0.94;
+    if (p.syncopationRatio > 0.40) return 1.0 + (p.syncopationRatio - 0.40) * 0.27;
+    return 1.0;
+  }, 0.92, 1.10);
 
   return {
     getSyncopationProfile,

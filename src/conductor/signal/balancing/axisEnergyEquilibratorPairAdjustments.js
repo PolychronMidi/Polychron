@@ -1,4 +1,40 @@
 axisEnergyEquilibratorPairAdjustments = (() => {
+  // R19 E4: Axis-aware giniMult dampening. Compute dominant axis from
+  // energy shares so giniMult preferentially targets pairs involving the
+  // dominant axis, protecting non-dominant axes from over-tightening.
+  // When flicker is dominant (0.219), flicker pairs feel full giniMult
+  // while tension pairs (non-dominant) get dampened giniMult, preserving
+  // tension peaks. Factor: pairs with 0 dominant axes get 0.5x giniMult
+  // excess; pairs with 1 get 0.75x; pairs with 2 get full 1.0x.
+  const GINI_DAMPEN_0 = 0.5;
+  const GINI_DAMPEN_1 = 0.75;
+
+  function getDominantAxes(shares) {
+    if (!shares) return [];
+    let maxShare = 0;
+    let secondShare = 0;
+    let maxAxis = '';
+    let secondAxis = '';
+    const axes = Object.keys(shares);
+    for (let i = 0; i < axes.length; i++) {
+      const s = shares[axes[i]];
+      if (typeof s === 'number' && s > maxShare) {
+        secondShare = maxShare;
+        secondAxis = maxAxis;
+        maxShare = s;
+        maxAxis = axes[i];
+      } else if (typeof s === 'number' && s > secondShare) {
+        secondShare = s;
+        secondAxis = axes[i];
+      }
+    }
+    // Only count an axis as "dominant" if it exceeds fair share (1/6 ~ 0.167)
+    const result = [];
+    if (maxAxis && maxShare > 0.167) result.push(maxAxis);
+    if (secondAxis && secondShare > 0.167) result.push(secondAxis);
+    return result;
+  }
+
   function apply(state, config, context, V) {
     for (let i = 0; i < config.ALL_PAIRS.length; i++) {
       const pair = config.ALL_PAIRS[i];
@@ -50,7 +86,22 @@ axisEnergyEquilibratorPairAdjustments = (() => {
         )
           ? 1 + context.nonNudgeableTailPressure * (isEntropySurfacePair ? 0.70 : (isPhaseSurfacePair || isTrustSurfacePair ? 0.52 : 0.32))
           : 1.0;
-        const rate = config.PAIR_TIGHTEN_RATE * pairTightenScale * context.giniMult * phaseSurfaceBoost * flickerPhaseBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * nonNudgeableHandOffBoost * (1 + residualTightenPressure * config.RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - config.HOTSPOT_RATIO, 0.5, 3.0);
+        // R19 E4: Axis-aware giniMult dampening. Only apply full giniMult
+        // excess to pairs involving the dominant axis. Non-dominant pairs
+        // get dampened giniMult to preserve their signal headroom (e.g.
+        // tension peaks when flicker is dominant).
+        const domAxes = getDominantAxes(context.shares);
+        let pairGiniMult = context.giniMult;
+        if (domAxes.length > 0 && pairGiniMult > 1.0) {
+          const pairParts = pair.split('-');
+          let domCount = 0;
+          for (let d = 0; d < domAxes.length; d++) {
+            if (pairParts[0] === domAxes[d] || pairParts[1] === domAxes[d]) domCount++;
+          }
+          const dampen = domCount >= 2 ? 1.0 : domCount === 1 ? GINI_DAMPEN_1 : GINI_DAMPEN_0;
+          pairGiniMult = 1.0 + (pairGiniMult - 1.0) * dampen;
+        }
+        const rate = config.PAIR_TIGHTEN_RATE * pairTightenScale * pairGiniMult * phaseSurfaceBoost * flickerPhaseBoost * entropySurfaceBoost * rankBoost * coherentHotBoost * shortRunHandOffBoost * nonNudgeableHandOffBoost * (1 + residualTightenPressure * config.RESIDUAL_TIGHTEN_BONUS) * clamp(overshoot - config.HOTSPOT_RATIO, 0.5, 3.0);
         const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - rate);
         if (nextBaseline < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);

@@ -112,12 +112,41 @@ energyMomentumTracker = (() => {
     return nudge;
   }
 
+  // R11 E3: Tension bias from energy momentum. When momentum is stale or
+  // plateaued, inject tension contrast -- stale gets stronger push (1.12)
+  // to break monotony, plateau gets mild push (1.06). Rising momentum
+  // sustains mild elevation (1.04). Falling/steady returns 1.0 (neutral).
+  // This creates a new tension signal pathway from a module that previously
+  // only contributed density bias -- diversifying the tension signal surface.
+  // R12 E2: Phase-aware dampening. When phase share is above fair share
+  // (0.167), reduce the tension nudge proportionally to decorrelate
+  // tension-phase (was 0.560 increasing in R11). Prevents tension from
+  // tracking phase-correlated activity patterns.
+  function getTensionNudge() {
+    const mom = getMomentum();
+    let nudge = 1.0;
+    if (mom.stale) nudge = 1.12;
+    else if (mom.trend === 'plateaued') nudge = 1.06;
+    else if (mom.trend === 'rising' && mom.momentum > 0.10) nudge = 1.04;
+    if (nudge > 1.0) {
+      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
+        ? axisEnergy.shares.phase : 1.0 / 6.0;
+      if (phaseShare > 1.0 / 6.0) {
+        const phaseExcess = clamp((phaseShare - 1.0 / 6.0) / 0.05, 0, 1);
+        nudge = 1.0 + (nudge - 1.0) * (1.0 - phaseExcess * 0.5);
+      }
+    }
+    return nudge;
+  }
+
   /** Reset tracking. */
   function reset() {
     samples.length = 0;
   }
 
   conductorIntelligence.registerDensityBias('energyMomentumTracker', () => energyMomentumTracker.getDensityNudge(), 0.9, 1.3);
+  conductorIntelligence.registerTensionBias('energyMomentumTracker', () => energyMomentumTracker.getTensionNudge(), 0.95, 1.15);
   conductorIntelligence.registerRecorder('energyMomentumTracker', (ctx) => { energyMomentumTracker.recordEnergy(ctx.compositeIntensity, ctx.absTime); });
   conductorIntelligence.registerModule('energyMomentumTracker', { reset }, ['section']);
 
@@ -126,6 +155,7 @@ energyMomentumTracker = (() => {
     getMomentum,
     suggestAction,
     getDensityNudge,
+    getTensionNudge,
     reset
   };
 })();

@@ -105,9 +105,22 @@ climaxProximityPredictor = (() => {
   function getTensionBias() {
     const pred = predict();
     if (pred.premature) return 0.8;
-    // Ramp: proximity 0.4-1.0 - bias 1.0-1.25
-    if (pred.proximity <= 0.4) return 1.0;
-    return 1.0 + clamp((pred.proximity - 0.4) / 0.6, 0, 1) * 0.25;
+    // R17 E4: Post-climax tension receding. When energy is falling, pull
+    // tension back to create valleys after peaks. Previously only density
+    // had receding handling; tension stayed elevated after peaks, driving
+    // TF/TE exceedance (32+30 beats in R16).
+    if (pred.phase === 'receding') {
+      return 1.0 - clamp((1.0 - pred.proximity) * 0.20, 0, 0.10);
+    }
+    // R9 E3: Lowered onset from 0.4 to 0.25 to engage tension boost 60%
+    // earlier in the buildup. Opening tension arc dropped 0.736 to 0.648 in
+    // R8. Earlier engagement creates steeper opening arcs by ramping tension
+    // bias during the building phase instead of waiting for approaching.
+    // R19 E3: Raised ceiling from 0.25 to 0.30 multiplier (max 1.30).
+    // Fills the gap between the 1.25 ceiling and 1.30 registration bound.
+    // Combined with E1 (higher building target) creates more dramatic peaks.
+    if (pred.proximity <= 0.25) return 1.0;
+    return 1.0 + clamp((pred.proximity - 0.25) / 0.75, 0, 1) * 0.30;
   }
 
   conductorIntelligence.registerDensityBias('climaxProximityPredictor', () => climaxProximityPredictor.getDensityRampBias(), 0.82, 1.35);

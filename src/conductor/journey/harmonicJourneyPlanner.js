@@ -36,11 +36,18 @@ harmonicJourneyPlanner = (() => {
       // from regime dynamics rather than post-hoc palette breaks.
       const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
       const currentRegime = regimeSnap ? regimeSnap.regime : 'exploring';
-      const DARK_POOL = ['minor', 'dorian', 'phrygian', 'aeolian', 'minor', 'dorian'];
+      // R9 E4: Added locrian for maximum modal darkness during exploring.
+      // Locrian's diminished tonic creates extreme harmonic tension, enriching
+      // modal variety in exploring passages (previously 6 modes, now 7).
+      // R15 E4: Reduce minor bias (2/6->1/6), boost phrygian (1/6->2/6) for
+      // darker modal variety. R14 produced only major/minor despite diverse pools.
+      const DARK_POOL = ['minor', 'dorian', 'phrygian', 'aeolian', 'phrygian', 'locrian'];
       // R5 E4: Deduplicate BRIGHT_POOL. 'ionian' is identical to 'major'
       // (same scale), doubling major-quality probability (3/6 = 50%). Replace
       // 'ionian' with 'dorian' for modal color variety during coherent regime.
-      const BRIGHT_POOL = ['major', 'mixolydian', 'dorian', 'major', 'lydian', 'mixolydian'];
+      // R15 E4: Reduce major bias (2/6->1/6), boost lydian (1/6->2/6) for
+      // brighter modal color. Lydian's #4 creates distinctive harmonic character.
+      const BRIGHT_POOL = ['major', 'mixolydian', 'dorian', 'lydian', 'lydian', 'mixolydian'];
       const modePool = currentRegime === 'exploring' ? DARK_POOL
         : currentRegime === 'coherent' ? BRIGHT_POOL
         : START_MODE_POOL;
@@ -138,6 +145,31 @@ harmonicJourneyPlanner = (() => {
             continue;
           }
         }
+      }
+
+      // R8 E3: Minimum harmonic distance guard. When a move produces a key
+      // within 2 semitones, retry with development-pool moves to push wider
+      // harmonic motion. Skip during resolution (return-home cadences are
+      // naturally close). Increases pitchEntropy and audible key contrast.
+      const moveDistance = HJ.harmonicDistance(currentKey, nextKey);
+      if (moveDistance < 3 && phase !== 'resolution' && steps.length > 0) {
+        let appliedWiderKey = false;
+        const widerMoves = HJ.getMovePoolForPhase('development');
+        for (let dRetry = 0; dRetry < 3; dRetry++) {
+          const wFn = widerMoves[ri(widerMoves.length - 1)];
+          const wResult = wFn(currentKey, currentMode);
+          const wSimplified = t.Note.simplify(wResult.key);
+          const wKey = t.Note.pitchClass(wSimplified || wResult.key);
+          if (wKey && HJ.harmonicDistance(currentKey, wKey) >= 3) {
+            const wDist = HJ.harmonicDistance(currentKey, wKey);
+            currentKey = wKey;
+            currentMode = wResult.mode;
+            appendStep({ key: currentKey, mode: currentMode, move: wResult.move + ' (distance-push)', distance: wDist });
+            appliedWiderKey = true;
+            break;
+          }
+        }
+        if (appliedWiderKey) continue;
       }
 
       if (nextKey === currentKey) {

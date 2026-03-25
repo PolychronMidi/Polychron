@@ -11,7 +11,7 @@
 
 structuralNarrativeAdvisor = (() => {
 
-  const VARIETY_GAIN = 0.08;
+  const VARIETY_GAIN = 0.14;   // R14 E3: 0.08->0.14 stronger diversity pressure across composer families
   const MAX_HISTORY  = 32;
 
   /** @type {string[]} */

@@ -161,6 +161,28 @@ velocityShapeAnalyzer = (() => {
     return 1.0;
   }
 
+  // R10 E3: Register tension bias based on velocity trajectory. Crescendo
+  // shapes reinforce tension buildup; decrescendo shapes relax it. This
+  // creates coherent coupling between velocity trends and tension direction,
+  // making sections with rising velocity also get tension reinforcement.
+  function getTensionBias() {
+    const shape = getVelocityShape();
+    if (shape.shape === 'crescendo') {
+      // Rising velocity: ramp 1.0-1.08 based on slope magnitude
+      return 1.0 + clamp((shape.slope - 8) / 30, 0, 1) * 0.08;
+    }
+    if (shape.shape === 'decrescendo') {
+      // Falling velocity: ramp 1.0-0.94 based on slope magnitude
+      return 1.0 - clamp((m.abs(shape.slope) - 8) / 30, 0, 1) * 0.06;
+    }
+    if (shape.shape === 'arch') {
+      // Arch shape: mild boost for peaked dynamics
+      return 1.03;
+    }
+    return 1.0;
+  }
+
+  conductorIntelligence.registerTensionBias('velocityShapeAnalyzer', () => velocityShapeAnalyzer.getTensionBias(), 0.94, 1.08);
   conductorIntelligence.registerFlickerModifier('velocityShapeAnalyzer', () => velocityShapeAnalyzer.getFlickerModifier(), 0.85, 1.2);
   conductorIntelligence.registerStateProvider('velocityShapeAnalyzer', () => {
     const s = velocityShapeAnalyzer.getVelocityShape();
@@ -169,6 +191,7 @@ velocityShapeAnalyzer = (() => {
 
   return {
     getVelocityShape,
-    getFlickerModifier
+    getFlickerModifier,
+    getTensionBias
   };
 })();

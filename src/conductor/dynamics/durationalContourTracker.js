@@ -83,6 +83,29 @@ durationalContourTracker = (() => {
     return { durationBias: 1.0, flickerMod: 1.0 };
   }
 
+  // R11 E4: Tension bias from durational contour. Accelerating notes
+  // (durations getting shorter) naturally build intensity -- complement
+  // with mild tension increase (up to 1.08). Decelerating notes signal
+  // release -- mild tension reduction (down to 0.94). This couples
+  // rhythmic momentum with harmonic tension for musically coherent
+  // trajectory shaping. A new tension channel from an untouched module.
+  function getTensionBias() {
+    const contour = getDurationContour();
+    const beatDur = beatGridHelpers.getBeatDuration();
+    const normSlope = beatDur > 0 ? contour.slope / beatDur : 0;
+    if (normSlope < -0.02) {
+      const t = clamp((m.abs(normSlope) - 0.02) / 0.28, 0, 1);
+      return 1.0 + t * 0.08;
+    }
+    if (normSlope > 0.02) {
+      const t = clamp((normSlope - 0.02) / 0.28, 0, 1);
+      return 1.0 - t * 0.06;
+    }
+    return 1.0;
+  }
+
+  conductorIntelligence.registerTensionBias('durationalContourTracker', () => durationalContourTracker.getTensionBias(), 0.94, 1.08);
+
   conductorIntelligence.registerFlickerModifier('durationalContourTracker', () => {
     const b = durationalContourTracker.getDurationBias();
     return b ? b.flickerMod : 1;
@@ -94,6 +117,7 @@ durationalContourTracker = (() => {
 
   return {
     getDurationContour,
-    getDurationBias
+    getDurationBias,
+    getTensionBias
   };
 })();

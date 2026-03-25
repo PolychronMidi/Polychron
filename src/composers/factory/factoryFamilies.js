@@ -160,9 +160,11 @@ factoryFamilies = {
     const peerType = opts.peerComposer ? this.inferComposerType(opts.peerComposer) : null;
 
     let score = 1;
-    if (previousType && candidateConfig.type === previousType) score += 0.45;
+    // R14 E4: Reduce same-as-previous continuity bonus (0.45->0.25) and boost
+    // different-from-peer bonus (0.10->0.20) for more composer type variety.
+    if (previousType && candidateConfig.type === previousType) score += 0.25;
     if (peerType && candidateConfig.type === peerType) score -= 0.35;
-    if (previousType && peerType && previousType !== peerType && candidateConfig.type !== peerType) score += 0.1;
+    if (previousType && peerType && previousType !== peerType && candidateConfig.type !== peerType) score += 0.20;
 
     // Layer quality-driven adjustment from composerFeedbackAdvisor
     score *= composerFeedbackAdvisor.scoreCandidateAdjustment(candidateConfig);

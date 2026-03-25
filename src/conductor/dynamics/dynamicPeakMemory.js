@@ -59,12 +59,17 @@ dynamicPeakMemory = (() => {
     // Trough: timeSince 0-5 - ramp 1.04-1.0.
     let tensionBias = 1;
     if (lastPeak.type === 'peak') {
-      if (timeSince < 8) {
-        // Recent peak: ramp 0.92-0.96 over 0-8s
-        tensionBias = 0.92 + clamp(timeSince / 8, 0, 1) * 0.04 + longFormBuildPressure * 0.015;
+      // R17 E2: Extended post-peak suppression window 8->12. Creates
+      // longer tension valleys after peaks, improving dynamic contrast
+      // and reducing TF/TE exceedance in post-peak sections.
+      if (timeSince < 12) {
+        // R10 E1: Deeper post-peak suppression (0.88 vs 0.92) and stronger
+        // build ramp (1.12 vs 1.06). Creates more dramatic tension contrast
+        // between post-peak valleys and the buildup to the next climax.
+        tensionBias = 0.88 + clamp(timeSince / 12, 0, 1) * 0.06 + longFormBuildPressure * 0.015;
       } else {
-        // Post-cooldown: ramp 0.96-1.06 over 8-40s
-        tensionBias = 0.96 + clamp((timeSince - 8) / 32, 0, 1) * 0.1 + longFormBuildPressure * 0.015;
+        // Post-cooldown: ramp 0.94-1.12 over 12-40s
+        tensionBias = 0.94 + clamp((timeSince - 12) / 28, 0, 1) * 0.18 + longFormBuildPressure * 0.015;
       }
     } else {
       // After trough: ramp 1.04-1.0 over 0-10s
@@ -97,7 +102,9 @@ dynamicPeakMemory = (() => {
     peakCooldown = 0;
   }
 
-  conductorIntelligence.registerTensionBias('dynamicPeakMemory', () => dynamicPeakMemory.getTensionBias(), 0.9, 1.1);
+  // R10 E1: Widened registration range from (0.9, 1.1) to (0.85, 1.15)
+  // to match the expanded bias values (0.88-1.12).
+  conductorIntelligence.registerTensionBias('dynamicPeakMemory', () => dynamicPeakMemory.getTensionBias(), 0.85, 1.15);
   conductorIntelligence.registerRecorder('dynamicPeakMemory', (ctx) => { dynamicPeakMemory.recordIntensity(ctx.compositeIntensity, ctx.absTime); });
   conductorIntelligence.registerStateProvider('dynamicPeakMemory', () => {
     const s = dynamicPeakMemory.getPeakSignal();

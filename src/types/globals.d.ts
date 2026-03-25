@@ -1172,6 +1172,7 @@ interface MelodicContourTrackerAPI {
   getLayerContour(layer: string): { shape: string; direction: number; range: number; avgPitch: number };
   getDirectionalitySignal(): { direction: string; ascendRatio: number; descendRatio: number; densityBias: number };
   getDirectionalityDensityBias(): number;
+  getDirectionalityFlickerBias(): number;
   reset(): void;
 }
 
