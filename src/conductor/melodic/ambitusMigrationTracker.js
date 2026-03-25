@@ -103,7 +103,20 @@ ambitusMigrationTracker = (() => {
     rangeHistory.length = 0;
   }
 
+  // R13 E2: Flicker bias from ambitus migration. When pitch range is
+  // contracting (narrowing), inject flicker variation (up to 1.10) to
+  // compensate for melodic narrowness with timbral richness. When
+  // expanding, reduce flicker (down to 0.95) to let melodic variety
+  // speak without timbral clutter. Static range returns neutral.
+  function getFlickerBias() {
+    const signal = getAmbitusSignal();
+    if (signal.trend === 'contracting') return 1.10;
+    if (signal.trend === 'expanding') return 0.95;
+    return 1.0;
+  }
+
   conductorIntelligence.registerDensityBias('ambitusMigrationTracker', () => ambitusMigrationTracker.getDensityBias(), 0.9, 1.1);
+  conductorIntelligence.registerFlickerModifier('ambitusMigrationTracker', () => ambitusMigrationTracker.getFlickerBias(), 0.93, 1.12);
   conductorIntelligence.registerRecorder('ambitusMigrationTracker', (ctx) => { ambitusMigrationTracker.recordSnapshot(ctx.absTime); });
   conductorIntelligence.registerStateProvider('ambitusMigrationTracker', () => {
     const s = ambitusMigrationTracker.getAmbitusSignal();
@@ -120,6 +133,7 @@ ambitusMigrationTracker = (() => {
     recordSnapshot,
     getAmbitusSignal,
     getDensityBias,
+    getFlickerBias,
     reset
   };
 })();

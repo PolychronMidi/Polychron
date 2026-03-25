@@ -13,9 +13,9 @@ narrativeTrajectory = (() => {
 
   const HISTORY_LEN      = 16;
   const SMOOTHING        = 0.3;
-  const STEER_GAIN       = 0.06;       // doubled from 0.03 for audible effect
-  const MONOTONE_THRESHOLD = 0.002;    // lowered from 0.005 - matches EMA-smoothed velocity scale
-  const CURVATURE_STEER  = 0.04;       // steer away from pendulum reversals
+  const STEER_GAIN       = 0.08;       // R15 E1: 0.10->0.08 moderated; 0.10 over-corrected tension peaks (-20% peak, -27% opening)
+  const MONOTONE_THRESHOLD = 0.004;    // R14 E2: 0.002->0.004 detect mild plateaus not just dead-flat
+  const CURVATURE_STEER  = 0.06;       // R14 E2: 0.04->0.06 stronger pendulum reversal steering
 
   /** @type {{ t: number, n: number, d: number }[]} */
   let trajectory = [];

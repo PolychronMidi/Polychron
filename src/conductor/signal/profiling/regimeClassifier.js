@@ -12,16 +12,21 @@ regimeClassifier = (() => {
     COHERENT_MOMENTUM_WINDOW: 8,
     REGIME_TARGET_COHERENT_LO: 0.10,
     REGIME_TARGET_COHERENT_HI: 0.35,
-    REGIME_TARGET_EVOLVING_LO: 0.14,
+    // R9 E2: Raised from 0.14 to 0.18. Evolving dropped to 17.3% (above old
+    // floor 14%), leaving the evolvingDeficit auto-widener inactive. At 0.18,
+    // the deficit mechanism engages at current levels, widening evolving entry
+    // bands and relaxing the coherent gate to recover evolving share.
+    REGIME_TARGET_EVOLVING_LO: 0.18,
     // R85 E3: Expand coherent self-balancer headroom. coherentThresholdScale
     // auto-adjusts to steer coherent share toward [0.10, 0.35] target. At
     // cap 1.20, the balancer maxes out at +20% threshold which is insufficient
     // when coupling strength is inflated (R83 E2 trust velocity amplification
-    // added a 6th responsive dimension). Cap 1.40 gives 40% headroom.
-    // Nudge 0.008->0.012 for faster convergence toward target.
+    // added a 6th responsive dimension). R14 E1: Raise cap 1.40->1.65 because
+    // scale already at 1.40 (max) but coherent still at 49%. More headroom
+    // lets the self-balancer actually correct coherent dominance.
     REGIME_SCALE_NUDGE: 0.012,
     REGIME_SCALE_MIN: 0.55,
-    REGIME_SCALE_MAX: 1.40,
+    REGIME_SCALE_MAX: 1.65,
     COHERENT_SHARE_ALPHA_INIT: 0.05,
     COHERENT_SHARE_ALPHA_DECAY: 80,
     EXPLORING_MAX_DWELL: 180,

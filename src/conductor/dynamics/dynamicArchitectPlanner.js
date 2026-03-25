@@ -74,22 +74,27 @@ dynamicArchitectPlanner = (() => {
   function idealDynamicCurve(position) {
     // Piecewise arch peaking at 0.7
     if (position < 0.15) {
-      // Opening: gentle ramp 0.2 - 0.4
-      return 0.2 + position / 0.15 * 0.2;
+      // R12 E1: Opening raised 0.2->0.30, target 0.4->0.45. Section-0
+      // tension collapsed to 0.376 in R11. Warmer opening creates stronger
+      // opening statement and reduces tension-phase correlation (tension
+      // is present before phase activity ramps up).
+      return 0.30 + position / 0.15 * 0.15;
     }
     if (position < 0.7) {
-      // Building: 0.4 - 0.85 (climax region)
-      return 0.4 + (position - 0.15) / 0.55 * 0.45;
+      // Building: 0.45 - 0.95 (climax region)
+      // R19 E1: Raised peak from 0.85 to 0.95. Q2 at 0.843 in R18 was
+      // capped by the 0.85 building target. Higher target gives the
+      // closed-loop controller room to push tension into climax territory.
+      return 0.45 + (position - 0.15) / 0.55 * 0.50;
     }
     if (position < 0.85) {
-      // R6 E4: Post-climax descent: 0.85 - 0.55 (was 0.45). Sustain more
-      // energy in late sections to prevent tension arc tail-off. Creates
-      // a plateau rather than steep drop, maintaining musical interest.
-      return 0.85 - (position - 0.7) / 0.15 * 0.30;
+      // R16 E2: Descent target 0.45->0.55 for sustained late-section tension.
+      // R19 E1: Descent starts from 0.95 (was 0.85) to match raised peak.
+      return 0.95 - (position - 0.7) / 0.15 * 0.40;
     }
-    // R6 E4: Coda: 0.55 - 0.25 (was 0.45-0.15). Higher floor maintains
-    // presence through the final section.
-    return 0.55 - (position - 0.85) / 0.15 * 0.30;
+    // R16 E2: Coda floor 0.20->0.30. Prevents extreme tail-off while
+    // maintaining resolution character with more sustained energy.
+    return 0.55 - (position - 0.85) / 0.15 * 0.25;
   }
 
   /**

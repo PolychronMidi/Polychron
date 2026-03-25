@@ -150,6 +150,40 @@ dynamicRangeTracker = (() => {
     return { direction: 'maintain', magnitude: 0 };
   }
 
+  // R12 E3: Density bias from velocity spread. R13 E1: Moderated --
+  // original spread < 20, max 1.08 caused density inflation (0.155->0.218)
+  // which collapsed entropy (0.186->0.101) via density-entropy coupling.
+  // Narrowed trigger to spread < 12, reduced max to 1.04, added entropy-
+  // aware dampening: disabled entirely when entropy share < 0.14.
+  function getDensityBias() {
+    const profile = getVelocityProfile();
+    if (profile.spread < 12) {
+      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const entropyShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.entropy === 'number'
+        ? axisEnergy.shares.entropy : 1.0 / 6.0;
+      if (entropyShare < 0.14) return 1.0;
+      // R18 E4: Density-axis-aware guard. When density is the dominant
+      // axis (share > 0.18), disable boost to prevent further inflation.
+      // R17 saw density surge to 0.213 driving 4 increasing correlations.
+      const densityShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.density === 'number'
+        ? axisEnergy.shares.density : 1.0 / 6.0;
+      if (densityShare > 0.18) return 1.0;
+      return 1.0 + clamp((12 - profile.spread) / 12, 0, 1) * 0.04;
+    }
+    return 1.0;
+  }
+
+  // R12 E4: Tension bias from contrast deficit. When dynamic range is wide
+  // globally but underutilized recently (contrast deficit), nudge tension
+  // up (1.06) to encourage dynamic exploration. When global range is narrow,
+  // mild tension boost (1.04) to push for expressiveness.
+  function getTensionBias() {
+    const contrast = getContrastProfile();
+    if (contrast.contrastDeficit) return 1.06;
+    if (contrast.globalRange < 20) return 1.04;
+    return 1.0;
+  }
+
   /** Reset tracking. */
   function reset() {
     globalMin = 127;
@@ -159,12 +193,16 @@ dynamicRangeTracker = (() => {
 
   conductorIntelligence.registerFlickerModifier('dynamicRangeTracker:spread', () => dynamicRangeTracker.getSpreadBias(), 0.85, 1.20);
   conductorIntelligence.registerFlickerModifier('dynamicRangeTracker:contrast', () => dynamicRangeTracker.getContrastFlickerModifier(), 0.88, 1.25);
+  conductorIntelligence.registerDensityBias('dynamicRangeTracker', () => dynamicRangeTracker.getDensityBias(), 0.95, 1.10);
+  conductorIntelligence.registerTensionBias('dynamicRangeTracker', () => dynamicRangeTracker.getTensionBias(), 0.95, 1.10);
   conductorIntelligence.registerRecorder('dynamicRangeTracker', (ctx) => { dynamicRangeTracker.recordExtremes(ctx.absTime); });
   conductorIntelligence.registerModule('dynamicRangeTracker', { reset }, ['section']);
 
   return {
     getVelocityProfile,
     getSpreadBias,
+    getDensityBias,
+    getTensionBias,
     recordExtremes,
     getContrastProfile,
     getContrastFlickerModifier,

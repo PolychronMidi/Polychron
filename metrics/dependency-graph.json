@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-25T05:14:10.972Z",
+    "generated": "2026-03-25T07:53:50.647Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2996,
-    "totalEdges": 2368,
-    "crossSubsystemEdges": 1586,
+    "totalConsumes": 3002,
+    "totalEdges": 2374,
+    "crossSubsystemEdges": 1590,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -32,7 +32,7 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 991
+        "consumes": 997
       },
       "rhythm": {
         "files": 30,
@@ -1844,6 +1844,7 @@
         "structuralNarrativeAdvisor"
       ],
       "consumes": [
+        "composer",
         "conductorIntelligence",
         "conductorState",
         "m"
@@ -2678,6 +2679,7 @@
         "beatGridHelpers",
         "conductorIntelligence",
         "m",
+        "p",
         "t",
         "validator"
       ]
@@ -2795,6 +2797,8 @@
         "beatCache",
         "clamp",
         "conductorIntelligence",
+        "pipelineCouplingManager",
+        "safePreBoot",
         "validator"
       ]
     },
@@ -2809,6 +2813,8 @@
         "clamp",
         "conductorIntelligence",
         "m",
+        "pipelineCouplingManager",
+        "safePreBoot",
         "signalReader"
       ]
     },
@@ -11060,6 +11066,20 @@
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/conductor/dynamics/densityWaveAnalyzer.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/dynamics/dynamicRangeTracker.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/conductor/dynamics/energyMomentumTracker.js",
       "globals": [
         "pipelineCouplingManager"
       ]
@@ -19808,6 +19828,13 @@
     },
     {
       "from": "src/utils/init.js",
+      "to": "src/conductor/signal/narrative/structuralNarrativeAdvisor.js",
+      "globals": [
+        "composer"
+      ]
+    },
+    {
+      "from": "src/utils/init.js",
       "to": "src/conductor/signal/output/outputAnalyzer.js",
       "globals": [
         "noteCount"
@@ -22045,6 +22072,20 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/dynamics/dynamicRangeTracker.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/dynamics/energyMomentumTracker.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/dynamics/velocityShapeAnalyzer.js",
       "globals": [
         "safePreBoot"
@@ -23994,6 +24035,13 @@
       "to": "src/conductor/profiles/conductorConfigValidateProfile.js",
       "globals": [
         "path"
+      ]
+    },
+    {
+      "from": "src/writer/index.js",
+      "to": "src/conductor/rhythmic/syncopationDensityTracker.js",
+      "globals": [
+        "p"
       ]
     },
     {

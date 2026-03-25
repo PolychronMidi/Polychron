@@ -20,7 +20,13 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         let dampMult = axis === 'entropy' ? entropyExploringDamp : 1.0;
         if (axis === 'phase') dampMult *= phaseEvolvingDamp;
         if (axis === 'entropy' && context.entropySurfaceHot) dampMult *= 1 + context.entropySurfacePressure * 0.35;
-        if (axis === 'flicker' && share > 0.20) dampMult *= (1.0 - m.min(0.15, (share - 0.20) * 1.5));
+        // R9 E1: Inverted flicker dampMult direction. #4 manages signal RANGE,
+        // not axis SHARE -- overshoot handler must apply stronger correction.
+        // R11 E2: Strengthened slope 2.0->3.5, lowered threshold 0.20->0.18,
+        // raised cap 0.25->0.40. At share=0.226: old=1.052, new=1.161.
+        // Flicker rebounded to 0.226 in R10 because the 5% amplification
+        // was insufficient. 16% amplification provides structural containment.
+        if (axis === 'flicker' && share > 0.18) dampMult *= (1.0 + m.min(0.40, (share - 0.18) * 3.5));
         if (axis === 'density' && share > 0.25) dampMult -= 0.05;
         if (context.recoveryAxisHandOffPressure > 0 && context.densityFlickerAxisLock && (axis === 'density' || axis === 'flicker')) {
           dampMult *= 1 + context.recoveryAxisHandOffPressure * (0.40 + context.shortRunRecoveryBias * 0.35);
@@ -223,6 +229,12 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
       const trustFloorPairs = config.axisToPairs.trust || [];
       for (let i = 0; i < trustFloorPairs.length; i++) {
         const pair = trustFloorPairs[i];
+        // R8 E2: Skip non-nudgeable pairs (entropy-trust, trust-phase). These
+        // have zero gain so baseline changes have no effect, yet they consumed
+        // 2/5 of the trust floor adjustment budget. Concentrating relaxation
+        // on the 3 active pairs (density-trust, tension-trust, flicker-trust)
+        // makes trust recovery corrections effective.
+        if (config.NON_NUDGEABLE_TAIL_SET && config.NON_NUDGEABLE_TAIL_SET.has(pair)) continue;
         if ((state.pairCooldowns[pair] || 0) > 0) continue;
         const baseline = V.optionalFinite(state.lastBaselines[pair]);
         if (baseline === undefined) continue;

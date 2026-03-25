@@ -39,10 +39,14 @@ motifTransformAdvisor = (() => {
         allowAugment = false;
         break;
       case 'development':
-        // Wider exploration
-        transposeRange = [-7, 7];
-        rotateRange = [-3, 3];
+        // R18 E3: Wider development exploration. Expanded transpose from
+        // [-7,7] to [-9,9] and rotate from [-3,3] to [-4,4] for more
+        // dramatic melodic variation during development phases. Added
+        // explicit augmentRange for rhythmic variety.
+        transposeRange = [-9, 9];
+        rotateRange = [-4, 4];
         allowAugment = true;
+        augmentRange = [1.5, 4];
         break;
       case 'climax':
         // Bold transforms at peak intensity

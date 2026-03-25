@@ -75,13 +75,16 @@ harmonicSurpriseIndex = (() => {
       return 1.2 - clamp(profile.surpriseIndex / 0.25, 0, 1) * 0.2;
     }
     if (profile.surpriseIndex > 0.65) {
-      // Fresh: 0.65-1.0 maps to 1.0-0.92
-      return 1.0 - clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.08;
+      // R7 E3: Fresh: 0.65-1.0 maps to 1.0-0.88 (was 0.92). Wider reduction
+      // for fresh harmonic content creates more dynamic contrast between
+      // predictable and surprising passages.
+      return 1.0 - clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.12;
     }
     return 1.0;
   }
 
-  conductorIntelligence.registerTensionBias('harmonicSurpriseIndex', () => harmonicSurpriseIndex.getTensionBias(), 0.9, 1.25);
+  // R7 E3: Widen registration range from (0.9, 1.25) to (0.88, 1.25)
+  conductorIntelligence.registerTensionBias('harmonicSurpriseIndex', () => harmonicSurpriseIndex.getTensionBias(), 0.88, 1.25);
 
   return {
     getSurpriseProfile,

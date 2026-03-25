@@ -154,7 +154,21 @@ melodicContourTracker = (() => {
     currentContour = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
   }
 
+  // R13 E4: Flicker bias from melodic contour direction. Ascending
+  // melodies inject flicker boost (1.06) -- upward motion pairs with
+  // timbral brightness. Descending melodies reduce flicker (0.96) --
+  // downward motion with timbral warmth/smoothness. Static melodies
+  // get mild boost (1.03) to prevent timbral monotony.
+  function getDirectionalityFlickerBias() {
+    const sig = getDirectionalitySignal();
+    if (sig.direction === 'ascending') return 1.06;
+    if (sig.direction === 'descending') return 0.96;
+    if (sig.direction === 'static') return 1.03;
+    return 1.0;
+  }
+
   conductorIntelligence.registerDensityBias('melodicContourTracker', () => melodicContourTracker.getDirectionalityDensityBias(), 0.9, 1.05);
+  conductorIntelligence.registerFlickerModifier('melodicContourTracker', () => melodicContourTracker.getDirectionalityFlickerBias(), 0.94, 1.08);
   conductorIntelligence.registerRecorder('melodicContourTracker', () => { melodicContourTracker.update(); });
   conductorIntelligence.registerStateProvider('melodicContourTracker', () => {
     const s = melodicContourTracker.getDirectionalitySignal();
@@ -169,6 +183,7 @@ melodicContourTracker = (() => {
     getLayerContour,
     getDirectionalitySignal,
     getDirectionalityDensityBias,
+    getDirectionalityFlickerBias,
     reset
   };
 })();

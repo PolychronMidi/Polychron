@@ -69,4 +69,11 @@ crossModulateRhythms = () => {
       crossModulation *= 1.15;
     }
   }
+
+  // R17 E3: Composition-progress rhythmic arc. Opening gets tighter
+  // texture, building/climax gets more complex, coda settles. Bell curve
+  // centered at 0.55 (slightly past midpoint) parallels the tension arch.
+  const compositionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
+  const rhythmicArc = 0.92 + 0.18 * m.exp(-m.pow((compositionProg - 0.55) * 2.2, 2));
+  crossModulation *= rhythmicArc;
 }

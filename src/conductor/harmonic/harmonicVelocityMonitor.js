@@ -55,13 +55,18 @@ harmonicVelocityMonitor = (() => {
    */
   function getChangeThresholdBias() {
     const diag = diagnoseEnergyMatch();
-    // Continuous ramp: mismatch 0 - 1.0, positive - up to 1.07, negative - down to 0.88
+    // R19 E2: Reversed stalling direction. When harmony stalls during
+    // high energy, the harmonic stasis creates anticipation and tension
+    // (repeated chords become insistent). Previous logic SUPPRESSED
+    // tension to 0.88 during stalls, which was the strongest single
+    // tension suppressor at end-of-run. Now: stalling -> boost 1.12,
+    // rushing -> dampen 0.93. Musically: static harmony at climax = tense.
     if (diag.mismatch > 0) {
-      // Ramp from 1.0 at mismatch=0 to 1.07 at mismatch=0.8+ (was 1.10 - still chronic ceiling)
-      return 1.0 + clamp(diag.mismatch / 0.8, 0, 1) * 0.07;
+      // Harmony rushing (too many changes for energy level): slight dampen
+      return 1.0 - clamp(diag.mismatch / 0.8, 0, 1) * 0.07;
     }
-    // Ramp from 1.0 at mismatch=0 to 0.88 at mismatch=-0.6-
-    return 1.0 + clamp(diag.mismatch / 0.6, -1, 0) * 0.12;
+    // Harmony stalling (fewer changes than energy warrants): boost tension
+    return 1.0 + clamp(-diag.mismatch / 0.6, 0, 1) * 0.12;
   }
 
   /**
@@ -79,7 +84,9 @@ harmonicVelocityMonitor = (() => {
     return 1.0 - clamp(diag.mismatch / 0.8, 0, 1) * 0.12;
   }
 
-  conductorIntelligence.registerTensionBias('harmonicVelocityMonitor', () => harmonicVelocityMonitor.getChangeThresholdBias(), 0.85, 1.2);
+  // R19 E2: Updated range from (0.85, 1.2) to (0.93, 1.12) to match
+  // reversed stalling direction (rush=0.93 dampen, stall=1.12 boost).
+  conductorIntelligence.registerTensionBias('harmonicVelocityMonitor', () => harmonicVelocityMonitor.getChangeThresholdBias(), 0.93, 1.12);
 
   return {
     getHarmonicVelocity,

@@ -64,18 +64,21 @@ consonanceDissonanceTracker = (() => {
    */
   function getTensionBias(opts) {
     const profile = getConsonanceProfile(opts);
-    // Bland side: consonanceRatio 0.5-1.0 - bias 1.0-1.15
+    // R7 E4: Bland side: consonanceRatio 0.5-1.0 - bias 1.0-1.20 (was 1.15).
+    // Stronger boost when content is bland creates more harmonic tension.
     if (profile.consonanceRatio > 0.5) {
-      return 1.0 + clamp((profile.consonanceRatio - 0.5) / 0.5, 0, 1) * 0.15;
+      return 1.0 + clamp((profile.consonanceRatio - 0.5) / 0.5, 0, 1) * 0.20;
     }
-    // Harsh side: dissonanceRatio 0.3-0.8 - bias 1.0-0.85
+    // R7 E4: Harsh side: dissonanceRatio 0.3-0.8 - bias 1.0-0.80 (was 0.85).
+    // Stronger reduction when harsh creates more contrast with consonant passages.
     if (profile.dissonanceRatio > 0.3) {
-      return 1.0 - clamp((profile.dissonanceRatio - 0.3) / 0.5, 0, 1) * 0.15;
+      return 1.0 - clamp((profile.dissonanceRatio - 0.3) / 0.5, 0, 1) * 0.20;
     }
     return 1.0;
   }
 
-  conductorIntelligence.registerTensionBias('consonanceDissonanceTracker', () => consonanceDissonanceTracker.getTensionBias(), 0.85, 1.15);
+  // R7 E4: Widen registration range from (0.85, 1.15) to (0.80, 1.20)
+  conductorIntelligence.registerTensionBias('consonanceDissonanceTracker', () => consonanceDissonanceTracker.getTensionBias(), 0.80, 1.20);
 
   return {
     getConsonanceProfile,
