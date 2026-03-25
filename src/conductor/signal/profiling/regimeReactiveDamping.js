@@ -68,7 +68,7 @@ regimeReactiveDamping = (() => {
 
   // Max bias magnitude per signal (how far from 1.0 we can go)
   const MAX_DENSITY = 0.12;  // - range 0.88-1.12
-  const MAX_TENSION = 0.10;  // R26 E2: Widened from 0.06 for audible tension contrast (range 0.90-1.10)
+  const MAX_TENSION = 0.12;  // R26 E2->R97 E5: Widened 0.06->0.10->0.12 for tension expressiveness (range 0.88-1.12)
   const MAX_FLICKER = 0.20;  // R28 E4: Widened from 0.15 for more timbral variety across regimes
   const _DENSITY_RANGE = [0.88, 1.12];
   const _TENSION_RANGE = [0.88, 1.22];  // R26 E2: widened to match MAX_TENSION=0.10
@@ -281,7 +281,7 @@ regimeReactiveDamping = (() => {
     // flicker arch (hill-shaped) and complements the density arch (V-shaped),
     // creating a more musically natural tension trajectory.
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
-    const sectionTensionNudge = m.sin(sectionProgress * m.PI) * 0.035;
+    const sectionTensionNudge = m.sin(sectionProgress * m.PI) * 0.045;
     // R81 E3: Section-level density arch. densityVariance has been declining
     // (0.0077->0.0054) because density is nearly uniform across sections.
     // Add V-shaped modulation: denser at composition boundaries, sparser at
