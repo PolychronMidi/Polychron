@@ -12,6 +12,12 @@ const BINAURAL_SYNC_TOLERANCE_MS = 1;
 /** Next absolute ms at which a timed binaural shift should fire */
 let nextBinauralShiftMs = 0;
 
+/** All initiated shifts, in chronological order. Both layers scan this list. */
+const initiatedShifts = [];
+
+/** Per-layer index into initiatedShifts: next entry to scan */
+const shiftCursorByLayer = {};
+
 
 setBinaural = () => {
   V.requireDefined(BINAURAL, 'BINAURAL');
@@ -23,89 +29,105 @@ setBinaural = () => {
   const activeLayer = /** @type {string} */ (LM.activeLayer);
   const absTimeMs = beatStartTime * 1000;
 
-  // Check the grid first - if the other layer already shifted, we must follow
-  const crossLayerShift = absoluteTimeGrid.findClosest(
-    'binaural', absTimeMs, BINAURAL_SYNC_TOLERANCE_MS, activeLayer
-  );
+  // Scan the shared shift list for cross-layer entries up to our current time
+  const cursor = shiftCursorByLayer[activeLayer] || 0;
+  const crossLayerEntries = [];
+  let newCursor = cursor;
+  for (let i = cursor; i < initiatedShifts.length; i++) {
+    const entry = initiatedShifts[i];
+    if (entry.layer === activeLayer) { newCursor = i + 1; continue; }
+    if (entry.syncMs > absTimeMs + BINAURAL_SYNC_TOLERANCE_MS) break;
+    crossLayerEntries.push(entry);
+    newCursor = i + 1;
+  }
+  shiftCursorByLayer[activeLayer] = newCursor;
 
-  // Derive the sync ms: either the other layer's exact timestamp or our own
-  const syncMs = crossLayerShift ? crossLayerShift.timeMs : absTimeMs;
+  // Emit silence, bends, and volume events at a specific sync tick
+  function emitShiftEvents(shiftSyncTick) {
+    const shiftActiveChannels = flipBin ? flipBinT2 : flipBinF2;
+    const shiftInactiveChannels = flipBin ? flipBinF2 : flipBinT2;
 
-  // Convert ms sync point using the shared timing anchor to avoid end-of-track drift.
-  const syncTick = m.max(0, crossLayerHelpers.msToSyncTick(syncMs));
-  V.requireFinite(syncTick, 'syncTick');
+    p(c,
+      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 64, 0] })),
+      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 123, 0] })),
+      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 120, 0] }))
+    );
 
-  const restoreTick = syncTick + 1;
-  const activeChannels = flipBin ? flipBinT2 : flipBinF2;
-  const inactiveChannels = flipBin ? flipBinF2 : flipBinT2;
+    p(c,
+      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'pitch_bend_c', vals: [ch, binauralL.includes(ch) ? binauralPlus : binauralMinus] }))
+    );
 
-  function setBinauralBuildRetuneSilenceEvents() {
-    return {
-      events: [
-        // Cut sustain and sounding notes on the exact retune tick before bend events are serialized.
-        ...activeChannels.map(ch => ({ tick: syncTick, type: 'control_c', vals: [ch, 64, 0] })),
-        ...activeChannels.map(ch => ({ tick: syncTick, type: 'control_c', vals: [ch, 123, 0] })),
-        ...activeChannels.map(ch => ({ tick: syncTick, type: 'control_c', vals: [ch, 120, 0] }))
-      ]
-    };
+    p(c,
+      ...shiftInactiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 7, 0] })),
+      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick + 1, type: 'control_c', vals: [ch, 7, velocity] }))
+    );
   }
 
-  const timedShift = absTimeMs >= nextBinauralShiftMs;
-  const shouldShift = firstLoop < 1 || timedShift || crossLayerShift;
-
-  if (shouldShift) {
-
-    // Only the initiating layer advances the shared timer
-    if (!crossLayerShift) {
-      nextBinauralShiftMs = absTimeMs + rf(2, 4) * 1000;
-    }
-
-    const retuneSilence = setBinauralBuildRetuneSilenceEvents();
-    p(c, ...retuneSilence.events);
-
-    if (crossLayerShift) {
-      // Sync: adopt the offset and flip state from the other layer's shift
-      binauralFreqOffset = V.requireFinite(crossLayerShift.freqOffset, 'crossLayerShift.freqOffset');
-      flipBin = V.assertBoolean(crossLayerShift.flip, 'crossLayerShift.flip');
-    } else {
-      // New shift: flip and compute a fresh offset
-      flipBin = !flipBin;
-      binauralFreqOffset = rl(binauralFreqOffset, -.1, .1, BINAURAL.min, BINAURAL.max);
-    }
-
-    // Recompute pitch bend values from updated offset - stale values cause audible detune
+  // Sync every cross-layer shift at its exact tick
+  for (let i = 0; i < crossLayerEntries.length; i++) {
+    const entry = crossLayerEntries[i];
+    binauralFreqOffset = V.requireFinite(entry.freqOffset, 'crossLayerShift.freqOffset');
+    flipBin = V.assertBoolean(entry.flip, 'crossLayerShift.flip');
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    // Post this shift to the grid for cross-layer coordination
-    absoluteTimeGrid.post('binaural', activeLayer, syncMs, {
-      freqOffset: binauralFreqOffset,
-      flip: flipBin
-    });
+    const entrySyncTick = m.max(0, crossLayerHelpers.msToSyncTick(entry.syncMs));
+    V.requireFinite(entrySyncTick, 'entrySyncTick');
+    emitShiftEvents(entrySyncTick);
+
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({
         layer: activeLayer,
         absTimeMs,
-        syncMs,
-        syncTick,
-        silenceTick: retuneSilence.silenceTick,
-        usedCrossLayerShift: Boolean(crossLayerShift),
-        syncDeltaMs: crossLayerShift ? m.abs(absTimeMs - syncMs) : 0,
+        syncMs: entry.syncMs,
+        syncTick: entrySyncTick,
+        silenceTick: entrySyncTick,
+        usedCrossLayerShift: true,
+        syncDeltaMs: m.abs(absTimeMs - entry.syncMs),
         freqOffset: binauralFreqOffset,
         toleranceMs: BINAURAL_SYNC_TOLERANCE_MS,
         flip: flipBin
       });
     }
+  }
 
-    p(c,
-      ...binauralL.map(ch => ({ tick: syncTick, type: 'pitch_bend_c', vals: [ch, ch === lCH1 || ch === lCH3 || ch === lCH5 ? (flipBin ? binauralMinus : binauralPlus) : (flipBin ? binauralPlus : binauralMinus)] })),
-      ...binauralR.map(ch => ({ tick: syncTick, type: 'pitch_bend_c', vals: [ch, ch === rCH1 || ch === rCH3 || ch === rCH5 ? (flipBin ? binauralPlus : binauralMinus) : (flipBin ? binauralMinus : binauralPlus)] }))
-    );
+  // Timed initiation: only when no cross-layer shift was just consumed
+  if (crossLayerEntries.length === 0) {
+    const timedShift = absTimeMs >= nextBinauralShiftMs;
+    if (firstLoop < 1 || timedShift) {
+      nextBinauralShiftMs = absTimeMs + rf(2, 4) * 1000;
+      flipBin = !flipBin;
+      binauralFreqOffset = rl(binauralFreqOffset, -.1, .1, BINAURAL.min, BINAURAL.max);
+      [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
+      V.requireFinite(binauralPlus, 'binauralPlus');
+      V.requireFinite(binauralMinus, 'binauralMinus');
 
-    p(c,
-      ...inactiveChannels.map(ch => ({ tick: syncTick, type: 'control_c', vals: [ch, 7, 0] })),
-      ...activeChannels.map(ch => ({ tick: restoreTick, type: 'control_c', vals: [ch, 7, velocity] }))
-    );
+      const syncTick = m.max(0, crossLayerHelpers.msToSyncTick(absTimeMs));
+      V.requireFinite(syncTick, 'syncTick');
+      emitShiftEvents(syncTick);
+
+      // Store for cross-layer sync and grid diagnostics
+      initiatedShifts.push({ layer: activeLayer, syncMs: absTimeMs, freqOffset: binauralFreqOffset, flip: flipBin });
+      absoluteTimeGrid.post('binaural', activeLayer, absTimeMs, {
+        freqOffset: binauralFreqOffset,
+        flip: flipBin
+      });
+
+      if (traceDrain && traceDrain.isEnabled()) {
+        traceDrain.recordBinauralShift({
+          layer: activeLayer,
+          absTimeMs,
+          syncMs: absTimeMs,
+          syncTick,
+          silenceTick: syncTick,
+          usedCrossLayerShift: false,
+          syncDeltaMs: 0,
+          freqOffset: binauralFreqOffset,
+          toleranceMs: BINAURAL_SYNC_TOLERANCE_MS,
+          flip: flipBin
+        });
+      }
+    }
   }
 };
