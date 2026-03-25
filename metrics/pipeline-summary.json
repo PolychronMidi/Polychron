@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-25T02:02:07.477Z",
-  "wallTimeSeconds": 102.6,
+  "generated": "2026-03-25T03:20:43.606Z",
+  "wallTimeSeconds": 109.1,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -29,17 +29,17 @@
     },
     {
       "label": "lint",
-      "elapsedSeconds": 1.7,
+      "elapsedSeconds": 1.9,
       "ok": true
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 1.8,
+      "elapsedSeconds": 2,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 96.2,
+      "elapsedSeconds": 102,
       "ok": true
     },
     {
@@ -69,22 +69,22 @@
     },
     {
       "label": "golden-fingerprint",
-      "elapsedSeconds": 0.4,
+      "elapsedSeconds": 0.5,
       "ok": true
     },
     {
       "label": "narrative-digest",
-      "elapsedSeconds": 0.4,
+      "elapsedSeconds": 0.5,
       "ok": true
     },
     {
       "label": "compare-runs",
-      "elapsedSeconds": 0.7,
+      "elapsedSeconds": 0.9,
       "ok": true
     },
     {
       "label": "diff-compositions",
-      "elapsedSeconds": 0.7,
+      "elapsedSeconds": 0.8,
       "ok": true
     },
     {

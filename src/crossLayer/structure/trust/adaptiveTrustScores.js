@@ -20,6 +20,8 @@ adaptiveTrustScores = (() => {
 
   const BASE_EMA_DECAY = 0.85; // R33 E2: 0.9->0.85 faster trust adaptation
   const BASE_EMA_NEW = 0.15;  // R33 E2: 0.1->0.15 faster learning rate
+  // R95 E2: Regime-responsive EMA learning rate
+  const EMA_NEW_REGIME = { exploring: 0.20, evolving: 0.15, coherent: 0.12 };
 
   let decayCycleCount = 0;
 
@@ -34,6 +36,8 @@ adaptiveTrustScores = (() => {
   const _DISENGAGE_THRESHOLD = 0.003;       // 3x threshold for hysteresis disengage
   const _DISENGAGE_BEATS = 50;              // beats above disengage threshold before stopping
   const _STAGNATION_BEATS_TRIGGER = 70;     // R33 E2: 100->70 faster recovery of stuck systems
+  // R95 E4: Regime-responsive stagnation trigger -- nurture starved systems faster during exploring
+  const STAGNATION_BEATS_REGIME = { exploring: 50, evolving: 70, coherent: 100 };
   const _BASE_NOURISHMENT_STRENGTH = 0.15;  // max synthetic payoff scaling
   const _MIN_NOURISHMENT_STRENGTH = 0.05;   // floor after decay
   const _NOURISHMENT_DECAY = 0.90;          // 10% decay per application
@@ -137,9 +141,16 @@ adaptiveTrustScores = (() => {
 
     let newWeight = BASE_EMA_NEW;
     let decayWeight = BASE_EMA_DECAY;
+    // R95 E2: Regime-responsive EMA learning rate -- faster adaptation during exploring, slower during coherent
+    const regimeDynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regimeForEma = regimeDynamics && regimeDynamics.regime ? regimeDynamics.regime : null;
+    if (regimeForEma && EMA_NEW_REGIME[regimeForEma] !== undefined) {
+      newWeight = EMA_NEW_REGIME[regimeForEma];
+      decayWeight = 1 - newWeight;
+    }
     // Trust Score Exponential Penalty
     if (p < 0) {
-      const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const dynamics = regimeDynamics;
       if (dynamics && dynamics.couplingMatrix) {
         let maxTrustCorr = 0;
         const pairs = ['tension-trust', 'density-trust', 'flicker-trust', 'entropy-trust', 'trust-phase'];
@@ -424,7 +435,11 @@ adaptiveTrustScores = (() => {
         vs.disengageBeats = 0;
       }
 
-      if (vs.stagnantBeats >= _STAGNATION_BEATS_TRIGGER && state.samples > 32) {
+      // R95 E4: Regime-responsive stagnation trigger
+      const stagnSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const stagnRegime = stagnSnap && stagnSnap.regime ? stagnSnap.regime : 'evolving';
+      const stagnTrigger = STAGNATION_BEATS_REGIME[stagnRegime] !== undefined ? STAGNATION_BEATS_REGIME[stagnRegime] : _STAGNATION_BEATS_TRIGGER;
+      if (vs.stagnantBeats >= stagnTrigger && state.samples > 32) {
         const gap = meanTrust - state.score;
         if (gap > 0) {
           const syntheticPayoff = clamp(gap * vs.effectiveStrength, 0, 0.10);

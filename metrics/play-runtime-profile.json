@@ -1,330 +1,330 @@
 {
-  "generated": "2026-03-25T02:02:04.756Z",
+  "generated": "2026-03-25T03:20:40.608Z",
   "traced": true,
   "metrics": {
     "playNotes.subsubdiv": {
-      "totalMs": 62290.898,
-      "count": 174565,
-      "avgMs": 0.356835,
-      "maxMs": 10.207567
+      "totalMs": 68162.852,
+      "count": 168648,
+      "avgMs": 0.404172,
+      "maxMs": 10.731702
     },
     "playNotes.emitLoop.subsubdiv": {
-      "totalMs": 31791.351,
-      "count": 166905,
-      "avgMs": 0.190476,
-      "maxMs": 9.70086
+      "totalMs": 36628.457,
+      "count": 162376,
+      "avgMs": 0.225578,
+      "maxMs": 5.576197
     },
     "playNotesEmitPick.subsubdiv": {
-      "totalMs": 31694.842,
-      "count": 168950,
-      "avgMs": 0.187599,
-      "maxMs": 9.696273
+      "totalMs": 36494.074,
+      "count": 164323,
+      "avgMs": 0.222087,
+      "maxMs": 5.569934
     },
     "playNotes.motifs.subsubdiv": {
-      "totalMs": 23008.315,
-      "count": 166905,
-      "avgMs": 0.137853,
-      "maxMs": 4.088284
+      "totalMs": 23357.725,
+      "count": 162376,
+      "avgMs": 0.14385,
+      "maxMs": 9.681496
     },
     "playNotes.subdiv": {
-      "totalMs": 11227.896,
-      "count": 29904,
-      "avgMs": 0.375465,
-      "maxMs": 9.749681
+      "totalMs": 12295.731,
+      "count": 28867,
+      "avgMs": 0.425944,
+      "maxMs": 14.882493
     },
     "playNotes.emitLoop.subdiv": {
-      "totalMs": 5739.541,
-      "count": 28480,
-      "avgMs": 0.201529,
-      "maxMs": 1.73072
+      "totalMs": 6653.793,
+      "count": 27672,
+      "avgMs": 0.240452,
+      "maxMs": 1.970494
     },
     "playNotesEmitPick.subdiv": {
-      "totalMs": 5717.221,
-      "count": 28941,
-      "avgMs": 0.197547,
-      "maxMs": 1.726215
+      "totalMs": 6623.828,
+      "count": 28118,
+      "avgMs": 0.235573,
+      "maxMs": 1.925462
     },
     "playNotes.motifs.subdiv": {
-      "totalMs": 4708.936,
-      "count": 28480,
-      "avgMs": 0.165342,
-      "maxMs": 2.131594
+      "totalMs": 4843.761,
+      "count": 27672,
+      "avgMs": 0.175042,
+      "maxMs": 14.140538
     },
     "playNotes.resolve.subsubdiv": {
-      "totalMs": 3842.277,
-      "count": 174565,
-      "avgMs": 0.022011,
-      "maxMs": 6.820245
+      "totalMs": 4070.827,
+      "count": 168648,
+      "avgMs": 0.024138,
+      "maxMs": 9.648418
     },
     "emitPickCrossLayerRecord.subsubdiv": {
-      "totalMs": 2887.114,
-      "count": 168950,
-      "avgMs": 0.017089,
-      "maxMs": 1.08975
+      "totalMs": 3256.805,
+      "count": 164323,
+      "avgMs": 0.01982,
+      "maxMs": 1.964688
     },
     "playNotes.div": {
-      "totalMs": 1911.685,
-      "count": 4689,
-      "avgMs": 0.407696,
-      "maxMs": 5.369142
+      "totalMs": 2092.287,
+      "count": 4491,
+      "avgMs": 0.465884,
+      "maxMs": 4.206922
     },
     "stage.beat-setup": {
-      "totalMs": 1082.123,
-      "count": 916,
-      "avgMs": 1.181357,
-      "maxMs": 9.246131
+      "totalMs": 1239.729,
+      "count": 880,
+      "avgMs": 1.408783,
+      "maxMs": 11.057337
     },
     "playNotes.emitLoop.div": {
-      "totalMs": 996.67,
-      "count": 4423,
-      "avgMs": 0.225338,
-      "maxMs": 5.254867
+      "totalMs": 1151.969,
+      "count": 4240,
+      "avgMs": 0.271691,
+      "maxMs": 2.277308
     },
     "playNotesEmitPick.div": {
-      "totalMs": 991.9,
-      "count": 4999,
-      "avgMs": 0.19842,
-      "maxMs": 5.248855
+      "totalMs": 1146.898,
+      "count": 4872,
+      "avgMs": 0.235406,
+      "maxMs": 1.463838
     },
     "playNotes.motifs.div": {
-      "totalMs": 803.116,
-      "count": 4423,
-      "avgMs": 0.181577,
-      "maxMs": 2.040608
+      "totalMs": 822.474,
+      "count": 4240,
+      "avgMs": 0.19398,
+      "maxMs": 3.688559
     },
     "stage.emission": {
-      "totalMs": 577.789,
-      "count": 916,
-      "avgMs": 0.630774,
-      "maxMs": 5.434492
+      "totalMs": 655.357,
+      "count": 880,
+      "avgMs": 0.744723,
+      "maxMs": 3.966569
     },
     "playNotes.beat": {
-      "totalMs": 576.205,
-      "count": 916,
-      "avgMs": 0.629045,
-      "maxMs": 5.19871
+      "totalMs": 653.447,
+      "count": 880,
+      "avgMs": 0.742553,
+      "maxMs": 3.742725
     },
     "emitPickCrossLayerRecord.subdiv": {
-      "totalMs": 507.768,
-      "count": 28941,
-      "avgMs": 0.017545,
-      "maxMs": 0.182329
-    },
-    "playNotes.compute.subsubdiv": {
-      "totalMs": 329.785,
-      "count": 174565,
-      "avgMs": 0.001889,
-      "maxMs": 0.656849
+      "totalMs": 579.695,
+      "count": 28118,
+      "avgMs": 0.020617,
+      "maxMs": 0.222818
     },
     "playNotes.emitLoop.beat": {
-      "totalMs": 305.795,
-      "count": 828,
-      "avgMs": 0.369318,
-      "maxMs": 2.438553
+      "totalMs": 374.514,
+      "count": 810,
+      "avgMs": 0.462363,
+      "maxMs": 2.616345
     },
     "playNotesEmitPick.beat": {
-      "totalMs": 304.013,
-      "count": 1706,
-      "avgMs": 0.178202,
-      "maxMs": 1.75995
+      "totalMs": 372.46,
+      "count": 1633,
+      "avgMs": 0.228083,
+      "maxMs": 1.841988
+    },
+    "playNotes.compute.subsubdiv": {
+      "totalMs": 361.143,
+      "count": 168648,
+      "avgMs": 0.002141,
+      "maxMs": 0.678446
     },
     "playNotes.motifs.beat": {
-      "totalMs": 233.932,
-      "count": 828,
-      "avgMs": 0.282527,
-      "maxMs": 1.822268
-    },
-    "playNotes.resolve.subdiv": {
-      "totalMs": 168.76,
-      "count": 29904,
-      "avgMs": 0.005643,
-      "maxMs": 8.552496
+      "totalMs": 238.166,
+      "count": 810,
+      "avgMs": 0.294032,
+      "maxMs": 2.169108
     },
     "playNotes.texture.subsubdiv": {
-      "totalMs": 116.081,
-      "count": 174565,
-      "avgMs": 0.000665,
-      "maxMs": 0.638942
+      "totalMs": 144.123,
+      "count": 168648,
+      "avgMs": 0.000855,
+      "maxMs": 0.185416
+    },
+    "playNotes.resolve.subdiv": {
+      "totalMs": 125.527,
+      "count": 28867,
+      "avgMs": 0.004348,
+      "maxMs": 5.276495
     },
     "emitPickCrossLayerRecord.div": {
-      "totalMs": 88.778,
-      "count": 4999,
-      "avgMs": 0.017759,
-      "maxMs": 0.065061
+      "totalMs": 100.868,
+      "count": 4872,
+      "avgMs": 0.020704,
+      "maxMs": 0.179813
     },
     "stage.negotiation": {
-      "totalMs": 81.267,
-      "count": 916,
-      "avgMs": 0.088719,
-      "maxMs": 0.992983
-    },
-    "playNotes.compute.subdiv": {
-      "totalMs": 68.704,
-      "count": 29904,
-      "avgMs": 0.002297,
-      "maxMs": 0.761215
+      "totalMs": 86.363,
+      "count": 880,
+      "avgMs": 0.09814,
+      "maxMs": 0.98084
     },
     "playNotes.voiceDistribute.subsubdiv": {
-      "totalMs": 65.067,
-      "count": 166905,
-      "avgMs": 0.00039,
-      "maxMs": 0.625794
+      "totalMs": 76.338,
+      "count": 162376,
+      "avgMs": 0.00047,
+      "maxMs": 0.483978
+    },
+    "playNotes.compute.subdiv": {
+      "totalMs": 75.03,
+      "count": 28867,
+      "avgMs": 0.002599,
+      "maxMs": 0.691745
     },
     "emitPickCrossLayerRecord.beat": {
-      "totalMs": 33.209,
-      "count": 1706,
-      "avgMs": 0.019466,
-      "maxMs": 0.350045
+      "totalMs": 38.687,
+      "count": 1633,
+      "avgMs": 0.023691,
+      "maxMs": 0.349527
     },
     "playNotes.texture.subdiv": {
-      "totalMs": 26.855,
-      "count": 29904,
-      "avgMs": 0.000898,
-      "maxMs": 0.038141
+      "totalMs": 33.834,
+      "count": 28867,
+      "avgMs": 0.001172,
+      "maxMs": 0.674268
     },
     "emitPickSourceTextures.flurry": {
-      "totalMs": 26.5,
-      "count": 7200,
-      "avgMs": 0.003681,
-      "maxMs": 0.13433
-    },
-    "stage.entropy": {
-      "totalMs": 21.562,
-      "count": 916,
-      "avgMs": 0.023539,
-      "maxMs": 0.218717
+      "totalMs": 33.182,
+      "count": 8416,
+      "avgMs": 0.003943,
+      "maxMs": 0.105209
     },
     "emitPickSourceTextures.chordBurst": {
-      "totalMs": 20.787,
-      "count": 6119,
-      "avgMs": 0.003397,
-      "maxMs": 0.433746
+      "totalMs": 27.246,
+      "count": 7354,
+      "avgMs": 0.003705,
+      "maxMs": 0.579682
+    },
+    "stage.entropy": {
+      "totalMs": 24.291,
+      "count": 880,
+      "avgMs": 0.027603,
+      "maxMs": 0.217965
     },
     "playNotes.voiceDistribute.subdiv": {
-      "totalMs": 14.255,
-      "count": 28480,
-      "avgMs": 0.000501,
-      "maxMs": 0.504102
-    },
-    "playNotes.compute.div": {
-      "totalMs": 12.533,
-      "count": 4689,
-      "avgMs": 0.002673,
-      "maxMs": 0.045271
+      "totalMs": 17.203,
+      "count": 27672,
+      "avgMs": 0.000622,
+      "maxMs": 0.533316
     },
     "stage.post-beat": {
-      "totalMs": 11.432,
-      "count": 916,
-      "avgMs": 0.01248,
-      "maxMs": 0.278218
+      "totalMs": 13.013,
+      "count": 880,
+      "avgMs": 0.014787,
+      "maxMs": 0.275913
     },
-    "stage.tension-cadence": {
-      "totalMs": 10.503,
-      "count": 916,
-      "avgMs": 0.011466,
-      "maxMs": 0.081998
-    },
-    "playNotes.resolve.div": {
-      "totalMs": 9.544,
-      "count": 4689,
-      "avgMs": 0.002035,
-      "maxMs": 3.748575
+    "playNotes.compute.div": {
+      "totalMs": 12.593,
+      "count": 4491,
+      "avgMs": 0.002804,
+      "maxMs": 0.067392
     },
     "stage.rest": {
-      "totalMs": 9.041,
-      "count": 916,
-      "avgMs": 0.00987,
-      "maxMs": 0.080874
+      "totalMs": 11.702,
+      "count": 880,
+      "avgMs": 0.013298,
+      "maxMs": 0.09271
     },
     "emitPickReflectionTextures.chordBurst": {
-      "totalMs": 8.028,
-      "count": 6119,
-      "avgMs": 0.001312,
-      "maxMs": 0.456189
+      "totalMs": 10.983,
+      "count": 7354,
+      "avgMs": 0.001493,
+      "maxMs": 0.085868
     },
-    "stage.climax": {
-      "totalMs": 7.906,
-      "count": 916,
-      "avgMs": 0.008631,
-      "maxMs": 0.12718
+    "stage.tension-cadence": {
+      "totalMs": 10.59,
+      "count": 880,
+      "avgMs": 0.012035,
+      "maxMs": 0.16661
     },
     "emitPickReflectionTextures.flurry": {
-      "totalMs": 7.328,
-      "count": 7200,
-      "avgMs": 0.001018,
-      "maxMs": 0.028889
+      "totalMs": 9.936,
+      "count": 8416,
+      "avgMs": 0.001181,
+      "maxMs": 0.051076
+    },
+    "stage.climax": {
+      "totalMs": 9.495,
+      "count": 880,
+      "avgMs": 0.010789,
+      "maxMs": 0.132085
     },
     "stage.phase": {
-      "totalMs": 7.276,
-      "count": 916,
-      "avgMs": 0.007943,
-      "maxMs": 0.128615
+      "totalMs": 8.874,
+      "count": 880,
+      "avgMs": 0.010084,
+      "maxMs": 0.588113
     },
     "stage.intent": {
-      "totalMs": 6.642,
-      "count": 916,
-      "avgMs": 0.007251,
-      "maxMs": 0.125375
+      "totalMs": 7.594,
+      "count": 880,
+      "avgMs": 0.008629,
+      "maxMs": 0.143628
     },
     "stage.envelope": {
-      "totalMs": 5.441,
-      "count": 916,
-      "avgMs": 0.00594,
-      "maxMs": 0.110999
+      "totalMs": 6.873,
+      "count": 880,
+      "avgMs": 0.007811,
+      "maxMs": 0.097217
+    },
+    "playNotes.resolve.div": {
+      "totalMs": 6.351,
+      "count": 4491,
+      "avgMs": 0.001414,
+      "maxMs": 0.043145
     },
     "playNotes.compute.beat": {
-      "totalMs": 5.183,
-      "count": 916,
-      "avgMs": 0.005658,
-      "maxMs": 0.256006
+      "totalMs": 5.962,
+      "count": 880,
+      "avgMs": 0.006775,
+      "maxMs": 0.248434
     },
     "stage.silhouette": {
-      "totalMs": 4.915,
-      "count": 916,
-      "avgMs": 0.005366,
-      "maxMs": 0.471329
+      "totalMs": 5.633,
+      "count": 880,
+      "avgMs": 0.006401,
+      "maxMs": 0.173462
     },
     "playNotes.texture.div": {
-      "totalMs": 4.509,
-      "count": 4689,
-      "avgMs": 0.000962,
-      "maxMs": 0.022754
+      "totalMs": 5.178,
+      "count": 4491,
+      "avgMs": 0.001153,
+      "maxMs": 0.085741
     },
     "playNotes.voiceDistribute.div": {
-      "totalMs": 2.536,
-      "count": 4423,
-      "avgMs": 0.000573,
-      "maxMs": 0.033549
+      "totalMs": 2.987,
+      "count": 4240,
+      "avgMs": 0.000704,
+      "maxMs": 0.03866
     },
     "playNotes.texture.beat": {
-      "totalMs": 1.839,
-      "count": 916,
-      "avgMs": 0.002008,
-      "maxMs": 0.134082
+      "totalMs": 2.025,
+      "count": 880,
+      "avgMs": 0.002301,
+      "maxMs": 0.136858
     },
     "stage.probability-adjust": {
-      "totalMs": 1.301,
-      "count": 916,
-      "avgMs": 0.00142,
-      "maxMs": 0.026756
+      "totalMs": 1.413,
+      "count": 880,
+      "avgMs": 0.001606,
+      "maxMs": 0.021224
     },
     "playNotes.voiceDistribute.beat": {
-      "totalMs": 1.111,
-      "count": 828,
-      "avgMs": 0.001342,
-      "maxMs": 0.107752
+      "totalMs": 1.207,
+      "count": 810,
+      "avgMs": 0.00149,
+      "maxMs": 0.097119
     },
     "stage.complement": {
-      "totalMs": 0.872,
-      "count": 916,
-      "avgMs": 0.000952,
-      "maxMs": 0.019959
+      "totalMs": 0.999,
+      "count": 880,
+      "avgMs": 0.001135,
+      "maxMs": 0.049341
     },
     "playNotes.resolve.beat": {
-      "totalMs": 0.375,
-      "count": 916,
-      "avgMs": 0.000409,
-      "maxMs": 0.004328
+      "totalMs": 0.361,
+      "count": 880,
+      "avgMs": 0.000411,
+      "maxMs": 0.002779
     }
   }
 }

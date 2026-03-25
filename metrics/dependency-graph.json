@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-25T02:02:05.050Z",
+    "generated": "2026-03-25T03:20:40.898Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2980,
-    "totalEdges": 2353,
-    "crossSubsystemEdges": 1573,
+    "totalConsumes": 2982,
+    "totalEdges": 2355,
+    "crossSubsystemEdges": 1575,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 382
+        "consumes": 384
       },
       "writer": {
         "files": 4,
@@ -6258,8 +6258,10 @@
         "crossLayerRegistry",
         "entropyRegulator",
         "interactionHeatMap",
+        "safePreBoot",
         "sectionIntentCurves",
         "spectralComplementarity",
+        "systemDynamicsProfiler",
         "validator"
       ]
     },
@@ -11940,6 +11942,13 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/crossLayer/structure/form/crossLayerSilhouette.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -22169,6 +22178,13 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/crossLayer/structure/form/crossLayerClimaxEngine.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/structure/form/crossLayerSilhouette.js",
       "globals": [
         "safePreBoot"
       ]

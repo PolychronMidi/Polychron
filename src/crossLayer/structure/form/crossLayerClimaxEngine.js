@@ -36,7 +36,7 @@ crossLayerClimaxEngine = (() => {
   // share which collapsed 0.193->0.114 in R93). During coherent, reduce
   // entropy injection to preserve unified texture. Regime multiplier
   // scales the ENTROPY_BOOST: exploring 1.35x (0.54), coherent 0.85x (0.34).
-  const CLIMAX_ENTROPY_REGIME_SCALE = { exploring: 1.35, coherent: 0.85 };
+  const CLIMAX_ENTROPY_REGIME_SCALE = { exploring: 1.35, evolving: 1.20, coherent: 0.85 };
 
   let smoothedClimax = 0;
   let peakReached = false;

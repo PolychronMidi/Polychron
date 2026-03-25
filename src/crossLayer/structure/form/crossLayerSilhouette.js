@@ -6,7 +6,8 @@
 
 crossLayerSilhouette = (() => {
   const V = validator.create('crossLayerSilhouette');
-  const SMOOTHING = 0.15;
+  const SMOOTHING_REGIME = { exploring: 0.22, evolving: 0.15, coherent: 0.10 };
+  const CORRECTION_GAIN_REGIME = { exploring: 0.75, evolving: 1.0, coherent: 1.10 };
   const ARC_HISTORY = 16;
 
   /** @type {{ density: number, register: number, dynamic: number, entropy: number, timeMs: number }[]} */
@@ -48,11 +49,16 @@ crossLayerSilhouette = (() => {
     const rawDynamic = convergenceRecent ? 0.7 : 0.4;
     const rawEntropy = V.optionalFinite(entropyReg.currentEntropy, 0.5);
 
+    // Regime-responsive smoothing: faster tracking during exploring, more stable arcs during coherent
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regime = snap && snap.regime ? snap.regime : 'evolving';
+    const smoothing = SMOOTHING_REGIME[regime] !== undefined ? SMOOTHING_REGIME[regime] : 0.15;
+
     // Smooth
-    smoothedDensity = smoothedDensity * (1 - SMOOTHING) + rawDensity * SMOOTHING;
-    smoothedRegister = smoothedRegister * (1 - SMOOTHING) + rawRegister * SMOOTHING;
-    smoothedDynamic = smoothedDynamic * (1 - SMOOTHING) + rawDynamic * SMOOTHING;
-    smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + rawEntropy * SMOOTHING;
+    smoothedDensity = smoothedDensity * (1 - smoothing) + rawDensity * smoothing;
+    smoothedRegister = smoothedRegister * (1 - smoothing) + rawRegister * smoothing;
+    smoothedDynamic = smoothedDynamic * (1 - smoothing) + rawDynamic * smoothing;
+    smoothedEntropy = smoothedEntropy * (1 - smoothing) + rawEntropy * smoothing;
 
     // Record arc history
     const entry = arcHistory[arcIndex];
@@ -78,11 +84,24 @@ crossLayerSilhouette = (() => {
     const targetDensity = V.optionalFinite(intent.densityTarget, 0.5);
     const targetEntropy = V.optionalFinite(intent.entropyTarget, 0.5);
 
+    // Regime-responsive correction gain: weaker during exploring (allow drift), stronger during coherent (enforce balance)
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regime = snap && snap.regime ? snap.regime : 'evolving';
+    const gainScale = CORRECTION_GAIN_REGIME[regime] !== undefined ? CORRECTION_GAIN_REGIME[regime] : 1.0;
+
+    // Regime-responsive register target: wider register spread during exploring supports phase axis
+    const REGISTER_TARGET_REGIME = { exploring: 0.40, evolving: 0.50, coherent: 0.55 };
+    const registerTarget = REGISTER_TARGET_REGIME[regime] !== undefined ? REGISTER_TARGET_REGIME[regime] : 0.5;
+
+    // Regime-responsive dynamic target: higher dynamic contrast during exploring supports tension arc
+    const DYNAMIC_TARGET_REGIME = { exploring: 0.70, evolving: 0.60, coherent: 0.55 };
+    const dynamicTarget = DYNAMIC_TARGET_REGIME[regime] !== undefined ? DYNAMIC_TARGET_REGIME[regime] : 0.6;
+
     return {
-      densityBias: clamp((targetDensity - smoothedDensity) * 0.5, -0.3, 0.3),
-      registerBias: clamp((0.5 - smoothedRegister) * 0.4, -0.3, 0.3), // steer toward balanced register
-      dynamicBias: clamp((0.6 - smoothedDynamic) * 0.3, -0.2, 0.2),
-      entropyBias: clamp((targetEntropy - smoothedEntropy) * 0.4, -0.3, 0.3)
+      densityBias: clamp((targetDensity - smoothedDensity) * 0.5 * gainScale, -0.3, 0.3),
+      registerBias: clamp((registerTarget - smoothedRegister) * 0.4 * gainScale, -0.3, 0.3),
+      dynamicBias: clamp((dynamicTarget - smoothedDynamic) * 0.3 * gainScale, -0.2, 0.2),
+      entropyBias: clamp((targetEntropy - smoothedEntropy) * 0.4 * gainScale, -0.3, 0.3)
     };
   }
 

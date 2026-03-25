@@ -39,7 +39,7 @@ sectionIntentCurves = (() => {
   // sections. During coherent, lower it to allow tighter entropy ranges.
   // This creates regime-dependent entropy variety at the intent level,
   // helping recover entropy axis share (collapsed 0.193->0.114 in R93).
-  const ENTROPY_FLOOR_REGIME = { exploring: 0.22, coherent: 0.12 };
+  const ENTROPY_FLOOR_REGIME = { exploring: 0.22, evolving: 0.20, coherent: 0.12 };
 
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
   let lastIntent = {
