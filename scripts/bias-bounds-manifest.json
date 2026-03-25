@@ -1,0 +1,470 @@
+{
+  "meta": {
+    "generated": "2026-03-25T21:18:43.009Z",
+    "description": "Locked bias registration bounds. Any change causes pipeline failure.",
+    "updateCommand": "node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds",
+    "registrationCount": 92
+  },
+  "registrations": {
+    "climaxProximityPredictor:density": {
+      "lo": 0.82,
+      "hi": 1.35,
+      "file": "src/conductor/dynamics/climaxProximityPredictor.js"
+    },
+    "climaxProximityPredictor:tension": {
+      "lo": 0.8,
+      "hi": 1.3,
+      "file": "src/conductor/dynamics/climaxProximityPredictor.js"
+    },
+    "densityWaveAnalyzer:flicker": {
+      "lo": 0.9,
+      "hi": 1.2,
+      "file": "src/conductor/dynamics/densityWaveAnalyzer.js"
+    },
+    "densityWaveAnalyzer:tension": {
+      "lo": 1,
+      "hi": 1.06,
+      "file": "src/conductor/dynamics/densityWaveAnalyzer.js"
+    },
+    "densityWaveAnalyzer:density": {
+      "lo": 0.97,
+      "hi": 1.06,
+      "file": "src/conductor/dynamics/densityWaveAnalyzer.js"
+    },
+    "durationalContourTracker:tension": {
+      "lo": 0.94,
+      "hi": 1.08,
+      "file": "src/conductor/dynamics/durationalContourTracker.js"
+    },
+    "durationalContourTracker:flicker": {
+      "lo": 0.8,
+      "hi": 1.3,
+      "file": "src/conductor/dynamics/durationalContourTracker.js"
+    },
+    "dynamicArchitectPlanner:tension": {
+      "lo": 0.9,
+      "hi": 1.15,
+      "file": "src/conductor/dynamics/dynamicArchitectPlanner.js"
+    },
+    "dynamicPeakMemory:tension": {
+      "lo": 0.85,
+      "hi": 1.15,
+      "file": "src/conductor/dynamics/dynamicPeakMemory.js"
+    },
+    "dynamicRangeTracker:spread:flicker": {
+      "lo": 0.85,
+      "hi": 1.2,
+      "file": "src/conductor/dynamics/dynamicRangeTracker.js"
+    },
+    "dynamicRangeTracker:contrast:flicker": {
+      "lo": 0.88,
+      "hi": 1.25,
+      "file": "src/conductor/dynamics/dynamicRangeTracker.js"
+    },
+    "dynamicRangeTracker:density": {
+      "lo": 0.95,
+      "hi": 1.1,
+      "file": "src/conductor/dynamics/dynamicRangeTracker.js"
+    },
+    "dynamicRangeTracker:tension": {
+      "lo": 0.95,
+      "hi": 1.1,
+      "file": "src/conductor/dynamics/dynamicRangeTracker.js"
+    },
+    "energyMomentumTracker:density": {
+      "lo": 0.9,
+      "hi": 1.3,
+      "file": "src/conductor/dynamics/energyMomentumTracker.js"
+    },
+    "energyMomentumTracker:tension": {
+      "lo": 0.95,
+      "hi": 1.15,
+      "file": "src/conductor/dynamics/energyMomentumTracker.js"
+    },
+    "velocityShapeAnalyzer:tension": {
+      "lo": 0.94,
+      "hi": 1.08,
+      "file": "src/conductor/dynamics/velocityShapeAnalyzer.js"
+    },
+    "velocityShapeAnalyzer:flicker": {
+      "lo": 0.85,
+      "hi": 1.2,
+      "file": "src/conductor/dynamics/velocityShapeAnalyzer.js"
+    },
+    "cadentialPreparationAdvisor:tension": {
+      "lo": 1,
+      "hi": 1.2,
+      "file": "src/conductor/harmonic/cadentialPreparationAdvisor.js"
+    },
+    "chromaticSaturationMonitor:density": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/harmonic/chromaticSaturationMonitor.js"
+    },
+    "chromaticSaturationMonitor:tension": {
+      "lo": 0.95,
+      "hi": 1.06,
+      "file": "src/conductor/harmonic/chromaticSaturationMonitor.js"
+    },
+    "consonanceDissonanceTracker:tension": {
+      "lo": 0.8,
+      "hi": 1.2,
+      "file": "src/conductor/harmonic/consonanceDissonanceTracker.js"
+    },
+    "consonanceDissonanceTracker:flicker": {
+      "lo": 0.96,
+      "hi": 1.06,
+      "file": "src/conductor/harmonic/consonanceDissonanceTracker.js"
+    },
+    "consonanceDissonanceTracker:density": {
+      "lo": 0.96,
+      "hi": 1.04,
+      "file": "src/conductor/harmonic/consonanceDissonanceTracker.js"
+    },
+    "harmonicDensityOscillator:tension": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/harmonic/harmonicDensityOscillator.js"
+    },
+    "harmonicDensityOscillator:density": {
+      "lo": 0.96,
+      "hi": 1.04,
+      "file": "src/conductor/harmonic/harmonicDensityOscillator.js"
+    },
+    "harmonicFieldDensityTracker:density": {
+      "lo": 0.94,
+      "hi": 1.1,
+      "file": "src/conductor/harmonic/harmonicFieldDensityTracker.js"
+    },
+    "harmonicFieldDensityTracker:flicker": {
+      "lo": 0.95,
+      "hi": 1.04,
+      "file": "src/conductor/harmonic/harmonicFieldDensityTracker.js"
+    },
+    "harmonicFunctionGraph:tension": {
+      "lo": 0.92,
+      "hi": 1.1,
+      "file": "src/conductor/harmonic/harmonicFunctionGraph.js"
+    },
+    "harmonicPedalFieldTracker:tension": {
+      "lo": 0.9,
+      "hi": 1.15,
+      "file": "src/conductor/harmonic/harmonicPedalFieldTracker.js"
+    },
+    "harmonicRhythmDensityRatio:density": {
+      "lo": 0.85,
+      "hi": 1.2,
+      "file": "src/conductor/harmonic/harmonicRhythmDensityRatio.js"
+    },
+    "harmonicSurpriseIndex:tension": {
+      "lo": 0.88,
+      "hi": 1.25,
+      "file": "src/conductor/harmonic/harmonicSurpriseIndex.js"
+    },
+    "harmonicSurpriseIndex:density": {
+      "lo": 0.94,
+      "hi": 1.06,
+      "file": "src/conductor/harmonic/harmonicSurpriseIndex.js"
+    },
+    "harmonicSurpriseIndex:flicker": {
+      "lo": 0.96,
+      "hi": 1.05,
+      "file": "src/conductor/harmonic/harmonicSurpriseIndex.js"
+    },
+    "harmonicVelocityMonitor:tension": {
+      "lo": 0.93,
+      "hi": 1.12,
+      "file": "src/conductor/harmonic/harmonicVelocityMonitor.js"
+    },
+    "tensionResolutionTracker:tension": {
+      "lo": 0.9,
+      "hi": 1.25,
+      "file": "src/conductor/harmonic/tensionResolutionTracker.js"
+    },
+    "tensionResolutionTracker:density": {
+      "lo": 0.96,
+      "hi": 1.04,
+      "file": "src/conductor/harmonic/tensionResolutionTracker.js"
+    },
+    "tonalAnchorDistanceTracker:tension": {
+      "lo": 0.9,
+      "hi": 1.12,
+      "file": "src/conductor/harmonic/tonalAnchorDistanceTracker.js"
+    },
+    "ambitusMigrationTracker:density": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/melodic/ambitusMigrationTracker.js"
+    },
+    "ambitusMigrationTracker:flicker": {
+      "lo": 0.93,
+      "hi": 1.12,
+      "file": "src/conductor/melodic/ambitusMigrationTracker.js"
+    },
+    "counterpointMotionTracker:tension": {
+      "lo": 0.88,
+      "hi": 1.15,
+      "file": "src/conductor/melodic/counterpointMotionTracker.js"
+    },
+    "counterpointMotionTracker:density": {
+      "lo": 0.93,
+      "hi": 1.08,
+      "file": "src/conductor/melodic/counterpointMotionTracker.js"
+    },
+    "intervalBalanceTracker:density": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/melodic/intervalBalanceTracker.js"
+    },
+    "intervalExpansionContractor:density": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/melodic/intervalExpansionContractor.js"
+    },
+    "intervalExpansionContractor:tension": {
+      "lo": 0.96,
+      "hi": 1.05,
+      "file": "src/conductor/melodic/intervalExpansionContractor.js"
+    },
+    "melodicContourTracker:density": {
+      "lo": 0.9,
+      "hi": 1.05,
+      "file": "src/conductor/melodic/melodicContourTracker.js"
+    },
+    "melodicContourTracker:flicker": {
+      "lo": 0.94,
+      "hi": 1.08,
+      "file": "src/conductor/melodic/melodicContourTracker.js"
+    },
+    "melodicContourTracker:tension": {
+      "lo": 0.96,
+      "hi": 1.06,
+      "file": "src/conductor/melodic/melodicContourTracker.js"
+    },
+    "phraseContourArchetypeDetector:flicker": {
+      "lo": 0.96,
+      "hi": 1.06,
+      "file": "src/conductor/melodic/phraseContourArchetypeDetector.js"
+    },
+    "registralVelocityCorrelator:flicker": {
+      "lo": 0.85,
+      "hi": 1.2,
+      "file": "src/conductor/melodic/registralVelocityCorrelator.js"
+    },
+    "registralVelocityCorrelator:tension": {
+      "lo": 0.97,
+      "hi": 1.06,
+      "file": "src/conductor/melodic/registralVelocityCorrelator.js"
+    },
+    "tessituraPressureMonitor:density": {
+      "lo": 0.93,
+      "hi": 1.1,
+      "file": "src/conductor/melodic/tessituraPressureMonitor.js"
+    },
+    "thematicRecallDetector:tension": {
+      "lo": 0.96,
+      "hi": 1,
+      "file": "src/conductor/melodic/thematicRecallDetector.js"
+    },
+    "voiceLeadingEfficiencyTracker:density": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/melodic/voiceLeadingEfficiencyTracker.js"
+    },
+    "voiceLeadingEfficiencyTracker:tension": {
+      "lo": 0.94,
+      "hi": 1.06,
+      "file": "src/conductor/melodic/voiceLeadingEfficiencyTracker.js"
+    },
+    "voiceLeadingEfficiencyTracker:flicker": {
+      "lo": 0.95,
+      "hi": 1.05,
+      "file": "src/conductor/melodic/voiceLeadingEfficiencyTracker.js"
+    },
+    "attackDensityProfiler:density": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/rhythmic/attackDensityProfiler.js"
+    },
+    "grooveTemplateAdvisor:flicker": {
+      "lo": 0.8,
+      "hi": 1.3,
+      "file": "src/conductor/rhythmic/grooveTemplateAdvisor.js"
+    },
+    "grooveTemplateAdvisor:tension": {
+      "lo": 0.95,
+      "hi": 1.06,
+      "file": "src/conductor/rhythmic/grooveTemplateAdvisor.js"
+    },
+    "interLayerRhythmAnalyzer:flicker": {
+      "lo": 0.9,
+      "hi": 1.2,
+      "file": "src/conductor/rhythmic/interLayerRhythmAnalyzer.js"
+    },
+    "interLayerRhythmAnalyzer:density": {
+      "lo": 0.96,
+      "hi": 1.04,
+      "file": "src/conductor/rhythmic/interLayerRhythmAnalyzer.js"
+    },
+    "onsetDensityProfiler:density": {
+      "lo": 0.86,
+      "hi": 1.35,
+      "file": "src/conductor/rhythmic/onsetDensityProfiler.js"
+    },
+    "onsetRegularityMonitor:density": {
+      "lo": 0.9,
+      "hi": 1.25,
+      "file": "src/conductor/rhythmic/onsetRegularityMonitor.js"
+    },
+    "rhythmicComplexityGradient:density": {
+      "lo": 0.88,
+      "hi": 1.25,
+      "file": "src/conductor/rhythmic/rhythmicComplexityGradient.js"
+    },
+    "rhythmicComplexityGradient:tension": {
+      "lo": 0.97,
+      "hi": 1.06,
+      "file": "src/conductor/rhythmic/rhythmicComplexityGradient.js"
+    },
+    "rhythmicDensityContrastTracker:flicker": {
+      "lo": 0.9,
+      "hi": 1.15,
+      "file": "src/conductor/rhythmic/rhythmicDensityContrastTracker.js"
+    },
+    "rhythmicInertiaTracker:density": {
+      "lo": 0.9,
+      "hi": 1.1,
+      "file": "src/conductor/rhythmic/rhythmicInertiaTracker.js"
+    },
+    "rhythmicInertiaTracker:flicker": {
+      "lo": 0.94,
+      "hi": 1.08,
+      "file": "src/conductor/rhythmic/rhythmicInertiaTracker.js"
+    },
+    "syncopationDensityTracker:density": {
+      "lo": 0.88,
+      "hi": 1.12,
+      "file": "src/conductor/rhythmic/syncopationDensityTracker.js"
+    },
+    "syncopationDensityTracker:flicker": {
+      "lo": 0.92,
+      "hi": 1.1,
+      "file": "src/conductor/rhythmic/syncopationDensityTracker.js"
+    },
+    "syncopationDensityTracker:tension": {
+      "lo": 0.96,
+      "hi": 1.06,
+      "file": "src/conductor/rhythmic/syncopationDensityTracker.js"
+    },
+    "pipelineBalancer:density": {
+      "lo": 0.92,
+      "hi": 1.15,
+      "file": "src/conductor/signal/balancing/coupling/pipelineBalancer.js"
+    },
+    "pipelineBalancer:tension": {
+      "lo": 0.86,
+      "hi": 1.14,
+      "file": "src/conductor/signal/balancing/coupling/pipelineBalancer.js"
+    },
+    "pipelineCouplingManager:density": {
+      "lo": 0.8,
+      "hi": 1.2,
+      "file": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js"
+    },
+    "pipelineCouplingManager:tension": {
+      "lo": 0.8,
+      "hi": 1.22,
+      "file": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js"
+    },
+    "pipelineCouplingManager:flicker": {
+      "lo": 0.7,
+      "hi": 1.3,
+      "file": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js"
+    },
+    "criticalityEngine:density": {
+      "lo": 0.88,
+      "hi": 1.05,
+      "file": "src/conductor/signal/meta/criticalityEngine.js"
+    },
+    "criticalityEngine:tension": {
+      "lo": 0.88,
+      "hi": 1.05,
+      "file": "src/conductor/signal/meta/criticalityEngine.js"
+    },
+    "criticalityEngine:flicker": {
+      "lo": 0.82,
+      "hi": 1.12,
+      "file": "src/conductor/signal/meta/criticalityEngine.js"
+    },
+    "dimensionalityExpander:density": {
+      "lo": 0.85,
+      "hi": 1.15,
+      "file": "src/conductor/signal/meta/dimensionalityExpander.js"
+    },
+    "dimensionalityExpander:tension": {
+      "lo": 0.85,
+      "hi": 1.15,
+      "file": "src/conductor/signal/meta/dimensionalityExpander.js"
+    },
+    "dimensionalityExpander:flicker": {
+      "lo": 0.85,
+      "hi": 1.15,
+      "file": "src/conductor/signal/meta/dimensionalityExpander.js"
+    },
+    "narrativeTrajectory:tension": {
+      "lo": 0.94,
+      "hi": 1.12,
+      "file": "src/conductor/signal/narrative/narrativeTrajectory.js"
+    },
+    "structuralNarrativeAdvisor:density": {
+      "lo": 0.96,
+      "hi": 1.12,
+      "file": "src/conductor/signal/narrative/structuralNarrativeAdvisor.js"
+    },
+    "voiceDensityBalancer:density": {
+      "lo": 0.9,
+      "hi": 1.3,
+      "file": "src/conductor/texture/balance/voiceDensityBalancer.js"
+    },
+    "restDensityTracker:density": {
+      "lo": 0.9,
+      "hi": 1.2,
+      "file": "src/conductor/texture/form/restDensityTracker.js"
+    },
+    "texturalGradientTracker:flicker": {
+      "lo": 0.88,
+      "hi": 1.2,
+      "file": "src/conductor/texture/form/texturalGradientTracker.js"
+    },
+    "texturalGradientTracker:tension": {
+      "lo": 0.96,
+      "hi": 1.05,
+      "file": "src/conductor/texture/form/texturalGradientTracker.js"
+    },
+    "crossLayerDensityBalancer:density": {
+      "lo": 0.9,
+      "hi": 1.05,
+      "file": "src/conductor/texture/layers/crossLayerDensityBalancer.js"
+    },
+    "layerCoherenceScorer:density": {
+      "lo": 0.9,
+      "hi": 1.15,
+      "file": "src/conductor/texture/layers/layerCoherenceScorer.js"
+    },
+    "layerIndependenceScorer:density": {
+      "lo": 0.9,
+      "hi": 1.15,
+      "file": "src/conductor/texture/layers/layerIndependenceScorer.js"
+    },
+    "motivicDensityTracker:density": {
+      "lo": 0.8,
+      "hi": 1.2,
+      "file": "src/conductor/texture/phrasing/motivicDensityTracker.js"
+    },
+    "repetitionFatigueMonitor:tension": {
+      "lo": 1,
+      "hi": 1.12,
+      "file": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js"
+    }
+  }
+}
