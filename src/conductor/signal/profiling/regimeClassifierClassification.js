@@ -115,6 +115,12 @@ regimeClassifierClassification = (() => {
     // when exploring already dominates (rawExploringShare > 0.40).
     state.dimEma = state.dimEma * 0.97 + effectiveDim * 0.03;
     state.dimStdEma = state.dimStdEma * 0.97 + m.abs(effectiveDim - state.dimEma) * 0.03;
+    // R79 E1: Track velocity distribution for adaptive evolving ceiling.
+    // Instead of hardcoded 0.090 ceiling (whack-a-mole since R68), derive
+    // from the actual velocity EMA + stddev. The enriched phase signal (R67)
+    // raised velocity to 0.11-0.21, making fixed ceilings obsolete.
+    state.velocityEma = state.velocityEma * 0.96 + avgVelocity * 0.04;
+    state.velocityStdEma = state.velocityStdEma * 0.96 + m.abs(avgVelocity - state.velocityEma) * 0.04;
     const highDimStreakEnabled = rawExploringShare < 0.40;
     const highDimThreshold = state.dimEma + state.dimStdEma * 1.5 + exploringSharePressure * 0.3;
     const highDimStreakLimit = 10 + m.round(exploringSharePressure * 8);
@@ -123,9 +129,16 @@ regimeClassifierClassification = (() => {
 
     if (state.highDimVelStreak >= highDimStreakLimit && state.lastRegime !== 'coherent') return 'exploring';
 
+    // R79 E4: Section-position-aware evolving entry. Mid-composition
+    // sections (S1-S3) get a velocity ceiling boost for the cadence monopoly
+    // path, making evolving transitions more likely during the musically
+    // interesting core. S0/S4 keep original thresholds since evolving
+    // during warmup or resolution is less valuable.
+    const sectionIndexForRegime = sectionIndex;
+    const midSectionBoost = (sectionIndexForRegime >= 1 && sectionIndexForRegime <= 3) ? 0.015 : 0;
     if (cadenceMonopolyPressure > 0.40 &&
         avgVelocity > evolvingEntryVelMin &&
-        avgVelocity < evolvingEntryVelMax + 0.012 &&
+        avgVelocity < evolvingEntryVelMax + 0.012 + midSectionBoost &&
         effectiveDim > evolvingEntryDimMin - 0.10 &&
         couplingStrength > coherentThreshold - 0.02 &&
         couplingStrength < coherentThreshold + 0.10) {
@@ -156,39 +169,61 @@ regimeClassifierClassification = (() => {
       return 'evolving';
     }
 
+    // R81 E1: Moved adaptiveVelCeiling before self-sustain so both paths
+    // (self-sustain and crossover) can use the same adaptive ceiling.
+    const adaptiveVelCeiling = m.max(0.090, state.velocityEma - state.velocityStdEma * 0.5);
+
     if (state.lastRegime === 'evolving' &&
         avgVelocity > evolvingEntryVelMin &&
-        avgVelocity < evolvingEntryVelMax + 0.010 + evolvingRecoveryBoost * 0.006 &&
+        // R81 E1: Align self-sustain velocity ceiling with the crossover's
+        // adaptive ceiling. Previously this used evolvingEntryVelMax+0.010
+        // (~0.138), while the crossover used adaptiveVelCeiling+bonuses
+        // (~0.212). This inconsistency meant beats could ENTER evolving via
+        // the crossover but FAIL self-sustain the next beat because velocity
+        // exceeded the tighter ceiling. rawEvolvingMaxStreak was capped at 3.
+        avgVelocity < adaptiveVelCeiling + 0.010 + evolvingRecoveryBoost * 0.006 &&
         effectiveDim > 1.65 &&
         couplingStrength > 0.08 &&
         couplingStrength < coherentThreshold + 0.16 + evolvingDeficit * 0.08) {
       return 'evolving';
     }
 
+    // R80 E2: Promoted exploring->evolving crossover BEFORE the generic
+    // exploring check. Previously, the exploring check (high dim + low
+    // coupling) caught ALL non-coherent beats because effectiveDim p10=2.97
+    // always exceeded the exploring threshold (~2.2). The crossover at line
+    // ~207 was dead code -- rawEvolvingShare stayed at 0 across all runs.
+    //
+    // By evaluating the crossover first, beats coming FROM exploring that
+    // have moderate coupling and velocity get classified as evolving before
+    // the exploring catch-all fires. This is self-limiting: requires
+    // lastRegime=exploring, and evolvingRecoveryBoost naturally disengages
+    // as rawEvolvingShare approaches 0.05.
+    //
+    // R65 E5 / R68 E1 / R79 E1: Adaptive velocity ceiling history preserved.
+    // R81 E1: adaptiveVelCeiling moved earlier (before self-sustain block).
+    // R84 E3: Raise critical boost threshold 0.02->0.04. rawEvolvingShare
+    // dropped to 0.06 in R83 (from 0.0886). At threshold 0.02, the boost
+    // only fires in extreme starvation. At 0.04, the boost activates
+    // whenever evolving falls below 4%, providing a wider recovery window.
+    // Also graduated: full 0.020 boost below 0.02, linear taper to 0 at 0.04.
+    const evolvingCriticalBoost = rawEvolvingShare < 0.04
+      ? 0.020 * clamp((0.04 - rawEvolvingShare) / 0.02, 0, 1)
+      : 0;
+    // R82 E2 / R89 E2: Minimum exploring dwell before crossover. Exploring share
+    // dropped 39.1% -> 19.8% because the crossover immediately consumed
+    // exploring beats. Requiring exploringBeats >= 3 (lowered from 4 in R89)
+    // lets exploring runs establish while giving evolving more entry
+    // opportunities. R88 rawEvolvingShare 0.1782 vs resolved 0.152 shows
+    // evolving is losing beats in resolution; earlier crossover helps.
+    if (state.lastRegime === 'exploring' && state.exploringBeats >= 3 && avgVelocity > 0.007 && avgVelocity < adaptiveVelCeiling + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
+
     const exploringVelThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) + exploringSharePressure * 0.004 - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
     const profileDimRelief = conductorConfig.getActiveProfile().exploringDimRelief || 0;
     const exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - profileDimRelief - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + exploringSharePressure * 0.12 + postForcedRecoveryPressure * 0.06;
     const exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06 - exploringSharePressure * 0.06 - postForcedRecoveryPressure * 0.05;
     if (avgVelocity > exploringVelThreshold && effectiveDim > exploringDimThreshold && couplingStrength <= exploringCouplingGate) return 'exploring';
-    // R65 E5: Widened exploring->evolving crossover. When evolving is starved
-    // (evolvingRecoveryBoost > 0), structurally widen the velocity ceiling and
-    // lower the dimension floor to create more evolving-eligible beats from
-    // the exploring pool. This is self-limiting: evolvingRecoveryBoost goes to
-    // 0 as rawEvolvingShare approaches 0.05, naturally disengaging the widening.
-    // R68 E1: Increased velocity ceiling coefficient from 0.016 to 0.030 when
-    // evolving is critically starved. The enriched phase signal (R67) raises
-    // trajectory velocity by adding phrase-level oscillation. This pushes beats
-    // above the old 0.076 ceiling into exploring, preventing evolving entry.
-    // Also widened the dim floor coefficient from 0.15 to 0.22 to match the
-    // higher-dimensional coupling landscape.
-    // R76 E1: Widen evolving velocity ceiling from 0.060 to 0.090.
-    // R67 enriched phase signal raised trajectory velocity systemically
-    // (avg 0.11-0.21), pushing ALL beats above the old 0.060 ceiling.
-    // rawEvolvingShare=0 in R75 -- the raw classifier never produces
-    // evolving. Raising ceiling to 0.090 with expanded boost range
-    // allows some beats to qualify organically.
-    const evolvingCriticalBoost = rawEvolvingShare < 0.02 ? 0.020 : 0;
-    if (state.lastRegime === 'exploring' && avgVelocity > 0.007 && avgVelocity < 0.090 + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
+
     if (couplingStrength < 0.15 && effectiveDim > 2.5) return 'fragmented';
     if (avgCurvature < 0.2 && avgVelocity > 0.008) return 'drifting';
     return 'evolving';

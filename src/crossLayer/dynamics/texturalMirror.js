@@ -62,7 +62,18 @@ texturalMirror = (() => {
     }
 
     // Weight: higher interaction target - stronger suggestion
-    const weight = clamp(interactionTarget * 0.7, 0.1, 0.8);
+    // R92 E5: Regime-responsive texture suggestion weight. Exploring
+    // passages benefit from stronger cross-layer texture contrast (more
+    // complementary or contrasting textures create richer coupling surface).
+    // Coherent passages get weaker suggestions for unified texture.
+    // Creates regime-specific textural behavior that enriches the
+    // coupling dimension landscape.
+    const snap = systemDynamicsProfiler.getSnapshot();
+    const texRegime = snap ? snap.regime : 'exploring';
+    const regimeWeightScale = texRegime === 'exploring' ? 1.20
+      : texRegime === 'coherent' ? 0.75
+      : 1.0;
+    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale, 0.1, 0.8);
 
     return { preferredMode, weight };
   }

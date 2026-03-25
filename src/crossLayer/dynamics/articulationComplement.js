@@ -74,6 +74,18 @@ articulationComplement = (() => {
     const sectionRoute = sectionBounds > 1 ? sectionPos / (sectionBounds - 1) : 0;
     const contrastStrength = CONTRAST_BASE + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * CONTRAST_GROWTH;
 
+    // R92 E4: Regime-responsive articulation contrast. Exploring passages
+    // benefit from stronger staccato/legato separation (more contrast = more
+    // textural variety and coupling dimension activity). Coherent passages
+    // get subtler contrast for unified articulation. Creates regime-specific
+    // articulation character that enriches coupling texture diversity.
+    const snap = systemDynamicsProfiler.getSnapshot();
+    const artRegime = snap ? snap.regime : 'exploring';
+    const regimeContrast = artRegime === 'exploring' ? 1.25
+      : artRegime === 'coherent' ? 0.80
+      : 1.0;
+    const effectiveContrast = contrastStrength * regimeContrast;
+
     // Check role swap state
     const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
 
@@ -83,11 +95,11 @@ articulationComplement = (() => {
 
     if (otherProfile.isLegato) {
       // Other is legato - we should be staccato (modulated by own profile)
-      sustainScale = clamp(1.0 - contrastStrength * interactionTarget + selfLegatoBias, 0.3, 1.0);
+      sustainScale = clamp(1.0 - effectiveContrast * interactionTarget + selfLegatoBias, 0.3, 1.0);
       preferredStutterType = 'chop';
     } else if (otherProfile.isStaccato) {
       // Other is staccato - we should be legato
-      sustainScale = clamp(1.0 + contrastStrength * interactionTarget, 1.0, 2.0);
+      sustainScale = clamp(1.0 + effectiveContrast * interactionTarget, 1.0, 2.0);
       preferredStutterType = 'fade';
     }
 

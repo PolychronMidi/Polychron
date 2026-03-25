@@ -45,10 +45,10 @@ try {
               // Check if the PID is still running
               process.kill(pid, 0);
               // If no error, process exists -> refuse to start another command
-              console.error('\n\n=================================================================');
+              console.error('\n\n=====');
               console.error(`ERROR: Another command is running (pid=${pid}).`);
               console.error('Please wait for it to finish or remove the stale lock at', lockPath);
-              console.error('=================================================================\n\n');
+              console.error('=====\n\n');
               process.exit(2);
             } catch (e) {
               // Process not running -> stale lock, remove it and continue

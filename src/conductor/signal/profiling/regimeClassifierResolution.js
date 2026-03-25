@@ -127,13 +127,21 @@ regimeClassifierResolution = (() => {
     let resolvedRegime = state.lastRegime;
     state.forcedOverrideActive = false;
 
+    // R86 E2: Decrement post-forced cooldown and prevent coherent re-entry
+    if (state.postForcedCooldown > 0) {
+      state.postForcedCooldown--;
+    }
+
     if (state.forcedRegimeBeatsRemaining > 0) {
       resolvedRegime = state.forcedRegime;
       state.forcedOverrideActive = true;
       state.forcedOverrideBeats++;
       state.forcedRegimeBeatsRemaining--;
       state.rawRegimeWindow.length = 0;
-      if (state.forcedRegimeBeatsRemaining === 0) state.forcedRegime = '';
+      if (state.forcedRegimeBeatsRemaining === 0) {
+        state.forcedRegime = '';
+        state.postForcedCooldown = 8;
+      }
     } else if (rawRegime !== state.lastRegime && state.rawRegimeWindow.length >= (config.REGIME_MAJORITY - 1)) {
       let windowHits = 0;
       for (let i = 0; i < state.rawRegimeWindow.length; i++) {
@@ -185,6 +193,14 @@ regimeClassifierResolution = (() => {
       }
     }
 
+    // R86 E2: Post-forced cooldown enforcement. If the forced break just
+    // ended (cooldown > 0) and the regime would return to coherent,
+    // override to exploring. This prevents immediate coherent re-entry
+    // that creates 44-break-44 superruns reducing transition variety.
+    if (state.postForcedCooldown > 0 && resolvedRegime === 'coherent') {
+      resolvedRegime = 'exploring';
+    }
+
     if (state.forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent') {
       const projectedRunCoherentBeats = state.runLastResolvedRegime === 'coherent' ? state.runCoherentBeats + beatSpan : beatSpan;
       let coherentMaxDwell = config.COHERENT_MAX_DWELL;
@@ -219,12 +235,19 @@ regimeClassifierResolution = (() => {
       }
       // R69 E2 / R72 E5 / R75 E4: Hard absolute cap on consecutive coherent beats.
       // R74 still showed maxConsecutiveCoherent at 110 trace entries.
-      // Reduced cap 60->50 to create shorter coherent stretches and
-      // more regime transition opportunities.
-      coherentMaxDwell = m.min(coherentMaxDwell, 50);
+      // R82 E4: Reduced cap 50->44. R81 coherent share surged 51.7%->62.5%
+      // and transition count dropped 52->36. Shorter coherent runs create
+      // more regime transition opportunities and compositional variety.
+      coherentMaxDwell = m.min(coherentMaxDwell, 44);
       if (projectedRunCoherentBeats > coherentMaxDwell) {
         const coherentOvershoot = projectedRunCoherentBeats - coherentMaxDwell;
-        const forcedWindow = clamp(5 + m.floor(coherentOvershoot / 22) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? m.round(1 + phaseStableRecoveryStrength) : 0), 5, 15);
+        // R84 E2: Expand forced window [5,15]->[8,20]. maxConsecutiveCoherent
+        // was 102 in R83 despite cap=44. The [5,15] window was too short --
+        // coherent re-established immediately after forced breaks, producing
+        // back-to-back 44-beat coherent runs with only brief interruptions.
+        // Wider forced window [8,20] makes breaks more impactful, giving the
+        // non-coherent regime time to establish trajectory momentum.
+        const forcedWindow = clamp(8 + m.floor(coherentOvershoot / 22) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? m.round(1 + phaseStableRecoveryStrength) : 0), 8, 20);
         const recoveryRegime = evolvingRecoveryPriority > 0.35 || (evolvingShare < 0.03 && evolvingDeficit > 0.80) ? 'evolving' : 'exploring';
         forceRegimeTransition(recoveryRegime, 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats, tickId);
         resolvedRegime = recoveryRegime;
@@ -232,7 +255,10 @@ regimeClassifierResolution = (() => {
         state.forcedOverrideBeats++;
         state.forcedRegimeBeatsRemaining = m.max(0, state.forcedRegimeBeatsRemaining - 1);
         state.rawRegimeWindow.length = 0;
-        if (state.forcedRegimeBeatsRemaining === 0) state.forcedRegime = '';
+        if (state.forcedRegimeBeatsRemaining === 0) {
+          state.forcedRegime = '';
+          state.postForcedCooldown = 8;
+        }
       }
     }
 
@@ -251,7 +277,10 @@ regimeClassifierResolution = (() => {
       state.forcedOverrideBeats++;
       state.forcedRegimeBeatsRemaining = m.max(0, state.forcedRegimeBeatsRemaining - 1);
       state.rawRegimeWindow.length = 0;
-      if (state.forcedRegimeBeatsRemaining === 0) state.forcedRegime = '';
+      if (state.forcedRegimeBeatsRemaining === 0) {
+        state.forcedRegime = '';
+        state.postForcedCooldown = 8;
+      }
       monopolyState = regimeClassifierHelpers.computeCadenceMonopolyProjection(state, resolvedRegime, beatSpan);
     }
 

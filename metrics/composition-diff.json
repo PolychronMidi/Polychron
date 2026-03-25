@@ -1,25 +1,36 @@
 {
   "meta": {
-    "generated": "2026-03-24T13:46:31.795Z",
+    "generated": "2026-03-25T00:53:51.695Z",
     "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
     "dirB": "/home/jah/Polychron/metrics",
-    "traceSizeA": 706,
-    "traceSizeB": 728,
+    "traceSizeA": 769,
+    "traceSizeB": 1202,
     "sectionsA": 5,
-    "sectionsB": 5
+    "sectionsB": 7
   },
   "diffs": [
+    {
+      "type": "section-count",
+      "severity": "major",
+      "detail": "Section count: 5 -> 7"
+    },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 0,
-      "detail": "Section 0: G minor -> G# minor"
+      "detail": "Section 0: B mixolydian -> Gb mixolydian"
+    },
+    {
+      "type": "tension-shift",
+      "severity": "moderate",
+      "section": 0,
+      "detail": "Section 0 avg tension: 0.441 -> 0.341"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 1,
-      "detail": "Section 1: Eb minor -> A# minor"
+      "detail": "Section 1: D# major -> E mixolydian"
     },
     {
       "type": "phrase-count",
@@ -28,88 +39,130 @@
       "detail": "Section 1: 3 phrases -> 2 phrases"
     },
     {
+      "type": "tension-shift",
+      "severity": "moderate",
+      "section": 1,
+      "detail": "Section 1 avg tension: 0.848 -> 0.638"
+    },
+    {
       "type": "regime-shift",
       "severity": "minor",
       "section": 1,
-      "detail": "Section 1 regime 'exploring': 11.9% -> 33.3%"
+      "detail": "Section 1 regime 'coherent': 36.9% -> 72.2%"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 1,
+      "detail": "Section 1 regime 'exploring': 36.9% -> 8.3%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 2,
-      "detail": "Section 2: C major -> C lydian"
+      "detail": "Section 2: A# minor -> E major"
     },
     {
-      "type": "regime-shift",
+      "type": "profile-change",
       "severity": "minor",
       "section": 2,
-      "detail": "Section 2 regime 'exploring': 38.0% -> 83.8%"
+      "phrase": 0,
+      "detail": "S2:P0 profile: default -> restrained"
     },
     {
-      "type": "regime-shift",
+      "type": "profile-change",
       "severity": "minor",
       "section": 2,
-      "detail": "Section 2 regime 'coherent': 62.0% -> 11.8%"
+      "phrase": 1,
+      "detail": "S2:P1 profile: default -> restrained"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 2,
+      "phrase": 2,
+      "detail": "S2:P2 profile: default -> restrained"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 3,
-      "detail": "Section 3: A# phrygian -> E major"
+      "detail": "Section 3: C# minor -> C# major"
     },
     {
-      "type": "phrase-count",
-      "severity": "moderate",
+      "type": "regime-shift",
+      "severity": "minor",
       "section": 3,
-      "detail": "Section 3: 3 phrases -> 4 phrases"
+      "detail": "Section 3 regime 'exploring': 7.6% -> 38.0%"
+    },
+    {
+      "type": "harmonic-change",
+      "severity": "notable",
+      "section": 4,
+      "detail": "Section 4: C major -> D dorian"
     },
     {
       "type": "tension-shift",
       "severity": "moderate",
-      "section": 3,
-      "detail": "Section 3 avg tension: 0.613 -> 0.732"
-    },
-    {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 3,
-      "detail": "Section 3 regime 'exploring': 66.7% -> 40.5%"
-    },
-    {
-      "type": "harmonic-change",
-      "severity": "notable",
       "section": 4,
-      "detail": "Section 4: G dorian -> D minor"
-    },
-    {
-      "type": "tension-shift",
-      "severity": "moderate",
-      "section": 4,
-      "detail": "Section 4 avg tension: 0.481 -> 0.591"
+      "detail": "Section 4 avg tension: 0.573 -> 0.773"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 4,
-      "detail": "Section 4 regime 'coherent': 22.7% -> 57.7%"
+      "detail": "Section 4 regime 'coherent': 69.4% -> 44.8%"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 4,
-      "detail": "Section 4 regime 'exploring': 77.3% -> 42.3%"
+      "detail": "Section 4 regime 'exploring': 19.4% -> 41.7%"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 4,
+      "phrase": 0,
+      "detail": "S4:P0 profile: explosive -> default"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 4,
+      "phrase": 1,
+      "detail": "S4:P1 profile: explosive -> default"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 4,
+      "phrase": 2,
+      "detail": "S4:P2 profile: explosive -> default"
+    },
+    {
+      "type": "section-added",
+      "severity": "major",
+      "section": 5,
+      "detail": "Section 5 added (key=F mixolydian)"
+    },
+    {
+      "type": "section-added",
+      "severity": "major",
+      "section": 6,
+      "detail": "Section 6 added (key=B mixolydian)"
     },
     {
       "type": "note-count",
       "severity": "major",
       "layer": "output1",
-      "detail": "output1: 11655 notes -> 17854 notes (53.2% change)"
+      "detail": "output1: 12749 notes -> 21237 notes (66.6% change)"
     },
     {
       "type": "note-count",
       "severity": "major",
       "layer": "output2",
-      "detail": "output2: 14568 notes -> 25648 notes (76.1% change)"
+      "detail": "output2: 17656 notes -> 27806 notes (57.5% change)"
     }
   ]
 }

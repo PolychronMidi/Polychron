@@ -21,7 +21,14 @@ regimeReactiveDamping = (() => {
     stagnant: 1,     // boost
     fragmented: 0,   // neutral
     oscillating: 0,  // neutral
-    exploring: 0,    // neutral
+    // R80 E3: Exploring density contraction. Exploring was neutral (0),
+    // producing no regime-dependent density motion. Combined with coherent=0,
+    // this left densityVariance stagnant at 0.0077. Setting exploring=-0.3
+    // creates sparser texture during exploring passages while exploring's
+    // tension direction (+1) rises, producing dramatic contrast: sparse-
+    // but-tense exploring vs neutral-density coherent. This regime-dependent
+    // density variation directly increases densityVariance.
+    exploring: -0.3, // sparse contrast
     coherent: 0,     // neutral
     evolving: 0,     // neutral
     drifting: -1,    // suppress
@@ -34,7 +41,7 @@ regimeReactiveDamping = (() => {
     fragmented: 0,
     oscillating: 0,
     exploring: 1,
-    coherent: 0,       // neutral -- R6's -0.5 flattened tension arc
+    coherent: 0,       // R91 E2: reverted to 0. DT pearsonR spiked 0.1247->0.4437 in R90 with 0.15; density and tension move in sync during coherent passages, creating exceedance (38 beats). Neutral decorrelates them.
     evolving: 1.0,     // R33 E4: 0.5->1.0 stronger tension identity for evolving regime
     drifting: 1,
   };
@@ -44,7 +51,16 @@ regimeReactiveDamping = (() => {
     fragmented: -1,  // dampen
     oscillating: 0,  // neutral (was -1 - dampening flicker while density is neutral
                      //   created mechanical anti-correlation r=-0.7 via shared causal path)
-    exploring: 1,    // boost variation - inject independent flicker to reduce density-flicker coupling
+    // R87 E5: Exploring flicker enrichment. Exploring is now 37.6%
+    // (dominant non-coherent regime). Boosting flicker direction from
+    // 1->1.5 creates more dynamic timbral variation during exploring,
+    // giving exploring passages a distinctive animated texture.
+    // R93 E1: Moderated 1.5->1.2. FT pearsonR improved 0.5269->0.4284
+    // but regime collapsed: exploring 41.1%->17.7%, coherent 49.1%->74.4%.
+    // R94 E1: Compromise 1.35. 1.2 was too low (collapsed exploring via
+    // insufficient dimensional variance). 1.5 was too high (FT correlation).
+    // 1.35 should balance FT decorrelation with regime diversity.
+    exploring: 1.35,  // boost variation - inject independent flicker to reduce density-flicker coupling
     coherent: 0,     // neutral - suppression (was -1) compressed flicker range and inflated coupling via near-zero variance
     evolving: 0.5,  // R33 E4: 0->0.5 give evolving regime distinct timbral character
     drifting: 0,
@@ -256,16 +272,56 @@ regimeReactiveDamping = (() => {
     const densityRebalanceLift = clamp(tensionFlickerPressure * (0.015 + phaseRecoveryCredit * 0.01) * (1 - densityFlickerPressure * 0.6), 0, 0.03);
 
     // Compute raw bias values with equilibrator corrections (#2)
-    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift;
-    // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
-    const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
     // R8 E3: Section-progressive tension bias. Adds a small ascending nudge
     // across sections to prevent V-shaped tension arc [0.44, 0.62, 0.43, 0.43].
-    // Max nudge +0.03 at final section. Does not depend on regime.
+    // R93 E2: Hill-shaped section tension nudge. Linear ramp (0->0.03) pushed
+    // tension monotonically toward later sections. Replace with sinusoidal
+    // arch (peak at mid-composition, ~0.035) creating natural tension climax
+    // at the compositional midpoint, then relaxation. This matches the
+    // flicker arch (hill-shaped) and complements the density arch (V-shaped),
+    // creating a more musically natural tension trajectory.
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
-    const sectionTensionNudge = sectionProgress * 0.03;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7;
+    const sectionTensionNudge = m.sin(sectionProgress * m.PI) * 0.035;
+    // R81 E3: Section-level density arch. densityVariance has been declining
+    // (0.0077->0.0054) because density is nearly uniform across sections.
+    // Add V-shaped modulation: denser at composition boundaries, sparser at
+    // midpoint. This creates structural density variation independent of
+    // regime, complementing the tension arch (which peaks at midpoint).
+    const densityArchProgress = m.abs(sectionProgress - 0.5) * 2; // 0 at mid, 1 at edges
+    const sectionDensityNudge = (densityArchProgress - 0.5) * 0.06; // range [-0.03, +0.03]
+    // R85 E2 + R86 E1: Density axis containment. When density axis exceeds
+    // fair share (0.167), apply graduated density brake. R86: threshold
+    // raised 0.18->0.20 because R85 overcorrected density to 0.1483
+    // (below fair share). Higher threshold ensures brake only fires on
+    // clear overshare, not near-fair-share fluctuations.
+    const densityShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.density === 'number'
+      ? axisEnergy.shares.density
+      : 1.0 / 6.0;
+    const densityShareBrake = clamp((densityShare - 0.20) / 0.08, 0, 1) * 0.04;
+    // R89 E1 / R90 E1: Density axis recovery lift. When density is below
+    // fair share, apply proportional positive nudge. R89 at 0.03 overcorrected
+    // density +74% (0.1325->0.2304). R90: reduced to 0.01 for gentler recovery.
+    const densityDeficit = clamp((1.0 / 6.0 - densityShare) / 0.05, 0, 1);
+    const densityRecoveryLift = densityDeficit * 0.01;
+    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift + sectionDensityNudge - densityShareBrake + densityRecoveryLift;
+    // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
+    const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
+    // R91 E3: Tension share brake. Tension axis surged to 0.2316 (dominant),
+    // creating DT exceedance monopoly (38 beats). Mirrors density share brake
+    // logic: activates above 0.20, full 0.04 brake at 0.28.
+    const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
+      ? axisEnergy.shares.tension
+      : 1.0 / 6.0;
+    const tensionShareBrake = clamp((tensionShare - 0.20) / 0.08, 0, 1) * 0.04;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease - tensionShareBrake;
+    // R83 E4: Section-level flicker arch -- inverted from density arch.
+    // Density is V-shaped (edges dense, midpoint sparse). Flicker arch is
+    // hill-shaped (edges calm, midpoint active). This creates complementary
+    // section-level texture: dense+calm boundaries, sparse+flickery midpoint.
+    // Range: [-0.02, +0.02], additive to raw flicker bias.
+    const flickerArchProgress = 1 - densityArchProgress; // 1 at mid, 0 at edges
+    const sectionFlickerNudge = (flickerArchProgress - 0.5) * 0.04; // range [-0.02, +0.02]
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7 + sectionFlickerNudge;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
     regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);

@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-24T13:46:29.280Z",
+    "generated": "2026-03-25T00:53:48.901Z",
     "moduleCount": 42,
-    "edgeCount": 57,
+    "edgeCount": 58,
     "atgChannelCount": 15
   },
   "modules": [
@@ -143,10 +143,11 @@
       ],
       "atgChannels": [],
       "interactions": [
+        "conductorSignalBridge",
         "interactionHeatMap",
         "sectionIntentCurves"
       ],
-      "readsSignals": false,
+      "readsSignals": true,
       "emitsExplain": false,
       "feedbackEnrolled": false
     },
@@ -810,6 +811,10 @@
     {
       "from": "crossLayerDynamicEnvelope",
       "to": "sectionIntentCurves"
+    },
+    {
+      "from": "restSynchronizer",
+      "to": "conductorSignalBridge"
     },
     {
       "from": "restSynchronizer",

@@ -31,6 +31,12 @@ crossLayerClimaxEngine = (() => {
   const MAX_REGISTER_WIDEN = 6;
   const ENTROPY_BASE = 0.5;
   const ENTROPY_BOOST = 0.4;
+  // R94 E3: Regime-responsive climax entropy scaling. During exploring,
+  // climax approach injects more entropy variance (boosting entropy axis
+  // share which collapsed 0.193->0.114 in R93). During coherent, reduce
+  // entropy injection to preserve unified texture. Regime multiplier
+  // scales the ENTROPY_BOOST: exploring 1.35x (0.54), coherent 0.85x (0.34).
+  const CLIMAX_ENTROPY_REGIME_SCALE = { exploring: 1.35, coherent: 0.85 };
 
   let smoothedClimax = 0;
   let peakReached = false;
@@ -97,11 +103,16 @@ crossLayerClimaxEngine = (() => {
     // Approaching or at climax: scale parameters
     const intensity = clamp((smoothedClimax - APPROACH_THRESHOLD) / (1 - APPROACH_THRESHOLD), 0, 1);
 
+    // R94 E3: Scale entropy boost by regime
+    const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const climaxRegime = regimeSnap ? regimeSnap.regime : 'evolving';
+    const entropyRegimeScale = CLIMAX_ENTROPY_REGIME_SCALE[climaxRegime] || 1.0;
+
     return {
       playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance,
       velocityScale: 1.0 + intensity * MAX_VELOCITY_BOOST,
       registerBias: intensity * MAX_REGISTER_WIDEN,
-      entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST
+      entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale
     };
   }
 

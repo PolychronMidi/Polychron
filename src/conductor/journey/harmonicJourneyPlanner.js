@@ -339,7 +339,8 @@ harmonicJourneyPlanner = (() => {
     if (steps.length > 0) {
       const firstStep = steps[0];
       if (firstStep && DARK_MODES.has(firstStep.mode)) {
-        const brighterOpeningMode = BRIGHTEN_MODE_MAP[firstStep.mode] || 'lydian';
+        // R90 E3: Changed fallback from 'lydian' to 'dorian' to reduce lydian bias
+        const brighterOpeningMode = BRIGHTEN_MODE_MAP[firstStep.mode] || 'dorian';
         firstStep.mode = brighterOpeningMode;
         firstStep.move = `parallel-${brighterOpeningMode} (frame-brighten)`;
       }
@@ -365,9 +366,21 @@ harmonicJourneyPlanner = (() => {
         }
       }
       if (dominantCount >= 3) {
-        const paletteBreakMode = dominantMode === 'dorian'
-          ? 'mixolydian'
-          : (dominantMode === 'major' || dominantMode === 'ionian' ? 'minor' : 'lydian');
+        // R90 E3: Fix lydian palette-break bias. Previously the catch-all
+        // fallback was always 'lydian', creating a strong lydian attractor.
+        // Now cycle through diverse contrast modes based on the dominant mode.
+        const PALETTE_BREAK_MAP = {
+          dorian: 'mixolydian',
+          major: 'minor',
+          ionian: 'minor',
+          lydian: 'dorian',
+          mixolydian: 'dorian',
+          minor: 'mixolydian',
+          aeolian: 'mixolydian',
+          phrygian: 'dorian',
+          locrian: 'dorian',
+        };
+        const paletteBreakMode = PALETTE_BREAK_MAP[dominantMode] || 'dorian';
         const targetIdx = m.floor(steps.length / 2);
         for (let offset = 0; offset < steps.length; offset++) {
           const idx = clamp(targetIdx + (offset % 2 === 0 ? offset : -offset), 0, steps.length - 1);

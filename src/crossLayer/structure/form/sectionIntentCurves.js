@@ -34,6 +34,12 @@ sectionIntentCurves = (() => {
   const ENTROPY_INTERACTION_W = 0.35;
   const ENTROPY_FLOOR = 0.15;
   const ENTROPY_CEIL = 0.95;
+  // R94 E4: Regime-responsive entropy floor. During exploring, raise the
+  // entropy floor to ensure minimum entropy diversity even in low-density
+  // sections. During coherent, lower it to allow tighter entropy ranges.
+  // This creates regime-dependent entropy variety at the intent level,
+  // helping recover entropy axis share (collapsed 0.193->0.114 in R93).
+  const ENTROPY_FLOOR_REGIME = { exploring: 0.22, coherent: 0.12 };
 
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
   let lastIntent = {
@@ -112,7 +118,11 @@ sectionIntentCurves = (() => {
       0,
       1
     );
-    const entropyTarget = clamp((densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W), ENTROPY_FLOOR, ENTROPY_CEIL);
+    // R94 E4: Apply regime-responsive entropy floor
+    const intentRegimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const intentRegime = intentRegimeSnap ? intentRegimeSnap.regime : 'evolving';
+    const effectiveEntropyFloor = ENTROPY_FLOOR_REGIME[intentRegime] || ENTROPY_FLOOR;
+    const entropyTarget = clamp((densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W), effectiveEntropyFloor, ENTROPY_CEIL);
 
     lastIntent = { densityTarget, dissonanceTarget, interactionTarget, entropyTarget };
     return lastIntent;

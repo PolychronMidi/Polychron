@@ -1,353 +1,394 @@
-## R77 -- 2026-03-24 -- STABLE
+## R93 -- 2026-03-24 -- STABLE
 
-**Profile:** explosive | **Beats:** 701 | **Duration:** 95.9s | **Notes:** 26223
+**Profile:** explosive | **Beats:** 762 | **Duration:** 93.1s | **Notes:** 30405
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- AXIS BALANCE BEST EVER: axisGini 0.0575 (from 0.0953). All 6 axes within 0.14-0.19 share range. Phase rising trend.
-- Notes recovered +43%: 18361->26223, L1 +75% (6659->11655). E2 density base 0.33->0.36 confirmed.
-- Tension S0 lifted: 0.39->0.47 (E1 confirmed). But S2/S3 softened: 0.67/0.58->0.55/0.44. Arch shape degraded — peak shifted from S2 to S1.
-- Evolving settled at 7.8% (down from 13.3% but up from pre-R76 baseline 4.7%). 55 evolving beats. Organic evolving still working.
-- Harmonic diversity: G minor, Eb minor, C major, A# phrygian, G dorian — 5 unique tonics, 5 unique modes (best modal variety ever).
-- S4 coherent monopoly broken: 100%->22.7%. S0 now has exploring (20.4%). 21 transitions (up from 11).
-- Exceedance improved: 48->36 beats. 10 pairs contributing (excellent spread). density-tension and flicker-trust top at 8 each.
-- Trust recovered: 0.124->0.160 (back toward fair share). Phase still low at 0.142 but trend rising.
-- densityVariance nearly doubled: 0.0072->0.0100. E4 density arc scale + E5 dissonance wave widening working.
+- REGIME COLLAPSE: Coherent surged 49.1% -> 74.4% (+25pp). Exploring collapsed 41.1% -> 17.7% (-23pp). maxConsecutiveCoherent 86 -> 103. Root cause: E1 (exploring flicker 1.5 -> 1.2) reduced dimensional variance during exploring, causing faster resolution to coherent.
+- AXIS BALANCE SEVERELY REGRESSED: axisGini 0.0813 -> 0.1819 (+124%). R92's best-ever balance completely lost. Tension surged 0.158 -> 0.252 (+60%), entropy collapsed 0.193 -> 0.114 (-41%), phase collapsed 0.150 -> 0.106 (-29%).
+- TENSION ARC IMPROVED: [0.548,0.748,0.572,0.473] -> [0.651,0.824,0.598,0.478]. Peak recovered to 0.824 (near R91 breakthrough 0.894). avgTension 0.662 -> 0.741 (+12%). Hill-shaped nudge (E2) likely contributed.
+- FT CORRELATION PARTIALLY DECORRELATED: pearsonR 0.5269 -> 0.4284 (-19%). Target of E1. But 6 OTHER pairs now have |pearsonR| > 0.40, including density-tension -0.504, density-trust 0.501, tension-flicker 0.530.
+- DF EXCEEDANCE SPIKED IN S3: Total 12 -> 25 (+108%). DF 7 -> 20. Of those, 18 in section 3 (sectionP95 0.931). Concentrated late-run hotspot.
+- HARMONIC VARIETY: B mixolydian -> D# major -> A# minor -> C# minor -> C major. 5 tonics, 4 modes including minor. Good variety. 0 lydian (fix durable since R90).
+- density-tension ANTI-CORRELATION: pearsonR -0.5036 (was -0.1156). DT separation exceeded target — density and tension now inversely coupled. The coherent tension direction = 0 (R91 E2) created independence that over-rotated in this high-coherent regime.
+- globalGainMultiplier compressed: 0.6085 -> 0.5902 (-3%). Budget pressure increased with coupling surface stress.
 
-### Evolutions Applied (from R76)
-- E1: Tension arch early floor 0.35->0.40 -- confirmed -- S0 tension 0.39->0.47
-- E2: Density base 0.33->0.36 -- confirmed -- notes +43%, L1 +75%
-- E3: Regime-responsive tension warmth -- inconclusive -- evolving at 7.8% too few beats to isolate
-- E4: Velocity interference boost 0.10/0.06->0.13/0.08 -- inconclusive -- no direct metric
-- E5: Dissonance wave scale 0.45->0.52 -- inconclusive -- densityVariance improved but multiple factors
+### Evolutions Applied (from R92)
+- E1: Exploring flicker direction 1.5 -> 1.2 -- REFUTED -- FT pearsonR improved 0.5269 -> 0.4284 (target achieved) BUT regime collapsed: exploring 41.1% -> 17.7%, coherent 49.1% -> 74.4%. Collateral too high. 0.3 reduction was excessive.
+- E2: Hill-shaped section tension nudge (sin * 0.035) -- confirmed -- Tension arc recovered to [0.651,0.824,0.598,0.478], nice arch shape. avgTension +12%. Small nudge but well-shaped.
+- E3: Rest synchronizer conductor density interaction -- inconclusive -- rest patterns not directly measurable. density-trust correlation spiked (0.1341 -> 0.5014) which MAY be partially caused by density signal bleeding into rest decisions that affect trust.
+- E4: Textural gradient tracker regime flickerMod -- refuted -- Combined with E1, further reduced flicker differentiation during exploring, contributing to regime collapse. Double-reduction of exploring flicker was too aggressive.
 
-### Evolutions Proposed (for R78)
-- E1: Tension arch S2/S3 sustain -- globalConductor.js -- S2/S3 dropped, need descending slope moderation
-- E2: Phase share recovery -- systemDynamicsProfilerHelpers.js or coupling -- phase at 0.142, below fair share
-- E3: Evolving holding power -- regimeClassifierResolution.js -- evolving minDwell or window adjustment
-- E4: Rhythmic subdivision variety -- getRhythm.js -- untouched since R69
-- E5: Composer exploring palette expansion -- composerFeedbackAdvisor.js or factoryFamilies
+### Evolutions Proposed (for R94)
+- E1: Partially revert exploring flicker direction to 1.35 -- regimeReactiveDamping.js. Compromise between 1.5 (FT too high) and 1.2 (regime collapse).
+- E2: Entropy axis structural recovery -- entropy collapsed 0.193 -> 0.114 (-41%). Need to strengthen entropy signal contribution in an untouched subsystem.
+- E3: Phase axis recovery via composer/rhythm subsystem -- phase at 0.106, lowest in lineage. Target untouched files.
+- E4: DF exceedance containment in S3 -- 18/20 DF beats concentrated in section 3. Investigate S3-specific coupling dynamics.
+- E5: Spread to fx or composers subsystem -- diversify evolutionary targets beyond conductor/crossLayer.
 
 ### Hypotheses to Track
-- Tension arch S2/S3 regression may be from profile-specific harmonic tension patterns rather than arch enforcement degradation.
-- axisGini at 0.0575 suggests the equilibrator is functioning optimally. Monitor for stability across rounds.
-- Phase below fair share despite rising trend — may need structural attention if it doesn't self-correct.
-- 21 transitions suggests the regime classifier is producing dynamic movement. This is healthy.
+- Exploring flicker direction has a sweet spot between 1.2 and 1.5 that balances FT decorrelation vs regime diversity. 1.35 should test the midpoint.
+- The regime collapse to 74.4% coherent is the primary driver of axis imbalance: coherent regime has damped entropy/phase velocity, so less coherent time = less entropy/phase energy.
+- density-trust correlation spike (0.134 -> 0.501) may trace to E3 (rest synchronizer density interaction). If density influences rest probability AND rest sync feeds trust, that creates a density -> trust pathway.
+- DF S3 concentration (18 beats) suggests section-dependent coupling dynamics. S3 has high tension (0.852 avg) which may amplify density-flicker coupling.
+- The tension share brake (threshold 0.20, max brake 0.04) was insufficient against the coherent regime surge. Tension at 0.252 means the brake applied full 0.04 but couldn't contain the accumulation.
 
 ---
 
-## R76 -- 2026-03-24 -- STABLE
+## R92 -- 2026-03-24 -- STABLE
 
-**Profile:** explosive | **Beats:** 490 | **Duration:** 80.1s | **Notes:** 18361
+**Profile:** explosive | **Beats:** 903 | **Duration:** 132.9s | **Notes:** 35398
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- EVOLVING BREAKTHROUGH: 4.7% -> 13.3% (nearly tripled). R76 E1 velocity ceiling widening (0.060->0.090) enabled organic evolving classification for the first time since R67 phase enrichment.
-- Regime balance best ever: coherent 41.0%, exploring 44.9%, evolving 13.3%. All three regimes meaningfully represented.
-- maxConsecutiveCoherent 79->74 (still within cap 50 influence). 11 transitions.
-- Tension arc softened: [0.48, 0.71, 0.70, 0.63] -> [0.39, 0.61, 0.67, 0.58]. S0/S1 dropped ~10pts. Arch shape preserved (S2 peak).
-- Phase dropped: 0.1771 -> 0.1430 (below fair share 0.1667). The evolving regime may redistribute coupling energy away from phase pairs. Monitor.
-- AxisGini 0.0889 -> 0.0953 (slight increase from phase drop but still excellent).
-- Note count dropped significantly: 29258 -> 18361 (-37%). L1 especially: 13651 -> 6659 (-51%). Density arc widening (E4) and stochastic profile differences.
-- Harmonic journey: F mixolydian, G# mixolydian, C# lydian, F major, E minor -- 4 unique tonics (F repeated) with good modal variety (2 mixolydian, 1 lydian, 1 major, 1 minor).
-- trust axis stable at 0.1243 (was 0.1258). Still slightly below fair share.
-- Exceedance rose: 31 -> 48 beats. density-trust p90=0.874 triggered manifest health warning. density-flicker remains top hotspot.
-- avgTension 0.654 -> 0.575 (-12%). Consistent with tension arc softening.
+- ENTROPY AXIS RECOVERED +33%: 0.1451 -> 0.1926. Entropy velocity amplification (E1) and regime-responsive window (E2) worked dramatically. Entropy now ABOVE fair share (0.1667). Same velocity amplification pattern that saved trust (R83) and phase (R88) now saves entropy.
+- AXIS BALANCE BEST IN LINEAGE: axisGini 0.1223 -> 0.0813 (-34%). All axes between 0.1294-0.199. This is the most balanced axis energy distribution in the entire lineage.
+- EXCEEDANCE HALVED AGAIN: 24 -> 12 (-50%). TE exceedance 10 -> 0 (eliminated!). Top pair now density-flicker (7) + density-trust (3). Two consecutive rounds of 50%+ exceedance reduction.
+- TRUST TREND STABILIZED: 0.1135 -> 0.1294 (+14%), trend "falling" -> "stable". Trust is still below fair share but no longer declining.
+- MULTIPLE CORRELATIONS DECORRELATED: density-entropy 0.3171 -> -0.1415 (stable), density-trust 0.3374 -> 0.1341 (stable), entropy-trust 0.3539 -> 0.0456 (stable). Three previously "increasing" correlations all stabilized.
+- FLICKER-TRUST SPIKE: pearsonR 0.1986 -> 0.5269 (increasing). New correlation hotspot. FT exceedance only 1 beat but correlation direction concerning.
+- EVOLVING REGRESSED: 24.5% -> 9.5%. Exploring surged 27.6% -> 41.1%. Regime balance shifted toward exploring-heavy.
+- TENSION ARC MODERATED: [0.556, 0.894, 0.704, 0.523] -> [0.548, 0.748, 0.572, 0.473]. Still good hill shape but R91 breakthrough peak (0.894) not sustained. avgTension 0.758 -> 0.662 (-13%).
+- PHASE DECLINED: 0.1784 -> 0.1502 (-16%). Phase trend "rising" despite share decrease -- may be temporary.
+- globalGainMultiplier IMPROVED: 0.5893 -> 0.6085 (+3%). Less coupling budget compression.
+- Harmonic: A# dorian -> D mixolydian -> G major -> A major -> A dorian. 3 modes, 4 tonics. Dorian framing preserved. 0 lydian (fix durable since R90).
+- maxConsecutiveCoherent: 94 -> 86 (improved).
 
-### Evolutions Applied (from R75)
-- E1: Evolving velocity ceiling 0.060->0.090 -- confirmed -- evolving surged 4.7%->13.3%, rawEvolvingShare no longer zero
-- E2: Exploring starvation trigger 12->8, window 5->6 -- inconclusive -- evolving gains likely from E1 not E2
-- E3: Exploring family boost 1.15->1.22 + blues -- inconclusive -- no isolated metric for composer family selection
-- E4: Density arc scale 0.55->0.62 -- inconclusive -- densityVariance 0.0077->0.0072, slight decrease (stochastic)
-- E5: Entropy ARC_TARGET_RANGE 0.6->0.7 -- inconclusive -- no isolated entropy motion metric
+### Evolutions Applied (from R91)
+- E1: Entropy velocity amplification (exploring 3.5x, evolving 3.0x, coherent 2.5x) -- confirmed -- entropy 0.1451 -> 0.1926 (+33%). Pattern proven across all three slow-changing axes (trust, phase, entropy).
+- E2: Regime-responsive entropy sample window (coherent 0.7s, exploring 1.3s) -- confirmed -- TE pearsonR 0.3794 -> 0.3348 (modest improvement), TE exceedance 10 -> 0, density-entropy 0.3171 -> -0.1415 (decorrelated). Entropy dynamics now regime-differentiated.
+- E3: Regime-responsive dynamic envelope amplitude (exploring 1.20x, coherent 0.85x) -- inconclusive -- cannot isolate envelope effects from other changes. Dynamic range maintained but densityVariance decreased 0.0122 -> 0.0074.
+- E4: Regime-responsive articulation contrast (exploring 1.25x, coherent 0.80x) -- inconclusive -- articulation effects not directly measurable in current metrics.
+- E5: Textural mirror regime-responsive weight (exploring 1.20x, coherent 0.75x) -- inconclusive -- texture effects not directly measurable in current metrics.
 
-### Evolutions Proposed (for R77)
-- E1: Tension arch S0 floor enforcement -- globalConductor.js -- S0 dropped to 0.39, add early-section minimum
-- E2: Note count recovery via density base lift -- sectionIntentCurves.js -- L1 halved, may need DENSITY_BASE nudge
-- E3: Trust axis gentle lift -- contextualTrust.js or adaptiveTrustScores.js -- trust at 0.1243 below fair share
-- E4: Regime-responsive pitch range variation -- composers/ or conductor/ -- expand pitch range during exploring
-- E5: Flicker-phase decorrelation improvement -- coupling surface -- flicker-phase avg 0.51 is highest pair
+### Evolutions Proposed (for R93)
+- E1: Flicker-trust decorrelation -- FT pearsonR spiked 0.1986 -> 0.5269. Investigate flicker-trust coupling pathway. May need regime-responsive flicker bias modulation in regimeReactiveDamping.js or a trust-flicker specific decorrelation mechanism.
+- E2: Evolving regime recovery -- evolving dropped 24.5% -> 9.5%. Investigating evolving entry conditions in regimeClassifierClassification.js.
+- E3: Phase axis recovery -- phase declined 0.1784 -> 0.1502 (-16%). Trend is "rising" but share below fair share again.
+- E4: Tension arc peak recovery -- R91 peak 0.894 regressed to 0.748. Investigate whether regime-responsive entropy window (coherent shorter) is dampening tension during peak sections.
+- E5: Density-flicker exceedance containment -- DF is now top pair (7 beats), needs monitoring.
 
 ### Hypotheses to Track
-- Evolving recovery may be sustainable now that velocity ceiling (0.090) better matches actual trajectory velocity range (0.11-0.21 with compound phase signal).
-- Note count drop (-37%) may be stochastic or profile-dependent. If persistent, DENSITY_BASE increase from 0.33 to 0.36 could help.
-- Phase regression from 0.1771 to 0.143 may correlate with higher evolving share. Evolving regime may produce different coupling dynamics than coherent/exploring.
-- Tension softening across all sections suggests the arch enforcement may need recalibration for current regime mix.
+- Flicker-trust correlation spike (0.5269) may be caused by the regime-responsive articulation + texture changes (E4/E5) that amplify contrast during exploring, where flicker and trust axes both respond to the same cross-layer dynamics.
+- Evolving regression (24.5% -> 9.5%) despite no regime classifier changes suggests the entropy velocity amplification creates more between-beat variance that pushes the system toward exploring/coherent classification rather than the intermediate evolving state.
+- Entropy velocity amplification may have a balloon effect: boosting entropy energy may have displaced flicker (0.1957 -> 0.171) and phase (0.1784 -> 0.1502). The "rising" phase trend suggests this is transient.
+- The 3 previously "increasing" correlations (density-entropy, density-trust, entropy-trust) all stabilized simultaneously. The regime-responsive entropy window likely created enough entropy independence to break these chains.
 
 ---
 
-## R75 -- 2026-03-24 -- STABLE
+## R91 -- 2026-03-24 -- STABLE
 
-**Profile:** explosive | **Beats:** 767 | **Duration:** 88.4s | **Notes:** 29258
+**Profile:** explosive | **Beats:** 764 | **Duration:** 92.8s | **Notes:** 30107
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- TENSION ARC SUSTAINED HIGH: [0.48, 0.71, 0.70, 0.63] -- best sustained arc ever. S2+S3 both above 0.69, S4 strongest at 0.63. E1 tension smoothing (0.38->0.30) confirmed.
-- Phase BEST EVER: 0.1771 axis share (up from 0.148). Above fair share (0.1667). Phase signal enrichment lineage paying off.
-- maxConsecutiveCoherent: 79 (down from 110). E4 coherent cap 60->50 working. 26 transitions.
-- Exploring surged to 52.9% (from 42.6%) -- coherent dwell reduction pushed time to exploring, not evolving.
-- Evolving halved: 9.4% -> 4.7% -- regression. Shorter coherent runs don't create evolving windows; they create exploring rebounds.
-- Hotspot concentration shattered: 0.75 -> 0.35 top2. 7 exceedance pairs all at 4-6 beats. Excellent diversity.
-- 5 unique tonics: F, C#, D#, Ab, G. Strong modal variety (major, minor, minor, minor, major).
-- Trust slightly low 0.1258 (below fair share). phaseLock trust 0.4617 highest.
-- avgTension 0.654 (up from 0.608) -- tension smoothing + arch enforcement compounding.
+- TENSION ARC BREAKTHROUGH: [0.556, 0.894, 0.704, 0.523]. S1 peak at 0.894 (was 0.740) -- best in lineage. Beautiful ascending-descending arch with sustained S2 at 0.704. avgTension 0.620->0.758 (+22%).
+- DT DECORRELATION CONFIRMED: density-tension pearsonR 0.4437->-0.1156. DT exceedance 38->1 beat (-97%). Reverting coherent tension direction to 0 completely broke the DT correlation. Hotspot migrated to tension-entropy (10 beats).
+- EVOLVING DOUBLED: 12.0% -> 24.5%. Best evolving share since R82 (15.3%). Coherent moderated 58.5%->47.4%. Regime balance is the best in recent lineage.
+- FLICKER RECOVERED +45%: 0.1345 -> 0.1957. Flicker axis near fair share for first time in many rounds. density-flicker pearsonR improved -0.4678->-0.111 (near decorrelated).
+- TRUST RECOVERING: 0.0866 -> 0.1135 (+31%). Coherent trustVelAmp boost 2.5->3.5 helped, but trust still below fair share (0.1667). Trend: "falling" -- more work needed.
+- PHASE CONTINUES RISING: 0.1659 -> 0.1784 (+7.5%). Phase now above fair share. 3-round sustained recovery.
+- axisGini: 0.1608 -> 0.1223 (-24% improvement). Axis balance significantly better.
+- EXCEEDANCE DROPPED 68%: 74 -> 24. Top pair TE(10)/FT(7). DT monopoly completely broken.
+- densityVariance: 0.0067 -> 0.0122 (+82%). Much stronger section-level density contrast.
+- Harmonic: G# dorian -> C major -> Bb major -> F minor -> Gb dorian. 4 modes, 5 tonics, 5 sections. Opening/closing in dorian -- nice framing.
+- globalGainMultiplier compressed further but coupling healthier overall.
 
-### Evolutions Applied (from R74)
-- E1: Tension smoothing 0.38->0.30 -- confirmed -- S2/S3/S4 all sustained high (0.70, 0.70, 0.63 vs 0.48, 0.70, 0.40)
-- E2: Entropy arc blend 0.3->0.45 -- inconclusive -- no isolated entropy motion metric
-- E3: Evolving melodic family boost -- inconclusive -- evolving at 4.7% too few beats to measure
-- E4: Coherent cap 60->50 -- confirmed -- maxConsecutiveCoherent 110->79, coherent share 47.5%->41.9%
-- E5: Section boundary depth by position -- inconclusive -- S4 has deeper dip but density data shows minimal variance change
+### Evolutions Applied (from R90)
+- E1: Trust coherent velAmp 2.5->3.5 -- confirmed -- trust 0.0866->0.1135 (+31%). Same pattern as phase recovery (R90 E5).
+- E2: Coherent tension direction 0.15->0 -- confirmed -- DT pearsonR 0.4437->-0.1156, DT exceedance 38->1. Most impactful single evolution in recent lineage.
+- E3: Tension share brake (activates above 0.20) -- confirmed -- tension 0.2316->0.1445 (-38%). Combined with E2, tension axis fully contained.
+- E4: Regime-responsive velocity interference -- inconclusive -- cannot isolate effects from other changes, but coupling texture healthier overall.
 
-### Evolutions Proposed (for R76)
-- E1: Evolving recovery via longer forced injection windows -- regimeClassifierResolution.js -- starvation injector window 6->8
-- E2: Density variance boost via section-level density target curve -- sectionIntentCurves.js -- add ascending/descending density arc per section
-- E3: Trust floor activation -- explore trust axis is 0.1258 (below fair share) -- monitor or nudge
-- E4: Regime-responsive harmonic complexity -- composerFeedbackAdvisor.js -- exploring regime should favor more dissonant families
-- E5: Rhythm subdivision variety -- getRhythm.js -- add section-progressive subdivision complexity
+### Evolutions Proposed (for R92)
+- E1: Trust axis continued recovery -- trust at 0.1135, trend "falling". May need structural trust enrichment rather than further velAmp tweaking. Investigate trust signal pathway in adaptiveTrustScores.js or contextualTrust.js.
+- E2: Entropy axis recovery -- entropy declined 0.1674->0.1451, now tied with tension as weakest. Investigate entropy signal in systemDynamicsProfilerHelpers.js.
+- E3: Density axis moderation -- density still at 0.2228 (highest). Density share brake activates at 0.20 but only provides 0.04 max brake. Consider lowering threshold.
+- E4: Tension-entropy exceedance containment -- TE is now the top pair (10 beats). Investigate structural decorrelation between tension and entropy signals.
+- E5: Composer diversity enrichment -- explore section-specific composer family weighting to create more distinct timbral character across sections.
 
 ### Hypotheses to Track
-- Coherent cap reduction creates exploring, not evolving. The exploring->evolving transition pathway needs strengthening independent of coherent dwell.
-- Phase at 0.1771 is above fair share -- this is the first time phase has been "healthy" across many rounds. The R67 compound signal + R71 measure oscillation is the durable fix.
-- Tension smoothing 0.30 creates smoother but potentially less dynamic arc. Monitor whether beat-to-beat tension variance declines.
+- Trust "falling" trend despite +31% recovery suggests the trust velAmp boost is fighting a structural drain. The trust signal may need an independent variance source (like the phase LFO) rather than velocity amplification.
+- Tension arc peak at 0.894 is the R91 signature. This may be a profile-specific (explosive) effect that won't persist under different profiles.
+- Evolving at 24.5% is the healthiest regime balance in 10+ rounds. If sustained, this creates more musical variety in transitional passages.
+- density-flicker pearsonR improved -0.4678->-0.111 -- nearly neutral. This may be an indirect benefit of reduced density-tension correlation freeing up coupling energy redistributed to other axes.
 
 ---
 
-## R74 -- 2026-03-24 -- STABLE
+## R90 -- 2026-03-24 -- STABLE
 
-**Profile:** evolving | **Beats:** 815 | **Duration:** 80.9s | **Notes:** 31104
+**Profile:** explosive | **Beats:** 909 | **Duration:** 120.4s | **Notes:** 36239
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- Tension arc [0.505, 0.783, 0.480, 0.399] -- S1 peak surged from 0.585 to 0.783 (E2 max boost confirmed)
-- Evolving recovered 4.7% -> 9.4% (doubled), 3 forced starvation injections (first at coherent streak 15)
-- Harmonic journey: Ab minor -> F# lydian -> B major -> C major -> G minor -- 5 unique tonics (was 3)
-- Note count recovered: 31104 from 27276 (+14%), L1 surged +35% (10886 -> 14692)
-- Exceedance re-engaged: 40 beats (was 4), density-flicker top pair at 20 beats
-- AxisGini improved 0.0988 -> 0.0707 (excellent balance)
-- maxConsecutiveCoherent fell 119 -> 110
-- Coherent share healthier at 47.5% (was 54.9%), exploring 42.6% (was 39.6%)
+- LYDIAN BIAS ELIMINATED: 5/5 lydian (R89) -> 0/4 lydian. Journey: D# minor -> F mixolydian -> F major -> D# minor. 3 distinct modes (minor, mixolydian, major), 3 tonics (D#, F, F). PALETTE_BREAK_MAP + frame-brighten fallback fix confirmed.
+- PHASE RECOVERED +43%: 0.1156 -> 0.1659. Coherent phaseVelAmp 2.0->3.0 boost confirmed effective. Phase near fair share (0.1667) for the first time in many rounds.
+- TRUST COLLAPSED -50%: 0.1736 -> 0.0866. Lowest trust axis share in lineage. Trust coupling energy displaced by tension (0.1808->0.2316) and phase recovery. Trust axis now the critical weak point.
+- DENSITY-TENSION HOTSPOT: DT exceedance 38/74 beats (51%). DT pearsonR jumped 0.1247->0.4437 (strongly increasing). DT p95=0.895. The density and tension axes are now dangerously correlated.
+- DENSITY MODERATED: 0.2304 -> 0.2139 (-7%). Recovery lift reduction 0.03->0.01 helped but density still above fair share.
+- FLICKER RECOVERING: 0.1163 -> 0.1345 (+16%). DF pearsonR improved -0.6671 -> -0.4678 (less anti-correlated). Flicker still below fair share.
+- EVOLVING REGRESSED: 20.9% -> 12.0%. Profile change to explosive likely responsible (explosive drives more extreme dynamics that suppress transitional regimes). Exploring gained (20.6%->29.0%).
+- axisGini: 0.1304 -> 0.1608 (+23%, regressed). Driven by trust collapse (0.0866 far below mean 0.1667).
+- maxConsecutiveCoherent: 115 -> 140 (increased). globalGainMultiplier: 0.5935 -> 0.3604 (compressed).
+- Tension arc: [0.511, 0.704, 0.492, 0.454] -> [0.522, 0.740, 0.492, 0.444]. Good hill shape, S1 peak improved.
+- Notes: 23856 -> 36239 (+52%). Longer composition (78.8s -> 120.4s, 4 sections). Profile change dominant factor.
 
-### Evolutions Applied (from R73)
-- E1: Coherent starvation threshold 20->15 -- confirmed -- evolving doubled 4.7%->9.4%, 3 injects (1 from coherent at 15)
-- E2: Tension arch max boost 0.15->0.20 -- confirmed -- S1 tension 0.585->0.783, avgTension 0.528->0.608
-- E3: Phase signal harmonic weight 0.15->0.20 -- inconclusive -- axisGini improved but phase share 0.148->0.148 unchanged
-- E4: Repeat-escape extended to S0->S1 -- confirmed -- 5 unique tonics (was 3), no adjacent repeats
-- E5: Rest sync base 0.18->0.14, coherent bonus 0.08->0.05 -- confirmed -- notes +14%, L1 +35%
+### Evolutions Applied (from R89)
+- E1: Density recovery lift 0.03->0.01 -- confirmed -- density share 0.2304->0.2139 (-7%). Moderate reduction; need further rounds to assess equilibrium.
+- E2: Coherent tension direction 0.25->0.15 -- inconclusive -- tension axis grew 0.1808->0.2316 but profile change to explosive naturally increases tension. Cannot isolate tension direction effect.
+- E3: Lydian bias fix (PALETTE_BREAK_MAP + frame-brighten 'lydian'->'dorian') -- confirmed -- 0/4 sections lydian (was 5/5). Minor/mixolydian/major diversity achieved.
+- E4: Regime-responsive swap probability -- inconclusive -- swap effects cannot be isolated from profile change. roleSwap trust score: 0.202->0.182, slightly decreased.
+- E5: Coherent phaseVelAmp 2.0->3.0 -- confirmed -- phase share 0.1156->0.1659 (+43.5%). Biggest single-round phase recovery in lineage. Phase near fair share.
 
-### Evolutions Proposed (for R75)
-- E1: Tension smoothing reduction 0.38->0.30 -- globalConductor.js -- Allow faster tension response to arch target
-- E2: Entropy regulator ARC_BLEND_WEIGHT increase 0.3->0.45 -- entropyRegulator.js -- Strengthen arc-driven entropy target
-- E3: Regime-responsive composer family weighting evolution -- composerFeedbackAdvisor.js -- Evolving regime should favor melodic development
-- E4: Stutter contagion trust-floor reduction -- negotiationEngine.js -- STUTTER_TRUST_BASE 0.85->0.78 for wider stutter range
-- E5: Section-boundary density dip asymmetry -- sectionIntentCurves.js -- Make S0/S1 boundary deeper than S3/S4
-- E6: Coherent hard cap reduction 60->50 -- regimeClassifierResolution.js -- Shorten max coherent stretch
-
-### Hypotheses to Track
-- S1 tension at 0.783 may be too peaked -- watch for distortion in S1 character
-- Phase signal harmonic weight increase may need complementary section weight decrease to show effect
-- Exceedance 40 beats shows coupling surface is alive again -- monitor for density-flicker monopoly risk
-- With evolving at 9.4%, cadence-monopoly forced transitions may reappear as coherent dips below 50%
-
-
-
-## R73 -- 2026-03-24 -- STABLE
-
-**Profile:** explosive | **Beats:** 728 | **Duration:** 81.8s | **Notes:** 27276
-**Fingerprint:** 10/10 stable | Drifted: none
-
-### Key Observations
-- TENSION ARC ARCH RESTORED: [0.52, 0.69, 0.39, 0.33] -> [0.48, 0.58, 0.47, 0.40]. S2 recovered 0.39->0.47, S3 recovered 0.33->0.40. E1 descending slope moderation (0.35->0.25) eliminated the spike-then-collapse shape from R72.
-- Exceedance collapsed: 53 -> 4 total beats. Only 3 unique exceedance beats. Top pair changed from tension-flicker(17) to tension-trust(2). With so few exceedance beats, coupling surface is barely active -- this may be a stochastic anomaly or from rest synchronizer suppressing signal energy.
-- Harmonic journey: Db lydian -> Db lydian -> D# major -> F major -> F lydian. 3 unique tonics (Db, D#, F). Db repeated S0-S1, F repeated S3-S4. Tighter cap ceil(n/3) allows max 2, both Db and F at 2. E3 inconclusive -- tighter cap works mechanically but stochastic variance reduced diversity vs R72's 4 tonics.
-- Evolving drifted down: 7.9% -> 4.7% (34 beats out of 728). Coherent 54.9%, exploring 39.6%. Exploring slightly up.
-- Note count dropped: L1 -27.6% (15042->10886), L2 -19.1% (20255->16390). R73 composition is shorter/sparser.
-- DensityVariance: 0.0114 -> 0.0098. Still well above R71's 0.0060 but slight regression from R72.
-- Phase: 0.1583 -> 0.1504. Minor decline but still above fair share. Tension rising trend.
-- axisGini: 0.0974 -> 0.0988 (stable). globalGainMultiplier: 0.5986 -> 0.6323 (loosened -- less suppression needed).
-- maxConsecutiveCoherent: 109 -> 119 (trace entries, ~60 actual beats at 60-beat cap). transitions: 29 -> 22.
-- Three untouched subsystem files activated: crossLayerDynamicEnvelope.js, articulationComplement.js, restSynchronizer.js.
-
-### Evolutions Applied (from R72)
-- E1: Tension arch descending slope 0.35->0.25 -- confirmed -- S2 0.39->0.47 (+21%), S3 0.33->0.40 (+21%). Arch shape restored without losing overall structure.
-- E2: Dynamic envelope regime-aware arc selection -- inconclusive -- no direct metric isolates arc type distribution. Need to track cross-layer velocity scale variance in future.
-- E3: Tonic repeat cap ceil(n/2)->ceil(n/3) -- inconclusive -- 3 unique tonics (down from 4). Cap mechanically correct (Db:2, F:2 both at limit) but random tonic selection yielded fewer unique tonics this run. Stochastic variance.
-- E4: Articulation contrast section-progressive scaling -- inconclusive -- sustainScale variance not directly tracked. The lower note count (-24% avg) could indicate increased rest periods from articulation changes.
-- E5: Regime-responsive rest synchronization -- inconclusive -- note count dropped 24% which could be from both rest sync and stochastic variance. Exceedance collapse to 4 beats may indicate rest-induced signal energy reduction.
-
-### Evolutions Proposed (for R74)
-- E1: Tension arch max boost increase 0.15->0.20 -- globalConductor.js -- the arch floor shape is good now but max boost limits actual tension lift. Raising it should sustain higher tension at the 0.59 peak.
-- E2: Evolving starvation frequency -- regimeClassifierResolution.js -- evolving drifted 7.9%->4.7%. The coherent-source injector added in R72 fired but evolving windows expire too quickly. Reduce coherent beat requirement from 20 to 15.
-- E3: Composer pool rotation for section variety -- composerFeedbackAdvisor.js -- add section-dependent bias toward less-used composer families
-- E4: Entropy-driven coupling engagement -- src/crossLayer/structure/entropy/ -- target entropyRegulator to inject more entropy variance in mid-sections
-- E5: Phase signal harmonic weight increase -- systemDynamicsProfilerHelpers.js -- boost harmonic oscillation weight from 0.15 to 0.20 for stronger phase beat-to-beat motion
+### Evolutions Proposed (for R91)
+- E1: Trust velocity amplification boost -- systemDynamicsProfilerHelpers.js -- trust axis at 0.0866 (collapsed). Coherent trustVelAmp is 2.5x, exploring 5.0x. With coherent at 58.5%, boost coherent trustVelAmp to restore trust energy.
+- E2: Density-tension decorrelation -- regimeReactiveDamping.js or globalConductor.js -- DT pearsonR 0.4437 (increasing), DT exceedance 38 beats. Density and tension signals need structural decorrelation.
+- E3: Evolving recovery -- regimeClassifierClassification.js -- evolving dropped 20.9%->12.0%. Investigate evolving entry thresholds under explosive profile.
+- E4: maxConsecutiveCoherent reduction -- regimeClassifierResolution.js -- maxCC 140, coherent dominates 58.5%. Consider tightening dwell cap or forced window.
+- E5: Flicker axis enrichment -- explore flicker signal pathway for independent variance boost, similar to phase LFO approach.
 
 ### Hypotheses to Track
-- Exceedance collapse (53->4) is likely stochastic -- one run is insufficient to conclude that rest sync or articulation changes systematically suppress coupling exceedance. If next run also shows <10 exceedance, investigate rest sync impact.
-- The tension arch floor at p=0.6 (value 0.59) with slope 0.25 creates a gentle but lower descending arc. If S2/S3 tension stays in the 0.45-0.50 range across multiple runs, the floor is working correctly.
-- Note count decrease (24%) could create less coupling signal energy and thus fewer exceedance events. Need to track this correlation.
+- Trust collapse may be structural: phase recovery (+43%) displaced trust coupling energy. The trust-phase relationship is a zero-sum game within the coupling budget when globalGainMultiplier is compressed (0.3604).
+- DT correlation spike (0.1247->0.4437) may be caused by coherent tension direction (+0.15) making density and tension move in sync during coherent passages. Reducing or removing this direction may decorrelate them.
+- Evolving regression (20.9%->12.0%) under explosive profile may be expected: explosive drives higher amplitude signals that push the system toward coherent or exploring extremes, compressing the transitional evolving space.
+- globalGainMultiplier compression (0.5935->0.3604) indicates the coupling budget is under stress from the longer run and higher note count. Trust axis starvation may be a budget-driven effect.
 
 ---
 
-## R72 -- 2026-03-24 -- STABLE
+## R89 -- 2026-03-24 -- STABLE
 
-**Profile:** explosive | **Beats:** 916 | **Duration:** 91.4s | **Notes:** 35297
+**Profile:** coherent | **Beats:** 593 | **Duration:** 78.8s | **Notes:** 23856
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- DENSITY VARIANCE BREAKTHROUGH: 0.0060 -> 0.0114 (nearly doubled). E3 phrase-alternating perturbation creates genuine inter-phrase contrast -- even phrases boosted, odd phrases dipped -- breaking the symmetric averaging of smooth sinusoids.
-- HOTSPOT DECONCENTRATION: top2Concentration 0.983 -> 0.434 (shattered). tension-flicker beats 55 -> 17. Exceedance now spread: tension-flicker 17, density-flicker 6, flicker-entropy 5, density-tension 4, plus 4 more pairs with 4-5 each. E4 monopoly relief worked.
-- EVOLVING TRIPLED: 2.5% -> 7.9% (72 beats). E2 coherent-source injection + wider window (3->5) + higher threshold (0.04->0.06) all contributed. transitions doubled 15 -> 29.
-- COHERENT REDUCED: 62.0% -> 55.9%. E5 cap reduction 75->60 and E2 coherent-source injection both push coherent down. exploring stable at 35.8%.
-- PHASE NEW HIGH: 0.1317 -> 0.1583, best ever. Phase trend "rising". axisGini 0.0829 -> 0.0974 (slight worsening but still < 0.10).
-- Tension arc peaked higher but declined faster: [0.52, 0.62, 0.46, 0.37] -> [0.52, 0.69, 0.39, 0.33]. S1 peak 0.69 is excellent but S2/S3 dropped. Shape is spike-then-decline rather than arch. E1 INCONCLUSIVE: descending slope at 0.35/unit is too steep.
-- Harmonic journey: F dorian -> A dorian -> A major -> Bb minor -> Eb minor. 4 unique tonics (A repeated in S1/S2 with different modes). Good diversity but slight tonic repeat.
-- Exceedance by section: S0 (7) and S3 (13). S1/S2 still zero -- mid-section coupling remains too tame.
-- Signal ranges: tension [0.098, 0.850] (widest ever), density [0.282, 0.683].
-- globalGainMultiplier: 0.5986 (stable). telemetryHealth improved 0.3418 -> 0.4478.
+- EVOLVING BREAKTHROUGH: 15.2% -> 20.9% (+38%). E2 exploring-to-evolving crossover dwell 4->3 confirmed. Target >18% met for first time since R85.
+- DENSITY AXIS OVERCORRECTION: 0.1325 -> 0.2304 (+74%). E1 density recovery lift (densityDeficit*0.03) was too aggressive. Density went from lowest to highest axis. axisGini 0.0791 -> 0.1304 (regressed). densityVariance collapsed 0.0091 -> 0.0039 as density became uniformly higher.
+- FLICKER COLLAPSED: 0.2063 -> 0.1163 (-44%). Flicker went from highest to near-lowest axis. Density took flicker's coupling energy. density-flicker pearsonR 0.3828 -> -0.6671 (extreme anti-correlation from density lift).
+- PHASE DECLINED AGAIN: 0.1550 -> 0.1156 (-25%). R88's velocity amplification gains not sustained. Phase remains structurally weak across different run sizes.
+- EXCEEDANCE DISTRIBUTION IMPROVED: top2Concentration 0.8000 -> 0.4167. 6 different pairs exceeded (broadest ever). Total 12 beats, all warmup-concentrated.
+- HARMONIC MONOTONY: All 5 sections lydian mode (A, Eb, C#, Db, Gb lydian). 5 tonics but 1 mode. Likely stochastic but notable.
+- maxConsecutiveCoherent: 78 -> 115 (regressed). 1 forced break (dwell-cap at tick 244, streak 45). rawMaxStreak coherent 81.
+- Tension arc: [0.511, 0.704, 0.492, 0.454]. S0 dropped significantly from R88's 0.656. S1 maintained good peak.
+- density-tension re-coupling: avg 0.2818 -> 0.4276 (+52%), now dominant tail pair (0.8961 pressure). Density lift drove density-tension energy up.
+- trustConvergence: 0.285 -> 0.296 (+4%). Trust stable.
 
-### Evolutions Applied (from R71)
-- E1: Tension arch peak shift p=0.5->0.6 -- inconclusive -- S1 peak reached 0.69 (highest ever) but S2/S3 dropped to 0.39/0.33. Descending slope 0.35/unit drops the floor too quickly after the delayed peak.
-- E2: Starvation injector scaling (threshold 0.04->0.06, window 3->5, coherent-source) -- confirmed -- evolving 2.5% -> 7.9%, transitions 15 -> 29. Coherent-source injection was the key improvement.
-- E3: Density perturbation asymmetry (phrase-alternating sign) -- confirmed -- densityVariance 0.0060 -> 0.0114 (90% increase). Phrase alternation creates real inter-phrase contrast.
-- E4: Tension-flicker monopoly relief (ceiling 0.08->0.12, concentration penalty) -- confirmed -- top2Concentration 0.983 -> 0.434, tension-flicker 55 -> 17 beats.
-- E5: Coherent dwell cap 75->60 -- confirmed -- coherent 62% -> 55.9%, more transition windows created.
+### Evolutions Applied (from R88)
+- E1: Density axis recovery lift -- refuted -- density 0.1325->0.2304 (+74%), axisGini 0.0791->0.1304. densityDeficit*0.03 overcorrected massively. Must reduce or remove.
+- E2: Exploring-to-evolving crossover dwell 4->3 -- confirmed -- evolving 15.2%->20.9% (+38%). Target >18% met.
+- E3: Coherent tension direction +0.25 -- inconclusive -- tension avg 0.685->0.599 (shorter run), coherent 48.5%->57.8%. Profile/size change confounds.
+- E4: Exploring cross-mod *1.15 -- inconclusive -- exploring dropped to 20.6%, less exploring volume to assess.
+- E5: Coherent composer palette +pentatonic -- inconclusive -- all lydian mode, possibly coincidence. Can't isolate.
 
-### Evolutions Proposed (for R73)
-- E1: Tension arch descending slope moderation -- globalConductor.js -- reduce slope from 0.35 to 0.25 so S2/S3 sustain tension after the p=0.6 peak
-- E2: Stutter subdivision variety -- src/fx/ (untouched since R64) -- regime-responsive stutter patterns for sonic differentiation
-- E3: Composer intervallic diversity -- src/composers/ -- target interval selection bias for wider melodic range
-- E4: Mid-section coupling engagement -- couplingConstants or sectionIntentCurves.js -- S1/S2 have zero exceedance, need structural coupling activity in mid-sections
-- E5: Tonic repeat tightening -- harmonicJourneyPlanner.js -- reduce max tonic appearances from ceil(n/2) to ceil(n/3)+1
+### Evolutions Proposed (for R90)
+- E1: Reduce density recovery lift 0.03->0.01 -- regimeReactiveDamping.js -- E1 overcorrected density +74%. Reduce lift magnitude by 67% to prevent axis domination.
+- E2: Coherent tension direction moderation 0.25->0.15 -- regimeReactiveDamping.js -- Inconclusive at 0.25 but tension avg dropped. Moderate to avoid over-steering coherent passages.
+- E3: Composer mode diversity injection -- composerFeedbackAdvisor.js or composer selection logic -- All lydian run suggests modal selection needs enrichment. Investigate how mode is chosen and whether dorian/mixolydian/minor can be encouraged.
+- E4: Section-progressive flicker recovery -- regimeReactiveDamping.js -- Flicker collapsed 0.2063->0.1163. The density lift stole flicker energy. Flicker recovery relief may need adjustment or flicker needs independent lift when below fair share.
+- E5: Phase axis persistence -- systemDynamicsProfilerHelpers.js -- Phase keeps declining despite R88's velocity amplification. May need to increase amplification factors or add persistence mechanism.
 
 ### Hypotheses to Track
-- Tension arch descending slope 0.35/unit is the cause of S2/S3 tension collapse. Reducing to 0.25 should sustain the arch through the middle sections.
-- The density perturbation asymmetry might interact with coupling: alternating high/low density phrases could create section-level coupling patterns visible in exceedance distribution.
-- Coherent at 55.9% is still above target (35%). The starvation injector fires from coherent now, so continued coherent reduction should follow over multiple runs.
-- maxConsecutiveCoherent 109 trace entries likely represents ~55 actual beats (L1+L2 doubling), which is under the 60-beat cap. Verify by checking actual beat count.
+- Density recovery lift at 0.01 (vs 0.03) should produce ~8% density lift instead of 74%. Monitor for balanced axis recovery.
+- density-flicker extreme anti-correlation (-0.6671) is caused by density going up while flicker goes down. Reducing density lift should moderate this automatically.
+- Phase signal decline across runs (0.155->0.116) despite velocity amplification suggests the amplification isn't effective across different run sizes/profiles. The state tracking (`lastPhaseSampleForVelAmp`) may reset too frequently.
+- Evolving at 20.9% with crossover dwell at 3 is healthy. If exploring drops below 20%, restore dwell to 4.
+- Coherent tension direction may need several runs to show effect due to EMA smoothing (BIAS_SMOOTHING = 0.20).
 
 ---
 
-## R71 -- 2026-03-24 -- STABLE
+## R88 -- 2026-03-24 -- STABLE
 
-**Profile:** explosive | **Beats:** 950 | **Duration:** 90.7s | **Notes:** 35740
+**Profile:** exploring | **Beats:** 1235 | **Duration:** 170.7s | **Notes:** 49582
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- HARMONIC DIVERSITY BREAKTHROUGH: F# major -> Eb major -> G# minor -> F dorian -> Bb major. 5 unique tonics, zero repeats. E1 tonic max-repeat cap eliminated the 4/5 E-tonic problem from R70.
-- PHASE SHARE RECOVERED: 0.1014 -> 0.1317 (+30%). E2 measure-level oscillation creates faster beat-to-beat phase variance. axisGini 0.1208 -> 0.0829 (best since R68's 0.0259). belowFloorAxes: null.
-- TENSION ARC REGRESSED: [0.41, 0.63, 0.67, 0.48] -> [0.52, 0.62, 0.46, 0.37]. Lost the beautiful delayed S3 peak. Now front-loaded with S2 as peak (0.62). S4 cratered to 0.37.
-- EVOLVING RE-COLLAPSED: 7.4% -> 2.5% (24 beats out of 950). Longer run length (950 vs 580) dilutes the starvation injector's impact -- it fires but evolving periods are too brief relative to run length.
-- COHERENT SURGED: 42.6% -> 62.0%. maxConsecutiveCoherent stable at 89 entries (~45 beats). transitions 15 -> 34 (more transitions in longer run but coherent still dominant).
-- EXCEEDANCE MONOPOLIZED by tension-flicker: 55/60 beats (92%). top2Concentration: 0.6042 -> 0.9833. density-flicker (14) and flicker-phase (15) from R70 replaced by single tension-flicker dominance. This is the worst hotspot concentration since tracking.
-- DensityVariance still declining: 0.0071 -> 0.0060. E3 amplification (0.06->0.10 + section scaling) refuted -- larger amplitude with smooth sinusoid may average out rather than creating variance.
-- Run much longer: 580 -> 950 entries, 65.9s -> 90.7s. L1 +49% (10916->16295), L2 +77% (11006->19445).
-- globalGainMultiplier: 0.6151 -> 0.6003 (stable). budgetConstraintActive. giniCoefficient 0.3323 (improved from 0.4018).
-- Signal ranges: tension [0.098, 0.840] (wide), density [0.305, 0.671].
-- Section regime contrast: S0 coherent 74.3%->73.5%(similar), S1 exploring-dominant->coherent-dominant (53->73% coh), S2 coherent->exploring (55->88%), S3 exploring->coherent (89->73%). Strong section-level contrast.
-- Telemetry health dropped: 0.5003 -> 0.3418. underSeenPairs improved 4->2 though.
+- 5/5 EVOLUTIONS CONFIRMED -- Best round in lineage. Every evolution produced measurable, predicted effect.
+- PHASE AXIS RECOVERY: 0.1096 -> 0.155 (+41%). Phase velocity amplification (exploring 4.0x, evolving 3.5x, coherent 2.0x) created the beat-to-beat deltas that LFO amplitude couldn't. axisGini 0.1077 -> 0.0791 (best since R85).
+- DENSITY-TENSION BALLOON BURST: pearsonR 0.6742 -> -0.1432. rawTensionBase blend shift (0.55/0.45 -> 0.45/0.55 composite/harmonic) broke the lockstep. No balloon migration.
+- POST-FORCED COOLDOWN FIX: maxConsecutiveCoherent 147 -> 78 (-47%). transitionCount 20 -> 49 (+145%). forcedBreaks 2 -> 0. The cooldown SET was MISSING in R86/R87 -- fixing it was highest-impact single change.
+- EVOLVING RECOVERY: 13.5% -> 15.2%, rawEvolvingShare 0.1093 -> 0.1782 (+63%). More transitions create more evolving opportunities.
+- DENSITY-FLICKER FINE-TUNE: pearsonR -0.4225 -> 0.3828 (anti-correlated -> moderate positive). compositeIntensity weight 0.28 -> 0.30 overcorrection.
+- SCALE-UP: 25729 -> 49582 notes (+93%), L1 +116%, L2 +79%. 5 sections (was 4). Stochastic composition size.
+- REGIME BALANCE: coherent 55.8% -> 48.5%, exploring 30.2% -> 36.0%, evolving 13.5% -> 15.2%. All three regimes improving toward target distribution.
+- TENSION ARC: [0.656, 0.747, 0.514, 0.455] -- strong ascending S0->S1, clean descent. S0 lift +38%.
+- HARMONIC: Db mixolydian -> C mixolydian -> D lydian -> G major -> Eb mixolydian. 5 tonics, 3 modes.
+- FLICKER NOW DOMINANT AXIS: 0.2063 (was 0.159). Took coupling energy that coherent/phase formerly consumed.
+- globalGainMultiplier: 0.5989 -> 0.6144. tailRecoveryHandshake 0.955 (near ceiling).
 
-### Evolutions Applied (from R70)
-- E1: Tonic max-repeat cap -- confirmed -- 5 unique tonics (F#, Eb, G#, F, Bb), zero repeats vs R70's 4/5 E-tonic. Post-hoc cap at ceil(totalStops/2) works perfectly.
-- E2: Phase signal measure oscillation -- confirmed -- phase share 0.1014 -> 0.1317, axisGini 0.1208 -> 0.0829. Measure-level progress (15% weight) adds beat-to-beat variance.
-- E3: Density perturbation amplification (0.06->0.10 + section scaling) -- refuted -- densityVariance 0.0071 -> 0.0060. Larger smooth sinusoid amplitude doesn't create more variance -- it creates higher uniform swings that average out. Need asymmetric perturbation instead.
-- E4: Regime velocity scaling (exploring 1.06x, evolving 1.10x) -- inconclusive -- regime distribution shifted dramatically (coherent 42.6%->62%, exploring 49.3%->34.8%) confounding velocity attribution.
-- E5: Section-progressive interference strength -- inconclusive -- exceedance 48->60 (increased) but 92% monopolized by tension-flicker. Can't attribute to interference change vs stochastic run variance.
+### Evolutions Applied (from R87)
+- E1: Phase velocity amplification -- confirmed -- phase 0.1096->0.155 (+41%), axisGini 0.0791. Phase velocity pattern (4.0/3.5/2.0x) created beat-to-beat deltas for coupling energy.
+- E2: Density-tension decorrelation -- confirmed -- DT pearsonR 0.6742->-0.1432. rawTensionBase blend toward harmonicTension broke lockstep.
+- E3: Post-forced cooldown fix + expansion -- confirmed -- maxCC 147->78 (-47%), transitions 20->49 (+145%). CRITICAL: cooldown SET was missing; fixing it at all 3 exit points transformed classifier behavior.
+- E4: Evolving recovery via E3 -- confirmed (modest) -- evolving 13.5%->15.2%, rawEvolvingShare +63%.
+- E5: Density-flicker fine-tune -- confirmed -- DF pearsonR -0.4225->0.3828. Weight 0.28->0.30 moved toward healthy moderate positive.
 
-### Evolutions Proposed (for R72)
-- E1: Tension arch S3/S4 reinforcement -- globalConductor.js -- the delayed S3 peak from R70 was lost. Strengthen late-section tension sustain to prevent S3->S4 collapse.
-- E2: Evolving starvation injector scaling by run length -- regimeClassifierResolution.js -- current threshold (evolvingShare<0.04) is absolute and doesn't scale with longer runs. Add run-length-aware threshold.
-- E3: Density perturbation asymmetry -- sectionIntentCurves.js -- replace smooth sinusoid with sawtooth or asymmetric wave to create genuine variance rather than symmetric swings that average out.
-- E4: Tension-flicker hotspot relief -- regimeReactiveDamping.js or coupling constants -- tension-flicker at 55/60 exceedance beats needs intervention. Check if existing tension-flicker brake is sufficient.
-- E5: Coherent dwell re-capping -- regimeClassifierResolution.js -- coherent at 62% indicates the cap at 75 isn't aggressive enough for longer runs. Consider reducing to 60.
+### Evolutions Proposed (for R89)
+- E1: Flicker axis share moderation -- regimeReactiveDamping.js -- Flicker 0.2063 is highest axis (Gini contribution). Could dampen flicker bias coupling or adjust flicker arch shape to reduce flicker-pair energy.
+- E2: Rhythmic texture enrichment -- src/rhythm/ subsystem -- Rhythm subsystem untouched all session. Explore stutter/rest behavior or polyrhythmic pattern variation.
+- E3: Evolving share boosting -- regimeClassifierClassification.js or regimeClassifier.js -- rawEvolvingShare 0.1782 but resolved 0.152. Some evolving raw classifications get overridden to exploring. Could lower evolving entry threshold.
+- E4: Cross-layer interaction diversity -- src/crossLayer/ -- Cross-layer subsystem untouched. May be opportunities to enrich L1/L2 interaction.
+- E5: Tension S3/S4 resolution lift -- globalConductor.js or regimeReactiveDamping.js -- Tension arc descends steeply S2->S3->S4 [0.514, 0.455]. Could apply late-section tension floor.
+- E6: Composer variety expansion -- composerFeedbackAdvisor.js -- Expand exploring's composer signature beyond current pentatonic/quartal/blues/modal emphasis.
 
 ### Hypotheses to Track
-- R70's delayed S3 climax may have been a stochastic outlier rather than a stable feature of the arch formula. Need to track arch shape across multiple rounds.
-- Evolving collapse is a run-length effect: threshold 0.04 was calibrated for ~580-beat runs. At 950 beats, the denominator is larger so evolving fraction dilutes naturally.
-- Tension-flicker exceedance monopoly might be regime-related: coherent 62% creates sustained tension-flicker correlation. When exploring creates flicker variance, the pair naturally decouples.
-- DensityVariance might be fundamentally constrained by the arch formula's smooth curves. Need to investigate whether architectural changes to how density targets are set could create structural variance.
+- Flicker axis dominance (0.2063) may be self-limiting as equilibrator redistributes energy. Monitor next round -- if flicker stays > 0.19, active dampening needed.
+- tailRecoveryHandshake at 0.955 is near ceiling. If it saturates (1.0), tail pressure management degrades. Monitor for ceiling contact.
+- density-flicker pearsonR 0.3828 may still be too correlated (was -0.4225 overcorrection, now 0.3828 undercorrection). Target range: 0.1-0.3.
+- Phase velocity amplification at 4.0x exploring may be too aggressive long-term, causing phase-related pair hotspots. flicker-phase p95 0.7008, density-phase p95 0.653.
+- Evolving share growth: resolved evolving 15.2% is still below target (>18%). rawEvolvingShare 17.8% suggests classifier resolution is eating evolving opportunities.
 
 ---
 
-## R70 -- 2026-03-24 -- STABLE
+## R87 -- 2026-03-24 -- STABLE
 
-**Profile:** explosive | **Beats:** 580 | **Duration:** 65.9s | **Notes:** 21922
+**Profile:** restrained | **Beats:** 660 | **Duration:** 61.5s | **Notes:** 25729
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- TENSION ARC BEST SHAPE: [0.41, 0.63, 0.67, 0.48] -- delayed S3 peak at 0.67, genuine ascending arch with late climax. Previous [0.50, 0.62, 0.48, 0.39] had S2 peak; now S3 is peak (+0.19).
-- EVOLVING MASSIVE RECOVERY: 1.4% -> 7.4% (43 beats). E2 starvation threshold raise (0.02->0.04) prevented self-disarming. Coherent dropped 51.6% -> 42.6%. Exploring 46.4% -> 49.3%.
-- FLICKER MODERATION CONFIRMED: 0.2367 -> 0.1837. E1 proportional scaling eliminated the cliff effect. axisGini 0.1051 -> 0.1208 (slightly worse due to entropy surge 0.1736 -> 0.2131).
-- Phase share REGRESSED: 0.1398 -> 0.1014 (well below fair 0.1667). Phase trend "rising" in shareTrend, but actual share dropped. Phase coupling total only 0.7124 (weakest axis).
-- HARMONIC MONOTONY: 4/5 sections on E tonic (E ionian, E ionian, Db minor, E major, E minor). Poor key diversity -- need upstream key selection intervention.
-- DensityVariance recovering: 0.0055 -> 0.0071. E3 phrase perturbation working but still below R68's 0.0100.
-- Exceedance: 15 -> 48 total, 6 -> 32 unique. Concentrated: S0 17 (density-flicker 14, tension-flicker 11), S4 15 (flicker-phase 15). S1-S3 zero exceedance -- too tame.
-- L2 notes dropped 46.9% (20736 -> 11006). L1 rose 15% (9490 -> 10916). Run shorter (122.9s -> 65.9s).
-- globalGainMultiplier: 0.6325 -> 0.6151 (stable). budgetConstraintActive. floorContactBeats 7.
-- maxConsecutiveCoherent: 80 -> 89 entries (~45 actual beats, cap at 75 beats working -- L1+L2 entries double the trace count).
-- Signal ranges: tension [0.098, 0.876] (wide!), density [0.299, 0.683], flicker [0.811, 1.156].
-- S3 tension avg: 0.569 -> 0.684 per composition-diff. Section regime contrast sharp: S0 74% coherent, S3 89% exploring.
+- EXCEEDANCE COLLAPSE: 71 -> 4 beats (-94%). density-flicker 61->2. E3 flickerBase compositeIntensity deweighting confirmed. Reducing compositeIntensity weight in flickerBase (0.35->0.28) structurally decorrelated density and flicker inputs.
+- TRUST AXIS SURGING: 0.1588 -> 0.1874 (+18%, 2nd consecutive rise). E3 regime-responsive trust velocity amplification continues to pay dividends. Trust now 2nd strongest axis.
+- DENSITY-TENSION BALLOON: pearsonR -0.2848 -> 0.6742. Energy that was in density-flicker correlation migrated to density-tension. The flickerBase deweighting made flicker more independent but density-tension coupling tightened. density-tension avg 0.4207 (up from 0.3133), p95 0.855.
+- PHASE AXIS CHRONIC: 0.116 -> 0.1096 (lowest, falling). E2 regime-responsive LFO weight didn't help. Phase coupling energy is structurally weak. The LFO adds variance but phase pairs (density-phase, tension-phase, etc.) have low coupling totals (phase total 0.8038, next lowest is density at 1.1119).
+- maxConsecutiveCoherent REGRESSED: 109 -> 147. Both forced breaks were cadence-monopoly (not dwell-cap). Coherent superruns persist across forced windows. The postForcedCooldown (4 beats) is too small to prevent.
+- EVOLVING DECLINED: 20.7% -> 13.5%. rawEvolvingShare 0.1093 (down from run estimate). May be stochastic or related to restrained profile.
+- COHERENT ROSE: 41.3% -> 55.8%. Profile change to restrained likely contributes (restrained favors coherent).
+- TENSION ARC PEAK: S1 tension 0.701 (from 0.667). Best section peak. Arc shape [0.473, 0.701, 0.518, 0.470] shows clear ascending-descending structure.
+- densityVariance: 0.0031 -> 0.0075 (+142%). Section-level density variation improving.
+- Harmonic journey: E dorian -> F# mixolydian -> A# major -> Bb dorian. 4 tonics, 3 modes (dorian, mixolydian, major). Good variety; mixolydian adds color.
+- axisGini: 0.0893 -> 0.1077 (+21%). Phase axis gap driving inequality up.
+- S3 profile switched to explosive mid-composition — interesting cross-profile dynamics.
+- density-flicker pearsonR: 0.062 -> -0.4225 (anti-correlated). FlickerBase deweighting + counter-phase together overdid density-flicker decorrelation.
 
-### Evolutions Applied (from R69)
-- E1: Flicker relief proportional moderation -- confirmed -- flicker share 0.2367 -> 0.1837, cliff effect eliminated, proportional scaling working as designed.
-- E2: Starvation injector threshold 0.02 -> 0.04 -- confirmed -- evolving 1.4% -> 7.4% (43 beats), massive recovery. Injector stays active longer, prevents self-disarming.
-- E3: Phrase density perturbation -- confirmed -- densityVariance 0.0055 -> 0.0071, recovering from 3-round decline. Per-phrase sine wave adding intra-section variance.
-- E4: Exploring regime family boost -- inconclusive -- regime shift (exploring 46.4% -> 49.3%) confounds family attribution. Pitch entropy stable (6.388 -> 6.442).
-- E5: Section-route dissonance escalation -- inconclusive -- all harmonic keys changed but 4/5 stuck on E tonic, cannot isolate dissonance effect from stochastic key selection.
+### Evolutions Applied (from R86)
+- E1: Moderate counter-phase PI*0.4->PI*0.15 -- confirmed -- tension-flicker pearsonR -0.4586->0.4651 (back to moderate positive from extreme anti-correlation). Moderation successful; correlation now moderate rather than extreme in either direction.
+- E2: Phase LFO regime-responsive amplitude -- inconclusive -- phase axis 0.116->0.1096 (tiny decline). Regime-responsive LFO weight (exploring 0.12, evolving 0.10, coherent 0.08) had no measurable effect. Phase problem is structural, not amplitude-related.
+- E3: FlickerBase compositeIntensity deweighting -- confirmed -- exceedance 71->4 (-94%), density-flicker 61->2. Reducing compositeIntensity weight in flickerBase (0.35->0.28, harmonicRhythm 0.25->0.32) dramatically reduced density-flicker coupling. However, balloon effect: density-tension pearsonR surged to 0.6742.
+- E4: Exploring composer distinctiveness -- inconclusive -- section/profile changes confound. Cannot isolate composer selection effect.
+- E5: Exploring flicker direction 1->1.5 -- inconclusive -- exploring share dropped 37.6%->30.2% (may be profile change, not E5). Flicker avg rose 1.0129->1.0425 which could reflect enhanced exploring flicker.
 
-### Evolutions Proposed (for R71)
-- E1: Key diversity injection -- composer subsystem -- investigate tonic selection mechanism and add anti-repetition logic to prevent consecutive sections sharing the same tonic
-- E2: Phase coupling strengthening -- phase axis share dropped to 0.1014, need to boost phase signal weight or reduce phase damping in profiler/coupling pipeline
-- E3: Mid-section exceedance spreading -- coupling or intent curves -- inject coupling texture in S1-S3 which currently have zero exceedance
-- E4: Density perturbation amplification -- sectionIntentCurves.js -- increase phrase sine amplitude from 0.06 to recover densityVariance faster
-- E5: fx subsystem touch -- explore velocity sculpting or dynamic range processing (completely untouched subsystem)
-- E6: Play subsystem regime awareness -- processBeat.js or related -- add regime-responsive behavior at the note emission level
+### Evolutions Proposed (for R88)
+- E1: Phase signal structural enrichment -- systemDynamicsProfilerHelpers.js -- Phase axis chronic decline (0.1561->0.116->0.1096 across 3 rounds). LFO adjustments haven't helped. Need to increase phase coupling energy by boosting phase signal delta (not just amplitude) during section transitions.
+- E2: Density-tension balloon containment -- globalConductor.js -- density-tension pearsonR surged 0.6742 after density-flicker deweighting. Need to decouple density from tension similarly to how density was decoupled from flicker.
+- E3: Coherent superrun investigation -- regimeClassifierResolution.js -- maxConsecutiveCoherent 147 despite dwell cap 44. Forced breaks are cadence-monopoly type. Need to understand why coherent immediately re-establishes after forced windows.
+- E4: Evolving starvation diagnosis -- regimeClassifierResolution.js or regimeClassifierClassification.js -- evolving 20.7%->13.5%. Check if coherent dominance suppresses evolving classification.
+- E5: Density-flicker anti-correlation correction -- globalConductor.js -- density-flicker pearsonR -0.4225. FlickerBase deweighting overcorrected. Fine-tune compositeIntensity weight (0.28->0.30) to move toward neutral correlation.
 
 ### Hypotheses to Track
-- Phase regression may be caused by evolving recovery: evolving regimes produce lower phase coupling than coherent, so more evolving time = less phase energy total.
-- Harmonic E-tonic lock is stochastic but may be biased by the key selection algorithm's starting seed or pitch center gravity. Check if composer key selection has memory or anti-repetition.
-- S1-S3 exceedance at zero suggests coupling is only stressed during regime transitions (S0 initialization, S4 end-of-piece). May need mid-piece coupling signal injection.
-- Entropy axis surge (0.1736 -> 0.2131, now dominant) could be related to exploring regime increase. More exploring = more entropy signal variety = more entropy coupling.
+- Phase axis decline is structural: phase pairs have lowest coupling totals (0.8038) because phase signal changes slowly (section/phrase-based). LFO helps with variance but doesn't create the high beat-to-beat deltas needed for coupling energy. Phase may need a "velocity amplification" approach similar to E3's trust fix.
+- density-tension balloon: When density-flicker energy was reduced via flickerBase deweighting, the density coupling energy migrated to the next available partner (tension). May need density itself to be more independent rather than fixing each pair individually.
+- maxConsecutiveCoherent 147 is a trace measurement artifact vs actual classifier behavior. The classifier caps at 44 ticks but trace entries reuse snapshots. Need to check whether profilerTickResolvedCounts show genuine long coherent runs.
+- Profile variation (explosive->atmospheric->restrained across R85-R87) confounds evolution evaluation. Many evolutions marked inconclusive due to profile changes.
 
 ---
 
-## R69 -- 2026-03-24 -- STABLE
+## R86 -- 2026-03-24 -- STABLE
 
-**Profile:** explosive | **Beats:** 769 | **Duration:** 122.9s | **Notes:** 30226
+**Profile:** atmospheric | **Beats:** 920 | **Duration:** 85.0s | **Notes:** 35673
 **Fingerprint:** 10/10 stable | Drifted: none
 
 ### Key Observations
-- S1 TENSION RECOVERED: 0.34 -> 0.50 (+47%). E1 (graduated relief) and E5 (arch floor lift) combined to fix the S1 crater. Tension arc now: [0.50, 0.62, 0.48, 0.39] -- smoother ascending arch with clear S2 peak.
-- S4 tension also improved: 0.37 -> 0.39 (continuing R68 E2's trend).
-- FLICKER OVERSHOOT: E3 (flicker recovery relief, 40% brake reduction) overcorrected. Flicker share jumped 0.1486 -> 0.2367 (highest axis, fair=0.1667). Flicker coupling totals: 1.2796 -> 1.6968. axisGini regressed: 0.0259 -> 0.1051. The 0.60 multiplier was too aggressive -- needs moderation to ~0.80.
-- Exceedance plummeted: 71 -> 15 total, 33 -> 6 unique. Best exceedance since tracking began. Top pair: tension-flicker (4 beats). top2Concentration 0.7042 -> 0.4667.
-- maxConsecutiveCoherent: 106 -> 80 (E2 hard cap at 75 working, slight overshoot from beat span quantization). Transitions: 19 -> 23.
-- Evolving regressed: 3.8% -> 1.4% (11 beats). R68's starvation injector (threshold: evolvingShare < 0.02) self-disarmed as evolving rose above 0.02, then didn't reactivate when it dropped back. Need to adjust the 0.02 threshold.
-- DensityVariance continued decline: 0.0100 -> 0.0055. The graduated relief for S1 (E1) lessened one source of variance. May need alternative variance injection.
-- L2 notes surged: 13800 -> 20736 (+50.3%). Run is also longer (83.7s -> 122.9s) with 769 vs 625 trace entries.
-- Harmonic journey: D major -> G major -> D minor -> F minor -> Gb major. Good variety with major/minor alternation.
-- Regime per-section: S0 mixed (39% coh, 25% exp), S1 exploring-dominant (66%), S2 coherent-dominant (73%), S3/S4 mixed. Good section-level regime variety.
-- globalGainMultiplier: 0.6124 -> 0.6325 (stable, healthy).
-- belowFloorAxes: null (maintained across R67-R69).
+- TENSION-FLICKER DECORRELATION BREAKTHROUGH: pearsonR 0.5918 -> -0.4586 (from most-correlated to anti-correlated). E4 counter-phase worked dramatically but overshot -- target is near-zero decorrelation, not anti-correlation. Moderate the phase shift magnitude next round.
+- TRUST AXIS RECOVERY: 0.1404 -> 0.1588 (+13.1%). E3 regime-responsive trust velocity amplification confirmed. Exploring passage 5.0x amplification boosts trust coupling energy when trust signals change most rapidly.
+- COHERENT REDUCTION: 53.0% -> 41.3% (-22%). Exploring surged 26.4% -> 37.6% (+42%). Profile change (explosive -> atmospheric) likely contributes. Evolving held at 20.7% (stable). Regime diversity improving.
+- PHASE AXIS DECLINED: 0.1561 -> 0.116 (-26%). This is the new weakest axis (was trust). Phase smoothedShare 0.1046. 12 phase axis adjustments (fewest). Phase-related pairs (density-phase, tension-phase, flicker-phase, entropy-phase, trust-phase) have modest coupling totals.
+- DENSITY-FLICKER EXCEEDANCE MONOPOLY: 61/71 exceedance beats (86%). density-flicker p95 0.954, avg 0.3989. top2Concentration 0.9014. This replaced the density-tension hotspot from R85.
+- NOTE COUNT SURGE: 26615 -> 35673 (+34%). L2 exploded 13882 -> 20944 (+50.9%). Profile change to atmospheric may produce denser L2 output.
+- HARMONIC DIVERSITY: F# ionian -> Ab ionian -> D# minor -> A# dorian -> Bb ionian. 5 sections, 4 tonics, 3 modes. Good modal variety; dorian and minor add color.
+- TENSION ARC: [0.558, 0.659, 0.527, 0.457] -> [0.471, 0.667, 0.545, 0.479]. S0 dipped, S1 peak maintained (0.667), better resolution arc (S2-S3 less sagging).
+- maxConsecutiveCoherent: 116 -> 109 (slight improvement). Only 1 forced break (vs 2). E2 cooldown too small to assess (4 beats is subtle).
+- axisGini: 0.0839 -> 0.0893 (+6.4%). Phase axis drop increased inequality slightly.
+- globalGainMultiplier: 0.6148 (stable from 0.6138). Budget constraint active, redistributionScore 0.9565.
 
-### Evolutions Applied (from R68)
-- E1: Section-boundary relief graduation (S1 6% vs 12%) -- confirmed -- S1 avg tension 0.257 -> 0.406 (+58%). Combined with E5 to achieve the recovery.
-- E2: Coherent block absolute cap at 75 -- confirmed -- maxConsecutiveCoherent 106 -> 80. Cap slightly exceeded due to beat span quantization. Transitions 19 -> 23.
-- E3: Flicker axis recovery relief (0.60x brake) -- refuted -- overcorrected. Flicker share 0.1486 -> 0.2367 (now dominant axis). The 40% brake reduction was too aggressive. Need 0.80x or proportional scaling instead of binary threshold.
-- E4: Rhythm novelty double-penalty during evolving -- inconclusive -- evolving only 1.4% (11 beats), too few beats to evaluate rhythm pattern diversity impact.
-- E5: Tension arch floor lift (0.30 -> 0.35) -- confirmed -- S1 tension recovers, overall arch shape [0.50, 0.62, 0.48, 0.39] is more balanced than R68's [0.34, 0.65, 0.45, 0.37].
+### Evolutions Applied (from R85)
+- E1: Density brake threshold 0.18->0.20 -- inconclusive -- density axis share 0.1483->0.1977 (rose), but profile change + stochastic variance confound attribution. Cannot confirm threshold change was the cause.
+- E2: Post-forced coherent cooldown (4 beats) -- inconclusive -- Only 1 forced break (vs 2 baseline), maxConsecutiveCoherent 109 (from 116). Too few events and too small an effect to evaluate.
+- E3: Regime-responsive trust velocity amplification -- confirmed -- trust axis share 0.1404->0.1588 (+13.1%). Trust no longer the weakest axis. Exploring 5.0x and evolving 4.0x amplification create regime-sensitive trust coupling energy.
+- E4: Tension-flicker counter-phase -- confirmed (overshooting) -- tension-flicker pearsonR crashed 0.5918 -> -0.4586. Phase shift of PI*0.4 is too aggressive; creates anti-correlation instead of decorrelation. Need to halve the magnitude.
+- E5: Harmonic excursion tension coupling -- inconclusive -- excursionTensionScale range [1.0, 1.05] too gentle for visible effect amid other changes.
 
-### Evolutions Proposed (for R70)
-- E1: Flicker relief moderation -- regimeReactiveDamping.js -- Change 0.60 to proportional: `flickerRecoveryRelief = 1.0 - clamp((0.1667 - flickerShare) / 0.05, 0, 0.25)`. This scales 0-25% brake reduction proportionally to how far below fair share flicker is, instead of a binary 40% reduction.
-- E2: Starvation injector threshold tuning -- regimeClassifierResolution.js -- Raise the evolvingShare threshold from 0.02 to 0.04 so the injector stays active longer, preventing the 3.8% -> 1.4% regression.
-- E3: Density variance injection -- globalConductor.js or sectionIntentCurves.js -- density variance has declined steadily (0.0139 -> 0.0100 -> 0.0055). Add a per-phrase density perturbation to create variance without relying solely on section boundaries.
-- E4: Composer subsystem touch -- explore composer family selection or dissonance scaling for greater intervallic variety within sections.
-- E5: Cross-layer density balancer activation -- crossLayerDensityBalancer density bias is 0.9400 (modestly active). Investigate whether it can be made more responsive to L1/L2 density imbalance (L1 9490 vs L2 20736).
+### Evolutions Proposed (for R87)
+- E1: Moderate tension-flicker counter-phase magnitude -- globalConductor.js -- PI*0.4 caused anti-correlation (-0.4586). Reduce to PI*0.15 to target decorrelation near zero.
+- E2: Phase axis recovery -- systemDynamicsProfilerHelpers.js or globalConductor.js -- phase share 0.116 (lowest axis). Investigate why phase coupling energy dropped despite dual-frequency LFO.
+- E3: Density-flicker exceedance containment -- investigate coupling surface or hotspot containment -- 61 exceedance beats concentrated in density-flicker.
+- E4: Regime-responsive composer variety -- src/composers/ -- with regime distribution now balanced, explore whether composer selection amplifies regime character.
+- E5: Post-forced cooldown expansion -- regimeClassifierResolution.js -- 4-beat cooldown too short to evaluate. Consider longer cooldown window or investigate if regime re-entry is dominated by coupling blocks.
+- E6: Exploring regime musical enrichment -- src/crossLayer/ or src/conductor/ -- exploring is now 37.6%, the dominant non-coherent regime. Ensure exploring passages have distinct musical character.
 
 ### Hypotheses to Track
-- Flicker overshoot was caused by the binary threshold in E3 (flicker < 0.155 -> 0.60x). Once flicker crossed 0.155, the brake fully restored, but by then flicker coupling totals had already grown. A proportional approach will avoid the cliff effect.
-- Evolving's self-disarming pattern: R68 starvation injector fires when evolvingShare < 0.02, raises evolving to 3.8%, injector shuts off, evolving falls back to 1.4%. This confirms the injector needs a higher threshold to maintain evolving recovery.
-- Density variance steady decline across 3 rounds (0.0139 -> 0.0100 -> 0.0055) despite section-boundary relief being active. The relief's contribution may be overwhelmed by other factors (arch floor pulling all sections toward similar tension -> similar density).
+- Tension-flicker anti-correlation (pearsonR -0.4586) may actually create more interesting musical texture than zero-correlation (counter-motion). Monitor whether moderate reduction preserves some counter-motion.
+- Phase axis decline to 0.116 may be caused by the counter-phase injection in E4 consuming phase-related coupling budget. The flicker carrier now has additional phase terms, potentially making flicker-phase correlation more systematic.
+- density-flicker exceedance (61 beats) may be a balloon effect from tension-flicker decorrelation: energy that was in tension-flicker correlation migrated to density-flicker.
+- Profile change (explosive -> atmospheric) complicates A/B comparison. Multiple evolution evaluations marked inconclusive.
+
+---
+
+## R85 -- 2026-03-24 -- STABLE
+
+**Profile:** explosive | **Beats:** 664 | **Duration:** 86.4s | **Notes:** 26615
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- EVOLVING EXPLOSION: 8.5% -> 20.2% (+138%). rawEvolvingShare 0.0392 -> 0.208 (+431%!). rawEvolvingMaxStreak 29 (new all-time best). E3 coherent self-balancer headroom (SCALE_MAX 1.20->1.40, NUDGE 0.008->0.012) dramatically reduced coherent dominance, creating windows for evolving classification. Evolving is now the strongest it's ever been.
+- DENSITY CONTAINMENT: density share 0.2389 -> 0.1483 (-38%). E2 density share brake active. Density no longer monopolizing. Now below fair share (0.167), which is overcorrection -- may need to tune brake threshold.
+- PHASE CONTINUING RECOVERY: 0.1341 -> 0.1561 (+16%, 2nd consecutive increase). Phase share at highest since R80 (0.169). E4 dual-frequency LFO enrichment providing robust independent variance.
+- axisGini: 0.1182 -> 0.0839 (-29%). Best balance since R82 (0.088). All 6 axes within 0.14-0.21 range.
+- COHERENT MODERATED: 72.6% -> 53.0% (-27%). The expanded self-balancer headroom allows coherentThresholdScale to reach higher values, making coherent classification harder.
+- EXCEEDANCE RECOVERED: 38 -> 16 (-58%). Density-flicker monopoly broken (24 -> 2). E1 jitter revert eliminated the systematic density-flicker correlation. Exceedance now spread: density-tension 9, density-flicker 2, tension-flicker 1, tension-trust 2, flicker-trust 2.
+- densityVariance: 0.0067 -> 0.0101 (+51%). Density arch + density containment brake creating section-level variation.
+- Tension arc improved: [0.44, 0.62, 0.49, 0.44] -> [0.56, 0.66, 0.53, 0.46]. S0 lift 0.44->0.56, better ascending character. S3 tension strong at 0.674 (composition-diff).
+- maxConsecutiveCoherent: 85 -> 116 (regression). But coherent share dropped 72.6% -> 53.0%, meaning fewer but longer coherent runs. The dwell cap still triggers but coherent runs are more concentrated.
+- Harmonic journey: Gb lydian -> D# lydian -> G major -> Bb major -> Db minor. 4 unique tonics, 3 modes (lydian, major, minor). Modal variety recovering.
+
+### Evolutions Applied (from R84)
+- E1: Revert density-phase jitter -- confirmed -- density-flicker exceedance 24->2 (-92%). The beat-modulo jitter was creating systematic density fluctuations that correlated with the flicker carrier.
+- E2: Density axis containment (share brake above 0.18) -- confirmed -- density share 0.2389->0.1483 (-38%). But overcorrected below fair share. Consider raising brake threshold from 0.18 to 0.20.
+- E3: Coherent self-balancer headroom (SCALE_MAX 1.20->1.40, NUDGE 0.008->0.012) -- confirmed -- coherent 72.6%->53.0%, evolving 8.5%->20.2%. The self-balancer now has enough range to effectively constrain coherent share. rawEvolvingShare 0.0392->0.208.
+- E4: Phase LFO dual-frequency enrichment -- confirmed -- phase share 0.1341->0.1561 (+16%). Dual-frequency (0.00073 + 0.00031) creates richer, less periodic phase variance.
+
+### Evolutions Proposed (for R86)
+- E1: Density brake threshold tuning -- regimeReactiveDamping.js -- density overcorrected to 0.1483 (below fair share). Raise brake threshold from 0.18 to 0.20 so brake only fires on clear overshare.
+- E2: maxConsecutiveCoherent investigation -- regimeClassifierResolution.js -- maxConsecutiveCoherent 116 despite cap 44. Coherent share is healthy at 53%, but individual runs of 116 beats reduce transition variety. Investigate whether post-forced-recovery coherent re-entry is too fast.
+- E3: Trust axis recovery -- trust dropped 0.1497->0.1404, now lowest axis. The trust velocity amplification (R83 E2) may need adjustment or the density containment brake may be reducing density-trust coupling energy.
+- E4: Composer regime variety -- src/composers/ -- with regimes now balanced (20% evolving, 53% coherent, 26% exploring), investigate whether composer selection weights create enough musical variety across regime transitions.
+
+### Hypotheses to Track
+- Density overcorrection (0.1483) will self-correct somewhat via the regime equilibrator, which notices density-contributed regime biases are suppressed and will reduce its density correction.
+- rawEvolvingShare at 0.208 (matching rawExploringShare at 0.208) suggests the classifier boundary is now balanced. The coherent self-balancer has reached equilibrium.
+- maxConsecutiveCoherent 116 occurs because the coherent cap (44) fires, forces 8-20 beats of non-coherent, then coherent immediately re-establishes. The forced window is long enough but single-cycle re-entry creates long coherent "superruns" in the trace (coherent-forced-coherent reads as semi-continuous coherent in the trace recorder).
+- Phase share 0.1561 is near fair share (0.167). The dual-frequency LFO provides structural independence. Phase axis may plateau here as it approaches equilibrium with other axes.
+
+---
+
+## Compacted Round History (R81-R84)
+
+| Round | Date | Verdict | Profile | Beats | Synopsis |
+|-------|------|---------|---------|-------|----------|
+| R81 | 2026-03-24 | STABLE | explosive | 896 | EVOLVING MATURATION: rawEvolvingMaxStreak 3->11. DF monopoly broken (34->3 exceedance). densityVariance 0.0054->0.0126. Tension S2 rose 0.47->0.58. Phase declined 0.169->0.126. axisGini 0.0388->0.0796. |
+| R82 | 2026-03-24 | STABLE | explosive | 701 | EXPLORING RECOVERED: 19.8%->31.1%. Coherent moderated 62.5%->53.1% via dwell cap 50->44. Phase still declining 0.126->0.120. axisGini regressed 0.0796->0.1037. |
+| R83 | 2026-03-24 | STABLE | explosive | 866 | TRUST RECOVERED: 0.144->0.1647 via velocity amplification (delta*3.5). Phase still declining 0.120->0.1137 (4-round decline). Evolving collapsed 15.3%->4.6%. Exceedance excellent: 19->7. |
+| R84 | 2026-03-24 | STABLE | explosive | 621 | PHASE RECOVERING: 0.1137->0.1341 (+18%) via independent phase LFO (sin*0.00073). Evolving partially recovered 4.6%->8.5%. Density monopolized at 0.2389. All lydian mode. |
+
+## Compacted Round History (R75-R80)
+
+| Round | Date | Verdict | Profile | Beats | Synopsis |
+|-------|------|---------|---------|-------|----------|
+| R75 | 2026-03-24 | STABLE | explosive | 767 | Tension arc best sustained [0.48,0.71,0.70,0.63]. Phase BEST EVER 0.1771. Exploring surged 52.9%. Evolving halved 4.7%. Hotspot top2 shattered to 0.35. |
+| R76 | 2026-03-24 | STABLE | explosive | 490 | EVOLVING BREAKTHROUGH: 4.7%->13.3% (velocity ceiling 0.060->0.090). Regime balance best (41/45/13 C/X/V). Phase dropped to 0.143. Note count -37%. |
+| R77 | 2026-03-24 | STABLE | explosive | 701 | Axis balance best ever (Gini 0.0575). Notes +43%. 5 unique tonics, 5 unique modes. S4 coherent monopoly broken. 21 transitions. |
+| R79 | 2026-03-24 | STABLE | explosive | 722 | 5 structural evolutions landed STABLE. Adaptive velocity ceiling, phase decorrelation, regime-differentiated tension. 5 tonics, 5 modes. axisGini 0.094. |
+| R80 | 2026-03-24 | STABLE | explosive | 947 | EVOLVING ORGANIC BREAKTHROUGH: rawEvolvingShare 0->0.0796. Crossover promotion fixed dead-code. Axis balance best (Gini 0.0388). Flicker-phase monopoly broken (49->0). Notes +62%. 52 transitions. |
+
+---
+
+## Compacted Round History (R69-R74)
+
+| Round | Date | Verdict | Profile | Beats | Synopsis |
+|-------|------|---------|---------|-------|----------|
+| R69 | 2026-03-24 | STABLE | explosive | 769 | S1 tension recovered (+47%). Flicker overcorrected to 0.2367 (refuted 0.60x brake). Exceedance best ever (15). Evolving regressed 3.8%->1.4% (starvation injector self-disarmed). DensityVariance decline continued (0.0100->0.0055). |
+| R70 | 2026-03-24 | STABLE | explosive | 580 | TENSION ARC BEST SHAPE [0.41,0.63,0.67,0.48] with delayed S3 climax. Evolving massive recovery 1.4%->7.4% (starvation threshold 0.02->0.04). Phase regressed 0.1398->0.1014. 4/5 sections on E tonic (harmonic monotony). |
+| R71 | 2026-03-24 | STABLE | explosive | 950 | HARMONIC DIVERSITY BREAKTHROUGH: 5 unique tonics, zero repeats (tonic cap). Phase recovered 0.1014->0.1317 (measure oscillation). Tension-flicker monopoly 55/60 exceedance (worst concentration). DensityVariance decline continued. |
+| R72 | 2026-03-24 | STABLE | explosive | 916 | DENSITY VARIANCE BREAKTHROUGH (0.006->0.011, phrase alternation). HOTSPOT DECONCENTRATION (top2 0.983->0.434). EVOLVING TRIPLED 2.5%->7.9% (coherent-source injection). Tension arch peak but steep S2/S3 decline. |
+| R73 | 2026-03-24 | STABLE | explosive | 728 | Tension arch restored [0.48,0.58,0.47,0.40] (slope 0.35->0.25). Exceedance collapsed to 4 beats (possible stochastic). Evolving 4.7%. Phase 0.1504. axisGini 0.0988. |
+| R74 | 2026-03-24 | STABLE | evolving | 815 | S1 tension peak 0.783 (max boost 0.15->0.20 confirmed). Evolving doubled 4.7%->9.4%. Harmonic journey 5 unique tonics. Exceedance re-engaged (40 beats, density-flicker top). axisGini 0.0707. |
 
 ---
 
@@ -355,30 +396,30 @@
 # Evolution Journal Summary
 
 Updated: 2026-03-24
-Status: compacted R52-R68, full entries preserved for R69-R73.
+Status: compacted R52-R80, full entries preserved for R81-R85.
 
 ## Current Headline
 
-- Latest validated round: R73
+- Latest validated round: R85
 - Verdict: STABLE
 - Profile: explosive
-- Beats: 728
-- Duration: 81.8s
-- Notes: 27276
+- Beats: 947
+- Duration: 96.5s
+- Notes: 36656
 - Fingerprint: 10/10 stable, 0 drifted
 
 ## Current Musical State
 
-- Phase share at 0.1504. Stable near fair share since R67 compound signal breakthrough.
-- Tension arc arch restored: [0.48, 0.58, 0.47, 0.40]. Smooth ascending arch with S2 peak.
-- DensityVariance 0.0098. Phrase-alternating perturbation (R72) nearly doubled it.
-- Hotspot monopoly shattered (R72): top2Concentration 0.983->0.434.
-- Evolving 4.7%. Starvation injector (R72) tripled it from 2.5%.
-- Coherent 54.9%, hard-capped at 60 beats (R72).
-- AxisGini 0.0988. Balanced across all 6 axes.
-- globalGainMultiplier 0.6323. Healthy homeostasis pressure.
-- Harmonic journey typically 3-5 unique tonics per run with modal variety.
-- Exceedance collapsed to 4 beats (R73). May need monitoring for coupling disengagement.
+- EVOLVING ORGANIC BREAKTHROUGH: rawEvolvingShare 0 -> 0.0796 (37 raw evolving beats). Crossover promotion (E2) fixed dead-code issue.
+- Axis balance best ever: axisGini 0.0388. All 6 axes within 0.140-0.178 share range.
+- Flicker-phase monopoly broken: flicker-phase exceedance eliminated (49->0). density-flicker emerged as new top (34/41).
+- Phase share healthy at 0.1689 (above fair share).
+- Tension arc sustained: [0.52, 0.67, 0.47, 0.44]. S2/S3 softened from baseline but arch shape intact.
+- Note count recovered to 36656 (+62% from R79).
+- DensityVariance regressed to 0.0054 -- needs structural attention.
+- Trust at 0.140 -- only axis below 0.15.
+- Transition count at 52 (+58%) -- most regime transitions since tracking.
+- Harmonic journey: modal variety (dorian, mixolydian, major). 4 unique tonics per run.
 
 ## Compacted Round History (R59-R68)
 
@@ -482,6 +523,8 @@ Status: compacted R52-R68, full entries preserved for R69-R73.
 - **Flicker centroid correction is permanently refuted.** Inflating flicker squeezes phase via axis energy competition (R64).
 - **Phrase-alternating perturbation creates variance.** Breaking symmetry with asymmetric sign patterns (R72) doubles density variance.
 - **Hotspot monopoly requires structural relief, not constant nudging.** The tensionFlickerRelease ceiling + concentration penalty (R72) shattered the monopoly.
+- **Check classification evaluation ORDER, not just thresholds.** R80 revealed the exploring check was a wall blocking the evolving crossover. The crossover was dead code because exploring caught all non-coherent beats first. Reordering priority was the structural fix.
+- **Use actual signal values for cross-signal decorrelation, not derived statistics.** R79 E5 used compositionalVariance[2] (~0.25 always) instead of snap.flickerProduct (deflects from 1.0). Direct signal values work; normalized variance shares don't.
 
 ## Snapshot Policy
 
