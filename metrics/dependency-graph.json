@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-25T03:20:40.898Z",
+    "generated": "2026-03-25T05:14:10.972Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 2982,
-    "totalEdges": 2355,
-    "crossSubsystemEdges": 1575,
+    "totalConsumes": 2996,
+    "totalEdges": 2368,
+    "crossSubsystemEdges": 1586,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 225
@@ -32,12 +32,12 @@
       "conductor": {
         "files": 185,
         "provides": 219,
-        "consumes": 987
+        "consumes": 991
       },
       "rhythm": {
         "files": 30,
         "provides": 45,
-        "consumes": 216
+        "consumes": 222
       },
       "time": {
         "files": 13,
@@ -52,12 +52,12 @@
       "fx": {
         "files": 23,
         "provides": 56,
-        "consumes": 229
+        "consumes": 231
       },
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 384
+        "consumes": 386
       },
       "writer": {
         "files": 4,
@@ -575,6 +575,7 @@
         "conductorConfig",
         "denominator",
         "m",
+        "rf",
         "ri",
         "sectionIndex",
         "t",
@@ -593,6 +594,8 @@
         "m",
         "rf",
         "ri",
+        "safePreBoot",
+        "systemDynamicsProfiler",
         "t",
         "totalSections"
       ]
@@ -1271,6 +1274,7 @@
       "consumes": [
         "clamp",
         "conductorConfig",
+        "conductorState",
         "m",
         "pipelineCouplingManager",
         "safePreBoot",
@@ -3277,6 +3281,8 @@
         "rf",
         "ri",
         "rv",
+        "safePreBoot",
+        "systemDynamicsProfiler",
         "tpBeat",
         "traceDrain",
         "validator"
@@ -3547,6 +3553,8 @@
         "eventBus",
         "m",
         "moduleLifecycle",
+        "safePreBoot",
+        "systemDynamicsProfiler",
         "validator"
       ]
     },
@@ -3572,6 +3580,8 @@
         "rhythmHistoryTracker"
       ],
       "consumes": [
+        "safePreBoot",
+        "systemDynamicsProfiler",
         "validator"
       ]
     },
@@ -5658,6 +5668,8 @@
         "p",
         "rf",
         "rl",
+        "safePreBoot",
+        "systemDynamicsProfiler",
         "traceDrain",
         "validator",
         "velocity"
@@ -6123,6 +6135,8 @@
         "dynamicRoleSwap",
         "interactionHeatMap",
         "m",
+        "pipelineCouplingManager",
+        "safePreBoot",
         "sectionIntentCurves",
         "systemDynamicsProfiler",
         "timeStream",
@@ -9365,6 +9379,13 @@
     },
     {
       "from": "src/conductor/conductorState.js",
+      "to": "src/conductor/signal/profiling/regimeClassifierClassification.js",
+      "globals": [
+        "conductorState"
+      ]
+    },
+    {
+      "from": "src/conductor/conductorState.js",
       "to": "src/conductor/signal/profiling/regimeReactiveDamping.js",
       "globals": [
         "conductorState"
@@ -11150,6 +11171,13 @@
     },
     {
       "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
+      "to": "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js",
+      "globals": [
+        "pipelineCouplingManager"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/balancing/coupling/pipelineCouplingManager.js",
       "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
       "globals": [
         "pipelineCouplingManager"
@@ -11836,6 +11864,13 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/conductor/journey/harmonicJourneyPlanner.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/conductor/signal/balancing/coupling/homeostasis/homeostasisRefresh.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -11983,6 +12018,13 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/fx/setBinaural.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/play/channelCoherence.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -12011,6 +12053,20 @@
     },
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/rhythm/drums/drummer.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/rhythm/feedback/journeyRhythmCoupler.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/rhythm/getRhythm.js",
       "globals": [
         "systemDynamicsProfiler"
@@ -12019,6 +12075,13 @@
     {
       "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
       "to": "src/rhythm/phaseLockedRhythmGenerator.js",
+      "globals": [
+        "systemDynamicsProfiler"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/systemDynamicsProfiler.js",
+      "to": "src/rhythm/rhythmHistoryTracker.js",
       "globals": [
         "systemDynamicsProfiler"
       ]
@@ -21598,6 +21661,7 @@
       "from": "src/utils/randoms.js",
       "to": "src/conductor/journey/harmonicJourneyHelpers.js",
       "globals": [
+        "rf",
         "ri"
       ]
     },
@@ -22002,6 +22066,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/conductor/journey/harmonicJourneyPlanner.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/conductor/profiles/conductorConfigDynamics.js",
       "globals": [
         "safePreBoot"
@@ -22156,6 +22227,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/dynamics/crossLayerDynamicEnvelope.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/crossLayer/dynamics/dynamicRoleSwap.js",
       "globals": [
         "safePreBoot"
@@ -22212,7 +22290,35 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/fx/setBinaural.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/play/crossLayerBeatRecord.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/rhythm/drums/drummer.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/rhythm/feedback/journeyRhythmCoupler.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/rhythm/rhythmHistoryTracker.js",
       "globals": [
         "safePreBoot"
       ]

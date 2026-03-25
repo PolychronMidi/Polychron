@@ -117,10 +117,23 @@ crossLayerDynamicEnvelope = (() => {
     const snap = systemDynamicsProfiler.getSnapshot();
     const regime = snap ? snap.regime : 'exploring';
 
+    // R2 E2: Phase-aware arc type bias. When phase axis is starved,
+    // bias toward complementary arcs which create cross-layer velocity
+    // interference that feeds phase coupling energy. This is a structural
+    // feedback loop: low phase share -> more complementary arcs -> more
+    // cross-layer contrast -> more phase coupling energy.
+    const phaseAxisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const phaseStarved = phaseAxisEnergy && phaseAxisEnergy.shares
+      && typeof phaseAxisEnergy.shares.phase === 'number'
+      && phaseAxisEnergy.shares.phase < 0.14;
+
     if (regime === 'coherent') {
       // Coherent: bias toward parallel (unified crescendo/decrescendo)
+      // R2 E2: When phase is starved, shift threshold so complementary
+      // is chosen more often even during coherent passages.
+      const coherentThreshold = phaseStarved ? 0.60 : 0.45;
       arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
-        interaction > 0.45 ? 'parallel' : 'complementary'
+        interaction > coherentThreshold ? 'parallel' : 'complementary'
       );
     } else if (regime === 'evolving') {
       // Evolving: bias toward independent (maximum differentiation)
@@ -131,10 +144,12 @@ crossLayerDynamicEnvelope = (() => {
         interaction > 0.45 ? 'complementary' : 'independent'
       );
     } else {
-      // Exploring: use intent directly (original behavior)
-      if (interaction > 0.65) {
+      // R99 E4: Widen exploring complementary arc band (was 0.35-0.65, now 0.28-0.72).
+      // More complementary arcs during exploring creates greater layer contrast,
+      // feeding phase axis energy through cross-layer velocity interference patterns.
+      if (interaction > 0.72) {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
-      } else if (interaction > 0.35) {
+      } else if (interaction > 0.28) {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('complementary');
       } else {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('independent');

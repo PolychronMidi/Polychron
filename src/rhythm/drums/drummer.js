@@ -39,6 +39,16 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
       [combined[i],combined[j]]=[combined[j],combined[i]];
     }
   }
+  // R99 E2: Regime-responsive drum stutter chance.
+  // Exploring benefits from higher stutter (rhythmic energy helps phase axis),
+  // coherent from lower stutter (stability, cleaner rhythms).
+  const drumSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+  const drumRegime = drumSnap ? drumSnap.regime : 'exploring';
+  const regimeStutterScale = drumRegime === 'exploring' ? 1.30
+    : drumRegime === 'coherent' ? 0.70
+    : 1.0;
+  stutterChance = clamp(stutterChance * regimeStutterScale, 0.10, 0.55);
+
   const conductorSnapshot = conductorState.getSnapshot();
   const contextIntensity = Number.isFinite(Number(conductorContext.compositeIntensity))
     ? clamp(Number(conductorContext.compositeIntensity), 0, 1)

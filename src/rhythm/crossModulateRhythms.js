@@ -39,12 +39,15 @@ crossModulateRhythms = () => {
     crossModulation += texIntensity * rf(0.3, 0.8) * cmScale.textureBoostScale;
   }
 
-  // R35 E5: Section-progress rhythmic openness - increase crossMod variance
-  // in later sections to push rhythmic complexity as the piece develops.
+  // R35 E5 -> R98 E1: Bell-curve cross-mod concentration at compositional midpoint.
+  // Replaces monotonic ramp with bell curve peaking at midpoint, concentrating
+  // rhythmic energy where tension arc should peak.
   const sectionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
-  if (sectionProg > 0.4) {
-    crossModulation += (sectionProg - 0.4) * rf(0.2, 0.6) * rs;
-  }
+  // R99 E5 -> R1 E1: Boundary floor reduced 0.15->0.08. The 0.15 floor
+  // diluted bell-curve contrast, regressing tension arc peak -17% (0.846->0.703).
+  // 0.08 keeps light boundary energy without killing midpoint concentration.
+  const midpointFocus = m.max(0.08, m.exp(-m.pow((sectionProg - 0.5) * 2.5, 2)));
+  crossModulation += midpointFocus * rf(0.2, 0.6) * rs;
 
   // R68 E3: Regime-responsive cross-modulation scaling.
   // Coherent regimes get tighter rhythmic texture (less cross-mod variance).

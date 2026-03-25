@@ -82,11 +82,14 @@ dynamicArchitectPlanner = (() => {
       return 0.4 + (position - 0.15) / 0.55 * 0.45;
     }
     if (position < 0.85) {
-      // Post-climax descent: 0.85 - 0.45
-      return 0.85 - (position - 0.7) / 0.15 * 0.4;
+      // R6 E4: Post-climax descent: 0.85 - 0.55 (was 0.45). Sustain more
+      // energy in late sections to prevent tension arc tail-off. Creates
+      // a plateau rather than steep drop, maintaining musical interest.
+      return 0.85 - (position - 0.7) / 0.15 * 0.30;
     }
-    // Coda: 0.45 - 0.15
-    return 0.45 - (position - 0.85) / 0.15 * 0.3;
+    // R6 E4: Coda: 0.55 - 0.25 (was 0.45-0.15). Higher floor maintains
+    // presence through the final section.
+    return 0.55 - (position - 0.85) / 0.15 * 0.30;
   }
 
   /**

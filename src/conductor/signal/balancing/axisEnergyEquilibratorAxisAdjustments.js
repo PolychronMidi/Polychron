@@ -110,7 +110,12 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           : { phaseCollapseBoost: 4.0, phaseFloorBoost: 1.0 };
         const emergencyBoost = isPhaseCollapse ? phaseBoosts.phaseCollapseBoost : (isEmergencyStarved ? 3.0 : m.max(1.0, phaseBoosts.phaseFloorBoost));
         if (axis === 'phase') phaseFloorController.recordBoostApplied(emergencyBoost);
-        const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
+        // R5 E2: Symmetric giniMult in undershoot handler. Previously only
+        // the overshoot handler used giniMult -- suppressed axes didn't recover
+        // faster when the system was imbalanced. This made axis starvation
+        // self-reinforcing: dominant axes got tightened faster but starved axes
+        // relaxed at a fixed slow rate regardless of Gini.
+        const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * context.giniMult * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           // R86 E1: Bypass pair cooldowns when phase floor/extreme collapse is active
@@ -173,6 +178,13 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
       }
     }
 
+    // R5 E5: Removed R4 E3 manual entropy floor at 0.13. This was a
+    // whack-a-mole constant that duplicated the generic AXIS_UNDERSHOOT
+    // handler (which already fires at < 0.12) and conflicted with the
+    // hypermeta equilibrator's adaptive rebalancing. With R5 E1-E2
+    // (progressive giniMult + symmetric undershoot recovery), the generic
+    // handler should recover entropy without manual overrides.
+
     const phaseSmoothed = state.smoothedShares.phase;
     const trustSmoothed = state.smoothedShares.trust;
     if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.08 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.20 : (phaseSmoothed < 0.04 ? 1.05 : 0.95))) {
@@ -204,7 +216,10 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
     if (typeof trustSmoothed === 'number' && trustSmoothed < 0.14 && trustSmoothed > 0.001) {
       const trustDeficit = 0.14 - trustSmoothed;
       const trustFloorPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
-      const trustFloorRate = m.min(0.03, config.AXIS_RELAX_RATE * 0.50 * trustFloorPairScale * clamp(trustDeficit / config.FAIR_SHARE, 0.5, 2.0));
+      // R3 E2: Trust floor rate 0.50 -> 1.2. Trust recovery was 5x slower
+      // than tension (0.50 vs 2.5). 1.2 gives trust meaningful recovery speed
+      // without overshooting phase (which is the reason R7 reduced from 1.05).
+      const trustFloorRate = m.min(0.03, config.AXIS_RELAX_RATE * 1.20 * trustFloorPairScale * clamp(trustDeficit / config.FAIR_SHARE, 0.5, 2.0));
       const trustFloorPairs = config.axisToPairs.trust || [];
       for (let i = 0; i < trustFloorPairs.length; i++) {
         const pair = trustFloorPairs[i];

@@ -78,6 +78,14 @@ journeyRhythmCoupler = (() => {
     const boldness = getBoldness();
     if (boldness < 0.05) return rhythmsObj; // No significant bias - pass through
 
+    // R98 E3: Regime-responsive boldness amplification.
+    // Exploring amplifies boldness effect, coherent dampens it.
+    const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regime = regimeSnap && regimeSnap.regime ? regimeSnap.regime : 'evolving';
+    const boldnessScale = regime === 'exploring' ? 1.30
+      : regime === 'coherent' ? 0.75
+      : 1.0;
+
     const modified = {};
     for (const [key, spec] of Object.entries(rhythmsObj)) {
       if (!spec || !Array.isArray(spec.weights)) {
@@ -89,7 +97,7 @@ journeyRhythmCoupler = (() => {
         const wN = V.optionalFinite(Number(w), 0.1);
         const complexity = idx / spec.weights.length; // 0 = simple, 1 = complex
         // Bold harmonic moves push weight toward complex end
-        const boldnessBoost = (complexity - 0.5) * boldness * 0.3;
+        const boldnessBoost = (complexity - 0.5) * boldness * 0.3 * boldnessScale;
         return m.max(0.1, wN + boldnessBoost);
       });
 

@@ -45,6 +45,15 @@ rhythmHistoryTracker = (() => {
       }
     }
 
+    // R98 E5: Regime-responsive repetition penalty strength.
+    // Exploring: stronger penalty (0.35) forces more rhythmic novelty.
+    // Coherent: weaker penalty (0.15) allows comfortable repetition.
+    const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const trackerRegime = regimeSnap && regimeSnap.regime ? regimeSnap.regime : 'evolving';
+    const penaltyStrength = trackerRegime === 'exploring' ? 0.35
+      : trackerRegime === 'coherent' ? 0.15
+      : 0.25;
+
     const result = {};
     const keys = Object.keys(candidates);
     for (let i = 0; i < keys.length; i++) {
@@ -54,7 +63,7 @@ rhythmHistoryTracker = (() => {
         result[key] = entry;
         continue;
       }
-      const penalty = counts[key] ? 1 / (1 + counts[key] * 0.25) : 1;
+      const penalty = counts[key] ? 1 / (1 + counts[key] * penaltyStrength) : 1;
       result[key] = {
         ...entry,
         weights: entry.weights.map(w => w * penalty)

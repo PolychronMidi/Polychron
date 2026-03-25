@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "generated": "2026-03-25T05:12:18.473Z",
+    "legacyAllowlistSize": 6,
+    "detectedOverrides": 10,
+    "unregisteredOverrides": 0,
+    "removedLegacy": 0
+  },
+  "registered": [
+    {
+      "axis": "tension",
+      "type": "floor",
+      "threshold": 0.15
+    },
+    {
+      "axis": "entropy",
+      "type": "cap",
+      "threshold": 0.19
+    },
+    {
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.08
+    },
+    {
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.02
+    },
+    {
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.04
+    },
+    {
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.02
+    },
+    {
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.04
+    },
+    {
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.02
+    },
+    {
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.04
+    },
+    {
+      "axis": "trust",
+      "type": "floor",
+      "threshold": 0.14
+    }
+  ],
+  "unregistered": [],
+  "removedLegacy": [],
+  "legacyOverrides": [
+    {
+      "id": "tension-floor-0.15",
+      "axis": "tension",
+      "type": "floor",
+      "threshold": 0.15,
+      "rationale": "Pre-hypermeta legacy. Generic undershoot at 0.12 is 0.03 below; tension floor at 0.15 with 2.5x rate provides faster recovery. Candidate for removal once giniMult proves sufficient."
+    },
+    {
+      "id": "entropy-cap-0.19",
+      "axis": "entropy",
+      "type": "cap",
+      "threshold": 0.19,
+      "rationale": "Pre-hypermeta legacy. Generic overshoot at 0.22 is 0.03 above; entropy cap at 0.19 with 2.5x rate prevents entropy domination. Candidate for removal once giniMult proves sufficient."
+    },
+    {
+      "id": "phase-trust-seesaw",
+      "axis": "phase+trust",
+      "type": "coordinated-cap",
+      "threshold": 0.08,
+      "rationale": "Coordination layer with no generic equivalent. Suppresses trust when phase is starved (<0.08). May conflict with phaseFloorController (#14) and trustStarvationAutoNourishment (#5). Evaluate for refactoring into a cross-axis controller."
+    },
+    {
+      "id": "phase-trust-seesaw-graduated-0.04",
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.04,
+      "rationale": "Sub-threshold within phase-trust seesaw graduated response. Moderate phase collapse triggers 1.05x trust threshold and 1.9x cap strength."
+    },
+    {
+      "id": "phase-trust-seesaw-graduated-0.02",
+      "axis": "phase",
+      "type": "floor",
+      "threshold": 0.02,
+      "rationale": "Sub-threshold within phase-trust seesaw graduated response. Deep phase collapse triggers 1.20x trust threshold and 2.4x cap strength."
+    },
+    {
+      "id": "trust-floor-0.14",
+      "axis": "trust",
+      "type": "floor",
+      "threshold": 0.14,
+      "rationale": "Post-R6 legacy with R3 rate adjustment (1.20x). Generic undershoot at 0.12 is 0.02 below. trustStarvationAutoNourishment (#5) handles velocity-based recovery. Candidate for removal."
+    }
+  ]
+}

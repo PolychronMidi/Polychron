@@ -42,7 +42,7 @@ regimeReactiveDamping = (() => {
     oscillating: 0,
     exploring: 1,
     coherent: 0,       // R91 E2: reverted to 0. DT pearsonR spiked 0.1247->0.4437 in R90 with 0.15; density and tension move in sync during coherent passages, creating exceedance (38 beats). Neutral decorrelates them.
-    evolving: 1.0,     // R33 E4: 0.5->1.0 stronger tension identity for evolving regime
+    evolving: 1.3,     // R33 E4: 0.5->1.0. R1 E2: 1.0->1.3 tension axis collapsed to 0.119 (29% below fair share). Evolving at 24.5% needs stronger tension contribution.
     drifting: 1,
   };
 
@@ -270,6 +270,16 @@ regimeReactiveDamping = (() => {
     // concentration > 0.80 AND tension-flicker is the pressured pair.
     const tensionFlickerRelease = clamp(tensionFlickerPressure * (0.045 + evolvingRecoveryPressure * 0.02 + phaseRecoveryCredit * 0.015) * ((currentRegime === 'coherent' || currentRegime === 'evolving') ? 1 : 0.7) + clamp((topPairConcentration - 0.80) / 0.15, 0, 1) * tensionFlickerPressure * 0.04, 0, 0.12);
     const densityRebalanceLift = clamp(tensionFlickerPressure * (0.015 + phaseRecoveryCredit * 0.01) * (1 - densityFlickerPressure * 0.6), 0, 0.03);
+    // R2 E4: Bidirectional flicker-trust brake. Currently only flicker is
+    // suppressed when FT correlation is high (0.4358 pearsonR in R1).
+    // Break the coupling at both ends: when flicker-trust coupling exceeds
+    // the threshold, also read the DF coupling to shift the flicker arch.
+    const ftRaw = couplingMatrix ? couplingMatrix['flicker-trust'] : 0;
+    const flickerTrustCoupling = Number.isFinite(ftRaw) ? m.abs(ftRaw) : 0;
+    // R4 E4: Strengthen ftDecoupleBrake. FT pearsonR resurgent at 0.4317
+    // in R3 despite R2's 0.025 max brake. Raise to 0.04 for stronger
+    // FT decorrelation pressure.
+    const ftDecoupleBrake = clamp((flickerTrustCoupling - 0.40) / 0.30, 0, 1) * 0.04;
 
     // Compute raw bias values with equilibrator corrections (#2)
     // R8 E3: Section-progressive tension bias. Adds a small ascending nudge
@@ -297,7 +307,9 @@ regimeReactiveDamping = (() => {
     const densityShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.density === 'number'
       ? axisEnergy.shares.density
       : 1.0 / 6.0;
-    const densityShareBrake = clamp((densityShare - 0.20) / 0.08, 0, 1) * 0.04;
+    // R1 E4: Tighten density brake. Density dominant at 0.219 (31% above
+    // fair share). Lower threshold 0.20->0.18 so brake engages earlier.
+    const densityShareBrake = clamp((densityShare - 0.18) / 0.08, 0, 1) * 0.04;
     // R89 E1 / R90 E1: Density axis recovery lift. When density is below
     // fair share, apply proportional positive nudge. R89 at 0.03 overcorrected
     // density +74% (0.1325->0.2304). R90: reduced to 0.01 for gentler recovery.
@@ -319,9 +331,17 @@ regimeReactiveDamping = (() => {
     // hill-shaped (edges calm, midpoint active). This creates complementary
     // section-level texture: dense+calm boundaries, sparse+flickery midpoint.
     // Range: [-0.02, +0.02], additive to raw flicker bias.
-    const flickerArchProgress = 1 - densityArchProgress; // 1 at mid, 0 at edges
-    const sectionFlickerNudge = (flickerArchProgress - 0.5) * 0.04; // range [-0.02, +0.02]
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7 + sectionFlickerNudge;
+    // R2 E5: DF-coupling-responsive flicker arch offset. When density-flicker
+    // correlation is high, shift the flicker arch peak away from density
+    // concentration zones. Density is V-shaped (high at edges), so when DF
+    // coupling is hot, push flicker peak LATER in the section to decorrelate.
+    const dfRaw = couplingMatrix ? couplingMatrix['density-flicker'] : 0;
+    const dfCoupling = Number.isFinite(dfRaw) ? m.abs(dfRaw) : 0;
+    const archOffset = clamp((dfCoupling - 0.35) / 0.40, 0, 1) * 0.15; // up to 0.15 rightward shift
+    const flickerArchCenter = 0.5 + archOffset; // shifted peak
+    const flickerArchProgress = 1 - m.abs(sectionProgress - flickerArchCenter) * 2; // peak at shifted center
+    const sectionFlickerNudge = (clamp(flickerArchProgress, 0, 1) - 0.5) * 0.04;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7 + sectionFlickerNudge - ftDecoupleBrake;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
     regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);

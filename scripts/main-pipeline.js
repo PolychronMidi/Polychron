@@ -21,6 +21,7 @@ const PRE_COMPOSITION = [
   { label: 'generate-globals-dts',    cmd: 'node scripts/generate-globals-dts.js' },
   { label: 'verify-boot-order',       cmd: 'node scripts/verify-boot-order.js --fix' },
   { label: 'check-tuning-invariants', cmd: 'node scripts/check-tuning-invariants.js' },
+  { label: 'check-hypermeta-jurisdiction', cmd: 'node scripts/check-hypermeta-jurisdiction.js' },
   { label: 'generate-feedback-graph', cmd: 'node scripts/generate-feedback-graph.js' },
   { label: 'validate-feedback-graph', cmd: 'node scripts/validate-feedback-graph.js' },
   { label: 'lint',                    cmd: 'npm run lint' },

@@ -7,7 +7,7 @@
 crossLayerSilhouette = (() => {
   const V = validator.create('crossLayerSilhouette');
   const SMOOTHING_REGIME = { exploring: 0.22, evolving: 0.15, coherent: 0.10 };
-  const CORRECTION_GAIN_REGIME = { exploring: 0.75, evolving: 1.0, coherent: 1.10 };
+  const CORRECTION_GAIN_REGIME = { exploring: 0.75, evolving: 1.0, coherent: 1.0 };
   const ARC_HISTORY = 16;
 
   /** @type {{ density: number, register: number, dynamic: number, entropy: number, timeMs: number }[]} */

@@ -22,7 +22,11 @@ axisEnergyEquilibratorRefreshContext = (() => {
     state.lastWarmupTicks = axisEnergyEquilibratorHelpers.getWarmupTicks(config.WARMUP_DEFAULT);
     if (state.beatCount < state.lastWarmupTicks) return null;
 
-    const giniMult = axisGini > config.GINI_ESCALATION ? 1.5 : 1.0;
+    // R5 E1: Progressive giniMult. The binary threshold (0.40) was unreachable
+    // in practice (Gini never exceeds ~0.15), making escalation dead code.
+    // Replace with continuous ramp: engages at Gini 0.08, reaches 1.7x at 0.33.
+    // This lets the equilibrator respond proportionally to actual imbalance.
+    const giniMult = 1.0 + clamp((axisGini - 0.08) / 0.25, 0, 1) * 0.7;
     const homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
     const recoveryAxisHandOffPressure = homeostasisState && typeof homeostasisState.recoveryAxisHandOffPressure === 'number'
       ? homeostasisState.recoveryAxisHandOffPressure

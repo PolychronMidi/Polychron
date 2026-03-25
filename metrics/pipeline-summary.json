@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-25T03:20:43.606Z",
-  "wallTimeSeconds": 109.1,
+  "generated": "2026-03-25T05:14:13.792Z",
+  "wallTimeSeconds": 115.5,
   "steps": [
     {
       "label": "generate-globals-dts",
@@ -18,6 +18,11 @@
       "ok": true
     },
     {
+      "label": "check-hypermeta-jurisdiction",
+      "elapsedSeconds": 0,
+      "ok": true
+    },
+    {
       "label": "generate-feedback-graph",
       "elapsedSeconds": 0,
       "ok": true
@@ -29,17 +34,17 @@
     },
     {
       "label": "lint",
-      "elapsedSeconds": 1.9,
+      "elapsedSeconds": 1.7,
       "ok": true
     },
     {
       "label": "typecheck",
-      "elapsedSeconds": 2,
+      "elapsedSeconds": 1.8,
       "ok": true
     },
     {
       "label": "composition",
-      "elapsedSeconds": 102,
+      "elapsedSeconds": 108.7,
       "ok": true
     },
     {
@@ -84,7 +89,7 @@
     },
     {
       "label": "diff-compositions",
-      "elapsedSeconds": 0.8,
+      "elapsedSeconds": 0.9,
       "ok": true
     },
     {
@@ -93,6 +98,6 @@
       "ok": true
     }
   ],
-  "passed": 18,
+  "passed": 19,
   "failed": 0
 }

@@ -36,10 +36,18 @@ phaseFloorController = (() => {
    * Adapts to the phase share's natural operating range.
    */
   function getLowShareThreshold() {
+    const fairShare = 1.0 / 6.0;
     const persistentLowSharePressure = clamp((0.06 - phaseFloorControllerShareEma) / 0.06, 0, 1);
+    // R5 E3: Add fair-share-relative floor (fairShare * 0.65 = 0.108) to
+    // prevent adaptive threshold from decaying below moderate-suppression
+    // detection. Without this, shareEma * 0.45 tracks the declining share
+    // downward, creating a self-reinforcing blind spot: phase drops -> EMA
+    // drops -> threshold drops -> controller never fires -> phase drops further.
+    // The fairShare anchor ensures the controller always detects shares below
+    // ~65% of fair share regardless of how low the EMA has adapted.
     return clamp(
-      m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030),
-      0.02, 0.10
+      m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030, fairShare * 0.65),
+      0.02, 0.12
     );
   }
 

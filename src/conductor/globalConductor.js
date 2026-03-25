@@ -13,7 +13,7 @@ globalConductor = (() => {
   // Flicker modifier EMA state - smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
   let globalConductorPrevFlickerMod = 1;
-  const FLICKER_SMOOTHING = 0.30; // raised from 0.15 - doubles tracking responsiveness to widen effective output range
+  const FLICKER_SMOOTHING = 0.40; // R6 E5: 0.30->0.40. Faster tracking reduces EMA compression, wider beat-to-beat flicker variation
 
   // Density-flicker additive decorrelation: tracks rolling correlation
   // between density direction and flicker amplitude direction. When both

@@ -96,16 +96,16 @@ velocityInterference = (() => {
     const sectionProg = totalSections > 1
       ? clamp(sectionIndex / (totalSections - 1), 0, 1)
       : 0.5;
-    // R91 E4: Regime-responsive interference scaling. Exploring passages
-    // benefit from stronger cross-layer velocity interaction (more dynamic
-    // range contrast), coherent passages preserve stability with gentler
-    // interference. Exploring: +20% ceiling, coherent: -15% ceiling.
+    // R98 E2: Bell-curve interference concentration at compositional midpoint.
+    // Stronger interference at midpoint supports tension arc peak.
+    const midpointFocus = m.exp(-m.pow((sectionProg - 0.5) * 2.5, 2));
+    // R91 E4: Regime-responsive interference scaling.
     const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
     const regimeScale = regime === 'exploring' ? 1.20
       : regime === 'coherent' ? 0.85
       : 1.0;
-    const boostCeiling = (0.13 + sectionProg * 0.10) * regimeScale;
-    const reductionCeiling = (0.08 + sectionProg * 0.06) * regimeScale;
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength
