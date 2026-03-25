@@ -1,6 +1,8 @@
 // harmonicJourneyHelpers.js - shared theory helpers for harmonicJourney
 
 harmonicJourneyHelpers = (() => {
+  // R3 E1: brightness spectrum for modal interchange close move
+  const BRIGHTNESS_ORDER = ['phrygian', 'aeolian', 'minor', 'dorian', 'mixolydian', 'major', 'ionian', 'lydian'];
   const CLOSE_MOVES = [
     (key, mode) => ({ key: t.Note.transpose(key, 'P5'), mode, move: 'fifth-up' }),
     (key, mode) => ({ key: t.Note.transpose(key, 'P4'), mode, move: 'fourth-up' }),
@@ -9,6 +11,16 @@ harmonicJourneyHelpers = (() => {
         return { key: t.Note.transpose(key, 'm3').replace(/\d+$/, ''), mode: 'minor', move: 'relative-minor' };
       }
       return { key: t.Note.transpose(key, 'M3').replace(/\d+$/, ''), mode: 'major', move: 'relative-major' };
+    },
+    // R3 E1: Modal interchange -- same key, one step on brightness spectrum.
+    // Enables mode diversity even in opening transitions.
+    (key, mode) => {
+      const idx = BRIGHTNESS_ORDER.indexOf(mode);
+      if (idx === -1) return { key, mode: 'dorian', move: 'modal-interchange' };
+      const dir = rf() < 0.5 ? -1 : 1;
+      const newIdx = clamp(idx + dir, 0, BRIGHTNESS_ORDER.length - 1);
+      const newMode = BRIGHTNESS_ORDER[newIdx];
+      return { key, mode: newMode, move: 'modal-interchange' };
     },
   ];
 
@@ -90,7 +102,8 @@ harmonicJourneyHelpers = (() => {
 
     let pool;
     switch (phase) {
-      case 'opening':    pool = [...CLOSE_MOVES]; break;
+      // R3 E1: Add 1 parallel-mode move to opening pool for early mode diversity
+      case 'opening':    pool = [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)]; break;
       case 'resolution': pool = [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)]; break;
       case 'development': pool = [...CLOSE_MOVES, ...MODERATE_MOVES]; break;
       case 'climax':     pool = [...MODERATE_MOVES, ...BOLD_MOVES]; break;

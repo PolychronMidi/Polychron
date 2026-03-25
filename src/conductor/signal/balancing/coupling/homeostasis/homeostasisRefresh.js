@@ -218,6 +218,14 @@ homeostasisRefresh = (() => {
     if (snap.regime === 'exploring' && S.beatCount > 30) {
       S.energyBudget *= 1.15;
     }
+    // R3 E5: Coherent regime budget bonus. Currently only exploring gets
+    // relaxation (+15% x2), so coherent passages (50%+ of beats) are the
+    // tightest-budgeted regime despite needing rich coupling texture.
+    // Add modest +8% when coherent and coupling surface has no severe hotspots.
+    if (homeostasisRefreshDynSnap && homeostasisRefreshDynSnap.regime === 'coherent' &&
+        S.beatCount > 50 && S.densityFlickerTailPressure < 0.80) {
+      S.energyBudget *= 1.08;
+    }
 
     // 3. Detect redistribution
     const energyDelta = totalEnergy - S.prevTotalEnergy;

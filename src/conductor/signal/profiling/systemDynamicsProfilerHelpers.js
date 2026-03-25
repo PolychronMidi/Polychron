@@ -315,9 +315,11 @@ systemDynamicsProfilerHelpers = (() => {
     // than trust/phase since entropy has more natural variance from note data.
     const entropyDelta = entropy - (state.lastEntropySample || entropy);
     state.lastEntropySample = entropy;
-    const entropyVelAmp = currentRegime === 'exploring' ? 4.5
-      : currentRegime === 'evolving' ? 3.5
-      : 3.0;
+    // R1 E3: Entropy velAmp boost. Entropy share collapsed 0.189->0.129
+    // (-32%) in R99. Boost all tiers to recover entropy axis.
+    const entropyVelAmp = currentRegime === 'exploring' ? 5.0
+      : currentRegime === 'evolving' ? 4.5
+      : 3.5;
     const enhancedEntropy = clamp(entropy + entropyDelta * entropyVelAmp, 0, 1);
 
     return [

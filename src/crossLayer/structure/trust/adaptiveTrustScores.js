@@ -160,7 +160,16 @@ adaptiveTrustScores = (() => {
              maxTrustCorr = m.max(maxTrustCorr, m.abs(val));
           }
         }
-        if (maxTrustCorr > 0.70) {
+        // R3 E4 + R4 E1: Graduated density-trust correlation brake. R3 set
+        // threshold at 0.50 but it fired on too many fleeting per-beat spikes,
+        // crushing trust share to 0.114. R4: raise to 0.60 to catch only
+        // sustained moderate coupling, not transient spikes.
+        if (maxTrustCorr > 0.60 && maxTrustCorr <= 0.70) {
+          const linearPressure = (maxTrustCorr - 0.60) / 0.10;
+          newWeight = 0.08 + linearPressure * 0.07;
+          newWeight = clamp(newWeight, 0.08, 0.15);
+          decayWeight = 1 - newWeight;
+        } else if (maxTrustCorr > 0.70) {
           // exponential drop scalar when locking, maximum weight approaches 0.60
           newWeight = 0.1 * m.exp(5 * (maxTrustCorr - 0.70));
           newWeight = clamp(newWeight, 0.1, 0.6);

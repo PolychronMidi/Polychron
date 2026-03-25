@@ -87,10 +87,13 @@ intervalExpansionContractor = (() => {
     // Density bias: rapid expansion - slight reduction to give melodic room;
     // extreme contraction - slight increase to encourage variety
     let densityBias = 1;
+    // R6 E3: Widen density bias from 4% to 8%. Stronger response to
+    // intervallic trends creates more melodic diversity: wider leaps get
+    // more room, stepwise motion gets encouraged toward variety.
     if (avgIntervalTrend > 2) {
-      densityBias = 0.96; // expanding fast - give room
+      densityBias = 0.92; // expanding fast - give room
     } else if (avgIntervalTrend < -2) {
-      densityBias = 1.04; // contracting - encourage variety
+      densityBias = 1.08; // contracting - encourage variety
     }
 
     return { trend, densityBias, avgIntervalTrend };

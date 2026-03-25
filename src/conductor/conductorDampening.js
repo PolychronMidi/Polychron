@@ -31,7 +31,7 @@ conductorDampening = (() => {
   // dynamically. Compressed range -> reduce dampening; excessive range
   // -> increase dampening. Self-heals flicker range compression.
   const _FLICKER_RANGE_WINDOW = 32;
-  let conductorDampeningTargetFlickerRange = 0.22; // R33 E1: 0.15->0.22 widen flicker elasticity target for greater timbral contrast
+  let conductorDampeningTargetFlickerRange = 0.28; // R6 E2: 0.22->0.28 widen flicker elasticity target. Compressed threshold moves 0.132->0.168, triggering active range expansion earlier
   /** @type {number[]} */
   const conductorDampeningFlickerRingBuffer = [];
   let conductorDampeningFlickerDampeningBaseAdj = 0;

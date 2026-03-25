@@ -189,7 +189,15 @@ couplingGainEscalation = (() => {
         if (eff < 0.50) rate *= m.max(0.25, eff / 0.50);
         const hp = ps.heatPenalty || 0;
         if (hp > 0.30) rate *= m.max(0.35, 1.0 - hp);
-        rate *= S.globalGainMultiplier;
+        // R3 E3 + R4 E2: Decouple escalation learning rate from full GGM.
+        // R3: sqrt(GGM) for all pairs. R4: DF pair uses linear GGM (full
+        // compression) because sqrt let DF escalate too fast (3->34 exceedance
+        // beats). Other pairs keep sqrt for better learning rate.
+        if (flags.isDensityFlickerPair) {
+          rate *= S.globalGainMultiplier;
+        } else {
+          rate *= m.sqrt(m.max(0.04, S.globalGainMultiplier));
+        }
         rate *= setup.floorDampen;
 
         let pairGainMax = flags.isDensityFlickerPair ? S.densityFlickerGainCeiling : GAIN_MAX;

@@ -29,7 +29,23 @@ harmonicJourneyPlanner = (() => {
     if (!startKey) throw new Error(`harmonicJourney.planJourney: invalid startKey "${opts.startKey}"`);
 
     let startMode = opts.startMode || 'random';
-    if (startMode === 'random') startMode = START_MODE_POOL[ri(START_MODE_POOL.length - 1)];
+    if (startMode === 'random') {
+      // R2 E1: Regime-responsive mode brightness. Exploring favors darker modes
+      // (dorian, minor, phrygian) for drama; coherent favors brighter (major,
+      // mixolydian, ionian) for stability. Creates modal diversity organically
+      // from regime dynamics rather than post-hoc palette breaks.
+      const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const currentRegime = regimeSnap ? regimeSnap.regime : 'exploring';
+      const DARK_POOL = ['minor', 'dorian', 'phrygian', 'aeolian', 'minor', 'dorian'];
+      // R5 E4: Deduplicate BRIGHT_POOL. 'ionian' is identical to 'major'
+      // (same scale), doubling major-quality probability (3/6 = 50%). Replace
+      // 'ionian' with 'dorian' for modal color variety during coherent regime.
+      const BRIGHT_POOL = ['major', 'mixolydian', 'dorian', 'major', 'lydian', 'mixolydian'];
+      const modePool = currentRegime === 'exploring' ? DARK_POOL
+        : currentRegime === 'coherent' ? BRIGHT_POOL
+        : START_MODE_POOL;
+      startMode = modePool[ri(modePool.length - 1)];
+    }
     if (!VALID_MODES.includes(startMode)) {
       throw new Error(`harmonicJourney.planJourney: invalid startMode "${startMode}"`);
     }
@@ -365,7 +381,9 @@ harmonicJourneyPlanner = (() => {
           dominantCount = count;
         }
       }
-      if (dominantCount >= 3) {
+      // R1 E5: Palette break at 2+ dominance (was 3). Only 2 modes
+      // (major/minor) in R99. Earlier palette break injects modal variety sooner.
+      if (dominantCount >= 2) {
         // R90 E3: Fix lydian palette-break bias. Previously the catch-all
         // fallback was always 'lydian', creating a strong lydian attractor.
         // Now cycle through diverse contrast modes based on the dominant mode.

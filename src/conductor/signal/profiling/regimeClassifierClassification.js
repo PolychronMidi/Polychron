@@ -136,9 +136,20 @@ regimeClassifierClassification = (() => {
     // during warmup or resolution is less valuable.
     const sectionIndexForRegime = sectionIndex;
     const midSectionBoost = (sectionIndexForRegime >= 1 && sectionIndexForRegime <= 3) ? 0.015 : 0;
+    // R2 E3: Tension-aware evolving sustain. When tension bias product
+    // is elevated (from R1 E2 tension dir 1.3), curvature rises and
+    // accelerates coherent entry. Counter this by widening the evolving
+    // velocity ceiling when tension is high, so evolving can persist
+    // despite stronger tension-driven curvature. Uses the actual tension
+    // signal rather than a hardcoded constant.
+    const tensionBiasProduct = safePreBoot.call(() => {
+      const s = conductorState.getField('tension');
+      return typeof s === 'number' && Number.isFinite(s) ? s : 0.5;
+    }, 0.5) || 0.5;
+    const tensionEvolvingSustain = clamp((tensionBiasProduct - 0.55) / 0.35, 0, 1) * 0.015;
     if (cadenceMonopolyPressure > 0.40 &&
         avgVelocity > evolvingEntryVelMin &&
-        avgVelocity < evolvingEntryVelMax + 0.012 + midSectionBoost &&
+        avgVelocity < evolvingEntryVelMax + 0.012 + midSectionBoost + tensionEvolvingSustain &&
         effectiveDim > evolvingEntryDimMin - 0.10 &&
         couplingStrength > coherentThreshold - 0.02 &&
         couplingStrength < coherentThreshold + 0.10) {
@@ -173,17 +184,16 @@ regimeClassifierClassification = (() => {
     // (self-sustain and crossover) can use the same adaptive ceiling.
     const adaptiveVelCeiling = m.max(0.090, state.velocityEma - state.velocityStdEma * 0.5);
 
+    // R99 E3: Widen evolving self-sustain coupling band when evolving is starved.
+    // evolvingDeficit already widens the upper bound; now also lower the coupling
+    // floor and raise the dim tolerance proportional to deficit. This makes the
+    // self-sustain window genuinely wider (not just upper-shifted) when evolving
+    // share falls below 14%.
     if (state.lastRegime === 'evolving' &&
         avgVelocity > evolvingEntryVelMin &&
-        // R81 E1: Align self-sustain velocity ceiling with the crossover's
-        // adaptive ceiling. Previously this used evolvingEntryVelMax+0.010
-        // (~0.138), while the crossover used adaptiveVelCeiling+bonuses
-        // (~0.212). This inconsistency meant beats could ENTER evolving via
-        // the crossover but FAIL self-sustain the next beat because velocity
-        // exceeded the tighter ceiling. rawEvolvingMaxStreak was capped at 3.
         avgVelocity < adaptiveVelCeiling + 0.010 + evolvingRecoveryBoost * 0.006 &&
-        effectiveDim > 1.65 &&
-        couplingStrength > 0.08 &&
+        effectiveDim > 1.65 - evolvingDeficit * 0.15 &&
+        couplingStrength > 0.08 - evolvingDeficit * 0.02 &&
         couplingStrength < coherentThreshold + 0.16 + evolvingDeficit * 0.08) {
       return 'evolving';
     }

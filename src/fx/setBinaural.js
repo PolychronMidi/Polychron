@@ -96,7 +96,15 @@ setBinaural = () => {
   if (crossLayerEntries.length === 0) {
     const timedShift = absTimeMs >= nextBinauralShiftMs;
     if (firstLoop < 1 || timedShift) {
-      nextBinauralShiftMs = absTimeMs + rf(2, 4) * 1000;
+      // R99 E1: Regime-responsive binaural shift timing.
+      // Exploring shifts more frequently (more tonal flux, feeds phase energy),
+      // coherent shifts less frequently (stability).
+      const binauralSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const binauralRegime = binauralSnap ? binauralSnap.regime : 'exploring';
+      const binauralInterval = binauralRegime === 'exploring' ? rf(1.5, 3.0)
+        : binauralRegime === 'coherent' ? rf(3.0, 5.0)
+        : rf(2.0, 4.0);
+      nextBinauralShiftMs = absTimeMs + binauralInterval * 1000;
       flipBin = !flipBin;
       binauralFreqOffset = rl(binauralFreqOffset, -.1, .1, BINAURAL.min, BINAURAL.max);
       [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
