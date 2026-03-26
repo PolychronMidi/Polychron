@@ -31,7 +31,7 @@ couplingGainEscalation = (() => {
     const adaptEma = isEntropyPair ? TARGET_ADAPT_EMA * 2.5 : TARGET_ADAPT_EMA;
     at.rollingAbsCorr = at.rollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
     at.rawRollingAbsCorr = at.rawRollingAbsCorr * (1 - adaptEma) + absCorr * adaptEma;
-    // R3 E3: non-nudgeable overflow monitoring -- when rolling correlation
+    // non-nudgeable overflow monitoring -- when rolling correlation
     // exceeds 1.3x baseline, record overflow ratio for downstream consumers
     const overflowRatio = at.baseline > 0 ? at.rawRollingAbsCorr / at.baseline : 0;
     at.nonNudgeableOverflow = overflowRatio > 1.3 ? overflowRatio : 0;
@@ -126,10 +126,10 @@ couplingGainEscalation = (() => {
           rate *= 1 + setup.entropyAxisPressure * 0.55;
           ps.heatPenalty = m.min((ps.heatPenalty || 0) + setup.entropyAxisPressure * 0.08, 1.0);
         }
-        // R73 E2: Entropy-cluster severe escalation. When an entropy-surface
+        // Entropy-cluster severe escalation. When an entropy-surface
         // pair is severe (p95 > 0.80) and telemetry confirms persistent
         // hotspot activity, apply 1.3x multiplier to break structural
-        // entropy-axis coupling concentration (3/3 severe in R72).
+        // entropy-axis coupling concentration
         if (flags.isEntropySurfacePair && p95 > 0.80 && telemetrySevereRate > 0.06) {
           const entropySevereBoost = 1.3 * clamp((p95 - 0.80) / 0.12, 0.5, 1.0);
           rate *= entropySevereBoost;
@@ -169,10 +169,10 @@ couplingGainEscalation = (() => {
           rate *= (1 + trustPressure);
           ps.heatPenalty = m.min((ps.heatPenalty || 0) + trustPressure * 0.14, 1.0);
         }
-        // R75 E1: Tension-flicker coherent spike suppression.
+        // Tension-flicker coherent spike suppression.
         // When regime is coherent and a tension-flicker pair shows high
         // absCorr with persistent severe exceedance, apply 1.5x escalation
-        // to break the late-run coupling lock observed in R75 (p95 0.922).
+        // to break the late-run coupling lock observed in (p95 0.922).
         const isTensionFlickerPair = (dimA === 'tension' && dimB === 'flicker') || (dimA === 'flicker' && dimB === 'tension');
         if (isTensionFlickerPair && setup.regime === 'coherent' &&
             absCorr > 0.85 && tailTelemetry.recentSevereRate > 0.20) {
@@ -189,8 +189,8 @@ couplingGainEscalation = (() => {
         if (eff < 0.50) rate *= m.max(0.25, eff / 0.50);
         const hp = ps.heatPenalty || 0;
         if (hp > 0.30) rate *= m.max(0.35, 1.0 - hp);
-        // R3 E3 + R4 E2: Decouple escalation learning rate from full GGM.
-        // R3: sqrt(GGM) for all pairs. R4: DF pair uses linear GGM (full
+        // Decouple escalation learning rate from full GGM.
+        // sqrt(GGM) for all pairs. R4: DF pair uses linear GGM (full
         // compression) because sqrt let DF escalate too fast (3->34 exceedance
         // beats). Other pairs keep sqrt for better learning rate.
         if (flags.isDensityFlickerPair) {
@@ -214,51 +214,17 @@ couplingGainEscalation = (() => {
             typeof setup.densityProd === 'number' && setup.densityProd < DENSITY_PAIR_GAIN_CAP_THRESHOLD) {
           pairGainMax = m.min(pairGainMax, DENSITY_PAIR_GAIN_CAP);
         }
-        // R30 E1: FT pair-specific correlation-responsive gain cap.
-        // FT correlation oscillates across rounds because budget pressure
-        // alone relaxes when correlation drops, allowing gains to re-escalate.
-        // R40 E4: Tighten FT cap. FT exploded 0.306->0.524 in R39,
-        // worst ever. Reduce range from 0.45->0.28 to 0.42->0.25.
-        // R55 E3: Tighten FT cap floor 0.38->0.34. FT at +0.404 with
-        // effectiveGain already at 0.0776. Further compression toward zero
-        // is the remaining lever. Also widen slope range 0.17->0.19.
+
         if (flags.isFlickerTrustPair && absCorr > 0.30) {
           const ftCorrCap = 0.34 - clamp((absCorr - 0.30) / 0.30, 0, 1) * 0.19;
           pairGainMax = m.min(pairGainMax, ftCorrCap);
         }
-        // R35 E1 / R36 E1 / R41 E5 / R43 E2: DT structural gain cap.
-        // LESSON (confirmed 3x: R35, R41/R42 recovery, R43 regression):
-        // Structural caps on primary axis pairs (DT) are HARMFUL. They
-        // limit the coupling engine's ability to fight anti-correlation,
-        // creating a vicious cycle. R43 proved it definitively:
-        // cap tightened 0.50->0.45, DT crashed to -0.642 (worst ever).
-        // R44 E1: REMOVED ENTIRELY. DT relies on budget scoring and
-        // natural coupling dynamics only. No structural gain cap.
-        // R36 E4: DF pair-specific correlation-responsive gain cap.
-        // DF oscillates like FT (0.367->-0.095->0.379). Budget scoring
-        // alone doesn't hold. Structural cap at absCorr > 0.30.
-        // R38 E3: Tighten DF cap. Exceedance surged DF 24/34 beats (71%)
-        // in R37. Reduce cap range from 0.45->0.30 to 0.42->0.27.
-        // R39 E1: Loosen DF cap. R38 overcorrected -- DF went -0.374,
-        // density axis starved (0.094 share, below floor). Restore
-        // density coupling headroom: 0.42->0.44, 0.15->0.14 (floor 0.30).
+
         if (flags.isDensityFlickerPair && absCorr > 0.30) {
           const dfCorrCap = 0.44 - clamp((absCorr - 0.30) / 0.30, 0, 1) * 0.14;
           pairGainMax = m.min(pairGainMax, dfCorrCap);
         }
-        // R40 E1: TF pair-specific correlation-responsive gain cap.
-        // TF coupling surged to avg 0.487 with 65 exceedance beats in R39.
-        // TF is a secondary-like pair (both axes are nudgeable). Cap at
-        // absCorr > 0.30, reduce 0.48 down to 0.30 at absCorr=0.60+.
-        // R43 E3: Loosen cap start 0.48->0.52 to let coupling engine
-        // fight TF anti-correlation (-0.395 in R42). Floor remains 0.30.
-        // R57 E3: Tighten TF cap 0.52->0.48. TF exceedance surged to 20
-        // beats in R56 (top hotspot, p95=0.890). TF correlation is near
-        // zero (-0.102) so cap can reduce coupling magnitude.
-        // R58 E1: Revert to 0.52. The tighter cap was refuted in R57:
-        // TF exceedance still exploded to 50 beats while TF correlation
-        // worsened to +0.240. Control should come from budget and regime
-        // damping rather than this tighter cap.
+
         if (isTensionFlickerPair && absCorr > 0.30) {
           const tfCorrCap = 0.52 - clamp((absCorr - 0.30) / 0.30, 0, 1) * 0.22;
           pairGainMax = m.min(pairGainMax, tfCorrCap);
@@ -308,7 +274,7 @@ couplingGainEscalation = (() => {
 
     // Window push
     pushWindowValue(ps.recentAbsCorr, absCorr, P95_WINDOW);
-    // R75 E6 + R76 E3 + R78 E4: Adaptive telemetry window scaling.
+    // Adaptive telemetry window scaling.
     // Originally density-flicker only. Now applies to any pair whose
     // reconciliation gap exceeds 0.25 (reduced from 0.30 to catch
     // density-trust gap 0.340).
