@@ -13,7 +13,7 @@ globalConductor = (() => {
   // Flicker modifier EMA state - smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
   let globalConductorPrevFlickerMod = 1;
-  const FLICKER_SMOOTHING = 0.40; // R6 E5: 0.30->0.40. Faster tracking reduces EMA compression, wider beat-to-beat flicker variation
+  const FLICKER_SMOOTHING = 0.40; // 0.30->0.40. Faster tracking reduces EMA compression, wider beat-to-beat flicker variation
 
   // Density-flicker additive decorrelation: tracks rolling correlation
   // between density direction and flicker amplitude direction. When both
@@ -28,10 +28,10 @@ globalConductor = (() => {
   let globalConductorFVarN = 0;
   let globalConductorFVarMean = 1.0;
   let globalConductorFVarM2 = 0;
-  const FLICKER_VARIANCE_FLOOR_STD = 0.015; // R35 E4: raised from 0.008 to trigger injection more often
-  const FLICKER_VARIANCE_INJECT = 0.04;     // R35 E4: raised from 0.02 to break coupling monopoly
+  const FLICKER_VARIANCE_FLOOR_STD = 0.015; // raised from 0.008 to trigger injection more often
+  const FLICKER_VARIANCE_INJECT = 0.04;     // raised from 0.02 to break coupling monopoly
 
-  // R65 E2: Running EMA of exploring regime share for tension arc sustain.
+  // Running EMA of exploring regime share for tension arc sustain.
   let globalConductorExploringEma = 0.5;
 
   /**
@@ -81,7 +81,7 @@ globalConductor = (() => {
     const lateSectionSplit = clamp((sectionProgress - 0.55) / 0.45, 0, 1);
     const midSectionPocket = m.sin(clamp((sectionProgress - 0.18) / 0.64, 0, 1) * m.PI);
     const resolutionRelease = 1 - lateSectionSplit * (0.06 + phaseEstablished * 0.10);
-    // R65 E2: Regime-aware resolution suppression. When exploring dominates,
+    // Regime-aware resolution suppression. When exploring dominates,
     // the tension arc already decays due to diffuse exploring output. Applying
     // full endRelease on top creates the front-loaded collapse seen in R64.
     // Scale the endRelease suppression by (1 - exploringDominance) so it's
@@ -144,14 +144,14 @@ globalConductor = (() => {
     const densityRecoverySupport = phaseRecoveryPressure * 0.03 * (1 - clamp(hotspotContainmentPressure * 0.75, 0, 0.75));
     const densityHotspotTrim = 1 - hotspotContainmentPressure * 0.08;
     const phaseProtectionTrim = 1 - clamp(phaseRecoveryPressure * 0.10 + trustSharePressure * 0.11 + densityTrustPressure * 0.06 + flickerTrustPressure * 0.05, 0, 0.22);
-    // R83 E3: Harmonic excursion-density coupling. When the harmonic
+    // Harmonic excursion-density coupling. When the harmonic
     // journey ventures to distant keys (high excursion), thin density to
     // create exposed, adventurous passages. Near home key, density stays
     // full. This couples harmonic motion to textural density, producing
     // structural musical variety between sections with different keys.
     // Range: [0.96, 1.0] -- gentle 4% thinning at max excursion (6).
     const excursionDensityScale = 1.0 - clamp(V.optionalFinite(Number(excursion), 0), 0, 6) / 6 * 0.04;
-    // R86 E5: Harmonic excursion tension coupling. When the harmonic
+    // Harmonic excursion tension coupling. When the harmonic
     // journey ventures far from home (high excursion), boost tension to
     // create dramatic, distant-key passages. Near home key, tension
     // relaxes for resolution. Range: [1.0, 1.05] -- gentle 5% boost.
@@ -186,7 +186,7 @@ globalConductor = (() => {
     // Decoupling: flicker base blends compositeIntensity with harmonicRhythm
     // and a slow independent carrier. This reduces lockstep coupling between
     // density/tension and flicker while preserving macro energy following.
-    // R80 E4: Regime-dependent carrier frequency. The fixed carrier frequency
+    // Regime-dependent carrier frequency. The fixed carrier frequency
     // (0.0017) creates a persistent density-flicker correlation pattern
     // because both density and flicker follow the same harmonic+intensity
     // blend. By shifting the carrier frequency during exploring/evolving
@@ -194,22 +194,22 @@ globalConductor = (() => {
     // signal's rhythm, structurally reducing density-flicker coupling
     // during non-coherent passages.
     const densitySeed = Number(beatStart);
-    // R81 E2: Replace frequency shift with phase offset to break
-    // density-flicker correlation. Frequency shifts (R80 E4) increased
+    // Replace frequency shift with phase offset to break
+    // density-flicker correlation. Frequency shifts increased
     // carrier rate during exploring/evolving, which accidentally aligned
     // with density signal rhythm -> density-flicker monopoly (34/41).
     // Phase offset decorrelates without creating new frequency alignment.
     const carrierPhaseOffset = currentRegime === 'exploring' ? m.PI / 3
       : currentRegime === 'evolving' ? m.PI / 2
       : 0;
-    // R86 E4 / R87 E1: Tension-responsive flicker counter-phase. When
+    // Tension-responsive flicker counter-phase. When
     // composite intensity is high (> 0.55), apply additional phase offset
     // to decorrelate tension and flicker. R86 used PI*0.4 which overshot
     // (pearsonR crashed to -0.4586, anti-correlation). Reduced to PI*0.15
     // to target near-zero decorrelation instead of counter-motion.
     const tensionFlickerCounterPhase = clamp((compositeIntensity - 0.55) / 0.25, 0, 1) * m.PI * 0.15;
     const flickerCarrier = 0.5 + 0.5 * m.sin(densitySeed * 0.0017 + harmonicRhythm * m.PI + carrierPhaseOffset + tensionFlickerCounterPhase);
-    // R87 E3 / R88 E5: FlickerBase compositeIntensity deweighting.
+    // FlickerBase compositeIntensity deweighting.
     // R87 used 0.28, creating density-flicker anti-correlation (-0.4225).
     // Fine-tuned to 0.30 to move toward neutral correlation while
     // preserving most of the exceedance reduction (71->4 in R87).
@@ -268,26 +268,26 @@ globalConductor = (() => {
     // Small smoothing factor (0.25) reduces beat-to-beat reversals.
     const tensionAttr = conductorIntelligence.collectTensionBiasWithAttribution();
     const registryTensionBias = tensionAttr.product;
-    // R66 E5: Tension arch enforcement. The tension arc lacks section-level
+    // Tension arch enforcement. The tension arc lacks section-level
     // shaping -- it relies entirely on upstream signal products which can
     // flatten when exploring dominates or endRelease suppresses. This adds
     // a macro-progress-aware floor that ensures an ascending-then-descending
     // arch shape across the composition. The floor is gentle (max 0.10 boost)
     // and only activates when the raw tension would otherwise collapse.
     const macroProgress = clamp((sectionIndex + sectionProgress) / m.max(totalSections, 1), 0, 1);
-    // R68 E2: Raised arch tail from (0.50 - 0.30*(p-0.5)) = 0.35 at p=1.0
+    // Raised arch tail from (0.50 - 0.30*(p-0.5)) = 0.35 at p=1.0
     // to (0.50 - 0.20*(p-0.5)) = 0.40 at p=1.0. Also raised max boost from
     // 0.10 to 0.15. R67 showed S4 collapsing to 0.35 partly due to the
     // climaxProximityPredictor's receding pullback. The stronger arch floor
     // counteracts this by providing more headroom for late-section sustain.
-    // R69 E5: Raised arch floor from 0.30 to 0.35 at macroProgress=0.
-    // R72 E1: Shift peak from p=0.5 to p=0.6, creating a delayed climax
+    // Raised arch floor from 0.30 to 0.35 at macroProgress=0.
+    // Shift peak from p=0.5 to p=0.6, creating a delayed climax
     // that reinforces S3 tension.
-    // R73 E1: Moderated descending slope 0.35->0.25 so S2/S3 sustain
+    // Moderated descending slope 0.35->0.25 so S2/S3 sustain
     // tension after the p=0.6 peak. R72 showed spike-then-decline shape
     // [0.52,0.69,0.39,0.33] -- steep descent killed S2/S3.
-    // R78 E1: Moderate descent further 0.25->0.18. R77 showed S2/S3 dropping
-    // R81 E4: Gentler descent slope 0.18->0.14. R80 tension arc was
+    // Moderate descent further 0.25->0.18. R77 showed S2/S3 dropping
+    // Gentler descent slope 0.18->0.14. R80 tension arc was
     // [0.52, 0.67, 0.47, 0.44] -- S2/S3 drop too steeply, reducing late-
     // composition dramatic weight. At 0.14: same 0.64 peak at p=0.6, floor
     // 0.584 at p=1.0 (was 0.568). This sustains tension through S2/S3 while
@@ -295,30 +295,30 @@ globalConductor = (() => {
     const tensionArchTarget = macroProgress < 0.6
       ? 0.40 + macroProgress * 0.40
       : 0.64 - (macroProgress - 0.6) * 0.14;
-    // R88 E2: Density-tension decorrelation. pearsonR surged to 0.6742
+    // Density-tension decorrelation. pearsonR surged to 0.6742
     // in R87 because both density and tension share compositeIntensity
     // as a common driver. Shift tension toward harmonicTension (key/modal
     // contributions) from 0.45->0.55, reducing resolved.composite weight
     // from 0.55->0.45. This makes tension more harmonically driven,
     // decorrelating it from density's intensity-driven behavior.
     const rawTensionBase = (Number(resolved.composite) * 0.45 + Number(harmonicTension) * 0.55) * registryTensionBias * tensionLateLift * excursionTensionScale;
-    // R78 E3: Section-boundary tension breathing. Brief 5% dip in the first
+    // Section-boundary tension breathing. Brief 5% dip in the first
     // 5% of each section (after S0) creates audible section articulation
     // at the tension level, complementing density relief from sectionIntentCurves.
     const sectionBoundaryTensionDip = sectionIndex > 0 && sectionProgress < 0.05
       ? 1.0 - (1.0 - sectionProgress / 0.05) * 0.05
       : 1.0;
-    // R74 E2: Raised max boost 0.15->0.20. The arch floor shape is
+    // Raised max boost 0.15->0.20. The arch floor shape is
     // correct but the boost ceiling limits actual lift especially
     // during the mid-composition peak where tensionArchTarget=0.59.
     const tensionArchBoost = rawTensionBase * sectionBoundaryTensionDip < tensionArchTarget
       ? clamp((tensionArchTarget - rawTensionBase * sectionBoundaryTensionDip) * 0.5, 0, 0.20)
       : 0;
-    // R77 E3: Regime-responsive tension warmth. Evolving regime gets a gentle
+    // Regime-responsive tension warmth. Evolving regime gets a gentle
     // tension floor lift (+0.04) to differentiate it sonically from exploring.
     // Coherent stays neutral. This adds musical character differentiation at
     // the tension signal level rather than just stutter/density.
-    // R79 E3: Exploring gets negative tension warmth (-0.02) for wider
+    // Exploring gets negative tension warmth (-0.02) for wider
     // dramatic range. This creates 0.06 total contrast between evolving
     // (+0.04) and exploring (-0.02), making regime transitions audible
     // at the tension signal level. Tension axis share is 0.133 (below fair
@@ -328,7 +328,7 @@ globalConductor = (() => {
       : currentRegime === 'exploring' ? -0.02
       : 0;
     const rawTension = clamp(rawTensionBase * sectionBoundaryTensionDip + tensionArchBoost + regimeTensionWarmth, 0, 1);
-    // R75 E1: Reduced smoothing 0.38->0.30 for faster tension response.
+    // Reduced smoothing 0.38->0.30 for faster tension response.
     // R74 showed S1 peaking at 0.783 but smoothing delays arch shape
     // propagation, blurring section-boundary tension transitions.
     const TENSION_SMOOTHING = 0.30;
@@ -339,12 +339,12 @@ globalConductor = (() => {
     let playOut = resolved.playProb;
     let stutterOut = resolved.stutterProb;
 
-    // R65 E4: Regime-responsive stutter shaping. During coherent regime,
+    // Regime-responsive stutter shaping. During coherent regime,
     // reduce stutter for cleaner rhythmic structure. During exploring,
     // boost stutter for more chaotic textural variety. This creates audible
     // regime contrast without touching constants -- the regime classifier's
     // output drives the behavior structurally.
-    // R67 E5: Added evolving regime -- boost stutter 1.15x for percussive
+    // Added evolving regime -- boost stutter 1.15x for percussive
     // rhythmic interest during transitional passages, further differentiating
     // the three active regimes sonically.
     if (currentRegime === 'coherent') {
@@ -355,13 +355,13 @@ globalConductor = (() => {
       stutterOut = clamp(stutterOut * 1.15, 0, 1);
     }
 
-    // R82 E3: Regime-responsive play probability. Play probability was the
+    // Regime-responsive play probability. Play probability was the
     // same across regimes, so note emission density was uniform. Exploring
     // gets a small boost (more notes in sparse-density passages = contrast);
     // evolving gets a small reduction (selective, intentional emission during
     // transitions). This feeds back into densityVariance through per-regime
     // note count differentiation.
-    // R78 E4: Exploring boost 1.06->1.10. L1 notes -36% vs original baseline.
+    // Exploring boost 1.06->1.10. L1 notes -36% vs original baseline.
     // With exploring at 31% of beats, a stronger boost targets the highest-
     // density-deficit regime. Combined with density mean recovery (0.545),
     // this helps close the note output gap.
