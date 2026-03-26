@@ -7,6 +7,10 @@
 //   3. Adaptive rate multipliers that controllers query to self-scale
 //   4. Global intervention budget enforcement
 //   5. Controller effectiveness tracking and priority ranking
+//   6. Coupling topology intelligence (R81 E1)
+//   7. Regime-topology cross-state emergence detection (R81 E1)
+//   8. Compositional trajectory memory (R81 E1)
+//   9. Attractor recognition with self-coherence scoring (R81 E1)
 //
 // Incorporates R98 evolutions:
 //   E1: Phase floor boost authority expansion (orchestrator-managed ceiling)
@@ -14,7 +18,41 @@
 //   E4: Section 0 exceedance reduction via tighter initial ceiling authority
 //   E5: Warmup ramp section-length EMA initialization (orchestrator tracks)
 //   E6: Exceedance axis-concentration diagnostic (orchestrator emits)
+//
+// R81 E1: Coupling Topology Intelligence -- the hyperhypermetameta layer.
+// Instead of treating coupling pairs individually, the orchestrator now
+// perceives the ENTIRE correlation matrix as a topology and classifies its
+// emergent phase. Three topology phases interact with three regime states
+// to produce cross-states (emergence/locked/seeking/dampened). When the
+// composition enters an "emergence" state (exploring regime + resonant
+// topology), the orchestrator recognizes self-coherent pattern formation
+// and reduces control authority to let the pattern express. When "locked"
+// (coherent + crystallized), it increases perturbation to break stasis.
+// Compositional trajectory memory tracks topology phase transitions across
+// sections, detecting narrative arcs. Attractor recognition identifies
+// recurring topology fingerprints as structural self-similarity.
 
+/**
+ * @typedef {Object} HyperMetaOrchestratorAPI
+ * @property {function(string): number} getRateMultiplier
+ * @property {function(): number} getPhaseBoostCeiling
+ * @property {function(): number} getP95AlphaMultiplier
+ * @property {function(): number} getS0TighteningMultiplier
+ * @property {function(): 'converging' | 'oscillating' | 'stabilized'} getSystemPhase
+ * @property {function(): number} getVarianceGateRelaxMultiplier
+ * @property {function(): number} getTopologyCreativityMultiplier
+ * @property {function(): 'crystallized' | 'resonant' | 'fluid'} getTopologyPhase
+ * @property {function(): 'emergence' | 'locked' | 'seeking' | 'dampened'} getCrossState
+ * @property {function(string): void} recordExceedance
+ * @property {function(): { axisExceedance: Record<string, number>, concentration: number, dominantAxis: string }} getAxisConcentration
+ * @property {function(): any} getSnapshot
+ * @property {function(): void} reset
+ */
+
+/**
+ * @global
+ * @type {HyperMetaOrchestratorAPI}
+ */
 hyperMetaOrchestrator = (() => {
 
   // ===== ORCHESTRATION CONSTANTS =====
@@ -57,6 +95,27 @@ hyperMetaOrchestrator = (() => {
   /** @type {Record<string, number>} previous correlation sign per pair (+1/-1/0) */
   const hyperMetaOrchestratorPrevCorrSign = {};
   let hyperMetaOrchestratorLastFlipCount = 0;
+
+  // ===== R81 E1: COUPLING TOPOLOGY INTELLIGENCE =====
+  // Perceives the coupling matrix as a unified topology rather than
+  // individual pairs. Computes entropy, classifies phase, detects
+  // regime-topology cross-states, tracks trajectory, recognizes attractors.
+
+  let hyperMetaOrchestratorTopologyEntropyEma = 0.50;
+  /** @type {'crystallized' | 'resonant' | 'fluid'} */
+  let hyperMetaOrchestratorTopologyPhase = 'fluid';
+  /** @type {'emergence' | 'locked' | 'seeking' | 'dampened'} */
+  let hyperMetaOrchestratorCrossState = 'seeking';
+  let hyperMetaOrchestratorInterventionBudgetScale = 1.0;
+  /** @type {Array<{ section: number, phase: string, entropy: number, crossState: string }>} */
+  const hyperMetaOrchestratorTrajectory = [];
+  let hyperMetaOrchestratorAttractorSimilarityEma = 0.0;
+  let hyperMetaOrchestratorAttractorStabilityBeats = 0;
+  /** @type {Record<string, number>} quantized correlation bucket per pair */
+  const hyperMetaOrchestratorPrevFingerprint = {};
+  let hyperMetaOrchestratorTopologyCreativityMultiplier = 1.0;
+  let hyperMetaOrchestratorEmergenceStreak = 0;
+  let hyperMetaOrchestratorCurrentSection = -1;
 
   // ===== CONTROLLER STATE SAMPLING =====
 
@@ -470,7 +529,7 @@ hyperMetaOrchestrator = (() => {
    */
   function getAxisConcentration() {
     const axes = Object.keys(hyperMetaOrchestratorAxisExceedanceCounts);
-    if (axes.length === 0) return { axisExceedance: {}, concentration: 0, dominantAxis: 'none' };
+    if (axes.length === 0) return { axisExceedance: Object.create(null), concentration: 0, dominantAxis: 'none' };
 
     let total = 0;
     let maxCount = 0;
@@ -489,6 +548,262 @@ hyperMetaOrchestrator = (() => {
       concentration: total > 0 ? maxCount / total : 0,
       dominantAxis
     };
+  }
+
+  // ===== R81 E1: TOPOLOGY INTELLIGENCE FUNCTIONS =====
+
+  /**
+   * Compute normalized Shannon entropy of the coupling correlation matrix.
+   * Measures how evenly coupling energy is distributed across pairs.
+   * High entropy = balanced, diverse coupling landscape.
+   * Low entropy = dominated by a few strong correlations.
+   * @param {Record<string, number>} matrix - pair correlation values
+   * @returns {number} normalized entropy [0, 1]
+   */
+  function computeTopologyEntropy(matrix) {
+    const pairs = Object.keys(matrix);
+    if (pairs.length < 2) return 0.5;
+
+    // Use absolute correlation values as "energy" distribution
+    let totalAbs = 0;
+    const absValues = [];
+    for (let i = 0; i < pairs.length; i++) {
+      const v = Number(matrix[pairs[i]]);
+      if (!Number.isFinite(v)) continue;
+      const a = m.abs(v) + 0.001; // floor to prevent log(0)
+      absValues.push(a);
+      totalAbs += a;
+    }
+    if (absValues.length < 2 || totalAbs < 0.01) return 0.5;
+
+    // Shannon entropy: H = -sum(p * log2(p))
+    let entropy = 0;
+    for (let i = 0; i < absValues.length; i++) {
+      const p = absValues[i] / totalAbs;
+      if (p > 0) entropy -= p * (m.log(p) / m.LN2);
+    }
+
+    // Normalize by maximum entropy (uniform distribution)
+    const maxEntropy = m.log(absValues.length) / m.LN2;
+    return maxEntropy > 0 ? clamp(entropy / maxEntropy, 0, 1) : 0.5;
+  }
+
+  /**
+   * Classify the coupling topology phase from its entropy.
+   * @param {number} normalizedEntropy [0, 1]
+   * @returns {'crystallized' | 'resonant' | 'fluid'}
+   */
+  function classifyTopologyPhase(normalizedEntropy) {
+    // Crystallized: energy concentrated in few pairs (low entropy)
+    if (normalizedEntropy < 0.50) return 'crystallized';
+    // Resonant: balanced structure with moderate correlations (mid entropy)
+    if (normalizedEntropy < 0.72) return 'resonant';
+    // Fluid: dispersed, chaotic, weak correlations (high entropy)
+    return 'fluid';
+  }
+
+  /**
+   * Determine the regime-topology cross-state.
+   * This is the hyperhypermetameta classification: it combines the macro
+   * compositional regime with the emergent topology phase to identify
+   * qualitatively different system behaviors.
+   *
+   * emergence: exploring + resonant -- novel self-coherent patterns forming.
+   *   The composition is "speaking a new language." Reduce control authority.
+   * locked: coherent + crystallized -- strong correlations dominate in a
+   *   stable regime. Risk of compositional stasis. Increase perturbation.
+   * seeking: evolving + fluid OR any non-special combination. Normal control.
+   * dampened: system is oscillating regardless of topology. Override to safety.
+   *
+   * @param {string} regime
+   * @param {'crystallized' | 'resonant' | 'fluid'} topPhase
+   * @param {'converging' | 'oscillating' | 'stabilized'} sysPhase
+   * @returns {'emergence' | 'locked' | 'seeking' | 'dampened'}
+   */
+  function computeCrossState(regime, topPhase, sysPhase) {
+    // Oscillating overrides everything -- safety first
+    if (sysPhase === 'oscillating') return 'dampened';
+
+    // Emergence: exploring regime with resonant topology
+    // The composition has found structured novelty -- self-coherent patterns
+    if (regime === 'exploring' && topPhase === 'resonant') return 'emergence';
+
+    // Also emergence: evolving regime with resonant topology (approaching novelty)
+    if (regime === 'evolving' && topPhase === 'resonant' && sysPhase === 'stabilized') return 'emergence';
+
+    // Locked: coherent regime with crystallized topology -- stasis risk
+    if (regime === 'coherent' && topPhase === 'crystallized') return 'locked';
+
+    // Everything else: normal seeking behavior
+    return 'seeking';
+  }
+
+  /**
+   * Quantize the coupling matrix into a discrete fingerprint for
+   * attractor detection. Each pair is bucketed into one of 5 categories
+   * based on correlation strength and sign.
+   * @param {Record<string, number>} matrix
+   * @returns {Record<string, number>} quantized fingerprint (values: -2,-1,0,1,2)
+   */
+  function quantizeTopologyFingerprint(matrix) {
+    const fp = Object.create(null);
+    const pairs = Object.keys(matrix);
+    for (let i = 0; i < pairs.length; i++) {
+      const v = Number(matrix[pairs[i]]);
+      if (!Number.isFinite(v)) { fp[pairs[i]] = 0; continue; }
+      // 5 buckets: strong-neg, weak-neg, neutral, weak-pos, strong-pos
+      if (v < -0.30) fp[pairs[i]] = -2;
+      else if (v < -0.08) fp[pairs[i]] = -1;
+      else if (v <= 0.08) fp[pairs[i]] = 0;
+      else if (v <= 0.30) fp[pairs[i]] = 1;
+      else fp[pairs[i]] = 2;
+    }
+    return fp;
+  }
+
+  /**
+   * Compute similarity between two topology fingerprints.
+   * Returns [0, 1] where 1 = identical topology shape.
+   * @param {Record<string, number>} fpA
+   * @param {Record<string, number>} fpB
+   * @returns {number}
+   */
+  function fingerprintSimilarity(fpA, fpB) {
+    const keysA = Object.keys(fpA);
+    if (keysA.length === 0) return 0;
+    let matches = 0;
+    let total = 0;
+    for (let i = 0; i < keysA.length; i++) {
+      const key = keysA[i];
+      if (key in fpB) {
+        total++;
+        if (fpA[key] === fpB[key]) matches++;
+        else if (m.abs(fpA[key] - fpB[key]) === 1) matches += 0.5; // adjacent bucket
+      }
+    }
+    return total > 0 ? matches / total : 0;
+  }
+
+  /**
+   * Full topology intelligence update. Called every orchestration tick.
+   * Computes entropy, classifies topology phase, detects cross-state,
+   * updates attractor tracking, and sets topology-derived multipliers.
+   * @param {ReturnType<typeof gatherControllerState>} state
+   */
+  function updateTopologyIntelligence(state) {
+    if (!state.profiler || !state.profiler.couplingMatrix) return;
+
+    const matrix = state.profiler.couplingMatrix;
+    const regime = state.profiler.regime || 'initializing';
+
+    // 1. Compute topology entropy
+    const rawEntropy = computeTopologyEntropy(matrix);
+    hyperMetaOrchestratorTopologyEntropyEma +=
+      (rawEntropy - hyperMetaOrchestratorTopologyEntropyEma) * 0.12;
+
+    // 2. Classify topology phase
+    hyperMetaOrchestratorTopologyPhase =
+      classifyTopologyPhase(hyperMetaOrchestratorTopologyEntropyEma);
+
+    // 3. Determine regime-topology cross-state
+    hyperMetaOrchestratorCrossState = computeCrossState(
+      regime,
+      hyperMetaOrchestratorTopologyPhase,
+      hyperMetaOrchestratorSystemPhase
+    );
+
+    // 4. Track emergence streak
+    if (hyperMetaOrchestratorCrossState === 'emergence') {
+      hyperMetaOrchestratorEmergenceStreak++;
+    } else {
+      hyperMetaOrchestratorEmergenceStreak = 0;
+    }
+
+    // 5. Attractor detection via fingerprint similarity
+    const fp = quantizeTopologyFingerprint(matrix);
+    const prevKeys = Object.keys(hyperMetaOrchestratorPrevFingerprint);
+    if (prevKeys.length > 0) {
+      const similarity = fingerprintSimilarity(fp, hyperMetaOrchestratorPrevFingerprint);
+      hyperMetaOrchestratorAttractorSimilarityEma +=
+        (similarity - hyperMetaOrchestratorAttractorSimilarityEma) * 0.10;
+
+      // Attractor recognized when similarity is consistently high
+      if (hyperMetaOrchestratorAttractorSimilarityEma > 0.70) {
+        hyperMetaOrchestratorAttractorStabilityBeats += _ORCHESTRATE_INTERVAL;
+      } else {
+        hyperMetaOrchestratorAttractorStabilityBeats = m.max(0,
+          hyperMetaOrchestratorAttractorStabilityBeats - _ORCHESTRATE_INTERVAL * 0.5);
+      }
+    }
+    // Update fingerprint
+    const fpKeys = Object.keys(fp);
+    for (let i = 0; i < fpKeys.length; i++) {
+      hyperMetaOrchestratorPrevFingerprint[fpKeys[i]] = fp[fpKeys[i]];
+    }
+
+    // 6. Compute topology-derived multipliers
+
+    // Creativity multiplier: emergence amplifies, locked suppresses
+    if (hyperMetaOrchestratorCrossState === 'emergence') {
+      // Emergence: reduce control, amplify creative freedom
+      // Stronger effect during sustained emergence (streak) and in attractors
+      const streakBonus = clamp(hyperMetaOrchestratorEmergenceStreak * 0.01, 0, 0.10);
+      const attractorBonus = hyperMetaOrchestratorAttractorStabilityBeats > 50
+        ? 0.05 : 0;
+      hyperMetaOrchestratorTopologyCreativityMultiplier =
+        clamp(1.12 + streakBonus + attractorBonus, 1.0, 1.30);
+    } else if (hyperMetaOrchestratorCrossState === 'locked') {
+      // Locked: increase perturbation to break crystallization
+      hyperMetaOrchestratorTopologyCreativityMultiplier =
+        clamp(0.85 - (hyperMetaOrchestratorAttractorStabilityBeats > 100 ? 0.05 : 0), 0.75, 1.0);
+    } else if (hyperMetaOrchestratorCrossState === 'dampened') {
+      // Dampened: neutral but slightly conservative
+      hyperMetaOrchestratorTopologyCreativityMultiplier = 0.95;
+    } else {
+      // Seeking: relax toward neutral
+      hyperMetaOrchestratorTopologyCreativityMultiplier +=
+        (1.0 - hyperMetaOrchestratorTopologyCreativityMultiplier) * 0.15;
+    }
+
+    // Intervention budget scale: emergence reduces budget, locked increases
+    if (hyperMetaOrchestratorCrossState === 'emergence') {
+      hyperMetaOrchestratorInterventionBudgetScale =
+        clamp(hyperMetaOrchestratorInterventionBudgetScale * 0.97, 0.40, 1.0);
+    } else if (hyperMetaOrchestratorCrossState === 'locked') {
+      hyperMetaOrchestratorInterventionBudgetScale =
+        clamp(hyperMetaOrchestratorInterventionBudgetScale * 1.03, 0.40, 1.20);
+    } else {
+      hyperMetaOrchestratorInterventionBudgetScale +=
+        (1.0 - hyperMetaOrchestratorInterventionBudgetScale) * 0.08;
+    }
+
+    // Store in rate multipliers for downstream consumption
+    hyperMetaOrchestratorRateMultipliers.topologyCreativity =
+      hyperMetaOrchestratorTopologyCreativityMultiplier;
+    hyperMetaOrchestratorRateMultipliers.interventionBudget =
+      _INTERVENTION_BUDGET * hyperMetaOrchestratorInterventionBudgetScale;
+
+    // 7. Section trajectory tracking
+    const sectionIdx = Number.isFinite(sectionIndex) ? sectionIndex : -1;
+    if (sectionIdx !== hyperMetaOrchestratorCurrentSection && sectionIdx >= 0) {
+      hyperMetaOrchestratorTrajectory.push({
+        section: hyperMetaOrchestratorCurrentSection,
+        phase: hyperMetaOrchestratorTopologyPhase,
+        entropy: m.round(hyperMetaOrchestratorTopologyEntropyEma * 1000) / 1000,
+        crossState: hyperMetaOrchestratorCrossState
+      });
+      // Trajectory-based perturbation: if stuck in same phase for 3+ sections
+      if (hyperMetaOrchestratorTrajectory.length >= 3) {
+        const recent = hyperMetaOrchestratorTrajectory.slice(-3);
+        const allSamePhase = recent[0].phase === recent[1].phase &&
+          recent[1].phase === recent[2].phase;
+        if (allSamePhase) {
+          // Compositional stasis detected -- nudge the global rate to perturb
+          hyperMetaOrchestratorRateMultipliers.global *= 0.92;
+        }
+      }
+      hyperMetaOrchestratorCurrentSection = sectionIdx;
+    }
   }
 
   // ===== MAIN ORCHESTRATION TICK =====
@@ -540,7 +855,19 @@ hyperMetaOrchestrator = (() => {
       hyperMetaOrchestratorRateMultipliers.global *= 0.90;
     }
 
-    // 9. Emit diagnostics
+    // 9. R81 E1: Coupling topology intelligence -- the hyperhypermetameta layer
+    // Perceives the full correlation matrix as a topology, classifies its
+    // emergent phase, detects regime-topology cross-states, tracks attractors,
+    // and modulates all downstream controllers via topology-derived multipliers.
+    updateTopologyIntelligence(state);
+
+    // 10. R81 E1: Apply topology creativity multiplier to global rate
+    // During emergence, controllers operate with more creative freedom (higher
+    // ceilings, slower tightening). During locked state, controllers operate
+    // more aggressively to break crystallization.
+    hyperMetaOrchestratorRateMultipliers.global *= hyperMetaOrchestratorTopologyCreativityMultiplier;
+
+    // 11. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
       beat: hyperMetaOrchestratorBeatCount,
       health: hyperMetaOrchestratorHealthEma,
@@ -550,7 +877,16 @@ hyperMetaOrchestrator = (() => {
       rateMultipliers: Object.assign({}, hyperMetaOrchestratorRateMultipliers),
       contradictionCount: hyperMetaOrchestratorContradictions.length,
       axisConcentration: getAxisConcentration(),
-      correlationFlips: corrFlips
+      correlationFlips: corrFlips,
+      // R81 E1: Topology intelligence diagnostics
+      topologyEntropy: hyperMetaOrchestratorTopologyEntropyEma,
+      topologyPhase: hyperMetaOrchestratorTopologyPhase,
+      crossState: hyperMetaOrchestratorCrossState,
+      attractorSimilarity: hyperMetaOrchestratorAttractorSimilarityEma,
+      attractorStabilityBeats: hyperMetaOrchestratorAttractorStabilityBeats,
+      emergenceStreak: hyperMetaOrchestratorEmergenceStreak,
+      interventionBudgetScale: hyperMetaOrchestratorInterventionBudgetScale,
+      topologyCreativity: hyperMetaOrchestratorTopologyCreativityMultiplier
     }));
   }
 
@@ -610,6 +946,34 @@ hyperMetaOrchestrator = (() => {
     return hyperMetaOrchestratorRateMultipliers.varianceGateRelax || 1.0;
   }
 
+  /**
+   * Get the topology creativity multiplier (R81 E1).
+   * Downstream controllers (e.g. pairGainCeilingController) apply this to
+   * their tighten/relax rates. During emergence (exploring + resonant
+   * topology), controllers are more permissive (> 1.0). During locked
+   * (coherent + crystallized), controllers are more aggressive (< 1.0).
+   * @returns {number}
+   */
+  function getTopologyCreativityMultiplier() {
+    return hyperMetaOrchestratorTopologyCreativityMultiplier;
+  }
+
+  /**
+   * Get the current topology phase (R81 E1).
+   * @returns {'crystallized' | 'resonant' | 'fluid'}
+   */
+  function getTopologyPhase() {
+    return hyperMetaOrchestratorTopologyPhase;
+  }
+
+  /**
+   * Get the current regime-topology cross-state (R81 E1).
+   * @returns {'emergence' | 'locked' | 'seeking' | 'dampened'}
+   */
+  function getCrossState() {
+    return hyperMetaOrchestratorCrossState;
+  }
+
   function getSnapshot() {
     return {
       beatCount: hyperMetaOrchestratorBeatCount,
@@ -624,7 +988,17 @@ hyperMetaOrchestrator = (() => {
       controllerStats: Object.assign({}, hyperMetaOrchestratorControllerStats),
       contradictions: hyperMetaOrchestratorContradictions.slice(-5),
       axisConcentration: getAxisConcentration(),
-      correlationFlips: hyperMetaOrchestratorLastFlipCount
+      correlationFlips: hyperMetaOrchestratorLastFlipCount,
+      // R81 E1: Topology intelligence snapshot
+      topologyEntropy: hyperMetaOrchestratorTopologyEntropyEma,
+      topologyPhase: hyperMetaOrchestratorTopologyPhase,
+      crossState: hyperMetaOrchestratorCrossState,
+      attractorSimilarity: hyperMetaOrchestratorAttractorSimilarityEma,
+      attractorStabilityBeats: hyperMetaOrchestratorAttractorStabilityBeats,
+      emergenceStreak: hyperMetaOrchestratorEmergenceStreak,
+      interventionBudgetScale: hyperMetaOrchestratorInterventionBudgetScale,
+      topologyCreativity: hyperMetaOrchestratorTopologyCreativityMultiplier,
+      trajectory: hyperMetaOrchestratorTrajectory.slice(-10)
     };
   }
 
@@ -635,6 +1009,11 @@ hyperMetaOrchestrator = (() => {
     for (let i = 0; i < axes.length; i++) {
       hyperMetaOrchestratorAxisExceedanceCounts[axes[i]] = 0;
     }
+    // R81 E1: Preserve topology EMAs and trajectory across sections
+    // (inter-section learning is the whole point of trajectory tracking)
+    // Only dampen attractor stability to allow fresh attractor detection
+    hyperMetaOrchestratorAttractorStabilityBeats =
+      m.floor(hyperMetaOrchestratorAttractorStabilityBeats * 0.5);
   }
 
   // ===== SELF-REGISTRATION =====
@@ -644,16 +1023,39 @@ hyperMetaOrchestrator = (() => {
   }));
   conductorIntelligence.registerModule('hyperMetaOrchestrator', { reset }, ['section']);
 
-  return {
+  /**
+   * @typedef {Object} HyperMetaOrchestratorAPI
+   * @property {function(string): number} getRateMultiplier
+   * @property {function(): number} getPhaseBoostCeiling
+   * @property {function(): number} getP95AlphaMultiplier
+   * @property {function(): number} getS0TighteningMultiplier
+   * @property {function(): 'converging' | 'oscillating' | 'stabilized'} getSystemPhase
+   * @property {function(): number} getVarianceGateRelaxMultiplier
+   * @property {function(): number} getTopologyCreativityMultiplier
+   * @property {function(): 'crystallized' | 'resonant' | 'fluid'} getTopologyPhase
+   * @property {function(): 'emergence' | 'locked' | 'seeking' | 'dampened'} getCrossState
+   * @property {function(string): void} recordExceedance
+   * @property {function(): { axisExceedance: Record<string, number>, concentration: number, dominantAxis: string }} getAxisConcentration
+   * @property {function(): any} getSnapshot
+   * @property {function(): void} reset
+   */
+
+  /** @type {HyperMetaOrchestratorAPI} */
+  const api = {
     getRateMultiplier,
     getPhaseBoostCeiling,
     getP95AlphaMultiplier,
     getS0TighteningMultiplier,
     getSystemPhase,
     getVarianceGateRelaxMultiplier,
+    getTopologyCreativityMultiplier,
+    getTopologyPhase,
+    getCrossState,
     recordExceedance,
     getAxisConcentration,
     getSnapshot,
     reset
   };
+
+  return api;
 })();
