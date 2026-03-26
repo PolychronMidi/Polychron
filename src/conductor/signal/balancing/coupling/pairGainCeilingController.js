@@ -104,6 +104,13 @@ pairGainCeilingController = (() => {
       ps.ceiling = dimFloor;
     }
 
+    // E1: Hotspot monopoly relief
+    const monopolyRelief = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('hotspotMonopolyRelief_' + pair), 1.0) || 1.0;
+    if (monopolyRelief > 1.0 && ps.ceiling < profile.baseCeiling) {
+      const reliefLift = _CEILING_RELAX_RATE * (monopolyRelief - 1.0) * 5.0;
+      ps.ceiling = m.min(profile.baseCeiling, ps.ceiling + reliefLift);
+    }
+
     if (pair.indexOf('phase') !== -1 || pair === 'flicker-trust') {
       const ceilingRelaxSignal = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('phasePairCeilingRelax'), 1.0) || 1.0;
       if (ceilingRelaxSignal > 1.0 && ps.ceiling < profile.baseCeiling) {

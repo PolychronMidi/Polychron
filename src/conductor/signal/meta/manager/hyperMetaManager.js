@@ -108,7 +108,64 @@ hyperMetaManager = (() => {
       ST.rateMultipliers.dimExpanderCeilingFloor = 0;
     }
 
-    // 14. Emit diagnostics
+    // 14. E1-E5 Evolutions orchestration
+    // E1: Hotspot monopoly relief
+    const monopoly = health.getPairMonopoly();
+    if (monopoly) {
+      ST.rateMultipliers['hotspotMonopolyRelief_' + monopoly.pair] =
+        1.0 + (monopoly.share - 0.75) * 4.0;
+    }
+    const rmKeys = Object.keys(ST.rateMultipliers);
+    for (let ri = 0; ri < rmKeys.length; ri++) {
+      if (rmKeys[ri].indexOf('hotspotMonopolyRelief_') === 0) {
+        if (!monopoly || rmKeys[ri] !== 'hotspotMonopolyRelief_' + monopoly.pair) {
+          ST.rateMultipliers[rmKeys[ri]] *= 0.8;
+          if (ST.rateMultipliers[rmKeys[ri]] < 1.01) delete ST.rateMultipliers[rmKeys[ri]];
+        }
+      }
+    }
+
+    // E2: Homeostasis stress detection
+    if (state.homeostasis) {
+      const ggm = state.homeostasis.globalGainMultiplier;
+      if (typeof ggm === 'number' && ggm < 0.65) {
+        const stressDampen = clamp(1.0 - (0.65 - ggm) * 2.0, 0.7, 1.0);
+        ST.rateMultipliers.global *= stressDampen;
+      }
+    }
+
+    // E3: Emergence-regime reinforcement
+    if (state.profiler && state.profiler.regime === 'exploring' &&
+        (S.crossState === 'emergence' || S.crossState === 'seeking')) {
+      S.topologyCreativityMultiplier = m.min(1.30, S.topologyCreativityMultiplier * 1.05);
+    }
+
+    // E4: Section-aware tension floor protection
+    {
+      let secProg = 0;
+      try { secProg = clamp(safePreBoot.call(() => timeStream.compoundProgress('section'), 0) || 0, 0, 1); } catch { void 0; }
+      const currentTension = safePreBoot.call(() => signalReader.tension(), 1.0) || 1.0;
+      if (secProg < 0.3 && currentTension < 0.75) {
+        ST.rateMultipliers.tensionFloorProtection = clamp(1.5 + (0.75 - currentTension) * 2.0, 1.5, 2.5);
+      } else {
+        ST.rateMultipliers.tensionFloorProtection =
+          m.max(1.0, (ST.rateMultipliers.tensionFloorProtection || 1.0) * 0.9);
+      }
+    }
+
+    // E5: Phase fatigue escalation
+    if (state.phaseFloor && state.phaseFloor.shareEma < (state.phaseFloor.collapseThreshold || 0.05)) {
+      S.phaseFatigueBeats = (S.phaseFatigueBeats || 0) + ST.ORCHESTRATE_INTERVAL;
+      if (S.phaseFatigueBeats > 75) {
+        const fatigueEscalation = clamp(1.0 + (S.phaseFatigueBeats - 75) / 200, 1.0, 2.5);
+        ST.rateMultipliers.phaseExemption = m.max(
+          ST.rateMultipliers.phaseExemption || 1.0, fatigueEscalation);
+      }
+    } else {
+      S.phaseFatigueBeats = m.max(0, (S.phaseFatigueBeats || 0) - ST.ORCHESTRATE_INTERVAL * 0.5);
+    }
+
+    // 15. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
       beat: S.beatCount,
       health: S.healthEma,
@@ -174,6 +231,8 @@ hyperMetaManager = (() => {
   function reset() {
     const axes = Object.keys(ST.axisExceedanceCounts);
     for (let i = 0; i < axes.length; i++) ST.axisExceedanceCounts[axes[i]] = 0;
+    const prs = Object.keys(ST.pairExceedanceCounts);
+    for (let i = 0; i < prs.length; i++) ST.pairExceedanceCounts[prs[i]] = 0;
     S.attractorStabilityBeats = m.floor(S.attractorStabilityBeats * 0.5);
   }
 
