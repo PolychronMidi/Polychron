@@ -21,61 +21,61 @@ regimeReactiveDamping = (() => {
     stagnant: 1,     // boost
     fragmented: 0,   // neutral
     oscillating: 0,  // neutral
-    // R80 E3: Exploring density contraction. Exploring was neutral (0),
+    // Exploring density contraction. Exploring was neutral (0),
     // producing no regime-dependent density motion. Combined with coherent=0,
     // this left densityVariance stagnant at 0.0077. Setting exploring=-0.3
     // creates sparser texture during exploring passages while exploring's
     // tension direction (+1) rises, producing dramatic contrast: sparse-
     // but-tense exploring vs neutral-density coherent. This regime-dependent
     // density variation directly increases densityVariance.
-    // R20 E2: Moderated -0.3 -> -0.15. With exploring at 45.5%, the
+    // Moderated -0.3 -> -0.15. With exploring at 45.5%, the
     // extreme sparsity direction pushes too many beats away from coherent
     // thresholds. More moderate exploring-density retains contrast while
     // reducing regime imbalance pressure.
-    // R21 E1: Fine-tuned -0.15 -> -0.22. R20 overshot coherent to 55.5%
+    // Fine-tuned -0.15 -> -0.22. R20 overshot coherent to 55.5%
     // (target 35%). Midpoint between -0.30 (exploring=45.5%) and -0.15
     // (coherent=55.5%) should converge on ~35-40% coherent.
-    // R30 E2: Moderated -0.22 -> -0.16. Exploring has been below budget
+    // Moderated -0.22 -> -0.16. Exploring has been below budget
     // (0.35) for 3 of last 4 rounds. Less density suppression during
     // exploring reduces the regime's sparsity penalty, helping beats stay
     // in exploring longer and recovering density axis share (0.123 lowest).
-    // R31 E1: Adjusted -0.16 -> -0.19. R30 overshot exploring to 44.5%
+    // Adjusted -0.16 -> -0.19. R30 overshot exploring to 44.5%
     // (target 35%). Split the difference to converge on ~35%.
-    // R70 E3: Moderate exploring density suppression -0.19->-0.10.
+    // Moderate exploring density suppression -0.19->-0.10.
     // Exploring at 29.6% of beats -- at -0.19, this is the dominant
     // density-suppressing force. Reducing suppression lets more natural
     // density variance emerge during exploring, targeting recovery from
     // 0.0097 toward 0.019 baseline.
-    // R72 E3: Restore exploring density suppression -0.10->-0.15.
+    // Restore exploring density suppression -0.10->-0.15.
     // R70 lightened from -0.19 to -0.10, but evolving collapsed to 11.9%
     // in R71. Modest suppression during exploring creates more
     // density contrast, which helps beats transition out of exploring
     // into evolving via the density-velocity pathway.
     exploring: -0.15, // moderate sparse contrast (R72 E3)
-    coherent: 0.15,     // R72 E1: Revert 0.22->0.15. R71 showed 0.22 REFUTED --
+    coherent: 0.15,     // Revert 0.22->0.15. R71 showed 0.22 REFUTED --
     // reduced density variance 0.0132->0.0108 and drove exceedance (DT 44 beats).
     // 0.15 was the proven value from R33 E2.
-    // R10 E2: Evolving density +0.3 REFUTED R11 -- entropy collapsed
+    // Evolving density +0.3 REFUTED R11 -- entropy collapsed
     // 0.203->0.123 (-39%), entropy-trust correlation surged to 0.520.
     // Dense evolving passages suppressed entropy via density-entropy
     // coupling. Reverted to neutral (0).
-    // R34 E4: 0->0.1. Much lighter than refuted +0.3 (R10). Evolving at
+    // 0->0.1. Much lighter than refuted +0.3 (R10). Evolving at
     // 21.5% with density=0 creates texturally neutral passages. Small
     // positive nudge adds richness without entropy collapse risk.
     evolving: 0.1,     // mild positive (R34 E4)
     drifting: -1,    // suppress
   };
 
-  // R6 E3 + R7 E1: Tension regime biases. Coherent reverted to 0 (R6 coherent=-0.5
+  // Tension regime biases. Coherent reverted to 0 (R6 coherent=-0.5
   // flattened ascending arc to plateau). Stagnant/evolving +0.5 retained but rare.
   const REGIME_TENSION_DIR = {
     stagnant: 0.5,     // mild boost to break stagnation
     fragmented: 0,
     oscillating: 0,
-    // R31 E2: Raise exploring tension 1.0->1.15. With exploring at 44.5%
+    // Raise exploring tension 1.0->1.15. With exploring at 44.5%
     // (R30), exploring passages need to carry more tension to maintain the
     // tension arc quality. This enriches exploring without changing regime balance.
-    // R71 E4: Exploring tension 1.15->1.25. Exploring at 31.2% of beats;
+    // Exploring tension 1.15->1.25. Exploring at 31.2% of beats;
     // stronger tension during exploring creates more dramatic contrast vs
     // coherent passages, enriching the tension arc.
     exploring: 1.25,
@@ -89,22 +89,22 @@ regimeReactiveDamping = (() => {
     fragmented: -1,  // dampen
     oscillating: 0,  // neutral (was -1 - dampening flicker while density is neutral
                      //   created mechanical anti-correlation r=-0.7 via shared causal path)
-    // R87 E5: Exploring flicker enrichment. Exploring is now 37.6%
+    // Exploring flicker enrichment. Exploring is now 37.6%
     // (dominant non-coherent regime). Boosting flicker direction from
     // 1->1.5 creates more dynamic timbral variation during exploring,
     // giving exploring passages a distinctive animated texture.
-    // R93 E1: Moderated 1.5->1.2. FT pearsonR improved 0.5269->0.4284
+    // Moderated 1.5->1.2. FT pearsonR improved 0.5269->0.4284
     // but regime collapsed: exploring 41.1%->17.7%, coherent 49.1%->74.4%.
-    // R94 E1: Compromise 1.35. 1.2 was too low (collapsed exploring via
+    // Compromise 1.35. 1.2 was too low (collapsed exploring via
     // insufficient dimensional variance). 1.5 was too high (FT correlation).
     // 1.35 should balance FT decorrelation with regime diversity.
     exploring: 1.35,  // boost variation - inject independent flicker to reduce density-flicker coupling
-    // R23 E2: 0->-0.15. FT r=0.57 in R22 (increasing). During coherent,
+    // 0->-0.15. FT r=0.57 in R22 (increasing). During coherent,
     // flicker and trust tend to co-move (both stabilize). Light flicker
     // dampening decorrelates them by reducing flicker while trust stays high.
     // Mild enough to avoid the R93 flicker-range compression (that was -1).
     coherent: -0.15, // R23 E2: light dampen for FT decorrelation
-    evolving: 0.7,  // R71 E3: 0.5->0.7. Evolving at 28.8% needs more distinct flicker
+    evolving: 0.7,  // 0.5->0.7. Evolving at 28.8% needs more distinct flicker
     // texture. Stronger flicker during evolving creates timbral variety vs coherent.
     drifting: 0,
   };

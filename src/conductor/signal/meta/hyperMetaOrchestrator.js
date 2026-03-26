@@ -7,10 +7,10 @@
 //   3. Adaptive rate multipliers that controllers query to self-scale
 //   4. Global intervention budget enforcement
 //   5. Controller effectiveness tracking and priority ranking
-//   6. Coupling topology intelligence (R81 E1)
-//   7. Regime-topology cross-state emergence detection (R81 E1)
-//   8. Compositional trajectory memory (R81 E1)
-//   9. Attractor recognition with self-coherence scoring (R81 E1)
+//   6. Coupling topology intelligence
+//   7. Regime-topology cross-state emergence detection
+//   8. Compositional trajectory memory
+//   9. Attractor recognition with self-coherence scoring
 //
 // Incorporates R98 evolutions:
 //   E1: Phase floor boost authority expansion (orchestrator-managed ceiling)
@@ -19,7 +19,7 @@
 //   E5: Warmup ramp section-length EMA initialization (orchestrator tracks)
 //   E6: Exceedance axis-concentration diagnostic (orchestrator emits)
 //
-// R81 E1: Coupling Topology Intelligence -- the hyperhypermetameta layer.
+// Coupling Topology Intelligence -- the hyperhypermetameta layer.
 // Instead of treating coupling pairs individually, the orchestrator now
 // perceives the ENTIRE correlation matrix as a topology and classifies its
 // emergent phase. Three topology phases interact with three regime states
@@ -91,12 +91,12 @@ hyperMetaOrchestrator = (() => {
   /** @type {Record<string, number>} */
   const hyperMetaOrchestratorAxisExceedanceCounts = {};
 
-  // R2 E5: Correlation trend monitoring -- track sign flips across ticks
+  // Correlation trend monitoring -- track sign flips across ticks
   /** @type {Record<string, number>} previous correlation sign per pair (+1/-1/0) */
   const hyperMetaOrchestratorPrevCorrSign = {};
   let hyperMetaOrchestratorLastFlipCount = 0;
 
-  // ===== R81 E1: COUPLING TOPOLOGY INTELLIGENCE =====
+  // ===== COUPLING TOPOLOGY INTELLIGENCE =====
   // Perceives the coupling matrix as a unified topology rather than
   // individual pairs. Computes entropy, classifies phase, detects
   // regime-topology cross-states, tracks trajectory, recognizes attractors.
@@ -391,12 +391,12 @@ hyperMetaOrchestrator = (() => {
       } else if (dfState && dfState.p95Ema > 0.85) {
         p95AlphaMultiplier = 1.0;
       }
-      // R3 E2: Extend to flicker-trust when reconciliation gap is large
+      // Extend to flicker-trust when reconciliation gap is large
       const ftState = state.pairCeiling['flicker-trust'];
       if (ftState && ftState.p95Ema < 0.70 && ftState.activeBeats > 50) {
         p95AlphaMultiplier = m.max(p95AlphaMultiplier, 1.8);
       }
-      // R4 E2: Extend to tension-flicker (new #1 tail pair)
+      // Extend to tension-flicker (new #1 tail pair)
       const tfState = state.pairCeiling['tension-flicker'];
       if (tfState && tfState.p95Ema < 0.70 && tfState.activeBeats > 50) {
         p95AlphaMultiplier = m.max(p95AlphaMultiplier, 1.8);
@@ -496,7 +496,7 @@ hyperMetaOrchestrator = (() => {
       }
     }
 
-    // R66 E1 Contradiction 4: Coherent regime suppresses phase coupling energy.
+    // Contradiction 4: Coherent regime suppresses phase coupling energy.
     // When coherent regime is present and phase share is low, the coherent
     // target scale relaxation in couplingRefreshSetup raises the bar for ALL
     // pairs, but phase pairs with weak correlations fall below the relaxed
@@ -614,7 +614,7 @@ hyperMetaOrchestrator = (() => {
 
   // ===== AXIS CONCENTRATION TRACKING (E6) =====
 
-  // ===== R2 E5: CORRELATION TREND MONITORING =====
+  // ===== CORRELATION TREND MONITORING =====
 
   /**
    * Detect simultaneous sign flips in the coupling correlation matrix.
@@ -688,7 +688,7 @@ hyperMetaOrchestrator = (() => {
     };
   }
 
-  // ===== R81 E1: TOPOLOGY INTELLIGENCE FUNCTIONS =====
+  // ===== TOPOLOGY INTELLIGENCE FUNCTIONS =====
 
   /**
    * Compute normalized Shannon entropy of the coupling correlation matrix.
@@ -987,13 +987,13 @@ hyperMetaOrchestrator = (() => {
     // 7. Update effectiveness tracking
     updateEffectiveness(healthBefore, hyperMetaOrchestratorHealthEma, state);
 
-    // 8. R2 E5: Correlation trend monitoring -- detect simultaneous sign flips
+    // 8. Correlation trend monitoring -- detect simultaneous sign flips
     const corrFlips = detectCorrelationFlips(state);
     if (corrFlips >= 2) {
       hyperMetaOrchestratorRateMultipliers.global *= 0.90;
     }
 
-    // 9. R81 E1: Coupling topology intelligence -- the hyperhypermetameta layer
+    // 9. Coupling topology intelligence -- the hyperhypermetameta layer
     // Perceives the full correlation matrix as a topology, classifies its
     // emergent phase, detects regime-topology cross-states, tracks attractors,
     // and modulates all downstream controllers via topology-derived multipliers.
@@ -1004,7 +1004,7 @@ hyperMetaOrchestrator = (() => {
     applyTrustVelocityDamping(state);
     checkPhaseTelemetryIntegrity(state);
 
-    // 11. R81 E1: Apply topology creativity multiplier to global rate
+    // 11. Apply topology creativity multiplier to global rate
     // During emergence, controllers operate with more creative freedom (higher
     // ceilings, slower tightening). During locked state, controllers operate
     // more aggressively to break crystallization.
@@ -1021,7 +1021,7 @@ hyperMetaOrchestrator = (() => {
       contradictionCount: hyperMetaOrchestratorContradictions.length,
       axisConcentration: getAxisConcentration(),
       correlationFlips: corrFlips,
-      // R81 E1: Topology intelligence diagnostics
+      // Topology intelligence diagnostics
       topologyEntropy: hyperMetaOrchestratorTopologyEntropyEma,
       topologyPhase: hyperMetaOrchestratorTopologyPhase,
       crossState: hyperMetaOrchestratorCrossState,
@@ -1090,7 +1090,7 @@ hyperMetaOrchestrator = (() => {
   }
 
   /**
-   * Get the topology creativity multiplier (R81 E1).
+   * Get the topology creativity multiplier.
    * Downstream controllers (e.g. pairGainCeilingController) apply this to
    * their tighten/relax rates. During emergence (exploring + resonant
    * topology), controllers are more permissive (> 1.0). During locked
@@ -1102,7 +1102,7 @@ hyperMetaOrchestrator = (() => {
   }
 
   /**
-   * Get the current topology phase (R81 E1).
+   * Get the current topology phase.
    * @returns {'crystallized' | 'resonant' | 'fluid'}
    */
   function getTopologyPhase() {
@@ -1110,7 +1110,7 @@ hyperMetaOrchestrator = (() => {
   }
 
   /**
-   * Get the current regime-topology cross-state (R81 E1).
+   * Get the current regime-topology cross-state.
    * @returns {'emergence' | 'locked' | 'seeking' | 'dampened'}
    */
   function getCrossState() {
@@ -1132,7 +1132,7 @@ hyperMetaOrchestrator = (() => {
       contradictions: hyperMetaOrchestratorContradictions.slice(-5),
       axisConcentration: getAxisConcentration(),
       correlationFlips: hyperMetaOrchestratorLastFlipCount,
-      // R81 E1: Topology intelligence snapshot
+      // Topology intelligence snapshot
       topologyEntropy: hyperMetaOrchestratorTopologyEntropyEma,
       topologyPhase: hyperMetaOrchestratorTopologyPhase,
       crossState: hyperMetaOrchestratorCrossState,
@@ -1152,7 +1152,7 @@ hyperMetaOrchestrator = (() => {
     for (let i = 0; i < axes.length; i++) {
       hyperMetaOrchestratorAxisExceedanceCounts[axes[i]] = 0;
     }
-    // R81 E1: Preserve topology EMAs and trajectory across sections
+    // Preserve topology EMAs and trajectory across sections
     // (inter-section learning is the whole point of trajectory tracking)
     // Only dampen attractor stability to allow fresh attractor detection
     hyperMetaOrchestratorAttractorStabilityBeats =
