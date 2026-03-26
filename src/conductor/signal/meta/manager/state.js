@@ -52,6 +52,8 @@ hyperMetaManagerState = (() => {
   /** @type {Record<string, number>} */
   const axisExceedanceCounts = {};
   /** @type {Record<string, number>} */
+  const pairExceedanceCounts = {};
+  /** @type {Record<string, number>} */
   const prevCorrSign = {};
   /** @type {Array<{ section: number, phase: string, entropy: number, crossState: string }>} */
   const trajectory = [];
@@ -78,6 +80,7 @@ hyperMetaManagerState = (() => {
     rateMultipliers,
     contradictions,
     axisExceedanceCounts,
+    pairExceedanceCounts,
     prevCorrSign,
     trajectory,
     prevFingerprint,

@@ -10,17 +10,19 @@ hyperMetaManagerHealth = (() => {
 
   /**
    * Gather snapshots from all queryable controllers.
-   * @returns {{ phaseFloor: any, pairCeiling: any, warmupRamp: any, watchdog: any, homeostasis: any, registry: any, profiler: any }}
+   * @returns {{ phaseFloor: any, pairCeiling: any, warmupRamp: any, watchdog: any, homeostasis: any, registry: any, profiler: any, criticality: any, dimExpander: any }}
    */
   function gatherControllerState() {
     return {
-      phaseFloor:  safePreBoot.call(() => phaseFloorController.getSnapshot(), null),
-      pairCeiling: safePreBoot.call(() => pairGainCeilingController.getSnapshot(), null),
-      warmupRamp:  safePreBoot.call(() => warmupRampController.getSnapshot(), null),
-      watchdog:    safePreBoot.call(() => conductorMetaWatchdog.getSnapshot(), null),
-      homeostasis: safePreBoot.call(() => couplingHomeostasis.getState(), null),
-      registry:    safePreBoot.call(() => metaControllerRegistry.getSnapshot(), null),
-      profiler:    safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null),
+      phaseFloor:        safePreBoot.call(() => phaseFloorController.getSnapshot(), null),
+      pairCeiling:       safePreBoot.call(() => pairGainCeilingController.getSnapshot(), null),
+      warmupRamp:        safePreBoot.call(() => warmupRampController.getSnapshot(), null),
+      watchdog:          safePreBoot.call(() => conductorMetaWatchdog.getSnapshot(), null),
+      homeostasis:       safePreBoot.call(() => couplingHomeostasis.getState(), null),
+      registry:          safePreBoot.call(() => metaControllerRegistry.getSnapshot(), null),
+      profiler:          safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null),
+      criticality:       safePreBoot.call(() => criticalityEngine.getState(), null),
+      dimExpander:       safePreBoot.call(() => dimensionalityExpander.getSnapshot(), null),
     };
   }
 

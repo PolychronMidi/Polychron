@@ -86,14 +86,17 @@ hyperMetaManagerTelemetry = (() => {
       if (state.phaseFloor) {
         S.phaseBoostCeiling = clamp(S.phaseBoostCeiling + 1.0, 25.0, 40.0);
       }
-      ST.rateMultipliers.varianceGateRelax = m.max(
-        ST.rateMultipliers.varianceGateRelax || 1.0, 1.8);
+      // Write to dedicated telemetry key so it doesn't overwrite the
+      // phase-share-derived value from updateRateMultipliers.
+      // The public getter takes max(varianceGateRelax, varianceGateRelaxTelemetry).
+      ST.rateMultipliers.varianceGateRelaxTelemetry = m.max(
+        ST.rateMultipliers.varianceGateRelaxTelemetry || 1.0, 1.8);
       S.topologyCreativityMultiplier = m.max(S.topologyCreativityMultiplier, 1.15);
     } else {
-      // Healthy: relax corrections
+      // Healthy: decay telemetry-side relaxation independently
       S.phaseBoostCeiling = clamp(S.phaseBoostCeiling - 0.2, 25.0, 40.0);
-      ST.rateMultipliers.varianceGateRelax = m.max(
-        1.0, (ST.rateMultipliers.varianceGateRelax || 1.0) * 0.95);
+      ST.rateMultipliers.varianceGateRelaxTelemetry = m.max(
+        1.0, (ST.rateMultipliers.varianceGateRelaxTelemetry || 1.0) * 0.95);
     }
   }
 
