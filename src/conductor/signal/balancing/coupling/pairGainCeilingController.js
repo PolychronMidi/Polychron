@@ -66,6 +66,21 @@ pairGainCeilingController = (() => {
     // increasing). Ceiling engages at current p95 level to contain drift
     // before it becomes structural.
     'entropy-phase':   { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.74, exceedanceSensitivity: 0.05 },
+    // R80 E2: tension-entropy -- new anti-correlation r=-0.427 decreasing in
+    // R79. 1 exceedance beat already. Extends ceiling coverage to contain the
+    // correlation before it entrenches. Wider bounds (like entropy-trust) since
+    // this is a newly emerging pair with limited history.
+    'tension-entropy': { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.76, exceedanceSensitivity: 0.05 },
+    // R80 E2: tension-phase -- new correlation r=0.470 increasing in R79.
+    // Pre-emptive ceiling profile. No exceedance yet but the correlation is
+    // the strongest new trend. Ceiling establishes infrastructure before the
+    // pair reaches tail territory.
+    'tension-phase':   { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.76, exceedanceSensitivity: 0.05 },
+    // R80 E4: density-entropy -- new correlation r=0.320 increasing in R79.
+    // Pre-emptive ceiling coverage. Entropy axis surged to 23.5% share,
+    // highest among all axes. Ceiling establishes control infrastructure
+    // before the DE correlation reaches structural levels.
+    'density-entropy': { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.76, exceedanceSensitivity: 0.05 },
   };
 
   function getPairState(pair) {
@@ -118,6 +133,12 @@ pairGainCeilingController = (() => {
     // E4 (R100): Phase-aware rate scaling from orchestrator system phase
     const globalMultiplier = safePreBoot.call(() => hyperMetaOrchestrator.getRateMultiplier('global'), 1.0) || 1.0;
 
+    // R81 E1: Topology creativity multiplier from orchestrator. During
+    // "emergence" (exploring + resonant topology), ceilings tighten slower
+    // to allow self-coherent coupling patterns to express. During "locked"
+    // (coherent + crystallized), ceilings tighten faster to break stasis.
+    const topologyCreativity = safePreBoot.call(() => hyperMetaOrchestrator.getTopologyCreativityMultiplier(), 1.0) || 1.0;
+
     if (p95Excess > 0 || exceedanceExcess > 0) {
       // Tighten: pressure proportional to severity
       // R63 E6: Non-linear tighten rate -- when exceedance EMA is high, the
@@ -129,12 +150,17 @@ pairGainCeilingController = (() => {
         p95Excess * 2.0 + exceedanceExcess * 4.0 + ps.severityEma * 6.0,
         0, 1
       );
-      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * exceedanceAccelerator * s0Multiplier * globalMultiplier;
+      // R81 E1: topologyCreativity inverted for tighten: emergence (>1.0) slows
+      // tightening (divide), locked (<1.0) accelerates tightening (divide by <1).
+      const topologyTightenScale = topologyCreativity > 0.5 ? 1.0 / topologyCreativity : 1.0;
+      const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * exceedanceAccelerator * s0Multiplier * globalMultiplier * topologyTightenScale;
       ps.ceiling = m.max(profile.minCeiling, ps.ceiling - tightenAmount);
     } else if (p95Excess < -0.05 && ps.exceedanceEma < profile.exceedanceSensitivity * 0.5) {
       // Relax: only when well below threshold AND exceedance is low
       const relaxPressure = clamp(m.abs(p95Excess) * 1.5, 0, 1);
-      const relaxAmount = _CEILING_RELAX_RATE * relaxPressure * globalMultiplier;
+      // R81 E1: topologyCreativity applied directly to relax: emergence (>1.0)
+      // relaxes ceilings faster, locked (<1.0) relaxes slower.
+      const relaxAmount = _CEILING_RELAX_RATE * relaxPressure * globalMultiplier * topologyCreativity;
       ps.ceiling = m.min(profile.maxCeiling, ps.ceiling + relaxAmount);
     }
 

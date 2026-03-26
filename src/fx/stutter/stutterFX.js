@@ -35,8 +35,16 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
         coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterFX coherence key=${coherenceKey} channel=${channelToStutter}`);
       }
 
-      const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX + (coh.x - 0.5) * 10;
-      const flutter = (mod.y - 0.5) * 2 * 20 * noiseProfile.influenceY + (coh.y - 0.5) * 6;
+      // R80 E3: Regime-aware stutter coherence weighting. In exploring regime,
+      // lower coherence weight (0.6x) -> more stochastic -> looser stutter texture
+      // with more rhythmic surprise. In coherent regime, higher coherence weight
+      // (1.3x) -> more deterministic -> tighter cross-layer stutter sync.
+      const cohRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+      const cohScale = cohRegime === 'exploring' ? 0.6
+        : cohRegime === 'coherent' ? 1.3
+        : 1.0;
+      const rampWarp = (mod.x - 0.5) * 2 * 40 * noiseProfile.influenceX + (coh.x - 0.5) * 10 * cohScale;
+      const flutter = (mod.y - 0.5) * 2 * 20 * noiseProfile.influenceY + (coh.y - 0.5) * 6 * cohScale;
       const currentValue = modClamp(m.floor(baseValue + rampWarp + flutter), 0, MIDI_MAX_VALUE);
 
       // publish modulation bus entry for cross-mod sampling
