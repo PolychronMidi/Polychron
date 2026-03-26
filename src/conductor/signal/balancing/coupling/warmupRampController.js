@@ -165,7 +165,7 @@ warmupRampController = (() => {
     warmupRampControllerCurrentSectionBeats = 0;
   }
 
-  // ===== SELF-REGISTRATION =====
+  // SELF-REGISTRATION
   conductorIntelligence.registerRecorder('warmupRampController', tick);
   conductorIntelligence.registerStateProvider('warmupRampController', () => ({
     warmupRampController: getSnapshot()

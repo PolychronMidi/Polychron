@@ -5,7 +5,7 @@
 
 phaseFloorController = (() => {
 
-  // ===== ADAPTIVE STATE =====
+  // ADAPTIVE STATE
   const _SHARE_EMA_ALPHA = 0.06;
   const _VOLATILITY_EMA_ALPHA = 0.04;
   const _COHERENT_STREAK_EMA_ALPHA = 0.03;
@@ -24,7 +24,7 @@ phaseFloorController = (() => {
   let phaseFloorControllerRecoverySuccessEma = 0.5;
   let phaseFloorControllerLastBoostApplied = 0;
 
-  // ===== DERIVED THRESHOLDS (self-calibrating) =====
+  // DERIVED THRESHOLDS (self-calibrating)
 
   /**
    * Derive the phase collapse threshold (default 0.02) from volatility.
@@ -184,7 +184,7 @@ phaseFloorController = (() => {
     return share < getExtremeCollapseShare() && phaseLowShareStreak > getExtremeCollapseStreak();
   }
 
-  // ===== TICK: called each beat via conductor recorder =====
+  // TICK: called each beat via conductor recorder
   function tick() {
     phaseFloorControllerBeatCount++;
 
@@ -252,7 +252,7 @@ phaseFloorController = (() => {
     phaseFloorControllerLastBoostApplied = 0;
   }
 
-  // ===== SELF-REGISTRATION =====
+  // SELF-REGISTRATION
   conductorIntelligence.registerRecorder('phaseFloorController', tick);
   conductorIntelligence.registerStateProvider('phaseFloorController', () => ({
     phaseFloorController: getSnapshot()
