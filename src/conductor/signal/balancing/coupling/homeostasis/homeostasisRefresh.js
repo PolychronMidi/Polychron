@@ -122,6 +122,13 @@ homeostasisRefresh = (() => {
       if (nextTailPressure > TAIL_RANKED_THRESHOLD) rankedTailPairs.push({ pair, pressure: nextTailPressure });
     }
     rankedTailPairs.sort(function(a, b) { return b.pressure - a.pressure; });
+    // R75 E3: Top-2 pair concentration ratio. Gini (threshold 0.40) misses
+    // high top-2 concentration when many low-activity pairs dilute inequality.
+    // TF+DT held 50/64 exceedance beats (0.781 concentration) with Gini only 0.269.
+    const top2TailSum = rankedTailPairs.length >= 2
+      ? rankedTailPairs[0].pressure + rankedTailPairs[1].pressure
+      : (rankedTailPairs.length === 1 ? rankedTailPairs[0].pressure : 0);
+    S.top2ConcentrationRatio = tailSum > 0 ? top2TailSum / tailSum : 0;
     S.dominantTailPair = strongestPair;
     S.nonNudgeableTailPressure = strongestNonNudgeableTail;
     S.nonNudgeableTailPair = strongestNonNudgeablePair;

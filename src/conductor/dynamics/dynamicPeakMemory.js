@@ -68,12 +68,23 @@ dynamicPeakMemory = (() => {
         // between post-peak valleys and the buildup to the next climax.
         tensionBias = 0.88 + clamp(timeSince / 12, 0, 1) * 0.06 + longFormBuildPressure * 0.015;
       } else {
-        // Post-cooldown: ramp 0.94-1.12 over 12-40s
-        tensionBias = 0.94 + clamp((timeSince - 12) / 28, 0, 1) * 0.18 + longFormBuildPressure * 0.015;
+        // Post-cooldown: ramp 0.94-1.08 over 12-40s
+        // R24 E2: Reduced ceiling 1.12->1.08 to create tension headroom.
+        // Product was capping at 1.4986 (from 1.5359); freeing 0.04 from
+        // this top contributor lets new tension pathways have effect.
+        tensionBias = 0.94 + clamp((timeSince - 12) / 28, 0, 1) * 0.14 + longFormBuildPressure * 0.015;
       }
     } else {
       // After trough: ramp 1.04-1.0 over 0-10s
       tensionBias = 1.04 + longFormBuildPressure * 0.015 - clamp(timeSince / 10, 0, 1) * 0.04;
+    }
+
+    if (tensionBias > 1.0) {
+      const tensionProduct = conductorState.getField('tension');
+      const saturationPressure = clamp((tensionProduct - 1.10) / 0.20, 0, 1);
+      if (saturationPressure > 0) {
+        tensionBias = 1.0 + (tensionBias - 1.0) * (1 - saturationPressure * 0.65);
+      }
     }
 
     return { tensionBias, timeSinceLastPeak: timeSince, peakRecency };

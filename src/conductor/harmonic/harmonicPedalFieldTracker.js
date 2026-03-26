@@ -74,8 +74,10 @@ harmonicPedalFieldTracker = (() => {
     // very unstable bass - decrease tension to allow settling.
     let tensionBias = 1;
     if (pedalDuration > 0) {
-      // Pedal forming - ramp tension up: duration 0-20 maps to 1.0-1.15
-      tensionBias = 1.0 + clamp(pedalDuration / 20, 0, 1) * 0.15;
+      // Pedal forming - ramp tension up: duration 0-12 maps to 1.0-1.15
+      // R21 E4: Faster ramp 20s->12s. Encourages harmonic motion sooner
+      // in pedal-heavy sections without increasing maximum bias.
+      tensionBias = 1.0 + clamp(pedalDuration / 12, 0, 1) * 0.15;
     } else if (bassSamples.length >= 5) {
       // No pedal - ramp settling bias from streak instability
       const instability = 1 - (streak / bassSamples.length);

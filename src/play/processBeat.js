@@ -134,6 +134,22 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     stutterProb = clamp(stutterProb * 1.04, 0, 1);
   }
 
+  // R41 E4: Regime-responsive stutter probability modulation.
+  // Coherent regime: tighter stutter (less random), evolving: wilder.
+  // Stutter had no direct regime awareness -- regime influenced only
+  // indirectly through negotiationEngine. Direct modulation creates
+  // more distinct dynamic character per regime.
+  const regimeSnap = systemDynamicsProfiler.getSnapshot();
+  if (regimeSnap && regimeSnap.regime) {
+    // R42 E3: Relax coherent multiplier 0.92->0.96. R41 note count
+    // dropped 29% -- coherent stutter suppression too aggressive.
+    if (regimeSnap.regime === 'coherent') {
+      stutterProb = clamp(stutterProb * 0.96, 0, 1);
+    } else if (regimeSnap.regime === 'evolving') {
+      stutterProb = clamp(stutterProb * 1.10, 0, 1);
+    }
+  }
+
   // -- [stage: emission] --
   if (PROFILE) marks[12] = process.hrtime.bigint();
   playNotes('beat', { playProb, stutterProb });

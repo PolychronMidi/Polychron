@@ -46,7 +46,14 @@ tonalAnchorDistanceTracker = (() => {
 
     // Tension bias: continuous ramp from distance 0-6.
     // distance 0 - 0.97 (grounded), 1-6 - ramp 0.97-1.1
-    const tensionBias = 0.97 + clamp(distance / 6, 0, 1) * 0.13;
+    let tensionBias = 0.97 + clamp(distance / 6, 0, 1) * 0.13;
+    if (tensionBias > 1.0) {
+      const tensionProduct = conductorState.getField('tension');
+      const saturationPressure = clamp((tensionProduct - 1.08) / 0.20, 0, 1);
+      if (saturationPressure > 0) {
+        tensionBias = 1.0 + (tensionBias - 1.0) * (1 - saturationPressure * 0.60);
+      }
+    }
 
     return { distance, tensionBias, adventureLevel };
   }

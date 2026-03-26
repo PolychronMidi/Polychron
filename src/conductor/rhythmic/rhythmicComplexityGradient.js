@@ -68,7 +68,28 @@ rhythmicComplexityGradient = (() => {
     samples.length = 0;
   }
 
+  // R26 E4: Tension bias from rhythmic complexity gradient. Building
+  // rhythmic complexity naturally accompanies rising tension (more
+  // subdivisions = more energy). Simplifying rhythm releases tension.
+  // Cross-domain rhythmic->harmonic coupling pathway.
+  // R28 E4: Weakened simplifying bias from 0.95 to 0.97. In R27, this
+  // module combined with chromaticSaturationMonitor (0.95) and
+  // intervalExpansionContractor (0.96) to over-dampen tension. Lighter
+  // simplifying influence preserves the pathway while reducing cumulative
+  // tension-down pressure.
+  /**
+   * Get tension multiplier from rhythmic complexity trajectory.
+   * @returns {number}
+   */
+  function getTensionBias() {
+    const g = getGradient();
+    if (g.building) return 1.06;
+    if (g.simplifying) return 0.97;
+    return 1.0;
+  }
+
   conductorIntelligence.registerDensityBias('rhythmicComplexityGradient', () => rhythmicComplexityGradient.getSubdivisionBias(), 0.88, 1.25);
+  conductorIntelligence.registerTensionBias('rhythmicComplexityGradient', () => rhythmicComplexityGradient.getTensionBias(), 0.97, 1.06);
   conductorIntelligence.registerRecorder('rhythmicComplexityGradient', (ctx) => { rhythmicComplexityGradient.recordComplexity(ctx.currentDensity, ctx.absTime); });
   conductorIntelligence.registerModule('rhythmicComplexityGradient', { reset }, ['section']);
 
@@ -76,6 +97,7 @@ rhythmicComplexityGradient = (() => {
     recordComplexity,
     getGradient,
     getSubdivisionBias,
+    getTensionBias,
     reset
   };
 })();

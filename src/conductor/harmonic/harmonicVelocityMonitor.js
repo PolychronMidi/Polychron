@@ -66,7 +66,8 @@ harmonicVelocityMonitor = (() => {
       return 1.0 - clamp(diag.mismatch / 0.8, 0, 1) * 0.07;
     }
     // Harmony stalling (fewer changes than energy warrants): boost tension
-    return 1.0 + clamp(-diag.mismatch / 0.6, 0, 1) * 0.12;
+    const bias = 1.0 + clamp(-diag.mismatch / 0.6, 0, 1) * 0.12;
+    return m.min(bias, 1.08);
   }
 
   /**

@@ -24,10 +24,13 @@ criticalityEngine = (() => {
   const WINDOW         = 16;       // beats to accumulate
   const TARGET_RATE    = 0.20;     // desired avalanche fraction
   const THRESHOLD_INIT = 0.40;     // initial energy threshold
-  const THRESHOLD_MIN  = 0.15;
+  const THRESHOLD_MIN  = 0.08;     // R73 E1: 0.15->0.08. Avg window energy ~0.096 never reached 0.15; engine fully dormant. At 0.08, avalanches fire during sustained normal energy.
   const THRESHOLD_MAX  = 1.20;
   const ADAPT_RATE     = 0.02;     // threshold adaptation speed
-  const SNAP_STRENGTH  = 0.92;     // how hard avalanche snaps to neutral
+  // R74 E1: 0.92->0.96. Engine just activated in R73 (was dormant at 1.0).
+  // Gentler snap (4% vs 8%) moderates the newly-active engine while
+  // tension arc recovers from Q3 0.765->0.643 regression.
+  const SNAP_STRENGTH  = 0.96;     // how hard avalanche snaps to neutral
   const RECOVERY_BEATS = 3;        // beats of neutral bias after avalanche
 
   let energyBuffer   = [];
@@ -124,7 +127,17 @@ criticalityEngine = (() => {
     return 1.0 + (currentBias - 1.0) * scale;
   }
   function tensionBias() {
-    if (tensionSnap < 1.0) return 1.0;
+    // R73 E2: Gate 1.0->0.85.
+    // R74 E1: Section-position-aware bypass. In the back half of sections,
+    // skip tension bias entirely so the engine doesn't compound suppression
+    // in Q3/Q4 territory (Q3 collapsed 0.765->0.643). Front half keeps
+    // normal gating. This is a structural change to the controller chain.
+    {
+      let secProgForGate = 0;
+      try { secProgForGate = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { void 0; }
+      if (secProgForGate > 0.55) return 1.0;
+    }
+    if (tensionSnap < 0.85) return 1.0;
     const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().tension.grade);
     return 1.0 + (currentBias - 1.0) * scale;
   }

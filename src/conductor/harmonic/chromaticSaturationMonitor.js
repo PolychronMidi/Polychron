@@ -46,10 +46,31 @@ chromaticSaturationMonitor = (() => {
     return getSaturationSignal().densityBias;
   }
 
+  // R27 E3: Tension bias from chromatic saturation. High chromatic
+  // saturation (>=10 PCs) signals harmonic adventurousness and should
+  // accompany elevated tension. Low saturation (<=2) signals tonal
+  // simplicity and reduced tension. Cross-domain harmonic->tension pathway.
+  // R28 E3: Raised low-PC threshold from <=3 to <=2. In R27, saturation at
+  // 0.95 (low) combined with rhythmicComplexityGradient (0.95) and
+  // intervalExpansionContractor (0.96) over-dampened tension. Narrowing to
+  // <=2 means only very sparse pitch material triggers tension reduction.
+  /**
+   * Get tension multiplier from chromatic saturation level.
+   * @returns {number}
+   */
+  function getTensionBias() {
+    const s = getSaturationSignal();
+    if (s.pitchClassCount >= 10) return 1.06;
+    if (s.pitchClassCount <= 2) return 0.95;
+    return 1.0;
+  }
+
   conductorIntelligence.registerDensityBias('chromaticSaturationMonitor', () => chromaticSaturationMonitor.getDensityBias(), 0.9, 1.1);
+  conductorIntelligence.registerTensionBias('chromaticSaturationMonitor', () => chromaticSaturationMonitor.getTensionBias(), 0.95, 1.06);
 
   return {
     getSaturationSignal,
-    getDensityBias
+    getDensityBias,
+    getTensionBias
   };
 })();

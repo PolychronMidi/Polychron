@@ -31,7 +31,7 @@ homeostasisConstants = (() => {
 
   // Tail pressure tracking
   const TAIL_PRESSURE_EMA_ALPHA = 0.18;
-  const TAIL_PRESSURE_DECAY = 0.97;
+  const TAIL_PRESSURE_DECAY = 0.94;
   const TAIL_ACTIVE_THRESHOLD = 0.08;
   const TAIL_RANKED_THRESHOLD = 0.03;
   const TAIL_PRESSURE_TRIGGER_MIN = 0.14;

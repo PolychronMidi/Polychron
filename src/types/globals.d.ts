@@ -1173,6 +1173,7 @@ interface MelodicContourTrackerAPI {
   getDirectionalitySignal(): { direction: string; ascendRatio: number; descendRatio: number; densityBias: number };
   getDirectionalityDensityBias(): number;
   getDirectionalityFlickerBias(): number;
+  getDirectionalityTensionBias(): number;
   reset(): void;
 }
 

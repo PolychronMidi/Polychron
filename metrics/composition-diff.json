@@ -1,109 +1,169 @@
 {
   "meta": {
-    "generated": "2026-03-25T07:53:53.593Z",
+    "generated": "2026-03-26T00:20:43.666Z",
     "dirA": "/home/jah/Polychron/metrics/snapshots/baseline",
     "dirB": "/home/jah/Polychron/metrics",
-    "traceSizeA": 1005,
-    "traceSizeB": 1172,
-    "sectionsA": 7,
+    "traceSizeA": 1202,
+    "traceSizeB": 982,
+    "sectionsA": 6,
     "sectionsB": 7
   },
   "diffs": [
     {
+      "type": "section-count",
+      "severity": "major",
+      "detail": "Section count: 6 -> 7"
+    },
+    {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 0,
-      "detail": "Section 0: F# major -> Eb mixolydian"
+      "detail": "Section 0: D# ionian -> B lydian"
     },
     {
-      "type": "tension-shift",
-      "severity": "moderate",
+      "type": "regime-shift",
+      "severity": "minor",
       "section": 0,
-      "detail": "Section 0 avg tension: 0.547 -> 0.396"
+      "detail": "Section 0 regime 'exploring': 25.0% -> 0.0%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 1,
-      "detail": "Section 1: A minor -> F# major"
+      "detail": "Section 1: F# minor -> G# dorian"
     },
     {
-      "type": "tension-shift",
+      "type": "phrase-count",
       "severity": "moderate",
       "section": 1,
-      "detail": "Section 1 avg tension: 0.884 -> 0.993"
+      "detail": "Section 1: 4 phrases -> 3 phrases"
     },
     {
-      "type": "tension-shift",
-      "severity": "moderate",
+      "type": "harmonic-change",
+      "severity": "notable",
       "section": 2,
-      "detail": "Section 2 avg tension: 0.765 -> 0.996"
+      "detail": "Section 2: A major -> C major"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 2,
+      "phrase": 0,
+      "detail": "S2:P0 profile: default -> restrained"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 2,
+      "phrase": 1,
+      "detail": "S2:P1 profile: default -> restrained"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 2,
+      "phrase": 2,
+      "detail": "S2:P2 profile: default -> restrained"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 3,
-      "detail": "Section 3: E minor -> B minor"
+      "detail": "Section 3: A major -> C dorian"
     },
     {
       "type": "phrase-count",
       "severity": "moderate",
       "section": 3,
-      "detail": "Section 3: 3 phrases -> 4 phrases"
-    },
-    {
-      "type": "tension-shift",
-      "severity": "moderate",
-      "section": 3,
-      "detail": "Section 3 avg tension: 0.754 -> 1.000"
+      "detail": "Section 3: 4 phrases -> 3 phrases"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 3,
-      "detail": "Section 3 regime 'exploring': 11.1% -> 35.7%"
+      "detail": "Section 3 regime 'evolving': 15.7% -> 40.9%"
     },
     {
       "type": "regime-shift",
       "severity": "minor",
       "section": 3,
-      "detail": "Section 3 regime 'evolving': 51.9% -> 26.8%"
+      "detail": "Section 3 regime 'coherent': 54.3% -> 31.8%"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 4,
-      "detail": "Section 4: A# minor -> D minor"
+      "detail": "Section 4: Db minor -> B dorian"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 4,
+      "detail": "Section 4 regime 'exploring': 27.3% -> 63.1%"
+    },
+    {
+      "type": "regime-shift",
+      "severity": "minor",
+      "section": 4,
+      "detail": "Section 4 regime 'coherent': 53.6% -> 20.2%"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 4,
+      "phrase": 0,
+      "detail": "S4:P0 profile: explosive -> default"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 4,
+      "phrase": 1,
+      "detail": "S4:P1 profile: explosive -> default"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 4,
+      "phrase": 2,
+      "detail": "S4:P2 profile: explosive -> default"
+    },
+    {
+      "type": "profile-change",
+      "severity": "minor",
+      "section": 4,
+      "phrase": 3,
+      "detail": "S4:P3 profile: explosive -> default"
     },
     {
       "type": "harmonic-change",
       "severity": "notable",
       "section": 5,
-      "detail": "Section 5: D major -> E major"
+      "detail": "Section 5: Gb ionian -> D major"
+    },
+    {
+      "type": "phrase-count",
+      "severity": "moderate",
+      "section": 5,
+      "detail": "Section 5: 2 phrases -> 3 phrases"
     },
     {
       "type": "tension-shift",
       "severity": "moderate",
       "section": 5,
-      "detail": "Section 5 avg tension: 0.718 -> 0.900"
+      "detail": "Section 5 avg tension: 0.562 -> 0.832"
     },
     {
-      "type": "regime-shift",
-      "severity": "minor",
-      "section": 5,
-      "detail": "Section 5 regime 'coherent': 27.4% -> 49.2%"
-    },
-    {
-      "type": "harmonic-change",
-      "severity": "notable",
+      "type": "section-added",
+      "severity": "major",
       "section": 6,
-      "detail": "Section 6: G major -> A mixolydian"
+      "detail": "Section 6 added (key=G lydian)"
     },
     {
       "type": "note-count",
       "severity": "moderate",
-      "layer": "output2",
-      "detail": "output2: 21939 notes -> 28949 notes (32.0% change)"
+      "layer": "output1",
+      "detail": "output1: 24584 notes -> 15679 notes (36.2% change)"
     }
   ]
 }

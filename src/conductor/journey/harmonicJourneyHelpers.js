@@ -69,6 +69,13 @@ harmonicJourneyHelpers = (() => {
     },
     (key, mode) => ({ key: t.Note.transpose(key, 'P5'), mode, relationship: 'dominant' }),
     (key, mode) => ({ key: t.Note.transpose(key, 'P4'), mode, relationship: 'subdominant' }),
+    // R22 E2: Tritone L2 relationship. Maximal harmonic distance (6 semitones)
+    // between layers creates dramatic inter-layer contrast. Mode flips
+    // (major->minor, minor->major) for additional color variety.
+    (key, mode) => {
+      const flipped = (mode === 'major' || mode === 'ionian' || mode === 'lydian' || mode === 'mixolydian') ? 'minor' : 'major';
+      return { key: t.Note.transpose(key, 'A4'), mode: flipped, relationship: 'tritone' };
+    },
   ];
 
   const modeToQuality = {
@@ -103,9 +110,22 @@ harmonicJourneyHelpers = (() => {
     let pool;
     switch (phase) {
       // R3 E1: Add 1 parallel-mode move to opening pool for early mode diversity
-      case 'opening':    pool = [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)]; break;
+      // R25 E5: Add all MODERATE_MOVES to opening pool. The opening phase
+      // (pos 0-0.20) was limited to CLOSE + 1 moderate, producing very
+      // conservative key changes. Adding full moderate pool creates more
+      // harmonic motion in the opening, supporting the raised tension
+      // floor (0.40) with more interesting harmonic content.
+      case 'opening':    pool = [...CLOSE_MOVES, ...MODERATE_MOVES]; break;
       case 'resolution': pool = [...CLOSE_MOVES, ...MODERATE_MOVES.slice(0, 1)]; break;
-      case 'development': pool = [...CLOSE_MOVES, ...MODERATE_MOVES]; break;
+      // R23 E4: Add mediant-flip to development. Development sections (pos
+      // 0.20-0.55) were limited to close+moderate moves. Adding one bold move
+      // (mediant-flip: minor 3rd + mode flip) creates occasional dramatic key
+      // changes mid-journey, enriching harmonic motion without destabilizing
+      // the opening or resolution phases.
+      // R29 E2: Also add tritone-sub to development for wider modal palette.
+      // Two bold moves available: mediant-flip for color, tritone-sub for
+      // maximal key distance. Climax still has the full set.
+      case 'development': pool = [...CLOSE_MOVES, ...MODERATE_MOVES, BOLD_MOVES[3], BOLD_MOVES[2]]; break;
       case 'climax':     pool = [...MODERATE_MOVES, ...BOLD_MOVES]; break;
       default:           pool = [...CLOSE_MOVES]; break;
     }

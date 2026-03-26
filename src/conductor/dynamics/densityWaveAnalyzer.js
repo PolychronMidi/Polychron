@@ -93,7 +93,7 @@ densityWaveAnalyzer = (() => {
   }
 
   /**
-   * Get a flicker amplitude modifier based on density wave patterns.
+   * Get flicker amplitude modifier based on density wave patterns.
    * Continuous ramp: flat (amplitude 0-0.05) - 1.15-1.0,
    * waving (amplitude 0.15-0.5) - 1.0-0.9.
    * @returns {number} - 0.9 to 1.2
@@ -114,12 +114,55 @@ densityWaveAnalyzer = (() => {
     return 1.0;
   }
 
+  // R25 E3: Tension bias from density wave patterns. When density is flat
+  // (no oscillation), boost tension to inject contrast from a different
+  // axis. When density is actively waving, sustain mild tension push.
+  // Creates cross-domain energy compensation: flat density -> tension picks
+  // up the slack; active density -> tension stays neutral.
+  /**
+   * Get tension multiplier from density wave amplitude.
+   * @returns {number}
+   */
+  function getTensionBias() {
+    const profile = getWaveProfile();
+    if (profile.isFlat) return 1.06;
+    if (profile.isWaving) return 1.02;
+    return 1.0;
+  }
+
+  // R39 E3: Density bias from density wave patterns. When density is flat,
+  // boost density to recover coupling headroom. When density is actively
+  // waving, leave it alone. Addresses density axis starvation (0.094 share
+  // in R38, below floor) by adding a self-correcting density push.
+  /**
+   * Get density multiplier from density wave amplitude.
+   * @returns {number}
+   */
+  // R74 E5: Alternating flat-density push. When density is flat, instead
+  // of a constant 1.06 boost (which raises mean without creating variance),
+  // alternate between boost (1.06) and cut (0.97) on a phrase-driven
+  // cycle. This structural mechanism creates variance by injecting
+  // oscillation when the density signal lacks it. When density is already
+  // waving, the cut path engages to deepen troughs.
+  function getDensityBias() {
+    const profile = getWaveProfile();
+    if (profile.isFlat) {
+      let phraseProgress = 0;
+      try { phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1); } catch { void 0; }
+      return phraseProgress < 0.5 ? 1.06 : 0.97;
+    }
+    if (profile.isWaving) return 0.97;
+    return 1.0;
+  }
+
   /** Reset tracking. */
   function reset() {
     samples.length = 0;
   }
 
   conductorIntelligence.registerFlickerModifier('densityWaveAnalyzer', () => densityWaveAnalyzer.getFlickerModifier(), 0.9, 1.2);
+  conductorIntelligence.registerTensionBias('densityWaveAnalyzer', () => densityWaveAnalyzer.getTensionBias(), 1.0, 1.06);
+  conductorIntelligence.registerDensityBias('densityWaveAnalyzer', () => densityWaveAnalyzer.getDensityBias(), 0.97, 1.06);
   conductorIntelligence.registerRecorder('densityWaveAnalyzer', (ctx) => { densityWaveAnalyzer.recordDensity(ctx.currentDensity, ctx.absTime); });
   conductorIntelligence.registerModule('densityWaveAnalyzer', { reset }, ['section']);
 
@@ -127,6 +170,8 @@ densityWaveAnalyzer = (() => {
     recordDensity,
     getWaveProfile,
     getFlickerModifier,
+    getTensionBias,
+    getDensityBias,
     reset
   };
 })();

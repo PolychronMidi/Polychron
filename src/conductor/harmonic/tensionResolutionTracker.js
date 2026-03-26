@@ -73,10 +73,28 @@ tensionResolutionTracker = (() => {
   function getTensionBias(opts) {
     const profile = getResolutionProfile(opts);
     // Continuous ramp: resolvedRatio 0-1.0 maps to 1.25-1.0
-    return 1.0 + (1.0 - profile.resolvedRatio) * 0.25;
+    let bias = 1.0 + (1.0 - profile.resolvedRatio) * 0.25;
+    if (bias > 1.0) {
+      const tensionProduct = conductorState.getField('tension');
+      const saturationPressure = clamp((tensionProduct - 1.08) / 0.18, 0, 1);
+      if (saturationPressure > 0) {
+        bias = 1.0 + (bias - 1.0) * (1 - saturationPressure * 0.75);
+      }
+    }
+    return bias;
   }
 
   conductorIntelligence.registerTensionBias('tensionResolutionTracker', () => tensionResolutionTracker.getTensionBias(), 0.9, 1.25);
+  // R33 E4: Density bias from resolution patterns. Unresolved dissonance
+  // (low resolvedRatio) -> slightly denser texture to explore/resolve
+  // the harmonic tension. High resolution -> neutral. New harmonic->density
+  // cross-domain pathway.
+  conductorIntelligence.registerDensityBias('tensionResolutionTracker', () => {
+    const p = tensionResolutionTracker.getResolutionProfile();
+    if (p.danglingTension) return 1.04;
+    if (p.resolvedRatio < 0.5) return 1.0 + (0.5 - p.resolvedRatio) * 0.08;
+    return 1.0;
+  }, 0.96, 1.04);
 
   return {
     getResolutionProfile,

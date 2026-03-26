@@ -28,13 +28,41 @@ regimeReactiveDamping = (() => {
     // tension direction (+1) rises, producing dramatic contrast: sparse-
     // but-tense exploring vs neutral-density coherent. This regime-dependent
     // density variation directly increases densityVariance.
-    exploring: -0.3, // sparse contrast
-    coherent: 0,     // neutral
+    // R20 E2: Moderated -0.3 -> -0.15. With exploring at 45.5%, the
+    // extreme sparsity direction pushes too many beats away from coherent
+    // thresholds. More moderate exploring-density retains contrast while
+    // reducing regime imbalance pressure.
+    // R21 E1: Fine-tuned -0.15 -> -0.22. R20 overshot coherent to 55.5%
+    // (target 35%). Midpoint between -0.30 (exploring=45.5%) and -0.15
+    // (coherent=55.5%) should converge on ~35-40% coherent.
+    // R30 E2: Moderated -0.22 -> -0.16. Exploring has been below budget
+    // (0.35) for 3 of last 4 rounds. Less density suppression during
+    // exploring reduces the regime's sparsity penalty, helping beats stay
+    // in exploring longer and recovering density axis share (0.123 lowest).
+    // R31 E1: Adjusted -0.16 -> -0.19. R30 overshot exploring to 44.5%
+    // (target 35%). Split the difference to converge on ~35%.
+    // R70 E3: Moderate exploring density suppression -0.19->-0.10.
+    // Exploring at 29.6% of beats -- at -0.19, this is the dominant
+    // density-suppressing force. Reducing suppression lets more natural
+    // density variance emerge during exploring, targeting recovery from
+    // 0.0097 toward 0.019 baseline.
+    // R72 E3: Restore exploring density suppression -0.10->-0.15.
+    // R70 lightened from -0.19 to -0.10, but evolving collapsed to 11.9%
+    // in R71. Modest suppression during exploring creates more
+    // density contrast, which helps beats transition out of exploring
+    // into evolving via the density-velocity pathway.
+    exploring: -0.15, // moderate sparse contrast (R72 E3)
+    coherent: 0.15,     // R72 E1: Revert 0.22->0.15. R71 showed 0.22 REFUTED --
+    // reduced density variance 0.0132->0.0108 and drove exceedance (DT 44 beats).
+    // 0.15 was the proven value from R33 E2.
     // R10 E2: Evolving density +0.3 REFUTED R11 -- entropy collapsed
     // 0.203->0.123 (-39%), entropy-trust correlation surged to 0.520.
     // Dense evolving passages suppressed entropy via density-entropy
     // coupling. Reverted to neutral (0).
-    evolving: 0,     // neutral (reverted R11)
+    // R34 E4: 0->0.1. Much lighter than refuted +0.3 (R10). Evolving at
+    // 21.5% with density=0 creates texturally neutral passages. Small
+    // positive nudge adds richness without entropy collapse risk.
+    evolving: 0.1,     // mild positive (R34 E4)
     drifting: -1,    // suppress
   };
 
@@ -44,8 +72,14 @@ regimeReactiveDamping = (() => {
     stagnant: 0.5,     // mild boost to break stagnation
     fragmented: 0,
     oscillating: 0,
-    exploring: 1,
-    coherent: 0,       // R91 E2: reverted to 0. DT pearsonR spiked 0.1247->0.4437 in R90 with 0.15; density and tension move in sync during coherent passages, creating exceedance (38 beats). Neutral decorrelates them.
+    // R31 E2: Raise exploring tension 1.0->1.15. With exploring at 44.5%
+    // (R30), exploring passages need to carry more tension to maintain the
+    // tension arc quality. This enriches exploring without changing regime balance.
+    // R71 E4: Exploring tension 1.15->1.25. Exploring at 31.2% of beats;
+    // stronger tension during exploring creates more dramatic contrast vs
+    // coherent passages, enriching the tension arc.
+    exploring: 1.25,
+    coherent: 0.2,       // R32 E3: 0->0.3. R33 E1: 0.3->0.2. At 0.3, TF exceedance spiked to 37 beats and DT anti-correlation deepened -0.562->-0.717. Moderate to 0.2 to preserve tension arc gains while reducing side effects.
     evolving: 1.3,     // R33 E4: 0.5->1.0. R1 E2: 1.0->1.3 tension axis collapsed to 0.119 (29% below fair share). Evolving at 24.5% needs stronger tension contribution.
     drifting: 1,
   };
@@ -65,18 +99,27 @@ regimeReactiveDamping = (() => {
     // insufficient dimensional variance). 1.5 was too high (FT correlation).
     // 1.35 should balance FT decorrelation with regime diversity.
     exploring: 1.35,  // boost variation - inject independent flicker to reduce density-flicker coupling
-    coherent: 0,     // neutral - suppression (was -1) compressed flicker range and inflated coupling via near-zero variance
-    evolving: 0.5,  // R33 E4: 0->0.5 give evolving regime distinct timbral character
+    // R23 E2: 0->-0.15. FT r=0.57 in R22 (increasing). During coherent,
+    // flicker and trust tend to co-move (both stabilize). Light flicker
+    // dampening decorrelates them by reducing flicker while trust stays high.
+    // Mild enough to avoid the R93 flicker-range compression (that was -1).
+    coherent: -0.15, // R23 E2: light dampen for FT decorrelation
+    evolving: 0.7,  // R71 E3: 0.5->0.7. Evolving at 28.8% needs more distinct flicker
+    // texture. Stronger flicker during evolving creates timbral variety vs coherent.
     drifting: 0,
   };
 
   // Max bias magnitude per signal (how far from 1.0 we can go)
   const MAX_DENSITY = 0.12;  // - range 0.88-1.12
   const MAX_TENSION = 0.12;  // R26 E2->R97 E5: Widened 0.06->0.10->0.12 for tension expressiveness (range 0.88-1.12)
-  const MAX_FLICKER = 0.20;  // R28 E4: Widened from 0.15 for more timbral variety across regimes
+  // R22 E1: 0.20->0.17. Flicker axis dominant at 0.2135 (fair share 0.167).
+  // Exploring DIR 1.35 * MAX 0.20 = 0.27 peak bias was too strong. 1.35 * 0.17
+  // = 0.23 preserves regime texture while reducing flicker energy dominance.
+  // Does NOT touch REGIME_FLICKER_DIR (R93 collapse risk) - only the magnitude.
+  const MAX_FLICKER = 0.17;  // R28 E4: 0.15->0.20, R22 E1: 0.20->0.17
   const _DENSITY_RANGE = [0.88, 1.12];
   const _TENSION_RANGE = [0.88, 1.22];  // R26 E2: widened to match MAX_TENSION=0.10
-  const _FLICKER_RANGE = [0.82, 1.22];  // R28 E4: widened to match MAX_FLICKER=0.20
+  const _FLICKER_RANGE = [0.83, 1.19];  // R22 E1: narrowed to match MAX_FLICKER=0.17
 
   // Curvature scaling: bias = 1 + dir * max * curvatureGain
   // At curvature 0 - bias = 1.0 (neutral). At curvature 1.0 - full magnitude.
@@ -92,7 +135,10 @@ regimeReactiveDamping = (() => {
   // despite evolving regime" problem - the system equilibrates too fast.
   const LOW_VEL_THRESHOLD = 0.015;
   const LOW_VEL_BEATS     = 8;
-  const DRIFT_MAGNITUDE   = 0.14;   // R29 E2: Raised from 0.09 for more dramatic stasis breakouts
+  // R70 E5: Raise DRIFT_MAGNITUDE 0.14->0.22. Stronger velocity-floor
+  // breakouts inject larger density discontinuities during stasis,
+  // directly boosting density variance from 0.0097.
+  const DRIFT_MAGNITUDE   = 0.22;
   const DRIFT_DECAY       = 0.93; // drift decays each beat, replaced when velocity recovers
   let lowVelStreak = 0;
   let regimeReactiveDampingDriftD = 0;
@@ -117,7 +163,7 @@ regimeReactiveDamping = (() => {
     oscillating: 0.02,
     drifting: 0.02,
   };
-  const _EQUILIB_STRENGTH = 0.25;
+  const _EQUILIB_STRENGTH = 0.28;
   let regimeReactiveDampingEqCorrD = 0;
   let regimeReactiveDampingEqCorrT = 0;
   let regimeReactiveDampingEqCorrF = 0;
@@ -138,6 +184,17 @@ regimeReactiveDamping = (() => {
   let regimeReactiveDampingSmoothedDensity = 1.0;
   let regimeReactiveDampingSmoothedTension = 1.0;
   let regimeReactiveDampingSmoothedFlicker = 1.0;
+
+  // R76 E5: Density variance self-calibrating arch (#17). Tracks running
+  // density variance via EMA and auto-scales the section density arch
+  // magnitude when variance drifts from target band [0.009, 0.014].
+  // 4-round decline (0.0129->0.0111->0.0094->0.0077) shows the fixed
+  // 0.04 coefficient cannot adapt to changing coupling dynamics.
+  let densityVarEma = 0.010;  // initial estimate
+  let densityMeanEma = 0.50;  // initial density mean estimate
+  const _DENSITY_VAR_EMA_ALPHA = 0.008;  // slow EMA for variance
+  const _DENSITY_VAR_TARGET_LOW = 0.009;
+  const _DENSITY_VAR_TARGET_HIGH = 0.014;
 
   function refresh() {
     const snap = systemDynamicsProfiler.getSnapshot();
@@ -206,8 +263,17 @@ regimeReactiveDamping = (() => {
     const tensionFlickerPressure = couplingMatrix && typeof couplingMatrix['tension-flicker'] === 'number' && Number.isFinite(couplingMatrix['tension-flicker'])
       ? clamp((m.abs(couplingMatrix['tension-flicker']) - 0.76) / 0.16, 0, 1)
       : 0;
+    // R61 E1: Explicit density-trust hotspot sensing. After R60 dispersed the
+    // DF/TF monopoly, density-trust became the top hotspot (15 beats) without
+    // a dedicated structural brake.
+    const densityTrustPressure = couplingMatrix && typeof couplingMatrix['density-trust'] === 'number' && Number.isFinite(couplingMatrix['density-trust'])
+      ? clamp((m.abs(couplingMatrix['density-trust']) - 0.72) / 0.18, 0, 1)
+      : 0;
+    // R60 E3: Engage FT hotspot pressure earlier. Directly strengthening the
+    // dedicated FT brake was refuted in R59. Instead, fold FT into the
+    // broader flicker hotspot brake path sooner.
     const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number' && Number.isFinite(couplingMatrix['flicker-trust'])
-      ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
+      ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.68) / 0.18, 0, 1)
       : 0;
     const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
@@ -241,10 +307,15 @@ regimeReactiveDamping = (() => {
     const topPairConcentration = dynamicSnap && typeof dynamicSnap.hotspotTop2Concentration === 'number'
       ? dynamicSnap.hotspotTop2Concentration
       : 0;
+    const containedTailRecovery = clamp((0.78 - topPairConcentration) / 0.18, 0, 1) * (1 - densityFlickerPressure * 0.55) * (1 - tensionFlickerPressure * 0.45);
     const longFormBuildPressure = totalSections >= 5 && sectionIndex > 0 && sectionIndex < totalSections - 1 ? 1 : 0;
+    const densityAxisShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.density === 'number'
+      ? axisEnergy.shares.density
+      : 1.0 / 6.0;
+    const densityAxisDeficit = clamp((1.0 / 6.0 - densityAxisShare) / 0.05, 0, 1);
     const regimeFlickerHotspotBrake = clamp(
       // R15 E2: FP weight raised 0.03+0.07 -> 0.05+0.08 for stronger flicker-phase decorrelation
-      (densityFlickerPressure * 0.08 + tensionFlickerPressure * 0.10 + flickerTrustPressure * 0.07 + lowPhasePressure * 0.02 + trustSharePressure * 0.03 + densitySaturationPressure * 0.04 + flickerPhasePressure * (0.05 + phaseRecoveryCredit * 0.08) + clamp((topPairConcentration - 0.72) / 0.20, 0, 1) * 0.04) * ((currentRegime === 'exploring' || currentRegime === 'coherent') ? 1 : 0.6),
+      (densityFlickerPressure * 0.08 + tensionFlickerPressure * 0.12 + flickerTrustPressure * 0.10 + lowPhasePressure * 0.02 + trustSharePressure * 0.03 + densitySaturationPressure * 0.04 + flickerPhasePressure * (0.05 + phaseRecoveryCredit * 0.08) + clamp((topPairConcentration - 0.72) / 0.20, 0, 1) * 0.04) * ((currentRegime === 'exploring' || currentRegime === 'coherent') ? 1 : 0.6),
       0,
       0.20
     );
@@ -259,29 +330,49 @@ regimeReactiveDamping = (() => {
     const flickerDeficit = clamp((1.0 / 6.0 - flickerShare) / 0.05, 0, 1);
     const flickerRecoveryRelief = 1.0 - flickerDeficit * 0.25;
     const adjustedFlickerHotspotBrake = regimeFlickerHotspotBrake * flickerRecoveryRelief;
-    const densityHotspotBrake = clamp((densityFlickerPressure * (0.010 + phaseRecoveryCredit * 0.015) + trustSharePressure * 0.015 + densitySaturationPressure * (0.030 + lowPhasePressure * 0.020)) * (0.45 + phaseRecoveryCredit * 0.55), 0, 0.07);
+    // R58 E4: Tail-concentration relief. R57 restored acceptable DF/TF
+    // correlations but exceedance exploded because DF/TF remained the top
+    // tail pairs. Add concentration-sensitive density braking so hotspot
+    // containment reacts to pair dominance, not just raw correlation.
+    // R59 E4: Spillover-aware density hotspot relief. After R58 broke the
+    // DF/TF monopoly, pressure migrated into density-trust and density-phase.
+    // Increase density braking when trust/phase stress is already elevated so
+    // overflow does not simply move to another density surface.
+    // R61 E2: Feed density-trust pressure into the density hotspot brake so
+    // migrated trust-side density tails are contained at the same structural
+    // layer that solved the DF/TF monopoly.
+    const densityHotspotBrake = clamp((densityFlickerPressure * (0.010 + phaseRecoveryCredit * 0.015) + densityTrustPressure * 0.020 + trustSharePressure * 0.022 + densitySaturationPressure * (0.032 + lowPhasePressure * 0.025) + clamp((topPairConcentration - 0.70) / 0.15, 0, 1) * densityFlickerPressure * 0.020) * (0.45 + phaseRecoveryCredit * 0.55), 0, 0.09);
     const tensionSignal = safePreBoot.call(() => conductorState.getField('tension'), null);
     const tensionValue = typeof tensionSignal === 'number' && Number.isFinite(tensionSignal)
       ? tensionSignal
       : 0.5;
     const tensionRecoveryNudge = longFormBuildPressure * phaseRecoveryCredit * clamp((0.58 - tensionValue) / 0.22, 0, 1) * (1 - tensionFlickerPressure * 0.45) * 0.02;
+    // R61 E3: When density-trust is hot during exploring, bias away from
+    // density a bit sooner so the hotspot does not rebuild in the freer regime.
     const exploringBiasBrake = currentRegime === 'exploring'
-      ? clamp(trustSharePressure * 0.04 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05, 0, 0.12)
+      ? clamp(trustSharePressure * 0.04 + densityTrustPressure * 0.015 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05, 0, 0.12)
       : 0;
+    // R59 E1: Restore evolving share. R58 pushed evolving back down to 19.9%
+    // after the R57 recovery to 31.0%. Increase the in-regime lift and the
+    // coherent-to-evolving reheat slightly without reopening the DF/TF tail.
     const evolvingLift = currentRegime === 'evolving'
-      ? clamp((1 - densityFlickerPressure) * 0.02 + lowPhasePressure * 0.04 + trustSharePressure * 0.02 + evolvingRecoveryPressure * 0.04 + phaseRecoveryCredit * 0.02, 0, 0.08)
+      ? clamp((1 - densityFlickerPressure) * 0.02 + lowPhasePressure * 0.04 + trustSharePressure * 0.02 + evolvingRecoveryPressure * 0.05 + phaseRecoveryCredit * 0.03 + containedTailRecovery * (0.025 + longFormBuildPressure * 0.01), 0, 0.12)
       : 0;
     const coherentToEvolvingReheat = currentRegime === 'coherent'
       // R16 E1: Raise max 0.04->0.06 for stronger cross-regime push when
       // evolving is deeply suppressed (9.3% in R15 vs 20% budget).
-      ? clamp(evolvingRecoveryPressure * 0.04 + phaseRecoveryCredit * 0.015 - densityFlickerPressure * 0.01 - tensionFlickerPressure * 0.018, 0, 0.06)
+      ? clamp(evolvingRecoveryPressure * 0.045 + phaseRecoveryCredit * 0.018 + containedTailRecovery * 0.018 - densityFlickerPressure * 0.008 - tensionFlickerPressure * 0.018, 0, 0.08)
       : 0;
     // R72 E4: Tension-flicker monopoly relief. R71 showed tension-flicker
     // at 55/60 exceedance beats (92%), worst hotspot concentration ever.
     // Raised ceiling 0.08->0.12 and added monopoly penalty when top pair
     // concentration > 0.80 AND tension-flicker is the pressured pair.
-    const tensionFlickerRelease = clamp(tensionFlickerPressure * (0.045 + evolvingRecoveryPressure * 0.02 + phaseRecoveryCredit * 0.015) * ((currentRegime === 'coherent' || currentRegime === 'evolving') ? 1 : 0.7) + clamp((topPairConcentration - 0.80) / 0.15, 0, 1) * tensionFlickerPressure * 0.04, 0, 0.12);
-    const densityRebalanceLift = clamp(tensionFlickerPressure * (0.015 + phaseRecoveryCredit * 0.01) * (1 - densityFlickerPressure * 0.6), 0, 0.03);
+    // R58 E4: Engage this relief earlier. In R57 top2 concentration hit
+    // 0.759 while TF alone still reached 50 exceedance beats. Lower the
+    // concentration gate and slightly raise the cap so the signal brake can
+    // respond before a full monopoly develops.
+    const tensionFlickerRelease = clamp(tensionFlickerPressure * (0.045 + evolvingRecoveryPressure * 0.02 + phaseRecoveryCredit * 0.015 + densityAxisDeficit * 0.02) * ((currentRegime === 'coherent' || currentRegime === 'evolving') ? 1 : 0.7) + clamp((topPairConcentration - 0.68) / 0.13, 0, 1) * tensionFlickerPressure * 0.07 + densityAxisDeficit * tensionFlickerPressure * 0.05, 0, 0.18);
+    const densityRebalanceLift = clamp(tensionFlickerPressure * (0.015 + phaseRecoveryCredit * 0.01 + densityAxisDeficit * 0.012) * (1 - densityFlickerPressure * 0.6), 0, 0.04);
     // R2 E4: Bidirectional flicker-trust brake. Currently only flicker is
     // suppressed when FT correlation is high (0.4358 pearsonR in R1).
     // Break the coupling at both ends: when flicker-trust coupling exceeds
@@ -291,7 +382,16 @@ regimeReactiveDamping = (() => {
     // R4 E4: Strengthen ftDecoupleBrake. FT pearsonR resurgent at 0.4317
     // in R3 despite R2's 0.025 max brake. Raise to 0.04 for stronger
     // FT decorrelation pressure.
-    const ftDecoupleBrake = clamp((flickerTrustCoupling - 0.40) / 0.30, 0, 1) * 0.04;
+    // R23 E1: 0.04->0.06. FT r=0.57 in R22 despite brake being active.
+    // At r=0.57, old brake was 0.023 -- insufficient. New max 0.06 gives
+    // 0.034 at r=0.57, stronger decorrelation pressure.
+    // R59 E2: Start earlier and slightly stronger. R58 FT rebounded to
+    // +0.377 after the R57 recovery to -0.074, so the structural brake needs
+    // to engage before FT fully re-entrenches.
+    // R60 E3: Revert the direct FT brake to 0.40/0.06. The stronger direct
+    // brake was refuted; FT control now comes from the broader flicker hotspot
+    // path above.
+    const ftDecoupleBrake = clamp((flickerTrustCoupling - 0.40) / 0.30, 0, 1) * 0.06;
 
     // Compute raw bias values with equilibrator corrections (#2)
     // R8 E3: Section-progressive tension bias. Adds a small ascending nudge
@@ -310,23 +410,55 @@ regimeReactiveDamping = (() => {
     // midpoint. This creates structural density variation independent of
     // regime, complementing the tension arch (which peaks at midpoint).
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2; // 0 at mid, 1 at edges
-    const sectionDensityNudge = (densityArchProgress - 0.5) * 0.06; // range [-0.03, +0.03]
+    // R76 E5: Self-calibrating density arch. Track running density variance
+    // and auto-scale arch magnitude to maintain target band [0.009, 0.014].
+    const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);
+    if (typeof currentDensitySignal === 'number' && Number.isFinite(currentDensitySignal)) {
+      densityMeanEma += (currentDensitySignal - densityMeanEma) * _DENSITY_VAR_EMA_ALPHA;
+      const densityDevSq = (currentDensitySignal - densityMeanEma) * (currentDensitySignal - densityMeanEma);
+      densityVarEma += (densityDevSq - densityVarEma) * _DENSITY_VAR_EMA_ALPHA;
+    }
+    // Scale arch: boost up to 2.0x when variance is low, reduce to 0.6x when high
+    const densityArchScale = densityVarEma < _DENSITY_VAR_TARGET_LOW
+      ? 1.0 + clamp((_DENSITY_VAR_TARGET_LOW - densityVarEma) / 0.005, 0, 1)
+      : densityVarEma > _DENSITY_VAR_TARGET_HIGH
+        ? 1.0 - clamp((densityVarEma - _DENSITY_VAR_TARGET_HIGH) / 0.006, 0, 1) * 0.4
+        : 1.0;
+    // R48 E3: Reduce V-shape amplitude 0.06->0.04 and add co-movement
+    // compensation. R76 E5: now scaled by densityArchScale.
+    const sectionDensityNudge = (densityArchProgress - 0.5) * 0.04 * densityArchScale; // base [-0.020, +0.020], scaled
+    // R48 E3: Section-level DT co-movement nudge. At mid-composition
+    // (where tension peaks), push density slightly upward to align with
+    // tension. This directly fights the structural DT anti-correlation
+    // caused by opposite section-level density/tension arches.
+    // R49 E3: Strengthen 0.015->0.022. DT barely moved with 0.015.
+    const midSectionDensityPush = m.sin(sectionProgress * m.PI) * 0.013;
     // R85 E2 + R86 E1: Density axis containment. When density axis exceeds
     // fair share (0.167), apply graduated density brake. R86: threshold
     // raised 0.18->0.20 because R85 overcorrected density to 0.1483
     // (below fair share). Higher threshold ensures brake only fires on
     // clear overshare, not near-fair-share fluctuations.
-    const densityShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.density === 'number'
-      ? axisEnergy.shares.density
-      : 1.0 / 6.0;
+    const densityShare = densityAxisShare;
     // R1 E4: Tighten density brake. Density dominant at 0.219 (31% above
     // fair share). Lower threshold 0.20->0.18 so brake engages earlier.
-    const densityShareBrake = clamp((densityShare - 0.18) / 0.08, 0, 1) * 0.04;
+    // R46 E2: Tighter range 0.08->0.06. Density ballooned to 0.233 in R45
+    // (flicker brake pushed energy to density). Full brake now at 0.24
+    // instead of 0.26.
+    // R56 E4: Tighten density brake threshold 0.18->0.16. Density is now
+    // dominant axis at 0.212 share after tension brake (R55 E4) pushed
+    // energy to density. Earlier engagement reduces density overshare.
+    // R57 E1: Moderate back to 0.17. At 0.16 evolving collapsed 40.2->18.6%
+    // because density brake suppressed signal variance needed for regime
+    // detection. Compromise preserves Gini gains while recovering evolving.
+    const densityShareBrake = clamp((densityShare - 0.17) / 0.06, 0, 1) * 0.04;
     // R89 E1 / R90 E1: Density axis recovery lift. When density is below
     // fair share, apply proportional positive nudge. R89 at 0.03 overcorrected
     // density +74% (0.1325->0.2304). R90: reduced to 0.01 for gentler recovery.
+    // R60 E2: Raise 0.01->0.015. R59 density share fell to 0.122, worsening
+    // DT and axis balance. Slightly stronger recovery helps DT co-movement
+    // without undoing the spillover brake.
     const densityDeficit = clamp((1.0 / 6.0 - densityShare) / 0.05, 0, 1);
-    const densityRecoveryLift = densityDeficit * 0.01;
+    const densityRecoveryLift = densityDeficit * 0.015;
     // R15 E3: Coherent-regime DF density brake. Section 6 had 39/63 DF
     // exceedance beats at 75% coherent. During coherent, density and flicker
     // get neutral regime biases (both 0), so they correlate naturally. When DF
@@ -339,22 +471,76 @@ regimeReactiveDamping = (() => {
     // R16 E3: DT coupling density moderation. DT exceedance surged to 44
     // beats (all in S3) after DF containment. When density-tension coupling
     // > 0.50, moderate density regardless of regime to break DT correlation.
+    // R48 E4: Soften max brake 0.020->0.012. At DT=-0.527 this brake rarely
+    // fires (dtAbs < 0.50) but when it does, overcorrection hurts DT recovery.
+    // R63 E1: Further soften this legacy brake. Recent rounds show the brake
+    // is fighting the successful DT co-movement mechanisms and feeding the
+    // density-tension hotspot.
     const dtRaw = couplingMatrix ? couplingMatrix['density-tension'] : 0;
     const dtAbs = Number.isFinite(dtRaw) ? m.abs(dtRaw) : 0;
-    const dtDensityBrake = dtAbs > 0.50
-      ? clamp((dtAbs - 0.50) / 0.35, 0, 1) * 0.020
+    const dtDensityBrake = dtAbs > 0.55
+      ? clamp((dtAbs - 0.55) / 0.30, 0, 1) * 0.006
       : 0;
-    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift + sectionDensityNudge - densityShareBrake + densityRecoveryLift - coherentDFBrake - dtDensityBrake;
+    // R41 E2: Harmonic boldness DT co-movement push. When journey boldness
+    // is high (bold key change), push density toward tension direction,
+    // creating co-movement episodes. This fights DT anti-correlation
+    // structurally -- harmonic events naturally demand both density and
+    // tension to rise together. The push is proportional to boldness and
+    // only fires when boldness > 0.25 to avoid noise during static passages.
+    // R47 E1: Strengthen 0.015->0.025. DT at -0.644 (worst ever).
+    // Budget scoring alone insufficient -- structural co-movement push
+    // is the primary DT fix mechanism.
+    const journeyBoldness = safePreBoot.call(
+      () => journeyRhythmCoupler.getBoldness(), 0
+    );
+    const dtCoMovementPush = journeyBoldness > 0.25
+      ? clamp((journeyBoldness - 0.25) / 0.60, 0, 1) * 0.030
+      : 0;
+    const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
+      ? axisEnergy.shares.tension
+      : 1.0 / 6.0;
+    // R63 E2: DT share bridge. When DT is hot and tension share exceeds
+    // density share, lift density directly to restore co-movement.
+    const dtShareGap = clamp(tensionShare - densityShare, 0, 0.12) / 0.12;
+    const dtShareBridgeLift = dtAbs > 0.45
+      ? clamp((dtAbs - 0.45) / 0.35, 0, 1) * dtShareGap * 0.015
+      : 0;
+    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift + sectionDensityNudge + midSectionDensityPush - densityShareBrake + densityRecoveryLift - coherentDFBrake - dtDensityBrake + dtCoMovementPush + dtShareBridgeLift;
     // #7 (R7): Tension pin relief valve - track pinning and relax ceiling
     const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
     // R91 E3: Tension share brake. Tension axis surged to 0.2316 (dominant),
     // creating DT exceedance monopoly (38 beats). Mirrors density share brake
     // logic: activates above 0.20, full 0.04 brake at 0.28.
-    const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
-      ? axisEnergy.shares.tension
-      : 1.0 / 6.0;
-    const tensionShareBrake = clamp((tensionShare - 0.20) / 0.08, 0, 1) * 0.04;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease - tensionShareBrake;
+    // R55 E4: Tighten threshold 0.20->0.18, increase max 0.04->0.06. Tension
+    // share was 0.226 in R54 (dominant), driving axisGini to 0.119. Earlier
+    // brake engagement with stronger cap reduces tension dominance.
+    const tensionShareBrake = clamp((tensionShare - 0.18) / 0.08, 0, 1) * 0.06;
+    // R42 E4: Tension axis share floor nudge. When tension share drops below
+    // 0.16 (1/6 = 0.167 fair share), apply graduated upward tension nudge.
+    // Tension fell 0.199->0.148 in R41 as density/trust surged. Max +0.015
+    // nudge at share=0.10. Symmetric with existing density recovery lift.
+    // R60 E4: Start slightly earlier and stronger. TE regressed to -0.332
+    // in R59 while tension hovered near the floor.
+    const tensionRecoveryLift2 = tensionShare < 0.17
+      ? clamp((0.17 - tensionShare) / 0.06, 0, 1) * 0.018
+      : 0;
+    // R41 E1: Harmonic boldness tension push (moved from journeyRhythmCoupler
+    // because the feedbackGraphContract blocks cross-layer modules from
+    // registering conductor biases). Bold key moves push tension up alongside
+    // density (see E2 dtCoMovementPush), creating co-movement moments.
+    // R44 E4: Strengthen push 0.012->0.018.
+    // R47 E1: Strengthen push 0.018->0.025 alongside density push to
+    // maintain coordinated DT co-movement at stronger magnitude.
+    const boldnessTensionPush = journeyBoldness > 0.25
+      ? clamp((journeyBoldness - 0.25) / 0.60, 0, 1) * 0.030
+      : 0;
+    // R63 E3: DT tension trim. When DT is hot and tension dominates the axis
+    // share, trim tension slightly so density can reconnect without opening a
+    // broad tension collapse.
+    const dtTensionTrim = dtAbs > 0.45
+      ? clamp((dtAbs - 0.45) / 0.35, 0, 1) * dtShareGap * 0.010
+      : 0;
+    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease - tensionShareBrake + boldnessTensionPush + tensionRecoveryLift2 - dtTensionTrim;
     // R83 E4: Section-level flicker arch -- inverted from density arch.
     // Density is V-shaped (edges dense, midpoint sparse). Flicker arch is
     // hill-shaped (edges calm, midpoint active). This creates complementary
@@ -370,7 +556,12 @@ regimeReactiveDamping = (() => {
     const flickerArchCenter = 0.5 + archOffset; // shifted peak
     const flickerArchProgress = 1 - m.abs(sectionProgress - flickerArchCenter) * 2; // peak at shifted center
     const sectionFlickerNudge = (clamp(flickerArchProgress, 0, 1) - 0.5) * 0.04;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7 + sectionFlickerNudge - ftDecoupleBrake;
+    // R45 E4: Flicker axis share brake. Flicker surged to 0.236 (dominant,
+    // 41% above fair share), worsening axisGini to 0.136. Mirrors density
+    // and tension share brake logic: activates above 0.20, full 0.04 brake
+    // at 0.28. flickerShare already computed near line 283 for recovery relief.
+    const flickerShareBrake = clamp((flickerShare - 0.18) / 0.10, 0, 1) * 0.08;
+    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7 + sectionFlickerNudge - ftDecoupleBrake - flickerShareBrake;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
     regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);

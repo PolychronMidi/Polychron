@@ -105,6 +105,23 @@ thematicRecallDetector = (() => {
     sectionFingerprints.length = 0;
   }
 
+  // R28 E5: Tension bias from thematic recall. When the current material
+  // strongly echoes a prior section (strong-recall), reduce tension --
+  // familiarity creates a sense of resolution and emotional settling.
+  // R29 E5: Also respond to 'echo' (moderate recall >0.5 similarity)
+  // with a milder reduction. Fresh material stays neutral.
+  /**
+   * Get tension multiplier from thematic recall detection.
+   * @returns {number}
+   */
+  function getTensionBias() {
+    const s = getThematicSignal();
+    if (s.thematicStatus === 'strong-recall') return 0.96;
+    if (s.thematicStatus === 'echo') return 0.98;
+    return 1.0;
+  }
+
+  conductorIntelligence.registerTensionBias('thematicRecallDetector', () => thematicRecallDetector.getTensionBias(), 0.96, 1.0);
   conductorIntelligence.registerStateProvider('thematicRecallDetector', () => {
     const s = thematicRecallDetector.getThematicSignal();
     return {
@@ -118,6 +135,7 @@ thematicRecallDetector = (() => {
     recordSectionFingerprint,
     checkRecallOpportunity,
     getThematicSignal,
+    getTensionBias,
     reset
   };
 })();

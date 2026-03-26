@@ -9,7 +9,11 @@ phaseFloorController = (() => {
   const _SHARE_EMA_ALPHA = 0.06;
   const _VOLATILITY_EMA_ALPHA = 0.04;
   const _COHERENT_STREAK_EMA_ALPHA = 0.03;
-  const _RECOVERY_EMA_ALPHA = 0.05;
+  // R22 E5: 0.05->0.08. Phase at 0.1334, below fair share (0.167).
+  // Faster recovery tracking makes the phase floor controller more responsive
+  // to phase deficit, reducing the lag between boost application and success
+  // measurement. Helps break the chronic mid-suppression pattern.
+  const _RECOVERY_EMA_ALPHA = 0.08;
 
   let phaseFloorControllerShareEma = 0.1667; // starts at FAIR_SHARE
   let phaseFloorControllerVolatilityEma = 0;
@@ -52,9 +56,18 @@ phaseFloorController = (() => {
     // The controller never fired, allowing chronic mid-suppression. The new
     // anchor detects shares below ~80% of fair share; the raised clamp allows
     // the threshold to reach the necessary level.
+    // R27 E4: Raised anchor from 0.80 to 0.85 (0.1417). Phase slipped from
+    // 0.152 to 0.143 in R26. The 0.133 anchor was too low to trigger support
+    // when phase is in the 0.14-0.15 range. New 0.1417 anchor provides
+    // earlier intervention to prevent phase from drifting below 0.14.
+    // R28 E2: Raised upper clamp from 0.14 to 0.16. Phase continued to
+    // slip to 0.128 despite raised anchor. The 0.14 ceiling prevented the
+    // threshold from reaching the needed level. With clamp at 0.16, the
+    // adaptive formula can output thresholds up to 0.16, firing when
+    // phase shares drop below ~15% of fair share.
     return clamp(
-      m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030, fairShare * 0.80),
-      0.02, 0.14
+      m.max(getCollapseThreshold() + 0.010, phaseFloorControllerShareEma * 0.45, 0.04 + persistentLowSharePressure * 0.030, fairShare * 0.85),
+      0.02, 0.16
     );
   }
 
@@ -99,7 +112,10 @@ phaseFloorController = (() => {
     // 0.06->0.12. Phase at 0.101 gave zero contribution from both terms
     // (both below their thresholds). Wider detection catches moderate
     // deficit (8-12% share range) and strengthens the boost formula.
-    const persistentLowSharePressure = clamp((0.10 - phaseFloorControllerShareEma) / 0.10, 0, 1);
+    // R23 E5: 0.10->0.13. R73 E5: 0.13->0.14. Phase at 0.130 gives
+    // zero pressure at 0.13. Raising to 0.14 detects the current deficit
+    // (pressure ~0.07 at shareEma=0.13), enabling earlier boost activation.
+    const persistentLowSharePressure = clamp((0.14 - phaseFloorControllerShareEma) / 0.14, 0, 1);
     const severeLowSharePressure = clamp((0.12 - share) / 0.12, 0, 1);
     // Recovery success dampens boost (if previous boosts recovered phase, be less aggressive)
     // Recovery failure amplifies boost (if previous boosts didn't work, push harder)

@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated": "2026-03-25T07:53:50.672Z",
+    "generated": "2026-03-26T00:20:40.850Z",
     "description": "Conductor Intelligence Map: per-module registry of signals, biases, domains, and scopes.",
-    "totalModules": 78
+    "totalModules": 79
   },
   "modules": [
     {
@@ -25,8 +25,8 @@
           "clamped": 0.94
         },
         "flicker": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 0.95,
+          "clamped": 0.95
         }
       }
     },
@@ -90,8 +90,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.075,
-          "clamped": 1.075
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -100,12 +100,17 @@
       "domain": "harmonic",
       "file": "src/conductor/harmonic/chromaticSaturationMonitor.js",
       "registrations": [
-        "density"
+        "density",
+        "tension"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
         "density": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "tension": {
           "raw": 1,
           "clamped": 1
         }
@@ -129,8 +134,8 @@
           "clamped": 0.88
         },
         "tension": {
-          "raw": 0.9,
-          "clamped": 0.9
+          "raw": 0.985,
+          "clamped": 0.985
         }
       }
     },
@@ -206,14 +211,24 @@
       "domain": "harmonic",
       "file": "src/conductor/harmonic/consonanceDissonanceTracker.js",
       "registrations": [
-        "tension"
+        "density",
+        "tension",
+        "flicker"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
+        "density": {
+          "raw": 0.96,
+          "clamped": 0.96
+        },
         "tension": {
           "raw": 1.181981981981982,
           "clamped": 1.181981981981982
+        },
+        "flicker": {
+          "raw": 0.96,
+          "clamped": 0.96
         }
       }
     },
@@ -222,12 +237,17 @@
       "domain": "melodic",
       "file": "src/conductor/melodic/counterpointMotionTracker.js",
       "registrations": [
+        "density",
         "tension",
         "stateProvider"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        },
         "tension": {
           "raw": 1,
           "clamped": 1
@@ -267,7 +287,8 @@
         "explainabilityBus",
         "flicker",
         "signalHealth",
-        "tension"
+        "tension",
+        "timeStream"
       ],
       "biasValues": {
         "density": {
@@ -306,6 +327,8 @@
       "domain": "dynamics",
       "file": "src/conductor/dynamics/densityWaveAnalyzer.js",
       "registrations": [
+        "density",
+        "tension",
         "flicker",
         "recorder"
       ],
@@ -314,12 +337,21 @@
       ],
       "signalReads": [
         "signalHealth",
-        "systemDynamics"
+        "systemDynamics",
+        "timeStream"
       ],
       "biasValues": {
+        "density": {
+          "raw": 0.97,
+          "clamped": 0.97
+        },
+        "tension": {
+          "raw": 1.02,
+          "clamped": 1.02
+        },
         "flicker": {
-          "raw": 0.9726008117075614,
-          "clamped": 0.9726008117075614
+          "raw": 0.9645089979600047,
+          "clamped": 0.9645089979600047
         }
       }
     },
@@ -343,16 +375,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.003165865384831,
-          "clamped": 1.003165865384831
+          "raw": 1.000028916073286,
+          "clamped": 1.000028916073286
         },
         "tension": {
-          "raw": 1.0000000805445208,
-          "clamped": 1.0000000805445208
+          "raw": 1.0000185703194753,
+          "clamped": 1.0000185703194753
         },
         "flicker": {
-          "raw": 0.9792279417273857,
-          "clamped": 0.9792279417273857
+          "raw": 0.9687077226666587,
+          "clamped": 0.9687077226666587
         }
       }
     },
@@ -393,8 +425,8 @@
       "signalReads": [],
       "biasValues": {
         "tension": {
-          "raw": 1.0674305549299332,
-          "clamped": 1.0674305549299332
+          "raw": 1.0817359605045935,
+          "clamped": 1.0817359605045935
         }
       }
     },
@@ -410,11 +442,13 @@
       "scopes": [
         "section"
       ],
-      "signalReads": [],
+      "signalReads": [
+        "conductorState"
+      ],
       "biasValues": {
         "tension": {
-          "raw": 1.1199999999999999,
-          "clamped": 1.1199999999999999
+          "raw": 1.0372222222222223,
+          "clamped": 1.0372222222222223
         }
       }
     },
@@ -452,8 +486,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1,
-          "clamped": 1
+          "raw": 1.0181640625,
+          "clamped": 1.0181640625
         }
       }
     },
@@ -466,8 +500,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 0.9904,
-          "clamped": 0.9904
+          "raw": 0.9952,
+          "clamped": 0.9952
         }
       }
     },
@@ -484,6 +518,7 @@
         "section"
       ],
       "signalReads": [
+        "conductorState",
         "tension"
       ],
       "biasValues": {
@@ -502,14 +537,19 @@
       "domain": "rhythmic",
       "file": "src/conductor/rhythmic/grooveTemplateAdvisor.js",
       "registrations": [
+        "tension",
         "flicker"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
+        "tension": {
+          "raw": 1.06,
+          "clamped": 1.06
+        },
         "flicker": {
-          "raw": 1.0026,
-          "clamped": 1.0026
+          "raw": 0.9,
+          "clamped": 0.9
         }
       }
     },
@@ -518,6 +558,7 @@
       "domain": "harmonic",
       "file": "src/conductor/harmonic/harmonicDensityOscillator.js",
       "registrations": [
+        "density",
         "tension",
         "recorder",
         "stateProvider"
@@ -527,6 +568,10 @@
       ],
       "signalReads": [],
       "biasValues": {
+        "density": {
+          "raw": 0.96,
+          "clamped": 0.96
+        },
         "tension": {
           "raw": 1.08,
           "clamped": 1.08
@@ -539,6 +584,7 @@
       "file": "src/conductor/harmonic/harmonicFieldDensityTracker.js",
       "registrations": [
         "density",
+        "flicker",
         "stateProvider"
       ],
       "scopes": [],
@@ -547,6 +593,10 @@
         "density": {
           "raw": 0.94,
           "clamped": 0.94
+        },
+        "flicker": {
+          "raw": 1.04,
+          "clamped": 1.04
         }
       }
     },
@@ -625,14 +675,24 @@
       "domain": "harmonic",
       "file": "src/conductor/harmonic/harmonicSurpriseIndex.js",
       "registrations": [
-        "tension"
+        "density",
+        "tension",
+        "flicker"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
+        "density": {
+          "raw": 1.028032960910356,
+          "clamped": 1.028032960910356
+        },
         "tension": {
-          "raw": 0.9457895704611722,
-          "clamped": 0.9457895704611722
+          "raw": 0.97663919924137,
+          "clamped": 0.97663919924137
+        },
+        "flicker": {
+          "raw": 1.0233608007586301,
+          "clamped": 1.0233608007586301
         }
       }
     },
@@ -649,8 +709,8 @@
       ],
       "biasValues": {
         "tension": {
-          "raw": 1.12,
-          "clamped": 1.12
+          "raw": 1.08,
+          "clamped": 1.08
         }
       }
     },
@@ -676,12 +736,17 @@
       "domain": "rhythmic",
       "file": "src/conductor/rhythmic/interLayerRhythmAnalyzer.js",
       "registrations": [
+        "density",
         "flicker",
         "stateProvider"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
+        "density": {
+          "raw": 0.96,
+          "clamped": 0.96
+        },
         "flicker": {
           "raw": 1,
           "clamped": 1
@@ -700,8 +765,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.9294494494494494,
-          "clamped": 0.9294494494494494
+          "raw": 0.9352552552552552,
+          "clamped": 0.9352552552552552
         }
       }
     },
@@ -711,6 +776,7 @@
       "file": "src/conductor/melodic/intervalExpansionContractor.js",
       "registrations": [
         "density",
+        "tension",
         "recorder",
         "stateProvider"
       ],
@@ -722,6 +788,10 @@
         "density": {
           "raw": 1.08,
           "clamped": 1.08
+        },
+        "tension": {
+          "raw": 0.96,
+          "clamped": 0.96
         }
       }
     },
@@ -780,6 +850,7 @@
       "file": "src/conductor/melodic/melodicContourTracker.js",
       "registrations": [
         "density",
+        "tension",
         "flicker",
         "recorder",
         "stateProvider"
@@ -792,6 +863,10 @@
         "density": {
           "raw": 1.02,
           "clamped": 1.02
+        },
+        "tension": {
+          "raw": 1,
+          "clamped": 1
         },
         "flicker": {
           "raw": 1,
@@ -828,6 +903,7 @@
         "all"
       ],
       "signalReads": [
+        "conductorState",
         "density",
         "flicker",
         "systemDynamics",
@@ -836,8 +912,8 @@
       ],
       "biasValues": {
         "tension": {
-          "raw": 1.1536978201058203,
-          "clamped": 1.1470000000000002
+          "raw": 1.1451059470899474,
+          "clamped": 1.1451059470899474
         }
       }
     },
@@ -905,6 +981,23 @@
       "biasValues": {}
     },
     {
+      "name": "phraseContourArchetypeDetector",
+      "domain": "melodic",
+      "file": "src/conductor/melodic/phraseContourArchetypeDetector.js",
+      "registrations": [
+        "flicker",
+        "stateProvider"
+      ],
+      "scopes": [],
+      "signalReads": [],
+      "biasValues": {
+        "flicker": {
+          "raw": 1.02,
+          "clamped": 1.02
+        }
+      }
+    },
+    {
       "name": "phraseLengthMomentumTracker",
       "domain": "texture",
       "file": "src/conductor/texture/phrasing/phraseLengthMomentumTracker.js",
@@ -936,12 +1029,12 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0439583174442653,
-          "clamped": 1.0439583174442653
+          "raw": 1.0438249034342029,
+          "clamped": 1.0438249034342029
         },
         "tension": {
-          "raw": 0.9252691253418239,
-          "clamped": 0.9252691253418239
+          "raw": 0.9498969355633875,
+          "clamped": 0.9498969355633875
         }
       }
     },
@@ -964,16 +1057,16 @@
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0167861004763412,
-          "clamped": 1.0167861004763412
+          "raw": 1.2,
+          "clamped": 1.2
         },
         "tension": {
-          "raw": 1.06,
-          "clamped": 1.06
+          "raw": 0.9505200939076682,
+          "clamped": 0.9505200939076682
         },
         "flicker": {
-          "raw": 0.95,
-          "clamped": 0.95
+          "raw": 1.1945147917569232,
+          "clamped": 1.1945147917569232
         }
       }
     },
@@ -1022,22 +1115,23 @@
       ],
       "signalReads": [
         "conductorState",
+        "density",
         "explainabilityBus",
         "signalHealth",
         "systemDynamics"
       ],
       "biasValues": {
         "density": {
-          "raw": 1.0782040449753914,
-          "clamped": 1.0782040449753914
+          "raw": 1.1027853836737003,
+          "clamped": 1.1027853836737003
         },
         "tension": {
-          "raw": 1.0635512092435697,
-          "clamped": 1.0635512092435697
+          "raw": 0.9726332665902236,
+          "clamped": 0.9726332665902236
         },
         "flicker": {
-          "raw": 1.1130774298021742,
-          "clamped": 1.1130774298021742
+          "raw": 0.9376531753171393,
+          "clamped": 0.9376531753171393
         }
       }
     },
@@ -1046,14 +1140,19 @@
       "domain": "melodic",
       "file": "src/conductor/melodic/registralVelocityCorrelator.js",
       "registrations": [
+        "tension",
         "flicker"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
+        "tension": {
+          "raw": 0.9741575773907704,
+          "clamped": 0.9741575773907704
+        },
         "flicker": {
-          "raw": 0.9606251680550083,
-          "clamped": 0.9606251680550083
+          "raw": 0.9462363660861555,
+          "clamped": 0.9462363660861555
         }
       }
     },
@@ -1071,8 +1170,8 @@
       ],
       "biasValues": {
         "tension": {
-          "raw": 1.076194297177246,
-          "clamped": 1.076194297177246
+          "raw": 1.0742342264889908,
+          "clamped": 1.0742342264889908
         }
       }
     },
@@ -1098,6 +1197,7 @@
       "file": "src/conductor/rhythmic/rhythmicComplexityGradient.js",
       "registrations": [
         "density",
+        "tension",
         "recorder"
       ],
       "scopes": [
@@ -1108,6 +1208,10 @@
         "density": {
           "raw": 0.9,
           "clamped": 0.9
+        },
+        "tension": {
+          "raw": 0.97,
+          "clamped": 0.97
         }
       }
     },
@@ -1126,8 +1230,8 @@
       "signalReads": [],
       "biasValues": {
         "flicker": {
-          "raw": 1.0721028264679684,
-          "clamped": 1.0721028264679684
+          "raw": 1.0153452513416883,
+          "clamped": 1.0153452513416883
         }
       }
     },
@@ -1137,6 +1241,7 @@
       "file": "src/conductor/rhythmic/rhythmicInertiaTracker.js",
       "registrations": [
         "density",
+        "flicker",
         "stateProvider"
       ],
       "scopes": [
@@ -1147,6 +1252,10 @@
       ],
       "biasValues": {
         "density": {
+          "raw": 1,
+          "clamped": 1
+        },
+        "flicker": {
           "raw": 1,
           "clamped": 1
         }
@@ -1245,6 +1354,7 @@
       "file": "src/conductor/rhythmic/syncopationDensityTracker.js",
       "registrations": [
         "density",
+        "tension",
         "flicker",
         "stateProvider"
       ],
@@ -1255,9 +1365,13 @@
           "raw": 1,
           "clamped": 1
         },
+        "tension": {
+          "raw": 1.0566,
+          "clamped": 1.0566
+        },
         "flicker": {
-          "raw": 1.07101,
-          "clamped": 1.07101
+          "raw": 1.07641,
+          "clamped": 1.07641
         }
       }
     },
@@ -1295,14 +1409,21 @@
       "domain": "harmonic",
       "file": "src/conductor/harmonic/tensionResolutionTracker.js",
       "registrations": [
+        "density",
         "tension"
       ],
       "scopes": [],
-      "signalReads": [],
+      "signalReads": [
+        "conductorState"
+      ],
       "biasValues": {
+        "density": {
+          "raw": 1,
+          "clamped": 1
+        },
         "tension": {
-          "raw": 1.0611111111111111,
-          "clamped": 1.0611111111111111
+          "raw": 1.0444444444444445,
+          "clamped": 1.0444444444444445
         }
       }
     },
@@ -1318,8 +1439,8 @@
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.95692,
-          "clamped": 0.95692
+          "raw": 0.94,
+          "clamped": 0.94
         }
       }
     },
@@ -1328,6 +1449,7 @@
       "domain": "texture",
       "file": "src/conductor/texture/form/texturalGradientTracker.js",
       "registrations": [
+        "tension",
         "flicker",
         "recorder"
       ],
@@ -1336,9 +1458,13 @@
       ],
       "signalReads": [],
       "biasValues": {
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        },
         "flicker": {
-          "raw": 0.9608715236828115,
-          "clamped": 0.9608715236828115
+          "raw": 0.9794059872658487,
+          "clamped": 0.9794059872658487
         }
       }
     },
@@ -1360,13 +1486,19 @@
       "domain": "melodic",
       "file": "src/conductor/melodic/thematicRecallDetector.js",
       "registrations": [
+        "tension",
         "stateProvider"
       ],
       "scopes": [
         "section"
       ],
       "signalReads": [],
-      "biasValues": {}
+      "biasValues": {
+        "tension": {
+          "raw": 1,
+          "clamped": 1
+        }
+      }
     },
     {
       "name": "tonalAnchorDistanceTracker",
@@ -1379,11 +1511,13 @@
       "scopes": [
         "section"
       ],
-      "signalReads": [],
+      "signalReads": [
+        "conductorState"
+      ],
       "biasValues": {
         "tension": {
-          "raw": 1.0783333333333334,
-          "clamped": 1.0783333333333334
+          "raw": 0.9916666666666667,
+          "clamped": 0.9916666666666667
         }
       }
     },
@@ -1406,8 +1540,8 @@
           "clamped": 1
         },
         "flicker": {
-          "raw": 0.9927272510605843,
-          "clamped": 0.9927272510605843
+          "raw": 1,
+          "clamped": 1
         }
       }
     },
@@ -1433,14 +1567,24 @@
       "file": "src/conductor/melodic/voiceLeadingEfficiencyTracker.js",
       "registrations": [
         "density",
+        "tension",
+        "flicker",
         "stateProvider"
       ],
       "scopes": [],
       "signalReads": [],
       "biasValues": {
         "density": {
-          "raw": 0.94,
-          "clamped": 0.94
+          "raw": 1.04,
+          "clamped": 1.04
+        },
+        "tension": {
+          "raw": 1.0542376950780312,
+          "clamped": 1.0542376950780312
+        },
+        "flicker": {
+          "raw": 0.9548019207683074,
+          "clamped": 0.9548019207683074
         }
       }
     },

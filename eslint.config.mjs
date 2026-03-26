@@ -94,7 +94,8 @@ export default [
       'local/no-direct-crosslayer-write-from-conductor': 'error',
       'local/no-direct-buffer-push-from-crosslayer': 'error',
       'local/prefer-validator': 'error',
-      'local/no-bare-math': 'error'
+      'local/no-bare-math': 'error',
+      'local/no-direct-coupling-matrix-read': 'error'
     },
 
   },

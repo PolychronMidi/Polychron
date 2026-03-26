@@ -140,6 +140,11 @@ adaptiveTrustScores = (() => {
     const state = ensure(systemName);
     const p = clamp(payoff, -1, 1);
     const scoreBefore = state.score;
+    const hotspotProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(systemName);
+    const trustSurfacePressure = hotspotProfile.trustSurfacePressure || 0;
+    const trustClusterPressure = clamp((hotspotProfile.trustHotPairCount || 0) > 1 ? trustSurfacePressure * 0.40 + 0.08 : 0, 0, 0.24);
+    const trustSurfaceSystem = hotspotProfile.hotspotPairs.some(function(entry) { return entry && entry.pair && entry.pair.indexOf('trust') >= 0; }) || hotspotProfile.dominantPair.indexOf('trust') >= 0;
+    const context = adaptiveTrustScoresResolveContext();
 
     let newWeight = BASE_EMA_NEW;
     let decayWeight = BASE_EMA_DECAY;
@@ -150,38 +155,28 @@ adaptiveTrustScores = (() => {
       newWeight = EMA_NEW_REGIME[regimeForEma];
       decayWeight = 1 - newWeight;
     }
-    // Trust Score Exponential Penalty
-    if (p < 0) {
-      const dynamics = regimeDynamics;
-      if (dynamics && dynamics.couplingMatrix) {
-        let maxTrustCorr = 0;
-        const pairs = ['tension-trust', 'density-trust', 'flicker-trust', 'entropy-trust', 'trust-phase'];
-        for (let i = 0; i < pairs.length; i++) {
-          const val = dynamics.couplingMatrix[pairs[i]];
-          if (typeof val === 'number') {
-             maxTrustCorr = m.max(maxTrustCorr, m.abs(val));
-          }
-        }
-        // R3 E4 + R4 E1: Graduated density-trust correlation brake. R3 set
-        // threshold at 0.50 but it fired on too many fleeting per-beat spikes,
-        // crushing trust share to 0.114. R4: raise to 0.60 to catch only
-        // sustained moderate coupling, not transient spikes.
-        if (maxTrustCorr > 0.60 && maxTrustCorr <= 0.70) {
-          const linearPressure = (maxTrustCorr - 0.60) / 0.10;
-          newWeight = 0.08 + linearPressure * 0.07;
-          newWeight = clamp(newWeight, 0.08, 0.15);
-          decayWeight = 1 - newWeight;
-        } else if (maxTrustCorr > 0.70) {
-          // exponential drop scalar when locking, maximum weight approaches 0.60
-          newWeight = 0.1 * m.exp(5 * (maxTrustCorr - 0.70));
-          newWeight = clamp(newWeight, 0.1, 0.6);
-          decayWeight = 1 - newWeight;
-        }
-      }
-    }
+    // R71 E1: Removed coupling matrix brake (was reading coupling data
+    // directly to compute ad-hoc trust penalty -- same anti-pattern fixed in
+    // R69 for 5 harmonic/dynamics modules). Trust weight decay is now managed
+    // solely through the standard EMA path and trustSurfaceGainBrake below.
+    // The hypermeta controller chain handles coupling-related pressure.
     // Trust Exceedance Limits (Starvation guard)
     // Clamp bottom to 0.10 instead of -1 so aggressive exponential drops don't permanently decouple modules.
     state.score = clamp(state.score * decayWeight + p * newWeight, 0.10, TRUST_CEILING);
+    if (p > 0 && trustSurfaceSystem) {
+      const trustSurfaceGainBrake = clamp(
+        hotspotProfile.pressure * 0.12 +
+        hotspotProfile.severePressure * 0.12 +
+        trustSurfacePressure * 0.16 +
+        trustClusterPressure * 0.20 +
+        context.trustAxisPressure * 0.10,
+        0,
+        0.34
+      );
+      if (trustSurfaceGainBrake > 0) {
+        state.score = scoreBefore + (state.score - scoreBefore) * (1 - trustSurfaceGainBrake);
+      }
+    }
     // trust ecosystem looks like, eliminating per-module floor additions.
     // Coefficient raised 0.30->0.50.
     //  Self-deriving coefficient from trust score standard deviation.
@@ -205,10 +200,9 @@ adaptiveTrustScores = (() => {
 
     const contextualRecord = contextualTrust ? V.optionalType(contextualTrust.record, 'function') : undefined;
     if (contextualRecord) {
-      const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(systemName);
       const contextualPayoff = p >= 0
-        ? clamp(p * (1 - pairAwareProfile.pressure * 0.30 - pairAwareProfile.severePressure * 0.20), -1, 1)
-        : clamp(p * (1 + pairAwareProfile.pressure * 0.35 + pairAwareProfile.severePressure * 0.25), -1, 1);
+        ? clamp(p * (1 - hotspotProfile.pressure * 0.30 - hotspotProfile.severePressure * 0.20 - trustSurfacePressure * 0.18 - trustClusterPressure * 0.18), -1, 1)
+        : clamp(p * (1 + hotspotProfile.pressure * 0.35 + hotspotProfile.severePressure * 0.25 + trustSurfacePressure * 0.16 + trustClusterPressure * 0.16), -1, 1);
       contextualRecord(systemName, contextualPayoff);
     }
 
@@ -273,6 +267,8 @@ adaptiveTrustScores = (() => {
     }
     const baseWeight = getBaseWeight(systemName);
     const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(systemName);
+    const trustSurfacePressure = pairAwareProfile.trustSurfacePressure || 0;
+    const trustClusterPressure = clamp((pairAwareProfile.trustHotPairCount || 0) > 1 ? trustSurfacePressure * 0.40 + 0.08 : 0, 0, 0.24);
     const contextualWeightGetter = contextualTrust ? V.optionalType(contextualTrust.getContextualWeight, 'function') : undefined;
     const contextualWeight = contextualWeightGetter ? contextualWeightGetter(systemName) : null;
     if (contextualWeight === null) {
@@ -316,6 +312,10 @@ adaptiveTrustScores = (() => {
     if (trustShare > 0.17 && pairAwareProfile.pressure > 0.15) {
       const dominanceBrake = clamp(context.trustAxisPressure * 0.10 + context.phaseLaneNeed * 0.12 + pairAwareProfile.pressure * 0.08 + pairAwareProfile.severePressure * 0.08, 0, 0.28);
       hotspotAwareWeight *= 1 - dominanceBrake;
+    }
+    if (trustSurfacePressure > 0.12) {
+      const trustSurfaceBrake = clamp(trustSurfacePressure * 0.18 + trustClusterPressure * 0.24 + pairAwareProfile.severePressure * 0.10 + context.trustAxisPressure * 0.08, 0.06, 0.30);
+      hotspotAwareWeight *= 1 - trustSurfaceBrake;
     }
     const resolvedWeight = clamp(hotspotAwareWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
     adaptiveTrustScoresWeightCache.set(systemName, resolvedWeight);
@@ -488,7 +488,9 @@ adaptiveTrustScores = (() => {
           dominantPair: pairAwareProfile.dominantPair,
           hotspotPairs: pairAwareProfile.hotspotPairs,
           severePressure: pairAwareProfile.severePressure,
-          severePair: pairAwareProfile.severePair
+          severePair: pairAwareProfile.severePair,
+          trustSurfacePressure: pairAwareProfile.trustSurfacePressure || 0,
+          trustHotPairCount: pairAwareProfile.trustHotPairCount || 0
         };
       }
       adaptiveTrustScoresSnapshotCacheKey = cacheKey;
@@ -507,7 +509,9 @@ adaptiveTrustScores = (() => {
         dominantPair: cached.dominantPair,
         hotspotPairs: cached.hotspotPairs,
         severePressure: cached.severePressure,
-        severePair: cached.severePair
+        severePair: cached.severePair,
+        trustSurfacePressure: cached.trustSurfacePressure,
+        trustHotPairCount: cached.trustHotPairCount
       };
     }
     return snapshotCopy;

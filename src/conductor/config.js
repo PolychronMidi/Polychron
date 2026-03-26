@@ -158,7 +158,7 @@ COMPOSER_FAMILIES={
     types: ['melodicDevelopment', 'mode', 'voiceLeading', 'scale']
   },
   tonalExploration: {
-    weight: 2,
+    weight: 3,
     types: ['mode', 'modalInterchange', 'pentatonic', 'scale']
   },
   rhythmicDrive: {

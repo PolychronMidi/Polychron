@@ -49,8 +49,12 @@ grooveTemplateAdvisor = (() => {
       avgDeviation,
       maxDeviation: maxDev,
       swingRatio,
-      rigid: avgDeviation < subdivDur * 0.05,
-      loose: avgDeviation > subdivDur * 0.3
+      // R24 E5: Widened bands from 0.05/0.30 to 0.08/0.22. Module dormant
+      // for 2+ rounds (tension always 1.0). Most algorithmic output falls
+      // between 5-30% deviation, so neither threshold triggers. Wider
+      // bands should activate the tension bias more frequently.
+      rigid: avgDeviation < subdivDur * 0.08,
+      loose: avgDeviation > subdivDur * 0.22
     };
   }
 
@@ -87,7 +91,9 @@ grooveTemplateAdvisor = (() => {
       return 1.25;
     }
     if (profile.loose) {
-      return 0.85;
+      // R73 E3: 0.85->0.90. Loosest flicker suppression was too aggressive,
+      // crushing timbral variety. Moderated for richer texture.
+      return 0.90;
     }
     // In between: avgDeviation relative to subdivDur range.
     // Use swingRatio as a proxy for how human the timing feels.
@@ -96,11 +102,27 @@ grooveTemplateAdvisor = (() => {
     return 1.0 + clamp(skew, 0, 1) * 0.1;
   }
 
+  // R22 E4: Tension bias from groove feel. Rigid mechanical timing stunts
+  // musical momentum - reduce tension to encourage evolution. Loose human-like
+  // grooves carry natural forward motion - boost tension to build on that energy.
+  /**
+   * Get tension multiplier from groove rigidity.
+   * @returns {number}
+   */
+  function getGrooveTensionBias() {
+    const profile = getGrooveProfile();
+    if (profile.rigid) return 0.95;
+    if (profile.loose) return 1.06;
+    return 1.0;
+  }
+
   conductorIntelligence.registerFlickerModifier('grooveTemplateAdvisor', () => grooveTemplateAdvisor.getVelocityHumanizeBias(), 0.8, 1.3);
+  conductorIntelligence.registerTensionBias('grooveTemplateAdvisor', () => grooveTemplateAdvisor.getGrooveTensionBias(), 0.95, 1.06);
 
   return {
     getGrooveProfile,
     suggestGrooveFeel,
-    getVelocityHumanizeBias
+    getVelocityHumanizeBias,
+    getGrooveTensionBias
   };
 })();

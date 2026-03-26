@@ -123,7 +123,11 @@ regimeClassifierClassification = (() => {
     state.velocityStdEma = state.velocityStdEma * 0.96 + m.abs(avgVelocity - state.velocityEma) * 0.04;
     const highDimStreakEnabled = rawExploringShare < 0.40;
     const highDimThreshold = state.dimEma + state.dimStdEma * 1.5 + exploringSharePressure * 0.3;
-    const highDimStreakLimit = 10 + m.round(exploringSharePressure * 8);
+    // R72 E2: Raise base from 14 to 18. With evolving at 11.9% (R71),
+    // the exploring velocity shortcut fires too aggressively, capturing
+    // beats that should go through evolving classification paths.
+    // At 18, evolving paths get 4 more beats of opportunity per streak.
+    const highDimStreakLimit = 18 + m.round(exploringSharePressure * 8);
     if (highDimStreakEnabled && effectiveDim > highDimThreshold && avgVelocity > 0.012) state.highDimVelStreak++;
     else state.highDimVelStreak = m.max(0, state.highDimVelStreak - 1);
 
@@ -220,13 +224,14 @@ regimeClassifierClassification = (() => {
     const evolvingCriticalBoost = rawEvolvingShare < 0.04
       ? 0.020 * clamp((0.04 - rawEvolvingShare) / 0.02, 0, 1)
       : 0;
-    // R82 E2 / R89 E2: Minimum exploring dwell before crossover. Exploring share
-    // dropped 39.1% -> 19.8% because the crossover immediately consumed
-    // exploring beats. Requiring exploringBeats >= 3 (lowered from 4 in R89)
-    // lets exploring runs establish while giving evolving more entry
-    // opportunities. R88 rawEvolvingShare 0.1782 vs resolved 0.152 shows
-    // evolving is losing beats in resolution; earlier crossover helps.
-    if (state.lastRegime === 'exploring' && state.exploringBeats >= 3 && avgVelocity > 0.007 && avgVelocity < adaptiveVelCeiling + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
+    // R82 E2 / R89 E2: Minimum exploring dwell before crossover.
+    // R74 E6: Adaptive dwell - instead of fixed 3, scale with evolvingDeficit.
+    // When evolving is healthy (deficit ~0), dwell stays at 3. When severely
+    // starved (deficit=1, evolving < 14%), dwell drops to 1. This is a
+    // structural self-correcting mechanism: as evolving recovers, the dwell
+    // automatically tightens back to prevent exploring collapse.
+    const crossoverMinDwell = m.max(1, 3 - m.floor(evolvingDeficit * 2));
+    if (state.lastRegime === 'exploring' && state.exploringBeats >= crossoverMinDwell && avgVelocity > 0.007 && avgVelocity < adaptiveVelCeiling + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
 
     const exploringVelThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) + exploringSharePressure * 0.004 - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
     const profileDimRelief = conductorConfig.getActiveProfile().exploringDimRelief || 0;

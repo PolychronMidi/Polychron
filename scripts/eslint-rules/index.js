@@ -18,6 +18,7 @@ module.exports = {
     'no-direct-crosslayer-write-from-conductor': require('./no-direct-crosslayer-write-from-conductor'),
     'no-direct-buffer-push-from-crosslayer': require('./no-direct-buffer-push-from-crosslayer'),
     'prefer-validator': require('./prefer-validator'),
-    'no-bare-math': require('./no-bare-math')
+    'no-bare-math': require('./no-bare-math'),
+    'no-direct-coupling-matrix-read': require('./no-direct-coupling-matrix-read')
   }
 };

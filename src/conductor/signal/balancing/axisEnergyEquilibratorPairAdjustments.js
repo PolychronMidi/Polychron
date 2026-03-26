@@ -6,7 +6,12 @@ axisEnergyEquilibratorPairAdjustments = (() => {
   // while tension pairs (non-dominant) get dampened giniMult, preserving
   // tension peaks. Factor: pairs with 0 dominant axes get 0.5x giniMult
   // excess; pairs with 1 get 0.75x; pairs with 2 get full 1.0x.
-  const GINI_DAMPEN_0 = 0.5;
+  // R19 E4: Axis-aware giniMult dampening.
+  // R20 E3: GINI_DAMPEN_0 raised 0.5->0.65. Non-dominant-axis pairs
+  // were getting only 50% of giniMult excess, allowing density-entropy
+  // correlation (r=0.51) to build unchecked. 65% provides more corrective
+  // pressure on non-dominant pairs while still prioritizing dominant axis.
+  const GINI_DAMPEN_0 = 0.65;
   const GINI_DAMPEN_1 = 0.75;
 
   function getDominantAxes(shares) {

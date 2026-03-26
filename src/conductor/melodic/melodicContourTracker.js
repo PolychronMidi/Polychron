@@ -169,6 +169,24 @@ melodicContourTracker = (() => {
 
   conductorIntelligence.registerDensityBias('melodicContourTracker', () => melodicContourTracker.getDirectionalityDensityBias(), 0.9, 1.05);
   conductorIntelligence.registerFlickerModifier('melodicContourTracker', () => melodicContourTracker.getDirectionalityFlickerBias(), 0.94, 1.08);
+
+  /**
+   * R37 E5: Tension bias from melodic contour -- 3rd domain pathway.
+   * Rising melodies boost tension (ascending = building intensity);
+   * arching melodies sustain tension; falling melodies reduce tension
+   * (descending = resolution). Static melodies get mild lift.
+   * @returns {number}
+   */
+  function getDirectionalityTensionBias() {
+    const sig = getDirectionalitySignal();
+    if (sig.direction === 'ascending') return 1.06;
+    if (sig.direction === 'descending') return 0.96;
+    if (sig.direction === 'static') return 1.02;
+    return 1.0;
+  }
+
+  conductorIntelligence.registerTensionBias('melodicContourTracker', () => melodicContourTracker.getDirectionalityTensionBias(), 0.96, 1.06);
+
   conductorIntelligence.registerRecorder('melodicContourTracker', () => { melodicContourTracker.update(); });
   conductorIntelligence.registerStateProvider('melodicContourTracker', () => {
     const s = melodicContourTracker.getDirectionalitySignal();
@@ -184,6 +202,7 @@ melodicContourTracker = (() => {
     getDirectionalitySignal,
     getDirectionalityDensityBias,
     getDirectionalityFlickerBias,
+    getDirectionalityTensionBias,
     reset
   };
 })();

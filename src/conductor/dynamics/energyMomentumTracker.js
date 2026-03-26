@@ -6,7 +6,13 @@ energyMomentumTracker = (() => {
   /** @type {Array<{ time: number, energy: number }>} */
   const samples = [];
   const MAX_SAMPLES = 64;
-  const PLATEAU_THRESHOLD = 0.04; // < 4% change = plateau
+  // R24 E3: Rolling variance replaces walk-back plateau detection.
+  // Window of 16 samples (~8-16 seconds depending on beat rate).
+  // R25 E1: Variance threshold widened 0.0004->0.002 (std dev 0.045).
+  // Module dormant 4 consecutive rounds. Std dev 0.02 was too tight;
+  // at 0.045 the module should detect energy bands narrower than ~0.09.
+  const PLATEAU_WINDOW = 16;
+  const PLATEAU_VARIANCE_THRESHOLD = 0.002;
   const STALE_SECONDS = 15;
 
   /**
@@ -39,28 +45,40 @@ energyMomentumTracker = (() => {
     for (let i = 0; i < samples.length; i++) energies.push(samples[i].energy);
     const { slope: momentum } = analysisHelpers.halfSplitSlope(energies);
 
-    // Detect plateau: count consecutive samples with minimal change
-    let plateauStart = samples.length - 1;
-    for (let i = samples.length - 2; i >= 0; i--) {
-      if (m.abs(samples[i].energy - samples[samples.length - 1].energy) > PLATEAU_THRESHOLD) {
-        break;
-      }
-      plateauStart = i;
+    // R24 E3: Rolling variance plateau detection. The old approach walked
+    // backward counting samples within PLATEAU_THRESHOLD of the latest
+    // value -- but energy is naturally noisy enough that consecutive
+    // samples rarely look "flat" even during true plateaus. Instead,
+    // compute the variance of the most recent PLATEAU_WINDOW samples.
+    // Low variance (< PLATEAU_VARIANCE_THRESHOLD) means the signal is
+    // stuck in a narrow band even if individual samples fluctuate.
+    const windowSize = m.min(samples.length, PLATEAU_WINDOW);
+    const windowStart = samples.length - windowSize;
+    let sumE = 0;
+    for (let i = windowStart; i < samples.length; i++) sumE += samples[i].energy;
+    const meanE = sumE / windowSize;
+    let sumSqDev = 0;
+    for (let i = windowStart; i < samples.length; i++) {
+      const d = samples[i].energy - meanE;
+      sumSqDev += d * d;
     }
+    const variance = sumSqDev / windowSize;
+    const isLowVariance = variance < PLATEAU_VARIANCE_THRESHOLD;
+
     const lastSample = samples[samples.length - 1];
-    const plateauSample = samples[plateauStart];
-    const plateauDuration = (lastSample && plateauSample) ? lastSample.time - plateauSample.time : 0;
+    const windowStartSample = samples[windowStart];
+    const windowDuration = lastSample.time - windowStartSample.time;
 
     let trend = 'steady';
     if (momentum > 0.05) trend = 'rising';
     else if (momentum < -0.05) trend = 'falling';
-    else if (plateauDuration > 4) trend = 'plateaued';
+    else if (isLowVariance && windowDuration > 4) trend = 'plateaued';
 
     return {
       momentum,
       trend,
-      plateauDuration,
-      stale: plateauDuration > STALE_SECONDS
+      plateauDuration: isLowVariance ? windowDuration : 0,
+      stale: isLowVariance && windowDuration > STALE_SECONDS
     };
   }
 
@@ -132,9 +150,18 @@ energyMomentumTracker = (() => {
       const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
       const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
         ? axisEnergy.shares.phase : 1.0 / 6.0;
+      const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
+        ? axisEnergy.shares.tension : 1.0 / 6.0;
       if (phaseShare > 1.0 / 6.0) {
         const phaseExcess = clamp((phaseShare - 1.0 / 6.0) / 0.05, 0, 1);
         nudge = 1.0 + (nudge - 1.0) * (1.0 - phaseExcess * 0.5);
+      }
+      const tensionProduct = conductorState.getField('tension');
+      const saturationPressure = clamp((tensionProduct - 1.10) / 0.20, 0, 1);
+      const tensionOvershare = clamp((tensionShare - 0.19) / 0.06, 0, 1);
+      if (saturationPressure > 0 || tensionOvershare > 0) {
+        const reliefScale = 1.0 - clamp(saturationPressure * 0.70 + tensionOvershare * 0.35, 0, 0.80);
+        nudge = 1.0 + (nudge - 1.0) * reliefScale;
       }
     }
     return nudge;

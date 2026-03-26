@@ -99,6 +99,15 @@ rhythmicInertiaTracker = (() => {
   }
 
   conductorIntelligence.registerDensityBias('rhythmicInertiaTracker', () => rhythmicInertiaTracker.getDensityBias(), 0.9, 1.1);
+  // R21 E2: Rhythmic inertia flicker bias. Stuck patterns (inertia>0.7)
+  // widen flicker to inject timbral variation; chaotic patterns (inertia<0.15)
+  // narrow flicker for consistency. Untouched musical pathway.
+  conductorIntelligence.registerFlickerModifier('rhythmicInertiaTracker', () => {
+    const s = rhythmicInertiaTracker.getInertiaSignal();
+    if (s.inertia > 0.7) return 1.08;
+    if (s.inertia < 0.15) return 0.94;
+    return 1.0;
+  }, 0.94, 1.08);
   conductorIntelligence.registerStateProvider('rhythmicInertiaTracker', () => {
     const s = rhythmicInertiaTracker.getInertiaSignal();
     return { rhythmicInertiaSuggestion: s ? s.suggestion : 'maintain' };
