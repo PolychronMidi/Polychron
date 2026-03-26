@@ -2,4 +2,4 @@ require('./criticalityEngine');
 require('./dimensionalityExpander');
 require('./conductorMetaWatchdog');
 require('./metaControllerRegistry');
-require('./hyperMetaManager');
+require('./manager');
