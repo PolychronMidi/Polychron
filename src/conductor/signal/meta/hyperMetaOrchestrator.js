@@ -84,10 +84,10 @@ hyperMetaOrchestrator = (() => {
   const hyperMetaOrchestratorContradictions = [];
   const _MAX_CONTRADICTIONS = 20;
 
-  // Phase floor boost authority ceiling (E1)
+  // Phase floor boost authority ceiling
   let hyperMetaOrchestratorPhaseBoostCeiling = 25.0;
 
-  // Axis-concentration tracking (E6)
+  // Axis-concentration tracking
   /** @type {Record<string, number>} */
   const hyperMetaOrchestratorAxisExceedanceCounts = {};
 
