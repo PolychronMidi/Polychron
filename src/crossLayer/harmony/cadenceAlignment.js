@@ -6,10 +6,32 @@
 cadenceAlignment = (() => {
   const V = validator.create('cadenceAlignment');
   const CHANNEL = 'tension';
-  const SYNC_TOLERANCE_MS = 400;
+  const BASE_SYNC_TOLERANCE_MS = 400;
   const HIGH_TENSION_THRESHOLD = 0.55;
   const STRONG_TENSION_THRESHOLD = 0.72;
   const EVENTS = eventCatalog.names;
+
+  // R79 E2: Regime-aware sync tolerance and resolution thresholds.
+  // In exploring regime, widen the sync window (400->550ms) to create more
+  // cross-layer cadence alignment opportunities -- harmonic "anchoring" during
+  // adventurous passages. In coherent regime, tighten (400->350ms) for precise
+  // alignment. This connects macro regime state to micro harmonic decisions.
+  function _getSyncTolerance() {
+    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+    if (regime === 'exploring') return 550;
+    if (regime === 'coherent') return 350;
+    return BASE_SYNC_TOLERANCE_MS;
+  }
+
+  function _getSupportScale(consensus) {
+    if (consensus) return 1.0;
+    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+    // Exploring: stronger non-consensus support (more cadence resolution)
+    // Coherent: weaker non-consensus support (only resolve on strong agreement)
+    if (regime === 'exploring') return 0.85;
+    if (regime === 'coherent') return 0.62;
+    return 0.72;
+  }
 
   /**
    * Post a tension sample from the active layer.
@@ -41,7 +63,7 @@ cadenceAlignment = (() => {
     if (ourTension < HIGH_TENSION_THRESHOLD) return null;
 
     const other = absoluteTimeGrid.findClosest(
-      CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
+      CHANNEL, absTimeMs, _getSyncTolerance(), activeLayer
     );
     if (!other || !Number.isFinite(other.tension)) return null;
     if (other.tension < HIGH_TENSION_THRESHOLD) return null;
@@ -79,7 +101,7 @@ cadenceAlignment = (() => {
 
     // Both layers at high tension - strongly bias toward cadential resolution
     const intensityBoost = alignment.combinedTension;
-    const supportScale = alignment.consensus ? 1.0 : 0.72;
+    const supportScale = _getSupportScale(alignment.consensus);
 
     // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CROSS_LAYER_CADENCE_ALIGN, {
@@ -90,8 +112,16 @@ cadenceAlignment = (() => {
       absTimeMs
     });
 
+    // R79 E2: Regime-aware resolve threshold. Exploring: lower (0.80) for
+    // more harmonic anchoring. Coherent: higher (0.92) for fewer forced resolutions.
+    const resolveThreshold = (function() {
+      const reg = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+      if (reg === 'exploring') return 0.80;
+      if (reg === 'coherent') return 0.92;
+      return 0.88;
+    })();
     return {
-      shouldResolve: alignment.consensus || alignment.combinedTension > 0.88,
+      shouldResolve: alignment.consensus || alignment.combinedTension > resolveThreshold,
       tonicBias: 0.5 + intensityBoost * 0.4 * supportScale,
       dominantBias: 0.3 + intensityBoost * 0.5 * supportScale,
       syncTick: alignment.syncTick,

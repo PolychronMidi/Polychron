@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-03-26T00:20:40.819Z",
+    "generated": "2026-03-26T07:05:51.048Z",
     "description": "Dependency graph: global variable producers and consumers across all source files."
   },
   "summary": {
     "totalFiles": 438,
     "totalGlobals": 717,
     "totalProvides": 732,
-    "totalConsumes": 3018,
-    "totalEdges": 2390,
-    "crossSubsystemEdges": 1600,
+    "totalConsumes": 3022,
+    "totalEdges": 2394,
+    "crossSubsystemEdges": 1604,
     "maxFanIn": {
       "file": "src/utils/index.js",
       "count": 226
@@ -37,7 +37,7 @@
       "rhythm": {
         "files": 30,
         "provides": 45,
-        "consumes": 222
+        "consumes": 224
       },
       "time": {
         "files": 13,
@@ -57,7 +57,7 @@
       "crossLayer": {
         "files": 52,
         "provides": 42,
-        "consumes": 386
+        "consumes": 388
       },
       "writer": {
         "files": 4,
@@ -3319,7 +3319,9 @@
         "clamp",
         "feedbackAccumulator",
         "moduleLifecycle",
+        "regimeClassifier",
         "rf",
+        "safePreBoot",
         "validator"
       ]
     },
@@ -5964,6 +5966,8 @@
         "crossLayerRegistry",
         "eventBus",
         "eventCatalog",
+        "regimeClassifier",
+        "safePreBoot",
         "validator"
       ]
     },
@@ -11851,6 +11855,13 @@
     },
     {
       "from": "src/conductor/signal/profiling/regimeClassifier.js",
+      "to": "src/crossLayer/harmony/cadenceAlignment.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/regimeClassifier.js",
       "to": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
       "globals": [
         "regimeClassifier"
@@ -11859,6 +11870,13 @@
     {
       "from": "src/conductor/signal/profiling/regimeClassifier.js",
       "to": "src/play/crossLayerBeatRecord.js",
+      "globals": [
+        "regimeClassifier"
+      ]
+    },
+    {
+      "from": "src/conductor/signal/profiling/regimeClassifier.js",
+      "to": "src/rhythm/drums/drumTextureCoupler.js",
       "globals": [
         "regimeClassifier"
       ]
@@ -22410,6 +22428,13 @@
     },
     {
       "from": "src/utils/safePreBoot.js",
+      "to": "src/crossLayer/harmony/cadenceAlignment.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
       "to": "src/crossLayer/structure/entropy/entropyRegulator.js",
       "globals": [
         "safePreBoot"
@@ -22467,6 +22492,13 @@
     {
       "from": "src/utils/safePreBoot.js",
       "to": "src/rhythm/drums/drummer.js",
+      "globals": [
+        "safePreBoot"
+      ]
+    },
+    {
+      "from": "src/utils/safePreBoot.js",
+      "to": "src/rhythm/drums/drumTextureCoupler.js",
       "globals": [
         "safePreBoot"
       ]

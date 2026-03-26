@@ -25,17 +25,47 @@ pairGainCeilingController = (() => {
     'density-flicker': { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.25, p95Sensitivity: 0.82, exceedanceSensitivity: 0.04 },
     // R75 E2: exceedanceSensitivity 0.06->0.03. At 0.06, the observed
     // exceedance rate of 0.039 (27 beats) never triggered ceiling tightening.
-    'tension-flicker': { baseCeiling: 0.10, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.83, exceedanceSensitivity: 0.03 },
-    'flicker-trust':   { baseCeiling: 0.08, minCeiling: 0.04, maxCeiling: 0.30, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
+    // R80 E1: p95Sensitivity 0.83->0.77. TF surged to 31 exceedance beats in
+    // R79 (69% of total). Classic balloon from FT containment (E1 R79). At
+    // 0.83, ceiling engaged late. At 0.77, ceiling engages earlier to contain
+    // the displaced energy before it becomes structural.
+    'tension-flicker': { baseCeiling: 0.10, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.77, exceedanceSensitivity: 0.03 },
+    // R77 E3: exceedanceSensitivity 0.08->0.05. FT is dominant tail pair
+    // (pressure 0.6113) with highest sensitivity among profiled pairs.
+    // At 0.08, ceiling never engages. Aligns with DF 0.04, TF 0.03, DT 0.04.
+    // R79 E1: p95Sensitivity 0.82->0.76. FT is the sole remaining trending
+    // pair (r=0.427 increasing in R78) after 5 other pairs de-trended.
+    // Classic balloon displacement. At 0.82, ceiling never engaged because
+    // FT p95 sits below the threshold. At 0.76, ceiling engages at current
+    // levels to contain the displaced coupling energy.
+    'flicker-trust':   { baseCeiling: 0.08, minCeiling: 0.04, maxCeiling: 0.30, p95Sensitivity: 0.76, exceedanceSensitivity: 0.05 },
     // R8 E2: density-tension ceiling -- dominant hotspot pair (p95 0.911, 22 exceedance beats)
     // R75 E2: exceedanceSensitivity 0.08->0.04. At 0.08, the 0.045 rate (23 beats) never triggered.
-    'density-tension': { baseCeiling: 0.12, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.04 },
+    // R78 E2: p95Sensitivity 0.85->0.80. DT had 55 exceedance beats in R77 with
+    // p95=0.906. At 0.85, ceiling engages late in the trajectory. At 0.80,
+    // tightening begins earlier to contain DT's structural anti-correlation.
+    'density-tension': { baseCeiling: 0.12, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.80, exceedanceSensitivity: 0.04 },
     'density-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
     'tension-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
     // R5 E1: flicker-phase profile to contain balloon-effect displacement
-    'flicker-phase':   { baseCeiling: 0.16, minCeiling: 0.06, maxCeiling: 0.45, p95Sensitivity: 0.80, exceedanceSensitivity: 0.06 },
+    // R77 E3: p95Sensitivity 0.80->0.73. FP correlation r=0.418 increasing,
+    // p95=0.734. At 0.80, ceiling never tightened. At 0.73, ceiling engages
+    // at current p95 levels to contain correlation drift.
+    'flicker-phase':   { baseCeiling: 0.16, minCeiling: 0.06, maxCeiling: 0.45, p95Sensitivity: 0.73, exceedanceSensitivity: 0.06 },
     // R7 E5: flicker-entropy profile -- sole underseen pair (lagIndex 0.116, p95 0.841)
-    'flicker-entropy': { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.82, exceedanceSensitivity: 0.06 },
+    // R78 E3: p95Sensitivity 0.82->0.76. FE p95=0.765 with r=0.321 increasing
+    // in R77. At 0.82, ceiling never engaged. At 0.76, ceiling tightens at
+    // current p95 level to contain growing correlation.
+    'flicker-entropy': { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.76, exceedanceSensitivity: 0.06 },
+    // R77 E2: entropy-trust -- non-nudgeable dominant tail pair (p95 0.763,
+    // r=-0.387 decreasing). Extends self-calibrating ceiling to the pair
+    // driving nonNudgeableTailPressure (0.452). Wider bounds since non-nudgeable
+    // pairs have fewer intervention levers.
+    'entropy-trust':   { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.75, exceedanceSensitivity: 0.05 },
+    // R77 E2: entropy-phase -- newly trending pair (p95 0.752, r=0.344
+    // increasing). Ceiling engages at current p95 level to contain drift
+    // before it becomes structural.
+    'entropy-phase':   { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.74, exceedanceSensitivity: 0.05 },
   };
 
   function getPairState(pair) {

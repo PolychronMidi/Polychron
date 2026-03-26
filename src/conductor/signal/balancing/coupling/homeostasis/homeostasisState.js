@@ -68,6 +68,12 @@ homeostasisState = (() => {
     // Exceedance tracking
     /** @type {Record<string, number>} */
     exceedanceTicks: {},
+    // R77 E1: Exceedance-outcome EMA for self-calibrating tail threshold (#18)
+    // R78 E1: Initial 0.05->0.10. Conservative start: no relaxation until EMA
+    // decays below 0.05 threshold (~24 beats of zero hotspot rate). Prevents
+    // premature threshold relaxation that contributed to R77's 70-beat exceedance.
+    exceedanceOutcomeEma: 0.10,
+    exceedanceRelaxOffset: 0,
 
     // Diagnostics
     invokeCount: 0,
@@ -119,6 +125,8 @@ homeostasisState = (() => {
       S.dominantTailPair = '';
       S.recoveryDominantAxes = [];
       S.tailHotspotCount = 0;
+      // R77 E1: Preserve exceedance outcome EMA across sections (learning persists)
+      S.exceedanceRelaxOffset *= 0.50;
       const tailKeys = Object.keys(S.tailPressureByPair);
       for (let i = 0; i < tailKeys.length; i++) {
         S.tailPressureByPair[tailKeys[i]] *= 0.50;

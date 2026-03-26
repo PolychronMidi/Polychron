@@ -361,8 +361,12 @@ globalConductor = (() => {
     // evolving gets a small reduction (selective, intentional emission during
     // transitions). This feeds back into densityVariance through per-regime
     // note count differentiation.
+    // R78 E4: Exploring boost 1.06->1.10. L1 notes -36% vs original baseline.
+    // With exploring at 31% of beats, a stronger boost targets the highest-
+    // density-deficit regime. Combined with density mean recovery (0.545),
+    // this helps close the note output gap.
     if (currentRegime === 'exploring') {
-      playOut = clamp(playOut * 1.06, 0, 1);
+      playOut = clamp(playOut * 1.10, 0, 1);
     } else if (currentRegime === 'evolving') {
       playOut = clamp(playOut * 0.92, 0, 1);
     }
