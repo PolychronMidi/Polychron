@@ -123,9 +123,11 @@ regimeReactiveDamping = (() => {
       smoothedFlicker: regimeReactiveDampingSmoothedFlicker,
     };
     regimeReactiveDampingEquilibrator.compute(equilibratorState);
-    regimeReactiveDampingEqCorrD = equilibratorState.eqCorrD;
-    regimeReactiveDampingEqCorrT = equilibratorState.eqCorrT;
-    regimeReactiveDampingEqCorrF = equilibratorState.eqCorrF;
+    // Apply watchdog attenuation so conflicting equilibrator corrections
+    // self-dampen on flagged axes instead of canceling peer controllers.
+    regimeReactiveDampingEqCorrD = equilibratorState.eqCorrD * conductorMetaWatchdog.getAttenuation('density', 'equilibrator');
+    regimeReactiveDampingEqCorrT = equilibratorState.eqCorrT * conductorMetaWatchdog.getAttenuation('tension', 'equilibrator');
+    regimeReactiveDampingEqCorrF = equilibratorState.eqCorrF * conductorMetaWatchdog.getAttenuation('flicker', 'equilibrator');
 
     const velocity = snap ? (snap.velocity || 0) : 0;
     if (velocity < LOW_VEL_THRESHOLD) {

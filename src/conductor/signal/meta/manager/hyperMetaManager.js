@@ -85,7 +85,30 @@ hyperMetaManager = (() => {
     // 11. Apply topology creativity to global rate
     ST.rateMultipliers.global *= S.topologyCreativityMultiplier;
 
-    // 12. Emit diagnostics
+    // 12. Criticality engine awareness. During emergence, suppress
+    // avalanche snap strength to let novel patterns express. During
+    // locked state, amplify snap to help break crystallization.
+    if (S.crossState === 'emergence') {
+      ST.rateMultipliers.criticalitySnap = clamp(0.5 - S.emergenceStreak * 0.02, 0.25, 0.5);
+    } else if (S.crossState === 'locked') {
+      ST.rateMultipliers.criticalitySnap = 1.2;
+    } else {
+      // Relax toward neutral
+      ST.rateMultipliers.criticalitySnap = 1.0 +
+        ((ST.rateMultipliers.criticalitySnap || 1.0) - 1.0) * 0.8;
+    }
+
+    // 13. Dimensionality expander ceiling floor. During locked state,
+    // preserve minimum ceiling capacity for expander-driven nudges
+    // when dimensionality is collapsing.
+    if (S.crossState === 'locked' && state.dimExpander && state.dimExpander.urgency > 0) {
+      ST.rateMultipliers.dimExpanderCeilingFloor =
+        clamp(0.06 + state.dimExpander.urgency * 0.04, 0.06, 0.10);
+    } else {
+      ST.rateMultipliers.dimExpanderCeilingFloor = 0;
+    }
+
+    // 14. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
       beat: S.beatCount,
       health: S.healthEma,
@@ -114,7 +137,9 @@ hyperMetaManager = (() => {
   function getP95AlphaMultiplier()       { return ST.rateMultipliers.p95Alpha || 1.0; }
   function getS0TighteningMultiplier()   { return ST.rateMultipliers.s0Tightening || 1.0; }
   function getSystemPhase()              { return S.systemPhase; }
-  function getVarianceGateRelaxMultiplier() { return ST.rateMultipliers.varianceGateRelax || 1.0; }
+  function getVarianceGateRelaxMultiplier() {
+    return m.max(ST.rateMultipliers.varianceGateRelax || 1.0, ST.rateMultipliers.varianceGateRelaxTelemetry || 1.0);
+  }
   function getTopologyCreativityMultiplier() { return S.topologyCreativityMultiplier; }
   function getTopologyPhase()            { return S.topologyPhase; }
   function getCrossState()               { return S.crossState; }

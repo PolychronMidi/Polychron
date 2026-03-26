@@ -187,7 +187,7 @@ metaControllerRegistry = (() => {
     {
       id: 17,
       name: 'hyperMetaManager',
-      file: 'conductor/signal/meta/hyperMetaManager.js',
+      file: 'conductor/signal/meta/manager/hyperMetaManager.js',
       axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
       mechanism: 'Hyperhypermeta master orchestrator. Centralizes all 16 hypermeta controllers into a unified dynamic self-corrector. Every 25 beats: gathers controller snapshots, computes system health composite, detects cross-controller contradictions, derives adaptive rate multipliers, tracks controller effectiveness, and manages axis exceedance concentration diagnostics. Subsumes R98 evolutions E1 (phase boost ceiling), E3 (p95 alpha scaling), E4 (S0 tightening), E6 (axis concentration).',
       gain: '_ORCHESTRATE_INTERVAL = 25, _HEALTH_EMA_ALPHA = 0.08, _INTERVENTION_BUDGET = 0.60, phase boost ceiling [25.0, 35.0], p95 alpha multiplier [1.0, 1.8], S0 tightening multiplier [1.0, 1.4]',

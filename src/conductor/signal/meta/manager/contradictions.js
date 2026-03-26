@@ -32,10 +32,10 @@ hyperMetaManagerContradictions = (() => {
     // Phase floor boost authority expansion
     if (state.phaseFloor && state.phaseFloor.shareEma < 0.05) {
       if (S.systemPhase !== 'oscillating') {
-        S.phaseBoostCeiling = clamp(S.phaseBoostCeiling + 0.5, 25.0, 35.0);
+        S.phaseBoostCeiling = clamp(S.phaseBoostCeiling + 0.5, 25.0, 40.0);
       }
     } else {
-      S.phaseBoostCeiling = clamp(S.phaseBoostCeiling - 0.2, 25.0, 35.0);
+      S.phaseBoostCeiling = clamp(S.phaseBoostCeiling - 0.2, 25.0, 40.0);
     }
 
     // P95 alpha multiplier -- accelerate tracking when controller p95 lags reality
@@ -92,7 +92,7 @@ hyperMetaManagerContradictions = (() => {
         recordContradiction(
           ['phaseFloorController', 'couplingHomeostasis'],
           'Phase floor boosting while homeostasis throttling global gain');
-        ST.rateMultipliers.phaseExemption = 1.5;
+        ST.rateMultipliers.phaseExemption = m.max(ST.rateMultipliers.phaseExemption || 1.0, 1.5);
       }
     }
 

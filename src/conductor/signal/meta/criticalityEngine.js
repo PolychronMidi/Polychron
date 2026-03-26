@@ -75,9 +75,14 @@ criticalityEngine = (() => {
     tensionSnap = signalReader.tension();
     flickerSnap = signalReader.flicker();
 
+    // Orchestrator-modulated snap: during emergence, reduce snap to let
+    // novel patterns express; during locked state, amplify to break stasis.
+    const critSnapScale = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('criticalitySnap'), 1.0) || 1.0;
+    const effectiveSnap = clamp(SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1.0 - critSnapScale), SNAP_STRENGTH, 1.0);
+
     if (inAvalanche > 0) {
       inAvalanche--;
-      currentBias = SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1 - inAvalanche / RECOVERY_BEATS);
+      currentBias = effectiveSnap + (1.0 - effectiveSnap) * (1 - inAvalanche / RECOVERY_BEATS);
       // Still in recovery - skip accumulation check
     } else if (accumulated > threshold && energyBuffer.length >= WINDOW / 2) {
       // Avalanche
@@ -86,7 +91,7 @@ criticalityEngine = (() => {
       if (avalancheSizes.length > 200) avalancheSizes.shift();
 
       inAvalanche = RECOVERY_BEATS;
-      currentBias = SNAP_STRENGTH;
+      currentBias = effectiveSnap;
       energyBuffer = [];
 
       explainabilityBus.emit('avalanche', '0', {

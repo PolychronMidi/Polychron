@@ -62,7 +62,12 @@ conductorDampening = (() => {
   function scaledDamping(registryLength, pipelineName) {
     // Flicker pipeline gets lighter dampening (0.78) plus #4 elasticity adjustment
     // R34 E1: 0.85->0.78 to reduce 57% crush factor under explosive profile
-    let base = pipelineName === 'flicker' ? 0.78 + conductorDampeningFlickerDampeningBaseAdj : BASE_DEVIATION_DAMPING;
+    // Apply watchdog attenuation to elasticity adjustment so conflicting
+    // flicker controllers self-dampen instead of canceling each other out.
+    const elasticityAdj = pipelineName === 'flicker'
+      ? conductorDampeningFlickerDampeningBaseAdj * conductorMetaWatchdog.getAttenuation('flicker', 'elasticity')
+      : 0;
+    let base = pipelineName === 'flicker' ? 0.78 + elasticityAdj : BASE_DEVIATION_DAMPING;
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
@@ -257,8 +262,12 @@ conductorDampening = (() => {
     conductorDampeningCentroidEma.set(pipelineName, updated);
     const drift = updated - 1.0;
     const correction = clamp(-drift, -_CENTROID_MAX_CORRECTION, _CENTROID_MAX_CORRECTION);
-    conductorDampeningLastCentroidCorrection.set(pipelineName, correction);
-    return product * (1.0 + correction);
+    // Apply watchdog attenuation: when centroid is flagged as conflicting
+    // with another controller on this axis, reduce correction strength.
+    const centroidAtten = conductorMetaWatchdog.getAttenuation(pipelineName, 'centroid');
+    const attenuatedCorrection = correction * centroidAtten;
+    conductorDampeningLastCentroidCorrection.set(pipelineName, attenuatedCorrection);
+    return product * (1.0 + attenuatedCorrection);
   }
 
   // -- #4: Flicker range elasticity update --

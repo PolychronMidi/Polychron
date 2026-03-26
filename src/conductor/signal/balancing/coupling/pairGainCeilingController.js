@@ -96,6 +96,14 @@ pairGainCeilingController = (() => {
       ps.ceiling = m.min(profile.maxCeiling, ps.ceiling + relaxAmount);
     }
 
+    // Dimensionality expander ceiling floor: during locked topology with
+    // collapsing dimensionality, the orchestrator emits a minimum ceiling
+    // to preserve nudge capacity for the expander's perturbations.
+    const dimFloor = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('dimExpanderCeilingFloor'), 0) || 0;
+    if (dimFloor > 0 && ps.ceiling < dimFloor) {
+      ps.ceiling = dimFloor;
+    }
+
     if (pair.indexOf('phase') !== -1 || pair === 'flicker-trust') {
       const ceilingRelaxSignal = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('phasePairCeilingRelax'), 1.0) || 1.0;
       if (ceilingRelaxSignal > 1.0 && ps.ceiling < profile.baseCeiling) {
