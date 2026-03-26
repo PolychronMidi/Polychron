@@ -170,6 +170,27 @@ hyperMetaManagerHealth = (() => {
     for (let i = 0; i < axes.length; i++) {
       ST.axisExceedanceCounts[axes[i]] = (ST.axisExceedanceCounts[axes[i]] || 0) + 1;
     }
+    // Per-pair tracking for monopoly detection (E1)
+    ST.pairExceedanceCounts[pair] = (ST.pairExceedanceCounts[pair] || 0) + 1;
+  }
+
+  /**
+   * Detect if a single pair dominates exceedance counts (>75% of total).
+   * Returns the monopoly pair key and its share, or null.
+   * @returns {{ pair: string, share: number } | null}
+   */
+  function getPairMonopoly() {
+    const pairs = Object.keys(ST.pairExceedanceCounts);
+    if (pairs.length < 2) return null;
+    let total = 0, maxCount = 0, monopolyPair = '';
+    for (let i = 0; i < pairs.length; i++) {
+      const c = ST.pairExceedanceCounts[pairs[i]];
+      total += c;
+      if (c > maxCount) { maxCount = c; monopolyPair = pairs[i]; }
+    }
+    if (total < 10) return null; // not enough data
+    const share = maxCount / total;
+    return share > 0.75 ? { pair: monopolyPair, share } : null;
   }
 
   /**
@@ -201,5 +222,6 @@ hyperMetaManagerHealth = (() => {
     detectCorrelationFlips,
     recordExceedance,
     getAxisConcentration,
+    getPairMonopoly,
   };
 })();

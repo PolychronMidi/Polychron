@@ -1,7 +1,7 @@
 
 
 /**
- * Self-Organized Criticality Engine (E13)
+ * Self-Organized Criticality Engine
  *
  * The crown-jewel evolution. Monitors the system's distance from the
  * "edge of chaos" - the boundary between ordered (low-entropy, high-
@@ -24,10 +24,10 @@ criticalityEngine = (() => {
   const WINDOW         = 16;       // beats to accumulate
   const TARGET_RATE    = 0.20;     // desired avalanche fraction
   const THRESHOLD_INIT = 0.40;     // initial energy threshold
-  const THRESHOLD_MIN  = 0.08;     // R73 E1: 0.15->0.08. Avg window energy ~0.096 never reached 0.15; engine fully dormant. At 0.08, avalanches fire during sustained normal energy.
+  const THRESHOLD_MIN  = 0.08;     // 0.15->0.08. Avg window energy ~0.096 never reached 0.15; engine fully dormant. At 0.08, avalanches fire during sustained normal energy.
   const THRESHOLD_MAX  = 1.20;
   const ADAPT_RATE     = 0.02;     // threshold adaptation speed
-  // R74 E1: 0.92->0.96. Engine just activated in R73 (was dormant at 1.0).
+  // 0.92->0.96. Engine just activated in (was dormant at 1.0).
   // Gentler snap (4% vs 8%) moderates the newly-active engine while
   // tension arc recovers from Q3 0.765->0.643 regression.
   const SNAP_STRENGTH  = 0.96;     // how hard avalanche snaps to neutral
@@ -49,7 +49,7 @@ criticalityEngine = (() => {
   let flickerSnap = 1.0;
 
   function criticalityEngineEnergy() {
-    // R67 E2: The original neutral points (density=0.5, tension=1.0, flicker=0.5)
+    // The original neutral points (density=0.5, tension=1.0, flicker=0.5)
     // assumed density/flicker products center at 0.5 and tension at 1.0. In
     // practice, density product is ~0.6, tension product is ~0.98, flicker ~1.0.
     // Tension offset (-0.387 avg) created a constant energy floor of ~0.15 per
@@ -125,15 +125,12 @@ criticalityEngine = (() => {
   }
 
   function densityBias() {
-    // R67 E2: Gate lowered from 0.65 to 0.52 -- density product averages ~0.62,
-    // so the old 0.65 gate prevented the engine from ever modulating density.
     if (densitySnap < 0.52) return 1.0;
     const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().density.grade);
     return 1.0 + (currentBias - 1.0) * scale;
   }
   function tensionBias() {
-    // R73 E2: Gate 1.0->0.85.
-    // R74 E1: Section-position-aware bypass. In the back half of sections,
+    // Section-position-aware bypass. In the back half of sections,
     // skip tension bias entirely so the engine doesn't compound suppression
     // in Q3/Q4 territory (Q3 collapsed 0.765->0.643). Front half keeps
     // normal gating. This is a structural change to the controller chain.
@@ -142,6 +139,11 @@ criticalityEngine = (() => {
       try { secProgForGate = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { void 0; }
       if (secProgForGate > 0.55) return 1.0;
     }
+    // Orchestrator tension floor protection. When the manager detects
+    // S0 tension collapse risk, it emits a protection signal. Reduce
+    // avalanche damping on tension to let tension recover naturally.
+    const tensionProtection = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('tensionFloorProtection'), 1.0) || 1.0;
+    if (tensionProtection > 1.2) return 1.0; // bypass damping entirely
     if (tensionSnap < 0.85) return 1.0;
     const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().tension.grade);
     return 1.0 + (currentBias - 1.0) * scale;
