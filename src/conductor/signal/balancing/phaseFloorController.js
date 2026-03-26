@@ -124,7 +124,7 @@ phaseFloorController = (() => {
     // E4 (R100): Phase-aware boost scaling from orchestrator system phase
     // When oscillating, dampen boosts to avoid amplifying instability
     // When stabilized, reduce boost urgency since system is healthy
-    const systemPhase = safePreBoot.call(() => hyperMetaOrchestrator.getSystemPhase(), 'converging') || 'converging';
+    const systemPhase = safePreBoot.call(() => hyperMetaManager.getSystemPhase(), 'converging') || 'converging';
     const phaseScaling = systemPhase === 'oscillating' ? 0.6
       : systemPhase === 'stabilized' ? 0.85
       : 1.0;
@@ -148,9 +148,9 @@ phaseFloorController = (() => {
     }
 
     // Extreme collapse: share < 1% -- emergency override
-    // E1: boost ceiling managed by hyperMetaOrchestrator (#17)
+    // E1: boost ceiling managed by hyperMetaManager (#17)
     if (share < getExtremeCollapseShare() && phaseLowShareStreak > getExtremeCollapseStreak()) {
-      const boostCeiling = safePreBoot.call(() => hyperMetaOrchestrator.getPhaseBoostCeiling(), 25.0) || 25.0;
+      const boostCeiling = safePreBoot.call(() => hyperMetaManager.getPhaseBoostCeiling(), 25.0) || 25.0;
       phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor * phaseScaling, 14.0, boostCeiling);
     }
 

@@ -662,7 +662,7 @@ fullBootstrap = (() => {
     'dimensionalityExpander',
     'conductorMetaWatchdog',
     'metaControllerRegistry',
-    'hyperMetaOrchestrator',
+    'hyperMetaManager',
     'conductorSignalBridge',
     'verticalIntervalMonitor',
     'polyrhythmicPhasePredictor',

@@ -14,7 +14,7 @@ midiMeter = [0, 0];
 
 composer = null; activeMotif = null; currentSectionType = null; currentSectionDynamics = null; fxEventTemplate = null;
 
-// Telemetry globals for hyperMetaOrchestrator
+// Telemetry globals for hyperMetaManager
 traceSummaryData = {
   adaptiveTelemetryReconciliation: {
     pairs: {}
