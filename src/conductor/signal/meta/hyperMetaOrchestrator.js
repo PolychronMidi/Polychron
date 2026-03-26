@@ -117,6 +117,144 @@ hyperMetaOrchestrator = (() => {
   let hyperMetaOrchestratorEmergenceStreak = 0;
   let hyperMetaOrchestratorCurrentSection = -1;
 
+  // ===== HYPERMETA TELEMETRY RECONCILIATION =====
+  // Tracks gaps between trace P95 and controller P95 to detect telemetry lag
+  /** @type {Record<string, { traceP95: number, controllerP95: number, gap: number }>} */
+  const hyperMetaOrchestratorReconciliationGaps = {};
+  const hyperMetaOrchestratorTrustVelocityHistory = {};
+
+  // ===== TELEMETRY CONSTANTS =====
+  const _TRUST_VELOCITY_DAMPING = 0.75;
+  const _PHASE_STALE_THRESHOLD = 0.15;
+
+  // ===== TELEMETRY RECONCILIATION FUNCTIONS =====
+
+  /**
+   * Update telemetry reconciliation gaps from trace summary and controller state.
+   * @param {ReturnType<typeof gatherControllerState>} state
+   */
+  function updateTelemetryReconciliation(state) {
+    // Get trace summary data if available
+    const traceSummary = safePreBoot.call(() => traceSummaryData, null);
+    if (!traceSummary || !traceSummary.adaptiveTelemetryReconciliation) return;
+
+    const reconciliation = traceSummary.adaptiveTelemetryReconciliation;
+    const pairs = Object.keys(reconciliation.pairs || {});
+
+    for (let i = 0; i < pairs.length; i++) {
+      const pair = pairs[i];
+      const traceData = reconciliation.pairs[pair];
+      const controllerData = state.pairCeiling && state.pairCeiling[pair];
+
+      if (!traceData || !controllerData) continue;
+
+      const gap = traceData.traceP95 - controllerData.p95Ema;
+      hyperMetaOrchestratorReconciliationGaps[pair] = {
+        traceP95: traceData.traceP95,
+        controllerP95: controllerData.p95Ema,
+        gap: gap
+      };
+
+      // E3: Adaptive p95 EMA alpha scaling when reconciliation gap is large
+      if (gap > 0.20 && controllerData.activeBeats > 30) {
+        // Large gap detected -- increase controller alpha to track reality faster
+        hyperMetaOrchestratorRateMultipliers.p95Alpha = m.max(
+          hyperMetaOrchestratorRateMultipliers.p95Alpha || 1.0,
+          2.0
+        );
+      }
+    }
+  }
+
+  /**
+   * Apply trust velocity damping to stabilize system.
+   * @param {ReturnType<typeof gatherControllerState>} state
+   */
+  function applyTrustVelocityDamping(state) {
+    if (!state.watchdog) return;
+
+    const pipelines = Object.keys(state.watchdog);
+    for (let i = 0; i < pipelines.length; i++) {
+      const pipeline = pipelines[i];
+      const controllers = Object.keys(state.watchdog[pipeline]);
+
+      for (let j = 0; j < controllers.length; j++) {
+        const controller = controllers[j];
+        const currentAttenuation = state.watchdog[pipeline][controller];
+
+        // Track velocity history
+        const key = `${pipeline}-${controller}`;
+        if (!hyperMetaOrchestratorTrustVelocityHistory[key]) {
+          hyperMetaOrchestratorTrustVelocityHistory[key] = [];
+        }
+
+        hyperMetaOrchestratorTrustVelocityHistory[key].push(currentAttenuation);
+        if (hyperMetaOrchestratorTrustVelocityHistory[key].length > 5) {
+          hyperMetaOrchestratorTrustVelocityHistory[key].shift();
+        }
+
+        // Calculate velocity (rate of change)
+        const history = hyperMetaOrchestratorTrustVelocityHistory[key];
+        if (history.length >= 3) {
+          const recent = history.slice(-3);
+          const velocity = (recent[2] - recent[0]) / 2; // smoothed velocity
+
+          // Apply damping when velocity exceeds threshold
+          if (m.abs(velocity) > 0.15) {
+            // High velocity detected -- dampen the rate multiplier
+            hyperMetaOrchestratorRateMultipliers.global *= _TRUST_VELOCITY_DAMPING;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Check phase telemetry integrity and apply corrections.
+   * @param {ReturnType<typeof gatherControllerState>} state
+   */
+  function checkPhaseTelemetryIntegrity(state) {
+    const telemetryHealth = safePreBoot.call(() => telemetryHealthData, null);
+    if (!telemetryHealth) return;
+
+    const staleRate = telemetryHealth.phaseStaleRate || 0;
+
+    if (staleRate > _PHASE_STALE_THRESHOLD) {
+      // Phase telemetry integrity is compromised
+      // Apply corrective measures
+
+      // 1. Increase phase floor sensitivity to compensate for stale data
+      if (state.phaseFloor) {
+        hyperMetaOrchestratorPhaseBoostCeiling = clamp(
+          hyperMetaOrchestratorPhaseBoostCeiling + 1.0,
+          25.0, 40.0
+        );
+      }
+
+      // 2. Reduce coupling gate engagement to allow more phase pairs through
+      hyperMetaOrchestratorRateMultipliers.varianceGateRelax = m.max(
+        hyperMetaOrchestratorRateMultipliers.varianceGateRelax || 1.0,
+        1.8
+      );
+
+      // 3. Signal topology intelligence to be more permissive with phase pairs
+      hyperMetaOrchestratorTopologyCreativityMultiplier = m.max(
+        hyperMetaOrchestratorTopologyCreativityMultiplier,
+        1.15
+      );
+    } else {
+      // Phase telemetry is healthy -- relax corrections
+      hyperMetaOrchestratorPhaseBoostCeiling = clamp(
+        hyperMetaOrchestratorPhaseBoostCeiling - 0.2,
+        25.0, 40.0
+      );
+      hyperMetaOrchestratorRateMultipliers.varianceGateRelax = m.max(
+        1.0,
+        (hyperMetaOrchestratorRateMultipliers.varianceGateRelax || 1.0) * 0.95
+      );
+    }
+  }
+
   // ===== CONTROLLER STATE SAMPLING =====
 
   /**
@@ -861,13 +999,18 @@ hyperMetaOrchestrator = (() => {
     // and modulates all downstream controllers via topology-derived multipliers.
     updateTopologyIntelligence(state);
 
-    // 10. R81 E1: Apply topology creativity multiplier to global rate
+    // 10. Hypermeta telemetry reconciliation and trust velocity stabilization
+    updateTelemetryReconciliation(state);
+    applyTrustVelocityDamping(state);
+    checkPhaseTelemetryIntegrity(state);
+
+    // 11. R81 E1: Apply topology creativity multiplier to global rate
     // During emergence, controllers operate with more creative freedom (higher
     // ceilings, slower tightening). During locked state, controllers operate
     // more aggressively to break crystallization.
     hyperMetaOrchestratorRateMultipliers.global *= hyperMetaOrchestratorTopologyCreativityMultiplier;
 
-    // 11. Emit diagnostics
+    // 12. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
       beat: hyperMetaOrchestratorBeatCount,
       health: hyperMetaOrchestratorHealthEma,

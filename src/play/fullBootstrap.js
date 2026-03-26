@@ -692,6 +692,8 @@ fullBootstrap = (() => {
     'eventCatalog',
     'trustSystems',
     'safePreBoot',
+    'traceSummaryData',
+    'telemetryHealthData',
     'totalSections',
     'phrasesPerSection',
     'measuresPerPhrase',
