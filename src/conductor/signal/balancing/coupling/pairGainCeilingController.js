@@ -260,7 +260,7 @@ pairGainCeilingController = (() => {
     }
   }
 
-  // ===== SELF-REGISTRATION =====
+  // SELF-REGISTRATION
   conductorIntelligence.registerRecorder('pairGainCeilingController', tick);
   conductorIntelligence.registerStateProvider('pairGainCeilingController', () => ({
     pairGainCeilingController: getSnapshot()

@@ -2,22 +2,22 @@
 // Centralizes all 16 hypermeta self-calibrating controllers into a unified
 // dynamic self-corrector. Every _ORCHESTRATE_INTERVAL beats, gathers state
 // from all controllers and computes:
-//   1. System health composite (exceedance trend, energy balance, phase health)
-//   2. Cross-controller contradiction detection (beyond watchdog pair-level)
-//   3. Adaptive rate multipliers that controllers query to self-scale
-//   4. Global intervention budget enforcement
-//   5. Controller effectiveness tracking and priority ranking
-//   6. Coupling topology intelligence
-//   7. Regime-topology cross-state emergence detection
-//   8. Compositional trajectory memory
-//   9. Attractor recognition with self-coherence scoring
+//  1. System health composite (exceedance trend, energy balance, phase health)
+//  2. Cross-controller contradiction detection (beyond watchdog pair-level)
+//  3. Adaptive rate multipliers that controllers query to self-scale
+//  4. Global intervention budget enforcement
+//  5. Controller effectiveness tracking and priority ranking
+//  6. Coupling topology intelligence
+//  7. Regime-topology cross-state emergence detection
+//  8. Compositional trajectory memory
+//  9. Attractor recognition with self-coherence scoring
 //
 // Incorporates R98 evolutions:
-//   E1: Phase floor boost authority expansion (orchestrator-managed ceiling)
-//   E3: Reconciliation gap reduction via adaptive p95 EMA alpha scaling
-//   E4: Section 0 exceedance reduction via tighter initial ceiling authority
-//   E5: Warmup ramp section-length EMA initialization (orchestrator tracks)
-//   E6: Exceedance axis-concentration diagnostic (orchestrator emits)
+//  E1: Phase floor boost authority expansion (orchestrator-managed ceiling)
+//  E3: Reconciliation gap reduction via adaptive p95 EMA alpha scaling
+//  E4: Section 0 exceedance reduction via tighter initial ceiling authority
+//  E5: Warmup ramp section-length EMA initialization (orchestrator tracks)
+//  E6: Exceedance axis-concentration diagnostic (orchestrator emits)
 //
 // Coupling Topology Intelligence -- the hyperhypermetameta layer.
 // Instead of treating coupling pairs individually, the orchestrator now
@@ -55,13 +55,13 @@
  */
 hyperMetaOrchestrator = (() => {
 
-  // ===== ORCHESTRATION CONSTANTS =====
+  // ORCHESTRATION CONSTANTS
   const _ORCHESTRATE_INTERVAL = 25;   // analyze every N beats
   const _HEALTH_EMA_ALPHA = 0.08;     // system health EMA
   const _EFFECTIVENESS_EMA_ALPHA = 0.05;
   const _INTERVENTION_BUDGET = 0.60;  // max total intervention energy per cycle
 
-  // ===== SYSTEM STATE =====
+  // SYSTEM STATE
   let hyperMetaOrchestratorBeatCount = 0;
   let hyperMetaOrchestratorHealthEma = 0.7;    // [0,1] where 1 = perfect health
   let hyperMetaOrchestratorExceedanceTrendEma = 0;
@@ -96,7 +96,7 @@ hyperMetaOrchestrator = (() => {
   const hyperMetaOrchestratorPrevCorrSign = {};
   let hyperMetaOrchestratorLastFlipCount = 0;
 
-  // ===== COUPLING TOPOLOGY INTELLIGENCE =====
+  // COUPLING TOPOLOGY INTELLIGENCE
   // Perceives the coupling matrix as a unified topology rather than
   // individual pairs. Computes entropy, classifies phase, detects
   // regime-topology cross-states, tracks trajectory, recognizes attractors.
@@ -117,17 +117,17 @@ hyperMetaOrchestrator = (() => {
   let hyperMetaOrchestratorEmergenceStreak = 0;
   let hyperMetaOrchestratorCurrentSection = -1;
 
-  // ===== HYPERMETA TELEMETRY RECONCILIATION =====
+  // HYPERMETA TELEMETRY RECONCILIATION
   // Tracks gaps between trace P95 and controller P95 to detect telemetry lag
   /** @type {Record<string, { traceP95: number, controllerP95: number, gap: number }>} */
   const hyperMetaOrchestratorReconciliationGaps = {};
   const hyperMetaOrchestratorTrustVelocityHistory = {};
 
-  // ===== TELEMETRY CONSTANTS =====
+  // TELEMETRY CONSTANTS
   const _TRUST_VELOCITY_DAMPING = 0.75;
   const _PHASE_STALE_THRESHOLD = 0.15;
 
-  // ===== TELEMETRY RECONCILIATION FUNCTIONS =====
+  // TELEMETRY RECONCILIATION FUNCTIONS
 
   /**
    * Update telemetry reconciliation gaps from trace summary and controller state.
@@ -255,7 +255,7 @@ hyperMetaOrchestrator = (() => {
     }
   }
 
-  // ===== CONTROLLER STATE SAMPLING =====
+  // CONTROLLER STATE SAMPLING
 
   /**
    * Gather snapshots from all queryable controllers.
@@ -272,7 +272,7 @@ hyperMetaOrchestrator = (() => {
     return { phaseFloor, pairCeiling, warmupRamp, watchdog, homeostasis, registry, profiler };
   }
 
-  // ===== SYSTEM HEALTH =====
+  // SYSTEM HEALTH
 
   /**
    * Compute composite system health from controller snapshots.
@@ -324,7 +324,7 @@ hyperMetaOrchestrator = (() => {
     return clamp(health, 0, 1);
   }
 
-  // ===== SYSTEM PHASE DETECTION =====
+  // SYSTEM PHASE DETECTION
 
   /**
    * Classify the system's current macro phase.
@@ -343,7 +343,7 @@ hyperMetaOrchestrator = (() => {
     return 'converging';
   }
 
-  // ===== ADAPTIVE RATE MULTIPLIERS =====
+  // ADAPTIVE RATE MULTIPLIERS
 
   /**
    * Compute rate multipliers that downstream controllers query.
@@ -443,7 +443,7 @@ hyperMetaOrchestrator = (() => {
     }
   }
 
-  // ===== CROSS-CONTROLLER CONTRADICTION DETECTION =====
+  // CROSS-CONTROLLER CONTRADICTION DETECTION
 
   /**
    * Detect contradictions that the watchdog might miss:
@@ -561,7 +561,7 @@ hyperMetaOrchestrator = (() => {
     }));
   }
 
-  // ===== EFFECTIVENESS TRACKING =====
+  // EFFECTIVENESS TRACKING
 
   /**
    * Track effectiveness of each controller: did their intervention improve health?
@@ -612,9 +612,9 @@ hyperMetaOrchestrator = (() => {
     stats.lastContribution = contribution;
   }
 
-  // ===== AXIS CONCENTRATION TRACKING (E6) =====
+  // AXIS CONCENTRATION TRACKING (E6)
 
-  // ===== CORRELATION TREND MONITORING =====
+  // CORRELATION TREND MONITORING
 
   /**
    * Detect simultaneous sign flips in the coupling correlation matrix.
@@ -688,7 +688,7 @@ hyperMetaOrchestrator = (() => {
     };
   }
 
-  // ===== TOPOLOGY INTELLIGENCE FUNCTIONS =====
+  // TOPOLOGY INTELLIGENCE FUNCTIONS
 
   /**
    * Compute normalized Shannon entropy of the coupling correlation matrix.
@@ -944,7 +944,7 @@ hyperMetaOrchestrator = (() => {
     }
   }
 
-  // ===== MAIN ORCHESTRATION TICK =====
+  // MAIN ORCHESTRATION TICK
 
   function tick() {
     hyperMetaOrchestratorBeatCount++;
@@ -1033,7 +1033,7 @@ hyperMetaOrchestrator = (() => {
     }));
   }
 
-  // ===== PUBLIC API =====
+  // PUBLIC API
 
   /**
    * Get the orchestrator's rate multiplier for a controller or parameter.
@@ -1159,7 +1159,7 @@ hyperMetaOrchestrator = (() => {
       m.floor(hyperMetaOrchestratorAttractorStabilityBeats * 0.5);
   }
 
-  // ===== SELF-REGISTRATION =====
+  // SELF-REGISTRATION
   conductorIntelligence.registerRecorder('hyperMetaOrchestrator', tick);
   conductorIntelligence.registerStateProvider('hyperMetaOrchestrator', () => ({
     hyperMetaOrchestrator: getSnapshot()
