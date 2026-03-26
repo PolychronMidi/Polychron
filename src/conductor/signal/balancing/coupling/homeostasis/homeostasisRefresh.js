@@ -72,6 +72,21 @@ homeostasisRefresh = (() => {
 
     // Tail pressure computation
     const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
+    // R77 E1: Exceedance-outcome-adaptive tail threshold (#18). Track rolling
+    // aggregate hotspot rate. When exceedance is consistently low, raise the
+    // per-pair adaptiveHotThreshold to reduce false-positive tail pressure.
+    // Negative feedback loop: low exceedance -> higher threshold -> less
+    // compression -> more headroom -> exceedance rises -> tighter threshold.
+    let totalHotspotRateSum = 0;
+    for (let i = 0; i < TAIL_TRACKED_PAIRS.length; i++) {
+      const ae = adaptiveSnapshot && adaptiveSnapshot[TAIL_TRACKED_PAIRS[i]];
+      if (ae && typeof ae.hotspotRate === 'number') totalHotspotRateSum += ae.hotspotRate;
+      if (ae && typeof ae.severeRate === 'number') totalHotspotRateSum += ae.severeRate * 2;
+    }
+    S.exceedanceOutcomeEma = S.exceedanceOutcomeEma * 0.97 + totalHotspotRateSum * 0.03;
+    S.exceedanceRelaxOffset = S.exceedanceOutcomeEma < 0.05
+      ? clamp((0.05 - S.exceedanceOutcomeEma) / 0.05 * 0.08, 0, 0.08)
+      : 0;
     /** @type {Array<{ pair: string, pressure: number }>} */
     const rankedTailPairs = [];
     let tailSum = 0;
@@ -91,7 +106,10 @@ homeostasisRefresh = (() => {
       const pairP95 = adaptiveEntry && typeof adaptiveEntry.p95AbsCorr === 'number' ? adaptiveEntry.p95AbsCorr : pairAbs;
       const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
       const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
-      const adaptiveHotThreshold = clamp(m.max(0.54, targetAnchor + 0.26, baseline * 1.9), 0.54, 0.82);
+      // R77 E1 + R78 E1: Raise threshold when exceedance outcome is low.
+      // R78: Cap 0.88->0.84. The 0.88 cap was too permissive, allowing
+      // high-baseline pairs to escape tail pressure (DT 55-beat exceedance).
+      const adaptiveHotThreshold = clamp(m.max(0.54 + S.exceedanceRelaxOffset, targetAnchor + 0.26, baseline * 1.9), 0.54, 0.84);
       const overshootPressure = clamp((pairAbs - adaptiveHotThreshold) / 0.26, 0, 1);
       const persistentPressure = clamp((pairP95 - adaptiveHotThreshold) / 0.18, 0, 1);
       const hotspotPressure = clamp(hotspotRate / 0.18, 0, 1);

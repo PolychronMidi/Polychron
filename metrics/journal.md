@@ -1,3 +1,119 @@
+## R79 -- 2026-03-26 -- STABLE
+
+**Profile:** explosive | **Beats:** 1115 entries | **Duration:** 159.2s | **Notes:** 44310
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- **Exploring recovered above baseline: 28.7% -> 34.8% (+6.1pp).** Now exceeds baseline 34.2% for the first time since R77 first run. E4 re-engaged the deficit amplifier at the lower 5pp threshold. Evolving normalized to 24.5% (baseline 24.4%). Three-way regime balance fully restored: exploring/evolving/coherent at 34.8/24.5/40.4 vs baseline 34.2/24.4/42.5.
+- **Q3 tension recovered: 0.636 -> 0.784 (+23.3%).** Confirms R78 regression was seed-dependent. Now at baseline 0.782. Full tension arc [0.832, 1.000, 0.784, 0.562] is a clean ascending-descending shape with Q1/Q3 at baseline.
+- **FT balloon contained: r=0.427 increasing -> 0.161 stable.** E1 p95Sensitivity reduction to 0.76 successfully contained the displaced coupling energy. FT exceedance maintained at 0 beats.
+- **TF exceedance surged: 0 -> 31 beats.** New balloon displacement -- containing FT pushed energy to tension-flicker. TF is now the dominant hotspot at 69% of total (31/45). Ceiling controller has TF exceedanceSensitivity 0.03 but the p95 may be exceeding the ceiling faster than the EMA can adapt.
+- **Density variance at new high: 0.01186 -> 0.01433 (+20.8%).** 5 consecutive rounds of improvement. Self-calibrating density variance arch (#17) continues to deliver. Now 29% above baseline 0.0111 -- may need the arch to relax.
+- **Density mean recovering: 0.510 -> 0.530 (+3.9%).** Trending toward baseline 0.566. Combined with L1 notes holding at 18727 (+1.6%), the note output pipeline is stabilizing.
+- **Entropy axis share surged: 12.1% -> 23.5%.** Highest share among all axes. New tension-entropy anti-correlation (r=-0.427 decreasing) may be driving energy redistribution toward entropy pairs.
+- **Phase axis share improved: 12.2% -> 15.9%.** E2 regime-aware cadence alignment may have contributed by creating more cross-layer harmonic events. Phase was the lowest axis share in R78; now more balanced.
+- **DT anti-correlation moderated: r=-0.585 -> -0.319 (still decreasing).** The structural pattern weakened significantly this run. DT exceedance held at 1 beat. Seed-dependent variation but encouraging.
+- **Notes and duration up: 41554 -> 44310 (+6.6%), 128.8s -> 159.2s (+23.6%).** Longer run with more beats (1020 -> 1115). Regime balance and density recovery may be allowing more productive beat generation.
+
+### Evolutions Applied (from R78 diagnosis)
+- E1: FT ceiling p95Sensitivity 0.82->0.76 -- **CONFIRMED** -- FT r=0.427 increasing -> 0.161 stable. Balloon displacement fully contained. The lower sensitivity threshold triggered ceiling engagement at current FT p95 levels, preventing the correlation from entrenching.
+- E2: Regime-aware cadence alignment (sync tolerance, resolve threshold, support scale) -- **INCONCLUSIVE** -- cadenceAlignment trust score improved marginally (0.164 -> 0.170). The structural change introduces regime-responsive harmonic synchronization but cadence alignment events are infrequent. Phase axis share improvement (12.2% -> 15.9%) may be partially attributable. Multi-round evaluation needed.
+- E3: Regime-aware drum texture accent threshold -- **INCONCLUSIVE** -- no direct metric for drum accent responsiveness. The regime-aware shouldAccent threshold is active but impact manifests in rhythmic texture that isn't separately tracked. Musical quality assessment needed.
+- E4: Exploring-deficit amplifier threshold 0.07->0.05 -- **CONFIRMED** -- exploring 28.7% -> 34.8% (+6.1pp), recovering above baseline. The lower threshold re-engaged the amplifier at the 5.5pp deficit. Evolving normalized to 24.5% (baseline 24.4%).
+
+### Evolutions Proposed (for R80)
+- E1: TF exceedance containment -- TF surged to 31 beats (69% of total). The ceiling controller has TF exceedanceSensitivity 0.03 but the EMA-based ceiling may adapt too slowly for burst exceedance. Investigate whether p95Sensitivity (0.83) needs lowering or if a different intervention is needed.
+- E2: Entropy axis rebalancing -- entropy share surged from 12.1% to 23.5%, creating a new imbalance. New tension-entropy anti-correlation (r=-0.427 decreasing) may need monitoring or ceiling profile coverage.
+- E3: Density variance arch relaxation -- at 0.01433, density variance is now 29% above baseline 0.0111. The self-calibrating arch should auto-reduce amplification but verify it's not overshooting.
+- E4: Musical evolution from untouched subsystem -- continue spreading evolutions to under-explored subsystems (composers, fx, trust).
+
+### Hypotheses to Track
+- TF balloon is the successor to the FT balloon -- as FT was contained (E1), TF absorbed the displaced coupling energy. The ceiling controller should be sufficient but may need time for EMA convergence.
+- Exploring recovery to 34.8% combined with density recovery (0.530) may continue to close the L1 note gap vs original baseline in R80.
+- Q3 tension recovery (0.636 -> 0.784) confirms seed-dependent variance. The tension arc is now structurally healthy with all quartiles near baseline.
+- Entropy axis surge (23.5%) is likely transient -- new tension-entropy anti-correlation creates energy redistribution that may self-correct as ceiling profiles adapt.
+- Regime-aware cadence alignment (E2) and drum texture coupling (E3) are structural musical changes that may take multiple rounds to manifest measurably. They should improve musical quality (more harmonic anchoring in exploring, more responsive drum accenting) even if metrics don't capture the difference directly.
+
+---
+
+## R78 -- 2026-03-26 -- STABLE
+
+**Profile:** explosive | **Beats:** 1020 entries | **Duration:** 128.8s | **Notes:** 41554
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- **Exceedance crushed: 70 -> 11 beats (-84%).** E1 conservative EMA start (0.10) + tighter cap (0.84) prevented premature threshold relaxation. DT collapsed 55->2 beats (E2 ceiling engagement). Unique exceedance beats 63->5. Top pair now DF 4, TE 4 -- exceedance evenly distributed rather than concentrated. Best result since R76's anomalous 2-beat low.
+- **L1 notes surged: 15813 -> 18429 (+16.5%).** Largest single-round L1 improvement in evolution history. E4 exploring playProb boost (1.06->1.10) is the primary driver. Total notes 39742->41554 (+4.6%). L2 slightly down (23929->23125). L1 still below original baseline but trajectory is strongly positive.
+- **Density variance above baseline: 0.0104 -> 0.01186 (+14%).** Now exceeds baseline 0.0111. The self-calibrating density variance arch (#17) continues to work. Three consecutive rounds of improvement (0.0077->0.0094->0.0104->0.0119).
+- **Q1 tension recovered above baseline: 0.774 -> 0.820 (+0.046).** Now exceeds baseline 0.801. Warmup gate + reduced exceedance pressure = healthier early-piece tension. Q2 maintains 1.000.
+- **Q3 tension regressed: 0.735 -> 0.636 (-13.5%).** Significant drop, now well below baseline 0.782. May be seed-dependent (R77 first run hit Q3 0.811). The tighter exceedance containment may be reducing coupling energy availability in mid-piece sections.
+- **Correlation landscape stabilized: 5 pairs de-trended.** Entropy-phase r=0.509->-0.008 (stable), entropy-trust r=-0.355->-0.002 (stable), flicker-entropy r=0.321->0.186 (stable), flicker-phase r=0.318->-0.087 (stable), density-trust r=0.382->0.188 (stable). The new ceiling profiles (E2/E3 from R77) drove convergence.
+- **Flicker-trust correlation surged: r=-0.147 -> 0.427 (increasing).** Classic balloon pattern -- as other pairs are contained, FT absorbs displaced coupling energy. FT ceiling profile exists (p95Sensitivity 0.82) but the correlation hasn't reached that threshold yet.
+- **DT anti-correlation deepened: r=-0.421 -> -0.585 (still decreasing).** Despite exceedance dropping 55->2, the structural anti-correlation strengthened. The ceiling controller is preventing tail exceedance but the underlying correlation is a compositional property, not a controller tuning issue.
+- **Density mean regressed: 0.545 -> 0.510 (-6.4%).** The exploring playProb boost generates more notes at lower average density. Seed-dependent but worth monitoring.
+- **Exploring share slipped: 31.4% -> 28.7% (-2.7pp).** Evolving rose 25.8%->29.8%. The equilibrator amplifier should maintain balance. Not alarming but trajectory reversed from R77's recovery.
+- **Telemetry health improved in detail: underSeenPairCount 7->3, maxGap 0.243->0.136.** Score dropped 0.436->0.368 (composite weighting) but the pair coverage improvements are substantial.
+- **globalGainMultiplier: 0.612 (unchanged).** The exceedance reduction didn't change compression level -- the system found a new equilibrium with less tail pressure but similar global gain.
+
+### Evolutions Applied (from R77 diagnosis)
+- E1: Tighten adaptiveHotThreshold cap 0.88->0.84 + conservative EMA start 0.05->0.10 -- **CONFIRMED** -- exceedance 70->11 (-84%). The 0.88 cap was too permissive, allowing high-baseline pairs to escape. Conservative EMA start (0.10) means no relaxation until ~24 beats of low hotspot rate. Combined with E2, DT exceedance collapsed.
+- E2: DT p95Sensitivity 0.85->0.80 -- **CONFIRMED** -- DT exceedance 55->2 beats. Earlier ceiling engagement at lower threshold contained the structural anti-correlation's tail. DT now tied for 3rd rather than dominating at 79% of total.
+- E3: FE p95Sensitivity 0.82->0.76 -- **CONFIRMED** -- FE exceedance 1->1 (maintained), r=0.321 increasing -> 0.186 stable. Ceiling now engages at current p95 levels, containing the growing correlation that was flagged in R77.
+- E4: Exploring playProb boost 1.06->1.10 -- **CONFIRMED** -- L1 notes +16.5% (15813->18429). The stronger boost targeted exploring-regime beats (28.7% of run), amplifying note output without disrupting coupling dynamics. Best L1 recovery in evolution history.
+
+### Evolutions Proposed (for R79)
+- E1: FT ceiling tightening -- p95Sensitivity 0.82->0.76. FT is the sole remaining trending pair (r=0.427 increasing). Classic balloon displacement from contained pairs. Aligning p95Sensitivity with FE's level should trigger ceiling engagement at current correlation levels.
+- E2: Q3 tension investigation -- 0.636 is -18.7% below baseline 0.782. Need to trace whether mid-piece tension drop is structural (coupling energy budget) or seed-dependent. Check section-level tension profiles in trace.
+- E3: DT structural monitoring -- anti-correlation deepened to r=-0.585 despite exceedance containment. The ceiling prevents tails but not the correlation itself. This may be a natural property of the composition that doesn't need intervention.
+- E4: Density mean recovery -- 0.510 is -9.9% below baseline 0.566. The E4 playProb boost generates more notes at lower density. May need density-weighted play probability rather than flat boost.
+
+### Hypotheses to Track
+- FT balloon displacement is predictable: when 5 pairs de-trend simultaneously, the remaining uncontained pair absorbs energy. E1 ceiling tightening should contain this.
+- Q3 tension regression may be seed-dependent -- R77 first run hit Q3 0.811 (above baseline). Verify across R79 before structural intervention.
+- DT r=-0.585 is the deepest anti-correlation observed. Despite excellent exceedance control (2 beats), the structural anti-correlation is a compositional feature. May need upstream intervention in the coupling matrix if it drives Q3 tension down.
+- L1 note recovery (+16.5%) suggests the playProb boost is effective but density-quality tradeoff exists (more notes at lower density).
+- The self-calibrating exceedance-outcome threshold (#18) is working as designed: conservative start prevents premature relaxation, exceedance drops, EMA decays, threshold gradually relaxes. Monitor for stability in R79.
+
+---
+
+## R77 -- 2026-03-26 -- STABLE
+
+**Profile:** explosive | **Beats:** 991 entries | **Duration:** 133.1s | **Notes:** 39742
+**Fingerprint:** 10/10 stable | Drifted: none
+
+### Key Observations
+- **Exploring share recovered: 25.7% -> 31.4% (+5.7pp).** E4 exploring-deficit density boost amplifier drove the recovery. First run hit 38.3% (above baseline 34.2%). Stabilized re-run at 31.4%. Evolving normalized from 31.8% to 25.8% (near baseline 24.4%). Three-way balance improving.
+- **Density mean recovered: 0.521 -> 0.545 (+4.6%).** Approaching baseline 0.566. Combined effect of E1 threshold relaxation and E4 density boost. L1 notes essentially flat (15679->15813, +0.9%) -- density recovery not yet translating to note output.
+- **Q1 tension improved: 0.768 -> 0.774 (+0.006).** Modest but consistent progress toward baseline 0.801. First run hit 0.811 (above baseline) -- stochastic variance is wide. Q3 regressed 0.770->0.735. Q4 near baseline at 0.565 (baseline 0.573).
+- **Exceedance regressed: 2 -> 70 beats.** Expected regression from R76's anomalous low. DT dominant at 55 beats, TF 8, DF 4. E1 adaptive threshold relaxation raised the adaptiveHotThreshold cap from 0.82 to 0.88, allowing more headroom for pairs with high baselines. The self-calibrating mechanism needs time to find equilibrium.
+- **Correlation landscape churned.** First run stabilized entropy-phase, entropy-trust, and flicker-phase (all moved to "stable"). Re-run reverted: entropy-phase r=0.509 increasing, entropy-trust r=-0.355 decreasing, flicker-phase r=0.318 increasing. Plus new: density-trust r=0.382 increasing, flicker-entropy r=0.321 increasing. Seed-dependent -- ceiling profiles (E2) need multiple runs to establish EMA convergence.
+- **Density-tension anti-correlation persistent: r=-0.421 "decreasing".** This is a structural pattern across R75-R77. The DT pair had 55 exceedance beats this run. The ceiling controller (exceedanceSensitivity 0.04) should be engaging.
+- **globalGainMultiplier: 0.611 (was 0.638).** Slightly more compressed despite E1. The higher exceedance rate raised tail pressure, counteracting the threshold relaxation. The self-calibrating loop is working as designed -- it just found a new equilibrium at higher exceedance and similar compression.
+- **Telemetry health stable: 0.441 -> 0.436.** Phase integrity still warning. Under-seen pair count 6->7.
+- **Trust convergence: 0.294 -> 0.308.** Slight improvement.
+
+### Evolutions Applied (from R76 diagnosis)
+- E1: Exceedance-outcome-adaptive tail threshold (#18) -- **INCONCLUSIVE** -- added exceedanceOutcomeEma tracking and raised adaptiveHotThreshold cap 0.82->0.88. First run showed density recovery (0.521->0.551) but exceedance rose to 70. The mechanism's initial EMA value (0.05) sits right at the threshold, so relaxOffset was minimal. The cap raise itself (0.82->0.88) may have been the dominant effect.
+- E2: Add entropy-trust + entropy-phase ceiling profiles -- **INCONCLUSIVE** -- first run stabilized both pairs (entropy-trust r=-0.171 stable, entropy-phase r=0.131 stable). Re-run reverted to trending. Ceiling profiles need multiple runs to converge their p95 EMAs.
+- E3: Lower FT exceedanceSensitivity 0.08->0.05, tighten flicker-phase p95Sensitivity 0.80->0.73 -- **PARTIALLY CONFIRMED** -- FT exceedance 0->0 maintained (despite 70 total beats, FT is not in top pairs). Flicker-phase exceedance at 0 (first run: 5 beats). The tighter p95Sensitivity should contain FP correlation over time.
+- E4: Exploring-deficit density boost amplifier -- **CONFIRMED** -- exploring 25.7%->31.4% (+5.7pp), first run hit 38.3%. The deficit-proportional amplification of equilibrator density/flicker corrections drove regime rebalancing. Evolving normalized from 31.8%->25.8%.
+- E5: Raise pipelineCouplingManager density bias ceiling 1.20->1.30 -- **REVERTED** -- hypermeta jurisdiction guard blocked the bias bounds change as a whack-a-mole anti-pattern.
+
+### Evolutions Proposed (for R78)
+- E1: Tighten E1 adaptiveHotThreshold cap from 0.88 back to 0.84 -- the cap at 0.88 may be too permissive, contributing to the 70-beat exceedance. A more moderate 0.84 would preserve the self-calibrating mechanism while limiting the headroom.
+- E2: DT exceedance containment -- DT at 55 beats is the dominant hotspot. The ceiling controller has exceedanceSensitivity 0.04 but may need structural reinforcement (similar to R75's TF path).
+- E3: Monitor entropy-trust/entropy-phase ceiling convergence -- E2 profiles are new and need multiple runs. Watch p95 EMA and ceiling trajectory.
+- E4: Q3 tension recovery -- 0.770->0.735, now -0.047 below baseline. May be connected to higher exploring share (exploring has lower tension).
+- E5: Flicker-entropy decorrelation -- r=0.321 increasing. This pair has a ceiling profile (exceedanceSensitivity 0.06) but the correlation is growing.
+
+### Hypotheses to Track
+- The E1 mechanism found equilibrium at ~70 exceedance beats and 0.611 multiplier. The cap at 0.88 is the primary knob -- tightening to 0.84 should reduce exceedance without reverting to over-compression.
+- Exploring recovery may naturally reduce L1 note deficit if density recovery continues (0.545 now, 0.566 baseline).
+- DT anti-correlation (r=-0.421) is structural and may resist ceiling-based intervention. Budget scoring already has DT-specific pressure. May need upstream structural change.
+- The 70-beat exceedance is near the original baseline level (55 beats). The system may be finding its natural equilibrium after R76's anomalous 2-beat low.
+
+---
+
 ## R76 -- 2026-03-26 -- STABLE
 
 **Profile:** explosive | **Beats:** 973 entries | **Duration:** 133.1s | **Notes:** 39527

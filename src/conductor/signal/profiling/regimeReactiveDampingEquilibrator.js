@@ -131,10 +131,22 @@ regimeReactiveDampingEquilibrator = (() => {
       args.eqCorrF -= monopolyPressure * args.equilibStrength * 0.85 * squaredEscalation * budgetDampen;
     }
 
+    // R77 E4: Exploring-deficit density boost amplifier. When exploring is
+    // significantly below target, amplify the density/flicker corrections
+    // to push the system toward more active dimensions and higher velocity,
+    // which are prerequisites for exploring entry. Self-calibrating: amplification
+    // is proportional to deficit magnitude, decays as exploring recovers.
+    // R79 E4: Threshold 0.07->0.05. R78 exploring 28.7% vs baseline 34.2%
+    // = 5.5pp deficit. At 0.07, amplifier never engaged. At 0.05, amplifier
+    // provides proportional correction at current deficit levels.
+    const exploringDeficit = m.max(0, args.regimeBudget.exploring - expShare);
+    const exploringDeficitAmplifier = exploringDeficit > 0.05
+      ? 1.0 + clamp((exploringDeficit - 0.05) / 0.12, 0, 0.5)
+      : 1.0;
     if (coherentPressure > 0) {
-      args.eqCorrD += coherentPressure * (args.equilibStrength * 0.75 + hotspotCounterpressure * 0.11);
+      args.eqCorrD += coherentPressure * (args.equilibStrength * 0.75 + hotspotCounterpressure * 0.11) * exploringDeficitAmplifier;
       if (transitionScarcity > 0.25 && runCoherentShare > args.regimeBudget.coherent) args.eqCorrD += coherentPressure * 0.04;
-      args.eqCorrF += coherentPressure * m.max(0, args.equilibStrength * (1.45 + hotspotCounterpressure * 0.55 - flickerPenalty * 0.70));
+      args.eqCorrF += coherentPressure * m.max(0, args.equilibStrength * (1.45 + hotspotCounterpressure * 0.55 - flickerPenalty * 0.70)) * exploringDeficitAmplifier;
       args.eqCorrT -= coherentPressure * (args.equilibStrength * 1.15 + hotspotCounterpressure * 0.14);
     }
     if (cadenceMonopolyPressure > 0) {

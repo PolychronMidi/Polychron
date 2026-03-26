@@ -1,7 +1,7 @@
 # Conductor Intelligence Map
 
 > Auto-generated per run by `generate-conductor-map.js`. Do not edit by hand.
-> Generated: 2026-03-26T00:20:40.851Z
+> Generated: 2026-03-26T07:05:51.082Z
 
 ## Summary
 
@@ -35,7 +35,7 @@
 - **Registrations:** density, tension, flicker, recorder
 - **Reset scopes:** section
 - **Signal reads:** signalHealth, systemDynamics, timeStream
-- **Bias values (end-of-run):** density=0.9700, tension=1.0200, flicker=0.9645
+- **Bias values (end-of-run):** density=0.9700, tension=1.0200, flicker=0.9430
 
 #### `durationalContourTracker`
 
@@ -51,7 +51,7 @@
 - **Registrations:** tension, recorder, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** tension=1.0817
+- **Bias values (end-of-run):** tension=1.0650
 
 #### `dynamicPeakMemory`
 
@@ -59,7 +59,7 @@
 - **Registrations:** tension, recorder, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** conductorState
-- **Bias values (end-of-run):** tension=1.0372
+- **Bias values (end-of-run):** tension=1.0800
 
 #### `dynamicRangeTracker`
 
@@ -83,7 +83,7 @@
 - **Registrations:** tension, flicker, stateProvider
 - **Reset scopes:** none detected
 - **Signal reads:** systemDynamics
-- **Bias values (end-of-run):** tension=1.0000, flicker=1.0000
+- **Bias values (end-of-run):** tension=1.0000, flicker=0.9845
 
 ### Harmonic
 
@@ -100,7 +100,7 @@
 - **Registrations:** tension, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** tension=1.0000
+- **Bias values (end-of-run):** tension=1.0562
 
 #### `chromaticSaturationMonitor`
 
@@ -108,7 +108,7 @@
 - **Registrations:** density, tension
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** density=1.0000, tension=1.0000
+- **Bias values (end-of-run):** density=1.0800, tension=1.0000
 
 #### `consonanceDissonanceTracker`
 
@@ -148,7 +148,7 @@
 - **Registrations:** tension, recorder, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** tension=0.9531
+- **Bias values (end-of-run):** tension=1.0385
 
 #### `harmonicRhythmDensityRatio`
 
@@ -164,7 +164,7 @@
 - **Registrations:** density, tension, flicker
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** density=1.0280, tension=0.9766, flicker=1.0234
+- **Bias values (end-of-run):** density=1.0000, tension=1.0000, flicker=1.0000
 
 #### `harmonicVelocityMonitor`
 
@@ -180,7 +180,7 @@
 - **Registrations:** density, tension
 - **Reset scopes:** none detected
 - **Signal reads:** conductorState
-- **Bias values (end-of-run):** density=1.0000, tension=1.0444
+- **Bias values (end-of-run):** density=1.0000, tension=1.0500
 
 #### `tonalAnchorDistanceTracker`
 
@@ -188,7 +188,7 @@
 - **Registrations:** tension, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** conductorState
-- **Bias values (end-of-run):** tension=0.9917
+- **Bias values (end-of-run):** tension=1.0350
 
 ### Journey
 
@@ -207,7 +207,7 @@
 - **Registrations:** density, flicker, recorder, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** density=0.9400, flicker=0.9500
+- **Bias values (end-of-run):** density=0.9400, flicker=1.0000
 
 #### `counterpointMotionTracker`
 
@@ -223,7 +223,7 @@
 - **Registrations:** density, stateProvider
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** density=0.9353
+- **Bias values (end-of-run):** density=0.9284
 
 #### `intervalExpansionContractor`
 
@@ -231,7 +231,7 @@
 - **Registrations:** density, tension, recorder, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** density=1.0800, tension=0.9600
+- **Bias values (end-of-run):** density=0.9200, tension=1.0500
 
 #### `melodicContourTracker`
 
@@ -255,7 +255,7 @@
 - **Registrations:** tension, flicker
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** tension=0.9742, flicker=0.9462
+- **Bias values (end-of-run):** tension=0.9708, flicker=0.9412
 
 #### `tessituraPressureMonitor`
 
@@ -279,7 +279,7 @@
 - **Registrations:** density, tension, flicker, stateProvider
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** density=1.0400, tension=1.0542, flicker=0.9548
+- **Bias values (end-of-run):** density=0.9400, tension=0.9579, flicker=1.0351
 
 ### Rhythmic
 
@@ -337,7 +337,7 @@
 - **Registrations:** flicker, recorder, stateProvider
 - **Reset scopes:** section
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** flicker=1.0153
+- **Bias values (end-of-run):** flicker=1.0053
 
 #### `rhythmicInertiaTracker`
 
@@ -353,7 +353,7 @@
 - **Registrations:** density, tension, flicker, stateProvider
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** density=1.0000, tension=1.0566, flicker=1.0764
+- **Bias values (end-of-run):** density=1.0000, tension=1.0338, flicker=1.0456
 
 #### `temporalProportionTracker`
 
@@ -407,7 +407,7 @@
 - **Registrations:** density, tension, flicker, recorder
 - **Reset scopes:** all, section
 - **Signal reads:** explainabilityBus, systemDynamics
-- **Bias values (end-of-run):** density=1.0000, tension=1.0000, flicker=0.9687
+- **Bias values (end-of-run):** density=0.9991, tension=1.0004, flicker=0.9989
 
 #### `hyperMetaOrchestrator`
 
@@ -422,7 +422,7 @@
 - **Registrations:** tension, recorder, stateProvider
 - **Reset scopes:** all
 - **Signal reads:** conductorState, density, flicker, systemDynamics, tension, timeStream
-- **Bias values (end-of-run):** tension=1.1451
+- **Bias values (end-of-run):** tension=1.1444
 
 #### `pairGainCeilingController`
 
@@ -444,7 +444,7 @@
 - **Registrations:** density, tension, recorder
 - **Reset scopes:** section
 - **Signal reads:** density, densityAttribution, tension
-- **Bias values (end-of-run):** density=1.0438, tension=0.9499
+- **Bias values (end-of-run):** density=1.0636, tension=0.9251
 
 #### `pipelineCouplingManager`
 
@@ -452,7 +452,7 @@
 - **Registrations:** density, tension, flicker, recorder
 - **Reset scopes:** section
 - **Signal reads:** explainabilityBus, systemDynamics
-- **Bias values (end-of-run):** density=1.2000, tension=0.9505, flicker=1.1945
+- **Bias values (end-of-run):** density=0.8050, tension=1.0600, flicker=0.9520
 
 #### `pipelineNormalizer`
 
@@ -474,7 +474,7 @@
 - **Registrations:** density, tension, flicker, recorder
 - **Reset scopes:** section
 - **Signal reads:** conductorState, density, explainabilityBus, signalHealth, systemDynamics
-- **Bias values (end-of-run):** density=1.1028, tension=0.9726, flicker=0.9377
+- **Bias values (end-of-run):** density=1.0215, tension=1.0172, flicker=0.9419
 
 #### `signalHealthAnalyzer`
 
@@ -573,7 +573,7 @@
 - **Registrations:** tension
 - **Reset scopes:** none detected
 - **Signal reads:** systemDynamics, timeStream
-- **Bias values (end-of-run):** tension=1.0742
+- **Bias values (end-of-run):** tension=1.0939
 
 #### `restDensityTracker`
 
@@ -603,7 +603,7 @@
 - **Registrations:** tension, flicker, recorder
 - **Reset scopes:** section
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** tension=1.0000, flicker=0.9794
+- **Bias values (end-of-run):** tension=1.0000, flicker=0.9666
 
 #### `texturalMemoryAdvisor`
 
@@ -636,11 +636,11 @@
 - **Registrations:** none
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** flicker=1.0182
+- **Bias values (end-of-run):** flicker=1.0000
 
 #### `dynamicRangeTracker:spread`
 
 - **Registrations:** none
 - **Reset scopes:** none detected
 - **Signal reads:** none detected
-- **Bias values (end-of-run):** flicker=0.9952
+- **Bias values (end-of-run):** flicker=1.0250

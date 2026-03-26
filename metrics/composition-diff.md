@@ -5,50 +5,45 @@
 **Run A**: /home/jah/Polychron/metrics/snapshots/baseline
 **Run B**: /home/jah/Polychron/metrics
 
-## Major Changes (2)
-
-- !!! **section-count**: Section count: 6 -> 7
-- !!! **section-added**: Section 6 added (key=G lydian)
-
 ## Notable Changes (6)
 
-- !! **harmonic-change**: Section 0: D# ionian -> B lydian
-- !! **harmonic-change**: Section 1: F# minor -> G# dorian
-- !! **harmonic-change**: Section 2: A major -> C major
-- !! **harmonic-change**: Section 3: A major -> C dorian
-- !! **harmonic-change**: Section 4: Db minor -> B dorian
-- !! **harmonic-change**: Section 5: Gb ionian -> D major
+- !! **harmonic-change**: Section 0: B lydian -> C mixolydian
+- !! **harmonic-change**: Section 1: C# dorian -> F dorian
+- !! **harmonic-change**: Section 2: D# lydian -> C mixolydian
+- !! **harmonic-change**: Section 3: E minor -> E major
+- !! **harmonic-change**: Section 4: G# major -> F minor
+- !! **harmonic-change**: Section 6: Bb minor -> G minor
 
-## Moderate Changes (5)
+## Moderate Changes (8)
 
-- ! **phrase-count**: Section 1: 4 phrases -> 3 phrases
-- ! **phrase-count**: Section 3: 4 phrases -> 3 phrases
-- ! **phrase-count**: Section 5: 2 phrases -> 3 phrases
-- ! **tension-shift**: Section 5 avg tension: 0.562 -> 0.832
-- ! **note-count**: output1: 24584 notes -> 15679 notes (36.2% change)
+- ! **phrase-count**: Section 0: 2 phrases -> 3 phrases
+- ! **tension-shift**: Section 0 avg tension: 0.512 -> 0.689
+- ! **phrase-count**: Section 1: 3 phrases -> 4 phrases
+- ! **phrase-count**: Section 2: 3 phrases -> 4 phrases
+- ! **phrase-count**: Section 3: 3 phrases -> 4 phrases
+- ! **phrase-count**: Section 4: 3 phrases -> 4 phrases
+- ! **phrase-count**: Section 5: 4 phrases -> 3 phrases
+- ! **tension-shift**: Section 5 avg tension: 0.785 -> 0.917
 
-## Minor Changes (12)
+## Minor Changes (9)
 
-- ~ **regime-shift**: Section 0 regime 'exploring': 25.0% -> 0.0%
-- ~ **profile-change**: S2:P0 profile: default -> restrained
-- ~ **profile-change**: S2:P1 profile: default -> restrained
-- ~ **profile-change**: S2:P2 profile: default -> restrained
-- ~ **regime-shift**: Section 3 regime 'evolving': 15.7% -> 40.9%
-- ~ **regime-shift**: Section 3 regime 'coherent': 54.3% -> 31.8%
-- ~ **regime-shift**: Section 4 regime 'exploring': 27.3% -> 63.1%
-- ~ **regime-shift**: Section 4 regime 'coherent': 53.6% -> 20.2%
-- ~ **profile-change**: S4:P0 profile: explosive -> default
-- ~ **profile-change**: S4:P1 profile: explosive -> default
-- ~ **profile-change**: S4:P2 profile: explosive -> default
-- ~ **profile-change**: S4:P3 profile: explosive -> default
+- ~ **regime-shift**: Section 2 regime 'evolving': 13.5% -> 40.3%
+- ~ **regime-shift**: Section 3 regime 'coherent': 48.5% -> 22.7%
+- ~ **regime-shift**: Section 3 regime 'exploring': 21.2% -> 50.0%
+- ~ **regime-shift**: Section 4 regime 'exploring': 66.0% -> 22.4%
+- ~ **regime-shift**: Section 4 regime 'coherent': 17.0% -> 59.2%
+- ~ **regime-shift**: Section 5 regime 'coherent': 59.4% -> 0.0%
+- ~ **regime-shift**: Section 5 regime 'exploring': 19.8% -> 76.9%
+- ~ **regime-shift**: Section 6 regime 'exploring': 7.1% -> 42.6%
+- ~ **regime-shift**: Section 6 regime 'evolving': 73.8% -> 31.5%
 
 ## Summary
 
-- Total differences: 25
-- Major: 2
+- Total differences: 23
+- Major: 0
 - Notable: 6
-- Moderate: 5
-- Minor: 12
+- Moderate: 8
+- Minor: 9
 
 
-*Generated 2026-03-26T00:20:43.666Z*
+*Generated 2026-03-26T07:05:53.900Z*

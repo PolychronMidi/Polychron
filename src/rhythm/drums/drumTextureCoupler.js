@@ -76,9 +76,18 @@ drumTextureCoupler = (() => {
    * Returns true when intensity crosses a rising threshold with jitter.
    * @returns {boolean}
    */
+  // R79 E3: Regime-aware accent threshold. In exploring regime, lower
+  // threshold (0.10-0.28) makes drums accent more readily in response to
+  // texture events -- punctuated, responsive rhythmic texture. In coherent
+  // regime, higher threshold (0.22-0.42) means only strong texture events
+  // trigger accents -- fewer but more impactful rhythmic punctuation.
   function shouldAccent() {
     const intensity = getIntensity();
-    return intensity > rf(0.15, 0.35);
+    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+    const threshold = regime === 'exploring' ? rf(0.10, 0.28)
+      : regime === 'coherent' ? rf(0.22, 0.42)
+      : rf(0.15, 0.35);
+    return intensity > threshold;
   }
 
   /**
