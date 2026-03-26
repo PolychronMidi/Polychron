@@ -1,4 +1,4 @@
-// hyperMetaOrchestrator.js - Hyperhypermeta master orchestrator (#17).
+// hyperMetaManager.js - Hyperhypermeta master orchestrator
 // Centralizes all 16 hypermeta self-calibrating controllers into a unified
 // dynamic self-corrector. Every _ORCHESTRATE_INTERVAL beats, gathers state
 // from all controllers and computes:
@@ -12,12 +12,11 @@
 //  8. Compositional trajectory memory
 //  9. Attractor recognition with self-coherence scoring
 //
-// Incorporates R98 evolutions:
-//  E1: Phase floor boost authority expansion (orchestrator-managed ceiling)
-//  E3: Reconciliation gap reduction via adaptive p95 EMA alpha scaling
-//  E4: Section 0 exceedance reduction via tighter initial ceiling authority
-//  E5: Warmup ramp section-length EMA initialization (orchestrator tracks)
-//  E6: Exceedance axis-concentration diagnostic (orchestrator emits)
+//  Phase floor boost authority expansion (orchestrator-managed ceiling)
+//  Reconciliation gap reduction via adaptive p95 EMA alpha scaling
+//  Section 0 exceedance reduction via tighter initial ceiling authority
+//  Warmup ramp section-length EMA initialization (orchestrator tracks)
+//  Exceedance axis-concentration diagnostic (orchestrator emits)
 //
 // Coupling Topology Intelligence -- the hyperhypermetameta layer.
 // Instead of treating coupling pairs individually, the orchestrator now
@@ -33,7 +32,7 @@
 // recurring topology fingerprints as structural self-similarity.
 
 /**
- * @typedef {Object} HyperMetaOrchestratorAPI
+ * @typedef {Object} hyperMetaManagerAPI
  * @property {function(string): number} getRateMultiplier
  * @property {function(): number} getPhaseBoostCeiling
  * @property {function(): number} getP95AlphaMultiplier
@@ -51,9 +50,9 @@
 
 /**
  * @global
- * @type {HyperMetaOrchestratorAPI}
+ * @type {hyperMetaManagerAPI}
  */
-hyperMetaOrchestrator = (() => {
+hyperMetaManager = (() => {
 
   // ORCHESTRATION CONSTANTS
   const _ORCHESTRATE_INTERVAL = 25;   // analyze every N beats
@@ -62,66 +61,66 @@ hyperMetaOrchestrator = (() => {
   const _INTERVENTION_BUDGET = 0.60;  // max total intervention energy per cycle
 
   // SYSTEM STATE
-  let hyperMetaOrchestratorBeatCount = 0;
-  let hyperMetaOrchestratorHealthEma = 0.7;    // [0,1] where 1 = perfect health
-  let hyperMetaOrchestratorExceedanceTrendEma = 0;
-  let hyperMetaOrchestratorPhaseTrendEma = 0.1667;
-  const hyperMetaOrchestratorEnergyBalanceEma = 0.5;
-  const hyperMetaOrchestratorTotalInterventionEma = 0;
+  let hyperMetaManagerBeatCount = 0;
+  let hyperMetaManagerHealthEma = 0.7;    // [0,1] where 1 = perfect health
+  let hyperMetaManagerExceedanceTrendEma = 0;
+  let hyperMetaManagerPhaseTrendEma = 0.1667;
+  const hyperMetaManagerEnergyBalanceEma = 0.5;
+  const hyperMetaManagerTotalInterventionEma = 0;
   /** @type {'converging' | 'oscillating' | 'stabilized'} */
-  let hyperMetaOrchestratorSystemPhase = 'converging';
+  let hyperMetaManagerSystemPhase = 'converging';
 
   // Per-controller effectiveness tracking
   /** @type {Record<string, { effectivenessEma: number, interventionCount: number, lastContribution: number }>} */
-  const hyperMetaOrchestratorControllerStats = {};
+  const hyperMetaManagerControllerStats = {};
 
   // Adaptive rate multipliers that downstream controllers query
   /** @type {Record<string, number>} */
-  const hyperMetaOrchestratorRateMultipliers = {};
+  const hyperMetaManagerRateMultipliers = {};
 
   // Cross-controller contradiction log
   /** @type {Array<{ beat: number, controllers: string[], description: string }>} */
-  const hyperMetaOrchestratorContradictions = [];
+  const hyperMetaManagerContradictions = [];
   const _MAX_CONTRADICTIONS = 20;
 
   // Phase floor boost authority ceiling
-  let hyperMetaOrchestratorPhaseBoostCeiling = 25.0;
+  let hyperMetaManagerPhaseBoostCeiling = 25.0;
 
   // Axis-concentration tracking
   /** @type {Record<string, number>} */
-  const hyperMetaOrchestratorAxisExceedanceCounts = {};
+  const hyperMetaManagerAxisExceedanceCounts = {};
 
   // Correlation trend monitoring -- track sign flips across ticks
   /** @type {Record<string, number>} previous correlation sign per pair (+1/-1/0) */
-  const hyperMetaOrchestratorPrevCorrSign = {};
-  let hyperMetaOrchestratorLastFlipCount = 0;
+  const hyperMetaManagerPrevCorrSign = {};
+  let hyperMetaManagerLastFlipCount = 0;
 
   // COUPLING TOPOLOGY INTELLIGENCE
   // Perceives the coupling matrix as a unified topology rather than
   // individual pairs. Computes entropy, classifies phase, detects
   // regime-topology cross-states, tracks trajectory, recognizes attractors.
 
-  let hyperMetaOrchestratorTopologyEntropyEma = 0.50;
+  let hyperMetaManagerTopologyEntropyEma = 0.50;
   /** @type {'crystallized' | 'resonant' | 'fluid'} */
-  let hyperMetaOrchestratorTopologyPhase = 'fluid';
+  let hyperMetaManagerTopologyPhase = 'fluid';
   /** @type {'emergence' | 'locked' | 'seeking' | 'dampened'} */
-  let hyperMetaOrchestratorCrossState = 'seeking';
-  let hyperMetaOrchestratorInterventionBudgetScale = 1.0;
+  let hyperMetaManagerCrossState = 'seeking';
+  let hyperMetaManagerInterventionBudgetScale = 1.0;
   /** @type {Array<{ section: number, phase: string, entropy: number, crossState: string }>} */
-  const hyperMetaOrchestratorTrajectory = [];
-  let hyperMetaOrchestratorAttractorSimilarityEma = 0.0;
-  let hyperMetaOrchestratorAttractorStabilityBeats = 0;
+  const hyperMetaManagerTrajectory = [];
+  let hyperMetaManagerAttractorSimilarityEma = 0.0;
+  let hyperMetaManagerAttractorStabilityBeats = 0;
   /** @type {Record<string, number>} quantized correlation bucket per pair */
-  const hyperMetaOrchestratorPrevFingerprint = {};
-  let hyperMetaOrchestratorTopologyCreativityMultiplier = 1.0;
-  let hyperMetaOrchestratorEmergenceStreak = 0;
-  let hyperMetaOrchestratorCurrentSection = -1;
+  const hyperMetaManagerPrevFingerprint = {};
+  let hyperMetaManagerTopologyCreativityMultiplier = 1.0;
+  let hyperMetaManagerEmergenceStreak = 0;
+  let hyperMetaManagerCurrentSection = -1;
 
   // HYPERMETA TELEMETRY RECONCILIATION
   // Tracks gaps between trace P95 and controller P95 to detect telemetry lag
   /** @type {Record<string, { traceP95: number, controllerP95: number, gap: number }>} */
-  const hyperMetaOrchestratorReconciliationGaps = {};
-  const hyperMetaOrchestratorTrustVelocityHistory = {};
+  const hyperMetaManagerReconciliationGaps = {};
+  const hyperMetaManagerTrustVelocityHistory = {};
 
   // TELEMETRY CONSTANTS
   const _TRUST_VELOCITY_DAMPING = 0.75;
@@ -149,17 +148,17 @@ hyperMetaOrchestrator = (() => {
       if (!traceData || !controllerData) continue;
 
       const gap = traceData.traceP95 - controllerData.p95Ema;
-      hyperMetaOrchestratorReconciliationGaps[pair] = {
+      hyperMetaManagerReconciliationGaps[pair] = {
         traceP95: traceData.traceP95,
         controllerP95: controllerData.p95Ema,
         gap: gap
       };
 
-      // E3: Adaptive p95 EMA alpha scaling when reconciliation gap is large
+      // Adaptive p95 EMA alpha scaling when reconciliation gap is large
       if (gap > 0.20 && controllerData.activeBeats > 30) {
         // Large gap detected -- increase controller alpha to track reality faster
-        hyperMetaOrchestratorRateMultipliers.p95Alpha = m.max(
-          hyperMetaOrchestratorRateMultipliers.p95Alpha || 1.0,
+        hyperMetaManagerRateMultipliers.p95Alpha = m.max(
+          hyperMetaManagerRateMultipliers.p95Alpha || 1.0,
           2.0
         );
       }
@@ -184,17 +183,17 @@ hyperMetaOrchestrator = (() => {
 
         // Track velocity history
         const key = `${pipeline}-${controller}`;
-        if (!hyperMetaOrchestratorTrustVelocityHistory[key]) {
-          hyperMetaOrchestratorTrustVelocityHistory[key] = [];
+        if (!hyperMetaManagerTrustVelocityHistory[key]) {
+          hyperMetaManagerTrustVelocityHistory[key] = [];
         }
 
-        hyperMetaOrchestratorTrustVelocityHistory[key].push(currentAttenuation);
-        if (hyperMetaOrchestratorTrustVelocityHistory[key].length > 5) {
-          hyperMetaOrchestratorTrustVelocityHistory[key].shift();
+        hyperMetaManagerTrustVelocityHistory[key].push(currentAttenuation);
+        if (hyperMetaManagerTrustVelocityHistory[key].length > 5) {
+          hyperMetaManagerTrustVelocityHistory[key].shift();
         }
 
         // Calculate velocity (rate of change)
-        const history = hyperMetaOrchestratorTrustVelocityHistory[key];
+        const history = hyperMetaManagerTrustVelocityHistory[key];
         if (history.length >= 3) {
           const recent = history.slice(-3);
           const velocity = (recent[2] - recent[0]) / 2; // smoothed velocity
@@ -202,7 +201,7 @@ hyperMetaOrchestrator = (() => {
           // Apply damping when velocity exceeds threshold
           if (m.abs(velocity) > 0.15) {
             // High velocity detected -- dampen the rate multiplier
-            hyperMetaOrchestratorRateMultipliers.global *= _TRUST_VELOCITY_DAMPING;
+            hyperMetaManagerRateMultipliers.global *= _TRUST_VELOCITY_DAMPING;
           }
         }
       }
@@ -225,32 +224,32 @@ hyperMetaOrchestrator = (() => {
 
       // 1. Increase phase floor sensitivity to compensate for stale data
       if (state.phaseFloor) {
-        hyperMetaOrchestratorPhaseBoostCeiling = clamp(
-          hyperMetaOrchestratorPhaseBoostCeiling + 1.0,
+        hyperMetaManagerPhaseBoostCeiling = clamp(
+          hyperMetaManagerPhaseBoostCeiling + 1.0,
           25.0, 40.0
         );
       }
 
       // 2. Reduce coupling gate engagement to allow more phase pairs through
-      hyperMetaOrchestratorRateMultipliers.varianceGateRelax = m.max(
-        hyperMetaOrchestratorRateMultipliers.varianceGateRelax || 1.0,
+      hyperMetaManagerRateMultipliers.varianceGateRelax = m.max(
+        hyperMetaManagerRateMultipliers.varianceGateRelax || 1.0,
         1.8
       );
 
       // 3. Signal topology intelligence to be more permissive with phase pairs
-      hyperMetaOrchestratorTopologyCreativityMultiplier = m.max(
-        hyperMetaOrchestratorTopologyCreativityMultiplier,
+      hyperMetaManagerTopologyCreativityMultiplier = m.max(
+        hyperMetaManagerTopologyCreativityMultiplier,
         1.15
       );
     } else {
       // Phase telemetry is healthy -- relax corrections
-      hyperMetaOrchestratorPhaseBoostCeiling = clamp(
-        hyperMetaOrchestratorPhaseBoostCeiling - 0.2,
+      hyperMetaManagerPhaseBoostCeiling = clamp(
+        hyperMetaManagerPhaseBoostCeiling - 0.2,
         25.0, 40.0
       );
-      hyperMetaOrchestratorRateMultipliers.varianceGateRelax = m.max(
+      hyperMetaManagerRateMultipliers.varianceGateRelax = m.max(
         1.0,
-        (hyperMetaOrchestratorRateMultipliers.varianceGateRelax || 1.0) * 0.95
+        (hyperMetaManagerRateMultipliers.varianceGateRelax || 1.0) * 0.95
       );
     }
   }
@@ -331,13 +330,13 @@ hyperMetaOrchestrator = (() => {
    * @returns {'converging' | 'oscillating' | 'stabilized'}
    */
   function classifySystemPhase() {
-    const healthDelta = m.abs(hyperMetaOrchestratorHealthEma - 0.7);
-    const exceedanceTrend = hyperMetaOrchestratorExceedanceTrendEma;
+    const healthDelta = m.abs(hyperMetaManagerHealthEma - 0.7);
+    const exceedanceTrend = hyperMetaManagerExceedanceTrendEma;
 
-    if (hyperMetaOrchestratorHealthEma > 0.80 && exceedanceTrend < 0.05) {
+    if (hyperMetaManagerHealthEma > 0.80 && exceedanceTrend < 0.05) {
       return 'stabilized';
     }
-    if (hyperMetaOrchestratorTotalInterventionEma > _INTERVENTION_BUDGET * 0.8 && healthDelta > 0.15) {
+    if (hyperMetaManagerTotalInterventionEma > _INTERVENTION_BUDGET * 0.8 && healthDelta > 0.15) {
       return 'oscillating';
     }
     return 'converging';
@@ -354,33 +353,33 @@ hyperMetaOrchestrator = (() => {
   function updateRateMultipliers(state) {
     let globalMultiplier = 1.0;
 
-    if (hyperMetaOrchestratorSystemPhase === 'oscillating') {
+    if (hyperMetaManagerSystemPhase === 'oscillating') {
       // System is oscillating: dampen all controllers
       globalMultiplier = 0.5;
-    } else if (hyperMetaOrchestratorSystemPhase === 'stabilized') {
+    } else if (hyperMetaManagerSystemPhase === 'stabilized') {
       // System is stable: relax rates (allow faster convergence on minor issues)
       globalMultiplier = 1.3;
     }
 
-    // E1: Phase floor boost authority expansion
+    // Phase floor boost authority expansion
     // When phase is chronically collapsed and system isn't oscillating,
     // increase the ceiling the phaseFloorController is allowed to boost to
     if (state.phaseFloor && state.phaseFloor.shareEma < 0.05) {
-      if (hyperMetaOrchestratorSystemPhase !== 'oscillating') {
-        hyperMetaOrchestratorPhaseBoostCeiling = clamp(
-          hyperMetaOrchestratorPhaseBoostCeiling + 0.5,
+      if (hyperMetaManagerSystemPhase !== 'oscillating') {
+        hyperMetaManagerPhaseBoostCeiling = clamp(
+          hyperMetaManagerPhaseBoostCeiling + 0.5,
           25.0, 35.0
         );
       }
     } else {
       // Phase healthy: relax ceiling back down
-      hyperMetaOrchestratorPhaseBoostCeiling = clamp(
-        hyperMetaOrchestratorPhaseBoostCeiling - 0.2,
+      hyperMetaManagerPhaseBoostCeiling = clamp(
+        hyperMetaManagerPhaseBoostCeiling - 0.2,
         25.0, 35.0
       );
     }
 
-    // E3: Reconciliation gap reduction
+    // Reconciliation gap reduction
     // When reconciliation gap is large (controller p95 << trace p95),
     // increase the p95 EMA alpha so controller tracks reality faster
     let p95AlphaMultiplier = 1.0;
@@ -403,7 +402,7 @@ hyperMetaOrchestrator = (() => {
       }
     }
 
-    // E4: Section 0 initial ceiling tightening
+    // Section 0 initial ceiling tightening
     // When S0 exceedance is dominant, signal warmup + ceiling controllers to tighten
     let s0TighteningMultiplier = 1.0;
     if (state.warmupRamp && state.warmupRamp.pairs) {
@@ -414,12 +413,12 @@ hyperMetaOrchestrator = (() => {
     }
 
     // Store all multipliers
-    hyperMetaOrchestratorRateMultipliers.global = globalMultiplier;
-    hyperMetaOrchestratorRateMultipliers.phaseBoostCeiling = hyperMetaOrchestratorPhaseBoostCeiling;
-    hyperMetaOrchestratorRateMultipliers.p95Alpha = p95AlphaMultiplier;
-    hyperMetaOrchestratorRateMultipliers.s0Tightening = s0TighteningMultiplier;
+    hyperMetaManagerRateMultipliers.global = globalMultiplier;
+    hyperMetaManagerRateMultipliers.phaseBoostCeiling = hyperMetaManagerPhaseBoostCeiling;
+    hyperMetaManagerRateMultipliers.p95Alpha = p95AlphaMultiplier;
+    hyperMetaManagerRateMultipliers.s0Tightening = s0TighteningMultiplier;
 
-    // E2 (R100): Variance gate relaxation for phase axis
+    // Variance gate relaxation for phase axis
     // When phase share is chronically near-zero, the variance gate is structural.
     // Relax the gate threshold to admit more phase pairs into coupling.
     let varianceGateRelaxMultiplier = 1.0;
@@ -430,16 +429,16 @@ hyperMetaOrchestrator = (() => {
         1.0, 2.5
       );
     }
-    hyperMetaOrchestratorRateMultipliers.varianceGateRelax = varianceGateRelaxMultiplier;
+    hyperMetaManagerRateMultipliers.varianceGateRelax = varianceGateRelaxMultiplier;
 
     // Per-controller multipliers (effectiveness-weighted)
-    const controllerNames = Object.keys(hyperMetaOrchestratorControllerStats);
+    const controllerNames = Object.keys(hyperMetaManagerControllerStats);
     for (let i = 0; i < controllerNames.length; i++) {
       const name = controllerNames[i];
-      const stats = hyperMetaOrchestratorControllerStats[name];
+      const stats = hyperMetaManagerControllerStats[name];
       // More effective controllers get slightly higher rate ceiling
       const effectivenessBoost = clamp(stats.effectivenessEma * 0.3, 0, 0.15);
-      hyperMetaOrchestratorRateMultipliers[name] = globalMultiplier + effectivenessBoost;
+      hyperMetaManagerRateMultipliers[name] = globalMultiplier + effectivenessBoost;
     }
   }
 
@@ -463,7 +462,7 @@ hyperMetaOrchestrator = (() => {
           'Phase floor boosting while homeostasis throttling global gain'
         );
         // Resolution: temporarily exempt phase axis from homeostasis throttle
-        hyperMetaOrchestratorRateMultipliers.phaseExemption = 1.5;
+        hyperMetaManagerRateMultipliers.phaseExemption = 1.5;
       }
     }
 
@@ -487,11 +486,11 @@ hyperMetaOrchestrator = (() => {
             ['pairGainCeilingController', 'warmupRampController'],
             'Both ceiling and warmup at minimum for ' + pair + ' -- may cause oscillation'
           );
-          // E5 (R100): Resolution -- relax the ceiling slightly since warmup is already minimal
-          hyperMetaOrchestratorRateMultipliers['ceilingRelax_' + pair] = 1.3;
+          // Resolution -- relax the ceiling slightly since warmup is already minimal
+          hyperMetaManagerRateMultipliers['ceilingRelax_' + pair] = 1.3;
         } else {
           // Clear relaxation when contradiction resolves
-          hyperMetaOrchestratorRateMultipliers['ceilingRelax_' + pair] = 1.0;
+          hyperMetaManagerRateMultipliers['ceilingRelax_' + pair] = 1.0;
         }
       }
     }
@@ -515,14 +514,14 @@ hyperMetaOrchestrator = (() => {
         );
         // Emit phaseExemption so downstream gain logic can boost phase pairs
         const phaseSeverity = clamp((0.08 - state.phaseFloor.shareEma) / 0.06, 0, 1);
-        hyperMetaOrchestratorRateMultipliers.phaseExemption = m.max(
-          hyperMetaOrchestratorRateMultipliers.phaseExemption || 1.0,
+        hyperMetaManagerRateMultipliers.phaseExemption = m.max(
+          hyperMetaManagerRateMultipliers.phaseExemption || 1.0,
           1.0 + phaseSeverity * 1.2
         );
       }
     }
 
-    // E5 (R100) Contradiction 3: Phase floor boosting while pair ceiling tightening on phase pairs
+    // Contradiction 3: Phase floor boosting while pair ceiling tightening on phase pairs
     // When phaseFloorController is actively boosting phase energy but pairGainCeilingController
     // is tightening phase-related pairs, the system fights itself
     if (state.phaseFloor && state.pairCeiling) {
@@ -534,9 +533,9 @@ hyperMetaOrchestrator = (() => {
           'Phase floor boosting while flicker-trust ceiling very tight -- energy conflict'
         );
         // Resolution: ease ceiling pressure on phase-related pairs
-        hyperMetaOrchestratorRateMultipliers.phasePairCeilingRelax = 1.4;
+        hyperMetaManagerRateMultipliers.phasePairCeilingRelax = 1.4;
       } else {
-        hyperMetaOrchestratorRateMultipliers.phasePairCeilingRelax = 1.0;
+        hyperMetaManagerRateMultipliers.phasePairCeilingRelax = 1.0;
       }
     }
   }
@@ -546,16 +545,16 @@ hyperMetaOrchestrator = (() => {
    * @param {string} description
    */
   function recordContradiction(controllers, description) {
-    hyperMetaOrchestratorContradictions.push({
-      beat: hyperMetaOrchestratorBeatCount,
+    hyperMetaManagerContradictions.push({
+      beat: hyperMetaManagerBeatCount,
       controllers,
       description
     });
-    if (hyperMetaOrchestratorContradictions.length > _MAX_CONTRADICTIONS) {
-      hyperMetaOrchestratorContradictions.shift();
+    if (hyperMetaManagerContradictions.length > _MAX_CONTRADICTIONS) {
+      hyperMetaManagerContradictions.shift();
     }
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-contradiction', 'both', {
-      beat: hyperMetaOrchestratorBeatCount,
+      beat: hyperMetaManagerBeatCount,
       controllers,
       description
     }));
@@ -599,20 +598,20 @@ hyperMetaOrchestrator = (() => {
    * @param {number} contribution
    */
   function updateControllerEffectiveness(name, contribution) {
-    if (!hyperMetaOrchestratorControllerStats[name]) {
-      hyperMetaOrchestratorControllerStats[name] = {
+    if (!hyperMetaManagerControllerStats[name]) {
+      hyperMetaManagerControllerStats[name] = {
         effectivenessEma: 0.5,
         interventionCount: 0,
         lastContribution: 0
       };
     }
-    const stats = hyperMetaOrchestratorControllerStats[name];
+    const stats = hyperMetaManagerControllerStats[name];
     stats.effectivenessEma += (clamp(contribution + 0.5, 0, 1) - stats.effectivenessEma) * _EFFECTIVENESS_EMA_ALPHA;
     stats.interventionCount++;
     stats.lastContribution = contribution;
   }
 
-  // AXIS CONCENTRATION TRACKING (E6)
+  // AXIS CONCENTRATION TRACKING
 
   // CORRELATION TREND MONITORING
 
@@ -636,15 +635,15 @@ hyperMetaOrchestrator = (() => {
       if (Number.isNaN(corr)) continue;
 
       const sign = corr > 0.05 ? 1 : (corr < -0.05 ? -1 : 0);
-      const prev = hyperMetaOrchestratorPrevCorrSign[pair];
+      const prev = hyperMetaManagerPrevCorrSign[pair];
 
       if (prev !== undefined && prev !== 0 && sign !== 0 && prev !== sign) {
         flipCount++;
       }
-      hyperMetaOrchestratorPrevCorrSign[pair] = sign;
+      hyperMetaManagerPrevCorrSign[pair] = sign;
     }
 
-    hyperMetaOrchestratorLastFlipCount = flipCount;
+    hyperMetaManagerLastFlipCount = flipCount;
     return flipCount;
   }
 
@@ -655,25 +654,25 @@ hyperMetaOrchestrator = (() => {
   function recordExceedance(pair) {
     const axes = pair.split('-');
     for (let i = 0; i < axes.length; i++) {
-      hyperMetaOrchestratorAxisExceedanceCounts[axes[i]] =
-        (hyperMetaOrchestratorAxisExceedanceCounts[axes[i]] || 0) + 1;
+      hyperMetaManagerAxisExceedanceCounts[axes[i]] =
+        (hyperMetaManagerAxisExceedanceCounts[axes[i]] || 0) + 1;
     }
   }
 
   /**
-   * Get axis exceedance concentration diagnostic (E6).
+   * Get axis exceedance concentration diagnostic
    * Returns axis names sorted by exceedance count and concentration ratio.
    * @returns {{ axisExceedance: Record<string, number>, concentration: number, dominantAxis: string }}
    */
   function getAxisConcentration() {
-    const axes = Object.keys(hyperMetaOrchestratorAxisExceedanceCounts);
+    const axes = Object.keys(hyperMetaManagerAxisExceedanceCounts);
     if (axes.length === 0) return { axisExceedance: Object.create(null), concentration: 0, dominantAxis: 'none' };
 
     let total = 0;
     let maxCount = 0;
     let dominantAxis = axes[0];
     for (let i = 0; i < axes.length; i++) {
-      const count = hyperMetaOrchestratorAxisExceedanceCounts[axes[i]];
+      const count = hyperMetaManagerAxisExceedanceCounts[axes[i]];
       total += count;
       if (count > maxCount) {
         maxCount = count;
@@ -682,7 +681,7 @@ hyperMetaOrchestrator = (() => {
     }
 
     return {
-      axisExceedance: Object.assign({}, hyperMetaOrchestratorAxisExceedanceCounts),
+      axisExceedance: Object.assign({}, hyperMetaManagerAxisExceedanceCounts),
       concentration: total > 0 ? maxCount / total : 0,
       dominantAxis
     };
@@ -836,127 +835,127 @@ hyperMetaOrchestrator = (() => {
 
     // 1. Compute topology entropy
     const rawEntropy = computeTopologyEntropy(matrix);
-    hyperMetaOrchestratorTopologyEntropyEma +=
-      (rawEntropy - hyperMetaOrchestratorTopologyEntropyEma) * 0.12;
+    hyperMetaManagerTopologyEntropyEma +=
+      (rawEntropy - hyperMetaManagerTopologyEntropyEma) * 0.12;
 
     // 2. Classify topology phase
-    hyperMetaOrchestratorTopologyPhase =
-      classifyTopologyPhase(hyperMetaOrchestratorTopologyEntropyEma);
+    hyperMetaManagerTopologyPhase =
+      classifyTopologyPhase(hyperMetaManagerTopologyEntropyEma);
 
     // 3. Determine regime-topology cross-state
-    hyperMetaOrchestratorCrossState = computeCrossState(
+    hyperMetaManagerCrossState = computeCrossState(
       regime,
-      hyperMetaOrchestratorTopologyPhase,
-      hyperMetaOrchestratorSystemPhase
+      hyperMetaManagerTopologyPhase,
+      hyperMetaManagerSystemPhase
     );
 
     // 4. Track emergence streak
-    if (hyperMetaOrchestratorCrossState === 'emergence') {
-      hyperMetaOrchestratorEmergenceStreak++;
+    if (hyperMetaManagerCrossState === 'emergence') {
+      hyperMetaManagerEmergenceStreak++;
     } else {
-      hyperMetaOrchestratorEmergenceStreak = 0;
+      hyperMetaManagerEmergenceStreak = 0;
     }
 
     // 5. Attractor detection via fingerprint similarity
     const fp = quantizeTopologyFingerprint(matrix);
-    const prevKeys = Object.keys(hyperMetaOrchestratorPrevFingerprint);
+    const prevKeys = Object.keys(hyperMetaManagerPrevFingerprint);
     if (prevKeys.length > 0) {
-      const similarity = fingerprintSimilarity(fp, hyperMetaOrchestratorPrevFingerprint);
-      hyperMetaOrchestratorAttractorSimilarityEma +=
-        (similarity - hyperMetaOrchestratorAttractorSimilarityEma) * 0.10;
+      const similarity = fingerprintSimilarity(fp, hyperMetaManagerPrevFingerprint);
+      hyperMetaManagerAttractorSimilarityEma +=
+        (similarity - hyperMetaManagerAttractorSimilarityEma) * 0.10;
 
       // Attractor recognized when similarity is consistently high
-      if (hyperMetaOrchestratorAttractorSimilarityEma > 0.70) {
-        hyperMetaOrchestratorAttractorStabilityBeats += _ORCHESTRATE_INTERVAL;
+      if (hyperMetaManagerAttractorSimilarityEma > 0.70) {
+        hyperMetaManagerAttractorStabilityBeats += _ORCHESTRATE_INTERVAL;
       } else {
-        hyperMetaOrchestratorAttractorStabilityBeats = m.max(0,
-          hyperMetaOrchestratorAttractorStabilityBeats - _ORCHESTRATE_INTERVAL * 0.5);
+        hyperMetaManagerAttractorStabilityBeats = m.max(0,
+          hyperMetaManagerAttractorStabilityBeats - _ORCHESTRATE_INTERVAL * 0.5);
       }
     }
     // Update fingerprint
     const fpKeys = Object.keys(fp);
     for (let i = 0; i < fpKeys.length; i++) {
-      hyperMetaOrchestratorPrevFingerprint[fpKeys[i]] = fp[fpKeys[i]];
+      hyperMetaManagerPrevFingerprint[fpKeys[i]] = fp[fpKeys[i]];
     }
 
     // 6. Compute topology-derived multipliers
 
     // Creativity multiplier: emergence amplifies, locked suppresses
-    if (hyperMetaOrchestratorCrossState === 'emergence') {
+    if (hyperMetaManagerCrossState === 'emergence') {
       // Emergence: reduce control, amplify creative freedom
       // Stronger effect during sustained emergence (streak) and in attractors
-      const streakBonus = clamp(hyperMetaOrchestratorEmergenceStreak * 0.01, 0, 0.10);
-      const attractorBonus = hyperMetaOrchestratorAttractorStabilityBeats > 50
+      const streakBonus = clamp(hyperMetaManagerEmergenceStreak * 0.01, 0, 0.10);
+      const attractorBonus = hyperMetaManagerAttractorStabilityBeats > 50
         ? 0.05 : 0;
-      hyperMetaOrchestratorTopologyCreativityMultiplier =
+      hyperMetaManagerTopologyCreativityMultiplier =
         clamp(1.12 + streakBonus + attractorBonus, 1.0, 1.30);
-    } else if (hyperMetaOrchestratorCrossState === 'locked') {
+    } else if (hyperMetaManagerCrossState === 'locked') {
       // Locked: increase perturbation to break crystallization
-      hyperMetaOrchestratorTopologyCreativityMultiplier =
-        clamp(0.85 - (hyperMetaOrchestratorAttractorStabilityBeats > 100 ? 0.05 : 0), 0.75, 1.0);
-    } else if (hyperMetaOrchestratorCrossState === 'dampened') {
+      hyperMetaManagerTopologyCreativityMultiplier =
+        clamp(0.85 - (hyperMetaManagerAttractorStabilityBeats > 100 ? 0.05 : 0), 0.75, 1.0);
+    } else if (hyperMetaManagerCrossState === 'dampened') {
       // Dampened: neutral but slightly conservative
-      hyperMetaOrchestratorTopologyCreativityMultiplier = 0.95;
+      hyperMetaManagerTopologyCreativityMultiplier = 0.95;
     } else {
       // Seeking: relax toward neutral
-      hyperMetaOrchestratorTopologyCreativityMultiplier +=
-        (1.0 - hyperMetaOrchestratorTopologyCreativityMultiplier) * 0.15;
+      hyperMetaManagerTopologyCreativityMultiplier +=
+        (1.0 - hyperMetaManagerTopologyCreativityMultiplier) * 0.15;
     }
 
     // Intervention budget scale: emergence reduces budget, locked increases
-    if (hyperMetaOrchestratorCrossState === 'emergence') {
-      hyperMetaOrchestratorInterventionBudgetScale =
-        clamp(hyperMetaOrchestratorInterventionBudgetScale * 0.97, 0.40, 1.0);
-    } else if (hyperMetaOrchestratorCrossState === 'locked') {
-      hyperMetaOrchestratorInterventionBudgetScale =
-        clamp(hyperMetaOrchestratorInterventionBudgetScale * 1.03, 0.40, 1.20);
+    if (hyperMetaManagerCrossState === 'emergence') {
+      hyperMetaManagerInterventionBudgetScale =
+        clamp(hyperMetaManagerInterventionBudgetScale * 0.97, 0.40, 1.0);
+    } else if (hyperMetaManagerCrossState === 'locked') {
+      hyperMetaManagerInterventionBudgetScale =
+        clamp(hyperMetaManagerInterventionBudgetScale * 1.03, 0.40, 1.20);
     } else {
-      hyperMetaOrchestratorInterventionBudgetScale +=
-        (1.0 - hyperMetaOrchestratorInterventionBudgetScale) * 0.08;
+      hyperMetaManagerInterventionBudgetScale +=
+        (1.0 - hyperMetaManagerInterventionBudgetScale) * 0.08;
     }
 
     // Store in rate multipliers for downstream consumption
-    hyperMetaOrchestratorRateMultipliers.topologyCreativity =
-      hyperMetaOrchestratorTopologyCreativityMultiplier;
-    hyperMetaOrchestratorRateMultipliers.interventionBudget =
-      _INTERVENTION_BUDGET * hyperMetaOrchestratorInterventionBudgetScale;
+    hyperMetaManagerRateMultipliers.topologyCreativity =
+      hyperMetaManagerTopologyCreativityMultiplier;
+    hyperMetaManagerRateMultipliers.interventionBudget =
+      _INTERVENTION_BUDGET * hyperMetaManagerInterventionBudgetScale;
 
     // 7. Section trajectory tracking
     const sectionIdx = Number.isFinite(sectionIndex) ? sectionIndex : -1;
-    if (sectionIdx !== hyperMetaOrchestratorCurrentSection && sectionIdx >= 0) {
-      hyperMetaOrchestratorTrajectory.push({
-        section: hyperMetaOrchestratorCurrentSection,
-        phase: hyperMetaOrchestratorTopologyPhase,
-        entropy: m.round(hyperMetaOrchestratorTopologyEntropyEma * 1000) / 1000,
-        crossState: hyperMetaOrchestratorCrossState
+    if (sectionIdx !== hyperMetaManagerCurrentSection && sectionIdx >= 0) {
+      hyperMetaManagerTrajectory.push({
+        section: hyperMetaManagerCurrentSection,
+        phase: hyperMetaManagerTopologyPhase,
+        entropy: m.round(hyperMetaManagerTopologyEntropyEma * 1000) / 1000,
+        crossState: hyperMetaManagerCrossState
       });
       // Trajectory-based perturbation: if stuck in same phase for 3+ sections
-      if (hyperMetaOrchestratorTrajectory.length >= 3) {
-        const recent = hyperMetaOrchestratorTrajectory.slice(-3);
+      if (hyperMetaManagerTrajectory.length >= 3) {
+        const recent = hyperMetaManagerTrajectory.slice(-3);
         const allSamePhase = recent[0].phase === recent[1].phase &&
           recent[1].phase === recent[2].phase;
         if (allSamePhase) {
           // Compositional stasis detected -- nudge the global rate to perturb
-          hyperMetaOrchestratorRateMultipliers.global *= 0.92;
+          hyperMetaManagerRateMultipliers.global *= 0.92;
         }
       }
-      hyperMetaOrchestratorCurrentSection = sectionIdx;
+      hyperMetaManagerCurrentSection = sectionIdx;
     }
   }
 
   // MAIN ORCHESTRATION TICK
 
   function tick() {
-    hyperMetaOrchestratorBeatCount++;
+    hyperMetaManagerBeatCount++;
 
-    if (hyperMetaOrchestratorBeatCount % _ORCHESTRATE_INTERVAL !== 0) return;
+    if (hyperMetaManagerBeatCount % _ORCHESTRATE_INTERVAL !== 0) return;
 
-    const healthBefore = hyperMetaOrchestratorHealthEma;
+    const healthBefore = hyperMetaManagerHealthEma;
     const state = gatherControllerState();
 
     // 1. Compute system health
     const health = computeSystemHealth(state);
-    hyperMetaOrchestratorHealthEma += (health - hyperMetaOrchestratorHealthEma) * _HEALTH_EMA_ALPHA;
+    hyperMetaManagerHealthEma += (health - hyperMetaManagerHealthEma) * _HEALTH_EMA_ALPHA;
 
     // 2. Detect exceedance trend
     if (state.pairCeiling) {
@@ -965,18 +964,18 @@ hyperMetaOrchestrator = (() => {
       for (let i = 0; i < pairs.length; i++) {
         totalExceedance += state.pairCeiling[pairs[i]].exceedanceEma || 0;
       }
-      hyperMetaOrchestratorExceedanceTrendEma +=
-        (totalExceedance - hyperMetaOrchestratorExceedanceTrendEma) * _HEALTH_EMA_ALPHA;
+      hyperMetaManagerExceedanceTrendEma +=
+        (totalExceedance - hyperMetaManagerExceedanceTrendEma) * _HEALTH_EMA_ALPHA;
     }
 
     // 3. Track phase health trend
     if (state.phaseFloor) {
-      hyperMetaOrchestratorPhaseTrendEma +=
-        (state.phaseFloor.shareEma - hyperMetaOrchestratorPhaseTrendEma) * _HEALTH_EMA_ALPHA;
+      hyperMetaManagerPhaseTrendEma +=
+        (state.phaseFloor.shareEma - hyperMetaManagerPhaseTrendEma) * _HEALTH_EMA_ALPHA;
     }
 
     // 4. Classify system phase
-    hyperMetaOrchestratorSystemPhase = classifySystemPhase();
+    hyperMetaManagerSystemPhase = classifySystemPhase();
 
     // 5. Update rate multipliers (includes E1, E3, E4)
     updateRateMultipliers(state);
@@ -985,12 +984,12 @@ hyperMetaOrchestrator = (() => {
     detectContradictions(state);
 
     // 7. Update effectiveness tracking
-    updateEffectiveness(healthBefore, hyperMetaOrchestratorHealthEma, state);
+    updateEffectiveness(healthBefore, hyperMetaManagerHealthEma, state);
 
     // 8. Correlation trend monitoring -- detect simultaneous sign flips
     const corrFlips = detectCorrelationFlips(state);
     if (corrFlips >= 2) {
-      hyperMetaOrchestratorRateMultipliers.global *= 0.90;
+      hyperMetaManagerRateMultipliers.global *= 0.90;
     }
 
     // 9. Coupling topology intelligence -- the hyperhypermetameta layer
@@ -1008,28 +1007,28 @@ hyperMetaOrchestrator = (() => {
     // During emergence, controllers operate with more creative freedom (higher
     // ceilings, slower tightening). During locked state, controllers operate
     // more aggressively to break crystallization.
-    hyperMetaOrchestratorRateMultipliers.global *= hyperMetaOrchestratorTopologyCreativityMultiplier;
+    hyperMetaManagerRateMultipliers.global *= hyperMetaManagerTopologyCreativityMultiplier;
 
     // 12. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
-      beat: hyperMetaOrchestratorBeatCount,
-      health: hyperMetaOrchestratorHealthEma,
-      systemPhase: hyperMetaOrchestratorSystemPhase,
-      exceedanceTrend: hyperMetaOrchestratorExceedanceTrendEma,
-      phaseTrend: hyperMetaOrchestratorPhaseTrendEma,
-      rateMultipliers: Object.assign({}, hyperMetaOrchestratorRateMultipliers),
-      contradictionCount: hyperMetaOrchestratorContradictions.length,
+      beat: hyperMetaManagerBeatCount,
+      health: hyperMetaManagerHealthEma,
+      systemPhase: hyperMetaManagerSystemPhase,
+      exceedanceTrend: hyperMetaManagerExceedanceTrendEma,
+      phaseTrend: hyperMetaManagerPhaseTrendEma,
+      rateMultipliers: Object.assign({}, hyperMetaManagerRateMultipliers),
+      contradictionCount: hyperMetaManagerContradictions.length,
       axisConcentration: getAxisConcentration(),
       correlationFlips: corrFlips,
       // Topology intelligence diagnostics
-      topologyEntropy: hyperMetaOrchestratorTopologyEntropyEma,
-      topologyPhase: hyperMetaOrchestratorTopologyPhase,
-      crossState: hyperMetaOrchestratorCrossState,
-      attractorSimilarity: hyperMetaOrchestratorAttractorSimilarityEma,
-      attractorStabilityBeats: hyperMetaOrchestratorAttractorStabilityBeats,
-      emergenceStreak: hyperMetaOrchestratorEmergenceStreak,
-      interventionBudgetScale: hyperMetaOrchestratorInterventionBudgetScale,
-      topologyCreativity: hyperMetaOrchestratorTopologyCreativityMultiplier
+      topologyEntropy: hyperMetaManagerTopologyEntropyEma,
+      topologyPhase: hyperMetaManagerTopologyPhase,
+      crossState: hyperMetaManagerCrossState,
+      attractorSimilarity: hyperMetaManagerAttractorSimilarityEma,
+      attractorStabilityBeats: hyperMetaManagerAttractorStabilityBeats,
+      emergenceStreak: hyperMetaManagerEmergenceStreak,
+      interventionBudgetScale: hyperMetaManagerInterventionBudgetScale,
+      topologyCreativity: hyperMetaManagerTopologyCreativityMultiplier
     }));
   }
 
@@ -1041,7 +1040,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {number} multiplier (default 1.0)
    */
   function getRateMultiplier(key) {
-    return hyperMetaOrchestratorRateMultipliers[key] || 1.0;
+    return hyperMetaManagerRateMultipliers[key] || 1.0;
   }
 
   /**
@@ -1050,7 +1049,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {number}
    */
   function getPhaseBoostCeiling() {
-    return hyperMetaOrchestratorPhaseBoostCeiling;
+    return hyperMetaManagerPhaseBoostCeiling;
   }
 
   /**
@@ -1059,7 +1058,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {number}
    */
   function getP95AlphaMultiplier() {
-    return hyperMetaOrchestratorRateMultipliers.p95Alpha || 1.0;
+    return hyperMetaManagerRateMultipliers.p95Alpha || 1.0;
   }
 
   /**
@@ -1068,7 +1067,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {number}
    */
   function getS0TighteningMultiplier() {
-    return hyperMetaOrchestratorRateMultipliers.s0Tightening || 1.0;
+    return hyperMetaManagerRateMultipliers.s0Tightening || 1.0;
   }
 
   /**
@@ -1076,7 +1075,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {'converging' | 'oscillating' | 'stabilized'}
    */
   function getSystemPhase() {
-    return hyperMetaOrchestratorSystemPhase;
+    return hyperMetaManagerSystemPhase;
   }
 
   /**
@@ -1086,7 +1085,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {number}
    */
   function getVarianceGateRelaxMultiplier() {
-    return hyperMetaOrchestratorRateMultipliers.varianceGateRelax || 1.0;
+    return hyperMetaManagerRateMultipliers.varianceGateRelax || 1.0;
   }
 
   /**
@@ -1098,7 +1097,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {number}
    */
   function getTopologyCreativityMultiplier() {
-    return hyperMetaOrchestratorTopologyCreativityMultiplier;
+    return hyperMetaManagerTopologyCreativityMultiplier;
   }
 
   /**
@@ -1106,7 +1105,7 @@ hyperMetaOrchestrator = (() => {
    * @returns {'crystallized' | 'resonant' | 'fluid'}
    */
   function getTopologyPhase() {
-    return hyperMetaOrchestratorTopologyPhase;
+    return hyperMetaManagerTopologyPhase;
   }
 
   /**
@@ -1114,60 +1113,60 @@ hyperMetaOrchestrator = (() => {
    * @returns {'emergence' | 'locked' | 'seeking' | 'dampened'}
    */
   function getCrossState() {
-    return hyperMetaOrchestratorCrossState;
+    return hyperMetaManagerCrossState;
   }
 
   function getSnapshot() {
     return {
-      beatCount: hyperMetaOrchestratorBeatCount,
-      healthEma: hyperMetaOrchestratorHealthEma,
-      systemPhase: hyperMetaOrchestratorSystemPhase,
-      exceedanceTrendEma: hyperMetaOrchestratorExceedanceTrendEma,
-      phaseTrendEma: hyperMetaOrchestratorPhaseTrendEma,
-      energyBalanceEma: hyperMetaOrchestratorEnergyBalanceEma,
-      totalInterventionEma: hyperMetaOrchestratorTotalInterventionEma,
-      phaseBoostCeiling: hyperMetaOrchestratorPhaseBoostCeiling,
-      rateMultipliers: Object.assign({}, hyperMetaOrchestratorRateMultipliers),
-      controllerStats: Object.assign({}, hyperMetaOrchestratorControllerStats),
-      contradictions: hyperMetaOrchestratorContradictions.slice(-5),
+      beatCount: hyperMetaManagerBeatCount,
+      healthEma: hyperMetaManagerHealthEma,
+      systemPhase: hyperMetaManagerSystemPhase,
+      exceedanceTrendEma: hyperMetaManagerExceedanceTrendEma,
+      phaseTrendEma: hyperMetaManagerPhaseTrendEma,
+      energyBalanceEma: hyperMetaManagerEnergyBalanceEma,
+      totalInterventionEma: hyperMetaManagerTotalInterventionEma,
+      phaseBoostCeiling: hyperMetaManagerPhaseBoostCeiling,
+      rateMultipliers: Object.assign({}, hyperMetaManagerRateMultipliers),
+      controllerStats: Object.assign({}, hyperMetaManagerControllerStats),
+      contradictions: hyperMetaManagerContradictions.slice(-5),
       axisConcentration: getAxisConcentration(),
-      correlationFlips: hyperMetaOrchestratorLastFlipCount,
+      correlationFlips: hyperMetaManagerLastFlipCount,
       // Topology intelligence snapshot
-      topologyEntropy: hyperMetaOrchestratorTopologyEntropyEma,
-      topologyPhase: hyperMetaOrchestratorTopologyPhase,
-      crossState: hyperMetaOrchestratorCrossState,
-      attractorSimilarity: hyperMetaOrchestratorAttractorSimilarityEma,
-      attractorStabilityBeats: hyperMetaOrchestratorAttractorStabilityBeats,
-      emergenceStreak: hyperMetaOrchestratorEmergenceStreak,
-      interventionBudgetScale: hyperMetaOrchestratorInterventionBudgetScale,
-      topologyCreativity: hyperMetaOrchestratorTopologyCreativityMultiplier,
-      trajectory: hyperMetaOrchestratorTrajectory.slice(-10)
+      topologyEntropy: hyperMetaManagerTopologyEntropyEma,
+      topologyPhase: hyperMetaManagerTopologyPhase,
+      crossState: hyperMetaManagerCrossState,
+      attractorSimilarity: hyperMetaManagerAttractorSimilarityEma,
+      attractorStabilityBeats: hyperMetaManagerAttractorStabilityBeats,
+      emergenceStreak: hyperMetaManagerEmergenceStreak,
+      interventionBudgetScale: hyperMetaManagerInterventionBudgetScale,
+      topologyCreativity: hyperMetaManagerTopologyCreativityMultiplier,
+      trajectory: hyperMetaManagerTrajectory.slice(-10)
     };
   }
 
   function reset() {
     // Preserve EMAs across sections (inter-section learning persists)
     // Reset per-section counters
-    const axes = Object.keys(hyperMetaOrchestratorAxisExceedanceCounts);
+    const axes = Object.keys(hyperMetaManagerAxisExceedanceCounts);
     for (let i = 0; i < axes.length; i++) {
-      hyperMetaOrchestratorAxisExceedanceCounts[axes[i]] = 0;
+      hyperMetaManagerAxisExceedanceCounts[axes[i]] = 0;
     }
     // Preserve topology EMAs and trajectory across sections
     // (inter-section learning is the whole point of trajectory tracking)
     // Only dampen attractor stability to allow fresh attractor detection
-    hyperMetaOrchestratorAttractorStabilityBeats =
-      m.floor(hyperMetaOrchestratorAttractorStabilityBeats * 0.5);
+    hyperMetaManagerAttractorStabilityBeats =
+      m.floor(hyperMetaManagerAttractorStabilityBeats * 0.5);
   }
 
   // SELF-REGISTRATION
-  conductorIntelligence.registerRecorder('hyperMetaOrchestrator', tick);
-  conductorIntelligence.registerStateProvider('hyperMetaOrchestrator', () => ({
-    hyperMetaOrchestrator: getSnapshot()
+  conductorIntelligence.registerRecorder('hyperMetaManager', tick);
+  conductorIntelligence.registerStateProvider('hyperMetaManager', () => ({
+    hyperMetaManager: getSnapshot()
   }));
-  conductorIntelligence.registerModule('hyperMetaOrchestrator', { reset }, ['section']);
+  conductorIntelligence.registerModule('hyperMetaManager', { reset }, ['section']);
 
   /**
-   * @typedef {Object} HyperMetaOrchestratorAPI
+   * @typedef {Object} hyperMetaManagerAPI
    * @property {function(string): number} getRateMultiplier
    * @property {function(): number} getPhaseBoostCeiling
    * @property {function(): number} getP95AlphaMultiplier
@@ -1183,7 +1182,7 @@ hyperMetaOrchestrator = (() => {
    * @property {function(): void} reset
    */
 
-  /** @type {HyperMetaOrchestratorAPI} */
+  /** @type {hyperMetaManagerAPI} */
   const api = {
     getRateMultiplier,
     getPhaseBoostCeiling,
