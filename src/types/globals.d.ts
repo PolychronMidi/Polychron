@@ -1930,6 +1930,8 @@ declare var trustSystems: TrustSystemsAPI;
 declare var safePreBoot: {
   call<T>(fn: () => T, fallback?: T): T | undefined;
 };
+declare var traceSummaryData: any;
+declare var telemetryHealthData: any;
 declare var totalSections: number;
 declare var phrasesPerSection: number;
 declare var measuresPerPhrase: number;

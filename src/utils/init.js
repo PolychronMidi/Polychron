@@ -14,6 +14,16 @@ midiMeter = [0, 0];
 
 composer = null; activeMotif = null; currentSectionType = null; currentSectionDynamics = null; fxEventTemplate = null;
 
+// Telemetry globals for hyperMetaOrchestrator
+traceSummaryData = {
+  adaptiveTelemetryReconciliation: {
+    pairs: {}
+  }
+};
+telemetryHealthData = {
+  phaseStaleRate: 0
+};
+
 /**
  * Cross-modulation factor for polyrhythmic interference.
  * @type {number}

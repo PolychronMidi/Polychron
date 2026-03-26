@@ -19,7 +19,7 @@ pipelineNormalizer = (() => {
   // range: compression depth; hard floor = softMin - range, hard ceiling = softMax + range.
   const BOUNDS = {
     density: { softMin: 0.50, softMax: 1.50, range: 0.22 },  // R27 E4: Widened softMax from 1.40 and range from 0.20 to allow more density dynamic range
-    tension: { softMin: 0.70, softMax: 1.40, range: 0.20 },
+    tension: { softMin: 0.65, softMax: 1.60, range: 0.25 },  // Hypermeta evolution: Widen tension compression envelope to restore dynamic range (avg 0.8684, max 0.9999 indicates over-compression)
     flicker: { softMin: 0.70, softMax: 1.30, range: 0.15 }
   };
 
