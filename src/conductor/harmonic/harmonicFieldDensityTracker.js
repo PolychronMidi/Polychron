@@ -85,7 +85,27 @@ harmonicFieldDensityTracker = (() => {
     return getFieldDensitySignal().densityBias;
   }
 
+  // R27 E5: Flicker modifier from vertical harmonic density. Thick vertical
+  // texture (many simultaneous voices) benefits from increased rhythmic
+  // variety (higher flicker) to avoid muddy sustained clusters. Thin texture
+  // (sparse voicing) benefits from reduced flicker for clarity.
+  /**
+   * Get flicker modifier from vertical density.
+   * @returns {number}
+   */
+  function getFlickerModifier() {
+    const s = getFieldDensitySignal();
+    // R34 E3: Dampen flicker boost 1.08->1.04. Flicker axis surged to
+    // 0.230 (35% above fair share) in R33, driving axisGini to 0.135.
+    // harmonicFieldDensityTracker was contributing 1.08 to the flicker
+    // product. Moderate to 1.04 to reduce flicker inflation.
+    if (s.avgSimultaneous > 4.0) return 1.04;
+    if (s.avgSimultaneous < 1.5) return 0.95;
+    return 1.0;
+  }
+
   conductorIntelligence.registerDensityBias('harmonicFieldDensityTracker', () => harmonicFieldDensityTracker.getDensityBias(), 0.94, 1.1);
+  conductorIntelligence.registerFlickerModifier('harmonicFieldDensityTracker', () => harmonicFieldDensityTracker.getFlickerModifier(), 0.95, 1.04);
   conductorIntelligence.registerStateProvider('harmonicFieldDensityTracker', () => {
     const s = harmonicFieldDensityTracker.getFieldDensitySignal();
     return { harmonicFieldAvgSimultaneous: s ? s.avgSimultaneous : 1 };
@@ -93,6 +113,7 @@ harmonicFieldDensityTracker = (() => {
 
   return {
     getFieldDensitySignal,
-    getDensityBias
+    getDensityBias,
+    getFlickerModifier
   };
 })();

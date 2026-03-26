@@ -20,11 +20,16 @@ pairGainCeilingController = (() => {
   // Pairs that historically needed tighter ceilings get lower base ceilings.
   // The ceiling adapts around this anchor, never straying too far.
   const _PAIR_PROFILES = {
-    'density-flicker': { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.25, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
-    'tension-flicker': { baseCeiling: 0.10, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.83, exceedanceSensitivity: 0.06 },
+    // R76 E3: exceedanceSensitivity 0.08->0.04. DF p95=0.938 with 5.85%
+    // exceedance rate never triggered at 0.08. At 0.04, ceiling engages.
+    'density-flicker': { baseCeiling: 0.10, minCeiling: 0.04, maxCeiling: 0.25, p95Sensitivity: 0.82, exceedanceSensitivity: 0.04 },
+    // R75 E2: exceedanceSensitivity 0.06->0.03. At 0.06, the observed
+    // exceedance rate of 0.039 (27 beats) never triggered ceiling tightening.
+    'tension-flicker': { baseCeiling: 0.10, minCeiling: 0.05, maxCeiling: 0.35, p95Sensitivity: 0.83, exceedanceSensitivity: 0.03 },
     'flicker-trust':   { baseCeiling: 0.08, minCeiling: 0.04, maxCeiling: 0.30, p95Sensitivity: 0.82, exceedanceSensitivity: 0.08 },
     // R8 E2: density-tension ceiling -- dominant hotspot pair (p95 0.911, 22 exceedance beats)
-    'density-tension': { baseCeiling: 0.12, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.08 },
+    // R75 E2: exceedanceSensitivity 0.08->0.04. At 0.08, the 0.045 rate (23 beats) never triggered.
+    'density-tension': { baseCeiling: 0.12, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.04 },
     'density-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
     'tension-trust':   { baseCeiling: 0.14, minCeiling: 0.06, maxCeiling: 0.40, p95Sensitivity: 0.85, exceedanceSensitivity: 0.05 },
     // R5 E1: flicker-phase profile to contain balloon-effect displacement

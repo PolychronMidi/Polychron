@@ -92,6 +92,17 @@ syncopationDensityTracker = (() => {
     if (p.syncopationRatio > 0.40) return 1.0 + (p.syncopationRatio - 0.40) * 0.27;
     return 1.0;
   }, 0.92, 1.10);
+  // R33 E3: Tension bias from syncopation. Syncopated passages (off-beat
+  // dominant) create rhythmic tension via metric displacement. Monotonous
+  // (all on-beat) passages are metrically stable -> lower tension.
+  // New rhythmic->tension cross-domain pathway.
+  conductorIntelligence.registerTensionBias('syncopationDensityTracker', () => {
+    const p = syncopationDensityTracker.getSyncopationProfile();
+    if (p.excessive) return 1.06;
+    if (p.monotonous) return 0.96;
+    if (p.syncopationRatio > 0.40) return 1.0 + (p.syncopationRatio - 0.40) * 0.20;
+    return 1.0;
+  }, 0.96, 1.06);
 
   return {
     getSyncopationProfile,

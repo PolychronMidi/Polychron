@@ -7,16 +7,19 @@ regimeClassifier = (() => {
     REGIME_MAJORITY: 3,
     OSCILLATING_CURVATURE_DEFAULT: 0.55,
     EVOLVING_MAX_DWELL: 150,
-    COHERENT_MAX_DWELL: 90,  // R26 E3: Reduced from 120 for greater regime diversity
+    COHERENT_MAX_DWELL: 75,  // R72 E4: 90->75 for more regime transitions.
     POST_FORCED_RECOVERY_WINDOW: 24,
     COHERENT_MOMENTUM_WINDOW: 8,
     REGIME_TARGET_COHERENT_LO: 0.10,
     REGIME_TARGET_COHERENT_HI: 0.35,
-    // R9 E2: Raised from 0.14 to 0.18. Evolving dropped to 17.3% (above old
-    // floor 14%), leaving the evolvingDeficit auto-widener inactive. At 0.18,
-    // the deficit mechanism engages at current levels, widening evolving entry
-    // bands and relaxing the coherent gate to recover evolving share.
-    REGIME_TARGET_EVOLVING_LO: 0.18,
+    // R9 E2: Raised from 0.14 to 0.18.
+    // R46 E4: Raise 0.18->0.24. Evolving stuck at 21.4% in R45 with
+    // exploring at 40.7%. At 0.18, evolvingDeficit=0 (21.4% > 18%)
+    // so all adaptive recovery is dormant (forced breaks go exploring,
+    // entry bands narrow, starvation injector off). At 0.24, deficit
+    // re-engages: forced breaks choose evolving, entry velocity ceiling
+    // widens, and coherent gate relaxes.
+    REGIME_TARGET_EVOLVING_LO: 0.27,
     // R85 E3: Expand coherent self-balancer headroom. coherentThresholdScale
     // auto-adjusts to steer coherent share toward [0.10, 0.35] target. At
     // cap 1.20, the balancer maxes out at +20% threshold which is insufficient

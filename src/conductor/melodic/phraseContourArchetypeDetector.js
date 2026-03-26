@@ -89,6 +89,22 @@ phraseContourArchetypeDetector = (() => {
     return { archetype, confidence, suggestion };
   }
 
+  /**
+   * R38 E5: Flicker bias from phrase contour archetype.
+   * Zigzag contours get timbral sparkle (boost). Plateau contours get
+   * timbral smoothing (reduce). Arch/valley/ramp are neutral to mild.
+   * @returns {number}
+   */
+  function getFlickerBias() {
+    const s = getContourSignal();
+    if (s.archetype === 'zigzag') return 1.0 + s.confidence * 0.06;
+    if (s.archetype === 'plateau') return 1.0 - s.confidence * 0.04;
+    if (s.archetype === 'arch' || s.archetype === 'valley') return 1.02;
+    return 1.0;
+  }
+
+  conductorIntelligence.registerFlickerModifier('phraseContourArchetypeDetector', () => phraseContourArchetypeDetector.getFlickerBias(), 0.96, 1.06);
+
   conductorIntelligence.registerStateProvider('phraseContourArchetypeDetector', () => {
     const s = phraseContourArchetypeDetector.getContourSignal();
     return {
@@ -98,6 +114,7 @@ phraseContourArchetypeDetector = (() => {
   });
 
   return {
-    getContourSignal
+    getContourSignal,
+    getFlickerBias
   };
 })();

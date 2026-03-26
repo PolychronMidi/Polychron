@@ -19,13 +19,18 @@ sectionIntentCurves = (() => {
   // tension variety across phrases. This amplifies the wave-based dissonance
   // modulation, creating more contrast between phrase peaks and troughs.
   const DISSONANCE_WAVE_SCALE = 0.52;
-  const DISSONANCE_LATE_SURGE = 0.10;
+  // R71 E5: 0.10->0.15. Stronger late-section dissonance surge creates
+  // more dramatic climaxes and greater tension contrast within sections.
+  const DISSONANCE_LATE_SURGE = 0.15;
   const INTERACTION_BASE = 0.2;
   const INTERACTION_WAVE_BASE = 0.25;
   const INTERACTION_WAVE_SCALE = 0.55;
   const INTERACTION_ARC_BASE = 0.5;
   const INTERACTION_ARC_SCALE = 0.5;
-  const INTERACTION_LATE_SURGE = 0.12;
+  // R73 E4: 0.12->0.16. Stronger late-section interaction target supports
+  // Q3 tension recovery (0.79->0.76 in R72) by creating more musical
+  // activity in the final quarter of each section.
+  const INTERACTION_LATE_SURGE = 0.16;
   const LONG_FORM_DENSITY_RELIEF = 0.10;
   const LONG_FORM_DISSONANCE_RELIEF = 0.08;
   const LONG_FORM_INTERACTION_RELIEF = 0.07;
@@ -70,6 +75,9 @@ sectionIntentCurves = (() => {
       : 1.0 / 6.0;
     const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
+    const intentRegimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const intentRegime = intentRegimeSnap ? intentRegimeSnap.regime : 'evolving';
+    const phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);
 
     // R35 E3: Asymmetric arc - shift peak later (~62% through piece) for
     // building tension with late climax. pow(p, 0.8) skews the sine peak.
@@ -103,7 +111,11 @@ sectionIntentCurves = (() => {
       // out. Alternating sign by phrase index creates genuine inter-phrase
       // density contrast: even phrases get +0.08 boost, odd phrases get
       // -0.03 dip, breaking the averaging symmetry.
-      + m.sin(clamp(timeStream.compoundProgress('phrase'), 0, 1) * m.PI) * 0.08 * (ph % 2 === 0 ? 1.0 : -0.4) * (1.0 + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * 0.3),
+      // R70 E2: Amplify phrase density perturbation 0.08->0.14 and widen
+      // odd-phrase dip -0.4->-0.55. Density variance at 0.0097 (half the
+      // 0.019 baseline) needs stronger inter-phrase contrast. Wider amplitude
+      // creates genuinely distinct phrase textures.
+      + m.sin(phraseProgress * m.PI) * 0.14 * (ph % 2 === 0 ? 1.0 : -0.55) * (1.0 + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * 0.3),
       0,
       1
     );
@@ -123,8 +135,6 @@ sectionIntentCurves = (() => {
       1
     );
     // R94 E4: Apply regime-responsive entropy floor
-    const intentRegimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const intentRegime = intentRegimeSnap ? intentRegimeSnap.regime : 'evolving';
     const effectiveEntropyFloor = ENTROPY_FLOOR_REGIME[intentRegime] || ENTROPY_FLOOR;
     const entropyTarget = clamp((densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W), effectiveEntropyFloor, ENTROPY_CEIL);
 

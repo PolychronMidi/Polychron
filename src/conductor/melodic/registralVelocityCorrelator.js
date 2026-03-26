@@ -9,13 +9,13 @@ registralVelocityCorrelator = (() => {
 
   /**
    * Compute Pearson-style correlation between MIDI pitch and velocity.
-   * @returns {{ correlation: number, flickerMod: number, suggestion: string }}
+   * @returns {{ correlation: number, flickerMod: number, tensionBias: number, suggestion: string }}
    */
   function getCorrelationSignal() {
     const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 6) {
-      return { correlation: 0, flickerMod: 1, suggestion: 'maintain' };
+      return { correlation: 0, flickerMod: 1, tensionBias: 1, suggestion: 'maintain' };
     }
     const noteMidis = analysisHelpers.extractMidiArray(notes, -1);
     const noteVelocities = analysisHelpers.extractVelocityArray(notes, -1);
@@ -36,7 +36,7 @@ registralVelocityCorrelator = (() => {
 
     const n = pitches.length;
     if (n < 5) {
-      return { correlation: 0, flickerMod: 1, suggestion: 'maintain' };
+      return { correlation: 0, flickerMod: 1, tensionBias: 1, suggestion: 'maintain' };
     }
 
     // Compute means
@@ -78,12 +78,23 @@ registralVelocityCorrelator = (() => {
       flickerMod = 0.94 + clamp(absCorr / 0.2, 0, 1) * 0.06;
     }
 
+    // R36 E5: Tension bias (cross-domain: melodic->tension).
+    // Rigid pitch-velocity mapping signals musical monotony -- push tension
+    // to encourage change. Disconnected mapping suggests evolving texture --
+    // mild tension reinforcement for natural connection.
+    let tensionBias = 1;
+    if (absCorr > 0.4) {
+      tensionBias = 1.0 + clamp((absCorr - 0.4) / 0.5, 0, 1) * 0.06;
+    } else if (absCorr < 0.15) {
+      tensionBias = 0.97 + clamp(absCorr / 0.15, 0, 1) * 0.03;
+    }
+
     let suggestion = 'maintain';
     if (absCorr > 0.75) suggestion = 'too-correlated';
     else if (absCorr > 0.4) suggestion = 'natural';
     else if (absCorr < 0.1) suggestion = 'disconnected';
 
-    return { correlation, flickerMod, suggestion };
+    return { correlation, flickerMod, tensionBias, suggestion };
   }
 
   /**
@@ -94,10 +105,20 @@ registralVelocityCorrelator = (() => {
     return getCorrelationSignal().flickerMod;
   }
 
+  /**
+   * Get tension multiplier for the derivedTension chain.
+   * @returns {number}
+   */
+  function getTensionBias() {
+    return getCorrelationSignal().tensionBias;
+  }
+
   conductorIntelligence.registerFlickerModifier('registralVelocityCorrelator', () => registralVelocityCorrelator.getFlickerModifier(), 0.85, 1.20);
+  conductorIntelligence.registerTensionBias('registralVelocityCorrelator', () => registralVelocityCorrelator.getTensionBias(), 0.97, 1.06);
 
   return {
     getCorrelationSignal,
-    getFlickerModifier
+    getFlickerModifier,
+    getTensionBias
   };
 })();

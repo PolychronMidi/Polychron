@@ -57,13 +57,16 @@ if (COMPOSER_POOL_SELECTION_STRATEGY === null) {
     version: 1,
     name: 'context-strategy-v1',
     defaultPool: 'default',
-    // Deploy fullSpectrumEclectic on every 3rd section (remainder 2 = typically development/climax territory)
+    // R70 E4: Increase eclectic pool frequency. Section mod 3->2 and
+    // phrase mod 4->3 for greater harmonic variety. With 6 sections,
+    // mod 3 only activates on S2 and S5. Mod 2 activates on S1, S3, S5
+    // giving half the composition eclectic composer selection.
     sectionModuloRules: [
-      { mod: 3, remainder: 2, pool: 'fullSpectrumEclectic' }
+      { mod: 2, remainder: 1, pool: 'fullSpectrumEclectic' }
     ],
-    // Deploy fullSpectrumEclectic on every 4th phrase within a section for variety
+    // Every 3rd phrase within a section gets full spectrum variety
     phraseModuloRules: [
-      { mod: 4, remainder: 3, pool: 'fullSpectrumEclectic' }
+      { mod: 3, remainder: 2, pool: 'fullSpectrumEclectic' }
     ]
   };
 }

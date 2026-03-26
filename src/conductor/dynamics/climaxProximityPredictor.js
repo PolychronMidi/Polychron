@@ -109,8 +109,17 @@ climaxProximityPredictor = (() => {
     // tension back to create valleys after peaks. Previously only density
     // had receding handling; tension stayed elevated after peaks, driving
     // TF/TE exceedance (32+30 beats in R16).
+    // R32 E4: Reduce max pullback 0.10->0.06. R74 E3: Section-position-aware
+    // receding. In the back half of sections (Q3/Q4 territory), suppress
+    // the receding pullback so tension sustains through late passages.
+    // Multiple peaks per section compound the pullback, creating the
+    // Q3 0.765->0.643 collapse. Structural gating replaces constant tweaking.
     if (pred.phase === 'receding') {
-      return 1.0 - clamp((1.0 - pred.proximity) * 0.20, 0, 0.10);
+      let secProg = 0;
+      try { secProg = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { void 0; }
+      const lateProtection = clamp((secProg - 0.50) / 0.30, 0, 1);
+      const recedingMax = 0.06 * (1 - lateProtection * 0.75);
+      return 1.0 - clamp((1.0 - pred.proximity) * 0.20, 0, recedingMax);
     }
     // R9 E3: Lowered onset from 0.4 to 0.25 to engage tension boost 60%
     // earlier in the buildup. Opening tension arc dropped 0.736 to 0.648 in

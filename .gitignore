@@ -13,3 +13,4 @@ deepwiki.config.json
 /log
 /tmp
 *.pyc
+/metrics

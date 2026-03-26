@@ -78,6 +78,21 @@ interLayerRhythmAnalyzer = (() => {
   }
 
   conductorIntelligence.registerFlickerModifier('interLayerRhythmAnalyzer', () => interLayerRhythmAnalyzer.getFlickerModifier(), 0.9, 1.2);
+
+  /**
+   * R30 E4: Density bias from rhythmic complementarity -- new rhythmic-to-density pathway.
+   * Complementary layers (independent, interlocking) support richer texture;
+   * in-phase layers (redundant) need less density.
+   * Continuous ramp on complementarity: 0->0.96, 0.5->1.0, 1->1.04.
+   * @returns {number}
+   */
+  function getDensityBias() {
+    const rel = getPhaseRelationship();
+    return 0.96 + clamp(rel.complementarity, 0, 1) * 0.08;
+  }
+
+  conductorIntelligence.registerDensityBias('interLayerRhythmAnalyzer', () => interLayerRhythmAnalyzer.getDensityBias(), 0.96, 1.04);
+
   conductorIntelligence.registerStateProvider('interLayerRhythmAnalyzer', () => {
     const disp = interLayerRhythmAnalyzer.getDisplacementSignal();
     const drift = interLayerRhythmAnalyzer.getDriftSignal();
@@ -101,6 +116,7 @@ interLayerRhythmAnalyzer = (() => {
     getDriftSignal,
     getAlignmentSignal,
     getFlickerModifier,
+    getDensityBias,
     getDisplacementProfile,
     getDisplacementSignal
   };

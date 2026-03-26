@@ -1,10 +1,18 @@
 {
   "meta": {
-    "generated": "2026-03-25T07:51:49.236Z",
+    "generated": "2026-03-26T00:18:51.510Z",
     "legacyAllowlistSize": 6,
     "detectedOverrides": 10,
     "unregisteredOverrides": 0,
-    "removedLegacy": 0
+    "removedLegacy": 0,
+    "couplingMatrixViolations": 0,
+    "couplingMatrixLegacy": 10,
+    "biasManifestPresent": true,
+    "biasBoundsViolations": 0,
+    "biasBoundsMissing": 0,
+    "biasBoundsAdded": 0,
+    "watchedConstantViolations": 0,
+    "watchedConstantCount": 5
   },
   "registered": [
     {
@@ -102,6 +110,127 @@
       "type": "floor",
       "threshold": 0.14,
       "rationale": "Post-R6 legacy with R3 rate adjustment (1.20x). Generic undershoot at 0.12 is 0.02 below. trustStarvationAutoNourishment (#5) handles velocity-based recovery. Candidate for removal."
+    }
+  ],
+  "couplingMatrixViolations": [],
+  "couplingMatrixLegacy": [
+    {
+      "file": "src/conductor/conductorDampening.js"
+    },
+    {
+      "file": "src/conductor/dynamics/densityWaveAnalyzer.js"
+    },
+    {
+      "file": "src/conductor/dynamics/velocityShapeAnalyzer.js"
+    },
+    {
+      "file": "src/conductor/dynamismEngine.js"
+    },
+    {
+      "file": "src/conductor/globalConductor.js"
+    },
+    {
+      "file": "src/conductor/signal/narrative/narrativeTrajectory.js"
+    },
+    {
+      "file": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js"
+    },
+    {
+      "file": "src/crossLayer/structure/entropy/entropyRegulator.js"
+    },
+    {
+      "file": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js"
+    },
+    {
+      "file": "src/rhythm/phaseLockedRhythmGenerator.js"
+    }
+  ],
+  "couplingMatrixLegacyAllowlist": [
+    {
+      "id": "phaseLockedRhythmGenerator-coupling-read",
+      "file": "src/rhythm/phaseLockedRhythmGenerator.js",
+      "rationale": "Pre-R69 legacy. Reads 4 coupling pairs to compute rhythm pressure scalars. Should register a bias via conductorIntelligence instead."
+    },
+    {
+      "id": "conductorDampening-density-entropy",
+      "file": "src/conductor/conductorDampening.js",
+      "rationale": "Pre-R69 legacy. Reads density-entropy coupling for dampening decisions. Should use controller chain."
+    },
+    {
+      "id": "densityWaveAnalyzer-coupling-read",
+      "file": "src/conductor/dynamics/densityWaveAnalyzer.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for wave analysis. Should register a bias via conductorIntelligence."
+    },
+    {
+      "id": "velocityShapeAnalyzer-coupling-read",
+      "file": "src/conductor/dynamics/velocityShapeAnalyzer.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for velocity shaping. Should register a bias via conductorIntelligence."
+    },
+    {
+      "id": "dynamismEngine-coupling-read",
+      "file": "src/conductor/dynamismEngine.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for dynamism decisions. Should use controller chain."
+    },
+    {
+      "id": "globalConductor-coupling-read",
+      "file": "src/conductor/globalConductor.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for conductor decisions. Should use controller chain."
+    },
+    {
+      "id": "narrativeTrajectory-coupling-read",
+      "file": "src/conductor/signal/narrative/narrativeTrajectory.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for narrative arc. Should register a bias via conductorIntelligence."
+    },
+    {
+      "id": "repetitionFatigueMonitor-coupling-read",
+      "file": "src/conductor/texture/phrasing/repetitionFatigueMonitor.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for fatigue detection. Should register a bias via conductorIntelligence."
+    },
+    {
+      "id": "entropyRegulator-coupling-read",
+      "file": "src/crossLayer/structure/entropy/entropyRegulator.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for entropy regulation. Should use controller chain."
+    },
+    {
+      "id": "adaptiveTrustScoresHelpers-coupling-read",
+      "file": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "rationale": "Pre-R69 legacy. Reads coupling matrix for coherence penalty formula. Should use controller chain."
+    }
+  ],
+  "biasBoundsViolations": [],
+  "biasBoundsMissing": [],
+  "biasBoundsAdded": [],
+  "watchedConstantViolations": [],
+  "watchedConstants": [
+    {
+      "id": "regime-coherent-max-dwell",
+      "file": "conductor/signal/profiling/regimeClassifier.js",
+      "expected": 75,
+      "controller": "coherentThresholdScale self-balancer"
+    },
+    {
+      "id": "criticality-density-gate",
+      "file": "conductor/signal/meta/criticalityEngine.js",
+      "expected": 0.52,
+      "controller": "criticalityEngine self-calibrating threshold"
+    },
+    {
+      "id": "criticality-tension-gate",
+      "file": "conductor/signal/meta/criticalityEngine.js",
+      "expected": 0.85,
+      "controller": "criticalityEngine self-calibrating threshold"
+    },
+    {
+      "id": "climax-receding-density-pullback",
+      "file": "conductor/dynamics/climaxProximityPredictor.js",
+      "expected": 0.12,
+      "controller": "density axis coupling controllers"
+    },
+    {
+      "id": "section-boundary-relief-window",
+      "file": "crossLayer/structure/form/sectionIntentCurves.js",
+      "expected": 0.08,
+      "controller": "density variance axis controllers"
     }
   ]
 }

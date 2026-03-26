@@ -75,10 +75,12 @@ harmonicSurpriseIndex = (() => {
       return 1.2 - clamp(profile.surpriseIndex / 0.25, 0, 1) * 0.2;
     }
     if (profile.surpriseIndex > 0.65) {
-      // R7 E3: Fresh: 0.65-1.0 maps to 1.0-0.88 (was 0.92). Wider reduction
-      // for fresh harmonic content creates more dynamic contrast between
-      // predictable and surprising passages.
-      return 1.0 - clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.12;
+      // R7 E3: Fresh: 0.65-1.0 maps to 1.0-0.88. R74 E4: Reduce 0.12->0.05.
+      // With 5 harmonic key changes and rich modal journey, most beats are
+      // "fresh", broadly suppressing tension (end-of-run bias 0.9429).
+      // 5% reduction preserves tension during harmonic motion while still
+      // creating mild contrast.
+      return 1.0 - clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.05;
     }
     return 1.0;
   }
@@ -86,8 +88,56 @@ harmonicSurpriseIndex = (() => {
   // R7 E3: Widen registration range from (0.9, 1.25) to (0.88, 1.25)
   conductorIntelligence.registerTensionBias('harmonicSurpriseIndex', () => harmonicSurpriseIndex.getTensionBias(), 0.88, 1.25);
 
+  /**
+   * R30 E3: Density bias from harmonic surprise -- new harmonic-to-density pathway.
+   * Surprising harmony (fresh, high surpriseIndex) gets richer texture;
+   * predictable harmony (stale) gets thinner.
+   * Continuous ramp: surpriseIndex 0-0.25 maps to 0.94-1.0;
+   * surpriseIndex 0.65-1.0 maps to 1.0-1.06.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @returns {number}
+   */
+  function getDensityBias(opts) {
+    const profile = getSurpriseProfile(opts);
+    if (profile.surpriseIndex < 0.25) {
+      return 0.94 + clamp(profile.surpriseIndex / 0.25, 0, 1) * 0.06;
+    }
+    if (profile.surpriseIndex > 0.65) {
+      return 1.0 + clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.06;
+    }
+    return 1.0;
+  }
+
+  conductorIntelligence.registerDensityBias('harmonicSurpriseIndex', () => harmonicSurpriseIndex.getDensityBias(), 0.94, 1.06);
+
+  /**
+   * R37 E4: Flicker bias from harmonic surprise -- 3rd domain pathway.
+   * Surprising harmony (fresh) gets timbral sparkle (flicker boost);
+   * predictable harmony (stale) gets timbral smoothing (flicker reduce).
+   * Continuous ramp: surpriseIndex 0-0.25 maps to 0.96-1.0;
+   * surpriseIndex 0.65-1.0 maps to 1.0-1.05.
+   * @param {Object} [opts]
+   * @param {string} [opts.layer]
+   * @returns {number}
+   */
+  function getFlickerBias(opts) {
+    const profile = getSurpriseProfile(opts);
+    if (profile.surpriseIndex < 0.25) {
+      return 0.96 + clamp(profile.surpriseIndex / 0.25, 0, 1) * 0.04;
+    }
+    if (profile.surpriseIndex > 0.65) {
+      return 1.0 + clamp((profile.surpriseIndex - 0.65) / 0.35, 0, 1) * 0.05;
+    }
+    return 1.0;
+  }
+
+  conductorIntelligence.registerFlickerModifier('harmonicSurpriseIndex', () => harmonicSurpriseIndex.getFlickerBias(), 0.96, 1.05);
+
   return {
     getSurpriseProfile,
-    getTensionBias
+    getTensionBias,
+    getDensityBias,
+    getFlickerBias
   };
 })();

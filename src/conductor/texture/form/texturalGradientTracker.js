@@ -85,12 +85,32 @@ texturalGradientTracker = (() => {
     return getGradientSignal().flickerMod;
   }
 
+  // R25 E4: Tension bias from textural gradient. When texture is thickening
+  // (positive gradient), boost tension -- building energy accompanies
+  // growing density. When thinning (negative gradient), reduce tension --
+  // resolving texture calls for tension release. Creates natural coupling
+  // between textural motion and harmonic tension.
+  // R26 E2: Narrowed dead zone from +/-0.08 to +/-0.03 -- R25 showed tension
+  // stuck at 1.0 while flicker pathway (0.9624) was active. Most gradients
+  // fall within +/-0.08, so the original thresholds were too wide.
+  /**
+   * Get tension multiplier from textural gradient direction.
+   * @returns {number}
+   */
+  function getTensionBias() {
+    const s = getGradientSignal();
+    if (s.gradient > 0.03) return 1.05;
+    if (s.gradient < -0.03) return 0.96;
+    return 1.0;
+  }
+
   /** Reset tracking. */
   function reset() {
     densitySamples.length = 0;
   }
 
   conductorIntelligence.registerFlickerModifier('texturalGradientTracker', () => texturalGradientTracker.getFlickerModifier(), 0.88, 1.20);
+  conductorIntelligence.registerTensionBias('texturalGradientTracker', () => texturalGradientTracker.getTensionBias(), 0.96, 1.05);
   conductorIntelligence.registerRecorder('texturalGradientTracker', (ctx) => { texturalGradientTracker.recordDensity(ctx.currentDensity, ctx.absTime); });
   conductorIntelligence.registerModule('texturalGradientTracker', { reset }, ['section']);
 
@@ -98,6 +118,7 @@ texturalGradientTracker = (() => {
     recordDensity,
     getGradientSignal,
     getFlickerModifier,
+    getTensionBias,
     reset
   };
 })();

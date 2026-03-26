@@ -80,12 +80,13 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - **Trust system names:** always use `trustSystems.names.*` / `trustSystems.heatMapSystems.*` constants. Never hardcode trust name strings. Boot validation asserts completeness.
 - **Cross-layer emission:** route all cross-layer buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. Never `push()` directly.
 - **Meta-controller constants** (coupling targets, pair baselines, coherent relaxation, coherent threshold scale, progressive strength, flicker dampening base, axis energy distribution, global gain multiplier) are managed by hypermeta self-calibrating controllers. Never hand-tune these; modify the controller logic instead. Never set `coherentThresholdScale` per-profile -- the regime self-balancer owns it. Query topology via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()`.
-- **Hypermeta-first rule (no whack-a-mole overrides):** Never add manual axis floors/caps/thresholds in `axisEnergyEquilibratorAxisAdjustments.js` SpecialCaps or similar locations. The 17 hypermeta controllers already manage all 6 axes. When an axis is suppressed or dominant, diagnose WHY the responsible controller isn't working and fix its logic (e.g., dead thresholds, asymmetric handlers, self-reinforcing decay). Pipeline script `check-hypermeta-jurisdiction.js` enforces this: new manual overrides cause pipeline failure. Legacy overrides are allowlisted in the script and tracked for removal.
+- **Hypermeta-first rule (no whack-a-mole overrides):** Never add manual axis floors/caps/thresholds in `axisEnergyEquilibratorAxisAdjustments.js` SpecialCaps or similar locations. The 17 hypermeta controllers already manage all 6 axes. When an axis is suppressed or dominant, diagnose WHY the responsible controller isn't working and fix its logic (e.g., dead thresholds, asymmetric handlers, self-reinforcing decay). Pipeline script `check-hypermeta-jurisdiction.js` enforces this across 4 phases: Phase 1 (SpecialCaps overrides), Phase 2 (coupling matrix reads), Phase 3 (bias registration bounds lock — 92 registrations locked against `scripts/bias-bounds-manifest.json`), Phase 4 (5 watched controller-managed constants). New manual overrides, changed bias bounds, or watched constant violations cause pipeline failure. Legacy violations are allowlisted and tracked for removal. To update the bias manifest after legitimate structural changes: `node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`.
+- **Coupling matrix firewall:** Never read `.couplingMatrix` from `systemDynamicsProfiler.getSnapshot()` outside the coupling engine (`src/conductor/signal/balancing/`), meta-controllers (`src/conductor/signal/meta/`), profiler, diagnostics, or pipeline plumbing. Modules that need coupling awareness must register a bias via `conductorIntelligence` and respond through the controller chain. ESLint `local/no-direct-coupling-matrix-read` enforces this; `check-hypermeta-jurisdiction.js` Phase 2 detects violations at pipeline time. Legacy violations are allowlisted and tracked for removal.
 - **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls.
 
 ## Custom ESLint Rules
 
-19 project-specific rules in `scripts/eslint-rules/`:
+20 project-specific rules in `scripts/eslint-rules/`:
 
 - **`case-conventions`** - PascalCase for classes, camelCase for everything else
 - **`no-bare-math`** - ban direct `Math.*` access; use the project `m = Math` alias
@@ -93,6 +94,7 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - **`no-console-acceptable-warning`** - restrict `console.warn` to `'Acceptable warning: ...'` format
 - **`no-direct-buffer-push-from-crosslayer`** - ban direct buffer `push()` in cross-layer modules (use `crossLayerEmissionGateway.emit()`)
 - **`no-direct-conductor-state-from-crosslayer`** - prevent cross-layer modules from reading `conductorState` directly (must use `conductorSignalBridge`)
+- **`no-direct-coupling-matrix-read`** - ban `.couplingMatrix` reads outside coupling engine, meta-controllers, and pipeline plumbing (use controller chain)
 - **`no-direct-crosslayer-write-from-conductor`** - prevent conductor modules from mutating cross-layer state (read-only access allowed)
 - **`no-direct-signal-read`** - ban `conductorIntelligence.getSignalSnapshot()` - use `signalReader`
 - **`no-math-random`** - ban `Math.random()` - use project random sources

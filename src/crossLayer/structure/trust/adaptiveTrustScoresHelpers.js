@@ -62,6 +62,9 @@ adaptiveTrustScoresHelpers = (() => {
     let pressureCount = 0;
     let severePressure = 0;
     let severePair = '';
+    let trustSurfacePressureSum = 0;
+    let trustSurfaceCount = 0;
+    let trustHotPairCount = 0;
     for (let i = 0; i < pairList.length; i++) {
       const pair = pairList[i];
       const rawCorrelation = couplingMatrix[pair];
@@ -94,6 +97,13 @@ adaptiveTrustScoresHelpers = (() => {
       maxPressure = m.max(maxPressure, pairPressure);
       pressureSum += pairPressure;
       pressureCount++;
+      if (pair.indexOf('trust') >= 0) {
+        trustSurfacePressureSum += pairPressure;
+        trustSurfaceCount++;
+        if (pairPressure >= 0.18 || pairSeverePressure >= 0.16) {
+          trustHotPairCount++;
+        }
+      }
       if (pairSeverePressure > severePressure) {
         severePressure = pairSeverePressure;
         severePair = pair;
@@ -101,12 +111,20 @@ adaptiveTrustScoresHelpers = (() => {
     }
     hotspotPairs.sort(function(a, b) { return b.pressure - a.pressure; });
     const meanPressure = pressureCount > 0 ? pressureSum / pressureCount : 0;
+    const trustSurfacePressure = trustSurfaceCount > 0 ? trustSurfacePressureSum / trustSurfaceCount : 0;
+    const trustClusterPressure = clamp(
+      clamp((trustHotPairCount - 1) / 2, 0, 1) * 0.18 + trustSurfacePressure * 0.12,
+      0,
+      0.28
+    );
     const profile = {
-      pressure: Number(clamp(maxPressure * 0.60 + meanPressure * 0.40, 0, 1).toFixed(4)),
+      pressure: Number(clamp(maxPressure * 0.56 + meanPressure * 0.32 + trustClusterPressure, 0, 1).toFixed(4)),
       dominantPair: hotspotPairs.length > 0 ? hotspotPairs[0].pair : '',
       hotspotPairs: hotspotPairs.slice(0, 3),
-      severePressure: Number(clamp(severePressure, 0, 1).toFixed(4)),
+      severePressure: Number(clamp(severePressure + trustClusterPressure * 0.55, 0, 1).toFixed(4)),
       severePair,
+      trustSurfacePressure: Number(clamp(trustSurfacePressure, 0, 1).toFixed(4)),
+      trustHotPairCount,
     };
     adaptiveTrustScoresHelpersHotspotCache.set(systemName, profile);
     return profile;
@@ -194,6 +212,8 @@ adaptiveTrustScoresHelpers = (() => {
     const pairAwareProfile = getSystemPairHotspotProfile(systemName);
     const pairAwarePressure = pairAwareProfile.pressure;
     const pairAwareSeverePressure = pairAwareProfile.severePressure || 0;
+    const trustSurfacePressure = pairAwareProfile.trustSurfacePressure || 0;
+    const trustClusterPressure = clamp((pairAwareProfile.trustHotPairCount || 0) > 1 ? trustSurfacePressure * 0.45 + 0.10 : 0, 0, 0.28);
     const trustSurfaceSystem = (pairAwareHotspotPairs[systemName] || []).some(function(pair) { return pair.indexOf('trust') >= 0; });
     const contextualScoreGetter = contextualTrust ? contextualTrust.getScore : undefined;
     const contextualScore = contextualScoreGetter ? contextualScoreGetter(systemName) : null;
@@ -217,6 +237,8 @@ adaptiveTrustScoresHelpers = (() => {
       trustHotspotPressure * 0.48 +
       pairAwarePressure * 0.60 +
       pairAwareSeverePressure * 0.50 +
+      trustSurfacePressure * 0.28 +
+      trustClusterPressure * 0.36 +
       trustAxisPressure * 0.32 +
       (trustSurfaceSystem ? phaseStarvationPressure * 0.42 : 0) +
       stickyTailPressure * 0.24 +
@@ -228,7 +250,7 @@ adaptiveTrustScoresHelpers = (() => {
     );
 
     const coherencePenalty = specificProfile && systemName === trustSystems.names.COHERENCE_MONITOR
-      ? clamp(trustHotspotPressure * 0.25 + pairAwarePressure * 0.24 + pairAwareSeverePressure * 0.22 + trustAxisPressure * 0.20 + settlementPressure * 0.20 + stickyTailPressure * 0.12 + contextualGap * 0.12 + phaseStarvationPressure * 0.24, 0, 0.50)
+      ? clamp(trustHotspotPressure * 0.25 + pairAwarePressure * 0.24 + pairAwareSeverePressure * 0.22 + trustSurfacePressure * 0.16 + trustClusterPressure * 0.18 + trustAxisPressure * 0.20 + settlementPressure * 0.20 + stickyTailPressure * 0.12 + contextualGap * 0.12 + phaseStarvationPressure * 0.24, 0, 0.50)
       : 0;
 
     return {

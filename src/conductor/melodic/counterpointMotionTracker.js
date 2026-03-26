@@ -69,8 +69,12 @@ counterpointMotionTracker = (() => {
         dominant = keys[i];
       }
     }
-    // Only dominant if >50% of total
-    if (maxCount / total < 0.5) dominant = 'mixed';
+    // Only dominant if >40% of total
+    // R21 E3: Lowered from 50% to 40%. At 50%, mixed motion almost always
+    // dominates, leaving tension and density biases permanently neutral.
+    // 40% activates biases when parallel or contrary motion is prevalent
+    // but not necessarily majority.
+    if (maxCount / total < 0.4) dominant = 'mixed';
 
     return { parallel, contrary, oblique, similar, total, dominant };
   }
@@ -104,6 +108,15 @@ counterpointMotionTracker = (() => {
     // parallelBias 0.8 means parallel is dominant -> boost tension to encourage variety
     return b.parallelBias < 1.0 ? 1.15 : (b.contraryBias < 1.0 ? 0.88 : 1.0);
   }, 0.88, 1.15);
+
+  // R20 E4: Counterpoint-aware density bias. Parallel motion lockstep
+  // reduces textural independence -- pull density back to create space.
+  // Contrary motion enriches counterpoint -- allow denser texture.
+  // Mixed motion is neutral. Range (0.93, 1.08).
+  conductorIntelligence.registerDensityBias('counterpointMotionTracker', () => {
+    const b = counterpointMotionTracker.getMotionBias();
+    return b.parallelBias < 1.0 ? 0.93 : (b.contraryBias < 1.0 ? 1.08 : 1.0);
+  }, 0.93, 1.08);
 
   return {
     getMotionProfile,

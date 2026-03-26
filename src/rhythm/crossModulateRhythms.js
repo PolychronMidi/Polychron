@@ -70,6 +70,19 @@ crossModulateRhythms = () => {
     }
   }
 
+  // R41 E3: Phase coupling awareness. When phase coupling coverage is sparse,
+  // boost cross-modulation to increase polyrhythmic energy flowing to phase
+  // pairs. Phase is consistently the weakest axis (0.123-0.135 share). Richer
+  // cross-modulation creates more opportunities for inter-layer phase
+  // interactions to register as meaningful coupling events.
+  if (profSnap && typeof profSnap.phaseCouplingCoverage === 'number') {
+    const phaseCov = profSnap.phaseCouplingCoverage;
+    if (phaseCov < 0.6) {
+      // Graduated boost: 0% at coverage 0.6, up to 10% at coverage 0.0
+      crossModulation *= 1.0 + clamp((0.6 - phaseCov) / 0.6, 0, 1) * 0.10;
+    }
+  }
+
   // R17 E3: Composition-progress rhythmic arc. Opening gets tighter
   // texture, building/climax gets more complex, coda settles. Bell curve
   // centered at 0.55 (slightly past midpoint) parallels the tension arch.

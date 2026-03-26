@@ -23,11 +23,11 @@ harmonicDensityOscillator = (() => {
 
   /**
    * Detect oscillation pattern in harmonic density.
-   * @returns {{ oscillating: boolean, tensionBias: number, period: number }}
+   * @returns {{ oscillating: boolean, tensionBias: number, densityBias: number, period: number }}
    */
   function harmonicDensityOscillatorComputeOscillationSignal() {
     if (changeSamples.length < 6) {
-      return { oscillating: false, tensionBias: 1, period: 0 };
+      return { oscillating: false, tensionBias: 1, densityBias: 1, period: 0 };
     }
 
     // Check for alternating high/low pattern (simple oscillation detection)
@@ -62,14 +62,24 @@ harmonicDensityOscillator = (() => {
       tensionBias = 1.0 + clamp((alternationRate - 0.4) / 0.4, 0, 1) * 0.03;
     }
 
-    return { oscillating, tensionBias, period };
+    // R35 E5: Density bias -- cross-domain pathway (harmonic->density).
+    // Stale harmony (low alternation) -> suppress density for contrast.
+    // Active breathing (high alternation) -> mild density boost.
+    let densityBias = 1;
+    if (alternationRate < 0.15) {
+      densityBias = 0.96 + clamp(alternationRate / 0.15, 0, 1) * 0.04;
+    } else if (alternationRate > 0.4) {
+      densityBias = 1.0 + clamp((alternationRate - 0.4) / 0.4, 0, 1) * 0.04;
+    }
+
+    return { oscillating, tensionBias, densityBias, period };
   }
 
   const harmonicDensityOscillatorCache = beatCache.create(harmonicDensityOscillatorComputeOscillationSignal);
 
   /**
    * Detect oscillation pattern in harmonic density (cached per beat).
-   * @returns {{ oscillating: boolean, tensionBias: number, period: number }}
+   * @returns {{ oscillating: boolean, tensionBias: number, densityBias: number, period: number }}
    */
   function getOscillationSignal() { return harmonicDensityOscillatorCache.get(); }
 
@@ -81,12 +91,21 @@ harmonicDensityOscillator = (() => {
     return getOscillationSignal().tensionBias;
   }
 
+  /**
+   * Get density multiplier for the derivedDensity chain.
+   * @returns {number}
+   */
+  function getDensityBias() {
+    return getOscillationSignal().densityBias;
+  }
+
   /** Reset tracking. */
   function reset() {
     changeSamples.length = 0;
   }
 
   conductorIntelligence.registerTensionBias('harmonicDensityOscillator', () => harmonicDensityOscillator.getTensionBias(), 0.9, 1.1);
+  conductorIntelligence.registerDensityBias('harmonicDensityOscillator', () => harmonicDensityOscillator.getDensityBias(), 0.96, 1.04);
   conductorIntelligence.registerRecorder('harmonicDensityOscillator', (ctx) => {
     const hr = clamp(V.optionalFinite(ctx.harmonicRhythm, 0.5), 0, 1);
     harmonicDensityOscillator.recordChangeRate(hr, ctx.absTime);
@@ -100,6 +119,7 @@ harmonicDensityOscillator = (() => {
     recordChangeRate,
     getOscillationSignal,
     getTensionBias,
+    getDensityBias,
     reset
   };
 })();

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-03-25T07:51:49.198Z",
+    "generated": "2026-03-26T00:18:51.461Z",
     "totalFiles": 438,
     "globalsDeclared": 717,
     "globalsMapped": 717,
@@ -84,7 +84,7 @@
     ],
     "subsystemCount": 9,
     "intraSubsystemViolations": 0,
-    "crossSubsystemViolations": 0
+    "crossSubsystemViolations": 1
   },
   "bootOrder": [
     {
@@ -3390,5 +3390,13 @@
     }
   ],
   "intraSubsystemViolations": [],
-  "crossSubsystemViolations": []
+  "crossSubsystemViolations": [
+    {
+      "consumer": "src/crossLayer/structure/trust/adaptiveTrustScores.js",
+      "consumerSubsystem": "crossLayer",
+      "provider": "src/writer/index.js",
+      "providerSubsystem": "writer",
+      "global": "p"
+    }
+  ]
 }

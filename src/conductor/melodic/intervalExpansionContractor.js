@@ -81,8 +81,11 @@ intervalExpansionContractor = (() => {
     const avgIntervalTrend = recentAvg - olderAvg;
 
     let trend = 'stable';
-    if (avgIntervalTrend > 1.5) trend = 'expanding';
-    else if (avgIntervalTrend < -1.5) trend = 'contracting';
+    // R27 E2: Narrowed thresholds from +/-1.5 to +/-0.8. R26 showed
+    // tension at 1.0 (stable intervals) because typical avgIntervalTrend
+    // rarely exceeds +/-1.5 in well-balanced compositions.
+    if (avgIntervalTrend > 0.8) trend = 'expanding';
+    else if (avgIntervalTrend < -0.8) trend = 'contracting';
 
     // Density bias: rapid expansion - slight reduction to give melodic room;
     // extreme contraction - slight increase to encourage variety
@@ -90,9 +93,10 @@ intervalExpansionContractor = (() => {
     // R6 E3: Widen density bias from 4% to 8%. Stronger response to
     // intervallic trends creates more melodic diversity: wider leaps get
     // more room, stepwise motion gets encouraged toward variety.
-    if (avgIntervalTrend > 2) {
+    // R27 E2: Aligned density bias thresholds with narrowed trend thresholds.
+    if (avgIntervalTrend > 1.2) {
       densityBias = 0.92; // expanding fast - give room
-    } else if (avgIntervalTrend < -2) {
+    } else if (avgIntervalTrend < -1.2) {
       densityBias = 1.08; // contracting - encourage variety
     }
 
@@ -112,7 +116,24 @@ intervalExpansionContractor = (() => {
     intervalSnapshots.length = 0;
   }
 
+  // R26 E5: Tension bias from intervallic expansion/contraction. Expanding
+  // intervals (wider leaps appearing) correlate with rising dramatic
+  // intensity and should boost tension. Contracting intervals (tighter
+  // steps) signal settling/resolution and should relax tension. Creates
+  // cross-domain melodic->harmonic coupling.
+  /**
+   * Get tension multiplier from interval expansion trajectory.
+   * @returns {number}
+   */
+  function getTensionBias() {
+    const s = getExpansionSignal();
+    if (s.trend === 'expanding') return 1.05;
+    if (s.trend === 'contracting') return 0.96;
+    return 1.0;
+  }
+
   conductorIntelligence.registerDensityBias('intervalExpansionContractor', () => intervalExpansionContractor.getDensityBias(), 0.9, 1.1);
+  conductorIntelligence.registerTensionBias('intervalExpansionContractor', () => intervalExpansionContractor.getTensionBias(), 0.96, 1.05);
   conductorIntelligence.registerRecorder('intervalExpansionContractor', (ctx) => { intervalExpansionContractor.recordSnapshot(ctx.absTime); });
   conductorIntelligence.registerStateProvider('intervalExpansionContractor', () => {
     const s = intervalExpansionContractor.getExpansionSignal();
@@ -124,6 +145,7 @@ intervalExpansionContractor = (() => {
     recordSnapshot,
     getExpansionSignal,
     getDensityBias,
+    getTensionBias,
     reset
   };
 })();

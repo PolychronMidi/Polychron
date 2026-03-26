@@ -75,6 +75,8 @@ narrativeTrajectory = (() => {
     // Prevent the tension arc from collapsing in the final quarter of a section.
     // When section progress exceeds 75%, ensure a minimum tension bias of 1.02.
     const secProgress = timeStream.normalizedProgress('section');
+    const s = timeStream.getPosition('section');
+    const totalSections = timeStream.getBounds('section');
     if (typeof secProgress === 'number' && Number.isFinite(secProgress)) {
       const edgeDistance = m.min(clamp(secProgress, 0, 1), clamp(1 - secProgress, 0, 1));
       const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
@@ -97,6 +99,8 @@ narrativeTrajectory = (() => {
       const tensionFlickerPressure = couplingMatrix && typeof couplingMatrix['tension-flicker'] === 'number' && Number.isFinite(couplingMatrix['tension-flicker'])
         ? clamp((m.abs(couplingMatrix['tension-flicker']) - 0.78) / 0.16, 0, 1)
         : 0;
+      const tensionProduct = conductorState.getField('tension');
+      const tensionSaturationPressure = clamp((tensionProduct - 1.10) / 0.20, 0, 1);
       const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
         ? dynamicSnap.evolvingShare
         : 0;
@@ -105,17 +109,24 @@ narrativeTrajectory = (() => {
         : 0;
       const evolvingRecoveryPressure = clamp((0.055 - evolvingShare) / 0.055, 0, 1);
       const coherentOvershare = clamp((coherentShare - 0.34) / 0.18, 0, 1);
-      const hotspotRelief = clamp(densityFlickerPressure * 0.45 + trustSharePressure * 0.25 + lowPhasePressure * 0.30, 0, 1);
+      const hotspotRelief = clamp(densityFlickerPressure * 0.45 + tensionFlickerPressure * 0.20 + trustSharePressure * 0.25 + lowPhasePressure * 0.30 + tensionSaturationPressure * 0.35, 0, 1);
       if (edgePressure > 0) {
         steerBias = 1.0 + (steerBias - 1.0) * (1 - hotspotRelief * (0.35 + edgePressure * 0.35));
       }
       const midSectionDrive = clamp(1 - edgePressure * 2.2, 0, 1);
-      const arcReheat = midSectionDrive * clamp(phaseRecoveryCredit * 0.014 + evolvingRecoveryPressure * 0.02 + coherentOvershare * 0.012 - densityFlickerPressure * 0.01 - tensionFlickerPressure * 0.012, 0, 0.032);
+      const arcReheat = midSectionDrive * clamp(phaseRecoveryCredit * 0.010 + evolvingRecoveryPressure * 0.014 + coherentOvershare * 0.008 - densityFlickerPressure * 0.01 - tensionFlickerPressure * 0.012 - tensionSaturationPressure * 0.014, 0, 0.024);
       if (arcReheat > 0) {
         steerBias += arcReheat;
       }
+      // R74 E2: Section-route-aware back-half recovery. Mid-piece sections
+      // (where the tension arc should peak) get amplified recovery force.
+      // Edge sections (S0, final S) get base recovery. This creates a
+      // structural envelope that lifts Q3/Q4 tension in the compositional
+      // core without constant tweaking.
+      const sectionRouteForRecovery = totalSections > 1 ? s / (totalSections - 1) : 0;
+      const midPieceBoost = 1.0 + m.sin(clamp(sectionRouteForRecovery, 0, 1) * m.PI) * 0.8;
       const backHalfRecovery = secProgress > 0.52
-        ? clamp((secProgress - 0.52) / 0.30, 0, 1) * clamp(evolvingRecoveryPressure * 0.018 + coherentOvershare * 0.014 + phaseRecoveryCredit * 0.01 - tensionFlickerPressure * 0.01, 0, 0.026)
+        ? clamp((secProgress - 0.52) / 0.30, 0, 1) * clamp(evolvingRecoveryPressure * 0.014 + coherentOvershare * 0.010 + phaseRecoveryCredit * 0.008 - tensionFlickerPressure * 0.01 - tensionSaturationPressure * 0.012, 0, 0.020) * midPieceBoost
         : 0;
       if (backHalfRecovery > 0) {
         steerBias += backHalfRecovery;
@@ -126,10 +137,13 @@ narrativeTrajectory = (() => {
       if (finalRelease > 0) {
         steerBias = m.max(0.985, steerBias - finalRelease);
       }
+      if (tensionSaturationPressure > 0 && steerBias > 1.0) {
+        steerBias = 1.0 + (steerBias - 1.0) * (1 - tensionSaturationPressure * 0.85);
+      }
       if (secProgress > 0.75) {
-        steerBias = m.max(steerBias, 1.0 + 0.02 * (1 - hotspotRelief));
+        steerBias = m.max(steerBias, 1.0 + 0.006 * (1 - hotspotRelief) * (1 - tensionSaturationPressure * 0.85));
       } else if (secProgress > 0.68) {
-        steerBias = m.max(steerBias, 1.0 + clamp(backHalfRecovery + coherentOvershare * 0.008 - hotspotRelief * 0.01, 0, 0.028));
+        steerBias = m.max(steerBias, 1.0 + clamp(backHalfRecovery + coherentOvershare * 0.006 - hotspotRelief * 0.012 - tensionSaturationPressure * 0.010, 0, 0.016));
       }
     }
   }

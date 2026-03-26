@@ -76,6 +76,11 @@ negotiationEngine = (() => {
     let playProb = clamp(context.playProb * playScale * clamp(PLAY_ENTROPY_BASE + entropyScale * PLAY_ENTROPY_SCALE, PLAY_ENTROPY_MIN, PLAY_ENTROPY_MAX), 0, 1);
     let stutterProb = clamp(context.stutterProb * stutterScale * clamp(STUTTER_ENTROPY_BASE + entropyScale * STUTTER_ENTROPY_SCALE, STUTTER_ENTROPY_MIN, STUTTER_ENTROPY_MAX), 0, 1);
 
+    // R43 E4: removed in R45 E3. Regime-responsive play scaling was
+    // contributing to note count decline (54596->34940 over 4 rounds).
+    // Coherent play reduction (0.97x) compounded with stutter-regime
+    // modulation in processBeat. Removing to recover note output.
+
     const conflict = m.abs(trustCadence - trustStutter);
     if (conflict > CONFLICT_THRESHOLD) {
       playProb = clamp(playProb * CONFLICT_PLAY_DAMPEN, 0, 1);
