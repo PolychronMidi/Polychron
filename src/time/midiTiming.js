@@ -15,18 +15,6 @@ getMidiTiming = () => {
   }
   meterRatio = numerator / denominator;
 
-  if (isPowerOf2(denominator)) {
-    midiMeter = [numerator, denominator];
-  } else {
-    const high = 2 ** m.ceil(m.log2(denominator));
-    const highRatio = numerator / high;
-    const low = 2 ** m.floor(m.log2(denominator));
-    const lowRatio = numerator / low;
-    midiMeter = m.abs(meterRatio - highRatio) < m.abs(meterRatio - lowRatio)
-      ? [numerator, high]
-      : [numerator, low];
-  }
-
   return setMidiTiming();
 };
 
@@ -35,15 +23,12 @@ getMidiTiming = () => {
  * Context-aware: writes to c1 or c2 depending on current meter.
  */
 setMidiTiming = () => {
-  midiMeterRatio = midiMeter[0] / midiMeter[1];
-  syncFactor = midiMeterRatio / meterRatio;
-  midiBPM = BPM * syncFactor;
   spMeasure = (60 / BPM) * 4 * meterRatio;
   if (!Number.isFinite(spMeasure) || spMeasure <= 0) {
     throw new Error(`Invalid spMeasure: ${spMeasure}`);
   }
   p(c,
-    { timeInSeconds: measureStartTime, type: 'bpm', vals: [midiBPM] },
-    { timeInSeconds: measureStartTime, type: 'meter', vals: [midiMeter[0], midiMeter[1]] },
+    { timeInSeconds: measureStartTime, type: 'bpm', vals: [BPM] },
+    { timeInSeconds: measureStartTime, type: 'meter', vals: [numerator, denominator] },
   );
 };
