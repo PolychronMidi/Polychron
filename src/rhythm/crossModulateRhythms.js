@@ -89,4 +89,19 @@ crossModulateRhythms = () => {
   const compositionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
   const rhythmicArc = 0.92 + 0.18 * m.exp(-m.pow((compositionProg - 0.55) * 2.2, 2));
   crossModulation *= rhythmicArc;
+
+  // E19: HyperMeta crossModulation influence. Controlled firewall breach
+  // giving hypermeta a direct composition-level throttle. Bounded tightly
+  // (+/-0.3 on a 0-6 scale = ~5% influence max) so even runaway feedback
+  // has capped effect. Bidirectional:
+  //   e19CrossModBoost > 0: boosts crossMod (more notes pass gate, richer texture)
+  //   e19CrossModBoost < 0: suppresses crossMod (fewer notes pass gate, breathing)
+  // During E11 sparse windows: negative offset reinforces ceiling suppression
+  // at the note-emission level (downstream of conductor signals).
+  // During healthy exploring: positive offset adds richness where chaos lives.
+  const e19Offset = safePreBoot.call(
+    () => hyperMetaManager.getRateMultiplier('e19CrossModBoost'), 0) || 0;
+  if (e19Offset !== 0) {
+    crossModulation = clamp(crossModulation + e19Offset, 0, 8);
+  }
 }

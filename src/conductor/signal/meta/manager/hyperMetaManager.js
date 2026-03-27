@@ -214,6 +214,43 @@ hyperMetaManager = (() => {
       }
     }
 
+    // E18: Health-gated evolution scaling. Scale E9/E11/E13 intervention
+    // strength by current system health. Healthy (healthEma > 0.7) = full
+    // strength; degraded (healthEma < 0.7) = automatically reduced.
+    // Range: 0.5x (very unhealthy) to 1.2x (very healthy, reward stability).
+    // This is the self-correction the evolutions previously lacked -- they
+    // now breathe harder when the system is stable and back off when stressed.
+    const e18HealthScale = clamp(S.healthEma / 0.7, 0.5, 1.2);
+
+    // E19: HyperMeta crossModulation influence. Additive offset on
+    // crossModulation, bounded +/-0.3 (~5% of 0-6 range). Operates
+    // downstream of all conductor signals -- direct note-gate influence.
+    // During E11 sparse windows: suppress crossMod to reinforce breathing
+    //   at note-emission level (not just conductor density ceiling).
+    // During exploring + healthy: small boost for richer polyrhythmic texture.
+    // Neutral (0) at all other times -- does not disturb normal operation.
+    {
+      const e11Active = (ST.rateMultipliers.e11SparseWindow || 0) > 0;
+      const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride || 1.0;
+      if (e11Active && e11Ceiling < 0.95) {
+        // Sparse window: suppress crossMod proportional to ceiling suppression
+        // Max suppression: 0.3 when ceiling at 0.55 (0.45 suppression * 0.67)
+        const suppressDepth = clamp((1.0 - e11Ceiling) * 0.67, 0, 0.3);
+        ST.rateMultipliers.e19CrossModBoost = -suppressDepth;
+      } else if (currentRegime === 'exploring' && e18HealthScale > 0.9) {
+        // Exploring + healthy: small positive boost for richer texture
+        // Scale by health so it backs off if system is stressed
+        ST.rateMultipliers.e19CrossModBoost = 0.15 * (e18HealthScale - 0.9) / 0.3;
+      } else {
+        // Decay toward 0 (neutral)
+        const prev = ST.rateMultipliers.e19CrossModBoost || 0;
+        ST.rateMultipliers.e19CrossModBoost = prev * 0.7;
+        if (m.abs(ST.rateMultipliers.e19CrossModBoost) < 0.01) {
+          ST.rateMultipliers.e19CrossModBoost = 0;
+        }
+      }
+    }
+
     // E15: Within-phrase density sculpting -- REFUTED.
     // Continuous smoothing variation creates persistent non-stationary signal
     // that coupling system can't stabilize around. Causes coherent regime
@@ -238,6 +275,7 @@ hyperMetaManager = (() => {
     // letting the raw target signal through with less EMA filtering.
     // This creates structural breathing room at phrase transitions.
     // Acts on conductor config pathway, not on pair ceilings (avoids E6).
+    // E18: strength scaled by e18HealthScale.
     {
       let phraseIdx = -1;
       try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { void 0; }
@@ -249,9 +287,10 @@ hyperMetaManager = (() => {
         S.e9BreathingCountdown--;
         // Smoothing relax: 1.0 = normal, >1.0 = reduce smoothing coefficient
         // downstream: effective smoothing = base / e9DensitySmoothingRelax
-        ST.rateMultipliers.e9DensitySmoothingRelax = 1.5;
+        // E18: base 1.5, health-scaled so unhealthy system gets less relax
+        ST.rateMultipliers.e9DensitySmoothingRelax = 1.0 + 0.5 * e18HealthScale;
         // Swing boost: widen density bounds temporarily
-        ST.rateMultipliers.e9DensitySwingBoost = 1.2;
+        ST.rateMultipliers.e9DensitySwingBoost = 1.0 + 0.2 * e18HealthScale;
       } else {
         // Decay toward neutral
         ST.rateMultipliers.e9DensitySmoothingRelax = m.max(1.0,
@@ -314,12 +353,23 @@ hyperMetaManager = (() => {
         ST.rateMultipliers.e11SparseWindow = 1.0;
         // E13: Regime-scaled ceiling suppression and rest boost.
         // exploring = no suppression, coherent = strongest, evolving = moderate.
-        const e13CeilingScale = currentRegime === 'exploring' ? 1.0
+        // E18: ceiling suppression depth health-scaled (less suppression when stressed).
+        // For ceiling: base suppression (1.0 - baseVal) scaled, then re-expressed as override.
+        // For rest: boost above 1.0 health-scaled.
+        const e13BaseCeiling = currentRegime === 'exploring' ? 1.0
           : currentRegime === 'coherent' ? 0.55
           : 0.70; // evolving
-        const e13RestScale = currentRegime === 'exploring' ? 1.0
+        const e13BaseRest = currentRegime === 'exploring' ? 1.0
           : currentRegime === 'coherent' ? 2.5
           : 1.6; // evolving
+        // E18: interpolate ceiling toward 1.0 when unhealthy (less suppression)
+        const e13CeilingScale = e13BaseCeiling < 1.0
+          ? clamp(1.0 - (1.0 - e13BaseCeiling) * e18HealthScale, e13BaseCeiling, 1.0)
+          : 1.0;
+        // E18: scale rest boost above baseline by health
+        const e13RestScale = e13BaseRest > 1.0
+          ? 1.0 + (e13BaseRest - 1.0) * e18HealthScale
+          : 1.0;
         ST.rateMultipliers.e11DensityCeilingOverride = e13CeilingScale;
         ST.rateMultipliers.e11RestBoost = e13RestScale;
       } else if (S.e11SparseCountdown > 0) {
