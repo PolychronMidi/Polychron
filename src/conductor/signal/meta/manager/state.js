@@ -47,8 +47,9 @@ hyperMetaManagerState = (() => {
     e9BreathingCountdown:  0,
     // E10: Tension release - phrase trough tracking
     e10ReleaseCooldown:    0,
-    // E11: Structural sparse windows
+    // E11/E13: Structural sparse windows (regime-aware)
     e11SparseCountdown:    0,
+    // E12: Section-level tension floor relaxation (no extra state needed)
   };
 
   // COLLECTION STATE
