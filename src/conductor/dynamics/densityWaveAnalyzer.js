@@ -125,7 +125,16 @@ densityWaveAnalyzer = (() => {
    */
   function getTensionBias() {
     const profile = getWaveProfile();
-    if (profile.isFlat) return 1.06;
+    // E10: When hyperMetaManager signals tension suppression during phrase
+    // troughs, reduce or invert the flat-density tension boost. This breaks
+    // the vicious cycle where flat density -> tension boost -> more energy
+    // consumption -> homeostasis suppresses gain -> flatter density.
+    const e10Suppress = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e10TensionSuppress'), 1.0) || 1.0;
+    if (profile.isFlat) {
+      // Normal: 1.06. With e10Suppress=0.6: 1.0 + 0.06*0.6 = 1.036
+      // During deep trough: tension boost is nearly eliminated
+      return 1.0 + 0.06 * e10Suppress;
+    }
     if (profile.isWaving) return 1.02;
     return 1.0;
   }

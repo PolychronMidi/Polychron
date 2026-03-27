@@ -68,7 +68,9 @@ restSynchronizer = (() => {
     // densityProduct is a multiplicative modifier centered around 1.0 (range ~0.5-1.8).
     // Above 1.0 = denser, below 1.0 = sparser. Scale modestly.
     const densityRestBoost = clamp((conductorDensity - 1.0) * 0.08, -0.04, 0.04);
-    const restProb = (SHARED_REST_BASE + regimeBonus + densityRestBoost) * (1 + restUrgency);
+    // E11: Boost rest probability during structural sparse windows
+    const e11RestBoost = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11RestBoost'), 1.0) || 1.0;
+    const restProb = (SHARED_REST_BASE + regimeBonus + densityRestBoost) * (1 + restUrgency) * e11RestBoost;
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';

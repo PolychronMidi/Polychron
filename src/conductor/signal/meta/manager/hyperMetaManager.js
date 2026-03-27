@@ -191,6 +191,97 @@ hyperMetaManager = (() => {
     }
 
 
+    // E9: Density breathing windows. At phrase boundaries, temporarily
+    // reduce density smoothing and widen the density floor/ceiling gap,
+    // letting the raw target signal through with less EMA filtering.
+    // This creates structural breathing room at phrase transitions.
+    // Acts on conductor config pathway, not on pair ceilings (avoids E6).
+    {
+      let phraseIdx = -1;
+      try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { void 0; }
+      if (phraseIdx >= 0 && phraseIdx !== S.e9LastPhraseIndex) {
+        S.e9LastPhraseIndex = phraseIdx;
+        S.e9BreathingCountdown = 4;
+      }
+      if (S.e9BreathingCountdown > 0) {
+        S.e9BreathingCountdown--;
+        // Smoothing relax: 1.0 = normal, >1.0 = reduce smoothing coefficient
+        // downstream: effective smoothing = base / e9DensitySmoothingRelax
+        ST.rateMultipliers.e9DensitySmoothingRelax = 1.5;
+        // Swing boost: widen density bounds temporarily
+        ST.rateMultipliers.e9DensitySwingBoost = 1.2;
+      } else {
+        // Decay toward neutral
+        ST.rateMultipliers.e9DensitySmoothingRelax = m.max(1.0,
+          (ST.rateMultipliers.e9DensitySmoothingRelax || 1.0) * 0.85);
+        ST.rateMultipliers.e9DensitySwingBoost = m.max(1.0,
+          (ST.rateMultipliers.e9DensitySwingBoost || 1.0) * 0.90);
+      }
+    }
+
+    // E10: Tension release cycle. Break the flat-density -> tension-boost
+    // feedback loop. When density is flat and we are at a phrase trough,
+    // suppress the tension bias, allowing genuine tension dips.
+    // Acts on tension bias pathway, not ceilings.
+    // NOTE: arch floor drop removed after R2 showed tension-flicker
+    // exceedance -- abrupt floor changes create coupling discontinuities.
+    // Only the tension bias suppression remains (gentler pathway).
+    {
+      let phraseProgress = 0;
+      try { phraseProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('phrase'), 0) || 0, 0, 1); } catch { void 0; }
+      // Phrase troughs: second half of phrase is the natural descent
+      const inPhraseTrough = phraseProgress > 0.55;
+      // Check if density is flat via wave analyzer
+      const densityWaveFlat = safePreBoot.call(() => {
+        const wp = densityWaveAnalyzer.getWaveProfile();
+        return wp && wp.isFlat;
+      }, false);
+      if (inPhraseTrough && densityWaveFlat) {
+        S.e10ReleaseCooldown = 3;
+        // Tension suppression: < 1.0 tells densityWaveAnalyzer to suppress
+        // its tension boost instead of amplifying
+        ST.rateMultipliers.e10TensionSuppress = 0.7;
+      } else if (S.e10ReleaseCooldown > 0) {
+        S.e10ReleaseCooldown--;
+      } else {
+        ST.rateMultipliers.e10TensionSuppress = m.min(1.0,
+          (ST.rateMultipliers.e10TensionSuppress || 1.0) * 1.15);
+      }
+      ST.rateMultipliers.e10ArchFloorDrop = 0;
+    }
+
+    // E11: Structural sparse windows. At phrase boundaries, emit a sparse
+    // window signal that forces multi-beat low-density passages. This
+    // creates perceptible breathing that single-beat rests cannot achieve.
+    // Acts on rest sync probability and density ceiling, not pair ceilings.
+    {
+      let phraseIdx = -1;
+      try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { void 0; }
+      let phraseProgress = 0;
+      try { phraseProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('phrase'), 0) || 0, 0, 1); } catch { void 0; }
+      // Sparse window at phrase wrap: last 5% of phrase
+      const atPhraseEnd = phraseProgress > 0.95;
+      // Also at phrase start: first 3% after S0
+      const atPhraseStart = phraseProgress < 0.03 && phraseIdx > 0;
+      if (atPhraseEnd || atPhraseStart) {
+        S.e11SparseCountdown = 2;
+        ST.rateMultipliers.e11SparseWindow = 1.0;
+        // Density ceiling suppression during sparse window (gentle)
+        ST.rateMultipliers.e11DensityCeilingOverride = 0.65;
+        // Rest probability boost
+        ST.rateMultipliers.e11RestBoost = 2.0;
+      } else if (S.e11SparseCountdown > 0) {
+        S.e11SparseCountdown--;
+        ST.rateMultipliers.e11SparseWindow = 1.0;
+        ST.rateMultipliers.e11DensityCeilingOverride = clamp(0.65 + (2 - S.e11SparseCountdown) * 0.15, 0.65, 0.95);
+        ST.rateMultipliers.e11RestBoost = m.max(1.2, 2.0 - (2 - S.e11SparseCountdown) * 0.4);
+      } else {
+        ST.rateMultipliers.e11SparseWindow = 0;
+        ST.rateMultipliers.e11DensityCeilingOverride = 1.0;
+        ST.rateMultipliers.e11RestBoost = 1.0;
+      }
+    }
+
     // 15. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
       beat: S.beatCount,
