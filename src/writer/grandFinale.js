@@ -147,6 +147,12 @@ grandFinale = () => {
     if (finalTick < 0) {
       throw new Error(`grandFinale: layer "${name}" produced no valid events (finalTick=${finalTick})`);
     }
+    // Reset pitch bend to neutral on all channels at track end.
+    // Binaural shifts leave active pitch bends that persist into silence if the
+    // last shift fires near track end with no subsequent reset.
+    for (let chi = 0; chi < allCHs.length; chi++) {
+      composition += `1,${finalTick},pitch_bend_c,${allCHs[chi]},${neutralPitchBend}\n`;
+    }
     composition += `1,${finalTick},end_track`;
     const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     fs.mkdirSync('output', { recursive: true });
