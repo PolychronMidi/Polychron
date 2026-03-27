@@ -40,6 +40,8 @@ hyperMetaManagerState = (() => {
     topologyCreativityMultiplier: 1.0,
     emergenceStreak:       0,
     currentSection:        -1,
+    coherentRegimeBeats:   0,
+    lastRegime:            '',
   };
 
   // COLLECTION STATE

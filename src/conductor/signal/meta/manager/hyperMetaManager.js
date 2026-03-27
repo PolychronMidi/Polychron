@@ -134,11 +134,6 @@ hyperMetaManager = (() => {
       }
     }
 
-    // E3: Emergence-regime reinforcement
-    if (state.profiler && state.profiler.regime === 'exploring' &&
-        (S.crossState === 'emergence' || S.crossState === 'seeking')) {
-      S.topologyCreativityMultiplier = m.min(1.30, S.topologyCreativityMultiplier * 1.05);
-    }
 
     // E4: Section-aware tension floor protection
     {
@@ -164,6 +159,37 @@ hyperMetaManager = (() => {
     } else {
       S.phaseFatigueBeats = m.max(0, (S.phaseFatigueBeats || 0) - ST.ORCHESTRATE_INTERVAL * 0.5);
     }
+
+
+    // E6: Coherent dwell suppression via pair ceiling tightening
+    const currentRegime = state.profiler ? state.profiler.regime : '';
+    if (currentRegime === 'coherent') {
+      S.coherentRegimeBeats += ST.ORCHESTRATE_INTERVAL;
+      if (S.coherentRegimeBeats > 30) {
+        const dwellExcess = S.coherentRegimeBeats - 30;
+        const tightenAmount = clamp(dwellExcess / 75, 0, 0.4);
+        ST.rateMultipliers.e6CoherentTightening = clamp(1.0 - tightenAmount, 0.60, 1.0);
+      }
+    } else {
+      S.coherentRegimeBeats = 0;
+      ST.rateMultipliers.e6CoherentTightening = 1.0;
+    }
+
+    // E7: Trust axis rebalancing via entropyRegulator boost
+    let trustShare = 0;
+    try {
+      const axisEnergyShare = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      trustShare = (axisEnergyShare && axisEnergyShare.shares && axisEnergyShare.shares.trust) || 0;
+    } catch {
+      trustShare = 0;
+    }
+    if (trustShare > 0 && trustShare < 0.07) {
+      const trustDeficit = 0.07 - trustShare;
+      ST.rateMultipliers.e7TrustBoost = 1.0 + trustDeficit * 5.0;
+    } else {
+      ST.rateMultipliers.e7TrustBoost = m.max(1.0, (ST.rateMultipliers.e7TrustBoost || 1.0) * 0.9);
+    }
+
 
     // 15. Emit diagnostics
     safePreBoot.call(() => explainabilityBus.emit('hyper-meta-orchestration', 'both', {
