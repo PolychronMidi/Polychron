@@ -1,0 +1,1 @@
+- [Musical Evolution Goals](user_musical_goals.md) — maximize complexity+chaos while ensuring breathing; avoid aural crowding

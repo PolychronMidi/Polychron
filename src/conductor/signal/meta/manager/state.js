@@ -42,6 +42,13 @@ hyperMetaManagerState = (() => {
     currentSection:        -1,
     coherentRegimeBeats:   0,
     lastRegime:            '',
+    // E9: Density breathing - phrase boundary tracking
+    e9LastPhraseIndex:     -1,
+    e9BreathingCountdown:  0,
+    // E10: Tension release - phrase trough tracking
+    e10ReleaseCooldown:    0,
+    // E11: Structural sparse windows
+    e11SparseCountdown:    0,
   };
 
   // COLLECTION STATE

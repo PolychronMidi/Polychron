@@ -160,7 +160,12 @@ globalConductor = (() => {
       V.optionalFinite(Number(conductorConfig.getTargetDensity(compositeIntensity)), safeCurrentDensity) * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * phaseProtectionTrim * excursionDensityScale * (1 + densityRecoverySupport),
       0, 1
     );
-    const smooth = clamp(V.optionalFinite(Number(conductorConfig.getDensitySmoothing()), 0.2), 0, 1);
+    const baseSmooth = clamp(V.optionalFinite(Number(conductorConfig.getDensitySmoothing()), 0.2), 0, 1);
+    // E9: Reduce density smoothing at phrase boundaries to let the raw
+    // target signal through. Higher relax = lower effective smoothing,
+    // allowing density swings to survive the EMA filter.
+    const e9SmoothRelax = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'), 1.0) || 1.0;
+    const smooth = clamp(baseSmooth / e9SmoothRelax, 0.05, 1);
     currentDensity = clamp(safeCurrentDensity * (1 - smooth) + targetDensity * smooth, 0, 1);
 
     // 5. Micro-hyper density flicker (attributed)
@@ -237,7 +242,13 @@ globalConductor = (() => {
                          + rf(-0.03, 0.03) * flickerAmplitude) * dfDecorrelScale
                          + flickerVarianceInject; // variance floor injection
     const densityBounds = conductorConfig.getDensityBounds();
-    const flickeredDensity = clamp(currentDensity + densityFlicker, densityBounds.floor, densityBounds.ceiling);
+    // E9: Widen density bounds at phrase boundaries for bigger swings.
+    // E11: Override ceiling during sparse windows for forced breathing.
+    const e9SwingBoost = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySwingBoost'), 1.0) || 1.0;
+    const e11CeilingOverride = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'), 1.0) || 1.0;
+    const effectiveFloor = densityBounds.floor / e9SwingBoost;
+    const effectiveCeiling = m.min(densityBounds.ceiling, densityBounds.ceiling * e11CeilingOverride);
+    const flickeredDensity = clamp(currentDensity + densityFlicker, effectiveFloor, effectiveCeiling);
 
     motifConfig.setUnitProfileOverride('div', { intervalDensity: flickeredDensity });
     motifConfig.setUnitProfileOverride('subdiv', { intervalDensity: flickeredDensity * 0.9 });
@@ -292,9 +303,12 @@ globalConductor = (() => {
     // composition dramatic weight. At 0.14: same 0.64 peak at p=0.6, floor
     // 0.584 at p=1.0 (was 0.568). This sustains tension through S2/S3 while
     // still providing compositional resolution.
-    const tensionArchTarget = macroProgress < 0.6
+    // E10: Lower the tension arch floor during phrase troughs to allow
+    // genuine tension resolution. e10ArchFloorDrop is 0-0.12 range.
+    const e10ArchDrop = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e10ArchFloorDrop'), 0) || 0;
+    const tensionArchTarget = (macroProgress < 0.6
       ? 0.40 + macroProgress * 0.40
-      : 0.64 - (macroProgress - 0.6) * 0.14;
+      : 0.64 - (macroProgress - 0.6) * 0.14) - e10ArchDrop;
     // Density-tension decorrelation. pearsonR surged to 0.6742
     // in R87 because both density and tension share compositeIntensity
     // as a common driver. Shift tension toward harmonicTension (key/modal
