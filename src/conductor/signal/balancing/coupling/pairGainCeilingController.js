@@ -111,6 +111,13 @@ pairGainCeilingController = (() => {
       ps.ceiling = m.min(profile.baseCeiling, ps.ceiling + reliefLift);
     }
 
+    // E6: Coherent regime tightening
+    const coherentTightening = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e6CoherentTightening'), 1.0) || 1.0;
+    if (coherentTightening < 1.0) {
+      const tightenAmount = _CEILING_ADAPT_RATE * (1.0 - coherentTightening) * 2.0;
+      ps.ceiling = m.max(profile.minCeiling, ps.ceiling - tightenAmount);
+    }
+
     if (pair.indexOf('phase') !== -1 || pair === 'flicker-trust') {
       const ceilingRelaxSignal = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('phasePairCeilingRelax'), 1.0) || 1.0;
       if (ceilingRelaxSignal > 1.0 && ps.ceiling < profile.baseCeiling) {
@@ -118,6 +125,7 @@ pairGainCeilingController = (() => {
         ps.ceiling = m.min(profile.baseCeiling, ps.ceiling + relaxLift);
       }
     }
+
 
     if (hotspotRate > 0) {
       safePreBoot.call(() => hyperMetaManager.recordExceedance(pair));
