@@ -92,9 +92,7 @@ hyperMetaManager = (() => {
       // Fast EMA blend: normalize fast EMA to exceedanceTrendEma scale (0.35x weight).
       // Correlation flips are short-lived -- early detection lets damping engage within
       // the same episode rather than several ticks later.
-      const e24SlowExc = S.exceedanceTrendEma;
-      const e24FastNorm = clamp((S.fastExceedanceEma - 0.05) / 0.10, 0, 1) * 0.35;
-      const e24Exceedance = m.max(e24SlowExc, e24FastNorm);
+      const e24Exceedance = m.max(S.exceedanceTrendEma, S.fastExcNormalized);
       const e24ExceedanceWeight = clamp(1.0 + e24Exceedance * 1.5, 1.0, 2.5);
       const e24FlipDampen = clamp(1.0 - corrFlips * 0.03 * e24ExceedanceWeight, 0.70, 0.99);
       ST.rateMultipliers.global *= e24FlipDampen;
@@ -215,8 +213,8 @@ hyperMetaManager = (() => {
       // Health gate: only accumulate fatigue when system is stable enough to act on it.
       // Stressed systems (healthEma <= 0.75) skip accumulation -- the E5 escalation
       // would compete with other controllers and overshoot during recovery.
-      if (S.healthEma > 0.75) {
-        S.phaseFatigueBeats = S.phaseFatigueBeats + ST.ORCHESTRATE_INTERVAL;
+      if (S.healthEma > ST.HEALTH_GATE_E5_ACCUM) {
+        S.phaseFatigueBeats = m.min(S.phaseFatigueBeats + ST.ORCHESTRATE_INTERVAL, ST.PHASE_FATIGUE_MAX);
       }
       if (S.phaseFatigueBeats > 75) {
         const e5MaxEscalation = 1.5 + S.e18ScaleEma; // 1.5x stressed -> 2.5x healthy (ramped)
@@ -296,8 +294,7 @@ hyperMetaManager = (() => {
         // Ramp floor drop slowly via EMA -- avoids discontinuity spikes.
         // E18: scale max drop by health (0.5x when unhealthy, 1.0x at nominal).
         // Attenuation only -- cap at 1.0, never amplify above calibrated 0.15 max.
-        const e18HealthScaleLocal = clamp(S.healthEma / 0.7, 0.5, 1.0);
-        const targetDrop = clamp((sectionProgress - 0.80) / 0.20 * 0.15 * e18HealthScaleLocal, 0, 0.15);
+        const targetDrop = clamp((sectionProgress - 0.80) / 0.20 * 0.15 * e18Scale, 0, 0.15);
         ST.rateMultipliers.e12TensionFloorDrop =
           (ST.rateMultipliers.e12TensionFloorDrop || 0) * 0.75 + targetDrop * 0.25;
       } else {
@@ -385,8 +382,7 @@ hyperMetaManager = (() => {
     // fast EMA sat above slow thresholds (0.20/0.30) at normal energy levels.
     {
       const e21SlowOverage = m.max(0, S.exceedanceTrendEma - 0.30);
-      const e21FastNorm = clamp((S.fastExceedanceEma - 0.05) / 0.10, 0, 1) * 0.35;
-      const e21FastOverage = m.max(0, e21FastNorm - 0.30);
+      const e21FastOverage = m.max(0, S.fastExcNormalized - 0.30);
       const e21ExceedanceOverage = m.max(e21SlowOverage, e21FastOverage);
       ST.rateMultipliers.e21FlickerAmplitudeCap = clamp(1.0 - e21ExceedanceOverage * e21ExceedanceOverage * 2.5, 0.80, 1.0);
     }
@@ -412,8 +408,7 @@ hyperMetaManager = (() => {
     // energy range 0.05-0.15, weighted 0.35x before comparing to slow threshold.
     {
       const e23SlowOverage = m.max(0, S.exceedanceTrendEma - 0.2);
-      const e23FastNorm = clamp((S.fastExceedanceEma - 0.05) / 0.10, 0, 1) * 0.35;
-      const e23FastOverage = m.max(0, e23FastNorm - 0.2);
+      const e23FastOverage = m.max(0, S.fastExcNormalized - 0.2);
       const e23ExceedanceOverage = m.max(e23SlowOverage, e23FastOverage);
       ST.rateMultipliers.e23RestPressureBoost = clamp(1.0 + e23ExceedanceOverage * e23ExceedanceOverage * 5.0, 1.0, 1.4);
     }
@@ -555,7 +550,7 @@ hyperMetaManager = (() => {
           : 1.0;
         ST.rateMultipliers.e11DensityCeilingOverride = e13CeilingScale;
         ST.rateMultipliers.e11RestBoost = e13RestScale;
-      } else if (S.e11SparseCountdown >= 0) {
+      } else if (S.e11SparseCountdown > 0) {
         ST.rateMultipliers.e11SparseWindow = 1.0;
         // Decay ceiling override back toward 1.0 over remaining countdown beats
         ST.rateMultipliers.e11DensityCeilingOverride = clamp(

@@ -27,6 +27,13 @@ hyperMetaManagerState = (() => {
   const E18_EXCEED_SLOPE     = 1.5;    // rate of reduction per unit above onset
   const E18_EXCEED_FLOOR     = 0.5;    // minimum exceedance scale
 
+  // HEALTH GATE CONSTANTS -- thresholds for evolution health checks.
+  // Centralised here so all E-number blocks reference the same values.
+  const HEALTH_GATE_E5_ACCUM   = 0.75;  // E5: min healthEma before fatigue accumulates
+  const HEALTH_GATE_TOPOLOGY   = 0.65;  // Topology: min healthEma for emergence budget decay
+  const PHASE_FATIGUE_MAX      = 500;   // E5: ceiling for phaseFatigueBeats counter
+  const TRAJECTORY_MAX         = 20;    // topology: max trajectory entries kept in memory
+
   // TELEMETRY CONSTANTS
   const TRUST_VELOCITY_DAMPING = 0.75;
   const PHASE_STALE_THRESHOLD  = 0.15;
@@ -117,6 +124,10 @@ hyperMetaManagerState = (() => {
     TRUST_VELOCITY_DAMPING,
     PHASE_STALE_THRESHOLD,
     MAX_CONTRADICTIONS,
+    HEALTH_GATE_E5_ACCUM,
+    HEALTH_GATE_TOPOLOGY,
+    PHASE_FATIGUE_MAX,
+    TRAJECTORY_MAX,
     FAST_EMA_ALPHA,
     FAST_EMA_THRESHOLD,
     FAST_EMA_SPAN,

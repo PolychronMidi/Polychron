@@ -163,7 +163,7 @@ COMPOSER_FAMILIES={
   },
   rhythmicDrive: {
     weight: 2,
-    types: ['measure', 'harmonicRhythm', 'tensionRelease', 'melodicDevelopment']
+    types: ['harmonicRhythm', 'tensionRelease', 'melodicDevelopment']
   }
 };
 /** @tier-2 - per-channel stutter probability */

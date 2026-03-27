@@ -169,6 +169,7 @@ hyperMetaManagerTopology = (() => {
         entropy: m.round(S.topologyEntropyEma * 1000) / 1000,
         crossState: S.crossState,
       });
+      if (ST.trajectory.length > ST.TRAJECTORY_MAX) ST.trajectory.shift();
       // Stasis detection: same phase for 3+ consecutive sections
       if (ST.trajectory.length >= 3) {
         const recent = ST.trajectory.slice(-3);
@@ -207,8 +208,8 @@ hyperMetaManagerTopology = (() => {
   function updateInterventionBudgetScale() {
     if (S.crossState === 'emergence') {
       // Health gate: only reduce budget when system is healthy enough to afford less intervention.
-      // Stressed system (healthEma <= 0.65) needs full budget -- skip decay.
-      if (S.healthEma > 0.65) {
+      // Stressed system (healthEma <= HEALTH_GATE_TOPOLOGY) needs full budget -- skip decay.
+      if (S.healthEma > ST.HEALTH_GATE_TOPOLOGY) {
         S.interventionBudgetScale = clamp(S.interventionBudgetScale * 0.97, 0.40, 1.0);
       }
     } else if (S.crossState === 'locked') {
