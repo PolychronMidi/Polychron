@@ -10,6 +10,23 @@ hyperMetaManagerState = (() => {
   const EFFECTIVENESS_EMA_ALPHA = 0.05;
   const INTERVENTION_BUDGET  = 0.60;
 
+  // FAST EMA CONSTANTS -- normalization for per-beat energy proxy (density+tension deviation^2).
+  // Energy range: ~0 (neutral) to ~0.15 (severe spike). Threshold at 0.05 = density ~0.67
+  // or tension ~0.88 (genuine departure from neutral). Span 0.10 maps spike range to [0,1].
+  // Weight 0.35 reserves fast lane for early warning; slow EMA drives sustained corrections.
+  const FAST_EMA_ALPHA       = 0.22;   // ~4-beat time constant
+  const FAST_EMA_THRESHOLD   = 0.05;   // energy floor before fast lane activates
+  const FAST_EMA_SPAN        = 0.10;   // energy range mapped to [0,1]
+  const FAST_EMA_WEIGHT      = 0.35;   // contribution weight vs slow EMA scale
+
+  // E18 SCALE CONSTANTS -- health+exceedance combined attenuation factor.
+  // Denominators/thresholds shared by hyperMetaManager and topologyIntelligence.
+  const E18_HEALTH_NOMINAL   = 0.7;    // healthEma at which scale = 1.0 (full strength)
+  const E18_HEALTH_FLOOR     = 0.5;    // minimum scale even at very poor health
+  const E18_EXCEED_ONSET     = 0.4;    // exceedanceTrendEma above which scale reduces
+  const E18_EXCEED_SLOPE     = 1.5;    // rate of reduction per unit above onset
+  const E18_EXCEED_FLOOR     = 0.5;    // minimum exceedance scale
+
   // TELEMETRY CONSTANTS
   const TRUST_VELOCITY_DAMPING = 0.75;
   const PHASE_STALE_THRESHOLD  = 0.15;
@@ -40,8 +57,11 @@ hyperMetaManagerState = (() => {
     topologyCreativityMultiplier: 1.0,
     emergenceStreak:       0,
     currentSection:        -1,
-    coherentRegimeBeats:   0,
     lastRegime:            '',
+    // E5: Phase fatigue escalation
+    phaseFatigueBeats:     0,
+    // E6: Coherent dwell suppression
+    coherentRegimeBeats:   0,
     // E9: Density breathing - phrase boundary tracking
     e9LastPhraseIndex:     -1,
     e9BreathingCountdown:  0,
@@ -52,12 +72,18 @@ hyperMetaManagerState = (() => {
     // E12: Section-level tension floor relaxation (no extra state needed)
     // E18: Smoothed scale EMA for E1/E4/E5/E7 health gates (prevents instant snap)
     e18ScaleEma:           1.0,
+    // E18 instantaneous scale (computed once per tick, used by multiple evolutions)
+    e18Scale:              1.0,
     // E13: Long-run coherent share tracker for feedback-loop break
+    // alpha=0.03 => ~33-tick window (~825 beats). Previous 0.015 was too slow;
+    // thresholds (0.38, 0.55) were unreachable in typical session lengths.
     coherentShareEma:      0.285,
-    // Fast EMA: per-beat signal energy proxy, ~4-beat time constant (alpha=0.22).
+    // Fast EMA: per-beat signal energy proxy, ~4-beat time constant.
     // Tracks density+tension deviation from neutral every beat -- responds to
     // transient spikes within 3-5 beats vs slow EMA's ~12-tick lag.
     fastExceedanceEma:     0,
+    // Normalized fast EMA signal on slow EMA scale (computed once per tick)
+    fastExcNormalized:     0,
   };
 
   // COLLECTION STATE
@@ -91,6 +117,15 @@ hyperMetaManagerState = (() => {
     TRUST_VELOCITY_DAMPING,
     PHASE_STALE_THRESHOLD,
     MAX_CONTRADICTIONS,
+    FAST_EMA_ALPHA,
+    FAST_EMA_THRESHOLD,
+    FAST_EMA_SPAN,
+    FAST_EMA_WEIGHT,
+    E18_HEALTH_NOMINAL,
+    E18_HEALTH_FLOOR,
+    E18_EXCEED_ONSET,
+    E18_EXCEED_SLOPE,
+    E18_EXCEED_FLOOR,
     // scalar state
     S,
     // collection state
