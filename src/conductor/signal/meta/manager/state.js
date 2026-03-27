@@ -50,6 +50,14 @@ hyperMetaManagerState = (() => {
     // E11/E13: Structural sparse windows (regime-aware)
     e11SparseCountdown:    0,
     // E12: Section-level tension floor relaxation (no extra state needed)
+    // E18: Smoothed scale EMA for E1/E4/E5/E7 health gates (prevents instant snap)
+    e18ScaleEma:           1.0,
+    // E13: Long-run coherent share tracker for feedback-loop break
+    coherentShareEma:      0.285,
+    // Fast EMA: per-beat signal energy proxy, ~4-beat time constant (alpha=0.22).
+    // Tracks density+tension deviation from neutral every beat -- responds to
+    // transient spikes within 3-5 beats vs slow EMA's ~12-tick lag.
+    fastExceedanceEma:     0,
   };
 
   // COLLECTION STATE

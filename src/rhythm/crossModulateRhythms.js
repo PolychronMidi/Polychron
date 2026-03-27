@@ -90,18 +90,26 @@ crossModulateRhythms = () => {
   const rhythmicArc = 0.92 + 0.18 * m.exp(-m.pow((compositionProg - 0.55) * 2.2, 2));
   crossModulation *= rhythmicArc;
 
-  // E19: HyperMeta crossModulation influence. Controlled firewall breach
-  // giving hypermeta a direct composition-level throttle. Bounded tightly
-  // (+/-0.3 on a 0-6 scale = ~5% influence max) so even runaway feedback
-  // has capped effect. Bidirectional:
-  //   e19CrossModBoost > 0: boosts crossMod (more notes pass gate, richer texture)
-  //   e19CrossModBoost < 0: suppresses crossMod (fewer notes pass gate, breathing)
-  // During E11 sparse windows: negative offset reinforces ceiling suppression
-  // at the note-emission level (downstream of conductor signals).
-  // During healthy exploring: positive offset adds richness where chaos lives.
-  const e19Offset = safePreBoot.call(
-    () => hyperMetaManager.getRateMultiplier('e19CrossModBoost'), 0) || 0;
-  if (e19Offset !== 0) {
-    crossModulation = clamp(crossModulation + e19Offset, 0, 8);
+  // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
+  // during E11 sparse windows. 1.0 = neutral (default from getRateMultiplier),
+  // <1.0 = max suppression depth (from hyperMetaManager EMA ramp).
+  // Proportional correction: suppression scales with how far crossModulation
+  // exceeds a neutral midpoint (~4.0). Low crossMod = little or no suppression;
+  // high crossMod = full suppression depth applied. This prevents over-suppression
+  // on already-quiet beats while still reining in runaway values.
+  // suppressFraction: 0 at crossMod <= 4.0, 1.0 at crossMod >= 8.0.
+  // E19 is skipped during exploring: E13 gives exploring a 1.0 ceiling (no sparse
+  // suppression), so crossMod suppression here would be inconsistent. Also prevents
+  // EMA ramp tail from bleeding into exploring passages after a coherent sparse window.
+  const e19Regime = safePreBoot.call(() => {
+    const sn = systemDynamicsProfiler.getSnapshot();
+    return sn ? sn.regime : '';
+  }, '') || '';
+  const e19Mult = safePreBoot.call(
+    () => hyperMetaManager.getRateMultiplier('e19CrossModScale'), 1.0) || 1.0;
+  if (e19Mult < 1.0 && e19Regime !== 'exploring') {
+    const e19SuppressFraction = clamp((crossModulation - 4.0) / 4.0, 0, 1);
+    const e19EffectiveMult = 1.0 - (1.0 - e19Mult) * e19SuppressFraction;
+    crossModulation = clamp(crossModulation * e19EffectiveMult, 0, 8);
   }
 }

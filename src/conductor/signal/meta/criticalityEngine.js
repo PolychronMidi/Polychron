@@ -77,6 +77,8 @@ criticalityEngine = (() => {
 
     // Orchestrator-modulated snap: during emergence, reduce snap to let
     // novel patterns express; during locked state, amplify to break stasis.
+    // E22 (snap softening under pressure) was refuted in R35 -- removing the
+    // stabilizing snap made exceedance worse (49->122). Engine unchanged.
     const critSnapScale = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('criticalitySnap'), 1.0) || 1.0;
     const effectiveSnap = clamp(SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1.0 - critSnapScale), SNAP_STRENGTH, 1.0);
 
