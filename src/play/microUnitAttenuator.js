@@ -66,7 +66,18 @@ microUnitAttenuator = (() => {
         c.push(onEvt, offEvt);
         return;
       }
-      microUnitAttenuatorStack[microUnitAttenuatorStack.length - 1].pairs.push({ on: onEvt, off: offEvt, score: V.optionalFinite(score, 0) });
+      // E20: HyperMeta attenuator score bias. When hypermeta signals a sparse
+      // window (e20AttenuatorBias < 1.0), scores are suppressed so that voice
+      // cap cuts more aggressively -- structurally reducing note density at
+      // the survival-ranking level. When signaling richness (> 1.0), scores
+      // are boosted so more notes survive against the cap. Bounded 0.7-1.3.
+      // This is a composition-level pressure valve: even if notes pass the
+      // playNotes gate (E19 crossMod influence), they can still be attenuated
+      // here if the voice cap is under pressure during sparse windows.
+      const e20Bias = safePreBoot.call(
+        () => hyperMetaManager.getRateMultiplier('e20AttenuatorBias'), 1.0) || 1.0;
+      const adjustedScore = V.optionalFinite(score, 0) * e20Bias;
+      microUnitAttenuatorStack[microUnitAttenuatorStack.length - 1].pairs.push({ on: onEvt, off: offEvt, score: adjustedScore });
     },
 
     /**
