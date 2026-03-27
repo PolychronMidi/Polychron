@@ -36,6 +36,19 @@ hyperMetaManager = (() => {
 
   function tick() {
     S.beatCount++;
+
+    // Fast EMA: runs every beat, not just on orchestration ticks.
+    // Proxy signal = squared deviation of density+tension from their neutral points,
+    // same energy formula as criticalityEngine. Alpha=0.22 => ~4-beat time constant.
+    // Used alongside the slow exceedanceTrendEma (alpha=0.08, ~12-tick lag) to give
+    // the system early warning of transient spikes before they compound.
+    {
+      const fd = safePreBoot.call(() => signalReader.density(), 0.6) || 0.6;
+      const ft = safePreBoot.call(() => signalReader.tension(), 0.95) || 0.95;
+      const fEnergy = (fd - 0.6) * (fd - 0.6) + (ft - 0.95) * (ft - 0.95);
+      S.fastExceedanceEma += (fEnergy - S.fastExceedanceEma) * 0.22;
+    }
+
     if (S.beatCount % ST.ORCHESTRATE_INTERVAL !== 0) return;
 
     const healthBefore = S.healthEma;
@@ -70,9 +83,22 @@ hyperMetaManager = (() => {
     // 7. Effectiveness tracking
     health.updateEffectiveness(healthBefore, S.healthEma, state);
 
-    // 8. Correlation flips -- dampen on multi-axis oscillation
+    // 8. Correlation flips -- dampen on multi-axis oscillation.
+    // E24: Scale damping continuously by exceedance rather than binary >=2 trigger.
+    // Low exceedance: 1 flip = mild 0.97x, 2+ = 0.94x. High exceedance: same
+    // flip counts trigger stronger 0.90x / 0.82x dampening. Self-correcting.
     const corrFlips = health.detectCorrelationFlips(state);
-    if (corrFlips >= 2) ST.rateMultipliers.global *= 0.90;
+    if (corrFlips >= 1) {
+      // Fast EMA blend: normalize fast EMA to exceedanceTrendEma scale (0.35x weight).
+      // Correlation flips are short-lived -- early detection lets damping engage within
+      // the same episode rather than several ticks later.
+      const e24SlowExc = S.exceedanceTrendEma;
+      const e24FastNorm = clamp((S.fastExceedanceEma - 0.05) / 0.10, 0, 1) * 0.35;
+      const e24Exceedance = m.max(e24SlowExc, e24FastNorm);
+      const e24ExceedanceWeight = clamp(1.0 + e24Exceedance * 1.5, 1.0, 2.5);
+      const e24FlipDampen = clamp(1.0 - corrFlips * 0.03 * e24ExceedanceWeight, 0.70, 0.99);
+      ST.rateMultipliers.global *= e24FlipDampen;
+    }
 
     // 9. Topology intelligence
     topo.update(state);
@@ -108,12 +134,27 @@ hyperMetaManager = (() => {
       ST.rateMultipliers.dimExpanderCeilingFloor = 0;
     }
 
+    // E18 scale computed early -- needed by E1/E4/E5/E7 below AND by E9/E11/E13 later.
+    // Health-gated evolution scaling: attenuation only (max 1.0), never amplifies above
+    // calibrated values. Range: 0.5x (very unhealthy) to 1.0x (healthy = full strength).
+    const e18HealthScale = clamp(S.healthEma / 0.7, 0.5, 1.0);
+    const e18ExceedanceScale = clamp(1.0 - m.max(0, S.exceedanceTrendEma - 0.4) * 1.5, 0.5, 1.0);
+    const e18Scale = e18HealthScale * e18ExceedanceScale;
+    // Smoothed e18Scale for amplifying gates (E1/E4/E5/E7): exponential ramp prevents
+    // instant coefficient drops when health/exceedance fluctuates. Alpha 0.15 = ~6 tick
+    // time constant (~150 beats). Raw e18Scale still used for E9/E11/E13 (brief pulses).
+    S.e18ScaleEma += (e18Scale - S.e18ScaleEma) * 0.15;
+
     // 14. E1-E5 Evolutions orchestration
     // E1: Hotspot monopoly relief
+    // Audit: 4.0x coefficient with no health gate could amplify above safe levels
+    // under stress. Scale coefficient by e18Scale (health+exceedance awareness).
+    // At full health (e18Scale=1.0): 4.0x max (calibrated). Stressed: 2.0x max.
     const monopoly = health.getPairMonopoly();
     if (monopoly) {
+      const e1Coefficient = 2.0 + 2.0 * S.e18ScaleEma; // 2.0x stressed -> 4.0x healthy (ramped)
       ST.rateMultipliers['hotspotMonopolyRelief_' + monopoly.pair] =
-        1.0 + (monopoly.share - 0.75) * 4.0;
+        1.0 + (monopoly.share - 0.75) * e1Coefficient;
     }
     const rmKeys = Object.keys(ST.rateMultipliers);
     for (let ri = 0; ri < rmKeys.length; ri++) {
@@ -136,12 +177,16 @@ hyperMetaManager = (() => {
 
 
     // E4: Section-aware tension floor protection
+    // Audit: 2.5x max amplifying with no health gate. When stressed, aggressive
+    // tension amplification can overshoot. Scale max by e18Scale: 2.5x healthy,
+    // down to 1.75x when stressed. Base 1.5x always preserved (minimum protection).
     {
       let secProg = 0;
       try { secProg = clamp(safePreBoot.call(() => timeStream.compoundProgress('section'), 0) || 0, 0, 1); } catch { void 0; }
       const currentTension = safePreBoot.call(() => signalReader.tension(), 1.0) || 1.0;
       if (secProg < 0.3 && currentTension < 0.75) {
-        ST.rateMultipliers.tensionFloorProtection = clamp(1.5 + (0.75 - currentTension) * 2.0, 1.5, 2.5);
+        const e4MaxProtection = 1.5 + S.e18ScaleEma; // 1.5 stressed -> 2.5 healthy (ramped)
+        ST.rateMultipliers.tensionFloorProtection = clamp(1.5 + (0.75 - currentTension) * 2.0, 1.5, e4MaxProtection);
       } else {
         ST.rateMultipliers.tensionFloorProtection =
           m.max(1.0, (ST.rateMultipliers.tensionFloorProtection || 1.0) * 0.9);
@@ -149,10 +194,15 @@ hyperMetaManager = (() => {
     }
 
     // E5: Phase fatigue escalation
+    // Audit: 2.5x max uncapped continuous escalation, no health gate. When system
+    // is stressed, aggressive phase exemption competes with other controllers.
+    // Health-gate the max: 2.5x when healthy, 1.5x when stressed. This preserves
+    // the escalation mechanism but prevents runaway amplification under load.
     if (state.phaseFloor && state.phaseFloor.shareEma < (state.phaseFloor.collapseThreshold || 0.05)) {
       S.phaseFatigueBeats = (S.phaseFatigueBeats || 0) + ST.ORCHESTRATE_INTERVAL;
       if (S.phaseFatigueBeats > 75) {
-        const fatigueEscalation = clamp(1.0 + (S.phaseFatigueBeats - 75) / 200, 1.0, 2.5);
+        const e5MaxEscalation = 1.5 + S.e18ScaleEma; // 1.5x stressed -> 2.5x healthy (ramped)
+        const fatigueEscalation = clamp(1.0 + (S.phaseFatigueBeats - 75) / 200, 1.0, e5MaxEscalation);
         ST.rateMultipliers.phaseExemption = m.max(
           ST.rateMultipliers.phaseExemption || 1.0, fatigueEscalation);
       }
@@ -175,7 +225,21 @@ hyperMetaManager = (() => {
       ST.rateMultipliers.e6CoherentTightening = 1.0;
     }
 
+    // E13 feedback-loop break: track long-run coherent share. When coherent has
+    // been dominant over many beats (shareEma > 0.38), ease E13's coherent ceiling
+    // toward the evolving level (0.70) to avoid locking the system into a positive
+    // feedback loop (more coherent -> more sparse suppression -> less evolving ->
+    // more coherent). Interpolates: at 0.38 share = full 0.55 ceiling; at 0.55+
+    // share = relaxed 0.70 ceiling. Attenuation-only on the suppression depth.
+    {
+      const isCoherent = currentRegime === 'coherent' ? 1 : 0;
+      S.coherentShareEma += (isCoherent - S.coherentShareEma) * 0.015; // ~67 tick window
+    }
+
     // E7: Trust axis rebalancing via entropyRegulator boost
+    // Audit: 5.0x coefficient amplifying when trust is low, no health gate.
+    // Under stress, aggressive trust rebalancing can overshoot. Scale coefficient
+    // by e18Scale: 5.0x when healthy (full correction), 2.5x when stressed.
     let trustShare = 0;
     try {
       const axisEnergyShare = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
@@ -185,7 +249,8 @@ hyperMetaManager = (() => {
     }
     if (trustShare > 0 && trustShare < 0.07) {
       const trustDeficit = 0.07 - trustShare;
-      ST.rateMultipliers.e7TrustBoost = 1.0 + trustDeficit * 5.0;
+      const e7Coefficient = 2.5 + 2.5 * S.e18ScaleEma; // 2.5x stressed -> 5.0x healthy (ramped)
+      ST.rateMultipliers.e7TrustBoost = 1.0 + trustDeficit * e7Coefficient;
     } else {
       ST.rateMultipliers.e7TrustBoost = m.max(1.0, (ST.rateMultipliers.e7TrustBoost || 1.0) * 0.9);
     }
@@ -203,8 +268,11 @@ hyperMetaManager = (() => {
       try { sectionProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('section'), 0) || 0, 0, 1); } catch { void 0; }
       const inResolution = sectionPhase === 'resolution' && sectionProgress > 0.80;
       if (inResolution) {
-        // Ramp floor drop slowly via EMA -- avoids discontinuity spikes
-        const targetDrop = clamp((sectionProgress - 0.80) / 0.20 * 0.15, 0, 0.15);
+        // Ramp floor drop slowly via EMA -- avoids discontinuity spikes.
+        // E18: scale max drop by health (0.5x when unhealthy, 1.0x at nominal).
+        // Attenuation only -- cap at 1.0, never amplify above calibrated 0.15 max.
+        const e18HealthScaleLocal = clamp(S.healthEma / 0.7, 0.5, 1.0);
+        const targetDrop = clamp((sectionProgress - 0.80) / 0.20 * 0.15 * e18HealthScaleLocal, 0, 0.15);
         ST.rateMultipliers.e12TensionFloorDrop =
           (ST.rateMultipliers.e12TensionFloorDrop || 0) * 0.75 + targetDrop * 0.25;
       } else {
@@ -217,38 +285,112 @@ hyperMetaManager = (() => {
     // E18: Health-gated evolution scaling. Scale E9/E11/E13 intervention
     // strength by current system health. Healthy (healthEma > 0.7) = full
     // strength; degraded (healthEma < 0.7) = automatically reduced.
-    // Range: 0.5x (very unhealthy) to 1.2x (very healthy, reward stability).
-    // This is the self-correction the evolutions previously lacked -- they
-    // now breathe harder when the system is stable and back off when stressed.
-    const e18HealthScale = clamp(S.healthEma / 0.7, 0.5, 1.2);
+    // Range: 0.5x (very unhealthy) to 1.0x (healthy = full original strength).
+    // ATTENUATION ONLY -- never amplifies above 1.0. The 1.2x amplification
+    // in earlier versions (R34-R36) raised the exceedance floor from 22->49+
+    // by over-breathing during healthy passages (E9 relax 1.6x vs calibrated 1.5x,
+    // E11 ceiling 0.46x vs calibrated 0.55x). Self-healing must only reduce
+    // interventions when stressed, never strengthen them above calibrated values.
+    // Also factor in exceedance trend: high exceedance (> 0.4) reduces further.
+    // NOTE: e18Scale computed early (before step 14) -- reused here, not redeclared.
 
-    // E19: HyperMeta crossModulation influence. Additive offset on
-    // crossModulation, bounded +/-0.3 (~5% of 0-6 range). Operates
-    // downstream of all conductor signals -- direct note-gate influence.
-    // During E11 sparse windows: suppress crossMod to reinforce breathing
-    //   at note-emission level (not just conductor density ceiling).
-    // During exploring + healthy: small boost for richer polyrhythmic texture.
-    // Neutral (0) at all other times -- does not disturb normal operation.
+    // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
+    // during E11 sparse windows (<1.0 = suppress, 1.0 = neutral).
+    // Uses multiplier semantics so getRateMultiplier's 1.0 default is safe.
+    // R32 bug: was additive offset stored as 0, but getRateMultiplier returned
+    // 1.0 default, causing +1.0 crossMod boost on every note -- note explosion.
+    // Now stored as true multiplier: 1.0 neutral, ~0.87x at max suppression.
+    // Positive boost REFUTED (R32). Suppression-only, tied to E11 windows.
     {
       const e11Active = (ST.rateMultipliers.e11SparseWindow || 0) > 0;
       const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride || 1.0;
       if (e11Active && e11Ceiling < 0.95) {
-        // Sparse window: suppress crossMod proportional to ceiling suppression
-        // Max suppression: 0.3 when ceiling at 0.55 (0.45 suppression * 0.67)
-        const suppressDepth = clamp((1.0 - e11Ceiling) * 0.67, 0, 0.3);
-        ST.rateMultipliers.e19CrossModBoost = -suppressDepth;
-      } else if (currentRegime === 'exploring' && e18HealthScale > 0.9) {
-        // Exploring + healthy: small positive boost for richer texture
-        // Scale by health so it backs off if system is stressed
-        ST.rateMultipliers.e19CrossModBoost = 0.15 * (e18HealthScale - 0.9) / 0.3;
+        // Suppress: proportional to ceiling depth, max 13% suppression (0.87x)
+        const suppressDepth = clamp((1.0 - e11Ceiling) * 0.28, 0, 0.13);
+        const e19Target = 1.0 - suppressDepth;
+        // Exponential ramp toward target (alpha 0.25 ~= 4 tick time constant)
+        ST.rateMultipliers.e19CrossModScale = (ST.rateMultipliers.e19CrossModScale || 1.0) +
+          (e19Target - (ST.rateMultipliers.e19CrossModScale || 1.0)) * 0.25;
       } else {
-        // Decay toward 0 (neutral)
-        const prev = ST.rateMultipliers.e19CrossModBoost || 0;
-        ST.rateMultipliers.e19CrossModBoost = prev * 0.7;
-        if (m.abs(ST.rateMultipliers.e19CrossModBoost) < 0.01) {
-          ST.rateMultipliers.e19CrossModBoost = 0;
-        }
+        // Ramp back toward 1.0 (neutral) -- same alpha, symmetric recovery
+        ST.rateMultipliers.e19CrossModScale = (ST.rateMultipliers.e19CrossModScale || 1.0) +
+          (1.0 - (ST.rateMultipliers.e19CrossModScale || 1.0)) * 0.25;
       }
+    }
+
+    // E20: MicroUnit attenuator score bias. During E11 sparse windows, lower
+    // the crossModulation score used to rank note pairs in the voice cap.
+    // Lower scores = more aggressive pruning when voice cap is under pressure.
+    // Works in concert with E19 (gate) and E11 (ceiling): triple-layer sparse.
+    // Suppression-only: boost direction refuted with E19 (R32 note explosion).
+    // Bounded: 0.75 minimum (never more than 25% score reduction).
+    {
+      const e11Active = (ST.rateMultipliers.e11SparseWindow || 0) > 0;
+      const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride || 1.0;
+      if (e11Active && e11Ceiling < 0.95) {
+        // Score suppression: proportional to ceiling suppression, capped at 0.25
+        const biasSuppression = clamp((1.0 - e11Ceiling) * 0.55, 0, 0.25);
+        const e20Target = 1.0 - biasSuppression;
+        // Exponential ramp toward target (alpha 0.25 -- same as E19)
+        ST.rateMultipliers.e20AttenuatorBias = (ST.rateMultipliers.e20AttenuatorBias || 1.0) +
+          (e20Target - (ST.rateMultipliers.e20AttenuatorBias || 1.0)) * 0.25;
+      } else {
+        // Ramp back toward 1.0 (neutral)
+        ST.rateMultipliers.e20AttenuatorBias = (ST.rateMultipliers.e20AttenuatorBias || 1.0) +
+          (1.0 - (ST.rateMultipliers.e20AttenuatorBias || 1.0)) * 0.25;
+      }
+    }
+
+    // E21: Flicker amplitude suppression under exceedance. REFUTED approach
+    // was smoothing alpha reduction (R35: caused note explosion via variance
+    // floor pathway -- more damped flicker triggered FLICKER_VARIANCE_INJECT
+    // additions, elevating density continuously). New approach: suppress the
+    // flickerHotspotTrim multiplier directly via a global flicker gain cap.
+    // When exceedance is elevated, reduce the maximum flicker amplitude
+    // by scaling down the trim ceiling. Neutral (1.0) when healthy.
+    // Max suppression: 0.80x flicker amplitude at high exceedance.
+    // Proportional: quadratic onset so minor exceedance (0.30-0.50) barely
+    // affects flicker; only high sustained exceedance (> 0.70) applies meaningful cap.
+    // cap reduction = overage^2 * 2.5, max 0.20 reduction (floor 0.80).
+    // Fast EMA blend: normalized to exceedanceTrendEma scale before blending.
+    // fastExceedanceEma is energy-based (~0-0.15); threshold 0.05 = density ~0.67
+    // or tension ~0.88 (genuine spike). Mapped to [0,1] over 0.05-0.15 range,
+    // then weighted 0.35x (early warning only, not dominant signal). R49: 0.6x
+    // weight with raw fast EMA caused persistent -29% note suppression because
+    // fast EMA sat above slow thresholds (0.20/0.30) at normal energy levels.
+    {
+      const e21SlowOverage = m.max(0, S.exceedanceTrendEma - 0.30);
+      const e21FastNorm = clamp((S.fastExceedanceEma - 0.05) / 0.10, 0, 1) * 0.35;
+      const e21FastOverage = m.max(0, e21FastNorm - 0.30);
+      const e21ExceedanceOverage = m.max(e21SlowOverage, e21FastOverage);
+      ST.rateMultipliers.e21FlickerAmplitudeCap = clamp(1.0 - e21ExceedanceOverage * e21ExceedanceOverage * 2.5, 0.80, 1.0);
+    }
+
+    // E22: Criticality snap softening -- REFUTED (R35).
+    // Softening snap under pressure removes a stabilizing force, allowing
+    // the system to stay in elevated energy states longer. Exceedance 49->122.
+    // The avalanche engine's snap-to-neutral is protective, not harmful.
+    // Neutralized: always 1.0 (full snap, engine unchanged).
+    ST.rateMultipliers.e22SnapSoften = 1.0;
+
+    // E23: Rest probability scaling under exceedance. When system is stressed
+    // (exceedance elevated), gently increase rest probability to naturally
+    // decompress density. This creates breathing room without conductor
+    // ceiling changes -- a composition-level pressure valve.
+    // Multiplier on rest base: 1.0 neutral, up to 1.4x when exceedance high.
+    // Proportional correction: quadratic onset so small overages (exceedance 0.2-0.4)
+    // produce negligible boost, and only sustained high exceedance (> 0.5) triggers
+    // meaningful rest pressure. Prevents continuous mild suppression during normal
+    // stochastic variance that sits just above the 0.2 threshold.
+    // boost = overage^2 * 5.0, max 0.4 added (cap at 1.4x).
+    // Fast EMA blend: same normalization as E21. fastNorm mapped to [0,1] over
+    // energy range 0.05-0.15, weighted 0.35x before comparing to slow threshold.
+    {
+      const e23SlowOverage = m.max(0, S.exceedanceTrendEma - 0.2);
+      const e23FastNorm = clamp((S.fastExceedanceEma - 0.05) / 0.10, 0, 1) * 0.35;
+      const e23FastOverage = m.max(0, e23FastNorm - 0.2);
+      const e23ExceedanceOverage = m.max(e23SlowOverage, e23FastOverage);
+      ST.rateMultipliers.e23RestPressureBoost = clamp(1.0 + e23ExceedanceOverage * e23ExceedanceOverage * 5.0, 1.0, 1.4);
     }
 
     // E15: Within-phrase density sculpting -- REFUTED.
@@ -275,7 +417,7 @@ hyperMetaManager = (() => {
     // letting the raw target signal through with less EMA filtering.
     // This creates structural breathing room at phrase transitions.
     // Acts on conductor config pathway, not on pair ceilings (avoids E6).
-    // E18: strength scaled by e18HealthScale.
+    // E18: strength scaled by e18Scale (health * exceedance-awareness).
     {
       let phraseIdx = -1;
       try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { void 0; }
@@ -287,10 +429,10 @@ hyperMetaManager = (() => {
         S.e9BreathingCountdown--;
         // Smoothing relax: 1.0 = normal, >1.0 = reduce smoothing coefficient
         // downstream: effective smoothing = base / e9DensitySmoothingRelax
-        // E18: base 1.5, health-scaled so unhealthy system gets less relax
-        ST.rateMultipliers.e9DensitySmoothingRelax = 1.0 + 0.5 * e18HealthScale;
+        // E18: health+exceedance-scaled so stressed system gets less relax
+        ST.rateMultipliers.e9DensitySmoothingRelax = 1.0 + 0.5 * e18Scale;
         // Swing boost: widen density bounds temporarily
-        ST.rateMultipliers.e9DensitySwingBoost = 1.0 + 0.2 * e18HealthScale;
+        ST.rateMultipliers.e9DensitySwingBoost = 1.0 + 0.2 * e18Scale;
       } else {
         // Decay toward neutral
         ST.rateMultipliers.e9DensitySmoothingRelax = m.max(1.0,
@@ -320,8 +462,13 @@ hyperMetaManager = (() => {
       if (inPhraseTrough && densityWaveFlat) {
         S.e10ReleaseCooldown = 3;
         // Tension suppression: < 1.0 tells densityWaveAnalyzer to suppress
-        // its tension boost instead of amplifying
-        ST.rateMultipliers.e10TensionSuppress = 0.7;
+        // its tension boost instead of amplifying.
+        // E18: suppression depth health-scaled. 0.7 base at neutral health.
+        // Unhealthy (scale 0.5): suppress less (0.85) -- tension stays higher
+        // which keeps system stable. Healthy (scale 1.0): full calibrated 0.70.
+        // Attenuation only -- cap at 1.0, never suppress more than calibrated 0.70.
+        const e18HealthScaleLocal = clamp(S.healthEma / 0.7, 0.5, 1.0);
+        ST.rateMultipliers.e10TensionSuppress = clamp(1.0 - 0.3 * e18HealthScaleLocal, 0.70, 0.85);
       } else if (S.e10ReleaseCooldown > 0) {
         S.e10ReleaseCooldown--;
       } else {
@@ -356,19 +503,31 @@ hyperMetaManager = (() => {
         // E18: ceiling suppression depth health-scaled (less suppression when stressed).
         // For ceiling: base suppression (1.0 - baseVal) scaled, then re-expressed as override.
         // For rest: boost above 1.0 health-scaled.
+        // E13 feedback-loop break: when coherent has been persistently dominant
+        // (coherentShareEma > 0.38), ease the coherent ceiling slightly -- but only
+        // to 0.62 max (not 0.70). Full ease-to-evolving (R45) removed suppression
+        // entirely causing exceedance 120 and note explosion +35%. Partial ease
+        // (0.55->0.62) is enough to break the feedback loop without losing the
+        // stabilizing effect of sparse window suppression in coherent passages.
+        const e13CoherentCeilingBase = currentRegime === 'coherent'
+          ? clamp(0.55 + clamp((S.coherentShareEma - 0.38) / 0.17, 0, 1) * 0.07, 0.55, 0.62)
+          : 0.55; // unused when not coherent, but kept for clarity
         const e13BaseCeiling = currentRegime === 'exploring' ? 1.0
-          : currentRegime === 'coherent' ? 0.55
+          : currentRegime === 'coherent' ? e13CoherentCeilingBase
           : 0.70; // evolving
         const e13BaseRest = currentRegime === 'exploring' ? 1.0
           : currentRegime === 'coherent' ? 2.5
           : 1.6; // evolving
-        // E18: interpolate ceiling toward 1.0 when unhealthy (less suppression)
+        // E18: interpolate ceiling toward 1.0 when unhealthy (less suppression).
+        // Attenuation only: e18Scale max 1.0, so ceiling never goes below base.
+        // At e18Scale=1.0 (healthy): ceiling = exactly baseCeiling (calibrated).
+        // At e18Scale<1.0 (stressed): ceiling eases toward 1.0 (less suppression).
         const e13CeilingScale = e13BaseCeiling < 1.0
-          ? clamp(1.0 - (1.0 - e13BaseCeiling) * e18HealthScale, e13BaseCeiling, 1.0)
+          ? clamp(1.0 - (1.0 - e13BaseCeiling) * e18Scale, e13BaseCeiling, 1.0)
           : 1.0;
-        // E18: scale rest boost above baseline by health
+        // E18: scale rest boost above baseline by combined health+exceedance scale
         const e13RestScale = e13BaseRest > 1.0
-          ? 1.0 + (e13BaseRest - 1.0) * e18HealthScale
+          ? 1.0 + (e13BaseRest - 1.0) * e18Scale
           : 1.0;
         ST.rateMultipliers.e11DensityCeilingOverride = e13CeilingScale;
         ST.rateMultipliers.e11RestBoost = e13RestScale;

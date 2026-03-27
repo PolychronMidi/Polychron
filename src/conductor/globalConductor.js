@@ -223,7 +223,11 @@ globalConductor = (() => {
     // preserving most of the exceedance reduction (71->4 in R87).
     const flickerBase = clamp(compositeIntensity * 0.30 + harmonicRhythm * 0.30 + flickerCarrier * 0.40, 0, 1.2);
     const flickerHotspotTrim = 1 - clamp(densityFlickerPressure * 0.16 + flickerTrustPressure * 0.20 + densityTrustPressure * 0.08 + trustSharePressure * 0.10 + phaseRecoveryPressure * 0.10, 0, 0.40);
-    const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod * flickerHotspotTrim;
+    // E21: Flicker amplitude cap under exceedance. Suppresses peak flicker
+    // amplitude when coupling is stressed, reducing density-flicker coupling
+    // pressure without touching the smoothing pathway (which feeds variance floor).
+    const e21AmpCap = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e21FlickerAmplitudeCap'), 1.0) || 1.0;
+    const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod * flickerHotspotTrim * e21AmpCap;
 
     // Density-flicker additive decorrelation: scale down the additive term
     // when density and flicker directions are persistently correlated.
@@ -365,6 +369,7 @@ globalConductor = (() => {
     // Reduced smoothing 0.38->0.30 for faster tension response.
     // R74 showed S1 peaking at 0.783 but smoothing delays arch shape
     // propagation, blurring section-boundary tension transitions.
+    // Reduced smoothing 0.38->0.30 for faster tension response.
     const TENSION_SMOOTHING = 0.30;
     const prevTension = harmonicContext.getField('tension');
     const derivedTension = prevTension * (1 - TENSION_SMOOTHING) + rawTension * TENSION_SMOOTHING;

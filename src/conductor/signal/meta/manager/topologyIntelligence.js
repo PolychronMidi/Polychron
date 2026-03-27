@@ -184,7 +184,16 @@ hyperMetaManagerTopology = (() => {
     if (S.crossState === 'emergence') {
       const streakBonus = clamp(S.emergenceStreak * 0.01, 0, 0.10);
       const attractorBonus = S.attractorStabilityBeats > 50 ? 0.05 : 0;
-      S.topologyCreativityMultiplier = clamp(1.12 + streakBonus + attractorBonus, 1.0, 1.30);
+      // Audit: 1.12-1.30x fixed during emergence, no health gate.
+      // Scale emergence boost by system health: full 1.12-1.30x when healthy,
+      // down to 1.0-1.15x when stressed. Uses same e18Scale from hyperMetaManager
+      // but topology doesn't have direct access -- use S.healthEma and exceedanceTrendEma.
+      const topoHealthScale = clamp(S.healthEma / 0.7, 0.5, 1.0);
+      const topoExceedanceScale = clamp(1.0 - m.max(0, S.exceedanceTrendEma - 0.4) * 1.5, 0.5, 1.0);
+      const topoE18Scale = topoHealthScale * topoExceedanceScale;
+      const rawBoost = 1.12 + streakBonus + attractorBonus; // 1.12 to 1.27
+      // Scale the overage above 1.0 by health: stressed = less boost
+      S.topologyCreativityMultiplier = clamp(1.0 + (rawBoost - 1.0) * topoE18Scale, 1.0, 1.30);
     } else if (S.crossState === 'locked') {
       S.topologyCreativityMultiplier =
         clamp(0.85 - (S.attractorStabilityBeats > 100 ? 0.05 : 0), 0.75, 1.0);
