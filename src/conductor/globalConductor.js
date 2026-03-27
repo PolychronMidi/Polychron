@@ -161,9 +161,12 @@ globalConductor = (() => {
       0, 1
     );
     const baseSmooth = clamp(V.optionalFinite(Number(conductorConfig.getDensitySmoothing()), 0.2), 0, 1);
-    // E9: Reduce density smoothing at phrase boundaries to let the raw
-    // target signal through. Higher relax = lower effective smoothing,
-    // allowing density swings to survive the EMA filter.
+    // E9: Reduce density smoothing at phrase boundaries (boundary breathing).
+    // E15: Continuous phrase-position sculpting of smoothing (within-phrase contour).
+    // E17: Tighten smoothing at section openings for sharper density peak.
+    // Combined: effective smoothing = base / (e9 * e15) * e17_tighten
+    // E9: Reduce density smoothing at phrase boundaries (boundary breathing).
+    // E15 was refuted -- continuous smoothing variation caused instability.
     const e9SmoothRelax = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'), 1.0) || 1.0;
     const smooth = clamp(baseSmooth / e9SmoothRelax, 0.05, 1);
     currentDensity = clamp(safeCurrentDensity * (1 - smooth) + targetDensity * smooth, 0, 1);
@@ -348,7 +351,17 @@ globalConductor = (() => {
       : currentRegime === 'coherent' ? 0.02
       : currentRegime === 'exploring' ? -0.02
       : 0;
-    const rawTension = clamp(rawTensionBase * sectionBoundaryTensionDip + tensionArchBoost + regimeTensionWarmth, 0, 1);
+    // E16: Tension micro-release at rest/sparse events. When E11 sparse
+    // windows are active (phrase-boundary breathing), briefly dip tension.
+    // This creates psychoacoustic "breathing" -- not just silence but actual
+    // tension release. Small dip (max 0.05) to avoid coupling discontinuities.
+    const e11Sparse = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11SparseWindow'), 0) || 0;
+    const e11CeilOvr = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'), 1.0) || 1.0;
+    // Only dip tension when ceiling is actually suppressed (not during exploring, where override=1.0)
+    const e16TensionDip = e11Sparse > 0 && e11CeilOvr < 0.95
+      ? clamp((1.0 - e11CeilOvr) * 0.08, 0, 0.03)
+      : 0;
+    const rawTension = clamp(rawTensionBase * sectionBoundaryTensionDip + tensionArchBoost + regimeTensionWarmth - e16TensionDip, 0, 1);
     // Reduced smoothing 0.38->0.30 for faster tension response.
     // R74 showed S1 peaking at 0.783 but smoothing delays arch shape
     // propagation, blurring section-boundary tension transitions.

@@ -214,6 +214,25 @@ hyperMetaManager = (() => {
       }
     }
 
+    // E15: Within-phrase density sculpting -- REFUTED.
+    // Continuous smoothing variation creates persistent non-stationary signal
+    // that coupling system can't stabilize around. Causes coherent regime
+    // dominance (47.5%), exceedance spikes (90+), and DIVERGENT verdict.
+    // Root cause: unlike E9 (brief boundary pulse), E15 varies every beat,
+    // preventing the coupling EMA from converging to any stable state.
+    ST.rateMultipliers.e15SculptSmoothRelax = 1.0;
+    ST.rateMultipliers.e15PhraseDensityArc  = 1.0;
+
+    // E17: Section-opening density surge -- REFUTED.
+    // Section-boundary density surges create repeated coupling shocks at
+    // every section transition. The 1.18x density boost causes exceedance
+    // spikes (22->75+) and coherent regime dominance (42%+).
+    // Root cause: E11's sparse window at section END creates a trough;
+    // E17's surge at section START creates a peak immediately after.
+    // The abrupt low->high transition violates the EMA settling time.
+    ST.rateMultipliers.e17DensitySurge     = 1.0;
+    ST.rateMultipliers.e17SmoothingTighten = 1.0;
+
     // E9: Density breathing windows. At phrase boundaries, temporarily
     // reduce density smoothing and widen the density floor/ceiling gap,
     // letting the raw target signal through with less EMA filtering.
