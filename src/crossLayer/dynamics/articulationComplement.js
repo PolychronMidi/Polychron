@@ -42,7 +42,7 @@ articulationComplement = (() => {
       return { avgSustain: 0.5, isLegato: false, isStaccato: false };
     }
     const avg = hist.reduce((a, b) => a + b, 0) / hist.length;
-    const beatTicks = tpBeat;
+    const beatTicks = spBeat;
     const normalized = avg / beatTicks; // ratio of sustain to beat length
     return {
       avgSustain: normalized,

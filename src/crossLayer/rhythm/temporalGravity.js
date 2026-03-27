@@ -45,40 +45,40 @@ temporalGravity = (() => {
   }
 
   /**
-   * Compute a gravity-adjusted tick offset for a note about to be placed.
+   * Compute a gravity-adjusted time offset for a note about to be placed.
    * Pulls the note toward a dense cluster in the other layer.
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
-   * @param {number} originalTick - the tick where the note would normally go
-   * @returns {number} adjusted tick (may be shifted toward the gravity well)
+   * @param {number} originalTime - the time (seconds) where the note would normally go
+   * @returns {number} adjusted time in seconds (may be shifted toward the gravity well)
    */
-  function applyGravity(absTimeMs, activeLayer, originalTick) {
+  function applyGravity(absTimeMs, activeLayer, originalTime) {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
-    const originalTickN = V.requireFinite(originalTick, 'originalTick');
+    const originalTimeN = V.requireFinite(originalTime, 'originalTime');
 
     // Find the nearest density peak from another layer
     const well = absoluteTimeGrid.findClosest(
       DENSITY_CHANNEL, absTimeMs, GRAVITY_TOLERANCE_MS, activeLayer
     );
-    if (!well) return originalTickN;
+    if (!well) return originalTimeN;
     V.assertObject(well, 'applyGravity.well');
     const wellDensity = V.requireFinite(well.density, 'applyGravity.well.density');
     const wellTimeMs = V.requireFinite(well.timeMs, 'applyGravity.well.timeMs');
-    if (wellDensity < 0.3) return originalTickN;
+    if (wellDensity < 0.3) return originalTimeN;
 
     // Pull strength proportional to density and proximity
     const dist = m.abs(wellTimeMs - absTimeMs);
     const proximity = 1 - (dist / GRAVITY_TOLERANCE_MS);
     const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO;
 
-    // Direction: pull toward the gravity well's ms in tick space
-    const wellTick = crossLayerHelpers.msToSyncTick(wellTimeMs);
-    const direction = wellTick > originalTickN ? 1 : -1;
-    const maxPull = tpSec * pullStrength;
-    const pull = m.min(maxPull, m.abs(wellTick - originalTickN) * 0.5);
+    // Direction: pull toward the gravity well's time position (seconds)
+    const wellTimeSec = wellTimeMs / 1000;
+    const direction = wellTimeSec > originalTimeN ? 1 : -1;
+    const maxPull = spBeat * pullStrength;
+    const pull = m.min(maxPull, m.abs(wellTimeSec - originalTimeN) * 0.5);
 
-    return m.round(originalTickN + direction * pull);
+    return originalTimeN + direction * pull;
   }
 
   return { postDensity, measureDensity, applyGravity, reset() { /* stateless - no per-scope state to clear */ } };

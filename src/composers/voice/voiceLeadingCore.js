@@ -46,7 +46,7 @@ voiceLeadingCore = {
     constraints = Array.isArray(constraints) ? constraints : [];
 
     // Noise context
-    const currentTime = beatStart;
+    const currentTime = beatStartTime;
     const voiceId = Number(candidate) + (lastNote * 17);
     const noiseContext = { currentTime, voiceId };
 

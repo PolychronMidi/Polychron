@@ -59,8 +59,8 @@ microUnitAttenuator = (() => {
     record(onEvt, offEvt, score) {
       V.assertObject(onEvt, 'record.onEvt');
       V.assertObject(offEvt, 'record.offEvt');
-      V.requireFinite(onEvt.tick, 'record.onEvt.tick');
-      V.requireFinite(offEvt.tick, 'record.offEvt.tick');
+      V.requireFinite(onEvt.timeInSeconds, 'record.onEvt.timeInSeconds');
+      V.requireFinite(offEvt.timeInSeconds, 'record.offEvt.timeInSeconds');
       if (microUnitAttenuatorStack.length === 0) {
         // No active attenuation - write through immediately
         c.push(onEvt, offEvt);
@@ -115,7 +115,7 @@ microUnitAttenuator = (() => {
         // Truncate in-place - avoids allocating a new array via .slice()
         pairs.length = limit;
         // Re-sort survivors by tick order so MIDI output stays chronological
-        pairs.sort((a, b) => a.on.tick - b.on.tick);
+        pairs.sort((a, b) => a.on.timeInSeconds - b.on.timeInSeconds);
         survivors = pairs;
       }
 

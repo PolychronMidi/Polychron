@@ -20,7 +20,7 @@ grooveTemplateAdvisor = (() => {
     }
 
     // Subdivision duration in seconds
-    const subdivDur = V.requireFinite(tpSubdiv, 'tpSubdiv') / V.requireFinite(tpSec, 'tpSec');
+    const subdivDur = V.requireFinite(spSubdiv, 'spSubdiv');
 
     let sumDev = 0;
     let maxDev = 0;

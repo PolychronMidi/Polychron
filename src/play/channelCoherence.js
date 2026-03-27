@@ -19,7 +19,7 @@ function channelCoherenceValidateDeps() {
 }
 
 function channelCoherenceRefreshBeatCache() {
-  const beatKey = V.optionalFinite(Number(beatStart), -1);
+  const beatKey = V.optionalFinite(Number(beatStartTime), -1);
   if (channelCoherenceBeatKey === beatKey) return;
   channelCoherenceBeatKey = beatKey;
   channelCoherenceProfileCfgCache = new Map();

@@ -15,16 +15,8 @@ logUnit = (type) => {
   // Localize all per-unit variables to avoid accidental global mutation across calls
   let unit = null;
   let unitsPerParent = null;
-  let startTick = null;
-  let endTick = null;
   let startTime = null;
   let endTime = null;
-  let spPhrase = null;
-  let spMeasure = null;
-  let spBeat = null;
-  let spDiv = null;
-  let spSubdiv = null;
-  let spSubsubdiv = null;
   let composerDetails = '';
   let progressionSymbols = '';
   let actualMeter = null;
@@ -49,17 +41,12 @@ logUnit = (type) => {
     unit = sectionIndex + 1;
     unitsPerParent = totalSections;
     // Ensure we always have a safe numeric start for sections.
-    startTick = sectionStart;
     startTime = sectionStartTime;
     // Section duration not known this early in the loop.
   } else if (type === 'phrase') {
     unit = phraseIndex + 1;
     unitsPerParent = phrasesPerSection;
-    startTick = phraseStart;
-    // Compute endTick only when tpPhrase is a finite number
-    endTick = startTick + tpPhrase;
     startTime = phraseStartTime;
-    spPhrase = tpPhrase / tpSec;
     endTime = startTime + spPhrase;
 
     composerDetails = composerForLog ? `${composerForLog.constructor.name} ` : 'Unknown Composer ';
@@ -76,18 +63,15 @@ logUnit = (type) => {
     actualMeter = [numerator, denominator];
     try {
       if (Array.isArray(midiMeter) && midiMeter[1] === actualMeter[1]) {
-        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} BPM: ${trueBPM}`;
       } else {
-        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
+        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} BPM: ${trueBPM}`;
       }
-    } catch { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
+    } catch { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} BPM: ${trueBPM}`; }
   } else if (type === 'measure') {
     unit = measureIndex + 1;
     unitsPerParent = measuresPerPhrase;
-    startTick = measureStart;
-    endTick = measureStart + tpMeasure;
     startTime = measureStartTime;
-    spMeasure = tpMeasure / tpSec;
     endTime = measureStartTime + spMeasure;
     composerDetails = composerForLog ? `${composerForLog.constructor.name} ` : 'Unknown Composer ';
     if (composerForLog && composerForLog.scale && composerForLog.scale.name) {
@@ -103,34 +87,25 @@ logUnit = (type) => {
     actualMeter = [numerator, denominator];
     try {
       if (Array.isArray(midiMeter) && midiMeter[1] === actualMeter[1]) {
-        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`;
+        meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} BPM: ${trueBPM}`;
       } else {
-        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} tpSec: ${tpSec}`;
+        meterInfo = `Actual Meter: ${actualMeter.join('/')} MIDI Meter: ${Array.isArray(midiMeter) ? midiMeter.join('/') : String(midiMeter)} Composer: ${composerDetails} BPM: ${trueBPM}`;
       }
-    } catch { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} tpSec: ${tpSec}`; }
+    } catch { meterInfo = `Meter: ${actualMeter.join('/')} Composer: ${composerDetails} BPM: ${trueBPM}`; }
   } else if (type === 'beat') {
     unit = beatIndex + 1;
     unitsPerParent = numerator;
-    startTick = beatStart;
-    endTick = startTick + tpBeat;
     startTime = beatStartTime;
-    spBeat = tpBeat / tpSec;
     endTime = startTime + spBeat;
   } else if (type === 'division') {
     unit = divIndex + 1;
     unitsPerParent = divsPerBeat;
-    startTick = divStart;
-    endTick = startTick + tpDiv;
     startTime = divStartTime;
-    spDiv = tpDiv / tpSec;
     endTime = startTime + spDiv;
   } else if (type === 'subdiv') {
     unit = subdivIndex + 1;
     unitsPerParent = subdivsPerDiv;
-    startTick = subdivStart;
-    endTick = startTick + tpSubdiv;
     startTime = subdivStartTime;
-    spSubdiv = tpSubdiv / tpSec;
     endTime = startTime + spSubdiv;
   } else if (type === 'subsubdiv') {
     // Use defensively coerced indices/totals to avoid NaN/undefined emissions
@@ -138,17 +113,14 @@ logUnit = (type) => {
     unit = sIndex + 1;
     // Prefer canonical name `subsubsPerSub` but accept legacy `subsubsPerSub` if present
     unitsPerParent = subsubsPerSub;
-    startTick = subsubdivStart;
-    endTick = startTick + tpSubsubdiv;
     startTime = subsubdivStartTime;
-    spSubsubdiv = tpSubsubdiv / tpSec;
     endTime = startTime + spSubsubdiv;
   }
   return (() => {
     c.push({
-      tick: startTick,
+      timeInSeconds: startTime ?? 0,
       type: 'marker_t',
-      vals: [`${activeLayerName} ${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} ${typeof endTick === 'undefined' || endTime === null || startTime === null ? `Start: ${formatTime(startTime ?? 0)}` : `Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)}) endTick: ${endTick}`} ${meterInfo ? meterInfo : ''}`]
+      vals: [`${activeLayerName} ${type.charAt(0).toUpperCase() + type.slice(1)} ${unit}/${unitsPerParent} ${endTime === null || startTime === null ? `Start: ${formatTime(startTime ?? 0)}` : `Length: ${formatTime(endTime - startTime)} (${formatTime(startTime)} - ${formatTime(endTime)})`} ${meterInfo ? meterInfo : ''}`]
     });
   })();
 };

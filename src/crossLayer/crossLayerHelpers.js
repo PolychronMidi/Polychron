@@ -22,17 +22,16 @@ crossLayerHelpers = (() => {
 
   function msToSyncTick(timeMs) {
     V.requireFinite(timeMs, 'timeMs');
-    V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
-    V.requireFinite(tpSec, 'tpSec');
-    const syncTickRaw = m.round(measureStart + ((timeMs / 1000) - measureStartTime) * tpSec);
-    return m.max(0, syncTickRaw);
+    // Returns offset in seconds from measure start (replaces tick-based sync position)
+    return m.max(0, (timeMs / 1000) - measureStartTime);
   }
 
   function tickToAbsMs(tick, fallbackAbsMs) {
     V.requireFinite(tick, 'tick');
-    if (Number.isFinite(measureStart) && Number.isFinite(measureStartTime) && Number.isFinite(tpSec)) {
-      return (measureStartTime + (tick - measureStart) / tpSec) * 1000;
+    // tick is now a time value in seconds; convert to ms
+    if (Number.isFinite(tick)) {
+      return tick * 1000;
     }
     const fallback = V.optionalFinite(fallbackAbsMs, beatStartTime * 1000);
     return fallback;

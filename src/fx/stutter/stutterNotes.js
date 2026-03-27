@@ -199,8 +199,8 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   // Build planned events (single on/off pair)
   const stutterOn = on + sustain * rf(0.05, 0.3);
   const stutterOff = stutterOn + sustain * rf(0.2, 0.6);
-  const evOn = { tick: stutterOn, type: 'on', vals: [channel, stutterNote, stutterVel] };
-  const evOff = { tick: stutterOff, vals: [channel, stutterNote] };
+  const evOn = { timeInSeconds: stutterOn, type: 'on', vals: [channel, stutterNote, stutterVel] };
+  const evOff = { timeInSeconds: stutterOff, vals: [channel, stutterNote] };
 
   if (!emit) {
     // Return planned events for testing/preview
@@ -210,7 +210,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   // Emit and metrics
   p(c, evOn);
   const eventName = eventCatalog.names.STUTTER_APPLIED;
-  eventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / MIDI_MAX_VALUE, 0, 1), tick: stutterOn });
+  eventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / MIDI_MAX_VALUE, 0, 1), timeInSeconds: stutterOn });
   p(c, evOff);
   stutterMetrics.incEmitted(1, profile);
 

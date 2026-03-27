@@ -17,7 +17,7 @@ systemSnapshot = (() => {
       snap.timing = {
         sectionIndex, phraseIndex, measureIndex, beatIndex,
         divIndex, subdivIndex, subsubdivIndex,
-        beatStartTime, beatStart
+        beatStartTime
       };
     } catch { snap.timing = null; }
 

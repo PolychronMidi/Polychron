@@ -6,17 +6,17 @@
  */
 setTuningAndInstruments = () => {
   p(c,...['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
-  type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [primaryInstrument]) : (type==='control_c' ? [10,127] : [primaryInstrument]))]})),
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-  { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));
+  timeInSeconds:measureStartTime,type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [primaryInstrument]) : (type==='control_c' ? [10,127] : [primaryInstrument]))]})),
+  { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
+  { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));
   p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
-    type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
-    { type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
+    timeInSeconds:measureStartTime,type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
+    { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
   p(c,
-    ...source.map(ch => ({ type: 'control_c', vals: [ch, 7, 104] })),
-    ...reflection.map(ch => ({ type: 'control_c', vals: [ch, 7, 100] })),
-    ...bass.map(ch => ({ type: 'control_c', vals: [ch, 7, 102] })),
-    { type:'control_c', vals:[drumCH, 7, 104] }
+    ...source.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 104] })),
+    ...reflection.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 100] })),
+    ...bass.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 102] })),
+    { timeInSeconds: measureStartTime, type:'control_c', vals:[drumCH, 7, 104] }
   );
 }
 
@@ -36,7 +36,7 @@ const bassProgramPool = Array.isArray(otherBassInstruments)
 const resolvedBassProgramPool = bassProgramPool.length > 0
   ? bassProgramPool
   : [bassInstrument, bassInstrument2].filter(program => Number.isFinite(Number(program)));
-p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' };
+p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:'program_c' };
   return [
     ...reflectionBinaural.map(ch=>({...tmp,vals:[ch,ra(otherInstruments)]})),
     ...bassBinaural.map(ch=>({...tmp,vals:[ch,ra(resolvedBassProgramPool)]})),
@@ -46,17 +46,17 @@ p(c,...['control_c'].flatMap(()=>{ const tmp={ tick:beatStart,type:'program_c' }
 
 /**
  * Send All Notes Off CC (123) to prevent sustain across transitions.
- * @param {number} [tick=measureStart] - Tick position for All Notes Off.
+ * @param {number} [timeInSeconds=measureStartTime] - Time position for All Notes Off.
  * @returns {Array} Array of CC events.
  */
-allNotesOff=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,123,0]  })));}
+allNotesOff=(timeInSeconds=measureStartTime)=>{return p(c,...allCHs.map(ch=>({timeInSeconds,type:'control_c',vals:[ch,123,0]  })));}
 
 /**
  * Send Mute All CC (120) to silence all channels.
- * @param {number} [tick=measureStart] - Tick position for Mute All.
+ * @param {number} [timeInSeconds=measureStartTime] - Time position for Mute All.
  * @returns {Array} Array of CC events.
  */
-muteAll=(tick=measureStart)=>{return p(c,...allCHs.map(ch=>({tick:m.max(0,tick-1),type:'control_c',vals:[ch,120,0]  })));}
+muteAll=(timeInSeconds=measureStartTime)=>{return p(c,...allCHs.map(ch=>({timeInSeconds,type:'control_c',vals:[ch,120,0]  })));}
 
 /**
  * Neutral pitch bend value (center of pitch bend range).

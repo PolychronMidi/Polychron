@@ -56,20 +56,21 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   const rhythmSwingAmount = V.requireFinite(emissionAdjustments.swingAmount, 'emissionAdjustments.swingAmount');
 
   // Validate timing globals and compute swing offset
-  V.requireFinite(Number(tpUnit), 'tpUnit');
-  V.requireFinite(Number(beatStart), 'beatStart');
-  const swingTicks = V.requireFinite(
+  V.requireFinite(Number(spUnit), 'spUnit');
+  V.requireFinite(Number(beatStartTime), 'beatStartTime');
+  // swingOffset returns a beat-fraction; multiply by spBeat for seconds
+  const swingFraction = V.requireFinite(
     Number(RhythmManager.swingOffset(V.requireFinite(beatIndex, 'beatIndex'), rhythmSwingAmount)),
-    'swingTicks'
+    'swingFraction'
   );
-  const timingOffsetTicks = (motifTimingOffsetUnits * Number(tpUnit)) + swingTicks;
+  const timingOffsetSecs = (motifTimingOffsetUnits * Number(spUnit)) + swingFraction * spBeat;
 
   const tempoFeelOffset = V.requireFinite(Number(tempoFeelEngine.getTickOffset()), 'tempoFeelOffset');
 
-  // Compute on-tick and sustain durations
-  const on = unitStart + timingOffsetTicks + tempoFeelOffset + (tpUnit * rv(rf(.2), [-.1, .07], .3));
-  const shortSustain = rv(rf(m.max(tpUnit * .5, tpUnit / unitsPerParent), (tpUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
-  const longSustain = rv(rf(tpUnit * .8, (tpParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
+  // Compute on-time and sustain durations (seconds)
+  const on = unitStartTime + timingOffsetSecs + tempoFeelOffset + (spUnit * rv(rf(.2), [-.1, .07], .3));
+  const shortSustain = rv(rf(m.max(spUnit * .5, spUnit / unitsPerParent), (spUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
+  const longSustain = rv(rf(spUnit * .8, (spParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
   const useShort = subdivsPerMinute > ri(400, 650);
   const sustain = (useShort ? shortSustain : longSustain) * rv(rf(.8, 1.3));
 
@@ -101,7 +102,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   const influenceX = V.requireFinite(Number(noiseProfile.influenceX), 'noiseProfile.influenceX');
   const influenceY = V.requireFinite(Number(noiseProfile.influenceY), 'noiseProfile.influenceY');
   const noiseInfluence = clamp((influenceX + influenceY) / 2, 0, 1);
-  const currentTime = beatStart + tpUnit * 0.5; // Approximate time within the unit
+  const currentTime = beatStartTime + spUnit * 0.5; // Approximate time within the unit (seconds)
 
   // Layer ID seed - cached on layer object to avoid recomputing per micro-unit
   let layerIdSeed = layer.cachedLayerIdSeed;
@@ -122,7 +123,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
     }
     layer.cachedLayerIdSeed = layerIdSeed;
   }
-  const voiceIdSeed = m.round(Number(beatStart) * 73 + layerIdSeed * 43 + V.requireFinite(measureCount, 'measureCount'));
+  const voiceIdSeed = m.round(Number(beatStartTime) * 7300 + layerIdSeed * 43 + V.requireFinite(measureCount, 'measureCount'));
 
   return { on, sustain, binVel, noiseInfluence, currentTime, voiceIdSeed };
 };

@@ -122,8 +122,8 @@ def parse(file, strict=True):
                     return j
         # Fallback 2: match by numeric tick computed under current context
         try:
-            if tf and tf.lower().startswith('t'):
-                sec = float(tf[1:].strip())
+            if tf and tf.lower().endswith('s'):
+                sec = float(tf[:-1].strip())
                 cur_tick = seconds_to_ticks(sec, pattern.resolution, current_bpm, current_numer, current_denom)
             else:
                 cur_tick = round(float(tf))
@@ -139,8 +139,8 @@ def parse(file, strict=True):
                 continue
             try:
                 rtf = r[1]
-                if rtf and rtf.lower().startswith('t'):
-                    sec = float(rtf[1:].strip())
+                if rtf and rtf.lower().endswith('s'):
+                    sec = float(rtf[:-1].strip())
                     r_tick = seconds_to_ticks(sec, pattern.resolution, current_bpm, current_numer, current_denom)
                 else:
                     r_tick = round(float(rtf))
@@ -161,9 +161,9 @@ def parse(file, strict=True):
         st = track_states[tr]
 
         # Compute absolute seconds and MIDI tick relative to the most recent change
-        if tf and tf.lower().startswith('t'):
+        if tf and tf.lower().endswith('s'):
             try:
-                secs = float(tf[1:].strip())
+                secs = float(tf[:-1].strip())
             except Exception:
                 secs = float(tf)
             last = find_last_change_by_sec(st, secs)

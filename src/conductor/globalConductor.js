@@ -201,7 +201,7 @@ globalConductor = (() => {
     // regimes, the flicker oscillation phase diverges from the density
     // signal's rhythm, structurally reducing density-flicker coupling
     // during non-coherent passages.
-    const densitySeed = Number(beatStart);
+    const densitySeed = Number(beatStartTime);
     // Replace frequency shift with phase offset to break
     // density-flicker correlation. Frequency shifts increased
     // carrier rate during exploring/evolving, which accidentally aligned

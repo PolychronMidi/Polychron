@@ -1,5 +1,5 @@
 /** @this {any} */
-stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = tpSec * rf(.1, 2)) {
+stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = spBeat * rf(.1, 2)) {
   if (!stutterFailFast) {
     throw new Error('stutterFX: stutterFailFast helper is not available');
   }
@@ -17,22 +17,22 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
 
     // Use moderate noise for FX curves - aligns with fade's organic treatment
     const noiseProfile = getNoiseProfile('moderate');
-    let tick;
+    let timeInSeconds;
     let lastNorm = 0;
 
     for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
-      tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
+      timeInSeconds = beatStartTime + i * (duration / numStutters) * rf(.9, 1.1);
       const progress = i / (numStutters - 1);
       const baseValue = startValue + (endValue - startValue) * progress;
 
       // Noise-modulate the FX curve - X axis warps the ramp, Y axis adds flutter
-      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fx', tick));
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fx', timeInSeconds));
 
       // If a coherence key exists, overlay correlated noise
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick), `stutterFX coherence key=${coherenceKey} channel=${channelToStutter}`);
+        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, timeInSeconds), `stutterFX coherence key=${coherenceKey} channel=${channelToStutter}`);
       }
 
       // R80 E3: Regime-aware stutter coherence weighting. In exploring regime,
@@ -65,13 +65,13 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
         return clamp(raw, 0, 127);
       };
 
-      p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, ccParam, mapToFxRange(channelToStutter, ccParam, currentValue)] });
+      p(c, { timeInSeconds, type: 'control_c', vals: [channelToStutter, ccParam, mapToFxRange(channelToStutter, ccParam, currentValue)] });
     }
-    if (tick === undefined) throw new Error('stutterFX: for-loop produced no iterations');
+    if (timeInSeconds === undefined) throw new Error('stutterFX: for-loop produced no iterations');
 
     // Emit one summary event per channel (not per-iteration)
     const profile = stutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-    eventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), tick });
+    eventBus.emit(eventName, { type: 'cc', subtype: 'fx', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), timeInSeconds });
 
     // restore to mid-point of configured range (falls back to 64)
     const defaultReset = (ch, cc) => {
@@ -82,6 +82,6 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = t
       if (def && Number.isFinite(Number(def.min)) && Number.isFinite(Number(def.max))) return m.round((Number(def.min) + Number(def.max)) / 2);
       return 64;
     };
-    p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, defaultReset(channelToStutter, ccParam)] });
+    p(c, { timeInSeconds: timeInSeconds + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, defaultReset(channelToStutter, ccParam)] });
   });
 };

@@ -57,41 +57,40 @@ rhythmicPhaseLock = (() => {
   }
 
   /**
-   * Apply phase lock/drift/repel to a tick position.
+   * Apply phase lock/drift/repel to a time position (seconds).
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
-   * @param {number} originalTick - the tick where the note would normally go
-   * @returns {{ tick: number, mode: 'lock'|'drift'|'repel', phaseDiff: number }}
+   * @param {number} originalTime - the time (seconds) where the note would normally go
+   * @returns {{ time: number, mode: 'lock'|'drift'|'repel', phaseDiff: number }}
    */
-  function applyPhaseLock(absTimeMs, activeLayer, originalTick) {
+  function applyPhaseLock(absTimeMs, activeLayer, originalTime) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    V.requireFinite(originalTick, 'originalTick');
+    V.requireFinite(originalTime, 'originalTime');
 
     const phase = measurePhase(absTimeMs, activeLayer);
-    if (!phase) return { tick: originalTick, mode: 'drift', phaseDiff: 0.5 };
+    if (!phase) return { time: originalTime, mode: 'drift', phaseDiff: 0.5 };
 
-    V.requireFinite(measureStart, 'measureStart');
     V.requireFinite(measureStartTime, 'measureStartTime');
-    V.requireFinite(tpSec, 'tpSec');
+    V.requireFinite(spBeat, 'spBeat');
 
     if (phase.mode === 'lock' && absTimeMs - lastLockMs >= MIN_LOCK_INTERVAL_MS) {
       lastLockMs = absTimeMs;
       lockCount++;
-      // Quantize: pull toward the other layer's beat grid position
-      const otherTick = crossLayerHelpers.msToSyncTick(phase.otherBeatMs);
-      const pull = m.round((otherTick - originalTick) * LOCK_STRENGTH);
-      return { tick: originalTick + pull, mode: 'lock', phaseDiff: phase.phaseDiff };
+      // Quantize: pull toward the other layer's beat grid position (in seconds)
+      const otherTimeSec = phase.otherBeatMs / 1000;
+      const pull = (otherTimeSec - originalTime) * LOCK_STRENGTH;
+      return { time: originalTime + pull, mode: 'lock', phaseDiff: phase.phaseDiff };
     }
 
     if (phase.mode === 'repel') {
-      // Push away from the other layer's grid
-      const otherTick = crossLayerHelpers.msToSyncTick(phase.otherBeatMs);
-      const direction = originalTick >= otherTick ? 1 : -1;
-      const push = m.round(tpSec * REPEL_STRENGTH * phase.phaseDiff * 0.1);
-      return { tick: originalTick + direction * push, mode: 'repel', phaseDiff: phase.phaseDiff };
+      // Push away from the other layer's grid (in seconds)
+      const otherTimeSec = phase.otherBeatMs / 1000;
+      const direction = originalTime >= otherTimeSec ? 1 : -1;
+      const push = spBeat * REPEL_STRENGTH * phase.phaseDiff * 0.1;
+      return { time: originalTime + direction * push, mode: 'repel', phaseDiff: phase.phaseDiff };
     }
 
-    return { tick: originalTick, mode: 'drift', phaseDiff: phase.phaseDiff };
+    return { time: originalTime, mode: 'drift', phaseDiff: phase.phaseDiff };
   }
 
   /** @returns {'lock'|'drift'|'repel'} */

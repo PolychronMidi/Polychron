@@ -10,8 +10,8 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   V.assertNonEmptyString(cfg.profile, 'cfg.profile');
   const profile = cfg.profile;
   const baseNote = V.requireFinite(cfg.note, 'plan.note');
-  const on = V.optionalFinite(Number(cfg.on), beatStart);
-  const sustain = V.optionalFinite(Number(cfg.sustain), tpSec * 0.25);
+  const on = V.optionalFinite(Number(cfg.on), beatStartTime);
+  const sustain = V.optionalFinite(Number(cfg.sustain), spBeat * 0.25);
   const numStutters = V.optionalFinite(Number(cfg.numStutters), m.max(1, ri(2, 6)));
   const duration = V.optionalFinite(Number(cfg.duration), m.max(0.001, (sustain / numStutters) * rf(.9, 1.1)));
 

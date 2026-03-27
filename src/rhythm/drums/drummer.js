@@ -96,8 +96,7 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
         for (let i = 0; i < numStutters; i++) {
           // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
           // const tickVal = (Number.isFinite(Number(beatStart)) ? Number(beatStart) : 0) + ((Number.isFinite(Number(useOffset)) ? Number(useOffset) : 0) + i * stutterDuration) * (Number.isFinite(Number(tpBeat)) ? Number(tpBeat) : 0);
-          const tickVal = beatStart + (useOffset + i * stutterDuration) * tpBeat;
-          const tick = m.round(tickVal);
+          const timeInSeconds = beatStartTime + (useOffset + i * stutterDuration) * spBeat;
           let currentVelocity;
           if (isFadeIn) {
             const fadeInMultiplier = stutterDecayFactor * (i / (numStutters * rf(0.4, 2.2) - 1));
@@ -108,19 +107,18 @@ drummer = (drumNames,beatOffsets,offsetJitter=rf(.1),stutterChance=.3,stutterRan
             currentVelocity = clamp(m.max(0, coupledMinVelocity + (coupledMaxVelocity - coupledMinVelocity) * fadeOutMultiplier), 0, MIDI_MAX_VALUE);
           }
           const emittedVelocity = m.floor(currentVelocity);
-          p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, emittedVelocity] });
+          p(c, { timeInSeconds, type: 'on', vals: [drumCH, drumInfo.note, emittedVelocity] });
           traceDrain.recordFamilyVelocity('drums', emittedVelocity);
         }
       } else {
-        const tickVal = beatStart + useOffset * tpBeat;
-        const tick = m.round(tickVal);
+        const timeInSeconds = beatStartTime + useOffset * spBeat;
         const baseMin = Number(drumInfo.velocityRange[0]);
         const baseMax = Number(drumInfo.velocityRange[1]);
         const scaledMin = clamp(m.round(baseMin * velocityScale), 1, MIDI_MAX_VALUE);
         const scaledMax = clamp(m.round(baseMax * velocityScale), scaledMin, MIDI_MAX_VALUE);
         const [coupledMin, coupledMax] = drummerCoupleVelocityRange(scaledMin, scaledMax, sharedVelocityAnchor);
         const emittedVelocity = ri(coupledMin, coupledMax);
-        p(c, { tick: tick, type: 'on', vals: [drumCH, drumInfo.note, emittedVelocity] });
+        p(c, { timeInSeconds, type: 'on', vals: [drumCH, drumInfo.note, emittedVelocity] });
         traceDrain.recordFamilyVelocity('drums', emittedVelocity);
       }
     }

@@ -35,30 +35,32 @@ setBinaural = () => {
   const activeLayer = /** @type {string} */ (LM.activeLayer);
   const absTimeMs = beatStartTime * 1000;
 
-  // Emit silence, bends, and volume events at a specific sync tick.
+  // Emit silence, bends, and volume events at a wall-clock second position.
+  // timeInSeconds is a plain numeric seconds value; grandFinale appends the 's'
+  // suffix when writing to CSV so csv_maestro converts to ticks per-layer.
   // Takes the flip value explicitly to avoid reading the shared global flipBin
   // mid-mutation -- both layers share that global and write it independently.
-  function emitShiftEvents(shiftSyncTick, shiftFlip) {
+  function emitShiftEvents(shiftSyncSec, shiftFlip) {
     const shiftActiveChannels = shiftFlip ? flipBinT2 : flipBinF2;
     const shiftInactiveChannels = shiftFlip ? flipBinF2 : flipBinT2;
 
     p(c,
-      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 64, 0] })),
-      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 123, 0] })),
-      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 120, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 64, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 123, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 120, 0] }))
+      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
+      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
+      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 120, 0] })),
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 120, 0] }))
     );
 
     p(c,
-      ...binauralL.map(ch => ({ tick: shiftSyncTick, type: 'pitch_bend_c', vals: [ch, (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus)] })),
-      ...binauralR.map(ch => ({ tick: shiftSyncTick, type: 'pitch_bend_c', vals: [ch, (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus)] }))
+      ...binauralL.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'pitch_bend_c', vals: [ch, (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus)] })),
+      ...binauralR.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'pitch_bend_c', vals: [ch, (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus)] }))
     );
 
     p(c,
-      ...shiftInactiveChannels.map(ch => ({ tick: shiftSyncTick, type: 'control_c', vals: [ch, 7, 0] })),
-      ...shiftActiveChannels.map(ch => ({ tick: shiftSyncTick + 1, type: 'control_c', vals: [ch, 7, velocity] }))
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 7, 0] })),
+      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 7, velocity] }))
     );
   }
 
@@ -86,20 +88,17 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    // Emit at the consuming layer's current beat tick. Reconstructing the initiating
-    // layer's past tick and writing events there places them outside this layer's
-    // timeline, extending the rendered track length with trailing pitch bend events.
-    const entrySyncTick = m.max(0, beatStart);
-    V.requireFinite(entrySyncTick, 'entrySyncTick');
-    emitShiftEvents(entrySyncTick, flipBin);
+    // Use the initiating layer's exact wall-clock second. csv_maestro converts
+    // this to the correct tick in each layer's own time-base, so both files
+    // retune at the same playback moment regardless of tempo differences.
+    const entrySyncSec = crossEntry.syncMs / 1000;
+    emitShiftEvents(entrySyncSec, flipBin);
 
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({
         layer: activeLayer,
         absTimeMs,
         syncMs: crossEntry.syncMs,
-        syncTick: entrySyncTick,
-        silenceTick: entrySyncTick,
         usedCrossLayerShift: true,
         syncDeltaMs: m.abs(absTimeMs - crossEntry.syncMs),
         freqOffset: binauralFreqOffset,
@@ -134,9 +133,8 @@ setBinaural = () => {
       V.requireFinite(binauralPlus, 'binauralPlus');
       V.requireFinite(binauralMinus, 'binauralMinus');
 
-      const syncTick = m.max(0, crossLayerHelpers.msToSyncTick(absTimeMs));
-      V.requireFinite(syncTick, 'syncTick');
-      emitShiftEvents(syncTick, flipBin);
+      const syncSec = absTimeMs / 1000;
+      emitShiftEvents(syncSec, flipBin);
 
       lastConsumedMsByLayer[activeLayer] = absTimeMs;
 
@@ -151,8 +149,6 @@ setBinaural = () => {
           layer: activeLayer,
           absTimeMs,
           syncMs: absTimeMs,
-          syncTick,
-          silenceTick: syncTick,
           usedCrossLayerShift: false,
           syncDeltaMs: 0,
           freqOffset: binauralFreqOffset,

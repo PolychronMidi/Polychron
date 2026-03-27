@@ -42,7 +42,7 @@ convergenceDetector = (() => {
    * Returns null if no convergence, or a convergence descriptor.
    * @param {number} absTimeMs - current absolute ms
    * @param {string} activeLayer - current layer
-   * @returns {{ syncTick: number, rarity: number, otherMidi: number, otherVelocity: number } | null}
+   * @returns {{ rarity: number, otherMidi: number, otherVelocity: number } | null}
    */
   function detect(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
@@ -61,11 +61,7 @@ convergenceDetector = (() => {
     const dist = m.abs(match.timeMs - absTimeMs);
     const rarity = 1 - (dist / CONVERGENCE_TOLERANCE_MS);
 
-    // Convert to this layer's tick space
-    const syncTick = crossLayerHelpers.msToSyncTick(match.timeMs);
-
     return {
-      syncTick,
       rarity: clamp(rarity, 0, 1),
       otherMidi: clamp(m.round(V.requireFinite(match.midi, 'match.midi')), 0, 127),
       otherVelocity: clamp(m.round(V.requireFinite(match.velocity, 'match.velocity')), 1, MIDI_MAX_VALUE)
@@ -94,7 +90,7 @@ convergenceDetector = (() => {
     // Both notes share a pitch class; emit octave-displaced cluster
     const boundedCurrentMidi = clamp(m.round(currentMidi), 0, 127);
     const burstPC = ((boundedCurrentMidi % 12) + 12) % 12;
-    const burstBaseTick = conv.syncTick;
+    const burstBaseTime = absTimeMs / 1000;
     const burstVel = m.round(clamp(
       ((currentVelocity + conv.otherVelocity) / 2) * (0.9 + conv.rarity * 0.3),
       1, MIDI_MAX_VALUE
@@ -109,20 +105,19 @@ convergenceDetector = (() => {
     }
     // Limit to BURST_VOICES and schedule via p(c,...)
     while (burstNotes.length > BURST_VOICES) burstNotes.splice(ri(burstNotes.length - 1), 1);
-    const burstSustain = tpSec * rf(0.15, 0.5) * (0.5 + conv.rarity * 0.5);
+    const burstSustain = spBeat * rf(0.15, 0.5) * (0.5 + conv.rarity * 0.5);
     const primaryCh = (activeLayer === 'L1') ? cCH1 : cCH2;
     for (let bi = 0; bi < burstNotes.length; bi++) {
-      const stagger = tpSec * BURST_STAGGER_RATIO * bi;
+      const stagger = spBeat * BURST_STAGGER_RATIO * bi;
       const bv = m.round(clamp(burstVel * rf(BURST_VEL_SCALE_MIN, BURST_VEL_SCALE_MAX), 1, MIDI_MAX_VALUE));
-      crossLayerEmissionGateway.emit('convergenceDetector', c, { tick: burstBaseTick + stagger, type: 'on', vals: [primaryCh, burstNotes[bi], bv] });
-      crossLayerEmissionGateway.emit('convergenceDetector', c, { tick: burstBaseTick + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
+      crossLayerEmissionGateway.emit('convergenceDetector', c, { timeInSeconds: burstBaseTime + stagger, type: 'on', vals: [primaryCh, burstNotes[bi], bv] });
+      crossLayerEmissionGateway.emit('convergenceDetector', c, { timeInSeconds: burstBaseTime + stagger + burstSustain, vals: [primaryCh, burstNotes[bi]] });
     }
 
     // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CROSS_LAYER_CONVERGENCE, {
       layer: activeLayer,
       rarity: conv.rarity,
-      syncTick: conv.syncTick,
       noteA: currentMidi,
       noteB: conv.otherMidi,
       velocityA: currentVelocity,

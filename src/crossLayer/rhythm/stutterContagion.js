@@ -113,7 +113,7 @@ stutterContagion = (() => {
 
     // Scale stutter parameters by decayed intensity
     const numStutters = m.max(5, m.round(ri(10, 70) * contagion.intensity));
-    const duration = tpSec * rf(.1, .8) * contagion.intensity;
+    const duration = spBeat * rf(.1, .8) * contagion.intensity;
 
     if (contagion.type === 'fade' && stutterFade) {
       stutterFade(flipBin ? flipBinT3 : flipBinF3, numStutters, duration);
