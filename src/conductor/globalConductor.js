@@ -235,7 +235,12 @@ globalConductor = (() => {
     const phaseSafeTrim = 1 - phaseEstablished * flickerAxisPressure * 0.18 - hotspotContainmentPressure * 0.12;
     // When correlation is positive (co-moving), attenuate the additive flicker;
     // when negative or zero, pass through fully. Range: [0.5, 1.0].
-    const dfDecorrelScale = clamp((1.0 - m.max(0, globalConductorDfCorrEma) * 0.5) * phaseSafeTrim, 0.45, 1.0);
+    // E14: During E9 phrase-boundary breathing windows, further attenuate the
+    // additive flicker to prevent flicker from tracking density swings and
+    // creating tension-flicker coupling spikes (the hotspot pattern from R22-R23).
+    const e9Active = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'), 1.0) || 1.0;
+    const e14FlickerDamp = e9Active > 1.05 ? clamp(1.0 - (e9Active - 1.0) * 0.4, 0.55, 1.0) : 1.0;
+    const dfDecorrelScale = clamp((1.0 - m.max(0, globalConductorDfCorrEma) * 0.5) * phaseSafeTrim * e14FlickerDamp, 0.40, 1.0);
 
     const densityFlicker = (m.sin(densitySeed * 0.0041 + 1.7) * 0.08 * flickerAmplitude
                          + m.sin(densitySeed * 0.0089 - 2.3) * 0.05 * flickerAmplitude
@@ -303,12 +308,14 @@ globalConductor = (() => {
     // composition dramatic weight. At 0.14: same 0.64 peak at p=0.6, floor
     // 0.584 at p=1.0 (was 0.568). This sustains tension through S2/S3 while
     // still providing compositional resolution.
-    // E10: Lower the tension arch floor during phrase troughs to allow
-    // genuine tension resolution. e10ArchFloorDrop is 0-0.12 range.
+    // E10: Phrase-trough arch floor drop (disabled -- see journal R21).
     const e10ArchDrop = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e10ArchFloorDrop'), 0) || 0;
+    // E12: Section-level tension floor relaxation during resolution phase.
+    // EMA-ramped to avoid coupling discontinuities. Range 0-0.15.
+    const e12FloorDrop = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e12TensionFloorDrop'), 0) || 0;
     const tensionArchTarget = (macroProgress < 0.6
       ? 0.40 + macroProgress * 0.40
-      : 0.64 - (macroProgress - 0.6) * 0.14) - e10ArchDrop;
+      : 0.64 - (macroProgress - 0.6) * 0.14) - e10ArchDrop - e12FloorDrop;
     // Density-tension decorrelation. pearsonR surged to 0.6742
     // in R87 because both density and tension share compositeIntensity
     // as a common driver. Shift tension toward harmonicTension (key/modal

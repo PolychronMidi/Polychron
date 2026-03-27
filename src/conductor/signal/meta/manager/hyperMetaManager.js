@@ -191,6 +191,29 @@ hyperMetaManager = (() => {
     }
 
 
+    // E12: Section-level tension floor relaxation. During section resolution
+    // phase (sectionProgress > 0.80), gradually lower the tension arch floor
+    // to allow genuine inter-section breathing. Separate from E10 (phrase
+    // troughs) -- this operates at the section boundary scale.
+    // Uses a slow EMA ramp to avoid the coupling discontinuities that
+    // killed the E10 arch floor drop attempt. Max drop 0.15 at full resolution.
+    {
+      const sectionPhase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), '') || '';
+      let sectionProgress = 0;
+      try { sectionProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('section'), 0) || 0, 0, 1); } catch { void 0; }
+      const inResolution = sectionPhase === 'resolution' && sectionProgress > 0.80;
+      if (inResolution) {
+        // Ramp floor drop slowly via EMA -- avoids discontinuity spikes
+        const targetDrop = clamp((sectionProgress - 0.80) / 0.20 * 0.15, 0, 0.15);
+        ST.rateMultipliers.e12TensionFloorDrop =
+          (ST.rateMultipliers.e12TensionFloorDrop || 0) * 0.75 + targetDrop * 0.25;
+      } else {
+        // Recover slowly (not instantly) to avoid abrupt re-tension on section boundary
+        ST.rateMultipliers.e12TensionFloorDrop =
+          m.max(0, (ST.rateMultipliers.e12TensionFloorDrop || 0) * 0.85);
+      }
+    }
+
     // E9: Density breathing windows. At phrase boundaries, temporarily
     // reduce density smoothing and widen the density floor/ceiling gap,
     // letting the raw target signal through with less EMA filtering.
@@ -254,6 +277,10 @@ hyperMetaManager = (() => {
     // window signal that forces multi-beat low-density passages. This
     // creates perceptible breathing that single-beat rests cannot achieve.
     // Acts on rest sync probability and density ceiling, not pair ceilings.
+    // E13: Regime-aware sparse windows. Exploring regime gets NO suppression
+    // (chaos lives there). Coherent gets stronger suppression (breathing
+    // needed there most). Evolving gets moderate. This recovers exploring
+    // share lost in E11 while concentrating breathing in coherent passages.
     {
       let phraseIdx = -1;
       try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { void 0; }
@@ -261,20 +288,29 @@ hyperMetaManager = (() => {
       try { phraseProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('phrase'), 0) || 0, 0, 1); } catch { void 0; }
       // Sparse window at phrase wrap: last 5% of phrase
       const atPhraseEnd = phraseProgress > 0.95;
-      // Also at phrase start: first 3% after S0
+      // Also at phrase start: first 3% after phrase 0
       const atPhraseStart = phraseProgress < 0.03 && phraseIdx > 0;
       if (atPhraseEnd || atPhraseStart) {
         S.e11SparseCountdown = 2;
         ST.rateMultipliers.e11SparseWindow = 1.0;
-        // Density ceiling suppression during sparse window (gentle)
-        ST.rateMultipliers.e11DensityCeilingOverride = 0.65;
-        // Rest probability boost
-        ST.rateMultipliers.e11RestBoost = 2.0;
+        // E13: Regime-scaled ceiling suppression and rest boost.
+        // exploring = no suppression, coherent = strongest, evolving = moderate.
+        const e13CeilingScale = currentRegime === 'exploring' ? 1.0
+          : currentRegime === 'coherent' ? 0.55
+          : 0.70; // evolving
+        const e13RestScale = currentRegime === 'exploring' ? 1.0
+          : currentRegime === 'coherent' ? 2.5
+          : 1.6; // evolving
+        ST.rateMultipliers.e11DensityCeilingOverride = e13CeilingScale;
+        ST.rateMultipliers.e11RestBoost = e13RestScale;
       } else if (S.e11SparseCountdown > 0) {
         S.e11SparseCountdown--;
         ST.rateMultipliers.e11SparseWindow = 1.0;
-        ST.rateMultipliers.e11DensityCeilingOverride = clamp(0.65 + (2 - S.e11SparseCountdown) * 0.15, 0.65, 0.95);
-        ST.rateMultipliers.e11RestBoost = m.max(1.2, 2.0 - (2 - S.e11SparseCountdown) * 0.4);
+        // Decay ceiling override back toward 1.0 over remaining countdown beats
+        ST.rateMultipliers.e11DensityCeilingOverride = clamp(
+          (ST.rateMultipliers.e11DensityCeilingOverride || 1.0) + 0.15, 0.55, 1.0);
+        ST.rateMultipliers.e11RestBoost = m.max(1.0,
+          (ST.rateMultipliers.e11RestBoost || 1.0) * 0.7);
       } else {
         ST.rateMultipliers.e11SparseWindow = 0;
         ST.rateMultipliers.e11DensityCeilingOverride = 1.0;
