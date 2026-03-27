@@ -93,7 +93,7 @@ function assertEmitPickDeps(unit) {
   V.assertManagerShape(LM, 'LM', ['activate']);
   V.assertObject(LM.layers, 'LM.layers');
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
-  V.assertManagerShape(absoluteTimeWindow, 'absoluteTimeWindow', ['recordNote', 'getNotes']);
+  V.assertManagerShape(L0, 'L0', ['post', 'query']);
   V.assertManagerShape(motifIdentityMemory, 'motifIdentityMemory', ['recordNote', 'getActiveIdentity']);
   V.assertManagerShape(convergenceDetector, 'convergenceDetector', ['postOnset', 'applyIfConverged', 'wasRecent']);
   V.assertObject(harmonicContext, 'harmonicContext');

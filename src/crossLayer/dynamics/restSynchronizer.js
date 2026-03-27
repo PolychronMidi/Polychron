@@ -114,7 +114,7 @@ restSynchronizer = (() => {
     }
 
     // Check if other layer is sparse from ATW
-    const otherCount = absoluteTimeWindow.countNotes({
+    const otherCount = L0.count('note', {
       layer: otherLayer,
       since: (absTimeMs / 1000) - 0.5,
       windowSeconds: 0.5

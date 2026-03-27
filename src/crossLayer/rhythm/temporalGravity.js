@@ -20,7 +20,7 @@ temporalGravity = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.assertNonEmptyString(layer, 'layer');
     const densityN = V.requireFinite(density, 'density');
-    absoluteTimeGrid.post(DENSITY_CHANNEL, layer, absTimeMs, {
+    L0.post(DENSITY_CHANNEL, layer, absTimeMs / 1000, {
       density: clamp(densityN, 0, 1)
     });
   }
@@ -35,7 +35,7 @@ temporalGravity = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = DENSITY_WINDOW_MS / 1000;
-    const count = absoluteTimeWindow.countNotes({
+    const count = L0.count('note', {
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
@@ -58,22 +58,22 @@ temporalGravity = (() => {
     const originalTimeN = V.requireFinite(originalTime, 'originalTime');
 
     // Find the nearest density peak from another layer
-    const well = absoluteTimeGrid.findClosest(
-      DENSITY_CHANNEL, absTimeMs, GRAVITY_TOLERANCE_MS, activeLayer
+    const well = L0.findClosest(
+      DENSITY_CHANNEL, absTimeMs / 1000, GRAVITY_TOLERANCE_MS / 1000, activeLayer
     );
     if (!well) return originalTimeN;
     V.assertObject(well, 'applyGravity.well');
     const wellDensity = V.requireFinite(well.density, 'applyGravity.well.density');
-    const wellTimeMs = V.requireFinite(well.timeMs, 'applyGravity.well.timeMs');
+    const wellTimeSec = V.requireFinite(well.timeInSeconds, 'applyGravity.well.timeInSeconds');
     if (wellDensity < 0.3) return originalTimeN;
 
     // Pull strength proportional to density and proximity
+    const wellTimeMs = wellTimeSec * 1000;
     const dist = m.abs(wellTimeMs - absTimeMs);
     const proximity = 1 - (dist / GRAVITY_TOLERANCE_MS);
     const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO;
 
     // Direction: pull toward the gravity well's time position (seconds)
-    const wellTimeSec = wellTimeMs / 1000;
     const direction = wellTimeSec > originalTimeN ? 1 : -1;
     const maxPull = spBeat * pullStrength;
     const pull = m.min(maxPull, m.abs(wellTimeSec - originalTimeN) * 0.5);

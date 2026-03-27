@@ -34,8 +34,8 @@ verticalIntervalMonitor = (() => {
     lastCheckMs = nowMs;
 
     // Query recent note pitches from both layers
-    const l1Events = absoluteTimeGrid.query(CHANNEL, nowMs, TOLERANCE, { onlyLayer: '1' });
-    const l2Events = absoluteTimeGrid.query(CHANNEL, nowMs, TOLERANCE, { onlyLayer: '2' });
+    const l1Events = L0.query(CHANNEL, { aroundSeconds: nowMs / 1000, toleranceSec: TOLERANCE / 1000, layer: 'L1' });
+    const l2Events = L0.query(CHANNEL, { aroundSeconds: nowMs / 1000, toleranceSec: TOLERANCE / 1000, layer: 'L2' });
 
     if (!l1Events || !l2Events || l1Events.length === 0 || l2Events.length === 0) return 0;
 

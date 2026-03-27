@@ -13,7 +13,7 @@ rhythmicSymmetryDetector = (() => {
    * @returns {number[]}
    */
   function getRecentIOIs() {
-    const entries = absoluteTimeWindow.getEntries(WINDOW_SECONDS);
+    const entries = L0.query('note', { windowSeconds: WINDOW_SECONDS });
     if (entries.length < MIN_ONSETS) return [];
     const rawIOIs = beatGridHelpers.getRecentIOIs(entries);
     // Quantize to hundredths for symmetry comparison

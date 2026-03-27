@@ -76,7 +76,7 @@ harmonicIntervalGuard = (() => {
     // Find other layer's most recent note from ATW
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
     let otherRecentMidi = -1;
-    const lastNote = absoluteTimeWindow.getLastNote({
+    const lastNote = L0.getLast('note', {
       layer: otherLayer,
       since: (absTimeMs / 1000) - 1,
       windowSeconds: 1

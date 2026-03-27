@@ -20,7 +20,7 @@ registerCollisionAvoider = (() => {
     V.requireFinite(midi, 'midi');
     V.requireFinite(tick, 'tick');
     const resolvedAbsMs = tickToMs(tick, absMs);
-    absoluteTimeGrid.post(CHANNEL, layer, resolvedAbsMs, { midi, tick });
+    L0.post(CHANNEL, layer, resolvedAbsMs / 1000, { midi, timeInSeconds: resolvedAbsMs / 1000 });
   }
 
   /**
@@ -38,7 +38,7 @@ registerCollisionAvoider = (() => {
     const boundedMidi = clamp(midi, lo, hi);
 
     const resolvedAbsMs = tickToMs(tick, absMs);
-    const other = absoluteTimeGrid.findClosest(CHANNEL, resolvedAbsMs, TIME_TOLERANCE_MS, activeLayer);
+    const other = L0.findClosest(CHANNEL, resolvedAbsMs / 1000, TIME_TOLERANCE_MS / 1000, activeLayer);
     if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
     if (m.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 

@@ -81,8 +81,8 @@ dynamicRoleSwap = (() => {
       return { densityScale: 0.6, chordalBias: 0.3, melodicBias: -0.2, isSwapped: true };
     }
     // L2 takes on L1 characteristics: denser, more melodic
-    const recentL2Count = absoluteTimeWindow.countNotes({ layer: 'L2', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
-    const recentL1Count = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
+    const recentL2Count = L0.count('note', { layer: 'L2', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
+    const recentL1Count = L0.count('note', { layer: 'L1', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
     const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase

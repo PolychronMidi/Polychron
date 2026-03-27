@@ -63,7 +63,7 @@ harmonicFunctionGraph = (() => {
     tensionVal = FUNCTION_TENSION[currentFunction] || 1.0;
 
     const nowMs = V.optionalFinite(conductorState.get('tick'), 0);
-    absoluteTimeGrid.post(CHANNEL, '0', nowMs, {
+    L0.post(CHANNEL, '0', nowMs / 1000, {
       fn: currentFunction,
       chordRoot,
       keyRoot,

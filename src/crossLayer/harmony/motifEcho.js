@@ -77,7 +77,7 @@ motifEcho = (() => {
     });
 
     // Post to ATG for visibility
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    L0.post(CHANNEL, layer, absTimeMs / 1000, {
       intervals,
       transform,
       delayBeats

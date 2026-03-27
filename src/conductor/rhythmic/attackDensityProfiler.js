@@ -18,7 +18,7 @@ attackDensityProfiler = (() => {
 
   /** @private */
   function attackDensityProfilerGetAttackSignal() {
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 4) {
       return { attackRatio: 0.5, sustainRatio: 0.5, densityBias: 1, suggestion: 'balanced' };

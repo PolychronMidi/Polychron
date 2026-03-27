@@ -26,7 +26,7 @@ velocityInterference = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const velocityN = V.requireFinite(velocity, 'velocity');
     const deltaN = V.requireFinite(delta, 'delta');
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    L0.post(CHANNEL, layer, absTimeMs / 1000, {
       velocity: clamp(velocityN, 0, 127),
       delta: deltaN
     });
@@ -42,7 +42,7 @@ velocityInterference = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = CONTOUR_WINDOW_MS / 1000;
-    const bounds = absoluteTimeWindow.getNoteBounds({
+    const bounds = L0.getBounds('note', {
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
@@ -69,8 +69,8 @@ velocityInterference = (() => {
     V.assertNonEmptyString(activeLayer, 'activeLayer');
     const baseVelocityN = V.requireFinite(baseVelocity, 'baseVelocity');
 
-    const other = absoluteTimeGrid.findClosest(
-      CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
+    const other = L0.findClosest(
+      CHANNEL, absTimeMs / 1000, SYNC_TOLERANCE_MS / 1000, activeLayer
     );
     if (!other) {
       writeVizCC(activeLayer, 'neutral');

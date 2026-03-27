@@ -137,7 +137,7 @@ spectralComplementarity = (() => {
    */
   function postSpectralState(absTimeMs, layer) {
     const hist = getHistogram(layer);
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, { histogram: hist });
+    L0.post(CHANNEL, layer, absTimeMs / 1000, { histogram: hist });
   }
 
   function reset() {

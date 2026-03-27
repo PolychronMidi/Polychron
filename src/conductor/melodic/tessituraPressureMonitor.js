@@ -13,7 +13,7 @@ tessituraPressureMonitor = (() => {
    * @returns {{ extremeRatio: number, region: string, densityBias: number }}
    */
   function tessituraPressureMonitorComputePressureSignal() {
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 3) {
       return { extremeRatio: 0, region: 'comfortable', densityBias: 1 };

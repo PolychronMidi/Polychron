@@ -42,7 +42,7 @@ cadenceAlignment = (() => {
    */
   function postTension(absTimeMs, layer, tension, cadenceSuggested) {
     V.requireFinite(absTimeMs, 'absTimeMs');
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    L0.post(CHANNEL, layer, absTimeMs / 1000, {
       tension: clamp(tension, 0, 1),
       cadenceSuggested
     });
@@ -62,8 +62,8 @@ cadenceAlignment = (() => {
 
     if (ourTension < HIGH_TENSION_THRESHOLD) return null;
 
-    const other = absoluteTimeGrid.findClosest(
-      CHANNEL, absTimeMs, _getSyncTolerance(), activeLayer
+    const other = L0.findClosest(
+      CHANNEL, absTimeMs / 1000, _getSyncTolerance() / 1000, activeLayer
     );
     if (!other || !Number.isFinite(other.tension)) return null;
     if (other.tension < HIGH_TENSION_THRESHOLD) return null;
@@ -74,7 +74,7 @@ cadenceAlignment = (() => {
     if (!sharedCadenceIntent && (ourTension < STRONG_TENSION_THRESHOLD || other.tension < STRONG_TENSION_THRESHOLD)) return null;
 
     // Both layers are at high tension within the same time window
-    const syncTick = crossLayerHelpers.msToSyncTick(other.timeMs);
+    const syncTick = crossLayerHelpers.msToSyncTick(other.timeInSeconds * 1000);
 
     return {
       aligned: true,

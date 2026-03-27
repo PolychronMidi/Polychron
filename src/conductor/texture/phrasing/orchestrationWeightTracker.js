@@ -15,7 +15,7 @@ orchestrationWeightTracker = (() => {
    * @returns {{ bassWeight: number, midWeight: number, trebleWeight: number, suggestion: string, dominantBand: string }}
    */
   function getWeightSignal() {
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 3) {
       return { bassWeight: 0.33, midWeight: 0.34, trebleWeight: 0.33, suggestion: 'balanced', dominantBand: 'none' };

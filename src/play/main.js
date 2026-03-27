@@ -9,6 +9,7 @@ const EVENTS = eventCatalog.names;
 
 const { layer: L1 } = LM.register('L1', 'c1', {}, () => setTuningAndInstruments());
 const { layer: L2 } = LM.register('L2', 'c2', {}, () => setTuningAndInstruments());
+LM.register('L0', [], {});
 
 // Create composer context for explicit dependency passing (fail-fast: throw if managers missing)
 const composerCtx = {

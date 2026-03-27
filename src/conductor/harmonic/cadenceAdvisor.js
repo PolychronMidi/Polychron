@@ -32,7 +32,7 @@ cadenceAdvisor = (() => {
       // Also feed chord changes into absoluteTimeWindow for cross-layer analysis
       const layer = LM.activeLayer;
       V.requireFinite(beatStartTime, 'beatStartTime');
-      absoluteTimeWindow.recordChord(data.chords, data.key, data.mode, layer, beatStartTime);
+      L0.post('chord', layer, beatStartTime, { chords: data.chords, key: data.key, mode: data.mode });
     });
   }
 

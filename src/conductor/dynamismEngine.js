@@ -24,7 +24,7 @@ dynamismEngine = (() => {
     V.assertManagerShape(textureBlender, 'textureBlender', ['getRecentDensity']);
     V.assertManagerShape(harmonicJourney, 'harmonicJourney', ['getStop']);
     V.assertManagerShape(dynamicRoleSwap, 'dynamicRoleSwap', ['getIsSwapped']);
-    V.assertManagerShape(absoluteTimeWindow, 'absoluteTimeWindow', ['countNotes']);
+    V.assertManagerShape(L0, 'L0', ['count']);
     V.assertManagerShape(LM, 'LM', ['register', 'activate']);
     V.assertObject(LM.layers, 'LM.layers');
 
@@ -171,8 +171,8 @@ dynamismEngine = (() => {
     const evolvingRecoveryPressure = clamp((0.05 - evolvingShare) / 0.05, 0, 1);
     let l2Overhang = 0;
     if (activeLayerName === 'L2') {
-      const recentL1 = absoluteTimeWindow.countNotes({ layer: 'L1', windowSeconds: 8 });
-      const recentL2 = absoluteTimeWindow.countNotes({ layer: 'L2', windowSeconds: 8 });
+      const recentL1 = L0.count('note', { layer: 'L1', windowSeconds: 8 });
+      const recentL2 = L0.count('note', { layer: 'L2', windowSeconds: 8 });
       if (recentL2 > recentL1) {
         l2Overhang = clamp((recentL2 - recentL1) / m.max(recentL1, 1), 0, 1.5);
       }

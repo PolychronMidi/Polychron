@@ -28,7 +28,7 @@ explainabilityBus = (() => {
       entries.splice(0, entries.length - MAX_ENTRIES);
     }
 
-    absoluteTimeGrid.post(CHANNEL, entry.layer, t, { type, payload });
+    L0.post(CHANNEL, entry.layer, t / 1000, { type, payload });
 
     return entry;
   }

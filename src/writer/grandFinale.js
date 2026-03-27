@@ -34,6 +34,8 @@ grandFinale = () => {
     };
   });
   layerData.forEach(({ name, buffer }) => {
+    // L0 is an in-memory-only layer; never written to CSV output.
+    if (name === 'L0') return;
     // Set naked global buffer `c` to this layer's buffer
     c = buffer;
 

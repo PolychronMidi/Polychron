@@ -4,7 +4,7 @@
 
 // Register time-subsystem modules into crossLayerRegistry for lifecycle management.
 // They load before crossLayer (utils - ... - time - ... - crossLayer) so they exist now.
-crossLayerRegistry.register('absoluteTimeGrid', absoluteTimeGrid, ['all', 'section']);
+crossLayerRegistry.register('L0', L0, ['all', 'section']);
 crossLayerRegistry.register('timeStream', { reset: timeStream.resetPositions }, ['all']);
 
 crossLayerLifecycleManager = (() => {
