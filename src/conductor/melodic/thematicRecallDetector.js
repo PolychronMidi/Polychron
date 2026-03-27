@@ -13,7 +13,7 @@ thematicRecallDetector = (() => {
    * @param {number} section - section index
    */
   function recordSectionFingerprint(section) {
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: 8 });
+    const notes = L0.query('note', { windowSeconds: 8 });
     const midis = analysisHelpers.extractMidiArray(notes, 60);
     if (midis.length < FINGERPRINT_LENGTH) {
       sectionFingerprints.push({ section, fingerprint: '' });
@@ -41,7 +41,7 @@ thematicRecallDetector = (() => {
       return { recallOpportunity: false, similarSection: null, similarity: 0 };
     }
 
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: 4 });
+    const notes = L0.query('note', { windowSeconds: 4 });
     const midis = analysisHelpers.extractMidiArray(notes, 60);
     if (midis.length < FINGERPRINT_LENGTH) {
       return { recallOpportunity: false, similarSection: null, similarity: 0 };

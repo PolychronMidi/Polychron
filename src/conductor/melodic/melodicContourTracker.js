@@ -50,7 +50,7 @@ melodicContourTracker = (() => {
    * Called at phrase boundaries or by any consumer needing a fresh read.
    */
   function update() {
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: 4 });
+    const notes = L0.query('note', { windowSeconds: 4 });
     if (notes.length < 3) return;
     const pitches = analysisHelpers.extractMidiArray(notes, 60);
     currentContour = melodicContourTrackerComputeContour(pitches);
@@ -83,7 +83,7 @@ melodicContourTracker = (() => {
    * @returns {{ shape: string, direction: number, range: number, avgPitch: number }}
    */
   function getLayerContour(layer) {
-    const notes = absoluteTimeWindow.getNotes({ layer, windowSeconds: 4 });
+    const notes = L0.query('note', { layer, windowSeconds: 4 });
     if (notes.length < 3) return DEFAULT_CONTOUR;
     return melodicContourTrackerComputeContour(analysisHelpers.extractMidiArray(notes, 60));
   }
@@ -101,7 +101,7 @@ melodicContourTracker = (() => {
 
   /** @private */
   function melodicContourTrackerGetDirectionalitySignal() {
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: 8 });
+    const notes = L0.query('note', { windowSeconds: 8 });
     if (notes.length < 4) {
       return { direction: 'undulating', ascendRatio: 0.5, descendRatio: 0.5, densityBias: 1 };
     }

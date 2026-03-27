@@ -436,6 +436,7 @@ fullBootstrap = (() => {
     'timeGridSearchStart',
     'absoluteTimeWindow',
     'absoluteTimeGrid',
+    'L0',
     'tempoFeelEngine',
     'timeStream',
     'fractalArcGenerator',

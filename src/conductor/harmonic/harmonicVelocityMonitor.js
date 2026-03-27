@@ -13,7 +13,7 @@ harmonicVelocityMonitor = (() => {
    */
   function getHarmonicVelocity(windowSeconds) {
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const chords = absoluteTimeWindow.getChords({ windowSeconds: ws });
+    const chords = L0.query('chord', { windowSeconds: ws });
     if (chords.length < 2) return { changesPerSecond: 0, total: chords.length };
 
     const first = chords[0];

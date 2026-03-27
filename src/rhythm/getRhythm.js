@@ -107,7 +107,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
 
     // Also feed into absoluteTimeWindow for cross-layer rhythm analysis
     const absTime = beatStartTime;
-    absoluteTimeWindow.recordRhythm(rhythmMethodKey, length, activeLayerName, absTime);
+    L0.post('rhythm', activeLayerName, absTime, { method: rhythmMethodKey, length });
 
     const generatedArgs = rhythmArgs(length, pattern);
     // Phase-locked path: only for length-only generators

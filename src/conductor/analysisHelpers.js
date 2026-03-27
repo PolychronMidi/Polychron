@@ -15,7 +15,7 @@ analysisHelpers = (() => {
   function getWindowNotes(V, opts, defaultWindowSeconds) {
     const safeOpts = opts && typeof opts === 'object' ? opts : {};
     const ws = V.optionalFinite(safeOpts.windowSeconds, defaultWindowSeconds);
-    return absoluteTimeWindow.getNotes({ layer: safeOpts.layer, windowSeconds: ws });
+    return L0.query('note', { layer: safeOpts.layer, windowSeconds: ws });
   }
 
   /**
@@ -28,8 +28,8 @@ analysisHelpers = (() => {
   function getWindowLayerPairNotes(V, windowSeconds, defaultWindowSeconds) {
     const ws = V.optionalFinite(windowSeconds, defaultWindowSeconds);
     return {
-      l1Notes: absoluteTimeWindow.getNotes({ layer: 'L1', windowSeconds: ws }),
-      l2Notes: absoluteTimeWindow.getNotes({ layer: 'L2', windowSeconds: ws })
+      l1Notes: L0.query('note', { layer: 'L1', windowSeconds: ws }),
+      l2Notes: L0.query('note', { layer: 'L2', windowSeconds: ws })
     };
   }
 

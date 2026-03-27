@@ -12,7 +12,7 @@ registralVelocityCorrelator = (() => {
    * @returns {{ correlation: number, flickerMod: number, tensionBias: number, suggestion: string }}
    */
   function getCorrelationSignal() {
-    const notes = absoluteTimeWindow.getNotes({ windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 6) {
       return { correlation: 0, flickerMod: 1, tensionBias: 1, suggestion: 'maintain' };

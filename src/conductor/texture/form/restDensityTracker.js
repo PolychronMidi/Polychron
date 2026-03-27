@@ -18,7 +18,7 @@ restDensityTracker = (() => {
   function getOnsetDensity(opts = {}) {
     const { layer, windowSeconds } = opts;
     const ws = V.optionalFinite(windowSeconds, WINDOW_SECONDS);
-    const bounds = absoluteTimeWindow.getNoteBounds({ layer, windowSeconds: ws });
+    const bounds = L0.getBounds('note', { layer, windowSeconds: ws });
     if (bounds.count < 2) {
       return { notesPerSecond: 0, saturated: false, sparse: true };
     }

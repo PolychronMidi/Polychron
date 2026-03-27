@@ -17,7 +17,7 @@ emitPickCrossLayerRecord = function(ctx) {
 
   const absMs = absMsAtOnTime;
   const atwTime = absMs / 1000;
-  absoluteTimeWindow.recordNote(noteToEmit, texVel, activeLayerName, atwTime, unit);
+  L0.post('note', activeLayerName, atwTime, { midi: noteToEmit, velocity: texVel, unit });
 
   // Cross-layer interactions
   convergenceDetector.postOnset(absMs, activeLayerName, noteToEmit, texVel);
@@ -71,7 +71,7 @@ emitPickCrossLayerRecord = function(ctx) {
   } else {
     // Fallback: query ATW directly (should not normally occur)
     const otherLayerForGuard = activeLayerName === 'L1' ? 'L2' : 'L1';
-    const otherRecentEntry = absoluteTimeWindow.getLastNote({ layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
+    const otherRecentEntry = L0.getLast('note', { layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
     if (otherRecentEntry) {
       const otherMidiCandidate = Number(
         (Number.isFinite(Number(otherRecentEntry.midi)))

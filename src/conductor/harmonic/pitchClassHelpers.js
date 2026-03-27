@@ -20,7 +20,7 @@ pitchClassHelpers = (() => {
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;
-    const notes = absoluteTimeWindow.getNotes(query);
+    const notes = L0.query('note', query);
     const counts = new Array(12).fill(0);
     let total = 0;
     for (let i = 0; i < notes.length; i++) {

@@ -12,27 +12,19 @@ const BINAURAL_SYNC_TOLERANCE_MS = 1;
 /** Next absolute ms at which a timed binaural shift should fire */
 let nextBinauralShiftMs = 0;
 
-/**
- * All initiated shifts in chronological order, persisted for cross-layer catch-up.
- * absoluteTimeGrid is point-in-time (+/- tolerance around now) and prunes entries after
- * 4s -- too narrow for binaural intervals up to 5s and beat-boundary latency up to
- * one full beat. This list is the authoritative cross-layer ledger; the grid is used
- * only for the tick-conversion timing context it stores.
- */
-const initiatedShifts = [];
-
-/** Per-layer ms of the last shift this layer consumed (own or cross-layer) */
-const lastConsumedMsByLayer = {};
+/** Per-layer seconds of the last shift this layer consumed (own or cross-layer) */
+const lastConsumedByLayer = {};
 
 
 setBinaural = () => {
   V.requireDefined(BINAURAL, 'BINAURAL');
   V.requireDefined(binauralOffset, 'binauralOffset');
-  V.requireDefined(absoluteTimeGrid, 'absoluteTimeGrid');
+  V.requireDefined(L0, 'L0');
   V.requireFinite(beatStartTime, 'beatStartTime');
 
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const activeLayer = /** @type {string} */ (LM.activeLayer);
+  const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
   const absTimeMs = beatStartTime * 1000;
 
   // Emit silence, bends, and volume events at a wall-clock second position.
@@ -64,24 +56,12 @@ setBinaural = () => {
     );
   }
 
-  // Scan initiatedShifts for cross-layer entries posted since this layer last consumed.
-  // Uses wall-clock ms range (lastConsumed to now) rather than a cursor index, so there
-  // is no beat-boundary latency -- any shift posted by the other layer up to this beat
-  // is caught immediately on the first beat that arrives after it.
-  const lastConsumed = lastConsumedMsByLayer[activeLayer] ?? -1;
-  let crossEntry = null;
-  for (let i = initiatedShifts.length - 1; i >= 0; i--) {
-    const entry = initiatedShifts[i];
-    if (entry.layer === activeLayer) continue;
-    if (entry.syncMs <= lastConsumed) break;
-    if (entry.syncMs <= absTimeMs + BINAURAL_SYNC_TOLERANCE_MS) {
-      crossEntry = entry;
-      break;
-    }
-  }
+  // Scan L0 for cross-layer binaural entries posted since this layer last consumed.
+  const lastConsumed = lastConsumedByLayer[activeLayer] ?? -1;
+  const crossEntry = L0.getLast('binaural', { layer: otherLayer, since: lastConsumed, windowSeconds: 10 });
 
   if (crossEntry) {
-    lastConsumedMsByLayer[activeLayer] = crossEntry.syncMs;
+    lastConsumedByLayer[activeLayer] = crossEntry.timeInSeconds;
     binauralFreqOffset = V.requireFinite(crossEntry.freqOffset, 'crossLayerShift.freqOffset');
     flipBin = V.assertBoolean(crossEntry.flip, 'crossLayerShift.flip');
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
@@ -91,16 +71,16 @@ setBinaural = () => {
     // Use the initiating layer's exact wall-clock second. csv_maestro converts
     // this to the correct tick in each layer's own time-base, so both files
     // retune at the same playback moment regardless of tempo differences.
-    const entrySyncSec = crossEntry.syncMs / 1000;
+    const entrySyncSec = crossEntry.timeInSeconds;
     emitShiftEvents(entrySyncSec, flipBin);
 
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({
         layer: activeLayer,
         absTimeMs,
-        syncMs: crossEntry.syncMs,
+        syncMs: crossEntry.timeInSeconds * 1000,
         usedCrossLayerShift: true,
-        syncDeltaMs: m.abs(absTimeMs - crossEntry.syncMs),
+        syncDeltaMs: m.abs(absTimeMs - crossEntry.timeInSeconds * 1000),
         freqOffset: binauralFreqOffset,
         toleranceMs: BINAURAL_SYNC_TOLERANCE_MS,
         flip: flipBin
@@ -136,13 +116,9 @@ setBinaural = () => {
       const syncSec = absTimeMs / 1000;
       emitShiftEvents(syncSec, flipBin);
 
-      lastConsumedMsByLayer[activeLayer] = absTimeMs;
+      lastConsumedByLayer[activeLayer] = absTimeMs / 1000;
 
-      initiatedShifts.push({ layer: activeLayer, syncMs: absTimeMs, freqOffset: binauralFreqOffset, flip: flipBin });
-      absoluteTimeGrid.post('binaural', activeLayer, absTimeMs, {
-        freqOffset: binauralFreqOffset,
-        flip: flipBin,
-      });
+      L0.post('binaural', activeLayer, absTimeMs / 1000, { freqOffset: binauralFreqOffset, flip: flipBin });
 
       if (traceDrain && traceDrain.isEnabled()) {
         traceDrain.recordBinauralShift({

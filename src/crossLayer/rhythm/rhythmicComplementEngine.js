@@ -52,7 +52,7 @@ rhythmicComplementEngine = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
-    const notes = absoluteTimeWindow.getNotes({
+    const notes = L0.query('note', {
       layer: otherLayer,
       since: (absTimeMs / 1000) - ANALYSIS_WINDOW_S,
       windowSeconds: ANALYSIS_WINDOW_S
@@ -63,8 +63,8 @@ rhythmicComplementEngine = (() => {
     const iois = [];
     const gaps = [];
     for (let i = 1; i < notes.length; i++) {
-      const tCurr = V.requireFinite(notes[i].time, 'note.time');
-      const tPrev = V.requireFinite(notes[i - 1].time, 'note.time');
+      const tCurr = V.requireFinite(notes[i].timeInSeconds, 'note.timeInSeconds');
+      const tPrev = V.requireFinite(notes[i - 1].timeInSeconds, 'note.timeInSeconds');
       const dt = (tCurr - tPrev) * 1000;
       if (dt > 0) {
         iois.push(dt);
