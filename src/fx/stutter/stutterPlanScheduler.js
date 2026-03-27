@@ -29,10 +29,10 @@ stutterPlanScheduler = (() => {
 
     const startTick = Number.isFinite(Number(plan.startTick))
       ? Number(plan.startTick)
-      : (Number.isFinite(Number(plan.on)) ? Number(plan.on) : Number(beatStart));
+      : (Number.isFinite(Number(plan.on)) ? Number(plan.on) : Number(beatStartTime));
 
     const key = m.round(startTick);
-    if (key > m.round(beatStart)) {
+    if (key > m.round(beatStartTime)) {
       const arr = stutterMgr.scheduledPlans.get(key) || [];
       arr.push(planId);
       stutterMgr.scheduledPlans.set(key, arr);

@@ -58,7 +58,7 @@ eventCatalog = (() => {
         V.assertNonEmptyString(data.profile, 'stutter-applied.profile');
         V.assertFinite(data.channel, 'stutter-applied.channel');
         V.assertRange(data.intensity, 0, 1, 'stutter-applied.intensity');
-        V.assertRange(data.tick, 0, Number.MAX_SAFE_INTEGER, 'stutter-applied.tick');
+        V.assertRange(data.timeInSeconds, 0, Number.MAX_SAFE_INTEGER, 'stutter-applied.timeInSeconds');
         if (data.subtype !== undefined) {
           V.assertNonEmptyString(data.subtype, 'stutter-applied.subtype');
         }
@@ -126,7 +126,6 @@ eventCatalog = (() => {
       case names.CROSS_LAYER_CONVERGENCE:
         V.assertNonEmptyString(data.layer, 'cross-layer-convergence.layer');
         V.assertRange(data.rarity, 0, 1, 'cross-layer-convergence.rarity');
-        V.assertRange(data.syncTick, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-convergence.syncTick');
         V.assertFinite(data.noteA, 'cross-layer-convergence.noteA');
         V.assertFinite(data.noteB, 'cross-layer-convergence.noteB');
         V.assertFinite(data.velocityA, 'cross-layer-convergence.velocityA');

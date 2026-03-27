@@ -137,7 +137,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     const intensity = this.intensity;
 
     // Build context for noise helper
-    const currentTime = beatStart;
+    const currentTime = beatStartTime;
     const voiceId = (this.root ? this.root.charCodeAt(0) : 60) + this.measureCount;
     const noiseContext = { currentTime, voiceId, phase: this.currentPhase };
 

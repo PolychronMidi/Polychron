@@ -87,7 +87,7 @@ function emitPickTextureEmitGetScalePitches(minMidi, maxMidi) {
  */
 emitPickSourceTextures = function(mode, ctx) {
   const emitPickTextureStartedAt = EMIT_PICK_TEXTURE_PROFILE ? process.hrtime.bigint() : 0n;
-  const { noteToEmit, texVel, onTick, tpUnit, texSustain, sourceCH, minMidi, maxMidi, sustainScale } = ctx;
+  const { noteToEmit, texVel, onTime, spUnit, texSustain, sourceCH, minMidi, maxMidi, sustainScale } = ctx;
 
   let scheduled = 0;
 
@@ -98,17 +98,17 @@ emitPickSourceTextures = function(mode, ctx) {
       const interval = burstIntervals[burstIndex % burstIntervals.length] * (rf() < 0.3 ? -1 : 1);
       const burstNote = modClamp(noteToEmit + interval, minMidi, maxMidi);
       const burstVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.8, 1.0))));
-      const burstStagger = tpUnit * rf(0.002, 0.01) * (burstIndex + 1);
-      const burstOnTick = onTick + burstStagger;
-      const burstOffTick = minimumNoteDuration.resolveOffTick(
-        burstOnTick,
-        burstOnTick + texSustain * rf(0.8, 1.1),
+      const burstStagger = spUnit * rf(0.002, 0.01) * (burstIndex + 1);
+      const burstOnTime = onTime + burstStagger;
+      const burstOffTime = minimumNoteDuration.resolveOffTick(
+        burstOnTime,
+        burstOnTime + texSustain * rf(0.8, 1.1),
         'ornament',
-        tpUnit,
-        'emitPickTextureEmit.burstOffTick'
+        spUnit,
+        'emitPickTextureEmit.burstOffTime'
       );
-      const burstOnEvt = { tick: burstOnTick, type: 'on', vals: [sourceCH, burstNote, burstVel] };
-      const burstOffEvt = { tick: burstOffTick, vals: [sourceCH, burstNote] };
+      const burstOnEvt = { timeInSeconds: burstOnTime, type: 'on', vals: [sourceCH, burstNote, burstVel] };
+      const burstOffEvt = { timeInSeconds: burstOffTime, vals: [sourceCH, burstNote] };
       microUnitAttenuator.record(burstOnEvt, burstOffEvt, crossModulation);
       scheduled += 2;
     }
@@ -118,7 +118,7 @@ emitPickSourceTextures = function(mode, ctx) {
     const flurryCount = ri(3, 5);
     const flurryDir = rf() < 0.5 ? 1 : -1;
     let flurryNote = noteToEmit;
-    const flurryGap = tpUnit * rf(0.04, 0.09);
+    const flurryGap = spUnit * rf(0.04, 0.09);
     const scalePitches = emitPickTextureEmitGetScalePitches(minMidi, maxMidi);
 
     for (let flurryIndex = 0; flurryIndex < flurryCount; flurryIndex++) {
@@ -140,17 +140,17 @@ emitPickSourceTextures = function(mode, ctx) {
       }
 
       const flurryVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95) * (1 - flurryIndex * 0.05))));
-      const flurrySus = tpUnit * rf(0.08, 0.2) * sustainScale;
-      const flurryOnTick = onTick + flurryGap * (flurryIndex + 1);
-      const flurryOffTick = minimumNoteDuration.resolveOffTick(
-        flurryOnTick,
-        flurryOnTick + flurrySus,
+      const flurrySus = spUnit * rf(0.08, 0.2) * sustainScale;
+      const flurryOnTime = onTime + flurryGap * (flurryIndex + 1);
+      const flurryOffTime = minimumNoteDuration.resolveOffTick(
+        flurryOnTime,
+        flurryOnTime + flurrySus,
         'ornament',
-        tpUnit,
-        'emitPickTextureEmit.flurryOffTick'
+        spUnit,
+        'emitPickTextureEmit.flurryOffTime'
       );
-      const flurryOnEvt = { tick: flurryOnTick, type: 'on', vals: [sourceCH, flurryNote, flurryVel] };
-      const flurryOffEvt = { tick: flurryOffTick, vals: [sourceCH, flurryNote] };
+      const flurryOnEvt = { timeInSeconds: flurryOnTime, type: 'on', vals: [sourceCH, flurryNote, flurryVel] };
+      const flurryOffEvt = { timeInSeconds: flurryOffTime, vals: [sourceCH, flurryNote] };
       microUnitAttenuator.record(flurryOnEvt, flurryOffEvt, crossModulation);
       scheduled += 2;
     }
@@ -168,7 +168,7 @@ emitPickSourceTextures = function(mode, ctx) {
  */
 emitPickReflectionTextures = function(mode, ctx) {
   const emitPickTextureStartedAt = EMIT_PICK_TEXTURE_PROFILE ? process.hrtime.bigint() : 0n;
-  const { note, vel, onTick, tpUnit, sustain, ch, minMidi, maxMidi, velocityScale, sustainScale } = ctx;
+  const { note, vel, onTime, spUnit, sustain, ch, minMidi, maxMidi, velocityScale, sustainScale } = ctx;
 
   let scheduled = 0;
 
@@ -179,17 +179,17 @@ emitPickReflectionTextures = function(mode, ctx) {
       const echoInterval = echoIntervals[burstIndex % echoIntervals.length] * (rf() < 0.3 ? -1 : 1);
       const echoNote = modClamp(note + echoInterval, minMidi, maxMidi);
       const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(vel * rf(0.45, 0.65) * velocityScale)));
-      const echoStagger = tpUnit * rf(0.01, 0.04) * (burstIndex + 1);
-      const echoOnTick = onTick + echoStagger;
-      const echoOffTick = minimumNoteDuration.resolveOffTick(
-        echoOnTick,
-        echoOnTick + sustain * sustainScale * rf(0.6, 0.9),
+      const echoStagger = spUnit * rf(0.01, 0.04) * (burstIndex + 1);
+      const echoOnTime = onTime + echoStagger;
+      const echoOffTime = minimumNoteDuration.resolveOffTick(
+        echoOnTime,
+        echoOnTime + sustain * sustainScale * rf(0.6, 0.9),
         'ornament',
-        tpUnit,
-        'emitPickTextureEmit.echoOffTick'
+        spUnit,
+        'emitPickTextureEmit.echoOffTime'
       );
-      const echoOnEvt = { tick: echoOnTick, type: 'on', vals: [ch, echoNote, echoVel] };
-      const echoOffEvt = { tick: echoOffTick, vals: [ch, echoNote] };
+      const echoOnEvt = { timeInSeconds: echoOnTime, type: 'on', vals: [ch, echoNote, echoVel] };
+      const echoOffEvt = { timeInSeconds: echoOffTime, vals: [ch, echoNote] };
       microUnitAttenuator.record(echoOnEvt, echoOffEvt, crossModulation);
       scheduled += 2;
     }
@@ -199,18 +199,18 @@ emitPickReflectionTextures = function(mode, ctx) {
     const ghostDir = rf() < 0.5 ? 1 : -1;
     const ghostNote = modClamp(note + ghostDir * ri(1, 3), minMidi, maxMidi);
     const ghostVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(vel * rf(0.35, 0.55))));
-    const ghostDelay = tpUnit * rf(0.06, 0.14);
-    const ghostSus = tpUnit * rf(0.1, 0.25) * sustainScale;
-    const ghostOnTick = onTick + ghostDelay;
-    const ghostOffTick = minimumNoteDuration.resolveOffTick(
-      ghostOnTick,
-      ghostOnTick + ghostSus,
+    const ghostDelay = spUnit * rf(0.06, 0.14);
+    const ghostSus = spUnit * rf(0.1, 0.25) * sustainScale;
+    const ghostOnTime = onTime + ghostDelay;
+    const ghostOffTime = minimumNoteDuration.resolveOffTick(
+      ghostOnTime,
+      ghostOnTime + ghostSus,
       'ornament',
-      tpUnit,
-      'emitPickTextureEmit.ghostOffTick'
+      spUnit,
+      'emitPickTextureEmit.ghostOffTime'
     );
-    const ghostOnEvt = { tick: ghostOnTick, type: 'on', vals: [ch, ghostNote, ghostVel] };
-    const ghostOffEvt = { tick: ghostOffTick, vals: [ch, ghostNote] };
+    const ghostOnEvt = { timeInSeconds: ghostOnTime, type: 'on', vals: [ch, ghostNote, ghostVel] };
+    const ghostOffEvt = { timeInSeconds: ghostOffTime, vals: [ch, ghostNote] };
     microUnitAttenuator.record(ghostOnEvt, ghostOffEvt, crossModulation);
     scheduled += 2;
   }

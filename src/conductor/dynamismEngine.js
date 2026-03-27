@@ -127,7 +127,7 @@ dynamismEngine = (() => {
 
   function getBeatStableResolveContext() {
     const activeLayerName = LM && typeof LM.activeLayer === 'string' ? LM.activeLayer : 'unknown';
-    const cacheKey = `${activeLayerName}:${Number(beatStart)}`;
+    const cacheKey = `${activeLayerName}:${Number(beatStartTime)}`;
     if (dynamismEngineResolveCacheKey === cacheKey && dynamismEngineResolveCacheValue) {
       return dynamismEngineResolveCacheValue;
     }

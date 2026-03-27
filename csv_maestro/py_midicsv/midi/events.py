@@ -78,6 +78,8 @@ class Event(AbstractEvent):
         super().__init__(tick, **kwargs)
 
     def __eq__(self, other):
+        if not isinstance(other, Event):
+            return NotImplemented
         return (self.tick, self.data, self.channel) == (
             other.tick,
             other.data,

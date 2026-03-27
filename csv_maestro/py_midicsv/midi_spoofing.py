@@ -3,7 +3,7 @@ Helpers for converting human-friendly time values to MIDI ticks and for
 silently normalizing non-power-of-two meters by applying a sync factor (as
 used in Polychron's `midiTiming.js`). This module keeps conversion logic
 contained inside the csv_maestro package so CSV authors can use simple
-notations like 't1.5' for 1.5 seconds and csvmidi will convert to ticks.
+notations like '1.5s' for 1.5 seconds and csvmidi will convert to ticks.
 """
 
 from __future__ import annotations

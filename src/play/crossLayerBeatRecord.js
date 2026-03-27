@@ -130,10 +130,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     : null;
   if (clCadResult) feedbackOscillator.inject(clAbsMs, layer, clamp(clTension, 0, 1), 'cadence');
 
-  const tpBeatVal = requireFiniteNumber('tpBeat', tpBeat);
-  const tpSecVal = requireFiniteNumber('tpSec', tpSec);
-  if (tpBeatVal <= 0 || tpSecVal <= 0) throw new Error(`crossLayerBeatRecord: tpBeat and tpSec must be > 0 (tpBeat=${tpBeatVal}, tpSec=${tpSecVal})`);
-  rhythmicPhaseLock.postBeat(clAbsMs, layer, (tpBeatVal / tpSecVal) * 1000);
+  const spBeatVal = requireFiniteNumber('spBeat', spBeat);
+  if (spBeatVal <= 0) throw new Error(`crossLayerBeatRecord: spBeat must be > 0 (spBeat=${spBeatVal})`);
+  rhythmicPhaseLock.postBeat(clAbsMs, layer, spBeatVal * 1000);
   const clPhaseMode = rhythmicPhaseLock.getMode();
 
   spectralComplementarity.postSpectralState(clAbsMs, layer);

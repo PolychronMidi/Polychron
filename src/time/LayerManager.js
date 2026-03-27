@@ -20,20 +20,13 @@ class LayerManager {
   static register(name, buffer, initialState = {}, setupFn = undefined) {
     // Create a plain timing object (flattened, no TimingContext class)
     const defaults = {
-      phraseStart: 0,
       phraseStartTime: 0,
-      sectionStart: 0,
       sectionStartTime: 0,
-      tpSec: 0,
-      tpSection: 0,
       spSection: 0,
       numerator: 0,
       denominator: 0,
-      tpPhrase: 0,
       spPhrase: 0,
-      measureStart: 0,
       measureStartTime: 0,
-      tpMeasure: 0,
       spMeasure: 0,
       bufferName: '',
       divMotifs: [],
@@ -83,7 +76,7 @@ class LayerManager {
    * Activate a layer; restores timing globals and sets meter.
    * @param {string} name - Layer name.
    * @param {boolean} [isPoly=false] - Whether this is a polyrhythmic layer.
-   * @returns {{numerator: number, denominator: number, tpSec: number, tpMeasure: number}} Snapshot of key timing values.
+   * @returns {{numerator: number, denominator: number, spMeasure: number}} Snapshot of key timing values.
    */
   static activate(name, isPoly = false) {
     // no need to pass meter info here, as it stays consitent until the next layer switch
@@ -124,29 +117,21 @@ class LayerManager {
 
     // Advance using the layer's timing values
     if (advancementType === 'phrase') {
-      phraseStart+=tpPhrase; phraseStartTime+=spPhrase;
+      phraseStartTime+=spPhrase;
       // Save current globals into the flattened layer object
       Object.assign(layer, {
-        tpPhrase,
         spPhrase,
-        phraseStart,
         phraseStartTime,
 
-        tpMeasure,
         spMeasure,
-        measureStart,
         measureStartTime,
 
-        tpSection,
         spSection,
-        sectionStart,
         sectionStartTime,
-
-        tpSec
       });
 
     } else if (advancementType === 'section') {
-      layer.sectionStart=phraseStart; layer.sectionStartTime=phraseStartTime;
+      layer.sectionStartTime=phraseStartTime;
     }
   }
 
@@ -154,7 +139,6 @@ class LayerManager {
   static setSectionStartFor(name) {
     const layer = LayerManager.layers[name];
     V.requireDefined(layer, `layer "${name}"`);
-    layer.sectionStart = phraseStart;
     layer.sectionStartTime = phraseStartTime;
   }
 
@@ -250,18 +234,11 @@ class LayerManager {
     for (const name of Object.keys(LayerManager.layers)) {
       const layer = LayerManager.layers[name];
       layer.buffer.length = 0;
-      layer.phraseStart = 0;
       layer.phraseStartTime = 0;
-      layer.sectionStart = 0;
       layer.sectionStartTime = 0;
-      layer.tpSec = 0;
-      layer.tpSection = 0;
       layer.spSection = 0;
-      layer.tpPhrase = 0;
       layer.spPhrase = 0;
-      layer.measureStart = 0;
       layer.measureStartTime = 0;
-      layer.tpMeasure = 0;
       layer.spMeasure = 0;
       layer.divMotifs = [];
     }
@@ -277,41 +254,25 @@ LM = layerManager = LayerManager;
  */
 function loadLayerToGlobals(layer) {
   V.requireDefined(layer, 'layer');
-  tpSection = layer.tpSection;
   spSection = layer.spSection;
-  sectionStart = layer.sectionStart;
   sectionStartTime = layer.sectionStartTime;
 
-  tpPhrase = layer.tpPhrase;
   spPhrase = layer.spPhrase;
-  phraseStart = layer.phraseStart;
   phraseStartTime = layer.phraseStartTime;
 
-  measureStart = layer.measureStart;
   measureStartTime = layer.measureStartTime;
-  tpMeasure = layer.tpMeasure;
   spMeasure = layer.spMeasure;
-
-  tpSec = layer.tpSec;
 
 }
 
 function saveGlobalsToLayer(layer) {
   V.requireDefined(layer, 'layer');
-  layer.tpSection = tpSection;
   layer.spSection = spSection;
-  layer.sectionStart = sectionStart;
   layer.sectionStartTime = sectionStartTime;
 
-  layer.tpPhrase = tpPhrase;
   layer.spPhrase = spPhrase;
-  layer.phraseStart = phraseStart;
   layer.phraseStartTime = phraseStartTime;
 
-  layer.measureStart = measureStart;
   layer.measureStartTime = measureStartTime;
-  layer.tpMeasure = tpMeasure;
   layer.spMeasure = spMeasure;
-
-  layer.tpSec = tpSec;
 }

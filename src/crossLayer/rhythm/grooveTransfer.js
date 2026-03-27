@@ -28,38 +28,34 @@ grooveTransfer = (() => {
   }
 
   /**
-   * @param {number} tick
-   * @returns {number}
+   * @param {number} timeSec - time in seconds
+   * @returns {number} absolute time in ms
    */
-  function getAbsoluteTimeMs(tick) {
-    const msTick = V.requireFinite(tick, 'tick');
-    const currentMeasureStart = V.requireFinite(measureStart, 'measureStart');
-    const currentMeasureStartTime = V.requireFinite(measureStartTime, 'measureStartTime');
-    const currentTpSec = V.requireFinite(tpSec, 'tpSec');
-    return (currentMeasureStartTime + (msTick - currentMeasureStart) / currentTpSec) * 1000;
+  function getAbsoluteTimeMs(timeSec) {
+    return V.requireFinite(timeSec, 'timeSec') * 1000;
   }
 
   /** @param {'beat'|'div'|'subdiv'|'subsubdiv'|string} unit */
-  function getUnitStart(unit) {
+  function getUnitStartTime(unit) {
     V.assertNonEmptyString(unit, 'unit');
-    if (unit === 'beat') return V.requireFinite(beatStart, 'beatStart');
-    if (unit === 'div') return V.requireFinite(divStart, 'divStart');
-    if (unit === 'subdiv') return V.requireFinite(subdivStart, 'subdivStart');
-    if (unit === 'subsubdiv') return V.requireFinite(subsubdivStart, 'subsubdivStart');
-    return V.requireFinite(beatStart, 'beatStart');
+    if (unit === 'beat') return V.requireFinite(beatStartTime, 'beatStartTime');
+    if (unit === 'div') return V.requireFinite(divStartTime, 'divStartTime');
+    if (unit === 'subdiv') return V.requireFinite(subdivStartTime, 'subdivStartTime');
+    if (unit === 'subsubdiv') return V.requireFinite(subsubdivStartTime, 'subsubdivStartTime');
+    return V.requireFinite(beatStartTime, 'beatStartTime');
   }
 
   /**
    * @param {string} layer
-   * @param {number} tick
+   * @param {number} timeSec - onset time in seconds
    * @param {string} unit
    */
-  function recordTiming(layer, tick, unit) {
+  function recordTiming(layer, timeSec, unit) {
     V.assertNonEmptyString(layer, 'recordTiming.layer');
-    const tickN = V.requireFinite(tick, 'recordTiming.tick');
+    const timeN = V.requireFinite(timeSec, 'recordTiming.timeSec');
     V.assertNonEmptyString(unit, 'recordTiming.unit');
-    const base = getUnitStart(unit);
-    const offset = tickN - base;
+    const base = getUnitStartTime(unit);
+    const offset = timeN - base;
     const row = ensure(layer);
     row.push(offset);
     sumByLayer.set(layer, (sumByLayer.get(layer) || 0) + offset);
@@ -68,28 +64,28 @@ grooveTransfer = (() => {
       row.shift();
     }
 
-    const absMs = getAbsoluteTimeMs(tickN);
+    const absMs = getAbsoluteTimeMs(timeN);
     const atg = getAbsoluteTimeGridOrThrow();
     atg.post(CHANNEL, layer, absMs, { offset, unit });
   }
 
   /**
    * @param {string} layer
-   * @param {number} tick
+   * @param {number} timeSec - onset time in seconds
    * @param {string} unit
    */
-  function applyOffset(layer, tick, unit) {
+  function applyOffset(layer, timeSec, unit) {
     V.assertInSet(layer, LAYER_SET, 'applyOffset.layer');
-    const tickN = V.requireFinite(tick, 'applyOffset.tick');
+    const timeN = V.requireFinite(timeSec, 'applyOffset.timeSec');
     V.assertNonEmptyString(unit, 'applyOffset.unit');
 
     const otherLayer = crossLayerHelpers.getOtherLayer(layer);
     const other = ensure(otherLayer);
-    if (other.length === 0) return tickN;
+    if (other.length === 0) return timeN;
 
     const avg = (sumByLayer.get(otherLayer) || 0) / other.length;
 
-    const absMs = getAbsoluteTimeMs(tickN);
+    const absMs = getAbsoluteTimeMs(timeN);
     const atg = getAbsoluteTimeGridOrThrow();
 
     let localTransfer = avg;
@@ -103,8 +99,7 @@ grooveTransfer = (() => {
       }
     }
 
-    const shifted = tickN + localTransfer * DAMPING;
-    return m.round(shifted);
+    return timeN + localTransfer * DAMPING;
   }
 
   function reset() {

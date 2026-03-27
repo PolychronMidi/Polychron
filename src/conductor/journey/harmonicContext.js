@@ -131,7 +131,7 @@ harmonicContext = (() => {
         excursion: state.excursion,
         tension: state.tension,
         mutationCount: state.mutationCount,
-        tick: V.requireFinite(beatStart, 'beatStart'),
+        tick: V.requireFinite(beatStartTime, 'beatStartTime'),
         timestamp: state.modifiedAt
       });
     }

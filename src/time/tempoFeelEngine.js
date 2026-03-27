@@ -1,4 +1,4 @@
-﻿// src/time/tempoFeelEngine.js - Applies subtle tick offsets for micro-tempo variation.
+﻿// src/time/tempoFeelEngine.js - Applies subtle time offsets for micro-tempo variation.
 // Creates accelerando/ritardando feel aligned with phrase arcs and section phases.
 // Pure query API - consumer adds getTickOffset() to note timing calculations.
 
@@ -19,18 +19,18 @@ tempoFeelEngine = (() => {
     return phase;
   }
 
-  function requireTicksPerUnit() {
-    const ticks = V.requireFinite(tpUnit, 'tpUnit');
-    if (ticks <= 0) {
-      throw new Error('tempoFeelEngine: tpUnit must be > 0');
+  function requireSecondsPerUnit() {
+    const secs = V.requireFinite(spUnit, 'spUnit');
+    if (secs <= 0) {
+      throw new Error('tempoFeelEngine: spUnit must be > 0');
     }
-    return ticks;
+    return secs;
   }
 
   /**
-   * Get a tick offset for the current timing context.
+   * Get a time offset (seconds) for the current timing context.
    * Positive = push forward (accelerando), negative = pull back (ritardando).
-   * @returns {number} - tick offset to add to note-on tick
+   * @returns {number} - seconds offset to add to note-on time
    */
   function getTickOffset() {
     const position = requirePhraseContextPosition();
@@ -57,10 +57,10 @@ tempoFeelEngine = (() => {
         feel = 0;
     }
 
-    // Convert to ticks using current tpUnit
-    const ticksPerUnit = requireTicksPerUnit();
+    // Convert to seconds using current spUnit
+    const secondsPerUnit = requireSecondsPerUnit();
 
-    return m.round(feel * ticksPerUnit);
+    return feel * secondsPerUnit;
   }
 
   /**

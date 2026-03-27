@@ -86,7 +86,7 @@ restSynchronizer = (() => {
     }
 
     // Calculate rest duration based on tpBeat
-    const beatMs = tpSec > 0 ? (tpBeat / tpSec) * 1000 : 500;
+    const beatMs = spBeat > 0 ? spBeat * 1000 : 500;
     const duration = beatMs * rf(0.25, 1.5);
 
     lastRestMs[layer] = absTimeMs;

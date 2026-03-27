@@ -1,5 +1,5 @@
 /** @this {any} */
-stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = tpSec * rf(.2, 1.5)) {
+stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration = spBeat * rf(.2, 1.5)) {
   if (!stutterFailFast) {
     throw new Error('stutterFade: stutterFailFast helper is not available');
   }
@@ -39,11 +39,11 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
     // Use moderate noise profile for stutter fades (more interesting than subtle)
     const noiseProfile = getNoiseProfile('moderate');
 
-    let tick, volume;
+    let timeInSeconds, volume;
     let lastNorm = 0;
 
     for (let i = m.floor(numStutters * (rf(1/3, 2/3))); i < numStutters; i++) {
-      tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
+      timeInSeconds = beatStartTime + i * (duration / numStutters) * rf(.9, 1.1);
 
       // Compute base fade curve
       let baseVolume;
@@ -54,12 +54,12 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       }
 
       // Apply noise modulation to fade curve
-      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fade', tick));
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'fade', timeInSeconds));
       // If a plan coherenceKey is present, overlay correlated noise
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick));
+        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, timeInSeconds));
       }
 
       // Modulate volume by noise influence (combine local + coherence)
@@ -73,15 +73,15 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       lastNorm = norm;
 
       const dipVolume = clamp(m.round(volume * rf(0.74, 0.88)), 52, maxVol);
-      p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 7, dipVolume] });
-      p(c, { tick: tick + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
+      p(c, { timeInSeconds, type: 'control_c', vals: [channelToStutter, 7, dipVolume] });
+      p(c, { timeInSeconds: timeInSeconds + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
     }
-    if (tick === undefined) throw new Error('stutterFade: for-loop produced no iterations');
+    if (timeInSeconds === undefined) throw new Error('stutterFade: for-loop produced no iterations');
 
     // Emit one summary event per channel (not per-iteration)
     const profile = stutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-    eventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), tick });
+    eventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), timeInSeconds });
 
-    p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
+    p(c, { timeInSeconds: timeInSeconds + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
   });
 };

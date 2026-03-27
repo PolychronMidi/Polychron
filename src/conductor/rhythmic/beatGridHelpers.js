@@ -12,10 +12,9 @@ beatGridHelpers = (() => {
    * @returns {number} - beat duration in seconds
    */
   function getBeatDuration() {
-    V.requireFinite(tpSec, 'tpSec');
-    V.requireFinite(tpBeat, 'tpBeat');
-    if (tpSec <= 0) throw new Error('beatGridHelpers.getBeatDuration: tpSec must be > 0');
-    return tpBeat / tpSec;
+    V.requireFinite(spBeat, 'spBeat');
+    if (spBeat <= 0) throw new Error('beatGridHelpers.getBeatDuration: spBeat must be > 0');
+    return spBeat;
   }
 
   /**

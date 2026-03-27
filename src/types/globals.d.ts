@@ -717,7 +717,7 @@ interface CrossLayerClimaxEngineAPI {
 
 interface ConvergenceDetectorAPI {
   postOnset(absTimeMs: number, layer: string, midi: number, velocity: number): void;
-  detect(absTimeMs: number, activeLayer: string): { syncTick: number; rarity: number; otherMidi: number; otherVelocity: number } | null;
+  detect(absTimeMs: number, activeLayer: string): { rarity: number; otherMidi: number; otherVelocity: number } | null;
   applyIfConverged(absTimeMs: number, activeLayer: string, currentMidi: number, currentVelocity: number): { convergence: boolean; rarity: number; burstNotes: number[]; totalConvergences: number } | null;
   wasRecent(absTimeMs: number, layer: string, windowMs?: number): boolean;
   getLastConvergenceMs(layer: string): number;
@@ -748,7 +748,7 @@ interface StutterContagionAPI {
 interface RhythmicPhaseLockAPI {
   postBeat(absTimeMs: number, layer: string, beatDurationMs: number): void;
   measurePhase(absTimeMs: number, activeLayer: string): { phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; otherBeatMs: number } | null;
-  applyPhaseLock(absTimeMs: number, activeLayer: string, originalTick: number): { tick: number; mode: 'lock' | 'drift' | 'repel'; phaseDiff: number };
+  applyPhaseLock(absTimeMs: number, activeLayer: string, originalTime: number): { time: number; mode: 'lock' | 'drift' | 'repel'; phaseDiff: number };
   getMode(): 'lock' | 'drift' | 'repel';
   getLockCount(): number;
   reset(): void;
@@ -756,7 +756,7 @@ interface RhythmicPhaseLockAPI {
 
 interface RhythmicComplementEngineAPI {
   analyzeOtherLayer(activeLayer: string, absTimeMs: number): { gaps: number[]; density: number; avgIOI: number };
-  suggestComplement(layer: string, onTick: number, absTimeMs: number): { tick: number; velocityScale: number; modified: boolean };
+  suggestComplement(layer: string, onTime: number, absTimeMs: number): { time: number; velocityScale: number; modified: boolean };
   getMode(): 'hocket' | 'antiphony' | 'canon' | 'free';
   setMode(newMode: 'hocket' | 'antiphony' | 'canon' | 'free'): void;
   autoSelectMode(absTimeMs?: number): void;
@@ -1592,12 +1592,6 @@ declare var rhythmHistoryTracker: any;
 declare var bpmRatio: number;
 declare var bpmRatio2: any;
 declare var bpmRatio3: any;
-declare var tpSec: number;
-declare var tpMeasure: number;
-declare var tpBeat: number;
-declare var tpDiv: number;
-declare var tpSubdiv: number;
-declare var tpSubsubdiv: number;
 declare var numerator: number;
 declare var denominator: number;
 declare var meterRatio: number;
@@ -1607,15 +1601,10 @@ declare var subdivRhythm: number;
 declare var subsubdivRhythm: number;
 declare var measuresPerPhrase1: number;
 declare var measuresPerPhrase2: number;
-declare var measureStart: number;
 declare var measureStartTime: number;
-declare var beatStart: number;
 declare var beatStartTime: number;
-declare var divStart: number;
 declare var divStartTime: number;
-declare var subdivStart: number;
 declare var subdivStartTime: number;
-declare var subsubdivStart: number;
 declare var subsubdivStartTime: number;
 declare var c: any;
 declare var LM: LayerManagerAPI;
@@ -1627,19 +1616,14 @@ declare var getPolyrhythm: any;
 declare var setUnitTiming: any;
 declare var bestMatch: number;
 declare var subsubsPerSub: number;
-declare var tpUnit: number;
+declare var spUnit: number;
 declare var unitIndex: number;
-declare var unitStart: number;
-declare var parentStart: number;
-declare var tpParent: number;
+declare var unitStartTime: number;
+declare var spParent: number;
 declare var unitsPerParent: number;
-declare var tpPhrase: any;
 declare var spPhrase: number;
-declare var phraseStart: number;
 declare var phraseStartTime: number;
-declare var tpSection: number;
 declare var spSection: number;
-declare var sectionStart: number;
 declare var sectionStartTime: number;
 declare var spMeasure: number;
 declare var spBeat: any;
@@ -1900,7 +1884,7 @@ declare var traceDrain: {
   recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string; axisEnergyShare?: any; sectionKey?: string; sectionMode?: string }): void;
   recordRuntimeMetric(name: string, durationMs: number): void;
   recordFamilyVelocity(family: string, velocity: number): void;
-  recordBinauralShift(data: { layer: string; absTimeMs: number; syncMs: number; syncTick: number; silenceTick: number; usedCrossLayerShift: boolean; syncDeltaMs: number; freqOffset: number; toleranceMs: number; flip: boolean }): void;
+  recordBinauralShift(data: { layer: string; absTimeMs: number; syncMs: number; usedCrossLayerShift: boolean; syncDeltaMs: number; freqOffset: number; toleranceMs: number; flip: boolean }): void;
   flush(): void;
   shutdown(): void;
 };
@@ -1924,7 +1908,6 @@ declare var FactoryManager: ComposerFactoryAPI;
 
 // -- node / timing --
 declare var fs: any;
-declare var finalTick: number;
 declare var path: any;
 declare var endTime: number;
 
@@ -2024,8 +2007,6 @@ declare var subdivsOff: number;
 declare var subsubdivsOn: number;
 declare var subsubdivsOff: number;
 declare var finalTime: number;
-declare var tpPhrase1: number;
-declare var tpPhrase2: number;
 declare var subdivsPerBeat: any;
 declare var noteCount: number;
 declare var firstLoop: number;

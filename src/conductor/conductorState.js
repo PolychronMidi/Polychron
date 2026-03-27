@@ -101,7 +101,7 @@
 
     snapshot.textureFatigue = clamp(Number(textureBlender.getRecentDensity()), 0, 1);
 
-    snapshot.tick = V.optionalFinite(Number(beatStart), snapshot.tick);
+    snapshot.tick = V.optionalFinite(Number(beatStartTime), snapshot.tick);
     snapshot.updatedAt = Date.now();
   }
 

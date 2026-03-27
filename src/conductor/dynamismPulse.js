@@ -15,7 +15,7 @@ dynamismPulse = (() => {
     const beatProgress = clamp(timeStream.normalizedProgress('beat'), 0, 1);
 
     const unitPhase = unit === 'beat' ? 0 : unit === 'div' ? 1.1 : unit === 'subdiv' ? 2.2 : 3.3;
-    const unitSeed = unitStart;
+    const unitSeed = unitStartTime;
     const osc = (m.sin(unitSeed * 0.0009 + unitPhase) + 1) * 0.5;
 
     const basePulse = measureProgress * 0.35 + beatProgress * 0.35 + osc * 0.3;

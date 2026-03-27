@@ -82,46 +82,46 @@ rhythmicComplementEngine = (() => {
    * In antiphony mode: delays onsets to create response pattern.
    * In canon mode: imitates other layer's rhythm with a beat delay.
    * @param {string} layer
-   * @param {number} onTick - current onset tick
+   * @param {number} onTime - current onset time (seconds)
    * @param {number} absTimeMs
-   * @returns {{ tick: number, velocityScale: number, modified: boolean }}
+   * @returns {{ time: number, velocityScale: number, modified: boolean }}
    */
-  function suggestComplement(layer, onTick, absTimeMs) {
-    V.requireFinite(onTick, 'onTick');
+  function suggestComplement(layer, onTime, absTimeMs) {
+    V.requireFinite(onTime, 'onTime');
     V.requireFinite(absTimeMs, 'absTimeMs');
 
-    if (mode === 'free') return { tick: onTick, velocityScale: 1.0, modified: false };
+    if (mode === 'free') return { time: onTime, velocityScale: 1.0, modified: false };
 
     // If this layer is already resting, skip complement - rest takes priority
-    if (restSynchronizer.isLayerResting(layer)) return { tick: onTick, velocityScale: 1.0, modified: false };
+    if (restSynchronizer.isLayerResting(layer)) return { time: onTime, velocityScale: 1.0, modified: false };
 
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5 };
 
     // Only apply strong complement when interaction target is high
     const strength = clamp(intent.interactionTarget * STRENGTH_SCALE - STRENGTH_OFFSET, 0, 1);
-    if (rf() > strength * STRENGTH_GATE) return { tick: onTick, velocityScale: 1.0, modified: false };
+    if (rf() > strength * STRENGTH_GATE) return { time: onTime, velocityScale: 1.0, modified: false };
 
     if (mode === 'hocket') {
-      // Shift onset by half a beat to interleave
-      const halfBeatTicks = tpBeat * 0.5;
-      const shift = halfBeatTicks * rf(HOCKET_SHIFT_MIN, HOCKET_SHIFT_MAX) * strength;
-      return { tick: onTick + shift, velocityScale: 1.0 + strength * HOCKET_VEL_BOOST, modified: true };
+      // Shift onset by half a beat to interleave (seconds)
+      const halfBeatSecs = spBeat * 0.5;
+      const shift = halfBeatSecs * rf(HOCKET_SHIFT_MIN, HOCKET_SHIFT_MAX) * strength;
+      return { time: onTime + shift, velocityScale: 1.0 + strength * HOCKET_VEL_BOOST, modified: true };
     }
 
     if (mode === 'antiphony') {
-      // Small delay for call-response feel
-      const responseTicks = tpBeat * rf(ANTIPHONY_DELAY_MIN, ANTIPHONY_DELAY_MAX) * strength;
-      return { tick: onTick + responseTicks, velocityScale: ANTIPHONY_VEL_BASE + strength * ANTIPHONY_VEL_SCALE, modified: true };
+      // Small delay for call-response feel (seconds)
+      const responseSecs = spBeat * rf(ANTIPHONY_DELAY_MIN, ANTIPHONY_DELAY_MAX) * strength;
+      return { time: onTime + responseSecs, velocityScale: ANTIPHONY_VEL_BASE + strength * ANTIPHONY_VEL_SCALE, modified: true };
     }
 
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
-      let grooveOffset = grooveTransfer.applyOffset(crossLayerHelpers.getOtherLayer(layer), onTick, 'beat') - onTick;
+      let grooveOffset = grooveTransfer.applyOffset(crossLayerHelpers.getOtherLayer(layer), onTime, 'beat') - onTime;
       if (!Number.isFinite(grooveOffset)) grooveOffset = 0;
-      return { tick: onTick + grooveOffset * strength * CANON_GROOVE_SCALE, velocityScale: CANON_VELOCITY, modified: grooveOffset !== 0 };
+      return { time: onTime + grooveOffset * strength * CANON_GROOVE_SCALE, velocityScale: CANON_VELOCITY, modified: grooveOffset !== 0 };
     }
 
-    return { tick: onTick, velocityScale: 1.0, modified: false };
+    return { time: onTime, velocityScale: 1.0, modified: false };
   }
 
   /** @returns {'hocket' | 'antiphony' | 'canon' | 'free'} */

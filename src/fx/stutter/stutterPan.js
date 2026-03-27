@@ -1,5 +1,5 @@
 /** @this {any} */
-stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = tpSec * rf(.1, 1.2)) {
+stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = spBeat * rf(.1, 1.2)) {
   if (!stutterFailFast) {
     throw new Error('stutterPan: stutterFailFast helper is not available');
   }
@@ -24,11 +24,11 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
     let currentPan = edgeMargin;
     let direction = 1;
-    let tick;
+    let timeInSeconds;
     let lastIntensity = 0;
 
     for (let i = m.floor(numStutters * rf(1/3, 2/3)); i < numStutters; i++) {
-      tick = beatStart + i * (duration / numStutters) * rf(.9, 1.1);
+      timeInSeconds = beatStartTime + i * (duration / numStutters) * rf(.9, 1.1);
 
       // Compute base pan direction
       if (currentPan >= rightBoundary) direction = -1;
@@ -36,13 +36,13 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
 
       // Apply noise modulation to pan movement
       let basePanDelta = direction * (fullRange / numStutters) * rf(.5, 1.5);
-      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'pan', tick));
+      const mod = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, 'pan', timeInSeconds));
 
       // If coherence key exists, overlay correlated modulation
       const coherenceKey = (this.beatContext && this.beatContext.coherenceKey) ? this.beatContext.coherenceKey : null;
       let coh = { x: 0.5, y: 0.5 };
       if (coherenceKey) {
-        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, tick));
+        coh = stutterFailFast.assertModulationXY(getParameterModulation(channelToStutter, coherenceKey, timeInSeconds));
       }
 
       // Y axis controls pan flutter - add oscillation on top of movement
@@ -52,7 +52,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       currentPan += basePanDelta;
       currentPan = modClamp(m.floor(currentPan), edgeMargin, 127 - edgeMargin);
       if (!Number.isFinite(Number(currentPan))) {
-        throw new Error(`stutterPan: computed non-finite currentPan for channel=${channelToStutter} tick=${tick}`);
+        throw new Error(`stutterPan: computed non-finite currentPan for channel=${channelToStutter} timeInSeconds=${timeInSeconds}`);
       }
 
       // publish modulation bus pan intensity (-1..1 normalized to 0..1 for convenience)
@@ -61,18 +61,18 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
       lastIntensity = m.abs(norm);
 
-      p(c, { tick: tick, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
+      p(c, { timeInSeconds, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }
-    if (tick === undefined) throw new Error('stutterPan: for-loop produced no iterations');
+    if (timeInSeconds === undefined) throw new Error('stutterPan: for-loop produced no iterations');
 
     // Emit one summary event per channel (not per-iteration)
     const profile = stutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
-    eventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: clamp(lastIntensity, 0, 1), tick });
+    eventBus.emit(eventName, { type: 'cc', subtype: 'pan', profile, channel: channelToStutter, intensity: clamp(lastIntensity, 0, 1), timeInSeconds });
 
     // Record final pan position for note cooperation -
     // negative = left-biased, positive = right-biased, 0 = center
     this.beatContext.panDirections[channelToStutter] = (currentPan - 64) / 64;
 
-    p(c, { tick: tick + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
+    p(c, { timeInSeconds: timeInSeconds + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
   });
 };

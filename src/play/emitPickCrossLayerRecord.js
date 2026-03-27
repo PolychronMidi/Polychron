@@ -13,9 +13,9 @@ const EMIT_PICK_CROSS_LAYER_PROFILE = process.argv.includes('--trace');
 emitPickCrossLayerRecord = function(ctx) {
   const emitPickCrossLayerStartedAt = EMIT_PICK_CROSS_LAYER_PROFILE ? process.hrtime.bigint() : 0n;
   V.assertPlainObject(ctx, 'ctx');
-  const { noteToEmit, texVel, activeLayerName, absMsAtOnTick, unit, onTick, sourceCH, tpUnit, texSustain, harmonicOtherMidi } = ctx;
+  const { noteToEmit, texVel, activeLayerName, absMsAtOnTime, unit, onTime, sourceCH, spUnit, texSustain, harmonicOtherMidi } = ctx;
 
-  const absMs = absMsAtOnTick;
+  const absMs = absMsAtOnTime;
   const atwTime = absMs / 1000;
   absoluteTimeWindow.recordNote(noteToEmit, texVel, activeLayerName, atwTime, unit);
 
@@ -41,18 +41,18 @@ emitPickCrossLayerRecord = function(ctx) {
     for (let echoIndex = 1; echoIndex < deliveredEcho.notes.length; echoIndex++) {
       const echoNote = deliveredEcho.notes[echoIndex];
       const echoStep = echoIndex;
-      const echoStagger = tpUnit * rf(0.015, 0.06) * echoStep;
+      const echoStagger = spUnit * rf(0.015, 0.06) * echoStep;
       const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95))));
-      const echoOnTick = onTick + echoStagger;
-      const echoOffTick = minimumNoteDuration.resolveOffTick(
-        echoOnTick,
-        echoOnTick + texSustain * rf(0.6, 0.95),
+      const echoOnTime = onTime + echoStagger;
+      const echoOffTime = minimumNoteDuration.resolveOffTick(
+        echoOnTime,
+        echoOnTime + texSustain * rf(0.6, 0.95),
         'ornament',
-        tpUnit,
-        'emitPickCrossLayerRecord.echoOffTick'
+        spUnit,
+        'emitPickCrossLayerRecord.echoOffTime'
       );
-      const echoOnEvt = { tick: echoOnTick, type: 'on', vals: [sourceCH, echoNote, echoVel] };
-      const echoOffEvt = { tick: echoOffTick, vals: [sourceCH, echoNote] };
+      const echoOnEvt = { timeInSeconds: echoOnTime, type: 'on', vals: [sourceCH, echoNote, echoVel] };
+      const echoOffEvt = { timeInSeconds: echoOffTime, vals: [sourceCH, echoNote] };
       microUnitAttenuator.record(echoOnEvt, echoOffEvt, crossModulation);
       additionalScheduled += 2;
     }

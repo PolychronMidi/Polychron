@@ -54,7 +54,7 @@ StutterManager = class StutterManager {
         const reflChs = reflection.slice(0, 2);
         if (reflChs.length > 0) {
           const microRate = clamp(m.round(24 + composite * 16), 24, 48);
-          const microDuration = tpUnit * rf(0.3, 0.6);
+          const microDuration = spUnit * rf(0.3, 0.6);
           this.StutterManagerStutterPan.call(this, reflChs, microRate, microDuration);
         }
       }
@@ -90,7 +90,7 @@ StutterManager = class StutterManager {
   static StutterManagerInvokeStutter(label, impl, grainCountKey, grainDurationKey, channels, numStutters, duration) {
     const grain = this.StutterManagerGetStutterGrainParams();
     const effectiveStutters = V.optionalFinite(Number(numStutters), ri(grain[grainCountKey][0], grain[grainCountKey][1]));
-    const effectiveDuration = V.optionalFinite(Number(duration), tpSec * rf(grain[grainDurationKey][0], grain[grainDurationKey][1]));
+    const effectiveDuration = V.optionalFinite(Number(duration), spBeat * rf(grain[grainDurationKey][0], grain[grainDurationKey][1]));
     if (!channels || (Array.isArray(channels) && channels.length === 0)) {
       throw new Error(`StutterManager.${label}: called with no channels`);
     }

@@ -5,7 +5,7 @@ adaptiveTrustScoresHelpers = (() => {
   function adaptiveTrustScoresHelpersGetBeatKey() {
     const safeSection = Number.isFinite(sectionIndex) ? sectionIndex : -1;
     const safePhrase = Number.isFinite(phraseIndex) ? phraseIndex : -1;
-    const safeBeat = Number.isFinite(beatStart) ? beatStart : (Number.isFinite(beatCount) ? beatCount : -1);
+    const safeBeat = Number.isFinite(beatStartTime) ? beatStartTime : (Number.isFinite(beatCount) ? beatCount : -1);
     return safeSection + ':' + safePhrase + ':' + safeBeat;
   }
 

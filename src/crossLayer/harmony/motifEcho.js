@@ -65,7 +65,7 @@ motifEcho = (() => {
 
     // Schedule delivery after a random delay in beats
     const delayBeats = ri(ECHO_DELAY_BEATS_MIN, ECHO_DELAY_BEATS_MAX);
-    const beatDurationMs = tpBeat > 0 ? (tpBeat / tpSec) * 1000 : 500;
+    const beatDurationMs = spBeat > 0 ? spBeat * 1000 : 500;
     const deliverMs = absTimeMs + delayBeats * beatDurationMs;
 
     pendingEchoes.push({

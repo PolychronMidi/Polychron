@@ -77,9 +77,9 @@ emergentDownbeat = (() => {
     if (bassNote < lo || bassNote > hi) return;
 
     const bassVel = crossLayerHelpers.scaleVelocity(velocity, 0.7);
-    const bassSustain = tpBeat * rf(0.6, 1.2);
-    crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart, type: 'on', vals: [cCH3, bassNote, bassVel] });
-    crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart + bassSustain, vals: [cCH3, bassNote] });
+    const bassSustain = spBeat * rf(0.6, 1.2);
+    crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: beatStartTime, type: 'on', vals: [cCH3, bassNote, bassVel] });
+    crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: beatStartTime + bassSustain, vals: [cCH3, bassNote] });
   }
 
   /**
@@ -95,13 +95,13 @@ emergentDownbeat = (() => {
     const leftCh = (layer === 'L1') ? lCH1 : lCH2;
     const rightCh = (layer === 'L1') ? rCH1 : rCH2;
 
-    crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart, type: 'control_c', vals: [leftCh, STEREO_WIDEN_CC, clamp(64 - offset, 0, 127)] });
-    crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: beatStart, type: 'control_c', vals: [rightCh, STEREO_WIDEN_CC, clamp(64 + offset, 0, 127)] });
+    crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [leftCh, STEREO_WIDEN_CC, clamp(64 - offset, 0, 127)] });
+    crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [rightCh, STEREO_WIDEN_CC, clamp(64 + offset, 0, 127)] });
 
     // Reset pan after a short duration
-    const resetTick = beatStart + tpBeat * 0.5;
-    crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: resetTick, type: 'control_c', vals: [leftCh, STEREO_WIDEN_CC, 64] });
-    crossLayerEmissionGateway.emit('emergentDownbeat', c, { tick: resetTick, type: 'control_c', vals: [rightCh, STEREO_WIDEN_CC, 64] });
+    const resetTime = beatStartTime + spBeat * 0.5;
+    crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: resetTime, type: 'control_c', vals: [leftCh, STEREO_WIDEN_CC, 64] });
+    crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: resetTime, type: 'control_c', vals: [rightCh, STEREO_WIDEN_CC, 64] });
   }
 
   /**

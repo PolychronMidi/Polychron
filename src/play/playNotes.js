@@ -72,7 +72,6 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     const intendedCountLocal = V.requireFinite(intended, 'notesEmitted.intended');
     const playProbLocal = V.requireFinite(playProb, 'notesEmitted.playProb');
     const stutterProbLocal = V.requireFinite(stutterProb, 'notesEmitted.stutterProb');
-    const tickValue = V.requireFinite(unitStart, 'notesEmitted.tick');
     eventBus.emit(PLAY_EVENTS.NOTES_EMITTED, {
       unit,
       layer: activeLayer,
@@ -80,8 +79,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
       intended: intendedCountLocal,
       playProb: playProbLocal,
       stutterProb: stutterProbLocal,
-      reason,
-      tick: tickValue
+      reason
     });
   };
 
@@ -130,7 +128,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Per-layer + per-unit voice budget (prevents first-invocation dominance)
   const layerName = /** @type {string} */ (LM.activeLayer);
-  const unitStartValue = V.requireFinite(unitStart, 'unitStart');
+  const unitStartValue = V.requireFinite(unitStartTime, 'unitStartTime');
   const unitBudgetKey = `${layerName}:${unit}:${unitStartValue}`;
 
   // Ensure per-layer budget maps exist (init.js defines these globals)
@@ -216,7 +214,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
         pickIndex: pi,
         resolvedStutterProb,
         on,
-        tpUnit,
+        spUnit,
         sustain,
         textureMode,
         velocity,

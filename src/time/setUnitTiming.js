@@ -29,31 +29,27 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'phrase':
-      tpPhrase = tpMeasure * measuresPerPhrase;
-      spPhrase = tpPhrase / tpSec;
+      spPhrase = spMeasure * measuresPerPhrase;
       unitIndex = phraseIndex;
-      unitStart = phraseStart;
-      tpUnit = tpPhrase;
-      parentStart = sectionStart;
-      // tpParent = tpSection; // unknown at phrase start time
+      unitStartTime = phraseStartTime;
+      spUnit = spPhrase;
+      spParent = spSection;
       unitsPerParent = phrasesPerSection;
       break;
 
     case 'measure':
       setRhythm('beat', activeLayer);
-      measureStart = phraseStart + measureIndex * tpMeasure;
       measureStartTime = phraseStartTime + measureIndex * spMeasure;
       unitIndex = measureIndex;
-      unitStart = measureStart;
-      tpUnit = tpMeasure;
-      parentStart = phraseStart;
-      tpParent = tpPhrase;
+      unitStartTime = measureStartTime;
+      spUnit = spMeasure;
+      spParent = spPhrase;
       unitsPerParent = measuresPerPhrase;
       V.requireFinite(Number(numerator), 'numerator');
       if (Number(numerator) <= 0) {
-        throw new Error(`setUnitTiming(measure): invalid numerator=${numerator} - cannot compute tpBeat`);
+        throw new Error(`setUnitTiming(measure): invalid numerator=${numerator}`);
       }
-      tpBeat = tpMeasure / Number(numerator);
+      spBeat = spMeasure / Number(numerator);
 
       // Plan measure-level + beat-level hierarchical motifs
       motifManager.planMeasure(activeLayer, activeComposer);
@@ -63,15 +59,13 @@ setUnitTiming = (unitType) => {
     case 'beat':
       // Ensure the active layer has a beat rhythm generated before tracking it
       setRhythm('div', activeLayer);
-      tpBeat = tpMeasure / numerator;
-      spBeat = tpBeat / tpSec;
+      spBeat = spMeasure / numerator;
       trueBPM = 60 / spBeat;
       bpmRatio = BPM / trueBPM;
       bpmRatio2 = trueBPM / BPM;
       trueBPM2 = numerator * (numerator / denominator) / 4;
       bpmRatio3 = 1 / trueBPM2;
 
-      beatStart = measureStart + beatIndex * tpBeat;
       beatStartTime = measureStartTime + beatIndex * spBeat;
       // ANTI-PATTERN: counter-productive "validation" masks issues and makes code unreadable
       // divsPerBeat = Number.isFinite(divsPerBeat) && divsPerBeat > 0 ? divsPerBeat : (composer && typeof composer.getDivisions === 'function' ? m.max(1, composer.getDivisions()) : (DIVISIONS && DIVISIONS.min ? DIVISIONS.min : 1));
@@ -79,10 +73,9 @@ setUnitTiming = (unitType) => {
 
       divRhythm = setRhythm('div', activeLayer);
       unitIndex = beatIndex;
-      unitStart = beatStart;
-      tpUnit = tpBeat;
-      parentStart = measureStart;
-      tpParent = tpMeasure;
+      unitStartTime = beatStartTime;
+      spUnit = spBeat;
+      spParent = spMeasure;
       unitsPerParent = numerator;
 
       // DIVS-only planner invocation (use DIV API and run once per measure)
@@ -99,18 +92,15 @@ setUnitTiming = (unitType) => {
 
     case 'div':
       setRhythm('subdiv', activeLayer);
-      tpDiv = tpBeat / divsPerBeat;
-      spDiv = tpDiv / tpSec;
-      divStart = beatStart + divIndex * tpDiv;
+      spDiv = spBeat / divsPerBeat;
       divStartTime = beatStartTime + divIndex * spDiv;
       subdivsPerDiv = activeComposer.getSubdivs();
       subdivFreq = subdivsPerDiv * divsPerBeat * numerator * meterRatio;
       subdivRhythm = setRhythm('subdiv', activeLayer);
       unitIndex = divIndex;
-      unitStart = divStart;
-      tpUnit = tpDiv;
-      parentStart = beatStart;
-      tpParent = tpBeat;
+      unitStartTime = divStartTime;
+      spUnit = spDiv;
+      spParent = spBeat;
       unitsPerParent = divsPerBeat;
 
       // Plan subdiv-level motifs derived from the current div's divMotifs bucket
@@ -121,18 +111,15 @@ setUnitTiming = (unitType) => {
 
     case 'subdiv':
       setRhythm('subsubdiv', activeLayer);
-      tpSubdiv = tpDiv / subdivsPerDiv;
-      spSubdiv = tpSubdiv / tpSec;
+      spSubdiv = spDiv / subdivsPerDiv;
       subdivsPerMinute = 60 / spSubdiv;
-      subdivStart = divStart + subdivIndex * tpSubdiv;
       subdivStartTime = divStartTime + subdivIndex * spSubdiv;
       subsubsPerSub = activeComposer.getSubsubdivs();
       subsubdivRhythm = setRhythm('subsubdiv', activeLayer);
       unitIndex = subdivIndex;
-      unitStart = subdivStart;
-      tpUnit = tpSubdiv;
-      parentStart = divStart;
-      tpParent = tpDiv;
+      unitStartTime = subdivStartTime;
+      spUnit = spSubdiv;
+      spParent = spDiv;
       unitsPerParent = subdivsPerDiv;
 
       // Plan subsubdiv-level motifs derived from the current subdiv's subdivMotifs bucket
@@ -143,16 +130,13 @@ setUnitTiming = (unitType) => {
       break;
 
     case 'subsubdiv':
-      tpSubsubdiv = tpSubdiv / subsubsPerSub;
-      spSubsubdiv = tpSubsubdiv / tpSec;
+      spSubsubdiv = spSubdiv / subsubsPerSub;
       subsubsPerMinute = 60 / spSubsubdiv;
-      subsubdivStart = subdivStart + subsubdivIndex * tpSubsubdiv;
       subsubdivStartTime = subdivStartTime + subsubdivIndex * spSubsubdiv;
       unitIndex = subsubdivIndex;
-      unitStart = subsubdivStart;
-      tpUnit = tpSubsubdiv;
-      parentStart = subdivStart;
-      tpParent = tpSubdiv;
+      unitStartTime = subsubdivStartTime;
+      spUnit = spSubsubdiv;
+      spParent = spSubdiv;
       unitsPerParent = subsubsPerSub;
       break;
 

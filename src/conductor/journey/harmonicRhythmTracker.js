@@ -13,8 +13,8 @@
   function tickDistanceToRate(currentTick) {
     if (lastTick === null) return 0.35;
     const delta = m.max(1, m.abs(currentTick - lastTick));
-    const measureTicks = m.max(1, V.requireFinite(tpMeasure, 'tpMeasure'));
-    return clamp(measureTicks / (measureTicks + delta), 0, 1);
+    const measureSecs = m.max(0.001, V.requireFinite(spMeasure, 'spMeasure'));
+    return clamp(measureSecs / (measureSecs + delta), 0, 1);
   }
 
   function resetSection() {

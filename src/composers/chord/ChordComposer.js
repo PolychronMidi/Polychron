@@ -87,7 +87,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
       const lastMeasure = (typeof this.ChordComposerLastMeasureCount === 'number') ? this.ChordComposerLastMeasureCount : measureCount;
       const measureAdvanced = measureCount > lastMeasure;
       const progressChord = measureAdvanced || rf() < 0.05;
-      if (progressChord) { allNotesOff(subdivStart); }
+      if (progressChord) { allNotesOff(subdivStartTime); }
       this.ChordComposerLastMeasureCount = measureCount;
       this.currentChordIndex+= progressChord ? next % (this.progression.length) : 0;
       this.currentChordIndex=(this.currentChordIndex+this.progression.length)%this.progression.length;
