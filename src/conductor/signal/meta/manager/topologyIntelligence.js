@@ -188,12 +188,11 @@ hyperMetaManagerTopology = (() => {
       // Scale emergence boost by system health: full 1.12-1.30x when healthy,
       // down to 1.0-1.15x when stressed. Uses same e18Scale from hyperMetaManager
       // but topology doesn't have direct access -- use S.healthEma and exceedanceTrendEma.
-      const topoHealthScale = clamp(S.healthEma / 0.7, 0.5, 1.0);
-      const topoExceedanceScale = clamp(1.0 - m.max(0, S.exceedanceTrendEma - 0.4) * 1.5, 0.5, 1.0);
-      const topoE18Scale = topoHealthScale * topoExceedanceScale;
+      // Use S.e18Scale (computed once per tick in hyperMetaManager) -- avoids
+      // recomputing health+exceedance scale from the same inputs with the same formula.
       const rawBoost = 1.12 + streakBonus + attractorBonus; // 1.12 to 1.27
       // Scale the overage above 1.0 by health: stressed = less boost
-      S.topologyCreativityMultiplier = clamp(1.0 + (rawBoost - 1.0) * topoE18Scale, 1.0, 1.30);
+      S.topologyCreativityMultiplier = clamp(1.0 + (rawBoost - 1.0) * S.e18Scale, 1.0, 1.30);
     } else if (S.crossState === 'locked') {
       S.topologyCreativityMultiplier =
         clamp(0.85 - (S.attractorStabilityBeats > 100 ? 0.05 : 0), 0.75, 1.0);
@@ -207,9 +206,18 @@ hyperMetaManagerTopology = (() => {
 
   function updateInterventionBudgetScale() {
     if (S.crossState === 'emergence') {
-      S.interventionBudgetScale = clamp(S.interventionBudgetScale * 0.97, 0.40, 1.0);
+      // Health gate: only reduce budget when system is healthy enough to afford less intervention.
+      // Stressed system (healthEma <= 0.65) needs full budget -- skip decay.
+      if (S.healthEma > 0.65) {
+        S.interventionBudgetScale = clamp(S.interventionBudgetScale * 0.97, 0.40, 1.0);
+      }
     } else if (S.crossState === 'locked') {
-      S.interventionBudgetScale = clamp(S.interventionBudgetScale * 1.03, 0.40, 1.20);
+      // Health gate: only amplify budget when exceedance is low.
+      // High exceedance (> 0.3) means system is already over-active -- amplifying
+      // further would worsen the situation.
+      if (S.exceedanceTrendEma < 0.3) {
+        S.interventionBudgetScale = clamp(S.interventionBudgetScale * 1.03, 0.40, 1.20);
+      }
     } else {
       S.interventionBudgetScale += (1.0 - S.interventionBudgetScale) * 0.08;
     }
