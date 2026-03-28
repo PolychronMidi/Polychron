@@ -3,7 +3,7 @@
 // buffer per channel, registered in LM as a real (but never CSV-exported) layer.
 
 L0 = (() => {
-  const V = validator.create('L0');
+  const V = validator.create('l0');
 
   const PRUNE_WINDOW_SECONDS = 30;
   const MAX_ENTRIES_PER_CHANNEL = 2000;
@@ -14,13 +14,6 @@ L0 = (() => {
    * @type {Object.<string, Array<Object>>}
    */
   const channels = {};
-
-  /**
-   * Per-channel per-layer running note counts (fast-path for countNotes).
-   * Keyed as `channel + ':' + layer`.
-   * @type {Map<string, number>}
-   */
-  const layerCounts = new Map();
 
   /** Query result cache. Invalidated on every post(). */
   /** @type {Map<string, Array<Object>>} */
@@ -82,7 +75,7 @@ L0 = (() => {
    *   layer?          - filter by layer name
    *   since?          - lower-bound timestamp (seconds)
    *   windowSeconds?  - rolling window size (seconds) from the last entry
-   *   aroundSeconds?  - centre of a ± toleranceSec window
+   *   aroundSeconds?  - centre of a +/- toleranceSec window
    *   toleranceSec?   - half-width for aroundSeconds query
    * @returns {Array<Object>}
    */
@@ -97,15 +90,13 @@ L0 = (() => {
       ({ layer, since, windowSeconds, aroundSeconds, toleranceSec } = opts);
     }
 
-    let startIdx, cutoff;
-
     if (aroundSeconds !== undefined && toleranceSec !== undefined) {
       // Bounded window query
       const around = V.requireFinite(aroundSeconds, 'query.aroundSeconds');
       const tol    = V.requireFinite(toleranceSec, 'query.toleranceSec');
       const lo = around - tol;
       const hi = around + tol;
-      startIdx = timeGridSearchStart(arr, 'timeInSeconds', lo);
+      const startIdx = timeGridSearchStart(arr, 'timeInSeconds', lo);
       const cacheKey = channel + ':' + (layer || '') + ':around:' + lo + ':' + hi;
       const cached = queryCache.get(cacheKey);
       if (cached) return cached;
@@ -125,14 +116,14 @@ L0 = (() => {
     const lastTime = last.timeInSeconds;
     const effectiveWindow = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds))
       ? windowSeconds : PRUNE_WINDOW_SECONDS;
-    cutoff = (typeof since === 'number' && Number.isFinite(since))
+    const cutoff = (typeof since === 'number' && Number.isFinite(since))
       ? since : (lastTime - effectiveWindow);
 
     const cacheKey = channel + ':' + (layer || '') + ':' + cutoff;
     const cached = queryCache.get(cacheKey);
     if (cached) return cached;
 
-    startIdx = timeGridSearchStart(arr, 'timeInSeconds', cutoff);
+    const startIdx = timeGridSearchStart(arr, 'timeInSeconds', cutoff);
     const result = [];
     for (let i = startIdx; i < arr.length; i++) {
       const e = arr[i];

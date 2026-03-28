@@ -27,11 +27,11 @@ stutterContagion = (() => {
    */
   function getAdaptiveDecay(absTimeMs) {
     // Check if convergence happened recently via ATG onset channel
-    const recentConvergence = absoluteTimeGrid.findClosest(
-      'onset', absTimeMs, CONVERGENCE_WINDOW_MS
+    const recentConvergence = L0.findClosest(
+      'onset', absTimeMs / 1000, CONVERGENCE_WINDOW_MS / 1000
     );
     if (!recentConvergence) return BASE_DECAY;
-    const dist = m.abs(recentConvergence.timeMs - absTimeMs);
+    const dist = m.abs(recentConvergence.timeInSeconds * 1000 - absTimeMs);
     const recency = 1 - (dist / CONVERGENCE_WINDOW_MS);
     // Interpolate: recent convergence - ALIGNED (sticky), distant - DIVERGED (loose)
     return BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
@@ -55,7 +55,7 @@ stutterContagion = (() => {
       V.requireFinite(normalizedChannels[i], `channels[${i}]`);
     }
     const normalizedType = V.assertInSet(type, STUTTER_TYPES, 'type');
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    L0.post(CHANNEL, layer, absTimeMs / 1000, {
       intensity: normalizedIntensity,
       channels: normalizedChannels,
       type: normalizedType
@@ -72,13 +72,13 @@ stutterContagion = (() => {
   function checkContagion(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
-    const match = absoluteTimeGrid.findClosest(
-      CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
+    const match = L0.findClosest(
+      CHANNEL, absTimeMs / 1000, SYNC_TOLERANCE_MS / 1000, activeLayer
     );
     if (!match) return null;
     V.assertObject(match, 'checkContagion.match');
     const matchIntensity = V.requireFinite(match.intensity, 'checkContagion.match.intensity');
-    const matchTimeMs = V.requireFinite(match.timeMs, 'checkContagion.match.timeMs');
+    const matchTimeMs = V.requireFinite(match.timeInSeconds * 1000, 'checkContagion.match.timeMs');
     const matchChannels = V.assertArray(match.channels, 'checkContagion.match.channels');
     for (let i = 0; i < matchChannels.length; i++) {
       V.requireFinite(matchChannels[i], `checkContagion.match.channels[${i}]`);
@@ -125,7 +125,7 @@ stutterContagion = (() => {
 
     // Re-post with decayed intensity to sustain the chain across more layers
     const repostDecay = getAdaptiveDecay(absTimeMs);
-    absoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
+    L0.post(CHANNEL, activeLayer, absTimeMs / 1000, {
       intensity: contagion.intensity * repostDecay,
       channels: contagion.channels,
       type: contagion.type

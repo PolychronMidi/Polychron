@@ -11,11 +11,9 @@ require('./getPolyrhythm');
 require('./getMeterPair');
 require('./timeGridHelpers');
 
-require('./absoluteTimeWindow');
 
-require('./absoluteTimeGrid');
 
-require('./L0');
+require('./l0');
 
 require('./tempoFeelEngine');
 

@@ -11,7 +11,7 @@ rhythmicGroupingAnalyzer = (() => {
    * @returns {{ groupingType: string, binaryScore: number, ternaryScore: number, inTransition: boolean }}
    */
   function getGroupingSignal() {
-    const entries = absoluteTimeWindow.getEntries(WINDOW_SECONDS);
+    const entries = L0.query('note', { windowSeconds: WINDOW_SECONDS });
 
     if (entries.length < 6) {
       return { groupingType: 'ambiguous', binaryScore: 0.5, ternaryScore: 0.5, inTransition: false };

@@ -26,7 +26,7 @@ rhythmicPhaseLock = (() => {
   function postBeat(absTimeMs, layer, beatDurationMs) {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.requireFinite(beatDurationMs, 'beatDurationMs');
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, { beatDurationMs });
+    L0.post(CHANNEL, layer, absTimeMs / 1000, { beatDurationMs });
   }
 
   /**
@@ -38,13 +38,14 @@ rhythmicPhaseLock = (() => {
   function measurePhase(absTimeMs, activeLayer) {
     V.requireFinite(absTimeMs, 'absTimeMs');
 
-    const other = absoluteTimeGrid.findClosest(
-      CHANNEL, absTimeMs, PHASE_TOLERANCE_MS * 10, activeLayer
+    const other = L0.findClosest(
+      CHANNEL, absTimeMs / 1000, (PHASE_TOLERANCE_MS * 10) / 1000, activeLayer
     );
     if (!other || !Number.isFinite(other.beatDurationMs)) return null;
 
+    const otherTimeMs = other.timeInSeconds * 1000;
     // Phase difference as fraction of beat duration (0 = in sync, 0.5 = max opposition)
-    const timeDiff = m.abs(other.timeMs - absTimeMs);
+    const timeDiff = m.abs(otherTimeMs - absTimeMs);
     const phaseDiff = (timeDiff % other.beatDurationMs) / other.beatDurationMs;
     const normalizedPhase = phaseDiff > 0.5 ? 1 - phaseDiff : phaseDiff;
 
@@ -53,7 +54,7 @@ rhythmicPhaseLock = (() => {
     else if (normalizedPhase > REPEL_THRESHOLD) mode = 'repel';
 
     currentMode = mode;
-    return { phaseDiff: normalizedPhase, mode, otherBeatMs: other.timeMs };
+    return { phaseDiff: normalizedPhase, mode, otherBeatMs: otherTimeMs };
   }
 
   /**

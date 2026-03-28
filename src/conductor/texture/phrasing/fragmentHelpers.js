@@ -21,7 +21,7 @@ fragmentHelpers = (() => {
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;
-    const notes = absoluteTimeWindow.getNotes(query);
+    const notes = L0.query('note', query);
     if (notes.length < fragLen) return [];
 
     /** @type {string[]} */

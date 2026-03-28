@@ -38,7 +38,7 @@ feedbackOscillator = (() => {
     if (impulseTypeMaybe !== undefined) {
       finalImpulseType = V.assertNonEmptyString(impulseTypeMaybe, 'impulseType');
     }
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    L0.post(CHANNEL, layer, absTimeMs / 1000, {
       energy: clamp(energy, 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
@@ -58,8 +58,8 @@ feedbackOscillator = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
 
-    const incoming = absoluteTimeGrid.findClosest(
-      CHANNEL, absTimeMs, SYNC_TOLERANCE_MS, activeLayer
+    const incoming = L0.findClosest(
+      CHANNEL, absTimeMs / 1000, SYNC_TOLERANCE_MS / 1000, activeLayer
     );
     if (!incoming) return null;
     V.assertObject(incoming, 'incoming');
@@ -86,13 +86,13 @@ feedbackOscillator = (() => {
     const incomingOriginLayer = (typeof incoming.originLayer === 'undefined')
       ? activeLayer
       : V.assertNonEmptyString(incoming.originLayer, 'react.incoming.originLayer');
-    const incomingTimeMs = V.requireFinite(incoming.timeMs, 'react.incoming.timeMs');
+    const incomingTimeMs = V.requireFinite(incoming.timeInSeconds * 1000, 'react.incoming.timeMs');
 
     // Convert to this layer's tick space
     const syncTick = crossLayerHelpers.msToSyncTick(incomingTimeMs);
 
     // Post our reaction for the other layer to pick up (with evolved pitch)
-    absoluteTimeGrid.post(CHANNEL, activeLayer, absTimeMs, {
+    L0.post(CHANNEL, activeLayer, absTimeMs / 1000, {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
       impulseType: incomingImpulseType,

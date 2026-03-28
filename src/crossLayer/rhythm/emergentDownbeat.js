@@ -46,7 +46,7 @@ emergentDownbeat = (() => {
     downbeatCount++;
 
     // Post to ATG for other systems to see
-    absoluteTimeGrid.post(CHANNEL, 'both', absTimeMs, { strength: score, signalCount });
+    L0.post(CHANNEL, 'both', absTimeMs / 1000, { strength: score, signalCount });
 
     return { isDownbeat: true, strength: clamp(score, 0, 1), signalCount };
   }

@@ -71,8 +71,6 @@ lastVoiceBudgetKey = null;
  */
 flipBin=false;
 
-L0 = null;
-
 /**
  * MIDI channel constants for center channels.
  * @type {number}

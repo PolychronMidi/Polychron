@@ -16,7 +16,7 @@ interLayerRhythmHelpers = (() => {
    * @returns {{ layerOnsets: Object.<string, number[]>, layerKeys: string[] }}
    */
   function getLayerOnsets(ws) {
-    const entries = absoluteTimeWindow.getEntries(ws);
+    const entries = L0.query('note', { windowSeconds: ws });
     /** @type {Object.<string, number[]>} */
     const layerOnsets = {};
     for (let i = 0; i < entries.length; i++) {

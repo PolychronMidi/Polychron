@@ -17,7 +17,7 @@ emitPickCrossLayerRecord = function(ctx) {
 
   const absMs = absMsAtOnTime;
   const atwTime = absMs / 1000;
-  L0.post('note', activeLayerName, atwTime, { midi: noteToEmit, velocity: texVel, unit });
+  L0.post('note', activeLayerName, atwTime, { midi: noteToEmit, velocity: texVel, unit, time: atwTime });
 
   // Cross-layer interactions
   convergenceDetector.postOnset(absMs, activeLayerName, noteToEmit, texVel);
