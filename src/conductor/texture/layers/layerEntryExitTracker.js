@@ -16,7 +16,7 @@ layerEntryExitTracker = (() => {
   function recordSnapshot(absTime) {
     V.requireFinite(absTime, 'absTime');
 
-    const entries = absoluteTimeWindow.getEntries(2);
+    const entries = L0.query('note', { windowSeconds: 2 });
 
     // Count distinct active layers in recent window
     /** @type {Object.<string, boolean>} */

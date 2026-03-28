@@ -31,7 +31,7 @@ convergenceDetector = (() => {
     V.requireFinite(absTimeMs, 'absTimeMs');
     V.requireFinite(midi, 'midi');
     V.requireFinite(velocity, 'velocity');
-    absoluteTimeGrid.post(CHANNEL, layer, absTimeMs, {
+    L0.post(CHANNEL, layer, absTimeMs / 1000, {
       midi: clamp(m.round(midi), 0, 127),
       velocity: clamp(m.round(velocity), 1, MIDI_MAX_VALUE)
     });
@@ -50,15 +50,15 @@ convergenceDetector = (() => {
     // Throttle: don't fire convergence events more often than the interval
     if (absTimeMs - lastConvergenceMs < MIN_CONVERGENCE_INTERVAL_MS) return null;
 
-    const match = absoluteTimeGrid.findClosest(
-      CHANNEL, absTimeMs, CONVERGENCE_TOLERANCE_MS, activeLayer
+    const match = L0.findClosest(
+      CHANNEL, absTimeMs / 1000, CONVERGENCE_TOLERANCE_MS / 1000, activeLayer
     );
     if (!match) return null;
 
     lastConvergenceMs = absTimeMs;
 
     // Rarity: tighter alignment = higher rarity score (0-1)
-    const dist = m.abs(match.timeMs - absTimeMs);
+    const dist = m.abs(match.timeInSeconds * 1000 - absTimeMs);
     const rarity = 1 - (dist / CONVERGENCE_TOLERANCE_MS);
 
     return {

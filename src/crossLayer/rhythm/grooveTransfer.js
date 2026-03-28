@@ -22,19 +22,6 @@ grooveTransfer = (() => {
     return arr;
   }
 
-  function getAbsoluteTimeGridOrThrow() {
-    V.assertObject(absoluteTimeGrid, 'absoluteTimeGrid');
-    return absoluteTimeGrid;
-  }
-
-  /**
-   * @param {number} timeSec - time in seconds
-   * @returns {number} absolute time in ms
-   */
-  function getAbsoluteTimeMs(timeSec) {
-    return V.requireFinite(timeSec, 'timeSec') * 1000;
-  }
-
   /** @param {'beat'|'div'|'subdiv'|'subsubdiv'|string} unit */
   function getUnitStartTime(unit) {
     V.assertNonEmptyString(unit, 'unit');
@@ -64,9 +51,7 @@ grooveTransfer = (() => {
       row.shift();
     }
 
-    const absMs = getAbsoluteTimeMs(timeN);
-    const atg = getAbsoluteTimeGridOrThrow();
-    atg.post(CHANNEL, layer, absMs, { offset, unit });
+    L0.post(CHANNEL, layer, timeN, { offset, unit });
   }
 
   /**
@@ -85,11 +70,8 @@ grooveTransfer = (() => {
 
     const avg = (sumByLayer.get(otherLayer) || 0) / other.length;
 
-    const absMs = getAbsoluteTimeMs(timeN);
-    const atg = getAbsoluteTimeGridOrThrow();
-
     let localTransfer = avg;
-    const closest = atg.findClosest(CHANNEL, absMs, 120, layer);
+    const closest = L0.findClosest(CHANNEL, timeN, 0.120, layer);
     if (closest) {
       V.assertObject(closest, 'applyOffset.closest');
       const closestOffset = V.requireFinite(closest.offset, 'applyOffset.closest.offset');

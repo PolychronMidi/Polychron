@@ -29,8 +29,9 @@ cadenceAdvisor = (() => {
       });
       if (recentChanges.length > MAX_HISTORY) recentChanges.shift();
 
-      // Also feed chord changes into absoluteTimeWindow for cross-layer analysis
-      const layer = LM.activeLayer;
+      // Also feed chord changes into L0 for cross-layer analysis
+      V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
+      const layer = /** @type {string} */ (LM.activeLayer);
       V.requireFinite(beatStartTime, 'beatStartTime');
       L0.post('chord', layer, beatStartTime, { chords: data.chords, key: data.key, mode: data.mode });
     });

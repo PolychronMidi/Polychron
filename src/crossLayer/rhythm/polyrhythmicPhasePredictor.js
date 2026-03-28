@@ -49,7 +49,7 @@ polyrhythmicPhasePredictor = (() => {
       if (i % d1 === 0 && i % d2 === 0) {
         const t = nowMs + i * stepMs;
         predictions.push(t);
-        absoluteTimeGrid.post(CHANNEL, '0', t, { cycle, step: i });
+        L0.post(CHANNEL, '0', t / 1000, { cycle, step: i });
       }
     }
   }

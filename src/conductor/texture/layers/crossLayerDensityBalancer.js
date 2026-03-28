@@ -8,7 +8,7 @@ crossLayerDensityBalancer = (() => {
 
   /** @private */
   function crossLayerDensityBalancerComputeBalanceSignal() {
-    const entries = absoluteTimeWindow.getEntries(WINDOW_SECONDS);
+    const entries = L0.query('note', { windowSeconds: WINDOW_SECONDS });
 
     if (entries.length < 6) {
       return { imbalance: 0, dominantLayer: 'none', densityBias: 1 };

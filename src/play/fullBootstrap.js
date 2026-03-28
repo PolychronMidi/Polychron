@@ -434,8 +434,6 @@ fullBootstrap = (() => {
     'syncFactor',
     'timeGridPrune',
     'timeGridSearchStart',
-    'absoluteTimeWindow',
-    'absoluteTimeGrid',
     'L0',
     'tempoFeelEngine',
     'timeStream',

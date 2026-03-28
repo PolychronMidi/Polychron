@@ -12,7 +12,7 @@ silenceDistributionTracker = (() => {
    * @returns {{ clusterScore: number, staggerScore: number, silenceRatio: number, suggestion: string }}
    */
   function getSilenceSignal() {
-    const entries = absoluteTimeWindow.getEntries(WINDOW_SECONDS);
+    const entries = L0.query('note', { windowSeconds: WINDOW_SECONDS });
 
     if (entries.length < 4) {
       return { clusterScore: 0, staggerScore: 0, silenceRatio: 0.5, suggestion: 'maintain' };
