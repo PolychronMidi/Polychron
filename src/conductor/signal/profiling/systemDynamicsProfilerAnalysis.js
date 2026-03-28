@@ -217,7 +217,7 @@ systemDynamicsProfilerAnalysis = (() => {
       effectiveDimensionality: state.lastSnapshot.effectiveDimensionality,
       couplingStrength: state.lastSnapshot.couplingStrength,
       stateVector: rawState
-    }, beatStartTime * 1000);
+    }, beatStartTime);
 
     if (grade !== 'healthy') {
       explainabilityBus.emit('system-dynamics', 'both', {
@@ -227,7 +227,7 @@ systemDynamicsProfilerAnalysis = (() => {
         curvature: state.lastSnapshot.curvature,
         effectiveDimensionality: state.lastSnapshot.effectiveDimensionality,
         couplingStrength: state.lastSnapshot.couplingStrength
-      }, beatStartTime * 1000);
+      }, beatStartTime);
     }
 
     return state.lastSnapshot;

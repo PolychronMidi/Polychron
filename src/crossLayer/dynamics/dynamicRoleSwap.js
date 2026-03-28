@@ -22,12 +22,12 @@ dynamicRoleSwap = (() => {
 
   /**
    * Called at each phrase boundary to evaluate whether a swap should occur.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {number} currentTension - 0-1 normalized tension from conductorState
    * @returns {{ swapped: boolean, swapCount: number }}
    */
-  function evaluateSwap(absTimeMs, currentTension) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function evaluateSwap(absoluteSeconds, currentTension) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.requireFinite(currentTension, 'currentTension');
     phrasesSinceLastSwap++;
 

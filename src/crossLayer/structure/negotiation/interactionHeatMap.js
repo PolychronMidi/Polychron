@@ -12,7 +12,7 @@ interactionHeatMap = (() => {
   const SYSTEMS = Object.values(trustSystems.heatMapSystems);
 
   /**
-   * @typedef {{ systems: Record<string, number>, totalFirings: number, absTimeMs: number }} BeatSnapshot
+   * @typedef {{ systems: Record<string, number>, totalFirings: number, absoluteSeconds: number }} BeatSnapshot
    */
 
   /** @type {BeatSnapshot[]} */
@@ -68,10 +68,10 @@ interactionHeatMap = (() => {
 
   /**
    * Flush the current beat snapshot into history. Call once per beat.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    */
-  function flushBeat(absTimeMs) {
-    pushHistorySnapshot({ systems: { ...currentBeat }, totalFirings: currentBeatTotalFirings, absTimeMs });
+  function flushBeat(absoluteSeconds) {
+    pushHistorySnapshot({ systems: { ...currentBeat }, totalFirings: currentBeatTotalFirings, absoluteSeconds });
     currentBeat = /** @type {Record<string, number>} */ ({});
     currentBeatTotalFirings = 0;
   }
@@ -90,10 +90,10 @@ interactionHeatMap = (() => {
 
   /**
    * Flush pair by merging deferred + current under one snapshot (typically L2 side).
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} beatKey
    */
-  function flushBeatPair(absTimeMs, beatKey) {
+  function flushBeatPair(absoluteSeconds, beatKey) {
     V.assertNonEmptyString(beatKey, 'beatKey');
     const deferred = deferredByKey.get(beatKey);
     const merged = /** @type {Record<string, number>} */ ({});
@@ -114,18 +114,18 @@ interactionHeatMap = (() => {
       merged[name] = (merged[name] || 0) + currentBeat[name];
     }
 
-    pushHistorySnapshot({ systems: merged, totalFirings, absTimeMs });
+    pushHistorySnapshot({ systems: merged, totalFirings, absoluteSeconds });
     currentBeat = /** @type {Record<string, number>} */ ({});
     currentBeatTotalFirings = 0;
   }
 
   /**
    * Flush any deferred orphan beats when pairing can't be completed.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    */
-  function flushDeferredOrphans(absTimeMs) {
+  function flushDeferredOrphans(absoluteSeconds) {
     for (const [beatKey, deferred] of deferredByKey.entries()) {
-      pushHistorySnapshot({ systems: { ...deferred.systems }, totalFirings: deferred.totalFirings, absTimeMs });
+      pushHistorySnapshot({ systems: { ...deferred.systems }, totalFirings: deferred.totalFirings, absoluteSeconds });
       deferredByKey.delete(beatKey);
     }
   }

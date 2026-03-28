@@ -71,7 +71,7 @@ signalReader = (() => {
    * load time - the global will not yet exist.
    * @param {string} type - event type to filter on
    * @param {number} [limit=10]
-   * @returns {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>}
+   * @returns {Array<{ type: string, layer: string, payload: any, absoluteSeconds: number }>}
    */
   function recentEvents(type, limit) {
     V.assertNonEmptyString(type, 'type');

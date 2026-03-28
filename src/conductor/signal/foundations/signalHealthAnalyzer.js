@@ -153,7 +153,7 @@ signalHealthAnalyzer = (() => {
         tension: { grade: tension.grade, pinnedModules: tension.pinnedModules, crushFactor: tension.crushFactor, saturated: tension.saturated },
         flicker: { grade: flicker.grade, pinnedModules: flicker.pinnedModules, crushFactor: flicker.crushFactor },
         trust: { grade: trust.grade, starvingSystems: trust.starvingSystems }
-      }, beatStartTime * 1000);
+      }, beatStartTime);
     }
   }
 

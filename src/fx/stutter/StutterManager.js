@@ -128,8 +128,8 @@ StutterManager = class StutterManager {
     return stutterPlanScheduler.cancelPlan(this, planId);
   }
 
-  static runDuePlans(tick) {
-    return stutterPlanScheduler.runDuePlans(this, tick);
+  static runDuePlans(absoluteSeconds) {
+    return stutterPlanScheduler.runDuePlans(this, absoluteSeconds);
   }
 
   static StutterManagerExecutePlan(plan = {}) {
@@ -160,8 +160,8 @@ StutterManager = class StutterManager {
     return stutterNotes(provided);
   }
 
-  static prepareBeat(beatStart) {
-    void beatStart;
+  static prepareBeat(beatStartTime) {
+    void beatStartTime;
     this.StutterManagerAttachTextureListener();
     if (!this.beatContext) this.beatContext = {};
 

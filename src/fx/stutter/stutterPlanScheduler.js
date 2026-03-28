@@ -27,11 +27,11 @@ stutterPlanScheduler = (() => {
     const planId = isId ? planOrCfg : createPlan(stutterMgr, planOrCfg);
     const plan = /** @type {any} */ (stutterMgr.plans.get(planId));
 
-    const startTick = Number.isFinite(Number(plan.startTick))
-      ? Number(plan.startTick)
+    const startTime = Number.isFinite(Number(plan.startTime))
+      ? Number(plan.startTime)
       : (Number.isFinite(Number(plan.on)) ? Number(plan.on) : Number(beatStartTime));
 
-    const key = m.round(startTick);
+    const key = m.round(startTime);
     if (key > m.round(beatStartTime)) {
       const arr = stutterMgr.scheduledPlans.get(key) || [];
       arr.push(planId);

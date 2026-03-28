@@ -1,44 +1,35 @@
 registerCollisionAvoider = (() => {
   const V = validator.create('registerCollisionAvoider');
   const CHANNEL = 'registerCollision';
-  const TIME_TOLERANCE_MS = 140;
+  const TIME_TOLERANCE_SEC = 0.140;
   const COLLISION_SEMITONES = 5;
   const octaveBounds = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true });
-
-  /** @param {number} tick @param {number | undefined} absMs */
-  function tickToMs(tick, absMs) {
-    return V.optionalFinite(absMs, crossLayerHelpers.tickToAbsMs(tick));
-  }
 
   /**
    * @param {string} layer
    * @param {number} midi
-   * @param {number} tick
-   * @param {number} [absMs]
+   * @param {number} absoluteSeconds
    */
-  function recordNote(layer, midi, tick, absMs) {
+  function recordNote(layer, midi, absoluteSeconds) {
     V.requireFinite(midi, 'midi');
-    V.requireFinite(tick, 'tick');
-    const resolvedAbsMs = tickToMs(tick, absMs);
-    L0.post(CHANNEL, layer, resolvedAbsMs / 1000, { midi, timeInSeconds: resolvedAbsMs / 1000 });
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
+    L0.post(CHANNEL, layer, absoluteSeconds, { midi, timeInSeconds: absoluteSeconds });
   }
 
   /**
    * @param {string} activeLayer
    * @param {number} midi
-   * @param {number} tick
-   * @param {number} [absMs]
+   * @param {number} absoluteSeconds
    * @returns {{ midi: number, adjusted: boolean }}
    */
-  function avoid(activeLayer, midi, tick, absMs) {
+  function avoid(activeLayer, midi, absoluteSeconds) {
     V.requireFinite(midi, 'midi');
-    V.requireFinite(tick, 'tick');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     const { lo, hi } = octaveBounds;
     const boundedMidi = clamp(midi, lo, hi);
 
-    const resolvedAbsMs = tickToMs(tick, absMs);
-    const other = L0.findClosest(CHANNEL, resolvedAbsMs / 1000, TIME_TOLERANCE_MS / 1000, activeLayer);
+    const other = L0.findClosest(CHANNEL, absoluteSeconds, TIME_TOLERANCE_SEC, activeLayer);
     if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
     if (m.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 
@@ -71,8 +62,8 @@ registerCollisionAvoider = (() => {
         sourceMidi: midi,
         otherMidi: other.midi,
         adjustedMidi: candidate,
-        tick
-      }, resolvedAbsMs);
+        absoluteSeconds
+      }, absoluteSeconds);
     }
 
     return { midi: candidate, adjusted };

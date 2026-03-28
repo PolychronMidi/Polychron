@@ -12,22 +12,22 @@ articulationComplement = (() => {
   const CONTRAST_BASE = 0.5;
   const CONTRAST_GROWTH = 0.3;
 
-  /** @type {Map<string, number[]>} recent sustain durations per layer (in ticks) */
+  /** @type {Map<string, number[]>} recent sustain durations per layer (in seconds) */
   const sustainHistory = new Map();
 
   /**
    * Record a sustain duration from a layer.
    * @param {string} layer
-   * @param {number} sustainTicks
-   * @param {number} absTimeMs
+   * @param {number} sustainSec
+   * @param {number} absoluteSeconds
    */
-  function recordSustain(layer, sustainTicks, absTimeMs) {
-    V.requireFinite(sustainTicks, 'sustainTicks');
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function recordSustain(layer, sustainSec, absoluteSeconds) {
+    V.requireFinite(sustainSec, 'sustainSec');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     if (!sustainHistory.has(layer)) sustainHistory.set(layer, []);
     const hist = sustainHistory.get(layer);
     if (!hist) throw new Error('articulationComplement.recordSustain: missing history for ' + layer);
-    hist.push(sustainTicks);
+    hist.push(sustainSec);
     if (hist.length > WINDOW_SIZE) hist.shift();
   }
 

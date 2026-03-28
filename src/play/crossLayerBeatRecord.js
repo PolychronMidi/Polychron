@@ -5,7 +5,7 @@
 
 /**
  * Record all cross-layer outcomes for one beat.
- * @param {{ layer: string, clAbsMs: number, clIntent: any, clPhase: any, clNegotiation: any,
+ * @param {{ layer: string, absoluteSeconds: number, clIntent: any, clPhase: any, clNegotiation: any,
  *           clBreathing: any, clTension: number, clCadence: any, clPhaseSnapshot: any,
  *           clRest: any, clEntropy: any, stutterProb: number, isL1: boolean,
  *           outputLoadGuard?: any,
@@ -104,7 +104,7 @@ function crossLayerBeatRecordValidateTraceProgress(layer, beatKey, timeMs) {
 
 crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const {
-    layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
+    layer, absoluteSeconds, clIntent, clPhase, clNegotiation, clBreathing,
     clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1,
     outputLoadGuard,
     stageTiming
@@ -113,29 +113,29 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const clBeatKey = `${sectionIndex}:${phraseIndex}:${measureIndex}:${beatIndex}`;
 
   // Post-beat recording
-  stutterContagion.postStutter(clAbsMs, layer, clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
-  stutterContagion.apply(clAbsMs, layer);
+  stutterContagion.postStutter(absoluteSeconds, layer, clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
+  stutterContagion.apply(absoluteSeconds, layer);
   const clDensity = temporalGravity.measureDensity(layer, beatStartTime);
-  temporalGravity.postDensity(clAbsMs, layer, clDensity);
-  const clFeedback = feedbackOscillator.applyFeedback(clAbsMs, layer);
+  temporalGravity.postDensity(absoluteSeconds, layer, clDensity);
+  const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
   if (!clFeedback || typeof clFeedback !== 'object') throw new Error('crossLayerBeatRecord: feedbackOscillator.applyFeedback must return an object');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);
   // Stash pitchBias for playNotesEmitPick to use (avoids double-calling feedbackOscillator per pick)
   setFeedbackPitchBias(clFeedback.pitchBias);
 
-  const clCadenceGate = phaseAwareCadenceWindow.shouldAllowCadence(clAbsMs, layer, Boolean(clCadence.suggest), clPhaseSnapshot);
-  cadenceAlignment.postTension(clAbsMs, layer, clTension, clCadence.suggest);
+  const clCadenceGate = phaseAwareCadenceWindow.shouldAllowCadence(absoluteSeconds, layer, Boolean(clCadence.suggest), clPhaseSnapshot);
+  cadenceAlignment.postTension(absoluteSeconds, layer, clTension, clCadence.suggest);
   const clCadResult = (clCadenceGate && clNegotiation.allowCadence)
-    ? cadenceAlignment.applyAlignment(clAbsMs, layer, clTension, Boolean(clCadence.suggest))
+    ? cadenceAlignment.applyAlignment(absoluteSeconds, layer, clTension, Boolean(clCadence.suggest))
     : null;
-  if (clCadResult) feedbackOscillator.inject(clAbsMs, layer, clamp(clTension, 0, 1), 'cadence');
+  if (clCadResult) feedbackOscillator.inject(absoluteSeconds, layer, clamp(clTension, 0, 1), 'cadence');
 
   const spBeatVal = requireFiniteNumber('spBeat', spBeat);
   if (spBeatVal <= 0) throw new Error(`crossLayerBeatRecord: spBeat must be > 0 (spBeat=${spBeatVal})`);
-  rhythmicPhaseLock.postBeat(clAbsMs, layer, spBeatVal * 1000);
+  rhythmicPhaseLock.postBeat(absoluteSeconds, layer, spBeatVal);
   const clPhaseMode = rhythmicPhaseLock.getMode();
 
-  spectralComplementarity.postSpectralState(clAbsMs, layer);
+  spectralComplementarity.postSpectralState(absoluteSeconds, layer);
 
   // Interaction heat map
   interactionHeatMap.record(trustSystems.heatMapSystems.STUTTER_CONTAGION, clamp(stutterProb, 0, 1));
@@ -145,14 +145,14 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   interactionHeatMap.record(trustSystems.heatMapSystems.FEEDBACK_OSCILLATOR, clFeedbackEnergy);
   interactionHeatMap.record(trustSystems.heatMapSystems.ROLE_SWAP, dynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
 
-  const clConvergenceIntensity = convergenceDetector.wasRecent(clAbsMs, layer, 300) ? 1 : 0;
+  const clConvergenceIntensity = convergenceDetector.wasRecent(absoluteSeconds, layer, 300) ? 1 : 0;
   interactionHeatMap.record(trustSystems.heatMapSystems.CONVERGENCE, clConvergenceIntensity);
   // Gate convergence reactions through negotiationEngine to prevent triple-stacking
   const clConvergenceGate = clConvergenceIntensity > 0
     ? negotiationEngine.gateConvergence(layer)
     : { allowHarmonicTrigger: false, allowDownbeat: false };
   const triggerCountBefore = convergenceHarmonicTrigger.getTriggerCount();
-  if (clConvergenceGate.allowHarmonicTrigger) convergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absTimeMs: clAbsMs, layer, alignment: clCadResult });
+  if (clConvergenceGate.allowHarmonicTrigger) convergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absoluteSeconds, layer, alignment: clCadResult });
   const convergenceTriggered = convergenceHarmonicTrigger.getTriggerCount() > triggerCountBefore;
   adaptiveTrustScores.registerOutcome(trustSystems.names.CONVERGENCE, convergenceTriggered ? 0.6 : (clConvergenceIntensity > 0 ? 0.15 : 0.20));
   interactionHeatMap.record(trustSystems.heatMapSystems.CLIMAX_ENGINE, crossLayerClimaxEngine.isApproaching() ? clamp(crossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
@@ -165,9 +165,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     velReinforce: false,
     phaseLock: clPhaseMode === 'lock'
   };
-  const clDownbeat = emergentDownbeat.applyIfDownbeat(clAbsMs, layer, edSignals, 0, velocity);
+  const clDownbeat = emergentDownbeat.applyIfDownbeat(absoluteSeconds, layer, edSignals, 0, velocity);
   interactionHeatMap.record(trustSystems.heatMapSystems.EMERGENT_DOWNBEAT, clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
-  if (clDownbeat) feedbackOscillator.inject(clAbsMs, layer, clamp(clDownbeat.strength, 0, 1), 'downbeat');
+  if (clDownbeat) feedbackOscillator.inject(absoluteSeconds, layer, clamp(clDownbeat.strength, 0, 1), 'downbeat');
 
   // Trust scores (payoff constants from MAIN_LOOP_CONTROLS.trustPayoffs)
   const tp = MAIN_LOOP_CONTROLS.trustPayoffs;
@@ -233,14 +233,14 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     cadenceGate: clCadenceGate,
     negotiation: clNegotiation,
     breathing: clBreathing.recommendation
-  }, clAbsMs);
+  }, absoluteSeconds);
 
   // Visual Diagnostic Mode (--trace)
   // Emit a trace-beat event every beat (L1 and L2) for the trace drain.
   // Conductor + dynamics snapshots are identical for L1 and L2 within the
   // same beat, so cache them on the L1 pass and reuse for L2.
   if (traceDrain.isEnabled()) {
-    crossLayerBeatRecordValidateTraceProgress(layer, clBeatKey, clAbsMs);
+    crossLayerBeatRecordValidateTraceProgress(layer, clBeatKey, absoluteSeconds);
     if (crossLayerBeatRecordTraceSnapBeatKey !== clBeatKey) {
       crossLayerBeatRecordTraceCachedConductorSnap = conductorState.getSnapshot();
       crossLayerBeatRecordTraceCachedDynamicsSnap = systemDynamicsProfiler.ensureBeatAnalysis(Boolean(isL1));
@@ -260,7 +260,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       phraseIndex,
       measureIndex,
       beatIndex,
-      timeMs: clAbsMs,
+      timeMs: absoluteSeconds,
       conductorSnap: crossLayerBeatRecordTraceCachedConductorSnap,
       negotiation: clNegotiation,
       trustScores: crossLayerBeatRecordTraceCachedTrustScores,
@@ -287,7 +287,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       forcedTransitionEvent: crossLayerBeatRecordTraceCachedForcedTransitionEvent,
       stageTiming: stageTiming
     };
-    explainabilityBus.emit('trace-beat', layer, tracePayload, clAbsMs);
+    explainabilityBus.emit('trace-beat', layer, tracePayload, absoluteSeconds);
     traceDrain.record(layer, tracePayload);
   }
 
@@ -295,7 +295,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   if (isL1) {
     interactionHeatMap.deferBeat(clBeatKey);
   } else {
-    interactionHeatMap.flushBeatPair(clAbsMs, clBeatKey);
+    interactionHeatMap.flushBeatPair(absoluteSeconds, clBeatKey);
 
     // L2 telemetry emission (every 8th beat)
     if (((measureIndex * numerator + beatIndex) % 8) === 0) {
@@ -311,7 +311,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
         rhythmicMode: rhythmicComplementEngine.getMode(),
         textureDistance: texturalMirror.getTextureDistance(),
         pitchMemories: pitchMemoryRecall.getMemoryCount()
-      }, clAbsMs);
+      }, absoluteSeconds);
     }
   }
 };

@@ -16,17 +16,17 @@ velocityInterference = (() => {
 
   /**
    * Post a velocity contour sample from the active layer.
-   * @param {number} absTimeMs - absolute ms
+   * @param {number} absoluteSeconds - absolute ms
    * @param {string} layer - source layer
    * @param {number} velocity - current velocity 0-127
    * @param {number} delta - velocity change rate (positive = crescendo, negative = decrescendo)
    */
-  function postVelocity(absTimeMs, layer, velocity, delta) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function postVelocity(absoluteSeconds, layer, velocity, delta) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(layer, 'layer');
     const velocityN = V.requireFinite(velocity, 'velocity');
     const deltaN = V.requireFinite(delta, 'delta');
-    L0.post(CHANNEL, layer, absTimeMs / 1000, {
+    L0.post(CHANNEL, layer, absoluteSeconds, {
       velocity: clamp(velocityN, 0, 127),
       delta: deltaN
     });
@@ -59,18 +59,18 @@ velocityInterference = (() => {
 
   /**
    * Compute interference modifier for a note's velocity.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
    * @param {number} baseVelocity - the note's original velocity
    * @returns {{ velocity: number, mode: 'reinforce' | 'separate' | 'neutral' }}
    */
-  function applyInterference(absTimeMs, activeLayer, baseVelocity) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function applyInterference(absoluteSeconds, activeLayer, baseVelocity) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
     const baseVelocityN = V.requireFinite(baseVelocity, 'baseVelocity');
 
     const other = L0.findClosest(
-      CHANNEL, absTimeMs / 1000, SYNC_TOLERANCE_MS / 1000, activeLayer
+      CHANNEL, absoluteSeconds, SYNC_TOLERANCE_MS / 1000, activeLayer
     );
     if (!other) {
       writeVizCC(activeLayer, 'neutral');
@@ -80,7 +80,7 @@ velocityInterference = (() => {
     const otherDelta = V.requireFinite(other.delta, 'applyInterference.other.delta');
 
     // Get our own recent delta
-    const absTimeSec = absTimeMs / 1000;
+    const absTimeSec = absoluteSeconds;
     const ourDelta = measureDelta(activeLayer, absTimeSec);
 
     // Same direction = reinforcement, opposite = separation

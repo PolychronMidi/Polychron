@@ -17,11 +17,11 @@ crossLayerDynamicEnvelope = (() => {
 
   /**
    * Tick the envelope generator each beat.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    */
-  function tick(absTimeMs, layer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function tick(absoluteSeconds, layer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);
     phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);

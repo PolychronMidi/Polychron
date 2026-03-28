@@ -8,15 +8,15 @@ pitchMemoryRecall = (() => {
   const V = validator.create('pitchMemoryRecall');
   const MAX_MEMORIES = 64;
   const RECALL_PROBABILITY = 0.2;
-  const MIN_RECALL_INTERVAL_MS = 3000;
+  const MIN_RECALL_INTERVAL_SEC = 3;
 
   /**
-   * @typedef {{ intervalDna: number[], pitchClasses: number[], strength: number, sectionIdx: number, absTimeMs: number }} PitchMemory
+   * @typedef {{ intervalDna: number[], pitchClasses: number[], strength: number, sectionIdx: number, absoluteSeconds: number }} PitchMemory
    */
 
   /** @type {PitchMemory[]} */
   const memories = [];
-  let lastRecallMs = -Infinity;
+  let lastRecallSec = -Infinity;
   let recallCount = 0;
 
   /**
@@ -42,14 +42,14 @@ pitchMemoryRecall = (() => {
     // Don't store very weak patterns
     if (strength < 0.35) return;
 
-    const absTimeMs = beatStartTime * 1000;
+    const absoluteSeconds = beatStartTime;
 
     memories.push({
       intervalDna: intervalDna.slice(0, 8), // limit DNA length
       pitchClasses: pitchClasses.slice(0, 8),
       strength,
       sectionIdx,
-      absTimeMs
+      absoluteSeconds
     });
 
     // Evict weakest if over capacity
@@ -72,19 +72,19 @@ pitchMemoryRecall = (() => {
    * material to find the best match.
    * @param {string} activeLayer
    * @param {number} currentMidi
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @returns {{ notes: number[], transform: string, memoryIdx: number } | null}
    */
-  function recall(activeLayer, currentMidi, absTimeMs) {
+  function recall(activeLayer, currentMidi, absoluteSeconds) {
     V.requireFinite(currentMidi, 'currentMidi');
-    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     if (memories.length === 0) return null;
-    if (absTimeMs - lastRecallMs < MIN_RECALL_INTERVAL_MS) return null;
+    if (absoluteSeconds - lastRecallSec < MIN_RECALL_INTERVAL_SEC) return null;
     if (rf() > RECALL_PROBABILITY) return null;
 
     // Check if a significant event is happening (convergence/downbeat)
-    const hasConvergence = convergenceDetector.wasRecent(absTimeMs, activeLayer, 400) ?? false;
+    const hasConvergence = convergenceDetector.wasRecent(absoluteSeconds, activeLayer, 400) ?? false;
 
     const hasDownbeat = Boolean(emergentDownbeat);
 
@@ -124,7 +124,7 @@ pitchMemoryRecall = (() => {
     // Boost the recalled memory's strength (reinforcement learning)
     memories[bestIdx].strength = clamp(mem.strength + 0.05, 0, 1);
 
-    lastRecallMs = absTimeMs;
+    lastRecallSec = absoluteSeconds;
     recallCount++;
 
     const transforms = ['transpose', 'invert', 'retrograde', 'identity'];
@@ -143,7 +143,7 @@ pitchMemoryRecall = (() => {
   // composition's long-term thematic memory. Only a full resetAll clears it.
   function reset() {
     memories.length = 0;
-    lastRecallMs = -Infinity;
+    lastRecallSec = -Infinity;
     recallCount = 0;
   }
 

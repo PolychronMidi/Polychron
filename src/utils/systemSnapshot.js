@@ -45,8 +45,7 @@ systemSnapshot = (() => {
         const layer = LM.layers[key];
         if (layer && typeof layer === 'object') {
           snap.layers[key] = {
-            tick: layer.tick,
-            sectionStart: layer.sectionStart,
+            sectionStartTime: layer.sectionStartTime,
             phraseFamily: layer.phraseFamily
           };
         }

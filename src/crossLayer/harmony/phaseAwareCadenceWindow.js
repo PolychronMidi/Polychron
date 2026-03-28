@@ -2,9 +2,9 @@ phaseAwareCadenceWindow = (() => {
   const V = validator.create('phaseAwareCadenceWindow');
   const MAX_SAMPLES = 24;
   const MIN_CONFIDENCE = 0.45;
-  /** @type {Map<string, Array<{ timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel' }>>} */
+  /** @type {Map<string, Array<{ timeInSeconds: number, phaseDiff: number, mode: 'lock'|'drift'|'repel' }>>} */
   const samplesByLayer = new Map();
-  /** @type {Map<string, { timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel', confidence: number }>} */
+  /** @type {Map<string, { timeInSeconds: number, phaseDiff: number, mode: 'lock'|'drift'|'repel', confidence: number }>} */
   const latestByLayer = new Map();
 
   /** @param {string} layer */
@@ -16,31 +16,31 @@ phaseAwareCadenceWindow = (() => {
   }
 
   /**
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    */
-  function update(absTimeMs, layer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function update(absoluteSeconds, layer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const row = ensureLayer(layer);
 
-    const phase = rhythmicPhaseLock.measurePhase(absTimeMs, layer) ?? null;
+    const phase = rhythmicPhaseLock.measurePhase(absoluteSeconds, layer) ?? null;
 
     const snapshot = phase
-      ? { timeMs: absTimeMs, phaseDiff: clamp(phase.phaseDiff, 0, 1), mode: phase.mode }
-      : { timeMs: absTimeMs, phaseDiff: 0.5, mode: /** @type {'lock'|'drift'|'repel'} */ ('drift') };
+      ? { timeInSeconds: absoluteSeconds, phaseDiff: clamp(phase.phaseDiff, 0, 1), mode: phase.mode }
+      : { timeInSeconds: absoluteSeconds, phaseDiff: 0.5, mode: /** @type {'lock'|'drift'|'repel'} */ ('drift') };
 
     row.push(snapshot);
     if (row.length > MAX_SAMPLES) row.shift();
 
     const confidence = getConfidence(layer);
-    const latest = { timeMs: absTimeMs, phaseDiff: snapshot.phaseDiff, mode: snapshot.mode, confidence };
+    const latest = { timeInSeconds: absoluteSeconds, phaseDiff: snapshot.phaseDiff, mode: snapshot.mode, confidence };
     latestByLayer.set(layer, latest);
     return { phaseDiff: snapshot.phaseDiff, mode: snapshot.mode, confidence };
   }
 
   /**
    * @param {string} layer
-   * @returns {{ timeMs: number, phaseDiff: number, mode: 'lock'|'drift'|'repel', confidence: number } | null}
+   * @returns {{ timeInSeconds: number, phaseDiff: number, mode: 'lock'|'drift'|'repel', confidence: number } | null}
    */
   function getLatest(layer) {
     const latest = latestByLayer.get(layer);
@@ -63,13 +63,13 @@ phaseAwareCadenceWindow = (() => {
   }
 
   /**
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    * @param {boolean} cadenceSuggested
    */
-  function shouldAllowCadence(absTimeMs, layer, cadenceSuggested, snapshot) {
+  function shouldAllowCadence(absoluteSeconds, layer, cadenceSuggested, snapshot) {
     const snap = snapshot || getLatest(layer) || {
-      timeMs: absTimeMs,
+      timeInSeconds: absoluteSeconds,
       phaseDiff: 1,
       mode: /** @type {'lock'|'drift'|'repel'} */ ('drift'),
       confidence: 0
@@ -81,7 +81,7 @@ phaseAwareCadenceWindow = (() => {
       confidence: snap.confidence,
       phaseDiff: snap.phaseDiff,
       allowed
-    }, absTimeMs);
+    }, absoluteSeconds);
 
     return allowed;
   }

@@ -20,21 +20,21 @@ texturalMirror = (() => {
    * Record the current texture mode of a layer.
    * @param {string} layer
    * @param {string} mode
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    */
-  function recordTexture(layer, mode, absTimeMs) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
-    layerTextures[layer] = { mode: String(mode), timestamp: absTimeMs };
+  function recordTexture(layer, mode, absoluteSeconds) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
+    layerTextures[layer] = { mode: String(mode), timestamp: absoluteSeconds };
   }
 
   /**
    * Suggest a texture for the active layer based on the other layer's texture.
    * @param {string} activeLayer
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @returns {{ preferredMode: string, weight: number }}
    */
-  function suggestTexture(activeLayer, absTimeMs) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function suggestTexture(activeLayer, absoluteSeconds) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
     // Get intent

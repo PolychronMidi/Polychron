@@ -20,21 +20,10 @@ crossLayerHelpers = (() => {
     return m.round(clamp(velocity * factor, 1, MIDI_MAX_VALUE));
   }
 
-  function msToSyncTick(timeMs) {
-    V.requireFinite(timeMs, 'timeMs');
+  function syncOffset(timeInSeconds) {
+    V.requireFinite(timeInSeconds, 'timeInSeconds');
     V.requireFinite(measureStartTime, 'measureStartTime');
-    // Returns offset in seconds from measure start (replaces tick-based sync position)
-    return m.max(0, (timeMs / 1000) - measureStartTime);
-  }
-
-  function tickToAbsMs(tick, fallbackAbsMs) {
-    V.requireFinite(tick, 'tick');
-    // tick is now a time value in seconds; convert to ms
-    if (Number.isFinite(tick)) {
-      return tick * 1000;
-    }
-    const fallback = V.optionalFinite(fallbackAbsMs, beatStartTime * 1000);
-    return fallback;
+    return m.max(0, timeInSeconds - measureStartTime);
   }
 
   function getOctaveBounds(options) {
@@ -53,5 +42,5 @@ crossLayerHelpers = (() => {
     return { lo, hi };
   }
 
-  return { createLayerPair, getOtherLayer, scaleVelocity, msToSyncTick, tickToAbsMs, getOctaveBounds };
+  return { createLayerPair, getOtherLayer, scaleVelocity, syncOffset, getOctaveBounds };
 })();

@@ -100,7 +100,7 @@ emitPickSourceTextures = function(mode, ctx) {
       const burstVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.8, 1.0))));
       const burstStagger = spUnit * rf(0.002, 0.01) * (burstIndex + 1);
       const burstOnTime = onTime + burstStagger;
-      const burstOffTime = minimumNoteDuration.resolveOffTick(
+      const burstOffTime = minimumNoteDuration.resolveOffTime(
         burstOnTime,
         burstOnTime + texSustain * rf(0.8, 1.1),
         'ornament',
@@ -142,7 +142,7 @@ emitPickSourceTextures = function(mode, ctx) {
       const flurryVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95) * (1 - flurryIndex * 0.05))));
       const flurrySus = spUnit * rf(0.08, 0.2) * sustainScale;
       const flurryOnTime = onTime + flurryGap * (flurryIndex + 1);
-      const flurryOffTime = minimumNoteDuration.resolveOffTick(
+      const flurryOffTime = minimumNoteDuration.resolveOffTime(
         flurryOnTime,
         flurryOnTime + flurrySus,
         'ornament',
@@ -181,7 +181,7 @@ emitPickReflectionTextures = function(mode, ctx) {
       const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(vel * rf(0.45, 0.65) * velocityScale)));
       const echoStagger = spUnit * rf(0.01, 0.04) * (burstIndex + 1);
       const echoOnTime = onTime + echoStagger;
-      const echoOffTime = minimumNoteDuration.resolveOffTick(
+      const echoOffTime = minimumNoteDuration.resolveOffTime(
         echoOnTime,
         echoOnTime + sustain * sustainScale * rf(0.6, 0.9),
         'ornament',
@@ -202,7 +202,7 @@ emitPickReflectionTextures = function(mode, ctx) {
     const ghostDelay = spUnit * rf(0.06, 0.14);
     const ghostSus = spUnit * rf(0.1, 0.25) * sustainScale;
     const ghostOnTime = onTime + ghostDelay;
-    const ghostOffTime = minimumNoteDuration.resolveOffTick(
+    const ghostOffTime = minimumNoteDuration.resolveOffTime(
       ghostOnTime,
       ghostOnTime + ghostSus,
       'ornament',

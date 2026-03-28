@@ -22,17 +22,17 @@ stutterContagion = (() => {
 
   /**
    * Compute adaptive decay factor based on recent convergence state.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @returns {number} decay factor (lower = stickier)
    */
-  function getAdaptiveDecay(absTimeMs) {
+  function getAdaptiveDecay(absoluteSeconds) {
     // Check if convergence happened recently via ATG onset channel
     const recentConvergence = L0.findClosest(
-      'onset', absTimeMs / 1000, CONVERGENCE_WINDOW_MS / 1000
+      'onset', absoluteSeconds, CONVERGENCE_WINDOW_MS / 1000
     );
     if (!recentConvergence) return BASE_DECAY;
-    const dist = m.abs(recentConvergence.timeInSeconds * 1000 - absTimeMs);
-    const recency = 1 - (dist / CONVERGENCE_WINDOW_MS);
+    const dist = m.abs(recentConvergence.timeInSeconds - absoluteSeconds);
+    const recency = 1 - (dist / (CONVERGENCE_WINDOW_MS / 1000));
     // Interpolate: recent convergence - ALIGNED (sticky), distant - DIVERGED (loose)
     return BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
   }
@@ -40,14 +40,14 @@ stutterContagion = (() => {
   /**
    * Post a stutter event from the active layer into ATG.
    * Call this after any stutter fires in the main loop.
-   * @param {number} absTimeMs - absolute ms
+   * @param {number} absoluteSeconds - absolute ms
    * @param {string} layer - source layer
    * @param {number} intensity - 0-1 normalized stutter intensity
    * @param {number[]} channels - MIDI channels that stuttered
    * @param {string} type - 'fade' | 'pan' | 'fx'
    */
-  function postStutter(absTimeMs, layer, intensity, channels, type) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function postStutter(absoluteSeconds, layer, intensity, channels, type) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(layer, 'layer');
     const normalizedIntensity = clamp(V.requireFinite(intensity, 'intensity'), 0, 1);
     const normalizedChannels = V.assertArray(channels, 'channels');
@@ -55,7 +55,7 @@ stutterContagion = (() => {
       V.requireFinite(normalizedChannels[i], `channels[${i}]`);
     }
     const normalizedType = V.assertInSet(type, STUTTER_TYPES, 'type');
-    L0.post(CHANNEL, layer, absTimeMs / 1000, {
+    L0.post(CHANNEL, layer, absoluteSeconds, {
       intensity: normalizedIntensity,
       channels: normalizedChannels,
       type: normalizedType
@@ -65,35 +65,34 @@ stutterContagion = (() => {
   /**
    * Check for cross-layer stutter infection. Returns null if no infection
    * should happen, otherwise returns the contagion parameters.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
-   * @returns {{ syncTick: number, intensity: number, channels: number[], type: string } | null}
+   * @returns {{ syncOffset: number, intensity: number, channels: number[], type: string } | null}
    */
-  function checkContagion(absTimeMs, activeLayer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function checkContagion(absoluteSeconds, activeLayer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
     const match = L0.findClosest(
-      CHANNEL, absTimeMs / 1000, SYNC_TOLERANCE_MS / 1000, activeLayer
+      CHANNEL, absoluteSeconds, SYNC_TOLERANCE_MS / 1000, activeLayer
     );
     if (!match) return null;
     V.assertObject(match, 'checkContagion.match');
     const matchIntensity = V.requireFinite(match.intensity, 'checkContagion.match.intensity');
-    const matchTimeMs = V.requireFinite(match.timeInSeconds * 1000, 'checkContagion.match.timeMs');
-    const matchChannels = V.assertArray(match.channels, 'checkContagion.match.channels');
+        const matchChannels = V.assertArray(match.channels, 'checkContagion.match.channels');
     for (let i = 0; i < matchChannels.length; i++) {
       V.requireFinite(matchChannels[i], `checkContagion.match.channels[${i}]`);
     }
     const matchType = V.assertInSet(match.type, STUTTER_TYPES, 'checkContagion.match.type');
 
-    const decay = getAdaptiveDecay(absTimeMs);
+    const decay = getAdaptiveDecay(absoluteSeconds);
     const decayedIntensity = matchIntensity * decay;
     if (decayedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space
-  const syncTick = crossLayerHelpers.msToSyncTick(matchTimeMs);
+  const syncOffset = crossLayerHelpers.syncOffset(match.timeInSeconds);
 
     return {
-      syncTick,
+      syncOffset,
       intensity: decayedIntensity,
       channels: matchChannels,
       type: matchType
@@ -102,13 +101,13 @@ stutterContagion = (() => {
 
   /**
    * Apply stutter contagion: triggers a secondary stutter on the receiving layer.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
    */
-  function apply(absTimeMs, activeLayer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function apply(absoluteSeconds, activeLayer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
-    const contagion = checkContagion(absTimeMs, activeLayer);
+    const contagion = checkContagion(absoluteSeconds, activeLayer);
     if (!contagion) return;
 
     // Scale stutter parameters by decayed intensity
@@ -124,8 +123,8 @@ stutterContagion = (() => {
     }
 
     // Re-post with decayed intensity to sustain the chain across more layers
-    const repostDecay = getAdaptiveDecay(absTimeMs);
-    L0.post(CHANNEL, activeLayer, absTimeMs / 1000, {
+    const repostDecay = getAdaptiveDecay(absoluteSeconds);
+    L0.post(CHANNEL, activeLayer, absoluteSeconds, {
       intensity: contagion.intensity * repostDecay,
       channels: contagion.channels,
       type: contagion.type

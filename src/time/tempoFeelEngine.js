@@ -1,6 +1,6 @@
 ﻿// src/time/tempoFeelEngine.js - Applies subtle time offsets for micro-tempo variation.
 // Creates accelerando/ritardando feel aligned with phrase arcs and section phases.
-// Pure query API - consumer adds getTickOffset() to note timing calculations.
+// Pure query API - consumer adds getTimeOffset() to note timing calculations.
 
 tempoFeelEngine = (() => {
   const MAX_FEEL_RATIO = 0.025; // max 2.5% tempo deviation
@@ -32,7 +32,7 @@ tempoFeelEngine = (() => {
    * Positive = push forward (accelerando), negative = pull back (ritardando).
    * @returns {number} - seconds offset to add to note-on time
    */
-  function getTickOffset() {
+  function getTimeOffset() {
     const position = requirePhraseContextPosition();
     const phase = requireSectionPhase();
 
@@ -71,11 +71,11 @@ tempoFeelEngine = (() => {
     const position = requirePhraseContextPosition();
     const phase = requireSectionPhase();
 
-    return { feel: getTickOffset(), phase, position };
+    return { feel: getTimeOffset(), phase, position };
   }
 
   return {
-    getTickOffset,
+    getTimeOffset,
     getFeelState
   };
 })();

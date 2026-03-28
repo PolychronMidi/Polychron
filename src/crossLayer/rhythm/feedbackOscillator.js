@@ -20,14 +20,14 @@ feedbackOscillator = (() => {
   /**
    * Inject an initial impulse into the feedback loop.
    * Call this when a noteworthy musical event happens (e.g. accent, convergence).
-   * @param {number} absTimeMs - absolute ms
+   * @param {number} absoluteSeconds - absolute ms
    * @param {string} layer - source layer
    * @param {number} energy - initial energy 0-1
    * @param {string} [impulseType='accent'] - what triggered the impulse
    * @param {number} [pitchClass=-1] - MIDI pitch class 0-11 or -1 for none
    */
-  function inject(absTimeMs, layer, energy, impulseType, pitchClass) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function inject(absoluteSeconds, layer, energy, impulseType, pitchClass) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(layer, 'layer');
     V.requireFinite(energy, 'energy');
     const safePitchClass = (typeof pitchClass === 'number' && Number.isFinite(pitchClass))
@@ -38,7 +38,7 @@ feedbackOscillator = (() => {
     if (impulseTypeMaybe !== undefined) {
       finalImpulseType = V.assertNonEmptyString(impulseTypeMaybe, 'impulseType');
     }
-    L0.post(CHANNEL, layer, absTimeMs / 1000, {
+    L0.post(CHANNEL, layer, absoluteSeconds, {
       energy: clamp(energy, 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
@@ -50,16 +50,16 @@ feedbackOscillator = (() => {
   /**
    * Check for pending feedback from the other layer and react.
    * Each reaction dampens the energy and increments the round-trip counter.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
-   * @returns {{ energy: number, roundTrip: number, impulseType: string, syncTick: number, pitchBias: number } | null}
+   * @returns {{ energy: number, roundTrip: number, impulseType: string, syncOffset: number, pitchBias: number } | null}
    */
-  function react(absTimeMs, activeLayer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function react(absoluteSeconds, activeLayer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
 
     const incoming = L0.findClosest(
-      CHANNEL, absTimeMs / 1000, SYNC_TOLERANCE_MS / 1000, activeLayer
+      CHANNEL, absoluteSeconds, SYNC_TOLERANCE_MS / 1000, activeLayer
     );
     if (!incoming) return null;
     V.assertObject(incoming, 'incoming');
@@ -86,13 +86,12 @@ feedbackOscillator = (() => {
     const incomingOriginLayer = (typeof incoming.originLayer === 'undefined')
       ? activeLayer
       : V.assertNonEmptyString(incoming.originLayer, 'react.incoming.originLayer');
-    const incomingTimeMs = V.requireFinite(incoming.timeInSeconds * 1000, 'react.incoming.timeMs');
 
     // Convert to this layer's tick space
-    const syncTick = crossLayerHelpers.msToSyncTick(incomingTimeMs);
+    const syncOffset = crossLayerHelpers.syncOffset(incoming.timeInSeconds);
 
     // Post our reaction for the other layer to pick up (with evolved pitch)
-    L0.post(CHANNEL, activeLayer, absTimeMs / 1000, {
+    L0.post(CHANNEL, activeLayer, absoluteSeconds, {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
       impulseType: incomingImpulseType,
@@ -104,7 +103,7 @@ feedbackOscillator = (() => {
       energy: dampedEnergy,
       roundTrip: nextRoundTrip,
       impulseType: incomingImpulseType,
-      syncTick,
+      syncOffset,
       pitchBias
     };
   }
@@ -112,14 +111,14 @@ feedbackOscillator = (() => {
   /**
    * Apply feedback oscillation effects based on the reaction.
    * Modulates velocity and stutter intensity based on feedback energy.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
      * @returns {{ applied: boolean, energy: number, roundTrip: number, pitchBias: number }}
    */
-  function applyFeedback(absTimeMs, activeLayer) {
-      V.requireFinite(absTimeMs, 'absTimeMs');
+  function applyFeedback(absoluteSeconds, activeLayer) {
+      V.requireFinite(absoluteSeconds, 'absoluteSeconds');
       V.assertNonEmptyString(activeLayer, 'activeLayer');
-    const reaction = react(absTimeMs, activeLayer);
+    const reaction = react(absoluteSeconds, activeLayer);
       if (!reaction) {
         return {
           applied: false,

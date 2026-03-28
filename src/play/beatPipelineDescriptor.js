@@ -14,7 +14,7 @@ beatPipelineDescriptor = (() => {
   const STAGES = Object.freeze([
     { name: 'beat-setup',
       after: [],
-      produces: ['clAbsMs', 'fxStereoPan', 'fxVelocityShift'] },
+      produces: ['absoluteSeconds', 'fxStereoPan', 'fxVelocityShift'] },
 
     { name: 'intent',
       after: ['beat-setup'],

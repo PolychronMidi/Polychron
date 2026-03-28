@@ -13,7 +13,7 @@ motifEcho = (() => {
   const ECHO_PROBABILITY = 0.35;
   const TRANSFORMS = ['retrograde', 'inversion', 'augmentation', 'retrograde-inversion'];
 
-  /** @type {Array<{ intervals: number[], originLayer: string, captureMs: number, deliverMs: number, transform: string }>} */
+  /** @type {Array<{ intervals: number[], originLayer: string, captureSec: number, deliverSec: number, transform: string }>} */
   const pendingEchoes = [];
 
   /** @type {Map<string, number[]>} last few notes per layer to extract intervals */
@@ -24,11 +24,11 @@ motifEcho = (() => {
    * Record a note to build interval sequences.
    * @param {number} midi - MIDI note
    * @param {string} layer - source layer
-   * @param {number} absTimeMs - absolute ms
+   * @param {number} absoluteSeconds - absolute ms
    */
-  function recordNote(midi, layer, absTimeMs) {
+  function recordNote(midi, layer, absoluteSeconds) {
     V.requireFinite(midi, 'midi');
-    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     if (!recentNotes.has(layer)) recentNotes.set(layer, []);
     const notes = recentNotes.get(layer);
     if (!notes) throw new Error('motifEcho.recordNote: missing recent notes for layer ' + layer);
@@ -37,16 +37,16 @@ motifEcho = (() => {
 
     // When we accumulate enough notes, potentially capture a motif fragment
     if (notes.length >= 3 && rf() < ECHO_PROBABILITY && pendingEchoes.length < MAX_PENDING_ECHOES) {
-      captureMotif(layer, absTimeMs);
+      captureMotif(layer, absoluteSeconds);
     }
   }
 
   /**
    * Capture current interval sequence and schedule echo for the other layer.
    * @param {string} layer
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    */
-  function captureMotif(layer, absTimeMs) {
+  function captureMotif(layer, absoluteSeconds) {
     const notes = recentNotes.get(layer);
     if (!notes || notes.length < 3) return;
 
@@ -65,19 +65,18 @@ motifEcho = (() => {
 
     // Schedule delivery after a random delay in beats
     const delayBeats = ri(ECHO_DELAY_BEATS_MIN, ECHO_DELAY_BEATS_MAX);
-    const beatDurationMs = spBeat > 0 ? spBeat * 1000 : 500;
-    const deliverMs = absTimeMs + delayBeats * beatDurationMs;
+    const deliverSec = absoluteSeconds + delayBeats * (spBeat > 0 ? spBeat : 0.5);
 
     pendingEchoes.push({
       intervals,
       originLayer: layer,
-      captureMs: absTimeMs,
-      deliverMs,
+      captureSec: absoluteSeconds,
+      deliverSec: deliverSec,
       transform
     });
 
     // Post to ATG for visibility
-    L0.post(CHANNEL, layer, absTimeMs / 1000, {
+    L0.post(CHANNEL, layer, absoluteSeconds, {
       intervals,
       transform,
       delayBeats
@@ -108,13 +107,13 @@ motifEcho = (() => {
   /**
    * Check for pending echoes ready to deliver to the active layer.
    * Returns transformed note offsets that can bias the next motif selection.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - receiving layer
    * @param {number} currentMidi - the note currently being placed (as anchor)
    * @returns {{ notes: number[], transform: string, echoIndex: number } | null}
    */
-  function deliverEcho(absTimeMs, activeLayer, currentMidi) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function deliverEcho(absoluteSeconds, activeLayer, currentMidi) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.requireFinite(currentMidi, 'currentMidi');
 
     // Find the first pending echo whose delivery time has passed and targets this layer
@@ -122,7 +121,7 @@ motifEcho = (() => {
       const echo = pendingEchoes[i];
       const targetLayer = crossLayerHelpers.getOtherLayer(echo.originLayer);
       if (targetLayer !== activeLayer) continue;
-      if (absTimeMs < echo.deliverMs) continue;
+      if (absoluteSeconds < echo.deliverSec) continue;
 
       // Deliver this echo
       pendingEchoes.splice(i, 1);

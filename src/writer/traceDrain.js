@@ -16,7 +16,7 @@ traceDrain = (() => {
   let traceDrainRuntimeBuckets = {};
   /** @type {Record<string, { count: number, min: number, max: number, sum: number, histogram: number[] }>} */
   let traceDrainFamilyVelocityStats = {};
-  /** @type {Array<{ layer: string, absTimeMs: number, syncMs: number, syncTick: number, silenceTick: number, usedCrossLayerShift: boolean, syncDeltaMs: number, nearTrackEnd: boolean, freqOffset: number, targetOffset: number, toleranceMs: number, flip: boolean }>} */
+  /** @type {Array<{ layer: string, absTimeMs: number, syncMs: number, usedCrossLayerShift: boolean, syncDeltaMs: number, nearTrackEnd: boolean, freqOffset: number, targetOffset: number, toleranceMs: number, flip: boolean }>} */
   let traceDrainBinauralShifts = [];
 
   function traceDrainResetFamilyVelocityStats() {
@@ -96,8 +96,6 @@ traceDrain = (() => {
       layer: String(data.layer || 'unknown'),
       absTimeMs: Number(data.absTimeMs),
       syncMs: Number(data.syncMs),
-      syncTick: Number(data.syncTick),
-      silenceTick: Number(data.silenceTick),
       usedCrossLayerShift: data.usedCrossLayerShift === true,
       syncDeltaMs: Number(data.syncDeltaMs),
       nearTrackEnd: data.nearTrackEnd === true,
@@ -113,16 +111,11 @@ traceDrain = (() => {
     let maxSyncDeltaMs = 0;
     let nearTrackEndCount = 0;
     let crossLayerSyncedCount = 0;
-    let minCutoffLeadTicks = Infinity;
-    let maxCutoffLeadTicks = 0;
     for (let index = 0; index < traceDrainBinauralShifts.length; index++) {
       const shift = traceDrainBinauralShifts[index];
       if (shift.syncDeltaMs > maxSyncDeltaMs) maxSyncDeltaMs = shift.syncDeltaMs;
       if (shift.nearTrackEnd) nearTrackEndCount++;
       if (shift.usedCrossLayerShift) crossLayerSyncedCount++;
-      const cutoffLeadTicks = m.max(0, shift.syncTick - shift.silenceTick);
-      if (cutoffLeadTicks < minCutoffLeadTicks) minCutoffLeadTicks = cutoffLeadTicks;
-      if (cutoffLeadTicks > maxCutoffLeadTicks) maxCutoffLeadTicks = cutoffLeadTicks;
     }
     const outDir = path.resolve(process.cwd(), 'metrics');
     fs.writeFileSync(path.join(outDir, 'binaural-shifts.json'), JSON.stringify({
@@ -132,8 +125,6 @@ traceDrain = (() => {
         shiftCount: traceDrainBinauralShifts.length,
         crossLayerSyncedCount,
         nearTrackEndCount,
-        minCutoffLeadTicks: Number.isFinite(minCutoffLeadTicks) ? minCutoffLeadTicks : 0,
-        maxCutoffLeadTicks,
         maxSyncDeltaMs: Number(maxSyncDeltaMs.toFixed(3))
       },
       shifts: traceDrainBinauralShifts

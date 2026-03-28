@@ -26,10 +26,10 @@ setTuningAndInstruments = () => {
  */
 let nextInstrumentShiftMs = 0;
 setOtherInstruments = () => {
-  const absTimeMs = beatStartTime * 1000;
-  const timedShift = absTimeMs >= nextInstrumentShiftMs;
+  const absoluteSeconds = beatStartTime;
+  const timedShift = absoluteSeconds * 1000 >= nextInstrumentShiftMs;
   if (firstLoop < 1 || timedShift) {
-    nextInstrumentShiftMs = absTimeMs + rf(2, 5) * 1000;
+    nextInstrumentShiftMs = absoluteSeconds * 1000 + rf(2, 5) * 1000;
 const bassProgramPool = Array.isArray(otherBassInstruments)
   ? otherBassInstruments.filter(program => Number.isFinite(Number(program)) && ((Number(program) >= 32 && Number(program) <= 39) || Number(program) === 43))
   : [];

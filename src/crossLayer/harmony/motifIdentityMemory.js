@@ -5,7 +5,7 @@ motifIdentityMemory = (() => {
 
   /** @type {Map<string, number[]>} */
   const notesByLayer = new Map();
-  /** @type {Map<string, Array<{ intervalDna: string, contour: string, confidence: number, absTimeMs: number }>>} */
+  /** @type {Map<string, Array<{ intervalDna: string, contour: string, confidence: number, absoluteSeconds: number }>>} */
   const identitiesByLayer = new Map();
 
   /** @param {string} layer */
@@ -27,11 +27,11 @@ motifIdentityMemory = (() => {
   /**
    * @param {string} layer
    * @param {number} midi
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    */
-  function recordNote(layer, midi, absTimeMs) {
+  function recordNote(layer, midi, absoluteSeconds) {
     V.requireFinite(midi, 'midi');
-    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     const notes = ensureNotes(layer);
     notes.push(midi);
@@ -49,7 +49,7 @@ motifIdentityMemory = (() => {
     const contour = up > down ? 'up' : down > up ? 'down' : 'mixed';
     const confidence = clamp((m.abs(intervals[0]) + m.abs(intervals[1]) + m.abs(intervals[2])) / 18, 0, 1);
 
-    const identity = { intervalDna, contour, confidence, absTimeMs };
+    const identity = { intervalDna, contour, confidence, absoluteSeconds };
     const identities = ensureIdentities(layer);
     identities.push(identity);
     if (identities.length > MAX_IDENTITIES) identities.shift();

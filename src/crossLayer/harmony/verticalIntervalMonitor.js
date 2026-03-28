@@ -21,7 +21,7 @@ verticalIntervalMonitor = (() => {
   const OVERLAP_INTERVALS = new Set([0]);  // unison/octave
 
   let collisionCount = 0;
-  let lastCheckMs    = 0;
+  let lastCheckSec   = 0;
 
   /**
    * Called each beat from cross-layer processing.
@@ -29,13 +29,13 @@ verticalIntervalMonitor = (() => {
    * @returns {number} playProb additive modifier
    */
   function process(ctx) {
-    const nowMs = V.optionalFinite(ctx && ctx.absoluteTimeMs, 0);
-    if (nowMs <= lastCheckMs) return 0;
-    lastCheckMs = nowMs;
+    const nowSec = V.optionalFinite(ctx && ctx.absoluteTimeMs, 0) / 1000;
+    if (nowSec <= lastCheckSec) return 0;
+    lastCheckSec = nowSec;
 
     // Query recent note pitches from both layers
-    const l1Events = L0.query(CHANNEL, { aroundSeconds: nowMs / 1000, toleranceSec: TOLERANCE / 1000, layer: 'L1' });
-    const l2Events = L0.query(CHANNEL, { aroundSeconds: nowMs / 1000, toleranceSec: TOLERANCE / 1000, layer: 'L2' });
+    const l1Events = L0.query(CHANNEL, { aroundSeconds: nowSec, toleranceSec: TOLERANCE / 1000, layer: 'L1' });
+    const l2Events = L0.query(CHANNEL, { aroundSeconds: nowSec, toleranceSec: TOLERANCE / 1000, layer: 'L2' });
 
     if (!l1Events || !l2Events || l1Events.length === 0 || l2Events.length === 0) return 0;
 
@@ -55,9 +55,9 @@ verticalIntervalMonitor = (() => {
       collisionCount += collisions;
       explainabilityBus.emit('verticalCollision', '0', {
         collisions,
-        timeMs: nowMs,
+        timeInSeconds: nowSec,
         totalCollisions: collisionCount,
-      }, nowMs);
+      }, nowSec);
       return PROB_REDUCE * m.min(collisions, 3);
     }
 
@@ -68,7 +68,7 @@ verticalIntervalMonitor = (() => {
 
   function reset() {
     collisionCount = 0;
-    lastCheckMs    = 0;
+    lastCheckSec   = 0;
   }
 
   const mod = { process, getCollisionCount, reset };

@@ -45,10 +45,10 @@ crossLayerClimaxEngine = (() => {
 
   /**
    * Tick the climax detector each beat.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    */
-  function tick(absTimeMs) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function tick(absoluteSeconds) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     // Gather signals
     const sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);

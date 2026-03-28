@@ -5,7 +5,7 @@
 
 restSynchronizer = (() => {
   const V = validator.create('restSynchronizer');
-  const MIN_REST_INTERVAL_MS = 800;
+  const MIN_REST_INTERVAL_SEC = 0.8;
   // R73 E5: Regime-responsive base rest probability. Coherent regime
   // gets more shared rests (breathing room in unified sections),
   // exploring gets fewer (keeping energy up). Creates density variance
@@ -19,25 +19,25 @@ restSynchronizer = (() => {
   const SHARED_REST_EXPLORING_PENALTY = 0.06;
   const COMPLEMENT_FILL_THRESHOLD = 0.45;
 
-  /** @type {Record<string, number>} last rest timestamp per layer */
-  let lastRestMs = crossLayerHelpers.createLayerPair(-Infinity);
+  /** @type {Record<string, number>} last rest timestamp per layer (seconds) */
+  let lastRestSec = crossLayerHelpers.createLayerPair(-Infinity);
   /** @type {Record<string, boolean>} whether layer is currently resting */
   let isResting = crossLayerHelpers.createLayerPair(false);
   let sharedRestCount = 0;
 
   /**
    * Evaluate whether both layers should share a rest at this moment.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    * @param {{ heatLevel?: number, densityTarget?: number, phaseMode?: string }} signals
    * @returns {{ shouldRest: boolean, duration: number }}
    */
-  function evaluateSharedRest(absTimeMs, layer, signals) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function evaluateSharedRest(absoluteSeconds, layer, signals) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const sig = (signals && typeof signals === 'object') ? signals : {};
 
     // Throttle: don't rest too frequently
-    if (absTimeMs - lastRestMs[layer] < MIN_REST_INTERVAL_MS) {
+    if (absoluteSeconds - lastRestSec[layer] < MIN_REST_INTERVAL_SEC) {
       return { shouldRest: false, duration: 0 };
     }
 
@@ -89,7 +89,7 @@ restSynchronizer = (() => {
     const beatMs = spBeat > 0 ? spBeat * 1000 : 500;
     const duration = beatMs * rf(0.25, 1.5);
 
-    lastRestMs[layer] = absTimeMs;
+    lastRestSec[layer] = absoluteSeconds;
     isResting[layer] = true;
     sharedRestCount++;
 
@@ -99,12 +99,12 @@ restSynchronizer = (() => {
   /**
    * Evaluate whether this layer should fill a gap left by the other layer resting.
    * Creates hocket-like interleaving.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} activeLayer
    * @returns {{ shouldFill: boolean, fillUrgency: number }}
    */
-  function evaluateComplementaryRest(absTimeMs, activeLayer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function evaluateComplementaryRest(absoluteSeconds, activeLayer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
     // If other layer is resting, this layer should fill
@@ -116,7 +116,7 @@ restSynchronizer = (() => {
     // Check if other layer is sparse from ATW
     const otherCount = L0.count('note', {
       layer: otherLayer,
-      since: (absTimeMs / 1000) - 0.5,
+      since: absoluteSeconds - 0.5,
       windowSeconds: 0.5
     });
     if (otherCount === 0) {
@@ -128,11 +128,11 @@ restSynchronizer = (() => {
 
   /**
    * Signal that a rest period has ended for a layer.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    */
-  function postRest(absTimeMs, layer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function postRest(absoluteSeconds, layer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     isResting[layer] = false;
   }
 
@@ -143,7 +143,7 @@ restSynchronizer = (() => {
   function isLayerResting(layer) { return Boolean(isResting[layer]); }
 
   function reset() {
-    lastRestMs = crossLayerHelpers.createLayerPair(-Infinity);
+    lastRestSec = crossLayerHelpers.createLayerPair(-Infinity);
     isResting = crossLayerHelpers.createLayerPair(false);
     sharedRestCount = 0;
   }

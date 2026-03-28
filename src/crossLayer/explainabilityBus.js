@@ -3,32 +3,32 @@ explainabilityBus = (() => {
   const MAX_ENTRIES = 600;
   const EVICT_BATCH = 100; // amortize O(n) splice cost over many emit calls
   const CHANNEL = 'explainability';
-  /** @type {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>} */
+  /** @type {Array<{ type: string, layer: string, payload: any, absoluteSeconds: number }>} */
   const entries = [];
 
   /**
    * @param {string} type
    * @param {string} layer
    * @param {any} payload
-   * @param {number} [absTimeMs]
+   * @param {number} [absoluteSeconds]
    */
-  function emit(type, layer, payload, absTimeMs) {
+  function emit(type, layer, payload, absoluteSeconds) {
     V.assertNonEmptyString(type, 'type');
     V.assertNonEmptyString(layer, 'layer');
     let t = 0;
-    if (Number.isFinite(absTimeMs)) {
-      t = Number(absTimeMs);
+    if (Number.isFinite(absoluteSeconds)) {
+      t = Number(absoluteSeconds);
     } else {
-      t = beatStartTime * 1000;
+      t = beatStartTime;
     }
-    const entry = { type, layer, payload, absTimeMs: t };
+    const entry = { type, layer, payload, absoluteSeconds: t };
     entries.push(entry);
     // Batch evict: let buffer grow past capacity, then splice once - avoids O(n) shift per emit
     if (entries.length > MAX_ENTRIES + EVICT_BATCH) {
       entries.splice(0, entries.length - MAX_ENTRIES);
     }
 
-    L0.post(CHANNEL, entry.layer, t / 1000, { type, payload });
+    L0.post(CHANNEL, entry.layer, t, { type, payload });
 
     return entry;
   }
@@ -39,17 +39,17 @@ explainabilityBus = (() => {
     return entries.slice(-lim);
   }
 
-  /** @param {number} sinceMs */
-  function querySince(sinceMs) {
-    V.requireFinite(sinceMs, 'sinceMs');
-    return entries.filter(e => e.absTimeMs >= sinceMs);
+  /** @param {number} sinceSec */
+  function querySince(sinceSec) {
+    V.requireFinite(sinceSec, 'sinceSec');
+    return entries.filter(e => e.absoluteSeconds >= sinceSec);
   }
 
   /**
    * Return entries matching a specific type, most recent first.
    * @param {string} type - event type to filter on
    * @param {number} [limit=20] max entries to return
-   * @returns {Array<{ type: string, layer: string, payload: any, absTimeMs: number }>}
+   * @returns {Array<{ type: string, layer: string, payload: any, absoluteSeconds: number }>}
    */
   function queryByType(type, limit) {
     V.assertNonEmptyString(type, 'type');

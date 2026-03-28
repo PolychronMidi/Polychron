@@ -65,7 +65,7 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   );
   const timingOffsetSecs = (motifTimingOffsetUnits * Number(spUnit)) + swingFraction * spBeat;
 
-  const tempoFeelOffset = V.requireFinite(Number(tempoFeelEngine.getTickOffset()), 'tempoFeelOffset');
+  const tempoFeelOffset = V.requireFinite(Number(tempoFeelEngine.getTimeOffset()), 'tempoFeelOffset');
 
   // Compute on-time and sustain durations (seconds)
   const on = unitStartTime + timingOffsetSecs + tempoFeelOffset + (spUnit * rv(rf(.2), [-.1, .07], .3));

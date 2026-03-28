@@ -132,12 +132,12 @@ spectralComplementarity = (() => {
 
   /**
    * Post spectral state to ATG for cross-layer visibility.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    */
-  function postSpectralState(absTimeMs, layer) {
+  function postSpectralState(absoluteSeconds, layer) {
     const hist = getHistogram(layer);
-    L0.post(CHANNEL, layer, absTimeMs / 1000, { histogram: hist });
+    L0.post(CHANNEL, layer, absoluteSeconds, { histogram: hist });
   }
 
   function reset() {

@@ -22,11 +22,11 @@ minimumNoteDuration = (() => {
   }
 
   return {
-    floorTicks(kind, unitSecs) {
+    floorSeconds(kind, unitSecs) {
       return getFloorSeconds(kind, unitSecs);
     },
 
-    resolveOffTick(onTime, desiredOffTime, kind, unitSecs, label) {
+    resolveOffTime(onTime, desiredOffTime, kind, unitSecs, label) {
       const onTimeValue = V.requireFinite(onTime, 'onTime');
       const desiredTimeValue = V.requireFinite(desiredOffTime, label || 'desiredOffTime');
       return m.max(onTimeValue + getFloorSeconds(kind, unitSecs), desiredTimeValue);
