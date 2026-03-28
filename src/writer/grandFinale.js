@@ -22,6 +22,35 @@ function grandFinaleEventPriority(event) {
 grandFinale = () => {
   if (!LM.layers) throw new Error('grandFinale: LM.layers must be a defined object');
   V.assertObject(LM.layers, 'LM.layers');
+
+  // Write L0 audit dump. High-frequency per-note channels are summarized
+  // (count + first/last entry) to keep the file small; low-frequency channels
+  // are written in full for forensic inspection.
+  try {
+    const L0_SUMMARY_THRESHOLD = 1000;
+    const l0Dump = {};
+    const chNames = Object.keys(L0.channels);
+    for (let ci = 0; ci < chNames.length; ci++) {
+      const ch = chNames[ci];
+      const arr = L0.channels[ch];
+      if (arr.length > L0_SUMMARY_THRESHOLD) {
+        l0Dump[ch] = {
+          _summary: true,
+          count: arr.length,
+          first: arr[0],
+          last: arr[arr.length - 1]
+        };
+      } else {
+        l0Dump[ch] = arr;
+      }
+    }
+    fs.mkdirSync('metrics', { recursive: true });
+    fs.writeFileSync('metrics/l0-dump.json', JSON.stringify(l0Dump, null, 2));
+    console.log('Wrote file: metrics/l0-dump.json');
+  } catch (e) {
+    throw new Error('grandFinale: failed to write l0-dump.json: ' + e.message);
+  }
+
   const LMCurrent = LM;
   // Collect all layer data
   const layerData = Object.entries(LMCurrent.layers).map(([name, layer]) => {
