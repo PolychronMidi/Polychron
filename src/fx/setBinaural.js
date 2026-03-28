@@ -1,18 +1,16 @@
 /**
- * Manages binaural beat pitch shifts and volume crossfades at beat boundaries,
- * synced across layers via absoluteTimeGrid using ms-precision timestamps.
- * This should not be a perceptible effect, allNoteOff is used to prevent detune artifacts.
+ * Manages binaural beat pitch shifts and volume crossfades at beat boundaries.
+ * L0 channel 'binaural' / layer 'shared' is the single source of truth.
+ * Both L1 and L2 consume from it independently, so they always emit the same
+ * shift at the same wall-clock second regardless of which layer initiated.
  * @returns {void}
  */
 const V = validator.create('setBinaural');
 
-/** Millisecond tolerance for treating two layer shifts as the same event */
-const BINAURAL_SYNC_TOLERANCE_MS = 1;
+/** Next absolute seconds at which a new binaural shift should be scheduled */
+let nextBinauralShiftSec = 0;
 
-/** Next absolute ms at which a timed binaural shift should fire */
-let nextBinauralShiftMs = 0;
-
-/** Per-layer seconds of the last shift this layer consumed (own or cross-layer) */
+/** Per-layer timeInSeconds of the last shared entry this layer consumed (dedup guard) */
 const lastConsumedByLayer = {};
 
 
@@ -24,14 +22,11 @@ setBinaural = () => {
 
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const activeLayer = /** @type {string} */ (LM.activeLayer);
-  const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
   const absoluteSeconds = beatStartTime;
 
   // Emit silence, bends, and volume events at a wall-clock second position.
   // timeInSeconds is a plain numeric seconds value; grandFinale appends the 's'
   // suffix when writing to CSV so csv_maestro converts to ticks per-layer.
-  // Takes the flip value explicitly to avoid reading the shared global flipBin
-  // mid-mutation -- both layers share that global and write it independently.
   function emitShiftEvents(shiftSyncSec, shiftFlip) {
     const shiftActiveChannels = shiftFlip ? flipBinT2 : flipBinF2;
     const shiftInactiveChannels = shiftFlip ? flipBinF2 : flipBinT2;
@@ -56,82 +51,53 @@ setBinaural = () => {
     );
   }
 
-  // Scan L0 for cross-layer binaural entries posted since this layer last consumed.
-  const lastConsumed = lastConsumedByLayer[activeLayer] ?? -1;
-  const crossEntry = L0.getLast('binaural', { layer: otherLayer, since: lastConsumed, windowSeconds: 10 });
-
-  if (crossEntry) {
-    lastConsumedByLayer[activeLayer] = crossEntry.timeInSeconds;
-    binauralFreqOffset = V.requireFinite(crossEntry.freqOffset, 'crossLayerShift.freqOffset');
-    flipBin = V.assertBoolean(crossEntry.flip, 'crossLayerShift.flip');
+  // -- Schedule a new shared shift if due --
+  const shiftDue = firstLoop < 1 || absoluteSeconds >= nextBinauralShiftSec;
+  if (shiftDue) {
+    const binauralSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const binauralRegime = binauralSnap ? binauralSnap.regime : 'exploring';
+    const binauralInterval = binauralRegime === 'exploring' ? rf(1.5, 3.0)
+      : binauralRegime === 'coherent' ? rf(3.0, 5.0)
+      : rf(2.0, 4.0);
+    nextBinauralShiftSec = absoluteSeconds + binauralInterval;
+    flipBin = !flipBin;
+    // Clamp current offset into range before stepping -- instrumentation.js seeds
+    // binauralFreqOffset from its own temporary BINAURAL default (0.75-2.25) which
+    // runs before conductor/config.js overrides BINAURAL to the real range (e.g. 8-12).
+    // Without this clamp, rl() receives currentValue far below minValue, collapses
+    // its [newMin, newMax] window to an invalid range, and produces large jumps.
+    binauralFreqOffset = clamp(binauralFreqOffset, BINAURAL.min, BINAURAL.max);
+    binauralFreqOffset = rl(binauralFreqOffset, -.5, .5, BINAURAL.min, BINAURAL.max, 'f');
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    // Use the initiating layer's exact wall-clock second. csv_maestro converts
-    // this to the correct tick in each layer's own time-base, so both files
-    // retune at the same playback moment regardless of tempo differences.
-    const entrySyncSec = crossEntry.timeInSeconds;
-    emitShiftEvents(entrySyncSec, flipBin);
+    L0.post('binaural', 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin });
+  }
+
+  // -- Consume the latest shared shift if not yet consumed by this layer --
+  const sharedEntry = L0.getLast('binaural', { layer: 'shared' });
+  if (sharedEntry && sharedEntry.timeInSeconds !== lastConsumedByLayer[activeLayer]) {
+    lastConsumedByLayer[activeLayer] = sharedEntry.timeInSeconds;
+    binauralFreqOffset = V.requireFinite(sharedEntry.freqOffset, 'sharedEntry.freqOffset');
+    flipBin = V.assertBoolean(sharedEntry.flip, 'sharedEntry.flip');
+    [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
+    V.requireFinite(binauralPlus, 'binauralPlus');
+    V.requireFinite(binauralMinus, 'binauralMinus');
+
+    emitShiftEvents(sharedEntry.timeInSeconds, flipBin);
 
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({
         layer: activeLayer,
         absTimeMs: absoluteSeconds * 1000,
-        syncMs: crossEntry.timeInSeconds * 1000,
-        usedCrossLayerShift: true,
-        syncDeltaMs: m.abs(absoluteSeconds - crossEntry.timeInSeconds) * 1000,
+        syncMs: sharedEntry.timeInSeconds * 1000,
+        usedCrossLayerShift: activeLayer !== 'L1' || !shiftDue,
+        syncDeltaMs: m.abs(absoluteSeconds - sharedEntry.timeInSeconds) * 1000,
         freqOffset: binauralFreqOffset,
-        toleranceMs: BINAURAL_SYNC_TOLERANCE_MS,
+        toleranceMs: 0,
         flip: flipBin
       });
-    }
-  }
-
-  // Timed initiation: only when no cross-layer shift was just consumed
-  if (!crossEntry) {
-    const timedShift = absoluteSeconds * 1000 >= nextBinauralShiftMs;
-    if (firstLoop < 1 || timedShift) {
-      // R99 E1: Regime-responsive binaural shift timing.
-      // Exploring shifts more frequently (more tonal flux, feeds phase energy),
-      // coherent shifts less frequently (stability).
-      const binauralSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-      const binauralRegime = binauralSnap ? binauralSnap.regime : 'exploring';
-      const binauralInterval = binauralRegime === 'exploring' ? rf(1.5, 3.0)
-        : binauralRegime === 'coherent' ? rf(3.0, 5.0)
-        : rf(2.0, 4.0);
-      nextBinauralShiftMs = absoluteSeconds * 1000 + binauralInterval * 1000;
-      flipBin = !flipBin;
-      // Clamp current offset into range before stepping -- instrumentation.js seeds
-      // binauralFreqOffset from its own temporary BINAURAL default (0.75-2.25) which
-      // runs before conductor/config.js overrides BINAURAL to the real range (e.g. 8-12).
-      // Without this clamp, rl() receives currentValue far below minValue, collapses
-      // its [newMin, newMax] window to an invalid range, and produces large jumps.
-      binauralFreqOffset = clamp(binauralFreqOffset, BINAURAL.min, BINAURAL.max);
-      binauralFreqOffset = rl(binauralFreqOffset, -.1, .1, BINAURAL.min, BINAURAL.max, 'f');
-      [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
-      V.requireFinite(binauralPlus, 'binauralPlus');
-      V.requireFinite(binauralMinus, 'binauralMinus');
-
-      const syncSec = absoluteSeconds;
-      emitShiftEvents(syncSec, flipBin);
-
-      lastConsumedByLayer[activeLayer] = absoluteSeconds;
-
-      L0.post('binaural', activeLayer, absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin });
-
-      if (traceDrain && traceDrain.isEnabled()) {
-        traceDrain.recordBinauralShift({
-          layer: activeLayer,
-          absTimeMs: absoluteSeconds * 1000,
-          syncMs: absoluteSeconds * 1000,
-          usedCrossLayerShift: false,
-          syncDeltaMs: 0,
-          freqOffset: binauralFreqOffset,
-          toleranceMs: BINAURAL_SYNC_TOLERANCE_MS,
-          flip: flipBin
-        });
-      }
     }
   }
 };

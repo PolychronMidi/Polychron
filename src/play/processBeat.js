@@ -26,7 +26,6 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (isL1) beatCount++;
   setUnitTiming('beat');
   setOtherInstruments();
-  setBinaural();
   eventBus.emit(EVENTS.BEAT_BINAURAL_APPLIED, {
     beatIndex, sectionIndex, phraseIndex, measureIndex, layer,
     freqOffset: requireFiniteNumber('binauralFreqOffset', binauralFreqOffset),

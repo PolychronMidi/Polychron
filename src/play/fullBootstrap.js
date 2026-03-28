@@ -663,6 +663,7 @@ fullBootstrap = (() => {
     'logUnit',
     'pushMultiple',
     'grandFinale',
+    'grandFinaleBinaural',
 
     // -- typed constructors (canonical declarations --
     'VoiceLeadingScore',

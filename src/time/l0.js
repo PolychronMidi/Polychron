@@ -1,12 +1,9 @@
 // src/time/L0.js - Unified in-memory temporal layer (L0).
 // Replaces absoluteTimeGrid and absoluteTimeWindow with a single flat-array
-// buffer per channel, registered in LM as a real (but never CSV-exported) layer.
+// buffer per channel. Never pruned - the composition run is finite and bounded.
 
 L0 = (() => {
   const V = validator.create('l0');
-
-  const PRUNE_WINDOW_SECONDS = 30;
-  const MAX_ENTRIES_PER_CHANNEL = 2000;
 
   /**
    * Per-channel flat arrays of entries.
@@ -60,11 +57,6 @@ L0 = (() => {
       arr.splice(insertIdx, 0, entry);
     }
 
-    // Prune only when over capacity to keep O(1) amortised cost.
-    if (arr.length > MAX_ENTRIES_PER_CHANNEL) {
-      timeGridPrune(arr, 'timeInSeconds', t, PRUNE_WINDOW_SECONDS, MAX_ENTRIES_PER_CHANNEL);
-    }
-
     invalidateCache();
   }
 
@@ -73,8 +65,8 @@ L0 = (() => {
    * @param {string} channel
    * @param {Object} [opts]
    *   layer?          - filter by layer name
-   *   since?          - lower-bound timestamp (seconds)
-   *   windowSeconds?  - rolling window size (seconds) from the last entry
+   *   since?          - lower-bound timestamp (seconds), inclusive
+   *   windowSeconds?  - rolling window from the last entry's time
    *   aroundSeconds?  - centre of a +/- toleranceSec window
    *   toleranceSec?   - half-width for aroundSeconds query
    * @returns {Array<Object>}
@@ -91,7 +83,6 @@ L0 = (() => {
     }
 
     if (aroundSeconds !== undefined && toleranceSec !== undefined) {
-      // Bounded window query
       const around = V.requireFinite(aroundSeconds, 'query.aroundSeconds');
       const tol    = V.requireFinite(toleranceSec, 'query.toleranceSec');
       const lo = around - tol;
@@ -111,19 +102,19 @@ L0 = (() => {
       return result;
     }
 
-    // Rolling-window / since query
-    const last = arr[arr.length - 1];
-    const lastTime = last.timeInSeconds;
-    const effectiveWindow = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds))
-      ? windowSeconds : PRUNE_WINDOW_SECONDS;
-    const cutoff = (typeof since === 'number' && Number.isFinite(since))
-      ? since : (lastTime - effectiveWindow);
+    // since / windowSeconds / full-channel query
+    let cutoff = -Infinity;
+    if (typeof since === 'number' && Number.isFinite(since)) {
+      cutoff = since;
+    } else if (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) {
+      cutoff = arr[arr.length - 1].timeInSeconds - windowSeconds;
+    }
 
     const cacheKey = channel + ':' + (layer || '') + ':' + cutoff;
     const cached = queryCache.get(cacheKey);
     if (cached) return cached;
 
-    const startIdx = timeGridSearchStart(arr, 'timeInSeconds', cutoff);
+    const startIdx = cutoff === -Infinity ? 0 : timeGridSearchStart(arr, 'timeInSeconds', cutoff);
     const result = [];
     for (let i = startIdx; i < arr.length; i++) {
       const e = arr[i];
@@ -135,7 +126,7 @@ L0 = (() => {
   }
 
   /**
-   * Count entries in a channel matching opts (no array allocation when possible).
+   * Count entries in a channel matching opts.
    * @param {string} channel
    * @param {Object} [opts]
    * @returns {number}
@@ -151,14 +142,14 @@ L0 = (() => {
       ({ layer, since, windowSeconds } = opts);
     }
 
-    const last = arr[arr.length - 1];
-    const lastTime = last.timeInSeconds;
-    const effectiveWindow = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds))
-      ? windowSeconds : PRUNE_WINDOW_SECONDS;
-    const cutoff = (typeof since === 'number' && Number.isFinite(since))
-      ? since : (lastTime - effectiveWindow);
+    let cutoff = -Infinity;
+    if (typeof since === 'number' && Number.isFinite(since)) {
+      cutoff = since;
+    } else if (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) {
+      cutoff = arr[arr.length - 1].timeInSeconds - windowSeconds;
+    }
 
-    const startIdx = timeGridSearchStart(arr, 'timeInSeconds', cutoff);
+    const startIdx = cutoff === -Infinity ? 0 : timeGridSearchStart(arr, 'timeInSeconds', cutoff);
     let n = 0;
     for (let i = startIdx; i < arr.length; i++) {
       if (layer && arr[i].layer !== layer) continue;
@@ -184,12 +175,12 @@ L0 = (() => {
       ({ layer, since, windowSeconds } = opts);
     }
 
-    const last = arr[arr.length - 1];
-    const lastTime = last.timeInSeconds;
-    const effectiveWindow = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds))
-      ? windowSeconds : PRUNE_WINDOW_SECONDS;
-    const cutoff = (typeof since === 'number' && Number.isFinite(since))
-      ? since : (lastTime - effectiveWindow);
+    let cutoff = -Infinity;
+    if (typeof since === 'number' && Number.isFinite(since)) {
+      cutoff = since;
+    } else if (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) {
+      cutoff = arr[arr.length - 1].timeInSeconds - windowSeconds;
+    }
 
     for (let i = arr.length - 1; i >= 0; i--) {
       const e = arr[i];
@@ -217,14 +208,14 @@ L0 = (() => {
       ({ layer, since, windowSeconds } = opts);
     }
 
-    const lastEntry = arr[arr.length - 1];
-    const lastTime = lastEntry.timeInSeconds;
-    const effectiveWindow = (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds))
-      ? windowSeconds : PRUNE_WINDOW_SECONDS;
-    const cutoff = (typeof since === 'number' && Number.isFinite(since))
-      ? since : (lastTime - effectiveWindow);
+    let cutoff = -Infinity;
+    if (typeof since === 'number' && Number.isFinite(since)) {
+      cutoff = since;
+    } else if (typeof windowSeconds === 'number' && Number.isFinite(windowSeconds)) {
+      cutoff = arr[arr.length - 1].timeInSeconds - windowSeconds;
+    }
 
-    const startIdx = timeGridSearchStart(arr, 'timeInSeconds', cutoff);
+    const startIdx = cutoff === -Infinity ? 0 : timeGridSearchStart(arr, 'timeInSeconds', cutoff);
     let n = 0;
     /** @type {Object|null} */ let first = null;
     /** @type {Object|null} */ let last = null;
