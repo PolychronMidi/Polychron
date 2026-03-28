@@ -427,7 +427,6 @@ fullBootstrap = (() => {
     'trueBPM',
     'trueBPM2',
     'polyMeterRatio',
-    'isPowerOf2',
     'midiMeter',
     'midiMeterRatio',
     'midiBPM',

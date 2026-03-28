@@ -40,16 +40,12 @@ setBinaural = () => {
       ...shiftActiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 120, 0] })),
       ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
       ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 120, 0] }))
-    );
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 120, 0] })),
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 7, 0] })),
 
-    p(c,
       ...binauralL.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'pitch_bend_c', vals: [ch, (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus)] })),
-      ...binauralR.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'pitch_bend_c', vals: [ch, (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus)] }))
-    );
+      ...binauralR.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'pitch_bend_c', vals: [ch, (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus)] })),
 
-    p(c,
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 7, 0] })),
       ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 7, velocity] }))
     );
   }

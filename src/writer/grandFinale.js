@@ -24,8 +24,7 @@ grandFinale = () => {
   V.assertObject(LM.layers, 'LM.layers');
 
   // Schedule binaural shifts over the full track for both layers.
-  // Single walk - both layers see each shift at each time step,
-  // mirroring how the beat loop called setBinaural alternately.
+  // Single walk - both layers see each shift at each time step.
   const noteBounds = L0.getBounds('note');
   if (noteBounds && noteBounds.first && noteBounds.last) {
     const trackStart = m.max(0, noteBounds.first.timeInSeconds);

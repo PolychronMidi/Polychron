@@ -10,7 +10,6 @@ eventCatalog = (() => {
     BEAT_FX_APPLIED: 'beat-fx-applied',
     STUTTER_APPLIED: 'stutter-applied',
     CONDUCTOR_REGULATION: 'conductor-regulation',
-    BEAT_BINAURAL_APPLIED: 'beat-binaural-applied',
     HARMONIC_CHANGE: 'harmonic-change',
     NOTES_EMITTED: 'notes-emitted',
     MOTIF_CHAIN_APPLIED: 'motif-chain-applied',
@@ -71,11 +70,6 @@ eventCatalog = (() => {
         V.assertNonEmptyString(data.profile, 'conductor-regulation.profile');
         return true;
 
-      case names.BEAT_BINAURAL_APPLIED:
-        V.assertFinite(data.beatIndex, 'beat-binaural-applied.beatIndex');
-        V.assertRange(data.freqOffset, -50, 50, 'beat-binaural-applied.freqOffset');
-        V.assertBoolean(data.flipBin, 'beat-binaural-applied.flipBin');
-        return true;
 
       case names.HARMONIC_CHANGE:
         V.assertArray(data.changedFields, 'harmonic-change.changedFields');
