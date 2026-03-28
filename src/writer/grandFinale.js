@@ -23,6 +23,27 @@ grandFinale = () => {
   if (!LM.layers) throw new Error('grandFinale: LM.layers must be a defined object');
   V.assertObject(LM.layers, 'LM.layers');
 
+  // Schedule binaural shifts over the full track for both layers.
+  // Single walk - both layers see each shift at each time step,
+  // mirroring how the beat loop called setBinaural alternately.
+  const noteBounds = L0.getBounds('note');
+  if (noteBounds && noteBounds.first && noteBounds.last) {
+    const trackStart = m.max(0, noteBounds.first.timeInSeconds);
+    const trackEnd = noteBounds.last.timeInSeconds;
+    firstLoop = 0;
+    beatStartTime = trackStart;
+    while (beatStartTime <= trackEnd) {
+      LM.activeLayer = 'L1';
+      c = LM.layers['L1'].buffer;
+      setBinaural();
+      LM.activeLayer = 'L2';
+      c = LM.layers['L2'].buffer;
+      setBinaural();
+      firstLoop = 1;
+      beatStartTime += spBeat > 0 ? spBeat : 0.5;
+    }
+  }
+
   // Write L0 audit dump. High-frequency per-note channels are summarized
   // (count + first/last entry) to keep the file small; low-frequency channels
   // are written in full for forensic inspection.

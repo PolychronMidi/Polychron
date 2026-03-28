@@ -1,6 +1,3 @@
-/** @param {number} n @returns {boolean} */
-isPowerOf2 = (n) => (n & (n - 1)) === 0;
-
 /**
  * Compute MIDI-compatible meter and tempo sync factor.
  * Sets: midiMeter, midiMeterRatio, syncFactor, midiBPM, spMeasure.
@@ -31,4 +28,5 @@ setMidiTiming = () => {
     { timeInSeconds: measureStartTime, type: 'bpm', vals: [BPM] },
     { timeInSeconds: measureStartTime, type: 'meter', vals: [numerator, denominator] },
   );
+  L0.post('tickDuration', LM.activeLayer || 'shared', measureStartTime, { oneTickInSeconds: 60 / (BPM * PPQ) });
 };
