@@ -26,11 +26,6 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (isL1) beatCount++;
   setUnitTiming('beat');
   setOtherInstruments();
-  eventBus.emit(EVENTS.BEAT_BINAURAL_APPLIED, {
-    beatIndex, sectionIndex, phraseIndex, measureIndex, layer,
-    freqOffset: requireFiniteNumber('binauralFreqOffset', binauralFreqOffset),
-    flipBin: Boolean(flipBin)
-  });
   setBalanceAndFX();
   StutterManager.prepareBeat(beatStartTime);
   const fxStereoPan = m.abs(requireFiniteNumber('balOffset', balOffset)) / boot.fxStereoPanDenominator;

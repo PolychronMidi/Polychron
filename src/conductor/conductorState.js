@@ -36,8 +36,6 @@
     journeyDistance: 0,
     journeyKey: 'C',
     journeyMode: 'major',
-    binauralFreqOffset: 0,
-    binauralFlip: false,
     tick: 0,
     updatedAt: 0
   };
@@ -153,12 +151,6 @@
       snapshot.updatedAt = Date.now();
     });
 
-    eventBus.on(EVENTS.BEAT_BINAURAL_APPLIED, (data) => {
-      snapshot.binauralFreqOffset = data.freqOffset;
-      snapshot.binauralFlip = data.flipBin;
-      snapshot.updatedAt = Date.now();
-    });
-
     initialized = true;
     return true;
   }
@@ -189,8 +181,6 @@
     snapshot.emissionRatio = 1;
     snapshot.extraDensityCorrection = 1;
     snapshot.extraCoherenceDensityBias = 1;
-    snapshot.binauralFreqOffset = 0;
-    snapshot.binauralFlip = false;
     snapshot.playProb = 0.5;
     snapshot.stutterProb = 0.3;
     snapshot.flicker = 1;

@@ -184,7 +184,6 @@ interface ConductorStateSnapshot {
   crossModBias: number; emissionRatio: number; activeProfile: string;
   extraDensityCorrection: number; extraCoherenceDensityBias: number;
   journeyMove: string; journeyDistance: number; journeyKey: string; journeyMode: string;
-  binauralFreqOffset: number; binauralFlip: boolean;
   tick: number; updatedAt: number;
 }
 
@@ -561,7 +560,6 @@ interface EventCatalogAPI {
     BEAT_FX_APPLIED: 'beat-fx-applied';
     STUTTER_APPLIED: 'stutter-applied';
     CONDUCTOR_REGULATION: 'conductor-regulation';
-    BEAT_BINAURAL_APPLIED: 'beat-binaural-applied';
     HARMONIC_CHANGE: 'harmonic-change';
     NOTES_EMITTED: 'notes-emitted';
     MOTIF_CHAIN_APPLIED: 'motif-chain-applied';
@@ -1637,7 +1635,6 @@ declare var spSubsubdiv: any;
 declare var trueBPM: any;
 declare var trueBPM2: any;
 declare var polyMeterRatio: number;
-declare var isPowerOf2: any;
 declare var midiMeter: any;
 declare var midiMeterRatio: any;
 declare var midiBPM: any;
