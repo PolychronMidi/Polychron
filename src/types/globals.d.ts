@@ -1883,7 +1883,6 @@ declare var formatTime: any;
 declare var logUnit: any;
 declare var pushMultiple: any;
 declare var grandFinale: any;
-declare var grandFinaleBinaural: () => void;
 /** @boot-advisory - trace is diagnostic, composition runs without it */
 declare var traceDrain: {
   init(): void;

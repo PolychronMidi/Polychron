@@ -289,7 +289,6 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
 }
 
-  grandFinaleBinaural();
   grandFinale();
 
   // Emit system manifest and capability matrix for compositional forensics

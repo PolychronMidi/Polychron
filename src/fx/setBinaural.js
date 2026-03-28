@@ -30,14 +30,17 @@ setBinaural = () => {
   function emitShiftEvents(shiftSyncSec, shiftFlip) {
     const shiftActiveChannels = shiftFlip ? flipBinT2 : flipBinF2;
     const shiftInactiveChannels = shiftFlip ? flipBinF2 : flipBinT2;
+    const tickEntry = L0.getLast('tickDuration', { since: shiftSyncSec, windowSeconds: Infinity });
+    const oneTickInSeconds = tickEntry ? tickEntry.oneTickInSeconds : 60 / (BPM * PPQ);
+    const silenceSyncSec = shiftSyncSec - oneTickInSeconds;
 
     p(c,
-      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
-      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
-      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 120, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 120, 0] }))
+      ...shiftActiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
+      ...shiftActiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
+      ...shiftActiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 120, 0] })),
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
+      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 120, 0] }))
     );
 
     p(c,

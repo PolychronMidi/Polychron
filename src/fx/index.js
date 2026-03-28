@@ -4,4 +4,3 @@ require('./stutter');
 require('./noise');
 require('./setBalanceAndFX');
 require('./setBinaural');
-require('./grandFinaleBinaural');
