@@ -207,7 +207,7 @@ adaptiveTrustScores = (() => {
     }
 
     state.samples += 1;
-    state.lastMs = beatStartTime * 1000;
+    state.lastMs = beatStartTime;
 
     // Journal significant trust changes for post-run forensics.
     if (m.abs(p) >= JOURNAL_PAYOFF_THRESHOLD) {

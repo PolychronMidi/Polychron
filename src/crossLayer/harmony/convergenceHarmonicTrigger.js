@@ -5,24 +5,24 @@
 
 convergenceHarmonicTrigger = (() => {
   const V = validator.create('convergenceHarmonicTrigger');
-  const MIN_TRIGGER_INTERVAL_MS = 2000;
+  const MIN_TRIGGER_INTERVAL_SEC = 2;
   const TRIGGER_PROBABILITY = 0.35;
   const EVENTS = eventCatalog.names;
 
-  let lastTriggerMs = -Infinity;
+  let lastTriggerSec = -Infinity;
   let triggerCount = 0;
-  /** @type {{ type: string, bias: number, absTimeMs: number }[]} */
+  /** @type {{ type: string, bias: number, absoluteSeconds: number }[]} */
   const pendingChanges = [];
 
   /**
    * Called when a convergence event fires (via eventBus or direct invocation).
    * Evaluates whether this convergence should trigger a harmonic change.
-   * @param {{ rarity?: number, absTimeMs?: number, layer?: string, alignment?: { tonicBias: number, dominantBias: number, shouldResolve: boolean } | null }} event
+   * @param {{ rarity?: number, absoluteSeconds?: number, layer?: string, alignment?: { tonicBias: number, dominantBias: number, shouldResolve: boolean } | null }} event
    */
   function onConvergence(event) {
     V.assertPlainObject(event, 'onConvergence.event');
     const ev = event;
-    const absTimeMs = V.requireFinite(ev.absTimeMs, 'onConvergence.event.absTimeMs');
+    const absoluteSeconds = V.requireFinite(ev.absoluteSeconds, 'onConvergence.event.absoluteSeconds');
     const rarity = (typeof ev.rarity === 'undefined')
       ? 0.5
       : clamp(V.requireFinite(ev.rarity, 'onConvergence.event.rarity'), 0, 1);
@@ -30,7 +30,7 @@ convergenceHarmonicTrigger = (() => {
       ? 'L1'
       : V.assertNonEmptyString(ev.layer, 'onConvergence.event.layer');
 
-    if (absTimeMs - lastTriggerMs < MIN_TRIGGER_INTERVAL_MS) return;
+    if (absoluteSeconds - lastTriggerSec < MIN_TRIGGER_INTERVAL_SEC) return;
 
     // Higher rarity convergences are more likely to trigger harmonic changes
     const triggerChance = TRIGGER_PROBABILITY * (0.5 + rarity * 0.5);
@@ -63,10 +63,10 @@ convergenceHarmonicTrigger = (() => {
     // Caller (processBeat) already confirmed convergence via convergenceDetector.wasRecent(300ms),
     // so a 500ms re-check is provably redundant. Skip it.
 
-    lastTriggerMs = absTimeMs;
+    lastTriggerSec = absoluteSeconds;
     triggerCount++;
 
-    pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absTimeMs });
+    pendingChanges.push({ type: changeType, bias: clamp(bias, 0, 1), absoluteSeconds });
 
     // No active listeners - emitted for eventCatalog completeness and future extensibility
     eventBus.emit(EVENTS.CONVERGENCE_HARMONIC_TRIGGER, {
@@ -75,23 +75,23 @@ convergenceHarmonicTrigger = (() => {
       rarity,
       layer,
       triggerCount,
-      absTimeMs
+      absoluteSeconds
     });
   }
 
   /**
    * Whether a harmonic change should be triggered at this time.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @returns {boolean}
    */
-  function shouldTriggerChange(absTimeMs) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
-    return pendingChanges.length > 0 && pendingChanges.some(c => c.absTimeMs <= absTimeMs);
+  function shouldTriggerChange(absoluteSeconds) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
+    return pendingChanges.length > 0 && pendingChanges.some(c => c.absoluteSeconds <= absoluteSeconds);
   }
 
   /**
    * Consume and return all pending triggered changes.
-   * @returns {{ type: string, bias: number, absTimeMs: number }[]}
+   * @returns {{ type: string, bias: number, absoluteSeconds: number }[]}
    */
   function getTriggeredChanges() {
     const changes = pendingChanges.splice(0, pendingChanges.length);
@@ -102,7 +102,7 @@ convergenceHarmonicTrigger = (() => {
   function getTriggerCount() { return triggerCount; }
 
   function reset() {
-    lastTriggerMs = -Infinity;
+    lastTriggerSec = -Infinity;
     triggerCount = 0;
     pendingChanges.length = 0;
   }

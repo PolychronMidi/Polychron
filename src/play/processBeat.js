@@ -45,7 +45,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   // -- [stage: intent] -
   if (PROFILE) marks[1] = process.hrtime.bigint();
-  const clAbsMs = beatStartTime * 1000;
+  const absoluteSeconds = beatStartTime;
   const clIntent = sectionIntentCurves.getIntent();
 
   // -- [stage: entropy]
@@ -61,23 +61,23 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   // -- [stage: phase] --
   if (PROFILE) marks[3] = process.hrtime.bigint();
-  const clPhase = phaseAwareCadenceWindow.update(clAbsMs, layer);
+  const clPhase = phaseAwareCadenceWindow.update(absoluteSeconds, layer);
 
   // -- [stage: climax] -
   if (PROFILE) marks[4] = process.hrtime.bigint();
-  crossLayerClimaxEngine.tick(clAbsMs);
+  crossLayerClimaxEngine.tick(absoluteSeconds);
   const clClimaxMods = crossLayerClimaxEngine.getModifiers(layer);
   // Stash climax modifiers for playNotesEmitPick (avoids re-calling getModifiers per pick)
   setClimaxMods(clClimaxMods);
 
   // -- [stage: envelope] --
   if (PROFILE) marks[5] = process.hrtime.bigint();
-  crossLayerDynamicEnvelope.tick(clAbsMs, layer);
+  crossLayerDynamicEnvelope.tick(absoluteSeconds, layer);
   if (isL1) crossLayerDynamicEnvelope.autoSelectArcType();
 
   // -- [stage: silhouette]
   if (PROFILE) marks[6] = process.hrtime.bigint();
-  crossLayerSilhouette.tick(clAbsMs, layer);
+  crossLayerSilhouette.tick(absoluteSeconds, layer);
   const clSilhouetteCorrections = crossLayerSilhouette.getCorrections();
 
   // -- [stage: rest]
@@ -87,12 +87,12 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
     densityTarget: clIntent.densityTarget,
     phaseMode: requireNonEmptyString('rhythmicPhaseLock.getMode()', rhythmicPhaseLock.getMode())
   };
-  const clRest = restSynchronizer.evaluateSharedRest(clAbsMs, layer, clRestSignals);
-  const clComplementRest = restSynchronizer.evaluateComplementaryRest(clAbsMs, layer);
+  const clRest = restSynchronizer.evaluateSharedRest(absoluteSeconds, layer, clRestSignals);
+  const clComplementRest = restSynchronizer.evaluateComplementaryRest(absoluteSeconds, layer);
 
   // -- [stage: complement]
   if (PROFILE) marks[8] = process.hrtime.bigint();
-  rhythmicComplementEngine.autoSelectMode(clAbsMs);
+  rhythmicComplementEngine.autoSelectMode(absoluteSeconds);
 
   // -- [stage: tension-cadence] -
   if (PROFILE) marks[9] = process.hrtime.bigint();
@@ -100,7 +100,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clCadence = cadenceAdvisor.shouldCadence();
   V_processBeat.assertPlainObject(clCadence, 'cadenceAdvisor.shouldCadence()');
   V_processBeat.assertBoolean(clCadence.suggest, 'clCadence.suggest');
-  const clPhaseSnapshot = { timeMs: clAbsMs, phaseDiff: clPhase.phaseDiff, mode: clPhase.mode, confidence: clPhase.confidence };
+  const clPhaseSnapshot = { timeInSeconds: absoluteSeconds, phaseDiff: clPhase.phaseDiff, mode: clPhase.mode, confidence: clPhase.confidence };
 
   // -- [stage: negotiation] --
   if (PROFILE) marks[10] = process.hrtime.bigint();
@@ -156,7 +156,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
 
   // -- [stage: post-beat] -
   if (PROFILE) marks[13] = process.hrtime.bigint();
-  if (clRest.shouldRest) restSynchronizer.postRest(clAbsMs, layer);
+  if (clRest.shouldRest) restSynchronizer.postRest(absoluteSeconds, layer);
 
   // Per-beat homeostasis multiplier update. Coupling data is analysed
   // per-measure in the recorder pipeline; the multiplier is smoothed per-beat
@@ -164,7 +164,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   couplingHomeostasis.tick();
 
   crossLayerBeatRecord({
-    layer, clAbsMs, clIntent, clPhase, clNegotiation, clBreathing,
+    layer, absoluteSeconds, clIntent, clPhase, clNegotiation, clBreathing,
     clTension, clCadence, clPhaseSnapshot, clRest, clEntropy, stutterProb, isL1,
     stageTiming: /** @type {Record<string, number> | null} */ (PROFILE ? (() => { marks[14] = process.hrtime.bigint(); const t = {}; for (let i = 0; i < 14; i++) t[STAGE_NAMES[i]] = Number(marks[i + 1] - marks[i]) / 1e6; return t; })() : null)
   });

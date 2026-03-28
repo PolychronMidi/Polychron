@@ -45,16 +45,16 @@ rhythmicComplementEngine = (() => {
   /**
    * Analyze the other layer's recent onsets to determine gaps.
    * @param {string} activeLayer
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @returns {{ gaps: number[], density: number, avgIOI: number }}
    */
-  function analyzeOtherLayer(activeLayer, absTimeMs) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function analyzeOtherLayer(activeLayer, absoluteSeconds) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
     const notes = L0.query('note', {
       layer: otherLayer,
-      since: (absTimeMs / 1000) - ANALYSIS_WINDOW_S,
+      since: absoluteSeconds - ANALYSIS_WINDOW_S,
       windowSeconds: ANALYSIS_WINDOW_S
     });
 
@@ -83,12 +83,12 @@ rhythmicComplementEngine = (() => {
    * In canon mode: imitates other layer's rhythm with a beat delay.
    * @param {string} layer
    * @param {number} onTime - current onset time (seconds)
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @returns {{ time: number, velocityScale: number, modified: boolean }}
    */
-  function suggestComplement(layer, onTime, absTimeMs) {
+  function suggestComplement(layer, onTime, absoluteSeconds) {
     V.requireFinite(onTime, 'onTime');
-    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     if (mode === 'free') return { time: onTime, velocityScale: 1.0, modified: false };
 
@@ -142,7 +142,7 @@ rhythmicComplementEngine = (() => {
   /**
    * Auto-select mode based on musical context. Call once per beat.
    */
-  function autoSelectMode(/* absTimeMs */) {
+  function autoSelectMode(/* absoluteSeconds */) {
     beatsSinceChange++;
     if (beatsSinceChange < MODE_CHANGE_INTERVAL) return;
 

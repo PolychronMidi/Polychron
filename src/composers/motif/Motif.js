@@ -242,11 +242,11 @@ applyMotifToNotes = (notes, motif = activeMotif, options = {}) => {
 /**
  * Return up to `max` scheduled notes that start within [windowStart, windowEnd).
  * Preserves order by start time and caps result size. Returns shallow copies.
- * @param {{note:number,startTick:number,duration:number}[]} schedule
+ * @param {{note:number,startTime:number,duration:number}[]} schedule
  * @param {number} windowStart
  * @param {number} windowEnd
  * @param {number} [max=3]
- * @returns {Array<{note:number,startTick:number,duration:number}>}
+ * @returns {Array<{note:number,startTime:number,duration:number}>}
  */
 getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max = 3) => {
   if (!Array.isArray(schedule) || schedule.length === 0) return [];
@@ -254,7 +254,7 @@ getScheduledNotes = (schedule = [], windowStart = 0, windowEnd = Infinity, max =
   // (e.g., due to jitter) are still considered. Slack is based on the
   // subdiv/subsubdiv tick lengths (use .1 as reasonable tolerance).
   const slack = m.max(1, m.round(spSubdiv * 0.1), m.round(spSubsubdiv * 0.1));
-  const hits = schedule.filter(s => Number.isFinite(Number(s.startTick)) && s.startTick >= (windowStart - slack) && s.startTick < windowEnd);
-  hits.sort((a, b) => a.startTick - b.startTick);
+  const hits = schedule.filter(s => Number.isFinite(Number(s.startTime)) && s.startTime >= (windowStart - slack) && s.startTime < windowEnd);
+  hits.sort((a, b) => a.startTime - b.startTime);
   return hits.slice(0, m.max(0, m.min(max, hits.length))).map(s => ({ ...s }));
 };

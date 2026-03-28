@@ -25,7 +25,7 @@ setBinaural = () => {
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const activeLayer = /** @type {string} */ (LM.activeLayer);
   const otherLayer = activeLayer === 'L1' ? 'L2' : 'L1';
-  const absTimeMs = beatStartTime * 1000;
+  const absoluteSeconds = beatStartTime;
 
   // Emit silence, bends, and volume events at a wall-clock second position.
   // timeInSeconds is a plain numeric seconds value; grandFinale appends the 's'
@@ -77,10 +77,10 @@ setBinaural = () => {
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({
         layer: activeLayer,
-        absTimeMs,
+        absTimeMs: absoluteSeconds * 1000,
         syncMs: crossEntry.timeInSeconds * 1000,
         usedCrossLayerShift: true,
-        syncDeltaMs: m.abs(absTimeMs - crossEntry.timeInSeconds * 1000),
+        syncDeltaMs: m.abs(absoluteSeconds - crossEntry.timeInSeconds) * 1000,
         freqOffset: binauralFreqOffset,
         toleranceMs: BINAURAL_SYNC_TOLERANCE_MS,
         flip: flipBin
@@ -90,7 +90,7 @@ setBinaural = () => {
 
   // Timed initiation: only when no cross-layer shift was just consumed
   if (!crossEntry) {
-    const timedShift = absTimeMs >= nextBinauralShiftMs;
+    const timedShift = absoluteSeconds * 1000 >= nextBinauralShiftMs;
     if (firstLoop < 1 || timedShift) {
       // R99 E1: Regime-responsive binaural shift timing.
       // Exploring shifts more frequently (more tonal flux, feeds phase energy),
@@ -100,7 +100,7 @@ setBinaural = () => {
       const binauralInterval = binauralRegime === 'exploring' ? rf(1.5, 3.0)
         : binauralRegime === 'coherent' ? rf(3.0, 5.0)
         : rf(2.0, 4.0);
-      nextBinauralShiftMs = absTimeMs + binauralInterval * 1000;
+      nextBinauralShiftMs = absoluteSeconds * 1000 + binauralInterval * 1000;
       flipBin = !flipBin;
       // Clamp current offset into range before stepping -- instrumentation.js seeds
       // binauralFreqOffset from its own temporary BINAURAL default (0.75-2.25) which
@@ -113,18 +113,18 @@ setBinaural = () => {
       V.requireFinite(binauralPlus, 'binauralPlus');
       V.requireFinite(binauralMinus, 'binauralMinus');
 
-      const syncSec = absTimeMs / 1000;
+      const syncSec = absoluteSeconds;
       emitShiftEvents(syncSec, flipBin);
 
-      lastConsumedByLayer[activeLayer] = absTimeMs / 1000;
+      lastConsumedByLayer[activeLayer] = absoluteSeconds;
 
-      L0.post('binaural', activeLayer, absTimeMs / 1000, { freqOffset: binauralFreqOffset, flip: flipBin });
+      L0.post('binaural', activeLayer, absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin });
 
       if (traceDrain && traceDrain.isEnabled()) {
         traceDrain.recordBinauralShift({
           layer: activeLayer,
-          absTimeMs,
-          syncMs: absTimeMs,
+          absTimeMs: absoluteSeconds * 1000,
+          syncMs: absoluteSeconds * 1000,
           usedCrossLayerShift: false,
           syncDeltaMs: 0,
           freqOffset: binauralFreqOffset,

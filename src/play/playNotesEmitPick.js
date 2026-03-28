@@ -163,17 +163,15 @@ playNotesEmitPick = function(opts = {}) {
     const preShiftTime = onTime;
     onTime = grooveTransfer.applyOffset(activeLayerName, onTime, unit);
     // Rhythmic complement: shift timing for hocket/antiphony/canon
-    const rhythmComplement = rhythmicComplementEngine.suggestComplement(activeLayerName, onTime, onTime * 1000);
+    const rhythmComplement = rhythmicComplementEngine.suggestComplement(activeLayerName, onTime, onTime);
     onTime = rhythmComplement.time;
-    const preSyncMs = onTime * 1000;
-    onTime = rhythmicPhaseLock.applyPhaseLock(preSyncMs, activeLayerName, onTime).time;
-    onTime = temporalGravity.applyGravity(preSyncMs, activeLayerName, onTime);
+    onTime = rhythmicPhaseLock.applyPhaseLock(onTime, activeLayerName, onTime).time;
+    onTime = temporalGravity.applyGravity(onTime, activeLayerName, onTime);
     // Cap cumulative time displacement
     if (m.abs(onTime - preShiftTime) > maxTimeShift) {
       onTime = preShiftTime + m.sign(onTime - preShiftTime) * maxTimeShift;
     }
     onTime = ensureNonNegativeTime(onTime, `${unit}.source.onTime`);
-    const absMsAtOnTime = onTime * 1000;
     const baseOnVel = (isPrimary ? velocity * rf(0.96, 1.04) : binVel * rf(0.88, 0.96)) * pickVelScale;
     const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pickIndex * 101 + sourceIndex;
     const sourceNoiseBase = baseOnVel * (1 - emissionCfg.sourceNoiseInfluence * noiseInfluence);
@@ -187,13 +185,13 @@ playNotesEmitPick = function(opts = {}) {
     const noteAfterSpectral = spectralComplementarity.nudgeToFillGap(noteToEmitBase, activeLayerName).midi;
     // Pass pre-computed pitchBias from processBeat's feedbackOscillator call to avoid double-react
     const feedbackPitchBias = playNotesEmitPickBeatFeedbackPitchBias;
-    const harmonicResult = harmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, absMsAtOnTime, feedbackPitchBias);
+    const harmonicResult = harmonicIntervalGuard.nudgePitch(noteAfterSpectral, activeLayerName, onTime, feedbackPitchBias);
     const noteAfterHarmonic = harmonicResult.midi;
-    const noteToEmit = registerCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTime, absMsAtOnTime).midi;
+    const noteToEmit = registerCollisionAvoider.avoid(activeLayerName, noteAfterHarmonic, onTime).midi;
 
     const texVelBase = m.max(1, m.min(MIDI_MAX_VALUE, m.round(coupledSourceVel * textureMode.velocityScale)));
     const texVelRole = dynamicRoleSwap.modifyVelocity(activeLayerName, texVelBase);
-    const texVelInterference = velocityInterference.applyInterference(absMsAtOnTime, activeLayerName, texVelRole).velocity;
+    const texVelInterference = velocityInterference.applyInterference(onTime, activeLayerName, texVelRole).velocity;
     // Apply dynamic envelope and climax velocity scaling (cached per beat)
     const envelopeScale = crossLayerDynamicEnvelope.getVelocityScale(activeLayerName);
     const texVel = playNotesEmitPickFinalizeFamilyVelocity(
@@ -208,7 +206,7 @@ playNotesEmitPick = function(opts = {}) {
     const srcOnEvt = { timeInSeconds: onTime, type: 'on', vals: [sourceCH, noteToEmit, texVel] };
     const sourceOffTimeRaw = onTime + texSustain * (isPrimary ? 1 : rv(rf(0.92, 1.03)));
     const sourceOffTime = ensureNonNegativeTime(
-      minimumNoteDuration.resolveOffTick(onTime, sourceOffTimeRaw, 'core', spUnit, `${unit}.source.offTimeRaw`),
+      minimumNoteDuration.resolveOffTime(onTime, sourceOffTimeRaw, 'core', spUnit, `${unit}.source.offTimeRaw`),
       `${unit}.source.offTime`
     );
     const srcOffEvt = { timeInSeconds: sourceOffTime, vals: [sourceCH, noteToEmit] };
@@ -216,22 +214,22 @@ playNotesEmitPick = function(opts = {}) {
     traceDrain.recordFamilyVelocity('source', texVel);
     scheduled += 2;
     if (isPrimary) {
-      registerCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTime, absMsAtOnTime);
+      registerCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTime);
       grooveTransfer.recordTiming(activeLayerName, onTime, unit);
       // Embed emitted note into trace for downstream analytics (evolution #1)
       traceDrain.recordNote(noteToEmit, texVel, sourceCH);
       // Record articulation for cross-layer contrast tracking
-      articulationComplement.recordSustain(activeLayerName, texSustain, absMsAtOnTime);
+      articulationComplement.recordSustain(activeLayerName, texSustain, onTime);
       // Record texture mode for texturalMirror
       V.assertObject(textureMode, 'textureMode');
       V.assertNonEmptyString(textureMode.mode, 'textureMode.mode');
-      texturalMirror.recordTexture(activeLayerName, textureMode.mode, absMsAtOnTime);
+      texturalMirror.recordTexture(activeLayerName, textureMode.mode, onTime);
     }
 
     // Record note into cross-layer tracking systems (convergence, spectral, motif echo, entropy, etc.)
     if (isPrimary) {
       scheduled += emitPickCrossLayerRecord({
-        noteToEmit, texVel, activeLayerName, absMsAtOnTime, unit,
+        noteToEmit, texVel, activeLayerName, unit,
         onTime, sourceCH, spUnit, texSustain,
         harmonicOtherMidi: harmonicResult.otherMidi
       });
@@ -252,15 +250,15 @@ playNotesEmitPick = function(opts = {}) {
     let onTime = isPrimary ? on + rv(spUnit * rf(0.2), [-0.01, 0.1], 0.5) : on + rv(spUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
     const reflPreShiftTime = onTime;
     onTime = grooveTransfer.applyOffset(activeLayerName, onTime, unit);
-    const reflectionPreSyncMs = onTime * 1000;
-    onTime = rhythmicPhaseLock.applyPhaseLock(reflectionPreSyncMs, activeLayerName, onTime).time;
-    onTime = temporalGravity.applyGravity(reflectionPreSyncMs, activeLayerName, onTime);
+    const reflectionPreSync = onTime;
+    onTime = rhythmicPhaseLock.applyPhaseLock(reflectionPreSync, activeLayerName, onTime).time;
+    onTime = temporalGravity.applyGravity(reflectionPreSync, activeLayerName, onTime);
     // Cap cumulative time displacement to 10% of spBeat
     if (m.abs(onTime - reflPreShiftTime) > maxTimeShift) {
       onTime = reflPreShiftTime + m.sign(onTime - reflPreShiftTime) * maxTimeShift;
     }
     onTime = ensureNonNegativeTime(onTime, `${unit}.reflection.onTime`);
-    const reflectionAbsMsAtOnTime = onTime * 1000;
+
     const baseOnVel = (isPrimary ? velocity * rf(0.9, 1.02) : binVel * rf(0.84, 0.94)) * pickVelScale;
     const reflectionVoiceId = voiceIdSeed + reflectionCH * 19 + pickIndex * 131 + reflectionIndex;
     const reflectionNoiseBase = baseOnVel * (1 - emissionCfg.reflectionNoiseInfluence * noiseInfluence);
@@ -272,12 +270,12 @@ playNotesEmitPick = function(opts = {}) {
     const reflectionEmitNoteBase = reflectApplyShift
       ? modClamp(pickNote + selectedShift, minMidi, maxMidi)
       : pickNote;
-    const reflectionEmitNote = registerCollisionAvoider.avoid(activeLayerName, reflectionEmitNoteBase, onTime, reflectionAbsMsAtOnTime).midi;
+    const reflectionEmitNote = registerCollisionAvoider.avoid(activeLayerName, reflectionEmitNoteBase, onTime).midi;
 
     const reflOnEvt = { timeInSeconds: onTime, type: 'on', vals: [reflectionCH, reflectionEmitNote, coupledReflectionVel] };
     const reflectionOffTimeRaw = onTime + sustain * (isPrimary ? rf(0.7, 1.2) : rv(rf(0.65, 1.3)));
     const reflectionOffTime = ensureNonNegativeTime(
-      minimumNoteDuration.resolveOffTick(onTime, reflectionOffTimeRaw, 'core', spUnit, `${unit}.reflection.offTimeRaw`),
+      minimumNoteDuration.resolveOffTime(onTime, reflectionOffTimeRaw, 'core', spUnit, `${unit}.reflection.offTimeRaw`),
       `${unit}.reflection.offTime`
     );
     const reflOffEvt = { timeInSeconds: reflectionOffTime, vals: [reflectionCH, reflectionEmitNote] };
@@ -285,7 +283,7 @@ playNotesEmitPick = function(opts = {}) {
     traceDrain.recordFamilyVelocity('reflection', coupledReflectionVel);
     scheduled += 2;
     if (isPrimary) {
-      registerCollisionAvoider.recordNote(activeLayerName, reflectionEmitNote, onTime, reflectionAbsMsAtOnTime);
+      registerCollisionAvoider.recordNote(activeLayerName, reflectionEmitNote, onTime);
       grooveTransfer.recordTiming(activeLayerName, onTime, unit);
     }
 
@@ -305,15 +303,15 @@ playNotesEmitPick = function(opts = {}) {
       let onTime = isPrimary ? on + rv(spUnit * rf(0.1), [-0.01, 0.1], 0.5) : on + rv(spUnit * rf(1 / 3), [-0.01, 0.1], 0.5);
       const bassPreShiftTime = onTime;
       onTime = grooveTransfer.applyOffset(activeLayerName, onTime, unit);
-      const bassPreSyncMs = onTime * 1000;
-      onTime = rhythmicPhaseLock.applyPhaseLock(bassPreSyncMs, activeLayerName, onTime).time;
-      onTime = temporalGravity.applyGravity(bassPreSyncMs, activeLayerName, onTime);
+      const bassPreSync = onTime;
+      onTime = rhythmicPhaseLock.applyPhaseLock(bassPreSync, activeLayerName, onTime).time;
+      onTime = temporalGravity.applyGravity(bassPreSync, activeLayerName, onTime);
       // Cap cumulative time displacement to 10% of spBeat
       if (m.abs(onTime - bassPreShiftTime) > maxTimeShift) {
         onTime = bassPreShiftTime + m.sign(onTime - bassPreShiftTime) * maxTimeShift;
       }
       onTime = ensureNonNegativeTime(onTime, `${unit}.bass.onTime`);
-      const bassAbsMsAtOnTime = onTime * 1000;
+
       const onVelRaw = (isPrimary ? velocity * rf(0.98, 1.08) : binVel * rf(0.92, 1.02)) * pickVelScale;
       const bassVoiceId = voiceIdSeed + bassCH * 23 + pickIndex * 151 + bassIndex;
       const bassNoiseBase = onVelRaw * (1 - emissionCfg.bassNoiseInfluence * noiseInfluence);
@@ -324,7 +322,7 @@ playNotesEmitPick = function(opts = {}) {
       const bassApplyShift = bassSelected && selectedShift !== 0 && rf() < perProbScaledBass;
       const bassEmitBase = bassApplyShift ? pickNote + selectedShift : pickNote;
       const bassNoteBase = modClamp(bassEmitBase, minMidi, m.min(59, maxMidi));
-      const bassNote = registerCollisionAvoider.avoid(activeLayerName, bassNoteBase, onTime, bassAbsMsAtOnTime).midi;
+      const bassNote = registerCollisionAvoider.avoid(activeLayerName, bassNoteBase, onTime).midi;
 
       const bassOnEvt = { timeInSeconds: onTime, type: 'on', vals: [bassCH, bassNote, coupledBassVel] };
       const bassSustainScale = textureMode.mode === 'chordBurst' ? textureMode.sustainScale * rf(1.2, 1.6)
@@ -332,7 +330,7 @@ playNotesEmitPick = function(opts = {}) {
         : 1;
       const bassOffTimeRaw = onTime + sustain * bassSustainScale * (isPrimary ? rf(1.1, 3) : rv(rf(0.8, 3.5)));
       const bassOffTime = ensureNonNegativeTime(
-        minimumNoteDuration.resolveOffTick(onTime, bassOffTimeRaw, 'core', spUnit, `${unit}.bass.offTimeRaw`),
+        minimumNoteDuration.resolveOffTime(onTime, bassOffTimeRaw, 'core', spUnit, `${unit}.bass.offTimeRaw`),
         `${unit}.bass.offTime`
       );
       const bassOffEvt = { timeInSeconds: bassOffTime, vals: [bassCH, bassNote] };
@@ -340,7 +338,7 @@ playNotesEmitPick = function(opts = {}) {
       traceDrain.recordFamilyVelocity('bass', coupledBassVel);
       scheduled += 2;
       if (isPrimary) {
-        registerCollisionAvoider.recordNote(activeLayerName, bassNote, onTime, bassAbsMsAtOnTime);
+        registerCollisionAvoider.recordNote(activeLayerName, bassNote, onTime);
         grooveTransfer.recordTiming(activeLayerName, onTime, unit);
       }
     }

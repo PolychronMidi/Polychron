@@ -13,30 +13,29 @@ const EMIT_PICK_CROSS_LAYER_PROFILE = process.argv.includes('--trace');
 emitPickCrossLayerRecord = function(ctx) {
   const emitPickCrossLayerStartedAt = EMIT_PICK_CROSS_LAYER_PROFILE ? process.hrtime.bigint() : 0n;
   V.assertPlainObject(ctx, 'ctx');
-  const { noteToEmit, texVel, activeLayerName, absMsAtOnTime, unit, onTime, sourceCH, spUnit, texSustain, harmonicOtherMidi } = ctx;
+  const { noteToEmit, texVel, activeLayerName, unit, onTime, sourceCH, spUnit, texSustain, harmonicOtherMidi } = ctx;
 
-  const absMs = absMsAtOnTime;
-  const atwTime = absMs / 1000;
-  L0.post('note', activeLayerName, atwTime, { midi: noteToEmit, velocity: texVel, unit, time: atwTime });
+  const timeInSeconds = onTime;
+  L0.post('note', activeLayerName, timeInSeconds, { midi: noteToEmit, velocity: texVel, unit, time: timeInSeconds });
 
   // Cross-layer interactions
-  convergenceDetector.postOnset(absMs, activeLayerName, noteToEmit, texVel);
-  const convergenceResult = convergenceDetector.applyIfConverged(absMs, activeLayerName, noteToEmit, texVel);
+  convergenceDetector.postOnset(timeInSeconds, activeLayerName, noteToEmit, texVel);
+  const convergenceResult = convergenceDetector.applyIfConverged(timeInSeconds, activeLayerName, noteToEmit, texVel);
   if (convergenceResult) {
-    feedbackOscillator.inject(absMs, activeLayerName, clamp(convergenceResult.rarity, 0, 1), 'convergence', noteToEmit % 12);
+    feedbackOscillator.inject(timeInSeconds, activeLayerName, clamp(convergenceResult.rarity, 0, 1), 'convergence', noteToEmit % 12);
   }
-  velocityInterference.postVelocity(absMs, activeLayerName, texVel, velocityInterference.measureDelta(activeLayerName, atwTime));
+  velocityInterference.postVelocity(timeInSeconds, activeLayerName, texVel, velocityInterference.measureDelta(activeLayerName, timeInSeconds));
 
   // Spectral Complementarity: record note for histogram tracking
   spectralComplementarity.recordNote(noteToEmit, activeLayerName);
 
   // Cross-Layer Motif Echo: record note for interval capture
-  motifEcho.recordNote(noteToEmit, activeLayerName, absMs);
-  motifIdentityMemory.recordNote(activeLayerName, noteToEmit, absMs);
+  motifEcho.recordNote(noteToEmit, activeLayerName, timeInSeconds);
+  motifIdentityMemory.recordNote(activeLayerName, noteToEmit, timeInSeconds);
 
   // Deliver pending motif echo as actual emitted notes
   let additionalScheduled = 0;
-  const deliveredEcho = motifEcho.deliverEcho(absMs, activeLayerName, noteToEmit);
+  const deliveredEcho = motifEcho.deliverEcho(timeInSeconds, activeLayerName, noteToEmit);
   if (deliveredEcho && Array.isArray(deliveredEcho.notes) && deliveredEcho.notes.length > 1) {
     for (let echoIndex = 1; echoIndex < deliveredEcho.notes.length; echoIndex++) {
       const echoNote = deliveredEcho.notes[echoIndex];
@@ -44,7 +43,7 @@ emitPickCrossLayerRecord = function(ctx) {
       const echoStagger = spUnit * rf(0.015, 0.06) * echoStep;
       const echoVel = m.max(1, m.min(MIDI_MAX_VALUE, m.round(texVel * rf(0.65, 0.95))));
       const echoOnTime = onTime + echoStagger;
-      const echoOffTime = minimumNoteDuration.resolveOffTick(
+      const echoOffTime = minimumNoteDuration.resolveOffTime(
         echoOnTime,
         echoOnTime + texSustain * rf(0.6, 0.95),
         'ornament',
@@ -65,13 +64,13 @@ emitPickCrossLayerRecord = function(ctx) {
   // Use pre-computed otherMidi from harmonicIntervalGuard.nudgePitch() when available,
   // avoiding a redundant absoluteTimeWindow.getLastNote() query.
   if (Number.isFinite(harmonicOtherMidi) && harmonicOtherMidi > 0) {
-    harmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, absMs);
+    harmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, timeInSeconds);
   } else if (harmonicOtherMidi === -1) {
     // harmonicOtherMidi === -1 means nudgePitch found no other-layer note; skip query entirely
   } else {
-    // Fallback: query ATW directly (should not normally occur)
+    // Fallback: query L0 directly (should not normally occur)
     const otherLayerForGuard = activeLayerName === 'L1' ? 'L2' : 'L1';
-    const otherRecentEntry = L0.getLast('note', { layer: otherLayerForGuard, since: atwTime - 0.5, windowSeconds: 0.5 });
+    const otherRecentEntry = L0.getLast('note', { layer: otherLayerForGuard, since: timeInSeconds - 0.5, windowSeconds: 0.5 });
     if (otherRecentEntry) {
       const otherMidiCandidate = Number(
         (Number.isFinite(Number(otherRecentEntry.midi)))
@@ -80,7 +79,7 @@ emitPickCrossLayerRecord = function(ctx) {
       );
       V.requireFinite(otherMidiCandidate, 'otherMidiCandidate');
       if (otherMidiCandidate > 0) {
-        harmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidiCandidate, absMs);
+        harmonicIntervalGuard.recordCrossInterval(noteToEmit, otherMidiCandidate, timeInSeconds);
       }
     }
   }
@@ -101,7 +100,7 @@ emitPickCrossLayerRecord = function(ctx) {
       memI.emitPickCrossLayerRecordParsedIntervals = memIntervals;
     }
     if (memIntervals.length >= 2) {
-      const memConvergence = convergenceDetector.wasRecent(absMs, activeLayerName, 500);
+      const memConvergence = convergenceDetector.wasRecent(timeInSeconds, activeLayerName, 500);
       pitchMemoryRecall.memorize(
         memIntervals,
         [noteToEmit % 12],

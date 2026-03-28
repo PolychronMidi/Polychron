@@ -10,8 +10,8 @@ crossLayerSilhouette = (() => {
   const CORRECTION_GAIN_REGIME = { exploring: 0.75, evolving: 1.0, coherent: 1.0 };
   const ARC_HISTORY = 16;
 
-  /** @type {{ density: number, register: number, dynamic: number, entropy: number, timeMs: number }[]} */
-  const arcHistory = new Array(ARC_HISTORY).fill(null).map(() => ({ density: 0, register: 0, dynamic: 0, entropy: 0, timeMs: 0 }));
+  /** @type {{ density: number, register: number, dynamic: number, entropy: number, timeInSeconds: number }[]} */
+  const arcHistory = new Array(ARC_HISTORY).fill(null).map(() => ({ density: 0, register: 0, dynamic: 0, entropy: 0, timeInSeconds: 0 }));
   let arcIndex = 0;
   let arcCount = 0;
 
@@ -22,11 +22,11 @@ crossLayerSilhouette = (() => {
 
   /**
    * Tick the silhouette analyzer each beat.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} [activeLayer='L1']
    */
-  function tick(absTimeMs, activeLayer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function tick(absoluteSeconds, activeLayer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const layerForSpectral = (typeof activeLayer === 'string' && activeLayer.length > 0) ? activeLayer : 'L1';
 
     // Gather all available signals
@@ -41,7 +41,7 @@ crossLayerSilhouette = (() => {
     const heat = interactionHeatMap.getDensity();
 
     // Convergence intensity boosts dynamic reading
-    const convergenceRecent = convergenceDetector.wasRecent(absTimeMs, 'L1', 500) || convergenceDetector.wasRecent(absTimeMs, 'L2', 500);
+    const convergenceRecent = convergenceDetector.wasRecent(absoluteSeconds, 'L1', 500) || convergenceDetector.wasRecent(absoluteSeconds, 'L2', 500);
 
     // Compute raw metrics
     const rawDensity = clamp(heat, 0, 1);
@@ -66,7 +66,7 @@ crossLayerSilhouette = (() => {
     entry.register = smoothedRegister;
     entry.dynamic = smoothedDynamic;
     entry.entropy = smoothedEntropy;
-    entry.timeMs = absTimeMs;
+    entry.timeInSeconds = absoluteSeconds;
 
     arcIndex = (arcIndex + 1) % ARC_HISTORY;
     if (arcCount < ARC_HISTORY) arcCount++;
@@ -120,7 +120,7 @@ crossLayerSilhouette = (() => {
 
   /**
    * Get the arc history for trend analysis.
-   * @returns {{ density: number, register: number, dynamic: number, entropy: number, timeMs: number }[]}
+   * @returns {{ density: number, register: number, dynamic: number, entropy: number, timeInSeconds: number }[]}
    */
   function getSilhouetteArc() {
     const result = new Array(arcCount);
@@ -138,7 +138,7 @@ crossLayerSilhouette = (() => {
         entry.register = 0;
         entry.dynamic = 0;
         entry.entropy = 0;
-        entry.timeMs = 0;
+        entry.timeInSeconds = 0;
     }
     smoothedDensity = 0.5;
     smoothedRegister = 0.5;

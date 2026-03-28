@@ -200,7 +200,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
 
     // #7 Dynamic Role Swap: evaluate at phrase boundary (tension valley = natural swap point)
     const phraseTension = mainBootstrap.requireUnitInterval('conductorState.compositeIntensity', conductorState.getField('compositeIntensity'));
-    const roleSwapResult = dynamicRoleSwap.evaluateSwap(beatStartTime * 1000, phraseTension);
+    const roleSwapResult = dynamicRoleSwap.evaluateSwap(beatStartTime, phraseTension);
     const rsp = MAIN_LOOP_CONTROLS.trustPayoffs.roleSwap;
     if (roleSwapResult.swapped) {
       adaptiveTrustScores.registerOutcome(trustSystems.names.ROLE_SWAP, rsp.swapped);
@@ -211,7 +211,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         phraseIndex,
         sectionIndex,
         phraseTension
-      }, beatStartTime * 1000);
+      }, beatStartTime);
     }
 
     LM.activate('L2', true);
@@ -233,7 +233,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Clean layer state at phrase boundary to prevent state bleeding
     playMotifs.resetLayerState(L2);
     LM.advance('L2', 'phrase');
-    interactionHeatMap.flushDeferredOrphans(mainBootstrap.requireFiniteNumber('beatStartTime', beatStartTime) * 1000);
+    interactionHeatMap.flushDeferredOrphans(mainBootstrap.requireFiniteNumber('beatStartTime', beatStartTime));
   }
 
   if (sectionL1BeatCount <= 0) {

@@ -12,15 +12,15 @@ temporalGravity = (() => {
 
   /**
    * Post a density sample from the active layer.
-   * @param {number} absTimeMs - absolute ms
+   * @param {number} absoluteSeconds - absolute ms
    * @param {string} layer - source layer
    * @param {number} density - normalized 0-1 note density in the recent window
    */
-  function postDensity(absTimeMs, layer, density) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function postDensity(absoluteSeconds, layer, density) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(layer, 'layer');
     const densityN = V.requireFinite(density, 'density');
-    L0.post(DENSITY_CHANNEL, layer, absTimeMs / 1000, {
+    L0.post(DENSITY_CHANNEL, layer, absoluteSeconds, {
       density: clamp(densityN, 0, 1)
     });
   }
@@ -47,19 +47,19 @@ temporalGravity = (() => {
   /**
    * Compute a gravity-adjusted time offset for a note about to be placed.
    * Pulls the note toward a dense cluster in the other layer.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
    * @param {number} originalTime - the time (seconds) where the note would normally go
    * @returns {number} adjusted time in seconds (may be shifted toward the gravity well)
    */
-  function applyGravity(absTimeMs, activeLayer, originalTime) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function applyGravity(absoluteSeconds, activeLayer, originalTime) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(activeLayer, 'activeLayer');
     const originalTimeN = V.requireFinite(originalTime, 'originalTime');
 
     // Find the nearest density peak from another layer
     const well = L0.findClosest(
-      DENSITY_CHANNEL, absTimeMs / 1000, GRAVITY_TOLERANCE_MS / 1000, activeLayer
+      DENSITY_CHANNEL, absoluteSeconds, GRAVITY_TOLERANCE_MS / 1000, activeLayer
     );
     if (!well) return originalTimeN;
     V.assertObject(well, 'applyGravity.well');
@@ -69,7 +69,7 @@ temporalGravity = (() => {
 
     // Pull strength proportional to density and proximity
     const wellTimeMs = wellTimeSec * 1000;
-    const dist = m.abs(wellTimeMs - absTimeMs);
+    const dist = m.abs(wellTimeMs - absoluteSeconds);
     const proximity = 1 - (dist / GRAVITY_TOLERANCE_MS);
     const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO;
 

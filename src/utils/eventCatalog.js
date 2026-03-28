@@ -112,7 +112,7 @@ eventCatalog = (() => {
       case names.CROSS_LAYER_EXPLAIN:
         V.assertNonEmptyString(data.type, 'cross-layer-explain.type');
         V.assertNonEmptyString(data.layer, 'cross-layer-explain.layer');
-        V.assertFinite(data.absTimeMs, 'cross-layer-explain.absTimeMs');
+        V.assertFinite(data.absoluteSeconds, 'cross-layer-explain.absoluteSeconds');
         return true;
 
       case names.CONVERGENCE_HARMONIC_TRIGGER:
@@ -120,7 +120,7 @@ eventCatalog = (() => {
         V.assertFinite(data.bias, 'convergence-harmonic-trigger.bias');
         V.assertRange(data.rarity, 0, 1, 'convergence-harmonic-trigger.rarity');
         V.assertRange(data.triggerCount, 0, Number.MAX_SAFE_INTEGER, 'convergence-harmonic-trigger.triggerCount');
-        V.assertFinite(data.absTimeMs, 'convergence-harmonic-trigger.absTimeMs');
+        V.assertFinite(data.absoluteSeconds, 'convergence-harmonic-trigger.absoluteSeconds');
         return true;
 
       case names.CROSS_LAYER_CONVERGENCE:
@@ -133,15 +133,15 @@ eventCatalog = (() => {
         V.assertArray(data.burstNotes, 'cross-layer-convergence.burstNotes');
         V.assertFinite(data.burstVel, 'cross-layer-convergence.burstVel');
         V.assertRange(data.totalConvergences, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-convergence.totalConvergences');
-        V.assertFinite(data.absTimeMs, 'cross-layer-convergence.absTimeMs');
+        V.assertFinite(data.absoluteSeconds, 'cross-layer-convergence.absoluteSeconds');
         return true;
 
       case names.CROSS_LAYER_CADENCE_ALIGN:
         V.assertNonEmptyString(data.layer, 'cross-layer-cadence-align.layer');
         V.assertRange(data.combinedTension, 0, 1, 'cross-layer-cadence-align.combinedTension');
-        V.assertRange(data.syncTick, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-cadence-align.syncTick');
+        V.assertRange(data.syncOffset, 0, Number.MAX_SAFE_INTEGER, 'cross-layer-cadence-align.syncOffset');
         V.assertBoolean(data.otherCadenceSuggested, 'cross-layer-cadence-align.otherCadenceSuggested');
-        V.assertFinite(data.absTimeMs, 'cross-layer-cadence-align.absTimeMs');
+        V.assertFinite(data.absoluteSeconds, 'cross-layer-cadence-align.absoluteSeconds');
         return true;
 
       case names.PHRASE_BOUNDARY:

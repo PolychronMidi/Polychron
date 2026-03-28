@@ -7,13 +7,13 @@
 emergentDownbeat = (() => {
   const V = validator.create('emergentDownbeat');
   const CHANNEL = 'emergentDownbeat';
-  const MIN_DOWNBEAT_INTERVAL_MS = 800;
+  const MIN_DOWNBEAT_INTERVAL_SEC = 0.8;
   const ACCENT_VELOCITY_BOOST = 0.2; // 20% velocity increase
   const BASS_REINFORCE_OCTAVE = 2;   // add bass note 2 octaves below
   const STEREO_WIDEN_CC = 10;        // pan CC
   const STEREO_WIDEN_AMOUNT = 20;    // pan offset from center (6420)
 
-  let lastDownbeatMs = -Infinity;
+  let lastDownbeatSec = -Infinity;
   let downbeatCount = 0;
 
   /**
@@ -23,13 +23,13 @@ emergentDownbeat = (() => {
   /**
    * Evaluate whether the current moment constitutes an emergent downbeat.
    * Combines multiple cross-layer signals into a single downbeat score.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {DownbeatSignals} signals - which cross-layer events just fired
    * @returns {{ isDownbeat: boolean, strength: number, signalCount: number } | null}
    */
-  function detect(absTimeMs, signals) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
-    if (absTimeMs - lastDownbeatMs < MIN_DOWNBEAT_INTERVAL_MS) return null;
+  function detect(absoluteSeconds, signals) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
+    if (absoluteSeconds - lastDownbeatSec < MIN_DOWNBEAT_INTERVAL_SEC) return null;
 
     // Count simultaneous signals
     let score = 0;
@@ -42,11 +42,11 @@ emergentDownbeat = (() => {
     // Need at least 2 coincident signals and score > 0.4 for a downbeat
     if (signalCount < 2 || score < 0.4) return null;
 
-    lastDownbeatMs = absTimeMs;
+    lastDownbeatSec = absoluteSeconds;
     downbeatCount++;
 
     // Post to ATG for other systems to see
-    L0.post(CHANNEL, 'both', absTimeMs / 1000, { strength: score, signalCount });
+    L0.post(CHANNEL, 'both', absoluteSeconds, { strength: score, signalCount });
 
     return { isDownbeat: true, strength: clamp(score, 0, 1), signalCount };
   }
@@ -106,15 +106,15 @@ emergentDownbeat = (() => {
 
   /**
    * Full emergent downbeat application: detect + accent + bass + stereo.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    * @param {DownbeatSignals} signals
    * @param {number} midi - current note
    * @param {number} velocity - current velocity
    * @returns {{ isDownbeat: boolean, accentedVelocity: number, strength: number } | null}
    */
-  function applyIfDownbeat(absTimeMs, layer, signals, midi, velocity) {
-    const result = detect(absTimeMs, signals);
+  function applyIfDownbeat(absoluteSeconds, layer, signals, midi, velocity) {
+    const result = detect(absoluteSeconds, signals);
     if (!result) return null;
 
     const av = accentVelocity(velocity, result.strength);
@@ -128,7 +128,7 @@ emergentDownbeat = (() => {
   function getDownbeatCount() { return downbeatCount; }
 
   function reset() {
-    lastDownbeatMs = -Infinity;
+    lastDownbeatSec = -Infinity;
     downbeatCount = 0;
   }
 

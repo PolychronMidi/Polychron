@@ -12,7 +12,7 @@ harmonicIntervalGuard = (() => {
   // 0=unison, 1=m2, 2=M2, 3=m3, 4=M3, 5=P4, 6=tritone, 7=P5, 8=m6, 9=M6, 10=m7, 11=M7
   const CONSONANCE = Object.freeze([1, 0.1, 0.25, 0.6, 0.7, 0.85, 0.05, 0.95, 0.65, 0.7, 0.2, 0.15]);
 
-  /** @type {{ midi: number, absTimeMs: number, layer: string }[]} */
+  /** @type {{ midi: number, absoluteSeconds: number, layer: string }[]} */
   const history = [];
 
   /** @type {number[]} rolling interval class histogram (12 bins, raw counts) */
@@ -23,16 +23,16 @@ harmonicIntervalGuard = (() => {
    * Record a cross-layer interval observation.
    * @param {number} midiA
    * @param {number} midiB
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    */
-  function recordCrossInterval(midiA, midiB, absTimeMs) {
+  function recordCrossInterval(midiA, midiB, absoluteSeconds) {
     V.requireFinite(midiA, 'midiA');
     V.requireFinite(midiB, 'midiB');
-    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const ic = ((midiA - midiB) % 12 + 12) % 12;
     intervalHist[ic]++;
     histTotal++;
-    history.push({ midi: midiA, absTimeMs, layer: 'cross' });
+    history.push({ midi: midiA, absoluteSeconds, layer: 'cross' });
     if (history.length > MAX_HISTORY) {
       history.shift();
     }
@@ -56,13 +56,13 @@ harmonicIntervalGuard = (() => {
    * Accepts pre-computed pitchBias to avoid re-calling feedbackOscillator.
    * @param {number} midi - original MIDI note
    * @param {string} activeLayer
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {number} [externalPitchBias=-1] - pre-computed pitch bias from feedbackOscillator
    * @returns {{ midi: number, nudged: boolean, interval: number, otherMidi: number }}
    */
-  function nudgePitch(midi, activeLayer, absTimeMs, externalPitchBias) {
+  function nudgePitch(midi, activeLayer, absoluteSeconds, externalPitchBias) {
     V.requireFinite(midi, 'midi');
-    V.requireFinite(absTimeMs, 'absTimeMs');
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     // Get dissonance target from intent
     const intent = sectionIntentCurves.getLastIntent();
@@ -78,7 +78,7 @@ harmonicIntervalGuard = (() => {
     let otherRecentMidi = -1;
     const lastNote = L0.getLast('note', {
       layer: otherLayer,
-      since: (absTimeMs / 1000) - 1,
+      since: absoluteSeconds - 1,
       windowSeconds: 1
     });
     if (lastNote) {
@@ -117,7 +117,7 @@ harmonicIntervalGuard = (() => {
 
     if (bestNote !== midi) {
       const newIC = ((bestNote - otherRecentMidi) % 12 + 12) % 12;
-      recordCrossInterval(bestNote, otherRecentMidi, absTimeMs);
+      recordCrossInterval(bestNote, otherRecentMidi, absoluteSeconds);
       return { midi: bestNote, nudged: true, interval: newIC, otherMidi: otherRecentMidi };
     }
 

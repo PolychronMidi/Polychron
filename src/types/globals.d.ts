@@ -82,7 +82,7 @@ interface SignalReaderAPI {
   densityAttribution(): BiasAttribution;
   tensionAttribution(): BiasAttribution;
   flickerAttribution(): BiasAttribution;
-  recentEvents(type: string, limit?: number): Array<{ type: string; layer: string; payload: unknown; absTimeMs: number }>;
+  recentEvents(type: string, limit?: number): Array<{ type: string; layer: string; payload: unknown; absoluteSeconds: number }>;
 }
 
 interface CrossLayerRegistryAPI {
@@ -239,14 +239,14 @@ interface ConductorConfigAPI {
 }
 
 interface ATGEntry {
-  timeMs: number;
+  timeInSeconds: number;
   layer: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
 interface AbsoluteTimeGridAPI {
-  post(channel: string, layer: string, timeMs: number, data?: Record<string, unknown>): void;
+  post(channel: string, layer: string, timeInSeconds: number, data?: Record<string, unknown>): void;
   query(channel: string, aroundMs: number, toleranceMs: number, opts?: { excludeLayer?: string; onlyLayer?: string }): ATGEntry[];
   findClosest(channel: string, aroundMs: number, toleranceMs: number, excludeLayer?: string): ATGEntry | null;
   getChannels(): string[];
@@ -260,13 +260,13 @@ interface ExplainabilityEntry {
   type: string;
   layer: string;
   payload: any;
-  absTimeMs: number;
+  absoluteSeconds: number;
 }
 
 interface ExplainabilityBusAPI {
-  emit(type: string, layer: string, payload: any, absTimeMs?: number): ExplainabilityEntry;
+  emit(type: string, layer: string, payload: any, absoluteSeconds?: number): ExplainabilityEntry;
   getRecent(limit?: number): ExplainabilityEntry[];
-  querySince(sinceMs: number): ExplainabilityEntry[];
+  querySince(sinceSec: number): ExplainabilityEntry[];
   queryByType(type: string, limit?: number): ExplainabilityEntry[];
   reset(): void;
 }
@@ -645,8 +645,7 @@ interface CrossLayerHelpersAPI {
   createLayerPair<T>(l1Value: T, l2Value?: T): { L1: T; L2: T };
   getOtherLayer(layer: string): string;
   scaleVelocity(velocity: number, factor: number): number;
-  msToSyncTick(timeMs: number): number;
-  tickToAbsMs(tick: number, fallbackAbsMs?: number): number;
+  syncOffset(timeInSeconds: number): number;
   getOctaveBounds(options?: { lowOffset?: number; clipToMidi?: boolean; anchorMidi?: number; radius?: number }): { lo: number; hi: number };
 }
 
@@ -667,10 +666,10 @@ interface NegotiationEngineAPI {
 
 interface InteractionHeatMapAPI {
   record(systemName: string, intensity: number): void;
-  flushBeat(absTimeMs: number): void;
+  flushBeat(absoluteSeconds: number): void;
   deferBeat(beatKey: string): void;
-  flushBeatPair(absTimeMs: number, beatKey: string): void;
-  flushDeferredOrphans(absTimeMs: number): void;
+  flushBeatPair(absoluteSeconds: number, beatKey: string): void;
+  flushDeferredOrphans(absoluteSeconds: number): void;
   getDensity(): number;
   getSystemHeat(): Record<string, number>;
   getBreathingRecommendation(): { recommendation: 'increase' | 'maintain' | 'decrease'; density: number; beatsTracked: number };
@@ -698,15 +697,15 @@ interface EntropyMetricsAPI {
 }
 
 interface CrossLayerSilhouetteAPI {
-  tick(absTimeMs: number, activeLayer?: string): void;
+  tick(absoluteSeconds: number, activeLayer?: string): void;
   getCorrections(): { densityBias: number; registerBias: number; dynamicBias: number; entropyBias: number };
   getSilhouette(): { density: number; register: number; dynamic: number; entropy: number };
-  getSilhouetteArc(): Array<{ density: number; register: number; dynamic: number; entropy: number; timeMs: number }>;
+  getSilhouetteArc(): Array<{ density: number; register: number; dynamic: number; entropy: number; timeInSeconds: number }>;
   reset(): void;
 }
 
 interface CrossLayerClimaxEngineAPI {
-  tick(absTimeMs: number): void;
+  tick(absoluteSeconds: number): void;
   getModifiers(layer?: string): { playProbScale: number; velocityScale: number; registerBias: number; entropyTarget: number };
   isApproaching(): boolean;
   isPeak(): boolean;
@@ -716,127 +715,127 @@ interface CrossLayerClimaxEngineAPI {
 }
 
 interface ConvergenceDetectorAPI {
-  postOnset(absTimeMs: number, layer: string, midi: number, velocity: number): void;
-  detect(absTimeMs: number, activeLayer: string): { rarity: number; otherMidi: number; otherVelocity: number } | null;
-  applyIfConverged(absTimeMs: number, activeLayer: string, currentMidi: number, currentVelocity: number): { convergence: boolean; rarity: number; burstNotes: number[]; totalConvergences: number } | null;
-  wasRecent(absTimeMs: number, layer: string, windowMs?: number): boolean;
+  postOnset(absoluteSeconds: number, layer: string, midi: number, velocity: number): void;
+  detect(absoluteSeconds: number, activeLayer: string): { rarity: number; otherMidi: number; otherVelocity: number } | null;
+  applyIfConverged(absoluteSeconds: number, activeLayer: string, currentMidi: number, currentVelocity: number): { convergence: boolean; rarity: number; burstNotes: number[]; totalConvergences: number } | null;
+  wasRecent(absoluteSeconds: number, layer: string, windowMs?: number): boolean;
   getLastConvergenceMs(layer: string): number;
   getConvergenceCount(): number;
   reset(): void;
 }
 
 interface GrooveTransferAPI {
-  recordTiming(layer: string, tick: number, unit: string): void;
-  applyOffset(layer: string, tick: number, unit: string): number;
+  recordTiming(layer: string, timeSec: number, unit: string): void;
+  applyOffset(layer: string, timeSec: number, unit: string): number;
   reset(): void;
 }
 
 interface TemporalGravityAPI {
-  postDensity(absTimeMs: number, layer: string, density: number): void;
+  postDensity(absoluteSeconds: number, layer: string, density: number): void;
   measureDensity(layer: string, absTimeSec: number): number;
-  applyGravity(absTimeMs: number, activeLayer: string, originalTick: number): number;
+  applyGravity(absoluteSeconds: number, activeLayer: string, originalTime: number): number;
   reset(): void;
 }
 
 interface StutterContagionAPI {
-  postStutter(absTimeMs: number, layer: string, intensity: number, channels: number[], type: string): void;
-  checkContagion(absTimeMs: number, activeLayer: string): { syncTick: number; intensity: number; channels: number[]; type: string } | null;
-  apply(absTimeMs: number, activeLayer: string): void;
+  postStutter(absoluteSeconds: number, layer: string, intensity: number, channels: number[], type: string): void;
+  checkContagion(absoluteSeconds: number, activeLayer: string): { syncOffset: number; intensity: number; channels: number[]; type: string } | null;
+  apply(absoluteSeconds: number, activeLayer: string): void;
   reset(): void;
 }
 
 interface RhythmicPhaseLockAPI {
-  postBeat(absTimeMs: number, layer: string, beatDurationMs: number): void;
-  measurePhase(absTimeMs: number, activeLayer: string): { phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; otherBeatMs: number } | null;
-  applyPhaseLock(absTimeMs: number, activeLayer: string, originalTime: number): { time: number; mode: 'lock' | 'drift' | 'repel'; phaseDiff: number };
+  postBeat(absoluteSeconds: number, layer: string, spBeatVal: number): void;
+  measurePhase(absoluteSeconds: number, activeLayer: string): { phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; otherBeatSec: number } | null;
+  applyPhaseLock(absoluteSeconds: number, activeLayer: string, originalTime: number): { time: number; mode: 'lock' | 'drift' | 'repel'; phaseDiff: number };
   getMode(): 'lock' | 'drift' | 'repel';
   getLockCount(): number;
   reset(): void;
 }
 
 interface RhythmicComplementEngineAPI {
-  analyzeOtherLayer(activeLayer: string, absTimeMs: number): { gaps: number[]; density: number; avgIOI: number };
-  suggestComplement(layer: string, onTime: number, absTimeMs: number): { time: number; velocityScale: number; modified: boolean };
+  analyzeOtherLayer(activeLayer: string, absoluteSeconds: number): { gaps: number[]; density: number; avgIOI: number };
+  suggestComplement(layer: string, onTime: number, absoluteSeconds: number): { time: number; velocityScale: number; modified: boolean };
   getMode(): 'hocket' | 'antiphony' | 'canon' | 'free';
   setMode(newMode: 'hocket' | 'antiphony' | 'canon' | 'free'): void;
-  autoSelectMode(absTimeMs?: number): void;
+  autoSelectMode(absoluteSeconds?: number): void;
   reset(): void;
 }
 
 interface FeedbackOscillatorAPI {
-  inject(absTimeMs: number, layer: string, energy: number, impulseType?: string, pitchClass?: number): void;
-  react(absTimeMs: number, activeLayer: string): { energy: number; roundTrip: number; impulseType: string; syncTick: number; pitchBias: number } | null;
-  applyFeedback(absTimeMs: number, activeLayer: string): { applied: boolean; energy: number; roundTrip: number; pitchBias: number };
+  inject(absoluteSeconds: number, layer: string, energy: number, impulseType?: string, pitchClass?: number): void;
+  react(absoluteSeconds: number, activeLayer: string): { energy: number; roundTrip: number; impulseType: string; syncOffset: number; pitchBias: number } | null;
+  applyFeedback(absoluteSeconds: number, activeLayer: string): { applied: boolean; energy: number; roundTrip: number; pitchBias: number };
   reset(): void;
 }
 
 interface EmergentDownbeatAPI {
-  detect(absTimeMs: number, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }): { isDownbeat: boolean; strength: number; signalCount: number } | null;
+  detect(absoluteSeconds: number, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }): { isDownbeat: boolean; strength: number; signalCount: number } | null;
   accentVelocity(velocity: number, strength: number): number;
   reinforceBass(midi: number, velocity: number, strength: number): void;
   widenStereo(layer: string, strength: number): void;
-  applyIfDownbeat(absTimeMs: number, layer: string, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }, midi: number, velocity: number): { isDownbeat: boolean; accentedVelocity: number; strength: number } | null;
+  applyIfDownbeat(absoluteSeconds: number, layer: string, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }, midi: number, velocity: number): { isDownbeat: boolean; accentedVelocity: number; strength: number } | null;
   getDownbeatCount(): number;
   reset(): void;
 }
 
 interface ConvergenceHarmonicTriggerAPI {
-  onConvergence(event: { rarity?: number; absTimeMs?: number; layer?: string; alignment?: { tonicBias: number; dominantBias: number; shouldResolve: boolean } | null }): void;
-  shouldTriggerChange(absTimeMs: number): boolean;
-  getTriggeredChanges(): Array<{ type: string; bias: number; absTimeMs: number }>;
+  onConvergence(event: { rarity?: number; absoluteSeconds?: number; layer?: string; alignment?: { tonicBias: number; dominantBias: number; shouldResolve: boolean } | null }): void;
+  shouldTriggerChange(absoluteSeconds: number): boolean;
+  getTriggeredChanges(): Array<{ type: string; bias: number; absoluteSeconds: number }>;
   getTriggerCount(): number;
   reset(): void;
 }
 
 interface MotifEchoAPI {
-  recordNote(midi: number, layer: string, absTimeMs: number): void;
-  captureMotif(layer: string, absTimeMs: number): void;
+  recordNote(midi: number, layer: string, absoluteSeconds: number): void;
+  captureMotif(layer: string, absoluteSeconds: number): void;
   applyTransform(intervals: number[], transform: string): number[];
-  deliverEcho(absTimeMs: number, activeLayer: string, currentMidi: number): { notes: number[]; transform: string; echoIndex: number } | null;
+  deliverEcho(absoluteSeconds: number, activeLayer: string, currentMidi: number): { notes: number[]; transform: string; echoIndex: number } | null;
   getPendingCount(): number;
   reset(): void;
 }
 
 interface PitchMemoryRecallAPI {
   memorize(intervalDna: number[], pitchClasses: number[], strengthSignals: { convergence?: boolean; cadence?: boolean; downbeat?: boolean }, sectionIdx: number): void;
-  recall(activeLayer: string, currentMidi: number, absTimeMs: number): { notes: number[]; transform: string; memoryIdx: number } | null;
+  recall(activeLayer: string, currentMidi: number, absoluteSeconds: number): { notes: number[]; transform: string; memoryIdx: number } | null;
   getMemoryCount(): number;
   getRecallCount(): number;
   reset(): void;
 }
 
 interface PhaseAwareCadenceWindowAPI {
-  update(absTimeMs: number, layer: string): { phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; confidence: number };
-  getLatest(layer: string): { timeMs: number; phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; confidence: number } | null;
+  update(absoluteSeconds: number, layer: string): { phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; confidence: number };
+  getLatest(layer: string): { timeInSeconds: number; phaseDiff: number; mode: 'lock' | 'drift' | 'repel'; confidence: number } | null;
   getConfidence(layer: string): number;
-  shouldAllowCadence(absTimeMs: number, layer: string, cadenceSuggested: boolean, snapshot?: { timeMs: number; phaseDiff: number; mode: string; confidence: number } | null): boolean;
+  shouldAllowCadence(absoluteSeconds: number, layer: string, cadenceSuggested: boolean, snapshot?: { timeInSeconds: number; phaseDiff: number; mode: string; confidence: number } | null): boolean;
   reset(): void;
 }
 
 interface MotifIdentityMemoryAPI {
-  recordNote(layer: string, midi: number, absTimeMs: number): { intervalDna: string; contour: string; confidence: number; absTimeMs: number } | null;
-  getActiveIdentity(layer: string): { intervalDna: string; contour: string; confidence: number; absTimeMs: number } | null;
+  recordNote(layer: string, midi: number, absoluteSeconds: number): { intervalDna: string; contour: string; confidence: number; absoluteSeconds: number } | null;
+  getActiveIdentity(layer: string): { intervalDna: string; contour: string; confidence: number; absoluteSeconds: number } | null;
   chooseEchoTransform(layer: string): { transform: 'retrograde' | 'inversion' | 'augmentation' | 'retrograde-inversion'; bias: number } | null;
   reset(): void;
 }
 
 interface HarmonicIntervalGuardAPI {
-  recordCrossInterval(midiA: number, midiB: number, absTimeMs: number): void;
+  recordCrossInterval(midiA: number, midiB: number, absoluteSeconds: number): void;
   getDissonanceLevel(): number;
-  nudgePitch(midi: number, activeLayer: string, absTimeMs: number, externalPitchBias?: number): { midi: number; nudged: boolean; interval: number; otherMidi: number };
+  nudgePitch(midi: number, activeLayer: string, absoluteSeconds: number, externalPitchBias?: number): { midi: number; nudged: boolean; interval: number; otherMidi: number };
   reset(): void;
 }
 
 interface CadenceAlignmentAPI {
-  postTension(absTimeMs: number, layer: string, tension: number, cadenceSuggested: boolean): void;
-  checkAlignment(absTimeMs: number, activeLayer: string, ourTension: number, ourCadenceSuggested?: boolean): { aligned: boolean; syncTick: number; combinedTension: number; otherCadenceSuggested: boolean; sharedCadenceIntent: boolean; consensus: boolean } | null;
-  applyAlignment(absTimeMs: number, activeLayer: string, ourTension: number, ourCadenceSuggested?: boolean): { shouldResolve: boolean; tonicBias: number; dominantBias: number; syncTick: number; consensus: boolean; sharedCadenceIntent: boolean } | null;
+  postTension(absoluteSeconds: number, layer: string, tension: number, cadenceSuggested: boolean): void;
+  checkAlignment(absoluteSeconds: number, activeLayer: string, ourTension: number, ourCadenceSuggested?: boolean): { aligned: boolean; syncOffset: number; combinedTension: number; otherCadenceSuggested: boolean; sharedCadenceIntent: boolean; consensus: boolean } | null;
+  applyAlignment(absoluteSeconds: number, activeLayer: string, ourTension: number, ourCadenceSuggested?: boolean): { shouldResolve: boolean; tonicBias: number; dominantBias: number; syncOffset: number; consensus: boolean; sharedCadenceIntent: boolean } | null;
   reset(): void;
 }
 
 interface RegisterCollisionAvoiderAPI {
-  recordNote(layer: string, midi: number, tick: number, absTimeMs?: number): void;
-  avoid(activeLayer: string, midi: number, tick: number, absTimeMs?: number): { midi: number; adjusted: boolean };
+  recordNote(layer: string, midi: number, absoluteSeconds: number): void;
+  avoid(activeLayer: string, midi: number, absoluteSeconds: number): { midi: number; adjusted: boolean };
   reset(): void;
 }
 
@@ -845,35 +844,35 @@ interface SpectralComplementarityAPI {
   getHistogram(layer: string): number[];
   analyzeComplement(activeLayer: string): { gaps: number[]; dominant: number[]; gapWeight: number };
   nudgeToFillGap(midi: number, activeLayer: string): { midi: number; nudged: boolean; targetBin: number };
-  postSpectralState(absTimeMs: number, layer: string): void;
+  postSpectralState(absoluteSeconds: number, layer: string): void;
   reset(): void;
 }
 
 interface VelocityInterferenceAPI {
-  postVelocity(absTimeMs: number, layer: string, velocity: number, delta: number): void;
+  postVelocity(absoluteSeconds: number, layer: string, velocity: number, delta: number): void;
   measureDelta(layer: string, absTimeSec: number): number;
-  applyInterference(absTimeMs: number, activeLayer: string, baseVelocity: number): { velocity: number; mode: 'reinforce' | 'separate' | 'neutral' };
+  applyInterference(absoluteSeconds: number, activeLayer: string, baseVelocity: number): { velocity: number; mode: 'reinforce' | 'separate' | 'neutral' };
   reset(): void;
 }
 
 interface TexturalMirrorAPI {
-  recordTexture(layer: string, mode: string, absTimeMs: number): void;
-  suggestTexture(activeLayer: string, absTimeMs: number): { preferredMode: string; weight: number };
+  recordTexture(layer: string, mode: string, absoluteSeconds: number): void;
+  suggestTexture(activeLayer: string, absoluteSeconds: number): { preferredMode: string; weight: number };
   getTextureDistance(): number;
   reset(): void;
 }
 
 interface RestSynchronizerAPI {
-  evaluateSharedRest(absTimeMs: number, layer: string, signals?: { heatLevel?: number; densityTarget?: number; phaseMode?: string }): { shouldRest: boolean; duration: number };
-  evaluateComplementaryRest(absTimeMs: number, activeLayer: string): { shouldFill: boolean; fillUrgency: number };
-  postRest(absTimeMs: number, layer: string): void;
+  evaluateSharedRest(absoluteSeconds: number, layer: string, signals?: { heatLevel?: number; densityTarget?: number; phaseMode?: string }): { shouldRest: boolean; duration: number };
+  evaluateComplementaryRest(absoluteSeconds: number, activeLayer: string): { shouldFill: boolean; fillUrgency: number };
+  postRest(absoluteSeconds: number, layer: string): void;
   getSharedRestCount(): number;
   isLayerResting(layer: string): boolean;
   reset(): void;
 }
 
 interface DynamicRoleSwapAPI {
-  evaluateSwap(absTimeMs: number, currentTension: number): { swapped: boolean; swapCount: number };
+  evaluateSwap(absoluteSeconds: number, currentTension: number): { swapped: boolean; swapCount: number };
   getProfileModifiers(layer: string): { densityScale: number; chordalBias: number; melodicBias: number; isSwapped: boolean };
   modifyPlayProb(layer: string, playProb: number): number;
   modifyVelocity(layer: string, vel: number): number;
@@ -883,7 +882,7 @@ interface DynamicRoleSwapAPI {
 }
 
 interface CrossLayerDynamicEnvelopeAPI {
-  tick(absTimeMs: number, layer: string): void;
+  tick(absoluteSeconds: number, layer: string): void;
   getVelocityScale(layer: string): number;
   setArcType(type: 'parallel' | 'complementary' | 'independent'): void;
   getArcType(): 'parallel' | 'complementary' | 'independent';
@@ -892,7 +891,7 @@ interface CrossLayerDynamicEnvelopeAPI {
 }
 
 interface ArticulationComplementAPI {
-  recordSustain(layer: string, sustainTicks: number, absTimeMs: number): void;
+  recordSustain(layer: string, sustainSec: number, absoluteSeconds: number): void;
   getArticulationProfile(layer: string): { avgSustain: number; isLegato: boolean; isStaccato: boolean };
   getSustainModifier(activeLayer: string): { sustainScale: number; preferredStutterType: string };
   reset(): void;
@@ -972,7 +971,7 @@ interface MotifManagerAPI {
 }
 
 interface TempoFeelEngineAPI {
-  getTickOffset(): number;
+  getTimeOffset(): number;
   getFeelState(): { feel: number; phase: string; position: number };
 }
 
@@ -1079,9 +1078,9 @@ interface StutterManagerAPI {
   schedulePlan(planOrCfg?: Record<string, any>): any;
   runPlan(planIdOrCfg?: Record<string, any>): any;
   cancelPlan(planId: any): any;
-  runDuePlans(tick: number): any;
+  runDuePlans(absoluteSeconds: number): any;
   scheduleStutterForUnit(opts?: Record<string, any>): any;
-  prepareBeat(beatStart?: number): any;
+  prepareBeat(beatStartTime?: number): any;
   resetChannelTracking(channels?: number[] | null): { cleared: number; lastUsedCHs?: number; lastUsedCHs2?: number; lastUsedCHs3?: number };
 }
 
@@ -1945,7 +1944,7 @@ declare var feedbackGraphContract: {
   assert(): void;
 };
 declare var mainBootstrap: any;
-declare var crossLayerBeatRecord: (opts: { layer: string; clAbsMs: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; clEntropy: any; stutterProb: number; isL1: boolean; outputLoadGuard?: any; stageTiming?: Record<string, number> | null }) => void;
+declare var crossLayerBeatRecord: (opts: { layer: string; absoluteSeconds: number; clIntent: any; clPhase: any; clNegotiation: any; clBreathing: any; clTension: number; clCadence: any; clPhaseSnapshot: any; clRest: any; clEntropy: any; stutterProb: number; isL1: boolean; outputLoadGuard?: any; stageTiming?: Record<string, number> | null }) => void;
 /** @boot-advisory */
 declare var beatPipelineDescriptor: {
   getStages(): ReadonlyArray<{ name: string; after: string[]; produces: string[] }>;
@@ -1955,8 +1954,8 @@ declare var beatPipelineDescriptor: {
 declare var processBeat: any;
 declare var layerPass: any;
 declare var minimumNoteDuration: {
-  floorTicks(kind: string, unitTicks?: number): number;
-  resolveOffTick(onTick: number, desiredOffTick: number, kind: string, unitTicks?: number, label?: string): number;
+  floorSeconds(kind: string, unitSecs?: number): number;
+  resolveOffTime(onTime: number, desiredOffTime: number, kind: string, unitSecs?: number, label?: string): number;
 };
 declare var playNotesEmitPick: any;
 declare var setFeedbackPitchBias: (bias: number) => void;

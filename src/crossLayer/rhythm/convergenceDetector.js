@@ -8,30 +8,30 @@ convergenceDetector = (() => {
   const V = validator.create('convergenceDetector');
   const CHANNEL = 'onset';
   const EVENTS = eventCatalog.names;
-  const CONVERGENCE_TOLERANCE_MS = 50;
-  const MIN_CONVERGENCE_INTERVAL_MS = 500;
+  const CONVERGENCE_TOLERANCE_SEC = 0.05;
+  const MIN_CONVERGENCE_INTERVAL_SEC = 0.5;
   const BURST_VOICES = 3;
   const BURST_STAGGER_RATIO = 0.008;
   const BURST_VEL_SCALE_MIN = 0.75;
   const BURST_VEL_SCALE_MAX = 1.1;
 
-  let lastConvergenceMs = -Infinity;
+  let lastConvergenceSec = -Infinity;
   let totalConvergences = 0;
   /** @type {Record<string, number>} */
   const lastConvergenceByLayer = {};
 
   /**
    * Post a note onset from the active layer.
-   * @param {number} absTimeMs - absolute ms
+   * @param {number} absoluteSeconds - absolute ms
    * @param {string} layer - source layer
    * @param {number} midi - MIDI note number
    * @param {number} velocity - 0-127
    */
-  function postOnset(absTimeMs, layer, midi, velocity) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function postOnset(absoluteSeconds, layer, midi, velocity) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.requireFinite(midi, 'midi');
     V.requireFinite(velocity, 'velocity');
-    L0.post(CHANNEL, layer, absTimeMs / 1000, {
+    L0.post(CHANNEL, layer, absoluteSeconds, {
       midi: clamp(m.round(midi), 0, 127),
       velocity: clamp(m.round(velocity), 1, MIDI_MAX_VALUE)
     });
@@ -40,26 +40,26 @@ convergenceDetector = (() => {
   /**
    * Check whether a convergence just occurred at this time point.
    * Returns null if no convergence, or a convergence descriptor.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
    * @returns {{ rarity: number, otherMidi: number, otherVelocity: number } | null}
    */
-  function detect(absTimeMs, activeLayer) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function detect(absoluteSeconds, activeLayer) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     // Throttle: don't fire convergence events more often than the interval
-    if (absTimeMs - lastConvergenceMs < MIN_CONVERGENCE_INTERVAL_MS) return null;
+    if (absoluteSeconds - lastConvergenceSec < MIN_CONVERGENCE_INTERVAL_SEC) return null;
 
     const match = L0.findClosest(
-      CHANNEL, absTimeMs / 1000, CONVERGENCE_TOLERANCE_MS / 1000, activeLayer
+      CHANNEL, absoluteSeconds, CONVERGENCE_TOLERANCE_SEC, activeLayer
     );
     if (!match) return null;
 
-    lastConvergenceMs = absTimeMs;
+    lastConvergenceSec = absoluteSeconds;
 
     // Rarity: tighter alignment = higher rarity score (0-1)
-    const dist = m.abs(match.timeInSeconds * 1000 - absTimeMs);
-    const rarity = 1 - (dist / CONVERGENCE_TOLERANCE_MS);
+    const dist = m.abs(match.timeInSeconds - absoluteSeconds);
+    const rarity = 1 - (dist / CONVERGENCE_TOLERANCE_SEC);
 
     return {
       rarity: clamp(rarity, 0, 1),
@@ -71,26 +71,26 @@ convergenceDetector = (() => {
   /**
    * Apply convergence effects: accent burst and velocity reinforcement.
    * Call from the main loop after each note emission.
-   * @param {number} absTimeMs - current absolute ms
+   * @param {number} absoluteSeconds - current absolute ms
    * @param {string} activeLayer - current layer
    * @param {number} currentMidi - the note just played
    * @param {number} currentVelocity - the velocity just used
     * @returns {{ convergence: boolean, rarity: number, burstNotes: number[], totalConvergences: number } | null}
    */
-  function applyIfConverged(absTimeMs, activeLayer, currentMidi, currentVelocity) {
+  function applyIfConverged(absoluteSeconds, activeLayer, currentMidi, currentVelocity) {
     V.requireFinite(currentMidi, 'currentMidi');
     V.requireFinite(currentVelocity, 'currentVelocity');
-    const conv = detect(absTimeMs, activeLayer);
+    const conv = detect(absoluteSeconds, activeLayer);
     if (!conv) return null;
 
     totalConvergences++;
-    lastConvergenceByLayer[activeLayer] = absTimeMs;
+    lastConvergenceByLayer[activeLayer] = absoluteSeconds;
 
     // === BURST EVENT: coordinated unison singularity ===
     // Both notes share a pitch class; emit octave-displaced cluster
     const boundedCurrentMidi = clamp(m.round(currentMidi), 0, 127);
     const burstPC = ((boundedCurrentMidi % 12) + 12) % 12;
-    const burstBaseTime = absTimeMs / 1000;
+    const burstBaseTime = absoluteSeconds;
     const burstVel = m.round(clamp(
       ((currentVelocity + conv.otherVelocity) / 2) * (0.9 + conv.rarity * 0.3),
       1, MIDI_MAX_VALUE
@@ -125,7 +125,7 @@ convergenceDetector = (() => {
       burstNotes,
       burstVel,
       totalConvergences,
-      absTimeMs
+      absoluteSeconds
     });
 
     return { convergence: true, rarity: conv.rarity, burstNotes, totalConvergences };
@@ -133,17 +133,17 @@ convergenceDetector = (() => {
 
   /**
    * Whether this layer had a convergence within the given lookback window.
-   * @param {number} absTimeMs
+   * @param {number} absoluteSeconds
    * @param {string} layer
    * @param {number} [windowMs=250]
    * @returns {boolean}
    */
-  function wasRecent(absTimeMs, layer, windowMs) {
-    V.requireFinite(absTimeMs, 'absTimeMs');
+  function wasRecent(absoluteSeconds, layer, windowMs) {
+    V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const window = V.optionalFinite(windowMs, 250);
-    const lastMs = Number(lastConvergenceByLayer[layer]);
-    if (!Number.isFinite(lastMs)) return false;
-    return (absTimeMs - lastMs) <= m.max(0, window);
+    const lastSec = Number(lastConvergenceByLayer[layer]);
+    if (!Number.isFinite(lastSec)) return false;
+    return (absoluteSeconds - lastSec) <= m.max(0, window / 1000);
   }
 
   /**
@@ -160,7 +160,7 @@ convergenceDetector = (() => {
 
   /** Reset state (e.g. between sections). */
   function reset() {
-    lastConvergenceMs = -Infinity;
+    lastConvergenceSec = -Infinity;
     totalConvergences = 0;
     Object.keys(lastConvergenceByLayer).forEach((layer) => {
       delete lastConvergenceByLayer[layer];
