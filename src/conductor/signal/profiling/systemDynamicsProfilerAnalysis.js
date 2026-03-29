@@ -185,6 +185,31 @@ systemDynamicsProfilerAnalysis = (() => {
       regime,
       grade,
       couplingMatrix: coupling.matrix,
+      couplingLabels: (() => {
+        const labels = {};
+        const LABEL_THRESHOLD = 0.5;
+        const LABEL_MAP = {
+          'density-tension': ['+', 'tension-drives-density', '-', 'tension-suppresses-density'],
+          'density-flicker': ['+', 'rhythmic-shimmer', '-', 'stability-amid-density'],
+          'density-entropy': ['+', 'chaotic-proliferation', '-', 'ordered-density'],
+          'tension-flicker': ['+', 'agitated-tension', '-', 'smooth-tension'],
+          'tension-entropy': ['+', 'exploratory-tension', '-', 'focused-tension'],
+          'flicker-entropy': ['+', 'chaotic-shimmer', '-', 'stable-variety'],
+          'density-phase': ['+', 'phase-aligned-density', '-', 'phase-opposed-density'],
+          'tension-phase': ['+', 'phase-aligned-tension', '-', 'phase-opposed-tension'],
+        };
+        if (coupling.matrix) {
+          const keys = Object.keys(coupling.matrix);
+          for (let li = 0; li < keys.length; li++) {
+            const k = keys[li];
+            const v = coupling.matrix[k];
+            if (m.abs(v) >= LABEL_THRESHOLD && LABEL_MAP[k]) {
+              labels[k] = v > 0 ? LABEL_MAP[k][1] : LABEL_MAP[k][3];
+            }
+          }
+        }
+        return labels;
+      })(),
       compositionalVariance: varRatios,
       entropyAmplification: m.round(entropyAmplificationController.getAmp() * 100) / 100,
       entropySampleErrors: state.entropySampleErrors,

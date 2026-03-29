@@ -15,6 +15,8 @@ V.assertObject(ccGroupScale, 'ccGroupScale');
 V.assertObject(ccRangeScale, 'ccRangeScale');
 
 const journeyFxModulation = conductorConfig.getJourneyFxModulation();
+const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
+const spectralBrightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
 
 const scaleFxDefaultObject = (fxDefault, scale) => {
   const minValue = Number(fxDefault.min);
@@ -93,7 +95,8 @@ const resolveFxDefaults = (groupName, effectNum) => {
     return scaleFxDefaultObject(resolved, requireFiniteScale(journeyFxModulation.portamentoScale, 'portamento'));
   }
   if (effectNum === 74) {
-    return scaleFxDefaultObject(resolved, requireFiniteScale(journeyFxModulation.filterScale, 'filter'));
+    const filterArc = 0.7 + spectralBrightness * 0.6;
+    return scaleFxDefaultObject(resolved, requireFiniteScale(journeyFxModulation.filterScale * filterArc, 'filter'));
   }
   if (effectNum === 91 || effectNum === 92 || effectNum === 93 || effectNum === 95) {
     return scaleFxDefaultObject(resolved, requireFiniteScale(journeyFxModulation.reverbScale, 'reverb'));

@@ -29,6 +29,7 @@ articulationComplement = (() => {
     if (!hist) throw new Error('articulationComplement.recordSustain: missing history for ' + layer);
     hist.push(sustainSec);
     if (hist.length > WINDOW_SIZE) hist.shift();
+    L0.post('articulation', layer, absoluteSeconds, { sustainSec, avgSustain: hist.reduce((a, b) => a + b, 0) / hist.length });
   }
 
   /**
@@ -93,14 +94,23 @@ articulationComplement = (() => {
     let sustainScale = 1.0;
     let preferredStutterType = 'fade';
 
+    const contagionMode = artRegime === 'coherent';
     if (otherProfile.isLegato) {
-      // Other is legato - we should be staccato (modulated by own profile)
-      sustainScale = clamp(1.0 - effectiveContrast * interactionTarget + selfLegatoBias, 0.3, 1.0);
-      preferredStutterType = 'chop';
+      if (contagionMode) {
+        sustainScale = clamp(1.0 + effectiveContrast * interactionTarget * 0.5, 1.0, 1.8);
+        preferredStutterType = 'fade';
+      } else {
+        sustainScale = clamp(1.0 - effectiveContrast * interactionTarget + selfLegatoBias, 0.3, 1.0);
+        preferredStutterType = 'chop';
+      }
     } else if (otherProfile.isStaccato) {
-      // Other is staccato - we should be legato
-      sustainScale = clamp(1.0 + effectiveContrast * interactionTarget, 1.0, 2.0);
-      preferredStutterType = 'fade';
+      if (contagionMode) {
+        sustainScale = clamp(1.0 - effectiveContrast * interactionTarget * 0.5, 0.4, 1.0);
+        preferredStutterType = 'chop';
+      } else {
+        sustainScale = clamp(1.0 + effectiveContrast * interactionTarget, 1.0, 2.0);
+        preferredStutterType = 'fade';
+      }
     }
 
     // Role swap inverts the contrast

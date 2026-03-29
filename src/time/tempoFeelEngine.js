@@ -41,26 +41,30 @@ tempoFeelEngine = (() => {
     switch (phase) {
       case 'development':
       case 'climax':
-        // Subtle push forward during the middle of phrases (accelerando feel)
         feel = m.sin(position * m.PI) * MAX_FEEL_RATIO;
         break;
       case 'resolution':
       case 'conclusion':
-        // Pull back toward phrase end (ritardando feel)
         feel = -m.sin(position * m.PI) * MAX_FEEL_RATIO * 0.7;
         break;
       case 'exposition':
-        // Very mild steady feel
         feel = m.sin(position * m.PI) * MAX_FEEL_RATIO * 0.3;
         break;
       default:
         feel = 0;
     }
 
-    // Convert to seconds using current spUnit
+    // Phrase-level rubato: slight ritardando approaching phrase end, accelerando in early phrase
+    const phraseProgress = clamp(timeStream.normalizedProgress('phrase'), 0, 1);
+    const rubato = phraseProgress > 0.8
+      ? -(phraseProgress - 0.8) / 0.2 * MAX_FEEL_RATIO * 0.5
+      : phraseProgress < 0.15
+        ? (0.15 - phraseProgress) / 0.15 * MAX_FEEL_RATIO * 0.3
+        : 0;
+
     const secondsPerUnit = requireSecondsPerUnit();
 
-    return feel * secondsPerUnit;
+    return (feel + rubato) * secondsPerUnit;
   }
 
   /**

@@ -39,12 +39,25 @@ const bassProgramPool = Array.isArray(otherBassInstruments)
 const resolvedBassProgramPool = bassProgramPool.length > 0
   ? bassProgramPool
   : [bassInstrument, bassInstrument2].filter(program => Number.isFinite(Number(program)));
+    // Bias instrument selection away from other layer's current programs
+    const otherLayer = LM.activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherInst = L0.getLast('instrument', { layer: otherLayer });
+    const otherPrograms = otherInst && Array.isArray(otherInst.programs) ? otherInst.programs : [];
+    const gmFamily = (pg) => m.floor(Number(pg) / 8);
+    const biasedOtherInstruments = otherPrograms.length > 0
+      ? otherInstruments.filter(pg => !otherPrograms.some(op => gmFamily(pg) === gmFamily(op))) : [];
+    const instrumentPool = biasedOtherInstruments.length > 2 ? biasedOtherInstruments : otherInstruments;
+    const selectedReflection = ra(instrumentPool);
+    const selectedBass = ra(resolvedBassProgramPool);
+    const selectedDrum = ra(drumSets);
 p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:'program_c' };
   return [
-    ...reflectionBinaural.map(ch=>({...tmp,vals:[ch,ra(otherInstruments)]})),
-    ...bassBinaural.map(ch=>({...tmp,vals:[ch,ra(resolvedBassProgramPool)]})),
-    { ...tmp,vals:[drumCH,ra(drumSets)] }
-  ];  })  );  }
+    ...reflectionBinaural.map(ch=>({...tmp,vals:[ch,selectedReflection]})),
+    ...bassBinaural.map(ch=>({...tmp,vals:[ch,selectedBass]})),
+    { ...tmp,vals:[drumCH,selectedDrum] }
+  ];  })  );
+    L0.post('instrument', LM.activeLayer || 'shared', beatStartTime, { programs: [selectedReflection, selectedBass, selectedDrum] });
+  }
 }
 
 /**

@@ -44,6 +44,7 @@ systemDynamicsProfilerHelpers = (() => {
       regime: 'initializing',
       grade: 'healthy',
       couplingMatrix: {},
+      couplingLabels: {},
       compositionalVariance: [0.25, 0.25, 0.25, 0.25],
       entropyAmplification: entropyAmplificationController.getAmp(),
       entropySampleErrors: 0,

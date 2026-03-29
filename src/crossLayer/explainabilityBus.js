@@ -11,8 +11,9 @@ explainabilityBus = (() => {
    * @param {string} layer
    * @param {any} payload
    * @param {number} [absoluteSeconds]
+   * @param {string} [cause]
    */
-  function emit(type, layer, payload, absoluteSeconds) {
+  function emit(type, layer, payload, absoluteSeconds, cause) {
     V.assertNonEmptyString(type, 'type');
     V.assertNonEmptyString(layer, 'layer');
     let t = 0;
@@ -21,14 +22,14 @@ explainabilityBus = (() => {
     } else {
       t = beatStartTime;
     }
-    const entry = { type, layer, payload, absoluteSeconds: t };
+    const entry = { type, layer, payload, absoluteSeconds: t, cause: cause || null };
     entries.push(entry);
     // Batch evict: let buffer grow past capacity, then splice once - avoids O(n) shift per emit
     if (entries.length > MAX_ENTRIES + EVICT_BATCH) {
       entries.splice(0, entries.length - MAX_ENTRIES);
     }
 
-    L0.post(CHANNEL, entry.layer, t, { type, payload });
+    L0.post(CHANNEL, entry.layer, t, { type, payload, cause: cause || null });
 
     return entry;
   }
