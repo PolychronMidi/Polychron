@@ -12,7 +12,7 @@ getComposerPoolOrFail = null;
 unitIndex=unitStartTime=spUnit=spParent=unitsPerParent=measureCount=spMeasure=subsubdivStartTime=subdivStartTime=beatStartTime=divStartTime=sectionStartTime=sectionEnd=spSection=finalTime=endTime=phraseStartTime=spPhrase=measuresPerPhrase=measuresPerPhrase1=measuresPerPhrase1=measuresPerPhrase2=subdivsPerMinute=subsubsPerMinute=numerator=denominator=meterRatio=divsPerBeat=subdivsPerDiv=subsubsPerSub=measureStartTime=beatCount=beatsOn=beatsOff=divsOn=divsOff=subdivsOn=subdivsOff=subsubdivsOn=subsubdivsOff=noteCount=beatRhythm=divRhythm=subdivRhythm=subsubdivRhythm=balOffset=sideBias=firstLoop=lastCrossMod=bpmRatio=phrasesPerSection=totalSections=sectionIndex=phraseIndex=measureIndex=beatIndex=divIndex=subdivIndex=subsubdivIndex=bpmRatio2=bpmRatio3=spBeat=spDiv=spSubdiv=spSubsubdiv=subdivFreq=trueBPM=trueBPM2=midiMeterRatio=midiBPM=syncFactor=polyDenominator=polyNumerator=polyMeterRatio=subdivsPerBeat=bestMatch=note=lBal=rBal=cBal=cBal2=cBal3=refVar=bassVar=0;
 midiMeter = [0, 0];
 
-composer = null; activeMotif = null; currentSectionType = null; currentSectionDynamics = null; fxEventTemplate = null;
+composer = null; activeMotif = null; currentSectionType = null; currentSectionDynamics = null; sectionBpmScale = 1.0; fxEventTemplate = null;
 
 // Telemetry globals for hyperMetaManager
 traceSummaryData = {

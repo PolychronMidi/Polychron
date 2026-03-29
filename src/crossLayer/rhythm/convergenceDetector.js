@@ -54,8 +54,11 @@ convergenceDetector = (() => {
     const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
     const currentEntropy = V.optionalFinite(entropyEntry ? entropyEntry.smoothed : NaN, 0.5);
     const entropyBoost = clamp((currentEntropy - 0.5) * 0.4, 0, 0.2);
-    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost);
-    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5);
+    // Recent regime transition = natural convergence opportunity
+    const recentRegimeTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 3, windowSeconds: 3 });
+    const transitionBoost = recentRegimeTransition ? 0.15 : 0;
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost);
+    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3);
 
     if (absoluteSeconds - lastConvergenceSec < effectiveInterval) return null;
 

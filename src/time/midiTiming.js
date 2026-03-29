@@ -20,13 +20,14 @@ getMidiTiming = () => {
  * Context-aware: writes to c1 or c2 depending on current meter.
  */
 setMidiTiming = () => {
-  spMeasure = (60 / BPM) * 4 * meterRatio;
+  const effectiveBpm = BPM * (Number.isFinite(sectionBpmScale) ? sectionBpmScale : 1.0);
+  spMeasure = (60 / effectiveBpm) * 4 * meterRatio;
   if (!Number.isFinite(spMeasure) || spMeasure <= 0) {
     throw new Error(`Invalid spMeasure: ${spMeasure}`);
   }
   p(c,
-    { timeInSeconds: measureStartTime, type: 'bpm', vals: [BPM] },
+    { timeInSeconds: measureStartTime, type: 'bpm', vals: [effectiveBpm] },
     { timeInSeconds: measureStartTime, type: 'meter', vals: [numerator, denominator] },
   );
-  L0.post('tickDuration', LM.activeLayer || 'shared', measureStartTime, { oneTickInSeconds: 60 / (BPM * PPQ) });
+  L0.post('tickDuration', LM.activeLayer || 'shared', measureStartTime, { oneTickInSeconds: 60 / (effectiveBpm * PPQ) });
 };

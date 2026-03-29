@@ -151,10 +151,14 @@ rhythmicComplementEngine = (() => {
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
     const density = V.optionalFinite(intent.densityTarget, 0.5);
 
-    // High interaction + low density - hocket (interleaving gaps)
-    // High interaction + high density - antiphony (dense call/response)
-    // Moderate everything - canon or free
-    if (interaction > HIGH_INTERACTION && density < LOW_DENSITY) {
+    // Harmonic distance awareness: far from home key favors canon (coherence in distant territory)
+    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const excursion = harmonicEntry ? V.optionalFinite(harmonicEntry.excursion, 0) : 0;
+    const farFromHome = excursion > 4;
+
+    if (farFromHome && interaction > MODERATE_INTERACTION) {
+      mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
+    } else if (interaction > HIGH_INTERACTION && density < LOW_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
     } else if (interaction > HIGH_INTERACTION && density > HIGH_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('antiphony');
