@@ -39,8 +39,11 @@ emergentDownbeat = (() => {
     if (signals.velReinforce) { score += 0.2; signalCount++; }
     if (signals.phaseLock) { score += 0.15; signalCount++; }
 
-    // Need at least 2 coincident signals and score > 0.4 for a downbeat
-    if (signalCount < 2 || score < 0.4) return null;
+    // convergenceTarget modulates detection threshold - more downbeats during climactic sections
+    const intent = sectionIntentCurves.getLastIntent();
+    const ct = V.optionalFinite(intent.convergenceTarget, 0.5);
+    const scoreThreshold = 0.4 - ct * 0.1;
+    if (signalCount < 2 || score < scoreThreshold) return null;
 
     lastDownbeatSec = absoluteSeconds;
     downbeatCount++;

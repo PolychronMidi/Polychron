@@ -75,8 +75,12 @@ setBinaural = () => {
     // runs before conductor/config.js overrides BINAURAL to the real range (e.g. 8-12).
     // Without this clamp, rl() receives currentValue far below minValue, collapses
     // its [newMin, newMax] window to an invalid range, and produces large jumps.
-    const biasedMin = binauralRegime === 'coherent' ? BINAURAL.min : binauralRegime === 'exploring' ? BINAURAL.min + 2 : BINAURAL.min + 1;
-    const biasedMax = binauralRegime === 'coherent' ? BINAURAL.max - 2 : binauralRegime === 'exploring' ? BINAURAL.max : BINAURAL.max - 1;
+    // Spectral brightness modulation: bright passages push binaural toward higher Hz
+    const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
+    const brightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
+    const brightnessBias = clamp((brightness - 0.5) * 1.5, -0.75, 0.75);
+    const biasedMin = (binauralRegime === 'coherent' ? BINAURAL.min : binauralRegime === 'exploring' ? BINAURAL.min + 2 : BINAURAL.min + 1) + brightnessBias * 0.5;
+    const biasedMax = (binauralRegime === 'coherent' ? BINAURAL.max - 2 : binauralRegime === 'exploring' ? BINAURAL.max : BINAURAL.max - 1) + brightnessBias * 0.5;
     binauralFreqOffset = clamp(binauralFreqOffset, biasedMin, biasedMax);
     binauralFreqOffset = rl(binauralFreqOffset, -.3, .3, biasedMin, biasedMax, 'f');
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
