@@ -75,7 +75,11 @@ restSynchronizer = (() => {
     // Multiplier on base probability only (not on urgency or phase bonus)
     // to avoid compounding with other pressure signals.
     const e23RestBoost = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e23RestPressureBoost'), 1.0));
-    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost) * (1 + restUrgency) * e11RestBoost;
+    // Coherence-aware rest boost: poor coherence (bias far from 1.0) increases rest value
+    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceDeviation = coherenceEntry ? m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) : 0;
+    const coherenceRestBoost = clamp(coherenceDeviation * 0.15, 0, 0.06);
+    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost) * (1 + restUrgency) * e11RestBoost;
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';

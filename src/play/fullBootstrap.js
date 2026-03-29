@@ -761,6 +761,7 @@ fullBootstrap = (() => {
     'firstLoop',
     'currentSectionType',
     'currentSectionDynamics',
+    'sectionBpmScale',
     'fxEventTemplate',
     'sectionEnd',
     'polyNumerator',

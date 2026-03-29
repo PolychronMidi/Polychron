@@ -135,9 +135,13 @@ sectionIntentCurves = (() => {
     );
     // Cross-section tension contrast: if previous section had high tension, bias this one lower
     const tensionContrastBias = prevSection && Number.isFinite(prevSection.tension) ? clamp((prevSection.tension - 0.85) * -0.10, -0.05, 0.05) : 0;
+    // Tension learning: if previous section overshot its dissonance target, pull lower
+    const prevIntentTension = prevSection ? V.optionalFinite(prevSection.intentTension, 0.5) : 0.5;
+    const prevActualTension = prevSection && Number.isFinite(prevSection.tension) ? prevSection.tension : 0.85;
+    const tensionLearning = clamp((prevActualTension - prevIntentTension) * -0.06, -0.03, 0.03);
 
     const dissonanceTarget = clamp(
-      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias
+      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning
       // R70 E5: Section-route dissonance escalation. Middle sections get
       // more dissonance (up to +0.08) than edge sections, creating harmonic
       // contrast across the piece. This complements the per-section key

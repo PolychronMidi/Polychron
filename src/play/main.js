@@ -96,6 +96,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   const sectionPhraseRange = activeSectionType && activeSectionType.phrases ? activeSectionType.phrases : PHRASES_PER_SECTION;
   currentSectionType = activeSectionType ? activeSectionType.type : null;
   currentSectionDynamics = activeSectionType ? activeSectionType.dynamics : null;
+  sectionBpmScale = activeSectionType && Number.isFinite(activeSectionType.bpmScale) ? activeSectionType.bpmScale : 1.0;
   phrasesPerSection = ri(sectionPhraseRange.min, sectionPhraseRange.max);
   mainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
   if (phrasesPerSection <= 0) {

@@ -2035,6 +2035,7 @@ declare var noteCount: number;
 declare var firstLoop: number;
 declare var currentSectionType: any;
 declare var currentSectionDynamics: any;
+declare var sectionBpmScale: number;
 declare var fxEventTemplate: any;
 declare var sectionEnd: number;
 declare var polyNumerator: number;

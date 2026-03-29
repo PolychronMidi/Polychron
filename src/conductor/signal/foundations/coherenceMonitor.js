@@ -213,6 +213,7 @@ coherenceMonitor = (() => {
       const rawEntropy = clamp(variance - 0.04, -0.5, 0.5) * 2;
       entropySignal = entropySignal * ENTROPY_DECAY + rawEntropy * (1 - ENTROPY_DECAY);
     }
+    L0.post('coherence', 'both', beatStartTime, { bias: coherenceBias, ratio: windowRatio, entropySignal });
   }
 
   /** @returns {number} Density bias multiplier for conductorIntelligence. */
