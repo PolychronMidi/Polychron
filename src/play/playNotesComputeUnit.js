@@ -65,10 +65,9 @@ playNotesComputeUnit = function playNotesComputeUnit(unit, emissionAdjustments, 
   );
   const timingOffsetSecs = (motifTimingOffsetUnits * Number(spUnit)) + swingFraction * spBeat;
 
-  const tempoFeelOffset = V.requireFinite(Number(tempoFeelEngine.getTimeOffset()), 'tempoFeelOffset');
-
   // Compute on-time and sustain durations (seconds)
-  const on = unitStartTime + timingOffsetSecs + tempoFeelOffset + (spUnit * rv(rf(.2), [-.1, .07], .3));
+  // Tempo feel is applied at beat level via spBeat scaling in setUnitTiming
+  const on = unitStartTime + timingOffsetSecs + (spUnit * rv(rf(.2), [-.1, .07], .3));
   const shortSustain = rv(rf(m.max(spUnit * .5, spUnit / unitsPerParent), (spUnit * (.3 + rf() * .7))), [.1, .2], .1, [-.05, -.1]);
   const longSustain = rv(rf(spUnit * .8, (spParent * (.3 + rf() * .7))), [.1, .3], .1, [-.05, -0.1]);
   const useShort = subdivsPerMinute > ri(400, 650);

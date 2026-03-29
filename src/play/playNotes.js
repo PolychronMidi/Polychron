@@ -24,7 +24,7 @@ function assertPlayNotesDeps() {
   V.assertManagerShape(textureBlender, 'textureBlender', ['resolve']);
   V.assertManagerShape(RhythmManager, 'RhythmManager', ['swingOffset']);
   V.assertManagerShape(dynamismEngine, 'dynamismEngine', ['resolve']);
-  V.assertManagerShape(tempoFeelEngine, 'tempoFeelEngine', ['getTimeOffset']);
+  V.assertManagerShape(tempoFeelEngine, 'tempoFeelEngine', ['getTempoScale']);
   V.assertManagerShape(voiceModulator, 'voiceModulator', ['distribute']);
   playNotesPlayNotesDepsValidated = true;
 }

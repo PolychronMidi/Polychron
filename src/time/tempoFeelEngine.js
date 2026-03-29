@@ -1,6 +1,8 @@
-﻿// src/time/tempoFeelEngine.js - Applies subtle time offsets for micro-tempo variation.
-// Creates accelerando/ritardando feel aligned with phrase arcs and section phases.
-// Pure query API - consumer adds getTimeOffset() to note timing calculations.
+// src/time/tempoFeelEngine.js - Applies tempo feel by modulating spBeat.
+// Instead of shifting individual note times (which causes drift), this
+// returns a tempo scale factor that modifies spBeat at the beat level.
+// All child unit durations (div/subdiv/subsubdiv) inherit the change
+// automatically, and BPM events reflect the actual effective tempo.
 
 tempoFeelEngine = (() => {
   const MAX_FEEL_RATIO = 0.025; // max 2.5% tempo deviation
@@ -19,70 +21,62 @@ tempoFeelEngine = (() => {
     return phase;
   }
 
-  function requireSecondsPerUnit() {
-    const secs = V.requireFinite(spUnit, 'spUnit');
-    if (secs <= 0) {
-      throw new Error('tempoFeelEngine: spUnit must be > 0');
-    }
-    return secs;
-  }
-
   /**
-   * Get a time offset (seconds) for the current timing context.
-   * Positive = push forward (accelerando), negative = pull back (ritardando).
-   * @returns {number} - seconds offset to add to note-on time
+   * Get a tempo scale factor for the current beat context.
+   * > 1.0 = slightly slower (ritardando), < 1.0 = slightly faster (accelerando).
+   * Applied to spBeat in setUnitTiming to change actual tempo.
+   * @returns {number} scale factor (e.g. 0.975 to 1.025)
    */
-  function getTimeOffset() {
+  function getTempoScale() {
     const position = requirePhraseContextPosition();
     const phase = requireSectionPhase();
 
-    // Compute feel factor based on phase and phrase arc position
     let feel = 0;
     switch (phase) {
       case 'development':
       case 'climax':
-        feel = m.sin(position * m.PI) * MAX_FEEL_RATIO;
+        // Accelerando through middle of phrase
+        feel = -m.sin(position * m.PI) * MAX_FEEL_RATIO;
         break;
       case 'resolution':
       case 'conclusion':
-        feel = -m.sin(position * m.PI) * MAX_FEEL_RATIO * 0.7;
+        // Ritardando through middle of phrase
+        feel = m.sin(position * m.PI) * MAX_FEEL_RATIO * 0.7;
         break;
       case 'exposition':
-        feel = m.sin(position * m.PI) * MAX_FEEL_RATIO * 0.3;
+        feel = -m.sin(position * m.PI) * MAX_FEEL_RATIO * 0.3;
         break;
       default:
         feel = 0;
     }
 
-    // Phrase-level rubato: slight ritardando approaching phrase end, accelerando in early phrase
-    // Tempo-responsive: slower tempo = more rubato, faster = tighter
+    // Phrase-level rubato: ritardando approaching phrase end, accelerando in early phrase
     const tempoEntry = L0.getLast('tickDuration', {});
     const bpmScaleForRubato = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;
     const rubatoDepth = clamp(1.2 - bpmScaleForRubato * 0.4, 0.5, 1.5);
     const phraseProgress = clamp(timeStream.normalizedProgress('phrase'), 0, 1);
     const rubato = phraseProgress > 0.8
-      ? -(phraseProgress - 0.8) / 0.2 * MAX_FEEL_RATIO * 0.5 * rubatoDepth
+      ? (phraseProgress - 0.8) / 0.2 * MAX_FEEL_RATIO * 0.5 * rubatoDepth
       : phraseProgress < 0.15
-        ? (0.15 - phraseProgress) / 0.15 * MAX_FEEL_RATIO * 0.3 * rubatoDepth
+        ? -(0.15 - phraseProgress) / 0.15 * MAX_FEEL_RATIO * 0.3 * rubatoDepth
         : 0;
 
-    const secondsPerUnit = requireSecondsPerUnit();
-
-    return (feel + rubato) * secondsPerUnit;
+    return 1.0 + feel + rubato;
   }
 
-  /**
-   * Get the raw feel factor (for diagnostics/logging).
-   * @returns {{ feel: number, phase: string, position: number }}
-   */
+  // Backwards compatibility
+  function getTimeOffset() {
+    return 0;
+  }
+
   function getFeelState() {
     const position = requirePhraseContextPosition();
     const phase = requireSectionPhase();
-
-    return { feel: getTimeOffset(), phase, position };
+    return { feel: getTempoScale(), phase, position };
   }
 
   return {
+    getTempoScale,
     getTimeOffset,
     getFeelState
   };
