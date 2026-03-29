@@ -85,7 +85,7 @@ const manifestPath = 'metrics/system-manifest.json';
         move: stop.move,
         distance: stop.distance
       }));
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       // Journey may not have been planned - non-fatal
     }
 
@@ -108,7 +108,7 @@ const manifestPath = 'metrics/system-manifest.json';
     let trustSnapshot = {};
     try {
       trustSnapshot = adaptiveTrustScores.getSnapshot();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       // Non-fatal
     }
 
@@ -116,7 +116,7 @@ const manifestPath = 'metrics/system-manifest.json';
     let trustJournal = [];
     try {
       trustJournal = adaptiveTrustScores.getJournal();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       // Non-fatal
     }
 
@@ -169,7 +169,7 @@ const manifestPath = 'metrics/system-manifest.json';
   function systemManifestBuildSignalHealth() {
     try {
       return signalHealthAnalyzer.getSummary();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       return { beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} };
     }
   }
@@ -178,7 +178,7 @@ const manifestPath = 'metrics/system-manifest.json';
   function systemManifestBuildPipelineNormalizer() {
     try {
       return pipelineNormalizer.getSnapshot();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       return {};
     }
   }
@@ -187,7 +187,7 @@ const manifestPath = 'metrics/system-manifest.json';
   function systemManifestBuildSystemDynamics() {
     try {
       return systemDynamicsProfiler.getSummary();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       return { beatsAnalyzed: 0, snapshot: {}, dimensionNames: [] };
     }
   }

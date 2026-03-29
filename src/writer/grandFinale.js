@@ -96,7 +96,7 @@ grandFinale = () => {
       try {
         V.assertObject(buffer, 'buffer');
         V.assertArray(buffer.rows, 'buffer.rows');
-      } catch {
+      } catch { /* boot-safety: dependency may not be ready */
         throw new Error(`grandFinale: layer "${name}" buffer must be an array or object with rows array`);
       }
       buffer = buffer.rows;
@@ -173,11 +173,6 @@ grandFinale = () => {
       throw new Error(`grandFinale: layer "${name}" produced no valid events (finalTimeInSeconds=${finalTimeInSeconds})`);
     }
     globalFinalTimeInSeconds = m.max(globalFinalTimeInSeconds, finalTimeInSeconds);
-    // Reset pitch bend to neutral on all channels at track end.
-    const finalCsvTime = `${finalTimeInSeconds}s`;
-    for (let chi = 0; chi < allCHs.length; chi++) {
-      composition += `1,${finalCsvTime},pitch_bend_c,${allCHs[chi]},${neutralPitchBend}\n`;
-    }
     const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     pendingWrites.push({ composition, outputFilename });
 

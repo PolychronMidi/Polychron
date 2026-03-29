@@ -267,7 +267,7 @@ hyperMetaManager = (() => {
     try {
       const axisEnergyShare = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
       trustShare = axisEnergyShare && axisEnergyShare.shares && Number.isFinite(axisEnergyShare.shares.trust) ? axisEnergyShare.shares.trust : 0;
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       trustShare = 0;
     }
     if (trustShare > 0 && trustShare < 0.07) {

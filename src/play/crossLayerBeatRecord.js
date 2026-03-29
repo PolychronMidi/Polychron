@@ -292,6 +292,33 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const rcOutcome = rcMode && rcMode !== 'free' ? clamp(0.4 + (rcMode === 'hocket' ? 0.2 : rcMode === 'antiphony' ? 0.15 : 0.1), -1, 1) : 0.08;
   adaptiveTrustScores.registerOutcome(trustSystems.names.RHYTHMIC_COMPLEMENT, rcOutcome);
 
+  // convergenceHarmonicTrigger: reward when trigger fires during high convergence intent
+  const chtTriggered = convergenceHarmonicTrigger.getTriggerCount() > 0;
+  const chtOutcome = chtTriggered ? clamp(0.5 + convergenceTarget * 0.3, -1, 1) : clamp(0.1 + (1 - convergenceTarget) * 0.15, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.CONVERGENCE_HARMONIC_TRIGGER, chtOutcome);
+
+  // registerCollisionAvoider: reward when collisions are being actively avoided (adjusted count > 0)
+  const rcaEntry = L0.getLast('registerCollision', { layer: layer });
+  const rcaOutcome = rcaEntry ? 0.35 : 0.15;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.REGISTER_COLLISION_AVOIDER, rcaOutcome);
+
+  // verticalIntervalMonitor: reward when cross-layer interval variety is moderate
+  const vimOutcome = 0.25;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.VERTICAL_INTERVAL_MONITOR, vimOutcome);
+
+  // crossLayerSilhouette: reward when density corrections are active (non-zero bias)
+  const silCorrections = crossLayerSilhouette.getCorrections();
+  const silOutcome = silCorrections && m.abs(silCorrections.densityBias) > 0.01 ? clamp(0.3 + m.abs(silCorrections.densityBias) * 2, -1, 1) : 0.1;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.CROSS_LAYER_SILHOUETTE, silOutcome);
+
+  // polyrhythmicPhasePredictor: reward based on phase confidence
+  const pppOutcome = clamp(0.15 + clPhase.confidence * 0.4, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.POLYRHYTHMIC_PHASE_PREDICTOR, pppOutcome);
+
+  // phaseAwareCadenceWindow: reward when cadence gating is meaningful
+  const pacwOutcome = clCadenceGate ? clamp(0.3 + clPhase.confidence * 0.3, -1, 1) : 0.12;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.PHASE_AWARE_CADENCE_WINDOW, pacwOutcome);
+
   adaptiveTrustScores.decayAll(tp.decayRate);
 
   // Explainability

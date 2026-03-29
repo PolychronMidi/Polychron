@@ -54,7 +54,7 @@ motifValidators = {
     if (scaleNotes.length === 0) {
       throw new Error('motifValidators: scaleNotes must be a non-empty array');
     }
-    if (!V.optionalType(developer, 'object')) return;
+    if (!V.optionalType(developer, 'object')) throw new Error('motifValidators: developer must be object');
 
     const caps = this.getCapabilities(developer);
     if (!caps.preservesScale) return;

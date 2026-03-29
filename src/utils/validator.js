@@ -199,7 +199,7 @@ validator = (() => {
           return parts[parts.length - 1];
         }
       }
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       /* ignore - fall through */
     }
 

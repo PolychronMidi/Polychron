@@ -66,7 +66,10 @@ feedbackOscillator = (() => {
     if (!Number.isFinite(incoming.energy) || incoming.energy < MIN_ENERGY) return null;
     if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
 
-    const dampedEnergy = incoming.energy * DAMPING;
+    // Modulate damping by entropy - high entropy means feedback should be stronger to create convergence
+    const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
+    const entropyModulation = entropyEntry && Number.isFinite(entropyEntry.smoothed) ? clamp(1.0 + (entropyEntry.smoothed - 0.5) * 0.3, 0.85, 1.15) : 1.0;
+    const dampedEnergy = incoming.energy * DAMPING * entropyModulation;
     if (dampedEnergy < MIN_ENERGY) return null;
 
     const incomingRoundTrip = V.requireFinite(incoming.roundTrip, 'react.incoming.roundTrip');

@@ -187,7 +187,7 @@ MeasureComposer = class MeasureComposer {
         validateInstance(scorerOrConfig);
         // looks like a real instance
         this.VoiceLeadingScore = scorerOrConfig;
-      } catch {
+      } catch { /* duck-type validation: input may be config instead of instance */
         // treat as configuration and build a new scorer
         this.VoiceLeadingScore = new VoiceLeadingScore(scorerOrConfig);
       }
@@ -196,7 +196,7 @@ MeasureComposer = class MeasureComposer {
       // but our downstream callers will guard again).
       try {
         validateInstance(scorerOrConfig);
-      } catch {
+      } catch { /* duck-type validation: input may be config instead of instance */
         // fall back to default scorer if validation fails
         this.VoiceLeadingScore = new VoiceLeadingScore();
         return /** @type {VoiceLeadingScoreAPI} */ (this.VoiceLeadingScore);

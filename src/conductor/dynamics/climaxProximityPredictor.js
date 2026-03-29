@@ -44,7 +44,7 @@ climaxProximityPredictor = (() => {
     let sectionProg = 0;
     try {
       sectionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       void 0;
     }
     climaxSignal += sectionProg * 0.12;

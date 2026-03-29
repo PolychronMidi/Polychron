@@ -48,7 +48,7 @@ motifEcho = (() => {
    */
   function captureMotif(layer, absoluteSeconds) {
     const notes = recentNotes.get(layer);
-    if (!notes || notes.length < 3) return;
+    if (!notes || notes.length < 3) throw new Error("motifEcho: notes must have >= 3 entries");
 
     // Extract interval sequence (relative intervals between consecutive notes)
     const intervals = [];
@@ -56,8 +56,12 @@ motifEcho = (() => {
       intervals.push(notes[i] - notes[i - 1]);
     }
 
-    // Pick transform type
+    // Pick transform type - modulated by harmonic distance
     let transform = TRANSFORMS[ri(TRANSFORMS.length - 1)];
+    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    if (harmonicEntry && Number.isFinite(harmonicEntry.excursion) && harmonicEntry.excursion > 3) {
+      transform = rf() < 0.6 ? 'retrograde-inversion' : 'inversion';
+    }
     const identityChoice = motifIdentityMemory.chooseEchoTransform(layer);
     if (identityChoice && typeof identityChoice.transform === 'string' && rf() < clamp(identityChoice.bias, 0, 1)) {
       transform = identityChoice.transform;

@@ -27,8 +27,10 @@ pitchMemoryRecall = (() => {
    * @param {number} sectionIdx
    */
   function memorize(intervalDna, pitchClasses, strengthSignals, sectionIdx) {
-    if (!Array.isArray(intervalDna) || intervalDna.length < 2) return;
-    if (!Array.isArray(pitchClasses) || pitchClasses.length < 2) return;
+    V.assertArray(intervalDna, 'intervalDna');
+    if (intervalDna.length < 2) return;
+    V.assertArray(pitchClasses, 'pitchClasses');
+    if (pitchClasses.length < 2) return;
     V.requireFinite(sectionIdx, 'sectionIdx');
 
     const sig = (strengthSignals && typeof strengthSignals === 'object') ? strengthSignals : {};

@@ -22,7 +22,7 @@ couplingGainEscalation = (() => {
 
   /** Process non-nudgeable pair: update EMA and windows only. */
   function handleNonNudgeable(key, ps, absCorr, isEntropyPair, dynTelemetryWindow) {
-    const telWin = dynTelemetryWindow || TELEMETRY_WINDOW;
+    const telWin = V.optionalFinite(dynTelemetryWindow, TELEMETRY_WINDOW);
     ps.gain = 0;
     ps.lastEffectiveGain = 0;
     ps.lastAbsCorr = absCorr;
@@ -280,7 +280,7 @@ couplingGainEscalation = (() => {
     // reconciliation gap exceeds 0.25 (reduced from 0.30 to catch
     // density-trust gap 0.340).
     // Scale factor: 1 + max(0, (gap - 0.25) * 2.0), capped at 80 beats.
-    let telWin = setup.dynTelemetryWindow || TELEMETRY_WINDOW;
+    let telWin = V.optionalFinite(setup.dynTelemetryWindow, TELEMETRY_WINDOW);
     if (ps.telemetryAbsCorr.length > 0 && ps.recentAbsCorr.length > 0) {
       const longP95 = tailTelemetry.p95;
       const shortP95 = tailTelemetry.recentP95;

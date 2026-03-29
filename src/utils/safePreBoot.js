@@ -19,7 +19,7 @@ safePreBoot = (() => {
     V.requireType(fn, 'function', 'fn');
     try {
       return fn();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       return fallback;
     }
   }

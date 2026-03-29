@@ -3,7 +3,7 @@ axisEnergyEquilibratorHelpers = (() => {
     let profile = null;
     try {
       profile = conductorConfig.getActiveProfile();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       profile = null;
     }
     const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;

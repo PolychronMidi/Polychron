@@ -44,7 +44,7 @@ entropyMetrics = (() => {
    * @returns {number} 0-1
    */
   function rhythmicIrregularity(layer) {
-    if (!L0) return 0.5;
+    V.requireDefined(L0, 'L0');
     V.requireFinite(beatStartTime, 'beatStartTime');
     const notes = L0.query('note', {
       layer,

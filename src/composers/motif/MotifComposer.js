@@ -75,7 +75,7 @@ MotifComposer = class MotifComposer {
       }
       try {
         V.requireType(opts.measureComposer.getVoicingIntent, 'function', 'opts.measureComposer.getVoicingIntent');
-      } catch {
+      } catch { /* duck-type validation: input may be config instead of instance */
         V.requireType(opts.measureComposer.selectNoteWithLeading, 'function', 'opts.measureComposer.selectNoteWithLeading');
       }
       this.measureComposer = opts.measureComposer;
@@ -176,8 +176,19 @@ MotifComposer = class MotifComposer {
       : (() => { throw new Error('MotifComposer.generate: VoiceManager not available'); })();
     const motifLayer = VC ? { id: `${this.MotifComposerMotifInstanceId}-${this.MotifComposerMotifSequenceId++}` } : null;
 
+    const seedIntervals = optsAny.seedIntervals;
+    const seedRoot = candidates.length > 0 ? candidates[ri(candidates.length - 1)] : 60;
+
     for (let i = 0; i < length; i++) {
       let chosen;
+
+      // Section motif seed: first N notes follow the seed interval pattern
+      if (Array.isArray(seedIntervals) && i < seedIntervals.length && rf() < 0.7) {
+        const seedNote = seedRoot + seedIntervals[i];
+        const seedNormalized = seedNote % 12;
+        const seedMatch = candidates.find(c => (c % 12) === seedNormalized);
+        if (seedMatch !== undefined) { chosen = seedMatch; seq.push({ note: chosen, duration: 1 }); lastNotes.push(chosen); continue; }
+      }
 
       // Prefer notes from developer feed when available, but constrain to scale candidates
       if (devNotes && devNotes.length > 0) {

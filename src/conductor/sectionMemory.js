@@ -7,7 +7,7 @@ sectionMemory = (() => {
   const V = validator.create('sectionMemory');
   const CARRYOVER = 0.30; // fraction of previous state seeded into new section
 
-  /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string, regime?: string } | null} */
+  /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string, regime?: string, coherenceBias?: number, intentDensity?: number, intentTension?: number } | null} */
   let sectionMemoryPrev = null;
 
   /**
@@ -17,13 +17,18 @@ sectionMemory = (() => {
   function snapshot() {
     const mom = energyMomentumTracker.getMomentum();
     const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const coherenceBias = V.optionalFinite(coherenceMonitor.getDensityBias(), 1.0);
+    const lastIntent = sectionIntentCurves.getLastIntent();
     sectionMemoryPrev = {
       energy: clamp(V.optionalFinite(conductorState.getField('compositeIntensity'), 0.5), 0, 1),
       tension: clamp(signalReader.tension(), 0.4, 1.6),
       density: clamp(currentDensity, 0, 1),
       flicker: clamp(signalReader.flicker(), 0.4, 1.6),
       trend: mom.trend ? mom.trend : 'steady',
-      regime: snap ? snap.regime : 'evolving'
+      regime: snap ? snap.regime : 'evolving',
+      coherenceBias,
+      intentDensity: lastIntent.densityTarget,
+      intentTension: lastIntent.dissonanceTarget
     };
   }
 

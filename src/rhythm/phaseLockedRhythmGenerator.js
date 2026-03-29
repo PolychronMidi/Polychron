@@ -174,7 +174,7 @@ phaseLockedRhythmGenerator = (() => {
         const decorrelationPush = m.max(1, m.round((0.5 + phaseRecoveryCredit * 0.6 + softPhaseDeficit * 0.45 + evolvingRecoveryPressure * 0.5) * (1 - rescueContainmentPressure * 0.55)));
         offset += decorrelationPush;
       }
-    } catch {
+    } catch { /* validation fallback */
       // Snapshot access is optional during early boot and tests.
       offset += textureDrift;
     }

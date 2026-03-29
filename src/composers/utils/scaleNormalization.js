@@ -63,12 +63,12 @@ scaleNormalization = {
       : 'scaleNormalization.collectComposerValidPCs';
 
     const addPitchClass = (val) => {
-      if (!Number.isFinite(Number(val))) return;
+      if (!Number.isFinite(Number(val))) throw new Error("scaleNormalization: val must be finite");
       pcs.add(((Number(val) % 12) + 12) % 12);
     };
 
     const addFromEntries = (entries) => {
-      if (!Array.isArray(entries)) return;
+      if (!Array.isArray(entries)) throw new Error("scaleNormalization: entries must be array");
       for (const entry of entries) {
         if (typeof entry === 'string') {
           if (!t || !t.Note || typeof t.Note.chroma !== 'function') {
