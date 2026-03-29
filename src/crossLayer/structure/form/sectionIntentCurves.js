@@ -141,8 +141,10 @@ sectionIntentCurves = (() => {
       0,
       1
     );
+    // Cross-section flicker contrast: if previous section had high flicker, bias interaction lower for textural contrast
+    const flickerContrastBias = prevSection && Number.isFinite(prevSection.flicker) ? clamp((prevSection.flicker - 1.0) * -0.08, -0.04, 0.04) : 0;
     const interactionTarget = clamp(
-      INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE) + lateLift * INTERACTION_LATE_SURGE - longFormRelief * LONG_FORM_INTERACTION_RELIEF,
+      INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE) + lateLift * INTERACTION_LATE_SURGE - longFormRelief * LONG_FORM_INTERACTION_RELIEF + flickerContrastBias,
       0,
       1
     );

@@ -22,7 +22,9 @@ trustSystems = (() => {
     HARMONIC_INTERVAL_GUARD: 'harmonicIntervalGuard',
     EMERGENT_DOWNBEAT: 'emergentDownbeat',
     ARTICULATION_COMPLEMENT: 'articulationComplement',
-    TEXTURAL_MIRROR: 'texturalMirror'
+    TEXTURAL_MIRROR: 'texturalMirror',
+    SPECTRAL_COMPLEMENTARITY: 'spectralComplementarity',
+    MOTIF_ECHO: 'motifEcho'
   });
 
   // -- Heat map system names (superset - includes non-trust systems tracked by interactionHeatMap) --

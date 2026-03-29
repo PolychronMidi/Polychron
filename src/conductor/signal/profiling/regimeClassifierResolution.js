@@ -40,6 +40,7 @@ regimeClassifierResolution = (() => {
       forcedBeatsRemaining: beatsRemaining,
       thresholdScale: state.coherentThresholdScale
     }, undefined, 'forced-' + reason);
+    L0.post('regimeTransition', 'both', beatStartTime, { from: state.lastRegime, to: regime, cause: 'forced-' + reason });
   }
 
   function resolve(state, config, rawRegime, tickId, forceRegimeTransition) {
@@ -189,6 +190,7 @@ regimeClassifierResolution = (() => {
             evolvingBeats: state.lastRegime === 'evolving' ? state.evolvingBeats + 1 : state.evolvingBeats,
             windowHits
           }, undefined, 'organic-' + organicCause);
+          L0.post('regimeTransition', 'both', beatStartTime, { from: state.lastRegime, to: rawRegime, cause: 'organic-' + organicCause });
           if (state.lastRegime === 'coherent') {
             state.coherentMomentumBeats = m.max(config.COHERENT_MOMENTUM_WINDOW, m.floor(state.coherentBeats * 0.25));
           }

@@ -593,6 +593,8 @@ interface TrustSystemsAPI {
     EMERGENT_DOWNBEAT: 'emergentDownbeat';
     ARTICULATION_COMPLEMENT: 'articulationComplement';
     TEXTURAL_MIRROR: 'texturalMirror';
+    SPECTRAL_COMPLEMENTARITY: 'spectralComplementarity';
+    MOTIF_ECHO: 'motifEcho';
   }>;
   heatMapSystems: Readonly<{
     STUTTER_CONTAGION: 'stutterContagion';
