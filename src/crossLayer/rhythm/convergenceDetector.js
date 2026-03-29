@@ -47,11 +47,16 @@ convergenceDetector = (() => {
   function detect(absoluteSeconds, activeLayer) {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
-    // Throttle: don't fire convergence events more often than the interval
-    if (absoluteSeconds - lastConvergenceSec < MIN_CONVERGENCE_INTERVAL_SEC) return null;
+    // Modulate tolerance and interval by convergenceTarget from section intent
+    const intent = sectionIntentCurves.getLastIntent ? sectionIntentCurves.getLastIntent() : null;
+    const ct = intent && Number.isFinite(intent.convergenceTarget) ? intent.convergenceTarget : 0.5;
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8);
+    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8);
+
+    if (absoluteSeconds - lastConvergenceSec < effectiveInterval) return null;
 
     const match = L0.findClosest(
-      CHANNEL, absoluteSeconds, CONVERGENCE_TOLERANCE_SEC, activeLayer
+      CHANNEL, absoluteSeconds, effectiveTolerance, activeLayer
     );
     if (!match) return null;
 
@@ -91,8 +96,10 @@ convergenceDetector = (() => {
     const boundedCurrentMidi = clamp(m.round(currentMidi), 0, 127);
     const burstPC = ((boundedCurrentMidi % 12) + 12) % 12;
     const burstBaseTime = absoluteSeconds;
+    const intentForBurst = sectionIntentCurves.getLastIntent ? sectionIntentCurves.getLastIntent() : null;
+    const ctForBurst = intentForBurst && Number.isFinite(intentForBurst.convergenceTarget) ? intentForBurst.convergenceTarget : 0.5;
     const burstVel = m.round(clamp(
-      ((currentVelocity + conv.otherVelocity) / 2) * (0.9 + conv.rarity * 0.3),
+      ((currentVelocity + conv.otherVelocity) / 2) * (0.8 + ctForBurst * 0.2 + conv.rarity * 0.3),
       1, MIDI_MAX_VALUE
     ));
     // Pick octave spread based on rarity: rarer = wider spread

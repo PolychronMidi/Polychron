@@ -222,7 +222,7 @@ traceDrain = (() => {
   /**
    * Record one trace beat entry.
    * @param {string} layer
-  * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, phaseTelemetry?: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, axisEnergyEquilibrator?: any, transitionReadiness?: any, profilerTelemetry?: any, outputLoadGuard?: any, forcedTransitionEvent?: any, stageTiming?: Record<string,number>|null }} data
+  * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, couplingLabels?: any, phaseTelemetry?: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, axisEnergyEquilibrator?: any, transitionReadiness?: any, profilerTelemetry?: any, outputLoadGuard?: any, forcedTransitionEvent?: any, stageTiming?: Record<string,number>|null }} data
    */
   function record(layer, data) {
     if (!isTracing || fd === null) return;
@@ -242,6 +242,7 @@ traceDrain = (() => {
       trust: data.trustScores,
       regime: data.regime,
       coupling: data.couplingMatrix,
+      couplingLabels: data.couplingLabels || undefined,
       phaseTelemetry: data.phaseTelemetry || undefined,
       couplingTargets: data.couplingTargets || undefined,
       axisCouplingTotals: data.axisCouplingTotals || undefined,

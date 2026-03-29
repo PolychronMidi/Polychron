@@ -587,6 +587,10 @@ interface TrustSystemsAPI {
     ENTROPY_REGULATOR: 'entropyRegulator';
     REST_SYNCHRONIZER: 'restSynchronizer';
     ROLE_SWAP: 'roleSwap';
+    GROOVE_TRANSFER: 'grooveTransfer';
+    VELOCITY_INTERFERENCE: 'velocityInterference';
+    HARMONIC_INTERVAL_GUARD: 'harmonicIntervalGuard';
+    EMERGENT_DOWNBEAT: 'emergentDownbeat';
   }>;
   heatMapSystems: Readonly<{
     STUTTER_CONTAGION: 'stutterContagion';
@@ -650,14 +654,14 @@ interface CrossLayerHelpersAPI {
 // -- Cross-Layer Module Interfaces --
 
 interface SectionIntentCurvesAPI {
-  getIntent(): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number };
-  getLastIntent(): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number };
-  setManualIntent(intent: { densityTarget?: number; dissonanceTarget?: number; interactionTarget?: number; entropyTarget?: number }): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number };
+  getIntent(): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number; convergenceTarget: number };
+  getLastIntent(): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number; convergenceTarget: number };
+  setManualIntent(intent: { densityTarget?: number; dissonanceTarget?: number; interactionTarget?: number; entropyTarget?: number }): { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number; convergenceTarget: number };
   reset(): void;
 }
 
 interface NegotiationEngineAPI {
-  apply(layer: string, context: { playProb: number; stutterProb: number; cadenceSuggested: boolean; phaseConfidence: number; intent?: { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number }; entropyScale?: number }): { playProb: number; stutterProb: number; allowCadence: boolean; conflict: number; phaseConfidence: number };
+  apply(layer: string, context: { playProb: number; stutterProb: number; cadenceSuggested: boolean; phaseConfidence: number; intent?: { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number; convergenceTarget: number }; entropyScale?: number }): { playProb: number; stutterProb: number; allowCadence: boolean; conflict: number; phaseConfidence: number };
   gateConvergence(layer: string): { allowHarmonicTrigger: boolean; allowDownbeat: boolean };
   reset(): void;
 }
@@ -1884,7 +1888,7 @@ declare var grandFinale: any;
 declare var traceDrain: {
   init(): void;
   isEnabled(): boolean;
-  record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any }): void;
+  record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any; couplingLabels?: any; [key: string]: any }): void;
   recordNote(pitch: number, velocity: number, channel: number): void;
   recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string; axisEnergyShare?: any; sectionKey?: string; sectionMode?: string }): void;
   recordRuntimeMetric(name: string, durationMs: number): void;

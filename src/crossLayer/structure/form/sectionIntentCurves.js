@@ -104,8 +104,12 @@ sectionIntentCurves = (() => {
     const reliefDepth = s === 1 ? 0.06 : sectionRoute > 0.7 ? 0.15 : 0.12;
     const sectionBoundaryRelief = s > 0 ? clamp(1.0 - (1.0 - p / 0.08) * reliefDepth, 1.0 - reliefDepth, 1.0) : 1.0;
 
+    // Cross-section contrast: if previous section was dense, bias this one sparser (and vice versa)
+    const prevSection = sectionMemory.getPrevious ? sectionMemory.getPrevious() : null;
+    const sectionContrastBias = prevSection ? clamp((prevSection.density - 0.5) * -0.12, -0.06, 0.06) : 0;
+
     const densityTarget = clamp(
-      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF) * sectionBoundaryRelief
+      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias) * sectionBoundaryRelief
       // R70 E3: Per-phrase density perturbation. Density variance declined
       // steadily (0.0139 -> 0.0100 -> 0.0055) as section-level smoothing
       // dominates. Adding a phrase-level sine wave creates mid-phrase

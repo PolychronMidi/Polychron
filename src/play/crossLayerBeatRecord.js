@@ -224,6 +224,28 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     crossLayerBeatRecordRestDroughtBeats++;
   }
   adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
+
+  // grooveTransfer: reward when groove offset is small (layers aligned), penalize large offsets
+  const grooveEntry = L0.getLast('grooveTransfer', { layer: layer });
+  const grooveOutcome = grooveEntry && Number.isFinite(grooveEntry.offset) ? clamp(1 - m.abs(grooveEntry.offset) * 8, -1, 1) : 0.1;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.GROOVE_TRANSFER, grooveOutcome);
+
+  // velocityInterference: reward when velocity delta between layers is moderate (contrast), penalize extremes
+  const velEntry = L0.getLast('velocity', { layer: layer });
+  const velDelta = velEntry && Number.isFinite(velEntry.delta) ? m.abs(velEntry.delta) : 0;
+  const velOutcome = clamp(velDelta < 20 ? 0.3 + velDelta * 0.02 : 0.7 - (velDelta - 20) * 0.015, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.VELOCITY_INTERFERENCE, velOutcome);
+
+  // harmonicIntervalGuard: reward consonance tracking toward dissonance target
+  const dissonanceTarget = clIntent ? clIntent.dissonanceTarget : 0.5;
+  const harmonicGuardOutcome = clamp(0.3 + (1 - m.abs(clTension - dissonanceTarget)) * 0.5, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.HARMONIC_INTERVAL_GUARD, harmonicGuardOutcome);
+
+  // emergentDownbeat: reward when downbeats fire during high convergence target, penalize during low
+  const convergenceTarget = clIntent ? (clIntent.convergenceTarget || 0.5) : 0.5;
+  const downbeatOutcome = clDownbeat ? clamp(0.2 + convergenceTarget * 0.6 + clDownbeat.strength * 0.2, -1, 1) : clamp(0.1 + (1 - convergenceTarget) * 0.2, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.EMERGENT_DOWNBEAT, downbeatOutcome);
+
   adaptiveTrustScores.decayAll(tp.decayRate);
 
   // Explainability
@@ -266,6 +288,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       trustScores: crossLayerBeatRecordTraceCachedTrustScores,
       regime: crossLayerBeatRecordTraceCachedDynamicsSnap.regime,
       couplingMatrix: crossLayerBeatRecordTraceCachedDynamicsSnap.couplingMatrix,
+      couplingLabels: crossLayerBeatRecordTraceCachedDynamicsSnap.couplingLabels,
       phaseTelemetry: crossLayerBeatRecordBuildPhaseTelemetry(crossLayerBeatRecordTraceCachedDynamicsSnap),
       // Adaptive target state for coupling drift diagnostics
       couplingTargets: crossLayerBeatRecordTraceCachedCouplingTargets,
