@@ -9,14 +9,15 @@ motifSpreader = {
    * Plan measure-level motif and derive beat-level buckets.
    * Called once per measure from motifManager.planMeasure().
    */
-  spreadMeasure({ layer, beats, composer, profile }) {
+  spreadMeasure({ layer, beats, composer, profile, sectionMotifSeed }) {
     if (!layer) throw new Error('motifSpreader.spreadMeasure: no layer');
     if (!Number.isFinite(Number(beats)) || Number(beats) <= 0) throw new Error('motifSpreader.spreadMeasure: invalid beats');
     if (!composer) throw new Error('motifSpreader.spreadMeasure: no composer');
 
     const mc = new MotifComposer({ useVoiceLeading: Boolean(composer.VoiceLeadingScore) });
     const length = m.max(2, m.round(Number(beats) * rf(1.5, 2.5)));
-    const measureMotif = mc.generate({ length, developFromComposer: composer, measureComposer: composer });
+    const seedOpts = Array.isArray(sectionMotifSeed) && sectionMotifSeed.length > 0 ? { seedIntervals: sectionMotifSeed } : {};
+    const measureMotif = mc.generate(Object.assign({ length, developFromComposer: composer, measureComposer: composer }, seedOpts));
     if (!measureMotif || !measureMotif.sequence) throw new Error('motifSpreader.spreadMeasure: motif generation failed');
 
     layer.measureMotifs = { motif: measureMotif, groupId: `msr-${measureCount}` };
@@ -128,7 +129,7 @@ motifSpreader = {
    */
   spreadSubunits({ layer, unit, parentIndex, count, bucketKey, parentBucketKey, profile }) {
     if (!layer) throw new Error(`motifSpreader.spreadSubunits(${unit}): no layer`);
-    if (!Number.isFinite(Number(count)) || Number(count) <= 0) return;
+    if (!Number.isFinite(Number(count)) || Number(count) <= 0) throw new Error('motifSpreader: count must be finite positive');
     const parentBuckets = layer[parentBucketKey];
     if (!Array.isArray(parentBuckets) || !Array.isArray(parentBuckets[parentIndex])) {
       throw new Error(`motifSpreader.spreadSubunits(${unit}): missing parent bucket at ${parentBucketKey}[${parentIndex}]`);

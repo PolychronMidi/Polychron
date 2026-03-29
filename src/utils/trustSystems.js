@@ -28,7 +28,13 @@ trustSystems = (() => {
     CLIMAX_ENGINE: 'climaxEngine',
     DYNAMIC_ENVELOPE: 'dynamicEnvelope',
     TEMPORAL_GRAVITY: 'temporalGravity',
-    RHYTHMIC_COMPLEMENT: 'rhythmicComplement'
+    RHYTHMIC_COMPLEMENT: 'rhythmicComplement',
+    CONVERGENCE_HARMONIC_TRIGGER: 'convergenceHarmonicTrigger',
+    REGISTER_COLLISION_AVOIDER: 'registerCollisionAvoider',
+    VERTICAL_INTERVAL_MONITOR: 'verticalIntervalMonitor',
+    CROSS_LAYER_SILHOUETTE: 'crossLayerSilhouette',
+    POLYRHYTHMIC_PHASE_PREDICTOR: 'polyrhythmicPhasePredictor',
+    PHASE_AWARE_CADENCE_WINDOW: 'phaseAwareCadenceWindow'
   });
 
   // -- Heat map system names (superset - includes non-trust systems tracked by interactionHeatMap) --

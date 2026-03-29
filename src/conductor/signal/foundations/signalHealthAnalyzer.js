@@ -82,7 +82,7 @@ signalHealthAnalyzer = (() => {
     let snapshot;
     try {
       snapshot = adaptiveTrustScores.getSnapshot();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       return { grade: 'unknown', starvingSystems: [], thrivingSystems: [] };
     }
 

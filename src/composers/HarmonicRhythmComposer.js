@@ -47,7 +47,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       }
       try {
         V.requireType(opts.phraseArcManager.isAtBoundary, 'function', 'opts.phraseArcManager.isAtBoundary');
-      } catch {
+      } catch { /* duck-type validation: input may be config instead of instance */
         V.requireType(opts.phraseArcManager.getPhraseContext, 'function', 'opts.phraseArcManager.getPhraseContext');
       }
       this.phraseArcManager = opts.phraseArcManager;

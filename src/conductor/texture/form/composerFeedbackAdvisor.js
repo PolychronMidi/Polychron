@@ -46,7 +46,7 @@ composerFeedbackAdvisor = (() => {
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
       if (snap && typeof snap.regime === 'string') currentRegime = snap.regime;
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       // profiler may not be available during early boot
     }
 

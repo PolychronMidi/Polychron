@@ -136,12 +136,8 @@ motifTransforms = {
    * @throws {Error} If transformation fails
    */
   applyAll(entries, transforms) {
-    try {
-      V.assertArray(entries, 'entries');
-      V.assertArray(transforms, 'transforms');
-    } catch {
-      throw new Error('motifTransforms.applyAll: entries and transforms must be arrays');
-    }
+    V.assertArray(entries, 'entries');
+    V.assertArray(transforms, 'transforms');
 
     for (const transform of transforms) {
       if (transform === 'reverse') {

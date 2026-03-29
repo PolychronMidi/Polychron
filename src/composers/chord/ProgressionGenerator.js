@@ -91,9 +91,9 @@ ProgressionGenerator = class ProgressionGenerator {
     const baseRoot = chordParts?.[1] || diatonicRoot;
     const baseQuality = chordParts?.[2] || '';
 
-    let quality = baseQuality;
+    const quality = baseQuality;
     if (!/dim/.test(quality) && romanNumeral === romanNumeral.toLowerCase()) {
-      quality = quality || 'm';
+      if (!quality) throw new Error('ProgressionGenerator: quality must be set, got ' + quality);
     }
 
     let rootNote = baseRoot;

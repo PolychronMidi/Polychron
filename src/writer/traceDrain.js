@@ -189,7 +189,7 @@ traceDrain = (() => {
       if (fs.existsSync(filepath)) {
         fs.unlinkSync(filepath);
       }
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       // Non-fatal
     }
 
@@ -314,7 +314,7 @@ traceDrain = (() => {
     if (fd !== null) {
       try {
         fs.closeSync(fd);
-      } catch {
+      } catch { /* boot-safety: dependency may not be ready */
         // Non-fatal
       }
       fd = null;

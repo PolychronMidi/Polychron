@@ -17,7 +17,7 @@ systemDynamicsProfilerAnalysis = (() => {
       } else if (profileName === 'minimal') {
         regimeClassifier.setOscillatingThreshold(0.45);
       }
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       state.stateSmoothing = 0.30;
     }
     state.stateSmoothingResolved = true;

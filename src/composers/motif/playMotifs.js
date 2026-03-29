@@ -173,7 +173,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
  * Clears beatNoteHistory, motifCycleTracking, and voice Manager history
  */
 /** @type {any} */ (playMotifs).resetLayerState = function(layer) {
-  if (!layer) return;
+  if (!layer) throw new Error("playMotifs: layer is required");
   layer.playMotifsMotifCycleTracking = null;
   layer.playMotifsEmptyBucketCaptured = null;
   layer.playMotifsBucketCursors = null;

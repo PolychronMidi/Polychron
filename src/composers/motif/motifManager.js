@@ -60,7 +60,8 @@ class MotifManagerClass {
       }
     }
     const profile = motifConfig.getUnitProfile('measure');
-    motifSpreader.spreadMeasure({ layer, beats: Number(numerator), composer, profile });
+    const sectionMotifSeed = currentSectionType && Array.isArray(SECTION_TYPES) ? (SECTION_TYPES.find(t => t.type === currentSectionType) || {}).motif : null;
+    motifSpreader.spreadMeasure({ layer, beats: Number(numerator), composer, profile, sectionMotifSeed });
   }
 
   /**
@@ -103,7 +104,7 @@ class MotifManagerClass {
    * Call from setUnitTiming('div').
    */
   static planSubdivs(layer, absDivIdx, sPerDiv) {
-    if (!Number.isFinite(Number(sPerDiv)) || Number(sPerDiv) <= 0) return;
+    if (!Number.isFinite(Number(sPerDiv)) || Number(sPerDiv) <= 0) throw new Error('motifManager: sPerDiv must be finite positive');
     MotifManagerClass.motifManagerResetChildVM(layer, 'subdiv');
     const profile = motifConfig.getUnitProfile('subdiv');
     motifSpreader.spreadSubunits({ layer, unit: 'subdiv', parentIndex: absDivIdx, count: Number(sPerDiv), bucketKey: 'subdivMotifs', parentBucketKey: 'divMotifs', profile });
@@ -115,7 +116,7 @@ class MotifManagerClass {
    * Call from setUnitTiming('subdiv').
    */
   static planSubsubdivs(layer, absSubdivIdx, ssPerSub) {
-    if (!Number.isFinite(Number(ssPerSub)) || Number(ssPerSub) <= 0) return;
+    if (!Number.isFinite(Number(ssPerSub)) || Number(ssPerSub) <= 0) throw new Error('motifManager: ssPerSub must be finite positive');
     MotifManagerClass.motifManagerResetChildVM(layer, 'subsubdiv');
     const profile = motifConfig.getUnitProfile('subsubdiv');
     motifSpreader.spreadSubunits({ layer, unit: 'subsubdiv', parentIndex: absSubdivIdx, count: Number(ssPerSub), bucketKey: 'subsubdivMotifs', parentBucketKey: 'subdivMotifs', profile });

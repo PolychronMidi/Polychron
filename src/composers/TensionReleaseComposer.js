@@ -25,7 +25,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
       }
       try {
         V.requireType(opts.phraseArcManager.getPosition, 'function', 'opts.phraseArcManager.getPosition');
-      } catch {
+      } catch { /* duck-type validation: input may be config instead of instance */
         V.requireType(opts.phraseArcManager.getPhase, 'function', 'opts.phraseArcManager.getPhase');
       }
       this.phraseArcManager = opts.phraseArcManager;

@@ -109,9 +109,12 @@ sectionIntentCurves = (() => {
     const sectionContrastBias = prevSection && Number.isFinite(prevSection.density) ? clamp((prevSection.density - 0.5) * -0.12, -0.06, 0.06) : 0;
     // Regime contrast: exploring-dominant prev -> encourage coherent (denser, less interactive), and vice versa
     const regimeContrastDensity = prevSection && prevSection.regime === 'exploring' ? 0.04 : prevSection && prevSection.regime === 'coherent' ? -0.03 : 0;
+    // Coherence learning: if previous section's coherence bias deviated from 1.0, adjust density intent to compensate
+    const prevCoherenceBias = prevSection ? V.optionalFinite(prevSection.coherenceBias, 1.0) : 1.0;
+    const coherenceLearning = clamp((prevCoherenceBias - 1.0) * 0.08, -0.04, 0.04);
 
     const densityTarget = clamp(
-      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias + regimeContrastDensity) * sectionBoundaryRelief
+      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias + regimeContrastDensity + coherenceLearning) * sectionBoundaryRelief
       // R70 E3: Per-phrase density perturbation. Density variance declined
       // steadily (0.0139 -> 0.0100 -> 0.0055) as section-level smoothing
       // dominates. Adding a phrase-level sine wave creates mid-phrase
@@ -151,7 +154,7 @@ sectionIntentCurves = (() => {
       1
     );
     // R94 E4: Apply regime-responsive entropy floor
-    const effectiveEntropyFloor = ENTROPY_FLOOR_REGIME[intentRegime] || ENTROPY_FLOOR;
+    const effectiveEntropyFloor = V.optionalFinite(ENTROPY_FLOOR_REGIME[intentRegime], ENTROPY_FLOOR);
     // Independent entropy arc: entropy peaks mid-section with wave modulation for variety
     const independentEntropyArc = 0.4 + arc * 0.25 + wave * 0.1;
     const blendedEntropy = (densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W);

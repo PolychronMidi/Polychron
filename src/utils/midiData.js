@@ -304,7 +304,7 @@ allModes=(()=>{
         if (Array.isArray(notes) && notes.length > 0) {
           allModes.add(modeName);
         }
-      } catch {
+      } catch { /* boot-safety: dependency may not be ready */
         // skip invalid combinations
       }
     });

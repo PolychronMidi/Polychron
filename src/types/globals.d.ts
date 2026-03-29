@@ -599,6 +599,12 @@ interface TrustSystemsAPI {
     DYNAMIC_ENVELOPE: 'dynamicEnvelope';
     TEMPORAL_GRAVITY: 'temporalGravity';
     RHYTHMIC_COMPLEMENT: 'rhythmicComplement';
+    CONVERGENCE_HARMONIC_TRIGGER: 'convergenceHarmonicTrigger';
+    REGISTER_COLLISION_AVOIDER: 'registerCollisionAvoider';
+    VERTICAL_INTERVAL_MONITOR: 'verticalIntervalMonitor';
+    CROSS_LAYER_SILHOUETTE: 'crossLayerSilhouette';
+    POLYRHYTHMIC_PHASE_PREDICTOR: 'polyrhythmicPhasePredictor';
+    PHASE_AWARE_CADENCE_WINDOW: 'phaseAwareCadenceWindow';
   }>;
   heatMapSystems: Readonly<{
     STUTTER_CONTAGION: 'stutterContagion';
@@ -1476,7 +1482,7 @@ declare var conductorDampening: {
 declare var sectionMemory: {
   snapshot(): void;
   seed(): void;
-  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string } | null;
+  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string; coherenceBias?: number; intentDensity?: number; intentTension?: number } | null;
   reset(): void;
 };
 declare var coherenceMonitor: CoherenceMonitorAPI;

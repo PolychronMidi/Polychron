@@ -1,9 +1,10 @@
 systemDynamicsProfilerHelpers = (() => {
+  const V = validator.create('systemDynamicsProfilerHelpers');
   function getAnalysisSettings(minWindowDefault) {
     let profile = null;
     try {
       profile = conductorConfig.getActiveProfile();
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       profile = null;
     }
     const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
@@ -90,7 +91,7 @@ systemDynamicsProfilerHelpers = (() => {
         }
       }
       if (trustCount > 0) avgTrust /= trustCount;
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       void 0;
     }
 
@@ -169,7 +170,7 @@ systemDynamicsProfilerHelpers = (() => {
           if (typeof phraseProgress === 'number' && Number.isFinite(phraseProgress)) {
             phrasePart = phraseProgress;
           }
-        } catch {
+        } catch { /* boot-safety: dependency may not be ready */
           void 0;
         }
         let measurePart = 0;
@@ -178,7 +179,7 @@ systemDynamicsProfilerHelpers = (() => {
           if (typeof measureProgress === 'number' && Number.isFinite(measureProgress)) {
             measurePart = measureProgress;
           }
-        } catch {
+        } catch { /* boot-safety: dependency may not be ready */
           void 0;
         }
         const harmonicPart = 0.5 + 0.5 * m.sin(sampledSectionProgress * m.PI * 2);
@@ -241,7 +242,7 @@ systemDynamicsProfilerHelpers = (() => {
         phase = clamp(sectionPart * adjSectionFinal + phrasePart * adjPhraseFinal + measurePart * adjMeasure + harmonicPart * adjHarmonic + phaseLfo * lfoWeight, 0, 1);
         state.lastPhaseSignalValid = true;
       }
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       void 0;
     }
 
@@ -272,7 +273,7 @@ systemDynamicsProfilerHelpers = (() => {
     // slowly (trust scores use slow EMAs). Amplifying the trust velocity
     // (beat-to-beat change) creates more responsive trust coupling dynamics
     // without changing the underlying trust system behavior.
-    const trustDelta = avgTrust - (state.lastAvgTrust || avgTrust);
+    const trustDelta = avgTrust - V.optionalFinite(state.lastAvgTrust, avgTrust);
     state.lastAvgTrust = avgTrust;
     // R86 E3: Regime-responsive trust velocity amplification. During
     // exploring, trust varies more dynamically (modules activated/deactivated
@@ -296,7 +297,7 @@ systemDynamicsProfilerHelpers = (() => {
     // (section/phrase-based components). Like trust velocity amplification
     // (R83 E2), amplify phase beat-to-beat deltas to create more coupling
     // energy. This is the same pattern that saved trust axis.
-    const phaseDelta = phase - (state.lastPhaseSampleForVelAmp || phase);
+    const phaseDelta = phase - V.optionalFinite(state.lastPhaseSampleForVelAmp, phase);
     state.lastPhaseSampleForVelAmp = phase;
     // R90 E5: Coherent phaseVelAmp 2.0->3.0. Phase declined again
     // (0.155->0.1156) in R89 despite R88 additions, because coherent
@@ -314,7 +315,7 @@ systemDynamicsProfilerHelpers = (() => {
     // trust (R83 E2: +31%) and phase (R88 E1: +43%). Amplify beat-to-beat
     // entropy deltas to create more coupling energy. Lower amplification
     // than trust/phase since entropy has more natural variance from note data.
-    const entropyDelta = entropy - (state.lastEntropySample || entropy);
+    const entropyDelta = entropy - V.optionalFinite(state.lastEntropySample, entropy);
     state.lastEntropySample = entropy;
     // R1 E3: Entropy velAmp boost. Entropy share collapsed 0.189->0.129
     // (-32%) in R99. Boost all tiers to recover entropy axis.

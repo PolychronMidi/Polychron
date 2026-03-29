@@ -116,11 +116,13 @@ globalConductor = (() => {
       0,
       1
     );
+    const DYNAMICS_SCALE = { pp: 0.6, p: 0.8, mf: 1.0, f: 1.15, ff: 1.3 };
+    const dynamicsScale = DYNAMICS_SCALE[currentSectionDynamics] || 1.0;
     const compositeIntensity = clamp(
       baseCompositeIntensity * (1 - harmonicRhythmWeight) + harmonicRhythm * harmonicRhythmWeight,
       0,
       1
-    );
+    ) * dynamicsScale;
 
     // 3. Run all registered recorders (side-effect: update intelligence module state)
     conductorIntelligence.runRecorders({

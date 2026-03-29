@@ -30,7 +30,7 @@ motifConfig = (function() {
    * @param {Object} props - properties to override (e.g. { intervalDensity: 0.8 })
    */
   function setUnitProfileOverride(unit, props) {
-    if (!unit || !UNIT_PROFILES[unit]) return;
+    if (!unit || !UNIT_PROFILES[unit]) throw new Error('motifConfig: unknown unit ' + unit);
     OVERRIDES[unit] = Object.assign({}, OVERRIDES[unit] || {}, props);
   }
 

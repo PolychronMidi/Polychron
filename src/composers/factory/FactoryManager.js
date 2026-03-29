@@ -84,7 +84,7 @@ FactoryManager = class FactoryManager {
    */
   static create(config = {}, ctx = null) {
     V.assertPlainObject(config, 'config');
-    const type = /** @type {any} */ (config).type || 'scale';
+    const type = V.assertNonEmptyString(/** @type {any} */ (config).type, 'config.type');
     const constructorFn = this.constructors[type];
     if (!constructorFn) {
       throw new Error(`FactoryManager.create: unknown composer type "${type}"-fail-fast`);

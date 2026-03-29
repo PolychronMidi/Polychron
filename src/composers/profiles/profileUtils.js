@@ -152,7 +152,7 @@ const cloneComposerEntryOrFail = (entry, label, expectedType = null) => {
 const cloneComposerEntriesOrFail = (entries, label, expectedType = null) => {
   try {
     V.assertArray(entries, label, true);
-  } catch {
+  } catch { /* validation fallback */
     throw new Error(`ComposerProfiles: ${label} must be a non-empty array`);
   }
   return entries.map((entry, i) => cloneComposerEntryOrFail(entry, `${label}[${i}]`, expectedType));
@@ -162,7 +162,7 @@ const pickProfileEntriesOrFail = (typeProfiles, type, profileName) => {
   const profileEntries = typeProfiles[profileName];
   try {
     V.assertArray(profileEntries, `profileEntries for ${profileName}`, true);
-  } catch {
+  } catch { /* validation fallback */
     throw new Error(`ComposerProfiles: profile "${profileName}" missing for type "${type}" while building pools`);
   }
   return cloneComposerEntriesOrFail(profileEntries, `COMPOSER_TYPE_PROFILES.${type}.${profileName}`, type);

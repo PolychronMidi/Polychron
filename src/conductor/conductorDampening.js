@@ -77,13 +77,13 @@ conductorDampening = (() => {
       } else if (snap.regime === 'exploring') {
         base *= 1.14;
       }
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       // profiler snapshot may not be available during early boot or testing;
       // absence is non-fatal, so just ignore and proceed with default base.
     }
     // Use effective active count instead of raw registry length when available.
     // This prevents dormant contributors from inflating the dampening calibration.
-    const activeCount = pipelineName ? (conductorDampeningActiveCountByPipeline.get(pipelineName) || registryLength) : registryLength;
+    const activeCount = pipelineName ? V.optionalFinite(conductorDampeningActiveCountByPipeline.get(pipelineName), registryLength) : registryLength;
     const effectiveLength = m.max(activeCount, registryLength * 0.5);
     return clamp(base * clamp(effectiveLength / REF_PIPELINE_SIZE, 0.3, 1.0), 0.1, 1.0);
   }
@@ -105,7 +105,7 @@ conductorDampening = (() => {
     // contributors need weaker per-contributor progressive dampening (they
     // self-cancel via the product dynamics). Replaces the hardcoded 0.5x
     // flicker special case with a general data-driven formula.
-    const pipelineActiveCount = pipelineName ? (conductorDampeningActiveCountByPipeline.get(pipelineName) || REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
+    const pipelineActiveCount = pipelineName ? V.optionalFinite(conductorDampeningActiveCountByPipeline.get(pipelineName), REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
     let progStrength = PROGRESSIVE_STRENGTH * clamp(pipelineActiveCount / REF_PIPELINE_SIZE, 0.3, 1.5);
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
@@ -118,7 +118,7 @@ conductorDampening = (() => {
       if (pipelineName === 'flicker' && snap.regime === 'evolving') {
         progStrength *= 0.65;
       }
-    } catch {
+    } catch { /* boot-safety: dependency may not be ready */
       // snapshot retrieval could fail early in boot; safe to ignore
     }
 
@@ -147,7 +147,7 @@ conductorDampening = (() => {
         if (snap && snap.couplingMatrix && typeof snap.couplingMatrix['density-entropy'] === 'number' && Number.isFinite(snap.couplingMatrix['density-entropy'])) {
           densityEntropyPressure = clamp((m.abs(snap.couplingMatrix['density-entropy']) - 0.50) / 0.20, 0, 1);
         }
-      } catch {
+      } catch { /* boot-safety: dependency may not be ready */
         // Axis energy is not always available during early boot.
       }
       const hotspotPressure = clamp(m.max(0, productDeviation) + deviation + phaseCollapsePressure * 0.35 + edgePressure * 0.08 + densityEntropyPressure * 0.06, 0, 0.80);
@@ -249,6 +249,7 @@ conductorDampening = (() => {
    * @param {string} [pipelineName]
    * @returns {number}
    */
+  /** @param {number} product @param {string} [pipelineName] */
   function conductorDampeningApplyCentroidCorrection(product, pipelineName) {
     if (!pipelineName) return product;
     // Skip flicker axis entirely - centroid pull suppresses
@@ -306,8 +307,9 @@ conductorDampening = (() => {
    * @param {number} product
    * @param {string} [pipelineName]
    */
+  /** @param {number} product @param {string} [pipelineName] */
   function conductorDampeningEmitMetaTelemetry(product, pipelineName) {
-    V.assertNonEmptyString(pipelineName, 'pipelineName');
+    if (!pipelineName) return;
     safePreBoot.call(() => {
       const centroidCorr = V.optionalFinite(conductorDampeningLastCentroidCorrection.get(pipelineName), 0);
       explainabilityBus.emit('meta-dampening-telemetry', 'both', {
@@ -316,7 +318,7 @@ conductorDampening = (() => {
         centroidEma: V.optionalFinite(conductorDampeningCentroidEma.get(pipelineName), 1.0),
         centroidCorrection: centroidCorr,
         flickerDampeningBaseAdj: pipelineName === 'flicker' ? conductorDampeningFlickerDampeningBaseAdj : 0,
-        activeCount: conductorDampeningActiveCountByPipeline.get(pipelineName) || 0
+        activeCount: V.optionalFinite(conductorDampeningActiveCountByPipeline.get(pipelineName), 0)
       });
       // Feed correction signs to meta-controller watchdog
       if (centroidCorr !== 0) {
