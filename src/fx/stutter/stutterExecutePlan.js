@@ -26,16 +26,25 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     finalChannels.push(.../** @type {number[]} */ (source.slice()));
   }
 
-  const crossRules = stutterConfig.getCrossModRules();
-  V.assertObject(crossRules, 'crossRules');
-
   const directiveDefaults = stutterConfig.getDirectiveDefaults();
   V.assertObject(directiveDefaults, 'directiveDefaults');
   const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
+  // Select preset based on regime if not explicitly set
+  if (!cfg.preset) {
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regime = snap ? snap.regime : null;
+    if (regime === 'coherent') cfg.preset = 'subtle';
+    else if (regime === 'exploring') cfg.preset = 'stereoWide';
+  }
   if (cfg.preset) {
     const preset = stutterConfig.getPreset(cfg.preset);
     if (preset && typeof preset === 'object') Object.assign(directive, preset);
   }
+
+  const crossRules = (directive.coherence && directive.coherence.enabled)
+    ? stutterConfig.getCrossModRules()
+    : STUTTER_CROSSMOD_RULES_FALLBACK;
+  V.assertObject(crossRules, 'crossRules');
 
   let adaptiveCrossRules = null;
   if (directive.metricsAdaptive && directive.metricsAdaptive.enabled) {

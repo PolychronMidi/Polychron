@@ -174,7 +174,8 @@ grandFinale = () => {
     for (let chi = 0; chi < allCHs.length; chi++) {
       composition += `1,${finalCsvTime},pitch_bend_c,${allCHs[chi]},${neutralPitchBend}\n`;
     }
-    composition += `1,${finalCsvTime},end_track`;
+    const endTrackTime = `${finalTimeInSeconds + SILENT_OUTRO_SECONDS}s`;
+    composition += `1,${endTrackTime},end_track`;
     const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
     fs.mkdirSync('output', { recursive: true });
     fs.writeFileSync(outputFilename, composition);
