@@ -29,7 +29,7 @@ sectionMemory = (() => {
       coherenceBias,
       intentDensity: lastIntent.densityTarget,
       intentTension: lastIntent.dissonanceTarget,
-      regimeTransitionCount: V.optionalFinite(L0.count('regimeTransition', { since: sectionStartTime }), 0),
+      regimeTransitionCount: L0.count('regimeTransition', { since: beatStartTime - 60, windowSeconds: 60 }),
       lastTransitionCause: (() => { const rt = L0.getLast('regimeTransition', {}); return rt && rt.cause ? rt.cause : null; })(),
       spectralBrightness: (() => { const ctx = FactoryManager.sharedPhraseArcManager.getPhraseContext(); return ctx && Number.isFinite(ctx.spectralDensity) ? ctx.spectralDensity : 0.5; })()
     };

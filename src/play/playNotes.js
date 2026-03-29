@@ -156,7 +156,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
 
   // Gate play invocation with playProb and crossModulation
   if (V.optionalFinite(resolvedPlayProb) !== undefined && (rf() > resolvedPlayProb * rf(1,2)) && (crossModulation < rv(rf(1.8,2.2), [-.2, -.3], .05))) {
-    if (unit === 'beat') emitNotesEmitted(0, intendedCount, 'probability-gate');
+    if (unit === 'beat' || unit === 'div') emitNotesEmitted(0, intendedCount, 'probability-gate');
     const gatedResult = trackRhythm(unit, layer, false);
     if (PLAY_NOTES_PROFILE) traceDrain.recordRuntimeMetric(`playNotes.${unit}`, Number(process.hrtime.bigint() - playNotesStartedAt) / 1e6);
     return gatedResult;
@@ -190,7 +190,7 @@ playNotes = function(unit = 'subdiv', opts = {}) {
     const allowed = m.max(0, m.min(picks.length, available));
     if (allowed <= 0) {
       // no budget available for this layer/unit - skip emission
-      if (unit === 'beat') emitNotesEmitted(0, intendedCount, 'voice-budget');
+      if (unit === 'beat' || unit === 'div') emitNotesEmitted(0, intendedCount, 'voice-budget');
       const budgetResult = trackRhythm(unit, layer, false);
       if (PLAY_NOTES_PROFILE) traceDrain.recordRuntimeMetric(`playNotes.${unit}`, Number(process.hrtime.bigint() - playNotesStartedAt) / 1e6);
       return budgetResult;
@@ -228,10 +228,10 @@ playNotes = function(unit = 'subdiv', opts = {}) {
       if (events > 0) picksEmitted++;
     }
     playNotesRecordProfileMetric(`playNotes.emitLoop.${unit}`, emitStartedAt);
-    if (unit === 'beat') emitNotesEmitted(picksEmitted, intendedCount, 'scheduled');
+    if (unit === 'beat' || unit === 'div') emitNotesEmitted(picksEmitted, intendedCount, 'scheduled');
     trackRhythm(unit, layer, true);
   } catch (e) {
-    if (unit === 'beat') emitNotesEmitted(0, intendedCount, 'emit-error');
+    if (unit === 'beat' || unit === 'div') emitNotesEmitted(0, intendedCount, 'emit-error');
     trackRhythm(unit, layer, false);
     throw new Error(`${unit}.playNotes: error while playing notes: ${e && e.stack ? e.stack : String(e)}`);
   }

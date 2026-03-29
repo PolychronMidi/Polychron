@@ -34,7 +34,11 @@ stutterContagion = (() => {
     const dist = m.abs(recentConvergence.timeInSeconds - absoluteSeconds);
     const recency = 1 - (dist / (CONVERGENCE_WINDOW_MS / 1000));
     // Interpolate: recent convergence - ALIGNED (sticky), distant - DIVERGED (loose)
-    return BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
+    const baseResult = BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
+    // Tempo modulation: faster tempo = tighter decay, slower = more lingering
+    const tempoEntry = L0.getLast('tickDuration', {});
+    const bpmScale = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;
+    return baseResult * clamp(0.8 + bpmScale * 0.2, 0.85, 1.15);
   }
 
   /**
