@@ -35,10 +35,10 @@ grandFinale = () => {
       LM.activeLayer = 'L1';
       c = LM.layers['L1'].buffer;
       setBinaural();
+      firstLoop = 1;
       LM.activeLayer = 'L2';
       c = LM.layers['L2'].buffer;
       setBinaural();
-      firstLoop = 1;
       beatStartTime += spBeat > 0 ? spBeat : 0.5;
     }
   }

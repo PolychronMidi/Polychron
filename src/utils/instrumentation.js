@@ -16,8 +16,11 @@ setTuningAndInstruments = () => {
     ...source.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 104] })),
     ...reflection.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 100] })),
     ...bass.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 102] })),
-    { timeInSeconds: measureStartTime, type:'control_c', vals:[drumCH, 7, 104] }
+    { timeInSeconds: measureStartTime, type:'control_c', vals:[drumCH, 7, 104] },
+    // poly operation
+    { timeInSeconds: measureStartTime, type: 'control_c', vals: [0, 127, 0] }
   );
+          p(c, );
 }
 
 /**

@@ -24,40 +24,50 @@ setBinaural = () => {
   const activeLayer = /** @type {string} */ (LM.activeLayer);
   const absoluteSeconds = beatStartTime;
 
-  // Emit silence, bends, and volume events at a wall-clock second position.
-  // timeInSeconds is a plain numeric seconds value; grandFinale appends the 's'
-  // suffix when writing to CSV so csv_maestro converts to ticks per-layer.
-  function emitShiftEvents(shiftSyncSec, shiftFlip) {
-    const shiftActiveChannels = shiftFlip ? flipBinT2 : flipBinF2;
-    const shiftInactiveChannels = shiftFlip ? flipBinF2 : flipBinT2;
-    const tickEntry = L0.getLast('tickDuration', { since: shiftSyncSec, windowSeconds: Infinity });
-    const oneTickInSeconds = tickEntry ? tickEntry.oneTickInSeconds : 60 / (BPM * PPQ);
-    const silenceSyncSec = shiftSyncSec - oneTickInSeconds;
-
-    p(c,
-      ...shiftActiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
-      ...shiftActiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
-      ...shiftActiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 120, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 64, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 123, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 120, 0] })),
-      ...shiftInactiveChannels.map(ch => ({ timeInSeconds: silenceSyncSec, type: 'control_c', vals: [ch, 7, 0] })),
-
-      ...binauralL.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'pitch_bend_c', vals: [ch, (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus)] })),
-      ...binauralR.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'pitch_bend_c', vals: [ch, (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus)] })),
-
-      ...shiftActiveChannels.map(ch => ({ timeInSeconds: shiftSyncSec, type: 'control_c', vals: [ch, 7, velocity] }))
-    );
+  function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
+    // Pitch bend glide spread over the full interval between shifts
+    const bendSteps = 20;
+    const bendStepSec = (shiftInterval - .05) / bendSteps;
+    for (let i = 0; i <= bendSteps; i++) {
+      const t = shiftSyncSec + bendStepSec * i;
+      const frac = i / bendSteps;
+      binauralL.forEach(ch => {
+        const target = (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus);
+        const prev = (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus);
+        p(c, { timeInSeconds: t, type: 'pitch_bend_c', vals: [ch, m.round(prev + (target - prev) * frac)] });
+      });
+      binauralR.forEach(ch => {
+        const target = (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus);
+        const prev = (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus);
+        p(c, { timeInSeconds: t, type: 'pitch_bend_c', vals: [ch, m.round(prev + (target - prev) * frac)] });
+      });
+    }
+    // Volume crossfade over 0.3s centered on shift time
+    const fadeHalf = rf(.05, .15);
+    const fadeStart = shiftSyncSec - fadeHalf;
+    const volSteps = 20;
+    const volStepSec = (fadeHalf * 2) / volSteps;
+    for (let i = volSteps / 2; i <= volSteps; i++) {
+      const t = fadeStart + volStepSec * i;
+      const frac = i / volSteps;
+      const volF2 = shiftFlip ? m.floor(100 * (1 - frac)) : m.floor(100 * frac);
+      const volT2 = shiftFlip ? m.floor(100 * frac) : m.floor(100 * (1 - frac));
+      const maxVol = rf(.9, 1.2);
+      flipBinF2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volF2 * maxVol)] }); });
+      flipBinT2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volT2 * maxVol)] }); });
+    }
   }
 
   // -- Schedule a new shared shift if due --
   const shiftDue = firstLoop < 1 || absoluteSeconds >= nextBinauralShiftSec;
   if (shiftDue) {
     const binauralSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    let binauralInterval = rf(1,3);
     const binauralRegime = binauralSnap ? binauralSnap.regime : 'exploring';
-    const binauralInterval = binauralRegime === 'exploring' ? rf(1.5, 3.0)
-      : binauralRegime === 'coherent' ? rf(3.0, 5.0)
-      : rf(2.0, 4.0);
+    const binauralIntervalFactor = binauralRegime === 'exploring' ? rf(.8, .9)
+      : binauralRegime === 'coherent' ? rf(1.1, 1.2)
+      : rf(.95, 1.05);
+    binauralInterval = binauralInterval * binauralIntervalFactor;
     nextBinauralShiftSec = absoluteSeconds + binauralInterval;
     flipBin = !flipBin;
     // Clamp current offset into range before stepping -- instrumentation.js seeds
@@ -66,12 +76,12 @@ setBinaural = () => {
     // Without this clamp, rl() receives currentValue far below minValue, collapses
     // its [newMin, newMax] window to an invalid range, and produces large jumps.
     binauralFreqOffset = clamp(binauralFreqOffset, BINAURAL.min, BINAURAL.max);
-    binauralFreqOffset = rl(binauralFreqOffset, -.5, .5, BINAURAL.min, BINAURAL.max, 'f');
+    binauralFreqOffset = rl(binauralFreqOffset, -.3, .3, BINAURAL.min, BINAURAL.max, 'f');
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    L0.post('binaural', 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin });
+    L0.post('binaural', 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin, interval: binauralInterval });
   }
 
   // -- Consume the latest shared shift if not yet consumed by this layer --
@@ -84,7 +94,7 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    emitShiftEvents(sharedEntry.timeInSeconds, flipBin);
+    emitShiftEvents(sharedEntry.timeInSeconds, flipBin, sharedEntry.interval || 2.0);
 
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({
