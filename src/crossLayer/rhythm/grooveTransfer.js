@@ -81,7 +81,10 @@ grooveTransfer = (() => {
       }
     }
 
-    return timeInSeconds + localTransfer * DAMPING;
+    // Coherence-responsive groove coupling: good coherence = tighter coupling, poor = looser
+    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceFactor = coherenceEntry ? clamp(0.8 + V.optionalFinite(coherenceEntry.bias, 1.0) * 0.4, 0.7, 1.3) : 1.0;
+    return timeInSeconds + localTransfer * DAMPING * coherenceFactor;
   }
 
   function reset() {

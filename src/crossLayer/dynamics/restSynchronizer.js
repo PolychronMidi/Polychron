@@ -79,7 +79,10 @@ restSynchronizer = (() => {
     const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
     const coherenceDeviation = coherenceEntry ? m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) : 0;
     const coherenceRestBoost = clamp(coherenceDeviation * 0.15, 0, 0.06);
-    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost) * (1 + restUrgency) * e11RestBoost;
+    // Harmonic change breathing: rest more likely after recent key change
+    const harmonicEntry = L0.getLast('harmonic', { layer: 'both', since: absoluteSeconds - 3, windowSeconds: 3 });
+    const harmonicRestBoost = harmonicEntry && harmonicEntry.excursion > 2 ? 0.05 : 0;
+    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost) * (1 + restUrgency) * e11RestBoost;
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';
