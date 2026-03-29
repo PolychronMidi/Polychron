@@ -52,6 +52,7 @@ motifIdentityMemory = (() => {
     const identity = { intervalDna, contour, confidence, absoluteSeconds };
     const identities = ensureIdentities(layer);
     identities.push(identity);
+    L0.post('motifIdentity', layer, absoluteSeconds, { intervalDna, contour, confidence });
     if (identities.length > MAX_IDENTITIES) identities.shift();
 
     return identity;

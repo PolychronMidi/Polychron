@@ -263,7 +263,7 @@ interface ExplainabilityEntry {
 }
 
 interface ExplainabilityBusAPI {
-  emit(type: string, layer: string, payload: any, absoluteSeconds?: number): ExplainabilityEntry;
+  emit(type: string, layer: string, payload: any, absoluteSeconds?: number, cause?: string): ExplainabilityEntry;
   getRecent(limit?: number): ExplainabilityEntry[];
   querySince(sinceSec: number): ExplainabilityEntry[];
   queryByType(type: string, limit?: number): ExplainabilityEntry[];
@@ -591,6 +591,8 @@ interface TrustSystemsAPI {
     VELOCITY_INTERFERENCE: 'velocityInterference';
     HARMONIC_INTERVAL_GUARD: 'harmonicIntervalGuard';
     EMERGENT_DOWNBEAT: 'emergentDownbeat';
+    ARTICULATION_COMPLEMENT: 'articulationComplement';
+    TEXTURAL_MIRROR: 'texturalMirror';
   }>;
   heatMapSystems: Readonly<{
     STUTTER_CONTAGION: 'stutterContagion';

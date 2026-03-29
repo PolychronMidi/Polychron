@@ -128,8 +128,11 @@ sectionIntentCurves = (() => {
       0,
       1
     );
+    // Cross-section tension contrast: if previous section had high tension, bias this one lower
+    const tensionContrastBias = prevSection ? clamp((prevSection.tension - 0.85) * -0.10, -0.05, 0.05) : 0;
+
     const dissonanceTarget = clamp(
-      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF
+      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias
       // R70 E5: Section-route dissonance escalation. Middle sections get
       // more dissonance (up to +0.08) than edge sections, creating harmonic
       // contrast across the piece. This complements the per-section key
@@ -145,7 +148,10 @@ sectionIntentCurves = (() => {
     );
     // R94 E4: Apply regime-responsive entropy floor
     const effectiveEntropyFloor = ENTROPY_FLOOR_REGIME[intentRegime] || ENTROPY_FLOOR;
-    const entropyTarget = clamp((densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W), effectiveEntropyFloor, ENTROPY_CEIL);
+    // Independent entropy arc: entropy peaks mid-section with wave modulation for variety
+    const independentEntropyArc = 0.4 + arc * 0.25 + wave * 0.1;
+    const blendedEntropy = (densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W);
+    const entropyTarget = clamp(blendedEntropy * 0.6 + independentEntropyArc * 0.4, effectiveEntropyFloor, ENTROPY_CEIL);
     const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1, 0, 1);
 
     lastIntent = { densityTarget, dissonanceTarget, interactionTarget, entropyTarget, convergenceTarget };
