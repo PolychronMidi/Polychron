@@ -109,6 +109,7 @@ entropyRegulator = (() => {
     const combined = (totalPitch / count) * PITCH_ENTROPY_WEIGHT + (totalVel / m.max(count, 1)) * VELOCITY_ENTROPY_WEIGHT + (totalRhythm / 2) * RHYTHM_ENTROPY_WEIGHT;
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + combined * SMOOTHING;
     lastRawEntropy = combined;
+    L0.post('entropy', LM.activeLayer || 'both', beatStartTime, { smoothed: smoothedEntropy, raw: combined });
     return smoothedEntropy;
   }
 

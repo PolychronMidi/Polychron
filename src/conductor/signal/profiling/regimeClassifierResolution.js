@@ -39,7 +39,7 @@ regimeClassifierResolution = (() => {
       triggerTick: state.lastForcedTriggerTick,
       forcedBeatsRemaining: beatsRemaining,
       thresholdScale: state.coherentThresholdScale
-    });
+    }, undefined, 'forced-' + reason);
   }
 
   function resolve(state, config, rawRegime, tickId, forceRegimeTransition) {
@@ -176,6 +176,8 @@ regimeClassifierResolution = (() => {
         }
 
         if (allowTransition) {
+          const organicCause = state.lastClassifyInputs.couplingStrength > state.lastClassifyInputs.coherentThreshold
+            ? 'coupling-crossed-threshold' : 'velocity-shift';
           explainabilityBus.emit('REGIME_TRANSITION', 'both', {
             from: state.lastRegime,
             to: rawRegime,
@@ -186,7 +188,7 @@ regimeClassifierResolution = (() => {
             exploringBeats: state.lastRegime === 'exploring' ? state.exploringBeats + 1 : state.exploringBeats,
             evolvingBeats: state.lastRegime === 'evolving' ? state.evolvingBeats + 1 : state.evolvingBeats,
             windowHits
-          });
+          }, undefined, 'organic-' + organicCause);
           if (state.lastRegime === 'coherent') {
             state.coherentMomentumBeats = m.max(config.COHERENT_MOMENTUM_WINDOW, m.floor(state.coherentBeats * 0.25));
           }

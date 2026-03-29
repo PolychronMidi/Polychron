@@ -246,6 +246,17 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const downbeatOutcome = clDownbeat ? clamp(0.2 + convergenceTarget * 0.6 + clDownbeat.strength * 0.2, -1, 1) : clamp(0.1 + (1 - convergenceTarget) * 0.2, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.EMERGENT_DOWNBEAT, downbeatOutcome);
 
+  // articulationComplement: reward active contrast/contagion (sustainScale != 1.0), penalize neutral
+  const artMod = articulationComplement.getSustainModifier(layer);
+  const artDeviation = m.abs(artMod.sustainScale - 1.0);
+  const artOutcome = clamp(artDeviation > 0.05 ? 0.3 + artDeviation * 1.5 : 0.05, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.ARTICULATION_COMPLEMENT, artOutcome);
+
+  // texturalMirror: reward moderate texture distance (complementary), penalize identical or extreme
+  const texDist = texturalMirror.getTextureDistance ? texturalMirror.getTextureDistance() : 0;
+  const texOutcome = clamp(texDist > 0.1 && texDist < 0.8 ? 0.4 + (0.5 - m.abs(texDist - 0.45)) : 0.05, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.TEXTURAL_MIRROR, texOutcome);
+
   adaptiveTrustScores.decayAll(tp.decayRate);
 
   // Explainability

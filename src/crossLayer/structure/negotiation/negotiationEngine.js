@@ -122,8 +122,12 @@ negotiationEngine = (() => {
     const trustCadence = trustWeights[trustSystems.names.CADENCE_ALIGNMENT];
     const trustStutter = trustWeights[trustSystems.names.STUTTER_CONTAGION];
 
-    // If convergence trust is low, suppress both secondary responders
-    if (trustConvergence < CONVERGENCE_TRUST_FLOOR) {
+    // Modulate trust floor by convergenceTarget from intent curves
+    const intent = sectionIntentCurves.getLastIntent ? sectionIntentCurves.getLastIntent() : null;
+    const ct = intent && Number.isFinite(intent.convergenceTarget) ? intent.convergenceTarget : 0.5;
+    const effectiveFloor = CONVERGENCE_TRUST_FLOOR * (1.3 - ct * 0.6);
+
+    if (trustConvergence < effectiveFloor) {
       return { allowHarmonicTrigger: false, allowDownbeat: false };
     }
 

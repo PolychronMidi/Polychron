@@ -98,6 +98,13 @@ harmonicIntervalGuard = (() => {
     // Apply nudge probability scaled by error magnitude
     if (rf() > m.abs(error) * 0.6) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
+    // Read other layer's active motif interval DNA for motif-aware scoring
+    const otherMotifEntry = L0.getLast('motifIdentity', { layer: otherLayer });
+    let motifIntervals = null;
+    if (otherMotifEntry && otherMotifEntry.intervalDna && otherMotifEntry.confidence > 0.3) {
+      motifIntervals = otherMotifEntry.intervalDna.split(',').map(Number).filter(Number.isFinite);
+    }
+
     // Find best candidate within 3 semitones
     let bestNote = midi;
     let bestScore = Infinity;
@@ -107,10 +114,15 @@ harmonicIntervalGuard = (() => {
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;
       const candidateConsonance = CONSONANCE[candidateIC];
       const score = m.abs(candidateConsonance - desiredConsonance);
-      // If pitchBias is set, prefer notes near that pitch class
       const pitchBiasBonus = (pitchBias >= 0 && (candidate % 12) === pitchBias) ? -0.15 : 0;
-      if (score + pitchBiasBonus < bestScore) {
-        bestScore = score + pitchBiasBonus;
+      // Motif DNA bonus: prefer candidates whose interval from midi matches one of the other layer's motif intervals
+      let motifBonus = 0;
+      if (motifIntervals && motifIntervals.length > 0) {
+        const candidateInterval = candidate - midi;
+        if (motifIntervals.includes(candidateInterval)) motifBonus = -0.12 * otherMotifEntry.confidence;
+      }
+      if (score + pitchBiasBonus + motifBonus < bestScore) {
+        bestScore = score + pitchBiasBonus + motifBonus;
         bestNote = candidate;
       }
     }

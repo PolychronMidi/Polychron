@@ -20,7 +20,9 @@ trustSystems = (() => {
     GROOVE_TRANSFER: 'grooveTransfer',
     VELOCITY_INTERFERENCE: 'velocityInterference',
     HARMONIC_INTERVAL_GUARD: 'harmonicIntervalGuard',
-    EMERGENT_DOWNBEAT: 'emergentDownbeat'
+    EMERGENT_DOWNBEAT: 'emergentDownbeat',
+    ARTICULATION_COMPLEMENT: 'articulationComplement',
+    TEXTURAL_MIRROR: 'texturalMirror'
   });
 
   // -- Heat map system names (superset - includes non-trust systems tracked by interactionHeatMap) --
