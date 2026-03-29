@@ -60,6 +60,9 @@ setUnitTiming = (unitType) => {
       // Ensure the active layer has a beat rhythm generated before tracking it
       setRhythm('div', activeLayer);
       spBeat = spMeasure / numerator;
+      // Apply tempo feel: scales spBeat to create accelerando/ritardando
+      const tempoScale = tempoFeelEngine.getTempoScale();
+      spBeat *= tempoScale;
       trueBPM = 60 / spBeat;
       bpmRatio = BPM / trueBPM;
       bpmRatio2 = trueBPM / BPM;

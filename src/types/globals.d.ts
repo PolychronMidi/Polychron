@@ -990,6 +990,7 @@ interface MotifManagerAPI {
 }
 
 interface TempoFeelEngineAPI {
+  getTempoScale(): number;
   getTimeOffset(): number;
   getFeelState(): { feel: number; phase: string; position: number };
 }
@@ -1660,7 +1661,6 @@ declare var midiMeter: any;
 declare var midiMeterRatio: any;
 declare var midiBPM: any;
 declare var syncFactor: any;
-declare var timeGridPrune: any;
 declare var timeGridSearchStart: any;
 declare var L0: {
   post(channel: string, layer: string, timeInSeconds: number, data?: Record<string, unknown>): void;

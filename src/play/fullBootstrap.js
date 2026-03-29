@@ -431,7 +431,6 @@ fullBootstrap = (() => {
     'midiMeterRatio',
     'midiBPM',
     'syncFactor',
-    'timeGridPrune',
     'timeGridSearchStart',
     'L0',
     'tempoFeelEngine',
