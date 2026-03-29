@@ -302,8 +302,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const rcaOutcome = rcaEntry ? 0.35 : 0.15;
   adaptiveTrustScores.registerOutcome(trustSystems.names.REGISTER_COLLISION_AVOIDER, rcaOutcome);
 
-  // verticalIntervalMonitor: reward when cross-layer interval variety is moderate
-  const vimOutcome = 0.25;
+  // verticalIntervalMonitor: reward when dissonance matches intent target
+  const vimDissonanceError = m.abs(clTension - dissonanceTarget);
+  const vimOutcome = clamp(0.5 - vimDissonanceError * 1.5, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.VERTICAL_INTERVAL_MONITOR, vimOutcome);
 
   // crossLayerSilhouette: reward when density corrections are active (non-zero bias)

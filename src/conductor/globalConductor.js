@@ -122,7 +122,7 @@ globalConductor = (() => {
       baseCompositeIntensity * (1 - harmonicRhythmWeight) + harmonicRhythm * harmonicRhythmWeight,
       0,
       1
-    ) * dynamicsScale;
+    );
 
     // 3. Run all registered recorders (side-effect: update intelligence module state)
     conductorIntelligence.runRecorders({
@@ -159,7 +159,7 @@ globalConductor = (() => {
     // relaxes for resolution. Range: [1.0, 1.05] -- gentle 5% boost.
     const excursionTensionScale = 1.0 + clamp(V.optionalFinite(Number(excursion), 0), 0, 6) / 6 * 0.05;
     const targetDensity = clamp(
-      V.optionalFinite(Number(conductorConfig.getTargetDensity(compositeIntensity)), safeCurrentDensity) * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * phaseProtectionTrim * excursionDensityScale * (1 + densityRecoverySupport),
+      V.optionalFinite(Number(conductorConfig.getTargetDensity(compositeIntensity)), safeCurrentDensity) * dynamicsScale * densityCorrection * registryDensityBias * densityLateRelief * densityHotspotTrim * phaseProtectionTrim * excursionDensityScale * (1 + densityRecoverySupport),
       0, 1
     );
     const baseSmooth = clamp(V.optionalFinite(Number(conductorConfig.getDensitySmoothing()), 0.2), 0, 1);

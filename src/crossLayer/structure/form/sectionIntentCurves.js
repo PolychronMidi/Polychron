@@ -22,7 +22,7 @@ sectionIntentCurves = (() => {
   // R71 E5: 0.10->0.15. Stronger late-section dissonance surge creates
   // more dramatic climaxes and greater tension contrast within sections.
   const DISSONANCE_LATE_SURGE = 0.15;
-  const INTERACTION_BASE = 0.2;
+  const INTERACTION_BASE = 0.28;
   const INTERACTION_WAVE_BASE = 0.25;
   const INTERACTION_WAVE_SCALE = 0.55;
   const INTERACTION_ARC_BASE = 0.5;

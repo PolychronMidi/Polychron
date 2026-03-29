@@ -115,73 +115,7 @@ function writeSummaryJSON(wallTime) {
 }
 
 function runCompositionWithWatchdog() {
-  var sep = '='.repeat(60);
-  console.log('\n' + sep);
-  console.log('  composition  (watchdog: ' + MEASURE_TIMEOUT_SEC + 's per measure)');
-  console.log(sep + '\n');
-
-  var t0 = Date.now();
-  var logPath = path.join(__dirname, '..', 'log', 'main.log');
-
-  var child = spawn('node', ['scripts/run-with-log.js', 'main.log', 'node', 'src/play/main.js', '--trace'], {
-    stdio: 'inherit',
-    cwd: path.join(__dirname, '..')
-  });
-
-  var killed = false;
-  var done = false;
-  var exitCode = null;
-
-  child.on('exit', function (code) {
-    exitCode = code;
-    done = true;
-  });
-
-  var watchdog = setInterval(function () {
-    if (done || killed) return;
-    try {
-      var content = fs.readFileSync(logPath, 'utf8');
-      var lines = content.split('\n');
-      for (var i = lines.length - 1; i >= Math.max(0, lines.length - 5); i--) {
-        var m = lines[i].match(/done \(([0-9.]+)s\)/);
-        if (m) {
-          var secs = parseFloat(m[1]);
-          if (secs > MEASURE_TIMEOUT_SEC) {
-            console.error('\n  WATCHDOG: measure took ' + secs + 's (limit ' + MEASURE_TIMEOUT_SEC + 's) - killing');
-            killed = true;
-            try { process.kill(child.pid, 'SIGKILL'); } catch (_e) { /* already dead */ }
-            try { execSync('pkill -9 -f "node src/play/main"', { stdio: 'ignore' }); } catch (_e2) { /* ignore */ }
-          }
-          break;
-        }
-      }
-    } catch (_) { /* log may not exist yet */ }
-  }, 3000);
-
-  // Synchronous wait via polling
-  while (!done) {
-    execSync('sleep 0.5', { stdio: 'ignore' });
-  }
-  clearInterval(watchdog);
-
-  var elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-
-  if (killed) {
-    timings.push({ label: 'composition', elapsed: elapsed, ok: false });
-    console.error('\n  FATAL: composition killed by watchdog after ' + elapsed + 's. Pipeline aborted.\n');
-    printSummary();
-    process.exit(1);
-  }
-
-  if (exitCode !== 0) {
-    timings.push({ label: 'composition', elapsed: elapsed, ok: false });
-    console.error('\n  FATAL: composition failed (exit ' + exitCode + '). Pipeline aborted.\n');
-    printSummary();
-    process.exit(exitCode || 1);
-  }
-
-  timings.push({ label: 'composition', elapsed: elapsed, ok: true });
-  console.log('\n  composition OK (' + elapsed + 's)');
+  run(COMPOSITION.label, COMPOSITION.cmd, true);
 }
 
 // main
