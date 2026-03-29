@@ -60,14 +60,15 @@ phraseArcProfiler = (() => {
     if (!PHRASES_ARC_CURVES) {
       throw new Error('phraseArcProfiler.generateArcProfiles: PHRASES_ARC_CURVES global is not defined - ensure conductorConfig is loaded first');
     }
-    /** @type {{ [key: string]: { register: Function, density: Function, independence: Function, dynamism: Function } }} */
+    /** @type {{ [key: string]: { register: Function, density: Function, independence: Function, dynamism: Function, spectralDensity: Function } }} */
     const adapted = {};
     for (const [key, curve] of Object.entries(PHRASES_ARC_CURVES)) {
       adapted[key] = {
         register: (pos) => (curve.register ? curve.register(pos) : 0),
         density: (pos) => (curve.density ? curve.density(pos) : 1),
         independence: (pos) => (curve.independence ? curve.independence(pos) : 0.5),
-        dynamism: (pos) => (curve.dynamism ? curve.dynamism(pos) : 1.0)
+        dynamism: (pos) => (curve.dynamism ? curve.dynamism(pos) : 1.0),
+        spectralDensity: (pos) => (curve.spectralDensity ? curve.spectralDensity(pos) : 0.5)
       };
     }
     return adapted;

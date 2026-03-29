@@ -1011,7 +1011,7 @@ interface PhraseArcManagerAPI {
   arcType: string;
   registerRange: number;
   densityRange: { min: number; max: number };
-  getPhraseContext(): { position: number; phase: string; measureInPhrase: number; phraseNumber: number; registerBias: number; densityMultiplier: number; voiceIndependence: number; dynamism: number; atBoundary: boolean; atStart: boolean; atEnd: boolean };
+  getPhraseContext(): { position: number; phase: string; measureInPhrase: number; phraseNumber: number; registerBias: number; densityMultiplier: number; voiceIndependence: number; dynamism: number; spectralDensity: number; atBoundary: boolean; atStart: boolean; atEnd: boolean };
   getPosition(): number;
   getPhase(): string;
   isAtBoundary(): boolean;

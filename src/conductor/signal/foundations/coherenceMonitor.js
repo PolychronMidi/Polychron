@@ -14,6 +14,8 @@ coherenceMonitor = (() => {
   const window = [];         // { actual, intended, tick }
   let cumulativeActual = 0;
   let cumulativeIntended = 0;
+  const layerWindows = { L1: [], L2: [] };
+  const layerBias = { L1: 1.0, L2: 1.0 };
 
   // Feedback signal
   let coherenceBias = 1.0;   // multiplier fed into density pipeline
@@ -47,6 +49,16 @@ coherenceMonitor = (() => {
       if (window.length > WINDOW_SIZE) window.shift();
       cumulativeActual += actual;
       cumulativeIntended += m.max(1, intended);
+
+      const layer = typeof data.layer === 'string' ? data.layer : null;
+      if (layer && layerWindows[layer]) {
+        layerWindows[layer].push({ actual, intended });
+        if (layerWindows[layer].length > WINDOW_SIZE) layerWindows[layer].shift();
+        let lActual = 0, lIntended = 0;
+        for (let wi = 0; wi < layerWindows[layer].length; wi++) { lActual += layerWindows[layer][wi].actual; lIntended += layerWindows[layer][wi].intended; }
+        const lRatio = lIntended > 0 ? lActual / lIntended : 1;
+        layerBias[layer] = clamp(1.0 + (1.0 - lRatio) * 0.3, BIAS_FLOOR, BIAS_CEILING);
+      }
 
       coherenceMonitorUpdateBias();
     });
@@ -249,6 +261,7 @@ coherenceMonitor = (() => {
   return {
     initialize,
     getDensityBias,
+    getLayerBias: (layer) => layerBias[layer] || 1.0,
     getEntropySignal,
     getMetrics,
     reset

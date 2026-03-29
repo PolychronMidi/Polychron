@@ -50,12 +50,17 @@ sectionIntentCurves = (() => {
   // in any regime, particularly during coherent passages (46.6% of beats).
   const ENTROPY_FLOOR_REGIME = { exploring: 0.28, evolving: 0.25, coherent: 0.18 };
 
-  /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number }} */
+  const CONVERGENCE_BASE = 0.3;
+  const CONVERGENCE_ARC_SCALE = 0.35;
+  const CONVERGENCE_LATE_SURGE = 0.15;
+
+  /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number, convergenceTarget: number }} */
   let lastIntent = {
     densityTarget: 0.5,
     dissonanceTarget: 0.5,
     interactionTarget: 0.5,
-    entropyTarget: 0.5
+    entropyTarget: 0.5,
+    convergenceTarget: 0.5
   };
 
   /**
@@ -137,8 +142,9 @@ sectionIntentCurves = (() => {
     // R94 E4: Apply regime-responsive entropy floor
     const effectiveEntropyFloor = ENTROPY_FLOOR_REGIME[intentRegime] || ENTROPY_FLOOR;
     const entropyTarget = clamp((densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W), effectiveEntropyFloor, ENTROPY_CEIL);
+    const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1, 0, 1);
 
-    lastIntent = { densityTarget, dissonanceTarget, interactionTarget, entropyTarget };
+    lastIntent = { densityTarget, dissonanceTarget, interactionTarget, entropyTarget, convergenceTarget };
     return lastIntent;
   }
 
@@ -146,14 +152,15 @@ sectionIntentCurves = (() => {
     return lastIntent;
   }
 
-  /** @param {{ densityTarget?: number, dissonanceTarget?: number, interactionTarget?: number, entropyTarget?: number }} intent */
+  /** @param {{ densityTarget?: number, dissonanceTarget?: number, interactionTarget?: number, entropyTarget?: number, convergenceTarget?: number }} intent */
   function setManualIntent(intent) {
     V.assertObject(intent, 'intent');
     lastIntent = {
       densityTarget: clamp(V.optionalFinite(intent.densityTarget, lastIntent.densityTarget), 0, 1),
       dissonanceTarget: clamp(V.optionalFinite(intent.dissonanceTarget, lastIntent.dissonanceTarget), 0, 1),
       interactionTarget: clamp(V.optionalFinite(intent.interactionTarget, lastIntent.interactionTarget), 0, 1),
-      entropyTarget: clamp(V.optionalFinite(intent.entropyTarget, lastIntent.entropyTarget), 0, 1)
+      entropyTarget: clamp(V.optionalFinite(intent.entropyTarget, lastIntent.entropyTarget), 0, 1),
+      convergenceTarget: clamp(V.optionalFinite(intent.convergenceTarget, lastIntent.convergenceTarget), 0, 1)
     };
     return lastIntent;
   }
@@ -163,7 +170,8 @@ sectionIntentCurves = (() => {
       densityTarget: 0.5,
       dissonanceTarget: 0.5,
       interactionTarget: 0.5,
-      entropyTarget: 0.5
+      entropyTarget: 0.5,
+      convergenceTarget: 0.5
     };
   }
 

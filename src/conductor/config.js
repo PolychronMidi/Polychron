@@ -525,24 +525,26 @@ PHRASES_ARC_CURVES = {
   'arch': {
     register: (p) => m.sin(Number(p) * m.PI) * 12 - 2,
     density: (p) => m.sin(Number(p) * m.PI) * 0.4 + 0.8,
-    // R29 E1: Mid-phrase intensification (was flat 1.0). Arch shape now peaks
-    // dynamism at phrase midpoint (0.7 + sin(pi*p)*0.3 = 0.7..1.0)
-    dynamism: (p) => 0.7 + m.sin(Number(p) * m.PI) * 0.3
+    dynamism: (p) => 0.7 + m.sin(Number(p) * m.PI) * 0.3,
+    spectralDensity: (p) => 0.4 + m.sin(Number(p) * m.PI) * 0.4
   },
   'wave': {
     register: (p) => m.sin(Number(p) * m.PI * 2) * 8,
     density: (p) => m.cos(Number(p) * m.PI) * 0.3 + 0.9,
-    dynamism: (p) => 0.8 + Number(p) * 0.4
+    dynamism: (p) => 0.8 + Number(p) * 0.4,
+    spectralDensity: (p) => 0.5 + m.sin(Number(p) * m.PI * 2) * 0.3
   },
   'rise-fall': {
     register: (p) => (Number(p) < 0.7 ? Number(p) * 15 : (1 - Number(p)) * 30) - 1,
     density: (p) => Number(p) * 0.5 + 0.5,
-    dynamism: (p) => 1.0 + Number(p) * 0.2
+    dynamism: (p) => 1.0 + Number(p) * 0.2,
+    spectralDensity: (p) => 0.3 + Number(p) * 0.5
   },
   'build-resolve': {
     register: (p) => Number(p) * 24 - 8,
     density: (p) => Number(p) * 0.8 + 0.4,
-    dynamism: (p) => 0.5 + Number(p) * 1.0
+    dynamism: (p) => 0.5 + Number(p) * 1.0,
+    spectralDensity: (p) => 0.3 + Number(p) * 0.6
   }
 };
 
