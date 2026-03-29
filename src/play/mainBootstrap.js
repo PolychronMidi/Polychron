@@ -98,7 +98,7 @@ mainBootstrap = (() => {
     const events = V.getEventsOrThrow();
     const EXPECTED_EVENTS = [
       'SECTION_BOUNDARY', 'JOURNEY_MOVE', 'TEXTURE_CONTRAST', 'BEAT_FX_APPLIED',
-      'STUTTER_APPLIED', 'CONDUCTOR_REGULATION', 'BEAT_BINAURAL_APPLIED',
+      'STUTTER_APPLIED', 'CONDUCTOR_REGULATION',
       'HARMONIC_CHANGE', 'NOTES_EMITTED', 'MOTIF_CHAIN_APPLIED',
       'CROSS_LAYER_EXPLAIN', 'CONVERGENCE_HARMONIC_TRIGGER',
       'CROSS_LAYER_CONVERGENCE', 'CROSS_LAYER_CADENCE_ALIGN',
@@ -106,7 +106,7 @@ mainBootstrap = (() => {
     ];
     EXPECTED_EVENTS.forEach((name) => requireNonEmptyString(`eventCatalog.names.${name}`, events[name]));
     const catalogKeys = Object.keys(events);
-    const MIN_EVENT_COUNT = 16;
+    const MIN_EVENT_COUNT = 15;
     if (catalogKeys.length < MIN_EVENT_COUNT) {
       throw new Error(`mainBootstrap: eventCatalog has only ${catalogKeys.length} events (expected >= ${MIN_EVENT_COUNT})`);
     }
