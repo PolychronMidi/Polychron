@@ -60,7 +60,7 @@ harmonicFunctionGraph = (() => {
     const keyRoot = V.optionalFinite(t.Note.chroma(keyStr), 0);
 
     currentFunction = classify(chordRoot, keyRoot);
-    tensionVal = FUNCTION_TENSION[currentFunction] || 1.0;
+    tensionVal = V.requireFinite(FUNCTION_TENSION[currentFunction], "FUNCTION_TENSION[" + currentFunction + "]");
 
     const nowMs = V.optionalFinite(conductorState.get('tick'), 0);
     L0.post(CHANNEL, '0', nowMs / 1000, {

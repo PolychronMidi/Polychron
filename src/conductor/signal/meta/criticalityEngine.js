@@ -20,6 +20,7 @@
  */
 
 criticalityEngine = (() => {
+  const V = validator.create('criticalityEngine');
 
   const WINDOW         = 16;       // beats to accumulate
   const TARGET_RATE    = 0.20;     // desired avalanche fraction
@@ -79,7 +80,7 @@ criticalityEngine = (() => {
     // novel patterns express; during locked state, amplify to break stasis.
     // E22 (snap softening under pressure) was refuted in R35 -- removing the
     // stabilizing snap made exceedance worse (49->122). Engine unchanged.
-    const critSnapScale = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('criticalitySnap'), 1.0) || 1.0;
+    const critSnapScale = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('criticalitySnap'), 1.0));
     const effectiveSnap = clamp(SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1.0 - critSnapScale), SNAP_STRENGTH, 1.0);
 
     if (inAvalanche > 0) {
@@ -100,7 +101,7 @@ criticalityEngine = (() => {
         energy: accumulated,
         threshold,
         count: avalancheCount,
-      }, conductorState.getField('tick') || 0);
+      }, V.optionalFinite(conductorState.getField('tick'), 0));
     } else {
       currentBias = 1.0;
     }
@@ -138,13 +139,13 @@ criticalityEngine = (() => {
     // normal gating. This is a structural change to the controller chain.
     {
       let secProgForGate = 0;
-      try { secProgForGate = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { void 0; }
+      try { secProgForGate = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { /* timeStream boot-safety */ }
       if (secProgForGate > 0.55) return 1.0;
     }
     // Orchestrator tension floor protection. When the manager detects
     // S0 tension collapse risk, it emits a protection signal. Reduce
     // avalanche damping on tension to let tension recover naturally.
-    const tensionProtection = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('tensionFloorProtection'), 1.0) || 1.0;
+    const tensionProtection = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('tensionFloorProtection'), 1.0));
     if (tensionProtection > 1.2) return 1.0; // bypass damping entirely
     if (tensionSnap < 0.85) return 1.0;
     const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().tension.grade);

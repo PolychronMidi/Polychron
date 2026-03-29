@@ -1,4 +1,5 @@
 adaptiveTrustScoresHelpers = (() => {
+  const V = validator.create('adaptiveTrustScoresHelpers');
   let adaptiveTrustScoresHelpersHotspotCacheBeatKey = '';
   const adaptiveTrustScoresHelpersHotspotCache = new Map();
 
@@ -46,7 +47,7 @@ adaptiveTrustScoresHelpers = (() => {
       return adaptiveTrustScoresHelpersHotspotCache.get(systemName);
     }
     const pairList = pairAwareHotspotPairs[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
-    const pairWeights = pairAwarePairWeights[systemName] || {};
+    const pairWeights = pairAwarePairWeights[systemName] || /** @type {Record<string, number>} */ ({});
     const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const couplingMatrix = dynamics ? dynamics.couplingMatrix : undefined;
     const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
@@ -68,7 +69,7 @@ adaptiveTrustScoresHelpers = (() => {
     for (let i = 0; i < pairList.length; i++) {
       const pair = pairList[i];
       const rawCorrelation = couplingMatrix[pair];
-      if (typeof rawCorrelation !== 'number' || !Number.isFinite(rawCorrelation)) continue;
+      if (!V.optionalType(rawCorrelation, 'number') || !Number.isFinite(rawCorrelation)) continue;
       const absCorrelation = m.abs(rawCorrelation);
       const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
         ? adaptiveSnapshot[pair]
@@ -179,7 +180,7 @@ adaptiveTrustScoresHelpers = (() => {
       let trustPairCount = 0;
       for (let i = 0; i < trustPairs.length; i++) {
         const correlation = couplingMatrix[trustPairs[i]];
-        if (typeof correlation !== 'number' || !Number.isFinite(correlation)) continue;
+        if (!V.optionalType(correlation, 'number') || !Number.isFinite(correlation)) continue;
         const absCorrelation = m.abs(correlation);
         maxTrustCorrelation = m.max(maxTrustCorrelation, absCorrelation);
         sumTrustCorrelation += absCorrelation;
@@ -211,10 +212,10 @@ adaptiveTrustScoresHelpers = (() => {
     }
     const pairAwareProfile = getSystemPairHotspotProfile(systemName);
     const pairAwarePressure = pairAwareProfile.pressure;
-    const pairAwareSeverePressure = pairAwareProfile.severePressure || 0;
-    const trustSurfacePressure = pairAwareProfile.trustSurfacePressure || 0;
-    const trustClusterPressure = clamp((pairAwareProfile.trustHotPairCount || 0) > 1 ? trustSurfacePressure * 0.45 + 0.10 : 0, 0, 0.28);
-    const trustSurfaceSystem = (pairAwareHotspotPairs[systemName] || []).some(function(pair) { return pair.indexOf('trust') >= 0; });
+    const pairAwareSeverePressure = V.optionalFinite(pairAwareProfile.severePressure, 0);
+    const trustSurfacePressure = V.optionalFinite(pairAwareProfile.trustSurfacePressure, 0);
+    const trustClusterPressure = clamp((V.optionalFinite(pairAwareProfile.trustHotPairCount, 0)) > 1 ? trustSurfacePressure * 0.45 + 0.10 : 0, 0, 0.28);
+    const trustSurfaceSystem = (pairAwareHotspotPairs[systemName] || /** @type {string[]} */ ([])).some(function(pair) { return pair.indexOf('trust') >= 0; });
     const contextualScoreGetter = contextualTrust ? contextualTrust.getScore : undefined;
     const contextualScore = contextualScoreGetter ? contextualScoreGetter(systemName) : null;
     const contextualGap = contextualScore !== null

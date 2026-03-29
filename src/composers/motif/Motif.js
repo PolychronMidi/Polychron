@@ -201,7 +201,7 @@ Motif = class Motif {
       const motifPC = ((this.sequence[motifIdx].note % 12) + 12) % 12;
 
       // Try exact PC match first
-      let availableIndices = (notesByPC.get(motifPC) || []).filter(idx => !consumedIndices.has(idx));
+      let availableIndices = (notesByPC.get(motifPC) || /** @type {number[]} */ ([])).filter(idx => !consumedIndices.has(idx));
 
       // Fallback: find nearest available PC by chromatic distance
       if (availableIndices.length === 0) {

@@ -1,3 +1,4 @@
+const V = validator.create('stutterMetrics');
 // stutterMetrics.js - lightweight metrics for stutter scheduling/emission
 
 const stutterMetricsState = {
@@ -29,22 +30,22 @@ function resetMetrics() {
 
 function incScheduled(n = 1, profile = 'unknown') {
   stutterMetricsState.scheduledCount += n;
-  stutterMetricsState.scheduledByProfile[profile] = (stutterMetricsState.scheduledByProfile[profile] || 0) + n;
+  stutterMetricsState.scheduledByProfile[profile] = (V.optionalFinite(stutterMetricsState.scheduledByProfile[profile], 0)) + n;
 }
 
 function incEmitted(n = 1, profile = 'unknown') {
   stutterMetricsState.emittedCount += n;
-  stutterMetricsState.emittedByProfile[profile] = (stutterMetricsState.emittedByProfile[profile] || 0) + n;
+  stutterMetricsState.emittedByProfile[profile] = (V.optionalFinite(stutterMetricsState.emittedByProfile[profile], 0)) + n;
 }
 
 function incPendingForTick(tick, n = 1) {
   const key = m.round(tick);
-  stutterMetricsState.pendingByTick.set(key, (stutterMetricsState.pendingByTick.get(key) || 0) + n);
+  stutterMetricsState.pendingByTick.set(key, (V.optionalFinite(stutterMetricsState.pendingByTick.get(key), 0)) + n);
 }
 
 function decPendingForTick(tick, n = 1) {
   const key = m.round(tick);
-  const cur = stutterMetricsState.pendingByTick.get(key) || 0;
+  const cur = V.optionalFinite(stutterMetricsState.pendingByTick.get(key), 0);
   const next = m.max(0, cur - n);
   if (next === 0) stutterMetricsState.pendingByTick.delete(key); else stutterMetricsState.pendingByTick.set(key, next);
 }

@@ -195,7 +195,7 @@ const validateEntryForTypeOrFail = (entry, label, expectedType = null) => {
 };
 
 const validateDiversityOrFail = (type, profileMap) => {
-  const dimensions = composerProfileUtils.DIVERSITY_DIMENSIONS_BY_TYPE[type] || [];
+  const dimensions = composerProfileUtils.DIVERSITY_DIMENSIONS_BY_TYPE[type] || /** @type {string[]} */ ([]);
   for (const dim of dimensions) {
     const distinct = new Set();
     for (const entries of Object.values(profileMap)) {

@@ -2,6 +2,7 @@
 // Extracted from systemManifest.js. Pure formatting - no side effects, no I/O.
 
 systemManifestMarkdown = (() => {
+  const V = validator.create('systemManifestMarkdown');
 
   /**
    * Build a Markdown capability matrix from the manifest data.
@@ -156,7 +157,7 @@ systemManifestMarkdown = (() => {
 
     lines.push('## Signal Health Report');
     lines.push('');
-    lines.push(`> Overall: **${sh.lastHealth.overall || 'unknown'}** | Beats analyzed: ${sh.beatsAnalyzed || 0}`);
+    lines.push(`> Overall: **${sh.lastHealth.overall || 'unknown'}** | Beats analyzed: ${V.optionalFinite(sh.beatsAnalyzed, 0)}`);
     lines.push('');
 
     lines.push('### Pipeline Health');
@@ -240,7 +241,7 @@ systemManifestMarkdown = (() => {
     const s = sd.snapshot;
     lines.push('## System Dynamics Report');
     lines.push('');
-    lines.push(`> Phase-space trajectory analysis | Regime: **${s.regime}** | Grade: **${s.grade}** | Beats: ${sd.beatsAnalyzed || 0}`);
+    lines.push(`> Phase-space trajectory analysis | Regime: **${s.regime}** | Grade: **${s.grade}** | Beats: ${V.optionalFinite(sd.beatsAnalyzed, 0)}`);
     lines.push('');
 
     lines.push('### Trajectory Metrics');
@@ -249,7 +250,7 @@ systemManifestMarkdown = (() => {
     lines.push('||||');
     lines.push(`| Velocity | ${s.velocity} | ${s.velocity < 0.01 ? 'Barely moving - stuck in attractor' : s.velocity < 0.05 ? 'Slow evolution' : 'Active exploration'} |`);
     lines.push(`| Curvature | ${s.curvature} | ${s.curvature < 0.3 ? 'Straight-line drift' : s.curvature < 0.7 ? 'Gentle winding' : 'Frequent reversals'} |`);
-    lines.push(`| Effective Dimensionality | ${s.effectiveDimensionality} / ${(sd.dimensionNames || []).length} | ${s.effectiveDimensionality < 2 ? 'Collapsed to ~1 axis' : s.effectiveDimensionality < 3.5 ? 'Moderate spread' : 'Rich multi-dimensional'} |`);
+    lines.push(`| Effective Dimensionality | ${s.effectiveDimensionality} / ${(Array.isArray(sd.dimensionNames) ? sd.dimensionNames : []).length} | ${s.effectiveDimensionality < 2 ? 'Collapsed to ~1 axis' : s.effectiveDimensionality < 3.5 ? 'Moderate spread' : 'Rich multi-dimensional'} |`);
     lines.push(`| Coupling Strength | ${s.couplingStrength} | ${s.couplingStrength < 0.2 ? 'Dimensions independent' : s.couplingStrength < 0.45 ? 'Moderate coupling' : 'Strong cross-coupling'} |`);
     lines.push('');
 

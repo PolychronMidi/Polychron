@@ -141,8 +141,8 @@ adaptiveTrustScores = (() => {
     const p = clamp(payoff, -1, 1);
     const scoreBefore = state.score;
     const hotspotProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(systemName);
-    const trustSurfacePressure = hotspotProfile.trustSurfacePressure || 0;
-    const trustClusterPressure = clamp((hotspotProfile.trustHotPairCount || 0) > 1 ? trustSurfacePressure * 0.40 + 0.08 : 0, 0, 0.24);
+    const trustSurfacePressure = V.optionalFinite(hotspotProfile.trustSurfacePressure, 0);
+    const trustClusterPressure = clamp((V.optionalFinite(hotspotProfile.trustHotPairCount, 0)) > 1 ? trustSurfacePressure * 0.40 + 0.08 : 0, 0, 0.24);
     const trustSurfaceSystem = hotspotProfile.hotspotPairs.some(function(entry) { return entry && entry.pair && entry.pair.indexOf('trust') >= 0; }) || hotspotProfile.dominantPair.indexOf('trust') >= 0;
     const context = adaptiveTrustScoresResolveContext();
 
@@ -267,8 +267,8 @@ adaptiveTrustScores = (() => {
     }
     const baseWeight = getBaseWeight(systemName);
     const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(systemName);
-    const trustSurfacePressure = pairAwareProfile.trustSurfacePressure || 0;
-    const trustClusterPressure = clamp((pairAwareProfile.trustHotPairCount || 0) > 1 ? trustSurfacePressure * 0.40 + 0.08 : 0, 0, 0.24);
+    const trustSurfacePressure = V.optionalFinite(pairAwareProfile.trustSurfacePressure, 0);
+    const trustClusterPressure = clamp((V.optionalFinite(pairAwareProfile.trustHotPairCount, 0)) > 1 ? trustSurfacePressure * 0.40 + 0.08 : 0, 0, 0.24);
     const contextualWeightGetter = contextualTrust ? V.optionalType(contextualTrust.getContextualWeight, 'function') : undefined;
     const contextualWeight = contextualWeightGetter ? contextualWeightGetter(systemName) : null;
     if (contextualWeight === null) {
@@ -489,8 +489,8 @@ adaptiveTrustScores = (() => {
           hotspotPairs: pairAwareProfile.hotspotPairs,
           severePressure: pairAwareProfile.severePressure,
           severePair: pairAwareProfile.severePair,
-          trustSurfacePressure: pairAwareProfile.trustSurfacePressure || 0,
-          trustHotPairCount: pairAwareProfile.trustHotPairCount || 0
+          trustSurfacePressure: V.optionalFinite(pairAwareProfile.trustSurfacePressure, 0),
+          trustHotPairCount: V.optionalFinite(pairAwareProfile.trustHotPairCount, 0)
         };
       }
       adaptiveTrustScoresSnapshotCacheKey = cacheKey;

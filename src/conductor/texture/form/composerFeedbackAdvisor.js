@@ -157,7 +157,7 @@ composerFeedbackAdvisor = (() => {
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
         if (fam.includes('chromatic') || fam.includes('tension') || fam.includes('blues') || fam.includes('quartal') || fam.includes('melodic')) {
-          weights[fam] = clamp((weights[fam] || 1.0) * 1.25, 0.3, 2.0);
+          weights[fam] = clamp((V.optionalFinite(weights[fam], 1.0)) * 1.25, 0.3, 2.0);
         }
       }
     } else if (signals.currentRegime === 'coherent') {
@@ -169,9 +169,9 @@ composerFeedbackAdvisor = (() => {
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
         if (fam.includes('harmonic') || fam.includes('modal') || fam.includes('tonal') || fam.includes('melodic')) {
-          weights[fam] = clamp((weights[fam] || 1.0) * 1.20, 0.3, 2.0);
+          weights[fam] = clamp((V.optionalFinite(weights[fam], 1.0)) * 1.20, 0.3, 2.0);
         } else if (fam.includes('pentatonic')) {
-          weights[fam] = clamp((weights[fam] || 1.0) * 1.15, 0.3, 2.0);
+          weights[fam] = clamp((V.optionalFinite(weights[fam], 1.0)) * 1.15, 0.3, 2.0);
         }
       }
     } else if (signals.currentRegime === 'exploring') {
@@ -184,9 +184,9 @@ composerFeedbackAdvisor = (() => {
       for (let i = 0; i < availableFamilies.length; i++) {
         const fam = availableFamilies[i];
         if (fam.includes('pentatonic') || fam.includes('quartal') || fam.includes('blues') || fam.includes('modal')) {
-          weights[fam] = clamp((weights[fam] || 1.0) * 1.30, 0.3, 2.0);
+          weights[fam] = clamp((V.optionalFinite(weights[fam], 1.0)) * 1.30, 0.3, 2.0);
         } else if (fam.includes('rhythmic')) {
-          weights[fam] = clamp((weights[fam] || 1.0) * 1.15, 0.3, 2.0);
+          weights[fam] = clamp((V.optionalFinite(weights[fam], 1.0)) * 1.15, 0.3, 2.0);
         }
       }
     }

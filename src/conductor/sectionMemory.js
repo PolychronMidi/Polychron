@@ -4,6 +4,7 @@
 // amnesia where each section restarts from a blank slate.
 
 sectionMemory = (() => {
+  const V = validator.create('sectionMemory');
   const CARRYOVER = 0.30; // fraction of previous state seeded into new section
 
   /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string, regime?: string } | null} */
@@ -17,11 +18,11 @@ sectionMemory = (() => {
     const mom = energyMomentumTracker.getMomentum();
     const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     sectionMemoryPrev = {
-      energy: clamp(conductorState.getField('compositeIntensity') || 0.5, 0, 1),
+      energy: clamp(V.optionalFinite(conductorState.getField('compositeIntensity'), 0.5), 0, 1),
       tension: clamp(signalReader.tension(), 0.4, 1.6),
       density: clamp(currentDensity, 0, 1),
       flicker: clamp(signalReader.flicker(), 0.4, 1.6),
-      trend: mom.trend || 'steady',
+      trend: mom.trend ? mom.trend : 'steady',
       regime: snap ? snap.regime : 'evolving'
     };
   }

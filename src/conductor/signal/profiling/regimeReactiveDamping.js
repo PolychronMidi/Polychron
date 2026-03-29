@@ -15,6 +15,7 @@
  */
 
 regimeReactiveDamping = (() => {
+  const V = validator.create('regimeReactiveDamping');
 
   const REGIME_DENSITY_DIR = {
     stagnant: 1,
@@ -107,7 +108,7 @@ regimeReactiveDamping = (() => {
     const snap = systemDynamicsProfiler.getSnapshot();
     const dynamicSnap = /** @type {any} */ (snap);
     currentRegime = snap ? snap.regime : 'evolving';
-    const rawCurv = snap ? (snap.curvature || 0) : 0;
+    const rawCurv = snap ? (V.optionalFinite(snap.curvature, 0)) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
 
     const equilibratorState = {
@@ -129,7 +130,7 @@ regimeReactiveDamping = (() => {
     regimeReactiveDampingEqCorrT = equilibratorState.eqCorrT * conductorMetaWatchdog.getAttenuation('tension', 'equilibrator');
     regimeReactiveDampingEqCorrF = equilibratorState.eqCorrF * conductorMetaWatchdog.getAttenuation('flicker', 'equilibrator');
 
-    const velocity = snap ? (snap.velocity || 0) : 0;
+    const velocity = snap ? (V.optionalFinite(snap.velocity, 0)) : 0;
     if (velocity < LOW_VEL_THRESHOLD) {
       lowVelStreak++;
     } else {
@@ -141,9 +142,9 @@ regimeReactiveDamping = (() => {
 
     if (lowVelStreak >= LOW_VEL_BEATS && snap && snap.couplingMatrix) {
       const cm = snap.couplingMatrix;
-      const dCoup = m.abs(cm['density-tension'] || 0) + m.abs(cm['density-flicker'] || 0);
-      const tCoup = m.abs(cm['density-tension'] || 0) + m.abs(cm['tension-flicker'] || 0);
-      const fCoup = m.abs(cm['density-flicker'] || 0) + m.abs(cm['tension-flicker'] || 0);
+      const dCoup = m.abs(V.optionalFinite(cm['density-tension'], 0)) + m.abs(V.optionalFinite(cm['density-flicker'], 0));
+      const tCoup = m.abs(V.optionalFinite(cm['density-tension'], 0)) + m.abs(V.optionalFinite(cm['tension-flicker'], 0));
+      const fCoup = m.abs(V.optionalFinite(cm['density-flicker'], 0)) + m.abs(V.optionalFinite(cm['tension-flicker'], 0));
 
       regimeReactiveDampingInjectionCount++;
       const sign = (regimeReactiveDampingInjectionCount % 2 === 0) ? 1 : -1;
@@ -279,7 +280,7 @@ regimeReactiveDamping = (() => {
     const dtShareBridgeLift = dtAbs > 0.45
       ? clamp((dtAbs - 0.45) / 0.35, 0, 1) * dtShareGap * 0.015
       : 0;
-    const rawD = 1.0 + (REGIME_DENSITY_DIR[currentRegime] || 0) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift + sectionDensityNudge + midSectionDensityPush - densityShareBrake + densityRecoveryLift - coherentDFBrake - dtDensityBrake + dtCoMovementPush + dtShareBridgeLift;
+    const rawD = 1.0 + (V.optionalFinite(REGIME_DENSITY_DIR[currentRegime], 0)) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift + sectionDensityNudge + midSectionDensityPush - densityShareBrake + densityRecoveryLift - coherentDFBrake - dtDensityBrake + dtCoMovementPush + dtShareBridgeLift;
     const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
     const tensionShareBrake = clamp((tensionShare - 0.18) / 0.08, 0, 1) * 0.06;
     const tensionRecoveryLift2 = tensionShare < 0.17
@@ -291,7 +292,7 @@ regimeReactiveDamping = (() => {
     const dtTensionTrim = dtAbs > 0.45
       ? clamp((dtAbs - 0.45) / 0.35, 0, 1) * dtShareGap * 0.010
       : 0;
-    const rawT = 1.0 + (REGIME_TENSION_DIR[currentRegime] || 0) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease - tensionShareBrake + boldnessTensionPush + tensionRecoveryLift2 - dtTensionTrim;
+    const rawT = 1.0 + (V.optionalFinite(REGIME_TENSION_DIR[currentRegime], 0)) * effectiveMaxTension * curvatureGain + regimeReactiveDampingDriftT + regimeReactiveDampingEqCorrT + sectionTensionNudge + tensionRecoveryNudge + evolvingLift + coherentToEvolvingReheat - exploringBiasBrake - tensionFlickerRelease - tensionShareBrake + boldnessTensionPush + tensionRecoveryLift2 - dtTensionTrim;
     const dfRaw = couplingMatrix ? couplingMatrix['density-flicker'] : 0;
     const dfCoupling = Number.isFinite(dfRaw) ? m.abs(dfRaw) : 0;
     const archOffset = clamp((dfCoupling - 0.35) / 0.40, 0, 1) * 0.15;
@@ -299,7 +300,7 @@ regimeReactiveDamping = (() => {
     const flickerArchProgress = 1 - m.abs(sectionProgress - flickerArchCenter) * 2;
     const sectionFlickerNudge = (clamp(flickerArchProgress, 0, 1) - 0.5) * 0.04;
     const flickerShareBrake = clamp((flickerShare - 0.18) / 0.10, 0, 1) * 0.08;
-    const rawF = 1.0 + (REGIME_FLICKER_DIR[currentRegime] || 0) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7 + sectionFlickerNudge - ftDecoupleBrake - flickerShareBrake;
+    const rawF = 1.0 + (V.optionalFinite(REGIME_FLICKER_DIR[currentRegime], 0)) * MAX_FLICKER * curvatureGain + regimeReactiveDampingDriftF + regimeReactiveDampingEqCorrF - adjustedFlickerHotspotBrake + evolvingLift - exploringBiasBrake - coherentToEvolvingReheat * 0.5 - tensionFlickerRelease * 0.7 + sectionFlickerNudge - ftDecoupleBrake - flickerShareBrake;
     regimeReactiveDampingSmoothedDensity = clamp(regimeReactiveDampingSmoothedDensity * (1 - BIAS_SMOOTHING) + rawD * BIAS_SMOOTHING, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
     regimeReactiveDampingSmoothedTension = clamp(regimeReactiveDampingSmoothedTension * (1 - BIAS_SMOOTHING) + rawT * BIAS_SMOOTHING, _TENSION_RANGE[0], _TENSION_RANGE[1]);
     regimeReactiveDampingSmoothedFlicker = clamp(regimeReactiveDampingSmoothedFlicker * (1 - BIAS_SMOOTHING) + rawF * BIAS_SMOOTHING, _FLICKER_RANGE[0], _FLICKER_RANGE[1]);

@@ -62,7 +62,7 @@ hyperMetaManager = (() => {
     if (state.pairCeiling) {
       const pairs = Object.keys(state.pairCeiling);
       let total = 0;
-      for (let i = 0; i < pairs.length; i++) total += state.pairCeiling[pairs[i]].exceedanceEma || 0;
+      for (let i = 0; i < pairs.length; i++) total += state.pairCeiling[pairs[i]].exceedanceEma;
       S.exceedanceTrendEma += (total - S.exceedanceTrendEma) * ST.HEALTH_EMA_ALPHA;
     }
 
@@ -119,7 +119,7 @@ hyperMetaManager = (() => {
     } else {
       // Relax toward neutral
       ST.rateMultipliers.criticalitySnap = 1.0 +
-        ((ST.rateMultipliers.criticalitySnap || 1.0) - 1.0) * 0.8;
+        ((ST.rateMultipliers.criticalitySnap) - 1.0) * 0.8;
     }
 
     // 13. Dimensionality expander ceiling floor. During locked state,
@@ -193,14 +193,14 @@ hyperMetaManager = (() => {
     // down to 1.75x when stressed. Base 1.5x always preserved (minimum protection).
     {
       let secProg = 0;
-      try { secProg = clamp(safePreBoot.call(() => timeStream.compoundProgress('section'), 0) || 0, 0, 1); } catch { void 0; }
-      const currentTension = safePreBoot.call(() => signalReader.tension(), 1.0) || 1.0;
+      try { secProg = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("section"), 0)), 0, 1); } catch { /* timeStream boot-safety */ }
+      const currentTension = /** @type {number} */ (safePreBoot.call(() => signalReader.tension(), 1.0));
       if (secProg < 0.3 && currentTension < 0.75) {
         const e4MaxProtection = 1.5 + S.e18ScaleEma; // 1.5 stressed -> 2.5 healthy (ramped)
         ST.rateMultipliers.tensionFloorProtection = clamp(1.5 + (0.75 - currentTension) * 2.0, 1.5, e4MaxProtection);
       } else {
         ST.rateMultipliers.tensionFloorProtection =
-          m.max(1.0, (ST.rateMultipliers.tensionFloorProtection || 1.0) * 0.9);
+          m.max(1.0, (ST.rateMultipliers.tensionFloorProtection) * 0.9);
       }
     }
 
@@ -220,7 +220,7 @@ hyperMetaManager = (() => {
         const e5MaxEscalation = 1.5 + S.e18ScaleEma; // 1.5x stressed -> 2.5x healthy (ramped)
         const fatigueEscalation = clamp(1.0 + (S.phaseFatigueBeats - 75) / 200, 1.0, e5MaxEscalation);
         ST.rateMultipliers.phaseExemption = m.max(
-          ST.rateMultipliers.phaseExemption || 1.0, fatigueEscalation);
+          ST.rateMultipliers.phaseExemption, fatigueEscalation);
       }
     } else {
       S.phaseFatigueBeats = m.max(0, S.phaseFatigueBeats - ST.ORCHESTRATE_INTERVAL * 0.5);
@@ -266,7 +266,7 @@ hyperMetaManager = (() => {
     let trustShare = 0;
     try {
       const axisEnergyShare = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
-      trustShare = (axisEnergyShare && axisEnergyShare.shares && axisEnergyShare.shares.trust) || 0;
+      trustShare = axisEnergyShare && axisEnergyShare.shares && Number.isFinite(axisEnergyShare.shares.trust) ? axisEnergyShare.shares.trust : 0;
     } catch {
       trustShare = 0;
     }
@@ -275,7 +275,7 @@ hyperMetaManager = (() => {
       const e7Coefficient = 2.0 + 1.5 * S.e18ScaleEma; // 2.0x stressed -> 3.5x healthy (ramped)
       ST.rateMultipliers.e7TrustBoost = 1.0 + trustDeficit * e7Coefficient;
     } else {
-      ST.rateMultipliers.e7TrustBoost = m.max(1.0, (ST.rateMultipliers.e7TrustBoost || 1.0) * 0.9);
+      ST.rateMultipliers.e7TrustBoost = m.max(1.0, (ST.rateMultipliers.e7TrustBoost) * 0.9);
     }
 
 
@@ -288,7 +288,7 @@ hyperMetaManager = (() => {
     {
       const sectionPhase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), '') || '';
       let sectionProgress = 0;
-      try { sectionProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('section'), 0) || 0, 0, 1); } catch { void 0; }
+      try { sectionProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("section"), 0)), 0, 1); } catch { /* timeStream boot-safety */ }
       const inResolution = sectionPhase === 'resolution' && sectionProgress > 0.80;
       if (inResolution) {
         // Ramp floor drop slowly via EMA -- avoids discontinuity spikes.
@@ -296,11 +296,11 @@ hyperMetaManager = (() => {
         // Attenuation only -- cap at 1.0, never amplify above calibrated 0.15 max.
         const targetDrop = clamp((sectionProgress - 0.80) / 0.20 * 0.15 * e18Scale, 0, 0.15);
         ST.rateMultipliers.e12TensionFloorDrop =
-          (ST.rateMultipliers.e12TensionFloorDrop || 0) * 0.75 + targetDrop * 0.25;
+          (ST.rateMultipliers.e12TensionFloorDrop) * 0.75 + targetDrop * 0.25;
       } else {
         // Recover slowly (not instantly) to avoid abrupt re-tension on section boundary
         ST.rateMultipliers.e12TensionFloorDrop =
-          m.max(0, (ST.rateMultipliers.e12TensionFloorDrop || 0) * 0.85);
+          m.max(0, (ST.rateMultipliers.e12TensionFloorDrop) * 0.85);
       }
     }
 
@@ -324,19 +324,19 @@ hyperMetaManager = (() => {
     // Now stored as true multiplier: 1.0 neutral, ~0.87x at max suppression.
     // Positive boost REFUTED (R32). Suppression-only, tied to E11 windows.
     {
-      const e11Active = (ST.rateMultipliers.e11SparseWindow || 0) > 0;
-      const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride || 1.0;
+      const e11Active = (ST.rateMultipliers.e11SparseWindow) > 0;
+      const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride;
       if (e11Active && e11Ceiling < 0.95) {
         // Suppress: proportional to ceiling depth, max 13% suppression (0.87x)
         const suppressDepth = clamp((1.0 - e11Ceiling) * 0.28, 0, 0.13);
         const e19Target = 1.0 - suppressDepth;
         // Exponential ramp toward target (alpha 0.25 ~= 4 tick time constant)
-        ST.rateMultipliers.e19CrossModScale = (ST.rateMultipliers.e19CrossModScale || 1.0) +
-          (e19Target - (ST.rateMultipliers.e19CrossModScale || 1.0)) * 0.25;
+        ST.rateMultipliers.e19CrossModScale = (ST.rateMultipliers.e19CrossModScale) +
+          (e19Target - (ST.rateMultipliers.e19CrossModScale)) * 0.25;
       } else {
         // Ramp back toward 1.0 (neutral) -- same alpha, symmetric recovery
-        ST.rateMultipliers.e19CrossModScale = (ST.rateMultipliers.e19CrossModScale || 1.0) +
-          (1.0 - (ST.rateMultipliers.e19CrossModScale || 1.0)) * 0.25;
+        ST.rateMultipliers.e19CrossModScale = (ST.rateMultipliers.e19CrossModScale) +
+          (1.0 - (ST.rateMultipliers.e19CrossModScale)) * 0.25;
       }
     }
 
@@ -347,19 +347,19 @@ hyperMetaManager = (() => {
     // Suppression-only: boost direction refuted with E19 (R32 note explosion).
     // Bounded: 0.75 minimum (never more than 25% score reduction).
     {
-      const e11Active = (ST.rateMultipliers.e11SparseWindow || 0) > 0;
-      const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride || 1.0;
+      const e11Active = (ST.rateMultipliers.e11SparseWindow) > 0;
+      const e11Ceiling = ST.rateMultipliers.e11DensityCeilingOverride;
       if (e11Active && e11Ceiling < 0.95) {
         // Score suppression: proportional to ceiling suppression, capped at 0.25
         const biasSuppression = clamp((1.0 - e11Ceiling) * 0.55, 0, 0.25);
         const e20Target = 1.0 - biasSuppression;
         // Exponential ramp toward target (alpha 0.25 -- same as E19)
-        ST.rateMultipliers.e20AttenuatorBias = (ST.rateMultipliers.e20AttenuatorBias || 1.0) +
-          (e20Target - (ST.rateMultipliers.e20AttenuatorBias || 1.0)) * 0.25;
+        ST.rateMultipliers.e20AttenuatorBias = (ST.rateMultipliers.e20AttenuatorBias) +
+          (e20Target - (ST.rateMultipliers.e20AttenuatorBias)) * 0.25;
       } else {
         // Ramp back toward 1.0 (neutral)
-        ST.rateMultipliers.e20AttenuatorBias = (ST.rateMultipliers.e20AttenuatorBias || 1.0) +
-          (1.0 - (ST.rateMultipliers.e20AttenuatorBias || 1.0)) * 0.25;
+        ST.rateMultipliers.e20AttenuatorBias = (ST.rateMultipliers.e20AttenuatorBias) +
+          (1.0 - (ST.rateMultipliers.e20AttenuatorBias)) * 0.25;
       }
     }
 
@@ -440,7 +440,7 @@ hyperMetaManager = (() => {
     // E18: strength scaled by e18Scale (health * exceedance-awareness).
     {
       let phraseIdx = -1;
-      try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { void 0; }
+      try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { /* timeStream boot-safety */ }
       if (phraseIdx >= 0 && phraseIdx !== S.e9LastPhraseIndex) {
         S.e9LastPhraseIndex = phraseIdx;
         S.e9BreathingCountdown = 4;
@@ -456,9 +456,9 @@ hyperMetaManager = (() => {
       } else {
         // Decay toward neutral
         ST.rateMultipliers.e9DensitySmoothingRelax = m.max(1.0,
-          (ST.rateMultipliers.e9DensitySmoothingRelax || 1.0) * 0.85);
+          (ST.rateMultipliers.e9DensitySmoothingRelax) * 0.85);
         ST.rateMultipliers.e9DensitySwingBoost = m.max(1.0,
-          (ST.rateMultipliers.e9DensitySwingBoost || 1.0) * 0.90);
+          (ST.rateMultipliers.e9DensitySwingBoost) * 0.90);
       }
     }
 
@@ -471,7 +471,7 @@ hyperMetaManager = (() => {
     // Only the tension bias suppression remains (gentler pathway).
     {
       let phraseProgress = 0;
-      try { phraseProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('phrase'), 0) || 0, 0, 1); } catch { void 0; }
+      try { phraseProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("phrase"), 0)), 0, 1); } catch { /* timeStream boot-safety */ }
       // Phrase troughs: second half of phrase is the natural descent
       const inPhraseTrough = phraseProgress > 0.55;
       // Check if density is flat via wave analyzer
@@ -492,7 +492,7 @@ hyperMetaManager = (() => {
         S.e10ReleaseCooldown--;
       } else {
         ST.rateMultipliers.e10TensionSuppress = m.min(1.0,
-          (ST.rateMultipliers.e10TensionSuppress || 1.0) * 1.15);
+          (ST.rateMultipliers.e10TensionSuppress) * 1.15);
       }
       ST.rateMultipliers.e10ArchFloorDrop = 0;
     }
@@ -507,9 +507,9 @@ hyperMetaManager = (() => {
     // share lost in E11 while concentrating breathing in coherent passages.
     {
       let phraseIdx = -1;
-      try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { void 0; }
+      try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { /* timeStream boot-safety */ }
       let phraseProgress = 0;
-      try { phraseProgress = clamp(safePreBoot.call(() => timeStream.compoundProgress('phrase'), 0) || 0, 0, 1); } catch { void 0; }
+      try { phraseProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("phrase"), 0)), 0, 1); } catch { /* timeStream boot-safety */ }
       // Sparse window at phrase wrap: last 5% of phrase
       const atPhraseEnd = phraseProgress > 0.95;
       // Also at phrase start: first 3% after phrase 0
@@ -554,9 +554,9 @@ hyperMetaManager = (() => {
         ST.rateMultipliers.e11SparseWindow = 1.0;
         // Decay ceiling override back toward 1.0 over remaining countdown beats
         ST.rateMultipliers.e11DensityCeilingOverride = clamp(
-          (ST.rateMultipliers.e11DensityCeilingOverride || 1.0) + 0.15, 0.55, 1.0);
+          (ST.rateMultipliers.e11DensityCeilingOverride) + 0.15, 0.55, 1.0);
         ST.rateMultipliers.e11RestBoost = m.max(1.0,
-          (ST.rateMultipliers.e11RestBoost || 1.0) * 0.7);
+          (ST.rateMultipliers.e11RestBoost) * 0.7);
         S.e11SparseCountdown--;
       } else {
         ST.rateMultipliers.e11SparseWindow = 0;
@@ -589,13 +589,17 @@ hyperMetaManager = (() => {
 
   // PUBLIC API
 
-  function getRateMultiplier(key)        { return ST.rateMultipliers[key] || 1.0; }
+  function getRateMultiplier(key) {
+    const val = ST.rateMultipliers[key];
+    if (val === undefined) { ST.rateMultipliers[key] = 1.0; return 1.0; }
+    return val;
+  }
   function getPhaseBoostCeiling()        { return S.phaseBoostCeiling; }
-  function getP95AlphaMultiplier()       { return ST.rateMultipliers.p95Alpha || 1.0; }
-  function getS0TighteningMultiplier()   { return ST.rateMultipliers.s0Tightening || 1.0; }
+  function getP95AlphaMultiplier()       { return ST.rateMultipliers.p95Alpha; }
+  function getS0TighteningMultiplier()   { return ST.rateMultipliers.s0Tightening; }
   function getSystemPhase()              { return S.systemPhase; }
   function getVarianceGateRelaxMultiplier() {
-    return m.max(ST.rateMultipliers.varianceGateRelax || 1.0, ST.rateMultipliers.varianceGateRelaxTelemetry || 1.0);
+    return m.max(ST.rateMultipliers.varianceGateRelax, ST.rateMultipliers.varianceGateRelaxTelemetry);
   }
   function getTopologyCreativityMultiplier() { return S.topologyCreativityMultiplier; }
   function getTopologyPhase()            { return S.topologyPhase; }

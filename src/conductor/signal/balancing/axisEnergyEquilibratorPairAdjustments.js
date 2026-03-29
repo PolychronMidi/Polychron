@@ -43,7 +43,7 @@ axisEnergyEquilibratorPairAdjustments = (() => {
   function apply(state, config, context, V) {
     for (let i = 0; i < config.ALL_PAIRS.length; i++) {
       const pair = config.ALL_PAIRS[i];
-      if ((state.pairCooldowns[pair] || 0) > 0) continue;
+      if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
       const pairData = context.snapshot[pair];
       if (!pairData) continue;
 
@@ -113,7 +113,7 @@ axisEnergyEquilibratorPairAdjustments = (() => {
           state.pairCooldowns[pair] = config.PAIR_COOLDOWN;
           state.pairAdjustments++;
           if (context.currentRegime === 'coherent' && pairTightenScale > 0) state.coherentHotspotPairAdj++;
-          state.perPairAdj[pair] = (state.perPairAdj[pair] || 0) + 1;
+          state.perPairAdj[pair] = (V.optionalFinite(state.perPairAdj[pair], 0)) + 1;
           state.regimePairAdj[context.regimeKey] = (state.regimePairAdj[context.regimeKey] || 0) + 1;
         }
       } else if (rolling < config.COLDSPOT_RATIO * baseline && rolling < config.COLDSPOT_ABS_MAX) {
@@ -128,7 +128,7 @@ axisEnergyEquilibratorPairAdjustments = (() => {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.PAIR_COOLDOWN;
           state.pairAdjustments++;
-          state.perPairAdj[pair] = (state.perPairAdj[pair] || 0) + 1;
+          state.perPairAdj[pair] = (V.optionalFinite(state.perPairAdj[pair], 0)) + 1;
           state.regimePairAdj[context.regimeKey] = (state.regimePairAdj[context.regimeKey] || 0) + 1;
         }
       }

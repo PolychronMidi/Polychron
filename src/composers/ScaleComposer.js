@@ -70,7 +70,7 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     let selectedNote;
     if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
       V.requireType(this.voiceHistory, 'array', 'this.voiceHistory');
-      selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory || [], candidates, {});
+      selectedNote = this.VoiceLeadingScore.selectNextNote(Array.isArray(this.voiceHistory) ? this.voiceHistory : [], candidates, {});
     }
 
     if (typeof selectedNote === 'undefined') {

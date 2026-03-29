@@ -261,7 +261,7 @@ coherenceMonitor = (() => {
   return {
     initialize,
     getDensityBias,
-    getLayerBias: (layer) => layerBias[layer] || 1.0,
+    getLayerBias: (layer) => V.optionalFinite(layerBias[layer], 1.0),
     getEntropySignal,
     getMetrics,
     reset

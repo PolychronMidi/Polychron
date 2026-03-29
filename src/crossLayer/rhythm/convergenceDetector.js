@@ -48,11 +48,11 @@ convergenceDetector = (() => {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
 
     // Modulate tolerance and interval by convergenceTarget from section intent
-    const intent = sectionIntentCurves.getLastIntent ? sectionIntentCurves.getLastIntent() : null;
-    const ct = intent && Number.isFinite(intent.convergenceTarget) ? intent.convergenceTarget : 0.5;
+    const intent = sectionIntentCurves.getLastIntent();
+    const ct = V.requireFinite(intent.convergenceTarget, 'intent.convergenceTarget');
     // Read current entropy from L0 - high entropy environments benefit from convergence moments
     const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
-    const currentEntropy = entropyEntry && Number.isFinite(entropyEntry.smoothed) ? entropyEntry.smoothed : 0.5;
+    const currentEntropy = V.optionalFinite(entropyEntry ? entropyEntry.smoothed : NaN, 0.5);
     const entropyBoost = clamp((currentEntropy - 0.5) * 0.4, 0, 0.2);
     const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost);
     const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5);
@@ -100,8 +100,8 @@ convergenceDetector = (() => {
     const boundedCurrentMidi = clamp(m.round(currentMidi), 0, 127);
     const burstPC = ((boundedCurrentMidi % 12) + 12) % 12;
     const burstBaseTime = absoluteSeconds;
-    const intentForBurst = sectionIntentCurves.getLastIntent ? sectionIntentCurves.getLastIntent() : null;
-    const ctForBurst = intentForBurst && Number.isFinite(intentForBurst.convergenceTarget) ? intentForBurst.convergenceTarget : 0.5;
+    const intentForBurst = sectionIntentCurves.getLastIntent();
+    const ctForBurst = V.requireFinite(intentForBurst.convergenceTarget, 'intentForBurst.convergenceTarget');
     const burstVel = m.round(clamp(
       ((currentVelocity + conv.otherVelocity) / 2) * (0.8 + ctForBurst * 0.2 + conv.rarity * 0.3),
       1, MIDI_MAX_VALUE

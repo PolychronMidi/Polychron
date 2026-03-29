@@ -10,6 +10,7 @@
  */
 
 couplingBiasAccumulator = (() => {
+  const V = validator.create('couplingBiasAccumulator');
   const { ALL_MONITORED_DIMS, NUDGEABLE_SET, GAIN_MAX,
     AXIS_SMOOTH_ALPHA, AXIS_BUDGET, GATE_EMA_ALPHA,
     HP_ROLLING_THRESHOLD, HP_MAX_BEATS, HP_COOLDOWN_BEATS } = couplingConstants;
@@ -30,8 +31,8 @@ couplingBiasAccumulator = (() => {
         const cv = matrix[k];
         if (cv === null || cv === undefined || cv !== cv) continue;
         const ac = m.abs(cv);
-        S.axisTotalAbsR[dA] = (S.axisTotalAbsR[dA] || 0) + ac;
-        S.axisTotalAbsR[dB] = (S.axisTotalAbsR[dB] || 0) + ac;
+        S.axisTotalAbsR[dA] = (V.optionalFinite(S.axisTotalAbsR[dA], 0)) + ac;
+        S.axisTotalAbsR[dB] = (V.optionalFinite(S.axisTotalAbsR[dB], 0)) + ac;
         if (!S.axisPairContrib[dA]) S.axisPairContrib[dA] = {};
         if (!S.axisPairContrib[dB]) S.axisPairContrib[dB] = {};
         S.axisPairContrib[dA][k] = ac;
@@ -41,7 +42,7 @@ couplingBiasAccumulator = (() => {
     // Update axis coupling EMA
     for (let d = 0; d < ALL_MONITORED_DIMS.length; d++) {
       const ax = ALL_MONITORED_DIMS[d];
-      const cur = S.axisTotalAbsR[ax] || 0;
+      const cur = V.optionalFinite(S.axisTotalAbsR[ax], 0);
       const prev = S.axisSmoothedAbsR[ax];
       if (prev === undefined) {
         S.axisSmoothedAbsR[ax] = cur;

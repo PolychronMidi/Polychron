@@ -71,9 +71,9 @@ hyperMetaManagerContradictions = (() => {
     ST.rateMultipliers.varianceGateRelax = varianceGateRelaxMultiplier;
 
     // E7: Trust axis rebalancing booster
-    const trustBoost = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e7TrustBoost'), 1.0) || 1.0;
+    const trustBoost = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e7TrustBoost'), 1.0));
     if (trustBoost > 1.0) {
-      ST.rateMultipliers.entropyRegulator = (ST.rateMultipliers.entropyRegulator || 1.0) * trustBoost;
+      ST.rateMultipliers.entropyRegulator = (ST.rateMultipliers.entropyRegulator) * trustBoost;
     }
 
     // Per-controller multipliers (effectiveness-weighted)
@@ -98,7 +98,7 @@ hyperMetaManagerContradictions = (() => {
         recordContradiction(
           ['phaseFloorController', 'couplingHomeostasis'],
           'Phase floor boosting while homeostasis throttling global gain');
-        ST.rateMultipliers.phaseExemption = m.max(ST.rateMultipliers.phaseExemption || 1.0, 1.5);
+        ST.rateMultipliers.phaseExemption = m.max(ST.rateMultipliers.phaseExemption, 1.5);
       }
     }
 
@@ -153,7 +153,7 @@ hyperMetaManagerContradictions = (() => {
           'Coherent regime suppresses phase coupling via target relaxation while phase share < 0.08');
         const severity = clamp((0.08 - state.phaseFloor.shareEma) / 0.06, 0, 1);
         ST.rateMultipliers.phaseExemption = m.max(
-          ST.rateMultipliers.phaseExemption || 1.0, 1.0 + severity * 1.2);
+          ST.rateMultipliers.phaseExemption, 1.0 + severity * 1.2);
       }
     }
   }

@@ -16,6 +16,7 @@
  */
 
 dimensionalityExpander = (() => {
+  const V = validator.create('dimensionalityExpander');
 
   // Below this threshold, we begin injecting perturbations.
   const DIM_THRESHOLD = 2.2;
@@ -75,9 +76,9 @@ dimensionalityExpander = (() => {
     let tPert = 0;
     let fPert = 0;
 
-    const dt = matrix['density-tension'] || 0;
-    const df = matrix['density-flicker'] || 0;
-    const tf = matrix['tension-flicker'] || 0;
+    const dt = V.optionalFinite(matrix['density-tension'], 0);
+    const df = V.optionalFinite(matrix['density-flicker'], 0);
+    const tf = V.optionalFinite(matrix['tension-flicker'], 0);
 
     if (m.abs(dt) > COUPLING_THRESHOLD) {
       const sign = dt > 0 ? -1 : 1;

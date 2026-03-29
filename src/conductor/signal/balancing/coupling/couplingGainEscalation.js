@@ -10,6 +10,7 @@
  */
 
 couplingGainEscalation = (() => {
+  const V = validator.create('couplingGainEscalation');
   const { GAIN_INIT, GAIN_MIN, GAIN_MAX, GAIN_ESCALATE_RATE, GAIN_EMERGENCY_RATE, GAIN_RELAX_RATE,
     NUDGEABLE_SET, AXIS_COUPLING_CEILING, HP_GAIN_MAX,
     FLICKER_PAIR_GAIN_CAP, FLICKER_PAIR_GAIN_CAP_THRESHOLD,
@@ -78,18 +79,18 @@ couplingGainEscalation = (() => {
         let rate = absCorr > target * 2 ? GAIN_EMERGENCY_RATE : GAIN_ESCALATE_RATE;
         if (p95 > target * 1.5) {
           rate *= 1.5;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.05, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + 0.05, 1.0);
         } else {
-          ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.01);
+          ps.heatPenalty = m.max(0, (V.optionalFinite(ps.heatPenalty, 0)) - 0.01);
         }
         if (flags.isTensionEntropyPair && corr < 0) {
           rate *= 1.2;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.03, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + 0.03, 1.0);
         }
         if (flags.isDensityFlickerPair && m.abs(corr) > 0.80) {
           const dfGrad = (m.abs(corr) - 0.80) * 2.0;
           rate *= (1 + dfGrad);
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfGrad * 0.25, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + dfGrad * 0.25, 1.0);
         }
         if (flags.isDensityFlickerPair) {
           let dfSevereCount = 0;
@@ -103,7 +104,7 @@ couplingGainEscalation = (() => {
             + clamp((m.abs(corr) - 0.90) * 1.8, 0, 0.24);
           if (dfTailPressure > 0) {
             rate *= 1 + dfTailPressure;
-            ps.heatPenalty = m.min((ps.heatPenalty || 0) + dfTailPressure * 0.18, 1.0);
+            ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + dfTailPressure * 0.18, 1.0);
           }
         }
         if (flags.isEntropySurfacePair && (m.abs(corr) > 0.70 || p95 > 0.78)) {
@@ -119,12 +120,12 @@ couplingGainEscalation = (() => {
             + clamp((entropyExceedRate - 0.18) * 0.8, 0, 0.18);
           if (entropyPressure > 0) {
             rate *= 1 + entropyPressure;
-            ps.heatPenalty = m.min((ps.heatPenalty || 0) + entropyPressure * 0.14, 1.0);
+            ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + entropyPressure * 0.14, 1.0);
           }
         }
         if (flags.isEntropySurfacePair && setup.entropyAxisPressure > 0) {
           rate *= 1 + setup.entropyAxisPressure * 0.55;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + setup.entropyAxisPressure * 0.08, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + setup.entropyAxisPressure * 0.08, 1.0);
         }
         // Entropy-cluster severe escalation. When an entropy-surface
         // pair is severe (p95 > 0.80) and telemetry confirms persistent
@@ -133,11 +134,11 @@ couplingGainEscalation = (() => {
         if (flags.isEntropySurfacePair && p95 > 0.80 && telemetrySevereRate > 0.06) {
           const entropySevereBoost = 1.3 * clamp((p95 - 0.80) / 0.12, 0.5, 1.0);
           rate *= entropySevereBoost;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.06, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + 0.06, 1.0);
         }
         if (nonNudgeableHandOffPressure > 0) {
           rate *= 1 + nonNudgeableHandOffPressure * 0.45;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + nonNudgeableHandOffPressure * 0.08, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + nonNudgeableHandOffPressure * 0.08, 1.0);
         }
         if (flags.isPhasePair && (m.abs(corr) > 0.78 || p95 > 0.88)) {
           let phaseExceedCount = 0;
@@ -149,13 +150,13 @@ couplingGainEscalation = (() => {
             + clamp((p95 - 0.88) * 2.0, 0, 0.35)
             + clamp((phaseExceedRate - 0.25) * 0.9, 0, 0.25);
           rate *= (1 + phasePressure);
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + phasePressure * 0.12, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + phasePressure * 0.12, 1.0);
         }
         if (flags.isPhaseSurfacePair && (m.abs(corr) > 0.72 || p95 > 0.80)) {
           const phaseSurfacePressure = clamp((m.abs(corr) - 0.72) * 1.4, 0, 0.28)
             + clamp((p95 - 0.80) * 1.6, 0, 0.22);
           rate *= 1 + phaseSurfacePressure;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + phaseSurfacePressure * 0.10, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + phaseSurfacePressure * 0.10, 1.0);
         }
         if (flags.isTrustPair && (NUDGEABLE_SET.has(dimA) || NUDGEABLE_SET.has(dimB)) && (m.abs(corr) > 0.74 || p95 > 0.82)) {
           let trustExceedCount = 0;
@@ -167,7 +168,7 @@ couplingGainEscalation = (() => {
             + clamp((p95 - 0.82) * 2.0, 0, 0.35)
             + clamp((trustExceedRate - 0.20) * 1.0, 0, 0.25);
           rate *= (1 + trustPressure);
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + trustPressure * 0.14, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + trustPressure * 0.14, 1.0);
         }
         // Tension-flicker coherent spike suppression.
         // When regime is coherent and a tension-flicker pair shows high
@@ -179,15 +180,15 @@ couplingGainEscalation = (() => {
           const coherentSpikePressure = clamp((absCorr - 0.85) * 3.0, 0, 0.50)
             + clamp((tailTelemetry.recentSevereRate - 0.20) * 1.5, 0, 0.40);
           rate *= 1 + coherentSpikePressure;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + coherentSpikePressure * 0.15, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + coherentSpikePressure * 0.15, 1.0);
         }
         if (!flags.isDensityFlickerPair && m.abs(corr) > 0.85) {
           rate *= 1.15;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.01, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + 0.01, 1.0);
         }
         const eff = ps.effectivenessEma || 0.5;
         if (eff < 0.50) rate *= m.max(0.25, eff / 0.50);
-        const hp = ps.heatPenalty || 0;
+        const hp = V.optionalFinite(ps.heatPenalty, 0);
         if (hp > 0.30) rate *= m.max(0.35, 1.0 - hp);
         // Decouple escalation learning rate from full GGM.
         // sqrt(GGM) for all pairs. R4: DF pair uses linear GGM (full
@@ -236,22 +237,22 @@ couplingGainEscalation = (() => {
         if (monotoneActive) {
           const cumulativeScale = m.min(2.0, 1.0 + (mst.consecutiveTriggers - 1) * 0.50);
           rate *= MONOTONE_IMPULSE_RATE * cumulativeScale;
-          ps.heatPenalty = m.min((ps.heatPenalty || 0) + 0.15, 1.0);
+          ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + 0.15, 1.0);
         }
         ps.gain = clamp(ps.gain + rate, GAIN_MIN, pairGainMax);
       }
 
       // Axis-centric proportional gain scaling
-      const dimATotal = S.axisTotalAbsR[dimA] || 0;
-      const dimBTotal = S.axisTotalAbsR[dimB] || 0;
+      const dimATotal = V.optionalFinite(S.axisTotalAbsR[dimA], 0);
+      const dimBTotal = V.optionalFinite(S.axisTotalAbsR[dimB], 0);
       const dimACeiling = AXIS_COUPLING_CEILING[dimA] || 2.0;
       const dimBCeiling = AXIS_COUPLING_CEILING[dimB] || 2.0;
       if (dimATotal > dimACeiling && S.axisPairContrib[dimA]) {
-        const pairShare = (S.axisPairContrib[dimA][key] || 0) / dimATotal;
+        const pairShare = (V.optionalFinite(S.axisPairContrib[dimA][key], 0)) / dimATotal;
         axisGainScale = m.min(axisGainScale, pairShare * (Object.keys(S.axisPairContrib[dimA]).length));
       }
       if (dimBTotal > dimBCeiling && S.axisPairContrib[dimB]) {
-        const pairShare = (S.axisPairContrib[dimB][key] || 0) / dimBTotal;
+        const pairShare = (V.optionalFinite(S.axisPairContrib[dimB][key], 0)) / dimBTotal;
         axisGainScale = m.min(axisGainScale, pairShare * (Object.keys(S.axisPairContrib[dimB]).length));
       }
       axisGainScale = clamp(axisGainScale, 0.15, 1.5);
@@ -259,14 +260,14 @@ couplingGainEscalation = (() => {
       let relaxRate = flags.isEntropyPair ? GAIN_RELAX_RATE * 2 : GAIN_RELAX_RATE;
       if (flags.isTensionEntropyPair) relaxRate *= 0.35;
       ps.gain = clamp(ps.gain - relaxRate, GAIN_INIT, GAIN_MAX);
-      ps.heatPenalty = m.max(0, (ps.heatPenalty || 0) - 0.05);
+      ps.heatPenalty = m.max(0, (V.optionalFinite(ps.heatPenalty, 0)) - 0.05);
     }
 
     // Effectiveness EMA update
     if (ps.gain > GAIN_INIT * 1.2 && absCorr > target) {
       const improved = absCorr < ps.lastAbsCorr ? 1 : 0;
       ps.effectivenessEma = (ps.effectivenessEma || 0.5) * 0.95 + improved * 0.05;
-      ps.effActiveBeats = (ps.effActiveBeats || 0) + 1;
+      ps.effActiveBeats = (V.optionalFinite(ps.effActiveBeats, 0)) + 1;
       ps.effMin = m.min(ps.effMin !== undefined ? ps.effMin : 1.0, ps.effectivenessEma);
       ps.effMax = m.max(ps.effMax !== undefined ? ps.effMax : 0.0, ps.effectivenessEma);
     }

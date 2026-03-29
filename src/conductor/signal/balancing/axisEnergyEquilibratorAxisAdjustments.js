@@ -5,7 +5,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
 
     for (let i = 0; i < config.ALL_AXES.length; i++) {
       const axis = config.ALL_AXES[i];
-      const share = state.smoothedShares[axis] || 0;
+      const share = V.optionalFinite(state.smoothedShares[axis], 0);
       const pairs = config.axisToPairs[axis];
       const axisTightenScale = context.currentRegime === 'coherent'
         ? ((((axis === 'phase' || axis === 'density' || axis === 'flicker') && context.phaseSurfaceHot) ||
@@ -45,7 +45,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         const rate = config.AXIS_TIGHTEN_RATE * tightenPairScale * axisTightenScale * context.giniMult * dampMult * clamp(excess / config.FAIR_SHARE, 0.5, 2.0);
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
-          if ((state.pairCooldowns[pair] || 0) > 0) continue;
+          if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
           const baseline = V.optionalFinite(state.lastBaselines[pair]);
           if (baseline === undefined) continue;
           const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - rate);
@@ -54,7 +54,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
             state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
             state.axisAdjustments++;
             if (context.currentRegime === 'coherent' && axisTightenScale > 0) state.coherentHotspotAxisAdj++;
-            state.perAxisAdj[axis] = (state.perAxisAdj[axis] || 0) + 1;
+            state.perAxisAdj[axis] = (V.optionalFinite(state.perAxisAdj[axis], 0)) + 1;
             state.regimeAxisAdj[context.regimeKey] = (state.regimeAxisAdj[context.regimeKey] || 0) + 1;
           }
         }
@@ -125,7 +125,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           // R86 E1: Bypass pair cooldowns when phase floor/extreme collapse is active
-          if (!isPhaseFloorActive && !isPhaseExtremeCollapse && (state.pairCooldowns[pair] || 0) > 0) continue;
+          if (!isPhaseFloorActive && !isPhaseExtremeCollapse && (V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
           const baseline = V.optionalFinite(state.lastBaselines[pair]);
           if (baseline === undefined) continue;
           const nextBaseline = m.min(config.BASELINE_MAX, baseline + rate);
@@ -133,7 +133,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
             pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
             state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
             state.axisAdjustments++;
-            state.perAxisAdj[axis] = (state.perAxisAdj[axis] || 0) + 1;
+            state.perAxisAdj[axis] = (V.optionalFinite(state.perAxisAdj[axis], 0)) + 1;
             state.regimeAxisAdj[context.regimeKey] = (state.regimeAxisAdj[context.regimeKey] || 0) + 1;
           }
         }
@@ -147,10 +147,10 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
       const tensionDeficit = 0.15 - tensionSmoothed;
       const tensionPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.tension || config.RELAX_RATE_REF);
       const tensionFloorRate = m.min(0.03, config.AXIS_RELAX_RATE * 2.5 * tensionPairScale * clamp(tensionDeficit / config.FAIR_SHARE, 0.5, 2.0));
-      const tensionPairs = config.axisToPairs.tension || [];
+      const tensionPairs = V.assertArray(config.axisToPairs.tension, "config.axisToPairs.tension");
       for (let i = 0; i < tensionPairs.length; i++) {
         const pair = tensionPairs[i];
-        if ((state.pairCooldowns[pair] || 0) > 0) continue;
+        if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
         const baseline = V.optionalFinite(state.lastBaselines[pair]);
         if (baseline === undefined) continue;
         const nextBaseline = m.min(config.BASELINE_MAX, baseline + tensionFloorRate);
@@ -158,7 +158,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
-          state.perAxisAdj.tension = (state.perAxisAdj.tension || 0) + 1;
+          state.perAxisAdj.tension = (V.optionalFinite(state.perAxisAdj.tension, 0)) + 1;
         }
       }
     }
@@ -168,10 +168,10 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
       const entropyExcess = entropySmoothed - 0.19;
       const entropyPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.entropy || config.RELAX_RATE_REF);
       const entropyCapRate = m.min(0.03, config.AXIS_TIGHTEN_RATE * 2.5 * entropyPairScale * clamp(entropyExcess / config.FAIR_SHARE, 0.5, 2.0));
-      const entropyPairs = config.axisToPairs.entropy || [];
+      const entropyPairs = V.assertArray(config.axisToPairs.entropy, "config.axisToPairs.entropy");
       for (let i = 0; i < entropyPairs.length; i++) {
         const pair = entropyPairs[i];
-        if ((state.pairCooldowns[pair] || 0) > 0) continue;
+        if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
         const baseline = V.optionalFinite(state.lastBaselines[pair]);
         if (baseline === undefined) continue;
         const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - entropyCapRate);
@@ -179,7 +179,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
-          state.perAxisAdj.entropy = (state.perAxisAdj.entropy || 0) + 1;
+          state.perAxisAdj.entropy = (V.optionalFinite(state.perAxisAdj.entropy, 0)) + 1;
         }
       }
     }
@@ -200,10 +200,10 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
       const trustPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
       const trustCapStrength = phaseSmoothed < 0.02 ? 2.4 : (phaseSmoothed < 0.04 ? 1.9 : 1.5);
       const trustCapRate = m.min(0.035, config.AXIS_TIGHTEN_RATE * trustCapStrength * trustPairScale * (1 + phaseShortfall * 0.95 + clamp((trustSmoothed - config.FAIR_SHARE) / config.FAIR_SHARE, 0, 1) * 0.35) * clamp(trustExcess / config.FAIR_SHARE, 0.5, 2.0));
-      const trustPairs = config.axisToPairs.trust || [];
+      const trustPairs = V.assertArray(config.axisToPairs.trust, "config.axisToPairs.trust");
       for (let i = 0; i < trustPairs.length; i++) {
         const pair = trustPairs[i];
-        if ((state.pairCooldowns[pair] || 0) > 0) continue;
+        if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
         const baseline = V.optionalFinite(state.lastBaselines[pair]);
         if (baseline === undefined) continue;
         const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - trustCapRate);
@@ -211,7 +211,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
-          state.perAxisAdj.trust = (state.perAxisAdj.trust || 0) + 1;
+          state.perAxisAdj.trust = (V.optionalFinite(state.perAxisAdj.trust, 0)) + 1;
         }
       }
     }
@@ -226,7 +226,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
       // than tension (0.50 vs 2.5). 1.2 gives trust meaningful recovery speed
       // without overshooting phase (which is the reason R7 reduced from 1.05).
       const trustFloorRate = m.min(0.03, config.AXIS_RELAX_RATE * 1.20 * trustFloorPairScale * clamp(trustDeficit / config.FAIR_SHARE, 0.5, 2.0));
-      const trustFloorPairs = config.axisToPairs.trust || [];
+      const trustFloorPairs = V.assertArray(config.axisToPairs.trust, "config.axisToPairs.trust");
       for (let i = 0; i < trustFloorPairs.length; i++) {
         const pair = trustFloorPairs[i];
         // R8 E2: Skip non-nudgeable pairs (entropy-trust, trust-phase). These
@@ -235,7 +235,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // on the 3 active pairs (density-trust, tension-trust, flicker-trust)
         // makes trust recovery corrections effective.
         if (config.NON_NUDGEABLE_TAIL_SET && config.NON_NUDGEABLE_TAIL_SET.has(pair)) continue;
-        if ((state.pairCooldowns[pair] || 0) > 0) continue;
+        if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
         const baseline = V.optionalFinite(state.lastBaselines[pair]);
         if (baseline === undefined) continue;
         const nextBaseline = m.min(config.BASELINE_MAX, baseline + trustFloorRate);
@@ -243,7 +243,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
-          state.perAxisAdj.trust = (state.perAxisAdj.trust || 0) + 1;
+          state.perAxisAdj.trust = (V.optionalFinite(state.perAxisAdj.trust, 0)) + 1;
         }
       }
     }

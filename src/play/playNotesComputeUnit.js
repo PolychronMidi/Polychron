@@ -11,14 +11,14 @@ let playNotesComputeUnitNoiseProfile = undefined;
 
 function playNotesComputeUnitGetUnitProfile(unit) {
   if (!Object.prototype.hasOwnProperty.call(playNotesComputeUnitProfileCache, unit)) {
-    playNotesComputeUnitProfileCache[unit] = motifConfig.getUnitProfile(unit) || null;
+    playNotesComputeUnitProfileCache[unit] = motifConfig.getUnitProfile(unit);
   }
   return playNotesComputeUnitProfileCache[unit];
 }
 
 function playNotesComputeUnitGetVoiceConfigDefault() {
   if (playNotesComputeUnitVoiceConfigDefault === undefined) {
-    playNotesComputeUnitVoiceConfigDefault = voiceConfig.getProfile('default') || null;
+    playNotesComputeUnitVoiceConfigDefault = voiceConfig.getProfile('default');
   }
   return playNotesComputeUnitVoiceConfigDefault;
 }

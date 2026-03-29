@@ -4,6 +4,7 @@
 // Pure query API - consumed via conductorState.
 
 intervalDirectionMemory = (() => {
+  const V = validator.create('intervalDirectionMemory');
   const WINDOW_SECONDS = 8;
 
   /**
@@ -30,7 +31,7 @@ intervalDirectionMemory = (() => {
       const diff = curr - prev;
       if (diff === 0) continue; // skip unisons
       const key = (diff > 0 ? '+' : '') + String(diff);
-      histogram[key] = (histogram[key] || 0) + 1;
+      histogram[key] = (V.optionalFinite(histogram[key], 0)) + 1;
       totalIntervals++;
     }
 

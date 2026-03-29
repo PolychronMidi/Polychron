@@ -40,7 +40,7 @@ contextualTrust = (() => {
     V.assertNonEmptyString(moduleName, 'moduleName');
     const p = V.requireFinite(payoff, 'payoff');
     const k = contextualTrustKey(moduleName);
-    const prev = scores.get(k) || 0;
+    const prev = V.optionalFinite(scores.get(k), 0);
     const next = m.max(LO, m.min(HI, prev * DECAY + p * (1 - DECAY)));
     scores.set(k, next);
   }

@@ -97,7 +97,38 @@ hyperMetaManagerState = (() => {
   /** @type {Record<string, { effectivenessEma: number, interventionCount: number, lastContribution: number }>} */
   const controllerStats = {};
   /** @type {Record<string, number>} */
-  const rateMultipliers = {};
+  const rateMultipliers = {
+    global: 1.0,
+    criticalitySnap: 1.0,
+    tensionFloorProtection: 1.0,
+    phaseExemption: 1.0,
+    e6CoherentTightening: 1.0,
+    e7TrustBoost: 1.0,
+    e9DensitySmoothingRelax: 1.0,
+    e9DensitySwingBoost: 1.0,
+    e10TensionSuppress: 1.0,
+    e10ArchFloorDrop: 1.0,
+    e11SparseWindow: 0,
+    e11DensityCeilingOverride: 1.0,
+    e11RestBoost: 1.0,
+    e12TensionFloorDrop: 0,
+    e15PhraseDensityArc: 1.0,
+    e15SculptSmoothRelax: 1.0,
+    e17DensitySurge: 1.0,
+    e17SmoothingTighten: 1.0,
+    e19CrossModScale: 1.0,
+    e20AttenuatorBias: 1.0,
+    e21FlickerAmplitudeCap: 1.0,
+    e22SnapSoften: 1.0,
+    e23RestPressureBoost: 1.0,
+    dimExpanderCeilingFloor: 1.0,
+    p95Alpha: 1.0,
+    s0Tightening: 1.0,
+    varianceGateRelax: 1.0,
+    varianceGateRelaxTelemetry: 1.0,
+    entropyRegulator: 1.0,
+    phasePairCeilingRelax: 1.0
+  };
   /** @type {Array<{ beat: number, controllers: string[], description: string }>} */
   const contradictions = [];
   /** @type {Record<string, number>} */

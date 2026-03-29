@@ -1,4 +1,5 @@
 regimeReactiveDampingEquilibrator = (() => {
+  const V = validator.create('regimeReactiveDampingEquilibrator');
   function compute(args) {
     args.regimeRing.push(args.currentRegime);
     if (args.regimeRing.length > args.regimeRingSize) args.regimeRing.shift();
@@ -19,11 +20,11 @@ regimeReactiveDampingEquilibrator = (() => {
     }
     for (const key in shares) shares[key] /= args.regimeRing.length;
 
-    const expShare = shares.exploring || 0;
-    const cohShare = shares.coherent || 0;
+    const expShare = V.optionalFinite(shares.exploring, 0);
+    const cohShare = V.optionalFinite(shares.coherent, 0);
     const expExcess = m.max(0, expShare - args.regimeBudget.exploring);
     const cohDeficit = m.max(0, args.regimeBudget.coherent - cohShare);
-    const evoDeficit = m.max(0, args.regimeBudget.evolving - (shares.evolving || 0));
+    const evoDeficit = m.max(0, args.regimeBudget.evolving - (V.optionalFinite(shares.evolving, 0)));
     const cohExcess = m.max(0, cohShare - args.regimeBudget.coherent);
 
     let runCoherentShare = cohShare;
@@ -63,11 +64,11 @@ regimeReactiveDampingEquilibrator = (() => {
       const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust'];
       let phaseMax = 0;
       let trustMax = 0;
-      for (let i = 0; i < phasePairs.length; i++) phaseMax = m.max(phaseMax, m.abs(matrix[phasePairs[i]] || 0));
-      for (let i = 0; i < trustPairs.length; i++) trustMax = m.max(trustMax, m.abs(matrix[trustPairs[i]] || 0));
+      for (let i = 0; i < phasePairs.length; i++) phaseMax = m.max(phaseMax, m.abs(V.optionalFinite(matrix[phasePairs[i]], 0)));
+      for (let i = 0; i < trustPairs.length; i++) trustMax = m.max(trustMax, m.abs(V.optionalFinite(matrix[trustPairs[i]], 0)));
       phaseHotspotPressure = clamp((phaseMax - 0.78) / 0.20, 0, 1);
       trustHotspotPressure = clamp((trustMax - 0.74) / 0.20, 0, 1);
-      densityFlickerPressure = clamp((m.abs(matrix['density-flicker'] || 0) - 0.82) / 0.16, 0, 1);
+      densityFlickerPressure = clamp((m.abs(V.optionalFinite(matrix['density-flicker'], 0)) - 0.82) / 0.16, 0, 1);
     }
     const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
     const stickyTailPressure = homeostasis && typeof homeostasis.stickyTailPressure === 'number'

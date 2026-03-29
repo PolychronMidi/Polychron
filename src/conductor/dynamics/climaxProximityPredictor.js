@@ -116,7 +116,7 @@ climaxProximityPredictor = (() => {
     // Q3 0.765->0.643 collapse. Structural gating replaces constant tweaking.
     if (pred.phase === 'receding') {
       let secProg = 0;
-      try { secProg = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { void 0; }
+      try { secProg = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { /* timeStream boot-safety */ }
       const lateProtection = clamp((secProg - 0.50) / 0.30, 0, 1);
       const recedingMax = 0.06 * (1 - lateProtection * 0.75);
       return 1.0 - clamp((1.0 - pred.proximity) * 0.20, 0, recedingMax);

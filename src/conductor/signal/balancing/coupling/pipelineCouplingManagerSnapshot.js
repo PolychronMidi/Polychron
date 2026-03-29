@@ -1,4 +1,5 @@
 pipelineCouplingManagerSnapshot = (() => {
+  const V = validator.create('pipelineCouplingManagerSnapshot');
   function computeP95(arr) {
     if (arr.length < 4) return 0;
     const sorted = arr.slice().sort((a, b) => a - b);
@@ -67,16 +68,16 @@ pipelineCouplingManagerSnapshot = (() => {
         telemetryWindowBeats: tailTelemetry.telemetryBeats,
         residualPressure: Number(residualPressure.toFixed(4)),
         gain: pairState ? Number(pairState.gain.toFixed(4)) : 0,
-        effectiveGain: pairState ? Number((pairState.lastEffectiveGain || 0).toFixed(4)) : 0,
+        effectiveGain: pairState ? Number((V.optionalFinite(pairState.lastEffectiveGain, 0)).toFixed(4)) : 0,
         nudgeable,
         budgetScore: args.budgetPriorityScore[key] !== undefined ? args.budgetPriorityScore[key] : 0,
         budgetBoost: args.budgetPriorityBoost[key] !== undefined ? args.budgetPriorityBoost[key] : 1,
         budgetRank: args.budgetPriorityRank[key] !== undefined ? args.budgetPriorityRank[key] : null,
-        heatPenalty: pairState ? Number((pairState.heatPenalty || 0).toFixed(4)) : 0,
+        heatPenalty: pairState ? Number((V.optionalFinite(pairState.heatPenalty, 0)).toFixed(4)) : 0,
         effectivenessEma: pairState ? Number((pairState.effectivenessEma || 0.5).toFixed(4)) : 0.5,
         effMin: pairState ? Number((pairState.effMin !== undefined ? pairState.effMin : 1.0).toFixed(4)) : 1.0,
         effMax: pairState ? Number((pairState.effMax !== undefined ? pairState.effMax : 0.0).toFixed(4)) : 0.0,
-        effActiveBeats: pairState ? (pairState.effActiveBeats || 0) : 0,
+        effActiveBeats: pairState ? (V.optionalFinite(pairState.effActiveBeats, 0)) : 0,
         hpPromoted: key === args.hpPromotedPair,
       };
     }

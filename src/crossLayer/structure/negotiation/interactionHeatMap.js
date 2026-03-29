@@ -39,7 +39,7 @@ interactionHeatMap = (() => {
     const names = Object.keys(snapshot.systems);
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
-      systemHeatTotals[name] = (systemHeatTotals[name] || 0) + snapshot.systems[name];
+      systemHeatTotals[name] = (V.optionalFinite(systemHeatTotals[name], 0)) + snapshot.systems[name];
     }
     if (history.length > WINDOW_SIZE) {
       const removed = history.shift();
@@ -48,7 +48,7 @@ interactionHeatMap = (() => {
         const removedNames = Object.keys(removed.systems);
         for (let i = 0; i < removedNames.length; i++) {
           const name = removedNames[i];
-          systemHeatTotals[name] = (systemHeatTotals[name] || 0) - removed.systems[name];
+          systemHeatTotals[name] = (V.optionalFinite(systemHeatTotals[name], 0)) - removed.systems[name];
         }
       }
     }
@@ -103,7 +103,7 @@ interactionHeatMap = (() => {
       const deferredNames = Object.keys(deferred.systems);
       for (let i = 0; i < deferredNames.length; i++) {
         const name = deferredNames[i];
-        merged[name] = (merged[name] || 0) + deferred.systems[name];
+        merged[name] = (V.optionalFinite(merged[name], 0)) + deferred.systems[name];
       }
       totalFirings += deferred.totalFirings;
       deferredByKey.delete(beatKey);
@@ -111,7 +111,7 @@ interactionHeatMap = (() => {
     const currentNames = Object.keys(currentBeat);
     for (let i = 0; i < currentNames.length; i++) {
       const name = currentNames[i];
-      merged[name] = (merged[name] || 0) + currentBeat[name];
+      merged[name] = (V.optionalFinite(merged[name], 0)) + currentBeat[name];
     }
 
     pushHistorySnapshot({ systems: merged, totalFirings, absoluteSeconds });
@@ -151,7 +151,7 @@ interactionHeatMap = (() => {
     const len = history.length;
     for (let i = 0; i < SYSTEMS.length; i++) {
       const sys = SYSTEMS[i];
-      heat[sys] = clamp((systemHeatTotals[sys] || 0) / len, 0, 1);
+      heat[sys] = clamp((V.optionalFinite(systemHeatTotals[sys], 0)) / len, 0, 1);
     }
     return heat;
   }

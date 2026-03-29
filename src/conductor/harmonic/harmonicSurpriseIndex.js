@@ -29,7 +29,7 @@ harmonicSurpriseIndex = (() => {
       const prevPC = pitchClasses[i - 1];
       const currPC = pitchClasses[i];
       const key = prevPC + '->' + currPC;
-      transitionCounts[key] = (transitionCounts[key] || 0) + 1;
+      transitionCounts[key] = (V.optionalFinite(transitionCounts[key], 0)) + 1;
       totalTransitions++;
     }
 
