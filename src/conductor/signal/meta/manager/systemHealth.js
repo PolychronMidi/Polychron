@@ -2,6 +2,7 @@
 // controller effectiveness tracking, and controller state gathering.
 
 hyperMetaManagerHealth = (() => {
+  const V = validator.create('systemHealth');
   const ST = hyperMetaManagerState;
   const C  = ST;                       // constants live on the same object
   const S  = ST.S;
@@ -171,7 +172,7 @@ hyperMetaManagerHealth = (() => {
       ST.axisExceedanceCounts[axes[i]] = (ST.axisExceedanceCounts[axes[i]] || 0) + 1;
     }
     // Per-pair tracking for monopoly detection (E1)
-    ST.pairExceedanceCounts[pair] = (ST.pairExceedanceCounts[pair] || 0) + 1;
+    ST.pairExceedanceCounts[pair] = (V.optionalFinite(ST.pairExceedanceCounts[pair], 0)) + 1;
   }
 
   /**

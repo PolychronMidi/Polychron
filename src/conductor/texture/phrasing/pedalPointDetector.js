@@ -43,7 +43,7 @@ pedalPointDetector = (() => {
     const bassPcs = analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(bassNotes, 0), 0);
     for (let i = 0; i < bassPcs.length; i++) {
       const pc = bassPcs[i];
-      pcCounts[pc] = (pcCounts[pc] || 0) + 1;
+      pcCounts[pc] = (V.optionalFinite(pcCounts[pc], 0)) + 1;
     }
 
     // Find the most repeated pitch class

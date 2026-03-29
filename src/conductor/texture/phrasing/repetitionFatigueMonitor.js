@@ -31,7 +31,7 @@ repetitionFatigueMonitor = (() => {
       const seen = /** @type {Object.<string, number>} */ ({});
       for (let i = 0; i <= pitches.length - len; i++) {
         const key = pitches.slice(i, i + len).join(',');
-        seen[key] = (seen[key] || 0) + 1;
+        seen[key] = (V.optionalFinite(seen[key], 0)) + 1;
         checkedCount++;
       }
       const keys = Object.keys(seen);

@@ -177,7 +177,7 @@ const buildProfileAuditOrFail = (typeProfiles, profilePools) => {
     const profileNames = Object.keys(profiles).sort();
     const dimensions = {};
     const dimensionSets = {};
-    for (const dim of (DIVERSITY_DIMENSIONS_BY_TYPE[type] || [])) dimensionSets[dim] = new Set();
+    for (const dim of (DIVERSITY_DIMENSIONS_BY_TYPE[type] || /** @type {string[]} */ ([]))) dimensionSets[dim] = new Set();
 
     let entryCount = 0;
     for (const entries of Object.values(profiles)) {

@@ -97,7 +97,7 @@ feedbackGraphContract = (() => {
       }
 
       const modRef = moduleRefs[modName];
-      V.assertManagerShape(modRef, modName, moduleMethodContracts[modName] || []);
+      V.assertManagerShape(modRef, modName, V.assertArray(moduleMethodContracts[modName], "moduleMethodContracts[" + modName + "]"));
     }
 
     // Firewall contract: cross-layer modules cannot directly register conductor

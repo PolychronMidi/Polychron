@@ -3,6 +3,7 @@
 // Resolves the starting key/mode and builds subsequent journey steps.
 
 harmonicJourneyPlanner = (() => {
+  const V = validator.create('harmonicJourneyPlanner');
   const VALID_MODES = ['major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian', 'ionian'];
   const START_MODE_POOL = ['major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'aeolian'];
   const DARK_MODES = new Set(['locrian', 'phrygian', 'aeolian']);
@@ -192,7 +193,7 @@ harmonicJourneyPlanner = (() => {
           }
         }
 
-        const canReuseCurrentTonic = phase === 'resolution' && currentKey === originKey && (tonicVisits.get(currentKey) || 0) <= 1;
+        const canReuseCurrentTonic = phase === 'resolution' && currentKey === originKey && V.optionalFinite(tonicVisits.get(currentKey), 0) <= 1;
         if (!appliedDistinctKey && !canReuseCurrentTonic) {
           for (let forcedRetry = 0; forcedRetry < 5; forcedRetry++) {
             const forcedCandidate = allNotes[ri(allNotes.length - 1)];

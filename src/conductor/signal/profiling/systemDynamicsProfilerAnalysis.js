@@ -137,9 +137,9 @@ systemDynamicsProfilerAnalysis = (() => {
     const varianceGateRelax = state.phaseStaleBeats > 10
       ? m.max(0.62, m.pow(0.85, (state.phaseStaleBeats - 10) / 15))
       : 1.0;
-    const profileGateScale = conductorConfig.getActiveProfile().phaseVarianceGateScale || 1.0;
+    const profileGateScale = conductorConfig.getActiveProfile().phaseVarianceGateScale ?? 1.0;
     // relaxes variance gate when phase is chronically near-zero
-    const orchestratorGateRelax = safePreBoot.call(() => hyperMetaManager.getVarianceGateRelaxMultiplier(), 1.0) || 1.0;
+    const orchestratorGateRelax = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getVarianceGateRelaxMultiplier(), 1.0));
     const relaxedGateThreshold = 0.005 * varianceGateRelax * profileGateScale * orchestratorGateRelax;
     const coupling = phaseSpaceMath.coupling(state.rawTrajectory, stats.mean, config.DIM_NAMES, config.N_DIMS, config.N_COMPOSITIONAL_DIMS, relaxedGateThreshold);
     const effDim = phaseSpaceMath.effectiveDimensionality(state.rawTrajectory, stats.mean, config.N_COMPOSITIONAL_DIMS);

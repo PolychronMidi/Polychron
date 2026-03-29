@@ -257,7 +257,7 @@ conductorDampening = (() => {
     // the flicker product, expanding flicker axis energy share and
     // catastrophically collapsing phase (0.1131 -> 0.0009).
     if (pipelineName === 'flicker') return product;
-    const prev = conductorDampeningCentroidEma.get(pipelineName) || 1.0;
+    const prev = V.optionalFinite(conductorDampeningCentroidEma.get(pipelineName), 1.0);
     const updated = prev * (1 - _CENTROID_EMA) + product * _CENTROID_EMA;
     conductorDampeningCentroidEma.set(pipelineName, updated);
     const drift = updated - 1.0;
@@ -307,13 +307,13 @@ conductorDampening = (() => {
    * @param {string} [pipelineName]
    */
   function conductorDampeningEmitMetaTelemetry(product, pipelineName) {
-    if (!pipelineName) return;
+    V.assertNonEmptyString(pipelineName, 'pipelineName');
     safePreBoot.call(() => {
-      const centroidCorr = conductorDampeningLastCentroidCorrection.get(pipelineName) || 0;
+      const centroidCorr = V.optionalFinite(conductorDampeningLastCentroidCorrection.get(pipelineName), 0);
       explainabilityBus.emit('meta-dampening-telemetry', 'both', {
         pipeline: pipelineName,
         product,
-        centroidEma: conductorDampeningCentroidEma.get(pipelineName) || 1.0,
+        centroidEma: V.optionalFinite(conductorDampeningCentroidEma.get(pipelineName), 1.0),
         centroidCorrection: centroidCorr,
         flickerDampeningBaseAdj: pipelineName === 'flicker' ? conductorDampeningFlickerDampeningBaseAdj : 0,
         activeCount: conductorDampeningActiveCountByPipeline.get(pipelineName) || 0

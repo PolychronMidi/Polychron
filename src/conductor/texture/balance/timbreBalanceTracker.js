@@ -19,7 +19,7 @@ timbreBalanceTracker = (() => {
     const channelCounts = /** @type {Object.<number, number>} */ ({});
     for (let i = 0; i < notes.length; i++) {
       const ch = V.optionalFinite(notes[i].channel, 0);
-      channelCounts[ch] = (channelCounts[ch] || 0) + 1;
+      channelCounts[ch] = (V.optionalFinite(channelCounts[ch], 0)) + 1;
     }
 
     const keys = Object.keys(channelCounts);
@@ -65,7 +65,7 @@ timbreBalanceTracker = (() => {
     const underused = [];
     for (let i = 0; i < availableChannels.length; i++) {
       const ch = availableChannels[i];
-      const count = profile.channelCounts[ch] || 0;
+      const count = V.optionalFinite(profile.channelCounts[ch], 0);
       if (count < total * 0.1) {
         underused.push(ch);
       }

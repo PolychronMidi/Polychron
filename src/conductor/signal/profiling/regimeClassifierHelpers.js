@@ -1,4 +1,5 @@
 regimeClassifierHelpers = (() => {
+  const V = validator.create('regimeClassifierHelpers');
   function getTickSpan(state, tickId) {
     const currentTick = state.V.optionalFinite(tickId, 0);
     if (currentTick <= 0) return 1;
@@ -28,7 +29,7 @@ regimeClassifierHelpers = (() => {
 
     state.runLastResolvedRegime = resolvedRegime;
     state.runCoherentShare = state.runBeatCount > 0
-      ? (state.runResolvedRegimeCounts.coherent || 0) / state.runBeatCount
+      ? (V.optionalFinite(state.runResolvedRegimeCounts.coherent, 0)) / state.runBeatCount
       : 0;
   }
 
@@ -38,17 +39,17 @@ regimeClassifierHelpers = (() => {
     const projectedResolvedCounts = Object.assign({}, state.runResolvedRegimeCounts);
     projectedResolvedCounts[resolvedRegime] = (projectedResolvedCounts[resolvedRegime] || 0) + span;
     const projectedCoherentShare = projectedRunBeatCount > 0
-      ? (projectedResolvedCounts.coherent || 0) / projectedRunBeatCount
+      ? (V.optionalFinite(projectedResolvedCounts.coherent, 0)) / projectedRunBeatCount
       : 0;
     const rawExploringShare = projectedRunBeatCount > 0
-      ? ((state.runRawRegimeCounts.exploring || 0) / projectedRunBeatCount)
+      ? ((V.optionalFinite(state.runRawRegimeCounts.exploring, 0)) / projectedRunBeatCount)
       : 0;
     const rawEvolvingShare = projectedRunBeatCount > 0
-      ? ((state.runRawRegimeCounts.evolving || 0) / projectedRunBeatCount)
+      ? ((V.optionalFinite(state.runRawRegimeCounts.evolving, 0)) / projectedRunBeatCount)
       : 0;
     const rawNonCoherentOpportunityShare = rawExploringShare + rawEvolvingShare;
     const resolvedNonCoherentShare = projectedRunBeatCount > 0
-      ? (((projectedResolvedCounts.exploring || 0) + (projectedResolvedCounts.evolving || 0)) / projectedRunBeatCount)
+      ? (((V.optionalFinite(projectedResolvedCounts.exploring, 0)) + (V.optionalFinite(projectedResolvedCounts.evolving, 0))) / projectedRunBeatCount)
       : 0;
     const opportunityGap = m.max(0, rawNonCoherentOpportunityShare - resolvedNonCoherentShare);
     const projectedTransitionCount = state.runTransitionCount + (state.runBeatCount > 0 && resolvedRegime !== state.runLastResolvedRegime ? 1 : 0);
@@ -63,7 +64,7 @@ regimeClassifierHelpers = (() => {
       clamp((projectedCoherentShare - 0.55) / 0.18, 0, 1) * 0.44 +
       clamp(opportunityGap / 0.22, 0, 1) * 0.34 +
       transitionScarcity * 0.12 +
-      (projectedRunBeatCount > 18 && (projectedResolvedCounts.exploring || 0) === 0 ? 0.10 : 0) +
+      (projectedRunBeatCount > 18 && (V.optionalFinite(projectedResolvedCounts.exploring, 0)) === 0 ? 0.10 : 0) +
       clamp((0.08 - rawExploringShare) / 0.08, 0, 1) * 0.04 +
       rawOpportunityPressure * 0.06,
       0,
@@ -88,17 +89,17 @@ regimeClassifierHelpers = (() => {
   }
 
   function buildTransitionReadiness(state) {
-    const cadenceOpportunityPressure = clamp((state.lastClassifyInputs.opportunityGap || 0) / 0.20, 0, 1);
-    const exploringVelocityThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) - (state.lastClassifyInputs.cadenceMonopolyPressure || 0) * 0.003 - cadenceOpportunityPressure * 0.001;
+    const cadenceOpportunityPressure = clamp((V.optionalFinite(state.lastClassifyInputs.opportunityGap, 0)) / 0.20, 0, 1);
+    const exploringVelocityThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) - (V.optionalFinite(state.lastClassifyInputs.cadenceMonopolyPressure, 0)) * 0.003 - cadenceOpportunityPressure * 0.001;
     let exploringBlock = 'none';
     if (state.lastClassifyInputs.velocity <= exploringVelocityThreshold) exploringBlock = 'velocity';
-    else if ((state.lastClassifyInputs.effectiveDim || 0) <= 2.5) exploringBlock = 'dimension';
-    else if (state.lastClassifyInputs.couplingStrength > 0.50 + (state.lastClassifyInputs.cadenceMonopolyPressure || 0) * 0.08 + cadenceOpportunityPressure * 0.06) exploringBlock = 'coupling';
+    else if ((V.optionalFinite(state.lastClassifyInputs.effectiveDim, 0)) <= 2.5) exploringBlock = 'dimension';
+    else if (state.lastClassifyInputs.couplingStrength > 0.50 + (V.optionalFinite(state.lastClassifyInputs.cadenceMonopolyPressure, 0)) * 0.08 + cadenceOpportunityPressure * 0.06) exploringBlock = 'coupling';
 
     let coherentBlock = 'none';
     if (state.lastClassifyInputs.couplingStrength <= state.lastClassifyInputs.coherentThreshold) coherentBlock = 'coupling';
     else if (state.lastClassifyInputs.velocity <= state.lastClassifyInputs.velThreshold) coherentBlock = 'velocity';
-    else if ((state.lastClassifyInputs.effectiveDim || 0) > 4.0 - (state.lastClassifyInputs.cadenceMonopolyPressure || 0) * 0.55 - cadenceOpportunityPressure * 0.35) coherentBlock = 'dimension';
+    else if ((V.optionalFinite(state.lastClassifyInputs.effectiveDim, 0)) > 4.0 - (V.optionalFinite(state.lastClassifyInputs.cadenceMonopolyPressure, 0)) * 0.55 - cadenceOpportunityPressure * 0.35) coherentBlock = 'dimension';
 
     return {
       gap: Number((state.lastClassifyInputs.couplingStrength - state.lastClassifyInputs.coherentThreshold).toFixed(4)),
@@ -133,15 +134,15 @@ regimeClassifierHelpers = (() => {
       runRawRegimeCounts: Object.assign({}, state.runRawRegimeCounts),
       rawRegimeMaxStreak: Object.assign({}, state.rawRegimeMaxStreak),
       runResolvedRegimeCounts: Object.assign({}, state.runResolvedRegimeCounts),
-      effectiveDim: Number(((state.lastClassifyInputs.effectiveDim || 0)).toFixed(4)),
+      effectiveDim: Number(((V.optionalFinite(state.lastClassifyInputs.effectiveDim, 0))).toFixed(4)),
       cadenceMonopolyPressure: Number(state.cadenceMonopolyPressure.toFixed(4)),
       cadenceMonopolyActive: state.cadenceMonopolyActive,
       cadenceMonopolyReason: state.cadenceMonopolyReason,
-      rawExploringShare: Number((state.lastClassifyInputs.rawExploringShare || 0).toFixed(4)),
-      rawEvolvingShare: Number((state.lastClassifyInputs.rawEvolvingShare || 0).toFixed(4)),
-      rawNonCoherentOpportunityShare: Number((state.lastClassifyInputs.rawNonCoherentOpportunityShare || 0).toFixed(4)),
-      resolvedNonCoherentShare: Number((state.lastClassifyInputs.resolvedNonCoherentShare || 0).toFixed(4)),
-      opportunityGap: Number((state.lastClassifyInputs.opportunityGap || 0).toFixed(4)),
+      rawExploringShare: Number((V.optionalFinite(state.lastClassifyInputs.rawExploringShare, 0)).toFixed(4)),
+      rawEvolvingShare: Number((V.optionalFinite(state.lastClassifyInputs.rawEvolvingShare, 0)).toFixed(4)),
+      rawNonCoherentOpportunityShare: Number((V.optionalFinite(state.lastClassifyInputs.rawNonCoherentOpportunityShare, 0)).toFixed(4)),
+      resolvedNonCoherentShare: Number((V.optionalFinite(state.lastClassifyInputs.resolvedNonCoherentShare, 0)).toFixed(4)),
+      opportunityGap: Number((V.optionalFinite(state.lastClassifyInputs.opportunityGap, 0)).toFixed(4)),
     };
   }
 

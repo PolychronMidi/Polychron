@@ -106,7 +106,7 @@ crossLayerClimaxEngine = (() => {
     // R94 E3: Scale entropy boost by regime
     const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const climaxRegime = regimeSnap ? regimeSnap.regime : 'evolving';
-    const entropyRegimeScale = CLIMAX_ENTROPY_REGIME_SCALE[climaxRegime] || 1.0;
+    const entropyRegimeScale = V.optionalFinite(CLIMAX_ENTROPY_REGIME_SCALE[climaxRegime], 1.0);
 
     return {
       playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance,

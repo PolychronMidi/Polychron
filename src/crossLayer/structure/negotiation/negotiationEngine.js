@@ -123,8 +123,8 @@ negotiationEngine = (() => {
     const trustStutter = trustWeights[trustSystems.names.STUTTER_CONTAGION];
 
     // Modulate trust floor by convergenceTarget from intent curves
-    const intent = sectionIntentCurves.getLastIntent ? sectionIntentCurves.getLastIntent() : null;
-    const ct = intent && Number.isFinite(intent.convergenceTarget) ? intent.convergenceTarget : 0.5;
+    const intent = sectionIntentCurves.getLastIntent();
+    const ct = V.requireFinite(intent.convergenceTarget, 'intent.convergenceTarget');
     const effectiveFloor = CONVERGENCE_TRUST_FLOOR * (1.3 - ct * 0.6);
 
     if (trustConvergence < effectiveFloor) {

@@ -45,9 +45,9 @@ grooveTransfer = (() => {
     const offset = timeInSeconds - base;
     const row = ensure(layer);
     row.push(offset);
-    sumByLayer.set(layer, (sumByLayer.get(layer) || 0) + offset);
+    sumByLayer.set(layer, V.optionalFinite(sumByLayer.get(layer), 0) + offset);
     if (row.length > MAX_OFFSETS) {
-      sumByLayer.set(layer, (sumByLayer.get(layer) || 0) - row[0]);
+      sumByLayer.set(layer, V.optionalFinite(sumByLayer.get(layer), 0) - row[0]);
       row.shift();
     }
 
@@ -68,7 +68,7 @@ grooveTransfer = (() => {
     const other = ensure(otherLayer);
     if (other.length === 0) return timeInSeconds;
 
-    const avg = (sumByLayer.get(otherLayer) || 0) / other.length;
+    const avg = V.optionalFinite(sumByLayer.get(otherLayer), 0) / other.length;
 
     let localTransfer = avg;
     const closest = L0.findClosest(CHANNEL, timeInSeconds, 0.120, layer);

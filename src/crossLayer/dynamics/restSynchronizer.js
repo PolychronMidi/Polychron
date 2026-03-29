@@ -69,12 +69,12 @@ restSynchronizer = (() => {
     // Above 1.0 = denser, below 1.0 = sparser. Scale modestly.
     const densityRestBoost = clamp((conductorDensity - 1.0) * 0.08, -0.04, 0.04);
     // E11: Boost rest probability during structural sparse windows
-    const e11RestBoost = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11RestBoost'), 1.0) || 1.0;
+    const e11RestBoost = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11RestBoost'), 1.0));
     // E23: Rest pressure boost under exceedance. When system is stressed,
     // gently increase rest probability to decompress density naturally.
     // Multiplier on base probability only (not on urgency or phase bonus)
     // to avoid compounding with other pressure signals.
-    const e23RestBoost = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e23RestPressureBoost'), 1.0) || 1.0;
+    const e23RestBoost = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e23RestPressureBoost'), 1.0));
     const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost) * (1 + restUrgency) * e11RestBoost;
 
     // Phase mode affects rest probability: locked layers rest together more naturally

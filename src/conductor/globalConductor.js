@@ -167,7 +167,7 @@ globalConductor = (() => {
     // Combined: effective smoothing = base / (e9 * e15) * e17_tighten
     // E9: Reduce density smoothing at phrase boundaries (boundary breathing).
     // E15 was refuted -- continuous smoothing variation caused instability.
-    const e9SmoothRelax = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'), 1.0) || 1.0;
+    const e9SmoothRelax = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'), 1.0));
     const smooth = clamp(baseSmooth / e9SmoothRelax, 0.05, 1);
     currentDensity = clamp(safeCurrentDensity * (1 - smooth) + targetDensity * smooth, 0, 1);
 
@@ -226,7 +226,7 @@ globalConductor = (() => {
     // E21: Flicker amplitude cap under exceedance. Suppresses peak flicker
     // amplitude when coupling is stressed, reducing density-flicker coupling
     // pressure without touching the smoothing pathway (which feeds variance floor).
-    const e21AmpCap = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e21FlickerAmplitudeCap'), 1.0) || 1.0;
+    const e21AmpCap = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e21FlickerAmplitudeCap'), 1.0));
     const flickerAmplitude = (flickerBase + textureDensityBoost) * registryFlickerMod * flickerHotspotTrim * e21AmpCap;
 
     // Density-flicker additive decorrelation: scale down the additive term
@@ -245,7 +245,7 @@ globalConductor = (() => {
     // E14: During E9 phrase-boundary breathing windows, further attenuate the
     // additive flicker to prevent flicker from tracking density swings and
     // creating tension-flicker coupling spikes (the hotspot pattern from R22-R23).
-    const e9Active = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'), 1.0) || 1.0;
+    const e9Active = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySmoothingRelax'), 1.0));
     const e14FlickerDamp = e9Active > 1.05 ? clamp(1.0 - (e9Active - 1.0) * 0.4, 0.55, 1.0) : 1.0;
     const dfDecorrelScale = clamp((1.0 - m.max(0, globalConductorDfCorrEma) * 0.5) * phaseSafeTrim * e14FlickerDamp, 0.40, 1.0);
 
@@ -256,8 +256,8 @@ globalConductor = (() => {
     const densityBounds = conductorConfig.getDensityBounds();
     // E9: Widen density bounds at phrase boundaries for bigger swings.
     // E11: Override ceiling during sparse windows for forced breathing.
-    const e9SwingBoost = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySwingBoost'), 1.0) || 1.0;
-    const e11CeilingOverride = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'), 1.0) || 1.0;
+    const e9SwingBoost = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e9DensitySwingBoost'), 1.0));
+    const e11CeilingOverride = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'), 1.0));
     const effectiveFloor = densityBounds.floor / e9SwingBoost;
     const effectiveCeiling = m.min(densityBounds.ceiling, densityBounds.ceiling * e11CeilingOverride);
     const flickeredDensity = clamp(currentDensity + densityFlicker, effectiveFloor, effectiveCeiling);
@@ -316,10 +316,10 @@ globalConductor = (() => {
     // 0.584 at p=1.0 (was 0.568). This sustains tension through S2/S3 while
     // still providing compositional resolution.
     // E10: Phrase-trough arch floor drop (disabled -- see journal R21).
-    const e10ArchDrop = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e10ArchFloorDrop'), 0) || 0;
+    const e10ArchDrop = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier("e10ArchFloorDrop"), 0));
     // E12: Section-level tension floor relaxation during resolution phase.
     // EMA-ramped to avoid coupling discontinuities. Range 0-0.15.
-    const e12FloorDrop = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e12TensionFloorDrop'), 0) || 0;
+    const e12FloorDrop = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier("e12TensionFloorDrop"), 0));
     const tensionArchTarget = (macroProgress < 0.6
       ? 0.40 + macroProgress * 0.40
       : 0.64 - (macroProgress - 0.6) * 0.14) - e10ArchDrop - e12FloorDrop;
@@ -359,8 +359,8 @@ globalConductor = (() => {
     // windows are active (phrase-boundary breathing), briefly dip tension.
     // This creates psychoacoustic "breathing" -- not just silence but actual
     // tension release. Small dip (max 0.05) to avoid coupling discontinuities.
-    const e11Sparse = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11SparseWindow'), 0) || 0;
-    const e11CeilOvr = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'), 1.0) || 1.0;
+    const e11Sparse = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier("e11SparseWindow"), 0));
+    const e11CeilOvr = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e11DensityCeilingOverride'), 1.0));
     // Only dip tension when ceiling is actually suppressed (not during exploring, where override=1.0)
     const e16TensionDip = e11Sparse > 0 && e11CeilOvr < 0.95
       ? clamp((1.0 - e11CeilOvr) * 0.08, 0, 0.03)

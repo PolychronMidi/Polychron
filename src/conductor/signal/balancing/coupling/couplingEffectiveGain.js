@@ -9,6 +9,7 @@
  */
 
 couplingEffectiveGain = (() => {
+  const V = validator.create('couplingEffectiveGain');
   const { NUDGEABLE_SET, BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN,
     VELOCITY_GAIN_BOOST } = couplingConstants;
 
@@ -48,7 +49,7 @@ couplingEffectiveGain = (() => {
         clamp((absCorr - 0.70) / 0.18, 0, 1) * 0.12 +
         tailTelemetry.hotspotRate * 0.20 +
         tailTelemetry.severeRate * 0.12 +
-        clamp((p95 - (tailTelemetry.recentP95 || 0) - 0.08) / 0.18, 0, 1) * 0.28,
+        clamp((p95 - (V.optionalFinite(tailTelemetry.recentP95, 0)) - 0.08) / 0.18, 0, 1) * 0.28,
         0, 1.05)
       : 0;
 
@@ -65,7 +66,7 @@ couplingEffectiveGain = (() => {
     // recent p95 by more than 0.15 (the gap observed in density-flicker 0.406),
     // inject additional surface pressure to amplify decorrelation effort on
     // the stale-window tail contribution.
-    const recentP95 = tailTelemetry.recentP95 || 0;
+    const recentP95 = V.optionalFinite(tailTelemetry.recentP95, 0);
     const reconciliationGap = m.max(0, p95 - recentP95 - 0.15);
     const gapPressure = flags.isTrustPair
       ? clamp(reconciliationGap * 1.9 + clamp((p95 - 0.70) / 0.18, 0, 1) * 0.10, 0, 0.70)
@@ -102,7 +103,7 @@ couplingEffectiveGain = (() => {
     // for phase pairs so they experience less tightening. This lets phase
     // correlations persist longer, increasing phase axis energy share.
     if (dimA === 'phase' || dimB === 'phase') {
-      const phaseExemption = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('phaseExemption'), 1.0) || 1.0;
+      const phaseExemption = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('phaseExemption'), 1.0));
       if (phaseExemption > 1.0) {
         const exemptionDamp = clamp(1.0 - (phaseExemption - 1.0) * 0.25, 0.4, 1.0);
         effectiveGain *= exemptionDamp;
@@ -149,7 +150,7 @@ couplingEffectiveGain = (() => {
     }
     if (S.velocityBoostActive || S.velocityBoostCooldown > 0) effectiveGain *= VELOCITY_GAIN_BOOST;
     // Late-run severe window escalation
-    const recentSevereRate = tailTelemetry.recentSevereRate || 0;
+    const recentSevereRate = V.optionalFinite(tailTelemetry.recentSevereRate, 0);
     if (recentSevereRate > 0.50 && sp.tailPressure > 0.40) {
       effectiveGain *= 1 + clamp(recentSevereRate * 0.35 + sp.tailPressure * 0.15, 0, 0.50);
     }
@@ -233,7 +234,7 @@ couplingEffectiveGain = (() => {
     const at = couplingState.getAdaptiveTarget(key);
     const excess = absCorr - target;
     const direction = -m.sign(corr);
-    const heatMulti = 1.0 + m.pow(ps.heatPenalty || 0, 2) * 2.0;
+    const heatMulti = 1.0 + m.pow(V.optionalFinite(ps.heatPenalty, 0), 2) * 2.0;
     const magnitude = effectiveGain * excess * heatMulti;
     const isSevere = absCorr > at.baseline * setup.targetScale * 2.0;
 

@@ -1,4 +1,5 @@
 regimeClassifierResolution = (() => {
+  const V = validator.create('regimeClassifierResolution');
   function activateForcedRegime(state, config, regime, reason, beatsRemaining, triggerStreak, triggerTickId) {
     state.forcedRegime = regime;
     state.forcedRegimeBeatsRemaining = beatsRemaining;
@@ -53,11 +54,11 @@ regimeClassifierResolution = (() => {
       ? axisEnergy.shares.trust
       : 0;
     const runExploringShare = state.runBeatCount > 0
-      ? ((state.runResolvedRegimeCounts.exploring || 0) / state.runBeatCount)
+      ? ((V.optionalFinite(state.runResolvedRegimeCounts.exploring, 0)) / state.runBeatCount)
       : 0;
     const shortFormPressure = state.V.optionalFinite(totalSections, 0) > 0 && totalSections <= 4 ? 1 : 0;
     const evolvingShare = state.runBeatCount > 0
-      ? ((state.runResolvedRegimeCounts.evolving || 0) / state.runBeatCount)
+      ? ((V.optionalFinite(state.runResolvedRegimeCounts.evolving, 0)) / state.runBeatCount)
       : 0;
     const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
     const coherentOvershare = clamp((state.runCoherentShare - config.REGIME_TARGET_COHERENT_HI) / 0.18, 0, 1);
@@ -73,15 +74,15 @@ regimeClassifierResolution = (() => {
     const evolvingRecoveryPriority = phaseShare > 0.02
       ? clamp(evolvingDeficit * (0.6 + phaseRecoveryCredit * 0.25 + coherentOvershare * 0.3 + (phaseStableRecoveryWindow ? 0.18 : 0)) + evolvingPolishPressure * 0.10 - trustSharePressure * 0.08, 0, 1)
       : 0;
-    state.rawRegimeCounts[rawRegime] = (state.rawRegimeCounts[rawRegime] || 0) + 1;
-    state.runRawRegimeCounts[rawRegime] = (state.runRawRegimeCounts[rawRegime] || 0) + beatSpan;
+    state.rawRegimeCounts[rawRegime] = (V.optionalFinite(state.rawRegimeCounts[rawRegime], 0)) + 1;
+    state.runRawRegimeCounts[rawRegime] = (V.optionalFinite(state.runRawRegimeCounts[rawRegime], 0)) + beatSpan;
 
     if (rawRegime === state.rawStreakRegime) state.rawStreakCount++;
     else {
       state.rawStreakRegime = rawRegime;
       state.rawStreakCount = 1;
     }
-    state.rawRegimeMaxStreak[rawRegime] = m.max(state.rawRegimeMaxStreak[rawRegime] || 0, state.rawStreakCount);
+    state.rawRegimeMaxStreak[rawRegime] = m.max(V.optionalFinite(state.rawRegimeMaxStreak[rawRegime], 0), state.rawStreakCount);
 
     let effectiveWindow = config.REGIME_WINDOW;
     if (state.lastRegime === 'exploring') {

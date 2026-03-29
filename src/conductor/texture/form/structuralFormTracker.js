@@ -84,7 +84,7 @@ structuralFormTracker = (() => {
     const counts = /** @type {Object.<string, number>} */ ({});
     for (let i = 0; i < formMap.length; i++) {
       const f = formMap[i].family;
-      counts[f] = (counts[f] || 0) + 1;
+      counts[f] = (V.optionalFinite(counts[f], 0)) + 1;
     }
     return counts;
   }

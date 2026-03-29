@@ -7,6 +7,7 @@
 // from cancelling each other out (e.g. R6 centroid vs elasticity on flicker).
 
 conductorMetaWatchdog = (() => {
+  const V = validator.create('conductorMetaWatchdog');
 
   const _CHECK_INTERVAL = 50;      // run watchdog every N beats
   const _CONFLICT_THRESHOLD = 30;  // out of 50 beats, opposing > this triggers attenuation
@@ -34,7 +35,7 @@ conductorMetaWatchdog = (() => {
   function getAttenuation(pipeline, controllerName) {
     const pipelineMap = conductorMetaWatchdogAttenuations.get(pipeline);
     if (!pipelineMap) return 1.0;
-    return pipelineMap.get(controllerName) || 1.0;
+    return V.optionalFinite(pipelineMap.get(controllerName), 1.0);
   }
 
   /**
@@ -109,7 +110,7 @@ conductorMetaWatchdog = (() => {
               pipelineMap = new Map();
               conductorMetaWatchdogAttenuations.set(pipeline, pipelineMap);
             }
-            const currentAtten = pipelineMap.get(weakerController) || 1.0;
+            const currentAtten = V.optionalFinite(pipelineMap.get(weakerController), 1.0);
             const newAtten = clamp(currentAtten * _ATTENUATION_FACTOR, 0.1, 1.0);
             pipelineMap.set(weakerController, newAtten);
 

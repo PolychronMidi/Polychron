@@ -10,6 +10,7 @@
  */
 
 couplingBudgetScoring = (() => {
+  const V = validator.create('couplingBudgetScoring');
   const { ALL_MONITORED_DIMS, NON_NUDGEABLE_SET,
     BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN, BUDGET_PRIORITY_TOP_K } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
@@ -38,7 +39,7 @@ couplingBudgetScoring = (() => {
         const flags = couplingConstants.classifyPair(key, dimA, dimB);
         const { isDensityFlickerPair, isFlickerTrustPair, isTensionPhasePair, isDensityTrustPair, isDensityTensionPair, isTensionEntropyPair, isEntropySurfacePair, isTrustPair, isPhasePair } = flags;
         const corr = matrix[key];
-        if (typeof corr !== 'number' || !Number.isFinite(corr)) continue;
+        if (!V.optionalType(corr, 'number') || !Number.isFinite(corr)) continue;
         const absCorr = m.abs(corr);
         // R66 E3: Use phaseTargetScale for phase pairs
         const pairTargetScale = isPhasePair && setup.phaseTargetScale !== undefined
@@ -50,14 +51,14 @@ couplingBudgetScoring = (() => {
         const p95 = tailTelemetry.p95;
         const hotspotRate = tailTelemetry.hotspotRate;
         const severeRate = tailTelemetry.severeRate;
-        const previousEffectiveGain = ps.lastEffectiveGain || 0;
+        const previousEffectiveGain = V.optionalFinite(ps.lastEffectiveGain, 0);
         // R78 E3: Track consecutive near-zero-effectiveGain beats per pair.
         // Pairs with zeroed gain (density-flicker, flicker-trust) waste
         // budget slots. Decay their boost after 10 consecutive zero beats.
         // R79 E1: Near-zero threshold (was === 0, but modifier chain
         // produces small positive values that never hit exact zero).
         if (previousEffectiveGain < 0.01 && absCorr > target) {
-          zeroGainStreaks[key] = (zeroGainStreaks[key] || 0) + 1;
+          zeroGainStreaks[key] = (V.optionalFinite(zeroGainStreaks[key], 0)) + 1;
         } else if (previousEffectiveGain >= 0.01) {
           zeroGainStreaks[key] = 0;
         }
@@ -78,7 +79,7 @@ couplingBudgetScoring = (() => {
             clamp((p95 - 0.68) / 0.16, 0, 1) * 0.32 +
             hotspotRate * 0.34 +
             clamp((setup.densityFlickerTailPressure - 0.25) / 0.45, 0, 1) * 0.18 +
-            clamp(((zeroGainStreaks[key] || 0) - 6) / 8, 0, 1) * 0.26 +
+            clamp(((V.optionalFinite(zeroGainStreaks[key], 0)) - 6) / 8, 0, 1) * 0.26 +
             (previousEffectiveGain < 0.01 ? 0.12 : 0),
             0, 1)
           : 0;
@@ -223,11 +224,11 @@ couplingBudgetScoring = (() => {
             clamp((p95 - 0.65) / 0.20, 0, 1) * 0.15,
             0, 1)
           : 0;
-        const recentP95 = tailTelemetry.recentP95 || 0;
+        const recentP95 = V.optionalFinite(tailTelemetry.recentP95, 0);
         // R82 E2: recent-deterioration bonus. When recentHotspotRate is
         // worsening relative to overall hotspotRate, the pair is actively
         // deteriorating and needs higher budget priority.
-        const recentHotspotRate = tailTelemetry.recentHotspotRate || 0;
+        const recentHotspotRate = V.optionalFinite(tailTelemetry.recentHotspotRate, 0);
         const recentDeteriorationBonus = recentHotspotRate > hotspotRate * 2.0 && recentHotspotRate > 0.15
           ? clamp((recentHotspotRate - hotspotRate) / 0.20, 0, 0.5) * 0.18
           : 0;
@@ -260,7 +261,7 @@ couplingBudgetScoring = (() => {
             hotspotRate * 0.15 + severeRate * 0.15,
             0, 1.1)
           : 0;
-        const recentSevere = tailTelemetry.recentSevereRate || 0;
+        const recentSevere = V.optionalFinite(tailTelemetry.recentSevereRate, 0);
         const severeWindowPressure = (recentSevere > 0.50 && tailPressure > 0.40)
           ? clamp(recentSevere * 0.55 + tailPressure * 0.35 + clamp((p95 - 0.85) / 0.12, 0, 1) * 0.30, 0, 1.2) : 0;
         const staticBias = BUDGET_PRIORITY_GAIN[key] !== undefined
@@ -268,7 +269,7 @@ couplingBudgetScoring = (() => {
         const telemetryGapPressure = clamp((p95 - recentP95 - 0.10) / 0.20, 0, 0.5);
         const score = clamp(
           residualTailPressure * 0.18 + tailPressure * (0.15 + setup.tailRecoveryHandshake * 0.08) +
-          clamp(ps.heatPenalty || 0, 0, 1) * 0.12 + severeRate * 0.10 + hotspotRate * 0.08 +
+          clamp(V.optionalFinite(ps.heatPenalty, 0), 0, 1) * 0.12 + severeRate * 0.10 + hotspotRate * 0.08 +
           residualP95Pressure * 0.10 + densityFlickerClampPressure * 0.18 +
           densityFlickerZeroGainPressure * 0.18 +
           flickerTrustCorrPressure * 0.25 +
@@ -353,7 +354,7 @@ couplingBudgetScoring = (() => {
       // R78 E3: Decay budget boost for prolonged zero-effectiveGain pairs.
       // After 10 consecutive zero-gain beats, decay by 0.95^(count-10),
       // floored at 0.5. Frees budget from density-flicker/flicker-trust.
-      const zgs = zeroGainStreaks[entry.key] || 0;
+      const zgs = V.optionalFinite(zeroGainStreaks[entry.key], 0);
       const zeroGainDecay = zgs > 10 ? m.max(m.pow(0.95, zgs - 10), 0.5) : 1;
       if (i < BUDGET_PRIORITY_TOP_K) {
         const rankBoost = i === 0 ? 1.68 : i === 1 ? 1.54 : i === 2 ? 1.40 : i === 3 ? 1.26 : 1.18;

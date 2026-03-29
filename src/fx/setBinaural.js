@@ -96,7 +96,7 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    emitShiftEvents(sharedEntry.timeInSeconds, flipBin, sharedEntry.interval || 2.0);
+    emitShiftEvents(sharedEntry.timeInSeconds, flipBin, V.optionalFinite(sharedEntry.interval, 2.0));
 
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({

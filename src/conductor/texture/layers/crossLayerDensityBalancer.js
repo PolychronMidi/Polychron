@@ -4,6 +4,7 @@
 // Pure query API - no side effects.
 
 crossLayerDensityBalancer = (() => {
+  const V = validator.create('crossLayerDensityBalancer');
   const WINDOW_SECONDS = 6;
 
   /** @private */
@@ -22,7 +23,7 @@ crossLayerDensityBalancer = (() => {
       const e = entries[i];
       if (!e) continue;
       const layer = String(e.layer || 'default');
-      layerCounts[layer] = (layerCounts[layer] || 0) + 1;
+      layerCounts[layer] = (V.optionalFinite(layerCounts[layer], 0)) + 1;
     }
 
     const layerKeys = Object.keys(layerCounts);

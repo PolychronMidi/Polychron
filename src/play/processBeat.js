@@ -46,7 +46,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   if (PROFILE) marks[2] = process.hrtime.bigint();
   // Blend section-shape arc (30%) with intent entropy target (70%)
   const clArcTarget = entropyRegulator.getArcTarget(timeStream.normalizedProgress('section'));
-  const pendingEchoes = motifEcho.getPendingCount ? motifEcho.getPendingCount() : 0;
+  const pendingEchoes = motifEcho.getPendingCount();
   const echoEntropyBias = pendingEchoes > 2 ? -0.05 * m.min(pendingEchoes - 2, 4) : 0;
   entropyRegulator.setTarget(clamp(clIntent.entropyTarget + echoEntropyBias, 0, 1), clArcTarget);
   // Regulation aggressiveness scales with deviation from target entropy:

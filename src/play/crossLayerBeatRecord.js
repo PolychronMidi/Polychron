@@ -3,6 +3,8 @@
 // and beat-pair telemetry after beat-level notes have been emitted.
 // Extracted from processBeat.js to keep that file under 200 lines.
 
+const V = validator.create('crossLayerBeatRecord');
+
 /**
  * Record all cross-layer outcomes for one beat.
  * @param {{ layer: string, absoluteSeconds: number, clIntent: any, clPhase: any, clNegotiation: any,
@@ -36,7 +38,7 @@ let crossLayerBeatRecordRestDroughtBeats = 0;
 const REST_DROUGHT_THRESHOLD = 16;
 
 function crossLayerBeatRecordBuildProfilerTelemetry(dynamicsSnapshot) {
-  if (!dynamicsSnapshot || typeof dynamicsSnapshot !== 'object') return null;
+  if (!V.optionalType(dynamicsSnapshot, 'object')) return null;
   return {
     analysisTick: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'profilerTick', 0),
     regimeTick: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'regimeTick', 0),
@@ -50,7 +52,7 @@ function crossLayerBeatRecordBuildProfilerTelemetry(dynamicsSnapshot) {
 }
 
 function crossLayerBeatRecordBuildPhaseTelemetry(dynamicsSnapshot) {
-  if (!dynamicsSnapshot || typeof dynamicsSnapshot !== 'object') return null;
+  if (!V.optionalType(dynamicsSnapshot, 'object')) return null;
   const phaseStaleBeats = propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseStaleBeats', 0);
   return {
     phaseValue: propertyExtractors.extractFiniteOrDefault(dynamicsSnapshot, 'phaseValue', 0),
@@ -81,7 +83,7 @@ function crossLayerBeatRecordValidateTraceProgress(layer, beatKey, timeMs) {
     throw new Error('crossLayerBeatRecord: duplicate trace payload for ' + layerBeatKey);
   }
   crossLayerBeatRecordTraceLayerBeatKeys.add(layerBeatKey);
-  crossLayerBeatRecordTraceBeatKeyCounts[beatKey] = (crossLayerBeatRecordTraceBeatKeyCounts[beatKey] || 0) + 1;
+  crossLayerBeatRecordTraceBeatKeyCounts[beatKey] = (V.optionalFinite(crossLayerBeatRecordTraceBeatKeyCounts[beatKey], 0)) + 1;
   if (crossLayerBeatRecordTraceBeatKeyCounts[beatKey] > 2) {
     throw new Error('crossLayerBeatRecord: beat key ' + beatKey + ' exceeded expected layer coverage');
   }
@@ -118,7 +120,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const clDensity = temporalGravity.measureDensity(layer, beatStartTime);
   temporalGravity.postDensity(absoluteSeconds, layer, clDensity);
   const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
-  if (!clFeedback || typeof clFeedback !== 'object') throw new Error('crossLayerBeatRecord: feedbackOscillator.applyFeedback must return an object');
+  V.assertObject(clFeedback, 'feedbackOscillator.applyFeedback result');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);
   // Stash pitchBias for playNotesEmitPick to use (avoids double-calling feedbackOscillator per pick)
   setFeedbackPitchBias(clFeedback.pitchBias);
@@ -227,22 +229,23 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
 
   // grooveTransfer: reward when groove offset is small (layers aligned), penalize large offsets
   const grooveEntry = L0.getLast('grooveTransfer', { layer: layer });
-  const grooveOutcome = grooveEntry && Number.isFinite(grooveEntry.offset) ? clamp(1 - m.abs(grooveEntry.offset) * 8, -1, 1) : 0.1;
+  const grooveOffset = V.optionalFinite(grooveEntry ? grooveEntry.offset : NaN, 0);
+  const grooveOutcome = grooveEntry ? clamp(1 - m.abs(grooveOffset) * 8, -1, 1) : 0.1;
   adaptiveTrustScores.registerOutcome(trustSystems.names.GROOVE_TRANSFER, grooveOutcome);
 
   // velocityInterference: reward when velocity delta between layers is moderate (contrast), penalize extremes
   const velEntry = L0.getLast('velocity', { layer: layer });
-  const velDelta = velEntry && Number.isFinite(velEntry.delta) ? m.abs(velEntry.delta) : 0;
+  const velDelta = velEntry ? m.abs(V.optionalFinite(velEntry.delta, 0)) : 0;
   const velOutcome = clamp(velDelta < 20 ? 0.3 + velDelta * 0.02 : 0.7 - (velDelta - 20) * 0.015, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.VELOCITY_INTERFERENCE, velOutcome);
 
   // harmonicIntervalGuard: reward consonance tracking toward dissonance target
-  const dissonanceTarget = clIntent ? clIntent.dissonanceTarget : 0.5;
+  const dissonanceTarget = V.requireFinite(clIntent.dissonanceTarget, 'clIntent.dissonanceTarget');
   const harmonicGuardOutcome = clamp(0.3 + (1 - m.abs(clTension - dissonanceTarget)) * 0.5, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.HARMONIC_INTERVAL_GUARD, harmonicGuardOutcome);
 
   // emergentDownbeat: reward when downbeats fire during high convergence target, penalize during low
-  const convergenceTarget = clIntent ? (clIntent.convergenceTarget || 0.5) : 0.5;
+  const convergenceTarget = V.requireFinite(clIntent.convergenceTarget, 'clIntent.convergenceTarget');
   const downbeatOutcome = clDownbeat ? clamp(0.2 + convergenceTarget * 0.6 + clDownbeat.strength * 0.2, -1, 1) : clamp(0.1 + (1 - convergenceTarget) * 0.2, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.EMERGENT_DOWNBEAT, downbeatOutcome);
 
@@ -253,17 +256,17 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   adaptiveTrustScores.registerOutcome(trustSystems.names.ARTICULATION_COMPLEMENT, artOutcome);
 
   // texturalMirror: reward moderate texture distance (complementary), penalize identical or extreme
-  const texDist = texturalMirror.getTextureDistance ? texturalMirror.getTextureDistance() : 0;
+  const texDist = texturalMirror.getTextureDistance();
   const texOutcome = clamp(texDist > 0.1 && texDist < 0.8 ? 0.4 + (0.5 - m.abs(texDist - 0.45)) : 0.05, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.TEXTURAL_MIRROR, texOutcome);
 
   // spectralComplementarity: reward active gap-filling (histogram imbalance being corrected)
-  const spectralHist = spectralComplementarity.getHistogram ? spectralComplementarity.getHistogram(layer) : null;
-  const spectralOutcome = spectralHist ? clamp(0.2 + (1 - (m.max(...spectralHist) - m.min(...spectralHist)) / m.max(1, m.max(...spectralHist))) * 0.5, -1, 1) : 0.1;
+  const spectralHist = spectralComplementarity.getHistogram(layer);
+  const spectralOutcome = clamp(0.2 + (1 - (m.max(...spectralHist) - m.min(...spectralHist)) / m.max(1, m.max(...spectralHist))) * 0.5, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.SPECTRAL_COMPLEMENTARITY, spectralOutcome);
 
   // motifEcho: reward when echoes are pending or recently delivered (cross-layer imitation active)
-  const echoPending = motifEcho.getPendingCount ? motifEcho.getPendingCount() : 0;
+  const echoPending = motifEcho.getPendingCount();
   const echoOutcome = clamp(echoPending > 0 ? 0.4 + m.min(echoPending, 5) * 0.08 : 0.1, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.MOTIF_ECHO, echoOutcome);
 
@@ -281,11 +284,11 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
 
   // temporalGravity: reward when density from L0 shows moderate cross-layer alignment
   const gravDensity = L0.getLast('density', { layer: layer });
-  const gravOutcome = gravDensity && Number.isFinite(gravDensity.density) ? clamp(0.2 + gravDensity.density * 0.5, -1, 1) : 0.1;
+  const gravOutcome = gravDensity ? clamp(0.2 + V.optionalFinite(gravDensity.density, 0.5) * 0.5, -1, 1) : 0.1;
   adaptiveTrustScores.registerOutcome(trustSystems.names.TEMPORAL_GRAVITY, gravOutcome);
 
   // rhythmicComplement: reward when complement mode is active (not 'none')
-  const rcMode = rhythmicComplementEngine.getMode ? rhythmicComplementEngine.getMode() : 'none';
+  const rcMode = rhythmicComplementEngine.getMode();
   const rcOutcome = rcMode && rcMode !== 'free' ? clamp(0.4 + (rcMode === 'hocket' ? 0.2 : rcMode === 'antiphony' ? 0.15 : 0.1), -1, 1) : 0.08;
   adaptiveTrustScores.registerOutcome(trustSystems.names.RHYTHMIC_COMPLEMENT, rcOutcome);
 

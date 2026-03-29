@@ -3,6 +3,7 @@
 // velocity damping, and checks phase telemetry integrity.
 
 hyperMetaManagerTelemetry = (() => {
+  const V = validator.create('telemetryReconciliation');
   const ST = hyperMetaManagerState;
   const S  = ST.S;
 
@@ -32,7 +33,7 @@ hyperMetaManagerTelemetry = (() => {
       };
 
       if (gap > 0.20 && controllerData.activeBeats > 30) {
-        ST.rateMultipliers.p95Alpha = m.max(ST.rateMultipliers.p95Alpha || 1.0, 2.0);
+        ST.rateMultipliers.p95Alpha = m.max(ST.rateMultipliers.p95Alpha, 2.0);
       }
     }
   }
@@ -79,7 +80,7 @@ hyperMetaManagerTelemetry = (() => {
     const telemetryHealth = safePreBoot.call(() => telemetryHealthData, null);
     if (!telemetryHealth) return;
 
-    const staleRate = telemetryHealth.phaseStaleRate || 0;
+    const staleRate = V.optionalFinite(telemetryHealth.phaseStaleRate, 0);
 
     if (staleRate > ST.PHASE_STALE_THRESHOLD) {
       // Stale: boost phase sensitivity, relax gates, increase creativity
@@ -90,13 +91,13 @@ hyperMetaManagerTelemetry = (() => {
       // phase-share-derived value from updateRateMultipliers.
       // The public getter takes max(varianceGateRelax, varianceGateRelaxTelemetry).
       ST.rateMultipliers.varianceGateRelaxTelemetry = m.max(
-        ST.rateMultipliers.varianceGateRelaxTelemetry || 1.0, 1.8);
+        ST.rateMultipliers.varianceGateRelaxTelemetry, 1.8);
       S.topologyCreativityMultiplier = m.max(S.topologyCreativityMultiplier, 1.15);
     } else {
       // Healthy: decay telemetry-side relaxation independently
       S.phaseBoostCeiling = clamp(S.phaseBoostCeiling - 0.2, 25.0, 40.0);
       ST.rateMultipliers.varianceGateRelaxTelemetry = m.max(
-        1.0, (ST.rateMultipliers.varianceGateRelaxTelemetry || 1.0) * 0.95);
+        1.0, (ST.rateMultipliers.varianceGateRelaxTelemetry) * 0.95);
     }
   }
 

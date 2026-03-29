@@ -10,6 +10,7 @@
  */
 
 couplingRefreshSetup = (() => {
+  const V = validator.create('couplingRefreshSetup');
   const { COHERENT_SHARE_EMA_ALPHA, VELOCITY_EMA_ALPHA, VELOCITY_TRIGGER_RATIO,
     VELOCITY_BOOST_BEATS } = couplingConstants;
 
@@ -37,8 +38,8 @@ couplingRefreshSetup = (() => {
       for (let vi = 0; vi < prevKeys.length; vi++) {
         const vk = prevKeys[vi];
         const currCorr = snap.couplingMatrix[vk];
-        if (typeof currCorr !== 'number' || !Number.isFinite(currCorr)) continue;
-        const delta = m.abs(m.abs(currCorr) - (S.prevBeatAbsCorr[vk] || 0));
+        if (!V.optionalType(currCorr, 'number') || !Number.isFinite(currCorr)) continue;
+        const delta = m.abs(m.abs(currCorr) - (V.optionalFinite(S.prevBeatAbsCorr[vk], 0)));
         if (delta > maxPairDelta) maxPairDelta = delta;
       }
     }
@@ -109,7 +110,7 @@ couplingRefreshSetup = (() => {
       : 1.0;
 
     // Floor dampening + homeostasis state
-    const floorDampen = safePreBoot.call(() => couplingHomeostasis.getFloorDampen(), 1.0) || 1.0;
+    const floorDampen = safePreBoot.call(() => couplingHomeostasis.getFloorDampen(), 1.0);
     const hs = safePreBoot.call(() => couplingHomeostasis.getState(), null);
     const budgetConstraintActive = Boolean(hs && hs.budgetConstraintActive);
     const budgetConstraintPressure = hs && typeof hs.budgetConstraintPressure === 'number' ? hs.budgetConstraintPressure : 0;

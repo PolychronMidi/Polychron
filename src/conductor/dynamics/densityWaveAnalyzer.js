@@ -129,7 +129,7 @@ densityWaveAnalyzer = (() => {
     // troughs, reduce or invert the flat-density tension boost. This breaks
     // the vicious cycle where flat density -> tension boost -> more energy
     // consumption -> homeostasis suppresses gain -> flatter density.
-    const e10Suppress = safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e10TensionSuppress'), 1.0) || 1.0;
+    const e10Suppress = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e10TensionSuppress'), 1.0));
     if (profile.isFlat) {
       // Normal: 1.06. With e10Suppress=0.6: 1.0 + 0.06*0.6 = 1.036
       // During deep trough: tension boost is nearly eliminated
@@ -157,7 +157,7 @@ densityWaveAnalyzer = (() => {
     const profile = getWaveProfile();
     if (profile.isFlat) {
       let phraseProgress = 0;
-      try { phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1); } catch { void 0; }
+      try { phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1); } catch { /* timeStream boot-safety */ }
       return phraseProgress < 0.5 ? 1.06 : 0.97;
     }
     if (profile.isWaving) return 0.97;

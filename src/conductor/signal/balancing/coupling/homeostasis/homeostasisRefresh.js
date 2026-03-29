@@ -12,6 +12,7 @@
  */
 
 homeostasisRefresh = (() => {
+  const V = validator.create('homeostasisRefresh');
   const { ALL_DIMS, ENERGY_EMA_ALPHA, REDISTRIBUTION_EMA_ALPHA,
     PEAK_DECAY, BUDGET_PEAK_RATIO, PEAK_EMA_CAP_RATIO,
     REDIST_RELATIVE_THRESHOLD, REDIST_COOLDOWN_BEATS, REDIST_COOLDOWN_DECAY,
@@ -97,7 +98,7 @@ homeostasisRefresh = (() => {
     let activeTailCount = 0;
     for (let i = 0; i < TAIL_TRACKED_PAIRS.length; i++) {
       const pair = TAIL_TRACKED_PAIRS[i];
-      const pairAbs = S.pairAbsR[pair] || 0;
+      const pairAbs = V.optionalFinite(S.pairAbsR[pair], 0);
       const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
         ? adaptiveSnapshot[pair]
         : null;
@@ -122,7 +123,7 @@ homeostasisRefresh = (() => {
         0,
         1
       );
-      const prevTailPressure = S.tailPressureByPair[pair] || 0;
+      const prevTailPressure = V.optionalFinite(S.tailPressureByPair[pair], 0);
       const nextTailPressure = rawTailPressure >= prevTailPressure
         ? prevTailPressure * (1 - TAIL_PRESSURE_EMA_ALPHA) + rawTailPressure * TAIL_PRESSURE_EMA_ALPHA
         : prevTailPressure * TAIL_PRESSURE_DECAY + rawTailPressure * (1 - TAIL_PRESSURE_DECAY);
@@ -188,7 +189,7 @@ homeostasisRefresh = (() => {
     S.stickyTailPressure = tailAggregate >= S.stickyTailPressure
       ? S.stickyTailPressure * (1 - TAIL_PRESSURE_EMA_ALPHA) + tailAggregate * TAIL_PRESSURE_EMA_ALPHA
       : S.stickyTailPressure * TAIL_PRESSURE_DECAY + tailAggregate * (1 - TAIL_PRESSURE_DECAY);
-    S.densityFlickerTailPressure = S.tailPressureByPair['density-flicker'] || 0;
+    S.densityFlickerTailPressure = V.optionalFinite(S.tailPressureByPair['density-flicker'], 0);
     S.tailRecoveryDrive = Number(clamp(tailAggregate * 0.52 + structuralTailPressure * 0.20 + strongestTail * 0.28, 0, 1).toFixed(4));
     S.tailRecoveryTrigger = Number(clamp(TAIL_PRESSURE_TRIGGER_MIN + structuralTailPressure * 0.06 + m.max(0, tailCoverage - 0.15) * 0.06, TAIL_PRESSURE_TRIGGER_MIN, 0.26).toFixed(4));
 
@@ -234,7 +235,7 @@ homeostasisRefresh = (() => {
       const homeostasisRefreshBudgetScale = 1 + clamp((S.beatCount - 150) / 300, 0, 0.50);
       S.energyBudget *= homeostasisRefreshBudgetScale;
     }
-    const homeostasisRefreshProfileBudgetScale = conductorConfig.getActiveProfile().couplingBudgetScale || 1.0;
+    const homeostasisRefreshProfileBudgetScale = conductorConfig.getActiveProfile().couplingBudgetScale ?? 1.0;
     S.energyBudget *= homeostasisRefreshProfileBudgetScale;
     const homeostasisRefreshDynSnap = systemDynamicsProfiler.getSnapshot();
     if (homeostasisRefreshDynSnap && homeostasisRefreshDynSnap.regime === 'exploring') {
@@ -264,8 +265,8 @@ homeostasisRefresh = (() => {
       let turbSum = 0;
       let nudgeableTurbSum = 0;
       for (let i = 0; i < prevKeys.length; i++) {
-        const curr = S.pairAbsR[prevKeys[i]] || 0;
-        const prev = S.prevPairAbsR[prevKeys[i]] || 0;
+        const curr = V.optionalFinite(S.pairAbsR[prevKeys[i]], 0);
+        const prev = V.optionalFinite(S.prevPairAbsR[prevKeys[i]], 0);
         const delta = m.abs(curr - prev);
         turbSum += delta;
         if (!NON_NUDGEABLE_SET.has(prevKeys[i])) {

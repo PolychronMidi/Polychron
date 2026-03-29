@@ -1,4 +1,5 @@
 regimeClassifierClassification = (() => {
+  const V = validator.create('regimeClassifierClassification');
   function classify(state, config, avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
     if (avgVelocity < 0.004) return 'stagnant';
     if (avgCurvature > state.oscillatingCurvatureThreshold && avgVelocity < 0.04) return 'oscillating';
@@ -48,15 +49,15 @@ regimeClassifierClassification = (() => {
     state.evolvingProximityBonus = evolvingProximityBonus;
 
     const evolvingShare = state.runBeatCount > 0
-      ? ((state.runResolvedRegimeCounts.evolving || 0) / state.runBeatCount)
+      ? ((V.optionalFinite(state.runResolvedRegimeCounts.evolving, 0)) / state.runBeatCount)
       : 0;
     const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
     const rawExploringShare = state.runBeatCount > 0
-      ? ((state.runRawRegimeCounts.exploring || 0) / state.runBeatCount)
+      ? ((V.optionalFinite(state.runRawRegimeCounts.exploring, 0)) / state.runBeatCount)
       : 0;
     const exploringSharePressure = clamp((rawExploringShare - 0.62) / 0.14, 0, 1);
     const rawEvolvingShare = state.runBeatCount > 0
-      ? ((state.runRawRegimeCounts.evolving || 0) / state.runBeatCount)
+      ? ((V.optionalFinite(state.runRawRegimeCounts.evolving, 0)) / state.runBeatCount)
       : 0;
     const axisEnergyC = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
     const trustShareC = axisEnergyC && axisEnergyC.shares && typeof axisEnergyC.shares.trust === 'number'
@@ -66,7 +67,7 @@ regimeClassifierClassification = (() => {
     const evolvingRecoveryBoost = clamp(((0.05 - rawEvolvingShare) / 0.05) * (1 - trustHealthDamper * 0.55), 0, 1);
     const rawNonCoherentOpportunityShare = rawExploringShare + rawEvolvingShare;
     const resolvedNonCoherentShare = state.runBeatCount > 0
-      ? (((state.runResolvedRegimeCounts.exploring || 0) + (state.runResolvedRegimeCounts.evolving || 0)) / state.runBeatCount)
+      ? (((V.optionalFinite(state.runResolvedRegimeCounts.exploring, 0)) + (V.optionalFinite(state.runResolvedRegimeCounts.evolving, 0))) / state.runBeatCount)
       : 0;
     const opportunityGap = m.max(0, rawNonCoherentOpportunityShare - resolvedNonCoherentShare);
     const cadenceMonopolyPressure = clamp(
@@ -234,7 +235,7 @@ regimeClassifierClassification = (() => {
     if (state.lastRegime === 'exploring' && state.exploringBeats >= crossoverMinDwell && avgVelocity > 0.007 && avgVelocity < adaptiveVelCeiling + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
 
     const exploringVelThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) + exploringSharePressure * 0.004 - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
-    const profileDimRelief = conductorConfig.getActiveProfile().exploringDimRelief || 0;
+    const profileDimRelief = conductorConfig.getActiveProfile().exploringDimRelief ?? 0;
     const exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - profileDimRelief - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + exploringSharePressure * 0.12 + postForcedRecoveryPressure * 0.06;
     const exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06 - exploringSharePressure * 0.06 - postForcedRecoveryPressure * 0.05;
     if (avgVelocity > exploringVelThreshold && effectiveDim > exploringDimThreshold && couplingStrength <= exploringCouplingGate) return 'exploring';
