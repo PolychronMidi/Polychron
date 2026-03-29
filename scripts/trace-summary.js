@@ -88,6 +88,7 @@ function summarizeTrace(entries, manifest) {
   const flicker = { min: Infinity, max: -Infinity, sum: 0, count: 0 };
   const couplingAbs = {};
   const couplingSeries = {};
+  let lastCouplingLabels = {};
   const trustScoreAbs = {};
   const trustWeightAbs = {};
   const trustHotspotPressureAbs = {};
@@ -523,6 +524,7 @@ function summarizeTrace(entries, manifest) {
     updateMinMax(tension, toNum(snap.tension, 0));
     updateMinMax(flicker, toNum(snap.flicker, 0));
 
+    if (e.couplingLabels && typeof e.couplingLabels === 'object' && Object.keys(e.couplingLabels).length > 0) lastCouplingLabels = e.couplingLabels;
     const cm = e.coupling && typeof e.coupling === 'object' ? e.coupling : {};
     const couplingKeys = Object.keys(cm);
     let beatHadExceedance = false;
@@ -1181,6 +1183,7 @@ function summarizeTrace(entries, manifest) {
       flicker: finalizeMinMax(flicker)
     },
     couplingAbs: couplingSummary,
+    couplingLabels: lastCouplingLabels,
     couplingTail,
     couplingHotspots,
     couplingCorrelation,

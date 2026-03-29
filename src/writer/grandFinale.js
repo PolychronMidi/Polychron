@@ -102,8 +102,8 @@ grandFinale = () => {
       .map((i, index) => {
         if (!i) throw new Error(`grandFinale: layer "${name}" contains non-object event entry`);
         V.assertObject(i, 'i');
-        const timeInSeconds = V.requireFinite(Number(i.timeInSeconds), 'timeInSeconds');
-        if (timeInSeconds < 0) throw new Error(`grandFinale: event timeInSeconds must be >= 0, received ${timeInSeconds}`);
+        const timeInSeconds = m.max(0, V.requireFinite(Number(i.timeInSeconds), 'timeInSeconds'));
+        if (timeInSeconds < -0.001) throw new Error(`grandFinale: event timeInSeconds must be >= 0, received ${timeInSeconds}`);
         return {
           ...i,
           grandFinaleTimeInSeconds: timeInSeconds,

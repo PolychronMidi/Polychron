@@ -16,7 +16,11 @@ trustSystems = (() => {
     COHERENCE_MONITOR: 'coherenceMonitor',
     ENTROPY_REGULATOR: 'entropyRegulator',
     REST_SYNCHRONIZER: 'restSynchronizer',
-    ROLE_SWAP: 'roleSwap'
+    ROLE_SWAP: 'roleSwap',
+    GROOVE_TRANSFER: 'grooveTransfer',
+    VELOCITY_INTERFERENCE: 'velocityInterference',
+    HARMONIC_INTERVAL_GUARD: 'harmonicIntervalGuard',
+    EMERGENT_DOWNBEAT: 'emergentDownbeat'
   });
 
   // -- Heat map system names (superset - includes non-trust systems tracked by interactionHeatMap) --
