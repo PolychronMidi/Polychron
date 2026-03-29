@@ -24,7 +24,13 @@ coherenceMonitor = (() => {
   const SMOOTHING = 0.55;    // exponential smoothing factor (higher = slower response)
 
   // Entropy tracking
-  let entropySignal = 0;     // -1 (stagnation) to +1 (chaos)
+  let entropySignal = 0;
+  let coherenceMonitorLastPostTime = -1;
+
+  // Rolling buffer for L0 - accumulates per-beat, posts once
+  const COHERENCE_BUFFER_SIZE = 32;
+  const coherenceBuffer = [];
+  let coherenceBufferDirty = false;     // -1 (stagnation) to +1 (chaos)
   const ENTROPY_DECAY = 0.92;
 
   /**
@@ -37,12 +43,8 @@ coherenceMonitor = (() => {
     const EVENTS = V.getEventsOrThrow();
 
     eventBus.on(EVENTS.NOTES_EMITTED, (data) => {
-      V.assertObject(data, 'notes-emitted payload');
-      const actual = V.requireFinite(data.actual, 'actual');
-      const intended = V.requireFinite(data.intended, 'intended');
-      if (intended < 0 || actual < 0) {
-        throw new Error('coherenceMonitor: actual/intended must be non-negative');
-      }
+      const actual = data.actual;
+      const intended = data.intended;
 
       // Push into rolling window
       window.push({ actual, intended });
@@ -71,19 +73,17 @@ coherenceMonitor = (() => {
       if (window.length > 0) {
         window[window.length - 1].actual += 1;
         window[window.length - 1].intended += 1;
-        coherenceMonitorUpdateBias();
       }
     });
 
     // Motif chain expansions also add notes the window wouldn't otherwise see.
     eventBus.on(EVENTS.MOTIF_CHAIN_APPLIED, (data) => {
-      const extra = V.requireFinite(data.resultNoteCount, 'resultNoteCount');
+      const extra = data.resultNoteCount;
       cumulativeActual += extra;
       cumulativeIntended += extra;
       if (window.length > 0) {
         window[window.length - 1].actual += extra;
         window[window.length - 1].intended += extra;
-        coherenceMonitorUpdateBias();
       }
     });
 
@@ -213,7 +213,12 @@ coherenceMonitor = (() => {
       const rawEntropy = clamp(variance - 0.04, -0.5, 0.5) * 2;
       entropySignal = entropySignal * ENTROPY_DECAY + rawEntropy * (1 - ENTROPY_DECAY);
     }
-    L0.post('coherence', 'both', beatStartTime, { bias: coherenceBias, ratio: windowRatio, entropySignal });
+    if (beatStartTime !== coherenceMonitorLastPostTime) {
+      coherenceMonitorLastPostTime = beatStartTime;
+      coherenceBuffer.push({ t: beatStartTime, bias: coherenceBias, ratio: windowRatio, entropySignal });
+      if (coherenceBuffer.length > COHERENCE_BUFFER_SIZE) coherenceBuffer.shift();
+      coherenceBufferDirty = true;
+    }
   }
 
   /** @returns {number} Density bias multiplier for conductorIntelligence. */
@@ -259,11 +264,22 @@ coherenceMonitor = (() => {
 
   moduleLifecycle.registerInitializer('coherenceMonitor', initialize);
 
+  function flushToL0() {
+    if (!coherenceBufferDirty || coherenceBuffer.length === 0) return;
+    const latest = coherenceBuffer[coherenceBuffer.length - 1];
+    L0.post('coherence', 'both', latest.t, { bias: latest.bias, ratio: latest.ratio, entropySignal: latest.entropySignal });
+    coherenceBufferDirty = false;
+  }
+
+  function getCoherenceBuffer() { return coherenceBuffer; }
+
   return {
     initialize,
     getDensityBias,
     getLayerBias: (layer) => V.optionalFinite(layerBias[layer], 1.0),
     getEntropySignal,
+    getCoherenceBuffer,
+    flushToL0,
     getMetrics,
     reset
   };

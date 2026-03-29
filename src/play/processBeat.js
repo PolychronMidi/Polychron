@@ -48,7 +48,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clArcTarget = entropyRegulator.getArcTarget(timeStream.normalizedProgress('section'));
   const pendingEchoes = motifEcho.getPendingCount();
   const echoEntropyBias = pendingEchoes > 2 ? -0.05 * m.min(pendingEchoes - 2, 4) : 0;
-  entropyRegulator.setTarget(clamp(clIntent.entropyTarget + echoEntropyBias, 0, 1), clArcTarget);
+  const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+  const coherenceBiasVal = coherenceEntry && Number.isFinite(coherenceEntry.bias) ? coherenceEntry.bias : 1.0;
+  const coherenceEntropyBias = coherenceEntry ? clamp((m.abs(coherenceBiasVal - 1.0)) * -0.08, -0.04, 0) : 0;
+  entropyRegulator.setTarget(clamp(clIntent.entropyTarget + echoEntropyBias + coherenceEntropyBias, 0, 1), clArcTarget);
   // Regulation aggressiveness scales with deviation from target entropy:
   // large deviation - stronger regulation, near-target - lighter touch.
   const entropyDeviation = m.abs(entropyRegulator.measureEntropy() - clArcTarget);
@@ -153,6 +156,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // -- [stage: post-beat] -
   if (PROFILE) marks[13] = process.hrtime.bigint();
   if (clRest.shouldRest) restSynchronizer.postRest(absoluteSeconds, layer);
+  coherenceMonitor.flushToL0();
 
   // Per-beat homeostasis multiplier update. Coupling data is analysed
   // per-measure in the recorder pipeline; the multiplier is smoothed per-beat

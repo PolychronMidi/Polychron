@@ -101,6 +101,8 @@ feedbackOscillator = (() => {
       originLayer: incomingOriginLayer,
       pitchClass: pitchBias
     });
+    // Post feedback pitch preference to L0 for pitchMemoryRecall
+    if (pitchBias >= 0) L0.post('feedbackPitch', activeLayer, absoluteSeconds, { pitchClass: pitchBias, energy: dampedEnergy });
 
     return {
       energy: dampedEnergy,

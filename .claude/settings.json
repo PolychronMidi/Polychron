@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm*run.lock*)",
+      "Bash(*rm*run.lock*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // \"\"' | grep -q 'run\\.lock' && grep -q 'rm' && echo '{\"decision\":\"block\",\"reason\":\"BLOCKED: Never delete run.lock\"}' || true"
+          }
+        ]
+      }
+    ]
+  }
+}

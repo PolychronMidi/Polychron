@@ -16,7 +16,10 @@ V.assertObject(ccRangeScale, 'ccRangeScale');
 
 const journeyFxModulation = conductorConfig.getJourneyFxModulation();
 const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
-const spectralBrightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
+const prevSec = sectionMemory.getPrevious ? sectionMemory.getPrevious() : null;
+const prevSpectral = prevSec ? (prevSec.spectralBrightness !== undefined && Number.isFinite(prevSec.spectralBrightness) ? prevSec.spectralBrightness : 0.5) : 0.5;
+const spectralContrastBias = prevSec ? clamp((prevSpectral - 0.5) * -0.15, -0.08, 0.08) : 0;
+const spectralBrightness = (phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5) + spectralContrastBias;
 
 const scaleFxDefaultObject = (fxDefault, scale) => {
   const minValue = Number(fxDefault.min);
