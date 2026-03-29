@@ -22,11 +22,8 @@ stutterFeedbackListener = (() => {
         {
           eventName: EVENTS.STUTTER_APPLIED,
           project(data) {
-            V.assertObject(data, 'stutter-applied payload');
-            const intensity = V.requireFinite(data.intensity, 'stutter-applied.intensity');
-            V.assertNonEmptyString(data.type, 'stutter-applied.type');
             const weight = data.type === 'note' ? 1.0 : 0.8;
-            return clamp(intensity * weight, 0, 1);
+            return clamp(data.intensity * weight, 0, 1);
           }
         }
       ],

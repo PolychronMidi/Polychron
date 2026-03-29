@@ -92,19 +92,20 @@ pitchMemoryRecall = (() => {
 
     if (!hasConvergence && !hasDownbeat && rf() > 0.3) return null;
 
-    // Find best matching memory by pitch-class similarity
+    // Find best matching memory by pitch-class similarity + feedback pitch preference
     const currentPC = currentMidi % 12;
+    const feedbackPitchEntry = L0.getLast('feedbackPitch', { layer: activeLayer, windowSeconds: 2 });
+    const feedbackPC = feedbackPitchEntry && Number.isFinite(feedbackPitchEntry.pitchClass) ? feedbackPitchEntry.pitchClass : -1;
     let bestIdx = -1;
     let bestScore = -Infinity;
 
     const sectionPos = timeStream.getPosition('section');
     for (let i = 0; i < memories.length; i++) {
       const mem = memories[i];
-      // Similarity: does any pitch class match? (boolean - avoids .filter() allocation)
       const hasMatch = mem.pitchClasses.includes(currentPC);
-      // Prefer memories from different sections (thematic recall, not repetition)
+      const hasFeedbackMatch = feedbackPC >= 0 && mem.pitchClasses.includes(feedbackPC);
       const sectionDist = m.abs(sectionPos - mem.sectionIdx);
-      const score = mem.strength * 0.4 + (hasMatch ? 0.3 : 0) + clamp(sectionDist * 0.1, 0, 0.3);
+      const score = mem.strength * 0.4 + (hasMatch ? 0.3 : 0) + (hasFeedbackMatch ? 0.2 : 0) + clamp(sectionDist * 0.1, 0, 0.3);
       if (score > bestScore) {
         bestScore = score;
         bestIdx = i;

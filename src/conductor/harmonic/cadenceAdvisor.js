@@ -29,11 +29,10 @@ cadenceAdvisor = (() => {
       });
       if (recentChanges.length > MAX_HISTORY) recentChanges.shift();
 
-      // Also feed chord changes into L0 for cross-layer analysis
-      V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
-      const layer = /** @type {string} */ (LM.activeLayer);
-      V.requireFinite(beatStartTime, 'beatStartTime');
-      L0.post('chord', layer, beatStartTime, { chords: data.chords, key: data.key, mode: data.mode });
+      // Feed chord changes into L0 for cross-layer analysis (skip if no layer active yet)
+      if (LM.activeLayer && typeof LM.activeLayer === 'string') {
+        L0.post('chord', LM.activeLayer, beatStartTime, { chords: data.chords, key: data.key, mode: data.mode });
+      }
     });
   }
 

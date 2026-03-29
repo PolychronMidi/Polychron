@@ -168,6 +168,7 @@ conductorDampening = (() => {
     let activeCount = 0;
     for (let i = 0; i < registry.length; i++) {
       const raw = registry[i].getter();
+      V.requireFinite(raw, 'contributor ' + registry[i].name);
       if (m.abs(raw - 1.0) > 1e-6) activeCount++;
       product *= progressiveDampen(clamp(raw, registry[i].lo, registry[i].hi), damping, product, pipelineName);
     }

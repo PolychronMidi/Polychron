@@ -293,7 +293,10 @@ interface ContextualTrustAPI {
 interface CoherenceMonitorAPI {
   initialize(): void;
   getDensityBias(): number;
+  getLayerBias(layer: string): number;
   getEntropySignal(): number;
+  getCoherenceBuffer(): Array<{ t: number; bias: number; ratio: number; entropySignal: number }>;
+  flushToL0(): void;
   getMetrics(): { bias: number; entropy: number; windowSize: number; cumActual: number; cumIntended: number };
   reset(): void;
 }
@@ -1482,7 +1485,7 @@ declare var conductorDampening: {
 declare var sectionMemory: {
   snapshot(): void;
   seed(): void;
-  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string; coherenceBias?: number; intentDensity?: number; intentTension?: number } | null;
+  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string; coherenceBias?: number; intentDensity?: number; intentTension?: number; regimeTransitionCount?: number; lastTransitionCause?: string|null; spectralBrightness?: number } | null;
   reset(): void;
 };
 declare var coherenceMonitor: CoherenceMonitorAPI;

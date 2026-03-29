@@ -7,7 +7,7 @@ sectionMemory = (() => {
   const V = validator.create('sectionMemory');
   const CARRYOVER = 0.30; // fraction of previous state seeded into new section
 
-  /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string, regime?: string, coherenceBias?: number, intentDensity?: number, intentTension?: number } | null} */
+  /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string, regime?: string, coherenceBias?: number, intentDensity?: number, intentTension?: number, regimeTransitionCount?: number, lastTransitionCause?: string|null, spectralBrightness?: number } | null} */
   let sectionMemoryPrev = null;
 
   /**
@@ -28,7 +28,10 @@ sectionMemory = (() => {
       regime: snap ? snap.regime : 'evolving',
       coherenceBias,
       intentDensity: lastIntent.densityTarget,
-      intentTension: lastIntent.dissonanceTarget
+      intentTension: lastIntent.dissonanceTarget,
+      regimeTransitionCount: V.optionalFinite(L0.count('regimeTransition', { since: sectionStartTime }), 0),
+      lastTransitionCause: (() => { const rt = L0.getLast('regimeTransition', {}); return rt && rt.cause ? rt.cause : null; })(),
+      spectralBrightness: (() => { const ctx = FactoryManager.sharedPhraseArcManager.getPhraseContext(); return ctx && Number.isFinite(ctx.spectralDensity) ? ctx.spectralDensity : 0.5; })()
     };
   }
 

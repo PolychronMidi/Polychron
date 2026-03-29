@@ -29,5 +29,5 @@ setMidiTiming = () => {
     { timeInSeconds: measureStartTime, type: 'bpm', vals: [effectiveBpm] },
     { timeInSeconds: measureStartTime, type: 'meter', vals: [numerator, denominator] },
   );
-  L0.post('tickDuration', LM.activeLayer || 'shared', measureStartTime, { oneTickInSeconds: 60 / (effectiveBpm * PPQ) });
+  L0.post('tickDuration', LM.activeLayer || 'shared', measureStartTime, { oneTickInSeconds: 60 / (effectiveBpm * PPQ), effectiveBpm, bpmScale: sectionBpmScale });
 };

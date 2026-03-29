@@ -20,7 +20,7 @@ harmonicVelocityMonitor = (() => {
     const last = chords[chords.length - 1];
     if (!first || !last) return { changesPerSecond: 0, total: chords.length };
 
-    const span = last.time - first.time;
+    const span = last.timeInSeconds - first.timeInSeconds;
     if (span <= 0) return { changesPerSecond: 0, total: chords.length };
 
     return { changesPerSecond: (chords.length - 1) / span, total: chords.length };

@@ -7,8 +7,8 @@ eventBus = (() => {
   function on(name, handler) {
     V.assertNonEmptyString(name, 'on.name');
     V.requireType(handler, 'function', 'on.handler');
-    if (!listeners[name]) listeners[name] = [];
-    listeners[name].push(handler);
+    if (!listenersMap[name]) listenersMap[name] = [];
+    listenersMap[name].push(handler);
   }
 
   function off(name, handler) {
@@ -17,13 +17,16 @@ eventBus = (() => {
     listenersMap[name] = listenersMap[name].filter(h => h !== handler);
   }
 
+  const HIGH_FREQ = new Set(['notes-emitted', 'stutter-applied']);
+
   function emit(name, data) {
-    V.assertNonEmptyString(name, 'emit.name');
-    eventCatalog.validateEmit(name, data);
     if (!listenersMap[name]) return;
-    // Fail-fast: let any listener exception bubble
-    for (const handler of listenersMap[name]) {
-      handler(data);
+    if (!HIGH_FREQ.has(name)) {
+      V.assertNonEmptyString(name, 'emit.name');
+      eventCatalog.validateEmit(name, data);
+    }
+    for (let i = 0; i < listenersMap[name].length; i++) {
+      listenersMap[name][i](data);
     }
   }
 
