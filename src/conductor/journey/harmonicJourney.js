@@ -104,6 +104,8 @@ harmonicJourney = (() => {
       sectionPhase: currentPhase
     });
 
+    L0.post('harmonic', 'both', beatStartTime, { key: stop.key, mode: stop.mode, excursion, sectionPhase: currentPhase, move: stop.move, distance: stop.distance });
+
     // Emit journey-move event for rhythm-harmonic coupling
     {
       const EVENTS = V.getEventsOrThrow();

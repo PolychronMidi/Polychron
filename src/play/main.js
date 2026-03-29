@@ -85,7 +85,18 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // Snapshot conductor state before section reset for cross-section narrative memory
   if (sectionIndex > 0) sectionMemory.snapshot();
   crossLayerLifecycleManager.resetSection();
-  phrasesPerSection = ri(PHRASES_PER_SECTION.min, PHRASES_PER_SECTION.max);
+  // Select section type from SECTION_TYPES based on position
+  let activeSectionType = null;
+  if (Array.isArray(SECTION_TYPES) && SECTION_TYPES.length > 0) {
+    if (sectionIndex === 0) activeSectionType = SECTION_TYPES.find(t => t.type === 'intro') || SECTION_TYPES[0];
+    else if (sectionIndex === totalSections - 1) activeSectionType = SECTION_TYPES.find(t => t.type === 'coda') || SECTION_TYPES[SECTION_TYPES.length - 1];
+    else if (sectionIndex >= totalSections - 2) activeSectionType = SECTION_TYPES.find(t => t.type === 'conclusion') || null;
+    else activeSectionType = SECTION_TYPES[rw(0, SECTION_TYPES.length - 1, SECTION_TYPES.map(t => t.weight))];
+  }
+  const sectionPhraseRange = activeSectionType && activeSectionType.phrases ? activeSectionType.phrases : PHRASES_PER_SECTION;
+  currentSectionType = activeSectionType ? activeSectionType.type : null;
+  currentSectionDynamics = activeSectionType ? activeSectionType.dynamics : null;
+  phrasesPerSection = ri(sectionPhraseRange.min, sectionPhraseRange.max);
   mainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
   if (phrasesPerSection <= 0) {
     throw new Error('main: phrasesPerSection must be > 0');

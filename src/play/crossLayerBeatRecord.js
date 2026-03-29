@@ -267,6 +267,28 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const echoOutcome = clamp(echoPending > 0 ? 0.4 + m.min(echoPending, 5) * 0.08 : 0.1, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.MOTIF_ECHO, echoOutcome);
 
+  // climaxEngine: reward when approaching climax during high-tension sections, reward release during low
+  const climaxApproaching = crossLayerClimaxEngine.isApproaching();
+  const climaxLevel = crossLayerClimaxEngine.getClimaxLevel();
+  const climaxOutcome = climaxApproaching ? clamp(0.3 + clTension * 0.4 + climaxLevel * 0.2, -1, 1) : clamp(0.15 + (1 - clTension) * 0.3, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.CLIMAX_ENGINE, climaxOutcome);
+
+  // dynamicEnvelope: reward when velocity scale deviates from 1.0 (envelope actively shaping)
+  const envScale = crossLayerDynamicEnvelope.getVelocityScale(layer);
+  const envDeviation = m.abs(envScale - 1.0);
+  const envOutcome = clamp(envDeviation > 0.03 ? 0.3 + envDeviation * 2 : 0.08, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.DYNAMIC_ENVELOPE, envOutcome);
+
+  // temporalGravity: reward when density from L0 shows moderate cross-layer alignment
+  const gravDensity = L0.getLast('density', { layer: layer });
+  const gravOutcome = gravDensity && Number.isFinite(gravDensity.density) ? clamp(0.2 + gravDensity.density * 0.5, -1, 1) : 0.1;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.TEMPORAL_GRAVITY, gravOutcome);
+
+  // rhythmicComplement: reward when complement mode is active (not 'none')
+  const rcMode = rhythmicComplementEngine.getMode ? rhythmicComplementEngine.getMode() : 'none';
+  const rcOutcome = rcMode && rcMode !== 'free' ? clamp(0.4 + (rcMode === 'hocket' ? 0.2 : rcMode === 'antiphony' ? 0.15 : 0.1), -1, 1) : 0.08;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.RHYTHMIC_COMPLEMENT, rcOutcome);
+
   adaptiveTrustScores.decayAll(tp.decayRate);
 
   // Explainability

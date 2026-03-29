@@ -595,6 +595,10 @@ interface TrustSystemsAPI {
     TEXTURAL_MIRROR: 'texturalMirror';
     SPECTRAL_COMPLEMENTARITY: 'spectralComplementarity';
     MOTIF_ECHO: 'motifEcho';
+    CLIMAX_ENGINE: 'climaxEngine';
+    DYNAMIC_ENVELOPE: 'dynamicEnvelope';
+    TEMPORAL_GRAVITY: 'temporalGravity';
+    RHYTHMIC_COMPLEMENT: 'rhythmicComplement';
   }>;
   heatMapSystems: Readonly<{
     STUTTER_CONTAGION: 'stutterContagion';
@@ -1472,7 +1476,7 @@ declare var conductorDampening: {
 declare var sectionMemory: {
   snapshot(): void;
   seed(): void;
-  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string } | null;
+  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string } | null;
   reset(): void;
 };
 declare var coherenceMonitor: CoherenceMonitorAPI;

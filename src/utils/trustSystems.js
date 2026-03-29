@@ -24,7 +24,11 @@ trustSystems = (() => {
     ARTICULATION_COMPLEMENT: 'articulationComplement',
     TEXTURAL_MIRROR: 'texturalMirror',
     SPECTRAL_COMPLEMENTARITY: 'spectralComplementarity',
-    MOTIF_ECHO: 'motifEcho'
+    MOTIF_ECHO: 'motifEcho',
+    CLIMAX_ENGINE: 'climaxEngine',
+    DYNAMIC_ENVELOPE: 'dynamicEnvelope',
+    TEMPORAL_GRAVITY: 'temporalGravity',
+    RHYTHMIC_COMPLEMENT: 'rhythmicComplement'
   });
 
   // -- Heat map system names (superset - includes non-trust systems tracked by interactionHeatMap) --
