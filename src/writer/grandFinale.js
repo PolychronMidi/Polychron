@@ -71,6 +71,9 @@ grandFinale = () => {
     throw new Error('grandFinale: failed to write l0-dump.json: ' + e.message);
   }
 
+  let globalFinalTimeInSeconds = 0;
+  const pendingWrites = [];
+
   const LMCurrent = LM;
   // Collect all layer data
   const layerData = Object.entries(LMCurrent.layers).map(([name, layer]) => {
@@ -169,17 +172,23 @@ grandFinale = () => {
     if (finalTimeInSeconds < 0) {
       throw new Error(`grandFinale: layer "${name}" produced no valid events (finalTimeInSeconds=${finalTimeInSeconds})`);
     }
+    globalFinalTimeInSeconds = m.max(globalFinalTimeInSeconds, finalTimeInSeconds);
     // Reset pitch bend to neutral on all channels at track end.
     const finalCsvTime = `${finalTimeInSeconds}s`;
     for (let chi = 0; chi < allCHs.length; chi++) {
       composition += `1,${finalCsvTime},pitch_bend_c,${allCHs[chi]},${neutralPitchBend}\n`;
     }
-    const endTrackTime = `${finalTimeInSeconds + SILENT_OUTRO_SECONDS}s`;
-    composition += `1,${endTrackTime},end_track`;
     const outputFilename = name === 'L1' ? 'output/output1.csv' : name === 'L2' ? 'output/output2.csv' : `output/output${name.charAt(0).toUpperCase() + name.slice(1)}.csv`;
-    fs.mkdirSync('output', { recursive: true });
-    fs.writeFileSync(outputFilename, composition);
-    console.log(`Wrote file: ${outputFilename}`);
+    pendingWrites.push({ composition, outputFilename });
 
   });
+
+  // Write all layers with unified end_track time
+  const endTrackTime = `${globalFinalTimeInSeconds + SILENT_OUTRO_SECONDS}s`;
+  fs.mkdirSync('output', { recursive: true });
+  for (let wi = 0; wi < pendingWrites.length; wi++) {
+    const { composition, outputFilename } = pendingWrites[wi];
+    fs.writeFileSync(outputFilename, composition + `1,${endTrackTime},end_track`);
+    console.log(`Wrote file: ${outputFilename}`);
+  }
 };
