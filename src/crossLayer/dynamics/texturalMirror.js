@@ -73,7 +73,10 @@ texturalMirror = (() => {
     const regimeWeightScale = texRegime === 'exploring' ? 1.20
       : texRegime === 'coherent' ? 0.75
       : 1.0;
-    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale, 0.1, 0.8);
+    // Coherence-aware: poor coherence = stronger texture suggestions to create differentiation
+    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.4, 0, 0.15) : 0;
+    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale + coherenceBoost, 0.1, 0.8);
 
     return { preferredMode, weight };
   }

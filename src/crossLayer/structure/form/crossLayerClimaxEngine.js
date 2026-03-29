@@ -78,8 +78,12 @@ crossLayerClimaxEngine = (() => {
     const intent = sectionIntentCurves.getLastIntent();
     const intentPressure = (intent.densityTarget + intent.interactionTarget) / 2;
 
+    // Harmonic excursion boost: distant keys amplify climax
+    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const excursionBoost = harmonicEntry && Number.isFinite(harmonicEntry.excursion) ? clamp(harmonicEntry.excursion * 0.02, 0, 0.1) : 0;
+
     // Composite climax signal
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT) * preClimaxHold;
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing
