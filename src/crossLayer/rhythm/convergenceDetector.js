@@ -57,8 +57,11 @@ convergenceDetector = (() => {
     // Recent regime transition = natural convergence opportunity
     const recentRegimeTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 3, windowSeconds: 3 });
     const transitionBoost = recentRegimeTransition ? 0.15 : 0;
-    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost);
-    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3);
+    // Poor coherence = convergence helps recalibrate
+    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.3, 0, 0.1) : 0;
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost);
+    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2);
 
     if (absoluteSeconds - lastConvergenceSec < effectiveInterval) return null;
 

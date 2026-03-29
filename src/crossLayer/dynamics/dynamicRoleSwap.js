@@ -50,7 +50,10 @@ dynamicRoleSwap = (() => {
     // Regime transition recency boost: recent transition = natural swap moment
     const recentTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 2, windowSeconds: 2 });
     const transitionBoost = recentTransition ? 0.15 : 0;
-    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost, 0, 1);
+    // Active feedback loops = more cross-layer conversation = natural swap point
+    const feedbackCount = L0.count('feedbackLoop', { since: absoluteSeconds - 4, windowSeconds: 4 });
+    const feedbackBoost = feedbackCount > 3 ? 0.1 : 0;
+    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost, 0, 1);
     if (rf() > gate) {
       return { swapped: false, swapCount };
     }

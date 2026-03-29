@@ -13,7 +13,7 @@ L0 = (() => {
   const channels = {};
 
   /** Query result cache. Invalidated on every post(). */
-  /** @type {Map<string, Array<Object>>} */
+  /** @type {Map<string, any>} */
   const queryCache = new Map();
 
   // ---------------------------------------------------------------------------
@@ -25,8 +25,16 @@ L0 = (() => {
     return channels[name];
   }
 
-  function invalidateCache() {
-    if (queryCache.size > 0) queryCache.clear();
+  function invalidateCache(channel) {
+    if (queryCache.size === 0) return;
+    if (channel) {
+      const prefix = channel + ':';
+      for (const key of queryCache.keys()) {
+        if (key.startsWith(prefix)) queryCache.delete(key);
+      }
+    } else {
+      queryCache.clear();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -41,13 +49,12 @@ L0 = (() => {
    * @param {Object} [data]  - arbitrary payload
    */
   function post(channel, layer, timeInSeconds, data) {
-    V.assertNonEmptyString(channel, 'post.channel');
-    V.assertNonEmptyString(layer, 'post.layer');
     const t = V.requireFinite(timeInSeconds, 'post.timeInSeconds');
-    if (data !== undefined) V.assertPlainObject(data, 'post.data');
 
     const arr = ensureChannel(channel);
-    const entry = Object.assign({}, data, { timeInSeconds: t, channel, layer });
+    const entry = data !== undefined
+      ? { ...data, timeInSeconds: t, channel, layer }
+      : { timeInSeconds: t, channel, layer };
 
     // Keep array time-sorted. Most callers push in order, so fast-path first.
     if (arr.length === 0 || t >= arr[arr.length - 1].timeInSeconds) {
@@ -57,7 +64,7 @@ L0 = (() => {
       arr.splice(insertIdx, 0, entry);
     }
 
-    invalidateCache();
+    invalidateCache(channel);
   }
 
   /**
@@ -165,13 +172,11 @@ L0 = (() => {
    * @returns {Object|null}
    */
   function getLast(channel, opts) {
-    V.assertNonEmptyString(channel, 'getLast.channel');
     const arr = channels[channel];
     if (!arr || arr.length === 0) return null;
 
     let layer, since, windowSeconds;
     if (opts !== undefined) {
-      V.assertPlainObject(opts, 'getLast.opts');
       ({ layer, since, windowSeconds } = opts);
     }
 
@@ -238,13 +243,15 @@ L0 = (() => {
    * @returns {Object|null}
    */
   function findClosest(channel, timeInSeconds, toleranceSec, excludeLayer) {
-    V.assertNonEmptyString(channel, 'findClosest.channel');
-    const around = V.requireFinite(timeInSeconds, 'findClosest.timeInSeconds');
-    const tol    = V.requireFinite(toleranceSec, 'findClosest.toleranceSec');
-    if (excludeLayer !== undefined) V.assertNonEmptyString(excludeLayer, 'findClosest.excludeLayer');
+    const around = timeInSeconds;
+    const tol = toleranceSec;
 
     const arr = channels[channel];
     if (!arr || arr.length === 0) return null;
+
+    const cacheKey = channel + ':closest:' + around + ':' + tol + ':' + (excludeLayer || '');
+    const cached = queryCache.get(cacheKey);
+    if (cached !== undefined) return cached;
 
     const lo = around - tol;
     const hi = around + tol;
@@ -262,6 +269,7 @@ L0 = (() => {
         bestDist = dist;
       }
     }
+    queryCache.set(cacheKey, best);
     return best;
   }
 

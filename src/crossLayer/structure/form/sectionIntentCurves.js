@@ -113,8 +113,15 @@ sectionIntentCurves = (() => {
     const prevCoherenceBias = prevSection ? V.optionalFinite(prevSection.coherenceBias, 1.0) : 1.0;
     const coherenceLearning = clamp((prevCoherenceBias - 1.0) * 0.08, -0.04, 0.04);
 
+    // Turbulence calming: if previous section had many regime transitions, reduce interaction target for stability
+    const prevTransitions = prevSection ? V.optionalFinite(prevSection.regimeTransitionCount, 0) : 0;
+    const turbulenceDampen = prevTransitions > 8 ? clamp((prevTransitions - 8) * -0.01, -0.05, 0) : 0;
+
+    const prevBrightness = prevSection ? V.optionalFinite(prevSection.spectralBrightness, 0.5) : 0.5;
+    const spectralContrastBias = clamp((prevBrightness - 0.5) * -0.06, -0.03, 0.03);
+
     const densityTarget = clamp(
-      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias + regimeContrastDensity + coherenceLearning) * sectionBoundaryRelief
+      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias + regimeContrastDensity + coherenceLearning + spectralContrastBias) * sectionBoundaryRelief
       // R70 E3: Per-phrase density perturbation. Density variance declined
       // steadily (0.0139 -> 0.0100 -> 0.0055) as section-level smoothing
       // dominates. Adding a phrase-level sine wave creates mid-phrase
@@ -153,7 +160,7 @@ sectionIntentCurves = (() => {
     // Cross-section flicker contrast: if previous section had high flicker, bias interaction lower for textural contrast
     const flickerContrastBias = prevSection && Number.isFinite(prevSection.flicker) ? clamp((prevSection.flicker - 1.0) * -0.08, -0.04, 0.04) : 0;
     const interactionTarget = clamp(
-      INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE) + lateLift * INTERACTION_LATE_SURGE - longFormRelief * LONG_FORM_INTERACTION_RELIEF + flickerContrastBias,
+      INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE) + lateLift * INTERACTION_LATE_SURGE - longFormRelief * LONG_FORM_INTERACTION_RELIEF + flickerContrastBias + turbulenceDampen,
       0,
       1
     );

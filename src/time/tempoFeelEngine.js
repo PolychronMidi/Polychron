@@ -55,11 +55,15 @@ tempoFeelEngine = (() => {
     }
 
     // Phrase-level rubato: slight ritardando approaching phrase end, accelerando in early phrase
+    // Tempo-responsive: slower tempo = more rubato, faster = tighter
+    const tempoEntry = L0.getLast('tickDuration', {});
+    const bpmScaleForRubato = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;
+    const rubatoDepth = clamp(1.2 - bpmScaleForRubato * 0.4, 0.5, 1.5);
     const phraseProgress = clamp(timeStream.normalizedProgress('phrase'), 0, 1);
     const rubato = phraseProgress > 0.8
-      ? -(phraseProgress - 0.8) / 0.2 * MAX_FEEL_RATIO * 0.5
+      ? -(phraseProgress - 0.8) / 0.2 * MAX_FEEL_RATIO * 0.5 * rubatoDepth
       : phraseProgress < 0.15
-        ? (0.15 - phraseProgress) / 0.15 * MAX_FEEL_RATIO * 0.3
+        ? (0.15 - phraseProgress) / 0.15 * MAX_FEEL_RATIO * 0.3 * rubatoDepth
         : 0;
 
     const secondsPerUnit = requireSecondsPerUnit();
