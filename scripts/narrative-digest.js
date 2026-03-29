@@ -85,14 +85,17 @@ function extractNarrativeEvents(tracePath) {
     // beatKey format: "section:phrase:beat:subdivision"
     const section = beatKey.includes(':') ? parseInt(beatKey.split(':')[0], 10) : null;
 
-    // Track regime transitions
+    // Track regime transitions with causal attribution
     if (regime !== prevRegime && prevRegime !== null) {
+      const forced = entry.forcedTransitionEvent;
+      const cause = forced && forced.reason ? 'forced: ' + forced.reason : 'organic';
       regimeTransitions.push({
         beat: i,
         beatKey,
         from: prevRegime,
         to: regime,
-        section: section
+        section: section,
+        cause
       });
     }
     prevRegime = regime;
@@ -215,8 +218,9 @@ function generateNarrative() {
     lines.push('');
     for (let i = 0; i < maxTransitions; i++) {
       const t = regimeTransitions[i];
-      lines.push(`- Beat ${t.beat}: transitioned from **${t.from}** to **${t.to}** ` +
-        `(the system went from ${describeRegime(t.from)} to ${describeRegime(t.to)})`);
+      const causeStr = t.cause && t.cause !== 'organic' ? ` [${t.cause}]` : '';
+      lines.push(`- Beat ${t.beat}: transitioned from **${t.from}** to **${t.to}**${causeStr}` +
+        ` (${describeRegime(t.from)} to ${describeRegime(t.to)})`);
     }
     lines.push('');
   }

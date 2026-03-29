@@ -50,8 +50,12 @@ convergenceDetector = (() => {
     // Modulate tolerance and interval by convergenceTarget from section intent
     const intent = sectionIntentCurves.getLastIntent ? sectionIntentCurves.getLastIntent() : null;
     const ct = intent && Number.isFinite(intent.convergenceTarget) ? intent.convergenceTarget : 0.5;
-    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8);
-    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8);
+    // Read current entropy from L0 - high entropy environments benefit from convergence moments
+    const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
+    const currentEntropy = entropyEntry && Number.isFinite(entropyEntry.smoothed) ? entropyEntry.smoothed : 0.5;
+    const entropyBoost = clamp((currentEntropy - 0.5) * 0.4, 0, 0.2);
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost);
+    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5);
 
     if (absoluteSeconds - lastConvergenceSec < effectiveInterval) return null;
 

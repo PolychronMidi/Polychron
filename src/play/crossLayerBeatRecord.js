@@ -257,6 +257,16 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const texOutcome = clamp(texDist > 0.1 && texDist < 0.8 ? 0.4 + (0.5 - m.abs(texDist - 0.45)) : 0.05, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.TEXTURAL_MIRROR, texOutcome);
 
+  // spectralComplementarity: reward active gap-filling (histogram imbalance being corrected)
+  const spectralHist = spectralComplementarity.getHistogram ? spectralComplementarity.getHistogram(layer) : null;
+  const spectralOutcome = spectralHist ? clamp(0.2 + (1 - (m.max(...spectralHist) - m.min(...spectralHist)) / m.max(1, m.max(...spectralHist))) * 0.5, -1, 1) : 0.1;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.SPECTRAL_COMPLEMENTARITY, spectralOutcome);
+
+  // motifEcho: reward when echoes are pending or recently delivered (cross-layer imitation active)
+  const echoPending = motifEcho.getPendingCount ? motifEcho.getPendingCount() : 0;
+  const echoOutcome = clamp(echoPending > 0 ? 0.4 + m.min(echoPending, 5) * 0.08 : 0.1, -1, 1);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.MOTIF_ECHO, echoOutcome);
+
   adaptiveTrustScores.decayAll(tp.decayRate);
 
   // Explainability

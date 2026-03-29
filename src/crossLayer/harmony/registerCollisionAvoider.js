@@ -51,9 +51,16 @@ registerCollisionAvoider = (() => {
     } else if (downClearsCollision) {
       candidate = downCandidate;
     } else {
-      // Neither direction fully clears - pick the one farther from other.midi
-      candidate = m.abs(upCandidate - other.midi) >= m.abs(downCandidate - other.midi)
-        ? upCandidate : downCandidate;
+      // Neither direction fully clears - pick the one in a sparser bin, breaking ties by distance
+      const hist = spectralComplementarity.getHistogram(activeLayer);
+      const upBin = upCandidate < 36 ? 0 : upCandidate < 60 ? 1 : upCandidate < 84 ? 2 : 3;
+      const downBin = downCandidate < 36 ? 0 : downCandidate < 60 ? 1 : downCandidate < 84 ? 2 : 3;
+      if (hist[upBin] !== hist[downBin]) {
+        candidate = hist[upBin] < hist[downBin] ? upCandidate : downCandidate;
+      } else {
+        candidate = m.abs(upCandidate - other.midi) >= m.abs(downCandidate - other.midi)
+          ? upCandidate : downCandidate;
+      }
     }
 
     const adjusted = candidate !== midi;
