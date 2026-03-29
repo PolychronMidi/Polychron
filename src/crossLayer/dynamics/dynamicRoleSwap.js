@@ -46,8 +46,11 @@ dynamicRoleSwap = (() => {
     const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
     const regimeSwapScale = regime === 'exploring' ? 1.15
       : regime === 'coherent' ? 0.80
-      : 1.0; // evolving / initializing
-    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale, 0, 1);
+      : 1.0;
+    // Regime transition recency boost: recent transition = natural swap moment
+    const recentTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 2, windowSeconds: 2 });
+    const transitionBoost = recentTransition ? 0.15 : 0;
+    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost, 0, 1);
     if (rf() > gate) {
       return { swapped: false, swapCount };
     }
