@@ -27,7 +27,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, '../..');
 const METRICS_DIR = path.join(ROOT, 'metrics');
 const COMPOSITION_DIR = path.join(ROOT, 'output');
 const FINGERPRINT_PATH = path.join(METRICS_DIR, 'golden-fingerprint.json');

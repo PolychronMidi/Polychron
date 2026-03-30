@@ -17,7 +17,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT        = path.join(__dirname, '..');
+const ROOT        = path.join(__dirname, '../..');
 const SRC         = path.join(ROOT, 'src');
 const GLOBALS_DTS = path.join(SRC, 'types', 'globals.d.ts');
 const OUTPUT      = path.join(ROOT, 'metrics', 'boot-order.json');

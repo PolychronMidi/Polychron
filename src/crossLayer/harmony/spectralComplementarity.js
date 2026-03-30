@@ -109,8 +109,13 @@ spectralComplementarity = (() => {
     if (analysis.gaps.length === 0 || analysis.gapWeight < 0.2) {
       return { midi, nudged: false, targetBin: -1 };
     }
-    // Roll probability: stronger gapWeight = more likely to nudge
-    if (rf() > analysis.gapWeight * NUDGE_STRENGTH) {
+    // Lab R4: reduce nudge when dissonance is desired so pitch corrections
+    // don't normalize intentionally dissonant output
+    const intentDissonance = sectionIntentCurves.getLastIntent()
+      ? V.optionalFinite(sectionIntentCurves.getLastIntent().dissonanceTarget, 0)
+      : 0;
+    const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.7);
+    if (rf() > analysis.gapWeight * effectiveNudge) {
       return { midi, nudged: false, targetBin: -1 };
     }
 

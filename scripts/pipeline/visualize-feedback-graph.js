@@ -11,7 +11,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, '../..');
 const GRAPH_PATH = path.join(ROOT, 'metrics/feedback_graph.json');
 const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');

@@ -121,10 +121,11 @@ SECTIONS={
   max: 7
 };
 /** @tier-2 - beat division count range and weight distribution */
+// Lab R4: polyrhythm-wall at 10-15 divisions confirmed good. Raised tail weights.
 DIVISIONS={
   min: 1,
   max: 15,
-  weights: [1,15,20,25,20,10,7,3,1,1]
+  weights: [1,15,20,25,20,12,9,5,3,2]
 };
 /** @tier-2 */ SUBDIVS={
   min: 1,
