@@ -106,7 +106,7 @@ function writeSummaryJSON(wallTime) {
     failed: timings.filter(function (t) { return !t.ok; }).length
   };
   try {
-    var outDir = path.join(__dirname, '..', 'metrics');
+    var outDir = path.join(__dirname, '../..', 'metrics');
     fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(path.join(outDir, 'pipeline-summary.json'), JSON.stringify(summary, null, 2) + '\n');
     console.log('  Pipeline summary -> metrics/pipeline-summary.json');
