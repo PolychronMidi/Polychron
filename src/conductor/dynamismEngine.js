@@ -243,7 +243,8 @@ dynamismEngine = (() => {
 
     const rawPlayOut = inputPlay * (ctx.playBase + composite * ctx.playScale) + ctx.layerBias * 0.5 * ctx.layerBiasScale;
     const rawStutterOut = inputStutter * (ctx.stutterBase + composite * ctx.stutterScale) + journeyEnergy * ctx.journeyBoost + feedbackEnergy * ctx.feedbackBoost + ctx.layerBias * ctx.layerBiasScale;
-    const playOut = clamp(V.optionalFinite(rawPlayOut, inputPlay), 0.02, 0.98);
+    // Lab R4: lowered floor 0.02->0.005 so sparse configs can achieve near-silence
+    const playOut = clamp(V.optionalFinite(rawPlayOut, inputPlay), 0.005, 0.98);
     const stutterOut = clamp(V.optionalFinite(rawStutterOut, inputStutter), 0.01, 0.98);
 
     return {

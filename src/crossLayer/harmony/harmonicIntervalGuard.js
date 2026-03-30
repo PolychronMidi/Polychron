@@ -93,22 +93,25 @@ harmonicIntervalGuard = (() => {
     // Should we nudge? Only if current consonance is far from target
     const desiredConsonance = 1 - dissonanceTarget;
     const error = currentConsonance - desiredConsonance;
-    if (m.abs(error) < 0.25) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
+    // Lab R4: tighter deadband (0.25->0.18) and higher nudge probability
+    // so the guard actively steers toward dissonance when intent demands it
+    if (m.abs(error) < 0.18) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
-    // Apply nudge probability scaled by error magnitude
-    if (rf() > m.abs(error) * 0.6) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
+    // Nudge probability: scale by error magnitude, boosted when dissonance is high
+    const nudgeProb = m.abs(error) * (0.6 + dissonanceTarget * 0.3);
+    if (rf() > nudgeProb) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
-    // Read other layer's active motif interval DNA for motif-aware scoring
     const otherMotifEntry = L0.getLast('motifIdentity', { layer: otherLayer });
     let motifIntervals = null;
     if (otherMotifEntry && otherMotifEntry.intervalDna && otherMotifEntry.confidence > 0.3) {
       motifIntervals = otherMotifEntry.intervalDna.split(',').map(Number).filter(Number.isFinite);
     }
 
-    // Find best candidate within 3 semitones
+    // Lab R4: widen search radius (3->5) so tritones and 7ths are reachable
     let bestNote = midi;
     let bestScore = Infinity;
-    const { lo, hi } = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true, anchorMidi: midi, radius: 3 });
+    const searchRadius = dissonanceTarget > 0.6 ? 5 : 3;
+    const { lo, hi } = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true, anchorMidi: midi, radius: searchRadius });
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;

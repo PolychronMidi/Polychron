@@ -18,7 +18,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, '../..');
 const SRC  = path.join(ROOT, 'src');
 const OUTPUT_DIR = path.join(ROOT, 'metrics');
 const MANIFEST_PATH = path.join(OUTPUT_DIR, 'system-manifest.json');

@@ -197,8 +197,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   }
 
   // Build planned events (single on/off pair)
+  // Lab R4: cap stutter off-time to source note boundary
+  const sourceEnd = on + sustain;
   const stutterOn = on + sustain * rf(0.05, 0.3);
-  const stutterOff = stutterOn + sustain * rf(0.2, 0.6);
+  const stutterOff = m.min(stutterOn + sustain * rf(0.2, 0.6), sourceEnd);
   const evOn = { timeInSeconds: stutterOn, type: 'on', vals: [channel, stutterNote, stutterVel] };
   const evOff = { timeInSeconds: stutterOff, vals: [channel, stutterNote] };
 

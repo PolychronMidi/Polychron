@@ -69,11 +69,14 @@ VoiceLeadingScore = class VoiceLeadingScore {
     };
 
     // Register bounds [min, max] in MIDI note numbers
+    // Lab R4: extended soprano to OCTAVE.max boundary so high-octave
+    // configs get proper voice leading instead of erratic motion
+    const upperBound = m.min(127, (OCTAVE.max || 9) * 12 - 1);
     this.registers = {
-      soprano: [60, 84],   // C4 to C6
-      alto: [48, 72],      // C3 to C5
-      tenor: [36, 60],     // C2 to C4
-      bass: [24, 48],      // C1 to C3
+      soprano: [60, m.max(84, upperBound)],
+      alto: [48, 72],
+      tenor: [36, 60],
+      bass: [24, 48],
     };
 
     // Historical tracking for context-aware scoring

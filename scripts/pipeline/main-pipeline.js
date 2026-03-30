@@ -20,32 +20,33 @@ const MEASURE_TIMEOUT_SEC = 30;
 // step definitions
 
 const PRE_COMPOSITION = [
-  { label: 'generate-globals-dts',    cmd: 'node scripts/generate-globals-dts.js' },
-  { label: 'verify-boot-order',       cmd: 'node scripts/verify-boot-order.js --fix' },
-  { label: 'check-tuning-invariants', cmd: 'node scripts/check-tuning-invariants.js' },
-  { label: 'check-hypermeta-jurisdiction', cmd: 'node scripts/check-hypermeta-jurisdiction.js' },
-  { label: 'generate-feedback-graph', cmd: 'node scripts/generate-feedback-graph.js' },
-  { label: 'validate-feedback-graph', cmd: 'node scripts/validate-feedback-graph.js' },
+  { label: 'sync-instructions',       cmd: 'node scripts/pipeline/sync-instructions.js' },
+  { label: 'generate-globals-dts',    cmd: 'node scripts/pipeline/generate-globals-dts.js' },
+  { label: 'verify-boot-order',       cmd: 'node scripts/pipeline/verify-boot-order.js --fix' },
+  { label: 'check-tuning-invariants', cmd: 'node scripts/pipeline/check-tuning-invariants.js' },
+  { label: 'check-hypermeta-jurisdiction', cmd: 'node scripts/pipeline/check-hypermeta-jurisdiction.js' },
+  { label: 'generate-feedback-graph', cmd: 'node scripts/pipeline/generate-feedback-graph.js' },
+  { label: 'validate-feedback-graph', cmd: 'node scripts/pipeline/validate-feedback-graph.js' },
   { label: 'lint',                    cmd: 'npm run lint' },
   { label: 'typecheck',               cmd: 'npm run tc' },
 ];
 
 const COMPOSITION = {
   label: 'composition',
-  cmd:   'node scripts/run-with-log.js main.log node src/play/main.js --trace',
+  cmd:   'node scripts/utils/run-with-log.js main.log node src/play/main.js --trace',
 };
 
 const POST_COMPOSITION = [
-  { label: 'trace-summary',            cmd: 'node scripts/trace-summary.js' },
-  { label: 'check-manifest-health',    cmd: 'node scripts/check-manifest-health.js' },
-  { label: 'generate-dependency-graph', cmd: 'node scripts/generate-dependency-graph.js' },
-  { label: 'generate-conductor-map',   cmd: 'node scripts/generate-conductor-map.js' },
-  { label: 'generate-crosslayer-map',  cmd: 'node scripts/generate-crosslayer-map.js' },
-  { label: 'golden-fingerprint',       cmd: 'node scripts/golden-fingerprint.js' },
-  { label: 'narrative-digest',         cmd: 'node scripts/narrative-digest.js' },
-  { label: 'compare-runs',             cmd: 'node scripts/compare-runs.js --against baseline' },
-  { label: 'diff-compositions',        cmd: 'node scripts/diff-compositions.js --against baseline' },
-  { label: 'visualize-feedback-graph', cmd: 'node scripts/visualize-feedback-graph.js' },
+  { label: 'trace-summary',            cmd: 'node scripts/pipeline/trace-summary.js' },
+  { label: 'check-manifest-health',    cmd: 'node scripts/pipeline/check-manifest-health.js' },
+  { label: 'generate-dependency-graph', cmd: 'node scripts/pipeline/generate-dependency-graph.js' },
+  { label: 'generate-conductor-map',   cmd: 'node scripts/pipeline/generate-conductor-map.js' },
+  { label: 'generate-crosslayer-map',  cmd: 'node scripts/pipeline/generate-crosslayer-map.js' },
+  { label: 'golden-fingerprint',       cmd: 'node scripts/pipeline/golden-fingerprint.js' },
+  { label: 'narrative-digest',         cmd: 'node scripts/pipeline/narrative-digest.js' },
+  { label: 'compare-runs',             cmd: 'node scripts/pipeline/compare-runs.js --against baseline' },
+  { label: 'diff-compositions',        cmd: 'node scripts/pipeline/diff-compositions.js --against baseline' },
+  { label: 'visualize-feedback-graph', cmd: 'node scripts/pipeline/visualize-feedback-graph.js' },
 ];
 
 // runner
@@ -114,10 +115,6 @@ function writeSummaryJSON(wallTime) {
   }
 }
 
-function runCompositionWithWatchdog() {
-  run(COMPOSITION.label, COMPOSITION.cmd, true);
-}
-
 // main
 
 function main() {
@@ -129,8 +126,8 @@ function main() {
     run(PRE_COMPOSITION[i].label, PRE_COMPOSITION[i].cmd, true);
   }
 
-  // Composition: fatal on failure, with measure-time watchdog
-  runCompositionWithWatchdog();
+  // Composition: fatal on failure
+  run(COMPOSITION.label, COMPOSITION.cmd, true);
 
   // Post-composition: non-fatal (diagnostics / reporting)
   for (var j = 0; j < POST_COMPOSITION.length; j++) {

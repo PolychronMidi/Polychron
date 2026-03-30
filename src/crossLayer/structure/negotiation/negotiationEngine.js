@@ -70,7 +70,11 @@ negotiationEngine = (() => {
     const phaseConfidence = clamp(V.requireFinite(context.phaseConfidence, 'phaseConfidence'), 0, 1);
   const entropyScale = V.optionalFinite(context.entropyScale, 1);
 
-    const playScale = clamp((PLAY_DENSITY_BASE + intent.densityTarget * PLAY_DENSITY_SCALE) * (PLAY_TRUST_BASE + trustPhase * PLAY_TRUST_SCALE), PLAY_SCALE_MIN, PLAY_SCALE_MAX);
+    // Lab R4: when input playProb is intentionally low (< 0.15), cap playScale
+    // to 1.0 so sparse configs don't get amplified back to normal density
+    const rawPlayScale = (PLAY_DENSITY_BASE + intent.densityTarget * PLAY_DENSITY_SCALE) * (PLAY_TRUST_BASE + trustPhase * PLAY_TRUST_SCALE);
+    const playScaleCap = context.playProb < 0.15 ? m.min(rawPlayScale, 1.0) : rawPlayScale;
+    const playScale = clamp(playScaleCap, PLAY_SCALE_MIN, PLAY_SCALE_MAX);
     const stutterScale = clamp((STUTTER_INTERACT_BASE + intent.interactionTarget * STUTTER_INTERACT_SCALE) * (STUTTER_TRUST_BASE + trustStutter * STUTTER_TRUST_SCALE), STUTTER_SCALE_MIN, STUTTER_SCALE_MAX);
 
     let playProb = clamp(context.playProb * playScale * clamp(PLAY_ENTROPY_BASE + entropyScale * PLAY_ENTROPY_SCALE, PLAY_ENTROPY_MIN, PLAY_ENTROPY_MAX), 0, 1);
