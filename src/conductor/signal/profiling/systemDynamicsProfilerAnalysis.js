@@ -13,6 +13,7 @@ systemDynamicsProfilerAnalysis = (() => {
         conductorDampening.setFlickerTargetRange(0.15 * 1.8);
         pipelineCouplingManager.setDensityFlickerGainScale(1.3);
       } else if (profileName === 'atmospheric') {
+        regimeClassifier.setOscillatingThreshold(0.18);
         regimeClassifier.setCoherentShareAlphaMin(0.03);
         regimeClassifier.setEvolvingMinDwell(7);
         regimeClassifier.setEvolvingMinDwellSec(5.8);

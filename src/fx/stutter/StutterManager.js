@@ -157,12 +157,15 @@ StutterManager = class StutterManager {
     }
 
     stutterMetrics.incScheduled(1, provided.profile || 'unknown');
-    return stutterNotes(provided);
+    const variant = stutterVariants.getActive();
+    const helper = variant || stutterRegistry.getHelper();
+    return (helper || stutterNotes)(provided);
   }
 
   static prepareBeat(beatStartTime) {
     void beatStartTime;
     this.StutterManagerAttachTextureListener();
+    stutterVariants.selectForBeat();
     if (!this.beatContext) this.beatContext = {};
 
     const beatContext = this.beatContext;

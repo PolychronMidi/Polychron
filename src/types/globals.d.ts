@@ -1793,6 +1793,7 @@ declare var stutterExecutePlan: any;
 declare var stutterNotes: any;
 declare var pickStutterChannels: any;
 declare var stutterRegistry: any;
+declare var stutterVariants: any;
 declare var stutterMetrics: any;
 declare var stutterConfig: any;
 declare var stutterPlanScheduler: any;

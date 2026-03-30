@@ -235,6 +235,29 @@ playNotesEmitPick = function(opts = {}) {
       texturalMirror.recordTexture(activeLayerName, textureMode.mode, onTime);
     }
 
+    // Stutter echo: emit a separate octave-shifted note after the source note.
+    // Lab R11: echo probability scaled by sustain relative to spBeat. Short
+    // subdivision notes (low sustain) are mostly gated out since they already
+    // crowd the buffer. Beat-length notes get the full 0.35 base probability.
+    // Lab R12: sustain-proportional gating - shorter notes get exponentially
+    // less likely to stutter, preventing low-unit note floods.
+    if (shouldStutter && isPrimary) {
+      const sustainRatio = clamp(texSustain / m.max(0.01, spBeat), 0, 1);
+      const stutterEchoProb = 0.35 * sustainRatio * sustainRatio;
+      if (rf() < stutterEchoProb) {
+        StutterManager.scheduleStutterForUnit({
+          profile: 'source',
+          channel: sourceCH,
+          note: noteToEmit,
+          on: onTime,
+          sustain: texSustain,
+          velocity: clamp(m.round(texVel * rf(0.3, 0.6)), 1, MIDI_MAX_VALUE),
+          binVel: clamp(m.round(texVel * rf(0.3, 0.6)), 1, MIDI_MAX_VALUE),
+          isPrimary: true
+        });
+      }
+    }
+
     // Record note into cross-layer tracking systems (convergence, spectral, motif echo, entropy, etc.)
     if (isPrimary) {
       scheduled += emitPickCrossLayerRecord({

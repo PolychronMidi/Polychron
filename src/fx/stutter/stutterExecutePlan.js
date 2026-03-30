@@ -141,7 +141,8 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
       const stepPeriodScaled = (baseStepPeriod / m.max(0.01, Number(rateCurveVal))) / m.max(0.01, rateScale);
       const stepTick = on + i * (stepPeriodScaled * jitter) + (phaseFraction * stepPeriodScaled);
 
-      stutterNotes({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity ?? 100, binVel: cfg.maxVelocity ?? 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });
+      const helper = stutterRegistry.getHelper();
+      (helper || stutterNotes)({ profile, channel: ch, note: baseNote, on: stepTick, sustain: duration, velocity: cfg.maxVelocity ?? 100, binVel: cfg.maxVelocity ?? 100, isPrimary: false, shared: stutterMgr.shared, beatContext: stutterMgr.beatContext });
     }
   }
 
