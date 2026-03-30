@@ -99,6 +99,7 @@ hyperMetaManagerContradictions = (() => {
           ['phaseFloorController', 'couplingHomeostasis'],
           'Phase floor boosting while homeostasis throttling global gain');
         ST.rateMultipliers.phaseExemption = m.max(ST.rateMultipliers.phaseExemption, 1.5);
+        conductorMetaWatchdog.signalContradiction('density', 'couplingHomeostasis');
       }
     }
 

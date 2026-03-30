@@ -23,6 +23,8 @@ phaseFloorController = (() => {
   let phaseFloorControllerBeatCount = 0;
   let phaseFloorControllerRecoverySuccessEma = 0.5;
   let phaseFloorControllerLastBoostApplied = 0;
+  let phaseFloorControllerBeatsSinceBoost = 0;
+  const RECOVERY_ATTRIBUTION_WINDOW = 12;
 
   // DERIVED THRESHOLDS (self-calibrating)
 
@@ -211,13 +213,18 @@ phaseFloorController = (() => {
       phaseFloorControllerCurrentCoherentStreak = 0;
     }
 
-    // Track recovery success: did a previous boost actually recover phase share?
-    if (phaseFloorControllerLastBoostApplied > 1.0 && share > getLowShareThreshold()) {
-      // Boost was applied and phase recovered -- success
-      phaseFloorControllerRecoverySuccessEma += (1.0 - phaseFloorControllerRecoverySuccessEma) * _RECOVERY_EMA_ALPHA;
-    } else if (phaseFloorControllerLastBoostApplied > 1.0 && share < getCollapseThreshold()) {
-      // Boost was applied but phase still collapsed -- failure
-      phaseFloorControllerRecoverySuccessEma += (0.0 - phaseFloorControllerRecoverySuccessEma) * _RECOVERY_EMA_ALPHA;
+    // Track recovery success: only attribute recovery if it happens within N beats of boost
+    phaseFloorControllerBeatsSinceBoost++;
+    if (phaseFloorControllerLastBoostApplied > 1.0 && phaseFloorControllerBeatsSinceBoost <= RECOVERY_ATTRIBUTION_WINDOW) {
+      if (share > getLowShareThreshold()) {
+        phaseFloorControllerRecoverySuccessEma += (1.0 - phaseFloorControllerRecoverySuccessEma) * _RECOVERY_EMA_ALPHA;
+      } else if (share < getCollapseThreshold()) {
+        phaseFloorControllerRecoverySuccessEma += (0.0 - phaseFloorControllerRecoverySuccessEma) * _RECOVERY_EMA_ALPHA;
+      }
+    } else if (phaseFloorControllerLastBoostApplied > 1.0 && phaseFloorControllerBeatsSinceBoost > RECOVERY_ATTRIBUTION_WINDOW) {
+      // Boost didn't work within window - negative feedback
+      phaseFloorControllerRecoverySuccessEma += (0.2 - phaseFloorControllerRecoverySuccessEma) * _RECOVERY_EMA_ALPHA;
+      phaseFloorControllerLastBoostApplied = 0;
     }
   }
 
@@ -228,6 +235,7 @@ phaseFloorController = (() => {
    */
   function recordBoostApplied(boost) {
     phaseFloorControllerLastBoostApplied = boost;
+    if (boost > 1.0) phaseFloorControllerBeatsSinceBoost = 0;
   }
 
   function getSnapshot() {
