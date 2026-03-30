@@ -70,6 +70,8 @@ entropyRegulator = (() => {
    * @returns {number} combined 0-1
    */
   let entropyRegulatorRhythmIrregErrors = 0;
+  let entropyRegulatorConsecutiveRhythmErrors = 0;
+  let entropyRegulatorLastRhythmValue = 0.5;
 
   function entropyRegulatorComputeEntropy() {
     const layers = ['L1', 'L2'];
@@ -88,14 +90,18 @@ entropyRegulator = (() => {
       // during early beats or section transitions. Isolate per-layer so
       // a failure in one layer doesn't abort the entire entropy measurement.
       try {
-        totalRhythm += entropyMetrics.rhythmicIrregularity(layer);
-      } catch (e) {
+        const rhythmVal = entropyMetrics.rhythmicIrregularity(layer);
+        totalRhythm += rhythmVal;
+        entropyRegulatorLastRhythmValue = rhythmVal;
+        entropyRegulatorConsecutiveRhythmErrors = 0;
+      } catch { /* boot-safety: rhythm data may not be available */
         entropyRegulatorRhythmIrregErrors++;
-        explainabilityBus.emit('entropy-rhythm-error', 'both', {
-          layer,
-          error: e && e.message ? e.message : 'unknown',
-          errorCount: entropyRegulatorRhythmIrregErrors
-        });
+        entropyRegulatorConsecutiveRhythmErrors++;
+        // Circuit breaker: after 3+ consecutive errors, use last known value
+        if (entropyRegulatorConsecutiveRhythmErrors <= 3) {
+          totalRhythm += entropyRegulatorLastRhythmValue;
+        }
+        // After 3 consecutive, stop contributing rhythm to entropy (reduces noise)
       }
     }
     if (count === 0) {

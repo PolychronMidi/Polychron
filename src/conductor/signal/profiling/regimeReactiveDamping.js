@@ -247,9 +247,9 @@ regimeReactiveDamping = (() => {
       densityVarEma += (densityDevSq - densityVarEma) * _DENSITY_VAR_EMA_ALPHA;
     }
     const densityArchScale = densityVarEma < _DENSITY_VAR_TARGET_LOW
-      ? 1.0 + clamp((_DENSITY_VAR_TARGET_LOW - densityVarEma) / 0.005, 0, 1)
+      ? 1.0 + clamp((_DENSITY_VAR_TARGET_LOW - densityVarEma) / 0.005, 0, 1) * 0.6
       : densityVarEma > _DENSITY_VAR_TARGET_HIGH
-        ? 1.0 - clamp((densityVarEma - _DENSITY_VAR_TARGET_HIGH) / 0.006, 0, 1) * 0.4
+        ? 1.0 - clamp((densityVarEma - _DENSITY_VAR_TARGET_HIGH) / 0.006, 0, 1) * 0.6
         : 1.0;
     const sectionDensityNudge = (densityArchProgress - 0.5) * 0.04 * densityArchScale;
     const midSectionDensityPush = m.sin(sectionProgress * m.PI) * 0.013;
@@ -358,6 +358,9 @@ regimeReactiveDamping = (() => {
     regimeReactiveDampingTensionPinStreak = 0;
     regimeReactiveDampingTensionUnpinStreak = 0;
     regimeReactiveDampingTensionCeilingRelax = 0;
+    regimeReactiveDampingInjectionCount = 0;
+    densityVarEma = 0.010;
+    densityMeanEma = 0.50;
   }
 
   conductorIntelligence.registerDensityBias('regimeReactiveDamping', densityBias, _DENSITY_RANGE[0], _DENSITY_RANGE[1]);
