@@ -90,9 +90,13 @@ articulationComplement = (() => {
     // Check role swap state
     const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
 
-    // Base contrast: if other layer is legato, make this one more staccato
-    let sustainScale = 1.0;
-    let preferredStutterType = 'fade';
+    // Entropy-aware articulation: high entropy favors staccato for rhythmic clarity
+    const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
+    const currentEntropy = entropyEntry ? V.optionalFinite(entropyEntry.smoothed, 0.5) : 0.5;
+    const entropyStaccatoBias = currentEntropy > 0.6 ? clamp((currentEntropy - 0.6) * 0.5, 0, 0.15) : 0;
+
+    let sustainScale = 1.0 - entropyStaccatoBias;
+    let preferredStutterType = currentEntropy > 0.7 ? 'chop' : 'fade';
 
     const contagionMode = artRegime === 'coherent';
     if (otherProfile.isLegato) {

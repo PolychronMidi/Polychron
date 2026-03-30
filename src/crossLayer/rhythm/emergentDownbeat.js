@@ -38,6 +38,8 @@ emergentDownbeat = (() => {
     if (signals.cadenceAlign) { score += 0.3; signalCount++; }
     if (signals.velReinforce) { score += 0.2; signalCount++; }
     if (signals.phaseLock) { score += 0.15; signalCount++; }
+    const recentTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 2, windowSeconds: 2 });
+    if (recentTransition) { score += 0.25; signalCount++; }
 
     // convergenceTarget modulates detection threshold - more downbeats during climactic sections
     const intent = sectionIntentCurves.getLastIntent();

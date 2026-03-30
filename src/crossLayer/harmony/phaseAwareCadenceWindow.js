@@ -74,7 +74,10 @@ phaseAwareCadenceWindow = (() => {
       mode: /** @type {'lock'|'drift'|'repel'} */ ('drift'),
       confidence: 0
     };
-    const allowed = Boolean(cadenceSuggested) && snap.confidence >= MIN_CONFIDENCE && snap.phaseDiff <= 0.3;
+    const intent = sectionIntentCurves.getLastIntent();
+    const ct = V.optionalFinite(intent.convergenceTarget, 0.5);
+    const phaseDiffThreshold = 0.3 + ct * 0.15;
+    const allowed = Boolean(cadenceSuggested) && snap.confidence >= MIN_CONFIDENCE && snap.phaseDiff <= phaseDiffThreshold;
 
     explainabilityBus.emit('phase-cadence-window', layer, {
       cadenceSuggested: Boolean(cadenceSuggested),

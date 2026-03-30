@@ -52,8 +52,18 @@ cadenceAdvisor = (() => {
     // Near phrase boundaries with sufficient harmonic motion - mild cadence suggestion
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
 
+    // Distant keys need stronger cadence resolution
+    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const excursion = harmonicEntry ? V.optionalFinite(harmonicEntry.excursion, 0) : 0;
+    const excursionBoost = excursion > 3 ? 0.15 : excursion > 1 ? 0.05 : 0;
+
     if (phraseCtx && phraseCtx.position > 0.85 && recentChanges.length >= 3) {
-      return { suggest: true, type: 'half', confidence: 0.55 };
+      return { suggest: true, type: 'half', confidence: clamp(0.55 + excursionBoost, 0, 1) };
+    }
+
+    // Distant keys mid-phrase can also trigger cadence suggestion
+    if (excursion > 4 && phraseCtx && phraseCtx.position > 0.6) {
+      return { suggest: true, type: 'deceptive', confidence: clamp(0.35 + excursionBoost, 0, 1) };
     }
 
     return { suggest: false, type: 'none', confidence: 0 };
