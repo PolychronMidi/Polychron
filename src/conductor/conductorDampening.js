@@ -70,12 +70,13 @@ conductorDampening = (() => {
     let base = pipelineName === 'flicker' ? 0.78 + elasticityAdj : BASE_DEVIATION_DAMPING;
     try {
       const snap = systemDynamicsProfiler.getSnapshot();
+      // Lab R3: no-dampening = raw energy not chaos. Widen regime multiplier range.
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
-        base *= 0.8; // Thicken gravity (less pass-through) when fragmented
+        base *= 0.72;
       } else if (snap.regime === 'coherent') {
-        base *= 1.18;
+        base *= 1.28;
       } else if (snap.regime === 'exploring') {
-        base *= 1.14;
+        base *= 1.22;
       }
     } catch { /* boot-safety: dependency may not be ready */
       // profiler snapshot may not be available during early boot or testing;

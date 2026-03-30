@@ -146,7 +146,16 @@ playNotesEmitPick = function(opts = {}) {
   };
 
   const resolvedStutterProbValue = V.requireFinite(resolvedStutterProb, 'resolvedStutterProb');
-  const shouldStutter = resolvedStutterProbValue > rf();
+  // Lab R3: perProb was a separate gate creating compound suppression (85% perProb * 40%
+  // conductorProb = 34% actual). Now perProb amplifies the conductor probability so
+  // high perProb profiles actually produce dense stutters.
+  const maxPerProb = m.max(
+    stutterConfig.getProfileConfig('source').perProb,
+    stutterConfig.getProfileConfig('reflection').perProb,
+    stutterConfig.getProfileConfig('bass').perProb
+  );
+  const stutterProbAmplified = clamp(resolvedStutterProbValue * (0.6 + maxPerProb * 0.8), 0, 1);
+  const shouldStutter = stutterProbAmplified > rf();
   const selectedShift = shouldStutter ? playNotesEmitPickChooseShift(pickNote, minMidi, maxMidi) : 0;
 
   const pickVelScale = Number.isFinite(pick.playNotesEmitPickDistributedVelocity)
