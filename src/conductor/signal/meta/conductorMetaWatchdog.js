@@ -10,9 +10,9 @@ conductorMetaWatchdog = (() => {
   const V = validator.create('conductorMetaWatchdog');
 
   const _CHECK_INTERVAL = 50;      // run watchdog every N beats
-  const _CONFLICT_THRESHOLD = 30;  // out of 50 beats, opposing > this triggers attenuation
+  const _CONFLICT_THRESHOLD = 55;  // out of 100 beats, opposing > this triggers attenuation
   const _ATTENUATION_FACTOR = 0.50; // weaker controller attenuated by this factor
-  const _RING_SIZE = 50;
+  const _RING_SIZE = 100;
 
   let conductorMetaWatchdogBeatCounter = 0;
 
@@ -182,5 +182,15 @@ conductorMetaWatchdog = (() => {
   }));
   conductorIntelligence.registerModule('conductorMetaWatchdog', { reset }, ['section']);
 
-  return { recordCorrection, getAttenuation, getSnapshot, reset };
+  function signalContradiction(pipeline, weakerController) {
+    let pipelineMap = conductorMetaWatchdogAttenuations.get(pipeline);
+    if (!pipelineMap) {
+      pipelineMap = new Map();
+      conductorMetaWatchdogAttenuations.set(pipeline, pipelineMap);
+    }
+    const current = V.optionalFinite(pipelineMap.get(weakerController), 1.0);
+    pipelineMap.set(weakerController, clamp(current * 0.85, 0.1, 1.0));
+  }
+
+  return { recordCorrection, getAttenuation, signalContradiction, getSnapshot, reset };
 })();

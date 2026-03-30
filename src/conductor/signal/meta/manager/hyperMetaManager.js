@@ -92,7 +92,8 @@ hyperMetaManager = (() => {
       // Fast EMA blend: normalize fast EMA to exceedanceTrendEma scale (0.35x weight).
       // Correlation flips are short-lived -- early detection lets damping engage within
       // the same episode rather than several ticks later.
-      const e24Exceedance = m.max(S.exceedanceTrendEma, S.fastExcNormalized);
+      const e24FastRescaled = ST.FAST_EMA_WEIGHT > 0 ? S.fastExcNormalized / ST.FAST_EMA_WEIGHT : 0;
+      const e24Exceedance = m.max(S.exceedanceTrendEma, e24FastRescaled);
       const e24ExceedanceWeight = clamp(1.0 + e24Exceedance * 1.5, 1.0, 2.5);
       const e24FlipDampen = clamp(1.0 - corrFlips * 0.03 * e24ExceedanceWeight, 0.70, 0.99);
       ST.rateMultipliers.global *= e24FlipDampen;
@@ -382,7 +383,9 @@ hyperMetaManager = (() => {
     // fast EMA sat above slow thresholds (0.20/0.30) at normal energy levels.
     {
       const e21SlowOverage = m.max(0, S.exceedanceTrendEma - 0.30);
-      const e21FastOverage = m.max(0, S.fastExcNormalized - 0.30);
+      // Rescale fast to slow range: fastExcNormalized is 0-0.35, slow is 0-1.0
+      const e21FastRescaled = ST.FAST_EMA_WEIGHT > 0 ? S.fastExcNormalized / ST.FAST_EMA_WEIGHT : 0;
+      const e21FastOverage = m.max(0, e21FastRescaled - 0.30);
       const e21ExceedanceOverage = m.max(e21SlowOverage, e21FastOverage);
       ST.rateMultipliers.e21FlickerAmplitudeCap = clamp(1.0 - e21ExceedanceOverage * e21ExceedanceOverage * 2.5, 0.80, 1.0);
     }
@@ -408,7 +411,8 @@ hyperMetaManager = (() => {
     // energy range 0.05-0.15, weighted 0.35x before comparing to slow threshold.
     {
       const e23SlowOverage = m.max(0, S.exceedanceTrendEma - 0.2);
-      const e23FastOverage = m.max(0, S.fastExcNormalized - 0.2);
+      const e23FastRescaled = ST.FAST_EMA_WEIGHT > 0 ? S.fastExcNormalized / ST.FAST_EMA_WEIGHT : 0;
+      const e23FastOverage = m.max(0, e23FastRescaled - 0.2);
       const e23ExceedanceOverage = m.max(e23SlowOverage, e23FastOverage);
       ST.rateMultipliers.e23RestPressureBoost = clamp(1.0 + e23ExceedanceOverage * e23ExceedanceOverage * 5.0, 1.0, 1.4);
     }

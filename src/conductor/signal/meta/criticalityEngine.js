@@ -146,9 +146,10 @@ criticalityEngine = (() => {
     // S0 tension collapse risk, it emits a protection signal. Reduce
     // avalanche damping on tension to let tension recover naturally.
     const tensionProtection = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('tensionFloorProtection'), 1.0));
-    if (tensionProtection > 1.2) return 1.0; // bypass damping entirely
-    if (tensionSnap < 0.85) return 1.0;
-    const scale = criticalityEngineHealthScale(signalHealthAnalyzer.getHealth().tension.grade);
+    const tensionHealth = signalHealthAnalyzer.getHealth().tension.grade;
+    const scale = criticalityEngineHealthScale(tensionHealth);
+    // Centralized tension damping gate: bypass when EITHER orchestrator protection OR health crisis
+    if (tensionProtection > 1.2 || scale === 0 || tensionSnap < 0.85) return 1.0;
     return 1.0 + (currentBias - 1.0) * scale;
   }
   function flickerMod() {
