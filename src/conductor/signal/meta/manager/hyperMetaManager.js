@@ -443,7 +443,7 @@ hyperMetaManager = (() => {
       try { phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1; } catch { /* timeStream boot-safety */ }
       if (phraseIdx >= 0 && phraseIdx !== S.e9LastPhraseIndex) {
         S.e9LastPhraseIndex = phraseIdx;
-        S.e9BreathingCountdown = 4;
+        S.e9BreathingCountdown = m.max(2, m.min(6, m.round(numerator * 0.5)));
       }
       if (S.e9BreathingCountdown > 0) {
         // Smoothing relax: 1.0 = normal, >1.0 = reduce smoothing coefficient
@@ -480,7 +480,7 @@ hyperMetaManager = (() => {
         return wp && wp.isFlat;
       }, false);
       if (inPhraseTrough && densityWaveFlat) {
-        S.e10ReleaseCooldown = 3;
+        S.e10ReleaseCooldown = m.max(2, m.min(5, m.round(numerator * 0.4)));
         // Tension suppression: < 1.0 tells densityWaveAnalyzer to suppress
         // its tension boost instead of amplifying.
         // E18: suppression depth health-scaled. 0.7 base at neutral health.
@@ -515,22 +515,19 @@ hyperMetaManager = (() => {
       // Also at phrase start: first 3% after phrase 0
       const atPhraseStart = phraseProgress < 0.03 && phraseIdx > 0;
       if (atPhraseEnd || atPhraseStart) {
-        S.e11SparseCountdown = 2;
+        S.e11SparseCountdown = m.max(1, m.min(4, m.round(numerator * 0.3)));
         ST.rateMultipliers.e11SparseWindow = 1.0;
         // E13: Regime-scaled ceiling suppression and rest boost.
         // exploring = no suppression, coherent = strongest, evolving = moderate.
         // E18: ceiling suppression depth health-scaled (less suppression when stressed).
         // For ceiling: base suppression (1.0 - baseVal) scaled, then re-expressed as override.
         // For rest: boost above 1.0 health-scaled.
-        // E13 feedback-loop break: when coherent has been persistently dominant
-        // (coherentShareEma > 0.38), ease the coherent ceiling slightly -- but only
-        // to 0.62 max (not 0.70). Full ease-to-evolving (R45) removed suppression
-        // entirely causing exceedance 120 and note explosion +35%. Partial ease
-        // (0.55->0.62) is enough to break the feedback loop without losing the
-        // stabilizing effect of sparse window suppression in coherent passages.
+        // E13 feedback-loop break: when coherent share is above threshold,
+        // ease the coherent ceiling to break the suppress->stagnate cycle.
+        // Threshold lowered to 0.15 so it fires in realistic session lengths.
         const e13CoherentCeilingBase = currentRegime === 'coherent'
-          ? clamp(0.55 + clamp((S.coherentShareEma - 0.38) / 0.17, 0, 1) * 0.07, 0.55, 0.62)
-          : 0.55; // unused when not coherent, but kept for clarity
+          ? clamp(0.55 + clamp((S.coherentShareEma - 0.15) / 0.25, 0, 1) * 0.07, 0.55, 0.62)
+          : 0.55;
         const e13BaseCeiling = currentRegime === 'exploring' ? 1.0
           : currentRegime === 'coherent' ? e13CoherentCeilingBase
           : 0.70; // evolving
@@ -589,9 +586,12 @@ hyperMetaManager = (() => {
 
   // PUBLIC API
 
+  const GLOBAL_MULTIPLIER_FLOOR = 0.65;
+
   function getRateMultiplier(key) {
     const val = ST.rateMultipliers[key];
     if (val === undefined) { ST.rateMultipliers[key] = 1.0; return 1.0; }
+    if (key === 'global' && val < GLOBAL_MULTIPLIER_FLOOR) return GLOBAL_MULTIPLIER_FLOOR;
     return val;
   }
   function getPhaseBoostCeiling()        { return S.phaseBoostCeiling; }
