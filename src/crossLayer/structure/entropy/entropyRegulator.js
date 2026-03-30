@@ -35,7 +35,7 @@ entropyRegulator = (() => {
   let smoothedEntropy = 0.5;
   let lastRawEntropy = 0.5;
   let targetEntropy = 0.5;
-  let regulationStrength = 0.5; // how aggressively to steer (0-1)
+  let regulationStrength = 0.65; // Lab R1: raised from 0.5, high entropy confirmed good
 
   /** @type {Map<string, number[]>} recent MIDI notes per layer */
   const noteHistory = new Map();
