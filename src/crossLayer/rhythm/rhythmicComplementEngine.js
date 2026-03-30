@@ -156,8 +156,15 @@ rhythmicComplementEngine = (() => {
     const excursion = harmonicEntry ? V.optionalFinite(harmonicEntry.excursion, 0) : 0;
     const farFromHome = excursion > 4;
 
+    // Rhythm awareness: read other layer's rhythm pattern from L0
+    const otherLayer = crossLayerHelpers.getOtherLayer(LM.activeLayer || 'L1');
+    const otherRhythm = L0.getLast('rhythm', { layer: otherLayer });
+    const otherIsDense = otherRhythm && (otherRhythm.method === 'onsets' || otherRhythm.method === 'random');
+
     if (farFromHome && interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
+    } else if (otherIsDense && interaction > MODERATE_INTERACTION) {
+      mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
     } else if (interaction > HIGH_INTERACTION && density < LOW_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
     } else if (interaction > HIGH_INTERACTION && density > HIGH_DENSITY) {

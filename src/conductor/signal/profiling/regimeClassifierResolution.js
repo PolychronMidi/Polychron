@@ -61,7 +61,9 @@ regimeClassifierResolution = (() => {
       ? ((V.optionalFinite(state.runResolvedRegimeCounts.evolving, 0)) / state.runBeatCount)
       : 0;
     const evolvingDeficit = clamp((config.REGIME_TARGET_EVOLVING_LO - evolvingShare) / config.REGIME_TARGET_EVOLVING_LO, 0, 1);
-    const coherentOvershare = clamp((state.runCoherentShare - config.REGIME_TARGET_COHERENT_HI) / 0.18, 0, 1);
+    // Chronic forcing mitigation: if forced breaks are frequent, ease classification thresholds
+    const forcedBreakPressure = state.forcedBreakCount > 3 ? clamp((state.forcedBreakCount - 3) * 0.02, 0, 0.08) : 0;
+    const coherentOvershare = clamp((state.runCoherentShare - config.REGIME_TARGET_COHERENT_HI - forcedBreakPressure) / 0.18, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
     const phaseWeakness = clamp((0.07 - phaseShare) / 0.07, 0, 1);
     const phaseRecoveryCredit = clamp((phaseShare - 0.10) / 0.06, 0, 1);
