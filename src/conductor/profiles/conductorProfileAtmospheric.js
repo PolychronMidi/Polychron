@@ -1,9 +1,9 @@
 conductorProfileAtmospheric = () => ({
   label: 'Atmospheric',
   density: {
-    floor: 0.1,
-    ceiling: 0.55,
-    range: [0.2, 0.5],
+    floor: 0.15,
+    ceiling: 0.75,
+    range: [0.35, 0.65],
     smoothing: 0.95
   },
   phaseMultipliers: {

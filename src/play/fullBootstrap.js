@@ -552,6 +552,7 @@ fullBootstrap = (() => {
     'stutterNotes',
     'pickStutterChannels',
     'stutterRegistry',
+    'stutterVariants',
     'stutterMetrics',
     'stutterConfig',
     'stutterPlanScheduler',

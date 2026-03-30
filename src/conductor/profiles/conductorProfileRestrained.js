@@ -1,20 +1,20 @@
 conductorProfileRestrained = () => ({
   label: 'Restrained',
   density: {
-    floor: 0.3,
-    ceiling: 0.65,
-    range: [0.4, 0.6],
-    smoothing: 0.92
+    floor: 0.20,
+    ceiling: 0.48,
+    range: [0.25, 0.42],
+    smoothing: 0.94
   },
   phaseMultipliers: {
-    intro: 0.85,
-    opening: 0.85,
-    exposition: 0.95,
-    development: 1.0,
-    climax: 1.1,
-    resolution: 0.8,
-    conclusion: 0.8,
-    coda: 0.75
+    intro: 0.65,
+    opening: 0.65,
+    exposition: 0.75,
+    development: 0.80,
+    climax: 0.90,
+    resolution: 0.65,
+    conclusion: 0.60,
+    coda: 0.55
   },
   arcMapping: {
     intro: 'arch',
@@ -42,29 +42,29 @@ conductorProfileRestrained = () => ({
     pulse: 0.15
   },
   flicker: {
-    depthScale: 0.5,
-    crossModWeight: 0.3
+    depthScale: 0.3,
+    crossModWeight: 0.2
   },
   climaxBoost: {
-    playScale: 1.05,
-    stutterScale: 1.05
+    playScale: 1.0,
+    stutterScale: 1.0
   },
   crossMod: {
-    rangeScale: 0.6,
-    penaltyScale: 0.7,
-    textureBoostScale: 0.5
+    rangeScale: 0.5,
+    penaltyScale: 0.6,
+    textureBoostScale: 0.35
   },
   fxMix: {
-    reverbScale: 0.6,
-    filterOpenness: 0.7,
-    delayScale: 0.4,
-    textureBoostScale: 0.4
+    reverbScale: 0.5,
+    filterOpenness: 0.55,
+    delayScale: 0.3,
+    textureBoostScale: 0.3
   },
   texture: {
-    burstBaseScale: 0.5,
-    flurryBaseScale: 0.4,
-    burstCap: 0.10,
-    flurryCap: 0.08
+    burstBaseScale: 0.35,
+    flurryBaseScale: 0.3,
+    burstCap: 0.07,
+    flurryCap: 0.05
   },
   attenuation: {
     subsubdivRange: [1, 2],

@@ -5,8 +5,9 @@
 // Cooperates with CC effects via beatContext (pan-register, fade-velocity).
 
 const stutterNotesClampStutterNote = (n, isBassLocal) => {
-  if (isBassLocal) return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), 59);
-  return modClamp(n, m.max(0, OCTAVE.min * 12 - 1), OCTAVE.max * 12 - 1);
+  const lo = m.max(0, OCTAVE.min * 12);
+  if (isBassLocal) return clamp(m.round(n), lo, 59);
+  return clamp(m.round(n), lo, m.max(lo, OCTAVE.max * 12 - 1));
 };
 
 /**
@@ -207,6 +208,14 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   if (!emit) {
     // Return planned events for testing/preview
     return { shared: localShared, events: [evOn, evOff] };
+  }
+
+  // Lab R12: per-step sustain-proportional gating. Short sustain stutters
+  // (subdivision echoes) are probabilistically skipped so multi-step stutter
+  // series thin out naturally. Probability = clamp(sustain / spBeat, 0.1, 1).
+  const stepGate = clamp(sustain / m.max(0.01, spBeat), 0.1, 1);
+  if (rf() > stepGate) {
+    return localShared;
   }
 
   // Emit and metrics

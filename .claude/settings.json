@@ -16,6 +16,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "STOP. Re-read CLAUDE.md and the user's most recent prompt. Did you do ALL the work asked, or did you summarize/journal/skip the hard parts? Every verdict, every finding, every requested change must be integrated into /src, not just documented. If you skipped anything, go back and do it now."
+          }
+        ]
+      }
     ]
   }
 }

@@ -161,11 +161,13 @@ rhythmicComplementEngine = (() => {
     const otherRhythm = L0.getLast('rhythm', { layer: otherLayer });
     const otherIsDense = otherRhythm && (otherRhythm.method === 'onsets' || otherRhythm.method === 'random');
 
-    // Lab R2: coherent+canon was "excellent" -favor canon during coherent regime
+    // Lab R2: coherent+canon was "excellent" - favor canon during coherent regime
+    // Lab R8: atmospheric+canon was "legendary" - favor canon during atmospheric profile
     const currentRegime = regimeClassifier.getLastRegime();
     const inCoherent = currentRegime === 'coherent';
+    const inAtmospheric = conductorConfig.getActiveProfileName() === 'atmospheric';
 
-    if (inCoherent && interaction > MODERATE_INTERACTION) {
+    if ((inCoherent || inAtmospheric) && interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
     } else if (farFromHome && interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
