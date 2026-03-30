@@ -85,8 +85,8 @@ sectionIntentCurves = (() => {
     const phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);
 
     // R35 E3: Asymmetric arc - shift peak later (~62% through piece) for
-    // building tension with late climax. pow(p, 0.8) skews the sine peak.
-    const arc = m.sin(m.pow(p, 0.8) * m.PI);
+    // Asymmetric arc: pow(p, 1.15) shifts sine peak to p~0.55 (mid Q2).
+    const arc = m.sin(m.pow(p, 1.15) * m.PI);
     const wave = 0.5 + 0.5 * m.sin((p + (s + ph * PHRASE_PHASE_SCALE) * WAVE_PHASE_SPEED) * m.PI * 2);
     const lateLift = clamp((p - 0.58) / 0.42, 0, 1);
     const midSectionPocket = m.sin(clamp((p - 0.18) / 0.64, 0, 1) * m.PI);
