@@ -52,7 +52,8 @@ regimeReactiveDampingEquilibrator = (() => {
       if (typeof readiness.cadenceMonopolyPressure === 'number') cadenceMonopolyPressure = clamp(readiness.cadenceMonopolyPressure, 0, 1);
       if (typeof readiness.rawNonCoherentOpportunityShare === 'number') rawNonCoherentOpportunityShare = clamp(readiness.rawNonCoherentOpportunityShare, 0, 1);
       if (typeof readiness.opportunityGap === 'number') opportunityGap = clamp(readiness.opportunityGap, 0, 1);
-      if (typeof readiness.postForcedRecoveryBeats === 'number') postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryBeats / 24, 0, 1);
+      if (typeof readiness.postForcedRecoveryRemainingSec === 'number') postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryRemainingSec / 20, 0, 1);
+      else if (typeof readiness.postForcedRecoveryBeats === 'number') postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryBeats / 24, 0, 1);
     }
 
     let phaseHotspotPressure = 0;

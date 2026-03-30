@@ -6,10 +6,33 @@ regimeClassifier = (() => {
     REGIME_WINDOW: 5,
     REGIME_MAJORITY: 3,
     OSCILLATING_CURVATURE_DEFAULT: 0.55,
+    EVOLVING_MAX_DWELL_SEC: 125,
+    COHERENT_MAX_DWELL_SEC: 62,
+    EXPLORING_MAX_DWELL_SEC: 150,
+    POST_FORCED_RECOVERY_SEC: 20,
+    COHERENT_MOMENTUM_SEC: 7,
+    // Legacy beat-based values kept for reference but _SEC versions are authoritative
     EVOLVING_MAX_DWELL: 150,
-    COHERENT_MAX_DWELL: 75,  // R72 E4: 90->75 for more regime transitions.
+    COHERENT_MAX_DWELL: 75,
     POST_FORCED_RECOVERY_WINDOW: 24,
     COHERENT_MOMENTUM_WINDOW: 8,
+    // Seconds-based dwell thresholds (authoritative for comparisons)
+    COHERENT_HARD_CAP_SEC: 31,
+    COHERENT_FLOOR_HIGH_SEC: 40,
+    COHERENT_FLOOR_LOW_SEC: 30,
+    STARVATION_EXPLORING_SEC: 6.6,
+    STARVATION_COHERENT_SEC: 12.5,
+    EXPLORING_MONOPOLY_FLOOR_SEC: 8.3,
+    POST_FORCED_COOLDOWN_SHORT_SEC: 6.6,
+    POST_FORCED_COOLDOWN_LONG_SEC: 11.6,
+    EXPLORING_FLOOR_BONUS_SEC: 83,
+    EXPLORING_DUR_BONUS_UNIT_SEC: 41.5,
+    EXPLORING_CONVERGENCE_SEC: 26.6,
+    COHERENT_DUR_PENALTY_SEC: 29,
+    COHERENT_SATURATION_SEC: 83,
+    EVOLVING_MIN_DWELL_DEFAULT_SEC: 8.3,
+    EVOLVING_VELOCITY_THRESHOLD_SEC: 83,
+    CROSSOVER_MIN_DWELL_SEC: 2.5,
     REGIME_TARGET_COHERENT_LO: 0.10,
     REGIME_TARGET_COHERENT_HI: 0.35,
     // R9 E2: Raised from 0.14 to 0.18.
@@ -43,6 +66,9 @@ regimeClassifier = (() => {
       rawRegimeWindow: [],
       exploringBeats: 0,
       coherentBeats: 0,
+      exploringStartSec: 0,
+      coherentStartSec: 0,
+      evolvingStartSec: 0,
       oscillatingCurvatureThreshold: regimeClassifierConfig.OSCILLATING_CURVATURE_DEFAULT,
       coherentThresholdScale: 0.65,
       evolvingBeats: 0,
@@ -73,6 +99,10 @@ regimeClassifier = (() => {
       postForcedCooldown: 0,
       evolvingProximityBonus: 0,
       coherentMomentumBeats: 0,
+      postForcedRecoveryEndSec: 0,
+      postForcedCooldownEndSec: 0,
+      coherentMomentumEndSec: 0,
+      evolvingMinDwellSec: 8.3,
       coherentShareAlphaMin: 0.025,
       coherentShareEma: 0.25,
       lastClassifyInputs: {
@@ -137,6 +167,11 @@ regimeClassifier = (() => {
    */
   function setEvolvingMinDwell(minDwell) {
     regimeClassifierState.evolvingMinDwell = V.requireFinite(minDwell, 'minDwell');
+  }
+
+  /** @param {number} sec */
+  function setEvolvingMinDwellSec(sec) {
+    regimeClassifierState.evolvingMinDwellSec = V.requireFinite(sec, 'evolvingMinDwellSec');
   }
 
   /** @returns {number} */
@@ -219,7 +254,7 @@ regimeClassifier = (() => {
    * above threshold), velocity status, and whether velocity is the blocking
    * factor. R35 E5: Adds exploring-block diagnostic.
    * R37 E5/E6: Adds effectiveDim and rawRegimeMaxStreak.
-  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runTickCount: number, runCoherentShare: number, runTransitionCount: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, lastForcedTriggerTick: number, postForcedRecoveryBeats: number, tickSource: string, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number, cadenceMonopolyPressure: number, cadenceMonopolyActive: boolean, cadenceMonopolyReason: string, rawExploringShare: number, rawEvolvingShare: number, rawNonCoherentOpportunityShare: number, resolvedNonCoherentShare: number, opportunityGap: number }}
+  * @returns {{ gap: number, couplingStrength: number, coherentThreshold: number, velocity: number, velThreshold: number, thresholdScale: number, velocityBlocked: boolean, exploringBlock: string, coherentBlock: string, evolvingBeats: number, coherentBeats: number, runCoherentBeats: number, maxCoherentBeats: number, runBeatCount: number, runTickCount: number, runCoherentShare: number, runTransitionCount: number, forcedBreakCount: number, forcedRegime: string, forcedRegimeBeatsRemaining: number, forcedOverrideActive: boolean, forcedOverrideBeats: number, lastForcedReason: string, lastForcedTriggerStreak: number, lastForcedTriggerBeat: number, lastForcedTriggerTick: number, postForcedRecoveryBeats: number, postForcedRecoveryRemainingSec: number, tickSource: string, rawRegimeCounts: Record<string, number>, runRawRegimeCounts: Record<string, number>, rawRegimeMaxStreak: Record<string, number>, runResolvedRegimeCounts: Record<string, number>, effectiveDim: number, cadenceMonopolyPressure: number, cadenceMonopolyActive: boolean, cadenceMonopolyReason: string, rawExploringShare: number, rawEvolvingShare: number, rawNonCoherentOpportunityShare: number, resolvedNonCoherentShare: number, opportunityGap: number }}
    */
   function getTransitionReadiness() {
     return regimeClassifierHelpers.buildTransitionReadiness({
@@ -242,6 +277,7 @@ regimeClassifier = (() => {
       lastForcedTriggerBeat: regimeClassifierState.lastForcedTriggerBeat,
       lastForcedTriggerTick: regimeClassifierState.lastForcedTriggerTick,
       postForcedRecoveryBeats: regimeClassifierState.postForcedRecoveryBeats,
+      postForcedRecoveryEndSec: regimeClassifierState.postForcedRecoveryEndSec,
       tickSource: regimeClassifierConfig.tickSource,
       rawRegimeCounts: regimeClassifierState.rawRegimeCounts,
       runRawRegimeCounts: regimeClassifierState.runRawRegimeCounts,
@@ -253,5 +289,5 @@ regimeClassifier = (() => {
     });
   }
 
-  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, getExploringBeats, getLastRegime, getTransitionReadiness, consumeForcedTransitionEvent, reset };
+  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, setEvolvingMinDwellSec, getExploringBeats, getLastRegime, getTransitionReadiness, consumeForcedTransitionEvent, reset };
 })();

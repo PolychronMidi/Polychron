@@ -90,7 +90,8 @@ regimeClassifierHelpers = (() => {
 
   function buildTransitionReadiness(state) {
     const cadenceOpportunityPressure = clamp((V.optionalFinite(state.lastClassifyInputs.opportunityGap, 0)) / 0.20, 0, 1);
-    const exploringVelocityThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) - (V.optionalFinite(state.lastClassifyInputs.cadenceMonopolyPressure, 0)) * 0.003 - cadenceOpportunityPressure * 0.001;
+    const evolvingElapsedSec = beatStartTime - state.evolvingStartSec;
+    const exploringVelocityThreshold = (evolvingElapsedSec > 83 ? 0.010 : 0.012) - (V.optionalFinite(state.lastClassifyInputs.cadenceMonopolyPressure, 0)) * 0.003 - cadenceOpportunityPressure * 0.001;
     let exploringBlock = 'none';
     if (state.lastClassifyInputs.velocity <= exploringVelocityThreshold) exploringBlock = 'velocity';
     else if ((V.optionalFinite(state.lastClassifyInputs.effectiveDim, 0)) <= 2.5) exploringBlock = 'dimension';
@@ -129,6 +130,7 @@ regimeClassifierHelpers = (() => {
       lastForcedTriggerBeat: state.lastForcedTriggerBeat,
       lastForcedTriggerTick: state.lastForcedTriggerTick,
       postForcedRecoveryBeats: state.postForcedRecoveryBeats,
+      postForcedRecoveryRemainingSec: beatStartTime < state.postForcedRecoveryEndSec ? state.postForcedRecoveryEndSec - beatStartTime : 0,
       tickSource: state.tickSource,
       rawRegimeCounts: Object.assign({}, state.rawRegimeCounts),
       runRawRegimeCounts: Object.assign({}, state.runRawRegimeCounts),

@@ -4,16 +4,24 @@ regimeClassifierClassification = (() => {
     if (avgVelocity < 0.004) return 'stagnant';
     if (avgCurvature > state.oscillatingCurvatureThreshold && avgVelocity < 0.04) return 'oscillating';
 
-    const coherentFloorBonus = state.exploringBeats > 100 ? clamp((state.exploringBeats - 100) * 0.0005, 0, 0.05) : 0;
-    const durationBonus = state.lastRegime === 'exploring' ? clamp(m.floor(state.exploringBeats / 50) * 0.02, 0, 0.12) : 0;
-    const momentumBonus = state.coherentMomentumBeats > 0
-      ? 0.05 * (state.coherentMomentumBeats / config.COHERENT_MOMENTUM_WINDOW)
+    const exploringElapsedSec = beatStartTime - state.exploringStartSec;
+    const coherentElapsedSec = beatStartTime - state.coherentStartSec;
+    const evolvingElapsedSec = beatStartTime - state.evolvingStartSec;
+    const coherentMomentumActive = beatStartTime < state.coherentMomentumEndSec;
+    const coherentMomentumRemainingSec = coherentMomentumActive ? state.coherentMomentumEndSec - beatStartTime : 0;
+    const postForcedRecoveryActive = beatStartTime < state.postForcedRecoveryEndSec;
+    const postForcedRecoveryRemainingSec = postForcedRecoveryActive ? state.postForcedRecoveryEndSec - beatStartTime : 0;
+
+    const coherentFloorBonus = exploringElapsedSec > config.EXPLORING_FLOOR_BONUS_SEC ? clamp((exploringElapsedSec - config.EXPLORING_FLOOR_BONUS_SEC) * 0.0006, 0, 0.05) : 0;
+    const durationBonus = state.lastRegime === 'exploring' ? clamp(m.floor(exploringElapsedSec / config.EXPLORING_DUR_BONUS_UNIT_SEC) * 0.02, 0, 0.12) : 0;
+    const momentumBonus = coherentMomentumActive
+      ? 0.05 * (coherentMomentumRemainingSec / config.COHERENT_MOMENTUM_SEC)
       : 0;
     if (state.coherentMomentumBeats > 0) state.coherentMomentumBeats--;
 
     let convergenceBonus = 0;
-    if (state.lastRegime === 'exploring' && state.exploringBeats > 32) {
-      convergenceBonus = clamp((state.exploringBeats - 32) * 0.005, 0, 0.15);
+    if (state.lastRegime === 'exploring' && exploringElapsedSec > config.EXPLORING_CONVERGENCE_SEC) {
+      convergenceBonus = clamp((exploringElapsedSec - config.EXPLORING_CONVERGENCE_SEC) * 0.006, 0, 0.15);
     }
 
     const adaptiveAlpha = m.max(state.coherentShareAlphaMin,
@@ -31,18 +39,18 @@ regimeClassifierClassification = (() => {
     const dynamicPenaltyCap = 0.08 + clamp((state.coherentShareEma - 0.60) * 1.0, 0, 0.20);
     const dynamicPenaltyRate = 0.003 + clamp((state.coherentShareEma - 0.50) * 0.004, 0, 0.004);
     let coherentDurationPenalty = 0;
-    if (state.lastRegime === 'coherent' && state.coherentBeats > 35) {
-      coherentDurationPenalty = clamp((state.coherentBeats - 35) * dynamicPenaltyRate, 0, dynamicPenaltyCap);
-      if (state.coherentBeats > 100) {
+    if (state.lastRegime === 'coherent' && coherentElapsedSec > config.COHERENT_DUR_PENALTY_SEC) {
+      coherentDurationPenalty = clamp((coherentElapsedSec - config.COHERENT_DUR_PENALTY_SEC) * dynamicPenaltyRate * 1.2, 0, dynamicPenaltyCap);
+      if (coherentElapsedSec > config.COHERENT_SATURATION_SEC) {
         const dynamicSaturationScale = 0.02 + m.max(0, (state.coherentShareEma - config.REGIME_TARGET_COHERENT_HI) * 0.05);
-        coherentDurationPenalty += (state.coherentBeats - 100) * dynamicSaturationScale;
+        coherentDurationPenalty += (coherentElapsedSec - config.COHERENT_SATURATION_SEC) * dynamicSaturationScale * 1.2;
       }
     }
 
     const baseCoherentThreshold = (state.lastRegime === 'coherent' ? 0.25 : 0.30) * 0.85 * state.coherentThresholdScale;
     let evolvingProximityBonus = 0;
-    if (state.lastRegime === 'evolving' && state.evolvingBeats > state.evolvingMinDwell) {
-      evolvingProximityBonus = clamp((state.evolvingBeats - state.evolvingMinDwell) * 0.002, 0, 0.07);
+    if (state.lastRegime === 'evolving' && evolvingElapsedSec > state.evolvingMinDwellSec) {
+      evolvingProximityBonus = clamp((evolvingElapsedSec - state.evolvingMinDwellSec) * 0.0024, 0, 0.07);
     } else if (state.lastRegime === 'exploring') {
       evolvingProximityBonus = clamp(state.evolvingProximityBonus + 0.001, 0, 0.07);
     }
@@ -80,8 +88,8 @@ regimeClassifierClassification = (() => {
       1
     );
     const opportunityPressure = clamp(opportunityGap / 0.18, 0, 1);
-    const postForcedRecoveryPressure = state.postForcedRecoveryBeats > 0
-      ? state.postForcedRecoveryBeats / config.POST_FORCED_RECOVERY_WINDOW
+    const postForcedRecoveryPressure = postForcedRecoveryActive
+      ? postForcedRecoveryRemainingSec / config.POST_FORCED_RECOVERY_SEC
       : 0;
     if (state.postForcedRecoveryBeats > 0) state.postForcedRecoveryBeats--;
 
@@ -93,7 +101,7 @@ regimeClassifierClassification = (() => {
     const evolvingEntryVelMin = 0.006;
     const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.020 + opportunityPressure * 0.016 + exploringSharePressure * 0.012 + evolvingRecoveryBoost * 0.010 + postForcedRecoveryPressure * 0.014;
     const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.22 - opportunityPressure * 0.12 - exploringSharePressure * 0.12 - evolvingRecoveryBoost * 0.10 - postForcedRecoveryPressure * 0.16;
-    const velThreshold = state.exploringBeats > 100 ? 0.005 : 0.008;
+    const velThreshold = exploringElapsedSec > config.EVOLVING_VELOCITY_THRESHOLD_SEC ? 0.005 : 0.008;
 
     state.lastClassifyInputs = {
       couplingStrength,
@@ -174,7 +182,7 @@ regimeClassifierClassification = (() => {
 
     if (couplingStrength > coherentThreshold + coherentEntryMargin - coherentBlockRelax && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) return 'coherent';
 
-    const recentlyCoherent = state.lastRegime === 'coherent' || state.coherentMomentumBeats > 0;
+    const recentlyCoherent = state.lastRegime === 'coherent' || coherentMomentumActive;
     const coherentGap = couplingStrength - coherentThreshold;
     if (recentlyCoherent &&
         coherentGap > -coherentExitWindow &&
@@ -231,10 +239,10 @@ regimeClassifierClassification = (() => {
     // starved (deficit=1, evolving < 14%), dwell drops to 1. This is a
     // structural self-correcting mechanism: as evolving recovers, the dwell
     // automatically tightens back to prevent exploring collapse.
-    const crossoverMinDwell = m.max(1, 3 - m.floor(evolvingDeficit * 2));
-    if (state.lastRegime === 'exploring' && state.exploringBeats >= crossoverMinDwell && avgVelocity > 0.007 && avgVelocity < adaptiveVelCeiling + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
+    const crossoverMinDwellSec = m.max(0.83, config.CROSSOVER_MIN_DWELL_SEC - evolvingDeficit * 1.66);
+    if (state.lastRegime === 'exploring' && exploringElapsedSec >= crossoverMinDwellSec && avgVelocity > 0.007 && avgVelocity < adaptiveVelCeiling + opportunityPressure * 0.012 + exploringSharePressure * 0.010 + evolvingRecoveryBoost * 0.035 + evolvingCriticalBoost && effectiveDim > 1.4 - exploringSharePressure * 0.10 - evolvingRecoveryBoost * 0.25 && couplingStrength > 0.07 + evolvingDeficit * 0.012 - opportunityPressure * 0.012 - exploringSharePressure * 0.014 - evolvingRecoveryBoost * 0.025) return 'evolving';
 
-    const exploringVelThreshold = (state.evolvingBeats > 100 ? 0.010 : 0.012) + exploringSharePressure * 0.004 - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
+    const exploringVelThreshold = (evolvingElapsedSec > config.EVOLVING_VELOCITY_THRESHOLD_SEC ? 0.010 : 0.012) + exploringSharePressure * 0.004 - cadenceMonopolyPressure * 0.003 - opportunityPressure * 0.001 + postForcedRecoveryPressure * 0.003;
     const profileDimRelief = conductorConfig.getActiveProfile().exploringDimRelief ?? 0;
     const exploringDimThreshold = (couplingStrength < 0.50 ? 2.2 : 2.5) - profileDimRelief - cadenceMonopolyPressure * 0.28 - opportunityPressure * 0.10 + exploringSharePressure * 0.12 + postForcedRecoveryPressure * 0.06;
     const exploringCouplingGate = 0.50 + cadenceMonopolyPressure * 0.08 + opportunityPressure * 0.06 - exploringSharePressure * 0.06 - postForcedRecoveryPressure * 0.05;
