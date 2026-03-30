@@ -9,11 +9,13 @@ systemDynamicsProfilerAnalysis = (() => {
         regimeClassifier.setOscillatingThreshold(0.65);
         regimeClassifier.setCoherentShareAlphaMin(0.04);
         regimeClassifier.setEvolvingMinDwell(5);
+        regimeClassifier.setEvolvingMinDwellSec(4.2);
         conductorDampening.setFlickerTargetRange(0.15 * 1.8);
         pipelineCouplingManager.setDensityFlickerGainScale(1.3);
       } else if (profileName === 'atmospheric') {
         regimeClassifier.setCoherentShareAlphaMin(0.03);
         regimeClassifier.setEvolvingMinDwell(7);
+        regimeClassifier.setEvolvingMinDwellSec(5.8);
       } else if (profileName === 'minimal') {
         regimeClassifier.setOscillatingThreshold(0.45);
       }

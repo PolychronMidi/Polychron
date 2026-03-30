@@ -11,6 +11,7 @@ regimeClassifierResolution = (() => {
     state.lastForcedTriggerBeat = state.lastForcedTriggerTick;
     if (reason === 'coherent-cadence-monopoly' || reason === 'coherent-max-dwell-run') {
       state.postForcedRecoveryBeats = config.POST_FORCED_RECOVERY_WINDOW;
+      state.postForcedRecoveryEndSec = beatStartTime + config.POST_FORCED_RECOVERY_SEC;
     }
     state.rawRegimeWindow.length = 0;
     state.pendingForcedTransitionEvent = {
@@ -46,6 +47,9 @@ regimeClassifierResolution = (() => {
 
   function resolve(state, config, rawRegime, tickId, forceRegimeTransition) {
     const beatSpan = regimeClassifierHelpers.getTickSpan(state, tickId);
+    const exploringElapsedSec = beatStartTime - state.exploringStartSec;
+    const coherentElapsedSec = beatStartTime - state.coherentStartSec;
+    const evolvingElapsedSec = beatStartTime - state.evolvingStartSec;
     const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
@@ -97,14 +101,14 @@ regimeClassifierResolution = (() => {
     state.rawRegimeWindow.push(rawRegime);
     while (state.rawRegimeWindow.length > effectiveWindow) state.rawRegimeWindow.shift();
 
-    if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && state.exploringBeats >= config.EXPLORING_MAX_DWELL) {
+    if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && exploringElapsedSec >= config.EXPLORING_MAX_DWELL_SEC) {
       forceRegimeTransition('evolving', 'exploring-max-dwell', 3);
     }
     const exploringMonopolyThreshold = clamp((shortFormPressure > 0 ? 0.66 : 0.72) - trustSharePressure * 0.04 - evolvingDeficit * 0.06 - phaseWeakness * 0.03 + phaseRecoveryCredit * 0.01 - (phaseStableRecoveryWindow ? 0.03 * phaseStableRecoveryStrength : 0), 0.54, 0.72);
-    const exploringMonopolyMinDwell = shortFormPressure > 0
-      ? m.max(10, m.floor(config.EXPLORING_MAX_DWELL * (0.45 - evolvingDeficit * 0.08)))
-      : m.max(10, m.floor(config.EXPLORING_MAX_DWELL * (0.50 - trustSharePressure * 0.06 - evolvingDeficit * 0.08 - phaseRecoveryCredit * 0.04 - (phaseStableRecoveryWindow ? 0.06 * phaseStableRecoveryStrength : 0))));
-    if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && runExploringShare > exploringMonopolyThreshold && state.exploringBeats >= exploringMonopolyMinDwell) {
+    const exploringMonopolyMinDwellSec = shortFormPressure > 0
+      ? m.max(config.EXPLORING_MONOPOLY_FLOOR_SEC, config.EXPLORING_MAX_DWELL_SEC * (0.45 - evolvingDeficit * 0.08))
+      : m.max(config.EXPLORING_MONOPOLY_FLOOR_SEC, config.EXPLORING_MAX_DWELL_SEC * (0.50 - trustSharePressure * 0.06 - evolvingDeficit * 0.08 - phaseRecoveryCredit * 0.04 - (phaseStableRecoveryWindow ? 0.06 * phaseStableRecoveryStrength : 0)));
+    if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && runExploringShare > exploringMonopolyThreshold && exploringElapsedSec >= exploringMonopolyMinDwellSec) {
       forceRegimeTransition('evolving', 'exploring-share-monopoly', 4, state.exploringBeats, tickId);
     }
 
@@ -122,8 +126,8 @@ regimeClassifierResolution = (() => {
     if (state.forcedRegimeBeatsRemaining <= 0
         && (state.lastRegime === 'exploring' || state.lastRegime === 'coherent')
         && evolvingShare < 0.06 && evolvingDeficit > 0.50
-        && ((state.lastRegime === 'exploring' && state.exploringBeats >= 8)
-            || (state.lastRegime === 'coherent' && state.coherentBeats >= 15))) {
+        && ((state.lastRegime === 'exploring' && exploringElapsedSec >= config.STARVATION_EXPLORING_SEC)
+            || (state.lastRegime === 'coherent' && coherentElapsedSec >= config.STARVATION_COHERENT_SEC))) {
       // R76 E2: Exploring trigger 12->8 beats. Wider injection from
       // exploring since exploring surged to 52.9% in R75 but evolving
       // only gets forced injection, not organic classification.
@@ -134,10 +138,8 @@ regimeClassifierResolution = (() => {
     let resolvedRegime = state.lastRegime;
     state.forcedOverrideActive = false;
 
-    // R86 E2: Decrement post-forced cooldown and prevent coherent re-entry
-    if (state.postForcedCooldown > 0) {
-      state.postForcedCooldown--;
-    }
+    // R86 E2: Post-forced cooldown (time-based)
+    const postForcedCooldownActive = beatStartTime < state.postForcedCooldownEndSec;
 
     if (state.forcedRegimeBeatsRemaining > 0) {
       resolvedRegime = state.forcedRegime;
@@ -148,6 +150,7 @@ regimeClassifierResolution = (() => {
       if (state.forcedRegimeBeatsRemaining === 0) {
         state.forcedRegime = '';
         state.postForcedCooldown = 8;
+        state.postForcedCooldownEndSec = beatStartTime + config.POST_FORCED_COOLDOWN_SHORT_SEC;
       }
     } else if (rawRegime !== state.lastRegime && state.rawRegimeWindow.length >= (config.REGIME_MAJORITY - 1)) {
       let windowHits = 0;
@@ -166,15 +169,15 @@ regimeClassifierResolution = (() => {
 
       if (windowHits >= requiredHits) {
         let allowTransition = true;
-        if (state.lastRegime === 'evolving' && state.evolvingBeats > config.EVOLVING_MAX_DWELL) {
+        if (state.lastRegime === 'evolving' && evolvingElapsedSec > config.EVOLVING_MAX_DWELL_SEC) {
           allowTransition = true;
-        } else if (state.lastRegime === 'evolving' && rawRegime === 'coherent' && state.evolvingBeats < state.evolvingMinDwell) {
+        } else if (state.lastRegime === 'evolving' && rawRegime === 'coherent' && evolvingElapsedSec < state.evolvingMinDwellSec) {
           allowTransition = false;
         } else if (state.lastRegime === 'evolving' && rawRegime === 'coherent') {
-          const evolvingHoldFloor = evolvingRecoveryPriority > 0.40
-            ? state.evolvingMinDwell + (phaseStableRecoveryWindow ? m.round(3 + phaseStableRecoveryStrength) : 2)
-            : state.evolvingMinDwell;
-          if (state.evolvingBeats < evolvingHoldFloor) {
+          const evolvingHoldFloorSec = evolvingRecoveryPriority > 0.40
+            ? state.evolvingMinDwellSec + (phaseStableRecoveryWindow ? 2.5 + phaseStableRecoveryStrength * 0.83 : 1.7)
+            : state.evolvingMinDwellSec;
+          if (evolvingElapsedSec < evolvingHoldFloorSec) {
             allowTransition = false;
           }
         }
@@ -196,6 +199,7 @@ regimeClassifierResolution = (() => {
           L0.post('regimeTransition', 'both', beatStartTime, { from: state.lastRegime, to: rawRegime, cause: 'organic-' + organicCause });
           if (state.lastRegime === 'coherent') {
             state.coherentMomentumBeats = m.max(config.COHERENT_MOMENTUM_WINDOW, m.floor(state.coherentBeats * 0.25));
+            state.coherentMomentumEndSec = beatStartTime + m.max(config.COHERENT_MOMENTUM_SEC, coherentElapsedSec * 0.25);
           }
           state.rawRegimeWindow.length = 0;
           resolvedRegime = rawRegime;
@@ -207,82 +211,43 @@ regimeClassifierResolution = (() => {
     // ended (cooldown > 0) and the regime would return to coherent,
     // override to exploring. This prevents immediate coherent re-entry
     // that creates 44-break-44 superruns reducing transition variety.
-    if (state.postForcedCooldown > 0 && resolvedRegime === 'coherent') {
+    if (postForcedCooldownActive && resolvedRegime === 'coherent') {
       resolvedRegime = 'exploring';
     }
 
     if (state.forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent') {
       const projectedRunCoherentBeats = state.runLastResolvedRegime === 'coherent' ? state.runCoherentBeats + beatSpan : beatSpan;
-      let coherentMaxDwell = config.COHERENT_MAX_DWELL;
+      let coherentMaxDwellSec = config.COHERENT_MAX_DWELL_SEC;
       const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
       if (phaseShare < lowPhaseThreshold) {
         const phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
-        coherentMaxDwell = m.max(48, m.round(config.COHERENT_MAX_DWELL * (1 - phaseCollapsePressure * 0.35)));
+        coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_HIGH_SEC, coherentMaxDwellSec * (1 - phaseCollapsePressure * 0.35));
       }
       if (trustShare > 0.22) {
         const trustInflationPressure = clamp((trustShare - 0.22) / 0.08, 0, 1);
-        coherentMaxDwell = m.max(48, m.round(coherentMaxDwell * (1 - trustInflationPressure * 0.18)));
+        coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_HIGH_SEC, coherentMaxDwellSec * (1 - trustInflationPressure * 0.18));
       }
       if (evolvingRecoveryPriority > 0.30) {
-        coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - evolvingRecoveryPriority * 0.28)));
+        coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_LOW_SEC, coherentMaxDwellSec * (1 - evolvingRecoveryPriority * 0.28));
       }
       if (evolvingPolishPressure > 0.35) {
-        coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - evolvingPolishPressure * 0.10)));
+        coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_LOW_SEC, coherentMaxDwellSec * (1 - evolvingPolishPressure * 0.10));
       }
-      // R62 E2: Evolving deficit fallback -- when evolving is critically low
-      // (< 3%), force shorter coherent runs to create evolving windows even
-      // when phase is too low for normal evolvingRecoveryPriority.
       if (evolvingShare < 0.03 && evolvingDeficit > 0.80) {
         const evolvingStarvationPressure = clamp((0.03 - evolvingShare) / 0.03, 0, 1);
-        coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - evolvingStarvationPressure * 0.20)));
+        coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_LOW_SEC, coherentMaxDwellSec * (1 - evolvingStarvationPressure * 0.20));
       }
-      // R66 E4: Coherent-aware evolving injection. When coherent share is
-      // already high (> 0.40) AND evolving is starved (< 0.05), shorten
-      // coherent dwell further. The existing pathways create evolving windows
-      // too infrequently -- this adds coherent-share pressure to the dwell.
       const coherentHighShare = state.runCoherentShare > 0.40;
       const evolvingStarved = evolvingShare < 0.05;
       if (coherentHighShare && evolvingStarved) {
         const coherentSharePressure = clamp((state.runCoherentShare - 0.40) / 0.20, 0, 1);
-        coherentMaxDwell = m.max(36, m.round(coherentMaxDwell * (1 - coherentSharePressure * 0.25)));
+        coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_LOW_SEC, coherentMaxDwellSec * (1 - coherentSharePressure * 0.25));
       }
-      // R69 E2 / R72 E5 / R75 E4: Hard absolute cap on consecutive coherent beats.
-      // R74 still showed maxConsecutiveCoherent at 110 trace entries.
-      // R82 E4: Reduced cap 50->44. R81 coherent share surged 51.7%->62.5%
-      // and transition count dropped 52->36. Shorter coherent runs create
-      // more regime transition opportunities and compositional variety.
-      // R35 E2: Reduced cap 44->38. R34 coherent 46.4% (above 35% target).
-      // R36 E3: Restore to 42. R35 exploring recovered (35.1%) but evolving
-      // crashed (16.7%). 42 is a middle ground.
-      // R38 E4: Dwell 42->40. Evolving dropped 26.7%->18.7% in R37 as
-      // coherent rose back to 46.5%. Shorter dwell forces more transitions.
-      // R40 E5: Dwell 40->38. Coherent surged to 47.6% in R39, with
-      // maxConsecutiveCoherent=94 and evolving dropping to 17.7%.
-      // R44 E3: Dwell 38->36. Coherent surged to 42.0% in R43.
-      // R45 E2: Restore dwell 36->38. Evolving crashed to 22.0% in R44
-      // while exploring surged to 42.6%. Forced transitions create
-      // exploring (not evolving) when dwell is too short.
-      // R47 E3: Lower dwell 38->35. Coherent surged to 46.9% in R46.
-      // R49 E1: Partial restore 35->36. Dwell 35 created exploring surge
-      // to 44.6% in R48. Moderate 36 balances coherent containment with
-      // evolving recovery.
-      coherentMaxDwell = m.min(coherentMaxDwell, 37);
-      if (projectedRunCoherentBeats > coherentMaxDwell) {
-        const coherentOvershoot = projectedRunCoherentBeats - coherentMaxDwell;
-        // R84 E2: Expand forced window [5,15]->[8,20]. maxConsecutiveCoherent
-        // was 102 in R83 despite cap=44. The [5,15] window was too short --
-        // coherent re-established immediately after forced breaks, producing
-        // back-to-back 44-beat coherent runs with only brief interruptions.
-        // Wider forced window [8,20] makes breaks more impactful, giving the
-        // non-coherent regime time to establish trajectory momentum.
-        // R70 E1: Widen forced break floor 8->12. maxConsecutiveCoherent was 77
-        // despite 37-beat dwell cap -- coherent re-establishes immediately after
-        // short 8-beat breaks. Wider floor gives non-coherent regimes time to
-        // build trajectory momentum before coherent can reclaim.
-        const forcedWindow = clamp(12 + m.floor(coherentOvershoot / 22) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? m.round(1 + phaseStableRecoveryStrength) : 0), 12, 24);
-        // R47 E4: Lower threshold 0.35->0.15. At R46's evolving=20.7% and
-        // target=0.24, deficit=0.137, priority~0.14 -- never reaching 0.35.
-        // Lower threshold ensures forced coherent breaks go to evolving.
+      // Hard cap (was 37 beats, now time-based)
+      coherentMaxDwellSec = m.min(coherentMaxDwellSec, config.COHERENT_HARD_CAP_SEC);
+      if (coherentElapsedSec > coherentMaxDwellSec) {
+        const coherentOvershootSec = coherentElapsedSec - coherentMaxDwellSec;
+        const forcedWindow = clamp(12 + m.floor(coherentOvershootSec / 18) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? m.round(1 + phaseStableRecoveryStrength) : 0), 12, 24);
         const recoveryRegime = evolvingRecoveryPriority > 0.18 || evolvingPolishPressure > 0.65 || (evolvingShare < 0.03 && evolvingDeficit > 0.80) ? 'evolving' : 'exploring';
         forceRegimeTransition(recoveryRegime, 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats, tickId);
         resolvedRegime = recoveryRegime;
@@ -292,9 +257,8 @@ regimeClassifierResolution = (() => {
         state.rawRegimeWindow.length = 0;
         if (state.forcedRegimeBeatsRemaining === 0) {
           state.forcedRegime = '';
-          // R70 E1: Extend cooldown 8->14. Prevents rapid coherent
-          // re-entry after forced break, addressing maxConsecutiveCoherent=77.
           state.postForcedCooldown = 14;
+          state.postForcedCooldownEndSec = beatStartTime + config.POST_FORCED_COOLDOWN_LONG_SEC;
         }
       }
     }
@@ -317,6 +281,7 @@ regimeClassifierResolution = (() => {
       if (state.forcedRegimeBeatsRemaining === 0) {
         state.forcedRegime = '';
         state.postForcedCooldown = 8;
+        state.postForcedCooldownEndSec = beatStartTime + config.POST_FORCED_COOLDOWN_SHORT_SEC;
       }
       monopolyState = regimeClassifierHelpers.computeCadenceMonopolyProjection(state, resolvedRegime, beatSpan);
     }
@@ -326,14 +291,17 @@ regimeClassifierResolution = (() => {
     state.cadenceMonopolyReason = monopolyState.reason;
 
     if (resolvedRegime === 'exploring') {
+      if (state.exploringBeats === 0) state.exploringStartSec = beatStartTime;
       state.exploringBeats++;
       state.coherentBeats = 0;
       state.evolvingBeats = 0;
     } else if (resolvedRegime === 'coherent') {
+      if (state.coherentBeats === 0) state.coherentStartSec = beatStartTime;
       state.coherentBeats++;
       state.exploringBeats = 0;
       state.evolvingBeats = 0;
     } else if (resolvedRegime === 'evolving') {
+      if (state.evolvingBeats === 0) state.evolvingStartSec = beatStartTime;
       state.evolvingBeats++;
       state.exploringBeats = 0;
       state.coherentBeats = 0;
