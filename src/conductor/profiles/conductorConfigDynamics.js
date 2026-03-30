@@ -1,4 +1,4 @@
-conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile }) => {
+conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActiveProfile, isProfileLocked }) => {
   const V = validator.create('conductorConfigDynamics');
 
   const controls = CONDUCTOR_DYNAMICS_CONTROLS;
@@ -151,6 +151,9 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
   };
 
   const applyPhaseProfile = (opts = {}) => {
+    // Lab R6: locked profile skips phase-based override
+    if (isProfileLocked()) return getActiveProfileName();
+
     const phase = harmonicContext.getField('sectionPhase');
     const outgoing = getActiveProfile();
     const outgoingName = getActiveProfileName();
