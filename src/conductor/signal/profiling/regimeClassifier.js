@@ -5,7 +5,8 @@ regimeClassifier = (() => {
   const regimeClassifierConfig = {
     REGIME_WINDOW: 5,
     REGIME_MAJORITY: 3,
-    OSCILLATING_CURVATURE_DEFAULT: 0.55,
+    // Lab R3: 0.15 sounded good/tense. Lower from 0.55->0.40.
+    OSCILLATING_CURVATURE_DEFAULT: 0.40,
     EVOLVING_MAX_DWELL_SEC: 125,
     COHERENT_MAX_DWELL_SEC: 62,
     // Lab R1: Exploring more interesting than coherent, allowed for longer blocks

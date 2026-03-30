@@ -21,6 +21,8 @@ restSynchronizer = (() => {
 
   /** @type {Record<string, number>} last rest timestamp per layer (seconds) */
   let lastRestSec = crossLayerHelpers.createLayerPair(-Infinity);
+  /** @type {Record<string, number>} when the current rest ends (seconds) */
+  let restEndSec = crossLayerHelpers.createLayerPair(0);
   /** @type {Record<string, boolean>} whether layer is currently resting */
   let isResting = crossLayerHelpers.createLayerPair(false);
   let sharedRestCount = 0;
@@ -35,6 +37,15 @@ restSynchronizer = (() => {
   function evaluateSharedRest(absoluteSeconds, layer, signals) {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const sig = (signals && typeof signals === 'object') ? signals : {};
+
+    // If already in an active rest, sustain it until restEndSec
+    if (isResting[layer] && absoluteSeconds < restEndSec[layer]) {
+      return { shouldRest: true, duration: (restEndSec[layer] - absoluteSeconds) * 1000 };
+    }
+    // Rest just expired naturally
+    if (isResting[layer]) {
+      isResting[layer] = false;
+    }
 
     // Throttle: don't rest too frequently
     if (absoluteSeconds - lastRestSec[layer] < MIN_REST_INTERVAL_SEC) {
@@ -92,15 +103,16 @@ restSynchronizer = (() => {
       return { shouldRest: false, duration: 0 };
     }
 
-    // Calculate rest duration based on tpBeat
-    const beatMs = spBeat > 0 ? spBeat * 1000 : 500;
-    const duration = beatMs * rf(0.25, 1.5);
+    // Rest duration: 1-3 beats worth of silence (in seconds)
+    const beatSec = spBeat > 0 ? spBeat : 0.5;
+    const durationSec = beatSec * rf(1.0, 3.0);
 
     lastRestSec[layer] = absoluteSeconds;
+    restEndSec[layer] = absoluteSeconds + durationSec;
     isResting[layer] = true;
     sharedRestCount++;
 
-    return { shouldRest: true, duration };
+    return { shouldRest: true, duration: durationSec * 1000 };
   }
 
   /**
@@ -140,7 +152,10 @@ restSynchronizer = (() => {
    */
   function postRest(absoluteSeconds, layer) {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
-    isResting[layer] = false;
+    // Only clear rest if duration has elapsed
+    if (absoluteSeconds >= restEndSec[layer]) {
+      isResting[layer] = false;
+    }
   }
 
   /** @returns {number} */
@@ -151,6 +166,7 @@ restSynchronizer = (() => {
 
   function reset() {
     lastRestSec = crossLayerHelpers.createLayerPair(-Infinity);
+    restEndSec = crossLayerHelpers.createLayerPair(0);
     isResting = crossLayerHelpers.createLayerPair(false);
     sharedRestCount = 0;
   }

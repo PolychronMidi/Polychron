@@ -2,7 +2,17 @@ regimeClassifierClassification = (() => {
   const V = validator.create('regimeClassifierClassification');
   function classify(state, config, avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
     if (avgVelocity < 0.004) return 'stagnant';
-    if (avgCurvature > state.oscillatingCurvatureThreshold && avgVelocity < 0.04) return 'oscillating';
+    // Lab R3: oscillating at 0.15 sounded good. Swing threshold dynamically
+    // between 0.15 (stressed/tense) and 0.65 (relaxed) based on system state.
+    const tensionVal = safePreBoot.call(() => conductorState.getField('tension'), 0.5) || 0.5;
+    const entropyEntry = L0.getLast('entropy', { layer: 'both' });
+    const entropyVal = entropyEntry && typeof entropyEntry.smoothed === 'number' ? entropyEntry.smoothed : 0.5;
+    const oscillatingDynamic = clamp(
+      state.oscillatingCurvatureThreshold
+        - tensionVal * 0.25       // high tension -> lower threshold -> more oscillating
+        + (1 - entropyVal) * 0.15 // low entropy -> higher threshold -> less oscillating
+      , 0.15, 0.65);
+    if (avgCurvature > oscillatingDynamic && avgVelocity < 0.04) return 'oscillating';
 
     const exploringElapsedSec = beatStartTime - state.exploringStartSec;
     const coherentElapsedSec = beatStartTime - state.coherentStartSec;
