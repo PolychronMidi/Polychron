@@ -126,9 +126,16 @@ restSynchronizer = (() => {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
+    // Lab R5: density-aware fill suppression. When conductor density is low
+    // (sparse/minimal contexts), complementary fill undermines intentional
+    // sparsity. Scale urgency by density so ultra-sparse textures stay sparse.
+    const conductorSigs = conductorSignalBridge.getSignals();
+    const density = V.optionalFinite(conductorSigs.density, 1.0);
+    const densityGate = clamp(density, 0.15, 1.0);
+
     // If other layer is resting, this layer should fill
     if (isResting[otherLayer]) {
-      const urgency = clamp(rf(0.3, 0.9), 0, 1);
+      const urgency = clamp(rf(0.3, 0.9) * densityGate, 0, 1);
       return { shouldFill: urgency > COMPLEMENT_FILL_THRESHOLD, fillUrgency: urgency };
     }
 
@@ -139,7 +146,8 @@ restSynchronizer = (() => {
       windowSeconds: 0.5
     });
     if (otherCount === 0) {
-      return { shouldFill: true, fillUrgency: 0.7 };
+      const urgency = clamp(0.7 * densityGate, 0, 1);
+      return { shouldFill: urgency > COMPLEMENT_FILL_THRESHOLD, fillUrgency: urgency };
     }
 
     return { shouldFill: false, fillUrgency: 0 };

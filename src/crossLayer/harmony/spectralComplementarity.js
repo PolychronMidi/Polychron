@@ -109,12 +109,14 @@ spectralComplementarity = (() => {
     if (analysis.gaps.length === 0 || analysis.gapWeight < 0.2) {
       return { midi, nudged: false, targetBin: -1 };
     }
-    // Lab R4: reduce nudge when dissonance is desired so pitch corrections
-    // don't normalize intentionally dissonant output
+    // Lab R4+R5: reduce nudge when dissonance is desired so pitch corrections
+    // don't normalize intentionally dissonant output. R5 raised scaling from
+    // 0.7 to 0.95: sketch showed full bypass still sounds good, so near-zero
+    // nudging at high dissonance is correct.
     const intentDissonance = sectionIntentCurves.getLastIntent()
       ? V.optionalFinite(sectionIntentCurves.getLastIntent().dissonanceTarget, 0)
       : 0;
-    const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.7);
+    const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.95);
     if (rf() > analysis.gapWeight * effectiveNudge) {
       return { midi, nudged: false, targetBin: -1 };
     }

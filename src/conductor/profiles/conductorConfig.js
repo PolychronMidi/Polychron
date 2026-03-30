@@ -8,6 +8,9 @@ conductorConfig = (() => {
   /** @type {Object|null} */
   let activeProfileCache = null;
 
+  /** @type {boolean} */
+  let profileLocked = false;
+
   const V = validator.create('conductorConfig');
 
   const PROFILE_TUNING_DEFAULTS = conductorConfigTuningDefaults();
@@ -57,7 +60,7 @@ conductorConfig = (() => {
     return Object.keys(getProfilesOrFail());
   }
 
-  function setActiveProfile(name) {
+  function setActiveProfile(name, opts) {
     V.requireType(name, 'string', 'name');
     if (name.length === 0) {
       throw new Error('conductorConfig.setActiveProfile: name must be a non-empty string');
@@ -68,7 +71,12 @@ conductorConfig = (() => {
     }
     activeProfileName = name;
     activeProfileCache = null;
+    if (opts && opts.lock) profileLocked = true;
   }
+
+  function isProfileLocked() { return profileLocked; }
+
+  function unlockProfile() { profileLocked = false; }
 
   function getActiveProfile() {
     if (activeProfileCache) return activeProfileCache;
@@ -85,7 +93,7 @@ conductorConfig = (() => {
     return activeProfileName;
   }
 
-  const dynamics = conductorConfigDynamics({ getActiveProfile, getActiveProfileName, setActiveProfile });
+  const dynamics = conductorConfigDynamics({ getActiveProfile, getActiveProfileName, setActiveProfile, isProfileLocked });
   const resolvers = conductorConfigResolvers({ getProfileTuning });
   const accessors = conductorConfigAccessors({ dynamics, getProfileTuning });
 
@@ -167,6 +175,8 @@ conductorConfig = (() => {
     getHarmonicRhythmParams: accessors.getHarmonicRhythmParams,
     getNoiseProfileForSection: resolvers.getNoiseProfileForSection,
     getRhythmDriftParams: accessors.getRhythmDriftParams,
+    isProfileLocked,
+    unlockProfile,
     applyPhaseProfile: dynamics.applyPhaseProfile,
     tickCrossfade: dynamics.tickCrossfade,
     regulationTick: dynamics.regulationTick,
