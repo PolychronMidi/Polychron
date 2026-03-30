@@ -8,7 +8,8 @@ regimeClassifier = (() => {
     OSCILLATING_CURVATURE_DEFAULT: 0.55,
     EVOLVING_MAX_DWELL_SEC: 125,
     COHERENT_MAX_DWELL_SEC: 62,
-    EXPLORING_MAX_DWELL_SEC: 150,
+    // Lab R1: Exploring more interesting than coherent, allowed for longer blocks
+    EXPLORING_MAX_DWELL_SEC: 180,
     POST_FORCED_RECOVERY_SEC: 20,
     COHERENT_MOMENTUM_SEC: 7,
     // Legacy beat-based values kept for reference but _SEC versions are authoritative
@@ -17,7 +18,8 @@ regimeClassifier = (() => {
     POST_FORCED_RECOVERY_WINDOW: 24,
     COHERENT_MOMENTUM_WINDOW: 8,
     // Seconds-based dwell thresholds (authoritative for comparisons)
-    COHERENT_HARD_CAP_SEC: 31,
+    // Lab R1: Coherent fatigues after 15-30s. Tighten hard cap from 31->28.
+    COHERENT_HARD_CAP_SEC: 28,
     COHERENT_FLOOR_HIGH_SEC: 40,
     COHERENT_FLOOR_LOW_SEC: 30,
     STARVATION_EXPLORING_SEC: 6.6,
@@ -34,7 +36,8 @@ regimeClassifier = (() => {
     EVOLVING_VELOCITY_THRESHOLD_SEC: 83,
     CROSSOVER_MIN_DWELL_SEC: 2.5,
     REGIME_TARGET_COHERENT_LO: 0.10,
-    REGIME_TARGET_COHERENT_HI: 0.35,
+    // Lab R1: coherent fatigues, exploring more interesting. Tighten ceiling 0.35->0.33.
+    REGIME_TARGET_COHERENT_HI: 0.33,
     // R9 E2: Raised from 0.14 to 0.18.
     // R46 E4: Raise 0.18->0.24. Evolving stuck at 21.4% in R45 with
     // exploring at 40.7%. At 0.18, evolvingDeficit=0 (21.4% > 18%)
@@ -103,7 +106,7 @@ regimeClassifier = (() => {
       postForcedCooldownEndSec: 0,
       coherentMomentumEndSec: 0,
       evolvingMinDwellSec: 8.3,
-      coherentShareAlphaMin: 0.025,
+      coherentShareAlphaMin: 0.035, // Lab R1: fast-trust confirmed good, raised from 0.025
       coherentShareEma: 0.25,
       lastClassifyInputs: {
         couplingStrength: 0,

@@ -55,7 +55,8 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // Regulation aggressiveness scales with deviation from target entropy:
   // large deviation - stronger regulation, near-target - lighter touch.
   const entropyDeviation = m.abs(entropyRegulator.measureEntropy() - clArcTarget);
-  entropyRegulator.setRegulationStrength(clamp(0.3 + entropyDeviation * 1.4, 0.2, 0.9));
+  // Lab R1: high entropy confirmed good, raise floor 0.2->0.35 and ceiling 0.9->0.95
+  entropyRegulator.setRegulationStrength(clamp(0.4 + entropyDeviation * 1.2, 0.35, 0.95));
   const clEntropy = entropyRegulator.getRegulation();
 
   // -- [stage: phase] --

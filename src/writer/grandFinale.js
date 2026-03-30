@@ -180,10 +180,18 @@ grandFinale = () => {
 
   // Write all layers with unified end_track time
   const endTrackTime = `${globalFinalTimeInSeconds + SILENT_OUTRO_SECONDS}s`;
+  const cutoffTime = `${globalFinalTimeInSeconds + SILENT_OUTRO_SECONDS - 0.01}s`;
   fs.mkdirSync('output', { recursive: true });
   for (let wi = 0; wi < pendingWrites.length; wi++) {
     const { composition, outputFilename } = pendingWrites[wi];
-    fs.writeFileSync(outputFilename, composition + `1,${endTrackTime},end_track`);
+    // Force-kill soundfont release tails so FluidSynth stops at end_track
+    let cutoff = '';
+    for (let ch = 0; ch < 16; ch++) {
+      cutoff += `1,${cutoffTime},control_c,${ch},120,0\n`;  // all sound off
+      cutoff += `1,${cutoffTime},control_c,${ch},123,0\n`;  // all notes off
+      cutoff += `1,${cutoffTime},control_c,${ch},121,0\n`;  // reset all controllers
+    }
+    fs.writeFileSync(outputFilename, composition + cutoff + `1,${endTrackTime},end_track`);
     console.log(`Wrote file: ${outputFilename}`);
   }
 };

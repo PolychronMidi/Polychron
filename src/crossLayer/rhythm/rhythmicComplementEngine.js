@@ -161,9 +161,18 @@ rhythmicComplementEngine = (() => {
     const otherRhythm = L0.getLast('rhythm', { layer: otherLayer });
     const otherIsDense = otherRhythm && (otherRhythm.method === 'onsets' || otherRhythm.method === 'random');
 
-    if (farFromHome && interaction > MODERATE_INTERACTION) {
+    // Lab R2: coherent+canon was "excellent" -favor canon during coherent regime
+    const currentRegime = regimeClassifier.getLastRegime();
+    const inCoherent = currentRegime === 'coherent';
+
+    if (inCoherent && interaction > MODERATE_INTERACTION) {
+      mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
+    } else if (farFromHome && interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
     } else if (otherIsDense && interaction > MODERATE_INTERACTION) {
+      mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
+    } else if (currentRegime === 'exploring' && density > HIGH_DENSITY && interaction > MODERATE_INTERACTION) {
+      // Lab R2: hocket+high-entropy was "great" -favor hocket during dense exploring
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
     } else if (interaction > HIGH_INTERACTION && density < LOW_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
