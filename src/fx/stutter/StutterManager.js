@@ -157,6 +157,8 @@ StutterManager = class StutterManager {
     }
 
     stutterMetrics.incScheduled(1, provided.profile || 'unknown');
+    if (stutterVariants.shouldThrottle()) return provided.shared || this.shared;
+    stutterVariants.incSectionCount();
     const variant = stutterVariants.getActive();
     const helper = variant || stutterRegistry.getHelper();
     return (helper || stutterNotes)(provided);

@@ -22,4 +22,4 @@ stutterVariants.register('decayingBounce', function decayingBounce(opts) {
     }));
   }
   return lastShared;
-}, 0.8);
+}, 0.8, { selfGate: 0.7, maxPerSection: 140 });

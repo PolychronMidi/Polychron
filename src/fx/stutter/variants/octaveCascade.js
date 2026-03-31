@@ -19,4 +19,4 @@ stutterVariants.register('octaveCascade', function octaveCascade(opts) {
     }));
   }
   return lastShared;
-}, 0.7);
+}, 0.7, { selfGate: 0.5, maxPerSection: 100 });
