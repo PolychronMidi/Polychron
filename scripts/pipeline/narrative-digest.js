@@ -158,9 +158,22 @@ function generateNarrative() {
 
   if (summary && summary.beats) {
     const totalBeats = summary.beats.totalEntries;
-    const spanMs = toNum(summary.beats.spanMs, 0);
-    const spanSec = (spanMs / 1000).toFixed(1);
-    lines.push(`The system processed **${totalBeats} beats** spanning **${spanSec} seconds** of musical time.`);
+    // Read actual musical duration from CSV end_track time
+    let musicalDurationSec = '?';
+    try {
+      for (const csvFile of ['output/output1.csv', 'output/output2.csv']) {
+        const csvPath = path.join(ROOT, csvFile);
+        if (fs.existsSync(csvPath)) {
+          const lastLine = fs.readFileSync(csvPath, 'utf8').trim().split('\n').pop();
+          if (lastLine && lastLine.includes('end_track')) {
+            const timePart = lastLine.split(',')[1];
+            const sec = parseFloat(timePart.replace('s', ''));
+            if (Number.isFinite(sec) && sec > toNum(musicalDurationSec, 0)) musicalDurationSec = sec.toFixed(0);
+          }
+        }
+      }
+    } catch (_) { /* */ }
+    lines.push(`The system processed **${totalBeats} beats** spanning **${musicalDurationSec} seconds** of musical time.`);
     if (summary.beats.byLayer) {
       lines.push(`Layer 1 experienced ${summary.beats.byLayer.L1 || 0} beats; Layer 2 experienced ${summary.beats.byLayer.L2 || 0} beats.`);
     }

@@ -67,6 +67,19 @@ grandFinale = () => {
     fs.mkdirSync('metrics', { recursive: true });
     fs.writeFileSync('metrics/l0-dump.json', JSON.stringify(l0Dump, null, 2));
     console.log('Wrote file: metrics/l0-dump.json');
+    // CIM, stutter variant, and correlation shuffler telemetry snapshots
+    const runtimeSnap = {
+      cim: safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null),
+      stutterVariants: safePreBoot.call(() => stutterMetrics.getMetrics(), null),
+      correlationShuffler: safePreBoot.call(() => correlationShuffler.getSnapshot(), null),
+      sectionHistory: safePreBoot.call(() => ({
+        tensionTrajectory: sectionMemory.getTensionTrajectory(),
+        densityTrajectory: sectionMemory.getDensityTrajectory(),
+        perSection: sectionMemory.getHistory()
+      }), null)
+    };
+    fs.writeFileSync('metrics/runtime-snapshots.json', JSON.stringify(runtimeSnap, null, 2));
+    console.log('Wrote file: metrics/runtime-snapshots.json');
   } catch (e) {
     throw new Error('grandFinale: failed to write l0-dump.json: ' + e.message);
   }

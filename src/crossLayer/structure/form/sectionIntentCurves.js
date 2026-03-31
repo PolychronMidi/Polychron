@@ -146,9 +146,13 @@ sectionIntentCurves = (() => {
     const prevIntentTension = prevSection ? V.optionalFinite(prevSection.intentTension, 0.5) : 0.5;
     const prevActualTension = prevSection && Number.isFinite(prevSection.tension) ? prevSection.tension : 0.85;
     const tensionLearning = clamp((prevActualTension - prevIntentTension) * -0.06, -0.03, 0.03);
+    // Cross-section trajectory correction: if tension has been declining for 2+
+    // sections, push it back up. Prevents monotonic tension decay across the piece.
+    const tensionSlope = sectionMemory.getTensionTrajectory();
+    const trajectoryCorrection = tensionSlope < -0.05 ? clamp(-tensionSlope * 0.15, 0, 0.08) : 0;
 
     const dissonanceTarget = clamp(
-      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning
+      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection
       // R70 E5: Section-route dissonance escalation. Middle sections get
       // more dissonance (up to +0.08) than edge sections, creating harmonic
       // contrast across the piece. This complements the per-section key
