@@ -17,4 +17,4 @@ stutterVariants.register('convergenceBurst', function convergenceBurst(opts) {
     }));
   }
   return lastShared;
-}, 0.7, { selfGate: 0.9, maxPerSection: 200 });
+}, 0.7, { selfGate: 0.95, maxPerSection: 280 });

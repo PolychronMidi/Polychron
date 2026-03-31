@@ -21,4 +21,4 @@ stutterVariants.register('stutterTremolo', function stutterTremolo(opts) {
     }));
   }
   return lastShared;
-}, 0.5, { selfGate: 0.35, maxPerSection: 100 });
+}, 0.5, { selfGate: 0.45, maxPerSection: 140 });

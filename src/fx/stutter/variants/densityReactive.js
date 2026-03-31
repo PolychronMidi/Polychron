@@ -16,4 +16,4 @@ stutterVariants.register('densityReactive', function densityReactive(opts) {
     }));
   }
   return lastShared;
-}, 0.9, { selfGate: 0.7, maxPerSection: 150 });
+}, 0.9, { selfGate: 0.8, maxPerSection: 210 });

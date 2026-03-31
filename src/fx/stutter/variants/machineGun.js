@@ -20,4 +20,4 @@ stutterVariants.register('machineGun', function machineGun(opts) {
     }
   }
   return lastShared;
-}, 0.6, { selfGate: 0.4, maxPerSection: 80 });
+}, 0.6, { selfGate: 0.5, maxPerSection: 120 });

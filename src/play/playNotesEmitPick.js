@@ -247,11 +247,12 @@ playNotesEmitPick = function(opts = {}) {
     // Lab R12: sustain-proportional gating - shorter notes get exponentially
     // less likely to stutter, preventing low-unit note floods.
     if (shouldStutter && isPrimary) {
+      // R16: sustainRatio^1.5 (was ^2) - all ecosystem tests great including
+      // dense polyrhythm, so soften the subdivision suppression. Base prob
+      // raised 0.35->0.45 - stress test at 0.65 stutterProb was great.
       const sustainRatio = clamp(texSustain / m.max(0.01, spBeat), 0, 1);
-      // feedbackOscillator energy boosts stutter probability at musically
-      // meaningful moments (cross-layer feedback peaks)
       const feedbackBoost = 1 + playNotesEmitPickBeatFeedbackEnergy * 1.5;
-      const stutterEchoProb = 0.35 * sustainRatio * sustainRatio * feedbackBoost;
+      const stutterEchoProb = 0.45 * m.pow(sustainRatio, 1.5) * feedbackBoost;
       if (rf() < stutterEchoProb) {
         StutterManager.scheduleStutterForUnit({
           profile: 'source',
@@ -259,8 +260,8 @@ playNotesEmitPick = function(opts = {}) {
           note: noteToEmit,
           on: onTime,
           sustain: texSustain,
-          velocity: clamp(m.round(texVel * rf(0.3, 0.6)), 1, MIDI_MAX_VALUE),
-          binVel: clamp(m.round(texVel * rf(0.3, 0.6)), 1, MIDI_MAX_VALUE),
+          velocity: clamp(m.round(texVel * rf(0.35, 0.65)), 1, MIDI_MAX_VALUE),
+          binVel: clamp(m.round(texVel * rf(0.35, 0.65)), 1, MIDI_MAX_VALUE),
           isPrimary: true
         });
       }

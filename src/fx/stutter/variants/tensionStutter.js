@@ -17,4 +17,4 @@ stutterVariants.register('tensionStutter', function tensionStutter(opts) {
     }));
   }
   return lastShared;
-}, 0.7, { selfGate: 0.6, maxPerSection: 120 });
+}, 0.7, { selfGate: 0.7, maxPerSection: 170 });

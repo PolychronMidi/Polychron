@@ -210,12 +210,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     return { shared: localShared, events: [evOn, evOff] };
   }
 
-  // Lab R12: per-step sustain-proportional gating. Short sustain stutters
-  // (subdivision echoes) are probabilistically skipped so multi-step stutter
-  // series thin out naturally. Probability = clamp(sustain / spBeat, 0.1, 1).
-  // Lab R13: variant selfGate multiplier further reduces dense variants.
+  // R12: per-step sustain-proportional gating. R16: floor raised 0.1->0.15,
+  // all ecosystem tests great including dense polyrhythm.
   const selfGate = stutterVariants.getActiveSelfGate();
-  const stepGate = clamp(sustain / m.max(0.01, spBeat), 0.1, 1) * selfGate;
+  const stepGate = clamp(sustain / m.max(0.01, spBeat), 0.15, 1) * selfGate;
   if (rf() > stepGate) {
     return localShared;
   }
