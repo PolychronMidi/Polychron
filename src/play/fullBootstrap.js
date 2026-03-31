@@ -59,7 +59,7 @@ fullBootstrap = (() => {
     'highModClamp',
     'scaleClamp',
     'scaleBoundClamp',
-    'softClamp',
+    'fuzzyClamp',
     'stepClamp',
     'logClamp',
     'expClamp',

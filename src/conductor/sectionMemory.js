@@ -9,6 +9,10 @@ sectionMemory = (() => {
 
   /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string, regime?: string, coherenceBias?: number, intentDensity?: number, intentTension?: number, regimeTransitionCount?: number, lastTransitionCause?: string|null, spectralBrightness?: number } | null} */
   let sectionMemoryPrev = null;
+  /** @type {number[]} rolling tension history across sections */
+  const tensionHistory = [];
+  /** @type {number[]} rolling density history across sections */
+  const densityHistory = [];
 
   /**
    * Snapshot current conductor state before section reset.
@@ -33,6 +37,10 @@ sectionMemory = (() => {
       lastTransitionCause: (() => { const rt = L0.getLast('regimeTransition', {}); return rt && rt.cause ? rt.cause : null; })(),
       spectralBrightness: (() => { const ctx = FactoryManager.sharedPhraseArcManager.getPhraseContext(); return ctx && Number.isFinite(ctx.spectralDensity) ? ctx.spectralDensity : 0.5; })()
     };
+    tensionHistory.push(sectionMemoryPrev.tension);
+    densityHistory.push(sectionMemoryPrev.density);
+    if (tensionHistory.length > 8) tensionHistory.shift();
+    if (densityHistory.length > 8) densityHistory.shift();
   }
 
   /**
@@ -55,9 +63,44 @@ sectionMemory = (() => {
     return sectionMemoryPrev ? Object.assign({}, sectionMemoryPrev) : null;
   }
 
-  function reset() {
-    sectionMemoryPrev = null;
+  /**
+   * Get the tension trajectory slope across recent sections.
+   * Negative = tension has been declining, positive = rising.
+   * @returns {number} slope (-1 to 1)
+   */
+  function getTensionTrajectory() {
+    if (tensionHistory.length < 2) return 0;
+    const n = tensionHistory.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i; sumY += tensionHistory[i];
+      sumXY += i * tensionHistory[i]; sumXX += i * i;
+    }
+    const denom = n * sumXX - sumX * sumX;
+    return denom < 1e-10 ? 0 : clamp((n * sumXY - sumX * sumY) / denom, -1, 1);
   }
 
-  return { snapshot, seed, getPrevious, reset };
+  function getDensityTrajectory() {
+    if (densityHistory.length < 2) return 0;
+    const n = densityHistory.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i; sumY += densityHistory[i];
+      sumXY += i * densityHistory[i]; sumXX += i * i;
+    }
+    const denom = n * sumXX - sumX * sumX;
+    return denom < 1e-10 ? 0 : clamp((n * sumXY - sumX * sumY) / denom, -1, 1);
+  }
+
+  function reset() {
+    sectionMemoryPrev = null;
+    tensionHistory.length = 0;
+    densityHistory.length = 0;
+  }
+
+  function getHistory() {
+    return { tension: tensionHistory.slice(), density: densityHistory.slice() };
+  }
+
+  return { snapshot, seed, getPrevious, getTensionTrajectory, getDensityTrajectory, getHistory, reset };
 })();

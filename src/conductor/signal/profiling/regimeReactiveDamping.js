@@ -85,6 +85,7 @@ regimeReactiveDamping = (() => {
   let regimeReactiveDampingEqCorrT = 0;
   let regimeReactiveDampingEqCorrF = 0;
 
+  let regimeReactiveDampingExploringBeats = 0;
   let regimeReactiveDampingTensionPinStreak = 0;
   let regimeReactiveDampingTensionUnpinStreak = 0;
   let regimeReactiveDampingTensionCeilingRelax = 0;
@@ -108,6 +109,8 @@ regimeReactiveDamping = (() => {
     const snap = systemDynamicsProfiler.getSnapshot();
     const dynamicSnap = /** @type {any} */ (snap);
     currentRegime = snap ? snap.regime : 'evolving';
+    regimeReactiveDampingExploringBeats = currentRegime === 'exploring'
+      ? regimeReactiveDampingExploringBeats + 1 : 0;
     const rawCurv = snap ? (V.optionalFinite(snap.curvature, 0)) : 0;
     curvatureGain = clamp(rawCurv / CURVATURE_CEILING, 0, 1);
 
@@ -222,8 +225,12 @@ regimeReactiveDamping = (() => {
       ? tensionSignal
       : 0.5;
     const tensionRecoveryNudge = longFormBuildPressure * phaseRecoveryCredit * clamp((0.58 - tensionValue) / 0.22, 0, 1) * (1 - tensionFlickerPressure * 0.45) * 0.02;
+    // R19: exploring brake strengthened. Duration-proportional component pushes
+    // system toward evolving/coherent when exploring persists >100 beats.
+    const exploringDurationPressure = currentRegime === 'exploring'
+      ? clamp((regimeReactiveDampingExploringBeats - 100) * 0.0003, 0, 0.06) : 0;
     const exploringBiasBrake = currentRegime === 'exploring'
-      ? clamp(trustSharePressure * 0.04 + densityTrustPressure * 0.015 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05, 0, 0.12)
+      ? clamp(trustSharePressure * 0.04 + densityTrustPressure * 0.015 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05 + exploringDurationPressure, 0, 0.18)
       : 0;
     const evolvingLift = currentRegime === 'evolving'
       ? clamp((1 - densityFlickerPressure) * 0.02 + lowPhasePressure * 0.04 + trustSharePressure * 0.02 + evolvingRecoveryPressure * 0.05 + phaseRecoveryCredit * 0.03 + containedTailRecovery * (0.025 + longFormBuildPressure * 0.01), 0, 0.12)
@@ -359,6 +366,7 @@ regimeReactiveDamping = (() => {
     regimeReactiveDampingTensionUnpinStreak = 0;
     regimeReactiveDampingTensionCeilingRelax = 0;
     regimeReactiveDampingInjectionCount = 0;
+    regimeReactiveDampingExploringBeats = 0;
     densityVarEma = 0.010;
     densityMeanEma = 0.50;
   }

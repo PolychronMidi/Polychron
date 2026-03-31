@@ -1253,7 +1253,7 @@ declare var lowModClamp: (value: number, min: number, max: number) => number;
 declare var highModClamp: (value: number, min: number, max: number) => number;
 declare var scaleClamp: (value: number, min: number, max: number, factor: number, maxFactor?: number, base?: number) => number;
 declare var scaleBoundClamp: (value: number, base: number, lowerScale: number, upperScale: number, minBound?: number, maxBound?: number) => number;
-declare var softClamp: (value: number, min: number, max: number, softness?: number) => number;
+declare var fuzzyClamp: (value: number, min: number, max: number, softness?: number, tolerance?: string) => number;
 declare var stepClamp: (value: number, min: number, max: number, step: number) => number;
 declare var logClamp: (value: number, min: number, max: number, base?: number) => number;
 declare var expClamp: (value: number, min: number, max: number, base?: number) => number;
@@ -1507,6 +1507,9 @@ declare var sectionMemory: {
   snapshot(): void;
   seed(): void;
   getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string; coherenceBias?: number; intentDensity?: number; intentTension?: number; regimeTransitionCount?: number; lastTransitionCause?: string|null; spectralBrightness?: number } | null;
+  getTensionTrajectory(): number;
+  getDensityTrajectory(): number;
+  getHistory(): { tension: number[]; density: number[] };
   reset(): void;
 };
 declare var coherenceMonitor: CoherenceMonitorAPI;

@@ -93,17 +93,42 @@ scaleBoundClamp=(value,base,lowerScale,upperScale,minBound=2,maxBound=9)=>{
 };
 
 /**
- * Soft clamp with gradual boundary approach.
+ * Fuzzy clamp with configurable tolerance modes.
  * @param {number} value - Value to clamp.
  * @param {number} min - Minimum allowed value.
  * @param {number} max - Maximum allowed value.
  * @param {number} [softness=0.1] - Softness factor (0-1).
- * @returns {number} Softly clamped value.
+ * @param {string} [tolerance='both'] - Tolerance mode: 'inclusive', 'exclusive', 'both', 'random'.
+ * @returns {number} Fuzzily clamped value.
  */
-softClamp = (value, min, max, softness = 0.1) => {
-  if (value < min) return min + (value - min) * softness;
-  if (value > max) return max - (value - max) * softness;
-  return value;
+fuzzyClamp = (value, min, max, softness = 0.1, tolerance = 'both') => {
+  let applyMin = false;
+  let applyMax = false;
+  if (tolerance === 'both') {
+    applyMin = true;
+    applyMax = true;
+  } else if (tolerance === 'inclusive') {
+    applyMin = true;
+    applyMax = false;
+  } else if (tolerance === 'exclusive') {
+    applyMin = false;
+    applyMax = true;
+  } else if (tolerance === 'random') {
+    const rand = m.random() < 0.5;
+    applyMin = rand;
+    applyMax = !rand;
+  } else {
+    // default to both
+    applyMin = true;
+    applyMax = true;
+  }
+  let result = value;
+  if (value < min) {
+    result = applyMin ? min + (value - min) * softness : min;
+  } else if (value > max) {
+    result = applyMax ? max - (value - max) * softness : max;
+  }
+  return result;
 };
 
 /**
