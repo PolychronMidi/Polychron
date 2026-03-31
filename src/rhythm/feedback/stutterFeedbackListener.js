@@ -88,13 +88,13 @@ stutterFeedbackListener = (() => {
   }
 
   function decay() {
-    if (!accumulator) return;
+    if (!accumulator) throw new Error('stutterFeedbackListener.decay: accumulator not initialized');
     accumulator.decay();
     Object.keys(perProfile).forEach(k => perProfile[k] *= decayRate);
   }
 
   function reset() {
-    if (!accumulator) return;
+    if (!accumulator) throw new Error('stutterFeedbackListener.reset: accumulator not initialized');
     accumulator.reset();
     Object.keys(perProfile).forEach(k => perProfile[k] = 0);
   }

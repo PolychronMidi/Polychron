@@ -29,8 +29,8 @@ setBinaural = () => {
 
   function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
     // Pitch bend glide spread over the full interval between shifts
-    const bendSteps = 20;
-    const bendStepSec = (shiftInterval - .05) / bendSteps;
+    const bendSteps = shiftInterval * 20;
+    const bendStepSec = (shiftInterval - .03) / bendSteps;
     for (let i = 0; i <= bendSteps; i++) {
       const t = shiftSyncSec + bendStepSec * i;
       const frac = i / bendSteps;
@@ -46,12 +46,12 @@ setBinaural = () => {
       });
     }
     // Volume crossfades centered on shift time
-    const flipBinCrossfade = rf(.05, .15);
-    const fadeStart = shiftSyncSec - flipBinCrossfade / 2;
+    const flipBinCrossfade = rf(.05, .1);
+    const fadeStart = shiftSyncSec - flipBinCrossfade / 1.9;
     flipBinCrossfadeWindow = [fadeStart, fadeStart + flipBinCrossfade];
-    const volSteps = 20;
+    const volSteps = flipBinCrossfade * 20;
     const volStepSec = flipBinCrossfade / volSteps;
-    for (let i = volSteps / 2; i <= volSteps; i++) {
+    for (let i = volSteps / 2.1; i <= volSteps; i++) {
       const t = fadeStart + volStepSec * i;
       const frac = i / volSteps;
       const volF2 = shiftFlip ? m.floor(100 * (1 - frac)) : m.floor(100 * frac);

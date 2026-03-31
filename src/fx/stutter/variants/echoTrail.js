@@ -1,10 +1,10 @@
-// variants/echoTrail.js - delay-pedal effect: growing inter-echo delay,
-// decaying velocity. Each echo further in time, quieter, longer sustain.
+// variants/echoTrail.js - growing inter-echo delay with decaying velocity.
+// Creates trailing echoes that spread out and fade over time.
 
 stutterVariants.register('echoTrail', function echoTrail(opts) {
-  const trails = ri(3, 6);
+  const trails = ri(4, 7);
   const delayGrowth = rf(1.3, 1.8);
-  let delay = opts.sustain * 0.1;
+  let delay = opts.sustain * 0.15;
   let vel = opts.velocity;
   let t = opts.on;
   let lastShared = opts.shared;

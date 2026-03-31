@@ -12,6 +12,10 @@ emergentDownbeat = (() => {
   const BASS_REINFORCE_OCTAVE = 2;   // add bass note 2 octaves below
   const STEREO_WIDEN_CC = 10;        // pan CC
   const STEREO_WIDEN_AMOUNT = 20;    // pan offset from center (6420)
+  // Perceived tempo multiplier: sub-beat accent echoes at 2x/3x/4x feel
+  const TEMPO_MULT_PROBABILITY = 0.25;
+  const TEMPO_MULT_OPTIONS = [2, 3, 4];
+  const TEMPO_MULT_LAYER_SWAP_PROB = 0.5;
 
   let lastDownbeatSec = -Infinity;
   let downbeatCount = 0;
@@ -110,7 +114,41 @@ emergentDownbeat = (() => {
   }
 
   /**
-   * Full emergent downbeat application: detect + accent + bass + stereo.
+   * Apply perceived tempo multiplication: rapid sub-beat accent echoes
+   * that create double/triple/quadruple time feel without changing actual
+   * composition tempo. Half the time swaps which layer leads the accents.
+   * @param {string} layer - originating layer
+   * @param {number} midi - current note
+   * @param {number} velocity - accented velocity
+   * @param {number} strength - downbeat strength
+   */
+  function applyTempoMultiplier(layer, midi, velocity, strength) {
+    if (strength < 0.45 || rf() > TEMPO_MULT_PROBABILITY) return;
+
+    const mult = TEMPO_MULT_OPTIONS[ri(TEMPO_MULT_OPTIONS.length - 1)];
+    const interval = spBeat / mult;
+    // Half the time, swap to the other layer for the rapid accents
+    const swapLayer = rf() < TEMPO_MULT_LAYER_SWAP_PROB;
+    const targetLayer = swapLayer ? crossLayerHelpers.getOtherLayer(layer) : layer;
+    const targetCh = targetLayer === 'L1' ? cCH1 : cCH2;
+
+    const { lo, hi } = crossLayerHelpers.getOctaveBounds();
+    const baseNote = clamp(midi, lo, hi);
+
+    for (let i = 1; i < mult; i++) {
+      const t = beatStartTime + interval * i;
+      // Velocity decays per sub-accent: first is 85% of source, each subsequent 15% less
+      const subVel = crossLayerHelpers.scaleVelocity(velocity, 0.85 - (i - 1) * 0.15);
+      if (subVel < 15) continue;
+      // Alternate between source pitch and octave shift for variety
+      const note = (i % 2 === 0) ? baseNote : clamp(baseNote + (rf() < 0.5 ? 12 : -12), lo, hi);
+      crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: t, type: 'on', vals: [targetCh, note, subVel] });
+      crossLayerEmissionGateway.emit('emergentDownbeat', c, { timeInSeconds: t + interval * 0.6, vals: [targetCh, note] });
+    }
+  }
+
+  /**
+   * Full emergent downbeat application: detect + accent + bass + stereo + tempo mult.
    * @param {number} absoluteSeconds
    * @param {string} layer
    * @param {DownbeatSignals} signals
@@ -125,6 +163,7 @@ emergentDownbeat = (() => {
     const av = accentVelocity(velocity, result.strength);
     reinforceBass(midi, av, result.strength);
     widenStereo(layer, result.strength);
+    applyTempoMultiplier(layer, midi, av, result.strength);
 
     return { isDownbeat: true, accentedVelocity: av, strength: result.strength };
   }
@@ -137,6 +176,6 @@ emergentDownbeat = (() => {
     downbeatCount = 0;
   }
 
-  return { detect, accentVelocity, reinforceBass, widenStereo, applyIfDownbeat, getDownbeatCount, reset };
+  return { detect, accentVelocity, reinforceBass, widenStereo, applyTempoMultiplier, applyIfDownbeat, getDownbeatCount, reset };
 })();
 crossLayerRegistry.register('emergentDownbeat', emergentDownbeat, ['all']);

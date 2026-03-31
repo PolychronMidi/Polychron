@@ -24,7 +24,8 @@ feedbackGraphContract = (() => {
         regimeReactiveDamping,
         pipelineBalancer,
         dynamicArchitectPlanner,
-        stutterVariantFeedback: stutterVariants
+        stutterVariantFeedback: stutterVariants,
+        correlationShuffler
       },
       methods: {
         coherenceMonitor: ['getDensityBias'],
@@ -35,7 +36,8 @@ feedbackGraphContract = (() => {
         regimeReactiveDamping: ['densityBias', 'tensionBias', 'flickerMod'],
         pipelineBalancer: ['densityBias', 'tensionBias'],
         dynamicArchitectPlanner: ['getTensionBias', 'recordIntensity'],
-        stutterVariantFeedback: ['selectForBeat', 'getActive', 'resetSection']
+        stutterVariantFeedback: ['selectForBeat', 'getActive', 'resetSection'],
+        correlationShuffler: ['tick', 'getShuffleScale', 'getSnapshot']
       }
     };
   }

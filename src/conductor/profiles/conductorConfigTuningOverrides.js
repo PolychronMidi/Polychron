@@ -1,6 +1,6 @@
 conductorConfigTuningOverrides = () => ({
   restrained: {
-    emissionGate: { playBase: 0.52, playScale: 0.65, stutterBase: 0.36, stutterScale: 0.80, journeyBoost: 0.03, feedbackBoost: 0.03 },
+    emissionGate: { playBase: 0.52, playScale: 0.65, stutterBase: 0.44, stutterScale: 0.85, journeyBoost: 0.03, feedbackBoost: 0.03 },
     feedbackMix: { fx: 0.35, stutter: 0.15, journey: 0.5 },
     intensityBlend: { arc: 0.45, tension: 0.55 },
     stutterGrain: { fadeCount: [8, 45], panCount: [18, 60], fxCount: [20, 70] },
@@ -134,7 +134,7 @@ conductorConfigTuningOverrides = () => ({
     rhythmDrift: { burst: [0.7, 1.8], flurry: [0.4, 1.2] }
   },
   minimal: {
-    emissionGate: { playBase: 0.54, playScale: 0.62, stutterBase: 0.32, stutterScale: 0.55, journeyBoost: 0.04, feedbackBoost: 0.03 },
+    emissionGate: { playBase: 0.54, playScale: 0.62, stutterBase: 0.48, stutterScale: 0.75, journeyBoost: 0.04, feedbackBoost: 0.03 },
     feedbackMix: { fx: 0.3, stutter: 0.1, journey: 0.6 },
     intensityBlend: { arc: 0.4, tension: 0.6 },
     stutterGrain: {

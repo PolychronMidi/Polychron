@@ -6,6 +6,7 @@ const stutterMetricsState = {
   emittedCount: 0,
   scheduledByProfile: {},
   emittedByProfile: {},
+  variantCounts: {},
   pendingByTick: new Map()
 };
 
@@ -15,6 +16,7 @@ function getMetrics() {
     emittedCount: stutterMetricsState.emittedCount,
     scheduledByProfile: Object.assign({}, stutterMetricsState.scheduledByProfile),
     emittedByProfile: Object.assign({}, stutterMetricsState.emittedByProfile),
+    variantCounts: Object.assign({}, stutterMetricsState.variantCounts),
     pendingByTick: new Map(stutterMetricsState.pendingByTick)
   };
 }
@@ -24,6 +26,7 @@ function resetMetrics() {
   stutterMetricsState.emittedCount = 0;
   stutterMetricsState.scheduledByProfile = {};
   stutterMetricsState.emittedByProfile = {};
+  stutterMetricsState.variantCounts = {};
   stutterMetricsState.pendingByTick = new Map();
   return true;
 }
@@ -50,11 +53,17 @@ function decPendingForTick(tick, n = 1) {
   if (next === 0) stutterMetricsState.pendingByTick.delete(key); else stutterMetricsState.pendingByTick.set(key, next);
 }
 
+function incVariant(name) {
+  const key = (name === null || name === undefined) ? 'default' : name;
+  stutterMetricsState.variantCounts[key] = (V.optionalFinite(stutterMetricsState.variantCounts[key], 0)) + 1;
+}
+
 stutterMetrics = {
   getMetrics,
   resetMetrics,
   incScheduled,
   incEmitted,
+  incVariant,
   incPendingForTick,
   decPendingForTick
 };

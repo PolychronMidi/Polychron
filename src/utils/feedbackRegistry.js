@@ -67,7 +67,11 @@ feedbackRegistry = (() => {
       }
     }
 
-    return clamp(dampening, 0.1, 1.0);
+    // Apply correlation shuffler perturbation if active
+    const shuffleScale = safePreBoot.call(() => correlationShuffler.getShuffleScale(name), 1.0);
+    dampening *= /** @type {number} */ (shuffleScale);
+
+    return clamp(dampening, 0.1, 1.5);
   }
 
   function getSnapshot() {

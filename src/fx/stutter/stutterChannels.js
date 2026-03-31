@@ -30,3 +30,21 @@ pickStutterChannels = (channels, count, excludeSet) => {
 
   return Array.from(selected);
 };
+
+/**
+ * Select up to maxCount mirror channels from a candidate pool with
+ * the given probability threshold. Single source of truth for mirror
+ * channel selection (was duplicated in stutterNotes, StutterManager, stutterFade).
+ * @param {Set<number>} targetSet - set to populate (mutated in-place)
+ * @param {number[]} candidates - channel pool
+ * @param {number} [maxCount=2] - max channels to select
+ * @param {number} [probability=0.5] - per-channel selection probability
+ */
+selectMirrorChannels = (targetSet, candidates, maxCount, probability) => {
+  const max = /** @type {number} */ (Number.isFinite(maxCount) ? maxCount : 2);
+  const prob = /** @type {number} */ (Number.isFinite(probability) ? probability : 0.5);
+  for (let i = 0; i < candidates.length; i++) {
+    if (targetSet.size >= max) break;
+    if (rf() < prob) targetSet.add(candidates[i]);
+  }
+};

@@ -167,7 +167,9 @@ rhythmicComplementEngine = (() => {
     const inCoherent = currentRegime === 'coherent';
     const inAtmospheric = conductorConfig.getActiveProfileName() === 'atmospheric';
 
-    if ((inCoherent || inAtmospheric) && interaction > MODERATE_INTERACTION) {
+    // R18: atmospheric canon repeatedly legendary - lower interaction threshold
+    const canonThreshold = inAtmospheric ? MODERATE_INTERACTION * 0.6 : MODERATE_INTERACTION;
+    if ((inCoherent || inAtmospheric) && interaction > canonThreshold) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
     } else if (farFromHome && interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
