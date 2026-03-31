@@ -12,6 +12,10 @@ harmonicIntervalGuard = (() => {
   // 0=unison, 1=m2, 2=M2, 3=m3, 4=M3, 5=P4, 6=tritone, 7=P5, 8=m6, 9=M6, 10=m7, 11=M7
   const CONSONANCE = Object.freeze([1, 0.1, 0.25, 0.6, 0.7, 0.85, 0.05, 0.95, 0.65, 0.7, 0.2, 0.15]);
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   /** @type {{ midi: number, absoluteSeconds: number, layer: string }[]} */
   const history = [];
 
@@ -98,7 +102,7 @@ harmonicIntervalGuard = (() => {
     if (m.abs(error) < 0.18) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high
-    const nudgeProb = m.abs(error) * (0.6 + dissonanceTarget * 0.3);
+    const nudgeProb = m.abs(error) * (0.6 + dissonanceTarget * 0.3) * (0.4 + cimScale * 1.2);
     if (rf() > nudgeProb) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     const otherMotifEntry = L0.getLast('motifIdentity', { layer: otherLayer });
@@ -145,6 +149,6 @@ harmonicIntervalGuard = (() => {
     histTotal = 0;
   }
 
-  return { recordCrossInterval, getDissonanceLevel, nudgePitch, reset };
+  return { recordCrossInterval, getDissonanceLevel, nudgePitch, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('harmonicIntervalGuard', harmonicIntervalGuard, ['all', 'section']);

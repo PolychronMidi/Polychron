@@ -12,6 +12,7 @@ adaptiveTrustScores = (() => {
   // from collapsing to near-zero for infrequently-active systems where
   // cumulative decay overwhelms sparse positive payoffs.
   const DECAY_FLOOR = 0.05;
+  let cimScale = 0.5;
 
   // Trust ceiling: prevents runaway dominance where high-trust systems
   // accumulate ever-more influence via positive feedback (high trust -
@@ -360,7 +361,9 @@ adaptiveTrustScores = (() => {
     // strained or worse, double the exploration nudge to accelerate recovery
     // of dormant systems. Wires adaptiveTrustScores into the health self-
     // healing loop without creating a new feedback mechanism.
-    let effectiveNudge = EXPLORATION_NUDGE;
+    // CIM: independent = more exploration nudge (keep all systems active),
+    // coordinated = less nudge (let dominant systems stay dominant)
+    let effectiveNudge = EXPLORATION_NUDGE * (1.5 - cimScale);
     const trustGrade = safePreBoot.call(() => signalHealthAnalyzer.getHealth().trust.grade, 'healthy');
     if (trustGrade === 'strained' || trustGrade === 'stressed' || trustGrade === 'critical') {
       effectiveNudge = EXPLORATION_NUDGE * 2;
@@ -532,6 +535,8 @@ adaptiveTrustScores = (() => {
     adaptiveTrustScoresInvalidateValueCaches();
   }
 
-  return { registerOutcome, getBaseWeight, getWeight, getWeightBatch, decayAll, getSnapshot, getJournal, reset };
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
+  return { registerOutcome, getBaseWeight, getWeight, getWeightBatch, decayAll, getSnapshot, getJournal, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('adaptiveTrustScores', adaptiveTrustScores, ['all']);

@@ -12,6 +12,10 @@ articulationComplement = (() => {
   const CONTRAST_BASE = 0.5;
   const CONTRAST_GROWTH = 0.3;
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   /** @type {Map<string, number[]>} recent sustain durations per layer (in seconds) */
   const sustainHistory = new Map();
 
@@ -85,7 +89,7 @@ articulationComplement = (() => {
     const regimeContrast = artRegime === 'exploring' ? 1.25
       : artRegime === 'coherent' ? 0.80
       : 1.0;
-    const effectiveContrast = contrastStrength * regimeContrast;
+    const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale);
 
     // Check role swap state
     const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
@@ -130,6 +134,6 @@ articulationComplement = (() => {
     sustainHistory.clear();
   }
 
-  return { recordSustain, getArticulationProfile, getSustainModifier, reset };
+  return { recordSustain, getArticulationProfile, getSustainModifier, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('articulationComplement', articulationComplement, ['all', 'section']);

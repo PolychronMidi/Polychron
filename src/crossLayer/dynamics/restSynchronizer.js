@@ -26,6 +26,9 @@ restSynchronizer = (() => {
   /** @type {Record<string, boolean>} whether layer is currently resting */
   let isResting = crossLayerHelpers.createLayerPair(false);
   let sharedRestCount = 0;
+  let coordinationScale = 0.5;
+  function setCoordinationScale(scale) { coordinationScale = clamp(scale, 0, 1); }
+  function getCoordinationScale() { return coordinationScale; }
 
   /**
    * Evaluate whether both layers should share a rest at this moment.
@@ -93,7 +96,9 @@ restSynchronizer = (() => {
     // Harmonic change breathing: rest more likely after recent key change
     const harmonicEntry = L0.getLast('harmonic', { layer: 'both', since: absoluteSeconds - 3, windowSeconds: 3 });
     const harmonicRestBoost = harmonicEntry && harmonicEntry.excursion > 2 ? 0.05 : 0;
-    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost) * (1 + restUrgency) * e11RestBoost;
+    // CIM coordination scale: high = more shared rests, low = independent rest timing
+    const cimScale = 0.5 + coordinationScale;
+    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost) * (1 + restUrgency) * e11RestBoost * cimScale;
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';
@@ -179,6 +184,6 @@ restSynchronizer = (() => {
     sharedRestCount = 0;
   }
 
-  return { evaluateSharedRest, evaluateComplementaryRest, postRest, getSharedRestCount, isLayerResting, reset };
+  return { evaluateSharedRest, evaluateComplementaryRest, postRest, getSharedRestCount, isLayerResting, setCoordinationScale, getCoordinationScale, reset };
 })();
 crossLayerRegistry.register('restSynchronizer', restSynchronizer, ['all', 'section']);

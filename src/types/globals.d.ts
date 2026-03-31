@@ -278,6 +278,7 @@ interface AdaptiveTrustScoresAPI {
   decayAll(rate?: number): void;
   getSnapshot(): Record<string, any>;
   getJournal(): { section: number; beat: number; systemName: string; payoff: number; scoreBefore: number; scoreAfter: number; ms: number }[];
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -305,7 +306,7 @@ interface CoherenceMonitorAPI {
 
 interface ConductorSignalBridgeAPI {
   refresh(ctx: RecorderContext): void;
-  getSignals(): Readonly<{ density: number; tension: number; flicker: number; compositeIntensity: number; sectionPhase: string; coherenceEntropy: number }>;
+  getSignals(): Readonly<{ density: number; tension: number; flicker: number; compositeIntensity: number; sectionPhase: string; coherenceEntropy: number; healthEma: number; systemPhase: string; exceedanceTrendEma: number; topologyPhase: string }>;
   reset(): void;
 }
 
@@ -680,6 +681,7 @@ interface SectionIntentCurvesAPI {
 interface NegotiationEngineAPI {
   apply(layer: string, context: { playProb: number; stutterProb: number; cadenceSuggested: boolean; phaseConfidence: number; intent?: { densityTarget: number; dissonanceTarget: number; interactionTarget: number; entropyTarget: number; convergenceTarget: number }; entropyScale?: number }): { playProb: number; stutterProb: number; allowCadence: boolean; conflict: number; phaseConfidence: number };
   gateConvergence(layer: string): { allowHarmonicTrigger: boolean; allowDownbeat: boolean };
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -740,12 +742,14 @@ interface ConvergenceDetectorAPI {
   wasRecent(absoluteSeconds: number, layer: string, windowMs?: number): boolean;
   getLastConvergenceMs(layer: string): number;
   getConvergenceCount(): number;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
 interface GrooveTransferAPI {
   recordTiming(layer: string, timeSec: number, unit: string): void;
   applyOffset(layer: string, timeSec: number, unit: string): number;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -753,6 +757,7 @@ interface TemporalGravityAPI {
   postDensity(absoluteSeconds: number, layer: string, density: number): void;
   measureDensity(layer: string, absTimeSec: number): number;
   applyGravity(absoluteSeconds: number, activeLayer: string, originalTime: number): number;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -760,6 +765,7 @@ interface StutterContagionAPI {
   postStutter(absoluteSeconds: number, layer: string, intensity: number, channels: number[], type: string): void;
   checkContagion(absoluteSeconds: number, activeLayer: string): { syncOffset: number; intensity: number; channels: number[]; type: string } | null;
   apply(absoluteSeconds: number, activeLayer: string): void;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -769,6 +775,7 @@ interface RhythmicPhaseLockAPI {
   applyPhaseLock(absoluteSeconds: number, activeLayer: string, originalTime: number): { time: number; mode: 'lock' | 'drift' | 'repel'; phaseDiff: number };
   getMode(): 'lock' | 'drift' | 'repel';
   getLockCount(): number;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -778,6 +785,7 @@ interface RhythmicComplementEngineAPI {
   getMode(): 'hocket' | 'antiphony' | 'canon' | 'free';
   setMode(newMode: 'hocket' | 'antiphony' | 'canon' | 'free'): void;
   autoSelectMode(absoluteSeconds?: number): void;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -785,6 +793,7 @@ interface FeedbackOscillatorAPI {
   inject(absoluteSeconds: number, layer: string, energy: number, impulseType?: string, pitchClass?: number): void;
   react(absoluteSeconds: number, activeLayer: string): { energy: number; roundTrip: number; impulseType: string; syncOffset: number; pitchBias: number } | null;
   applyFeedback(absoluteSeconds: number, activeLayer: string): { applied: boolean; energy: number; roundTrip: number; pitchBias: number };
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -795,6 +804,7 @@ interface EmergentDownbeatAPI {
   widenStereo(layer: string, strength: number): void;
   applyIfDownbeat(absoluteSeconds: number, layer: string, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }, midi: number, velocity: number): { isDownbeat: boolean; accentedVelocity: number; strength: number } | null;
   getDownbeatCount(): number;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -842,6 +852,7 @@ interface HarmonicIntervalGuardAPI {
   recordCrossInterval(midiA: number, midiB: number, absoluteSeconds: number): void;
   getDissonanceLevel(): number;
   nudgePitch(midi: number, activeLayer: string, absoluteSeconds: number, externalPitchBias?: number): { midi: number; nudged: boolean; interval: number; otherMidi: number };
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -855,6 +866,7 @@ interface CadenceAlignmentAPI {
 interface RegisterCollisionAvoiderAPI {
   recordNote(layer: string, midi: number, absoluteSeconds: number): void;
   avoid(activeLayer: string, midi: number, absoluteSeconds: number): { midi: number; adjusted: boolean };
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -864,6 +876,7 @@ interface SpectralComplementarityAPI {
   analyzeComplement(activeLayer: string): { gaps: number[]; dominant: number[]; gapWeight: number };
   nudgeToFillGap(midi: number, activeLayer: string): { midi: number; nudged: boolean; targetBin: number };
   postSpectralState(absoluteSeconds: number, layer: string): void;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -871,6 +884,7 @@ interface VelocityInterferenceAPI {
   postVelocity(absoluteSeconds: number, layer: string, velocity: number, delta: number): void;
   measureDelta(layer: string, absTimeSec: number): number;
   applyInterference(absoluteSeconds: number, activeLayer: string, baseVelocity: number): { velocity: number; mode: 'reinforce' | 'separate' | 'neutral' };
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -878,6 +892,7 @@ interface TexturalMirrorAPI {
   recordTexture(layer: string, mode: string, absoluteSeconds: number): void;
   suggestTexture(activeLayer: string, absoluteSeconds: number): { preferredMode: string; weight: number };
   getTextureDistance(): number;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -887,6 +902,8 @@ interface RestSynchronizerAPI {
   postRest(absoluteSeconds: number, layer: string): void;
   getSharedRestCount(): number;
   isLayerResting(layer: string): boolean;
+  setCoordinationScale(scale: number): void;
+  getCoordinationScale(): number;
   reset(): void;
 }
 
@@ -906,6 +923,7 @@ interface CrossLayerDynamicEnvelopeAPI {
   setArcType(type: 'parallel' | 'complementary' | 'independent'): void;
   getArcType(): 'parallel' | 'complementary' | 'independent';
   autoSelectArcType(): void;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -913,6 +931,7 @@ interface ArticulationComplementAPI {
   recordSustain(layer: string, sustainSec: number, absoluteSeconds: number): void;
   getArticulationProfile(layer: string): { avgSustain: number; isLegato: boolean; isStaccato: boolean };
   getSustainModifier(activeLayer: string): { sustainScale: number; preferredStutterType: string };
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -1101,6 +1120,7 @@ interface StutterManagerAPI {
   runDuePlans(absoluteSeconds: number): any;
   scheduleStutterForUnit(opts?: Record<string, any>): any;
   prepareBeat(beatStartTime?: number): any;
+  setChannelCoordinationScale(scale: number): void;
   resetChannelTracking(channels?: number[] | null): { cleared: number; lastUsedCHs?: number; lastUsedCHs2?: number; lastUsedCHs3?: number };
 }
 
@@ -1795,6 +1815,7 @@ declare var pickStutterChannels: any;
 declare var selectMirrorChannels: (targetSet: Set<number>, candidates: number[], maxCount?: number, probability?: number) => void;
 declare var stutterRegistry: any;
 declare var stutterVariants: any;
+declare var stutterSteps: { shouldEmit(sustain: number): boolean; getStepProbability(sustain: number): number; patternAllows(): boolean };
 declare var stutterMetrics: any;
 declare var stutterConfig: any;
 declare var stutterPlanScheduler: any;
@@ -1895,6 +1916,7 @@ declare var hyperMetaManagerTelemetry: { updateReconciliation(state: any): void;
 declare var correlationShuffler: { tick(): void; getShuffleScale(loopName: string): number; getSnapshot(): any; reset(): void };
 declare var hyperMetaManager: { getRateMultiplier(key: string): number; getPhaseBoostCeiling(): number; getP95AlphaMultiplier(): number; getS0TighteningMultiplier(): number; getSystemPhase(): 'converging' | 'oscillating' | 'stabilized'; getVarianceGateRelaxMultiplier(): number; getTopologyCreativityMultiplier(): number; getTopologyPhase(): 'crystallized' | 'resonant' | 'fluid'; getCrossState(): 'emergence' | 'locked' | 'seeking' | 'dampened'; recordExceedance(pair: string): void; getAxisConcentration(): { axisExceedance: Record<string, number>; concentration: number; dominantAxis: string }; getSnapshot(): any; reset(): void };
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
+declare var coordinationIndependenceManager: { tick(): void; getDial(pair: string): number; getSnapshot(): any; reset(): void };
 declare var verticalIntervalMonitor: { process(ctx: any): number; getCollisionCount(): number; reset(): void };
 declare var polyrhythmicPhasePredictor: { process(ctx: any): number; predictConvergences(): void; reset(): void };
 declare var contextualTrust: ContextualTrustAPI;

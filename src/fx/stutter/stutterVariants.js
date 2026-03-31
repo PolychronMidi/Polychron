@@ -11,6 +11,10 @@ stutterVariants = (() => {
   let sectionStutterCount = 0;
   /** @type {number[]|null} */ let activePattern = null;
   let patternStepIndex = 0;
+  let prevRegime = 'exploring';
+  let blendFromRegime = 'exploring';
+  let regimeTransitionBeats = 0;
+  const REGIME_BLEND_DURATION = 8;
 
   // Regime weight multipliers: which variants suit which musical context
   const REGIME_WEIGHTS = {
@@ -43,11 +47,21 @@ stutterVariants = (() => {
 
   function getNames() { return Array.from(registered.keys()); }
 
-  /** Get the selfGate multiplier for the active variant (1.0 = no extra gating). */
+  /** Get the selfGate multiplier for the active variant, dynamically adjusted
+   *  by the emitted/scheduled ratio. When steps are mostly gated out, ease up.
+   *  When flooding, tighten. */
   function getActiveSelfGate() {
     if (!activeVariantName) return 1.0;
     const entry = registered.get(activeVariantName);
-    return entry ? entry.selfGate : 1.0;
+    if (!entry) return 1.0;
+    const metrics = stutterMetrics.getMetrics();
+    const scheduled = m.max(1, metrics.scheduledCount);
+    const emitted = metrics.emittedCount;
+    const ratio = emitted / scheduled;
+    // ratio < 0.3 = most steps gated out, ease selfGate up by 20%
+    // ratio > 0.7 = most steps emitting, tighten selfGate by 15%
+    const adjustment = ratio < 0.3 ? 1.2 : ratio > 0.7 ? 0.85 : 1.0;
+    return clamp(entry.selfGate * adjustment, 0.15, 1.0);
   }
 
   /**
@@ -75,11 +89,33 @@ stutterVariants = (() => {
     patternStepIndex = 0;
 
     // R18: pattern gating legendary across all profiles/regimes/densities.
-    // Raised from 50% to 75% - Euclidean patterns are now the primary gating mode.
-    if (rf() < 0.75) {
+    // R19: uses full patterns.js selection. Activation scales with composite
+    // intensity - sparse passages get fewer patterns, climactic sections more.
+    const sigs = safePreBoot.call(() => conductorSignalBridge.getSignals(), null);
+    const compositeIntensity = sigs ? clamp((sigs.compositeIntensity || 0.5), 0, 1) : 0.5;
+    const patternActivationProb = clamp(0.55 + compositeIntensity * 0.35, 0.45, 0.90);
+    if (rf() < patternActivationProb) {
       const patternLen = ri(4, 12);
-      const ones = m.max(1, m.round(patternLen * rf(0.25, 0.6)));
-      activePattern = euclid(patternLen, ones);
+      const roll = rf();
+      if (roll < 0.30) {
+        const ones = m.max(1, m.round(patternLen * rf(0.25, 0.6)));
+        activePattern = euclid(patternLen, ones);
+      } else if (roll < 0.50) {
+        activePattern = binary(patternLen);
+      } else if (roll < 0.65) {
+        activePattern = hex(patternLen);
+      } else if (roll < 0.78) {
+        activePattern = random(patternLen, rf(0.3, 0.7));
+      } else if (roll < 0.88) {
+        activePattern = onsets({ make: [patternLen, () => [1, ri(2, 4)]] });
+      } else if (activePattern && activePattern.length > 0) {
+        // Rotate or morph the previous pattern for continuity
+        activePattern = rf() < 0.5
+          ? rotate(activePattern, ri(2), '?', patternLen)
+          : morph(activePattern, '?', patternLen);
+      } else {
+        activePattern = euclid(patternLen, m.max(1, m.round(patternLen * rf(0.3, 0.5))));
+      }
     } else {
       activePattern = null;
     }
@@ -93,10 +129,26 @@ stutterVariants = (() => {
     };
     const DENSE_VARIANTS = new Set(['machineGun', 'stutterTremolo', 'stutterSwarm', 'convergenceBurst']);
 
-    // Regime-aware + phase-aware weighted selection
+    // Regime-aware + phase-aware weighted selection with transition blending
     const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const regime = (snap && snap.regime) ? snap.regime : 'exploring';
-    const regimeMap = REGIME_WEIGHTS[regime] || REGIME_WEIGHTS.evolving;
+    if (regime !== prevRegime) {
+      blendFromRegime = prevRegime;
+      regimeTransitionBeats = 0;
+      prevRegime = regime;
+    }
+    regimeTransitionBeats++;
+    const currentMap = REGIME_WEIGHTS[regime] || REGIME_WEIGHTS.evolving;
+    const fromMap = REGIME_WEIGHTS[blendFromRegime] || REGIME_WEIGHTS.evolving;
+    const blendT = clamp(regimeTransitionBeats / REGIME_BLEND_DURATION, 0, 1);
+    // Interpolate regime weights during transition
+    /** @type {Record<string, number>} */
+    const regimeMap = {};
+    for (const key of Object.keys(currentMap)) {
+      const cur = currentMap[key] || 1.0;
+      const from = fromMap[key] || 1.0;
+      regimeMap[key] = from + (cur - from) * blendT;
+    }
     const phase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development');
     const phaseDenseMult = PHASE_DENSE_MULT[phase] || 1.0;
 

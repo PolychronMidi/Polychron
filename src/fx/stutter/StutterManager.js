@@ -198,8 +198,12 @@ StutterManager = class StutterManager {
 
       V.assertArray(reflection, 'reflection');
       V.assertArray(bass, 'bass');
-      selectMirrorChannels(beatContext.selectedReflectionChannels, reflection, 2, textureSuppression);
-      selectMirrorChannels(beatContext.selectedBassChannels, bass, 2, textureSuppression);
+      // CIM: coordinated = more channels stutter together, independent = fewer
+      const cimCoord = /** @type {number} */ (this.StutterManagerChannelCoordination) || 0.5;
+      const cimMaxChannels = m.max(1, m.round(2 + (cimCoord - 0.5) * 3));
+      const cimProb = textureSuppression * (0.5 + cimCoord * 0.5);
+      selectMirrorChannels(beatContext.selectedReflectionChannels, reflection, cimMaxChannels, cimProb);
+      selectMirrorChannels(beatContext.selectedBassChannels, bass, cimMaxChannels, cimProb);
     }
 
     const def = /** @type {any} */ (this.defaultDirective);
@@ -214,6 +218,10 @@ StutterManager = class StutterManager {
 
     if (!beatContext.mod) beatContext.mod = {};
     return beatContext;
+  }
+
+  static setChannelCoordinationScale(scale) {
+    this.StutterManagerChannelCoordination = clamp(scale, 0, 1);
   }
 
   /**
@@ -262,6 +270,7 @@ stutterManagerStatic.StutterManagerTextureIntensity = 0;
 stutterManagerStatic.StutterManagerLastTextureMode = 'single';
 stutterManagerStatic.StutterManagerTextureDecay = 0.85;
 stutterManagerStatic.StutterManagerTextureListenerAttached = false;
+stutterManagerStatic.StutterManagerChannelCoordination = 0.5;
 
 stutterFade = (...args) => StutterManager.stutterFade(...args);
 stutterPan = (...args) => StutterManager.stutterPan(...args);

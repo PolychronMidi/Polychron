@@ -40,6 +40,21 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
     const preset = stutterConfig.getPreset(cfg.preset);
     if (preset && typeof preset === 'object') Object.assign(directive, preset);
   }
+  // Signal-driven curve override: articulation and rhythm mode modulate curve type
+  if (!cfg.rateCurve && !cfg.phaseCurve) {
+    const artLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
+    const art = safePreBoot.call(() => articulationComplement.getArticulationProfile(artLayer), null);
+    const rhythmMode = safePreBoot.call(() => rhythmicComplementEngine.getMode(), 'free');
+    if (art && art.isStaccato) {
+      directive.rateCurve = 'accelerando';
+      directive.phaseCurve = 'pingpong';
+    } else if (art && art.isLegato) {
+      directive.rateCurve = 'sine';
+      directive.phaseCurve = 'oscillate';
+    } else if (rhythmMode === 'hocket') {
+      directive.rateCurve = 'pingpong';
+    }
+  }
 
   const crossRules = (directive.coherence && directive.coherence.enabled)
     ? stutterConfig.getCrossModRules()

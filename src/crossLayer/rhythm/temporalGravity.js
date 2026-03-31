@@ -10,6 +10,10 @@ temporalGravity = (() => {
   const GRAVITY_TOLERANCE_MS = 500;
   const MAX_PULL_TICKS_RATIO = 0.05; // max 5% of tpSec pull
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   /**
    * Post a density sample from the active layer.
    * @param {number} absoluteSeconds - absolute ms
@@ -71,7 +75,7 @@ temporalGravity = (() => {
     const wellTimeMs = wellTimeSec * 1000;
     const dist = m.abs(wellTimeMs - absoluteSeconds);
     const proximity = 1 - (dist / GRAVITY_TOLERANCE_MS);
-    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO;
+    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale);
 
     // Direction: pull toward the gravity well's time position (seconds)
     const direction = wellTimeSec > originalTimeN ? 1 : -1;
@@ -81,6 +85,6 @@ temporalGravity = (() => {
     return originalTimeN + direction * pull;
   }
 
-  return { postDensity, measureDensity, applyGravity, reset() { /* stateless - no per-scope state to clear */ } };
+  return { postDensity, measureDensity, applyGravity, setCoordinationScale, reset() { /* stateless - no per-scope state to clear */ } };
 })();
 crossLayerRegistry.register('temporalGravity', temporalGravity, ['all']);

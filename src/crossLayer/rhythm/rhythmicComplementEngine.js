@@ -9,6 +9,7 @@ rhythmicComplementEngine = (() => {
   /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */
   let mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('free');
   const MODE_CHANGE_INTERVAL = 8; // beats between mode re-evaluation
+  let cimScale = 0.5;
 
   // Analysis
   const ANALYSIS_WINDOW_S = 2;
@@ -144,7 +145,9 @@ rhythmicComplementEngine = (() => {
    */
   function autoSelectMode(/* absoluteSeconds */) {
     beatsSinceChange++;
-    if (beatsSinceChange < MODE_CHANGE_INTERVAL) return;
+    // CIM: coordinated = longer mode dwell, independent = faster switching
+    const effectiveInterval = m.round(MODE_CHANGE_INTERVAL * (0.5 + cimScale));
+    if (beatsSinceChange < effectiveInterval) return;
 
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
 
@@ -195,6 +198,8 @@ rhythmicComplementEngine = (() => {
     beatsSinceChange = 0;
   }
 
-  return { analyzeOtherLayer, suggestComplement, getMode, setMode, autoSelectMode, reset };
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
+  return { analyzeOtherLayer, suggestComplement, getMode, setMode, autoSelectMode, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('rhythmicComplementEngine', rhythmicComplementEngine, ['all', 'phrase']);

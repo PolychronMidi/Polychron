@@ -1,0 +1,273 @@
+// coordinationIndependenceManager.js - Dynamic coordination/independence dial
+// for cross-layer module pairs. Manages how independently or coordinatedly
+// modules behave, switching based on regime, phase, health, entropy, topology,
+// and self-assessed effectiveness. Lives in crossLayer (reads conductor via
+// bridge, writes to peer crossLayer modules via setCoordinationScale).
+
+coordinationIndependenceManager = (() => {
+
+  // Module pairs and their coordination dials (0=independent, 1=coordinated)
+  const MODULE_PAIRS = [
+    'restSync-rhythmComplement',
+    'stutterContagion-stutterVariants',
+    'spectralComp-velocityInterference',
+    'feedbackOsc-emergentDownbeat',
+    'stutterChannels-coordination',
+    'harmonic-pitchCorrection',
+    'rhythm-phaseLockGravity',
+    'dynamics-envelopeInterference',
+    'dynamics-articulationTexture',
+    'rhythm-grooveConvergence',
+    'structure-trustNegotiation'
+  ];
+
+  const TICK_INTERVAL = 4;
+  const MIN_DWELL_BEATS = 12;
+  const SELF_INTERFERENCE_WINDOW = 3;
+  const EFFECTIVENESS_ALPHA = 0.06;
+  const DIAL_STEP = 0.08;
+
+  // Phase targets: what coordination level each section phase wants
+  const PHASE_TARGETS = {
+    intro: 0.3, opening: 0.35, exposition: 0.45, development: 0.5,
+    climax: 0.8, resolution: 0.6, conclusion: 0.55, coda: 0.4
+  };
+
+  // Regime targets: coherent = coordinate, exploring = independent
+  const REGIME_TARGETS = {
+    coherent: 0.75, exploring: 0.25, evolving: 0.5, oscillating: 0.55,
+    drifting: 0.3, fragmented: 0.2, stagnant: 0.4
+  };
+
+  // Topology targets: crystallized = break coordination, resonant = maintain, fluid = loosen
+  const TOPOLOGY_TARGETS = {
+    crystallized: 0.3, resonant: 0.6, fluid: 0.4
+  };
+
+  /** @type {Record<string, number>} */
+  const dials = {};
+  /** @type {Record<string, number>} */
+  const dialTargets = {};
+  /** @type {Record<string, number>} */
+  const beatsSinceChange = {};
+  /** @type {Record<string, number>} */
+  const effectiveness = {};
+  /** @type {Record<string, number>} */
+  const healthAtLastChange = {};
+  let tickCount = 0;
+
+  function initPair(pair) {
+    if (dials[pair] === undefined) {
+      dials[pair] = 0.5;
+      dialTargets[pair] = 0.5;
+      beatsSinceChange[pair] = 0;
+      effectiveness[pair] = 0.5;
+      healthAtLastChange[pair] = 0.7;
+    }
+  }
+
+  for (let i = 0; i < MODULE_PAIRS.length; i++) initPair(MODULE_PAIRS[i]);
+
+  /**
+   * Compute the target coordination level for a pair based on all signals.
+   * @param {string} pair
+   * @param {Object} sigs - conductorSignalBridge signals
+   * @returns {number} target 0-1
+   */
+  function computeTarget(pair, sigs) {
+    const phase = sigs.sectionPhase || 'development';
+    const regimeEntry = /** @type {string} */ (safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving'));
+
+    const phaseTarget = PHASE_TARGETS[phase] || 0.5;
+    const regimeTarget = REGIME_TARGETS[regimeEntry] || 0.5;
+    const topoTarget = TOPOLOGY_TARGETS[sigs.topologyPhase] || 0.5;
+
+    // Entropy modulation: high coherenceEntropy = loosen coordination
+    const entropyBias = clamp((sigs.coherenceEntropy - 0.5) * -0.3, -0.15, 0.15);
+
+    // Density modulation: very low density = more independence (let things explore)
+    const densityBias = sigs.density < 0.5 ? -0.1 : sigs.density > 1.5 ? 0.1 : 0;
+
+    // Effectiveness modulation: if coordination worked well for this pair, bias toward it
+    const effectBias = (effectiveness[pair] - 0.5) * 0.2;
+
+    // Composite target
+    const raw = phaseTarget * 0.3 + regimeTarget * 0.3 + topoTarget * 0.2 + 0.5 * 0.2
+      + entropyBias + densityBias + effectBias;
+    return clamp(raw, 0.05, 0.95);
+  }
+
+  /**
+   * Main tick: update dial targets and ease dials toward targets.
+   * Phase-gated: only adjust during stabilized system phase.
+   * Self-interference detection: revert on health drop.
+   */
+  function tick() {
+    tickCount++;
+    if (tickCount % TICK_INTERVAL !== 0) return;
+
+    const sigs = conductorSignalBridge.getSignals();
+    const healthEma = sigs.healthEma;
+    const systemPhase = sigs.systemPhase;
+
+    // Self-interference detection: if health dropped since last change, revert toward neutral
+    for (let i = 0; i < MODULE_PAIRS.length; i++) {
+      const pair = MODULE_PAIRS[i];
+      if (beatsSinceChange[pair] > 0 && beatsSinceChange[pair] <= SELF_INTERFERENCE_WINDOW) {
+        if (healthEma < healthAtLastChange[pair] - 0.05) {
+          // Health dropped after recent dial change - revert toward neutral
+          dials[pair] += (0.5 - dials[pair]) * 0.4;
+          effectiveness[pair] += (0.2 - effectiveness[pair]) * EFFECTIVENESS_ALPHA * 3;
+        }
+      }
+      beatsSinceChange[pair]++;
+    }
+
+    // Phase gating: only adjust dials when system is stabilized.
+    // During oscillating/converging, freeze dials and let hypermeta recover.
+    // Exception: if health is very low (<0.4), shuffle dials to try to break out.
+    const canAdjust = systemPhase === 'stabilized' || healthEma < 0.4;
+    if (!canAdjust) { applyDials(); return; }
+
+    // Low health emergency shuffle: randomize dials to break stuck state
+    if (healthEma < 0.4) {
+      for (let i = 0; i < MODULE_PAIRS.length; i++) {
+        const pair = MODULE_PAIRS[i];
+        if (beatsSinceChange[pair] > MIN_DWELL_BEATS) {
+          dials[pair] = rf(0.15, 0.85);
+          beatsSinceChange[pair] = 0;
+          healthAtLastChange[pair] = healthEma;
+        }
+      }
+      applyDials();
+
+      return;
+    }
+
+    // Normal operation: compute targets and ease dials toward them
+    for (let i = 0; i < MODULE_PAIRS.length; i++) {
+      const pair = MODULE_PAIRS[i];
+      if (beatsSinceChange[pair] < MIN_DWELL_BEATS) continue;
+
+      const target = computeTarget(pair, sigs);
+      dialTargets[pair] = target;
+
+      const diff = target - dials[pair];
+      if (m.abs(diff) > 0.02) {
+        const prevDial = dials[pair];
+        dials[pair] += clamp(diff, -DIAL_STEP, DIAL_STEP);
+        if (m.abs(dials[pair] - prevDial) > 0.01) {
+          beatsSinceChange[pair] = 0;
+          healthAtLastChange[pair] = healthEma;
+        }
+      }
+    }
+
+    // Track effectiveness: did health improve since last change?
+    for (let i = 0; i < MODULE_PAIRS.length; i++) {
+      const pair = MODULE_PAIRS[i];
+      if (beatsSinceChange[pair] > SELF_INTERFERENCE_WINDOW && beatsSinceChange[pair] < SELF_INTERFERENCE_WINDOW + 8) {
+        const improved = healthEma > healthAtLastChange[pair];
+        const outcome = improved ? 0.7 : 0.3;
+        effectiveness[pair] += (outcome - effectiveness[pair]) * EFFECTIVENESS_ALPHA;
+      }
+    }
+
+    applyDials();
+  }
+
+  /**
+   * Apply current dials to target modules via setCoordinationScale.
+   */
+  function applyDials() {
+    const restRhythm = dials['restSync-rhythmComplement'];
+    const stutterContagionDial = dials['stutterContagion-stutterVariants'];
+    const spectralVelocity = dials['spectralComp-velocityInterference'];
+    const feedbackDownbeat = dials['feedbackOsc-emergentDownbeat'];
+    const stutterChannelDial = dials['stutterChannels-coordination'];
+
+    // restSynchronizer: shared rest probability scales with coordination
+    safePreBoot.call(() => restSynchronizer.setCoordinationScale(restRhythm), null);
+
+    // rhythmicComplementEngine: mode change interval scales inversely with coordination
+    safePreBoot.call(() => rhythmicComplementEngine.setCoordinationScale(restRhythm), null);
+
+    // stutterContagion: decay rate scales with coordination (coordinated = sticky)
+    safePreBoot.call(() => stutterContagion.setCoordinationScale(stutterContagionDial), null);
+
+    // spectralComplementarity: nudge strength scales with coordination
+    safePreBoot.call(() => spectralComplementarity.setCoordinationScale(spectralVelocity), null);
+
+    // feedbackOscillator: energy routing scales with coordination
+    safePreBoot.call(() => feedbackOscillator.setCoordinationScale(feedbackDownbeat), null);
+
+    // emergentDownbeat: layer swap probability scales inversely with coordination
+    safePreBoot.call(() => emergentDownbeat.setCoordinationScale(feedbackDownbeat), null);
+
+    // stutter channel coordination: how many channels stutter together
+    safePreBoot.call(() => StutterManager.setChannelCoordinationScale(stutterChannelDial), null);
+
+    // Harmonic pitch correction: interval guard + collision avoidance
+    const harmonicDial = dials['harmonic-pitchCorrection'];
+    safePreBoot.call(() => harmonicIntervalGuard.setCoordinationScale(harmonicDial), null);
+    safePreBoot.call(() => registerCollisionAvoider.setCoordinationScale(harmonicDial), null);
+
+    // Rhythm phase/gravity: phase lock + temporal gravity + groove transfer
+    const rhythmPhaseDial = dials['rhythm-phaseLockGravity'];
+    safePreBoot.call(() => rhythmicPhaseLock.setCoordinationScale(rhythmPhaseDial), null);
+    safePreBoot.call(() => temporalGravity.setCoordinationScale(rhythmPhaseDial), null);
+
+    // Groove + convergence
+    const grooveConvDial = dials['rhythm-grooveConvergence'];
+    safePreBoot.call(() => grooveTransfer.setCoordinationScale(grooveConvDial), null);
+    safePreBoot.call(() => convergenceDetector.setCoordinationScale(grooveConvDial), null);
+
+    // Dynamics: envelope + velocity interference
+    const dynamicsDial = dials['dynamics-envelopeInterference'];
+    safePreBoot.call(() => crossLayerDynamicEnvelope.setCoordinationScale(dynamicsDial), null);
+    safePreBoot.call(() => velocityInterference.setCoordinationScale(dynamicsDial), null);
+
+    // Dynamics: articulation + texture
+    const artTexDial = dials['dynamics-articulationTexture'];
+    safePreBoot.call(() => articulationComplement.setCoordinationScale(artTexDial), null);
+    safePreBoot.call(() => texturalMirror.setCoordinationScale(artTexDial), null);
+
+    // Structure: trust + negotiation
+    const trustDial = dials['structure-trustNegotiation'];
+    safePreBoot.call(() => adaptiveTrustScores.setCoordinationScale(trustDial), null);
+    safePreBoot.call(() => negotiationEngine.setCoordinationScale(trustDial), null);
+  }
+
+  /**
+   * Get the current coordination dial for a module pair.
+   * @param {string} pair
+   * @returns {number} 0-1
+   */
+  function getDial(pair) {
+    return dials[pair] !== undefined ? dials[pair] : 0.5;
+  }
+
+  function getSnapshot() {
+    return {
+      dials: Object.assign({}, dials),
+      targets: Object.assign({}, dialTargets),
+      effectiveness: Object.assign({}, effectiveness),
+      tickCount
+    };
+  }
+
+  function reset() {
+    for (let i = 0; i < MODULE_PAIRS.length; i++) {
+      const pair = MODULE_PAIRS[i];
+      dials[pair] = 0.5;
+      dialTargets[pair] = 0.5;
+      beatsSinceChange[pair] = 0;
+      effectiveness[pair] = 0.5;
+      healthAtLastChange[pair] = 0.7;
+    }
+    tickCount = 0;
+  }
+
+  return { tick, getDial, getSnapshot, reset };
+})();
+crossLayerRegistry.register('coordinationIndependenceManager', coordinationIndependenceManager, ['all', 'section']);
