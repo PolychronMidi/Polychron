@@ -158,9 +158,11 @@ StutterManager = class StutterManager {
 
     if (stutterVariants.shouldThrottle()) return provided.shared || this.shared;
     stutterVariants.incSectionCount();
-    stutterMetrics.incScheduled(1, provided.profile || 'unknown');
+    V.assertNonEmptyString(provided.profile, 'provided.profile');
+    stutterMetrics.incScheduled(1, provided.profile);
     const variant = stutterVariants.getActive();
     const variantName = stutterVariants.getActiveName();
+    stutterMetrics.incVariant(variantName);
     const helper = variant || stutterRegistry.getHelper();
     const result = (helper || stutterNotes)(provided);
     // Consolidated STUTTER_APPLIED event - one per invocation, not per step.
@@ -169,10 +171,10 @@ StutterManager = class StutterManager {
     eventBus.emit(eventName, {
       type: 'note',
       variant: variantName || 'default',
-      profile: provided.profile || 'source',
+      profile: provided.profile,
       channel: provided.channel,
-      intensity: clamp(V.optionalFinite(provided.velocity, 80) / MIDI_MAX_VALUE, 0, 1),
-      timeInSeconds: V.optionalFinite(provided.on, beatStartTime)
+      intensity: clamp(V.requireFinite(provided.velocity, 'provided.velocity') / MIDI_MAX_VALUE, 0, 1),
+      timeInSeconds: V.requireFinite(provided.on, 'provided.on')
     });
     return result;
   }
@@ -196,14 +198,8 @@ StutterManager = class StutterManager {
 
       V.assertArray(reflection, 'reflection');
       V.assertArray(bass, 'bass');
-      const reflCandidates = reflection.slice();
-      for (const ch of reflCandidates) {
-        if (beatContext.selectedReflectionChannels.size < 2 && rf() < textureSuppression) beatContext.selectedReflectionChannels.add(ch);
-      }
-      const bassCandidates = bass.slice();
-      for (const ch of bassCandidates) {
-        if (beatContext.selectedBassChannels.size < 2 && rf() < textureSuppression) beatContext.selectedBassChannels.add(ch);
-      }
+      selectMirrorChannels(beatContext.selectedReflectionChannels, reflection, 2, textureSuppression);
+      selectMirrorChannels(beatContext.selectedBassChannels, bass, 2, textureSuppression);
     }
 
     const def = /** @type {any} */ (this.defaultDirective);

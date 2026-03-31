@@ -107,6 +107,9 @@ hyperMetaManager = (() => {
     telem.applyTrustVelocityDamping(state);
     telem.checkPhaseTelemetryIntegrity(state);
 
+    // 10b. Feedback loop correlation shuffler
+    correlationShuffler.tick();
+
     // 11. Apply topology creativity to global rate
     ST.rateMultipliers.global *= S.topologyCreativityMultiplier;
 

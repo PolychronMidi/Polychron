@@ -36,7 +36,8 @@ stutterPlanScheduler = (() => {
       const arr = stutterMgr.scheduledPlans.get(key) || /** @type {string[]} */ ([]);
       arr.push(planId);
       stutterMgr.scheduledPlans.set(key, arr);
-      stutterMetrics.incScheduled(1, plan.profile || 'unknown');
+      V.assertNonEmptyString(plan.profile, 'plan.profile');
+      stutterMetrics.incScheduled(1, plan.profile);
       stutterMetrics.incPendingForTick(key, 1);
       return planId;
     }

@@ -36,9 +36,13 @@ RhythmManager = class RhythmManager {
   }
 
   static applyToNote(note, hit, profileName, options = {}) {
-    const profile = profileName ? rhythmConfig.getProfile(profileName) : null;
     if (options !== undefined) RhythmManager.V.assertPlainObject(options, 'applyToNote.options');
-    const opts = Object.assign({}, profile || {}, options);
+    if (profileName) {
+      const profile = rhythmConfig.getProfile(profileName);
+      RhythmManager.V.assertPlainObject(profile, 'rhythmConfig.getProfile(' + profileName + ')');
+      return rhythmModulator.apply(note, hit, Object.assign({}, profile, options));
+    }
+    const opts = Object.assign({}, options);
     return rhythmModulator.apply(note, hit, opts);
   }
 }

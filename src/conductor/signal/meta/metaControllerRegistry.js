@@ -185,6 +185,16 @@ metaControllerRegistry = (() => {
       interactionNotes: '#15 pairGainCeilingController: warmup ramp interacts with ceiling during S0 -- both affect early-section gain. #12 homeostasis: warmup ramp duration affects early energy budget pressure. #17 orchestrator: manages rate multipliers and S0 tightening authority.'
     },
     {
+      id: 18,
+      name: 'correlationShuffler',
+      file: 'conductor/signal/meta/manager/correlationShuffler.js',
+      axes: ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'],
+      mechanism: 'Feedback loop correlation detection and perturbation. Tracks rolling Pearson correlation between all registered feedback loop outputs (amplitude + phase). Detects reinforcement spirals (corr > 0.65 for 40+ beats), tug-of-war (anti-corr < -0.65), cross-domain amplitude lock, and stasis (all loops flat > 100 beats). Applies graduated shuffle interventions: magnitude perturbation, timing rotation, stasis breaks. Inversely health-gated (shuffles MORE under stress). Self-tuning via recovery attribution (12-beat window) and confidence EMA.',
+      gain: 'Perturbation scale 0.5-1.4x, duration 8-25 beats, confidence range [0.2, 1.0]',
+      interactsWith: [11, 12, 17],
+      interactionNotes: '#11 watchdog detects controller-level conflicts; shuffler detects loop-level correlations (layer above). #12 homeostasis: shuffle perturbations affect total energy. #17 orchestrator: shuffler ticks within orchestration interval.'
+    },
+    {
       id: 17,
       name: 'hyperMetaManager',
       file: 'conductor/signal/meta/manager/hyperMetaManager.js',

@@ -1792,6 +1792,7 @@ declare var stutterFX: any;
 declare var stutterExecutePlan: any;
 declare var stutterNotes: any;
 declare var pickStutterChannels: any;
+declare var selectMirrorChannels: (targetSet: Set<number>, candidates: number[], maxCount?: number, probability?: number) => void;
 declare var stutterRegistry: any;
 declare var stutterVariants: any;
 declare var stutterMetrics: any;
@@ -1891,6 +1892,7 @@ declare var hyperMetaManagerHealth: { gatherControllerState(): any; computeSyste
 declare var hyperMetaManagerContradictions: { updateRateMultipliers(state: any): void; detectContradictions(state: any): void };
 declare var hyperMetaManagerTopology: { update(state: any): void };
 declare var hyperMetaManagerTelemetry: { updateReconciliation(state: any): void; applyTrustVelocityDamping(state: any): void; checkPhaseTelemetryIntegrity(state: any): void };
+declare var correlationShuffler: { tick(): void; getShuffleScale(loopName: string): number; getSnapshot(): any; reset(): void };
 declare var hyperMetaManager: { getRateMultiplier(key: string): number; getPhaseBoostCeiling(): number; getP95AlphaMultiplier(): number; getS0TighteningMultiplier(): number; getSystemPhase(): 'converging' | 'oscillating' | 'stabilized'; getVarianceGateRelaxMultiplier(): number; getTopologyCreativityMultiplier(): number; getTopologyPhase(): 'crystallized' | 'resonant' | 'fluid'; getCrossState(): 'emergence' | 'locked' | 'seeking' | 'dampened'; recordExceedance(pair: string): void; getAxisConcentration(): { axisExceedance: Record<string, number>; concentration: number; dominantAxis: string }; getSnapshot(): any; reset(): void };
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 declare var verticalIntervalMonitor: { process(ctx: any): number; getCollisionCount(): number; reset(): void };

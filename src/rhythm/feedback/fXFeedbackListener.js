@@ -170,12 +170,12 @@ FXFeedbackListener = (() => {
    * Decay FX influence (call periodically if not using eventBus pulse)
    */
   function decay() {
-    if (!accumulator) return;
+    if (!accumulator) throw new Error('fXFeedbackListener.decay: accumulator not initialized');
     accumulator.decay();
   }
 
   function reset() {
-    if (!accumulator) return;
+    if (!accumulator) throw new Error('fXFeedbackListener.reset: accumulator not initialized');
     accumulator.reset();
   }
 

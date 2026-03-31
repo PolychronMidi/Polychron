@@ -109,16 +109,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
 
   // If mirror-selection not yet populated for this beat, lazily choose up to 2 channels
   if (!globalState.selectedReflectionChannels || globalState.selectedReflectionChannels.size === 0) {
-    const candidates = reflection.slice();
-    for (const ch of candidates) {
-      if (globalState.selectedReflectionChannels.size < 2 && rf() < 0.5) globalState.selectedReflectionChannels.add(ch);
-    }
+    selectMirrorChannels(globalState.selectedReflectionChannels, reflection);
   }
   if (!globalState.selectedBassChannels || globalState.selectedBassChannels.size === 0) {
-    const candidates = bass.slice();
-    for (const ch of candidates) {
-      if (globalState.selectedBassChannels.size < 2 && rf() < 0.5) globalState.selectedBassChannels.add(ch);
-    }
+    selectMirrorChannels(globalState.selectedBassChannels, bass);
   }
 
   // Pan-spatial bias from CC context
@@ -141,26 +135,28 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   V.assertObject(crossRules.fade, 'crossRules.fade');
   V.assertObject(crossRules.fx, 'crossRules.fx');
 
-  // Apply cross-mod adjustments
+  // Apply cross-mod adjustments. R18: coherence scales cross-mod strength -
+  // high coherence tightens interactions, low coherence loosens them.
+  const coherenceKey = (beatContext && beatContext.coherenceKey) ? beatContext.coherenceKey : null;
+  const cohMod = coherenceKey ? getParameterModulation(channel, coherenceKey, on) : null;
+  const cohScale = cohMod && Number.isFinite(cohMod.x) ? 0.7 + cohMod.x * 0.6 : 1.0;
   let shiftRangeBias = 0;
   let velocityScaleBias = 0;
   if (modBus) {
     if (typeof modBus.pan === 'number') {
       const panAbs = m.abs(modBus.pan);
-      shiftRangeBias += m.round((crossRules.pan.shiftRangeBias ?? 0) * panAbs);
+      shiftRangeBias += m.round(crossRules.pan.shiftRangeBias * panAbs * cohScale);
     }
     if (typeof modBus.fade === 'number') {
-      velocityScaleBias += (crossRules.fade.velocityScaleBias ?? 0) * modBus.fade;
+      velocityScaleBias += crossRules.fade.velocityScaleBias * modBus.fade * cohScale;
     }
     if (typeof modBus.fx === 'number') {
-      shiftRangeBias += m.round((crossRules.fx.shiftRangeScale - 1) * modBus.fx);
+      shiftRangeBias += m.round((crossRules.fx.shiftRangeScale - 1) * modBus.fx * cohScale);
     }
   }
 
-  // Per-channel coherence overlay (shared noise key) - can bias shifts/decision
-  const coherenceKey = (beatContext && beatContext.coherenceKey) ? beatContext.coherenceKey : null;
-  const cohMod = coherenceKey ? getParameterModulation(channel, coherenceKey, on) : null;
-  if (coherenceKey) {
+  // coherenceKey and cohMod already computed above for cross-mod scaling
+  if (coherenceKey && cohMod) {
     V.requireFinite(Number(cohMod.x), 'cohMod.x');
     V.requireFinite(Number(cohMod.y), 'cohMod.y');
   }
@@ -210,8 +206,14 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     return { shared: localShared, events: [evOn, evOff] };
   }
 
-  // R12: per-step sustain-proportional gating. R16: floor raised 0.1->0.15,
-  // all ecosystem tests great including dense polyrhythm.
+  // R18: pattern-based gating (when active) overrides probabilistic gate.
+  // Uses Euclidean rhythm patterns from patterns.js to create structured
+  // stutter step sequences (0=silence, 1=emit).
+  if (!stutterVariants.patternGate()) {
+    return localShared;
+  }
+
+  // R12: per-step sustain-proportional gating. R16: floor raised 0.1->0.15.
   const selfGate = stutterVariants.getActiveSelfGate();
   const stepGate = clamp(sustain / m.max(0.01, spBeat), 0.15, 1) * selfGate;
   if (rf() > stepGate) {

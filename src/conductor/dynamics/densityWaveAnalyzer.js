@@ -70,7 +70,7 @@ densityWaveAnalyzer = (() => {
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
-    const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
+    const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
     const phaseRecoveryCredit = clamp((phaseShare - lowPhaseThreshold) / 0.08, 0, 1);
     const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
     const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;

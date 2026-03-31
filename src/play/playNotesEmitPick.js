@@ -246,13 +246,17 @@ playNotesEmitPick = function(opts = {}) {
     // crowd the buffer. Beat-length notes get the full 0.35 base probability.
     // Lab R12: sustain-proportional gating - shorter notes get exponentially
     // less likely to stutter, preventing low-unit note floods.
-    if (shouldStutter && isPrimary) {
+    // R18: suppress stutter echoes on resting layers - respect musical silence
+    if (shouldStutter && isPrimary && !restSynchronizer.isLayerResting(activeLayerName)) {
       // R16: sustainRatio^1.5 (was ^2) - all ecosystem tests great including
       // dense polyrhythm, so soften the subdivision suppression. Base prob
       // raised 0.35->0.45 - stress test at 0.65 stutterProb was great.
       const sustainRatio = clamp(texSustain / m.max(0.01, spBeat), 0, 1);
       const feedbackBoost = 1 + playNotesEmitPickBeatFeedbackEnergy * 1.5;
-      const stutterEchoProb = 0.45 * m.pow(sustainRatio, 1.5) * feedbackBoost;
+      // R18: emission gap compensation - when notes fail to emit, boost stutter
+      const emissionGap = safePreBoot.call(() => emissionFeedbackListener.getEmissionGap(), 0);
+      const emissionBoost = 1 + clamp(emissionGap, 0, 0.5) * 0.8;
+      const stutterEchoProb = 0.45 * m.pow(sustainRatio, 1.5) * feedbackBoost * emissionBoost;
       if (rf() < stutterEchoProb) {
         StutterManager.scheduleStutterForUnit({
           profile: 'source',

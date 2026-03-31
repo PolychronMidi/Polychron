@@ -15,3 +15,4 @@ require('./rhythmicDotted');
 require('./flickerStutter');
 require('./convergenceBurst');
 require('./tensionStutter');
+require('./directionalOscillation');
