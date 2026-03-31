@@ -10,6 +10,9 @@ const V = validator.create('setBinaural');
 /** Next absolute seconds at which a new binaural shift should be scheduled */
 let nextBinauralShiftSec = 0;
 
+/** Current flipBin crossfade window [startSec, endSec]. Updated each shift. */
+flipBinCrossfadeWindow = [0, 0];
+
 /** Per-layer timeInSeconds of the last shared entry this layer consumed (dedup guard) */
 const lastConsumedByLayer = {};
 
@@ -42,11 +45,12 @@ setBinaural = () => {
         p(c, { timeInSeconds: t, type: 'pitch_bend_c', vals: [ch, m.round(prev + (target - prev) * frac)] });
       });
     }
-    // Volume crossfade over 0.3s centered on shift time
-    const fadeHalf = rf(.05, .15);
-    const fadeStart = shiftSyncSec - fadeHalf;
+    // Volume crossfades centered on shift time
+    const flipBinCrossfade = rf(.05, .15);
+    const fadeStart = shiftSyncSec - flipBinCrossfade / 2;
+    flipBinCrossfadeWindow = [fadeStart, fadeStart + flipBinCrossfade];
     const volSteps = 20;
-    const volStepSec = (fadeHalf * 2) / volSteps;
+    const volStepSec = flipBinCrossfade / volSteps;
     for (let i = volSteps / 2; i <= volSteps; i++) {
       const t = fadeStart + volStepSec * i;
       const frac = i / volSteps;
