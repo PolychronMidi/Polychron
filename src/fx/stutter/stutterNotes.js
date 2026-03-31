@@ -220,10 +220,10 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     return localShared;
   }
 
-  // Emit and metrics
+  // Emit note events (no STUTTER_APPLIED here - consolidated event emitted
+  // once per variant invocation from scheduleStutterForUnit to prevent
+  // dense variants from causing disproportionate feedback accumulation)
   p(c, evOn);
-  const eventName = eventCatalog.names.STUTTER_APPLIED;
-  eventBus.emit(eventName, { type: 'note', profile, channel, shift, intensity: clamp(stutterVel / MIDI_MAX_VALUE, 0, 1), timeInSeconds: stutterOn });
   p(c, evOff);
   stutterMetrics.incEmitted(1, profile);
 

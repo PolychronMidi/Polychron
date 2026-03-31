@@ -156,12 +156,25 @@ StutterManager = class StutterManager {
       provided.beatContext.coherenceKey = `${prefix}:${seed}`;
     }
 
-    stutterMetrics.incScheduled(1, provided.profile || 'unknown');
     if (stutterVariants.shouldThrottle()) return provided.shared || this.shared;
     stutterVariants.incSectionCount();
+    stutterMetrics.incScheduled(1, provided.profile || 'unknown');
     const variant = stutterVariants.getActive();
+    const variantName = stutterVariants.getActiveName();
     const helper = variant || stutterRegistry.getHelper();
-    return (helper || stutterNotes)(provided);
+    const result = (helper || stutterNotes)(provided);
+    // Consolidated STUTTER_APPLIED event - one per invocation, not per step.
+    // Prevents dense variants from causing disproportionate feedback accumulation.
+    const eventName = eventCatalog.names.STUTTER_APPLIED;
+    eventBus.emit(eventName, {
+      type: 'note',
+      variant: variantName || 'default',
+      profile: provided.profile || 'source',
+      channel: provided.channel,
+      intensity: clamp(V.optionalFinite(provided.velocity, 80) / MIDI_MAX_VALUE, 0, 1),
+      timeInSeconds: V.optionalFinite(provided.on, beatStartTime)
+    });
+    return result;
   }
 
   static prepareBeat(beatStartTime) {

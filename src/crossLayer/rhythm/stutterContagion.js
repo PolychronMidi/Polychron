@@ -126,6 +126,28 @@ stutterContagion = (() => {
       stutterFX(flipBin ? flipBinT3 : flipBinF3, numStutters, duration);
     }
 
+    // Contagion note stutter: force ghostStutter variant (most reductive)
+    // to prevent dense variant cascades across layers
+    const ghostFn = stutterVariants.getVariant('ghostStutter');
+    if (ghostFn && contagion.intensity > 0.15) {
+      const savedVariant = stutterRegistry.getHelper();
+      stutterRegistry.registerHelper(ghostFn);
+      const chs = flipBin ? flipBinT3 : flipBinF3;
+      if (chs.length > 0) {
+        const ch = chs[ri(chs.length - 1)];
+        const lastNote = L0.getLast('note', { layer: activeLayer });
+        if (lastNote && Number.isFinite(lastNote.midi)) {
+          StutterManager.scheduleStutterForUnit({
+            profile: 'reflection', channel: ch,
+            note: lastNote.midi, on: absoluteSeconds,
+            sustain: duration, velocity: clamp(m.round(40 * contagion.intensity), 10, 40),
+            binVel: clamp(m.round(40 * contagion.intensity), 10, 40), isPrimary: false
+          });
+        }
+      }
+      stutterRegistry.registerHelper(savedVariant);
+    }
+
     // Re-post with decayed intensity to sustain the chain across more layers
     const repostDecay = getAdaptiveDecay(absoluteSeconds);
     L0.post(CHANNEL, activeLayer, absoluteSeconds, {

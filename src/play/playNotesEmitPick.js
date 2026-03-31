@@ -23,6 +23,11 @@ let playNotesEmitPickBeatFeedbackPitchBias = -1;
 /** @param {number} bias */
 setFeedbackPitchBias = function(bias) { playNotesEmitPickBeatFeedbackPitchBias = V.optionalFinite(bias, -1); };
 
+// Beat-level feedback energy cache - modulates stutter probability
+let playNotesEmitPickBeatFeedbackEnergy = 0;
+/** @param {number} energy */
+setFeedbackStutterEnergy = function(energy) { playNotesEmitPickBeatFeedbackEnergy = V.optionalFinite(energy, 0); };
+
 // Beat-level climax modifiers cache - set once from processBeat, read per-pick
 /** @type {{ playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }} */
 let playNotesEmitPickBeatClimaxMods = { playProbScale: 1, velocityScale: 1, registerBias: 0, entropyTarget: -1 };
@@ -243,7 +248,10 @@ playNotesEmitPick = function(opts = {}) {
     // less likely to stutter, preventing low-unit note floods.
     if (shouldStutter && isPrimary) {
       const sustainRatio = clamp(texSustain / m.max(0.01, spBeat), 0, 1);
-      const stutterEchoProb = 0.35 * sustainRatio * sustainRatio;
+      // feedbackOscillator energy boosts stutter probability at musically
+      // meaningful moments (cross-layer feedback peaks)
+      const feedbackBoost = 1 + playNotesEmitPickBeatFeedbackEnergy * 1.5;
+      const stutterEchoProb = 0.35 * sustainRatio * sustainRatio * feedbackBoost;
       if (rf() < stutterEchoProb) {
         StutterManager.scheduleStutterForUnit({
           profile: 'source',

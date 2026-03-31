@@ -122,8 +122,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
   V.assertObject(clFeedback, 'feedbackOscillator.applyFeedback result');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);
-  // Stash pitchBias for playNotesEmitPick to use (avoids double-calling feedbackOscillator per pick)
+  // Stash pitchBias and energy for playNotesEmitPick to use
   setFeedbackPitchBias(clFeedback.pitchBias);
+  setFeedbackStutterEnergy(clFeedbackEnergy);
 
   const clCadenceGate = phaseAwareCadenceWindow.shouldAllowCadence(absoluteSeconds, layer, Boolean(clCadence.suggest), clPhaseSnapshot);
   cadenceAlignment.postTension(absoluteSeconds, layer, clTension, clCadence.suggest);

@@ -700,6 +700,7 @@ fullBootstrap = (() => {
     'minimumNoteDuration',
     'playNotesEmitPick',
     'setFeedbackPitchBias',
+    'setFeedbackStutterEnergy',
     'setClimaxMods',
     'emitPickCrossLayerRecord',
     'emitPickSourceTextures',
