@@ -141,8 +141,8 @@ DIVISIONS={
 DYNAMISM={
   scaleBase: 0.75,
   scaleRange: 0.7,  // R27 E2: Widened from 0.5 for wider play/stutter probability range
-  playProb: { start: 0.22, mid: 0.28 },
-  stutterProb: { end: 0.5, mid: 0.2 }  // R28 E3: end raised from 0.4 for punchier phrase endings
+  playProb: { start: 0.22, mid: 0.30 },  // R15: mid 0.28->0.30, all ecosystem tests great/legendary
+  stutterProb: { end: 0.5, mid: 0.25 }  // R28 E3: end raised from 0.4. R15: mid 0.2->0.25 for more variant activity (stress-tested at 0.40)
 };
 /** @tier-2 - composer family weights and member types */
 COMPOSER_FAMILIES={
