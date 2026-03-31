@@ -22,4 +22,4 @@ stutterVariants.register('harmonicShadow', function harmonicShadow(opts) {
     sustain: opts.sustain * rf(0.3, 0.6),
     velocity: vel, binVel: vel
   }));
-}, 0.9, { selfGate: 0.85, maxPerSection: 180 });
+}, 0.9, { selfGate: 0.9, maxPerSection: 250 });

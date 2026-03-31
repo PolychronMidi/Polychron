@@ -16,4 +16,4 @@ stutterVariants.register('rhythmicGrid', function rhythmicGrid(opts) {
     }));
   }
   return lastShared;
-}, 1.0, { selfGate: 0.8, maxPerSection: 160 });
+}, 1.0, { selfGate: 0.9, maxPerSection: 220 });

@@ -87,12 +87,19 @@ stutterVariants = (() => {
     const phase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development');
     const phaseDenseMult = PHASE_DENSE_MULT[phase] || 1.0;
 
-    // Build weighted pool including null (default) at weight 2.0
-    const pool = [{ name: null, fn: null, weight: 2.0 }];
+    // R16: hocket mode favors rhythmic/subtle variants that complement interleaving
+    const HOCKET_WEIGHTS = { ghostStutter: 1.5, rhythmicGrid: 1.4, rhythmicDotted: 1.4, harmonicShadow: 1.2, machineGun: 0.5, stutterTremolo: 0.5, stutterSwarm: 0.6 };
+    const rhythmMode = safePreBoot.call(() => rhythmicComplementEngine.getMode(), 'free');
+    const inHocket = rhythmMode === 'hocket';
+
+    // R16: default weight reduced 2.0->1.2 - all ecosystem tests great,
+    // variants should fire more often relative to the single-echo default
+    const pool = [{ name: null, fn: null, weight: 1.2 }];
     for (const [name, entry] of registered) {
       const regimeMult = regimeMap[name] || 1.0;
       const phaseMult = DENSE_VARIANTS.has(name) ? phaseDenseMult : 1.0;
-      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult });
+      const hocketMult = inHocket ? (HOCKET_WEIGHTS[name] || 1.0) : 1.0;
+      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult });
     }
     let totalWeight = 0;
     for (let i = 0; i < pool.length; i++) totalWeight += pool[i].weight;

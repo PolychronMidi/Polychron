@@ -16,4 +16,4 @@ stutterVariants.register('rhythmicDotted', function rhythmicDotted(opts) {
     }));
   }
   return lastShared;
-}, 1.0, { selfGate: 0.8, maxPerSection: 170 });
+}, 1.0, { selfGate: 0.9, maxPerSection: 240 });

@@ -22,4 +22,4 @@ stutterVariants.register('echoTrail', function echoTrail(opts) {
     }));
   }
   return lastShared;
-}, 0.9, { selfGate: 0.75, maxPerSection: 160 });
+}, 0.9, { selfGate: 0.85, maxPerSection: 220 });
