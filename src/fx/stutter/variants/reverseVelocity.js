@@ -15,4 +15,4 @@ stutterVariants.register('reverseVelocity', function reverseVelocity(opts) {
     }));
   }
   return lastShared;
-}, 0.8);
+}, 0.8, { selfGate: 0.6, maxPerSection: 120 });

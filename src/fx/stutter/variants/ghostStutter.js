@@ -14,4 +14,4 @@ stutterVariants.register('ghostStutter', function ghostStutter(opts) {
     }));
   }
   return lastShared;
-}, 1.2);
+}, 1.2, { selfGate: 0.95, maxPerSection: 300 });

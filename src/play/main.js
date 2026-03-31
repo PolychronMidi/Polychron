@@ -85,6 +85,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // Snapshot conductor state before section reset for cross-section narrative memory
   if (sectionIndex > 0) sectionMemory.snapshot();
   crossLayerLifecycleManager.resetSection();
+  stutterVariants.resetSection();
   // Select section type from SECTION_TYPES based on position
   let activeSectionType = null;
   if (Array.isArray(SECTION_TYPES) && SECTION_TYPES.length > 0) {
