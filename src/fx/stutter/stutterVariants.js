@@ -10,10 +10,18 @@ stutterVariants = (() => {
   let lastBeat = -1;
   let sectionStutterCount = 0;
 
+  // Regime weight multipliers: which variants suit which musical context
+  const REGIME_WEIGHTS = {
+    coherent:   { ghostStutter: 1.8, rhythmicGrid: 1.5, decayingBounce: 1.2, reverseVelocity: 0.8, octaveCascade: 0.6, machineGun: 0.3, stutterSwarm: 0.5, stutterTremolo: 0.4 },
+    exploring:  { ghostStutter: 0.6, rhythmicGrid: 0.7, decayingBounce: 0.8, reverseVelocity: 1.2, octaveCascade: 1.3, machineGun: 1.6, stutterSwarm: 1.4, stutterTremolo: 1.5 },
+    evolving:   { ghostStutter: 1.0, rhythmicGrid: 1.0, decayingBounce: 1.3, reverseVelocity: 1.1, octaveCascade: 1.2, machineGun: 0.7, stutterSwarm: 0.9, stutterTremolo: 0.8 },
+    oscillating:{ ghostStutter: 0.8, rhythmicGrid: 1.2, decayingBounce: 1.0, reverseVelocity: 1.3, octaveCascade: 1.0, machineGun: 1.0, stutterSwarm: 1.1, stutterTremolo: 1.2 }
+  };
+
   /**
    * @param {string} name
    * @param {Function} fn
-   * @param {number} [weight] - selection weight (higher = more likely)
+   * @param {number} [weight] - base selection weight (higher = more likely)
    * @param {{ selfGate?: number, maxPerSection?: number }} [opts]
    *   selfGate: 0-1 multiplier on per-step gate (lower = fewer steps emit)
    *   maxPerSection: cap total stutter invocations per section for this variant
@@ -65,10 +73,26 @@ stutterVariants = (() => {
 
     if (registered.size === 0) { activeVariant = null; activeVariantName = null; return null; }
 
+    // Phase multipliers: suppress dense variants in resolution/coda, boost in climax
+    const PHASE_DENSE_MULT = {
+      intro: 0.5, opening: 0.6, exposition: 0.8, development: 1.0,
+      climax: 1.4, resolution: 0.5, conclusion: 0.4, coda: 0.3
+    };
+    const DENSE_VARIANTS = new Set(['machineGun', 'stutterTremolo', 'stutterSwarm']);
+
+    // Regime-aware + phase-aware weighted selection
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regime = (snap && snap.regime) ? snap.regime : 'exploring';
+    const regimeMap = REGIME_WEIGHTS[regime] || {};
+    const phase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development');
+    const phaseDenseMult = PHASE_DENSE_MULT[phase] || 1.0;
+
     // Build weighted pool including null (default) at weight 2.0
     const pool = [{ name: null, fn: null, weight: 2.0 }];
     for (const [name, entry] of registered) {
-      pool.push({ name, fn: entry.fn, weight: entry.weight });
+      const regimeMult = regimeMap[name] || 1.0;
+      const phaseMult = DENSE_VARIANTS.has(name) ? phaseDenseMult : 1.0;
+      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult });
     }
     let totalWeight = 0;
     for (let i = 0; i < pool.length; i++) totalWeight += pool[i].weight;
@@ -100,6 +124,21 @@ stutterVariants = (() => {
   function resetSection() {
     sectionStutterCount = 0;
   }
+
+  // Register as a closed-loop feedback controller so feedbackRegistry tracks
+  // and dampens the stutter variant selection loop
+  safePreBoot.call(() => {
+    closedLoopController.create({
+      name: 'stutterVariantFeedback',
+      observe: () => stutterFeedbackListener.getIntensity().overall,
+      target: () => 0.3,
+      gain: 0.15,
+      smoothing: 0.4,
+      clampRange: [0.5, 1.5],
+      sourceDomain: 'stutter_density',
+      targetDomain: 'stutter_variant_selection'
+    });
+  }, null);
 
   return { register, getVariant, getNames, selectForBeat, getActive, getActiveName,
     getActiveSelfGate, shouldThrottle, incSectionCount, reset, resetSection };

@@ -1979,6 +1979,7 @@ declare var minimumNoteDuration: {
 };
 declare var playNotesEmitPick: any;
 declare var setFeedbackPitchBias: (bias: number) => void;
+declare var setFeedbackStutterEnergy: (energy: number) => void;
 declare var setClimaxMods: (mods: { playProbScale: number, velocityScale: number, registerBias: number, entropyTarget: number }) => void;
 declare var emitPickCrossLayerRecord: any;
 declare var emitPickSourceTextures: any;
