@@ -1800,6 +1800,7 @@ declare var stutterPlanScheduler: any;
 declare var StutterManager: StutterManagerAPI;
 declare var setBalanceAndFX: any;
 declare var setBinaural: any;
+declare var flipBinCrossfadeWindow: [number, number];
 declare var fbm: any;
 declare var turbulence: any;
 declare var ridged: any;

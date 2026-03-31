@@ -12,10 +12,10 @@ stutterVariants = (() => {
 
   // Regime weight multipliers: which variants suit which musical context
   const REGIME_WEIGHTS = {
-    coherent:   { ghostStutter: 1.8, rhythmicGrid: 1.5, decayingBounce: 1.2, reverseVelocity: 0.8, octaveCascade: 0.6, machineGun: 0.3, stutterSwarm: 0.5, stutterTremolo: 0.4 },
-    exploring:  { ghostStutter: 0.6, rhythmicGrid: 0.7, decayingBounce: 0.8, reverseVelocity: 1.2, octaveCascade: 1.3, machineGun: 1.6, stutterSwarm: 1.4, stutterTremolo: 1.5 },
-    evolving:   { ghostStutter: 1.0, rhythmicGrid: 1.0, decayingBounce: 1.3, reverseVelocity: 1.1, octaveCascade: 1.2, machineGun: 0.7, stutterSwarm: 0.9, stutterTremolo: 0.8 },
-    oscillating:{ ghostStutter: 0.8, rhythmicGrid: 1.2, decayingBounce: 1.0, reverseVelocity: 1.3, octaveCascade: 1.0, machineGun: 1.0, stutterSwarm: 1.1, stutterTremolo: 1.2 }
+    coherent:   { ghostStutter: 1.8, rhythmicGrid: 1.5, decayingBounce: 1.2, reverseVelocity: 0.8, octaveCascade: 0.6, machineGun: 0.3, stutterSwarm: 0.5, stutterTremolo: 0.4, stereoScatter: 1.0, harmonicShadow: 1.4, densityReactive: 0.8, echoTrail: 1.2, rhythmicDotted: 1.3, flickerStutter: 0.6, convergenceBurst: 1.8, tensionStutter: 0.7 },
+    exploring:  { ghostStutter: 0.6, rhythmicGrid: 0.7, decayingBounce: 0.8, reverseVelocity: 1.2, octaveCascade: 1.3, machineGun: 1.6, stutterSwarm: 1.4, stutterTremolo: 1.5, stereoScatter: 1.2, harmonicShadow: 0.8, densityReactive: 1.3, echoTrail: 0.9, rhythmicDotted: 0.8, flickerStutter: 1.5, convergenceBurst: 0.5, tensionStutter: 1.3 },
+    evolving:   { ghostStutter: 1.0, rhythmicGrid: 1.0, decayingBounce: 1.3, reverseVelocity: 1.1, octaveCascade: 1.2, machineGun: 0.7, stutterSwarm: 0.9, stutterTremolo: 0.8, stereoScatter: 1.0, harmonicShadow: 1.2, densityReactive: 1.1, echoTrail: 1.3, rhythmicDotted: 1.1, flickerStutter: 1.0, convergenceBurst: 1.0, tensionStutter: 1.2 },
+    oscillating:{ ghostStutter: 0.8, rhythmicGrid: 1.2, decayingBounce: 1.0, reverseVelocity: 1.3, octaveCascade: 1.0, machineGun: 1.0, stutterSwarm: 1.1, stutterTremolo: 1.2, stereoScatter: 1.1, harmonicShadow: 0.9, densityReactive: 1.0, echoTrail: 1.0, rhythmicDotted: 1.2, flickerStutter: 1.3, convergenceBurst: 0.7, tensionStutter: 1.4 }
   };
 
   /**
@@ -78,7 +78,7 @@ stutterVariants = (() => {
       intro: 0.5, opening: 0.6, exposition: 0.8, development: 1.0,
       climax: 1.4, resolution: 0.5, conclusion: 0.4, coda: 0.3
     };
-    const DENSE_VARIANTS = new Set(['machineGun', 'stutterTremolo', 'stutterSwarm']);
+    const DENSE_VARIANTS = new Set(['machineGun', 'stutterTremolo', 'stutterSwarm', 'convergenceBurst']);
 
     // Regime-aware + phase-aware weighted selection
     const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);

@@ -559,6 +559,7 @@ fullBootstrap = (() => {
     'StutterManager',
     'setBalanceAndFX',
     'setBinaural',
+    'flipBinCrossfadeWindow',
     'fbm',
     'turbulence',
     'ridged',
