@@ -10,6 +10,7 @@ require('./stutterFX');
 require('./stutterExecutePlan');
 require('./stutterPlanScheduler');
 require('./StutterManager');
-require('./stutterNotes');
 require('./stutterVariants');
+require('./stutterSteps');
+require('./stutterNotes');
 require('./variants');

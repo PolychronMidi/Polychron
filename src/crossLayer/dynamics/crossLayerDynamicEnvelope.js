@@ -12,6 +12,10 @@ crossLayerDynamicEnvelope = (() => {
   let sectionProgress = 0;
   const SMOOTHING = 0.2;
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   /** @type {Record<string, number>} per-layer smoothed velocity scale */
   let smoothedScale = crossLayerHelpers.createLayerPair(1.0);
 
@@ -127,29 +131,26 @@ crossLayerDynamicEnvelope = (() => {
       && typeof phaseAxisEnergy.shares.phase === 'number'
       && phaseAxisEnergy.shares.phase < 0.14;
 
+    // cimScale biases arc type: coordinated favors parallel, independent favors independent
+    const parallelBias = cimScale * 0.3;
+    const independentBias = (1 - cimScale) * 0.3;
+
     if (regime === 'coherent') {
-      // Coherent: bias toward parallel (unified crescendo/decrescendo)
-      // R2 E2: When phase is starved, shift threshold so complementary
-      // is chosen more often even during coherent passages.
       const coherentThreshold = phaseStarved ? 0.60 : 0.45;
+      const biasedInteraction = interaction + parallelBias - independentBias;
       arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
-        interaction > coherentThreshold ? 'parallel' : 'complementary'
+        biasedInteraction > coherentThreshold ? 'parallel' : 'complementary'
       );
     } else if (regime === 'evolving') {
-      // Evolving: bias toward independent (maximum differentiation)
-      // R78 E5: Widen range -- lower threshold from 0.55 to 0.45 so
-      // more evolving beats get independent arcs, creating stronger
-      // layer autonomy during transitional passages.
+      const biasedInteraction = interaction + parallelBias - independentBias;
       arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
-        interaction > 0.45 ? 'complementary' : 'independent'
+        biasedInteraction > 0.45 ? 'complementary' : 'independent'
       );
     } else {
-      // R99 E4: Widen exploring complementary arc band (was 0.35-0.65, now 0.28-0.72).
-      // More complementary arcs during exploring creates greater layer contrast,
-      // feeding phase axis energy through cross-layer velocity interference patterns.
-      if (interaction > 0.72) {
+      const biasedInteraction = interaction + parallelBias - independentBias;
+      if (biasedInteraction > 0.72) {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
-      } else if (interaction > 0.28) {
+      } else if (biasedInteraction > 0.28) {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('complementary');
       } else {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('independent');
@@ -164,6 +165,6 @@ crossLayerDynamicEnvelope = (() => {
     smoothedScale = crossLayerHelpers.createLayerPair(1.0);
   }
 
-  return { tick, getVelocityScale, setArcType, getArcType, autoSelectArcType, reset };
+  return { tick, getVelocityScale, setArcType, getArcType, autoSelectArcType, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('crossLayerDynamicEnvelope', crossLayerDynamicEnvelope, ['all', 'section']);

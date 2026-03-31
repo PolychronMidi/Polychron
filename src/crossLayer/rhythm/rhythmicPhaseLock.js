@@ -13,6 +13,10 @@ rhythmicPhaseLock = (() => {
   const REPEL_STRENGTH = 0.15;   // how strongly to push apart
   const MIN_LOCK_INTERVAL_SEC = 0.8;
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   let lastLockSec = -Infinity;
   let lockCount = 0;
   let currentMode = /** @type {'lock'|'drift'|'repel'} */ ('drift'); // 'lock' | 'drift' | 'repel'
@@ -50,7 +54,8 @@ rhythmicPhaseLock = (() => {
     const normalizedPhase = phaseDiff > 0.5 ? 1 - phaseDiff : phaseDiff;
 
     let mode = /** @type {'lock'|'drift'|'repel'} */ ('drift');
-    if (normalizedPhase < LOCK_THRESHOLD) mode = 'lock';
+    const effectiveLockThreshold = LOCK_THRESHOLD * (1.5 - cimScale);
+    if (normalizedPhase < effectiveLockThreshold) mode = 'lock';
     else if (normalizedPhase > REPEL_THRESHOLD) mode = 'repel';
 
     currentMode = mode;
@@ -106,6 +111,6 @@ rhythmicPhaseLock = (() => {
     currentMode = 'drift';
   }
 
-  return { postBeat, measurePhase, applyPhaseLock, getMode, getLockCount, reset };
+  return { postBeat, measurePhase, applyPhaseLock, getMode, getLockCount, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('rhythmicPhaseLock', rhythmicPhaseLock, ['all']);

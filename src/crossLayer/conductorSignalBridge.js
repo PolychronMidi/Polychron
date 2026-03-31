@@ -3,7 +3,7 @@
 // Reads signalReader each beat and caches a snapshot so cross-layer modules
 // never need to understand conductorIntelligence internals.
 
-conductorSignalBridge = (() => {
+conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
   const V = validator.create('conductorSignalBridge');
 
   let cached = {
@@ -13,6 +13,11 @@ conductorSignalBridge = (() => {
     compositeIntensity: 0,
     sectionPhase: 'development',
     coherenceEntropy: 0,
+    // Hypermeta state for CIM phase-gating
+    healthEma: 0.7,
+    systemPhase: 'converging',
+    exceedanceTrendEma: 0,
+    topologyPhase: 'fluid',
     updatedAt: 0
   };
 
@@ -25,6 +30,8 @@ conductorSignalBridge = (() => {
    */
   function refresh(ctx) {
     const snap = signalReader.snapshot();
+    // Read hypermeta state (read-only, no boundary violation)
+    const hmSnap = safePreBoot.call(() => hyperMetaManager.getSnapshot(), null);
     cached = {
       density: snap.densityProduct,
       tension: snap.tensionProduct,
@@ -32,6 +39,10 @@ conductorSignalBridge = (() => {
       compositeIntensity: V.requireFinite(ctx.compositeIntensity, 'ctx.compositeIntensity'),
       sectionPhase: V.assertNonEmptyString(harmonicContext.getField('sectionPhase'), 'sectionPhase'),
       coherenceEntropy: V.optionalFinite(snap.stateFields.coherenceEntropy, 0),
+      healthEma: hmSnap ? V.optionalFinite(hmSnap.healthEma, 0.7) : 0.7,
+      systemPhase: (hmSnap && hmSnap.systemPhase) ? hmSnap.systemPhase : 'converging',
+      exceedanceTrendEma: hmSnap ? V.optionalFinite(hmSnap.exceedanceTrendEma, 0) : 0,
+      topologyPhase: (hmSnap && hmSnap.topologyPhase) ? hmSnap.topologyPhase : 'fluid',
       updatedAt: Date.now()
     };
 
@@ -59,7 +70,11 @@ conductorSignalBridge = (() => {
       flicker: cached.flicker,
       compositeIntensity: cached.compositeIntensity,
       sectionPhase: cached.sectionPhase,
-      coherenceEntropy: cached.coherenceEntropy
+      coherenceEntropy: cached.coherenceEntropy,
+      healthEma: cached.healthEma,
+      systemPhase: cached.systemPhase,
+      exceedanceTrendEma: cached.exceedanceTrendEma,
+      topologyPhase: cached.topologyPhase
     });
   }
 
@@ -72,12 +87,16 @@ conductorSignalBridge = (() => {
       compositeIntensity: 0,
       sectionPhase: 'development',
       coherenceEntropy: 0,
+      healthEma: 0.7,
+      systemPhase: 'converging',
+      exceedanceTrendEma: 0,
+      topologyPhase: 'fluid',
       updatedAt: 0
     };
   }
 
   return { refresh, getSignals, reset };
-})();
+})());
 // Registered as a recorder so refresh(ctx) runs each beat automatically.
 conductorIntelligence.registerRecorder('conductorSignalBridge', (ctx) => { conductorSignalBridge.refresh(ctx); });
 crossLayerRegistry.register('conductorSignalBridge', conductorSignalBridge, ['all', 'section']);

@@ -11,6 +11,7 @@ negotiationEngine = (() => {
 
   // Stutter probability scaling
   const STUTTER_INTERACT_BASE = 0.6;
+  let cimScale = 0.5;
   const STUTTER_INTERACT_SCALE = 0.75;
   const STUTTER_TRUST_BASE = 0.85;
   const STUTTER_TRUST_SCALE = 0.1;
@@ -129,7 +130,8 @@ negotiationEngine = (() => {
     // Modulate trust floor by convergenceTarget from intent curves
     const intent = sectionIntentCurves.getLastIntent();
     const ct = V.requireFinite(intent.convergenceTarget, 'intent.convergenceTarget');
-    const effectiveFloor = CONVERGENCE_TRUST_FLOOR * (1.3 - ct * 0.6);
+    // CIM: coordinated = lower floor (allow convergence more easily), independent = higher
+    const effectiveFloor = CONVERGENCE_TRUST_FLOOR * (1.3 - ct * 0.6) * (1.3 - cimScale * 0.6);
 
     if (trustConvergence < effectiveFloor) {
       return { allowHarmonicTrigger: false, allowDownbeat: false };
@@ -154,6 +156,8 @@ negotiationEngine = (() => {
     // Kept explicit to satisfy lint rule against silent early returns.
   }
 
-  return { apply, gateConvergence, reset };
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
+  return { apply, gateConvergence, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('negotiationEngine', negotiationEngine, ['all']);

@@ -19,6 +19,7 @@ stutterContagion = (() => {
   const DIVERGED_DECAY = 0.8;  // looser decay = fades faster when divergent
   const CONVERGENCE_WINDOW_MS = 2000; // look for recent convergences within this window
   const CHANNEL = 'stutterContagion';
+  let cimScale = 0.5;
 
   /**
    * Compute adaptive decay factor based on recent convergence state.
@@ -88,7 +89,8 @@ stutterContagion = (() => {
     }
     const matchType = V.assertInSet(match.type, STUTTER_TYPES, 'checkContagion.match.type');
 
-    const decay = getAdaptiveDecay(absoluteSeconds);
+    // CIM: coordinated = stickier contagion, independent = faster decay
+    const decay = getAdaptiveDecay(absoluteSeconds) * (1.3 - cimScale * 0.6);
     const decayedIntensity = matchIntensity * decay;
     if (decayedIntensity < 0.05) return null;
 
@@ -157,6 +159,8 @@ stutterContagion = (() => {
     });
   }
 
-  return { postStutter, checkContagion, apply, reset() { /* stateless - no per-scope state to clear */ } };
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
+  return { postStutter, checkContagion, apply, setCoordinationScale, reset() { cimScale = 0.5; } };
 })();
 crossLayerRegistry.register('stutterContagion', stutterContagion, ['all']);

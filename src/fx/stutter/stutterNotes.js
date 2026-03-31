@@ -206,17 +206,8 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     return { shared: localShared, events: [evOn, evOff] };
   }
 
-  // R18: pattern-based gating (when active) overrides probabilistic gate.
-  // Uses Euclidean rhythm patterns from patterns.js to create structured
-  // stutter step sequences (0=silence, 1=emit).
-  if (!stutterVariants.patternGate()) {
-    return localShared;
-  }
-
-  // R12: per-step sustain-proportional gating. R16: floor raised 0.1->0.15.
-  const selfGate = stutterVariants.getActiveSelfGate();
-  const stepGate = clamp(sustain / m.max(0.01, spBeat), 0.15, 1) * selfGate;
-  if (rf() > stepGate) {
+  // Per-step gating: pattern + probabilistic (delegated to stutterSteps)
+  if (!stutterSteps.shouldEmit(sustain)) {
     return localShared;
   }
 

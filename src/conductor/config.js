@@ -333,7 +333,7 @@ STUTTER_DIRECTIVE_DEFAULTS = {
   phaseCurve: 'linear',
   crossModOverrides: null,
   perProfileRouting: { L1: 'source', L2: 'reflection', defaultWeight: 0.6 },
-  metricsAdaptive: { enabled: false, sensitivity: 0.08 }
+  metricsAdaptive: { enabled: true, sensitivity: 0.08 }
 };
 
 // CONDUCTOR_DYNAMICS_CONTROLS is defined in conductorDynamicsControls.js to

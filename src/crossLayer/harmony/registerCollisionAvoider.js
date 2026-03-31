@@ -2,8 +2,11 @@ registerCollisionAvoider = (() => {
   const V = validator.create('registerCollisionAvoider');
   const CHANNEL = 'registerCollision';
   const TIME_TOLERANCE_SEC = 0.140;
-  const COLLISION_SEMITONES = 5;
   const octaveBounds = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true });
+
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
   /**
    * @param {string} layer
@@ -31,13 +34,14 @@ registerCollisionAvoider = (() => {
 
     const other = L0.findClosest(CHANNEL, absoluteSeconds, TIME_TOLERANCE_SEC, activeLayer);
     if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
-    if (m.abs(other.midi - boundedMidi) >= COLLISION_SEMITONES) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
+    const effectiveCollisionSemitones = m.round(2 + (1 - cimScale) * 5);
+    if (m.abs(other.midi - boundedMidi) >= effectiveCollisionSemitones) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 
     // Choose octave displacement that favors spectrally sparse bins
     const upCandidate = clamp(boundedMidi + 12, lo, hi);
     const downCandidate = clamp(boundedMidi - 12, lo, hi);
-    const upClearsCollision = m.abs(upCandidate - other.midi) >= COLLISION_SEMITONES;
-    const downClearsCollision = m.abs(downCandidate - other.midi) >= COLLISION_SEMITONES;
+    const upClearsCollision = m.abs(upCandidate - other.midi) >= effectiveCollisionSemitones;
+    const downClearsCollision = m.abs(downCandidate - other.midi) >= effectiveCollisionSemitones;
 
     let candidate;
     if (upClearsCollision && downClearsCollision) {
@@ -80,6 +84,6 @@ registerCollisionAvoider = (() => {
     // Stateless - nothing to clear for registerCollisionAvoider. No-op by design.
   }
 
-  return { recordNote, avoid, reset };
+  return { recordNote, avoid, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('registerCollisionAvoider', registerCollisionAvoider, ['all', 'phrase']);

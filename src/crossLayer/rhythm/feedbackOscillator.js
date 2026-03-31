@@ -14,6 +14,7 @@ feedbackOscillator = (() => {
   const CHANNEL = 'feedbackLoop';
   const SYNC_TOLERANCE_MS = 250;
   const DAMPING = 0.55;
+  let cimScale = 0.5;
   const MIN_ENERGY = 0.03;
   const MAX_ROUND_TRIPS = 6;
 
@@ -69,7 +70,9 @@ feedbackOscillator = (() => {
     // Modulate damping by entropy - high entropy means feedback should be stronger to create convergence
     const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
     const entropyModulation = entropyEntry && Number.isFinite(entropyEntry.smoothed) ? clamp(1.0 + (entropyEntry.smoothed - 0.5) * 0.3, 0.85, 1.15) : 1.0;
-    const dampedEnergy = incoming.energy * DAMPING * entropyModulation;
+    // CIM: coordinated = less damping (energy flows freely), independent = more
+    const cimDamping = DAMPING * (1.3 - cimScale * 0.6);
+    const dampedEnergy = incoming.energy * cimDamping * entropyModulation;
     if (dampedEnergy < MIN_ENERGY) return null;
 
     const incomingRoundTrip = V.requireFinite(incoming.roundTrip, 'react.incoming.roundTrip');
@@ -147,6 +150,8 @@ feedbackOscillator = (() => {
     };
   }
 
-  return { inject, react, applyFeedback, reset() { /* stateless - no per-scope state to clear */ } };
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
+  return { inject, react, applyFeedback, setCoordinationScale, reset() { cimScale = 0.5; } };
 })();
 crossLayerRegistry.register('feedbackOscillator', feedbackOscillator, ['all']);

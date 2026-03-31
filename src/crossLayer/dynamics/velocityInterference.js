@@ -14,6 +14,10 @@ velocityInterference = (() => {
   const VIZ_NEUTRAL = 64;    // CC value for neutral
   const MODE_SET = new Set(['reinforce', 'separate', 'neutral']);
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   /**
    * Post a velocity contour sample from the active layer.
    * @param {number} absoluteSeconds - absolute ms
@@ -104,8 +108,9 @@ velocityInterference = (() => {
     const regimeScale = regime === 'exploring' ? 1.20
       : regime === 'coherent' ? 0.85
       : 1.0;
-    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale;
-    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale;
+    const cimFactor = 0.4 + cimScale * 1.2;
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength
@@ -138,6 +143,6 @@ velocityInterference = (() => {
     crossLayerEmissionGateway.emit('velocityInterference', c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [ch, VIZ_CC, val] });
   }
 
-  return { postVelocity, measureDelta, applyInterference, reset() { /* stateless - no per-scope state to clear */ } };
+  return { postVelocity, measureDelta, applyInterference, setCoordinationScale, reset() { /* stateless - no per-scope state to clear */ } };
 })();
 crossLayerRegistry.register('velocityInterference', velocityInterference, ['all']);

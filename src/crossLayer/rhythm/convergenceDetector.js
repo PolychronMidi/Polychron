@@ -10,6 +10,10 @@ convergenceDetector = (() => {
   const EVENTS = eventCatalog.names;
   const CONVERGENCE_TOLERANCE_SEC = 0.05;
   const MIN_CONVERGENCE_INTERVAL_SEC = 0.5;
+
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
   const BURST_VOICES = 3;
   const BURST_STAGGER_RATIO = 0.008;
   const BURST_VEL_SCALE_MIN = 0.75;
@@ -60,7 +64,7 @@ convergenceDetector = (() => {
     // Poor coherence = convergence helps recalibrate
     const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
     const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.3, 0, 0.1) : 0;
-    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost);
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost) * (0.6 + cimScale * 0.8);
     const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2);
 
     if (absoluteSeconds - lastConvergenceSec < effectiveInterval) return null;
@@ -184,6 +188,6 @@ convergenceDetector = (() => {
     });
   }
 
-  return { postOnset, detect, applyIfConverged, wasRecent, getLastConvergenceMs, getConvergenceCount, reset };
+  return { postOnset, detect, applyIfConverged, wasRecent, getLastConvergenceMs, getConvergenceCount, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('convergenceDetector', convergenceDetector, ['all', 'phrase']);

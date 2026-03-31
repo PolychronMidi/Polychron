@@ -16,6 +16,7 @@ emergentDownbeat = (() => {
   const TEMPO_MULT_PROBABILITY = 0.25;
   const TEMPO_MULT_OPTIONS = [2, 3, 4];
   const TEMPO_MULT_LAYER_SWAP_PROB = 0.5;
+  let cimScale = 0.5;
 
   let lastDownbeatSec = -Infinity;
   let downbeatCount = 0;
@@ -128,7 +129,9 @@ emergentDownbeat = (() => {
     const mult = TEMPO_MULT_OPTIONS[ri(TEMPO_MULT_OPTIONS.length - 1)];
     const interval = spBeat / mult;
     // Half the time, swap to the other layer for the rapid accents
-    const swapLayer = rf() < TEMPO_MULT_LAYER_SWAP_PROB;
+    // CIM: coordinated = less swapping (layers accent together), independent = more swapping
+    const swapProb = TEMPO_MULT_LAYER_SWAP_PROB * (1.5 - cimScale);
+    const swapLayer = rf() < swapProb;
     const targetLayer = swapLayer ? crossLayerHelpers.getOtherLayer(layer) : layer;
     const targetCh = targetLayer === 'L1' ? cCH1 : cCH2;
 
@@ -176,6 +179,8 @@ emergentDownbeat = (() => {
     downbeatCount = 0;
   }
 
-  return { detect, accentVelocity, reinforceBass, widenStereo, applyTempoMultiplier, applyIfDownbeat, getDownbeatCount, reset };
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
+  return { detect, accentVelocity, reinforceBass, widenStereo, applyTempoMultiplier, applyIfDownbeat, setCoordinationScale, getDownbeatCount, reset };
 })();
 crossLayerRegistry.register('emergentDownbeat', emergentDownbeat, ['all']);

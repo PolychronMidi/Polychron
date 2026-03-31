@@ -13,6 +13,10 @@ texturalMirror = (() => {
     dense: 'flurry'
   });
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   /** @type {Record<string, { mode: string, timestamp: number }>} */
   const layerTextures = {};
 
@@ -76,7 +80,7 @@ texturalMirror = (() => {
     // Coherence-aware: poor coherence = stronger texture suggestions to create differentiation
     const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
     const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.4, 0, 0.15) : 0;
-    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale + coherenceBoost, 0.1, 0.8);
+    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) + coherenceBoost, 0.1, 0.8);
 
     return { preferredMode, weight };
   }
@@ -102,6 +106,6 @@ texturalMirror = (() => {
     Object.keys(layerTextures).forEach(k => delete layerTextures[k]);
   }
 
-  return { recordTexture, suggestTexture, getTextureDistance, reset };
+  return { recordTexture, suggestTexture, getTextureDistance, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('texturalMirror', texturalMirror, ['all', 'section']);

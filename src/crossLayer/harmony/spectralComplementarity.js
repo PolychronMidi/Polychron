@@ -12,6 +12,7 @@ spectralComplementarity = (() => {
   // Wider register separation between layers enriches harmonic texture by
   // ensuring combined output covers bass-to-treble more completely.
   const NUDGE_STRENGTH = 0.55; // max probability of register nudge
+  let cimScale = 0.5;
 
   /** @type {Map<string, number[]>} recent MIDI notes per layer */
   const noteHistory = new Map();
@@ -116,7 +117,8 @@ spectralComplementarity = (() => {
     const intentDissonance = sectionIntentCurves.getLastIntent()
       ? V.optionalFinite(sectionIntentCurves.getLastIntent().dissonanceTarget, 0)
       : 0;
-    const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.95);
+    // CIM: coordinated = stronger gap-filling, independent = each layer owns spectrum
+    const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.95) * (0.4 + cimScale * 1.2);
     if (rf() > analysis.gapWeight * effectiveNudge) {
       return { midi, nudged: false, targetBin: -1 };
     }
@@ -152,6 +154,8 @@ spectralComplementarity = (() => {
     binCountsByLayer.clear();
   }
 
-  return { recordNote, getHistogram, analyzeComplement, nudgeToFillGap, postSpectralState, reset };
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
+  return { recordNote, getHistogram, analyzeComplement, nudgeToFillGap, postSpectralState, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('spectralComplementarity', spectralComplementarity, ['all', 'section']);

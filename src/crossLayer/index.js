@@ -25,6 +25,7 @@ require('./structure');
 
 require('./conductorSignalBridge');
 
+require('./coordinationIndependenceManager');
 
 // Lifecycle manager loads LAST - after all modules have self-registered.
 

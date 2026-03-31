@@ -5,6 +5,10 @@ grooveTransfer = (() => {
   const DAMPING = 0.55;
   const LAYER_SET = new Set(['L1', 'L2']);
 
+  let cimScale = 0.5;
+
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   /** @type {Map<string, number[]>} */
   const offsetsByLayer = new Map();
   /** @type {Map<string, number>} running sum per layer for O(1) average */
@@ -84,7 +88,8 @@ grooveTransfer = (() => {
     // Coherence-responsive groove coupling: good coherence = tighter coupling, poor = looser
     const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
     const coherenceFactor = coherenceEntry ? clamp(0.8 + V.optionalFinite(coherenceEntry.bias, 1.0) * 0.4, 0.7, 1.3) : 1.0;
-    return timeInSeconds + localTransfer * DAMPING * coherenceFactor;
+    const effectiveDamping = DAMPING * (1.3 - cimScale * 0.6);
+    return timeInSeconds + localTransfer * effectiveDamping * coherenceFactor;
   }
 
   function reset() {
@@ -92,6 +97,6 @@ grooveTransfer = (() => {
     sumByLayer.clear();
   }
 
-  return { recordTiming, applyOffset, reset };
+  return { recordTiming, applyOffset, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('grooveTransfer', grooveTransfer, ['all', 'phrase']);
