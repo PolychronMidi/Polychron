@@ -47,7 +47,9 @@ const resolvedBassProgramPool = bassProgramPool.length > 0
     const biasedOtherInstruments = otherPrograms.length > 0
       ? otherInstruments.filter(pg => !otherPrograms.some(op => gmFamily(pg) === gmFamily(op))) : [];
     const instrumentPool = biasedOtherInstruments.length > 2 ? biasedOtherInstruments : otherInstruments;
-    const selectedReflection = ra(instrumentPool);
+    // Trust-driven timbre: if trust ecology suggests a program, use it
+    const trustSuggestion = safePreBoot.call(() => trustTimbreMapping.suggest(absoluteSeconds), null);
+    const selectedReflection = (Number.isFinite(trustSuggestion)) ? trustSuggestion : ra(instrumentPool);
     const selectedBass = ra(resolvedBassProgramPool);
     const selectedDrum = ra(drumSets);
 p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:'program_c' };
