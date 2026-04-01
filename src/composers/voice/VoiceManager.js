@@ -131,7 +131,14 @@ VoiceManager = class VoiceManager {
     // Extract phrase context for arc-driven biases
     const phraseContext = /** @type {any} */ (this.V.optionalType(opts && opts.phraseContext, 'object')) || {};
     const arcDensityMultiplier = this.V.optionalFinite(Number(phraseContext.densityMultiplier), 1.0);
-    const voiceIndependence = this.V.optionalFinite(Number(phraseContext.voiceIndependence), VOICE_MANAGER.voiceIndependenceDefault);
+    // R21: coherence-counterpoint: phase-locked = high independence (counterpoint),
+    // divergent = low independence (harmony). Reads phase lock state directly.
+    const phaseLockMode = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseIndependenceBias = phaseLockMode === 'lock' ? 0.2 : phaseLockMode === 'repel' ? -0.15 : 0;
+    const voiceIndependence = clamp(
+      this.V.optionalFinite(Number(phraseContext.voiceIndependence), VOICE_MANAGER.voiceIndependenceDefault) + phaseIndependenceBias,
+      0.3, 0.9
+    );
     const runtimeProfile = /** @type {any} */ (this.V.optionalType(opts && opts.runtimeProfile, 'object')) || null;
     const runtimeVoiceCountMultiplier = this.V.optionalFinite(
       runtimeProfile && Number(runtimeProfile.voiceCountMultiplier), 1.0);

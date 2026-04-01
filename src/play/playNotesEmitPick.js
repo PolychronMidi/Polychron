@@ -186,7 +186,9 @@ playNotesEmitPick = function(opts = {}) {
       onTime = preShiftTime + m.sign(onTime - preShiftTime) * maxTimeShift;
     }
     onTime = ensureNonNegativeTime(onTime, `${unit}.source.onTime`);
-    const baseOnVel = (isPrimary ? velocity * rf(0.96, 1.04) : binVel * rf(0.88, 0.96)) * pickVelScale;
+    // Convergence velocity surge: brief boost at convergence points
+    const convergeSurge = isPrimary ? convergenceVelocitySurge.check(onTime, activeLayerName) : 1.0;
+    const baseOnVel = (isPrimary ? velocity * rf(0.96, 1.04) : binVel * rf(0.88, 0.96)) * pickVelScale * convergeSurge;
     const sourceVoiceId = voiceIdSeed + sourceCH * 17 + pickIndex * 101 + sourceIndex;
     const sourceNoiseBase = baseOnVel * (1 - emissionCfg.sourceNoiseInfluence * noiseInfluence);
     const { perProbScaled: perProbScaledSrc, onVel } = getChannelCoherence(sourceCH, 'source', sourceNoiseBase, sourceVoiceId, currentTime);

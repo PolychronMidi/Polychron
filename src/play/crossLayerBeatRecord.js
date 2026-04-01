@@ -116,6 +116,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
 
   // Post-beat recording
   coordinationIndependenceManager.tick();
+  trustEcologyCharacter.update();
   stutterContagion.postStutter(absoluteSeconds, layer, clamp(stutterProb, 0, 1), flipBin ? flipBinT3 : flipBinF3, 'fade');
   stutterContagion.apply(absoluteSeconds, layer);
   const clDensity = temporalGravity.measureDensity(layer, beatStartTime);

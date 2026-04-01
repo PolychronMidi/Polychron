@@ -164,6 +164,14 @@ stutterVariants = (() => {
     const activeLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
     const artProfile = safePreBoot.call(() => articulationComplement.getArticulationProfile(activeLayer), null);
 
+    // R21: harmonic journey distance biases variant character.
+    // Near home = subtle variants, far = dramatic
+    const JOURNEY_SUBTLE = { ghostStutter: 1.4, echoTrail: 1.3, harmonicShadow: 1.2, rhythmicGrid: 1.1 };
+    const JOURNEY_DRAMATIC = { octaveCascade: 1.5, machineGun: 1.3, stutterSwarm: 1.4, directionalOscillation: 1.3, stutterTremolo: 1.2 };
+    const journeyStop = safePreBoot.call(() => harmonicJourney.getStop(sectionIndex), null);
+    const journeyDist = (journeyStop && Number.isFinite(journeyStop.distance)) ? journeyStop.distance : 0;
+    const journeyFar = journeyDist > 3;
+
     // R16: default weight reduced 2.0->1.2 - all ecosystem tests great,
     // variants should fire more often relative to the single-echo default
     const pool = [{ name: null, fn: null, weight: 1.2 }];
@@ -175,7 +183,8 @@ stutterVariants = (() => {
         ? (artProfile.isStaccato ? (STACCATO_WEIGHTS[name] || 1.0)
           : artProfile.isLegato ? (LEGATO_WEIGHTS[name] || 1.0) : 1.0)
         : 1.0;
-      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult });
+      const journeyMult = journeyFar ? (JOURNEY_DRAMATIC[name] || 1.0) : (journeyDist < 1.5 ? (JOURNEY_SUBTLE[name] || 1.0) : 1.0);
+      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult });
     }
     let totalWeight = 0;
     for (let i = 0; i < pool.length; i++) totalWeight += pool[i].weight;

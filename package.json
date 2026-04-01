@@ -22,6 +22,7 @@
     "dashboard": "node scripts/live-dashboard.js",
     "replay": "node scripts/trace-replay.js",
     "snapshot": "node scripts/pipeline/compare-runs.js --snapshot",
+    "baseline": "node scripts/pipeline/compare-runs.js --snapshot baseline",
     "compare": "node scripts/pipeline/compare-runs.js --against",
     "diff": "node scripts/pipeline/diff-compositions.js --against",
     "music21-data": "node scripts/utils/run-with-log.js music21.log python scripts/music21/run_music21_data.py",

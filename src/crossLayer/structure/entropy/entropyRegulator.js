@@ -173,9 +173,10 @@ entropyRegulator = (() => {
       arcWeight = clamp(ARC_BLEND_WEIGHT + entropyContainment * 0.10 + edgePressure * 0.05, ARC_BLEND_WEIGHT, 0.48);
       intentWeight = 1 - arcWeight;
       targetTrim = entropyContainment * (0.02 + edgePressure * 0.03) * (0.25 + phaseProtection * 0.45);
-      targetEntropy = clamp(arcTarget * arcWeight + target * intentWeight - targetTrim, 0, 1);
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim;
+      targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
-      targetEntropy = clamp(target, 0, 1);
+      targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;
     }
   }
 
@@ -187,7 +188,8 @@ entropyRegulator = (() => {
    */
   function getArcTarget(sectionProgress) {
     // Bell curve: peaks at 0.5, troughs at 0 and 1
-    const arc = m.sin(clamp(sectionProgress, 0, 1) * m.PI);
+    const progress = Number.isFinite(sectionProgress) ? clamp(sectionProgress, 0, 1) : 0.5;
+    const arc = m.sin(progress * m.PI);
     return ARC_TARGET_FLOOR + arc * ARC_TARGET_RANGE;
   }
 

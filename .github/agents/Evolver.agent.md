@@ -255,7 +255,7 @@ Compact old entries when journal exceeds 500 lines.
 
 ## Phase 7: Maintain & Loop
 
-- STABLE: `node scripts/compare-runs.js --snapshot baseline`
+- STABLE: snapshot a new baseline if better than current baseline, 'npm run snapshot'
 - Don't snapshot EVOLVED/DRIFTED
 - Loop back to Phase 1
 - `--- Starting R<XX> ---`

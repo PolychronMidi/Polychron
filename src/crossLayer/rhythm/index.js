@@ -17,3 +17,4 @@ require('./stutterContagion');
 
 require('./temporalGravity');
 require('./polyrhythmicPhasePredictor');
+require('./stutterTempoFeel');
