@@ -159,9 +159,6 @@ if (rf() < .5*bpmRatio3 || absoluteSeconds * 1000 >= nextBalanceAndFXShiftMs || 
   refVar=ri(1,10); cBal2=rf()<.5?cBal+m.round(refVar*.5) : cBal+m.round(refVar*-.5);
   bassVar=refVar*rf(-2,2); cBal3=rf()<.5?cBal2+m.round(bassVar*.5) : cBal2+m.round(bassVar*-.5);
 
-  // Sync instance state back to legacy naked globals so tests that mutate globals pass
-  // Globals are populated via require-side effects; no explicit wrapper assignment required.
-
   p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:'control_c' }; fxEventTemplate=tmp;
 return [
     ...source2.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal : rBal) : ch.toString().startsWith('rCH') ? (flipBin ? rBal : lBal) : ch===drumCH ? cBal3+m.round((rf(-.5,.5)*bassVar)) : cBal]})),

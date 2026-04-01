@@ -183,6 +183,10 @@ StutterManager = class StutterManager {
     void beatStartTime;
     this.StutterManagerAttachTextureListener();
     stutterVariants.selectForBeat();
+    // Stereo width oscillation for stereoWidthModulation variant
+    if (!this.beatContext) this.beatContext = {};
+    const swt = beatStartTime * 0.25;
+    this.beatContext.stereoWidth = 0.6 + m.sin(swt * m.PI * 2) * 0.3;
     if (!this.beatContext) this.beatContext = {};
 
     const beatContext = this.beatContext;

@@ -71,7 +71,15 @@ conductorConfigAccessors = (deps) => {
       if (!Object.prototype.hasOwnProperty.call(arcMapping, sectionPhase)) {
         throw new Error(`conductorConfig.getArcMapping: unknown sectionPhase "${sectionPhase}"`);
       }
-      return V.assertNonEmptyString(arcMapping[sectionPhase], `conductorConfig.arcMapping.${sectionPhase}`);
+      let arcType = V.assertNonEmptyString(arcMapping[sectionPhase], `conductorConfig.arcMapping.${sectionPhase}`);
+      // R21: feedback energy can override arc type. High energy = build-resolve, oscillating = wave.
+      const fbEnergy = safePreBoot.call(() => {
+        const sigs = conductorSignalBridge.getSignals();
+        return sigs.compositeIntensity || 0;
+      }, 0);
+      if (typeof fbEnergy === 'number' && fbEnergy > 0.7 && rf() < 0.3) arcType = 'build-resolve';
+      else if (typeof fbEnergy === 'number' && fbEnergy < 0.25 && rf() < 0.2) arcType = 'wave';
+      return arcType;
     }
     return Object.assign({}, arcMapping);
   }

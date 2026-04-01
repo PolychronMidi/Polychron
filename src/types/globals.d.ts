@@ -1876,6 +1876,7 @@ declare var convergenceDetector: ConvergenceDetectorAPI;
 declare var convergenceVelocitySurge: { check(absoluteSeconds: number, layer: string): number; reset(): void };
 declare var trustEcologyCharacter: { update(): void; biasWeights(baseWeights: Record<string, number>): Record<string, number>; getDominant(): { system: string | null; family: string | null }; reset(): void };
 declare var stutterTempoFeel: { getTempoModulation(): number; reset(): void };
+declare var trustTimbreMapping: { suggest(absoluteSeconds: number): number | null; reset(): void };
 declare var temporalGravity: TemporalGravityAPI;
 declare var velocityInterference: VelocityInterferenceAPI;
 declare var feedbackOscillator: FeedbackOscillatorAPI;
