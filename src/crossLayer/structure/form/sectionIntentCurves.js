@@ -120,6 +120,9 @@ sectionIntentCurves = (() => {
     const prevBrightness = prevSection ? V.optionalFinite(prevSection.spectralBrightness, 0.5) : 0.5;
     const spectralContrastBias = clamp((prevBrightness - 0.5) * -0.06, -0.03, 0.03);
 
+    // Section phase for intent-aware corrections (used by both density and tension)
+    const currentPhase = /** @type {string} */ (safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development'));
+
     const densityTarget = clamp(
       (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias + regimeContrastDensity + coherenceLearning + spectralContrastBias) * sectionBoundaryRelief
       // R70 E3: Per-phrase density perturbation. Density variance declined
@@ -136,7 +139,16 @@ sectionIntentCurves = (() => {
       // odd-phrase dip -0.4->-0.55. Density variance at 0.0097 (half the
       // 0.019 baseline) needs stronger inter-phrase contrast. Wider amplitude
       // creates genuinely distinct phrase textures.
-      + m.sin(phraseProgress * m.PI) * 0.14 * (ph % 2 === 0 ? 1.0 : -0.55) * (1.0 + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * 0.3),
+      + m.sin(phraseProgress * m.PI) * 0.14 * (ph % 2 === 0 ? 1.0 : -0.55) * (1.0 + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * 0.3)
+      // Intent-aware density trajectory correction: same phase-gated principle as tension.
+      // Prevents monotonic density decline but respects coda/resolution sparsity.
+      + (() => {
+        const densitySlope = sectionMemory.getDensityTrajectory();
+        if (densitySlope >= -0.03) return 0;
+        const dPhaseGate = currentPhase === 'coda' || currentPhase === 'conclusion' ? 0.15
+          : currentPhase === 'climax' ? 1.3 : 1.0;
+        return clamp(-densitySlope * 0.12 * dPhaseGate, 0, 0.06);
+      })(),
       0,
       1
     );
@@ -146,10 +158,17 @@ sectionIntentCurves = (() => {
     const prevIntentTension = prevSection ? V.optionalFinite(prevSection.intentTension, 0.5) : 0.5;
     const prevActualTension = prevSection && Number.isFinite(prevSection.tension) ? prevSection.tension : 0.85;
     const tensionLearning = clamp((prevActualTension - prevIntentTension) * -0.06, -0.03, 0.03);
-    // Cross-section trajectory correction: if tension has been declining for 2+
-    // sections, push it back up. Prevents monotonic tension decay across the piece.
+    // Intent-aware trajectory correction: push tension back up when declining,
+    // but respect phases where low tension is intentional (resolution/coda).
+    // During resolution/conclusion/coda, suppresses correction since tension
+    // SHOULD decline. During development/climax, strengthens it.
     const tensionSlope = sectionMemory.getTensionTrajectory();
-    const trajectoryCorrection = tensionSlope < -0.05 ? clamp(-tensionSlope * 0.15, 0, 0.08) : 0;
+    const phaseIntentGate = currentPhase === 'resolution' || currentPhase === 'conclusion' || currentPhase === 'coda'
+      ? 0.2
+      : currentPhase === 'climax' ? 1.5
+      : currentPhase === 'development' ? 1.2
+      : 1.0;
+    const trajectoryCorrection = tensionSlope < -0.05 ? clamp(-tensionSlope * 0.15 * phaseIntentGate, 0, 0.10) : 0;
 
     const dissonanceTarget = clamp(
       DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection

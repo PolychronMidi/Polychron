@@ -82,18 +82,29 @@ coordinationIndependenceManager = (() => {
     const regimeTarget = REGIME_TARGETS[regimeEntry] || 0.5;
     const topoTarget = TOPOLOGY_TARGETS[sigs.topologyPhase] || 0.5;
 
+    // Intent-aware: read actual interactionTarget from sectionIntentCurves
+    // which encodes trajectory learning, contrast bias, and phase position.
+    // Blends with the static phase target for a more nuanced dial.
+    const lastIntent = safePreBoot.call(() => sectionIntentCurves.getLastIntent(), null);
+    const intentInteraction = lastIntent ? clamp(lastIntent.interactionTarget || 0.5, 0, 1) : 0.5;
+
     // Entropy modulation: high coherenceEntropy = loosen coordination
     const entropyBias = clamp((sigs.coherenceEntropy - 0.5) * -0.3, -0.15, 0.15);
 
     // Density modulation: very low density = more independence (let things explore)
     const densityBias = sigs.density < 0.5 ? -0.1 : sigs.density > 1.5 ? 0.1 : 0;
 
+    // Canon mode reduces stutter channel coordination to prevent overcrowding
+    // (canon already adds rhythmic complexity via delayed imitation)
+    const rhythmMode = safePreBoot.call(() => rhythmicComplementEngine.getMode(), 'free');
+    const canonBias = (rhythmMode === 'canon' && pair === 'stutterChannels-coordination') ? -0.15 : 0;
+
     // Effectiveness modulation: if coordination worked well for this pair, bias toward it
     const effectBias = (effectiveness[pair] - 0.5) * 0.2;
 
-    // Composite target
-    const raw = phaseTarget * 0.3 + regimeTarget * 0.3 + topoTarget * 0.2 + 0.5 * 0.2
-      + entropyBias + densityBias + effectBias;
+    // Composite target: intent-aware blend replaces the static 0.5 baseline
+    const raw = phaseTarget * 0.25 + regimeTarget * 0.25 + topoTarget * 0.15 + intentInteraction * 0.35
+      + entropyBias + densityBias + effectBias + canonBias;
     return clamp(raw, 0.05, 0.95);
   }
 
@@ -123,10 +134,10 @@ coordinationIndependenceManager = (() => {
       beatsSinceChange[pair]++;
     }
 
-    // Phase gating: only adjust dials when system is stabilized.
-    // During oscillating/converging, freeze dials and let hypermeta recover.
-    // Exception: if health is very low (<0.4), shuffle dials to try to break out.
-    const canAdjust = systemPhase === 'stabilized' || healthEma < 0.4;
+    // Phase gating: adjust during stabilized (full speed) or converging (half speed).
+    // Only freeze during oscillating (let hypermeta recover).
+    // Exception: if health is very low (<0.4), shuffle dials to break out.
+    const canAdjust = systemPhase !== 'oscillating' || healthEma < 0.4;
     if (!canAdjust) { applyDials(); return; }
 
     // Low health emergency shuffle: randomize dials to break stuck state
@@ -153,9 +164,11 @@ coordinationIndependenceManager = (() => {
       dialTargets[pair] = target;
 
       const diff = target - dials[pair];
+      // Converging phase: half-speed dial movement for gentler adjustment
+      const effectiveStep = systemPhase === 'converging' ? DIAL_STEP * 0.5 : DIAL_STEP;
       if (m.abs(diff) > 0.02) {
         const prevDial = dials[pair];
-        dials[pair] += clamp(diff, -DIAL_STEP, DIAL_STEP);
+        dials[pair] += clamp(diff, -effectiveStep, effectiveStep);
         if (m.abs(dials[pair] - prevDial) > 0.01) {
           beatsSinceChange[pair] = 0;
           healthAtLastChange[pair] = healthEma;
