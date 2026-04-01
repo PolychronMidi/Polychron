@@ -176,6 +176,21 @@ StutterManager = class StutterManager {
       intensity: clamp(V.requireFinite(provided.velocity, 'provided.velocity') / MIDI_MAX_VALUE, 0, 1),
       timeInSeconds: V.requireFinite(provided.on, 'provided.on')
     });
+    // R24: multi-variant beat - 20% chance of a second variant on a mirror channel
+    if (rf() < 0.2 && this.beatContext && this.beatContext.selectedReflectionChannels) {
+      const mirrorChs = Array.from(this.beatContext.selectedReflectionChannels);
+      if (mirrorChs.length > 0) {
+        const secondVariant = stutterVariants.getVariant('ghostStutter');
+        if (secondVariant) {
+          const mirrorCh = mirrorChs[ri(mirrorChs.length - 1)];
+          secondVariant(Object.assign({}, provided, {
+            channel: mirrorCh, profile: 'reflection',
+            velocity: clamp(m.round(provided.velocity * 0.5), 1, MIDI_MAX_VALUE),
+            binVel: clamp(m.round(provided.velocity * 0.5), 1, MIDI_MAX_VALUE)
+          }));
+        }
+      }
+    }
     return result;
   }
 

@@ -243,8 +243,10 @@ dynamismEngine = (() => {
 
     const rawPlayOut = inputPlay * (ctx.playBase + composite * ctx.playScale) + ctx.layerBias * 0.5 * ctx.layerBiasScale;
     const rawStutterOut = inputStutter * (ctx.stutterBase + composite * ctx.stutterScale) + journeyEnergy * ctx.journeyBoost + feedbackEnergy * ctx.feedbackBoost + ctx.layerBias * ctx.layerBiasScale;
-    // Lab R4: lowered floor 0.02->0.005 so sparse configs can achieve near-silence
-    const playOut = clamp(V.optionalFinite(rawPlayOut, inputPlay), 0.005, 0.98);
+    // R23: self-aware density correction from emission gap
+    const emGap = /** @type {number} */ (safePreBoot.call(() => emissionFeedbackListener.getEmissionGap(), 0));
+    const densityCorrection = Number.isFinite(emGap) ? clamp(emGap * 0.08, -0.04, 0.04) : 0;
+    const playOut = clamp(V.optionalFinite(rawPlayOut + densityCorrection, inputPlay), 0.005, 0.98);
     const stutterOut = clamp(V.optionalFinite(rawStutterOut, inputStutter), 0.01, 0.98);
 
     return {

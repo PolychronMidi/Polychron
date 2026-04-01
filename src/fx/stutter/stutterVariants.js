@@ -15,6 +15,20 @@ stutterVariants = (() => {
   let blendFromRegime = 'exploring';
   let regimeTransitionBeats = 0;
   const REGIME_BLEND_DURATION = 8;
+  let prevEntropyEma = 0.5;
+  const ENTROPY_EMA_ALPHA = 0.25;
+  // R24: stutter call-response - cross-layer variant conversation
+  const lastVariantPerLayer = { L1: null, L2: null };
+  const CALL_RESPONSE_MAP = {
+    machineGun: { ghostStutter: 1.8, rhythmicGrid: 1.5 },
+    ghostStutter: { rhythmicGrid: 1.6, echoTrail: 1.4 },
+    rhythmicGrid: { harmonicShadow: 1.5, stereoWidthModulation: 1.3 },
+    octaveCascade: { decayingBounce: 1.6, reverseVelocity: 1.4 },
+    stutterTremolo: { ghostStutter: 1.8, echoTrail: 1.5 },
+    stutterSwarm: { ghostStutter: 1.6, rhythmicDotted: 1.4 },
+    tensionStutter: { harmonicShadow: 1.5, ghostStutter: 1.3 },
+    convergenceBurst: { rhythmicGrid: 1.5, decayingBounce: 1.3 }
+  };
 
   // Regime weight multipliers: which variants suit which musical context
   const REGIME_WEIGHTS = {
@@ -172,8 +186,47 @@ stutterVariants = (() => {
     const journeyDist = (journeyStop && Number.isFinite(journeyStop.distance)) ? journeyStop.distance : 0;
     const journeyFar = journeyDist > 3;
 
-    // R16: default weight reduced 2.0->1.2 - all ecosystem tests great,
-    // variants should fire more often relative to the single-echo default
+    // R23: phrase boundary fills - boost decayingBounce/machineGun in last 12% of phrase
+    const phraseProgress = /** @type {number} */ (safePreBoot.call(() => timeStream.normalizedProgress('phrase'), 0.5));
+    const PHRASE_BOUNDARY_WEIGHTS = { decayingBounce: 2.0, machineGun: 1.5, rhythmicGrid: 1.3 };
+    const atPhraseBoundary = Number.isFinite(phraseProgress) && phraseProgress > 0.88;
+
+    // R24: stutter call-response - other layer's last variant biases this layer's selection
+    const crLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
+    const crOtherLayer = crLayer === 'L1' ? 'L2' : 'L1';
+    const otherLastVariant = lastVariantPerLayer[crOtherLayer];
+    const responseWeights = (otherLastVariant && CALL_RESPONSE_MAP[otherLastVariant]) ? CALL_RESPONSE_MAP[otherLastVariant] : {};
+
+    // R24: entropy reversal detection - sudden entropy drops trigger dramatic variants
+    const currentEntropy = /** @type {number} */ (safePreBoot.call(() => entropyRegulator.measureEntropy(), 0.5));
+    const entropyVal = Number.isFinite(currentEntropy) ? currentEntropy : 0.5;
+    const entropyDelta = prevEntropyEma - entropyVal;
+    prevEntropyEma += (entropyVal - prevEntropyEma) * ENTROPY_EMA_ALPHA;
+    const entropyReversal = entropyDelta > 0.12;
+    const ENTROPY_REVERSAL_WEIGHTS = { machineGun: 2.0, stutterSwarm: 1.8, octaveCascade: 1.6, stutterTremolo: 1.5 };
+
+    // R24: coupling label reactive stutter - system's self-description drives variant character
+    const COUPLING_LABEL_WEIGHTS = {
+      'rhythmic-shimmer': { stereoWidthModulation: 2.0, ghostStutter: 1.8, flickerStutter: 1.5 },
+      'agitated-tension': { machineGun: 1.8, tensionStutter: 2.0, stutterTremolo: 1.5 },
+      'smooth-tension': { echoTrail: 1.8, harmonicShadow: 1.5, ghostStutter: 1.3 },
+      'chaotic-proliferation': { machineGun: 2.0, stutterSwarm: 1.8, octaveCascade: 1.5 },
+      'phase-aligned-density': { rhythmicGrid: 1.8, rhythmicDotted: 1.5, convergenceBurst: 1.3 },
+      'phase-opposed-density': { directionalOscillation: 1.5, reverseVelocity: 1.3 },
+      'tension-drives-density': { tensionStutter: 1.6, decayingBounce: 1.4 },
+      'stable-variety': { ghostStutter: 1.4, echoTrail: 1.3, harmonicShadow: 1.2 }
+    };
+    const profSnap = /** @type {any} */ (safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null));
+    /** @type {Record<string, number>} */
+    const labelMults = {};
+    if (profSnap && profSnap.couplingLabels) {
+      for (const label of Object.values(profSnap.couplingLabels)) {
+        const w = COUPLING_LABEL_WEIGHTS[/** @type {string} */ (label)];
+        if (w) { for (const [vn, vm] of Object.entries(w)) { labelMults[vn] = (labelMults[vn] || 1.0) * vm; } }
+      }
+    }
+
+    // R16: default weight reduced 2.0->1.2
     const pool = [{ name: null, fn: null, weight: 1.2 }];
     for (const [name, entry] of registered) {
       const regimeMult = regimeMap[name] || 1.0;
@@ -184,7 +237,11 @@ stutterVariants = (() => {
           : artProfile.isLegato ? (LEGATO_WEIGHTS[name] || 1.0) : 1.0)
         : 1.0;
       const journeyMult = journeyFar ? (JOURNEY_DRAMATIC[name] || 1.0) : (journeyDist < 1.5 ? (JOURNEY_SUBTLE[name] || 1.0) : 1.0);
-      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult });
+      const boundaryMult = atPhraseBoundary ? (PHRASE_BOUNDARY_WEIGHTS[name] || 1.0) : 1.0;
+      const labelMult = labelMults[name] || 1.0;
+      const entropyMult = entropyReversal ? (ENTROPY_REVERSAL_WEIGHTS[name] || 1.0) : 1.0;
+      const responseMult = responseWeights[name] || 1.0;
+      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult });
     }
     let totalWeight = 0;
     for (let i = 0; i < pool.length; i++) totalWeight += pool[i].weight;
@@ -195,6 +252,7 @@ stutterVariants = (() => {
       if (roll <= 0) {
         activeVariant = pool[i].fn;
         activeVariantName = pool[i].name;
+        lastVariantPerLayer[crLayer] = activeVariantName;
         return activeVariant;
       }
     }

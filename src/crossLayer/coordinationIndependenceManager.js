@@ -54,6 +54,8 @@ coordinationIndependenceManager = (() => {
   const effectiveness = {};
   /** @type {Record<string, number>} */
   const healthAtLastChange = {};
+  let oscillationEnabled = false;
+  let oscillationBeat = 0;
   let tickCount = 0;
 
   function initPair(pair) {
@@ -152,6 +154,19 @@ coordinationIndependenceManager = (() => {
       }
       applyDials();
 
+      return;
+    }
+
+    // R24: CIM oscillation mode - periodic coordination breathing
+    if (oscillationEnabled) {
+      oscillationBeat++;
+      const period = 14 + m.round(rf(-2, 2));
+      const osc = m.sin(oscillationBeat / period * m.PI * 2);
+      const oscTarget = 0.5 + osc * 0.3 + rf(-0.05, 0.05);
+      for (let i = 0; i < MODULE_PAIRS.length; i++) {
+        dials[MODULE_PAIRS[i]] = clamp(oscTarget, 0.15, 0.85);
+      }
+      applyDials();
       return;
     }
 
@@ -260,6 +275,17 @@ coordinationIndependenceManager = (() => {
     return dials[pair] !== undefined ? dials[pair] : 0.5;
   }
 
+  function setOscillationMode(enabled) { oscillationEnabled = Boolean(enabled); oscillationBeat = 0; }
+
+  function setChaosMode(enabled) {
+    const target = enabled ? 0.1 : 0.5;
+    for (let i = 0; i < MODULE_PAIRS.length; i++) {
+      dials[MODULE_PAIRS[i]] = target;
+      beatsSinceChange[MODULE_PAIRS[i]] = 0;
+    }
+    applyDials();
+  }
+
   function getSnapshot() {
     return {
       dials: Object.assign({}, dials),
@@ -281,6 +307,6 @@ coordinationIndependenceManager = (() => {
     tickCount = 0;
   }
 
-  return { tick, getDial, getSnapshot, reset };
+  return { tick, getDial, setChaosMode, setOscillationMode, getSnapshot, reset };
 })();
 crossLayerRegistry.register('coordinationIndependenceManager', coordinationIndependenceManager, ['all', 'section']);
