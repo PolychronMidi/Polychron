@@ -227,8 +227,17 @@ regimeReactiveDamping = (() => {
     const tensionRecoveryNudge = longFormBuildPressure * phaseRecoveryCredit * clamp((0.58 - tensionValue) / 0.22, 0, 1) * (1 - tensionFlickerPressure * 0.45) * 0.02;
     // R19: exploring brake strengthened. Duration-proportional component pushes
     // system toward evolving/coherent when exploring persists >100 beats.
+    // Intent-aware exploring brake: soften during development/exposition where
+    // exploring is a natural mode, strengthen during climax/resolution where
+    // coherence is expected.
+    const sectionPhaseForBrake = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development');
+    const exploringPhaseScale = sectionPhaseForBrake === 'development' || sectionPhaseForBrake === 'exposition'
+      ? 0.6
+      : sectionPhaseForBrake === 'climax' || sectionPhaseForBrake === 'resolution'
+      ? 1.4
+      : 1.0;
     const exploringDurationPressure = currentRegime === 'exploring'
-      ? clamp((regimeReactiveDampingExploringBeats - 100) * 0.0003, 0, 0.06) : 0;
+      ? clamp((regimeReactiveDampingExploringBeats - 100) * 0.0003 * exploringPhaseScale, 0, 0.06) : 0;
     const exploringBiasBrake = currentRegime === 'exploring'
       ? clamp(trustSharePressure * 0.04 + densityTrustPressure * 0.015 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05 + exploringDurationPressure, 0, 0.18)
       : 0;

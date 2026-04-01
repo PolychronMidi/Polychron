@@ -1,10 +1,12 @@
 /**
- * Manages binaural beat pitch shifts and volume crossfades at beat boundaries.
+ * Manages binaural beat pitch shifts and volume crossfades.
  * L0 channel 'binaural' / layer 'shared' is the single source of truth.
  * Both L1 and L2 consume from it independently, so they always emit the same
  * shift at the same wall-clock second regardless of which layer initiated.
  * @returns {void}
  */
+
+// Binaural should always be SUBPERCEPTUAL as a subtle neurostimulant, NOT as an overt effect. Rapid or large shifts can be jarring and unpleasant. The goal is to create a gentle, evolving soundscape that engages the brain without drawing attention to the binaural effect itself.
 const V = validator.create('setBinaural');
 
 /** Next absolute seconds at which a new binaural shift should be scheduled */
@@ -16,6 +18,54 @@ flipBinCrossfadeWindow = [0, 0];
 /** Per-layer timeInSeconds of the last shared entry this layer consumed (dedup guard) */
 const lastConsumedByLayer = {};
 
+/**
+ * Emit pitch bend glides and volume crossfades for a binaural shift.
+ * Hoisted so both the scheduling path and the consume path can call it.
+ */
+function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
+  // Pitch bend glide spread over the full interval between shifts
+  const bendSteps = shiftInterval * 20;
+  const bendStepSec = (shiftInterval - .03) / bendSteps;
+  for (let i = 0; i <= bendSteps; i++) {
+    const t = shiftSyncSec + bendStepSec * i;
+    const frac = i / bendSteps;
+    binauralL.forEach(ch => {
+      const target = (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus);
+      const prev = (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus);
+      p(c, { timeInSeconds: t, type: 'pitch_bend_c', vals: [ch, m.round(prev + (target - prev) * frac)] });
+    });
+    binauralR.forEach(ch => {
+      const target = (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus);
+      const prev = (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus);
+      p(c, { timeInSeconds: t, type: 'pitch_bend_c', vals: [ch, m.round(prev + (target - prev) * frac)] });
+    });
+  }
+  // Volume crossfade covering the FULL window (not just second half).
+  // Brief volume dip at exact shift moment masks pitch bend overlap.
+  const flipBinCrossfade = rf(.05, .1);
+  const fadeStart = shiftSyncSec - flipBinCrossfade / 1.9;
+  flipBinCrossfadeWindow = [fadeStart, fadeStart + flipBinCrossfade];
+  const volSteps = m.max(4, m.round(flipBinCrossfade * 20));
+  const volStepSec = flipBinCrossfade / volSteps;
+  for (let i = 0; i <= volSteps; i++) {
+    const t = fadeStart + volStepSec * i;
+    const frac = i / volSteps;
+    // Outgoing channels: full -> zero over the window
+    const volOut = shiftFlip ? m.floor(100 * (1 - frac)) : m.floor(100 * frac);
+    // Incoming channels: zero -> full over the window
+    const volIn = shiftFlip ? m.floor(100 * frac) : m.floor(100 * (1 - frac));
+    // Volume dip at midpoint to mask detune overlap
+    const dipScale = 1.0 - 0.25 * m.exp(-m.pow((frac - 0.5) / 0.15, 2));
+    const maxVol = rf(.9, 1.2);
+    flipBinF2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volOut * maxVol * dipScale)] }); });
+    flipBinT2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volIn * maxVol * dipScale)] }); });
+  }
+  // Restore full volume on both channel sets after crossfade completes
+  const restoreTime = fadeStart + flipBinCrossfade + 0.01;
+  flipBinF2.forEach(ch => { p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
+  flipBinT2.forEach(ch => { p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
+}
+
 setBinaural = () => {
   V.requireDefined(BINAURAL, 'BINAURAL');
   V.requireDefined(binauralOffset, 'binauralOffset');
@@ -25,8 +75,6 @@ setBinaural = () => {
   V.assertNonEmptyString(LM.activeLayer, 'LM.activeLayer');
   const activeLayer = /** @type {string} */ (LM.activeLayer);
   const absoluteSeconds = beatStartTime;
-
-
 
   // -- Schedule a new shared shift if due --
   const shiftDue = firstLoop < 1 || absoluteSeconds >= nextBinauralShiftSec;
@@ -41,12 +89,6 @@ setBinaural = () => {
     nextBinauralShiftSec = absoluteSeconds + binauralInterval;
     const freqChangeRateLimit = binauralInterval / 10;
     flipBin = !flipBin;
-    // Clamp current offset into range before stepping -- instrumentation.js seeds
-    // binauralFreqOffset from its own temporary BINAURAL default (0.75-2.25) which
-    // runs before conductor/config.js overrides BINAURAL to the real range (e.g. 8-12).
-    // Without this clamp, rl() receives currentValue far below minValue, collapses
-    // its [newMin, newMax] window to an invalid range, and produces large jumps.
-    // Spectral brightness modulation: bright passages push binaural toward higher Hz
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
     const brightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
     const brightnessBias = clamp((brightness - 0.5) * 1.5, -0.75, 0.75);
@@ -61,71 +103,34 @@ setBinaural = () => {
     V.requireFinite(binauralMinus, 'binauralMinus');
 
     L0.post('binaural', 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin, interval: binauralInterval });
-    prevBiasedMin = biasedMin;
-    prevBiasedMax = biasedMax;
-
-    function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
-      // Pitch bend glide spread over the full interval between shifts
-      const bendSteps = shiftInterval * 20;
-      const bendStepSec = (shiftInterval - .03) / bendSteps;
-      for (let i = 0; i <= bendSteps; i++) {
-        const t = shiftSyncSec + bendStepSec * i;
-        const frac = i / bendSteps;
-        binauralL.forEach(ch => {
-          const target = (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus);
-          const prev = (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus);
-          p(c, { timeInSeconds: t, type: 'pitch_bend_c', vals: [ch, m.round(prev + (target - prev) * frac)] });
-        });
-        binauralR.forEach(ch => {
-          const target = (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus);
-          const prev = (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus);
-          p(c, { timeInSeconds: t, type: 'pitch_bend_c', vals: [ch, m.round(prev + (target - prev) * frac)] });
-        });
-      }
-      // Volume crossfades centered on shift time
-      const flipBinCrossfade = rf(.05, .1);
-      const fadeStart = shiftSyncSec - flipBinCrossfade / 1.9;
-      flipBinCrossfadeWindow = [fadeStart, fadeStart + flipBinCrossfade];
-      const volSteps = flipBinCrossfade * 20;
-      const volStepSec = flipBinCrossfade / volSteps;
-      for (let i = volSteps / 2.1; i <= volSteps; i++) {
-        const t = fadeStart + volStepSec * i;
-        const frac = i / volSteps;
-        const volF2 = shiftFlip ? m.floor(100 * (1 - frac)) : m.floor(100 * frac);
-        const volT2 = shiftFlip ? m.floor(100 * frac) : m.floor(100 * (1 - frac));
-        const maxVol = rf(.9, 1.2);
-        flipBinF2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volF2 * maxVol)] }); });
-        flipBinT2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volT2 * maxVol)] }); });
-      }
-    }
-
-      // -- Consume the latest shared shift if not yet consumed by this layer --
-    const sharedEntry = L0.getLast('binaural', { layer: 'shared' });
-    if (sharedEntry && sharedEntry.timeInSeconds !== lastConsumedByLayer[activeLayer]) {
-      lastConsumedByLayer[activeLayer] = sharedEntry.timeInSeconds;
-      binauralFreqOffset = V.requireFinite(sharedEntry.freqOffset, 'sharedEntry.freqOffset');
-      flipBin = V.assertBoolean(sharedEntry.flip, 'sharedEntry.flip');
-      [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
-      V.requireFinite(binauralPlus, 'binauralPlus');
-      V.requireFinite(binauralMinus, 'binauralMinus');
-
-      emitShiftEvents(sharedEntry.timeInSeconds, flipBin, V.optionalFinite(sharedEntry.interval, 2.0));
-
-      if (traceDrain && traceDrain.isEnabled()) {
-        traceDrain.recordBinauralShift({
-          layer: activeLayer,
-          absTimeMs: absoluteSeconds * 1000,
-          syncMs: sharedEntry.timeInSeconds * 1000,
-          usedCrossLayerShift: activeLayer !== 'L1' || !shiftDue,
-          syncDeltaMs: m.abs(absoluteSeconds - sharedEntry.timeInSeconds) * 1000,
-          freqOffset: binauralFreqOffset,
-          toleranceMs: 0,
-          flip: flipBin
-        });
-      }
-    }
-
   }
 
+  // -- Consume the latest shared shift if not yet consumed by this layer --
+  // CRITICAL: this runs OUTSIDE the shiftDue gate so L2 processes L1's shifts
+  // even when L2's own shift isn't due. Prevents detune bleed-through from
+  // desynchronized pitch bend state between layers.
+  const sharedEntry = L0.getLast('binaural', { layer: 'shared' });
+  if (sharedEntry && sharedEntry.timeInSeconds !== lastConsumedByLayer[activeLayer]) {
+    lastConsumedByLayer[activeLayer] = sharedEntry.timeInSeconds;
+    binauralFreqOffset = V.requireFinite(sharedEntry.freqOffset, 'sharedEntry.freqOffset');
+    flipBin = V.assertBoolean(sharedEntry.flip, 'sharedEntry.flip');
+    [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
+    V.requireFinite(binauralPlus, 'binauralPlus');
+    V.requireFinite(binauralMinus, 'binauralMinus');
 
+    emitShiftEvents(sharedEntry.timeInSeconds, flipBin, V.optionalFinite(sharedEntry.interval, 2.0));
+
+    if (traceDrain && traceDrain.isEnabled()) {
+      traceDrain.recordBinauralShift({
+        layer: activeLayer,
+        absTimeMs: absoluteSeconds * 1000,
+        syncMs: sharedEntry.timeInSeconds * 1000,
+        usedCrossLayerShift: activeLayer !== 'L1' || !shiftDue,
+        syncDeltaMs: m.abs(absoluteSeconds - sharedEntry.timeInSeconds) * 1000,
+        freqOffset: binauralFreqOffset,
+        toleranceMs: 0,
+        flip: flipBin
+      });
+    }
+  }
 };
