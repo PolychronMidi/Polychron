@@ -43,7 +43,16 @@ factoryFamilies = {
         ? conductorConfig.getFamilyWeights() : {};
       // Trust ecology character bias: dominant trust system boosts its associated family
       const biasedWeights = /** @type {Record<string, number>} */ (safePreBoot.call(() => trustEcologyCharacter.biasWeights(profileWeights), profileWeights));
-      const profileMultiplier = Number(biasedWeights[familyName]) || 1;
+      // R24: section memory trend bias - previous section's momentum shapes families
+      const TREND_FAMILY_BIAS = {
+        rising: { development: 1.4, harmonicMotion: 1.3, rhythmicDrive: 1.2 },
+        falling: { diatonicCore: 1.5, tonalExploration: 1.3 },
+        steady: {}
+      };
+      const prevSection = safePreBoot.call(() => sectionMemory.getPrevious(), null);
+      const trendBias = (prevSection && prevSection.trend && TREND_FAMILY_BIAS[prevSection.trend])
+        ? (TREND_FAMILY_BIAS[prevSection.trend][familyName] || 1.0) : 1.0;
+      const profileMultiplier = (Number(biasedWeights[familyName]) || 1) * trendBias;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
         types: normalizedTypes

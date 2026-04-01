@@ -182,6 +182,11 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
     : fadeDir === 'out' ? clamp(m.round(rawVel * rf(0.4, 0.8)), 1, MIDI_MAX_VALUE)
     : rawVel;
 
+  // R24: velocity contour - stutter velocity tracks phrase arc position
+  const phraseArcPos = /** @type {number} */ (safePreBoot.call(() => timeStream.normalizedProgress('phrase'), 0.5));
+  const arcContour = Number.isFinite(phraseArcPos) ? m.sin(clamp(phraseArcPos, 0, 1) * m.PI) : 0.5;
+  stutterVel = clamp(m.round(stutterVel * (0.7 + arcContour * 0.5)), 1, MIDI_MAX_VALUE);
+
   // apply cross-mod velocity bias (from beatContext.mod - stutterConfig.fade.velocityScaleBias)
   if (velocityScaleBias && V.optionalType(velocityScaleBias, 'number') !== undefined) {
     stutterVel = clamp(m.round(stutterVel * (1 + velocityScaleBias)), 1, MIDI_MAX_VALUE);

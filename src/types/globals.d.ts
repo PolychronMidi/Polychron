@@ -803,6 +803,7 @@ interface EmergentDownbeatAPI {
   reinforceBass(midi: number, velocity: number, strength: number): void;
   widenStereo(layer: string, strength: number): void;
   applyIfDownbeat(absoluteSeconds: number, layer: string, signals: { convergence: boolean; cadenceAlign: boolean; velReinforce: boolean; phaseLock: boolean }, midi: number, velocity: number): { isDownbeat: boolean; accentedVelocity: number; strength: number } | null;
+  applyTempoMultiplier(layer: string, midi: number, velocity: number, strength: number): void;
   getDownbeatCount(): number;
   setCoordinationScale(scale: number): void;
   reset(): void;

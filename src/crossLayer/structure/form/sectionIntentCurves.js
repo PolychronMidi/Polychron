@@ -123,8 +123,13 @@ sectionIntentCurves = (() => {
     // Section phase for intent-aware corrections (used by both density and tension)
     const currentPhase = /** @type {string} */ (safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development'));
 
+    // R23: harmonic gravity well - distant keys boost density and dissonance
+    const journeyStop = safePreBoot.call(() => harmonicJourney.getStop(s), null);
+    const journeyDist = (journeyStop && Number.isFinite(journeyStop.distance)) ? journeyStop.distance : 0;
+    const gravityBoost = clamp(journeyDist * 0.025, 0, 0.10);
+
     const densityTarget = clamp(
-      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias + regimeContrastDensity + coherenceLearning + spectralContrastBias) * sectionBoundaryRelief
+      (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + sectionContrastBias + regimeContrastDensity + coherenceLearning + spectralContrastBias + gravityBoost) * sectionBoundaryRelief
       // R70 E3: Per-phrase density perturbation. Density variance declined
       // steadily (0.0139 -> 0.0100 -> 0.0055) as section-level smoothing
       // dominates. Adding a phrase-level sine wave creates mid-phrase
@@ -171,7 +176,7 @@ sectionIntentCurves = (() => {
     const trajectoryCorrection = tensionSlope < -0.05 ? clamp(-tensionSlope * 0.15 * phaseIntentGate, 0, 0.10) : 0;
 
     const dissonanceTarget = clamp(
-      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection
+      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection + gravityBoost * 0.7
       // R70 E5: Section-route dissonance escalation. Middle sections get
       // more dissonance (up to +0.08) than edge sections, creating harmonic
       // contrast across the piece. This complements the per-section key
