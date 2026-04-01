@@ -39,9 +39,11 @@ factoryFamilies = {
 
       const weight = Number(family.weight);
       // Apply conductor profile family weight multiplier if available
-      const profileMultiplier = (conductorConfig && conductorConfig.getFamilyWeights)
-        ? (Number(conductorConfig.getFamilyWeights()[familyName]) || 1)
-        : 1;
+      const profileWeights = (conductorConfig && conductorConfig.getFamilyWeights)
+        ? conductorConfig.getFamilyWeights() : {};
+      // Trust ecology character bias: dominant trust system boosts its associated family
+      const biasedWeights = /** @type {Record<string, number>} */ (safePreBoot.call(() => trustEcologyCharacter.biasWeights(profileWeights), profileWeights));
+      const profileMultiplier = Number(biasedWeights[familyName]) || 1;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
         types: normalizedTypes

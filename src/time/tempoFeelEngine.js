@@ -61,7 +61,9 @@ tempoFeelEngine = (() => {
         ? -(0.15 - phraseProgress) / 0.15 * MAX_FEEL_RATIO * 0.3 * rubatoDepth
         : 0;
 
-    return 1.0 + feel + rubato;
+    // R21: stutter density modulates tempo feel
+    const stutterTempoMod = /** @type {number} */ (safePreBoot.call(() => stutterTempoFeel.getTempoModulation(), 0));
+    return 1.0 + feel + rubato + stutterTempoMod;
   }
 
   // Backwards compatibility

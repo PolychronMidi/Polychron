@@ -12,3 +12,5 @@ require('./restSynchronizer');
 require('./texturalMirror');
 
 require('./velocityInterference');
+
+require('./convergenceVelocitySurge');
