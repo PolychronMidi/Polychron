@@ -7,8 +7,13 @@ convergenceVelocitySurge = (() => {
   let surgeMultiplier = 1.0;
   let lastSurgeTime = -Infinity;
   const MIN_SURGE_INTERVAL = 1.5;
+  // R31 lab: convergence-driven density boost -- locked-in moments get shared intensity
+  let densityBoostRemaining = 0;
+  const CONVERGENCE_DENSITY_BOOST = 0.15;
+  const CONVERGENCE_DENSITY_BEATS = 4;
 
   function check(absoluteSeconds, layer) {
+    postDensityBoost(absoluteSeconds);
     if (surgeActive > 0) {
       surgeActive--;
       return surgeMultiplier;
@@ -17,6 +22,7 @@ convergenceVelocitySurge = (() => {
     const conv = convergenceDetector.wasRecent(absoluteSeconds, layer, 200);
     if (conv) {
       surgeActive = ri(2, 4);
+      densityBoostRemaining = CONVERGENCE_DENSITY_BEATS;
       // R23: harmonic gravity - surge scales with journey distance
       const stop = safePreBoot.call(() => harmonicJourney.getStop(sectionIndex), null);
       const dist = (stop && Number.isFinite(stop.distance)) ? stop.distance : 0;
@@ -34,10 +40,20 @@ convergenceVelocitySurge = (() => {
     return 1.0;
   }
 
+  // R31 lab: convergence density boost -- posts to L0 channel for clean inter-module comm
+  function postDensityBoost(absoluteSeconds) {
+    if (densityBoostRemaining > 0) {
+      densityBoostRemaining--;
+      const boost = CONVERGENCE_DENSITY_BOOST * (densityBoostRemaining / CONVERGENCE_DENSITY_BEATS);
+      if (boost > 0.01) L0.post('convergence-density', 'both', absoluteSeconds, { boost });
+    }
+  }
+
   function reset() {
     surgeActive = 0;
     surgeMultiplier = 1.0;
     lastSurgeTime = -Infinity;
+    densityBoostRemaining = 0;
   }
 
   return { check, reset };

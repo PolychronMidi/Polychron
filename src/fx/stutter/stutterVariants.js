@@ -189,11 +189,12 @@ stutterVariants = (() => {
 
     // R21: harmonic journey distance biases variant character.
     // Near home = subtle variants, far = dramatic
+    // R30 lab: continuous excursion from L0 harmonic channel for smoother gradient
     const JOURNEY_SUBTLE = { ghostStutter: 1.4, echoTrail: 1.3, harmonicShadow: 1.2, rhythmicGrid: 1.1 };
-    const JOURNEY_DRAMATIC = { octaveCascade: 1.5, machineGun: 1.3, stutterSwarm: 1.4, directionalOscillation: 1.3, stutterTremolo: 1.2 };
-    const journeyStop = safePreBoot.call(() => harmonicJourney.getStop(sectionIndex), null);
-    const journeyDist = (journeyStop && Number.isFinite(journeyStop.distance)) ? journeyStop.distance : 0;
-    const journeyFar = journeyDist > 3;
+    const JOURNEY_DRAMATIC = { octaveCascade: 1.5, machineGun: 1.3, stutterSwarm: 1.4, directionalOscillation: 1.3, stutterTremolo: 1.2, convergenceBurst: 1.3, stereoScatter: 1.2 };
+    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const excursion = harmonicEntry && Number.isFinite(harmonicEntry.excursion) ? harmonicEntry.excursion : 0;
+    const exoticness = clamp(excursion / 6, 0, 1);
 
     // R23: phrase boundary fills - boost decayingBounce/machineGun in last 12% of phrase
     const phraseProgress = /** @type {number} */ (safePreBoot.call(() => timeStream.normalizedProgress('phrase'), 0.5));
@@ -249,7 +250,10 @@ stutterVariants = (() => {
         ? (artProfile.isStaccato ? (STACCATO_WEIGHTS[name] || 1.0)
           : artProfile.isLegato ? (LEGATO_WEIGHTS[name] || 1.0) : 1.0)
         : 1.0;
-      const journeyMult = journeyFar ? (JOURNEY_DRAMATIC[name] || 1.0) : (journeyDist < 1.5 ? (JOURNEY_SUBTLE[name] || 1.0) : 1.0);
+      // R30 lab: continuous exoticness gradient (0-1) blends subtle-to-dramatic
+      const journeyMult = exoticness > 0.5
+        ? 1.0 + ((JOURNEY_DRAMATIC[name] || 1.0) - 1.0) * exoticness
+        : 1.0 + ((JOURNEY_SUBTLE[name] || 1.0) - 1.0) * (1 - exoticness);
       const boundaryMult = atPhraseBoundary ? (PHRASE_BOUNDARY_WEIGHTS[name] || 1.0) : 1.0;
       const labelMult = labelMults[name] || 1.0;
       const entropyMult = entropyReversal ? (ENTROPY_REVERSAL_WEIGHTS[name] || 1.0) : 1.0;

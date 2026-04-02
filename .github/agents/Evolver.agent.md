@@ -94,7 +94,8 @@ Read in this order. Tier 1 gives the headline. Tier 2 gives the full picture. Ti
 | `metrics/fingerprint-comparison.json` | Verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta |
 | `metrics/fingerprint-drift-explainer.json` | Causal narratives for drifts |
 | `metrics/run-comparison.json` | A/B vs baseline: notes, regime, trust, stats. Verdict: SIMILAR/DIFFERENT/DIVERGENT |
-| `metrics/trace-summary.json` | Statistical core: beats, regimes, signals, coupling, trust, axis energy, homeostasis, phase telemetry |
+| `metrics/trace-summary.json` | Statistical core: beats, regimes, signals, coupling, trust, axis energy, homeostasis, phase telemetry, sectionStats (per-section regime/tension/density), aggregateCouplingLabels (whole-run) |
+| `metrics/trace-replay.json` | Per-section/phrase breakdown: regime, tension, note counts, profile |
 | `metrics/journal.md` | Most recent entry only: what was attempted, what was learned |
 
 ### Tier 2 — Character & Attribution
@@ -102,7 +103,7 @@ Read in this order. Tier 1 gives the headline. Tier 2 gives the full picture. Ti
 | File | Purpose |
 |------|---------|
 | `metrics/golden-fingerprint.json` | 10-dimension fingerprint with full detail |
-| `metrics/narrative-digest.md` | Prose composition story |
+| `metrics/narrative-digest.md` | Prose composition story: section character, arc shape, coupling semantics |
 | `metrics/composition-diff.md` | Structural diff vs baseline |
 | `metrics/capability-matrix.md` | Module attribution: contributing vs inert |
 | `metrics/conductor-map.md` | Module bias contributions, interactions |
