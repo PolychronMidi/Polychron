@@ -88,6 +88,11 @@ harmonicIntervalGuard = (() => {
     if (lastNote) {
       otherRecentMidi = lastNote.midi || lastNote.note || -1;
     }
+    // R34: prefer collision-adjusted MIDI if recent (avoid conflicting nudges)
+    const collisionEntry = L0.getLast('registerCollision', { layer: otherLayer });
+    if (collisionEntry && m.abs(collisionEntry.timeInSeconds - absoluteSeconds) < 0.2) {
+      otherRecentMidi = V.optionalFinite(collisionEntry.midi, otherRecentMidi);
+    }
 
     if (otherRecentMidi < 0) return { midi, nudged: false, interval: -1, otherMidi: -1 };
 

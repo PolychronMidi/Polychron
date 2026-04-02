@@ -99,6 +99,12 @@ crossLayerClimaxEngine = (() => {
     } else {
       densityPressureAccum = m.max(0, densityPressureAccum - 0.5);
     }
+    // R33: post climax state to L0 for cross-module awareness
+    if (smoothedClimax > 0.1) {
+      L0.post('climax-pressure', 'both', absoluteSeconds, {
+        level: smoothedClimax, densityPressure: densityPressureAccum / DENSITY_SATURATION_BEATS
+      });
+    }
     // Blend compositeIntensity with elevated density/tension products for richer peak detection
     const densityPressure = clamp((sigs.density - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
     const tensionPressure = clamp((sigs.tension - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);

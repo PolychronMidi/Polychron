@@ -60,10 +60,16 @@ restSynchronizer = (() => {
 
     // Get density target from sectionIntentCurves
     const densityTarget = V.optionalFinite(sig.densityTarget, 0.5);
+    // R34: rest-sync L0 -- other layer's rest intention boosts shared rest probability
+    const restSyncLayer = crossLayerHelpers.getOtherLayer(layer);
+    const otherRestEntry = L0.getLast('rest-sync', {
+      layer: restSyncLayer, since: absoluteSeconds - 0.5, windowSeconds: 0.5
+    });
+    const restSyncBoost = otherRestEntry ? 0.08 : 0;
 
     // Shared rests are more likely when heat is high (need breathing room)
     // and density target is low
-    const restUrgency = clamp((heatLevel - 0.5) * 2 + (1 - densityTarget) * 0.5, 0, 1);
+    const restUrgency = clamp((heatLevel - 0.5) * 2 + (1 - densityTarget) * 0.5 + restSyncBoost, 0, 1);
 
     // R73 E5: Regime-responsive rest probability
     const snap = systemDynamicsProfiler.getSnapshot();
@@ -96,9 +102,14 @@ restSynchronizer = (() => {
     // Harmonic change breathing: rest more likely after recent key change
     const harmonicEntry = L0.getLast('harmonic', { layer: 'both', since: absoluteSeconds - 3, windowSeconds: 3 });
     const harmonicRestBoost = harmonicEntry && harmonicEntry.excursion > 2 ? 0.05 : 0;
+    // R34: articulation L0 awareness -- suppress rests when other layer is legato
+    const otherLayer = crossLayerHelpers.getOtherLayer(layer);
+    const artEntry = L0.getLast('articulation', { layer: otherLayer });
+    const otherSustain = artEntry ? V.optionalFinite(artEntry.avgSustain, 0.5) : 0.5;
+    const legatoSuppression = otherSustain > 0.7 ? -0.03 : 0;
     // CIM coordination scale: high = more shared rests, low = independent rest timing
     const cimScale = 0.5 + coordinationScale;
-    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost) * (1 + restUrgency) * e11RestBoost * cimScale;
+    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost + legatoSuppression) * (1 + restUrgency) * e11RestBoost * cimScale;
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';
@@ -116,6 +127,8 @@ restSynchronizer = (() => {
     restEndSec[layer] = absoluteSeconds + durationSec;
     isResting[layer] = true;
     sharedRestCount++;
+    // R34: post rest intention so other layer can respond
+    L0.post('rest-sync', layer, absoluteSeconds, { duration: durationSec, urgency: restUrgency });
 
     return { shouldRest: true, duration: durationSec * 1000 };
   }

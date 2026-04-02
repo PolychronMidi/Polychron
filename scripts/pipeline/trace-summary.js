@@ -792,10 +792,23 @@ function summarizeTrace(entries, manifest) {
     const denom = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
     const r = denom > 0 ? (n * sumXY - sumX * sumY) / denom : 0;
     const meanVal = sumY / n;
+    // R33: temporal coupling trajectory -- first-half vs second-half mean detects building/dissolving
+    var halfN = Math.floor(n / 2);
+    var firstHalfMean = 0, secondHalfMean = 0;
+    for (var ti = 0; ti < halfN; ti++) firstHalfMean += raw[ti];
+    for (var ti2 = halfN; ti2 < n; ti2++) secondHalfMean += raw[ti2];
+    firstHalfMean = halfN > 0 ? firstHalfMean / halfN : 0;
+    secondHalfMean = (n - halfN) > 0 ? secondHalfMean / (n - halfN) : 0;
+    var trajectoryDelta = secondHalfMean - firstHalfMean;
+    var trajectory = Math.abs(trajectoryDelta) < 0.05 ? 'sustained'
+      : trajectoryDelta > 0.15 ? 'building' : trajectoryDelta < -0.15 ? 'dissolving'
+      : trajectoryDelta > 0 ? 'strengthening' : 'weakening';
     couplingCorrelation[key] = {
       pearsonR: Number(r.toFixed(4)),
       meanSigned: Number(meanVal.toFixed(4)),
-      direction: r > 0.3 ? 'increasing' : r < -0.3 ? 'decreasing' : 'stable'
+      direction: r > 0.3 ? 'increasing' : r < -0.3 ? 'decreasing' : 'stable',
+      trajectory: trajectory,
+      trajectoryDelta: Number(trajectoryDelta.toFixed(4))
     };
   }
 
