@@ -1,76 +1,142 @@
-# Polychron Architecture: The Anatomy of a Beat
+# Architecture Deep-Dive
 
-Polychron generates music through **emergent coherence**—an evolutionary process where multiple independent observers influence a shared signal field, and complex feedback loops resolve contradictions into musicality. Rather than hardcoding structure, the system steers it.
+Beat lifecycle from conductor to emission, signal flow, layer isolation, and emergence boundaries.
 
-To understand Polychron, you must understand the lifecycle of a single beat. This document traces the signal flow from the initial context gathering to the final emission of notes, illuminating the strict boundaries that keep the system musical instead of chaotic.
+## The Beat Lifecycle
 
+Each beat follows this sequence (per layer pass):
 
+```
+globalConductor.update()
+  -> gather context (phraseArc, density, harmonicTension, sectionPhase)
+  -> compute compositeIntensity
+  -> runRecorders(ctx) [L1-only; L2 only runs conductorSignalBridge]
+  -> collect density/tension/flicker biases from all registered providers
+  -> apply dampening (progressive strength, centroid correction, flicker elasticity)
+  -> produce final density/tension/flicker products
+  -> dynamismEngine resolves playProb + stutterProb
 
-## 1. The Conductor Pipeline (`globalConductor.update`)
-At the start of every beat, before any layer knows what it will play, the **Conductor** re-evaluates the state of the composition.
+processBeat(layer, playProb, stutterProb)
+  -> sectionIntentCurves.getIntent() [density, dissonance, interaction, entropy, convergence targets]
+  -> entropyRegulator.setTarget() + regulate()
+  -> setBalanceAndFX() [per-layer balance via LM.perLayerState]
+  -> setOtherInstruments() [trust-driven timbre, regime-driven reflection pool]
+  -> stutterFade/Pan/FX on flipBin channels
+  -> StutterManager.prepareBeat() [variant selection, pattern gate, stereo width]
+  -> playNotes() -> playNotesEmitPick() per pick
+    -> convergenceVelocitySurge.check()
+    -> stutter echo probability (sustain^1.5 * tension * density * ramp * convMemBoost * startSuppress)
+    -> StutterManager.scheduleStutterForUnit() [variant dispatch, multi-variant beat]
+  -> crossLayerBeatRecord()
+    -> CIM.tick()
+    -> trustEcologyCharacter.update()
+    -> convergenceMemory.record()
+    -> stutterContagion.post/apply
+    -> feedbackOscillator.applyFeedback
+    -> trust score registration for all 27 systems
+```
 
-1. **Context Gathering:** The system queries structural context—what section are we in? Are we at the climax? What is the current harmonic excursion and tension?
-2. **Composite Intensity:** Baseline structural cues and harmonic rhythm are merged into a single metric, `compositeIntensity` (0.0 - 1.0).
-3. **The Recorders:** 42 intelligence modules (e.g., `dynamicRangeTracker`, `melodicContourTracker`) observe this intensity alongside recent output, updating their internal states.
-4. **Attributed Biases:** Modules cast "votes" for density, tension, and flicker via multiplicative biases. These votes are gathered, multiplied, and attributed in the `conductorIntelligence` registry.
-5. **Dampening & Normalization:** `conductorDampening` limits extreme deviation based on system regimes, preventing runaway feedback. `pipelineNormalizer` smooths these into actionable targets.
-6. **State Snapshot:** The final resolved signals—`playProb`, `stutterProb`, `density`, `tension`, `flicker`—are committed to `conductorState`.
+## The Conductor Pipeline
 
+### Signal Products
 
+Three pipeline products computed per beat:
 
-## 2. The Signal Bridge (`conductorSignalBridge`)
-**Firewall Boundary 1: The Conductor is Blind to Cross-Layer Negotiation.**
-The conductor signals are cached beat-by-beat in the `conductorSignalBridge`. Cross-layer modules *cannot* directly read raw conductor signals. They query this bridge. This is an explicit, load-bearing firewall: it prevents the microscopic interplay of rhythm from polluting the macroscopic trajectories of the composition, imposing a minimal beat-delayed latency.
+- **Density product** (0.1-2.0): how many notes to emit. Driven by compositeIntensity, profile density range, regulation bias, emission gap correction.
+- **Tension product** (0.1-2.0): harmonic dissonance intensity. Driven by arc position, journey distance, climax proximity, regime.
+- **Flicker product** (0.4-2.0): micro-oscillation amplitude. Driven by flicker range elasticity, progressive dampening, cross-modulation.
 
+### Recorders
 
+34 registered recorders tick via `conductorIntelligence.runRecorders(ctx)`. The registry gates L2: only `conductorSignalBridge` runs on L2 pass (needs per-layer signal refresh). All other recorders skip L2 to prevent polyrhythmic beat-count asymmetry.
 
-## 3. The Play Loop (`processBeat`)
-With the conductor's intent crystallized, the structural components prepare the beat across an interleaved, 14-stage topological sequence.
+Recorder context carries: `{ absTime, compositeIntensity, currentDensity, harmonicRhythm, layer }`.
 
-1. **Beat Setup:** Set binaural mapping, panning, balance, and start FX stutter preparation.
-2. **Intent & Entropy:** `sectionIntentCurves` resolves the structural arc, while `entropyRegulator` defines an allowable variance threshold.
-3. **Phase Lock:** `rhythmicPhaseLock` determines whether layers synchronize or complement each other.
-4. **Rest Sync:** The `restSynchronizer` forces emergent rests, aligning layer absences based on thermal load (heatMap).
-5. **Cadence & Tension:** The system probes whether a harmonic cadence is biologically due, guided by systemic tension.
+### Bias Providers
 
+Modules register density/tension/flicker biases via `conductorIntelligence.registerDensityBias(name, fn, lo, hi)`. At pipeline time, all biases are collected, dampened, and multiplied into the final products. 92 bias registrations are locked against `scripts/bias-bounds-manifest.json`.
 
+## The Signal Bridge
 
-## 4. Negotiation (`negotiationEngine`)
-**Firewall Boundary 2: Trust-Weighted Intent.**
-Even though the conductor declares an intent and the initial cross-layer stages suggest a path, these are not directly executed. They pass through the `negotiationEngine`.
-Here, `adaptiveTrustScores` applies moving average weights (0.4 to 1.8) to the recommendations of various cross-layer actors. A module the system "trusts" gets more sway over the final `playProb` and `stutterProb` for the specific layer and beat. This forces consensus through compromise.
+**Firewall boundary 1.** `conductorSignalBridge` (crossLayer module) caches conductor signals per-beat via a registered recorder. Exposes: density, tension, flicker, compositeIntensity, sectionPhase, coherenceEntropy, plus hypermeta state (healthEma, systemPhase, exceedanceTrendEma, topologyPhase). CrossLayer modules read the bridge, never the conductor directly.
 
+## Layer Isolation (L1/L2)
 
+Two polyrhythmic layers alternate via `LM.activate()`. On every activation:
 
-## 5. Emission (`playNotes` & `playNotesEmitPick`)
-With the probabilities finalized, the system finally iterates through the micro-units (divisions, subdivisions).
-Notes are picked via the assigned `ScaleComposer` or `MeasureComposer`.
-Stutter effects apply localized fading and panning.
-The actual MIDI/CSV event is pushed to the buffer.
+1. **Save outgoing layer**: `saveGlobalsToLayer()` captures mutable globals into `LM.perLayerState[outgoingLayer]`
+2. **Restore incoming layer**: `loadLayerToGlobals()` writes per-layer values back to globals
+3. **Restore flipBin**: `flipBin = LM.flipBinByLayer[incomingLayer]`
+4. **PRNG decorrelation**: L2 activation advances PRNG 17 steps to break cross-layer sequence coupling
 
-Cross-layer modules that emit notes (e.g., `emergentDownbeat`, `convergenceDetector`, `velocityInterference`) route all buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. This provides attributed emission counting and a centralized boundary for future buffer guards.
+### Per-Layer Globals (LM.perLayerState)
 
+Saved/restored on every `activate()`:
+- `crossModulation`, `lastCrossMod` -- polyrhythmic interference intensity
+- `balOffset`, `sideBias` -- stereo pan positioning
+- `lBal`, `rBal`, `cBal`, `cBal2`, `cBal3` -- derived channel balance values
+- `refVar`, `bassVar` -- FX variance
 
+### Closure-Based Per-Layer State
 
-## 6. Closing the Loop (`crossLayerBeatRecord` & `coherenceMonitor`)
-After the notes are emitted, the system enters the post-beat phase. It has generated music, but it needs to know *what* it generated to inform the next beat.
+Modules with internal state use `byLayer` maps keyed by `LM.activeLayer`:
+- `stutterTempoFeel.emaByLayer` -- stutter density EMA per layer
+- `crossLayerDynamicEnvelope.arcTypeByLayer` -- phrase arc type per layer
+- `journeyRhythmCoupler.boldnessByLayer` -- harmonic journey energy per layer
+- `emissionFeedbackListener.ratioByLayer` -- note emission ratio per layer
 
-1. **Beat Interleaved Processor:** Captures exact note pitch, velocity, and timing.
-2. **Heatmap & Trend:** `interactionHeatMap` maps the burst density against silence.
-3. **Trust Adjustments:** If a module pushed for a cadence and it successfully resolved the music's chaos, its trust increases. Trust system names are canonical constants defined in `trustSystems` (see `src/utils/trustSystems.js`) — never hardcoded strings.
-4. **Coherence Monitor:** **Firewall Boundary 3: Closed-Loop Output Verification.**
-`coherenceMonitor` listens to the output layer and checks if the actual density matches the conductor's intended density. If the stochastic elements under-produced notes, it sends a bias multiplier back to the conductor to slightly boost density on the *next* beat. This is the only way output affects input, and it operates through a dampened, delayed feedback registry, preventing catastrophic resonance.
+### Conductor Recorder L1-Only Gating
 
-When `--trace` is enabled, each beat also writes a JSONL diagnostic entry to `metrics/trace.jsonl` (via `traceDrain`), including per-stage timing data (14 named stages, nanosecond precision via `process.hrtime.bigint()`), making this full loop replayable and profilable over time.
+`conductorRecorderRegistry.runRecorders()` skips all recorders on L2 pass (except `conductorSignalBridge`). This prevents:
+- Beat counters advancing at 2x rate
+- Ring buffers filling at wrong timescale
+- Orchestration intervals firing twice per measure
+- Regime classification operating at double speed
 
+## Regime Classification
 
+7 regime states with hysteresis:
 
-## The Emergence Boundaries (Membranes)
+| Regime | Character | Typical Share |
+|--------|-----------|--------------|
+| `coherent` | Stable, interlocking layers | 30-40% |
+| `exploring` | Searching, variety-seeking | 25-40% |
+| `evolving` | Transitional, developing | 20-30% |
+| `oscillating` | Tension/release cycling | Variable |
+| `drifting` | Low-energy wandering | Rare |
+| `fragmented` | Disconnected, chaotic | Rare |
+| `stagnant` | Locked, no movement | Rare |
 
-Every time you build a new module, you must respect these cellular boundaries:
+Regime affects: variant selection weights, CIM dial targets, stutter CC coherence scaling (coherent=1.3x, exploring=0.6x), preset selection (coherent->subtle, exploring->stereoWide), exploring brake strength.
 
-* **Top-Down Steering Only:** The Conductor sets the climate. The Cross-Layer orchestrates the weather. The play loop experiences it. Cross-layer modules *cannot* write to the conductor directly. They must operate locally via `explainabilityBus` adjustments or influence the `playProb`/`stutterProb` locally out of the conductor's sight. Conversely, conductor modules *cannot* mutate cross-layer state (ESLint-enforced via `no-direct-crosslayer-write-from-conductor`); read-only access via getters is permitted.
-* **Network Dampening:** Any new feedback loop must register with `feedbackRegistry`. The closed-loop controller mechanism ensures that phase misalignment and thermal loads do not cause feedback loops to resonate and destroy the system's structural integrity. Six feedback loops are formally declared in `metrics/feedback_graph.json` and cross-validated against source code by `scripts/validate-feedback-graph.js` on every pipeline run.
-* **Absolute AbsoluteTimeGrid:** Modules do not speak directly to each other; they post signals into `absoluteTimeGrid`, and interested modules query the timestamps. This ensures spatial decoupling and guarantees that chronological reasoning remains immutable.
+The exploring brake applies duration-proportional pressure after 60 L1-only ticks, intent-aware (softer during development, stronger during climax/resolution).
 
-Understand this beat, and you will understand Polychron.
+## The Negotiation Engine
+
+**Firewall boundary 2.** Resolves conflicts between competing cross-layer systems. Reads trust weights from `adaptiveTrustScores`. Gates convergence events (trust floor modulated by convergenceTarget and CIM coordination scale). Prevents destructive interference between cadence alignment and stutter contagion.
+
+## Emission
+
+`playNotesEmitPick()` emits note events per pick across source/reflection/bass channel families. Per-pick: spectral nudge, harmonic interval guard, register collision avoidance, convergence velocity surge, stutter echo gate.
+
+All cross-layer buffer writes route through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`.
+
+## Closing the Loop
+
+`crossLayerBeatRecord()` runs after note emission:
+1. CIM tick (coordination dial adjustment)
+2. Trust ecology character update (dominant system -> composer bias)
+3. Convergence memory recording (histogram)
+4. Stutter contagion post/apply
+5. Temporal gravity density measurement
+6. FeedbackOscillator energy exchange
+7. Trust score registration for all 27 systems
+8. Heat map recording
+
+## Emergence Boundaries
+
+Three architectural membranes:
+
+1. **Conductor -> CrossLayer**: read-only via `conductorSignalBridge`. No conductor module may mutate cross-layer state. ESLint enforced.
+2. **CrossLayer -> Conductor**: no direct writes. Only `playProb`/`stutterProb` local modifications and `explainabilityBus` diagnostics.
+3. **Inter-module communication**: via `absoluteTimeGrid` (L0) channels, not direct calls. L0 queries should include layer filter when per-layer data is needed.

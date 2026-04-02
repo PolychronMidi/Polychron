@@ -15,3 +15,4 @@ deepwiki.config.json
 *.pyc
 /metrics
 /lab
+/.claude/mcp

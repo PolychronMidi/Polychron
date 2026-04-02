@@ -39,7 +39,7 @@ Modules self-register at load time. Two registries:
 - **`crossLayerRegistry`** - `register(name, module, scopes)` where scopes ⊆ `['all','section','phrase']`
 - **`conductorIntelligence`** - `registerDensityBias`, `registerTensionBias`, `registerFlickerModifier`, `registerRecorder`, `registerStateProvider`, `registerModule`
 
-16 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, inter-controller conflict detection, whole-system coupling energy homeostasis, axis-level energy equilibration (two-layer pair-hotspot + axis-balance with graduated coherent gate), phase energy floor (adaptive collapse detection and graduated boost), per-pair gain ceilings (adaptive ceiling from rolling p95 EMA), and section-0 warmup ramps (adaptive per-pair ramp from S0 exceedance history). The regime classifier additionally self-balances coherent share via auto-adjusting `coherentThresholdScale`. Never manually tune constants that a meta-controller already manages.
+18 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, inter-controller conflict detection, whole-system coupling energy homeostasis, axis-level energy equilibration (two-layer pair-hotspot + axis-balance with graduated coherent gate), phase energy floor (adaptive collapse detection and graduated boost), per-pair gain ceilings (adaptive ceiling from rolling p95 EMA), and section-0 warmup ramps (adaptive per-pair ramp from S0 exceedance history). The regime classifier additionally self-balances coherent share via auto-adjusting `coherentThresholdScale`. Never manually tune constants that a meta-controller already manages.
 
 To add a module: write the file, self-register at end of IIFE, require from subsystem `index.js`.
 
@@ -82,6 +82,39 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - **Coupling matrix firewall:** Never read `.couplingMatrix` from `systemDynamicsProfiler.getSnapshot()` outside the coupling engine (`src/conductor/signal/balancing/`), meta-controllers (`src/conductor/signal/meta/`), profiler, diagnostics, or pipeline plumbing. Modules that need coupling awareness must register a bias via `conductorIntelligence` and respond through the controller chain. ESLint `local/no-direct-coupling-matrix-read` enforces this; `check-hypermeta-jurisdiction.js` Phase 2 detects violations at pipeline time. Legacy violations are allowlisted and tracked for removal.
 - **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls.
 
+## Layer Isolation (L1/L2 Polyrhythmic Safety)
+
+Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed between layers unless explicitly per-layer.
+
+- **Per-layer globals** live in `LM.perLayerState`, saved/restored by `loadLayerToGlobals`/`saveGlobalsToLayer` on every `activate()` call. Currently: crossModulation, lastCrossMod, balOffset, sideBias, lBal, rBal, cBal, cBal2, cBal3, refVar, bassVar.
+- **Per-layer flipBin** lives in `LM.flipBinByLayer`, restored in `activate()`.
+- **Conductor recorders** tick L1-only via registry gate in `conductorRecorderRegistry.runRecorders()`. Only `conductorSignalBridge` runs on L2 (needs per-layer signal refresh). Never add beat counters or ring buffers to recorders without accounting for this.
+- **Closure-based per-layer state** (stutterTempoFeel, crossLayerDynamicEnvelope, journeyRhythmCoupler, emissionFeedbackListener) uses `byLayer` maps keyed by `LM.activeLayer`.
+- **When adding new mutable state**: ask "does this get written during per-beat processing and read by both layers?" If yes, it needs per-layer treatment.
+
+## Adaptive System Infrastructure
+
+- **Cross-run warm-start**: `metrics/adaptive-state.json` persists terminal EMA values (healthEma, exceedanceTrendEma). Loaded by `hyperMetaManagerState` on boot. Values are clamped to safe ranges on load to prevent stressed-state boot loops.
+- **Reconvergence accelerator**: `reconvergenceAccelerator.js` detects structural input discontinuities and temporarily spikes EMA alphas for fast reconvergence (50 ticks, decaying).
+- **Regime-adaptive alphas**: `regimeTransitionAlphaBoost` in hyperMetaManager spikes 3x on regime transitions, decays at 0.88/tick.
+- **Effectiveness-weighted convergence**: controller effectiveness EMA alpha scales with proven effectiveness (0.02-0.12 range). Rate multiplier authority +/-25%.
+
+## Stutter Variant System
+
+18 stutter note variants in `src/fx/stutter/variants/`, selected per-beat by `stutterVariants.selectForBeat()`. Selection is weighted by 10 signal dimensions: regime, section phase, hocket mode, articulation, harmonic journey distance, phrase boundary, coupling labels, entropy reversal, call-response, and self-balancing inverse-frequency. Per-step gating in `stutterNotes.js` via `stutterSteps.shouldEmit()` applies two layers: Euclidean pattern gate (75% activation) then sustain-proportional probabilistic gate. New variants: create file in `variants/`, self-register with `stutterVariants.register(name, fn, weight, { selfGate, maxPerSection })`, add to `variants/index.js`, add to `REGIME_WEIGHTS` in `stutterVariants.js`.
+
+## Coordination Independence Manager (CIM)
+
+`src/crossLayer/coordinationIndependenceManager.js` manages 11 module-pair coordination dials (0=independent, 1=coordinated). Lives in crossLayer (reads conductor via `conductorSignalBridge`, writes to peer crossLayer modules via `setCoordinationScale()`). Phase-gated: adjusts during stabilized/converging, freezes during oscillating (unless health < 0.4). Has chaos mode (`setChaosMode(true)`) and oscillation mode (`setOscillationMode(true)`). Intent-aware: reads `sectionIntentCurves.interactionTarget` for 35% of target blend.
+
+## Binaural Detune Prevention
+
+`setBinaural.js` pitch bend glide must complete WITHIN the volume crossfade window (0.06-0.12s), not over the full shift interval. Post-crossfade snap event ensures final pitch bend is applied. `flipBinCrossfadeWindow` global exposes the exact crossfade window for `stereoScatter` variant. Per-layer flipBin state in `LM.flipBinByLayer` prevents L1/L2 pitch bend desync.
+
+## Pipeline Scripts
+
+Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` uses isolated temp working directories (never touches `output/`). Lab runner timeout is 180s with explicit timeout message.
+
 ## Custom ESLint Rules
 
 20 project-specific rules in `scripts/eslint-rules/`:
@@ -123,9 +156,45 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 
 Act on feedback immediately and thoroughly. Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing to update or confirm. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
 
+## Lab Sketches
+
+Every sketch `postBoot()` must contain **real implementation code** that creates the described behavior. A postBoot that only calls `setActiveProfile('atmospheric')` with no other code is an empty sketch -- it tests nothing and produces no actionable verdict. Monkey-patching globals/functions in postBoot is the mechanism for prototyping behavior before integration into /src.
+
 ## Lab Findings (Calibration Anchors)
 
 [metrics/journal.md](../metrics/journal.md) - Listening-confirmed constraints from lab sessions, with detailed descriptions and results. Use these to anchor calibration and validate that changes have the intended effect. Track whether changes took effect at all, and if so, whether the effect size is in the expected direction and magnitude. "Inconclusive" is a valid outcome when the effect is too small to confirm or deny with confidence, but "opposite effect" is a red flag that the change may not be working as intended, in which case it should be abandoned or revised.
+
+## code-RAG
+
+A local semantic code search MCP server running at `~/.claude/mcp/code-RAG/`. Indexed against this repo (614 files, 2004 symbols). Always load the skill first: `/code-RAG`.
+
+**When to use instead of Grep/Glob:**
+- Open-ended searches where you don't know the exact filename or symbol name
+- Finding all callers of a function across 600+ files
+- Locating similar code patterns by description rather than literal string
+- After context compaction, to recover precise file locations without re-reading everything
+
+**Core workflow after compaction:**
+```
+/code-RAG
+search_code "conductorSignalBridge layer activation"   -- find relevant code
+get_function_body processBeat                          -- pull exact implementation
+get_dependency_graph src/conductor/globalConductor.js  -- trace require() chains
+get_module_map src/conductor/signal/meta               -- subsystem structure
+```
+
+**Knowledge KB** (`add_knowledge` / `search_knowledge`): persist architecture decisions, lab verdicts, and calibration anchors that survive context resets. Categories: `architecture`, `decision`, `pattern`, `bugfix`. Do NOT add_knowledge until user confirms task complete.
+
+**After every code change:** call `index_codebase` to keep the index current (or rely on the file watcher which auto-reindexes on save with 5s debounce).
+
+**Key tools:**
+- `search_code` - semantic search across all JS source
+- `get_function_body <name>` - extract exact function body via tree-sitter AST
+- `find_callers <name>` - all call sites across the repo
+- `get_dependency_graph <file>` - import/require graph for a file
+- `lookup_symbol <name>` - find where a symbol is defined
+- `search_knowledge` - query the persistent architecture KB
+- `get_module_map src/<subsystem>` - directory structure with symbol counts
 
 ## Related Documentation
 
@@ -133,8 +202,10 @@ Act on feedback immediately and thoroughly. Never summarize without fixing. Neve
 - [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) - Beat lifecycle deep-dive, signal flow from conductor to emission
 - [doc/TUNING_MAP.md](../doc/TUNING_MAP.md) - Feedback loop constants, interaction partners, cross-constant invariants
 - [metrics/journal.md](../metrics/journal.md) - Evolution journal with lab findings and calibration anchors
-- [metrics/feedback_graph.json](../metrics/feedback_graph.json) - Feedback loop topology (source of truth for visualization). 6 loops, auto-generated by `scripts/generate-feedback-graph.js` and cross-validated by `scripts/validate-feedback-graph.js` on every pipeline run.
+- [metrics/feedback_graph.json](../metrics/feedback_graph.json) - Feedback loop topology (source of truth for visualization). 8 loops, auto-generated by `scripts/generate-feedback-graph.js` and cross-validated by `scripts/validate-feedback-graph.js` on every pipeline run.
 - `metrics/conductor-map.md` - Auto-generated conductor intelligence map (per-run)
 - `metrics/crosslayer-map.md` - Auto-generated cross-layer intelligence map (per-run)
 - `metrics/narrative-digest.md` - Auto-generated prose narrative (per-run)
 - `metrics/feedback-graph.html` - Interactive feedback graph visualization (per-run)
+- `metrics/runtime-snapshots.json` - CIM dials, stutter variant counts, correlation shuffler state, section history (per-run)
+- `metrics/adaptive-state.json` - Cross-run warm-start state for hypermeta EMAs (persisted across runs)

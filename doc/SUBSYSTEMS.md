@@ -1,71 +1,84 @@
 # Subsystem Detail
 
-Module-level reference for each Polychron subsystem.
+Module-level reference for each Polychron subsystem. 473 source files, 58K LOC.
 
-## `src/utils/` — Shared Foundation (18 files)
+## `src/utils/` -- Shared Foundation (35 files)
 
-- **`validator`** — Stamped validation: `requireFinite`, `optionalFinite`, `requireDefined`, `assertRange`
-- **`clamps`** — Numeric clamping
-- **`randoms`** — Deterministic random sources (no `Math.random`)
-- **`midiData`** — MIDI constants, note names, velocity tables
-- **`modeQualityMap`** / **`priorsHelpers`** — Shared priors infrastructure
-- **`moduleLifecycle`** — Scoped-reset registry (scopes: `all`/`section`/`phrase`)
-- **`beatCache`** — Deduplication: at most one evaluation per beat
-- **`feedbackRegistry`** — Coordinates closed-loop controllers against resonance
-- **`closedLoopController`** — Base controller abstraction for feedback-enrolled modules
-- **`eventCatalog`** — Canonical event type constants
-- **`trustSystems`** — Canonical trust system name constants (9 scored, 13 heat-map)
+- **`validator`** -- Stamped validation: `requireFinite`, `optionalFinite`, `requireDefined`, `assertRange`
+- **`clamps`** -- Numeric clamping (`clamp`, `modClamp`, `fuzzyClamp`)
+- **`randoms`** -- Deterministic random sources (`rf`, `ri`, `rv`, `rl`, `ra`). No `Math.random` directly.
+- **`midiData`** -- MIDI constants, note names, velocity tables
+- **`modeQualityMap`** / **`priorsHelpers`** -- Shared priors infrastructure
+- **`moduleLifecycle`** -- Scoped-reset registry (scopes: `all`/`section`/`phrase`)
+- **`beatCache`** -- Layer-aware per-beat memoization (includes `LM.activeLayer` in cache key)
+- **`feedbackRegistry`** -- Coordinates closed-loop controllers against resonance
+- **`closedLoopController`** -- Base controller abstraction for feedback-enrolled modules
+- **`eventCatalog`** -- Canonical event type constants
+- **`trustSystems`** -- Canonical trust system name constants (27 scored, 13 heat-map)
+- **`musicalTimeWindows`** -- Converts musical seconds to tick/beat counts based on current tempo
+- **`safePreBoot`** -- Safe function calls during boot before dependencies are ready
+- **`formatTime`** -- Time formatting utilities
 
-## `src/conductor/` — Intelligence & Signal (127 files, 10 subdirs)
+## `src/conductor/` -- Intelligence & Signal (193 files, 10 subdirs)
 
-42 modules register with `conductorIntelligence`, contributing 30 density biases, 20 tension biases, 14 flicker modifiers, 29 recorders, 56 state providers.
+34 modules register recorders with `conductorIntelligence`. All recorders tick L1-only (L2 gated at registry level except `conductorSignalBridge`).
 
-**Orchestration:** `conductorIntelligence` (registry), `globalConductor` / `globalConductorUpdate` (per-beat), `conductorState` (committed signals), `conductorDampening` (regime-aware gravity + centroid), `dynamismEngine` / `dynamismPulse`, `PhraseArcManager`, `textureBlender`, `config` (central constants), `sectionMemory` (cross-section narrative)
+**Orchestration:** `conductorIntelligence` (registry), `globalConductor` / `globalConductorUpdate` (per-beat), `conductorState` (committed signals), `conductorDampening` (regime-aware gravity + centroid), `dynamismEngine` (play/stutter probability resolution with emission gap correction), `PhraseArcManager` (feedback-reactive arc type selection), `textureBlender`, `config` (central constants), `sectionMemory` (cross-section narrative with tension/density trajectory tracking)
 
-**Domains:** dynamics (8), harmonic (17), melodic (15), rhythmic (15), texture (20), signal (21 + meta-controllers), journey (5), profiles (15)
+**Domains:** dynamics (8 -- peakMemory, momentumTracker, waveAnalyzer, rangeTracker, architectPlanner), harmonic (17), melodic (15), rhythmic (15), texture (20), signal (21 + 19 meta-controllers), journey (5), profiles (15 -- 6 profiles with tuning overrides)
 
-## `src/rhythm/` — Pattern Generation (20 files)
+## `src/rhythm/` -- Pattern Generation (22 files)
 
-`RhythmManager`, `rhythmRegistry`, pattern resolution, onset generation, modulation, phase-locked generation, cross-modulation. Subdirs: `drums/` (6), `feedback/` (7).
+`RhythmManager`, `rhythmRegistry`, pattern resolution (`binary`, `hex`, `euclid`, `onsets`, `random`, `morph`, `rotate`), onset generation, modulation, phase-locked generation, cross-modulation.
 
-## `src/time/` — Temporal Infrastructure (13 files)
+**drums/** (6) -- playDrums, drummer, drumTextureCoupler
 
-- **`absoluteTimeGrid`** (L0) — shared temporal memory: `post()`, `query()`, `findClosest()`
-- **`LayerManager`** — L1/L2 registration, timing, buffer management
-- **`midiTiming`** — tick/time conversion with sync factor for non-power-of-2 meters
-- **`getMeterPair`** / **`getPolyrhythm`** — meter pair selection, polyrhythm ratios
-- **`tempoFeelEngine`** — tempo humanization via spBeat scaling
-- **`setUnitTiming`** — per-unit timing computation
+**feedback/** (7) -- stutterFeedbackListener (per-layer accumulation), fXFeedbackListener, emissionFeedbackListener (per-layer ratio/gap), journeyRhythmCoupler (per-layer boldness), conductorRegulationListener, rhythmHistoryTracker
 
-## `src/composers/` — Music Generation (22 files, 6 subdirs)
+## `src/time/` -- Temporal Infrastructure (13 files)
+
+- **`absoluteTimeGrid`** (L0) -- shared temporal memory: `post()`, `query()`, `findClosest()`, `count()`
+- **`LayerManager`** -- L1/L2 registration, timing, buffer management, per-layer state (`perLayerState`, `flipBinByLayer`), save/restore on `activate()`, PRNG decorrelation
+- **`midiTiming`** -- tick/time conversion with sync factor
+- **`getMeterPair`** / **`getPolyrhythm`** -- meter pair selection, polyrhythm ratios
+- **`tempoFeelEngine`** -- tempo humanization (phase-aware + rubato + stutter tempo feel modulation)
+- **`setUnitTiming`** -- per-unit timing computation
+- **`timeStream`** -- normalized progress tracking (section/phrase/beat positions)
+
+## `src/composers/` -- Music Generation (24 files, 6 subdirs)
 
 11 composers: ScaleComposer, ModeComposer, BluesComposer, ChromaticComposer, PentatonicComposer, QuartalComposer, HarmonicRhythmComposer, MelodicDevelopmentComposer, ModalInterchangeComposer, TensionReleaseComposer, VoiceLeadingComposer
 
-**Subdirs:** chord/ (12 — ChordComposer, progressions, harmonic priors), factory/ (7 — FactoryManager, family selection), motif/ (18 — motif transforms, chain, validation), profiles/ (18 — per-composer tuning), voice/ (17 — voice leading scoring, priors, register biasing)
+**factory/** (7) -- FactoryManager, family selection (trust ecology + section trend biases)
+**motif/** (18) -- motif transforms, chain, validation
+**profiles/** (18) -- per-composer tuning
+**voice/** (17) -- voice leading scoring, coherence-responsive independence (phase lock -> counterpoint)
 
-## `src/fx/` — Effects (3 files, 2 subdirs)
+## `src/fx/` -- Effects (55 files, 2 subdirs)
 
-- **`setBinaural`** — binaural beat mapping (alpha range 8-12Hz only, grandFinale post-loop walk)
-- **`setBalanceAndFX`** — layer balance, panning, FX routing
-- **noise/** (7) — simplex/FBM/worley noise engines
-- **stutter/** (13) — StutterManager, fade/pan/FX strategies, stutter config/profiler
+- **`setBinaural`** -- binaural beat mapping (alpha 8-12Hz, grandFinale post-loop walk only). Pitch bend completes within crossfade window. Per-layer flipBin via `LM.flipBinByLayer`. `flipBinCrossfadeWindow` global for stereoScatter.
+- **`setBalanceAndFX`** -- per-layer balance (via LM.perLayerState), FX routing, trust/regime-driven instrument selection
+- **noise/** (7) -- simplex/FBM/worley/ridged noise engines
+- **stutter/** (37) -- StutterManager, 18 variants, stutterVariants (10-dimension selection), stutterSteps (Euclidean+probabilistic gating), stutterNotes (velocity contour, coherence cross-mod), fade/pan/FX CC strategies, config, metrics, channels, plans, registry
 
-## `src/crossLayer/` — Layer Coordination (44 files, 5 subdirs)
+## `src/crossLayer/` -- Layer Coordination (58 files, 5 subdirs)
 
-**Infrastructure:** `crossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` (firewall), `explainabilityBus`, `crossLayerEmissionGateway`
+39 registered modules. CIM manages 11 module-pair coordination dials.
 
-**dynamics/** (6) — articulationComplement, dynamicEnvelope, roleSwap, restSynchronizer, texturalMirror, velocityInterference
+**Infrastructure:** `crossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` (firewall + hypermeta state), `explainabilityBus`, `crossLayerEmissionGateway`, `coordinationIndependenceManager` (CIM)
 
-**harmony/** (10) — cadenceAlignment, convergenceHarmonicTrigger, harmonicIntervalGuard, motifEcho, motifIdentityMemory, phaseAwareCadenceWindow, registerCollisionAvoider, spectralComplementarity, verticalIntervalMonitor
+**dynamics/** (7) -- articulationComplement (CIM-aware), dynamicEnvelope (per-layer arcType), roleSwap, restSynchronizer (CIM + density-gated fill), texturalMirror, velocityInterference (CIM + convergence surge), convergenceVelocitySurge
 
-**rhythm/** (9) — convergenceDetector, emergentDownbeat, feedbackOscillator, grooveTransfer, polyrhythmicPhasePredictor, rhythmicComplementEngine, rhythmicPhaseLock, stutterContagion, temporalGravity
+**harmony/** (10) -- cadenceAlignment, convergenceHarmonicTrigger, harmonicIntervalGuard (CIM-aware), motifEcho, motifIdentityMemory, phaseAwareCadenceWindow, registerCollisionAvoider (CIM-aware), spectralComplementarity (CIM + dissonance-scaled), verticalIntervalMonitor
 
-**structure/** (10) — adaptiveTrustScores, beatInterleavedProcessor, contextualTrust, climaxEngine, silhouette, entropyMetrics, entropyRegulator, interactionHeatMap, negotiationEngine, sectionIntentCurves
+**rhythm/** (11) -- convergenceDetector (CIM-aware), convergenceMemory, emergentDownbeat (tempo multiplier + CIM layer-swap), feedbackOscillator (CIM damping), grooveTransfer (CIM-aware), polyrhythmicPhasePredictor, rhythmicComplementEngine (CIM mode dwell + intent-aware canon bias), rhythmicPhaseLock (CIM-aware), stutterContagion (CIM decay + ghost-stutter contagion), stutterTempoFeel (per-layer EMA), temporalGravity (CIM-aware)
 
-## `src/writer/` — Output (4 files)
+**structure/** (12) -- adaptiveTrustScores (CIM exploration nudge), trustEcologyCharacter (dominance -> composer bias), trustTimbreMapping (dominance -> instrument pools), climaxEngine, silhouette, entropyMetrics, entropyRegulator (phase-gated arc target), interactionHeatMap, negotiationEngine (CIM convergence floor), sectionIntentCurves (trajectory correction, harmonic gravity, intent-aware phase gate)
 
-`grandFinale` (CSV finalization + all-sound-off cutoff), `traceDrain` (JSONL trace), `logUnit`
+## `src/writer/` -- Output (4 files)
 
-## `src/play/` — Execution Loop (16 files)
+`grandFinale` (CSV finalization + all-sound-off cutoff + runtime snapshots + adaptive state persistence), `traceDrain` (JSONL trace), `logUnit`
 
-`main` (entry point), `fullBootstrap` / `mainBootstrap` (validation), `layerPass` (measure/beat/div loop), `processBeat` (14-stage pipeline), `playNotes` / `playNotesEmitPick` (emission), `crossLayerBeatRecord` (post-beat), `channelCoherence`, `microUnitAttenuator`
+## `src/play/` -- Execution Loop (18 files)
+
+`main` (entry point), `fullBootstrap` / `mainBootstrap` (validation + feedbackGraphContract), `layerPass` (measure/beat/div loop), `processBeat` (conductor + crossLayer orchestration), `playNotes` / `playNotesEmitPick` (emission with convergence surge, stutter echo gate, per-layer channel cache), `crossLayerBeatRecord` (CIM tick, trust ecology, convergence memory, stutter contagion, feedback oscillator, 27 trust registrations), `channelCoherence`, `microUnitAttenuator`
