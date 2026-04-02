@@ -114,6 +114,12 @@ function summarizeTrace(entries, manifest) {
   const uniqueBeatKeys = new Set();
   const sectionEntryCounts = {};
   const sectionBeatKeys = {};
+  // R26 E1: Per-section stats for automatic section-level awareness
+  const sectionRegimeCounts = {};
+  const sectionTensionSums = {};
+  const sectionDensitySums = {};
+  const sectionPlayProbSums = {};
+  const sectionBeatCounts = {};
   const uniqueProfilerAnalysisTicks = new Set();
   const uniqueProfilerRegimeTicks = new Set();
   let profilerCadence = '';
@@ -518,11 +524,27 @@ function summarizeTrace(entries, manifest) {
     }
     lastRegime = regime;
 
-    updateMinMax(playProb, toNum(snap.playProb, 0));
+    const entryPlayProb = toNum(snap.playProb, 0);
+    const entryDensity = toNum(snap.compositeIntensity !== undefined ? snap.compositeIntensity : snap.currentDensity, 0);
+    const entryTension = toNum(snap.tension, 0);
+    updateMinMax(playProb, entryPlayProb);
     updateMinMax(stutterProb, toNum(snap.stutterProb, 0));
-    updateMinMax(density, toNum(snap.compositeIntensity !== undefined ? snap.compositeIntensity : snap.currentDensity, 0));
-    updateMinMax(tension, toNum(snap.tension, 0));
+    updateMinMax(density, entryDensity);
+    updateMinMax(tension, entryTension);
     updateMinMax(flicker, toNum(snap.flicker, 0));
+
+    // R26 E1: per-section accumulation
+    if (typeof e.beatKey === 'string' && e.beatKey.indexOf(':') !== -1) {
+      const sec = parseInt(e.beatKey.split(':')[0], 10);
+      if (Number.isFinite(sec)) {
+        if (!sectionRegimeCounts[sec]) sectionRegimeCounts[sec] = {};
+        sectionRegimeCounts[sec][regime] = (sectionRegimeCounts[sec][regime] || 0) + 1;
+        sectionTensionSums[sec] = (sectionTensionSums[sec] || 0) + entryTension;
+        sectionDensitySums[sec] = (sectionDensitySums[sec] || 0) + entryDensity;
+        sectionPlayProbSums[sec] = (sectionPlayProbSums[sec] || 0) + entryPlayProb;
+        sectionBeatCounts[sec] = (sectionBeatCounts[sec] || 0) + 1;
+      }
+    }
 
     if (e.couplingLabels && typeof e.couplingLabels === 'object' && Object.keys(e.couplingLabels).length > 0) lastCouplingLabels = e.couplingLabels;
     const cm = e.coupling && typeof e.coupling === 'object' ? e.coupling : {};
@@ -1182,8 +1204,52 @@ function summarizeTrace(entries, manifest) {
       tension: finalizeMinMax(tension),
       flicker: finalizeMinMax(flicker)
     },
+    // R26 E1: Per-section stats for automatic section-level awareness
+    sectionStats: (() => {
+      const secs = Object.keys(sectionBeatCounts).map(Number).sort(function(a, b) { return a - b; });
+      return secs.map(function(sec) {
+        var n = sectionBeatCounts[sec] || 1;
+        var regimes = sectionRegimeCounts[sec] || {};
+        var dominant = Object.entries(regimes).sort(function(a, b) { return b[1] - a[1]; })[0];
+        return {
+          section: sec,
+          beats: n,
+          avgTension: Number(((sectionTensionSums[sec] || 0) / n).toFixed(3)),
+          avgDensity: Number(((sectionDensitySums[sec] || 0) / n).toFixed(3)),
+          avgPlayProb: Number(((sectionPlayProbSums[sec] || 0) / n).toFixed(3)),
+          dominantRegime: dominant ? dominant[0] : 'unknown',
+          regimeDistribution: regimes
+        };
+      });
+    })(),
     couplingAbs: couplingSummary,
     couplingLabels: lastCouplingLabels,
+    // R26 E2: Aggregate coupling labels from whole-run correlation, not terminal snapshot
+    aggregateCouplingLabels: (() => {
+      var LABEL_MAP = {
+        'density-tension': ['+', 'tension-drives-density', '-', 'tension-suppresses-density'],
+        'density-flicker': ['+', 'rhythmic-shimmer', '-', 'stability-amid-density'],
+        'density-entropy': ['+', 'chaotic-proliferation', '-', 'ordered-density'],
+        'tension-flicker': ['+', 'agitated-tension', '-', 'smooth-tension'],
+        'tension-entropy': ['+', 'entropy-amplifies-tension', '-', 'entropy-dampens-tension'],
+        'flicker-entropy': ['+', 'rhythmic-chaos', '-', 'rhythmic-order'],
+        'density-phase': ['+', 'phase-aligned-density', '-', 'phase-opposed-density'],
+        'tension-phase': ['+', 'phase-aligned-tension', '-', 'phase-opposed-tension'],
+        'flicker-phase': ['+', 'phase-aligned-flicker', '-', 'phase-opposed-flicker']
+      };
+      var AGG_THRESHOLD = 0.20;
+      var labels = {};
+      var corrKeys = Object.keys(couplingCorrelation);
+      for (var ci = 0; ci < corrKeys.length; ci++) {
+        var k = corrKeys[ci];
+        var corr = couplingCorrelation[k];
+        if (!corr || !LABEL_MAP[k]) continue;
+        if (Math.abs(corr.meanSigned) >= AGG_THRESHOLD) {
+          labels[k] = corr.meanSigned > 0 ? LABEL_MAP[k][1] : LABEL_MAP[k][3];
+        }
+      }
+      return labels;
+    })(),
     couplingTail,
     couplingHotspots,
     couplingCorrelation,

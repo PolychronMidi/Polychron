@@ -39,6 +39,7 @@ const COMPOSITION = {
 
 const POST_COMPOSITION = [
   { label: 'trace-summary',            cmd: 'node scripts/pipeline/trace-summary.js' },
+  { label: 'trace-replay',             cmd: 'node scripts/trace-replay.js --stats --json' },
   { label: 'check-manifest-health',    cmd: 'node scripts/pipeline/check-manifest-health.js' },
   { label: 'generate-dependency-graph', cmd: 'node scripts/pipeline/generate-dependency-graph.js' },
   { label: 'generate-conductor-map',   cmd: 'node scripts/pipeline/generate-conductor-map.js' },

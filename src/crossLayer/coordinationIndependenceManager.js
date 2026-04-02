@@ -23,6 +23,11 @@ coordinationIndependenceManager = (() => {
 
   const TICK_INTERVAL = 4;
   const MIN_DWELL_BEATS = 12;
+  // R26 E4: Per-pair stagger breaks simultaneous adjustment/evaluation so
+  // effectiveness tracks per-pair health attribution, not shared global delta.
+  // R26 listen: stagger=2 over-delayed high-index pairs (32 beat dwell for pair 10),
+  // blocking coherent formation. Reduced to 1 (max dwell 22, 10 beat spread).
+  const PAIR_DWELL_STAGGER = 1;
   const SELF_INTERFERENCE_WINDOW = 3;
   const EFFECTIVENESS_ALPHA = 0.06;
   const DIAL_STEP = 0.08;
@@ -176,9 +181,10 @@ coordinationIndependenceManager = (() => {
     }
 
     // Normal operation: compute targets and ease dials toward them
+    // R26 E4: staggered dwell per pair for temporal separation
     for (let i = 0; i < MODULE_PAIRS.length; i++) {
       const pair = MODULE_PAIRS[i];
-      if (beatsSinceChange[pair] < MIN_DWELL_BEATS) continue;
+      if (beatsSinceChange[pair] < MIN_DWELL_BEATS + i * PAIR_DWELL_STAGGER) continue;
 
       const target = computeTarget(pair, sigs);
       dialTargets[pair] = target;
@@ -197,9 +203,11 @@ coordinationIndependenceManager = (() => {
     }
 
     // Track effectiveness: did health improve since last change?
+    // R26 E4: evaluation window staggered per pair to isolate health attribution
     for (let i = 0; i < MODULE_PAIRS.length; i++) {
       const pair = MODULE_PAIRS[i];
-      if (beatsSinceChange[pair] > SELF_INTERFERENCE_WINDOW && beatsSinceChange[pair] < SELF_INTERFERENCE_WINDOW + 8) {
+      const evalStart = SELF_INTERFERENCE_WINDOW + i * PAIR_DWELL_STAGGER;
+      if (beatsSinceChange[pair] > evalStart && beatsSinceChange[pair] < evalStart + 8) {
         const improved = healthEma > healthAtLastChange[pair];
         const outcome = improved ? 0.7 : 0.3;
         effectiveness[pair] += (outcome - effectiveness[pair]) * EFFECTIVENESS_ALPHA;
