@@ -172,7 +172,7 @@ densityWaveAnalyzer = (() => {
   conductorIntelligence.registerFlickerModifier('densityWaveAnalyzer', () => densityWaveAnalyzer.getFlickerModifier(), 0.9, 1.2);
   conductorIntelligence.registerTensionBias('densityWaveAnalyzer', () => densityWaveAnalyzer.getTensionBias(), 1.0, 1.06);
   conductorIntelligence.registerDensityBias('densityWaveAnalyzer', () => densityWaveAnalyzer.getDensityBias(), 0.97, 1.06);
-  conductorIntelligence.registerRecorder('densityWaveAnalyzer', (ctx) => { densityWaveAnalyzer.recordDensity(ctx.currentDensity, ctx.absTime); });
+  conductorIntelligence.registerRecorder('densityWaveAnalyzer', (ctx) => { if (ctx.layer === 'L2') return; densityWaveAnalyzer.recordDensity(ctx.currentDensity, ctx.absTime); });
   conductorIntelligence.registerModule('densityWaveAnalyzer', { reset }, ['section']);
 
   return {

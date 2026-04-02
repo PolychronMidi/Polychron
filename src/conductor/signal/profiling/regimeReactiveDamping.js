@@ -105,7 +105,8 @@ regimeReactiveDamping = (() => {
   const _DENSITY_VAR_TARGET_LOW = 0.009;
   const _DENSITY_VAR_TARGET_HIGH = 0.014;
 
-  function refresh() {
+  function refresh(ctx) {
+    if (ctx && ctx.layer === 'L2') return;
     const snap = systemDynamicsProfiler.getSnapshot();
     const dynamicSnap = /** @type {any} */ (snap);
     currentRegime = snap ? snap.regime : 'evolving';
@@ -237,7 +238,7 @@ regimeReactiveDamping = (() => {
       ? 1.4
       : 1.0;
     const exploringDurationPressure = currentRegime === 'exploring'
-      ? clamp((regimeReactiveDampingExploringBeats - 100) * 0.0003 * exploringPhaseScale, 0, 0.06) : 0;
+      ? clamp((regimeReactiveDampingExploringBeats - 60) * 0.0004 * exploringPhaseScale, 0, 0.08) : 0;
     const exploringBiasBrake = currentRegime === 'exploring'
       ? clamp(trustSharePressure * 0.04 + densityTrustPressure * 0.015 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05 + exploringDurationPressure, 0, 0.18)
       : 0;

@@ -173,6 +173,7 @@ StutterManager = class StutterManager {
       variant: variantName || 'default',
       profile: provided.profile,
       channel: provided.channel,
+      layer: (LM && LM.activeLayer) ? LM.activeLayer : 'L1',
       intensity: clamp(V.requireFinite(provided.velocity, 'provided.velocity') / MIDI_MAX_VALUE, 0, 1),
       timeInSeconds: V.requireFinite(provided.on, 'provided.on')
     });

@@ -195,7 +195,7 @@ dynamicRangeTracker = (() => {
   conductorIntelligence.registerFlickerModifier('dynamicRangeTracker:contrast', () => dynamicRangeTracker.getContrastFlickerModifier(), 0.88, 1.25);
   conductorIntelligence.registerDensityBias('dynamicRangeTracker', () => dynamicRangeTracker.getDensityBias(), 0.95, 1.10);
   conductorIntelligence.registerTensionBias('dynamicRangeTracker', () => dynamicRangeTracker.getTensionBias(), 0.95, 1.10);
-  conductorIntelligence.registerRecorder('dynamicRangeTracker', (ctx) => { dynamicRangeTracker.recordExtremes(ctx.absTime); });
+  conductorIntelligence.registerRecorder('dynamicRangeTracker', (ctx) => { if (ctx.layer === 'L2') return; dynamicRangeTracker.recordExtremes(ctx.absTime); });
   conductorIntelligence.registerModule('dynamicRangeTracker', { reset }, ['section']);
 
   return {

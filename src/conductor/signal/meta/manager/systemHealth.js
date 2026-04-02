@@ -100,7 +100,9 @@ hyperMetaManagerHealth = (() => {
       ST.controllerStats[name] = { effectivenessEma: 0.5, interventionCount: 0, lastContribution: 0 };
     }
     const stats = ST.controllerStats[name];
-    stats.effectivenessEma += (clamp(contribution + 0.5, 0, 1) - stats.effectivenessEma) * C.EFFECTIVENESS_EMA_ALPHA;
+    // Effectiveness-weighted convergence: proven controllers adapt faster
+    const effAlpha = C.EFFECTIVENESS_EMA_ALPHA * (0.6 + stats.effectivenessEma * 0.8);
+    stats.effectivenessEma += (clamp(contribution + 0.5, 0, 1) - stats.effectivenessEma) * clamp(effAlpha, 0.02, 0.12);
     stats.interventionCount++;
     stats.lastContribution = contribution;
   }

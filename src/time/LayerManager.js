@@ -95,6 +95,8 @@ class LayerManager {
     LayerManager.activeLayer = name;
     // Restore per-layer flipBin
     flipBin = LayerManager.flipBinByLayer[name] !== undefined ? LayerManager.flipBinByLayer[name] : false;
+    // Decorrelate PRNG between layers to break systematic sequence coupling
+    if (name === 'L2') { for (let _rng = 0; _rng < 17; _rng++) m.random(); }
     loadLayerToGlobals(layer);
     const globalComposer = composer ? composer : null;
     const layerComposer = (LayerManager.layerComposers[name] && typeof LayerManager.layerComposers[name] === 'object')

@@ -80,6 +80,16 @@ grandFinale = () => {
     };
     fs.writeFileSync('metrics/runtime-snapshots.json', JSON.stringify(runtimeSnap, null, 2));
     console.log('Wrote file: metrics/runtime-snapshots.json');
+    // Cross-run adaptive state: save terminal EMA values for next boot warm-start
+    const adaptiveState = {
+      healthEma: safePreBoot.call(() => hyperMetaManager.getSnapshot().healthEma, 0.7),
+      exceedanceTrendEma: safePreBoot.call(() => hyperMetaManager.getSnapshot().exceedanceTrendEma, 0),
+      coherentShareEma: safePreBoot.call(() => hyperMetaManager.getSnapshot().coherentShareEma, 0.285),
+      systemPhase: safePreBoot.call(() => hyperMetaManager.getSnapshot().systemPhase, 'converging'),
+      savedAt: new Date().toISOString()
+    };
+    fs.writeFileSync('metrics/adaptive-state.json', JSON.stringify(adaptiveState, null, 2));
+    console.log('Wrote file: metrics/adaptive-state.json');
   } catch (e) {
     throw new Error('grandFinale: failed to write l0-dump.json: ' + e.message);
   }

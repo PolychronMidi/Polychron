@@ -169,11 +169,11 @@ sectionIntentCurves = (() => {
     // SHOULD decline. During development/climax, strengthens it.
     const tensionSlope = sectionMemory.getTensionTrajectory();
     const phaseIntentGate = currentPhase === 'resolution' || currentPhase === 'conclusion' || currentPhase === 'coda'
-      ? 0.2
+      ? 0.4
       : currentPhase === 'climax' ? 1.5
       : currentPhase === 'development' ? 1.2
       : 1.0;
-    const trajectoryCorrection = tensionSlope < -0.05 ? clamp(-tensionSlope * 0.15 * phaseIntentGate, 0, 0.10) : 0;
+    const trajectoryCorrection = tensionSlope < -0.04 ? clamp(-tensionSlope * 0.20 * phaseIntentGate, 0, 0.12) : 0;
 
     const dissonanceTarget = clamp(
       DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection + gravityBoost * 0.7

@@ -39,11 +39,21 @@ hyperMetaManagerState = (() => {
   const PHASE_STALE_THRESHOLD  = 0.15;
   const MAX_CONTRADICTIONS     = 20;
 
-  // SYSTEM STATE (scalar)
+  // Cross-run warm-start: load previous run's terminal adaptive state
+  let warmStartState = null;
+  try {
+    const fs = require('fs');
+    const statePath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    if (fs.existsSync(statePath)) {
+      warmStartState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    }
+  } catch (warmErr) { void warmErr; }
+
+  // SYSTEM STATE (scalar) - warm-started from previous run when available
   const S = {
     beatCount:             0,
-    healthEma:             0.7,
-    exceedanceTrendEma:    0,
+    healthEma:             (warmStartState && Number.isFinite(warmStartState.healthEma)) ? clamp(warmStartState.healthEma, 0.4, 0.9) : 0.7,
+    exceedanceTrendEma:    (warmStartState && Number.isFinite(warmStartState.exceedanceTrendEma)) ? clamp(warmStartState.exceedanceTrendEma, 0, 0.5) : 0,
     phaseTrendEma:         0.1667,
     energyBalanceEma:      0.5,
     totalInterventionEma:  0,
@@ -91,6 +101,8 @@ hyperMetaManagerState = (() => {
     fastExceedanceEma:     0,
     // Normalized fast EMA signal on slow EMA scale (computed once per tick)
     fastExcNormalized:     0,
+    // Regime-adaptive alpha: spikes on regime transitions for fast reconvergence
+    regimeTransitionAlphaBoost: 1.0,
   };
 
   // COLLECTION STATE

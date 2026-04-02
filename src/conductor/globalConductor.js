@@ -129,7 +129,8 @@ globalConductor = (() => {
       absTime,
       compositeIntensity,
       currentDensity: safeCurrentDensity,
-      harmonicRhythm
+      harmonicRhythm,
+      layer: (LM && LM.activeLayer) ? LM.activeLayer : 'L1'
     });
 
     // 4. Collect density bias from registry (attributed for signal decomposition)

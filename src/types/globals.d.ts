@@ -37,6 +37,7 @@ interface RecorderContext {
   compositeIntensity: number;
   currentDensity: number;
   harmonicRhythm: number;
+  layer: string;
 }
 
 interface SignalSnapshot {
@@ -1925,6 +1926,8 @@ declare var hyperMetaManagerContradictions: { updateRateMultipliers(state: any):
 declare var hyperMetaManagerTopology: { update(state: any): void };
 declare var hyperMetaManagerTelemetry: { updateReconciliation(state: any): void; applyTrustVelocityDamping(state: any): void; checkPhaseTelemetryIntegrity(state: any): void };
 declare var correlationShuffler: { tick(): void; getShuffleScale(loopName: string): number; getSnapshot(): any; reset(): void };
+declare var reconvergenceAccelerator: { recordInput(value: number): void; getAlphaMultiplier(): number; isAccelerating(): boolean; reset(): void };
+declare var musicalTimeWindows: { beatsForSeconds(seconds: number): number; ticksForSeconds(seconds: number): number };
 declare var hyperMetaManager: { getRateMultiplier(key: string): number; getPhaseBoostCeiling(): number; getP95AlphaMultiplier(): number; getS0TighteningMultiplier(): number; getSystemPhase(): 'converging' | 'oscillating' | 'stabilized'; getVarianceGateRelaxMultiplier(): number; getTopologyCreativityMultiplier(): number; getTopologyPhase(): 'crystallized' | 'resonant' | 'fluid'; getCrossState(): 'emergence' | 'locked' | 'seeking' | 'dampened'; recordExceedance(pair: string): void; getAxisConcentration(): { axisExceedance: Record<string, number>; concentration: number; dominantAxis: string }; getSnapshot(): any; reset(): void };
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 declare var coordinationIndependenceManager: { tick(): void; getDial(pair: string): number; getSnapshot(): any; reset(): void };

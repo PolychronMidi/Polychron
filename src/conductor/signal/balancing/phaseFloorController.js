@@ -186,8 +186,10 @@ phaseFloorController = (() => {
     return share < getExtremeCollapseShare() && phaseLowShareStreak > getExtremeCollapseStreak();
   }
 
-  // TICK: called each beat via conductor recorder
-  function tick() {
+  // TICK: called each beat via conductor recorder. Only tick on L1 to prevent
+  // double-counting from asymmetric layer beat counts.
+  function tick(ctx) {
+    if (ctx && ctx.layer === 'L2') return;
     phaseFloorControllerBeatCount++;
 
     const energyData = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);

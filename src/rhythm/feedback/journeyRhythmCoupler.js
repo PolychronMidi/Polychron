@@ -4,6 +4,9 @@
 journeyRhythmCoupler = (() => {
   const V = validator.create('journeyRhythmCoupler');
 
+  // Per-layer boldness prevents L1's journey energy from contaminating L2's rhythm bias
+  const boldnessByLayer = { L1: 0, L2: 0 };
+  const externalBiasByLayer = { L1: 1, L2: 1 };
   let journeyRhythmCouplerBoldness = 0;
   let journeyRhythmCouplerExternalBias = 1;
   const journeyRhythmCouplerDecayRate = 0.85;
@@ -45,6 +48,8 @@ journeyRhythmCoupler = (() => {
       V.assertNonEmptyString(data.move, 'journey-move.move');
       const move = data.move;
       journeyRhythmCouplerBoldness = moveToBoldness(distance, move);
+      const evtLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+      boldnessByLayer[evtLayer] = journeyRhythmCouplerBoldness;
     });
 
     crossLayerRegistry.register('journeyRhythmCoupler', { reset: resetSection }, ['section']);
@@ -56,13 +61,18 @@ journeyRhythmCoupler = (() => {
    * @returns {number}
    */
   function getBoldness() {
-    return clamp(journeyRhythmCouplerBoldness * journeyRhythmCouplerExternalBias, 0, 1);
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    const b = boldnessByLayer[layer] !== undefined ? boldnessByLayer[layer] : journeyRhythmCouplerBoldness;
+    const e = externalBiasByLayer[layer] !== undefined ? externalBiasByLayer[layer] : journeyRhythmCouplerExternalBias;
+    return clamp(b * e, 0, 1);
   }
 
   function setExternalBias(value) {
     const num = Number(value);
     V.requireFinite(num, 'num');
     journeyRhythmCouplerExternalBias = clamp(num, 0.5, 1.5);
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    externalBiasByLayer[layer] = journeyRhythmCouplerExternalBias;
   }
 
   /**
@@ -112,6 +122,8 @@ journeyRhythmCoupler = (() => {
    */
   function decay() {
     journeyRhythmCouplerBoldness *= journeyRhythmCouplerDecayRate;
+    const decayLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    boldnessByLayer[decayLayer] = journeyRhythmCouplerBoldness;
   }
 
   /**

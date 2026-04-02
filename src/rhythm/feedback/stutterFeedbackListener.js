@@ -30,7 +30,10 @@ stutterFeedbackListener = (() => {
       onInput(data, contribution) {
         const profile = data.profile;
         V.assertNonEmptyString(profile, 'profile');
-        if (profile && perProfile[profile] !== undefined) {
+        // Per-layer accumulation: only update if event layer matches active layer
+        const eventLayer = data.layer || 'L1';
+        const currentLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+        if (eventLayer === currentLayer && profile && perProfile[profile] !== undefined) {
           perProfile[profile] = perProfile[profile] * decayRate + contribution * (1 - decayRate);
         }
       },

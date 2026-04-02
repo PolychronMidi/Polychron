@@ -174,7 +174,7 @@ energyMomentumTracker = (() => {
 
   conductorIntelligence.registerDensityBias('energyMomentumTracker', () => energyMomentumTracker.getDensityNudge(), 0.9, 1.3);
   conductorIntelligence.registerTensionBias('energyMomentumTracker', () => energyMomentumTracker.getTensionNudge(), 0.95, 1.15);
-  conductorIntelligence.registerRecorder('energyMomentumTracker', (ctx) => { energyMomentumTracker.recordEnergy(ctx.compositeIntensity, ctx.absTime); });
+  conductorIntelligence.registerRecorder('energyMomentumTracker', (ctx) => { if (ctx.layer === 'L2') return; energyMomentumTracker.recordEnergy(ctx.compositeIntensity, ctx.absTime); });
   conductorIntelligence.registerModule('energyMomentumTracker', { reset }, ['section']);
 
   return {

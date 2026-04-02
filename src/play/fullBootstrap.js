@@ -658,6 +658,8 @@ fullBootstrap = (() => {
     'hyperMetaManagerTopology',
     'hyperMetaManagerTelemetry',
     'correlationShuffler',
+    'reconvergenceAccelerator',
+    'musicalTimeWindows',
     'hyperMetaManager',
     'conductorSignalBridge',
     'coordinationIndependenceManager',
