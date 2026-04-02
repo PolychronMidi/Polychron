@@ -190,7 +190,7 @@ systemDynamicsProfilerAnalysis = (() => {
       couplingMatrix: coupling.matrix,
       couplingLabels: (() => {
         const labels = {};
-        const LABEL_THRESHOLD = 0.5;
+        const LABEL_THRESHOLD = 0.35; // lowered from 0.5: homeostasis success keeps correlations moderate, not extreme
         const LABEL_MAP = {
           'density-tension': ['+', 'tension-drives-density', '-', 'tension-suppresses-density'],
           'density-flicker': ['+', 'rhythmic-shimmer', '-', 'stability-amid-density'],
