@@ -10,7 +10,8 @@ conductorRecorderRegistry = (() => {
    *   absTime: number,
    *   compositeIntensity: number,
    *   currentDensity: number,
-   *   harmonicRhythm: number
+   *   harmonicRhythm: number,
+   *   layer: string
    * }} RecorderContext
    */
   /** @type {Array<{ name: string, fn: (ctx: RecorderContext) => void }>} */
@@ -40,7 +41,12 @@ conductorRecorderRegistry = (() => {
    * @param {RecorderContext} ctx
    */
   function runRecorders(ctx) {
+    // L2 pass only runs conductorSignalBridge (needs per-layer refresh).
+    // All other recorders skip L2 to prevent double-counting from
+    // polyrhythmic layer asymmetry.
+    const l2Only = ctx && ctx.layer === 'L2';
     for (let i = 0; i < recorders.length; i++) {
+      if (l2Only && recorders[i].name !== 'conductorSignalBridge') continue;
       recorders[i].fn(ctx);
     }
   }

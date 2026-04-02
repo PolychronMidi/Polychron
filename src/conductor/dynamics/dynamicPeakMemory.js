@@ -116,7 +116,7 @@ dynamicPeakMemory = (() => {
   // R10 E1: Widened registration range from (0.9, 1.1) to (0.85, 1.15)
   // to match the expanded bias values (0.88-1.12).
   conductorIntelligence.registerTensionBias('dynamicPeakMemory', () => dynamicPeakMemory.getTensionBias(), 0.85, 1.15);
-  conductorIntelligence.registerRecorder('dynamicPeakMemory', (ctx) => { dynamicPeakMemory.recordIntensity(ctx.compositeIntensity, ctx.absTime); });
+  conductorIntelligence.registerRecorder('dynamicPeakMemory', (ctx) => { if (ctx.layer === 'L2') return; dynamicPeakMemory.recordIntensity(ctx.compositeIntensity, ctx.absTime); });
   conductorIntelligence.registerStateProvider('dynamicPeakMemory', () => {
     const s = dynamicPeakMemory.getPeakSignal();
     return { dynamicPeakRecency: s ? s.peakRecency : 'none' };

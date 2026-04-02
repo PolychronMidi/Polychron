@@ -44,12 +44,15 @@ function playNotesEmitPickBuildChannelPools(flip) {
   };
 }
 
+let playNotesEmitPickChCacheLayer = '';
 function playNotesEmitPickRefreshChannelCache() {
   const key = beatStartTime;
   const flip = flipBin;
-  if (playNotesEmitPickChCacheBeat === key && playNotesEmitPickChCacheFlip === flip) return;
+  const layer = (LM && LM.activeLayer) ? LM.activeLayer : '';
+  if (playNotesEmitPickChCacheBeat === key && playNotesEmitPickChCacheFlip === flip && playNotesEmitPickChCacheLayer === layer) return;
   playNotesEmitPickChCacheBeat = key;
   playNotesEmitPickChCacheFlip = flip;
+  playNotesEmitPickChCacheLayer = layer;
   const cachedPools = flip
     ? (playNotesEmitPickChannelPoolsTrue || (playNotesEmitPickChannelPoolsTrue = playNotesEmitPickBuildChannelPools(true)))
     : (playNotesEmitPickChannelPoolsFalse || (playNotesEmitPickChannelPoolsFalse = playNotesEmitPickBuildChannelPools(false)));

@@ -32,3 +32,4 @@ require('./trustSystems');
 require('./safePreBoot');
 
 require('./formatTime');
+require('./musicalTimeWindows');

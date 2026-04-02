@@ -34,7 +34,8 @@ hyperMetaManager = (() => {
 
   // MAIN ORCHESTRATION TICK
 
-  function tick() {
+  function tick(ctx) {
+    if (ctx && ctx.layer === 'L2') return;
     S.beatCount++;
 
     // Fast EMA: runs every beat, not just on orchestration ticks.
@@ -54,16 +55,28 @@ hyperMetaManager = (() => {
     const healthBefore = S.healthEma;
     const state = health.gatherControllerState();
 
-    // 1. System health
+    // 1. System health (with reconvergence acceleration on structural shifts)
     const rawHealth = health.computeSystemHealth(state);
-    S.healthEma += (rawHealth - S.healthEma) * ST.HEALTH_EMA_ALPHA;
+    reconvergenceAccelerator.recordInput(rawHealth);
+    const healthAlpha = ST.HEALTH_EMA_ALPHA * reconvergenceAccelerator.getAlphaMultiplier();
+    S.healthEma += (rawHealth - S.healthEma) * clamp(healthAlpha, ST.HEALTH_EMA_ALPHA, 0.4);
 
-    // 2. Exceedance trend
+    // Regime-adaptive alpha: spike on regime transitions to snap to new operating point
+    const regimeForAlpha = state.profiler ? state.profiler.regime : null;
+    if (regimeForAlpha && S.lastRegime && regimeForAlpha !== S.lastRegime) {
+      S.regimeTransitionAlphaBoost = 3.0;
+    }
+    S.lastRegime = regimeForAlpha || S.lastRegime;
+    if (S.regimeTransitionAlphaBoost > 1.0) S.regimeTransitionAlphaBoost *= 0.88;
+    if (S.regimeTransitionAlphaBoost < 1.05) S.regimeTransitionAlphaBoost = 1.0;
+
+    // 2. Exceedance trend (with regime-adaptive alpha)
+    const adaptiveAlpha = ST.HEALTH_EMA_ALPHA * clamp(S.regimeTransitionAlphaBoost, 1.0, 3.0);
     if (state.pairCeiling) {
       const pairs = Object.keys(state.pairCeiling);
       let total = 0;
       for (let i = 0; i < pairs.length; i++) total += state.pairCeiling[pairs[i]].exceedanceEma;
-      S.exceedanceTrendEma += (total - S.exceedanceTrendEma) * ST.HEALTH_EMA_ALPHA;
+      S.exceedanceTrendEma += (total - S.exceedanceTrendEma) * adaptiveAlpha;
     }
 
     // 3. Phase health trend

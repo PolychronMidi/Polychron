@@ -102,7 +102,7 @@ systemDynamicsProfiler = (() => {
   }
 
   // -- Self-register --
-  conductorIntelligence.registerRecorder('systemDynamicsProfiler', () => { systemDynamicsProfiler.analyze('measure-recorder'); });
+  conductorIntelligence.registerRecorder('systemDynamicsProfiler', (ctx) => { if (ctx && ctx.layer === 'L2') return; systemDynamicsProfiler.analyze('measure-recorder'); });
   conductorIntelligence.registerStateProvider('systemDynamicsProfiler', () => ({
     dynamicsRegime: systemDynamicsProfilerState.lastSnapshot.regime,
     dynamicsGrade: systemDynamicsProfilerState.lastSnapshot.grade,

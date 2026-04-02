@@ -1,11 +1,12 @@
-﻿emissionFeedbackListener = (() => {
+emissionFeedbackListener = (() => {
   const V = validator.create('emissionFeedbackListener');
 
   let initialized = false;
-  let ratio = 1;
+  // Per-layer emission tracking prevents L1's emission ratio from biasing L2
+  const ratioByLayer = { L1: 1, L2: 1 };
+  const lastActualByLayer = { L1: 0, L2: 0 };
+  const lastIntendedByLayer = { L1: 0, L2: 0 };
   const decayRate = 0.85;
-  let lastActual = 0;
-  let lastIntended = 0;
 
   function initialize() {
     if (initialized) return;
@@ -20,11 +21,12 @@
         throw new Error('emissionFeedbackListener: actual/intended must be non-negative numbers');
       }
 
+      const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
       const safeIntended = m.max(1, intended);
       const currentRatio = clamp(actual / safeIntended, 0, 2);
-      ratio = clamp(ratio * decayRate + currentRatio * (1 - decayRate), 0, 2);
-      lastActual = actual;
-      lastIntended = intended;
+      ratioByLayer[layer] = clamp(ratioByLayer[layer] * decayRate + currentRatio * (1 - decayRate), 0, 2);
+      lastActualByLayer[layer] = actual;
+      lastIntendedByLayer[layer] = intended;
     });
 
     crossLayerRegistry.register('emissionFeedbackListener', { reset: resetSection }, ['section']);
@@ -32,31 +34,34 @@
   }
 
   function getEmissionRatio() {
-    return clamp(ratio, 0, 2);
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    return clamp(ratioByLayer[layer], 0, 2);
   }
 
   function getEmissionGap() {
-    return clamp(1 - ratio, -1, 1);
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    return clamp(1 - ratioByLayer[layer], -1, 1);
   }
 
   function getMetrics() {
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
     return {
-      ratio: clamp(ratio, 0, 2),
-      lastActual,
-      lastIntended
+      ratio: clamp(ratioByLayer[layer], 0, 2),
+      lastActual: lastActualByLayer[layer],
+      lastIntended: lastIntendedByLayer[layer]
     };
   }
 
   function resetSection() {
-    ratio = 1;
-    lastActual = 0;
-    lastIntended = 0;
+    ratioByLayer.L1 = 1; ratioByLayer.L2 = 1;
+    lastActualByLayer.L1 = 0; lastActualByLayer.L2 = 0;
+    lastIntendedByLayer.L1 = 0; lastIntendedByLayer.L2 = 0;
   }
 
   function reset() {
-    ratio = 1;
-    lastActual = 0;
-    lastIntended = 0;
+    ratioByLayer.L1 = 1; ratioByLayer.L2 = 1;
+    lastActualByLayer.L1 = 0; lastActualByLayer.L2 = 0;
+    lastIntendedByLayer.L1 = 0; lastIntendedByLayer.L2 = 0;
   }
 
   moduleLifecycle.registerInitializer('emissionFeedbackListener', initialize);

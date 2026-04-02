@@ -63,7 +63,8 @@ criticalityEngine = (() => {
     return d * d + t * t + f * f;
   }
 
-  function refresh() {
+  function refresh(ctx) {
+    if (ctx && ctx.layer === 'L2') return;
     totalBeats++;
     const e = criticalityEngineEnergy();
     energyBuffer.push(e);

@@ -8,6 +8,8 @@ crossLayerDynamicEnvelope = (() => {
 
   /** @type {'parallel' | 'complementary' | 'independent'} */
   let arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
+  // Per-layer arc type prevents L1's selection from contaminating L2
+  const arcTypeByLayer = { L1: /** @type {string} */ ('parallel'), L2: /** @type {string} */ ('parallel') };
   let phraseProgress = 0;
   let sectionProgress = 0;
   const SMOOTHING = 0.2;
@@ -102,10 +104,15 @@ crossLayerDynamicEnvelope = (() => {
       throw new Error('crossLayerDynamicEnvelope.setArcType: invalid type "' + type + '"');
     }
     arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (type);
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    arcTypeByLayer[layer] = type;
   }
 
   /** @returns {'parallel' | 'complementary' | 'independent'} */
-  function getArcType() { return arcType; }
+  function getArcType() {
+    const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    return /** @type {'parallel' | 'complementary' | 'independent'} */ (arcTypeByLayer[layer] || arcType);
+  }
 
   /**
    * Auto-select arc type based on intent, section position, and regime.
@@ -156,6 +163,8 @@ crossLayerDynamicEnvelope = (() => {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('independent');
       }
     }
+    const autoLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
+    arcTypeByLayer[autoLayer] = arcType;
   }
 
   function reset() {

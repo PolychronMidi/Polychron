@@ -80,7 +80,8 @@ hyperMetaManagerContradictions = (() => {
     const names = Object.keys(ST.controllerStats);
     for (let i = 0; i < names.length; i++) {
       const stats = ST.controllerStats[names[i]];
-      ST.rateMultipliers[names[i]] = globalMultiplier + clamp(stats.effectivenessEma * 0.3, 0, 0.15);
+      // Effectiveness-weighted authority: proven controllers get more influence
+      ST.rateMultipliers[names[i]] = globalMultiplier + clamp(stats.effectivenessEma * 0.5, 0, 0.25);
     }
   }
 

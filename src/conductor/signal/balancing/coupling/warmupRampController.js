@@ -117,7 +117,8 @@ warmupRampController = (() => {
     return minC + (maxC - minC) * tCurve;
   }
 
-  function tick() {
+  function tick(ctx) {
+    if (ctx && ctx.layer === 'L2') return;
     warmupRampControllerBeatCount++;
     warmupRampControllerCurrentSectionBeats++;
   }

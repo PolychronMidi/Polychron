@@ -149,7 +149,7 @@ dynamicArchitectPlanner = (() => {
   }
 
   conductorIntelligence.registerTensionBias('dynamicArchitectPlanner', () => dynamicArchitectPlanner.getTensionBias(), 0.9, 1.15);
-  conductorIntelligence.registerRecorder('dynamicArchitectPlanner', (ctx) => { dynamicArchitectPlanner.recordIntensity(ctx.compositeIntensity, ctx.absTime); });
+  conductorIntelligence.registerRecorder('dynamicArchitectPlanner', (ctx) => { if (ctx.layer === 'L2') return; dynamicArchitectPlanner.recordIntensity(ctx.compositeIntensity, ctx.absTime); });
   conductorIntelligence.registerStateProvider('dynamicArchitectPlanner', () => {
     const s = dynamicArchitectPlanner.getDynamicPlanSignal();
     return { dynamicPlanMacroPosition: s ? s.macroPosition : 0 };
