@@ -1,4 +1,4 @@
-﻿// stutterConfig.js - config storage and validation
+// stutterConfig.js - config storage and validation
 
 const V = validator.create('stutterConfig');
 

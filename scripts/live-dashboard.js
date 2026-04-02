@@ -1,5 +1,5 @@
 // scripts/live-dashboard.js
-// Real-time composition dashboard — WebSocket server that streams
+// Real-time composition dashboard -- WebSocket server that streams
 // telemetry from trace.jsonl as it is written, plus a static HTML page.
 //
 // Usage:
@@ -32,7 +32,7 @@ function parsePort() {
 }
 
 // -Minimal WebSocket handshake (RFC 6455) -
-// No external dependencies — just raw sockets.
+// No external dependencies -- just raw sockets.
 
 const crypto = require('crypto');
 
@@ -96,7 +96,7 @@ function startTailing(clients) {
 
     const stat = fs.statSync(TRACE_FILE);
     if (stat.size <= offset) {
-      // File was truncated (new run) — reset
+      // File was truncated (new run) -- reset
       offset = 0;
       buffer = '';
       broadcast(clients, { type: 'reset' });

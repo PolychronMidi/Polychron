@@ -29,7 +29,7 @@ if (exists[0] && !exists[1]) {
   process.exit(0);
 }
 
-// Both exist — compare
+// Both exist -- compare
 const content0 = fs.readFileSync(files[0], 'utf8');
 const content1 = fs.readFileSync(files[1], 'utf8');
 
@@ -38,7 +38,7 @@ if (content0 === content1) {
   process.exit(0);
 }
 
-// Different — newer wins
+// Different -- newer wins
 const mtime0 = fs.statSync(files[0]).mtimeMs;
 const mtime1 = fs.statSync(files[1]).mtimeMs;
 

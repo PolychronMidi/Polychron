@@ -1,4 +1,4 @@
-﻿// src/conductor/harmonicRhythmDensityRatio.js - Ratio of harmonic change rate to onset rate.
+// src/conductor/harmonicRhythmDensityRatio.js - Ratio of harmonic change rate to onset rate.
 // Detects imbalance: fast harmony + sparse notes, or slow harmony + dense notes.
 // Pure query API - corrects density when harmonic and melodic activity diverge.
 

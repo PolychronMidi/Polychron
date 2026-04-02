@@ -1,4 +1,4 @@
-﻿// src/conductor/structuralFormTracker.js - Section-level form map.
+// src/conductor/structuralFormTracker.js - Section-level form map.
 // Tracks which families, keys, energy levels appeared in each section.
 // Detects ABA returns, through-composed drift, or lack of recapitulation.
 // Pure query API - advises family/key selection for structural callbacks.

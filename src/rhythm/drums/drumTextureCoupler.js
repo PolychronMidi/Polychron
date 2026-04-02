@@ -1,4 +1,4 @@
-﻿// src/rhythm/drumTextureCoupler.js - eventBus listener coupling texture contrast events to drum accenting
+// src/rhythm/drumTextureCoupler.js - eventBus listener coupling texture contrast events to drum accenting
 // When textureBlender fires chord bursts or flurries, this listener accumulates
 // intensity and exposes it so drum patterns can accent in sympathy.
 

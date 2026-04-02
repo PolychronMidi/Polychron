@@ -1,4 +1,4 @@
-﻿// src/conductor/layerEntryExitTracker.js - Layer entry/exit orchestration tracker.
+// src/conductor/layerEntryExitTracker.js - Layer entry/exit orchestration tracker.
 // Detects when polyrhythmic layers enter or exit activity (additive vs.
 // subtractive orchestration). Signals orchestration momentum direction.
 // Pure query API - consumed via conductorState.

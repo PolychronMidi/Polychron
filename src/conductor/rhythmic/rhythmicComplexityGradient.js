@@ -1,4 +1,4 @@
-﻿// src/conductor/rhythmicComplexityGradient.js - Tracks rhythmic subdivision complexity over time.
+// src/conductor/rhythmicComplexityGradient.js - Tracks rhythmic subdivision complexity over time.
 // Detects whether the piece is building toward denser subdivisions or simplifying.
 // Pure query API - advises rhythm pattern tier selection and subdivision depth bias.
 

@@ -1,4 +1,4 @@
-﻿// src/conductor/melodic/index.js - Pitch, intervals, contour, register, voice leading
+// src/conductor/melodic/index.js - Pitch, intervals, contour, register, voice leading
 require('./ambitusMigrationTracker');
 require('./counterpointMotionTracker');
 require('./intervalBalanceTracker');

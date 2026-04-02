@@ -104,7 +104,7 @@ dynamicRoleSwap = (() => {
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
     const imbalancePressure = clamp((recentL2Count - recentL1Count - SWAPPED_L2_IMBALANCE_OFFSET) / SWAPPED_L2_IMBALANCE_RANGE, 0, 1) * (1 - lowPhasePressure * 0.65);
     return {
-      densityScale: 1.4 - imbalancePressure * SWAPPED_L2_MAX_RELIEF,
+      densityScale: 1.2 - imbalancePressure * SWAPPED_L2_MAX_RELIEF, // R19: 1.4 created 40% density surge driving density-phase exceedance; 1.2 = 20% boost max
       chordalBias: -0.2,
       melodicBias: 0.3 - imbalancePressure * 0.08,
       isSwapped: true

@@ -1,4 +1,4 @@
-﻿// src/conductor/melodic/intervalBalanceTracker.js - Unified interval analysis.
+// src/conductor/melodic/intervalBalanceTracker.js - Unified interval analysis.
 // Merges IntervalTensionProfiler + IntervalVarietyTracker + LeapStepBalancer.
 // Provides density bias, interval selection biases, rut detection, and leap penalties.
 // Pure query API - no side effects.

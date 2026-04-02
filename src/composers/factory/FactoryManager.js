@@ -1,4 +1,4 @@
-﻿const V = validator.create('FactoryManager');
+const V = validator.create('FactoryManager');
 FactoryManager = class FactoryManager {
   /** @type {any|null} */
   static sharedPhraseArcManager = null;

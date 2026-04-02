@@ -1,4 +1,4 @@
-﻿// src/fx/noise/index.js - central entry for noise functions
+// src/fx/noise/index.js - central entry for noise functions
 require('./metaRecursive');
 require('./SimplexNoise');
 require('./noiseRegistry');

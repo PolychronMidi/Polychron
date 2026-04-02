@@ -1,4 +1,4 @@
-﻿// src/conductor/dynamics/index.js - Dynamic level, energy, tension, climax
+// src/conductor/dynamics/index.js - Dynamic level, energy, tension, climax
 require('./climaxProximityPredictor');
 require('./densityWaveAnalyzer');
 require('./durationalContourTracker');

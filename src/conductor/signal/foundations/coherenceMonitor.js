@@ -1,4 +1,4 @@
-﻿// coherenceMonitor.js - Closed-loop feedback that regulates density based on actual output.
+// coherenceMonitor.js - Closed-loop feedback that regulates density based on actual output.
 // Subscribes to NOTES_EMITTED events, compares actual note counts against the
 // conductor's intended density, and feeds a correction bias back into the
 // conductorIntelligence density pipeline. This closes the open loop:

@@ -1,4 +1,4 @@
-﻿// src/rhythm/phaseLockedRhythmGenerator.js - Phase-locked polyrhythmic generation
+// src/rhythm/phaseLockedRhythmGenerator.js - Phase-locked polyrhythmic generation
 // Enables explicit polyrhythmic interlocking via phase offset tracking
 // Reflects African music principles: cyclic patterns with phase relationships
 

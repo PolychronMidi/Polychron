@@ -1,4 +1,4 @@
-﻿// voiceRegistry.js - canonical multi-voice selection function
+// voiceRegistry.js - canonical multi-voice selection function
 
 voiceRegistry = function voiceRegistry(scorer, lastNotesByVoice, candidatesPerVoice, opts = {}) {
   const V = validator.create('voiceRegistry');

@@ -1,4 +1,4 @@
-﻿// motifValidators.js - validation helpers for motif generation
+// motifValidators.js - validation helpers for motif generation
 const V = validator.create('motifValidators');
 
 motifValidators = {

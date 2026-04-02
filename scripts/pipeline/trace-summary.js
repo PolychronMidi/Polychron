@@ -1597,7 +1597,7 @@ function summarizeTrace(entries, manifest) {
       }
       return Object.keys(ctx).length > 0 ? ctx : null;
     })() : null,
-    // R11 E1: Phase-regime correlation — confirms coherent suppresses phase share
+    // R11 E1: Phase-regime correlation -- confirms coherent suppresses phase share
     phaseRegimeCorrelation: diagnosticArc.length > 0 ? (() => {
       var coherentPhase = [], exploringPhase = [];
       for (var di = 0; di < diagnosticArc.length; di++) {
@@ -1661,7 +1661,7 @@ function summarizeTrace(entries, manifest) {
       }
       return Object.keys(hArc).length > 0 ? hArc : null;
     })() : null,
-    // R13 E1: Phase share velocity — delta between consecutive sections
+    // R13 E1: Phase share velocity -- delta between consecutive sections
     phaseShareVelocity: diagnosticArc.length > 0 ? (() => {
       var psvArc = {};
       var prevPhase = null;
@@ -1678,7 +1678,7 @@ function summarizeTrace(entries, manifest) {
       }
       return Object.keys(psvArc).length > 0 ? psvArc : null;
     })() : null,
-    // R17 E1: Phase peak position — which section has highest phase share
+    // R17 E1: Phase peak position -- which section has highest phase share
     // normalized to [0,1] by total sections for cross-run comparison
     phasePeakPosition: diagnosticArc.length > 0 ? (() => {
       var maxPhase = -1;
@@ -1703,7 +1703,7 @@ function summarizeTrace(entries, manifest) {
       }
       return Object.keys(bps).length > 0 ? bps : null;
     })(),
-    // R14 E4: Harmonic distance — semitone distance between consecutive section keys
+    // R14 E4: Harmonic distance -- semitone distance between consecutive section keys
     harmonicDistance: diagnosticArc.length > 0 ? (() => {
       var noteMap = { 'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'Fb': 4, 'F': 5, 'E#': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11, 'Cb': 11 };
       var keys = [];
@@ -1733,7 +1733,7 @@ function summarizeTrace(entries, manifest) {
       }
       return Object.keys(rates).length > 0 ? rates : null;
     })(),
-    // R15 E1: Phase-Gini correlation — per-section pairing of phase share and axis Gini
+    // R15 E1: Phase-Gini correlation -- per-section pairing of phase share and axis Gini
     phaseGiniCorrelation: diagnosticArc.length > 0 ? (() => {
       var pairs = [];
       for (var di = 0; di < diagnosticArc.length; di++) {
@@ -1756,7 +1756,7 @@ function summarizeTrace(entries, manifest) {
       var r = denom > 0 ? (n * sumPG - sumP * sumG) / denom : 0;
       return { r: Number(r.toFixed(4)), n: n, pairs: pairs };
     })() : null,
-    // R71 E5: Trust turbulence events — snapshots where any trust system
+    // R71 E5: Trust turbulence events -- snapshots where any trust system
     // velocity exceeded +/-0.10 per snapshot interval.
     trustTurbulenceEvents: (() => {
       const events = [];

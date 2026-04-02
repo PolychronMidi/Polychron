@@ -1,4 +1,4 @@
-﻿// src/conductor/rhythmicDensityContrastTracker.js - Dense vs. sparse passage contrast.
+// src/conductor/rhythmicDensityContrastTracker.js - Dense vs. sparse passage contrast.
 // Measures the contrast between rhythmically dense and sparse passages over time.
 // Flicker modifier widens when contrast is healthy, stabilizes when extreme.
 // Pure query API - no side effects.

@@ -8,7 +8,7 @@
 // Phase 2: Scans all src/ files for direct .couplingMatrix reads outside the
 //   coupling engine, meta-controllers, and pipeline plumbing. Modules that read
 //   coupling matrix values and compute ad-hoc pressure formulas bypass the
-//   hypermeta controller chain — the same whack-a-mole antipattern.
+//   hypermeta controller chain -- the same whack-a-mole antipattern.
 //
 // Phase 3: Bias registration bounds lock. Scans all src/ files for
 //   conductorIntelligence.register{Density,Tension,Flicker}Bias calls and
@@ -177,7 +177,7 @@ const COUPLING_MATRIX_LEGACY = [
   { id: 'narrativeTrajectory-coupling-read', file: 'src/conductor/signal/narrative/narrativeTrajectory.js', rationale: 'Pre-R69 legacy. Reads coupling matrix for narrative arc. Should register a bias via conductorIntelligence.' },
   { id: 'repetitionFatigueMonitor-coupling-read', file: 'src/conductor/texture/phrasing/repetitionFatigueMonitor.js', rationale: 'Pre-R69 legacy. Reads coupling matrix for fatigue detection. Should register a bias via conductorIntelligence.' },
   { id: 'entropyRegulator-coupling-read', file: 'src/crossLayer/structure/entropy/entropyRegulator.js', rationale: 'Pre-R69 legacy. Reads coupling matrix for entropy regulation. Should use controller chain.' },
-  // R71 E1: adaptiveTrustScores coupling brake removed — no longer a legacy violation
+  // R71 E1: adaptiveTrustScores coupling brake removed -- no longer a legacy violation
   { id: 'adaptiveTrustScoresHelpers-coupling-read', file: 'src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js', rationale: 'Pre-R69 legacy. Reads coupling matrix for coherence penalty formula. Should use controller chain.' }
 ];
 
@@ -355,7 +355,7 @@ function detectBiasBoundsViolations() {
 // Specific module constants that affect system-level metrics and have been
 // empirically identified as whack-a-mole targets (R69-R74). When a system
 // metric (density variance, regime balance, exceedance) is off-target,
-// the correct fix is the controller chain — not these module constants.
+// the correct fix is the controller chain -- not these module constants.
 // To change a locked constant, you must also modify the controlling controller
 // and update WATCHED_CONSTANTS with the new value.
 

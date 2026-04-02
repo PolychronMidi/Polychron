@@ -1,4 +1,4 @@
-﻿// voiceLeadingCore.js - core candidate scoring logic delegated from VoiceLeadingScore
+// voiceLeadingCore.js - core candidate scoring logic delegated from VoiceLeadingScore
 const V = validator.create('voiceLeadingCore');
 
 /**

@@ -1,4 +1,4 @@
-﻿// src/conductor/onsetRegularityMonitor.js - Inter-onset-interval (IOI) regularity analysis.
+// src/conductor/onsetRegularityMonitor.js - Inter-onset-interval (IOI) regularity analysis.
 // Detects metronomic uniformity vs. rhythmic chaos in onset timing.
 // Pure query API - biases toward variety when IOI is too uniform, stabilizes when chaotic.
 

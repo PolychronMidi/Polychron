@@ -1,4 +1,4 @@
-﻿// src/rhythm/rhythmHistoryTracker.js - Tracks recent rhythm method selections.
+// src/rhythm/rhythmHistoryTracker.js - Tracks recent rhythm method selections.
 // Provides novelty bias by penalizing recently-used rhythm patterns.
 // Integrates into getRhythm() as an additional bias stage.
 

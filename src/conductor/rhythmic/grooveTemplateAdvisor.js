@@ -1,4 +1,4 @@
-﻿// src/conductor/grooveTemplateAdvisor.js - Tracks micro-timing deviations from the grid.
+// src/conductor/grooveTemplateAdvisor.js - Tracks micro-timing deviations from the grid.
 // Detects mechanical rigidity vs. human-like swing feel.
 // Pure query API - advises velocity humanization and swing feel per section phase.
 

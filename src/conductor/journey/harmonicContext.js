@@ -1,4 +1,4 @@
-﻿// src/composers/harmonicContext.js - Shared harmonic state for composer coherence
+// src/composers/harmonicContext.js - Shared harmonic state for composer coherence
 // Enables harmonically-aware composition across multiple composer types
 
 /**

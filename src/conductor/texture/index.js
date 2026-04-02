@@ -1,4 +1,4 @@
-﻿// src/conductor/texture/index.js - Texture, orchestration, layers, phrasing, structure
+// src/conductor/texture/index.js - Texture, orchestration, layers, phrasing, structure
 require('./articulation');
 require('./layers');
 require('./phrasing');

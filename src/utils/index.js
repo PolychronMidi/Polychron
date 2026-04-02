@@ -1,4 +1,4 @@
-﻿m=Math;
+m=Math;
 
 require('./validator');
 require('./moduleLifecycle');

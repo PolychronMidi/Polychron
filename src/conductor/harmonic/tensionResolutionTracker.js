@@ -1,4 +1,4 @@
-﻿// src/conductor/tensionResolutionTracker.js - Tracks dissonance->consonance resolution.
+// src/conductor/tensionResolutionTracker.js - Tracks dissonance->consonance resolution.
 // Detects dangling unresolved tension (dissonant intervals not followed by resolution).
 // Pure query API - modifies derivedTension to penalize sustained unresolved dissonance.
 

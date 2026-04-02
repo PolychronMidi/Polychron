@@ -1,4 +1,4 @@
-﻿// src/conductor/layerIndependenceScorer.js - Combined rhythmic + melodic independence.
+// src/conductor/layerIndependenceScorer.js - Combined rhythmic + melodic independence.
 // Measures how independent L1 and L2 are in pitch and rhythm.
 // Too locked = boring homophony; too diverged = incoherent.
 // Pure query API - nudges density toward balance between coupling and independence.

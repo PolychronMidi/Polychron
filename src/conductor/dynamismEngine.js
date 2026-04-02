@@ -1,4 +1,4 @@
-﻿// src/composers/dynamismEngine.js - Unified probability modulation for note emission
+// src/composers/dynamismEngine.js - Unified probability modulation for note emission
 // Combines phrase arc, harmonic journey tension, and feedback intensity into per-unit play/stutter probabilities.
 
 dynamismEngine = (() => {

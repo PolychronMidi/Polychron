@@ -1,4 +1,4 @@
-﻿// src/conductor/syncopationDensityTracker.js - Measures off-beat onset ratio.
+// src/conductor/syncopationDensityTracker.js - Measures off-beat onset ratio.
 // Detects metric monotony (all on-beat) or excessive syncopation (all off-beat).
 // Pure query API - biases rhythm pattern selection weights.
 

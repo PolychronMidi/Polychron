@@ -1,4 +1,4 @@
-﻿// src/conductor/durationalContourTracker.js - Tracks note-duration trajectory over time.
+// src/conductor/durationalContourTracker.js - Tracks note-duration trajectory over time.
 // Detects acceleration (durations getting shorter) or deceleration (durations getting longer).
 // Pure query API - biases duration envelope for intentional temporal shaping.
 

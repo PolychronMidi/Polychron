@@ -1,4 +1,4 @@
-﻿// src/conductor/registerMigrationTracker.js - Tracks directional pitch-center drift.
+// src/conductor/registerMigrationTracker.js - Tracks directional pitch-center drift.
 // Detects ascending, descending, or static register migration over time.
 // Pure query API - nudges pitch gravity toward underexplored registers.
 

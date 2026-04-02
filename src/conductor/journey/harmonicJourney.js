@@ -1,4 +1,4 @@
-﻿// harmonicJourney.js - Tonal center trajectory engine for cross-section/cross-layer coherence.
+// harmonicJourney.js - Tonal center trajectory engine for cross-section/cross-layer coherence.
 //
 // Plans a key/mode journey across sections using music-theory relationships
 // (circle of fifths, relative major/minor, parallel modes, chromatic mediants).

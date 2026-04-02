@@ -1,4 +1,4 @@
-﻿feedbackAccumulator = (() => {
+feedbackAccumulator = (() => {
   const V = validator.create('feedbackAccumulator');
 
   /**

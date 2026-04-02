@@ -1,4 +1,4 @@
-﻿// src/conductor/harmonic/index.js - Harmony, tonality, chord quality, key distance
+// src/conductor/harmonic/index.js - Harmony, tonality, chord quality, key distance
 require('./pitchClassHelpers');
 require('./cadenceAdvisor');
 require('./cadentialPreparationAdvisor');

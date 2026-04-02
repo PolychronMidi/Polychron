@@ -1,4 +1,4 @@
-﻿// moduleLifecycle.js - Shared scope-based lifecycle management.
+// moduleLifecycle.js - Shared scope-based lifecycle management.
 // Both crossLayerRegistry and conductorIntelligence compose this
 // for uniform module lifecycle (scoped resets at all/section/phrase boundaries).
 // Each module self-declares which scopes it participates in at registration time.

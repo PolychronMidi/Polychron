@@ -5,7 +5,7 @@ module.exports = {
       description:
         'Ban direct .couplingMatrix reads outside the coupling engine, meta-controllers, ' +
         'and pipeline plumbing. Modules that need coupling awareness should register with ' +
-        'conductorIntelligence and let the hypermeta controllers manage the response — not ' +
+        'conductorIntelligence and let the hypermeta controllers manage the response -- not ' +
         'compute ad-hoc pressure formulas from raw coupling values.'
     },
     schema: []
@@ -25,7 +25,7 @@ module.exports = {
       'src/writer/traceDrain.js'
     ];
 
-    // Legacy violations tracked for removal — do NOT add new entries
+    // Legacy violations tracked for removal -- do NOT add new entries
     const LEGACY_EXEMPT = [
       'src/rhythm/phaseLockedRhythmGenerator.js',
       'src/conductor/conductorDampening.js',

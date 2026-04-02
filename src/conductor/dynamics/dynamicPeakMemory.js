@@ -1,4 +1,4 @@
-﻿// src/conductor/dynamicPeakMemory.js - Dynamic peak/trough spacing tracker.
+// src/conductor/dynamicPeakMemory.js - Dynamic peak/trough spacing tracker.
 // Remembers the loudest and quietest moments and prevents re-peaking too soon.
 // Tension bias spaces dynamic peaks for maximum impact.
 // Pure query API - no side effects.

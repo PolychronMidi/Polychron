@@ -1,4 +1,4 @@
-﻿// src/composers/motif/motifChain.js - Cascading motif transformations & mutations
+// src/composers/motif/motifChain.js - Cascading motif transformations & mutations
 // Enables experimental motif feedback: transformations stack and mutate over time
 
 motifChain = (() => {

@@ -1,4 +1,4 @@
-﻿// src/conductor/conductorIntelligence.js - Registry for conductor intelligence modules.
+// src/conductor/conductorIntelligence.js - Registry for conductor intelligence modules.
 // Each intelligence module self-registers its contributions (density biases,
 // tension biases, flicker modifiers, recorders, state-field providers).
 // globalConductorUpdate iterates these registries instead of probing 70+ typeof guards.

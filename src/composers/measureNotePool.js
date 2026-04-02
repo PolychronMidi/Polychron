@@ -1,4 +1,4 @@
-﻿// measureNotePool.js - note pool builder for MeasureComposer
+// measureNotePool.js - note pool builder for MeasureComposer
 const V = validator.create('measureNotePool');
 
 /**

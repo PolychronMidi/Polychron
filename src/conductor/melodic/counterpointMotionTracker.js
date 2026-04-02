@@ -1,4 +1,4 @@
-﻿// src/conductor/counterpointMotionTracker.js - Inter-layer melodic motion classification.
+// src/conductor/counterpointMotionTracker.js - Inter-layer melodic motion classification.
 // Classifies note-pairs across L1/L2 as parallel, contrary, oblique, or similar motion.
 // Pure query API - composers use to favor underused motion types.
 

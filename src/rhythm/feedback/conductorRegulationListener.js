@@ -1,4 +1,4 @@
-﻿conductorRegulationListener = (() => {
+conductorRegulationListener = (() => {
   const V = validator.create('conductorRegulationListener');
 
   let initialized = false;
