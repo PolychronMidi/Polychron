@@ -49,6 +49,20 @@ crossLayerClimaxEngine = (() => {
   // R23 E2: Density-aware playProb -- when already dense, climax adds velocity/register, not notes.
   let lastDensity = 0.5;
 
+  // R28 E1: Density-pressure homeostasis. Self-regulating accumulator builds
+  // pressure when output density is sustained high during climax, reducing
+  // play/entropy boost proportionally. Same architecture as cadenceAlignment
+  // tension-accumulation (R25 E1). Prevents aural crowding at peaks without
+  // static tension gates. Regime-aware: coherent gets more relief (needs less
+  // chaos at peaks), exploring gets none (preserve searching energy).
+  const DENSITY_SATURATION_BEATS = 40;
+  const DENSITY_HIGH_THRESHOLD = 0.62;
+  // exploring gets relief too -- unlike tension-accumulation where exploring's 0.80
+  // threshold was correctly calibrated (R79 E2), density crowding is worst in exploring
+  // at high tension because all four climax dimensions stack up simultaneously.
+  const DENSITY_PRESSURE_RELIEF = { exploring: 0.15, evolving: 0.12, coherent: 0.20 };
+  let densityPressureAccum = 0;
+
   /**
    * Tick the climax detector each beat.
    * @param {number} absoluteSeconds
@@ -75,6 +89,12 @@ crossLayerClimaxEngine = (() => {
 
     const sigs = conductorSignalBridge.getSignals();
     lastDensity = sigs.density;
+    // R28 E1: accumulate density pressure when sustained high during climax
+    if (lastDensity > DENSITY_HIGH_THRESHOLD && smoothedClimax >= APPROACH_THRESHOLD) {
+      densityPressureAccum = m.min(densityPressureAccum + 1, DENSITY_SATURATION_BEATS);
+    } else {
+      densityPressureAccum = m.max(0, densityPressureAccum - 0.5);
+    }
     // Blend compositeIntensity with elevated density/tension products for richer peak detection
     const densityPressure = clamp((sigs.density - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
     const tensionPressure = clamp((sigs.tension - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
@@ -122,11 +142,17 @@ crossLayerClimaxEngine = (() => {
     // R23 E2: Density-aware play boost -- when already dense (>0.55), climax
     // intensity shifts to velocity/register rather than adding more notes.
     const densityScale = clamp((lastDensity - 0.55) / 0.35, 0, 1);
+    // R28 E1: density-pressure homeostasis -- sustained high density during climax
+    // self-reduces play/entropy boost. Relief is regime-aware (coherent more, exploring none).
+    const dpRelief = V.optionalFinite(DENSITY_PRESSURE_RELIEF[climaxRegime], 0.12);
+    const dpPressure = clamp(densityPressureAccum / DENSITY_SATURATION_BEATS, 0, 1);
+    const crowdingReduction = dpPressure * dpRelief;
+    if (crowdingReduction > 0.01) densityPressureAccum = m.max(0, densityPressureAccum - 0.25);
     return {
-      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - densityScale),
+      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - densityScale) * (1 - crowdingReduction),
       velocityScale: 1.0 + intensity * MAX_VELOCITY_BOOST,
       registerBias: intensity * MAX_REGISTER_WIDEN,
-      entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale
+      entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale * (1 - crowdingReduction * 0.5)
     };
   }
 
@@ -153,6 +179,7 @@ crossLayerClimaxEngine = (() => {
     climaxCount = 0;
     climaxPlayAllowance = 1;
     lastDensity = 0.5;
+    densityPressureAccum = 0;
   }
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };
