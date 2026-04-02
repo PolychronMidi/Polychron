@@ -6,11 +6,15 @@
 dynamicRoleSwap = (() => {
   const V = validator.create('dynamicRoleSwap');
   const MIN_PHRASES_BETWEEN_SWAPS = 2;
-  const TENSION_VALLEY_THRESHOLD = 0.45; // R34 E4: 0.3->0.45 allow swaps during moderate tension valleys (was never triggering at 0.3 with avg tension 0.5-0.7)
+  const TENSION_VALLEY_THRESHOLD = 0.45; // absolute floor: obvious valleys still trigger regardless of regime
   const SWAP_PROBABILITY = 0.75; // probability of actually swapping when conditions met
   const SWAP_DROUGHT_TRIGGER = 4;
-  const MODERATE_TENSION_THRESHOLD = 0.62;
+  const MODERATE_TENSION_THRESHOLD = 0.62; // absolute floor for drought release
   const DROUGHT_SWAP_PROBABILITY = 0.55;
+  // Tension EMA: relative valley detection so thresholds track actual composition tension level
+  const TENSION_EMA_ALPHA = 0.08;
+  const TENSION_VALLEY_RELATIVE_DROP = 0.12; // inValley if tension < ema - this
+  const DROUGHT_RELATIVE_DROP = 0.07; // drought release if tension < ema - this
   const SWAPPED_L2_WINDOW_SECONDS = 12;
   const SWAPPED_L2_IMBALANCE_OFFSET = 4;
   const SWAPPED_L2_IMBALANCE_RANGE = 18;
@@ -19,6 +23,7 @@ dynamicRoleSwap = (() => {
   let phrasesSinceLastSwap = 0;
   let swapCount = 0;
   let isSwapped = false;
+  let tensionEma = 0.5;
 
   /**
    * Called at each phrase boundary to evaluate whether a swap should occur.
@@ -30,13 +35,15 @@ dynamicRoleSwap = (() => {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.requireFinite(currentTension, 'currentTension');
     phrasesSinceLastSwap++;
+    tensionEma = tensionEma + TENSION_EMA_ALPHA * (currentTension - tensionEma);
 
     // Not enough time since last swap
     if (phrasesSinceLastSwap < MIN_PHRASES_BETWEEN_SWAPS) {
       return { swapped: false, swapCount };
     }
-    const inValley = currentTension <= TENSION_VALLEY_THRESHOLD;
-    const droughtRelease = phrasesSinceLastSwap >= SWAP_DROUGHT_TRIGGER && currentTension <= MODERATE_TENSION_THRESHOLD;
+    // Relative valley: below running EMA by threshold, or absolute floor
+    const inValley = currentTension <= tensionEma - TENSION_VALLEY_RELATIVE_DROP || currentTension <= TENSION_VALLEY_THRESHOLD;
+    const droughtRelease = phrasesSinceLastSwap >= SWAP_DROUGHT_TRIGGER && (currentTension <= tensionEma - DROUGHT_RELATIVE_DROP || currentTension <= MODERATE_TENSION_THRESHOLD);
     if (!inValley && !droughtRelease) {
       return { swapped: false, swapCount };
     }
@@ -93,7 +100,7 @@ dynamicRoleSwap = (() => {
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
-    const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
+    const lowPhaseThreshold = V.optionalFinite(phaseFloorController.getLowShareThreshold(), 0);
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
     const imbalancePressure = clamp((recentL2Count - recentL1Count - SWAPPED_L2_IMBALANCE_OFFSET) / SWAPPED_L2_IMBALANCE_RANGE, 0, 1) * (1 - lowPhasePressure * 0.65);
     return {
@@ -139,6 +146,7 @@ dynamicRoleSwap = (() => {
     phrasesSinceLastSwap = 0;
     swapCount = 0;
     isSwapped = false;
+    tensionEma = 0.5;
   }
 
   return { evaluateSwap, getProfileModifiers, modifyPlayProb, modifyVelocity, getIsSwapped, getSwapCount, reset };

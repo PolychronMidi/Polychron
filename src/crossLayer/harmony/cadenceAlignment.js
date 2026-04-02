@@ -117,7 +117,7 @@ cadenceAlignment = (() => {
     const resolveThreshold = (function() {
       const reg = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
       if (reg === 'exploring') return 0.80;
-      if (reg === 'coherent') return 0.92;
+      if (reg === 'coherent') return 0.82; // lowered from 0.92: high threshold suppressed all resolution during coherent regime (48% of piece)
       return 0.88;
     })();
     return {

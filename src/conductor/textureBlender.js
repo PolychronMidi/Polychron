@@ -66,10 +66,15 @@ textureBlender = (() => {
   function getStutterCoupling() {
     if (StutterManager && StutterManager.beatContext) {
       const bc = StutterManager.beatContext;
-      const hasReflection = bc.selectedReflectionChannels && bc.selectedReflectionChannels.size > 0;
-      const hasBass = bc.selectedBassChannels && bc.selectedBassChannels.size > 0;
-      if (hasReflection || hasBass) {
-        return { burstSuppression: 0.35, flurryBoost: 1.3 };
+      const reflCount = (bc.selectedReflectionChannels && bc.selectedReflectionChannels.size) || 0;
+      const bassCount = (bc.selectedBassChannels && bc.selectedBassChannels.size) || 0;
+      const channelLoad = reflCount + bassCount;
+      if (channelLoad > 0) {
+        // Proportional suppression: light stutter (1 channel) clips less than heavy (3+)
+        const intensity = clamp(channelLoad / 3, 0, 1);
+        const burstSuppression = 1 - intensity * 0.45; // max 45% reduction (was 65%)
+        const flurryBoost = 1 + intensity * 0.15; // max 15% boost (was 30%)
+        return { burstSuppression, flurryBoost };
       }
     }
     return { burstSuppression: 1, flurryBoost: 1 };
