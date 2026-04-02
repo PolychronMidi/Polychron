@@ -49,7 +49,15 @@ const resolvedBassProgramPool = bassProgramPool.length > 0
     const instrumentPool = biasedOtherInstruments.length > 2 ? biasedOtherInstruments : otherInstruments;
     // Trust-driven timbre: if trust ecology suggests a program, use it
     const trustSuggestion = safePreBoot.call(() => trustTimbreMapping.suggest(absoluteSeconds), null);
-    const selectedReflection = (Number.isFinite(trustSuggestion)) ? trustSuggestion : ra(instrumentPool);
+    // R25: regime-timbre-link - regime changes bias reflection instrument toward
+    // regime-appropriate families (coherent=pads, exploring=synths, evolving=strings)
+    const REGIME_REFLECTION_POOLS = { coherent: [89, 92, 97, 98], exploring: [79, 81, 104, 112], evolving: [48, 49, 50, 51] };
+    const currentRegimeForTimbre = /** @type {string} */ (safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving'));
+    const regimePool = REGIME_REFLECTION_POOLS[currentRegimeForTimbre];
+    const regimeSuggestion = regimePool && rf() < 0.35 ? regimePool[ri(regimePool.length - 1)] : null;
+    const selectedReflection = Number.isFinite(trustSuggestion) ? trustSuggestion
+      : Number.isFinite(regimeSuggestion) ? regimeSuggestion
+      : ra(instrumentPool);
     const selectedBass = ra(resolvedBassProgramPool);
     const selectedDrum = ra(drumSets);
 p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:'program_c' };

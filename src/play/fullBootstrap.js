@@ -612,6 +612,7 @@ fullBootstrap = (() => {
     'convergenceVelocitySurge',
     'trustEcologyCharacter',
     'stutterTempoFeel',
+    'convergenceMemory',
     'trustTimbreMapping',
     'temporalGravity',
     'velocityInterference',

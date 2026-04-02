@@ -136,8 +136,13 @@ coordinationIndependenceManager = (() => {
       beatsSinceChange[pair]++;
     }
 
+    // R26: auto-activate oscillation mode during oscillating regime
+    const regimeForOsc = /** @type {string} */ (safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving'));
+    if (regimeForOsc === 'oscillating' && !oscillationEnabled) { oscillationEnabled = true; oscillationBeat = 0; }
+    else if (regimeForOsc !== 'oscillating' && oscillationEnabled) { oscillationEnabled = false; }
+
     // Phase gating: adjust during stabilized (full speed) or converging (half speed).
-    // Only freeze during oscillating (let hypermeta recover).
+    // Only freeze during oscillating system phase (let hypermeta recover).
     // Exception: if health is very low (<0.4), shuffle dials to break out.
     const canAdjust = systemPhase !== 'oscillating' || healthEma < 0.4;
     if (!canAdjust) { applyDials(); return; }

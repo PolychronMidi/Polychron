@@ -17,15 +17,20 @@ flipBinCrossfadeWindow = [0, 0];
 
 /** Per-layer timeInSeconds of the last shared entry this layer consumed (dedup guard) */
 const lastConsumedByLayer = {};
+// Per-layer flipBin state lives in LM.flipBinByLayer (restored on activate)
 
 /**
  * Emit pitch bend glides and volume crossfades for a binaural shift.
  * Hoisted so both the scheduling path and the consume path can call it.
  */
 function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
-  // Pitch bend glide spread over the full interval between shifts
-  const bendSteps = shiftInterval * 20;
-  const bendStepSec = (shiftInterval - .03) / bendSteps;
+  void shiftInterval;
+  // Pitch bend glide completes within the crossfade window, not over the full
+  // interval. After crossfade, channels are at full volume with final pitch bend
+  // already applied. No gliding while audible = no detune artifacts.
+  const bendDuration = rf(0.06, 0.12);
+  const bendSteps = m.max(6, m.round(bendDuration * 40));
+  const bendStepSec = bendDuration / bendSteps;
   for (let i = 0; i <= bendSteps; i++) {
     const t = shiftSyncSec + bendStepSec * i;
     const frac = i / bendSteps;
@@ -64,6 +69,16 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
   const restoreTime = fadeStart + flipBinCrossfade + 0.01;
   flipBinF2.forEach(ch => { p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
   flipBinT2.forEach(ch => { p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
+  // Snap all channels to final target pitch bend after crossfade - no residual glide
+  const snapTime = restoreTime + 0.005;
+  binauralL.forEach(ch => {
+    const target = (ch === lCH1 || ch === lCH3 || ch === lCH5) ? (shiftFlip ? binauralMinus : binauralPlus) : (shiftFlip ? binauralPlus : binauralMinus);
+    p(c, { timeInSeconds: snapTime, type: 'pitch_bend_c', vals: [ch, target] });
+  });
+  binauralR.forEach(ch => {
+    const target = (ch === rCH1 || ch === rCH3 || ch === rCH5) ? (shiftFlip ? binauralPlus : binauralMinus) : (shiftFlip ? binauralMinus : binauralPlus);
+    p(c, { timeInSeconds: snapTime, type: 'pitch_bend_c', vals: [ch, target] });
+  });
 }
 
 setBinaural = () => {
@@ -88,7 +103,9 @@ setBinaural = () => {
     binauralInterval = binauralInterval * binauralIntervalFactor;
     nextBinauralShiftSec = absoluteSeconds + binauralInterval;
     const freqChangeRateLimit = binauralInterval / 10;
-    flipBin = !flipBin;
+    // Toggle per-layer to prevent cross-layer desync
+    LM.flipBinByLayer[activeLayer] = !LM.flipBinByLayer[activeLayer];
+    flipBin = LM.flipBinByLayer[activeLayer];
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
     const brightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
     const brightnessBias = clamp((brightness - 0.5) * 1.5, -0.75, 0.75);
@@ -113,7 +130,9 @@ setBinaural = () => {
   if (sharedEntry && sharedEntry.timeInSeconds !== lastConsumedByLayer[activeLayer]) {
     lastConsumedByLayer[activeLayer] = sharedEntry.timeInSeconds;
     binauralFreqOffset = V.requireFinite(sharedEntry.freqOffset, 'sharedEntry.freqOffset');
-    flipBin = V.assertBoolean(sharedEntry.flip, 'sharedEntry.flip');
+    // Sync per-layer flipBin from shared entry, set global to this layer's state
+    LM.flipBinByLayer[activeLayer] = V.assertBoolean(sharedEntry.flip, 'sharedEntry.flip');
+    flipBin = LM.flipBinByLayer[activeLayer];
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
