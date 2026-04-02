@@ -208,9 +208,15 @@ sectionIntentCurves = (() => {
     const independentEntropyArc = 0.4 + arc * 0.25 + wave * 0.1;
     const blendedEntropy = (densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W);
     const entropyTarget = clamp(blendedEntropy * 0.6 + independentEntropyArc * 0.4, effectiveEntropyFloor, ENTROPY_CEIL);
-    const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1, 0, 1);
+    // R33: quality feed-forward via L0 -- only applies during first phrase
+    // to avoid cumulative suppression (L0 entry persists across the whole section)
+    const sectionStart = ph === 0;
+    const qualityEntry = sectionStart ? L0.getLast('section-quality', { layer: 'both' }) : null;
+    const qBias = qualityEntry && Number.isFinite(qualityEntry.bias) ? qualityEntry.bias : 0;
+    const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1 + qBias * 0.8, 0, 1);
+    const adjustedDensity = clamp(densityTarget + qBias * -0.5, 0, 1);
 
-    lastIntent = { densityTarget, dissonanceTarget, interactionTarget, entropyTarget, convergenceTarget };
+    lastIntent = { densityTarget: adjustedDensity, dissonanceTarget, interactionTarget, entropyTarget, convergenceTarget };
     return lastIntent;
   }
 

@@ -21,6 +21,12 @@ convergenceDetector = (() => {
 
   let lastConvergenceSec = -Infinity;
   let totalConvergences = 0;
+  // R33: convergence momentum -- rapid convergences build momentum that lowers
+  // the effective interval (stickier detection). Self-regulating: momentum
+  // decays when convergences are sparse, builds when they cluster.
+  let convergenceMomentum = 0;
+  const MOMENTUM_BUILD = 0.25;
+  const MOMENTUM_DECAY = 0.02;
   /** @type {Record<string, number>} */
   const lastConvergenceByLayer = {};
 
@@ -64,10 +70,16 @@ convergenceDetector = (() => {
     // Poor coherence = convergence helps recalibrate
     const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
     const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.3, 0, 0.1) : 0;
-    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost) * (0.6 + cimScale * 0.8);
+    // R33: climax approach widens tolerance (pull layers together during peaks)
+    const climaxEntry = L0.getLast('climax-pressure', { layer: 'both' });
+    const climaxBoost = climaxEntry && Number.isFinite(climaxEntry.level) ? clamp(climaxEntry.level * 0.15, 0, 0.1) : 0;
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost + climaxBoost) * (0.6 + cimScale * 0.8);
     const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2);
 
-    if (absoluteSeconds - lastConvergenceSec < effectiveInterval) return null;
+    // R33: convergence momentum -- recent convergences make the next one easier
+    convergenceMomentum = m.max(0, convergenceMomentum - MOMENTUM_DECAY);
+    const momentumScale = 1.0 - clamp(convergenceMomentum * 0.3, 0, 0.25);
+    if (absoluteSeconds - lastConvergenceSec < effectiveInterval * momentumScale) return null;
 
     const match = L0.findClosest(
       CHANNEL, absoluteSeconds, effectiveTolerance, activeLayer
@@ -75,6 +87,7 @@ convergenceDetector = (() => {
     if (!match) return null;
 
     lastConvergenceSec = absoluteSeconds;
+    convergenceMomentum = clamp(convergenceMomentum + MOMENTUM_BUILD, 0, 1);
 
     // Rarity: tighter alignment = higher rarity score (0-1)
     const dist = m.abs(match.timeInSeconds - absoluteSeconds);

@@ -7,6 +7,9 @@ motifIdentityMemory = (() => {
   const notesByLayer = new Map();
   /** @type {Map<string, Array<{ intervalDna: string, contour: string, confidence: number, absoluteSeconds: number }>>} */
   const identitiesByLayer = new Map();
+  // R34: pattern histogram for saturation detection
+  /** @type {Map<string, Map<string, number>>} */
+  const patternHistByLayer = new Map();
 
   /** @param {string} layer */
   function ensureNotes(layer) {
@@ -52,7 +55,13 @@ motifIdentityMemory = (() => {
     const identity = { intervalDna, contour, confidence, absoluteSeconds };
     const identities = ensureIdentities(layer);
     identities.push(identity);
-    L0.post('motifIdentity', layer, absoluteSeconds, { intervalDna, contour, confidence });
+    // R34: track pattern frequency for saturation detection
+    if (!patternHistByLayer.has(layer)) patternHistByLayer.set(layer, new Map());
+    const hist = /** @type {Map<string, number>} */ (patternHistByLayer.get(layer));
+    hist.set(intervalDna, (hist.get(intervalDna) || 0) + 1);
+    const patternCount = hist.get(intervalDna) || 0;
+    const isSaturated = patternCount > 4;
+    L0.post('motifIdentity', layer, absoluteSeconds, { intervalDna, contour, confidence, saturated: isSaturated });
     if (identities.length > MAX_IDENTITIES) identities.shift();
 
     return identity;
@@ -77,6 +86,12 @@ motifIdentityMemory = (() => {
     if (identity.contour === 'up') transform = 'retrograde-inversion';
     else if (identity.contour === 'down') transform = 'inversion';
     else if (identity.confidence > 0.55) transform = 'augmentation';
+    // R34: if pattern is saturated, force a different transform to break repetition
+    const hist = patternHistByLayer.get(layer);
+    if (hist && (hist.get(identity.intervalDna) || 0) > 4) {
+      const transforms = /** @type {Array<'retrograde'|'inversion'|'augmentation'|'retrograde-inversion'>} */ (['retrograde', 'inversion', 'augmentation', 'retrograde-inversion']);
+      transform = transforms[ri(0, 3)];
+    }
 
     return { transform, bias: identity.confidence };
   }
@@ -84,6 +99,7 @@ motifIdentityMemory = (() => {
   function reset() {
     notesByLayer.clear();
     identitiesByLayer.clear();
+    patternHistByLayer.clear();
   }
 
   return { recordNote, getActiveIdentity, chooseEchoTransform, reset };

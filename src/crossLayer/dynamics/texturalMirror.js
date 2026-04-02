@@ -85,7 +85,18 @@ texturalMirror = (() => {
     // Coherence-aware: poor coherence = stronger texture suggestions to create differentiation
     const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
     const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.4, 0, 0.15) : 0;
-    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) + coherenceBoost, 0.1, 0.8);
+    // R34: spectral L0 awareness -- sparse spectrum = densify texture, full spectrum = thin
+    const spectralEntry = L0.getLast('spectral', { layer: otherLayer });
+    const spectralBoost = (() => {
+      if (!spectralEntry || !Array.isArray(spectralEntry.histogram)) return 0;
+      const h = spectralEntry.histogram;
+      const mean = h.reduce((a, b) => a + b, 0) / m.max(h.length, 1);
+      let variance = 0;
+      for (let si = 0; si < h.length; si++) variance += (h[si] - mean) * (h[si] - mean);
+      variance /= m.max(h.length, 1);
+      return clamp(0.5 - m.sqrt(variance) * 2, -0.1, 0.15);
+    })();
+    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) + coherenceBoost + spectralBoost, 0.1, 0.8);
 
     return { preferredMode, weight };
   }
