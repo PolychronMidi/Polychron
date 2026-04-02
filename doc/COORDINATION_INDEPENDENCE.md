@@ -43,6 +43,10 @@ Per-pair target is a weighted blend:
 - **Converging**: half-speed dial adjustment
 - **Oscillating**: freeze dials UNLESS oscillation mode is enabled (auto-activates during oscillating regime) OR health < 0.4 (emergency shuffle)
 
+## Staggered Per-Pair Evaluation (R27)
+
+All 11 pairs previously adjusted and evaluated simultaneously, causing identical effectiveness scores (shared health signal). `PAIR_DWELL_STAGGER=1` staggers adjustment timing: pair `i` adjusts at `MIN_DWELL_BEATS + i` and evaluates at `SELF_INTERFERENCE_WINDOW + i`. This creates 10 beats of temporal spread, isolating each pair's health attribution. Effectiveness now differentiates (4-7 unique values vs all identical).
+
 ## Self-Interference Detection
 
 If health drops within 3 beats of a dial change, CIM reverts that dial 40% toward neutral and penalizes its effectiveness score.

@@ -49,6 +49,10 @@ crossLayerClimaxEngine = (() => {
   // R23 E2: Density-aware playProb -- when already dense, climax adds velocity/register, not notes.
   let lastDensity = 0.5;
 
+  // R31 lab: voice-independence-feedback. Tracks whether voices achieve their
+  // independence target and compensates with register spread when they don't.
+  let observedIndependenceEma = 0.5;
+
   // R28 E1: Density-pressure homeostasis. Self-regulating accumulator builds
   // pressure when output density is sustained high during climax, reducing
   // play/entropy boost proportionally. Same architecture as cadenceAlignment
@@ -139,20 +143,46 @@ crossLayerClimaxEngine = (() => {
     const climaxRegime = regimeSnap ? regimeSnap.regime : 'evolving';
     const entropyRegimeScale = V.optionalFinite(CLIMAX_ENTROPY_REGIME_SCALE[climaxRegime], 1.0);
 
-    // R23 E2: Density-aware play boost -- when already dense (>0.55), climax
-    // intensity shifts to velocity/register rather than adding more notes.
+    // R32: Unified density suppression with total-impact budget.
+    // Three independent mechanisms (R23 density-aware, R28 homeostasis, R30a vel-inverse)
+    // were stacking without coordination, compound-suppressing climax intensity below the
+    // coupling pressure threshold needed for coherent formation. Now they share a budget:
+    // total suppression capped at MAX_DENSITY_SUPPRESSION to preserve climax energy.
+    const MAX_DENSITY_SUPPRESSION = 0.45;
     const densityScale = clamp((lastDensity - 0.55) / 0.35, 0, 1);
-    // R28 E1: density-pressure homeostasis -- sustained high density during climax
-    // self-reduces play/entropy boost. Relief is regime-aware (coherent more, exploring none).
     const dpRelief = V.optionalFinite(DENSITY_PRESSURE_RELIEF[climaxRegime], 0.12);
     const dpPressure = clamp(densityPressureAccum / DENSITY_SATURATION_BEATS, 0, 1);
-    const crowdingReduction = dpPressure * dpRelief;
-    if (crowdingReduction > 0.01) densityPressureAccum = m.max(0, densityPressureAccum - 0.25);
+    const rawCrowding = dpPressure * dpRelief;
+    if (rawCrowding > 0.01) densityPressureAccum = m.max(0, densityPressureAccum - 0.25);
+    const densityExcess = clamp((lastDensity - 0.65) / 0.25, 0, 1);
+    const rawVelSuppression = densityExcess > 0.1 ? densityExcess * 0.25 : 0;
+    // Budget: total suppression from all 3 mechanisms capped
+    const totalSuppression = clamp(densityScale * 0.5 + rawCrowding + rawVelSuppression, 0, MAX_DENSITY_SUPPRESSION);
+    const playSuppression = clamp(densityScale + rawCrowding, 0, MAX_DENSITY_SUPPRESSION);
+    const velSoftening = 1.0 - clamp(rawVelSuppression, 0, MAX_DENSITY_SUPPRESSION - playSuppression);
+    // R30 lab: spectral-chord-voicing
+    const phraseCtx = safePreBoot.call(() => FactoryManager.sharedPhraseArcManager.getPhraseContext(), null);
+    const spectral = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
+    const spectralSpread = (spectral - 0.5) * 8;
+    // R31 lab: trust-responsive articulation
+    const artTrust = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.ARTICULATION_COMPLEMENT), 1.0), 1.0);
+    const grooveTrust = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.GROOVE_TRANSFER), 1.0), 1.0);
+    const trustVelSpread = clamp((artTrust - 1.2) * 0.6, -0.15, 0.2) - clamp((grooveTrust - 1.2) * 0.5, -0.1, 0.15);
+    const trustVelMod = 1.0 + trustVelSpread * rf(-0.15, 0.15);
+    // R31 lab: voice-independence-feedback
+    const indTarget = phraseCtx && Number.isFinite(phraseCtx.voiceIndependence) ? phraseCtx.voiceIndependence : 0.5;
+    const velVariance = clamp(m.abs((lastDensity - 0.5) * 2), 0, 1);
+    observedIndependenceEma += (velVariance - observedIndependenceEma) * 0.02;
+    const indGap = indTarget - observedIndependenceEma;
+    const indCompensation = indGap > 0.15 ? indGap * 6 : 0;
+    // R31 lab: convergence-driven density via L0 channel (R32: replaces direct call)
+    const convEntry = L0.getLast('convergence-density', { layer: 'both' });
+    const convDensityBoost = convEntry && Number.isFinite(convEntry.boost) ? convEntry.boost : 0;
     return {
-      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - densityScale) * (1 - crowdingReduction),
-      velocityScale: 1.0 + intensity * MAX_VELOCITY_BOOST,
-      registerBias: intensity * MAX_REGISTER_WIDEN,
-      entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale * (1 - crowdingReduction * 0.5)
+      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - playSuppression) + convDensityBoost,
+      velocityScale: (1.0 + intensity * MAX_VELOCITY_BOOST) * velSoftening * trustVelMod,
+      registerBias: intensity * MAX_REGISTER_WIDEN + spectralSpread + indCompensation,
+      entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale * (1 - totalSuppression * 0.3)
     };
   }
 
@@ -180,6 +210,7 @@ crossLayerClimaxEngine = (() => {
     climaxPlayAllowance = 1;
     lastDensity = 0.5;
     densityPressureAccum = 0;
+    observedIndependenceEma = 0.5;
   }
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };

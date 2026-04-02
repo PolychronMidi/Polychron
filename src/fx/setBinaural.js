@@ -28,8 +28,8 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
   // Pitch bend glide completes within the crossfade window, not over the full
   // interval. After crossfade, channels are at full volume with final pitch bend
   // already applied. No gliding while audible = no detune artifacts.
-  const bendDuration = rf(0.02, 0.06);
-  const bendSteps = 3;
+  const bendDuration = rf(0.01, 0.02);
+  const bendSteps = 5;
   const bendStepSec = bendDuration / bendSteps;
   for (let i = 0; i <= bendSteps; i++) {
     const t = shiftSyncSec + bendStepSec * i;
@@ -50,7 +50,7 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
   const flipBinCrossfade = bendDuration * 2;
   const fadeStart = shiftSyncSec - flipBinCrossfade / 1.9;
   flipBinCrossfadeWindow = [fadeStart, fadeStart + flipBinCrossfade];
-  const volSteps = 7;
+  const volSteps = 9;
   const volStepSec = flipBinCrossfade / volSteps;
   for (let i = 0; i <= volSteps; i++) {
     const t = fadeStart + volStepSec * i;

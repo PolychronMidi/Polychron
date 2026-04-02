@@ -90,6 +90,23 @@ crossModulateRhythms = () => {
   const rhythmicArc = 0.92 + 0.18 * m.exp(-m.pow((compositionProg - 0.55) * 2.2, 2));
   crossModulation *= rhythmicArc;
 
+  // R31 lab: harmonic-rhythm awareness. Fast chord changes = tighter crossMod,
+  // sustained harmony = looser. Relationship occasionally inverts (20% chance)
+  // for unpredictability, and scale is jittered via fuzzyClamp.
+  {
+    const harmEntry = L0.getLast('harmonic', { layer: 'both' });
+    if (harmEntry && Number.isFinite(harmEntry.timestamp)) {
+      const timeSinceHarmonic = beatStartTime - harmEntry.timestamp;
+      // Fast chords (< 1s since last) = tighten, slow (> 3s) = loosen
+      const rawScale = clamp(timeSinceHarmonic / 2.0, 0.7, 1.4);
+      // 20% chance to invert the relationship for organic unpredictability
+      const inverted = rf(0, 1) < 0.20;
+      const directed = inverted ? (2.1 - rawScale) : rawScale;
+      const jittered = fuzzyClamp(directed, 0.7, 1.4, 0.12, 'both');
+      crossModulation *= jittered;
+    }
+  }
+
   // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
   // during E11 sparse windows. 1.0 = neutral (default from getRateMultiplier),
   // <1.0 = max suppression depth (from hyperMetaManager EMA ramp).

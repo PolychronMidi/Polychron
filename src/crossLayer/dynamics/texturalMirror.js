@@ -56,7 +56,12 @@ texturalMirror = (() => {
     }
 
     const otherMode = layerTextures[otherLayer].mode;
-    let preferredMode = COMPLEMENT_MAP[otherMode] || 'normal';
+    // R30 lab: regime-texture-mirror -- coherent mirrors other layer's texture,
+    // exploring opposes it. Creates regime-aware cross-layer relationship.
+    const mirrorRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
+    let preferredMode = mirrorRegime === 'coherent'
+      ? otherMode
+      : (COMPLEMENT_MAP[otherMode] || 'normal');
 
     // Chordal bias pushes toward chordBurst
     if (chordalBias > 0.2) {
