@@ -197,6 +197,35 @@ function generateNarrative() {
     lines.push('');
   }
 
+  // R26 E3: Per-section musical characterization
+  if (summary && Array.isArray(summary.sectionStats) && summary.sectionStats.length > 0) {
+    lines.push('## Section Character');
+    lines.push('');
+    const stats = summary.sectionStats;
+    const maxTension = Math.max.apply(null, stats.map(function(s) { return s.avgTension; }));
+    const minTension = Math.min.apply(null, stats.map(function(s) { return s.avgTension; }));
+    for (let si = 0; si < stats.length; si++) {
+      const s = stats[si];
+      const tensionDesc = s.avgTension >= maxTension - 0.05 ? 'peak tension' :
+        s.avgTension <= minTension + 0.05 ? 'lowest tension' :
+        s.avgTension > 0.7 ? 'high tension' :
+        s.avgTension > 0.5 ? 'moderate tension' : 'relaxed';
+      const densityDesc = s.avgDensity > 0.65 ? 'dense' :
+        s.avgDensity < 0.4 ? 'sparse' : 'balanced density';
+      lines.push(`- **S${s.section}** (${s.beats} beats): ${tensionDesc}, ${densityDesc}, ` +
+        `dominant regime \`${s.dominantRegime}\`, playProb ${dec(s.avgPlayProb)}`);
+    }
+    // Identify arc shape
+    const halfIdx = Math.floor(stats.length / 2);
+    const firstHalfAvg = stats.slice(0, halfIdx).reduce(function(sum, s) { return sum + s.avgTension; }, 0) / halfIdx;
+    const secondHalfAvg = stats.slice(halfIdx).reduce(function(sum, s) { return sum + s.avgTension; }, 0) / (stats.length - halfIdx);
+    const arcShape = firstHalfAvg > secondHalfAvg + 0.1 ? 'early-peak with resolution' :
+      secondHalfAvg > firstHalfAvg + 0.1 ? 'building to late climax' : 'plateau arc';
+    lines.push('');
+    lines.push(`**Arc shape:** ${arcShape} (first-half tension ${dec(firstHalfAvg)} vs second-half ${dec(secondHalfAvg)})`);
+    lines.push('');
+  }
+
   // -Regime Story -
   lines.push('## The System\'s Inner Life');
   lines.push('');
@@ -455,6 +484,23 @@ function generateNarrative() {
         }
         lines.push('');
       }
+    }
+  }
+
+  // R26 E2: Aggregate coupling labels in narrative
+  if (summary && summary.aggregateCouplingLabels && typeof summary.aggregateCouplingLabels === 'object') {
+    const aggLabels = Object.entries(summary.aggregateCouplingLabels);
+    if (aggLabels.length > 0) {
+      lines.push('## Coupling Semantics (whole-run)');
+      lines.push('');
+      lines.push('The following coupling relationships characterized this composition:');
+      lines.push('');
+      for (const [pair, label] of aggLabels) {
+        const corr = summary.couplingCorrelation && summary.couplingCorrelation[pair];
+        const meanStr = corr ? ` (mean r=${dec(corr.meanSigned, 3)})` : '';
+        lines.push(`- **${pair}**: ${label}${meanStr}`);
+      }
+      lines.push('');
     }
   }
 
