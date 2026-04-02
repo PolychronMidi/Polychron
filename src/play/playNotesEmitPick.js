@@ -258,7 +258,21 @@ playNotesEmitPick = function(opts = {}) {
       // R18: emission gap compensation - when notes fail to emit, boost stutter
       const emissionGap = safePreBoot.call(() => emissionFeedbackListener.getEmissionGap(), 0);
       const emissionBoost = 1 + clamp(emissionGap, 0, 0.5) * 0.8;
-      const stutterEchoProb = 0.45 * m.pow(sustainRatio, 1.5) * feedbackBoost * emissionBoost;
+      // R26: tension-scaled stutter density - high tension = more stutter
+      const tensionSigs = conductorSignalBridge.getSignals();
+      const tensionScale = clamp(tensionSigs.tension * 0.8 + 0.2, 0.5, 1.5);
+      // R26: density-inverse stutter - sparse passages get more stutter
+      const densityScale = clamp(1.5 - tensionSigs.density, 0.6, 1.8);
+      // R26: anticipatory stutter - ramp in last 20% of phrase based on tension trajectory
+      const phrasePos = /** @type {number} */ (safePreBoot.call(() => timeStream.normalizedProgress('phrase'), 0.5));
+      const inRamp = Number.isFinite(phrasePos) && phrasePos > 0.80;
+      const tensionTraj = safePreBoot.call(() => sectionMemory.getTensionTrajectory(), 0);
+      const rampScale = inRamp ? clamp(1.0 + /** @type {number} */ (tensionTraj) * 2 * (phrasePos - 0.80) / 0.20, 0.7, 1.5) : 1.0;
+      // R26: phrase-start suppression - less stutter in first 10% for clean phrase entry
+      const startSuppress = (Number.isFinite(phrasePos) && phrasePos < 0.10) ? 0.4 : 1.0;
+      // R26: convergence memory boost at historically high-convergence positions
+      const convMemBoost = safePreBoot.call(() => convergenceMemory.getBoost(), 1.0);
+      const stutterEchoProb = 0.45 * m.pow(sustainRatio, 1.5) * feedbackBoost * emissionBoost * tensionScale * densityScale * rampScale * startSuppress * /** @type {number} */ (convMemBoost);
       if (rf() < stutterEchoProb) {
         StutterManager.scheduleStutterForUnit({
           profile: 'source',

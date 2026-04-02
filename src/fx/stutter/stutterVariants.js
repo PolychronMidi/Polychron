@@ -27,7 +27,16 @@ stutterVariants = (() => {
     stutterTremolo: { ghostStutter: 1.8, echoTrail: 1.5 },
     stutterSwarm: { ghostStutter: 1.6, rhythmicDotted: 1.4 },
     tensionStutter: { harmonicShadow: 1.5, ghostStutter: 1.3 },
-    convergenceBurst: { rhythmicGrid: 1.5, decayingBounce: 1.3 }
+    convergenceBurst: { rhythmicGrid: 1.5, decayingBounce: 1.3 },
+    reverseVelocity: { octaveCascade: 1.5, directionalOscillation: 1.4 },
+    decayingBounce: { machineGun: 1.4, stutterTremolo: 1.3 },
+    echoTrail: { reverseVelocity: 1.5, convergenceBurst: 1.3 },
+    harmonicShadow: { flickerStutter: 1.5, tensionStutter: 1.3 },
+    stereoWidthModulation: { ghostStutter: 1.5, harmonicShadow: 1.4 },
+    densityReactive: { rhythmicDotted: 1.4, echoTrail: 1.3 },
+    rhythmicDotted: { machineGun: 1.3, stutterSwarm: 1.4 },
+    flickerStutter: { stereoWidthModulation: 1.5, ghostStutter: 1.3 },
+    directionalOscillation: { stutterTremolo: 1.4, rhythmicGrid: 1.3 }
   };
 
   // Regime weight multipliers: which variants suit which musical context
@@ -226,7 +235,11 @@ stutterVariants = (() => {
       }
     }
 
-    // R16: default weight reduced 2.0->1.2
+    // R25: self-balancing - inverse-frequency boost for underrepresented variants
+    const variantCounts = stutterMetrics.getMetrics().variantCounts;
+    const totalVariantCount = Object.values(variantCounts).reduce((/** @type {number} */ s, /** @type {number} */ c) => s + c, 0);
+    const variantAvgShare = totalVariantCount > 50 ? 1.0 / m.max(1, registered.size) : 0;
+
     const pool = [{ name: null, fn: null, weight: 1.2 }];
     for (const [name, entry] of registered) {
       const regimeMult = regimeMap[name] || 1.0;
@@ -241,7 +254,13 @@ stutterVariants = (() => {
       const labelMult = labelMults[name] || 1.0;
       const entropyMult = entropyReversal ? (ENTROPY_REVERSAL_WEIGHTS[name] || 1.0) : 1.0;
       const responseMult = responseWeights[name] || 1.0;
-      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult });
+      // Self-balancing: boost underrepresented variants, dampen overrepresented
+      let balanceMult = 1.0;
+      if (variantAvgShare > 0 && totalVariantCount > 50) {
+        const thisShare = (variantCounts[name] || 0) / totalVariantCount;
+        balanceMult = thisShare > variantAvgShare * 1.5 ? 0.7 : thisShare < variantAvgShare * 0.5 ? 1.4 : 1.0;
+      }
+      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult * balanceMult });
     }
     let totalWeight = 0;
     for (let i = 0; i < pool.length; i++) totalWeight += pool[i].weight;

@@ -10,6 +10,12 @@ class LayerManager {
   static layerComposers = {};
   static phraseFamily = /** @type {string|null} */ (null);
   static activeLayer = /** @type {string|null} */ (null);
+  static flipBinByLayer = { L1: false, L2: false };
+  // Per-layer state for globals that must not bleed between layers
+  static perLayerState = {
+    L1: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0 },
+    L2: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0 }
+  };
 
   /**
    * Register a layer with buffer and initial timing state.
@@ -79,10 +85,16 @@ class LayerManager {
    * @returns {{numerator: number, denominator: number, spMeasure: number}} Snapshot of key timing values.
    */
   static activate(name, isPoly = false) {
-    // no need to pass meter info here, as it stays consitent until the next layer switch
+    // Save outgoing layer's state before switching
+    if (LayerManager.activeLayer && LayerManager.layers[LayerManager.activeLayer]) {
+      saveGlobalsToLayer(LayerManager.layers[LayerManager.activeLayer]);
+      LayerManager.flipBinByLayer[LayerManager.activeLayer] = flipBin;
+    }
     const layer = LayerManager.layers[name];
     c = layer.buffer;
     LayerManager.activeLayer = name;
+    // Restore per-layer flipBin
+    flipBin = LayerManager.flipBinByLayer[name] !== undefined ? LayerManager.flipBinByLayer[name] : false;
     loadLayerToGlobals(layer);
     const globalComposer = composer ? composer : null;
     const layerComposer = (LayerManager.layerComposers[name] && typeof LayerManager.layerComposers[name] === 'object')
@@ -263,6 +275,21 @@ function loadLayerToGlobals(layer) {
   measureStartTime = layer.measureStartTime;
   spMeasure = layer.spMeasure;
 
+  // Restore per-layer state for globals that must not bleed between layers
+  const pls = LayerManager.perLayerState[layer.id];
+  if (pls) {
+    crossModulation = pls.crossModulation;
+    lastCrossMod = pls.lastCrossMod;
+    balOffset = pls.balOffset;
+    sideBias = pls.sideBias;
+    lBal = pls.lBal;
+    rBal = pls.rBal;
+    cBal = pls.cBal;
+    cBal2 = pls.cBal2;
+    cBal3 = pls.cBal3;
+    refVar = pls.refVar;
+    bassVar = pls.bassVar;
+  }
 }
 
 function saveGlobalsToLayer(layer) {
@@ -275,4 +302,20 @@ function saveGlobalsToLayer(layer) {
 
   layer.measureStartTime = measureStartTime;
   layer.spMeasure = spMeasure;
+
+  // Save per-layer state before switching away
+  const pls = LayerManager.perLayerState[layer.id];
+  if (pls) {
+    pls.crossModulation = crossModulation;
+    pls.lastCrossMod = lastCrossMod;
+    pls.balOffset = balOffset;
+    pls.sideBias = sideBias;
+    pls.lBal = lBal;
+    pls.rBal = rBal;
+    pls.cBal = cBal;
+    pls.cBal2 = cBal2;
+    pls.cBal3 = cBal3;
+    pls.refVar = refVar;
+    pls.bassVar = bassVar;
+  }
 }

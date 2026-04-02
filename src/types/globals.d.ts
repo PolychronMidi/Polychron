@@ -483,6 +483,8 @@ interface LayerManagerAPI {
   layerComposers: Record<string, any>;
   phraseFamily: string | null;
   activeLayer: string | null;
+  flipBinByLayer: Record<string, boolean>;
+  perLayerState: Record<string, { crossModulation: number; lastCrossMod: number; balOffset: number; sideBias: number; lBal: number; rBal: number; cBal: number; cBal2: number; cBal3: number; refVar: number; bassVar: number }>;
   register(name: string, buffer: any[] | string, initialState?: object, setupFn?: Function): { layer: any; buffer: any[] };
   activate(name: string, isPoly?: boolean): any;
   advance(name: string, advancementType?: 'phrase' | 'section'): void;
@@ -1877,6 +1879,7 @@ declare var convergenceDetector: ConvergenceDetectorAPI;
 declare var convergenceVelocitySurge: { check(absoluteSeconds: number, layer: string): number; reset(): void };
 declare var trustEcologyCharacter: { update(): void; biasWeights(baseWeights: Record<string, number>): Record<string, number>; getDominant(): { system: string | null; family: string | null }; reset(): void };
 declare var stutterTempoFeel: { getTempoModulation(): number; reset(): void };
+declare var convergenceMemory: { record(absoluteSeconds: number, layer: string): void; getBoost(): number; reset(): void };
 declare var trustTimbreMapping: { suggest(absoluteSeconds: number): number | null; reset(): void };
 declare var temporalGravity: TemporalGravityAPI;
 declare var velocityInterference: VelocityInterferenceAPI;
