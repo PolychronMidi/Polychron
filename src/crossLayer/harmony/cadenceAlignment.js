@@ -11,6 +11,15 @@ cadenceAlignment = (() => {
   const STRONG_TENSION_THRESHOLD = 0.72;
   const EVENTS = eventCatalog.names;
 
+  // Tension-accumulation adaptive threshold (R23 E1, corrected R24/R25).
+  // postTension fires per-layer so ~2x per beat pair -- SATURATION_CALLS=60 = ~30 real beats.
+  // Relief is exploring=0 (R79 E2 calibrated 0.80 is correct, adding relief creates pump-dump
+  // oscillation), evolving=0.03, coherent=0.04 (floor 0.88 -- just enough micro-relief without
+  // crossing the sub-0.88 danger zone proven destructive in R19/R23/R24).
+  const TENSION_SATURATION_CALLS = 60;
+  const THRESHOLD_PRESSURE_RELIEF = { exploring: 0.0, evolving: 0.03, coherent: 0.04 };
+  let tensionPressureAccum = 0;
+
   // R79 E2: Regime-aware sync tolerance and resolution thresholds.
   // In exploring regime, widen the sync window (400->550ms) to create more
   // cross-layer cadence alignment opportunities -- harmonic "anchoring" during
@@ -46,6 +55,12 @@ cadenceAlignment = (() => {
       tension: clamp(tension, 0, 1),
       cadenceSuggested
     });
+    // Accumulate pressure when tension is sustained high; slow decay otherwise
+    if (tension > HIGH_TENSION_THRESHOLD) {
+      tensionPressureAccum = m.min(tensionPressureAccum + 1, TENSION_SATURATION_CALLS);
+    } else {
+      tensionPressureAccum = m.max(0, tensionPressureAccum - 0.5);
+    }
   }
 
   /**
@@ -112,16 +127,20 @@ cadenceAlignment = (() => {
       absoluteSeconds
     });
 
-    // R79 E2: Regime-aware resolve threshold. Exploring: lower (0.80) for
-    // more harmonic anchoring. Coherent: higher (0.92) for fewer forced resolutions.
+    // Tension-accumulation adaptive threshold. Base is regime-aware; pressure
+    // (sustained tension beats) reduces it. Relief is regime-capped to protect
+    // coherent stability floor (min ~0.89) while allowing more relief in exploring.
     const resolveThreshold = (function() {
       const reg = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
-      if (reg === 'exploring') return 0.80;
-      if (reg === 'coherent') return 0.82; // lowered from 0.92: high threshold suppressed all resolution during coherent regime (48% of piece)
-      return 0.88;
+      const base = reg === 'exploring' ? 0.80 : reg === 'coherent' ? 0.92 : 0.88;
+      const relief = V.optionalFinite(THRESHOLD_PRESSURE_RELIEF[reg], 0.03);
+      const pressure = clamp(tensionPressureAccum / TENSION_SATURATION_CALLS, 0, 1);
+      return base - pressure * relief;
     })();
+    const shouldResolve = alignment.consensus || alignment.combinedTension > resolveThreshold;
+    if (shouldResolve) tensionPressureAccum = 0; // resolution fired, reset accumulator
     return {
-      shouldResolve: alignment.consensus || alignment.combinedTension > resolveThreshold,
+      shouldResolve,
       tonicBias: 0.5 + intensityBoost * 0.4 * supportScale,
       dominantBias: 0.3 + intensityBoost * 0.5 * supportScale,
       syncOffset: alignment.syncOffset,
@@ -130,6 +149,6 @@ cadenceAlignment = (() => {
     };
   }
 
-  return { postTension, checkAlignment, applyAlignment, reset() { /* stateless - no per-scope state to clear */ } };
+  return { postTension, checkAlignment, applyAlignment, reset() { tensionPressureAccum = 0; } };
 })();
 crossLayerRegistry.register('cadenceAlignment', cadenceAlignment, ['all']);

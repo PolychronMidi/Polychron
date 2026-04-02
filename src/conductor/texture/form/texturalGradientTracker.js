@@ -1,4 +1,4 @@
-﻿// src/conductor/texturalGradientTracker.js - Rate of change in textural density.
+// src/conductor/texturalGradientTracker.js - Rate of change in textural density.
 // Tracks how fast the composite texture (voices - onset rate) is thickening
 // or thinning over time. Biases toward gradual transitions when rate is too
 // extreme, or allows sudden changes when dramatically appropriate.

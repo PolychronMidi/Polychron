@@ -1,4 +1,4 @@
-﻿harmonicRhythmTracker = (() => {
+harmonicRhythmTracker = (() => {
   const V = validator.create('harmonicRhythmTracker');
 
   let initialized = false;

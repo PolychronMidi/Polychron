@@ -1,4 +1,4 @@
-﻿// src/rhythm/FXFeedbackListener.js - eventBus listener for FX-Rhythm feedback loops
+// src/rhythm/FXFeedbackListener.js - eventBus listener for FX-Rhythm feedback loops
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
 FXFeedbackListener = (() => {

@@ -1,4 +1,4 @@
-﻿// src/conductor/texture/restDensityTracker.js - Tracks rest-to-onset ratio across layers.
+// src/conductor/texture/restDensityTracker.js - Tracks rest-to-onset ratio across layers.
 // Flags over-saturation (wall of sound) or sparse deserts.
 // Also detects phrase breathing points - merged from PhraseBreathingAdvisor.
 // Pure query API - biases rhythm onset probability and phrase breathing.

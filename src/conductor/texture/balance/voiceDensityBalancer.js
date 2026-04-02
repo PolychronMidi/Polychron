@@ -1,4 +1,4 @@
-﻿// src/conductor/voiceDensityBalancer.js - Counts simultaneous active voices per layer.
+// src/conductor/voiceDensityBalancer.js - Counts simultaneous active voices per layer.
 // Detects homophonic collapse (1 voice) or textural overcrowding.
 // Pure query API - scales motifConfig voice count targets and emission limits.
 

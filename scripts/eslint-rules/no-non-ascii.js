@@ -9,6 +9,18 @@ module.exports = {
       Program(node) {
         const source = context.getSourceCode();
         const text = source.getText();
+
+        // Catch sentinel left by fix-non-ascii.js for unmapped characters.
+        const sentinelRe = /\?unknown-ascii-character\?/g;
+        let sm;
+        while ((sm = sentinelRe.exec(text)) !== null) {
+          context.report({
+            node,
+            loc: source.getLocFromIndex(sm.index),
+            message: 'Unknown non-ASCII character was replaced by sentinel. Add a mapping for it in scripts/pipeline/fix-non-ascii.js REPLACEMENTS.'
+          });
+        }
+
         // Match any character outside printable ASCII (0x20-0x7E) and standard
         // whitespace (tab 0x09, newline 0x0A, carriage return 0x0D).
         const nonAscii = /[^\x09\x0A\x0D\x20-\x7E]/g;

@@ -1,4 +1,4 @@
-﻿// Aggregated entry point for the src/time modules.
+// Aggregated entry point for the src/time modules.
 
 
 require('./LayerManager');

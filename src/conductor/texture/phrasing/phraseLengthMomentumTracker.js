@@ -1,4 +1,4 @@
-﻿// src/conductor/phraseLengthMomentumTracker.js - Track phrase length trajectory.
+// src/conductor/phraseLengthMomentumTracker.js - Track phrase length trajectory.
 // Detects whether phrases are getting shorter (accelerating) or longer (expanding).
 // Pure query API - advises phrase-count decisions alongside sectionLengthAdvisor.
 

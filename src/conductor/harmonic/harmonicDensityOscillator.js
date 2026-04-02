@@ -1,4 +1,4 @@
-﻿// src/conductor/harmonicDensityOscillator.js - Harmonic change rate oscillation tracker.
+// src/conductor/harmonicDensityOscillator.js - Harmonic change rate oscillation tracker.
 // Detects periodic oscillation in harmonic density (chord changes per time unit).
 // Tension bias to reinforce natural harmonic "breathing" or break stale patterns.
 // Pure query API - no side effects.

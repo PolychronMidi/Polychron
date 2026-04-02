@@ -1,4 +1,4 @@
-﻿// src/conductor/intervalExpansionContractor.js - Intervallic vocabulary expansion/contraction.
+// src/conductor/intervalExpansionContractor.js - Intervallic vocabulary expansion/contraction.
 // Tracks whether the range of interval sizes used is expanding (wider leaps
 // emerging) or contracting (tighter steps dominating) over time.
 // Density bias to allow expansion room or encourage consolidation.

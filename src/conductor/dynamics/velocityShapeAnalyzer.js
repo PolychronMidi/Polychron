@@ -1,4 +1,4 @@
-﻿// src/conductor/dynamics/velocityShapeAnalyzer.js - Unified velocity shape analysis.
+// src/conductor/dynamics/velocityShapeAnalyzer.js - Unified velocity shape analysis.
 // Merges VelocityContourTracker + DynamicEnvelopeShaper.
 // Provides velocity contour shape, punchiness, and a single flicker modifier.
 // Pure query API - no side effects.

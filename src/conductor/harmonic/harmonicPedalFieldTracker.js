@@ -1,4 +1,4 @@
-﻿// src/conductor/harmonicPedalFieldTracker.js - Sustained harmonic field tracker.
+// src/conductor/harmonicPedalFieldTracker.js - Sustained harmonic field tracker.
 // Detects extended harmonic stasis (pedal/drone zones) by measuring how long
 // the same pitch class dominates the bass register. Tension bias encourages
 // movement after sustained fields or allows settling during instability.

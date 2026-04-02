@@ -26,11 +26,15 @@ crossLayerClimaxEngine = (() => {
   const INTENT_WEIGHT = 0.25;
 
   // Climax modifiers
-  const MAX_PLAY_BOOST = 0.35;
+  // R22: Play boost 0.35->0.12 -- climax intensity through velocity/register, not
+  // more notes. +35% playProb compounded with already-dense Q3 causing aural overload.
+  const MAX_PLAY_BOOST = 0.12;
   const MAX_VELOCITY_BOOST = 0.25;
   const MAX_REGISTER_WIDEN = 6;
   const ENTROPY_BASE = 0.5;
-  const ENTROPY_BOOST = 0.4;
+  // R22: Entropy boost 0.4->0.22 -- coherent climax should be focused, not frenzied.
+  // Peak target: 0.5+0.22*0.85=0.69 (was 0.84).
+  const ENTROPY_BOOST = 0.22;
   // R94 E3: Regime-responsive climax entropy scaling. During exploring,
   // climax approach injects more entropy variance (boosting entropy axis
   // share which collapsed 0.193->0.114 in R93). During coherent, reduce
@@ -42,6 +46,8 @@ crossLayerClimaxEngine = (() => {
   let peakReached = false;
   let climaxCount = 0;
   let climaxPlayAllowance = 1;
+  // R23 E2: Density-aware playProb -- when already dense, climax adds velocity/register, not notes.
+  let lastDensity = 0.5;
 
   /**
    * Tick the climax detector each beat.
@@ -68,6 +74,7 @@ crossLayerClimaxEngine = (() => {
     climaxPlayAllowance = 1 - longFormPressure * clamp((0.68 - journeyProgress) / 0.68, 0, 1) * 0.30 * (1 - lowPhasePressure * 0.75);
 
     const sigs = conductorSignalBridge.getSignals();
+    lastDensity = sigs.density;
     // Blend compositeIntensity with elevated density/tension products for richer peak detection
     const densityPressure = clamp((sigs.density - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
     const tensionPressure = clamp((sigs.tension - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
@@ -112,8 +119,11 @@ crossLayerClimaxEngine = (() => {
     const climaxRegime = regimeSnap ? regimeSnap.regime : 'evolving';
     const entropyRegimeScale = V.optionalFinite(CLIMAX_ENTROPY_REGIME_SCALE[climaxRegime], 1.0);
 
+    // R23 E2: Density-aware play boost -- when already dense (>0.55), climax
+    // intensity shifts to velocity/register rather than adding more notes.
+    const densityScale = clamp((lastDensity - 0.55) / 0.35, 0, 1);
     return {
-      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance,
+      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - densityScale),
       velocityScale: 1.0 + intensity * MAX_VELOCITY_BOOST,
       registerBias: intensity * MAX_REGISTER_WIDEN,
       entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale
@@ -142,6 +152,7 @@ crossLayerClimaxEngine = (() => {
     peakReached = false;
     climaxCount = 0;
     climaxPlayAllowance = 1;
+    lastDensity = 0.5;
   }
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };

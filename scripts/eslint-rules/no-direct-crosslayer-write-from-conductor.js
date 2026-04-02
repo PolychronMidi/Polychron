@@ -38,7 +38,7 @@ module.exports = {
     ]);
     // explainabilityBus is intentionally NOT in this set (exempt diagnostic channel)
 
-    // Read-only method prefixes — these are safe to call from conductor
+    // Read-only method prefixes -- these are safe to call from conductor
     const READ_PATTERN = /^(get|is|has|query)/;
     // Additional read-only methods that do not match the prefix pattern
     const READ_EXCEPTIONS = new Set(['pitchEntropy', 'velocityVariance']);

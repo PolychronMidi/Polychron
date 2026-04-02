@@ -4,7 +4,6 @@
  * @module scripts/run-with-log
  */
 const { spawn } = require('child_process');
-const { createWriteStream } = require('fs');
 const { mkdir } = require('fs/promises');
 // Load stripAnsi for side-effects (defines naked global `stripAnsi`)
 require('./stripAnsi');
@@ -71,33 +70,59 @@ process.on('SIGINT', () => { removeLock(); process.exit(130); });
 process.on('SIGTERM', () => { removeLock(); process.exit(143); });
 process.on('uncaughtException', (err) => { removeLock(); throw err; });
 
-// Ensure log directory exists (async-safe)
-mkdir('log', { recursive: true }).catch(() => {});
+// Ensure log directory exists (sync so the fd open below always succeeds)
+fs.mkdirSync('log', { recursive: true });
 
-const logStream = createWriteStream(`log/${logFile}`);
+// fd-based log writer: tracks logPos so the progress marker can be overwritten
+// on each new write and truncated away cleanly on exit.
+const LOG_PATH = `log/${logFile}`;
+const PROGRESS_LINE = 'script in progress, wait...\n';
+const logFd = fs.openSync(LOG_PATH, 'w');
+let logPos = 0;
+
+function writeToLog(text) {
+  const buf = Buffer.from(text);
+  fs.writeSync(logFd, buf, 0, buf.length, logPos);
+  logPos += buf.length;
+  // Rewrite progress marker at new end so it's always the last line
+  const pb = Buffer.from(PROGRESS_LINE);
+  fs.writeSync(logFd, pb, 0, pb.length, logPos);
+}
+
+function finalizeLog(exitText) {
+  // Truncate to logPos (removes progress marker), write exit line, close fd
+  fs.ftruncateSync(logFd, logPos);
+  const buf = Buffer.from(exitText);
+  fs.writeSync(logFd, buf, 0, buf.length, logPos);
+  fs.closeSync(logFd);
+}
+
+// Write initial progress marker
+writeToLog('');
 // Preserve and propagate RUN_WITH_LOG_OWNER so nested run-with-log invocations are recognized as children
 const childEnv = Object.assign({}, process.env);
 if (!childEnv.RUN_WITH_LOG_OWNER) childEnv.RUN_WITH_LOG_OWNER = String(owner || process.pid);
 const proc = spawn(command[0], command.slice(1), { shell: false, stdio: 'pipe', env: childEnv });
 
-// ── Persistent single-line spinner ──────────────────────────────────────────
-// One status line pinned at the bottom. Overwrites itself in place so it never
-// adds extra lines. Cleared before child output, redrawn after.
+// Persistent single-line spinner -- only active when stderr is a real TTY.
+// When stderr is redirected to a file the ANSI escape codes land as literal
+// characters (\x1b[2K, \r) producing spam lines in the log.
+const _IS_TTY = Boolean(process.stderr.isTTY);
 const _SPIN = ['|', '/', '-', '\\'];
 let _spinIdx = 0;
 let _statusShown = false;
 const _STATUS_MSG = ' script in progress, wait...';
 
 function _writeStatus() {
+  if (!_IS_TTY) return;
   const ch = _SPIN[_spinIdx++ & 3];
   process.stderr.write('\x1b[2K\r' + ch + _STATUS_MSG);
   _statusShown = true;
 }
 function _clearStatus() {
-  if (_statusShown) {
-    process.stderr.write('\x1b[2K\r');
-    _statusShown = false;
-  }
+  if (!_IS_TTY || !_statusShown) return;
+  process.stderr.write('\x1b[2K\r');
+  _statusShown = false;
 }
 _writeStatus();
 const _spinTimer = setInterval(_writeStatus, 500);
@@ -125,40 +150,34 @@ function normalizeForLog(line) {
   return s;
 }
 
-function writeNormalized(streamLabel, chunk) {
-  // Split into lines and write each normalized line
+function writeNormalized(chunk) {
   const raw = String(chunk);
   const lines = raw.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
     if (l === '' && i === lines.length - 1) continue; // trailing newline
-    // Skip spinner status lines from the log
-    if (l.indexOf('script in progress') !== -1) continue;
-    const normalized = normalizeForLog(l) + '\n';
-    logStream.write(normalized);
+    writeToLog(normalizeForLog(l) + '\n');
   }
 }
 
 proc.stdout.on('data', (data) => {
   _clearStatus();
   process.stdout.write(data);
-  writeNormalized('STDOUT', data);
+  writeNormalized(data);
   _writeStatus();
 });
 
 proc.stderr.on('data', (data) => {
   _clearStatus();
   process.stderr.write(data);
-  writeNormalized('STDERR', data);
+  writeNormalized(data);
   _writeStatus();
 });
 
 proc.on('close', (code) => {
   clearInterval(_spinTimer);
   _clearStatus();
-  const summary = `[${new Date().toISOString()}] PROCESS EXIT: code=${code}\n`;
-  logStream.write(summary);
-  logStream.end();
+  finalizeLog(`script exited (code=${code})\n`);
   process.stderr.write('script exited (code=' + code + ')\n');
   process.exit(code);
 });

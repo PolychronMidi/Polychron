@@ -1,4 +1,4 @@
-﻿// src/rhythm/journeyRhythmCoupler.js - Harmonic journey - rhythm complexity coupling
+// src/rhythm/journeyRhythmCoupler.js - Harmonic journey - rhythm complexity coupling
 // Bold key moves trigger higher rhythm complexity via eventBus journey-move events
 
 journeyRhythmCoupler = (() => {

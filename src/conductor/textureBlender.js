@@ -1,4 +1,4 @@
-﻿// textureBlender.js - Per-unit texture mode selector for contrast-blend oscillations.
+// textureBlender.js - Per-unit texture mode selector for contrast-blend oscillations.
 // Decides whether a unit should emit normally ('single'), fire a percussive
 // chord stab ('chordBurst'), or inject a rapid scalar flurry ('flurry').
 // Probabilities oscillate using micro-hyper technique so texture switching

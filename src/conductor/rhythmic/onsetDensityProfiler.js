@@ -1,4 +1,4 @@
-﻿// src/conductor/onsetDensityProfiler.js - Ground-truth onset density metric via ATW.
+// src/conductor/onsetDensityProfiler.js - Ground-truth onset density metric via ATW.
 // Note-onset count per second across both layers, independent of eventBus feedback.
 // Directly scales conductor densityBias and crossModBias.
 

@@ -1,4 +1,4 @@
-﻿// src/conductor/ambitusMigrationTracker.js - Pitch range (ambitus) expansion/contraction.
+// src/conductor/ambitusMigrationTracker.js - Pitch range (ambitus) expansion/contraction.
 // Tracks the overall pitch range used in recent material and its rate of change.
 // Biases toward range exploration when constrained or consolidation when overspread.
 // Pure query API - no side effects.

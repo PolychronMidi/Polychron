@@ -1,4 +1,4 @@
-﻿// src/fx/stutter/index.js - central entry for stutter system
+// src/fx/stutter/index.js - central entry for stutter system
 require('./stutterConfig');
 require('./stutterRegistry');
 require('./stutterMetrics');

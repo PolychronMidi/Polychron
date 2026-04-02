@@ -1,4 +1,4 @@
-﻿// src/conductor/rhythmicInertiaTracker.js - Rhythmic pattern persistence tracker.
+// src/conductor/rhythmicInertiaTracker.js - Rhythmic pattern persistence tracker.
 // Measures how long rhythmic patterns persist (inertia) vs. change frequently.
 // Biases density to break rhythmic ruts or sustain good grooves.
 // Pure query API - no side effects.

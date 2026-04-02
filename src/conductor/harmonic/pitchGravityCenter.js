@@ -1,4 +1,4 @@
-﻿// src/conductor/pitchGravityCenter.js - Weighted average pitch ("center of gravity").
+// src/conductor/pitchGravityCenter.js - Weighted average pitch ("center of gravity").
 // Detects tonal drift vs. anchoring across the recent note window.
 // Pure query API - advises register shifts toward or away from a tonal anchor.
 

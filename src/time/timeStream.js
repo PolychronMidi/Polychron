@@ -1,4 +1,4 @@
-﻿// timeStream.js - Navigable metric hierarchy abstraction.
+// timeStream.js - Navigable metric hierarchy abstraction.
 // Tracks current position and bounds at every structural level.
 // Allows composers and cross-layer modules to query where they are,
 // look ahead/behind, compute progress, and detect boundaries -

@@ -449,7 +449,7 @@ function compareFingerprints(current, previous) {
     regimeDivergence += Math.abs(p - q);
   }
   regimeDivergence /= Math.max(allRegimes.size, 1);
-  // R10 Evo 5: profile-adaptive tolerance — explosive allows more flux, ambient demands stability
+  // R10 Evo 5: profile-adaptive tolerance -- explosive allows more flux, ambient demands stability
   const PROFILE_REGIME_TOLERANCE = { explosive: 0.30, atmospheric: 0.25, ambient: 0.15, minimal: 0.15 };
   const effectiveRegimeTolerance = (PROFILE_REGIME_TOLERANCE[current.activeProfile] || TOLERANCES.regimeDistributionDelta) * crossProfileScale;
   const regimePass = regimeDivergence <= effectiveRegimeTolerance;
@@ -489,7 +489,7 @@ function compareFingerprints(current, previous) {
     const flipRate = totalPairs > 0 ? flips / totalPairs : 0;
     // Informational dimension -- not counted toward drift verdict.
     // R71 E6: Apply crossProfileScale to correlationTrend tolerance.
-    // Correlation direction is inherently profile-dependent — atmospheric
+    // Correlation direction is inherently profile-dependent -- atmospheric
     // shows "stable" directions while explosive shows directional. Without
     // scaling, cross-profile runs consume 85%+ of tolerance on structural
     // profile differences, not meaningful regression.

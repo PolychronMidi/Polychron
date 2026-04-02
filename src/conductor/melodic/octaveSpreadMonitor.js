@@ -1,4 +1,4 @@
-﻿// src/conductor/octaveSpreadMonitor.js - Note distribution across octaves.
+// src/conductor/octaveSpreadMonitor.js - Note distribution across octaves.
 // Detects octave clustering (all notes in one octave) vs wide spread.
 // Pure query API - nudges composers toward underused octaves via conductorState.
 

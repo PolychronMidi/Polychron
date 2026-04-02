@@ -1,4 +1,4 @@
-﻿// src/conductor/motivicDensityTracker.js - Counts distinct active pitch patterns.
+// src/conductor/motivicDensityTracker.js - Counts distinct active pitch patterns.
 // Detects motivic overcrowding (too many competing fragments) or sparseness.
 // Pure query API - biases targetDensity to thin when overcrowded, thicken when sparse.
 

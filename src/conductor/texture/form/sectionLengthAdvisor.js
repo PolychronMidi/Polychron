@@ -1,4 +1,4 @@
-﻿// src/conductor/sectionLengthAdvisor.js - Advises section/phrase count based on energy trajectory.
+// src/conductor/sectionLengthAdvisor.js - Advises section/phrase count based on energy trajectory.
 // Tracks composite intensity over time to recommend extending or truncating sections.
 // Pure query API - consumed by main.js when determining phrasesPerSection.
 

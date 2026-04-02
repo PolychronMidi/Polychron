@@ -27,6 +27,7 @@ const PRE_COMPOSITION = [
   { label: 'check-hypermeta-jurisdiction', cmd: 'node scripts/pipeline/check-hypermeta-jurisdiction.js' },
   { label: 'generate-feedback-graph', cmd: 'node scripts/pipeline/generate-feedback-graph.js' },
   { label: 'validate-feedback-graph', cmd: 'node scripts/pipeline/validate-feedback-graph.js' },
+  { label: 'fix-non-ascii',           cmd: 'node scripts/pipeline/fix-non-ascii.js' },
   { label: 'lint',                    cmd: 'npm run lint' },
   { label: 'typecheck',               cmd: 'npm run tc' },
 ];

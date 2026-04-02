@@ -1,4 +1,4 @@
-﻿// src/conductor/harmonicSurpriseIndex.js - Chord-progression predictability analysis.
+// src/conductor/harmonicSurpriseIndex.js - Chord-progression predictability analysis.
 // Measures pitch-class transition entropy in the ATW window.
 // High entropy = surprising/fresh; low entropy = predictable/stale.
 // Pure query API - biases derivedTension toward harmonic freshness.

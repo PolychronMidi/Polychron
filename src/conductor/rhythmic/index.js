@@ -1,4 +1,4 @@
-﻿// src/conductor/rhythmic/index.js - Rhythm, timing, onset, accent, syncopation
+// src/conductor/rhythmic/index.js - Rhythm, timing, onset, accent, syncopation
 require('./beatGridHelpers');
 require('./accentPatternTracker');
 require('./attackDensityProfiler');

@@ -74,6 +74,12 @@ sectionIntentCurves = (() => {
     const ph = timeStream.getPosition('phrase');
     const sectionRoute = totalSections > 1 ? s / (totalSections - 1) : 0;
     const longFormPressure = clamp(totalSections - 4, 0, 1);
+    // R23 E4 / R24 fix: Piece-route-aware late surge gate. Per-section late surges
+    // (interaction, dissonance) taper off in Q3-Q4 of the piece to prevent
+    // compounding section-level surges into piece-level overload.
+    // R24: Onset moved 0.55->0.70 -- 0.55 suppressed surges too early (sections 3-4),
+    // reducing tension buildup and contributing to coherent collapse.
+    const lateSurgeGate = clamp(1.0 - (sectionRoute - 0.70) / 0.30, 0, 1);
     const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
@@ -176,7 +182,7 @@ sectionIntentCurves = (() => {
     const trajectoryCorrection = tensionSlope < -0.04 ? clamp(-tensionSlope * 0.20 * phaseIntentGate, 0, 0.12) : 0;
 
     const dissonanceTarget = clamp(
-      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection + gravityBoost * 0.7
+      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE * lateSurgeGate - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection + gravityBoost * 0.7
       // R70 E5: Section-route dissonance escalation. Middle sections get
       // more dissonance (up to +0.08) than edge sections, creating harmonic
       // contrast across the piece. This complements the per-section key
@@ -192,7 +198,7 @@ sectionIntentCurves = (() => {
     // Cross-section flicker contrast: if previous section had high flicker, bias interaction lower for textural contrast
     const flickerContrastBias = prevSection && Number.isFinite(prevSection.flicker) ? clamp((prevSection.flicker - 1.0) * -0.08, -0.04, 0.04) : 0;
     const interactionTarget = clamp(
-      INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE) + lateLift * INTERACTION_LATE_SURGE - longFormRelief * LONG_FORM_INTERACTION_RELIEF + flickerContrastBias + turbulenceDampen + transitionSettling,
+      INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE) + lateLift * INTERACTION_LATE_SURGE * lateSurgeGate - longFormRelief * LONG_FORM_INTERACTION_RELIEF + flickerContrastBias + turbulenceDampen + transitionSettling,
       0,
       1
     );

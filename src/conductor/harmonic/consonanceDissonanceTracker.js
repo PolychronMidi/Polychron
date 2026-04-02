@@ -1,4 +1,4 @@
-﻿// src/conductor/consonanceDissonanceTracker.js - Interval-quality ratio analysis.
+// src/conductor/consonanceDissonanceTracker.js - Interval-quality ratio analysis.
 // Measures consonant vs dissonant intervals in simultaneously sounding notes.
 // Pure query API - modifies derivedTension to prevent dissonance ruts or blandness.
 

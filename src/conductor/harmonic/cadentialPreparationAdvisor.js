@@ -1,4 +1,4 @@
-﻿// src/conductor/cadentialPreparationAdvisor.js - Cadential approach detector.
+// src/conductor/cadentialPreparationAdvisor.js - Cadential approach detector.
 // Monitors proximity to phrase/section boundaries and harmonic approach patterns,
 // signalling when dominant preparation or leading-tone pressure should begin.
 // Pure query API - biases derivedTension near cadence points.

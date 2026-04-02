@@ -1,4 +1,4 @@
-﻿// motifTransforms.js - Motif transformation strategies
+// motifTransforms.js - Motif transformation strategies
 // Pure permutation transformations for motif sequences
 
 const V = validator.create('motifTransforms');

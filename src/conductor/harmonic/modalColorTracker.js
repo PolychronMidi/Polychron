@@ -1,4 +1,4 @@
-﻿// src/conductor/modalColorTracker.js - Tracks which scale degrees are actually sounding.
+// src/conductor/modalColorTracker.js - Tracks which scale degrees are actually sounding.
 // Detects "vanilla" (1-3-5 heavy) vs. colorful (2, 4, 6, 7) pitch usage.
 // Pure query API - biases note selection toward underused color tones.
 

@@ -1,4 +1,4 @@
-﻿// src/conductor/dynamics/dynamicRangeTracker.js - Unified dynamic range analysis.
+// src/conductor/dynamics/dynamicRangeTracker.js - Unified dynamic range analysis.
 // Merges DynamicRangeAdvisor + DynamicContrastMemory.
 // Provides instantaneous velocity spread bias + longitudinal contrast tracking.
 // Pure query API - recordExtremes for longitudinal memory.

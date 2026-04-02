@@ -1,4 +1,4 @@
-﻿// registerBiasing.js - register bias selection and filtering helper
+// registerBiasing.js - register bias selection and filtering helper
 
 /**
  * Applies register bias (higher/lower) using phrase arc context and intent.

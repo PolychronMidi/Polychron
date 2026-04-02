@@ -1,4 +1,4 @@
-﻿// src/conductor/cadenceAdvisor.js - Detects structurally appropriate cadence points.
+// src/conductor/cadenceAdvisor.js - Detects structurally appropriate cadence points.
 // Listens to HARMONIC_CHANGE events to track chord progressions and advises
 // when a cadence is appropriate based on section phase and harmonic trajectory.
 

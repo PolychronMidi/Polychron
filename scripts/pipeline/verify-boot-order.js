@@ -168,7 +168,7 @@ function mapProviders(bootOrder, globalSet) {
 // -Scan consumed globals at LOAD TIME only -
 // Only top-level code runs during require(). References inside function
 // bodies, method definitions, and arrow-function expressions are deferred
-// to runtime — by which point every global has been assigned. We track
+// to runtime -- by which point every global has been assigned. We track
 // brace depth: depth 0 = top-level, depth >= 1 = inside a function body.
 // IIFE wrappers (the `= (() => {` / `= (function() {` pattern used by
 // every Polychron module) count as load-time because they execute
@@ -238,7 +238,7 @@ function scanConsumed(filePath, globalSet) {
         continue;
       }
 
-      // Brace tracking — integrate with codeParts so only depth-0 code is collected.
+      // Brace tracking -- integrate with codeParts so only depth-0 code is collected.
       // One-line functions like `function f() { return globalVar; }` open and
       // close on the same line, leaving depth at 0 at line end. Without per-brace
       // flushing, the function-body code would be scanned for globals.
@@ -348,9 +348,9 @@ function checkIntraSubsystemOrder(bootOrder, fileToGlobals, globalToFile, global
 
       for (const g of consumed) {
         const provider = subsystemProviders.get(g);
-        if (!provider) continue; // provided by another subsystem — OK
-        if (provider === filePath) continue; // self-provided — OK
-        // Consumer also assigns this global (re-assignment) — not a real dependency
+        if (!provider) continue; // provided by another subsystem -- OK
+        if (provider === filePath) continue; // self-provided -- OK
+        // Consumer also assigns this global (re-assignment) -- not a real dependency
         if (selfProvides.has(g)) continue;
         // index.js consuming globals from its own children is safe
         // (children load during index.js execution via require)
@@ -410,12 +410,12 @@ function checkCrossSubsystemOrder(bootOrder, fileToGlobals, globalToFile, global
     const selfProvides = new Set(fileToGlobals.get(filePath) || []);
 
     for (const g of consumed) {
-      if (selfProvides.has(g)) continue; // self-provided — OK
+      if (selfProvides.has(g)) continue; // self-provided -- OK
       const provider = globalToFile.get(g);
-      if (!provider) continue; // orphaned global — skip
+      if (!provider) continue; // orphaned global -- skip
       const providerSub = subsystemOf(rel(provider));
       if (!providerSub) continue;
-      if (providerSub === consumerSub) continue; // same subsystem — handled by intra check
+      if (providerSub === consumerSub) continue; // same subsystem -- handled by intra check
 
       const providerRank = subsystemRank.get(providerSub);
       if (providerRank === undefined) continue;
@@ -475,7 +475,7 @@ function autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet) 
   }
 
   // For each file in boot order, find which index.js child it belongs to
-  // (it may be a deeply nested file — trace back to the direct child)
+  // (it may be a deeply nested file -- trace back to the direct child)
   function directChildOf(file, idxFile) {
     const children = indexChildren.get(idxFile);
     if (!children) return null;
@@ -585,7 +585,7 @@ function autoFix(violations, bootOrder, fileToGlobals, globalToFile, globalSet) 
         reqEntries.push({ startLine: commentStart, endLine: li, resolvedAbs });
         li++;
       } else {
-        // Comments didn't lead to a require — skip them
+        // Comments didn't lead to a require -- skip them
         // (li is already past the comments)
       }
     }

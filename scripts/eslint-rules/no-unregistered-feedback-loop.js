@@ -44,7 +44,7 @@ module.exports = {
         if (!obj || obj.type !== 'Identifier') return;
         const methodName = (prop && prop.type === 'Identifier') ? prop.name : null;
 
-        // closedLoopController.create() auto-registers — always safe
+        // closedLoopController.create() auto-registers -- always safe
         if (obj.name === 'closedLoopController' && methodName === 'create') {
           hasControllerCreate = true;
         }
@@ -62,7 +62,7 @@ module.exports = {
       },
 
       'Program:exit'() {
-        // If file only uses closedLoopController.create(), that auto-registers — no error.
+        // If file only uses closedLoopController.create(), that auto-registers -- no error.
         // Only flag files with raw feedback loop access that lack registration.
         if (hasRawLoopCreation && !hasFeedbackRegister && !hasControllerCreate) {
           for (const node of rawLoopNodes) {

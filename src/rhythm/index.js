@@ -1,4 +1,4 @@
-﻿// Subsystem helpers (helpers first, manager last)
+// Subsystem helpers (helpers first, manager last)
 
 require('./rhythmValues');
 

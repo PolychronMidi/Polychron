@@ -1,4 +1,4 @@
-﻿conductorState = (() => {
+conductorState = (() => {
   const V = validator.create('conductorState');
 
   let initialized = false;

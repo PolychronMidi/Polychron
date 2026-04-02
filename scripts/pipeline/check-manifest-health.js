@@ -38,7 +38,7 @@ function getNested(obj, keys, label) {
   return cur;
 }
 
-// Regime scaling factors — shared by coupling matrix and coupling tail gates.
+// Regime scaling factors -- shared by coupling matrix and coupling tail gates.
 const REGIME_SCALE = {
   initializing: 1.15,
   exploring:    1.10,
@@ -81,7 +81,7 @@ function assertManifestHealth(manifest, manifestPath) {
   const regime = String(getNested(manifest, ['systemDynamics', 'snapshot', 'regime'], 'systemDynamics.snapshot.regime')).toLowerCase();
   const scale = regimeScale(regime);
   const MAX_COMPOSITIONAL_COUPLING = resolveCouplingThreshold(regime, BASE_MAX_COMPOSITIONAL_COUPLING);
-  // Apply the same regime scaling to tail gates — exploring/initializing regimes
+  // Apply the same regime scaling to tail gates -- exploring/initializing regimes
   // legitimately produce transient sectional coupling spikes.
   const MAX_COUPLING_TAIL_P90 = Math.min(BASE_MAX_COUPLING_TAIL_P90 * scale, 1.0);
   const MAX_COUPLING_TAIL_EXCEEDANCE = BASE_MAX_COUPLING_TAIL_EXCEEDANCE * scale;
@@ -128,7 +128,7 @@ function assertManifestHealth(manifest, manifestPath) {
     if (sev === 'warning') warningCount++;
     if (sev === 'critical') {
       const finding = String(v.finding || 'critical finding');
-      // Pipeline saturation during exploratory regimes is transient — downgrade to warning
+      // Pipeline saturation during exploratory regimes is transient -- downgrade to warning
       if (finding.includes('saturated') && SATURATION_TOLERANT_REGIMES.has(regime)) {
         warningCount++;
         console.warn('Acceptable warning: downgraded saturated verdict in ' + regime + ' regime: ' + finding);
@@ -205,14 +205,14 @@ function assertManifestHealth(manifest, manifestPath) {
         }
       }
     } catch (err) {
-      // Trace summary is advisory — parse failures are non-fatal
+      // Trace summary is advisory -- parse failures are non-fatal
       console.warn('Acceptable warning: check-manifest-health could not parse trace-summary.json: ' + (err && err.message ? err.message : err));
     }
   }
 
   if (failures.length > 0) {
     // Report failures as warnings but NEVER exit non-zero.
-    // This is a post-run diagnostic — killing the pipeline here prevents all
+    // This is a post-run diagnostic -- killing the pipeline here prevents all
     // downstream reporting scripts (conductor-map, crosslayer-map, golden-fingerprint,
     // narrative-digest, visualize-feedback-graph) from running, producing incomplete output.
     console.warn('check-manifest-health: FAIL (non-fatal) - ' + failures.join('; '));

@@ -1,4 +1,4 @@
-﻿// src/crossLayer/index.js - Central entry for cross-layer interaction modules.
+// src/crossLayer/index.js - Central entry for cross-layer interaction modules.
 
 // Registry MUST load first so every module below can self-register.
 

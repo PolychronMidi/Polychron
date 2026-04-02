@@ -1,4 +1,4 @@
-﻿// src/conductor/dynamicArchitectPlanner.js - Macro-level dynamic architecture.
+// src/conductor/dynamicArchitectPlanner.js - Macro-level dynamic architecture.
 // Tracks overall dynamic envelope across the entire piece (pp->ff arc) and
 // biases tension to enforce a long-range dynamic plan.
 // Pure query API - tension bias drives gradual macro-dynamic shape.

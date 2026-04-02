@@ -1,4 +1,4 @@
-﻿// eventCatalog.js - central event names + lightweight payload validation.
+// eventCatalog.js - central event names + lightweight payload validation.
 
 eventCatalog = (() => {
   const V = validator.create('eventCatalog');

@@ -190,7 +190,10 @@ systemDynamicsProfilerAnalysis = (() => {
       couplingMatrix: coupling.matrix,
       couplingLabels: (() => {
         const labels = {};
-        const LABEL_THRESHOLD = 0.35; // lowered from 0.5: homeostasis success keeps correlations moderate, not extreme
+        // R23 E3: Regime-aware label threshold. Coherent correlations are moderate
+        // not extreme, so lower threshold there. Exploring correlations are noisy,
+        // requiring a stronger signal to merit a semantic label.
+        const LABEL_THRESHOLD = regime === 'coherent' ? 0.28 : regime === 'exploring' ? 0.42 : 0.35;
         const LABEL_MAP = {
           'density-tension': ['+', 'tension-drives-density', '-', 'tension-suppresses-density'],
           'density-flicker': ['+', 'rhythmic-shimmer', '-', 'stability-amid-density'],
