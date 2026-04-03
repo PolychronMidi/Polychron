@@ -127,9 +127,11 @@ crossLayerClimaxEngine = (() => {
     // Harmonic excursion boost: distant keys amplify climax
     const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
     const excursionBoost = harmonicEntry && Number.isFinite(harmonicEntry.excursion) ? clamp(harmonicEntry.excursion * 0.02, 0, 0.1) : 0;
+    // R40: fractal arc multi-scale intensity -- dormant module now wired
+    const fractalIntensity = fractalArcGenerator.composite() * 0.08;
 
-    // Composite climax signal
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost) * preClimaxHold;
+    // Composite climax signal (R40: fractal arc adds multi-scale texture)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing
