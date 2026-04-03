@@ -3,7 +3,8 @@
 
 require('./LayerManager');
 
-require('./midiTiming');
+require('./setBpm');
+require('./setMeter');
 
 require('./setUnitTiming');
 require('./polyrhythmPairs');

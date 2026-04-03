@@ -88,7 +88,7 @@ Trust ecology alignment:
 - narrative-digest shows temporal trajectories inline with coupling labels
 - Journal compacted (R13-R24 archived)
 
-code-RAG improvements:
+code-docs-rag improvements:
 - IIFE global symbol indexing (+321 globals)
 - Inner function indexing (+1518 functions)
 - Scoped search by directory (path parameter)

@@ -64,11 +64,7 @@ tempoFeelEngine = (() => {
 
     // R21: stutter density modulates tempo feel
     const stutterTempoMod = /** @type {number} */ (safePreBoot.call(() => stutterTempoFeel.getTempoModulation(), 0));
-    // R40: regime-responsive tempo feel. Coherent = slightly more rubato (expressive),
-    // exploring = tighter tempo (searching energy). Evolving = neutral.
-    const tempoRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
-    const regimeTempoScale = tempoRegime === 'coherent' ? 1.3 : tempoRegime === 'exploring' ? 0.6 : 1.0;
-    return 1.0 + (feel + rubato) * regimeTempoScale + stutterTempoMod;
+    return 1.0 + feel + rubato + stutterTempoMod;
   }
 
   // Backwards compatibility

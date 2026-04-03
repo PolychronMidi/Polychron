@@ -199,7 +199,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   if (clPhaseMode === 'lock') emergenceSystems.push('phaseLock');
   if (clFeedbackEnergy > 0.05) emergenceSystems.push('feedback');
   if (clDownbeat) emergenceSystems.push('downbeat');
-  const otherLayerForEmergence = layer === 'L1' ? 'L2' : 'L1';
+  const otherLayerForEmergence = crossLayerHelpers.getOtherLayer(layer);
   const convergenceEntry = L0.getLast('onset', { layer: otherLayerForEmergence, since: absoluteSeconds - 0.05, windowSeconds: 0.05 });
   if (convergenceEntry) emergenceSystems.push('convergence');
   const emergenceBonus = emergenceSystems.length >= 3 ? 0.04 * (emergenceSystems.length - 2) : 0;

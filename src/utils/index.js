@@ -13,6 +13,8 @@ require('./modeQualityMap');
 require('./priorsHelpers');
 
 require('./clamps');
+require('./deepFreeze');
+require('./regimeDispatch');
 
 require('./propertyExtractors');
 

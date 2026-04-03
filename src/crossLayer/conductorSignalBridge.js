@@ -43,6 +43,11 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       systemPhase: (hmSnap && hmSnap.systemPhase) ? hmSnap.systemPhase : 'converging',
       exceedanceTrendEma: hmSnap ? V.optionalFinite(hmSnap.exceedanceTrendEma, 0) : 0,
       topologyPhase: (hmSnap && hmSnap.topologyPhase) ? hmSnap.topologyPhase : 'fluid',
+      // R46: expose regime and axis energy so crossLayer modules don't bypass the bridge
+      regime: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? ds.regime : 'evolving'; })(),
+      effectiveDimensionality: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.effectiveDimensionality, 3) : 3; })(),
+      couplingStrength: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.couplingStrength, 0.3) : 0.3; })(),
+      axisEnergyShares: (() => { const ae = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null); return ae && ae.shares ? ae.shares : null; })(),
       updatedAt: Date.now()
     };
 
@@ -74,7 +79,11 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       healthEma: cached.healthEma,
       systemPhase: cached.systemPhase,
       exceedanceTrendEma: cached.exceedanceTrendEma,
-      topologyPhase: cached.topologyPhase
+      topologyPhase: cached.topologyPhase,
+      regime: cached.regime,
+      effectiveDimensionality: cached.effectiveDimensionality,
+      couplingStrength: cached.couplingStrength,
+      axisEnergyShares: cached.axisEnergyShares
     });
   }
 
@@ -91,6 +100,10 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       systemPhase: 'converging',
       exceedanceTrendEma: 0,
       topologyPhase: 'fluid',
+      regime: 'evolving',
+      effectiveDimensionality: 3,
+      couplingStrength: 0.3,
+      axisEnergyShares: null,
       updatedAt: 0
     };
   }

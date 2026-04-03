@@ -40,7 +40,7 @@ const resolvedBassProgramPool = bassProgramPool.length > 0
   ? bassProgramPool
   : [bassInstrument, bassInstrument2].filter(program => Number.isFinite(Number(program)));
     // Bias instrument selection away from other layer's current programs
-    const otherLayer = LM.activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherLayer = crossLayerHelpers.getOtherLayer(LM.activeLayer || 'L1');
     const otherInst = L0.getLast('instrument', { layer: otherLayer });
     const otherPrograms = otherInst && Array.isArray(otherInst.programs) ? otherInst.programs : [];
     const gmFamily = (pg) => m.floor(Number(pg) / 8);

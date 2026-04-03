@@ -69,7 +69,7 @@ emitPickCrossLayerRecord = function(ctx) {
     // harmonicOtherMidi === -1 means nudgePitch found no other-layer note; skip query entirely
   } else {
     // Fallback: query L0 directly (should not normally occur)
-    const otherLayerForGuard = activeLayerName === 'L1' ? 'L2' : 'L1';
+    const otherLayerForGuard = crossLayerHelpers.getOtherLayer(activeLayerName);
     const otherRecentEntry = L0.getLast('note', { layer: otherLayerForGuard, since: timeInSeconds - 0.5, windowSeconds: 0.5 });
     if (otherRecentEntry) {
       const otherMidiCandidate = Number(

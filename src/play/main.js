@@ -162,7 +162,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     getMeterPair.pick();
     // Activate L1 layer first so activation doesn't overwrite freshly computed timing
     LM.activate('L1', false);
-    getMidiTiming();
+    setMeter(); setBpm();
     phraseLengthMomentumTracker.recordPhraseLength(sectionIndex, phraseIndex, measuresPerPhrase1);
     // Initialize polyrhythmic phase coupling after alignment is computed
     phaseLockedRhythmGenerator.initializePolyrhythmCoupling('L1', 'L2', measuresPerPhrase1, measuresPerPhrase2);
@@ -232,7 +232,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     // Apply L2 harmonic complement (complementary key/mode relationship to L1)
     harmonicJourney.applyL2ToContext(sectionIndex);
 
-    getMidiTiming();
+    setMeter(); setBpm();
     measuresPerPhrase = measuresPerPhrase2;
     setUnitTiming('phrase');
     layerPass.runLayerPass('L2', phraseFamily, {}, { boot, composerCtx });

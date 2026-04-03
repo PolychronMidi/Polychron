@@ -28,8 +28,7 @@ contextualTrust = (() => {
   let scores = new Map();
 
   function contextualTrustKey(moduleName) {
-    const snap = systemDynamicsProfiler.getSnapshot();
-    const regime = snap ? snap.regime : 'evolving';
+    const regime = conductorSignalBridge.getSignals().regime || 'evolving';
     return `${moduleName}::${regime}`;
   }
 

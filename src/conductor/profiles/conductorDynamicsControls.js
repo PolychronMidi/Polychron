@@ -27,12 +27,4 @@ CONDUCTOR_DYNAMICS_CONTROLS = {
   }
 };
 
-// Deep-freeze to prevent accidental mutation (Principle 2: Fail Fast)
-(function deepFreezeObj(obj) {
-  if (obj === null || typeof obj !== 'object') return;
-  Object.freeze(obj);
-  Object.getOwnPropertyNames(obj).forEach(n => {
-    const v = obj[n];
-    if (v !== null && typeof v === 'object' && !Object.isFrozen(v)) deepFreezeObj(v);
-  });
-})(CONDUCTOR_DYNAMICS_CONTROLS);
+deepFreeze(CONDUCTOR_DYNAMICS_CONTROLS);

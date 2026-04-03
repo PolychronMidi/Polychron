@@ -557,17 +557,6 @@ PHRASES_ARC_CURVES = {
 // Lambda-bearing objects (PHRASES_ARC_CURVES, RHYTHM_PATTERNS) are safely frozen
 // because Object.freeze preserves function references.
 (function freezeConfigs() {
-  function deepFreeze(obj) {
-    if (obj === null || typeof obj !== 'object') return obj;
-    Object.freeze(obj);
-    Object.getOwnPropertyNames(obj).forEach(name => {
-      const val = obj[name];
-      if (val !== null && typeof val === 'object' && !Object.isFrozen(val)) {
-        deepFreeze(val);
-      }
-    });
-    return obj;
-  }
 
   [
     BINAURAL, NUMERATOR, DENOMINATOR, OCTAVE,

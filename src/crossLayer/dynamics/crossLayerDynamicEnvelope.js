@@ -71,8 +71,7 @@ crossLayerDynamicEnvelope = (() => {
     // benefit from wider dynamic swings (more dramatic crescendo/decrescendo),
     // coherent passages from tighter, more unified dynamics. This creates
     // distinct dynamic characters per regime without changing arc type.
-    const snap = systemDynamicsProfiler.getSnapshot();
-    const envelopeRegime = snap ? snap.regime : 'exploring';
+    const envelopeRegime = conductorSignalBridge.getSignals().regime || 'exploring';
     const regimeAmplitude = envelopeRegime === 'exploring' ? 1.20
       : envelopeRegime === 'coherent' ? 0.85
       : 1.0;
@@ -125,8 +124,7 @@ crossLayerDynamicEnvelope = (() => {
     const intent = sectionIntentCurves.getLastIntent();
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
 
-    const snap = systemDynamicsProfiler.getSnapshot();
-    const regime = snap ? snap.regime : 'exploring';
+    const regime = conductorSignalBridge.getSignals().regime || 'exploring';
 
     // R2 E2: Phase-aware arc type bias. When phase axis is starved,
     // bias toward complementary arcs which create cross-layer velocity

@@ -84,8 +84,7 @@ articulationComplement = (() => {
     // textural variety and coupling dimension activity). Coherent passages
     // get subtler contrast for unified articulation. Creates regime-specific
     // articulation character that enriches coupling texture diversity.
-    const snap = systemDynamicsProfiler.getSnapshot();
-    V.assertObject(snap, 'systemDynamicsProfiler.getSnapshot()'); const artRegime = snap.regime;
+    const artRegime = conductorSignalBridge.getSignals().regime || 'evolving';
     const regimeContrast = artRegime === 'exploring' ? 1.25
       : artRegime === 'coherent' ? 0.80
       : 1.0;

@@ -72,8 +72,7 @@ restSynchronizer = (() => {
     const restUrgency = clamp((heatLevel - 0.5) * 2 + (1 - densityTarget) * 0.5 + restSyncBoost, 0, 1);
 
     // R73 E5: Regime-responsive rest probability
-    const snap = systemDynamicsProfiler.getSnapshot();
-    const regime = snap ? snap.regime : 'exploring';
+    const regime = conductorSignalBridge.getSignals().regime || 'exploring';
     const regimeBonus = regime === 'coherent' ? SHARED_REST_COHERENT_BONUS
       : regime === 'exploring' ? -SHARED_REST_EXPLORING_PENALTY
       : 0;
