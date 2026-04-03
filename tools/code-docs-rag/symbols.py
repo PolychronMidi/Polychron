@@ -42,11 +42,11 @@ TS_PATTERNS = {
 # These are the primary module pattern (473 files). TS_PATTERNS misses them.
 JS_IIFE_PATTERNS = {
     "iife_global": re.compile(
-        r'^(\w+)\s*=\s*\(\s*\(\s*\)\s*=>\s*\{',
+        r'^(\w+)\s*=\s*(?:/\*\*[^*]*\*/\s*)?(?:\(\s*)?\(\s*\(\s*\)\s*=>\s*\{',
         re.MULTILINE,
     ),
     "iife_function_global": re.compile(
-        r'^(\w+)\s*=\s*\(\s*function\s*\(\s*\)\s*\{',
+        r'^(\w+)\s*=\s*(?:/\*\*[^*]*\*/\s*)?(?:\(\s*)?\(\s*function\s*\(\s*\)\s*\{',
         re.MULTILINE,
     ),
     "const_global": re.compile(
