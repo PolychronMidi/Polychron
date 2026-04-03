@@ -1265,7 +1265,7 @@ def diagnose_error(error_text: str) -> str:
             parts.append(f"\n## '{sym}' appears in {len(callers)} locations")
             for r in callers[:3]:
                 parts.append(f"  {r['file'].replace(PROJECT_ROOT + '/', '')}:{r['line']}")
-    if not file_refs and not bugfixes and not unique_symbols:
+    if not file_refs and not kb_results and not unique_symbols:
         parts.append("\nNo specific diagnosis available. Try search_knowledge with key terms from the error.")
     return "\n".join(parts)
 
