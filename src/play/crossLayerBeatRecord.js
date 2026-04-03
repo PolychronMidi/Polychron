@@ -157,6 +157,12 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   interactionHeatMap.record(trustSystems.heatMapSystems.PHASE_LOCK, clPhaseMode === 'lock' ? 1 : 0);
   interactionHeatMap.record(trustSystems.heatMapSystems.FEEDBACK_OSCILLATOR, clFeedbackEnergy);
   interactionHeatMap.record(trustSystems.heatMapSystems.ROLE_SWAP, dynamicRoleSwap.getIsSwapped() ? 0.8 : 0);
+  // roleSwap payoff: reward when swap creates layer differentiation (density contrast)
+  const isSwapped = dynamicRoleSwap.getIsSwapped();
+  const roleSwapOutcome = isSwapped
+    ? clamp(0.35 + clDensity * 0.3, 0, 0.7)
+    : 0.15;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.ROLE_SWAP, clamp(roleSwapOutcome, -1, 1));
 
   const clConvergenceIntensity = convergenceDetector.wasRecent(absoluteSeconds, layer, 300) ? 1 : 0;
   interactionHeatMap.record(trustSystems.heatMapSystems.CONVERGENCE, clConvergenceIntensity);
@@ -167,7 +173,11 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const triggerCountBefore = convergenceHarmonicTrigger.getTriggerCount();
   if (clConvergenceGate.allowHarmonicTrigger) convergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absoluteSeconds, layer, alignment: clCadResult });
   const convergenceTriggered = convergenceHarmonicTrigger.getTriggerCount() > triggerCountBefore;
-  adaptiveTrustScores.registerOutcome(trustSystems.names.CONVERGENCE, convergenceTriggered ? 0.6 : (clConvergenceIntensity > 0 ? 0.15 : 0.20));
+  // Convergence payoff: momentum-aware. Climax approach boosts convergence reward.
+  const convClimaxEntry = L0.getLast('climax-pressure', { layer: 'both' });
+  const convClimaxBoost = convClimaxEntry && convClimaxEntry.level > 0.5 ? 0.10 : 0;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.CONVERGENCE, clamp(
+    (convergenceTriggered ? 0.65 : (clConvergenceIntensity > 0 ? 0.30 : 0.12)) + convClimaxBoost, -1, 1));
   interactionHeatMap.record(trustSystems.heatMapSystems.CLIMAX_ENGINE, crossLayerClimaxEngine.isApproaching() ? clamp(crossLayerClimaxEngine.getClimaxLevel(), 0, 1) : 0);
   interactionHeatMap.record(trustSystems.heatMapSystems.REST_SYNC, clRest.shouldRest ? 0.9 : 0);
 
@@ -280,10 +290,14 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const artOutcome = clamp(artDeviation > 0.05 ? 0.3 + artDeviation * 1.5 : 0.05, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.ARTICULATION_COMPLEMENT, artOutcome);
 
-  // texturalMirror: reward moderate texture distance (complementary), penalize identical or extreme
+  // texturalMirror: regime-aware payoff. Coherent = reward mirroring (low distance),
+  // exploring = reward complementing (moderate distance). Fixes conflict where R30
+  // regime-mirror told it to echo in coherent but payoff penalized zero distance.
   const texDist = texturalMirror.getTextureDistance();
-  const texOutcome = clamp(texDist > 0.1 && texDist < 0.8 ? 0.4 + (0.5 - m.abs(texDist - 0.45)) : 0.05, -1, 1);
-  adaptiveTrustScores.registerOutcome(trustSystems.names.TEXTURAL_MIRROR, texOutcome);
+  const texRegime = dynamicsSnapshot ? dynamicsSnapshot.regime : 'evolving';
+  const texTarget = texRegime === 'coherent' ? 0.15 : texRegime === 'exploring' ? 0.55 : 0.35;
+  const texOutcome = clamp(0.5 - m.abs(texDist - texTarget) * 1.5, -0.2, 0.8);
+  adaptiveTrustScores.registerOutcome(trustSystems.names.TEXTURAL_MIRROR, clamp(texOutcome + (emergenceSystems.length >= 3 ? eb : 0), -1, 1));
 
   // spectralComplementarity: reward active gap-filling (histogram imbalance being corrected)
   const spectralHist = spectralComplementarity.getHistogram(layer);

@@ -9,7 +9,12 @@ trustTimbreMapping = (() => {
     stutterContagion: [9, 12, 13, 14],
     harmonicIntervalGuard: [0, 4, 6, 11],
     motifEcho: [48, 49, 50, 51],
-    temporalGravity: [79, 89, 104, 112]
+    temporalGravity: [79, 89, 104, 112],
+    articulationComplement: [24, 25, 26, 27],
+    dynamicEnvelope: [40, 41, 42, 44],
+    grooveTransfer: [32, 33, 35, 38],
+    spectralComplementarity: [52, 53, 54, 55],
+    cadenceAlignment: [0, 4, 19, 24]
   };
 
   let lastShiftTime = -Infinity;

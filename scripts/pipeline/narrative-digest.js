@@ -498,7 +498,8 @@ function generateNarrative() {
       for (const [pair, label] of aggLabels) {
         const corr = summary.couplingCorrelation && summary.couplingCorrelation[pair];
         const meanStr = corr ? ` (mean r=${dec(corr.meanSigned, 3)})` : '';
-        lines.push(`- **${pair}**: ${label}${meanStr}`);
+        const trajStr = corr && corr.trajectory && corr.trajectory !== 'sustained' ? `, ${corr.trajectory}` : '';
+        lines.push(`- **${pair}**: ${label}${meanStr}${trajStr}`);
       }
       lines.push('');
     }

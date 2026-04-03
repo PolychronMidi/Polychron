@@ -51,10 +51,11 @@ crossLayerClimaxEngine = (() => {
 
   // R31 lab: voice-independence-feedback. Tracks whether voices achieve their
   // independence target and compensates with register spread when they don't.
-  let observedIndependenceEma = 0.5;
-  // R38: trust velocity anticipation state
-  let lastMotifTrust = 1.0;
-  let lastStutterTrust = 1.0;
+  // R39: per-layer state to prevent L1/L2 bleed
+  const observedIndependenceByLayer = { L1: 0.5, L2: 0.5 };
+  // R38: trust velocity anticipation state (per-layer)
+  const lastMotifTrustByLayer = { L1: 1.0, L2: 1.0 };
+  const lastStutterTrustByLayer = { L1: 1.0, L2: 1.0 };
 
   // R28 E1: Density-pressure homeostasis. Self-regulating accumulator builds
   // pressure when output density is sustained high during climax, reducing
@@ -150,6 +151,7 @@ crossLayerClimaxEngine = (() => {
     }
 
     // Approaching or at climax: scale parameters
+    const activeLayer = safePreBoot.call(() => LM.activeLayer, 'L1');
     const intensity = clamp((smoothedClimax - APPROACH_THRESHOLD) / (1 - APPROACH_THRESHOLD), 0, 1);
 
     // R94 E3: Scale entropy boost by regime
@@ -186,11 +188,11 @@ crossLayerClimaxEngine = (() => {
     // R31 lab: voice-independence-feedback
     const indTarget = phraseCtx && Number.isFinite(phraseCtx.voiceIndependence) ? phraseCtx.voiceIndependence : 0.5;
     const velVariance = clamp(m.abs((lastDensity - 0.5) * 2), 0, 1);
-    observedIndependenceEma += (velVariance - observedIndependenceEma) * 0.02;
-    const indGap = indTarget - observedIndependenceEma;
+    const indLayer = activeLayer === 'L1' || activeLayer === 'L2' ? activeLayer : 'L1';
+    observedIndependenceByLayer[indLayer] += (velVariance - observedIndependenceByLayer[indLayer]) * 0.02;
+    const indGap = indTarget - observedIndependenceByLayer[indLayer];
     const indCompensation = indGap > 0.15 ? indGap * 6 : 0;
     // R37: cross-layer voice sensing -- contrary motion when registers overlap
-    const activeLayer = safePreBoot.call(() => LM.activeLayer, 'L1');
     const voiceSenseLayer = activeLayer === 'L1' ? 'L2' : 'L1';
     const otherNotes = L0.query('note', { layer: voiceSenseLayer, windowSeconds: 0.3 });
     let contraryBias = 0;
@@ -211,10 +213,11 @@ crossLayerClimaxEngine = (() => {
     // R38: trust velocity anticipation -- lean into rising trust, back off falling
     const motifTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.MOTIF_ECHO), 1.0), 1.0);
     const stutterTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION), 1.0), 1.0);
-    const trustMotifDelta = motifTrustW - V.optionalFinite(lastMotifTrust, motifTrustW);
-    const trustStutterDelta = stutterTrustW - V.optionalFinite(lastStutterTrust, stutterTrustW);
-    lastMotifTrust = motifTrustW;
-    lastStutterTrust = stutterTrustW;
+    const trustLayer = activeLayer === 'L1' || activeLayer === 'L2' ? activeLayer : 'L1';
+    const trustMotifDelta = motifTrustW - V.optionalFinite(lastMotifTrustByLayer[trustLayer], motifTrustW);
+    const trustStutterDelta = stutterTrustW - V.optionalFinite(lastStutterTrustByLayer[trustLayer], stutterTrustW);
+    lastMotifTrustByLayer[trustLayer] = motifTrustW;
+    lastStutterTrustByLayer[trustLayer] = stutterTrustW;
     const trustRegBias = trustMotifDelta > 0.01 ? trustMotifDelta * 20 : 0;
     const trustStutterMod = trustStutterDelta < -0.01 ? 0.7 : 1.0;
     return {
@@ -249,9 +252,9 @@ crossLayerClimaxEngine = (() => {
     climaxPlayAllowance = 1;
     lastDensity = 0.5;
     densityPressureAccum = 0;
-    observedIndependenceEma = 0.5;
-    lastMotifTrust = 1.0;
-    lastStutterTrust = 1.0;
+    observedIndependenceByLayer.L1 = 0.5; observedIndependenceByLayer.L2 = 0.5;
+    lastMotifTrustByLayer.L1 = 1.0; lastMotifTrustByLayer.L2 = 1.0;
+    lastStutterTrustByLayer.L1 = 1.0; lastStutterTrustByLayer.L2 = 1.0;
   }
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };

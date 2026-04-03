@@ -170,33 +170,35 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 A local semantic code search MCP server running at `~/.claude/mcp/code-RAG/`. Indexed against this repo (614 files, 2004 symbols). Always load the skill first: `/code-RAG`.
 
-**When to use instead of Grep/Glob:**
-- Open-ended searches where you don't know the exact filename or symbol name
-- Finding all callers of a function across 600+ files
-- Locating similar code patterns by description rather than literal string
-- After context compaction, to recover precise file locations without re-reading everything
+**Mandatory usage (not optional):**
+- **Before modifying a file:** `search_knowledge` for existing decisions/constraints about that module. The KB contains calibration anchors, architectural boundaries, and proven anti-patterns. Ignoring these causes regressions.
+- **For any search involving "where does X happen" or "what reads Y":** use `search_code` or `find_callers`, NOT Grep. Semantic search finds intent-based matches that literal grep misses.
+- **After each code change:** the file watcher auto-reindexes (5s debounce). For batch changes, call `index_codebase` once at the end.
+- **After each listen-confirmed round:** `add_knowledge` for any new calibration anchor, architectural decision, anti-pattern, or bugfix discovered. Categories: `architecture`, `decision`, `pattern`, `bugfix`.
+
+**When Grep/Glob is still better:** exact symbol lookup (`class Foo`), specific file path known, 2-3 file targeted search.
 
 **Core workflow after compaction:**
 ```
 /code-RAG
+search_knowledge "density suppression"                  -- check existing constraints
 search_code "conductorSignalBridge layer activation"   -- find relevant code
 get_function_body processBeat                          -- pull exact implementation
 get_dependency_graph src/conductor/globalConductor.js  -- trace require() chains
 get_module_map src/conductor/signal/meta               -- subsystem structure
 ```
 
-**Knowledge KB** (`add_knowledge` / `search_knowledge`): persist architecture decisions, lab verdicts, and calibration anchors that survive context resets. Categories: `architecture`, `decision`, `pattern`, `bugfix`. Do NOT add_knowledge until user confirms task complete.
-
-**After every code change:** call `index_codebase` to keep the index current (or rely on the file watcher which auto-reindexes on save with 5s debounce).
+**Knowledge KB** (`add_knowledge` / `search_knowledge`): persists architecture decisions, calibration anchors, anti-patterns, and bugfixes across context resets. Currently contains 8 entries covering compound suppression, whack-a-mole thresholds, coherent safety floor, L0 persistence caveats, and the full evolutionary roadmap. Do NOT add_knowledge until user confirms task complete.
 
 **Key tools:**
-- `search_code` - semantic search across all JS source
+- `search_code` - semantic search across all JS source (use for open-ended "where does X happen")
+- `search_knowledge` - query KB before modifying any module (check for constraints)
+- `find_callers <name>` - all call sites across 600+ files (use instead of grep for callers)
 - `get_function_body <name>` - extract exact function body via tree-sitter AST
-- `find_callers <name>` - all call sites across the repo
 - `get_dependency_graph <file>` - import/require graph for a file
 - `lookup_symbol <name>` - find where a symbol is defined
-- `search_knowledge` - query the persistent architecture KB
 - `get_module_map src/<subsystem>` - directory structure with symbol counts
+- `add_knowledge` - persist decisions/anchors after confirmed rounds
 
 ## Related Documentation
 

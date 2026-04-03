@@ -8,7 +8,12 @@ trustEcologyCharacter = (() => {
     harmonicIntervalGuard: 'diatonicCore',
     convergenceHarmonicTrigger: 'harmonicMotion',
     motifEcho: 'development',
-    temporalGravity: 'tonalExploration'
+    temporalGravity: 'tonalExploration',
+    articulationComplement: 'expressiveDynamic',
+    dynamicEnvelope: 'expressiveDynamic',
+    grooveTransfer: 'rhythmicDrive',
+    spectralComplementarity: 'diatonicCore',
+    cadenceAlignment: 'harmonicMotion'
   };
 
   const DOMINANCE_BOOST = 1.5;
