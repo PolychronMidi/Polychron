@@ -83,14 +83,18 @@ pitchMemoryRecall = (() => {
 
     if (memories.length === 0) return null;
     if (absoluteSeconds - lastRecallSec < MIN_RECALL_INTERVAL_SEC) return null;
-    if (rf() > RECALL_PROBABILITY) return null;
+    // R41: regime-responsive recall probability. Coherent = more recall (reinforce patterns),
+    // exploring = less recall (seek novelty). System's memory behavior adapts to its state.
+    const recallRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
+    const recallScale = recallRegime === 'coherent' ? 1.4 : recallRegime === 'exploring' ? 0.6 : 1.0;
+    if (rf() > RECALL_PROBABILITY * recallScale) return null;
 
     // Check if a significant event is happening (convergence/downbeat)
     const hasConvergence = convergenceDetector.wasRecent(absoluteSeconds, activeLayer, 400) ?? false;
 
     const hasDownbeat = Boolean(emergentDownbeat);
 
-    if (!hasConvergence && !hasDownbeat && rf() > 0.3) return null;
+    if (!hasConvergence && !hasDownbeat && rf() > 0.3 * recallScale) return null;
 
     // Find best matching memory by pitch-class similarity + feedback pitch preference
     const currentPC = currentMidi % 12;

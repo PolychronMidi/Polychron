@@ -72,7 +72,12 @@ feedbackOscillator = (() => {
     const entropyModulation = entropyEntry && Number.isFinite(entropyEntry.smoothed) ? clamp(1.0 + (entropyEntry.smoothed - 0.5) * 0.3, 0.85, 1.15) : 1.0;
     // CIM: coordinated = less damping (energy flows freely), independent = more
     const cimDamping = DAMPING * (1.3 - cimScale * 0.6);
-    const dampedEnergy = incoming.energy * cimDamping * entropyModulation;
+    // R41: regime-responsive feedback character. Coherent = longer feedback chains
+    // (less damping, energy sustains), exploring = shorter chains (more damping,
+    // energy dissipates quickly). Creates regime-specific cross-layer dialogue depth.
+    const fbRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
+    const regimeDamping = fbRegime === 'coherent' ? 0.90 : fbRegime === 'exploring' ? 1.15 : 1.0;
+    const dampedEnergy = incoming.energy * cimDamping * entropyModulation * regimeDamping;
     if (dampedEnergy < MIN_ENERGY) return null;
 
     const incomingRoundTrip = V.requireFinite(incoming.roundTrip, 'react.incoming.roundTrip');
