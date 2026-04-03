@@ -16,3 +16,8 @@ deepwiki.config.json
 /metrics
 /lab
 /.claude/mcp
+
+# tools - track source, ignore runtime artifacts
+/tools/*/venv/
+/tools/*/__pycache__/
+/tools/*/global_kb/
