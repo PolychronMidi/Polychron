@@ -77,3 +77,21 @@ Modules are locally smart, globally blind. 5 dead-end L0 channels (articulation,
 ## Xenolinguistic Vision
 
 The three ceilings converge: a system that composes, understands what it composed, adjusts based on that understanding, and communicates at multiple perceptual levels. Binaural speaks to brainstem, harmony to emotional cortex, rhythm to motor cortex. Emergent interactions create meaning no module planned -- xenolinguistic expression arising from self-apparent intelligence.
+
+## Post-Roadmap Honing (R39+)
+
+Trust ecology alignment:
+- texturalMirror payoff made regime-aware (coherent=mirror, exploring=complement)
+- roleSwap trust payoff added (was completely missing)
+- convergence payoff improved (climax-pressure L0 awareness)
+- trustEcologyCharacter expanded 5->10 system-to-family mappings
+- narrative-digest shows temporal trajectories inline with coupling labels
+- Journal compacted (R13-R24 archived)
+
+code-RAG improvements:
+- IIFE global symbol indexing (+321 globals)
+- Inner function indexing (+1518 functions)
+- Scoped search by directory (path parameter)
+- Knowledge relationship linking (related_to parameter)
+- Temporal relevance decay in KB scoring
+- find_callers dotted reference support
