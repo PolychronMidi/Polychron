@@ -97,16 +97,17 @@ adaptiveTrustScores = (() => {
     if (adaptiveTrustScoresContextCacheKey === beatKey && adaptiveTrustScoresContextCache) {
       return adaptiveTrustScoresContextCache;
     }
-    const regime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
-    const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
-      ? axisEnergy.shares.tension
+    const bridgeSigs = conductorSignalBridge.getSignals();
+    const regime = bridgeSigs.regime || 'evolving';
+    const axisShares = bridgeSigs.axisEnergyShares;
+    const tensionShare = axisShares && typeof axisShares.tension === 'number'
+      ? axisShares.tension
       : 1.0 / 6.0;
-    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
-      ? axisEnergy.shares.trust
+    const trustShare = axisShares && typeof axisShares.trust === 'number'
+      ? axisShares.trust
       : 1.0 / 6.0;
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
+    const phaseShare = axisShares && typeof axisShares.phase === 'number'
+      ? axisShares.phase
       : 1.0 / 6.0;
     adaptiveTrustScoresContextCacheKey = beatKey;
     adaptiveTrustScoresContextCache = {
@@ -150,8 +151,7 @@ adaptiveTrustScores = (() => {
     let newWeight = BASE_EMA_NEW;
     let decayWeight = BASE_EMA_DECAY;
     // R95 E2: Regime-responsive EMA learning rate -- faster adaptation during exploring, slower during coherent
-    const regimeDynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const regimeForEma = regimeDynamics && regimeDynamics.regime ? regimeDynamics.regime : null;
+    const regimeForEma = conductorSignalBridge.getSignals().regime || null;
     if (regimeForEma && EMA_NEW_REGIME[regimeForEma] !== undefined) {
       newWeight = EMA_NEW_REGIME[regimeForEma];
       decayWeight = 1 - newWeight;
@@ -450,8 +450,7 @@ adaptiveTrustScores = (() => {
       }
 
       // R95 E4: Regime-responsive stagnation trigger
-      const stagnSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-      const stagnRegime = stagnSnap && stagnSnap.regime ? stagnSnap.regime : 'evolving';
+      const stagnRegime = conductorSignalBridge.getSignals().regime || 'evolving';
       const stagnTrigger = STAGNATION_BEATS_REGIME[stagnRegime] !== undefined ? STAGNATION_BEATS_REGIME[stagnRegime] : _STAGNATION_BEATS_TRIGGER;
       if (vs.stagnantBeats >= stagnTrigger && state.samples > 32) {
         const gap = meanTrust - state.score;

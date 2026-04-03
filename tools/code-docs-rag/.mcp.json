@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "code-RAG": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["/home/jah/.claude/mcp/code-RAG/server.py"],
+      "env": {
+        "PROJECT_ROOT": "/home/jah/Polychron",
+        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/code-RAG",
+        "HF_HUB_OFFLINE": "0",
+        "TRANSFORMERS_OFFLINE": "0",
+        "PYTHONPATH": "/home/jah/.local/lib/python3.12/site-packages"
+      },
+      "ragIgnoreDirs": [
+        ".git",
+        ".claude",
+        "node_modules",
+        "__pycache__",
+        "venv",
+        ".venv",
+        "dist",
+        "build",
+        "output",
+        "tmp",
+        "lab",
+        "runtime"
+      ],
+      "ragIgnore": [
+        "*.log",
+        "*-lock.yaml",
+        "*.json",
+        "*.wav",
+        "*.mid",
+        "*.csv"
+      ],
+      "ragLibs": [],
+      "ragMaxFileSize": 512
+    }
+  }
+}

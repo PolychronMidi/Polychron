@@ -6,9 +6,9 @@
 
 ### Server Source (Python)
 ```
-~/.claude/mcp/code-docs-rag/
-  server.py              FastMCP server (41 tools, name="code-docs-rag")
-  rag_engine.py          LanceDB vector store + BM25 + cross-encoder reranking + prediction error gating
+tools/code-docs-rag/     (symlinked to ~/.claude/mcp/code-docs-rag/ by scripts/setup-mcp.sh)
+  server.py              FastMCP server (44 tools, name="code-docs-rag")
+  rag_engine.py          LanceDB vector store (all-mpnet-base-v2, 768-dim) + BM25 + cross-encoder reranking + prediction error gating
   chunker.py             IIFE-aware JS chunker + line fallback (tree-sitter not installed)
   symbols.py             Symbol index: TS_PATTERNS + JS_IIFE_PATTERNS (globals + inner functions)
   analysis.py            Dependency graph, similar code, cross-language trace
@@ -30,22 +30,16 @@ Polychron/.claude/mcp/code-docs-rag/
 ```
 
 ### Skill Definition
-```
-~/.claude/skills/code-docs-rag/
-  SKILL.md               Skill manifest (name, description, allowed-tools)
-  search.md              Search & index tool docs
-  knowledge.md           Knowledge management workflow
-  symbols.md             Symbol lookup tool docs
-  code-trace.md          Trace & dependency tool docs
+Loaded via `/code-docs-rag` slash command (registered as a Claude Code skill).
 ```
 
-### Settings (~/. claude/settings.json)
+### Settings (~/.claude/settings.json)
 ```json
 {
   "mcpServers": {
     "code-docs-rag": {
       "command": "python3",
-      "args": ["~/.claude/mcp/code-docs-rag/server.py"],
+      "args": ["/home/jah/Polychron/tools/code-docs-rag/server.py"],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
         "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/code-docs-rag"
@@ -72,7 +66,7 @@ Polychron/.claude/mcp/code-docs-rag/
 ### Project Doc References
 ```
 Polychron/
-  CLAUDE.md                   code-docs-rag section (mandatory workflow, 41 tools)
+  CLAUDE.md                   code-docs-rag section (mandatory workflow, 44 tools)
   .github/agents/Evolver.agent.md    code-docs-rag constraints in evolution loop
   .github/copilot-instructions.md    code-docs-rag reference
   .mcp.json                          MCP server registration
@@ -83,13 +77,13 @@ Polychron/
 
 ## Setup
 
-Configured in `~/.claude/settings.json` under `mcpServers.code-docs-rag`. Load the skill before first use: `/code-docs-rag`
+Source tracked in `tools/code-docs-rag/`, symlinked to `~/.claude/mcp/code-docs-rag/` by `scripts/setup-mcp.sh`. Configured in `~/.claude/settings.json` under `mcpServers.code-docs-rag`. Load the skill before first use: `/code-docs-rag`
 
 ## When to Use What
 
 | I want to... | Use | NOT |
 |---|---|---|
-| Find code by intent ("where does convergence happen") | `search_code` | Grep |
+| Find code by intent ("where does convergence happen") | `search_code` (use `response_format="concise"` to save tokens) | Grep |
 | Find all callers of a function | `find_callers` | Grep |
 | Find callers in a specific directory | `find_callers path="src/crossLayer"` | Grep + manual filtering |
 | Find boundary violations | `find_anti_pattern` or `find_callers exclude_path=` | Multi-step Grep |
@@ -221,9 +215,28 @@ crossLayerClimaxEngine.js:
 
 Note: tree-sitter is not installed. The IIFE regex chunker is the primary JS path.
 
+### Embedding Model
+
+Uses `all-mpnet-base-v2` (768-dim, 109M params) from sentence-transformers. Configurable via `RAG_MODEL` env var. Vector dimension is auto-detected from the model and all LanceDB schemas adapt dynamically. Cross-encoder reranking uses `cross-encoder/ms-marco-MiniLM-L-6-v2`.
+
 ### IIFE Global + Inner Function Symbol Indexing
 
 321 IIFE globals + 1914 inner functions indexed (3848+ total). `lookup_symbol` and `find_callers` work for Polychron's global-assignment pattern and functions nested inside IIFEs.
+
+### Context-Budget Awareness
+
+Composite tools (`before_editing`, `what_did_i_forget`, `module_story`) auto-scale output based on remaining context window. Reads `/tmp/claude-context.json` (written by the status line command) to determine pressure level:
+
+| Context Remaining | Budget | KB Entries | Callers | Symbols | KB Content Chars |
+|---|---|---|---|---|---|
+| >75% | greedy | 5 | 10 | 15 | 200 |
+| 50-75% | moderate | 3 | 8 | 12 | 150 |
+| 25-50% | conservative | 2 | 5 | 8 | 100 |
+| <25% | minimal | 1 | 3 | 5 | 60 |
+
+### Response Format Control
+
+`search_code` supports a `response_format` parameter: `"detailed"` (default) includes summaries, KB tags, and language info. `"concise"` returns only `file:line (score%)` — roughly 1/3 the tokens. Use concise mode when you need locations but not full context, or when context window is tight.
 
 ### Temporal Relevance Decay
 

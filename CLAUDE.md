@@ -170,7 +170,7 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 ## code-docs-rag
 
-A local semantic code search MCP server running at `~/.claude/mcp/code-docs-rag/`. Indexed against this repo (614 files, 2004 symbols). Always load the skill first: `/code-docs-rag`.
+A local semantic code search MCP server tracked at `tools/code-docs-rag/` (symlinked to `~/.claude/mcp/` by `scripts/setup-mcp.sh`). Uses `all-mpnet-base-v2` (768-dim) embeddings with hybrid semantic+BM25+RRF search. Composite tools (`before_editing`, `what_did_i_forget`, `module_story`) auto-scale output based on remaining context window via `/tmp/claude-context.json`. Always load the skill first: `/code-docs-rag`.
 
 **Mandatory usage (not optional):**
 - **Before modifying a file:** `before_editing "path/to/file.js"` -- ONE CALL assembles KB constraints, callers, boundary warnings, and file structure. Replaces multi-step research.
