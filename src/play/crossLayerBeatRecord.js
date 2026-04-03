@@ -122,6 +122,8 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   stutterContagion.apply(absoluteSeconds, layer);
   const clDensity = temporalGravity.measureDensity(layer, beatStartTime);
   temporalGravity.postDensity(absoluteSeconds, layer, clDensity);
+  // R35: density-rhythm L0 channel for rhythm mode adaptation
+  L0.post('density-rhythm', layer, absoluteSeconds, { density: clamp(clDensity, 0, 1) });
   const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
   V.assertObject(clFeedback, 'feedbackOscillator.applyFeedback result');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);
@@ -175,6 +177,18 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   interactionHeatMap.record(trustSystems.heatMapSystems.EMERGENT_DOWNBEAT, clDownbeat ? clamp(clDownbeat.strength, 0, 1) : 0);
   if (clDownbeat) feedbackOscillator.inject(absoluteSeconds, layer, clamp(clDownbeat.strength, 0, 1), 'downbeat');
 
+  // R35: emergence detection -- when 3+ systems fire on same beat, boost all payoffs
+  const emergenceSystems = [];
+  if (stutterProb > 0.15) emergenceSystems.push('stutter');
+  if (clCadResult && clCadResult.shouldResolve) emergenceSystems.push('cadence');
+  if (clPhaseMode === 'lock') emergenceSystems.push('phaseLock');
+  if (clFeedbackEnergy > 0.05) emergenceSystems.push('feedback');
+  if (clDownbeat) emergenceSystems.push('downbeat');
+  const otherLayerForEmergence = layer === 'L1' ? 'L2' : 'L1';
+  const convergenceEntry = L0.getLast('onset', { layer: otherLayerForEmergence, since: absoluteSeconds - 0.05, windowSeconds: 0.05 });
+  if (convergenceEntry) emergenceSystems.push('convergence');
+  const emergenceBonus = emergenceSystems.length >= 3 ? 0.04 * (emergenceSystems.length - 2) : 0;
+
   // Trust scores (payoff constants from MAIN_LOOP_CONTROLS.trustPayoffs)
   const tp = MAIN_LOOP_CONTROLS.trustPayoffs;
   const stutterOutcome = clamp(1 - m.abs(stutterProb - clIntent.interactionTarget) * tp.stutterContagion.targetScale, -1, 1);
@@ -202,10 +216,12 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const feedbackOutcome = (clFeedbackEnergy === 0 && !clDownbeat)
     ? clamp(0.12 + velocitySupport, -1, 1)
     : clamp(0.20 + clFeedbackEnergy + velocitySupport + fop.energyOffset + (clDownbeat ? clDownbeat.strength * fop.downbeatScale : 0), -1, 1);
-  adaptiveTrustScores.registerOutcome(trustSystems.names.STUTTER_CONTAGION, stutterOutcome);
-  adaptiveTrustScores.registerOutcome(trustSystems.names.PHASE_LOCK, phaseOutcome);
-  adaptiveTrustScores.registerOutcome(trustSystems.names.CADENCE_ALIGNMENT, cadenceOutcome);
-  adaptiveTrustScores.registerOutcome(trustSystems.names.FEEDBACK_OSCILLATOR, feedbackOutcome);
+  // R35: emergence bonus applied to all active systems when 3+ fire together
+  const eb = Number.isFinite(emergenceBonus) ? emergenceBonus : 0;
+  adaptiveTrustScores.registerOutcome(trustSystems.names.STUTTER_CONTAGION, clamp(stutterOutcome + (emergenceSystems.includes('stutter') ? eb : 0), -1, 1));
+  adaptiveTrustScores.registerOutcome(trustSystems.names.PHASE_LOCK, clamp(phaseOutcome + (emergenceSystems.includes('phaseLock') ? eb : 0), -1, 1));
+  adaptiveTrustScores.registerOutcome(trustSystems.names.CADENCE_ALIGNMENT, clamp(cadenceOutcome + (emergenceSystems.includes('cadence') ? eb : 0), -1, 1));
+  adaptiveTrustScores.registerOutcome(trustSystems.names.FEEDBACK_OSCILLATOR, clamp(feedbackOutcome + (emergenceSystems.includes('feedback') ? eb : 0), -1, 1));
   // coherenceMonitor: bias near neutralBias = coherent (positive), far = correcting (negative)
   const cmp = tp.coherenceMonitor;
   const coherenceOutcome = clamp(1 - m.abs(coherenceMonitor.getDensityBias() - cmp.neutralBias) * cmp.sensitivity, -1, 1);

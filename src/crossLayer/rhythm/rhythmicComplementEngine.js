@@ -152,7 +152,12 @@ rhythmicComplementEngine = (() => {
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
 
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
-    const density = V.optionalFinite(intent.densityTarget, 0.5);
+    // R35: density-rhythm L0 -- blend real-time density with intent for mode selection
+    const densityRhythmEntry = L0.getLast('density-rhythm', {
+      layer: crossLayerHelpers.getOtherLayer(LM.activeLayer || 'L1')
+    });
+    const realtimeDensity = densityRhythmEntry ? V.optionalFinite(densityRhythmEntry.density, 0.5) : 0.5;
+    const density = V.optionalFinite(intent.densityTarget, 0.5) * 0.5 + realtimeDensity * 0.5;
 
     // Harmonic distance awareness: far from home key favors canon (coherence in distant territory)
     const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
