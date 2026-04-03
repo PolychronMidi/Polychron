@@ -139,13 +139,13 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // Stutter had no direct regime awareness -- regime influenced only
   // indirectly through negotiationEngine. Direct modulation creates
   // more distinct dynamic character per regime.
-  const regimeSnap = systemDynamicsProfiler.getSnapshot();
-  if (regimeSnap && regimeSnap.regime) {
+  const beatRegime = conductorSignalBridge.getSignals().regime;
+  if (beatRegime) {
     // R42 E3: Relax coherent multiplier 0.92->0.96. R41 note count
     // dropped 29% -- coherent stutter suppression too aggressive.
-    if (regimeSnap.regime === 'coherent') {
+    if (beatRegime === 'coherent') {
       stutterProb = clamp(stutterProb * 0.96, 0, 1);
-    } else if (regimeSnap.regime === 'evolving') {
+    } else if (beatRegime === 'evolving') {
       stutterProb = clamp(stutterProb * 1.10, 0, 1);
     }
   }

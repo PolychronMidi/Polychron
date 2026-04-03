@@ -1,6 +1,6 @@
 # code-docs-rag: Setup, Usage, and Maintenance Guide
 
-> Local semantic code + documentation RAG system for Polychron. 41 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
+> Local semantic code + documentation RAG system for Polychron. 43 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
 
 ## Full Installation Topology
 

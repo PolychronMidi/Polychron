@@ -86,10 +86,18 @@ negotiationEngine = (() => {
     // Coherent play reduction (0.97x) compounded with stutter-regime
     // modulation in processBeat. Removing to recover note output.
 
-    const conflict = m.abs(trustCadence - trustStutter);
-    if (conflict > CONFLICT_THRESHOLD) {
-      playProb = clamp(playProb * CONFLICT_PLAY_DAMPEN, 0, 1);
-      stutterProb = clamp(stutterProb * CONFLICT_STUTTER_DAMPEN, 0, 1);
+    // Quark-level: multi-pair conflict detection (was single pair only)
+    const trustValues = [trustStutter, trustCadence, trustPhase];
+    let maxConflict = 0;
+    for (let ci = 0; ci < trustValues.length; ci++) {
+      for (let cj = ci + 1; cj < trustValues.length; cj++) {
+        maxConflict = m.max(maxConflict, m.abs(trustValues[ci] - trustValues[cj]));
+      }
+    }
+    if (maxConflict > CONFLICT_THRESHOLD) {
+      const dampScale = clamp(1.0 - (maxConflict - CONFLICT_THRESHOLD) * 0.3, CONFLICT_PLAY_DAMPEN, 1.0);
+      playProb = clamp(playProb * dampScale, 0, 1);
+      stutterProb = clamp(stutterProb * clamp(dampScale + 0.02, CONFLICT_STUTTER_DAMPEN, 1.0), 0, 1);
     }
 
     const allowCadence = Boolean(context.cadenceSuggested) && phaseConfidence >= CADENCE_PHASE_MIN && trustCadence >= CADENCE_TRUST_MIN;
@@ -104,10 +112,10 @@ negotiationEngine = (() => {
       trustCadence,
       trustPhase,
       allowCadence,
-      conflict
+      conflict: maxConflict
     });
 
-    return { playProb, stutterProb, allowCadence, conflict, phaseConfidence };
+    return { playProb, stutterProb, allowCadence, conflict: maxConflict, phaseConfidence };
   }
 
   /**
