@@ -486,6 +486,7 @@ interface LayerManagerAPI {
   activeLayer: string | null;
   flipBinByLayer: Record<string, boolean>;
   perLayerState: Record<string, { crossModulation: number; lastCrossMod: number; balOffset: number; sideBias: number; lBal: number; rBal: number; cBal: number; cBal2: number; cBal3: number; refVar: number; bassVar: number }>;
+  quantumState: { lastPitchClass: number; lastDensity: number; lastRegime: string; lastTexture: string };
   register(name: string, buffer: any[] | string, initialState?: object, setupFn?: Function): { layer: any; buffer: any[] };
   activate(name: string, isPoly?: boolean): any;
   advance(name: string, advancementType?: 'phrase' | 'section'): void;

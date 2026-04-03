@@ -16,6 +16,9 @@ class LayerManager {
     L1: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0 },
     L2: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0 }
   };
+  // Xenolinguistic L2: quantum entanglement register. L1 writes its last pitch/rhythm
+  // choices here, L2 reads them at activation to pre-constrain its search space.
+  static quantumState = { lastPitchClass: -1, lastDensity: 0.5, lastRegime: 'evolving', lastTexture: 'normal' };
 
   /**
    * Register a layer with buffer and initial timing state.

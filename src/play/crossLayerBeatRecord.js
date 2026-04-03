@@ -134,6 +134,22 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const selfNarrative = (clDensity > 0.6 ? 'dense' : clDensity < 0.3 ? 'sparse' : 'balanced') + ' '
     + selfRegime + (perceptualDensity > 0.7 ? ' crowded' : '');
   L0.post('self-narration', layer, absoluteSeconds, { narrative: selfNarrative, density: clDensity, regime: selfRegime });
+  // Xenolinguistic L2: entanglement -- write quantum state for other layer to read
+  LM.quantumState = { lastPitchClass: -1, lastDensity: clDensity, lastRegime: selfRegime, lastTexture: selfNarrative };
+  // Xenolinguistic L3: channel unification. Measure alignment across 5 perceptual channels:
+  // harmonic (regime), rhythmic (phase lock), binaural (implicit), spectral (brightness), micro (density).
+  // High alignment = unified xenolinguistic expression. Low = fragmented channels.
+  const channelHarmonic = selfRegime === 'coherent' ? 1 : selfRegime === 'exploring' ? 0 : 0.5;
+  const channelRhythmic = clamp(clDensity, 0, 1);
+  const channelSpectral = (() => { const se = L0.getLast('spectral', { layer }); return se && Array.isArray(se.histogram) ? clamp(se.histogram.reduce((a, b) => a + b, 0) / 4, 0, 1) : 0.5; })();
+  const channelMicro = clamp(1 - perceptualDensity, 0, 1);
+  const channels = [channelHarmonic, channelRhythmic, channelSpectral, channelMicro];
+  const chMean = channels.reduce((a, b) => a + b, 0) / channels.length;
+  let chVariance = 0;
+  for (let chi = 0; chi < channels.length; chi++) chVariance += (channels[chi] - chMean) * (channels[chi] - chMean);
+  chVariance /= channels.length;
+  const channelCoherence = clamp(1 - chVariance * 4, 0, 1);
+  L0.post('channel-coherence', layer, absoluteSeconds, { coherence: channelCoherence, mean: chMean });
   const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
   V.assertObject(clFeedback, 'feedbackOscillator.applyFeedback result');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);

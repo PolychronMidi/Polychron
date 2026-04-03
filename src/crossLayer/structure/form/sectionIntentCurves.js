@@ -186,8 +186,12 @@ sectionIntentCurves = (() => {
       : 1.0;
     const trajectoryCorrection = tensionSlope < -0.04 ? clamp(-tensionSlope * 0.20 * phaseIntentGate, 0, 0.12) : 0;
 
+    // Xenolinguistic L1: feedback pitch complement bleeds into dissonance target.
+    // Active sub-harmonic feedback = slight dissonance pull (sub-conscious tension).
+    const feedbackPitchEntry = L0.getLast('feedbackPitch', { layer: 'both' });
+    const feedbackDissonancePull = feedbackPitchEntry && Number.isFinite(feedbackPitchEntry.pitchClass) ? 0.03 : 0;
     const dissonanceTarget = clamp(
-      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE * lateSurgeGate - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection + gravityBoost * 0.7
+      DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE * lateSurgeGate - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + tensionContrastBias + tensionLearning + trajectoryCorrection + gravityBoost * 0.7 + feedbackDissonancePull
       // R70 E5: Section-route dissonance escalation. Middle sections get
       // more dissonance (up to +0.08) than edge sections, creating harmonic
       // contrast across the piece. This complements the per-section key
@@ -240,7 +244,12 @@ sectionIntentCurves = (() => {
     const sectionStart = ph === 0 || ph === halfPhrase;
     const qualityEntry = sectionStart ? L0.getLast('section-quality', { layer: 'both' }) : null;
     const qBias = qualityEntry && Number.isFinite(qualityEntry.bias) ? qualityEntry.bias : 0;
-    const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1 + qBias * 0.8, 0, 1);
+    // Xenolinguistic L2: observation effect. System reads its own exceedance trend
+    // and self-corrects convergence target. Measurement changes behavior.
+    const bridgeSigs = conductorSignalBridge.getSignals();
+    const exceedanceObs = V.optionalFinite(bridgeSigs.exceedanceTrendEma, 0);
+    const observationConvergenceBoost = exceedanceObs > 0.3 ? clamp((exceedanceObs - 0.3) * 0.15, 0, 0.06) : 0;
+    const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1 + qBias * 0.8 + observationConvergenceBoost, 0, 1);
     const adjustedDensity = clamp(densityTarget + qBias * -0.5 + personalityContrastDensity, 0, 1);
 
     lastIntent = { densityTarget: adjustedDensity, dissonanceTarget, interactionTarget, entropyTarget, convergenceTarget };

@@ -173,7 +173,11 @@ entropyRegulator = (() => {
       arcWeight = clamp(ARC_BLEND_WEIGHT + entropyContainment * 0.10 + edgePressure * 0.05, ARC_BLEND_WEIGHT, 0.48);
       intentWeight = 1 - arcWeight;
       targetTrim = entropyContainment * (0.02 + edgePressure * 0.03) * (0.25 + phaseProtection * 0.45);
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim;
+      // Xenolinguistic L4: self-narration modulates entropy. Crowded = less entropy, sparse = more.
+      const narEntry = L0.getLast('self-narration', { layer: 'both' });
+      const narMod = narEntry && narEntry.narrative
+        ? (narEntry.narrative.includes('crowded') ? -0.03 : narEntry.narrative.includes('sparse') ? 0.03 : 0) : 0;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

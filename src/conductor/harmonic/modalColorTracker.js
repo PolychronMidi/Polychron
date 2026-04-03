@@ -88,6 +88,13 @@ modalColorTracker = (() => {
     const b = modalColorTracker.getColorBias();
     return { modalColorBias: b ? b.colorBias : 1, modalStabilityBias: b ? b.stabilityBias : 1 };
   });
+  // Xenolinguistic L1: post underused pitch classes to L0 for voice selection diversity
+  conductorIntelligence.registerRecorder('modalColorTracker', (ctx) => {
+    const underused = modalColorTracker.getUnderusedPitchClasses();
+    if (underused.length > 0) {
+      L0.post('underusedPitchClasses', 'both', ctx.absTime, { pitchClasses: underused });
+    }
+  });
 
   return {
     getModalProfile,
