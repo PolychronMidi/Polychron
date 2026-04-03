@@ -129,6 +129,11 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const noteCount = recentNotes ? recentNotes.length : 0;
   const perceptualDensity = clamp(noteCount / 12, 0, 1);
   L0.post('perceptual-crowding', layer, absoluteSeconds, { perceptualDensity, noteCount });
+  // Xenolinguistic L4: beat-level self-narration. The system describes what it just did.
+  const selfRegime = conductorSignalBridge.getSignals().regime || 'evolving';
+  const selfNarrative = (clDensity > 0.6 ? 'dense' : clDensity < 0.3 ? 'sparse' : 'balanced') + ' '
+    + selfRegime + (perceptualDensity > 0.7 ? ' crowded' : '');
+  L0.post('self-narration', layer, absoluteSeconds, { narrative: selfNarrative, density: clDensity, regime: selfRegime });
   const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
   V.assertObject(clFeedback, 'feedbackOscillator.applyFeedback result');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);
