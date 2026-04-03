@@ -20,10 +20,10 @@ require('./harmony');
 require('./dynamics');
 // Subsystem groups - each subfolder index.js loads its own modules.
 
-require('./structure');
-
-
 require('./conductorSignalBridge');
+
+
+require('./structure');
 
 require('./coordinationIndependenceManager');
 
