@@ -275,8 +275,8 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
         except Exception:
             budget = 4000  # safe default when context file unavailable
     lang = language if language else None
-    # When path filtering, search wider to compensate for post-filter loss
-    search_budget = budget * 3 if path else budget
+    # When path filtering, search much wider to compensate for post-filter loss
+    search_budget = budget * 8 if path else budget
     results = project_engine.search_budgeted(query, max_tokens=search_budget, language=lang)
     if path:
         results = [r for r in results if path in r.get('source', '')]
@@ -291,7 +291,9 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
             used += ct
         results = trimmed
     if not results:
-        return f"No results for '{query}' within {budget} token budget."
+        if path:
+            return f"No results for '{query}' in path '{path}' within {budget} token budget. Try without the path filter, or use search_code for broader results."
+        return f"No results for '{query}' within {budget} token budget. Try broader terms or check index with get_index_status."
     # KB enrichment
     kb_hits = project_engine.search_knowledge(query, top_k=3)
     relevant_kb = kb_hits
@@ -432,6 +434,8 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
 @mcp.tool()
 def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", scope: str = "main", path: str = "", response_format: str = "detailed") -> str:
     """Semantic natural-language code search across the indexed codebase. Use this for intent-based queries like 'where does convergence detection happen' — it uses vector similarity, not string matching. Set path='src/crossLayer' to scope results to a directory. Set lib='<name>' to search an indexed library. Set scope='all' to include both main and libs. Results include chunk summaries, relevance scores, and any KB constraints tagged to matching modules. For exact string/regex matching, use grep instead. Set response_format='concise' to get file:line locations only (saves ~2/3 tokens); 'detailed' (default) includes full summaries and KB tags."""
+    if not query or not query.strip():
+        return "Empty query. Provide a natural-language description of what you're looking for, e.g. 'where does convergence detection happen'."
     top_k = max(1, min(30, top_k))
     lang = language if language else None
     # Scoped search: filter by directory/file path prefix
@@ -811,6 +815,8 @@ def get_file_summary(file_path: str) -> str:
     if result["by_kind"]:
         kind_str = ", ".join(f"{v} {k}(s)" for k, v in sorted(result["by_kind"].items(), key=lambda x: -x[1]))
         parts.append(f"Symbols: {kind_str}")
+    else:
+        parts.append("Symbols: none (data file or unsupported pattern)")
 
     if result["symbols"]:
         by_kind: dict[str, list] = {}
@@ -995,7 +1001,8 @@ def convention_check(file_path: str) -> str:
             stddev = statistics.stdev(sample_lines) if len(sample_lines) > 1 else 0
             z_score = (len(lines) - median) / max(stddev, 1)
             if z_score > 2.0:
-                issues.append(f"OUTLIER: {len(lines)} lines is {z_score:.1f} std devs above median ({median:.0f}). Top {100 * (1 - min(1, len([l for l in sample_lines if l >= len(lines)]) / len(sample_lines))):.0f}% largest.")
+                pct = max(1, round(100 * len([l for l in sample_lines if l >= len(lines)]) / len(sample_lines)))
+                issues.append(f"OUTLIER: {len(lines)} lines is {z_score:.1f} std devs above median ({median:.0f}). Top {pct}% largest.")
             elif z_score < -1.5:
                 issues.append(f"NOTE: {len(lines)} lines is unusually small ({z_score:.1f} std devs below median {median:.0f}).")
 
@@ -1011,6 +1018,8 @@ def before_editing(file_path: str) -> str:
     limits = _BUDGET_LIMITS[budget]
     expanded = os.path.expanduser(file_path)
     abs_path = expanded if os.path.isabs(expanded) else os.path.join(PROJECT_ROOT, expanded)
+    if not os.path.isfile(abs_path):
+        return f"File not found: {abs_path}\nCheck the path and try again. Use get_module_map to find files by directory."
     rel_path = abs_path.replace(PROJECT_ROOT + "/", "")
     module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
     parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]
@@ -1242,18 +1251,10 @@ def diagnose_error(error_text: str) -> str:
         module = os.path.basename(fpath).replace('.js', '').replace('.ts', '')
         module_kb = project_engine.search_knowledge(module, top_k=2)
         kb_results.extend([k for k in module_kb if k["id"] not in {r["id"] for r in kb_results}])
-    bugfixes = [k for k in kb_results if k["category"] == "bugfix"]
-    patterns = [k for k in kb_results if k["category"] == "pattern"]
-    if bugfixes:
-        parts.append(f"\n## Similar Past Bugs ({len(bugfixes)})")
-        for k in bugfixes:
-            parts.append(f"  **{k['title']}**")
-            parts.append(f"  {k['content'][:180]}")
-            parts.append("")
-    if patterns:
-        parts.append(f"\n## Related Patterns ({len(patterns)})")
-        for k in patterns:
-            parts.append(f"  **{k['title']}**")
+    if kb_results:
+        parts.append(f"\n## Related KB Entries ({len(kb_results)})")
+        for k in kb_results:
+            parts.append(f"  **[{k['category']}] {k['title']}**")
             parts.append(f"  {k['content'][:150]}")
             parts.append("")
     # Symbol context
@@ -1405,7 +1406,7 @@ def memory_dream() -> str:
     for i in range(len(rows)):
         for j in range(i + 1, len(rows)):
             sim = float(np.dot(vecs[i], vecs[j]) / (np.linalg.norm(vecs[i]) * np.linalg.norm(vecs[j]) + 1e-10))
-            if sim > 0.65:
+            if sim > 0.50:
                 # Check if already linked
                 tags_i = rows[i].get("tags", "")
                 tags_j = rows[j].get("tags", "")
@@ -1414,7 +1415,7 @@ def memory_dream() -> str:
                     discoveries.append((sim, rows[i]["title"], rows[j]["title"], rows[i]["id"], rows[j]["id"]))
     discoveries.sort(key=lambda x: -x[0])
     if not discoveries:
-        return f"Memory dream complete: {len(rows)} entries, no hidden connections found (all similarities < 0.65)."
+        return f"Memory dream complete: {len(rows)} entries, no hidden connections found (all similarities < 0.50)."
     parts = [f"# Memory Dream ({len(rows)} entries, {len(discoveries)} hidden connections)\n"]
     for sim, title_a, title_b, id_a, id_b in discoveries[:10]:
         parts.append(f"  {sim:.0%} similarity:")
@@ -1577,8 +1578,11 @@ def doc_sync_check(doc_path: str = "") -> str:
     server_content = open(os.path.join(os.path.dirname(__file__), "server.py"), encoding="utf-8").read()
     doc_tool_refs = set(re.findall(r'`(\w{4,})`', doc_content))
     server_fns = set(re.findall(r'def (\w+)\(', server_content))
-    # Only flag tools that look like they should be server functions
-    tool_like = {t for t in doc_tool_refs if t.islower() and '_' in t and t not in server_fns and len(t) > 6}
+    # Also collect parameter names to avoid false positives
+    param_names = set(re.findall(r'(\w+)\s*[:=]', server_content))
+    known_non_tools = param_names | {"response_format", "file_type", "top_k", "top_n", "max_depth", "max_tokens", "file_path", "scope", "entry_id"}
+    # Only flag identifiers that look like they should be server tools
+    tool_like = {t for t in doc_tool_refs if t.islower() and '_' in t and t not in server_fns and t not in known_non_tools and len(t) > 6}
     if tool_like:
         issues.append(f"MISSING: doc references tools not in server: {', '.join(sorted(tool_like))}")
     if not issues:
@@ -1627,6 +1631,9 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
             visited.add(sym)
             callers = _find_callers(sym, PROJECT_ROOT)
             for r in callers:
+                rel = r["file"].replace(PROJECT_ROOT + "/", "")
+                if not rel.startswith("src/"):
+                    continue
                 caller_file = os.path.basename(r["file"]).replace(".js", "").replace(".ts", "")
                 if caller_file not in visited and caller_file != sym:
                     next_layer.append(caller_file)
