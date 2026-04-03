@@ -164,9 +164,9 @@ entropyRegulator = (() => {
       const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
         ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
         : 0;
-      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
-      const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-        ? axisEnergy.shares.phase
+      const bridgeAxis = conductorSignalBridge.getSignals().axisEnergyShares;
+      const phaseShare = bridgeAxis && typeof bridgeAxis.phase === 'number'
+        ? bridgeAxis.phase
         : 1.0 / 6.0;
       const phaseProtection = clamp((phaseShare - 0.12) / 0.05, 0, 1);
       const entropyContainment = clamp(densityEntropyPressure * 0.55 + densityFlickerPressure * 0.45, 0, 1);

@@ -50,8 +50,7 @@ crossLayerSilhouette = (() => {
     const rawEntropy = V.optionalFinite(entropyReg.currentEntropy, 0.5);
 
     // Regime-responsive smoothing: faster tracking during exploring, more stable arcs during coherent
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const regime = snap && snap.regime ? snap.regime : 'evolving';
+    const regime = conductorSignalBridge.getSignals().regime || 'evolving';
     const smoothing = SMOOTHING_REGIME[regime] !== undefined ? SMOOTHING_REGIME[regime] : 0.15;
 
     // Smooth
@@ -85,8 +84,7 @@ crossLayerSilhouette = (() => {
     const targetEntropy = V.optionalFinite(intent.entropyTarget, 0.5);
 
     // Regime-responsive correction gain: weaker during exploring (allow drift), stronger during coherent (enforce balance)
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const regime = snap && snap.regime ? snap.regime : 'evolving';
+    const regime = conductorSignalBridge.getSignals().regime || 'evolving';
     const gainScale = CORRECTION_GAIN_REGIME[regime] !== undefined ? CORRECTION_GAIN_REGIME[regime] : 1.0;
 
     // Regime-responsive register target: wider register spread during exploring supports phase axis
