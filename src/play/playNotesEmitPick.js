@@ -235,6 +235,16 @@ playNotesEmitPick = function(opts = {}) {
     if (isPrimary) {
       registerCollisionAvoider.recordNote(activeLayerName, noteToEmit, onTime);
       grooveTransfer.recordTiming(activeLayerName, onTime, unit);
+      // R36: emission accountability -- post what actually happened vs what was selected
+      const pitchDelta = noteToEmit - pickNote;
+      const timeDelta = onTime - preShiftTime;
+      if (pitchDelta !== 0 || m.abs(timeDelta) > 0.001) {
+        L0.post('emissionDelta', activeLayerName, onTime, {
+          selected: pickNote, emitted: noteToEmit, pitchDelta,
+          timeDelta: Number(timeDelta.toFixed(4)),
+          stuttered: shouldStutter, shift: selectedShift
+        });
+      }
       // Embed emitted note into trace for downstream analytics (evolution #1)
       traceDrain.recordNote(noteToEmit, texVel, sourceCH);
       // Record articulation for cross-layer contrast tracking

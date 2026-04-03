@@ -68,6 +68,15 @@ crossModulateRhythms = () => {
       // polyrhythmic variety during exploratory passages.
       crossModulation *= 1.15;
     }
+    // R38: regime exit forecast -- velocity trend predicts transitions 4 beats early.
+    // Rising velocity in coherent = exit coming -> boost crossMod (anticipatory energy).
+    // Falling velocity in exploring = settlement approaching -> reduce crossMod.
+    const exitVelocity = typeof profSnap.velocity === 'number' ? profSnap.velocity : 0;
+    if (profSnap.regime === 'coherent' && exitVelocity > 0.02) {
+      crossModulation *= 1.0 + clamp(exitVelocity * 4, 0, 0.25);
+    } else if (profSnap.regime === 'exploring' && exitVelocity < -0.015) {
+      crossModulation *= 1.0 - clamp(m.abs(exitVelocity) * 3, 0, 0.20);
+    }
   }
 
   // R41 E3: Phase coupling awareness. When phase coupling coverage is sparse,

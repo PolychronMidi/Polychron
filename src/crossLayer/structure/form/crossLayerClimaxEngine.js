@@ -52,6 +52,9 @@ crossLayerClimaxEngine = (() => {
   // R31 lab: voice-independence-feedback. Tracks whether voices achieve their
   // independence target and compensates with register spread when they don't.
   let observedIndependenceEma = 0.5;
+  // R38: trust velocity anticipation state
+  let lastMotifTrust = 1.0;
+  let lastStutterTrust = 1.0;
 
   // R28 E1: Density-pressure homeostasis. Self-regulating accumulator builds
   // pressure when output density is sustained high during climax, reducing
@@ -93,8 +96,13 @@ crossLayerClimaxEngine = (() => {
 
     const sigs = conductorSignalBridge.getSignals();
     lastDensity = sigs.density;
+    // R37: perceptual crowding -- blend raw density with perceptual estimate
+    const crowdingEntry = L0.getLast('perceptual-crowding', { layer: 'both' });
+    const perceptualDensity = crowdingEntry && Number.isFinite(crowdingEntry.perceptualDensity)
+      ? crowdingEntry.perceptualDensity : lastDensity;
+    const effectiveDensity = lastDensity * 0.6 + perceptualDensity * 0.4;
     // R28 E1: accumulate density pressure when sustained high during climax
-    if (lastDensity > DENSITY_HIGH_THRESHOLD && smoothedClimax >= APPROACH_THRESHOLD) {
+    if (effectiveDensity > DENSITY_HIGH_THRESHOLD && smoothedClimax >= APPROACH_THRESHOLD) {
       densityPressureAccum = m.min(densityPressureAccum + 1, DENSITY_SATURATION_BEATS);
     } else {
       densityPressureAccum = m.max(0, densityPressureAccum - 0.5);
@@ -181,13 +189,38 @@ crossLayerClimaxEngine = (() => {
     observedIndependenceEma += (velVariance - observedIndependenceEma) * 0.02;
     const indGap = indTarget - observedIndependenceEma;
     const indCompensation = indGap > 0.15 ? indGap * 6 : 0;
+    // R37: cross-layer voice sensing -- contrary motion when registers overlap
+    const activeLayer = safePreBoot.call(() => LM.activeLayer, 'L1');
+    const voiceSenseLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const otherNotes = L0.query('note', { layer: voiceSenseLayer, windowSeconds: 0.3 });
+    let contraryBias = 0;
+    if (otherNotes && otherNotes.length > 0) {
+      let otherAvg = 0;
+      for (let vsi = 0; vsi < otherNotes.length; vsi++) otherAvg += V.optionalFinite(otherNotes[vsi].midi || otherNotes[vsi].note, 60);
+      otherAvg /= otherNotes.length;
+      const selfAvg = 60 + spectralSpread;
+      if (m.abs(selfAvg - otherAvg) < 5) contraryBias = selfAvg > otherAvg ? 3 : -3;
+    }
     // R31 lab: convergence-driven density via L0 channel (R32: replaces direct call)
     const convEntry = L0.getLast('convergence-density', { layer: 'both' });
     const convDensityBoost = convEntry && Number.isFinite(convEntry.boost) ? convEntry.boost : 0;
+    // R38: dimensionality response -- adapt palette to dimensional complexity
+    const effDim = regimeSnap ? V.optionalFinite(regimeSnap.effectiveDimensionality, 3) : 3;
+    const dimRegisterBias = effDim < 2.5 ? clamp((2.5 - effDim) / 1.5, 0, 1) * 4 : effDim > 4.0 ? clamp((effDim - 4.0) / 2.0, 0, 1) * -2 : 0;
+    const dimVelScale = effDim < 2.5 ? 1.0 + clamp((2.5 - effDim) / 1.5, 0, 1) * 0.15 : 1.0;
+    // R38: trust velocity anticipation -- lean into rising trust, back off falling
+    const motifTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.MOTIF_ECHO), 1.0), 1.0);
+    const stutterTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION), 1.0), 1.0);
+    const trustMotifDelta = motifTrustW - V.optionalFinite(lastMotifTrust, motifTrustW);
+    const trustStutterDelta = stutterTrustW - V.optionalFinite(lastStutterTrust, stutterTrustW);
+    lastMotifTrust = motifTrustW;
+    lastStutterTrust = stutterTrustW;
+    const trustRegBias = trustMotifDelta > 0.01 ? trustMotifDelta * 20 : 0;
+    const trustStutterMod = trustStutterDelta < -0.01 ? 0.7 : 1.0;
     return {
-      playProbScale: 1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - playSuppression) + convDensityBoost,
-      velocityScale: (1.0 + intensity * MAX_VELOCITY_BOOST) * velSoftening * trustVelMod,
-      registerBias: intensity * MAX_REGISTER_WIDEN + spectralSpread + indCompensation,
+      playProbScale: (1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - playSuppression) + convDensityBoost) * trustStutterMod,
+      velocityScale: (1.0 + intensity * MAX_VELOCITY_BOOST) * velSoftening * trustVelMod * dimVelScale,
+      registerBias: intensity * MAX_REGISTER_WIDEN + spectralSpread + indCompensation + contraryBias + dimRegisterBias + trustRegBias,
       entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale * (1 - totalSuppression * 0.3)
     };
   }
@@ -217,6 +250,8 @@ crossLayerClimaxEngine = (() => {
     lastDensity = 0.5;
     densityPressureAccum = 0;
     observedIndependenceEma = 0.5;
+    lastMotifTrust = 1.0;
+    lastStutterTrust = 1.0;
   }
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };

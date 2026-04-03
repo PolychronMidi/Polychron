@@ -124,6 +124,11 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   temporalGravity.postDensity(absoluteSeconds, layer, clDensity);
   // R35: density-rhythm L0 channel for rhythm mode adaptation
   L0.post('density-rhythm', layer, absoluteSeconds, { density: clamp(clDensity, 0, 1) });
+  // R37: perceptual crowding estimate from note density + onset clustering
+  const recentNotes = L0.query('note', { layer, windowSeconds: 0.3 });
+  const noteCount = recentNotes ? recentNotes.length : 0;
+  const perceptualDensity = clamp(noteCount / 12, 0, 1);
+  L0.post('perceptual-crowding', layer, absoluteSeconds, { perceptualDensity, noteCount });
   const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
   V.assertObject(clFeedback, 'feedbackOscillator.applyFeedback result');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);
