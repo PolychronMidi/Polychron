@@ -74,6 +74,11 @@ sectionIntentCurves = (() => {
     const ph = timeStream.getPosition('phrase');
     const sectionRoute = totalSections > 1 ? s / (totalSections - 1) : 0;
     const longFormPressure = clamp(totalSections - 4, 0, 1);
+    // Xenolinguistic L5: cross-run personality contrast. First section opposes previous run's character.
+    const personality = hyperMetaManagerState.lastRunPersonality;
+    const personalityContrastDensity = s === 0 && personality
+      ? (personality.narrative && personality.narrative.includes('dense') ? -0.08 : personality.narrative && personality.narrative.includes('sparse') ? 0.06 : 0)
+      : 0;
     // R23 E4 / R24 fix: Piece-route-aware late surge gate. Per-section late surges
     // (interaction, dissonance) taper off in Q3-Q4 of the piece to prevent
     // compounding section-level surges into piece-level overload.
@@ -236,7 +241,7 @@ sectionIntentCurves = (() => {
     const qualityEntry = sectionStart ? L0.getLast('section-quality', { layer: 'both' }) : null;
     const qBias = qualityEntry && Number.isFinite(qualityEntry.bias) ? qualityEntry.bias : 0;
     const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1 + qBias * 0.8, 0, 1);
-    const adjustedDensity = clamp(densityTarget + qBias * -0.5, 0, 1);
+    const adjustedDensity = clamp(densityTarget + qBias * -0.5 + personalityContrastDensity, 0, 1);
 
     lastIntent = { densityTarget: adjustedDensity, dissonanceTarget, interactionTarget, entropyTarget, convergenceTarget };
     return lastIntent;
