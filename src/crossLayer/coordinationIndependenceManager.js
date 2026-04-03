@@ -83,10 +83,12 @@ coordinationIndependenceManager = (() => {
    */
   function computeTarget(pair, sigs) {
     const phase = sigs.sectionPhase || 'development';
-    const regimeEntry = /** @type {string} */ (safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving'));
-
+    // Xenolinguistic L2: regime superposition -- blend targets by probability instead of hard switch
+    const rp = sigs.regimeProb || { coherent: 0.33, exploring: 0.33, evolving: 0.34 };
     const phaseTarget = PHASE_TARGETS[phase] || 0.5;
-    const regimeTarget = REGIME_TARGETS[regimeEntry] || 0.5;
+    const regimeTarget = (REGIME_TARGETS.coherent || 0.75) * rp.coherent
+      + (REGIME_TARGETS.exploring || 0.25) * rp.exploring
+      + (REGIME_TARGETS.evolving || 0.5) * rp.evolving;
     const topoTarget = TOPOLOGY_TARGETS[sigs.topologyPhase] || 0.5;
 
     // Intent-aware: read actual interactionTarget from sectionIntentCurves
@@ -101,6 +103,11 @@ coordinationIndependenceManager = (() => {
     // Density modulation: very low density = more independence (let things explore)
     const densityBias = sigs.density < 0.5 ? -0.1 : sigs.density > 1.5 ? 0.1 : 0;
 
+    // Xenolinguistic L4: read self-narration. System adapts coordination based on its own description.
+    const narrationEntry = L0.getLast('self-narration', { layer: 'both' });
+    const narrativeBias = narrationEntry && narrationEntry.narrative
+      ? (narrationEntry.narrative.includes('crowded') ? 0.1 : narrationEntry.narrative.includes('sparse') ? -0.1 : 0) : 0;
+
     // Canon mode reduces stutter channel coordination to prevent overcrowding
     // (canon already adds rhythmic complexity via delayed imitation)
     const rhythmMode = safePreBoot.call(() => rhythmicComplementEngine.getMode(), 'free');
@@ -111,7 +118,7 @@ coordinationIndependenceManager = (() => {
 
     // Composite target: intent-aware blend replaces the static 0.5 baseline
     const raw = phaseTarget * 0.25 + regimeTarget * 0.25 + topoTarget * 0.15 + intentInteraction * 0.35
-      + entropyBias + densityBias + effectBias + canonBias;
+      + entropyBias + densityBias + effectBias + canonBias + narrativeBias;
     return clamp(raw, 0.05, 0.95);
   }
 

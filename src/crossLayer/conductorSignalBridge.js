@@ -48,6 +48,25 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       effectiveDimensionality: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.effectiveDimensionality, 3) : 3; })(),
       couplingStrength: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.couplingStrength, 0.3) : 0.3; })(),
       axisEnergyShares: (() => { const ae = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null); return ae && ae.shares ? ae.shares : null; })(),
+      // Xenolinguistic L2: regime probability distribution (superposition).
+      // Instead of collapsing to one regime, expose soft probabilities based on
+      // velocity + coupling. Low velocity + high coupling = coherent-leaning.
+      // High velocity + low coupling = exploring-leaning. Medium = evolving.
+      regimeProb: (() => {
+        const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+        if (!ds) return { coherent: 0.33, exploring: 0.33, evolving: 0.34 };
+        const vel = V.optionalFinite(ds.velocity, 0.1);
+        const coup = V.optionalFinite(ds.couplingStrength, 0.3);
+        const coherentScore = clamp((1 - vel * 3) * (coup * 2), 0, 1);
+        const exploringScore = clamp(vel * 3 * (1 - coup), 0, 1);
+        const evolvingScore = clamp(1 - m.abs(coherentScore - exploringScore), 0.1, 1);
+        const total = coherentScore + exploringScore + evolvingScore;
+        return {
+          coherent: coherentScore / total,
+          exploring: exploringScore / total,
+          evolving: evolvingScore / total
+        };
+      })(),
       updatedAt: Date.now()
     };
 
@@ -83,7 +102,8 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       regime: cached.regime,
       effectiveDimensionality: cached.effectiveDimensionality,
       couplingStrength: cached.couplingStrength,
-      axisEnergyShares: cached.axisEnergyShares
+      axisEnergyShares: cached.axisEnergyShares,
+      regimeProb: cached.regimeProb
     });
   }
 
@@ -104,6 +124,7 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       effectiveDimensionality: 3,
       couplingStrength: 0.3,
       axisEnergyShares: null,
+      regimeProb: { coherent: 0.33, exploring: 0.33, evolving: 0.34 },
       updatedAt: 0
     };
   }

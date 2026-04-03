@@ -81,11 +81,21 @@ grandFinale = () => {
     fs.writeFileSync('metrics/runtime-snapshots.json', JSON.stringify(runtimeSnap, null, 2));
     console.log('Wrote file: metrics/runtime-snapshots.json');
     // Cross-run adaptive state: save terminal EMA values for next boot warm-start
+    // Xenolinguistic L5: cross-run personality persistence
+    const lastNarration = safePreBoot.call(() => L0.getLast('self-narration', { layer: 'both' }), null);
+    const tensionTraj = safePreBoot.call(() => sectionMemory.getTensionTrajectory(), 0);
+    const hmSnap = safePreBoot.call(() => hyperMetaManager.getSnapshot(), null);
     const adaptiveState = {
-      healthEma: safePreBoot.call(() => hyperMetaManager.getSnapshot().healthEma, 0.7),
-      exceedanceTrendEma: safePreBoot.call(() => hyperMetaManager.getSnapshot().exceedanceTrendEma, 0),
-      coherentShareEma: safePreBoot.call(() => hyperMetaManager.getSnapshot().coherentShareEma, 0.285),
-      systemPhase: safePreBoot.call(() => hyperMetaManager.getSnapshot().systemPhase, 'converging'),
+      healthEma: hmSnap ? hmSnap.healthEma : 0.7,
+      exceedanceTrendEma: hmSnap ? hmSnap.exceedanceTrendEma : 0,
+      coherentShareEma: hmSnap ? hmSnap.coherentShareEma : 0.285,
+      systemPhase: hmSnap ? hmSnap.systemPhase : 'converging',
+      // Cross-run personality: what this composition was like
+      lastRunPersonality: {
+        narrative: lastNarration ? lastNarration.narrative : 'balanced evolving',
+        tensionTrajectory: (tensionTraj || 0) > 0.1 ? 'rising' : (tensionTraj || 0) < -0.1 ? 'falling' : 'stable',
+        dominantRegime: hmSnap && hmSnap.coherentShareEma > 0.4 ? 'coherent' : 'exploring'
+      },
       savedAt: new Date().toISOString()
     };
     fs.writeFileSync('metrics/adaptive-state.json', JSON.stringify(adaptiveState, null, 2));

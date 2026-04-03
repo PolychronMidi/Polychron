@@ -49,6 +49,11 @@ hyperMetaManagerState = (() => {
     }
   } catch (warmErr) { void warmErr; }
 
+  // Xenolinguistic L5: cross-run personality from previous composition
+  const lastRunPersonality = warmStartState && warmStartState.lastRunPersonality
+    ? warmStartState.lastRunPersonality
+    : { narrative: 'balanced evolving', tensionTrajectory: 'stable', dominantRegime: 'evolving' };
+
   // SYSTEM STATE (scalar) - warm-started from previous run when available
   const S = {
     beatCount:             0,
@@ -193,5 +198,6 @@ hyperMetaManagerState = (() => {
     prevFingerprint,
     reconciliationGaps,
     trustVelocityHistory,
+    lastRunPersonality,
   };
 })();

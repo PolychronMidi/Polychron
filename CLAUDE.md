@@ -154,7 +154,9 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 
 **Context budget:** When the context window has significant headroom (e.g. after compaction or early in a session), be greedy — use parallel research agents, read full files, investigate deeply, explore multiple approaches. Only economize context when window pressure is actually high or the task is clearly simple/familiar. Default to thoroughness; err on the side of over-researching rather than under-researching.
 
-**Enforcement:** This file is loaded every prompt. The lock file deny rule in `.claude/settings.json` is the only mechanical hook — everything else is enforced by adherence to these instructions. If you find yourself violating a rule here, the fix is behavioral, not more memories or hooks.
+**Auto-commits:** After each verified non-regressive pipeline run (STABLE or EVOLVED), auto-commit all changed files with a descriptive message summarizing the round's evolutions. This creates natural reversion points. Do not commit DRIFTED runs or failed pipelines. Format: `RXX: brief description of changes`.
+
+**Enforcement:** This file is loaded every prompt. Hooks in `.claude/settings.json` enforce code-docs-rag usage, Evolver phases, lab rules, and Grep blocking. If you find yourself violating a rule here, the fix is behavioral, not more memories or hooks.
 
 Act on feedback immediately and thoroughly. Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing to update or confirm. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
 
