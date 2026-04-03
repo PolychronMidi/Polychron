@@ -1,6 +1,6 @@
 # code-docs-rag: Setup, Usage, and Maintenance Guide
 
-> Local semantic code + documentation RAG system for Polychron. 36 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
+> Local semantic code + documentation RAG system for Polychron. 40 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
 
 ## Architecture
 
@@ -68,6 +68,9 @@ These wrap common shell operations with KB cross-referencing and convention warn
 | `grep` | Bash `grep -rn` | KB cross-reference on pattern, boundary warnings |
 | `file_lines` | Bash `cat`, `head`, `tail`, `sed -n` | KB context for the file's module |
 | `count_lines` | Bash `wc -l`, `find \| wc` | Convention warnings (oversize flags) |
+| `recent_changes` | `git diff --name-only` | KB context per changed file, great after compaction |
+
+**Auto-KB enrichment:** Every `search_code` result automatically includes `[KB: constraint]` tags when the module has relevant knowledge entries. No separate search_knowledge call needed.
 
 ### Architectural Reasoning
 
@@ -78,6 +81,8 @@ These wrap common shell operations with KB cross-referencing and convention warn
 | `module_story` | Living biography: definition, evolution, callers, neighbors | `module_story "crossLayerClimaxEngine"` |
 | `diagnose_error` | Paste error, get: source, similar bugs, fix patterns | `diagnose_error "Error: playNotes: resolved.playProb must be finite"` |
 | `codebase_health` | Full-repo convention sweep, prioritized by severity | `codebase_health` |
+| `think` | Structured reflection before proceeding | `think "completeness"` or `think "constraints"` |
+| `blast_radius` | Transitive dependency chain (depth 1-3) | `blast_radius "crossLayerClimaxEngine" max_depth=3` |
 | `knowledge_graph` | Search KB and show connections between entries | `knowledge_graph "density suppression"` |
 | `impact_analysis` | Callers + references + KB constraints in one shot | `impact_analysis "crossLayerClimaxEngine"` |
 | `convention_check` | Audit file against conventions | `convention_check "src/crossLayer/dynamics/texturalMirror.js"` |
