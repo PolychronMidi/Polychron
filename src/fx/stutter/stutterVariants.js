@@ -203,7 +203,7 @@ stutterVariants = (() => {
 
     // R24: stutter call-response - other layer's last variant biases this layer's selection
     const crLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
-    const crOtherLayer = crLayer === 'L1' ? 'L2' : 'L1';
+    const crOtherLayer = crossLayerHelpers.getOtherLayer(crLayer);
     const otherLastVariant = lastVariantPerLayer[crOtherLayer];
     const responseWeights = (otherLastVariant && CALL_RESPONSE_MAP[otherLastVariant]) ? CALL_RESPONSE_MAP[otherLastVariant] : {};
 

@@ -77,8 +77,7 @@ texturalMirror = (() => {
     // Coherent passages get weaker suggestions for unified texture.
     // Creates regime-specific textural behavior that enriches the
     // coupling dimension landscape.
-    const snap = systemDynamicsProfiler.getSnapshot();
-    const texRegime = snap ? snap.regime : 'exploring';
+    const texRegime = conductorSignalBridge.getSignals().regime || 'exploring';
     const regimeWeightScale = texRegime === 'exploring' ? 1.20
       : texRegime === 'coherent' ? 0.75
       : 1.0;

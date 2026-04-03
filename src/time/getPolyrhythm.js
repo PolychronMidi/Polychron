@@ -24,7 +24,7 @@ getPolyrhythm = () => {
     console.warn(`Acceptable warning: getPolyrhythm(): no alignment for ${numerator}/${denominator}; requesting new L1 meter...`);
     const activeComposer = LM.getComposerFor('L1');
     [numerator, denominator] = activeComposer.getMeter(true, false);
-    getMidiTiming();
+    setMeter(); setBpm();
     getPolyrhythm();
     return;
   }

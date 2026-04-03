@@ -166,42 +166,35 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 [metrics/journal.md](../metrics/journal.md) - Listening-confirmed constraints from lab sessions, with detailed descriptions and results. Use these to anchor calibration and validate that changes have the intended effect. Track whether changes took effect at all, and if so, whether the effect size is in the expected direction and magnitude. "Inconclusive" is a valid outcome when the effect is too small to confirm or deny with confidence, but "opposite effect" is a red flag that the change may not be working as intended, in which case it should be abandoned or revised.
 
-## code-RAG
+## code-docs-rag
 
-A local semantic code search MCP server running at `~/.claude/mcp/code-RAG/`. Indexed against this repo (614 files, 2004 symbols). Always load the skill first: `/code-RAG`.
+A local semantic code search MCP server running at `~/.claude/mcp/code-docs-rag/`. Indexed against this repo (614 files, 2004 symbols). Always load the skill first: `/code-docs-rag`.
 
 **Mandatory usage (not optional):**
-- **Before modifying a file:** `search_knowledge` for existing decisions/constraints about that module. The KB contains calibration anchors, architectural boundaries, and proven anti-patterns. Ignoring these causes regressions.
-- **For any search involving "where does X happen" or "what reads Y":** use `search_code` or `find_callers`, NOT Grep. Semantic search finds intent-based matches that literal grep misses.
-- **After each code change:** the file watcher auto-reindexes (5s debounce). For batch changes, call `index_codebase` once at the end.
-- **After each listen-confirmed round:** `add_knowledge` for any new calibration anchor, architectural decision, anti-pattern, or bugfix discovered. Categories: `architecture`, `decision`, `pattern`, `bugfix`.
+- **Before modifying a file:** `before_editing "path/to/file.js"` -- ONE CALL assembles KB constraints, callers, boundary warnings, and file structure. Replaces multi-step research.
+- **After implementing changes:** `what_did_i_forget "file1.js,file2.js"` -- checks against KB constraints, boundary rules, new L0 channels, doc update needs.
+- **For any search:** use `search_code`, `find_callers`, or `find_anti_pattern` instead of Grep.
+- **After each listen-confirmed round:** `add_knowledge` for new calibration anchors, decisions, anti-patterns, bugfixes. Do NOT add_knowledge until user confirms task complete.
+- **When pipeline fails:** `diagnose_error "paste error text"` -- traces source, finds similar KB bugs, suggests fix patterns.
 
-**When Grep/Glob is still better:** exact symbol lookup (`class Foo`), specific file path known, 2-3 file targeted search.
+**Grep/file reads:** use `grep`, `file_lines`, `count_lines` tools in code-docs-rag instead of Bash equivalents. These wrap the same operations but add KB cross-referencing and convention warnings automatically.
 
-**Core workflow after compaction:**
+**Core workflow:**
 ```
-/code-RAG
-search_knowledge "density suppression"                  -- check existing constraints
-search_code "conductorSignalBridge layer activation"   -- find relevant code
-get_function_body processBeat                          -- pull exact implementation
-get_dependency_graph src/conductor/globalConductor.js  -- trace require() chains
-get_module_map src/conductor/signal/meta               -- subsystem structure
+/code-docs-rag
+before_editing "src/crossLayer/structure/form/crossLayerClimaxEngine.js"  -- pre-edit briefing
+search_code "where does convergence detection happen"                     -- semantic search
+module_story "crossLayerClimaxEngine"                                     -- living biography
+what_did_i_forget "src/time/setBpm.js,src/time/setMeter.js"             -- post-change audit
+codebase_health                                                           -- full-repo sweep
+knowledge_graph "density suppression"                                     -- connected KB entries
 ```
 
-**Knowledge KB** (`add_knowledge` / `search_knowledge`): persists architecture decisions, calibration anchors, anti-patterns, and bugfixes across context resets. Currently contains 8 entries covering compound suppression, whack-a-mole thresholds, coherent safety floor, L0 persistence caveats, and the full evolutionary roadmap. Do NOT add_knowledge until user confirms task complete.
-
-**Key tools:**
-- `search_code` - semantic search across all JS source (use for open-ended "where does X happen")
-- `search_knowledge` - query KB before modifying any module (check for constraints)
-- `find_callers <name>` - all call sites across 600+ files (use instead of grep for callers)
-- `get_function_body <name>` - extract exact function body via tree-sitter AST
-- `get_dependency_graph <file>` - import/require graph for a file
-- `lookup_symbol <name>` - find where a symbol is defined
-- `get_module_map src/<subsystem>` - directory structure with symbol counts
-- `add_knowledge` - persist decisions/anchors after confirmed rounds
+**36 tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through code-docs-rag for KB enrichment. Full reference: [doc/code-docs-rag.md](../doc/code-docs-rag.md)
 
 ## Related Documentation
 
+- [doc/code-docs-rag.md](../doc/code-docs-rag.md) - Comprehensive setup, usage, and maintenance guide for code-docs-rag
 - [README.md](../README.md) - Comprehensive project overview, architecture, subsystem details, diagnostics
 - [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) - Beat lifecycle deep-dive, signal flow from conductor to emission
 - [doc/TUNING_MAP.md](../doc/TUNING_MAP.md) - Feedback loop constants, interaction partners, cross-constant invariants

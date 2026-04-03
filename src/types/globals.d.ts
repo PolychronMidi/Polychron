@@ -307,7 +307,7 @@ interface CoherenceMonitorAPI {
 
 interface ConductorSignalBridgeAPI {
   refresh(ctx: RecorderContext): void;
-  getSignals(): Readonly<{ density: number; tension: number; flicker: number; compositeIntensity: number; sectionPhase: string; coherenceEntropy: number; healthEma: number; systemPhase: string; exceedanceTrendEma: number; topologyPhase: string }>;
+  getSignals(): Readonly<{ density: number; tension: number; flicker: number; compositeIntensity: number; sectionPhase: string; coherenceEntropy: number; healthEma: number; systemPhase: string; exceedanceTrendEma: number; topologyPhase: string; regime: string; effectiveDimensionality: number; couplingStrength: number; axisEnergyShares: Record<string, number> | null }>;
   reset(): void;
 }
 
@@ -1655,8 +1655,10 @@ declare var subdivStartTime: number;
 declare var subsubdivStartTime: number;
 declare var c: any;
 declare var LM: LayerManagerAPI;
-declare var getMidiTiming: any;
-declare var setMidiTiming: any;
+declare var setBpm: any;
+declare var setMeter: any;
+declare var deepFreeze: (obj: any) => any;
+declare var regimeDispatch: (regime: string, coherentVal: number, exploringVal: number, evolvingVal?: number) => number;
 declare var POLYRHYTHM_PAIRS: any;
 declare var getMeterPair: { pick: () => void; reset: () => void };
 declare var getPolyrhythm: any;

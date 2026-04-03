@@ -157,8 +157,8 @@ crossLayerClimaxEngine = (() => {
     const intensity = clamp((smoothedClimax - APPROACH_THRESHOLD) / (1 - APPROACH_THRESHOLD), 0, 1);
 
     // R94 E3: Scale entropy boost by regime
-    const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const climaxRegime = regimeSnap ? regimeSnap.regime : 'evolving';
+    const bridgeSignals = conductorSignalBridge.getSignals();
+    const climaxRegime = bridgeSignals.regime || 'evolving';
     const entropyRegimeScale = V.optionalFinite(CLIMAX_ENTROPY_REGIME_SCALE[climaxRegime], 1.0);
 
     // R32: Unified density suppression with total-impact budget.
@@ -195,7 +195,7 @@ crossLayerClimaxEngine = (() => {
     const indGap = indTarget - observedIndependenceByLayer[indLayer];
     const indCompensation = indGap > 0.15 ? indGap * 6 : 0;
     // R37: cross-layer voice sensing -- contrary motion when registers overlap
-    const voiceSenseLayer = activeLayer === 'L1' ? 'L2' : 'L1';
+    const voiceSenseLayer = crossLayerHelpers.getOtherLayer(activeLayer || 'L1');
     const otherNotes = L0.query('note', { layer: voiceSenseLayer, windowSeconds: 0.3 });
     let contraryBias = 0;
     if (otherNotes && otherNotes.length > 0) {
@@ -209,7 +209,7 @@ crossLayerClimaxEngine = (() => {
     const convEntry = L0.getLast('convergence-density', { layer: 'both' });
     const convDensityBoost = convEntry && Number.isFinite(convEntry.boost) ? convEntry.boost : 0;
     // R38: dimensionality response -- adapt palette to dimensional complexity
-    const effDim = regimeSnap ? V.optionalFinite(regimeSnap.effectiveDimensionality, 3) : 3;
+    const effDim = V.optionalFinite(bridgeSignals.effectiveDimensionality, 3);
     const dimRegisterBias = effDim < 2.5 ? clamp((2.5 - effDim) / 1.5, 0, 1) * 4 : effDim > 4.0 ? clamp((effDim - 4.0) / 2.0, 0, 1) * -2 : 0;
     const dimVelScale = effDim < 2.5 ? 1.0 + clamp((2.5 - effDim) / 1.5, 0, 1) * 0.15 : 1.0;
     // R38: trust velocity anticipation -- lean into rising trust, back off falling
