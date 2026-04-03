@@ -104,7 +104,16 @@ harmonicJourney = (() => {
       sectionPhase: currentPhase
     });
 
-    L0.post('harmonic', 'both', beatStartTime, { key: stop.key, mode: stop.mode, excursion, sectionPhase: currentPhase, move: stop.move, distance: stop.distance });
+    // Xenolinguistic: spectral awareness influences harmonic context.
+    // If low registers dominate, post brightness hint for downstream modules.
+    const spectralEntry = L0.getLast('spectral', { layer: 'both' });
+    const spectralBrightness = spectralEntry && Array.isArray(spectralEntry.histogram)
+      ? (spectralEntry.histogram[2] + spectralEntry.histogram[3]) / m.max(1, spectralEntry.histogram.reduce((a, b) => a + b, 0))
+      : 0.5;
+    L0.post('harmonic', 'both', beatStartTime, {
+      key: stop.key, mode: stop.mode, excursion, sectionPhase: currentPhase,
+      move: stop.move, distance: stop.distance, spectralBrightness
+    });
 
     // R37: harmonic journey self-assessment -- evaluate previous section's move effectiveness
     if (sectionIndex > 0) {

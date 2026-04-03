@@ -159,6 +159,10 @@ rhythmicComplementEngine = (() => {
     const realtimeDensity = densityRhythmEntry ? V.optionalFinite(densityRhythmEntry.density, 0.5) : 0.5;
     const density = V.optionalFinite(intent.densityTarget, 0.5) * 0.5 + realtimeDensity * 0.5;
 
+    // Xenolinguistic: phase convergence prediction -> pre-position for canon before convergence
+    const phaseEntry = L0.getLast('phaseConvergence', { layer: 'both' });
+    const convergenceImminent = phaseEntry && Number.isFinite(phaseEntry.cycle) && phaseEntry.step < 2;
+
     // Harmonic distance awareness: far from home key favors canon (coherence in distant territory)
     const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
     const excursion = harmonicEntry ? V.optionalFinite(harmonicEntry.excursion, 0) : 0;
@@ -177,7 +181,9 @@ rhythmicComplementEngine = (() => {
 
     // R18: atmospheric canon repeatedly legendary - lower interaction threshold
     const canonThreshold = inAtmospheric ? MODERATE_INTERACTION * 0.6 : MODERATE_INTERACTION;
-    if ((inCoherent || inAtmospheric) && interaction > canonThreshold) {
+    if (convergenceImminent && interaction > MODERATE_INTERACTION * 0.5) {
+      mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
+    } else if ((inCoherent || inAtmospheric) && interaction > canonThreshold) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
     } else if (farFromHome && interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');

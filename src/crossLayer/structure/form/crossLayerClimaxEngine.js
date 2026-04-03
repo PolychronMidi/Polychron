@@ -168,6 +168,9 @@ crossLayerClimaxEngine = (() => {
     // total suppression capped at MAX_DENSITY_SUPPRESSION to preserve climax energy.
     const MAX_DENSITY_SUPPRESSION = 0.45;
     const densityScale = clamp((lastDensity - 0.55) / 0.35, 0, 1);
+    // Xenolinguistic L1: modal color awareness. Vanilla harmony = widen register to seek color tones.
+    const modalProfile = safePreBoot.call(() => modalColorTracker.getModalProfile(), null);
+    const colorRegisterBias = modalProfile && modalProfile.vanilla ? 2 : modalProfile && modalProfile.colorful ? -1 : 0;
     const dpRelief = V.optionalFinite(DENSITY_PRESSURE_RELIEF[climaxRegime], 0.12);
     const dpPressure = clamp(densityPressureAccum / DENSITY_SATURATION_BEATS, 0, 1);
     const rawCrowding = dpPressure * dpRelief;
@@ -225,7 +228,7 @@ crossLayerClimaxEngine = (() => {
     return {
       playProbScale: (1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - playSuppression) + convDensityBoost) * trustStutterMod,
       velocityScale: (1.0 + intensity * MAX_VELOCITY_BOOST) * velSoftening * trustVelMod * dimVelScale,
-      registerBias: intensity * MAX_REGISTER_WIDEN + spectralSpread + indCompensation + contraryBias + dimRegisterBias + trustRegBias,
+      registerBias: intensity * MAX_REGISTER_WIDEN + spectralSpread + indCompensation + contraryBias + dimRegisterBias + trustRegBias + colorRegisterBias,
       entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale * (1 - totalSuppression * 0.3)
     };
   }

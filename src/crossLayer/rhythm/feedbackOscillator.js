@@ -39,8 +39,13 @@ feedbackOscillator = (() => {
     if (impulseTypeMaybe !== undefined) {
       finalImpulseType = V.assertNonEmptyString(impulseTypeMaybe, 'impulseType');
     }
+    // Xenolinguistic: articulation shapes feedback energy character.
+    // Staccato -> percussive impulses (higher energy, shorter). Legato -> sustained (lower, longer).
+    const artEntry = L0.getLast('articulation', { layer });
+    const artSustain = artEntry && Number.isFinite(artEntry.avgSustain) ? artEntry.avgSustain : 0.5;
+    const artScale = artSustain > 0.7 ? 0.8 : artSustain < 0.3 ? 1.2 : 1.0;
     L0.post(CHANNEL, layer, absoluteSeconds, {
-      energy: clamp(energy, 0, 1),
+      energy: clamp(energy * artScale, 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
       originLayer: layer,
