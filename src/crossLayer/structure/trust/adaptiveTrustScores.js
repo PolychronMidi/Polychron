@@ -474,6 +474,28 @@ adaptiveTrustScores = (() => {
       }
     }
 
+    // R36: trust ecosystem biodiversity -- when Gini is high (monopolistic),
+    // create protected niches for bottom systems. Self-regulating: biodiversity
+    // boost scales with Gini coefficient and decays as distribution equalizes.
+    if (scoreBySystem.size > 5 && decayCycleCount % 8 === 0) {
+      const allScores = [];
+      for (const s of scoreBySystem.values()) allScores.push(s.score);
+      allScores.sort((a, b) => a - b);
+      const n = allScores.length;
+      let giniSum = 0;
+      for (let gi = 0; gi < n; gi++) giniSum += (2 * gi - n + 1) * allScores[gi];
+      const gini = n > 1 ? giniSum / (n * allScores.reduce((a, b) => a + b, 0) + 1e-10) : 0;
+      if (gini > 0.25) {
+        const biodiversityBoost = clamp((gini - 0.25) * 0.08, 0, 0.03);
+        const bottomThreshold = allScores[m.floor(n * 0.2)];
+        for (const [, state] of scoreBySystem.entries()) {
+          if (state.score <= bottomThreshold && state.samples > 16) {
+            state.score = clamp(state.score + biodiversityBoost, -1, TRUST_CEILING);
+          }
+        }
+      }
+    }
+
     adaptiveTrustScoresInvalidateValueCaches();
   }
 

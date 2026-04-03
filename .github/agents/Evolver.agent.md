@@ -204,6 +204,9 @@ For each evolution: read the target file, make the change, note what and why (on
 - Buffer writes through crossLayerEmissionGateway
 - Trust names via trustSystems.names.*
 - After adding/changing `conductorIntelligence.register*Bias` calls: `node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
+- **Before modifying any module:** `search_knowledge` in code-RAG for existing constraints
+- **For open-ended searches:** use `search_code` / `find_callers`, not Grep
+- **After confirmed round:** `add_knowledge` for new calibration anchors, decisions, anti-patterns
 
 ## Phase 4: Run
 

@@ -1510,7 +1510,7 @@ declare var conductorDampening: {
 declare var sectionMemory: {
   snapshot(): void;
   seed(): void;
-  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string; coherenceBias?: number; intentDensity?: number; intentTension?: number; regimeTransitionCount?: number; lastTransitionCause?: string|null; spectralBrightness?: number } | null;
+  getPrevious(): { energy: number; tension: number; density: number; flicker: number; trend: string; regime?: string; coherenceBias?: number; intentDensity?: number; intentTension?: number; regimeTransitionCount?: number; lastTransitionCause?: string|null; spectralBrightness?: number; quality?: number } | null;
   getTensionTrajectory(): number;
   getDensityTrajectory(): number;
   getHistory(): { tension: number[]; density: number[] };

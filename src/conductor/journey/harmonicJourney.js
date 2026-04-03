@@ -106,6 +106,21 @@ harmonicJourney = (() => {
 
     L0.post('harmonic', 'both', beatStartTime, { key: stop.key, mode: stop.mode, excursion, sectionPhase: currentPhase, move: stop.move, distance: stop.distance });
 
+    // R37: harmonic journey self-assessment -- evaluate previous section's move effectiveness
+    if (sectionIndex > 0) {
+      const prevMem = sectionMemory.getPrevious();
+      const prevStop = getStop(sectionIndex - 1);
+      if (prevMem) {
+        L0.post('harmonic-journey-eval', 'both', beatStartTime, {
+          fromKey: prevStop.key, toKey: stop.key, move: stop.move,
+          distance: stop.distance, excursion,
+          quality: V.optionalFinite(prevMem.quality, 0.5),
+          regime: prevMem.regime || 'evolving',
+          effective: (V.optionalFinite(prevMem.quality, 0.5)) > 0.6
+        });
+      }
+    }
+
     // Emit journey-move event for rhythm-harmonic coupling
     {
       const EVENTS = V.getEventsOrThrow();

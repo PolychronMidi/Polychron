@@ -35,9 +35,12 @@ motifIdentityMemory = (() => {
   function recordNote(layer, midi, absoluteSeconds) {
     V.requireFinite(midi, 'midi');
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
+    // R36: emission accountability -- use actual emitted note if available
+    const deltaEntry = L0.getLast('emissionDelta', { layer, since: absoluteSeconds - 0.05, windowSeconds: 0.05 });
+    const actualMidi = deltaEntry && Number.isFinite(deltaEntry.emitted) ? deltaEntry.emitted : midi;
 
     const notes = ensureNotes(layer);
-    notes.push(midi);
+    notes.push(actualMidi);
     if (notes.length > MAX_NOTES) notes.shift();
 
     if (notes.length < 4) return null;

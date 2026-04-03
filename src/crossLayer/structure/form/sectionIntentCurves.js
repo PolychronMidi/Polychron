@@ -208,9 +208,31 @@ sectionIntentCurves = (() => {
     const independentEntropyArc = 0.4 + arc * 0.25 + wave * 0.1;
     const blendedEntropy = (densityTarget * ENTROPY_DENSITY_W) + (dissonanceTarget * ENTROPY_DISSONANCE_W) + (interactionTarget * ENTROPY_INTERACTION_W);
     const entropyTarget = clamp(blendedEntropy * 0.6 + independentEntropyArc * 0.4, effectiveEntropyFloor, ENTROPY_CEIL);
-    // R33: quality feed-forward via L0 -- only applies during first phrase
-    // to avoid cumulative suppression (L0 entry persists across the whole section)
-    const sectionStart = ph === 0;
+    // R37: mid-section self-evaluation -- at halfway phrase, assess trajectory
+    // and post quality bias if the section is declining. Piece adjusts its own
+    // dramatic arc mid-stream.
+    const totalPhrases = timeStream.getBounds('phrase');
+    const halfPhrase = m.floor(totalPhrases / 2);
+    if (ph === halfPhrase && p > 0.3 && p < 0.7) {
+      const midTensionSlope = sectionMemory.getTensionTrajectory();
+      const midSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const midRegime = midSnap ? midSnap.regime : 'evolving';
+      if (midTensionSlope < -0.1 && midRegime !== 'coherent') {
+        L0.post('section-quality', 'both', beatStartTime, { quality: 0.35, bias: 0.08 });
+      }
+      // R38: coupling decay predictor -- rapid coupling decay boosts convergence
+      const midCoupling = midSnap ? midSnap.couplingStrength : 0.3;
+      const prevCouplingEntry = L0.getLast('climax-pressure', { layer: 'both' });
+      const prevCoupling = prevCouplingEntry && Number.isFinite(prevCouplingEntry.level) ? prevCouplingEntry.level : midCoupling;
+      const couplingTrend = midCoupling - prevCoupling;
+      if (couplingTrend < -0.05) {
+        L0.post('section-quality', 'both', beatStartTime, {
+          quality: 0.3, bias: clamp(m.abs(couplingTrend) * 0.5, 0, 0.10)
+        });
+      }
+    }
+    // R33: quality feed-forward via L0 -- only applies during first phrase or mid-eval
+    const sectionStart = ph === 0 || ph === halfPhrase;
     const qualityEntry = sectionStart ? L0.getLast('section-quality', { layer: 'both' }) : null;
     const qBias = qualityEntry && Number.isFinite(qualityEntry.bias) ? qualityEntry.bias : 0;
     const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1 + qBias * 0.8, 0, 1);
