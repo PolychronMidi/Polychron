@@ -1,24 +1,84 @@
 # code-docs-rag: Setup, Usage, and Maintenance Guide
 
-> Local semantic code + documentation RAG system for Polychron. 40 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
+> Local semantic code + documentation RAG system for Polychron. 41 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
 
-## Architecture
+## Full Installation Topology
 
+### Server Source (Python)
 ```
-~/.claude/mcp/code-RAG/               Server source (Python)
-  server.py                            FastMCP server (26 tools)
-  rag_engine.py                        LanceDB vector store + BM25 hybrid search + cross-encoder reranking
-  chunker.py                           IIFE-aware JS chunker + line fallback
-  symbols.py                           Symbol index (IIFE globals + inner functions + TS patterns)
-  analysis.py                          Dependency graph, similar code, cross-language trace
-  structure.py                         File summary, module map
-  watcher.py                           5s debounce file watcher for auto-reindex
-  lang_registry.py                     30+ language support
+~/.claude/mcp/code-docs-rag/
+  server.py              FastMCP server (41 tools, name="code-docs-rag")
+  rag_engine.py          LanceDB vector store + BM25 + cross-encoder reranking + prediction error gating
+  chunker.py             IIFE-aware JS chunker + line fallback (tree-sitter not installed)
+  symbols.py             Symbol index: TS_PATTERNS + JS_IIFE_PATTERNS (globals + inner functions)
+  analysis.py            Dependency graph, similar code, cross-language trace
+  structure.py           File summary, module map
+  watcher.py             5s debounce file watcher for auto-reindex
+  lang_registry.py       30+ language support
+  file_walker.py         File discovery + .ragignore support
+  complexity.py          Complexity analysis helpers
+  patterns.py            Code pattern detection
+```
 
-Polychron/.claude/mcp/code-docs-rag/   Project databases
-  code_chunks.lance/                   Semantic code chunks (~3000 chunks from 608 files)
-  knowledge.lance/                     Knowledge KB (17+ entries)
-  symbols.lance/                       Symbol index (3848+ symbols)
+### Project Databases
+```
+Polychron/.claude/mcp/code-docs-rag/
+  code_chunks.lance/     Semantic code chunks (~3000 chunks from 610 files)
+  knowledge.lance/       Knowledge KB (20+ entries with prediction error gating)
+  symbols.lance/         Symbol index (3848+ symbols)
+  file_hashes.json       Content hash cache for incremental reindex
+```
+
+### Skill Definition
+```
+~/.claude/skills/code-docs-rag/
+  SKILL.md               Skill manifest (name, description, allowed-tools)
+  search.md              Search & index tool docs
+  knowledge.md           Knowledge management workflow
+  symbols.md             Symbol lookup tool docs
+  code-trace.md          Trace & dependency tool docs
+```
+
+### Settings (~/. claude/settings.json)
+```json
+{
+  "mcpServers": {
+    "code-docs-rag": {
+      "command": "python3",
+      "args": ["~/.claude/mcp/code-docs-rag/server.py"],
+      "env": {
+        "PROJECT_ROOT": "/home/jah/Polychron",
+        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/code-docs-rag"
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Edit",  "...": "before_editing reminder for src/ files" },
+      { "matcher": "Grep",  "...": "soft warn, prefer MCP grep()" },
+      { "matcher": "Write", "...": "lab rules for sketches.js" },
+      { "matcher": "Bash",  "...": "warn on grep/cat/head/tail/wc patterns" }
+    ],
+    "PostToolUse": [
+      { "matcher": "Bash", "...": "Evolver phases after npm run main, KB persist after snapshot, lab check after run" }
+    ]
+  },
+  "permissions": {
+    "deny": ["Bash(rm*run.lock*)", "Bash(*rm*tmp/run.lock*)"]
+  }
+}
+```
+
+### Project Doc References
+```
+Polychron/
+  CLAUDE.md                   code-docs-rag section (mandatory workflow, 41 tools)
+  .github/agents/Evolver.agent.md    code-docs-rag constraints in evolution loop
+  .github/copilot-instructions.md    code-docs-rag reference
+  .mcp.json                          MCP server registration
+  doc/code-docs-rag.md               THIS FILE (comprehensive guide)
+  doc/CALIBRATION_ANCHORS.md         KB entries merged into doc form
+  doc/EVOLUTIONARY_ROADMAP.md        code-docs-rag improvements section
 ```
 
 ## Setup
@@ -36,8 +96,10 @@ Configured in `~/.claude/settings.json` under `mcpServers.code-docs-rag`. Load t
 | Check if a change is safe | `impact_analysis "symbolName"` | Reading code manually |
 | Audit a file for convention issues | `convention_check "path/to/file.js"` | Manual review |
 | Check for existing constraints before editing | `search_knowledge "module"` | Hoping you remember |
-| Find exact variable name | Grep | `search_code` (weak on identifiers) |
+| Get optimal code for a query within token budget | `get_context "query" max_tokens=4000` | Reading files manually |
+| Find exact variable name | `grep "varName" regex=True` | Built-in Grep |
 | Search 2-3 specific files | Read tool | `search_code` (overkill) |
+| Check KB for stale entries | `kb_health` | Manual review |
 
 ## Mandatory Workflow
 
