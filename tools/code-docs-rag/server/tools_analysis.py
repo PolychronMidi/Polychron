@@ -891,12 +891,17 @@ def _get_api_key() -> str:
 # Claude 4 models. Override via RAG_THINK_MODEL env var (e.g. claude-opus-4-6).
 _THINK_MODEL = os.environ.get("RAG_THINK_MODEL", "claude-sonnet-4-6")
 
-_THINK_SYSTEM = (
-    "You are a code-review assistant with deep knowledge of this project's architecture and conventions. "
-    "Provide concise, actionable analysis grounded in the KB context provided. "
-    "Focus on architectural boundaries, potential breakage, and concrete next steps. "
-    "Be direct — no preamble, no trailing summaries."
-)
+def _build_think_system() -> str:
+    project_name = os.path.basename(os.path.realpath(ctx.PROJECT_ROOT)) if ctx.PROJECT_ROOT else "project"
+    return (
+        f"You are a code-review assistant for the '{project_name}' codebase. "
+        "You have deep knowledge of its architecture and conventions from the KB provided. "
+        "Provide concise, actionable analysis grounded in the KB context. "
+        "Focus on architectural boundaries, potential breakage, and concrete next steps. "
+        "Be direct — no preamble, no trailing summaries."
+    )
+
+_THINK_SYSTEM = _build_think_system()
 
 # context budget → max_tokens for API responses
 _BUDGET_TOKENS = {"greedy": 2048, "moderate": 1024, "conservative": 512, "minimal": 256}
@@ -917,17 +922,25 @@ def _get_effort() -> str:
     return _BUDGET_EFFORT.get(budget, "medium")
 
 
+_KB_CATEGORY_ORDER = {"architecture": 0, "decision": 1, "pattern": 2, "bugfix": 3, "general": 4}
+
+
 def _format_kb_corpus() -> str:
-    """Dump all KB entries (project + global) as a cacheable context block."""
+    """Dump all KB entries (project + global) as a cacheable context block.
+
+    Sorted architecture → decision → pattern → bugfix → general for logical flow.
+    """
     try:
         lines = []
         proj_rows = ctx.project_engine.list_knowledge_full() if ctx.project_engine else []
         if proj_rows:
+            proj_rows = sorted(proj_rows, key=lambda r: _KB_CATEGORY_ORDER.get(r.get("category", "general"), 4))
             lines.append("# Project Knowledge Base\n")
             for r in proj_rows:
                 lines.append(f"[{r['category']}] {r['title']}: {r['content'][:300]}")
         glob_rows = ctx.global_engine.list_knowledge_full() if ctx.global_engine else []
         if glob_rows:
+            glob_rows = sorted(glob_rows, key=lambda r: _KB_CATEGORY_ORDER.get(r.get("category", "general"), 4))
             lines.append("\n# Global Knowledge Base\n")
             for r in glob_rows:
                 lines.append(f"[global/{r['category']}] {r['title']}: {r['content'][:200]}")
@@ -960,36 +973,46 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
             system_blocks.append(
                 {"type": "text", "text": kb_context, "cache_control": {"type": "ephemeral", "ttl": "1h"}}
             )
-        resp = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "content-type": "application/json",
-                "anthropic-version": "2023-06-01",
-                # extended-cache-ttl-2025-04-11 required for "ttl": "1h" to take effect
-                "anthropic-beta": "prompt-caching-2024-07-31,extended-cache-ttl-2025-04-11",
-            },
-            json={
-                "model": _THINK_MODEL,
-                "max_tokens": max_tokens,
-                "thinking": {"type": "adaptive", "display": "omitted"},
-                "output_config": {"effort": effort},
-                "system": system_blocks,
-                "messages": [{"role": "user", "content": user_text}],
-            },
-            timeout=45.0,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            usage = data.get("usage", {})
-            cache_read = usage.get("cache_read_input_tokens", 0)
-            cache_write = usage.get("cache_creation_input_tokens", 0)
-            if cache_read or cache_write:
-                logger.info(f"_claude_think: cache_read={cache_read} cache_write={cache_write} effort={effort}")
-            return " ".join(
-                b["text"] for b in data.get("content", []) if b.get("type") == "text"
-            ).strip() or None
-        logger.warning(f"_claude_think: HTTP {resp.status_code}: {resp.text[:200]}")
+        request_body = {
+            "model": _THINK_MODEL,
+            "max_tokens": max_tokens,
+            "thinking": {"type": "adaptive", "display": "omitted"},
+            "output_config": {"effort": effort},
+            "system": system_blocks,
+            "messages": [{"role": "user", "content": user_text}],
+        }
+        headers = {
+            "x-api-key": api_key,
+            "content-type": "application/json",
+            "anthropic-version": "2023-06-01",
+            # extended-cache-ttl-2025-04-11 required for "ttl": "1h" to take effect
+            "anthropic-beta": "prompt-caching-2024-07-31,extended-cache-ttl-2025-04-11",
+        }
+        import time as _time
+        for attempt in range(2):
+            resp = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers=headers,
+                json=request_body,
+                timeout=45.0,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                usage = data.get("usage", {})
+                cache_read = usage.get("cache_read_input_tokens", 0)
+                cache_write = usage.get("cache_creation_input_tokens", 0)
+                if cache_read or cache_write:
+                    logger.info(f"_claude_think: cache_read={cache_read} cache_write={cache_write} effort={effort}")
+                return " ".join(
+                    b["text"] for b in data.get("content", []) if b.get("type") == "text"
+                ).strip() or None
+            if resp.status_code in (429, 500, 529) and attempt == 0:
+                retry_after = int(resp.headers.get("retry-after", "5"))
+                logger.warning(f"_claude_think: HTTP {resp.status_code}, retrying in {retry_after}s")
+                _time.sleep(min(retry_after, 10))
+                continue
+            logger.warning(f"_claude_think: HTTP {resp.status_code}: {resp.text[:200]}")
+            break
     except Exception as e:
         logger.warning(f"_claude_think: {e}")
     return None
