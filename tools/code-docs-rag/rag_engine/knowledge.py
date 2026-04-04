@@ -57,12 +57,18 @@ class RAGKnowledgeMixin:
                         break
                     elif similarity > 0.6 and category == ex.get("category", ""):
                         # Moderately similar + same category -> supersede
-                        prediction_action = "supersede"
-                        superseded_id = ex["id"]
+                        superseded_candidate = ex["id"]
+                        deleted = False
                         try:
                             self.knowledge_table.delete(f"id = '{_sanitize(ex['id'])}'")
+                            deleted = True
                         except Exception:
                             pass
+                        if not deleted:
+                            # Delete failed — don't supersede to avoid losing the original
+                            break
+                        prediction_action = "supersede"
+                        superseded_id = superseded_candidate
                         break
             except Exception:
                 pass  # gating failure -> store normally
