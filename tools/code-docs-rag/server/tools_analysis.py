@@ -282,6 +282,8 @@ def convention_check(file_path: str) -> str:
 @ctx.mcp.tool()
 def before_editing(file_path: str) -> str:
     """Call BEFORE editing any file. Assembles everything you need to know: KB constraints, callers, boundary rules, recent changes, and danger zones. One call replaces the entire pre-edit research workflow."""
+    if not file_path or not file_path.strip():
+        return "Error: file_path cannot be empty. Pass the relative or absolute path to the file you are about to edit."
     budget = get_context_budget()
     limits = BUDGET_LIMITS[budget]
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
