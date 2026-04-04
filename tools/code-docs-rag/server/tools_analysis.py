@@ -906,8 +906,8 @@ _THINK_SYSTEM = _build_think_system()
 # context budget → max_tokens for API responses
 _BUDGET_TOKENS = {"greedy": 2048, "moderate": 1024, "conservative": 512, "minimal": 256}
 
-# context budget → output_config.effort (Sonnet/Opus 4.6)
-_BUDGET_EFFORT = {"greedy": "medium", "moderate": "medium", "conservative": "low", "minimal": "low"}
+# context budget → output_config.effort (Sonnet/Opus 4.6): full 4-step scaling
+_BUDGET_EFFORT = {"greedy": "high", "moderate": "medium", "conservative": "low", "minimal": "low"}
 
 
 def _get_max_tokens(default: int = 1024) -> int:
@@ -1093,8 +1093,10 @@ def think(about: str, context: str = "") -> str:
         user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
         if context:
             user_text += f"\n\n**Additional context:** {context}"
-        # think is an explicit reasoning call — use high effort when context allows
-        think_effort = "high" if get_context_budget() in ("greedy", "moderate") else "low"
+        # think is an explicit reasoning call — full 4-step effort scaling
+        think_effort = {"greedy": "max", "moderate": "high", "conservative": "medium", "minimal": "low"}.get(
+            get_context_budget(), "medium"
+        )
         answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), effort=think_effort)
         if answer:
             parts = [f"# Think: {about} *(adaptive/{think_effort}, {_THINK_MODEL})*\n", answer]
