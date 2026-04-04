@@ -402,7 +402,8 @@ def before_editing(file_path: str) -> str:
             "Be concrete about which callers could break, which architectural boundaries apply, "
             "and any invariants (coupling targets, registration order, layer isolation) that must not change."
         )
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                   max_tool_calls=_get_tool_budget())
         if synthesis:
             parts.append(f"\n## Edit Risks *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -493,7 +494,8 @@ def what_did_i_forget(changed_files: str) -> str:
             "Consider: registration requirements, doc sync, boundary rules, follow-on changes, "
             "and anything the warnings above don't capture."
         )
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                   max_tool_calls=_get_tool_budget())
         if synthesis:
             parts.append(f"\n## What You May Have Missed *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -595,7 +597,8 @@ def module_story(module_name: str) -> str:
             "In 3 bullet points: what are the most important things to know before editing this module? "
             "Focus on hidden invariants, caller contracts, and architectural constraints visible in the history above."
         )
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                   max_tool_calls=_get_tool_budget())
         if synthesis:
             parts.append(f"\n## Key Constraints *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -664,7 +667,8 @@ def diagnose_error(error_text: str) -> str:
             "(2) exact fix steps as a numbered list, "
             "(3) any boundary/architectural rule to check."
         )
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                   max_tool_calls=_get_tool_budget())
         if synthesis:
             parts.append(f"\n## Fix Synthesis *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -701,12 +705,25 @@ def codebase_health() -> str:
                     break
         if "(function deepFreeze" in content or "(function deepFreezeObj" in content:
             issues_by_severity["WARN"].append(f"{rel}: inline deepFreeze (use shared utility)")
-        # Coupling firewall
+        # Coupling firewall — mirrors COUPLING_MATRIX_EXEMPT_PATHS + COUPLING_MATRIX_LEGACY
+        # from scripts/pipeline/check-hypermeta-jurisdiction.js
         if ".couplingMatrix" in content:
-            allowed = ["/conductor/signal/balancing/", "/conductor/signal/meta/", "/conductor/signal/profiling/",
-                       "/conductor/conductorDiagnostics", "/scripts/pipeline/", "/writer/"]
-            if not any(a in rel for a in allowed):
-                issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix)")
+            exempt = [
+                "/conductor/signal/balancing/", "/conductor/signal/profiling/",
+                "/conductor/signal/meta/", "/conductor/signal/output/",
+                "conductorDiagnostics", "/scripts/pipeline/", "/writer/traceDrain",
+                "play/processBeat.js",
+            ]
+            legacy = [
+                "phaseLockedRhythmGenerator.js", "conductorDampening.js",
+                "densityWaveAnalyzer.js", "velocityShapeAnalyzer.js",
+                "play/crossLayerBeatRecord.js", "play/main.js",
+            ]
+            if not any(a in rel for a in exempt):
+                if any(l in rel for l in legacy):
+                    issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix) [legacy — tracked for refactor]")
+                else:
+                    issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix)")
         if "=== 'L1' ? 'L2' : 'L1'" in content:
             issues_by_severity["NOTE"].append(f"{rel}: inline layer switch")
     parts = [f"# Codebase Health Report ({file_count} src/ files)\n"]
@@ -733,7 +750,8 @@ def codebase_health() -> str:
             "In 3 numbered points: which issues are highest-priority to address first, and why? "
             "Consider architectural risk, coupling exposure, and technical debt accumulation."
         )
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                   max_tool_calls=_get_tool_budget())
         if synthesis:
             parts.append(f"\n## Priority Analysis *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -909,6 +927,87 @@ _BUDGET_TOKENS = {"greedy": 4096, "moderate": 2048, "conservative": 1024, "minim
 # context budget → output_config.effort (Sonnet/Opus 4.6): full 4-step scaling
 _BUDGET_EFFORT = {"greedy": "high", "moderate": "medium", "conservative": "low", "minimal": "low"}
 
+# context budget → max synthesis tool calls (0 = kickstart-only, no agentic loop)
+_BUDGET_TOOL_CALLS = {"greedy": 12, "moderate": 6, "conservative": 3, "minimal": 0}
+
+# Read-only tools Claude may call during synthesis to chase down context it needs
+_SYNTHESIS_TOOLS = [
+    {
+        "name": "search_code",
+        "description": "Semantic search for code by intent. Use to find implementations, call sites, or related patterns.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Natural language description of what to find"},
+                "path": {"type": "string", "description": "Optional directory filter (e.g. 'src/crossLayer')"},
+                "top_k": {"type": "integer", "description": "Number of results (default 5)", "default": 5},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "search_knowledge",
+        "description": "Query the knowledge base for constraints, decisions, anti-patterns, and bugfixes.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "top_k": {"type": "integer", "default": 5},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "find_callers",
+        "description": "Find all files that call or reference a symbol by name.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "Symbol name to find callers of"},
+                "path": {"type": "string", "description": "Optional directory filter"},
+            },
+            "required": ["symbol"],
+        },
+    },
+    {
+        "name": "file_lines",
+        "description": "Read a range of lines from a source file.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string"},
+                "start": {"type": "integer", "default": 1},
+                "end": {"type": "integer", "description": "Last line to read (0 = EOF)", "default": 0},
+            },
+            "required": ["file_path"],
+        },
+    },
+    {
+        "name": "lookup_symbol",
+        "description": "Find where a symbol is defined. Returns file, line, kind, and signature.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "kind": {"type": "string", "description": "Optional: 'global', 'function', 'class'", "default": ""},
+            },
+            "required": ["name"],
+        },
+    },
+    {
+        "name": "get_function_body",
+        "description": "Extract the complete source of a named function with line numbers.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "function_name": {"type": "string"},
+                "file_path": {"type": "string", "description": "Optional file path to narrow search", "default": ""},
+            },
+            "required": ["function_name"],
+        },
+    },
+]
+
 
 def _get_max_tokens(default: int = 1024) -> int:
     """Scale max_tokens by remaining context window pressure."""
@@ -920,6 +1019,113 @@ def _get_effort() -> str:
     """Map context budget to output_config.effort level."""
     budget = get_context_budget()
     return _BUDGET_EFFORT.get(budget, "medium")
+
+
+def _get_tool_budget() -> int:
+    """Map context budget to synthesis tool-call ceiling."""
+    return _BUDGET_TOOL_CALLS.get(get_context_budget(), 6)
+
+
+def _dispatch_synthesis_tool(name: str, inp: dict) -> str:
+    """Execute a read-only synthesis tool call and return a formatted text result.
+
+    Called by _claude_think when Claude issues a tool_use block during synthesis.
+    All tools are read-only — no KB mutations, no indexing operations.
+    """
+    try:
+        ctx.ensure_ready_sync()
+
+        if name == "search_code":
+            query = inp.get("query", "")
+            path_filter = inp.get("path", "") or ""
+            top_k = min(int(inp.get("top_k", 5)), 10)
+            # engine.search() only accepts query, top_k, language — path filter applied post-hoc
+            results = ctx.project_engine.search(query, top_k=top_k * 2 if path_filter else top_k)
+            if path_filter:
+                results = [r for r in results if path_filter in r.get("source", "")]
+            results = results[:top_k]
+            if not results:
+                return "No results."
+            lines = []
+            for r in results:
+                rel = r.get("source", "").replace(ctx.PROJECT_ROOT + "/", "")
+                snippet = r.get("content", "")[:120].replace("\n", " ")
+                lines.append(f"{rel}:{r.get('start_line', '?')} ({fmt_score(r.get('score', 0))}) — {snippet}")
+            return "\n".join(lines)
+
+        if name == "search_knowledge":
+            query = inp.get("query", "")
+            top_k = min(int(inp.get("top_k", 5)), 10)
+            results = ctx.project_engine.search_knowledge(query, top_k=top_k)
+            if not results:
+                return "No KB entries found."
+            return "\n".join(
+                f"[{r['category']}] {r['title']}: {r['content'][:300]}"
+                for r in results
+            )
+
+        if name == "find_callers":
+            symbol = inp.get("symbol", "")
+            path_filter = inp.get("path", "")
+            if not symbol:
+                return "Error: symbol required."
+            results = _find_callers(symbol, ctx.PROJECT_ROOT)
+            if path_filter:
+                results = [r for r in results if path_filter in r.get("file", "")]
+            results = [r for r in results if symbol not in os.path.basename(r.get("file", ""))]
+            if not results:
+                return f"No callers found for '{symbol}'."
+            caller_files = sorted(set(r["file"].replace(ctx.PROJECT_ROOT + "/", "") for r in results))
+            return f"{len(caller_files)} caller files:\n" + "\n".join(f"  {f}" for f in caller_files[:25])
+
+        if name == "file_lines":
+            file_path = inp.get("file_path", "")
+            start = max(1, int(inp.get("start", 1)))
+            end = int(inp.get("end", 0))
+            abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
+            if abs_path is None:
+                return "Error: path outside project root."
+            if not os.path.isfile(abs_path):
+                return f"File not found: {file_path}"
+            with open(abs_path, encoding="utf-8", errors="ignore") as f:
+                all_lines = f.readlines()
+            total = len(all_lines)
+            s = start - 1
+            e = min(end if end > 0 else total, total, s + 200)  # cap at 200 lines per call
+            selected = all_lines[s:e]
+            rel = abs_path.replace(ctx.PROJECT_ROOT + "/", "")
+            header = f"## {rel} (lines {s+1}-{e} of {total})\n"
+            return header + "".join(f"{s+1+i:4d}  {ln.rstrip()}\n" for i, ln in enumerate(selected))
+
+        if name == "lookup_symbol":
+            sym_name = inp.get("name", "")
+            kind = inp.get("kind", "") or ""
+            if not sym_name:
+                return "Error: name required."
+            results = ctx.project_engine.lookup_symbol(sym_name, kind=kind)
+            if not results:
+                return f"Symbol '{sym_name}' not found."
+            lines = []
+            for r in results:
+                sig = f" {r['signature']}" if r.get("signature") else ""
+                rel = r.get("file", "").replace(ctx.PROJECT_ROOT + "/", "")
+                lines.append(f"[{r['kind']}] {r['name']}{sig}  ({rel}:{r['line']})")
+            return "\n".join(lines)
+
+        if name == "get_function_body":
+            fn_name = inp.get("function_name", "")
+            file_path = inp.get("file_path", "") or ""
+            if not fn_name:
+                return "Error: function_name required."
+            # Reuse the MCP tool (defined later in this file) — call via lazy import to avoid
+            # forward-reference issues; it's importable since this module is already loaded.
+            return get_function_body(fn_name, file_path=file_path)
+
+        return f"Unknown synthesis tool: {name}"
+
+    except Exception as e:
+        logger.warning(f"_dispatch_synthesis_tool {name}: {e}")
+        return f"Tool error: {e}"
 
 
 _KB_CATEGORY_ORDER = {"architecture": 0, "decision": 1, "pattern": 2, "bugfix": 3, "general": 4}
@@ -967,7 +1173,8 @@ def _format_kb_corpus() -> str:
 
 
 def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
-                  kb_context: str = "", effort: str | None = None) -> str | None:
+                  kb_context: str = "", effort: str | None = None,
+                  max_tool_calls: int | None = None) -> str | None:
     """Call Claude with adaptive thinking + two-level prompt caching.
 
     Cache breakpoints:
@@ -978,6 +1185,12 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
     Pass effort='high' to override for explicit reasoning calls (e.g. think tool).
     Thinking blocks use display='omitted' — tokens are processed but not streamed,
     reducing TTFT. We only extract the text blocks from the response.
+
+    When max_tool_calls > 0, enables a hybrid kickstart + agentic loop: Claude receives
+    the pre-assembled kickstart context AND a set of read-only tools it can invoke to
+    chase down anything the kickstart doesn't cover. The loop continues until Claude
+    stops requesting tools or the budget is exhausted, at which point tools are
+    removed from the request to force a final synthesis turn.
     """
     if max_tokens is None:
         max_tokens = _get_max_tokens()
@@ -985,6 +1198,8 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
         effort = _get_effort()
     try:
         import httpx
+        import time as _time
+
         system_blocks: list[dict] = [
             {"type": "text", "text": _THINK_SYSTEM, "cache_control": {"type": "ephemeral"}},
         ]
@@ -992,14 +1207,6 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
             system_blocks.append(
                 {"type": "text", "text": kb_context, "cache_control": {"type": "ephemeral", "ttl": "1h"}}
             )
-        request_body = {
-            "model": _THINK_MODEL,
-            "max_tokens": max_tokens,
-            "thinking": {"type": "adaptive", "display": "omitted"},
-            "output_config": {"effort": effort},
-            "system": system_blocks,
-            "messages": [{"role": "user", "content": user_text}],
-        }
         headers = {
             "x-api-key": api_key,
             "content-type": "application/json",
@@ -1007,31 +1214,96 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
             # extended-cache-ttl-2025-04-11 required for "ttl": "1h" to take effect
             "anthropic-beta": "prompt-caching-2024-07-31,extended-cache-ttl-2025-04-11",
         }
-        import time as _time
-        for attempt in range(2):
-            resp = httpx.post(
-                "https://api.anthropic.com/v1/messages",
-                headers=headers,
-                json=request_body,
-                timeout=45.0,
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                usage = data.get("usage", {})
-                cache_read = usage.get("cache_read_input_tokens", 0)
-                cache_write = usage.get("cache_creation_input_tokens", 0)
-                if cache_read or cache_write:
-                    logger.info(f"_claude_think: cache_read={cache_read} cache_write={cache_write} effort={effort}")
+
+        def _call_api(messages: list, tools: list) -> dict | None:
+            """Single API call with one retry on transient errors."""
+            body: dict = {
+                "model": _THINK_MODEL,
+                "max_tokens": max_tokens,
+                "thinking": {"type": "adaptive", "display": "omitted"},
+                "output_config": {"effort": effort},
+                "system": system_blocks,
+                "messages": messages,
+            }
+            if tools:
+                body["tools"] = tools
+            for attempt in range(2):
+                t0 = _time.monotonic()
+                resp = httpx.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers=headers,
+                    json=body,
+                    timeout=60.0,
+                )
+                elapsed_ms = int((_time.monotonic() - t0) * 1000)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    usage = data.get("usage", {})
+                    logger.info(
+                        f"_claude_think: effort={effort} turn={len(messages)} "
+                        f"tokens={usage.get('input_tokens',0)}in/{usage.get('output_tokens',0)}out "
+                        f"cache_read={usage.get('cache_read_input_tokens',0)} "
+                        f"cache_write={usage.get('cache_creation_input_tokens',0)} "
+                        f"latency={elapsed_ms}ms"
+                    )
+                    return data
+                if resp.status_code in (429, 500, 529) and attempt == 0:
+                    retry_after = int(resp.headers.get("retry-after", "5"))
+                    logger.warning(f"_claude_think: HTTP {resp.status_code}, retrying in {retry_after}s")
+                    _time.sleep(min(retry_after, 10))
+                    continue
+                logger.warning(f"_claude_think: HTTP {resp.status_code}: {resp.text[:200]}")
+                return None
+            return None
+
+        # ── Hybrid kickstart + agentic loop ──────────────────────────────────
+        budget = max_tool_calls if max_tool_calls is not None else 0
+        messages: list[dict] = [{"role": "user", "content": user_text}]
+        tools_remaining = budget
+
+        # Allow up to budget+2 turns: tool-call turns + forced final synthesis turn
+        for _turn in range(budget + 2):
+            active_tools = _SYNTHESIS_TOOLS if tools_remaining > 0 else []
+            data = _call_api(messages, active_tools)
+            if data is None:
+                return None
+
+            content_blocks = data.get("content", [])
+            stop_reason = data.get("stop_reason", "end_turn")
+
+            # Always append the full assistant response (incl. thinking blocks for multi-turn)
+            messages.append({"role": "assistant", "content": content_blocks})
+
+            if stop_reason != "tool_use":
+                # Done — extract text blocks as synthesis result
                 return " ".join(
-                    b["text"] for b in data.get("content", []) if b.get("type") == "text"
+                    b["text"] for b in content_blocks if b.get("type") == "text"
                 ).strip() or None
-            if resp.status_code in (429, 500, 529) and attempt == 0:
-                retry_after = int(resp.headers.get("retry-after", "5"))
-                logger.warning(f"_claude_think: HTTP {resp.status_code}, retrying in {retry_after}s")
-                _time.sleep(min(retry_after, 10))
-                continue
-            logger.warning(f"_claude_think: HTTP {resp.status_code}: {resp.text[:200]}")
-            break
+
+            # Execute tool calls and build tool_result user turn
+            tool_results = []
+            for block in content_blocks:
+                if block.get("type") != "tool_use":
+                    continue
+                tool_id = block.get("id", "")
+                tool_name = block.get("name", "")
+                tool_input = block.get("input", {})
+                logger.info(f"_claude_think: tool_use {tool_name} input_keys={list(tool_input.keys())}")
+                result_text = _dispatch_synthesis_tool(tool_name, tool_input)
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "content": result_text[:6000],  # cap to keep context bounded
+                })
+                tools_remaining -= 1
+
+            if not tool_results:
+                break
+            messages.append({"role": "user", "content": tool_results})
+            # If budget exhausted, next turn gets no tools — forces end_turn synthesis
+            if tools_remaining <= 0:
+                tools_remaining = 0
+
     except Exception as e:
         logger.warning(f"_claude_think: {e}")
     return None
@@ -1097,7 +1369,8 @@ def think(about: str, context: str = "") -> str:
         think_effort = {"greedy": "max", "moderate": "high", "conservative": "medium", "minimal": "low"}.get(
             get_context_budget(), "medium"
         )
-        answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), effort=think_effort)
+        answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), effort=think_effort,
+                               max_tool_calls=_get_tool_budget())
         if answer:
             parts = [f"# Think: {about} *(adaptive/{think_effort}, {_THINK_MODEL})*\n", answer]
             if kb_hits:
@@ -1184,7 +1457,8 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
             "(2) what integration tests or validation steps are most important, "
             "(3) any cascade effects to watch for in deeper layers."
         )
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                   max_tool_calls=_get_tool_budget())
         if synthesis:
             parts.append(f"\n## Change Risk *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)

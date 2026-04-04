@@ -1929,6 +1929,7 @@ declare var hyperMetaManagerHealth: { gatherControllerState(): any; computeSyste
 declare var hyperMetaManagerContradictions: { updateRateMultipliers(state: any): void; detectContradictions(state: any): void };
 declare var hyperMetaManagerTopology: { update(state: any): void };
 declare var hyperMetaManagerTelemetry: { updateReconciliation(state: any): void; applyTrustVelocityDamping(state: any): void; checkPhaseTelemetryIntegrity(state: any): void };
+declare var hyperMetaManagerEvolutions: { applyEvolutions(state: any, e18Scale: number): void };
 declare var correlationShuffler: { tick(): void; getShuffleScale(loopName: string): number; getSnapshot(): any; reset(): void };
 declare var reconvergenceAccelerator: { recordInput(value: number): void; getAlphaMultiplier(): number; isAccelerating(): boolean; reset(): void };
 declare var musicalTimeWindows: { beatsForSeconds(seconds: number): number; ticksForSeconds(seconds: number): number };

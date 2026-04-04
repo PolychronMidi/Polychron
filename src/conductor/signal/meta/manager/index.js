@@ -5,4 +5,5 @@ require('./topologyIntelligence');
 require('./telemetryReconciliation');
 require('./correlationShuffler');
 require('./reconvergenceAccelerator');
+require('./hyperMetaManagerEvolutions');
 require('./hyperMetaManager');
