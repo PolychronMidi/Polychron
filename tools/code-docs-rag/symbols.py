@@ -370,6 +370,18 @@ SQL_PATTERNS = {
 }
 
 
+def find_iife_globals(content: str) -> list[str]:
+    """Find all IIFE global names in JavaScript content."""
+    names = []
+    skip = {'if', 'else', 'for', 'while', 'return'}
+    for pat in (JS_IIFE_PATTERNS["iife_global"], JS_IIFE_PATTERNS["iife_function_global"]):
+        for m in pat.finditer(content):
+            name = m.group(1)
+            if name not in skip:
+                names.append(name)
+    return names
+
+
 def extract_symbols(file_path: str, content: str = "") -> list[dict]:
     ext = Path(file_path).suffix
     fname = Path(file_path).name

@@ -3,7 +3,7 @@
     "code-docs-rag": {
       "type": "stdio",
       "command": "python3",
-      "args": ["/home/jah/.claude/mcp/code-docs-rag/server.py"],
+      "args": ["/home/jah/.claude/mcp/code-docs-rag/server/main.py"],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
         "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/code-docs-rag",
