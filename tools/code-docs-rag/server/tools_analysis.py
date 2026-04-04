@@ -62,6 +62,7 @@ def get_dependency_graph(file_path: str) -> str:
 @ctx.mcp.tool()
 def lookup_symbol(name: str, kind: str = "", language: str = "") -> str:
     """Find where a symbol is defined by exact name match. Returns the file, line number, kind (global, function, class), and signature for each match. Use kind='global' to filter to IIFE globals only, or kind='function' for inner functions. For fuzzy/semantic symbol search, use search_symbols instead."""
+    ctx.ensure_ready_sync()
     if not name.strip():
         return "Error: name cannot be empty."
     results = ctx.project_engine.lookup_symbol(name, kind=kind, language=language)
@@ -82,6 +83,7 @@ def lookup_symbol(name: str, kind: str = "", language: str = "") -> str:
 @ctx.mcp.tool()
 def search_symbols(query: str, top_k: int = 20, kind: str = "") -> str:
     """Semantic search across the symbol index. Unlike lookup_symbol (exact match), this finds symbols whose names or signatures are semantically similar to the query. Use kind='global' to filter to IIFE globals, 'function' for inner functions. Returns ranked results with file locations, kinds, signatures, and relevance scores."""
+    ctx.ensure_ready_sync()
     if not query or not query.strip():
         return "Error: query cannot be empty. Pass a symbol name or description to search for."
     top_k = max(1, min(50, top_k))
@@ -162,6 +164,7 @@ def get_module_map(directory: str = "", max_depth: int = 3) -> str:
 @ctx.mcp.tool()
 def impact_analysis(symbol_name: str, language: str = "") -> str:
     """Analyze the impact of changing a symbol: who calls it, what it calls, and knowledge constraints."""
+    ctx.ensure_ready_sync()
     if not symbol_name.strip():
         return "Error: symbol_name cannot be empty."
     if len(symbol_name.strip()) < 2:
@@ -203,6 +206,7 @@ def impact_analysis(symbol_name: str, language: str = "") -> str:
 @ctx.mcp.tool()
 def convention_check(file_path: str) -> str:
     """Check a file against project conventions: line count, naming, registration, boundary rules."""
+    ctx.ensure_ready_sync()
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
@@ -284,6 +288,7 @@ def convention_check(file_path: str) -> str:
 @ctx.mcp.tool()
 def before_editing(file_path: str) -> str:
     """Call BEFORE editing any file. Assembles everything you need to know: KB constraints, callers, boundary rules, recent changes, and danger zones. One call replaces the entire pre-edit research workflow."""
+    ctx.ensure_ready_sync()
     if not file_path or not file_path.strip():
         return "Error: file_path cannot be empty. Pass the relative or absolute path to the file you are about to edit."
     budget = get_context_budget()
@@ -364,6 +369,7 @@ def before_editing(file_path: str) -> str:
 @ctx.mcp.tool()
 def what_did_i_forget(changed_files: str) -> str:
     """Call AFTER implementing changes, BEFORE running pipeline. Takes comma-separated file paths. Checks changed files against KB for missed constraints, boundary violations, and doc update needs. Output scales with remaining context window."""
+    ctx.ensure_ready_sync()
     budget = get_context_budget()
     limits = BUDGET_LIMITS[budget]
     files = [f.strip() for f in changed_files.split(",") if f.strip()]
@@ -435,6 +441,7 @@ def what_did_i_forget(changed_files: str) -> str:
 @ctx.mcp.tool()
 def module_story(module_name: str) -> str:
     """Tell the story of a module: definition, evolution history from KB, callers, conventions, and current health. A living biography. Output is automatically scaled based on remaining context window — greedy when context is plentiful, minimal when tight."""
+    ctx.ensure_ready_sync()
     if not module_name.strip():
         return "Error: module_name cannot be empty."
     budget = get_context_budget()
@@ -514,6 +521,7 @@ def module_story(module_name: str) -> str:
 @ctx.mcp.tool()
 def diagnose_error(error_text: str) -> str:
     """Paste a pipeline error. Returns: likely source file, relevant KB entries, similar past bugs, and fix patterns."""
+    ctx.ensure_ready_sync()
     if not error_text or not error_text.strip():
         return "Error: error_text cannot be empty. Paste the error message or stack trace."
     parts = ["# Error Diagnosis\n"]
@@ -741,6 +749,7 @@ def doc_sync_check(doc_path: str = "") -> str:
 @ctx.mcp.tool()
 def think(about: str, context: str = "") -> str:
     """Structured reflection tool. Forces the agent to pause and reason about a specific concern before proceeding. Inspired by Serena MCP's thinking workflow."""
+    ctx.ensure_ready_sync()
     prompts = {
         "task_adherence": "Am I still working on what the user asked? Have I drifted into tangential work? What was the original request and am I addressing it?",
         "completeness": "Have I finished everything required? Are there skipped phases (verify, journal, snapshot)? Did I check the pipeline results? Did I update docs?",
@@ -768,6 +777,7 @@ def think(about: str, context: str = "") -> str:
 @ctx.mcp.tool()
 def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
     """Trace the full transitive dependency chain of a symbol: who calls it, who calls those callers, etc. Deeper than impact_analysis."""
+    ctx.ensure_ready_sync()
     if not symbol_name.strip():
         return "Error: symbol_name cannot be empty."
     visited = set()
@@ -944,6 +954,7 @@ def bulk_rename_preview(old_name: str, new_name: str, language: str = "") -> str
 @ctx.mcp.tool()
 def get_function_body(function_name: str, file_path: str = "", language: str = "") -> str:
     """Extract the complete source code of a named function. If file_path is given, searches only that file. Otherwise, looks up the function in the symbol index and extracts from the first matching file(s). Returns the function body with line numbers and kind (function, method, etc). Useful for reading a specific function without loading the entire file."""
+    ctx.ensure_ready_sync()
     from chunker import get_function_body as _get_body
 
     if file_path:

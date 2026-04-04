@@ -40,6 +40,7 @@ def _index_main(target: str) -> dict:
 def grep(pattern: str, path: str = "src", file_type: str = "js", context: int = 0, regex: bool = False, files_only: bool = False) -> str:
     """Exact string or regex search across project files, enriched with KB cross-references. Use this instead of built-in Grep for all exact-match searches — it automatically surfaces relevant knowledge constraints alongside results. Set regex=True for extended regex (-E), context=N for surrounding lines (-C), files_only=True for file paths only (-l). Returns up to 30 matching lines plus any KB entries related to the search pattern. For semantic/intent-based searches, use search_code instead."""
     import subprocess
+    ctx.ensure_ready_sync()
     if not pattern:
         return "Error: pattern cannot be empty."
     if regex:
@@ -93,6 +94,7 @@ def grep(pattern: str, path: str = "src", file_type: str = "js", context: int = 
 @ctx.mcp.tool()
 def file_lines(file_path: str, start: int = 1, end: int = 0) -> str:
     """Read specific line ranges of a file with automatic KB context for the module. Use this instead of Bash cat/head/tail/sed — it surfaces any knowledge constraints associated with the file's module. Accepts relative paths (resolved against ctx.PROJECT_ROOT) or absolute paths. Specify start and end line numbers to read a range; omit end to read to EOF. Returns numbered lines plus any matching KB entries."""
+    ctx.ensure_ready_sync()
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
@@ -174,6 +176,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
     max_tokens=0 means AUTO: reads /tmp/claude-context.json (from status line) to determine budget.
     >75% remaining = greedy (8000), 50-75% = moderate (4000), 25-50% = conservative (2000), <25% = minimal (800).
     max_tokens>0 means MANUAL override."""
+    ctx.ensure_ready_sync()
     if not query or not query.strip():
         return "Empty query. Provide a natural-language description of what you're looking for."
     if max_tokens > 0:
@@ -251,6 +254,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
 @ctx.mcp.tool()
 def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", scope: str = "main", path: str = "", response_format: str = "detailed") -> str:
     """Semantic natural-language code search across the indexed codebase. Use this for intent-based queries like 'where does convergence detection happen' — it uses vector similarity, not string matching. Set path='src/crossLayer' to scope results to a directory. Set lib='<name>' to search an indexed library. Set scope='all' to include both main and libs. Results include chunk summaries, relevance scores, and any KB constraints tagged to matching modules. For exact string/regex matching, use grep instead. Set response_format='concise' to get file:line locations only (saves ~2/3 tokens); 'detailed' (default) includes full summaries and KB tags."""
+    ctx.ensure_ready_sync()
     if not query or not query.strip():
         return "Empty query. Provide a natural-language description of what you're looking for, e.g. 'where does convergence detection happen'."
     top_k = max(1, min(30, top_k))
@@ -332,6 +336,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
 @ctx.mcp.tool()
 def find_similar_code(code_snippet: str, top_k: int = 10) -> str:
     """Find code chunks semantically similar to a given snippet. Paste a code fragment and get back the most similar chunks in the codebase, ranked by vector similarity. Useful for finding duplicated logic, parallel implementations, or code that follows the same pattern. Returns file locations, language, similarity scores, and chunk summaries."""
+    ctx.ensure_ready_sync()
     top_k = max(1, min(30, top_k))
     results = _find_similar(code_snippet, ctx.project_engine, top_k=top_k)
 

@@ -1,8 +1,10 @@
-import lancedb
 import pyarrow as pa
-from sentence_transformers import SentenceTransformer
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    import lancedb
+    from sentence_transformers import SentenceTransformer
 import hashlib
 import json
 import logging
@@ -348,18 +350,22 @@ def _file_hash(content: str) -> str:
 
 
 class RAGEngine:
-    def __init__(self, db_path: str, model_name: str = "all-mpnet-base-v2", model: Optional[SentenceTransformer] = None):
+    def __init__(self, db_path: str, model_name: str = "all-mpnet-base-v2", model: "Optional[SentenceTransformer]" = None):
         self.db_path = db_path
-        self.db = lancedb.connect(db_path)
-        self.model = model or SentenceTransformer(model_name)
+        import lancedb as _lancedb
+        self.db = _lancedb.connect(db_path)
+        if model is None:
+            from sentence_transformers import SentenceTransformer as _ST
+            model = _ST(model_name)
+        self.model = model
         # Dynamic vector dimension from the actual model
         self._dim = self.model.get_sentence_embedding_dimension()
         self._code_schema = _code_schema(self._dim)
         self._knowledge_schema = _knowledge_schema(self._dim)
         self._symbol_schema = _symbol_schema(self._dim)
-        self.table: Optional[lancedb.table.Table] = None
-        self.knowledge_table: Optional[lancedb.table.Table] = None
-        self.symbol_table: Optional[lancedb.table.Table] = None
+        self.table = None
+        self.knowledge_table = None
+        self.symbol_table = None
         self.hash_cache_path = os.path.join(db_path, "file_hashes.json")
         self._file_hashes: dict[str, str] = {}
         self._chunk_hashes: set[str] = set()  # chunk-level dedup
