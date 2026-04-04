@@ -92,13 +92,9 @@ narrativeTrajectory = (() => {
       const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
       const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
       const dynamicSnap = /** @type {any} */ (snap);
-      const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
-      const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
-        ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
-        : 0;
-      const tensionFlickerPressure = couplingMatrix && typeof couplingMatrix['tension-flicker'] === 'number' && Number.isFinite(couplingMatrix['tension-flicker'])
-        ? clamp((m.abs(couplingMatrix['tension-flicker']) - 0.78) / 0.16, 0, 1)
-        : 0;
+      const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {});
+      const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
+      const tensionFlickerPressure = clamp(((couplingPressures['tension-flicker'] || 0) - 0.78) / 0.16, 0, 1);
       const tensionProduct = conductorState.getField('tension');
       const tensionSaturationPressure = clamp((tensionProduct - 1.10) / 0.20, 0, 1);
       const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'

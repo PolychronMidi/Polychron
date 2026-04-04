@@ -111,17 +111,12 @@ velocityShapeAnalyzer = (() => {
     if (phaseRecoveryCredit <= 0) {
       return 0;
     }
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
-    if (!couplingMatrix) {
+    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), null);
+    if (!couplingPressures) {
       return 0;
     }
-    const densityFlickerPressure = typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
-      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.76) / 0.16, 0, 1)
-      : 0;
-    const flickerPhasePressure = typeof couplingMatrix['flicker-phase'] === 'number' && Number.isFinite(couplingMatrix['flicker-phase'])
-      ? clamp((m.abs(couplingMatrix['flicker-phase']) - 0.74) / 0.16, 0, 1)
-      : 0;
+    const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.76) / 0.16, 0, 1);
+    const flickerPhasePressure = clamp(((couplingPressures['flicker-phase'] || 0) - 0.74) / 0.16, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
     return clamp((densityFlickerPressure * 0.55 + flickerPhasePressure * 0.25 + trustSharePressure * 0.20) * phaseRecoveryCredit, 0, 1);
   }
