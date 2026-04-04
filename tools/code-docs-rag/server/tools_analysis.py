@@ -746,9 +746,27 @@ def doc_sync_check(doc_path: str = "") -> str:
 
 
 
+def _get_api_key() -> str:
+    """Return Anthropic API key from env or common key file locations."""
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if key:
+        return key
+    for key_path in [
+        os.path.expanduser("~/.anthropic/api_key"),
+        os.path.expanduser("~/.config/anthropic/key"),
+    ]:
+        try:
+            key = open(key_path).read().strip()
+            if key:
+                return key
+        except Exception:
+            pass
+    return ""
+
+
 @ctx.mcp.tool()
 def think(about: str, context: str = "") -> str:
-    """Structured reflection tool. Forces the agent to pause and reason about a specific concern before proceeding. Inspired by Serena MCP's thinking workflow."""
+    """Structured reflection tool. When ANTHROPIC_API_KEY is set, uses Claude with adaptive thinking to produce real analysis. Falls back to a structured reflection template otherwise."""
     ctx.ensure_ready_sync()
     prompts = {
         "task_adherence": "Am I still working on what the user asked? Have I drifted into tangential work? What was the original request and am I addressing it?",
@@ -758,16 +776,67 @@ def think(about: str, context: str = "") -> str:
         "conventions": "Does my code follow project conventions? Line count? Naming? Registration? Architectural boundaries?",
     }
     prompt = prompts.get(about, f"Reflect on: {about}")
+
+    # Gather KB context regardless of path
+    kb_hits = ctx.project_engine.search_knowledge(about, top_k=5)
+    kb_block = ""
+    if kb_hits:
+        lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_hits]
+        kb_block = "Relevant KB constraints:\n" + "\n".join(lines)
+
+    api_key = _get_api_key()
+    if api_key:
+        try:
+            import httpx
+            system_text = (
+                "You are a code-review assistant with deep knowledge of this project's architecture. "
+                "Provide concise, actionable analysis. Focus on architectural boundaries, potential breakage, "
+                "and concrete next steps. Be direct — no preamble."
+            )
+            user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
+            if context:
+                user_text += f"\n\n**Additional context:** {context}"
+            if kb_block:
+                user_text += f"\n\n{kb_block}"
+
+            resp = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "content-type": "application/json",
+                    "anthropic-version": "2023-06-01",
+                },
+                json={
+                    "model": "claude-sonnet-4-6",
+                    "max_tokens": 2048,
+                    "thinking": {"type": "adaptive"},
+                    "system": [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
+                    "messages": [{"role": "user", "content": user_text}],
+                },
+                timeout=30.0,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                # Extract text blocks (thinking blocks are internal, not exposed)
+                answer = " ".join(
+                    b["text"] for b in data.get("content", []) if b.get("type") == "text"
+                ).strip()
+                if answer:
+                    parts = [f"# Think: {about} *(adaptive)*\n", answer]
+                    if kb_hits:
+                        parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
+                    return "\n".join(parts)
+        except Exception as e:
+            logger.warning(f"think: API call failed ({e}), falling back to template")
+
+    # Template fallback
     parts = [f"# Think: {about}\n"]
     parts.append(f"**Prompt:** {prompt}\n")
     if context:
         parts.append(f"**Context:** {context}\n")
-    # Auto-inject relevant KB
-    kb_hits = ctx.project_engine.search_knowledge(about, top_k=3)
-    relevant = kb_hits
-    if relevant:
+    if kb_hits:
         parts.append("**Relevant KB:**")
-        for k in relevant:
+        for k in kb_hits:
             parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:100]}...")
     parts.append("\n**Now reflect and respond before proceeding.**")
     return "\n".join(parts)
