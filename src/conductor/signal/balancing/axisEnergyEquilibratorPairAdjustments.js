@@ -69,6 +69,10 @@ axisEnergyEquilibratorPairAdjustments = (() => {
         ? (coherentPairEligible && (residualTailHot || rolling > config.HOTSPOT_RATIO * baseline) ? context.coherentHotspotScale : 0)
         : context.tightenScale;
 
+      // Cross-adjuster direction inhibit: skip if axis adjuster recently relaxed this pair
+      const crossWindow = config.CROSS_INHIBIT_WINDOW || 6;
+      if (state.pairLastRelaxBeat[pair] !== undefined && state.beatCount - state.pairLastRelaxBeat[pair] < crossWindow) continue;
+
       if (pairTightenScale > 0 && ((rolling > config.HOTSPOT_RATIO * baseline && rolling > config.HOTSPOT_ABS_MIN) || residualTailHot)) {
         const overshoot = m.max(rolling / m.max(baseline, 0.01), pairP95 / m.max(baseline, 0.01));
         const residualTightenPressure = clamp(
@@ -111,6 +115,7 @@ axisEnergyEquilibratorPairAdjustments = (() => {
         if (nextBaseline < baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.PAIR_COOLDOWN;
+          state.pairLastTightenBeat[pair] = state.beatCount;
           state.pairAdjustments++;
           if (context.currentRegime === 'coherent' && pairTightenScale > 0) state.coherentHotspotPairAdj++;
           state.perPairAdj[pair] = (V.optionalFinite(state.perPairAdj[pair], 0)) + 1;
@@ -129,6 +134,7 @@ axisEnergyEquilibratorPairAdjustments = (() => {
         if (nextBaseline > baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.PAIR_COOLDOWN;
+          state.pairLastRelaxBeat[pair] = state.beatCount;
           state.pairAdjustments++;
           state.perPairAdj[pair] = (V.optionalFinite(state.perPairAdj[pair], 0)) + 1;
           state.regimePairAdj[context.regimeKey] = (state.regimePairAdj[context.regimeKey] || 0) + 1;

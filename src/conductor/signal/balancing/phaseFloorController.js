@@ -24,6 +24,9 @@ phaseFloorController = (() => {
   let phaseFloorControllerRecoverySuccessEma = 0.5;
   let phaseFloorControllerLastBoostApplied = 0;
   let phaseFloorControllerBeatsSinceBoost = 0;
+  // Tracks consecutive beats where phase share exceeded 115% of fair share.
+  // Used by computeBoosts to dampen boost when phase recently overshot.
+  let phaseFloorControllerHighShareStreak = 0;
   const RECOVERY_ATTRIBUTION_WINDOW = 12;
 
   // DERIVED THRESHOLDS (self-calibrating)
@@ -105,7 +108,7 @@ phaseFloorController = (() => {
    * @param {number} share - current phase share
    * @param {number} phaseLowShareStreak - how many consecutive beats below low-share threshold
    * @param {number} phaseCollapseStreak - how many consecutive beats below collapse threshold
-   * @returns {{ phaseCollapseBoost: number, phaseFloorBoost: number }}
+   * @returns {{ phaseCollapseBoost: number, phaseFloorBoost: number, phaseRetractionMult: number }}
    */
   function computeBoosts(share, phaseLowShareStreak, phaseCollapseStreak) {
     const fairShare = 1.0 / 6.0;
@@ -156,7 +159,12 @@ phaseFloorController = (() => {
       phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor * phaseScaling, 14.0, boostCeiling);
     }
 
-    return { phaseCollapseBoost, phaseFloorBoost };
+    // Anti-overshoot memory: if phase was recently above 115% of fair share, dampen boost
+    // to avoid re-triggering overshoot. Bypass retraction during genuine collapse (share < collapseThreshold).
+    const phaseRetractionMult = share < getCollapseThreshold() ? 1.0
+      : clamp(1.0 - phaseFloorControllerHighShareStreak * 0.025, 0.7, 1.0);
+
+    return { phaseCollapseBoost, phaseFloorBoost, phaseRetractionMult };
   }
 
   /**
@@ -196,6 +204,14 @@ phaseFloorController = (() => {
     if (!energyData || !energyData.shares) return;
 
     const share = typeof energyData.shares.phase === 'number' ? energyData.shares.phase : 0.1667;
+
+    // Track high-share streak for anti-overshoot retraction in computeBoosts
+    const fairShareT = 1.0 / 6.0;
+    if (share > fairShareT * 1.15) {
+      phaseFloorControllerHighShareStreak++;
+    } else if (share < fairShareT * 1.05) {
+      phaseFloorControllerHighShareStreak = 0;
+    }
 
     // Track volatility: |delta| of share from beat to beat
     const delta = m.abs(share - phaseFloorControllerLastShare);
@@ -252,6 +268,7 @@ phaseFloorController = (() => {
       extremeCollapseStreak: getExtremeCollapseStreak(),
       escalatedBoostStreak: getEscalatedBoostStreak(),
       extremeCollapseShare: getExtremeCollapseShare(),
+      highShareStreak: phaseFloorControllerHighShareStreak,
       beatCount: phaseFloorControllerBeatCount
     };
   }
@@ -260,6 +277,7 @@ phaseFloorController = (() => {
     // Preserve EMAs across sections (they carry inter-section learning)
     phaseFloorControllerCurrentCoherentStreak = 0;
     phaseFloorControllerLastBoostApplied = 0;
+    phaseFloorControllerHighShareStreak = 0;
   }
 
   // SELF-REGISTRATION

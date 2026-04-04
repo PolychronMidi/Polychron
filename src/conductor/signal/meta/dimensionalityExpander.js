@@ -35,6 +35,9 @@ dimensionalityExpander = (() => {
   // fair share. Catches ANY dead nudgeable axis automatically.
   const DEAD_AXIS_THRESHOLD = 0.05;
   const DEAD_AXIS_PERTURBATION = 0.12; // raised (was 0.08) - Run 11: flicker at 3.6% below threshold but nudge too small to produce measurable effect
+  // Minimum beats between dead-axis nudge applications. Prevents continuous nudging
+  // before the axis has had time to respond to the previous perturbation.
+  const DEAD_AXIS_MIN_GAP = 8;
 
   // Dominant-axis suppression: mirror of dead-axis detection. If a
   // nudgeable axis exceeds this fraction of total variance, dampen it
@@ -51,6 +54,7 @@ dimensionalityExpander = (() => {
   let dimensionalityExpanderTensionBias = 1.0;
   let dimensionalityExpanderFlickerBias = 1.0;
   let dimensionalityExpanderUrgency = 0;
+  let axisNudgeGaps = [0, 0, 0]; // per-axis cooldown: beats remaining before next dead-axis nudge
 
   /**
    * Compute the perturbation urgency from effective dimensionality.
@@ -129,18 +133,28 @@ dimensionalityExpander = (() => {
         if (varRatios[i] < DEAD_AXIS_THRESHOLD) {
           // Dead axis: persistent upward bias to displace equilibrium.
           // Oscillating nudge was killed by EMA smoothing (averaged to ~0).
-          const severity = 1 - varRatios[i] / DEAD_AXIS_THRESHOLD;
-          const nudge = DEAD_AXIS_PERTURBATION * severity;
-          if (VARIANCE_AXES[i] === 'density') varD = nudge;
-          else if (VARIANCE_AXES[i] === 'tension') varT = nudge;
-          else varF = nudge;
+          // Gap fills: only fire when gap counter has expired (prevent continuous
+          // nudging before axis has had time to respond to previous perturbation).
+          if (axisNudgeGaps[i] > 0) {
+            axisNudgeGaps[i]--;
+          } else {
+            const severity = 1 - varRatios[i] / DEAD_AXIS_THRESHOLD;
+            const nudge = DEAD_AXIS_PERTURBATION * severity;
+            if (VARIANCE_AXES[i] === 'density') varD = nudge;
+            else if (VARIANCE_AXES[i] === 'tension') varT = nudge;
+            else varF = nudge;
+            axisNudgeGaps[i] = DEAD_AXIS_MIN_GAP;
+          }
         } else if (varRatios[i] > DOMINANT_AXIS_THRESHOLD) {
+          axisNudgeGaps[i] = 0; // reset gap when axis is no longer dead
           // Dominant axis: dampen toward fair share (floor prevents paper-wall threshold)
           const excess = varRatios[i] - DOMINANT_AXIS_THRESHOLD;
           const nudge = -m.max(DOMINANT_AXIS_DAMPENING * excess, DOMINANT_MIN_NUDGE);
           if (VARIANCE_AXES[i] === 'density') varD = nudge;
           else if (VARIANCE_AXES[i] === 'tension') varT = nudge;
           else varF = nudge;
+        } else {
+          axisNudgeGaps[i] = 0; // axis is healthy, reset gap
         }
       }
     }
@@ -198,6 +212,7 @@ dimensionalityExpander = (() => {
     dimensionalityExpanderTensionBias = 1.0;
     dimensionalityExpanderFlickerBias = 1.0;
     dimensionalityExpanderUrgency = 0;
+    axisNudgeGaps = [0, 0, 0];
   }
 
   // Self-registration (conductor-side: bias registration is permitted here)
