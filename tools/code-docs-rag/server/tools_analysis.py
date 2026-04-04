@@ -10,6 +10,7 @@ from server.helpers import (
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
 )
 from rag_engine import summarize_chunk
+from lang_registry import ext_to_lang
 from symbols import (
     collect_all_symbols,
     find_callers as _find_callers,
