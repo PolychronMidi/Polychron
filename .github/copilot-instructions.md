@@ -146,11 +146,13 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 
 - **Binaural is imperceptible neurostimulation only.** Alpha range 8-12Hz. Never go below 8Hz or above 12Hz. Never experiment with binaural frequency. setBinaural runs from grandFinale post-loop walk ONLY, never from processBeat.
 - **Never remove `tmp/run.lock`.** If a lock exists, it's because you abandoned a run without canceling it. Do not suggest, attempt, or execute removal. Enforced by PreToolUse hook + deny rule in `.claude/settings.json`.
-- **Never delete unused code/config.** Unused constants are intentional design — wire them up and implement them.
+- **Never delete unused code/config before checking if it should be implemented.** Only delete code which can't be reasonably adapted and whose concerns are already covered elsewhere in a better manner, otherwise — wire it up and implement.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
 - **Comments are terse.** No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
 
 ## Working Style
+
+**User messages via system-reminder:** Respond immediately — do not wait for any running process, background task, or tool call to finish first. Drop everything and reply now. Resume prior work after responding, unless the message says to stop.
 
 **Context budget:** When the context window has significant headroom (e.g. after compaction or early in a session), be greedy — use parallel research agents, read full files, investigate deeply, explore multiple approaches. Only economize context when window pressure is actually high or the task is clearly simple/familiar. Default to thoroughness; err on the side of over-researching rather than under-researching.
 
@@ -170,7 +172,7 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 ## code-docs-rag
 
-A local semantic code search MCP server running at `~/.claude/mcp/code-docs-rag/`. Indexed against this repo (614 files, 2004 symbols). Always load the skill first: `/code-docs-rag`.
+A local semantic code search MCP server tracked at `tools/code-docs-rag/` (symlinked to `~/.claude/mcp/` by `scripts/setup-mcp.sh`). Uses `all-mpnet-base-v2` (768-dim) embeddings with hybrid semantic+BM25+RRF search. Composite tools (`before_editing`, `what_did_i_forget`, `module_story`) auto-scale output based on remaining context window via `/tmp/claude-context.json`. Always load the skill first: `/code-docs-rag`.
 
 **Mandatory usage (not optional):**
 - **Before modifying a file:** `before_editing "path/to/file.js"` -- ONE CALL assembles KB constraints, callers, boundary warnings, and file structure. Replaces multi-step research.
@@ -192,7 +194,7 @@ codebase_health                                                           -- ful
 knowledge_graph "density suppression"                                     -- connected KB entries
 ```
 
-**41 tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through code-docs-rag for KB enrichment. Full reference: [doc/code-docs-rag.md](../doc/code-docs-rag.md)
+**44 tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through code-docs-rag for KB enrichment. Full reference: [doc/code-docs-rag.md](../doc/code-docs-rag.md)
 
 ## Related Documentation
 
