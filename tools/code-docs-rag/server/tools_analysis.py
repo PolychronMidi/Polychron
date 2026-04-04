@@ -905,7 +905,8 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
                 "x-api-key": api_key,
                 "content-type": "application/json",
                 "anthropic-version": "2023-06-01",
-                "anthropic-beta": "prompt-caching-2024-07-31",
+                # extended-cache-ttl-2025-04-11 required for "ttl": "1h" to take effect
+                "anthropic-beta": "prompt-caching-2024-07-31,extended-cache-ttl-2025-04-11",
             },
             json={
                 "model": _THINK_MODEL,
