@@ -183,15 +183,16 @@ Layer 2 balances axis-level energy shares. Interacts with #1 (targets),
 | `_AXIS_OVERSHOOT` | 0.22 | Axis share above this triggers tightening | `_FAIR_SHARE` (0.167) |
 | `_AXIS_UNDERSHOOT` | 0.12 | Axis share below this triggers relaxation | `_FAIR_SHARE` |
 | `_AXIS_TIGHTEN_RATE` | 0.002 | Per-beat tightening rate for overshoot axes | `tightenScale`, giniMult, pairScale |
-| `_AXIS_RELAX_RATE` | 0.0012 | Per-beat relaxation rate for undershoot axes | `pairScale` (E2 nudgeable scaling) |
+| `_AXIS_RELAX_RATE` | 0.0009 | Per-beat relaxation rate for undershoot axes | `pairScale` (E2 nudgeable scaling) |
 | `_AXIS_COOLDOWN` | 4 | Beats before axis pairs can be readjusted | `_PAIR_COOLDOWN` |
 | `_SHARE_EMA_ALPHA` | 0.08 | ~12-beat horizon for smoothed axis shares | Raw shares from coupling manager |
 | `_GINI_ESCALATION` | 0.40 | Gini above this → 1.5x rate multiplier | axisGini from coupling manager |
 | `_EFFECTIVE_NUDGEABLE` | d/t/f=5, e/tr/ph=3 | Nudgeable pair count per axis | `_RELAX_RATE_REF` |
 | `_RELAX_RATE_REF` | 5 | Reference count for rate scaling | Relaxation scaling = 5/count |
 | Graduated coherent gate | evolving=0.6, coherent=0.0, exploring=1.5 | `tightenScale` multiplier for Layer 1+2 | regimeClassifier.getLastRegime() |
+| `CROSS_INHIBIT_WINDOW` | 6 | Beats after one handler adjusts a pair before the OTHER handler can reverse direction. Prevents pair-vs-axis oscillation when PAIR_COOLDOWN=3 expired before AXIS_COOLDOWN=4. Phase floor/extreme-collapse bypasses. | `_PAIR_COOLDOWN`, `_AXIS_COOLDOWN` |
 
-**Sensitivity:** The graduated coherent gate is the most critical interaction. R35 E4: Evolving tightenScale raised from 0.4 to 0.6 to compensate for exploring absence (R34: 0% exploring, tighten budget collapsed 35→14). R34 E4: Exploring 1.5x amplification. It prevents tightening from destabilizing coherent regime (0.0 during coherent) while allowing partial correction during evolving (0.4). The `_AXIS_OVERSHOOT`/`_UNDERSHOOT` thresholds (0.22/0.12) with fair share at 0.167 create a +/-33% deadband. `_RELAX_RATE_REF` scaling gives trust/entropy/phase 1.67x faster undershoot relaxation to compensate for fewer nudgeable pairs. R33 E2: Symmetric tighten-rate scaling applies the same `_EFFECTIVE_NUDGEABLE` / `_RELAX_RATE_REF` ratio to the overshoot tightening path. Entropy/trust/phase axes now tighten 1.67x faster (matching relaxation), preventing asymmetric response where overshoot persists because tightening is slower than relaxation.
+**Sensitivity:** The graduated coherent gate is the most critical interaction. `CROSS_INHIBIT_WINDOW` (6 beats) is larger than either cooldown period (3/4) to guarantee directional protection across the full recovery window. Phase floor/extreme-collapse bypasses the inhibit unconditionally since phase recovery takes absolute priority over oscillation prevention. R35 E4: Evolving tightenScale raised from 0.4 to 0.6 to compensate for exploring absence (R34: 0% exploring, tighten budget collapsed 35→14). R34 E4: Exploring 1.5x amplification. It prevents tightening from destabilizing coherent regime (0.0 during coherent) while allowing partial correction during evolving (0.4). The `_AXIS_OVERSHOOT`/`_UNDERSHOOT` thresholds (0.22/0.12) with fair share at 0.167 create a +/-33% deadband. `_RELAX_RATE_REF` scaling gives trust/entropy/phase 1.67x faster undershoot relaxation to compensate for fewer nudgeable pairs. R33 E2: Symmetric tighten-rate scaling applies the same `_EFFECTIVE_NUDGEABLE` / `_RELAX_RATE_REF` ratio to the overshoot tightening path. Entropy/trust/phase axes now tighten 1.67x faster (matching relaxation), preventing asymmetric response where overshoot persists because tightening is slower than relaxation.
 
 
 
@@ -214,6 +215,79 @@ redistribution, controls gain multiplier and floor dampening.
 | Proportional control | Kp in [0.5, 2.0] | Multiplier adjustment: `target / max(totalEnergy, 0.1)` | `energyBudget`, `totalEnergyEma` |
 
 **Sensitivity:** Floor dampening is the dominant throttle mechanism. When `totalEnergyEma` is close to `_totalEnergyFloor` (ratio < 1.35), `floorDampen` drops below 0.50, suppressing >50% of all gain escalation. The asymmetric floor tracking (fast up 0.04, slow down 0.005) means the floor quickly captures energy minima but very slowly releases them -- this can create chronic dampening lock. R33 E3 chronic decay breaks this lock: after 20 consecutive sub-0.50 beats, the floor is nudged downward (0.5%/beat) and the effective minimum rises toward 0.60 (0.01/beat). The floor never drops below 60% of EMA, maintaining minimum 40% suppression. Any energy surge that raises rawDampen above 0.50 resets the counter.
+
+
+
+## 10. Phase Energy Floor - `phaseFloorController` (#14)
+
+Self-calibrating phase share recovery controller. Derives collapse thresholds,
+boost multipliers, and streak activation counts adaptively from rolling volatility
+and coherent regime duration. Now bidirectional: boosts when phase is low,
+attenuates when phase recently overshot.
+
+| Constant / State | Value | Role | Interaction Partners |
+|||||
+| `_SHARE_EMA_ALPHA` | 0.06 | ~17-beat EMA for phase share | `persistentLowSharePressure`, `getLowShareThreshold()` |
+| `_RECOVERY_EMA_ALPHA` | 0.08 | Recovery attribution window EMA | `recoveryFactor` in computeBoosts |
+| `RECOVERY_ATTRIBUTION_WINDOW` | 12 | Beats after boost before unattributed failure | `phaseFloorControllerBeatsSinceBoost` |
+| `getCollapseThreshold()` | [0.01, 0.04] | Share below = phase collapse (base 0.015 + volatility*0.5) | `getExtremeCollapseStreak()` |
+| `getLowShareThreshold()` | [0.02, 0.16] | Share below = low share streak accumulates | `getFloorActivationStreak()`, fair share 0.167 |
+| `getFloorActivationStreak()` | [4, 16] | Beats below low-share threshold before floor activates | `getEscalatedBoostStreak()` |
+| `computeBoosts()` base boost range | [6.0, 22.0] | `phaseFloorBoost` graduated by streakDepth, deficit, recovery | `emergencyBoost` in axis adjuster |
+| `phaseCollapseBoost` | [3.5, 11.0] | Boost when share < collapseThreshold | `isPhaseCollapse` detection |
+| `phaseRetractionMult` | [0.7, 1.0] | Anti-overshoot: dampens boost when phase recently > 115% of fair share. Bypassed during genuine collapse. | `phaseFloorControllerHighShareStreak`, axis adjuster floor path |
+| `phaseFloorControllerHighShareStreak` | counter | Increments each beat share > fairShare*1.15; resets below fairShare*1.05 | `phaseRetractionMult = 1.0 - streak*0.025` |
+| System phase scaling | oscillating=0.6, stabilized=0.85, other=1.0 | Dampens boosts during oscillation | hyperMetaManager.getSystemPhase() |
+
+**Sensitivity:** `phaseRetractionMult` prevents overshoot feedback loops where aggressive boosts push phase above fair share, triggering further boost applications on the next starvation episode. The 0.025 per-beat decay means 12 beats above threshold produces ~70% retraction. The retraction hard-bypasses on genuine collapse (`share < collapseThreshold`) so the controller can't be stuck in retract mode during actual emergencies.
+
+
+
+## 11. Dimensionality Expander - `dimensionalityExpander`
+
+Prevents phase-space collapse by injecting orthogonal perturbations when
+effectiveDimensionality falls below threshold. Now gated by per-axis cooldowns
+to prevent continuous nudging before the axis has responded.
+
+| Constant | Value | Role | Interaction Partners |
+|||||
+| `DIM_THRESHOLD` | 2.2 | Below this, begin injecting perturbations | effectiveDimensionality from systemDynamicsProfiler |
+| `DIM_CRITICAL` | 1.5 | At this, perturbation is at full strength | Urgency ramp between 1.5–2.2 |
+| `MAX_PERTURBATION` | 0.15 | Maximum perturbation per axis | Coupling-based perturbation direction vectors |
+| `DEAD_AXIS_THRESHOLD` | 0.05 | Variance ratio below this = axis considered dead | `DEAD_AXIS_PERTURBATION`, nudge gap |
+| `DEAD_AXIS_PERTURBATION` | 0.12 | Nudge magnitude scaling (severity * 0.12) | `DEAD_AXIS_MIN_GAP`, `SMOOTHING` |
+| `DEAD_AXIS_MIN_GAP` | 8 | Minimum beats between dead-axis nudge applications. Gap resets when axis exits dead zone. Prevents continuous nudging before axis has had time to respond. | Per-axis `axisNudgeGaps[i]` counter |
+| `DOMINANT_AXIS_THRESHOLD` | 0.35 | Variance ratio above this = axis dominant | `DOMINANT_AXIS_DAMPENING`, `DOMINANT_MIN_NUDGE` |
+| `DOMINANT_AXIS_DAMPENING` | 0.12 | Suppression scaling for dominant axis excess | `DOMINANT_MIN_NUDGE` floor |
+| `DOMINANT_MIN_NUDGE` | 0.02 | Floor so threshold boundary produces meaningful force | `DOMINANT_AXIS_DAMPENING` |
+| `SMOOTHING` | 0.25 | EMA factor on bias outputs | Prevents discontinuous jumps in bias values |
+| `COUPLING_THRESHOLD` | 0.30 | Only break correlations stronger than this | Coupling matrix pairs: dt, tf, df |
+
+**Sensitivity:** `DEAD_AXIS_MIN_GAP` (8 beats) is deliberately larger than `DIM_THRESHOLD` response latency (~3–5 beats at SMOOTHING=0.25). Without the gap, continuous nudging drives the EMA toward a fixed non-neutral setpoint even when the axis is recovering. The gap = 0 reset when axis exits dead zone means recovery is recognized immediately and further nudging stops.
+
+
+
+## 12. Self-Organized Criticality - `criticalityEngine`
+
+Monitors distance from the "edge of chaos." Triggers avalanche corrections when
+accumulated energy exceeds threshold, maintaining ~20% avalanche rate. Now
+health-aware: worse system health lowers the effective trigger threshold, producing
+more corrective avalanches when the system is under stress.
+
+| Constant | Value | Role | Interaction Partners |
+|||||
+| `WINDOW` | 16 | Beats to accumulate energy before avalanche check | `THRESHOLD_MIN/MAX`, `energyBuffer` |
+| `TARGET_RATE` | 0.20 | Desired fraction of beats with avalanche | `ADAPT_RATE`, threshold self-calibration |
+| `THRESHOLD_MIN` | 0.08 | Minimum energy threshold (calibrated down from 0.15 to activate at normal energy levels) | `ADAPT_RATE`, avg window energy |
+| `THRESHOLD_MAX` | 1.20 | Maximum energy threshold | `ADAPT_RATE` |
+| `ADAPT_RATE` | 0.02 | Per-beat threshold adjustment toward TARGET_RATE | Rate-based adaptation: +0.02 if rate > 0.20, -0.02 if rate < 0.10 |
+| `SNAP_STRENGTH` | 0.96 | How hard avalanche snaps bias toward neutral (4% correction) | `critSnapScale` from hyperMetaManager, `RECOVERY_BEATS` |
+| `RECOVERY_BEATS` | 3 | Beats of recovery after each avalanche | Bias ramp-down during recovery |
+| `criticalityHealthScale` | `clamp(healthEma/0.7, 0.5, 1.4)` | Effective threshold multiplier. healthEma=0.35 → scale=0.5 (more avalanches). healthEma=1.0 → scale=1.4 (fewer avalanches). | hyperMetaManager.getSnapshot().healthEma |
+| Section-bypass gate | back half (progress > 0.55) | `tensionBias()` returns 1.0 in Q3/Q4 -- prevents compounding tension suppression | timeStream.compoundProgress('section') |
+| Health grade scale | healthy=1.0, strained=0.5, stressed=0 | Per-signal bias gating by `signalHealthAnalyzer.getHealth()` grade | Multiplied into avalanche bias for each signal |
+
+**Sensitivity:** `criticalityHealthScale` decouples the per-signal bias gating (which uses categorical grade) from the trigger threshold (which uses continuous healthEma). At nominal health (0.7), the formula gives scale=1.0 — no change. Under stress the threshold drops proportionally, making the engine more responsive precisely when corrective avalanches are most needed. `SNAP_STRENGTH=0.96` was tuned in R35 (from 0.92) after tension arc regression showed gentler snap was needed while the engine was newly activated.
 
 
 
@@ -240,3 +314,7 @@ These relationships must hold to prevent runaway behavior:
 9. **Graduated gate–axis balance tradeoff:** Coherent gate (0.0 during coherent) freezes all equilibrator tightening. Long coherent phases (>100 beats) can cause axis imbalance (axisGini increase) because no rebalancing occurs. The evolving gate (0.4x) provides partial correction. System health requires coherent % < 50% to maintain axis balance; the regime self-balancer targets 15-35% coherent to ensure sufficient non-coherent beats for equilibrator operation.
 
 10. **Regime hysteresis and entry convergence (R37 E1/E2/E3):** Consecutive-streak hysteresis (`REGIME_HOLD`) replaced by majority-window (R37 E1): `_REGIME_WINDOW=5`, `_REGIME_MAJORITY=3`. R36 proved REGIME_HOLD=3 still insufficient -- 87 raw coherent beats (10.6%) produced 0 resolved coherent because P(3 consecutive|p=0.106) ~ 0.12%. Majority-window: P(>=3 of 5|p=0.106) ~ 4.7%. `effectiveDim` coherent gate tightened 4.0->3.5 (R37 E2) -- dim almost always > 4.0, swallowing potential exploring beats. Exploring coupling gate widened 0.40->0.50 (R37 E3) -- coupling averages 0.19-0.44 made the 0.40 gate too restrictive. `coherentThresholdScale` starts at 0.65, floor 0.55, nudge 0.006/beat.
+
+11. **Phase retraction–floor interaction:** `phaseRetractionMult` (0.7–1.0) dampens `phaseFloorBoost` when phase was recently above 115% of fair share. It does NOT affect `phaseCollapseBoost` or the emergency-starved 3.0 path. Minimum: at 12 beats above 115%, retractionMult = 0.70, so phaseFloorBoost is reduced to 70% of its computed value. The retraction is bypassed for genuine collapse (share < collapseThreshold), preventing deadlock. Net effect: the floor controller now resists the overshoot-boost-overshoot cycle without needing manual cap adjustments.
+
+12. **Cross-adjuster inhibit scope:** `CROSS_INHIBIT_WINDOW=6` only prevents DIRECTION REVERSAL between pair and axis handlers. It does NOT prevent the same handler from re-adjusting a pair in the same direction — that uses the standard `pairCooldowns` (3 or 4 beats). The 6-beat window means a pair tightened by the pair-adjuster cannot be relaxed by the axis-adjuster for 6 beats, regardless of which cooldown expired first. The inhibit is asymmetric for phase: floor/extreme-collapse bypasses are unconditional because phase starvation is higher priority than oscillation prevention.
