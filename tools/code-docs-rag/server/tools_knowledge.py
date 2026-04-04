@@ -102,6 +102,13 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     engine = ctx.global_engine if scope == "global" else ctx.project_engine
     ok = engine.remove_knowledge(entry_id)
     if ok:
+        try:
+            from server.tools_analysis import _get_api_key, _warm_cache
+            api_key = _get_api_key()
+            if api_key:
+                _warm_cache(api_key)
+        except Exception:
+            pass
         return f"Knowledge entry '{entry_id}' removed from {scope}."
     return f"Failed to remove entry '{entry_id}' from {scope}. It may not exist."
 
@@ -153,12 +160,23 @@ def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
         notes.append(f"Note: threshold {threshold} clamped to {clamped} (valid range 0.5–1.0).")
     threshold = clamped
     results = notes
+    total_removed = 0
     if scope in ("project", "both"):
         r = ctx.project_engine.compact_knowledge(similarity_threshold=threshold)
         results.append(f"  [project] removed={r['removed']}, kept={r['kept']}")
+        total_removed += r["removed"]
     if scope in ("global", "both"):
         r = ctx.global_engine.compact_knowledge(similarity_threshold=threshold)
         results.append(f"  [global]  removed={r['removed']}, kept={r['kept']}")
+        total_removed += r["removed"]
+    if total_removed > 0:
+        try:
+            from server.tools_analysis import _get_api_key, _warm_cache
+            api_key = _get_api_key()
+            if api_key:
+                _warm_cache(api_key)
+        except Exception:
+            pass
     return "Compaction complete:\n" + "\n".join(results)
 
 
