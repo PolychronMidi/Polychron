@@ -172,6 +172,8 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
     max_tokens=0 means AUTO: reads /tmp/claude-context.json (from status line) to determine budget.
     >75% remaining = greedy (8000), 50-75% = moderate (4000), 25-50% = conservative (2000), <25% = minimal (800).
     max_tokens>0 means MANUAL override."""
+    if not query or not query.strip():
+        return "Empty query. Provide a natural-language description of what you're looking for."
     if max_tokens > 0:
         budget = max_tokens
     else:
@@ -388,6 +390,10 @@ def find_callers(symbol_name: str, language: str = "", path: str = "", exclude_p
 @ctx.mcp.tool()
 def find_anti_pattern(wrong_symbol: str, right_symbol: str, path: str = "", exclude_path: str = "") -> str:
     """Find files using wrong_symbol that should use right_symbol instead. Auto-excludes the file that defines right_symbol (the authorized bridge)."""
+    if not wrong_symbol.strip():
+        return "Error: wrong_symbol cannot be empty."
+    if not right_symbol.strip():
+        return "Error: right_symbol cannot be empty."
     wrong_results = _find_callers(wrong_symbol, ctx.PROJECT_ROOT)
     right_results = _find_callers(right_symbol, ctx.PROJECT_ROOT)
     # Auto-exclude files that define/implement the right_symbol (the bridge, not a violation)
