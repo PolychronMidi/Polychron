@@ -13,8 +13,8 @@ from server.helpers import (
 logger = logging.getLogger("code-docs-rag")
 
 @ctx.mcp.tool()
-def add_knowledge(title: str, content: str, category: str = "general", tags: str | list = "", scope: str = "project", related_to: str = "", relation_type: str = "") -> str:
-    """Persist a knowledge entry (decision, calibration anchor, pattern, or bugfix) to the KB. Only call this after the user confirms a task is complete — never speculatively. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) to create typed graph edges for knowledge_graph traversal. Tags can be a comma-separated string ("tag1,tag2") or a list (["tag1","tag2"]). Scope 'project' stores locally, 'global' stores in shared KB, 'both' stores in both. Automatically detects and merges redundant entries or supersedes outdated ones."""
+def add_knowledge(title: str, content: str, category: str = "general", tags: list[str] = [], scope: str = "project", related_to: str = "", relation_type: str = "") -> str:
+    """Persist a knowledge entry (decision, calibration anchor, pattern, or bugfix) to the KB. Only call this after the user confirms a task is complete — never speculatively. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) to create typed graph edges for knowledge_graph traversal. Tags: pass as a list of strings (["tag1","tag2"]). Scope 'project' stores locally, 'global' stores in shared KB, 'both' stores in both. Automatically detects and merges redundant entries or supersedes outdated ones."""
     if not title.strip():
         return "Error: title cannot be empty."
     if not content.strip():
@@ -22,10 +22,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: str
     valid_categories = {"architecture", "decision", "pattern", "bugfix", "general"}
     if category not in valid_categories:
         return f"Error: invalid category '{category}'. Valid: {', '.join(sorted(valid_categories))}"
-    # Accept both comma-separated string and list (LLM agents sometimes pass lists)
-    if isinstance(tags, list):
-        tags = ",".join(str(t) for t in tags)
-    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+    tag_list = [str(t).strip() for t in tags if str(t).strip()] if tags else []
     results = []
 
     if scope in ("project", "both"):
