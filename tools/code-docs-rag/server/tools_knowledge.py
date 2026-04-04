@@ -133,6 +133,7 @@ def list_knowledge(category: str = "", scope: str = "") -> str:
 @ctx.mcp.tool()
 def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
     """Deduplicate the knowledge base by merging entries with high semantic similarity. Use after 30+ entries accumulate. The threshold (0.0-1.0) controls how similar entries must be to merge — 0.85 is a good default. Returns counts of removed vs kept entries. Scope can be 'project', 'global', or 'both'."""
+    threshold = max(0.5, min(1.0, threshold))
     results = []
     if scope in ("project", "both"):
         r = ctx.project_engine.compact_knowledge(similarity_threshold=threshold)
