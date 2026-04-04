@@ -1324,13 +1324,20 @@ def codebase_health() -> str:
 
 @mcp.tool()
 def find_dead_code(path: str = "src") -> str:
-    """Scan all IIFE globals for zero external callers (dormant modules). Wraps find_callers into a sweep."""
+    """Scan all IIFE globals for zero external callers AND no conductor self-registration (truly dormant modules). Modules that self-register via conductorIntelligence.register* are active even without direct callers — their biases flow through the conductor signal pipeline via callbacks."""
     from file_walker import walk_code_files
     import re as _re
     target = os.path.join(PROJECT_ROOT, path) if not os.path.isabs(path) else path
-    iife_re = _re.compile(r'^(\w+)\s*=\s*\(\s*\(', _re.MULTILINE)
+    iife_re = _re.compile(r'^(\w+)\s*=\s*(?:/\*\*[^*]*\*/\s*)?(?:\(\s*)?\(\s*\(', _re.MULTILINE)
+    # Registration patterns that make a module "active" even without direct callers
+    registration_patterns = [
+        'conductorIntelligence.register',
+        'crossLayerRegistry.register',
+        'feedbackRegistry.register',
+    ]
     dormant = []
     active = []
+    self_registered = []
     for fpath in walk_code_files(target):
         if not str(fpath).endswith('.js'):
             continue
@@ -1342,20 +1349,24 @@ def find_dead_code(path: str = "src") -> str:
             name = m.group(1)
             if name in ('if', 'else', 'for', 'while', 'return'):
                 continue
+            # Check for self-registration (module is active via callbacks, not direct calls)
+            has_registration = any(pat in content for pat in registration_patterns)
             callers = _find_callers(name, PROJECT_ROOT)
             # Exclude self-references (same file)
             external = [c for c in callers if os.path.basename(c['file']) != os.path.basename(str(fpath))]
-            if not external:
+            if not external and not has_registration:
                 rel = str(fpath).replace(PROJECT_ROOT + '/', '')
-                dormant.append(f"  {name} ({rel}) -- 0 external callers")
+                dormant.append(f"  {name} ({rel}) -- 0 external callers, no self-registration")
+            elif not external and has_registration:
+                self_registered.append(name)
             else:
                 active.append(name)
     if not dormant:
-        return f"No dead code found. All {len(active)} IIFE globals have external callers."
-    parts = [f"# Dead Code Report ({len(dormant)} dormant globals)\n"]
+        return f"No dead code found. {len(active)} globals with direct callers, {len(self_registered)} active via conductor self-registration."
+    parts = [f"# Dead Code Report ({len(dormant)} truly dormant globals)\n"]
     for d in sorted(dormant):
         parts.append(d)
-    parts.append(f"\n{len(active)} active globals OK")
+    parts.append(f"\n{len(active)} active (direct callers) + {len(self_registered)} active (self-registered) = {len(active) + len(self_registered)} total active")
     return "\n".join(parts)
 
 
@@ -1364,7 +1375,7 @@ def symbol_importance(top_n: int = 20) -> str:
     """Rank IIFE globals by caller count (architectural centrality). Most-called = most important."""
     from file_walker import walk_code_files
     import re as _re
-    iife_re = _re.compile(r'^(\w+)\s*=\s*\(\s*\(', _re.MULTILINE)
+    iife_re = _re.compile(r'^(\w+)\s*=\s*(?:/\*\*[^*]*\*/\s*)?(?:\(\s*)?\(\s*\(', _re.MULTILINE)
     symbols = []
     for fpath in walk_code_files(os.path.join(PROJECT_ROOT, 'src')):
         if not str(fpath).endswith('.js'):
