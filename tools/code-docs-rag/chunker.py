@@ -163,8 +163,11 @@ def _chunk_js_iife_functions(source: str) -> list[dict]:
     chunks = []
     for i, m in enumerate(matches):
         start_line = source[:m.start()].count("\n") + 1
-        end_line = matches[i + 1].start() if i + 1 < len(matches) else len(lines)
-        end_line = source[:end_line].count("\n")
+        if i + 1 < len(matches):
+            # Byte offset of next function → convert to 0-indexed line count
+            end_line = source[:matches[i + 1].start()].count("\n")
+        else:
+            end_line = len(lines)  # last function extends to EOF
         name = m.group(1)
         prefix = f"{global_name}." if global_name else ""
         chunk_text = "\n".join(lines[start_line - 1:end_line])
@@ -202,7 +205,7 @@ def _chunk_by_lines_fallback(source: str, language: str, chunk_lines: int = 60, 
     if len(lines) <= chunk_lines:
         return [{"start_line": 1, "end_line": len(lines), "content": source, "name": "", "kind": "block"}]
     chunks = []
-    step = chunk_lines - overlap
+    step = max(1, chunk_lines - overlap)
     for i in range(0, len(lines), step):
         end = min(i + chunk_lines, len(lines))
         chunk = "\n".join(lines[i:end])

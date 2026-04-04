@@ -23,7 +23,7 @@ def start_watcher(project_root: str, engine, debounce: float = 5.0):
     _lock = threading.Lock()
 
     IGNORE_DIRS = {".git", ".claude", "node_modules", "__pycache__", "venv", ".venv", "dist", "build", "output", "tmp", "lab"}
-    IGNORE_EXTS = {".log", ".lock", ".json", ".md", ".wav", ".mid", ".csv"}
+    IGNORE_EXTS = {".log", ".lock", ".json", ".jsonl", ".md", ".wav", ".mid", ".csv", ".png", ".jpg", ".gif", ".mp3", ".ogg"}
 
     class Handler(FileSystemEventHandler):
         def on_any_event(self, event):

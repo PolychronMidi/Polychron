@@ -530,7 +530,7 @@ def trace_cross_language(symbol_name: str, project_root: str) -> dict:
         except Exception:
             continue
         fname = fpath.name
-        is_bridge = "bridge" in fname.lower() or "wasm" in fname.lower()
+        is_bridge = "wasm" in fname.lower()
         for search_name in {symbol_name, camel_name}:
             pat = re.compile(rf'\b{re.escape(search_name)}\b')
             for m_ts in pat.finditer(content):

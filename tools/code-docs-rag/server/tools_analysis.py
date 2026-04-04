@@ -876,7 +876,7 @@ def cross_language_trace(symbol_name: str) -> str:
             parts.append(f"  {br['file']}:{br['line']} - {br['text'][:100]}")
 
     if result["ts_callers"]:
-        parts.append(f"\nTS callers ({len(result['ts_callers'])}):")
+        parts.append(f"\nJS/TS callers ({len(result['ts_callers'])}):")
         for tc in result["ts_callers"][:20]:
             parts.append(f"  {tc['file']}:{tc['line']} - {tc['text'][:100]}")
 

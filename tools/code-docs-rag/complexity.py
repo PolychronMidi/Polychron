@@ -276,10 +276,17 @@ def _max_nesting_indent(body: str) -> int:
     if not non_empty:
         return 0
     base_indent = len(non_empty[0]) - len(non_empty[0].lstrip())
+    # Detect actual indent unit from the smallest non-zero indent step observed
+    indent_unit = 4  # default fallback
+    seen_indents = sorted(set(len(ln) - len(ln.lstrip()) for ln in non_empty if ln.strip()))
+    if len(seen_indents) > 1:
+        steps = [seen_indents[i+1] - seen_indents[i] for i in range(len(seen_indents)-1) if seen_indents[i+1] > seen_indents[i]]
+        if steps:
+            indent_unit = max(1, min(steps))
     max_depth = 0
     for ln in non_empty:
         indent = len(ln) - len(ln.lstrip())
-        rel = (indent - base_indent) // 4
+        rel = (indent - base_indent) // indent_unit
         if rel > max_depth:
             max_depth = rel
     return max_depth
