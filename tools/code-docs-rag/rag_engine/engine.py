@@ -391,7 +391,7 @@ class RAGEngine(RAGKnowledgeMixin):
             results = []
             name_lower = name.lower()
             for r in rows:
-                if name_lower not in r["name"].lower():
+                if r["name"].lower() != name_lower:
                     continue
                 if kind and r["kind"] != kind:
                     continue

@@ -58,6 +58,13 @@ def fmt_score(score) -> str:
     return f"{sig:.0%}"
 
 
+def fmt_sim_score(score) -> str:
+    """Format a similarity score already in [0,1] range (vector distance, cosine, etc.)."""
+    if not isinstance(score, (int, float)):
+        return "?"
+    return f"{max(0.0, min(1.0, float(score))):.0%}"
+
+
 def format_knowledge_results(results: list[dict], label: str, min_score: float = 0.01) -> list[str]:
     # Filter out zero-score results — these are negative cross-encoder scores clamped to 0,
     # meaning the entry is irrelevant to this query. Showing them is pure noise.

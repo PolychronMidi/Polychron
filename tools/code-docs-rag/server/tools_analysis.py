@@ -5,7 +5,7 @@ import logging
 
 from server import context as ctx
 from server.helpers import (
-    get_context_budget, validate_project_path, fmt_score,
+    get_context_budget, validate_project_path, fmt_score, fmt_sim_score,
     format_knowledge_results, check_path_in_project,
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
 )
@@ -94,7 +94,7 @@ def search_symbols(query: str, top_k: int = 20, kind: str = "") -> str:
         sig = f" {r['signature']}" if r['signature'] else ""
         lines.append(
             f"[{i+1}] [{r['kind']}] {r['name']}{sig}\n"
-            f"     {r['file']}:{r['line']} ({r['language']}, score: {fmt_score(r['score'])})"
+            f"     {r['file']}:{r['line']} ({r['language']}, score: {fmt_sim_score(r['score'])})"
         )
     return "\n".join(lines)
 
@@ -158,6 +158,10 @@ def get_module_map(directory: str = "", max_depth: int = 3) -> str:
 @ctx.mcp.tool()
 def impact_analysis(symbol_name: str, language: str = "") -> str:
     """Analyze the impact of changing a symbol: who calls it, what it calls, and knowledge constraints."""
+    if not symbol_name.strip():
+        return "Error: symbol_name cannot be empty."
+    if len(symbol_name.strip()) < 2:
+        return f"Error: symbol_name '{symbol_name}' too short (min 2 chars)."
     parts = []
     # Who calls this?
     callers = _find_callers(symbol_name, ctx.PROJECT_ROOT, lang_filter=language)
@@ -492,7 +496,7 @@ def module_story(module_name: str) -> str:
             if similar:
                 parts.append(f"\n## Similar Modules")
                 for r in similar:
-                    parts.append(f"  {r['source'].replace(ctx.PROJECT_ROOT + '/', '')} ({fmt_score(r['score'])})")
+                    parts.append(f"  {r['source'].replace(ctx.PROJECT_ROOT + '/', '')} ({fmt_sim_score(r['score'])})")
         except Exception:
             pass
     return "\n".join(parts)

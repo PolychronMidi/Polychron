@@ -4,7 +4,7 @@ import logging
 
 from server import context as ctx
 from server.helpers import (
-    get_context_budget, validate_project_path, fmt_score,
+    get_context_budget, validate_project_path, fmt_score, fmt_sim_score,
     format_knowledge_results, check_path_in_project,
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
 )
@@ -227,7 +227,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
         kb_tag = ""
         if r.get("kb_constraints"):
             kb_tag = f" [KB: {', '.join(r['kb_constraints'][:2])}]"
-        parts.append(f"\n### [{i+1}] {r['source'].replace(ctx.PROJECT_ROOT + '/', '')}:{r['start_line']}-{r['end_line']} ({fmt_score(r['score'])}){kb_tag}{truncated}")
+        parts.append(f"\n### [{i+1}] {r['source'].replace(ctx.PROJECT_ROOT + '/', '')}:{r['start_line']}-{r['end_line']} ({fmt_sim_score(r['score'])}){kb_tag}{truncated}")
         parts.append(f"```{r['language']}")
         parts.append(r['content'])
         parts.append("```")
@@ -269,7 +269,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
             summary = summarize_chunk(r['content'], r['language'])
             code_lines.append(
                 f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
-                f"({r['language']}, {fmt_score(r['score'])}) {summary}"
+                f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}"
             )
         return f"=== Lib: {lib_key} ===\n" + "\n".join(code_lines)
 
@@ -289,7 +289,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
             code_lines = []
             for i, r in enumerate(results):
                 if concise:
-                    code_lines.append(f"{r['source']}:{r['start_line']} ({fmt_score(r['score'])})")
+                    code_lines.append(f"{r['source']}:{r['start_line']} ({fmt_sim_score(r['score'])})")
                 else:
                     summary = summarize_chunk(r['content'], r['language'])
                     kb_tag = ""
@@ -297,7 +297,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                         kb_tag = f" [KB: {', '.join(r['kb_constraints'][:2])}]"
                     code_lines.append(
                         f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
-                        f"({r['language']}, {fmt_score(r['score'])}) {summary}{kb_tag}"
+                        f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}{kb_tag}"
                     )
             output_parts.append("=== Main ===\n" + "\n".join(code_lines))
 
@@ -310,7 +310,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                     summary = summarize_chunk(r['content'], r['language'])
                     code_lines.append(
                         f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
-                        f"({r['language']}, {fmt_score(r['score'])}) {summary}"
+                        f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}"
                     )
                 output_parts.append(f"=== Lib: {lib_key} ===\n" + "\n".join(code_lines))
 
@@ -338,7 +338,7 @@ def find_similar_code(code_snippet: str, top_k: int = 10) -> str:
         summary = summarize_chunk(r['content'], r['language'])
         lines.append(
             f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
-            f"({r['language']}, {fmt_score(r['score'])}) {summary}"
+            f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}"
         )
 
     # KB enrichment: surface constraints relevant to the top matching files
