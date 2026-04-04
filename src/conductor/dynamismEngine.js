@@ -156,7 +156,7 @@ dynamismEngine = (() => {
       ? axisEnergy.shares.trust
       : 1.0 / 6.0;
     const dynamicSnap = /** @type {any} */ (dynamics);
-    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {});
+    const couplingPressures = /** @type {Record<string,number>} */ (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {}) || {});
     const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.74) / 0.18, 0, 1);
     const densityTrustPressure = clamp(((couplingPressures['density-trust'] || 0) - 0.72) / 0.18, 0, 1);
     const recoveryContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.40, 0, 1);
@@ -179,9 +179,7 @@ dynamismEngine = (() => {
       : (activeLayerName === 'L1' && activeProfileName === 'explosive'
         ? clamp(0.04 + lowPhasePressure * 0.10 + recoveryContainmentPressure * 0.03 + (activeRegime === 'exploring' ? 0.01 : 0), 0, 0.18)
         : 0);
-    const flickerTrustPressureDyn = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number'
-      ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.72) / 0.18, 0, 1)
-      : 0;
+    const flickerTrustPressureDyn = clamp(((couplingPressures['flicker-trust'] || 0) - 0.72) / 0.18, 0, 1);
     if (activeLayerName === 'L2' && trustShare < 0.20 && evolvingRecoveryPressure > 0.25 && flickerTrustPressureDyn < 0.50) {
       layerBias += clamp((0.018 + evolvingRecoveryPressure * 0.030 + (1 - trustShare / 0.20) * 0.015) * (1 - recoveryContainmentPressure * 0.55 - flickerTrustPressureDyn * 0.20), 0, 0.06);
     } else if (activeLayerName === 'L1' && activeRegime === 'coherent' && trustShare < 0.20 && evolvingRecoveryPressure > 0.25) {

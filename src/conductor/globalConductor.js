@@ -63,7 +63,7 @@ globalConductor = (() => {
     const phaseRecoveryPressure = clamp((0.08 - phaseShare) / 0.08, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.18) / 0.08, 0, 1);
     const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {});
+    const couplingPressures = /** @type {Record<string,number>} */ (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {}) || {});
     const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.74) / 0.18, 0, 1);
     const densityTrustPressure = clamp(((couplingPressures['density-trust'] || 0) - 0.72) / 0.18, 0, 1);
     const flickerTrustPressure = clamp(((couplingPressures['flicker-trust'] || 0) - 0.74) / 0.18, 0, 1);
