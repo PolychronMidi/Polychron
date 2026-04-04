@@ -230,12 +230,22 @@ class RAGEngine(RAGKnowledgeMixin):
 
         fused = _rrf_fuse(sem_ranked, bm25_ranked)[:top_k]
 
+        # Filename-boost: if query contains a camelCase/PascalCase token that matches a
+        # result's filename, boost that result's score. Handles "crossLayerClimaxEngine tick"
+        # queries where the generic term ("tick") otherwise dominates chunk scoring.
+        import re as _re
+        query_tokens_lower = {t.lower() for t in _re.findall(r'[A-Za-z][a-z0-9]+(?:[A-Z][a-z0-9]+)+', query)}
+
         results = []
         for i in fused:
             r = sem_rows[i]
             sem_score = float(1.0 / (1.0 + r.get("_distance", 0)))
             bm25_score = next((s for j, s in bm25_hits if j == i), 0.0)
             combined = 0.6 * sem_score + 0.4 * min(bm25_score / 10.0, 1.0)
+            # Filename-match boost: 20% bonus if the query names this file
+            fname = os.path.basename(r["source"]).lower().replace(".js", "").replace(".ts", "").replace(".py", "")
+            if any(tok in fname for tok in query_tokens_lower if len(tok) >= 5):
+                combined = min(1.0, combined * 1.2)
             results.append({
                 "content": r["content"],
                 "source": r["source"],

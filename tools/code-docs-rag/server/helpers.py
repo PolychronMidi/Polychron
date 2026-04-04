@@ -1,5 +1,6 @@
 import os
 import json
+import math
 import logging
 
 logger = logging.getLogger("code-docs-rag")
@@ -47,10 +48,14 @@ def validate_project_path(file_path: str, project_root: str) -> str | None:
 
 
 def fmt_score(score) -> str:
-    """Format a cross-encoder score as a percentage, clamping negatives to 0."""
+    """Format a cross-encoder logit score as a human-readable percentage via sigmoid."""
     if not isinstance(score, (int, float)):
         return "?"
-    return f"{max(0.0, score):.0%}"
+    if score <= 0:
+        return "0%"
+    # Sigmoid maps raw logits to [0,1]: logit 9 → ~100%, logit 2 → ~88%, logit 0.1 → ~52%
+    sig = 1.0 / (1.0 + math.exp(-float(score)))
+    return f"{sig:.0%}"
 
 
 def format_knowledge_results(results: list[dict], label: str, min_score: float = 0.01) -> list[str]:
