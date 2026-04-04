@@ -104,6 +104,8 @@ def file_lines(file_path: str, start: int = 1, end: int = 0) -> str:
     except Exception as e:
         return f"Error: {e}"
     total = len(all_lines)
+    if end > 0 and end < start:
+        return f"Error: end ({end}) must be >= start ({start})."
     s = max(1, start) - 1
     e = end if end > 0 else total
     e = min(e, total)
