@@ -139,6 +139,22 @@ regimeClassifier = (() => {
 
   const regimeClassifierState = regimeClassifierCreateState();
 
+  // Cross-run warm-start: restore terminal coherentThresholdScale from previous run
+  try {
+    const _rcFs = require('fs');
+    const _rcPath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    if (_rcFs.existsSync(_rcPath)) {
+      const _rcState = JSON.parse(_rcFs.readFileSync(_rcPath, 'utf8'));
+      if (Number.isFinite(_rcState.coherentThresholdScale)) {
+        regimeClassifierState.coherentThresholdScale = clamp(
+          _rcState.coherentThresholdScale,
+          regimeClassifierConfig.REGIME_SCALE_MIN,
+          regimeClassifierConfig.REGIME_SCALE_MAX
+        );
+      }
+    }
+  } catch (_rcErr) { void _rcErr; }
+
   function setOscillatingThreshold(threshold) {
     regimeClassifierState.oscillatingCurvatureThreshold = V.requireFinite(threshold, 'threshold');
   }

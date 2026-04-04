@@ -85,11 +85,13 @@ grandFinale = () => {
     const lastNarration = safePreBoot.call(() => L0.getLast('self-narration', { layer: 'both' }), null);
     const tensionTraj = safePreBoot.call(() => sectionMemory.getTensionTrajectory(), 0);
     const hmSnap = safePreBoot.call(() => hyperMetaManager.getSnapshot(), null);
+    const rcReadiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
     const adaptiveState = {
       healthEma: hmSnap ? hmSnap.healthEma : 0.7,
       exceedanceTrendEma: hmSnap ? hmSnap.exceedanceTrendEma : 0,
       coherentShareEma: hmSnap ? hmSnap.coherentShareEma : 0.285,
       systemPhase: hmSnap ? hmSnap.systemPhase : 'converging',
+      coherentThresholdScale: rcReadiness ? rcReadiness.thresholdScale : 0.65,
       // Cross-run personality: what this composition was like
       lastRunPersonality: {
         narrative: lastNarration ? lastNarration.narrative : 'balanced evolving',
