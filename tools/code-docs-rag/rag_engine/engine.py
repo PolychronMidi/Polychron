@@ -426,18 +426,21 @@ class RAGEngine(RAGKnowledgeMixin):
         except Exception as e:
             logger.error(f"Symbol search failed: {e}")
             return []
-        return [
-            {
+        out = []
+        for r in results:
+            score = float(1.0 / (1.0 + r.get("_distance", 0)))
+            if score < 0.40:
+                continue
+            out.append({
                 "name": r["name"],
                 "kind": r["kind"],
                 "signature": r["signature"],
                 "file": r["file"],
                 "line": r["line"],
                 "language": r["language"],
-                "score": float(1.0 / (1.0 + r.get("_distance", 0))),
-            }
-            for r in results
-        ]
+                "score": score,
+            })
+        return out
 
     def get_symbol_status(self) -> dict:
         self._try_open_symbol_table()
