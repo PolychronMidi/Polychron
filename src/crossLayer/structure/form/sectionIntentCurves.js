@@ -91,8 +91,7 @@ sectionIntentCurves = (() => {
       : 1.0 / 6.0;
     const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
-    const intentRegimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const intentRegime = intentRegimeSnap ? intentRegimeSnap.regime : 'evolving';
+    const intentRegime = safePreBoot.call(() => conductorSignalBridge.getSignals().regime, 'evolving') || 'evolving';
     const phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);
 
     // R35 E3: Asymmetric arc - shift peak later (~62% through piece) for
@@ -224,13 +223,13 @@ sectionIntentCurves = (() => {
     const halfPhrase = m.floor(totalPhrases / 2);
     if (ph === halfPhrase && p > 0.3 && p < 0.7) {
       const midTensionSlope = sectionMemory.getTensionTrajectory();
-      const midSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-      const midRegime = midSnap ? midSnap.regime : 'evolving';
+      const midSignals = safePreBoot.call(() => conductorSignalBridge.getSignals(), null);
+      const midRegime = midSignals ? midSignals.regime || 'evolving' : 'evolving';
       if (midTensionSlope < -0.1 && midRegime !== 'coherent') {
         L0.post('section-quality', 'both', beatStartTime, { quality: 0.35, bias: 0.08 });
       }
       // R38: coupling decay predictor -- rapid coupling decay boosts convergence
-      const midCoupling = midSnap ? midSnap.couplingStrength : 0.3;
+      const midCoupling = midSignals && typeof midSignals.couplingStrength === 'number' ? midSignals.couplingStrength : 0.3;
       const prevCouplingEntry = L0.getLast('climax-pressure', { layer: 'both' });
       const prevCoupling = prevCouplingEntry && Number.isFinite(prevCouplingEntry.level) ? prevCouplingEntry.level : midCoupling;
       const couplingTrend = midCoupling - prevCoupling;
