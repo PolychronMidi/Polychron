@@ -13,6 +13,7 @@ def _code_schema(dim: int = None) -> pa.Schema:
         pa.field("start_line", pa.int32()),
         pa.field("end_line", pa.int32()),
         pa.field("language", pa.utf8()),
+        pa.field("token_count", pa.int32()),
         pa.field("vector", pa.list_(pa.float32(), d)),
     ])
 
