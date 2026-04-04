@@ -152,6 +152,7 @@ class RAGEngine(RAGKnowledgeMixin):
                     "start_line": chunk["start_line"],
                     "end_line": chunk["end_line"],
                     "language": lang,
+                    "token_count": len(chunk["content"]) // 4,
                 })
                 pending_texts.append(chunk["content"])
 
@@ -178,6 +179,10 @@ class RAGEngine(RAGKnowledgeMixin):
                     keep_mask = [s not in stale_sources for s in source_col]
                     keep_table = existing.filter(keep_mask)
                     merged = keep_table.to_pylist()
+                    # Backfill token_count for rows from older schema that lack it
+                    for row in merged:
+                        if "token_count" not in row or row["token_count"] is None:
+                            row["token_count"] = len(row.get("content", "")) // 4
                     merged.extend(pending_chunks)
                     self.table = self.db.create_table("code_chunks", data=merged, schema=self._code_schema, mode="overwrite")
                 except Exception as e:
@@ -327,7 +332,7 @@ class RAGEngine(RAGKnowledgeMixin):
         return count
 
     def search_budgeted(self, query: str, max_tokens: int = 8000, language: Optional[str] = None) -> list[dict]:
-        """Search and pack results into a token budget. Uses Anthropic token counting API when available."""
+        """Search and pack results into a token budget. Reads pre-indexed token_count when available."""
         # Fetch more candidates than typical to have packing options
         candidates = self.search(query, top_k=30, language=language)
         if not candidates:
@@ -335,7 +340,8 @@ class RAGEngine(RAGKnowledgeMixin):
         packed = []
         used_tokens = 0
         for r in candidates:
-            chunk_tokens = self._count_tokens(r["content"])
+            # Prefer stored token_count (zero-cost), fall back to in-memory cache / BERT / estimate
+            chunk_tokens = r.get("token_count") or self._count_tokens(r["content"])
             if used_tokens + chunk_tokens > max_tokens:
                 # Try to fit a truncated version if it's high relevance
                 if r["score"] > 0.3 and used_tokens + 200 < max_tokens:

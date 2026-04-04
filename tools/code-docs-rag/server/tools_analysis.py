@@ -362,6 +362,26 @@ def before_editing(file_path: str) -> str:
             if len(result["symbols"]) > sym_limit:
                 parts.append(f"  ... and {len(result['symbols']) - sym_limit} more symbols")
 
+    # Adaptive synthesis: what are the specific edit risks?
+    api_key = _get_api_key()
+    if api_key and relevant_kb:
+        kb_summary = "\n".join(
+            f"[{k['category']}] {k['title']}: {k['content'][:200]}" for k in relevant_kb[:5]
+        )
+        callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
+        user_text = (
+            f"File about to be edited: {rel_path}\n"
+            f"Dependents: {callers_summary}\n\n"
+            f"KB constraints:\n{kb_summary}\n\n"
+            "In 3 numbered points: what are the specific risks of editing this file? "
+            "Include: which callers could break, which architectural boundaries to respect, "
+            "and any constants or invariants that must not change."
+        )
+        synthesis = _claude_think(user_text, api_key, max_tokens=512)
+        if synthesis:
+            parts.append(f"\n## Edit Risks *(adaptive, {_THINK_MODEL})*")
+            parts.append(synthesis)
+
     return "\n".join(parts)
 
 
@@ -434,6 +454,23 @@ def what_did_i_forget(changed_files: str) -> str:
     parts.append(f"\n## Reminders")
     parts.append("  - index_codebase after running pipeline")
     parts.append("  - add_knowledge for any new calibration anchors or decisions")
+
+    # Adaptive synthesis: what specific things might have been missed?
+    api_key = _get_api_key()
+    if api_key and all_warnings:
+        warnings_text = "\n".join(all_warnings[:15])
+        user_text = (
+            f"Changed files: {changed_files}\n\n"
+            f"Audit warnings:\n{warnings_text}\n\n"
+            "In 3 numbered points: what specific things might the developer have forgotten? "
+            "Focus on: missed doc updates, boundary rules that need verification, "
+            "and follow-on changes required by the KB constraints above."
+        )
+        synthesis = _claude_think(user_text, api_key, max_tokens=512)
+        if synthesis:
+            parts.append(f"\n## What You May Have Missed *(adaptive, {_THINK_MODEL})*")
+            parts.append(synthesis)
+
     return "\n".join(parts)
 
 
@@ -514,6 +551,26 @@ def module_story(module_name: str) -> str:
                     parts.append(f"  {r['source'].replace(ctx.PROJECT_ROOT + '/', '')} ({fmt_sim_score(r['score'])})")
         except Exception:
             pass
+
+    # Adaptive synthesis: top 3 things to know before editing
+    api_key = _get_api_key()
+    if api_key and kb_results:
+        kb_summary = "\n".join(
+            f"[{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:6]
+        )
+        callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
+        user_text = (
+            f"Module: {module_name}\n"
+            f"Dependents: {callers_summary}\n\n"
+            f"KB history:\n{kb_summary}\n\n"
+            "In 3 bullet points: what are the most important things to know before editing this module? "
+            "Focus on hidden invariants, caller contracts, and architectural constraints."
+        )
+        synthesis = _claude_think(user_text, api_key, max_tokens=512)
+        if synthesis:
+            parts.append(f"\n## Key Constraints *(adaptive, {_THINK_MODEL})*")
+            parts.append(synthesis)
+
     return "\n".join(parts)
 
 
@@ -562,6 +619,24 @@ def diagnose_error(error_text: str) -> str:
                 parts.append(f"  {r['file'].replace(ctx.PROJECT_ROOT + '/', '')}:{r['line']}")
     if not file_refs and not kb_results and not unique_symbols:
         parts.append("\nNo specific diagnosis available. Try search_knowledge with key terms from the error.")
+
+    # Adaptive thinking synthesis: if API key available, ask Claude to produce fix steps
+    api_key = _get_api_key()
+    if api_key:
+        kb_summary = "\n".join(
+            f"[{k['category']}] {k['title']}: {k['content'][:150]}" for k in kb_results[:5]
+        ) if kb_results else "None"
+        user_text = (
+            f"Error:\n{error_text[:600]}\n\n"
+            f"Related KB entries:\n{kb_summary}\n\n"
+            "Based on the error and KB context, provide: (1) most likely root cause in one sentence, "
+            "(2) exact fix steps as a numbered list, (3) any boundary/architectural rule to check."
+        )
+        synthesis = _claude_think(user_text, api_key, max_tokens=1024)
+        if synthesis:
+            parts.append(f"\n## Fix Synthesis *(adaptive, {_THINK_MODEL})*")
+            parts.append(synthesis)
+
     return "\n".join(parts)
 
 
@@ -764,6 +839,50 @@ def _get_api_key() -> str:
     return ""
 
 
+# RAG_THINK_MODEL: defaults to Opus 4.6 for deep-analysis tools (think, diagnose_error,
+# module_story, before_editing, what_did_i_forget). Override with RAG_THINK_MODEL=claude-sonnet-4-6
+# if cost is a concern. Adaptive thinking is supported on both.
+_THINK_MODEL = os.environ.get("RAG_THINK_MODEL", "claude-sonnet-4-6")
+
+_THINK_SYSTEM = (
+    "You are a code-review assistant with deep knowledge of this project's architecture and conventions. "
+    "Provide concise, actionable analysis grounded in the KB context provided. "
+    "Focus on architectural boundaries, potential breakage, and concrete next steps. "
+    "Be direct — no preamble, no trailing summaries."
+)
+
+
+def _claude_think(user_text: str, api_key: str, max_tokens: int = 2048) -> str | None:
+    """Call Claude with adaptive thinking + cached system prompt. Returns text or None on failure."""
+    try:
+        import httpx
+        resp = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "content-type": "application/json",
+                "anthropic-version": "2023-06-01",
+            },
+            json={
+                "model": _THINK_MODEL,
+                "max_tokens": max_tokens,
+                "thinking": {"type": "adaptive"},
+                "system": [{"type": "text", "text": _THINK_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+                "messages": [{"role": "user", "content": user_text}],
+            },
+            timeout=45.0,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return " ".join(
+                b["text"] for b in data.get("content", []) if b.get("type") == "text"
+            ).strip() or None
+        logger.warning(f"_claude_think: HTTP {resp.status_code}: {resp.text[:200]}")
+    except Exception as e:
+        logger.warning(f"_claude_think: {e}")
+    return None
+
+
 @ctx.mcp.tool()
 def think(about: str, context: str = "") -> str:
     """Structured reflection tool. When ANTHROPIC_API_KEY is set, uses Claude with adaptive thinking to produce real analysis. Falls back to a structured reflection template otherwise."""
@@ -786,48 +905,17 @@ def think(about: str, context: str = "") -> str:
 
     api_key = _get_api_key()
     if api_key:
-        try:
-            import httpx
-            system_text = (
-                "You are a code-review assistant with deep knowledge of this project's architecture. "
-                "Provide concise, actionable analysis. Focus on architectural boundaries, potential breakage, "
-                "and concrete next steps. Be direct — no preamble."
-            )
-            user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
-            if context:
-                user_text += f"\n\n**Additional context:** {context}"
-            if kb_block:
-                user_text += f"\n\n{kb_block}"
-
-            resp = httpx.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": api_key,
-                    "content-type": "application/json",
-                    "anthropic-version": "2023-06-01",
-                },
-                json={
-                    "model": "claude-sonnet-4-6",
-                    "max_tokens": 2048,
-                    "thinking": {"type": "adaptive"},
-                    "system": [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
-                    "messages": [{"role": "user", "content": user_text}],
-                },
-                timeout=30.0,
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                # Extract text blocks (thinking blocks are internal, not exposed)
-                answer = " ".join(
-                    b["text"] for b in data.get("content", []) if b.get("type") == "text"
-                ).strip()
-                if answer:
-                    parts = [f"# Think: {about} *(adaptive)*\n", answer]
-                    if kb_hits:
-                        parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
-                    return "\n".join(parts)
-        except Exception as e:
-            logger.warning(f"think: API call failed ({e}), falling back to template")
+        user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
+        if context:
+            user_text += f"\n\n**Additional context:** {context}"
+        if kb_block:
+            user_text += f"\n\n{kb_block}"
+        answer = _claude_think(user_text, api_key)
+        if answer:
+            parts = [f"# Think: {about} *(adaptive, {_THINK_MODEL})*\n", answer]
+            if kb_hits:
+                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
+            return "\n".join(parts)
 
     # Template fallback
     parts = [f"# Think: {about}\n"]
