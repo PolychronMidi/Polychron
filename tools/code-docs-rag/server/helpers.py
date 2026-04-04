@@ -1,0 +1,77 @@
+import os
+import json
+import logging
+
+logger = logging.getLogger("code-docs-rag")
+
+# Shared boundary violation patterns for crossLayer checks
+CROSSLAYER_BOUNDARY_VIOLATIONS = [
+    "conductorIntelligence.", "conductorState.",
+    "systemDynamicsProfiler.", "pipelineCouplingManager.",
+]
+
+# Budget-aware limits for composite tool output
+BUDGET_LIMITS = {
+    "greedy":       {"kb_entries": 5, "callers": 10, "symbols": 15, "kb_content": 200, "similar": 3},
+    "moderate":     {"kb_entries": 3, "callers": 8,  "symbols": 12, "kb_content": 150, "similar": 2},
+    "conservative": {"kb_entries": 2, "callers": 5,  "symbols": 8,  "kb_content": 100, "similar": 1},
+    "minimal":      {"kb_entries": 1, "callers": 3,  "symbols": 5,  "kb_content": 60,  "similar": 0},
+}
+
+
+def get_context_budget() -> str:
+    """Read context-window pressure from status line. Returns 'greedy', 'moderate', 'conservative', or 'minimal'."""
+    try:
+        ctx = json.load(open("/tmp/claude-context.json"))
+        remaining = ctx.get("remaining_pct", 50)
+        if remaining > 75:
+            return "greedy"
+        elif remaining > 50:
+            return "moderate"
+        elif remaining > 25:
+            return "conservative"
+        else:
+            return "minimal"
+    except Exception:
+        return "moderate"
+
+
+def validate_project_path(file_path: str, project_root: str) -> str | None:
+    """Resolve path and ensure it's within PROJECT_ROOT. Returns abs path or None."""
+    expanded = os.path.expanduser(file_path)
+    abs_path = expanded if os.path.isabs(expanded) else os.path.join(project_root, expanded)
+    abs_path = os.path.realpath(abs_path)
+    if not abs_path.startswith(os.path.realpath(project_root)):
+        return None
+    return abs_path
+
+
+def fmt_score(score) -> str:
+    """Format a cross-encoder score as a percentage, clamping negatives to 0."""
+    if not isinstance(score, (int, float)):
+        return "?"
+    return f"{max(0.0, score):.0%}"
+
+
+def format_knowledge_results(results: list[dict], label: str, min_score: float = 0.01) -> list[str]:
+    # Filter out zero-score results — these are negative cross-encoder scores clamped to 0,
+    # meaning the entry is irrelevant to this query. Showing them is pure noise.
+    results = [r for r in results if r.get("score", 0) >= min_score]
+    if not results:
+        return []
+    lines = []
+    for k in results:
+        tags_str = ", ".join(k["tags"]) if k["tags"] else ""
+        lines.append(
+            f"  [{k['category']}] {k['title']} (score: {fmt_score(k['score'])}){' | ' + tags_str if tags_str else ''}\n"
+            f"  {k['content']}"
+        )
+    return [f"=== {label} ===\n" + "\n\n".join(lines)]
+
+
+def check_path_in_project(path: str, project_root: str) -> str | None:
+    """Check a directory path is within project root. Returns error string or None if OK."""
+    target = os.path.join(project_root, path) if not os.path.isabs(path) else path
+    if not os.path.realpath(target).startswith(os.path.realpath(project_root)):
+        return f"Error: path '{path}' is outside the project root."
+    return None

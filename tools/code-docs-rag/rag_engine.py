@@ -366,6 +366,7 @@ class RAGEngine:
         self._search_cache = _TTLCache(maxsize=256, ttl=CACHE_TTL)
         self._knowledge_cache = _TTLCache(maxsize=128, ttl=CACHE_TTL)
         self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count for spaced repetition
+        self._index_lock = threading.Lock()
         self._load_hashes()
         self._try_open_table()
         self._try_open_knowledge_table()
@@ -429,18 +430,23 @@ class RAGEngine:
         return results
 
     def index_directory(self, directory: str) -> dict:
+        with self._index_lock:
+            return self._index_directory_locked(directory)
+
+    def _index_directory_locked(self, directory: str) -> dict:
         files = self._collect_files(directory)
         logger.info(f"Collected {len(files)} source files")
-
         pending_chunks: list[dict] = []
         pending_texts: list[str] = []
         indexed_files = 0
         skipped_files = 0
+        new_file_hashes: dict[str, str] = {}
 
         for file_path in files:
             try:
                 content = file_path.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to read {file_path}: {e}")
                 continue
 
             file_key = str(file_path)
@@ -472,7 +478,7 @@ class RAGEngine:
                 })
                 pending_texts.append(chunk["content"])
 
-            self._file_hashes[file_key] = content_hash
+            new_file_hashes[file_key] = content_hash
             indexed_files += 1
 
         if pending_texts:
@@ -492,14 +498,19 @@ class RAGEngine:
                     merged = keep_table.to_pylist()
                     merged.extend(pending_chunks)
                     self.table = self.db.create_table("code_chunks", data=merged, schema=self._code_schema, mode="overwrite")
-                except Exception:
+                except Exception as e:
+                    logger.error(f"Table merge failed, writing new chunks only: {e}")
                     self.table = self.db.create_table("code_chunks", data=pending_chunks, schema=self._code_schema, mode="overwrite")
             else:
                 self.table = self.db.create_table("code_chunks", data=pending_chunks, schema=self._code_schema, mode="overwrite")
 
+        # Only update file hashes after successful table write
+        self._file_hashes.update(new_file_hashes)
         self._save_hashes()
         if pending_chunks:
             self._search_cache.invalidate()
+            # Rebuild chunk hashes from actual table state to fix stale entries
+            self._rebuild_chunk_hashes()
 
         return {
             "total_files": len(files),
@@ -641,13 +652,17 @@ class RAGEngine:
         return {"indexed": True, "total_chunks": count, "total_files": sources}
 
     def clear(self):
-        try:
-            self.db.drop_table("code_chunks")
-        except Exception:
-            pass
-        self.table = None
-        self._file_hashes = {}
-        self._save_hashes()
+        with self._index_lock:
+            try:
+                self.db.drop_table("code_chunks")
+            except Exception:
+                pass
+            self.table = None
+            self._file_hashes = {}
+            self._chunk_hashes = set()
+            self._access_log = {}
+            self._search_cache.invalidate()
+            self._save_hashes()
 
     def _try_open_knowledge_table(self):
         try:
@@ -816,6 +831,7 @@ class RAGEngine:
             self.knowledge_table = self.db.create_table("knowledge", data=[record], schema=self._knowledge_schema, mode="overwrite")
 
         self._knowledge_cache.invalidate()
+        self._search_cache.invalidate()  # code search results include KB enrichment
         return {"id": entry_id, "title": title, "category": category, "action": prediction_action, "superseded": superseded_id}
 
     def search_knowledge(self, query: str, top_k: int = 10, category: str | None = None) -> list[dict]:
@@ -884,9 +900,14 @@ class RAGEngine:
         if self.knowledge_table is None:
             return False
         try:
+            count_before = self.knowledge_table.count_rows()
             self.knowledge_table.delete(f"id = '{self._sanitize(entry_id)}'")
-            self._knowledge_cache.invalidate()
-            return True
+            count_after = self.knowledge_table.count_rows()
+            if count_after < count_before:
+                self._knowledge_cache.invalidate()
+                self._search_cache.invalidate()  # code search results include KB enrichment
+                return True
+            return False  # entry not found
         except Exception as e:
             logger.error(f"Knowledge remove failed: {e}")
             return False
@@ -943,6 +964,7 @@ class RAGEngine:
             return {"has_knowledge": False, "total_entries": 0, "categories": []}
 
     def compact_knowledge(self, similarity_threshold: float = 0.85) -> dict:
+        similarity_threshold = max(0.5, min(1.0, similarity_threshold))
         if self.knowledge_table is None:
             return {"removed": 0, "kept": 0}
 
@@ -987,6 +1009,7 @@ class RAGEngine:
 
         if remove_ids:
             self._knowledge_cache.invalidate()
+            self._search_cache.invalidate()  # code search results include KB enrichment
         return {"removed": len(remove_ids), "kept": len(rows) - len(remove_ids)}
 
     def export_knowledge(self, category: str | None = None) -> str:

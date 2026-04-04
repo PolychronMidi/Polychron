@@ -252,7 +252,7 @@ def find_orphan_files(project_root: str) -> dict:
 
     entry_patterns = [
         "main.ts", "main.rs", "lib.rs", "mod.rs", "index.ts", "index.js",
-        "App.vue", "main.py", "__init__.py", "server.py",
+        "App.vue", "main.py", "__init__.py",
         "Main.java", "Application.java", "main.go", "Program.cs",
         "main.kt", "Main.kt", "main.rb", "main.lua", "main.jl",
         "Makefile", "Dockerfile",
