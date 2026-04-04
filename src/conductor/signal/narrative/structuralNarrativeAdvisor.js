@@ -11,7 +11,7 @@
 
 structuralNarrativeAdvisor = (() => {
 
-  const VARIETY_GAIN = 0.14;   // R14 E3: 0.08->0.14 stronger diversity pressure across composer families
+  const VARIETY_GAIN = 0.16;   // R14 E3: 0.08->0.14; bidirectional: 0.14->0.16 so lo=0.96 is reachable at high entropy
   const MAX_HISTORY  = 32;
 
   /** @type {string[]} */
@@ -38,8 +38,8 @@ structuralNarrativeAdvisor = (() => {
       const total  = familyHistory.length;
       const entropy = unique / m.max(total, 1);
 
-      // Low entropy - push density up slightly to encourage change
-      varietyPressure = 1.0 + VARIETY_GAIN * (1.0 - entropy);
+      // Bidirectional: low entropy (repetition) boosts density; high entropy (max variety) suppresses slightly
+      varietyPressure = 1.04 + VARIETY_GAIN * (0.5 - entropy);
     }
   }
 
