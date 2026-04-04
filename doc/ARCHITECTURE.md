@@ -58,7 +58,13 @@ Modules register density/tension/flicker biases via `conductorIntelligence.regis
 
 ## The Signal Bridge
 
-**Firewall boundary 1.** `conductorSignalBridge` (crossLayer module) caches conductor signals per-beat via a registered recorder. Exposes: density, tension, flicker, compositeIntensity, sectionPhase, coherenceEntropy, plus hypermeta state (healthEma, systemPhase, exceedanceTrendEma, topologyPhase). CrossLayer modules read the bridge, never the conductor directly.
+**Firewall boundary 1.** `conductorSignalBridge` (crossLayer module) caches conductor signals per-beat via a registered recorder. CrossLayer modules read the bridge, never the conductor directly.
+
+Exposed fields (17 total):
+- Core signals: `density`, `tension`, `flicker`, `compositeIntensity`, `sectionPhase`, `coherenceEntropy`
+- Hypermeta state: `healthEma`, `systemPhase`, `exceedanceTrendEma`, `topologyPhase`
+- Structural: `regime`, `effectiveDimensionality`, `couplingStrength`, `axisEnergyShares`
+- Coupling: `adaptiveTargetSnapshot` (per-pair targets), `regimeProb` (probability distribution over all 7 regimes)
 
 ## Layer Isolation (L1/L2)
 
@@ -93,6 +99,30 @@ Modules with internal state use `byLayer` maps keyed by `LM.activeLayer`:
 - Orchestration intervals firing twice per measure
 - Regime classification operating at double speed
 
+## Adaptive System Infrastructure
+
+### Cross-Run Warm-Start
+
+`metrics/adaptive-state.json` persists terminal EMA values across runs. Loaded at bootstrap by `hyperMetaManagerState` via `loadWarmStartState()`. Fields persisted:
+
+- `healthEma`, `exceedanceTrendEma` — system health and exceedance trend (clamped to [0.4, 0.9] and [0.0, 0.5] on load)
+- `systemPhase`, `coherentThresholdScale` — regime self-balancer state
+- `cimDials` — CIM coordination dial positions per pair (restores pair-level learning)
+- `cimEffectiveness` — per-pair effectiveness EMA (restores controller responsiveness)
+- `trustScores` — per-system trust EMAs (restores trust ecology character)
+
+On load, all values are clamped to safe ranges to prevent stressed-state boot loops. If the file is missing or corrupt, all values initialize to nominal defaults. The file is rewritten at the end of each successful run.
+
+### Reconvergence Accelerator
+
+`reconvergenceAccelerator.js` detects structural input discontinuities (e.g., a large section-boundary healthEma jump) and temporarily spikes EMA alphas for fast reconvergence:
+
+- Trigger condition: |healthEma delta| > threshold in a single beat
+- Effect: alphas in hyperMetaManager spike to 3-5x normal for 50 beats, decaying back
+- Interaction: `regimeTransitionAlphaBoost` independently spikes 3x on regime transitions (decays at 0.88/tick)
+
+Together these prevent the ~30-beat lag where warm-started EMA values pull toward the previous run's terminal state before converging to the new run's actual conditions.
+
 ## Regime Classification
 
 7 regime states with hysteresis:
@@ -106,6 +136,15 @@ Modules with internal state use `byLayer` maps keyed by `LM.activeLayer`:
 | `drifting` | Low-energy wandering | Rare |
 | `fragmented` | Disconnected, chaotic | Rare |
 | `stagnant` | Locked, no movement | Rare |
+
+**Classifier hysteresis** uses a majority-window: `_REGIME_WINDOW=5` beats, `_REGIME_MAJORITY=3`. A regime is resolved only when ≥3 of the last 5 raw classifications agree. Replaced the prior consecutive-streak approach (R37 E1) because P(3 consecutive coherent | p≈0.1) was near zero — the classifier was effectively blind to low-probability regimes.
+
+**Coherent entry gates:** tensor-product of 3 conditions:
+1. `regimeProb.coherent` ≥ `coherentThresholdScale` (self-calibrating, starts 0.65)
+2. `effectiveDimensionality` ≥ 3.5 (R37 E2 tightened from 4.0)
+3. `couplingStrength` ≤ 0.50 (R37 E3 widened from 0.40)
+
+`coherentThresholdScale` self-balances to maintain target coherent share: nudges up (+0.006/beat) when coherent is over-represented, down (-0.006/beat) when under-represented. Floor 0.55, ceiling 0.85.
 
 Regime affects: variant selection weights, CIM dial targets, stutter CC coherence scaling (coherent=1.3x, exploring=0.6x), preset selection (coherent->subtle, exploring->stereoWide), exploring brake strength.
 
