@@ -47,7 +47,9 @@ regimeClassifierClassification = (() => {
     }
 
     const dynamicPenaltyCap = 0.08 + clamp((state.coherentShareEma - 0.60) * 1.0, 0, 0.20);
-    const dynamicPenaltyRate = 0.003 + clamp((state.coherentShareEma - 0.50) * 0.004, 0, 0.004);
+    // Rate starts at 0 when coherent share is at target, grows proportionally as it overshoots.
+    // Removed hardcoded 0.003 floor that made adaptation ineffective (prior range [0.003, 0.007]).
+    const dynamicPenaltyRate = clamp((state.coherentShareEma - config.REGIME_TARGET_COHERENT_HI) * 0.016, 0, 0.008);
     let coherentDurationPenalty = 0;
     if (state.lastRegime === 'coherent' && coherentElapsedSec > config.COHERENT_DUR_PENALTY_SEC) {
       coherentDurationPenalty = clamp((coherentElapsedSec - config.COHERENT_DUR_PENALTY_SEC) * dynamicPenaltyRate * 1.2, 0, dynamicPenaltyCap);
@@ -190,7 +192,8 @@ regimeClassifierClassification = (() => {
     if (coherentGapToEntry > -0.06 && coherentGapToEntry < 0 && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) {
       state.coherentBlockStreak++;
     } else if (state.lastRegime === 'coherent' || coherentGapToEntry >= 0) {
-      state.coherentBlockStreak = 0;
+      // Decay rather than instant reset: prevents rapid re-accumulation after a brief coherent pass
+      state.coherentBlockStreak = m.max(0, state.coherentBlockStreak - 2);
     }
     const coherentBlockRelax = clamp(state.coherentBlockStreak * 0.004, 0, 0.04);
 

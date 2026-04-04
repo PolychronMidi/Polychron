@@ -225,6 +225,10 @@ regimeClassifierResolution = (() => {
       if (phaseShare < lowPhaseThreshold) {
         const phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
         coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_HIGH_SEC, coherentMaxDwellSec * (1 - phaseCollapsePressure * 0.35));
+      } else if (phaseShare > lowPhaseThreshold + 0.04) {
+        // Phase healthy -- symmetric recovery: slightly extend coherent dwell to balance asymmetric suppression.
+        const phaseHealthBonus = clamp((phaseShare - (lowPhaseThreshold + 0.04)) / 0.08, 0, 1);
+        coherentMaxDwellSec = m.min(config.COHERENT_HARD_CAP_SEC, coherentMaxDwellSec * (1 + phaseHealthBonus * 0.12));
       }
       if (trustShare > 0.22) {
         const trustInflationPressure = clamp((trustShare - 0.22) / 0.08, 0, 1);
