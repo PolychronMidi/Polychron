@@ -18,6 +18,12 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
     systemPhase: 'converging',
     exceedanceTrendEma: 0,
     topologyPhase: 'fluid',
+    regime: 'evolving',
+    effectiveDimensionality: 3,
+    couplingStrength: 0.3,
+    axisEnergyShares: null,
+    adaptiveTargetSnapshot: null,
+    regimeProb: { coherent: 0.33, exploring: 0.33, evolving: 0.34 },
     updatedAt: 0
   };
 
@@ -48,6 +54,7 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       effectiveDimensionality: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.effectiveDimensionality, 3) : 3; })(),
       couplingStrength: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.couplingStrength, 0.3) : 0.3; })(),
       axisEnergyShares: (() => { const ae = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null); return ae && ae.shares ? ae.shares : null; })(),
+      adaptiveTargetSnapshot: safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null),
       // Xenolinguistic L2: regime probability distribution (superposition).
       // Instead of collapsing to one regime, expose soft probabilities based on
       // velocity + coupling. Low velocity + high coupling = coherent-leaning.
@@ -103,6 +110,7 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       effectiveDimensionality: cached.effectiveDimensionality,
       couplingStrength: cached.couplingStrength,
       axisEnergyShares: cached.axisEnergyShares,
+      adaptiveTargetSnapshot: cached.adaptiveTargetSnapshot,
       regimeProb: cached.regimeProb
     });
   }
@@ -124,6 +132,7 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       effectiveDimensionality: 3,
       couplingStrength: 0.3,
       axisEnergyShares: null,
+      adaptiveTargetSnapshot: null,
       regimeProb: { coherent: 0.33, exploring: 0.33, evolving: 0.34 },
       updatedAt: 0
     };

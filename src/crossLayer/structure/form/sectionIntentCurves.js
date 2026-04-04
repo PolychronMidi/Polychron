@@ -85,9 +85,9 @@ sectionIntentCurves = (() => {
     // R24: Onset moved 0.55->0.70 -- 0.55 suppressed surges too early (sections 3-4),
     // reducing tension buildup and contributing to coherent collapse.
     const lateSurgeGate = clamp(1.0 - (sectionRoute - 0.70) / 0.30, 0, 1);
-    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
+    const axisEnergyShares = safePreBoot.call(() => conductorSignalBridge.getSignals().axisEnergyShares, null);
+    const phaseShare = axisEnergyShares && typeof axisEnergyShares.phase === 'number'
+      ? axisEnergyShares.phase
       : 1.0 / 6.0;
     const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);

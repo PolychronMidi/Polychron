@@ -49,7 +49,7 @@ adaptiveTrustScoresHelpers = (() => {
     const pairList = pairAwareHotspotPairs[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
     const pairWeights = pairAwarePairWeights[systemName] || /** @type {Record<string, number>} */ ({});
     const couplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
-    const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
+    const adaptiveSnapshot = safePreBoot.call(() => conductorSignalBridge.getSignals().adaptiveTargetSnapshot, null);
 
     const hotspotPairs = [];
     let maxPressure = 0;
@@ -188,11 +188,11 @@ adaptiveTrustScoresHelpers = (() => {
 
     let trustAxisPressure = 0;
     let phaseStarvationPressure = 0;
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
-    if (axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number') {
-      trustAxisPressure = clamp((axisEnergy.shares.trust - 0.19) / 0.09, 0, 1);
-      if (typeof axisEnergy.shares.phase === 'number') {
-        phaseStarvationPressure = clamp((0.08 - axisEnergy.shares.phase) / 0.08, 0, 1);
+    const axisEnergyShares = safePreBoot.call(() => conductorSignalBridge.getSignals().axisEnergyShares, null);
+    if (axisEnergyShares && typeof axisEnergyShares.trust === 'number') {
+      trustAxisPressure = clamp((axisEnergyShares.trust - 0.19) / 0.09, 0, 1);
+      if (typeof axisEnergyShares.phase === 'number') {
+        phaseStarvationPressure = clamp((0.08 - axisEnergyShares.phase) / 0.08, 0, 1);
       }
     }
 
