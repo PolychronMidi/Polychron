@@ -1,14 +1,25 @@
 # code-docs-rag: Setup, Usage, and Maintenance Guide
 
-> Local semantic code + documentation RAG system for Polychron. 44 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
+> Local semantic code + documentation RAG system for Polychron. 45 MCP tools across 3 intelligence layers: reactive search, architectural analysis, and collaborative reasoning. All search and file operations route through code-docs-rag for consistent KB enrichment.
 
 ## Full Installation Topology
 
 ### Server Source (Python)
 ```
 tools/code-docs-rag/     (symlinked to ~/.claude/mcp/code-docs-rag/ by scripts/setup-mcp.sh)
-  server.py              FastMCP server (44 tools, name="code-docs-rag")
-  rag_engine.py          LanceDB vector store (all-mpnet-base-v2, 768-dim) + BM25 + cross-encoder reranking + prediction error gating
+  server/
+    main.py              FastMCP entry point (45 tools, name="code-docs-rag")
+    tools_analysis.py    Architectural reasoning + Claude synthesis tools
+    tools_search.py      Search, grep, file, context assembly tools
+    tools_knowledge.py   KB CRUD + memory_dream + knowledge_graph
+    tools_index.py       Index management + recent_changes
+    context.py           Shared engine references + ensure_ready_sync
+    helpers.py           Budget limits, path validation, formatters
+  rag_engine/
+    engine.py            LanceDB vector store + BM25 + RRF fusion + token budget
+    knowledge.py         KB add/search/remove/compact/export
+    schemas.py           LanceDB schemas + summarize_chunk
+    utils.py             BM25, RRF, TTL cache
   chunker.py             IIFE-aware JS chunker + line fallback (tree-sitter not installed)
   symbols.py             Symbol index: TS_PATTERNS + JS_IIFE_PATTERNS (globals + inner functions)
   analysis.py            Dependency graph, similar code, cross-language trace
@@ -16,8 +27,6 @@ tools/code-docs-rag/     (symlinked to ~/.claude/mcp/code-docs-rag/ by scripts/s
   watcher.py             5s debounce file watcher for auto-reindex
   lang_registry.py       30+ language support
   file_walker.py         File discovery + .ragignore support
-  complexity.py          Complexity analysis helpers
-  patterns.py            Code pattern detection
 ```
 
 ### Project Databases
@@ -39,7 +48,7 @@ Loaded via `/code-docs-rag` slash command (registered as a Claude Code skill).
   "mcpServers": {
     "code-docs-rag": {
       "command": "python3",
-      "args": ["/home/jah/Polychron/tools/code-docs-rag/server.py"],
+      "args": ["/home/jah/Polychron/tools/code-docs-rag/server/main.py"],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
         "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/code-docs-rag"
@@ -180,6 +189,18 @@ These wrap common shell operations with KB cross-referencing and convention warn
 | `remove_knowledge` | Delete stale entry | `remove_knowledge "entry_id"` |
 | `compact_knowledge` | Deduplicate similar entries | `compact_knowledge threshold=0.85` |
 | `export_knowledge` | Export KB as markdown | `export_knowledge` |
+| `knowledge_graph` | Search KB with spreading activation + Claude cluster analysis | `knowledge_graph "density suppression"` |
+| `memory_dream` | Pairwise similarity pass — discover hidden KB connections | `memory_dream` |
+| `kb_health` | Check KB for stale file refs and aged entries | `kb_health` |
+
+### Analysis & Dead Code
+
+| Tool | Use For | Example |
+|------|---------|---------|
+| `find_dead_code` | Scan IIFE globals with 0 callers and no self-registration | `find_dead_code` |
+| `symbol_importance` | Rank IIFE globals by caller count (architectural centrality) | `symbol_importance top_n=20` |
+| `bulk_rename_preview` | Preview rename impact without making changes | `bulk_rename_preview "oldName" "newName"` |
+| `doc_sync_check` | Verify a doc file matches implementation (tool counts, file refs) | `doc_sync_check "doc/code-docs-rag.md"` |
 
 ### Index Management
 
@@ -223,16 +244,29 @@ Uses `all-mpnet-base-v2` (768-dim, 109M params) from sentence-transformers. Conf
 
 321 IIFE globals + 1914 inner functions indexed (3848+ total). `lookup_symbol` and `find_callers` work for Polychron's global-assignment pattern and functions nested inside IIFEs.
 
+### Claude API Integration
+
+When `ANTHROPIC_API_KEY` is set (or found in `~/.anthropic/api_key`), composite tools use Claude for adaptive synthesis. All calls use:
+
+- **Adaptive thinking** (`thinking.display="omitted"`) — reasoning happens internally, only text output is returned
+- **Prompt caching** — system prompt cached at 5-min TTL; KB corpus cached at 1-hour TTL (`extended-cache-ttl-2025-04-11`)
+- **Context-adaptive effort** — `output_config.effort` scales with remaining context (see budget table above)
+- **Cache warming** — background thread pre-warms both cache breakpoints at startup and after any KB mutation
+
+Tools with Claude synthesis: `before_editing`, `what_did_i_forget`, `module_story`, `diagnose_error`, `codebase_health`, `blast_radius`, `knowledge_graph`, `memory_dream`, `think`.
+
+The `think` tool accepts named reflection topics: `task_adherence`, `completeness`, `constraints`, `impact`, `conventions`, `recent_changes` (auto-fetches last 6h of git activity). Uses `effort="max"` on greedy context.
+
 ### Context-Budget Awareness
 
 Composite tools (`before_editing`, `what_did_i_forget`, `module_story`) auto-scale output based on remaining context window. Reads `/tmp/claude-context.json` (written by the status line command) to determine pressure level:
 
-| Context Remaining | Budget | KB Entries | Callers | Symbols | KB Content Chars |
-|---|---|---|---|---|---|
-| >75% | greedy | 5 | 10 | 15 | 200 |
-| 50-75% | moderate | 3 | 8 | 12 | 150 |
-| 25-50% | conservative | 2 | 5 | 8 | 100 |
-| <25% | minimal | 1 | 3 | 5 | 60 |
+| Context Remaining | Budget | KB Entries | Callers | Symbols | KB Content Chars | Claude max_tokens | Claude effort |
+|---|---|---|---|---|---|---|---|
+| >75% | greedy | 10 | 20 | 25 | 400 | 4096 | high (think: max) |
+| 50-75% | moderate | 5 | 10 | 15 | 200 | 2048 | medium (think: high) |
+| 25-50% | conservative | 3 | 6 | 10 | 120 | 1024 | low (think: medium) |
+| <25% | minimal | 1 | 3 | 5 | 60 | 256 | low |
 
 ### Response Format Control
 

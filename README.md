@@ -123,6 +123,7 @@ Generated per-run in `metrics/`:
 | File | Scope |
 |------|-------|
 | [CLAUDE.md](CLAUDE.md) | Coding rules, architectural boundaries, hard rules |
+| [doc/code-docs-rag.md](doc/code-docs-rag.md) | Local semantic RAG + MCP tool reference (45 tools) |
 | [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) | Beat lifecycle, signal flow, layer isolation |
 | [doc/TUNING_MAP.md](doc/TUNING_MAP.md) | Feedback loop constants, cross-constant invariants |
 | [doc/HYPERMETA.md](doc/HYPERMETA.md) | 19 self-calibrating controllers |
