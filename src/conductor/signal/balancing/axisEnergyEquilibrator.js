@@ -46,6 +46,9 @@ axisEnergyEquilibrator = (() => {
       phase: 4
     },
     RELAX_RATE_REF: 5,
+    // Cross-adjuster direction inhibit: beats after one handler adjusts a pair
+    // before the OTHER handler can reverse direction. Prevents pair/axis oscillation.
+    CROSS_INHIBIT_WINDOW: 6,
     ALL_AXES: couplingConstants.ALL_MONITORED_DIMS,
     ALL_PAIRS: couplingConstants.ALL_PAIRS,
     axisToPairs: couplingConstants.AXIS_TO_PAIRS,
@@ -79,7 +82,9 @@ axisEnergyEquilibrator = (() => {
       coherentHotspotAxisAdj: 0,
       phaseCollapseStreak: 0,
       phaseLowShareStreak: 0,
-      lastWarmupTicks: axisEnergyEquilibratorConfig.WARMUP_DEFAULT
+      lastWarmupTicks: axisEnergyEquilibratorConfig.WARMUP_DEFAULT,
+      pairLastTightenBeat: {},
+      pairLastRelaxBeat: {}
     };
   }
 

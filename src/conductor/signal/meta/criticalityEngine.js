@@ -77,6 +77,11 @@ criticalityEngine = (() => {
     tensionSnap = signalReader.tension();
     flickerSnap = signalReader.flicker();
 
+    // Health-aware effective threshold: worse health -> lower trigger -> more corrective avalanches.
+    // At healthEma=0.7 (nominal), scale=1.0 (unchanged). Stressed system (healthEma=0.35) -> scale=0.5 -> fires at half threshold.
+    const critHealthEma = V.optionalFinite(safePreBoot.call(() => hyperMetaManager.getSnapshot().healthEma, 0.7), 0.7);
+    const criticalityHealthScale = clamp(critHealthEma / 0.7, 0.5, 1.4);
+
     // Orchestrator-modulated snap: during emergence, reduce snap to let
     // novel patterns express; during locked state, amplify to break stasis.
     // E22 (snap softening under pressure) was refuted in R35 -- removing the
@@ -88,7 +93,7 @@ criticalityEngine = (() => {
       inAvalanche--;
       currentBias = effectiveSnap + (1.0 - effectiveSnap) * (1 - inAvalanche / RECOVERY_BEATS);
       // Still in recovery - skip accumulation check
-    } else if (accumulated > threshold && energyBuffer.length >= WINDOW / 2) {
+    } else if (accumulated > threshold * criticalityHealthScale && energyBuffer.length >= WINDOW / 2) {
       // Avalanche
       avalancheCount++;
       avalancheSizes.push(accumulated);

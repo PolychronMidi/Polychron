@@ -43,15 +43,19 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
 
         const tightenPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE[axis] || config.RELAX_RATE_REF);
         const rate = config.AXIS_TIGHTEN_RATE * tightenPairScale * axisTightenScale * context.giniMult * dampMult * clamp(excess / config.FAIR_SHARE, 0.5, 2.0);
+        const crossWindow = config.CROSS_INHIBIT_WINDOW || 6;
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
+          // Cross-inhibit: pair adjuster recently relaxed this pair -- don't immediately reverse
+          if (state.pairLastRelaxBeat[pair] !== undefined && state.beatCount - state.pairLastRelaxBeat[pair] < crossWindow) continue;
           const baseline = V.optionalFinite(state.lastBaselines[pair]);
           if (baseline === undefined) continue;
           const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - rate);
           if (nextBaseline < baseline) {
             pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
             state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
+            state.pairLastTightenBeat[pair] = state.beatCount;
             state.axisAdjustments++;
             if (context.currentRegime === 'coherent' && axisTightenScale > 0) state.coherentHotspotAxisAdj++;
             state.perAxisAdj[axis] = (V.optionalFinite(state.perAxisAdj[axis], 0)) + 1;
@@ -113,8 +117,10 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // regime duration, and recovery success history.
         const phaseBoosts = axis === 'phase'
           ? phaseFloorController.computeBoosts(share, state.phaseLowShareStreak, state.phaseCollapseStreak)
-          : { phaseCollapseBoost: 4.0, phaseFloorBoost: 1.0 };
-        const emergencyBoost = isPhaseCollapse ? phaseBoosts.phaseCollapseBoost : (isEmergencyStarved ? 3.0 : m.max(1.0, phaseBoosts.phaseFloorBoost));
+          : { phaseCollapseBoost: 4.0, phaseFloorBoost: 1.0, phaseRetractionMult: 1.0 };
+        const emergencyBoost = isPhaseCollapse ? phaseBoosts.phaseCollapseBoost
+          : (isEmergencyStarved ? 3.0
+          : m.max(1.0, phaseBoosts.phaseFloorBoost * (phaseBoosts.phaseRetractionMult || 1.0)));
         if (axis === 'phase') phaseFloorController.recordBoostApplied(emergencyBoost);
         // R5 E2: Symmetric giniMult in undershoot handler. Previously only
         // the overshoot handler used giniMult -- suppressed axes didn't recover
@@ -122,16 +128,21 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
         // self-reinforcing: dominant axes got tightened faster but starved axes
         // relaxed at a fixed slow rate regardless of Gini.
         const rate = config.AXIS_RELAX_RATE * pairScale * handOffRelaxBoost * nonNudgeableRelaxBoost * emergencyBoost * context.giniMult * clamp(deficit / config.FAIR_SHARE, 0.5, 2.0);
+        const crossWindowR = config.CROSS_INHIBIT_WINDOW || 6;
         for (let p = 0; p < pairs.length; p++) {
           const pair = pairs[p];
           // R86 E1: Bypass pair cooldowns when phase floor/extreme collapse is active
           if (!isPhaseFloorActive && !isPhaseExtremeCollapse && (V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
+          // Cross-inhibit: pair adjuster recently tightened this pair -- don't immediately reverse
+          if (!isPhaseFloorActive && !isPhaseExtremeCollapse &&
+              state.pairLastTightenBeat[pair] !== undefined && state.beatCount - state.pairLastTightenBeat[pair] < crossWindowR) continue;
           const baseline = V.optionalFinite(state.lastBaselines[pair]);
           if (baseline === undefined) continue;
           const nextBaseline = m.min(config.BASELINE_MAX, baseline + rate);
           if (nextBaseline > baseline) {
             pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
             state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
+            state.pairLastRelaxBeat[pair] = state.beatCount;
             state.axisAdjustments++;
             state.perAxisAdj[axis] = (V.optionalFinite(state.perAxisAdj[axis], 0)) + 1;
             state.regimeAxisAdj[context.regimeKey] = (state.regimeAxisAdj[context.regimeKey] || 0) + 1;
