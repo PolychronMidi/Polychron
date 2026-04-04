@@ -75,6 +75,24 @@ coordinationIndependenceManager = (() => {
 
   for (let i = 0; i < MODULE_PAIRS.length; i++) initPair(MODULE_PAIRS[i]);
 
+  // Cross-run warm-start: restore terminal dial and effectiveness state from previous run
+  try {
+    const _cimFs = require('fs');
+    const _cimPath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    if (_cimFs.existsSync(_cimPath)) {
+      const _cimState = JSON.parse(_cimFs.readFileSync(_cimPath, 'utf8'));
+      if (_cimState.cimDials && typeof _cimState.cimDials === 'object') {
+        for (let i = 0; i < MODULE_PAIRS.length; i++) {
+          const p = MODULE_PAIRS[i];
+          if (Number.isFinite(_cimState.cimDials[p])) dials[p] = clamp(_cimState.cimDials[p], 0, 1);
+          if (_cimState.cimEffectiveness && Number.isFinite(_cimState.cimEffectiveness[p])) {
+            effectiveness[p] = clamp(_cimState.cimEffectiveness[p], 0, 1);
+          }
+        }
+      }
+    }
+  } catch (_cimErr) { void _cimErr; }
+
   /**
    * Compute the target coordination level for a pair based on all signals.
    * @param {string} pair
