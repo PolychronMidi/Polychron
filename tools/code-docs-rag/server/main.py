@@ -6,6 +6,12 @@ import os
 import sys
 import logging
 
+# Ensure the tool root (parent of server/) is on sys.path so that rag_engine,
+# file_walker, symbols, etc. are importable regardless of how this script is launched.
+_tool_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _tool_root not in sys.path:
+    sys.path.insert(0, _tool_root)
+
 logging.basicConfig(
     level=logging.WARNING,
     format="%(asctime)s [%(levelname)s] %(message)s",
