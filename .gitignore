@@ -21,3 +21,5 @@ deepwiki.config.json
 /tools/*/venv/
 /tools/*/__pycache__/
 /tools/*/global_kb/
+/tools/**/__pycache__/
+*.bak
