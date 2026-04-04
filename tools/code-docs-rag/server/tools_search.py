@@ -10,6 +10,7 @@ from server.helpers import (
 )
 from rag_engine import summarize_chunk
 from symbols import find_callers as _find_callers, collect_all_symbols
+from analysis import find_similar_code as _find_similar
 
 logger = logging.getLogger("code-docs-rag")
 

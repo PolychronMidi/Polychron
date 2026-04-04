@@ -1,5 +1,6 @@
 """code-docs-rag knowledge tools."""
 import os
+import time
 import logging
 
 from server import context as ctx
@@ -190,7 +191,7 @@ def memory_dream() -> str:
                     discoveries.append((sim, rows[i]["title"], rows[j]["title"], rows[i]["id"], rows[j]["id"]))
     discoveries.sort(key=lambda x: -x[0])
     if not discoveries:
-        return f"Memory dream complete: {len(rows)} entries, no hidden connections found (all similarities < 0.50)."
+        return f"Memory dream complete: {len(rows)} entries, no hidden connections found (all similarities < 0.35)."
     parts = [f"# Memory Dream ({len(rows)} entries, {len(discoveries)} hidden connections)\n"]
     for sim, title_a, title_b, id_a, id_b in discoveries[:10]:
         parts.append(f"  {sim:.0%} similarity:")
