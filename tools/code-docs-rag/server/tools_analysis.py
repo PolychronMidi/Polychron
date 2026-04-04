@@ -115,7 +115,8 @@ def get_file_summary(file_path: str) -> str:
     parts = [f"File: {result['file']} ({result['lines']} lines)"]
 
     if result["by_kind"]:
-        kind_str = ", ".join(f"{v} {k}(s)" for k, v in sorted(result["by_kind"].items(), key=lambda x: -x[1]))
+        def _pl(n, w): return f"{n} {w}" if n == 1 else (f"{n} {w}es" if w.endswith(("s","sh","ch","x","z")) else f"{n} {w}s")
+        kind_str = ", ".join(_pl(v, k) for k, v in sorted(result["by_kind"].items(), key=lambda x: -x[1]))
         parts.append(f"Symbols: {kind_str}")
     else:
         parts.append("Symbols: none (data file or unsupported pattern)")
@@ -430,6 +431,8 @@ def what_did_i_forget(changed_files: str) -> str:
 @ctx.mcp.tool()
 def module_story(module_name: str) -> str:
     """Tell the story of a module: definition, evolution history from KB, callers, conventions, and current health. A living biography. Output is automatically scaled based on remaining context window — greedy when context is plentiful, minimal when tight."""
+    if not module_name.strip():
+        return "Error: module_name cannot be empty."
     budget = get_context_budget()
     limits = BUDGET_LIMITS[budget]
     parts = [f"# Module Story: {module_name} (context: {budget})\n"]
@@ -507,6 +510,8 @@ def module_story(module_name: str) -> str:
 @ctx.mcp.tool()
 def diagnose_error(error_text: str) -> str:
     """Paste a pipeline error. Returns: likely source file, relevant KB entries, similar past bugs, and fix patterns."""
+    if not error_text or not error_text.strip():
+        return "Error: error_text cannot be empty. Paste the error message or stack trace."
     parts = ["# Error Diagnosis\n"]
     # Extract symbol/file references from error text
     import re
@@ -864,6 +869,8 @@ def type_hierarchy(type_name: str = "") -> str:
 @ctx.mcp.tool()
 def cross_language_trace(symbol_name: str) -> str:
     """Trace a symbol across language boundaries: Rust definition, WASM bridge, and TypeScript/JavaScript callers. Reconstructs the full call chain from native code through FFI to the JS runtime. Useful for understanding cross-language dependencies and WASM integration points."""
+    if not symbol_name.strip():
+        return "Error: symbol_name cannot be empty."
     result = _trace_cross_lang(symbol_name, ctx.PROJECT_ROOT)
 
     parts = [f"Cross-language trace for '{symbol_name}':"]
