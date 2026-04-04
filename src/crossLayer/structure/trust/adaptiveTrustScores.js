@@ -267,9 +267,13 @@ adaptiveTrustScores = (() => {
   function getBaseWeight(systemName) {
     const state = ensure(systemName);
     let effectiveScore = state.score;
-    // Cadence Alignment Trust Minimum
+    // Intentional hypermeta exemptions (structural, not tuning targets):
+    // CADENCE_ALIGNMENT needs phrase boundaries to accumulate signal -- floor of 0.20 prevents
+    // permanent starvation before it has enough samples. No controller manages this because
+    // the starvation is sampling-rate-driven, not coupling-driven.
+    // STUTTER_CONTAGION capped at 0.55 to prevent rhythmic overcrowding when stutter trust
+    // compounds with high entropy. Structural ceiling that predates the controller chain.
     if (systemName === trustSystems.names.CADENCE_ALIGNMENT && effectiveScore < 0.20) effectiveScore = 0.20;
-    // Stutter Weight Dampening
     if (systemName === trustSystems.names.STUTTER_CONTAGION && effectiveScore > 0.55) effectiveScore = 0.55;
 
     const maxWeight = getAdaptiveDominanceCaps(systemName, effectiveScore).weightCap;
@@ -302,42 +306,9 @@ adaptiveTrustScores = (() => {
       ? m.min(baseWeight, blendedWeight)
       : blendedWeight;
     const context = adaptiveTrustScoresResolveContext();
-    const regime = context.regime;
-    const tensionShare = context.tensionShare;
-    const trustShare = context.trustShare;
-    const phaseShare = context.phaseShare;
-    if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE)
-      && regime === 'exploring'
-      && (pairAwareProfile.dominantPair === 'density-trust' || (pairAwareProfile.dominantPair === 'density-flicker' && trustShare > 0.17))) {
-      const densityTrustBrake = clamp(pairAwareProfile.pressure * 0.24 + pairAwareProfile.severePressure * 0.20 + clamp((trustShare - 0.17) / 0.07, 0, 1) * 0.10, 0.10, 0.34);
-      hotspotAwareWeight *= 1 - densityTrustBrake;
-    }
-    if ((systemName === trustSystems.names.STUTTER_CONTAGION || systemName === trustSystems.names.REST_SYNCHRONIZER || systemName === trustSystems.names.COHERENCE_MONITOR)
-      && (pairAwareProfile.dominantPair === 'flicker-trust' || pairAwareProfile.dominantPair === 'density-flicker' || pairAwareProfile.dominantPair === 'density-trust')) {
-      const lowPhasePressure = clamp((0.05 - phaseShare) / 0.05, 0, 1);
-      const trustAxisPressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
-      const flickerTrustBrake = clamp(pairAwareProfile.pressure * 0.20 + pairAwareProfile.severePressure * 0.20 + lowPhasePressure * 0.14 + trustAxisPressure * 0.16, 0.08, 0.34);
-      hotspotAwareWeight *= 1 - flickerTrustBrake;
-    }
-    if (systemName === trustSystems.names.ENTROPY_REGULATOR
-      && (pairAwareProfile.dominantPair === 'entropy-trust' || pairAwareProfile.severePair === 'entropy-trust')) {
-      const entropyTrustBrake = clamp(pairAwareProfile.pressure * 0.22 + pairAwareProfile.severePressure * 0.22 + clamp((trustShare - 0.15) / 0.06, 0, 1) * 0.08, 0.10, 0.30);
-      hotspotAwareWeight *= 1 - entropyTrustBrake;
-    }
-    if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE || systemName === trustSystems.names.COHERENCE_MONITOR)
-      && regime === 'exploring'
-      && pairAwareProfile.dominantPair === 'tension-trust') {
-      const tensionTrustBrake = clamp(pairAwareProfile.pressure * 0.20 + pairAwareProfile.severePressure * 0.18 + clamp((tensionShare - 0.18) / 0.08, 0, 1) * 0.12, 0.10, 0.32);
-      hotspotAwareWeight *= 1 - tensionTrustBrake;
-    }
-    if (trustShare > 0.17 && pairAwareProfile.pressure > 0.15) {
-      const dominanceBrake = clamp(context.trustAxisPressure * 0.10 + context.phaseLaneNeed * 0.12 + pairAwareProfile.pressure * 0.08 + pairAwareProfile.severePressure * 0.08, 0, 0.28);
-      hotspotAwareWeight *= 1 - dominanceBrake;
-    }
-    if (trustSurfacePressure > 0.12) {
-      const trustSurfaceBrake = clamp(trustSurfacePressure * 0.18 + trustClusterPressure * 0.24 + pairAwareProfile.severePressure * 0.10 + context.trustAxisPressure * 0.08, 0.06, 0.30);
-      hotspotAwareWeight *= 1 - trustSurfaceBrake;
-    }
+    hotspotAwareWeight = adaptiveTrustScoresHelpers.applyTrustBrakes(
+      systemName, pairAwareProfile, context, hotspotAwareWeight, trustClusterPressure, trustSurfacePressure
+    );
     const resolvedWeight = clamp(hotspotAwareWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
     adaptiveTrustScoresWeightCache.set(systemName, resolvedWeight);
     return resolvedWeight;
@@ -463,6 +434,12 @@ adaptiveTrustScores = (() => {
         if (vs.disengageBeats >= _DISENGAGE_BEATS) {
           vs.stagnantBeats = 0;
           vs.disengageBeats = 0;
+          // Partial strength reset: a system that escaped stagnation and stayed active
+          // long enough to disengage has proven itself. Allow partial recovery of nourishment
+          // capacity so future stagnation episodes aren't permanently weaker.
+          if (vs.effectiveStrength < _BASE_NOURISHMENT_STRENGTH * 0.7) {
+            vs.effectiveStrength = m.min(_BASE_NOURISHMENT_STRENGTH, vs.effectiveStrength / _NOURISHMENT_DECAY);
+          }
         }
       } else {
         // In between thresholds: hold current state (hysteresis band)

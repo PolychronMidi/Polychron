@@ -251,8 +251,58 @@ adaptiveTrustScoresHelpers = (() => {
     };
   }
 
+  /**
+   * Apply all 6 cascading trust brake conditions to hotspotAwareWeight.
+   * Extracted from adaptiveTrustScores.getWeight() to keep the main weight
+   * function as structural flow only.
+   * @param {string} systemName
+   * @param {{ pressure: number, severePressure: number, dominantPair: string, severePair: string }} profile
+   * @param {{ regime: string, tensionShare: number, trustShare: number, phaseShare: number, trustAxisPressure: number, phaseLaneNeed: number }} context
+   * @param {number} weight
+   * @param {number} trustClusterPressure
+   * @param {number} trustSurfacePressure
+   * @returns {number}
+   */
+  function applyTrustBrakes(systemName, profile, context, weight, trustClusterPressure, trustSurfacePressure) {
+    let w = weight;
+    if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE)
+      && context.regime === 'exploring'
+      && (profile.dominantPair === 'density-trust' || (profile.dominantPair === 'density-flicker' && context.trustShare > 0.17))) {
+      const densityTrustBrake = clamp(profile.pressure * 0.24 + profile.severePressure * 0.20 + clamp((context.trustShare - 0.17) / 0.07, 0, 1) * 0.10, 0.10, 0.34);
+      w *= 1 - densityTrustBrake;
+    }
+    if ((systemName === trustSystems.names.STUTTER_CONTAGION || systemName === trustSystems.names.REST_SYNCHRONIZER || systemName === trustSystems.names.COHERENCE_MONITOR)
+      && (profile.dominantPair === 'flicker-trust' || profile.dominantPair === 'density-flicker' || profile.dominantPair === 'density-trust')) {
+      const lowPhasePressure = clamp((0.05 - context.phaseShare) / 0.05, 0, 1);
+      const trustAxisPressure = clamp((context.trustShare - 0.17) / 0.08, 0, 1);
+      const flickerTrustBrake = clamp(profile.pressure * 0.20 + profile.severePressure * 0.20 + lowPhasePressure * 0.14 + trustAxisPressure * 0.16, 0.08, 0.34);
+      w *= 1 - flickerTrustBrake;
+    }
+    if (systemName === trustSystems.names.ENTROPY_REGULATOR
+      && (profile.dominantPair === 'entropy-trust' || profile.severePair === 'entropy-trust')) {
+      const entropyTrustBrake = clamp(profile.pressure * 0.22 + profile.severePressure * 0.22 + clamp((context.trustShare - 0.15) / 0.06, 0, 1) * 0.08, 0.10, 0.30);
+      w *= 1 - entropyTrustBrake;
+    }
+    if ((systemName === trustSystems.names.CADENCE_ALIGNMENT || systemName === trustSystems.names.CONVERGENCE || systemName === trustSystems.names.COHERENCE_MONITOR)
+      && context.regime === 'exploring'
+      && profile.dominantPair === 'tension-trust') {
+      const tensionTrustBrake = clamp(profile.pressure * 0.20 + profile.severePressure * 0.18 + clamp((context.tensionShare - 0.18) / 0.08, 0, 1) * 0.12, 0.10, 0.32);
+      w *= 1 - tensionTrustBrake;
+    }
+    if (context.trustShare > 0.17 && profile.pressure > 0.15) {
+      const dominanceBrake = clamp(context.trustAxisPressure * 0.10 + context.phaseLaneNeed * 0.12 + profile.pressure * 0.08 + profile.severePressure * 0.08, 0, 0.28);
+      w *= 1 - dominanceBrake;
+    }
+    if (trustSurfacePressure > 0.12) {
+      const trustSurfaceBrake = clamp(trustSurfacePressure * 0.18 + trustClusterPressure * 0.24 + profile.severePressure * 0.10 + context.trustAxisPressure * 0.08, 0.06, 0.30);
+      w *= 1 - trustSurfaceBrake;
+    }
+    return w;
+  }
+
   return {
     getAdaptiveDominanceCaps,
     getSystemPairHotspotProfile,
+    applyTrustBrakes,
   };
 })();
