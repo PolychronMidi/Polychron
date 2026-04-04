@@ -967,7 +967,7 @@ def _format_kb_corpus() -> str:
 
 
 def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
-                  kb_context: str = "") -> str | None:
+                  kb_context: str = "", effort: str | None = None) -> str | None:
     """Call Claude with adaptive thinking + two-level prompt caching.
 
     Cache breakpoints:
@@ -975,12 +975,14 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
       2. kb_context (stable content, 1h TTL) — cached as second system block when provided
 
     max_tokens and output_config.effort both scale with context window pressure.
+    Pass effort='high' to override for explicit reasoning calls (e.g. think tool).
     Thinking blocks use display='omitted' — tokens are processed but not streamed,
     reducing TTFT. We only extract the text blocks from the response.
     """
     if max_tokens is None:
         max_tokens = _get_max_tokens()
-    effort = _get_effort()
+    if effort is None:
+        effort = _get_effort()
     try:
         import httpx
         system_blocks: list[dict] = [
@@ -1091,9 +1093,11 @@ def think(about: str, context: str = "") -> str:
         user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
         if context:
             user_text += f"\n\n**Additional context:** {context}"
-        answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        # think is an explicit reasoning call — use high effort when context allows
+        think_effort = "high" if get_context_budget() in ("greedy", "moderate") else "low"
+        answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), effort=think_effort)
         if answer:
-            parts = [f"# Think: {about} *(adaptive, {_THINK_MODEL})*\n", answer]
+            parts = [f"# Think: {about} *(adaptive/{think_effort}, {_THINK_MODEL})*\n", answer]
             if kb_hits:
                 parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
             return "\n".join(parts)
