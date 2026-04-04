@@ -944,7 +944,24 @@ def _format_kb_corpus() -> str:
             lines.append("\n# Global Knowledge Base\n")
             for r in glob_rows:
                 lines.append(f"[global/{r['category']}] {r['title']}: {r['content'][:200]}")
-        return "\n".join(lines) if lines else ""
+        corpus = "\n".join(lines) if lines else ""
+        # Guard: if corpus exceeds ~40k tokens (≈160k chars), trim oldest entries first
+        if len(corpus) > 160_000:
+            if proj_rows:
+                proj_rows = proj_rows[:max(10, len(proj_rows) // 2)]
+            if glob_rows:
+                glob_rows = glob_rows[:max(5, len(glob_rows) // 2)]
+            lines = []
+            if proj_rows:
+                lines.append("# Project Knowledge Base (trimmed)\n")
+                for r in proj_rows:
+                    lines.append(f"[{r['category']}] {r['title']}: {r['content'][:300]}")
+            if glob_rows:
+                lines.append("\n# Global Knowledge Base (trimmed)\n")
+                for r in glob_rows:
+                    lines.append(f"[global/{r['category']}] {r['title']}: {r['content'][:200]}")
+            corpus = "\n".join(lines)
+        return corpus
     except Exception:
         return ""
 
@@ -1027,7 +1044,8 @@ def _warm_cache(api_key: str) -> None:
     def _warm():
         try:
             kb = _format_kb_corpus()
-            _claude_think("ping", api_key, max_tokens=1, kb_context=kb)
+            # min 10 tokens: adaptive thinking needs room for a valid text response block
+            _claude_think("ping", api_key, max_tokens=10, kb_context=kb)
             logger.info("_warm_cache: system + KB corpus cache warmed")
         except Exception as e:
             logger.debug(f"_warm_cache: {e}")
@@ -1044,8 +1062,22 @@ def think(about: str, context: str = "") -> str:
         "constraints": "What KB constraints apply to what I'm about to do? Have I called before_editing? Are there boundary rules I might violate?",
         "impact": "What could break from my changes? Have I checked callers? Are there compound effects with other recent changes?",
         "conventions": "Does my code follow project conventions? Line count? Naming? Registration? Architectural boundaries?",
+        "recent_changes": "What files changed recently? Are there unintended interactions between the recent changes?",
     }
     prompt = prompts.get(about, f"Reflect on: {about}")
+
+    # For recent_changes, fetch git context and inject as additional context
+    if about == "recent_changes" and not context:
+        try:
+            import subprocess as _sp
+            _log = _sp.run(
+                ["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "--since=6 hours ago", "--name-only", "--diff-filter=AM"],
+                capture_output=True, text=True, timeout=5
+            )
+            if _log.stdout.strip():
+                context = f"Recent git activity:\n{_log.stdout.strip()[:800]}"
+        except Exception:
+            pass
 
     # Gather KB context regardless of path
     kb_hits = ctx.project_engine.search_knowledge(about, top_k=5)
