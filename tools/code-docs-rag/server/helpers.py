@@ -11,12 +11,12 @@ CROSSLAYER_BOUNDARY_VIOLATIONS = [
     "systemDynamicsProfiler.", "pipelineCouplingManager.",
 ]
 
-# Budget-aware limits for composite tool output
+# Budget-aware limits for composite tool output — full 4-step scaling
 BUDGET_LIMITS = {
-    "greedy":       {"kb_entries": 5, "callers": 10, "symbols": 15, "kb_content": 200, "similar": 3},
-    "moderate":     {"kb_entries": 3, "callers": 8,  "symbols": 12, "kb_content": 150, "similar": 2},
-    "conservative": {"kb_entries": 2, "callers": 5,  "symbols": 8,  "kb_content": 100, "similar": 1},
-    "minimal":      {"kb_entries": 1, "callers": 3,  "symbols": 5,  "kb_content": 60,  "similar": 0},
+    "greedy":       {"kb_entries": 10, "callers": 20, "symbols": 25, "kb_content": 400, "similar": 5},
+    "moderate":     {"kb_entries": 5,  "callers": 10, "symbols": 15, "kb_content": 200, "similar": 3},
+    "conservative": {"kb_entries": 3,  "callers": 6,  "symbols": 10, "kb_content": 120, "similar": 1},
+    "minimal":      {"kb_entries": 1,  "callers": 3,  "symbols": 5,  "kb_content": 60,  "similar": 0},
 }
 
 

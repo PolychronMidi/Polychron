@@ -903,8 +903,8 @@ def _build_think_system() -> str:
 
 _THINK_SYSTEM = _build_think_system()
 
-# context budget → max_tokens for API responses
-_BUDGET_TOKENS = {"greedy": 2048, "moderate": 1024, "conservative": 512, "minimal": 256}
+# context budget → max_tokens for API responses — full 4-step scaling
+_BUDGET_TOKENS = {"greedy": 4096, "moderate": 2048, "conservative": 1024, "minimal": 256}
 
 # context budget → output_config.effort (Sonnet/Opus 4.6): full 4-step scaling
 _BUDGET_EFFORT = {"greedy": "high", "moderate": "medium", "conservative": "low", "minimal": "low"}

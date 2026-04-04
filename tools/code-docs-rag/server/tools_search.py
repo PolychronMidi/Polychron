@@ -174,7 +174,7 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
 def get_context(query: str, max_tokens: int = 0, language: str = "", path: str = "") -> str:
     """Token-budgeted context assembly with auto context-window awareness.
     max_tokens=0 means AUTO: reads /tmp/claude-context.json (from status line) to determine budget.
-    >75% remaining = greedy (8000), 50-75% = moderate (4000), 25-50% = conservative (2000), <25% = minimal (800).
+    >75% remaining = greedy (16000), 50-75% = moderate (8000), 25-50% = conservative (3000), <25% = minimal (800).
     max_tokens>0 means MANUAL override."""
     ctx.ensure_ready_sync()
     if not query or not query.strip():
@@ -188,15 +188,15 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
             _ctx_data = _json.load(open("/tmp/claude-context.json"))
             remaining = _ctx_data.get("remaining_pct", 50)
             if remaining > 75:
-                budget = 8000
+                budget = 16000
             elif remaining > 50:
-                budget = 4000
+                budget = 8000
             elif remaining > 25:
-                budget = 2000
+                budget = 3000
             else:
                 budget = 800
         except Exception:
-            budget = 4000  # safe default when context file unavailable
+            budget = 8000  # safe default when context file unavailable
     lang = language if language else None
     # When path filtering, search much wider to compensate for post-filter loss
     search_budget = budget * 8 if path else budget
