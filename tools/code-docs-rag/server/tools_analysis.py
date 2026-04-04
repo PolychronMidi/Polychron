@@ -302,6 +302,23 @@ def before_editing(file_path: str) -> str:
     module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
     parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]
 
+    # 0. Recent git commits for this file (temporal context for Claude synthesis)
+    _recent_commits = ""
+    try:
+        import subprocess as _sp
+        _git = _sp.run(
+            ["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "-5", "--", rel_path],
+            capture_output=True, text=True, timeout=3
+        )
+        if _git.stdout.strip():
+            _recent_commits = _git.stdout.strip()
+            parts.append("## Recent Commits")
+            for line in _recent_commits.splitlines():
+                parts.append(f"  {line}")
+            parts.append("")
+    except Exception:
+        pass
+
     # 1. KB constraints — keep all results since cross-encoder scores aren't 0-1 bounded
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=limits["kb_entries"])
     relevant_kb = kb_results
@@ -379,6 +396,7 @@ def before_editing(file_path: str) -> str:
             f"File about to be edited: {rel_path}\n"
             f"Dependents: {callers_summary}\n"
             f"Project KB constraints for this module:\n{kb_summary}\n"
+            + (f"Recent commits: {_recent_commits[:200]}\n" if _recent_commits else "")
             + (f"Key symbols: {sym_summary}\n" if sym_summary else "")
             + "\nIn 3 numbered points: what are the specific risks of editing this file? "
             "Be concrete about which callers could break, which architectural boundaries apply, "
@@ -566,11 +584,16 @@ def module_story(module_name: str) -> str:
     api_key = _get_api_key()
     if api_key:
         callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
+        kb_summary = "\n".join(
+            f"  [{k['category']}] {k['title']}: {k['content'][:100]}"
+            for k in relevant
+        ) if relevant else "none"
         user_text = (
             f"Module: {module_name}\n"
-            f"Dependents: {callers_summary}\n\n"
+            f"Dependents: {callers_summary}\n"
+            f"KB evolution history:\n{kb_summary}\n\n"
             "In 3 bullet points: what are the most important things to know before editing this module? "
-            "Focus on hidden invariants, caller contracts, and architectural constraints."
+            "Focus on hidden invariants, caller contracts, and architectural constraints visible in the history above."
         )
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
         if synthesis:
