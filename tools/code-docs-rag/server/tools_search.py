@@ -356,7 +356,7 @@ def find_similar_code(code_snippet: str, top_k: int = 10) -> str:
                 kb_hits.append(k)
                 seen_kb.add(k['id'])
     if kb_hits:
-        lines.append(format_knowledge_results(kb_hits, "\n## KB Constraints"))
+        lines.extend(format_knowledge_results(kb_hits, "\n## KB Constraints"))
     return "\n".join(lines)
 
 
