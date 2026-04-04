@@ -181,7 +181,7 @@ def memory_dream() -> str:
     for i in range(len(rows)):
         for j in range(i + 1, len(rows)):
             sim = float(np.dot(vecs[i], vecs[j]) / (np.linalg.norm(vecs[i]) * np.linalg.norm(vecs[j]) + 1e-10))
-            if sim > 0.50:
+            if sim > 0.35:
                 # Check if already linked
                 tags_i = rows[i].get("tags", "")
                 tags_j = rows[j].get("tags", "")
@@ -208,7 +208,8 @@ def knowledge_graph(query: str) -> str:
     results = ctx.project_engine.search_knowledge(query, top_k=8)
     if not results:
         return "No knowledge entries match this query."
-    # Spreading activation: for each result, also fetch entries it links to
+    # Spreading activation: fetch all KB entries once, then do ID-based graph traversal
+    all_entries = {e["id"]: e for e in ctx.project_engine.list_knowledge_full()}
     activated = []
     seen_ids = {r["id"] for r in results}
     for r in results:
@@ -218,13 +219,9 @@ def knowledge_graph(query: str) -> str:
         for tag in tags:
             # Extract linked entry IDs from typed relationships (e.g., "caused_by:abc123")
             linked_id = tag.split(":")[-1] if ":" in tag else tag
-            if len(linked_id) == 12 and linked_id not in seen_ids:
-                # Fetch the linked entry by searching for its ID
-                linked = ctx.project_engine.search_knowledge(linked_id, top_k=1)
-                for lk in linked:
-                    if lk["id"] not in seen_ids:
-                        activated.append(lk)
-                        seen_ids.add(lk["id"])
+            if len(linked_id) >= 8 and linked_id in all_entries and linked_id not in seen_ids:
+                activated.append(all_entries[linked_id])
+                seen_ids.add(linked_id)
     results = results + activated
     parts = [f"# Knowledge Graph: '{query}' ({len(results)} entries, {len(activated)} via activation)\n"]
     # Build adjacency from tags

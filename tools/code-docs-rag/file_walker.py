@@ -53,8 +53,10 @@ def init_config(project_root: str):
 
     dirs = rag_cfg.get("ragIgnoreDirs")
     if dirs and isinstance(dirs, list):
-        _config["ignore_dirs"] = set(dirs)
-        logger.info(f"ragIgnoreDirs loaded: {len(dirs)} entries")
+        # Merge with defaults rather than replace — losing 'tools'/'node_modules'/'.git'
+        # would cause the server to index itself or vendor dependencies
+        _config["ignore_dirs"] = set(DEFAULT_IGNORE_DIRS) | set(dirs)
+        logger.info(f"ragIgnoreDirs loaded: {len(dirs)} entries (merged with {len(DEFAULT_IGNORE_DIRS)} defaults)")
 
     patterns = rag_cfg.get("ragIgnore")
     if patterns and isinstance(patterns, list):

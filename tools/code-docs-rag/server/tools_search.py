@@ -125,12 +125,23 @@ def file_lines(file_path: str, start: int = 1, end: int = 0) -> str:
 
 @ctx.mcp.tool()
 def count_lines(path: str = "src", file_type: str = "js") -> str:
-    """Count lines per file in a directory, sorted largest-first with convention warnings. Use instead of wc -l. Flags files exceeding the project's 200-line target and 250-line hard limit. Returns the top 30 files by size, total line count, and number of oversize files. Useful for identifying extraction candidates and tracking code bloat."""
+    """Count lines per file in a directory, sorted largest-first with convention warnings. Use instead of wc -l. Flags files exceeding the project's 200-line target and 250-line hard limit. Returns the top 30 files by size, total line count, and number of oversize files. Useful for identifying extraction candidates and tracking code bloat. Can also be called with a file path to count a single file."""
     from file_walker import walk_code_files
+    if path == "":
+        path = "src"
     target = os.path.join(ctx.PROJECT_ROOT, path) if not os.path.isabs(path) else path
     if not os.path.realpath(target).startswith(os.path.realpath(ctx.PROJECT_ROOT)):
         return f"Error: path '{path}' is outside the project root."
     counts = []
+    # Handle file path directly (not just directories)
+    if os.path.isfile(target):
+        try:
+            n = sum(1 for _ in open(target, encoding="utf-8", errors="ignore"))
+            rel = target.replace(ctx.PROJECT_ROOT + "/", "")
+            flag = " *** OVERSIZE" if n > 250 else " * over target" if n > 200 else ""
+            return f"  {n:5d}  {rel}{flag}\n\nTotal: {n} lines"
+        except Exception as e:
+            return f"Error reading file: {e}"
     for fpath in walk_code_files(target):
         if not str(fpath).endswith(f".{file_type}"):
             continue
@@ -329,6 +340,22 @@ def find_similar_code(code_snippet: str, top_k: int = 10) -> str:
             f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
             f"({r['language']}, {fmt_score(r['score'])}) {summary}"
         )
+
+    # KB enrichment: surface constraints relevant to the top matching files
+    from helpers import format_knowledge_results
+    top_modules = list(dict.fromkeys(
+        os.path.basename(r['source']).replace('.js', '').replace('.ts', '').replace('.py', '')
+        for r in results[:3]
+    ))
+    kb_hits = []
+    seen_kb = set()
+    for mod in top_modules:
+        for k in ctx.project_engine.search_knowledge(mod, top_k=2):
+            if k['id'] not in seen_kb:
+                kb_hits.append(k)
+                seen_kb.add(k['id'])
+    if kb_hits:
+        lines.append(format_knowledge_results(kb_hits, "\n## KB Constraints"))
     return "\n".join(lines)
 
 
@@ -338,6 +365,8 @@ def find_callers(symbol_name: str, language: str = "", path: str = "", exclude_p
     """Find all call sites. Use path='src/crossLayer' to scope. Use exclude_path='src/conductor' to find boundary violations."""
     if not symbol_name.strip():
         return "Error: symbol_name cannot be empty."
+    if len(symbol_name.strip()) < 2:
+        return f"Error: symbol_name '{symbol_name}' is too short (min 2 chars) — would match too many sites."
     results = _find_callers(symbol_name, ctx.PROJECT_ROOT, lang_filter=language)
     # Scoped filtering
     if path:
