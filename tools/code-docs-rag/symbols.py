@@ -681,6 +681,10 @@ def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> 
         re.compile(rf'\.{re.escape(symbol_name)}\s*\('),
         # Dotted method access: `object.method(` where object is the symbol
         re.compile(rf'\b{re.escape(symbol_name)}\.\w+\s*\('),
+        # Variable assignment: `const x = symbolName` or `= symbolName.prop`
+        re.compile(rf'=\s*{re.escape(symbol_name)}\b'),
+        # Property read: `symbolName.prop` (not already covered by dotted method)
+        re.compile(rf'\b{re.escape(symbol_name)}\.\w+'),
     ]
 
     def_patterns = [
