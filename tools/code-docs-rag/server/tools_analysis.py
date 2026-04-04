@@ -364,20 +364,16 @@ def before_editing(file_path: str) -> str:
 
     # Adaptive synthesis: what are the specific edit risks?
     api_key = _get_api_key()
-    if api_key and relevant_kb:
-        kb_summary = "\n".join(
-            f"[{k['category']}] {k['title']}: {k['content'][:200]}" for k in relevant_kb[:5]
-        )
+    if api_key:
         callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
         user_text = (
             f"File about to be edited: {rel_path}\n"
             f"Dependents: {callers_summary}\n\n"
-            f"KB constraints:\n{kb_summary}\n\n"
             "In 3 numbered points: what are the specific risks of editing this file? "
             "Include: which callers could break, which architectural boundaries to respect, "
             "and any constants or invariants that must not change."
         )
-        synthesis = _claude_think(user_text, api_key, max_tokens=512)
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
         if synthesis:
             parts.append(f"\n## Edit Risks *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -455,18 +451,20 @@ def what_did_i_forget(changed_files: str) -> str:
     parts.append("  - index_codebase after running pipeline")
     parts.append("  - add_knowledge for any new calibration anchors or decisions")
 
-    # Adaptive synthesis: what specific things might have been missed?
+    # Adaptive synthesis: always run when API key available — missed things aren't only in warnings
     api_key = _get_api_key()
-    if api_key and all_warnings:
-        warnings_text = "\n".join(all_warnings[:15])
+    if api_key:
+        warnings_text = "\n".join(all_warnings[:15]) if all_warnings else "none"
+        docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
         user_text = (
-            f"Changed files: {changed_files}\n\n"
-            f"Audit warnings:\n{warnings_text}\n\n"
+            f"Changed files: {changed_files}\n"
+            f"Audit warnings: {warnings_text}\n"
+            f"Docs that may need updating: {docs_text}\n\n"
             "In 3 numbered points: what specific things might the developer have forgotten? "
-            "Focus on: missed doc updates, boundary rules that need verification, "
-            "and follow-on changes required by the KB constraints above."
+            "Consider: registration requirements, doc sync, boundary rules, follow-on changes, "
+            "and anything the warnings above don't capture."
         )
-        synthesis = _claude_think(user_text, api_key, max_tokens=512)
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
         if synthesis:
             parts.append(f"\n## What You May Have Missed *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -554,19 +552,15 @@ def module_story(module_name: str) -> str:
 
     # Adaptive synthesis: top 3 things to know before editing
     api_key = _get_api_key()
-    if api_key and kb_results:
-        kb_summary = "\n".join(
-            f"[{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:6]
-        )
+    if api_key:
         callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
         user_text = (
             f"Module: {module_name}\n"
             f"Dependents: {callers_summary}\n\n"
-            f"KB history:\n{kb_summary}\n\n"
             "In 3 bullet points: what are the most important things to know before editing this module? "
             "Focus on hidden invariants, caller contracts, and architectural constraints."
         )
-        synthesis = _claude_think(user_text, api_key, max_tokens=512)
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
         if synthesis:
             parts.append(f"\n## Key Constraints *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -620,19 +614,17 @@ def diagnose_error(error_text: str) -> str:
     if not file_refs and not kb_results and not unique_symbols:
         parts.append("\nNo specific diagnosis available. Try search_knowledge with key terms from the error.")
 
-    # Adaptive thinking synthesis: if API key available, ask Claude to produce fix steps
+    # Adaptive thinking synthesis: root cause + fix steps, KB grounded via corpus cache
     api_key = _get_api_key()
     if api_key:
-        kb_summary = "\n".join(
-            f"[{k['category']}] {k['title']}: {k['content'][:150]}" for k in kb_results[:5]
-        ) if kb_results else "None"
         user_text = (
             f"Error:\n{error_text[:600]}\n\n"
-            f"Related KB entries:\n{kb_summary}\n\n"
-            "Based on the error and KB context, provide: (1) most likely root cause in one sentence, "
-            "(2) exact fix steps as a numbered list, (3) any boundary/architectural rule to check."
+            "Based on the error and the project KB, provide: "
+            "(1) most likely root cause in one sentence, "
+            "(2) exact fix steps as a numbered list, "
+            "(3) any boundary/architectural rule to check."
         )
-        synthesis = _claude_think(user_text, api_key, max_tokens=1024)
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
         if synthesis:
             parts.append(f"\n## Fix Synthesis *(adaptive, {_THINK_MODEL})*")
             parts.append(synthesis)
@@ -839,9 +831,8 @@ def _get_api_key() -> str:
     return ""
 
 
-# RAG_THINK_MODEL: defaults to Opus 4.6 for deep-analysis tools (think, diagnose_error,
-# module_story, before_editing, what_did_i_forget). Override with RAG_THINK_MODEL=claude-sonnet-4-6
-# if cost is a concern. Adaptive thinking is supported on both.
+# RAG_THINK_MODEL: defaults to claude-sonnet-4-6. Adaptive thinking is supported on all
+# Claude 4 models. Override via RAG_THINK_MODEL env var (e.g. claude-opus-4-6).
 _THINK_MODEL = os.environ.get("RAG_THINK_MODEL", "claude-sonnet-4-6")
 
 _THINK_SYSTEM = (
@@ -851,29 +842,75 @@ _THINK_SYSTEM = (
     "Be direct — no preamble, no trailing summaries."
 )
 
+# context budget → max_tokens for API responses
+_BUDGET_TOKENS = {"greedy": 2048, "moderate": 1024, "conservative": 512, "minimal": 256}
 
-def _claude_think(user_text: str, api_key: str, max_tokens: int = 2048) -> str | None:
-    """Call Claude with adaptive thinking + cached system prompt. Returns text or None on failure."""
+
+def _get_max_tokens(default: int = 1024) -> int:
+    """Scale max_tokens by remaining context window pressure."""
+    budget = get_context_budget()
+    return _BUDGET_TOKENS.get(budget, default)
+
+
+def _format_kb_corpus() -> str:
+    """Dump all KB entries as a cacheable context block. Called once per cache window."""
+    try:
+        rows = ctx.project_engine.list_knowledge_full()
+        if not rows:
+            return ""
+        lines = ["# Project Knowledge Base\n"]
+        for r in rows:
+            lines.append(f"[{r['category']}] {r['title']}: {r['content'][:300]}")
+        return "\n".join(lines)
+    except Exception:
+        return ""
+
+
+def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
+                  kb_context: str = "") -> str | None:
+    """Call Claude with adaptive thinking + two-level prompt caching.
+
+    Cache breakpoints:
+      1. _THINK_SYSTEM (stable across all calls) — cached as first system block
+      2. kb_context (stable within ~5min window) — cached as second system block when provided
+
+    max_tokens defaults to context-budget-scaled value if not specified.
+    """
+    if max_tokens is None:
+        max_tokens = _get_max_tokens()
     try:
         import httpx
+        system_blocks: list[dict] = [
+            {"type": "text", "text": _THINK_SYSTEM, "cache_control": {"type": "ephemeral"}},
+        ]
+        if kb_context:
+            system_blocks.append(
+                {"type": "text", "text": kb_context, "cache_control": {"type": "ephemeral"}}
+            )
         resp = httpx.post(
             "https://api.anthropic.com/v1/messages",
             headers={
                 "x-api-key": api_key,
                 "content-type": "application/json",
                 "anthropic-version": "2023-06-01",
+                "anthropic-beta": "prompt-caching-2024-07-31",
             },
             json={
                 "model": _THINK_MODEL,
                 "max_tokens": max_tokens,
                 "thinking": {"type": "adaptive"},
-                "system": [{"type": "text", "text": _THINK_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+                "system": system_blocks,
                 "messages": [{"role": "user", "content": user_text}],
             },
             timeout=45.0,
         )
         if resp.status_code == 200:
             data = resp.json()
+            usage = data.get("usage", {})
+            cache_read = usage.get("cache_read_input_tokens", 0)
+            cache_write = usage.get("cache_creation_input_tokens", 0)
+            if cache_read or cache_write:
+                logger.info(f"_claude_think: cache_read={cache_read} cache_write={cache_write}")
             return " ".join(
                 b["text"] for b in data.get("content", []) if b.get("type") == "text"
             ).strip() or None
@@ -881,6 +918,22 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int = 2048) -> str |
     except Exception as e:
         logger.warning(f"_claude_think: {e}")
     return None
+
+
+def _warm_cache(api_key: str) -> None:
+    """Pre-warm the system prompt + KB corpus cache in a background thread.
+
+    Fires at startup (from context.py) so the first real tool call hits cached blocks.
+    """
+    import threading
+    def _warm():
+        try:
+            kb = _format_kb_corpus()
+            _claude_think("ping", api_key, max_tokens=1, kb_context=kb)
+            logger.info("_warm_cache: system + KB corpus cache warmed")
+        except Exception as e:
+            logger.debug(f"_warm_cache: {e}")
+    threading.Thread(target=_warm, daemon=True, name="cdr-cache-warm").start()
 
 
 @ctx.mcp.tool()
@@ -908,9 +961,7 @@ def think(about: str, context: str = "") -> str:
         user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
         if context:
             user_text += f"\n\n**Additional context:** {context}"
-        if kb_block:
-            user_text += f"\n\n{kb_block}"
-        answer = _claude_think(user_text, api_key)
+        answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
         if answer:
             parts = [f"# Think: {about} *(adaptive, {_THINK_MODEL})*\n", answer]
             if kb_hits:
