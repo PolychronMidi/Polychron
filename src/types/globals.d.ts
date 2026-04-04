@@ -279,6 +279,7 @@ interface AdaptiveTrustScoresAPI {
   decayAll(rate?: number): void;
   getSnapshot(): Record<string, any>;
   getJournal(): { section: number; beat: number; systemName: string; payoff: number; scoreBefore: number; scoreAfter: number; ms: number }[];
+  getScores(): Record<string, number>;
   setCoordinationScale(scale: number): void;
   reset(): void;
 }

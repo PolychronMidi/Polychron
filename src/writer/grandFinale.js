@@ -87,6 +87,7 @@ grandFinale = () => {
     const hmSnap = safePreBoot.call(() => hyperMetaManager.getSnapshot(), null);
     const rcReadiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
     const cimSnap = safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null);
+    const trustScores = safePreBoot.call(() => adaptiveTrustScores.getScores(), null);
     const adaptiveState = {
       healthEma: hmSnap ? hmSnap.healthEma : 0.7,
       exceedanceTrendEma: hmSnap ? hmSnap.exceedanceTrendEma : 0,
@@ -95,6 +96,7 @@ grandFinale = () => {
       coherentThresholdScale: rcReadiness ? rcReadiness.thresholdScale : 0.65,
       cimDials: cimSnap ? cimSnap.dials : null,
       cimEffectiveness: cimSnap ? cimSnap.effectiveness : null,
+      trustScores: trustScores || null,
       // Cross-run personality: what this composition was like
       lastRunPersonality: {
         narrative: lastNarration ? lastNarration.narrative : 'balanced evolving',
