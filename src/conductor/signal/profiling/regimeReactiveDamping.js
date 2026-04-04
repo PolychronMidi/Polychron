@@ -84,6 +84,10 @@ regimeReactiveDamping = (() => {
   let regimeReactiveDampingEqCorrD = 0;
   let regimeReactiveDampingEqCorrT = 0;
   let regimeReactiveDampingEqCorrF = 0;
+  // Effectiveness tracking: if exploring share persistently exceeds budget despite corrections,
+  // escalate equilibStrength by up to 50%. Resets when exploring returns to budget.
+  let regimeReactiveDampingEqExcessEma = 0;
+  let regimeReactiveDampingDynamicEquilibStrength = _EQUILIB_STRENGTH;
 
   let regimeReactiveDampingExploringBeats = 0;
   let regimeReactiveDampingTensionPinStreak = 0;
@@ -120,7 +124,7 @@ regimeReactiveDamping = (() => {
       regimeRing: regimeReactiveDampingRegimeRing,
       regimeRingSize: _REGIME_RING_SIZE,
       regimeBudget: _REGIME_BUDGET,
-      equilibStrength: _EQUILIB_STRENGTH,
+      equilibStrength: regimeReactiveDampingDynamicEquilibStrength,
       eqCorrD: regimeReactiveDampingEqCorrD,
       eqCorrT: regimeReactiveDampingEqCorrT,
       eqCorrF: regimeReactiveDampingEqCorrF,
@@ -133,6 +137,14 @@ regimeReactiveDamping = (() => {
     regimeReactiveDampingEqCorrD = equilibratorState.eqCorrD * conductorMetaWatchdog.getAttenuation('density', 'equilibrator');
     regimeReactiveDampingEqCorrT = equilibratorState.eqCorrT * conductorMetaWatchdog.getAttenuation('tension', 'equilibrator');
     regimeReactiveDampingEqCorrF = equilibratorState.eqCorrF * conductorMetaWatchdog.getAttenuation('flicker', 'equilibrator');
+    // Effectiveness tracking: update EMA of persistent exploring excess; escalate strength if corrections fail.
+    const ringLen = regimeReactiveDampingRegimeRing.length;
+    const ringExpShare = ringLen > 0
+      ? regimeReactiveDampingRegimeRing.filter(/** @param {string} r */ (r) => r === 'exploring').length / ringLen
+      : 0;
+    const expExcessNow = m.max(0, ringExpShare - _REGIME_BUDGET.exploring);
+    regimeReactiveDampingEqExcessEma = regimeReactiveDampingEqExcessEma * 0.95 + expExcessNow * 0.05;
+    regimeReactiveDampingDynamicEquilibStrength = _EQUILIB_STRENGTH * (1 + clamp(regimeReactiveDampingEqExcessEma / 0.10, 0, 0.5));
 
     const velocity = snap ? (V.optionalFinite(snap.velocity, 0)) : 0;
     if (velocity < LOW_VEL_THRESHOLD) {

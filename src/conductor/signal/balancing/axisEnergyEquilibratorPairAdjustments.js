@@ -123,7 +123,9 @@ axisEnergyEquilibratorPairAdjustments = (() => {
           else state.coldspotSkipReasons.residual++;
           continue;
         }
-        const nextBaseline = m.min(config.BASELINE_MAX, baseline + config.PAIR_RELAX_RATE);
+        // Proportional relax: deeper cold -> faster recovery, mirroring tighten's overshoot scaling.
+        const undershoot = clamp((config.COLDSPOT_RATIO * baseline - rolling) / m.max(config.COLDSPOT_RATIO * baseline, 0.01), 0, 1);
+        const nextBaseline = m.min(config.BASELINE_MAX, baseline + config.PAIR_RELAX_RATE * (1 + undershoot * 1.5));
         if (nextBaseline > baseline) {
           pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
           state.pairCooldowns[pair] = config.PAIR_COOLDOWN;
