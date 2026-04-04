@@ -366,12 +366,23 @@ def before_editing(file_path: str) -> str:
     api_key = _get_api_key()
     if api_key:
         callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
+        kb_summary = "\n".join(
+            f"  [{k['category']}] {k['title']}: {k['content'][:120]}"
+            for k in relevant_kb
+        ) if relevant_kb else "none"
+        sym_summary = ""
+        if not result.get("error") and result.get("symbols"):
+            sym_summary = ", ".join(
+                f"L{s['line']}:{s['name']}" for s in result["symbols"][:8]
+            )
         user_text = (
             f"File about to be edited: {rel_path}\n"
-            f"Dependents: {callers_summary}\n\n"
-            "In 3 numbered points: what are the specific risks of editing this file? "
-            "Include: which callers could break, which architectural boundaries to respect, "
-            "and any constants or invariants that must not change."
+            f"Dependents: {callers_summary}\n"
+            f"Project KB constraints for this module:\n{kb_summary}\n"
+            + (f"Key symbols: {sym_summary}\n" if sym_summary else "")
+            + "\nIn 3 numbered points: what are the specific risks of editing this file? "
+            "Be concrete about which callers could break, which architectural boundaries apply, "
+            "and any invariants (coupling targets, registration order, layer isolation) that must not change."
         )
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
         if synthesis:
@@ -593,6 +604,11 @@ def diagnose_error(error_text: str) -> str:
     # Search KB for similar bugs — by error message AND by module names from stack
     kb_query = error_type.group(2)[:60] if error_type else error_text[:80]
     kb_results = ctx.project_engine.search_knowledge(kb_query, top_k=5)
+    # Also search global KB for cross-project patterns
+    if ctx.global_engine:
+        glob_hits = ctx.global_engine.search_knowledge(kb_query, top_k=2)
+        kb_results.extend([dict(k, title=f"[global] {k['title']}") for k in glob_hits
+                           if k["id"] not in {r["id"] for r in kb_results}])
     # Also search by module names from file refs for broader matches
     for fpath, _ in file_refs[:3]:
         module = os.path.basename(fpath).replace('.js', '').replace('.ts', '')
@@ -1073,6 +1089,22 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
             f = r.strip().split(":")[0]
             all_files.add(f)
     parts.append(f"Files affected: {len(all_files)}")
+
+    api_key = _get_api_key()
+    if api_key and total > 0:
+        depth_summary = "; ".join(f"depth {d}: {len(r)} sites" for d, r in layers)
+        user_text = (
+            f"Symbol changed: {symbol_name}\n"
+            f"Blast radius: {total} call sites in {len(all_files)} files ({depth_summary})\n\n"
+            "In 3 points: (1) which callers at depth 1 are highest-risk to break, "
+            "(2) what integration tests or validation steps are most important, "
+            "(3) any cascade effects to watch for in deeper layers."
+        )
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        if synthesis:
+            parts.append(f"\n## Change Risk *(adaptive, {_THINK_MODEL})*")
+            parts.append(synthesis)
+
     return "\n".join(parts)
 
 
