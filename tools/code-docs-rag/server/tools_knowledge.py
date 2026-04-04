@@ -319,6 +319,31 @@ def knowledge_graph(query: str) -> str:
         parts.append(f"\n## Implication: bugfix + pattern entries both match -- check if the fix addresses the pattern root cause")
     if "decision" in categories and "architecture" in categories:
         parts.append(f"\n## Implication: decision + architecture entries both match -- verify the decision respects the architectural boundary")
+
+    # Adaptive synthesis: what does this KB cluster mean right now?
+    try:
+        from server.tools_analysis import _get_api_key, _claude_think, _THINK_MODEL, _format_kb_corpus
+        api_key = _get_api_key()
+        if api_key and results:
+            cluster_text = "\n".join(
+                f"  [{r['category']}] {r['title']}: {r['content'][:120]}"
+                for r in results[:8]
+            )
+            conn_text = f"{len(unique_connections)} connections" if unique_connections else "no explicit connections"
+            user_text = (
+                f"Knowledge graph query: '{query}'\n"
+                f"Activated entries ({len(results)}, {conn_text}):\n{cluster_text}\n\n"
+                "In 3 points: (1) what is the common theme or causal chain in this KB cluster, "
+                "(2) what current architectural risk does it highlight, "
+                "(3) which entry is most important to act on first?"
+            )
+            synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), max_tokens=512)
+            if synthesis:
+                parts.append(f"\n## Cluster Analysis *(adaptive, {_THINK_MODEL})*")
+                parts.append(synthesis)
+    except Exception:
+        pass
+
     return "\n".join(parts)
 
 
