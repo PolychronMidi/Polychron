@@ -22,6 +22,9 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: str
     valid_categories = {"architecture", "decision", "pattern", "bugfix", "general"}
     if category not in valid_categories:
         return f"Error: invalid category '{category}'. Valid: {', '.join(sorted(valid_categories))}"
+    # Accept both comma-separated string and list (LLM agents sometimes pass lists)
+    if isinstance(tags, list):
+        tags = ",".join(str(t) for t in tags)
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
     results = []
 
