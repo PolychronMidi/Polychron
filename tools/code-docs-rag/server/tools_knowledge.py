@@ -393,6 +393,18 @@ def kb_health() -> str:
         for s in stale:
             parts.append(s)
     parts.append(f"\n## Healthy: {len(healthy)} entries")
+    # Check global KB too
+    if ctx.global_engine:
+        glob_rows = ctx.global_engine.list_knowledge_full()
+        if glob_rows:
+            glob_stale = []
+            for entry in glob_rows:
+                ts = entry.get("timestamp", 0)
+                if ts > 0 and (time.time() - ts) / 86400 > 90:
+                    glob_stale.append(f"  [{entry.get('id','?')[:8]}] {entry.get('title','')}: {(time.time()-ts)/86400:.0f} days old")
+            parts.append(f"\n## Global KB: {len(glob_rows)} entries" + (f", {len(glob_stale)} aged >90 days" if glob_stale else ", all fresh"))
+            for s in glob_stale[:5]:
+                parts.append(s)
     return "\n".join(parts)
 
 
