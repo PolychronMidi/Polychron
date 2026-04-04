@@ -178,8 +178,8 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
         # Auto-detect from status line context file
         try:
             import json as _json
-            ctx = _json.load(open("/tmp/claude-context.json"))
-            remaining = ctx.get("remaining_pct", 50)
+            _ctx_data = _json.load(open("/tmp/claude-context.json"))
+            remaining = _ctx_data.get("remaining_pct", 50)
             if remaining > 75:
                 budget = 8000
             elif remaining > 50:
@@ -235,8 +235,8 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
     ctx_info = ""
     try:
         import json as _json
-        ctx = _json.load(open("/tmp/claude-context.json"))
-        ctx_info = f" | context: {ctx.get('remaining_pct', '?')}% remaining"
+        _ctx_data = _json.load(open("/tmp/claude-context.json"))
+        ctx_info = f" | context: {_ctx_data.get('remaining_pct', '?')}% remaining"
     except Exception:
         pass
     parts.append(f"\n---\nUsed ~{total_tokens} tokens of {budget} budget ({len(results)} chunks){ctx_info}")
