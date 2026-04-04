@@ -63,16 +63,10 @@ globalConductor = (() => {
     const phaseRecoveryPressure = clamp((0.08 - phaseShare) / 0.08, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.18) / 0.08, 0, 1);
     const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const couplingMatrix = dynamics && dynamics.couplingMatrix ? dynamics.couplingMatrix : null;
-    const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number'
-      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.74) / 0.18, 0, 1)
-      : 0;
-    const densityTrustPressure = couplingMatrix && typeof couplingMatrix['density-trust'] === 'number'
-      ? clamp((m.abs(couplingMatrix['density-trust']) - 0.72) / 0.18, 0, 1)
-      : 0;
-    const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number'
-      ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.74) / 0.18, 0, 1)
-      : 0;
+    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {});
+    const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.74) / 0.18, 0, 1);
+    const densityTrustPressure = clamp(((couplingPressures['density-trust'] || 0) - 0.72) / 0.18, 0, 1);
+    const flickerTrustPressure = clamp(((couplingPressures['flicker-trust'] || 0) - 0.74) / 0.18, 0, 1);
     const hotspotContainmentPressure = clamp(
       densityFlickerPressure * 0.48 + densityTrustPressure * 0.34 + flickerTrustPressure * 0.28 + phaseRecoveryPressure * 0.24 + trustSharePressure * 0.22,
       0,

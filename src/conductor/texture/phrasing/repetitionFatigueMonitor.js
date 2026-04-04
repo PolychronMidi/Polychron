@@ -78,11 +78,8 @@ repetitionFatigueMonitor = (() => {
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
     const lowPhasePressure = clamp((0.12 - phaseShare) / 0.12, 0, 1);
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
-    const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
-      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
-      : 0;
+    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {});
+    const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
     const relief = clamp(edgePressure * 0.40 + lowPhasePressure * 0.30 + densityFlickerPressure * 0.30, 0, 0.75);
     penalty = 1.0 + (penalty - 1.0) * (1 - relief);
     return penalty;

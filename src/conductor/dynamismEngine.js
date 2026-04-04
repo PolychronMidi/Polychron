@@ -155,14 +155,10 @@ dynamismEngine = (() => {
     const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
       ? axisEnergy.shares.trust
       : 1.0 / 6.0;
-    const couplingMatrix = dynamics && dynamics.couplingMatrix ? dynamics.couplingMatrix : null;
     const dynamicSnap = /** @type {any} */ (dynamics);
-    const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number'
-      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.74) / 0.18, 0, 1)
-      : 0;
-    const densityTrustPressure = couplingMatrix && typeof couplingMatrix['density-trust'] === 'number'
-      ? clamp((m.abs(couplingMatrix['density-trust']) - 0.72) / 0.18, 0, 1)
-      : 0;
+    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {});
+    const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.74) / 0.18, 0, 1);
+    const densityTrustPressure = clamp(((couplingPressures['density-trust'] || 0) - 0.72) / 0.18, 0, 1);
     const recoveryContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.40, 0, 1);
     const activeProfileName = conductorConfig.getActiveProfileName();
     const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'

@@ -151,19 +151,14 @@ entropyRegulator = (() => {
       let arcWeight = ARC_BLEND_WEIGHT;
       let intentWeight = INTENT_BLEND_WEIGHT;
       let targetTrim = 0;
-      const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-      const couplingMatrix = snap && snap.couplingMatrix ? snap.couplingMatrix : null;
+      const couplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
       const sectionProgress = safePreBoot.call(() => timeStream.normalizedProgress('section'), 0.5);
       const edgeDistance = typeof sectionProgress === 'number' && Number.isFinite(sectionProgress)
         ? m.min(clamp(sectionProgress, 0, 1), clamp(1 - sectionProgress, 0, 1))
         : 0.5;
       const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
-      const densityEntropyPressure = couplingMatrix && typeof couplingMatrix['density-entropy'] === 'number' && Number.isFinite(couplingMatrix['density-entropy'])
-        ? clamp((m.abs(couplingMatrix['density-entropy']) - 0.50) / 0.20, 0, 1)
-        : 0;
-      const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
-        ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.80) / 0.16, 0, 1)
-        : 0;
+      const densityEntropyPressure = clamp(((couplingPressures['density-entropy'] || 0) - 0.50) / 0.20, 0, 1);
+      const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
       const bridgeAxis = conductorSignalBridge.getSignals().axisEnergyShares;
       const phaseShare = bridgeAxis && typeof bridgeAxis.phase === 'number'
         ? bridgeAxis.phase

@@ -48,14 +48,8 @@ adaptiveTrustScoresHelpers = (() => {
     }
     const pairList = pairAwareHotspotPairs[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
     const pairWeights = pairAwarePairWeights[systemName] || /** @type {Record<string, number>} */ ({});
-    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const couplingMatrix = dynamics ? dynamics.couplingMatrix : undefined;
+    const couplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
     const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
-    if (!couplingMatrix) {
-      const emptyProfile = { pressure: 0, dominantPair: '', hotspotPairs: [], severePressure: 0, severePair: '' };
-      adaptiveTrustScoresHelpersHotspotCache.set(systemName, emptyProfile);
-      return emptyProfile;
-    }
 
     const hotspotPairs = [];
     let maxPressure = 0;
@@ -68,9 +62,8 @@ adaptiveTrustScoresHelpers = (() => {
     let trustHotPairCount = 0;
     for (let i = 0; i < pairList.length; i++) {
       const pair = pairList[i];
-      const rawCorrelation = couplingMatrix[pair];
-      if (!V.optionalType(rawCorrelation, 'number') || !Number.isFinite(rawCorrelation)) continue;
-      const absCorrelation = m.abs(rawCorrelation);
+      const absCorrelation = couplingPressures[pair];
+      if (typeof absCorrelation !== 'number') continue;
       const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
         ? adaptiveSnapshot[pair]
         : null;
@@ -171,17 +164,15 @@ adaptiveTrustScoresHelpers = (() => {
     }
 
     let trustHotspotPressure = 0;
-    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const couplingMatrix = dynamics ? dynamics.couplingMatrix : undefined;
-    if (couplingMatrix) {
+    const trustCouplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
+    {
       const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust', 'entropy-trust'];
       let maxTrustCorrelation = 0;
       let sumTrustCorrelation = 0;
       let trustPairCount = 0;
       for (let i = 0; i < trustPairs.length; i++) {
-        const correlation = couplingMatrix[trustPairs[i]];
-        if (!V.optionalType(correlation, 'number') || !Number.isFinite(correlation)) continue;
-        const absCorrelation = m.abs(correlation);
+        const absCorrelation = trustCouplingPressures[trustPairs[i]];
+        if (typeof absCorrelation !== 'number') continue;
         maxTrustCorrelation = m.max(maxTrustCorrelation, absCorrelation);
         sumTrustCorrelation += absCorrelation;
         trustPairCount++;

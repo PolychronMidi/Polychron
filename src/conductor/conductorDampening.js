@@ -144,9 +144,9 @@ conductorDampening = (() => {
           const edgeDistance = m.min(clamp(sectionProgress, 0, 1), clamp(1 - sectionProgress, 0, 1));
           edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
         }
-        const snap = systemDynamicsProfiler.getSnapshot();
-        if (snap && snap.couplingMatrix && typeof snap.couplingMatrix['density-entropy'] === 'number' && Number.isFinite(snap.couplingMatrix['density-entropy'])) {
-          densityEntropyPressure = clamp((m.abs(snap.couplingMatrix['density-entropy']) - 0.50) / 0.20, 0, 1);
+        const couplingPressures = pipelineCouplingManager.getCouplingPressures();
+        if (couplingPressures['density-entropy']) {
+          densityEntropyPressure = clamp((couplingPressures['density-entropy'] - 0.50) / 0.20, 0, 1);
         }
       } catch { /* boot-safety: dependency may not be ready */
         // Axis energy is not always available during early boot.

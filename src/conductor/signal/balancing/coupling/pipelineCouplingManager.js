@@ -23,6 +23,7 @@ pipelineCouplingManager = (() => {
     axisCouplingTotals: null,
     axisEnergyShare: null,
     couplingGates: null,
+    rawPairAbsValues: null,
   };
 
   function pipelineCouplingManagerInvalidateCache() {
@@ -30,6 +31,7 @@ pipelineCouplingManager = (() => {
     pipelineCouplingManagerCache.axisCouplingTotals = null;
     pipelineCouplingManagerCache.axisEnergyShare = null;
     pipelineCouplingManagerCache.couplingGates = null;
+    pipelineCouplingManagerCache.rawPairAbsValues = null;
   }
 
   /** @param {number} scale */
@@ -54,6 +56,14 @@ pipelineCouplingManager = (() => {
     }
 
     const setup = couplingRefreshSetup.run(snap);
+    // Cache raw |r| per pair so getCouplingPressures() never needs snap.couplingMatrix directly
+    const rawAbsVals = {};
+    const matrixKeys = Object.keys(setup.matrix);
+    for (let k = 0; k < matrixKeys.length; k++) {
+      const v = setup.matrix[matrixKeys[k]];
+      if (typeof v === 'number' && Number.isFinite(v)) rawAbsVals[matrixKeys[k]] = m.abs(v);
+    }
+    pipelineCouplingManagerCache.rawPairAbsValues = rawAbsVals;
     if (setup.budgetConstraintActive) couplingBudgetScoring.compute(setup);
     couplingBiasAccumulator.computeAxisTotals(setup.matrix);
 
@@ -181,6 +191,11 @@ pipelineCouplingManager = (() => {
     return pipelineCouplingManagerCache.couplingGates;
   }
 
+  /** Raw Math.abs(r) per pair key, populated each beat. Use instead of snap.couplingMatrix outside the firewall. */
+  function getCouplingPressures() {
+    return pipelineCouplingManagerCache.rawPairAbsValues || {};
+  }
+
   /** @param {string} pairKey  @param {number} newBaseline */
   function setPairBaseline(pairKey, newBaseline) {
     const clamped = clamp(newBaseline, couplingConstants.TARGET_MIN, couplingConstants.TARGET_MAX);
@@ -229,6 +244,7 @@ pipelineCouplingManager = (() => {
     setDensityFlickerGainScale, setGlobalGainMultiplier,
     setPairBaseline, getPairBaselines,
     getAdaptiveTargetSnapshot, getAxisCouplingTotals, getAxisEnergyShare, getCouplingGates,
+    getCouplingPressures,
     reset,
   };
 })();
