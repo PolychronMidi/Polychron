@@ -452,7 +452,12 @@ adaptiveTrustScores = (() => {
       // R95 E4: Regime-responsive stagnation trigger
       const stagnRegime = conductorSignalBridge.getSignals().regime || 'evolving';
       const stagnTrigger = STAGNATION_BEATS_REGIME[stagnRegime] !== undefined ? STAGNATION_BEATS_REGIME[stagnRegime] : _STAGNATION_BEATS_TRIGGER;
-      if (vs.stagnantBeats >= stagnTrigger && state.samples > 32) {
+      // Scale trigger down for deeply stagnant systems (score far below mean = faster nourishment).
+      // Systems at 50% of mean or below get up to 2x faster nourishment to escape the catch-22
+      // where slow velocity EMA prevents the trigger from ever firing in time.
+      const depthPenalty = clamp(state.score / m.max(meanTrust, 0.01), 0.5, 1.0);
+      const stagnTriggerScaled = m.floor(stagnTrigger * depthPenalty);
+      if (vs.stagnantBeats >= stagnTriggerScaled && state.samples > 32) {
         const gap = meanTrust - state.score;
         if (gap > 0) {
           const syntheticPayoff = clamp(gap * vs.effectiveStrength, 0, 0.10);
