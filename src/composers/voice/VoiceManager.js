@@ -58,27 +58,6 @@ VoiceManager = class VoiceManager {
     return rw(min, max, weights);
   }
 
-  VoiceManagerNormalizeCandidates(candidateNotes = []) {
-    const notes = [];
-    const weights = {};
-
-    for (const item of candidateNotes) {
-      if (typeof item === 'number' && Number.isFinite(item)) {
-        notes.push(item);
-        continue;
-      }
-
-      if (item && typeof item.note === 'number' && Number.isFinite(item.note)) {
-        notes.push(item.note);
-        if (typeof item.weight === 'number' && Number.isFinite(item.weight)) {
-          weights[item.note] = item.weight;
-        }
-      }
-    }
-
-    return { notes, weights: Object.keys(weights).length > 0 ? weights : null };
-  }
-
   VoiceManagerWeightedPick(notes, weights) {
     this.V.assertArray(notes, 'VoiceManagerWeightedPick.notes', true);
     if (!weights) return notes[ri(notes.length - 1)];
@@ -114,7 +93,7 @@ VoiceManager = class VoiceManager {
     this.V.assertObject(layer, 'pickNotesForBeat.layer');
     this.V.assertArray(candidateNotes, 'pickNotesForBeat.candidateNotes');
 
-    const normalized = this.VoiceManagerNormalizeCandidates(candidateNotes);
+    const normalized = voiceValues.normalizeCandidates(candidateNotes);
     let notePool = normalized.notes;
     const weightMap = (opts && opts.candidateWeights !== undefined) ? opts.candidateWeights : normalized.weights;
 
