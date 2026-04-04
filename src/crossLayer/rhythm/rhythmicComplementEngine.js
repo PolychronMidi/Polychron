@@ -175,7 +175,7 @@ rhythmicComplementEngine = (() => {
 
     // Lab R2: coherent+canon was "excellent" - favor canon during coherent regime
     // Lab R8: atmospheric+canon was "legendary" - favor canon during atmospheric profile
-    const currentRegime = regimeClassifier.getLastRegime();
+    const currentRegime = conductorSignalBridge.getSignals().regime || 'evolving';
     const inCoherent = currentRegime === 'coherent';
     const inAtmospheric = conductorConfig.getActiveProfileName() === 'atmospheric';
 
