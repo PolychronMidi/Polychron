@@ -345,7 +345,6 @@ def find_similar_code(code_snippet: str, top_k: int = 10) -> str:
         )
 
     # KB enrichment: surface constraints relevant to the top matching files
-    from helpers import format_knowledge_results
     top_modules = list(dict.fromkeys(
         os.path.basename(r['source']).replace('.js', '').replace('.ts', '').replace('.py', '')
         for r in results[:3]
