@@ -205,12 +205,36 @@ def memory_dream() -> str:
     if not discoveries:
         return f"Memory dream complete: {len(rows)} entries, no hidden connections found (all similarities < 0.35)."
     parts = [f"# Memory Dream ({len(rows)} entries, {len(discoveries)} hidden connections)\n"]
-    for sim, title_a, title_b, id_a, id_b in discoveries[:10]:
+    top_pairs = discoveries[:10]
+    for sim, title_a, title_b, id_a, id_b in top_pairs:
         parts.append(f"  {sim:.0%} similarity:")
         parts.append(f"    [{id_a[:8]}] {title_a}")
         parts.append(f"    [{id_b[:8]}] {title_b}")
         parts.append(f"    -> Consider: add_knowledge related_to=\"{id_b}\" relation_type=\"similar_to\"")
         parts.append("")
+
+    # Adaptive synthesis: what do the connections mean architecturally?
+    try:
+        from server.tools_analysis import _get_api_key, _claude_think, _THINK_MODEL, _format_kb_corpus
+        api_key = _get_api_key()
+        if api_key and top_pairs:
+            pairs_text = "\n".join(
+                f"  {sim:.0%}: '{a}' <-> '{b}'" for sim, a, b, _, _ in top_pairs[:6]
+            )
+            user_text = (
+                f"Discovered KB connections:\n{pairs_text}\n\n"
+                "In 3 bullet points: what do these connections suggest architecturally? "
+                "Are these entries describing the same causal chain from different angles? "
+                "Which ones should be explicitly linked via add_knowledge? "
+                "Are any of these connections surprising given the codebase design?"
+            )
+            synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), max_tokens=512)
+            if synthesis:
+                parts.append(f"\n## Architectural Interpretation *(adaptive, {_THINK_MODEL})*")
+                parts.append(synthesis)
+    except Exception:
+        pass
+
     return "\n".join(parts)
 
 
