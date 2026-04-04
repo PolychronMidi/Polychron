@@ -845,11 +845,20 @@ _THINK_SYSTEM = (
 # context budget → max_tokens for API responses
 _BUDGET_TOKENS = {"greedy": 2048, "moderate": 1024, "conservative": 512, "minimal": 256}
 
+# context budget → output_config.effort (Sonnet/Opus 4.6)
+_BUDGET_EFFORT = {"greedy": "medium", "moderate": "medium", "conservative": "low", "minimal": "low"}
+
 
 def _get_max_tokens(default: int = 1024) -> int:
     """Scale max_tokens by remaining context window pressure."""
     budget = get_context_budget()
     return _BUDGET_TOKENS.get(budget, default)
+
+
+def _get_effort() -> str:
+    """Map context budget to output_config.effort level."""
+    budget = get_context_budget()
+    return _BUDGET_EFFORT.get(budget, "medium")
 
 
 def _format_kb_corpus() -> str:
@@ -872,12 +881,15 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
 
     Cache breakpoints:
       1. _THINK_SYSTEM (stable across all calls) — cached as first system block
-      2. kb_context (stable within ~5min window) — cached as second system block when provided
+      2. kb_context (stable content, 1h TTL) — cached as second system block when provided
 
-    max_tokens defaults to context-budget-scaled value if not specified.
+    max_tokens and output_config.effort both scale with context window pressure.
+    Thinking blocks use display='omitted' — tokens are processed but not streamed,
+    reducing TTFT. We only extract the text blocks from the response.
     """
     if max_tokens is None:
         max_tokens = _get_max_tokens()
+    effort = _get_effort()
     try:
         import httpx
         system_blocks: list[dict] = [
@@ -885,7 +897,7 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
         ]
         if kb_context:
             system_blocks.append(
-                {"type": "text", "text": kb_context, "cache_control": {"type": "ephemeral"}}
+                {"type": "text", "text": kb_context, "cache_control": {"type": "ephemeral", "ttl": "1h"}}
             )
         resp = httpx.post(
             "https://api.anthropic.com/v1/messages",
@@ -898,7 +910,8 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
             json={
                 "model": _THINK_MODEL,
                 "max_tokens": max_tokens,
-                "thinking": {"type": "adaptive"},
+                "thinking": {"type": "adaptive", "display": "omitted"},
+                "output_config": {"effort": effort},
                 "system": system_blocks,
                 "messages": [{"role": "user", "content": user_text}],
             },
@@ -910,7 +923,7 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
             cache_read = usage.get("cache_read_input_tokens", 0)
             cache_write = usage.get("cache_creation_input_tokens", 0)
             if cache_read or cache_write:
-                logger.info(f"_claude_think: cache_read={cache_read} cache_write={cache_write}")
+                logger.info(f"_claude_think: cache_read={cache_read} cache_write={cache_write} effort={effort}")
             return " ".join(
                 b["text"] for b in data.get("content", []) if b.get("type") == "text"
             ).strip() or None
