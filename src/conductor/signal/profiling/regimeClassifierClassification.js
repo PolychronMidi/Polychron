@@ -132,14 +132,18 @@ regimeClassifierClassification = (() => {
     // effectiveDim and its standard deviation. Set threshold relative to the
     // observed distribution instead of static 2.8. Gate the streak entirely
     // when exploring already dominates (rawExploringShare > 0.40).
-    state.dimEma = state.dimEma * 0.97 + effectiveDim * 0.03;
-    state.dimStdEma = state.dimStdEma * 0.97 + m.abs(effectiveDim - state.dimEma) * 0.03;
+    // Regime-adaptive EMA alphas: faster during exploring (more dynamic signal variance),
+    // slower during coherent (stability reduces noise sensitivity).
+    const dimAlpha = state.lastRegime === 'exploring' ? 0.05 : state.lastRegime === 'coherent' ? 0.02 : 0.03;
+    const velAlpha = state.lastRegime === 'exploring' ? 0.06 : state.lastRegime === 'coherent' ? 0.02 : 0.04;
+    state.dimEma = state.dimEma * (1 - dimAlpha) + effectiveDim * dimAlpha;
+    state.dimStdEma = state.dimStdEma * (1 - dimAlpha) + m.abs(effectiveDim - state.dimEma) * dimAlpha;
     // R79 E1: Track velocity distribution for adaptive evolving ceiling.
     // Instead of hardcoded 0.090 ceiling (whack-a-mole since R68), derive
     // from the actual velocity EMA + stddev. The enriched phase signal (R67)
     // raised velocity to 0.11-0.21, making fixed ceilings obsolete.
-    state.velocityEma = state.velocityEma * 0.96 + avgVelocity * 0.04;
-    state.velocityStdEma = state.velocityStdEma * 0.96 + m.abs(avgVelocity - state.velocityEma) * 0.04;
+    state.velocityEma = state.velocityEma * (1 - velAlpha) + avgVelocity * velAlpha;
+    state.velocityStdEma = state.velocityStdEma * (1 - velAlpha) + m.abs(avgVelocity - state.velocityEma) * velAlpha;
     const highDimStreakEnabled = rawExploringShare < 0.40;
     const highDimThreshold = state.dimEma + state.dimStdEma * 1.5 + exploringSharePressure * 0.3;
     // R72 E2: Raise base from 14 to 18. With evolving at 11.9% (R71),

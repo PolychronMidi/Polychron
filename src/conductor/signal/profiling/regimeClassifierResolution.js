@@ -102,7 +102,10 @@ regimeClassifierResolution = (() => {
     while (state.rawRegimeWindow.length > effectiveWindow) state.rawRegimeWindow.shift();
 
     if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && exploringElapsedSec >= config.EXPLORING_MAX_DWELL_SEC) {
-      forceRegimeTransition('evolving', 'exploring-max-dwell', 3);
+      const exploringForcedWindow = clamp(6 + m.floor(evolvingDeficit * 6), 6, 12);
+      // If evolving is well-represented, break toward coherent; otherwise recover evolving.
+      const exploringRecoveryRegime = evolvingRecoveryPriority > 0.18 ? 'evolving' : 'coherent';
+      forceRegimeTransition(exploringRecoveryRegime, 'exploring-max-dwell', exploringForcedWindow);
     }
     const exploringMonopolyThreshold = clamp((shortFormPressure > 0 ? 0.66 : 0.72) - trustSharePressure * 0.04 - evolvingDeficit * 0.06 - phaseWeakness * 0.03 + phaseRecoveryCredit * 0.01 - (phaseStableRecoveryWindow ? 0.03 * phaseStableRecoveryStrength : 0), 0.54, 0.72);
     const exploringMonopolyMinDwellSec = shortFormPressure > 0
