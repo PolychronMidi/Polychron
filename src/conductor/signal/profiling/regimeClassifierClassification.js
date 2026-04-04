@@ -109,7 +109,7 @@ regimeClassifierClassification = (() => {
     const coherentEntryMargin = cadenceMonopolyPressure * 0.050 + opportunityPressure * 0.040 + (state.lastRegime === 'coherent' ? 0.010 : 0) - postForcedRecoveryPressure * 0.028;
     const coherentDimMax = 4.0 - cadenceMonopolyPressure * 0.55 - opportunityPressure * 0.35;
     const coherentThreshold = baseCoherentThreshold - durationBonus - coherentFloorBonus - convergenceBonus - evolvingProximityBonus - momentumBonus + coherentDurationPenalty + coherentGateTightening - postForcedRecoveryPressure * 0.035;
-    const coherentExitWindow = 0.08 + evolvingDeficit * 0.12;
+    const coherentExitWindowBase = 0.08 + evolvingDeficit * 0.12;
     const evolvingEntryVelMin = 0.006;
     const evolvingEntryVelMax = 0.032 + evolvingDeficit * 0.024 + cadenceMonopolyPressure * 0.020 + opportunityPressure * 0.016 + exploringSharePressure * 0.012 + evolvingRecoveryBoost * 0.010 + postForcedRecoveryPressure * 0.014;
     const evolvingEntryDimMin = 1.75 + evolvingDeficit * 0.25 - cadenceMonopolyPressure * 0.22 - opportunityPressure * 0.12 - exploringSharePressure * 0.12 - evolvingRecoveryBoost * 0.10 - postForcedRecoveryPressure * 0.16;
@@ -196,6 +196,9 @@ regimeClassifierClassification = (() => {
       state.coherentBlockStreak = m.max(0, state.coherentBlockStreak - 2);
     }
     const coherentBlockRelax = clamp(state.coherentBlockStreak * 0.004, 0, 0.04);
+    // Enforce minimum dead band: exit window must exceed effective entry margin by at least 0.02.
+    // Prevents oscillation when blockRelax widens the entry band close to the exit band.
+    const coherentExitWindow = m.max(coherentExitWindowBase, coherentEntryMargin + coherentBlockRelax + 0.02);
 
     if (couplingStrength > coherentThreshold + coherentEntryMargin - coherentBlockRelax && avgVelocity > velThreshold && effectiveDim <= coherentDimMax) return 'coherent';
 

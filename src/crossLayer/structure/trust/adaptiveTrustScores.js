@@ -65,6 +65,24 @@ adaptiveTrustScores = (() => {
     restSynchronizer: 0.25  // break 3-generation stagnation at ~0.199
   };
 
+  // Cross-run warm-start: restore terminal trust scores from previous run.
+  // Clamped to [0.08, 0.60] to prevent extreme inherited states.
+  const adaptiveTrustScoresLoadedScores = /** @type {Record<string, number>} */ ({});
+  try {
+    const _atsFs = require('fs');
+    const _atsPath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    if (_atsFs.existsSync(_atsPath)) {
+      const _atsState = JSON.parse(_atsFs.readFileSync(_atsPath, 'utf8'));
+      if (_atsState.trustScores && typeof _atsState.trustScores === 'object') {
+        const _atsNames = Object.keys(_atsState.trustScores);
+        for (let _i = 0; _i < _atsNames.length; _i++) {
+          const _s = _atsState.trustScores[_atsNames[_i]];
+          if (Number.isFinite(_s)) adaptiveTrustScoresLoadedScores[_atsNames[_i]] = clamp(_s, 0.08, 0.60);
+        }
+      }
+    }
+  } catch (_atsErr) { void _atsErr; }
+
   let adaptiveTrustScoresCacheVersion = 0;
   let adaptiveTrustScoresContextCacheKey = '';
   let adaptiveTrustScoresContextCache = null;
@@ -125,7 +143,9 @@ adaptiveTrustScores = (() => {
   function ensure(systemName) {
     V.assertNonEmptyString(systemName, 'systemName');
     if (!scoreBySystem.has(systemName)) {
-      const initScore = WARM_START[systemName] !== undefined ? WARM_START[systemName] : 0;
+      const initScore = adaptiveTrustScoresLoadedScores[systemName] !== undefined
+        ? adaptiveTrustScoresLoadedScores[systemName]
+        : (WARM_START[systemName] !== undefined ? WARM_START[systemName] : 0);
       scoreBySystem.set(systemName, { score: initScore, samples: 0, lastMs: 0 });
     }
     const state = scoreBySystem.get(systemName);
@@ -563,6 +583,13 @@ adaptiveTrustScores = (() => {
 
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
-  return { registerOutcome, getBaseWeight, getWeight, getWeightBatch, decayAll, getSnapshot, getJournal, setCoordinationScale, reset };
+  /** @returns {Record<string, number>} plain name->score map for cross-run persistence */
+  function getScores() {
+    const scores = /** @type {Record<string, number>} */ ({});
+    for (const [name, state] of scoreBySystem.entries()) scores[name] = state.score;
+    return scores;
+  }
+
+  return { registerOutcome, getBaseWeight, getWeight, getWeightBatch, decayAll, getSnapshot, getJournal, getScores, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('adaptiveTrustScores', adaptiveTrustScores, ['all']);
