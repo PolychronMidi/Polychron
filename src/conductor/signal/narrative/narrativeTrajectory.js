@@ -92,7 +92,7 @@ narrativeTrajectory = (() => {
       const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
       const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
       const dynamicSnap = /** @type {any} */ (snap);
-      const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {});
+      const couplingPressures = /** @type {Record<string,number>} */ (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {}) || {});
       const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
       const tensionFlickerPressure = clamp(((couplingPressures['tension-flicker'] || 0) - 0.78) / 0.16, 0, 1);
       const tensionProduct = conductorState.getField('tension');

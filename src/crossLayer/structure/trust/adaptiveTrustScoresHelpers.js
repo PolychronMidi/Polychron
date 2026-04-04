@@ -62,8 +62,8 @@ adaptiveTrustScoresHelpers = (() => {
     let trustHotPairCount = 0;
     for (let i = 0; i < pairList.length; i++) {
       const pair = pairList[i];
-      const absCorrelation = couplingPressures[pair];
-      if (typeof absCorrelation !== 'number') continue;
+      const absCorrelation = V.optionalFinite(couplingPressures[pair], -1);
+      if (absCorrelation < 0) continue;
       const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
         ? adaptiveSnapshot[pair]
         : null;
@@ -171,8 +171,8 @@ adaptiveTrustScoresHelpers = (() => {
       let sumTrustCorrelation = 0;
       let trustPairCount = 0;
       for (let i = 0; i < trustPairs.length; i++) {
-        const absCorrelation = trustCouplingPressures[trustPairs[i]];
-        if (typeof absCorrelation !== 'number') continue;
+        const absCorrelation = V.optionalFinite(trustCouplingPressures[trustPairs[i]], -1);
+        if (absCorrelation < 0) continue;
         maxTrustCorrelation = m.max(maxTrustCorrelation, absCorrelation);
         sumTrustCorrelation += absCorrelation;
         trustPairCount++;

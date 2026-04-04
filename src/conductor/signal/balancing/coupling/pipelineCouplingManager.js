@@ -18,13 +18,13 @@ pipelineCouplingManager = (() => {
   const { ALL_MONITORED_DIMS } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
   const S = couplingState;
-  const pipelineCouplingManagerCache = {
+  const pipelineCouplingManagerCache = /** @type {{ adaptiveTargetSnapshot: any, axisCouplingTotals: any, axisEnergyShare: any, couplingGates: any, rawPairAbsValues: Record<string,number>|null }} */ ({
     adaptiveTargetSnapshot: null,
     axisCouplingTotals: null,
     axisEnergyShare: null,
     couplingGates: null,
     rawPairAbsValues: null,
-  };
+  });
 
   function pipelineCouplingManagerInvalidateCache() {
     pipelineCouplingManagerCache.adaptiveTargetSnapshot = null;
@@ -57,7 +57,7 @@ pipelineCouplingManager = (() => {
 
     const setup = couplingRefreshSetup.run(snap);
     // Cache raw |r| per pair so getCouplingPressures() never needs snap.couplingMatrix directly
-    const rawAbsVals = {};
+    const rawAbsVals = /** @type {Record<string, number>} */ ({});
     const matrixKeys = Object.keys(setup.matrix);
     for (let k = 0; k < matrixKeys.length; k++) {
       const v = setup.matrix[matrixKeys[k]];
