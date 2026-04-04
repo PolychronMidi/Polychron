@@ -43,6 +43,7 @@ class RAGEngine(RAGKnowledgeMixin):
         self._knowledge_cache = _TTLCache(maxsize=128, ttl=CACHE_TTL)
         self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count for spaced repetition
         self._index_lock = threading.Lock()
+        self._token_cache: dict[int, int] = {}
         self._load_hashes()
         self._try_open_table()
         self._try_open_knowledge_table()
@@ -281,9 +282,12 @@ class RAGEngine(RAGKnowledgeMixin):
         return results
 
     def _count_tokens(self, text: str) -> int:
-        """Count tokens using Anthropic API (free, precise) with char-estimate fallback."""
+        """Count tokens: API (precise) → BERT tokenizer (accurate, free) → char estimate."""
+        cache_key = hash(text)
+        if cache_key in self._token_cache:
+            return self._token_cache[cache_key]
+
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        # Also check common key file locations
         if not api_key:
             for key_path in [os.path.expanduser("~/.anthropic/api_key"), os.path.expanduser("~/.config/anthropic/key")]:
                 try:
@@ -302,10 +306,25 @@ class RAGEngine(RAGKnowledgeMixin):
                     timeout=3.0
                 )
                 if resp.status_code == 200:
-                    return resp.json().get("input_tokens", len(text) // 4)
+                    count = resp.json().get("input_tokens", len(text) // 4)
+                    self._token_cache[cache_key] = count
+                    return count
             except Exception:
                 pass
-        return len(text) // 4  # fallback: ~4 chars per token
+
+        # BERT tokenizer: same model already loaded, much more accurate than len//4
+        try:
+            tok = getattr(self.model, "tokenizer", None)
+            if tok is not None:
+                count = len(tok.encode(text))
+                self._token_cache[cache_key] = count
+                return count
+        except Exception:
+            pass
+
+        count = len(text) // 4
+        self._token_cache[cache_key] = count
+        return count
 
     def search_budgeted(self, query: str, max_tokens: int = 8000, language: Optional[str] = None) -> list[dict]:
         """Search and pack results into a token budget. Uses Anthropic token counting API when available."""
