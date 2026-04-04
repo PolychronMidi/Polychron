@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from server import context as ctx
 from server.helpers import (
-    get_context_budget, validate_project_path, fmt_score,
+    get_context_budget, validate_project_path,
     format_knowledge_results, check_path_in_project,
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
 )
