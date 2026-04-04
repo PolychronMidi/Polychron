@@ -82,6 +82,8 @@ def lookup_symbol(name: str, kind: str = "", language: str = "") -> str:
 @ctx.mcp.tool()
 def search_symbols(query: str, top_k: int = 20, kind: str = "") -> str:
     """Semantic search across the symbol index. Unlike lookup_symbol (exact match), this finds symbols whose names or signatures are semantically similar to the query. Use kind='global' to filter to IIFE globals, 'function' for inner functions. Returns ranked results with file locations, kinds, signatures, and relevance scores."""
+    if not query or not query.strip():
+        return "Error: query cannot be empty. Pass a symbol name or description to search for."
     top_k = max(1, min(50, top_k))
     results = ctx.project_engine.search_symbols(query, top_k=top_k, kind=kind)
     if not results:
