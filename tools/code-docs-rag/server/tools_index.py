@@ -207,7 +207,11 @@ def index_symbols() -> str:
     by_kind: dict[str, int] = {}
     for s in symbols:
         by_kind[s["kind"]] = by_kind.get(s["kind"], 0) + 1
-    kind_str = ", ".join(f"{v} {k}s" for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
+    def _plural(n, word):
+        if n == 1:
+            return f"{n} {word}"
+        return f"{n} {word}es" if word.endswith(("s", "sh", "ch", "x", "z")) else f"{n} {word}s"
+    kind_str = ", ".join(_plural(v, k) for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
     return f"Symbol index built: {result['indexed']} symbols ({kind_str})"
 
 
