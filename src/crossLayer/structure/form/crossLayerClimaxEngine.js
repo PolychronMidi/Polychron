@@ -84,9 +84,9 @@ crossLayerClimaxEngine = (() => {
     const totalSections = timeStream.getBounds('section');
     const journeyProgress = totalSections > 1 ? sectionIndex / (totalSections - 1) : 1;
     const longFormPressure = clamp(totalSections - 4, 0, 1);
-    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
+    const axisEnergyShares = conductorSignalBridge.getSignals().axisEnergyShares;
+    const phaseShare = axisEnergyShares && typeof axisEnergyShares.phase === 'number'
+      ? axisEnergyShares.phase
       : 1.0 / 6.0;
     const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);

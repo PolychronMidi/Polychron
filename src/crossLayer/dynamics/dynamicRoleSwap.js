@@ -96,9 +96,9 @@ dynamicRoleSwap = (() => {
     // L2 takes on L1 characteristics: denser, more melodic
     const recentL2Count = L0.count('note', { layer: 'L2', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
     const recentL1Count = L0.count('note', { layer: 'L1', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
-    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
+    const axisEnergyShares = conductorSignalBridge.getSignals().axisEnergyShares;
+    const phaseShare = axisEnergyShares && typeof axisEnergyShares.phase === 'number'
+      ? axisEnergyShares.phase
       : 1.0 / 6.0;
     const lowPhaseThreshold = V.optionalFinite(phaseFloorController.getLowShareThreshold(), 0);
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
