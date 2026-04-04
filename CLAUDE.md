@@ -194,7 +194,7 @@ codebase_health                                                           -- ful
 knowledge_graph "density suppression"                                     -- connected KB entries
 ```
 
-**44 tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through code-docs-rag for KB enrichment. Full reference: [doc/code-docs-rag.md](../doc/code-docs-rag.md)
+**45 tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through code-docs-rag for KB enrichment. Full reference: [doc/code-docs-rag.md](../doc/code-docs-rag.md)
 
 ## Related Documentation
 
