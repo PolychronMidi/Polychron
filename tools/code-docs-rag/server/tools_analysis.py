@@ -514,10 +514,11 @@ def module_story(module_name: str) -> str:
             if len(result["symbols"]) > sym_limit:
                 parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
         parts.append("")
-    # Evolution history from KB
+    # Evolution history from KB (project + global)
     kb_limit = limits["kb_entries"] * 2  # module_story should show more history
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=kb_limit)
-    relevant = kb_results
+    glob_results = ctx.global_engine.search_knowledge(module_name, top_k=3) if ctx.global_engine else []
+    relevant = kb_results + [dict(r, title=f"[global] {r['title']}") for r in glob_results]
     if relevant:
         parts.append(f"## Evolution History ({len(relevant)} KB entries)")
         for k in relevant:
@@ -682,6 +683,22 @@ def codebase_health() -> str:
                 parts.append(f"  - {item}")
             parts.append("")
     parts.append(f"Total: {total} issues across {file_count} files")
+
+    api_key = _get_api_key()
+    if api_key and total > 0:
+        critical_list = "\n".join(issues_by_severity["CRITICAL"][:10]) or "none"
+        warn_list = "\n".join(issues_by_severity["WARN"][:10]) or "none"
+        user_text = (
+            f"Codebase health sweep found {total} issues across {file_count} files.\n"
+            f"CRITICAL:\n{critical_list}\nWARN:\n{warn_list}\n\n"
+            "In 3 numbered points: which issues are highest-priority to address first, and why? "
+            "Consider architectural risk, coupling exposure, and technical debt accumulation."
+        )
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+        if synthesis:
+            parts.append(f"\n## Priority Analysis *(adaptive, {_THINK_MODEL})*")
+            parts.append(synthesis)
+
     return "\n".join(parts)
 
 
@@ -862,15 +879,20 @@ def _get_effort() -> str:
 
 
 def _format_kb_corpus() -> str:
-    """Dump all KB entries as a cacheable context block. Called once per cache window."""
+    """Dump all KB entries (project + global) as a cacheable context block."""
     try:
-        rows = ctx.project_engine.list_knowledge_full()
-        if not rows:
-            return ""
-        lines = ["# Project Knowledge Base\n"]
-        for r in rows:
-            lines.append(f"[{r['category']}] {r['title']}: {r['content'][:300]}")
-        return "\n".join(lines)
+        lines = []
+        proj_rows = ctx.project_engine.list_knowledge_full() if ctx.project_engine else []
+        if proj_rows:
+            lines.append("# Project Knowledge Base\n")
+            for r in proj_rows:
+                lines.append(f"[{r['category']}] {r['title']}: {r['content'][:300]}")
+        glob_rows = ctx.global_engine.list_knowledge_full() if ctx.global_engine else []
+        if glob_rows:
+            lines.append("\n# Global Knowledge Base\n")
+            for r in glob_rows:
+                lines.append(f"[global/{r['category']}] {r['title']}: {r['content'][:200]}")
+        return "\n".join(lines) if lines else ""
     except Exception:
         return ""
 

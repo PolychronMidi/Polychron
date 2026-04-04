@@ -41,6 +41,15 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
         action = r.get("action", "store")
         results.append(f"  [global]  ID: {r['id']}")
 
+    # Re-warm the KB corpus cache so next Claude call gets the updated KB without a cold-write penalty
+    try:
+        from server.tools_analysis import _get_api_key, _warm_cache
+        api_key = _get_api_key()
+        if api_key:
+            _warm_cache(api_key)
+    except Exception:
+        pass
+
     return f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
 
 
