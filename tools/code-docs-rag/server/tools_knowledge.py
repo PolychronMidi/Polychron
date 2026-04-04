@@ -15,6 +15,7 @@ logger = logging.getLogger("code-docs-rag")
 @ctx.mcp.tool()
 def add_knowledge(title: str, content: str, category: str = "general", tags: list[str] = [], scope: str = "project", related_to: str = "", relation_type: str = "") -> str:
     """Persist a knowledge entry (decision, calibration anchor, pattern, or bugfix) to the KB. Only call this after the user confirms a task is complete — never speculatively. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) to create typed graph edges for knowledge_graph traversal. Tags: pass as a list of strings (["tag1","tag2"]). Scope 'project' stores locally, 'global' stores in shared KB, 'both' stores in both. Automatically detects and merges redundant entries or supersedes outdated ones."""
+    ctx.ensure_ready_sync()
     if not title.strip():
         return "Error: title cannot be empty."
     if not content.strip():
@@ -47,6 +48,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
 @ctx.mcp.tool()
 def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
     """Search the persistent knowledge base for constraints, decisions, patterns, and bugfixes. MANDATORY before modifying any module — always check for existing constraints first. Returns matching entries from both project and global KBs, ranked by relevance. Filter by category ('architecture', 'decision', 'pattern', 'bugfix') to narrow results. Each result includes ID, title, content, tags, and relevance score."""
+    ctx.ensure_ready_sync()
     top_k = max(1, min(20, top_k))
     cat = category if category else None
 
@@ -85,6 +87,7 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
 @ctx.mcp.tool()
 def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     """Delete a knowledge entry by its ID. Use after kb_health identifies stale entries, or when a decision has been superseded. Specify scope='global' to remove from the shared KB instead of the project KB."""
+    ctx.ensure_ready_sync()
     if not entry_id.strip():
         return "Error: entry_id cannot be empty."
     engine = ctx.global_engine if scope == "global" else ctx.project_engine
@@ -98,6 +101,7 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
 @ctx.mcp.tool()
 def list_knowledge(category: str = "", scope: str = "") -> str:
     """List all knowledge entries, optionally filtered by category. Returns entry IDs, titles, categories, and tags for both project and global KBs. Use to get an overview of what's in the KB, or filter by category ('architecture', 'decision', 'pattern', 'bugfix') to find specific entry types."""
+    ctx.ensure_ready_sync()
     cat = category if category else None
     parts = []
 
@@ -133,6 +137,7 @@ def list_knowledge(category: str = "", scope: str = "") -> str:
 @ctx.mcp.tool()
 def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
     """Deduplicate the knowledge base by merging entries with high semantic similarity. Use after 30+ entries accumulate. The threshold (0.0-1.0) controls how similar entries must be to merge — 0.85 is a good default. Returns counts of removed vs kept entries. Scope can be 'project', 'global', or 'both'."""
+    ctx.ensure_ready_sync()
     clamped = max(0.5, min(1.0, threshold))
     notes = []
     if clamped != threshold:
@@ -152,6 +157,7 @@ def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
 @ctx.mcp.tool()
 def export_knowledge(scope: str = "project", category: str = "") -> str:
     """Export all knowledge entries as markdown for backup or review. Optionally filter by category. Returns formatted markdown with all entry metadata and content. Use for periodic KB snapshots or before major KB reorganization."""
+    ctx.ensure_ready_sync()
     cat = category if category else None
     parts = []
 
@@ -175,6 +181,7 @@ def export_knowledge(scope: str = "project", category: str = "") -> str:
 @ctx.mcp.tool()
 def memory_dream() -> str:
     """Consolidation pass: replay all KB entries, discover hidden connections via pairwise similarity. Inspired by Vestige's memory dreaming."""
+    ctx.ensure_ready_sync()
     rows = ctx.project_engine.list_knowledge_full()
     if len(rows) < 2:
         return "Not enough KB entries to dream (need 2+)."
@@ -211,6 +218,7 @@ def memory_dream() -> str:
 @ctx.mcp.tool()
 def knowledge_graph(query: str) -> str:
     """Search knowledge with spreading activation: matches entry A, then traverses A's relationships to find connected entries. Multi-hop discovery."""
+    ctx.ensure_ready_sync()
     results = ctx.project_engine.search_knowledge(query, top_k=8)
     if not results:
         return "No knowledge entries match this query."
@@ -285,6 +293,7 @@ def knowledge_graph(query: str) -> str:
 @ctx.mcp.tool()
 def kb_health() -> str:
     """Check all KB entries for staleness: do the files/modules they mention still exist? Are line counts accurate?"""
+    ctx.ensure_ready_sync()
     import re
     rows = ctx.project_engine.list_knowledge_full()
     if not rows:

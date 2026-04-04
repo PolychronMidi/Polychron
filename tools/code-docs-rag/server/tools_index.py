@@ -38,6 +38,7 @@ def _index_main(target: str) -> dict:
 @ctx.mcp.tool()
 def recent_changes(since: str = "1 hour ago") -> str:
     """Show recently changed files with KB context. Great after context compaction to recover what was modified."""
+    ctx.ensure_ready_sync()
     import subprocess
     try:
         result = subprocess.run(
@@ -86,6 +87,7 @@ def recent_changes(since: str = "1 hour ago") -> str:
 @ctx.mcp.tool()
 def index_codebase(directory: str = "", lib: str = "") -> str:
     """Reindex all code chunks and symbols for semantic search. Run after batch code changes or when search results seem stale. The file watcher handles individual saves automatically (5s debounce), so this is only needed after bulk operations. Set lib='<name>' to reindex a specific library. With no arguments, reindexes the main project and all configured libraries in parallel. Also rebuilds the symbol index. Returns file/chunk/symbol counts."""
+    ctx.ensure_ready_sync()
     if lib:
         resolved = _resolve_lib_engine(lib)
         if not resolved:
@@ -144,6 +146,7 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
 @ctx.mcp.tool()
 def get_index_status() -> str:
     """Check the health and size of all indexes (main project and libraries). Returns file counts, chunk counts, and symbol counts. Use this to verify indexing completed successfully or to diagnose why search results are missing. If the index shows zero files, run index_codebase to build it."""
+    ctx.ensure_ready_sync()
     status = ctx.project_engine.get_status()
     parts = []
     if not status["indexed"]:
@@ -172,6 +175,7 @@ def get_index_status() -> str:
 @ctx.mcp.tool()
 def clear_index() -> str:
     """Delete all indexed code chunks, forcing a complete rebuild on next index_codebase call. Use this when the chunker logic has changed or the index is corrupted. Does not affect the knowledge base or symbol index. After clearing, you must run index_codebase to restore search functionality."""
+    ctx.ensure_ready_sync()
     ctx.project_engine.clear()
     return "Index cleared. Run index_codebase to rebuild."
 
@@ -180,6 +184,7 @@ def clear_index() -> str:
 @ctx.mcp.tool()
 def list_libs() -> str:
     """Show all configured external library directories and their index status. Libraries are configured via ragLibs in .mcp.json. Returns each library's file count and chunk count if indexed, or indicates whether the directory exists but is unindexed. Use index_codebase with lib='<name>' to index a specific library."""
+    ctx.ensure_ready_sync()
     if not ctx.lib_engines:
         return "No external libraries configured. Add ragLibs to .mcp.json to configure."
 
@@ -202,6 +207,7 @@ def list_libs() -> str:
 @ctx.mcp.tool()
 def index_symbols() -> str:
     """Rebuild the symbol index from scratch. Scans all project files for IIFE globals, inner functions, classes, and other named symbols. Usually called automatically by index_codebase, but can be run independently after symbol-focused changes. Returns counts broken down by symbol kind."""
+    ctx.ensure_ready_sync()
     symbols = collect_all_symbols(ctx.PROJECT_ROOT)
     result = ctx.project_engine.index_symbols(symbols)
     by_kind: dict[str, int] = {}
