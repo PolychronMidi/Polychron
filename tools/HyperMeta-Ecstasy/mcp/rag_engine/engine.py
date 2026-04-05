@@ -111,6 +111,9 @@ class RAGEngine(RAGKnowledgeMixin):
             return self._index_directory_locked(directory)
 
     def _index_directory_locked(self, directory: str) -> dict:
+        # Block if clear is in progress
+        if getattr(self, '_clearing', False):
+            return {"total_files": 0, "indexed": 0, "skipped_unchanged": 0, "chunks_created": 0}
         # Validate cache integrity before any skip decisions —
         # catches desync from crashed clears, DB renames, race conditions
         self._validate_cache()
@@ -375,6 +378,8 @@ class RAGEngine(RAGKnowledgeMixin):
 
     def clear(self):
         with self._index_lock:
+            # Suppress watcher re-indexing during clear
+            self._clearing = True
             try:
                 self.db.drop_table("code_chunks")
             except Exception:
@@ -384,13 +389,17 @@ class RAGEngine(RAGKnowledgeMixin):
             self._chunk_hashes = set()
             self._access_log = {}
             self._search_cache.invalidate()
-            # Belt AND suspenders: clear in-memory dict, save empty to disk,
-            # AND delete the physical file to prevent any stale cache survival
-            self._save_hashes()
+            # Nuclear: delete hash file FIRST, then save empty, then delete again
             try:
                 os.remove(self.hash_cache_path)
             except OSError:
                 pass
+            self._save_hashes()  # writes {} to disk
+            try:
+                os.remove(self.hash_cache_path)
+            except OSError:
+                pass
+            self._clearing = False
 
     def _try_open_symbol_table(self):
         try:

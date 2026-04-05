@@ -194,7 +194,7 @@ codebase_health                                                           -- ful
 knowledge_graph "density suppression"                                     -- connected KB entries
 ```
 
-**48 tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HyperMeta-Ecstasy for KB enrichment.
+**49 tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HyperMeta-Ecstasy for KB enrichment.
 
 ## Related Documentation
 

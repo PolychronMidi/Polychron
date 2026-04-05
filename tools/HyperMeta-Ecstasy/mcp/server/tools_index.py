@@ -174,10 +174,18 @@ def get_index_status() -> str:
 
 @ctx.mcp.tool()
 def clear_index() -> str:
-    """Delete all indexed code chunks, forcing a complete rebuild on next index_codebase call. Use this when the chunker logic has changed or the index is corrupted. Does not affect the knowledge base or symbol index. After clearing, you must run index_codebase to restore search functionality."""
+    """Delete all indexed code chunks AND immediately rebuild from scratch. Atomic: no gap for
+    file watcher to repopulate stale hashes. Use when embedding model changed, chunker logic
+    changed, or index is corrupted. Does not affect the knowledge base."""
     ctx.ensure_ready_sync()
     ctx.project_engine.clear()
-    return "Index cleared. Run index_codebase to rebuild."
+    # Immediately rebuild — atomic, no gap for watcher to repopulate stale cache
+    result = _index_main(ctx.PROJECT_ROOT)
+    return (
+        f"Index cleared and rebuilt: {result['total_files']} files, "
+        f"{result['indexed']} indexed, {result['chunks_created']} chunks, "
+        f"{result['symbols_indexed']} symbols"
+    )
 
 
 

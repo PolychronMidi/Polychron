@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HyperMeta-Ecstasy/` | 48 tools: semantic search, KB, architectural analysis, Claude synthesis |
+| **MCP Server** | `tools/HyperMeta-Ecstasy/` | 49 tools: semantic search, KB, architectural analysis, Claude synthesis |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HyperMeta-Ecstasy/` | Cognitive frameworks loaded per session via `/HyperMeta-Ecstasy` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -49,7 +49,7 @@ tools/HyperMeta-Ecstasy/               The single source of truth
     plugin.json                         Plugin metadata (name, version, description)
   mcp/                                  Python MCP server (symlinked from ~/.claude/mcp/)
     server/
-      main.py                           FastMCP entry point (48 tools)
+      main.py                           FastMCP entry point (49 tools)
       tools_analysis.py                 Architectural reasoning + Claude synthesis (20 tools)
       tools_search.py                   Search, grep, file, context assembly (6 tools)
       tools_knowledge.py                KB CRUD + memory_dream + knowledge_graph (9 tools)
@@ -192,7 +192,7 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 | Understand a module deeply | `module_story "moduleName"` | Multi-file reading |
 | Preview rename impact | `bulk_rename_preview "old" "new"` | Manual grep |
 
-## Tool Reference (48 tools)
+## Tool Reference (49 tools)
 
 ### Shell Replacements (use INSTEAD of Bash)
 
@@ -256,13 +256,15 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 | `memory_dream` | Discover hidden KB connections via pairwise similarity |
 | `kb_health` | Check for stale refs and aged entries |
 
-### Evolution & Causal Intelligence (3 tools)
+### Evolution & Causal Intelligence (5 tools)
 
 | Tool | Use For |
 |------|---------|
 | `evolution_patterns` | Meta-patterns across journal rounds: confirm rates, subsystem receptivity, stabilization timelines |
 | `causal_trace` | Trace constant -> controller -> metric -> musical effect chain |
 | `hme_introspect` | Self-benchmarking: usage patterns, system health, musical context |
+| `trace_query` | Query trace.jsonl for what a module ACTUALLY DID: trust scores, regime transitions, value ranges |
+| `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
 
 ### Analysis (3 tools)
 
