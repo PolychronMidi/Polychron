@@ -1,0 +1,14 @@
+{
+  "name": "polychron-local",
+  "description": "Polychron project local plugins — HME and project-specific tooling",
+  "owner": {
+    "name": "i1li"
+  },
+  "plugins": [
+    {
+      "name": "HME",
+      "source": "./HME",
+      "description": "Master executive for hypermeta evolutionary intelligence. Full-stack: MCP server, hooks, skills, Evolver."
+    }
+  ]
+}
