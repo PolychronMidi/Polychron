@@ -9,7 +9,6 @@ from . import _track
 logger = logging.getLogger("HyperMeta-Ecstasy")
 
 
-@ctx.mcp.tool()
 def drama_finder(top_n: int = 10) -> str:
     """Find the N most dramatic moments in the last pipeline run: largest trust weight
     swings, regime transitions with hotspot pressure, convergence cascades. The

@@ -142,7 +142,6 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def hme_introspect() -> str:
     """Self-benchmarking: report HME tool usage patterns for this session. Shows which tools are called most, which mandatory tools are underused, and compositional context from the last pipeline run."""
     _track("hme_introspect")
@@ -462,35 +461,30 @@ def interaction_map(module_a: str, module_b: str = "") -> str:
 @ctx.mcp.tool()
 def kb_seed(top_n: int = 15) -> str:
     """Auto-generate starter KB entries for the highest-dependency modules that have
-    zero KB entries. Reads each module's source code and uses Ollama to generate a
-    concise architectural constraint summary. Returns the entries as add_knowledge
-    calls you can execute."""
+    zero KB entries. Reads each module's source code and uses a single batched LLM
+    call to generate concise architectural constraint summaries. Returns the entries
+    as add_knowledge calls you can execute.
+
+    Performance: single-pass file scan for all caller counts (not N scans per symbol),
+    plus one batched LLM call for all candidates (not N sequential calls)."""
     ctx.ensure_ready_sync()
     _track("kb_seed")
-    from file_walker import walk_code_files
-    from symbols import find_iife_globals as _find_iife_globals
+    from .health import _compute_iife_caller_counts
 
-    # Find all IIFE globals with their caller counts
-    modules = []
-    for fpath in walk_code_files(os.path.join(ctx.PROJECT_ROOT, "src")):
-        if not str(fpath).endswith(".js"):
-            continue
-        try:
-            content = fpath.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
-        for name in _find_iife_globals(content):
-            callers = _find_callers(name, ctx.PROJECT_ROOT)
-            external = [c for c in callers if name not in os.path.basename(c.get("file", ""))]
-            modules.append((len(external), name, str(fpath)))
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    sym_files, caller_counts, _ = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
+    if not sym_files:
+        return "No IIFE globals found in src/."
 
-    modules.sort(key=lambda x: -x[0])
+    modules = sorted(
+        [(count, name, sym_files[name]) for name, count in caller_counts.items()],
+        key=lambda x: -x[0]
+    )
 
-    # Filter to modules with zero KB entries AND not already documented
+    # --- Load doc content once for doc-coverage filter ---
     from . import _filter_kb_relevance
     import glob as _glob
     doc_content = ""
-    # Scan ALL docs: doc/*.md, CLAUDE.md, README.md
     doc_paths = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "doc", "*.md"))
     for root_doc in ["CLAUDE.md", "README.md"]:
         rp = os.path.join(ctx.PROJECT_ROOT, root_doc)
@@ -501,14 +495,15 @@ def kb_seed(top_n: int = 15) -> str:
             doc_content += open(dp, encoding="utf-8").read().lower()
         except Exception:
             pass
+
+    # --- Filter: skip if already in KB or already documented ---
     candidates = []
     for count, name, path in modules:
-        # Skip if already in KB
-        kb = ctx.project_engine.search_knowledge(name, top_k=3)
-        relevant = _filter_kb_relevance(kb, name)
-        if relevant:
+        if count == 0:
+            break  # zero callers → self-registered or truly unused, stop here
+        kb = ctx.project_engine.search_knowledge(name, top_k=2)
+        if _filter_kb_relevance(kb, name):
             continue
-        # Skip if documented in key docs (name appears as whole word)
         if name.lower() in doc_content:
             continue
         candidates.append((count, name, path))
@@ -518,28 +513,43 @@ def kb_seed(top_n: int = 15) -> str:
     if not candidates:
         return "All high-dependency modules already have KB entries."
 
-    parts = [f"## KB Seed — {len(candidates)} modules need KB entries\n"]
-    entries = []
-
-    for count, name, path in candidates:
-        # Read source for grounded synthesis
+    # --- Single batched LLM call for all candidates ---
+    # Read source snippets
+    sources: dict[str, str] = {}
+    for _, name, path in candidates:
         try:
-            source = open(path, encoding="utf-8", errors="ignore").read()[:1500]
+            sources[name] = open(path, encoding="utf-8", errors="ignore").read()[:800]
         except Exception:
-            source = ""
+            sources[name] = ""
 
-        prompt = (
-            f"Module: {name} ({count} external callers)\n"
-            f"Source:\n```\n{source}\n```\n\n"
-            "In ONE paragraph (3-4 sentences): what is the key architectural constraint "
-            "of this module? What would break if someone edited it carelessly? "
-            "What musical effect does it control?"
+    # Build one prompt covering all candidates
+    batch_sections = []
+    for count, name, _ in candidates:
+        src = sources.get(name, "")
+        batch_sections.append(
+            f"### {name} ({count} callers)\n```\n{src}\n```"
         )
-        summary = _local_think(prompt, max_tokens=200)
-        if not summary:
-            summary = f"{name}: {count} callers, needs KB documentation"
+    batch_prompt = (
+        "For each module below, write ONE sentence (max 120 chars) stating: "
+        "the key architectural constraint AND what breaks if edited carelessly.\n\n"
+        + "\n\n".join(batch_sections)
+        + "\n\nReply in this exact format (one line per module):\n"
+        + "\n".join(f"{name}: <constraint>" for _, name, _ in candidates)
+    )
+    raw = _local_think(batch_prompt, max_tokens=80 * len(candidates))
 
-        entries.append({"name": name, "callers": count, "summary": summary})
+    # Parse responses: expect "name: summary" lines
+    summaries: dict[str, str] = {}
+    if raw:
+        for line in raw.splitlines():
+            for _, name, _ in candidates:
+                if line.startswith(f"{name}:"):
+                    summaries[name] = line[len(name) + 1:].strip()
+                    break
+
+    parts = [f"## KB Seed — {len(candidates)} modules need KB entries\n"]
+    for count, name, _ in candidates:
+        summary = summaries.get(name) or f"{name}: {count} callers, needs KB documentation"
         parts.append(f"**{name}** ({count} callers)")
         parts.append(f"  {summary[:200]}")
         parts.append("")
@@ -548,7 +558,6 @@ def kb_seed(top_n: int = 15) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def hme_selftest() -> str:
     """Verify HME's own health: tool registration, doc sync, index integrity,
     Ollama connectivity, hash cache consistency. Run after structural changes."""
@@ -625,3 +634,19 @@ def hme_selftest() -> str:
     total = len(results)
     header = f"## HME Self-Test: {passed}/{total} passed\n"
     return header + "\n".join(f"  {r}" for r in results)
+
+
+@ctx.mcp.tool()
+def hme_inspect(mode: str = "both") -> str:
+    """Merged HME self-inspection. mode: 'introspect' (session tool usage + compositional context),
+    'selftest' (health check: tool count, doc sync, index integrity, Ollama), or 'both' (default).
+    Replaces calling hme_introspect + hme_selftest separately."""
+    _track("hme_inspect")
+    parts = []
+    if mode in ("introspect", "both"):
+        parts.append(hme_introspect())
+    if mode in ("selftest", "both"):
+        parts.append(hme_selftest())
+    if not parts:
+        return f"Unknown mode '{mode}'. Use 'introspect', 'selftest', or 'both'."
+    return "\n\n".join(parts)

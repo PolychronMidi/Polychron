@@ -29,10 +29,18 @@ logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
 logger = logging.getLogger("HyperMeta-Ecstasy")
 logger.setLevel(logging.INFO)
 
+
+class _FlushFileHandler(logging.FileHandler):
+    """FileHandler that flushes after every record — ensures logs reach disk even if process hangs."""
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
+
+
 # File logger: timestamped request/response log at log/hme.log
 _log_dir = os.path.join(os.environ.get("PROJECT_ROOT", os.getcwd()), "log")
 os.makedirs(_log_dir, exist_ok=True)
-_file_handler = logging.FileHandler(os.path.join(_log_dir, "hme.log"), encoding="utf-8")
+_file_handler = _FlushFileHandler(os.path.join(_log_dir, "hme.log"), encoding="utf-8")
 _file_handler.setLevel(logging.DEBUG)
 _file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
 logger.addHandler(_file_handler)
@@ -135,4 +143,66 @@ def _background_load():
 threading.Thread(target=_background_load, daemon=True, name="HyperMeta-Ecstasy-startup").start()
 
 if __name__ == "__main__":
+    # Wrap sys.stdin with a proxy that logs every tools/call message at the protocol
+    # level — fires before the tool dispatcher runs, so requests appear in hme.log
+    # even if the tool function itself hangs or is never reached.
+    import json as _json
+
+    class _LoggingBuffer:
+        """Byte-stream proxy that logs every incoming tools/call MCP message."""
+
+        def __init__(self, inner):
+            self._inner = inner
+            self._pending = b""
+
+        def _sniff(self, data: bytes):
+            if not data:
+                return
+            self._pending += data
+            while b"\n" in self._pending:
+                line, self._pending = self._pending.split(b"\n", 1)
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    msg = _json.loads(line)
+                    method = msg.get("method", "")
+                    if method == "tools/call":
+                        name_ = (msg.get("params") or {}).get("name", "?")
+                        logger.info(f"PROTO tools/call → {name_}")
+                    elif method and not method.startswith("notifications/"):
+                        logger.info(f"PROTO {method}")
+                except Exception:
+                    pass
+
+        def read(self, n=-1):
+            d = self._inner.read(n)
+            self._sniff(d)
+            return d
+
+        def readline(self):
+            d = self._inner.readline()
+            self._sniff(d)
+            return d
+
+        def read1(self, n=-1):
+            fn = getattr(self._inner, "read1", None) or self._inner.read
+            d = fn(n)
+            self._sniff(d)
+            return d
+
+        def __getattr__(self, name):
+            return getattr(self._inner, name)
+
+    class _LoggingStdin:
+        """sys.stdin proxy with a logging .buffer for FastMCP stdio transport."""
+
+        def __init__(self, original):
+            self._original = original
+            self.buffer = _LoggingBuffer(original.buffer)
+
+        def __getattr__(self, name):
+            return getattr(self._original, name)
+
+    sys.stdin = _LoggingStdin(sys.stdin)
     mcp.run(transport="stdio")

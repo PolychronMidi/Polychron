@@ -158,7 +158,7 @@ The exploring brake applies duration-proportional pressure after 60 L1-only tick
 
 **Firewall boundary 2.** Resolves conflicts between competing cross-layer systems. Reads trust weights from `adaptiveTrustScores`. Gates convergence events (trust floor modulated by convergenceTarget and CIM coordination scale). Prevents destructive interference between cadence alignment and stutter contagion.
 
-**Density-attenuated hotspot pressure.** Pair-aware hotspot scoring in `adaptiveTrustScoresHelpers.getSystemPairHotspotProfile()` scales density-containing pair weights by `clamp(densityProduct / 0.75, 0.5, 1.0)` from `conductorSignalBridge`. When the conductor deliberately suppresses density (atmospheric/explosive profiles, densityMultiplier < 1), density-pair hotspot pressure attenuates proportionally — preventing false cascades where density-trust systems are penalized for low density the conductor itself requested.
+**Axis-attenuated hotspot pressure.** Pair-aware hotspot scoring in `adaptiveTrustScoresHelpers.getSystemPairHotspotProfile()` applies two axis attenuations. (1) Density: `clamp(densityProduct / 0.75, 0.5, 1.0)` — when the conductor deliberately suppresses density (atmospheric/explosive profiles), density-pair pressure attenuates to prevent false cascades. (2) Flicker: `clamp(flickerProduct / 0.75, 0.5, 1.0)` — when flicker is subdued (smooth-tension coupling label), flicker-pair pressure attenuates analogously, preventing simultaneous false hotspot across stutterContagion, feedbackOscillator, rhythmicComplement and other flicker-axis systems. Both attenuations read from `conductorSignalBridge.getSignals()` and apply multiplicatively to any pair name containing the respective axis keyword.
 
 ## Emission
 
