@@ -8,6 +8,7 @@ from server.helpers import (
     format_knowledge_results, check_path_in_project,
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
     KNOWN_L0_CHANNELS, DRY_PATTERNS, DOC_UPDATE_TRIGGERS,
+    LINE_COUNT_TARGET, LINE_COUNT_WARN,
 )
 from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
@@ -86,8 +87,8 @@ def before_editing(file_path: str) -> str:
             content = _f.read()
         lines = content.split("\n")
         warnings = []
-        if len(lines) > 250:
-            warnings.append(f"OVERSIZE: {len(lines)} lines (target 200)")
+        if len(lines) > LINE_COUNT_WARN:
+            warnings.append(f"OVERSIZE: {len(lines)} lines (target {LINE_COUNT_TARGET})")
         if "/crossLayer/" in rel_path:
             for dr in CROSSLAYER_BOUNDARY_VIOLATIONS:
                 if dr in content and "conductorSignalBridge" not in content:

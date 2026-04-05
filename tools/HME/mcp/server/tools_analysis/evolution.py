@@ -5,7 +5,7 @@ import re
 import logging
 
 from server import context as ctx
-from server.helpers import get_context_budget, validate_project_path, fmt_score, BUDGET_LIMITS
+from server.helpers import get_context_budget, validate_project_path, fmt_score, BUDGET_LIMITS, SUBSYSTEM_NAMES
 from symbols import find_callers as _find_callers
 from .synthesis import (
     _get_api_key, _claude_think, _local_think, _think_local_or_claude,
@@ -85,7 +85,7 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
 
     subsystems = set()
     for f in caller_files:
-        for sub in ['conductor', 'crossLayer', 'composers', 'rhythm', 'fx', 'time', 'play', 'writer']:
+        for sub in SUBSYSTEM_NAMES:
             if sub in f:
                 subsystems.add(sub)
     if subsystems:

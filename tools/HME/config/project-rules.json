@@ -57,5 +57,15 @@
     "conductorDampening.js",
     "densityWaveAnalyzer.js",
     "velocityShapeAnalyzer.js"
-  ]
+  ],
+
+  "subsystem_names": [
+    "conductor", "crossLayer", "composers", "rhythm", "fx", "time", "play", "writer"
+  ],
+
+  "line_count_thresholds": {
+    "target": 200,
+    "warn": 250,
+    "critical": 300
+  }
 }
