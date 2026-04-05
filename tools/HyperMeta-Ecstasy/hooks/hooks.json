@@ -1,0 +1,49 @@
+{
+  "description": "HyperMeta Ecstasy hooks — full lifecycle enforcement for the evolution loop",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/sessionstart.sh", "timeout": 10}]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_edit.sh", "timeout": 10}]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_grep.sh", "timeout": 10}]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_write.sh", "timeout": 10}]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_bash.sh", "timeout": 10}]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_bash.sh", "timeout": 10}]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/userpromptsubmit.sh", "timeout": 10}]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/precompact.sh", "timeout": 10}]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/stop.sh", "timeout": 10}]
+      }
+    ]
+  }
+}

@@ -111,6 +111,9 @@ class RAGEngine(RAGKnowledgeMixin):
             return self._index_directory_locked(directory)
 
     def _index_directory_locked(self, directory: str) -> dict:
+        # Validate cache integrity before any skip decisions —
+        # catches desync from crashed clears, DB renames, race conditions
+        self._validate_cache()
         files = self._collect_files(directory)
         logger.info(f"Collected {len(files)} source files")
         pending_chunks: list[dict] = []
@@ -381,7 +384,13 @@ class RAGEngine(RAGKnowledgeMixin):
             self._chunk_hashes = set()
             self._access_log = {}
             self._search_cache.invalidate()
+            # Belt AND suspenders: clear in-memory dict, save empty to disk,
+            # AND delete the physical file to prevent any stale cache survival
             self._save_hashes()
+            try:
+                os.remove(self.hash_cache_path)
+            except OSError:
+                pass
 
     def _try_open_symbol_table(self):
         try:

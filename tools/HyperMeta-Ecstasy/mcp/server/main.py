@@ -1,4 +1,4 @@
-"""code-docs-rag MCP server entry point.
+"""HyperMeta-Ecstasy MCP server entry point.
 
 Bootstrap order (critical for fast MCP handshake):
   1. Create FastMCP app + populate context (no model needed)
@@ -26,7 +26,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
-logger = logging.getLogger("code-docs-rag")
+logger = logging.getLogger("HyperMeta-Ecstasy")
 logger.setLevel(logging.INFO)
 
 from mcp.server.fastmcp import FastMCP
@@ -34,8 +34,8 @@ from file_walker import init_config, get_lib_dirs
 
 # --- Config (no model needed) ---
 PROJECT_ROOT = os.environ.get("PROJECT_ROOT") or os.getcwd()
-PROJECT_DB = os.environ.get("RAG_DB_PATH") or os.path.join(PROJECT_ROOT, ".claude", "mcp", "code-docs-rag")
-GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "code-docs-rag", "global_kb")
+PROJECT_DB = os.environ.get("RAG_DB_PATH") or os.path.join(PROJECT_ROOT, ".claude", "mcp", "HyperMeta-Ecstasy")
+GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "HyperMeta-Ecstasy", "global_kb")
 MODEL_NAME = os.environ.get("RAG_MODEL", "all-mpnet-base-v2")
 MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
 
@@ -45,13 +45,13 @@ init_config(PROJECT_ROOT)
 
 # --- MCP App (created BEFORE model load so handshake is instant) ---
 mcp = FastMCP(
-    "code-docs-rag",
+    "HyperMeta-Ecstasy",
     instructions=(
         "Use search_knowledge before modifying a module to check for existing constraints.\n"
         "Use search_code or find_callers for open-ended code searches (they add KB context that Grep misses).\n"
         "After batch code changes: run index_codebase once. File watcher handles individual saves.\n"
         "After user-confirmed rounds: add_knowledge for calibration anchors and decisions.\n"
-        "See doc/code-docs-rag.md for the full workflow."
+        "See doc/HyperMeta-Ecstasy.md for the full workflow."
     ),
 )
 
@@ -106,7 +106,7 @@ def _background_load():
         context.shared_model = shared_model
         context.lib_engines = lib_engines
 
-        logger.info(f"code-docs-rag ready | project={PROJECT_ROOT} | project_db={PROJECT_DB} | global_db={GLOBAL_DB} | libs={list(lib_engines.keys())}")
+        logger.info(f"HyperMeta-Ecstasy ready | project={PROJECT_ROOT} | project_db={PROJECT_DB} | global_db={GLOBAL_DB} | libs={list(lib_engines.keys())}")
 
         # Pre-warm system prompt + KB corpus cache so first tool call hits cached blocks
         try:
@@ -118,12 +118,12 @@ def _background_load():
             logger.debug(f"Cache warm skipped: {_e}")
     except Exception as e:
         context._startup_error = e
-        logger.error(f"code-docs-rag background startup failed: {e}")
+        logger.error(f"HyperMeta-Ecstasy background startup failed: {e}")
     finally:
         _startup_done.set()
 
 
-threading.Thread(target=_background_load, daemon=True, name="code-docs-rag-startup").start()
+threading.Thread(target=_background_load, daemon=True, name="HyperMeta-Ecstasy-startup").start()
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

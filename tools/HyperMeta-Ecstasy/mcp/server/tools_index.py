@@ -1,4 +1,4 @@
-"""code-docs-rag index tools."""
+"""HyperMeta-Ecstasy index tools."""
 import os
 import logging
 from concurrent.futures import ThreadPoolExecutor
@@ -11,7 +11,7 @@ from server.helpers import (
 )
 from symbols import collect_all_symbols
 
-logger = logging.getLogger("code-docs-rag")
+logger = logging.getLogger("HyperMeta-Ecstasy")
 
 def _resolve_lib_engine(lib: str) -> tuple | None:
     if lib in ctx.lib_engines:
@@ -219,6 +219,3 @@ def index_symbols() -> str:
         return f"{n} {word}es" if word.endswith(("s", "sh", "ch", "x", "z")) else f"{n} {word}s"
     kind_str = ", ".join(_plural(v, k) for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
     return f"Symbol index built: {result['indexed']} symbols ({kind_str})"
-
-
-

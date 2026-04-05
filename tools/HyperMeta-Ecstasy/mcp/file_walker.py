@@ -15,7 +15,7 @@ DEFAULT_IGNORE_DIRS = {
     ".claude", "venv", ".venv", "env", ".env",
     "runtime", ".idea", ".vscode", ".next",
     "coverage", ".nyc_output", ".turbo",
-    "tools", ".github", "metrics", "output", "tmp", "lab",
+    ".github", "metrics", "output", "tmp", "lab",
 }
 
 IGNORE_FILES = {
@@ -49,12 +49,12 @@ def init_config(project_root: str):
         logger.warning(f"Failed to read .mcp.json: {e}")
         return
 
-    rag_cfg = data.get("mcpServers", {}).get("code-docs-rag", {})
+    rag_cfg = data.get("mcpServers", {}).get("HyperMeta-Ecstasy", {})
 
     dirs = rag_cfg.get("ragIgnoreDirs")
     if dirs and isinstance(dirs, list):
-        # Merge with defaults rather than replace — losing 'tools'/'node_modules'/'.git'
-        # would cause the server to index itself or vendor dependencies
+        # Merge with defaults rather than replace — losing 'node_modules'/'.git'/etc
+        # would cause the server to index vendor dependencies
         _config["ignore_dirs"] = set(DEFAULT_IGNORE_DIRS) | set(dirs)
         logger.info(f"ragIgnoreDirs loaded: {len(dirs)} entries (merged with {len(DEFAULT_IGNORE_DIRS)} defaults)")
 
@@ -165,4 +165,3 @@ def walk_code_files(
                     pass
 
             yield fpath
-

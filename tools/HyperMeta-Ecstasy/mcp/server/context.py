@@ -7,7 +7,7 @@ import logging
 import threading
 from mcp.server.fastmcp import FastMCP
 
-logger = logging.getLogger("code-docs-rag")
+logger = logging.getLogger("HyperMeta-Ecstasy")
 
 # Populated by main.py before tool modules load
 PROJECT_ROOT: str = ""
@@ -31,9 +31,9 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     """
     if _startup_done is None or _startup_done.is_set():
         if _startup_error:
-            raise RuntimeError(f"code-docs-rag startup failed: {_startup_error}")
+            raise RuntimeError(f"HyperMeta-Ecstasy startup failed: {_startup_error}")
         return
     if not _startup_done.wait(timeout=timeout):
-        raise RuntimeError(f"code-docs-rag: model loading timed out after {timeout}s")
+        raise RuntimeError(f"HyperMeta-Ecstasy: model loading timed out after {timeout}s")
     if _startup_error:
-        raise RuntimeError(f"code-docs-rag startup failed: {_startup_error}")
+        raise RuntimeError(f"HyperMeta-Ecstasy startup failed: {_startup_error}")
