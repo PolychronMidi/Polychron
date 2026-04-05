@@ -1,4 +1,4 @@
-"""code-docs-rag knowledge tools."""
+"""HyperMeta-Ecstasy knowledge tools."""
 import os
 import time
 import logging
@@ -10,16 +10,18 @@ from server.helpers import (
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
 )
 
-logger = logging.getLogger("code-docs-rag")
+logger = logging.getLogger("HyperMeta-Ecstasy")
 
 @ctx.mcp.tool()
-def add_knowledge(title: str, content: str, category: str = "general", tags: list[str] = [], scope: str = "project", related_to: str = "", relation_type: str = "") -> str:
-    """Persist a knowledge entry (decision, calibration anchor, pattern, or bugfix) to the KB. Only call this after the user confirms a task is complete — never speculatively. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) to create typed graph edges for knowledge_graph traversal. Tags: pass as a list of strings (["tag1","tag2"]). Scope 'project' stores locally, 'global' stores in shared KB, 'both' stores in both. Automatically detects and merges redundant entries or supersedes outdated ones."""
+def add_knowledge(title: str, content: str, category: str = "general", tags: list[str] = [], scope: str = "project", related_to: str = "", relation_type: str = "", listening_notes: str = "") -> str:
+    """Persist a knowledge entry to the KB. Tell the STORY, not just the fact: include WHY this matters musically, what the listener experiences when this constraint is violated, and what happened in the round that discovered it. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use listening_notes to describe the musical effect ('coherent sections lost their sense of arrival'). Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) for knowledge_graph edges. Scope 'project'/'global'/'both'."""
     ctx.ensure_ready_sync()
     if not title.strip():
         return "Error: title cannot be empty."
     if not content.strip():
         return "Error: content cannot be empty."
+    if listening_notes.strip():
+        content = content.rstrip() + f"\n\nListening notes: {listening_notes.strip()}"
     valid_categories = {"architecture", "decision", "pattern", "bugfix", "general"}
     if category not in valid_categories:
         return f"Error: invalid category '{category}'. Valid: {', '.join(sorted(valid_categories))}"
@@ -242,9 +244,8 @@ def memory_dream() -> str:
 
     # Adaptive synthesis: what do the connections mean architecturally?
     try:
-        from server.tools_analysis import _get_api_key, _claude_think, _THINK_MODEL, _format_kb_corpus
-        api_key = _get_api_key()
-        if api_key and top_pairs:
+        from server.tools_analysis import _get_api_key, _think_local_or_claude
+        if top_pairs:
             pairs_text = "\n".join(
                 f"  {sim:.0%}: '{a}' <-> '{b}'" for sim, a, b, _, _ in top_pairs[:6]
             )
@@ -255,9 +256,9 @@ def memory_dream() -> str:
                 "Which ones should be explicitly linked via add_knowledge? "
                 "Are any of these connections surprising given the codebase design?"
             )
-            synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), max_tokens=512)
+            synthesis = _think_local_or_claude(user_text, _get_api_key())
             if synthesis:
-                parts.append(f"\n## Architectural Interpretation *(adaptive, {_THINK_MODEL})*")
+                parts.append(f"\n## Architectural Interpretation *(adaptive)*")
                 parts.append(synthesis)
     except Exception:
         pass
@@ -340,9 +341,8 @@ def knowledge_graph(query: str) -> str:
 
     # Adaptive synthesis: what does this KB cluster mean right now?
     try:
-        from server.tools_analysis import _get_api_key, _claude_think, _THINK_MODEL, _format_kb_corpus
-        api_key = _get_api_key()
-        if api_key and results:
+        from server.tools_analysis import _get_api_key, _think_local_or_claude
+        if results:
             cluster_text = "\n".join(
                 f"  [{r['category']}] {r['title']}: {r['content'][:120]}"
                 for r in results[:8]
@@ -355,9 +355,9 @@ def knowledge_graph(query: str) -> str:
                 "(2) what current architectural risk does it highlight, "
                 "(3) which entry is most important to act on first?"
             )
-            synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), max_tokens=512)
+            synthesis = _think_local_or_claude(user_text, _get_api_key())
             if synthesis:
-                parts.append(f"\n## Cluster Analysis *(adaptive, {_THINK_MODEL})*")
+                parts.append(f"\n## Cluster Analysis *(adaptive)*")
                 parts.append(synthesis)
     except Exception:
         pass
@@ -424,6 +424,3 @@ def kb_health() -> str:
             for s in glob_stale[:5]:
                 parts.append(s)
     return "\n".join(parts)
-
-
-

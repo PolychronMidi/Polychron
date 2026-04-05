@@ -1,4 +1,4 @@
-"""code-docs-rag search tools."""
+"""HyperMeta-Ecstasy search tools."""
 import os
 import logging
 
@@ -12,7 +12,7 @@ from rag_engine import summarize_chunk
 from symbols import find_callers as _find_callers, collect_all_symbols
 from analysis import find_similar_code as _find_similar
 
-logger = logging.getLogger("code-docs-rag")
+logger = logging.getLogger("HyperMeta-Ecstasy")
 
 def _resolve_lib_engine(lib: str) -> tuple | None:
     if lib in ctx.lib_engines:
@@ -37,7 +37,7 @@ def _index_main(target: str) -> dict:
     return result
 
 @ctx.mcp.tool()
-def grep(pattern: str, path: str = "src", file_type: str = "js", context: int = 0, regex: bool = False, files_only: bool = False) -> str:
+def grep(pattern: str, path: str = "", file_type: str = "", context: int = 0, regex: bool = False, files_only: bool = False) -> str:
     """Exact string or regex search across project files, enriched with KB cross-references. Use this instead of built-in Grep for all exact-match searches — it automatically surfaces relevant knowledge constraints alongside results. Set regex=True for extended regex (-E), context=N for surrounding lines (-C), files_only=True for file paths only (-l). Returns up to 30 matching lines plus any KB entries related to the search pattern. For semantic/intent-based searches, use search_code instead."""
     import subprocess
     ctx.ensure_ready_sync()
@@ -49,16 +49,20 @@ def grep(pattern: str, path: str = "src", file_type: str = "js", context: int = 
             _re.compile(pattern)
         except _re.error as e:
             return f"Error: invalid regex pattern: {e}"
-    target = os.path.join(ctx.PROJECT_ROOT, path) if not os.path.isabs(path) else path
+    target = os.path.join(ctx.PROJECT_ROOT, path) if path and not os.path.isabs(path) else (path if path else ctx.PROJECT_ROOT)
     if not os.path.realpath(target).startswith(os.path.realpath(ctx.PROJECT_ROOT)):
         return f"Error: path '{path}' is outside the project root."
-    cmd = ["grep", "-rn", "--include", f"*.{file_type}"]
+    cmd = ["grep", "-rn"]
+    if file_type:
+        cmd.extend(["--include", f"*.{file_type}"])
     if regex:
         cmd.insert(1, "-E")
     if context > 0:
         cmd.extend([f"-C{context}"])
     if files_only:
-        cmd = ["grep", "-rl", "--include", f"*.{file_type}"]
+        cmd = ["grep", "-rl"]
+        if file_type:
+            cmd.extend(["--include", f"*.{file_type}"])
         if regex:
             cmd.insert(1, "-E")
     cmd.extend([pattern, target])
@@ -425,6 +429,3 @@ def find_anti_pattern(wrong_symbol: str, right_symbol: str, path: str = "", excl
     lines = [f"  {r['file']}:{r['line']} - {r['text']}" for r in violation_results[:30]]
     overflow = f"\n  ... and {len(violation_results) - 30} more" if len(violation_results) > 30 else ""
     return f"ANTI-PATTERN: {len(violations)} file(s) use '{wrong_symbol}' but not '{right_symbol}':\n" + "\n".join(lines) + overflow
-
-
-

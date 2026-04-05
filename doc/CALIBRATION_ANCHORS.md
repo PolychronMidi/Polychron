@@ -2,7 +2,7 @@
 
 > Listening-confirmed constraints and proven thresholds from evolution rounds.
 > These are the load-bearing decisions that prevent regressions.
-> Source: code-docs-rag KB entries, verified by pipeline + listening.
+> Source: HyperMeta-Ecstasy KB entries, verified by pipeline + listening.
 
 ## Timing
 

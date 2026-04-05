@@ -1,0 +1,277 @@
+"""HME reasoning tools — module biography, reflection, blast radius."""
+import os
+import logging
+
+from server import context as ctx
+from server.helpers import get_context_budget, validate_project_path, fmt_score, fmt_sim_score, BUDGET_LIMITS
+from symbols import collect_all_symbols, find_callers as _find_callers
+from structure import file_summary as _file_summary
+from analysis import find_similar_code as _find_similar
+from .synthesis import (
+    _get_api_key, _claude_think, _local_think, _think_local_or_claude,
+    _format_kb_corpus, _THINK_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+)
+from . import _get_compositional_context, _track
+
+logger = logging.getLogger("HyperMeta-Ecstasy")
+
+@ctx.mcp.tool()
+def module_story(module_name: str) -> str:
+    """Tell the story of a module: definition, evolution history from KB, callers, conventions, and current health. A living biography. Output is automatically scaled based on remaining context window — greedy when context is plentiful, minimal when tight."""
+    ctx.ensure_ready_sync()
+    _track("module_story")
+    if not module_name.strip():
+        return "Error: module_name cannot be empty."
+    budget = get_context_budget()
+    limits = BUDGET_LIMITS[budget]
+    parts = [f"# Module Story: {module_name} (context: {budget})\n"]
+    # Definition — try exact symbol match, then prefix match, then file search
+    syms = collect_all_symbols(ctx.PROJECT_ROOT)
+    matching = [s for s in syms if s["name"] == module_name]
+    if not matching:
+        # Prefix match: find symbols whose name starts with the module name (inner functions)
+        prefix_matches = [s for s in syms if s["name"].startswith(module_name) and s["kind"] in ("function", "method")]
+        if prefix_matches:
+            # Use the file from the first match as the definition location
+            matching = [{"name": module_name, "kind": "module", "file": prefix_matches[0]["file"], "line": 1, "signature": ""}]
+    if not matching:
+        # File search: look for a file named after the module
+        import glob as _glob
+        candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{module_name}.js"), recursive=True)
+        if candidates:
+            matching = [{"name": module_name, "kind": "module", "file": candidates[0], "line": 1, "signature": ""}]
+    if not matching:
+        return f"Module '{module_name}' not found. No matching symbol, prefix, or file in src/."
+    if matching:
+        s = matching[0]
+        parts.append(f"## Definition")
+        parts.append(f"  {s['file'].replace(ctx.PROJECT_ROOT + '/', '')}:{s['line']} [{s['kind']}]")
+        # File summary
+        result = _file_summary(s["file"])
+        if not result.get("error") and result.get("symbols"):
+            sym_limit = limits["symbols"]
+            parts.append(f"  {result['lines']} lines, {len(result['symbols'])} symbols")
+            for sym in result["symbols"][:sym_limit]:
+                sig = f" {sym['signature']}" if sym.get('signature') else ""
+                parts.append(f"    L{sym['line']}: {sym['name']}{sig}")
+            if len(result["symbols"]) > sym_limit:
+                parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
+        parts.append("")
+    # Evolution history from KB (project + global)
+    kb_limit = limits["kb_entries"] * 2  # module_story should show more history
+    kb_results = ctx.project_engine.search_knowledge(module_name, top_k=kb_limit)
+    glob_results = ctx.global_engine.search_knowledge(module_name, top_k=3) if ctx.global_engine else []
+    relevant = kb_results + [dict(r, title=f"[global] {r['title']}") for r in glob_results]
+    if relevant:
+        parts.append(f"## Evolution History ({len(relevant)} KB entries)")
+        for k in relevant:
+            parts.append(f"  **[{k['category']}] {k['title']}**")
+            kb_body = k['content'][:limits['kb_content']]
+            parts.append(f"  {kb_body}" + ("..." if len(k['content']) > limits['kb_content'] else ""))
+            parts.append("")
+    else:
+        parts.append("## Evolution History: no KB entries mention this module\n")
+    # Callers
+    callers = _find_callers(module_name, ctx.PROJECT_ROOT)
+    callers = [r for r in callers if module_name not in os.path.basename(r.get('file', ''))]
+    caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
+    caller_limit = limits["callers"]
+    parts.append(f"## Dependents ({len(caller_files)} files)")
+    for f in caller_files[:caller_limit]:
+        parts.append(f"  {f}")
+    if len(caller_files) > caller_limit:
+        parts.append(f"  ... and {len(caller_files) - caller_limit} more")
+    # Musical impact — compositional awareness
+    comp = _get_compositional_context(module_name)
+    if comp:
+        parts.append(f"\n## Musical Impact (last run)")
+        parts.append(comp)
+
+    # Semantic neighbors
+    sim_limit = limits["similar"]
+    if matching and sim_limit > 0:
+        try:
+            content = open(matching[0]["file"], encoding="utf-8", errors="ignore").read()[:500]
+            similar = _find_similar(content, ctx.project_engine, top_k=sim_limit)
+            if similar:
+                parts.append(f"\n## Similar Modules")
+                for r in similar:
+                    parts.append(f"  {r['source'].replace(ctx.PROJECT_ROOT + '/', '')} ({fmt_sim_score(r['score'])})")
+        except Exception:
+            pass
+
+    # Adaptive synthesis: top 3 things to know before editing
+    callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
+    kb_summary = "\n".join(
+        f"  [{k['category']}] {k['title']}: {k['content'][:100]}"
+        for k in relevant
+    ) if relevant else "none"
+    user_text = (
+        f"Module: {module_name}\n"
+        f"Dependents: {callers_summary}\n"
+        f"KB evolution history:\n{kb_summary}\n\n"
+        "In 3 bullet points: what are the most important things to know before editing this module? "
+        "Focus on hidden invariants, caller contracts, and architectural constraints visible in the history above."
+    )
+    api_key = _get_api_key()
+    synthesis = None
+    if api_key:
+        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                   max_tool_calls=_get_tool_budget())
+    if not synthesis:
+        synthesis = _local_think(user_text, max_tokens=1024)
+    if synthesis:
+        parts.append(f"\n## Key Constraints *(adaptive)*")
+        parts.append(synthesis)
+
+    return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def think(about: str, context: str = "") -> str:
+    """Structured reflection tool. When ANTHROPIC_API_KEY is set, uses Claude with adaptive thinking to produce real analysis. Falls back to a structured reflection template otherwise."""
+    ctx.ensure_ready_sync()
+    prompts = {
+        "task_adherence": "Am I still working on what the user asked? Have I drifted into tangential work? What was the original request and am I addressing it?",
+        "completeness": "Have I finished everything required? Are there skipped phases (verify, journal, snapshot)? Did I check the pipeline results? Did I update docs?",
+        "constraints": "What KB constraints apply to what I'm about to do? Have I called before_editing? Are there boundary rules I might violate?",
+        "impact": "What could break from my changes? Have I checked callers? Are there compound effects with other recent changes?",
+        "conventions": "Does my code follow project conventions? Line count? Naming? Registration? Architectural boundaries?",
+        "recent_changes": "What files changed recently? Are there unintended interactions between the recent changes?",
+    }
+    prompt = prompts.get(about, f"Reflect on: {about}")
+
+    # For recent_changes, fetch git context and inject as additional context
+    if about == "recent_changes" and not context:
+        try:
+            import subprocess as _sp
+            _log = _sp.run(
+                ["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "--since=6 hours ago", "--name-only", "--diff-filter=AM"],
+                capture_output=True, text=True, timeout=5
+            )
+            if _log.stdout.strip():
+                context = f"Recent git activity:\n{_log.stdout.strip()[:800]}"
+        except Exception:
+            pass
+
+    # Gather KB context regardless of path
+    kb_hits = ctx.project_engine.search_knowledge(about, top_k=5)
+    kb_block = ""
+    if kb_hits:
+        lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_hits]
+        kb_block = "Relevant KB constraints:\n" + "\n".join(lines)
+
+    api_key = _get_api_key()
+    if api_key:
+        user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
+        if context:
+            user_text += f"\n\n**Additional context:** {context}"
+        # think is an explicit reasoning call — full 4-step effort scaling
+        think_effort = {"greedy": "max", "moderate": "high", "conservative": "medium", "minimal": "low"}.get(
+            get_context_budget(), "medium"
+        )
+        answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), effort=think_effort,
+                               max_tool_calls=_get_tool_budget())
+        if answer:
+            parts = [f"# Think: {about} *(adaptive/{think_effort}, {_THINK_MODEL})*\n", answer]
+            if kb_hits:
+                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
+            return "\n".join(parts)
+
+    # Ollama fallback before template
+    user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
+    if context:
+        user_text += f"\n\n**Additional context:** {context}"
+    if kb_block:
+        user_text += f"\n\n{kb_block}"
+    local_answer = _local_think(user_text, max_tokens=1024)
+    if local_answer:
+        parts = [f"# Think: {about} *(local)*\n", local_answer]
+        if kb_hits:
+            parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
+        return "\n".join(parts)
+
+    # Template fallback (no models available)
+    parts = [f"# Think: {about}\n"]
+    parts.append(f"**Prompt:** {prompt}\n")
+    if context:
+        parts.append(f"**Context:** {context}\n")
+    if kb_hits:
+        parts.append("**Relevant KB:**")
+        for k in kb_hits:
+            parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:100]}...")
+    parts.append("\n**Now reflect and respond before proceeding.**")
+    return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
+    """Trace the full transitive dependency chain of a symbol: who calls it, who calls those callers, etc. Deeper than impact_analysis."""
+    ctx.ensure_ready_sync()
+    if not symbol_name.strip():
+        return "Error: symbol_name cannot be empty."
+    visited = set()
+    layers = []
+    current = [symbol_name]
+    for depth in range(max_depth):
+        next_layer = []
+        layer_results = []
+        for sym in current:
+            if sym in visited:
+                continue
+            visited.add(sym)
+            callers = _find_callers(sym, ctx.PROJECT_ROOT)
+            for r in callers:
+                rel = r["file"].replace(ctx.PROJECT_ROOT + "/", "")
+                if not rel.startswith("src/"):
+                    continue
+                caller_file = os.path.basename(r["file"]).replace(".js", "").replace(".ts", "")
+                if caller_file not in visited and caller_file != sym:
+                    next_layer.append(caller_file)
+                    layer_results.append(f"  {r['file'].replace(ctx.PROJECT_ROOT + '/', '')}:{r['line']} ({sym})")
+        if layer_results:
+            layers.append((depth + 1, layer_results))
+        current = list(set(next_layer))
+        if not current:
+            break
+    if not layers:
+        return f"No callers found for '{symbol_name}'. Blast radius = 0."
+    parts = [f"# Blast Radius: {symbol_name}\n"]
+    total = 0
+    for depth, results in layers:
+        total += len(results)
+        parts.append(f"## Depth {depth} ({len(results)} sites)")
+        for r in results[:15]:
+            parts.append(r)
+        if len(results) > 15:
+            parts.append(f"  ... and {len(results) - 15} more")
+        parts.append("")
+    # KB constraints
+    kb_hits = ctx.project_engine.search_knowledge(symbol_name, top_k=2)
+    if kb_hits:
+        parts.append("## KB Constraints")
+        for k in kb_hits:
+            parts.append(f"  [{k['category']}] {k['title']}")
+    parts.append(f"\nTotal blast radius: {total} sites across {len(layers)} depth levels")
+    all_files = set()
+    for _, results in layers:
+        for r in results:
+            f = r.strip().split(":")[0]
+            all_files.add(f)
+    parts.append(f"Files affected: {len(all_files)}")
+
+    if total > 0:
+        depth_summary = "; ".join(f"depth {d}: {len(r)} sites" for d, r in layers)
+        user_text = (
+            f"Symbol changed: {symbol_name}\n"
+            f"Blast radius: {total} call sites in {len(all_files)} files ({depth_summary})\n\n"
+            "In 3 points: (1) which callers at depth 1 are highest-risk to break, "
+            "(2) what integration tests or validation steps are most important, "
+            "(3) any cascade effects to watch for in deeper layers."
+        )
+        synthesis = _think_local_or_claude(user_text, _get_api_key())
+        if synthesis:
+            parts.append(f"\n## Change Risk *(adaptive)*")
+            parts.append(synthesis)
+
+    return "\n".join(parts)

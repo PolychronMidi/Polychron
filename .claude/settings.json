@@ -6,26 +6,52 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/sessionstart.sh"}]
+      }
+    ],
     "PreToolUse": [
       {
+        "matcher": "Edit",
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/pretooluse_edit.sh"}]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/pretooluse_grep.sh"}]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/pretooluse_write.sh"}]
+      },
+      {
         "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.command // \"\"' | grep -q 'run\\.lock' && grep -q 'rm' && echo '{\"decision\":\"block\",\"reason\":\"BLOCKED: Never delete run.lock\"}' || true"
-          }
-        ]
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/pretooluse_bash.sh"}]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/posttooluse_bash.sh"}]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/userpromptsubmit.sh"}]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/precompact.sh"}]
       }
     ],
     "Stop": [
       {
         "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2; exit 0"
-          }
-        ]
+        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/stop.sh"}]
       }
     ]
   }

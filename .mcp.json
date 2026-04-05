@@ -1,16 +1,18 @@
 {
   "mcpServers": {
-    "code-docs-rag": {
+    "HyperMeta-Ecstasy": {
       "type": "stdio",
       "command": "python3",
-      "args": ["/home/jah/.claude/mcp/code-docs-rag/server/main.py"],
+      "args": ["/home/jah/Polychron/tools/HyperMeta-Ecstasy/mcp/server/main.py"],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
-        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/code-docs-rag",
+        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HyperMeta-Ecstasy",
         "PYTHONPATH": "/home/jah/.local/lib/python3.12/site-packages",
         "PATH": "/home/jah/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "HF_HUB_OFFLINE": "1",
-        "TRANSFORMERS_OFFLINE": "1"
+        "TRANSFORMERS_OFFLINE": "1",
+        "HME_LOCAL_MODEL": "qwen2.5-coder:7b",
+        "HME_LOCAL_URL": "http://localhost:11434/api/generate"
       }
     }
   }

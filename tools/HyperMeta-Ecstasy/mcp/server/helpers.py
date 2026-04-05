@@ -3,7 +3,7 @@ import json
 import math
 import logging
 
-logger = logging.getLogger("code-docs-rag")
+logger = logging.getLogger("HyperMeta-Ecstasy")
 
 # Shared boundary violation patterns for crossLayer checks
 CROSSLAYER_BOUNDARY_VIOLATIONS = [
