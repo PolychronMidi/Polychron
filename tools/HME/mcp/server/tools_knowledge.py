@@ -224,10 +224,15 @@ def memory_dream() -> str:
         for j in range(i + 1, len(rows)):
             sim = float(np.dot(vecs[i], vecs[j]) / (np.linalg.norm(vecs[i]) * np.linalg.norm(vecs[j]) + 1e-10))
             if sim > 0.35:
-                # Check if already linked
-                tags_i = rows[i].get("tags", "")
-                tags_j = rows[j].get("tags", "")
-                already_linked = rows[j]["id"] in tags_i or rows[i]["id"] in tags_j
+                # Related-to links stored as tags in format "relation_type:entry_id" or bare "entry_id"
+                tags_i = rows[i].get("tags", [])
+                tags_j = rows[j].get("tags", [])
+                if isinstance(tags_i, str): tags_i = [tags_i]
+                if isinstance(tags_j, str): tags_j = [tags_j]
+                already_linked = (
+                    any(rows[j]["id"] in tag for tag in tags_i)
+                    or any(rows[i]["id"] in tag for tag in tags_j)
+                )
                 if not already_linked:
                     discoveries.append((sim, rows[i]["title"], rows[j]["title"], rows[i]["id"], rows[j]["id"]))
     discoveries.sort(key=lambda x: -x[0])

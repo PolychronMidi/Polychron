@@ -366,10 +366,14 @@ def interaction_map(module_a: str, module_b: str = "") -> str:
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
-    # Single-module mode: find all modules it interacts with
+    # Single-module mode: compute correlations vs all other modules in one pass
     if not module_b.strip():
+        import math
+        a_lower = module_a.lower()
+        # Single-pass: collect A's scores and all others' scores simultaneously
+        a_scores_raw: list = []
+        others: dict = {}  # name → [scores]
         try:
-            modules_seen = set()
             with open(trace_path, encoding="utf-8") as f:
                 for line in f:
                     try:
@@ -377,18 +381,40 @@ def interaction_map(module_a: str, module_b: str = "") -> str:
                     except Exception:
                         continue
                     trust = record.get("trust", {})
-                    modules_seen.update(k for k in trust.keys() if k.lower() != module_a.lower())
-            if not modules_seen:
-                return f"No other modules found in trace data to compare with '{module_a}'."
-            parts = [f"# Interaction Map: {module_a} vs all\n"]
-            for other in sorted(modules_seen)[:10]:
-                # Recursive call for each pair — limited to top 10
-                parts.append(f"---\n## vs {other}")
-                # Inline a lightweight correlation check
-                parts.append(f"  (use interaction_map module_a='{module_a}' module_b='{other}' for details)")
-            return "\n".join(parts)
+                    a_data = next((v for k, v in trust.items() if k.lower() == a_lower and isinstance(v, dict)), None)
+                    if a_data is None:
+                        continue
+                    a_scores_raw.append(a_data.get("score", 0))
+                    for k, v in trust.items():
+                        if k.lower() != a_lower and isinstance(v, dict):
+                            others.setdefault(k, []).append(v.get("score", 0))
         except Exception as e:
             return f"Error scanning trace: {e}"
+        if len(a_scores_raw) < 10:
+            return f"Insufficient trace data for '{module_a}' ({len(a_scores_raw)} beats)."
+
+        def _corr(xs, ys):
+            n = min(len(xs), len(ys))
+            if n < 5: return 0.0
+            xs, ys = xs[:n], ys[:n]
+            mx, my = sum(xs)/n, sum(ys)/n
+            cov = sum((x-mx)*(y-my) for x,y in zip(xs,ys)) / n
+            sx = math.sqrt(sum((x-mx)**2 for x in xs) / n)
+            sy = math.sqrt(sum((y-my)**2 for y in ys) / n)
+            return cov / (sx * sy) if sx > 0 and sy > 0 else 0.0
+
+        correlations = [(name, _corr(a_scores_raw, scores)) for name, scores in others.items() if len(scores) >= 10]
+        correlations.sort(key=lambda x: -abs(x[1]))
+        parts = [f"# Interaction Map: {module_a} vs all ({len(a_scores_raw)} beats)\n"]
+        parts.append(f"**Score avg:** {sum(a_scores_raw)/len(a_scores_raw):.3f}\n")
+        parts.append("Top interactions (by |correlation|):")
+        for name, corr in correlations[:12]:
+            rel = "COOPERATIVE" if corr > 0.4 else ("COMPETITIVE" if corr < -0.2 else "independent")
+            bar = "▶" * int(abs(corr) * 10)
+            parts.append(f"  {name:<30} r={corr:+.3f} {bar} ({rel})")
+        if len(correlations) > 12:
+            parts.append(f"  ... {len(correlations) - 12} more")
+        return "\n".join(parts)
 
     a_lower, b_lower = module_a.lower(), module_b.lower()
     a_scores, b_scores, a_weights, b_weights = [], [], [], []

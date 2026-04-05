@@ -1,3 +1,28 @@
+## R45 — 2026-04-05 — STABLE (all identical pair clusters eliminated + HME project-rules config)
+
+**Profile:** atmospheric | **Beats:** ~817 traced | **axisGini:** 0.136 (was 0.064 — UP, monitoring)
+**Fingerprint:** 10/10 stable | Drifted: none
+**Regimes:** exploring 47%, coherent 28%, evolving 25%
+
+### What the Music Sounds Like
+Needs listen. Significant regime shift: exploring dominant at 47% (was 28% in R44). Coherent dropped from 36%→28%. Less settled, more exploratory character. 32234 notes (atmospheric). axisGini rise unexpected — monitoring for musical effect.
+
+### Causal Findings
+- **All identical pair clusters eliminated**: verticalIntervalMonitor→density-phase, convergenceHarmonicTrigger→entropy-trust, phaseAwareCadenceWindow→trust-phase, motifEcho→entropy-trust, grooveTransfer→flicker-entropy, velocityInterference→entropy-trust. Node checker confirms: 27/27 systems now have unique pair sets — first time true.
+- **axisGini rose 0.064→0.136**: Pair changes pointed new systems at entropy-trust/flicker-entropy axes that were previously underused. Those axes have more extreme pressure distributions in this composition → higher inequality. Not necessarily bad; monitoring.
+- **Remaining coincidental clusters**: stutterContagion+texturalMirror (24.7%, share 2/3 pairs), rhythmicComplement+crossLayerSilhouette (15.3%, share 2/3 pairs), spectralComplementarity+registerCollisionAvoider (14.3%, share 2/3 pairs). These are NOT structural bugs — distinct pair sets confirmed.
+- **HME project-rules.json**: externalized project-specific declarations from Python into config/project-rules.json (crosslayer violations, L0 channels, DRY patterns, doc triggers, known non-tool identifiers). Logic stays in Python, data in config.
+- **HME stale field reads fixed**: _get_compositional_context, posttooluse_pipeline_kb.sh both read regimeDistribution/trustStats (wrong) — fixed to regimes/trustDominance.
+- **HME codebase_health**: DRY pattern checks now driven by project-rules.json.
+
+### Evolutions Applied
+- E1: fix 4 identical pair-assignment bugs (6 system pairs differentiated) — CONFIRMED (0 identical pair sets)
+
+### Evolutions Proposed (for R46)
+- E1: if axisGini rise is musically negative, review grooveTransfer/velocityInterference entropy-trust assignments — may need different pairs
+- E2: if exploring dominance (47%) sounds good, consider investigating what drove it for further tuning
+- E3: attack remaining 2/3-pair-overlap coincidental clusters if they reappear as stable patterns
+
 ## R44 — 2026-04-05 — STABLE (uniform hotspot cluster broken + HME tool fixes)
 
 **Profile:** atmospheric | **Beats:** ~991 traced | **Duration:** ~519s pipeline
