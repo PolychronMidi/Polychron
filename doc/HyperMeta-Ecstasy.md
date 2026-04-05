@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. Not a code search tool — the cognitive substrate that makes self-evolving composition possible.
 
-HME is the integration of five layers that together form Polychron's evolutionary nervous system. The MCP server provides 45 intelligence tools. CLAUDE.md encodes the rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce intelligent workflow automatically. The Evolver and lab run the evolution loop that grows both Polychron and HME itself.
+HME is the integration of five layers that together form Polychron's evolutionary nervous system. The MCP server provides 57 intelligence tools. CLAUDE.md encodes the rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce intelligent workflow automatically. The Evolver and lab run the evolution loop that grows both Polychron and HME itself.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HyperMeta-Ecstasy/` | 50+ tools: semantic search, KB, architectural analysis, Claude synthesis |
+| **MCP Server** | `tools/HyperMeta-Ecstasy/` | 57 tools: semantic search, KB, architectural analysis, Claude synthesis |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HyperMeta-Ecstasy/` | Cognitive frameworks loaded per session via `/HyperMeta-Ecstasy` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -256,57 +256,52 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 | `memory_dream` | Discover hidden KB connections via pairwise similarity |
 | `kb_health` | Check for stale refs and aged entries |
 
-### Evolution & Causal Intelligence (7 tools)
+### Evolution & Causal Intelligence (6 tools)
 
 | Tool | Use For |
 |------|---------|
 | `evolution_patterns` | Meta-patterns across journal rounds: confirm rates, subsystem receptivity, stabilization timelines |
 | `causal_trace` | Trace constant -> controller -> metric -> musical effect chain |
-| `hme_introspect` | Self-benchmarking: usage patterns, system health, musical context |
+| `hme_inspect(mode)` | mode='introspect': usage patterns, system health, musical context. mode='selftest': 8-point health check. mode='both' (default). |
 | `trace_query` | Query trace.jsonl for what a module ACTUALLY DID: trust scores, regime transitions, value ranges |
 | `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
 | `kb_seed` | Auto-generate starter KB entries for top-N highest-dependency modules with zero KB coverage |
-| `hme_selftest` | 8-point health check: tool count, doc sync, index, hash cache, Ollama, KB, symlinks |
 
-### Runtime Intelligence (9 tools)
+### Runtime Intelligence (7 tools)
 
 | Tool | Use For |
 |------|---------|
 | `pipeline_digest` | **ONE-CALL post-pipeline summary**: arc + hotspots + drama + regime health |
-| `composition_arc` | Per-section biography: regime, tension bars, trust leaders, coupling |
-| `regime_timeline` | ASCII visualization of regime across full run (I/E/X/C per beat) |
+| `composition_events(mode)` | mode='arc': per-section biography (regime, tension, trust, coupling). mode='drama': top-N dramatic moments. mode='both' (default). |
+| `regime_report(mode)` | mode='timeline': ASCII regime visualization. mode='anomaly': regime health. mode='both' (default). |
 | `hotspot_leaderboard` | Rank trust systems by hotspot frequency and pressure |
-| `trust_trajectory` | Per-system weight/score career arc with sparklines |
-| `trust_rivalry` | Head-to-head comparison: overtakes, dominance share |
+| `trust_report(system_a, system_b)` | system_b empty: career arc with sparklines. system_b provided: head-to-head rivalry with overtakes. |
 | `section_compare` | Two sections side-by-side: tension delta, trust winners/losers |
-| `drama_finder` | Top N dramatic moments: regime transitions, weight swings, hotspots |
 | `beat_snapshot` | Full system state at one beat: trust ecology, snap, coupling, notes |
 
-### Analysis (3 tools)
+### Analysis (2 tools)
 
 | Tool | Use For |
 |------|---------|
-| `find_dead_code` | IIFE globals with 0 callers, no self-registration |
-| `symbol_importance` | Rank globals by caller count (architectural centrality) |
+| `symbol_audit(mode)` | mode='dead': IIFE globals with 0 callers. mode='importance': rank by caller count. mode='both' (default). |
 | `list_libs` | Show indexed library directories |
 
-### Perceptual Intelligence (2 tools)
+### Perceptual Intelligence (1 tool)
 
 | Tool | Use For |
 |------|---------|
-| `audio_encodec` | Neural audio codec analysis: per-section token entropy (complexity), codebook activation, inter-section contrast. EnCodec 24kHz on GPU |
-| `audio_clap` | Natural language audio queries: "is this section tense?", "where is the atmospheric texture?". CLAP text↔audio similarity. Custom queries via comma-separated string |
+| `audio_analyze(analysis, queries)` | analysis='encodec': per-section token entropy (complexity), codebook activation. analysis='clap': text↔audio similarity with natural language queries. analysis='both' (default). EnCodec 24kHz + CLAP HTSAT-tiny on GPU. |
 
-Both tools start at **15% confidence** — verify against listening before trusting. Confidence earns trust through verdict correlation, like any trust system.
+Starts at **15% confidence** — verify against listening before trusting. Confidence earns trust through verdict correlation, like any trust system.
 
 ### Index Management (4 tools)
 
 | Tool | Use For |
 |------|---------|
-| `index_codebase` | Reindex all code chunks |
-| `index_symbols` | Rebuild symbol index |
+| `reindex(what)` | what='codebase': reindex all code chunks. what='symbols': rebuild symbol index. what='both' (default). |
 | `get_index_status` | Check index health |
 | `clear_index` | Wipe index for full rebuild |
+| `index_codebase` | Low-level: index a specific directory or library. Use `reindex` for standard rebuilds. |
 
 ## Knowledge KB Categories
 
@@ -374,7 +369,7 @@ HME routes synthesis to the right model for each task — Claude for high-value 
 - Default model: `qwen2.5-coder:7b` at `http://localhost:11434/api/generate`
 
 **No model needed:**
-- All hooks (pure bash), all search/grep/index operations, `hme_introspect`, `doc_sync_check`
+- All hooks (pure bash), all search/grep/index operations, `hme_inspect(mode='introspect')`, `doc_sync_check`
 
 **Configuration** (in `.mcp.json` env):
 ```
@@ -405,15 +400,13 @@ KB entries < 1 day: 1.05x boost. > 7 days: gradual decay (0.7x at 37 days). Rece
 
 ### Reindex After Code Changes
 ```
-index_codebase
-index_symbols
+reindex
 ```
 
 ### Full Rebuild
 ```
 clear_index
-index_codebase
-index_symbols
+reindex
 ```
 
 ### KB Maintenance

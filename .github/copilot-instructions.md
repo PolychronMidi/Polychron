@@ -6,11 +6,10 @@
 ## Run
 
 ```bash
-npm run main   # primary pipeline command - lint, typecheck, generate output, analyze metrics
-npm run render # generate MIDI, render both layers to WAV, and mix output/combined.wav
+npm run main   # full pipeline: lint, typecheck, compose, render, perceptual analysis, snapshot
 ```
 
-Only use "npm run main" to run the full pipeline, never run individual pipeline scripts directly. The main command ensures all steps run in the correct order with necessary validations and context.
+Only use "npm run main" to run the full pipeline, never run individual pipeline scripts directly. The main command ensures all steps run in the correct order with necessary validations and context. Pipeline now includes render-lite (MIDI→WAV), perceptual analysis (EnCodec+CLAP), and run-history snapshot with perceptual data.
 
 ## Five Core Principles
 
@@ -112,6 +111,15 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 ## Binaural Detune Prevention
 
 `setBinaural.js` pitch bend glide must complete WITHIN the volume crossfade window (0.06-0.12s), not over the full shift interval. Post-crossfade snap event ensures final pitch bend is applied. `flipBinCrossfadeWindow` global exposes the exact crossfade window for `stereoScatter` variant. Per-layer flipBin state in `LM.flipBinByLayer` prevents L1/L2 pitch bend desync.
+
+## Perceptual Intelligence (Neural Audio Analysis)
+
+Three-phase perceptual stack on Tesla M40 GPU, all at **15% confidence** until verified against listening:
+- **Phase 1**: Run-history snapshots (`scripts/pipeline/snapshot-run.js`) — trace features auto-captured per pipeline run. Label with `--label STABLE`. Training at 15 labeled runs.
+- **Phase 2**: EnCodec 24kHz neural audio codec — per-section token entropy (musical complexity). Validated: conductor tension correlates r=0.644 with CB0 entropy.
+- **Phase 3**: CLAP (HTSAT-tiny) — natural language audio queries. Text↔audio similarity for probing composition character.
+
+Perceptual snapshot with audio: `node scripts/pipeline/snapshot-run.js --perceptual` (checks WAV freshness).
 
 ## Pipeline Scripts
 

@@ -214,7 +214,6 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def audio_encodec(top_sections: int = 3) -> str:
     """Phase 2: EnCodec neural audio analysis — per-section token entropy and section contrast.
     Prefer audio_analyze(analysis='both') to run EnCodec + CLAP in one call."""
@@ -314,7 +313,6 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def audio_clap(queries: str = "") -> str:
     """Phase 3: CLAP text↔audio similarity queries on the rendered WAV.
     Prefer audio_analyze(analysis='both') to run EnCodec + CLAP in one call."""

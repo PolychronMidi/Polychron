@@ -12,7 +12,7 @@ HME is not a passive tool collection. It is the cognitive substrate of the Evolv
 | 4. Run | Pipeline; file watcher auto-reindexes | (automatic) |
 | 5. Verify | Post-change audit, missed constraints | `what_did_i_forget`, `convention_check`, `codebase_health` |
 | 6. Journal | Persist findings as KB entries | `add_knowledge`, `knowledge_graph`, `compact_knowledge` |
-| 7. Maintain | Reindex, health checks, doc sync | `index_codebase`, `kb_health`, `doc_sync_check` |
+| 7. Maintain | Reindex, health checks, doc sync | `reindex`, `kb_health`, `doc_sync_check` |
 
 ## Self-Evolution Cycle
 

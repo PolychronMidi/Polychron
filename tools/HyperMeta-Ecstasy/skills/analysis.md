@@ -30,11 +30,8 @@ Audit file against project conventions. Flags violations.
 ### find_anti_pattern(wrong, right="", path="")
 Find boundary violations. Example: `find_anti_pattern wrong="systemDynamicsProfiler" right="conductorSignalBridge" path="src/crossLayer"`
 
-### find_dead_code()
-Scan IIFE globals with 0 callers and no self-registration.
-
-### symbol_importance(top_n=20)
-Rank IIFE globals by caller count (architectural centrality).
+### symbol_audit(mode="both", path="src", top_n=20)
+mode='dead': IIFE globals with 0 callers and no self-registration. mode='importance': rank by caller count (architectural centrality). mode='both' (default).
 
 ### doc_sync_check(doc_path)
 Verify doc matches implementation: tool counts, file refs, section completeness.
@@ -45,5 +42,5 @@ Meta-patterns across evolution journal: confirm/refute rates, subsystem receptiv
 ### causal_trace(start, max_depth=3)
 Trace causal chain from constant/module/signal through controllers, metrics, regime behavior to musical effect. Shows: A -> B -> C -> [what the listener hears].
 
-### hme_introspect()
-Self-benchmarking: session tool usage, mandatory tool coverage gaps, last run's musical context, KB/index health.
+### hme_inspect(mode="both")
+mode='introspect': session tool usage, mandatory tool coverage gaps, last run's musical context, KB/index health. mode='selftest': 8-point health check (tool count, doc sync, index, hash cache, Ollama, KB, symlinks). mode='both' (default).
