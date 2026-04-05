@@ -106,12 +106,18 @@ def module_story(module_name: str) -> str:
         f"  [{k['category']}] {k['title']}: {k['content'][:100]}"
         for k in relevant
     ) if relevant else "none"
+    # Ground in actual source code
+    from .synthesis import _read_module_source
+    source_code = _read_module_source(module_name, max_chars=1500)
+    source_block = f"\nSource code (first 1500 chars):\n```\n{source_code}\n```\n" if source_code else ""
     user_text = (
         f"Module: {module_name}\n"
         f"Dependents: {callers_summary}\n"
-        f"KB evolution history:\n{kb_summary}\n\n"
-        "In 3 bullet points: what are the most important things to know before editing this module? "
-        "Focus on hidden invariants, caller contracts, and architectural constraints visible in the history above."
+        f"KB evolution history:\n{kb_summary}\n"
+        + source_block
+        + "\nBased on the actual code above, in 3 bullet points: what are the most important things "
+        "to know before editing this module? Focus on hidden invariants, caller contracts, and "
+        "architectural constraints. Only reference behaviors visible in the code."
     )
     api_key = _get_api_key()
     synthesis = None

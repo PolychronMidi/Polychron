@@ -23,17 +23,37 @@ def _track(name: str):
 
 
 def _get_compositional_context(module_name: str) -> str:
-    """Read narrative-digest.md and trace-summary.json for musical context."""
+    """Read narrative-digest.md and trace-summary.json for musical context.
+
+    Searches narrative by module name AND related terms (subsystem keywords,
+    camelCase fragments) to find mentions even when prose uses different phrasing.
+    """
     parts = []
+    # Build search terms: module name + camelCase fragments + subsystem keywords
+    search_terms = {module_name.lower()}
+    # Split camelCase: "trustEcologyCharacter" -> {"trust", "ecology", "character"}
+    import re
+    fragments = re.findall(r'[A-Z]?[a-z]+', module_name)
+    for frag in fragments:
+        if len(frag) > 3:  # skip short fragments like "get", "set"
+            search_terms.add(frag.lower())
+
     digest_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
     if os.path.isfile(digest_path):
         try:
             content = open(digest_path, encoding="utf-8").read()
-            lines = [l.strip() for l in content.split("\n")
-                     if module_name.lower() in l.lower() and l.strip() and not l.startswith("#")]
-            if lines:
+            matched = []
+            for line in content.split("\n"):
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                line_lower = stripped.lower()
+                # Match if any search term appears
+                if any(term in line_lower for term in search_terms):
+                    matched.append(stripped)
+            if matched:
                 parts.append("**Narrative mentions:**")
-                for l in lines[:5]:
+                for l in matched[:5]:
                     parts.append(f"  {l[:200]}")
         except Exception:
             pass
