@@ -192,7 +192,8 @@ def convention_check(file_path: str) -> str:
             if not srel.startswith("src/") or not srel.endswith(".js"):
                 continue
             try:
-                sample_lines.append(sum(1 for _ in open(sfp, encoding="utf-8", errors="ignore")))
+                with open(sfp, encoding="utf-8", errors="ignore") as _sfpf:
+                    sample_lines.append(sum(1 for _ in _sfpf))
             except Exception:
                 continue
         if sample_lines:

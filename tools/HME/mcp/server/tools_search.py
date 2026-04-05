@@ -145,7 +145,8 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
     # Handle file path directly (not just directories)
     if os.path.isfile(target):
         try:
-            n = sum(1 for _ in open(target, encoding="utf-8", errors="ignore"))
+            with open(target, encoding="utf-8", errors="ignore") as _f:
+                n = sum(1 for _ in _f)
             rel = target.replace(ctx.PROJECT_ROOT + "/", "")
             flag = " *** OVERSIZE" if n > 250 else " * over target" if n > 200 else ""
             return f"  {n:5d}  {rel}{flag}\n\nTotal: {n} lines"
@@ -155,7 +156,8 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
         if not str(fpath).endswith(f".{file_type}"):
             continue
         try:
-            n = sum(1 for _ in open(fpath, encoding="utf-8", errors="ignore"))
+            with open(fpath, encoding="utf-8", errors="ignore") as _f:
+                n = sum(1 for _ in _f)
             rel = str(fpath).replace(ctx.PROJECT_ROOT + "/", "")
             counts.append((n, rel))
         except Exception:

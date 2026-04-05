@@ -150,7 +150,9 @@ def module_story(module_name: str) -> str:
         doc_path = os.path.join(ctx.PROJECT_ROOT, "doc", doc_name)
         if os.path.isfile(doc_path):
             try:
-                if module_name.lower() not in open(doc_path, encoding="utf-8").read().lower():
+                with open(doc_path, encoding="utf-8") as _f:
+                    _doc_text = _f.read().lower()
+                if module_name.lower() not in _doc_text:
                     if len(caller_files) >= 5:
                         blind_spots.append(f"NOT IN {doc_name}: high-dependency module undocumented in key architecture docs")
             except Exception:

@@ -174,12 +174,13 @@ def hme_introspect() -> str:
     if os.path.isfile(journal_path):
         try:
             header_lines = []
-            for line in open(journal_path, encoding="utf-8"):
-                if header_lines and line.startswith("## R"):
-                    break
-                header_lines.append(line.rstrip())
-                if len(header_lines) > 15:
-                    break
+            with open(journal_path, encoding="utf-8") as _jf:
+                for line in _jf:
+                    if header_lines and line.startswith("## R"):
+                        break
+                    header_lines.append(line.rstrip())
+                    if len(header_lines) > 15:
+                        break
             if header_lines:
                 parts.append("\n### Latest Journal Entry")
                 parts.append("\n".join(header_lines[:15]))
@@ -603,9 +604,10 @@ def hme_selftest() -> str:
         for f in files:
             if f.endswith(".py"):
                 try:
-                    for line in open(os.path.join(root, f), encoding="utf-8"):
-                        if line.strip() == "@ctx.mcp.tool()":
-                            tool_count += 1
+                    with open(os.path.join(root, f), encoding="utf-8") as _pyf:
+                        for line in _pyf:
+                            if line.strip() == "@ctx.mcp.tool()":
+                                tool_count += 1
                 except Exception:
                     pass
     results.append(f"{'PASS' if tool_count > 40 else 'FAIL'}: {tool_count} tools registered")
