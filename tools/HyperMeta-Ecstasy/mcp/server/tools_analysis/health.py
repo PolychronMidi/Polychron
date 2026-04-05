@@ -181,7 +181,6 @@ def codebase_health() -> str:
             legacy = [
                 "phaseLockedRhythmGenerator.js", "conductorDampening.js",
                 "densityWaveAnalyzer.js", "velocityShapeAnalyzer.js",
-                "play/crossLayerBeatRecord.js", "play/main.js",
             ]
             if not any(a in rel for a in exempt):
                 if any(l in rel for l in legacy):

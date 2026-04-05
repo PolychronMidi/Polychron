@@ -486,14 +486,32 @@ def kb_seed(top_n: int = 15) -> str:
 
     modules.sort(key=lambda x: -x[0])
 
-    # Filter to modules with zero KB entries
+    # Filter to modules with zero KB entries AND not already documented
     from . import _filter_kb_relevance
+    import glob as _glob
+    doc_content = ""
+    # Scan ALL docs: doc/*.md, CLAUDE.md, README.md
+    doc_paths = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "doc", "*.md"))
+    for root_doc in ["CLAUDE.md", "README.md"]:
+        rp = os.path.join(ctx.PROJECT_ROOT, root_doc)
+        if os.path.isfile(rp):
+            doc_paths.append(rp)
+    for dp in doc_paths:
+        try:
+            doc_content += open(dp, encoding="utf-8").read().lower()
+        except Exception:
+            pass
     candidates = []
     for count, name, path in modules:
+        # Skip if already in KB
         kb = ctx.project_engine.search_knowledge(name, top_k=3)
         relevant = _filter_kb_relevance(kb, name)
-        if not relevant:
-            candidates.append((count, name, path))
+        if relevant:
+            continue
+        # Skip if documented in key docs (name appears as whole word)
+        if name.lower() in doc_content:
+            continue
+        candidates.append((count, name, path))
         if len(candidates) >= top_n:
             break
 
