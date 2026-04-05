@@ -36,46 +36,44 @@ def drama_finder(top_n: int = 10) -> str:
                 regime = record.get("regime", "?")
                 trust = record.get("trust", {})
 
-                # Regime transition with context
+                # Snap fields available to all event types
+                snap = record.get("snap", {})
+                tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
+                note_count = len(record.get("notes", []))
+
+                # Regime transition — highest base drama (system fundamental shift)
                 if regime != prev_regime and prev_regime is not None:
-                    # Collect hotspot pressures at this transition
-                    hotspots = []
-                    for sys_name, sys_data in trust.items():
-                        if isinstance(sys_data, dict):
-                            hp = sys_data.get("hotspotPressure", 0)
-                            if hp > 0.1:
-                                hotspots.append((sys_name, round(hp, 3)))
-                    drama = 2.0 + len(hotspots) * 0.5  # transitions are dramatic; hotspots amplify
+                    hotspots = [(n, round(d.get("hotspotPressure", 0), 3))
+                                for n, d in trust.items()
+                                if isinstance(d, dict) and d.get("hotspotPressure", 0) > 0.1]
+                    drama = 10.0 + len(hotspots) * 0.5 + tension * 3.0
                     events.append({
                         "beat": beat_key, "drama": drama,
                         "type": "regime_transition",
-                        "detail": f"{prev_regime} -> {regime}, {len(hotspots)} hotspots",
+                        "detail": f"{prev_regime} → {regime} | {len(hotspots)} hotspots | tension={tension:.3f}",
                         "hotspots": hotspots[:3],
                     })
 
-                # Weight swings — compare to previous beat
+                # Weight swings — trust system seizing or losing control
                 for sys_name, sys_data in trust.items():
                     if not isinstance(sys_data, dict):
                         continue
                     weight = sys_data.get("weight", 1.0)
                     prev_w = prev_weights.get(sys_name, weight)
                     swing = abs(weight - prev_w)
-                    if swing > 0.15:  # significant weight swing
+                    if swing > 0.15:
+                        drama = swing * 20.0 + tension * 2.0
                         events.append({
-                            "beat": beat_key, "drama": swing * 5,
+                            "beat": beat_key, "drama": drama,
                             "type": "weight_swing",
-                            "detail": f"{sys_name}: {prev_w:.3f} -> {weight:.3f} (swing {swing:.3f})",
+                            "detail": f"{sys_name}: {prev_w:.3f}→{weight:.3f} (Δ{swing:.3f}) | tension={tension:.3f}",
                         })
                     prev_weights[sys_name] = weight
 
-                # Multiple simultaneous hotspots — amplified by tension
-                snap = record.get("snap", {})
-                tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
-                note_count = len(record.get("notes", []))
+                # Multiple simultaneous hotspots — sustained systemic stress
                 active_hotspots = sum(1 for s in trust.values()
                                       if isinstance(s, dict) and s.get("hotspotPressure", 0) > 0.2)
                 if active_hotspots >= 3:
-                    # Tension and note density amplify drama; max_hotspot_pressure shows peak stress
                     max_hp = max((s.get("hotspotPressure", 0) for s in trust.values()
                                   if isinstance(s, dict)), default=0)
                     drama = active_hotspots * 0.8 + tension * 3.0 + max_hp * 2.0 + min(note_count / 50, 2.0)
@@ -104,16 +102,31 @@ def drama_finder(top_n: int = 10) -> str:
         if run_key not in seen_run:
             deduped.append(ev)
             seen_run[run_key] = True
-    # Also enforce beat diversity: don't let one beat dominate all top_n slots
-    final: list = []
-    beat_count: dict = {}
+    # Bucket by type, guarantee slots for each, fill remainder with highest overall
+    per_type: dict = {"multi_hotspot": [], "regime_transition": [], "weight_swing": []}
+    seen_beats_by_type: dict = {t: set() for t in per_type}
     for ev in deduped:
-        if beat_count.get(ev["beat"], 0) < 2:  # max 2 events per beat in top results
-            final.append(ev)
-            beat_count[ev["beat"]] = beat_count.get(ev["beat"], 0) + 1
-        if len(final) >= top_n * 3:
+        t = ev["type"]
+        if t in per_type and ev["beat"] not in seen_beats_by_type[t]:
+            per_type[t].append(ev)
+            seen_beats_by_type[t].add(ev["beat"])
+
+    # Guaranteed minimums per type
+    quota = max(top_n // 5, 2)  # e.g. top_n=10 -> 2 each guaranteed
+    top = []
+    for t, evs in per_type.items():
+        top.extend(evs[:quota])
+    # Fill remaining slots with highest-drama events not already included
+    included_keys = {(e["beat"], e["type"]) for e in top}
+    for ev in deduped:
+        if len(top) >= top_n:
             break
-    top = final[:top_n]
+        k = (ev["beat"], ev["type"])
+        if k not in included_keys:
+            top.append(ev)
+            included_keys.add(k)
+    top.sort(key=lambda e: -e["drama"])
+    top = top[:top_n]
 
     parts = [f"## Drama Finder — Top {len(top)} Most Dramatic Moments\n"]
     for i, ev in enumerate(top, 1):
