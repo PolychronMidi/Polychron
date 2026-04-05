@@ -54,6 +54,23 @@ sectionIntentCurves = (() => {
   const CONVERGENCE_ARC_SCALE = 0.35;
   const CONVERGENCE_LATE_SURGE = 0.15;
 
+  // Evolution 2: Per-section CLAP xenolinguistic probes from previous run.
+  // alien/organic/chaotic/sparse scores nudge intent targets each section.
+  const _clapGuide = (() => {
+    try {
+      const fs = require('fs');
+      const statePath = require('path').join(process.cwd(), 'metrics', 'perceptual-report.json');
+      const rep = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      const secs = (rep.encodec && rep.encodec.sections) || {};
+      const confidence = rep.confidence || 0;
+      const guide = {};
+      for (const [k, v] of Object.entries(secs)) {
+        if (v && v.clap) guide[k] = v.clap;
+      }
+      return Object.keys(guide).length > 0 ? { guide, confidence } : null;
+    } catch { return null; }
+  })();
+
   /** @type {{ densityTarget: number, dissonanceTarget: number, interactionTarget: number, entropyTarget: number, convergenceTarget: number }} */
   let lastIntent = {
     densityTarget: 0.5,
@@ -249,9 +266,26 @@ sectionIntentCurves = (() => {
     const exceedanceObs = V.optionalFinite(bridgeSigs.exceedanceTrendEma, 0);
     const observationConvergenceBoost = exceedanceObs > 0.3 ? clamp((exceedanceObs - 0.3) * 0.15, 0, 0.06) : 0;
     const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1 + qBias * 0.8 + observationConvergenceBoost, 0, 1);
-    const adjustedDensity = clamp(densityTarget + qBias * -0.5 + personalityContrastDensity, 0, 1);
+    // CLAP guidance: previous run's section character nudges this run's intent.
+    // High alien -> moderate dissonance (section already xenolinguistic, ease off).
+    // High organic -> boost dissonance (push toward tension). High chaotic ->
+    // reduce interaction. High sparse -> boost density. +-0.06 max at full confidence.
+    let clapDensityNudge = 0, clapDissonanceNudge = 0, clapInteractionNudge = 0;
+    if (_clapGuide && _clapGuide.confidence >= 0.10) {
+      const clapStr = clamp((_clapGuide.confidence - 0.10) / 0.20, 0, 1);
+      const secClap = _clapGuide.guide[String(s)];
+      if (secClap) {
+        if (Number.isFinite(secClap.alien))   clapDissonanceNudge -= clamp(secClap.alien * 0.30 * clapStr, 0, 0.06);
+        if (Number.isFinite(secClap.organic)) clapDissonanceNudge += clamp(secClap.organic * 0.35 * clapStr, 0, 0.06);
+        if (Number.isFinite(secClap.chaotic)) clapInteractionNudge -= clamp(secClap.chaotic * 0.25 * clapStr, 0, 0.05);
+        if (Number.isFinite(secClap.sparse))  clapDensityNudge += clamp(secClap.sparse * 0.40 * clapStr, 0, 0.06);
+      }
+    }
+    const adjustedDensity = clamp(densityTarget + qBias * -0.5 + personalityContrastDensity + clapDensityNudge, 0, 1);
+    const adjustedDissonance = clamp(dissonanceTarget + clapDissonanceNudge, 0, 1);
+    const adjustedInteraction = clamp(interactionTarget + clapInteractionNudge, 0, 1);
 
-    lastIntent = { densityTarget: adjustedDensity, dissonanceTarget, interactionTarget, entropyTarget, convergenceTarget };
+    lastIntent = { densityTarget: adjustedDensity, dissonanceTarget: adjustedDissonance, interactionTarget: adjustedInteraction, entropyTarget, convergenceTarget };
     return lastIntent;
   }
 

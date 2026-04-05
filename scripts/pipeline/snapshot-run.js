@@ -101,8 +101,52 @@ function extractFeatures() {
   };
 }
 
+function loadVerdictModel() {
+  const modelPath = path.join(__dirname, '..', '..', 'metrics', 'verdict-model.json');
+  try {
+    return fs.existsSync(modelPath) ? JSON.parse(fs.readFileSync(modelPath, 'utf-8')) : null;
+  } catch (_) { return null; }
+}
+
+function predictVerdict(features, model) {
+  if (!model || !model.coef || !model.features) return null;
+  const featureVec = model.features.map(k => (typeof features[k] === 'number' ? features[k] : 0));
+  const scaled = featureVec.map((v, i) => (v - model.scale_mean[i]) / (model.scale_std[i] || 1));
+  const z = scaled.reduce((s, v, i) => s + v * model.coef[i], model.intercept);
+  const p = 1 / (1 + Math.exp(-z));
+  return { probability: p, predicted: p >= model.threshold ? 'LEGENDARY' : 'STABLE' };
+}
+
 function main() {
   const args = process.argv.slice(2);
+
+  // --label-bulk VERDICT --since ISO --until ISO: retroactive batch labeling
+  if (args[0] === '--label-bulk' && args[1]) {
+    const verdict = args[1];
+    const sinceIdx = args.indexOf('--since');
+    const untilIdx = args.indexOf('--until');
+    const since = sinceIdx >= 0 ? new Date(args[sinceIdx + 1]).getTime() : 0;
+    const until = untilIdx >= 0 ? new Date(args[untilIdx + 1]).getTime() : Date.now();
+    const files = fs.readdirSync(HISTORY_DIR).filter(f => f.endsWith('.json')).sort();
+    let count = 0;
+    for (const f of files) {
+      const isoTs = f.replace('.json', '').replace(/T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, 'T$1:$2:$3.$4Z');
+      const ts = new Date(isoTs).getTime();
+      if (ts >= since && ts <= until) {
+        const fpath = path.join(HISTORY_DIR, f);
+        const data = JSON.parse(fs.readFileSync(fpath, 'utf-8'));
+        if (!data.verdict) {
+          data.verdict = verdict;
+          data.labeledAt = new Date().toISOString();
+          fs.writeFileSync(fpath, JSON.stringify(data, null, 2));
+          console.log(`Labeled ${f} as ${verdict}`);
+          count++;
+        }
+      }
+    }
+    console.log(`Bulk labeled ${count} snapshots as ${verdict}.`);
+    return;
+  }
 
   // --label MODE: label the most recent unlabeled snapshot
   if (args[0] === '--label' && args[1]) {
@@ -217,6 +261,14 @@ print(json.dumps(result))
   const outPath = path.join(HISTORY_DIR, `${timestamp}.json`);
   fs.writeFileSync(outPath, JSON.stringify(snapshot, null, 2));
   console.log(`Snapshot saved: ${path.basename(outPath)} (${features.traceEntries} beats, ${features.sectionCount} sections)`);
+
+  // Verdict prediction: apply trained regressor if model exists
+  const verdictModel = loadVerdictModel();
+  const prediction = predictVerdict(features, verdictModel);
+  if (prediction) {
+    const pct = (prediction.probability * 100).toFixed(1);
+    console.log(`  Predicted verdict: ${prediction.predicted} (${pct}% LEGENDARY confidence)`);
+  }
 }
 
 main();

@@ -14,3 +14,4 @@ require('./registralVelocityCorrelator');
 require('./tessituraPressureMonitor');
 require('./thematicRecallDetector');
 require('./voiceLeadingEfficiencyTracker');
+require('./perceptualTensionBias');

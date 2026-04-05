@@ -52,6 +52,7 @@ const POST_COMPOSITION = [
   { label: 'render-lite',              cmd: 'bash scripts/render-lite.sh' },
   { label: 'perceptual-analysis',     cmd: 'node scripts/pipeline/perceptual-analysis.js' },
   { label: 'snapshot-run',            cmd: 'node scripts/pipeline/snapshot-run.js --perceptual' },
+  { label: 'train-verdict-predictor', cmd: 'node scripts/pipeline/train-verdict-predictor.js' },
 ];
 
 // runner
