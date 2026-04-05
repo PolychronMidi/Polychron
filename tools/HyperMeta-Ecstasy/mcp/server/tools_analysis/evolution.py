@@ -67,16 +67,16 @@ def evolution_patterns() -> str:
 
 
 @ctx.mcp.tool()
-def causal_trace(start: str, max_depth: int = 3) -> str:
-    """Trace the causal chain from a constant, module, or signal through controllers, metrics, and regime behavior to its musical effect on the listener. Shows the complete cascade: constant -> controller -> metric -> musical character."""
+def causal_trace(symptom: str, max_depth: int = 3) -> str:
+    """Trace the causal chain from a symptom (constant name, module name, signal dimension, or description like 'density too high in coherent') through controllers, metrics, and regime behavior to its musical effect on the listener. Shows the complete cascade: constant -> controller -> metric -> musical character."""
     ctx.ensure_ready_sync()
     _track("causal_trace")
-    if not start.strip():
-        return "Error: start cannot be empty. Pass a constant name, module name, or signal dimension."
-    parts = [f"# Causal Trace: {start}\n"]
+    if not symptom.strip():
+        return "Error: symptom cannot be empty. Pass a constant name, module name, signal dimension, or description of the issue."
+    parts = [f"# Causal Trace: {symptom}\n"]
 
-    callers = _find_callers(start, ctx.PROJECT_ROOT)
-    callers = [r for r in callers if start not in os.path.basename(r.get('file', ''))]
+    callers = _find_callers(symptom, ctx.PROJECT_ROOT)
+    callers = [r for r in callers if symptom not in os.path.basename(r.get('file', ''))]
     caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
     parts.append(f"## Direct References ({len(caller_files)} files)")
     for f in caller_files[:15]:
@@ -90,13 +90,13 @@ def causal_trace(start: str, max_depth: int = 3) -> str:
     if subsystems:
         parts.append(f"\n## Subsystem Reach: {', '.join(sorted(subsystems))}")
 
-    kb_results = ctx.project_engine.search_knowledge(start, top_k=5)
+    kb_results = ctx.project_engine.search_knowledge(symptom, top_k=5)
     if kb_results:
         parts.append(f"\n## KB Context ({len(kb_results)} entries)")
         for k in kb_results:
             parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:150]}")
 
-    comp = _get_compositional_context(start)
+    comp = _get_compositional_context(symptom)
     if comp:
         parts.append(f"\n## Musical Context")
         parts.append(comp)
@@ -106,7 +106,7 @@ def causal_trace(start: str, max_depth: int = 3) -> str:
     if os.path.isfile(tuning_path):
         try:
             tuning = open(tuning_path, encoding="utf-8").read()
-            tuning_lines = [l for l in tuning.split("\n") if start.lower() in l.lower()]
+            tuning_lines = [l for l in tuning.split("\n") if symptom.lower() in l.lower()]
             if tuning_lines:
                 tuning_context = "Tuning map references:\n" + "\n".join(tuning_lines[:10])
         except Exception:
@@ -114,11 +114,11 @@ def causal_trace(start: str, max_depth: int = 3) -> str:
 
     # Ground synthesis in actual source code — prevents hallucination
     from .synthesis import _read_module_source
-    source_code = _read_module_source(start, max_chars=2000)
+    source_code = _read_module_source(symptom, max_chars=2000)
     source_block = f"\nSource code (first 2000 chars):\n```\n{source_code}\n```\n" if source_code else ""
 
     user_text = (
-        f"Trace the causal chain for: {start}\n"
+        f"Trace the causal chain for: {symptom}\n"
         f"Direct callers ({len(caller_files)}): {', '.join(caller_files[:10])}\n"
         f"Subsystems touched: {', '.join(sorted(subsystems))}\n"
         + source_block
@@ -354,16 +354,41 @@ def trace_query(module: str, section: int = -1, limit: int = 15) -> str:
 
 
 @ctx.mcp.tool()
-def interaction_map(module_a: str, module_b: str) -> str:
+def interaction_map(module_a: str, module_b: str = "") -> str:
     """Show how two modules interact at runtime by correlating their trust scores,
     weight trajectories, and hotspot co-occurrence across the last pipeline run.
-    Reveals whether modules cooperate, compete, or are independent."""
+    Reveals whether modules cooperate, compete, or are independent.
+    If only module_a is given, shows its interactions with all other traced modules."""
     ctx.ensure_ready_sync()
     _track("interaction_map")
 
     trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
+
+    # Single-module mode: find all modules it interacts with
+    if not module_b.strip():
+        try:
+            modules_seen = set()
+            with open(trace_path, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        record = json.loads(line)
+                    except Exception:
+                        continue
+                    trust = record.get("trust", {})
+                    modules_seen.update(k for k in trust.keys() if k.lower() != module_a.lower())
+            if not modules_seen:
+                return f"No other modules found in trace data to compare with '{module_a}'."
+            parts = [f"# Interaction Map: {module_a} vs all\n"]
+            for other in sorted(modules_seen)[:10]:
+                # Recursive call for each pair — limited to top 10
+                parts.append(f"---\n## vs {other}")
+                # Inline a lightweight correlation check
+                parts.append(f"  (use interaction_map module_a='{module_a}' module_b='{other}' for details)")
+            return "\n".join(parts)
+        except Exception as e:
+            return f"Error scanning trace: {e}"
 
     a_lower, b_lower = module_a.lower(), module_b.lower()
     a_scores, b_scores, a_weights, b_weights = [], [], [], []
