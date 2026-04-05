@@ -1,8 +1,35 @@
-## R50b: Future Evolution — emergentMelodicEngine
+## R53: Future Evolution — emergentMelodicEngine (architecture sketch)
 
-The 16 conductor/melodic trackers (intervalDirectionMemory, counterpointMotionTracker, phraseContourArchetypeDetector, tessituraPressureMonitor, registralVelocityCorrelator, voiceLeadingEfficiencyTracker, melodicContourTracker, ambitusMigrationTracker, intervalExpansionContractor, thematicRecallDetector, octaveHelpers, phraseContourArchetypeDetector, etc.) each register isolated conductor biases but have no integrating engine. An "emergentMelodicEngine" would mirror emergentRhythmEngine's architecture: accumulate L0 melodic events into a synthesis layer that exposes cross-layer melodic intelligence (contrapuntal motion preferences, thematic development decisions, register migration strategies). This is the melodic equivalent of what emergentRhythmEngine does for rhythm.
+The 15 conductor/melodic trackers each register isolated biases but have no cross-layer synthesis.
+Architecture for emergentMelodicEngine (mirrors emergentRhythmEngine pattern):
 
-Status: Noted for future evolution. Not yet implemented.
+**Inputs (tracker APIs, polled per phrase boundary):**
+- `melodicContourTracker.getContour()` → shape (rising/falling/arching/static), direction [-1..1], range
+- `counterpointMotionTracker` → similar/contrary/oblique motion balance between layers
+- `intervalDirectionMemory` → ascending/descending bias from recent interval history
+- `motifEcho` via L0 `motifIdentity` → intervalDna, confidence per layer (already posting)
+- `thematicRecallDetector` → whether current material echoes earlier sections
+- `tessituraPressureMonitor` → how crowded the register is
+- `ambitusMigrationTracker` → direction of register drift over time
+
+**Synthesis (posted to L0 `emergentMelody`):**
+```
+{ contourShape, directionBias, counterpoint, intervalDiversity, tessituraLoad,
+  thematicDensity, registerMigrationDir }
+```
+
+**Downstream consumers:**
+- `harmonicIntervalGuard.nudgePitch()` → scale noveltyWeight by intervalDiversity
+- `stutterVariants.selectForBeat()` → new signal dimension (melodic context)
+- `motifEcho.captureMotif()` → reduce echoProbability during high thematicDensity
+- New: `alienArpeggio` → use contourShape to bias ascendBias
+
+**Key insight from R53 analysis:** motifEcho + harmonicIntervalGuard are cooperative
+(r=+0.570). emergentMelodicEngine would act as the integrating intelligence that
+lets these two know what the other is doing — closing the loop into a proper
+melodic feedback system.
+
+Status: Architecture designed, R54+ implementation target.
 
 ## R49 — 2026-04-05 — (firewall ports + rhythmic contagion port)
 

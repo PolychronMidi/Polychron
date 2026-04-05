@@ -123,6 +123,9 @@ harmonicIntervalGuard = (() => {
     let bestScore = Infinity;
     const searchRadius = dissonanceTarget > 0.6 ? 5 : 3;
     const { lo, hi } = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true, anchorMidi: midi, radius: searchRadius });
+    // R53: interval novelty steering -- under-used ICs get a score bonus when in dissonant+independent mode
+    // high dissonance * low cimScale = xenolinguistic pull toward unexplored harmonic territory
+    const noveltyWeight = histTotal > 12 ? dissonanceTarget * 0.28 * (1.0 - cimScale * 0.65) : 0;
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;
@@ -135,8 +138,12 @@ harmonicIntervalGuard = (() => {
         const candidateInterval = candidate - midi;
         if (motifIntervals.includes(candidateInterval)) motifBonus = -0.12 * otherMotifEntry.confidence;
       }
-      if (score + pitchBiasBonus + motifBonus < bestScore) {
-        bestScore = score + pitchBiasBonus + motifBonus;
+      // Novelty bonus: rarely-used interval classes score lower (preferred) in exploratory/independent mode
+      const noveltyBonus = noveltyWeight > 0.01
+        ? -(1 - intervalHist[candidateIC] / histTotal) * noveltyWeight
+        : 0;
+      if (score + pitchBiasBonus + motifBonus + noveltyBonus < bestScore) {
+        bestScore = score + pitchBiasBonus + motifBonus + noveltyBonus;
         bestNote = candidate;
       }
     }

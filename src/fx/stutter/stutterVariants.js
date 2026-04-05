@@ -41,10 +41,10 @@ stutterVariants = (() => {
 
   // Regime weight multipliers: which variants suit which musical context
   const REGIME_WEIGHTS = {
-    coherent:   { ghostStutter: 1.8, rhythmicGrid: 1.5, decayingBounce: 1.2, reverseVelocity: 0.8, octaveCascade: 0.6, machineGun: 0.3, stutterSwarm: 0.5, stutterTremolo: 0.4, stereoScatter: 1.0, harmonicShadow: 1.4, densityReactive: 0.8, echoTrail: 1.2, rhythmicDotted: 1.3, flickerStutter: 0.6, convergenceBurst: 1.8, tensionStutter: 0.7, directionalOscillation: 0.8, stereoWidthModulation: 1.0 },
-    exploring:  { ghostStutter: 0.6, rhythmicGrid: 0.7, decayingBounce: 0.8, reverseVelocity: 1.2, octaveCascade: 1.3, machineGun: 1.6, stutterSwarm: 1.4, stutterTremolo: 1.5, stereoScatter: 1.2, harmonicShadow: 0.8, densityReactive: 1.3, echoTrail: 0.9, rhythmicDotted: 0.8, flickerStutter: 1.5, convergenceBurst: 0.5, tensionStutter: 1.3, directionalOscillation: 1.3, stereoWidthModulation: 1.2 },
-    evolving:   { ghostStutter: 1.0, rhythmicGrid: 1.0, decayingBounce: 1.3, reverseVelocity: 1.1, octaveCascade: 1.2, machineGun: 0.7, stutterSwarm: 0.9, stutterTremolo: 0.8, stereoScatter: 1.0, harmonicShadow: 1.2, densityReactive: 1.1, echoTrail: 1.3, rhythmicDotted: 1.1, flickerStutter: 1.0, convergenceBurst: 1.0, tensionStutter: 1.2, directionalOscillation: 1.2, stereoWidthModulation: 1.1 },
-    oscillating:{ ghostStutter: 0.8, rhythmicGrid: 1.2, decayingBounce: 1.0, reverseVelocity: 1.3, octaveCascade: 1.0, machineGun: 1.0, stutterSwarm: 1.1, stutterTremolo: 1.2, stereoScatter: 1.1, harmonicShadow: 0.9, densityReactive: 1.0, echoTrail: 1.0, rhythmicDotted: 1.2, flickerStutter: 1.3, convergenceBurst: 0.7, tensionStutter: 1.4, directionalOscillation: 1.1, stereoWidthModulation: 1.2 }
+    coherent:    { ghostStutter: 1.8, rhythmicGrid: 1.5, decayingBounce: 1.2, reverseVelocity: 0.8, octaveCascade: 0.6, machineGun: 0.3, stutterSwarm: 0.5, stutterTremolo: 0.4, stereoScatter: 1.0, harmonicShadow: 1.4, densityReactive: 0.8, echoTrail: 1.2, rhythmicDotted: 1.3, flickerStutter: 0.6, convergenceBurst: 1.8, tensionStutter: 0.7, directionalOscillation: 0.8, stereoWidthModulation: 1.0, alienArpeggio: 0.5 },
+    exploring:   { ghostStutter: 0.6, rhythmicGrid: 0.7, decayingBounce: 0.8, reverseVelocity: 1.2, octaveCascade: 1.3, machineGun: 1.6, stutterSwarm: 1.4, stutterTremolo: 1.5, stereoScatter: 1.2, harmonicShadow: 0.8, densityReactive: 1.3, echoTrail: 0.9, rhythmicDotted: 0.8, flickerStutter: 1.5, convergenceBurst: 0.5, tensionStutter: 1.3, directionalOscillation: 1.3, stereoWidthModulation: 1.2, alienArpeggio: 1.9 },
+    evolving:    { ghostStutter: 1.0, rhythmicGrid: 1.0, decayingBounce: 1.3, reverseVelocity: 1.1, octaveCascade: 1.2, machineGun: 0.7, stutterSwarm: 0.9, stutterTremolo: 0.8, stereoScatter: 1.0, harmonicShadow: 1.2, densityReactive: 1.1, echoTrail: 1.3, rhythmicDotted: 1.1, flickerStutter: 1.0, convergenceBurst: 1.0, tensionStutter: 1.2, directionalOscillation: 1.2, stereoWidthModulation: 1.1, alienArpeggio: 1.3 },
+    oscillating: { ghostStutter: 0.8, rhythmicGrid: 1.2, decayingBounce: 1.0, reverseVelocity: 1.3, octaveCascade: 1.0, machineGun: 1.0, stutterSwarm: 1.1, stutterTremolo: 1.2, stereoScatter: 1.1, harmonicShadow: 0.9, densityReactive: 1.0, echoTrail: 1.0, rhythmicDotted: 1.2, flickerStutter: 1.3, convergenceBurst: 0.7, tensionStutter: 1.4, directionalOscillation: 1.1, stereoWidthModulation: 1.2, alienArpeggio: 1.6 }
   };
 
   /**
@@ -218,12 +218,13 @@ stutterVariants = (() => {
     // R24: coupling label reactive stutter - system's self-description drives variant character
     const COUPLING_LABEL_WEIGHTS = {
       'rhythmic-shimmer': { stereoWidthModulation: 2.0, ghostStutter: 1.8, flickerStutter: 1.5 },
-      'agitated-tension': { machineGun: 1.8, tensionStutter: 2.0, stutterTremolo: 1.5 },
+      'agitated-tension': { machineGun: 1.8, tensionStutter: 2.0, stutterTremolo: 1.5, alienArpeggio: 1.6 },
       'smooth-tension': { echoTrail: 1.8, harmonicShadow: 1.5, ghostStutter: 1.3 },
-      'chaotic-proliferation': { machineGun: 2.0, stutterSwarm: 1.8, octaveCascade: 1.5 },
+      'chaotic-proliferation': { machineGun: 2.0, stutterSwarm: 1.8, octaveCascade: 1.5, alienArpeggio: 1.7 },
       'phase-aligned-density': { rhythmicGrid: 1.8, rhythmicDotted: 1.5, convergenceBurst: 1.3 },
       'phase-opposed-density': { directionalOscillation: 1.5, reverseVelocity: 1.3 },
       'tension-drives-density': { tensionStutter: 1.6, decayingBounce: 1.4 },
+      'exploratory-tension': { alienArpeggio: 1.8, octaveCascade: 1.4, reverseVelocity: 1.3 },
       'stable-variety': { ghostStutter: 1.4, echoTrail: 1.3, harmonicShadow: 1.2 }
     };
     const profSnap = /** @type {any} */ (safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null));
@@ -239,7 +240,7 @@ stutterVariants = (() => {
     // R50: emergent rhythm intensity modulates variant selection. Dense emergent
     // grids boost percussive/dramatic variants; complex grids boost textural variants.
     const EMERGENT_DENSE_WEIGHTS = { machineGun: 1.6, stutterSwarm: 1.4, rhythmicGrid: 1.5, convergenceBurst: 1.3 };
-    const EMERGENT_COMPLEX_WEIGHTS = { ghostStutter: 1.5, flickerStutter: 1.4, stereoWidthModulation: 1.3, echoTrail: 1.3 };
+    const EMERGENT_COMPLEX_WEIGHTS = { ghostStutter: 1.5, flickerStutter: 1.4, stereoWidthModulation: 1.3, echoTrail: 1.3, alienArpeggio: 1.6 };
     const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
     const emergentDensity = emergentEntry && Number.isFinite(emergentEntry.density) ? emergentEntry.density : 0;
     const emergentComplexity = emergentEntry && Number.isFinite(emergentEntry.complexity) ? emergentEntry.complexity : 0.5;

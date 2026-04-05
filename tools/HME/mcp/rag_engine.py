@@ -411,6 +411,20 @@ class RAGEngine:
                     logger.info("code_chunks table empty but cache non-empty - clearing cache")
                     self._file_hashes = {}
                     self._save_hashes()
+                else:
+                    # Check for cache/table mismatch: if cache claims far more files than exist
+                    # in the table, prune stale entries so skipped files get re-indexed.
+                    existing = self.table.to_arrow()
+                    indexed_sources: set[str] = set(existing.column("source").to_pylist())
+                    stale_keys = [k for k in self._file_hashes if k not in indexed_sources]
+                    if stale_keys:
+                        logger.info(
+                            f"Hash cache has {len(stale_keys)} stale entries not in table "
+                            f"({len(indexed_sources)} actual sources) — pruning for re-index"
+                        )
+                        for k in stale_keys:
+                            del self._file_hashes[k]
+                        self._save_hashes()
             except Exception:
                 pass
 
