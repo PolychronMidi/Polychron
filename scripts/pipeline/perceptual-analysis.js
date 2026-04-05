@@ -145,6 +145,34 @@ for qi, query in enumerate(queries):
 avg_q = sim.mean(dim=1).detach().cpu().numpy()
 dominant = queries[int(np.argmax(avg_q))]
 
+# Per-section CLAP: xenolinguistic character probes for sectionIntentCurves guidance
+section_probes = [
+    'alien xenolinguistic mechanical language',
+    'organic natural human music',
+    'rhythmically chaotic unstructured noise',
+    'sparse minimal quiet passage',
+]
+sec_text_embed = clap.get_text_embedding(section_probes, use_tensor=True)
+for sec in sorted(section_times):
+    st = section_times[sec]
+    dur = st['end'] - st['start']
+    if dur < 2.0: continue
+    off = int(st['start'] * csr)
+    end = int(st['end'] * csr)
+    y_sec = y[off:end].astype(np.float32)
+    if len(y_sec) < csr * 2: continue
+    ct = torch.from_numpy(y_sec).unsqueeze(0)
+    sec_audio_emb = clap.get_audio_embedding_from_data(ct, use_tensor=True)
+    sec_sim = torch.nn.functional.cosine_similarity(
+        sec_text_embed.unsqueeze(1), sec_audio_emb.unsqueeze(0), dim=2
+    )
+    encodec_sections[str(sec)]['clap'] = {
+        'alien':   float(sec_sim[0, 0]),
+        'organic': float(sec_sim[1, 0]),
+        'chaotic': float(sec_sim[2, 0]),
+        'sparse':  float(sec_sim[3, 0]),
+    }
+
 report = {
     'timestamp': __import__('datetime').datetime.now().isoformat(),
     'confidence': 0.15,

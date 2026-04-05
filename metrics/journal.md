@@ -1,6 +1,37 @@
-## R54 — 2026-04-05 — (emergentMelodicEngine: 6-tracker melodic synthesis hub)
+## R56 — 2026-04-05 — (3 perceptual evolutions: CB0 tension loop + CLAP section guidance + verdict regressor)
 
-**Profile:** 7 sections | **Beats:** pending | **Verdict:** pending listen
+**Profile:** atmospheric | **Beats:** 1306 | **Sections:** 7 | **Verdict:** pending listen
+**EnCodec r=0.132** (down from 0.644 — bidirectional loop now active, breaks monotonic correlation)
+**CLAP dominant:** "dense chaotic many notes simultaneously" (0.226) | **Predicted:** STABLE (43.9%)
+
+### What Changed
+- **Evolution 1: perceptualTensionBias** (`src/conductor/melodic/perceptualTensionBias.js`): reads `metrics/perceptual-report.json` CB0 entropy per section, computes deviation from section mean, registers as tension bias modifier (±0.08 max at confidence ≥0.30, ±0.02 at 15%). Closes the tension→CB0→tension loop (previously one-way). Correlation anchor: r=0.644.
+- **Evolution 2a: per-section CLAP probes** (`scripts/pipeline/perceptual-analysis.js`): runs 4 xenolinguistic probes per section (alien/organic/chaotic/sparse) via CLAP HTSAT-tiny. Stored in `encodec_sections[sec].clap`. Character snapshot for each section.
+- **Evolution 2b: sectionIntentCurves CLAP guidance** (`src/crossLayer/structure/form/sectionIntentCurves.js`): `_clapGuide` IIFE loads previous run's per-section CLAP scores. High alien → moderate dissonanceTarget. High organic → boost dissonanceTarget. High chaotic → reduce interactionTarget. High sparse → boost densityTarget. ±0.06 max at full confidence.
+- **Evolution 3: verdict regressor** (`scripts/pipeline/train-verdict-predictor.js`): LogisticRegression (sklearn, L2, C=0.5) trained on labeled run-history snapshots. 21 samples labeled retroactively (12 STABLE, 9 LEGENDARY). 62% CV accuracy. Top features: densityMean, totalNotes, couplingLabelCount. Prediction integrated into snapshot-run.js output. Runs as non-fatal pipeline step after snapshot-run.
+
+### Architecture Notes
+- perceptualTensionBias uses same `require('fs')` pattern as coordinationIndependenceManager.js for cross-run static data loading at boot
+- CLAP guidance uses negative feedback (contrast): dominant character → nudge away. Creates section-level variety across runs.
+- Verdict model at 62% CV (21 samples) — weak signal. Will improve toward 80%+ as labeled count grows past 30.
+- `--label-bulk VERDICT --since ISO --until ISO` added to snapshot-run.js for retroactive batch labeling
+
+---
+
+## R55 — 2026-04-05 — LEGENDARY (motifEcho thematic gating + emergentMelody crossMod consumer)
+
+**Profile:** atmospheric | **Beats:** ~806 | **Verdict:** "new legendary xenolinguistic tier. keep blasting interstellar!"
+
+### What Changed
+- **motifEcho thematic density gate** (`src/crossLayer/harmony/motifEcho.js`): `thematicDensity` from emergentMelodicEngine suppresses echoProbability when thematic material is already dense (clamp 0.55-1.0 mult). Prevents motif saturation.
+- **motifEcho contour-aware transforms**: rising contour → retrograde (65% prob), falling → inversion, arching → retrograde-inversion. Natural melodic flow mapped to pitch transforms.
+- **crossModulateRhythms emergentMelody consumer** (R55 in file): rising contour → +crossMod, contrary counterpoint → −crossMod, stale intervals → slight boost.
+
+---
+
+## R54 — 2026-04-05 — LEGENDARY (emergentMelodicEngine: 6-tracker melodic synthesis hub)
+
+**Profile:** atmospheric | **Beats:** ~939 | **Verdict:** "new legendary xenolinguistic tier. keep blasting interstellar!"
 
 ### What Changed
 - **emergentMelodicEngine** (`src/crossLayer/melody/`): synthesizes 6 conductor melodic trackers (contour, interval freshness, tessiture, thematic recall, ambitus, counterpoint) into `emergentMelody` L0 channel. Three bias surfaces: `nudgeNoveltyWeight()` in harmonicIntervalGuard, `getMelodicWeights()` as 12th signal dimension in stutterVariants, `getContourAscendBias()` in alienArpeggio

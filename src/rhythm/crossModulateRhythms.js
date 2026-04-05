@@ -175,6 +175,22 @@ crossModulateRhythms = () => {
     }
   }
 
+  // R55: emergentMelody contour-rhythm coupling. Rising contour -> more cross-mod
+  // energy (layers diverging upward). Contrary counterpoint -> less cross-mod
+  // (preserve independence). Stale intervals -> slight boost (explore more).
+  {
+    const melody = L0.getLast('emergentMelody', { layer: 'both' });
+    if (melody) {
+      const mFreshness = V.optionalFinite(melody.intervalFreshness, 1);
+      let melodicMod = 0;
+      if (melody.contourShape === 'rising')    melodicMod += rf(0.05, 0.15);
+      else if (melody.contourShape === 'falling') melodicMod -= rf(0.03, 0.10);
+      if (melody.counterpoint === 'contrary')  melodicMod -= rf(0.04, 0.10);
+      if (mFreshness < 0.45)                   melodicMod += rf(0.03, 0.08);
+      crossModulation += melodicMod;
+    }
+  }
+
   // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
   // during E11 sparse windows. 1.0 = neutral (default from getRateMultiplier),
   // <1.0 = max suppression depth (from hyperMetaManager EMA ramp).

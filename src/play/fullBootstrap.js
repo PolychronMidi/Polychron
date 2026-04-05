@@ -259,6 +259,7 @@ fullBootstrap = (() => {
     'ambitusMigrationTracker',
     'silenceDistributionTracker',
     'voiceLeadingEfficiencyTracker',
+    'perceptualTensionBias',
     'rhythmicGroupingAnalyzer',
     'dynamicArchitectPlanner',
     'tessituraPressureMonitor',

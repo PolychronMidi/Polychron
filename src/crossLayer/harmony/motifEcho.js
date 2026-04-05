@@ -38,7 +38,10 @@ motifEcho = (() => {
 
     // When we accumulate enough notes, potentially capture a motif fragment
     // R51: CIM-modulated echo probability -- coordinated = more imitative echo, independent = less
-    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2);
+    // R55: thematic density gate -- high recall suppresses new capture (preserve existing material)
+    const melodicCtx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const thematicMult = melodicCtx ? clamp(1.0 - melodicCtx.thematicDensity * 0.45, 0.55, 1.0) : 1.0;
+    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2) * thematicMult;
     if (notes.length >= 3 && rf() < echoProbability && pendingEchoes.length < MAX_PENDING_ECHOES) {
       captureMotif(layer, absoluteSeconds);
     }
@@ -64,6 +67,13 @@ motifEcho = (() => {
     const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
     if (harmonicEntry && Number.isFinite(harmonicEntry.excursion) && harmonicEntry.excursion > 3) {
       transform = rf() < 0.6 ? 'retrograde-inversion' : 'inversion';
+    }
+    // R55: contour-aware transform -- echo mirrors the melodic arc direction
+    const captureCtx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    if (captureCtx && rf() < 0.55) {
+      if (captureCtx.contourShape === 'rising')  transform = rf() < 0.65 ? 'retrograde' : transform;
+      else if (captureCtx.contourShape === 'falling') transform = rf() < 0.65 ? 'inversion' : transform;
+      else if (captureCtx.contourShape === 'arching') transform = rf() < 0.55 ? 'retrograde-inversion' : transform;
     }
     const identityChoice = motifIdentityMemory.chooseEchoTransform(layer);
     if (identityChoice && typeof identityChoice.transform === 'string' && rf() < clamp(identityChoice.bias, 0, 1)) {
