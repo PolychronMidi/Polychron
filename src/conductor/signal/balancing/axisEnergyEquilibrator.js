@@ -33,7 +33,7 @@ axisEnergyEquilibrator = (() => {
     PHASE_SURFACE_ABS_MIN: 0.22,    // R81 E2: widened from 0.18 to allow more coldspot relaxation
     TRUST_SURFACE_RATIO: 1.45,
     TRUST_SURFACE_ABS_MIN: 0.20,
-    ENTROPY_SURFACE_RATIO: 1.35,
+    ENTROPY_SURFACE_RATIO: 1.50,  // R46: raised from 1.35 -- entropy axis sparse, higher threshold protects entropy pairs from over-tightening so coldspot relaxation can grow entropy share
     ENTROPY_SURFACE_ABS_MIN: 0.18,
     COHERENT_HOTSPOT_MIN_SCALE: 0.18,
     COHERENT_HOTSPOT_MAX_SCALE: 0.42,

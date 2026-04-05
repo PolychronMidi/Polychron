@@ -313,6 +313,7 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | `evolution_patterns` | Meta-patterns across journal rounds: confirm rates, subsystem receptivity, stabilization timelines |
 | `causal_trace` | Trace constant -> controller -> metric -> musical effect chain |
 | `hme_inspect(mode)` | mode='introspect': usage patterns, system health, musical context. mode='selftest': 8-point health check. mode='both' (default). |
+| `fix_antipattern(antipattern, hook_target)` | Permanently enforce a rule by synthesizing bash detection logic and appending it to the target hook script. Use when a behavioral rule is repeatedly violated and needs hook-level enforcement. |
 | `trace_query` | Query trace.jsonl for what a module ACTUALLY DID: trust scores, regime transitions, value ranges |
 | `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
 | `kb_seed` | Auto-generate starter KB entries for top-N highest-dependency modules with zero KB coverage |
