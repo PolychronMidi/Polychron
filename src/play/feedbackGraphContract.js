@@ -100,6 +100,9 @@ feedbackGraphContract = (() => {
         }
       }
 
+      // Conceptual loops are documentation-only (no runtime global expected)
+      if (loop.conceptual) continue;
+
       const modRef = moduleRefs[modName];
       V.assertManagerShape(modRef, modName, V.assertArray(moduleMethodContracts[modName], "moduleMethodContracts[" + modName + "]"));
     }

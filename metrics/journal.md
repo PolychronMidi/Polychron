@@ -1,8 +1,40 @@
+## R49 — 2026-04-05 — (firewall ports + rhythmic contagion port)
+
+**Profile:** 7 sections (restrained×2 → default×2 → explosive → atmospheric×2) | **Beats:** 1167 | **Duration:** pending
+**Fingerprint:** pending | **Regimes:** exploring 36%, coherent 35%, evolving 26% | **Verdict:** pending listen
+
+### What Changed
+- **Firewall ports centralized**: 9 controlled cross-boundary openings now declared in
+  `metrics/feedback_graph.json` under `firewallPorts`. Pipeline-validated by `validate-feedback-graph.js`.
+- **New firewall port #9: rhythmic contagion port**: `crossModulateRhythms.js` reads L0
+  `emergentDownbeat` + `stutterContagion`. Downbeats → micro-breathing bell curve (spike at 0.15,
+  dip at 0.7). Stutter contagion → 3-beat crossMod boost. Regime-scaled: exploring 1.3-1.4x, coherent 0.5-0.6x.
+- **Feedback loop registered**: `rhythmicContagionPort` in feedbackRegistry.
+- **HME fixes**: generate-feedback-graph.js preserves firewallPorts + no-duplicate-conceptual fix;
+  feedbackGraphContract.js skips conceptual loops; fix_antipattern now hook-aware (stop vs pretooluse);
+  stop.sh detects polling behavior from transcript (≥2 task output reads in one turn).
+
+### Causal Findings
+- **Massive regime shift vs R48**: exploring 18%→36%, coherent 44%→35%. The contagion port's
+  exploring-boosted crossMod (1.4x regime scale) fed back into regime dynamics — more rhythmic
+  energy during exploring passages likely extended exploring dwell time.
+- Effectively partially reversed the R48 REGIME_TARGET_COHERENT_HI tightening effect.
+- Section arc: S0 coherent warmup → S1 exploring → S2/S3 evolving-dominant → S4 explosive coherent
+  → S5/S6 atmospheric exploring. More balanced distribution than R48.
+- One anomaly: coherenceMonitor weight swing Δ0.784 at S0 beat 8 (EMA alpha spike, minor).
+- 1167 beats vs R48's 951 — longer composition this run.
+
+### Evolutions Proposed (for R50)
+- If exploring 36% feels too much like a regression to pre-R48 (fragmented exploring without
+  the punchier concentrated feel), the contagion exploring boost (1.4x) may need tuning down to 1.2x
+- If it sounds good/better: the contagion port is doing real work and the exploring boost is valid
+- Consider whether coherent at 35% vs R48's 44% loses the breathing room quality
+
 ## R48 — 2026-04-05 — STABLE (coherent ceiling raise + exploring independence amplification)
 
 **Profile:** 7 sections (atmospheric) | **Beats:** 951 | **Duration:** 468.3s
 **Fingerprint:** SIMILAR vs baseline | Drifted: 28 differences (7 notable harmonic changes)
-**Regimes:** coherent 44%, evolving 36%, exploring 18% | **Verdict:** pending listen
+**Regimes:** coherent 44%, evolving 36%, exploring 18% | **Verdict:** LEGENDARY (user: "legendary, and yes — good punchier dynamism!")
 
 ### What the Music Sounds Like
 Needs listen. Regime shift from R47: exploring dropped 31%→18% (short transient bursts), evolving
