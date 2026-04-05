@@ -563,7 +563,7 @@ def kb_seed(top_n: int = 15) -> str:
         + "\n\nReply in this exact format (one line per module):\n"
         + "\n".join(f"{name}: <constraint>" for _, name, _ in candidates)
     )
-    raw = _local_think(batch_prompt, max_tokens=80 * len(candidates))
+    raw = _think_local_or_claude(batch_prompt, _get_api_key(), max_tokens=80 * len(candidates))
 
     # Parse responses: expect "name: summary" lines
     summaries: dict[str, str] = {}
