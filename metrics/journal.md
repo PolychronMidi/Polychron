@@ -638,3 +638,16 @@ with Q3-Q4 quite flat. Exceedance down to 128 beats (flicker-phase 57, healthier
 - The cadence-monopoly forced exits are structural benefits: they prevent coherent stagnation
   without requiring manual intervention. Falsification: monopoly exits are audible as harsh breaks.
 
+
+## R40 — 2026-04-05 — STABLE (density-attenuation + coherent fix + per-system pairs)
+
+**Profile:** atmospheric | **Beats:** 1092 | **Duration:** ~150s
+**Fingerprint:** pipeline green | Regimes: exploring 41%, coherent 31%, evolving 27%
+
+### Findings
+- **Density-attenuation fix**: atmospheric S5 hotspot dropped 84%→26% for density-trust systems via `clamp(densityProduct/0.75, 0.5, 1.0)` scaling in adaptiveTrustScoresHelpers.
+- **Coherent death spiral fix**: `coherentStartSec` init-to-0 caused dwell check to fire on first coherent beat after 28s. Fixed: set startSec on first entry. Coherent restored from 0% to 31%.
+- **Per-system pair assignments**: 19 systems previously on generic fallback pairs now have function-specific pairs. Hotspot diversity: was 20 systems at identical 23.9%, now 14 distinct levels (1.4%–30.9%).
+- **Coupling label arc**: S0 rhythmic-shimmer → S2 stable-variety → S4 chaotic-proliferation → S6 smooth-tension. Tracks the emotional trajectory.
+- **roleSwap collapse**: weight drops Δ-0.258 at S4 (explosive). Hypothesis: tension valleys trigger excessive profile swaps.
+- **flicker-trust cluster stress**: feedbackOscillator, restSynchronizer, coherenceMonitor, stutterContagion all hit 0.65-0.75 hotspot in atmospheric S5. Candidate for flicker-attenuation, needs listen.

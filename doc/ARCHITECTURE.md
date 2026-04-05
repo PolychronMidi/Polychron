@@ -56,9 +56,13 @@ Recorder context carries: `{ absTime, compositeIntensity, currentDensity, harmon
 
 Modules register density/tension/flicker biases via `conductorIntelligence.registerDensityBias(name, fn, lo, hi)`. At pipeline time, all biases are collected, dampened, and multiplied into the final products. 92 bias registrations are locked against `scripts/bias-bounds-manifest.json`.
 
+**`conductorIntelligence`** is the most-called module in the codebase (282 callers). Never call `getSignalSnapshot()` directly — use `signalReader` (ESLint `no-direct-signal-read`). Cross-layer modules must NOT register biases here — use `crossLayerRegistry` instead (ESLint `no-conductor-registration-from-crosslayer`).
+
+**`conductorState`** holds the mutable per-beat state (densityMultiplier, tension, flicker, regime, playProb, stutterProb, etc). Cross-layer must NOT read this directly — use `conductorSignalBridge.getSignals()` (ESLint `no-direct-conductor-state-from-crosslayer`). `traceDrain` captures snap fields from this into `trace.jsonl`.
+
 ## The Signal Bridge
 
-**Firewall boundary 1.** `conductorSignalBridge` (crossLayer module) caches conductor signals per-beat via a registered recorder. CrossLayer modules read the bridge, never the conductor directly.
+**Firewall boundary 1.** `conductorSignalBridge` (crossLayer module) caches conductor signals per-beat via a registered recorder. CrossLayer modules read the bridge, never the conductor directly. 43 callers — the critical architectural boundary between conductor and crossLayer subsystems.
 
 Exposed fields (17 total):
 - Core signals: `density`, `tension`, `flicker`, `compositeIntensity`, `sectionPhase`, `coherenceEntropy`
