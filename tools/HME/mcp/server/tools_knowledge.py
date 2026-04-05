@@ -394,7 +394,8 @@ def kb_health() -> str:
             if not os.path.isfile(abs_path):
                 issues.append(f"references {fref} which no longer exists")
             else:
-                lines = sum(1 for _ in open(abs_path, encoding="utf-8", errors="ignore"))
+                with open(abs_path, encoding="utf-8", errors="ignore") as _fh:
+                    lines = sum(1 for _ in _fh)
                 # Check if entry mentions a line count
                 line_match = re.search(r'(\d{3,})\s*lines', content)
                 if line_match:

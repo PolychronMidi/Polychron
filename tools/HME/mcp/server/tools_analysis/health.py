@@ -139,7 +139,8 @@ def convention_check(file_path: str) -> str:
     if not os.path.isfile(abs_path):
         return f"File not found: {abs_path}"
     try:
-        content = open(abs_path, encoding="utf-8", errors="ignore").read()
+        with open(abs_path, encoding="utf-8", errors="ignore") as _f:
+            content = _f.read()
     except Exception as e:
         return f"Error reading {abs_path}: {e}"
     lines = content.split("\n")
@@ -340,7 +341,8 @@ def doc_sync_check(doc_path: str = "") -> str:
     abs_target = target if os.path.isabs(target) else os.path.join(ctx.PROJECT_ROOT, target)
     if not os.path.isfile(abs_target):
         return f"File not found: {abs_target}"
-    doc_content = open(abs_target, encoding="utf-8", errors="ignore").read()
+    with open(abs_target, encoding="utf-8", errors="ignore") as _f:
+        doc_content = _f.read()
     issues = []
     # Check tool count claim
     count_match = re.search(r'(\d+)\s+(?:MCP\s+)?tools', doc_content)
@@ -354,7 +356,8 @@ def doc_sync_check(doc_path: str = "") -> str:
                 continue
             _tf_path = os.path.join(_root, _tf)
             try:
-                _lines = open(_tf_path, encoding="utf-8").readlines()
+                with open(_tf_path, encoding="utf-8") as _f:
+                    _lines = _f.readlines()
                 actual_tools += sum(1 for l in _lines if l.strip() == "@ctx.mcp.tool()")
                 server_content_parts.append("".join(_lines))
             except Exception:

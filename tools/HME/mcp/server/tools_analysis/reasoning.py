@@ -118,7 +118,8 @@ def module_story(module_name: str) -> str:
     sim_limit = limits["similar"]
     if matching and sim_limit > 0:
         try:
-            content = open(matching[0]["file"], encoding="utf-8", errors="ignore").read()[:500]
+            with open(matching[0]["file"], encoding="utf-8", errors="ignore") as _f:
+                content = _f.read()[:500]
             similar = _find_similar(content, ctx.project_engine, top_k=sim_limit + 3)
             if similar:
                 source_file = matching[0]["file"]

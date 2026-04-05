@@ -22,7 +22,8 @@ def _get_api_key() -> str:
         os.path.expanduser("~/.config/anthropic/key"),
     ]:
         try:
-            key = open(key_path).read().strip()
+            with open(key_path) as _f:
+                key = _f.read().strip()
             if key:
                 return key
         except Exception:
@@ -352,7 +353,8 @@ def _read_module_source(module_name: str, max_chars: int = 3000) -> str:
     if not candidates:
         return ""
     try:
-        content = open(candidates[0], encoding="utf-8", errors="ignore").read()
+        with open(candidates[0], encoding="utf-8", errors="ignore") as _f:
+            content = _f.read()
         return content[:max_chars]
     except Exception:
         return ""
