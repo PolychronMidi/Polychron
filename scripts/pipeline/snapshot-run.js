@@ -31,19 +31,23 @@ function extractFeatures() {
     ? axisVals.reduce((s, v) => s + Math.abs(v - axisMean), 0) / (2 * axisVals.length * axisMean)
     : 0;
 
-  // Section stats from trace-summary
+  // Section stats from trace-summary (field names: avgTension, avgDensity)
   const sectionStats = (ts.sectionStats || []).map(s => ({
     beats: s.beats || 0,
     dominantRegime: s.dominantRegime || '?',
-    tensionMean: s.tensionMean || 0,
-    tensionPeak: s.tensionPeak || 0,
+    tensionMean: s.avgTension || s.tensionMean || 0,
+    tensionPeak: s.peakTension || s.tensionPeak || s.avgTension || 0,
     profile: s.profile || '?',
   }));
 
-  // Trust ecology summary
+  // Trust ecology summary (trustFinal values are plain floats = score)
   const trustFinal = fp.trustFinal || {};
   const trustWeights = Object.entries(trustFinal)
-    .map(([name, data]) => ({ name, weight: data.weight || 0, score: data.score || 0 }))
+    .map(([name, data]) => ({
+      name,
+      weight: typeof data === 'number' ? data : (data.weight || data.score || 0),
+      score: typeof data === 'number' ? data : (data.score || data.weight || 0),
+    }))
     .sort((a, b) => b.weight - a.weight);
 
   // Coupling label diversity
@@ -88,6 +92,9 @@ function extractFeatures() {
         (sectionStats.slice(Math.ceil(sectionStats.length / 2))
           .reduce((s, x) => s + x.tensionMean, 0) / Math.floor(sectionStats.length / 2))
       : 0,
+
+    // Active profile (from fingerprint)
+    activeProfile: fp.activeProfile || 'unknown',
 
     // Section detail (compact)
     sections: sectionStats,
@@ -154,7 +161,7 @@ function main() {
     timestamp: new Date().toISOString(),
     features: features,
     verdict: null,  // labeled later via --label
-    profile: features.sections[0] ? features.sections[0].profile : 'unknown',
+    profile: features.activeProfile || 'unknown',
   };
 
   // --perceptual: run EnCodec analysis and attach to snapshot

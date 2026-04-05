@@ -150,7 +150,6 @@ def pipeline_digest() -> str:
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def regime_anomaly() -> str:
     """Auto-detect regime pathologies: death spirals (0% of any expected regime),
     monopolies (>75% single regime), forced-transition storms, and trust inflation.

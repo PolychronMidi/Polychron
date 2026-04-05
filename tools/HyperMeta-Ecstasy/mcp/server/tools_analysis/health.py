@@ -19,6 +19,73 @@ from .synthesis import (
 
 logger = logging.getLogger("HyperMeta-Ecstasy")
 
+
+def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict, dict]:
+    """Single-pass caller count for all IIFE globals.
+
+    Returns:
+      sym_files:  name → defining file path
+      caller_counts: name → external caller count
+
+    Algorithm:
+      Pass 1 (src/ only): collect all IIFE global names and their defining files.
+      Pass 2 (full project): read each file ONCE, find all symbol references
+        simultaneously using a combined regex — O(files) not O(symbols × files).
+    """
+    from file_walker import walk_code_files
+
+    # Pass 1 — collect symbols
+    sym_files: dict[str, str] = {}
+    sym_registrations: dict[str, bool] = {}
+    _reg_pats = [
+        'conductorIntelligence.register',
+        'crossLayerRegistry.register',
+        'feedbackRegistry.register',
+    ]
+    for fpath in walk_code_files(src_root):
+        if not str(fpath).endswith(".js"):
+            continue
+        try:
+            content = fpath.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        iife_names = _find_iife_globals(content)
+        for name in iife_names:
+            sym_files[name] = str(fpath)
+            # Check self-registration per symbol
+            has_reg = any(
+                f"{p}('{name}" in content or f'{p}("{name}' in content
+                for p in _reg_pats
+            )
+            if not has_reg and len(iife_names) == 1:
+                has_reg = any(p in content for p in _reg_pats)
+            sym_registrations[name] = has_reg
+
+    if not sym_files:
+        return {}, {}
+
+    # Pass 2 — count references in one scan
+    import re as _re
+    name_list = list(sym_files.keys())
+    combined = _re.compile(r'\b(' + '|'.join(_re.escape(n) for n in name_list) + r')\b')
+    caller_counts: dict[str, int] = {n: 0 for n in name_list}
+
+    for fpath in walk_code_files(project_root):
+        if not (str(fpath).endswith(".js") or str(fpath).endswith(".ts")):
+            continue
+        try:
+            content = fpath.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        fpath_str = str(fpath)
+        for m in combined.finditer(content):
+            name = m.group(1)
+            if fpath_str != sym_files.get(name, ""):
+                caller_counts[name] = caller_counts.get(name, 0) + 1
+
+    return sym_files, caller_counts, sym_registrations  # type: ignore[return-value]
+
+
 @ctx.mcp.tool()
 def impact_analysis(symbol_name: str, language: str = "") -> str:
     """Analyze the impact of changing a symbol: who calls it, what it calls, and knowledge constraints."""
@@ -220,43 +287,22 @@ def codebase_health() -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def find_dead_code(path: str = "src") -> str:
     """Scan all IIFE globals for zero external callers AND no conductor self-registration (truly dormant modules). Modules that self-register via conductorIntelligence.register* are active even without direct callers — their biases flow through the conductor signal pipeline via callbacks."""
-    from file_walker import walk_code_files
-    target = os.path.join(ctx.PROJECT_ROOT, path) if not os.path.isabs(path) else path
-    registration_patterns = [
-        'conductorIntelligence.register',
-        'crossLayerRegistry.register',
-        'feedbackRegistry.register',
-    ]
-    dormant = []
-    active = []
-    self_registered = []
-    for fpath in walk_code_files(target):
-        if not str(fpath).endswith('.js'):
-            continue
-        try:
-            content = fpath.read_text(encoding='utf-8', errors='ignore')
-        except Exception:
-            continue
-        iife_names = _find_iife_globals(content)
-        for name in iife_names:
-            # Check for self-registration of THIS specific symbol (not just any in the file)
-            has_registration = any(f"{pat}('{name}" in content or f'{pat}("{name}' in content for pat in registration_patterns)
-            # Fallback: if file has only one IIFE global, file-level check is fine
-            if not has_registration:
-                has_registration = any(pat in content for pat in registration_patterns) and len(iife_names) == 1
-            callers = _find_callers(name, ctx.PROJECT_ROOT)
-            # Exclude self-references (same file)
-            external = [c for c in callers if os.path.basename(c['file']) != os.path.basename(str(fpath))]
-            if not external and not has_registration:
-                rel = str(fpath).replace(ctx.PROJECT_ROOT + '/', '')
-                dormant.append(f"  {name} ({rel}) -- 0 external callers, no self-registration")
-            elif not external and has_registration:
-                self_registered.append(name)
-            else:
-                active.append(name)
+    src_root = os.path.join(ctx.PROJECT_ROOT, path) if not os.path.isabs(path) else path
+    sym_files, caller_counts, sym_registrations = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
+
+    dormant, active, self_registered = [], [], []
+    for name, count in caller_counts.items():
+        has_reg = sym_registrations.get(name, False)
+        if count == 0 and not has_reg:
+            rel = sym_files[name].replace(ctx.PROJECT_ROOT + '/', '')
+            dormant.append(f"  {name} ({rel}) -- 0 external callers, no self-registration")
+        elif count == 0 and has_reg:
+            self_registered.append(name)
+        else:
+            active.append(name)
+
     if not dormant:
         return f"No dead code found. {len(active)} globals with direct callers, {len(self_registered)} active via conductor self-registration."
     parts = [f"# Dead Code Report ({len(dormant)} truly dormant globals)\n"]
@@ -266,24 +312,15 @@ def find_dead_code(path: str = "src") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def symbol_importance(top_n: int = 20) -> str:
     """Rank IIFE globals by caller count (architectural centrality). Most-called = most important."""
-    from file_walker import walk_code_files
-    symbols = []
-    for fpath in walk_code_files(os.path.join(ctx.PROJECT_ROOT, 'src')):
-        if not str(fpath).endswith('.js'):
-            continue
-        try:
-            content = fpath.read_text(encoding='utf-8', errors='ignore')
-        except Exception:
-            continue
-        for name in _find_iife_globals(content):
-            callers = _find_callers(name, ctx.PROJECT_ROOT)
-            external = [c for c in callers if os.path.basename(c['file']) != os.path.basename(str(fpath))]
-            rel = str(fpath).replace(ctx.PROJECT_ROOT + '/', '')
-            symbols.append((len(external), name, rel))
-    symbols.sort(key=lambda x: -x[0])
+    src_root = os.path.join(ctx.PROJECT_ROOT, 'src')
+    sym_files, caller_counts, _ = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
+    symbols = sorted(
+        [(count, name, sym_files[name].replace(ctx.PROJECT_ROOT + '/', ''))
+         for name, count in caller_counts.items()],
+        key=lambda x: -x[0]
+    )
     parts = [f"# Symbol Importance (top {top_n} by caller count)\n"]
     for i, (count, name, rel) in enumerate(symbols[:top_n]):
         parts.append(f"  {i+1}. {name}: {count} callers ({rel})")
@@ -353,3 +390,19 @@ def doc_sync_check(doc_path: str = "") -> str:
     if not issues:
         return f"IN SYNC: {os.path.basename(abs_target)} matches server ({actual_tools} tools)"
     return f"OUT OF SYNC: {os.path.basename(abs_target)}\n" + "\n".join(f"  - {i}" for i in issues)
+
+
+@ctx.mcp.tool()
+def symbol_audit(mode: str = "both", path: str = "src", top_n: int = 20) -> str:
+    """Merged symbol analysis. mode: 'dead' (globals with 0 callers and no self-registration),
+    'importance' (top-N IIFE globals by caller count, architectural centrality),
+    or 'both' (default). Replaces calling find_dead_code + symbol_importance separately."""
+    _track("symbol_audit")
+    parts = []
+    if mode in ("dead", "both"):
+        parts.append(find_dead_code(path))
+    if mode in ("importance", "both"):
+        parts.append(symbol_importance(top_n))
+    if not parts:
+        return f"Unknown mode '{mode}'. Use 'dead', 'importance', or 'both'."
+    return "\n\n".join(parts)

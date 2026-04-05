@@ -20,6 +20,38 @@ logger = logging.getLogger("HyperMeta-Ecstasy")
 # Perceptual confidence starts low — earns trust through verified accuracy
 _PERCEPTUAL_CONFIDENCE = 0.15  # raised as predictions correlate with verdicts
 
+# Module-level model cache — loaded once per MCP server process, reused across tool calls
+_encodec_model = None
+_encodec_device = None
+_clap_model = None
+
+
+def _get_encodec():
+    """Lazy-load EnCodec 24kHz model, cached for the server process lifetime."""
+    global _encodec_model, _encodec_device
+    if _encodec_model is None:
+        import torch
+        from encodec import EncodecModel
+        _encodec_device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info("Loading EnCodec 24kHz model onto %s (one-time)...", _encodec_device)
+        _encodec_model = EncodecModel.encodec_model_24khz()
+        _encodec_model.set_target_bandwidth(6.0)
+        _encodec_model.to(_encodec_device).eval()
+        logger.info("EnCodec ready.")
+    return _encodec_model, _encodec_device
+
+
+def _get_clap():
+    """Lazy-load CLAP HTSAT-tiny model, cached for the server process lifetime."""
+    global _clap_model
+    if _clap_model is None:
+        import laion_clap
+        logger.info("Loading CLAP HTSAT-tiny model (one-time)...")
+        _clap_model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')
+        _clap_model.load_ckpt()
+        logger.info("CLAP ready.")
+    return _clap_model
+
 
 def _get_wav_path() -> str:
     return os.path.join(ctx.PROJECT_ROOT, "output", "combined.wav")
@@ -63,33 +95,37 @@ def _load_audio_sections(wav_path: str, sr: int = 22050) -> list[tuple[int, any]
 
 
 @ctx.mcp.tool()
-def audio_encodec(top_sections: int = 3) -> str:
-    """Phase 2: Analyze the rendered WAV with EnCodec neural audio codec.
-    Extracts per-section token entropy (musical complexity), inter-section
-    token distance (contrast), and codebook activation patterns.
-    Confidence-weighted — starts low, earns trust through verdict correlation."""
+def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int = 3) -> str:
+    """Unified perceptual audio analysis. Runs EnCodec, CLAP, or both on combined.wav.
+    analysis: 'encodec' (neural token entropy per section), 'clap' (text↔audio similarity),
+              or 'both' (default). queries: comma-separated CLAP queries (CLAP only).
+    Replaces calling audio_encodec + audio_clap separately — one call, one model-load cycle."""
     ctx.ensure_ready_sync()
-    _track("audio_encodec")
-
+    _track("audio_analyze")
     wav_path = _get_wav_path()
     if not os.path.isfile(wav_path):
         return "No combined.wav found. Run `npm run render` first."
+    parts = []
+    if analysis in ("encodec", "both"):
+        parts.append(_run_encodec(wav_path, top_sections))
+    if analysis in ("clap", "both"):
+        parts.append(_run_clap(wav_path, queries))
+    if not parts:
+        return f"Unknown analysis type '{analysis}'. Use 'encodec', 'clap', or 'both'."
+    return "\n\n".join(parts)
 
+
+def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
+    """EnCodec analysis implementation — called by audio_encodec and audio_analyze."""
     try:
         import torch
         import torchaudio
-        from encodec import EncodecModel
         from encodec.utils import convert_audio
         import numpy as np
     except ImportError as e:
         return f"Missing dependency: {e}. Install: pip install encodec torchaudio"
 
-    # Load model (24kHz bandwidth for quality)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = EncodecModel.encodec_model_24khz()
-    model.set_target_bandwidth(6.0)  # 6kbps = good quality
-    model.to(device)
-    model.eval()
+    model, device = _get_encodec()
 
     # Load and convert audio
     wav, sr = torchaudio.load(wav_path)
@@ -179,22 +215,21 @@ def audio_encodec(top_sections: int = 3) -> str:
 
 
 @ctx.mcp.tool()
-def audio_clap(queries: str = "") -> str:
-    """Phase 3: Query the rendered WAV with natural language using CLAP.
-    Computes similarity between text descriptions and audio sections.
-    Default queries probe tension, coherence, density, atmosphere.
-    Custom queries: comma-separated (e.g. 'sparse texture,rhythmic complexity').
-    Confidence-weighted — starts low, earns trust through verdict correlation."""
+def audio_encodec(top_sections: int = 3) -> str:
+    """Phase 2: EnCodec neural audio analysis — per-section token entropy and section contrast.
+    Prefer audio_analyze(analysis='both') to run EnCodec + CLAP in one call."""
     ctx.ensure_ready_sync()
-    _track("audio_clap")
-
+    _track("audio_encodec")
     wav_path = _get_wav_path()
     if not os.path.isfile(wav_path):
         return "No combined.wav found. Run `npm run render` first."
+    return _run_encodec(wav_path, top_sections)
 
+
+def _run_clap(wav_path: str, queries: str = "") -> str:
+    """CLAP analysis implementation — called by audio_clap and audio_analyze."""
     try:
         import torch
-        import laion_clap
         import librosa
         import numpy as np
     except ImportError as e:
@@ -213,10 +248,7 @@ def audio_clap(queries: str = "") -> str:
     else:
         query_list = default_queries
 
-    # Load CLAP model
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')
-    model.load_ckpt()
+    model = _get_clap()
 
     # Load and chunk audio into ~10s sections
     y, sr = librosa.load(wav_path, sr=48000, mono=True)
@@ -280,3 +312,15 @@ def audio_clap(queries: str = "") -> str:
 
     parts.append(f"\n*Confidence: {_PERCEPTUAL_CONFIDENCE:.0%} — verify against listening before trusting*")
     return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def audio_clap(queries: str = "") -> str:
+    """Phase 3: CLAP text↔audio similarity queries on the rendered WAV.
+    Prefer audio_analyze(analysis='both') to run EnCodec + CLAP in one call."""
+    ctx.ensure_ready_sync()
+    _track("audio_clap")
+    wav_path = _get_wav_path()
+    if not os.path.isfile(wav_path):
+        return "No combined.wav found. Run `npm run render` first."
+    return _run_clap(wav_path, queries)

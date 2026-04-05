@@ -21,7 +21,6 @@ def _load_trace(trace_path: str) -> list[dict]:
     return records
 
 
-@ctx.mcp.tool()
 def trust_trajectory(system_name: str) -> str:
     """Show how a trust system's weight and score evolved section-by-section across the
     full run — its 'career arc'. Reveals if a system is gaining trust, losing it, or
@@ -130,7 +129,6 @@ def trust_trajectory(system_name: str) -> str:
     return "\n".join(parts_out)
 
 
-@ctx.mcp.tool()
 def trust_rivalry(system_a: str, system_b: str) -> str:
     """Compare two trust systems head-to-head across the full run: weight, score, hotspot
     pressure, and section-by-section dominance. Find the moments where one overtook the
@@ -197,3 +195,15 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
         lines.append(f"{system_b} led {len(wa_all)-a_led}/{len(wa_all)} beats ({(len(wa_all)-a_led)/len(wa_all)*100:.0f}%)")
 
     return "\n".join(lines)
+
+
+@ctx.mcp.tool()
+def trust_report(system_a: str, system_b: str = "") -> str:
+    """Merged trust analysis. If system_b is empty: show system_a's section-by-section
+    weight/score career arc (trajectory). If system_b is provided: head-to-head rivalry
+    with overtake moments and dominance percentage. Replaces trust_trajectory + trust_rivalry."""
+    ctx.ensure_ready_sync()
+    _track("trust_report")
+    if not system_b.strip():
+        return trust_trajectory(system_a)
+    return trust_rivalry(system_a, system_b)

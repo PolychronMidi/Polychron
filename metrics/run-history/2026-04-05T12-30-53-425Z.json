@@ -8,9 +8,9 @@
     "densityVariance": 0.016964159453421737,
     "pitchEntropy": 6.487001237578811,
     "trustConvergence": 0.45254814814814814,
-    "topTrustSystem": "articulationComplement",
-    "topTrustWeight": 0,
-    "trustWeightSpread": 0,
+    "topTrustSystem": "motifEcho",
+    "topTrustWeight": 0.6882,
+    "trustWeightSpread": 0.4233,
     "healthScore": 0.3126,
     "exceedanceRate": 0.0659,
     "correlationExtremes": 0,
@@ -19,48 +19,48 @@
     "sectionCount": 7,
     "axisGini": 0.09799999999999999,
     "couplingLabelCount": 6,
-    "tensionArcShape": 0,
+    "tensionArcShape": 0.28225,
     "sections": [
       {
         "beats": 91,
         "dominantRegime": "evolving",
-        "tensionMean": 0,
-        "tensionPeak": 0,
+        "tensionMean": 0.319,
+        "tensionPeak": 0.319,
         "profile": "?"
       },
       {
         "beats": 119,
         "dominantRegime": "exploring",
-        "tensionMean": 0,
-        "tensionPeak": 0,
+        "tensionMean": 0.835,
+        "tensionPeak": 0.835,
         "profile": "?"
       },
       {
         "beats": 214,
         "dominantRegime": "coherent",
-        "tensionMean": 0,
-        "tensionPeak": 0,
+        "tensionMean": 0.655,
+        "tensionPeak": 0.655,
         "profile": "?"
       },
       {
         "beats": 176,
         "dominantRegime": "exploring",
-        "tensionMean": 0,
-        "tensionPeak": 0,
+        "tensionMean": 0.471,
+        "tensionPeak": 0.471,
         "profile": "?"
       },
       {
         "beats": 151,
         "dominantRegime": "evolving",
-        "tensionMean": 0,
-        "tensionPeak": 0,
+        "tensionMean": 0.506,
+        "tensionPeak": 0.506,
         "profile": "?"
       },
       {
         "beats": 268,
         "dominantRegime": "evolving",
-        "tensionMean": 0,
-        "tensionPeak": 0,
+        "tensionMean": 0.306,
+        "tensionPeak": 0.306,
         "profile": "?"
       },
       {
@@ -73,6 +73,6 @@
     ]
   },
   "verdict": "STABLE",
-  "profile": "?",
+  "profile": "atmospheric",
   "labeledAt": "2026-04-05T12:31:08.028Z"
 }

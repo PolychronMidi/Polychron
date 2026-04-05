@@ -21,7 +21,6 @@ def _load_trace(trace_path: str) -> list[dict]:
     return records
 
 
-@ctx.mcp.tool()
 def composition_arc() -> str:
     """Full composition biography: for every section, show regime distribution,
     tension arc (avg/peak), dominant trust systems, coupling labels, and note density.
@@ -195,3 +194,21 @@ def hotspot_leaderboard() -> str:
             break
 
     return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def composition_events(mode: str = "both", top_n: int = 10) -> str:
+    """Merged composition analysis. mode: 'arc' (section biography with regime/tension/trust),
+    'drama' (top-N most dramatic trust swings and regime transitions), or 'both' (default).
+    Replaces calling composition_arc + drama_finder separately."""
+    ctx.ensure_ready_sync()
+    _track("composition_events")
+    from .runtime import drama_finder
+    parts = []
+    if mode in ("arc", "both"):
+        parts.append(composition_arc())
+    if mode in ("drama", "both"):
+        parts.append(drama_finder(top_n))
+    if not parts:
+        return f"Unknown mode '{mode}'. Use 'arc', 'drama', or 'both'."
+    return "\n\n".join(parts)

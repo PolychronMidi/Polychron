@@ -33,10 +33,12 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.CROSS_LAYER_SILHOUETTE]: ['density-trust', 'density-phase', 'density-entropy'],
     [trustSystems.names.ROLE_SWAP]: ['density-trust', 'tension-trust', 'flicker-trust'],
     [trustSystems.names.DYNAMIC_ENVELOPE]: ['tension-trust', 'density-trust', 'tension-flicker'],
-    [trustSystems.names.GROOVE_TRANSFER]: ['density-flicker', 'density-phase', 'flicker-phase'],
+    // grooveTransfer: groove propagation = density-to-phase flow + tension-driven variation
+    [trustSystems.names.GROOVE_TRANSFER]: ['density-phase', 'density-flicker', 'tension-phase'],
     [trustSystems.names.CLIMAX_ENGINE]: ['tension-trust', 'density-trust', 'tension-phase'],
     [trustSystems.names.VELOCITY_INTERFERENCE]: ['density-trust', 'tension-trust', 'density-flicker'],
-    [trustSystems.names.RHYTHMIC_COMPLEMENT]: ['density-flicker', 'flicker-phase', 'density-phase'],
+    // rhythmicComplement: fills sparse moments = entropy/phase when main layer is quiet
+    [trustSystems.names.RHYTHMIC_COMPLEMENT]: ['density-entropy', 'density-phase', 'tension-entropy'],
     [trustSystems.names.SPECTRAL_COMPLEMENTARITY]: ['density-trust', 'tension-entropy', 'density-entropy'],
     [trustSystems.names.REGISTER_COLLISION_AVOIDER]: ['density-trust', 'tension-trust', 'density-entropy'],
     [trustSystems.names.TEXTURAL_MIRROR]: ['density-trust', 'density-flicker', 'flicker-trust'],
@@ -76,6 +78,11 @@ adaptiveTrustScoresHelpers = (() => {
     // Low densityProduct + high density-axis correlation = axes moving together (expected), not stressed.
     const densityProduct = V.optionalFinite(signals.density, 1.0);
     const densityAttenuation = clamp(densityProduct / 0.75, 0.5, 1.0);
+    // Attenuate flicker-pair pressure when flicker is subdued (e.g. smooth-tension coupling label).
+    // Analogous to density-attenuation: systems measured against flicker pairs should not be
+    // penalized when the composition intentionally reduces flicker activity.
+    const flickerProduct = V.optionalFinite(signals.flicker, 1.0);
+    const flickerAttenuation = clamp(flickerProduct / 0.75, 0.5, 1.0);
 
     const hotspotPairs = [];
     let maxPressure = 0;
@@ -97,7 +104,8 @@ adaptiveTrustScoresHelpers = (() => {
       const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
       const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
       const pairWeight = (pairWeights[pair] !== undefined ? pairWeights[pair] : 1) *
-        (pair.indexOf('density') >= 0 ? densityAttenuation : 1);
+        (pair.indexOf('density') >= 0 ? densityAttenuation : 1) *
+        (pair.indexOf('flicker') >= 0 ? flickerAttenuation : 1);
       const pairPressure = clamp(
         clamp((absCorrelation - 0.72) / 0.18, 0, 1) * 0.40 +
         clamp((pairP95 - 0.82) / 0.16, 0, 1) * 0.35 +

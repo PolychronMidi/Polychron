@@ -212,7 +212,6 @@ def list_libs() -> str:
 
 
 
-@ctx.mcp.tool()
 def index_symbols() -> str:
     """Rebuild the symbol index from scratch. Scans all project files for IIFE globals, inner functions, classes, and other named symbols. Usually called automatically by index_codebase, but can be run independently after symbol-focused changes. Returns counts broken down by symbol kind."""
     ctx.ensure_ready_sync()
@@ -227,3 +226,14 @@ def index_symbols() -> str:
         return f"{n} {word}es" if word.endswith(("s", "sh", "ch", "x", "z")) else f"{n} {word}s"
     kind_str = ", ".join(_plural(v, k) for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
     return f"Symbol index built: {result['indexed']} symbols ({kind_str})"
+
+# index_codebase now also rebuilds symbols — reindex() just provides a cleaner API
+@ctx.mcp.tool()
+def reindex(what: str = "codebase") -> str:
+    """Rebuild the search index. what: 'codebase' (code chunks + symbols, handles both),
+    'symbols' (symbol index only — faster for symbol-only changes). Replaces calling
+    index_codebase + index_symbols separately. File watcher handles individual saves."""
+    ctx.ensure_ready_sync()
+    if what == "symbols":
+        return index_symbols()
+    return index_codebase()
