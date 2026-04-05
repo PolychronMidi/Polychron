@@ -11,6 +11,7 @@ from server.helpers import (
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS, KNOWN_NON_TOOL_IDENTIFIERS,
     DRY_PATTERNS, REGISTRATION_PATTERNS,
     COUPLING_MATRIX_EXEMPT_PATHS, COUPLING_MATRIX_LEGACY_PATHS,
+    LINE_COUNT_TARGET, LINE_COUNT_WARN, LINE_COUNT_CRITICAL,
 )
 from symbols import collect_all_symbols, find_callers as _find_callers, find_iife_globals as _find_iife_globals
 from analysis import trace_cross_language as _trace_cross_lang
@@ -143,10 +144,10 @@ def convention_check(file_path: str) -> str:
     lines = content.split("\n")
     issues = []
     # Line count
-    if len(lines) > 250:
-        issues.append(f"WARN: {len(lines)} lines (target <= 200). Consider extracting a helper.")
-    elif len(lines) > 200:
-        issues.append(f"NOTE: {len(lines)} lines (target <= 200). Approaching limit.")
+    if len(lines) > LINE_COUNT_WARN:
+        issues.append(f"WARN: {len(lines)} lines (target <= {LINE_COUNT_TARGET}). Consider extracting a helper.")
+    elif len(lines) > LINE_COUNT_TARGET:
+        issues.append(f"NOTE: {len(lines)} lines (target <= {LINE_COUNT_TARGET}). Approaching limit.")
     # Check for boundary violations (crossLayer reading conductor directly)
     rel_path = abs_path.replace(ctx.PROJECT_ROOT + "/", "")
     if "/crossLayer/" in rel_path:
@@ -224,9 +225,9 @@ def codebase_health() -> str:
             continue
         lines = content.split("\n")
         line_count = len(lines)
-        if line_count > 300:
-            issues_by_severity["CRITICAL"].append(f"{rel}: {line_count} lines (target 200)")
-        elif line_count > 250:
+        if line_count > LINE_COUNT_CRITICAL:
+            issues_by_severity["CRITICAL"].append(f"{rel}: {line_count} lines (target {LINE_COUNT_TARGET})")
+        elif line_count > LINE_COUNT_WARN:
             issues_by_severity["WARN"].append(f"{rel}: {line_count} lines")
         if "/crossLayer/" in rel:
             for dr in CROSSLAYER_BOUNDARY_VIOLATIONS:

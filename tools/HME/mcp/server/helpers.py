@@ -35,6 +35,13 @@ REGISTRATION_PATTERNS: list[str] = _PROJECT_RULES.get("registration_patterns", [
 ])
 COUPLING_MATRIX_EXEMPT_PATHS: list[str] = _PROJECT_RULES.get("coupling_matrix_exempt_paths", [])
 COUPLING_MATRIX_LEGACY_PATHS: list[str] = _PROJECT_RULES.get("coupling_matrix_legacy_paths", [])
+SUBSYSTEM_NAMES: list[str] = _PROJECT_RULES.get("subsystem_names", [
+    "conductor", "crossLayer", "composers", "rhythm", "fx", "time", "play", "writer",
+])
+_lct = _PROJECT_RULES.get("line_count_thresholds", {})
+LINE_COUNT_TARGET: int = _lct.get("target", 200)
+LINE_COUNT_WARN: int = _lct.get("warn", 250)
+LINE_COUNT_CRITICAL: int = _lct.get("critical", 300)
 
 # Budget-aware limits for composite tool output — full 4-step scaling
 BUDGET_LIMITS = {

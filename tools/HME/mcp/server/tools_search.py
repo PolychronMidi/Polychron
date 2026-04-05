@@ -7,6 +7,7 @@ from server.helpers import (
     get_context_budget, validate_project_path, fmt_score, fmt_sim_score,
     format_knowledge_results, check_path_in_project,
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
+    LINE_COUNT_TARGET, LINE_COUNT_WARN,
 )
 from rag_engine import summarize_chunk
 from symbols import find_callers as _find_callers, collect_all_symbols
@@ -148,7 +149,7 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
             with open(target, encoding="utf-8", errors="ignore") as _f:
                 n = sum(1 for _ in _f)
             rel = target.replace(ctx.PROJECT_ROOT + "/", "")
-            flag = " *** OVERSIZE" if n > 250 else " * over target" if n > 200 else ""
+            flag = " *** OVERSIZE" if n > LINE_COUNT_WARN else " * over target" if n > LINE_COUNT_TARGET else ""
             return f"  {n:5d}  {rel}{flag}\n\nTotal: {n} lines"
         except Exception as e:
             return f"Error reading file: {e}"
@@ -165,13 +166,13 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
     counts.sort(key=lambda x: -x[0])
     parts = [f"## Line Counts ({len(counts)} .{file_type} files in {path})\n"]
     for n, rel in counts[:30]:
-        flag = " *** OVERSIZE" if n > 250 else " * over target" if n > 200 else ""
+        flag = " *** OVERSIZE" if n > LINE_COUNT_WARN else " * over target" if n > LINE_COUNT_TARGET else ""
         parts.append(f"  {n:5d}  {rel}{flag}")
     if len(counts) > 30:
         parts.append(f"  ... and {len(counts) - 30} more files")
     total = sum(n for n, _ in counts)
-    oversize = sum(1 for n, _ in counts if n > 250)
-    parts.append(f"\nTotal: {total} lines | {oversize} oversize files (>250)")
+    oversize = sum(1 for n, _ in counts if n > LINE_COUNT_WARN)
+    parts.append(f"\nTotal: {total} lines | {oversize} oversize files (>{LINE_COUNT_WARN})")
     return "\n".join(parts)
 
 

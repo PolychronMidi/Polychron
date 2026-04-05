@@ -70,7 +70,9 @@ tools/HME/               The single source of truth
                                           enum values + KB categories),
                                           registration_patterns,
                                           coupling_matrix_exempt_paths,
-                                          coupling_matrix_legacy_paths
+                                          coupling_matrix_legacy_paths,
+                                          subsystem_names,
+                                          line_count_thresholds
                                         Logic stays in Python; only DATA lives here.
                                         Loaded at MCP server import time by helpers.py.
   hooks/                                Hook scripts (referenced from .claude/settings.json)
