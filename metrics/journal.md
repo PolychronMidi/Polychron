@@ -1,3 +1,68 @@
+## R44 — 2026-04-05 — STABLE (uniform hotspot cluster broken + HME tool fixes)
+
+**Profile:** atmospheric | **Beats:** ~991 traced | **Duration:** ~519s pipeline
+**Fingerprint:** 10/10 stable | Drifted: none
+**Regimes:** coherent 36%, evolving 35%, exploring 29% | **axisGini:** 0.064 (was 0.093)
+
+### What the Music Sounds Like
+Listen verdict: **"new tier of legendary xenolinguistics achieved!"**
+CLAP pending. EnCodec CB0 entropy=6.07. axisGini 0.064 — most equalized axis pressure distribution yet. 39306 total notes (atmospheric profile, lower density than explosive-dominated runs). evolvingShare rose to 35% vs 21% in R43 — richer mid-state activity.
+
+### Causal Findings
+- **38.9% uniform cluster broken**: stutterContagion 38.9%→22.6%, feedbackOscillator 38.9%→29.3%, polyrhythmicPhasePredictor 38.9%→24.0%. phaseLock rose to 45.6% (kept flicker-phase, confirming flicker-phase is genuinely dominant in this composition). axisGini dropped 0.093→0.064 — clear ecosystem health improvement.
+- **New identical clusters found**: temporalGravity = phaseAwareCadenceWindow (identical pairs, structural bug), climaxEngine = convergenceHarmonicTrigger (identical pairs), harmonicIntervalGuard = verticalIntervalMonitor (identical pairs). grooveTransfer + velocityInterference both at 39.9% via shared density-flicker. Targeted in R45 E1.
+- **HME beat_snapshot fix**: now accepts partial keys (e.g. "3:0" matches "3:0:0:0") via prefix fallback.
+- **HME section_compare fix**: trust delta filter was `wa>0 AND wb>0` — silently dropped emerging/dying trust systems. Fixed to `wa>0 OR wb>0`.
+
+### Evolutions Applied
+- E1: break 38.9% hotspot cluster — stutterContagion trust-phase, feedbackOscillator entropy-phase, polyrhythmicPhasePredictor entropy-phase — CONFIRMED (axisGini -31%)
+
+### Evolutions Proposed (for R45)
+- E1: fix 4 identical pair-assignment bugs — temporalGravity vs phaseAwareCadenceWindow, climaxEngine vs convergenceHarmonicTrigger, harmonicIntervalGuard vs verticalIntervalMonitor, grooveTransfer vs velocityInterference
+
+## R43 — 2026-04-05 — STABLE (exploring brake fix + coherenceMonitor pair fix)
+
+**Profile:** explosive (S4) / atmospheric / restrained / default | **Beats:** 1408 | **Duration:** ~238s
+**Fingerprint:** 10/10 stable | Drifted: none
+**Regimes:** coherent 42%, exploring 36%, evolving 21%
+
+### What the Music Sounds Like
+Needs listen. CLAP dominant: "dense chaotic many notes simultaneously" (0.235). EnCodec CB0 entropy=6.22. S4 (explosive, 319b) now at exploring t=0.45 — brake fix working (no 80-beat monopolies). S3 (coherent, 288b) at t=0.97 — very high tension ceiling. 47 regime transitions, drama max 20.9 (exploring→evolving at S3). ALL CLEAR on regime anomalies.
+
+### Causal Findings
+- **Exploring brake fix**: coefficient 0.0004→0.0012, cap 0.08→0.10. S4 now reaches exploring at 180/319 beats (56%) — dominant but no monopoly. Brake pressure at 80 beats was 0.011 (effectively zero) before fix.
+- **coherenceMonitor pair fix**: removed density-trust pair. Explosive profile saturates density by design, causing 66% false hotspot in S4. flicker-trust + tension-trust now measured instead (structural timing/harmonic coherence, not density load).
+- **HME rename complete**: tools/HyperMeta-Ecstasy → tools/HME, doc/HyperMeta-Ecstasy.md → doc/HME.md, .claude/settings.json symlinked to tools/HME/settings.json.
+- **uniform 38.9% hotspot cluster**: stutterContagion, phaseLock, feedbackOscillator, polyrhythmicPhasePredictor all at 38.9% due to shared flicker-phase pair. Targeted in R44 E1.
+
+### Evolutions Applied
+- E1: exploring brake 0.0004→0.0012, cap 0.08→0.10 — CONFIRMED (no monopoly in S4)
+- E2: coherenceMonitor pair list: removed density-trust — CONFIRMED (false hotspot eliminated)
+
+### Evolutions Proposed (for R44)
+- E1: break 38.9% uniform hotspot cluster — replace shared flicker-phase with system-specific pairs for stutterContagion (trust-phase), feedbackOscillator (entropy-phase), polyrhythmicPhasePredictor (entropy-phase)
+
+## R42 — 2026-04-05 — STABLE (entropy KI regime adaptation + coupling label system)
+
+**Profile:** atmospheric | **Beats:** (varied) | **Duration:** ~238s
+**Fingerprint:** 10/10 stable | Drifted: none
+**Regimes:** coherent 42%, exploring 36%, evolving 21%
+
+### What the Music Sounds Like
+Needs listen. Regime-adaptive entropy KI and new coupling label system (flicker-phase, entropy-phase, entropy-trust labels added to LABEL_MAP).
+
+### Causal Findings
+- **Regime-responsive entropy KI**: KI_BY_REGIME {exploring:0.08, evolving:0.05, coherent:0.03}. Entropy gets harder correction when exploring, gentler when coherent — targets reconciliation gap reduction.
+- **Coupling label routing via conductorSignalBridge**: couplingLabels now propagated as `Record<string,string>|null` in signal snapshot. All cross-layer modules can read semantic labels for pair-aware decisions.
+- **Opposed-pair hotspot discount confirmed**: 0.70x for "phase-opposed-*" and "smooth-tension" labels. Reduces chronic flicker-phase pressure. phaseLock and feedbackOscillator no longer penalized for structural anti-correlations.
+- **LABEL_MAP expansion**: flicker-phase, entropy-phase, entropy-trust labels added to real-time profiler. entropy-trust (absCorr 0.285) occasionally appears near the coherent threshold (0.28).
+
+### Evolutions Applied
+- E1: KI_BY_REGIME entropy amplification — CONFIRMED (regime-responsive, exploring harder)
+- E2: couplingLabels in conductorSignalBridge — CONFIRMED (propagated, type-safe)
+- E3: opposed-pair trust discount 0.70x — CONFIRMED (discount active for labeled pairs)
+- E4: LABEL_MAP expansion (flicker-phase, entropy-phase, entropy-trust) — CONFIRMED
+
 ## R41 — 2026-04-05 — LEGENDARY (rhythmicComplement pair fix + HME 57-tool merge)
 
 **Profile:** atmospheric | **Beats:** 1510 | **Duration:** ~738s

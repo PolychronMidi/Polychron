@@ -157,7 +157,7 @@ def beat_snapshot(beat_key: str) -> str:
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
-    # Find the beat
+    # Find the beat — exact match first, then prefix match (e.g. "3:0" finds "3:0:0:0")
     target = beat_key.strip()
     record = None
     try:
@@ -167,7 +167,8 @@ def beat_snapshot(beat_key: str) -> str:
                     r = json.loads(line)
                 except Exception:
                     continue
-                if r.get("beatKey") == target:
+                bk = r.get("beatKey", "")
+                if bk == target or bk.startswith(target + ":"):
                     record = r
                     break
     except Exception as e:

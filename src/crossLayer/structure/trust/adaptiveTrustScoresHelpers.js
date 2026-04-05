@@ -23,8 +23,11 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.COHERENCE_MONITOR]: ['flicker-trust', 'tension-trust'],
     [trustSystems.names.PHASE_LOCK]: ['density-phase', 'flicker-phase', 'tension-phase', 'trust-phase'],
     [trustSystems.names.CADENCE_ALIGNMENT]: ['density-trust', 'tension-trust', 'density-phase'],
-    [trustSystems.names.STUTTER_CONTAGION]: ['flicker-trust', 'density-flicker', 'flicker-phase'],
-    [trustSystems.names.FEEDBACK_OSCILLATOR]: ['tension-flicker', 'flicker-trust', 'flicker-phase'],
+    // R44 E1: replace shared flicker-phase to break 38.9% uniform hotspot cluster.
+    // stutterContagion spreads density-driven sync -> trust-phase captures timing lock.
+    [trustSystems.names.STUTTER_CONTAGION]: ['flicker-trust', 'density-flicker', 'trust-phase'],
+    // feedbackOscillator oscillatory feedback = entropy-phase coupling, not flicker-phase.
+    [trustSystems.names.FEEDBACK_OSCILLATOR]: ['tension-flicker', 'flicker-trust', 'entropy-phase'],
     [trustSystems.names.ENTROPY_REGULATOR]: ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'],
     [trustSystems.names.CONVERGENCE]: ['density-trust', 'tension-trust', 'density-phase', 'tension-phase'],
     [trustSystems.names.REST_SYNCHRONIZER]: ['density-trust', 'flicker-trust'],
@@ -48,7 +51,8 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.VERTICAL_INTERVAL_MONITOR]: ['tension-trust', 'density-trust', 'tension-entropy'],
     [trustSystems.names.ARTICULATION_COMPLEMENT]: ['density-flicker', 'tension-flicker', 'flicker-trust'],
     [trustSystems.names.CONVERGENCE_HARMONIC_TRIGGER]: ['tension-trust', 'tension-phase', 'density-trust'],
-    [trustSystems.names.POLYRHYTHMIC_PHASE_PREDICTOR]: ['density-phase', 'flicker-phase', 'tension-phase'],
+    // R44 E1: polyrhythm prediction relates entropy to phase, not flicker-phase.
+    [trustSystems.names.POLYRHYTHMIC_PHASE_PREDICTOR]: ['density-phase', 'entropy-phase', 'tension-phase'],
     [trustSystems.names.EMERGENT_DOWNBEAT]: ['density-phase', 'density-trust', 'tension-phase'],
     [trustSystems.names.PHASE_AWARE_CADENCE_WINDOW]: ['tension-phase', 'density-phase', 'tension-trust'],
   };
@@ -56,8 +60,8 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.COHERENCE_MONITOR]: { 'density-trust': 1.26, 'flicker-trust': 1.28, 'tension-trust': 1.08 },
     [trustSystems.names.PHASE_LOCK]: { 'flicker-phase': 1.20, 'density-phase': 1.10, 'tension-phase': 1.05, 'trust-phase': 1.05 },
     [trustSystems.names.CADENCE_ALIGNMENT]: { 'tension-trust': 1.25, 'density-trust': 1.16, 'density-phase': 1.08 },
-    [trustSystems.names.STUTTER_CONTAGION]: { 'density-flicker': 1.25, 'flicker-phase': 1.10, 'flicker-trust': 1.22 },
-    [trustSystems.names.FEEDBACK_OSCILLATOR]: { 'tension-flicker': 1.18, 'flicker-trust': 1.24, 'flicker-phase': 1.08 },
+    [trustSystems.names.STUTTER_CONTAGION]: { 'density-flicker': 1.25, 'trust-phase': 1.10, 'flicker-trust': 1.22 },
+    [trustSystems.names.FEEDBACK_OSCILLATOR]: { 'tension-flicker': 1.18, 'flicker-trust': 1.24, 'entropy-phase': 1.08 },
     [trustSystems.names.ENTROPY_REGULATOR]: { 'flicker-entropy': 1.22, 'density-entropy': 1.18, 'tension-entropy': 1.10, 'entropy-trust': 1.22, 'entropy-phase': 1.08 },
     [trustSystems.names.CONVERGENCE]: { 'tension-trust': 1.22, 'density-trust': 1.18, 'tension-phase': 1.06, 'density-phase': 1.04 },
     [trustSystems.names.REST_SYNCHRONIZER]: { 'density-trust': 1.20, 'flicker-trust': 1.22 },
