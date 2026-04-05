@@ -206,4 +206,80 @@ def hme_introspect() -> str:
 
     return "\n".join(parts)
 
-    return "\n\n---\n\n".join(parts)
+
+@ctx.mcp.tool()
+def trace_query(module: str, section: int = -1, limit: int = 20) -> str:
+    """Query the last pipeline run's trace.jsonl for runtime behavior of a specific module.
+    Shows what a module ACTUALLY DID: when it fired, what values it produced, which
+    sections/regimes it was active in. Set section=N to filter to a specific section.
+    This is compositional awareness at the runtime level — not what code says, but what happened."""
+    ctx.ensure_ready_sync()
+    _track("trace_query")
+    import subprocess
+
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    if not os.path.isfile(trace_path):
+        return "No trace.jsonl found. Run `npm run main` to generate."
+
+    # Use grep to find relevant lines (trace.jsonl can be 25MB+)
+    try:
+        result = subprocess.run(
+            ["grep", "-i", module, trace_path],
+            capture_output=True, text=True, timeout=10,
+        )
+        raw_lines = result.stdout.strip().split("\n") if result.stdout.strip() else []
+    except Exception as e:
+        return f"Error reading trace: {e}"
+
+    if not raw_lines:
+        return f"No trace entries mention '{module}'. It may not emit trace data, or the name might differ from the trace key."
+
+    # Parse JSON lines and extract key fields
+    hits = []
+    for line in raw_lines:
+        try:
+            record = json.loads(line)
+            beat = record.get("beat", "?")
+            sec = record.get("section", "?")
+            regime = record.get("currentRegime", record.get("regime", "?"))
+            if section >= 0 and sec != section:
+                continue
+            hits.append({"beat": beat, "section": sec, "regime": regime, "raw": record})
+        except Exception:
+            continue
+
+    if not hits:
+        return f"Found {len(raw_lines)} trace lines mentioning '{module}' but none in section {section}."
+
+    # Summarize
+    total = len(hits)
+    sections_active = sorted(set(h["section"] for h in hits if h["section"] != "?"))
+    regimes_active = {}
+    for h in hits:
+        r = h["regime"]
+        regimes_active[r] = regimes_active.get(r, 0) + 1
+
+    parts = [f"## Trace Query: {module}\n"]
+    parts.append(f"**Matches:** {total} beats (of {len(raw_lines)} raw lines)")
+    if sections_active:
+        parts.append(f"**Active in sections:** {', '.join(str(s) for s in sections_active)}")
+    if regimes_active:
+        regime_str = ", ".join(f"{k}: {v}" for k, v in sorted(regimes_active.items(), key=lambda x: -x[1]))
+        parts.append(f"**Regime distribution:** {regime_str}")
+
+    # Show sample entries (first N)
+    parts.append(f"\n### Sample Entries ({min(limit, total)} of {total})")
+    for h in hits[:limit]:
+        # Find the module-specific value in the record
+        module_lower = module.lower()
+        relevant = {}
+        for k, v in h["raw"].items():
+            if module_lower in k.lower() and k not in ("beat", "section", "currentRegime"):
+                relevant[k] = v
+        if relevant:
+            vals = ", ".join(f"{k}={v}" for k, v in list(relevant.items())[:5])
+            parts.append(f"  beat {h['beat']} S{h['section']} [{h['regime']}] {vals}")
+        else:
+            parts.append(f"  beat {h['beat']} S{h['section']} [{h['regime']}]")
+
+    return "\n".join(parts)
