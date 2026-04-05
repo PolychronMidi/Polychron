@@ -215,7 +215,7 @@ def audio_clap(queries: str = "") -> str:
 
     # Load CLAP model
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-base')
+    model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')
     model.load_ckpt()
 
     # Load and chunk audio into ~10s sections
@@ -241,10 +241,10 @@ def audio_clap(queries: str = "") -> str:
     # Process chunks
     audio_embeds = []
     for chunk in chunks:
-        # CLAP expects int16 WAV data or file paths
-        chunk_int16 = (chunk * 32767).astype(np.int16)
+        # CLAP expects float32 torch tensors
+        chunk_tensor = torch.from_numpy(chunk).float().unsqueeze(0)
         embed = model.get_audio_embedding_from_data(
-            [chunk_int16], use_tensor=True
+            chunk_tensor, use_tensor=True
         )
         audio_embeds.append(embed)
 
@@ -260,7 +260,7 @@ def audio_clap(queries: str = "") -> str:
     # Report: for each query, which chunks match best
     parts.append("## Query Matches (chunk = ~10s window)")
     for qi, query in enumerate(query_list):
-        scores = similarity[qi].cpu().numpy()
+        scores = similarity[qi].detach().cpu().numpy()
         best_chunk = int(np.argmax(scores))
         best_score = float(scores[best_chunk])
         avg_score = float(np.mean(scores))
@@ -274,7 +274,7 @@ def audio_clap(queries: str = "") -> str:
         parts.append(f"    peak={best_score:.3f} at {best_chunk*chunk_seconds}s | avg={avg_score:.3f} [{spark}]")
 
     # Overall composition character (highest avg similarity query)
-    avg_per_query = similarity.mean(dim=1).cpu().numpy()
+    avg_per_query = similarity.mean(dim=1).detach().cpu().numpy()
     top_qi = int(np.argmax(avg_per_query))
     parts.append(f"\n## Dominant Character: \"{query_list[top_qi]}\" (avg={avg_per_query[top_qi]:.3f})")
 
