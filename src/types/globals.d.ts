@@ -829,6 +829,7 @@ interface MotifEchoAPI {
   applyTransform(intervals: number[], transform: string): number[];
   deliverEcho(absoluteSeconds: number, activeLayer: string, currentMidi: number): { notes: number[]; transform: string; echoIndex: number } | null;
   getPendingCount(): number;
+  setCoordinationScale(scale: number): void;
   reset(): void;
 }
 
@@ -1938,7 +1939,7 @@ declare var musicalTimeWindows: { beatsForSeconds(seconds: number): number; tick
 declare var hyperMetaManager: { getRateMultiplier(key: string): number; getPhaseBoostCeiling(): number; getP95AlphaMultiplier(): number; getS0TighteningMultiplier(): number; getSystemPhase(): 'converging' | 'oscillating' | 'stabilized'; getVarianceGateRelaxMultiplier(): number; getTopologyCreativityMultiplier(): number; getTopologyPhase(): 'crystallized' | 'resonant' | 'fluid'; getCrossState(): 'emergence' | 'locked' | 'seeking' | 'dampened'; recordExceedance(pair: string): void; getAxisConcentration(): { axisExceedance: Record<string, number>; concentration: number; dominantAxis: string }; getSnapshot(): any; reset(): void };
 declare var conductorSignalBridge: ConductorSignalBridgeAPI;
 declare var coordinationIndependenceManager: { tick(): void; getDial(pair: string): number; getSnapshot(): any; reset(): void };
-declare var verticalIntervalMonitor: { process(ctx: any): number; getCollisionCount(): number; reset(): void };
+declare var verticalIntervalMonitor: { process(absoluteSeconds: number, layer: string): number; getCollisionCount(): number; getCollisionRate(): number; setCoordinationScale(scale: number): void; reset(): void };
 declare var polyrhythmicPhasePredictor: { process(ctx: any): number; predictConvergences(): void; reset(): void };
 declare var contextualTrust: ContextualTrustAPI;
 declare var beatInterleavedProcessor: { recordLayerBeat(layer: number, outcome: any): void; getOtherLayerOutcome(myLayer: number): any; getBeatSnapshot(): { layer1: any; layer2: any }; reset(): void };

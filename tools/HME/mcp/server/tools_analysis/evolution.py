@@ -9,7 +9,8 @@ from server.helpers import get_context_budget, validate_project_path, fmt_score,
 from symbols import find_callers as _find_callers
 from .synthesis import (
     _get_api_key, _claude_think, _local_think, _think_local_or_claude,
-    _format_kb_corpus, _THINK_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+    _format_kb_corpus, _THINK_MODEL, _REASONING_MODEL,
+    _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from . import _get_compositional_context, _track, _usage_stats
 
@@ -115,9 +116,31 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
             pass
 
     # Ground synthesis in actual source code — prevents hallucination
+    # Extract camelCase module names from the symptom text + caller files
+    import re as _re
     from .synthesis import _read_module_source
-    source_code = _read_module_source(symptom, max_chars=2000)
-    source_block = f"\nSource code (first 2000 chars):\n```\n{source_code}\n```\n" if source_code else ""
+    source_parts = []
+    # Parse camelCase words from symptom (likely module names)
+    candidate_modules = _re.findall(r'[a-z][a-zA-Z]{8,}', symptom)
+    # Also try the raw symptom as a module name
+    candidate_modules.insert(0, symptom)
+    # Add caller file basenames
+    for cf in caller_files[:3]:
+        candidate_modules.append(os.path.basename(cf).replace('.js', ''))
+    # Add module names from KB results
+    for k in kb_results[:3]:
+        candidate_modules.extend(_re.findall(r'[a-z][a-zA-Z]{8,}', k.get('title', '')))
+    seen = set()
+    for mod in candidate_modules:
+        if mod in seen:
+            continue
+        seen.add(mod)
+        src = _read_module_source(mod, max_chars=1200)
+        if src:
+            source_parts.append(f"### {mod}\n```\n{src}\n```")
+        if len(source_parts) >= 3:
+            break
+    source_block = "\nSource code:\n" + "\n".join(source_parts) + "\n" if source_parts else ""
 
     user_text = (
         f"Trace the causal chain for: {symptom}\n"
@@ -136,7 +159,7 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
     if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=1024)
+        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
     if synthesis:
         parts.append(f"\n## Causal Chain *(adaptive)*")
         parts.append(synthesis)

@@ -171,6 +171,9 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
 
   spectralComplementarity.postSpectralState(absoluteSeconds, layer);
 
+  // R51: vertical interval collision detection -- posts to L0 and explainabilityBus
+  verticalIntervalMonitor.process(absoluteSeconds, layer);
+
   // Interaction heat map
   interactionHeatMap.record(trustSystems.heatMapSystems.STUTTER_CONTAGION, clamp(stutterProb, 0, 1));
   interactionHeatMap.record(trustSystems.heatMapSystems.TEMPORAL_GRAVITY, clDensity);
