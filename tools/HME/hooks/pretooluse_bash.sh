@@ -20,7 +20,7 @@ Evolver phase steps when the command completes. Stopping to wait is the antipatt
 MSG
 fi
 
-# Block polling pipeline log file with tail (fix_antipattern: dead code recovery)
+# Block polling pipeline log file with tail
 if echo "$CMD" | grep -qE 'tail.*(r4[0-9]+_run|run\.log|pipeline)'; then
   echo '{"decision":"block","reason":"BLOCKED: Polling pipeline log is the antipattern. run_in_background fires a notification when done — continue with other work now."}' >&2
   exit 2

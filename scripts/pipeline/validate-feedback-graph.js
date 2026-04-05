@@ -70,6 +70,7 @@ const jsonLoops = graph.feedbackLoops || [];
 const jsonLoopModules = new Set(jsonLoops.map(l => l.module));
 const jsonLoopIds = new Set(jsonLoops.map(l => l.id));
 const jsonFirewallKeys = new Set(Object.keys(graph.firewalls || {}));
+const jsonFirewallPorts = graph.firewallPorts || [];
 
 // -Scan source for runtime loop registrations -
 
@@ -220,6 +221,32 @@ for (const [firewallName, ruleNames] of Object.entries(FIREWALL_ESLINT_MAP)) {
   }
 }
 
+// Check 6: Firewall ports structure validation
+for (const port of jsonFirewallPorts) {
+  const label = `firewallPort "${port.id || '(no id)'}"`;
+  if (!port.id || typeof port.id !== 'string') {
+    failures.push(`${label}: missing or empty id`);
+  } else { passes++; }
+  if (!port.direction || typeof port.direction !== 'string') {
+    failures.push(`${label}: missing or empty direction`);
+  } else { passes++; }
+  if (!port.mechanism || typeof port.mechanism !== 'string') {
+    failures.push(`${label}: missing or empty mechanism`);
+  } else { passes++; }
+  if (!port.enforcement || typeof port.enforcement !== 'string') {
+    failures.push(`${label}: missing or empty enforcement`);
+  } else { passes++; }
+  // Check ESLint enforcement rule exists (if it looks like a rule name)
+  if (port.enforcement && /^no-/.test(port.enforcement)) {
+    const ruleFile = path.join(eslintRulesDir, port.enforcement + '.js');
+    if (fs.existsSync(ruleFile)) {
+      passes++;
+    } else {
+      warnings.push(`${label}: enforcement "${port.enforcement}" looks like an ESLint rule but ${port.enforcement}.js not found`);
+    }
+  }
+}
+
 // -Output -
 
 const results = {
@@ -232,6 +259,7 @@ const results = {
   sourceLoopCount: sourceLoops.length,
   sourceLoops: sourceLoops.map(l => ({ name: l.name, file: l.file, type: l.type })),
   firewallCount: jsonFirewallKeys.size,
+  firewallPortCount: jsonFirewallPorts.length,
   passes,
   failures,
   warnings
@@ -260,6 +288,7 @@ if (failures.length > 0) {
     'validate-feedback-graph: PASS (' + passes + ' checks, ' +
     jsonLoops.length + ' JSON loops, ' +
     sourceLoops.length + ' source loops, ' +
+    jsonFirewallPorts.length + ' firewall ports, ' +
     warnings.length + ' warnings)'
   );
 }

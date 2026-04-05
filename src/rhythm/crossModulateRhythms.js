@@ -1,4 +1,5 @@
 const V = validator.create('crossModulateRhythms');
+let contagionContribution = 0; // tracks rhythmic contagion port amplitude for feedbackRegistry
 
 /**
  * Calculates cross-modulation value based on rhythm state across all levels
@@ -116,6 +117,47 @@ crossModulateRhythms = () => {
     }
   }
 
+  // R49: Rhythmic contagion port (firewall port #9).
+  // Reads emergentDownbeat + stutterContagion L0 channels to create rhythmic
+  // dancing around cross-layer events. Downbeat proximity -> micro-breathing
+  // (build->spike->dip). Stutter contagion -> boosted rhythmic variance.
+  {
+    let portContribution = 0;
+    const recentDownbeat = L0.getLast('emergentDownbeat', { layer: 'both' });
+    if (recentDownbeat && Number.isFinite(recentDownbeat.timeInSeconds)) {
+      const secSinceDownbeat = beatStartTime - recentDownbeat.timeInSeconds;
+      const dbStrength = V.optionalFinite(recentDownbeat.strength, 0);
+      if (secSinceDownbeat >= 0 && secSinceDownbeat < spBeat * 2 && dbStrength > 0.1) {
+        // Phase within downbeat micro-breathing cycle (0=at downbeat, 1=2 beats later)
+        const phase = clamp(secSinceDownbeat / (spBeat * 2), 0, 1);
+        // Bell curve: spike at 0.15 (just after downbeat), dip at 0.7 (breathing room)
+        const breathCurve = m.exp(-m.pow((phase - 0.15) * 4, 2)) - 0.3 * m.exp(-m.pow((phase - 0.7) * 5, 2));
+        // Regime-scaled: exploring gets stronger dancing, coherent lighter
+        const regimeScale = profSnap && profSnap.regime === 'exploring' ? 1.3
+          : (profSnap && profSnap.regime === 'coherent' ? 0.6 : 1.0);
+        const contrib = breathCurve * dbStrength * rf(0.3, 0.7) * regimeScale;
+        crossModulation += contrib;
+        portContribution += m.abs(contrib);
+      }
+    }
+    const recentContagion = L0.getLast('stutterContagion', { layer: 'both' });
+    if (recentContagion && Number.isFinite(recentContagion.timeInSeconds)) {
+      const secSinceContagion = beatStartTime - recentContagion.timeInSeconds;
+      const contagionIntensity = V.optionalFinite(recentContagion.intensity, 0);
+      if (secSinceContagion >= 0 && secSinceContagion < spBeat * 3 && contagionIntensity > 0.1) {
+        // Stutter contagion boosts rhythmic variance -- rhythms "dance" when
+        // stutter patterns propagate between layers. Decays over 3 beats.
+        const contagionDecay = 1 - clamp(secSinceContagion / (spBeat * 3), 0, 1);
+        const regimeScale = profSnap && profSnap.regime === 'exploring' ? 1.4
+          : (profSnap && profSnap.regime === 'coherent' ? 0.5 : 1.0);
+        const contrib = contagionIntensity * contagionDecay * rf(0.2, 0.5) * regimeScale;
+        crossModulation += contrib;
+        portContribution += m.abs(contrib);
+      }
+    }
+    contagionContribution = portContribution;
+  }
+
   // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
   // during E11 sparse windows. 1.0 = neutral (default from getRateMultiplier),
   // <1.0 = max suppression depth (from hyperMetaManager EMA ramp).
@@ -139,3 +181,12 @@ crossModulateRhythms = () => {
     crossModulation = clamp(crossModulation * e19EffectiveMult, 0, 8);
   }
 }
+// Feedback loop registration: rhythmic contagion port creates a cycle
+// emergentDownbeat/stutterContagion -> crossMod -> rhythm -> new patterns
+feedbackRegistry.registerLoop(
+  'rhythmicContagionPort',
+  'emergent_downbeat_stutter_contagion',
+  'cross_modulation',
+  () => clamp(contagionContribution / 0.5, 0, 1),
+  () => contagionContribution > 0 ? 1 : 0
+);

@@ -710,23 +710,68 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     with open(hook_path, encoding="utf-8") as _f:
         current = _f.read()
 
+    # Hook-specific context: different hooks have different inputs and capabilities
+    hook_context = {
+        "pretooluse_bash": (
+            "This hook fires ONCE PER TOOL CALL before a Bash command executes. "
+            "Available variables: CMD (the bash command string), INPUT (raw JSON). "
+            "Use CMD-based matching. Can only inspect a single command at a time — "
+            "do NOT try to detect patterns across multiple calls. "
+            "To block: exit 2 with JSON {\"decision\":\"block\",\"reason\":\"...\"}. "
+            "Example: if echo \"$CMD\" | grep -qE 'tail.*run\\.log'; then"
+        ),
+        "posttooluse_bash": (
+            "This hook fires ONCE PER TOOL CALL after a Bash command completes. "
+            "Available variables: CMD (the bash command), INPUT (raw JSON including output). "
+            "Use CMD-based matching. Cannot block (already executed). Warn to stderr."
+        ),
+        "stop": (
+            "This hook fires ONCE when Claude is about to stop responding (end of turn). "
+            "Available variables: INPUT (JSON with transcript_path). "
+            "Use TRANSCRIPT_PATH=$(echo \"$INPUT\" | jq -r '.transcript_path // \"\"') to access "
+            "the full conversation transcript. This is the ONLY hook that can detect BEHAVIORAL "
+            "PATTERNS across multiple tool calls in a turn (e.g. polling, repeated reads, loops). "
+            "Do NOT use CMD-based matching here — inspect the transcript instead. "
+            "To block: output JSON {\"decision\":\"block\",\"reason\":\"...\"} and exit 0. "
+            "Use python3 or jq to parse the transcript JSON lines if needed."
+        ),
+        "userpromptsubmit": (
+            "This hook fires when the user submits a prompt, before Claude responds. "
+            "Available variables: INPUT (JSON with the user prompt text). "
+            "Use to detect problematic prompt patterns and inject context or block."
+        ),
+        "pretooluse_edit": (
+            "This hook fires before an Edit tool call. "
+            "Available variables: INPUT (JSON with file_path, old_string, new_string). "
+            "Use to enforce file-level constraints."
+        ),
+        "pretooluse_grep": (
+            "This hook fires before a Grep tool call. "
+            "Available variables: INPUT (raw JSON). "
+            "Use to redirect to HME alternatives when appropriate."
+        ),
+        "pretooluse_write": (
+            "This hook fires before a Write tool call. "
+            "Available variables: INPUT (JSON with file_path, content). "
+            "Use to enforce file-level write constraints."
+        ),
+    }
+    hook_guidance = hook_context.get(hook_target, "")
+
     # Synthesize the enforcement snippet via Claude or local
     synthesis_prompt = (
         f"You are writing a bash snippet to add to a Claude Code hook script.\n"
         f"Hook: {hook_target}.sh\n"
+        f"Hook context: {hook_guidance}\n\n"
         f"Current hook content:\n{current}\n\n"
         f"Antipattern to prevent: {antipattern}\n\n"
         f"Write ONLY the bash snippet (no markdown fences, no explanation) to detect and block or warn "
         f"about this antipattern. The snippet must:\n"
-        f"1. Use CMD/INPUT variables already set in the hook (CMD = tool_input.command if Bash hook)\n"
-        f"2. Output enforcement message to stderr (>&2)\n"
-        f"3. Use exit 0 (warn) or exit 2 with JSON {{\"decision\":\"block\",\"reason\":\"...\"}} (block)\n"
-        f"4. Include a one-line comment explaining what it prevents\n"
-        f"Be concise — 5-10 lines maximum.\n\n"
-        f"CRITICAL: The hook fires once per tool call. Write a SINGLE if-condition on CMD "
-        f"that matches ONLY the command that IS the antipattern (the thing to block). "
-        f"Do NOT AND multiple conditions from different tool calls together — they will never both be true simultaneously. "
-        f"Example: to block 'tail /tmp/run.log', write: if echo \"$CMD\" | grep -qE 'tail.*run\\.log'; then"
+        f"1. Use the variables appropriate for this hook type (see hook context above)\n"
+        f"2. Output enforcement message to stderr (>&2) or JSON block decision to stdout\n"
+        f"3. Include a one-line comment explaining what it prevents\n"
+        f"4. Follow the detection approach for this hook type exactly\n"
+        f"Be concise — 5-15 lines maximum."
     )
     api_key = _get_api_key()
     snippet = None

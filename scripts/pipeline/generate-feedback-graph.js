@@ -133,6 +133,11 @@ function mergeLoops(existingLoops, sourceLoops) {
   for (const loop of existingLoops) {
     if (loop.conceptual) {
       // Conceptual loops have no source registration - preserve verbatim
+      // If a conceptual loop's module matches a source registration, mark handled
+      // to prevent duplicate scaffolding
+      if (loop.module && sourceLoops.has(loop.module)) {
+        handledSourceNames.add(loop.module);
+      }
       merged.push(loop);
       continue;
     }
@@ -172,7 +177,7 @@ function mergeLoops(existingLoops, sourceLoops) {
 function buildGraph(existingGraph, sourceLoops) {
   const mergedLoops = mergeLoops(existingGraph.feedbackLoops || [], sourceLoops);
 
-  return {
+  const result = {
     $schema: 'http://json-schema.org/draft-07/schema#',
     title: existingGraph.title || 'Polychron Feedback Topology',
     description: existingGraph.description ||
@@ -180,6 +185,11 @@ function buildGraph(existingGraph, sourceLoops) {
     firewalls: existingGraph.firewalls || {},
     feedbackLoops: mergedLoops
   };
+  // Preserve firewallPorts section if present (manually curated)
+  if (existingGraph.firewallPorts) {
+    result.firewallPorts = existingGraph.firewallPorts;
+  }
+  return result;
 }
 
 // -Main -
