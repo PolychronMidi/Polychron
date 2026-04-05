@@ -322,10 +322,38 @@ def _local_think(prompt: str, max_tokens: int = 1024) -> str | None:
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
             result = json.loads(resp.read())
-            return result.get("response", "").strip() or None
+            text = result.get("response", "").strip()
+            if not text:
+                return None
+            # Quality gate: suppress hallucinated / low-value output
+            _hallucination_markers = [
+                "hypothetical", "as an AI", "I don't have access",
+                "this document provides", "these documents provide",
+                "in this hypothetical", "as a language model",
+            ]
+            text_lower = text.lower()
+            if any(m in text_lower for m in _hallucination_markers):
+                logger.info(f"_local_think: suppressed hallucinated output ({len(text)} chars)")
+                return None
+            return text
     except Exception as e:
         logger.debug(f"_local_think unavailable: {e}")
         return None
+
+
+def _read_module_source(module_name: str, max_chars: int = 3000) -> str:
+    """Read the first N chars of a module's source file for grounding synthesis prompts."""
+    import glob as _glob
+    candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{module_name}.js"), recursive=True)
+    if not candidates:
+        candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "tools", "**", f"{module_name}.py"), recursive=True)
+    if not candidates:
+        return ""
+    try:
+        content = open(candidates[0], encoding="utf-8", errors="ignore").read()
+        return content[:max_chars]
+    except Exception:
+        return ""
 
 
 def _think_local_or_claude(prompt: str, api_key: str, **claude_kwargs) -> str | None:

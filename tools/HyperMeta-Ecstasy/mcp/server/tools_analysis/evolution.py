@@ -112,16 +112,21 @@ def causal_trace(start: str, max_depth: int = 3) -> str:
         except Exception:
             pass
 
+    # Ground synthesis in actual source code — prevents hallucination
+    from .synthesis import _read_module_source
+    source_code = _read_module_source(start, max_chars=2000)
+    source_block = f"\nSource code (first 2000 chars):\n```\n{source_code}\n```\n" if source_code else ""
+
     user_text = (
         f"Trace the causal chain for: {start}\n"
         f"Direct callers ({len(caller_files)}): {', '.join(caller_files[:10])}\n"
         f"Subsystems touched: {', '.join(sorted(subsystems))}\n"
+        + source_block
         + (f"\n{tuning_context}\n" if tuning_context else "")
-        + "\nTrace the COMPLETE causal chain from this starting point to the listener's "
-        "experience. Format as: A -> B -> C -> [musical effect]. Show how changing this "
-        "would cascade through controllers, metrics, regime behavior, and ultimately "
-        "what the listener would hear differently. Be specific about the musical quality "
-        "(e.g. 'less rhythmic tension', 'more harmonic adventurousness', 'denser texture')."
+        + "\nBased on the ACTUAL source code above, trace the causal chain from this "
+        "module to the listener's experience. Format: A -> B -> C -> [musical effect]. "
+        "Only reference functions and behaviors visible in the code. Do NOT invent behaviors. "
+        "Be specific about musical quality (e.g. 'less rhythmic tension', 'denser texture')."
     )
     api_key = _get_api_key()
     synthesis = None
