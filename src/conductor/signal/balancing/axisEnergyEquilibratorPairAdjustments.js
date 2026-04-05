@@ -11,7 +11,11 @@ axisEnergyEquilibratorPairAdjustments = (() => {
   // were getting only 50% of giniMult excess, allowing density-entropy
   // correlation (r=0.51) to build unchecked. 65% provides more corrective
   // pressure on non-dominant pairs while still prioritizing dominant axis.
-  const GINI_DAMPEN_0 = 0.65;
+  // R46: Raised 0.65->0.72. axisGini rose to 0.136 after R45. All 27 pair
+  // assignments are unique but trust/entropy axes remain sparsely distributed.
+  // 72% applies stronger corrective pressure on non-dominant pairs while
+  // still protecting dominant axis signal headroom.
+  const GINI_DAMPEN_0 = 0.72;
   const GINI_DAMPEN_1 = 0.75;
 
   function getDominantAxes(shares) {

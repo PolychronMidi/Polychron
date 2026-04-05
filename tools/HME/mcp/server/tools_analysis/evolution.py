@@ -685,3 +685,71 @@ def hme_inspect(mode: str = "both") -> str:
     if not parts:
         return f"Unknown mode '{mode}'. Use 'introspect', 'selftest', or 'both'."
     return "\n\n".join(parts)
+
+
+@ctx.mcp.tool()
+def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> str:
+    """Permanently enforce a rule against a stubborn antipattern by adding detection logic to
+    the specified hook script. hook_target: 'pretooluse_bash', 'posttooluse_bash', 'stop',
+    'userpromptsubmit', 'pretooluse_edit', 'pretooluse_grep', 'pretooluse_write'.
+    The tool synthesizes the bash detection snippet, appends it to the hook, and confirms.
+    Use this when a behavioral rule has been violated repeatedly and needs permanent enforcement."""
+    _track("fix_antipattern")
+    if not antipattern or not antipattern.strip():
+        return "Error: antipattern cannot be empty. Describe the bad behavior to prevent."
+    valid_hooks = {
+        "pretooluse_bash", "posttooluse_bash", "stop",
+        "userpromptsubmit", "pretooluse_edit", "pretooluse_grep", "pretooluse_write",
+    }
+    if hook_target not in valid_hooks:
+        return f"Error: hook_target must be one of: {', '.join(sorted(valid_hooks))}"
+    hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
+    hook_path = os.path.join(hooks_dir, f"{hook_target}.sh")
+    if not os.path.isfile(hook_path):
+        return f"Hook file not found: {hook_path}"
+    with open(hook_path, encoding="utf-8") as _f:
+        current = _f.read()
+
+    # Synthesize the enforcement snippet via Claude or local
+    synthesis_prompt = (
+        f"You are writing a bash snippet to add to a Claude Code hook script.\n"
+        f"Hook: {hook_target}.sh\n"
+        f"Current hook content:\n{current}\n\n"
+        f"Antipattern to prevent: {antipattern}\n\n"
+        f"Write ONLY the bash snippet (no markdown fences, no explanation) to detect and block or warn "
+        f"about this antipattern. The snippet must:\n"
+        f"1. Use CMD/INPUT variables already set in the hook (CMD = tool_input.command if Bash hook)\n"
+        f"2. Output enforcement message to stderr (>&2)\n"
+        f"3. Use exit 0 (warn) or exit 2 with JSON {{\"decision\":\"block\",\"reason\":\"...\"}} (block)\n"
+        f"4. Include a one-line comment explaining what it prevents\n"
+        f"Be concise — 5-10 lines maximum."
+    )
+    api_key = _get_api_key()
+    snippet = None
+    if api_key:
+        snippet = _claude_think(synthesis_prompt, api_key, max_tool_calls=0)
+    if not snippet:
+        snippet = _local_think(synthesis_prompt, max_tokens=256)
+    if not snippet:
+        return (
+            f"Could not synthesize snippet (no API key and Ollama unavailable).\n"
+            f"Manually add detection logic to: {hook_path}\n"
+            f"Antipattern to prevent: {antipattern}"
+        )
+
+    # Strip markdown fences if present
+    snippet = re.sub(r'^```[a-z]*\n?', '', snippet.strip())
+    snippet = re.sub(r'\n?```$', '', snippet)
+
+    # Append to hook with separator
+    new_content = current.rstrip("\n") + f"\n\n# fix_antipattern: {antipattern[:80]}\n{snippet.strip()}\n"
+    with open(hook_path, "w", encoding="utf-8") as _f:
+        _f.write(new_content)
+
+    return (
+        f"# fix_antipattern: Applied enforcement to {hook_target}.sh\n\n"
+        f"**Antipattern:** {antipattern}\n\n"
+        f"**Appended snippet:**\n```bash\n{snippet.strip()}\n```\n\n"
+        f"Hook file: {hook_path}\n"
+        f"The enforcement is now active for all future sessions."
+    )

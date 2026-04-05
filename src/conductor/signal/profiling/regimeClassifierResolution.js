@@ -104,10 +104,15 @@ regimeClassifierResolution = (() => {
     if (state.forcedRegimeBeatsRemaining <= 0 && state.lastRegime === 'exploring' && exploringElapsedSec >= config.EXPLORING_MAX_DWELL_SEC) {
       const exploringForcedWindow = clamp(6 + m.floor(evolvingDeficit * 6), 6, 12);
       // If evolving is well-represented, break toward coherent; otherwise recover evolving.
-      const exploringRecoveryRegime = evolvingRecoveryPriority > 0.18 ? 'evolving' : 'coherent';
+      // R46: Lowered threshold 0.18->0.12. At 0.18, priority ~0.044 (25% evolving,
+      // deficit 0.074) meant all forced breaks went to coherent, creating a bipolar
+      // exploring<->coherent cycle that excluded evolving. 0.12 allows breaks to evolving
+      // when deficit is meaningful (target 0.32, actual 25% -> priority 0.131 > 0.12).
+      const exploringRecoveryRegime = evolvingRecoveryPriority > 0.12 ? 'evolving' : 'coherent';
       forceRegimeTransition(exploringRecoveryRegime, 'exploring-max-dwell', exploringForcedWindow);
     }
-    const exploringMonopolyThreshold = clamp((shortFormPressure > 0 ? 0.66 : 0.72) - trustSharePressure * 0.04 - evolvingDeficit * 0.06 - phaseWeakness * 0.03 + phaseRecoveryCredit * 0.01 - (phaseStableRecoveryWindow ? 0.03 * phaseStableRecoveryStrength : 0), 0.54, 0.72);
+    // R46: evolvingDeficit penalty 0.06->0.08 (stronger monopoly suppression when evolving underrepresented)
+    const exploringMonopolyThreshold = clamp((shortFormPressure > 0 ? 0.66 : 0.72) - trustSharePressure * 0.04 - evolvingDeficit * 0.08 - phaseWeakness * 0.03 + phaseRecoveryCredit * 0.01 - (phaseStableRecoveryWindow ? 0.03 * phaseStableRecoveryStrength : 0), 0.54, 0.72);
     const exploringMonopolyMinDwellSec = shortFormPressure > 0
       ? m.max(config.EXPLORING_MONOPOLY_FLOOR_SEC, config.EXPLORING_MAX_DWELL_SEC * (0.45 - evolvingDeficit * 0.08))
       : m.max(config.EXPLORING_MONOPOLY_FLOOR_SEC, config.EXPLORING_MAX_DWELL_SEC * (0.50 - trustSharePressure * 0.06 - evolvingDeficit * 0.08 - phaseRecoveryCredit * 0.04 - (phaseStableRecoveryWindow ? 0.06 * phaseStableRecoveryStrength : 0)));

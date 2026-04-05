@@ -40,13 +40,14 @@ regimeClassifier = (() => {
     // Lab R1: coherent fatigues, exploring more interesting. Tighten ceiling 0.35->0.33.
     REGIME_TARGET_COHERENT_HI: 0.33,
     // R9 E2: Raised from 0.14 to 0.18.
-    // R46 E4: Raise 0.18->0.24. Evolving stuck at 21.4% in R45 with
-    // exploring at 40.7%. At 0.18, evolvingDeficit=0 (21.4% > 18%)
-    // so all adaptive recovery is dormant (forced breaks go exploring,
-    // entry bands narrow, starvation injector off). At 0.24, deficit
-    // re-engages: forced breaks choose evolving, entry velocity ceiling
-    // widens, and coherent gate relaxes.
-    REGIME_TARGET_EVOLVING_LO: 0.27,
+    // R46 E4: Raise 0.18->0.27. Evolving stuck at 21.4% in R45 with
+    // exploring at 40.7%. At 0.18, evolvingDeficit=0 so recovery dormant.
+    // R46: Raise 0.27->0.32. Evolving at 25% with target 0.27 yields deficit
+    // only 0.074 -> evolvingRecoveryPriority ~0.044 < recovery threshold,
+    // so all exploring forced breaks route to coherent. Target 0.32 gives
+    // deficit 0.219 -> priority 0.131 which crosses the 0.12 threshold,
+    // routing forced breaks to evolving and breaking the bipolar cycle.
+    REGIME_TARGET_EVOLVING_LO: 0.32,
     // R85 E3: Expand coherent self-balancer headroom. coherentThresholdScale
     // auto-adjusts to steer coherent share toward [0.10, 0.35] target. At
     // cap 1.20, the balancer maxes out at +20% threshold which is insufficient
