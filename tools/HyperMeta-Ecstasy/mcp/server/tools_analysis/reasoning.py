@@ -9,7 +9,7 @@ from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
     _get_api_key, _claude_think, _local_think, _think_local_or_claude,
-    _format_kb_corpus, _THINK_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+    _format_kb_corpus, _THINK_MODEL, _DEEP_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from . import _get_compositional_context, _track
 
@@ -251,9 +251,9 @@ def think(about: str, context: str = "") -> str:
             get_context_budget(), "medium"
         )
         answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), effort=think_effort,
-                               max_tool_calls=_get_tool_budget())
+                               max_tool_calls=_get_tool_budget(), model=_DEEP_MODEL)
         if answer:
-            parts = [f"# Think: {about} *(adaptive/{think_effort}, {_THINK_MODEL})*\n", answer]
+            parts = [f"# Think: {about} *(adaptive/{think_effort}, {_DEEP_MODEL})*\n", answer]
             if kb_hits:
                 parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
             return "\n".join(parts)
@@ -349,7 +349,9 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
             "(2) what integration tests or validation steps are most important, "
             "(3) any cascade effects to watch for in deeper layers."
         )
-        synthesis = _think_local_or_claude(user_text, _get_api_key())
+        api_key = _get_api_key()
+        synthesis = (_claude_think(user_text, api_key, kb_context=_format_kb_corpus())
+                     if api_key else _local_think(user_text))
         if synthesis:
             parts.append(f"\n## Change Risk *(adaptive)*")
             parts.append(synthesis)

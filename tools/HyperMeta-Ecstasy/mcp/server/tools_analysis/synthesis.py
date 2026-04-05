@@ -31,6 +31,8 @@ def _get_api_key() -> str:
 
 
 _THINK_MODEL = os.environ.get("RAG_THINK_MODEL", "claude-sonnet-4-6")
+# Deep reasoning model — used by think tool and causal_trace where Opus pays off
+_DEEP_MODEL = os.environ.get("HME_DEEP_MODEL", "claude-opus-4-6")
 
 
 def _build_think_system() -> str:
@@ -368,7 +370,7 @@ def _think_local_or_claude(prompt: str, api_key: str, **claude_kwargs) -> str | 
 
 def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
                   kb_context: str = "", effort: str | None = None,
-                  max_tool_calls: int | None = None) -> str | None:
+                  max_tool_calls: int | None = None, model: str | None = None) -> str | None:
     """Call Claude with adaptive thinking + two-level prompt caching.
 
     Cache breakpoints:
@@ -412,7 +414,7 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
         def _call_api(messages: list, tools: list) -> dict | None:
             """Single API call with one retry on transient errors."""
             body: dict = {
-                "model": _THINK_MODEL,
+                "model": model or _THINK_MODEL,
                 "max_tokens": max_tokens,
                 "thinking": {"type": "adaptive", "display": "omitted"},
                 "output_config": {"effort": effort},
