@@ -256,7 +256,7 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 | `memory_dream` | Discover hidden KB connections via pairwise similarity |
 | `kb_health` | Check for stale refs and aged entries |
 
-### Evolution & Causal Intelligence (5 tools)
+### Evolution & Causal Intelligence (7 tools)
 
 | Tool | Use For |
 |------|---------|
@@ -265,6 +265,22 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 | `hme_introspect` | Self-benchmarking: usage patterns, system health, musical context |
 | `trace_query` | Query trace.jsonl for what a module ACTUALLY DID: trust scores, regime transitions, value ranges |
 | `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
+| `kb_seed` | Auto-generate starter KB entries for top-N highest-dependency modules with zero KB coverage |
+| `hme_selftest` | 8-point health check: tool count, doc sync, index, hash cache, Ollama, KB, symlinks |
+
+### Runtime Intelligence (9 tools)
+
+| Tool | Use For |
+|------|---------|
+| `pipeline_digest` | **ONE-CALL post-pipeline summary**: arc + hotspots + drama + regime health |
+| `composition_arc` | Per-section biography: regime, tension bars, trust leaders, coupling |
+| `regime_timeline` | ASCII visualization of regime across full run (I/E/X/C per beat) |
+| `hotspot_leaderboard` | Rank trust systems by hotspot frequency and pressure |
+| `trust_trajectory` | Per-system weight/score career arc with sparklines |
+| `trust_rivalry` | Head-to-head comparison: overtakes, dominance share |
+| `section_compare` | Two sections side-by-side: tension delta, trust winners/losers |
+| `drama_finder` | Top N dramatic moments: regime transitions, weight swings, hotspots |
+| `beat_snapshot` | Full system state at one beat: trust ecology, snap, coupling, notes |
 
 ### Analysis (3 tools)
 
