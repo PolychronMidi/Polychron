@@ -69,7 +69,7 @@ tools/HME/               The single source of truth
     pretooluse_write.sh                 Lab rules for sketches.js
     pretooluse_bash.sh                  Block run.lock deletion + suggest HME tools
     posttooluse_bash.sh                 Evolver phase triggers after pipeline/snapshot/lab
-    stop.sh                             Verify all work implemented, not just documented
+    stop.sh                             Verify completeness; drive autonomous Evolver loop
   Evolver.agent.md                      -> .github/agents/Evolver.agent.md (symlink)
   doc                                   -> doc/ (symlink)
 ```
@@ -173,6 +173,43 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 ### When Pipeline Fails
 
 `diagnose_error "paste error text"` — traces source, finds similar KB bugs, suggests fix patterns.
+
+## Autonomous Evolver Loop
+
+The Stop hook implements the **ralph-loop pattern**: when `.claude/hme-evolver.local.md` exists, the Stop hook blocks session exit and injects the next evolution directive, creating an autonomous multi-round evolution cycle.
+
+### Setup
+
+Create `.claude/hme-evolver.local.md` (gitignored):
+
+```markdown
+---
+enabled: true
+iteration: 1
+max_iterations: 5
+done_signal: "EVOLUTION COMPLETE"
+---
+
+Continue simultaneous synergistic evolution of src/, doc/, and HME.
+Run npm run main after each round of changes. After a STABLE or EVOLVED pipeline,
+auto-commit and move to the next evolution opportunity. When you have completed
+all outstanding evolutions and the system is in a good state, output "EVOLUTION COMPLETE".
+```
+
+The loop drives until `max_iterations` is reached or `done_signal` appears in the transcript.
+
+### Fields
+
+| Field | Description |
+|-------|-------------|
+| `enabled` | `true` to activate (set `false` to pause without deleting) |
+| `iteration` | Auto-incremented by the hook — do not set manually |
+| `max_iterations` | Hard cap (0 = unlimited) |
+| `done_signal` | String Claude outputs to signal completion |
+
+The prompt body (everything after the second `---`) is injected verbatim as the next user prompt.
+
+**Note:** Hook changes require `claude plugin update HME@polychron-local` to refresh the plugin cache.
 
 ## When to Use What
 
