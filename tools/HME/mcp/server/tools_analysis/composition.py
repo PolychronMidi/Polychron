@@ -10,15 +10,7 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
-def _load_trace(trace_path: str) -> list[dict]:
-    records = []
-    with open(trace_path, encoding="utf-8") as f:
-        for line in f:
-            try:
-                records.append(json.loads(line))
-            except Exception:
-                continue
-    return records
+from . import _load_trace  # noqa: F401 — shared helper, avoids duplicate in each trace tool
 
 
 @ctx.mcp.tool()
