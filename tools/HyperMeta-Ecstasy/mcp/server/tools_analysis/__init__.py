@@ -120,6 +120,7 @@ from . import composition    # noqa: E402, F401
 from . import trust_analysis  # noqa: E402, F401
 from . import digest             # noqa: E402, F401
 from . import section_compare    # noqa: E402, F401
+from . import perceptual         # noqa: E402, F401
 
 # Re-export synthesis functions for tools_knowledge.py compatibility
 from .synthesis import (  # noqa: E402, F401
