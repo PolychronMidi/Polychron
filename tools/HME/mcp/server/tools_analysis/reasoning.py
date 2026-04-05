@@ -89,13 +89,14 @@ def module_story(module_name: str) -> str:
         parts.append(f"\n## Musical Impact (last run)")
         parts.append(comp)
     # Runtime trace summary — what the module ACTUALLY DID
+    _trace_result = None
     try:
         from .evolution import trace_query as _trace_query
-        trace_result = _trace_query(module_name, limit=8)
+        _trace_result = _trace_query(module_name, limit=8)
         # Only include if there's meaningful data (not just "No trace data")
-        if "Value Ranges" in trace_result:
+        if "Value Ranges" in _trace_result:
             # Extract just the value ranges section (skip header/samples for brevity)
-            trace_lines = trace_result.split("\n")
+            trace_lines = _trace_result.split("\n")
             runtime_lines = []
             in_ranges = False
             for tl in trace_lines:
@@ -137,14 +138,9 @@ def module_story(module_name: str) -> str:
         blind_spots.append(f"KNOWLEDGE GAP: {len(caller_files)} dependents but zero KB entries — this module needs documented constraints")
     if not relevant and matching:
         blind_spots.append("No calibration anchors, decisions, or known bugs in KB for this module")
-    # Check if module has runtime trace data
-    try:
-        from .evolution import trace_query as _tq
-        _trace_test = _tq(module_name, limit=1)
-        if "No trace data" in _trace_test:
-            blind_spots.append("NO RUNTIME DATA: this module doesn't emit to trace.jsonl — runtime behavior is invisible")
-    except Exception:
-        pass
+    # Re-use cached trace result rather than calling trace_query a second time
+    if _trace_result is not None and "No trace data" in _trace_result:
+        blind_spots.append("NO RUNTIME DATA: this module doesn't emit to trace.jsonl — runtime behavior is invisible")
     # Check if module is mentioned in key docs
     for doc_name in ["TUNING_MAP.md", "ARCHITECTURE.md"]:
         doc_path = os.path.join(ctx.PROJECT_ROOT, "doc", doc_name)

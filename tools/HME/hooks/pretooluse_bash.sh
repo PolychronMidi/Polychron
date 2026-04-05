@@ -26,3 +26,9 @@ if echo "$CMD" | grep -qE '^(grep |cat |head |tail |wc -l)'; then
   echo "PREFER HME: use grep(), file_lines(), or count_lines() MCP tools for KB-enriched results. Bash $TOOL is allowed but misses KB context." >&2
 fi
 exit 0
+
+# fix_antipattern: Block polling pipeline log file with tail - run_in_background means notification fires on completion
+if echo "$CMD" | grep -qE 'tail.*(r4[0-9]+_run|run\.log|pipeline)'; then
+  echo '{"decision":"block","reason":"BLOCKED: Polling pipeline log is the antipattern. run_in_background fires a notification when done — continue with other work now."}' >&2
+  exit 2
+fi
