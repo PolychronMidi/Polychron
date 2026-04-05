@@ -10,16 +10,12 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
+from . import _load_trace as _load_trace_impl  # shared helper
+
+
 def _load_trace() -> list[dict]:
-    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
-    records = []
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            try:
-                records.append(json.loads(line))
-            except Exception:
-                continue
-    return records
+    """Wrapper: loads from the canonical trace.jsonl path for this project."""
+    return _load_trace_impl(os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl"))
 
 
 @ctx.mcp.tool()

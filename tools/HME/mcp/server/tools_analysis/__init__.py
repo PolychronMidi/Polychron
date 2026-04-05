@@ -110,6 +110,19 @@ def _get_compositional_context(module_name: str) -> str:
     return "\n".join(parts) if parts else ""
 
 
+def _load_trace(trace_path: str) -> list[dict]:
+    """Load trace.jsonl and return list of beat records. Shared by composition/trust/section tools."""
+    import json as _json
+    records = []
+    with open(trace_path, encoding="utf-8") as f:
+        for line in f:
+            try:
+                records.append(_json.loads(line))
+            except Exception:
+                continue
+    return records
+
+
 # Import sub-modules to register tools (order: synthesis first, then tools)
 from . import synthesis  # noqa: E402, F401 — synthesis engine (no tools, just helpers)
 from . import symbols    # noqa: E402, F401
