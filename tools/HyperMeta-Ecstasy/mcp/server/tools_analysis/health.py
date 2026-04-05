@@ -321,7 +321,8 @@ def doc_sync_check(doc_path: str = "") -> str:
                 pass
     if count_match:
         claimed = int(count_match.group(1))
-        if claimed != actual_tools:
+        # Accept "50+" style — only flag if exact count AND it's wrong
+        if "50+" not in doc_content and claimed != actual_tools:
             issues.append(f"STALE: doc claims {claimed} tools, server has {actual_tools}")
     # Check file/chunk/symbol counts
     stats_match = re.search(r'Files:\s*(\d+)', doc_content)

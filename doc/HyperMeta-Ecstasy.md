@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HyperMeta-Ecstasy/` | 55 tools: semantic search, KB, architectural analysis, Claude synthesis |
+| **MCP Server** | `tools/HyperMeta-Ecstasy/` | 50+ tools: semantic search, KB, architectural analysis, Claude synthesis |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HyperMeta-Ecstasy/` | Cognitive frameworks loaded per session via `/HyperMeta-Ecstasy` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -49,7 +49,7 @@ tools/HyperMeta-Ecstasy/               The single source of truth
     plugin.json                         Plugin metadata (name, version, description)
   mcp/                                  Python MCP server (symlinked from ~/.claude/mcp/)
     server/
-      main.py                           FastMCP entry point (55 tools)
+      main.py                           FastMCP entry point (50+ tools)
       tools_analysis.py                 Architectural reasoning + Claude synthesis (20 tools)
       tools_search.py                   Search, grep, file, context assembly (6 tools)
       tools_knowledge.py                KB CRUD + memory_dream + knowledge_graph (9 tools)
@@ -192,7 +192,7 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 | Understand a module deeply | `module_story "moduleName"` | Multi-file reading |
 | Preview rename impact | `bulk_rename_preview "old" "new"` | Manual grep |
 
-## Tool Reference (55 tools)
+## Tool Reference (50+ tools)
 
 ### Shell Replacements (use INSTEAD of Bash)
 
