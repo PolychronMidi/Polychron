@@ -11,8 +11,9 @@
         "PATH": "/home/jah/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "HF_HUB_OFFLINE": "1",
         "TRANSFORMERS_OFFLINE": "1",
-        "HME_LOCAL_MODEL": "qwen2.5-coder:7b",
-        "HME_LOCAL_URL": "http://localhost:11434/api/generate"
+        "HME_LOCAL_MODEL": "qwen2.5-coder:14b",
+        "HME_LOCAL_URL": "http://localhost:11434/api/generate",
+        "HME_DEEP_MODEL": "claude-opus-4-6"
       }
     }
   }
