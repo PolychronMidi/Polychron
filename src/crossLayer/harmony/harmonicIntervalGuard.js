@@ -124,8 +124,9 @@ harmonicIntervalGuard = (() => {
     const searchRadius = dissonanceTarget > 0.6 ? 5 : 3;
     const { lo, hi } = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true, anchorMidi: midi, radius: searchRadius });
     // R53: interval novelty steering -- under-used ICs get a score bonus when in dissonant+independent mode
-    // high dissonance * low cimScale = xenolinguistic pull toward unexplored harmonic territory
-    const noveltyWeight = histTotal > 12 ? dissonanceTarget * 0.28 * (1.0 - cimScale * 0.65) : 0;
+    // R54: emergentMelodicEngine amplifies noveltyWeight when interval territory is stale
+    const baseNoveltyWeight = histTotal > 12 ? dissonanceTarget * 0.28 * (1.0 - cimScale * 0.65) : 0;
+    const noveltyWeight = V.optionalFinite(safePreBoot.call(() => emergentMelodicEngine.nudgeNoveltyWeight(baseNoveltyWeight), baseNoveltyWeight), baseNoveltyWeight);
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;

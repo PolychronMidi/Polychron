@@ -246,6 +246,9 @@ stutterVariants = (() => {
     const emergentComplexity = emergentEntry && Number.isFinite(emergentEntry.complexity) ? emergentEntry.complexity : 0.5;
     const emergentActive = emergentDensity > 0.06;
 
+    // R54: melodic context (12th signal dimension) -- contour, freshness, tessiture, counterpoint
+    const melodicWeights = /** @type {Record<string, number>} */ (safePreBoot.call(() => emergentMelodicEngine.getMelodicWeights(), {}));
+
     // R25: self-balancing - inverse-frequency boost for underrepresented variants
     const variantCounts = stutterMetrics.getMetrics().variantCounts;
     const totalVariantCount = Object.values(variantCounts).reduce((/** @type {number} */ s, /** @type {number} */ c) => s + c, 0);
@@ -278,7 +281,8 @@ stutterVariants = (() => {
         ? (emergentComplexity > 0.5 ? (EMERGENT_COMPLEX_WEIGHTS[name] || 1.0) : (EMERGENT_DENSE_WEIGHTS[name] || 1.0))
         * (1.0 + emergentDensity * 0.3)
         : 1.0;
-      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult * balanceMult * emergentMult });
+      const melodicMult = melodicWeights[name] || 1.0;
+      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult * balanceMult * emergentMult * melodicMult });
     }
     let totalWeight = 0;
     for (let i = 0; i < pool.length; i++) totalWeight += pool[i].weight;

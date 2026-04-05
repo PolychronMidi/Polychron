@@ -20,9 +20,15 @@ Evolver phase steps when the command completes. Stopping to wait is the antipatt
 MSG
 fi
 
-# Block polling pipeline log file with tail
-if echo "$CMD" | grep -qE 'tail.*(r4[0-9]+_run|run\.log|pipeline)'; then
-  echo '{"decision":"block","reason":"BLOCKED: Polling pipeline log is the antipattern. run_in_background fires a notification when done — continue with other work now."}' >&2
+# Block polling: task output files or pipeline log
+if echo "$CMD" | grep -qE '(tail|cat|head|grep).*(/tasks/[a-z0-9]+\.output|r4[0-9]+_run|run\.log|pipeline\.log)'; then
+  echo '{"decision":"block","reason":"BLOCKED: Polling task output or pipeline log is the antipattern. run_in_background fires a notification when done — continue with other work now."}'
+  exit 2
+fi
+
+# Block sleep-then-check patterns (sleep N && tail/cat/grep)
+if echo "$CMD" | grep -qE 'sleep.*(tail|cat|head|grep|\.output)'; then
+  echo '{"decision":"block","reason":"BLOCKED: sleep+check is the polling antipattern. Do not sleep-poll background tasks — a notification fires when done. Continue with other work."}'
   exit 2
 fi
 

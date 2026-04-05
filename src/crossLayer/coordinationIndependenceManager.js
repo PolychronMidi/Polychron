@@ -274,13 +274,14 @@ coordinationIndependenceManager = (() => {
 
     // emergentRhythmEngine: grid sensitivity + bias strength scale with coordination
     safePreBoot.call(() => emergentRhythmEngine.setCoordinationScale(feedbackDownbeat), null);
-
     // stutter channel coordination: how many channels stutter together
     safePreBoot.call(() => StutterManager.setChannelCoordinationScale(stutterChannelDial), null);
 
     // Harmonic pitch correction: interval guard + collision avoidance
     const harmonicDial = dials['harmonic-pitchCorrection'];
     safePreBoot.call(() => harmonicIntervalGuard.setCoordinationScale(harmonicDial), null);
+    // emergentMelodicEngine: noveltyWeight amplification scales with harmonic coordination
+    safePreBoot.call(() => emergentMelodicEngine.setCoordinationScale(harmonicDial), null);
     safePreBoot.call(() => registerCollisionAvoider.setCoordinationScale(harmonicDial), null);
     safePreBoot.call(() => verticalIntervalMonitor.setCoordinationScale(harmonicDial), null);
 

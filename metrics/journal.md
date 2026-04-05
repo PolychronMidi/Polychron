@@ -1,4 +1,24 @@
-## R53: Future Evolution — emergentMelodicEngine (architecture sketch)
+## R54 — 2026-04-05 — (emergentMelodicEngine: 6-tracker melodic synthesis hub)
+
+**Profile:** 7 sections | **Beats:** pending | **Verdict:** pending listen
+
+### What Changed
+- **emergentMelodicEngine** (`src/crossLayer/melody/`): synthesizes 6 conductor melodic trackers (contour, interval freshness, tessiture, thematic recall, ambitus, counterpoint) into `emergentMelody` L0 channel. Three bias surfaces: `nudgeNoveltyWeight()` in harmonicIntervalGuard, `getMelodicWeights()` as 12th signal dimension in stutterVariants, `getContourAscendBias()` in alienArpeggio
+- **HME hook fix**: merged hooks from plugin cache into `tools/HME/settings.json` (hooks were in cache but not in active settings — all hooks were silently disabled). Added sleep+check blocking to `pretooluse_bash.sh`
+- **Feedback enrollment**: `emergentMelodicPort` in feedbackRegistry; CIM harmonic-pitchCorrection dial scales noveltyWeight amplification authority
+
+### Architecture Notes
+- Mirrors emergentRhythmEngine pattern: IIFE global, per-beat cache, self-calibrating EMAs (freshnessEma + tessitureEma), phrase-gated L0 post
+- Stutter variant dimension expansion: 11 → 12 signal dimensions. New melodic weights: stale intervals → alienArpeggio (1.5), contrary counterpoint → directionalOscillation (1.4), high tessiture → machineGun suppressed (0.7), expanding register → octaveCascade (1.2)
+- alienArpeggio ascendBias: rising contour (×1.22), falling (×0.72), arching (+directionBias×0.12)
+
+### Pending (R55+)
+- `motifEcho.captureMotif()` capture gating during high thematicDensity
+- `emergentMelody` L0 consumers: crossModulateRhythms, convergenceDetector
+
+---
+
+## R53: Future Evolution — emergentMelodicEngine (architecture sketch — IMPLEMENTED in R54)
 
 The 15 conductor/melodic trackers each register isolated biases but have no cross-layer synthesis.
 Architecture for emergentMelodicEngine (mirrors emergentRhythmEngine pattern):
