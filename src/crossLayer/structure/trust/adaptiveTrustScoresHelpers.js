@@ -49,7 +49,12 @@ adaptiveTrustScoresHelpers = (() => {
     const pairList = pairAwareHotspotPairs[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
     const pairWeights = pairAwarePairWeights[systemName] || /** @type {Record<string, number>} */ ({});
     const couplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
-    const adaptiveSnapshot = safePreBoot.call(() => conductorSignalBridge.getSignals().adaptiveTargetSnapshot, null);
+    const signals = safePreBoot.call(() => conductorSignalBridge.getSignals(), /** @type {any} */ ({}));
+    const adaptiveSnapshot = signals.adaptiveTargetSnapshot || null;
+    // Attenuate density-pair pressure when conductor intentionally suppresses density.
+    // Low densityProduct + high density-axis correlation = axes moving together (expected), not stressed.
+    const densityProduct = V.optionalFinite(signals.density, 1.0);
+    const densityAttenuation = clamp(densityProduct / 0.75, 0.5, 1.0);
 
     const hotspotPairs = [];
     let maxPressure = 0;
@@ -70,7 +75,8 @@ adaptiveTrustScoresHelpers = (() => {
       const pairP95 = adaptiveEntry && typeof adaptiveEntry.p95AbsCorr === 'number' ? adaptiveEntry.p95AbsCorr : absCorrelation;
       const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
       const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
-      const pairWeight = pairWeights[pair] !== undefined ? pairWeights[pair] : 1;
+      const pairWeight = (pairWeights[pair] !== undefined ? pairWeights[pair] : 1) *
+        (pair.indexOf('density') >= 0 ? densityAttenuation : 1);
       const pairPressure = clamp(
         clamp((absCorrelation - 0.72) / 0.18, 0, 1) * 0.40 +
         clamp((pairP95 - 0.82) / 0.16, 0, 1) * 0.35 +
