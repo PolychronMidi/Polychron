@@ -43,17 +43,17 @@ def get_dependency_graph(file_path: str) -> str:
 
 
 @ctx.mcp.tool()
-def lookup_symbol(name: str, kind: str = "", language: str = "") -> str:
+def lookup_symbol(symbol_name: str, kind: str = "", language: str = "") -> str:
     """Find where a symbol is defined by exact name match. Returns the file, line number, kind (global, function, class), and signature for each match. Use kind='global' to filter to IIFE globals only, or kind='function' for inner functions. For fuzzy/semantic symbol search, use search_symbols instead."""
     ctx.ensure_ready_sync()
-    if not name.strip():
-        return "Error: name cannot be empty."
-    results = ctx.project_engine.lookup_symbol(name, kind=kind, language=language)
+    if not symbol_name.strip():
+        return "Error: symbol_name cannot be empty."
+    results = ctx.project_engine.lookup_symbol(symbol_name, kind=kind, language=language)
     if not results:
         status = ctx.project_engine.get_symbol_status()
         if not status["indexed"]:
             return "No symbol index found. Run index_symbols first."
-        return f"No symbols matching '{name}' found."
+        return f"No symbols matching '{symbol_name}' found."
 
     lines = []
     for r in results:

@@ -177,6 +177,7 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
 @ctx.mcp.tool()
 def get_context(query: str, max_tokens: int = 0, language: str = "", path: str = "") -> str:
     """Token-budgeted context assembly with auto context-window awareness.
+    query is a natural-language description of what you need (NOT a file path — use file_lines for reading files, or pass file paths via the path parameter to scope results).
     max_tokens=0 means AUTO: reads /tmp/claude-context.json (from status line) to determine budget.
     >75% remaining = greedy (16000), 50-75% = moderate (8000), 25-50% = conservative (3000), <25% = minimal (800).
     max_tokens>0 means MANUAL override."""
@@ -399,7 +400,7 @@ def find_callers(symbol_name: str, language: str = "", path: str = "", exclude_p
 
 @ctx.mcp.tool()
 def find_anti_pattern(wrong_symbol: str, right_symbol: str, path: str = "", exclude_path: str = "") -> str:
-    """Find files using wrong_symbol that should use right_symbol instead. Auto-excludes the file that defines right_symbol (the authorized bridge)."""
+    """Find boundary violations: files using wrong_symbol (the banned direct access) that should use right_symbol (the approved bridge/wrapper) instead. Example: find_anti_pattern wrong_symbol='conductorState' right_symbol='conductorSignalBridge'. Auto-excludes the file that defines right_symbol."""
     if not wrong_symbol.strip():
         return "Error: wrong_symbol cannot be empty."
     if not right_symbol.strip():
