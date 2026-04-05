@@ -181,7 +181,8 @@ def regime_anomaly() -> str:
             w = data.get("weight", 1)
             s = data.get("score", 0.5)
             if isinstance(w, (int, float)) and isinstance(s, (int, float)):
-                if w > 1.15 and s < 0.30:
+                predicted_w = 1.0 + s * 0.75
+                if w > predicted_w + 0.15 and s < 0.30:
                     trust_inflation.append((sys, w, s))
             pw = prev_weights.get(sys, w)
             if isinstance(pw, (int, float)) and abs(w - pw) > 0.5:
