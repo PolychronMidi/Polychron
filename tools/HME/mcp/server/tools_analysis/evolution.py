@@ -29,20 +29,29 @@ def evolution_patterns() -> str:
         content = _f.read()
 
     rounds = re.findall(r'## R(\d+)', content)
-    confirmed = re.findall(r'confirmed', content, re.IGNORECASE)
-    refuted = re.findall(r'refuted', content, re.IGNORECASE)
-    inconclusive = re.findall(r'inconclusive', content, re.IGNORECASE)
-    total_outcomes = len(confirmed) + len(refuted) + len(inconclusive)
+    # Parse per-round verdicts from **Verdict:** fields (authoritative, not raw word counts)
+    verdict_pattern = re.compile(r'\*\*Verdict:\*\*\s*([^\n|]+)')
+    verdicts_raw = [v.strip().lower() for v in verdict_pattern.findall(content)]
+    confirmed_verdicts = [v for v in verdicts_raw if any(k in v for k in ('stable', 'evolved', 'legendary', 'confirmed', 'confirmed positive'))]
+    drifted_verdicts = [v for v in verdicts_raw if any(k in v for k in ('drifted', 'refuted', 'negative'))]
+    inconclusive_verdicts = [v for v in verdicts_raw if any(k in v for k in ('inconclusive', 'pending', 'tbd', 'unclear'))]
+    # Rounds that don't appear in journal at all are rejected — note this in output
+    total_journal_rounds = len(rounds)
+    total_outcomes = len(confirmed_verdicts) + len(drifted_verdicts) + len(inconclusive_verdicts)
     subsystem_counts = {}
     for sub in ['conductor', 'crossLayer', 'composers', 'rhythm', 'fx', 'time', 'play', 'writer']:
         count = len(re.findall(sub, content, re.IGNORECASE))
         if count:
             subsystem_counts[sub] = count
 
+    confirm_rate = len(confirmed_verdicts) / max(1, total_outcomes)
     parts = [
-        f"## Evolution Patterns ({len(rounds)} rounds analyzed)\n",
-        f"**Outcomes:** {len(confirmed)} confirmed, {len(refuted)} refuted, {len(inconclusive)} inconclusive",
-        f"**Confirm rate:** {len(confirmed) / max(1, total_outcomes):.0%}\n",
+        f"## Evolution Patterns ({total_journal_rounds} rounds in journal)\n",
+        f"**Verdicts:** {len(confirmed_verdicts)} confirmed (STABLE/EVOLVED/LEGENDARY), "
+        f"{len(drifted_verdicts)} drifted/refuted, {len(inconclusive_verdicts)} inconclusive/pending",
+        f"**Confirm rate (journaled rounds):** {confirm_rate:.0%}",
+        f"**Note:** DRIFTED runs are committed but not journaled — journal skews toward successes.",
+        "",
         "**Subsystem activity:**",
     ]
     for sub, count in sorted(subsystem_counts.items(), key=lambda x: -x[1]):
@@ -231,6 +240,66 @@ def hme_introspect() -> str:
     parts.append(f"  Index: {idx['files']} files, {idx['chunks']} chunks, {idx['symbols']} symbols")
 
     return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def hme_hot_reload(modules: str = "") -> str:
+    """Hot-reload HME tool modules without restarting the server. Pass comma-separated
+    module short names (e.g. 'health,evolution,section_compare') or 'all' to reload
+    every tools_analysis sub-module. Re-registers all tools from reloaded modules in-place."""
+    import sys
+    import importlib
+    _track("hme_hot_reload")
+
+    RELOADABLE = [
+        "synthesis", "symbols", "workflow", "reasoning", "health",
+        "evolution", "runtime", "composition", "trust_analysis",
+        "digest", "section_compare", "perceptual",
+    ]
+    if not modules or modules.strip().lower() == "all":
+        targets = RELOADABLE
+    else:
+        targets = [m.strip() for m in modules.split(",") if m.strip()]
+
+    # Temporarily silence duplicate-tool warnings during reload
+    inner = ctx.mcp._inner
+    old_warn = inner._tool_manager.warn_on_duplicate_tools
+    inner._tool_manager.warn_on_duplicate_tools = False
+
+    results = []
+    try:
+        for name in targets:
+            full = f"server.tools_analysis.{name}"
+            mod = sys.modules.get(full)
+            if mod is None:
+                results.append(f"  SKIP {name}: not in sys.modules")
+                continue
+            try:
+                # Count tools registered from this module before reload
+                tools_before = {
+                    tname for tname, t in inner._tool_manager._tools.items()
+                    if getattr(t.fn, "__module__", "") == full
+                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
+                }
+                importlib.reload(mod)
+                tools_after = {
+                    tname for tname, t in inner._tool_manager._tools.items()
+                    if getattr(t.fn, "__module__", "") == full
+                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
+                }
+                re_registered = len(tools_after)
+                results.append(f"  OK {name}: {re_registered} tools updated (was {len(tools_before)})")
+            except Exception as e:
+                results.append(f"  ERR {name}: {e}")
+    finally:
+        inner._tool_manager.warn_on_duplicate_tools = old_warn
+
+    total_tools = len(inner._tool_manager._tools)
+    return (
+        f"## HME Hot Reload\n"
+        + "\n".join(results)
+        + f"\n\nTotal tools registered: {total_tools}"
+    )
 
 
 @ctx.mcp.tool()

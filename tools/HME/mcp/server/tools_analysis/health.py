@@ -159,7 +159,10 @@ def convention_check(file_path: str) -> str:
     # Coupling firewall: .couplingMatrix reads only allowed in coupling engine, meta-controllers, profiler, diagnostics, pipeline
     if ".couplingMatrix" in content:
         if not any(ap in rel_path for ap in COUPLING_MATRIX_EXEMPT_PATHS):
-            issues.append(f"COUPLING FIREWALL: reads .couplingMatrix directly. Only allowed in coupling engine, meta-controllers, profiler, diagnostics.")
+            if any(lp in rel_path for lp in COUPLING_MATRIX_LEGACY_PATHS):
+                issues.append(f"COUPLING FIREWALL: reads .couplingMatrix [legacy — tracked for refactor, not a blocker].")
+            else:
+                issues.append(f"COUPLING FIREWALL: reads .couplingMatrix directly. Only allowed in coupling engine, meta-controllers, profiler, diagnostics.")
     # Check for Object.freeze that should use deepFreeze
     import re as _re
     if "(function deepFreeze" in content or "(function deepFreezeObj" in content:
