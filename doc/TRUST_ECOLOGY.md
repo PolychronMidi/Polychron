@@ -27,6 +27,18 @@ Bottom 3 consistently: convergence (~0.26), texturalMirror (~0.27), roleSwap (~0
 
 Full list: motifEcho, temporalGravity, harmonicIntervalGuard, convergenceHarmonicTrigger, articulationComplement, crossLayerSilhouette, dynamicEnvelope, coherenceMonitor, grooveTransfer, rhythmicComplement, phaseLock, climaxEngine, velocityInterference, restSynchronizer, stutterContagion, spectralComplementarity, entropyRegulator, registerCollisionAvoider, verticalIntervalMonitor, polyrhythmicPhasePredictor, feedbackOscillator, cadenceAlignment, roleSwap, emergentDownbeat, phaseAwareCadenceWindow, convergence, texturalMirror
 
+### Notable System Behaviors
+
+**motifEcho** — highest trust system (avg weight 1.48, score 0.69). Creates fugue-like imitative counterpoint: captures motifs from L1, injects transformed versions (retrograde, inversion, augmentation) into L2. Consistently #1 in 6/7 sections. Only yields to phaseLock during atmospheric resolution.
+
+**feedbackOscillator** — chronically lowest score (avg 0.32) with highest hotspot rate (31%). Creates round-trip rhythmic impulses between layers with damping=0.55. EMA floor prevents weight collapse. Performs well in high-tension sections, badly in atmospheric.
+
+**stutterContagion** — largest score swing of any system (0.22-0.70). Regime-dependent: surges during coherent (stable rhythms for prediction), collapses during exploring (unpredictable patterns). In 50/50 rivalry with phaseLock (116 overtakes/run).
+
+**coherenceMonitor** — systematic weight decline across sections (S0 1.45 → S6 1.25). Performs well when coherent regime dominates, deteriorates when exploring takes over. Largest single-beat weight drop of any system (Δ0.79).
+
+**roleSwap** — collapses in explosive sections (Δ-0.26 S3→S4) because tension valleys trigger excessive profile swaps. Trust inflation in S4-S6 (weight > 1.1 despite score < 0.31).
+
 ## Trust Starvation Auto-Nourishment (#5)
 
 When a system's trust velocity stagnates for >70-100 beats (regime-dependent), synthetic positive payoff is injected:
