@@ -309,21 +309,24 @@ def _format_kb_corpus() -> str:
         return ""
 
 
-_LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen2.5-coder:7b")
+_LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen2.5-coder:14b")
+# Reasoning model for think/causal_trace/memory_dream — falls back to _LOCAL_MODEL
+_REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "deepseek-r1:14b")
 
 
 _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
 
 
-def _local_think(prompt: str, max_tokens: int = 1024) -> str | None:
-    """Call local Ollama model for mechanical synthesis tasks (git, journal, conventions).
+def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) -> str | None:
+    """Call local Ollama model for synthesis tasks.
 
-    Uses only stdlib — no extra dependencies. Returns None if Ollama isn't running
+    Uses only stdlib -- no extra dependencies. Returns None if Ollama isn't running
     or the model isn't available, allowing callers to fall back gracefully.
+    Pass model=_REASONING_MODEL for think/causal_trace/memory_dream tasks.
     """
     import urllib.request
     body = json.dumps({
-        "model": _LOCAL_MODEL,
+        "model": model or _LOCAL_MODEL,
         "prompt": prompt,
         "stream": False,
         "options": {"temperature": 0.3, "num_predict": max_tokens},

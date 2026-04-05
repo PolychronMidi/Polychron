@@ -62,7 +62,7 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
             sym_registrations[name] = has_reg
 
     if not sym_files:
-        return {}, {}
+        return {}, {}, {}
 
     # Pass 2 — count references in one scan
     import re as _re

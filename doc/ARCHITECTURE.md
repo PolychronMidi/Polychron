@@ -178,6 +178,17 @@ All cross-layer buffer writes route through `crossLayerEmissionGateway.emit(sour
 7. Trust score registration for all 27 systems
 8. Heat map recording
 
+## Emergent Rhythm Engine
+
+**7-way L0 hub.** `emergentRhythmEngine` (`src/crossLayer/rhythm/emergentRhythmEngine.js`) reads 6 L0 channels — `stutterContagion`, `emergentDownbeat`, `feedbackLoop`, `onset` (convergence), `cadenceAlignment`, `regimeTransition` — and fuses them into the `emergentRhythm` L0 channel.
+
+- **Quantization grid**: 16-slot subdivision per regime-adaptive rolling window (exploring: 3 beats, coherent: 1.5, evolving: 2)
+- **Metrics**: grid density + syncopation complexity with self-calibrating EMA thresholds
+- **Bias output**: 4th link in `getRhythm.js` weight-selection bias chain (after `journeyRhythmCoupler`)
+- **Consumers**: `crossModulateRhythms`, `stutterVariants`, `convergenceDetector`, `feedbackOscillator`, `emergentDownbeat`
+- **CIM pair**: `feedbackOsc-emergentDownbeat`
+- **Feedback enrollment**: `emergentRhythmPort` in `feedbackRegistry`
+
 ## Emergence Boundaries
 
 Three architectural membranes:

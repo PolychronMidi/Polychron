@@ -45,6 +45,12 @@ emergentDownbeat = (() => {
     if (signals.phaseLock) { score += 0.15; signalCount++; }
     const recentTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 2, windowSeconds: 2 });
     if (recentTransition) { score += 0.25; signalCount++; }
+    // R50: emergent rhythm grid density feeds back as a downbeat signal (completing the loop)
+    const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    if (emergentEntry && Number.isFinite(emergentEntry.density) && emergentEntry.density > 0.15) {
+      score += clamp(emergentEntry.density * 0.2, 0, 0.15);
+      signalCount++;
+    }
 
     // convergenceTarget modulates detection threshold - more downbeats during climactic sections
     const intent = sectionIntentCurves.getLastIntent();

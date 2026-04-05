@@ -44,8 +44,11 @@ feedbackOscillator = (() => {
     const artEntry = L0.getLast('articulation', { layer });
     const artSustain = artEntry && Number.isFinite(artEntry.avgSustain) ? artEntry.avgSustain : 0.5;
     const artScale = artSustain > 0.7 ? 0.8 : artSustain < 0.3 ? 1.2 : 1.0;
+    // R50: emergent rhythm density amplifies feedback energy (rhythmic activity = richer feedback)
+    const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const emergentScale = emergentEntry && Number.isFinite(emergentEntry.density) ? 1.0 + clamp(emergentEntry.density * 0.3, 0, 0.15) : 1.0;
     L0.post(CHANNEL, layer, absoluteSeconds, {
-      energy: clamp(energy * artScale, 0, 1),
+      energy: clamp(energy * artScale * emergentScale, 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
       originLayer: layer,

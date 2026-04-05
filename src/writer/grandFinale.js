@@ -72,6 +72,13 @@ grandFinale = () => {
       cim: safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null),
       stutterVariants: safePreBoot.call(() => stutterMetrics.getMetrics(), null),
       correlationShuffler: safePreBoot.call(() => correlationShuffler.getSnapshot(), null),
+      emergentRhythm: safePreBoot.call(() => ({
+        density: emergentRhythmEngine.getDensity(),
+        complexity: emergentRhythmEngine.getComplexity(),
+        biasStrength: emergentRhythmEngine.getBiasStrength(),
+        densityEma: emergentRhythmEngine.getDensityEma(),
+        grid: emergentRhythmEngine.getGrid()
+      }), null),
       sectionHistory: safePreBoot.call(() => ({
         tensionTrajectory: sectionMemory.getTensionTrajectory(),
         densityTrajectory: sectionMemory.getDensityTrajectory(),
