@@ -137,14 +137,32 @@ def module_story(module_name: str) -> str:
     from .synthesis import _read_module_source
     source_code = _read_module_source(module_name, max_chars=1500)
     source_block = f"\nSource code (first 1500 chars):\n```\n{source_code}\n```\n" if source_code else ""
+    # Subsystem-aware synthesis prompt — ask questions relevant to what this module DOES
+    file_path = matching[0]["file"] if matching else ""
+    subsystem_prompt = ""
+    if "/trust/" in file_path or "Trust" in module_name:
+        subsystem_prompt = "How does this module affect which systems gain or lose influence? What would the listener hear if trust weights shift?"
+    elif "/rhythm/" in file_path or "/convergence" in file_path.lower():
+        subsystem_prompt = "How does this affect the rhythmic dialogue between layers? What happens to convergence/divergence patterns?"
+    elif "/harmony/" in file_path:
+        subsystem_prompt = "How does this affect harmonic choices? What would the listener hear — key changes, dissonance, resolution?"
+    elif "/form/" in file_path or "section" in module_name.lower():
+        subsystem_prompt = "How does this shape the large-scale musical form? Which sections would sound different? Would the arc change?"
+    elif "/signal/" in file_path or "/profiling/" in file_path:
+        subsystem_prompt = "How does this affect signal processing and regime classification? What regime shifts would change?"
+    elif "/meta/" in file_path:
+        subsystem_prompt = "How does this self-calibration affect the system's overall behavior? What would drift if this controller breaks?"
+    elif "/dynamics/" in file_path or "/stutter/" in file_path:
+        subsystem_prompt = "How does this affect musical expressiveness — velocity, articulation, micro-timing? What would feel different?"
+    else:
+        subsystem_prompt = "What are the hidden invariants and caller contracts?"
     user_text = (
         f"Module: {module_name}\n"
         f"Dependents: {callers_summary}\n"
         f"KB evolution history:\n{kb_summary}\n"
         + source_block
-        + "\nBased on the actual code above, in 3 bullet points: what are the most important things "
-        "to know before editing this module? Focus on hidden invariants, caller contracts, and "
-        "architectural constraints. Only reference behaviors visible in the code."
+        + f"\nBased on the actual code above, in 3 bullet points: {subsystem_prompt} "
+        "Only reference behaviors visible in the code. Be specific about musical effects."
     )
     api_key = _get_api_key()
     synthesis = None

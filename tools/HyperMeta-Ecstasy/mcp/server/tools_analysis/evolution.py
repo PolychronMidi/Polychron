@@ -329,6 +329,19 @@ def trace_query(module: str, section: int = -1, limit: int = 15) -> str:
             avg = r["sum"] / r["count"]
             parts.append(f"  {k}: {r['min']:.3f} - {r['max']:.3f} (avg {avg:.3f}, n={r['count']})")
 
+    # Regime transitions — the musically dramatic moments
+    transitions = []
+    prev_regime = None
+    for b in beats:
+        if b["regime"] != prev_regime and prev_regime is not None:
+            transitions.append({"beatKey": b["beatKey"], "from": prev_regime, "to": b["regime"], "values": b["values"]})
+        prev_regime = b["regime"]
+    if transitions:
+        parts.append(f"\n### Regime Transitions ({len(transitions)})")
+        for t in transitions[:12]:
+            vals = ", ".join(f"{k}={v}" for k, v in list(t["values"].items())[:3])
+            parts.append(f"  {t['beatKey']}: {t['from']} -> {t['to']}  {vals}")
+
     # Sample entries — spread across the composition (every Nth)
     step = max(1, len(beats) // limit)
     samples = beats[::step][:limit]

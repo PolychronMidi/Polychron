@@ -41,9 +41,10 @@ def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
     for entry in kb_results:
         haystack = (entry.get("title", "") + " " + entry.get("content", "")[:300]
                      + " " + " ".join(entry.get("tags", []) if isinstance(entry.get("tags"), list) else [str(entry.get("tags", ""))])).lower()
-        if any(term in haystack for term in terms):
+        # Word-boundary match: "section" should match "section memory" but not "maxPerSection"
+        if any(re.search(r'(?<![a-z])' + re.escape(term) + r'(?![a-z])', haystack) for term in terms):
             filtered.append(entry)
-    return filtered if filtered else kb_results[:2]  # fallback: top 2 by score if nothing matches
+    return filtered  # no fallback — irrelevant KB entries are worse than no entries
 
 
 def _get_compositional_context(module_name: str) -> str:
