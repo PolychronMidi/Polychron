@@ -17,3 +17,4 @@ require('./convergenceBurst');
 require('./tensionStutter');
 require('./directionalOscillation');
 require('./stereoWidthModulation');
+require('./alienArpeggio');
