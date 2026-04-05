@@ -303,19 +303,22 @@ def doc_sync_check(doc_path: str = "") -> str:
     doc_content = open(abs_target, encoding="utf-8", errors="ignore").read()
     issues = []
     # Check tool count claim
-    import re
     count_match = re.search(r'(\d+)\s+(?:MCP\s+)?tools', doc_content)
-    # Tools are now split across multiple files in the server/ package
-    _server_dir = os.path.dirname(__file__)
-    _tool_files = ["tools_search.py", "tools_analysis.py", "tools_knowledge.py", "tools_index.py"]
+    # Recursively scan all .py files under server/ for @ctx.mcp.tool decorators
+    _server_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # health.py -> tools_analysis/ -> server/
     actual_tools = 0
     server_content_parts = []
-    for _tf in _tool_files:
-        _tf_path = os.path.join(_server_dir, _tf)
-        if os.path.isfile(_tf_path):
-            _lines = open(_tf_path, encoding="utf-8").readlines()
-            actual_tools += sum(1 for l in _lines if l.strip().startswith("@ctx.mcp.tool"))
-            server_content_parts.append(open(_tf_path, encoding="utf-8").read())
+    for _root, _dirs, _files in os.walk(_server_root):
+        for _tf in _files:
+            if not _tf.endswith(".py"):
+                continue
+            _tf_path = os.path.join(_root, _tf)
+            try:
+                _lines = open(_tf_path, encoding="utf-8").readlines()
+                actual_tools += sum(1 for l in _lines if l.strip() == "@ctx.mcp.tool()")
+                server_content_parts.append("".join(_lines))
+            except Exception:
+                pass
     if count_match:
         claimed = int(count_match.group(1))
         if claimed != actual_tools:
