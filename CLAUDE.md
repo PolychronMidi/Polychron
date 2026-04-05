@@ -108,7 +108,7 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 
 ## Coordination Independence Manager (CIM)
 
-`src/crossLayer/coordinationIndependenceManager.js` manages 11 module-pair coordination dials (0=independent, 1=coordinated). Lives in crossLayer (reads conductor via `conductorSignalBridge`, writes to peer crossLayer modules via `setCoordinationScale()`). Phase-gated: adjusts during stabilized/converging, freezes during oscillating (unless health < 0.4). Has chaos mode (`setChaosMode(true)`) and oscillation mode (`setOscillationMode(true)`). Intent-aware: reads `sectionIntentCurves.interactionTarget` for 35% of target blend. Per-pair staggered evaluation (`PAIR_DWELL_STAGGER=1`) isolates health attribution for effectiveness tracking.
+`src/crossLayer/coordinationIndependenceManager.js` manages 12 module-pair coordination dials (0=independent, 1=coordinated). Lives in crossLayer (reads conductor via `conductorSignalBridge`, writes to peer crossLayer modules via `setCoordinationScale()`). Phase-gated: adjusts during stabilized/converging, freezes during oscillating (unless health < 0.4). Has chaos mode (`setChaosMode(true)`) and oscillation mode (`setOscillationMode(true)`). Intent-aware: reads `sectionIntentCurves.interactionTarget` for 35% of target blend. Per-pair staggered evaluation (`PAIR_DWELL_STAGGER=1`) isolates health attribution for effectiveness tracking.
 
 ## Binaural Detune Prevention
 

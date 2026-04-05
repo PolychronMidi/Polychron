@@ -157,6 +157,7 @@ def regime_timeline(row_width: int = 80) -> str:
 
     regime_map = {"initializing": "I", "evolving": "E", "exploring": "X", "coherent": "C"}
     timeline: list = []
+    tension_vals: list = []
     section_starts: list = []
     prev_sec = -1
 
@@ -168,37 +169,55 @@ def regime_timeline(row_width: int = 80) -> str:
                 except Exception:
                     continue
                 bk = rec.get("beatKey", "")
-                parts = bk.split(":")
-                sec = int(parts[0]) if parts and parts[0].isdigit() else -1
+                parts_bk = bk.split(":")
+                sec = int(parts_bk[0]) if parts_bk and parts_bk[0].isdigit() else -1
                 regime = rec.get("regime", "?")
+                snap = rec.get("snap", {})
+                tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
                 timeline.append(regime_map.get(regime, "?"))
+                tension_vals.append(float(tension) if isinstance(tension, (int, float)) else 0.5)
                 if sec != prev_sec:
                     section_starts.append(len(timeline) - 1)
                     prev_sec = sec
     except Exception as e:
         return f"Error: {e}"
 
+    def _tension_char(t: float) -> str:
+        if t >= 0.75:
+            return "^"
+        if t >= 0.55:
+            return "+"
+        if t <= 0.25:
+            return "_"
+        return "."
+
     out = [f"# Regime Timeline ({len(timeline)} beats)", ""]
     out.append("```")
     for start in range(0, len(timeline), row_width):
         chunk = timeline[start:start + row_width]
+        t_chunk = tension_vals[start:start + row_width]
         beat_range = f"{start:4d}-{min(start + row_width - 1, len(timeline) - 1):4d}"
         out.append(f"{beat_range} {''.join(chunk)}")
+        out.append(f"{'':9s} {''.join(_tension_char(t) for t in t_chunk)}")
     out.append("```")
     out.append("")
     out.append("I=initializing E=evolving X=exploring C=coherent")
+    out.append("^=tension>=0.75  +=tension>=0.55  .=mid  _=tension<=0.25")
     out.append("")
 
-    # Section summary
+    # Section summary with tension stats
     for i, sb in enumerate(section_starts):
         end = section_starts[i + 1] - 1 if i + 1 < len(section_starts) else len(timeline) - 1
         section_chunk = timeline[sb:end + 1]
+        t_section = tension_vals[sb:end + 1]
         counts: dict = {}
         for c in section_chunk:
             counts[c] = counts.get(c, 0) + 1
         dom = max(counts.items(), key=lambda x: x[1])[0]
         regime_str = " ".join(f"{k}:{v}" for k, v in sorted(counts.items(), key=lambda x: -x[1]))
-        out.append(f"  S{i} ({end - sb + 1:3d}b) {regime_str} [{dom}]")
+        avg_t = sum(t_section) / len(t_section) if t_section else 0.0
+        peak_t = max(t_section) if t_section else 0.0
+        out.append(f"  S{i} ({end - sb + 1:3d}b) {regime_str} [{dom}] t_avg={avg_t:.2f} t_peak={peak_t:.2f}")
 
     return "\n".join(out)
 

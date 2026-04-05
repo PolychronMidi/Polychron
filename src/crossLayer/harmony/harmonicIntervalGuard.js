@@ -102,9 +102,11 @@ harmonicIntervalGuard = (() => {
     // Should we nudge? Only if current consonance is far from target
     const desiredConsonance = 1 - dissonanceTarget;
     const error = currentConsonance - desiredConsonance;
-    // Lab R4: tighter deadband (0.25->0.18) and higher nudge probability
-    // so the guard actively steers toward dissonance when intent demands it
-    if (m.abs(error) < 0.18) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
+    // R51: verticalCollision awareness -- recent collisions tighten deadband
+    const vimEntry = L0.getLast('verticalCollision', { layer: 'both' });
+    const vimTighten = vimEntry && Number.isFinite(vimEntry.collisionRate) ? vimEntry.collisionRate * 0.08 : 0;
+    const deadband = 0.18 - clamp(vimTighten, 0, 0.06);
+    if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high
     const nudgeProb = m.abs(error) * (0.6 + dissonanceTarget * 0.3) * (0.4 + cimScale * 1.2);
