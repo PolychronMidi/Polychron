@@ -57,11 +57,13 @@ def module_story(module_name: str) -> str:
             if len(result["symbols"]) > sym_limit:
                 parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
         parts.append("")
-    # Evolution history from KB (project + global)
-    kb_limit = limits["kb_entries"] * 2  # module_story should show more history
+    # Evolution history from KB — filtered for actual relevance to this module
+    from . import _filter_kb_relevance
+    kb_limit = limits["kb_entries"] * 2
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=kb_limit)
     glob_results = ctx.global_engine.search_knowledge(module_name, top_k=3) if ctx.global_engine else []
-    relevant = kb_results + [dict(r, title=f"[global] {r['title']}") for r in glob_results]
+    all_kb = kb_results + [dict(r, title=f"[global] {r['title']}") for r in glob_results]
+    relevant = _filter_kb_relevance(all_kb, module_name)
     if relevant:
         parts.append(f"## Evolution History ({len(relevant)} KB entries)")
         for k in relevant:

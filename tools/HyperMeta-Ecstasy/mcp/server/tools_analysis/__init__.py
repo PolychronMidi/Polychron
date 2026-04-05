@@ -22,6 +22,30 @@ def _track(name: str):
     _usage_stats[name] = _usage_stats.get(name, 0) + 1
 
 
+def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
+    """Post-filter KB results to only include entries actually relevant to the module.
+
+    With few KB entries, semantic search returns everything. This keyword filter
+    checks whether the module name or its camelCase fragments appear in the entry's
+    title, content, or tags. Entries with no keyword overlap are noise.
+    """
+    import re
+    # Build search terms from camelCase fragments
+    terms = {module_name.lower()}
+    fragments = re.findall(r'[A-Z]?[a-z]+', module_name)
+    for frag in fragments:
+        if len(frag) > 3:
+            terms.add(frag.lower())
+
+    filtered = []
+    for entry in kb_results:
+        haystack = (entry.get("title", "") + " " + entry.get("content", "")[:300]
+                     + " " + " ".join(entry.get("tags", []) if isinstance(entry.get("tags"), list) else [str(entry.get("tags", ""))])).lower()
+        if any(term in haystack for term in terms):
+            filtered.append(entry)
+    return filtered if filtered else kb_results[:2]  # fallback: top 2 by score if nothing matches
+
+
 def _get_compositional_context(module_name: str) -> str:
     """Read narrative-digest.md and trace-summary.json for musical context.
 

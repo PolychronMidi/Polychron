@@ -54,9 +54,10 @@ def before_editing(file_path: str) -> str:
     except Exception:
         pass
 
-    # 1. KB constraints — keep all results since cross-encoder scores aren't 0-1 bounded
+    # 1. KB constraints — filtered for actual relevance to this module
+    from . import _filter_kb_relevance
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=limits["kb_entries"])
-    relevant_kb = kb_results
+    relevant_kb = _filter_kb_relevance(kb_results, module_name)
     if relevant_kb:
         parts.append(f"## KB Constraints ({len(relevant_kb)} entries)")
         for k in relevant_kb:
