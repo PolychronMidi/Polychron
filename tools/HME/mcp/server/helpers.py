@@ -28,6 +28,13 @@ KNOWN_L0_CHANNELS: frozenset[str] = frozenset(_PROJECT_RULES.get("known_l0_chann
 DRY_PATTERNS: list[dict] = _PROJECT_RULES.get("dry_patterns", [])
 DOC_UPDATE_TRIGGERS: dict[str, list[str]] = _PROJECT_RULES.get("doc_update_triggers", {})
 KNOWN_NON_TOOL_IDENTIFIERS: frozenset[str] = frozenset(_PROJECT_RULES.get("known_non_tool_identifiers", []))
+REGISTRATION_PATTERNS: list[str] = _PROJECT_RULES.get("registration_patterns", [
+    "conductorIntelligence.register",
+    "crossLayerRegistry.register",
+    "feedbackRegistry.register",
+])
+COUPLING_MATRIX_EXEMPT_PATHS: list[str] = _PROJECT_RULES.get("coupling_matrix_exempt_paths", [])
+COUPLING_MATRIX_LEGACY_PATHS: list[str] = _PROJECT_RULES.get("coupling_matrix_legacy_paths", [])
 
 # Budget-aware limits for composite tool output — full 4-step scaling
 BUDGET_LIMITS = {

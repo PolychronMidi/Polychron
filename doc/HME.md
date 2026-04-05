@@ -66,7 +66,11 @@ tools/HME/               The single source of truth
     project-rules.json                  Project-specific declarations (not logic):
                                           crosslayer_boundary_violations, known_l0_channels,
                                           dry_patterns, doc_update_triggers,
-                                          known_non_tool_identifiers
+                                          known_non_tool_identifiers (incl. relation_type
+                                          enum values + KB categories),
+                                          registration_patterns,
+                                          coupling_matrix_exempt_paths,
+                                          coupling_matrix_legacy_paths
                                         Logic stays in Python; only DATA lives here.
                                         Loaded at MCP server import time by helpers.py.
   hooks/                                Hook scripts (referenced from .claude/settings.json)
