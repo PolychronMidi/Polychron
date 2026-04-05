@@ -104,7 +104,7 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 
 ## Stutter Variant System
 
-18 stutter note variants in `src/fx/stutter/variants/`, selected per-beat by `stutterVariants.selectForBeat()`. Selection is weighted by 11 signal dimensions: regime, section phase, hocket mode, articulation, harmonic journey distance, phrase boundary, coupling labels, entropy reversal, call-response, self-balancing inverse-frequency, and emergent rhythm density/complexity. Per-step gating in `stutterNotes.js` via `stutterSteps.shouldEmit()` applies two layers: Euclidean pattern gate (75% activation) then sustain-proportional probabilistic gate. New variants: create file in `variants/`, self-register with `stutterVariants.register(name, fn, weight, { selfGate, maxPerSection })`, add to `variants/index.js`, add to `REGIME_WEIGHTS` in `stutterVariants.js`.
+19 stutter note variants in `src/fx/stutter/variants/`, selected per-beat by `stutterVariants.selectForBeat()`. Selection is weighted by 11 signal dimensions: regime, section phase, hocket mode, articulation, harmonic journey distance, phrase boundary, coupling labels, entropy reversal, call-response, self-balancing inverse-frequency, and emergent rhythm density/complexity. Per-step gating in `stutterNotes.js` via `stutterSteps.shouldEmit()` applies two layers: Euclidean pattern gate (75% activation) then sustain-proportional probabilistic gate. New variants: create file in `variants/`, self-register with `stutterVariants.register(name, fn, weight, { selfGate, maxPerSection })`, add to `variants/index.js`, add to `REGIME_WEIGHTS` in `stutterVariants.js`.
 
 ## Coordination Independence Manager (CIM)
 
