@@ -25,6 +25,27 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.ENTROPY_REGULATOR]: ['density-entropy', 'tension-entropy', 'flicker-entropy', 'entropy-trust', 'entropy-phase'],
     [trustSystems.names.CONVERGENCE]: ['density-trust', 'tension-trust', 'density-phase', 'tension-phase'],
     [trustSystems.names.REST_SYNCHRONIZER]: ['density-trust', 'flicker-trust'],
+    // Per-system pair assignments to prevent identical hotspot blocks.
+    // Each system measured against the coupling axes most relevant to its function.
+    [trustSystems.names.MOTIF_ECHO]: ['density-trust', 'tension-trust', 'density-phase'],
+    [trustSystems.names.TEMPORAL_GRAVITY]: ['tension-phase', 'density-phase', 'tension-trust'],
+    [trustSystems.names.HARMONIC_INTERVAL_GUARD]: ['tension-trust', 'density-trust', 'tension-entropy'],
+    [trustSystems.names.CROSS_LAYER_SILHOUETTE]: ['density-trust', 'density-phase', 'density-entropy'],
+    [trustSystems.names.ROLE_SWAP]: ['density-trust', 'tension-trust', 'flicker-trust'],
+    [trustSystems.names.DYNAMIC_ENVELOPE]: ['tension-trust', 'density-trust', 'tension-flicker'],
+    [trustSystems.names.GROOVE_TRANSFER]: ['density-flicker', 'density-phase', 'flicker-phase'],
+    [trustSystems.names.CLIMAX_ENGINE]: ['tension-trust', 'density-trust', 'tension-phase'],
+    [trustSystems.names.VELOCITY_INTERFERENCE]: ['density-trust', 'tension-trust', 'density-flicker'],
+    [trustSystems.names.RHYTHMIC_COMPLEMENT]: ['density-flicker', 'flicker-phase', 'density-phase'],
+    [trustSystems.names.SPECTRAL_COMPLEMENTARITY]: ['density-trust', 'tension-entropy', 'density-entropy'],
+    [trustSystems.names.REGISTER_COLLISION_AVOIDER]: ['density-trust', 'tension-trust', 'density-entropy'],
+    [trustSystems.names.TEXTURAL_MIRROR]: ['density-trust', 'density-flicker', 'flicker-trust'],
+    [trustSystems.names.VERTICAL_INTERVAL_MONITOR]: ['tension-trust', 'density-trust', 'tension-entropy'],
+    [trustSystems.names.ARTICULATION_COMPLEMENT]: ['density-flicker', 'tension-flicker', 'flicker-trust'],
+    [trustSystems.names.CONVERGENCE_HARMONIC_TRIGGER]: ['tension-trust', 'tension-phase', 'density-trust'],
+    [trustSystems.names.POLYRHYTHMIC_PHASE_PREDICTOR]: ['density-phase', 'flicker-phase', 'tension-phase'],
+    [trustSystems.names.EMERGENT_DOWNBEAT]: ['density-phase', 'density-trust', 'tension-phase'],
+    [trustSystems.names.PHASE_AWARE_CADENCE_WINDOW]: ['tension-phase', 'density-phase', 'tension-trust'],
   };
   const pairAwarePairWeights = {
     [trustSystems.names.COHERENCE_MONITOR]: { 'density-trust': 1.26, 'flicker-trust': 1.28, 'tension-trust': 1.08 },
