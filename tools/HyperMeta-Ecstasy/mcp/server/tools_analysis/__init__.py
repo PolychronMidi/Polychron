@@ -31,10 +31,12 @@ def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
     """
     import re
     # Build search terms from camelCase fragments
+    # Full module name always searched; fragments only if specific enough (>5 chars, not generic)
+    _generic_fragments = {"engine", "manager", "helper", "utils", "state", "config", "monitor", "controller"}
     terms = {module_name.lower()}
     fragments = re.findall(r'[A-Z]?[a-z]+', module_name)
     for frag in fragments:
-        if len(frag) > 3:
+        if len(frag) > 5 and frag.lower() not in _generic_fragments:
             terms.add(frag.lower())
 
     filtered = []
@@ -54,13 +56,13 @@ def _get_compositional_context(module_name: str) -> str:
     camelCase fragments) to find mentions even when prose uses different phrasing.
     """
     parts = []
-    # Build search terms: module name + camelCase fragments + subsystem keywords
+    # Build search terms: module name + camelCase fragments (specific enough to avoid noise)
     search_terms = {module_name.lower()}
-    # Split camelCase: "trustEcologyCharacter" -> {"trust", "ecology", "character"}
     import re
+    _generic = {"engine", "manager", "helper", "utils", "state", "config", "monitor", "controller"}
     fragments = re.findall(r'[A-Z]?[a-z]+', module_name)
     for frag in fragments:
-        if len(frag) > 3:  # skip short fragments like "get", "set"
+        if len(frag) > 5 and frag.lower() not in _generic:
             search_terms.add(frag.lower())
 
     digest_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
