@@ -266,7 +266,8 @@ def get_function_body(function_name: str, file_path: str = "", language: str = "
         if not os.path.isfile(abs_path):
             return f"File not found: {abs_path}"
         try:
-            content = open(abs_path, encoding="utf-8", errors="ignore").read()
+            with open(abs_path, encoding="utf-8", errors="ignore") as _f:
+                content = _f.read()
         except Exception as e:
             return f"Error reading file: {e}"
         lang = language if language else ext_to_lang(os.path.splitext(abs_path)[1])
@@ -286,7 +287,8 @@ def get_function_body(function_name: str, file_path: str = "", language: str = "
             continue
         seen.add(sym["file"])
         try:
-            content = open(sym["file"], encoding="utf-8", errors="ignore").read()
+            with open(sym["file"], encoding="utf-8", errors="ignore") as _f:
+                content = _f.read()
         except Exception:
             continue
         lang = language if language else ext_to_lang(os.path.splitext(sym["file"])[1])

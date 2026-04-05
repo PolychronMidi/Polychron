@@ -24,7 +24,8 @@ def evolution_patterns() -> str:
     journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
     if not os.path.isfile(journal_path):
         return "No journal found at metrics/journal.md"
-    content = open(journal_path, encoding="utf-8").read()
+    with open(journal_path, encoding="utf-8") as _f:
+        content = _f.read()
 
     rounds = re.findall(r'## R(\d+)', content)
     confirmed = re.findall(r'confirmed', content, re.IGNORECASE)
@@ -105,7 +106,8 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
     tuning_path = os.path.join(ctx.PROJECT_ROOT, "doc", "TUNING_MAP.md")
     if os.path.isfile(tuning_path):
         try:
-            tuning = open(tuning_path, encoding="utf-8").read()
+            with open(tuning_path, encoding="utf-8") as _f:
+                tuning = _f.read()
             tuning_lines = [l for l in tuning.split("\n") if symptom.lower() in l.lower()]
             if tuning_lines:
                 tuning_context = "Tuning map references:\n" + "\n".join(tuning_lines[:10])
@@ -519,7 +521,8 @@ def kb_seed(top_n: int = 15) -> str:
             doc_paths.append(rp)
     for dp in doc_paths:
         try:
-            doc_content += open(dp, encoding="utf-8").read().lower()
+            with open(dp, encoding="utf-8") as _f:
+                doc_content += _f.read().lower()
         except Exception:
             pass
 
@@ -545,7 +548,8 @@ def kb_seed(top_n: int = 15) -> str:
     sources: dict[str, str] = {}
     for _, name, path in candidates:
         try:
-            sources[name] = open(path, encoding="utf-8", errors="ignore").read()[:800]
+            with open(path, encoding="utf-8", errors="ignore") as _f:
+                sources[name] = _f.read()[:800]
         except Exception:
             sources[name] = ""
 

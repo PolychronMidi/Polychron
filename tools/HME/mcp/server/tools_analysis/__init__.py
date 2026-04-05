@@ -68,7 +68,8 @@ def _get_compositional_context(module_name: str) -> str:
     digest_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
     if os.path.isfile(digest_path):
         try:
-            content = open(digest_path, encoding="utf-8").read()
+            with open(digest_path, encoding="utf-8") as _f:
+                content = _f.read()
             matched = []
             for line in content.split("\n"):
                 stripped = line.strip()

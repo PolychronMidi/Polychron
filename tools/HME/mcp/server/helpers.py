@@ -41,7 +41,8 @@ BUDGET_LIMITS = {
 def get_context_budget() -> str:
     """Read context-window pressure from status line. Returns 'greedy', 'moderate', 'conservative', or 'minimal'."""
     try:
-        ctx = json.load(open("/tmp/claude-context.json"))
+        with open("/tmp/claude-context.json") as _f:
+            ctx = json.load(_f)
         remaining = ctx.get("remaining_pct", 50)
         if remaining > 75:
             return "greedy"

@@ -82,7 +82,8 @@ def before_editing(file_path: str) -> str:
 
     # 3. Convention check
     try:
-        content = open(abs_path, encoding="utf-8", errors="ignore").read()
+        with open(abs_path, encoding="utf-8", errors="ignore") as _f:
+            content = _f.read()
         lines = content.split("\n")
         warnings = []
         if len(lines) > 250:
@@ -184,7 +185,8 @@ def what_did_i_forget(changed_files: str) -> str:
             all_warnings.append(f"[{rel_path}] KB constraint: [{k['category']}] {k['title']}")
         # Check if crossLayer file touches conductor
         try:
-            content = open(abs_path, encoding="utf-8", errors="ignore").read()
+            with open(abs_path, encoding="utf-8", errors="ignore") as _f:
+                content = _f.read()
             if "/crossLayer/" in rel_path:
                 for dr in CROSSLAYER_BOUNDARY_VIOLATIONS:
                     if dr in content and "conductorSignalBridge" not in content:
