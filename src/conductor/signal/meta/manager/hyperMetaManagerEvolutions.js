@@ -15,7 +15,7 @@ hyperMetaManagerEvolutions = (() => {
   function applyEvolutions(state, e18Scale) {
     // Layer-specific numerator: evolutions always run on L1 (tick returns early for L2),
     // but reading from the active layer's timing object is explicit about the source.
-    const layerNumerator = LM.layers[LM.activeLayer] ? LM.layers[LM.activeLayer].numerator : 4;
+    const layerNumerator = LM.activeLayer && LM.layers[LM.activeLayer] ? LM.layers[LM.activeLayer].numerator : 4;
 
     // 14. E1-E5 Evolutions orchestration
     // E1: Hotspot monopoly relief
