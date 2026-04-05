@@ -4,6 +4,7 @@ import logging
 import re
 
 from server import context as ctx
+from . import _track
 from server.helpers import (
     get_context_budget, validate_project_path, fmt_score,
     format_knowledge_results, check_path_in_project,
@@ -384,6 +385,8 @@ def doc_sync_check(doc_path: str = "") -> str:
         "caused_by", "fixed_by", "depends_on", "contradicts", "similar_to", "supersedes",
         # KB category values
         "architecture", "decision", "pattern", "bugfix",
+        # Evolver loop hook config fields (not MCP tools)
+        "done_signal", "max_iterations",
     }
     # Only flag identifiers that look like they should be server tools
     tool_like = {t for t in doc_tool_refs if t.islower() and '_' in t and t not in server_fns and t not in known_non_tools and len(t) > 6}
