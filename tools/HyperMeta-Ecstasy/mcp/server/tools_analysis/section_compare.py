@@ -140,3 +140,64 @@ def section_compare(section_a: int, section_b: int) -> str:
             parts_out.append(f"  - {lbl.split(':')[-1]} ({lbl.split(':')[0]})")
 
     return "\n".join(parts_out)
+
+
+@ctx.mcp.tool()
+def regime_timeline(row_width: int = 80) -> str:
+    """Visual ASCII timeline of regime transitions across the full composition.
+    One character per beat: I=initializing, E=evolving, X=exploring, C=coherent.
+    Shows the composition breathing — where coherent blocks form, exploring
+    wilderness opens up, and evolving transitions happen. Section boundaries marked."""
+    ctx.ensure_ready_sync()
+    _track("regime_timeline")
+
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    if not os.path.isfile(trace_path):
+        return "No trace.jsonl found."
+
+    regime_map = {"initializing": "I", "evolving": "E", "exploring": "X", "coherent": "C"}
+    timeline: list = []
+    section_starts: list = []
+    prev_sec = -1
+
+    try:
+        with open(trace_path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                except Exception:
+                    continue
+                bk = rec.get("beatKey", "")
+                parts = bk.split(":")
+                sec = int(parts[0]) if parts and parts[0].isdigit() else -1
+                regime = rec.get("regime", "?")
+                timeline.append(regime_map.get(regime, "?"))
+                if sec != prev_sec:
+                    section_starts.append(len(timeline) - 1)
+                    prev_sec = sec
+    except Exception as e:
+        return f"Error: {e}"
+
+    out = [f"# Regime Timeline ({len(timeline)} beats)", ""]
+    out.append("```")
+    for start in range(0, len(timeline), row_width):
+        chunk = timeline[start:start + row_width]
+        beat_range = f"{start:4d}-{min(start + row_width - 1, len(timeline) - 1):4d}"
+        out.append(f"{beat_range} {''.join(chunk)}")
+    out.append("```")
+    out.append("")
+    out.append("I=initializing E=evolving X=exploring C=coherent")
+    out.append("")
+
+    # Section summary
+    for i, sb in enumerate(section_starts):
+        end = section_starts[i + 1] - 1 if i + 1 < len(section_starts) else len(timeline) - 1
+        section_chunk = timeline[sb:end + 1]
+        counts: dict = {}
+        for c in section_chunk:
+            counts[c] = counts.get(c, 0) + 1
+        dom = max(counts.items(), key=lambda x: x[1])[0]
+        regime_str = " ".join(f"{k}:{v}" for k, v in sorted(counts.items(), key=lambda x: -x[1]))
+        out.append(f"  S{i} ({end - sb + 1:3d}b) {regime_str} [{dom}]")
+
+    return "\n".join(out)
