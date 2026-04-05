@@ -49,6 +49,7 @@ const POST_COMPOSITION = [
   { label: 'compare-runs',             cmd: 'node scripts/pipeline/compare-runs.js --against baseline' },
   { label: 'diff-compositions',        cmd: 'node scripts/pipeline/diff-compositions.js --against baseline' },
   { label: 'visualize-feedback-graph', cmd: 'node scripts/pipeline/visualize-feedback-graph.js' },
+  { label: 'snapshot-run',             cmd: 'node scripts/pipeline/snapshot-run.js' },
 ];
 
 // runner
