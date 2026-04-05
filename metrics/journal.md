@@ -1,3 +1,114 @@
+## R48 — 2026-04-05 — STABLE (coherent ceiling raise + exploring independence amplification)
+
+**Profile:** 7 sections (atmospheric) | **Beats:** 951 | **Duration:** 468.3s
+**Fingerprint:** SIMILAR vs baseline | Drifted: 28 differences (7 notable harmonic changes)
+**Regimes:** coherent 44%, evolving 36%, exploring 18% | **Verdict:** pending listen
+
+### What the Music Sounds Like
+Needs listen. Regime shift from R47: exploring dropped 31%→18% (short transient bursts), evolving
+jumped 25%→36% (now dominant transition regime), coherent stable at 44%. 23 regime transitions
+(exploring appears in brief spurts: 59 beats, 13 beats, 37 beats, 4 beats then resurfaces). Section
+arc: S0 exploring-dominant (warmup) → S1/S2/S4 evolving-dominant → S3/S5/S6 coherent-dominant.
+Tension arc shape: plateau (0.56 first-half vs 0.54 second-half). Each exploring burst now has
+stronger independence (0.20 mod vs 0.15 in R47) — concentrated xenolinguistic intensity vs R47's
+sustained lower-intensity exploring. Coherent sections tighter (−0.10 mod vs −0.08 in R47).
+
+### Causal Findings
+- **REGIME_TARGET_COHERENT_HI 0.33→0.42**: The self-balancer's upper ceiling was raised to
+  match R47's legendary 42% coherent. Effect: now ALSO accelerates exploring→coherent transitions
+  (lower coherentThresholdScale = coherent easier to enter from exploring), dramatically reducing
+  exploring dwell time (31%→18%). The ceiling raise didn't just preserve coherent share — it
+  fundamentally changed the regime dynamics by making exploring episodes shorter and more transient.
+- **INDEPENDENCE_REGIME_MOD.exploring 0.15→0.20**: Each now-shorter exploring burst has stronger
+  phrase arc independence. Compensates for lower exploring share with higher intensity per burst.
+- **INDEPENDENCE_REGIME_MOD.coherent −0.08→−0.10**: Tighter unity during coherent sections,
+  sharpening the contrast between coherent (unified) and exploring (contrapuntal) passages.
+
+### HME Break Points Fixed This Round
+- perceptual.py _run_encodec: replaced bare `open(trace_path)` with shared `_load_trace` (encoding fix)
+- tools_search.py: DRY fix — removed duplicate _resolve_lib_engine/_index_lib/_index_main definitions
+  (identical to tools_index.py); replaced with `from tools_index import _resolve_lib_engine, _index_lib`
+
+### Evolutions Proposed (for R49)
+- Listen verdict determines direction: if exploring bursts feel too brief/fragmented, consider
+  backing off REGIME_TARGET_COHERENT_HI to 0.38 to recover some exploring dwell time
+- If exploring bursts feel more intense/punchy than R47's sustained exploring, document as
+  evolutionary discovery: "concentrated xenolinguistic bursts > sustained lower-intensity exploring"
+- Consider whether evolving at 36% has interesting transitional character (the "breathing zone"
+  between coherent arrival and exploring departure)
+
+## R47 — 2026-04-05 — STABLE (adaptiveVelCeiling bias removal + exploring independence amplification)
+
+**Profile:** 7 sections (restrained→default→explosive→atmospheric) | **Beats:** 942 | **Duration:** 485.9s
+**Fingerprint:** 10/10 stable | Drifted: none
+**Regimes:** coherent 42%, exploring 31%, evolving 25% | **Verdict:** LEGENDARY (user: "another legendary tier of xenolinguistics, a standout is how much more pleasant of a breathing room the aural density oscillation has pleasantly achieved")
+
+### What the Music Sounds Like
+Needs listen. Massive regime shift: coherent jumped from 28%→42%, exploring dropped 52.7%→31%.
+Evolving stable at 25%. R47's combined effect: adaptiveVelCeiling fix unblocked evolving crossover
+path, which relieved the exploring monopoly, which let regime balancer resume coherent recovery.
+Section arc: S0 restrained/evolving → S1 restrained/coherent → S2 default/evolving → S3 default/exploring
+→ S4 explosive/evolving → S5 atmospheric/exploring → S6 atmospheric/coherent. Top hotspots:
+roleSwap 47%, coherenceMonitor 47%, dynamicEnvelope 46%. One weight swing alert:
+coherenceMonitor Δ0.802 at beat 4:1:0:0 (extreme trust dynamics — likely intentional drama).
+motifEcho dominant trust system across all sections (avg weight 1.51-1.53).
+
+### Causal Findings
+- **adaptiveVelCeiling -0.5*std bias removed**: Post-R67 velocity distribution 0.11-0.21 made
+  `velocityEma - 0.5*std ≈ 0.11` the binding floor, blocking most beats from evolving crossover.
+  Using `max(0.090, velocityEma)` directly lifts ceiling to median velocity (0.16), restoring
+  evolving entry for beats near the distribution center. This unblocked the evolving path that
+  R46's evolvingRecoveryPriority fix had set up.
+- **INDEPENDENCE_REGIME_MOD.exploring 0.10→0.15**: Amplifies contrapuntal phrase arc independence
+  during the now-31% exploring phase. More independent voices = richer xenolinguistic searching.
+- **Regime cascade**: R46 fixed the ROUTING (evolvingRecoveryPriority threshold 0.18→0.12);
+  R47 fixed the RATE (velocity gate blocking entry). Both needed for full evolving recovery.
+  Result: first healthy three-way distribution since R44 (36/35/29), but with more coherent
+  weight (42%) reflecting R46's coherentThresholdScale=1.326 accumulated from previous runs.
+
+### HME Break Points Fixed This Round
+- fix_antipattern synthesis prompt: added CRITICAL guard against AND-ing independent bash conditions
+- _format_kb_corpus priority trimming: now drops general entries before architecture/decision
+- module_story: eliminated redundant second trace_query call (was calling twice)
+- pretooluse_bash.sh log-polling enforcement: blocks `tail` on pipeline log files
+
+### Evolutions Proposed (for R48)
+- E1: if coherent 42% sounds overly settled, consider relaxing coherentThresholdScale back toward
+  1.0 — it's frozen at 1.326 because the self-balancer only acts at extremes (<0.10 or >0.33)
+- E2: explore INDEPENDENCE_REGIME_MOD.coherent from -0.08 toward -0.12 to sharpen
+  the coherent→exploring contrast (more unified coherent sections = clearer xenolinguistic arc)
+- E3: continue HME break-point scanning: section_compare.py, trust_analysis.py, perceptual.py,
+  tools_search.py — particularly trust_analysis for runtime data cross-referencing
+
+## R46 — 2026-04-05 — STABLE (regime recovery routing fix + axisGini dampening + HME fix_antipattern tool)
+
+**Profile:** atmospheric | **Beats:** 7 sections | **Duration:** ~480s
+**Fingerprint:** 10/10 stable | Drifted: none
+**Regimes:** exploring 52.7%, coherent ~28%, evolving ~20%
+**Verdict:** LEGENDARY (user confirmed "another new tier of legendary xenolinguistics")
+
+### What the Music Sounds Like
+User confirmed: "another new tier of legendary xenolinguistics." Dominant hotspot: flicker-phase
+(migrated from density-phase in R45). F# mixolydian palette-break. 7 sections.
+
+### Causal Findings
+- **Bipolar exploring-coherent cycle fixed**: With REGIME_TARGET_EVOLVING_LO=0.27, evolvingDeficit
+  was only 0.074 → evolvingRecoveryPriority≈0.044 < 0.18 threshold → all forced breaks went to
+  coherent. Raised target to 0.32 (deficit 0.219 → priority 0.131 > 0.12 threshold) so forced
+  breaks now route to evolving. exploringWindowReduction amplification side effect: raised deficit
+  also shortens window, causing faster transitions → exploring INCREASED from 47%→52.7%.
+- **evolvingRecoveryPriority threshold 0.18→0.12**: Lower threshold ensures priority 0.131 crosses it.
+- **GINI_DAMPEN_0 0.65→0.72**: Stronger corrective pressure on sparse-distribution pairs.
+- **ENTROPY_SURFACE_RATIO 1.35→1.50**: Protects entropy pairs from over-tightening.
+- **HME fix_antipattern tool**: Added to evolution.py; synthesis prompt generates bash enforcement
+  snippet for hook scripts. Anti-wait injection added to pretooluse_bash.sh.
+
+### Evolutions Applied
+- E1: REGIME_TARGET_EVOLVING_LO 0.27→0.32 — confirmed routing fix (evolving now gets forced breaks)
+- E2: evolvingRecoveryPriority threshold 0.18→0.12 — confirmed priority calculation fix
+- E3: GINI_DAMPEN_0 0.65→0.72 — confirmed stronger non-dominant pair pressure
+- E4: ENTROPY_SURFACE_RATIO 1.35→1.50 — confirmed entropy surface protection
+
 ## R45 — 2026-04-05 — STABLE (all identical pair clusters eliminated + HME project-rules config)
 
 **Profile:** atmospheric | **Beats:** ~817 traced | **axisGini:** 0.136 (was 0.064 — UP, monitoring)

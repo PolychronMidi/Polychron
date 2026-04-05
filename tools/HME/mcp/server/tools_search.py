@@ -10,32 +10,12 @@ from server.helpers import (
     LINE_COUNT_TARGET, LINE_COUNT_WARN,
 )
 from rag_engine import summarize_chunk
-from symbols import find_callers as _find_callers, collect_all_symbols
+from symbols import find_callers as _find_callers
 from analysis import find_similar_code as _find_similar
+from tools_index import _resolve_lib_engine, _index_lib  # shared helpers
 
 logger = logging.getLogger("HME")
 
-def _resolve_lib_engine(lib: str) -> tuple | None:
-    if lib in ctx.lib_engines:
-        return lib, ctx.lib_engines[lib]
-    for key, engine in ctx.lib_engines.items():
-        if key.split("/")[-1] == lib or key.split("\\")[-1] == lib:
-            return key, engine
-    return None
-
-def _index_lib(lib_key: str, engine) -> tuple[str, dict | str]:
-    lib_abs = os.path.normpath(os.path.join(ctx.PROJECT_ROOT, lib_key))
-    if not os.path.isdir(lib_abs):
-        return lib_key, f"directory not found: {lib_abs}"
-    logger.info(f"Indexing lib: {lib_key} -> {lib_abs}")
-    return lib_key, engine.index_directory(lib_abs)
-
-def _index_main(target: str) -> dict:
-    result = ctx.project_engine.index_directory(target)
-    symbols = collect_all_symbols(target)
-    sym_result = ctx.project_engine.index_symbols(symbols)
-    result["symbols_indexed"] = sym_result["indexed"]
-    return result
 
 @ctx.mcp.tool()
 def grep(pattern: str, path: str = "", file_type: str = "", context: int = 0, regex: bool = False, files_only: bool = False) -> str:
