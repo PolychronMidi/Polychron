@@ -184,6 +184,7 @@ Select **4-8 evolutions**. The best evolutions do not just fix a metric — they
 - Deepening self-awareness (per-layer coherence, semantic coupling labels, cross-section memory)
 - Creating new perceptual effects (spectral arcs, timbral dialogue, convergence targets)
 - Evolving feedback topology (new loops, effectiveness measurement)
+- Grounding in perceptual reality (validate trace predictions against EnCodec/CLAP audio analysis)
 
 ### What Does NOT Count
 

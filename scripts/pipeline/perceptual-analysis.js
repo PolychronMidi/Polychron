@@ -15,11 +15,11 @@ const REPORT_PATH = path.join(PROJECT_ROOT, 'metrics', 'perceptual-report.json')
 
 function main() {
   if (!fs.existsSync(WAV_PATH)) {
-    console.log('No combined.wav — run `npm run render` first.');
+    console.log('No combined.wav -- run `npm run render` first.');
     return;
   }
   if (!fs.existsSync(TRACE_SUMMARY)) {
-    console.log('No trace-summary.json — run `npm run main` first.');
+    console.log('No trace-summary.json -- run `npm run main` first.');
     return;
   }
 
@@ -183,7 +183,7 @@ print(json.dumps(report))
     fs.writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2));
 
     console.log(`Perceptual report saved: metrics/perceptual-report.json`);
-    console.log(`  EnCodec: tension↔complexity r=${report.encodec.tension_complexity_correlation.toFixed(3)}`);
+    console.log(`  EnCodec: tension?unknown-ascii-character?complexity r=${report.encodec.tension_complexity_correlation.toFixed(3)}`);
     console.log(`  CLAP dominant: "${report.clap.dominant_character}" (${report.clap.dominant_score.toFixed(3)})`);
     console.log(`  Confidence: ${report.confidence * 100}%`);
   } catch (e) {
