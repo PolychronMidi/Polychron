@@ -16,19 +16,21 @@ python3 -c "
 import json, sys
 try:
     s = json.load(open('$SUMMARY'))
-    regimes = s.get('regimeDistribution', {})
-    coherent = regimes.get('coherent', 0)
-    exploring = regimes.get('exploring', 0)
-    trust = s.get('trustStats', {})
-    top_trust = sorted(trust.items(), key=lambda x: -x[1] if isinstance(x[1], (int,float)) else 0)[:3]
+    regimes = s.get('regimes', {})
+    total_r = sum(v for v in regimes.values() if isinstance(v, (int,float))) or 1
+    coherent = regimes.get('coherent', 0) / total_r
+    exploring = regimes.get('exploring', 0) / total_r
+    trust_dom = s.get('trustDominance', {})
+    dominant = trust_dom.get('dominantSystems', []) if isinstance(trust_dom, dict) else []
+    top_trust = [(d['system'], d.get('score', 0)) for d in dominant[:3]]
     coupling = list(s.get('aggregateCouplingLabels', {}).keys())[:4]
-    beats = s.get('totalBeats', '?')
-    sections = s.get('totalSections', '?')
+    beats = s.get('beats', {}).get('totalEntries', '?')
+    sections = len(s.get('sectionStats', []))
 
     print(f'TRACE SUMMARY for KB: {beats} beats, {sections} sections. ', end='')
     print(f'Regimes: coherent={coherent:.0%}, exploring={exploring:.0%}. ', end='')
     if top_trust:
-        print(f'Top trust: ' + ', '.join(f'{k}={v:.2f}' for k,v in top_trust if isinstance(v,(int,float))) + '. ', end='')
+        print(f'Top trust: ' + ', '.join(f'{k}={v:.2f}' for k,v in top_trust) + '. ', end='')
     if coupling:
         print(f'Coupling: ' + ', '.join(coupling) + '.', end='')
     print()

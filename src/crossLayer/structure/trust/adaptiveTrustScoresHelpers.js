@@ -33,28 +33,33 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.REST_SYNCHRONIZER]: ['density-trust', 'flicker-trust'],
     // Per-system pair assignments to prevent identical hotspot blocks.
     // Each system measured against the coupling axes most relevant to its function.
-    [trustSystems.names.MOTIF_ECHO]: ['density-trust', 'tension-trust', 'density-phase'],
+    // R45 E1: motif echo = density + entropic reduction through repetition, not tension-trust (same as cadenceAlignment).
+    [trustSystems.names.MOTIF_ECHO]: ['density-trust', 'entropy-trust', 'density-phase'],
     [trustSystems.names.TEMPORAL_GRAVITY]: ['tension-phase', 'density-phase', 'tension-trust'],
     [trustSystems.names.HARMONIC_INTERVAL_GUARD]: ['tension-trust', 'density-trust', 'tension-entropy'],
+    // R45 E1: verticalIntervalMonitor measures voice spacing = phase-dependent register distribution, not density-trust.
     [trustSystems.names.CROSS_LAYER_SILHOUETTE]: ['density-trust', 'density-phase', 'density-entropy'],
     [trustSystems.names.ROLE_SWAP]: ['density-trust', 'tension-trust', 'flicker-trust'],
     [trustSystems.names.DYNAMIC_ENVELOPE]: ['tension-trust', 'density-trust', 'tension-flicker'],
-    // grooveTransfer: groove propagation = density-to-phase flow + tension-driven variation
-    [trustSystems.names.GROOVE_TRANSFER]: ['density-phase', 'density-flicker', 'tension-phase'],
+    // R45 E1: groove = rhythmic shimmer with entropic density flow. flicker-entropy captures groove shimmer quality.
+    [trustSystems.names.GROOVE_TRANSFER]: ['density-phase', 'flicker-entropy', 'tension-phase'],
     [trustSystems.names.CLIMAX_ENGINE]: ['tension-trust', 'density-trust', 'tension-phase'],
-    [trustSystems.names.VELOCITY_INTERFERENCE]: ['density-trust', 'tension-trust', 'density-flicker'],
+    // R45 E1: velocity interference = trust-weighted entropy pattern, not density-flicker.
+    [trustSystems.names.VELOCITY_INTERFERENCE]: ['density-trust', 'tension-trust', 'entropy-trust'],
     // rhythmicComplement: fills sparse moments = entropy/phase when main layer is quiet
     [trustSystems.names.RHYTHMIC_COMPLEMENT]: ['density-entropy', 'density-phase', 'tension-entropy'],
     [trustSystems.names.SPECTRAL_COMPLEMENTARITY]: ['density-trust', 'tension-entropy', 'density-entropy'],
     [trustSystems.names.REGISTER_COLLISION_AVOIDER]: ['density-trust', 'tension-trust', 'density-entropy'],
     [trustSystems.names.TEXTURAL_MIRROR]: ['density-trust', 'density-flicker', 'flicker-trust'],
-    [trustSystems.names.VERTICAL_INTERVAL_MONITOR]: ['tension-trust', 'density-trust', 'tension-entropy'],
+    [trustSystems.names.VERTICAL_INTERVAL_MONITOR]: ['tension-trust', 'density-phase', 'tension-entropy'],
     [trustSystems.names.ARTICULATION_COMPLEMENT]: ['density-flicker', 'tension-flicker', 'flicker-trust'],
-    [trustSystems.names.CONVERGENCE_HARMONIC_TRIGGER]: ['tension-trust', 'tension-phase', 'density-trust'],
+    // R45 E1: harmonic convergence trigger = entropy-driven, not density-trust (same pairs as climaxEngine).
+    [trustSystems.names.CONVERGENCE_HARMONIC_TRIGGER]: ['tension-trust', 'tension-phase', 'entropy-trust'],
     // R44 E1: polyrhythm prediction relates entropy to phase, not flicker-phase.
     [trustSystems.names.POLYRHYTHMIC_PHASE_PREDICTOR]: ['density-phase', 'entropy-phase', 'tension-phase'],
     [trustSystems.names.EMERGENT_DOWNBEAT]: ['density-phase', 'density-trust', 'tension-phase'],
-    [trustSystems.names.PHASE_AWARE_CADENCE_WINDOW]: ['tension-phase', 'density-phase', 'tension-trust'],
+    // R45 E1: cadence window = inter-layer phase coordination, not tension-trust (same pairs as temporalGravity).
+    [trustSystems.names.PHASE_AWARE_CADENCE_WINDOW]: ['tension-phase', 'density-phase', 'trust-phase'],
   };
   const pairAwarePairWeights = {
     [trustSystems.names.COHERENCE_MONITOR]: { 'density-trust': 1.26, 'flicker-trust': 1.28, 'tension-trust': 1.08 },

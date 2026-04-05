@@ -55,13 +55,20 @@ tools/HME/               The single source of truth
       tools_knowledge.py                KB CRUD + memory_dream + knowledge_graph (9 tools)
       tools_index.py                    Index management + recent_changes (5 tools)
       context.py                        Shared engine references
-      helpers.py                        Budget limits, formatters
+      helpers.py                        Budget limits, formatters; loads project-rules.json
     rag_engine/                         LanceDB + BM25 + RRF fusion
     chunker.py, symbols.py, etc.        IIFE-aware indexing
   skills/                               Skill definitions (symlinked from ~/.claude/skills/)
     SKILL.md                            Master skill index
     analysis.md, search.md, etc.        Tool reference pages
     evolution.md                        Evolver integration guide
+  config/
+    project-rules.json                  Project-specific declarations (not logic):
+                                          crosslayer_boundary_violations, known_l0_channels,
+                                          dry_patterns, doc_update_triggers,
+                                          known_non_tool_identifiers
+                                        Logic stays in Python; only DATA lives here.
+                                        Loaded at MCP server import time by helpers.py.
   hooks/                                Hook scripts (referenced from .claude/settings.json)
     hooks.json                          Plugin-format hook definitions
     pretooluse_edit.sh                  before_editing reminder for src/ files

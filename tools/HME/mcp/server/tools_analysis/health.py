@@ -8,7 +8,8 @@ from . import _track
 from server.helpers import (
     get_context_budget, validate_project_path, fmt_score,
     format_knowledge_results, check_path_in_project,
-    BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
+    BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS, KNOWN_NON_TOOL_IDENTIFIERS,
+    DRY_PATTERNS,
 )
 from symbols import collect_all_symbols, find_callers as _find_callers, find_iife_globals as _find_iife_globals
 from analysis import trace_cross_language as _trace_cross_lang
@@ -235,8 +236,9 @@ def codebase_health() -> str:
                 if dr in content and "conductorSignalBridge" not in content:
                     issues_by_severity["CRITICAL"].append(f"{rel}: boundary violation ({dr})")
                     break
-        if "(function deepFreeze" in content or "(function deepFreezeObj" in content:
-            issues_by_severity["WARN"].append(f"{rel}: inline deepFreeze (use shared utility)")
+        for dry in DRY_PATTERNS:
+            if dry["pattern"] in content and "crossLayerHelpers" not in rel:
+                issues_by_severity["WARN"].append(f"{rel}: {dry['message']}")
         # Coupling firewall — mirrors COUPLING_MATRIX_EXEMPT_PATHS + COUPLING_MATRIX_LEGACY
         # from scripts/pipeline/check-hypermeta-jurisdiction.js
         if ".couplingMatrix" in content:
@@ -255,8 +257,6 @@ def codebase_health() -> str:
                     issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix) [legacy — tracked for refactor]")
                 else:
                     issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix)")
-        if "=== 'L1' ? 'L2' : 'L1'" in content:
-            issues_by_severity["NOTE"].append(f"{rel}: inline layer switch")
     parts = [f"# Codebase Health Report ({file_count} src/ files)\n"]
     total = sum(len(v) for v in issues_by_severity.values())
     if total == 0:
@@ -385,9 +385,7 @@ def doc_sync_check(doc_path: str = "") -> str:
         "caused_by", "fixed_by", "depends_on", "contradicts", "similar_to", "supersedes",
         # KB category values
         "architecture", "decision", "pattern", "bugfix",
-        # Evolver loop hook config fields (not MCP tools)
-        "done_signal", "max_iterations",
-    }
+    } | KNOWN_NON_TOOL_IDENTIFIERS  # hook config fields from project-rules.json
     # Only flag identifiers that look like they should be server tools
     tool_like = {t for t in doc_tool_refs if t.islower() and '_' in t and t not in server_fns and t not in known_non_tools and len(t) > 6}
     if tool_like:
