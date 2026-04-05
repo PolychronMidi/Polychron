@@ -1,0 +1,61 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm*run.lock*)",
+      "Bash(*rm*run.lock*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/sessionstart.sh"}]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/pretooluse_edit.sh"}]
+      },
+      {
+        "matcher": "Grep",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/pretooluse_grep.sh"}]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/pretooluse_write.sh"}]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/pretooluse_bash.sh"}]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {"type": "command", "command": "bash tools/HME/hooks/posttooluse_bash.sh"},
+          {"type": "command", "command": "bash tools/HME/hooks/posttooluse_pipeline_kb.sh"}
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/userpromptsubmit.sh"}]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/precompact.sh"}]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash tools/HME/hooks/stop.sh"}]
+      }
+    ]
+  }
+}

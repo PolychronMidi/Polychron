@@ -166,7 +166,7 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 
 **Auto-commits:** After each verified non-regressive pipeline run (STABLE or EVOLVED), auto-commit all changed files with a descriptive message summarizing the round's evolutions. This creates natural reversion points. Do not commit DRIFTED runs or failed pipelines. Format: `RXX: brief description of changes`.
 
-**Enforcement:** This file is loaded every prompt. Hooks in `.claude/settings.json` enforce HyperMeta-Ecstasy usage, Evolver phases, lab rules, and Grep blocking. If you find yourself violating a rule here, the fix is behavioral, not more memories or hooks.
+**Enforcement:** This file is loaded every prompt. Hooks in `.claude/settings.json` enforce HME usage, Evolver phases, lab rules, and Grep blocking. If you find yourself violating a rule here, the fix is behavioral, not more memories or hooks.
 
 Act on feedback immediately and thoroughly. Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing to update or confirm. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
 
@@ -180,7 +180,7 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 ## HyperMeta Ecstasy
 
-Master executive for hypermeta evolutionary intelligence. Not just 45 MCP tools — the full stack that makes self-evolving composition possible: MCP server (`tools/HyperMeta-Ecstasy/`), CLAUDE.md, skills (`/HyperMeta-Ecstasy`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HyperMeta-Ecstasy.md](../doc/HyperMeta-Ecstasy.md)
+Master executive for hypermeta evolutionary intelligence. Not just 45 MCP tools — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
 
 **Mandatory usage (not optional):**
 - **Before modifying a file:** `before_editing "path/to/file.js"` -- ONE CALL assembles KB constraints, callers, boundary warnings, and file structure. Replaces multi-step research.
@@ -189,11 +189,11 @@ Master executive for hypermeta evolutionary intelligence. Not just 45 MCP tools 
 - **After each listen-confirmed round:** `add_knowledge` for new calibration anchors, decisions, anti-patterns, bugfixes. Do NOT add_knowledge until user confirms task complete.
 - **When pipeline fails:** `diagnose_error "paste error text"` -- traces source, finds similar KB bugs, suggests fix patterns.
 
-**Grep/file reads:** use `grep`, `file_lines`, `count_lines` tools in HyperMeta-Ecstasy instead of Bash equivalents. These wrap the same operations but add KB cross-referencing and convention warnings automatically.
+**Grep/file reads:** use `grep`, `file_lines`, `count_lines` tools in HME instead of Bash equivalents. These wrap the same operations but add KB cross-referencing and convention warnings automatically.
 
 **Core workflow:**
 ```
-/HyperMeta-Ecstasy
+/HME
 before_editing "src/crossLayer/structure/form/crossLayerClimaxEngine.js"  -- pre-edit briefing
 search_code "where does convergence detection happen"                     -- semantic search
 module_story "crossLayerClimaxEngine"                                     -- living biography
@@ -202,11 +202,11 @@ codebase_health                                                           -- ful
 knowledge_graph "density suppression"                                     -- connected KB entries
 ```
 
-**50+ tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HyperMeta-Ecstasy for KB enrichment.
+**50+ tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME for KB enrichment.
 
 ## Related Documentation
 
-- [doc/HyperMeta-Ecstasy.md](../doc/HyperMeta-Ecstasy.md) - Comprehensive setup, usage, and maintenance guide for HyperMeta-Ecstasy
+- [doc/HME.md](../doc/HME.md) - Comprehensive setup, usage, and maintenance guide for HME
 - [README.md](../README.md) - Comprehensive project overview, architecture, subsystem details, diagnostics
 - [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) - Beat lifecycle deep-dive, signal flow from conductor to emission
 - [doc/TUNING_MAP.md](../doc/TUNING_MAP.md) - Feedback loop constants, interaction partners, cross-constant invariants

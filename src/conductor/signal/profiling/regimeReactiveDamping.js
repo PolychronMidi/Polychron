@@ -249,8 +249,9 @@ regimeReactiveDamping = (() => {
       : sectionPhaseForBrake === 'climax' || sectionPhaseForBrake === 'resolution'
       ? 1.4
       : 1.0;
+    // R43 E1: triple coefficient 0.0004->0.0012, raise cap 0.08->0.10 to break 80-beat monopolies.
     const exploringDurationPressure = currentRegime === 'exploring'
-      ? clamp((regimeReactiveDampingExploringBeats - 60) * 0.0004 * exploringPhaseScale, 0, 0.08) : 0;
+      ? clamp((regimeReactiveDampingExploringBeats - 60) * 0.0012 * exploringPhaseScale, 0, 0.10) : 0;
     const exploringBiasBrake = currentRegime === 'exploring'
       ? clamp(trustSharePressure * 0.04 + densityTrustPressure * 0.015 + densitySaturationPressure * 0.04 + lowPhasePressure * 0.03 + evolvingRecoveryPressure * 0.05 + exploringDurationPressure, 0, 0.18)
       : 0;

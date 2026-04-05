@@ -1,12 +1,12 @@
 {
   "mcpServers": {
-    "HyperMeta-Ecstasy": {
+    "HME": {
       "type": "stdio",
       "command": "python3",
-      "args": ["/home/jah/Polychron/tools/HyperMeta-Ecstasy/mcp/server/main.py"],
+      "args": ["/home/jah/Polychron/tools/HME/mcp/server/main.py"],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
-        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HyperMeta-Ecstasy",
+        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME",
         "PYTHONPATH": "/home/jah/.local/lib/python3.12/site-packages",
         "PATH": "/home/jah/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "HF_HUB_OFFLINE": "1",
