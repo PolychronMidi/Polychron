@@ -29,6 +29,15 @@ logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
 logger = logging.getLogger("HyperMeta-Ecstasy")
 logger.setLevel(logging.INFO)
 
+# File logger: timestamped request/response log at log/hme.log
+_log_dir = os.path.join(os.environ.get("PROJECT_ROOT", os.getcwd()), "log")
+os.makedirs(_log_dir, exist_ok=True)
+_file_handler = logging.FileHandler(os.path.join(_log_dir, "hme.log"), encoding="utf-8")
+_file_handler.setLevel(logging.DEBUG)
+_file_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+logger.addHandler(_file_handler)
+logger.info("HyperMeta-Ecstasy log initialized")
+
 from mcp.server.fastmcp import FastMCP
 from file_walker import init_config, get_lib_dirs
 
@@ -59,7 +68,7 @@ mcp = FastMCP(
 from server import context
 context.PROJECT_ROOT = PROJECT_ROOT
 context.PROJECT_DB = PROJECT_DB
-context.mcp = mcp
+context.mcp = context._LoggingMCP(mcp)  # wrap with request/response logging
 context.project_engine = None
 context.global_engine = None
 context.shared_model = None
