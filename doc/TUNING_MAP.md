@@ -291,6 +291,20 @@ more corrective avalanches when the system is under stress.
 
 
 
+## 13. Rhythmic Feedback - `feedbackOscillator`
+
+Creates rhythmic round-trip impulses between L1/L2 with complementary
+interval biasing. Highest hotspot rate (31%) of any trust system.
+
+| Constant | Value | Role | Interaction Partners |
+|||||
+| `DAMPING` | 0.55 | Energy decay per round-trip — prevents runaway feedback | CIM `setCoordinationScale`, trust EMA weight |
+| `COMPLEMENT_MAP` | interval→complement | Biases response pitch toward complementary interval of stimulus | harmonicContext key/mode |
+| `MAX_PENDING` | 4 | Maximum concurrent feedback rounds — caps multi-layer accumulation | L1/L2 activate cycle timing |
+
+**Sensitivity:** `DAMPING` at 0.55 produces ~2 effective round-trips before energy is negligible. Lower values (< 0.4) risk self-reinforcing oscillation between layers. Higher values (> 0.7) mean the feedback loop dies after one round, losing the "dialogue" character. Score range [0.23-0.64] with chronic trust inflation (weight 1.2+ despite avg score 0.34) suggests the EMA floor may be propping up a system that rarely delivers. Profile-dependent: performs well in high-tension sections (S1-S2), badly in atmospheric/low-density sections (S0, S5) where the round-trip energy has less material to work with.
+
+
 ## Cross-Constant Invariants
 
 These relationships must hold to prevent runaway behavior:
