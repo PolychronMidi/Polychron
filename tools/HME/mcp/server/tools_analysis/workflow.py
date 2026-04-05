@@ -7,6 +7,7 @@ from server.helpers import (
     get_context_budget, validate_project_path, fmt_score,
     format_knowledge_results, check_path_in_project,
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
+    KNOWN_L0_CHANNELS, DRY_PATTERNS, DOC_UPDATE_TRIGGERS,
 )
 from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
@@ -90,10 +91,9 @@ def before_editing(file_path: str) -> str:
             for dr in CROSSLAYER_BOUNDARY_VIOLATIONS:
                 if dr in content and "conductorSignalBridge" not in content:
                     warnings.append(f"BOUNDARY VIOLATION: uses '{dr}' without conductorSignalBridge")
-        if "(function deepFreeze" in content or "(function deepFreezeObj" in content:
-            warnings.append("DRY: inline deepFreeze (use shared utility)")
-        if "=== 'L1' ? 'L2' : 'L1'" in content and "crossLayerHelpers" not in os.path.basename(abs_path):
-            warnings.append("DRY: inline layer switch (use getOtherLayer)")
+        for dry in DRY_PATTERNS:
+            if dry["pattern"] in content and "crossLayerHelpers" not in os.path.basename(abs_path):
+                warnings.append(dry["message"])
         if warnings:
             parts.append("## Warnings")
             for w in warnings:
@@ -194,25 +194,15 @@ def what_did_i_forget(changed_files: str) -> str:
                 import re
                 channels = set(re.findall(r"L0\.post\('([^']+)'", content))
                 for ch in channels:
-                    if ch not in ('onset', 'note', 'harmonic', 'entropy', 'coherence', 'feedbackPitch',
-                                  'regimeTransition', 'rhythm', 'tickDuration', 'feedbackLoop',
-                                  'motifIdentity', 'phase', 'spectral', 'articulation', 'grooveTransfer',
-                                  'registerCollision', 'convergence-density', 'climax-pressure',
-                                  'rest-sync', 'density-rhythm', 'section-quality', 'emissionDelta',
-                                  'perceptual-crowding', 'harmonic-journey-eval', 'emissionSummary',
-                                  'phaseConvergence', 'explainability'):
-                        all_warnings.append(f"[{rel_path}] NEW L0 CHANNEL: '{ch}' -- add to narrative-digest and trace-summary consumers")
+                    if ch not in KNOWN_L0_CHANNELS:
+                        all_warnings.append(f"[{rel_path}] NEW L0 CHANNEL: '{ch}' -- add to project-rules.json and narrative-digest/trace-summary consumers")
         except Exception:
             pass
-        # Track doc update needs
-        if "src/conductor/" in rel_path:
-            doc_updates_needed.add("doc/ARCHITECTURE.md (conductor changes)")
-        if "src/crossLayer/" in rel_path:
-            doc_updates_needed.add("doc/ARCHITECTURE.md (cross-layer changes)")
-        if "src/utils/" in rel_path:
-            doc_updates_needed.add("CLAUDE.md (new utility)")
-        if "src/time/" in rel_path:
-            doc_updates_needed.add("doc/ARCHITECTURE.md (timing changes)")
+        # Track doc update needs (path triggers from project-rules.json)
+        for path_prefix, docs in DOC_UPDATE_TRIGGERS.items():
+            if path_prefix in rel_path:
+                for d in docs:
+                    doc_updates_needed.add(d)
 
     if all_warnings:
         parts.append(f"## Warnings ({len(all_warnings)})")

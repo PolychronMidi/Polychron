@@ -89,20 +89,21 @@ def _get_compositional_context(module_name: str) -> str:
         try:
             with open(summary_path) as f:
                 summary = json.load(f)
-            regimes = summary.get("regimeDistribution", {})
+            regimes = summary.get("regimes", {})
             if regimes:
-                regime_str = ", ".join(f"{k}: {v:.0%}" for k, v in regimes.items()
+                total_r = sum(v for v in regimes.values() if isinstance(v, (int, float))) or 1
+                regime_str = ", ".join(f"{k}: {v/total_r:.0%}" for k, v in regimes.items()
                                        if isinstance(v, (int, float)))
                 parts.append(f"**Last run regimes:** {regime_str}")
             coupling = summary.get("aggregateCouplingLabels", {})
             if coupling:
                 labels = [str(k) for k in list(coupling.keys())[:6]]
                 parts.append(f"**Coupling labels:** {', '.join(labels)}")
-            trust = summary.get("trustStats", {})
-            if trust:
-                top_systems = sorted(trust.items(), key=lambda x: -x[1] if isinstance(x[1], (int, float)) else 0)[:3]
-                if top_systems:
-                    parts.append(f"**Top trust systems:** {', '.join(f'{k}: {v:.2f}' for k, v in top_systems if isinstance(v, (int, float)))}")
+            trust_dom = summary.get("trustDominance", {})
+            dominant = trust_dom.get("dominantSystems", []) if isinstance(trust_dom, dict) else []
+            if dominant:
+                top = [f"{s['system']}({s.get('score', 0):.2f})" for s in dominant[:3]]
+                parts.append(f"**Top trust systems:** {', '.join(top)}")
         except Exception:
             pass
     return "\n".join(parts) if parts else ""

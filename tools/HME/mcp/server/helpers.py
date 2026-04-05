@@ -5,11 +5,29 @@ import logging
 
 logger = logging.getLogger("HME")
 
-# Shared boundary violation patterns for crossLayer checks
-CROSSLAYER_BOUNDARY_VIOLATIONS = [
+# ---------------------------------------------------------------------------
+# Project rules — loaded from config/project-rules.json at import time.
+# Logic stays in Python; declarations live in config. Add new rules there.
+# ---------------------------------------------------------------------------
+def _load_project_rules() -> dict:
+    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "project-rules.json")
+    try:
+        with open(os.path.realpath(config_path), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.warning("Acceptable warning: helpers: could not load project-rules.json: %s", e)
+        return {}
+
+_PROJECT_RULES = _load_project_rules()
+
+CROSSLAYER_BOUNDARY_VIOLATIONS: list[str] = _PROJECT_RULES.get("crosslayer_boundary_violations", [
     "conductorIntelligence.", "conductorState.",
     "systemDynamicsProfiler.", "pipelineCouplingManager.",
-]
+])
+KNOWN_L0_CHANNELS: frozenset[str] = frozenset(_PROJECT_RULES.get("known_l0_channels", []))
+DRY_PATTERNS: list[dict] = _PROJECT_RULES.get("dry_patterns", [])
+DOC_UPDATE_TRIGGERS: dict[str, list[str]] = _PROJECT_RULES.get("doc_update_triggers", {})
+KNOWN_NON_TOOL_IDENTIFIERS: frozenset[str] = frozenset(_PROJECT_RULES.get("known_non_tool_identifiers", []))
 
 # Budget-aware limits for composite tool output — full 4-step scaling
 BUDGET_LIMITS = {

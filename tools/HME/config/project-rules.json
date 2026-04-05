@@ -1,0 +1,35 @@
+{
+  "_comment": "Project-specific rules consumed by HME tools and hooks. Logic stays in Python/bash; declarations live here.",
+
+  "crosslayer_boundary_violations": [
+    "conductorIntelligence.", "conductorState.",
+    "systemDynamicsProfiler.", "pipelineCouplingManager."
+  ],
+
+  "known_l0_channels": [
+    "onset", "note", "harmonic", "entropy", "coherence", "feedbackPitch",
+    "regimeTransition", "rhythm", "tickDuration", "feedbackLoop",
+    "motifIdentity", "phase", "spectral", "articulation", "grooveTransfer",
+    "registerCollision", "convergence-density", "climax-pressure",
+    "rest-sync", "density-rhythm", "section-quality", "emissionDelta",
+    "perceptual-crowding", "harmonic-journey-eval", "emissionSummary",
+    "phaseConvergence", "explainability"
+  ],
+
+  "dry_patterns": [
+    { "pattern": "(function deepFreeze", "message": "DRY: inline deepFreeze (use shared utility)" },
+    { "pattern": "(function deepFreezeObj", "message": "DRY: inline deepFreeze (use shared utility)" },
+    { "pattern": "=== 'L1' ? 'L2' : 'L1'", "message": "DRY: inline layer switch (use getOtherLayer)" }
+  ],
+
+  "doc_update_triggers": {
+    "src/conductor/": ["doc/ARCHITECTURE.md (conductor changes)"],
+    "src/crossLayer/": ["doc/ARCHITECTURE.md (cross-layer changes)"],
+    "src/utils/": ["CLAUDE.md (new utility)"],
+    "src/time/": ["doc/ARCHITECTURE.md (timing changes)"]
+  },
+
+  "known_non_tool_identifiers": [
+    "done_signal", "max_iterations"
+  ]
+}
