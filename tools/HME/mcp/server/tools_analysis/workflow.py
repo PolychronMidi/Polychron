@@ -15,7 +15,7 @@ from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
     _get_api_key, _claude_think, _local_think, _format_kb_corpus,
-    _THINK_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+    _THINK_MODEL, _REASONING_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from . import _get_compositional_context, _track
 
@@ -152,7 +152,7 @@ def before_editing(file_path: str) -> str:
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
     if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=1024)
+        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
     if synthesis:
         parts.append(f"\n## Edit Risks *(adaptive)*")
         parts.append(synthesis)
@@ -237,7 +237,7 @@ def what_did_i_forget(changed_files: str) -> str:
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
         if not synthesis:
-            synthesis = _local_think(user_text, max_tokens=1024)
+            synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
         if synthesis:
             parts.append(f"\n## What You May Have Missed *(adaptive)*")
             parts.append(synthesis)
@@ -309,7 +309,7 @@ def diagnose_error(error_text: str) -> str:
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
     if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=1024)
+        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
     if synthesis:
         parts.append(f"\n## Fix Synthesis *(adaptive)*")
         parts.append(synthesis)
