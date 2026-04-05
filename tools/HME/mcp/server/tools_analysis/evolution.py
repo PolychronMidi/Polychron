@@ -745,8 +745,21 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     snippet = re.sub(r'^```[a-z]*\n?', '', snippet.strip())
     snippet = re.sub(r'\n?```$', '', snippet)
 
-    # Append to hook with separator
-    new_content = current.rstrip("\n") + f"\n\n# fix_antipattern: {antipattern[:80]}\n{snippet.strip()}\n"
+    # Insert before final 'exit 0' if present (appending after it creates dead code)
+    stripped = current.rstrip("\n")
+    insertion = f"\n\n# fix_antipattern: {antipattern[:80]}\n{snippet.strip()}\n"
+    if stripped.endswith("exit 0"):
+        # Find last 'exit 0' line and insert before it
+        lines = stripped.split("\n")
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip() == "exit 0":
+                lines.insert(i, insertion.strip())
+                new_content = "\n".join(lines) + "\n"
+                break
+        else:
+            new_content = stripped + insertion
+    else:
+        new_content = stripped + insertion
     with open(hook_path, "w", encoding="utf-8") as _f:
         _f.write(new_content)
 
