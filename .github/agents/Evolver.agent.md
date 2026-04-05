@@ -100,6 +100,14 @@ Start with `recent_changes` to see what changed since last round with KB context
 | `metrics/trace-replay.json` | Per-section/phrase breakdown: regime, tension, note counts, profile |
 | `metrics/journal.md` | Most recent entry only: what was attempted, what was learned |
 
+### Tier 1.5 — Perceptual Grounding (15% confidence)
+
+| File | Purpose |
+|------|---------|
+| `metrics/perceptual-report.json` | EnCodec: per-section token entropy (audio complexity), tension↔complexity correlation. CLAP: text↔audio similarity for 6 probes (tension, atmosphere, rhythm, sparse, dense, coherent). Dominant character label |
+
+Compare the conductor's INTENTION (trace-summary tension, regime) against what the audio SOUNDS LIKE (EnCodec complexity, CLAP character). Mismatches are evolution candidates. Agreement validates the system's self-model.
+
 ### Tier 2 — Character & Attribution
 
 | File | Purpose |
