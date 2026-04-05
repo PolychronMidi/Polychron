@@ -24,7 +24,7 @@ from .synthesis import (
 logger = logging.getLogger("HME")
 
 
-def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict, dict]:
+def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict, dict, dict]:
     """Single-pass caller count for all IIFE globals.
 
     Returns:
@@ -83,7 +83,7 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
             if fpath_str != sym_files.get(name, ""):
                 caller_counts[name] = caller_counts.get(name, 0) + 1
 
-    return sym_files, caller_counts, sym_registrations  # type: ignore[return-value]
+    return sym_files, caller_counts, sym_registrations
 
 
 @ctx.mcp.tool()

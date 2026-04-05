@@ -622,6 +622,7 @@ def hme_selftest() -> str:
         results.append(f"FAIL: doc sync — {e}")
 
     # 3. Index health
+    status: dict = {}
     try:
         ctx.ensure_ready_sync()
         status = ctx.project_engine.get_status()
