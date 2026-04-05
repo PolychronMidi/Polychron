@@ -203,6 +203,9 @@ systemDynamicsProfilerAnalysis = (() => {
           'flicker-entropy': ['+', 'chaotic-shimmer', '-', 'stable-variety'],
           'density-phase': ['+', 'phase-aligned-density', '-', 'phase-opposed-density'],
           'tension-phase': ['+', 'phase-aligned-tension', '-', 'phase-opposed-tension'],
+          'flicker-phase': ['+', 'phase-coupled-flicker', '-', 'phase-opposed-flicker'],
+          'entropy-phase': ['+', 'phase-coupled-entropy', '-', 'phase-opposed-entropy'],
+          'entropy-trust': ['+', 'trust-coupled-entropy', '-', 'trust-opposed-entropy'],
         };
         if (coupling.matrix) {
           const keys = Object.keys(coupling.matrix);

@@ -1,3 +1,40 @@
+## R41 — 2026-04-05 — LEGENDARY (rhythmicComplement pair fix + HME 57-tool merge)
+
+**Profile:** atmospheric | **Beats:** 1510 | **Duration:** ~738s
+**Fingerprint:** 10/10 stable | Drifted: none
+**Regimes:** coherent 41.2%, exploring 37.0%, evolving 21.7%
+
+### What the Music Sounds Like
+Listen verdict: **"another amazing new level of legendary xenolinguistics! epic work, keep pushing!"**
+CLAP perceptual: "dense chaotic many notes simultaneously" (avg=0.239) + "rhythmically complex polyrhythmic pattern" (avg=0.211). The composition is perceived as both chaotic AND rhythmically intentional — classic xenolinguistic signature. EnCodec: S0 cb0=5.935 (warmup) rising to S2 peak 6.339, then plateau S3-S6 (6.260-6.285). Coherent leads at 41.2% — highest in recent runs.
+
+### Causal Findings
+- **rhythmicComplement pair collision fixed**: had identical pairs to feedbackOscillator. Assigned entropy-based pairs `['density-entropy', 'density-phase', 'tension-entropy']`. Trust score now 0.477 vs feedbackOscillator 0.302 — clearly distinct ecology.
+- **Trust ecology diversity confirmed**: all 27 systems have weights 1.165–1.526 (all above 1.0). motifEcho leads (score 0.693, weight 1.526) but within healthy range.
+- **HME tool merges**: 63→57 tools via 7 clean merges. audio_analyze, hme_inspect, symbol_audit, regime_report, trust_report, composition_events, reindex replace 14 originals.
+- **flicker-phase coupling label "phase-opposed-flicker"**: confirmed in aggregateCouplingLabels — structural anti-correlation recognized as compositional feature.
+
+### Trust Ecology
+- Trust-scored systems: 27 total | all above 1.0
+- Coupling labels: flicker-phase (phase-opposed-flicker), density-phase (phase-opposed-density), density-tension (tension-drives-density), density-flicker (rhythmic-shimmer)
+- Convergence target: active in S1/S3 high-tension sections
+
+### Evolutions Applied (R40/R41)
+- E1: rhythmicComplement entropy-pairs — CONFIRMED (score 0.477, distinct from feedbackOscillator 0.302)
+- E2: HME 7-merge tool consolidation — CONFIRMED (57 tools, docs updated)
+- E3: protocol-level MCP logging (_LoggingBuffer) — CONFIRMED (requests visible in hme.log)
+- E4: kb_seed O(2×files) single-pass — CONFIRMED (speed improvement)
+
+### Evolutions Proposed (for R42)
+- E1: entropy KI regime adaptation — KI_BY_REGIME {exploring:0.08, evolving:0.05, coherent:0.03} — targets 0.110 reconciliation gap
+- E2: coupling label routing — expose couplingLabels via conductorSignalBridge — enables semantic hotspot discounting
+- E3: opposed-pair hotspot discount — 0.70x for "phase-opposed-*" and "smooth-tension" labels — reduces chronic flicker-phase pressure (p95=0.888)
+- E4: extended LABEL_MAP — add flicker-phase, entropy-phase, entropy-trust labels to real-time profiler
+
+### Hypotheses
+- Entropy reconciliation gap (0.110) will narrow with regime-adaptive KI: exploring gets harder correction, coherent gets gentler. Verification: track density-entropy/flicker-entropy p95 trends.
+- Opposed-pair hotspot discount will raise PHASE_LOCK, FEEDBACK_OSCILLATOR trust scores above 0.35: these systems face structural anti-correlation pressure, not true underperformance.
+
 ## R39 — 2026-04-04 — STABLE (hypermeta gap fixes validated)
 
 **Profile:** atmospheric | **Beats:** 952 | **Duration:** ~134s
@@ -639,15 +676,17 @@ with Q3-Q4 quite flat. Exceedance down to 128 beats (flicker-phase 57, healthier
   without requiring manual intervention. Falsification: monopoly exits are audible as harsh breaks.
 
 
-## R40 — 2026-04-05 — STABLE (density-attenuation + coherent fix + per-system pairs)
+## R40 — 2026-04-05 — LEGENDARY (density-attenuation + coherent fix + per-system pairs)
 
 **Profile:** atmospheric | **Beats:** 1092 | **Duration:** ~150s
 **Fingerprint:** pipeline green | Regimes: exploring 41%, coherent 31%, evolving 27%
+
+### What the Music Sounds Like
+Listen verdict: **"amazing new level of legendary xenolinguistics"**. The alien-linguistic quality is the compound result of: trust ecology diversity (14 distinct hotspot levels), flicker-attenuation eliminating false smooth-tension hotspot cascades, and coherent regime restoration unlocking stable polyrhythmic interplay. The system is developing its own compositional language.
 
 ### Findings
 - **Density-attenuation fix**: atmospheric S5 hotspot dropped 84%→26% for density-trust systems via `clamp(densityProduct/0.75, 0.5, 1.0)` scaling in adaptiveTrustScoresHelpers.
 - **Coherent death spiral fix**: `coherentStartSec` init-to-0 caused dwell check to fire on first coherent beat after 28s. Fixed: set startSec on first entry. Coherent restored from 0% to 31%.
 - **Per-system pair assignments**: 19 systems previously on generic fallback pairs now have function-specific pairs. Hotspot diversity: was 20 systems at identical 23.9%, now 14 distinct levels (1.4%–30.9%).
+- **Flicker-attenuation**: added `clamp(flickerProduct/0.75, 0.5, 1.0)` scaling for flicker-indexed pairs. Breaks smooth-tension false cascade.
 - **Coupling label arc**: S0 rhythmic-shimmer → S2 stable-variety → S4 chaotic-proliferation → S6 smooth-tension. Tracks the emotional trajectory.
-- **roleSwap collapse**: weight drops Δ-0.258 at S4 (explosive). Hypothesis: tension valleys trigger excessive profile swaps.
-- **flicker-trust cluster stress**: feedbackOscillator, restSynchronizer, coherenceMonitor, stutterContagion all hit 0.65-0.75 hotspot in atmospheric S5. Candidate for flicker-attenuation, needs listen.

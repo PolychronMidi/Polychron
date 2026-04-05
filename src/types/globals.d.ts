@@ -308,7 +308,7 @@ interface CoherenceMonitorAPI {
 
 interface ConductorSignalBridgeAPI {
   refresh(ctx: RecorderContext): void;
-  getSignals(): Readonly<{ density: number; tension: number; flicker: number; compositeIntensity: number; sectionPhase: string; coherenceEntropy: number; healthEma: number; systemPhase: string; exceedanceTrendEma: number; topologyPhase: string; regime: string; effectiveDimensionality: number; couplingStrength: number; axisEnergyShares: Record<string, number> | null; adaptiveTargetSnapshot: Record<string, any> | null; regimeProb: { coherent: number; exploring: number; evolving: number } }>;
+  getSignals(): Readonly<{ density: number; tension: number; flicker: number; compositeIntensity: number; sectionPhase: string; coherenceEntropy: number; healthEma: number; systemPhase: string; exceedanceTrendEma: number; topologyPhase: string; regime: string; effectiveDimensionality: number; couplingStrength: number; axisEnergyShares: Record<string, number> | null; adaptiveTargetSnapshot: Record<string, any> | null; couplingLabels: Record<string, string> | null; regimeProb: { coherent: number; exploring: number; evolving: number } }>;
   reset(): void;
 }
 
@@ -372,6 +372,7 @@ interface SystemDynamicsSnapshot {
   regime: string;
   grade: string;
   couplingMatrix: Record<string, number>;
+  couplingLabels: Record<string, string>;
   compositionalVariance: number[];
   entropyAmplification: number;
   entropySampleErrors: number;
@@ -1532,7 +1533,7 @@ declare var phaseSpaceMath: {
   effectiveDimensionality(data: number[][], mean: number[], nCompositional: number): number;
 };
 declare var entropyAmplificationController: {
-  adapt(currentShare: number): void;
+  adapt(currentShare: number, regime?: string): void;
   getAmp(): number;
   reset(): void;
 };

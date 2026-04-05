@@ -6,7 +6,7 @@
 conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
   const V = validator.create('conductorSignalBridge');
 
-  let cached = /** @type {{ density: number, tension: number, flicker: number, compositeIntensity: number, sectionPhase: string, coherenceEntropy: number, healthEma: number, systemPhase: string, exceedanceTrendEma: number, topologyPhase: string, regime: string, effectiveDimensionality: number, couplingStrength: number, axisEnergyShares: Record<string,number>|null, adaptiveTargetSnapshot: Record<string,any>|null, regimeProb: {coherent:number,exploring:number,evolving:number}, updatedAt: number }} */ ({
+  let cached = /** @type {{ density: number, tension: number, flicker: number, compositeIntensity: number, sectionPhase: string, coherenceEntropy: number, healthEma: number, systemPhase: string, exceedanceTrendEma: number, topologyPhase: string, regime: string, effectiveDimensionality: number, couplingStrength: number, axisEnergyShares: Record<string,number>|null, adaptiveTargetSnapshot: Record<string,any>|null, couplingLabels: Record<string,string>|null, regimeProb: {coherent:number,exploring:number,evolving:number}, updatedAt: number }} */ ({
     density: 1,
     tension: 1,
     flicker: 1,
@@ -55,6 +55,9 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       couplingStrength: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.couplingStrength, 0.3) : 0.3; })(),
       axisEnergyShares: (() => { const ae = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null); return (ae && ae.shares) ? /** @type {Record<string,number>} */ (ae.shares) : null; })(),
       adaptiveTargetSnapshot: /** @type {Record<string,any>|null} */ (safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null) || null),
+      // Semantic coupling labels for axis pairs -- 'opposed'/'contrasting' labels indicate
+      // creative anti-correlations that should not be treated as structural failures.
+      couplingLabels: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return (ds && ds.couplingLabels) ? ds.couplingLabels : null; })(),
       // Xenolinguistic L2: regime probability distribution (superposition).
       // Instead of collapsing to one regime, expose soft probabilities based on
       // velocity + coupling. Low velocity + high coupling = coherent-leaning.
@@ -111,6 +114,7 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       couplingStrength: cached.couplingStrength,
       axisEnergyShares: cached.axisEnergyShares,
       adaptiveTargetSnapshot: cached.adaptiveTargetSnapshot,
+      couplingLabels: cached.couplingLabels,
       regimeProb: cached.regimeProb
     });
   }
@@ -133,6 +137,7 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       couplingStrength: 0.3,
       axisEnergyShares: null,
       adaptiveTargetSnapshot: null,
+      couplingLabels: null,
       regimeProb: { coherent: 0.33, exploring: 0.33, evolving: 0.34 },
       updatedAt: 0
     };
