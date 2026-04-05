@@ -17,7 +17,10 @@ adaptiveTrustScoresHelpers = (() => {
     [trustSystems.names.ENTROPY_REGULATOR]: { scoreFloor: 0.48, scorePenalty: 0.12, weightFloor: 1.20, weightPenalty: 0.26 },
   };
   const pairAwareHotspotPairs = {
-    [trustSystems.names.COHERENCE_MONITOR]: ['density-trust', 'flicker-trust', 'tension-trust'],
+    // R43 E2: removed density-trust -- explosive profile intentionally saturates density,
+    // causing 66% false hotspot in S4. flicker-trust + tension-trust reflect coherenceMonitor's
+    // actual function (structural timing/harmonic coherence), not density load.
+    [trustSystems.names.COHERENCE_MONITOR]: ['flicker-trust', 'tension-trust'],
     [trustSystems.names.PHASE_LOCK]: ['density-phase', 'flicker-phase', 'tension-phase', 'trust-phase'],
     [trustSystems.names.CADENCE_ALIGNMENT]: ['density-trust', 'tension-trust', 'density-phase'],
     [trustSystems.names.STUTTER_CONTAGION]: ['flicker-trust', 'density-flicker', 'flicker-phase'],

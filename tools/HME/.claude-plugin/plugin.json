@@ -1,0 +1,16 @@
+{
+  "name": "HME",
+  "version": "1.0.0",
+  "description": "Master executive for hypermeta evolutionary intelligence. 45 MCP tools for semantic search, KB, architectural analysis, and Claude synthesis. Full-stack scope: MCP server, skills, hooks, Evolver, and lab.",
+  "author": {
+    "name": "i1li"
+  },
+  "keywords": [
+    "rag",
+    "semantic-search",
+    "knowledge-base",
+    "code-analysis",
+    "evolutionary-intelligence",
+    "self-evolving"
+  ]
+}

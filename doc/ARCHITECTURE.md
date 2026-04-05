@@ -152,7 +152,7 @@ Together these prevent the ~30-beat lag where warm-started EMA values pull towar
 
 Regime affects: variant selection weights, CIM dial targets, stutter CC coherence scaling (coherent=1.3x, exploring=0.6x), preset selection (coherent->subtle, exploring->stereoWide), exploring brake strength.
 
-The exploring brake applies duration-proportional pressure after 60 L1-only ticks, intent-aware (softer during development, stronger during climax/resolution).
+The exploring brake applies duration-proportional pressure after 60 L1-only ticks, intent-aware (softer during development/exposition: 0.6x, stronger during climax/resolution: 1.4x). R43: coefficient tripled (0.0004→0.0012), cap raised (0.08→0.10) to break 80-beat monopolies. At 80 beats into exploring during climax: pressure = 0.034.
 
 ## The Negotiation Engine
 

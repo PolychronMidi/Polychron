@@ -1,1 +1,0 @@
-# HyperMeta-Ecstasy server package

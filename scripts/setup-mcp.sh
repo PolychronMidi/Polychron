@@ -4,7 +4,7 @@
 
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-HME_DIR="$REPO_ROOT/tools/HyperMeta-Ecstasy"
+HME_DIR="$REPO_ROOT/tools/HME"
 MCP_DIR="$HOME/.claude/mcp"
 SKILLS_DIR="$HOME/.claude/skills"
 
@@ -22,8 +22,8 @@ _link() {
   fi
 }
 
-_link "$HME_DIR/mcp" "$MCP_DIR/HyperMeta-Ecstasy" "mcp"
-_link "$HME_DIR/skills" "$SKILLS_DIR/HyperMeta-Ecstasy" "skills"
+_link "$HME_DIR/mcp" "$MCP_DIR/HME" "mcp"
+_link "$HME_DIR/skills" "$SKILLS_DIR/HME" "skills"
 
 # make hook scripts executable
 chmod +x "$HME_DIR/hooks/"*.sh 2>/dev/null || true
@@ -36,4 +36,4 @@ if [ -f "$REQ" ] && [ ! -d "$HME_DIR/mcp/venv" ]; then
   "$HME_DIR/mcp/venv/bin/pip" install -q -r "$REQ"
 fi
 
-echo "done. Hooks are in .claude/settings.json -> tools/HyperMeta-Ecstasy/hooks/"
+echo "done. Hooks are in .claude/settings.json -> tools/HME/hooks/"
