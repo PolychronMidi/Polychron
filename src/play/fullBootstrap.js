@@ -611,6 +611,7 @@ fullBootstrap = (() => {
     't',
     'stutterContagion',
     'emergentRhythmEngine',
+    'emergentMelodicEngine',
     'convergenceDetector',
     'convergenceVelocitySurge',
     'trustEcologyCharacter',

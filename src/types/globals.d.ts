@@ -1883,6 +1883,7 @@ declare var stutterFailFast: any;
 declare var t: any;
 declare var stutterContagion: StutterContagionAPI;
 declare var emergentRhythmEngine: { biasRhythmWeights(rhythmsObj: object): object; getDensity(): number; getComplexity(): number; getBiasStrength(): number; getDensityEma(): number; getGrid(): number[]; setCoordinationScale(scale: number): void; reset(): void };
+declare var emergentMelodicEngine: { synthesize(): object | null; nudgeNoveltyWeight(baseWeight: number): number; getContourAscendBias(baseAscendBias: number): number; getMelodicWeights(): Record<string, number>; getContext(): object | null; setCoordinationScale(scale: number): void; reset(): void };
 declare var convergenceDetector: ConvergenceDetectorAPI;
 declare var convergenceVelocitySurge: { check(absoluteSeconds: number, layer: string): number; reset(): void };
 declare var trustEcologyCharacter: { update(): void; biasWeights(baseWeights: Record<string, number>): Record<string, number>; getDominant(): { system: string | null; family: string | null }; reset(): void };

@@ -15,7 +15,8 @@
     "perceptual-crowding", "harmonic-journey-eval", "emissionSummary",
     "phaseConvergence", "explainability", "emergentRhythm",
     "emergentDownbeat", "stutterContagion", "cadenceAlignment",
-    "self-narration", "verticalCollision", "channel-coherence"
+    "self-narration", "verticalCollision", "channel-coherence",
+    "emergentMelody"
   ],
 
   "dry_patterns": [

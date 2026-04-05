@@ -18,6 +18,8 @@ require('./rhythm');
 require('./harmony');
 
 require('./dynamics');
+
+require('./melody');
 // Subsystem groups - each subfolder index.js loads its own modules.
 
 require('./conductorSignalBridge');

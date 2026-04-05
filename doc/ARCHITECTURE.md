@@ -189,6 +189,16 @@ All cross-layer buffer writes route through `crossLayerEmissionGateway.emit(sour
 - **CIM pair**: `feedbackOsc-emergentDownbeat`
 - **Feedback enrollment**: `emergentRhythmPort` in `feedbackRegistry`
 
+## Emergent Melodic Engine
+
+**6-tracker synthesis hub.** `emergentMelodicEngine` (`src/crossLayer/melody/emergentMelodicEngine.js`) polls 6 conductor melodic tracker APIs per beat and fuses their signals into the `emergentMelody` L0 channel.
+
+- **Inputs**: `melodicContourTracker` (shape/direction), `intervalDirectionMemory` (freshness), `tessituraPressureMonitor` (register load), `thematicRecallDetector` (recall status), `ambitusMigrationTracker` (register trend), `counterpointMotionTracker` (motion type)
+- **Bias surfaces**: `nudgeNoveltyWeight()` amplifies `harmonicIntervalGuard` interval novelty steering when territory is stale; `getMelodicWeights()` adds 12th signal dimension to `stutterVariants`; `getContourAscendBias()` modulates `alienArpeggio` pitch direction by melodic arc
+- **Self-calibrating EMAs**: freshnessEma + tessitureEma track running means; L0 post is phrase-gated (every 4+ beats when freshness shock or high tessiture/thematic density)
+- **CIM**: `harmonic-pitchCorrection` dial scales noveltyWeight amplification authority
+- **Feedback enrollment**: `emergentMelodicPort` in `feedbackRegistry`
+
 ## Emergence Boundaries
 
 Three architectural membranes:
