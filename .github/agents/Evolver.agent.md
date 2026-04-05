@@ -279,7 +279,7 @@ Compact old entries when journal exceeds 500 lines.
 
 - STABLE: snapshot a new baseline if better than current baseline, 'npm run snapshot'
 - Don't snapshot EVOLVED/DRIFTED
-- `index_codebase` to refresh HME embeddings for changed files
+- `reindex` to refresh HME embeddings for changed files
 - `kb_health` periodically to find stale KB entries
 - Loop back to Phase 1
 - `--- Starting R<XX> ---`
