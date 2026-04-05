@@ -33,7 +33,10 @@
     "PostToolUse": [
       {
         "matcher": "Bash",
-        "hooks": [{"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/posttooluse_bash.sh"}]
+        "hooks": [
+          {"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/posttooluse_bash.sh"},
+          {"type": "command", "command": "bash tools/HyperMeta-Ecstasy/hooks/posttooluse_pipeline_kb.sh"}
+        ]
       }
     ],
     "UserPromptSubmit": [

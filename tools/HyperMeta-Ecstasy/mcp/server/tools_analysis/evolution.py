@@ -208,78 +208,214 @@ def hme_introspect() -> str:
 
 
 @ctx.mcp.tool()
-def trace_query(module: str, section: int = -1, limit: int = 20) -> str:
+def trace_query(module: str, section: int = -1, limit: int = 15) -> str:
     """Query the last pipeline run's trace.jsonl for runtime behavior of a specific module.
     Shows what a module ACTUALLY DID: when it fired, what values it produced, which
     sections/regimes it was active in. Set section=N to filter to a specific section.
-    This is compositional awareness at the runtime level — not what code says, but what happened."""
+    Works for trust system names, snap fields, coupling labels, and top-level trace keys."""
     ctx.ensure_ready_sync()
     _track("trace_query")
-    import subprocess
 
     trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found. Run `npm run main` to generate."
 
-    # Use grep to find relevant lines (trace.jsonl can be 25MB+)
+    # Stream trace.jsonl and extract module-specific data
+    module_lower = module.lower()
+    beats = []
+    total_beats = 0
     try:
-        result = subprocess.run(
-            ["grep", "-i", module, trace_path],
-            capture_output=True, text=True, timeout=10,
-        )
-        raw_lines = result.stdout.strip().split("\n") if result.stdout.strip() else []
+        with open(trace_path, encoding="utf-8") as f:
+            for line in f:
+                total_beats += 1
+                try:
+                    record = json.loads(line)
+                except Exception:
+                    continue
+                beat_key = record.get("beatKey", "?")
+                regime = record.get("regime", "?")
+                # Parse section from beatKey (format: "section:phrase:beat:sub")
+                sec = -1
+                if isinstance(beat_key, str) and ":" in beat_key:
+                    try:
+                        sec = int(beat_key.split(":")[0])
+                    except ValueError:
+                        pass
+                if section >= 0 and sec != section:
+                    continue
+
+                # Extract module-specific values from different trace locations
+                values = {}
+
+                # 1. Trust system: trust.{moduleName}.score/weight
+                trust = record.get("trust", {})
+                if module_lower in {k.lower() for k in trust}:
+                    for k, v in trust.items():
+                        if k.lower() == module_lower and isinstance(v, dict):
+                            values["score"] = round(v.get("score", 0), 3)
+                            values["weight"] = round(v.get("weight", 0), 3)
+                            dp = v.get("dominantPair", "")
+                            if dp:
+                                values["dominantPair"] = dp
+                            hp = v.get("hotspotPressure", 0)
+                            if hp > 0:
+                                values["hotspot"] = round(hp, 3)
+
+                # 2. Snap fields: snap.{field} containing module name
+                snap = record.get("snap", {})
+                for k, v in snap.items():
+                    if module_lower in k.lower():
+                        if isinstance(v, (int, float)):
+                            values[k] = round(v, 4) if isinstance(v, float) else v
+                        elif isinstance(v, str) and len(v) < 50:
+                            values[k] = v
+
+                # 3. Top-level fields containing module name
+                for k, v in record.items():
+                    if k in ("trust", "snap", "notes", "stageTiming"):
+                        continue
+                    if module_lower in k.lower():
+                        if isinstance(v, (int, float)):
+                            values[k] = round(v, 4) if isinstance(v, float) else v
+                        elif isinstance(v, str) and len(v) < 80:
+                            values[k] = v
+
+                # 4. Coupling labels mentioning module
+                labels = record.get("couplingLabels", {})
+                if isinstance(labels, dict):
+                    for k, v in labels.items():
+                        if module_lower in k.lower():
+                            values[f"coupling:{k}"] = v
+
+                if values:
+                    beats.append({"beatKey": beat_key, "section": sec, "regime": regime, "values": values})
     except Exception as e:
         return f"Error reading trace: {e}"
 
-    if not raw_lines:
-        return f"No trace entries mention '{module}'. It may not emit trace data, or the name might differ from the trace key."
-
-    # Parse JSON lines and extract key fields
-    hits = []
-    for line in raw_lines:
-        try:
-            record = json.loads(line)
-            beat = record.get("beat", "?")
-            sec = record.get("section", "?")
-            regime = record.get("currentRegime", record.get("regime", "?"))
-            if section >= 0 and sec != section:
-                continue
-            hits.append({"beat": beat, "section": sec, "regime": regime, "raw": record})
-        except Exception:
-            continue
-
-    if not hits:
-        return f"Found {len(raw_lines)} trace lines mentioning '{module}' but none in section {section}."
+    if not beats:
+        return (f"No trace data for '{module}' across {total_beats} beats. "
+                "Try: trust system name (e.g. 'coherenceMonitor'), snap field, or coupling label.")
 
     # Summarize
-    total = len(hits)
-    sections_active = sorted(set(h["section"] for h in hits if h["section"] != "?"))
-    regimes_active = {}
-    for h in hits:
-        r = h["regime"]
-        regimes_active[r] = regimes_active.get(r, 0) + 1
+    sections_seen = sorted(set(b["section"] for b in beats if b["section"] >= 0))
+    regime_counts = {}
+    for b in beats:
+        regime_counts[b["regime"]] = regime_counts.get(b["regime"], 0) + 1
+
+    # Compute value ranges for numeric fields
+    numeric_ranges = {}
+    for b in beats:
+        for k, v in b["values"].items():
+            if isinstance(v, (int, float)):
+                if k not in numeric_ranges:
+                    numeric_ranges[k] = {"min": v, "max": v, "sum": v, "count": 1}
+                else:
+                    r = numeric_ranges[k]
+                    r["min"] = min(r["min"], v)
+                    r["max"] = max(r["max"], v)
+                    r["sum"] += v
+                    r["count"] += 1
 
     parts = [f"## Trace Query: {module}\n"]
-    parts.append(f"**Matches:** {total} beats (of {len(raw_lines)} raw lines)")
-    if sections_active:
-        parts.append(f"**Active in sections:** {', '.join(str(s) for s in sections_active)}")
-    if regimes_active:
-        regime_str = ", ".join(f"{k}: {v}" for k, v in sorted(regimes_active.items(), key=lambda x: -x[1]))
-        parts.append(f"**Regime distribution:** {regime_str}")
+    parts.append(f"**Beats with data:** {len(beats)} / {total_beats}")
+    if sections_seen:
+        parts.append(f"**Active in sections:** {', '.join(str(s) for s in sections_seen)}")
+    regime_str = ", ".join(f"{k}: {v}" for k, v in sorted(regime_counts.items(), key=lambda x: -x[1]))
+    parts.append(f"**Regime distribution:** {regime_str}")
 
-    # Show sample entries (first N)
-    parts.append(f"\n### Sample Entries ({min(limit, total)} of {total})")
-    for h in hits[:limit]:
-        # Find the module-specific value in the record
-        module_lower = module.lower()
-        relevant = {}
-        for k, v in h["raw"].items():
-            if module_lower in k.lower() and k not in ("beat", "section", "currentRegime"):
-                relevant[k] = v
-        if relevant:
-            vals = ", ".join(f"{k}={v}" for k, v in list(relevant.items())[:5])
-            parts.append(f"  beat {h['beat']} S{h['section']} [{h['regime']}] {vals}")
-        else:
-            parts.append(f"  beat {h['beat']} S{h['section']} [{h['regime']}]")
+    if numeric_ranges:
+        parts.append(f"\n### Value Ranges")
+        for k, r in sorted(numeric_ranges.items()):
+            avg = r["sum"] / r["count"]
+            parts.append(f"  {k}: {r['min']:.3f} - {r['max']:.3f} (avg {avg:.3f}, n={r['count']})")
+
+    # Sample entries — spread across the composition (every Nth)
+    step = max(1, len(beats) // limit)
+    samples = beats[::step][:limit]
+    parts.append(f"\n### Samples ({len(samples)} of {len(beats)}, evenly spaced)")
+    for b in samples:
+        vals = ", ".join(f"{k}={v}" for k, v in list(b["values"].items())[:4])
+        parts.append(f"  {b['beatKey']} [{b['regime']}] {vals}")
+
+    return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def interaction_map(module_a: str, module_b: str) -> str:
+    """Show how two modules interact at runtime by correlating their trust scores,
+    weight trajectories, and hotspot co-occurrence across the last pipeline run.
+    Reveals whether modules cooperate, compete, or are independent."""
+    ctx.ensure_ready_sync()
+    _track("interaction_map")
+
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    if not os.path.isfile(trace_path):
+        return "No trace.jsonl found."
+
+    a_lower, b_lower = module_a.lower(), module_b.lower()
+    a_scores, b_scores, a_weights, b_weights = [], [], [], []
+    co_hotspot = 0
+    total = 0
+
+    try:
+        with open(trace_path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    record = json.loads(line)
+                except Exception:
+                    continue
+                trust = record.get("trust", {})
+                a_data = next((v for k, v in trust.items() if k.lower() == a_lower), None)
+                b_data = next((v for k, v in trust.items() if k.lower() == b_lower), None)
+                if not a_data or not b_data or not isinstance(a_data, dict) or not isinstance(b_data, dict):
+                    continue
+                total += 1
+                a_scores.append(a_data.get("score", 0))
+                b_scores.append(b_data.get("score", 0))
+                a_weights.append(a_data.get("weight", 1))
+                b_weights.append(b_data.get("weight", 1))
+                if a_data.get("hotspotPressure", 0) > 0.1 and b_data.get("hotspotPressure", 0) > 0.1:
+                    co_hotspot += 1
+    except Exception as e:
+        return f"Error reading trace: {e}"
+
+    if total < 10:
+        return f"Insufficient data: only {total} beats with both '{module_a}' and '{module_b}' trust data."
+
+    # Compute correlation
+    import math
+    def _corr(xs, ys):
+        n = len(xs)
+        mx, my = sum(xs)/n, sum(ys)/n
+        cov = sum((x-mx)*(y-my) for x, y in zip(xs, ys)) / n
+        sx = math.sqrt(sum((x-mx)**2 for x in xs) / n)
+        sy = math.sqrt(sum((y-my)**2 for y in ys) / n)
+        return cov / (sx * sy) if sx > 0 and sy > 0 else 0
+
+    score_corr = _corr(a_scores, b_scores)
+    weight_corr = _corr(a_weights, b_weights)
+
+    # Interpret
+    if score_corr > 0.5:
+        relationship = "COOPERATIVE (scores rise and fall together)"
+    elif score_corr < -0.3:
+        relationship = "COMPETITIVE (one gains when the other loses)"
+    else:
+        relationship = "INDEPENDENT (scores uncorrelated)"
+
+    parts = [f"## Interaction Map: {module_a} <-> {module_b}\n"]
+    parts.append(f"**Relationship:** {relationship}")
+    parts.append(f"**Score correlation:** {score_corr:.3f}")
+    parts.append(f"**Weight correlation:** {weight_corr:.3f}")
+    parts.append(f"**Hotspot co-occurrence:** {co_hotspot}/{total} beats ({co_hotspot/total:.0%})")
+    parts.append(f"\n**{module_a}:** score {min(a_scores):.3f}-{max(a_scores):.3f} (avg {sum(a_scores)/len(a_scores):.3f}), weight {min(a_weights):.3f}-{max(a_weights):.3f}")
+    parts.append(f"**{module_b}:** score {min(b_scores):.3f}-{max(b_scores):.3f} (avg {sum(b_scores)/len(b_scores):.3f}), weight {min(b_weights):.3f}-{max(b_weights):.3f}")
+
+    # Callers overlap — do they share code dependencies?
+    a_callers = set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in _find_callers(module_a, ctx.PROJECT_ROOT))
+    b_callers = set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in _find_callers(module_b, ctx.PROJECT_ROOT))
+    shared = a_callers & b_callers
+    if shared:
+        parts.append(f"\n**Shared callers ({len(shared)}):** {', '.join(sorted(shared)[:5])}")
 
     return "\n".join(parts)
