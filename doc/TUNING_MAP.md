@@ -305,6 +305,20 @@ interval biasing. Highest hotspot rate (31%) of any trust system.
 **Sensitivity:** `DAMPING` at 0.55 produces ~2 effective round-trips before energy is negligible. Lower values (< 0.4) risk self-reinforcing oscillation between layers. Higher values (> 0.7) mean the feedback loop dies after one round, losing the "dialogue" character. Score range [0.23-0.64] with chronic trust inflation (weight 1.2+ despite avg score 0.34) suggests the EMA floor may be propping up a system that rarely delivers. Profile-dependent: performs well in high-tension sections (S1-S2), badly in atmospheric/low-density sections (S0, S5) where the round-trip energy has less material to work with.
 
 
+## 14. Stutter Contagion - `stutterContagion`
+
+Cross-layer module that propagates stutter rhythmic events from one layer
+to the other with adaptive decay. The #2 hotspot system with extreme
+peak pressure (0.944) and a dramatic regime-dependent performance swing.
+
+| Constant | Value | Role | Interaction Partners |
+|||||
+| Adaptive decay | EMA-based | Adjusts stutter propagation intensity over time | CIM `setCoordinationScale`, regime |
+| Stutter variants | 18 types | Selection weighted by 10 signal dimensions | `stutterVariants.selectForBeat()` |
+
+**Sensitivity:** Performance is strongly regime-dependent: score surges from 0.30→0.60 at S2 transition (evolving→coherent emergence), then declines through exploring-dominant sections (S3 score=0.58, S4=0.40). Coherent sections provide stable rhythmic patterns that stutter can predict and amplify; exploring sections are too unpredictable. In intense rivalry with phaseLock (50/50 dominance split, 116 overtake events per run). S4 hotspot rate 92% — the explosive profile overwhelms stutter's prediction capacity.
+
+
 ## Cross-Constant Invariants
 
 These relationships must hold to prevent runaway behavior:

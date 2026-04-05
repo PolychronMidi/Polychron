@@ -119,11 +119,14 @@ def module_story(module_name: str) -> str:
     if matching and sim_limit > 0:
         try:
             content = open(matching[0]["file"], encoding="utf-8", errors="ignore").read()[:500]
-            similar = _find_similar(content, ctx.project_engine, top_k=sim_limit)
+            similar = _find_similar(content, ctx.project_engine, top_k=sim_limit + 3)
             if similar:
-                parts.append(f"\n## Similar Modules")
-                for r in similar:
-                    parts.append(f"  {r['source'].replace(ctx.PROJECT_ROOT + '/', '')} ({fmt_sim_score(r['score'])})")
+                source_file = matching[0]["file"]
+                filtered = [r for r in similar if r.get("source") != source_file][:sim_limit]
+                if filtered:
+                    parts.append(f"\n## Similar Modules")
+                    for r in filtered:
+                        parts.append(f"  {r['source'].replace(ctx.PROJECT_ROOT + '/', '')} ({fmt_sim_score(r['score'])})")
         except Exception:
             pass
 
