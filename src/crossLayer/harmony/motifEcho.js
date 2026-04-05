@@ -10,8 +10,9 @@ motifEcho = (() => {
   const ECHO_DELAY_BEATS_MIN = 1;
   const ECHO_DELAY_BEATS_MAX = 4;
   const MAX_PENDING_ECHOES = 8;
-  const ECHO_PROBABILITY = 0.35;
+  const BASE_ECHO_PROBABILITY = 0.35;
   const TRANSFORMS = ['retrograde', 'inversion', 'augmentation', 'retrograde-inversion'];
+  let cimScale = 0.5;
 
   /** @type {Array<{ intervals: number[], originLayer: string, captureSec: number, deliverSec: number, transform: string }>} */
   const pendingEchoes = [];
@@ -36,7 +37,9 @@ motifEcho = (() => {
     if (notes.length > RECENT_WINDOW) notes.shift();
 
     // When we accumulate enough notes, potentially capture a motif fragment
-    if (notes.length >= 3 && rf() < ECHO_PROBABILITY && pendingEchoes.length < MAX_PENDING_ECHOES) {
+    // R51: CIM-modulated echo probability -- coordinated = more imitative echo, independent = less
+    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2);
+    if (notes.length >= 3 && rf() < echoProbability && pendingEchoes.length < MAX_PENDING_ECHOES) {
       captureMotif(layer, absoluteSeconds);
     }
   }
@@ -149,11 +152,14 @@ motifEcho = (() => {
   /** @returns {number} count of pending echoes */
   function getPendingCount() { return pendingEchoes.length; }
 
+  function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
+
   function reset() {
     pendingEchoes.length = 0;
     recentNotes.clear();
+    cimScale = 0.5;
   }
 
-  return { recordNote, captureMotif, applyTransform, deliverEcho, getPendingCount, reset };
+  return { recordNote, captureMotif, applyTransform, deliverEcho, getPendingCount, setCoordinationScale, reset };
 })();
 crossLayerRegistry.register('motifEcho', motifEcho, ['all', 'phrase']);

@@ -97,6 +97,8 @@ def impact_analysis(symbol_name: str, language: str = "") -> str:
     parts = []
     # Who calls this?
     callers = _find_callers(symbol_name, ctx.PROJECT_ROOT, lang_filter=language)
+    # Filter out documentation files — .md mentions are not callers
+    callers = [r for r in callers if not r['file'].endswith('.md')]
     caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
     parts.append(f"## Callers ({len(callers)} sites in {len(caller_files)} files)")
     for f in caller_files[:15]:

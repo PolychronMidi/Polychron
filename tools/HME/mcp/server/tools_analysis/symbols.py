@@ -301,3 +301,73 @@ def get_function_body(function_name: str, file_path: str = "", language: str = "
         return f"Found symbol but couldn't extract body:\n" + "\n".join(locs)
 
     return "\n---\n".join(parts)
+
+
+@ctx.mcp.tool()
+def l0_channel_map(channel: str = "") -> str:
+    """Map L0 channel producers and consumers. Shows which modules post to and read from
+    each L0 channel. If channel is given, shows detailed view for that channel. Otherwise
+    shows all channels with producer/consumer counts. Finds the invisible L0-mediated
+    dependency edges that find_callers and blast_radius miss."""
+    import re
+    ctx.ensure_ready_sync()
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+
+    post_pat = re.compile(r"""L0\.post\(\s*['"]([^'"]+)['"]""")
+    read_pats = [
+        re.compile(r"""L0\.getLast\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.query\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.findClosest\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.count\(\s*['"]([^'"]+)['"]"""),
+        re.compile(r"""L0\.getBounds\(\s*['"]([^'"]+)['"]"""),
+    ]
+
+    # channel -> { producers: {file: [lines]}, consumers: {file: [lines]} }
+    channels: dict[str, dict] = {}
+
+    for dirpath, _, filenames in os.walk(src_root):
+        for fname in filenames:
+            if not fname.endswith(".js"):
+                continue
+            fpath = os.path.join(dirpath, fname)
+            try:
+                with open(fpath, encoding="utf-8", errors="ignore") as f:
+                    lines = f.readlines()
+            except Exception:
+                continue
+            rel = fpath.replace(ctx.PROJECT_ROOT + "/", "")
+            for i, line in enumerate(lines, 1):
+                for m_obj in post_pat.finditer(line):
+                    ch = m_obj.group(1)
+                    channels.setdefault(ch, {"producers": {}, "consumers": {}})
+                    channels[ch]["producers"].setdefault(rel, []).append(i)
+                for pat in read_pats:
+                    for m_obj in pat.finditer(line):
+                        ch = m_obj.group(1)
+                        channels.setdefault(ch, {"producers": {}, "consumers": {}})
+                        channels[ch]["consumers"].setdefault(rel, []).append(i)
+
+    if not channels:
+        return "No L0 channels found in src/."
+
+    if channel:
+        ch_data = channels.get(channel)
+        if not ch_data:
+            return f"Channel '{channel}' not found. Known channels: {', '.join(sorted(channels.keys()))}"
+        parts = [f"# L0 Channel: {channel}\n"]
+        parts.append(f"## Producers ({len(ch_data['producers'])} files)")
+        for f, lines in sorted(ch_data["producers"].items()):
+            parts.append(f"  {f}:{','.join(str(l) for l in lines)}")
+        parts.append(f"\n## Consumers ({len(ch_data['consumers'])} files)")
+        for f, lines in sorted(ch_data["consumers"].items()):
+            parts.append(f"  {f}:{','.join(str(l) for l in lines)}")
+        return "\n".join(parts)
+
+    # Summary view
+    parts = [f"# L0 Channel Map ({len(channels)} channels)\n"]
+    for ch in sorted(channels.keys()):
+        d = channels[ch]
+        p = len(d["producers"])
+        c = len(d["consumers"])
+        parts.append(f"  {ch}: {p} producer(s), {c} consumer(s)")
+    return "\n".join(parts)

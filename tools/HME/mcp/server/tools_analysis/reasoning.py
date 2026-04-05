@@ -80,7 +80,9 @@ def module_story(module_name: str) -> str:
         parts.append("## Evolution History: no KB entries mention this module\n")
     # Callers
     callers = _find_callers(module_name, ctx.PROJECT_ROOT)
-    callers = [r for r in callers if module_name not in os.path.basename(r.get('file', ''))]
+    callers = [r for r in callers
+               if module_name not in os.path.basename(r.get('file', ''))
+               and not r.get('file', '').endswith('.md')]
     caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
     caller_limit = limits["callers"]
     parts.append(f"## Dependents ({len(caller_files)} files)")
@@ -339,12 +341,52 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         parts.append("## KB Constraints")
         for k in kb_hits:
             parts.append(f"  [{k['category']}] {k['title']}")
-    parts.append(f"\nTotal blast radius: {total} sites across {len(layers)} depth levels")
+    # L0 channel consumers: scan the module source for L0.post('channel') and find readers
+    from .synthesis import _read_module_source
+    import re as _re
+    source = _read_module_source(symbol_name, max_chars=10000)
+    l0_consumers = []
+    if source:
+        posted_channels = _re.findall(r"L0\.post\(['\"]([^'\"]+)['\"]", source)
+        if posted_channels:
+            # Scan src/ for L0 consumers of these channels
+            read_pats = [_re.compile(r"L0\." + method + r"\(\s*['\"]" + ch + r"['\"]")
+                         for ch in set(posted_channels)
+                         for method in ("getLast", "query", "findClosest", "count", "getBounds")]
+            src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+            for dp, _, fnames in os.walk(src_root):
+                for fn in fnames:
+                    if not fn.endswith(".js"):
+                        continue
+                    fp = os.path.join(dp, fn)
+                    try:
+                        with open(fp, encoding="utf-8", errors="ignore") as _f:
+                            content = _f.read()
+                    except Exception:
+                        continue
+                    rel = fp.replace(ctx.PROJECT_ROOT + "/", "")
+                    for pat in read_pats:
+                        m_obj = pat.search(content)
+                        if m_obj:
+                            ch_name = _re.search(r"['\"]([^'\"]+)['\"]", m_obj.group()).group(1)
+                            l0_consumers.append(f"  {rel} (via L0 '{ch_name}')")
+                            break
+    if l0_consumers:
+        parts.append(f"\n## L0 Channel Consumers ({len(l0_consumers)} sites)")
+        for lc in l0_consumers:
+            parts.append(lc)
+        total += len(l0_consumers)
+
+    parts.append(f"\nTotal blast radius: {total} sites across {len(layers)} depth levels"
+                 + (f" + {len(l0_consumers)} L0 consumers" if l0_consumers else ""))
     all_files = set()
     for _, results in layers:
         for r in results:
             f = r.strip().split(":")[0]
             all_files.add(f)
+    for lc in l0_consumers:
+        f = lc.strip().split(":")[0].split(" (via")[0]
+        all_files.add(f)
     parts.append(f"Files affected: {len(all_files)}")
 
     if total > 0:

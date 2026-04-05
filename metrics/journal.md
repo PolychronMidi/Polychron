@@ -1,3 +1,9 @@
+## R50b: Future Evolution — emergentMelodicEngine
+
+The 16 conductor/melodic trackers (intervalDirectionMemory, counterpointMotionTracker, phraseContourArchetypeDetector, tessituraPressureMonitor, registralVelocityCorrelator, voiceLeadingEfficiencyTracker, melodicContourTracker, ambitusMigrationTracker, intervalExpansionContractor, thematicRecallDetector, octaveHelpers, phraseContourArchetypeDetector, etc.) each register isolated conductor biases but have no integrating engine. An "emergentMelodicEngine" would mirror emergentRhythmEngine's architecture: accumulate L0 melodic events into a synthesis layer that exposes cross-layer melodic intelligence (contrapuntal motion preferences, thematic development decisions, register migration strategies). This is the melodic equivalent of what emergentRhythmEngine does for rhythm.
+
+Status: Noted for future evolution. Not yet implemented.
+
 ## R49 — 2026-04-05 — (firewall ports + rhythmic contagion port)
 
 **Profile:** 7 sections (restrained×2 → default×2 → explosive → atmospheric×2) | **Beats:** 1167 | **Duration:** pending

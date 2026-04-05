@@ -18,7 +18,9 @@ coordinationIndependenceManager = (() => {
     'dynamics-envelopeInterference',
     'dynamics-articulationTexture',
     'rhythm-grooveConvergence',
-    'structure-trustNegotiation'
+    'structure-trustNegotiation',
+    'motif-echoIdentity',
+    'motif-echoIdentity'
   ];
 
   const TICK_INTERVAL = 4;
@@ -280,6 +282,7 @@ coordinationIndependenceManager = (() => {
     const harmonicDial = dials['harmonic-pitchCorrection'];
     safePreBoot.call(() => harmonicIntervalGuard.setCoordinationScale(harmonicDial), null);
     safePreBoot.call(() => registerCollisionAvoider.setCoordinationScale(harmonicDial), null);
+    safePreBoot.call(() => verticalIntervalMonitor.setCoordinationScale(harmonicDial), null);
 
     // Rhythm phase/gravity: phase lock + temporal gravity + groove transfer
     const rhythmPhaseDial = dials['rhythm-phaseLockGravity'];
@@ -300,6 +303,10 @@ coordinationIndependenceManager = (() => {
     const artTexDial = dials['dynamics-articulationTexture'];
     safePreBoot.call(() => articulationComplement.setCoordinationScale(artTexDial), null);
     safePreBoot.call(() => texturalMirror.setCoordinationScale(artTexDial), null);
+
+    // Motif echo: coordinated = more imitative counterpoint, independent = original material
+    const motifDial = dials['motif-echoIdentity'];
+    safePreBoot.call(() => motifEcho.setCoordinationScale(motifDial), null);
 
     // Structure: trust + negotiation
     const trustDial = dials['structure-trustNegotiation'];
