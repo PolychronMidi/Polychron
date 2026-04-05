@@ -327,7 +327,7 @@ Polychron's primary module pattern: `globalName = (() => { function tick() {...}
 
 ### Embedding Model
 
-`all-mpnet-base-v2` (768-dim, 109M params). Cross-encoder reranking via `cross-encoder/ms-marco-MiniLM-L-6-v2`. Configurable via `RAG_MODEL` env var.
+`BAAI/bge-base-en-v1.5` (768-dim, 110M params). 3x better code similarity than previous mpnet model. Cross-encoder reranking via `cross-encoder/ms-marco-MiniLM-L-6-v2`. Configurable via `RAG_MODEL` env var.
 
 ### Symbol Indexing
 

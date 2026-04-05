@@ -83,11 +83,36 @@ def module_story(module_name: str) -> str:
         parts.append(f"  {f}")
     if len(caller_files) > caller_limit:
         parts.append(f"  ... and {len(caller_files) - caller_limit} more")
-    # Musical impact — compositional awareness
+    # Musical impact — compositional awareness + runtime trace
     comp = _get_compositional_context(module_name)
     if comp:
         parts.append(f"\n## Musical Impact (last run)")
         parts.append(comp)
+    # Runtime trace summary — what the module ACTUALLY DID
+    try:
+        from .evolution import trace_query as _trace_query
+        trace_result = _trace_query(module_name, limit=8)
+        # Only include if there's meaningful data (not just "No trace data")
+        if "Value Ranges" in trace_result:
+            # Extract just the value ranges section (skip header/samples for brevity)
+            trace_lines = trace_result.split("\n")
+            runtime_lines = []
+            in_ranges = False
+            for tl in trace_lines:
+                if "Beats with data" in tl or "Active in sections" in tl or "Regime distribution" in tl:
+                    runtime_lines.append(tl)
+                elif "Value Ranges" in tl:
+                    in_ranges = True
+                    runtime_lines.append(tl)
+                elif in_ranges and tl.startswith("  "):
+                    runtime_lines.append(tl)
+                elif in_ranges and not tl.startswith("  "):
+                    in_ranges = False
+            if runtime_lines:
+                parts.append(f"\n## Runtime Behavior (last run)")
+                parts.extend(runtime_lines)
+    except Exception:
+        pass
 
     # Semantic neighbors
     sim_limit = limits["similar"]

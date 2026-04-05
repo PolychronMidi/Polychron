@@ -45,7 +45,7 @@ from file_walker import init_config, get_lib_dirs
 PROJECT_ROOT = os.environ.get("PROJECT_ROOT") or os.getcwd()
 PROJECT_DB = os.environ.get("RAG_DB_PATH") or os.path.join(PROJECT_ROOT, ".claude", "mcp", "HyperMeta-Ecstasy")
 GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "HyperMeta-Ecstasy", "global_kb")
-MODEL_NAME = os.environ.get("RAG_MODEL", "all-mpnet-base-v2")
+MODEL_NAME = os.environ.get("RAG_MODEL", "BAAI/bge-base-en-v1.5")
 MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
 
 os.makedirs(PROJECT_DB, exist_ok=True)
