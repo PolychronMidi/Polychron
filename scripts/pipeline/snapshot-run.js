@@ -157,6 +157,56 @@ function main() {
     profile: features.sections[0] ? features.sections[0].profile : 'unknown',
   };
 
+  // --perceptual: run EnCodec analysis and attach to snapshot
+  // Only if WAV is newer than trace-summary (same pipeline run)
+  const WAV_PATH = path.join(__dirname, '..', '..', 'output', 'combined.wav');
+  const wavFresh = fs.existsSync(WAV_PATH) &&
+    fs.statSync(WAV_PATH).mtimeMs > fs.statSync(TS_PATH).mtimeMs - 600000; // within 10min
+  if (args.includes('--perceptual') && !wavFresh && fs.existsSync(WAV_PATH)) {
+    console.log('  ! Skipping perceptual: combined.wav is stale (older than trace-summary). Run `npm run render` first.');
+  }
+  if (args.includes('--perceptual') && wavFresh) {
+    try {
+      const { execSync } = require('child_process');
+      const pyScript = `
+import json, torch, torchaudio, numpy as np
+from encodec import EncodecModel
+from encodec.utils import convert_audio
+
+model = EncodecModel.encodec_model_24khz()
+model.set_target_bandwidth(6.0)
+model.to('cuda' if torch.cuda.is_available() else 'cpu').eval()
+wav, sr = torchaudio.load('${WAV_PATH.replace(/'/g, "\\'")}')
+wav = convert_audio(wav, sr, model.sample_rate, model.channels).unsqueeze(0).to(next(model.parameters()).device)
+codes_list = []
+with torch.no_grad():
+    for s in range(0, wav.shape[-1], model.sample_rate*30):
+        c = wav[..., s:s+model.sample_rate*30]
+        if c.shape[-1] < model.sample_rate: continue
+        codes_list.append(model.encode(c)[0][0][0].cpu())
+codes = torch.cat(codes_list, dim=-1)
+result = {}
+for cb in range(min(codes.shape[0], 4)):
+    t = codes[cb].numpy()
+    u, c = np.unique(t, return_counts=True)
+    p = c/c.sum()
+    result[f'cb{cb}_entropy'] = float(-np.sum(p*np.log2(p+1e-10)))
+    result[f'cb{cb}_unique'] = int(len(u))
+result['total_frames'] = int(codes.shape[1])
+result['codebooks'] = int(codes.shape[0])
+print(json.dumps(result))
+`;
+      const output = execSync(`python3 -c '${pyScript.replace(/'/g, "'\\''")}'`, {
+        timeout: 120000, encoding: 'utf-8',
+        env: { ...process.env, PYTHONPATH: '/home/jah/.local/lib/python3.12/site-packages' },
+      }).trim();
+      snapshot.perceptual = { encodec: JSON.parse(output) };
+      console.log(`  + EnCodec: ${snapshot.perceptual.encodec.codebooks} codebooks, CB0 entropy=${snapshot.perceptual.encodec.cb0_entropy.toFixed(2)}`);
+    } catch (e) {
+      console.log(`  ! EnCodec analysis failed: ${e.message.slice(0, 80)}`);
+    }
+  }
+
   const outPath = path.join(HISTORY_DIR, `${timestamp}.json`);
   fs.writeFileSync(outPath, JSON.stringify(snapshot, null, 2));
   console.log(`Snapshot saved: ${path.basename(outPath)} (${features.traceEntries} beats, ${features.sectionCount} sections)`);

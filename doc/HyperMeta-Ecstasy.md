@@ -290,6 +290,15 @@ Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tool
 | `symbol_importance` | Rank globals by caller count (architectural centrality) |
 | `list_libs` | Show indexed library directories |
 
+### Perceptual Intelligence (2 tools)
+
+| Tool | Use For |
+|------|---------|
+| `audio_encodec` | Neural audio codec analysis: per-section token entropy (complexity), codebook activation, inter-section contrast. EnCodec 24kHz on GPU |
+| `audio_clap` | Natural language audio queries: "is this section tense?", "where is the atmospheric texture?". CLAP text↔audio similarity. Custom queries via comma-separated string |
+
+Both tools start at **15% confidence** — verify against listening before trusting. Confidence earns trust through verdict correlation, like any trust system.
+
 ### Index Management (4 tools)
 
 | Tool | Use For |
