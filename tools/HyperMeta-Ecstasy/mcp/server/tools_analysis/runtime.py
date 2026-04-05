@@ -102,17 +102,25 @@ def drama_finder(top_n: int = 10) -> str:
         if run_key not in seen_run:
             deduped.append(ev)
             seen_run[run_key] = True
-    # Bucket by type, guarantee slots for each, fill remainder with highest overall
+    # Bucket by type with section-diversity cap: max N multi_hotspot per section
     per_type: dict = {"multi_hotspot": [], "regime_transition": [], "weight_swing": []}
     seen_beats_by_type: dict = {t: set() for t in per_type}
+    section_counts: dict = {}  # "type:section" -> count
+    max_per_section = max(top_n // 3, 3)  # prevent one section from monopolizing
     for ev in deduped:
         t = ev["type"]
-        if t in per_type and ev["beat"] not in seen_beats_by_type[t]:
-            per_type[t].append(ev)
-            seen_beats_by_type[t].add(ev["beat"])
+        if t not in per_type or ev["beat"] in seen_beats_by_type[t]:
+            continue
+        section = ev["beat"].split(":")[0] if ":" in ev["beat"] else "?"
+        sec_key = f"{t}:{section}"
+        if section_counts.get(sec_key, 0) >= max_per_section:
+            continue
+        per_type[t].append(ev)
+        seen_beats_by_type[t].add(ev["beat"])
+        section_counts[sec_key] = section_counts.get(sec_key, 0) + 1
 
     # Guaranteed minimums per type
-    quota = max(top_n // 5, 2)  # e.g. top_n=10 -> 2 each guaranteed
+    quota = max(top_n // 4, 2)
     top = []
     for t, evs in per_type.items():
         top.extend(evs[:quota])

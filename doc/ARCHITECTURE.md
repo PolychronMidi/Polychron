@@ -154,6 +154,8 @@ The exploring brake applies duration-proportional pressure after 60 L1-only tick
 
 **Firewall boundary 2.** Resolves conflicts between competing cross-layer systems. Reads trust weights from `adaptiveTrustScores`. Gates convergence events (trust floor modulated by convergenceTarget and CIM coordination scale). Prevents destructive interference between cadence alignment and stutter contagion.
 
+**Density-attenuated hotspot pressure.** Pair-aware hotspot scoring in `adaptiveTrustScoresHelpers.getSystemPairHotspotProfile()` scales density-containing pair weights by `clamp(densityProduct / 0.75, 0.5, 1.0)` from `conductorSignalBridge`. When the conductor deliberately suppresses density (atmospheric/explosive profiles, densityMultiplier < 1), density-pair hotspot pressure attenuates proportionally — preventing false cascades where density-trust systems are penalized for low density the conductor itself requested.
+
 ## Emission
 
 `playNotesEmitPick()` emits note events per pick across source/reflection/bass channel families. Per-pick: spectral nudge, harmonic interval guard, register collision avoidance, convergence velocity surge, stutter echo gate.
