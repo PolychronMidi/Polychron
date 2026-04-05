@@ -9,7 +9,8 @@ from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
     _get_api_key, _claude_think, _local_think, _think_local_or_claude,
-    _format_kb_corpus, _THINK_MODEL, _DEEP_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+    _format_kb_corpus, _THINK_MODEL, _DEEP_MODEL, _REASONING_MODEL,
+    _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from . import _get_compositional_context, _track
 
@@ -28,18 +29,22 @@ def module_story(module_name: str) -> str:
     # Definition — try exact symbol match, then prefix match, then file search
     syms = collect_all_symbols(ctx.PROJECT_ROOT)
     matching = [s for s in syms if s["name"] == module_name]
+    if matching and len(matching) > 1:
+        # Prefer the file whose basename matches the module name (definition over call site)
+        name_matched = [s for s in matching if os.path.basename(s["file"]).replace(".js", "") == module_name]
+        if name_matched:
+            matching = name_matched
     if not matching:
-        # Prefix match: find symbols whose name starts with the module name (inner functions)
-        prefix_matches = [s for s in syms if s["name"].startswith(module_name) and s["kind"] in ("function", "method")]
-        if prefix_matches:
-            # Use the file from the first match as the definition location
-            matching = [{"name": module_name, "kind": "module", "file": prefix_matches[0]["file"], "line": 1, "signature": ""}]
-    if not matching:
-        # File search: look for a file named after the module
+        # File search first: a file named after the module is almost certainly the definition
         import glob as _glob
         candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{module_name}.js"), recursive=True)
         if candidates:
             matching = [{"name": module_name, "kind": "module", "file": candidates[0], "line": 1, "signature": ""}]
+    if not matching:
+        # Prefix match: find symbols whose name starts with the module name (inner functions)
+        prefix_matches = [s for s in syms if s["name"].startswith(module_name) and s["kind"] in ("function", "method")]
+        if prefix_matches:
+            matching = [{"name": module_name, "kind": "module", "file": prefix_matches[0]["file"], "line": 1, "signature": ""}]
     if not matching:
         return f"Module '{module_name}' not found. No matching symbol, prefix, or file in src/."
     if matching:
@@ -201,7 +206,7 @@ def module_story(module_name: str) -> str:
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
     if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=1024)
+        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
     if synthesis:
         parts.append(f"\n## Key Constraints *(adaptive)*")
         parts.append(synthesis)
@@ -266,7 +271,7 @@ def think(about: str, context: str = "") -> str:
         user_text += f"\n\n**Additional context:** {context}"
     if kb_block:
         user_text += f"\n\n{kb_block}"
-    local_answer = _local_think(user_text, max_tokens=1024)
+    local_answer = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
     if local_answer:
         parts = [f"# Think: {about} *(local)*\n", local_answer]
         if kb_hits:
@@ -353,7 +358,7 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         )
         api_key = _get_api_key()
         synthesis = (_claude_think(user_text, api_key, kb_context=_format_kb_corpus())
-                     if api_key else _local_think(user_text))
+                     if api_key else _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL))
         if synthesis:
             parts.append(f"\n## Change Risk *(adaptive)*")
             parts.append(synthesis)

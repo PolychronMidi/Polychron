@@ -110,6 +110,51 @@ print(count)
   fi
 fi
 
+# ── Background-launch-then-idle detection ────────────────────────────────────
+# If the assistant launched a background task (run_in_background) and then did
+# fewer than 3 tool calls after it, block: the antipattern is launching a
+# pipeline then ending the turn with a summary instead of continuing work.
+if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
+  IDLE_AFTER_BG=$(python3 -c "
+import json, sys
+data = open('$TRANSCRIPT_PATH').read()
+lines = data.strip().split('\n')
+in_turn = False
+found_bg = False
+calls_after_bg = 0
+for line in reversed(lines):
+    try:
+        obj = json.loads(line)
+    except Exception:
+        continue
+    role = obj.get('role','')
+    if role == 'user' and not in_turn:
+        continue
+    if role == 'assistant':
+        in_turn = True
+    if role == 'user' and in_turn:
+        break
+    if in_turn:
+        for block in obj.get('content', []):
+            if not isinstance(block, dict) or block.get('type') != 'tool_use':
+                continue
+            inp = block.get('input', {})
+            if block.get('name') == 'Bash' and inp.get('run_in_background'):
+                found_bg = True
+            elif found_bg:
+                calls_after_bg += 1
+print('idle' if found_bg and calls_after_bg < 3 else 'ok')
+" 2>/dev/null || echo ok)
+
+  if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
+    jq -n '{
+      "decision": "block",
+      "reason": "ANTI-IDLE: You launched a background task then stopped working. run_in_background means CONTINUE with parallel work immediately: doc updates, HME indexing, code improvements, break-point scanning, or any other pending tasks. Do NOT end your turn waiting."
+    }'
+    exit 0
+  fi
+fi
+
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 exit 0

@@ -13,7 +13,9 @@
     "registerCollision", "convergence-density", "climax-pressure",
     "rest-sync", "density-rhythm", "section-quality", "emissionDelta",
     "perceptual-crowding", "harmonic-journey-eval", "emissionSummary",
-    "phaseConvergence", "explainability"
+    "phaseConvergence", "explainability", "emergentRhythm",
+    "emergentDownbeat", "stutterContagion", "cadenceAlignment",
+    "self-narration"
   ],
 
   "dry_patterns": [

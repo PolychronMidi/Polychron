@@ -270,6 +270,9 @@ coordinationIndependenceManager = (() => {
     // emergentDownbeat: layer swap probability scales inversely with coordination
     safePreBoot.call(() => emergentDownbeat.setCoordinationScale(feedbackDownbeat), null);
 
+    // emergentRhythmEngine: grid sensitivity + bias strength scale with coordination
+    safePreBoot.call(() => emergentRhythmEngine.setCoordinationScale(feedbackDownbeat), null);
+
     // stutter channel coordination: how many channels stutter together
     safePreBoot.call(() => StutterManager.setChannelCoordinationScale(stutterChannelDial), null);
 

@@ -610,6 +610,7 @@ fullBootstrap = (() => {
     // -- crossLayer --
     't',
     'stutterContagion',
+    'emergentRhythmEngine',
     'convergenceDetector',
     'convergenceVelocitySurge',
     'trustEcologyCharacter',

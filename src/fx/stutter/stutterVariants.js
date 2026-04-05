@@ -236,6 +236,15 @@ stutterVariants = (() => {
       }
     }
 
+    // R50: emergent rhythm intensity modulates variant selection. Dense emergent
+    // grids boost percussive/dramatic variants; complex grids boost textural variants.
+    const EMERGENT_DENSE_WEIGHTS = { machineGun: 1.6, stutterSwarm: 1.4, rhythmicGrid: 1.5, convergenceBurst: 1.3 };
+    const EMERGENT_COMPLEX_WEIGHTS = { ghostStutter: 1.5, flickerStutter: 1.4, stereoWidthModulation: 1.3, echoTrail: 1.3 };
+    const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const emergentDensity = emergentEntry && Number.isFinite(emergentEntry.density) ? emergentEntry.density : 0;
+    const emergentComplexity = emergentEntry && Number.isFinite(emergentEntry.complexity) ? emergentEntry.complexity : 0.5;
+    const emergentActive = emergentDensity > 0.06;
+
     // R25: self-balancing - inverse-frequency boost for underrepresented variants
     const variantCounts = stutterMetrics.getMetrics().variantCounts;
     const totalVariantCount = Object.values(variantCounts).reduce((/** @type {number} */ s, /** @type {number} */ c) => s + c, 0);
@@ -264,7 +273,11 @@ stutterVariants = (() => {
         const thisShare = (variantCounts[name] || 0) / totalVariantCount;
         balanceMult = thisShare > variantAvgShare * 1.5 ? 0.7 : thisShare < variantAvgShare * 0.5 ? 1.4 : 1.0;
       }
-      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult * balanceMult });
+      const emergentMult = emergentActive
+        ? (emergentComplexity > 0.5 ? (EMERGENT_COMPLEX_WEIGHTS[name] || 1.0) : (EMERGENT_DENSE_WEIGHTS[name] || 1.0))
+        * (1.0 + emergentDensity * 0.3)
+        : 1.0;
+      pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult * balanceMult * emergentMult });
     }
     let totalWeight = 0;
     for (let i = 0; i < pool.length; i++) totalWeight += pool[i].weight;

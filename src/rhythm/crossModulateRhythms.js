@@ -158,6 +158,23 @@ crossModulateRhythms = () => {
     contagionContribution = portContribution;
   }
 
+  // R50: Emergent rhythm grid modulation. When emergentRhythmEngine detects
+  // dense cross-layer activity, its complexity shapes crossMod character:
+  // high complexity = looser (syncopated passages need room),
+  // high density + low complexity = tighter (driving passages want cohesion).
+  {
+    const emergent = L0.getLast('emergentRhythm', { layer: 'both' });
+    if (emergent && Number.isFinite(emergent.density) && emergent.density > 0.05) {
+      const eDensity = V.optionalFinite(emergent.density, 0);
+      const eComplexity = V.optionalFinite(emergent.complexity, 0.5);
+      const eRegimeScale = profSnap && profSnap.regime === 'exploring' ? 1.3
+        : (profSnap && profSnap.regime === 'coherent' ? 0.6 : 1.0);
+      // complexity > 0.5: loosen crossMod (positive), < 0.5: tighten (negative)
+      const emergentMod = (eComplexity - 0.5) * eDensity * eRegimeScale * rf(0.3, 0.6);
+      crossModulation += emergentMod;
+    }
+  }
+
   // E19: HyperMeta crossModulation suppression. Multiplier on crossModulation
   // during E11 sparse windows. 1.0 = neutral (default from getRateMultiplier),
   // <1.0 = max suppression depth (from hyperMetaManager EMA ramp).

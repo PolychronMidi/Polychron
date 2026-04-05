@@ -93,7 +93,7 @@ function analyzeModule(filePath) {
   const moduleNames = [
     'adaptiveTrustScores', 'cadenceAlignment', 'convergenceDetector', 'convergenceHarmonicTrigger',
     'crossLayerClimaxEngine', 'crossLayerDynamicEnvelope', 'crossLayerSilhouette',
-    'dynamicRoleSwap', 'emergentDownbeat', 'entropyMetrics', 'entropyRegulator',
+    'dynamicRoleSwap', 'emergentDownbeat', 'emergentRhythmEngine', 'entropyMetrics', 'entropyRegulator',
     'explainabilityBus', 'feedbackOscillator', 'grooveTransfer', 'harmonicIntervalGuard',
     'interactionHeatMap', 'motifEcho', 'motifIdentityMemory', 'negotiationEngine',
     'phaseAwareCadenceWindow', 'pitchMemoryRecall', 'polyrhythmicPhasePredictor',
