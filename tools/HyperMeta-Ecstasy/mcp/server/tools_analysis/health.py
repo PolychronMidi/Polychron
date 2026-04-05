@@ -10,6 +10,7 @@ from server.helpers import (
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS,
 )
 from symbols import collect_all_symbols, find_callers as _find_callers, find_iife_globals as _find_iife_globals
+from analysis import trace_cross_language as _trace_cross_lang
 from structure import file_summary as _file_summary
 from .synthesis import (
     _get_api_key, _think_local_or_claude, _format_kb_corpus,

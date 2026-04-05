@@ -219,6 +219,10 @@ regimeClassifierResolution = (() => {
     }
 
     if (state.forcedRegimeBeatsRemaining <= 0 && resolvedRegime === 'coherent') {
+      // Fresh coherent entry: use 0 elapsed, not time-since-init (coherentStartSec inits to 0,
+      // causing the dwell check to fire immediately if first coherent beat is after HARD_CAP_SEC).
+      if (state.coherentBeats === 0) state.coherentStartSec = beatStartTime;
+      const effectiveCoherentElapsedSec = beatStartTime - state.coherentStartSec;
       const projectedRunCoherentBeats = state.runLastResolvedRegime === 'coherent' ? state.runCoherentBeats + beatSpan : beatSpan;
       let coherentMaxDwellSec = config.COHERENT_MAX_DWELL_SEC;
       const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
@@ -252,8 +256,8 @@ regimeClassifierResolution = (() => {
       }
       // Hard cap (was 37 beats, now time-based)
       coherentMaxDwellSec = m.min(coherentMaxDwellSec, config.COHERENT_HARD_CAP_SEC);
-      if (coherentElapsedSec > coherentMaxDwellSec) {
-        const coherentOvershootSec = coherentElapsedSec - coherentMaxDwellSec;
+      if (effectiveCoherentElapsedSec > coherentMaxDwellSec) {
+        const coherentOvershootSec = effectiveCoherentElapsedSec - coherentMaxDwellSec;
         const forcedWindow = clamp(12 + m.floor(coherentOvershootSec / 18) + m.floor(state.coherentShareEma * 6) + m.floor(evolvingRecoveryPriority * 3) + (phaseStableRecoveryWindow ? m.round(1 + phaseStableRecoveryStrength) : 0), 12, 24);
         const recoveryRegime = evolvingRecoveryPriority > 0.18 || evolvingPolishPressure > 0.65 || (evolvingShare < 0.03 && evolvingDeficit > 0.80) ? 'evolving' : 'exploring';
         forceRegimeTransition(recoveryRegime, 'coherent-max-dwell-run', forcedWindow, projectedRunCoherentBeats, tickId);
