@@ -58,7 +58,10 @@ phraseArcProfiler = (() => {
    */
   // R29 E1: regime-responsive independence modulation on top of profile values.
   // Exploring: +0.10 (more contrapuntal searching), coherent: -0.08 (more unified).
-  const INDEPENDENCE_REGIME_MOD = { exploring: 0.10, evolving: 0.0, coherent: -0.08 };
+  // R47: Raised exploring 0.10->0.15. flicker-phase became dominant coupling pair
+  // in R46 (legendary). Amplifies contrapuntal searching during the 52.7% exploring
+  // phase -- more independent phrase arcs = richer xenolinguistic character.
+  const INDEPENDENCE_REGIME_MOD = { exploring: 0.15, evolving: 0.0, coherent: -0.08 };
 
   function generateArcProfiles() {
     if (!PHRASES_ARC_CURVES) {

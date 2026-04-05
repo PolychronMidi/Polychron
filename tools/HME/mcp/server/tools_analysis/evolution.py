@@ -722,7 +722,11 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         f"2. Output enforcement message to stderr (>&2)\n"
         f"3. Use exit 0 (warn) or exit 2 with JSON {{\"decision\":\"block\",\"reason\":\"...\"}} (block)\n"
         f"4. Include a one-line comment explaining what it prevents\n"
-        f"Be concise — 5-10 lines maximum."
+        f"Be concise — 5-10 lines maximum.\n\n"
+        f"CRITICAL: The hook fires once per tool call. Write a SINGLE if-condition on CMD "
+        f"that matches ONLY the command that IS the antipattern (the thing to block). "
+        f"Do NOT AND multiple conditions from different tool calls together — they will never both be true simultaneously. "
+        f"Example: to block 'tail /tmp/run.log', write: if echo \"$CMD\" | grep -qE 'tail.*run\\.log'; then"
     )
     api_key = _get_api_key()
     snippet = None

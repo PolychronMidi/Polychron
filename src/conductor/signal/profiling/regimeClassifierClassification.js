@@ -215,7 +215,11 @@ regimeClassifierClassification = (() => {
 
     // R81 E1: Moved adaptiveVelCeiling before self-sustain so both paths
     // (self-sustain and crossover) can use the same adaptive ceiling.
-    const adaptiveVelCeiling = m.max(0.090, state.velocityEma - state.velocityStdEma * 0.5);
+    // R47: Removed -0.5*std bias. Post-R67 velocity distribution sits at 0.11-0.21,
+    // so EMA - 0.5*std ~0.11 -- many beats have velocity just above this, blocking
+    // evolving crossover. Using EMA directly lifts the ceiling to the median velocity,
+    // allowing beats near the distribution center to qualify for evolving crossover.
+    const adaptiveVelCeiling = m.max(0.090, state.velocityEma);
 
     // R99 E3: Widen evolving self-sustain coupling band when evolving is starved.
     // evolvingDeficit already widens the upper bound; now also lower the coupling

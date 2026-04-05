@@ -278,20 +278,30 @@ def _format_kb_corpus() -> str:
             for r in glob_rows:
                 lines.append(f"[global/{r['category']}] {r['title']}: {r['content'][:200]}")
         corpus = "\n".join(lines) if lines else ""
-        # Guard: if corpus exceeds ~40k tokens (≈160k chars), trim oldest entries first
+        # Guard: if corpus exceeds ~40k tokens (≈160k chars), trim from lowest-priority first.
+        # Already sorted by category priority (architecture→general), so drop from the tail.
         if len(corpus) > 160_000:
-            if proj_rows:
-                proj_rows = proj_rows[:max(10, len(proj_rows) // 2)]
-            if glob_rows:
-                glob_rows = glob_rows[:max(5, len(glob_rows) // 2)]
+            trimmed_proj = proj_rows[:]
+            trimmed_glob = glob_rows[:]
+            while len("\n".join(
+                (["# Project Knowledge Base (trimmed)\n"] + [f"[{r['category']}] {r['title']}: {r['content'][:300]}" for r in trimmed_proj])
+                + (["\n# Global Knowledge Base (trimmed)\n"] + [f"[global/{r['category']}] {r['title']}: {r['content'][:200]}" for r in trimmed_glob] if trimmed_glob else [])
+            )) > 160_000:
+                # Drop from global first (lower priority), then project general/bugfix tail
+                if trimmed_glob:
+                    trimmed_glob = trimmed_glob[:-1]
+                elif trimmed_proj:
+                    trimmed_proj = trimmed_proj[:-1]
+                else:
+                    break
             lines = []
-            if proj_rows:
+            if trimmed_proj:
                 lines.append("# Project Knowledge Base (trimmed)\n")
-                for r in proj_rows:
+                for r in trimmed_proj:
                     lines.append(f"[{r['category']}] {r['title']}: {r['content'][:300]}")
-            if glob_rows:
+            if trimmed_glob:
                 lines.append("\n# Global Knowledge Base (trimmed)\n")
-                for r in glob_rows:
+                for r in trimmed_glob:
                     lines.append(f"[global/{r['category']}] {r['title']}: {r['content'][:200]}")
             corpus = "\n".join(lines)
         return corpus

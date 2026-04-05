@@ -780,3 +780,34 @@ Listen verdict: **"amazing new level of legendary xenolinguistics"**. The alien-
 - **Per-system pair assignments**: 19 systems previously on generic fallback pairs now have function-specific pairs. Hotspot diversity: was 20 systems at identical 23.9%, now 14 distinct levels (1.4%–30.9%).
 - **Flicker-attenuation**: added `clamp(flickerProduct/0.75, 0.5, 1.0)` scaling for flicker-indexed pairs. Breaks smooth-tension false cascade.
 - **Coupling label arc**: S0 rhythmic-shimmer → S2 stable-variety → S4 chaotic-proliferation → S6 smooth-tension. Tracks the emotional trajectory.
+
+## R46 — Regime Recovery Routing + axisGini Dampening (2026-04-05)
+
+**Listening verdict: legendary xenolinguistics (new tier above R45)**
+
+**Pipeline: STABLE** | 899 beats, 7 sections, 144s | 72 BPM, 432Hz, atmospheric
+
+**Evolutions:**
+- `regimeClassifier`: REGIME_TARGET_EVOLVING_LO 0.27→0.32 (deficit re-engagement at 25% actual)
+- `regimeClassifierResolution`: exploringRecoveryPriority threshold 0.18→0.12 (fixes bipolar cycle)
+- `regimeClassifierResolution`: evolvingDeficit monopoly penalty 0.06→0.08
+- `axisEnergyEquilibratorPairAdjustments`: GINI_DAMPEN_0 0.65→0.72 (stronger non-dominant pressure)
+- `axisEnergyEquilibrator`: ENTROPY_SURFACE_RATIO 1.35→1.50 (protects sparse entropy axis)
+
+**Results:**
+- Regimes: exploring 52.7% (+5.7%), evolving 18.7% (-6.3%), coherent 28.1%
+- Axis shares: phase +5% (0.154→0.204), density +3.8%, entropy +1.2%, trust -3.6%, tension -5.5%
+- Top hotspot migrated density-phase → flicker-phase (76 beats)
+- New arc shape: plateau arc; 7 sections (up from 5), F# mixolydian palette-break in S5
+- Harmonic journey: C ionian → D ionian → F minor → C minor → F# mixolydian → C ionian → Eb minor
+
+**Key learnings:**
+- Raising evolvingTarget has window-shortening side effect via exploringWindowReduction amplification
+- Bipolar exploring-coherent cycle was caused by evolvingRecoveryPriority < 0.18 threshold (now 0.12)
+- ENTROPY_SURFACE_RATIO raise produced measurable +1.2% entropy share improvement
+- Exploring dominance (52.7%) produces musically superior output — not a problem to fix
+- Root driver of exploring dominance: adaptiveVelCeiling floored at 0.090, post-R67 velocity at 0.11-0.21
+
+**HME improvements:**
+- fix_antipattern MCP tool added (permanent hook enforcement via bash synthesis)
+- pretooluse_bash.sh: anti-wait injection for long-running commands
