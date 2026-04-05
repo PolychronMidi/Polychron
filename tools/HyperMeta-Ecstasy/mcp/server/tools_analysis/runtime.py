@@ -68,14 +68,22 @@ def drama_finder(top_n: int = 10) -> str:
                         })
                     prev_weights[sys_name] = weight
 
-                # Multiple simultaneous hotspots (system under pressure)
+                # Multiple simultaneous hotspots — amplified by tension
+                snap = record.get("snap", {})
+                tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
+                note_count = len(record.get("notes", []))
                 active_hotspots = sum(1 for s in trust.values()
                                       if isinstance(s, dict) and s.get("hotspotPressure", 0) > 0.2)
                 if active_hotspots >= 3:
+                    # Tension and note density amplify drama; max_hotspot_pressure shows peak stress
+                    max_hp = max((s.get("hotspotPressure", 0) for s in trust.values()
+                                  if isinstance(s, dict)), default=0)
+                    drama = active_hotspots * 0.8 + tension * 3.0 + max_hp * 2.0 + min(note_count / 50, 2.0)
                     events.append({
-                        "beat": beat_key, "drama": active_hotspots * 0.8,
+                        "beat": beat_key, "drama": drama,
                         "type": "multi_hotspot",
-                        "detail": f"{active_hotspots} systems under hotspot pressure simultaneously",
+                        "detail": (f"{active_hotspots} hotspots | tension={tension:.3f} | "
+                                   f"peak_hp={max_hp:.3f} | {note_count} notes"),
                     })
 
                 prev_regime = regime
@@ -85,9 +93,27 @@ def drama_finder(top_n: int = 10) -> str:
     if not events:
         return "No dramatic moments detected."
 
-    # Sort by drama score and take top N
+    # Sort by drama score descending
     events.sort(key=lambda e: -e["drama"])
-    top = events[:top_n]
+
+    # Deduplicate consecutive same-type same-beat-key runs — keep highest, skip the rest
+    deduped = []
+    seen_run: dict = {}  # type -> last beat key that was emitted
+    for ev in events:
+        run_key = (ev["type"], ev["beat"])
+        if run_key not in seen_run:
+            deduped.append(ev)
+            seen_run[run_key] = True
+    # Also enforce beat diversity: don't let one beat dominate all top_n slots
+    final: list = []
+    beat_count: dict = {}
+    for ev in deduped:
+        if beat_count.get(ev["beat"], 0) < 2:  # max 2 events per beat in top results
+            final.append(ev)
+            beat_count[ev["beat"]] = beat_count.get(ev["beat"], 0) + 1
+        if len(final) >= top_n * 3:
+            break
+    top = final[:top_n]
 
     parts = [f"## Drama Finder — Top {len(top)} Most Dramatic Moments\n"]
     for i, ev in enumerate(top, 1):
