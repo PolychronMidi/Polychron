@@ -83,6 +83,11 @@ adaptiveTrustScoresHelpers = (() => {
     // penalized when the composition intentionally reduces flicker activity.
     const flickerProduct = V.optionalFinite(signals.flicker, 1.0);
     const flickerAttenuation = clamp(flickerProduct / 0.75, 0.5, 1.0);
+    // Discount hotspot pressure for semantically labeled "opposed" pairs.
+    // Creative anti-correlations (phase-opposed-flicker, smooth-tension, etc.) are structural
+    // features of the composition, not failures -- penalizing them suppresses valid patterns.
+    const couplingLabels = (signals.couplingLabels && typeof signals.couplingLabels === 'object')
+      ? signals.couplingLabels : null;
 
     const hotspotPairs = [];
     let maxPressure = 0;
@@ -103,9 +108,14 @@ adaptiveTrustScoresHelpers = (() => {
       const pairP95 = adaptiveEntry && typeof adaptiveEntry.p95AbsCorr === 'number' ? adaptiveEntry.p95AbsCorr : absCorrelation;
       const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
       const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
+      // Attenuate if pair has a recognized creative "opposed" coupling label:
+      // these are structural anti-correlations by design, not underperformance.
+      const pairLabel = couplingLabels ? (couplingLabels[pair] || '') : '';
+      const opposedDiscount = (pairLabel.indexOf('opposed') >= 0 || pairLabel === 'smooth-tension') ? 0.70 : 1.0;
       const pairWeight = (pairWeights[pair] !== undefined ? pairWeights[pair] : 1) *
         (pair.indexOf('density') >= 0 ? densityAttenuation : 1) *
-        (pair.indexOf('flicker') >= 0 ? flickerAttenuation : 1);
+        (pair.indexOf('flicker') >= 0 ? flickerAttenuation : 1) *
+        opposedDiscount;
       const pairPressure = clamp(
         clamp((absCorrelation - 0.72) / 0.18, 0, 1) * 0.40 +
         clamp((pairP95 - 0.82) / 0.16, 0, 1) * 0.35 +

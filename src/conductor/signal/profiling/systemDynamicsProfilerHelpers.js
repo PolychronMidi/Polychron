@@ -131,7 +131,7 @@ systemDynamicsProfilerHelpers = (() => {
           rhythmEntropy = clamp(ioiStd / m.max(ioiMean, 0.001), 0, 1);
         }
         const combined = pitchEntropy * 0.4 + velocityEntropy * 0.3 + rhythmEntropy * 0.3;
-        entropyAmplificationController.adapt(state.lastSnapshot.compositionalVariance[3]);
+        entropyAmplificationController.adapt(state.lastSnapshot.compositionalVariance[3], entropyRegime);
         entropy = 0.5 + (combined - 0.5) * entropyAmplificationController.getAmp();
       }
     } catch (error) {
