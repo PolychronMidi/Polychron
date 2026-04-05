@@ -161,29 +161,30 @@ report = {
         'chunks': len(chunks),
     },
 }
-print(json.dumps(report))
+with open(sys.argv[3], 'w') as f:
+    json.dump(report, f)
 `;
 
   try {
-    const output = execSync(
-      `python3 -c '${pyScript.replace(/'/g, "'\\''").replace(/\n/g, '\n')}' '${WAV_PATH}' '${path.join(PROJECT_ROOT, 'metrics', 'trace.jsonl')}'`,
+    const tmpReport = path.join(PROJECT_ROOT, 'metrics', '.perceptual-tmp.json');
+    execSync(
+      `python3 -c '${pyScript.replace(/'/g, "'\\''").replace(/\n/g, '\n')}' '${WAV_PATH}' '${path.join(PROJECT_ROOT, 'metrics', 'trace.jsonl')}' '${tmpReport}'`,
       {
         timeout: 300000,
         encoding: 'utf-8',
         maxBuffer: 50 * 1024 * 1024,
+        stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env, PYTHONPATH: '/home/jah/.local/lib/python3.12/site-packages' },
       }
-    ).trim();
+    );
 
-    // Extract JSON from output (skip model loading messages)
-    const jsonStart = output.lastIndexOf('{');
-    const jsonStr = output.slice(jsonStart);
-    const report = JSON.parse(jsonStr);
+    const report = JSON.parse(fs.readFileSync(tmpReport, 'utf-8'));
+    try { fs.unlinkSync(tmpReport); } catch (_) {}
 
     fs.writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2));
 
     console.log(`Perceptual report saved: metrics/perceptual-report.json`);
-    console.log(`  EnCodec: tension?unknown-ascii-character?complexity r=${report.encodec.tension_complexity_correlation.toFixed(3)}`);
+    console.log(`  EnCodec: tension-complexity r=${report.encodec.tension_complexity_correlation.toFixed(3)}`);
     console.log(`  CLAP dominant: "${report.clap.dominant_character}" (${report.clap.dominant_score.toFixed(3)})`);
     console.log(`  Confidence: ${report.confidence * 100}%`);
   } catch (e) {
