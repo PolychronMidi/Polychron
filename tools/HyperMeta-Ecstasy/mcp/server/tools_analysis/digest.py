@@ -148,3 +148,85 @@ def pipeline_digest() -> str:
             shown += 1
 
     return "\n".join(out)
+
+
+@ctx.mcp.tool()
+def regime_anomaly() -> str:
+    """Auto-detect regime pathologies: death spirals (0% of any expected regime),
+    monopolies (>75% single regime), forced-transition storms, and trust inflation.
+    Run after every pipeline — catches problems before they require hours of debugging."""
+    ctx.ensure_ready_sync()
+    _track("regime_anomaly")
+
+    try:
+        records = _load_trace()
+    except Exception as e:
+        return f"No trace data: {e}"
+
+    if not records:
+        return "Empty trace.jsonl."
+
+    regime_total: dict = defaultdict(int)
+    forced_reasons: dict = defaultdict(int)
+    trust_inflation: list = []
+    weight_swings: list = []
+    prev_weights: dict = {}
+
+    for rec in records:
+        regime_total[rec.get("regime", "?")] += 1
+        trust = rec.get("trust", {})
+        for sys, data in trust.items():
+            if not isinstance(data, dict):
+                continue
+            w = data.get("weight", 1)
+            s = data.get("score", 0.5)
+            if isinstance(w, (int, float)) and isinstance(s, (int, float)):
+                if w > 1.15 and s < 0.30:
+                    trust_inflation.append((sys, w, s))
+            pw = prev_weights.get(sys, w)
+            if isinstance(pw, (int, float)) and abs(w - pw) > 0.5:
+                weight_swings.append((abs(w - pw), rec.get("beatKey", "?"), sys))
+            prev_weights[sys] = w
+
+    total = sum(regime_total.values())
+    alerts: list = []
+
+    # Death spiral: 0% of an expected regime
+    for expected in ["coherent", "evolving", "exploring"]:
+        if regime_total.get(expected, 0) == 0:
+            alerts.append(f"🔴 DEATH SPIRAL: 0% {expected} regime ({total} beats). "
+                          "Check regimeClassifier warm-start and threshold scale.")
+
+    # Monopoly: >75% single regime
+    for regime, count in regime_total.items():
+        if regime != "initializing" and count / total > 0.75:
+            alerts.append(f"🟡 MONOPOLY: {regime} at {count*100//total}% ({count}/{total} beats). "
+                          "Regime self-balancer may be stuck.")
+
+    # Trust inflation: high weight despite low score
+    inflated = defaultdict(list)
+    for sys, w, s in trust_inflation:
+        inflated[sys].append((w, s))
+    for sys, samples in sorted(inflated.items(), key=lambda x: -len(x[1]))[:3]:
+        pct = len(samples) * 100 // total
+        if pct > 20:
+            avg_w = sum(w for w, _ in samples) / len(samples)
+            avg_s = sum(s for _, s in samples) / len(samples)
+            alerts.append(f"🟡 TRUST INFLATION: {sys} — weight {avg_w:.2f} but score {avg_s:.2f} "
+                          f"on {pct}% of beats. EMA floor may be propping it up.")
+
+    # Extreme weight swings
+    weight_swings.sort(reverse=True)
+    if weight_swings and weight_swings[0][0] > 0.7:
+        d, bk, sys = weight_swings[0]
+        alerts.append(f"🟡 WEIGHT SWING: {sys} Δ{d:.3f} at {bk}. "
+                      "Check for EMA alpha spike or sudden score inversion.")
+
+    if not alerts:
+        return f"# Regime Health: ALL CLEAR ({total} beats)\n\nNo anomalies detected. " \
+               f"Regimes: {', '.join(f'{r}:{c}' for r, c in sorted(regime_total.items(), key=lambda x: -x[1]))}"
+
+    out = [f"# Regime Anomaly Report ({total} beats, {len(alerts)} alerts)\n"]
+    out.extend(alerts)
+    out.append(f"\nRegimes: {', '.join(f'{r}:{c}' for r, c in sorted(regime_total.items(), key=lambda x: -x[1]))}")
+    return "\n".join(out)
