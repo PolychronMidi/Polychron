@@ -168,20 +168,16 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
     section_entropies = []
     trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
     section_times: dict = {}
-    with open(trace_path) as f:
-        for line in f:
-            try:
-                rec = json.loads(line)
-            except Exception:
-                continue
-            bk = rec.get("beatKey", "")
-            p = bk.split(":")
-            sec = int(p[0]) if p and p[0].isdigit() else -1
-            t = rec.get("timeMs", 0)
-            if isinstance(t, (int, float)) and sec >= 0:
-                if sec not in section_times:
-                    section_times[sec] = {"start": t / 1000, "end": t / 1000}
-                section_times[sec]["end"] = t / 1000
+    from . import _load_trace as _lt
+    for rec in _lt(trace_path):
+        bk = rec.get("beatKey", "")
+        p = bk.split(":")
+        sec = int(p[0]) if p and p[0].isdigit() else -1
+        t = rec.get("timeMs", 0)
+        if isinstance(t, (int, float)) and sec >= 0:
+            if sec not in section_times:
+                section_times[sec] = {"start": t / 1000, "end": t / 1000}
+            section_times[sec]["end"] = t / 1000
 
     for sec_num in sorted(section_times.keys()):
         st = section_times[sec_num]

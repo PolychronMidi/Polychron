@@ -61,7 +61,10 @@ phraseArcProfiler = (() => {
   // R47: Raised exploring 0.10->0.15. flicker-phase became dominant coupling pair
   // in R46 (legendary). Amplifies contrapuntal searching during the 52.7% exploring
   // phase -- more independent phrase arcs = richer xenolinguistic character.
-  const INDEPENDENCE_REGIME_MOD = { exploring: 0.15, evolving: 0.0, coherent: -0.08 };
+  // R48: exploring 0.15->0.20 (wider arc contrast -- 31% exploring needs stronger
+  // independence signal to maintain xenolinguistic quality at lower share).
+  // coherent -0.08->-0.10 (tighter unified feel, within KB-recommended ceiling).
+  const INDEPENDENCE_REGIME_MOD = { exploring: 0.20, evolving: 0.0, coherent: -0.10 };
 
   function generateArcProfiles() {
     if (!PHRASES_ARC_CURVES) {

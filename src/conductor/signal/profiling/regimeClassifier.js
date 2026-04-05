@@ -38,7 +38,10 @@ regimeClassifier = (() => {
     CROSSOVER_MIN_DWELL_SEC: 2.5,
     REGIME_TARGET_COHERENT_LO: 0.10,
     // Lab R1: coherent fatigues, exploring more interesting. Tighten ceiling 0.35->0.33.
-    REGIME_TARGET_COHERENT_HI: 0.33,
+    // R48: Raise 0.33->0.42. R47 coherent 42% produced legendary breathing room
+    // ("pleasant density oscillation"). Self-balancer at 0.33 ceiling would fight it
+    // back down. Raising ceiling preserves the 40-45% sweet spot discovered in R47.
+    REGIME_TARGET_COHERENT_HI: 0.42,
     // R9 E2: Raised from 0.14 to 0.18.
     // R46 E4: Raise 0.18->0.27. Evolving stuck at 21.4% in R45 with
     // exploring at 40.7%. At 0.18, evolvingDeficit=0 so recovery dormant.
