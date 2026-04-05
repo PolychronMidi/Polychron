@@ -13,6 +13,9 @@ function assertGetRhythmDeps() {
   if (!journeyRhythmCoupler || !journeyRhythmCoupler.biasRhythmWeights) {
     throw new Error('getRhythm: journeyRhythmCoupler.biasRhythmWeights is required');
   }
+  if (!emergentRhythmEngine || !emergentRhythmEngine.biasRhythmWeights) {
+    throw new Error('getRhythm: emergentRhythmEngine.biasRhythmWeights is required');
+  }
   if (!phaseLockedRhythmGenerator || !phaseLockedRhythmGenerator.generate) {
     throw new Error('getRhythm: phaseLockedRhythmGenerator.generate is required');
   }
@@ -43,6 +46,9 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
 
     // Chain journey-boldness bias on top of FX+stutter bias
     let rhythmSource = journeyRhythmCoupler.biasRhythmWeights(stutterBiasedRhythmSource);
+
+    // Chain emergent cross-layer pattern bias (4th link): contagion+downbeat+feedback -> rhythm shape
+    rhythmSource = emergentRhythmEngine.biasRhythmWeights(rhythmSource);
 
     // Apply rhythm history novelty penalty to discourage repetition
     rhythmSource = rhythmHistoryTracker.penalizeRepetition(rhythmSource);

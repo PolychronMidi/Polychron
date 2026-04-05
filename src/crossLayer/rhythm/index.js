@@ -15,6 +15,8 @@ require('./rhythmicPhaseLock');
 
 require('./stutterContagion');
 
+require('./emergentRhythmEngine');
+
 require('./temporalGravity');
 require('./polyrhythmicPhasePredictor');
 require('./stutterTempoFeel');
