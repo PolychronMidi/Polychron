@@ -30,6 +30,32 @@
   },
 
   "known_non_tool_identifiers": [
-    "done_signal", "max_iterations"
+    "done_signal", "max_iterations",
+    "caused_by", "fixed_by", "depends_on", "contradicts", "similar_to", "supersedes",
+    "architecture", "decision", "pattern", "bugfix"
+  ],
+
+  "registration_patterns": [
+    "conductorIntelligence.register",
+    "crossLayerRegistry.register",
+    "feedbackRegistry.register"
+  ],
+
+  "coupling_matrix_exempt_paths": [
+    "/conductor/signal/balancing/",
+    "/conductor/signal/profiling/",
+    "/conductor/signal/meta/",
+    "/conductor/signal/output/",
+    "conductorDiagnostics",
+    "/scripts/pipeline/",
+    "/writer/traceDrain",
+    "play/processBeat.js"
+  ],
+
+  "coupling_matrix_legacy_paths": [
+    "phaseLockedRhythmGenerator.js",
+    "conductorDampening.js",
+    "densityWaveAnalyzer.js",
+    "velocityShapeAnalyzer.js"
   ]
 }

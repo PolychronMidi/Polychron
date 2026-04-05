@@ -9,7 +9,8 @@ from server.helpers import (
     get_context_budget, validate_project_path, fmt_score,
     format_knowledge_results, check_path_in_project,
     BUDGET_LIMITS, CROSSLAYER_BOUNDARY_VIOLATIONS, KNOWN_NON_TOOL_IDENTIFIERS,
-    DRY_PATTERNS,
+    DRY_PATTERNS, REGISTRATION_PATTERNS,
+    COUPLING_MATRIX_EXEMPT_PATHS, COUPLING_MATRIX_LEGACY_PATHS,
 )
 from symbols import collect_all_symbols, find_callers as _find_callers, find_iife_globals as _find_iife_globals
 from analysis import trace_cross_language as _trace_cross_lang
@@ -39,11 +40,7 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
     # Pass 1 — collect symbols
     sym_files: dict[str, str] = {}
     sym_registrations: dict[str, bool] = {}
-    _reg_pats = [
-        'conductorIntelligence.register',
-        'crossLayerRegistry.register',
-        'feedbackRegistry.register',
-    ]
+    _reg_pats = REGISTRATION_PATTERNS
     for fpath in walk_code_files(src_root):
         if not str(fpath).endswith(".js"):
             continue
@@ -158,9 +155,7 @@ def convention_check(file_path: str) -> str:
                 issues.append(f"BOUNDARY: Uses '{dr}' without conductorSignalBridge. Route through bridge.")
     # Coupling firewall: .couplingMatrix reads only allowed in coupling engine, meta-controllers, profiler, diagnostics, pipeline
     if ".couplingMatrix" in content:
-        allowed_paths = ["/conductor/signal/balancing/", "/conductor/signal/meta/", "/conductor/signal/profiling/",
-                         "/conductor/conductorDiagnostics", "/scripts/pipeline/", "/writer/"]
-        if not any(ap in rel_path for ap in allowed_paths):
+        if not any(ap in rel_path for ap in COUPLING_MATRIX_EXEMPT_PATHS):
             issues.append(f"COUPLING FIREWALL: reads .couplingMatrix directly. Only allowed in coupling engine, meta-controllers, profiler, diagnostics.")
     # Check for Object.freeze that should use deepFreeze
     import re as _re
@@ -241,21 +236,10 @@ def codebase_health() -> str:
         for dry in DRY_PATTERNS:
             if dry["pattern"] in content and "crossLayerHelpers" not in rel:
                 issues_by_severity["WARN"].append(f"{rel}: {dry['message']}")
-        # Coupling firewall — mirrors COUPLING_MATRIX_EXEMPT_PATHS + COUPLING_MATRIX_LEGACY
-        # from scripts/pipeline/check-hypermeta-jurisdiction.js
+        # Coupling firewall — driven by project-rules.json (COUPLING_MATRIX_EXEMPT/LEGACY_PATHS)
         if ".couplingMatrix" in content:
-            exempt = [
-                "/conductor/signal/balancing/", "/conductor/signal/profiling/",
-                "/conductor/signal/meta/", "/conductor/signal/output/",
-                "conductorDiagnostics", "/scripts/pipeline/", "/writer/traceDrain",
-                "play/processBeat.js",
-            ]
-            legacy = [
-                "phaseLockedRhythmGenerator.js", "conductorDampening.js",
-                "densityWaveAnalyzer.js", "velocityShapeAnalyzer.js",
-            ]
-            if not any(a in rel for a in exempt):
-                if any(l in rel for l in legacy):
+            if not any(a in rel for a in COUPLING_MATRIX_EXEMPT_PATHS):
+                if any(l in rel for l in COUPLING_MATRIX_LEGACY_PATHS):
                     issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix) [legacy — tracked for refactor]")
                 else:
                     issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix)")
@@ -385,11 +369,7 @@ def doc_sync_check(doc_path: str = "") -> str:
     known_non_tools = param_names | {
         "response_format", "file_type", "top_k", "top_n", "max_depth", "max_tokens",
         "file_path", "scope", "entry_id", "related_to", "relation_type",
-        # relation_type enum values (appear backticked in docs)
-        "caused_by", "fixed_by", "depends_on", "contradicts", "similar_to", "supersedes",
-        # KB category values
-        "architecture", "decision", "pattern", "bugfix",
-    } | KNOWN_NON_TOOL_IDENTIFIERS  # hook config fields from project-rules.json
+    } | KNOWN_NON_TOOL_IDENTIFIERS  # relation_type values, KB categories, hook fields from project-rules.json
     # Only flag identifiers that look like they should be server tools
     tool_like = {t for t in doc_tool_refs if t.islower() and '_' in t and t not in server_fns and t not in known_non_tools and len(t) > 6}
     if tool_like:
