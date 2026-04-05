@@ -10,7 +10,7 @@ logger = logging.getLogger("HME")
 # Logic stays in Python; declarations live in config. Add new rules there.
 # ---------------------------------------------------------------------------
 def _load_project_rules() -> dict:
-    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "project-rules.json")
+    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "project-rules.json")
     try:
         with open(os.path.realpath(config_path), encoding="utf-8") as f:
             return json.load(f)
