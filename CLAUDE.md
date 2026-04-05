@@ -6,11 +6,10 @@
 ## Run
 
 ```bash
-npm run main   # primary pipeline command - lint, typecheck, generate output, analyze metrics
-npm run render # generate MIDI, render both layers to WAV, and mix output/combined.wav
+npm run main   # full pipeline: lint, typecheck, compose, render, perceptual analysis, snapshot
 ```
 
-Only use "npm run main" to run the full pipeline, never run individual pipeline scripts directly. The main command ensures all steps run in the correct order with necessary validations and context.
+Only use "npm run main" to run the full pipeline, never run individual pipeline scripts directly. The main command ensures all steps run in the correct order with necessary validations and context. Pipeline now includes render-lite (MIDI→WAV), perceptual analysis (EnCodec+CLAP), and run-history snapshot with perceptual data.
 
 ## Five Core Principles
 
