@@ -111,7 +111,7 @@ def section_compare(section_a: int, section_b: int) -> str:
     for sys in all_systems:
         wa = sum(sa["trust_weights"][sys]) / len(sa["trust_weights"][sys]) if sa["trust_weights"][sys] else 0
         wb = sum(sb["trust_weights"][sys]) / len(sb["trust_weights"][sys]) if sb["trust_weights"][sys] else 0
-        if wa > 0 and wb > 0:
+        if wa > 0 or wb > 0:
             trust_deltas.append((wb - wa, sys, wa, wb))
     trust_deltas.sort(key=lambda x: -abs(x[0]))
 

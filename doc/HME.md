@@ -1,6 +1,6 @@
-# HyperMeta Ecstasy
+# Hypermeta Ecstasy
 
-> Master executive for hypermeta evolutionary intelligence. Not a code search tool — the cognitive substrate that makes self-evolving composition possible.
+> Master executive for hypermeta evolutionary intelligence. Not a code search tool — the cognitive substrate that makes self-evolving composition possible. Agents are encouraged to continually evolve HME to always be a tool that is not just exciting to use, but ecstatic to even think about, removing the ceiling on coherence, through intelligently managed context-efficiency!
 
 HME is the integration of five layers that together form Polychron's evolutionary nervous system. The MCP server provides 50+ intelligence tools. CLAUDE.md encodes the rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce intelligent workflow automatically. The Evolver and lab run the evolution loop that grows both Polychron and HME itself.
 
