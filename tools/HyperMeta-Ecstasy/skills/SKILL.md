@@ -1,6 +1,6 @@
 ---
 name: HyperMeta-Ecstasy
-description: Master executive for hypermeta evolutionary intelligence. 48 MCP tools for semantic search, KB, architectural analysis, and Claude synthesis. Full-stack scope includes skills, hooks, Evolver, and lab. Load before using any mcp__HyperMeta-Ecstasy__ tool.
+description: Master executive for hypermeta evolutionary intelligence. 53 MCP tools for semantic search, KB, architectural analysis, and Claude synthesis. Full-stack scope includes skills, hooks, Evolver, and lab. Load before using any mcp__HyperMeta-Ecstasy__ tool.
 allowed-tools: mcp__HyperMeta-Ecstasy__*
 ---
 

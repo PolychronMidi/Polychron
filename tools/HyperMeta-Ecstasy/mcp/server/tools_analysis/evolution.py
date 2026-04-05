@@ -432,3 +432,153 @@ def interaction_map(module_a: str, module_b: str) -> str:
         parts.append(f"\n**Shared callers ({len(shared)}):** {', '.join(sorted(shared)[:5])}")
 
     return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def kb_seed(top_n: int = 15) -> str:
+    """Auto-generate starter KB entries for the highest-dependency modules that have
+    zero KB entries. Reads each module's source code and uses Ollama to generate a
+    concise architectural constraint summary. Returns the entries as add_knowledge
+    calls you can execute."""
+    ctx.ensure_ready_sync()
+    _track("kb_seed")
+    from file_walker import walk_code_files
+    from symbols import find_iife_globals as _find_iife_globals
+
+    # Find all IIFE globals with their caller counts
+    modules = []
+    for fpath in walk_code_files(os.path.join(ctx.PROJECT_ROOT, "src")):
+        if not str(fpath).endswith(".js"):
+            continue
+        try:
+            content = fpath.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        for name in _find_iife_globals(content):
+            callers = _find_callers(name, ctx.PROJECT_ROOT)
+            external = [c for c in callers if name not in os.path.basename(c.get("file", ""))]
+            modules.append((len(external), name, str(fpath)))
+
+    modules.sort(key=lambda x: -x[0])
+
+    # Filter to modules with zero KB entries
+    from . import _filter_kb_relevance
+    candidates = []
+    for count, name, path in modules:
+        kb = ctx.project_engine.search_knowledge(name, top_k=3)
+        relevant = _filter_kb_relevance(kb, name)
+        if not relevant:
+            candidates.append((count, name, path))
+        if len(candidates) >= top_n:
+            break
+
+    if not candidates:
+        return "All high-dependency modules already have KB entries."
+
+    parts = [f"## KB Seed — {len(candidates)} modules need KB entries\n"]
+    entries = []
+
+    for count, name, path in candidates:
+        # Read source for grounded synthesis
+        try:
+            source = open(path, encoding="utf-8", errors="ignore").read()[:1500]
+        except Exception:
+            source = ""
+
+        prompt = (
+            f"Module: {name} ({count} external callers)\n"
+            f"Source:\n```\n{source}\n```\n\n"
+            "In ONE paragraph (3-4 sentences): what is the key architectural constraint "
+            "of this module? What would break if someone edited it carelessly? "
+            "What musical effect does it control?"
+        )
+        summary = _local_think(prompt, max_tokens=200)
+        if not summary:
+            summary = f"{name}: {count} callers, needs KB documentation"
+
+        entries.append({"name": name, "callers": count, "summary": summary})
+        parts.append(f"**{name}** ({count} callers)")
+        parts.append(f"  {summary[:200]}")
+        parts.append("")
+
+    parts.append(f"\n### To persist, call add_knowledge for each entry above.")
+    return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def hme_selftest() -> str:
+    """Verify HME's own health: tool registration, doc sync, index integrity,
+    Ollama connectivity, hash cache consistency. Run after structural changes."""
+    _track("hme_selftest")
+    results = []
+
+    # 1. Tool count
+    tool_count = 0
+    server_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for root, dirs, files in os.walk(server_root):
+        for f in files:
+            if f.endswith(".py"):
+                try:
+                    for line in open(os.path.join(root, f), encoding="utf-8"):
+                        if line.strip() == "@ctx.mcp.tool()":
+                            tool_count += 1
+                except Exception:
+                    pass
+    results.append(f"{'PASS' if tool_count > 40 else 'FAIL'}: {tool_count} tools registered")
+
+    # 2. Doc sync
+    try:
+        from .health import doc_sync_check
+        sync = doc_sync_check("doc/HyperMeta-Ecstasy.md")
+        is_sync = "IN SYNC" in sync
+        results.append(f"{'PASS' if is_sync else 'FAIL'}: doc sync — {sync[:80]}")
+    except Exception as e:
+        results.append(f"FAIL: doc sync — {e}")
+
+    # 3. Index health
+    try:
+        ctx.ensure_ready_sync()
+        status = ctx.project_engine.get_status()
+        files = status.get("total_files", 0)
+        chunks = status.get("total_chunks", 0)
+        results.append(f"{'PASS' if files > 100 else 'FAIL'}: index — {files} files, {chunks} chunks")
+    except Exception as e:
+        results.append(f"FAIL: index — {e}")
+
+    # 4. Hash cache consistency
+    try:
+        hashes = ctx.project_engine._file_hashes
+        table_files = status.get("total_files", 0)
+        hash_count = len(hashes)
+        consistent = abs(hash_count - table_files) < 50
+        results.append(f"{'PASS' if consistent else 'WARN'}: hash cache — {hash_count} hashes vs {table_files} indexed files")
+    except Exception as e:
+        results.append(f"FAIL: hash cache — {e}")
+
+    # 5. Ollama connectivity
+    try:
+        from .synthesis import _local_think
+        test = _local_think("respond with OK", max_tokens=5)
+        results.append(f"{'PASS' if test else 'FAIL'}: Ollama — {'connected' if test else 'no response'}")
+    except Exception as e:
+        results.append(f"FAIL: Ollama — {e}")
+
+    # 6. KB health
+    try:
+        kb = ctx.project_engine.list_knowledge()
+        results.append(f"{'PASS' if len(kb) > 0 else 'WARN'}: KB — {len(kb)} entries")
+    except Exception as e:
+        results.append(f"FAIL: KB — {e}")
+
+    # 7. Symlinks
+    for name, target in [
+        ("~/.claude/mcp/HyperMeta-Ecstasy", "mcp symlink"),
+        ("~/.claude/skills/HyperMeta-Ecstasy", "skills symlink"),
+    ]:
+        path = os.path.expanduser(name)
+        results.append(f"{'PASS' if os.path.islink(path) else 'FAIL'}: {target} — {path}")
+
+    passed = sum(1 for r in results if r.startswith("PASS"))
+    total = len(results)
+    header = f"## HME Self-Test: {passed}/{total} passed\n"
+    return header + "\n".join(f"  {r}" for r in results)
