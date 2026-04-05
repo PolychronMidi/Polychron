@@ -55,8 +55,17 @@ class RAGKnowledgeMixin:
                         title = ex["title"]  # keep original title
                         category = ex["category"]
                         break
-                    elif similarity > 0.6 and category == ex.get("category", ""):
-                        # Moderately similar + same category -> supersede
+                    elif similarity > 0.78 and category == ex.get("category", ""):
+                        # Moderately similar + same category -> supersede only if titles share keywords
+                        import re as _re
+                        def _title_tokens(t: str) -> set:
+                            return {w.lower() for w in _re.findall(r'[a-zA-Z]{4,}', t)
+                                    if w.lower() not in {"with", "from", "that", "this", "callers", "module"}}
+                        new_tokens = _title_tokens(title)
+                        old_tokens = _title_tokens(ex.get("title", ""))
+                        if not (new_tokens & old_tokens):
+                            # No shared title keywords — different modules, don't supersede
+                            break
                         superseded_candidate = ex["id"]
                         deleted = False
                         try:
