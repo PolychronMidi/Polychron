@@ -116,7 +116,7 @@ def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int =
 
 
 def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
-    """EnCodec analysis implementation — called by audio_encodec and audio_analyze."""
+    """EnCodec analysis implementation — called by audio_analyze."""
     try:
         import torch
         import torchaudio
@@ -150,8 +150,6 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
     codes = torch.cat(all_codes, dim=-1)  # [n_codebooks, total_frames]
     n_codebooks, n_frames = codes.shape
 
-    # Per-section analysis using trace timing
-    sections = _load_audio_sections(wav_path, sr=model.sample_rate)
     frames_per_sec = n_frames / (wav.shape[-1] / model.sample_rate)
 
     parts = [f"# EnCodec Analysis (confidence: {_PERCEPTUAL_CONFIDENCE:.0%})\n"]
@@ -185,7 +183,6 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
                     section_times[sec] = {"start": t / 1000, "end": t / 1000}
                 section_times[sec]["end"] = t / 1000
 
-    import numpy as np
     for sec_num in sorted(section_times.keys()):
         st = section_times[sec_num]
         f_start = int(st["start"] * frames_per_sec)
@@ -214,19 +211,8 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
     return "\n".join(parts)
 
 
-def audio_encodec(top_sections: int = 3) -> str:
-    """Phase 2: EnCodec neural audio analysis — per-section token entropy and section contrast.
-    Prefer audio_analyze(analysis='both') to run EnCodec + CLAP in one call."""
-    ctx.ensure_ready_sync()
-    _track("audio_encodec")
-    wav_path = _get_wav_path()
-    if not os.path.isfile(wav_path):
-        return "No combined.wav found. Run `npm run render` first."
-    return _run_encodec(wav_path, top_sections)
-
-
 def _run_clap(wav_path: str, queries: str = "") -> str:
-    """CLAP analysis implementation — called by audio_clap and audio_analyze."""
+    """CLAP analysis implementation — called by audio_analyze."""
     try:
         import torch
         import librosa
@@ -313,12 +299,3 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     return "\n".join(parts)
 
 
-def audio_clap(queries: str = "") -> str:
-    """Phase 3: CLAP text↔audio similarity queries on the rendered WAV.
-    Prefer audio_analyze(analysis='both') to run EnCodec + CLAP in one call."""
-    ctx.ensure_ready_sync()
-    _track("audio_clap")
-    wav_path = _get_wav_path()
-    if not os.path.isfile(wav_path):
-        return "No combined.wav found. Run `npm run render` first."
-    return _run_clap(wav_path, queries)
