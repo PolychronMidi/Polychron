@@ -87,7 +87,12 @@ pitchMemoryRecall = (() => {
     // exploring = less recall (seek novelty). System's memory behavior adapts to its state.
     const recallRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
     const recallScale = recallRegime === 'coherent' ? 1.4 : recallRegime === 'exploring' ? 0.6 : 1.0;
-    if (rf() > RECALL_PROBABILITY * recallScale) return null;
+    // Melodic coupling: stale territory -> pull from memory to break repetition;
+    // fresh territory -> let novelty continue, suppress recall.
+    const melodicCtxPMR = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const freshnessEma = melodicCtxPMR ? V.optionalFinite(melodicCtxPMR.freshnessEma, 0.5) : 0.5;
+    const freshnessRecallScale = 1.3 - freshnessEma * 0.6; // 0.7 fresh ... 1.3 stale
+    if (rf() > RECALL_PROBABILITY * recallScale * freshnessRecallScale) return null;
 
     // Check if a significant event is happening (convergence/downbeat)
     const hasConvergence = convergenceDetector.wasRecent(absoluteSeconds, activeLayer, 400) ?? false;

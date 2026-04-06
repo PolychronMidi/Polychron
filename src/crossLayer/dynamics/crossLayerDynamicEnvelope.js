@@ -124,6 +124,15 @@ crossLayerDynamicEnvelope = (() => {
     const intent = sectionIntentCurves.getLastIntent();
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
 
+    // Melodic coupling: counterpoint motion biases arc type selection.
+    // Contrary motion -> complementary arcs (layers diverge dynamically).
+    // Similar motion -> parallel arcs (layers converge dynamically).
+    const melodicCtxCLDE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const cpBias = melodicCtxCLDE
+      ? (melodicCtxCLDE.counterpoint === 'contrary' ? -0.12 : melodicCtxCLDE.counterpoint === 'similar' ? 0.12 : 0)
+      : 0;
+    const adjustedInteraction = clamp(interaction + cpBias, 0, 1);
+
     const regime = conductorSignalBridge.getSignals().regime || 'exploring';
 
     // R2 E2: Phase-aware arc type bias. When phase axis is starved,
@@ -142,17 +151,17 @@ crossLayerDynamicEnvelope = (() => {
 
     if (regime === 'coherent') {
       const coherentThreshold = phaseStarved ? 0.60 : 0.45;
-      const biasedInteraction = interaction + parallelBias - independentBias;
+      const biasedInteraction = adjustedInteraction + parallelBias - independentBias;
       arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
         biasedInteraction > coherentThreshold ? 'parallel' : 'complementary'
       );
     } else if (regime === 'evolving') {
-      const biasedInteraction = interaction + parallelBias - independentBias;
+      const biasedInteraction = adjustedInteraction + parallelBias - independentBias;
       arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ (
         biasedInteraction > 0.45 ? 'complementary' : 'independent'
       );
     } else {
-      const biasedInteraction = interaction + parallelBias - independentBias;
+      const biasedInteraction = adjustedInteraction + parallelBias - independentBias;
       if (biasedInteraction > 0.72) {
         arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
       } else if (biasedInteraction > 0.28) {

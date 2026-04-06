@@ -105,7 +105,12 @@ harmonicIntervalGuard = (() => {
     // R51: verticalCollision awareness -- recent collisions tighten deadband
     const vimEntry = L0.getLast('verticalCollision', { layer: 'both' });
     const vimTighten = vimEntry && Number.isFinite(vimEntry.collisionRate) ? vimEntry.collisionRate * 0.08 : 0;
-    const deadband = 0.18 - clamp(vimTighten, 0, 0.06);
+    // Melodic coupling: intervalFreshness widens deadband for novel intervals,
+    // tightens it for stale intervals (correct repetitive harmonic patterns harder).
+    const melodicCtxHIG = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const hiFreshness = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.intervalFreshness, 0.5) : 0.5;
+    const freshnessBand = (hiFreshness - 0.5) * 0.06; // [-0.03 stale ... +0.03 fresh]
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high
