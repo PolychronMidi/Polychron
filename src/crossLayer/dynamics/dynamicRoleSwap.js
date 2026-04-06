@@ -61,8 +61,8 @@ dynamicRoleSwap = (() => {
     const feedbackCount = L0.count('feedbackLoop', { since: absoluteSeconds - 4, windowSeconds: 4 });
     const feedbackBoost = feedbackCount > 3 ? 0.1 : 0;
     // Melodic coupling: contourShape modulates swap gate.
-    // Falling contour → natural role handoff moment → amplify gate.
-    // Rising contour → keep the build going with current roles → suppress gate.
+    // Falling contour -> natural role handoff moment -> amplify gate.
+    // Rising contour -> keep the build going with current roles -> suppress gate.
     const melodicCtxDRS = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const contourSwapBoost = melodicCtxDRS
       ? (melodicCtxDRS.contourShape === 'falling' ? 0.08 : melodicCtxDRS.contourShape === 'rising' ? -0.08 : 0)

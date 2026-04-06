@@ -47,8 +47,8 @@ convergenceHarmonicTrigger = (() => {
     let bias = 0;
 
     // Melodic coupling: directionBias primes the change type when no explicit alignment is available.
-    // Ascending melody at convergence → dominant-push (amplify the build).
-    // Descending melody at convergence → tonic-reaffirm (invite resolution).
+    // Ascending melody at convergence -> dominant-push (amplify the build).
+    // Descending melody at convergence -> tonic-reaffirm (invite resolution).
     const melodicCtxCHT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const dirBias = melodicCtxCHT ? V.optionalFinite(melodicCtxCHT.directionBias, 0) : 0;
 

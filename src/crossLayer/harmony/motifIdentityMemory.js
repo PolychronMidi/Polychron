@@ -91,10 +91,16 @@ motifIdentityMemory = (() => {
     else if (identity.confidence > 0.55) transform = 'augmentation';
     // R34: if pattern is saturated, force a different transform to break repetition
     const hist = patternHistByLayer.get(layer);
-    if (hist && (hist.get(identity.intervalDna) || 0) > 4) {
+    const isSaturated = hist && (hist.get(identity.intervalDna) || 0) > 4;
+    if (isSaturated) {
       const transforms = /** @type {Array<'retrograde'|'inversion'|'augmentation'|'retrograde-inversion'>} */ (['retrograde', 'inversion', 'augmentation', 'retrograde-inversion']);
       transform = transforms[ri(0, 3)];
     }
+    // Melodic coupling: thematicDensity biases toward augmentation when themes are established.
+    // Strong thematic recall -> stretch the familiar; fresh territory -> let contour drive.
+    const melodicCtxMIM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const thematicDensity = melodicCtxMIM ? V.optionalFinite(melodicCtxMIM.thematicDensity, 0) : 0;
+    if (!isSaturated && thematicDensity >= 1 && identity.confidence > 0.4) transform = 'augmentation';
 
     return { transform, bias: identity.confidence };
   }
