@@ -72,7 +72,12 @@ emergentRhythmEngine = (() => {
     cachedBeatTime = beatStartTime;
 
     const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
-    const windowBeats = regime === 'exploring' ? 3 : regime === 'coherent' ? 1.5 : 2;
+    const baseWindow = regime === 'exploring' ? 3 : regime === 'coherent' ? 1.5 : 2;
+    // Melodic coupling: tessituraLoad narrows the quantization window at register extremes.
+    // Tight tessiture focus = focus on immediate rhythmic events; comfortable = wider context.
+    const melodicCtxERE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const tessLoad = melodicCtxERE ? V.optionalFinite(melodicCtxERE.tessituraLoad, 0) : 0;
+    const windowBeats = baseWindow * (1.0 - tessLoad * 0.25); // [base ... 0.75*base at extreme]
     const windowDuration = spBeat * windowBeats;
     const windowStart = beatStartTime - windowDuration;
 
