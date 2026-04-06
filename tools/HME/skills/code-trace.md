@@ -1,7 +1,7 @@
 # Code Trace
 
-### get_dependency_graph(file_path)
-Import graph: what a file imports and what imports it.
+### file_intel(file_path, mode="deps")
+Import/require graph: what a file imports and what imports it. Use mode='both' for structure + deps together.
 
 ### type_hierarchy(type_name="")
 Class/struct/trait/interface inheritance tree. ""=full hierarchy.

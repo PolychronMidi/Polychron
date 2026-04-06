@@ -10,8 +10,9 @@ Semantic symbol search. Use when you know the purpose but not the name.
 ### find_callers(symbol_name, language="")
 Find all call sites: `name(`, `.name(`, `::name(`.
 
-### get_file_summary(file_path)
-File structure: line count, defined symbols, export preview. Faster than reading whole file.
+### file_intel(file_path, mode="both")
+mode='both' (default): structure + dependency graph. mode='summary': symbols/line count. mode='deps': import/require graph.
+Faster than reading whole file.
 
 ### get_module_map(directory="", max_depth=3)
 Project module tree with file stats and key type names per directory.
