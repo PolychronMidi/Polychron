@@ -142,6 +142,23 @@ def _background_load():
 
 threading.Thread(target=_background_load, daemon=True, name="HME-startup").start()
 
+
+def _deferred_prewarm():
+    """Wait for startup then pre-warm the before_editing caller+KB caches for all src/ files.
+    Means the first before_editing call of every session is instant rather than ~500ms."""
+    _startup_done.wait(timeout=90)
+    if context.project_engine is None:
+        return
+    try:
+        from server.tools_analysis.workflow import warm_pre_edit_cache
+        result = warm_pre_edit_cache(max_files=200)
+        logger.info(f"HME pre-edit warm: {result}")
+    except Exception as _e:
+        logger.debug(f"Pre-edit warm skipped: {_e}")
+
+
+threading.Thread(target=_deferred_prewarm, daemon=True, name="HME-prewarm").start()
+
 if __name__ == "__main__":
     # Wrap sys.stdin with a proxy that logs every tools/call message at the protocol
     # level — fires before the tool dispatcher runs, so requests appear in hme.log

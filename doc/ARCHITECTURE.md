@@ -235,16 +235,46 @@ Coupled modules (37 as of R68): motifEcho, articulationComplement, texturalMirro
 Channels that are posted but never consumed are prime evolution targets — they carry information the system already computes but doesn't use. Harvesting them creates new signal pathways without additional computation:
 
 - **R76 E1 `harmonicFunction` → `convergenceHarmonicTrigger`**: `harmonicFunctionGraph` posts `{fn, chordRoot, keyRoot}` per beat (T/S/D/A function). `convergenceHarmonicTrigger` now reads this: when convergence fires with no explicit cadence alignment and melodic direction is indeterminate, harmonic function primes the change type — `D` (dominant) → `tonic-reaffirm`; `T` (tonic) → `dominant-push`. Activates the channel for the first time.
+- **R77 E2 `harmonic-journey-eval` → `motifEcho`**: `harmonicJourney` posts `{fromKey, toKey, distance, excursion, quality, effective}` on key transitions (was never consumed). `motifEcho.recordNote()` now suppresses new motif capture within 2s of a high-distance journey (`distance > 2`): echo probability multiplied by `(1 - clamp(distance * 0.08, 0, 0.45))`. Old-key motifs don't echo into a new tonal region.
+- **R77 E3 `chord` → `convergenceDetector`**: `cadenceAdvisor` posts `{chords, key, mode}` per beat (was never consumed). `convergenceDetector.detect()` now reads mode: minor tonality adds `+0.06` to `effectiveTolerance` — harmonic tension in minor mode invites rhythmic convergence as resolution.
+- **R77 E4 `channel-coherence` → `feedbackOscillator`**: `crossLayerBeatRecord` posts `{coherence, mean}` every beat (was never consumed). `feedbackOscillator.record()` now reads this: when cross-layer channel coherence exceeds 0.70, feedback impulse energy is damped by up to 0.09 — already-synchronized layers don't need more feedback energy pushing them together.
+- **R77 E5 `emergentRhythm.hotspots` → `polyrhythmicPhasePredictor`**: `emergentRhythmEngine` posts hotspot arrays per beat. `polyrhythmicPhasePredictor.process()` now reads hotspot count: up to 20% boost to phase-convergence playProb when rhythmically dense moments coincide with predicted convergence points.
+- **R77 E8 `emergentRhythm.hotspots` → `registerCollisionAvoider`**: `registerCollisionAvoider.avoid()` now reads hotspot count: up to +2 semitones added to `effectiveCollisionSemitones` at max hotspot density — rhythmic burst moments allow denser vertical clusters (intentional dissonance at peaks).
+- **R77 E9 `complexityEma` antagonism bridge — `entropyRegulator ↔ crossLayerSilhouette` (r=-0.660):**
+  - `entropyRegulator.setTarget()` reads `rhythmEntry.complexityEma`: above 0.5 baseline, adds up to +0.07 to entropy target — complex rhythmic memory accelerates chaotic texture.
+  - `crossLayerSilhouette.tick()` reads `rhythmEntry.complexityEma`: above 0.5 baseline, reduces `effectiveSmoothing` by up to 10% — complex rhythmic inertia stabilizes the form arc (slow-form / fast-chaos coupling).
+- **R77 E10 `emergentRhythm.hotspots` → `restSynchronizer`**: `restSynchronizer.evaluateSharedRest()` now subtracts up to 0.08 from rest probability base at max hotspot density — rhythmic burst moments actively defer coordinated breathing.
+- **R77 E7 `emergentRhythm.hotspots` → `spectralComplementarity`**: `spectralComplementarity.nudgeToFillGap()` now reads hotspot count from `emergentRhythm`: up to 18% boost to `effectiveNudge` at maximum hotspot density — rhythmic burst moments coincide with stronger spectral register gap-filling.
+- **R77 E6 `underusedPitchClasses` → `harmonicIntervalGuard`**: `modalColorTracker` posts `{pitchClasses: underused[]}` per beat when any pitch class falls below 30% of expected modal usage (was never consumed). `harmonicIntervalGuard.nudgePitch()` now reads this array: candidate notes that land on underused pitch classes score -0.10 bonus in the interval selection loop, biasing voice leading toward modally starved pitch classes for complete modal coverage.
 
 ### Antagonism Bridges
 
-**Pattern (R73/R75/R76):** When two modules are negatively correlated (r < -0.5), they form a *structural anti-correlation* — their peaks naturally oppose each other. Rather than suppressing this, couple both sides bidirectionally to create *constructive opposition*.
+**Pattern (R73/R75/R76/R77):** When two modules are negatively correlated (r < -0.5), they form a *structural anti-correlation* — their peaks naturally oppose each other. Rather than suppressing this, couple both sides bidirectionally to create *constructive opposition*.
 
 - **R73:** `entropyRegulator ↔ crossLayerSilhouette` (r=-0.696) bridged via `emergentRhythm.densitySurprise` — both sides respond to surprising rhythmic bursts with opposing effects.
 - **R75:** `dynamicRoleSwap ↔ harmonicIntervalGuard` bridged via `registerMigrationDir` — ascending register migration amplifies role-swap probability while narrowing HIG interval guard.
 - **R76:** `entropyRegulator ↔ climaxEngine` (r=-0.604) bridged bidirectionally:
   - `climaxEngine.tick()` reads `entropy` channel: high smoothed entropy (> 0.55) damps climax accumulation — chaotic texture can't sustain coherent climax peaks.
   - `entropyRegulator.setTarget()` reads `climax-pressure` channel: approaching climax pulls entropy target down — peaks need definition, not chaos.
+- **R77:** `stutterContagion ↔ restSynchronizer` (r=-0.382) bridged via `ascendRatio` (fraction of ascending melodic intervals, 0–1):
+  - `stutterContagion.checkContagion()`: `ascendRatio > 0.55` boosts `melodicContagionScale` up to +0.135 — ascending melodic energy intensifies cross-layer stutter spread (climbing phrases become rhythmically infectious).
+  - `restSynchronizer.evaluateSharedRest()`: `ascendRatio > 0.55` subtracts up to 0.10 from rest probability base — ascending energy suppresses synchronized breathing (upward motion resists pause).
+
+### Phase Intelligence Coupling (R78)
+
+**New signal: `rhythmicPhaseLock.getMode()`** — ternary state ('lock'/'drift'/'repel') representing the inter-layer timing relationship. First use as a universal coupling signal across multiple systems. Access via `safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift')`.
+
+| Mode | Meaning | Expected response |
+|---|---|---|
+| `lock` | Layers synchronized (< 20% of beat apart) | Reinforce, amplify, consonance, stability |
+| `drift` | Layers independent | Neutral, balanced, no coupling pressure |
+| `repel` | Layers in opposition (> 60% of beat apart) | Contrast, counterpoint, entropy, sharpness |
+
+- **R78 E1 `rhythmicPhaseLock.getMode()` → `motifEcho`**: Repel mode opens space for imitation (offset layers create natural echo opportunity) — echoProbability ×1.15. Lock mode suppresses echo (synchronized layers reinforce directly, imitation is redundant) — ×0.88.
+- **R78 E2 `rhythmicPhaseLock.getMode()` → `stutterContagion`**: Lock mode boosts contagion (synchronized bursts = rhythmic unison, layers stutter together) — ×1.12 scale on gated intensity. Repel mode suppresses (diverging layers should not cascade stutter across each other) — ×0.88.
+- **R78 E4 `rhythmicPhaseLock.getMode()` → `crossLayerSilhouette`**: Repel mode sharpens structural tracking (effectiveSmoothing ×0.88 — opposition demands faster correction). Lock mode stabilizes holistic arc (effectiveSmoothing ×1.10 — synchronized layers need less structural correction).
+- **R78 E5 `rhythmicPhaseLock.getMode()` → `entropyRegulator`**: Repel mode raises entropy target +0.04 (counter-motion inherently increases pitch/timing diversity). Lock mode lowers target -0.03 (synchronized layers create coherent order).
+- **R78 E3 `freshnessEma` → `crossLayerClimaxEngine`**: Novel melodic territory (freshnessEma > 0.60) damps climax accumulation by up to -0.08. Musical logic: fresh intervals already generate their own harmonic tension; piling climax pressure on top creates aural overload.
 
 ## Emergence Boundaries
 

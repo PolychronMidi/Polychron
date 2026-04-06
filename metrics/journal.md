@@ -1,3 +1,67 @@
+## R77 — 2026-04-06 — LEGENDARY (10-sub-evolution xenolinguistic tier: dead-end harvests + antagonism bridges)
+
+**Profile:** atmospheric | **Beats:** 1002 | **Sections:** 5 | **Verdict:** "new legendary xenolinguistic tier"
+**Run delta:** +3225 notes vs R76 | CB0 entropy +0.078 | exploringShare +13.7% | coherentShare stable
+
+### What Changed
+
+**Pattern: dead-end channel harvests** — activating existing L0 data flows with zero architectural cost.
+
+- **E1: stutterContagion + restSynchronizer ← ascendRatio** — ascending melody (>0.55) intensifies stutter spread (+0.135 max) and suppresses rests (-0.10). Energy climbs with the melodic arc.
+- **E2: motifEcho ← harmonic-journey-eval** — key change with distance >2 suppresses echo capture for 2s (-0.45 max). Avoids tonal confusion during modulations.
+- **E3: convergenceDetector ← chord.mode** — minor mode widens convergence tolerance (+0.06). Minor-mode layers converge more loosely, preserving modal tension.
+- **E4: feedbackOscillator ← channel-coherence** — coherence >0.70 damps impulse energy (-0.09). High coherence tames feedback resonance.
+- **E5: polyrhythmicPhasePredictor ← emergentRhythm.hotspots** — dense burst positions boost phase-convergence playProb (+20%).
+- **E6: harmonicIntervalGuard ← underusedPitchClasses** — modally starved pitch classes get -0.10 score bonus in interval scoring.
+- **E7: spectralComplementarity ← emergentRhythm.hotspots** — burst positions amplify register gap-filling (+18%).
+- **E8: registerCollisionAvoider ← emergentRhythm.hotspots** — burst peaks widen collision tolerance (+2 semitones). Intentional cluster dissonance.
+- **E9: complexityEma antagonism bridge (entropyRegulator↔crossLayerSilhouette)** — same signal, opposing effects: entropyRegulator raises entropy target (+0.07 at complexityEma=1.0), crossLayerSilhouette reduces smoothing (-10% inertia). Fast-chaos / slow-form coupling.
+- **E10: restSynchronizer ← emergentRhythm.hotspots** — burst moments suppress rests (-0.08). Rhythmic peaks don't pause.
+
+**HME evolutions (R77):**
+- L0 topology scanner: added `findClosest`/`getAll`/`query`/`count`/`getBounds` as consumer methods
+- coupling.py `_LABEL_INVERSIONS`: fixed contradictory "widens ↓" wording
+- `before_editing` caching: caller cache keyed (abs_path, mtime), KB hits keyed (module, kb_version)
+- `warm_pre_edit_cache()`: precomputes callers+KB for all 477 src/ files
+- `codebase_health`: CRITICAL files sorted by line count descending
+- `module_intel`: hot-path files flagged with [HOT PATH — per-beat execution] warning
+
+### Architecture Notes
+- All E1-E10 changes are pure L0 signal consumers — no new channels, no architectural changes
+- complexityEma antagonism bridge (E9) is the most significant: one signal driving both entropy chaos AND form stability simultaneously. Structured chaos as a design target.
+- hotspots consumed by 4 modules (E5/E7/E8/E10) making it the most harvested sub-field of emergentRhythm after R77
+
+---
+
+## R76 — 2026-04-06 — LEGENDARY (harmonicFunction dead-end harvest + entropyRegulator↔climaxEngine bridge)
+
+**Verdict:** LEGENDARY | **Key pattern:** antagonism bridge (r=-0.604 pair coupled to climax-pressure)
+
+### What Changed
+- **harmonicFunction dead-end harvest**: multiple modules reading `harmonic` L0 channel (harmonicFunction data)
+- **entropyRegulator↔climaxEngine antagonism bridge**: climax-pressure signal coupled with opposing effects — entropy raises at low climax, entropy suppressed at high climax (r=-0.604 pair)
+- **HME evolutions**: drama_map Peak Tension Moments + Dramatic Arc synthesis; leverage wording fixes in coupling.py
+
+---
+
+## R75 — 2026-04-06 — LEGENDARY (motifEcho dead signal harvest + registerMigrationDir antagonism bridge)
+
+**Verdict:** LEGENDARY | **Key pattern:** motifEcho ← harmonic-journey-eval + registerMigrationDir bridge
+
+---
+
+## R73 — 2026-04-06 — LEGENDARY (cross-organism entropy bridge: densitySurprise+hotspots antagonist coupling)
+
+**Verdict:** LEGENDARY | **Key pattern:** densitySurprise and hotspots as first cross-organism bridge fields
+
+---
+
+## R72 — 2026-04-06 — LEGENDARY (rhythmicPhaseLock hotspots + dynamicEnvelope complexityEma + convergenceDetector)
+
+**Verdict:** LEGENDARY | **Key pattern:** emergentRhythm sub-fields (hotspots, complexityEma) as coupling targets; grooveTransfer vs rhythmicComplement pair collision fixed
+
+---
+
 ## R56 — 2026-04-05 — (3 perceptual evolutions: CB0 tension loop + CLAP section guidance + verdict regressor)
 
 **Profile:** atmospheric | **Beats:** 1306 | **Sections:** 7 | **Verdict:** pending listen

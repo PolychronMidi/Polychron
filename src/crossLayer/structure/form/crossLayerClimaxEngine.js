@@ -134,9 +134,14 @@ crossLayerClimaxEngine = (() => {
     const entropyEntryClx = L0.getLast('entropy', { layer: 'both' });
     const entropyDampClx = entropyEntryClx && Number.isFinite(entropyEntryClx.smoothed)
       ? clamp((entropyEntryClx.smoothed - 0.55) * 0.22, 0, 0.10) : 0;
+    // R78: freshnessEma suppression -- fresh melodic territory generates its own tension; climax piling on
+    // top creates aural overload. Novel intervals demand attentive listening: climax backs off.
+    const melodicCtxClx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const freshnessEmaClx = melodicCtxClx ? V.optionalFinite(melodicCtxClx.freshnessEma, 0.5) : 0.5;
+    const freshnessDampClx = clamp((freshnessEmaClx - 0.60) * 0.20, 0, 0.08);
 
-    // Composite climax signal (R40: fractal arc, R76: entropy antagonism)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity - entropyDampClx) * preClimaxHold;
+    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity - entropyDampClx - freshnessDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing

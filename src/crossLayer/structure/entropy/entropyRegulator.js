@@ -195,7 +195,15 @@ entropyRegulator = (() => {
       const climaxEntryER = L0.getLast('climax-pressure', { layer: 'both' });
       const climaxMod = climaxEntryER && Number.isFinite(climaxEntryER.level)
         ? -clamp(climaxEntryER.level * 0.07, 0, 0.07) : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06 + motifEchoMod + climaxMod;
+      // R77 E9: complexityEma fast-chaos bridge -- high rhythmic complexity EMA amplifies entropy target
+      // (counterpart: crossLayerSilhouette slows tracking under same condition)
+      const complexityEmaER = rhythmEntryER && Number.isFinite(rhythmEntryER.complexityEma) ? rhythmEntryER.complexityEma : 0;
+      const complexityMod = clamp((complexityEmaER - 0.5) * 0.10, 0, 0.07);
+      // R78: phase-lock coupling -- repel mode (layers opposing) inherently raises entropy (counterpoint diversity),
+      // lock mode (layers synchronized) creates coherent order (reduced entropy target).
+      const phaseModeER = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+      const phaseMod = phaseModeER === 'repel' ? 0.04 : phaseModeER === 'lock' ? -0.03 : 0;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

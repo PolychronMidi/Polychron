@@ -63,7 +63,15 @@ crossLayerSilhouette = (() => {
     // Opposing response to entropyRegulator: same trigger, structure sharpens while entropy rises.
     const rhythmEntryCS = L0.getLast('emergentRhythm', { layer: 'both' });
     const densitySurpriseCS = rhythmEntryCS && Number.isFinite(rhythmEntryCS.densitySurprise) ? rhythmEntryCS.densitySurprise : 0;
-    const effectiveSmoothing = smoothing * (1 - densitySurpriseCS * 0.30);
+    // R77 E9: complexityEma slow-form bridge -- sustained rhythmic complexity keeps form stable (inertia)
+    // Counterpart: entropyRegulator raises target under same condition (fast-chaos / slow-form coupling)
+    const complexityEmaCS = rhythmEntryCS && Number.isFinite(rhythmEntryCS.complexityEma) ? rhythmEntryCS.complexityEma : 0;
+    const complexityInertiaCS = clamp((complexityEmaCS - 0.5) * 0.20, 0, 0.10);
+    // R78: phase-lock coupling -- repel mode (layer opposition) demands sharper structural tracking;
+    // lock mode (sync) stabilizes the holistic arc (layers moving together need less correction).
+    const phaseModeCSil = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseSmoothing = phaseModeCSil === 'repel' ? 0.88 : phaseModeCSil === 'lock' ? 1.10 : 1.0;
+    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing, 0.05, 0.40);
 
     // Smooth
     smoothedDensity = smoothedDensity * (1 - effectiveSmoothing) + rawDensity * effectiveSmoothing;

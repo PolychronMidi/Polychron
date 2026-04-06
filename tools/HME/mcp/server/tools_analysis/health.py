@@ -23,6 +23,15 @@ from .synthesis import (
 
 logger = logging.getLogger("HME")
 
+# Files called on every beat — changes that affect these callers are highest-risk
+_HOT_PATH_FILES = {
+    "src/play/processBeat.js",
+    "src/play/crossLayerBeatRecord.js",
+    "src/play/emitPickCrossLayerRecord.js",
+    "src/play/playNotesEmitPick.js",
+    "src/play/main.js",
+}
+
 
 def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict, dict, dict]:
     """Single-pass caller count for all IIFE globals.
@@ -99,11 +108,16 @@ def impact_analysis(symbol_name: str, language: str = "") -> str:
     # Filter out documentation files — .md mentions are not callers
     callers = [r for r in callers if not r['file'].endswith('.md')]
     caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
-    parts.append(f"## Callers ({len(callers)} sites in {len(caller_files)} files)")
+    hot_callers = [f for f in caller_files if f in _HOT_PATH_FILES]
+    parts.append(f"## Callers ({len(callers)} sites in {len(caller_files)} files)"
+                 + (f" — {len(hot_callers)} HOT PATH" if hot_callers else ""))
     for f in caller_files[:15]:
-        parts.append(f"  {f}")
+        label = " [HOT PATH — per-beat execution]" if f in _HOT_PATH_FILES else ""
+        parts.append(f"  {f}{label}")
     if len(caller_files) > 15:
         parts.append(f"  ... and {len(caller_files) - 15} more files")
+    if hot_callers:
+        parts.append(f"  !! This module is called from per-beat hot-path code — any signature or behavior change propagates on every beat.")
     # What does it call? (via cross_language_trace)
     trace = _trace_cross_lang(symbol_name, ctx.PROJECT_ROOT)
     if trace.get("ts_callers"):
@@ -260,8 +274,14 @@ def codebase_health() -> str:
         return "\n".join(parts)
 
     if actionable_critical:
-        parts.append(f"## CRITICAL — Actionable ({len(actionable_critical)})")
-        for item in sorted(actionable_critical):
+        # Sort by line count descending — worst offenders first
+        def _extract_line_count(item: str) -> int:
+            import re as _re
+            m = _re.search(r"(\d+) lines", item)
+            return int(m.group(1)) if m else 0
+        actionable_critical_sorted = sorted(actionable_critical, key=_extract_line_count, reverse=True)
+        parts.append(f"## CRITICAL — Actionable ({len(actionable_critical_sorted)})")
+        for item in actionable_critical_sorted:
             parts.append(f"  - {item}")
         parts.append("")
     if expected_large:

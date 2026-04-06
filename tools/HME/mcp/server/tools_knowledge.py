@@ -51,6 +51,8 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
             _warm_cache(api_key)
     except Exception:
         pass
+    # Invalidate KB hits cache so before_editing re-fetches fresh constraints
+    ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
 
     return f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
 
@@ -111,6 +113,7 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
                 _warm_cache(api_key)
         except Exception:
             pass
+        ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
         return f"Knowledge entry '{entry_id}' removed from {scope}."
     return f"Failed to remove entry '{entry_id}' from {scope}. It may not exist."
 

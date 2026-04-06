@@ -199,6 +199,56 @@ def module_story(module_name: str) -> str:
         for bs in blind_spots:
             parts.append(f"  - {bs}")
 
+    # Evolutionary Potential — uncoupled signal dims + live antagonism bridge status
+    try:
+        from .coupling import _scan_coupling_state, get_top_bridges, _TRUST_FILE_ALIASES, _FILE_TRUST_ALIASES
+        src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+        coupling_state = _scan_coupling_state(src_root)
+        m_info = coupling_state.get(module_name, {})
+        _ALL_MELODIC = ["contourShape", "registerMigrationDir", "tessituraLoad", "thematicDensity",
+                        "counterpoint", "intervalFreshness", "ascendRatio", "freshnessEma"]
+        _ALL_RHYTHM  = ["densitySurprise", "hotspots", "complexityEma", "biasStrength", "complexity", "density"]
+        used_m = set(m_info.get("melodic_dims", []))
+        used_r = set(m_info.get("rhythm_dims", []))
+        unused_m = [d for d in _ALL_MELODIC if d not in used_m]
+        unused_r = [f for f in _ALL_RHYTHM  if f not in used_r]
+
+        trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
+        bridges = get_top_bridges(n=6)
+        def _is_this(name: str) -> bool:
+            return (name == module_name or name == trust_alias
+                    or _TRUST_FILE_ALIASES.get(name, name) == module_name)
+        my_bridges = [b for b in bridges if _is_this(b["pair_a"]) or _is_this(b["pair_b"])]
+
+        evo_parts = []
+        if not m_info.get("melodic"):
+            evo_parts.append(f"  Not melodically coupled — top dims: {', '.join(_ALL_MELODIC[:4])}...")
+        elif unused_m:
+            evo_parts.append(f"  Unused melodic dims: {', '.join(unused_m[:5])}")
+        if not m_info.get("rhythm"):
+            evo_parts.append(f"  Not rhythmically coupled — top fields: {', '.join(_ALL_RHYTHM[:4])}...")
+        elif unused_r:
+            evo_parts.append(f"  Unused rhythm fields: {', '.join(unused_r[:4])}")
+        if not m_info.get("phase"):
+            evo_parts.append(f"  Not phase-coupled — add rhythmicPhaseLock.getMode() for lock/drift/repel awareness")
+
+        for b in my_bridges[:2]:
+            partner_raw = b["pair_b"] if _is_this(b["pair_a"]) else b["pair_a"]
+            partner = _TRUST_FILE_ALIASES.get(partner_raw, partner_raw)
+            if b["already_bridged"]:
+                evo_parts.append(f"  BRIDGED r={b['r']:+.3f} vs {partner} (via {', '.join(b['already_bridged'])})")
+            else:
+                evo_parts.append(f"  BRIDGE OPPORTUNITY r={b['r']:+.3f} vs {partner}")
+                evo_parts.append(f"    bridge field: `{b['field']}`")
+                evo_parts.append(f"    {b['eff_a']} | opposite: {b['eff_b']}")
+                evo_parts.append(f"    musical logic: {b['why']}")
+
+        if evo_parts:
+            parts.append(f"\n## Evolutionary Potential")
+            parts.extend(evo_parts)
+    except Exception:
+        pass
+
     # Adaptive synthesis: top 3 things to know before editing
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
     kb_summary = "\n".join(

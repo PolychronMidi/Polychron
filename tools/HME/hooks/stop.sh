@@ -66,19 +66,17 @@ if [[ -f "$LOOP_FILE" ]]; then
 fi
 
 # ── Background task polling detection ─────────────────────────────────────────
-# If the transcript shows multiple bash commands reading background task output
-# files in this turn, block and redirect. Catches all command forms (tail/cat/
-# head/grep/etc.) regardless of path variation.
+# Catches both Bash-based polling (task output files) and MCP tool polling
+# (repeated check_pipeline calls). Both are the same antipattern.
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""')
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  # Count bash tool calls in the last assistant turn that reference tasks/ output paths
   POLL_COUNT=$(python3 -c "
 import json, sys
 data = open('$TRANSCRIPT_PATH').read()
 lines = data.strip().split('\n')
-# Walk backwards to find the most recent assistant turn's tool uses
 in_turn = False
-count = 0
+bash_polls = 0
+mcp_polls = 0
 for line in reversed(lines):
     try:
         obj = json.loads(line)
@@ -94,17 +92,20 @@ for line in reversed(lines):
     if in_turn:
         for block in obj.get('content', []):
             if isinstance(block, dict) and block.get('type') == 'tool_use':
-                if block.get('name') == 'Bash':
+                name = block.get('name', '')
+                if name == 'Bash':
                     cmd = block.get('input', {}).get('command', '')
                     if '/tasks/' in cmd and '.output' in cmd:
-                        count += 1
-print(count)
+                        bash_polls += 1
+                elif name == 'mcp__HME__check_pipeline':
+                    mcp_polls += 1
+print(max(bash_polls, mcp_polls))
 " 2>/dev/null || echo 0)
 
   if [[ "$POLL_COUNT" -ge 2 ]]; then
     jq -n '{
       "decision": "block",
-      "reason": "ANTI-POLLING: You checked background task output multiple times in one turn. This is the wait-and-poll antipattern regardless of command form (tail/cat/head/grep/BashOutput). run_in_background fires a notification — stop checking and do real work instead."
+      "reason": "ANTI-POLLING: You polled pipeline/task status multiple times in one turn. This is the wait-and-poll antipattern. Background tasks fire notifications when done — use pipeline_digest (freshness guard) or do real work instead."
     }'
     exit 0
   fi

@@ -104,12 +104,18 @@ stutterContagion = (() => {
     // already provides rhythmic "infection"). Stale intervals -> boost (rhythmic novelty).
     // Contrary counterpoint -> slight boost (opposing motion benefits from interruption).
     const melodicCtxSC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    // R77: ascendRatio bridge -- ascending melodic energy intensifies cross-layer stutter spread
     const melodicContagionScale = melodicCtxSC
       ? clamp(1.0 - melodicCtxSC.thematicDensity * 0.20
         + (melodicCtxSC.intervalFreshness < 0.40 ? 0.10 : 0)
-        + (melodicCtxSC.counterpoint === 'contrary' ? 0.08 : 0), 0.65, 1.25)
+        + (melodicCtxSC.counterpoint === 'contrary' ? 0.08 : 0)
+        + (melodicCtxSC.ascendRatio > 0.55 ? (melodicCtxSC.ascendRatio - 0.55) * 0.30 : 0), 0.65, 1.35)
       : 1.0;
-    const gatedIntensity = decayedIntensity * melodicContagionScale;
+    // R78: phase-lock coupling -- locked layers stutter together (synchronized burst = rhythmic unison),
+    // repelling layers diverge (opposition should not cascade stutter across layers).
+    const phaseModeContagion = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseContagionScale = phaseModeContagion === 'lock' ? 1.12 : phaseModeContagion === 'repel' ? 0.88 : 1.0;
+    const gatedIntensity = decayedIntensity * melodicContagionScale * phaseContagionScale;
     if (gatedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space

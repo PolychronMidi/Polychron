@@ -62,6 +62,15 @@
             "command": "bash tools/HME/hooks/pretooluse_read.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__HME__check_pipeline",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/pretooluse_check_pipeline.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

@@ -48,12 +48,12 @@ def _scan_l0_topology(src_root: str) -> dict:
     Resolves const CHANNEL = '...' assignments so variable-name channels are captured.
     Returns {channel: {producers: [module, ...], consumers: [module, ...]}}."""
     topology: dict = defaultdict(lambda: {"producers": [], "consumers": []})
-    # Match string literal: L0.post('channel', ...) or L0.getLast('channel', ...)
+    # Match string literal: L0.post/getLast/findClosest('channel', ...)
     _post_lit  = re.compile(r"L0\.post\(\s*['\"]([^'\"]+)['\"]")
-    _get_lit   = re.compile(r"L0\.getLast\(\s*['\"]([^'\"]+)['\"]")
+    _get_lit   = re.compile(r"L0\.(?:getLast|findClosest|getAll|query|count|getBounds)\(\s*['\"]([^'\"]+)['\"]")
     # Match variable: L0.post(VARNAME, ...) where VARNAME is a plain identifier
     _post_var  = re.compile(r"L0\.post\(\s*([A-Z_][A-Z0-9_]*)\s*,")
-    _get_var   = re.compile(r"L0\.getLast\(\s*([A-Z_][A-Z0-9_]*)\s*,")
+    _get_var   = re.compile(r"L0\.(?:getLast|findClosest|getAll|query|count|getBounds)\(\s*([A-Z_][A-Z0-9_]*)\s*,")
     # Match const/let CHANNEL_VAR = 'value'
     _const_re  = re.compile(r"(?:const|let)\s+([A-Z_][A-Z0-9_]*)\s*=\s*['\"]([^'\"]+)['\"]")
 
@@ -250,6 +250,8 @@ def _scan_coupling_state(src_root: str) -> dict:
                 or "L0.getLast('emergentRhythm'" in content
                 or 'L0.getLast("emergentRhythm"' in content
             )
+            # Detect phase coupling: reads rhythmicPhaseLock.getMode() (R78+)
+            phase_coupled = "rhythmicPhaseLock.getMode()" in content
 
             melodic_dims: list[str] = []
             if melodic_coupled:
@@ -276,6 +278,7 @@ def _scan_coupling_state(src_root: str) -> dict:
                 "melodic_dims": melodic_dims,
                 "rhythm": rhythm_coupled,
                 "rhythm_dims": rhythm_dims,
+                "phase": phase_coupled,
             }
 
     return results
@@ -481,7 +484,9 @@ def _format_clusters(clusters, corr, modules, n_beats, coupling_state, trust, mi
             display_name = file_name if file_name != m_name else m_name
             has_m = bool(info.get("melodic"))
             has_r = bool(info.get("rhythm"))
-            tag = "[M+R]" if has_m and has_r else "[MEL]" if has_m else "[RHY]" if has_r else "[---]"
+            has_p = bool(info.get("phase"))
+            _base = "[M+R]" if has_m and has_r else "[MEL]" if has_m else "[RHY]" if has_r else "[---]"
+            tag = _base[:-1] + "+P]" if has_p and _base != "[---]" else ("[PHZ]" if has_p else _base)
 
             others = [o for o in cluster if o != m_name]
             top2 = sorted(others, key=lambda o: corr.get((m_name, o), 0), reverse=True)[:2]
@@ -545,10 +550,11 @@ def coupling_network(clusters: bool = False) -> str:
     n_any = n_melodic_only + n_rhythm_only + n_both
     n_uncoupled = len(uncoupled)
 
+    n_phase = sum(1 for _, _, _, info in coupled_melodic + coupled_rhythm + coupled_both + uncoupled if info.get("phase"))
     out = [f"# Coupling Network ({total} crossLayer modules)\n"]
     out.append(f"Melodic-coupled: {n_melodic_only + n_both} | "
                f"Rhythm-coupled: {n_rhythm_only + n_both} | "
-               f"Both: {n_both} | Uncoupled: {n_uncoupled}")
+               f"Both: {n_both} | Phase-coupled: {n_phase} | Uncoupled: {n_uncoupled}")
     out.append(f"Coverage: {n_any / total:.0%} have at least one engine coupling\n")
 
     if coupled_both:
@@ -576,8 +582,21 @@ def coupling_network(clusters: bool = False) -> str:
     if uncoupled:
         out.append(f"## Uncoupled ({n_uncoupled} modules) — by trust score (top = next priority)")
         for name, _, score_str, info in uncoupled:
+            phase_mark = " [PHZ]" if info.get("phase") else ""
+            out.append(f"  {name:<35} trust={score_str}{phase_mark}")
+        out.append("")
+
+    # Phase coupling section (R78+ — rhythmicPhaseLock.getMode() consumers)
+    phase_coupled_all = [(name, score or 0.0, score_str, info)
+                         for name, score, score_str, info in coupled_melodic + coupled_rhythm + coupled_both + uncoupled
+                         if info.get("phase")]
+    if phase_coupled_all:
+        out.append(f"## Phase-Coupled (rhythmicPhaseLock.getMode(), R78+, {len(phase_coupled_all)} modules)")
+        for name, _, score_str, _ in sorted(phase_coupled_all, key=lambda x: -x[1]):
             out.append(f"  {name:<35} trust={score_str}")
         out.append("")
+    else:
+        out.append("## Phase-Coupled: none yet (add rhythmicPhaseLock.getMode() reads to link phase mode)\n")
 
     # Dimension coverage audit — which melodic dimensions are under-used?
     all_melodic_dims: dict[str, list] = defaultdict(list)
@@ -628,10 +647,31 @@ def cluster_finder(min_r: float = 0.35) -> str:
     return "\n".join(_format_clusters(cl, corr, mods, nb, cs, tr, min_r))
 
 
+def _get_bridge_cache() -> dict:
+    """Session cache for get_top_bridges — keyed by (trace_mtime, coupling_state_hash).
+    Eliminates redundant _compute_clusters() calls when before_editing + module_intel both invoke bridges."""
+    if not hasattr(ctx, "_bridge_cache"):
+        ctx._bridge_cache = {}
+    return ctx._bridge_cache
+
+
 def get_top_bridges(n: int = 3) -> list:
     """Return top N antagonist bridge opportunities as structured dicts for injection into other tools.
-    Each dict: {pair_a, pair_b, r, arch_a, arch_b, field, eff_a, eff_b, why, already_bridged}."""
+    Each dict: {pair_a, pair_b, r, arch_a, arch_b, field, eff_a, eff_b, why, already_bridged}.
+    Results cached per trace.jsonl mtime to avoid repeated O(n^2) Pearson computation."""
     try:
+        # Cache key: trace file mtime (changes per pipeline run) + coupling state mtime
+        trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+        trace_mtime = os.path.getmtime(trace_path) if os.path.isfile(trace_path) else 0
+        src_root_b = os.path.join(ctx.PROJECT_ROOT, "src")
+        # Use crossLayer dir mtime as a proxy for coupling state freshness
+        cl_dir = os.path.join(src_root_b, "crossLayer")
+        cl_mtime = os.path.getmtime(cl_dir) if os.path.isdir(cl_dir) else 0
+        cache_key = (trace_mtime, cl_mtime, n)
+        _bridge_cache = _get_bridge_cache()
+        if cache_key in _bridge_cache:
+            return _bridge_cache[cache_key]
+
         clusters, corr, modules, n_beats, coupling_state, trust = _compute_clusters()
         if not corr:
             return []
@@ -724,6 +764,7 @@ def get_top_bridges(n: int = 3) -> list:
                             "already_bridged": already})
             if len(results) >= n:
                 break
+        _bridge_cache[cache_key] = results
         return results
     except Exception:
         return []
@@ -910,11 +951,19 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         # Breath/pulse archetypes INVERT: they suppress when the chaos side rises
         _invert_archetypes = {"breath", "pulse", "phase"}
 
+        _LABEL_INVERSIONS = {
+            "widens": "suppresses", "opens": "closes",
+            "expands": "contracts", "boosts": "reduces",
+        }
+
         def _action_eff(arch: tuple, field: str, invert: bool = False) -> str:
             if arch[0] in _ACTION_SPECIFIC_ARCHETYPES:
-                arrow = "↓" if invert else "↑"
-                suffix = " (suppresses during chaos rise)" if invert else ""
-                return f"{arch[1]} {arrow} at high {field}{suffix}"
+                label = arch[1]
+                if invert:
+                    for fwd, rev in _LABEL_INVERSIONS.items():
+                        label = label.replace(fwd, rev)
+                    return f"{label} ↓ at high {field} (suppresses during chaos rise)"
+                return f"{label} ↑ at high {field}"
             return ""
 
         if a_is_chaos and not b_is_chaos:
