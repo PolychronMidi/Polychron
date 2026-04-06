@@ -136,9 +136,17 @@ coordinationIndependenceManager = (() => {
     // Effectiveness modulation: if coordination worked well for this pair, bias toward it
     const effectBias = (effectiveness[pair] - 0.5) * 0.2;
 
+    // Melodic coupling: counterpoint motion type biases coordination target.
+    // Contrary motion -> more independence (layers diverging intentionally).
+    // Similar motion -> more coordination (layers moving together).
+    const melodicCtxCIM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const counterpointBias = melodicCtxCIM
+      ? (melodicCtxCIM.counterpoint === 'contrary' ? -0.08 : melodicCtxCIM.counterpoint === 'similar' ? 0.07 : 0)
+      : 0;
+
     // Composite target: intent-aware blend replaces the static 0.5 baseline
     const raw = phaseTarget * 0.25 + regimeTarget * 0.25 + topoTarget * 0.15 + intentInteraction * 0.35
-      + entropyBias + densityBias + effectBias + canonBias + narrativeBias;
+      + entropyBias + densityBias + effectBias + canonBias + narrativeBias + counterpointBias;
     return clamp(raw, 0.05, 0.95);
   }
 
