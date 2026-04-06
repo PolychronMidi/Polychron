@@ -78,7 +78,15 @@ polyrhythmicPhasePredictor = (() => {
 
     if (minDist < window) {
       const proximity = 1.0 - minDist / window;
-      return PROB_BOOST * proximity;
+      // Melodic coupling: counterpoint motion scales convergence boost.
+      // Contrary motion at convergence creates dramatic cross-voice tension -> amplify.
+      // Similar motion amplifies the shared direction -> moderate boost.
+      const melodicCtxPPP = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+      const cpMult = melodicCtxPPP
+        ? (melodicCtxPPP.counterpoint === 'contrary' ? 1.35
+          : melodicCtxPPP.counterpoint === 'similar' ? 1.15 : 1.0)
+        : 1.0;
+      return PROB_BOOST * proximity * cpMult;
     }
 
     return 0;

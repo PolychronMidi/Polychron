@@ -71,8 +71,7 @@ emergentRhythmEngine = (() => {
     if (beatStartTime === cachedBeatTime && cachedResult) return cachedResult;
     cachedBeatTime = beatStartTime;
 
-    const profSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const regime = profSnap && profSnap.regime ? profSnap.regime : 'evolving';
+    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
     const windowBeats = regime === 'exploring' ? 3 : regime === 'coherent' ? 1.5 : 2;
     const windowDuration = spBeat * windowBeats;
     const windowStart = beatStartTime - windowDuration;

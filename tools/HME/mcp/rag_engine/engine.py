@@ -199,6 +199,11 @@ class RAGEngine(RAGKnowledgeMixin):
 
         # Only update file hashes after successful table write
         self._file_hashes.update(new_file_hashes)
+        # Prune orphaned hashes (files deleted/moved since last index run)
+        indexed_keys = {str(f) for f in files}
+        for k in list(self._file_hashes.keys()):
+            if k not in indexed_keys:
+                del self._file_hashes[k]
         self._save_hashes()
         if pending_chunks:
             self._search_cache.invalidate()

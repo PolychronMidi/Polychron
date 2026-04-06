@@ -137,7 +137,13 @@ cadenceAlignment = (() => {
       const pressure = clamp(tensionPressureAccum / TENSION_SATURATION_CALLS, 0, 1);
       return base - pressure * relief;
     })();
-    const shouldResolve = alignment.consensus || alignment.combinedTension > resolveThreshold;
+    // Melodic coupling: ascendRatio shifts the resolve threshold.
+    // High ascendRatio (phrase building) -> raise threshold -> hold resolution.
+    // Low ascendRatio (phrase descending) -> lower threshold -> invite resolution.
+    const melodicCtxCA = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const ascendRatio = melodicCtxCA ? V.optionalFinite(melodicCtxCA.ascendRatio, 0.5) : 0.5;
+    const adjustedResolveThreshold = resolveThreshold + (ascendRatio - 0.5) * 0.04;
+    const shouldResolve = alignment.consensus || alignment.combinedTension > adjustedResolveThreshold;
     if (shouldResolve) tensionPressureAccum = 0; // resolution fired, reset accumulator
     return {
       shouldResolve,

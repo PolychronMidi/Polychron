@@ -202,17 +202,15 @@ def hme_introspect() -> str:
     journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
     if os.path.isfile(journal_path):
         try:
-            header_lines = []
+            import re as _jre
             with open(journal_path, encoding="utf-8") as _jf:
-                for line in _jf:
-                    if header_lines and line.startswith("## R"):
-                        break
-                    header_lines.append(line.rstrip())
-                    if len(header_lines) > 15:
-                        break
-            if header_lines:
+                journal_content = _jf.read()
+            # Find all round-section starts; use the LAST one (most recent round)
+            section_starts = [m.start() for m in _jre.finditer(r'^## R\d+', journal_content, _jre.MULTILINE)]
+            if section_starts:
+                latest_section = journal_content[section_starts[-1]:section_starts[-1] + 900]
                 parts.append("\n### Latest Journal Entry")
-                parts.append("\n".join(header_lines[:15]))
+                parts.append(latest_section.rstrip()[:900])
         except Exception:
             pass
 
@@ -294,12 +292,7 @@ def hme_hot_reload(modules: str = "") -> str:
                     except Exception as _re:
                         remove_errs.append(f"{tname}:{_re}")
                 if remove_errs:
-                    results.append(f"  DBG remove errors for {name}: {remove_errs[:3]}")
-                # DEBUG: sample module attribution for first few tools
-                if not tools_before:
-                    sample = list(inner._tool_manager._tools.items())[:2]
-                    for sname, st in sample:
-                        results.append(f"  DBG {sname}: fn.__module__={getattr(st.fn,'__module__','?')!r} expected={full!r}")
+                    results.append(f"  WARN remove errors for {name}: {remove_errs[:3]}")
                 importlib.reload(mod)
                 tools_after = {
                     tname for tname, t in inner._tool_manager._tools.items()
@@ -756,7 +749,7 @@ def hme_selftest() -> str:
         hashes = ctx.project_engine._file_hashes
         table_files = status.get("total_files", 0)
         hash_count = len(hashes)
-        consistent = abs(hash_count - table_files) < 50
+        consistent = abs(hash_count - table_files) < 15
         results.append(f"{'PASS' if consistent else 'WARN'}: hash cache — {hash_count} hashes vs {table_files} indexed files")
     except Exception as e:
         results.append(f"FAIL: hash cache — {e}")

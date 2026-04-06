@@ -168,10 +168,22 @@ def evolution_momentum() -> str:
         out.append("")
 
     # --- 4. Subsystem receptivity from journal ---
+    # Split into lines for ±5-line window search (subsystem name and verdict rarely co-occur on same line)
+    journal_lines = journal_text.splitlines()
     subsystem_counts: dict[str, dict[str, int]] = {}
+    _VERDICT_PAT = _re.compile(r'\b(STABLE|EVOLVED|LEGENDARY|stable|evolved|legendary)\b')
     for sub in ["crossLayer", "conductor", "fx", "composers", "rhythm", "time", "play"]:
-        confirmed = len(_re.findall(rf'\b{sub}\b.*?(?:STABLE|EVOLVED|LEGENDARY)', journal_text, _re.IGNORECASE))
         total_mentions = len(_re.findall(rf'\b{sub}\b', journal_text, _re.IGNORECASE))
+        confirmed = 0
+        sub_pat = _re.compile(rf'\b{sub}\b', _re.IGNORECASE)
+        for i, line in enumerate(journal_lines):
+            if sub_pat.search(line):
+                # Look in ±5 line window for a verdict
+                window_start = max(0, i - 5)
+                window_end = min(len(journal_lines), i + 6)
+                window_text = "\n".join(journal_lines[window_start:window_end])
+                if _VERDICT_PAT.search(window_text):
+                    confirmed += 1
         subsystem_counts[sub] = {"confirmed": confirmed, "mentions": total_mentions}
 
     if any(v["mentions"] > 0 for v in subsystem_counts.values()):
@@ -235,6 +247,27 @@ def _describe_musical_role(name: str, path: str, narrative: str = "") -> tuple[s
     if any(k in name_l for k in ("climax", "peak", "apex")):
         role = "drives peak intensity arcs — decides when the music crests"
         effect = "melodic freshness gates the climax window; a stale contour defers the peak until novelty returns"
+    elif any(k in name_l for k in ("cadence", "cadent", "resolution")):
+        role = "harmonic cadence gateway — controls when and how layers resolve to consonance"
+        effect = "melodic ascendRatio shifts the resolve threshold; descending phrases lower it (invite resolution), building phrases raise it (hold tension)"
+    elif any(k in name_l for k in ("interval", "vertical", "collision", "unison")):
+        role = "voice-interval collision detector — penalizes unisons/octave stack between simultaneous layers"
+        effect = "intervalFreshness scales the collision penalty; novel intervals earn tolerance, stale collisions are penalized harder"
+    elif any(k in name_l for k in ("phase", "window", "lock", "sync")) and "phrase" not in name_l:
+        role = "rhythmic phase synchronization window — tracks when layers are approaching phase lock"
+        effect = "contour directionBias shifts the phase threshold; descending contour widens the cadence window, ascending contour narrows it"
+    elif any(k in name_l for k in ("downbeat", "accent", "metric", "beat")) and "predict" not in name_l:
+        role = "emergent metric accent anchor — reinforces downbeat position across layers"
+        effect = "thematic recall strengthens downbeat affinity; fresh territory enables metric displacement experiments"
+    elif any(k in name_l for k in ("predict", "predictor", "anticipat", "lookahead")):
+        role = "look-ahead state predictor — anticipates rhythmic/harmonic phase for preemptive decisions"
+        effect = "melodic contour shape biases prediction confidence; rising contour predicts continuation, falling predicts resolution"
+    elif any(k in name_l for k in ("contagion", "contag", "propagat", "spread")):
+        role = "pattern propagation engine — spreads stutter/rhythmic gestures across layers"
+        effect = "contour coherence scales propagation strength; coherent phrases amplify contagion, counterpoint motion scatters it"
+    elif any(k in name_l for k in ("groove", "transfer", "swing", "feel")):
+        role = "groove transfer bridge — broadcasts rhythmic feel from one layer to the other"
+        effect = "intervalFreshness weights groove fidelity; fresh territory allows groove mutation, stale territory locks it in"
     elif any(k in name_l for k in ("rest", "breath", "silence")):
         role = "coordinates rests and silence across layers"
         effect = "phrase-completion signals anchor rests to melodic boundaries — silence lands where contour resolves"
@@ -256,7 +289,7 @@ def _describe_musical_role(name: str, path: str, narrative: str = "") -> tuple[s
     elif any(k in name_l for k in ("tension", "harmonic", "dissonance")):
         role = "modulates harmonic tension and dissonance level"
         effect = "stale intervals trigger tension increase to force novelty; fresh territory allows tension resolution"
-    elif any(k in name_l for k in ("rhythm", "tempo", "pulse")):
+    elif any(k in name_l for k in ("rhythm", "tempo", "pulse", "rhythmic")):
         role = "shapes rhythmic character and pulse density"
         effect = "melodic descent invites rhythmic fill; phrase boundaries trigger metric softening"
     elif any(k in name_l for k in ("emit", "gate", "filter", "guard")):
@@ -271,6 +304,15 @@ def _describe_musical_role(name: str, path: str, narrative: str = "") -> tuple[s
     elif any(k in name_l for k in ("feedback", "oscillat", "resonate")):
         role = "feeds signal back into the conductor loop"
         effect = "melodic contour direction biases feedback sign — ascending curves amplify, descending curves dampen"
+    elif any(k in name_l for k in ("motif", "echo", "mirror", "silhouette")):
+        role = "motif memory and echo — tracks thematic recurrence across the piece"
+        effect = "thematicDensity gates motif recall; strong recall suppresses new motif injection, fresh territory invites new ones"
+    elif any(k in name_l for k in ("complement", "articul", "mirror")):
+        role = "articulation complement — adds expressive nuance to the opposing layer"
+        effect = "contour shape selects articulation type; ascending phrases get accented attacks, descending get tapered releases"
+    elif any(k in name_l for k in ("gravity", "well", "attractor")):
+        role = "temporal gravity well — pulls note timing toward rhythmic anchor points"
+        effect = "contourShape scales pull strength; rising contour amplifies gravity (strong metric pull), contrary motion scatters it"
     else:
         prefix = "cross-layer " if is_crosslayer else ""
         role = f"manages {prefix}{name} behavior"

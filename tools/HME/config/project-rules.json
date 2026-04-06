@@ -16,7 +16,7 @@
     "phaseConvergence", "explainability", "emergentRhythm",
     "emergentDownbeat", "stutterContagion", "cadenceAlignment",
     "self-narration", "verticalCollision", "channel-coherence",
-    "emergentMelody"
+    "emergentMelody", "tension"
   ],
 
   "dry_patterns": [
@@ -52,7 +52,9 @@
     "conductorDiagnostics",
     "/scripts/pipeline/",
     "/writer/traceDrain",
-    "play/processBeat.js"
+    "play/processBeat.js",
+    "play/main.js",
+    "play/crossLayerBeatRecord.js"
   ],
 
   "coupling_matrix_legacy_paths": [

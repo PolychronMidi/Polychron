@@ -88,7 +88,13 @@ grooveTransfer = (() => {
     // Coherence-responsive groove coupling: good coherence = tighter coupling, poor = looser
     const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
     const coherenceFactor = coherenceEntry ? clamp(0.8 + V.optionalFinite(coherenceEntry.bias, 1.0) * 0.4, 0.7, 1.3) : 1.0;
-    const effectiveDamping = DAMPING * (1.3 - cimScale * 0.6);
+    // Melodic coupling: intervalFreshness controls groove independence vs. convergence.
+    // Novel intervals -> layers explore independently (more damping = less groove transfer).
+    // Stale intervals -> layers converge into shared groove (less damping = more transfer).
+    const melodicCtxGT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const intervalFreshness = melodicCtxGT ? V.optionalFinite(melodicCtxGT.intervalFreshness, 0.5) : 0.5;
+    const melodicDampingScale = 0.8 + intervalFreshness * 0.4; // [0.8 stale ... 1.2 fresh]
+    const effectiveDamping = DAMPING * (1.3 - cimScale * 0.6) * melodicDampingScale;
     return timeInSeconds + localTransfer * effectiveDamping * coherenceFactor;
   }
 
