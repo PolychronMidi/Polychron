@@ -59,12 +59,17 @@ crossLayerSilhouette = (() => {
     // Regime-responsive smoothing: faster tracking during exploring, more stable arcs during coherent
     const regime = conductorSignalBridge.getSignals().regime || 'evolving';
     const smoothing = SMOOTHING_REGIME[regime] !== undefined ? SMOOTHING_REGIME[regime] : 0.15;
+    // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts sharpen silhouette tracking.
+    // Opposing response to entropyRegulator: same trigger, structure sharpens while entropy rises.
+    const rhythmEntryCS = L0.getLast('emergentRhythm', { layer: 'both' });
+    const densitySurpriseCS = rhythmEntryCS && Number.isFinite(rhythmEntryCS.densitySurprise) ? rhythmEntryCS.densitySurprise : 0;
+    const effectiveSmoothing = smoothing * (1 - densitySurpriseCS * 0.30);
 
     // Smooth
-    smoothedDensity = smoothedDensity * (1 - smoothing) + rawDensity * smoothing;
-    smoothedRegister = smoothedRegister * (1 - smoothing) + rawRegister * smoothing;
-    smoothedDynamic = smoothedDynamic * (1 - smoothing) + rawDynamic * smoothing;
-    smoothedEntropy = smoothedEntropy * (1 - smoothing) + rawEntropy * smoothing;
+    smoothedDensity = smoothedDensity * (1 - effectiveSmoothing) + rawDensity * effectiveSmoothing;
+    smoothedRegister = smoothedRegister * (1 - effectiveSmoothing) + rawRegister * effectiveSmoothing;
+    smoothedDynamic = smoothedDynamic * (1 - effectiveSmoothing) + rawDynamic * effectiveSmoothing;
+    smoothedEntropy = smoothedEntropy * (1 - effectiveSmoothing) + rawEntropy * effectiveSmoothing;
 
     // Record arc history
     const entry = arcHistory[arcIndex];

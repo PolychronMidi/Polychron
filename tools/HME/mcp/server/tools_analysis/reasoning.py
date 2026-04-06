@@ -230,8 +230,13 @@ def module_story(module_name: str) -> str:
 
 @ctx.mcp.tool()
 def think(about: str, context: str = "") -> str:
-    """Structured reflection tool. When ANTHROPIC_API_KEY is set, uses Claude with adaptive thinking to produce real analysis. Falls back to a structured reflection template otherwise."""
+    """Structured reflection tool. When ANTHROPIC_API_KEY is set, uses Claude with adaptive
+    thinking to produce real analysis. Falls back to Ollama (deepseek-r1) with project-grounded
+    context injection, then a structured template. For evolution/coupling/HME questions,
+    automatically injects antagonist map, dimension gaps, and recent KB patterns."""
     ctx.ensure_ready_sync()
+    import re as _re
+
     prompts = {
         "task_adherence": "Am I still working on what the user asked? Have I drifted into tangential work? What was the original request and am I addressing it?",
         "completeness": "Have I finished everything required? Are there skipped phases (verify, journal, snapshot)? Did I check the pipeline results? Did I update docs?",
@@ -240,14 +245,14 @@ def think(about: str, context: str = "") -> str:
         "conventions": "Does my code follow project conventions? Line count? Naming? Registration? Architectural boundaries?",
         "recent_changes": "What files changed recently? Are there unintended interactions between the recent changes?",
     }
-    prompt = prompts.get(about, f"Reflect on: {about}")
 
-    # For recent_changes, fetch git context and inject as additional context
+    # For recent_changes, fetch git context
     if about == "recent_changes" and not context:
         try:
             import subprocess as _sp
             _log = _sp.run(
-                ["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "--since=6 hours ago", "--name-only", "--diff-filter=AM"],
+                ["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "--since=6 hours ago",
+                 "--name-only", "--diff-filter=AM"],
                 capture_output=True, text=True, timeout=5
             )
             if _log.stdout.strip():
@@ -255,19 +260,67 @@ def think(about: str, context: str = "") -> str:
         except Exception:
             pass
 
-    # Gather KB context regardless of path
-    kb_hits = ctx.project_engine.search_knowledge(about, top_k=5)
+    # Multi-term KB search for richer context than single-query lookup
+    kb_hits: list = []
+    seen_kb_ids: set = set()
+    def _add_kb_hits(query: str, top_k: int = 4) -> None:
+        for h in ctx.project_engine.search_knowledge(query, top_k=top_k):
+            hid = h.get("id") or h.get("title", "")
+            if hid not in seen_kb_ids:
+                seen_kb_ids.add(hid)
+                kb_hits.append(h)
+
+    _add_kb_hits(about, top_k=5)
+    _STOPWORDS = {"about", "which", "would", "should", "could", "their", "there", "these",
+                  "those", "where", "while", "using", "every", "other", "after", "before",
+                  "since", "think", "tools", "what", "with", "when", "from", "have", "been",
+                  "into", "make", "more", "most", "them", "also", "does", "next"}
+    key_terms = [w for w in _re.findall(r'\b[a-zA-Z]{5,}\b', about)
+                 if w.lower() not in _STOPWORDS]
+    for term in key_terms[:6]:
+        _add_kb_hits(term, top_k=2)
     kb_block = ""
     if kb_hits:
-        lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_hits]
-        kb_block = "Relevant KB constraints:\n" + "\n".join(lines)
+        lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_hits[:10]]
+        kb_block = "Relevant KB patterns and constraints:\n" + "\n".join(lines)
 
+    # Auto-inject project state for evolution/coupling/HME questions
+    _EVOLUTION_TERMS = {"evolution", "evolve", "coupling", "antagonist", "bridge", "hme",
+                        "ecstasy", "leverage", "cluster", "organism", "xenolinguistic",
+                        "improve", "analysis", "insight", "exciting", "generative", "induce"}
+    is_evolution_q = any(t.lower() in _EVOLUTION_TERMS for t in key_terms)
+    injected_state = ""
+    if is_evolution_q and not context:
+        try:
+            from .coupling import antagonist_map as _ant_map, dimension_gap_finder as _dim_gaps
+            injected_state = "## Live Project State\n### Antagonist pairs (top creative tensions):\n"
+            injected_state += _ant_map()[:1200]
+            injected_state += "\n\n### Dimension gaps (underused coupling signals):\n"
+            injected_state += _dim_gaps()[:600]
+        except Exception:
+            pass
+
+    # Directive prompt for free-form questions
+    if about in prompts:
+        prompt = prompts[about]
+    else:
+        prompt = (
+            f"Topic: {about}\n\n"
+            f"Give SPECIFIC, actionable suggestions grounded in the project state and KB above. "
+            f"For each suggestion: state WHAT to implement, WHICH file/function to change, "
+            f"and WHY it improves the system. "
+            f"If a suggestion is already implemented per the KB, mark it [DONE] and skip it. "
+            f"Focus on 3–5 highest-impact, genuinely novel ideas."
+        )
+
+    # Claude API path
     api_key = _get_api_key()
     if api_key:
-        user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
+        user_text = f"**Reflection topic:** {about}\n\n**Question/task:** {prompt}"
+        if injected_state:
+            user_text += f"\n\n{injected_state}"
         if context:
             user_text += f"\n\n**Additional context:** {context}"
-        # think is an explicit reasoning call — full 4-step effort scaling
         think_effort = {"greedy": "max", "moderate": "high", "conservative": "medium", "minimal": "low"}.get(
             get_context_budget(), "medium"
         )
@@ -276,11 +329,22 @@ def think(about: str, context: str = "") -> str:
         if answer:
             parts = [f"# Think: {about} *(adaptive/{think_effort}, {_DEEP_MODEL})*\n", answer]
             if kb_hits:
-                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
+                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
             return "\n".join(parts)
 
-    # Ollama fallback before template
-    user_text = f"**Reflection topic:** {about}\n\n**Question:** {prompt}"
+    # Ollama path: prepend Polychron system context so local model is grounded
+    _POLYCHRON_SYSTEM = (
+        "You are HME (HyperMeta Engine), the analysis intelligence for Polychron — a self-evolving "
+        "generative music system. Polychron has ~27 cross-layer modules (trust-weighted, 0–1 scores), "
+        "two polyrhythmic layers (L1/L2), emergent rhythm (6 L0 channels → 16-slot grid, fields: "
+        "density, complexity, biasStrength, densitySurprise, hotspots, complexityEma) and emergent "
+        "melody engines (contourShape, registerMigrationDir, tessituraLoad, etc.). Evolution rounds "
+        "R1–R73+ couple modules to these signals for xenolinguistic texture. Give project-specific, "
+        "actionable suggestions. Reference actual module names, signal fields, and coupling patterns."
+    )
+    user_text = f"{_POLYCHRON_SYSTEM}\n\n**Task:** {prompt}"
+    if injected_state:
+        user_text += f"\n\n{injected_state}"
     if context:
         user_text += f"\n\n**Additional context:** {context}"
     if kb_block:
@@ -289,18 +353,20 @@ def think(about: str, context: str = "") -> str:
     if local_answer:
         parts = [f"# Think: {about} *(local)*\n", local_answer]
         if kb_hits:
-            parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits))
+            parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
         return "\n".join(parts)
 
-    # Template fallback (no models available)
+    # Template fallback: show project state so caller can still reason from it
     parts = [f"# Think: {about}\n"]
     parts.append(f"**Prompt:** {prompt}\n")
+    if injected_state:
+        parts.append(injected_state[:800])
     if context:
         parts.append(f"**Context:** {context}\n")
     if kb_hits:
         parts.append("**Relevant KB:**")
-        for k in kb_hits:
-            parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:100]}...")
+        for k in kb_hits[:6]:
+            parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:120]}")
     parts.append("\n**Now reflect and respond before proceeding.**")
     return "\n".join(parts)
 

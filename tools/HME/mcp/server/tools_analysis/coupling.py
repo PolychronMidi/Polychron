@@ -43,6 +43,153 @@ def _pearson(xs: list, ys: list) -> float:
     return num / (denom_sq ** 0.5)
 
 
+def _scan_l0_topology(src_root: str) -> dict:
+    """Scan ALL JS source files for L0.post / L0.getLast patterns.
+    Resolves const CHANNEL = '...' assignments so variable-name channels are captured.
+    Returns {channel: {producers: [module, ...], consumers: [module, ...]}}."""
+    topology: dict = defaultdict(lambda: {"producers": [], "consumers": []})
+    # Match string literal: L0.post('channel', ...) or L0.getLast('channel', ...)
+    _post_lit  = re.compile(r"L0\.post\(\s*['\"]([^'\"]+)['\"]")
+    _get_lit   = re.compile(r"L0\.getLast\(\s*['\"]([^'\"]+)['\"]")
+    # Match variable: L0.post(VARNAME, ...) where VARNAME is a plain identifier
+    _post_var  = re.compile(r"L0\.post\(\s*([A-Z_][A-Z0-9_]*)\s*,")
+    _get_var   = re.compile(r"L0\.getLast\(\s*([A-Z_][A-Z0-9_]*)\s*,")
+    # Match const/let CHANNEL_VAR = 'value'
+    _const_re  = re.compile(r"(?:const|let)\s+([A-Z_][A-Z0-9_]*)\s*=\s*['\"]([^'\"]+)['\"]")
+
+    for dirpath, _, filenames in os.walk(src_root):
+        for fname in filenames:
+            if not fname.endswith(".js") or fname == "index.js":
+                continue
+            fpath = os.path.join(dirpath, fname)
+            try:
+                with open(fpath, encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+            except Exception:
+                continue
+            module_name = fname.replace(".js", "")
+            # Build local constant map for this file
+            consts: dict[str, str] = {k: v for k, v in _const_re.findall(content)}
+            # String literals
+            for ch in _post_lit.findall(content):
+                if module_name not in topology[ch]["producers"]:
+                    topology[ch]["producers"].append(module_name)
+            for ch in _get_lit.findall(content):
+                if module_name not in topology[ch]["consumers"]:
+                    topology[ch]["consumers"].append(module_name)
+            # Variable references — resolve via consts
+            for var in _post_var.findall(content):
+                ch = consts.get(var)
+                if ch and module_name not in topology[ch]["producers"]:
+                    topology[ch]["producers"].append(module_name)
+            for var in _get_var.findall(content):
+                ch = consts.get(var)
+                if ch and module_name not in topology[ch]["consumers"]:
+                    topology[ch]["consumers"].append(module_name)
+    return dict(topology)
+
+
+def channel_topology(start_channel: str = "") -> str:
+    """Show the L0 channel signal graph. No argument → full channel map (producers + consumers for
+    every channel). With start_channel → cascade trace: follow the signal from that channel through
+    its consumers and their downstream output channels up to 3 hops deep."""
+    ctx.ensure_ready_sync()
+    _track("channel_topology")
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    topo = _scan_l0_topology(src_root)
+    if not topo:
+        return "No L0.post/getLast patterns found in src/."
+
+    if not start_channel.strip():
+        # Full channel map sorted by total activity (producers + consumers)
+        out = [f"# L0 Channel Map  ({len(topo)} channels)\n"]
+        sorted_chs = sorted(topo.items(),
+                            key=lambda kv: len(kv[1]["producers"]) + len(kv[1]["consumers"]),
+                            reverse=True)
+        for ch, data in sorted_chs:
+            prods = data["producers"]
+            cons  = data["consumers"]
+            loops = set(prods) & set(cons)  # modules that both post AND read the same channel
+            loop_s = f"  ⟳ LOOP: {', '.join(sorted(loops))}" if loops else ""
+            out.append(f"## {ch}  ({len(prods)} producers, {len(cons)} consumers){loop_s}")
+            if prods:
+                out.append(f"  POST: {', '.join(sorted(prods))}")
+            if cons:
+                out.append(f"  READ: {', '.join(sorted(cons))}")
+            out.append("")
+        # Broadcast hubs (channels with many consumers — high broadcast impact)
+        hubs = [(ch, len(d["consumers"])) for ch, d in topo.items() if len(d["consumers"]) >= 4]
+        if hubs:
+            out.append("## Broadcast Hubs  (≥4 consumers)")
+            for ch, n_c in sorted(hubs, key=lambda x: -x[1]):
+                out.append(f"  {ch:<30} → {n_c} consumers")
+            out.append("")
+        # Dead-end channels — signals posted but never consumed (evolution targets!)
+        _SYSTEM_LOOPS = {"rest-sync", "section-quality", "binaural", "instrument", "note"}
+        # emergentRhythmEngine reads these via variable patterns we can't always resolve:
+        _KNOWN_CONNECTED = {"feedbackLoop", "cadenceAlignment", "explainability",
+                            "channel-coherence", "chord"}
+        dead_ends = [
+            (ch, d["producers"])
+            for ch, d in topo.items()
+            if d["producers"] and not d["consumers"]
+            and ch not in _SYSTEM_LOOPS and ch not in _KNOWN_CONNECTED
+        ]
+        if dead_ends:
+            out.append("## Signal Dead-ends  (posted but NEVER consumed — prime evolution targets)")
+            out.append("These signals broadcast into the void. Adding consumers creates new coupling paths.\n")
+            for ch, prods in sorted(dead_ends, key=lambda x: x[0]):
+                out.append(f"  {ch:<30} posted by: {', '.join(sorted(prods))}")
+            out.append("")
+        # Orphan channels — consumed but never posted (stale consumers)
+        orphans = [
+            (ch, d["consumers"])
+            for ch, d in topo.items()
+            if d["consumers"] and not d["producers"]
+        ]
+        if orphans:
+            out.append("## Orphan Channels  (consumed but never posted — stale reads or missed producers)")
+            for ch, cons in sorted(orphans, key=lambda x: x[0]):
+                out.append(f"  {ch:<30} read by: {', '.join(sorted(cons))}")
+        return "\n".join(out)
+
+    # Cascade trace from start_channel
+    ch = start_channel.strip()
+    if ch not in topo:
+        return (f"Channel '{ch}' not found. Known channels: "
+                + ", ".join(sorted(topo.keys())[:20]) + " ...")
+
+    out = [f"# L0 Cascade: {ch}\n"]
+    visited_channels: set = set()
+
+    def _show_level(channels: list, depth: int) -> None:
+        if depth > 3 or not channels:
+            return
+        indent = "  " * depth
+        for c in sorted(set(channels) - visited_channels):
+            visited_channels.add(c)
+            data = topo.get(c, {})
+            prods = data.get("producers", [])
+            cons  = data.get("consumers", [])
+            loop_s = " ⟳" if set(prods) & set(cons) else ""
+            out.append(f"{indent}▸ {c}  [posted by: {', '.join(sorted(prods)) or '?'}]{loop_s}")
+            if cons:
+                out.append(f"{indent}  consumers: {', '.join(sorted(cons))}")
+                # Find output channels of each consumer
+                downstream: list = []
+                for consumer in cons:
+                    for other_ch, other_data in topo.items():
+                        if consumer in other_data.get("producers", []) and other_ch != c:
+                            downstream.append(other_ch)
+                if downstream and depth < 3:
+                    out.append(f"{indent}  → downstream channels: {', '.join(sorted(set(downstream)))}")
+                    _show_level(list(set(downstream)), depth + 1)
+            out.append("")
+
+    _show_level([ch], 0)
+    return "\n".join(out)
+
+
 def _scan_coupling_state(src_root: str) -> dict:
     """Return per-module coupling state for all crossLayer JS files."""
     cl_dir = os.path.join(src_root, "crossLayer")
@@ -440,6 +587,379 @@ def cluster_finder(min_r: float = 0.35) -> str:
     return "\n".join(_format_clusters(cl, corr, mods, nb, cs, tr, min_r))
 
 
+def get_top_bridges(n: int = 3) -> list:
+    """Return top N antagonist bridge opportunities as structured dicts for injection into other tools.
+    Each dict: {pair_a, pair_b, r, arch_a, arch_b, field, eff_a, eff_b, why, already_bridged}."""
+    try:
+        clusters, corr, modules, n_beats, coupling_state, trust = _compute_clusters()
+        if not corr:
+            return []
+        src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+        if not coupling_state:
+            coupling_state = _scan_coupling_state(src_root)
+        ALL_RHYTHM_FIELDS = ["densitySurprise", "hotspots", "complexityEma", "biasStrength", "complexity", "density"]
+        ALL_MELODIC_DIMS  = ["contourShape", "registerMigrationDir", "tessituraLoad", "thematicDensity",
+                             "counterpoint", "intervalFreshness", "ascendRatio", "freshnessEma"]
+        rhythm_field_users: dict = defaultdict(list)
+        melodic_dim_users: dict = defaultdict(list)
+        for name, info in coupling_state.items():
+            for f in info.get("rhythm_dims", []):
+                rhythm_field_users[f].append(name)
+            for d in info.get("melodic_dims", []):
+                melodic_dim_users[d].append(name)
+        _ARCHETYPES_B = {
+            "entropy": ("chaos", "spikes entropy"), "silhouette": ("form", "sharpens tracking"),
+            "gravity": ("timing", "strengthens gravity"), "mirror": ("balance", "amplifies contrast"),
+            "complement": ("balance", "boosts complement"), "cadence": ("pulse", "tightens cadence"),
+            "convergence": ("pulse", "raises merge probability"), "phase": ("phase", "tightens phase lock"),
+            "envelope": ("dynamics", "raises amplitude"), "climax": ("arc", "accelerates climax"),
+            "role": ("dynamics", "lowers swap threshold"), "groove": ("transfer", "boosts groove"),
+            "stutter": ("articulation", "raises contagion"), "vertical": ("harmony", "raises collision penalty"),
+            "velocity": ("dynamics", "scales interference"), "motif": ("memory", "boosts echo"),
+            "articulation": ("articulation", "scales contrast"), "feedback": ("resonance", "amplifies feedback"),
+            "rest": ("breath", "widens rest window"), "harmonic": ("harmony", "narrows novelty hunting"),
+        }
+        _FIELD_GUIDE_B: dict = {
+            "densitySurprise": {"chaos_up": "spikes entropy at surprise", "order_up": "sharpens form tracking",
+                                "bridge_why": "surprise events drive chaos spike AND structural sharpening simultaneously"},
+            "hotspots": {"chaos_up": "raise entropy at density peaks", "order_up": "intensify suggestion weight",
+                         "bridge_why": "dense grid positions pull all geometry inward while entropy erupts"},
+            "complexityEma": {"chaos_up": "amplify entropy modulation rate", "order_up": "slow tracking (stable arc = stable form)",
+                              "bridge_why": "complexity memory: chaos accelerates, form stabilises — slow-fast coupling"},
+            "ascendRatio": {"chaos_up": "rising phrases → spike entropy", "order_up": "ascending arc tightens structural hold",
+                            "bridge_why": "ascending momentum: chaos rides the climb, structure braces for landing"},
+            "freshnessEma": {"chaos_up": "novel intervals → raise entropy target", "order_up": "novel intervals demand structural anchoring",
+                             "bridge_why": "melodic novelty: chaos diversifies into the unknown, form holds the ground"},
+            "registerMigrationDir": {"chaos_up": "upward migration amplifies entropy", "order_up": "register shift raises swap/role opportunity",
+                                     "bridge_why": "register transition: entropy leaps into new territory, roles reorganise"},
+        }
+        def _arch(name: str) -> tuple:
+            n_low = name.lower()
+            for key, val in _ARCHETYPES_B.items():
+                if key.lower() in n_low:
+                    return val
+            return ("module", f"modulates {name}")
+        def _score(field: str, used_a: bool, used_b: bool) -> float:
+            if used_a or used_b:
+                return -1.0
+            return 1.0 / (1 + len(rhythm_field_users.get(field, [])) + len(melodic_dim_users.get(field, [])))
+        def _recipe(arch_a: tuple, arch_b: tuple, field: str) -> tuple:
+            g = _FIELD_GUIDE_B.get(field, {})
+            chaos_types = {"chaos", "resonance", "articulation", "transfer"}
+            a_chaos = arch_a[0] in chaos_types
+            b_chaos = arch_b[0] in chaos_types
+            if a_chaos and not b_chaos:
+                return g.get("chaos_up", arch_a[1]), g.get("order_up", arch_b[1])
+            if b_chaos and not a_chaos:
+                return g.get("order_up", arch_a[1]), g.get("chaos_up", arch_b[1])
+            return f"{arch_a[1]} scales with {field}", f"{arch_b[1]} inverts with {field}"
+        seen: set = set()
+        pairs: list = []
+        for (a, b), r in corr.items():
+            key = tuple(sorted([a, b]))
+            if key not in seen and r < -0.30:
+                seen.add(key)
+                pairs.append((a, b, r))
+        pairs.sort(key=lambda x: x[2])
+        results = []
+        for a, b, r in pairs[:n * 2]:  # over-sample, filter down to n
+            fa = _TRUST_FILE_ALIASES.get(a, a); fb = _TRUST_FILE_ALIASES.get(b, b)
+            ia = coupling_state.get(a, {}) or coupling_state.get(fa, {})
+            ib = coupling_state.get(b, {}) or coupling_state.get(fb, {})
+            used_a = set(ia.get("rhythm_dims", [])) | set(ia.get("melodic_dims", []))
+            used_b = set(ib.get("rhythm_dims", [])) | set(ib.get("melodic_dims", []))
+            already = sorted(used_a & used_b)
+            arch_a = _arch(fa); arch_b = _arch(fb)
+            all_f = ALL_RHYTHM_FIELDS + ALL_MELODIC_DIMS
+            scored = sorted([(f, _score(f, f in used_a, f in used_b)) for f in all_f],
+                            key=lambda x: -x[1])
+            if not scored or scored[0][1] <= 0:
+                continue
+            top_f, _ = scored[0]
+            eff_a, eff_b = _recipe(arch_a, arch_b, top_f)
+            why = _FIELD_GUIDE_B.get(top_f, {}).get("bridge_why", "shared signal drives constructive opposition")
+            results.append({"pair_a": a, "pair_b": b, "r": r, "arch_a": arch_a[0], "arch_b": arch_b[0],
+                            "field": top_f, "eff_a": eff_a, "eff_b": eff_b, "why": why,
+                            "already_bridged": already})
+            if len(results) >= n:
+                break
+        return results
+    except Exception:
+        return []
+
+
+def antagonism_leverage(pair_limit: int = 6) -> str:
+    """Analyse each top antagonist pair and recommend a shared coupling field that
+    would amplify their creative opposition constructively. For each pair shows:
+    existing dims, candidate bridge fields (used by neither), and a concrete
+    opposing-response recipe with musical rationale."""
+    ctx.ensure_ready_sync()
+    _track("antagonism_leverage")
+
+    clusters, corr, modules, n_beats, coupling_state, trust = _compute_clusters()
+    if not corr:
+        return "No trace data available. Run pipeline first."
+
+    # Field coverage: how many modules already use each field (lower = more distinctive)
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    if not coupling_state:
+        coupling_state = _scan_coupling_state(src_root)
+
+    ALL_RHYTHM_FIELDS = ["densitySurprise", "hotspots", "complexityEma", "biasStrength", "complexity", "density"]
+    ALL_MELODIC_DIMS  = ["contourShape", "registerMigrationDir", "tessituraLoad", "thematicDensity",
+                         "counterpoint", "intervalFreshness", "ascendRatio", "freshnessEma"]
+
+    rhythm_field_users: dict[str, list[str]] = defaultdict(list)
+    melodic_dim_users:  dict[str, list[str]] = defaultdict(list)
+    for name, info in coupling_state.items():
+        for f in info.get("rhythm_dims", []):
+            rhythm_field_users[f].append(name)
+        for d in info.get("melodic_dims", []):
+            melodic_dim_users[d].append(name)
+
+    # Module "archetype" inference for musical effect descriptions
+    _ARCHETYPES = {
+        "entropy": ("chaos", "spikes entropy target"),
+        "silhouette": ("form", "sharpens structural tracking"),
+        "gravity": ("timing", "strengthens gravity wells"),
+        "mirror": ("balance", "amplifies texture contrast"),
+        "complement": ("balance", "boosts complement weight"),
+        "cadence": ("pulse", "compresses cadence window"),
+        "convergence": ("pulse", "raises merge probability"),
+        "phase": ("phase", "tightens phase lock threshold"),
+        "envelope": ("dynamics", "raises dynamic amplitude"),
+        "climax": ("arc", "accelerates climax approach"),
+        "role": ("dynamics", "lowers swap threshold"),
+        "groove": ("transfer", "boosts groove transfer rate"),
+        "stutter": ("articulation", "raises stutter contagion"),
+        "vertical": ("harmony", "raises interval collision penalty"),
+        "velocity": ("dynamics", "scales velocity interference"),
+        "motif": ("memory", "boosts echo probability"),
+        "articulation": ("articulation", "scales contrast strength"),
+        "feedback": ("resonance", "amplifies feedback depth"),
+        "rest": ("breath", "widens rest synchronization window"),
+        "harmonic": ("harmony", "narrows novelty hunting"),
+        "phaseLock": ("phase", "tightens phase lock threshold"),
+        "dynamicEnvelope": ("dynamics", "raises dynamic amplitude"),
+        "rhythmicComplement": ("balance", "boosts complement density"),
+    }
+
+    def _archetype(name: str) -> tuple[str, str]:
+        n = name.lower()
+        for key, val in _ARCHETYPES.items():
+            if key.lower() in n:
+                return val
+        return ("module", f"modulates {name} behaviour")
+
+    # Field→opposing-effects table: (chaos_response, order_response, neutral_response)
+    _FIELD_GUIDE: dict[str, dict] = {
+        "densitySurprise": {
+            "signal": "unexpected density deviation (0–1)",
+            "chaos_up":   "spike entropy / loosen constraint",
+            "chaos_dn":   "amplify chaos further",
+            "order_up":   "sharpen tracking / compress structure",
+            "order_dn":   "dampen chaotic spread",
+            "bridge_why": "surprise events should simultaneously increase chaos AND tighten structure — push-pull creates alien tension",
+        },
+        "hotspots": {
+            "signal": "fraction of active grid slots (0–1)",
+            "chaos_up":   "raise entropy target at density peaks",
+            "chaos_dn":   "diversify pitch vocabulary",
+            "order_up":   "strengthen gravity / intensify suggestion weight",
+            "order_dn":   "suppress competing signals when grid is full",
+            "bridge_why": "dense rhythmic moments should pull all geometry inward while structure firms up",
+        },
+        "complexityEma": {
+            "signal": "long-term rhythmic complexity EMA (0–1)",
+            "chaos_up":   "amplify entropy modulation rate",
+            "chaos_dn":   "suppress entropy when complexity is stable",
+            "order_up":   "slow tracking responsiveness (stable arc = stable form)",
+            "order_dn":   "allow looser structure when complexity is low",
+            "bridge_why": "complexity memory creates complementary slow-fast coupling: chaos accelerates, form stabilises",
+        },
+        "biasStrength": {
+            "signal": "emergent rhythm bias confidence (0–1)",
+            "chaos_up":   "amplify entropy injection on strong bias",
+            "chaos_dn":   "raise disorder when rhythm is un-biased",
+            "order_up":   "raise form correction gain on strong bias",
+            "order_dn":   "loosen structure when bias is weak",
+            "bridge_why": "rhythmic bias confidence drives both agents: order follows the pulse, chaos rebels against it",
+        },
+        "complexity": {
+            "signal": "per-beat rhythmic complexity (0–1)",
+            "chaos_up":   "raise entropy target with beat complexity",
+            "chaos_dn":   "inject disorder during complex passages",
+            "order_up":   "tighten silhouette smoothing (more complex = needs more structure)",
+            "order_dn":   "relax structure during simple passages",
+            "bridge_why": "complexity drives complementary responses: entropy opens up while form holds the container",
+        },
+        "density": {
+            "signal": "normalised note density (0–1)",
+            "chaos_up":   "raise entropy at high density",
+            "chaos_dn":   "lower entropy at low density",
+            "order_up":   "strengthen structural correction at high density",
+            "order_dn":   "relax structural hold at low density",
+            "bridge_why": "density is the shared currency: chaos and order both amplify around density peaks, pulling in opposite musical directions",
+        },
+        # melodic dims
+        "contourShape": {
+            "signal": "melodic contour direction (rising/flat/falling)",
+            "chaos_up":   "rising contour raises entropy target",
+            "chaos_dn":   "falling contour damps entropy",
+            "order_up":   "rising contour sharpens form tracking",
+            "order_dn":   "falling contour relaxes structure",
+            "bridge_why": "melodic arc is a natural shared conductor: chaos and order both respond to the rise/fall",
+        },
+        "tessituraLoad": {
+            "signal": "tessitura pressure 0–1 (extreme register)",
+            "chaos_up":   "register extremes raise entropy target",
+            "chaos_dn":   "settled register allows lower entropy",
+            "order_up":   "extreme register demands stronger structural correction",
+            "order_dn":   "settled register relaxes corrections",
+            "bridge_why": "register extremity is both exciting and structurally stressful — dual coupling captures that tension",
+        },
+        "ascendRatio": {
+            "signal": "fraction of ascending melodic intervals (0–1)",
+            "chaos_up":   "rising phrases signal exploratory territory → spike entropy",
+            "chaos_dn":   "descending phrases → settle entropy down",
+            "order_up":   "ascending arc requires tighter structural hold (building toward peak)",
+            "order_dn":   "descending arc → relax structural correction",
+            "bridge_why": "ascending melodic momentum drives constructive opposition: chaos rides the climb, structure braces for landing",
+        },
+        "freshnessEma": {
+            "signal": "EMA of melodic interval novelty (0=familiar, 1=novel)",
+            "chaos_up":   "novel intervals signal uncharted territory → raise entropy target",
+            "chaos_dn":   "familiar intervals → reduce entropy (settled ground)",
+            "order_up":   "novel intervals demand stronger structural anchoring (unfamiliar = need for container)",
+            "order_dn":   "familiar intervals → relax structural hold",
+            "bridge_why": "melodic novelty triggers dual response: chaos diversifies into the unknown while form holds the ground beneath it",
+        },
+        "registerMigrationDir": {
+            "signal": "register migration direction (ascending/descending/stable encoded as 1/−1/0)",
+            "chaos_up":   "upward register migration amplifies entropy (new register = new possibilities)",
+            "chaos_dn":   "downward migration settles entropy",
+            "order_up":   "register shift raises swap/role threshold — liminal moments = role opportunity",
+            "order_dn":   "stable register relaxes role assignments",
+            "bridge_why": "register migration is a liminal transition: entropy leaps into new territory while roles/structure reorganise around the shift",
+        },
+    }
+
+    def _field_score(field: str, used_by_a: bool, used_by_b: bool) -> float:
+        """Lower uniqueness = higher score (virgin bridge preferred). Penalise already-used."""
+        if used_by_a or used_by_b:
+            return -1.0  # already used by one partner
+        users = len(rhythm_field_users.get(field, [])) + len(melodic_dim_users.get(field, []))
+        # Virgin field bonus; fewer total users = higher score
+        return 1.0 / (1 + users)
+
+    def _opposing_recipe(arch_a: tuple, arch_b: tuple, field: str) -> tuple[str, str]:
+        """Return (effect_a, effect_b) for a constructive antagonism bridge."""
+        g = _FIELD_GUIDE.get(field, {})
+        chaos_types = {"chaos", "resonance", "articulation", "transfer"}
+        # Secondary archetype groups for nuanced effect direction
+        opening_types = {"dynamics", "timing", "memory", "transfer"}  # open up on signal
+        closing_types = {"harmony", "pulse", "phase", "breath"}       # tighten on signal
+        a_is_chaos = arch_a[0] in chaos_types
+        b_is_chaos = arch_b[0] in chaos_types
+        if a_is_chaos and not b_is_chaos:
+            # a opens/spikes, b tightens/sharpens
+            eff_a = g.get("chaos_up") or f"{arch_a[1]} ↑ on high {field}"
+            eff_b = g.get("order_up") or f"{arch_b[1]} tightens on high {field}"
+            return eff_a, eff_b
+        if b_is_chaos and not a_is_chaos:
+            # b opens/spikes, a tightens/sharpens
+            eff_a = g.get("order_up") or f"{arch_a[1]} tightens on high {field}"
+            eff_b = g.get("chaos_up") or f"{arch_b[1]} ↑ on high {field}"
+            return eff_a, eff_b
+        # Both opening or both closing — create constructive complementarity
+        # One partner amplifies on signal, the other SUPPRESSES (inverse response)
+        a_opens = arch_a[0] in opening_types
+        b_opens = arch_b[0] in opening_types
+        if a_opens and not b_opens:
+            return f"{arch_a[1]} scales UP with {field}", f"{arch_b[1]} scales DOWN with {field}"
+        if b_opens and not a_opens:
+            return f"{arch_a[1]} scales DOWN with {field}", f"{arch_b[1]} scales UP with {field}"
+        # Truly same type: use signal direction to assign opposing phase
+        return f"{arch_a[1]} ↑ at high {field}", f"{arch_b[1]} ↓ at high {field} (inverse)"
+
+    # Collect top antagonist pairs
+    seen: set = set()
+    antagonists: list = []
+    for (a, b), r in corr.items():
+        key = tuple(sorted([a, b]))
+        if key not in seen and r < -0.30:
+            seen.add(key)
+            antagonists.append((a, b, r))
+    antagonists.sort(key=lambda x: x[2])
+
+    out = [f"# Antagonism Leverage Analysis  ({len(antagonists)} strong pairs, {n_beats} beats)\n"]
+    out.append("For each antagonist pair: candidate bridge fields that couple BOTH modules")
+    out.append("to the SAME rhythmic/melodic signal with OPPOSING musical responses.\n")
+
+    for a, b, r in antagonists[:pair_limit]:
+        file_a = _TRUST_FILE_ALIASES.get(a, a)
+        file_b = _TRUST_FILE_ALIASES.get(b, b)
+        info_a = coupling_state.get(a, {}) or coupling_state.get(file_a, {})
+        info_b = coupling_state.get(b, {}) or coupling_state.get(file_b, {})
+        used_a = set(info_a.get("rhythm_dims", [])) | set(info_a.get("melodic_dims", []))
+        used_b = set(info_b.get("rhythm_dims", [])) | set(info_b.get("melodic_dims", []))
+        already_bridged = used_a & used_b  # fields BOTH use — may already be bridged
+        ta = trust.get(a)
+        tb = trust.get(b)
+        ta_s = f"{ta:.2f}" if ta is not None else "?"
+        tb_s = f"{tb:.2f}" if tb is not None else "?"
+        arch_a = _archetype(file_a)
+        arch_b = _archetype(file_b)
+        bar = "◀" * min(int(abs(r) * 10), 8)
+        out.append(f"## r={r:+.3f} {bar}  {a} (t={ta_s}) ↔ {b} (t={tb_s})")
+        out.append(f"   archetypes: [{arch_a[0]}] vs [{arch_b[0]}]")
+        out.append(f"   {a} dims: [{', '.join(sorted(used_a)) or 'none'}]")
+        out.append(f"   {b} dims: [{', '.join(sorted(used_b)) or 'none'}]")
+        if already_bridged:
+            out.append(f"   Already bridged on: {', '.join(sorted(already_bridged))}")
+
+        # Score candidate bridge fields
+        all_fields = ALL_RHYTHM_FIELDS + ALL_MELODIC_DIMS
+        scored = []
+        for f in all_fields:
+            score = _field_score(f, f in used_a, f in used_b)
+            if score > 0:
+                scored.append((f, score))
+        scored.sort(key=lambda x: -x[1])
+
+        if scored:
+            out.append(f"   Bridge candidates (unused by both):")
+            for field, score in scored[:4]:
+                g = _FIELD_GUIDE.get(field, {})
+                eff_a, eff_b = _opposing_recipe(arch_a, arch_b, field)
+                why = g.get("bridge_why", "shared signal drives constructive opposition")
+                sig = g.get("signal", field)
+                users_n = len(rhythm_field_users.get(field, [])) + len(melodic_dim_users.get(field, []))
+                out.append(f"   ▸ {field:<22} [{sig}]  ({users_n} existing users)")
+                out.append(f"       {a}: {eff_a}")
+                out.append(f"       {b}: {eff_b}")
+                out.append(f"       why: {why}")
+        else:
+            out.append(f"   No virgin bridge fields — all signals already used by one partner.")
+        out.append("")
+
+    # Summary: most leverageable modules (appear in multiple antagonist pairs, high trust)
+    ant_count: dict[str, int] = defaultdict(int)
+    for a, b, _ in antagonists:
+        ant_count[a] += 1
+        ant_count[b] += 1
+    out.append("## Most Leverageable Modules  (most antagonisms × highest trust)")
+    for name in sorted(ant_count, key=lambda n: (-ant_count[n], -(trust.get(n) or 0)))[:6]:
+        t = trust.get(name)
+        t_s = f"{t:.2f}" if t is not None else "?"
+        file_n = _TRUST_FILE_ALIASES.get(name, name)
+        info = coupling_state.get(name, {}) or coupling_state.get(file_n, {})
+        used = set(info.get("rhythm_dims", [])) | set(info.get("melodic_dims", []))
+        out.append(f"  {name:<30} {ant_count[name]} pairs  trust={t_s}  dims=[{', '.join(sorted(used)) or 'none'}]")
+
+    return "\n".join(out)
+
+
 def antagonist_map() -> str:
     """Show all negative correlation pairs (r < -0.20). Internal helper — call via coupling_intel(mode='antagonists')."""
     ctx.ensure_ready_sync()
@@ -628,7 +1148,12 @@ def coupling_intel(mode: str = "full") -> str:
     uncoupled sorted by trust). mode='antagonists': negative-correlation pairs (creative tensions,
     dark matter of alien texture). mode='personalities': cluster biographies (each cluster as
     emergent organism — members, dims, tightest bond, primary antagonist). mode='gaps': underused
-    melodic/rhythmic dimensions sorted by coverage count (highest-yield next targets)."""
+    melodic/rhythmic dimensions sorted by coverage count (highest-yield next targets).
+    mode='leverage': for each top antagonist pair, recommend the bridge field that creates
+    maximum constructive opposition — with concrete opposing-response recipes and musical rationale.
+    mode='channels': full L0 channel map — every channel with its producers, consumers, and loop
+    detection. mode='cascade:channelName': cascade trace from a specific L0 channel — follow the
+    signal through consumers and their downstream outputs up to 3 hops deep."""
     ctx.ensure_ready_sync()
     _track("coupling_intel")
     if mode == "full":
@@ -642,4 +1167,10 @@ def coupling_intel(mode: str = "full") -> str:
         return cluster_personality()
     if mode == "gaps":
         return dimension_gap_finder()
-    return f"Unknown mode '{mode}'. Use 'full', 'network', 'antagonists', 'personalities', or 'gaps'."
+    if mode == "leverage":
+        return antagonism_leverage()
+    if mode == "channels":
+        return channel_topology()
+    if mode.startswith("cascade:"):
+        return channel_topology(mode[len("cascade:"):])
+    return f"Unknown mode '{mode}'. Use 'full', 'network', 'antagonists', 'personalities', 'gaps', 'leverage', 'channels', or 'cascade:channelName'."

@@ -624,4 +624,40 @@ def suggest_evolution() -> str:
     except Exception:
         pass
 
+    # Dead-end L0 channels — signals posted but never consumed (prime new coupling targets)
+    try:
+        from .coupling import _scan_l0_topology as _topo
+        src_root_p = os.path.join(ctx.PROJECT_ROOT, "src")
+        topo = _topo(src_root_p)
+        _SYSTEM_LOOPS = {"rest-sync", "section-quality", "binaural", "instrument", "note"}
+        _KNOWN_CONNECTED = {"feedbackLoop", "cadenceAlignment", "explainability", "channel-coherence", "chord"}
+        dead = [(ch, d["producers"]) for ch, d in topo.items()
+                if d["producers"] and not d["consumers"]
+                and ch not in _SYSTEM_LOOPS and ch not in _KNOWN_CONNECTED]
+        if dead:
+            parts.append("\n## Dead Signal Channels  (posted but never consumed)\n")
+            parts.append("*Adding L0.getLast consumers to these channels unlocks existing data flows.*\n")
+            for ch, prods in sorted(dead, key=lambda x: x[0]):
+                parts.append(f"  `{ch}` — posted by {', '.join(sorted(prods))}")
+    except Exception:
+        pass
+
+    # Antagonism bridge opportunities — top 2 cross-organism bridge recipes
+    try:
+        from .coupling import get_top_bridges as _get_bridges
+        bridges = _get_bridges(n=2)
+        if bridges:
+            parts.append("\n## Antagonism Bridge Opportunities\n")
+            parts.append("*Couple both sides of an antagonist pair to the SAME signal with opposing effects.*\n")
+            for br in bridges:
+                already_s = f"  already bridged: {', '.join(br['already_bridged'])}" if br['already_bridged'] else ""
+                parts.append(f"**{br['pair_a']} [{br['arch_a']}] ↔ {br['pair_b']} [{br['arch_b']}]**  r={br['r']:+.3f}{already_s}")
+                parts.append(f"  Bridge field: `{br['field']}`")
+                parts.append(f"  {br['pair_a']}: {br['eff_a']}")
+                parts.append(f"  {br['pair_b']}: {br['eff_b']}")
+                parts.append(f"  Why: {br['why']}")
+                parts.append("")
+    except Exception:
+        pass
+
     return "\n".join(parts)
