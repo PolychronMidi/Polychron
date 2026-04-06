@@ -32,8 +32,11 @@ convergenceHarmonicTrigger = (() => {
 
     if (absoluteSeconds - lastTriggerSec < MIN_TRIGGER_INTERVAL_SEC) return;
 
-    // Higher rarity convergences are more likely to trigger harmonic changes
-    const triggerChance = TRIGGER_PROBABILITY * (0.5 + rarity * 0.5);
+    // Higher rarity convergences are more likely to trigger harmonic changes.
+    // Rhythmic coupling: strong rhythmic bias at convergence -> more harmonic change triggers.
+    const rhythmEntryRHT = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmBiasRHT = rhythmEntryRHT && Number.isFinite(rhythmEntryRHT.biasStrength) ? rhythmEntryRHT.biasStrength : 0;
+    const triggerChance = TRIGGER_PROBABILITY * (0.5 + rarity * 0.5) * (1.0 + rhythmBiasRHT * 0.25);
     if (rf() > triggerChance) return;
 
     // Check trust in convergence system

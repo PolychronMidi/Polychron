@@ -62,7 +62,11 @@ verticalIntervalMonitor = (() => {
       const intervalFreshness = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.intervalFreshness, 0.5) : 0.5;
       const freshnessScale = 1.3 - intervalFreshness * 0.6; // [0.7 fresh ... 1.3 stale]
 
-      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale;
+      // Rhythmic coupling: dense rhythm -> collisions statistically expected -> reduce penalty.
+      const rhythmEntryVIM = L0.getLast('emergentRhythm', { layer: 'both' });
+      const rhythmDensityVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.density) ? rhythmEntryVIM.density : 0;
+      const rhythmPenaltyMod = 1.0 - rhythmDensityVIM * 0.20; // [0.80-1.0] dense->less penalty
+      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod;
     }
 
     return 0;
