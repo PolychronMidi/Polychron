@@ -82,11 +82,14 @@ phraseArcProfiler = (() => {
       'build-resolve': (pos) => (ind.buildResolveOuter || 0.3) + ((ind.buildResolveInner || 0.8) - (ind.buildResolveOuter || 0.3)) * Number(pos)
     };
     // R29 E1: wire dormant phraseBreath.dynamism config into arc curves.
+    // R62: added 0.20*sin(pos*4pi) micro-oscillation to arch/rise-fall/build-resolve (2 cycles/phrase)
+    // and doubled wave to sin(pos*4pi) for micro-term dense/atmospheric variation.
+    // Values may briefly exceed [0,1] -- dynamismEngine clamps before use.
     const dynFns = {
-      'arch': (pos) => (dyn.archBase || 0.5) + (dyn.archAmplitude || 0.5) * m.sin(Number(pos) * m.PI),
-      'wave': (pos) => (dyn.waveBase || 0.5) + (dyn.waveAmplitude || 0.5) * m.sin(Number(pos) * m.PI * 2),
-      'rise-fall': (pos) => (dyn.riseFallBase || 0.4) + (dyn.riseFallAmplitude || 0.6) * Number(pos),
-      'build-resolve': (pos) => (dyn.buildResolveBase || 0.3) + (dyn.buildResolveSlope || 0.7) * m.min(Number(pos), (dyn.buildResolveEnd || 0.2) + 0.8)
+      'arch': (pos) => (dyn.archBase || 0.5) + (dyn.archAmplitude || 0.40) * m.sin(Number(pos) * m.PI) + 0.20 * m.sin(Number(pos) * m.PI * 4),
+      'wave': (pos) => (dyn.waveBase || 0.5) + (dyn.waveAmplitude || 0.5) * m.sin(Number(pos) * m.PI * 4),
+      'rise-fall': (pos) => (dyn.riseFallBase || 0.4) + (dyn.riseFallAmplitude || 0.45) * Number(pos) + 0.20 * m.sin(Number(pos) * m.PI * 4),
+      'build-resolve': (pos) => (dyn.buildResolveBase || 0.3) + (dyn.buildResolveSlope || 0.55) * m.min(Number(pos), (dyn.buildResolveEnd || 0.2) + 0.8) + 0.20 * m.sin(Number(pos) * m.PI * 4)
     };
     /** @type {{ [key: string]: { register: Function, density: Function, independence: Function, dynamism: Function, spectralDensity: Function } }} */
     const adapted = {};

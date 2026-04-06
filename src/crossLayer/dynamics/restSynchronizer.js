@@ -14,7 +14,7 @@ restSynchronizer = (() => {
   // R73 showed 24% note count drop after rest sync introduction.
   // The combined coherent rest probability was 0.26 -- too aggressive
   // for a system that already has density regulation elsewhere.
-  const SHARED_REST_BASE = 0.14;
+  const SHARED_REST_BASE = 0.20; // R62: raised from 0.14 for more micro-term atmospheric pockets
   const SHARED_REST_COHERENT_BONUS = 0.05;
   const SHARED_REST_EXPLORING_PENALTY = 0.06;
   const COMPLEMENT_FILL_THRESHOLD = 0.45;
