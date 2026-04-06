@@ -139,6 +139,7 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
 
     stats: dict = {system_a: defaultdict(list), system_b: defaultdict(list)}
     overtakes: list = []
+    section_leads: dict = {}  # section_idx → {system_a: beats, system_b: beats}
     prev_leader = None
 
     for rec in records:
@@ -155,9 +156,17 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
         stats[system_a]["scores"].append(da.get("score", 0))
         stats[system_b]["scores"].append(db.get("score", 0))
 
+        # Extract section index from beatKey (format: section:phrase:bar:beat)
+        try:
+            sec = int(str(bk).split(":")[0])
+        except Exception:
+            sec = -1
+        if sec not in section_leads:
+            section_leads[sec] = {system_a: 0, system_b: 0}
         leader = system_a if wa > wb else system_b
+        section_leads[sec][leader] = section_leads[sec].get(leader, 0) + 1
         if prev_leader and leader != prev_leader:
-            overtakes.append((bk, prev_leader, leader, abs(wa - wb)))
+            overtakes.append((sec, prev_leader, leader, abs(wa - wb)))
         prev_leader = leader
 
     def _fmt(name: str) -> str:
@@ -172,12 +181,28 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
     lines = [f"# Trust Rivalry: {system_a} vs {system_b}\n",
              _fmt(system_a), _fmt(system_b)]
 
+    # Section-level dominance (much more useful than raw beat coords)
+    sec_lines = []
+    for sec in sorted(k for k in section_leads if k >= 0):
+        la = section_leads[sec].get(system_a, 0)
+        lb = section_leads[sec].get(system_b, 0)
+        total = la + lb
+        if total > 0:
+            winner = system_a if la > lb else system_b
+            pct = max(la, lb) / total * 100
+            sec_lines.append(f"  S{sec}: {winner} ({pct:.0f}%)")
+    if sec_lines:
+        lines.append(f"\n## Section Dominance")
+        lines.extend(sec_lines)
+
     if overtakes:
-        lines.append(f"\n## Overtakes ({len(overtakes)} total)")
-        for bk, loser, winner, gap in overtakes[:8]:
-            lines.append(f"  Beat {bk}: {winner} overtook {loser} (gap={gap:.3f})")
-        if len(overtakes) > 8:
-            lines.append(f"  ... and {len(overtakes) - 8} more")
+        # Summarize overtakes by section instead of listing all beat coords
+        sec_flip_counts: dict = {}
+        for sec, loser, winner, gap in overtakes:
+            sec_flip_counts[sec] = sec_flip_counts.get(sec, 0) + 1
+        lines.append(f"\n## Overtakes ({len(overtakes)} total, by section)")
+        for sec in sorted(sec_flip_counts):
+            lines.append(f"  S{sec}: {sec_flip_counts[sec]} flip(s)")
 
     wa_all = stats[system_a]["weights"]
     wb_all = stats[system_b]["weights"]

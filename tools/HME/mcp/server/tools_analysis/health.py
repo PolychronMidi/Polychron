@@ -247,33 +247,36 @@ def codebase_health() -> str:
                     issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix) [legacy — tracked for refactor]")
                 else:
                     issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix)")
+    # Partition CRITICAL issues: expected-large (data/generated) vs actionable
+    _EXPECTED_LARGE = ("PriorsData.js", "Data.js", "globals.d.ts", "fullBootstrap.js")
+    expected_large = [i for i in issues_by_severity["CRITICAL"] if any(p in i for p in _EXPECTED_LARGE)]
+    actionable_critical = [i for i in issues_by_severity["CRITICAL"] if i not in expected_large]
+
     parts = [f"# Codebase Health Report ({file_count} src/ files)\n"]
+    total_actionable = len(actionable_critical) + len(issues_by_severity["WARN"]) + len(issues_by_severity["NOTE"])
     total = sum(len(v) for v in issues_by_severity.values())
     if total == 0:
         parts.append("ALL CLEAN. No convention issues found.")
         return "\n".join(parts)
-    for sev in ["CRITICAL", "WARN", "NOTE"]:
+
+    if actionable_critical:
+        parts.append(f"## CRITICAL — Actionable ({len(actionable_critical)})")
+        for item in sorted(actionable_critical):
+            parts.append(f"  - {item}")
+        parts.append("")
+    if expected_large:
+        parts.append(f"## CRITICAL — Expected Large ({len(expected_large)}, data/generated — not split targets)")
+        for item in sorted(expected_large):
+            parts.append(f"  - {item}")
+        parts.append("")
+    for sev in ["WARN", "NOTE"]:
         items = issues_by_severity[sev]
         if items:
             parts.append(f"## {sev} ({len(items)})")
             for item in sorted(items):
                 parts.append(f"  - {item}")
             parts.append("")
-    parts.append(f"Total: {total} issues across {file_count} files")
-
-    if total > 0:
-        critical_list = "\n".join(issues_by_severity["CRITICAL"][:10]) or "none"
-        warn_list = "\n".join(issues_by_severity["WARN"][:10]) or "none"
-        user_text = (
-            f"Codebase health sweep found {total} issues across {file_count} files.\n"
-            f"CRITICAL:\n{critical_list}\nWARN:\n{warn_list}\n\n"
-            "In 3 numbered points: which issues are highest-priority to address first, and why? "
-            "Consider architectural risk, coupling exposure, and technical debt accumulation."
-        )
-        synthesis = _think_local_or_claude(user_text, _get_api_key())
-        if synthesis:
-            parts.append(f"\n## Priority Analysis *(adaptive)*")
-            parts.append(synthesis)
+    parts.append(f"Total: {total} issues ({total_actionable} actionable, {len(expected_large)} expected-large) across {file_count} files")
 
     # Dead code sweep (top issues only)
     try:
