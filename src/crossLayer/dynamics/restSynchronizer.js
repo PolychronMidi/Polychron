@@ -114,7 +114,20 @@ restSynchronizer = (() => {
       ? (melodicCtxRest.contourShape === 'falling' ? 1.28 : melodicCtxRest.contourShape === 'rising' ? 0.80 : 1.0)
         * (1.0 + clamp(melodicCtxRest.thematicDensity, 0, 1) * 0.22)
       : 1.0;
-    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost + legatoSuppression) * (1 + restUrgency) * e11RestBoost * cimScale * melodicRestMult;
+    // R77: ascendRatio antagonism bridge -- ascending energy suppresses synchronized breathing
+    const ascendSuppressRS = melodicCtxRest && melodicCtxRest.ascendRatio > 0.55
+      ? clamp((melodicCtxRest.ascendRatio - 0.55) * 0.22, 0, 0.10)
+      : 0;
+    // R77 E10: hotspots suppress rest -- rhythmic burst moments defer coordinated breathing
+    const rhythmEntryRS = L0.getLast('emergentRhythm', { layer: 'both' });
+    const hotspotsRS = rhythmEntryRS && Array.isArray(rhythmEntryRS.hotspots) ? rhythmEntryRS.hotspots.length : 0;
+    const hotspotRestSuppressRS = clamp(hotspotsRS / 16, 0, 1) * 0.08;
+    // R79 E5: densitySurprise antagonism bridge with stutterContagion -- surprising rhythmic events
+    // suppress synchronized rests (don't breathe during chaos bursts). Counterpart: stutterContagion
+    // amplifies contagion on same signal. Together: surprise = more chaos, no rest escape valve.
+    const densitySurpriseRS = rhythmEntryRS && Number.isFinite(rhythmEntryRS.densitySurprise) ? rhythmEntryRS.densitySurprise : 1.0;
+    const surpriseSuppressRS = densitySurpriseRS > 1.1 ? clamp((densitySurpriseRS - 1.0) * 0.08, 0, 0.06) : 0;
+    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost + legatoSuppression - ascendSuppressRS - hotspotRestSuppressRS - surpriseSuppressRS) * (1 + restUrgency) * e11RestBoost * cimScale * melodicRestMult;
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';

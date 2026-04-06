@@ -1245,6 +1245,69 @@ def dimension_gap_finder() -> str:
     return "\n".join(out)
 
 
+def bridge_ledger() -> str:
+    """Bridge completion ledger — for each top antagonist pair, shows how many KB-confirmed
+    bridges exist across rounds vs how many are still proposed. Answers 'how saturated is this pair?'"""
+    try:
+        bridges = get_top_bridges(n=8)
+    except Exception as e:
+        return f"Bridge ledger unavailable: {e}"
+    try:
+        all_kb = ctx.project_engine.list_knowledge_full() or []
+    except Exception:
+        all_kb = []
+
+    def _pair_kb_refs(a: str, b: str) -> list[dict]:
+        """KB entries that mention both modules in the pair."""
+        refs = []
+        for k in all_kb:
+            body = (k.get("title", "") + " " + k.get("content", "")).lower()
+            if a.lower() in body and b.lower() in body:
+                refs.append(k)
+        return refs
+
+    _FIELD_WORDS = {
+        "complexityema", "densitysurprise", "freshnessema", "ascendratio", "tessituraload",
+        "hotspots", "biasstrength", "thematicDensity", "intervalfreshness", "counterpoint",
+        "contourshape", "registermigrationdir", "complexity", "density",
+    }
+
+    out = ["# Bridge Completion Ledger\n",
+           "For each antagonist pair: confirmed KB bridges (implemented across rounds) vs proposed.\n"]
+
+    seen_pairs: set = set()
+    for b in bridges:
+        pair_key = tuple(sorted([b["pair_a"], b["pair_b"]]))
+        if pair_key in seen_pairs:
+            continue
+        seen_pairs.add(pair_key)
+        a_name = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
+        b_name = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
+        kb_refs = _pair_kb_refs(a_name, b_name)
+        confirmed_fields = set()
+        confirmed_rounds = []
+        for k in kb_refs:
+            body = (k.get("title", "") + " " + k.get("content", "")).lower()
+            for f in _FIELD_WORDS:
+                if f in body:
+                    confirmed_fields.add(f)
+            title = k.get("title", "")
+            round_match = __import__("re").search(r"R(\d+)", title)
+            if round_match:
+                confirmed_rounds.append(f"R{round_match.group(1)}")
+        already = set(x.lower() for x in b.get("already_bridged", []))
+        proposed = b.get("field", "")
+        saturation = len(already | confirmed_fields)
+        out.append(f"## {a_name} [{b['arch_a']}] ↔ {b_name} [{b['arch_b']}]  r={b['r']:+.3f}")
+        out.append(f"  KB rounds mentioning this pair: {', '.join(sorted(set(confirmed_rounds))) or 'none'}")
+        out.append(f"  Confirmed bridged fields: {', '.join(sorted(already | confirmed_fields)) or 'none'}")
+        out.append(f"  Next proposed bridge: `{proposed}` ({'DONE' if proposed.lower() in (already | confirmed_fields) else 'open'})")
+        out.append(f"  Saturation: {saturation} field(s) bridged")
+        out.append("")
+
+    return "\n".join(out)
+
+
 @ctx.mcp.tool()
 def coupling_intel(mode: str = "full") -> str:
     """Unified coupling intelligence hub. Replaces coupling_network + antagonist_map +
@@ -1260,7 +1323,8 @@ def coupling_intel(mode: str = "full") -> str:
     maximum constructive opposition — with concrete opposing-response recipes and musical rationale.
     mode='channels': full L0 channel map — every channel with its producers, consumers, and loop
     detection. mode='cascade:channelName': cascade trace from a specific L0 channel — follow the
-    signal through consumers and their downstream outputs up to 3 hops deep."""
+    signal through consumers and their downstream outputs up to 3 hops deep.
+    mode='ledger': bridge completion ledger — confirmed KB bridges vs proposed, per pair."""
     ctx.ensure_ready_sync()
     _track("coupling_intel")
     if mode == "full":
@@ -1280,4 +1344,6 @@ def coupling_intel(mode: str = "full") -> str:
         return channel_topology()
     if mode.startswith("cascade:"):
         return channel_topology(mode[len("cascade:"):])
-    return f"Unknown mode '{mode}'. Use 'full', 'network', 'antagonists', 'personalities', 'gaps', 'leverage', 'channels', or 'cascade:channelName'."
+    if mode == "ledger":
+        return bridge_ledger()
+    return f"Unknown mode '{mode}'. Use 'full', 'network', 'antagonists', 'personalities', 'gaps', 'leverage', 'channels', 'cascade:channelName', or 'ledger'."

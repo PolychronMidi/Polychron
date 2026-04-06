@@ -320,7 +320,7 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 
 | Tool | Use For |
 |------|---------|
-| `coupling_intel(mode)` | mode='full' (default): all four views — topology + antagonist tensions + cluster biographies + dimension gaps. Use before planning a coupling round. mode='network': melodic/rhythmic topology, uncoupled modules by trust. mode='antagonists': negative correlation pairs (creative tensions). mode='personalities': cluster biographies (members, dims, bonds, antagonists). mode='gaps': underused melodic/rhythmic dims sorted by coverage. |
+| `coupling_intel(mode)` | mode='full' (default): all four views — topology + antagonist tensions + cluster biographies + dimension gaps. Use before planning a coupling round. mode='network': melodic/rhythmic topology, uncoupled modules by trust. mode='antagonists': negative correlation pairs (creative tensions). mode='personalities': cluster biographies (members, dims, bonds, antagonists). mode='gaps': underused melodic/rhythmic dims. mode='leverage': for each top pair, the bridge field with maximum constructive opposition — concrete opposing-response recipes. mode='channels': full L0 channel map. mode='cascade:channelName': signal cascade trace 3 hops deep. **mode='ledger'**: bridge completion ledger — for each antagonist pair, KB-confirmed bridges across rounds vs proposed (answers "how saturated is this pair?"). |
 
 ### Runtime Intelligence (7 tools)
 
@@ -355,7 +355,7 @@ Starts at **15% confidence** — verify against listening before trusting. Confi
 | Tool | Use For |
 |------|---------|
 | `hme_admin(action='index')` | Reindex all code chunks + symbols. Use after batch changes when file watcher hasn't caught up. |
-| `hme_admin(action='warm')` | Pre-populate caller + KB caches for all src/ files so every `before_editing` call is instant. Also runs automatically at server startup via background thread. |
+| `hme_admin(action='warm')` | Pre-populate caches: Tier 1 (caller+KB for all src/ files) + Tier 2 (Edit Risks synthesis via Haiku for 30 hot files). Runs automatically at startup. Edit Risks uses Haiku (~200ms) — 3-5× faster than previous Sonnet+extended-thinking. |
 | `get_index_status` | Check index health |
 | `clear_index` | Wipe index for full rebuild |
 

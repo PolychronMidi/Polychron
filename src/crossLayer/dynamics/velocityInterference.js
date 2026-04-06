@@ -115,12 +115,16 @@ velocityInterference = (() => {
     const melodicCtxVI = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const tessituraLoad = melodicCtxVI ? V.optionalFinite(melodicCtxVI.tessituraLoad, 0) : 0;
     const melodicIntensityScale = 1.0 + tessituraLoad * 0.25; // [1.0 comfortable ... 1.25 extreme]
+    // R79 E3: freshnessEma coupling -- novel melodic intervals amplify interference strength.
+    // Fresh territory produces stronger dynamic contrast: reinforcement louder, separation softer.
+    const freshnessEmaVI = melodicCtxVI ? V.optionalFinite(melodicCtxVI.freshnessEma, 0.5) : 0.5;
+    const freshnessIntensityScale = 1.0 + clamp(freshnessEmaVI - 0.40, 0, 0.60) * 0.25; // [1.0 familiar ... 1.15 novel]
     // Rhythmic coupling: unexpected density surge sharpens velocity interference. Decline surprises soften it.
     const rhythmEntryVI = L0.getLast('emergentRhythm', { layer: 'both' });
     const densitySurpriseVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.densitySurprise) ? rhythmEntryVI.densitySurprise : 1.0;
     const rhythmInterferenceMod = densitySurpriseVI > 1.1 ? 1.12 : densitySurpriseVI < 0.9 ? 0.92 : 1.0;
-    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * rhythmInterferenceMod;
-    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * rhythmInterferenceMod;
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength

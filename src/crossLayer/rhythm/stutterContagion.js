@@ -115,7 +115,13 @@ stutterContagion = (() => {
     // repelling layers diverge (opposition should not cascade stutter across layers).
     const phaseModeContagion = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
     const phaseContagionScale = phaseModeContagion === 'lock' ? 1.12 : phaseModeContagion === 'repel' ? 0.88 : 1.0;
-    const gatedIntensity = decayedIntensity * melodicContagionScale * phaseContagionScale;
+    // R79 E4: densitySurprise antagonism bridge with restSynchronizer -- surprising rhythmic events
+    // amplify contagion spread (chaos invites more chaos). Counterpart: restSynchronizer SUPPRESSES
+    // rests on same signal (surprise = no breathing room, both layers in contagion state).
+    const rhythmEntrySC = L0.getLast('emergentRhythm', { layer: 'both' });
+    const densitySurpriseSC = rhythmEntrySC && Number.isFinite(rhythmEntrySC.densitySurprise) ? rhythmEntrySC.densitySurprise : 1.0;
+    const surpriseContagionScale = densitySurpriseSC > 1.1 ? 1.0 + clamp((densitySurpriseSC - 1.0) * 0.12, 0, 0.10) : 1.0;
+    const gatedIntensity = decayedIntensity * melodicContagionScale * phaseContagionScale * surpriseContagionScale;
     if (gatedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space
