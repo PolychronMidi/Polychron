@@ -84,7 +84,7 @@ phraseArcProfiler = (() => {
     // R29 E1: wire dormant phraseBreath.dynamism config into arc curves.
     const dynFns = {
       'arch': (pos) => (dyn.archBase || 0.5) + (dyn.archAmplitude || 0.5) * m.sin(Number(pos) * m.PI),
-      'wave': (pos) => (dyn.waveBase || 0.5) + (dyn.waveAmplitude || 0.5) * Number(pos),
+      'wave': (pos) => (dyn.waveBase || 0.5) + (dyn.waveAmplitude || 0.5) * m.sin(Number(pos) * m.PI * 2),
       'rise-fall': (pos) => (dyn.riseFallBase || 0.4) + (dyn.riseFallAmplitude || 0.6) * Number(pos),
       'build-resolve': (pos) => (dyn.buildResolveBase || 0.3) + (dyn.buildResolveSlope || 0.7) * m.min(Number(pos), (dyn.buildResolveEnd || 0.2) + 0.8)
     };

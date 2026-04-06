@@ -5,31 +5,65 @@ import logging
 
 from server import context as ctx
 from .synthesis import _get_api_key, _think_local_or_claude
-from . import _track
+from . import _track, _load_trace
 
 logger = logging.getLogger("HME")
 
 
-def _find_uncoupled_modules(src_root, engine_name):
-    """Find crossLayer modules that don't reference a given engine."""
-    uncoupled = []
-    cl_dir = os.path.join(src_root, "crossLayer")
-    if not os.path.isdir(cl_dir):
-        return []
-    for dirpath, _, filenames in os.walk(cl_dir):
-        for fname in filenames:
-            if not fname.endswith(".js") or fname == "index.js":
+def _rank_by_cluster_pull(coupling_state: dict, trace_records: list, top_n: int = 8) -> list:
+    """Rank uncoupled modules by correlation strength with melodically-coupled neighbors.
+
+    Returns list of (module_name, pull_score) sorted descending. pull_score is the
+    mean |r| across all coupled modules with |r| >= 0.25 — a direct measure of
+    how strongly the coupled network is 'pulling' this module into shared musical logic.
+    """
+    from .coupling import _pearson
+
+    coupled = {name for name, info in coupling_state.items() if info.get("melodic")}
+    uncoupled = {name for name, info in coupling_state.items() if not info.get("melodic")}
+
+    if not trace_records or not coupled or not uncoupled:
+        return [(m, 0.0) for m in sorted(uncoupled)[:top_n]]
+
+    n = len(trace_records)
+
+    # Build per-module score series from trace trust data
+    raw: dict[str, list] = {}
+    for rec in trace_records:
+        trust = rec.get("trust", {})
+        for mod in coupled | uncoupled:
+            data = trust.get(mod)
+            if isinstance(data, dict):
+                s = data.get("score")
+                raw.setdefault(mod, []).append(float(s) if isinstance(s, (int, float)) else None)
+            else:
+                raw.setdefault(mod, []).append(None)
+
+    # Fill missing values with per-module mean; skip modules with < 50 data points
+    series: dict[str, list[float]] = {}
+    for mod, vals in raw.items():
+        present = [v for v in vals if v is not None]
+        if len(present) < 50:
+            continue
+        mean = sum(present) / len(present)
+        series[mod] = [v if v is not None else mean for v in vals]
+
+    # Score each uncoupled module: mean |r| with coupled neighbors >= 0.25
+    scores: dict[str, float] = {}
+    for unc in uncoupled:
+        if unc not in series:
+            continue
+        pull_vals = []
+        for cop in coupled:
+            if cop not in series:
                 continue
-            fpath = os.path.join(dirpath, fname)
-            try:
-                with open(fpath, encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-                if engine_name not in content:
-                    rel = fpath.replace(src_root + "/", "")
-                    uncoupled.append(rel)
-            except Exception:
-                continue
-    return sorted(uncoupled)
+            r = _pearson(series[unc], series[cop])
+            if abs(r) >= 0.25:
+                pull_vals.append(abs(r))
+        if pull_vals:
+            scores[unc] = sum(pull_vals) / len(pull_vals)
+
+    return sorted(scores.items(), key=lambda x: -x[1])[:top_n]
 
 
 @ctx.mcp.tool()
@@ -102,28 +136,31 @@ def suggest_evolution() -> str:
         except Exception:
             pass
 
-    # 3. Uncoupled modules -- crossLayer modules not reading emergent engines
+    # 3. Coupling state — source-code scan (accurate, no KB guessing)
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
-    melodic_uncoupled = _find_uncoupled_modules(src_root, "emergentMelodicEngine")
-    rhythm_uncoupled = _find_uncoupled_modules(src_root, "emergentRhythmEngine")
-    # Show basenames only, more useful for the synthesis model
-    signals["melodically_uncoupled"] = [
-        os.path.basename(m).replace(".js", "") for m in melodic_uncoupled[:15]
-    ]
-    signals["rhythmically_uncoupled"] = [
-        os.path.basename(m).replace(".js", "") for m in rhythm_uncoupled[:15]
-    ]
-    # Already-coupled modules from KB -- prevents re-suggesting done work
-    kb_recent = ctx.project_engine.search_knowledge("melodic coupling legendary", top_k=8)
-    already_coupled = set()
-    import re as _re
-    for k in kb_recent:
-        # Extract module names from KB titles (camelCase words)
-        for m in _re.findall(r'[a-z][a-zA-Z]+', k.get("title", "")):
-            if len(m) > 8:
-                already_coupled.add(m)
-    if already_coupled:
-        signals["already_coupled"] = sorted(already_coupled)
+    from .coupling import _scan_coupling_state
+    coupling_state = _scan_coupling_state(src_root)
+    melodic_uncoupled_names = sorted(n for n, i in coupling_state.items() if not i["melodic"])
+    rhythm_uncoupled_names = sorted(n for n, i in coupling_state.items() if not i["rhythm"])
+    already_coupled = sorted(n for n, i in coupling_state.items() if i["melodic"])
+    signals["melodically_uncoupled"] = melodic_uncoupled_names[:20]
+    signals["rhythmically_uncoupled"] = rhythm_uncoupled_names[:15]
+    signals["already_coupled"] = already_coupled
+
+    # Cluster-pull ranking: load trace and rank uncoupled by correlation with coupled neighbors
+    trace_raw_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_records: list = []
+    if os.path.isfile(trace_raw_path):
+        try:
+            trace_records = _load_trace(trace_raw_path)
+        except Exception:
+            pass
+    if trace_records:
+        cluster_targets = _rank_by_cluster_pull(coupling_state, trace_records)
+        if cluster_targets:
+            signals["cluster_priority_targets"] = [
+                f"{name}(pull:{score:.2f})" for name, score in cluster_targets
+            ]
 
     # 4. Narrative excerpt
     narrative_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
@@ -156,36 +193,93 @@ def suggest_evolution() -> str:
         except Exception:
             pass
 
+    # 7. Rut detection -- categorize last N KB evolution entries to detect monotonic runs
+    import re as _re2
+    _COUPLING_PATTERN = _re2.compile(
+        r'\b(melodic coupling|rhythmicCouple|melodicEngine|emergentMelodic|'
+        r'emergentRhythm|rhythmic coupling|rhythm coupling)\b', _re2.IGNORECASE
+    )
+    _HME_PATTERN = _re2.compile(r'\bHME\b|mcp.tool|suggest_evolution|coupling_network', _re2.IGNORECASE)
+    try:
+        recent_kb = ctx.project_engine.search_knowledge("R5 R6 evolution round", top_k=12)
+        rut_types = []
+        for k in recent_kb:
+            text = k.get("title", "") + " " + k.get("content", "")[:200]
+            if _COUPLING_PATTERN.search(text):
+                rut_types.append("melodic_coupling")
+            elif _HME_PATTERN.search(text):
+                rut_types.append("hme_tool")
+            else:
+                rut_types.append("other")
+        if rut_types:
+            # Check if last 3+ are same type
+            last3 = rut_types[:3]
+            if len(set(last3)) == 1:
+                signals["evolution_rut"] = {
+                    "type": last3[0],
+                    "consecutive": len([t for t in rut_types if t == last3[0]]),
+                    "warning": f"Last {len(last3)}+ evolutions are all '{last3[0]}' — "
+                               "consider orthogonal target (architecture, perceptual loop, "
+                               "new engine, or structural refactor)"
+                }
+    except Exception:
+        pass
+
     signal_str = json.dumps(signals, indent=2, default=str)[:6000]
+
+    rut_warning = ""
+    if signals.get("evolution_rut"):
+        rut = signals["evolution_rut"]
+        rut_warning = (
+            f"\n\nRUT ALERT: {rut['warning']} "
+            f"If suggesting more melodic coupling, explicitly explain why it's not diminishing returns. "
+            f"Consider one orthogonal evolution (new engine, perceptual loop extension, "
+            f"cross-boundary architecture) among your proposals."
+        )
+
+    cluster_hint = ""
+    if signals.get("cluster_priority_targets"):
+        cluster_hint = (
+            "\n\nCLUSTER PRIORITY: The following uncoupled modules have the strongest "
+            "cooperative correlation with already-coupled modules (pull score = mean |r| "
+            "with coupled cluster-mates). These are the highest-leverage targets:\n  "
+            + "\n  ".join(signals["cluster_priority_targets"])
+            + "\nStart your proposals from this ranked list before considering others."
+        )
 
     user_text = (
         "You are the evolution intelligence for Polychron, a generative polyrhythmic "
-        "composition engine with 39 cross-layer modules, 27 trust-scored systems, and "
+        "composition engine with 50 cross-layer modules, 27 trust-scored systems, and "
         "19 self-calibrating hypermeta controllers.\n\n"
         f"SIGNALS:\n{signal_str}\n\n"
         "Propose 3-5 evolution targets ranked by expected impact on musical expression. "
         "For each:\n"
         "### E<N>: <title>\n"
-        "**Target:** <file:function>\n"
+        "**Target:** <module_name:function>\n"
         "**Change:** <specific structural change, not constant tweaking>\n"
         "**Musical Effect:** <what the listener hears differently>\n"
         "**Risk:** <what could break>\n\n"
         "CRITICAL CONSTRAINTS:\n"
         "- Do NOT suggest modules listed in 'already_coupled' -- they are done.\n"
-        "- ONLY suggest modules from 'melodically_uncoupled' or 'rhythmically_uncoupled' lists.\n"
-        "- Do NOT invent module names -- use exact names from the uncoupled lists above.\n\n"
-        "Prioritize: (1) uncoupled modules with high trust scores -- these are powerful "
-        "systems not yet responding to melodic/rhythmic context; (2) perceptual gaps -- "
-        "where the system's intention diverges from what the audio analysis hears; "
-        "(3) underexplored architectural connections between subsystems.\n"
-        "Focus on STRUCTURAL evolutions (new pathways, new cross-system connections) "
-        "over parametric changes."
+        "- ONLY suggest modules from 'melodically_uncoupled' list (exact names).\n"
+        "- Do NOT invent module names -- copy exact names verbatim from the lists.\n"
+        "- Melodic coupling pattern: `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` "
+        "then compute a multiplier from contourShape/counterpoint/thematicDensity and apply to "
+        "the module's key behavioral parameter.\n\n"
+        "Prioritize: (1) modules in cluster_priority_targets (highest network leverage); "
+        "(2) perceptual gaps where the system's intention diverges from what audio analysis hears; "
+        "(3) underexplored architectural connections.\n"
+        "Focus on STRUCTURAL evolutions (new pathways, new cross-system connections)."
+        + cluster_hint
+        + rut_warning
     )
 
     parts = ["# Evolution Suggestions\n"]
     parts.append(f"**Signals analyzed:** {len(signals)} categories")
-    parts.append(f"**Melodically uncoupled:** {len(melodic_uncoupled)} crossLayer modules")
-    parts.append(f"**Rhythmically uncoupled:** {len(rhythm_uncoupled)} crossLayer modules")
+    parts.append(f"**Melodically uncoupled:** {len(melodic_uncoupled_names)} crossLayer modules")
+    parts.append(f"**Rhythmically uncoupled:** {len(rhythm_uncoupled_names)} crossLayer modules")
+    if signals.get("cluster_priority_targets"):
+        parts.append(f"**Cluster targets:** {', '.join(t.split('(')[0] for t in signals['cluster_priority_targets'][:5])}")
     if signals.get("perceptual_character"):
         parts.append(f"**Perceptual character:** {signals['perceptual_character']}")
     parts.append("")
@@ -194,8 +288,8 @@ def suggest_evolution() -> str:
     if synthesis:
         parts.append(synthesis)
     else:
-        parts.append("*Synthesis unavailable. Uncoupled modules:*")
-        for mod in melodic_uncoupled[:10]:
-            parts.append(f"  {mod} -- no emergentMelodicEngine reference")
+        parts.append("*Synthesis unavailable. Top cluster targets:*")
+        for mod in (signals.get("cluster_priority_targets") or melodic_uncoupled_names)[:10]:
+            parts.append(f"  {mod}")
 
     return "\n".join(parts)

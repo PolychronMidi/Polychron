@@ -108,7 +108,13 @@ restSynchronizer = (() => {
     const legatoSuppression = otherSustain > 0.7 ? -0.03 : 0;
     // CIM coordination scale: high = more shared rests, low = independent rest timing
     const cimScale = 0.5 + coordinationScale;
-    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost + legatoSuppression) * (1 + restUrgency) * e11RestBoost * cimScale;
+    // Melodic-driven rest probability: falling contour + high thematic density -> atmospheric pockets
+    const melodicCtxRest = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicRestMult = melodicCtxRest
+      ? (melodicCtxRest.contourShape === 'falling' ? 1.28 : melodicCtxRest.contourShape === 'rising' ? 0.80 : 1.0)
+        * (1.0 + clamp(melodicCtxRest.thematicDensity, 0, 1) * 0.22)
+      : 1.0;
+    const restProb = (SHARED_REST_BASE * e23RestBoost + regimeBonus + densityRestBoost + coherenceRestBoost + harmonicRestBoost + legatoSuppression) * (1 + restUrgency) * e11RestBoost * cimScale * melodicRestMult;
 
     // Phase mode affects rest probability: locked layers rest together more naturally
     const phaseMode = (typeof sig.phaseMode === 'string') ? sig.phaseMode : 'free';
