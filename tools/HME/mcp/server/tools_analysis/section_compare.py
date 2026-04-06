@@ -142,12 +142,8 @@ def section_compare(section_a: int, section_b: int) -> str:
     return "\n".join(parts_out)
 
 
-@ctx.mcp.tool()
 def regime_timeline(row_width: int = 80) -> str:
-    """Visual ASCII timeline of regime transitions across the full composition.
-    One character per beat: I=initializing, E=evolving, X=exploring, C=coherent.
-    Shows the composition breathing — where coherent blocks form, exploring
-    wilderness opens up, and evolving transitions happen. Section boundaries marked."""
+    """Visual ASCII timeline of regime transitions across the full composition."""
     ctx.ensure_ready_sync()
     _track("regime_timeline")
 
@@ -222,10 +218,12 @@ def regime_timeline(row_width: int = 80) -> str:
     return "\n".join(out)
 
 
+@ctx.mcp.tool()
 def regime_report(mode: str = "both", row_width: int = 80) -> str:
-    """Merged regime analysis tool. mode: 'timeline' (ASCII beat-map of regime transitions),
-    'anomaly' (auto-detect death spirals, monopolies, forced-transition storms),
-    or 'both' (default, runs both). Replaces calling regime_timeline + regime_anomaly separately."""
+    """Regime analysis. mode='timeline': ASCII beat-map (I=initializing E=evolving X=exploring
+    C=coherent) with tension overlay and per-section stats. mode='anomaly': auto-detect
+    death spirals, monopolies, forced-transition storms. mode='both' (default): full report.
+    Replaces regime_timeline as a standalone call."""
     ctx.ensure_ready_sync()
     _track("regime_report")
     from .digest import regime_anomaly
