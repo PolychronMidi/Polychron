@@ -1,10 +1,9 @@
-"""HME evolution intelligence — next-evolution suggestions powered by synthesis."""
+"""HME evolution intelligence — next-evolution suggestions via algorithmic cluster ranking."""
 import json
 import os
 import logging
 
 from server import context as ctx
-from .synthesis import _get_api_key, _think_local_or_claude
 from . import _track, _load_trace
 
 logger = logging.getLogger("HME")
@@ -225,71 +224,55 @@ def suggest_evolution() -> str:
     except Exception:
         pass
 
-    signal_str = json.dumps(signals, indent=2, default=str)[:6000]
-
-    rut_warning = ""
-    if signals.get("evolution_rut"):
-        rut = signals["evolution_rut"]
-        rut_warning = (
-            f"\n\nRUT ALERT: {rut['warning']} "
-            f"If suggesting more melodic coupling, explicitly explain why it's not diminishing returns. "
-            f"Consider one orthogonal evolution (new engine, perceptual loop extension, "
-            f"cross-boundary architecture) among your proposals."
-        )
-
-    cluster_hint = ""
-    if signals.get("cluster_priority_targets"):
-        cluster_hint = (
-            "\n\nCLUSTER PRIORITY: The following uncoupled modules have the strongest "
-            "cooperative correlation with already-coupled modules (pull score = mean |r| "
-            "with coupled cluster-mates). These are the highest-leverage targets:\n  "
-            + "\n  ".join(signals["cluster_priority_targets"])
-            + "\nStart your proposals from this ranked list before considering others."
-        )
-
-    user_text = (
-        "You are the evolution intelligence for Polychron, a generative polyrhythmic "
-        "composition engine with 50 cross-layer modules, 27 trust-scored systems, and "
-        "19 self-calibrating hypermeta controllers.\n\n"
-        f"SIGNALS:\n{signal_str}\n\n"
-        "Propose 3-5 evolution targets ranked by expected impact on musical expression. "
-        "For each:\n"
-        "### E<N>: <title>\n"
-        "**Target:** <module_name:function>\n"
-        "**Change:** <specific structural change, not constant tweaking>\n"
-        "**Musical Effect:** <what the listener hears differently>\n"
-        "**Risk:** <what could break>\n\n"
-        "CRITICAL CONSTRAINTS:\n"
-        "- Do NOT suggest modules listed in 'already_coupled' -- they are done.\n"
-        "- ONLY suggest modules from 'melodically_uncoupled' list (exact names).\n"
-        "- Do NOT invent module names -- copy exact names verbatim from the lists.\n"
-        "- Melodic coupling pattern: `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` "
-        "then compute a multiplier from contourShape/counterpoint/thematicDensity and apply to "
-        "the module's key behavioral parameter.\n\n"
-        "Prioritize: (1) modules in cluster_priority_targets (highest network leverage); "
-        "(2) perceptual gaps where the system's intention diverges from what audio analysis hears; "
-        "(3) underexplored architectural connections.\n"
-        "Focus on STRUCTURAL evolutions (new pathways, new cross-system connections)."
-        + cluster_hint
-        + rut_warning
-    )
-
+    # --- Build output: pure algorithmic ranking, no LLM ---
     parts = ["# Evolution Suggestions\n"]
     parts.append(f"**Signals analyzed:** {len(signals)} categories")
     parts.append(f"**Melodically uncoupled:** {len(melodic_uncoupled_names)} crossLayer modules")
     parts.append(f"**Rhythmically uncoupled:** {len(rhythm_uncoupled_names)} crossLayer modules")
-    if signals.get("cluster_priority_targets"):
-        parts.append(f"**Cluster targets:** {', '.join(t.split('(')[0] for t in signals['cluster_priority_targets'][:5])}")
     if signals.get("perceptual_character"):
         parts.append(f"**Perceptual character:** {signals['perceptual_character']}")
+    if signals.get("cb0_entropy_mean"):
+        parts.append(f"**CB0 entropy:** {signals['cb0_entropy_mean']}")
+    if signals.get("evolution_rut"):
+        rut = signals["evolution_rut"]
+        parts.append(f"**RUT ALERT:** {rut['warning']}")
     parts.append("")
 
-    synthesis = _think_local_or_claude(user_text, _get_api_key())
-    if synthesis:
-        parts.append(synthesis)
+    # Generate proposals from cluster_priority_targets
+    cluster_targets = signals.get("cluster_priority_targets", [])
+    if cluster_targets:
+        parts.append("## Ranked by Cluster Pull (cooperative correlation with coupled modules)\n")
+        for idx, entry in enumerate(cluster_targets[:5]):
+            name = entry.split("(")[0]
+            score_str = entry.split("pull:")[1].rstrip(")") if "pull:" in entry else "?"
+            info = coupling_state.get(name, {})
+            fpath = info.get("path", "?").replace(os.path.join(ctx.PROJECT_ROOT, "src/"), "")
+            parts.append(f"### E{idx + 1}: {name}")
+            parts.append(f"**Path:** {fpath}")
+            parts.append(f"**Cluster pull:** {score_str}")
+            # Check for KB constraints
+            try:
+                kb_hits = ctx.project_engine.search_knowledge(name, top_k=2)
+                if kb_hits:
+                    parts.append(f"**KB:** {kb_hits[0].get('title', '?')[:80]}")
+                else:
+                    parts.append("**KB:** no entries (blind spot)")
+            except Exception:
+                pass
+            parts.append(f"**Pattern:** `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` → multiplier on key parameter")
+            parts.append("")
     else:
-        parts.append("*Synthesis unavailable. Top cluster targets:*")
-        for mod in (signals.get("cluster_priority_targets") or melodic_uncoupled_names)[:10]:
-            parts.append(f"  {mod}")
+        parts.append("## Uncoupled Modules (no cluster data — run pipeline first)\n")
+        for name in melodic_uncoupled_names[:8]:
+            info = coupling_state.get(name, {})
+            fpath = info.get("path", "?").replace(os.path.join(ctx.PROJECT_ROOT, "src/"), "")
+            parts.append(f"  {name:<35} {fpath}")
+
+    # Perceptual gap analysis
+    if signals.get("per_section_character"):
+        chars = signals["per_section_character"]
+        parts.append("## Perceptual Section Characters")
+        for sec, char in chars.items():
+            parts.append(f"  {sec}: {char}")
 
     return "\n".join(parts)

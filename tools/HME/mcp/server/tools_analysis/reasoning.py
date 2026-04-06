@@ -122,6 +122,19 @@ def module_story(module_name: str) -> str:
     except Exception:
         pass
 
+    # Runtime interactions (top cooperative/competitive modules)
+    try:
+        from .evolution import interaction_map as _imap
+        imap_result = _imap(module_name)
+        if imap_result and "No trace" not in imap_result and "Insufficient" not in imap_result:
+            imap_lines = imap_result.split("\n")
+            parts.append(f"\n## Interactions (last run)")
+            for line in imap_lines[1:9]:  # skip header, show top 8
+                if line.strip():
+                    parts.append(line)
+    except Exception:
+        pass
+
     # Semantic neighbors
     sim_limit = limits["similar"]
     if matching and sim_limit > 0:
