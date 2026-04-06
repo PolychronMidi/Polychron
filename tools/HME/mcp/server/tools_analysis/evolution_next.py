@@ -92,7 +92,7 @@ def evolution_momentum() -> str:
         r'phraseArcProfiler.*melodic)\b', _re.IGNORECASE
     )
     _RHYTHM_PAT = _re.compile(
-        r'\b(rhythmic coupling|emergentRhythmEngine|rhythmCtx|rhythm.*couple)\b', _re.IGNORECASE
+        r'(rhythmic coupling|emergentRhythm|rhythmEntry|rhythmCtx|rhythm.*couple)', _re.IGNORECASE
     )
     _HME_PAT = _re.compile(
         r'\b(HME|mcp\.tool|suggest_evolution|coupling_network|drama_map|'

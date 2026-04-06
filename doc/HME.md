@@ -318,6 +318,15 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
 | `kb_seed` | Auto-generate starter KB entries for top-N highest-dependency modules with zero KB coverage |
 
+### Coupling Intelligence (4 tools)
+
+| Tool | Use For |
+|------|---------|
+| `coupling_network(clusters)` | Full melodic/rhythmic coupling topology. clusters=True adds cooperation cluster analysis. Shows uncoupled modules ranked by trust as evolution priority. |
+| `antagonist_map` | All negative correlation pairs (r < -0.20) sorted by magnitude — the creative tensions that produce alien texture. Shows most antagonistic modules. |
+| `cluster_personality` | Musical biography of each cooperation cluster: members, melodic dims, tightest bond, primary antagonist, uncoupled members. |
+| `dimension_gap_finder` | Rank melodic/rhythmic signal dimensions by usage. Flags underused dims (< 3 modules) as highest-yield coupling targets. |
+
 ### Runtime Intelligence (7 tools)
 
 | Tool | Use For |
