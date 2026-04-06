@@ -88,7 +88,13 @@ articulationComplement = (() => {
     const regimeContrast = artRegime === 'exploring' ? 1.25
       : artRegime === 'coherent' ? 0.80
       : 1.0;
-    const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale);
+    const melodicCtxAC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicContrastScale = melodicCtxAC
+      ? (melodicCtxAC.contourShape === 'rising' ? 1.15 : melodicCtxAC.contourShape === 'falling' ? 0.85 : 1.0)
+      * (melodicCtxAC.counterpoint === 'contrary' ? 1.20 : 1.0)
+      * (1.0 - clamp(melodicCtxAC.thematicDensity, 0, 1) * 0.15)
+      : 1.0;
+    const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale) * melodicContrastScale;
 
     // Check role swap state
     const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
