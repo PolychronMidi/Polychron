@@ -71,20 +71,37 @@ def check_pipeline() -> str:
 
     # In-progress: ANY of the last 5 non-empty lines starts with "script in progress"
     # (pipeline prints this once per step, not as a continuous stream)
+    import time as _time
+    import re as _re
     last5 = stripped[-5:] if len(stripped) >= 5 else stripped
-    if any(l.startswith("script in progress") for l in last5):
-        return "Pipeline: IN PROGRESS"
+    in_progress_line = next((l for l in reversed(last5) if l.startswith("script in progress")), None)
+    if in_progress_line:
+        # Extract step name (e.g., "script in progress: lint" → "lint")
+        step_match = _re.search(r"script in progress[:\s]+(.+)", in_progress_line)
+        step_name = step_match.group(1).strip() if step_match else "unknown step"
+        try:
+            log_age_s = _time.time() - os.path.getmtime(log_path)
+            return f"Pipeline: IN PROGRESS — `{step_name}` (log updated {log_age_s:.0f}s ago)"
+        except Exception:
+            return f"Pipeline: IN PROGRESS — `{step_name}`"
 
     # Race-condition guard: between steps, "script in progress" isn't present.
     # If the log was modified very recently (< 90s) but "Pipeline finished" is NOT
     # in the last line, treat as still running — catches inter-step gaps.
-    import time as _time
     try:
         log_mtime = os.path.getmtime(log_path)
         log_age_s = _time.time() - log_mtime
-        last_line = stripped[-1] if stripped else ""
-        if log_age_s < 90 and "Pipeline finished" not in last_line and "error" not in last_line.lower():
-            return "Pipeline: IN PROGRESS (between steps — log modified {:.0f}s ago)".format(log_age_s)
+        last3 = stripped[-3:] if len(stripped) >= 3 else stripped
+        last3_text = " ".join(last3)
+        if log_age_s < 90 and "Pipeline finished" not in last3_text and "error" not in last3_text.lower():
+            # Try to extract the last step name from the log for context
+            last_step = "between steps"
+            for l in reversed(stripped[-20:]):
+                step_m = _re.search(r"script in progress[:\s]+(.+)", l)
+                if step_m:
+                    last_step = f"after `{step_m.group(1).strip()}`"
+                    break
+            return f"Pipeline: IN PROGRESS ({last_step} — log modified {log_age_s:.0f}s ago)"
     except Exception:
         pass
 

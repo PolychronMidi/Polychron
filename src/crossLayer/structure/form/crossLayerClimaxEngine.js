@@ -140,8 +140,15 @@ crossLayerClimaxEngine = (() => {
     const freshnessEmaClx = melodicCtxClx ? V.optionalFinite(melodicCtxClx.freshnessEma, 0.5) : 0.5;
     const freshnessDampClx = clamp((freshnessEmaClx - 0.60) * 0.20, 0, 0.08);
 
-    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity - entropyDampClx - freshnessDampClx) * preClimaxHold;
+    // R80 E2: complexity antagonism bridge with harmonicIntervalGuard -- high rhythmic complexity
+    // accelerates climax build (complex texture = compositional density -> amplify structural arc).
+    // Counterpart: HIG NARROWS deadband at same complexity (E1). Together: harmony stabilizes
+    // while structural arc intensifies -- complexity is the shared currency.
+    const rhythmEntryClx = L0.getLast('emergentRhythm', { layer: 'both' });
+    const complexityClx = rhythmEntryClx && Number.isFinite(rhythmEntryClx.complexity) ? rhythmEntryClx.complexity : 0.5;
+    const complexityClimaxBoost = clamp((complexityClx - 0.45) * 0.10, 0, 0.06);
+    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost - entropyDampClx - freshnessDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing

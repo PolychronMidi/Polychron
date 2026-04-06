@@ -286,6 +286,14 @@ R79 completes the `freshnessEma` antagonism bridge with `entropyRegulator` (othe
 - **R79 E4 `densitySurprise` → `stutterContagion`**: Surprising rhythmic density events amplify contagion spread (gated intensity ×up to 1.10). Chaos invites more chaos — unexpected bursts propagate stutter across layers.
 - **R79 E5 `densitySurprise` → `restSynchronizer`**: Same surprise signal suppresses synchronized rests by up to -0.06. **Antagonism bridge with E4**: surprise → contagion ↑ + rest ↓. Together: rhythmic chaos keeps both layers active and spreading stutter, never breathing simultaneously.
 
+### Complexity Triple-Bridge (R80)
+
+`complexity` (per-beat rhythmic complexity, 0–1) as the shared currency driving three-way constructive opposition across harmony, arc, and phase.
+
+- **R80 E1 `complexity` → `harmonicIntervalGuard`**: High complexity narrows the consonance deadband by up to -0.04 (tighter harmonic control during complex rhythmic moments). Musical logic: when rhythm is complex, harmony stabilizes to prevent perceptual overload.
+- **R80 E2 `complexity` → `crossLayerClimaxEngine`**: High complexity boosts climax accumulation by up to +0.06. Musical logic: complex texture signals compositional density — the structural arc intensifies as rhythmic complexity peaks. **Antagonism bridge with E1**: same signal → harmony tightens while climax accelerates.
+- **R80 E3 `rhythmicPhaseLock.getMode()` → `harmonicIntervalGuard`**: Lock mode narrows deadband -0.03 (synchronized layers prefer consonance — harmonic agreement). Repel mode widens +0.04 (opposing layers tolerate more dissonance — harmonic tension from opposition). First phase coupling for HIG.
+
 ## Emergence Boundaries
 
 Three architectural membranes:

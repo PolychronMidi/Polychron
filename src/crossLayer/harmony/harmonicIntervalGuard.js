@@ -115,7 +115,16 @@ harmonicIntervalGuard = (() => {
     const hotspotsScaleHIG = rhythmEntryHIG && Array.isArray(rhythmEntryHIG.hotspots) ? rhythmEntryHIG.hotspots.length / 16 : 0;
     // R75: registerMigrationDir antagonism bridge -- ascending pitch center narrows interval hunting (inverts roleSwap: chaos in dynamics, stability in harmony).
     const registerNarrowHIG = melodicCtxHIG ? (melodicCtxHIG.registerMigrationDir === 'ascending' ? 0.03 : melodicCtxHIG.registerMigrationDir === 'descending' ? -0.025 : 0) : 0;
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG, 0.05, 0.30);
+    // R80 E1: complexity antagonism bridge with climaxEngine -- high rhythmic complexity narrows deadband
+    // (tighter harmonic control during complex moments). Counterpart: climaxEngine ACCELERATES climax
+    // on same signal (E2). Harmony stabilizes while structural arc intensifies.
+    const complexityHIG = rhythmEntryHIG && Number.isFinite(rhythmEntryHIG.complexity) ? rhythmEntryHIG.complexity : 0.5;
+    const complexityNarrowHIG = clamp((complexityHIG - 0.5) * 0.06, -0.02, 0.04);
+    // R80 E3: phase coupling -- locked layers prefer consonance (tighter deadband),
+    // repelling layers tolerate dissonance (wider deadband for harmonic tension).
+    const phaseModeHIG = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseNarrowHIG = phaseModeHIG === 'lock' ? 0.03 : phaseModeHIG === 'repel' ? -0.04 : 0;
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high
@@ -137,6 +146,9 @@ harmonicIntervalGuard = (() => {
     // R54: emergentMelodicEngine amplifies noveltyWeight when interval territory is stale
     const baseNoveltyWeight = histTotal > 12 ? dissonanceTarget * 0.28 * (1.0 - cimScale * 0.65) : 0;
     const noveltyWeight = V.optionalFinite(safePreBoot.call(() => emergentMelodicEngine.nudgeNoveltyWeight(baseNoveltyWeight), baseNoveltyWeight), baseNoveltyWeight);
+    // R77 E6: underusedPitchClasses harvest -- bias interval selection toward modally underrepresented pitch classes
+    const underusedEntry = L0.getLast('underusedPitchClasses', { layer: 'both' });
+    const underusedPCs = underusedEntry && Array.isArray(underusedEntry.pitchClasses) ? underusedEntry.pitchClasses : [];
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;
       const candidateIC = ((candidate - otherRecentMidi) % 12 + 12) % 12;
@@ -153,8 +165,10 @@ harmonicIntervalGuard = (() => {
       const noveltyBonus = noveltyWeight > 0.01
         ? -(1 - intervalHist[candidateIC] / histTotal) * noveltyWeight
         : 0;
-      if (score + pitchBiasBonus + motifBonus + noveltyBonus < bestScore) {
-        bestScore = score + pitchBiasBonus + motifBonus + noveltyBonus;
+      // R77 E6: underused pitch class bonus -- prefer candidates that hit modally starved pitch classes
+      const underusedBonus = underusedPCs.includes(candidate % 12) ? -0.10 : 0;
+      if (score + pitchBiasBonus + motifBonus + noveltyBonus + underusedBonus < bestScore) {
+        bestScore = score + pitchBiasBonus + motifBonus + noveltyBonus + underusedBonus;
         bestNote = candidate;
       }
     }
