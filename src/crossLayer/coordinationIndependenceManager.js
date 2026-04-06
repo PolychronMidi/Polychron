@@ -137,11 +137,14 @@ coordinationIndependenceManager = (() => {
     const effectBias = (effectiveness[pair] - 0.5) * 0.2;
 
     // Melodic coupling: counterpoint motion type biases coordination target.
-    // Contrary motion -> more independence (layers diverging intentionally).
-    // Similar motion -> more coordination (layers moving together).
+    // Scoped to harmonic/melodic pairs only -- applying globally was too aggressive
+    // (contrary is normal in polyphony; -0.08 across all 12 pairs halved note output).
+    // Similar motion -> mild coordination boost for the whole system.
     const melodicCtxCIM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const isHarmonicPair = pair === 'harmonic-pitchCorrection' || pair === 'motif-echoIdentity';
     const counterpointBias = melodicCtxCIM
-      ? (melodicCtxCIM.counterpoint === 'contrary' ? -0.08 : melodicCtxCIM.counterpoint === 'similar' ? 0.07 : 0)
+      ? (melodicCtxCIM.counterpoint === 'contrary' && isHarmonicPair ? -0.06
+        : melodicCtxCIM.counterpoint === 'similar' ? 0.04 : 0)
       : 0;
 
     // Composite target: intent-aware blend replaces the static 0.5 baseline
