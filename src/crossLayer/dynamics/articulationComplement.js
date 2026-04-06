@@ -94,7 +94,11 @@ articulationComplement = (() => {
       * (melodicCtxAC.counterpoint === 'contrary' ? 1.20 : 1.0)
       * (1.0 - clamp(melodicCtxAC.thematicDensity, 0, 1) * 0.15)
       : 1.0;
-    const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale) * melodicContrastScale;
+    // Rhythmic coupling: dense emergent rhythm → sharper articulation contrast.
+    const rhythmEntryAC = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmDensityAC = rhythmEntryAC && Number.isFinite(rhythmEntryAC.density) ? rhythmEntryAC.density : 0;
+    const rhythmContrastMod = 1.0 + rhythmDensityAC * 0.15; // [1.0-1.15] dense→sharper
+    const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale) * melodicContrastScale * rhythmContrastMod;
 
     // Check role swap state
     const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
