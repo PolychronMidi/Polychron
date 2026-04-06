@@ -6,8 +6,10 @@
 ### what_did_i_forget(file_paths)
 Post-change audit. Comma-separated paths. Checks KB constraints, boundary rules, L0 channels, doc needs.
 
-### module_story(module_name)
-Living biography: definition, evolution history, callers, neighbors, KB context.
+### module_intel(target, mode="story")
+mode='story': living biography — definition, evolution history, callers, neighbors, KB context.
+mode='impact': callers + references + KB constraints.
+mode='both': biography + impact in one call.
 
 ### diagnose_error(error_text)
 Paste error text. Returns: source trace, similar KB bugs, fix patterns.
@@ -20,9 +22,6 @@ Structured reflection. Topics: task_adherence, completeness, constraints, impact
 
 ### blast_radius(symbol_name, max_depth=3)
 Transitive dependency chain at depth 1-3. Shows which callers break if symbol changes.
-
-### impact_analysis(symbol_name)
-Callers + references + KB constraints in one shot.
 
 ### convention_check(file_path)
 Audit file against project conventions. Flags violations.

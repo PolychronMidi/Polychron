@@ -1,7 +1,7 @@
 # Search & Index
 
-### index_codebase(directory="")
-Index source files for semantic search. ""=project root. Incremental.
+### hme_admin(action='index')
+Reindex all code chunks + symbols. Run after batch changes when file watcher hasn't caught up.
 
 ### search_code(query, top_k=10, language="")
 Semantic code search. Prefer over Glob/Grep for open-ended queries.
@@ -12,7 +12,7 @@ Semantic code search. Prefer over Glob/Grep for open-ended queries.
 Returns indexed file/chunk counts.
 
 ### clear_index()
-Wipe code index. Run index_codebase after.
+Wipe code index. Run hme_admin(action='index') after.
 
 ### list_libs()
 List configured external libraries (from ragLibs in .mcp.json) with index status.
