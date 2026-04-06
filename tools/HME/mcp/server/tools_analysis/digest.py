@@ -75,6 +75,19 @@ def check_pipeline() -> str:
     if any(l.startswith("script in progress") for l in last5):
         return "Pipeline: IN PROGRESS"
 
+    # Race-condition guard: between steps, "script in progress" isn't present.
+    # If the log was modified very recently (< 90s) but "Pipeline finished" is NOT
+    # in the last line, treat as still running — catches inter-step gaps.
+    import time as _time
+    try:
+        log_mtime = os.path.getmtime(log_path)
+        log_age_s = _time.time() - log_mtime
+        last_line = stripped[-1] if stripped else ""
+        if log_age_s < 90 and "Pipeline finished" not in last_line and "error" not in last_line.lower():
+            return "Pipeline: IN PROGRESS (between steps — log modified {:.0f}s ago)".format(log_age_s)
+    except Exception:
+        pass
+
     # Finished: "Pipeline finished" appears in last 10 non-empty lines
     finished = next((l for l in reversed(last10) if "Pipeline finished" in l), None)
     if finished:
