@@ -17,7 +17,7 @@ from . import _get_compositional_context, _track, _usage_stats
 logger = logging.getLogger("HME")
 
 def evolution_patterns() -> str:
-    """Analyze metrics/journal.md for meta-patterns across evolution rounds. Identifies confirm/refute rates, subsystem receptivity, recurring themes, and stabilization timelines. Use to understand HOW the system evolves, not just what changed."""
+    """Analyze metrics/journal.md for meta-patterns across evolution rounds. Identifies confirm/refute rates, subsystem receptivity, temporal trends, and stabilization timelines. Use to understand HOW the system evolves, not just what changed."""
     ctx.ensure_ready_sync()
     _track("evolution_patterns")
     import re
@@ -28,49 +28,115 @@ def evolution_patterns() -> str:
         content = _f.read()
 
     rounds = re.findall(r'## R(\d+)', content)
-    # Parse per-round verdicts from **Verdict:** fields (authoritative, not raw word counts)
-    verdict_pattern = re.compile(r'\*\*Verdict:\*\*\s*([^\n|]+)')
-    verdicts_raw = [v.strip().lower() for v in verdict_pattern.findall(content)]
-    confirmed_verdicts = [v for v in verdicts_raw if any(k in v for k in ('stable', 'evolved', 'legendary', 'confirmed', 'confirmed positive'))]
-    drifted_verdicts = [v for v in verdicts_raw if any(k in v for k in ('drifted', 'refuted', 'negative'))]
-    inconclusive_verdicts = [v for v in verdicts_raw if any(k in v for k in ('inconclusive', 'pending', 'tbd', 'unclear'))]
-    # Rounds that don't appear in journal at all are rejected — note this in output
+    # Parse per-round verdicts paired with round numbers
+    # Regex: ## R<num> ... **Verdict:** <text> within the same section
+    round_sections = re.split(r'(?=^## R\d+)', content, flags=re.MULTILINE)
+    verdict_map = {"S": "STABLE", "E": "EVOLVED", "L": "LEGENDARY", "D": "DRIFTED",
+                   "R": "REFUTED", "I": "INCONCLUSIVE"}
+    round_verdicts: list[tuple[int, str]] = []  # (round_num, verdict_category)
+    for section in round_sections:
+        r_match = re.match(r'## R(\d+)', section)
+        if not r_match:
+            continue
+        r_num = int(r_match.group(1))
+        v_match = re.search(r'\*\*Verdict:\*\*\s*([^\n|]+)', section)
+        if not v_match:
+            continue
+        v_text = v_match.group(1).strip().lower()
+        if any(k in v_text for k in ('legendary',)):
+            round_verdicts.append((r_num, "L"))
+        elif any(k in v_text for k in ('evolved',)):
+            round_verdicts.append((r_num, "E"))
+        elif any(k in v_text for k in ('stable', 'confirmed positive', 'confirmed')):
+            round_verdicts.append((r_num, "S"))
+        elif any(k in v_text for k in ('drifted',)):
+            round_verdicts.append((r_num, "D"))
+        elif any(k in v_text for k in ('refuted', 'negative')):
+            round_verdicts.append((r_num, "R"))
+        elif any(k in v_text for k in ('inconclusive', 'pending', 'tbd', 'unclear')):
+            round_verdicts.append((r_num, "I"))
+
+    confirmed = [rv for rv in round_verdicts if rv[1] in ("S", "E", "L")]
+    drifted = [rv for rv in round_verdicts if rv[1] in ("D", "R")]
+    inconclusive = [rv for rv in round_verdicts if rv[1] == "I"]
     total_journal_rounds = len(rounds)
-    total_outcomes = len(confirmed_verdicts) + len(drifted_verdicts) + len(inconclusive_verdicts)
+    total_outcomes = len(round_verdicts)
+    confirm_rate = len(confirmed) / max(1, total_outcomes)
+
     subsystem_counts = {}
     for sub in ['conductor', 'crossLayer', 'composers', 'rhythm', 'fx', 'time', 'play', 'writer']:
         count = len(re.findall(sub, content, re.IGNORECASE))
         if count:
             subsystem_counts[sub] = count
 
-    confirm_rate = len(confirmed_verdicts) / max(1, total_outcomes)
     parts = [
         f"## Evolution Patterns ({total_journal_rounds} rounds in journal)\n",
-        f"**Verdicts:** {len(confirmed_verdicts)} confirmed (STABLE/EVOLVED/LEGENDARY), "
-        f"{len(drifted_verdicts)} drifted/refuted, {len(inconclusive_verdicts)} inconclusive/pending",
-        f"**Confirm rate (journaled rounds):** {confirm_rate:.0%}",
-        f"**Note:** DRIFTED runs are committed but not journaled — journal skews toward successes.",
-        "",
-        "**Subsystem activity:**",
+        f"**Verdicts:** {len(confirmed)} confirmed ({sum(1 for _,v in confirmed if v=='L')}L/"
+        f"{sum(1 for _,v in confirmed if v=='E')}E/"
+        f"{sum(1 for _,v in confirmed if v=='S')}S), "
+        f"{len(drifted)} drifted/refuted, {len(inconclusive)} inconclusive",
+        f"**Confirm rate:** {confirm_rate:.0%}",
+        f"**Note:** DRIFTED runs committed but not journaled — journal skews toward successes.",
     ]
+
+    # Temporal trend: verdict timeline as visual sparkline
+    if round_verdicts:
+        # Show last 30 rounds as a visual timeline
+        recent = round_verdicts[-30:]
+        _v_chars = {"S": ".", "E": "+", "L": "*", "D": "x", "R": "!", "I": "?"}
+        timeline = "".join(_v_chars.get(v, "?") for _, v in recent)
+        r_start, r_end = recent[0][0], recent[-1][0]
+        parts.append(f"\n**Temporal Trend (R{r_start}-R{r_end}):**")
+        parts.append(f"  [{timeline}]")
+        parts.append(f"  .=STABLE +=EVOLVED *=LEGENDARY x=DRIFTED !=REFUTED ?=INCONCLUSIVE")
+
+        # Streak detection
+        last_5 = [v for _, v in recent[-5:]]
+        if all(v in ("S", "E", "L") for v in last_5):
+            parts.append(f"  Current streak: {len(last_5)}+ consecutive successes")
+        elif last_5[-1] in ("D", "R"):
+            parts.append(f"  Last round DRIFTED — check what changed")
+
+    parts.append(f"\n**Subsystem activity:**")
     for sub, count in sorted(subsystem_counts.items(), key=lambda x: -x[1]):
         parts.append(f"  {sub}: {count} mentions")
 
+    # KB anti-pattern correlation
+    kb_antipatterns = []
+    try:
+        ctx.ensure_ready_sync()
+        kb_results = ctx.project_engine.search_knowledge("anti-pattern evolution failure", top_k=5)
+        for k in kb_results:
+            if any(m in k.get("content", "").lower() for m in ("never", "avoid", "don't", "anti-pattern", "failure")):
+                kb_antipatterns.append(f"  [{k['category']}] {k['title']}")
+    except Exception:
+        pass
+    if kb_antipatterns:
+        parts.append(f"\n**KB Anti-patterns ({len(kb_antipatterns)}):**")
+        parts.extend(kb_antipatterns[:5])
+
+    # Two-stage synthesis for deeper analysis
+    from .synthesis import _two_stage_think
     journal_tail = content[-4000:]
-    user_text = (
+    verdict_summary = ", ".join(f"R{r}:{verdict_map.get(v, v)}" for r, v in round_verdicts[-15:])
+    raw_context = (
         f"Evolution journal excerpt (last ~4000 chars of {len(content)} total):\n{journal_tail}\n\n"
-        f"Stats: {len(rounds)} rounds, {len(confirmed_verdicts)} confirmed, "
-        f"{len(drifted_verdicts)} drifted/refuted, {len(inconclusive_verdicts)} inconclusive\n\n"
-        "In 5 bullet points identify:\n"
-        "(1) which types of evolutions succeed most often and why,\n"
-        "(2) which subsystems are most vs least receptive to change,\n"
-        "(3) recurring constants or areas that keep needing adjustment,\n"
-        "(4) how many rounds changes typically take to stabilize,\n"
-        "(5) any anti-patterns in the evolution approach that should be avoided."
+        f"Recent verdicts: {verdict_summary}\n"
+        f"Subsystems: {', '.join(f'{s}:{c}' for s,c in sorted(subsystem_counts.items(), key=lambda x: -x[1]))}\n"
     )
-    synthesis = _think_local_or_claude(user_text, _get_api_key())
+    if kb_antipatterns:
+        raw_context += "KB anti-patterns:\n" + "\n".join(kb_antipatterns) + "\n"
+    question = (
+        "In 5 bullet points: (1) which evolution types succeed most and why, "
+        "(2) which subsystems are most/least receptive, (3) recurring areas needing adjustment, "
+        "(4) typical stabilization timeline, (5) anti-patterns to avoid. "
+        "Reference specific round numbers and module names."
+    )
+    synthesis = _two_stage_think(raw_context, question)
+    if not synthesis:
+        synthesis = _think_local_or_claude(raw_context + "\n\n" + question, _get_api_key())
     if synthesis:
-        parts.append(f"\n## Pattern Analysis *(adaptive)*")
+        parts.append(f"\n## Pattern Analysis *(two-stage)*")
         parts.append(synthesis)
 
     return "\n".join(parts)
@@ -123,59 +189,81 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
             pass
 
     # Ground synthesis in actual source code — prevents hallucination
-    # Extract camelCase module names from the symptom text + caller files
     import re as _re
-    from .synthesis import _read_module_source
+    from .synthesis import _read_module_source, _two_stage_think
     source_parts = []
     # Parse camelCase words from symptom (likely module names)
     candidate_modules = _re.findall(r'[a-z][a-zA-Z]{8,}', symptom)
-    # Also try the raw symptom as a module name
     candidate_modules.insert(0, symptom)
     # Add caller file basenames
-    for cf in caller_files[:3]:
+    for cf in caller_files[:5]:
         candidate_modules.append(os.path.basename(cf).replace('.js', ''))
     # Add module names from KB results
     for k in kb_results[:3]:
         candidate_modules.extend(_re.findall(r'[a-z][a-zA-Z]{8,}', k.get('title', '')))
     seen = set()
+    known_modules: set = set()  # track modules with confirmed source for validation
     for mod in candidate_modules:
         if mod in seen:
             continue
         seen.add(mod)
-        src = _read_module_source(mod, max_chars=1200)
+        src = _read_module_source(mod, max_chars=2000)
         if src:
             source_parts.append(f"### {mod}\n```\n{src}\n```")
-        if len(source_parts) >= 3:
+            known_modules.add(mod)
+        if len(source_parts) >= 4:
             break
     source_block = "\nSource code:\n" + "\n".join(source_parts) + "\n" if source_parts else ""
 
-    user_text = (
-        f"Trace the causal chain for: {symptom}\n"
+    # Build raw context for two-stage synthesis
+    raw_context = (
+        f"Symptom: {symptom}\n"
         f"Direct callers ({len(caller_files)}): {', '.join(caller_files[:10])}\n"
         f"Subsystems touched: {', '.join(sorted(subsystems))}\n"
         + source_block
         + (f"\n{tuning_context}\n" if tuning_context else "")
-        + "\nBased on the ACTUAL source code above, trace the causal chain from this "
-        "module to the listener's experience. Format: A -> B -> C -> [musical effect]. "
-        "Only reference functions and behaviors visible in the code. Do NOT invent behaviors. "
+    )
+    if kb_results:
+        raw_context += "\nKB entries:\n" + "\n".join(
+            f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results
+        ) + "\n"
+    question = (
+        "Trace the causal chain from this module to the listener's experience. "
+        "Format: A -> B -> C -> [musical effect]. "
+        "Only reference functions and behaviors visible in the source code. "
         "Be specific about musical quality (e.g. 'less rhythmic tension', 'denser texture')."
     )
+
     api_key = _get_api_key()
     synthesis = None
     if api_key:
+        user_text = raw_context + "\n" + question
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
     if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
+        # Two-stage: coder structures context, reasoner traces causality
+        synthesis = _two_stage_think(raw_context, question)
     if synthesis:
-        parts.append(f"\n## Causal Chain *(adaptive)*")
+        # Validate synthesis: flag any module names not found in codebase
+        mentioned = set(_re.findall(r'[a-z][a-zA-Z]{8,}', synthesis))
+        # Only flag if we have a meaningful known set to validate against
+        if known_modules and len(known_modules) >= 2:
+            unknown = mentioned - known_modules - set(SUBSYSTEM_NAMES) - {"controller", "conductorIntelligence", "signalReader", "crossLayerEmissionGateway"}
+            # Check if unknown names actually exist as files
+            real_unknown = set()
+            for unk in unknown:
+                if not _read_module_source(unk, max_chars=50):
+                    real_unknown.add(unk)
+            if real_unknown and len(real_unknown) <= 5:
+                synthesis += f"\n\n*Unverified module names in synthesis: {', '.join(sorted(real_unknown))}*"
+        parts.append(f"\n## Causal Chain *(two-stage)*")
         parts.append(synthesis)
 
     return "\n".join(parts)
 
 
 def hme_introspect() -> str:
-    """Self-benchmarking: report HME tool usage patterns for this session. Shows which tools are called most, which mandatory tools are underused, and compositional context from the last pipeline run."""
+    """Self-benchmarking: report HME tool usage patterns, workflow discipline, KB health, and compositional context from the last pipeline run."""
     _track("hme_introspect")
     parts = ["## HME Session Introspection\n"]
 
@@ -189,6 +277,21 @@ def hme_introspect() -> str:
         unused = expected - set(_usage_stats.keys())
         if unused:
             parts.append(f"**Mandatory but unused:** {', '.join(sorted(unused))}")
+
+        # Workflow discipline: before_editing should roughly match what_did_i_forget
+        be_count = _usage_stats.get("before_editing", 0)
+        wf_count = _usage_stats.get("what_did_i_forget", 0)
+        if be_count > 0 or wf_count > 0:
+            parts.append(f"\n### Workflow Discipline")
+            parts.append(f"  before_editing: {be_count}  |  what_did_i_forget: {wf_count}")
+            if be_count > 0 and wf_count == 0:
+                parts.append(f"  WARNING: editing without post-change audits")
+            elif be_count > wf_count + 2:
+                parts.append(f"  NOTE: {be_count - wf_count} edits lack matching post-audits")
+            elif wf_count > 0 and be_count == 0:
+                parts.append(f"  WARNING: post-audits without pre-edit research")
+            else:
+                parts.append(f"  Good: pre-edit/post-audit ratio balanced")
     else:
         parts.append("### Tool Usage: no tracked calls yet")
 
@@ -205,22 +308,40 @@ def hme_introspect() -> str:
             import re as _jre
             with open(journal_path, encoding="utf-8") as _jf:
                 journal_content = _jf.read()
-            # Find all round-section starts; use the LAST one (most recent round)
+            # Find last round section — bound to next ## R header or EOF
             section_starts = [m.start() for m in _jre.finditer(r'^## R\d+', journal_content, _jre.MULTILINE)]
             if section_starts:
-                latest_section = journal_content[section_starts[-1]:section_starts[-1] + 900]
+                start = section_starts[-1]
+                # Find next ## header after current (not just ## R — any ## boundary)
+                rest = journal_content[start + 4:]
+                next_match = _jre.search(r'^## ', rest, _jre.MULTILINE)
+                end = (start + 4 + next_match.start()) if next_match else len(journal_content)
+                latest_section = journal_content[start:end].rstrip()
+                # Cap at 1500 chars but don't cut mid-line
+                if len(latest_section) > 1500:
+                    cut = latest_section.rfind('\n', 0, 1500)
+                    latest_section = latest_section[:cut if cut > 0 else 1500] + "\n  ... (truncated)"
                 parts.append("\n### Latest Journal Entry")
-                parts.append(latest_section.rstrip()[:900])
+                parts.append(latest_section)
         except Exception:
             pass
 
+    # KB health: count + category breakdown
     kb_count = 0
+    kb_categories: dict = {}
     try:
         ctx.ensure_ready_sync()
-        all_kb = ctx.project_engine.list_knowledge()
-        kb_count = len(all_kb)
+        all_kb_full = ctx.project_engine.list_knowledge_full() if hasattr(ctx.project_engine, 'list_knowledge_full') else []
+        kb_count = len(all_kb_full)
+        for entry in all_kb_full:
+            cat = entry.get("category", "unknown")
+            kb_categories[cat] = kb_categories.get(cat, 0) + 1
     except Exception:
-        pass
+        try:
+            all_kb = ctx.project_engine.list_knowledge()
+            kb_count = len(all_kb)
+        except Exception:
+            pass
     idx = {"files": 0, "chunks": 0, "symbols": 0}
     try:
         status = ctx.project_engine.get_status()
@@ -232,6 +353,9 @@ def hme_introspect() -> str:
         pass
     parts.append(f"\n### System Health")
     parts.append(f"  KB entries: {kb_count}")
+    if kb_categories:
+        cat_str = ", ".join(f"{cat}:{n}" for cat, n in sorted(kb_categories.items(), key=lambda x: -x[1]))
+        parts.append(f"  KB breakdown: {cat_str}")
     parts.append(f"  Index: {idx['files']} files, {idx['chunks']} chunks, {idx['symbols']} symbols")
 
     return "\n".join(parts)

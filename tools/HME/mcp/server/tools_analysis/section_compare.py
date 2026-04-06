@@ -10,6 +10,31 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
+# Coupling label → musical meaning (from Polychron coupling engine semantics)
+_COUPLING_LABEL_MEANING: dict[str, str] = {
+    "locked": "tightly synchronized — movements mirror each other",
+    "drifting": "loosely coupled — independent but aware",
+    "opposing": "antagonistic — one rises as other falls",
+    "converging": "approaching sync — building toward lock",
+    "diverging": "separating — increasing independence",
+    "resonant": "harmonic reinforcement — shared frequency peaks",
+    "decoupled": "fully independent — no interaction",
+    "entangled": "complex bidirectional — hard to predict one from other",
+}
+
+
+def _coupling_label_display(raw_label: str) -> str:
+    """Format a coupling label with musical meaning."""
+    parts = raw_label.split(":")
+    if len(parts) >= 2:
+        pair = parts[0]
+        label = parts[-1]
+        meaning = _COUPLING_LABEL_MEANING.get(label, "")
+        suffix = f" ({meaning})" if meaning else ""
+        return f"{label}{suffix} [{pair}]"
+    return raw_label
+
+
 @ctx.mcp.tool()
 def section_compare(section_a: int, section_b: int) -> str:
     """Compare two sections head-to-head: regime shift, tension delta, trust system
@@ -127,7 +152,19 @@ def section_compare(section_a: int, section_b: int) -> str:
             for d, n, wa, wb in losers:
                 parts_out.append(f"  ▼ {n}: {wa:.3f}→{wb:.3f} ({d:.3f})")
 
-    # Coupling label changes
+    # Hotspot dominance per section (which trust system had most hotspot pressure)
+    all_hotspot_systems = set(sa["hotspot_counts"].keys()) | set(sb["hotspot_counts"].keys())
+    if all_hotspot_systems:
+        parts_out.append(f"\n## Hotspot Activity")
+        for sec_label, sec_data in [(f"S{section_a}", sa), (f"S{section_b}", sb)]:
+            if sec_data["hotspot_counts"]:
+                top_hot = sorted(sec_data["hotspot_counts"].items(), key=lambda x: -x[1])[:3]
+                hot_str = ", ".join(f"{name}({count})" for name, count in top_hot)
+                parts_out.append(f"  {sec_label}: {hot_str}")
+            else:
+                parts_out.append(f"  {sec_label}: no hotspot pressure")
+
+    # Coupling label changes — with musical semantics
     labels_a = set(sa["coupling"].keys())
     labels_b = set(sb["coupling"].keys())
     new_labels = labels_b - labels_a
@@ -135,9 +172,24 @@ def section_compare(section_a: int, section_b: int) -> str:
     if new_labels or lost_labels:
         parts_out.append(f"\n## Coupling Changes")
         for lbl in sorted(new_labels)[:5]:
-            parts_out.append(f"  + {lbl.split(':')[-1]} ({lbl.split(':')[0]})")
+            parts_out.append(f"  + {_coupling_label_display(lbl)}")
         for lbl in sorted(lost_labels)[:5]:
-            parts_out.append(f"  - {lbl.split(':')[-1]} ({lbl.split(':')[0]})")
+            parts_out.append(f"  - {_coupling_label_display(lbl)}")
+
+    # Persistent coupling — labels present in both sections (stable relationships)
+    shared_labels = labels_a & labels_b
+    if shared_labels:
+        # Show top 3 most frequent shared labels
+        shared_sorted = sorted(shared_labels, key=lambda l: sb["coupling"].get(l, 0), reverse=True)[:3]
+        parts_out.append(f"\n## Stable Coupling (present in both)")
+        for lbl in shared_sorted:
+            parts_out.append(f"  = {_coupling_label_display(lbl)}")
+
+    # Cross-reference suggestions
+    parts_out.append(f"\n---")
+    parts_out.append(f"See also: regime_report(mode='drama') for tension spikes and trust reversals")
+    if abs(delta) > 0.05:
+        parts_out.append(f"Large tension delta — try trust_rivalry to trace which system drove the shift")
 
     return "\n".join(parts_out)
 

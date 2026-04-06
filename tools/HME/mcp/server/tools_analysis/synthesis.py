@@ -524,6 +524,72 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
     return None
 
 
+def _two_stage_think(raw_context: str, question: str, max_tokens: int = 2048) -> str | None:
+    """Two-stage local synthesis: coder model structures context, reasoning model thinks deeply.
+
+    Stage 1 (qwen2.5-coder): Extract and structure relevant facts from raw context into a brief
+    Stage 2 (deepseek-r1): Reason about the structured brief to answer the question
+
+    Falls back to single-stage reasoning if Stage 1 fails.
+    """
+    # Stage 1: Coder model structures the raw context
+    frame_prompt = (
+        "Extract and structure ONLY the facts relevant to answering this question:\n"
+        f"  {question}\n\n"
+        "Rules:\n"
+        "- Output a structured brief with exact file names, function names, and signal names\n"
+        "- Remove irrelevant context — keep only what bears on the question\n"
+        "- Preserve code snippets that directly relate\n"
+        "- Max 600 words\n\n"
+        "Raw project context:\n" + raw_context[:12000]
+    )
+    frame = _local_think(frame_prompt, max_tokens=1024, model=_LOCAL_MODEL)
+    if not frame or len(frame) < 40:
+        # Fall back to single-stage reasoning
+        return _local_think(
+            raw_context[:8000] + "\n\n" + question,
+            max_tokens=max_tokens, model=_REASONING_MODEL
+        )
+
+    # Stage 2: Reasoning model thinks deeply about the structured brief
+    reason_prompt = (
+        "Structured brief about the Polychron codebase:\n\n"
+        + frame + "\n\n"
+        "Question: " + question + "\n\n"
+        "Answer using ONLY modules, files, signals, and functions named in the brief above. "
+        "Do NOT invent names. Be specific about musical effects."
+    )
+    return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
+
+
+def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
+                              model: str | None = None) -> str | None:
+    """Call local Ollama model with an explicit system prompt."""
+    import urllib.request
+    body = json.dumps({
+        "model": model or _LOCAL_MODEL,
+        "system": system,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"temperature": 0.3, "num_predict": max_tokens},
+    }).encode()
+    req = urllib.request.Request(
+        _LOCAL_URL, data=body,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=240) as resp:
+            result = json.loads(resp.read())
+            text = result.get("response", "").strip()
+            if not text:
+                return None
+            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            return text if text else None
+    except Exception as e:
+        logger.debug(f"_local_think_with_system unavailable: {e}")
+        return None
+
+
 def _warm_cache(api_key: str) -> None:
     """Pre-warm the system prompt + KB corpus cache in a background thread.
 
