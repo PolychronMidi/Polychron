@@ -109,12 +109,20 @@ def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int =
     wav_path = _get_wav_path()
     if not os.path.isfile(wav_path):
         return "No combined.wav found. Run `npm run render` first."
-    parts = []
+
+    # Confidence banner — front and center
+    header = (
+        f"# Perceptual Analysis (confidence: {_PERCEPTUAL_CONFIDENCE:.0%})\n"
+        f"All perceptual outputs are UNVERIFIED until correlated with listening verdicts.\n"
+        f"Treat as hypothesis, not ground truth.\n"
+    )
+
+    parts = [header]
     if analysis in ("encodec", "both"):
         parts.append(_run_encodec(wav_path, top_sections))
     if analysis in ("clap", "both"):
         parts.append(_run_clap(wav_path, queries))
-    if not parts:
+    if len(parts) == 1:  # only header, no analysis ran
         return f"Unknown analysis type '{analysis}'. Use 'encodec', 'clap', 'both', or 'intent_loop'."
     return "\n\n".join(parts)
 
@@ -292,7 +300,6 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
             direction = "▲" if e2 > e1 else "▼"
             parts.append(f"  S{s1}→S{s2}: {direction}{delta:.2f} bits")
 
-    parts.append(f"\n*Confidence: {_PERCEPTUAL_CONFIDENCE:.0%} — verify against listening before trusting*")
     return "\n".join(parts)
 
 
@@ -337,8 +344,13 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     text_embed = model.get_text_embedding(query_list, use_tensor=True)
 
     # Get audio embeddings per chunk
-    parts = [f"# CLAP Audio Analysis (confidence: {_PERCEPTUAL_CONFIDENCE:.0%})\n"]
-    parts.append(f"Chunks: {len(chunks)} x {chunk_seconds}s | Queries: {len(query_list)}\n")
+    parts = [f"# CLAP Audio Analysis\n"]
+    parts.append(f"Chunks: {len(chunks)} x {chunk_seconds}s | Queries: {len(query_list)}")
+    using_custom = bool(queries.strip())
+    parts.append(f"Query set: {'custom' if using_custom else 'default xenolinguistic probes'}")
+    if not using_custom:
+        parts.append(f"  Probes: {' | '.join(q[:40] for q in query_list)}")
+    parts.append("")
 
     # Process chunks
     audio_embeds = []
@@ -380,7 +392,58 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     top_qi = int(np.argmax(avg_per_query))
     parts.append(f"\n## Dominant Character: \"{query_list[top_qi]}\" (avg={avg_per_query[top_qi]:.3f})")
 
-    parts.append(f"\n*Confidence: {_PERCEPTUAL_CONFIDENCE:.0%} — verify against listening before trusting*")
+    # Per-section mismatch coaching: compare CLAP character to section intent
+    # Load section intent data if available
+    try:
+        trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+        section_regimes: dict = {}
+        if os.path.isfile(trace_path):
+            with open(trace_path, encoding="utf-8") as _tf:
+                for line in _tf:
+                    try:
+                        rec = json.loads(line)
+                    except Exception:
+                        continue
+                    bk = rec.get("beatKey", "")
+                    p = bk.split(":")
+                    sec = int(p[0]) if p and p[0].isdigit() else -1
+                    regime = rec.get("regime", "?")
+                    if sec >= 0:
+                        if sec not in section_regimes:
+                            section_regimes[sec] = {}
+                        section_regimes[sec][regime] = section_regimes[sec].get(regime, 0) + 1
+
+        # Map chunks to approximate sections
+        if section_regimes and len(chunks) >= 3:
+            parts.append(f"\n## Section Character Coaching")
+            # Intent mapping: regime expectations vs CLAP character
+            _REGIME_EXPECTS = {
+                "coherent": {"coherent organized harmonic structure", "high musical tension building to climax"},
+                "exploring": {"rhythmically complex polyrhythmic pattern", "dense chaotic many notes simultaneously"},
+                "evolving": {"high musical tension building to climax", "rhythmically complex polyrhythmic pattern"},
+            }
+            n_chunks_per_section = max(1, len(chunks) // max(1, len(section_regimes)))
+            for sec_num in sorted(section_regimes.keys()):
+                dom_regime = max(section_regimes[sec_num].items(), key=lambda x: x[1])[0]
+                expected = _REGIME_EXPECTS.get(dom_regime, set())
+                if not expected:
+                    continue
+                # Get dominant CLAP character for chunks in this section range
+                chunk_start = sec_num * n_chunks_per_section
+                chunk_end = min(chunk_start + n_chunks_per_section, len(chunks))
+                if chunk_start >= len(chunks):
+                    continue
+                sec_scores = similarity[:, chunk_start:chunk_end].mean(dim=1).detach().cpu().numpy()
+                sec_top_qi = int(np.argmax(sec_scores))
+                sec_character = query_list[sec_top_qi]
+                if sec_character not in expected:
+                    parts.append(
+                        f"  S{sec_num} ({dom_regime}): CLAP sees \"{sec_character[:45]}\" "
+                        f"-- expected {dom_regime} character. Check density/tension tuning."
+                    )
+    except Exception:
+        pass
+
     return "\n".join(parts)
 
 

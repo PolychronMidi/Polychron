@@ -100,6 +100,34 @@ def channel_topology(start_channel: str = "") -> str:
     if not topo:
         return "No L0.post/getLast patterns found in src/."
 
+    # Musical semantics for L0 channel names — what each signal carries
+    _CHANNEL_SEMANTICS: dict[str, str] = {
+        "emergentRhythm": "grid density/complexity from accumulated rhythmic events",
+        "emergentMelody": "contour/freshness/tessiture/counterpoint melodic context",
+        "motifEcho": "imitative counterpoint: delay, interval, voice pairs",
+        "stutterContagion": "stutter spread across voices — rhythmic infection",
+        "emergentDownbeat": "spontaneous accent from event accumulation",
+        "feedbackLoop": "oscillatory feedback between modules",
+        "onset": "note attack timing and velocity",
+        "cadenceAlignment": "phrase-boundary tension resolution timing",
+        "regimeTransition": "regime change events with direction",
+        "densitySurprise": "unexpected density deviations per beat",
+        "hotspots": "per-pair coupling hotspot pressure",
+        "convergence": "system convergence state and rate",
+        "beatPhase": "current position within the beat cycle",
+        "harmonicFunction": "harmonic analysis (tonic/dominant/etc)",
+        "underusedPitchClasses": "pitch classes needing more representation",
+        "harmonic-journey-eval": "harmonic distance from home key",
+        "rest-sync": "rest synchronization between layers",
+        "section-quality": "per-section quality metrics",
+        "binaural": "binaural beat frequency and phase",
+        "instrument": "instrument selection and assignment",
+        "note": "individual note events",
+        "explainability": "diagnostic explanations for decisions",
+        "channel-coherence": "channel signal consistency metric",
+        "chord": "chord progression events",
+    }
+
     if not start_channel.strip():
         # Full channel map sorted by total activity (producers + consumers)
         out = [f"# L0 Channel Map  ({len(topo)} channels)\n"]
@@ -109,9 +137,11 @@ def channel_topology(start_channel: str = "") -> str:
         for ch, data in sorted_chs:
             prods = data["producers"]
             cons  = data["consumers"]
-            loops = set(prods) & set(cons)  # modules that both post AND read the same channel
-            loop_s = f"  ⟳ LOOP: {', '.join(sorted(loops))}" if loops else ""
-            out.append(f"## {ch}  ({len(prods)} producers, {len(cons)} consumers){loop_s}")
+            loops = set(prods) & set(cons)
+            loop_s = f"  LOOP: {', '.join(sorted(loops))}" if loops else ""
+            sem = _CHANNEL_SEMANTICS.get(ch, "")
+            sem_s = f"  -- {sem}" if sem else ""
+            out.append(f"## {ch}  ({len(prods)} producers, {len(cons)} consumers){loop_s}{sem_s}")
             if prods:
                 out.append(f"  POST: {', '.join(sorted(prods))}")
             if cons:
@@ -120,26 +150,26 @@ def channel_topology(start_channel: str = "") -> str:
         # Broadcast hubs (channels with many consumers — high broadcast impact)
         hubs = [(ch, len(d["consumers"])) for ch, d in topo.items() if len(d["consumers"]) >= 4]
         if hubs:
-            out.append("## Broadcast Hubs  (≥4 consumers)")
+            out.append("## Broadcast Hubs  (>=4 consumers)")
             for ch, n_c in sorted(hubs, key=lambda x: -x[1]):
-                out.append(f"  {ch:<30} → {n_c} consumers")
+                out.append(f"  {ch:<30} -> {n_c} consumers")
             out.append("")
-        # Dead-end channels — signals posted but never consumed (evolution targets!)
-        _SYSTEM_LOOPS = {"rest-sync", "section-quality", "binaural", "instrument", "note"}
-        # emergentRhythmEngine reads these via variable patterns we can't always resolve:
-        _KNOWN_CONNECTED = {"feedbackLoop", "cadenceAlignment", "explainability",
-                            "channel-coherence", "chord"}
+        # Dead-end channels — dynamic detection
+        # Infrastructure channels that are consumed by non-JS systems (MIDI, audio, UI)
+        _INFRA_CHANNELS = {"rest-sync", "section-quality", "binaural", "instrument", "note"}
         dead_ends = [
             (ch, d["producers"])
             for ch, d in topo.items()
             if d["producers"] and not d["consumers"]
-            and ch not in _SYSTEM_LOOPS and ch not in _KNOWN_CONNECTED
+            and ch not in _INFRA_CHANNELS
         ]
         if dead_ends:
-            out.append("## Signal Dead-ends  (posted but NEVER consumed — prime evolution targets)")
-            out.append("These signals broadcast into the void. Adding consumers creates new coupling paths.\n")
+            out.append("## Signal Dead-ends  (posted but NEVER consumed -- prime evolution targets)")
+            out.append("Adding consumers creates new coupling paths.\n")
             for ch, prods in sorted(dead_ends, key=lambda x: x[0]):
+                sem = _CHANNEL_SEMANTICS.get(ch, "unknown signal type")
                 out.append(f"  {ch:<30} posted by: {', '.join(sorted(prods))}")
+                out.append(f"    carries: {sem}")
             out.append("")
         # Orphan channels — consumed but never posted (stale consumers)
         orphans = [
@@ -148,7 +178,7 @@ def channel_topology(start_channel: str = "") -> str:
             if d["consumers"] and not d["producers"]
         ]
         if orphans:
-            out.append("## Orphan Channels  (consumed but never posted — stale reads or missed producers)")
+            out.append("## Orphan Channels  (consumed but never posted -- stale reads or missed producers)")
             for ch, cons in sorted(orphans, key=lambda x: x[0]):
                 out.append(f"  {ch:<30} read by: {', '.join(sorted(cons))}")
         return "\n".join(out)
@@ -159,7 +189,9 @@ def channel_topology(start_channel: str = "") -> str:
         return (f"Channel '{ch}' not found. Known channels: "
                 + ", ".join(sorted(topo.keys())[:20]) + " ...")
 
-    out = [f"# L0 Cascade: {ch}\n"]
+    sem = _CHANNEL_SEMANTICS.get(ch, "")
+    sem_s = f"  -- {sem}" if sem else ""
+    out = [f"# L0 Cascade: {ch}{sem_s}\n"]
     visited_channels: set = set()
 
     def _show_level(channels: list, depth: int) -> None:
