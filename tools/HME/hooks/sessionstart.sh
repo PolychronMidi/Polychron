@@ -4,6 +4,10 @@ cat > /dev/null  # consume stdin
 
 PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 
+# Reset compact tab for fresh session
+mkdir -p "${PROJECT}/tmp"
+> "${PROJECT}/tmp/hme-tab.txt"
+
 # Persist HME env vars for the session
 if [ -n "$CLAUDE_ENV_FILE" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"

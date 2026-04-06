@@ -35,7 +35,8 @@
   "known_non_tool_identifiers": [
     "done_signal", "max_iterations",
     "caused_by", "fixed_by", "depends_on", "contradicts", "similar_to", "supersedes",
-    "architecture", "decision", "pattern", "bugfix"
+    "architecture", "decision", "pattern", "bugfix",
+    "_append_file_to_tab", "_extract_bg_output_path", "_tab_helpers"
   ],
 
   "registration_patterns": [

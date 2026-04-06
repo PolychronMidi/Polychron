@@ -110,7 +110,10 @@ harmonicIntervalGuard = (() => {
     const melodicCtxHIG = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const hiFreshness = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.intervalFreshness, 0.5) : 0.5;
     const freshnessBand = (hiFreshness - 0.5) * 0.06; // [-0.03 stale ... +0.03 fresh]
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand, 0.05, 0.30);
+    // R74: emergentRhythm hotspots coupling -- rhythmic burst positions widen deadband (more interval tolerance during dense moments).
+    const rhythmEntryHIG = L0.getLast('emergentRhythm', { layer: 'both' });
+    const hotspotsScaleHIG = rhythmEntryHIG && Array.isArray(rhythmEntryHIG.hotspots) ? rhythmEntryHIG.hotspots.length / 16 : 0;
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high

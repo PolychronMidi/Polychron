@@ -73,6 +73,9 @@ convergenceDetector = (() => {
     // R33: climax approach widens tolerance (pull layers together during peaks)
     const climaxEntry = L0.getLast('climax-pressure', { layer: 'both' });
     const climaxBoost = climaxEntry && Number.isFinite(climaxEntry.level) ? clamp(climaxEntry.level * 0.15, 0, 0.1) : 0;
+    // R74: tension channel coupling -- high harmonic tension from cadenceAlignment widens convergence tolerance (harmonic peaks invite rhythmic singularity).
+    const tensionEntry = L0.getLast('tension', { layer: 'both' });
+    const tensionBoost = tensionEntry && Number.isFinite(tensionEntry.tension) ? clamp((tensionEntry.tension - 0.5) * 0.2, 0, 0.1) : 0;
     // R50: emergent rhythm density widens tolerance (rhythmic activity = natural convergence opportunity)
     const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
     const emergentBoost = emergentEntry && Number.isFinite(emergentEntry.density) ? clamp(emergentEntry.density * 0.2, 0, 0.12) : 0;
@@ -87,8 +90,8 @@ convergenceDetector = (() => {
         + (melodicCtxCD.intervalFreshness < 0.45 ? 0.04 : 0),
         -0.10, 0.10)
       : 0;
-    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost + climaxBoost + emergentBoost + melodicBoostCD) * (0.6 + cimScale * 0.8);
-    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2);
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost + climaxBoost + emergentBoost + melodicBoostCD + tensionBoost) * (0.6 + cimScale * 0.8);
+    const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2 - tensionBoost * 0.3);
 
     // R33: convergence momentum -- recent convergences make the next one easier
     // R72: complexityEma coupling -- complex rhythms sustain convergence momentum longer.

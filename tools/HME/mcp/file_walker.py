@@ -16,6 +16,7 @@ DEFAULT_IGNORE_DIRS = {
     "runtime", ".idea", ".vscode", ".next",
     "coverage", ".nyc_output", ".turbo",
     ".github", "metrics", "output", "tmp", "lab",
+    "doc", "hooks",
 }
 
 IGNORE_FILES = {

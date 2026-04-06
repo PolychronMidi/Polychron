@@ -77,6 +77,33 @@
             "command": "bash tools/HME/hooks/posttooluse_pipeline_kb.sh"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/posttooluse_write.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/posttooluse_agent.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__HME__add_knowledge",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/posttooluse_addknowledge.sh"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -97,6 +124,17 @@
           {
             "type": "command",
             "command": "bash tools/HME/hooks/precompact.sh"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/postcompact.sh"
           }
         ]
       }
