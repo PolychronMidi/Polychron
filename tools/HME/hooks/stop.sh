@@ -111,17 +111,20 @@ print(count)
 fi
 
 # ── Background-launch-then-idle detection ────────────────────────────────────
-# If the assistant launched a background task (run_in_background) and then did
-# fewer than 3 tool calls after it, block: the antipattern is launching a
-# pipeline then ending the turn with a summary instead of continuing work.
+# If a pipeline was launched in background, block stopping until either:
+#   a) The output file signals pipeline completion, OR
+#   b) 20+ tool calls have been made after the launch (enough real work done)
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   IDLE_AFTER_BG=$(python3 -c "
-import json, sys
+import json, os, re, sys
+
 data = open('$TRANSCRIPT_PATH').read()
 lines = data.strip().split('\n')
 in_turn = False
 found_bg = False
 calls_after_bg = 0
+bg_output_path = None
+
 for line in reversed(lines):
     try:
         obj = json.loads(line)
@@ -136,20 +139,51 @@ for line in reversed(lines):
         break
     if in_turn:
         for block in obj.get('content', []):
-            if not isinstance(block, dict) or block.get('type') != 'tool_use':
+            if not isinstance(block, dict):
+                continue
+            # Capture background task output path from tool result
+            if block.get('type') == 'tool_result':
+                for part in block.get('content', []):
+                    if isinstance(part, dict) and part.get('type') == 'text':
+                        m = re.search(r'Output is being written to: (\S+)', part.get('text',''))
+                        if m and bg_output_path is None:
+                            bg_output_path = m.group(1)
+            if block.get('type') != 'tool_use':
                 continue
             inp = block.get('input', {})
             if block.get('name') == 'Bash' and inp.get('run_in_background'):
-                found_bg = True
+                cmd = inp.get('command', '')
+                if 'npm run main' in cmd or 'npm run snapshot' in cmd or 'node lab/run' in cmd:
+                    found_bg = True
             elif found_bg:
                 calls_after_bg += 1
-print('idle' if found_bg and calls_after_bg < 3 else 'ok')
+
+if not found_bg:
+    print('ok')
+    sys.exit(0)
+
+# Check if pipeline output file signals completion
+if bg_output_path and os.path.isfile(bg_output_path):
+    try:
+        tail = open(bg_output_path).read()[-2000:]
+        # npm run main ends with success/error markers
+        done_signals = ['Pipeline complete', 'pipeline complete', 'npm ERR!', 'Snapshot saved',
+                        'error Command failed', 'DONE', 'Finished in', 'exited with code']
+        if any(sig in tail for sig in done_signals):
+            # Pipeline done — still require minimum work was done
+            print('idle' if calls_after_bg < 5 else 'ok')
+            sys.exit(0)
+    except Exception:
+        pass
+
+# Pipeline still running (or output not readable): require 20 real calls
+print('idle' if calls_after_bg < 20 else 'ok')
 " 2>/dev/null || echo ok)
 
   if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
     jq -n '{
       "decision": "block",
-      "reason": "ANTI-IDLE: You launched a background task then stopped working. run_in_background means CONTINUE with parallel work immediately: doc updates, HME indexing, code improvements, break-point scanning, or any other pending tasks. Do NOT end your turn waiting."
+      "reason": "ANTI-IDLE: Pipeline is running in background — do NOT stop. Continue with real work now:\n1. Run index_codebase (KB stays fresh for next round)\n2. Pick next evolution targets from the suggest_evolution output and implement them\n3. Run what_did_i_forget on any recently changed files\n4. Update docs or KB entries for this round\nDo not end your turn until the pipeline completes or you have done 20+ tool calls of substantive work."
     }'
     exit 0
   fi

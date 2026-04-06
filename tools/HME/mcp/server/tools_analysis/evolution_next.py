@@ -327,8 +327,8 @@ def _describe_musical_role(name: str, path: str, narrative: str = "") -> tuple[s
 def suggest_evolution() -> str:
     """Synthesize all available signals -- hotspots, trust ecology, coupling state, perceptual
     character, uncoupled modules, KB evolution patterns -- into 3-5 ranked evolution proposals.
-    The single-call evolution planner that replaces manual research. Use after pipeline_digest
-    to decide what to evolve next."""
+    NOTE: pipeline_digest(evolve=True) now calls this automatically -- no separate call needed.
+    Call directly only when you want evolution suggestions without the full digest."""
     ctx.ensure_ready_sync()
     _track("suggest_evolution")
 

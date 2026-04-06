@@ -226,7 +226,7 @@ const intervalFreshness = melodicCtxXxx ? V.optionalFinite(melodicCtxXxx.interva
 const freshnessScale = 1.3 - intervalFreshness * 0.6;
 ```
 
-Coupled modules (22 as of R63): motifEcho, articulationComplement, texturalMirror, restSynchronizer, rhythmicComplementEngine, stutterContagion, rhythmicPhaseLock, feedbackOscillator, convergenceDetector, temporalGravity, verticalIntervalMonitor, phaseAwareCadenceWindow, cadenceAlignment, polyrhythmicPhasePredictor, emergentDownbeat, crossLayerSilhouette, grooveTransfer, velocityInterference, entropyRegulator.
+Coupled modules (26 as of R64): motifEcho, articulationComplement, texturalMirror, restSynchronizer, rhythmicComplementEngine, stutterContagion, rhythmicPhaseLock, feedbackOscillator, convergenceDetector, temporalGravity, verticalIntervalMonitor, phaseAwareCadenceWindow, cadenceAlignment, polyrhythmicPhasePredictor, emergentDownbeat, crossLayerSilhouette, grooveTransfer, velocityInterference, entropyRegulator, dynamicRoleSwap, convergenceHarmonicTrigger, spectralComplementarity, registerCollisionAvoider, convergenceVelocitySurge, motifIdentityMemory, stutterTempoFeel.
 
 ## Emergence Boundaries
 

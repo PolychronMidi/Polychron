@@ -117,8 +117,15 @@ spectralComplementarity = (() => {
     const intentDissonance = sectionIntentCurves.getLastIntent()
       ? V.optionalFinite(sectionIntentCurves.getLastIntent().dissonanceTarget, 0)
       : 0;
+    // Melodic coupling: contourShape modulates register gap-filling aggressiveness.
+    // Rising contour -> amplify nudge (build spreads across registers).
+    // Falling contour -> soften nudge (spectrum thins as phrases descend).
+    const melodicCtxSC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const contourNudgeScale = melodicCtxSC
+      ? (melodicCtxSC.contourShape === 'rising' ? 1.15 : melodicCtxSC.contourShape === 'falling' ? 0.82 : 1.0)
+      : 1.0;
     // CIM: coordinated = stronger gap-filling, independent = each layer owns spectrum
-    const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.95) * (0.4 + cimScale * 1.2);
+    const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.95) * (0.4 + cimScale * 1.2) * contourNudgeScale;
     if (rf() > analysis.gapWeight * effectiveNudge) {
       return { midi, nudged: false, targetBin: -1 };
     }

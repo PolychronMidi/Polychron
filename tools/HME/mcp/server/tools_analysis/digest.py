@@ -19,12 +19,13 @@ def _load_trace() -> list[dict]:
 
 
 @ctx.mcp.tool()
-def pipeline_digest(critique: bool = False) -> str:
+def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     """The single post-pipeline ritual. Consolidates: composition arc, regime health,
-    regime anomaly detection, top hotspot systems, dramatic moments, and run delta
-    (what changed vs last run). Pass critique=True to also append a musical prose
-    critique via Claude synthesis. Replaces pipeline_digest + regime_anomaly +
-    evolution_delta + composition_critique as separate calls."""
+    regime anomaly detection, top hotspot systems, dramatic moments, run delta
+    (what changed vs last run), and ranked evolution proposals. evolve=True (default)
+    appends suggest_evolution output so no separate call is needed. critique=True
+    appends a musical prose critique via Claude synthesis. Replaces pipeline_digest +
+    regime_anomaly + evolution_delta + composition_critique + suggest_evolution."""
     ctx.ensure_ready_sync()
     _track("pipeline_digest")
 
@@ -234,6 +235,15 @@ def pipeline_digest(critique: bool = False) -> str:
             out.append(composition_critique())
         except Exception as e:
             out.append(f"## Musical Critique\n*(unavailable: {e})*")
+
+    # --- Inline evolution suggestions (default on) ---
+    if evolve:
+        try:
+            from .evolution_next import suggest_evolution as _suggest_ev
+            out.append("\n---")
+            out.append(_suggest_ev())
+        except Exception as e:
+            out.append(f"\n## Evolution\n*(unavailable: {e})*")
 
     return "\n".join(out)
 
