@@ -182,6 +182,15 @@ entropyRegulator = (() => {
       // tessituraLoad: extreme register positions warrant more pitch variety -> raise entropy.
       const tessLoad = melodicCtxER ? V.optionalFinite(melodicCtxER.tessituraLoad, 0) : 0;
       const tessEntropy = tessLoad * 0.025; // 0 neutral ... +0.025 extreme register
+      // R79 E1: freshnessEma antagonism bridge -- novel intervals signal uncharted territory -> raise entropy.
+      // Counterpart: climaxEngine SUPPRESSES climax on freshnessEma>0.60 (R78 E3).
+      // Together: fresh melody -> entropy UP + climax DOWN (constructive opposition on same signal).
+      const freshnessEmaER = melodicCtxER ? V.optionalFinite(melodicCtxER.freshnessEma, 0.5) : 0.5;
+      const freshnessMod = clamp((freshnessEmaER - 0.5) * 0.08, 0, 0.04); // 0 at 0.5 ... +0.04 at max novelty
+      // R79 E2: ascendRatio coupling -- ascending phrases signal exploratory territory -> more entropy.
+      // Descending phrases (settling) -> less entropy. More granular than ternary registerMigrationDir.
+      const ascendRatioER = melodicCtxER ? V.optionalFinite(melodicCtxER.ascendRatio, 0.5) : 0.5;
+      const ascendMod = clamp((ascendRatioER - 0.5) * 0.06, -0.03, 0.03); // ascending +0.03 ... descending -0.03
       // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts spike entropy target.
       // Surprising rhythmic events should be more chaotic/entropic by nature.
       const rhythmEntryER = L0.getLast('emergentRhythm', { layer: 'both' });
@@ -203,7 +212,7 @@ entropyRegulator = (() => {
       // lock mode (layers synchronized) creates coherent order (reduced entropy target).
       const phaseModeER = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
       const phaseMod = phaseModeER === 'repel' ? 0.04 : phaseModeER === 'lock' ? -0.03 : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

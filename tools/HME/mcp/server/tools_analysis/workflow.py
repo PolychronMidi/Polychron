@@ -14,8 +14,8 @@ from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
-    _get_api_key, _claude_think, _local_think, _format_kb_corpus,
-    _THINK_MODEL, _REASONING_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+    _get_api_key, _claude_think, _local_think, _format_kb_corpus, _fast_claude,
+    _THINK_MODEL, _REASONING_MODEL, _LOCAL_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from . import _get_compositional_context, _track
 
@@ -199,7 +199,8 @@ def before_editing(file_path: str) -> str:
         parts.append(comp)
 
     # Adaptive synthesis: what are the specific edit risks?
-    # Cache by (abs_path, mtime) — reuse if file unchanged (eliminates repeated 20-60s Ollama waits).
+    # Uses _fast_claude (Haiku, no thinking, no tools) — 3-5x faster than Sonnet+thinking.
+    # Cache by (abs_path, mtime) — reuse if file unchanged. warm_pre_edit_cache pre-populates this.
     try:
         _cache_key = (abs_path, os.path.getmtime(abs_path))
     except Exception:
@@ -207,34 +208,11 @@ def before_editing(file_path: str) -> str:
     _be_cache = _get_before_editing_cache()
     synthesis = _be_cache.get(_cache_key)
     if synthesis is None:
-        callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
-        kb_summary = "\n".join(
-            f"  [{k['category']}] {k['title']}: {k['content'][:120]}"
-            for k in relevant_kb
-        ) if relevant_kb else "none"
-        sym_summary = ""
-        if not result.get("error") and result.get("symbols"):
-            sym_summary = ", ".join(
-                f"L{s['line']}:{s['name']}" for s in result["symbols"][:8]
-            )
-        user_text = (
-            f"File about to be edited: {rel_path}\n"
-            f"Dependents: {callers_summary}\n"
-            f"Project KB constraints for this module:\n{kb_summary}\n"
-            + (f"Recent commits: {_recent_commits[:200]}\n" if _recent_commits else "")
-            + (f"Key symbols: {sym_summary}\n" if sym_summary else "")
-            + (f"Musical context: {comp[:300]}\n" if comp else "")
-            + "\nIn 3 numbered points: what are the specific risks of editing this file? "
-            "Be concrete about which callers could break, which architectural boundaries apply, "
-            "and any invariants (coupling targets, registration order, layer isolation) that must not change. "
-            "If this module has musical impact, explain what the listener would notice if this code breaks."
+        synthesis = _build_edit_risks(
+            rel_path=rel_path, caller_files=caller_files, relevant_kb=relevant_kb,
+            symbols=result.get("symbols") if not result.get("error") else None,
+            recent_commits=_recent_commits, comp=comp,
         )
-        api_key = _get_api_key()
-        if api_key:
-            synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
-                                       max_tool_calls=_get_tool_budget())
-        if not synthesis:
-            synthesis = _local_think(user_text, max_tokens=512, model=_REASONING_MODEL)
         if synthesis:
             _be_cache[_cache_key] = synthesis
     if synthesis:
@@ -244,9 +222,50 @@ def before_editing(file_path: str) -> str:
     return "\n".join(parts)
 
 
-def warm_pre_edit_cache(max_files: int = 200) -> str:
-    """Pre-populate caller and KB caches for all src/ files so before_editing is instant.
-    Returns count of files warmed and cache hit statistics."""
+def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
+                      symbols: list | None, recent_commits: str, comp: str) -> str | None:
+    """Build and return the Edit Risks synthesis text. Shared by before_editing and warm_pre_edit_cache.
+    Uses _fast_claude (Haiku) for speed; falls back to local model if API unavailable."""
+    callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
+    kb_summary = "\n".join(
+        f"  [{k['category']}] {k['title']}: {k['content'][:120]}"
+        for k in relevant_kb
+    ) if relevant_kb else "none"
+    sym_summary = ""
+    if symbols:
+        sym_summary = ", ".join(f"L{s['line']}:{s['name']}" for s in symbols[:8])
+    user_text = (
+        f"File about to be edited: {rel_path}\n"
+        f"Dependents: {callers_summary}\n"
+        f"Project KB constraints for this module:\n{kb_summary}\n"
+        + (f"Recent commits: {recent_commits[:200]}\n" if recent_commits else "")
+        + (f"Key symbols: {sym_summary}\n" if sym_summary else "")
+        + (f"Musical context: {comp[:300]}\n" if comp else "")
+        + "\nIn 3 numbered points: what are the specific risks of editing this file? "
+        "Be concrete about which callers could break, which architectural boundaries apply, "
+        "and any invariants (coupling targets, registration order, layer isolation) that must not change. "
+        "If this module has musical impact, explain what the listener would notice if this code breaks."
+    )
+    api_key = _get_api_key()
+    synthesis = None
+    if api_key:
+        synthesis = _fast_claude(user_text, api_key)
+    if not synthesis:
+        # Fallback: qwen2.5-coder (code-specialized synthesis, ~17-34s) rather than
+        # deepseek-r1 (reasoning model, ~45-90s — overkill for 3-bullet edit risks)
+        synthesis = _local_think(user_text, max_tokens=512, model=_LOCAL_MODEL)
+    return synthesis
+
+
+def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
+    """Pre-populate caches for src/ files so before_editing is instant.
+
+    Warms two cache tiers:
+    - Tier 1 (all files): caller scan + KB hits — fast, covers max_files files
+    - Tier 2 (hot files): Edit Risks synthesis via _fast_claude — covers synthesis_hot
+      most recently modified files (highest chance of being edited next session)
+
+    Returns count of files warmed and synthesis hits pre-loaded."""
     ctx.ensure_ready_sync()
     import glob as _glob
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
@@ -254,9 +273,9 @@ def warm_pre_edit_cache(max_files: int = 200) -> str:
     js_files = [f for f in js_files if not f.endswith("index.js")][:max_files]
     _caller_cache = _get_caller_cache()
     _kb_cache = _get_kb_hits_cache()
+    _be_cache = _get_before_editing_cache()
     kb_version = getattr(ctx, "_kb_version", 0)
     warmed = 0
-    skipped = 0
     for fpath in js_files:
         module_name = os.path.basename(fpath).replace(".js", "")
         try:
@@ -270,7 +289,45 @@ def warm_pre_edit_cache(max_files: int = 200) -> str:
         if kb_key not in _kb_cache:
             _kb_cache[kb_key] = ctx.project_engine.search_knowledge(module_name, 8)
         warmed += 1
-    return f"Pre-edit cache warmed: {warmed} files (skipped {len(js_files) - warmed} already cached). before_editing calls will now be instant for these files."
+    # Tier 2: pre-synthesize Edit Risks for most recently modified files.
+    # Now cheap (Haiku, no thinking) — each call ~200ms vs 15-30s with Sonnet+thinking.
+    hot_files = sorted(js_files, key=lambda f: os.path.getmtime(f) if os.path.exists(f) else 0, reverse=True)[:synthesis_hot]
+    synth_warmed = 0
+    from structure import file_summary as _fs
+    for fpath in hot_files:
+        try:
+            mtime = os.path.getmtime(fpath)
+        except Exception:
+            continue
+        _cache_key = (fpath, mtime)
+        if _cache_key in _be_cache:
+            continue
+        module_name = os.path.basename(fpath).replace(".js", "")
+        rel_path = fpath.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
+        kb_key = (module_name, kb_version)
+        caller_key = (fpath, mtime)
+        relevant_kb = _caller_cache.get(caller_key) and _kb_cache.get(kb_key) and []
+        callers_raw = _caller_cache.get(caller_key) or []
+        caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers_raw
+                                  if module_name not in os.path.basename(r.get('file', ''))))
+        kb_results = _kb_cache.get(kb_key) or []
+        from . import _filter_kb_relevance
+        relevant_kb = _filter_kb_relevance(kb_results, module_name)
+        try:
+            sym_data = _fs(fpath)
+            symbols = sym_data.get("symbols") if not sym_data.get("error") else None
+        except Exception:
+            symbols = None
+        synthesis = _build_edit_risks(
+            rel_path=rel_path, caller_files=caller_files, relevant_kb=relevant_kb,
+            symbols=symbols, recent_commits="", comp="",
+        )
+        if synthesis:
+            _be_cache[_cache_key] = synthesis
+            synth_warmed += 1
+    return (f"Pre-edit cache warmed: {warmed} files (callers+KB). "
+            f"Synthesis pre-loaded: {synth_warmed}/{len(hot_files)} hot files. "
+            f"before_editing calls instant for all warmed files.")
 
 
 @ctx.mcp.tool()

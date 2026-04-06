@@ -524,6 +524,59 @@ def _claude_think(user_text: str, api_key: str, max_tokens: int | None = None,
     return None
 
 
+_FAST_MODEL = os.environ.get("HME_FAST_MODEL", "claude-haiku-4-5-20251001")
+
+
+def _fast_claude(user_text: str, api_key: str, system_text: str = "", max_tokens: int = 400) -> str | None:
+    """Fast Claude synthesis via Haiku — no extended thinking, no tools, no KB corpus.
+
+    Used for high-frequency, low-stakes synthesis tasks (before_editing Edit Risks)
+    where 3-5x speed matters more than depth. Haiku handles 3-bullet-point analysis
+    fine and costs ~20x less than Sonnet with extended thinking.
+    """
+    if not api_key:
+        return None
+    try:
+        import httpx
+        import time as _time
+        system = system_text or _THINK_SYSTEM
+        body = {
+            "model": _FAST_MODEL,
+            "max_tokens": max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": user_text}],
+        }
+        headers = {
+            "x-api-key": api_key,
+            "content-type": "application/json",
+            "anthropic-version": "2023-06-01",
+        }
+        t0 = _time.monotonic()
+        resp = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers=headers,
+            json=body,
+            timeout=30.0,
+        )
+        elapsed_ms = int((_time.monotonic() - t0) * 1000)
+        if resp.status_code == 200:
+            data = resp.json()
+            usage = data.get("usage", {})
+            logger.info(
+                f"_fast_claude: model={_FAST_MODEL} "
+                f"tokens={usage.get('input_tokens',0)}in/{usage.get('output_tokens',0)}out "
+                f"latency={elapsed_ms}ms"
+            )
+            return " ".join(
+                b["text"] for b in data.get("content", []) if b.get("type") == "text"
+            ).strip() or None
+        logger.warning(f"_fast_claude: HTTP {resp.status_code}: {resp.text[:200]}")
+        return None
+    except Exception as e:
+        logger.warning(f"_fast_claude: {e}")
+        return None
+
+
 def _two_stage_think(raw_context: str, question: str, max_tokens: int = 2048) -> str | None:
     """Two-stage local synthesis: coder model structures context, reasoning model thinks deeply.
 

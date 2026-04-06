@@ -276,6 +276,16 @@ Channels that are posted but never consumed are prime evolution targets — they
 - **R78 E5 `rhythmicPhaseLock.getMode()` → `entropyRegulator`**: Repel mode raises entropy target +0.04 (counter-motion inherently increases pitch/timing diversity). Lock mode lowers target -0.03 (synchronized layers create coherent order).
 - **R78 E3 `freshnessEma` → `crossLayerClimaxEngine`**: Novel melodic territory (freshnessEma > 0.60) damps climax accumulation by up to -0.08. Musical logic: fresh intervals already generate their own harmonic tension; piling climax pressure on top creates aural overload.
 
+### Fresher Melodic Territory Coupling (R79)
+
+R79 completes the `freshnessEma` antagonism bridge with `entropyRegulator` (other side already wired in R78) and adds `ascendRatio` + `densitySurprise` as new bridge signals.
+
+- **R79 E1 `freshnessEma` → `entropyRegulator`**: Novel intervals raise entropy target by up to +0.04 (range: 0 at familiar, +0.04 at maximum novelty). **Completes the bridge**: climaxEngine suppresses climax ↓ on fresh melody (R78 E3), entropyRegulator raises entropy ↑ — constructive opposition on the same signal.
+- **R79 E2 `ascendRatio` → `entropyRegulator`**: Fraction of ascending melodic intervals (0–1) modulates entropy target ±0.03. Ascending phrases (>0.5) signal exploratory territory → more entropy. Descending phrases signal settling → less. More granular than the ternary `registerMigrationDir` already present.
+- **R79 E3 `freshnessEma` → `velocityInterference`**: Novel melodic intervals amplify interference strength (both boost and reduction ceilings ×up to 1.15). Musical logic: fresh territory deserves stronger dynamic contrast to mark the unfamiliar.
+- **R79 E4 `densitySurprise` → `stutterContagion`**: Surprising rhythmic density events amplify contagion spread (gated intensity ×up to 1.10). Chaos invites more chaos — unexpected bursts propagate stutter across layers.
+- **R79 E5 `densitySurprise` → `restSynchronizer`**: Same surprise signal suppresses synchronized rests by up to -0.06. **Antagonism bridge with E4**: surprise → contagion ↑ + rest ↓. Together: rhythmic chaos keeps both layers active and spreading stutter, never breathing simultaneously.
+
 ## Emergence Boundaries
 
 Three architectural membranes:

@@ -356,13 +356,39 @@ def think(about: str, context: str = "") -> str:
         lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_hits[:10]]
         kb_block = "Relevant KB patterns and constraints:\n" + "\n".join(lines)
 
-    # Auto-inject project state for evolution/coupling/HME questions
-    _EVOLUTION_TERMS = {"evolution", "evolve", "coupling", "antagonist", "bridge", "hme",
+    # Detect meta-HME questions (about improving HME tools themselves, not the music src).
+    # Route AWAY from coupling state injection — inject HME doc summary instead.
+    _about_lower = about.lower()
+    _is_meta_hme = (
+        ("hme" in _about_lower and any(t in _about_lower for t in
+            ["tool", "tools", "ecstasy", "feature", "usage", "capability", "inducing", "workflow"]))
+        or any(t in _about_lower for t in
+            ["pipeline_digest", "before_editing", "module_intel", "coupling_intel",
+             "what_did_i_forget", "think tool", "tool evolution", "hme evolution"])
+    )
+
+    # Auto-inject project state for evolution/coupling questions (NOT for meta-HME tool questions)
+    _EVOLUTION_TERMS = {"evolution", "evolve", "coupling", "antagonist", "bridge",
                         "ecstasy", "leverage", "cluster", "organism", "xenolinguistic",
                         "improve", "analysis", "insight", "exciting", "generative", "induce"}
-    is_evolution_q = any(t.lower() in _EVOLUTION_TERMS for t in key_terms)
+    is_evolution_q = any(t.lower() in _EVOLUTION_TERMS for t in key_terms) and not _is_meta_hme
     injected_state = ""
-    if is_evolution_q and not context:
+    if _is_meta_hme and not context:
+        # Inject HME tool overview so the model reasons about HME UX, not music src
+        try:
+            hme_doc = os.path.join(ctx.PROJECT_ROOT, "doc", "HME.md")
+            if os.path.isfile(hme_doc):
+                with open(hme_doc, encoding="utf-8") as _f:
+                    injected_state = "## HME Tool Reference (from doc/HME.md):\n" + _f.read()[:3000]
+        except Exception:
+            pass
+        injected_state += "\n\n## Recent HME Evolution History (from KB):\n"
+        hme_kb = [k for k in (ctx.project_engine.list_knowledge_full() or [])
+                  if any(t in (k.get("title","") + k.get("content","")).lower()
+                         for t in ["hme", "r72", "r73", "r74", "r75", "r76", "r77", "r78", "r79"])]
+        for k in hme_kb[:6]:
+            injected_state += f"  [{k['category']}] {k['title']}: {k['content'][:200]}\n"
+    elif is_evolution_q:
         try:
             from .coupling import antagonist_map as _ant_map, dimension_gap_finder as _dim_gaps
             injected_state = "## Live Project State\n### Antagonist pairs (top creative tensions):\n"
@@ -408,6 +434,16 @@ def think(about: str, context: str = "") -> str:
     # Directive prompt for free-form questions
     if about in prompts:
         prompt = prompts[about]
+    elif _is_meta_hme:
+        prompt = (
+            f"Question: {about}\n\n"
+            f"You are reasoning about HME (HyperMeta Ecstasy) tooling improvements — "
+            f"NOT about music source code changes. Focus on: tool UX gaps, missing capabilities, "
+            f"workflows that still require manual mental work, and new tool ideas that would make "
+            f"the system feel more alive and self-aware. Reference specific tool names, "
+            f"the HME doc, and KB patterns above. Be concrete about what exists, what's missing, "
+            f"and why the gap matters for the evolution workflow. Max 5 items, no code file paths."
+        )
     else:
         prompt = (
             f"Question: {about}\n\n"
