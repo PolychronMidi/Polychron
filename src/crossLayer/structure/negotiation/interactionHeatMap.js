@@ -163,7 +163,12 @@ interactionHeatMap = (() => {
   function getBreathingRecommendation() {
     const density = getDensity();
     const beatsTracked = history.length;
-    if (density > HIGH_DENSITY_THRESHOLD) {
+    // Melodic coupling: high tessiture load -> tolerate higher interaction density.
+    // Extreme register positions need more cross-layer coordination, not less.
+    const melodicCtxIHM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const tessLoad = melodicCtxIHM ? V.optionalFinite(melodicCtxIHM.tessituraLoad, 0) : 0;
+    const effectiveHigh = HIGH_DENSITY_THRESHOLD + tessLoad * 0.12; // 0.70 neutral ... 0.82 extreme
+    if (density > effectiveHigh) {
       return { recommendation: 'decrease', density, beatsTracked };
     }
     if (density < LOW_DENSITY_THRESHOLD) {
