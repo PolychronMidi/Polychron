@@ -227,3 +227,100 @@ def regime_anomaly() -> str:
     out.extend(alerts)
     out.append(f"\nRegimes: {', '.join(f'{r}:{c}' for r, c in sorted(regime_total.items(), key=lambda x: -x[1]))}")
     return "\n".join(out)
+
+
+@ctx.mcp.tool()
+def composition_critique() -> str:
+    """Musical interpretation of the latest pipeline run. Not stats -- a critic's review
+    of what the composition sounds like, how the narrative unfolds, and where the system's
+    expression succeeds or falls flat. Reads narrative-digest, perceptual data, and
+    trace-replay for grounded musical prose."""
+    ctx.ensure_ready_sync()
+    _track("composition_critique")
+    from .synthesis import _get_api_key, _think_local_or_claude
+    import json
+
+    context_parts = []
+
+    narrative_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
+    if os.path.isfile(narrative_path):
+        try:
+            with open(narrative_path, encoding="utf-8") as f:
+                context_parts.append(f"NARRATIVE:\n{f.read()[:3000]}")
+        except Exception:
+            pass
+
+    perc_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "perceptual-report.json")
+    if os.path.isfile(perc_path):
+        try:
+            with open(perc_path) as f:
+                perc = json.load(f)
+            perc_lines = []
+            clap = perc.get("clap", {})
+            if clap:
+                perc_lines.append(f"Dominant character: {clap.get('dominant_label', '?')}")
+                for k, v in clap.items():
+                    if isinstance(v, (int, float)):
+                        perc_lines.append(f"  {k}: {v:.3f}")
+            enc = perc.get("encodec", {})
+            if enc:
+                perc_lines.append(f"CB0 entropy: {enc.get('cb0_entropy', 0):.2f}")
+                perc_lines.append(f"Tension-complexity r: {enc.get('tension_correlation', 0):.3f}")
+                sections = enc.get("sections", {})
+                for sec_id, sec_data in sorted(sections.items()):
+                    if isinstance(sec_data, dict) and "clap" in sec_data:
+                        clap_sec = sec_data["clap"]
+                        top_probe = max(clap_sec, key=clap_sec.get, default="?")
+                        perc_lines.append(
+                            f"  S{sec_id}: {top_probe} ({clap_sec.get(top_probe, 0):.3f})"
+                        )
+            if perc_lines:
+                context_parts.append("PERCEPTUAL:\n" + "\n".join(perc_lines))
+        except Exception:
+            pass
+
+    replay_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-replay.json")
+    if os.path.isfile(replay_path):
+        try:
+            with open(replay_path) as f:
+                replay = json.load(f)
+            replay_lines = []
+            for sec in replay.get("sections", []):
+                if isinstance(sec, dict):
+                    replay_lines.append(
+                        f"S{sec.get('section', '?')}: {sec.get('beats', 0)} beats, "
+                        f"regime={sec.get('dominantRegime', '?')}, "
+                        f"tension={sec.get('avgTension', 0):.2f}, "
+                        f"profile={sec.get('profile', '?')}"
+                    )
+            if replay_lines:
+                context_parts.append("SECTIONS:\n" + "\n".join(replay_lines))
+        except Exception:
+            pass
+
+    if not context_parts:
+        return "No pipeline data available. Run `npm run main` first."
+
+    user_text = (
+        "You are a music critic reviewing a live performance of an AI-composed polyrhythmic "
+        "piece. Write a 3-paragraph musical critique based on the data below. Write about "
+        "the LISTENER'S experience -- what they hear, feel, and perceive.\n\n"
+        "Paragraph 1: Opening character -- how the piece establishes its identity.\n"
+        "Paragraph 2: Development -- how the musical narrative evolves, where tension builds "
+        "and releases, moments of surprise or predictability.\n"
+        "Paragraph 3: Resolution and overall impression -- does the piece achieve coherence? "
+        "What lingers in the listener's mind?\n\n"
+        + "\n\n".join(context_parts) + "\n\n"
+        "Write in vivid, evocative prose. Reference specific sections and moments. "
+        "Be honest about weaknesses. Do NOT use technical jargon like 'regime' or 'hotspot' -- "
+        "translate everything into musical language a concert-goer would understand."
+    )
+
+    parts = ["# Composition Critique\n"]
+    synthesis = _think_local_or_claude(user_text, _get_api_key())
+    if synthesis:
+        parts.append(synthesis)
+    else:
+        parts.append("*Synthesis unavailable.*")
+
+    return "\n".join(parts)

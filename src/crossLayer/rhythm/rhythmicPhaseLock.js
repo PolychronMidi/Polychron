@@ -54,7 +54,14 @@ rhythmicPhaseLock = (() => {
     const normalizedPhase = phaseDiff > 0.5 ? 1 - phaseDiff : phaseDiff;
 
     let mode = /** @type {'lock'|'drift'|'repel'} */ ('drift');
-    const effectiveLockThreshold = LOCK_THRESHOLD * (1.5 - cimScale);
+    // R59: rising contour widens lock tolerance (layers converge as energy builds);
+    // contrary counterpoint narrows it (opposing motion should diverge, not lock).
+    const melodicCtxPL = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicLockDelta = melodicCtxPL
+      ? (melodicCtxPL.contourShape === 'rising' ? 0.06 : melodicCtxPL.contourShape === 'falling' ? -0.04 : 0)
+        + (melodicCtxPL.counterpoint === 'contrary' ? -0.08 : 0)
+      : 0;
+    const effectiveLockThreshold = clamp(LOCK_THRESHOLD * (1.5 - cimScale) + melodicLockDelta, 0.05, 0.40);
     if (normalizedPhase < effectiveLockThreshold) mode = 'lock';
     else if (normalizedPhase > REPEL_THRESHOLD) mode = 'repel';
 
@@ -79,12 +86,18 @@ rhythmicPhaseLock = (() => {
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(spBeat, 'spBeat');
 
+    const melodicCtxPLApply = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicLockStr = melodicCtxPLApply
+      ? (melodicCtxPLApply.contourShape === 'rising' ? 1.08 : melodicCtxPLApply.contourShape === 'falling' ? 0.90 : 1.0)
+      : 1.0;
+    const melodicRepelStr = melodicCtxPLApply && melodicCtxPLApply.counterpoint === 'contrary' ? 1.25 : 1.0;
+
     if (phase.mode === 'lock' && absoluteSeconds - lastLockSec >= MIN_LOCK_INTERVAL_SEC) {
       lastLockSec = absoluteSeconds;
       lockCount++;
       // Quantize: pull toward the other layer's beat grid position (in seconds)
       const otherTimeSec = phase.otherBeatSec;
-      const pull = (otherTimeSec - originalTime) * LOCK_STRENGTH;
+      const pull = (otherTimeSec - originalTime) * LOCK_STRENGTH * melodicLockStr;
       return { time: originalTime + pull, mode: 'lock', phaseDiff: phase.phaseDiff };
     }
 
@@ -92,7 +105,7 @@ rhythmicPhaseLock = (() => {
       // Push away from the other layer's grid (in seconds)
       const otherTimeSec = phase.otherBeatSec;
       const direction = originalTime >= otherTimeSec ? 1 : -1;
-      const push = spBeat * REPEL_STRENGTH * phase.phaseDiff * 0.1;
+      const push = spBeat * REPEL_STRENGTH * melodicRepelStr * phase.phaseDiff * 0.1;
       return { time: originalTime + direction * push, mode: 'repel', phaseDiff: phase.phaseDiff };
     }
 
