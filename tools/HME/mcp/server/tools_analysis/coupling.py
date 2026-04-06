@@ -93,6 +93,57 @@ def _load_trust_scores(project_root: str) -> dict:
         return {}
 
 
+def _detect_traced_modules(project_root: str) -> set:
+    """Return set of module names that appear in trace.jsonl trust data."""
+    trace_path = os.path.join(project_root, "metrics", "trace.jsonl")
+    found: set = set()
+    if not os.path.isfile(trace_path):
+        return found
+    try:
+        with open(trace_path, encoding="utf-8") as f:
+            for i, line in enumerate(f):
+                if i > 20:
+                    break  # sample first 20 beats
+                rec = json.loads(line)
+                for sys_name in rec.get("trust", {}):
+                    found.add(sys_name)
+    except Exception:
+        pass
+    return found
+
+
+def _detect_kb_covered_modules(project_root: str) -> set:
+    """Return set of module names mentioned in KB entries."""
+    found: set = set()
+    try:
+        all_entries = ctx.project_engine.search_knowledge("module", top_k=100)
+        for entry in all_entries:
+            text = (entry.get("title", "") + " " + entry.get("content", "")[:300]).lower()
+            # Match camelCase module names in KB text
+            for m in re.findall(r'[a-z][a-zA-Z]{8,}', text):
+                found.add(m)
+    except Exception:
+        pass
+    return found
+
+
+def _detect_documented_modules(project_root: str) -> set:
+    """Return set of module names mentioned in ARCHITECTURE.md or TUNING_MAP.md."""
+    found: set = set()
+    for doc in ["doc/ARCHITECTURE.md", "doc/TUNING_MAP.md"]:
+        path = os.path.join(project_root, doc)
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                content = f.read().lower()
+            for m in re.findall(r'[a-z][a-zA-Z]{8,}', content):
+                found.add(m)
+        except Exception:
+            pass
+    return found
+
+
 @ctx.mcp.tool()
 def coupling_network() -> str:
     """Show the full melodic/rhythmic coupling topology for all crossLayer modules.
@@ -179,6 +230,29 @@ def coupling_network() -> str:
         out.append("## Melodic Dimension Coverage (all coupled modules)")
         for dim, users in sorted(all_melodic_dims.items(), key=lambda x: -len(x[1])):
             out.append(f"  {dim:<28} x{len(users):2}  {', '.join(users[:6])}")
+        out.append("")
+
+    # Blind spot audit — flag uncoupled modules with missing KB/trace/docs
+    trace_modules = _detect_traced_modules(ctx.PROJECT_ROOT)
+    kb_modules = _detect_kb_covered_modules(ctx.PROJECT_ROOT)
+    doc_modules = _detect_documented_modules(ctx.PROJECT_ROOT)
+
+    blind_spots: list[tuple[str, list[str]]] = []
+    for name, _, score_str, _ in uncoupled:
+        gaps = []
+        if name not in trace_modules:
+            gaps.append("no-trace")
+        if name not in kb_modules:
+            gaps.append("no-KB")
+        if name not in doc_modules:
+            gaps.append("no-docs")
+        if gaps:
+            blind_spots.append((name, gaps))
+
+    if blind_spots:
+        out.append(f"## Blind Spots ({len(blind_spots)} uncoupled modules with intelligence gaps)")
+        for name, gaps in sorted(blind_spots, key=lambda x: -len(x[1])):
+            out.append(f"  {name:<35} [{', '.join(gaps)}]")
 
     return "\n".join(out)
 

@@ -9,6 +9,18 @@ if echo "$CMD" | grep -q 'run\.lock' && echo "$CMD" | grep -q 'rm'; then
   exit 2
 fi
 
+# Block ALL other run.lock access — reading lock status IS polling
+if echo "$CMD" | grep -q 'run\.lock'; then
+  echo '{"decision":"block","reason":"BLOCKED: Checking run.lock is pipeline status polling. Continue with other work — you will be notified when the pipeline completes."}'
+  exit 2
+fi
+
+# Block indirect pipeline polling via metric file timestamps
+if echo "$CMD" | grep -qE '(stat|ls -l).*(pipeline-summary|trace-summary|run-history|perceptual-report)'; then
+  echo '{"decision":"block","reason":"BLOCKED: Checking metric timestamps is indirect pipeline polling. Continue with other work."}'
+  exit 2
+fi
+
 # Anti-wait injection: long-running pipeline commands run in background.
 # Claude MUST continue working — NOT stop and wait for completion.
 if echo "$CMD" | grep -qE '(npm run main|npm run snapshot|node lab/run)'; then
