@@ -282,19 +282,28 @@ def _scan_coupling_state(src_root: str) -> dict:
 
 
 def _load_trust_scores(project_root: str) -> dict:
-    """Load latest per-module trust scores from trace-summary.json."""
+    """Load ALL per-module trust scores from trace-summary.json.
+    Uses trustScoreAbs (full avg scores for all systems), falling back to
+    trustDominance.dominantSystems (top 3 only)."""
     summary_path = os.path.join(project_root, "metrics", "trace-summary.json")
     if not os.path.isfile(summary_path):
         return {}
     try:
         with open(summary_path) as f:
             summary = json.load(f)
+        # Primary: trustScoreAbs has ALL systems with avg scores
+        score_abs = summary.get("trustScoreAbs", {})
+        if isinstance(score_abs, dict) and score_abs:
+            return {name: round(data.get("avg", 0), 3)
+                    for name, data in score_abs.items()
+                    if isinstance(data, dict)}
+        # Fallback: trustDominance (top 3 only)
         dom = summary.get("trustDominance", {})
-        if not isinstance(dom, dict):
-            return {}
-        systems = dom.get("dominantSystems", [])
-        return {s["system"]: round(s.get("score", 0), 3)
-                for s in systems if isinstance(s, dict) and "system" in s}
+        if isinstance(dom, dict):
+            systems = dom.get("dominantSystems", [])
+            return {s["system"]: round(s.get("score", 0), 3)
+                    for s in systems if isinstance(s, dict) and "system" in s}
+        return {}
     except Exception:
         return {}
 
