@@ -330,6 +330,52 @@ def _describe_musical_role(name: str, path: str, narrative: str = "") -> tuple[s
     return role, effect
 
 
+def _describe_rhythm_effect(name: str, field: str) -> str:
+    """Return a rhythm-coupling effect description for (module, field). No LLM."""
+    name_l = name.lower()
+    _field_map = {
+        "hotspots": {
+            "phase": "burst grid alignment tightens phase lock windows — dense rhythmic moments invite layer convergence",
+            "mirror": "hotspot density amplifies mirror intensity at burst positions — textural reflection peaks during rhythmic clusters",
+            "interval": "dense grid slots trigger deadband widening — busy rhythmic moments allow more interval tolerance",
+            "gravity": "hotspot positions strengthen temporal gravity wells — beats cluster toward rhythmically dense anchors",
+            "rest": "burst moments suppress rest synchronization — rests are deferred during hotspot activity and invited at quiet gaps",
+            "complement": "hotspot grid guides articulation accents — complementary attacks land at burst positions",
+            "silhouette": "rhythmic density amplifies silhouette contour — dense passages produce sharper cross-layer shape",
+            "cadence": "hotspot proximity shifts cadence resolve threshold — convergent bursts trigger earlier harmonic resolution",
+            "default": "burst grid positions gate key parameter — dense rhythmic moments activate, sparse moments release",
+        },
+        "complexityEma": {
+            "phase": "sustained rhythmic complexity widens phase tolerance — intricate patterns permit looser synchronization",
+            "mirror": "EMA-smoothed complexity scales mirror fidelity — complex passages earn higher reflection accuracy",
+            "interval": "cumulative complexity relaxes interval collision penalty — sustained intricacy licenses harmonic density",
+            "gravity": "complexity EMA adjusts gravity well depth — complex runs deepen the pull toward anchor beats",
+            "rest": "high complexity EMA defers rest synchronization — intricate passages earn longer runs before shared rest",
+            "default": "EMA-smoothed rhythmic complexity scales parameter amplitude — sustained intricacy earns wider range",
+        },
+        "densitySurprise": {
+            "phase": "unexpected density bursts trigger phase-lock evaluation — surprise triggers realignment attempt",
+            "mirror": "density surprise spikes mirror activation — unexpected rhythmic density produces sudden textural echo",
+            "interval": "surprise factor scales collision sensitivity — unexpected density bursts heighten harmonic alertness",
+            "default": "unexpected density deviation spikes parameter — surprise triggers momentary sensitivity boost",
+        },
+        "density": {
+            "default": "rhythmic density scales the parameter proportionally — denser passages earn proportionally higher values",
+        },
+        "complexity": {
+            "default": "per-beat rhythmic complexity scales the parameter — intricate beats earn proportionally wider range",
+        },
+        "biasStrength": {
+            "default": "rhythmic bias strength amplifies the coupling effect — stronger emergent patterns increase influence",
+        },
+    }
+    field_effects = _field_map.get(field, {"default": f"emergent {field} modulates key parameter"})
+    for kw, desc in field_effects.items():
+        if kw != "default" and kw in name_l:
+            return desc
+    return field_effects.get("default", f"emergentRhythm.{field} scales key parameter")
+
+
 def suggest_evolution() -> str:
     """Synthesize all available signals into ranked evolution proposals.
     Called automatically by pipeline_digest(evolve=True). Call directly only without the full digest."""
@@ -532,13 +578,16 @@ def suggest_evolution() -> str:
                 name, fpath, signals.get("narrative_excerpt", "")
             )
             parts.append(f"**Musical role:** {role_desc}")
-            parts.append(f"**Coupling effect:** {coupling_effect}")
             # Suggest underused rhythm field for this target
             existing_r = info.get("rhythm_dims", [])
             _RHYTHM_FIELD_PRIORITY = ["hotspots", "complexityEma", "densitySurprise", "density", "complexity", "biasStrength"]
             suggested_r = next((f for f in _RHYTHM_FIELD_PRIORITY if f not in existing_r), None)
             if is_rhythm_fallback and suggested_r:
-                parts.append(f"**Rhythm field:** `emergentEntry.{suggested_r}` (underused — currently x{len([n for n, i in coupling_state.items() if suggested_r in i.get('rhythm_dims', [])])} modules)")
+                rhythm_effect = _describe_rhythm_effect(name, suggested_r)
+                parts.append(f"**Rhythm coupling:** `{suggested_r}` → {rhythm_effect}")
+                parts.append(f"  (underused — x{len([n for n, i in coupling_state.items() if suggested_r in i.get('rhythm_dims', [])])} modules currently)")
+            else:
+                parts.append(f"**Coupling effect:** {coupling_effect}")
             # Check for KB constraints
             try:
                 kb_hits = ctx.project_engine.search_knowledge(name, top_k=2)
