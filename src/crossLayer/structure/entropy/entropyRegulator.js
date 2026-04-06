@@ -182,7 +182,11 @@ entropyRegulator = (() => {
       // tessituraLoad: extreme register positions warrant more pitch variety -> raise entropy.
       const tessLoad = melodicCtxER ? V.optionalFinite(melodicCtxER.tessituraLoad, 0) : 0;
       const tessEntropy = tessLoad * 0.025; // 0 neutral ... +0.025 extreme register
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy;
+      // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts spike entropy target.
+      // Surprising rhythmic events should be more chaotic/entropic by nature.
+      const rhythmEntryER = L0.getLast('emergentRhythm', { layer: 'both' });
+      const densitySurpriseER = rhythmEntryER && Number.isFinite(rhythmEntryER.densitySurprise) ? rhythmEntryER.densitySurprise : 0;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

@@ -114,7 +114,10 @@ texturalMirror = (() => {
       ? (melodicCtxTM.contourShape === 'rising' ? 1.12 : melodicCtxTM.contourShape === 'falling' ? 0.88 : 1.0)
         * (melodicCtxTM.counterpoint === 'contrary' ? 1.08 : 1.0)
       : 1.0;
-    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) * melodicWeightTM + coherenceBoost + spectralBoost, 0.1, 0.8);
+    // R73: emergentRhythm hotspots coupling -- rhythmic burst positions boost texture suggestion weight.
+    const rhythmEntryTM = L0.getLast('emergentRhythm', { layer: 'both' });
+    const hotspotsScaleTM = rhythmEntryTM && Array.isArray(rhythmEntryTM.hotspots) ? rhythmEntryTM.hotspots.length / 16 : 0;
+    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) * melodicWeightTM * (1.0 + hotspotsScaleTM * 0.12) + coherenceBoost + spectralBoost, 0.1, 0.8);
 
     return { preferredMode, weight };
   }

@@ -81,7 +81,10 @@ temporalGravity = (() => {
       * (melodicCtxTG.counterpoint === 'contrary' ? 0.70 : 1.0)
       * (1.0 + clamp(melodicCtxTG.thematicDensity, 0, 1) * 0.20)
       : 1.0;
-    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult;
+    // R73: hotspots coupling -- rhythmically dense burst positions strengthen gravity wells.
+    const rhythmEntryTG = L0.getLast('emergentRhythm', { layer: 'both' });
+    const hotspotsScaleTG = rhythmEntryTG && Array.isArray(rhythmEntryTG.hotspots) ? rhythmEntryTG.hotspots.length / 16 : 0;
+    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult * (1.0 + hotspotsScaleTG * 0.30);
 
     // Direction: pull toward the gravity well's time position (seconds)
     const direction = wellTimeSec > originalTimeN ? 1 : -1;
