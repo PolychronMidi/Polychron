@@ -113,7 +113,6 @@ def file_lines(file_path: str, start: int = 1, end: int = 0) -> str:
 
 
 
-@ctx.mcp.tool()
 def count_lines(path: str = "src", file_type: str = "js") -> str:
     """Count lines per file in a directory, sorted largest-first with convention warnings. Use instead of wc -l. Flags files exceeding the project's 200-line target and 250-line hard limit. Returns the top 30 files by size, total line count, and number of oversize files. Useful for identifying extraction candidates and tracking code bloat. Can also be called with a file path to count a single file."""
     from file_walker import walk_code_files
@@ -157,7 +156,6 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
 
 
 
-@ctx.mcp.tool()
 def get_context(query: str, max_tokens: int = 0, language: str = "", path: str = "") -> str:
     """Token-budgeted context assembly with auto context-window awareness.
     query is a natural-language description of what you need (NOT a file path — use file_lines for reading files, or pass file paths via the path parameter to scope results).
@@ -323,7 +321,6 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
 
 
 
-@ctx.mcp.tool()
 def find_similar_code(code_snippet: str, top_k: int = 10) -> str:
     """Find code chunks semantically similar to a given snippet. Paste a code fragment and get back the most similar chunks in the codebase, ranked by vector similarity. Useful for finding duplicated logic, parallel implementations, or code that follows the same pattern. Returns file locations, language, similarity scores, and chunk summaries."""
     ctx.ensure_ready_sync()

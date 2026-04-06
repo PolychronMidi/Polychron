@@ -35,7 +35,6 @@ def _index_main(target: str) -> dict:
     result["symbols_indexed"] = sym_result["indexed"]
     return result
 
-@ctx.mcp.tool()
 def recent_changes(since: str = "1 hour ago") -> str:
     """Show recently changed files with KB context. Great after context compaction to recover what was modified."""
     ctx.ensure_ready_sync()
@@ -143,7 +142,6 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
 
 
 
-@ctx.mcp.tool()
 def get_index_status() -> str:
     """Check the health and size of all indexes (main project and libraries). Returns file counts, chunk counts, and symbol counts. Use this to verify indexing completed successfully or to diagnose why search results are missing. If the index shows zero files, run index_codebase to build it."""
     ctx.ensure_ready_sync()
@@ -172,7 +170,6 @@ def get_index_status() -> str:
 
 
 
-@ctx.mcp.tool()
 def clear_index() -> str:
     """Delete all indexed code chunks AND immediately rebuild from scratch. Atomic: no gap for
     file watcher to repopulate stale hashes. Use when embedding model changed, chunker logic
@@ -189,7 +186,6 @@ def clear_index() -> str:
 
 
 
-@ctx.mcp.tool()
 def list_libs() -> str:
     """Show all configured external library directories and their index status. Libraries are configured via ragLibs in .mcp.json. Returns each library's file count and chunk count if indexed, or indicates whether the directory exists but is unindexed. Use index_codebase with lib='<name>' to index a specific library."""
     ctx.ensure_ready_sync()
@@ -228,7 +224,6 @@ def index_symbols() -> str:
     return f"Symbol index built: {result['indexed']} symbols ({kind_str})"
 
 # index_codebase now also rebuilds symbols — reindex() just provides a cleaner API
-@ctx.mcp.tool()
 def reindex(what: str = "codebase") -> str:
     """Rebuild the search index. what: 'codebase' (code chunks + symbols, handles both),
     'symbols' (symbol index only — faster for symbol-only changes). Replaces calling

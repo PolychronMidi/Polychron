@@ -9,7 +9,6 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
 def drama_finder(top_n: int = 10) -> str:
     """Find the N most dramatic moments in the last pipeline run: largest trust weight
     swings, regime transitions with hotspot pressure, convergence cascades. The
@@ -163,7 +162,6 @@ def drama_finder(top_n: int = 10) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def beat_snapshot(beat_key: str) -> str:
     """Show the complete system state at a specific beat: regime, all trust scores/weights,
     snap fields, coupling labels, notes emitted. A cross-section of everything happening

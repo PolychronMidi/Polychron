@@ -19,10 +19,12 @@ def _load_trace() -> list[dict]:
 
 
 @ctx.mcp.tool()
-def pipeline_digest() -> str:
-    """One-call post-pipeline analysis: composition arc + top hotspot systems + dramatic
-    moments + regime health. Run this after every pipeline to get the full picture without
-    calling 4 separate tools. The 'executive summary' of the composition."""
+def pipeline_digest(critique: bool = False) -> str:
+    """The single post-pipeline ritual. Consolidates: composition arc, regime health,
+    regime anomaly detection, top hotspot systems, dramatic moments, and run delta
+    (what changed vs last run). Pass critique=True to also append a musical prose
+    critique via Claude synthesis. Replaces pipeline_digest + regime_anomaly +
+    evolution_delta + composition_critique as separate calls."""
     ctx.ensure_ready_sync()
     _track("pipeline_digest")
 
@@ -142,11 +144,100 @@ def pipeline_digest() -> str:
             else:
                 out.append(f"  {bk}: {detail} (drama={score:.1f})")
             shown += 1
+        out.append("")
+
+    # --- Regime Anomaly (inline) ---
+    alerts: list = []
+    for expected in ["coherent", "evolving", "exploring"]:
+        if regime_total.get(expected, 0) == 0:
+            alerts.append(f"🔴 DEATH SPIRAL: 0% {expected} — check regimeClassifier warm-start")
+    for regime, count in regime_total.items():
+        if regime != "initializing" and count / total_beats > 0.75:
+            alerts.append(f"🟡 MONOPOLY: {regime} at {count*100//total_beats}% ({count}/{total_beats})")
+    trust_inflation: list = []
+    for rec in records:
+        for sys, data in rec.get("trust", {}).items():
+            if not isinstance(data, dict):
+                continue
+            w = data.get("weight", 1)
+            s = data.get("score", 0.5)
+            if isinstance(w, (int, float)) and isinstance(s, (int, float)):
+                predicted_w = 1.0 + s * 0.75
+                if w > predicted_w + 0.15 and s < 0.30:
+                    trust_inflation.append(sys)
+    from collections import Counter as _Counter
+    inflated = _Counter(trust_inflation)
+    for sys, cnt in inflated.most_common(2):
+        pct = cnt * 100 // total_beats
+        if pct > 20:
+            alerts.append(f"🟡 TRUST INFLATION: {sys} high weight / low score on {pct}% of beats")
+    if alerts:
+        out.append("## Regime Alerts")
+        out.extend(f"  {a}" for a in alerts)
+        out.append("")
+    else:
+        out.append("## Regime Health: ✓ ALL CLEAR\n")
+
+    # --- Run Delta (last 2 snapshots) ---
+    history_dir = os.path.join(ctx.PROJECT_ROOT, "metrics", "run-history")
+    if os.path.isdir(history_dir):
+        snaps = sorted([f for f in os.listdir(history_dir) if f.endswith(".json")], reverse=True)
+        if len(snaps) >= 2:
+            try:
+                def _load_snap(fname):
+                    with open(os.path.join(history_dir, fname)) as f:
+                        return json.load(f)
+                cur = _load_snap(snaps[0])
+                prev = _load_snap(snaps[1])
+                cf = cur.get("features", {})
+                pf = prev.get("features", {})
+                cp = cur.get("perceptual", {}).get("encodec", {})
+                pp = prev.get("perceptual", {}).get("encodec", {})
+                delta_lines = []
+                for label, key, fmt in [
+                    ("totalNotes", "totalNotes", ".0f"),
+                    ("densityMean", "densityMean", ".3f"),
+                    ("couplingLabels", "couplingLabelCount", ".0f"),
+                    ("tensionArc", "tensionArcShape", ".3f"),
+                ]:
+                    old_v, new_v = pf.get(key), cf.get(key)
+                    if old_v is not None and new_v is not None:
+                        d = new_v - old_v
+                        sign = "+" if d >= 0 else ""
+                        delta_lines.append(
+                            f"  {label:<16} {format(old_v, fmt)} → {format(new_v, fmt)}  ({sign}{format(d, fmt)})"
+                        )
+                for regime in ["coherentShare", "exploringShare", "evolvingShare"]:
+                    old_v, new_v = pf.get(regime, 0), cf.get(regime, 0)
+                    d = new_v - old_v
+                    sign = "+" if d >= 0 else ""
+                    delta_lines.append(
+                        f"  {regime:<16} {old_v:.1%} → {new_v:.1%}  ({sign}{d:.1%})"
+                    )
+                old_cb0 = pp.get("cb0_entropy")
+                new_cb0 = cp.get("cb0_entropy")
+                if old_cb0 is not None and new_cb0 is not None:
+                    d = new_cb0 - old_cb0
+                    sign = "+" if d >= 0 else ""
+                    delta_lines.append(f"  CB0 entropy      {old_cb0:.3f} → {new_cb0:.3f}  ({sign}{d:.3f})")
+                if delta_lines:
+                    out.append(f"## Run Delta  ({prev.get('timestamp','?')[:16]} → {cur.get('timestamp','?')[:16]})")
+                    out.extend(delta_lines)
+                    out.append("")
+            except Exception:
+                pass
+
+    # --- Optional critique ---
+    if critique:
+        try:
+            out.append("## Musical Critique")
+            out.append(composition_critique())
+        except Exception as e:
+            out.append(f"## Musical Critique\n*(unavailable: {e})*")
 
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def regime_anomaly() -> str:
     """Auto-detect regime pathologies: death spirals (0% of any expected regime),
     monopolies (>75% single regime), forced-transition storms, and trust inflation.
@@ -229,7 +320,6 @@ def regime_anomaly() -> str:
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def composition_critique() -> str:
     """Musical interpretation of the latest pipeline run. Not stats -- a critic's review
     of what the composition sounds like, how the narrative unfolds, and where the system's

@@ -222,7 +222,6 @@ def regime_timeline(row_width: int = 80) -> str:
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def regime_report(mode: str = "both", row_width: int = 80) -> str:
     """Merged regime analysis tool. mode: 'timeline' (ASCII beat-map of regime transitions),
     'anomaly' (auto-detect death spirals, monopolies, forced-transition storms),

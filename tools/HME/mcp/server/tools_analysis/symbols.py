@@ -42,7 +42,6 @@ def get_dependency_graph(file_path: str) -> str:
     return "\n\n".join(parts)
 
 
-@ctx.mcp.tool()
 def lookup_symbol(symbol_name: str, kind: str = "", language: str = "") -> str:
     """Find where a symbol is defined by exact name match. Returns the file, line number, kind (global, function, class), and signature for each match. Use kind='global' to filter to IIFE globals only, or kind='function' for inner functions. For fuzzy/semantic symbol search, use search_symbols instead."""
     ctx.ensure_ready_sync()
@@ -62,7 +61,6 @@ def lookup_symbol(symbol_name: str, kind: str = "", language: str = "") -> str:
     return f"Found {len(results)} symbol(s):\n" + "\n".join(lines)
 
 
-@ctx.mcp.tool()
 def search_symbols(query: str, top_k: int = 20, kind: str = "") -> str:
     """Semantic search across the symbol index. Unlike lookup_symbol (exact match), this finds symbols whose names or signatures are semantically similar to the query. Use kind='global' to filter to IIFE globals, 'function' for inner functions. Returns ranked results with file locations, kinds, signatures, and relevance scores."""
     ctx.ensure_ready_sync()
@@ -122,7 +120,6 @@ def get_file_summary(file_path: str) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def get_module_map(directory: str = "", max_depth: int = 3) -> str:
     """Show the directory tree structure with line counts per file. Use to get a bird's-eye view of a subsystem's organization. Set directory='src/crossLayer' or just 'crossLayer' to scope to a subdirectory, or omit for the full project. max_depth controls how deep to recurse (default 3)."""
     if directory:
@@ -140,7 +137,6 @@ def get_module_map(directory: str = "", max_depth: int = 3) -> str:
     return formatted if formatted else "Empty directory or no code files found."
 
 
-@ctx.mcp.tool()
 def type_hierarchy(type_name: str = "") -> str:
     """Show the class/interface inheritance hierarchy. With no arguments, shows all root types and their subtypes. With type_name, shows the specific type's extends/implements relationships and who extends/implements it. Useful for understanding polymorphism and interface contracts in the codebase."""
     result = _get_type_hierarchy(ctx.PROJECT_ROOT)
@@ -186,7 +182,6 @@ def type_hierarchy(type_name: str = "") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def cross_language_trace(symbol_name: str) -> str:
     """Trace a symbol across language boundaries: Rust definition, WASM bridge, and TypeScript/JavaScript callers. Reconstructs the full call chain from native code through FFI to the JS runtime. Useful for understanding cross-language dependencies and WASM integration points."""
     if not symbol_name.strip():
@@ -303,7 +298,6 @@ def get_function_body(function_name: str, file_path: str = "", language: str = "
     return "\n---\n".join(parts)
 
 
-@ctx.mcp.tool()
 def l0_channel_map(channel: str = "") -> str:
     """Map L0 channel producers and consumers. Shows which modules post to and read from
     each L0 channel. If channel is given, shows detailed view for that channel. Otherwise
