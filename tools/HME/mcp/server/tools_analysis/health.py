@@ -86,9 +86,8 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
     return sym_files, caller_counts, sym_registrations
 
 
-@ctx.mcp.tool()
 def impact_analysis(symbol_name: str, language: str = "") -> str:
-    """Analyze the impact of changing a symbol: who calls it, what it calls, and knowledge constraints."""
+    """Analyze impact of changing a symbol: callers, references, KB constraints. Internal — call via module_intel(target, mode='impact')."""
     ctx.ensure_ready_sync()
     if not symbol_name.strip():
         return "Error: symbol_name cannot be empty."

@@ -796,16 +796,31 @@ def hme_selftest() -> str:
 def hme_admin(action: str = "selftest", modules: str = "") -> str:
     """HME maintenance dispatcher. action='selftest': verify tool registration, doc sync,
     index integrity, Ollama, KB health, symlinks. action='reload': hot-reload tool modules
-    without restarting server (pass modules='health,evolution' or 'all'). action='both': reload
-    then selftest. Use after structural changes to HME tool files."""
+    without restarting server (pass modules='health,evolution' or 'all'). action='index':
+    reindex all code chunks and symbols (replaces standalone index_codebase — run after batch
+    code changes when file watcher hasn't caught up). action='clear_index': wipe hash cache +
+    chunk store then rebuild from scratch (use when hash cache is stale or index is corrupted).
+    action='both': reload then selftest. Use after structural changes to HME tool files."""
     _track("hme_admin")
     parts = []
     if action in ("reload", "both"):
         parts.append(hme_hot_reload(modules))
     if action in ("selftest", "both"):
         parts.append(hme_selftest())
+    if action == "index":
+        try:
+            from tools_index import index_codebase as _index_codebase
+            parts.append(_index_codebase())
+        except Exception as e:
+            parts.append(f"index_codebase error: {e}")
+    if action == "clear_index":
+        try:
+            from tools_index import clear_index as _clear_index
+            parts.append(_clear_index())
+        except Exception as e:
+            parts.append(f"clear_index error: {e}")
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', or 'both'."
     return "\n\n".join(parts)
 
 
