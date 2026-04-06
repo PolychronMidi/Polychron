@@ -59,7 +59,7 @@ def trust_trajectory(system_name: str) -> str:
             sections[sec]["hotspot"].append(hp)
 
     if not all_weights:
-        return f"Trust system '{system_name}' not found in trace. Check spelling — use hotspot_leaderboard for valid names."
+        return f"Trust system '{system_name}' not found in trace. Check spelling — use trust_report() (no args) for valid system names."
 
     parts_out = [f"# Trust Trajectory: {system_name}\n"]
 
@@ -190,10 +190,61 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
 
 
 @ctx.mcp.tool()
-def trust_report(system_a: str, system_b: str = "", mode: str = "both") -> str:
-    """Unified trust analysis. mode='both' (default): full report + trajectory. mode='rivalry': compare two systems. mode='trajectory': trajectory only. Replaces trust_trajectory and trust_rivalry as separate calls."""
+def trust_report(system_a: str = "", system_b: str = "", mode: str = "both") -> str:
+    """Unified trust analysis. No args → leaderboard overview of all systems.
+    system_a only → trajectory (weight/score arc, hotspot patterns, concerns).
+    system_a + system_b → rivalry (head-to-head, overtakes, dominance).
+    mode='rivalry': force rivalry mode. mode='trajectory': trajectory only."""
     ctx.ensure_ready_sync()
     _track("trust_report")
+
+    if not system_a.strip():
+        # Overview mode: sample first 200 trace records, rank all systems by avg weight
+        trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+        if not os.path.isfile(trace_path):
+            return "No trace.jsonl found. Run pipeline first."
+        try:
+            records = []
+            with open(trace_path, encoding="utf-8") as _f:
+                for _line in _f:
+                    if len(records) >= 200:
+                        break
+                    try:
+                        records.append(json.loads(_line))
+                    except Exception:
+                        continue
+            agg: dict = defaultdict(lambda: {"weights": [], "scores": [], "hotspot": []})
+            for rec in records:
+                for name, data in rec.get("trust", {}).items():
+                    if not isinstance(data, dict):
+                        continue
+                    w = data.get("weight")
+                    s = data.get("score")
+                    hp = data.get("hotspotPressure", 0)
+                    if isinstance(w, (int, float)):
+                        agg[name]["weights"].append(w)
+                    if isinstance(s, (int, float)):
+                        agg[name]["scores"].append(s)
+                    if isinstance(hp, (int, float)) and hp > 0.05:
+                        agg[name]["hotspot"].append(hp)
+
+            ranked = sorted(
+                [(n, sum(d["weights"]) / len(d["weights"]),
+                  sum(d["scores"]) / len(d["scores"]) if d["scores"] else 0,
+                  len(d["hotspot"]) / len(d["weights"]) if d["weights"] else 0)
+                 for n, d in agg.items() if d["weights"]],
+                key=lambda x: -x[1]
+            )
+            lines = [f"# Trust Leaderboard (sample: {len(records)} beats)\n",
+                     f"{'System':<28} {'AvgWeight':>9} {'AvgScore':>9} {'Hotspot%':>9}",
+                     "-" * 60]
+            for name, w, sc, hp in ranked[:25]:
+                lines.append(f"  {name:<26} {w:9.3f} {sc:9.3f} {hp*100:8.1f}%")
+            lines.append(f"\nTotal systems: {len(ranked)}  |  trust_report(system) for full trajectory")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Error building trust overview: {e}"
+
     if mode == "rivalry" or (mode == "both" and system_b.strip()):
         if not system_b.strip():
             return "Error: system_b required for rivalry mode."
