@@ -71,15 +71,34 @@ def suggest_evolution() -> str:
                 perc = json.load(f)
             clap = perc.get("clap", {})
             if clap:
-                signals["perceptual_character"] = clap.get("dominant_label", "unknown")
-                signals["perceptual_scores"] = {
-                    k: round(v, 3) for k, v in clap.items()
-                    if isinstance(v, (int, float))
+                signals["perceptual_character"] = clap.get("dominant_character", "unknown")
+                signals["perceptual_score"] = round(clap.get("dominant_score", 0), 3)
+                queries = clap.get("queries", {})
+                signals["perceptual_queries"] = {
+                    k: round(v.get("avg", 0), 3) for k, v in queries.items()
+                    if isinstance(v, dict)
                 }
             enc = perc.get("encodec", {})
             if enc:
-                signals["cb0_entropy"] = enc.get("cb0_entropy", 0)
-                signals["tension_correlation"] = enc.get("tension_correlation", 0)
+                # CB0 entropy averaged across sections
+                sections = enc.get("sections", {})
+                cb0_vals = [s["entropies"]["cb0"] for s in sections.values()
+                            if isinstance(s, dict) and "entropies" in s and "cb0" in s["entropies"]]
+                if cb0_vals:
+                    signals["cb0_entropy_mean"] = round(sum(cb0_vals) / len(cb0_vals), 3)
+                    signals["cb0_entropy_range"] = [round(min(cb0_vals), 3), round(max(cb0_vals), 3)]
+                signals["tension_complexity_r"] = round(
+                    enc.get("tension_complexity_correlation", 0), 3
+                )
+                # Per-section character
+                sec_chars = {}
+                for sec_id, sec_data in sorted(sections.items()):
+                    if isinstance(sec_data, dict) and "clap" in sec_data:
+                        sc = sec_data["clap"]
+                        top = max(sc, key=sc.get, default="?")
+                        sec_chars[f"S{sec_id}"] = f"{top}({sc.get(top, 0):.2f})"
+                if sec_chars:
+                    signals["per_section_character"] = sec_chars
         except Exception:
             pass
 
@@ -87,8 +106,24 @@ def suggest_evolution() -> str:
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
     melodic_uncoupled = _find_uncoupled_modules(src_root, "emergentMelodicEngine")
     rhythm_uncoupled = _find_uncoupled_modules(src_root, "emergentRhythmEngine")
-    signals["melodically_uncoupled"] = melodic_uncoupled[:15]
-    signals["rhythmically_uncoupled"] = rhythm_uncoupled[:15]
+    # Show basenames only, more useful for the synthesis model
+    signals["melodically_uncoupled"] = [
+        os.path.basename(m).replace(".js", "") for m in melodic_uncoupled[:15]
+    ]
+    signals["rhythmically_uncoupled"] = [
+        os.path.basename(m).replace(".js", "") for m in rhythm_uncoupled[:15]
+    ]
+    # Already-coupled modules from KB -- prevents re-suggesting done work
+    kb_recent = ctx.project_engine.search_knowledge("melodic coupling legendary", top_k=8)
+    already_coupled = set()
+    import re as _re
+    for k in kb_recent:
+        # Extract module names from KB titles (camelCase words)
+        for m in _re.findall(r'[a-z][a-zA-Z]+', k.get("title", "")):
+            if len(m) > 8:
+                already_coupled.add(m)
+    if already_coupled:
+        signals["already_coupled"] = sorted(already_coupled)
 
     # 4. Narrative excerpt
     narrative_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
@@ -135,6 +170,10 @@ def suggest_evolution() -> str:
         "**Change:** <specific structural change, not constant tweaking>\n"
         "**Musical Effect:** <what the listener hears differently>\n"
         "**Risk:** <what could break>\n\n"
+        "CRITICAL CONSTRAINTS:\n"
+        "- Do NOT suggest modules listed in 'already_coupled' -- they are done.\n"
+        "- ONLY suggest modules from 'melodically_uncoupled' or 'rhythmically_uncoupled' lists.\n"
+        "- Do NOT invent module names -- use exact names from the uncoupled lists above.\n\n"
         "Prioritize: (1) uncoupled modules with high trust scores -- these are powerful "
         "systems not yet responding to melodic/rhythmic context; (2) perceptual gaps -- "
         "where the system's intention diverges from what the audio analysis hears; "

@@ -258,15 +258,19 @@ def composition_critique() -> str:
             perc_lines = []
             clap = perc.get("clap", {})
             if clap:
-                perc_lines.append(f"Dominant character: {clap.get('dominant_label', '?')}")
-                for k, v in clap.items():
-                    if isinstance(v, (int, float)):
-                        perc_lines.append(f"  {k}: {v:.3f}")
+                perc_lines.append(f"Dominant character: {clap.get('dominant_character', '?')}")
+                perc_lines.append(f"  score: {clap.get('dominant_score', 0):.3f}")
+                for q, qv in clap.get("queries", {}).items():
+                    if isinstance(qv, dict):
+                        perc_lines.append(f"  {q}: avg={qv.get('avg', 0):.3f}")
             enc = perc.get("encodec", {})
             if enc:
-                perc_lines.append(f"CB0 entropy: {enc.get('cb0_entropy', 0):.2f}")
-                perc_lines.append(f"Tension-complexity r: {enc.get('tension_correlation', 0):.3f}")
                 sections = enc.get("sections", {})
+                cb0_vals = [s["entropies"]["cb0"] for s in sections.values()
+                            if isinstance(s, dict) and "entropies" in s and "cb0" in s["entropies"]]
+                if cb0_vals:
+                    perc_lines.append(f"CB0 entropy: mean={sum(cb0_vals)/len(cb0_vals):.2f} range=[{min(cb0_vals):.2f},{max(cb0_vals):.2f}]")
+                perc_lines.append(f"Tension-complexity r: {enc.get('tension_complexity_correlation', 0):.3f}")
                 for sec_id, sec_data in sorted(sections.items()):
                     if isinstance(sec_data, dict) and "clap" in sec_data:
                         clap_sec = sec_data["clap"]
