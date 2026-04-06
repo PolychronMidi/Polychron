@@ -57,6 +57,10 @@ emergentDownbeat = (() => {
       score += clamp(emergentEntry.density * 0.2, 0, 0.15);
       signalCount++;
     }
+    // R71: biasStrength > 0.3 indicates strong rhythmic structure -> amplify downbeat score.
+    if (emergentEntry && Number.isFinite(emergentEntry.biasStrength) && emergentEntry.biasStrength > 0.3) {
+      score += clamp(emergentEntry.biasStrength * 0.10, 0, 0.08);
+    }
 
     // convergenceTarget modulates detection threshold - more downbeats during climactic sections
     const intent = sectionIntentCurves.getLastIntent();

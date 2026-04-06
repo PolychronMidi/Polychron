@@ -115,8 +115,12 @@ velocityInterference = (() => {
     const melodicCtxVI = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const tessituraLoad = melodicCtxVI ? V.optionalFinite(melodicCtxVI.tessituraLoad, 0) : 0;
     const melodicIntensityScale = 1.0 + tessituraLoad * 0.25; // [1.0 comfortable ... 1.25 extreme]
-    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale;
-    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale;
+    // Rhythmic coupling: unexpected density surge sharpens velocity interference. Decline surprises soften it.
+    const rhythmEntryVI = L0.getLast('emergentRhythm', { layer: 'both' });
+    const densitySurpriseVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.densitySurprise) ? rhythmEntryVI.densitySurprise : 1.0;
+    const rhythmInterferenceMod = densitySurpriseVI > 1.1 ? 1.12 : densitySurpriseVI < 0.9 ? 0.92 : 1.0;
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * rhythmInterferenceMod;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * rhythmInterferenceMod;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength
