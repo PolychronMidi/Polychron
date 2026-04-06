@@ -41,7 +41,10 @@ motifEcho = (() => {
     // R55: thematic density gate -- high recall suppresses new capture (preserve existing material)
     const melodicCtx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const thematicMult = melodicCtx ? clamp(1.0 - melodicCtx.thematicDensity * 0.45, 0.55, 1.0) : 1.0;
-    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2) * thematicMult;
+    // Rhythmic coupling: strong emergent rhythm structure = natural thematic imitation moment.
+    const rhythmEntryME = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmBiasME = rhythmEntryME && Number.isFinite(rhythmEntryME.biasStrength) ? rhythmEntryME.biasStrength : 0;
+    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2) * thematicMult * (1.0 + rhythmBiasME * 0.18);
     if (notes.length >= 3 && rf() < echoProbability && pendingEchoes.length < MAX_PENDING_ECHOES) {
       captureMotif(layer, absoluteSeconds);
     }

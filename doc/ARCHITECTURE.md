@@ -187,7 +187,7 @@ All cross-layer buffer writes route through `crossLayerEmissionGateway.emit(sour
 - **Quantization grid**: 16-slot subdivision per regime-adaptive rolling window (exploring: 3 beats, coherent: 1.5, evolving: 2)
 - **Metrics**: grid density + syncopation complexity with self-calibrating EMA thresholds
 - **Bias output**: 4th link in `getRhythm.js` weight-selection bias chain (after `journeyRhythmCoupler`)
-- **Consumers**: `crossModulateRhythms`, `stutterVariants`, `convergenceDetector`, `feedbackOscillator`, `emergentDownbeat`
+- **Consumers**: `crossModulateRhythms`, `stutterVariants`, `convergenceDetector`, `feedbackOscillator`, `emergentDownbeat`; rhythmic coupling arc (R69+): `stutterContagion` (decay stickiness), `grooveTransfer` (transfer strength), `dynamicRoleSwap` (swap gate), `convergenceVelocitySurge` (surge amp), `rhythmicComplementEngine` (effective density for mode), `motifEcho` (echo probability), `articulationComplement` (contrast strength)
 - **CIM pair**: `feedbackOsc-emergentDownbeat`
 - **Feedback enrollment**: `emergentRhythmPort` in `feedbackRegistry`
 
