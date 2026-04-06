@@ -16,6 +16,12 @@ _TRUST_FILE_ALIASES: dict[str, str] = {
     "climaxEngine": "crossLayerClimaxEngine",
     "roleSwap": "dynamicRoleSwap",
     "restSync": "restSynchronizer",
+    # R72: additional aliases discovered via cluster analysis
+    "phaseLock": "rhythmicPhaseLock",
+    "convergence": "convergenceDetector",
+    "dynamicEnvelope": "crossLayerDynamicEnvelope",
+    "rhythmicComplement": "rhythmicComplementEngine",
+    "motifEcho": "motifEcho",  # same name, explicit for clarity
 }
 _FILE_TRUST_ALIASES: dict[str, str] = {v: k for k, v in _TRUST_FILE_ALIASES.items()}
 
@@ -81,6 +87,8 @@ def _scan_coupling_state(src_root: str) -> dict:
                 dims = re.findall(r'rhythmCtx\w*\s*(?:\?\.|\.)(\w+)', content)
                 # New style: rhythmEntry variable (L0.getLast pattern, R69+)
                 dims += re.findall(r'rhythmEntry\w*\.(\w+)', content)
+                # Legacy: emergentEntry variable (pre-R69 naming, e.g. convergenceDetector R50)
+                dims += re.findall(r'emergentEntry\w*\.(\w+)', content)
                 rhythm_dims = sorted(d for d in set(dims) if d in _KNOWN_RHYTHM_FIELDS)
 
             results[module_name] = {

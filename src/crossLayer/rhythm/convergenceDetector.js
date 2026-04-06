@@ -91,7 +91,9 @@ convergenceDetector = (() => {
     const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2);
 
     // R33: convergence momentum -- recent convergences make the next one easier
-    convergenceMomentum = m.max(0, convergenceMomentum - MOMENTUM_DECAY);
+    // R72: complexityEma coupling -- complex rhythms sustain convergence momentum longer.
+    const rhythmComplexEmaCD = emergentEntry && Number.isFinite(emergentEntry.complexityEma) ? emergentEntry.complexityEma : 0;
+    convergenceMomentum = m.max(0, convergenceMomentum - MOMENTUM_DECAY * (1.0 - rhythmComplexEmaCD * 0.30));
     const momentumScale = 1.0 - clamp(convergenceMomentum * 0.3, 0, 0.25);
     if (absoluteSeconds - lastConvergenceSec < effectiveInterval * momentumScale) return null;
 

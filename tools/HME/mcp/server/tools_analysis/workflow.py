@@ -21,6 +21,10 @@ from . import _get_compositional_context, _track
 
 logger = logging.getLogger("HME")
 
+# Synthesis cache: keyed by (abs_path, mtime) — reuse if file unchanged between calls.
+# This eliminates the 20-60s Ollama wait on repeated before_editing calls for the same file.
+_before_editing_synthesis_cache: dict[tuple, str] = {}
+
 @ctx.mcp.tool()
 def before_editing(file_path: str) -> str:
     """Call BEFORE editing any file. Assembles everything you need to know: KB constraints, callers, boundary rules, recent changes, and danger zones. One call replaces the entire pre-edit research workflow."""
@@ -56,9 +60,14 @@ def before_editing(file_path: str) -> str:
     except Exception:
         pass
 
-    # 1. KB constraints — filtered for actual relevance to this module
+    # 1+2. KB constraints + callers — parallel fetch (independent I/O)
     from . import _filter_kb_relevance
-    kb_results = ctx.project_engine.search_knowledge(module_name, top_k=limits["kb_entries"])
+    from concurrent.futures import ThreadPoolExecutor as _TPE
+    with _TPE(max_workers=2) as _pool:
+        _kb_fut = _pool.submit(ctx.project_engine.search_knowledge, module_name, limits["kb_entries"])
+        _cal_fut = _pool.submit(_find_callers, module_name, ctx.PROJECT_ROOT)
+        kb_results = _kb_fut.result()
+        _all_callers = _cal_fut.result()
     relevant_kb = _filter_kb_relevance(kb_results, module_name)
     if relevant_kb:
         parts.append(f"## KB Constraints ({len(relevant_kb)} entries)")
@@ -70,8 +79,7 @@ def before_editing(file_path: str) -> str:
         parts.append("## KB Constraints: none found\n")
 
     # 2. Who depends on this?
-    callers = _find_callers(module_name, ctx.PROJECT_ROOT)
-    callers = [r for r in callers if module_name not in os.path.basename(r.get('file', ''))]
+    callers = [r for r in _all_callers if module_name not in os.path.basename(r.get('file', ''))]
     caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
     caller_limit = limits["callers"]
     parts.append(f"## Dependents ({len(caller_files)} files)")
@@ -124,35 +132,43 @@ def before_editing(file_path: str) -> str:
         parts.append(comp)
 
     # Adaptive synthesis: what are the specific edit risks?
-    callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
-    kb_summary = "\n".join(
-        f"  [{k['category']}] {k['title']}: {k['content'][:120]}"
-        for k in relevant_kb
-    ) if relevant_kb else "none"
-    sym_summary = ""
-    if not result.get("error") and result.get("symbols"):
-        sym_summary = ", ".join(
-            f"L{s['line']}:{s['name']}" for s in result["symbols"][:8]
+    # Cache by (abs_path, mtime) — reuse if file unchanged (eliminates repeated 20-60s Ollama waits).
+    try:
+        _cache_key = (abs_path, os.path.getmtime(abs_path))
+    except Exception:
+        _cache_key = (abs_path, 0)
+    synthesis = _before_editing_synthesis_cache.get(_cache_key)
+    if synthesis is None:
+        callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
+        kb_summary = "\n".join(
+            f"  [{k['category']}] {k['title']}: {k['content'][:120]}"
+            for k in relevant_kb
+        ) if relevant_kb else "none"
+        sym_summary = ""
+        if not result.get("error") and result.get("symbols"):
+            sym_summary = ", ".join(
+                f"L{s['line']}:{s['name']}" for s in result["symbols"][:8]
+            )
+        user_text = (
+            f"File about to be edited: {rel_path}\n"
+            f"Dependents: {callers_summary}\n"
+            f"Project KB constraints for this module:\n{kb_summary}\n"
+            + (f"Recent commits: {_recent_commits[:200]}\n" if _recent_commits else "")
+            + (f"Key symbols: {sym_summary}\n" if sym_summary else "")
+            + (f"Musical context: {comp[:300]}\n" if comp else "")
+            + "\nIn 3 numbered points: what are the specific risks of editing this file? "
+            "Be concrete about which callers could break, which architectural boundaries apply, "
+            "and any invariants (coupling targets, registration order, layer isolation) that must not change. "
+            "If this module has musical impact, explain what the listener would notice if this code breaks."
         )
-    user_text = (
-        f"File about to be edited: {rel_path}\n"
-        f"Dependents: {callers_summary}\n"
-        f"Project KB constraints for this module:\n{kb_summary}\n"
-        + (f"Recent commits: {_recent_commits[:200]}\n" if _recent_commits else "")
-        + (f"Key symbols: {sym_summary}\n" if sym_summary else "")
-        + (f"Musical context: {comp[:300]}\n" if comp else "")
-        + "\nIn 3 numbered points: what are the specific risks of editing this file? "
-        "Be concrete about which callers could break, which architectural boundaries apply, "
-        "and any invariants (coupling targets, registration order, layer isolation) that must not change. "
-        "If this module has musical impact, explain what the listener would notice if this code breaks."
-    )
-    api_key = _get_api_key()
-    synthesis = None
-    if api_key:
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
-                                   max_tool_calls=_get_tool_budget())
-    if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
+        api_key = _get_api_key()
+        if api_key:
+            synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
+                                       max_tool_calls=_get_tool_budget())
+        if not synthesis:
+            synthesis = _local_think(user_text, max_tokens=512, model=_REASONING_MODEL)
+        if synthesis:
+            _before_editing_synthesis_cache[_cache_key] = synthesis
     if synthesis:
         parts.append(f"\n## Edit Risks *(adaptive)*")
         parts.append(synthesis)
@@ -218,7 +234,7 @@ def what_did_i_forget(changed_files: str) -> str:
         for d in sorted(doc_updates_needed):
             parts.append(f"  - {d}")
     parts.append(f"\n## Reminders")
-    parts.append("  - index_codebase after running pipeline")
+    parts.append("  - hme_admin(action='index') after batch changes (file watcher handles individual saves)")
     parts.append("  - add_knowledge for any new calibration anchors or decisions")
 
     # Adaptive synthesis: always run when API key available — missed things aren't only in warnings
