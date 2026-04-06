@@ -228,6 +228,24 @@ const freshnessScale = 1.3 - intervalFreshness * 0.6;
 
 Coupled modules (37 as of R68): motifEcho, articulationComplement, texturalMirror, restSynchronizer, rhythmicComplementEngine, stutterContagion, rhythmicPhaseLock, feedbackOscillator, convergenceDetector, temporalGravity, verticalIntervalMonitor, phaseAwareCadenceWindow, cadenceAlignment, polyrhythmicPhasePredictor, emergentDownbeat, crossLayerSilhouette, grooveTransfer, velocityInterference, entropyRegulator, dynamicRoleSwap, convergenceHarmonicTrigger, spectralComplementarity, registerCollisionAvoider, convergenceVelocitySurge, motifIdentityMemory, stutterTempoFeel, pitchMemoryRecall, convergenceMemory, crossLayerDynamicEnvelope, negotiationEngine, harmonicIntervalGuard, trustEcologyCharacter, contextualTrust, interactionHeatMap, crossLayerClimaxEngine, coordinationIndependenceManager, emergentRhythmEngine.
 
+## L0 Channel Evolution
+
+### Dead-End Channel Harvests
+
+Channels that are posted but never consumed are prime evolution targets — they carry information the system already computes but doesn't use. Harvesting them creates new signal pathways without additional computation:
+
+- **R76 E1 `harmonicFunction` → `convergenceHarmonicTrigger`**: `harmonicFunctionGraph` posts `{fn, chordRoot, keyRoot}` per beat (T/S/D/A function). `convergenceHarmonicTrigger` now reads this: when convergence fires with no explicit cadence alignment and melodic direction is indeterminate, harmonic function primes the change type — `D` (dominant) → `tonic-reaffirm`; `T` (tonic) → `dominant-push`. Activates the channel for the first time.
+
+### Antagonism Bridges
+
+**Pattern (R73/R75/R76):** When two modules are negatively correlated (r < -0.5), they form a *structural anti-correlation* — their peaks naturally oppose each other. Rather than suppressing this, couple both sides bidirectionally to create *constructive opposition*.
+
+- **R73:** `entropyRegulator ↔ crossLayerSilhouette` (r=-0.696) bridged via `emergentRhythm.densitySurprise` — both sides respond to surprising rhythmic bursts with opposing effects.
+- **R75:** `dynamicRoleSwap ↔ harmonicIntervalGuard` bridged via `registerMigrationDir` — ascending register migration amplifies role-swap probability while narrowing HIG interval guard.
+- **R76:** `entropyRegulator ↔ climaxEngine` (r=-0.604) bridged bidirectionally:
+  - `climaxEngine.tick()` reads `entropy` channel: high smoothed entropy (> 0.55) damps climax accumulation — chaotic texture can't sustain coherent climax peaks.
+  - `entropyRegulator.setTarget()` reads `climax-pressure` channel: approaching climax pulls entropy target down — peaks need definition, not chaos.
+
 ## Emergence Boundaries
 
 Three architectural membranes:

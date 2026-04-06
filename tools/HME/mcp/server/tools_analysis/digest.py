@@ -63,16 +63,17 @@ def check_pipeline() -> str:
         return "pipeline.log is empty."
 
     stripped = [l.rstrip() for l in lines if l.strip()]
-    last2 = stripped[-2:] if len(stripped) >= 2 else stripped
-    last3 = stripped[-3:] if len(stripped) >= 3 else stripped
     last30 = "\n".join(stripped[-30:])
+    last10 = stripped[-10:] if len(stripped) >= 10 else stripped
 
-    # In-progress: last 2 non-empty lines each start with "script in progress"
-    if last2 and all(l.startswith("script in progress") for l in last2):
+    # In-progress: ANY of the last 5 non-empty lines starts with "script in progress"
+    # (pipeline prints this once per step, not as a continuous stream)
+    last5 = stripped[-5:] if len(stripped) >= 5 else stripped
+    if any(l.startswith("script in progress") for l in last5):
         return "Pipeline: IN PROGRESS"
 
-    # Finished: "Pipeline finished" appears in last 3 non-empty lines
-    finished = next((l for l in reversed(last3) if "Pipeline finished" in l), None)
+    # Finished: "Pipeline finished" appears in last 10 non-empty lines
+    finished = next((l for l in reversed(last10) if "Pipeline finished" in l), None)
     if finished:
         return f"Pipeline: {finished.strip()}"
 

@@ -326,7 +326,8 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 
 | Tool | Use For |
 |------|---------|
-| `pipeline_digest` | **ONE-CALL post-pipeline summary**: arc + hotspots + drama + regime health |
+| `pipeline_digest` | **ONE-CALL post-pipeline summary**: arc + hotspots + drama + regime health. Freshness-gated — auto-runs `check_pipeline` if no new output since last digest. |
+| `check_pipeline` | Read `pipeline.log` → IN PROGRESS / finished line / FAILED+last 30 lines. Only permitted way to check pipeline status. |
 | `composition_events(mode)` | mode='arc': per-section biography (regime, tension, trust, coupling). mode='drama': top-N dramatic moments. mode='both' (default). |
 | `regime_report(mode)` | mode='timeline': ASCII regime visualization. mode='anomaly': regime health. mode='both' (default). |
 | `hotspot_leaderboard` | Rank trust systems by hotspot frequency and pressure |

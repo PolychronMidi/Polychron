@@ -185,6 +185,32 @@ def section_compare(section_a: int, section_b: int) -> str:
         for lbl in shared_sorted:
             parts_out.append(f"  = {_coupling_label_display(lbl)}")
 
+    # Narrative synthesis — one sentence distilling what the listener hears at this transition
+    from .synthesis import _two_stage_think
+    from .trust_analysis import TRUST_MUSICAL_MEANING as _TMM
+    top_winner = winners[0] if winners else None
+    top_loser = losers[0] if losers else None
+    winner_role = _TMM.get(top_winner[1], "") if top_winner else ""
+    loser_role = _TMM.get(top_loser[1], "") if top_loser else ""
+    syn_ctx = (
+        f"Section {section_a} vs {section_b} transition in a generative alien music composition.\n"
+        f"S{section_a}: dominant regime {max(sa['regimes'], key=lambda r: sa['regimes'][r])}, "
+        f"tension={avg_a:.3f}, notes/beat={avg_notes_a:.0f}\n"
+        f"S{section_b}: dominant regime {max(sb['regimes'], key=lambda r: sb['regimes'][r])}, "
+        f"tension={avg_b:.3f}, notes/beat={avg_notes_b:.0f}\n"
+        f"Tension delta: {delta:+.3f}  |  Notes delta: {avg_notes_b - avg_notes_a:+.0f}/beat\n"
+        + (f"Trust winner: {top_winner[1]} ({winner_role}) +{top_winner[0]:.3f}\n" if top_winner else "")
+        + (f"Trust loser: {top_loser[1]} ({loser_role}) {top_loser[0]:.3f}\n" if top_loser else "")
+        + (f"New coupling: {next(iter(new_labels), '')}\n" if new_labels else "")
+    )
+    narrative = _two_stage_think(
+        syn_ctx,
+        f"Write ONE sentence (max 40 words) describing what a listener would HEAR at the S{section_a}→S{section_b} transition. Be specific about texture, tension feel, and sonic character."
+    )
+    if narrative and len(narrative.strip()) > 10:
+        parts_out.append(f"\n## What You Hear")
+        parts_out.append(f"  {narrative.strip()}")
+
     # Cross-reference suggestions
     parts_out.append(f"\n---")
     parts_out.append(f"See also: regime_report(mode='drama') for tension spikes and trust reversals")

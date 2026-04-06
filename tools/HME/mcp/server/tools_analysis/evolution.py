@@ -589,6 +589,29 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
             avg = r["sum"] / r["count"]
             parts.append(f"  {k}: {r['min']:.3f} - {r['max']:.3f} (avg {avg:.3f}, n={r['count']})")
 
+    # Musical interpretation — what did this module actually DO for the composition?
+    from .trust_analysis import TRUST_MUSICAL_MEANING as _TM_TQ
+    from .synthesis import _two_stage_think as _tst_tq
+    musical_role = _TM_TQ.get(module, "")
+    avg_score_tq = (numeric_ranges["score"]["sum"] / numeric_ranges["score"]["count"]) if "score" in numeric_ranges else None
+    avg_weight_tq = (numeric_ranges["weight"]["sum"] / numeric_ranges["weight"]["count"]) if "weight" in numeric_ranges else None
+    dom_regime_tq = max(regime_counts, key=lambda r: regime_counts[r]) if regime_counts else "?"
+    if avg_score_tq is not None:
+        _w_str_tq = f"{avg_weight_tq:.3f}" if avg_weight_tq is not None else "?"
+        _hp_rate_tq = numeric_ranges.get("hotspot", {}).get("count", 0) / max(len(beats), 1)
+        interp_ctx = (
+            f"Trust system '{module}' in a generative alien music composition.\n"
+            + (f"Musical role: {musical_role}\n" if musical_role else "")
+            + f"avg_score={avg_score_tq:.3f} avg_weight={_w_str_tq}\n"
+            + f"dominant regime: {dom_regime_tq}\n"
+            + f"hotspot_rate: {_hp_rate_tq:.2f}\n"
+        )
+        interp = _tst_tq(interp_ctx,
+            f"In ONE sentence (max 35 words), interpret what '{module}' was actually doing to the music — was it active/passive, helping/competing, what did the listener hear?")
+        if interp and len(interp.strip()) > 10:
+            parts.append(f"\n### Musical Interpretation")
+            parts.append(f"  {interp.strip()}")
+
     # Regime transitions — the musically dramatic moments
     transitions = []
     prev_regime = None

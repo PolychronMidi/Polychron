@@ -12,8 +12,40 @@ from analysis import get_dependency_graph as _get_dep_graph, find_similar_code a
 
 logger = logging.getLogger("HME")
 
+_GLOBALS_DTS_PATH = "src/types/globals.d.ts"
+_GLOBALS_CACHE: list[str] | None = None
+
+
+def _get_architectural_globals() -> list[str]:
+    """Extract architectural (module-level) global names from globals.d.ts.
+    Filters to names >= 10 chars to skip utility functions (clamp, rf, m, etc.).
+    Results are cached for the server lifetime."""
+    global _GLOBALS_CACHE
+    if _GLOBALS_CACHE is not None:
+        return _GLOBALS_CACHE
+    import re as _re
+    dts_path = os.path.join(ctx.PROJECT_ROOT, _GLOBALS_DTS_PATH)
+    if not os.path.isfile(dts_path):
+        _GLOBALS_CACHE = []
+        return _GLOBALS_CACHE
+    names: list[str] = []
+    try:
+        with open(dts_path, encoding="utf-8") as _f:
+            for _line in _f:
+                m = _re.match(r"^declare var ([a-zA-Z_]\w+)\s*:", _line)
+                if m:
+                    name = m.group(1)
+                    if len(name) >= 10:  # architectural globals only
+                        names.append(name)
+    except Exception:
+        pass
+    _GLOBALS_CACHE = names
+    return _GLOBALS_CACHE
+
+
 def get_dependency_graph(file_path: str) -> str:
     """Map import/require dependency graph for a file. Internal — call via file_intel(path, mode='deps')."""
+    import re as _re
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
@@ -38,6 +70,20 @@ def get_dependency_graph(file_path: str) -> str:
         parts.append(f"Imported by ({len(result['imported_by'])}):\n" + "\n".join(lines))
     else:
         parts.append("Imported by: none")
+
+    # Referenced globals — architectural globals (>=10 chars) referenced in this file.
+    # Require-based deps miss all globals; this surfaces the actual module dependencies.
+    if abs_path and os.path.isfile(abs_path):
+        try:
+            src = open(abs_path, encoding="utf-8").read()
+            arch_globals = _get_architectural_globals()
+            # Only report globals that appear as standalone identifiers (word boundary)
+            referenced = [g for g in arch_globals if _re.search(r'\b' + _re.escape(g) + r'\b', src)]
+            if referenced:
+                parts.append(f"Referenced Globals ({len(referenced)}):\n" +
+                              "\n".join(f"  {g}" for g in sorted(referenced)))
+        except Exception:
+            pass
 
     return "\n\n".join(parts)
 

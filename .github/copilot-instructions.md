@@ -199,7 +199,7 @@ Master executive for hypermeta evolutionary intelligence. Not just 45 MCP tools 
 /HME
 before_editing "src/crossLayer/structure/form/crossLayerClimaxEngine.js"  -- pre-edit briefing
 search_code "where does convergence detection happen"                     -- semantic search
-module_story "crossLayerClimaxEngine"                                     -- living biography
+module_intel "crossLayerClimaxEngine"                                     -- living biography
 what_did_i_forget "src/time/setBpm.js,src/time/setMeter.js"             -- post-change audit
 codebase_health                                                           -- full-repo sweep
 knowledge_graph "density suppression"                                     -- connected KB entries
