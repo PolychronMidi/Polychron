@@ -21,9 +21,13 @@ from . import _get_compositional_context, _track
 
 logger = logging.getLogger("HME")
 
-# Synthesis cache: keyed by (abs_path, mtime) — reuse if file unchanged between calls.
+# Synthesis cache lives on ctx (survives module hot-reloads — ctx is not in RELOADABLE).
+# Keyed by (abs_path, mtime) — reuse if file unchanged between calls.
 # This eliminates the 20-60s Ollama wait on repeated before_editing calls for the same file.
-_before_editing_synthesis_cache: dict[tuple, str] = {}
+def _get_before_editing_cache() -> dict:
+    if not hasattr(ctx, "_before_editing_synthesis_cache"):
+        ctx._before_editing_synthesis_cache = {}
+    return ctx._before_editing_synthesis_cache
 
 @ctx.mcp.tool()
 def before_editing(file_path: str) -> str:
@@ -137,7 +141,8 @@ def before_editing(file_path: str) -> str:
         _cache_key = (abs_path, os.path.getmtime(abs_path))
     except Exception:
         _cache_key = (abs_path, 0)
-    synthesis = _before_editing_synthesis_cache.get(_cache_key)
+    _be_cache = _get_before_editing_cache()
+    synthesis = _be_cache.get(_cache_key)
     if synthesis is None:
         callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
         kb_summary = "\n".join(
@@ -168,7 +173,7 @@ def before_editing(file_path: str) -> str:
         if not synthesis:
             synthesis = _local_think(user_text, max_tokens=512, model=_REASONING_MODEL)
         if synthesis:
-            _before_editing_synthesis_cache[_cache_key] = synthesis
+            _be_cache[_cache_key] = synthesis
     if synthesis:
         parts.append(f"\n## Edit Risks *(adaptive)*")
         parts.append(synthesis)
