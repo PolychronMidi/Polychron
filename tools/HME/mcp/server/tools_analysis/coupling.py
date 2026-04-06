@@ -893,6 +893,11 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         # Virgin field bonus; fewer total users = higher score
         return 1.0 / (1 + users)
 
+    # Action-specific archetypes: use module action label instead of generic chaos/order description.
+    # "articulation" and "transfer" modules have distinct behaviors (stutter spread, groove transfer)
+    # that don't match the generic "spike entropy" chaos description.
+    _ACTION_SPECIFIC_ARCHETYPES = {"articulation", "transfer", "breath", "resonance"}
+
     def _opposing_recipe(arch_a: tuple, arch_b: tuple, field: str) -> tuple[str, str]:
         """Return (effect_a, effect_b) for a constructive antagonism bridge."""
         g = _FIELD_GUIDE.get(field, {})
@@ -902,15 +907,27 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         closing_types = {"harmony", "pulse", "phase", "breath"}       # tighten on signal
         a_is_chaos = arch_a[0] in chaos_types
         b_is_chaos = arch_b[0] in chaos_types
+        # Breath/pulse archetypes INVERT: they suppress when the chaos side rises
+        _invert_archetypes = {"breath", "pulse", "phase"}
+
+        def _action_eff(arch: tuple, field: str, invert: bool = False) -> str:
+            if arch[0] in _ACTION_SPECIFIC_ARCHETYPES:
+                arrow = "↓" if invert else "↑"
+                suffix = " (suppresses during chaos rise)" if invert else ""
+                return f"{arch[1]} {arrow} at high {field}{suffix}"
+            return ""
+
         if a_is_chaos and not b_is_chaos:
             # a opens/spikes, b tightens/sharpens
-            eff_a = g.get("chaos_up") or f"{arch_a[1]} ↑ on high {field}"
-            eff_b = g.get("order_up") or f"{arch_b[1]} tightens on high {field}"
+            eff_a = _action_eff(arch_a, field) or g.get("chaos_up") or f"{arch_a[1]} ↑ on high {field}"
+            b_inverts = arch_b[0] in _invert_archetypes
+            eff_b = _action_eff(arch_b, field, invert=b_inverts) or g.get("order_up") or f"{arch_b[1]} tightens on high {field}"
             return eff_a, eff_b
         if b_is_chaos and not a_is_chaos:
             # b opens/spikes, a tightens/sharpens
-            eff_a = g.get("order_up") or f"{arch_a[1]} tightens on high {field}"
-            eff_b = g.get("chaos_up") or f"{arch_b[1]} ↑ on high {field}"
+            a_inverts = arch_a[0] in _invert_archetypes
+            eff_a = _action_eff(arch_a, field, invert=a_inverts) or g.get("order_up") or f"{arch_a[1]} tightens on high {field}"
+            eff_b = _action_eff(arch_b, field) or g.get("chaos_up") or f"{arch_b[1]} ↑ on high {field}"
             return eff_a, eff_b
         # Both opening or both closing — create constructive complementarity
         # One partner amplifies on signal, the other SUPPRESSES (inverse response)
