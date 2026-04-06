@@ -322,19 +322,36 @@ def think(about: str, context: str = "") -> str:
         except Exception:
             pass
 
-    # For dead-channel / signal questions: inject actual channel topology with producer/consumer counts
+    # For dead-channel / signal questions: inject topology + producer source code
     _CHANNEL_TERMS = {"channel", "signal", "dead", "consumer", "producer", "l0", "posted", "consumed", "harvest"}
     is_channel_q = any(t.lower() in _CHANNEL_TERMS for t in key_terms) or any(t.lower() in _CHANNEL_TERMS for t in _re.findall(r'\b\w+\b', about.lower()))
     if is_channel_q and not context:
         try:
-            from .coupling import channel_topology as _ch_topo
+            from .coupling import channel_topology as _ch_topo, _scan_l0_topology
             topo = _ch_topo()
-            # Extract dead-end channels section only (concise)
             dead_start = topo.find("Dead-end")
             if dead_start == -1:
                 dead_start = topo.find("0 consumers")
             channel_block = topo[dead_start:dead_start + 800] if dead_start != -1 else topo[:600]
             injected_state = (injected_state or "") + "\n\n## L0 Dead-End Channels (no consumers — prime harvest targets):\n" + channel_block
+
+            # Inject producer source for mentioned channels so model sees real L0.post field names
+            src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+            l0_topo = _scan_l0_topology(src_root)
+            mentioned_channels = [w for w in _re.findall(r'[a-zA-Z][a-zA-Z-]+', about) if w in l0_topo]
+            if mentioned_channels:
+                from .synthesis import _read_module_source
+                for ch_name in mentioned_channels[:2]:
+                    producers = l0_topo[ch_name].get("producers", [])
+                    for prod in producers[:1]:
+                        src = _read_module_source(prod, max_chars=1500)
+                        if src:
+                            # Extract just the L0.post call and its surrounding context
+                            post_match = _re.search(r'L0\.post\([^)]+\{[^}]+\}', src, _re.DOTALL)
+                            if post_match:
+                                start = max(0, post_match.start() - 100)
+                                snippet = src[start:post_match.end() + 50]
+                                injected_state += f"\n\n## Producer source for '{ch_name}' (from {prod}.js):\n```\n{snippet}\n```"
         except Exception:
             pass
 
@@ -372,29 +389,35 @@ def think(about: str, context: str = "") -> str:
                 parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
             return "\n".join(parts)
 
-    # Ollama path: prepend Polychron system context so local model is grounded
-    _POLYCHRON_SYSTEM = (
-        "You are HME, the analysis engine for Polychron — a self-evolving generative music system. "
-        "RULES: Only reference modules, files, and signals that appear in the KB or project state below. "
-        "Never invent module names. Never give generic software advice. "
+    # Ollama path: two-stage synthesis (coder structures, reasoner thinks deeply)
+    from .synthesis import _two_stage_think
+    raw_context = ""
+    if injected_state:
+        raw_context += injected_state + "\n\n"
+    if context:
+        raw_context += f"Additional context: {context}\n\n"
+    if kb_block:
+        raw_context += kb_block + "\n\n"
+    # Clarify channel jargon for local models
+    if is_channel_q:
+        raw_context += (
+            "TERMINOLOGY: 'dead-end channel' means an L0 channel that is posted (produced) but has "
+            "ZERO consumers — no module reads it. 'Consuming' a dead-end channel means adding "
+            "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
+        )
+    raw_context += (
         "Polychron modules: motifEcho, entropyRegulator, harmonicIntervalGuard, convergenceDetector, "
         "dynamicRoleSwap, stutterContagion, feedbackOscillator, temporalGravity, crossLayerSilhouette, "
         "texturalMirror, rhythmicPhaseLock, polyrhythmicPhasePredictor, restSynchronizer, "
         "registerCollisionAvoider, spectralComplementarity, grooveTransfer, phaseAwareCadenceWindow. "
-        "L0 channels read via: L0.getLast('channelName', { layer: 'both' }). "
-        "Coupling pattern: const entry = L0.getLast('emergentRhythm', {layer:'both'}); const val = entry?.fieldName ?? 0. "
-        "Be terse, file-specific, signal-specific."
+        "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
+        "Each channel posts specific fields — check the producer source code above for exact field names. "
+        "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
+        "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
     )
-    user_text = f"{_POLYCHRON_SYSTEM}\n\n**Task:** {prompt}"
-    if injected_state:
-        user_text += f"\n\n{injected_state}"
-    if context:
-        user_text += f"\n\n**Additional context:** {context}"
-    if kb_block:
-        user_text += f"\n\n{kb_block}"
-    local_answer = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
+    local_answer = _two_stage_think(raw_context, prompt)
     if local_answer:
-        parts = [f"# Think: {about} *(local)*\n", local_answer]
+        parts = [f"# Think: {about} *(two-stage)*\n", local_answer]
         if kb_hits:
             parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
         return "\n".join(parts)
