@@ -167,6 +167,11 @@ rhythmicComplementEngine = (() => {
     });
     const realtimeDensity = densityRhythmEntry ? V.optionalFinite(densityRhythmEntry.density, 0.5) : 0.5;
     const density = V.optionalFinite(intent.densityTarget, 0.5) * 0.5 + realtimeDensity * 0.5;
+    // Rhythmic coupling: high emergent rhythm complexity adds to effective density for mode selection.
+    // Syncopated/complex rhythm patterns favor interlocking modes (hocket/antiphony) over free.
+    const rhythmEntryRCE = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmComplexityRCE = rhythmEntryRCE && Number.isFinite(rhythmEntryRCE.complexity) ? rhythmEntryRCE.complexity : 0;
+    const effectiveDensity = clamp(density + rhythmComplexityRCE * 0.15, 0, 1);
 
     // Xenolinguistic: phase convergence prediction -> pre-position for canon before convergence
     const phaseEntry = L0.getLast('phaseConvergence', { layer: 'both' });
@@ -198,12 +203,12 @@ rhythmicComplementEngine = (() => {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');
     } else if (otherIsDense && interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
-    } else if (currentRegime === 'exploring' && density > HIGH_DENSITY && interaction > MODERATE_INTERACTION) {
+    } else if (currentRegime === 'exploring' && effectiveDensity > HIGH_DENSITY && interaction > MODERATE_INTERACTION) {
       // Lab R2: hocket+high-entropy was "great" -favor hocket during dense exploring
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
-    } else if (interaction > HIGH_INTERACTION && density < LOW_DENSITY) {
+    } else if (interaction > HIGH_INTERACTION && effectiveDensity < LOW_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('hocket');
-    } else if (interaction > HIGH_INTERACTION && density > HIGH_DENSITY) {
+    } else if (interaction > HIGH_INTERACTION && effectiveDensity > HIGH_DENSITY) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('antiphony');
     } else if (interaction > MODERATE_INTERACTION) {
       mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('canon');

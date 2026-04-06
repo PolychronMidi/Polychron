@@ -94,7 +94,11 @@ grooveTransfer = (() => {
     const melodicCtxGT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const intervalFreshness = melodicCtxGT ? V.optionalFinite(melodicCtxGT.intervalFreshness, 0.5) : 0.5;
     const melodicDampingScale = 0.8 + intervalFreshness * 0.4; // [0.8 stale ... 1.2 fresh]
-    const effectiveDamping = DAMPING * (1.3 - cimScale * 0.6) * melodicDampingScale;
+    // Rhythmic coupling: complex cross-layer rhythm = layers creating structure together -> amplify transfer.
+    const rhythmEntryGT = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmComplexityGT = rhythmEntryGT && Number.isFinite(rhythmEntryGT.complexity) ? rhythmEntryGT.complexity : 0;
+    const rhythmDampingMod = 1.0 + rhythmComplexityGT * 0.12; // [1.0-1.12] complex->stronger transfer
+    const effectiveDamping = DAMPING * (1.3 - cimScale * 0.6) * melodicDampingScale * rhythmDampingMod;
     return timeInSeconds + localTransfer * effectiveDamping * coherenceFactor;
   }
 

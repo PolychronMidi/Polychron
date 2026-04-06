@@ -67,7 +67,10 @@ dynamicRoleSwap = (() => {
     const contourSwapBoost = melodicCtxDRS
       ? (melodicCtxDRS.contourShape === 'falling' ? 0.08 : melodicCtxDRS.contourShape === 'rising' ? -0.08 : 0)
       : 0;
-    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost, 0, 1);
+    // Rhythmic coupling: strong emergent rhythm structure (high biasStrength) = natural role exchange moment.
+    const rhythmEntryDRS = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmBiasBoost = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.biasStrength) && rhythmEntryDRS.biasStrength > 0.4 ? 0.06 : 0;
+    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost + rhythmBiasBoost, 0, 1);
     if (rf() > gate) {
       return { swapped: false, swapCount };
     }

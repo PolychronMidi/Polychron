@@ -40,7 +40,12 @@ stutterContagion = (() => {
     const sctLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
     const tempoEntry = L0.getLast('tickDuration', { layer: sctLayer });
     const bpmScale = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;
-    return baseResult * clamp(0.8 + bpmScale * 0.2, 0.85, 1.15);
+    // Rhythmic coupling: dense emergent rhythm = stickier contagion (lower decay).
+    // When the cross-layer rhythm grid is busy, stutter infection propagates more readily.
+    const rhythmEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmDensity = rhythmEntry && Number.isFinite(rhythmEntry.density) ? rhythmEntry.density : 0;
+    const rhythmDecayMod = 1.0 - rhythmDensity * 0.12; // [0.88-1.0] dense->sticky
+    return baseResult * clamp(0.8 + bpmScale * 0.2, 0.85, 1.15) * rhythmDecayMod;
   }
 
   /**
