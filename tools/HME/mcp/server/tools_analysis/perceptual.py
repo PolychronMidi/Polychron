@@ -98,10 +98,14 @@ def _load_audio_sections(wav_path: str, sr: int = 22050) -> list[tuple[int, any]
 def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int = 3) -> str:
     """Unified perceptual audio analysis. Runs EnCodec, CLAP, or both on combined.wav.
     analysis: 'encodec' (neural token entropy per section), 'clap' (text↔audio similarity),
-              or 'both' (default). queries: comma-separated CLAP queries (CLAP only).
+    'both' (default), or 'intent_loop' (CLAP character drift across last N run-history
+    snapshots — shows whether the perceptual feedback loop is converging, oscillating, or stalled).
+    queries: comma-separated CLAP queries (CLAP only).
     Replaces calling audio_encodec + audio_clap separately — one call, one model-load cycle."""
     ctx.ensure_ready_sync()
     _track("audio_analyze")
+    if analysis == "intent_loop":
+        return _run_intent_loop()
     wav_path = _get_wav_path()
     if not os.path.isfile(wav_path):
         return "No combined.wav found. Run `npm run render` first."
@@ -111,8 +115,93 @@ def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int =
     if analysis in ("clap", "both"):
         parts.append(_run_clap(wav_path, queries))
     if not parts:
-        return f"Unknown analysis type '{analysis}'. Use 'encodec', 'clap', or 'both'."
+        return f"Unknown analysis type '{analysis}'. Use 'encodec', 'clap', 'both', or 'intent_loop'."
     return "\n\n".join(parts)
+
+
+def _run_intent_loop(max_runs: int = 6) -> str:
+    """Track CLAP section character across consecutive run-history snapshots.
+    Detects whether the perceptual feedback loop (CLAP→sectionIntentCurves→character)
+    is converging, oscillating, or stalled per section."""
+    history_dir = os.path.join(ctx.PROJECT_ROOT, "metrics", "run-history")
+    if not os.path.isdir(history_dir):
+        return "No run-history directory. Run `node scripts/pipeline/snapshot-run.js --perceptual` to build history."
+
+    snapshots = sorted(
+        [f for f in os.listdir(history_dir) if f.endswith(".json")],
+        reverse=True
+    )[:max_runs]
+    if len(snapshots) < 2:
+        return f"Need at least 2 perceptual snapshots (found {len(snapshots)}). Run pipeline with --perceptual flag."
+
+    # Load snapshots oldest→newest
+    snapshots = list(reversed(snapshots))
+    run_data: list[dict] = []
+    for fname in snapshots:
+        try:
+            with open(os.path.join(history_dir, fname)) as f:
+                snap = json.load(f)
+            perc = snap.get("perceptual", {})
+            enc = perc.get("encodec", {})
+            secs = enc.get("sections", {})
+            run_data.append({
+                "ts": snap.get("timestamp", fname)[:16],
+                "verdict": snap.get("verdict", "?"),
+                "sections": secs,
+            })
+        except Exception:
+            continue
+
+    if len(run_data) < 2:
+        return "Could not load perceptual section data from snapshots. Check if --perceptual flag was used."
+
+    # Gather all section IDs
+    all_sec_ids = sorted(set(
+        int(k) for rd in run_data for k in rd["sections"].keys()
+        if str(k).isdigit()
+    ))
+
+    out = [f"# Perceptual Intent Loop ({len(run_data)} runs)\n"]
+    out.append("Tracking CLAP character drift: converging = same direction change, oscillating = reversals, stalled = <0.03 delta\n")
+
+    for sec_id in all_sec_ids:
+        # Collect dominant CLAP character per run for this section
+        chars: list[tuple[str, float, str]] = []
+        for rd in run_data:
+            sec_data = rd["sections"].get(str(sec_id), {})
+            clap_data = sec_data.get("clap", {})
+            if not clap_data:
+                continue
+            dominant = max(clap_data, key=lambda k: clap_data[k], default="?")
+            score = clap_data.get(dominant, 0.0)
+            chars.append((dominant, score, rd["ts"]))
+
+        if len(chars) < 2:
+            continue
+
+        # Detect loop state
+        scores = [c[1] for c in chars]
+        deltas = [scores[i+1] - scores[i] for i in range(len(scores)-1)]
+        last_dominant = chars[-1][0]
+        first_dominant = chars[0][0]
+
+        if all(d < -0.03 for d in deltas):
+            loop_state = "CONVERGING ▼ (intent suppression working)"
+        elif all(d > 0.03 for d in deltas):
+            loop_state = "CONVERGING ▲ (intent amplification)"
+        elif all(abs(d) < 0.03 for d in deltas):
+            loop_state = "STALLED (no character shift across runs)"
+        elif any(d > 0 for d in deltas) and any(d < 0 for d in deltas):
+            loop_state = "OSCILLATING (loop not settling)"
+        else:
+            loop_state = f"unclear ({first_dominant}→{last_dominant})"
+
+        out.append(f"**S{sec_id}** {loop_state}")
+        for char, score, ts in chars:
+            out.append(f"  {ts}  {char:<20} {score:.3f}")
+        out.append("")
+
+    return "\n".join(out)
 
 
 def _run_encodec(wav_path: str, top_sections: int = 3) -> str:

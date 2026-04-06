@@ -11,6 +11,15 @@ from . import _track, _load_trace
 logger = logging.getLogger("HME")
 
 
+# Trust system name → crossLayer file name aliases (names differ between trust registry and filesystem)
+_TRUST_FILE_ALIASES: dict[str, str] = {
+    "climaxEngine": "crossLayerClimaxEngine",
+    "roleSwap": "dynamicRoleSwap",
+    "restSync": "restSynchronizer",
+}
+_FILE_TRUST_ALIASES: dict[str, str] = {v: k for k, v in _TRUST_FILE_ALIASES.items()}
+
+
 def _pearson(xs: list, ys: list) -> float:
     """Compute Pearson correlation without numpy."""
     n = len(xs)
@@ -107,6 +116,8 @@ def _detect_traced_modules(project_root: str) -> set:
                 rec = json.loads(line)
                 for sys_name in rec.get("trust", {}):
                     found.add(sys_name)
+                    if sys_name in _TRUST_FILE_ALIASES:
+                        found.add(_TRUST_FILE_ALIASES[sys_name])  # resolve to file-based name
     except Exception:
         pass
     return found
@@ -258,18 +269,21 @@ def _format_clusters(clusters, corr, modules, n_beats, coupling_state, trust, mi
         for m_name in cluster_sorted:
             t = trust.get(m_name)
             t_str = f"{t:.2f}" if t is not None else "  ?"
-            info = coupling_state.get(m_name, {})
+            # Resolve trust-name aliases to file-based coupling state (e.g. climaxEngine → crossLayerClimaxEngine)
+            file_name = _TRUST_FILE_ALIASES.get(m_name, m_name)
+            info = coupling_state.get(m_name, {}) or coupling_state.get(file_name, {})
+            display_name = file_name if file_name != m_name else m_name
             tag = "[MEL]" if info.get("melodic") else "[---]"
 
             others = [o for o in cluster if o != m_name]
             top2 = sorted(others, key=lambda o: corr.get((m_name, o), 0), reverse=True)[:2]
             r_strs = "  ".join(f"r={corr.get((m_name, o), 0):+.2f}->{o}" for o in top2)
 
-            out.append(f"  {tag} {m_name:<35} trust={t_str}  {r_strs}")
+            out.append(f"  {tag} {display_name:<35} trust={t_str}  {r_strs}")
 
-        targets = [m_name for m_name in cluster_sorted
-                   if not coupling_state.get(m_name, {}).get("melodic")
-                   and not coupling_state.get(m_name, {}).get("rhythm")]
+        targets = [_TRUST_FILE_ALIASES.get(m_name, m_name) for m_name in cluster_sorted
+                   if not (coupling_state.get(m_name, {}) or coupling_state.get(_TRUST_FILE_ALIASES.get(m_name, m_name), {})).get("melodic")
+                   and not (coupling_state.get(m_name, {}) or coupling_state.get(_TRUST_FILE_ALIASES.get(m_name, m_name), {})).get("rhythm")]
         if targets:
             out.append(f"  >> Uncoupled: {', '.join(targets[:8])}")
 
