@@ -300,17 +300,35 @@ def think(about: str, context: str = "") -> str:
         except Exception:
             pass
 
+    # For dead-channel / signal questions: inject actual channel topology with producer/consumer counts
+    _CHANNEL_TERMS = {"channel", "signal", "dead", "consumer", "producer", "l0", "posted", "consumed", "harvest"}
+    is_channel_q = any(t.lower() in _CHANNEL_TERMS for t in key_terms) or any(t.lower() in _CHANNEL_TERMS for t in _re.findall(r'\b\w+\b', about.lower()))
+    if is_channel_q and not context:
+        try:
+            from .coupling import channel_topology as _ch_topo
+            topo = _ch_topo()
+            # Extract dead-end channels section only (concise)
+            dead_start = topo.find("Dead-end")
+            if dead_start == -1:
+                dead_start = topo.find("0 consumers")
+            channel_block = topo[dead_start:dead_start + 800] if dead_start != -1 else topo[:600]
+            injected_state = (injected_state or "") + "\n\n## L0 Dead-End Channels (no consumers — prime harvest targets):\n" + channel_block
+        except Exception:
+            pass
+
     # Directive prompt for free-form questions
     if about in prompts:
         prompt = prompts[about]
     else:
         prompt = (
-            f"Topic: {about}\n\n"
-            f"Give SPECIFIC, actionable suggestions grounded in the project state and KB above. "
-            f"For each suggestion: state WHAT to implement, WHICH file/function to change, "
-            f"and WHY it improves the system. "
-            f"If a suggestion is already implemented per the KB, mark it [DONE] and skip it. "
-            f"Focus on 3–5 highest-impact, genuinely novel ideas."
+            f"Question: {about}\n\n"
+            f"You have the KB context and project state injected above. "
+            f"Answer DIRECTLY using only the modules, signals, and patterns shown in the KB and project state. "
+            f"Do NOT invent hypothetical systems. Do NOT use generic advice. "
+            f"For each answer: name the exact FILE (e.g. src/crossLayer/harmony/X.js), "
+            f"the exact FUNCTION to modify, the exact SIGNAL FIELD to read, "
+            f"and the musical effect in one sentence. "
+            f"If something is already done per the KB, skip it. Max 4 items."
         )
 
     # Claude API path
@@ -334,13 +352,16 @@ def think(about: str, context: str = "") -> str:
 
     # Ollama path: prepend Polychron system context so local model is grounded
     _POLYCHRON_SYSTEM = (
-        "You are HME (HyperMeta Engine), the analysis intelligence for Polychron — a self-evolving "
-        "generative music system. Polychron has ~27 cross-layer modules (trust-weighted, 0–1 scores), "
-        "two polyrhythmic layers (L1/L2), emergent rhythm (6 L0 channels → 16-slot grid, fields: "
-        "density, complexity, biasStrength, densitySurprise, hotspots, complexityEma) and emergent "
-        "melody engines (contourShape, registerMigrationDir, tessituraLoad, etc.). Evolution rounds "
-        "R1–R73+ couple modules to these signals for xenolinguistic texture. Give project-specific, "
-        "actionable suggestions. Reference actual module names, signal fields, and coupling patterns."
+        "You are HME, the analysis engine for Polychron — a self-evolving generative music system. "
+        "RULES: Only reference modules, files, and signals that appear in the KB or project state below. "
+        "Never invent module names. Never give generic software advice. "
+        "Polychron modules: motifEcho, entropyRegulator, harmonicIntervalGuard, convergenceDetector, "
+        "dynamicRoleSwap, stutterContagion, feedbackOscillator, temporalGravity, crossLayerSilhouette, "
+        "texturalMirror, rhythmicPhaseLock, polyrhythmicPhasePredictor, restSynchronizer, "
+        "registerCollisionAvoider, spectralComplementarity, grooveTransfer, phaseAwareCadenceWindow. "
+        "L0 channels read via: L0.getLast('channelName', { layer: 'both' }). "
+        "Coupling pattern: const entry = L0.getLast('emergentRhythm', {layer:'both'}); const val = entry?.fieldName ?? 0. "
+        "Be terse, file-specific, signal-specific."
     )
     user_text = f"{_POLYCHRON_SYSTEM}\n\n**Task:** {prompt}"
     if injected_state:

@@ -186,7 +186,10 @@ entropyRegulator = (() => {
       // Surprising rhythmic events should be more chaotic/entropic by nature.
       const rhythmEntryER = L0.getLast('emergentRhythm', { layer: 'both' });
       const densitySurpriseER = rhythmEntryER && Number.isFinite(rhythmEntryER.densitySurprise) ? rhythmEntryER.densitySurprise : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06;
+      // R75: motifEcho coupling -- imitative counterpoint activity suppresses entropy target (fugue structure invites order).
+      const motifEchoEntry = L0.getLast('motifEcho', { layer: 'both' });
+      const motifEchoMod = motifEchoEntry ? (motifEchoEntry.delayBeats <= 2 ? -0.04 : -0.02) : 0;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06 + motifEchoMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;
