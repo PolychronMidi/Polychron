@@ -215,6 +215,12 @@ crossLayerClimaxEngine = (() => {
     const effDim = V.optionalFinite(bridgeSignals.effectiveDimensionality, 3);
     const dimRegisterBias = effDim < 2.5 ? clamp((2.5 - effDim) / 1.5, 0, 1) * 4 : effDim > 4.0 ? clamp((effDim - 4.0) / 2.0, 0, 1) * -2 : 0;
     const dimVelScale = effDim < 2.5 ? 1.0 + clamp((2.5 - effDim) / 1.5, 0, 1) * 0.15 : 1.0;
+    // Melodic coupling: directionBias steers register spread at climax.
+    // Ascending direction -> widen register (building energy needs space);
+    // descending -> compress (falling motion consolidates range).
+    const melodicCtxCCE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const dirBias = melodicCtxCCE ? V.optionalFinite(melodicCtxCCE.directionBias, 0) : 0;
+    const melodicRegBias = dirBias * 2.5; // [-2.5 descending ... +2.5 ascending]
     // R38: trust velocity anticipation -- lean into rising trust, back off falling
     const motifTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.MOTIF_ECHO), 1.0), 1.0);
     const stutterTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION), 1.0), 1.0);
@@ -228,7 +234,7 @@ crossLayerClimaxEngine = (() => {
     return {
       playProbScale: (1.0 + intensity * MAX_PLAY_BOOST * climaxPlayAllowance * (1 - playSuppression) + convDensityBoost) * trustStutterMod,
       velocityScale: (1.0 + intensity * MAX_VELOCITY_BOOST) * velSoftening * trustVelMod * dimVelScale,
-      registerBias: intensity * MAX_REGISTER_WIDEN + spectralSpread + indCompensation + contraryBias + dimRegisterBias + trustRegBias + colorRegisterBias,
+      registerBias: intensity * MAX_REGISTER_WIDEN + spectralSpread + indCompensation + contraryBias + dimRegisterBias + trustRegBias + colorRegisterBias + melodicRegBias,
       entropyTarget: ENTROPY_BASE + intensity * ENTROPY_BOOST * entropyRegimeScale * (1 - totalSuppression * 0.3)
     };
   }
