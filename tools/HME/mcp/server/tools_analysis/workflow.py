@@ -129,6 +129,26 @@ def before_editing(file_path: str) -> str:
             if len(result["symbols"]) > sym_limit:
                 parts.append(f"  ... and {len(result['symbols']) - sym_limit} more symbols")
 
+    # L0 Signal I/O — what channels this file reads and posts
+    try:
+        import re as _re
+        with open(abs_path, encoding="utf-8", errors="ignore") as _mf:
+            _src = _mf.read()
+        _posts = sorted(set(_re.findall(r"L0\.post\('([^']+)'", _src)))
+        _chan_vars = dict(_re.findall(r"const\s+(\w+)\s*=\s*'([^']+)'", _src))
+        for _var, _ch in _chan_vars.items():
+            if _re.search(r"L0\.post\(" + _re.escape(_var) + r"\b", _src):
+                _posts = sorted(set(_posts + [_ch]))
+        _reads = sorted(set(_re.findall(r"L0\.getLast\('([^']+)'", _src)))
+        if _posts or _reads:
+            parts.append(f"\n## L0 Signal I/O")
+            if _posts:
+                parts.append(f"  POSTS: {', '.join(_posts)}")
+            if _reads:
+                parts.append(f"  READS: {', '.join(_reads)}")
+    except Exception:
+        pass
+
     # Musical context
     comp = _get_compositional_context(module_name)
     if comp:

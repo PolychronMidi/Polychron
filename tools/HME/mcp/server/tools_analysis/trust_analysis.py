@@ -13,6 +13,43 @@ logger = logging.getLogger("HME")
 from . import _load_trace  # noqa: F401 — shared helper
 
 
+# Trust system → what the listener hears (shared with section_compare drama_map)
+TRUST_MUSICAL_MEANING: dict[str, str] = {
+    "restSynchronizer": "coordinated breathing/silence",
+    "stutterContagion": "rhythmic infection spreading",
+    "motifEcho": "imitative counterpoint",
+    "convergenceDetector": "pattern locking",
+    "convergence": "pattern locking",
+    "convergenceHarmonicTrigger": "harmonic-driven convergence",
+    "convergenceVelocitySurge": "velocity-driven intensity",
+    "dynamicRoleSwap": "voice role exchange",
+    "roleSwap": "voice role exchange",
+    "harmonicIntervalGuard": "interval/dissonance control",
+    "feedbackOscillator": "oscillatory feedback texture",
+    "temporalGravity": "density gravity pull",
+    "crossLayerSilhouette": "timbral silhouette shaping",
+    "texturalMirror": "spectral mirroring",
+    "rhythmicPhaseLock": "phase synchronization",
+    "phaseLock": "phase synchronization",
+    "rhythmicComplementEngine": "rhythmic complementarity",
+    "rhythmicComplement": "rhythmic complementarity",
+    "grooveTransfer": "groove pattern transfer",
+    "emergentDownbeat": "spontaneous accent",
+    "articulationComplement": "articulation diversity",
+    "phaseAwareCadenceWindow": "cadence timing",
+    "climaxEngine": "climax building",
+    "crossLayerClimaxEngine": "climax building",
+    "dynamicEnvelope": "dynamic envelope shaping",
+    "coherenceMonitor": "coherence tracking",
+    "entropyRegulator": "entropy regulation",
+    "velocityInterference": "velocity interference patterns",
+    "verticalIntervalMonitor": "vertical interval tracking",
+    "spectralComplementarity": "spectral complement matching",
+    "registerCollisionAvoider": "register collision avoidance",
+    "polyrhythmicPhasePredictor": "polyrhythmic phase prediction",
+}
+
+
 def trust_trajectory(system_name: str) -> str:
     """Show how a trust system's weight and score evolved section-by-section across the
     full run — its 'career arc'. Reveals if a system is gaining trust, losing it, or
@@ -261,10 +298,11 @@ def trust_report(system_a: str = "", system_b: str = "", mode: str = "both") -> 
                 key=lambda x: -x[1]
             )
             lines = [f"# Trust Leaderboard (sample: {len(records)} beats)\n",
-                     f"{'System':<28} {'AvgWeight':>9} {'AvgScore':>9} {'Hotspot%':>9}",
-                     "-" * 60]
+                     f"{'System':<28} {'AvgWeight':>9} {'AvgScore':>9} {'Hotspot%':>9}  Musical Role",
+                     "-" * 85]
             for name, w, sc, hp in ranked[:25]:
-                lines.append(f"  {name:<26} {w:9.3f} {sc:9.3f} {hp*100:8.1f}%")
+                role = TRUST_MUSICAL_MEANING.get(name, "")
+                lines.append(f"  {name:<26} {w:9.3f} {sc:9.3f} {hp*100:8.1f}%  {role}")
             lines.append(f"\nTotal systems: {len(ranked)}  |  trust_report(system) for full trajectory")
             return "\n".join(lines)
         except Exception as e:
