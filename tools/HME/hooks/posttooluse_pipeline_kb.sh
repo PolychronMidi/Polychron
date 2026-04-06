@@ -27,13 +27,18 @@ try:
     beats = s.get('beats', {}).get('totalEntries', '?')
     sections = len(s.get('sectionStats', []))
 
-    print(f'TRACE SUMMARY for KB: {beats} beats, {sections} sections. ', end='')
-    print(f'Regimes: coherent={coherent:.0%}, exploring={exploring:.0%}. ', end='')
+    SUMMARY_LINE = f'{beats} beats, {sections} sections. Regimes: coherent={coherent:.0%}, exploring={exploring:.0%}.'
     if top_trust:
-        print(f'Top trust: ' + ', '.join(f'{k}={v:.2f}' for k,v in top_trust) + '. ', end='')
+        SUMMARY_LINE += ' Top trust: ' + ', '.join(f'{k}={v:.2f}' for k,v in top_trust) + '.'
     if coupling:
-        print(f'Coupling: ' + ', '.join(coupling) + '.', end='')
-    print()
+        SUMMARY_LINE += ' Coupling: ' + ', '.join(coupling) + '.'
+    print(f'TRACE SUMMARY for KB: {SUMMARY_LINE}')
+    # Write pending KB anchor to tab
+    import os
+    tab = os.path.join('$PROJECT', 'tmp', 'hme-tab.txt')
+    os.makedirs(os.path.dirname(tab), exist_ok=True)
+    with open(tab, 'a') as f:
+        f.write(f'KB: pipeline run complete — {SUMMARY_LINE}\n')
 except Exception as e:
     print(f'Could not parse trace-summary: {e}', file=sys.stderr)
 " >&2

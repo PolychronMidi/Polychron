@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-# HME PostToolUse: Bash — Evolver phase triggers after pipeline/snapshot/lab
+# HME PostToolUse: Bash — background file tracking + Evolver phase triggers
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_tab_helpers.sh"
+
 INPUT=$(cat)
 CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
+
+# Track background task output files to compact tab
+BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
+[[ -n "$BG_FILE" ]] && _append_file_to_tab "$BG_FILE"
 
 if echo "$CMD" | grep -q 'npm run main'; then
   cat >&2 <<'MSG'

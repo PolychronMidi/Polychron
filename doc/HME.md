@@ -370,18 +370,25 @@ Starts at **15% confidence** — verify against listening before trusting. Confi
 
 All hooks live in `tools/HME/hooks/` as standalone scripts, referenced from `.claude/settings.json`. This keeps hook logic version-controlled, testable, and visible from the HME directory.
 
-### Hook Scripts (9 hooks across 6 lifecycle events)
+### Hook Scripts (14 hooks across 7 lifecycle events)
+
+All hooks share `_tab_helpers.sh` for deduped tab operations (`_append_file_to_tab`, `_extract_bg_output_path`).
 
 | Script | Event | Matcher | What It Does |
 |--------|-------|---------|-------------|
-| `sessionstart.sh` | SessionStart | * | Inject HME awareness, persist `$HME_ACTIVE` env var |
+| `sessionstart.sh` | SessionStart | * | Reset compact tab, inject HME awareness, persist `$HME_ACTIVE` env var |
 | `pretooluse_edit.sh` | PreToolUse | Edit | Remind: `before_editing` or `search_knowledge` for src/ files |
 | `pretooluse_grep.sh` | PreToolUse | Grep | Soft warn: prefer HME `grep()` for KB enrichment |
 | `pretooluse_write.sh` | PreToolUse | Write | Lab rules for `sketches.js`: audible postBoot, no empty sketches |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock` + suggest HME `file_lines`/`count_lines` |
-| `posttooluse_bash.sh` | PostToolUse | Bash | Evolver phases 5-7 after `npm run main`, KB persist after snapshot, lab check |
+| `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers |
+| `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
+| `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
+| `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
+| `posttooluse_addknowledge.sh` | PostToolUse | add_knowledge | Clear `KB:` entries from tab after save |
 | `userpromptsubmit.sh` | UserPromptSubmit | * | Inject Evolver context on evolution-related prompts |
-| `precompact.sh` | PreCompact | * | Remind to save KB anchors and note file paths before compaction |
+| `precompact.sh` | PreCompact | * | Surface `KB:`/`FILE:` entries from tab + untracked `tmp/` files |
+| `postcompact.sh` | PostCompact | * | Re-surface the same tab state after compaction |
 | `stop.sh` | Stop | * | Verify all work is implemented in code, not just documented |
 
 ### Plugin-Ready

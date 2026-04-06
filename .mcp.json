@@ -4,6 +4,7 @@
       "type": "stdio",
       "command": "python3",
       "args": ["/home/jah/Polychron/tools/HME/mcp/server/main.py"],
+      "ragIgnoreDirs": ["doc", "hooks"],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
         "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME",

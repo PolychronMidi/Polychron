@@ -1,6 +1,7 @@
 """HME synthesis engine — Claude API + Ollama local model."""
 import json
 import os
+import re
 import time
 import logging
 import threading
@@ -352,7 +353,9 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) 
             if any(m in text_lower for m in _hallucination_markers):
                 logger.info(f"_local_think: suppressed hallucinated output ({len(text)} chars)")
                 return None
-            return text
+            # Strip non-ASCII (multilingual model leakage: CJK, emoji, etc.)
+            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            return text if text else None
     except Exception as e:
         logger.debug(f"_local_think unavailable: {e}")
         return None

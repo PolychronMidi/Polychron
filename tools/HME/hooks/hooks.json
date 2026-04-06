@@ -31,6 +31,24 @@
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_bash.sh", "timeout": 10},
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_pipeline_kb.sh", "timeout": 10}
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_write.sh", "timeout": 10}
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_agent.sh", "timeout": 10}
+        ]
+      },
+      {
+        "matcher": "mcp__HME__add_knowledge",
+        "hooks": [
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_addknowledge.sh", "timeout": 10}
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -41,6 +59,11 @@
     "PreCompact": [
       {
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/precompact.sh", "timeout": 10}]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/postcompact.sh", "timeout": 10}]
       }
     ],
     "Stop": [
