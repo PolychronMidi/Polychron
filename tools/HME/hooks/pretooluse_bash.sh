@@ -21,15 +21,16 @@ if echo "$CMD" | grep -qE '(stat|ls -l).*(pipeline-summary|trace-summary|run-his
   exit 2
 fi
 
-# Anti-wait injection: long-running pipeline commands run in background.
-# Claude MUST continue working — NOT stop and wait for completion.
-if echo "$CMD" | grep -qE '(npm run main|npm run snapshot|node lab/run)'; then
-  cat >&2 <<'MSG'
-ANTI-WAIT ENFORCEMENT: This command runs in background. Do NOT stop and wait for it.
-Continue immediately with parallel work: HME break-point scanning, src/ evolution,
-doc improvements, or any other pending tasks. The posttooluse hook will inject
-Evolver phase steps when the command completes. Stopping to wait is the antipattern.
-MSG
+# Anti-wait enforcement: pipeline commands MUST use run_in_background=true.
+# Only triggers when the command itself starts with the pipeline command (not when
+# the string appears inside a heredoc, commit message, or other argument).
+TRIMMED_CMD=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
+if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; then
+  RUN_BG=$(echo "$INPUT" | jq -r '.tool_input.run_in_background // false')
+  if [[ "$RUN_BG" != "true" ]]; then
+    echo '{"decision":"block","reason":"ANTI-WAIT: npm run main must use run_in_background=true. Re-issue this Bash call with run_in_background: true, then CONTINUE with parallel work (HME indexing, doc updates, src/ improvements, what_did_i_forget). Stopping to wait for the pipeline is the antipattern."}'
+    exit 2
+  fi
 fi
 
 # Block polling: task output files or pipeline log
