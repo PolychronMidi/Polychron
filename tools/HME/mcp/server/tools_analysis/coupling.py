@@ -58,7 +58,13 @@ def _scan_coupling_state(src_root: str) -> dict:
             module_name = fname.replace(".js", "")
 
             melodic_coupled = "emergentMelodicEngine" in content
-            rhythm_coupled = "emergentRhythmEngine" in content
+            # Detect rhythmic coupling via emergentRhythmEngine reference OR
+            # L0.getLast('emergentRhythm') pattern (R69+ coupling style)
+            rhythm_coupled = (
+                "emergentRhythmEngine" in content
+                or "L0.getLast('emergentRhythm'" in content
+                or 'L0.getLast("emergentRhythm"' in content
+            )
 
             melodic_dims: list[str] = []
             if melodic_coupled:
@@ -68,10 +74,14 @@ def _scan_coupling_state(src_root: str) -> dict:
                                       if d not in {"call", "getContext", "getMelodicWeights",
                                                    "getContourAscendBias", "nudgeNoveltyWeight"})
 
+            _KNOWN_RHYTHM_FIELDS = {"density", "complexity", "biasStrength", "densitySurprise", "hotspots", "complexityEma"}
             rhythm_dims: list[str] = []
             if rhythm_coupled:
+                # Old style: rhythmCtx variable (direct emergentRhythmEngine access)
                 dims = re.findall(r'rhythmCtx\w*\s*(?:\?\.|\.)(\w+)', content)
-                rhythm_dims = sorted(d for d in set(dims) if d not in {"call"})
+                # New style: rhythmEntry variable (L0.getLast pattern, R69+)
+                dims += re.findall(r'rhythmEntry\w*\.(\w+)', content)
+                rhythm_dims = sorted(d for d in set(dims) if d in _KNOWN_RHYTHM_FIELDS)
 
             results[module_name] = {
                 "path": fpath,
@@ -422,3 +432,190 @@ def cluster_finder(min_r: float = 0.35) -> str:
     """Internal: cooperation cluster analysis. Use coupling_network(clusters=True) instead."""
     cl, corr, mods, nb, cs, tr = _compute_clusters(min_r)
     return "\n".join(_format_clusters(cl, corr, mods, nb, cs, tr, min_r))
+
+
+@ctx.mcp.tool()
+def antagonist_map() -> str:
+    """Show all negative correlation pairs (r < -0.20) from the cooperation network.
+    Reveals creative tensions between modules — where the system resists itself to
+    produce alien texture. Sorted by antagonism strength. The 'dark matter' of
+    xenolinguistic composition: modules that pull against each other create the
+    resistance that makes the music feel genuinely alien rather than merely complex."""
+    ctx.ensure_ready_sync()
+    _track("antagonist_map")
+
+    clusters, corr, modules, n_beats, coupling_state, trust = _compute_clusters()
+    if not corr:
+        return "No trace data available for antagonist analysis. Run pipeline first."
+
+    seen: set = set()
+    antagonists: list = []
+    for (a, b), r in corr.items():
+        key = tuple(sorted([a, b]))
+        if key not in seen and r < -0.20:
+            seen.add(key)
+            antagonists.append((a, b, r))
+    antagonists.sort(key=lambda x: x[2])
+
+    if not antagonists:
+        return "No significant antagonist pairs found (r < -0.20)."
+
+    out = [f"# Antagonist Map ({len(antagonists)} pairs with r < -0.20, {n_beats} beats)\n"]
+    out.append("Creative tensions are the dark matter of xenolinguistic texture.")
+    out.append("These modules resist each other — their friction produces the alien quality.\n")
+
+    for a, b, r in antagonists[:20]:
+        ta = trust.get(a)
+        tb = trust.get(b)
+        ta_str = f"t={ta:.2f}" if ta is not None else "t=?"
+        tb_str = f"t={tb:.2f}" if tb is not None else "t=?"
+        bar = "◀" * min(int(abs(r) * 10), 8)
+        out.append(f"  r={r:+.3f} {bar}  {a} ({ta_str}) ↔ {b} ({tb_str})")
+
+    from collections import Counter
+    cnt: Counter = Counter()
+    for a, b, r in antagonists:
+        if abs(r) >= 0.30:
+            cnt[a] += 1
+            cnt[b] += 1
+    if cnt:
+        out.append(f"\n## Most Antagonistic Modules (in ≥1 strong tension pair)")
+        for name, count in cnt.most_common(8):
+            t = trust.get(name)
+            t_str = f"{t:.2f}" if t is not None else "?"
+            out.append(f"  {name:<35} {count} antagonisms  trust={t_str}")
+
+    return "\n".join(out)
+
+
+@ctx.mcp.tool()
+def cluster_personality() -> str:
+    """Musical biography of each cooperation cluster.
+    Each cluster is an emergent musical organism — a set of modules that fire together
+    and shape the same musical moments. Shows: members, melodic intelligence dimensions,
+    tightest internal bond, primary external antagonist, and uncoupled members.
+    Use to understand what each cluster 'does' as a unified entity before targeting it
+    for new coupling rounds."""
+    ctx.ensure_ready_sync()
+    _track("cluster_personality")
+
+    clusters, corr, modules, n_beats, coupling_state, trust = _compute_clusters()
+    if clusters is None:
+        return "No cluster data available. Run pipeline first."
+
+    out = [f"# Cluster Personalities ({len(clusters)} emergent organisms, {n_beats} beats)\n"]
+
+    for idx, cluster in enumerate(clusters[:5]):
+        cluster_sorted = sorted(cluster, key=lambda m: trust.get(m, 0.0), reverse=True)
+        avg_t = sum(trust.get(m, 0.0) for m in cluster) / len(cluster)
+        leader = cluster_sorted[0]
+
+        coupled_dims: list[str] = []
+        rhythm_coupled_count = 0
+        uncoupled_members: list[str] = []
+        for m in cluster:
+            file_name = _TRUST_FILE_ALIASES.get(m, m)
+            info = coupling_state.get(m, {}) or coupling_state.get(file_name, {})
+            if info.get("melodic"):
+                coupled_dims.extend(info.get("melodic_dims", []))
+            if info.get("rhythm"):
+                rhythm_coupled_count += 1
+            if not info.get("melodic") and not info.get("rhythm"):
+                uncoupled_members.append(file_name)
+
+        unique_dims = sorted(set(coupled_dims))
+
+        max_r = 0.0
+        bond_pair = ("", "")
+        for i, a in enumerate(cluster):
+            for b in cluster[i + 1:]:
+                r = corr.get((a, b), 0.0)
+                if r > max_r:
+                    max_r = r
+                    bond_pair = (a, b)
+
+        antagonist_list = [(m, corr.get((leader, m), 0.0)) for m in modules if m not in cluster]
+        antagonist_list.sort(key=lambda x: x[1])
+        top_ant = antagonist_list[0] if antagonist_list and antagonist_list[0][1] < -0.20 else None
+
+        out.append(f"## Organism {idx + 1}: {leader.upper()} cluster "
+                   f"({len(cluster)} members, avg_trust={avg_t:.2f})")
+        out.append(f"  Members: {', '.join(cluster_sorted)}")
+        if unique_dims:
+            out.append(f"  Melodic dims: [{', '.join(unique_dims[:8])}]")
+        out.append(f"  Rhythm-coupled: {rhythm_coupled_count}/{len(cluster)} members")
+        if uncoupled_members:
+            out.append(f"  Fully uncoupled: {', '.join(uncoupled_members[:6])}")
+        if bond_pair[0]:
+            out.append(f"  Tightest bond: {bond_pair[0]} ↔ {bond_pair[1]} (r={max_r:.3f})")
+        if top_ant:
+            out.append(f"  Primary antagonist: {top_ant[0]} (r={top_ant[1]:.3f})")
+        out.append("")
+
+    return "\n".join(out)
+
+
+@ctx.mcp.tool()
+def dimension_gap_finder() -> str:
+    """Find underused melodic/rhythmic signal dimensions and rank evolution targets.
+    Shows all known dimensions sorted by current usage count. Flags dimensions used
+    by fewer than 3 modules as underused — these are the highest-yield coupling targets
+    since each new coupling to an underused dimension creates a genuinely novel
+    musical relationship rather than reinforcing existing patterns."""
+    ctx.ensure_ready_sync()
+    _track("dimension_gap_finder")
+
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    coupling = _scan_coupling_state(src_root)
+    trust = _load_trust_scores(ctx.PROJECT_ROOT)
+
+    dim_usage: dict[str, list[str]] = defaultdict(list)
+    rhythm_field_usage: dict[str, list[str]] = defaultdict(list)
+    for name, info in coupling.items():
+        for d in info.get("melodic_dims", []):
+            dim_usage[d].append(name)
+        for d in info.get("rhythm_dims", []):
+            rhythm_field_usage[d].append(name)
+
+    ALL_MELODIC_DIMS = [
+        "ascendRatio", "contourShape", "counterpoint", "directionBias",
+        "freshnessEma", "intervalFreshness", "registerMigrationDir",
+        "tessituraLoad", "thematicDensity",
+    ]
+    ALL_RHYTHM_FIELDS = ["density", "complexity", "biasStrength", "densitySurprise", "hotspots", "complexityEma"]
+
+    out = ["# Dimension Gap Finder\n"]
+    out.append("## Melodic Dimension Coverage")
+    all_melodic = sorted(set(list(dim_usage.keys()) + ALL_MELODIC_DIMS), key=lambda d: len(dim_usage.get(d, [])))
+    for dim in all_melodic:
+        users = dim_usage.get(dim, [])
+        bar = "█" * len(users) if users else "░"
+        gap = "  ← UNDERUSED" if len(users) < 3 else ""
+        out.append(f"  {dim:<28} x{len(users):2}  {bar}{gap}")
+        if 0 < len(users) < 3:
+            out.append(f"    only: {', '.join(users)}")
+
+    out.append("\n## Rhythmic Field Coverage")
+    for field in ALL_RHYTHM_FIELDS:
+        users = rhythm_field_usage.get(field, [])
+        bar = "█" * len(users) if users else "░"
+        gap = "  ← UNDERUSED" if len(users) < 3 else ""
+        out.append(f"  {field:<28} x{len(users):2}  {bar}{gap}")
+
+    underused_melodic = [d for d in ALL_MELODIC_DIMS if len(dim_usage.get(d, [])) < 3]
+    underused_rhythm = [f for f in ALL_RHYTHM_FIELDS if len(rhythm_field_usage.get(f, [])) < 3]
+
+    if underused_melodic or underused_rhythm:
+        out.append(f"\n## Highest-Yield Targets")
+        if underused_melodic:
+            out.append(f"  Underused melodic dims: {', '.join(underused_melodic)}")
+        if underused_rhythm:
+            out.append(f"  Underused rhythm fields: {', '.join(underused_rhythm)}")
+
+        uncoupled = [(n, trust.get(n, 0.0)) for n, info in coupling.items()
+                     if not info.get("melodic") and not info.get("rhythm")]
+        uncoupled.sort(key=lambda x: -x[1])
+        if uncoupled:
+            out.append(f"  Top uncoupled modules: {', '.join(n for n, _ in uncoupled[:6])}")
+
+    return "\n".join(out)

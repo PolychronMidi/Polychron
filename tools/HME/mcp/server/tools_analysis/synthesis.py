@@ -336,7 +336,8 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) 
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        # 240s: at ~15 tok/s, 1024 tokens needs ~68s + deepseek-r1 reasoning overhead
+        with urllib.request.urlopen(req, timeout=240) as resp:
             result = json.loads(resp.read())
             text = result.get("response", "").strip()
             if not text:
