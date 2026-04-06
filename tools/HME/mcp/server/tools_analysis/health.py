@@ -129,7 +129,6 @@ def impact_analysis(symbol_name: str, language: str = "") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def convention_check(file_path: str) -> str:
     """Check a file against project conventions: line count, naming, registration, boundary rules."""
     ctx.ensure_ready_sync()
@@ -215,7 +214,7 @@ def convention_check(file_path: str) -> str:
 
 @ctx.mcp.tool()
 def codebase_health() -> str:
-    """Full-repo convention sweep. Returns prioritized report of all files with issues."""
+    """Full codebase health sweep: architectural violations, dead code, convention checks, symbol importance, and doc sync. Replaces 5 separate health tools."""
     from file_walker import walk_code_files
     issues_by_severity = {"CRITICAL": [], "WARN": [], "NOTE": []}
     file_count = 0
@@ -277,10 +276,37 @@ def codebase_health() -> str:
             parts.append(f"\n## Priority Analysis *(adaptive)*")
             parts.append(synthesis)
 
+    # Dead code sweep (top issues only)
+    try:
+        dead = find_dead_code()
+        if "No dead code" not in dead:
+            lines = dead.split("\n")
+            parts.append("\n## Dead Code (top 5)")
+            for l in lines[1:6]:
+                parts.append(l)
+    except Exception:
+        pass
+
+    # Symbol importance (top 10)
+    try:
+        importance = symbol_importance(top_n=10)
+        lines = importance.split("\n")
+        parts.append("\n## Symbol Importance (top 10)")
+        for l in lines[1:12]:
+            parts.append(l)
+    except Exception:
+        pass
+
+    # Doc sync check
+    try:
+        sync = doc_sync_check()
+        parts.append(f"\n## Doc Sync: {sync[:120]}")
+    except Exception:
+        pass
+
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def find_dead_code(path: str = "src") -> str:
     """Scan all IIFE globals for zero external callers AND no conductor self-registration (truly dormant modules). Modules that self-register via conductorIntelligence.register* are active even without direct callers — their biases flow through the conductor signal pipeline via callbacks."""
     src_root = os.path.join(ctx.PROJECT_ROOT, path) if not os.path.isabs(path) else path
@@ -306,7 +332,6 @@ def find_dead_code(path: str = "src") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def symbol_importance(top_n: int = 20) -> str:
     """Rank IIFE globals by caller count (architectural centrality). Most-called = most important."""
     src_root = os.path.join(ctx.PROJECT_ROOT, 'src')
@@ -325,7 +350,6 @@ def symbol_importance(top_n: int = 20) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def doc_sync_check(doc_path: str = "") -> str:
     """Check if a doc file is in sync with the codebase it describes. Finds stale references, missing tools, outdated counts."""
     target = doc_path if doc_path else os.path.join(ctx.PROJECT_ROOT, "doc/HME.md")
@@ -385,7 +409,6 @@ def doc_sync_check(doc_path: str = "") -> str:
     return f"OUT OF SYNC: {os.path.basename(abs_target)}\n" + "\n".join(f"  - {i}" for i in issues)
 
 
-@ctx.mcp.tool()
 def symbol_audit(mode: str = "both", path: str = "src", top_n: int = 20) -> str:
     """Merged symbol analysis. mode: 'dead' (globals with 0 callers and no self-registration),
     'importance' (top-N IIFE globals by caller count, architectural centrality),

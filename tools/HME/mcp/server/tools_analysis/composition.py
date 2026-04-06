@@ -13,7 +13,6 @@ logger = logging.getLogger("HME")
 from . import _load_trace  # noqa: F401 — shared helper, avoids duplicate in each trace tool
 
 
-@ctx.mcp.tool()
 def composition_arc() -> str:
     """Full composition biography: for every section, show regime distribution,
     tension arc (avg/peak), dominant trust systems, coupling labels, and note density.
@@ -130,7 +129,6 @@ def composition_arc() -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def hotspot_leaderboard() -> str:
     """Rank all trust systems by how often they appear under hotspot pressure across
     the full run. Reveals chronic underperformers vs consistently dominant systems.
@@ -189,7 +187,6 @@ def hotspot_leaderboard() -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def composition_events(mode: str = "both", top_n: int = 10) -> str:
     """Merged composition analysis. mode: 'arc' (section biography with regime/tension/trust),
     'drama' (top-N most dramatic trust swings and regime transitions), or 'both' (default).

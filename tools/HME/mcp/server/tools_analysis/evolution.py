@@ -16,7 +16,6 @@ from . import _get_compositional_context, _track, _usage_stats
 
 logger = logging.getLogger("HME")
 
-@ctx.mcp.tool()
 def evolution_patterns() -> str:
     """Analyze metrics/journal.md for meta-patterns across evolution rounds. Identifies confirm/refute rates, subsystem receptivity, recurring themes, and stabilization timelines. Use to understand HOW the system evolves, not just what changed."""
     ctx.ensure_ready_sync()
@@ -77,7 +76,6 @@ def evolution_patterns() -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def causal_trace(symptom: str, max_depth: int = 3) -> str:
     """Trace the causal chain from a symptom (constant name, module name, signal dimension, or description like 'density too high in coherent') through controllers, metrics, and regime behavior to its musical effect on the listener. Shows the complete cascade: constant -> controller -> metric -> musical character."""
     ctx.ensure_ready_sync()
@@ -176,7 +174,6 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def hme_introspect() -> str:
     """Self-benchmarking: report HME tool usage patterns for this session. Shows which tools are called most, which mandatory tools are underused, and compositional context from the last pipeline run."""
     _track("hme_introspect")
@@ -285,20 +282,41 @@ def hme_hot_reload(modules: str = "") -> str:
                     results.append(f"  ERR {name} (import): {e}")
                 continue
             try:
-                # Count tools registered from this module before reload
+                # Collect tools registered from this module, then remove them all
+                # before reloading — ensures tools whose decorators were removed
+                # don't linger in the registry.
                 tools_before = {
                     tname for tname, t in inner._tool_manager._tools.items()
                     if getattr(t.fn, "__module__", "") == full
                        or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
                 }
+                remove_errs = []
+                for tname in tools_before:
+                    try:
+                        inner.remove_tool(tname)
+                    except Exception as _re:
+                        remove_errs.append(f"{tname}:{_re}")
+                if remove_errs:
+                    results.append(f"  DBG remove errors for {name}: {remove_errs[:3]}")
+                # DEBUG: sample module attribution for first few tools
+                if not tools_before:
+                    sample = list(inner._tool_manager._tools.items())[:2]
+                    for sname, st in sample:
+                        results.append(f"  DBG {sname}: fn.__module__={getattr(st.fn,'__module__','?')!r} expected={full!r}")
                 importlib.reload(mod)
                 tools_after = {
                     tname for tname, t in inner._tool_manager._tools.items()
                     if getattr(t.fn, "__module__", "") == full
                        or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
                 }
-                re_registered = len(tools_after)
-                results.append(f"  OK {name}: {re_registered} tools updated (was {len(tools_before)})")
+                removed = tools_before - tools_after
+                added = tools_after - tools_before
+                status = f"{len(tools_after)} tools"
+                if removed:
+                    status += f" (-{len(removed)}: {', '.join(sorted(removed))})"
+                if added:
+                    status += f" (+{len(added)}: {', '.join(sorted(added))})"
+                results.append(f"  OK {name}: {status} (was {len(tools_before)})")
             except Exception as e:
                 results.append(f"  ERR {name}: {e}")
     finally:
@@ -313,10 +331,12 @@ def hme_hot_reload(modules: str = "") -> str:
 
 
 @ctx.mcp.tool()
-def trace_query(module: str, section: int = -1, limit: int = 15) -> str:
+def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "module") -> str:
     """Query the last pipeline run's trace.jsonl for runtime behavior of a specific module.
     Shows what a module ACTUALLY DID: when it fired, what values it produced, which
     sections/regimes it was active in. Set section=N to filter to a specific section.
+    mode='module' (default): standard trace lookup. mode='causal': causal chain trace from
+    module through controllers to musical effect (folds causal_trace behavior).
     Works for trust system names, snap fields, coupling labels, and top-level trace keys."""
     ctx.ensure_ready_sync()
     _track("trace_query")
@@ -396,6 +416,9 @@ def trace_query(module: str, section: int = -1, limit: int = 15) -> str:
                     beats.append({"beatKey": beat_key, "section": sec, "regime": regime, "values": values})
     except Exception as e:
         return f"Error reading trace: {e}"
+
+    if mode == "causal":
+        return causal_trace(module)
 
     if not beats:
         return (f"No trace data for '{module}' across {total_beats} beats. "
@@ -590,7 +613,6 @@ def interaction_map(module_a: str, module_b: str = "") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def kb_seed(top_n: int = 15) -> str:
     """Auto-generate starter KB entries for the highest-dependency modules that have
     zero KB entries. Reads each module's source code and uses a single batched LLM
@@ -770,10 +792,18 @@ def hme_selftest() -> str:
     passed = sum(1 for r in results if r.startswith("PASS"))
     total = len(results)
     header = f"## HME Self-Test: {passed}/{total} passed\n"
-    return header + "\n".join(f"  {r}" for r in results)
+    output = header + "\n".join(f"  {r}" for r in results)
+
+    # Include introspect output (session usage + compositional context)
+    try:
+        introspect_out = hme_introspect()
+        output += "\n\n" + introspect_out
+    except Exception:
+        pass
+
+    return output
 
 
-@ctx.mcp.tool()
 def hme_inspect(mode: str = "both") -> str:
     """Merged HME self-inspection. mode: 'introspect' (session tool usage + compositional context),
     'selftest' (health check: tool count, doc sync, index integrity, Ollama), or 'both' (default).
@@ -789,7 +819,6 @@ def hme_inspect(mode: str = "both") -> str:
     return "\n\n".join(parts)
 
 
-@ctx.mcp.tool()
 def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> str:
     """Permanently enforce a rule against a stubborn antipattern by adding detection logic to
     the specified hook script. hook_target: 'pretooluse_bash', 'posttooluse_bash', 'stop',

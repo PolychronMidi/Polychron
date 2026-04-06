@@ -293,7 +293,6 @@ def think(about: str, context: str = "") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
     """Trace the full transitive dependency chain of a symbol: who calls it, who calls those callers, etc. Deeper than impact_analysis."""
     ctx.ensure_ready_sync()

@@ -116,7 +116,6 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
 
 
 
-@ctx.mcp.tool()
 def list_knowledge(category: str = "", scope: str = "") -> str:
     """List all knowledge entries, optionally filtered by category. Returns entry IDs, titles, categories, and tags for both project and global KBs. Use to get an overview of what's in the KB, or filter by category ('architecture', 'decision', 'pattern', 'bugfix') to find specific entry types."""
     ctx.ensure_ready_sync()
@@ -152,7 +151,6 @@ def list_knowledge(category: str = "", scope: str = "") -> str:
 
 
 
-@ctx.mcp.tool()
 def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
     """Deduplicate the knowledge base by merging entries with high semantic similarity. Use after 30+ entries accumulate. The threshold (0.0-1.0) controls how similar entries must be to merge — 0.85 is a good default. Returns counts of removed vs kept entries. Scope can be 'project', 'global', or 'both'."""
     ctx.ensure_ready_sync()
@@ -183,7 +181,6 @@ def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
 
 
 
-@ctx.mcp.tool()
 def export_knowledge(scope: str = "project", category: str = "") -> str:
     """Export all knowledge entries as markdown for backup or review. Optionally filter by category. Returns formatted markdown with all entry metadata and content. Use for periodic KB snapshots or before major KB reorganization."""
     ctx.ensure_ready_sync()
@@ -207,7 +204,6 @@ def export_knowledge(scope: str = "project", category: str = "") -> str:
 
 
 
-@ctx.mcp.tool()
 def memory_dream() -> str:
     """Consolidation pass: replay all KB entries, discover hidden connections via pairwise similarity. Inspired by Vestige's memory dreaming."""
     ctx.ensure_ready_sync()
@@ -272,7 +268,6 @@ def memory_dream() -> str:
 
 
 
-@ctx.mcp.tool()
 def knowledge_graph(query: str) -> str:
     """Search knowledge with spreading activation: matches entry A, then traverses A's relationships to find connected entries. Multi-hop discovery."""
     ctx.ensure_ready_sync()
@@ -371,7 +366,6 @@ def knowledge_graph(query: str) -> str:
 
 
 
-@ctx.mcp.tool()
 def kb_health() -> str:
     """Check all KB entries for staleness: do the files/modules they mention still exist? Are line counts accurate?"""
     ctx.ensure_ready_sync()
