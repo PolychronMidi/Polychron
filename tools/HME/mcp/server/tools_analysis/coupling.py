@@ -144,13 +144,154 @@ def _detect_documented_modules(project_root: str) -> set:
     return found
 
 
+def _compute_clusters(min_r: float = 0.35) -> tuple:
+    """Compute cooperation clusters from trace data. Returns (clusters, corr, modules, n_beats, coupling_state, trust)."""
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    try:
+        records = _load_trace(trace_path)
+    except Exception:
+        return None, {}, [], 0, {}, {}
+
+    if len(records) < 50:
+        return None, {}, [], 0, {}, {}
+
+    n_beats = len(records)
+    beat_scores: list[dict] = []
+    for rec in records:
+        bd = {}
+        trust_data = rec.get("trust", {})
+        for sys_name, data in trust_data.items():
+            if isinstance(data, dict):
+                s = data.get("score")
+                if isinstance(s, (int, float)):
+                    bd[sys_name] = float(s)
+        beat_scores.append(bd)
+
+    module_counts: dict[str, int] = defaultdict(int)
+    for bd in beat_scores:
+        for m_name in bd:
+            module_counts[m_name] += 1
+    active_modules = [m_name for m_name, c in module_counts.items() if c >= n_beats * 0.8]
+
+    if len(active_modules) < 4:
+        return None, {}, active_modules, n_beats, {}, {}
+
+    raw: dict[str, list] = {m_name: [] for m_name in active_modules}
+    for bd in beat_scores:
+        for m_name in active_modules:
+            raw[m_name].append(bd.get(m_name))
+
+    series: dict[str, list[float]] = {}
+    for m_name, vals in raw.items():
+        present = [v for v in vals if v is not None]
+        mean = sum(present) / len(present) if present else 0.5
+        series[m_name] = [v if v is not None else mean for v in vals]
+
+    modules = list(series.keys())
+    nm = len(modules)
+
+    corr: dict[tuple, float] = {}
+    for i in range(nm):
+        for j in range(i + 1, nm):
+            a, b = modules[i], modules[j]
+            r = _pearson(series[a], series[b])
+            corr[(a, b)] = r
+            corr[(b, a)] = r
+
+    coop_adj: dict[str, set] = {m_name: set() for m_name in modules}
+    for i in range(nm):
+        for j in range(i + 1, nm):
+            a, b = modules[i], modules[j]
+            r = corr.get((a, b), 0)
+            if r >= min_r:
+                coop_adj[a].add(b)
+                coop_adj[b].add(a)
+
+    visited: set = set()
+    clusters: list[list] = []
+    for start in modules:
+        if start in visited:
+            continue
+        cluster = []
+        stack = [start]
+        while stack:
+            node = stack.pop()
+            if node in visited:
+                continue
+            visited.add(node)
+            cluster.append(node)
+            stack.extend(coop_adj[node] - visited)
+        if len(cluster) >= 2:
+            clusters.append(cluster)
+
+    trust = _load_trust_scores(ctx.PROJECT_ROOT)
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    coupling_state = _scan_coupling_state(src_root)
+
+    def avg_trust(c: list) -> float:
+        scores = [trust.get(m_name, 0.0) for m_name in c]
+        return sum(scores) / len(scores) if scores else 0.0
+
+    clusters.sort(key=avg_trust, reverse=True)
+    return clusters, corr, modules, n_beats, coupling_state, trust
+
+
+def _format_clusters(clusters, corr, modules, n_beats, coupling_state, trust, min_r=0.35) -> list[str]:
+    """Format cluster analysis as output lines."""
+    out = [f"## Cooperation Clusters  (r>={min_r}, {len(modules)} modules, {n_beats} beats)\n"]
+
+    if clusters is None:
+        out.append("  *Insufficient trace data for cluster analysis.*")
+        return out
+
+    out.append(f"Found {len(clusters)} cluster(s)\n")
+
+    def avg_trust(c: list) -> float:
+        scores = [trust.get(m_name, 0.0) for m_name in c]
+        return sum(scores) / len(scores) if scores else 0.0
+
+    for idx, cluster in enumerate(clusters[:5]):
+        at = avg_trust(cluster)
+        cluster_sorted = sorted(cluster, key=lambda m_name: trust.get(m_name, 0.0), reverse=True)
+
+        out.append(f"### Cluster {idx + 1}  avg_trust={at:.2f}  ({len(cluster)} members)")
+        for m_name in cluster_sorted:
+            t = trust.get(m_name)
+            t_str = f"{t:.2f}" if t is not None else "  ?"
+            info = coupling_state.get(m_name, {})
+            tag = "[MEL]" if info.get("melodic") else "[---]"
+
+            others = [o for o in cluster if o != m_name]
+            top2 = sorted(others, key=lambda o: corr.get((m_name, o), 0), reverse=True)[:2]
+            r_strs = "  ".join(f"r={corr.get((m_name, o), 0):+.2f}->{o}" for o in top2)
+
+            out.append(f"  {tag} {m_name:<35} trust={t_str}  {r_strs}")
+
+        targets = [m_name for m_name in cluster_sorted
+                   if not coupling_state.get(m_name, {}).get("melodic")
+                   and not coupling_state.get(m_name, {}).get("rhythm")]
+        if targets:
+            out.append(f"  >> Uncoupled: {', '.join(targets[:8])}")
+
+        centroid = cluster_sorted[0]
+        antagonists = [(m_name, corr.get((centroid, m_name), 0)) for m_name in modules if m_name not in cluster]
+        antagonists = sorted(antagonists, key=lambda x: x[1])[:3]
+        ant_str = "  ".join(f"{m_name}({r:+.2f})" for m_name, r in antagonists if r < -0.20)
+        if ant_str:
+            out.append(f"  << Antagonists to {centroid}: {ant_str}")
+
+        out.append("")
+
+    return out
+
+
 @ctx.mcp.tool()
-def coupling_network() -> str:
+def coupling_network(clusters: bool = False) -> str:
     """Show the full melodic/rhythmic coupling topology for all crossLayer modules.
     Reveals which modules read emergentMelodicEngine or emergentRhythmEngine, which
     signal dimensions they use (contourShape, counterpoint, thematicDensity, etc.),
-    and which are uncoupled sorted by trust score as evolution priority. One-call
-    replacement for 10+ module_story calls when deciding what to couple next."""
+    and which are uncoupled sorted by trust score as evolution priority.
+    Pass clusters=True to include cooperation cluster analysis (slower, loads trace)."""
     ctx.ensure_ready_sync()
     _track("coupling_network")
 
@@ -253,161 +394,17 @@ def coupling_network() -> str:
         out.append(f"## Blind Spots ({len(blind_spots)} uncoupled modules with intelligence gaps)")
         for name, gaps in sorted(blind_spots, key=lambda x: -len(x[1])):
             out.append(f"  {name:<35} [{', '.join(gaps)}]")
-
-    return "\n".join(out)
-
-
-@ctx.mcp.tool()
-def cluster_finder(min_r: float = 0.35) -> str:
-    """Find cooperation clusters: groups of crossLayer modules whose trust scores
-    consistently rise and fall together across beats. Surfaces uncoupled modules
-    within high-trust clusters as top coupling candidates — coupled cluster-mates
-    can pull the uncoupled module into the same musical logic. min_r sets the
-    Pearson correlation threshold for cluster membership (default 0.35)."""
-    ctx.ensure_ready_sync()
-    _track("cluster_finder")
-
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
-    try:
-        records = _load_trace(trace_path)
-    except Exception as e:
-        return f"No trace data: {e}"
-
-    if len(records) < 50:
-        return "Insufficient trace data (need 50+ beats)."
-
-    n_beats = len(records)
-
-    # Collect aligned per-beat scores: beat_scores[beat_idx][module] = score
-    beat_scores: list[dict] = []
-    for rec in records:
-        bd = {}
-        trust = rec.get("trust", {})
-        for sys_name, data in trust.items():
-            if isinstance(data, dict):
-                s = data.get("score")
-                if isinstance(s, (int, float)):
-                    bd[sys_name] = float(s)
-        beat_scores.append(bd)
-
-    # Modules present in >80% of beats
-    module_counts: dict[str, int] = defaultdict(int)
-    for bd in beat_scores:
-        for m in bd:
-            module_counts[m] += 1
-    active_modules = [m for m, c in module_counts.items() if c >= n_beats * 0.8]
-
-    if len(active_modules) < 4:
-        return f"Too few active modules ({len(active_modules)}) — need 4+ with 80%+ beat coverage."
-
-    # Build aligned series, filling missing values with per-module mean
-    raw: dict[str, list] = {m: [] for m in active_modules}
-    for bd in beat_scores:
-        for m in active_modules:
-            raw[m].append(bd.get(m))  # None = missing
-
-    # Fill missing with mean
-    series: dict[str, list[float]] = {}
-    for m, vals in raw.items():
-        present = [v for v in vals if v is not None]
-        mean = sum(present) / len(present) if present else 0.5
-        series[m] = [v if v is not None else mean for v in vals]
-
-    modules = list(series.keys())
-    nm = len(modules)
-
-    # Compute all pairwise Pearson correlations
-    corr: dict[tuple, float] = {}
-    for i in range(nm):
-        for j in range(i + 1, nm):
-            a, b = modules[i], modules[j]
-            r = _pearson(series[a], series[b])
-            corr[(a, b)] = r
-            corr[(b, a)] = r
-
-    # Build adjacency for cooperation (r >= min_r) and competition (r <= -min_r)
-    coop_adj: dict[str, set] = {m: set() for m in modules}
-    for i in range(nm):
-        for j in range(i + 1, nm):
-            a, b = modules[i], modules[j]
-            r = corr.get((a, b), 0)
-            if r >= min_r:
-                coop_adj[a].add(b)
-                coop_adj[b].add(a)
-
-    # Find connected components (cooperation clusters)
-    visited: set = set()
-    clusters: list[list] = []
-    for start in modules:
-        if start in visited:
-            continue
-        cluster = []
-        stack = [start]
-        while stack:
-            node = stack.pop()
-            if node in visited:
-                continue
-            visited.add(node)
-            cluster.append(node)
-            stack.extend(coop_adj[node] - visited)
-        if len(cluster) >= 2:
-            clusters.append(cluster)
-
-    trust = _load_trust_scores(ctx.PROJECT_ROOT)
-    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
-    coupling_state = _scan_coupling_state(src_root)
-
-    def avg_trust(c: list) -> float:
-        scores = [trust.get(m, 0.0) for m in c]
-        return sum(scores) / len(scores) if scores else 0.0
-
-    clusters.sort(key=avg_trust, reverse=True)
-
-    out = [f"# Cooperation Clusters  (r≥{min_r}, {nm} modules, {n_beats} beats)\n"]
-    out.append(f"Found {len(clusters)} cooperation clusters\n")
-
-    for idx, cluster in enumerate(clusters[:10]):
-        at = avg_trust(cluster)
-        # Sort cluster by trust
-        cluster_sorted = sorted(cluster, key=lambda m: trust.get(m, 0.0), reverse=True)
-
-        out.append(f"## Cluster {idx + 1}  avg_trust={at:.2f}  ({len(cluster)} members)")
-        for m in cluster_sorted:
-            t = trust.get(m)
-            t_str = f"{t:.2f}" if t is not None else "  ?"
-            info = coupling_state.get(m, {})
-            if info.get("melodic") and info.get("rhythm"):
-                tag = "[M+R]"
-            elif info.get("melodic"):
-                tag = "[MEL]"
-            elif info.get("rhythm"):
-                tag = "[RHY]"
-            else:
-                tag = "[---]"
-
-            # Top 2 intra-cluster correlations
-            others = [o for o in cluster if o != m]
-            top2 = sorted(others, key=lambda o: corr.get((m, o), 0), reverse=True)[:2]
-            r_strs = "  ".join(f"r={corr.get((m, o), 0):+.2f}→{o}" for o in top2)
-
-            out.append(f"  {tag} {m:<35} trust={t_str}  {r_strs}")
-
-        # Highlight uncoupled members with trust > 0.35
-        targets = [m for m in cluster_sorted
-                   if not coupling_state.get(m, {}).get("melodic")
-                   and not coupling_state.get(m, {}).get("rhythm")
-                   and trust.get(m, 0) > 0.35]
-        if targets:
-            out.append(f"  ⚡ Uncoupled targets: {', '.join(targets)}")
-
-        # Show strongest antagonists (competitive with cluster centroid)
-        centroid = cluster_sorted[0]  # highest-trust member
-        antagonists = [(m, corr.get((centroid, m), 0)) for m in modules if m not in cluster]
-        antagonists = sorted(antagonists, key=lambda x: x[1])[:3]
-        ant_str = "  ".join(f"{m}({r:+.2f})" for m, r in antagonists if r < -0.20)
-        if ant_str:
-            out.append(f"  ⚔ Antagonists to {centroid}: {ant_str}")
-
         out.append("")
 
+    # Cluster analysis (optional, loads trace data)
+    if clusters:
+        cl, corr, mods, nb, cs, tr = _compute_clusters()
+        out.extend(_format_clusters(cl, corr, mods, nb, cs, tr))
+
     return "\n".join(out)
+
+
+def cluster_finder(min_r: float = 0.35) -> str:
+    """Internal: cooperation cluster analysis. Use coupling_network(clusters=True) instead."""
+    cl, corr, mods, nb, cs, tr = _compute_clusters(min_r)
+    return "\n".join(_format_clusters(cl, corr, mods, nb, cs, tr, min_r))

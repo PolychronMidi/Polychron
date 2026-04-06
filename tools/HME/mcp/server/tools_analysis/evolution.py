@@ -481,7 +481,6 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def interaction_map(module_a: str, module_b: str = "") -> str:
     """Show how two modules interact at runtime by correlating their trust scores,
     weight trajectories, and hotspot co-occurrence across the last pipeline run.
