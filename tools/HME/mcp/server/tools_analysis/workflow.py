@@ -21,13 +21,23 @@ from . import _get_compositional_context, _track
 
 logger = logging.getLogger("HME")
 
-# Synthesis cache lives on ctx (survives module hot-reloads — ctx is not in RELOADABLE).
-# Keyed by (abs_path, mtime) — reuse if file unchanged between calls.
-# This eliminates the 20-60s Ollama wait on repeated before_editing calls for the same file.
+# Synthesis cache — keyed (abs_path, mtime), eliminates repeated Ollama waits.
 def _get_before_editing_cache() -> dict:
     if not hasattr(ctx, "_before_editing_synthesis_cache"):
         ctx._before_editing_synthesis_cache = {}
     return ctx._before_editing_synthesis_cache
+
+# Caller cache — keyed (abs_path, mtime); file change auto-invalidates.
+def _get_caller_cache() -> dict:
+    if not hasattr(ctx, "_caller_cache"):
+        ctx._caller_cache = {}
+    return ctx._caller_cache
+
+# KB hits cache — keyed (module_name, kb_version); knowledge write auto-invalidates.
+def _get_kb_hits_cache() -> dict:
+    if not hasattr(ctx, "_kb_hits_cache"):
+        ctx._kb_hits_cache = {}
+    return ctx._kb_hits_cache
 
 @ctx.mcp.tool()
 def before_editing(file_path: str) -> str:
@@ -64,14 +74,24 @@ def before_editing(file_path: str) -> str:
     except Exception:
         pass
 
-    # 1+2. KB constraints + callers — parallel fetch (independent I/O)
+    # 1+2. KB constraints + callers — cached parallel fetch (eliminates repeated scans)
     from . import _filter_kb_relevance
-    from concurrent.futures import ThreadPoolExecutor as _TPE
-    with _TPE(max_workers=2) as _pool:
-        _kb_fut = _pool.submit(ctx.project_engine.search_knowledge, module_name, limits["kb_entries"])
-        _cal_fut = _pool.submit(_find_callers, module_name, ctx.PROJECT_ROOT)
-        kb_results = _kb_fut.result()
-        _all_callers = _cal_fut.result()
+    _caller_cache = _get_caller_cache()
+    _kb_cache = _get_kb_hits_cache()
+    _caller_key = (abs_path, os.path.getmtime(abs_path) if os.path.isfile(abs_path) else 0)
+    _kb_key = (module_name, getattr(ctx, "_kb_version", 0))
+    if _caller_key in _caller_cache and _kb_key in _kb_cache:
+        _all_callers = _caller_cache[_caller_key]
+        kb_results = _kb_cache[_kb_key]
+    else:
+        from concurrent.futures import ThreadPoolExecutor as _TPE
+        with _TPE(max_workers=2) as _pool:
+            _kb_fut = _pool.submit(ctx.project_engine.search_knowledge, module_name, limits["kb_entries"])
+            _cal_fut = _pool.submit(_find_callers, module_name, ctx.PROJECT_ROOT)
+            kb_results = _kb_fut.result()
+            _all_callers = _cal_fut.result()
+        _caller_cache[_caller_key] = _all_callers
+        _kb_cache[_kb_key] = kb_results
     relevant_kb = _filter_kb_relevance(kb_results, module_name)
     if relevant_kb:
         parts.append(f"## KB Constraints ({len(relevant_kb)} entries)")
@@ -149,6 +169,29 @@ def before_editing(file_path: str) -> str:
     except Exception:
         pass
 
+    # Antagonism bridges — live r values, flag bridged vs virgin opportunities
+    try:
+        from .coupling import get_top_bridges, _TRUST_FILE_ALIASES, _FILE_TRUST_ALIASES
+        trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
+        bridges = get_top_bridges(n=6)
+        def _is_this_mod(name: str) -> bool:
+            return (name == module_name or name == trust_alias
+                    or _TRUST_FILE_ALIASES.get(name, name) == module_name)
+        my_bridges = [b for b in bridges if _is_this_mod(b["pair_a"]) or _is_this_mod(b["pair_b"])]
+        if my_bridges:
+            parts.append(f"\n## Antagonism Bridges ({len(my_bridges)} pairs involve this module)")
+            for b in my_bridges[:3]:
+                partner_raw = b["pair_b"] if _is_this_mod(b["pair_a"]) else b["pair_a"]
+                partner = _TRUST_FILE_ALIASES.get(partner_raw, partner_raw)
+                if b["already_bridged"]:
+                    parts.append(f"  BRIDGED r={b['r']:+.3f} vs {partner} (via {', '.join(b['already_bridged'])})")
+                else:
+                    parts.append(f"  OPPORTUNITY r={b['r']:+.3f} vs {partner} — bridge via `{b['field']}`")
+                    parts.append(f"    {b['eff_a']} | opposite: {b['eff_b']}")
+                    parts.append(f"    {b['why']}")
+    except Exception:
+        pass
+
     # Musical context
     comp = _get_compositional_context(module_name)
     if comp:
@@ -199,6 +242,35 @@ def before_editing(file_path: str) -> str:
         parts.append(synthesis)
 
     return "\n".join(parts)
+
+
+def warm_pre_edit_cache(max_files: int = 200) -> str:
+    """Pre-populate caller and KB caches for all src/ files so before_editing is instant.
+    Returns count of files warmed and cache hit statistics."""
+    ctx.ensure_ready_sync()
+    import glob as _glob
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    js_files = _glob.glob(os.path.join(src_root, "**", "*.js"), recursive=True)
+    js_files = [f for f in js_files if not f.endswith("index.js")][:max_files]
+    _caller_cache = _get_caller_cache()
+    _kb_cache = _get_kb_hits_cache()
+    kb_version = getattr(ctx, "_kb_version", 0)
+    warmed = 0
+    skipped = 0
+    for fpath in js_files:
+        module_name = os.path.basename(fpath).replace(".js", "")
+        try:
+            mtime = os.path.getmtime(fpath)
+        except Exception:
+            continue
+        caller_key = (fpath, mtime)
+        kb_key = (module_name, kb_version)
+        if caller_key not in _caller_cache:
+            _caller_cache[caller_key] = _find_callers(module_name, ctx.PROJECT_ROOT)
+        if kb_key not in _kb_cache:
+            _kb_cache[kb_key] = ctx.project_engine.search_knowledge(module_name, 8)
+        warmed += 1
+    return f"Pre-edit cache warmed: {warmed} files (skipped {len(js_files) - warmed} already cached). before_editing calls will now be instant for these files."
 
 
 @ctx.mcp.tool()
@@ -321,6 +393,23 @@ def diagnose_error(error_text: str) -> str:
         for fpath, line in file_refs[:5]:
             rel = fpath.replace(ctx.PROJECT_ROOT + '/', '')
             parts.append(f"  {rel}" + (f":{line}" if line else ""))
+            # Show lines around the error site for immediate context
+            if line:
+                abs_path = fpath if os.path.isabs(fpath) else os.path.join(ctx.PROJECT_ROOT, fpath)
+                if os.path.isfile(abs_path):
+                    try:
+                        with open(abs_path, encoding="utf-8", errors="ignore") as _ef:
+                            file_lines = _ef.readlines()
+                        lineno = int(line)
+                        lo = max(0, lineno - 3)
+                        hi = min(len(file_lines), lineno + 2)
+                        parts.append("  ```")
+                        for ln_idx in range(lo, hi):
+                            marker = ">>>" if ln_idx == lineno - 1 else "   "
+                            parts.append(f"  {marker} {ln_idx+1}: {file_lines[ln_idx].rstrip()}")
+                        parts.append("  ```")
+                    except Exception:
+                        pass
     # Search KB for similar bugs — by error message AND by module names from stack
     kb_query = error_type.group(2)[:60] if error_type else error_text[:80]
     kb_results = ctx.project_engine.search_knowledge(kb_query, top_k=5)

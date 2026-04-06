@@ -630,7 +630,10 @@ def suggest_evolution() -> str:
         src_root_p = os.path.join(ctx.PROJECT_ROOT, "src")
         topo = _topo(src_root_p)
         _SYSTEM_LOOPS = {"rest-sync", "section-quality", "binaural", "instrument", "note"}
-        _KNOWN_CONNECTED = {"feedbackLoop", "cadenceAlignment", "explainability", "channel-coherence", "chord"}
+        # Self-consumed: rhythmicPhaseLock reads its own beatPhase posts via findClosest (internal timing).
+        # External modules couple via rhythmicPhaseLock.getMode() directly (R78+), not via L0.
+        _KNOWN_CONNECTED = {"feedbackLoop", "cadenceAlignment", "explainability", "channel-coherence",
+                            "chord", "beatPhase"}
         dead = [(ch, d["producers"]) for ch, d in topo.items()
                 if d["producers"] and not d["consumers"]
                 and ch not in _SYSTEM_LOOPS and ch not in _KNOWN_CONNECTED]

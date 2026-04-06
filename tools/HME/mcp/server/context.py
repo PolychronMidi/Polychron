@@ -61,6 +61,13 @@ global_engine = None   # RAGEngine
 shared_model = None    # SentenceTransformer
 lib_engines: dict = {}
 
+# Pre-edit brief cache — callers and KB hits are expensive; cache them per file+mtime.
+# kb_version increments on add_knowledge/remove_knowledge so KB-derived caches auto-invalidate.
+_kb_version: int = 0
+# _caller_cache: (abs_path, mtime) → list[caller dicts]
+# _kb_hits_cache: (module_name, kb_version) → list[kb result dicts]
+# Both live on ctx so they survive module hot-reloads.
+
 # Background startup synchronization — set by main.py after background load completes
 _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None

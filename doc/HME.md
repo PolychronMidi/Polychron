@@ -355,6 +355,7 @@ Starts at **15% confidence** — verify against listening before trusting. Confi
 | Tool | Use For |
 |------|---------|
 | `hme_admin(action='index')` | Reindex all code chunks + symbols. Use after batch changes when file watcher hasn't caught up. |
+| `hme_admin(action='warm')` | Pre-populate caller + KB caches for all src/ files so every `before_editing` call is instant. Also runs automatically at server startup via background thread. |
 | `get_index_status` | Check index health |
 | `clear_index` | Wipe index for full rebuild |
 

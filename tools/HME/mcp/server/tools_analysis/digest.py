@@ -102,10 +102,21 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     ctx.ensure_ready_sync()
     _track("pipeline_digest")
 
+    # In-progress guard: reject if pipeline is still running.
+    # Partial output files written mid-pipeline pass the freshness check below,
+    # so this must come FIRST to prevent digesting incomplete data.
+    status = check_pipeline()
+    if "IN PROGRESS" in status:
+        return (
+            "pipeline_digest: pipeline is still running — cannot digest partial results.\n"
+            f"{status}\n\n"
+            "Do substantive work while waiting (implement next evolution, run what_did_i_forget, "
+            "update KB/docs, explore with module_intel). The background task fires a notification "
+            "when done — then call pipeline_digest."
+        )
+
     # Freshness guard: only run if pipeline has produced new output since last digest.
     if not _pipeline_outputs_fresh():
-        status = check_pipeline()
-        # Still show key cached metrics so the return isn't empty
         stale_summary = ""
         try:
             summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-summary.json")

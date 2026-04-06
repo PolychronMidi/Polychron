@@ -965,7 +965,9 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
     reindex all code chunks and symbols (replaces standalone index_codebase — run after batch
     code changes when file watcher hasn't caught up). action='clear_index': wipe hash cache +
     chunk store then rebuild from scratch (use when hash cache is stale or index is corrupted).
-    action='both': reload then selftest. Use after structural changes to HME tool files."""
+    action='warm': pre-populate before_editing caller+KB caches for all src/ files — makes
+    all subsequent before_editing calls instant. action='both': reload then selftest.
+    Use after structural changes to HME tool files."""
     _track("hme_admin")
     parts = []
     if action in ("reload", "both"):
@@ -984,8 +986,14 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
             parts.append(_clear_index())
         except Exception as e:
             parts.append(f"clear_index error: {e}")
+    if action == "warm":
+        try:
+            from .workflow import warm_pre_edit_cache as _warm
+            parts.append(_warm())
+        except Exception as e:
+            parts.append(f"warm_pre_edit_cache error: {e}")
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', or 'both'."
     return "\n\n".join(parts)
 
 

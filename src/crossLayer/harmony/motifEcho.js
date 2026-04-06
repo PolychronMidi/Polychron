@@ -44,7 +44,16 @@ motifEcho = (() => {
     // Rhythmic coupling: strong emergent rhythm structure = natural thematic imitation moment.
     const rhythmEntryME = L0.getLast('emergentRhythm', { layer: 'both' });
     const rhythmBiasME = rhythmEntryME && Number.isFinite(rhythmEntryME.biasStrength) ? rhythmEntryME.biasStrength : 0;
-    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2) * thematicMult * (1.0 + rhythmBiasME * 0.18);
+    // R77 E2: harmonic-journey-eval gate -- suppress capture after key change (old-key motifs wrong tonal region)
+    const journeyEntryME = L0.getLast('harmonic-journey-eval', { layer: 'both', since: absoluteSeconds - 2, windowSeconds: 2 });
+    const journeySuppress = journeyEntryME && Number.isFinite(journeyEntryME.distance) && journeyEntryME.distance > 2
+      ? clamp(journeyEntryME.distance * 0.08, 0, 0.45)
+      : 0;
+    // R78: phase-lock coupling -- repel mode opens space for imitation (layers offset creates echo opportunity),
+    // lock mode suppresses echo (synchronized layers reinforce directly, no need for delayed imitation).
+    const phaseModeEcho = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseEchoScale = phaseModeEcho === 'repel' ? 1.15 : phaseModeEcho === 'lock' ? 0.88 : 1.0;
+    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2) * thematicMult * (1.0 + rhythmBiasME * 0.18) * (1 - journeySuppress) * phaseEchoScale;
     if (notes.length >= 3 && rf() < echoProbability && pendingEchoes.length < MAX_PENDING_ECHOES) {
       captureMotif(layer, absoluteSeconds);
     }
