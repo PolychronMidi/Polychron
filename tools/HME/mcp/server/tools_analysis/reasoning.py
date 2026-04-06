@@ -89,6 +89,28 @@ def module_story(module_name: str) -> str:
         parts.append(f"  {f}")
     if len(caller_files) > caller_limit:
         parts.append(f"  ... and {len(caller_files) - caller_limit} more")
+    # L0 signal I/O — channels this module reads and posts
+    if matching:
+        try:
+            import re as _re
+            with open(matching[0]["file"], encoding="utf-8", errors="ignore") as _mf:
+                _src = _mf.read()
+            _posts = sorted(set(_re.findall(r"L0\.post\('([^']+)'", _src)))
+            # Also catch variable-based channel names: const CHANNEL = 'name'; L0.post(CHANNEL, ...)
+            _chan_vars = dict(_re.findall(r"const\s+(\w+)\s*=\s*'([^']+)'", _src))
+            for _var, _ch in _chan_vars.items():
+                if _re.search(r"L0\.post\(" + _re.escape(_var) + r"\b", _src):
+                    _posts = sorted(set(_posts + [_ch]))
+            _reads = sorted(set(_re.findall(r"L0\.getLast\('([^']+)'", _src)))
+            if _posts or _reads:
+                parts.append(f"\n## L0 Signal I/O")
+                if _posts:
+                    parts.append(f"  POSTS: {', '.join(_posts)}")
+                if _reads:
+                    parts.append(f"  READS: {', '.join(_reads)}")
+        except Exception:
+            pass
+
     # Musical impact — compositional awareness + runtime trace
     comp = _get_compositional_context(module_name)
     if comp:
