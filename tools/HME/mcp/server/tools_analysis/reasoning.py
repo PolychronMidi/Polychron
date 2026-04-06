@@ -16,6 +16,60 @@ from . import _get_compositional_context, _track
 
 logger = logging.getLogger("HME")
 
+
+def build_evolutionary_potential(module_name: str) -> list[str]:
+    """Build the Evolutionary Potential section for a module.
+
+    Returns list of formatted lines showing: uncoupled signal dims,
+    phase coupling status, and live antagonism bridge opportunities.
+    Shared by module_story() and before_editing()."""
+    try:
+        from .coupling import _scan_coupling_state, get_top_bridges, _TRUST_FILE_ALIASES, _FILE_TRUST_ALIASES
+        src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+        coupling_state = _scan_coupling_state(src_root)
+        m_info = coupling_state.get(module_name, {})
+        _ALL_MELODIC = ["contourShape", "registerMigrationDir", "tessituraLoad", "thematicDensity",
+                        "counterpoint", "intervalFreshness", "ascendRatio", "freshnessEma"]
+        _ALL_RHYTHM  = ["densitySurprise", "hotspots", "complexityEma", "biasStrength", "complexity", "density"]
+        used_m = set(m_info.get("melodic_dims", []))
+        used_r = set(m_info.get("rhythm_dims", []))
+        unused_m = [d for d in _ALL_MELODIC if d not in used_m]
+        unused_r = [f for f in _ALL_RHYTHM  if f not in used_r]
+
+        trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
+        bridges = get_top_bridges(n=6)
+        def _is_this(name: str) -> bool:
+            return (name == module_name or name == trust_alias
+                    or _TRUST_FILE_ALIASES.get(name, name) == module_name)
+        my_bridges = [b for b in bridges if _is_this(b["pair_a"]) or _is_this(b["pair_b"])]
+
+        evo_parts: list[str] = []
+        if not m_info.get("melodic"):
+            evo_parts.append(f"  Not melodically coupled — top dims: {', '.join(_ALL_MELODIC[:4])}...")
+        elif unused_m:
+            evo_parts.append(f"  Unused melodic dims: {', '.join(unused_m[:5])}")
+        if not m_info.get("rhythm"):
+            evo_parts.append(f"  Not rhythmically coupled — top fields: {', '.join(_ALL_RHYTHM[:4])}...")
+        elif unused_r:
+            evo_parts.append(f"  Unused rhythm fields: {', '.join(unused_r[:4])}")
+        if not m_info.get("phase"):
+            evo_parts.append(f"  Not phase-coupled — add rhythmicPhaseLock.getMode() for lock/drift/repel awareness")
+
+        for b in my_bridges[:2]:
+            partner_raw = b["pair_b"] if _is_this(b["pair_a"]) else b["pair_a"]
+            partner = _TRUST_FILE_ALIASES.get(partner_raw, partner_raw)
+            if b["already_bridged"]:
+                evo_parts.append(f"  BRIDGED r={b['r']:+.3f} vs {partner} (via {', '.join(b['already_bridged'])})")
+            else:
+                evo_parts.append(f"  BRIDGE OPPORTUNITY r={b['r']:+.3f} vs {partner}")
+                evo_parts.append(f"    bridge field: `{b['field']}`")
+                evo_parts.append(f"    {b['eff_a']} | opposite: {b['eff_b']}")
+                evo_parts.append(f"    musical logic: {b['why']}")
+        return evo_parts
+    except Exception:
+        return []
+
+
 def module_story(module_name: str) -> str:
     """Living biography of a module. Internal — call via module_intel(target, mode='story')."""
     ctx.ensure_ready_sync()
@@ -117,31 +171,33 @@ def module_story(module_name: str) -> str:
         parts.append(f"\n## Musical Impact (last run)")
         parts.append(comp)
     # Runtime trace summary — what the module ACTUALLY DID
+    # Gate behind greedy budget: trace_query calls synthesis model (300-600s on local model).
+    # On moderate/conservative, skip entirely — Musical Impact section above covers basics.
     _trace_result = None
-    try:
-        from .evolution import trace_query as _trace_query
-        _trace_result = _trace_query(module_name, limit=8)
-        # Only include if there's meaningful data (not just "No trace data")
-        if "Value Ranges" in _trace_result:
-            # Extract just the value ranges section (skip header/samples for brevity)
-            trace_lines = _trace_result.split("\n")
-            runtime_lines = []
-            in_ranges = False
-            for tl in trace_lines:
-                if "Beats with data" in tl or "Active in sections" in tl or "Regime distribution" in tl:
-                    runtime_lines.append(tl)
-                elif "Value Ranges" in tl:
-                    in_ranges = True
-                    runtime_lines.append(tl)
-                elif in_ranges and tl.startswith("  "):
-                    runtime_lines.append(tl)
-                elif in_ranges and not tl.startswith("  "):
-                    in_ranges = False
-            if runtime_lines:
-                parts.append(f"\n## Runtime Behavior (last run)")
-                parts.extend(runtime_lines)
-    except Exception:
-        pass
+    if budget == "greedy":
+        try:
+            from .evolution import trace_query as _trace_query
+            _trace_result = _trace_query(module_name, limit=8)
+            # Only include if there's meaningful data (not just "No trace data")
+            if _trace_result and "Value Ranges" in _trace_result:
+                trace_lines = _trace_result.split("\n")
+                runtime_lines = []
+                in_ranges = False
+                for tl in trace_lines:
+                    if "Beats with data" in tl or "Active in sections" in tl or "Regime distribution" in tl:
+                        runtime_lines.append(tl)
+                    elif "Value Ranges" in tl:
+                        in_ranges = True
+                        runtime_lines.append(tl)
+                    elif in_ranges and tl.startswith("  "):
+                        runtime_lines.append(tl)
+                    elif in_ranges and not tl.startswith("  "):
+                        in_ranges = False
+                if runtime_lines:
+                    parts.append(f"\n## Runtime Behavior (last run)")
+                    parts.extend(runtime_lines)
+        except Exception:
+            pass
 
     # Runtime interactions (top cooperative/competitive modules)
     try:
@@ -199,55 +255,12 @@ def module_story(module_name: str) -> str:
         for bs in blind_spots:
             parts.append(f"  - {bs}")
 
-    # Evolutionary Potential — uncoupled signal dims + live antagonism bridge status
-    try:
-        from .coupling import _scan_coupling_state, get_top_bridges, _TRUST_FILE_ALIASES, _FILE_TRUST_ALIASES
-        src_root = os.path.join(ctx.PROJECT_ROOT, "src")
-        coupling_state = _scan_coupling_state(src_root)
-        m_info = coupling_state.get(module_name, {})
-        _ALL_MELODIC = ["contourShape", "registerMigrationDir", "tessituraLoad", "thematicDensity",
-                        "counterpoint", "intervalFreshness", "ascendRatio", "freshnessEma"]
-        _ALL_RHYTHM  = ["densitySurprise", "hotspots", "complexityEma", "biasStrength", "complexity", "density"]
-        used_m = set(m_info.get("melodic_dims", []))
-        used_r = set(m_info.get("rhythm_dims", []))
-        unused_m = [d for d in _ALL_MELODIC if d not in used_m]
-        unused_r = [f for f in _ALL_RHYTHM  if f not in used_r]
+    # Evolutionary Potential — shared function, also used by before_editing
+    evo_lines = build_evolutionary_potential(module_name)
+    if evo_lines:
+        parts.append(f"\n## Evolutionary Potential")
+        parts.extend(evo_lines)
 
-        trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
-        bridges = get_top_bridges(n=6)
-        def _is_this(name: str) -> bool:
-            return (name == module_name or name == trust_alias
-                    or _TRUST_FILE_ALIASES.get(name, name) == module_name)
-        my_bridges = [b for b in bridges if _is_this(b["pair_a"]) or _is_this(b["pair_b"])]
-
-        evo_parts = []
-        if not m_info.get("melodic"):
-            evo_parts.append(f"  Not melodically coupled — top dims: {', '.join(_ALL_MELODIC[:4])}...")
-        elif unused_m:
-            evo_parts.append(f"  Unused melodic dims: {', '.join(unused_m[:5])}")
-        if not m_info.get("rhythm"):
-            evo_parts.append(f"  Not rhythmically coupled — top fields: {', '.join(_ALL_RHYTHM[:4])}...")
-        elif unused_r:
-            evo_parts.append(f"  Unused rhythm fields: {', '.join(unused_r[:4])}")
-        if not m_info.get("phase"):
-            evo_parts.append(f"  Not phase-coupled — add rhythmicPhaseLock.getMode() for lock/drift/repel awareness")
-
-        for b in my_bridges[:2]:
-            partner_raw = b["pair_b"] if _is_this(b["pair_a"]) else b["pair_a"]
-            partner = _TRUST_FILE_ALIASES.get(partner_raw, partner_raw)
-            if b["already_bridged"]:
-                evo_parts.append(f"  BRIDGED r={b['r']:+.3f} vs {partner} (via {', '.join(b['already_bridged'])})")
-            else:
-                evo_parts.append(f"  BRIDGE OPPORTUNITY r={b['r']:+.3f} vs {partner}")
-                evo_parts.append(f"    bridge field: `{b['field']}`")
-                evo_parts.append(f"    {b['eff_a']} | opposite: {b['eff_b']}")
-                evo_parts.append(f"    musical logic: {b['why']}")
-
-        if evo_parts:
-            parts.append(f"\n## Evolutionary Potential")
-            parts.extend(evo_parts)
-    except Exception:
-        pass
 
     # Adaptive synthesis: top 3 things to know before editing
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
@@ -475,8 +488,8 @@ def think(about: str, context: str = "") -> str:
                 parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
             return "\n".join(parts)
 
-    # Ollama path: two-stage synthesis (coder structures, reasoner thinks deeply)
-    from .synthesis import _two_stage_think
+    # Ollama path: route by question type for best quality
+    from .synthesis import _two_stage_think, _local_think, _REASONING_MODEL
     raw_context = ""
     if injected_state:
         raw_context += injected_state + "\n\n"
@@ -484,29 +497,42 @@ def think(about: str, context: str = "") -> str:
         raw_context += f"Additional context: {context}\n\n"
     if kb_block:
         raw_context += kb_block + "\n\n"
-    # Clarify channel jargon for local models
-    if is_channel_q:
+
+    if _is_meta_hme:
+        # Meta-HME: skip two-stage (qwen structuring strips UX context). Go directly
+        # to deepseek-r1 with full context. The structuring stage is designed for code
+        # analysis, not meta-tooling reasoning — it actively hurts meta-HME questions.
+        direct_prompt = f"{raw_context}\n\nQuestion: {about}\n\n{prompt}"
+        local_answer = _local_think(direct_prompt, max_tokens=1024, model=_REASONING_MODEL)
+        if local_answer:
+            parts = [f"# Think: {about} *(direct-reasoning)*\n", local_answer]
+            if kb_hits:
+                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
+            return "\n".join(parts)
+    else:
+        # Code/evolution questions: two-stage (qwen structures, deepseek reasons)
+        if is_channel_q:
+            raw_context += (
+                "TERMINOLOGY: 'dead-end channel' means an L0 channel that is posted (produced) but has "
+                "ZERO consumers — no module reads it. 'Consuming' a dead-end channel means adding "
+                "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
+            )
         raw_context += (
-            "TERMINOLOGY: 'dead-end channel' means an L0 channel that is posted (produced) but has "
-            "ZERO consumers — no module reads it. 'Consuming' a dead-end channel means adding "
-            "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
+            "Polychron modules: motifEcho, entropyRegulator, harmonicIntervalGuard, convergenceDetector, "
+            "dynamicRoleSwap, stutterContagion, feedbackOscillator, temporalGravity, crossLayerSilhouette, "
+            "texturalMirror, rhythmicPhaseLock, polyrhythmicPhasePredictor, restSynchronizer, "
+            "registerCollisionAvoider, spectralComplementarity, grooveTransfer, phaseAwareCadenceWindow. "
+            "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
+            "Each channel posts specific fields — check the producer source code above for exact field names. "
+            "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
+            "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
         )
-    raw_context += (
-        "Polychron modules: motifEcho, entropyRegulator, harmonicIntervalGuard, convergenceDetector, "
-        "dynamicRoleSwap, stutterContagion, feedbackOscillator, temporalGravity, crossLayerSilhouette, "
-        "texturalMirror, rhythmicPhaseLock, polyrhythmicPhasePredictor, restSynchronizer, "
-        "registerCollisionAvoider, spectralComplementarity, grooveTransfer, phaseAwareCadenceWindow. "
-        "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
-        "Each channel posts specific fields — check the producer source code above for exact field names. "
-        "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
-        "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
-    )
-    local_answer = _two_stage_think(raw_context, prompt)
-    if local_answer:
-        parts = [f"# Think: {about} *(two-stage)*\n", local_answer]
-        if kb_hits:
-            parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
-        return "\n".join(parts)
+        local_answer = _two_stage_think(raw_context, prompt)
+        if local_answer:
+            parts = [f"# Think: {about} *(two-stage)*\n", local_answer]
+            if kb_hits:
+                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
+            return "\n".join(parts)
 
     # Template fallback: show project state so caller can still reason from it
     parts = [f"# Think: {about}\n"]

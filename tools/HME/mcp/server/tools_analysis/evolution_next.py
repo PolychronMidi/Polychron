@@ -174,6 +174,47 @@ def evolution_momentum() -> str:
         out.append(f"\nTotal rounds in journal: {len(all_rounds)} | KB entries: {len(all_kb)}")
         out.append("")
 
+        # --- 3b. Evolution velocity + bridge narrative ---
+        legendary_rounds = [r for r in all_rounds if any(k in verdict_map.get(r, "").lower() for k in ("legendary",))]
+        recent_n = 6
+        recent_slice = all_rounds[-recent_n:] if len(all_rounds) >= recent_n else all_rounds
+        recent_legendary = [r for r in recent_slice if r in legendary_rounds]
+        if len(recent_slice) >= 3:
+            out.append(f"## Evolution Velocity (last {len(recent_slice)} rounds)")
+            out.append(f"  LEGENDARY rate: {len(recent_legendary)}/{len(recent_slice)} ({len(recent_legendary)*100//len(recent_slice)}%)")
+            if legendary_rounds:
+                streak = 0
+                for r in reversed(all_rounds):
+                    if r in legendary_rounds:
+                        streak += 1
+                    else:
+                        break
+                if streak > 1:
+                    out.append(f"  Current streak: {streak} consecutive LEGENDARYs (R{legendary_rounds[-streak]}–R{legendary_rounds[-1]})")
+            out.append("")
+
+        # --- 3c. Bridge saturation narrative ---
+        try:
+            from .coupling import get_top_bridges
+            bridges = get_top_bridges(n=6)
+            saturated = [b for b in bridges if len(b.get("already_bridged", [])) >= 3]
+            virgin = [b for b in bridges if not b.get("already_bridged")]
+            if saturated or virgin:
+                out.append("## Bridge Narrative")
+                for b in saturated[:2]:
+                    from .coupling import _TRUST_FILE_ALIASES
+                    a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
+                    bn = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
+                    out.append(f"  SATURATED: {a}↔{bn} ({len(b['already_bridged'])} fields: {', '.join(b['already_bridged'])})")
+                for b in virgin[:3]:
+                    from .coupling import _TRUST_FILE_ALIASES
+                    a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
+                    bn = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
+                    out.append(f"  VIRGIN: {a}↔{bn} r={b['r']:+.3f} → bridge on `{b['field']}`")
+                out.append("")
+        except Exception:
+            pass
+
     # --- 4. Subsystem receptivity from journal ---
     # Split into lines for ±5-line window search (subsystem name and verdict rarely co-occur on same line)
     journal_lines = journal_text.splitlines()

@@ -192,6 +192,17 @@ def before_editing(file_path: str) -> str:
     except Exception:
         pass
 
+    # Evolutionary Potential — fused from module_intel (R80 E4: one call gives everything)
+    if abs_path.endswith(".js") and "/src/" in abs_path:
+        try:
+            from .reasoning import build_evolutionary_potential
+            evo_lines = build_evolutionary_potential(module_name)
+            if evo_lines:
+                parts.append(f"\n## Evolutionary Potential")
+                parts.extend(evo_lines)
+        except Exception:
+            pass
+
     # Musical context
     comp = _get_compositional_context(module_name)
     if comp:
