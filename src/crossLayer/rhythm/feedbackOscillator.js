@@ -47,8 +47,17 @@ feedbackOscillator = (() => {
     // R50: emergent rhythm density amplifies feedback energy (rhythmic activity = richer feedback)
     const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
     const emergentScale = emergentEntry && Number.isFinite(emergentEntry.density) ? 1.0 + clamp(emergentEntry.density * 0.3, 0, 0.15) : 1.0;
+    // R57: melodic contour shapes feedback energy. Rising -> stronger resonance (ascending momentum).
+    // Contrary counterpoint -> dampened (layers diverging, don't force resonance).
+    // High thematic density -> slight boost (familiar material creates stronger feedback echo).
+    const melodicCtxFO = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicScaleFO = melodicCtxFO
+      ? (melodicCtxFO.contourShape === 'rising' ? 1.12 : melodicCtxFO.contourShape === 'falling' ? 0.90 : 1.0)
+      * (melodicCtxFO.counterpoint === 'contrary' ? 0.82 : 1.0)
+      * (1.0 + clamp(melodicCtxFO.thematicDensity, 0, 1) * 0.12)
+      : 1.0;
     L0.post(CHANNEL, layer, absoluteSeconds, {
-      energy: clamp(energy * artScale * emergentScale, 0, 1),
+      energy: clamp(energy * artScale * emergentScale * melodicScaleFO, 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
       originLayer: layer,

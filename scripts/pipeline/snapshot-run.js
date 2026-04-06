@@ -96,6 +96,9 @@ function extractFeatures() {
     // Active profile (from fingerprint)
     activeProfile: fp.activeProfile || 'unknown',
 
+    // Perceptual (filled in later if --perceptual flag and WAV available)
+    cb0Entropy: 0,
+
     // Section detail (compact)
     sections: sectionStats,
   };
@@ -252,6 +255,7 @@ print(json.dumps(result))
         env: { ...process.env, PYTHONPATH: '/home/jah/.local/lib/python3.12/site-packages' },
       }).trim();
       snapshot.perceptual = { encodec: JSON.parse(output) };
+      snapshot.features.cb0Entropy = snapshot.perceptual.encodec.cb0_entropy || 0;
       console.log(`  + EnCodec: ${snapshot.perceptual.encodec.codebooks} codebooks, CB0 entropy=${snapshot.perceptual.encodec.cb0_entropy.toFixed(2)}`);
     } catch (e) {
       console.log(`  ! EnCodec analysis failed: ${e.message.slice(0, 80)}`);

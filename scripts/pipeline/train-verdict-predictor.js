@@ -19,6 +19,7 @@ const FEATURES = [
   'trustConvergence', 'topTrustWeight', 'trustWeightSpread',
   'healthScore', 'exceedanceRate',
   'totalNotes', 'axisGini', 'couplingLabelCount', 'tensionArcShape',
+  'cb0Entropy',  // perceptual: EnCodec CB0 token entropy (musical complexity)
 ];
 
 function main() {
@@ -33,9 +34,15 @@ function main() {
     const d = JSON.parse(fs.readFileSync(path.join(HISTORY_DIR, f), 'utf-8'));
     if (d.verdict && d.features) {
       const ft = d.features;
+      // cb0Entropy fallback: old snapshots stored it in perceptual.encodec, not features
+      const cb0Fallback = d.perceptual && d.perceptual.encodec
+        ? (d.perceptual.encodec.cb0_entropy || 0) : 0;
       labeled.push({
         verdict: d.verdict,
-        features: FEATURES.map(k => (typeof ft[k] === 'number' ? ft[k] : 0)),
+        features: FEATURES.map(k => {
+          if (k === 'cb0Entropy') return typeof ft[k] === 'number' ? ft[k] : cb0Fallback;
+          return typeof ft[k] === 'number' ? ft[k] : 0;
+        }),
       });
     }
   }
