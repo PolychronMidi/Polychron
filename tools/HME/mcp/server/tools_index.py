@@ -83,9 +83,9 @@ def recent_changes(since: str = "1 hour ago") -> str:
 
 
 
-@ctx.mcp.tool()
 def index_codebase(directory: str = "", lib: str = "") -> str:
-    """Reindex all code chunks and symbols for semantic search. Run after batch code changes or when search results seem stale. The file watcher handles individual saves automatically (5s debounce), so this is only needed after bulk operations. Set lib='<name>' to reindex a specific library. With no arguments, reindexes the main project and all configured libraries in parallel. Also rebuilds the symbol index. Returns file/chunk/symbol counts."""
+    """Reindex all code chunks and symbols for semantic search. Called via hme_admin(action='index').
+    Run after batch code changes when file watcher hasn't caught up."""
     ctx.ensure_ready_sync()
     if lib:
         resolved = _resolve_lib_engine(lib)

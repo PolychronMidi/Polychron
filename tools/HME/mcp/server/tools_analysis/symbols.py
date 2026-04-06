@@ -4,6 +4,7 @@ import logging
 
 from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, fmt_sim_score, BUDGET_LIMITS
+from . import _track
 from lang_registry import ext_to_lang
 from symbols import collect_all_symbols, get_type_hierarchy as _get_type_hierarchy, preview_rename as _preview_rename
 from structure import file_summary as _file_summary, module_map as _module_map, format_module_map as _format_module_map
@@ -11,9 +12,8 @@ from analysis import get_dependency_graph as _get_dep_graph, find_similar_code a
 
 logger = logging.getLogger("HME")
 
-@ctx.mcp.tool()
 def get_dependency_graph(file_path: str) -> str:
-    """Map the import/require dependency graph for a single file. Shows what the file imports (with resolved paths) and which files import it. Accepts relative or absolute paths. Use to understand a file's position in the dependency tree before refactoring or moving it."""
+    """Map import/require dependency graph for a file. Internal — call via file_intel(path, mode='deps')."""
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
@@ -84,9 +84,8 @@ def search_symbols(query: str, top_k: int = 20, kind: str = "") -> str:
     return "\n".join(lines)
 
 
-@ctx.mcp.tool()
 def get_file_summary(file_path: str) -> str:
-    """Get a structural overview of a file: line count, symbol kinds, and all symbol definitions with line numbers and signatures. Use to quickly understand a file's API surface without reading the full source. Accepts relative or absolute paths."""
+    """Structural overview of a file: line count, symbols, signatures. Internal — call via file_intel(path, mode='summary')."""
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
@@ -365,3 +364,28 @@ def l0_channel_map(channel: str = "") -> str:
         c = len(d["consumers"])
         parts.append(f"  {ch}: {p} producer(s), {c} consumer(s)")
     return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def file_intel(file_path: str, mode: str = "both") -> str:
+    """Unified file intelligence. Replaces get_file_summary + get_dependency_graph in one call.
+    mode='both' (default): structural overview AND dependency graph — use before editing a file
+    you haven't read yet to understand its API surface and its position in the dependency tree.
+    mode='summary': line count, symbol kinds, all definitions with line numbers and signatures.
+    Use to quickly understand a file's API surface without reading the full source.
+    mode='deps': import/require dependency graph — what the file imports (with resolved paths)
+    and which files import it. Use to assess refactor scope or understand load order.
+    Accepts relative or absolute paths."""
+    ctx.ensure_ready_sync()
+    _track("file_intel")
+    if not file_path.strip():
+        return "Error: file_path cannot be empty."
+    if mode == "summary":
+        return get_file_summary(file_path)
+    if mode == "deps":
+        return get_dependency_graph(file_path)
+    if mode == "both":
+        summary = get_file_summary(file_path)
+        deps = get_dependency_graph(file_path)
+        return f"{summary}\n\n---\n\n{deps}"
+    return f"Unknown mode '{mode}'. Use 'both', 'summary', or 'deps'."

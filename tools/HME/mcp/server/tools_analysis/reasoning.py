@@ -16,9 +16,8 @@ from . import _get_compositional_context, _track
 
 logger = logging.getLogger("HME")
 
-@ctx.mcp.tool()
 def module_story(module_name: str) -> str:
-    """Tell the story of a module: definition, evolution history from KB, callers, conventions, and current health. A living biography. Output is automatically scaled based on remaining context window — greedy when context is plentiful, minimal when tight."""
+    """Living biography of a module. Internal — call via module_intel(target, mode='story')."""
     ctx.ensure_ready_sync()
     _track("module_story")
     if not module_name.strip():
@@ -418,3 +417,30 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
             parts.append(synthesis)
 
     return "\n".join(parts)
+
+
+@ctx.mcp.tool()
+def module_intel(target: str, mode: str = "story") -> str:
+    """Unified module intelligence. Replaces module_story + impact_analysis in one call.
+    mode='story' (default): full living biography — definition, KB evolution history, callers,
+    runtime behavior, interactions, semantic neighbors, blind spots, adaptive synthesis.
+    Output scales with context budget (greedy when plentiful, minimal when tight).
+    mode='impact': blast radius — who calls it, what it calls, KB constraints, definition site.
+    Lighter than story; use when you just need caller graph + constraint check before a quick edit.
+    mode='both': story first, then impact analysis. Use before a high-stakes edit to a
+    well-connected module — you get the full biography AND the caller blast radius."""
+    ctx.ensure_ready_sync()
+    _track("module_intel")
+    if not target.strip():
+        return "Error: target cannot be empty."
+    if mode == "story":
+        return module_story(target)
+    if mode == "impact":
+        from .health import impact_analysis as _impact
+        return _impact(target)
+    if mode == "both":
+        story = module_story(target)
+        from .health import impact_analysis as _impact
+        impact = _impact(target)
+        return f"{story}\n\n---\n\n## Impact Analysis\n{impact}"
+    return f"Unknown mode '{mode}'. Use 'story', 'impact', or 'both'."

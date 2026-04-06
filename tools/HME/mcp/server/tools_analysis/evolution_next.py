@@ -323,12 +323,9 @@ def _describe_musical_role(name: str, path: str, narrative: str = "") -> tuple[s
     return role, effect
 
 
-@ctx.mcp.tool()
 def suggest_evolution() -> str:
-    """Synthesize all available signals -- hotspots, trust ecology, coupling state, perceptual
-    character, uncoupled modules, KB evolution patterns -- into 3-5 ranked evolution proposals.
-    NOTE: pipeline_digest(evolve=True) now calls this automatically -- no separate call needed.
-    Call directly only when you want evolution suggestions without the full digest."""
+    """Synthesize all available signals into ranked evolution proposals.
+    Called automatically by pipeline_digest(evolve=True). Call directly only without the full digest."""
     ctx.ensure_ready_sync()
     _track("suggest_evolution")
 

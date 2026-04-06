@@ -309,13 +309,9 @@ def _format_clusters(clusters, corr, modules, n_beats, coupling_state, trust, mi
     return out
 
 
-@ctx.mcp.tool()
 def coupling_network(clusters: bool = False) -> str:
     """Show the full melodic/rhythmic coupling topology for all crossLayer modules.
-    Reveals which modules read emergentMelodicEngine or emergentRhythmEngine, which
-    signal dimensions they use (contourShape, counterpoint, thematicDensity, etc.),
-    and which are uncoupled sorted by trust score as evolution priority.
-    Pass clusters=True to include cooperation cluster analysis (slower, loads trace)."""
+    Internal helper — call via coupling_intel(mode='network') or coupling_intel(mode='full')."""
     ctx.ensure_ready_sync()
     _track("coupling_network")
 
@@ -434,13 +430,8 @@ def cluster_finder(min_r: float = 0.35) -> str:
     return "\n".join(_format_clusters(cl, corr, mods, nb, cs, tr, min_r))
 
 
-@ctx.mcp.tool()
 def antagonist_map() -> str:
-    """Show all negative correlation pairs (r < -0.20) from the cooperation network.
-    Reveals creative tensions between modules — where the system resists itself to
-    produce alien texture. Sorted by antagonism strength. The 'dark matter' of
-    xenolinguistic composition: modules that pull against each other create the
-    resistance that makes the music feel genuinely alien rather than merely complex."""
+    """Show all negative correlation pairs (r < -0.20). Internal helper — call via coupling_intel(mode='antagonists')."""
     ctx.ensure_ready_sync()
     _track("antagonist_map")
 
@@ -488,14 +479,8 @@ def antagonist_map() -> str:
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def cluster_personality() -> str:
-    """Musical biography of each cooperation cluster.
-    Each cluster is an emergent musical organism — a set of modules that fire together
-    and shape the same musical moments. Shows: members, melodic intelligence dimensions,
-    tightest internal bond, primary external antagonist, and uncoupled members.
-    Use to understand what each cluster 'does' as a unified entity before targeting it
-    for new coupling rounds."""
+    """Musical biography of each cooperation cluster. Internal helper — call via coupling_intel(mode='personalities')."""
     ctx.ensure_ready_sync()
     _track("cluster_personality")
 
@@ -555,13 +540,8 @@ def cluster_personality() -> str:
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def dimension_gap_finder() -> str:
-    """Find underused melodic/rhythmic signal dimensions and rank evolution targets.
-    Shows all known dimensions sorted by current usage count. Flags dimensions used
-    by fewer than 3 modules as underused — these are the highest-yield coupling targets
-    since each new coupling to an underused dimension creates a genuinely novel
-    musical relationship rather than reinforcing existing patterns."""
+    """Find underused melodic/rhythmic signal dimensions. Internal helper — call via coupling_intel(mode='gaps')."""
     ctx.ensure_ready_sync()
     _track("dimension_gap_finder")
 
@@ -619,3 +599,30 @@ def dimension_gap_finder() -> str:
             out.append(f"  Top uncoupled modules: {', '.join(n for n, _ in uncoupled[:6])}")
 
     return "\n".join(out)
+
+
+@ctx.mcp.tool()
+def coupling_intel(mode: str = "full") -> str:
+    """Unified coupling intelligence hub. Replaces coupling_network + antagonist_map +
+    cluster_personality + dimension_gap_finder. mode='full' (default): all four views in one
+    call — topology, antagonist tensions, cluster biographies, dimension gaps. Use 'full' before
+    planning a new coupling round: you get the complete picture in one shot.
+    mode='network': coupling topology only (which modules are coupled to which engines, dims used,
+    uncoupled sorted by trust). mode='antagonists': negative-correlation pairs (creative tensions,
+    dark matter of alien texture). mode='personalities': cluster biographies (each cluster as
+    emergent organism — members, dims, tightest bond, primary antagonist). mode='gaps': underused
+    melodic/rhythmic dimensions sorted by coverage count (highest-yield next targets)."""
+    ctx.ensure_ready_sync()
+    _track("coupling_intel")
+    if mode == "full":
+        parts = [coupling_network(clusters=True), antagonist_map(), cluster_personality(), dimension_gap_finder()]
+        return "\n\n---\n\n".join(parts)
+    if mode == "network":
+        return coupling_network(clusters=True)
+    if mode == "antagonists":
+        return antagonist_map()
+    if mode == "personalities":
+        return cluster_personality()
+    if mode == "gaps":
+        return dimension_gap_finder()
+    return f"Unknown mode '{mode}'. Use 'full', 'network', 'antagonists', 'personalities', or 'gaps'."
