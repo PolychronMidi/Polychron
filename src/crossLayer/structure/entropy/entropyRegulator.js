@@ -189,7 +189,13 @@ entropyRegulator = (() => {
       // R75: motifEcho coupling -- imitative counterpoint activity suppresses entropy target (fugue structure invites order).
       const motifEchoEntry = L0.getLast('motifEcho', { layer: 'both' });
       const motifEchoMod = motifEchoEntry ? (motifEchoEntry.delayBeats <= 2 ? -0.04 : -0.02) : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06 + motifEchoMod;
+      // R76: climax-pressure antagonism bridge -- approaching climax suppresses entropy target.
+      // Constructive opposition: climax needs definition (low entropy), entropy needs space (high).
+      // Both sides coupled to entropy channel with opposing intent (r=-0.604 pair).
+      const climaxEntryER = L0.getLast('climax-pressure', { layer: 'both' });
+      const climaxMod = climaxEntryER && Number.isFinite(climaxEntryER.level)
+        ? -clamp(climaxEntryER.level * 0.07, 0, 0.07) : 0;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + densitySurpriseER * 0.06 + motifEchoMod + climaxMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

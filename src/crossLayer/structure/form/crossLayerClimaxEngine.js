@@ -129,9 +129,14 @@ crossLayerClimaxEngine = (() => {
     const excursionBoost = harmonicEntry && Number.isFinite(harmonicEntry.excursion) ? clamp(harmonicEntry.excursion * 0.02, 0, 0.1) : 0;
     // R40: fractal arc multi-scale intensity -- dormant module now wired
     const fractalIntensity = fractalArcGenerator.composite() * 0.08;
+    // R76: entropy antagonism bridge -- high current entropy damps climax accumulation.
+    // Chaotic texture (high entropy) opposes coherent climax build (r=-0.604 pair).
+    const entropyEntryClx = L0.getLast('entropy', { layer: 'both' });
+    const entropyDampClx = entropyEntryClx && Number.isFinite(entropyEntryClx.smoothed)
+      ? clamp((entropyEntryClx.smoothed - 0.55) * 0.22, 0, 0.10) : 0;
 
-    // Composite climax signal (R40: fractal arc adds multi-scale texture)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity) * preClimaxHold;
+    // Composite climax signal (R40: fractal arc, R76: entropy antagonism)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity - entropyDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing

@@ -11,7 +11,7 @@ fi
 
 # Block ALL other run.lock access — reading lock status IS polling
 if echo "$CMD" | grep -q 'run\.lock'; then
-  echo '{"decision":"block","reason":"BLOCKED: Checking run.lock is pipeline status polling. Continue with other work — you will be notified when the pipeline completes."}'
+  echo '{"decision":"block","reason":"BLOCKED: Checking run.lock is pipeline status polling. Call the check_pipeline MCP tool NOW for current status, then continue with other work."}'
   exit 2
 fi
 
@@ -35,7 +35,7 @@ fi
 
 # Block polling: task output files or pipeline log
 if echo "$CMD" | grep -qE '(tail|cat|head|grep).*(/tasks/[a-z0-9]+\.output|r4[0-9]+_run|run\.log|pipeline\.log)'; then
-  echo '{"decision":"block","reason":"BLOCKED: Polling task output or pipeline log is the antipattern. run_in_background fires a notification when done — continue with other work now."}'
+  echo '{"decision":"block","reason":"BLOCKED: Polling task output or pipeline log is the antipattern. Call the check_pipeline MCP tool NOW for current status, then continue with other work."}'
   exit 2
 fi
 
