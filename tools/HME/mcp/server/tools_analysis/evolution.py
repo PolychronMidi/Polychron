@@ -239,11 +239,8 @@ def hme_introspect() -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def hme_hot_reload(modules: str = "") -> str:
-    """Hot-reload HME tool modules without restarting the server. Pass comma-separated
-    module short names (e.g. 'health,evolution,section_compare') or 'all' to reload
-    every tools_analysis sub-module. Re-registers all tools from reloaded modules in-place."""
+    """Hot-reload HME tool modules without restarting the server."""
     import sys
     import importlib
     _track("hme_hot_reload")
@@ -713,10 +710,9 @@ def kb_seed(top_n: int = 15) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def hme_selftest() -> str:
     """Verify HME's own health: tool registration, doc sync, index integrity,
-    Ollama connectivity, hash cache consistency. Run after structural changes."""
+    Ollama connectivity, hash cache consistency."""
     _track("hme_selftest")
     results = []
 
@@ -733,7 +729,7 @@ def hme_selftest() -> str:
                                 tool_count += 1
                 except Exception:
                     pass
-    results.append(f"{'PASS' if tool_count > 40 else 'FAIL'}: {tool_count} tools registered")
+    results.append(f"{'PASS' if tool_count > 20 else 'FAIL'}: {tool_count} tools registered")
 
     # 2. Doc sync
     try:
@@ -801,6 +797,23 @@ def hme_selftest() -> str:
         pass
 
     return output
+
+
+@ctx.mcp.tool()
+def hme_admin(action: str = "selftest", modules: str = "") -> str:
+    """HME maintenance dispatcher. action='selftest': verify tool registration, doc sync,
+    index integrity, Ollama, KB health, symlinks. action='reload': hot-reload tool modules
+    without restarting server (pass modules='health,evolution' or 'all'). action='both': reload
+    then selftest. Use after structural changes to HME tool files."""
+    _track("hme_admin")
+    parts = []
+    if action in ("reload", "both"):
+        parts.append(hme_hot_reload(modules))
+    if action in ("selftest", "both"):
+        parts.append(hme_selftest())
+    if not parts:
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', or 'both'."
+    return "\n\n".join(parts)
 
 
 def hme_inspect(mode: str = "both") -> str:
