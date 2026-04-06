@@ -12,6 +12,73 @@ logger = logging.getLogger("HME")
 
 from . import _load_trace as _load_trace_impl  # shared helper
 
+# Files written by every pipeline run — used to detect freshness
+_PIPELINE_OUTPUT_FILES = [
+    "metrics/trace.jsonl",
+    "metrics/trace-summary.json",
+    "metrics/fingerprint-comparison.json",
+]
+# Sentinel file records when pipeline_digest last ran successfully
+_DIGEST_SENTINEL = ".claude/mcp/HME/.last_pipeline_digest"
+
+
+def _pipeline_outputs_fresh() -> bool:
+    """Return True if pipeline has run since the last pipeline_digest call."""
+    sentinel = os.path.join(ctx.PROJECT_ROOT, _DIGEST_SENTINEL)
+    if not os.path.exists(sentinel):
+        return True  # first call ever — allow through
+    sentinel_mtime = os.path.getmtime(sentinel)
+    for rel in _PIPELINE_OUTPUT_FILES:
+        p = os.path.join(ctx.PROJECT_ROOT, rel)
+        if os.path.exists(p) and os.path.getmtime(p) > sentinel_mtime:
+            return True
+    return False
+
+
+def _touch_digest_sentinel():
+    sentinel = os.path.join(ctx.PROJECT_ROOT, _DIGEST_SENTINEL)
+    os.makedirs(os.path.dirname(sentinel), exist_ok=True)
+    import time
+    with open(sentinel, "w") as f:
+        f.write(str(time.time()))
+
+
+@ctx.mcp.tool()
+def check_pipeline() -> str:
+    """Check current pipeline status by reading pipeline.log directly.
+    Reports: IN PROGRESS (pipeline currently running), the finished line
+    (pipeline completed), or FAILED with last 30 lines for diagnosis.
+    This is the ONLY permitted way to check pipeline state — never tail/cat the log."""
+    _track("check_pipeline")
+    log_path = os.path.join(ctx.PROJECT_ROOT, "log", "pipeline.log")
+    if not os.path.isfile(log_path):
+        return "No pipeline.log found — pipeline has not been run yet."
+    try:
+        with open(log_path, encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+    except Exception as e:
+        return f"Could not read pipeline.log: {e}"
+
+    if not lines:
+        return "pipeline.log is empty."
+
+    stripped = [l.rstrip() for l in lines if l.strip()]
+    last2 = stripped[-2:] if len(stripped) >= 2 else stripped
+    last3 = stripped[-3:] if len(stripped) >= 3 else stripped
+    last30 = "\n".join(stripped[-30:])
+
+    # In-progress: last 2 non-empty lines each start with "script in progress"
+    if last2 and all(l.startswith("script in progress") for l in last2):
+        return "Pipeline: IN PROGRESS"
+
+    # Finished: "Pipeline finished" appears in last 3 non-empty lines
+    finished = next((l for l in reversed(last3) if "Pipeline finished" in l), None)
+    if finished:
+        return f"Pipeline: {finished.strip()}"
+
+    # Otherwise: failed
+    return f"Pipeline: FAILED\n\nLast 30 lines:\n{last30}"
+
 
 def _load_trace() -> list[dict]:
     """Wrapper: loads from the canonical trace.jsonl path for this project."""
@@ -25,9 +92,52 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     (what changed vs last run), and ranked evolution proposals. evolve=True (default)
     appends suggest_evolution output so no separate call is needed. critique=True
     appends a musical prose critique via Claude synthesis. Replaces pipeline_digest +
-    regime_anomaly + evolution_delta + composition_critique + suggest_evolution."""
+    regime_anomaly + evolution_delta + composition_critique + suggest_evolution.
+    FRESHNESS GUARD: only runs if pipeline output files are newer than last digest call.
+    If stale, auto-runs check_pipeline and returns its status instead."""
     ctx.ensure_ready_sync()
     _track("pipeline_digest")
+
+    # Freshness guard: only run if pipeline has produced new output since last digest.
+    if not _pipeline_outputs_fresh():
+        status = check_pipeline()
+        # Still show key cached metrics so the return isn't empty
+        stale_summary = ""
+        try:
+            summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-summary.json")
+            if os.path.isfile(summary_path):
+                with open(summary_path) as _sf:
+                    summary = json.load(_sf)
+                beats_data = summary.get("beats", {})
+                total_beats = beats_data.get("totalEntries", "?") if isinstance(beats_data, dict) else "?"
+                regimes = summary.get("regimes", {})
+                total_regime = sum(regimes.values()) if regimes else 1
+                regime_str = ", ".join(f"{k}:{v/total_regime:.0%}" for k, v in sorted(regimes.items(), key=lambda x: -x[1]))
+                top_trust = summary.get("trustDominance", {}).get("dominantSystems", [])
+                trust_str = ", ".join(f"{s['system']}({s.get('score',0):.2f})" for s in top_trust[:3]) if top_trust else "?"
+                fp_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "fingerprint-comparison.json")
+                fp_verdict = "?"
+                if os.path.isfile(fp_path):
+                    with open(fp_path) as _fp:
+                        fp = json.load(_fp)
+                    verdict = fp.get("verdict", "?")
+                    drifted = fp.get("driftedDimensions", 0)
+                    total_fp = fp.get("totalDimensions", 0)
+                    fp_verdict = f"{verdict} ({drifted}/{total_fp} drifted)"
+                stale_summary = (
+                    f"\n## Last Run (cached)\n"
+                    f"  Beats: {total_beats} | Regimes: {regime_str}\n"
+                    f"  Top trust: {trust_str}\n"
+                    f"  Fingerprints: {fp_verdict}\n"
+                )
+        except Exception:
+            pass
+        return (
+            "pipeline_digest: no new pipeline output since last digest.\n"
+            f"{status}"
+            f"{stale_summary}"
+            "\nRun `npm run main` for a fresh pipeline, then call pipeline_digest again."
+        )
 
     try:
         records = _load_trace()
@@ -245,6 +355,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
         except Exception as e:
             out.append(f"\n## Evolution\n*(unavailable: {e})*")
 
+    _touch_digest_sentinel()
     return "\n".join(out)
 
 

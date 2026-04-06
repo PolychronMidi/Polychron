@@ -390,12 +390,40 @@ def drama_map(top_n: int = 5) -> str:
             l_n, l_d = min(losers, key=lambda x: x[1])
             magnitude = w_d - l_d
             reversal_events.append((magnitude, beats[i], w_n, l_n, w_d, l_d))
+    # Trust system → what the listener hears when this system gains/loses influence
+    _TRUST_MUSICAL_MEANING: dict[str, str] = {
+        "restSynchronizer": "coordinated breathing/silence",
+        "stutterContagion": "rhythmic infection spreading",
+        "motifEcho": "imitative counterpoint",
+        "convergenceDetector": "pattern locking/convergence",
+        "convergenceHarmonicTrigger": "harmonic-driven convergence",
+        "convergenceVelocitySurge": "velocity-driven intensity",
+        "dynamicRoleSwap": "voice role exchange",
+        "harmonicIntervalGuard": "interval control/dissonance management",
+        "feedbackOscillator": "oscillatory feedback texture",
+        "temporalGravity": "density gravity pull",
+        "crossLayerSilhouette": "timbral silhouette shaping",
+        "texturalMirror": "spectral mirroring",
+        "rhythmicPhaseLock": "phase synchronization",
+        "rhythmicComplementEngine": "rhythmic complementarity",
+        "grooveTransfer": "groove pattern transfer",
+        "emergentDownbeat": "spontaneous accent",
+        "articulationComplement": "articulation diversity",
+        "phaseAwareCadenceWindow": "cadence timing",
+        "climaxEngine": "climax building",
+        "phaseLock": "phase synchronization",
+        "roleSwap": "voice role exchange",
+    }
     reversal_events.sort(key=lambda x: -x[0])
     if reversal_events:
         out.append(f"## Trust Reversals (top {min(top_n, len(reversal_events))})")
         for magnitude, b, winner, loser, w_d, l_d in reversal_events[:top_n]:
+            w_meaning = _TRUST_MUSICAL_MEANING.get(winner, "")
+            l_meaning = _TRUST_MUSICAL_MEANING.get(loser, "")
             out.append(f"  magnitude={magnitude:.3f}  beat {b['bk']}  S{b['sec']}  {b['regime']}")
-            out.append(f"    ▲ {winner} (+{w_d:.3f})  ▼ {loser} ({l_d:.3f})")
+            w_label = f" ({w_meaning})" if w_meaning else ""
+            l_label = f" ({l_meaning})" if l_meaning else ""
+            out.append(f"    ▲ {winner}{w_label} (+{w_d:.3f})  ▼ {loser}{l_label} ({l_d:.3f})")
         out.append("")
 
     # --- Density contrast pairs: find atmospheric valley (≤2 notes) within 10 beats of dense peak (≥6 notes) ---
