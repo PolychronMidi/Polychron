@@ -222,7 +222,7 @@ traceDrain = (() => {
   /**
    * Record one trace beat entry.
    * @param {string} layer
-  * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, couplingLabels?: any, phaseTelemetry?: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, axisEnergyEquilibrator?: any, transitionReadiness?: any, profilerTelemetry?: any, outputLoadGuard?: any, forcedTransitionEvent?: any, stageTiming?: Record<string,number>|null }} data
+  * @param {{ beatKey: string, timeMs: number, conductorSnap: any, negotiation: any, trustScores: any, regime: any, couplingMatrix: any, couplingLabels?: any, phaseTelemetry?: any, couplingTargets?: any, axisCouplingTotals?: Record<string,number>, axisEnergyShare?: { shares: Record<string,number>, axisGini: number }, couplingGates?: { gateD: number, gateT: number, gateF: number, floorDampen: number, bypassD: number, bypassT: number, bypassF: number }, couplingHomeostasis?: any, axisEnergyEquilibrator?: any, transitionReadiness?: any, profilerTelemetry?: any, outputLoadGuard?: any, forcedTransitionEvent?: any, stageTiming?: Record<string,number>|null, climaxTelemetry?: { level: number, approaching: boolean, peak: boolean, count: number }|null }} data
    */
   function record(layer, data) {
     if (!isTracing || fd === null) return;
@@ -254,6 +254,7 @@ traceDrain = (() => {
       profilerTelemetry: data.profilerTelemetry || undefined,
       outputLoadGuard: data.outputLoadGuard || undefined,
       forcedTransitionEvent: data.forcedTransitionEvent || undefined,
+      climaxTelemetry: data.climaxTelemetry || undefined,
       notes: traceDrainPendingNotes.length > 0 ? traceDrainPendingNotes.slice() : undefined,
       stageTiming: data.stageTiming || undefined
     };

@@ -445,6 +445,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       profilerTelemetry,
       outputLoadGuard: outputLoadGuard || null,
       forcedTransitionEvent: crossLayerBeatRecordTraceCachedForcedTransitionEvent,
+      climaxTelemetry: { level: climaxLevel, approaching: climaxApproaching, peak: crossLayerClimaxEngine.isPeak(), count: crossLayerClimaxEngine.getClimaxCount() },
       stageTiming: stageTiming
     };
     explainabilityBus.emit('trace-beat', layer, tracePayload, absoluteSeconds);

@@ -219,11 +219,12 @@ def regime_timeline(row_width: int = 80) -> str:
 
 
 @ctx.mcp.tool()
-def regime_report(mode: str = "both", row_width: int = 80) -> str:
-    """Regime analysis. mode='timeline': ASCII beat-map (I=initializing E=evolving X=exploring
-    C=coherent) with tension overlay and per-section stats. mode='anomaly': auto-detect
-    death spirals, monopolies, forced-transition storms. mode='both' (default): full report.
-    Replaces regime_timeline as a standalone call."""
+def regime_report(mode: str = "both", row_width: int = 80, top_n: int = 5) -> str:
+    """Regime + drama analysis. mode='timeline': ASCII beat-map (I=initializing E=evolving
+    X=exploring C=coherent) with tension overlay and per-section stats. mode='anomaly':
+    auto-detect death spirals, monopolies, forced-transition storms. mode='drama': find the
+    composition's most intense moments (tension spikes, sustained coherent blocks, trust
+    reversals, density contrast pairs). mode='both' (default): timeline + anomaly."""
     ctx.ensure_ready_sync()
     _track("regime_report")
     from .digest import regime_anomaly
@@ -232,6 +233,141 @@ def regime_report(mode: str = "both", row_width: int = 80) -> str:
         parts.append(regime_timeline(row_width))
     if mode in ("anomaly", "both"):
         parts.append(regime_anomaly())
+    if mode == "drama":
+        parts.append(drama_map(top_n))
     if not parts:
-        return f"Unknown mode '{mode}'. Use 'timeline', 'anomaly', or 'both'."
+        return f"Unknown mode '{mode}'. Use 'timeline', 'anomaly', 'drama', or 'both'."
     return "\n\n".join(parts)
+
+
+def drama_map(top_n: int = 5) -> str:
+    """Find the composition's most dramatically intense moments from the last pipeline run."""
+    ctx.ensure_ready_sync()
+    _track("drama_map")
+
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    if not os.path.isfile(trace_path):
+        return "No trace.jsonl found. Run `npm run main` to generate."
+
+    beats: list[dict] = []
+    try:
+        with open(trace_path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                    if rec.get("recordType") == "snapshot":
+                        continue
+                    bk = rec.get("beatKey", "")
+                    parts_bk = bk.split(":")
+                    sec = int(parts_bk[0]) if parts_bk and parts_bk[0].isdigit() else -1
+                    snap = rec.get("snap", {})
+                    tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
+                    note_count = len(rec.get("notes") or [])
+                    regime = rec.get("regime", "?")
+                    trust = rec.get("trust", {})
+                    beats.append({
+                        "idx": len(beats), "sec": sec, "bk": bk,
+                        "tension": float(tension) if isinstance(tension, (int, float)) else 0.5,
+                        "notes": note_count, "regime": regime, "trust": trust,
+                    })
+                except Exception:
+                    continue
+    except Exception as e:
+        return f"Error reading trace: {e}"
+
+    if len(beats) < 20:
+        return "Not enough trace data (need 20+ beats)."
+
+    out = [f"# Drama Map ({len(beats)} beats)\n"]
+
+    # --- Tension spikes: beats where tension jumped vs 5-beat rolling mean ---
+    window = 5
+    spike_events: list[tuple[float, dict]] = []
+    for i in range(window, len(beats)):
+        window_mean = sum(b["tension"] for b in beats[i - window:i]) / window
+        delta = beats[i]["tension"] - window_mean
+        if abs(delta) > 0.08:
+            spike_events.append((delta, beats[i]))
+    spike_events.sort(key=lambda x: -abs(x[0]))
+    if spike_events:
+        out.append(f"## Tension Spikes (top {min(top_n, len(spike_events))})")
+        for delta, b in spike_events[:top_n]:
+            direction = "▲" if delta > 0 else "▼"
+            out.append(f"  {direction}{delta:+.3f}  beat {b['bk']}  S{b['sec']}  t={b['tension']:.3f}  {b['regime']}  {b['notes']}n")
+        out.append("")
+
+    # --- Sustained coherent blocks (consecutive coherent beats ≥ 8) ---
+    coherent_blocks: list[tuple[int, int, int]] = []  # (start_idx, length, sec)
+    i = 0
+    while i < len(beats):
+        if beats[i]["regime"] == "coherent":
+            j = i
+            while j < len(beats) and beats[j]["regime"] == "coherent":
+                j += 1
+            length = j - i
+            if length >= 8:
+                coherent_blocks.append((i, length, beats[i]["sec"]))
+            i = j
+        else:
+            i += 1
+    coherent_blocks.sort(key=lambda x: -x[1])
+    if coherent_blocks:
+        out.append(f"## Sustained Coherent Blocks (top {min(top_n, len(coherent_blocks))}, ≥8 beats)")
+        for start, length, sec in coherent_blocks[:top_n]:
+            b_start = beats[start]
+            b_end = beats[min(start + length - 1, len(beats) - 1)]
+            avg_tension = sum(beats[k]["tension"] for k in range(start, start + length)) / length
+            out.append(f"  {length:3d}b  {b_start['bk']} → {b_end['bk']}  S{sec}  avg_t={avg_tension:.3f}")
+        out.append("")
+
+    # --- Trust reversals: one system rose ≥0.04 while another fell ≥0.04 in same beat ---
+    reversal_events: list[tuple[float, dict, str, str, float, float]] = []
+    for i in range(1, len(beats)):
+        prev_t = beats[i - 1]["trust"]
+        curr_t = beats[i]["trust"]
+        risers = [(n, curr_t[n].get("score", 0) - prev_t.get(n, {}).get("score", curr_t[n].get("score", 0)))
+                  for n in curr_t if isinstance(curr_t[n], dict) and n in prev_t and isinstance(prev_t.get(n), dict)]
+        winners = [(n, d) for n, d in risers if d >= 0.04]
+        losers = [(n, d) for n, d in risers if d <= -0.04]
+        if winners and losers:
+            w_n, w_d = max(winners, key=lambda x: x[1])
+            l_n, l_d = min(losers, key=lambda x: x[1])
+            magnitude = w_d - l_d
+            reversal_events.append((magnitude, beats[i], w_n, l_n, w_d, l_d))
+    reversal_events.sort(key=lambda x: -x[0])
+    if reversal_events:
+        out.append(f"## Trust Reversals (top {min(top_n, len(reversal_events))})")
+        for magnitude, b, winner, loser, w_d, l_d in reversal_events[:top_n]:
+            out.append(f"  magnitude={magnitude:.3f}  beat {b['bk']}  S{b['sec']}  {b['regime']}")
+            out.append(f"    ▲ {winner} (+{w_d:.3f})  ▼ {loser} ({l_d:.3f})")
+        out.append("")
+
+    # --- Density contrast pairs: find atmospheric valley (≤2 notes) within 10 beats of dense peak (≥6 notes) ---
+    contrast_pairs: list[tuple[float, int, int]] = []
+    for i in range(len(beats)):
+        if beats[i]["notes"] >= 6:  # dense beat
+            # Look for valley within ±10 beats
+            window_start = max(0, i - 10)
+            window_end = min(len(beats), i + 11)
+            for j in range(window_start, window_end):
+                if beats[j]["notes"] <= 2 and abs(i - j) >= 3:
+                    contrast = beats[i]["notes"] - beats[j]["notes"]
+                    contrast_pairs.append((contrast, i, j))
+    contrast_pairs.sort(key=lambda x: -x[0])
+    seen_peaks: set = set()
+    unique_pairs: list = []
+    for contrast, peak_i, valley_j in contrast_pairs:
+        if peak_i not in seen_peaks:
+            seen_peaks.add(peak_i)
+            unique_pairs.append((contrast, peak_i, valley_j))
+    if unique_pairs:
+        out.append(f"## Density Contrast Pairs (peak→valley, top {min(top_n, len(unique_pairs))})")
+        for contrast, peak_i, valley_j in unique_pairs[:top_n]:
+            b_peak = beats[peak_i]
+            b_valley = beats[valley_j]
+            gap = abs(peak_i - valley_j)
+            direction = "→" if valley_j > peak_i else "←"
+            out.append(f"  +{contrast}n  dense={b_peak['bk']}({b_peak['notes']}n,t={b_peak['tension']:.2f}) {direction}{gap}b valley={b_valley['bk']}({b_valley['notes']}n,t={b_valley['tension']:.2f})")
+        out.append("")
+
+    return "\n".join(out)
