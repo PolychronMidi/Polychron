@@ -3,6 +3,7 @@
 // creating "impact" moments driven by cross-layer agreement.
 
 convergenceVelocitySurge = (() => {
+  const V = validator.create('convergenceVelocitySurge');
   let surgeActive = 0;
   let surgeMultiplier = 1.0;
   let lastSurgeTime = -Infinity;
@@ -27,7 +28,11 @@ convergenceVelocitySurge = (() => {
       const stop = safePreBoot.call(() => harmonicJourney.getStop(sectionIndex), null);
       const dist = (stop && Number.isFinite(stop.distance)) ? stop.distance : 0;
       const distScale = 1.0 + clamp(dist * 0.04, 0, 0.15);
-      surgeMultiplier = rf(1.15, 1.35) * distScale;
+      // Melodic coupling: tessituraLoad amplifies surge at extreme registers.
+      // High register pressure at a convergence moment -> more expressive impact.
+      const melodicCtxCVS = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+      const tessLoad = melodicCtxCVS ? V.optionalFinite(melodicCtxCVS.tessituraLoad, 0) : 0;
+      surgeMultiplier = rf(1.15, 1.35) * distScale * (1.0 + tessLoad * 0.20);
       lastSurgeTime = absoluteSeconds;
       // R23: convergence cascade - surge triggers emergent downbeat tempo mult
       if (surgeMultiplier > 1.2) {

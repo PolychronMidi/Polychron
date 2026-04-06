@@ -3,6 +3,7 @@
 // Per-layer EMA prevents cross-layer contamination.
 
 stutterTempoFeel = (() => {
+  const V = validator.create('stutterTempoFeel');
   const emaByLayer = { L1: 0.3, L2: 0.3 };
   const EMA_ALPHA = 0.18;
 
@@ -11,7 +12,11 @@ stutterTempoFeel = (() => {
     const raw = safePreBoot.call(() => stutterFeedbackListener.getIntensity(), null);
     const intensity = (raw && Number.isFinite(raw.overall)) ? raw.overall : 0.3;
     emaByLayer[layer] += (intensity - emaByLayer[layer]) * EMA_ALPHA;
-    return clamp((emaByLayer[layer] - 0.3) * 0.06, -0.03, 0.03);
+    const base = clamp((emaByLayer[layer] - 0.3) * 0.06, -0.03, 0.03);
+    // Melodic coupling: ascending phrases micro-accelerate, descending micro-decelerate.
+    const melodicCtxSTF = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const dirBias = melodicCtxSTF ? V.optionalFinite(melodicCtxSTF.directionBias, 0) : 0;
+    return clamp(base + dirBias * 0.008, -0.04, 0.04);
   }
 
   function reset() { emaByLayer.L1 = 0.3; emaByLayer.L2 = 0.3; }

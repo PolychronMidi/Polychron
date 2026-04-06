@@ -53,6 +53,15 @@
             "command": "bash tools/HME/hooks/pretooluse_bash.sh"
           }
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/pretooluse_read.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
