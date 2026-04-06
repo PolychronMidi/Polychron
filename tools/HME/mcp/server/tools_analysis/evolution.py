@@ -60,8 +60,8 @@ def evolution_patterns() -> str:
     journal_tail = content[-4000:]
     user_text = (
         f"Evolution journal excerpt (last ~4000 chars of {len(content)} total):\n{journal_tail}\n\n"
-        f"Stats: {len(rounds)} rounds, {len(confirmed)} confirmed, "
-        f"{len(refuted)} refuted, {len(inconclusive)} inconclusive\n\n"
+        f"Stats: {len(rounds)} rounds, {len(confirmed_verdicts)} confirmed, "
+        f"{len(drifted_verdicts)} drifted/refuted, {len(inconclusive_verdicts)} inconclusive\n\n"
         "In 5 bullet points identify:\n"
         "(1) which types of evolutions succeed most often and why,\n"
         "(2) which subsystems are most vs least receptive to change,\n"
@@ -253,7 +253,7 @@ def hme_hot_reload(modules: str = "") -> str:
 
     RELOADABLE = [
         "synthesis", "symbols", "workflow", "reasoning", "health",
-        "evolution", "runtime", "composition", "trust_analysis",
+        "evolution", "evolution_next", "runtime", "composition", "trust_analysis",
         "digest", "section_compare", "perceptual",
     ]
     if not modules or modules.strip().lower() == "all":
@@ -272,7 +272,17 @@ def hme_hot_reload(modules: str = "") -> str:
             full = f"server.tools_analysis.{name}"
             mod = sys.modules.get(full)
             if mod is None:
-                results.append(f"  SKIP {name}: not in sys.modules")
+                # New module: import it for the first time
+                try:
+                    mod = importlib.import_module(f".{name}", "server.tools_analysis")
+                    tools_new = {
+                        tname for tname, t in inner._tool_manager._tools.items()
+                        if getattr(t.fn, "__module__", "") == full
+                           or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
+                    }
+                    results.append(f"  NEW {name}: {len(tools_new)} tools loaded")
+                except Exception as e:
+                    results.append(f"  ERR {name} (import): {e}")
                 continue
             try:
                 # Count tools registered from this module before reload

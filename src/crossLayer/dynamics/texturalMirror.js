@@ -70,6 +70,21 @@ texturalMirror = (() => {
       preferredMode = 'flurry';
     }
 
+    // R59: melodic contour gates texture mode. Rising arc builds energy -> push toward
+    // energetic textures; falling releases energy -> calm down. High thematic density ->
+    // reduce texture complexity (motif echo already provides melodic richness).
+    const melodicCtxTM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    if (melodicCtxTM) {
+      if (melodicCtxTM.contourShape === 'rising') {
+        if (preferredMode === 'sparse') preferredMode = 'normal';
+        else if (preferredMode === 'normal') preferredMode = 'flurry';
+      } else if (melodicCtxTM.contourShape === 'falling') {
+        if (preferredMode === 'flurry' || preferredMode === 'dense') preferredMode = 'normal';
+        else if (preferredMode === 'chordBurst') preferredMode = 'sparse';
+      }
+      if (melodicCtxTM.thematicDensity > 0.65 && preferredMode === 'dense') preferredMode = 'normal';
+    }
+
     // Weight: higher interaction target - stronger suggestion
     // R92 E5: Regime-responsive texture suggestion weight. Exploring
     // passages benefit from stronger cross-layer texture contrast (more
@@ -95,7 +110,11 @@ texturalMirror = (() => {
       variance /= m.max(h.length, 1);
       return clamp(0.5 - m.sqrt(variance) * 2, -0.1, 0.15);
     })();
-    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) + coherenceBoost + spectralBoost, 0.1, 0.8);
+    const melodicWeightTM = melodicCtxTM
+      ? (melodicCtxTM.contourShape === 'rising' ? 1.12 : melodicCtxTM.contourShape === 'falling' ? 0.88 : 1.0)
+        * (melodicCtxTM.counterpoint === 'contrary' ? 1.08 : 1.0)
+      : 1.0;
+    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) * melodicWeightTM + coherenceBoost + spectralBoost, 0.1, 0.8);
 
     return { preferredMode, weight };
   }
