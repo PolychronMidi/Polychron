@@ -46,7 +46,17 @@ convergenceHarmonicTrigger = (() => {
     let changeType = 'modal-color'; // default: add modal interchange color
     let bias = 0;
 
+    // Melodic coupling: directionBias primes the change type when no explicit alignment is available.
+    // Ascending melody at convergence → dominant-push (amplify the build).
+    // Descending melody at convergence → tonic-reaffirm (invite resolution).
+    const melodicCtxCHT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const dirBias = melodicCtxCHT ? V.optionalFinite(melodicCtxCHT.directionBias, 0) : 0;
+
     const alignment = (ev.alignment !== undefined) ? ev.alignment : null;
+    if (!alignment && melodicCtxCHT) {
+      if (dirBias > 0.3) { changeType = 'dominant-push'; bias = clamp(dirBias, 0, 1); }
+      else if (dirBias < -0.3) { changeType = 'tonic-reaffirm'; bias = clamp(-dirBias, 0, 1); }
+    }
     if (alignment && typeof alignment === 'object') {
       const tonicBias = clamp(V.requireFinite(alignment.tonicBias, 'onConvergence.alignment.tonicBias'), 0, 1);
       const dominantBias = clamp(V.requireFinite(alignment.dominantBias, 'onConvergence.alignment.dominantBias'), 0, 1);

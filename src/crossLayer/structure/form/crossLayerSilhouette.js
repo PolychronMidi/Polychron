@@ -46,7 +46,14 @@ crossLayerSilhouette = (() => {
     // Compute raw metrics
     const rawDensity = clamp(heat, 0, 1);
     const rawRegister = clamp(spectralComplement.gapWeight, 0, 1);
-    const rawDynamic = convergenceRecent ? 0.7 : 0.4;
+    // Melodic coupling: contourShape amplifies or dampens the dynamic reading.
+    // Rising contour -> higher dynamic presence (silhouette tracks the build).
+    // Falling contour -> softer dynamic presence (silhouette tracks the descent).
+    const melodicCtxCS = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const contourDynBoost = melodicCtxCS
+      ? (melodicCtxCS.contourShape === 'rising' ? 0.12 : melodicCtxCS.contourShape === 'falling' ? -0.08 : 0)
+      : 0;
+    const rawDynamic = clamp((convergenceRecent ? 0.7 : 0.4) + contourDynBoost, 0, 1);
     const rawEntropy = V.optionalFinite(entropyReg.currentEntropy, 0.5);
 
     // Regime-responsive smoothing: faster tracking during exploring, more stable arcs during coherent

@@ -15,11 +15,11 @@ require('./crossLayerEmissionGateway');
 
 require('./rhythm');
 
-require('./harmony');
-
 require('./dynamics');
 
 require('./melody');
+
+require('./harmony');
 // Subsystem groups - each subfolder index.js loads its own modules.
 
 require('./conductorSignalBridge');

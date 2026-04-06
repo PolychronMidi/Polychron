@@ -60,6 +60,8 @@ Modules register density/tension/flicker biases via `conductorIntelligence.regis
 
 **`conductorState`** holds the mutable per-beat state (densityMultiplier, tension, flicker, regime, playProb, stutterProb, etc). Cross-layer must NOT read this directly — use `conductorSignalBridge.getSignals()` (ESLint `no-direct-conductor-state-from-crosslayer`). `traceDrain` captures snap fields from this into `trace.jsonl`.
 
+**Regime access in crossLayer modules**: use `safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving')` — do NOT call `systemDynamicsProfiler.getSnapshot()` just to read `regime`. `systemDynamicsProfiler` is for the conductor/coupling engine only; `regimeClassifier` is the shared read-only source.
+
 ## The Signal Bridge
 
 **Firewall boundary 1.** `conductorSignalBridge` (crossLayer module) caches conductor signals per-beat via a registered recorder. CrossLayer modules read the bridge, never the conductor directly. 43 callers — the critical architectural boundary between conductor and crossLayer subsystems.
@@ -198,6 +200,33 @@ All cross-layer buffer writes route through `crossLayerEmissionGateway.emit(sour
 - **Self-calibrating EMAs**: freshnessEma + tessitureEma track running means; L0 post is phrase-gated (every 4+ beats when freshness shock or high tessiture/thematic density)
 - **CIM**: `harmonic-pitchCorrection` dial scales noveltyWeight amplification authority
 - **Feedback enrollment**: `emergentMelodicPort` in `feedbackRegistry`
+
+### Melodic Coupling Pattern
+
+CrossLayer modules couple to `emergentMelodicEngine` by calling `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` and reading from the returned context object. Context fields:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `contourShape` | `'rising'\|'falling'\|'static'\|'arc'` | Overall melodic shape |
+| `directionBias` | `float [-1…1]` | Signed ascending (+) / descending (-) bias |
+| `ascendRatio` | `float [0…1]` | Fraction of recent intervals that ascend |
+| `intervalFreshness` | `float [0…1]` | How novel the current intervals are |
+| `freshnessEma` | `float [0…1]` | Smoothed intervalFreshness |
+| `tessituraLoad` | `float [0…1]` | Register extremity pressure |
+| `tessituraRegion` | string | `'comfortable'\|'high'\|'low'\|'extreme'` |
+| `thematicDensity` | `0\|0.5\|1` | Thematic recall presence |
+| `counterpoint` | string | `'contrary'\|'similar'\|'oblique'\|'insufficient'` |
+| `registerMigrationDir` | string | `'stable'\|'ascending'\|'descending'` |
+
+**Coupling template** (use `V.optionalFinite` for all reads, always fallback to neutral 0.5 or default):
+```js
+const melodicCtxXxx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+const intervalFreshness = melodicCtxXxx ? V.optionalFinite(melodicCtxXxx.intervalFreshness, 0.5) : 0.5;
+// scale: 0=stale → 1.3x; 0.5=neutral → 1.0x; 1.0=fresh → 0.7x
+const freshnessScale = 1.3 - intervalFreshness * 0.6;
+```
+
+Coupled modules (22 as of R63): motifEcho, articulationComplement, texturalMirror, restSynchronizer, rhythmicComplementEngine, stutterContagion, rhythmicPhaseLock, feedbackOscillator, convergenceDetector, temporalGravity, verticalIntervalMonitor, phaseAwareCadenceWindow, cadenceAlignment, polyrhythmicPhasePredictor, emergentDownbeat, crossLayerSilhouette, grooveTransfer, velocityInterference, entropyRegulator.
 
 ## Emergence Boundaries
 

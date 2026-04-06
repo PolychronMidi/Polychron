@@ -172,7 +172,14 @@ entropyRegulator = (() => {
       const narEntry = L0.getLast('self-narration', { layer: 'both' });
       const narMod = narEntry && narEntry.narrative
         ? (narEntry.narrative.includes('crowded') ? -0.03 : narEntry.narrative.includes('sparse') ? 0.03 : 0) : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod;
+      // Melodic coupling: register migration direction nudges entropy target.
+      // Ascending -> more entropy (exploring new register territory needs variety).
+      // Descending -> less entropy (settling into lower register invites consolidation).
+      const melodicCtxER = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+      const melodicMod = melodicCtxER
+        ? (melodicCtxER.registerMigrationDir === 'ascending' ? 0.02 : melodicCtxER.registerMigrationDir === 'descending' ? -0.02 : 0)
+        : 0;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

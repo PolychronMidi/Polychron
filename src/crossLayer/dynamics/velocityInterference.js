@@ -109,8 +109,14 @@ velocityInterference = (() => {
       : regime === 'coherent' ? 0.85
       : 1.0;
     const cimFactor = 0.4 + cimScale * 1.2;
-    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor;
-    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor;
+    // Melodic coupling: tessituraLoad amplifies interference in extreme registers.
+    // High register extremity -> stronger velocity coordination between layers.
+    // Comfortable register -> normal interference level.
+    const melodicCtxVI = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const tessituraLoad = melodicCtxVI ? V.optionalFinite(melodicCtxVI.tessituraLoad, 0) : 0;
+    const melodicIntensityScale = 1.0 + tessituraLoad * 0.25; // [1.0 comfortable ... 1.25 extreme]
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength

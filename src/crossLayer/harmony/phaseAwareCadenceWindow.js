@@ -76,7 +76,12 @@ phaseAwareCadenceWindow = (() => {
     };
     const intent = sectionIntentCurves.getLastIntent();
     const ct = V.optionalFinite(intent.convergenceTarget, 0.5);
-    const phaseDiffThreshold = 0.3 + ct * 0.15;
+    // Melodic coupling: directionBias shifts the phase threshold.
+    // Ascending contour (building) -> narrow window -> resist premature cadence.
+    // Descending contour (resolving) -> widen window -> welcome cadence.
+    const melodicCtxPACW = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const dirBias = melodicCtxPACW ? V.optionalFinite(melodicCtxPACW.directionBias, 0) : 0;
+    const phaseDiffThreshold = clamp(0.3 + ct * 0.15 - dirBias * 0.06, 0.15, 0.55);
     const allowed = Boolean(cadenceSuggested) && snap.confidence >= MIN_CONFIDENCE && snap.phaseDiff <= phaseDiffThreshold;
 
     explainabilityBus.emit('phase-cadence-window', layer, {

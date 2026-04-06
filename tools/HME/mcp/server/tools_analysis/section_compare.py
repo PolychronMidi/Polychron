@@ -293,7 +293,11 @@ def drama_map(top_n: int = 5) -> str:
         out.append(f"## Tension Spikes (top {min(top_n, len(spike_events))})")
         for delta, b in spike_events[:top_n]:
             direction = "▲" if delta > 0 else "▼"
-            out.append(f"  {direction}{delta:+.3f}  beat {b['bk']}  S{b['sec']}  t={b['tension']:.3f}  {b['regime']}  {b['notes']}n")
+            # Annotate section-boundary drops (first 2 beats of a new section)
+            bk_parts = b["bk"].split(":")
+            beat_in_section = int(bk_parts[2]) if len(bk_parts) > 2 and bk_parts[2].isdigit() else 99
+            ctx_note = " [section-start]" if beat_in_section < 2 and delta < 0 else ""
+            out.append(f"  {direction}{delta:+.3f}  beat {b['bk']}  S{b['sec']}  t={b['tension']:.3f}  {b['regime']}  {b['notes']}n{ctx_note}")
         out.append("")
 
     # --- Sustained coherent blocks (consecutive coherent beats ≥ 8) ---
@@ -343,16 +347,23 @@ def drama_map(top_n: int = 5) -> str:
         out.append("")
 
     # --- Density contrast pairs: find atmospheric valley (≤2 notes) within 10 beats of dense peak (≥6 notes) ---
+    # Filter out warmup beats (S0 first 8 beats) and zero-tension beats (section silence)
     contrast_pairs: list[tuple[float, int, int]] = []
     for i in range(len(beats)):
-        if beats[i]["notes"] >= 6:  # dense beat
-            # Look for valley within ±10 beats
-            window_start = max(0, i - 10)
-            window_end = min(len(beats), i + 11)
-            for j in range(window_start, window_end):
-                if beats[j]["notes"] <= 2 and abs(i - j) >= 3:
-                    contrast = beats[i]["notes"] - beats[j]["notes"]
-                    contrast_pairs.append((contrast, i, j))
+        b = beats[i]
+        if b["notes"] < 6:
+            continue
+        if b["tension"] < 0.08:  # skip warmup / pre-tension silence
+            continue
+        if b["sec"] == 0 and b["idx"] < 8:  # skip S0 warmup ramp
+            continue
+        # Look for valley within ±10 beats
+        window_start = max(0, i - 10)
+        window_end = min(len(beats), i + 11)
+        for j in range(window_start, window_end):
+            if beats[j]["notes"] <= 2 and abs(i - j) >= 3 and beats[j]["tension"] >= 0.05:
+                contrast = beats[i]["notes"] - beats[j]["notes"]
+                contrast_pairs.append((contrast, i, j))
     contrast_pairs.sort(key=lambda x: -x[0])
     seen_peaks: set = set()
     unique_pairs: list = []
