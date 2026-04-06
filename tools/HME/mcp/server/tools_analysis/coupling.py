@@ -291,7 +291,9 @@ def _format_clusters(clusters, corr, modules, n_beats, coupling_state, trust, mi
             file_name = _TRUST_FILE_ALIASES.get(m_name, m_name)
             info = coupling_state.get(m_name, {}) or coupling_state.get(file_name, {})
             display_name = file_name if file_name != m_name else m_name
-            tag = "[MEL]" if info.get("melodic") else "[---]"
+            has_m = bool(info.get("melodic"))
+            has_r = bool(info.get("rhythm"))
+            tag = "[M+R]" if has_m and has_r else "[MEL]" if has_m else "[RHY]" if has_r else "[---]"
 
             others = [o for o in cluster if o != m_name]
             top2 = sorted(others, key=lambda o: corr.get((m_name, o), 0), reverse=True)[:2]
@@ -505,15 +507,20 @@ def cluster_personality() -> str:
 
         coupled_dims: list[str] = []
         rhythm_coupled_count = 0
+        melodic_only_members: list[str] = []
         uncoupled_members: list[str] = []
         for m in cluster:
             file_name = _TRUST_FILE_ALIASES.get(m, m)
             info = coupling_state.get(m, {}) or coupling_state.get(file_name, {})
-            if info.get("melodic"):
+            has_m = bool(info.get("melodic"))
+            has_r = bool(info.get("rhythm"))
+            if has_m:
                 coupled_dims.extend(info.get("melodic_dims", []))
-            if info.get("rhythm"):
+            if has_r:
                 rhythm_coupled_count += 1
-            if not info.get("melodic") and not info.get("rhythm"):
+            if has_m and not has_r:
+                melodic_only_members.append(file_name)
+            elif not has_m and not has_r:
                 uncoupled_members.append(file_name)
 
         unique_dims = sorted(set(coupled_dims))
@@ -537,6 +544,8 @@ def cluster_personality() -> str:
         if unique_dims:
             out.append(f"  Melodic dims: [{', '.join(unique_dims[:8])}]")
         out.append(f"  Rhythm-coupled: {rhythm_coupled_count}/{len(cluster)} members")
+        if melodic_only_members:
+            out.append(f"  Melody-only (rhythm gap): {', '.join(melodic_only_members[:8])}")
         if uncoupled_members:
             out.append(f"  Fully uncoupled: {', '.join(uncoupled_members[:6])}")
         if bond_pair[0]:
