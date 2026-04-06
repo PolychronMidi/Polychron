@@ -102,24 +102,33 @@ rhythmicComplementEngine = (() => {
     const strength = clamp(intent.interactionTarget * STRENGTH_SCALE - STRENGTH_OFFSET, 0, 1);
     if (rf() > strength * STRENGTH_GATE) return { time: onTime, velocityScale: 1.0, modified: false };
 
+    // R58: melodic contour modulates complement strength. Rising -> stronger momentum.
+    // Falling -> softer complements. Contrary counterpoint -> tighter rhythmic contrast.
+    const melodicCtxRCE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicMult = melodicCtxRCE
+      ? (melodicCtxRCE.contourShape === 'rising' ? 1.15 : melodicCtxRCE.contourShape === 'falling' ? 0.85 : 1.0)
+      * (melodicCtxRCE.counterpoint === 'contrary' ? 1.10 : 1.0)
+      : 1.0;
+    const es = clamp(strength * melodicMult, 0, 1);
+
     if (mode === 'hocket') {
       // Shift onset by half a beat to interleave (seconds)
       const halfBeatSecs = spBeat * 0.5;
-      const shift = halfBeatSecs * rf(HOCKET_SHIFT_MIN, HOCKET_SHIFT_MAX) * strength;
-      return { time: onTime + shift, velocityScale: 1.0 + strength * HOCKET_VEL_BOOST, modified: true };
+      const shift = halfBeatSecs * rf(HOCKET_SHIFT_MIN, HOCKET_SHIFT_MAX) * es;
+      return { time: onTime + shift, velocityScale: 1.0 + es * HOCKET_VEL_BOOST, modified: true };
     }
 
     if (mode === 'antiphony') {
       // Small delay for call-response feel (seconds)
-      const responseSecs = spBeat * rf(ANTIPHONY_DELAY_MIN, ANTIPHONY_DELAY_MAX) * strength;
-      return { time: onTime + responseSecs, velocityScale: ANTIPHONY_VEL_BASE + strength * ANTIPHONY_VEL_SCALE, modified: true };
+      const responseSecs = spBeat * rf(ANTIPHONY_DELAY_MIN, ANTIPHONY_DELAY_MAX) * es;
+      return { time: onTime + responseSecs, velocityScale: ANTIPHONY_VEL_BASE + es * ANTIPHONY_VEL_SCALE, modified: true };
     }
 
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
       let grooveOffset = grooveTransfer.applyOffset(crossLayerHelpers.getOtherLayer(layer), onTime, 'beat') - onTime;
       if (!Number.isFinite(grooveOffset)) grooveOffset = 0;
-      return { time: onTime + grooveOffset * strength * CANON_GROOVE_SCALE, velocityScale: CANON_VELOCITY, modified: grooveOffset !== 0 };
+      return { time: onTime + grooveOffset * es * CANON_GROOVE_SCALE, velocityScale: CANON_VELOCITY, modified: grooveOffset !== 0 };
     }
 
     return { time: onTime, velocityScale: 1.0, modified: false };

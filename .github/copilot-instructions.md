@@ -118,9 +118,9 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 ## Perceptual Intelligence (Neural Audio Analysis)
 
 Three-phase perceptual stack on Tesla M40 GPU, all at **15% confidence** until verified against listening:
-- **Phase 1**: Run-history snapshots (`scripts/pipeline/snapshot-run.js`) — trace features auto-captured per pipeline run. Label with `--label STABLE`. Training at 15 labeled runs.
-- **Phase 2**: EnCodec 24kHz neural audio codec — per-section token entropy (musical complexity). Validated: conductor tension correlates r=0.644 with CB0 entropy.
-- **Phase 3**: CLAP (HTSAT-tiny) — natural language audio queries. Text↔audio similarity for probing composition character.
+- **Phase 1**: Run-history snapshots (`scripts/pipeline/snapshot-run.js`) — trace features auto-captured per pipeline run. Label with `--label STABLE` or `--label-bulk VERDICT --since ISO --until ISO`. Training at 15 labeled runs; `train-verdict-predictor.js` runs each pipeline, outputting predicted verdict probability from LogisticRegression weights in `metrics/verdict-model.json`.
+- **Phase 2**: EnCodec 24kHz neural audio codec — per-section token entropy (musical complexity). Validated: conductor tension correlates r=0.644 with CB0 entropy. CB0 deviation per section → tension bias modifier in `src/conductor/melodic/perceptualTensionBias.js` (±0.08 max, confidence-scaled, closes the tension→CB0→tension loop).
+- **Phase 3**: CLAP (HTSAT-tiny) — natural language audio queries. Per-section xenolinguistic probes (alien/organic/chaotic/sparse) stored in `encodec_sections[sec].clap`. CLAP guidance feeds `sectionIntentCurves.js` (±0.06 per target, confidence-scaled) to nudge density/dissonance/interaction away from dominant section character.
 
 Perceptual snapshot with audio: `node scripts/pipeline/snapshot-run.js --perceptual` (checks WAV freshness).
 

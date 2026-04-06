@@ -95,12 +95,24 @@ stutterContagion = (() => {
     const decayedIntensity = matchIntensity * decay;
     if (decayedIntensity < 0.05) return null;
 
+    // R58: melodic context gates contagion. High thematic density -> reduce (motif echo
+    // already provides rhythmic "infection"). Stale intervals -> boost (rhythmic novelty).
+    // Contrary counterpoint -> slight boost (opposing motion benefits from interruption).
+    const melodicCtxSC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicContagionScale = melodicCtxSC
+      ? clamp(1.0 - melodicCtxSC.thematicDensity * 0.20
+        + (melodicCtxSC.intervalFreshness < 0.40 ? 0.10 : 0)
+        + (melodicCtxSC.counterpoint === 'contrary' ? 0.08 : 0), 0.65, 1.25)
+      : 1.0;
+    const gatedIntensity = decayedIntensity * melodicContagionScale;
+    if (gatedIntensity < 0.05) return null;
+
     // Convert the source stutter's ms to this layer's tick space
-  const syncOffset = crossLayerHelpers.syncOffset(match.timeInSeconds);
+    const syncOffset = crossLayerHelpers.syncOffset(match.timeInSeconds);
 
     return {
       syncOffset,
-      intensity: decayedIntensity,
+      intensity: gatedIntensity,
       channels: matchChannels,
       type: matchType
     };
