@@ -76,7 +76,14 @@ negotiationEngine = (() => {
     const rawPlayScale = (PLAY_DENSITY_BASE + intent.densityTarget * PLAY_DENSITY_SCALE) * (PLAY_TRUST_BASE + trustPhase * PLAY_TRUST_SCALE);
     const playScaleCap = context.playProb < 0.15 ? m.min(rawPlayScale, 1.0) : rawPlayScale;
     const playScale = clamp(playScaleCap, PLAY_SCALE_MIN, PLAY_SCALE_MAX);
-    const stutterScale = clamp((STUTTER_INTERACT_BASE + intent.interactionTarget * STUTTER_INTERACT_SCALE) * (STUTTER_TRUST_BASE + trustStutter * STUTTER_TRUST_SCALE), STUTTER_SCALE_MIN, STUTTER_SCALE_MAX);
+    const stutterRaw = (STUTTER_INTERACT_BASE + intent.interactionTarget * STUTTER_INTERACT_SCALE) * (STUTTER_TRUST_BASE + trustStutter * STUTTER_TRUST_SCALE);
+    // Melodic coupling: falling contour invites rhythmic fill (stutter up);
+    // rising contour preserves the build (stutter down).
+    const melodicCtxNE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const contourStutterBias = melodicCtxNE
+      ? (melodicCtxNE.contourShape === 'falling' ? 1.08 : melodicCtxNE.contourShape === 'rising' ? 0.92 : 1.0)
+      : 1.0;
+    const stutterScale = clamp(stutterRaw * contourStutterBias, STUTTER_SCALE_MIN, STUTTER_SCALE_MAX);
 
     let playProb = clamp(context.playProb * playScale * clamp(PLAY_ENTROPY_BASE + entropyScale * PLAY_ENTROPY_SCALE, PLAY_ENTROPY_MIN, PLAY_ENTROPY_MAX), 0, 1);
     let stutterProb = clamp(context.stutterProb * stutterScale * clamp(STUTTER_ENTROPY_BASE + entropyScale * STUTTER_ENTROPY_SCALE, STUTTER_ENTROPY_MIN, STUTTER_ENTROPY_MAX), 0, 1);

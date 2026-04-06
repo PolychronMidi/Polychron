@@ -20,7 +20,13 @@ convergenceMemory = (() => {
     const bin = beatIndex % BINS;
     const avgCount = totalSamples / BINS;
     const binScore = histogram[bin] / m.max(1, avgCount);
-    return binScore > 1.5 ? clamp(1.0 + (binScore - 1.5) * 0.3, 1.0, 1.6) : 1.0;
+    // Melodic coupling: falling contour at a historical convergence point = natural cadence -> amplify.
+    // Rising contour = momentum building -> moderate the convergence pull.
+    const melodicCtxCM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const contourBoost = melodicCtxCM
+      ? (melodicCtxCM.contourShape === 'falling' ? 1.15 : melodicCtxCM.contourShape === 'rising' ? 0.88 : 1.0)
+      : 1.0;
+    return binScore > 1.5 ? clamp((1.0 + (binScore - 1.5) * 0.3) * contourBoost, 1.0, 1.6) : 1.0;
   }
 
   function reset() {
