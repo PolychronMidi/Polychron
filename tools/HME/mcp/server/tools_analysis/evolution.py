@@ -372,6 +372,8 @@ def hme_hot_reload(modules: str = "") -> str:
         "evolution", "evolution_next", "runtime", "composition", "trust_analysis",
         "digest", "section_compare", "perceptual",
     ]
+    # Top-level server modules (not under tools_analysis/)
+    TOP_LEVEL_RELOADABLE = ["tools_search"]
     if not modules or modules.strip().lower() == "all":
         targets = RELOADABLE
     else:
@@ -382,15 +384,31 @@ def hme_hot_reload(modules: str = "") -> str:
     old_warn = inner._tool_manager.warn_on_duplicate_tools
     inner._tool_manager.warn_on_duplicate_tools = False
 
+    # Include top-level modules if requested explicitly or via "all"
+    if not modules or modules.strip().lower() == "all":
+        targets = targets + TOP_LEVEL_RELOADABLE
+    else:
+        # Check if any requested module is top-level
+        for t in list(targets):
+            if t in TOP_LEVEL_RELOADABLE and t not in RELOADABLE:
+                pass  # will be handled by prefix check below
+
     results = []
     try:
         for name in targets:
-            full = f"server.tools_analysis.{name}"
+            # Determine module path: top-level or tools_analysis
+            if name in TOP_LEVEL_RELOADABLE:
+                full = f"server.{name}"
+            else:
+                full = f"server.tools_analysis.{name}"
             mod = sys.modules.get(full)
             if mod is None:
                 # New module: import it for the first time
                 try:
-                    mod = importlib.import_module(f".{name}", "server.tools_analysis")
+                    if name in TOP_LEVEL_RELOADABLE:
+                        mod = importlib.import_module(f".{name}", "server")
+                    else:
+                        mod = importlib.import_module(f".{name}", "server.tools_analysis")
                     tools_new = {
                         tname for tname, t in inner._tool_manager._tools.items()
                         if getattr(t.fn, "__module__", "") == full

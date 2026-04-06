@@ -98,7 +98,9 @@ def trust_trajectory(system_name: str) -> str:
     if not all_weights:
         return f"Trust system '{system_name}' not found in trace. Check spelling — use trust_report() (no args) for valid system names."
 
-    parts_out = [f"# Trust Trajectory: {system_name}\n"]
+    role = TRUST_MUSICAL_MEANING.get(system_name, "")
+    role_s = f" — {role}" if role else ""
+    parts_out = [f"# Trust Trajectory: {system_name}{role_s}\n"]
 
     # Global stats
     avg_w = sum(all_weights) / len(all_weights)
@@ -215,7 +217,12 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
                 f"[{min(ws):.3f}–{max(ws):.3f}] | "
                 f"score avg={sum(ss)/len(ss):.3f} [{min(ss):.3f}–{max(ss):.3f}]")
 
-    lines = [f"# Trust Rivalry: {system_a} vs {system_b}\n",
+    role_a = TRUST_MUSICAL_MEANING.get(system_a, "")
+    role_b = TRUST_MUSICAL_MEANING.get(system_b, "")
+    subtitle = ""
+    if role_a and role_b:
+        subtitle = f"\n  {role_a} vs {role_b}\n"
+    lines = [f"# Trust Rivalry: {system_a} vs {system_b}{subtitle}",
              _fmt(system_a), _fmt(system_b)]
 
     # Section-level dominance (much more useful than raw beat coords)

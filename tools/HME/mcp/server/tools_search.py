@@ -315,6 +315,54 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
         status = ctx.project_engine.get_status()
         if not status["indexed"]:
             return "No results: codebase not indexed yet. Run index_codebase first."
+        # Auto-retry with shorter query variants (verbose queries dilute semantic signal)
+        import re as _re
+        _SEARCH_STOPWORDS = {"where", "does", "which", "what", "when", "that", "this",
+                             "with", "from", "have", "been", "into", "make", "more",
+                             "about", "would", "should", "could", "their", "there",
+                             "these", "those", "using", "every", "other", "after",
+                             "modules", "function", "read", "aware", "behavior"}
+        terms = [w for w in _re.findall(r'\b[a-zA-Z]{3,}\b', query) if w.lower() not in _SEARCH_STOPWORDS]
+        retry_results = []
+        retry_query = ""
+        # Phase 1: shorter query, same path filter
+        for n_terms in [min(4, len(terms)), min(2, len(terms))]:
+            if n_terms < 1:
+                break
+            short_query = " ".join(terms[:n_terms])
+            if short_query == query:
+                continue
+            results = ctx.project_engine.search(short_query, top_k=top_k, language=lang)
+            if path_filter:
+                results = [r for r in results if path_filter in r.get('source', '')][:top_k]
+            if results:
+                retry_results = results
+                retry_query = short_query
+                break
+        # Phase 2: if path filter yielded nothing, try without it
+        if not retry_results and path_filter:
+            for n_terms in [min(4, len(terms)), min(2, len(terms)), len(terms)]:
+                if n_terms < 1:
+                    break
+                short_query = " ".join(terms[:n_terms]) if n_terms < len(terms) else " ".join(terms)
+                results = ctx.project_engine.search(short_query, top_k=top_k, language=lang)
+                if results:
+                    retry_results = results[:top_k]
+                    retry_query = f"{short_query} (path filter '{path_filter}' dropped — no matches there)"
+                    break
+        if retry_results:
+            code_lines = []
+            for r in retry_results:
+                if concise:
+                    code_lines.append(f"{r['source']}:{r['start_line']} ({fmt_sim_score(r['score'])})")
+                else:
+                    summary = summarize_chunk(r['content'], r['language'])
+                    code_lines.append(
+                        f"{r['source']}:{r['start_line']}-{r['end_line']} "
+                        f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}"
+                    )
+            header = f"=== Main (auto-retried: '{retry_query}') ==="
+            return header + "\n" + "\n".join(code_lines)
         return f"No results for '{query}'. Try: broader terms, remove path filter, or check spelling. Index has {status.get('total_chunks', '?')} chunks across {status.get('total_files', '?')} files."
 
     return "\n\n".join(output_parts)
