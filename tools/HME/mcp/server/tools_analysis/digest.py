@@ -12,11 +12,14 @@ logger = logging.getLogger("HME")
 
 from . import _load_trace as _load_trace_impl  # shared helper
 
-# Files written by every pipeline run — used to detect freshness
+# Files written by every pipeline run — used to detect freshness.
+# pipeline.log is written LAST (the "Pipeline finished" line), so it detects completion
+# even when digest was called mid-run and already consumed the early metrics files.
 _PIPELINE_OUTPUT_FILES = [
     "metrics/trace.jsonl",
     "metrics/trace-summary.json",
     "metrics/fingerprint-comparison.json",
+    "log/pipeline.log",
 ]
 # Sentinel file records when pipeline_digest last ran successfully
 _DIGEST_SENTINEL = ".claude/mcp/HME/.last_pipeline_digest"
