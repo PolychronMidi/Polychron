@@ -9,17 +9,24 @@ from . import _track, _load_trace
 logger = logging.getLogger("HME")
 
 
-def _rank_by_cluster_pull(coupling_state: dict, trace_records: list, top_n: int = 8) -> list:
+def _rank_by_cluster_pull(coupling_state: dict, trace_records: list, top_n: int = 8,
+                          uncoupled_override: set | None = None) -> list:
     """Rank uncoupled modules by correlation strength with melodically-coupled neighbors.
 
     Returns list of (module_name, pull_score) sorted descending. pull_score is the
     mean |r| across all coupled modules with |r| >= 0.25 — a direct measure of
     how strongly the coupled network is 'pulling' this module into shared musical logic.
+    uncoupled_override: if provided, rank these specific module names instead of auto-detecting.
     """
     from .coupling import _pearson
 
     coupled = {name for name, info in coupling_state.items() if info.get("melodic")}
-    uncoupled = {name for name, info in coupling_state.items() if not info.get("melodic")}
+    uncoupled = uncoupled_override if uncoupled_override is not None else \
+        {name for name, info in coupling_state.items() if not info.get("melodic")}
+    # When using uncoupled_override, exclude those modules from the coupled reference set
+    # to prevent self-correlation (a module can't be its own neighbor)
+    if uncoupled_override is not None:
+        coupled -= uncoupled_override
 
     if not trace_records or not coupled or not uncoupled:
         return [(m, 0.0) for m in sorted(uncoupled)[:top_n]]
@@ -415,6 +422,17 @@ def suggest_evolution() -> str:
             signals["cluster_priority_targets"] = [
                 f"{name}(pull:{score:.2f})" for name, score in cluster_targets
             ]
+        elif rhythm_uncoupled_names:
+            # Melodically-uncoupled modules have no trace coverage (infrastructure);
+            # fall back to ranking rhythm-uncoupled modules against the coupled cluster.
+            rhythm_cluster = _rank_by_cluster_pull(
+                coupling_state, trace_records,
+                uncoupled_override=set(rhythm_uncoupled_names)
+            )
+            if rhythm_cluster:
+                signals["cluster_priority_targets"] = [
+                    f"{name}(pull:{score:.2f})[+rhythm]" for name, score in rhythm_cluster
+                ]
 
     # 4. Narrative excerpt
     narrative_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
@@ -495,11 +513,16 @@ def suggest_evolution() -> str:
 
     # Generate proposals from cluster_priority_targets
     cluster_targets = signals.get("cluster_priority_targets", [])
+    is_rhythm_fallback = cluster_targets and cluster_targets[0].endswith("[+rhythm]")
     if cluster_targets:
-        parts.append("## Ranked by Cluster Pull (cooperative correlation with coupled modules)\n")
+        heading = ("## Ranked by Cluster Pull — Rhythm Gap Targets (melodically-coupled, need +rhythm)\n"
+                   if is_rhythm_fallback else
+                   "## Ranked by Cluster Pull (cooperative correlation with coupled modules)\n")
+        parts.append(heading)
         for idx, entry in enumerate(cluster_targets[:5]):
             name = entry.split("(")[0]
-            score_str = entry.split("pull:")[1].rstrip(")") if "pull:" in entry else "?"
+            raw_score = entry.split("pull:")[1] if "pull:" in entry else "?"
+            score_str = raw_score.rstrip(")[+rhythm]").rstrip(")") if raw_score != "?" else "?"
             info = coupling_state.get(name, {})
             fpath = info.get("path", "?").replace(os.path.join(ctx.PROJECT_ROOT, "src/"), "")
             parts.append(f"### E{idx + 1}: {name}")
@@ -510,6 +533,12 @@ def suggest_evolution() -> str:
             )
             parts.append(f"**Musical role:** {role_desc}")
             parts.append(f"**Coupling effect:** {coupling_effect}")
+            # Suggest underused rhythm field for this target
+            existing_r = info.get("rhythm_dims", [])
+            _RHYTHM_FIELD_PRIORITY = ["hotspots", "complexityEma", "densitySurprise", "density", "complexity", "biasStrength"]
+            suggested_r = next((f for f in _RHYTHM_FIELD_PRIORITY if f not in existing_r), None)
+            if is_rhythm_fallback and suggested_r:
+                parts.append(f"**Rhythm field:** `emergentEntry.{suggested_r}` (underused — currently x{len([n for n, i in coupling_state.items() if suggested_r in i.get('rhythm_dims', [])])} modules)")
             # Check for KB constraints
             try:
                 kb_hits = ctx.project_engine.search_knowledge(name, top_k=2)
@@ -519,7 +548,10 @@ def suggest_evolution() -> str:
                     parts.append("**KB:** no entries (blind spot)")
             except Exception:
                 pass
-            parts.append(f"**Pattern:** `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` → multiplier on key parameter")
+            if is_rhythm_fallback:
+                parts.append(f"**Pattern:** `const rhythmEntry = L0.getLast('emergentRhythm', {{layer: 'both'}}); const val = rhythmEntry?.{suggested_r or 'density'} ?? 0;`")
+            else:
+                parts.append(f"**Pattern:** `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` → multiplier on key parameter")
             parts.append("")
     else:
         parts.append("## Uncoupled Modules (no cluster data — run pipeline first)\n")
