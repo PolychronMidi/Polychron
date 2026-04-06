@@ -342,7 +342,10 @@ def diagnose_error(error_text: str) -> str:
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
     if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
+        # Ground local model in the KB entries already found — prevents hallucination
+        kb_lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:5]]
+        kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
+        synthesis = _local_think(user_text + kb_suffix, max_tokens=2048, model=_REASONING_MODEL)
     if synthesis:
         parts.append(f"\n## Fix Synthesis *(adaptive)*")
         parts.append(synthesis)

@@ -395,10 +395,18 @@ def doc_sync_check(doc_path: str = "") -> str:
     server_fns = set(re.findall(r'def (\w+)\(', server_content))
     # Also collect parameter names to avoid false positives
     param_names = set(re.findall(r'(\w+)\s*[:=]', server_content))
+    # Read project-rules.json fresh at call time (module-level KNOWN_NON_TOOL_IDENTIFIERS is cached at import)
+    try:
+        import json as _json
+        _rules_path = os.path.join(ctx.PROJECT_ROOT, "tools/HME/config/project-rules.json")
+        with open(_rules_path) as _rf:
+            _live_non_tools = frozenset(_json.load(_rf).get("known_non_tool_identifiers", []))
+    except Exception:
+        _live_non_tools = frozenset()
     known_non_tools = param_names | {
         "response_format", "file_type", "top_k", "top_n", "max_depth", "max_tokens",
         "file_path", "scope", "entry_id", "related_to", "relation_type",
-    } | KNOWN_NON_TOOL_IDENTIFIERS  # relation_type values, KB categories, hook fields from project-rules.json
+    } | KNOWN_NON_TOOL_IDENTIFIERS | _live_non_tools  # relation_type values, KB categories, hook fields from project-rules.json
     # Only flag identifiers that look like they should be server tools
     tool_like = {t for t in doc_tool_refs if t.islower() and '_' in t and t not in server_fns and t not in known_non_tools and len(t) > 6}
     if tool_like:

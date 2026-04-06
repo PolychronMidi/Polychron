@@ -113,7 +113,9 @@ harmonicIntervalGuard = (() => {
     // R74: emergentRhythm hotspots coupling -- rhythmic burst positions widen deadband (more interval tolerance during dense moments).
     const rhythmEntryHIG = L0.getLast('emergentRhythm', { layer: 'both' });
     const hotspotsScaleHIG = rhythmEntryHIG && Array.isArray(rhythmEntryHIG.hotspots) ? rhythmEntryHIG.hotspots.length / 16 : 0;
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04, 0.05, 0.30);
+    // R75: registerMigrationDir antagonism bridge -- ascending pitch center narrows interval hunting (inverts roleSwap: chaos in dynamics, stability in harmony).
+    const registerNarrowHIG = melodicCtxHIG ? (melodicCtxHIG.registerMigrationDir === 'ascending' ? 0.03 : melodicCtxHIG.registerMigrationDir === 'descending' ? -0.025 : 0) : 0;
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high
