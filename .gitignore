@@ -31,6 +31,5 @@ deepwiki.config.json
 *.bak
 log/
 
-# metrics - track only intentional files (journal, adaptive-state)
+# metrics - track only intentional files (journal, adaptive-state, named snapshots)
 /metrics/run-history/
-/metrics/snapshots/
