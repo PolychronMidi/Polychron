@@ -14,7 +14,7 @@ from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
-    _local_think,
+    _local_think, compress_for_claude,
     _THINK_MODEL, _REASONING_MODEL, _LOCAL_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
     _THINK_SYSTEM,
 )
@@ -230,8 +230,10 @@ def before_editing(file_path: str) -> str:
             _be_cache[_cache_key] = synthesis
     if synthesis:
         parts.append(f"\n## Edit Risks *(adaptive)*")
-        # Cap at 1200 chars (~300 tokens) — 3 bullets don't need more
-        parts.append(synthesis[:1200])
+        # Compress via arbiter to ~600 chars — preserves file paths and action verbs,
+        # strips prose explanation. Falls back to truncation if arbiter unavailable.
+        parts.append(compress_for_claude(synthesis, max_chars=600,
+                                         hint=f"edit risks for {rel_path}"))
 
     return "\n".join(parts)
 
