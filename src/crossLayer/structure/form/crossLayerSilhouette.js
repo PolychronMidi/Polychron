@@ -77,7 +77,11 @@ crossLayerSilhouette = (() => {
     const registerMigFormCS = melodicCtxCS
       ? (melodicCtxCS.registerMigrationDir === 'ascending' ? 0.08 : melodicCtxCS.registerMigrationDir === 'descending' ? -0.05 : 0)
       : 0;
-    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS), 0.05, 0.40);
+    // R85 E1: intervalFreshness antagonism bridge -- novel intervals sharpen silhouette structural tracking.
+    // Counterpart: entropyRegulator RAISES entropy target under same signal (form tightens while chaos expands).
+    const intervalFreshnessCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.intervalFreshness, 0.5) : 0.5;
+    const intervalFreshnessNarrowCS = clamp((intervalFreshnessCS - 0.45) * 0.18, -0.03, 0.09);
+    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS) * (1 - intervalFreshnessNarrowCS), 0.05, 0.40);
 
     // Smooth
     smoothedDensity = smoothedDensity * (1 - effectiveSmoothing) + rawDensity * effectiveSmoothing;

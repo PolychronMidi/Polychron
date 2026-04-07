@@ -191,6 +191,10 @@ entropyRegulator = (() => {
       // Descending phrases (settling) -> less entropy. More granular than ternary registerMigrationDir.
       const ascendRatioER = melodicCtxER ? V.optionalFinite(melodicCtxER.ascendRatio, 0.5) : 0.5;
       const ascendMod = clamp((ascendRatioER - 0.5) * 0.06, -0.03, 0.03); // ascending +0.03 ... descending -0.03
+      // R85 E1: intervalFreshness antagonism bridge -- novel intervals signal uncharted territory -> raise entropy.
+      // Counterpart: crossLayerSilhouette SHARPENS structural tracking under same signal (form holds while chaos expands).
+      const intervalFreshnessER = melodicCtxER ? V.optionalFinite(melodicCtxER.intervalFreshness, 0.5) : 0.5;
+      const intervalFreshnessMod = clamp((intervalFreshnessER - 0.45) * 0.07, -0.02, 0.04); // familiar -0.02 ... novel +0.04
       // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts spike entropy target.
       // Surprising rhythmic events should be more chaotic/entropic by nature.
       const rhythmEntryER = L0.getLast('emergentRhythm', { layer: 'both' });
@@ -212,7 +216,7 @@ entropyRegulator = (() => {
       // lock mode (layers synchronized) creates coherent order (reduced entropy target).
       const phaseModeER = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
       const phaseMod = phaseModeER === 'repel' ? 0.04 : phaseModeER === 'lock' ? -0.03 : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + intervalFreshnessMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

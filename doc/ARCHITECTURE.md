@@ -294,6 +294,30 @@ R79 completes the `freshnessEma` antagonism bridge with `entropyRegulator` (othe
 - **R80 E2 `complexity` → `crossLayerClimaxEngine`**: High complexity boosts climax accumulation by up to +0.06. Musical logic: complex texture signals compositional density — the structural arc intensifies as rhythmic complexity peaks. **Antagonism bridge with E1**: same signal → harmony tightens while climax accelerates.
 - **R80 E3 `rhythmicPhaseLock.getMode()` → `harmonicIntervalGuard`**: Lock mode narrows deadband -0.03 (synchronized layers prefer consonance — harmonic agreement). Repel mode widens +0.04 (opposing layers tolerate more dissonance — harmonic tension from opposition). First phase coupling for HIG.
 
+### complexityEma Antagonism Bridge (R81)
+
+`complexityEma` (long-term rhythmic complexity EMA) as shared currency for slow-memory structural opposition.
+
+- **R81 E1 `complexityEma` → `dynamicRoleSwap`**: Sustained high complexity lowers swap gate by up to +0.08 — dynamics reorganize into new roles as long-term complexity accumulates.
+- **R81 E2 `complexityEma` → `crossLayerClimaxEngine`**: Sustained high complexity suppresses climax approach by up to -0.07 — climax backs off rather than pile more energy into an already-complex texture. **Antagonism with E1**: same slow signal → dynamic roles reshuffle while structural arc defers.
+
+### Virgin Antagonist Bridges (R82–R84)
+
+Bridges across virgin or near-virgin negatively-correlated pairs with zero prior coupling.
+
+- **R82 E1 `registerMigrationDir` → `crossLayerSilhouette ↔ phaseAwareCadenceWindow`** (r=-0.539): ascending register migration tightens silhouette form smoothing (×0.92) while simultaneously compressing the cadence window (-0.05). Form firms up while resolution is resisted — harmonic destabilization paired with structural firmness.
+- **R82 E2 `tessituraLoad` → `harmonicIntervalGuard ↔ stutterContagion`**: extreme register extremity narrows harmonic deadband (tighter harmonic control, up to -0.04) while amplifying stutter contagion (×up to 1.12). Chaos diversifies at extremes while harmony simultaneously stabilizes.
+- **R83 E1 `ascendRatio` → `velocityInterference ↔ harmonicIntervalGuard`** (r=-0.388): ascending melodic momentum amplifies velocity interference strength (×up to 1.12) while narrowing harmonic deadband (up to -0.04). Dynamic contrast intensifies as harmony tightens during upward energy.
+- **R84 E1 `complexity` → `verticalIntervalMonitor ↔ dynamicRoleSwap`** (r=-0.512): per-beat rhythmic complexity raises collision penalty (×up to 1.10) while lowering the role-swap gate (up to +0.06). Vertical tightening + dynamic reshuffling at complex beats — dual response from harmony and dynamics.
+
+### intervalFreshness + densitySurprise Antagonism Bridges (R85)
+
+Recovers the `intervalFreshness` dimension (absent since R63) across two new virgin pairs, plus `densitySurprise` completing the harmonicIntervalGuard↔climaxEngine bridge.
+
+- **R85 E1 `intervalFreshness` → `entropyRegulator ↔ crossLayerSilhouette`** (r=-0.685, strongest pair): novel intervals raise entropy target (up to +0.04) while sharpening silhouette structural tracking (up to -9% smoothing). Chaos expands into uncharted melodic territory while form holds tighter — the strongest constructive opposition in the system.
+- **R85 E2 `intervalFreshness` → `dynamicRoleSwap ↔ temporalGravity`** (r=-0.343): novel intervals lower the role-swap gate (up to +0.05) while strengthening temporal gravity wells (×up to 1.12). Dynamic roles reshuffle as time pulls tighter — alien temporal displacement paired with role chaos.
+- **R85 E3 `densitySurprise` → `harmonicIntervalGuard ↔ crossLayerClimaxEngine`** (r=-0.354): surprise rhythmic events narrow the harmonic deadband (up to -0.05) while backing off climax approach (up to -0.06). Form stabilizes under surprise while the structural arc defers — harmony holds while the climax waits.
+
 ## Emergence Boundaries
 
 Three architectural membranes:
