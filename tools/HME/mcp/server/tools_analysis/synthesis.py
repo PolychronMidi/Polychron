@@ -311,9 +311,10 @@ def _format_kb_corpus() -> str:
 
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen2.5-coder:14b")
-# Reasoning model for think/causal_trace/memory_dream — 70b spans both M40 GPUs,
-# 14b stays loaded in leftover VRAM. Both coexist without swapping.
-_REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "deepseek-r1:70b")
+# Reasoning model: Qwen3-30B-A3B (MoE, 3B active params, hybrid thinking mode).
+# Beats QwQ-32B and DeepSeek-R1 on reasoning benchmarks at lower compute.
+# ~18.6GB Q4 — fits on one M40. qwen2.5-coder:14b (~9GB) on the other. Both loaded.
+_REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
 
 
 _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
@@ -628,12 +629,14 @@ def _fast_claude(user_text: str, api_key: str, system_text: str = "", max_tokens
 def _two_stage_think(raw_context: str, question: str, max_tokens: int = 2048) -> str | None:
     """Two-stage local synthesis: coder model structures context, reasoning model thinks deeply.
 
-    Stage 1 (qwen2.5-coder): Extract and structure relevant facts from raw context into a brief
-    Stage 2 (deepseek-r1): Reason about the structured brief to answer the question
+    Stage 1 (qwen2.5-coder:14b on GPU 0): Extract and structure relevant facts into a brief.
+      Fast, code-specialized, no thinking overhead.
+    Stage 2 (qwen3:30b-a3b on GPU 1): Reason deeply about the structured brief.
+      MoE with hybrid thinking mode — only 3B params active but 30B knowledge.
 
     Falls back to single-stage reasoning if Stage 1 fails.
     """
-    # Stage 1: Coder model structures the raw context
+    # Stage 1: Coder model structures the raw context (GPU 0, fast, code-specialized)
     frame_prompt = (
         "Extract and structure ONLY the facts relevant to answering this question:\n"
         f"  {question}\n\n"
@@ -648,11 +651,11 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 2048) ->
     if not frame or len(frame) < 40:
         # Fall back to single-stage reasoning
         return _local_think(
-            raw_context[:8000] + "\n\n" + question,
+            raw_context[:6000] + "\n\n" + question,
             max_tokens=max_tokens, model=_REASONING_MODEL
         )
 
-    # Stage 2: Reasoning model thinks deeply about the structured brief
+    # Stage 2: Reasoning model thinks deeply (GPU 1, Qwen3 MoE with thinking mode)
     reason_prompt = (
         "Structured brief about the Polychron codebase:\n\n"
         + frame + "\n\n"
