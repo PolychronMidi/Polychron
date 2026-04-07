@@ -731,4 +731,47 @@ def suggest_evolution() -> str:
     except Exception:
         pass
 
+    # Adaptive synthesis: one-paragraph prescription that synthesizes all signals.
+    # Uses local Ollama hybrid (GPU0 extract + GPU1 reason) — no API key required.
+    try:
+        from .synthesis import _two_stage_think
+        _cluster_top = signals.get("cluster_priority_targets", ["?"])[:2]
+        _bridge_top = ""
+        try:
+            from .coupling import get_top_bridges as _gb2, _TRUST_FILE_ALIASES
+            _bt = _gb2(n=1)
+            if _bt:
+                _a = _TRUST_FILE_ALIASES.get(_bt[0]["pair_a"], _bt[0]["pair_a"])
+                _b = _TRUST_FILE_ALIASES.get(_bt[0]["pair_b"], _bt[0]["pair_b"])
+                _bridge_top = f"{_a}↔{_b} r={_bt[0]['r']:+.3f} via `{_bt[0]['field']}`"
+        except Exception:
+            pass
+        _rut = signals.get("evolution_rut", {})
+        _arc = signals.get("recent_evo_arc", [])
+        _perc = signals.get("perceptual_character", "unknown")
+        _synthesis_ctx = (
+            f"Recent evolution arc: {' → '.join(_arc) if _arc else 'unknown'}\n"
+            + (f"Rut alert: {_rut.get('warning', '')} (consecutive: {_rut.get('consecutive', 0)})\n" if _rut else "")
+            + f"Top cluster-pull targets: {', '.join(_cluster_top)}\n"
+            + (f"Top bridge opportunity: {_bridge_top}\n" if _bridge_top else "")
+            + f"Perceptual character: {_perc}\n"
+            + (f"CB0 entropy: mean={signals.get('cb0_entropy_mean', '?')}\n" if signals.get('cb0_entropy_mean') else "")
+            + (f"Verdict model top features: {signals.get('verdict_top_features', [])[:3]}\n" if signals.get('verdict_top_features') else "")
+        )
+        _prescription = _two_stage_think(
+            _synthesis_ctx,
+            "You are an evolution strategist for a self-evolving alien generative music system. "
+            "In 2-3 sentences: what is the single highest-leverage evolution action for the NEXT ROUND? "
+            "Name the specific module(s) to modify, the signal field to use, "
+            "and what the listener will hear differently. "
+            "If a rut is detected, prescribe an orthogonal target. "
+            "Be concrete and decisive — no hedging. No code snippets.",
+            max_tokens=512,
+        )
+        if _prescription:
+            parts.append("\n---\n## NEXT EVOLUTION PRESCRIPTION *(two-stage)*\n")
+            parts.append(_prescription)
+    except Exception:
+        pass
+
     return "\n".join(parts)
