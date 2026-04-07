@@ -129,6 +129,13 @@ def what_did_i_forget(changed_files: str) -> str:
     else:
         logger.warning("what_did_i_forget: adaptive synthesis unavailable")
 
+    # Auto-draft: suggest a learn() call if warnings found KB-worthy patterns
+    if all_warnings:
+        _file_list = ", ".join(os.path.basename(f.strip()) for f in changed_files.split(",")[:3])
+        parts.append(f"\n## Quick KB Draft")
+        parts.append(f"  If these changes are confirmed, save with:")
+        parts.append(f"  learn(title='...describe the change...', content='...why and what changed in {_file_list}...', category='decision')")
+
     return "\n".join(parts)
 
 

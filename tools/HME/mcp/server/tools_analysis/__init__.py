@@ -143,6 +143,10 @@ from . import coupling           # noqa: E402, F401
 from . import evolution_evolve   # noqa: E402, F401
 from . import search_unified     # noqa: E402, F401
 from . import review_unified     # noqa: E402, F401
+from . import read_unified       # noqa: E402, F401
+from . import learn_unified      # noqa: E402, F401
+from . import status_unified     # noqa: E402, F401
+from . import trace_unified      # noqa: E402, F401
 
 # Re-export synthesis functions for tools_knowledge.py compatibility
 from .synthesis import (  # noqa: E402, F401
