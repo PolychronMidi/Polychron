@@ -75,9 +75,10 @@ def _ollama_background_yield():
 
 
 def _gpu_persona(model: str) -> str:
-    """GPU-specialized persona for warm context priming.
+    """Model-specialized persona for warm context priming.
     GPU0 (extractor): structured code facts — paths, signals, correlations.
-    GPU1 (reasoner): musical effects, evolution strategy, coupling analysis."""
+    GPU1 (reasoner): musical effects, evolution strategy, coupling analysis.
+    Arbiter: conflict detection between independent analyses."""
     recent_kb = ""
     try:
         all_kb = ctx.project_engine.list_knowledge_full() or []
@@ -95,6 +96,32 @@ def _gpu_persona(model: str) -> str:
             "correlation values, coupling dimensions, bridge status (VIRGIN/PARTIAL/SATURATED). "
             "Antagonism bridges couple BOTH modules of a negatively-correlated pair to the "
             "SAME signal with OPPOSING effects. Never reason or opine — output raw data only.\n\n"
+            "Recent KB (ground truth):\n" + recent_kb
+        )
+    if model == _ARBITER_MODEL:
+        # Arbiter persona: domain-aware conflict detection.
+        # Knowing the actual module names and signal fields helps detect hallucinations.
+        import glob as _glob
+        _modules = []
+        try:
+            _cl_files = _glob.glob(
+                os.path.join(ctx.PROJECT_ROOT, "src", "crossLayer", "**", "*.js"), recursive=True
+            )
+            _modules = sorted(set(
+                os.path.basename(f).replace(".js", "") for f in _cl_files
+                if not os.path.basename(f).startswith("index")
+            ))
+        except Exception:
+            pass
+        return (
+            "You are the arbiter for Polychron, a self-evolving alien generative music system. "
+            "Your role: compare two independent code analyses and detect contradictions, "
+            "hallucinated module names, and overlooked facts. "
+            "You know the REAL crossLayer modules: " + ", ".join(_modules[:30]) + ". "
+            "Signal fields you know: contourShape, counterpoint, thematicDensity, "
+            "tessituraPressure, intervalFreshness, density, complexity, biasStrength, "
+            "densitySurprise, hotspots, complexityEma. "
+            "If an analysis cites a module or field NOT in these lists, flag it.\n\n"
             "Recent KB (ground truth):\n" + recent_kb
         )
     return (
@@ -132,21 +159,29 @@ def _prime_warm_context(model: str) -> bool:
 
 
 def _prime_all_gpus() -> str:
-    """Prime both GPUs in parallel threads. Returns status summary."""
+    """Prime all three models in parallel threads. Returns status summary."""
     import time as _t
-    results = [False, False]
+    results = [False, False, False]
     def _do0():
         results[0] = _prime_warm_context(_LOCAL_MODEL)
     def _do1():
         results[1] = _prime_warm_context(_REASONING_MODEL)
+    def _do2():
+        results[2] = _prime_warm_context(_ARBITER_MODEL)
     t0 = _t.time()
-    th0 = _threading.Thread(target=_do0, daemon=True)
-    th1 = _threading.Thread(target=_do1, daemon=True)
-    th0.start(); th1.start()
-    th0.join(timeout=120); th1.join(timeout=120)
+    threads = [
+        _threading.Thread(target=_do0, daemon=True),
+        _threading.Thread(target=_do1, daemon=True),
+        _threading.Thread(target=_do2, daemon=True),
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=120)
     elapsed = _t.time() - t0
     parts = [f"Warm context priming ({elapsed:.1f}s):"]
-    for model, ok in [(_LOCAL_MODEL, results[0]), (_REASONING_MODEL, results[1])]:
+    for model, ok in [(_LOCAL_MODEL, results[0]), (_REASONING_MODEL, results[1]),
+                      (_ARBITER_MODEL, results[2])]:
         ctx_len = len(_warm_ctx.get(model, []))
         parts.append(f"  {model}: {'PRIMED' if ok else 'FAILED'}" +
                      (f" ({ctx_len} ctx tokens)" if ok else ""))
@@ -158,7 +193,7 @@ def warm_context_status() -> dict:
     import time as _t
     now = _t.time()
     status = {}
-    for model in [_LOCAL_MODEL, _REASONING_MODEL]:
+    for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
         if model in _warm_ctx:
             status[model] = {
                 "primed": True, "tokens": len(_warm_ctx[model]),
@@ -167,7 +202,6 @@ def warm_context_status() -> dict:
             }
         else:
             status[model] = {"primed": False}
-    status["arbiter"] = _ARBITER_MODEL
     status["think_history"] = len(_think_history)
     return status
 
@@ -204,10 +238,16 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
         "MINOR: <one sentence describing the mismatch>\n"
         "COMPLEX: <one sentence describing the fundamental contradiction>"
     )
-    body = json.dumps({
+    payload = {
         "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
         "options": {"temperature": 0.0, "num_predict": 600},
-    }).encode()
+    }
+    # Use warm context if primed — arbiter knows real module names and signal fields
+    arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
+    if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
+        payload["context"] = arbiter_ctx
+        logger.debug(f"arbiter: warm ctx hit ({len(arbiter_ctx)} tokens)")
+    body = json.dumps(payload).encode()
     req = urllib.request.Request(
         _LOCAL_URL, data=body, headers={"Content-Type": "application/json"},
     )
@@ -303,6 +343,7 @@ def _ensure_warm(model: str):
         try:
             _prime_warm_context(_LOCAL_MODEL)
             _prime_warm_context(_REASONING_MODEL)
+            _prime_warm_context(_ARBITER_MODEL)
         except Exception:
             pass
     _threading.Thread(target=_bg, daemon=True).start()
