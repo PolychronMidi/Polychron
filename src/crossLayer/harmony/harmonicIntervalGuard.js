@@ -133,7 +133,11 @@ harmonicIntervalGuard = (() => {
     // AMPLIFIES interference under same signal (dynamics intensify during ascending momentum).
     const ascendRatioHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.ascendRatio, 0.5) : 0.5;
     const ascendNarrowHIG = clamp((ascendRatioHIG - 0.45) * 0.06, -0.02, 0.04);
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG, 0.05, 0.30);
+    // R85 E3: densitySurprise antagonism bridge -- surprise rhythmic events tighten harmonic control.
+    // Counterpart: crossLayerClimaxEngine BACKS OFF climax approach under same signal (form stabilizes while arc defers).
+    const densitySurpriseHIG = rhythmEntryHIG && Number.isFinite(rhythmEntryHIG.densitySurprise) ? rhythmEntryHIG.densitySurprise : 0;
+    const densitySurpriseNarrowHIG = clamp(densitySurpriseHIG * 0.08, 0, 0.05);
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG - densitySurpriseNarrowHIG, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high

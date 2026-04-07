@@ -78,12 +78,17 @@ dynamicRoleSwap = (() => {
     // dynamics reshuffles while structural arc holds -- complexityEma is the shared currency.
     const complexityEmaDRS = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.complexityEma) ? rhythmEntryDRS.complexityEma : 0.5;
     const complexityEmaSwapBoost = clamp((complexityEmaDRS - 0.50) * 0.14, -0.05, 0.08);
-    // R84 E2: per-beat complexity bridge — instantaneous complexity spikes lower swap gate
+    // R84 E2: per-beat complexity bridge -- instantaneous complexity spikes lower swap gate
     // (role swaps at complex beats, faster than complexityEma's slow memory).
     // Counterpart: verticalIntervalMonitor RAISES collision penalty under same signal.
     const complexityBeatDRS = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.complexity) ? rhythmEntryDRS.complexity : 0.5;
     const complexityBeatSwapBoost = clamp((complexityBeatDRS - 0.55) * 0.10, -0.03, 0.06);
-    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost + rhythmBiasBoost + registerSwapBoostDRS + complexityEmaSwapBoost + complexityBeatSwapBoost, 0, 1);
+    // R85 E2: intervalFreshness antagonism bridge -- novel intervals trigger more dynamic role reshuffling.
+    // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal pull tightens as roles shuffle).
+    const intervalFreshnessSwapBoost = melodicCtxDRS
+      ? clamp((V.optionalFinite(melodicCtxDRS.intervalFreshness, 0.5) - 0.45) * 0.10, -0.02, 0.05)
+      : 0;
+    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost + rhythmBiasBoost + registerSwapBoostDRS + complexityEmaSwapBoost + complexityBeatSwapBoost + intervalFreshnessSwapBoost, 0, 1);
     if (rf() > gate) {
       return { swapped: false, swapCount };
     }

@@ -66,7 +66,7 @@ verticalIntervalMonitor = (() => {
       const rhythmEntryVIM = L0.getLast('emergentRhythm', { layer: 'both' });
       const rhythmDensityVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.density) ? rhythmEntryVIM.density : 0;
       const rhythmPenaltyMod = 1.0 - rhythmDensityVIM * 0.20; // [0.80-1.0] dense->less penalty
-      // R84 E1: complexity bridge — high rhythmic complexity raises collision penalty
+      // R84 E1: complexity bridge -- high rhythmic complexity raises collision penalty
       // (tighter vertical control during complex moments). Counterpart: dynamicRoleSwap
       // LOWERS swap gate under same signal (dynamics reshuffle during complexity).
       const rhythmComplexityVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.complexity) ? rhythmEntryVIM.complexity : 0.5;

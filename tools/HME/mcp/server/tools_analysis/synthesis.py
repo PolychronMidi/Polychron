@@ -318,6 +318,11 @@ _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
 
 
 _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
+# Chat endpoint: Ollama /api/chat accepts messages=[{role,content}] (OpenAI-compatible).
+# Prefer over /api/generate for multi-turn synthesis — model sees prior outputs as
+# "assistant turns it already said", producing more coherent continuation than feeding
+# them back as raw text. This is the equivalent of Claude's conversation memory.
+_LOCAL_CHAT_URL = _LOCAL_URL.replace("/api/generate", "/api/chat")
 
 
 # ── Ollama priority queue ──────────────────────────────────────────────────
@@ -359,10 +364,13 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
 
     # Priority queue: interactive calls signal background callers to yield.
     # Background callers check _ollama_interactive before proceeding.
+    # "parallel": used inside _parallel_two_stage_think threads — skip event management
+    #   entirely (caller manages interactive flag before/after launching threads).
     if priority == "background":
         _ollama_background_yield()
     elif priority == "interactive":
         _ollama_interactive.set()  # signal background to pause
+    # priority == "parallel": no event set/clear, no background yield
 
     payload: dict = {
         "model": model or _LOCAL_MODEL,
@@ -389,6 +397,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             resp_obj = urllib.request.urlopen(req, timeout=420)
         if priority == "interactive":
             _ollama_interactive.clear()  # release background callers
+        # priority == "parallel": caller manages clear() after all threads join
         with resp_obj as resp:
             result = json.loads(resp.read())
             text = result.get("response", "").strip()
@@ -442,7 +451,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
             # Strip generic filler sentences that add no information
             _filler_phrases = [
-                "dynamic interplay between", "dynamic interplay of",
+                # NOTE: "dynamic interplay between/of" intentionally NOT listed --
+                # it's a valid music criticism phrase (only strip HME-specific filler).
                 "enhancing the alien", "creating a rich tapestry",
                 "a fascinating interplay", "this creates a dynamic",
             ]
@@ -476,9 +486,16 @@ def _read_module_source(module_name: str, max_chars: int = 3000) -> str:
         return ""
 
 
-def _think_local_or_claude(prompt: str, api_key: str, **claude_kwargs) -> str | None:
-    """Try local model first for mechanical tasks. Fall back to Claude if unavailable."""
-    result = _local_think(prompt)
+def _think_local_or_claude(prompt: str, api_key: str,
+                           local_model: str | None = None,
+                           local_temperature: float = 0.3,
+                           **claude_kwargs) -> str | None:
+    """Try local model first for mechanical tasks. Fall back to Claude if unavailable.
+
+    local_model: override the default _LOCAL_MODEL (e.g. pass _REASONING_MODEL for creative prose).
+    local_temperature: override default 0.3 (use 0.5+ for creative/critique tasks).
+    """
+    result = _local_think(prompt, model=local_model, temperature=local_temperature)
     if result:
         return result
     if api_key:
@@ -757,6 +774,205 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         "Max 4 items. No prose paragraphs. /no_think"
     )
     return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
+
+
+def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) -> str | None:
+    """True parallel two-GPU synthesis. GPU 0 and GPU 1 run simultaneously in Stage 1.
+
+    Stage 1A (qwen3-coder:30b, GPU 0): Extract structured code facts — file paths,
+      function names, signal fields, bridge status. Deterministic (temp=0.1).
+    Stage 1B (qwen3:30b-a3b, GPU 1): Independent first-pass analysis — coupling
+      patterns, musical effects, antagonism logic. Speculative (temp=0.2).
+    Both run simultaneously via threading.Thread with per-GPU locks.
+
+    Stage 2 (GPU 1): Final synthesis from merged Stage 1A + 1B briefs.
+
+    Performance: ~max(GPU0_time, GPU1_time) instead of sum — roughly 2× faster
+    than the 4-stage sequential flow for most questions.
+    Falls back to _two_stage_think if threading fails.
+    """
+    import threading
+
+    # Detect question type for format routing
+    _q_lower = question.lower()
+    _is_evolution_q = any(k in _q_lower for k in [
+        "next bridge", "r86", "r87", "r88", "r89", "antagonist", "leverage",
+        "which pair", "best signal", "next evolution", "virgin pair", "best next"
+    ])
+
+    _EXTRACT_SYSTEM = (
+        "You are a code extraction assistant for the Polychron music synthesis project. "
+        "Extract code facts only. No reasoning, no analysis, no opinions. "
+        "Output: file paths, signal fields, correlation values, bridge status. NO function names."
+    )
+
+    # Signal interactive to pause background callers before launching threads.
+    _ollama_interactive.set()
+
+    results = [None, None]  # index 0 = GPU 0 result, index 1 = GPU 1 result
+
+    def _gpu0_extract():
+        if _is_evolution_q:
+            prompt = (
+                "Extract antagonist pair data relevant to:\n"
+                f"  {question}\n\n"
+                "For each relevant PAIR: module names, r-value, already-bridged signals, "
+                "candidate unused signals with directions (A does X / B does Y opposing).\n"
+                "Mark pairs: VIRGIN (0 bridges), PARTIAL (1-2), SATURATED (3+).\n"
+                "Max 400 words. NO function names.\n\n"
+                "Raw context:\n" + raw_context[:8000]
+            )
+        else:
+            prompt = (
+                "Extract ONLY the facts relevant to answering:\n"
+                f"  {question}\n\n"
+                "Rules:\n"
+                "- EXACT file paths (src/crossLayer/...), signal field names\n"
+                "- For each relevant module: file path, coupling dimensions, antagonist pair\n"
+                "- Mark pairs: VIRGIN (0 bridges), PARTIAL (1-2), SATURATED (3+)\n"
+                "- Code snippets that directly relate\n"
+                "- Max 400 words. NO function names.\n\n"
+                "Raw context:\n" + raw_context[:8000]
+            )
+        results[0] = _local_think(prompt, max_tokens=2000, model=_LOCAL_MODEL,
+                                   system=_EXTRACT_SYSTEM, temperature=0.1,
+                                   priority="parallel")
+
+    def _gpu1_analyze():
+        prompt = (
+            "Question: " + question + "\n\n"
+            "Analyze this Polychron codebase context. What coupling patterns, antagonism "
+            "bridges, or signal flows directly answer this question?\n"
+            "Be specific: name modules, exact fields, and effects.\n"
+            "Max 300 words. /no_think\n\n"
+            "Context:\n" + raw_context[:6000]
+        )
+        results[1] = _local_think(prompt, max_tokens=1200, model=_REASONING_MODEL,
+                                   temperature=0.2, priority="parallel")
+
+    try:
+        t0 = threading.Thread(target=_gpu0_extract, daemon=True)
+        t1 = threading.Thread(target=_gpu1_analyze, daemon=True)
+        t0.start()
+        t1.start()
+        t0.join(timeout=450)
+        t1.join(timeout=450)
+    finally:
+        _ollama_interactive.clear()  # clear after ALL threads done
+
+    gpu0_out, gpu1_out = results[0], results[1]
+
+    # If both failed, fall back to sequential
+    if not gpu0_out and not gpu1_out:
+        logger.warning("_parallel_two_stage_think: both stages failed, falling back to sequential")
+        return _two_stage_think(raw_context, question, max_tokens)
+
+    # Build merged brief from both perspectives
+    merged_parts = []
+    if gpu0_out and len(gpu0_out) > 30:
+        merged_parts.append("## Structural Facts (extracted)\n" + gpu0_out)
+    if gpu1_out and len(gpu1_out) > 30:
+        merged_parts.append("## Coupling Analysis (reasoned)\n" + gpu1_out)
+    merged = "\n\n".join(merged_parts) if merged_parts else (gpu0_out or gpu1_out or "")
+
+    # Stage 2: Final synthesis via /api/chat — model sees merged analysis as its own
+    # prior assistant turn, producing coherent continuation rather than re-reading text.
+    if _is_evolution_q:
+        _fmt_instruction = (
+            "Format each recommendation as:\n"
+            "  PAIR: moduleA↔moduleB (r=value), SIGNAL: fieldName, "
+            "DIRECTION: moduleA raises X when field high / moduleB lowers Y when field high."
+        )
+    else:
+        _fmt_instruction = (
+            "Format each finding as:\n"
+            "  FILE: path, SIGNAL: field, EFFECT: one sentence."
+        )
+    chat_messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a Polychron music synthesis codebase expert. "
+                "Answer only from facts in the conversation. Do NOT invent module names, "
+                "function names, or signal fields. /no_think"
+            )
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Analyze the Polychron codebase for:\n  {question}\n\n"
+                "Context:\n" + raw_context[:2000]
+            )
+        },
+        {
+            "role": "assistant",
+            "content": merged  # model sees this as "what I already concluded"
+        },
+        {
+            "role": "user",
+            "content": (
+                "Based on your analysis, answer the question:\n  " + question + "\n\n"
+                "Use ONLY modules and signals from your analysis above. " + _fmt_instruction + "\n"
+                "Max 4 items. No prose. /no_think"
+            )
+        },
+    ]
+    result = _local_chat(chat_messages, model=_REASONING_MODEL, max_tokens=max_tokens, temperature=0.15)
+    if not result:
+        # Fallback: single-stage generate if chat endpoint unavailable
+        fallback_prompt = ("Based on this analysis:\n\n" + merged + "\n\nAnswer: " + question +
+                           "\n\n" + _fmt_instruction + "\nMax 4 items. /no_think")
+        result = _local_think(fallback_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
+    if result:
+        logger.info(f"_parallel_two_stage_think: merged {len(gpu0_out or '')}+{len(gpu1_out or '')} chars → {len(result)} chars answer (chat)")
+    return result or merged  # return merged brief as fallback if final stage fails
+
+
+def _local_chat(messages: list[dict], model: str | None = None,
+                max_tokens: int = 4096, temperature: float = 0.2) -> str | None:
+    """Call Ollama /api/chat with a messages array (OpenAI-compatible multi-turn format).
+
+    The model sees prior outputs as assistant turns it already produced, giving it a
+    'continuation' mental model rather than treating prior context as external text.
+    This is the Ollama equivalent of Claude's conversation memory — better coherence
+    for multi-stage synthesis where each stage builds on the previous.
+
+    messages: [{role: 'system'|'user'|'assistant', content: str}]
+    Falls back to None if chat endpoint unavailable (caller should degrade gracefully).
+    """
+    import urllib.request
+    active_lock = (_gpu0_lock if (model or _LOCAL_MODEL) == _LOCAL_MODEL
+                   else _gpu1_lock if (model or _LOCAL_MODEL) == _REASONING_MODEL
+                   else _ollama_lock)
+    payload = {
+        "model": model or _REASONING_MODEL,
+        "messages": messages,
+        "stream": False,
+        "options": {"temperature": temperature, "num_predict": max_tokens},
+    }
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        _LOCAL_CHAT_URL, data=body,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with active_lock:
+            resp_obj = urllib.request.urlopen(req, timeout=420)
+        with resp_obj as resp:
+            result = json.loads(resp.read())
+            # /api/chat response: {"message": {"role": "assistant", "content": "..."}}
+            msg = result.get("message", {})
+            text = msg.get("content", "").strip() if isinstance(msg, dict) else ""
+            # Strip <think>...</think> blocks (qwen3 chain-of-thought in chat mode)
+            if "</think>" in text:
+                text = text[text.rfind("</think>") + len("</think>"):].strip()
+            elif "<think>" in text:
+                text = text[text.find("<think>") + len("<think>"):].strip()
+            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            return text if text else None
+    except Exception as e:
+        logger.debug(f"_local_chat unavailable: {e}")
+        return None
 
 
 def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,

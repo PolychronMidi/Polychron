@@ -153,8 +153,11 @@ crossLayerClimaxEngine = (() => {
     // Counterpart: dynamicRoleSwap INCREASES swap frequency at same complexityEma (E1).
     const complexityEmaClx = rhythmEntryClx && Number.isFinite(rhythmEntryClx.complexityEma) ? rhythmEntryClx.complexityEma : 0.5;
     const complexityEmaDampClx = clamp((complexityEmaClx - 0.55) * 0.12, 0, 0.07);
-    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx) * preClimaxHold;
+    // R85 E3: densitySurprise antagonism bridge -- surprise rhythmic events back off climax approach.
+    // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while arc defers).
+    const densitySurpriseDampClx = clamp(rhythmEntryClx && Number.isFinite(rhythmEntryClx.densitySurprise) ? rhythmEntryClx.densitySurprise * 0.09 : 0, 0, 0.06);
+    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp, R85: densitySurprise damp)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx - densitySurpriseDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing

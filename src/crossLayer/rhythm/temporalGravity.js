@@ -84,7 +84,11 @@ temporalGravity = (() => {
     // R73: hotspots coupling -- rhythmically dense burst positions strengthen gravity wells.
     const rhythmEntryTG = L0.getLast('emergentRhythm', { layer: 'both' });
     const hotspotsScaleTG = rhythmEntryTG && Array.isArray(rhythmEntryTG.hotspots) ? rhythmEntryTG.hotspots.length / 16 : 0;
-    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult * (1.0 + hotspotsScaleTG * 0.30);
+    // R85 E2: intervalFreshness antagonism bridge -- novel intervals strengthen temporal gravity wells.
+    // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle while time pulls tighter).
+    const intervalFreshnessTG = melodicCtxTG ? V.optionalFinite(melodicCtxTG.intervalFreshness, 0.5) : 0.5;
+    const intervalFreshnessGravity = 1.0 + clamp((intervalFreshnessTG - 0.45) * 0.25, -0.05, 0.12);
+    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult * (1.0 + hotspotsScaleTG * 0.30) * intervalFreshnessGravity;
 
     // Direction: pull toward the gravity well's time position (seconds)
     const direction = wellTimeSec > originalTimeN ? 1 : -1;

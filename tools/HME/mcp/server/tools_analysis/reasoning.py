@@ -495,7 +495,7 @@ def think(about: str, context: str = "") -> str:
             return "\n".join(parts)
 
     # Ollama path: route by question type for best quality
-    from .synthesis import _two_stage_think, _local_think, _REASONING_MODEL
+    from .synthesis import _two_stage_think, _parallel_two_stage_think, _local_think, _REASONING_MODEL
     raw_context = ""
     if injected_state:
         raw_context += injected_state + "\n\n"
@@ -516,7 +516,7 @@ def think(about: str, context: str = "") -> str:
                 parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
             return "\n".join(parts)
     else:
-        # Code/evolution questions: two-stage (qwen structures, deepseek reasons)
+        # Code/evolution questions: parallel two-stage (GPU 0 + GPU 1 simultaneously)
         if is_channel_q:
             raw_context += (
                 "TERMINOLOGY: 'dead-end channel' means an L0 channel that is posted (produced) but has "
@@ -541,9 +541,11 @@ def think(about: str, context: str = "") -> str:
             "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
             "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
         )
-        local_answer = _two_stage_think(raw_context, prompt)
+        # Parallel synthesis: GPU 0 (extract) + GPU 1 (analyze) run simultaneously,
+        # then GPU 1 produces final answer from merged brief. ~2x faster than sequential.
+        local_answer = _parallel_two_stage_think(raw_context, prompt)
         if local_answer:
-            parts = [f"# Think: {about} *(two-stage)*\n", local_answer]
+            parts = [f"# Think: {about} *(parallel-two-stage)*\n", local_answer]
             if kb_hits:
                 parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
             return "\n".join(parts)

@@ -599,7 +599,12 @@ def composition_critique() -> str:
     )
 
     parts = ["# Composition Critique\n"]
-    synthesis = _think_local_or_claude(user_text, _get_api_key())
+    # Use reasoning model (GPU 1) + higher temperature for creative music prose.
+    # Coder model (GPU 0) produces stilted output for non-code tasks.
+    from .synthesis import _REASONING_MODEL
+    synthesis = _think_local_or_claude(user_text, _get_api_key(),
+                                       local_model=_REASONING_MODEL,
+                                       local_temperature=0.55)
     if synthesis:
         parts.append(synthesis)
     else:
