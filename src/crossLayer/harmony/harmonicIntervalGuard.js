@@ -128,7 +128,7 @@ harmonicIntervalGuard = (() => {
     // Counterpart: stutterContagion AMPLIFIES contagion at register extremes (chaos diversifies).
     const tessituraLoadHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.tessituraLoad, 0) : 0;
     const tessituraNarrowHIG = clamp(tessituraLoadHIG * 0.05, 0, 0.04);
-    // R83 E2: ascendRatio bridge — ascending melodic momentum narrows harmonic deadband
+    // R83 E2: ascendRatio bridge -- ascending melodic momentum narrows harmonic deadband
     // (tighter harmonic control during upward energy). Counterpart: velocityInterference
     // AMPLIFIES interference under same signal (dynamics intensify during ascending momentum).
     const ascendRatioHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.ascendRatio, 0.5) : 0.5;

@@ -123,7 +123,7 @@ velocityInterference = (() => {
     const rhythmEntryVI = L0.getLast('emergentRhythm', { layer: 'both' });
     const densitySurpriseVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.densitySurprise) ? rhythmEntryVI.densitySurprise : 1.0;
     const rhythmInterferenceMod = densitySurpriseVI > 1.1 ? 1.12 : densitySurpriseVI < 0.9 ? 0.92 : 1.0;
-    // R83 E1: ascendRatio bridge — ascending melodic momentum amplifies velocity interference
+    // R83 E1: ascendRatio bridge -- ascending melodic momentum amplifies velocity interference
     // (stronger dynamic contrast during upward energy). Counterpart: harmonicIntervalGuard
     // NARROWS deadband under same signal (harmony stabilizes during ascending momentum).
     const ascendRatioVI = melodicCtxVI ? V.optionalFinite(melodicCtxVI.ascendRatio, 0.5) : 0.5;
