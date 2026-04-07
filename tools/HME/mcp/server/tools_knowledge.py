@@ -46,6 +46,13 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     # Invalidate KB hits cache so before_editing re-fetches fresh constraints
     ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
 
+    # Feed the session narrative so models know what was just learned this session
+    try:
+        from server.tools_analysis.synthesis import append_session_narrative
+        append_session_narrative("knowledge_added", f"[{category}] {title[:70]}")
+    except Exception:
+        pass
+
     return f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
 
 
