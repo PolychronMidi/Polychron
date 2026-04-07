@@ -351,7 +351,8 @@ def _ollama_background_yield():
 
 def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                  priority: str = "interactive", system: str = "",
-                 temperature: float = 0.3) -> str | None:
+                 temperature: float = 0.3, context: list | None = None,
+                 return_context: bool = False) -> str | tuple | None:
     """Call local Ollama model for synthesis tasks.
 
     Uses only stdlib -- no extra dependencies. Returns None if Ollama isn't running
@@ -359,6 +360,11 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     Pass model=_REASONING_MODEL for think/causal_trace/memory_dream tasks.
     system: optional system prompt for role-setting.
     temperature: 0.1 for deterministic extraction, 0.3 for balanced, 0.5 for creative.
+    context: Ollama KV cache context array from a prior call (same model only).
+      When provided, Ollama resumes from the cached model state instead of re-processing
+      previous text — the closest analog to Claude's persistent context window.
+    return_context: when True, returns (text, context_array) tuple instead of just text.
+      Callers can pass the context_array to the next same-model call for KV cache reuse.
     """
     import urllib.request
 
@@ -380,6 +386,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     }
     if system:
         payload["system"] = system
+    if context:
+        payload["context"] = context
     body = json.dumps(payload).encode()
     req = urllib.request.Request(
         _LOCAL_URL, data=body,
@@ -462,12 +470,16 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             text = " ".join(sentences).strip()
             if priority == "interactive":
                 _ollama_interactive.clear()
-            return text if text else None
+            if not text:
+                return (None, []) if return_context else None
+            if return_context:
+                return (text, result.get("context", []))
+            return text
     except Exception as e:
         if priority == "interactive":
             _ollama_interactive.clear()
         logger.debug(f"_local_think unavailable: {e}")
-        return None
+        return (None, []) if return_context else None
 
 
 def _read_module_source(module_name: str, max_chars: int = 3000) -> str:
@@ -710,6 +722,8 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         "Output: file paths, function names, signal fields, correlation values, bridge status."
     )
     # Stage 1: Coder extracts (GPU 0, fast, deterministic)
+    # return_context=True captures the KV cache for reuse in Stage 3 (same model/GPU).
+    # Stage 3 resumes from Stage 1's cached state instead of re-processing 8000 chars.
     frame_prompt = (
         "Extract ONLY the facts relevant to answering this question:\n"
         f"  {question}\n\n"
@@ -721,8 +735,10 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         "- Max 500 words\n\n"
         "Raw project context:\n" + raw_context[:8000]
     )
-    frame = _local_think(frame_prompt, max_tokens=2000, model=_LOCAL_MODEL,
-                         system=_STAGE1_SYSTEM, temperature=0.1)
+    frame_result = _local_think(frame_prompt, max_tokens=2000, model=_LOCAL_MODEL,
+                                system=_STAGE1_SYSTEM, temperature=0.1, return_context=True)
+    frame = frame_result[0] if isinstance(frame_result, tuple) else frame_result
+    stage1_kv_ctx = frame_result[1] if isinstance(frame_result, tuple) else []
 
     # Quality gate: frame must contain at least one src/ path to be useful
     if not frame or len(frame) < 40 or "src/" not in frame:
@@ -745,15 +761,17 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
     # Convergence check: if no gaps found, skip Stage 3
     if gaps and "NO GAP" not in gaps.upper() and "NEED:" in gaps:
         # Stage 3: Coder does targeted re-extraction for identified gaps (GPU 0)
+        # Reuse Stage 1's KV cache (context=stage1_kv_ctx) — the model already has
+        # the 8000-char raw context loaded. Stage 3 just needs the gap-fill prompt.
         supplement_prompt = (
             "The following information is MISSING from a previous extraction.\n"
-            "Extract ONLY these specific facts from the raw context:\n\n"
+            "Extract ONLY these specific facts:\n\n"
             + gaps + "\n\n"
-            "Raw project context:\n" + raw_context[:8000] + "\n\n"
             "Output only the missing facts. Max 300 words."
         )
         supplement = _local_think(supplement_prompt, max_tokens=1000, model=_LOCAL_MODEL,
-                                  system=_STAGE1_SYSTEM, temperature=0.1)
+                                  system=_STAGE1_SYSTEM, temperature=0.1,
+                                  context=stage1_kv_ctx if stage1_kv_ctx else None)
         if supplement and len(supplement) > 20:
             frame = frame + "\n\n## Supplemental extraction:\n" + supplement
             logger.info(f"_two_stage_think: gap-fill round added {len(supplement)} chars")

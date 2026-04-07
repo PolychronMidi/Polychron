@@ -156,8 +156,12 @@ crossLayerClimaxEngine = (() => {
     // R85 E3: densitySurprise antagonism bridge -- surprise rhythmic events back off climax approach.
     // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while arc defers).
     const densitySurpriseDampClx = clamp(rhythmEntryClx && Number.isFinite(rhythmEntryClx.densitySurprise) ? rhythmEntryClx.densitySurprise * 0.09 : 0, 0, 0.06);
-    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp, R85: densitySurprise damp)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx - densitySurpriseDampClx) * preClimaxHold;
+    // R86 E3: thematicDensity antagonism bridge -- rich thematic development accelerates climax approach.
+    // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while structural arc intensifies).
+    const thematicDensityCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.thematicDensity, 0) : 0;
+    const thematicClimaxBoost = clamp(thematicDensityCCE * 0.08, 0, 0.05);
+    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp, R85: densitySurprise damp, R86: thematicDensity boost)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost + thematicClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx - densitySurpriseDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing

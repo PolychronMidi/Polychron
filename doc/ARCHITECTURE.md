@@ -318,6 +318,14 @@ Recovers the `intervalFreshness` dimension (absent since R63) across two new vir
 - **R85 E2 `intervalFreshness` → `dynamicRoleSwap ↔ temporalGravity`** (r=-0.343): novel intervals lower the role-swap gate (up to +0.05) while strengthening temporal gravity wells (×up to 1.12). Dynamic roles reshuffle as time pulls tighter — alien temporal displacement paired with role chaos.
 - **R85 E3 `densitySurprise` → `harmonicIntervalGuard ↔ crossLayerClimaxEngine`** (r=-0.354): surprise rhythmic events narrow the harmonic deadband (up to -0.05) while backing off climax approach (up to -0.06). Form stabilizes under surprise while the structural arc defers — harmony holds while the climax waits.
 
+### biasStrength + complexityEma + thematicDensity Triple-Dimension Bridge (R86)
+
+Three new signals bridging three pairs, recovering `thematicDensity` (absent 6 rounds) and introducing `biasStrength` (first use in antagonism bridges).
+
+- **R86 E1 `biasStrength` → `temporalGravity ↔ verticalIntervalMonitor`** (r=-0.477): confident rhythmic pulse strengthens gravity wells (×up to 1.15) while reducing collision penalty (×down to 0.90). Temporal cohesion + harmonic freedom at rhythmically confident moments.
+- **R86 E2 `complexityEma` → `velocityInterference ↔ harmonicIntervalGuard`** (r=-0.408): sustained rhythmic complexity amplifies velocity interference (×up to 1.10) while narrowing harmonic deadband (up to -0.03). Dynamics intensify while harmony stabilizes — slow-memory complexity creates dual-response.
+- **R86 E3 `thematicDensity` → `harmonicIntervalGuard ↔ crossLayerClimaxEngine`** (r=-0.354): rich thematic development narrows harmonic deadband (up to -0.04) while accelerating climax approach (up to +0.05). Harmony stabilizes while the structural arc intensifies during peak thematic richness.
+
 ## Emergence Boundaries
 
 Three architectural membranes:

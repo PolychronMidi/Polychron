@@ -88,7 +88,11 @@ temporalGravity = (() => {
     // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle while time pulls tighter).
     const intervalFreshnessTG = melodicCtxTG ? V.optionalFinite(melodicCtxTG.intervalFreshness, 0.5) : 0.5;
     const intervalFreshnessGravity = 1.0 + clamp((intervalFreshnessTG - 0.45) * 0.25, -0.05, 0.12);
-    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult * (1.0 + hotspotsScaleTG * 0.30) * intervalFreshnessGravity;
+    // R86 E1: biasStrength antagonism bridge -- confident rhythm pulse strengthens temporal gravity.
+    // Counterpart: verticalIntervalMonitor REDUCES collision penalty under same signal (harmonic freedom at rhythmic confidence).
+    const biasStrengthTG = rhythmEntryTG && Number.isFinite(rhythmEntryTG.biasStrength) ? rhythmEntryTG.biasStrength : 0;
+    const biasGravityScale = 1.0 + clamp((biasStrengthTG - 0.3) * 0.25, -0.05, 0.15);
+    const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult * (1.0 + hotspotsScaleTG * 0.30) * intervalFreshnessGravity * biasGravityScale;
 
     // Direction: pull toward the gravity well's time position (seconds)
     const direction = wellTimeSec > originalTimeN ? 1 : -1;

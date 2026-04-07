@@ -71,7 +71,11 @@ verticalIntervalMonitor = (() => {
       // LOWERS swap gate under same signal (dynamics reshuffle during complexity).
       const rhythmComplexityVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.complexity) ? rhythmEntryVIM.complexity : 0.5;
       const complexityPenaltyMod = 1.0 + clamp((rhythmComplexityVIM - 0.5) * 0.20, -0.05, 0.10);
-      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod;
+      // R86 E1: biasStrength antagonism bridge -- confident rhythm pulse raises collision tolerance.
+      // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal cohesion + harmonic freedom).
+      const biasStrengthVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.biasStrength) ? rhythmEntryVIM.biasStrength : 0;
+      const biasPenaltyMod = 1.0 - clamp((biasStrengthVIM - 0.3) * 0.15, 0, 0.10);
+      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod * biasPenaltyMod;
     }
 
     return 0;
