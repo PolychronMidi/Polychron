@@ -310,7 +310,7 @@ def _format_kb_corpus() -> str:
         return ""
 
 
-_LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b-a3b")
+_LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
 # Reasoning model: Qwen3-30B-A3B (MoE, 3B active params, hybrid thinking mode).
 # Beats QwQ-32B and DeepSeek-R1 on reasoning benchmarks at lower compute.
 # ~18.6GB Q4 — fits on one M40. qwen2.5-coder:14b (~9GB) on the other. Both loaded.
