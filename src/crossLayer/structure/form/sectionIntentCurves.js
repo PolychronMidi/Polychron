@@ -267,18 +267,34 @@ sectionIntentCurves = (() => {
     const observationConvergenceBoost = exceedanceObs > 0.3 ? clamp((exceedanceObs - 0.3) * 0.15, 0, 0.06) : 0;
     const convergenceTarget = clamp(CONVERGENCE_BASE + arc * CONVERGENCE_ARC_SCALE + lateLift * CONVERGENCE_LATE_SURGE + middleSectionPressure * 0.1 + qBias * 0.8 + observationConvergenceBoost, 0, 1);
     // CLAP guidance: previous run's section character nudges this run's intent.
-    // High alien -> moderate dissonance (section already xenolinguistic, ease off).
-    // High organic -> boost dissonance (push toward tension). High chaotic ->
-    // reduce interaction. High sparse -> boost density. +-0.06 max at full confidence.
+    // alien: high score means xenolinguistic quality achieved — reinforce, don't suppress.
+    //   Only reduce dissonance if alien is extremely saturated (>0.45), otherwise boost.
+    // organic: push away from human-sounding character with mild dissonance boost,
+    //   but only when organic score exceeds baseline (>0.25) to avoid constant pressure.
+    // chaotic: reduce interaction when chaotic to prevent compounding disorder.
+    // sparse: boost density — but sparse scores are negative in practice (cosine sim),
+    //   so use the raw value directly (not clamped to 0) to allow density reduction too.
+    // +-0.06 max at full confidence.
     let clapDensityNudge = 0, clapDissonanceNudge = 0, clapInteractionNudge = 0;
     if (_clapGuide && _clapGuide.confidence >= 0.10) {
       const clapStr = clamp((_clapGuide.confidence - 0.10) / 0.20, 0, 1);
       const secClap = _clapGuide.guide[String(s)];
       if (secClap) {
-        if (Number.isFinite(secClap.alien))   clapDissonanceNudge -= clamp(secClap.alien * 0.30 * clapStr, 0, 0.06);
-        if (Number.isFinite(secClap.organic)) clapDissonanceNudge += clamp(secClap.organic * 0.35 * clapStr, 0, 0.06);
-        if (Number.isFinite(secClap.chaotic)) clapInteractionNudge -= clamp(secClap.chaotic * 0.25 * clapStr, 0, 0.05);
-        if (Number.isFinite(secClap.sparse))  clapDensityNudge += clamp(secClap.sparse * 0.40 * clapStr, 0, 0.06);
+        if (Number.isFinite(secClap.alien)) {
+          if (secClap.alien > 0.45) {
+            // Saturated xenolinguistic — ease off slightly to prevent stagnation
+            clapDissonanceNudge -= clamp((secClap.alien - 0.45) * 0.40 * clapStr, 0, 0.04);
+          } else {
+            // Partial alien — reinforce toward xenolinguistic quality
+            clapDissonanceNudge += clamp(secClap.alien * 0.20 * clapStr, 0, 0.04);
+          }
+        }
+        if (Number.isFinite(secClap.organic) && secClap.organic > 0.25)
+          clapDissonanceNudge += clamp((secClap.organic - 0.25) * 0.35 * clapStr, 0, 0.05);
+        if (Number.isFinite(secClap.chaotic))
+          clapInteractionNudge -= clamp(secClap.chaotic * 0.25 * clapStr, 0, 0.05);
+        if (Number.isFinite(secClap.sparse))
+          clapDensityNudge += clamp(secClap.sparse * 0.40 * clapStr, -0.06, 0.06);
       }
     }
     const adjustedDensity = clamp(densityTarget + qBias * -0.5 + personalityContrastDensity + clapDensityNudge, 0, 1);
