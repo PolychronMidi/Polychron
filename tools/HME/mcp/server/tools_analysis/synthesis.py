@@ -341,8 +341,14 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) 
         with urllib.request.urlopen(req, timeout=240) as resp:
             result = json.loads(resp.read())
             text = result.get("response", "").strip()
+            # deepseek-r1 puts reasoning in "thinking" field, final answer in "response".
+            # If response is empty (ran out of tokens during thinking), use thinking content.
             if not text:
-                return None
+                thinking = result.get("thinking", "").strip()
+                if thinking:
+                    text = thinking
+                else:
+                    return None
             # Quality gate: suppress hallucinated / low-value output
             _hallucination_markers = [
                 "hypothetical", "as an AI", "I don't have access",

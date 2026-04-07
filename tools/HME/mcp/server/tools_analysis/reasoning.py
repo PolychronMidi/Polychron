@@ -218,10 +218,13 @@ def module_story(module_name: str) -> str:
         try:
             with open(matching[0]["file"], encoding="utf-8", errors="ignore") as _f:
                 content = _f.read()[:500]
-            similar = _find_similar(content, ctx.project_engine, top_k=sim_limit + 3)
+            similar = _find_similar(content, ctx.project_engine, top_k=sim_limit + 5)
             if similar:
                 source_file = matching[0]["file"]
-                filtered = [r for r in similar if r.get("source") != source_file][:sim_limit]
+                # Filter to src/ files only — tools/HME Python files are false positives
+                filtered = [r for r in similar
+                            if r.get("source") != source_file
+                            and "/src/" in (r.get("source") or "")][:sim_limit]
                 if filtered:
                     parts.append(f"\n## Similar Modules")
                     for r in filtered:
