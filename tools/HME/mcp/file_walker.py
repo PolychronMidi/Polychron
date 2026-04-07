@@ -16,7 +16,9 @@ DEFAULT_IGNORE_DIRS = {
     "runtime", ".idea", ".vscode", ".next",
     "coverage", ".nyc_output", ".turbo",
     ".github", "metrics", "output", "tmp", "lab",
-    "doc", "hooks",
+    # "doc" and "hooks" intentionally NOT ignored — HME indexes its own
+    # enforcement hooks (tools/HME/hooks/) and project docs (doc/) for
+    # full self-awareness. These are small, high-value files.
 }
 
 IGNORE_FILES = {

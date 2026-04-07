@@ -1909,6 +1909,11 @@ declare var crossLayerHelpers: CrossLayerHelpersAPI;
 declare var crossLayerEmissionGateway: CrossLayerEmissionGatewayAPI;
 declare var adaptiveTrustScoresHelpers: any;
 declare var adaptiveTrustScores: AdaptiveTrustScoresAPI;
+declare var sectionIntentCurvesHelpers: {
+  getClapNudges(sectionIdx: number): { density: number; dissonance: number; interaction: number };
+  getSectionContrastBiases(): { densityContrast: number; regimeContrast: number; coherenceLearning: number; turbulenceDampen: number; spectralContrast: number; tensionContrast: number; tensionLearning: number; flickerContrast: number };
+  midSectionEval(ph: number, p: number, totalPhrases: number): void;
+};
 declare var sectionIntentCurves: SectionIntentCurvesAPI;
 declare var phaseAwareCadenceWindow: PhaseAwareCadenceWindowAPI;
 declare var negotiationEngine: NegotiationEngineAPI;
