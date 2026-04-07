@@ -612,6 +612,21 @@ def _local_chat(messages: list[dict], model: str | None = None,
             elif "<think>" in text:
                 text = text[text.find("<think>") + len("<think>"):].strip()
             text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            # Trim leaked reasoning preamble (same markers as _local_think)
+            _reasoning_markers = [
+                "but note:", "however,", "let's look", "we are to", "given the above",
+                "so we", "but we don't know", "we have to", "let's consider",
+                "we need to find", "we can assume", "first, note that",
+                "now, let's", "let's structure",
+            ]
+            text_lower = text.lower()
+            reasoning_hits = sum(1 for m in _reasoning_markers if m in text_lower)
+            if reasoning_hits >= 3 and len(text) > 200:
+                for marker in ["therefore,", "so the answer", "in summary", "answer:", "file:", "pair:"]:
+                    idx = text_lower.rfind(marker)
+                    if idx != -1:
+                        text = text[idx:].strip()
+                        break
             return text if text else None
     except Exception as e:
         logger.debug(f"_local_chat unavailable: {e}")
@@ -890,8 +905,12 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
             "content": (
                 "/no_think Based on your analysis, answer the question:\n  " + question + "\n\n"
                 "Use ONLY modules and signals from your analysis above. " + _fmt_instruction + "\n"
-                "Max 4 items. No prose."
+                "Max 4 items. No prose. No explanation. Start your response immediately with the first item."
             )
+        },
+        {
+            "role": "assistant",
+            "content": "1."
         },
     ]
     result = _local_chat(chat_messages, model=_REASONING_MODEL, max_tokens=max_tokens, temperature=0.15)
