@@ -520,12 +520,7 @@ def think(about: str, context: str = "") -> str:
         )
         if local_answer:
             store_think_history(about, local_answer)
-            parts = [f"# Think: {about} *(meta-hme)*\n", local_answer]
-            if kb_hits:
-                parts.append("\n---\n**KB context used:**")
-                for k in kb_hits[:6]:
-                    parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:120]}")
-            return "\n".join(parts)
+            return f"# Think: {about} *(meta-hme)*\n\n{local_answer}"
     else:
         # Code/evolution questions: parallel two-stage (GPU 0 + GPU 1 simultaneously)
         if is_channel_q:
@@ -555,25 +550,14 @@ def think(about: str, context: str = "") -> str:
         local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=1024)
         if local_answer:
             store_think_history(about, local_answer)
-            parts = [f"# Think: {about} *(parallel-two-stage)*\n", local_answer]
-            if kb_hits:
-                parts.append("\n---\n**KB context used:**")
-                for k in kb_hits[:6]:
-                    parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:120]}")
-            return "\n".join(parts)
+            return f"# Think: {about} *(parallel-two-stage)*\n\n{local_answer}"
 
-    # Template fallback: show project state so caller can still reason from it
-    parts = [f"# Think: {about}\n"]
-    parts.append(f"**Prompt:** {prompt}\n")
-    if injected_state:
-        parts.append(injected_state[:800])
-    if context:
-        parts.append(f"**Context:** {context}\n")
+    # Template fallback (Ollama unavailable): minimal context, no injected_state echo
+    parts = [f"# Think: {about} *(Ollama unavailable — fallback)*\n"]
     if kb_hits:
         parts.append("**Relevant KB:**")
-        for k in kb_hits[:6]:
-            parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:120]}")
-    parts.append("\n**Now reflect and respond before proceeding.**")
+        for k in kb_hits[:4]:
+            parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:100]}")
     return "\n".join(parts)
 
 

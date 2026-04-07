@@ -230,7 +230,8 @@ def before_editing(file_path: str) -> str:
             _be_cache[_cache_key] = synthesis
     if synthesis:
         parts.append(f"\n## Edit Risks *(adaptive)*")
-        parts.append(synthesis)
+        # Cap at 1200 chars (~300 tokens) — 3 bullets don't need more
+        parts.append(synthesis[:1200])
 
     return "\n".join(parts)
 
@@ -261,7 +262,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
         "If this module has musical impact, explain what the listener would notice if this code breaks."
     )
     # Local model: coder model handles 3-bullet edit risks well (~17-34s).
-    synthesis = _local_think(user_text, max_tokens=512, model=_LOCAL_MODEL,
+    synthesis = _local_think(user_text, max_tokens=250, model=_LOCAL_MODEL,
                              system=_THINK_SYSTEM, priority=priority)
     return synthesis
 

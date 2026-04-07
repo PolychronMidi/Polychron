@@ -274,7 +274,11 @@ def evolution_momentum() -> str:
             out.append(f"**Dimension opportunity:** {', '.join(untouched)} — used historically but absent in last {len(recent_rounds)} rounds")
             out.append("")
 
-    return "\n".join(out)
+    result = "\n".join(out)
+    # Cap at 4000 chars (~1000 tokens) — momentum is a strategic summary, not a data dump
+    if len(result) > 4000:
+        result = result[:4000] + f"\n*(truncated — {len(result) - 4000} chars omitted for token budget)*"
+    return result
 
 
 def _describe_musical_role(name: str, path: str, narrative: str = "") -> tuple[str, str]:
@@ -794,4 +798,10 @@ def suggest_evolution() -> str:
     except Exception:
         pass
 
-    return "\n".join(parts)
+    result = "\n".join(parts)
+    # Cap at 6000 chars (~1500 tokens) when called from pipeline_digest context.
+    # The pipeline_digest wrapper applies its own 8000-char total budget, but this
+    # prevents suggest_evolution alone from dominating the entire digest output.
+    if len(result) > 6000:
+        result = result[:6000] + f"\n*(truncated — {len(result) - 6000} chars omitted for token budget)*"
+    return result
