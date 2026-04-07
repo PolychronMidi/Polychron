@@ -86,7 +86,11 @@ polyrhythmicPhasePredictor = (() => {
         ? (melodicCtxPPP.counterpoint === 'contrary' ? 1.35
           : melodicCtxPPP.counterpoint === 'similar' ? 1.15 : 1.0)
         : 1.0;
-      return PROB_BOOST * proximity * cpMult;
+      // R77 E5: emergentRhythm hotspots coupling -- dense moments amplify phase convergence boost
+      const rhythmEntryPPP = L0.getLast('emergentRhythm', { layer: 'both' });
+      const hotspotsPPP = rhythmEntryPPP && Array.isArray(rhythmEntryPPP.hotspots) ? rhythmEntryPPP.hotspots.length : 0;
+      const hotspotMult = 1.0 + clamp(hotspotsPPP / 16, 0, 1) * 0.20;
+      return PROB_BOOST * proximity * cpMult * hotspotMult;
     }
 
     return 0;

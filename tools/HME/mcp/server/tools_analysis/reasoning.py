@@ -308,7 +308,7 @@ def module_story(module_name: str) -> str:
         synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
                                    max_tool_calls=_get_tool_budget())
     if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
+        synthesis = _local_think(user_text, max_tokens=8192, model=_REASONING_MODEL)
     if synthesis:
         parts.append(f"\n## Key Constraints *(adaptive)*")
         parts.append(synthesis)
@@ -506,7 +506,7 @@ def think(about: str, context: str = "") -> str:
         # The HME doc + KB injection can be large — trim to fit M40 GPU timing.
         # Stage 1 (qwen) structures the meta-HME context; Stage 2 (deepseek) reasons.
         # deepseek-r1 thinking field fix in _local_think makes Stage 2 work now.
-        local_answer = _two_stage_think(raw_context[:4000], prompt, max_tokens=512)
+        local_answer = _two_stage_think(raw_context[:4000], prompt, max_tokens=8192)
         if local_answer:
             parts = [f"# Think: {about} *(two-stage/meta-hme)*\n", local_answer]
             if kb_hits:
@@ -658,7 +658,7 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         )
         api_key = _get_api_key()
         synthesis = (_claude_think(user_text, api_key, kb_context=_format_kb_corpus())
-                     if api_key else _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL))
+                     if api_key else _local_think(user_text, max_tokens=8192, model=_REASONING_MODEL))
         if synthesis:
             parts.append(f"\n## Change Risk *(adaptive)*")
             parts.append(synthesis)

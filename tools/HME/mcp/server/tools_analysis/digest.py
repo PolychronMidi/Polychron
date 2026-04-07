@@ -46,13 +46,21 @@ def _touch_digest_sentinel():
         f.write(str(time.time()))
 
 
+_check_pipeline_blocked: bool = False  # True after first IN PROGRESS; cleared on finish/fail
+
 @ctx.mcp.tool()
 def check_pipeline() -> str:
     """Check current pipeline status by reading pipeline.log directly.
     Reports: IN PROGRESS (pipeline currently running), the finished line
     (pipeline completed), or FAILED with last 30 lines for diagnosis.
-    This is the ONLY permitted way to check pipeline state — never tail/cat the log."""
-    _track("check_pipeline")
+    This is the ONLY permitted way to check pipeline state — never tail/cat the log.
+    ONE CALL PER RUN: once IN PROGRESS is returned, all subsequent calls are blocked
+    until the pipeline actually completes. The task notification fires on completion —
+    that is your signal. Do not poll."""
+    global _check_pipeline_blocked
+    import time as _time
+    import re as _re
+
     log_path = os.path.join(ctx.PROJECT_ROOT, "log", "pipeline.log")
     if not os.path.isfile(log_path):
         return "No pipeline.log found — pipeline has not been run yet."
@@ -69,48 +77,62 @@ def check_pipeline() -> str:
     last30 = "\n".join(stripped[-30:])
     last10 = stripped[-10:] if len(stripped) >= 10 else stripped
 
+    # Finished: check FIRST so a completed pipeline always unblocks immediately.
+    finished = next((l for l in reversed(last10) if "Pipeline finished" in l), None)
+    if finished:
+        _check_pipeline_blocked = False
+        return f"Pipeline: {finished.strip()}"
+
     # In-progress: ANY of the last 5 non-empty lines starts with "script in progress"
-    # (pipeline prints this once per step, not as a continuous stream)
-    import time as _time
-    import re as _re
     last5 = stripped[-5:] if len(stripped) >= 5 else stripped
     in_progress_line = next((l for l in reversed(last5) if l.startswith("script in progress")), None)
     if in_progress_line:
-        # Extract step name (e.g., "script in progress: lint" → "lint")
+        if _check_pipeline_blocked:
+            return (
+                "BLOCKED: check_pipeline already returned IN PROGRESS for this run. "
+                "Calling it again proves you are polling — burning context window on a status "
+                "you already have, instead of doing actual work. Every redundant call is dead "
+                "context that can never be recovered. The task notification fires when the "
+                "pipeline finishes. Until then: implement the next evolution, run "
+                "what_did_i_forget, explore with coupling_intel or module_intel. "
+                "Polling is not waiting — it is active waste."
+            )
         step_match = _re.search(r"script in progress[:\s]+(.+)", in_progress_line)
         step_name = step_match.group(1).strip() if step_match else "unknown step"
         try:
             log_age_s = _time.time() - os.path.getmtime(log_path)
-            return f"Pipeline: IN PROGRESS — `{step_name}` (log updated {log_age_s:.0f}s ago)"
+            result = f"Pipeline: IN PROGRESS — `{step_name}` (log updated {log_age_s:.0f}s ago)"
         except Exception:
-            return f"Pipeline: IN PROGRESS — `{step_name}`"
+            result = f"Pipeline: IN PROGRESS — `{step_name}`"
+        _check_pipeline_blocked = True
+        return result
 
-    # Race-condition guard: between steps, "script in progress" isn't present.
-    # If the log was modified very recently (< 90s) but "Pipeline finished" is NOT
-    # in the last line, treat as still running — catches inter-step gaps.
+    # Race-condition guard: between steps
     try:
         log_mtime = os.path.getmtime(log_path)
         log_age_s = _time.time() - log_mtime
         last3 = stripped[-3:] if len(stripped) >= 3 else stripped
         last3_text = " ".join(last3)
-        if log_age_s < 90 and "Pipeline finished" not in last3_text and "error" not in last3_text.lower():
-            # Try to extract the last step name from the log for context
+        if log_age_s < 90 and "error" not in last3_text.lower():
+            if _check_pipeline_blocked:
+                return (
+                    "STOP POLLING. Pipeline is still running — you already know this. "
+                    "check_pipeline is blocked for the rest of this run. "
+                    "The task notification fires on completion. Do other work."
+                )
             last_step = "between steps"
             for l in reversed(stripped[-20:]):
                 step_m = _re.search(r"script in progress[:\s]+(.+)", l)
                 if step_m:
                     last_step = f"after `{step_m.group(1).strip()}`"
                     break
+            _check_pipeline_blocked = True
             return f"Pipeline: IN PROGRESS ({last_step} — log modified {log_age_s:.0f}s ago)"
     except Exception:
         pass
 
-    # Finished: "Pipeline finished" appears in last 10 non-empty lines
-    finished = next((l for l in reversed(last10) if "Pipeline finished" in l), None)
-    if finished:
-        return f"Pipeline: {finished.strip()}"
-
-    # Otherwise: failed
+    # Failed
+    _check_pipeline_blocked = False
     return f"Pipeline: FAILED\n\nLast 30 lines:\n{last30}"
 
 

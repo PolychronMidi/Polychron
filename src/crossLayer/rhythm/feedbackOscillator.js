@@ -56,8 +56,13 @@ feedbackOscillator = (() => {
       * (melodicCtxFO.counterpoint === 'contrary' ? 0.82 : 1.0)
       * (1.0 + clamp(melodicCtxFO.thematicDensity, 0, 1) * 0.12)
       : 1.0;
+    // R77 E4: channel-coherence gate -- high cross-layer coherence dampens impulse (already synchronized)
+    const ccEntry = L0.getLast('channel-coherence', { layer: 'both' });
+    const ccDamp = ccEntry && Number.isFinite(ccEntry.coherence) && ccEntry.coherence > 0.70
+      ? clamp((ccEntry.coherence - 0.70) * 0.30, 0, 0.09)
+      : 0;
     L0.post(CHANNEL, layer, absoluteSeconds, {
-      energy: clamp(energy * artScale * emergentScale * melodicScaleFO, 0, 1),
+      energy: clamp(energy * artScale * emergentScale * melodicScaleFO * (1 - ccDamp), 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
       originLayer: layer,

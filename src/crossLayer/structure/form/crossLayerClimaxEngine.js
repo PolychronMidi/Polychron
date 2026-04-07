@@ -147,8 +147,14 @@ crossLayerClimaxEngine = (() => {
     const rhythmEntryClx = L0.getLast('emergentRhythm', { layer: 'both' });
     const complexityClx = rhythmEntryClx && Number.isFinite(rhythmEntryClx.complexity) ? rhythmEntryClx.complexity : 0.5;
     const complexityClimaxBoost = clamp((complexityClx - 0.45) * 0.10, 0, 0.06);
-    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost - entropyDampClx - freshnessDampClx) * preClimaxHold;
+    // R81 E2: complexityEma antagonism bridge with dynamicRoleSwap -- sustained high complexity
+    // suppresses climax approach (memory of long-term complexity creates its own structural tension;
+    // climax backs off rather than pile more energy into an already-complex texture).
+    // Counterpart: dynamicRoleSwap INCREASES swap frequency at same complexityEma (E1).
+    const complexityEmaClx = rhythmEntryClx && Number.isFinite(rhythmEntryClx.complexityEma) ? rhythmEntryClx.complexityEma : 0.5;
+    const complexityEmaDampClx = clamp((complexityEmaClx - 0.55) * 0.12, 0, 0.07);
+    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing

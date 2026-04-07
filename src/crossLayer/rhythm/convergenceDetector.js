@@ -79,6 +79,9 @@ convergenceDetector = (() => {
     // R50: emergent rhythm density widens tolerance (rhythmic activity = natural convergence opportunity)
     const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
     const emergentBoost = emergentEntry && Number.isFinite(emergentEntry.density) ? clamp(emergentEntry.density * 0.2, 0, 0.12) : 0;
+    // R77 E3: chord mode -- minor tonality invites rhythmic convergence (harmonic tension craves resolution)
+    const chordEntryCD = L0.getLast('chord', { layer: 'both' });
+    const chordModeBoost = chordEntryCD && chordEntryCD.mode === 'minor' ? 0.06 : 0;
     // R57: melodic contour modulates convergence tolerance. Rising -> widen (ascending together).
     // Contrary counterpoint -> narrow (layers pulling apart, convergence harder).
     // Stale intervals -> slight widen (fresh unison after staleness = dramatic).
@@ -90,7 +93,7 @@ convergenceDetector = (() => {
         + (melodicCtxCD.intervalFreshness < 0.45 ? 0.04 : 0),
         -0.10, 0.10)
       : 0;
-    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost + climaxBoost + emergentBoost + melodicBoostCD + tensionBoost) * (0.6 + cimScale * 0.8);
+    const effectiveTolerance = CONVERGENCE_TOLERANCE_SEC * (0.6 + ct * 0.8 + entropyBoost + transitionBoost + coherenceBoost + climaxBoost + emergentBoost + melodicBoostCD + tensionBoost + chordModeBoost) * (0.6 + cimScale * 0.8);
     const effectiveInterval = MIN_CONVERGENCE_INTERVAL_SEC * (1.4 - ct * 0.8 - entropyBoost * 0.5 - transitionBoost * 0.3 - coherenceBoost * 0.2 - tensionBoost * 0.3);
 
     // R33: convergence momentum -- recent convergences make the next one easier
