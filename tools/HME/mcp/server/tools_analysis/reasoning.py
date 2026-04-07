@@ -502,11 +502,13 @@ def think(about: str, context: str = "") -> str:
         raw_context += kb_block + "\n\n"
 
     if _is_meta_hme:
-        # Meta-HME: skip two-stage (qwen structuring strips UX context). Go directly
-        # to deepseek-r1 with full context. The structuring stage is designed for code
-        # analysis, not meta-tooling reasoning — it actively hurts meta-HME questions.
-        direct_prompt = f"{raw_context}\n\nQuestion: {about}\n\n{prompt}"
-        local_answer = _local_think(direct_prompt, max_tokens=1024, model=_REASONING_MODEL)
+        # Meta-HME: use qwen2.5-coder (fast, code/UX-specialized) NOT deepseek-r1 (slow,
+        # math/logic reasoning, times out on long prompts). Trim context to avoid exceeding
+        # qwen's effective window. Direct single-stage — no two-stage structuring.
+        trimmed_context = raw_context[:2500]
+        direct_prompt = f"{trimmed_context}\n\nQuestion: {about}\n\n{prompt}"
+        # Use 7b model — 14b times out on M40 GPU. 7b at ~135tok/s = fast enough.
+        local_answer = _local_think(direct_prompt, max_tokens=400, model="qwen2.5-coder:7b")
         if local_answer:
             parts = [f"# Think: {about} *(direct-reasoning)*\n", local_answer]
             if kb_hits:
