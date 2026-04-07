@@ -289,6 +289,26 @@ def get_think_history_context() -> str:
     return "Previous think exchanges this session:\n" + "\n".join(lines) + "\n\n"
 
 
+_lazy_prime_attempted = False
+
+def _ensure_warm(model: str):
+    """Lazy warm context priming — fires on first synthesis call if not already primed.
+    Non-blocking: runs in a background thread so the first call isn't delayed.
+    Subsequent calls check _warm_ctx dict directly (instant)."""
+    global _lazy_prime_attempted
+    if model in _warm_ctx or _lazy_prime_attempted:
+        return
+    _lazy_prime_attempted = True
+    def _bg():
+        try:
+            _prime_warm_context(_LOCAL_MODEL)
+            _prime_warm_context(_REASONING_MODEL)
+        except Exception:
+            pass
+    _threading.Thread(target=_bg, daemon=True).start()
+    logger.info("lazy warm context priming started (background)")
+
+
 def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                  priority: str = "interactive", system: str = "",
                  temperature: float = 0.3, context: list | None = None,
@@ -316,6 +336,10 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         _ollama_interactive.set()
 
     _effective_model = model or _LOCAL_MODEL
+
+    # Lazy warm: kick off background priming on first interactive call
+    if priority == "interactive" and system == _THINK_SYSTEM:
+        _ensure_warm(_effective_model)
 
     # ── Auto-warm: use warm KV context when available ──
     # When system==_THINK_SYSTEM and no explicit context, swap in the warm KV cache.
