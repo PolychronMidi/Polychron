@@ -301,7 +301,14 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
             _kb_cache[kb_key] = ctx.project_engine.search_knowledge(module_name, 8)
         warmed += 1
     # Tier 2: pre-synthesize Edit Risks for most recently modified files.
-    # Now cheap (Haiku, no thinking) — each call ~200ms vs 15-30s with Sonnet+thinking.
+    # ONLY when API key is available (Haiku ~200ms per call). Without API key, each call
+    # falls through to Ollama (~73s per file × 30 files = 36 min of background queue that
+    # blocks ALL interactive model calls like think/module_intel). Never pre-warm via Ollama.
+    api_key = _get_api_key()
+    if not api_key:
+        return (f"Pre-edit cache warmed: {warmed} files (callers+KB). "
+                f"Synthesis pre-load skipped (no API key — would flood Ollama queue). "
+                f"before_editing synthesis runs on-demand per file.")
     hot_files = sorted(js_files, key=lambda f: os.path.getmtime(f) if os.path.exists(f) else 0, reverse=True)[:synthesis_hot]
     synth_warmed = 0
     from structure import file_summary as _fs

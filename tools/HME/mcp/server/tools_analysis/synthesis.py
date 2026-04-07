@@ -599,10 +599,10 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 2048) ->
         "- Output a structured brief with exact file names, function names, and signal names\n"
         "- Remove irrelevant context — keep only what bears on the question\n"
         "- Preserve code snippets that directly relate\n"
-        "- Max 600 words\n\n"
-        "Raw project context:\n" + raw_context[:12000]
+        "- Max 400 words\n\n"
+        "Raw project context:\n" + raw_context[:6000]
     )
-    frame = _local_think(frame_prompt, max_tokens=1024, model=_LOCAL_MODEL)
+    frame = _local_think(frame_prompt, max_tokens=600, model=_LOCAL_MODEL)
     if not frame or len(frame) < 40:
         # Fall back to single-stage reasoning
         return _local_think(
