@@ -28,6 +28,7 @@ from .synthesis_ollama import (  # noqa: F401
     _arbiter_check, _resolve_complex_conflict,
     store_think_history, get_think_history_context,
     append_session_narrative, get_session_narrative,
+    compress_for_claude,
 )
 
 

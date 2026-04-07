@@ -422,6 +422,59 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
     return resolved
 
 
+def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
+    """Compress verbose tool output using the arbiter model before returning to Claude.
+
+    The arbiter (qwen3:4b) acts as a context efficiency manager: it reads the full
+    analysis and emits a compact summary that preserves actionable signal while cutting
+    prose explanation, context preamble, and repetition. This keeps Claude's context
+    window lean without losing synthesis quality — Ollama did the full analysis, Claude
+    only needs the conclusion.
+
+    hint: optional one-sentence context about what the text contains (e.g. 'evolution
+    proposals for crossLayer modules') to help the arbiter focus its compression.
+    Falls back to truncation if arbiter is unavailable or too slow.
+    """
+    if len(text) <= max_chars:
+        return text
+    import urllib.request
+    hint_prefix = f"Context: {hint}\n\n" if hint else ""
+    prompt = (
+        hint_prefix +
+        f"Compress the following to ≤{max_chars} characters. "
+        "Preserve: file paths (src/...), signal field names, module names, numbers, "
+        "and concrete action verbs. Remove: prose preamble, redundant explanation, "
+        "verbose 'why' sections that repeat what the action already implies. "
+        "Output the compressed version ONLY — no meta-commentary.\n\n"
+        f"INPUT:\n{text[:4000]}"
+    )
+    payload = {
+        "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
+        "options": {"temperature": 0.0, "num_predict": max(150, max_chars // 3)},
+    }
+    arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
+    if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
+        payload["context"] = arbiter_ctx
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(
+        _LOCAL_URL, data=body, headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read())
+            compressed = result.get("response", "").strip()
+            if "</think>" in compressed:
+                compressed = compressed[compressed.rfind("</think>") + len("</think>"):].strip()
+            compressed = re.sub(r'[^\x00-\x7F]+', '', compressed).strip()
+            if compressed and len(compressed) < len(text):
+                logger.debug(f"compress_for_claude: {len(text)} → {len(compressed)} chars")
+                return compressed
+    except Exception as e:
+        logger.debug(f"compress_for_claude: arbiter unavailable ({e}), falling back to truncation")
+    # Fallback: hard truncation
+    return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
+
+
 def store_think_history(about: str, answer: str):
     """Store a think Q&A pair for cross-call continuation."""
     _think_history.append({"about": about, "answer": answer[:300]})

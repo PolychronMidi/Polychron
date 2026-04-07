@@ -422,15 +422,18 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     if evolve:
         try:
             from .evolution_next import suggest_evolution as _suggest_ev
+            from .synthesis import compress_for_claude as _compress
             _evo = _suggest_ev()
             if _current_len + len(_evo) <= _DIGEST_CHAR_CAP:
                 out.append("\n---")
                 out.append(_evo)
             else:
-                # Over budget: include truncated version with budget note
-                _remaining = max(0, _DIGEST_CHAR_CAP - _current_len - 8)
+                # Over budget: compress via arbiter rather than hard truncation
+                _remaining = max(800, _DIGEST_CHAR_CAP - _current_len - 8)
+                _compressed = _compress(_evo, max_chars=_remaining,
+                                        hint="ranked evolution proposals for next Polychron round")
                 out.append("\n---")
-                out.append(_evo[:_remaining] + f"\n*(truncated — {len(_evo) - _remaining} chars omitted for token budget)*")
+                out.append(_compressed)
         except Exception as e:
             out.append(f"\n## Evolution\n*(unavailable: {e})*")
 
