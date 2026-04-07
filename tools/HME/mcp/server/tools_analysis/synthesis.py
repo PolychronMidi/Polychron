@@ -40,11 +40,11 @@ _DEEP_MODEL = os.environ.get("HME_DEEP_MODEL", "claude-opus-4-6")
 def _build_think_system() -> str:
     project_name = os.path.basename(os.path.realpath(ctx.PROJECT_ROOT)) if ctx.PROJECT_ROOT else "project"
     return (
-        f"You are a code-review assistant for the '{project_name}' codebase. "
-        "You have deep knowledge of its architecture and conventions from the KB provided. "
-        "Provide concise, actionable analysis grounded in the KB context. "
-        "Focus on architectural boundaries, potential breakage, and concrete next steps. "
-        "Be direct — no preamble, no trailing summaries."
+        f"You are a structured reflection engine for the '{project_name}' codebase. "
+        "Ground every claim in KB constraints or injected code — never speculate about "
+        "tool capabilities or module behavior without evidence. Cite exact file paths, "
+        "function names, and KB entry titles. No generic advice. No preamble. "
+        "Max 4 concrete items per answer."
     )
 
 
@@ -395,9 +395,9 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                     return None
             # Quality gate: suppress hallucinated / low-value output
             _hallucination_markers = [
-                "hypothetical", "as an AI", "I don't have access",
+                "in this hypothetical scenario", "as an AI", "I don't have access",
                 "this document provides", "these documents provide",
-                "in this hypothetical", "as a language model",
+                "as a language model", "i cannot determine",
             ]
             text_lower = text.lower()
             if any(m in text_lower for m in _hallucination_markers):
@@ -405,6 +405,25 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                 if priority == "interactive":
                     _ollama_interactive.clear()
                 return None
+            # Reasoning-leak gate: detect chain-of-thought that leaked into response.
+            # qwen3 sometimes outputs internal reasoning instead of a direct answer.
+            _reasoning_markers = [
+                "but note:", "however,", "let's look", "we are to", "given the above",
+                "so we", "but we don't know", "we have to", "let's consider",
+                "we need to find", "we can assume", "first, note that",
+            ]
+            reasoning_hits = sum(1 for m in _reasoning_markers if m in text_lower)
+            if reasoning_hits >= 4 and len(text) > 1500:
+                # Try to extract just the conclusion (after "therefore" or "so the answer")
+                for marker in ["therefore,", "so the answer", "in summary", "the next two", "answer:"]:
+                    idx = text_lower.rfind(marker)
+                    if idx != -1:
+                        text = text[idx:].strip()
+                        break
+                else:
+                    # No conclusion marker — take last 25% as likely conclusion
+                    text = text[len(text) * 3 // 4:].strip()
+                logger.info(f"_local_think: trimmed reasoning leak ({reasoning_hits} markers, kept {len(text)} chars)")
             # Strip non-ASCII (multilingual model leakage: CJK, emoji, etc.)
             text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
             if priority == "interactive":
@@ -648,11 +667,12 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         "Extract and structure ONLY the facts relevant to answering this question:\n"
         f"  {question}\n\n"
         "Rules:\n"
-        "- Output a structured brief with exact file names, function names, and signal names\n"
+        "- Preserve EXACT file paths (src/crossLayer/...), function names, signal field names, and KB entry titles\n"
         "- Remove irrelevant context — keep only what bears on the question\n"
+        "- For each relevant module: state its file, its coupling dimensions, and its antagonist pair\n"
         "- Preserve code snippets that directly relate\n"
-        "- Max 400 words\n\n"
-        "Raw project context:\n" + raw_context[:6000]
+        "- Max 500 words\n\n"
+        "Raw project context:\n" + raw_context[:8000]
     )
     frame = _local_think(frame_prompt, max_tokens=2000, model=_LOCAL_MODEL)
     if not frame or len(frame) < 40:
@@ -662,13 +682,15 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
             max_tokens=max_tokens, model=_REASONING_MODEL
         )
 
-    # Stage 2: Reasoning model thinks deeply (GPU 1, Qwen3 MoE with thinking mode)
+    # Stage 2: Reasoning model answers directly (GPU 1, Qwen3 MoE)
+    # /no_think: Stage 1 already did the thinking — Stage 2 just answers from structured facts.
     reason_prompt = (
         "Structured brief about the Polychron codebase:\n\n"
         + frame + "\n\n"
         "Question: " + question + "\n\n"
         "Answer using ONLY modules, files, signals, and functions named in the brief above. "
-        "Do NOT invent names. Be specific about musical effects."
+        "Do NOT invent names. Be specific about musical effects. "
+        "Answer directly in max 300 words. /no_think"
     )
     return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
 

@@ -408,9 +408,9 @@ def think(about: str, context: str = "") -> str:
         try:
             from .coupling import antagonist_map as _ant_map, dimension_gap_finder as _dim_gaps
             injected_state = "## Live Project State\n### Antagonist pairs (top creative tensions):\n"
-            injected_state += _ant_map()[:1200]
+            injected_state += _ant_map()[:800]
             injected_state += "\n\n### Dimension gaps (underused coupling signals):\n"
-            injected_state += _dim_gaps()[:600]
+            injected_state += _dim_gaps()[:400]
         except Exception:
             pass
 

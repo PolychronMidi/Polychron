@@ -282,7 +282,9 @@ def codebase_health() -> str:
         actionable_critical_sorted = sorted(actionable_critical, key=_extract_line_count, reverse=True)
         parts.append(f"## CRITICAL — Actionable ({len(actionable_critical_sorted)})")
         for item in actionable_critical_sorted:
-            parts.append(f"  - {item}")
+            # Hot-path annotation: flag files that run on every beat
+            hot = " [HOT PATH]" if any(h in item for h in _HOT_PATH_FILES) else ""
+            parts.append(f"  - {item}{hot}")
         parts.append("")
     if expected_large:
         parts.append(f"## CRITICAL — Expected Large ({len(expected_large)}, data/generated — not split targets)")
@@ -323,6 +325,28 @@ def codebase_health() -> str:
     try:
         sync = doc_sync_check()
         parts.append(f"\n## Doc Sync: {sync[:120]}")
+    except Exception:
+        pass
+
+    # KB-to-code freshness: check if KB entries reference modules that no longer exist
+    try:
+        all_kb = ctx.project_engine.list_knowledge_full() or []
+        import glob as _glob
+        src_modules = set()
+        for _f in _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", "*.js"), recursive=True):
+            src_modules.add(os.path.basename(_f).replace(".js", ""))
+        stale_kb = []
+        _module_pat = re.compile(r'\b([a-z][a-zA-Z]{6,}(?:Engine|Manager|Guard|Detector|Regulator|Monitor|Tracker|Controller|Oscillator|Predictor|Avoider|Window|Transfer|Lock|Swap|Echo|Gravity|Mirror|Silhouette))\b')
+        for entry in all_kb:
+            text = entry.get("title", "") + " " + entry.get("content", "")
+            refs = set(_module_pat.findall(text))
+            missing = [r for r in refs if r not in src_modules and r.lower() not in {m.lower() for m in src_modules}]
+            if missing:
+                stale_kb.append(f"  [{entry.get('category','')}] {entry.get('title','')}: references {', '.join(missing[:3])}")
+        if stale_kb:
+            parts.append(f"\n## KB Staleness ({len(stale_kb)} entries reference missing modules)")
+            for s in stale_kb[:8]:
+                parts.append(s)
     except Exception:
         pass
 
