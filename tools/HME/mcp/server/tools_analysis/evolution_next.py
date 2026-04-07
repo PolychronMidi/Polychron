@@ -488,8 +488,18 @@ def suggest_evolution() -> str:
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
     from .coupling import _scan_coupling_state
     coupling_state = _scan_coupling_state(src_root)
-    melodic_uncoupled_names = sorted(n for n, i in coupling_state.items() if not i["melodic"])
-    rhythm_uncoupled_names = sorted(n for n, i in coupling_state.items() if not i["rhythm"])
+    # Infrastructure modules that should never be melodically/rhythmically coupled:
+    # helpers, registries, gateways, managers, bridges, processors, trust bookkeeping
+    _INFRA_MODULES = {
+        "crossLayerHelpers", "crossLayerRegistry", "crossLayerEmissionGateway",
+        "crossLayerLifecycleManager", "conductorSignalBridge", "beatInterleavedProcessor",
+        "adaptiveTrustScores", "adaptiveTrustScoresHelpers", "coordinationIndependenceManager",
+        "crossLayerDiagnostics",
+    }
+    melodic_uncoupled_names = sorted(n for n, i in coupling_state.items()
+                                     if not i["melodic"] and n not in _INFRA_MODULES)
+    rhythm_uncoupled_names = sorted(n for n, i in coupling_state.items()
+                                    if not i["rhythm"] and n not in _INFRA_MODULES)
     already_coupled = sorted(n for n, i in coupling_state.items() if i["melodic"])
     signals["melodically_uncoupled"] = melodic_uncoupled_names[:20]
     signals["rhythmically_uncoupled"] = rhythm_uncoupled_names[:15]

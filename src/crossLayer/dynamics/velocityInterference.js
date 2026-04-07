@@ -123,8 +123,13 @@ velocityInterference = (() => {
     const rhythmEntryVI = L0.getLast('emergentRhythm', { layer: 'both' });
     const densitySurpriseVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.densitySurprise) ? rhythmEntryVI.densitySurprise : 1.0;
     const rhythmInterferenceMod = densitySurpriseVI > 1.1 ? 1.12 : densitySurpriseVI < 0.9 ? 0.92 : 1.0;
-    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod;
-    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod;
+    // R83 E1: ascendRatio bridge — ascending melodic momentum amplifies velocity interference
+    // (stronger dynamic contrast during upward energy). Counterpart: harmonicIntervalGuard
+    // NARROWS deadband under same signal (harmony stabilizes during ascending momentum).
+    const ascendRatioVI = melodicCtxVI ? V.optionalFinite(melodicCtxVI.ascendRatio, 0.5) : 0.5;
+    const ascendInterferenceScale = 1.0 + clamp((ascendRatioVI - 0.45) * 0.25, -0.05, 0.12);
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength

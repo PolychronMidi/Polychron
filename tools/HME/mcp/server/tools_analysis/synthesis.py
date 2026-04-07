@@ -426,6 +426,16 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                 logger.info(f"_local_think: trimmed reasoning leak ({reasoning_hits} markers, kept {len(text)} chars)")
             # Strip non-ASCII (multilingual model leakage: CJK, emoji, etc.)
             text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            # Strip generic filler sentences that add no information
+            _filler_phrases = [
+                "dynamic interplay between", "dynamic interplay of",
+                "enhancing the alien", "creating a rich tapestry",
+                "a fascinating interplay", "this creates a dynamic",
+            ]
+            sentences = re.split(r'(?<=[.!])\s+', text)
+            sentences = [s for s in sentences
+                         if not any(fp in s.lower() for fp in _filler_phrases)]
+            text = " ".join(sentences).strip()
             if priority == "interactive":
                 _ollama_interactive.clear()
             return text if text else None
@@ -689,8 +699,10 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         + frame + "\n\n"
         "Question: " + question + "\n\n"
         "Answer using ONLY modules, files, signals, and functions named in the brief above. "
-        "Do NOT invent names. Be specific about musical effects. "
-        "Answer directly in max 300 words. /no_think"
+        "Do NOT invent names. "
+        "Format each item as:\n"
+        "  FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence.\n"
+        "Max 4 items. No prose paragraphs. /no_think"
     )
     return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
 

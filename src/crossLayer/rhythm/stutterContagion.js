@@ -121,7 +121,7 @@ stutterContagion = (() => {
     const rhythmEntrySC = L0.getLast('emergentRhythm', { layer: 'both' });
     const densitySurpriseSC = rhythmEntrySC && Number.isFinite(rhythmEntrySC.densitySurprise) ? rhythmEntrySC.densitySurprise : 1.0;
     const surpriseContagionScale = densitySurpriseSC > 1.1 ? 1.0 + clamp((densitySurpriseSC - 1.0) * 0.12, 0, 0.10) : 1.0;
-    // R82 E4: tessituraLoad bridge — extreme register amplifies stutter contagion
+    // R82 E4: tessituraLoad bridge -- extreme register amplifies stutter contagion
     // (chaos diversifies at register extremes). Counterpart: harmonicIntervalGuard TIGHTENS
     // harmonic control under same signal (structure anchors at extremes).
     const tessituraContagionSC = melodicCtxSC ? V.optionalFinite(melodicCtxSC.tessituraLoad, 0) : 0;

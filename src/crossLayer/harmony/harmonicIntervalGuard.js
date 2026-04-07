@@ -124,11 +124,16 @@ harmonicIntervalGuard = (() => {
     // repelling layers tolerate dissonance (wider deadband for harmonic tension).
     const phaseModeHIG = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
     const phaseNarrowHIG = phaseModeHIG === 'lock' ? 0.03 : phaseModeHIG === 'repel' ? -0.04 : 0;
-    // R82 E3: tessituraLoad bridge — extreme register tightens harmonic control (narrow deadband).
+    // R82 E3: tessituraLoad bridge -- extreme register tightens harmonic control (narrow deadband).
     // Counterpart: stutterContagion AMPLIFIES contagion at register extremes (chaos diversifies).
     const tessituraLoadHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.tessituraLoad, 0) : 0;
     const tessituraNarrowHIG = clamp(tessituraLoadHIG * 0.05, 0, 0.04);
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG, 0.05, 0.30);
+    // R83 E2: ascendRatio bridge — ascending melodic momentum narrows harmonic deadband
+    // (tighter harmonic control during upward energy). Counterpart: velocityInterference
+    // AMPLIFIES interference under same signal (dynamics intensify during ascending momentum).
+    const ascendRatioHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.ascendRatio, 0.5) : 0.5;
+    const ascendNarrowHIG = clamp((ascendRatioHIG - 0.45) * 0.06, -0.02, 0.04);
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high
