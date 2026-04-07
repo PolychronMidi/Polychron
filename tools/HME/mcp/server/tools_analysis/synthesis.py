@@ -311,8 +311,9 @@ def _format_kb_corpus() -> str:
 
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen2.5-coder:14b")
-# Reasoning model for think/causal_trace/memory_dream — falls back to _LOCAL_MODEL
-_REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "deepseek-r1:14b")
+# Reasoning model for think/causal_trace/memory_dream — 70b spans both M40 GPUs,
+# 14b stays loaded in leftover VRAM. Both coexist without swapping.
+_REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "deepseek-r1:70b")
 
 
 _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
@@ -367,9 +368,10 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None,
         headers={"Content-Type": "application/json"},
     )
     try:
-        # 240s: at ~15 tok/s, 1024 tokens needs ~68s + deepseek-r1 reasoning overhead
+        # 420s: 70b at ~5-8 tok/s on 2x M40 → 512 tokens needs ~64-102s + reasoning overhead.
+        # 14b at ~15 tok/s → 512 tokens needs ~34s. Timeout covers both with margin.
         with _ollama_lock:
-            resp_obj = urllib.request.urlopen(req, timeout=240)
+            resp_obj = urllib.request.urlopen(req, timeout=420)
         if priority == "interactive":
             _ollama_interactive.clear()  # release background callers
         with resp_obj as resp:
