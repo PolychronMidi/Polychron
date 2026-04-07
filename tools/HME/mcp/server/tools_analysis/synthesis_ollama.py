@@ -173,13 +173,20 @@ def warm_context_status() -> dict:
 
 
 def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
-                   question: str) -> str | None:
-    """Run the nimble arbiter model to contrast GPU0/GPU1 outputs.
+                   question: str) -> dict | None:
+    """Triage arbiter: contrast GPU0/GPU1 outputs and classify conflict severity.
+
     Qwen3:4b thinks before judging — reasoning is essential for accurate conflict detection.
-    num_predict=600 gives budget for ~400 thinking tokens + ~200 answer tokens.
-    Runs during GPU idle time (between stages) — Ollama auto-schedules GPU layers
-    from the ~4-5GB free per 24GB GPU alongside 18.6GB models. Falls back to CPU/64GB RAM
-    when GPUs are busy. Returns conflict report, or None if aligned / unavailable."""
+    Returns structured dict with severity level, or None if aligned / unavailable.
+
+    Severity levels:
+      ALIGNED  — no conflicts, proceed directly to Stage 2
+      MINOR    — name mismatch or scope gap, inject as advisory note
+      COMPLEX  — fundamental contradiction requiring escalation to reasoning model
+                 for deep resolution before Stage 2 gets the brief
+
+    The arbiter also catches GAPS: facts the extractor found that the reasoner ignored.
+    """
     if not gpu0_out or not gpu1_out or len(gpu0_out) < 30 or len(gpu1_out) < 30:
         return None
     import urllib.request
@@ -188,15 +195,17 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
         f"Question: {question[:200]}\n\n"
         f"EXTRACTOR (GPU0, structured facts):\n{gpu0_out[:800]}\n\n"
         f"REASONER (GPU1, analysis):\n{gpu1_out[:800]}\n\n"
-        "Are there CONTRADICTIONS between these analyses? "
-        "Does the reasoner cite module names or signal fields NOT in the extractor output? "
-        "If everything aligns, respond with exactly: ALIGNED\n"
-        "If conflicts exist, name the specific conflict in 1-2 sentences."
+        "Compare these analyses. Check for:\n"
+        "1. Module names or signal fields in the reasoner NOT present in the extractor\n"
+        "2. Contradicting claims about the same module (e.g. coupled vs uncoupled)\n"
+        "3. Facts the extractor found that the reasoner completely ignored\n\n"
+        "Classify and respond with EXACTLY one of these formats:\n"
+        "ALIGNED — if no conflicts or gaps\n"
+        "MINOR: <one sentence describing the mismatch>\n"
+        "COMPLEX: <one sentence describing the fundamental contradiction>"
     )
     body = json.dumps({
         "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
-        # No num_gpu override — Ollama auto-schedules layers across available VRAM.
-        # During GPU idle time (between stages), 4B model gets partial GPU offload for speed.
         "options": {"temperature": 0.0, "num_predict": 600},
     }).encode()
     req = urllib.request.Request(
@@ -211,15 +220,58 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
             if "</think>" in text:
                 text = text[text.rfind("</think>") + len("</think>"):].strip()
             text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-            if text and "ALIGNED" not in text.upper():
-                logger.info(f"arbiter conflict detected: {text[:200]}")
-                return text
-            if text:
+            if not text:
+                return None
+            text_upper = text.upper()
+            if "ALIGNED" in text_upper and "MINOR" not in text_upper and "COMPLEX" not in text_upper:
                 logger.info("arbiter: ALIGNED")
-            return None
+                return None
+            if "COMPLEX" in text_upper:
+                logger.info(f"arbiter: COMPLEX conflict — {text[:200]}")
+                return {"severity": "complex", "report": text}
+            if "MINOR" in text_upper:
+                logger.info(f"arbiter: MINOR conflict — {text[:200]}")
+                return {"severity": "minor", "report": text}
+            # Unstructured conflict — treat as minor
+            logger.info(f"arbiter: unstructured conflict — {text[:200]}")
+            return {"severity": "minor", "report": text}
     except Exception as e:
         logger.debug(f"arbiter unavailable: {e}")
         return None
+
+
+def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
+                              arbiter_report: str, question: str) -> str | None:
+    """Stage 1.75: Deep conflict resolution via the reasoning model (GPU1).
+
+    When the arbiter detects a COMPLEX conflict — a fundamental contradiction between
+    the extractor and reasoner — this function escalates to the full qwen3:30b-a3b
+    reasoning model for authoritative resolution.
+
+    The reasoning model sees: both analyses + the arbiter's conflict diagnosis.
+    It produces a RESOLVED brief that reconciles the contradiction or decisively
+    picks one side with justification. Stage 2 then works from this resolved brief
+    instead of silently inheriting the contradiction.
+    """
+    resolve_prompt = (
+        "The arbiter detected a COMPLEX conflict between two analyses of the "
+        "Polychron codebase. You must RESOLVE this before the final answer.\n\n"
+        f"Question: {question[:200]}\n\n"
+        f"EXTRACTOR analysis:\n{gpu0_out[:600]}\n\n"
+        f"REASONER analysis:\n{gpu1_out[:600]}\n\n"
+        f"ARBITER CONFLICT:\n{arbiter_report[:400]}\n\n"
+        "Resolve: which analysis is correct? If the reasoner cited modules or signals "
+        "not in the extractor, those are likely hallucinated — trust the extractor's "
+        "facts and discard the hallucinated elements. If there's a genuine disagreement "
+        "about coupling state or signal effects, explain which side is supported by "
+        "the evidence. Output a CORRECTED brief (max 300 words) that Stage 2 can "
+        "safely use without inheriting the contradiction."
+    )
+    resolved = _local_think(resolve_prompt, max_tokens=1024, model=_REASONING_MODEL,
+                            system=_THINK_SYSTEM, temperature=0.15)
+    if resolved:
+        logger.info(f"Stage 1.75: complex conflict resolved ({len(resolved)} chars)")
+    return resolved
 
 
 def store_think_history(about: str, answer: str):
@@ -625,18 +677,34 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         logger.warning("_parallel_two_stage_think: both stages failed, falling back to sequential")
         return _two_stage_think(raw_context, question, max_tokens)
 
-    # ── Stage 1.5: Arbiter conflict check (CPU-only, ~2-3s) ──
-    # Runs the nimble qwen3:4b on CPU from RAM while GPUs are idle between stages.
-    # Catches: hallucinated module names, contradicting analysis, scope misalignment.
-    arbiter_report = _arbiter_check(gpu0_out, gpu1_out, question)
+    # ── Stage 1.5: Arbiter triage (qwen3:4b, thinks then classifies) ──
+    # Runs during GPU idle time between stages. Classifies conflicts as:
+    #   ALIGNED → proceed to Stage 2
+    #   MINOR   → inject advisory note into Stage 2 brief
+    #   COMPLEX → escalate to Stage 1.75 (reasoning model resolves before Stage 2)
+    arbiter_result = _arbiter_check(gpu0_out, gpu1_out, question)
 
     merged_parts = []
     if gpu0_out and len(gpu0_out) > 30:
         merged_parts.append("## Structural Facts (extracted)\n" + gpu0_out)
     if gpu1_out and len(gpu1_out) > 30:
         merged_parts.append("## Coupling Analysis (reasoned)\n" + gpu1_out)
-    if arbiter_report:
-        merged_parts.append("## Arbiter Conflict Report (resolve before answering)\n" + arbiter_report)
+
+    if arbiter_result and arbiter_result["severity"] == "complex":
+        # ── Stage 1.75: Deep conflict resolution (GPU1 reasoning model) ──
+        # Fundamental contradiction — reasoning model reconciles before Stage 2
+        resolved = _resolve_complex_conflict(
+            gpu0_out, gpu1_out, arbiter_result["report"], question
+        )
+        if resolved:
+            merged_parts.append("## Conflict Resolution (Stage 1.75)\n" + resolved)
+        else:
+            merged_parts.append(
+                "## Arbiter: COMPLEX Conflict (unresolved)\n" + arbiter_result["report"]
+            )
+    elif arbiter_result and arbiter_result["severity"] == "minor":
+        merged_parts.append("## Arbiter Advisory\n" + arbiter_result["report"])
+
     merged = "\n\n".join(merged_parts) if merged_parts else (gpu0_out or gpu1_out or "")
 
     if _is_evolution_q:

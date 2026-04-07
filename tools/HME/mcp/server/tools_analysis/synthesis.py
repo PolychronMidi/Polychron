@@ -24,7 +24,8 @@ from .synthesis_ollama import (  # noqa: F401
     _local_chat, _local_think_with_system,
     _two_stage_think, _parallel_two_stage_think,
     _prime_warm_context, _prime_all_gpus, warm_context_status,
-    _arbiter_check, store_think_history, get_think_history_context,
+    _arbiter_check, _resolve_complex_conflict,
+    store_think_history, get_think_history_context,
 )
 
 
