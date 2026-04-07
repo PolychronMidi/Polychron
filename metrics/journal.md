@@ -1,14 +1,24 @@
-## R90 — 2026-04-07 — PENDING (contourShape+tessituraLoad+freshnessEma three-bridge round + VIRGIN pair debut)
+## R90 — 2026-04-07 — OVERCROWDED → R91 fix (contourShape+tessituraLoad+freshnessEma three-bridge round + VIRGIN pair debut)
 
-**Profile:** varied | **Sections:** 7 | **Verdict:** PENDING (pipeline not yet run)
+**Profile:** varied | **Sections:** 7 | **Verdict:** Dissonant chaotic tension / aural overcrowding. Persisted across two pipeline runs (not autotuning lag).
+**Root cause:** R87-R90 collectively added too many positive-energy bridges. +35% notes and +14.8% exploring share from R89 alone. Compound effect of 8 positive-energy bridges pushing entropy, swaps, climax, and gravity pull simultaneously.
 
 ### What Changed (R90)
 
 Three new bridges using underused/dormant signals. contourShape had 0 uses in last 6 rounds (13 all-time) — full resurrection on a VIRGIN antagonist pair.
 
-- **E1: contourShape → entropyRegulator↔motifEcho** (r=-0.503, VIRGIN pair debut): rising contour raises entropy (+0.03) while suppressing echo (×0.88). Falling contour lowers entropy (−0.02) while amplifying echo (×1.12). Musical logic: ascending arc = forward-looking exploration (chaos expands, memory fades). Descending arc = nostalgic settling (order returns, imitative memory deepens).
-- **E2: tessituraLoad → grooveTransfer↔climaxEngine** (r=-0.487): extreme register reduces groove transfer (×down to 0.92) while accelerating climax approach (+0.05). Extreme register = layers pursue independent rhythmic territory while structural arc crests.
-- **E3: freshnessEma → harmonicIntervalGuard↔phaseAwareCadenceWindow** (r=-0.426): sustained novelty narrows harmonic deadband (up to −0.03) while compressing cadence window (up to −0.04 threshold). Novel territory = tighter harmonic discipline + deferred resolution.
+- **E1: contourShape → entropyRegulator↔motifEcho** (r=-0.503, VIRGIN pair debut): rising contour raises entropy (+0.015, halved in R91) while suppressing echo (×0.88). Falling contour lowers entropy (−0.02) while amplifying echo (×1.12).
+- **E2: tessituraLoad → grooveTransfer↔climaxEngine** (r=-0.487): extreme register reduces groove transfer (×down to 0.92) while accelerating climax approach (+0.03, halved in R91).
+- **E3: freshnessEma → harmonicIntervalGuard↔phaseAwareCadenceWindow** (r=-0.426): sustained novelty narrows harmonic deadband (up to −0.03) while compressing cadence window (up to −0.04 threshold).
+
+### R91 Fix: 8 surgical effect-size reductions
+
+Halved positive-energy bridge effects across R87-R90 while preserving all dampening bridges:
+- dynamicRoleSwap: freshnessEma swap boost 0.07→0.035, register ascending boost 0.07→0.04
+- entropyRegulator: complexity mod 0.03→0.015, contourShape rising 0.03→0.015
+- verticalIntervalMonitor: freshnessEma scale range [0.8..1.2]→[0.87..1.12] (less dissonance permission)
+- temporalGravity: complexity gravity scale max 0.10→0.06
+- crossLayerClimaxEngine: tessituraLoad boost 0.05→0.03, register ascending boost 0.05→0.03
 
 ---
 

@@ -225,12 +225,12 @@ entropyRegulator = (() => {
       // (complex rhythmic events open up pitch variety to match their structural richness).
       // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal anchor tightens while entropy expands).
       const complexityBeatER = rhythmEntryER && Number.isFinite(rhythmEntryER.complexity) ? rhythmEntryER.complexity : 0.5;
-      const complexityBeatEntMod = clamp((complexityBeatER - 0.5) * 0.06, -0.02, 0.03);
+      const complexityBeatEntMod = clamp((complexityBeatER - 0.5) * 0.04, -0.02, 0.015);
       // R90 E1: contourShape antagonism bridge with motifEcho (VIRGIN pair r=-0.503) -- rising contour raises entropy target
       // (ascending arc = exploratory territory demands pitch variety).
       // Counterpart: motifEcho REDUCES echo probability under same signal (rising motion looks forward, not backward).
       const contourShapeER = melodicCtxER ? melodicCtxER.contourShape : null;
-      const contourShapeEntMod = contourShapeER === 'rising' ? 0.03 : contourShapeER === 'falling' ? -0.02 : 0;
+      const contourShapeEntMod = contourShapeER === 'rising' ? 0.015 : contourShapeER === 'falling' ? -0.02 : 0;
       const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + intervalFreshnessMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod + densityEntMod + complexityBeatEntMod + contourShapeEntMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {

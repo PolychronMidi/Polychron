@@ -225,6 +225,19 @@ def convention_check(file_path: str) -> str:
     return f"REVIEW: {rel_path} ({len(lines)} lines)\n" + "\n".join(f"  - {i}" for i in issues)
 
 
+def _symbol_exists_in_src(name: str, project_root: str) -> bool:
+    """Check if a symbol name appears in any src/ JS file (as variable, function, etc)."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["grep", "-rl", name, os.path.join(project_root, "src")],
+            capture_output=True, text=True, timeout=5
+        )
+        return bool(result.stdout.strip())
+    except Exception:
+        return False
+
+
 @ctx.mcp.tool()
 def codebase_health() -> str:
     """Full codebase health sweep: architectural violations, dead code, convention checks, symbol importance, and doc sync. Replaces 5 separate health tools."""
@@ -340,7 +353,8 @@ def codebase_health() -> str:
         for entry in all_kb:
             text = entry.get("title", "") + " " + entry.get("content", "")
             refs = set(_module_pat.findall(text))
-            missing = [r for r in refs if r not in src_modules and r.lower() not in {m.lower() for m in src_modules}]
+            missing = [r for r in refs if r not in src_modules and r.lower() not in {m.lower() for m in src_modules}
+                       and not _symbol_exists_in_src(r, ctx.PROJECT_ROOT)]
             if missing:
                 stale_kb.append(f"  [{entry.get('category','')}] {entry.get('title','')}: references {', '.join(missing[:3])}")
         if stale_kb:

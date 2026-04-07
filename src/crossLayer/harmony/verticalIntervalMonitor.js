@@ -84,7 +84,7 @@ verticalIntervalMonitor = (() => {
       // reduces collision penalty (novel territory = exploratory dissonance is musically endorsed).
       // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle during novelty).
       const freshnessEmaVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.freshnessEma, 0.5) : 0.5;
-      const freshnessEmaVIMScale = 1.2 - freshnessEmaVIM * 0.40; // [0.8 novel ... 1.2 familiar]
+      const freshnessEmaVIMScale = 1.12 - freshnessEmaVIM * 0.25; // [0.87 novel ... 1.12 familiar]
       return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod * biasPenaltyMod * ascendPenaltyMod * freshnessEmaVIMScale;
     }
 

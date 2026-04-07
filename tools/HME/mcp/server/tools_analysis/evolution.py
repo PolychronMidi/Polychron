@@ -1,4 +1,9 @@
-"""HME evolution intelligence — patterns, causal trace, introspection."""
+"""HME evolution intelligence — journal patterns and KB seeding.
+
+Split into focused modules:
+  evolution_trace.py  — trace_query, interaction_map, causal_trace
+  evolution_admin.py  — hme_admin, selftest, hot-reload, introspection, antipattern enforcement
+"""
 import json
 import os
 import re
@@ -16,765 +21,117 @@ from . import _get_compositional_context, _track, _usage_stats
 
 logger = logging.getLogger("HME")
 
+# Re-export everything that other modules import from evolution.py
+from .evolution_trace import trace_query, interaction_map, causal_trace  # noqa: F401
+from .evolution_admin import (  # noqa: F401
+    hme_admin, hme_selftest, hme_introspect, hme_hot_reload,
+    hme_inspect, fix_antipattern,
+)
+
+
 def evolution_patterns() -> str:
-    """Analyze metrics/journal.md for meta-patterns across evolution rounds. Identifies confirm/refute rates, subsystem receptivity, temporal trends, and stabilization timelines. Use to understand HOW the system evolves, not just what changed."""
+    """Analyze metrics/journal.md for meta-patterns across evolution rounds."""
     ctx.ensure_ready_sync()
     _track("evolution_patterns")
-    import re
+
     journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
     if not os.path.isfile(journal_path):
-        return "No journal found at metrics/journal.md"
-    with open(journal_path, encoding="utf-8") as _f:
-        content = _f.read()
+        return "No journal.md found."
 
-    rounds = re.findall(r'## R(\d+)', content)
-    # Parse per-round verdicts paired with round numbers
-    # Regex: ## R<num> ... **Verdict:** <text> within the same section
-    round_sections = re.split(r'(?=^## R\d+)', content, flags=re.MULTILINE)
-    verdict_map = {"S": "STABLE", "E": "EVOLVED", "L": "LEGENDARY", "D": "DRIFTED",
-                   "R": "REFUTED", "I": "INCONCLUSIVE"}
-    round_verdicts: list[tuple[int, str]] = []  # (round_num, verdict_category)
-    for section in round_sections:
-        r_match = re.match(r'## R(\d+)', section)
-        if not r_match:
-            continue
-        r_num = int(r_match.group(1))
-        v_match = re.search(r'\*\*Verdict:\*\*\s*([^\n|]+)', section)
-        if not v_match:
-            continue
-        v_text = v_match.group(1).strip().lower()
-        if any(k in v_text for k in ('legendary',)):
-            round_verdicts.append((r_num, "L"))
-        elif any(k in v_text for k in ('evolved',)):
-            round_verdicts.append((r_num, "E"))
-        elif any(k in v_text for k in ('stable', 'confirmed positive', 'confirmed')):
-            round_verdicts.append((r_num, "S"))
-        elif any(k in v_text for k in ('drifted',)):
-            round_verdicts.append((r_num, "D"))
-        elif any(k in v_text for k in ('refuted', 'negative')):
-            round_verdicts.append((r_num, "R"))
-        elif any(k in v_text for k in ('inconclusive', 'pending', 'tbd', 'unclear')):
-            round_verdicts.append((r_num, "I"))
-
-    confirmed = [rv for rv in round_verdicts if rv[1] in ("S", "E", "L")]
-    drifted = [rv for rv in round_verdicts if rv[1] in ("D", "R")]
-    inconclusive = [rv for rv in round_verdicts if rv[1] == "I"]
-    total_journal_rounds = len(rounds)
-    total_outcomes = len(round_verdicts)
-    confirm_rate = len(confirmed) / max(1, total_outcomes)
-
-    subsystem_counts = {}
-    for sub in ['conductor', 'crossLayer', 'composers', 'rhythm', 'fx', 'time', 'play', 'writer']:
-        count = len(re.findall(sub, content, re.IGNORECASE))
-        if count:
-            subsystem_counts[sub] = count
-
-    parts = [
-        f"## Evolution Patterns ({total_journal_rounds} rounds in journal)\n",
-        f"**Verdicts:** {len(confirmed)} confirmed ({sum(1 for _,v in confirmed if v=='L')}L/"
-        f"{sum(1 for _,v in confirmed if v=='E')}E/"
-        f"{sum(1 for _,v in confirmed if v=='S')}S), "
-        f"{len(drifted)} drifted/refuted, {len(inconclusive)} inconclusive",
-        f"**Confirm rate:** {confirm_rate:.0%}",
-        f"**Note:** DRIFTED runs committed but not journaled — journal skews toward successes.",
-    ]
-
-    # Temporal trend: verdict timeline as visual sparkline
-    if round_verdicts:
-        # Show last 30 rounds as a visual timeline
-        recent = round_verdicts[-30:]
-        _v_chars = {"S": ".", "E": "+", "L": "*", "D": "x", "R": "!", "I": "?"}
-        timeline = "".join(_v_chars.get(v, "?") for _, v in recent)
-        r_start, r_end = recent[0][0], recent[-1][0]
-        parts.append(f"\n**Temporal Trend (R{r_start}-R{r_end}):**")
-        parts.append(f"  [{timeline}]")
-        parts.append(f"  .=STABLE +=EVOLVED *=LEGENDARY x=DRIFTED !=REFUTED ?=INCONCLUSIVE")
-
-        # Streak detection
-        last_5 = [v for _, v in recent[-5:]]
-        if all(v in ("S", "E", "L") for v in last_5):
-            parts.append(f"  Current streak: {len(last_5)}+ consecutive successes")
-        elif last_5[-1] in ("D", "R"):
-            parts.append(f"  Last round DRIFTED — check what changed")
-
-    parts.append(f"\n**Subsystem activity:**")
-    for sub, count in sorted(subsystem_counts.items(), key=lambda x: -x[1]):
-        parts.append(f"  {sub}: {count} mentions")
-
-    # KB anti-pattern correlation
-    kb_antipatterns = []
     try:
-        ctx.ensure_ready_sync()
-        kb_results = ctx.project_engine.search_knowledge("anti-pattern evolution failure", top_k=5)
-        for k in kb_results:
-            if any(m in k.get("content", "").lower() for m in ("never", "avoid", "don't", "anti-pattern", "failure")):
-                kb_antipatterns.append(f"  [{k['category']}] {k['title']}")
-    except Exception:
-        pass
-    if kb_antipatterns:
-        parts.append(f"\n**KB Anti-patterns ({len(kb_antipatterns)}):**")
-        parts.extend(kb_antipatterns[:5])
-
-    # Two-stage synthesis for deeper analysis
-    from .synthesis import _two_stage_think
-    journal_tail = content[-4000:]
-    verdict_summary = ", ".join(f"R{r}:{verdict_map.get(v, v)}" for r, v in round_verdicts[-15:])
-    raw_context = (
-        f"Evolution journal excerpt (last ~4000 chars of {len(content)} total):\n{journal_tail}\n\n"
-        f"Recent verdicts: {verdict_summary}\n"
-        f"Subsystems: {', '.join(f'{s}:{c}' for s,c in sorted(subsystem_counts.items(), key=lambda x: -x[1]))}\n"
-    )
-    if kb_antipatterns:
-        raw_context += "KB anti-patterns:\n" + "\n".join(kb_antipatterns) + "\n"
-    question = (
-        "In 5 bullet points: (1) which evolution types succeed most and why, "
-        "(2) which subsystems are most/least receptive, (3) recurring areas needing adjustment, "
-        "(4) typical stabilization timeline, (5) anti-patterns to avoid. "
-        "Reference specific round numbers and module names."
-    )
-    synthesis = _two_stage_think(raw_context, question)
-    if not synthesis:
-        synthesis = _think_local_or_claude(raw_context + "\n\n" + question, _get_api_key())
-    if synthesis:
-        parts.append(f"\n## Pattern Analysis *(two-stage)*")
-        parts.append(synthesis)
-
-    return "\n".join(parts)
-
-
-def causal_trace(symptom: str, max_depth: int = 3) -> str:
-    """Trace the causal chain from a symptom (constant name, module name, signal dimension, or description like 'density too high in coherent') through controllers, metrics, and regime behavior to its musical effect on the listener. Shows the complete cascade: constant -> controller -> metric -> musical character."""
-    ctx.ensure_ready_sync()
-    _track("causal_trace")
-    if not symptom.strip():
-        return "Error: symptom cannot be empty. Pass a constant name, module name, signal dimension, or description of the issue."
-    parts = [f"# Causal Trace: {symptom}\n"]
-
-    callers = _find_callers(symptom, ctx.PROJECT_ROOT)
-    callers = [r for r in callers if symptom not in os.path.basename(r.get('file', ''))]
-    caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
-    parts.append(f"## Direct References ({len(caller_files)} files)")
-    for f in caller_files[:15]:
-        parts.append(f"  {f}")
-
-    subsystems = set()
-    for f in caller_files:
-        for sub in SUBSYSTEM_NAMES:
-            if sub in f:
-                subsystems.add(sub)
-    if subsystems:
-        parts.append(f"\n## Subsystem Reach: {', '.join(sorted(subsystems))}")
-
-    kb_results = ctx.project_engine.search_knowledge(symptom, top_k=5)
-    if kb_results:
-        parts.append(f"\n## KB Context ({len(kb_results)} entries)")
-        for k in kb_results:
-            parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:150]}")
-
-    comp = _get_compositional_context(symptom)
-    if comp:
-        parts.append(f"\n## Musical Context")
-        parts.append(comp)
-
-    tuning_context = ""
-    tuning_path = os.path.join(ctx.PROJECT_ROOT, "doc", "TUNING_MAP.md")
-    if os.path.isfile(tuning_path):
-        try:
-            with open(tuning_path, encoding="utf-8") as _f:
-                tuning = _f.read()
-            tuning_lines = [l for l in tuning.split("\n") if symptom.lower() in l.lower()]
-            if tuning_lines:
-                tuning_context = "Tuning map references:\n" + "\n".join(tuning_lines[:10])
-        except Exception:
-            pass
-
-    # Ground synthesis in actual source code — prevents hallucination
-    import re as _re
-    from .synthesis import _read_module_source, _two_stage_think
-    source_parts = []
-    # Parse camelCase words from symptom (likely module names)
-    candidate_modules = _re.findall(r'[a-z][a-zA-Z]{8,}', symptom)
-    candidate_modules.insert(0, symptom)
-    # Add caller file basenames
-    for cf in caller_files[:5]:
-        candidate_modules.append(os.path.basename(cf).replace('.js', ''))
-    # Add module names from KB results
-    for k in kb_results[:3]:
-        candidate_modules.extend(_re.findall(r'[a-z][a-zA-Z]{8,}', k.get('title', '')))
-    seen = set()
-    known_modules: set = set()  # track modules with confirmed source for validation
-    for mod in candidate_modules:
-        if mod in seen:
-            continue
-        seen.add(mod)
-        src = _read_module_source(mod, max_chars=2000)
-        if src:
-            source_parts.append(f"### {mod}\n```\n{src}\n```")
-            known_modules.add(mod)
-        if len(source_parts) >= 4:
-            break
-    source_block = "\nSource code:\n" + "\n".join(source_parts) + "\n" if source_parts else ""
-
-    # Build raw context for two-stage synthesis
-    raw_context = (
-        f"Symptom: {symptom}\n"
-        f"Direct callers ({len(caller_files)}): {', '.join(caller_files[:10])}\n"
-        f"Subsystems touched: {', '.join(sorted(subsystems))}\n"
-        + source_block
-        + (f"\n{tuning_context}\n" if tuning_context else "")
-    )
-    if kb_results:
-        raw_context += "\nKB entries:\n" + "\n".join(
-            f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results
-        ) + "\n"
-    question = (
-        "Trace the causal chain from this module to the listener's experience. "
-        "Format: A -> B -> C -> [musical effect]. "
-        "Only reference functions and behaviors visible in the source code. "
-        "Be specific about musical quality (e.g. 'less rhythmic tension', 'denser texture')."
-    )
-
-    api_key = _get_api_key()
-    synthesis = None
-    if api_key:
-        user_text = raw_context + "\n" + question
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
-                                   max_tool_calls=_get_tool_budget())
-    if not synthesis:
-        # Two-stage: coder structures context, reasoner traces causality
-        synthesis = _two_stage_think(raw_context, question)
-    if synthesis:
-        # Validate synthesis: flag any module names not found in codebase
-        mentioned = set(_re.findall(r'[a-z][a-zA-Z]{8,}', synthesis))
-        # Only flag if we have a meaningful known set to validate against
-        if known_modules and len(known_modules) >= 2:
-            unknown = mentioned - known_modules - set(SUBSYSTEM_NAMES) - {"controller", "conductorIntelligence", "signalReader", "crossLayerEmissionGateway"}
-            # Check if unknown names actually exist as files
-            real_unknown = set()
-            for unk in unknown:
-                if not _read_module_source(unk, max_chars=50):
-                    real_unknown.add(unk)
-            if real_unknown and len(real_unknown) <= 5:
-                synthesis += f"\n\n*Unverified module names in synthesis: {', '.join(sorted(real_unknown))}*"
-        parts.append(f"\n## Causal Chain *(two-stage)*")
-        parts.append(synthesis)
-
-    return "\n".join(parts)
-
-
-def hme_introspect() -> str:
-    """Self-benchmarking: report HME tool usage patterns, workflow discipline, KB health, and compositional context from the last pipeline run."""
-    _track("hme_introspect")
-    parts = ["## HME Session Introspection\n"]
-
-    if _usage_stats:
-        sorted_usage = sorted(_usage_stats.items(), key=lambda x: -x[1])
-        parts.append("### Tool Usage This Session")
-        for tool, count in sorted_usage:
-            parts.append(f"  {tool}: {count}")
-        parts.append(f"\n**Total tracked calls:** {sum(c for _, c in sorted_usage)}")
-        expected = {"before_editing", "what_did_i_forget", "search_knowledge", "search_code", "add_knowledge"}
-        unused = expected - set(_usage_stats.keys())
-        if unused:
-            parts.append(f"**Mandatory but unused:** {', '.join(sorted(unused))}")
-
-        # Workflow discipline: before_editing should roughly match what_did_i_forget
-        be_count = _usage_stats.get("before_editing", 0)
-        wf_count = _usage_stats.get("what_did_i_forget", 0)
-        if be_count > 0 or wf_count > 0:
-            parts.append(f"\n### Workflow Discipline")
-            parts.append(f"  before_editing: {be_count}  |  what_did_i_forget: {wf_count}")
-            if be_count > 0 and wf_count == 0:
-                parts.append(f"  WARNING: editing without post-change audits")
-            elif be_count > wf_count + 2:
-                parts.append(f"  NOTE: {be_count - wf_count} edits lack matching post-audits")
-            elif wf_count > 0 and be_count == 0:
-                parts.append(f"  WARNING: post-audits without pre-edit research")
-            else:
-                parts.append(f"  Good: pre-edit/post-audit ratio balanced")
-    else:
-        parts.append("### Tool Usage: no tracked calls yet")
-
-    parts.append("")
-
-    comp = _get_compositional_context("system")
-    if comp:
-        parts.append("### Last Run Musical Context")
-        parts.append(comp)
-
-    journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
-    if os.path.isfile(journal_path):
-        try:
-            import re as _jre
-            with open(journal_path, encoding="utf-8") as _jf:
-                journal_content = _jf.read()
-            # Find last round section — bound to next ## R header or EOF
-            section_starts = [m.start() for m in _jre.finditer(r'^## R\d+', journal_content, _jre.MULTILINE)]
-            if section_starts:
-                start = section_starts[-1]
-                # Find next ## header after current (not just ## R — any ## boundary)
-                rest = journal_content[start + 4:]
-                next_match = _jre.search(r'^## ', rest, _jre.MULTILINE)
-                end = (start + 4 + next_match.start()) if next_match else len(journal_content)
-                latest_section = journal_content[start:end].rstrip()
-                # Cap at 1500 chars but don't cut mid-line
-                if len(latest_section) > 1500:
-                    cut = latest_section.rfind('\n', 0, 1500)
-                    latest_section = latest_section[:cut if cut > 0 else 1500] + "\n  ... (truncated)"
-                parts.append("\n### Latest Journal Entry")
-                parts.append(latest_section)
-        except Exception:
-            pass
-
-    # KB health: count + category breakdown
-    kb_count = 0
-    kb_categories: dict = {}
-    try:
-        ctx.ensure_ready_sync()
-        all_kb_full = ctx.project_engine.list_knowledge_full() if hasattr(ctx.project_engine, 'list_knowledge_full') else []
-        kb_count = len(all_kb_full)
-        for entry in all_kb_full:
-            cat = entry.get("category", "unknown")
-            kb_categories[cat] = kb_categories.get(cat, 0) + 1
-    except Exception:
-        try:
-            all_kb = ctx.project_engine.list_knowledge()
-            kb_count = len(all_kb)
-        except Exception:
-            pass
-    idx = {"files": 0, "chunks": 0, "symbols": 0}
-    try:
-        status = ctx.project_engine.get_status()
-        idx["files"] = status.get("total_files", 0)
-        idx["chunks"] = status.get("total_chunks", 0)
-        sym_status = ctx.project_engine.get_symbol_status()
-        idx["symbols"] = sym_status.get("total_symbols", 0) if sym_status.get("indexed") else 0
-    except Exception:
-        pass
-    parts.append(f"\n### System Health")
-    parts.append(f"  KB entries: {kb_count}")
-    if kb_categories:
-        cat_str = ", ".join(f"{cat}:{n}" for cat, n in sorted(kb_categories.items(), key=lambda x: -x[1]))
-        parts.append(f"  KB breakdown: {cat_str}")
-    parts.append(f"  Index: {idx['files']} files, {idx['chunks']} chunks, {idx['symbols']} symbols")
-
-    return "\n".join(parts)
-
-
-def hme_hot_reload(modules: str = "") -> str:
-    """Hot-reload HME tool modules without restarting the server."""
-    import sys
-    import importlib
-    _track("hme_hot_reload")
-
-    RELOADABLE = [
-        "synthesis", "symbols", "workflow", "reasoning", "health",
-        "evolution", "evolution_next", "runtime", "composition", "trust_analysis",
-        "digest", "section_compare", "perceptual",
-    ]
-    # Top-level server modules (not under tools_analysis/)
-    TOP_LEVEL_RELOADABLE = ["tools_search"]
-    if not modules or modules.strip().lower() == "all":
-        targets = RELOADABLE
-    else:
-        targets = [m.strip() for m in modules.split(",") if m.strip()]
-
-    # Temporarily silence duplicate-tool warnings during reload
-    inner = ctx.mcp._inner
-    old_warn = inner._tool_manager.warn_on_duplicate_tools
-    inner._tool_manager.warn_on_duplicate_tools = False
-
-    # Include top-level modules if requested explicitly or via "all"
-    if not modules or modules.strip().lower() == "all":
-        targets = targets + TOP_LEVEL_RELOADABLE
-    else:
-        # Check if any requested module is top-level
-        for t in list(targets):
-            if t in TOP_LEVEL_RELOADABLE and t not in RELOADABLE:
-                pass  # will be handled by prefix check below
-
-    results = []
-    try:
-        for name in targets:
-            # Determine module path: top-level or tools_analysis
-            if name in TOP_LEVEL_RELOADABLE:
-                full = f"server.{name}"
-            else:
-                full = f"server.tools_analysis.{name}"
-            mod = sys.modules.get(full)
-            if mod is None:
-                # New module: import it for the first time
-                try:
-                    if name in TOP_LEVEL_RELOADABLE:
-                        mod = importlib.import_module(f".{name}", "server")
-                    else:
-                        mod = importlib.import_module(f".{name}", "server.tools_analysis")
-                    tools_new = {
-                        tname for tname, t in inner._tool_manager._tools.items()
-                        if getattr(t.fn, "__module__", "") == full
-                           or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
-                    }
-                    results.append(f"  NEW {name}: {len(tools_new)} tools loaded")
-                except Exception as e:
-                    results.append(f"  ERR {name} (import): {e}")
-                continue
-            try:
-                # Collect tools registered from this module, then remove them all
-                # before reloading — ensures tools whose decorators were removed
-                # don't linger in the registry.
-                tools_before = {
-                    tname for tname, t in inner._tool_manager._tools.items()
-                    if getattr(t.fn, "__module__", "") == full
-                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
-                }
-                remove_errs = []
-                for tname in tools_before:
-                    try:
-                        inner.remove_tool(tname)
-                    except Exception as _re:
-                        remove_errs.append(f"{tname}:{_re}")
-                if remove_errs:
-                    results.append(f"  WARN remove errors for {name}: {remove_errs[:3]}")
-                importlib.reload(mod)
-                tools_after = {
-                    tname for tname, t in inner._tool_manager._tools.items()
-                    if getattr(t.fn, "__module__", "") == full
-                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
-                }
-                removed = tools_before - tools_after
-                added = tools_after - tools_before
-                status = f"{len(tools_after)} tools"
-                if removed:
-                    status += f" (-{len(removed)}: {', '.join(sorted(removed))})"
-                if added:
-                    status += f" (+{len(added)}: {', '.join(sorted(added))})"
-                results.append(f"  OK {name}: {status} (was {len(tools_before)})")
-            except Exception as e:
-                results.append(f"  ERR {name}: {e}")
-    finally:
-        inner._tool_manager.warn_on_duplicate_tools = old_warn
-
-    total_tools = len(inner._tool_manager._tools)
-    return (
-        f"## HME Hot Reload\n"
-        + "\n".join(results)
-        + f"\n\nTotal tools registered: {total_tools}"
-    )
-
-
-@ctx.mcp.tool()
-def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "module") -> str:
-    """Query the last pipeline run's trace.jsonl for runtime behavior of a specific module.
-    Shows what a module ACTUALLY DID: when it fired, what values it produced, which
-    sections/regimes it was active in. Set section=N to filter to a specific section.
-    mode='module' (default): standard trace lookup. mode='causal': causal chain trace from
-    module through controllers to musical effect (folds causal_trace behavior).
-    Works for trust system names, snap fields, coupling labels, and top-level trace keys."""
-    ctx.ensure_ready_sync()
-    _track("trace_query")
-
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
-    if not os.path.isfile(trace_path):
-        return "No trace.jsonl found. Run `npm run main` to generate."
-
-    # Stream trace.jsonl and extract module-specific data
-    module_lower = module.lower()
-    beats = []
-    total_beats = 0
-    try:
-        with open(trace_path, encoding="utf-8") as f:
-            for line in f:
-                total_beats += 1
-                try:
-                    record = json.loads(line)
-                except Exception:
-                    continue
-                beat_key = record.get("beatKey", "?")
-                regime = record.get("regime", "?")
-                # Parse section from beatKey (format: "section:phrase:beat:sub")
-                sec = -1
-                if isinstance(beat_key, str) and ":" in beat_key:
-                    try:
-                        sec = int(beat_key.split(":")[0])
-                    except ValueError:
-                        pass
-                if section >= 0 and sec != section:
-                    continue
-
-                # Extract module-specific values from different trace locations
-                values = {}
-
-                # 1. Trust system: trust.{moduleName}.score/weight
-                trust = record.get("trust", {})
-                if module_lower in {k.lower() for k in trust}:
-                    for k, v in trust.items():
-                        if k.lower() == module_lower and isinstance(v, dict):
-                            values["score"] = round(v.get("score", 0), 3)
-                            values["weight"] = round(v.get("weight", 0), 3)
-                            dp = v.get("dominantPair", "")
-                            if dp:
-                                values["dominantPair"] = dp
-                            hp = v.get("hotspotPressure", 0)
-                            if hp > 0:
-                                values["hotspot"] = round(hp, 3)
-
-                # 2. Snap fields: snap.{field} containing module name
-                snap = record.get("snap", {})
-                for k, v in snap.items():
-                    if module_lower in k.lower():
-                        if isinstance(v, (int, float)):
-                            values[k] = round(v, 4) if isinstance(v, float) else v
-                        elif isinstance(v, str) and len(v) < 50:
-                            values[k] = v
-
-                # 3. Top-level fields containing module name
-                for k, v in record.items():
-                    if k in ("trust", "snap", "notes", "stageTiming"):
-                        continue
-                    if module_lower in k.lower():
-                        if isinstance(v, (int, float)):
-                            values[k] = round(v, 4) if isinstance(v, float) else v
-                        elif isinstance(v, str) and len(v) < 80:
-                            values[k] = v
-
-                # 4. Coupling labels mentioning module
-                labels = record.get("couplingLabels", {})
-                if isinstance(labels, dict):
-                    for k, v in labels.items():
-                        if module_lower in k.lower():
-                            values[f"coupling:{k}"] = v
-
-                if values:
-                    beats.append({"beatKey": beat_key, "section": sec, "regime": regime, "values": values})
+        with open(journal_path, encoding="utf-8") as f:
+            content = f.read()
     except Exception as e:
-        return f"Error reading trace: {e}"
+        return f"Error reading journal: {e}"
 
-    if mode == "causal":
-        return causal_trace(module)
+    # Extract round data
+    round_sections = re.findall(
+        r'## (R\d+)\s+.*?—\s+\d{4}-\d{2}-\d{2}\s+—\s+(\w+)',
+        content
+    )
+    if not round_sections:
+        return "No round entries found in journal."
 
-    if not beats:
-        return (f"No trace data for '{module}' across {total_beats} beats. "
-                "Try: trust system name (e.g. 'coherenceMonitor'), snap field, or coupling label.")
+    total_rounds = len(round_sections)
+    verdicts = [v for _, v in round_sections]
 
-    # Summarize
-    sections_seen = sorted(set(b["section"] for b in beats if b["section"] >= 0))
-    regime_counts = {}
-    for b in beats:
-        regime_counts[b["regime"]] = regime_counts.get(b["regime"], 0) + 1
+    # Verdict distribution
+    verdict_counts: dict = {}
+    for v in verdicts:
+        v_upper = v.upper()
+        verdict_counts[v_upper] = verdict_counts.get(v_upper, 0) + 1
 
-    # Compute value ranges for numeric fields
-    numeric_ranges = {}
-    for b in beats:
-        for k, v in b["values"].items():
-            if isinstance(v, (int, float)):
-                if k not in numeric_ranges:
-                    numeric_ranges[k] = {"min": v, "max": v, "sum": v, "count": 1}
-                else:
-                    r = numeric_ranges[k]
-                    r["min"] = min(r["min"], v)
-                    r["max"] = max(r["max"], v)
-                    r["sum"] += v
-                    r["count"] += 1
+    # Subsystem mention frequency
+    subsystem_mentions: dict = {}
+    for sub in SUBSYSTEM_NAMES:
+        count = len(re.findall(rf'\b{sub}\b', content, re.IGNORECASE))
+        if count > 0:
+            subsystem_mentions[sub] = count
 
-    parts = [f"## Trace Query: {module}\n"]
-    parts.append(f"**Beats with data:** {len(beats)} / {total_beats}")
-    if sections_seen:
-        parts.append(f"**Active in sections:** {', '.join(str(s) for s in sections_seen)}")
-    regime_str = ", ".join(f"{k}: {v}" for k, v in sorted(regime_counts.items(), key=lambda x: -x[1]))
-    parts.append(f"**Regime distribution:** {regime_str}")
+    # Module frequency in evolution entries
+    module_mentions: dict = {}
+    for m in re.findall(r'[a-z][a-zA-Z]{8,}', content):
+        module_mentions[m] = module_mentions.get(m, 0) + 1
 
-    if numeric_ranges:
-        parts.append(f"\n### Value Ranges")
-        for k, r in sorted(numeric_ranges.items()):
-            avg = r["sum"] / r["count"]
-            parts.append(f"  {k}: {r['min']:.3f} - {r['max']:.3f} (avg {avg:.3f}, n={r['count']})")
+    # Signal/dimension usage patterns
+    signal_mentions: dict = {}
+    for sig in ["freshnessEma", "complexity", "density", "contourShape", "tessituraLoad",
+                "ascendRatio", "registerMigrationDir", "hotspots", "biasStrength",
+                "complexityEma", "densitySurprise", "intervalFreshness", "counterpoint",
+                "thematicDensity"]:
+        count = content.count(sig)
+        if count > 0:
+            signal_mentions[sig] = count
 
-    # Musical interpretation — what did this module actually DO for the composition?
-    from .trust_analysis import TRUST_MUSICAL_MEANING as _TM_TQ
-    from .synthesis import _two_stage_think as _tst_tq
-    musical_role = _TM_TQ.get(module, "")
-    avg_score_tq = (numeric_ranges["score"]["sum"] / numeric_ranges["score"]["count"]) if "score" in numeric_ranges else None
-    avg_weight_tq = (numeric_ranges["weight"]["sum"] / numeric_ranges["weight"]["count"]) if "weight" in numeric_ranges else None
-    dom_regime_tq = max(regime_counts, key=lambda r: regime_counts[r]) if regime_counts else "?"
-    if avg_score_tq is not None:
-        _w_str_tq = f"{avg_weight_tq:.3f}" if avg_weight_tq is not None else "?"
-        _hp_rate_tq = numeric_ranges.get("hotspot", {}).get("count", 0) / max(len(beats), 1)
-        interp_ctx = (
-            f"Trust system '{module}' in a generative alien music composition.\n"
-            + (f"Musical role: {musical_role}\n" if musical_role else "")
-            + f"avg_score={avg_score_tq:.3f} avg_weight={_w_str_tq}\n"
-            + f"dominant regime: {dom_regime_tq}\n"
-            + f"hotspot_rate: {_hp_rate_tq:.2f}\n"
-        )
-        interp = _tst_tq(interp_ctx,
-            f"In ONE sentence (max 35 words), interpret what '{module}' was actually doing to the music — was it active/passive, helping/competing, what did the listener hear?")
-        if interp and len(interp.strip()) > 10:
-            parts.append(f"\n### Musical Interpretation")
-            parts.append(f"  {interp.strip()}")
+    out = [f"# Evolution Patterns ({total_rounds} rounds)\n"]
 
-    # Regime transitions — the musically dramatic moments
-    transitions = []
-    prev_regime = None
-    for b in beats:
-        if b["regime"] != prev_regime and prev_regime is not None:
-            transitions.append({"beatKey": b["beatKey"], "from": prev_regime, "to": b["regime"], "values": b["values"]})
-        prev_regime = b["regime"]
-    if transitions:
-        parts.append(f"\n### Regime Transitions ({len(transitions)})")
-        for t in transitions[:12]:
-            vals = ", ".join(f"{k}={v}" for k, v in list(t["values"].items())[:3])
-            parts.append(f"  {t['beatKey']}: {t['from']} -> {t['to']}  {vals}")
+    out.append("## Verdict Distribution")
+    for v, c in sorted(verdict_counts.items(), key=lambda x: -x[1]):
+        bar = "x" * c
+        rate = c / total_rounds * 100
+        out.append(f"  {v:<15} {c:3} ({rate:.0f}%)  {bar}")
+    legendary_rate = verdict_counts.get("LEGENDARY", 0) / total_rounds * 100
+    out.append(f"\n  Legendary rate: {legendary_rate:.1f}%")
 
-    # Sample entries — spread across the composition (every Nth)
-    step = max(1, len(beats) // limit)
-    samples = beats[::step][:limit]
-    parts.append(f"\n### Samples ({len(samples)} of {len(beats)}, evenly spaced)")
-    for b in samples:
-        vals = ", ".join(f"{k}={v}" for k, v in list(b["values"].items())[:4])
-        parts.append(f"  {b['beatKey']} [{b['regime']}] {vals}")
+    # Recent trajectory
+    recent = round_sections[-10:]
+    recent_verdicts = [v.upper() for _, v in recent]
+    out.append(f"\n## Recent Trajectory (last {len(recent)})")
+    for rnd, v in recent:
+        out.append(f"  {rnd}: {v}")
 
-    return "\n".join(parts)
+    # Streaks
+    streaks = []
+    current_streak = {"verdict": recent_verdicts[0], "count": 1}
+    for v in recent_verdicts[1:]:
+        if v == current_streak["verdict"]:
+            current_streak["count"] += 1
+        else:
+            streaks.append(current_streak)
+            current_streak = {"verdict": v, "count": 1}
+    streaks.append(current_streak)
+    if streaks:
+        longest = max(streaks, key=lambda s: s["count"])
+        out.append(f"  Longest recent streak: {longest['count']}x {longest['verdict']}")
 
+    out.append(f"\n## Signal Usage Frequency")
+    for sig, c in sorted(signal_mentions.items(), key=lambda x: -x[1])[:12]:
+        out.append(f"  {sig:<25} {c:3} mentions")
 
-def interaction_map(module_a: str, module_b: str = "") -> str:
-    """Show how two modules interact at runtime by correlating their trust scores,
-    weight trajectories, and hotspot co-occurrence across the last pipeline run.
-    Reveals whether modules cooperate, compete, or are independent.
-    If only module_a is given, shows its interactions with all other traced modules."""
-    ctx.ensure_ready_sync()
-    _track("interaction_map")
+    out.append(f"\n## Most Evolved Modules")
+    top_modules = sorted(
+        [(m, c) for m, c in module_mentions.items() if c >= 5 and len(m) > 10],
+        key=lambda x: -x[1]
+    )[:12]
+    for m, c in top_modules:
+        out.append(f"  {m:<35} {c:3} mentions")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
-    if not os.path.isfile(trace_path):
-        return "No trace.jsonl found."
-
-    # Single-module mode: compute correlations vs all other modules in one pass
-    if not module_b.strip():
-        import math
-        a_lower = module_a.lower()
-        # Single-pass: collect A's scores and all others' scores simultaneously
-        a_scores_raw: list = []
-        others: dict = {}  # name → [scores]
-        try:
-            with open(trace_path, encoding="utf-8") as f:
-                for line in f:
-                    try:
-                        record = json.loads(line)
-                    except Exception:
-                        continue
-                    trust = record.get("trust", {})
-                    a_data = next((v for k, v in trust.items() if k.lower() == a_lower and isinstance(v, dict)), None)
-                    if a_data is None:
-                        continue
-                    a_scores_raw.append(a_data.get("score", 0))
-                    for k, v in trust.items():
-                        if k.lower() != a_lower and isinstance(v, dict):
-                            others.setdefault(k, []).append(v.get("score", 0))
-        except Exception as e:
-            return f"Error scanning trace: {e}"
-        if len(a_scores_raw) < 10:
-            return f"Insufficient trace data for '{module_a}' ({len(a_scores_raw)} beats)."
-
-        def _corr(xs, ys):
-            n = min(len(xs), len(ys))
-            if n < 5: return 0.0
-            xs, ys = xs[:n], ys[:n]
-            mx, my = sum(xs)/n, sum(ys)/n
-            cov = sum((x-mx)*(y-my) for x,y in zip(xs,ys)) / n
-            sx = math.sqrt(sum((x-mx)**2 for x in xs) / n)
-            sy = math.sqrt(sum((y-my)**2 for y in ys) / n)
-            return cov / (sx * sy) if sx > 0 and sy > 0 else 0.0
-
-        correlations = [(name, _corr(a_scores_raw, scores)) for name, scores in others.items() if len(scores) >= 10]
-        correlations.sort(key=lambda x: -abs(x[1]))
-        parts = [f"# Interaction Map: {module_a} vs all ({len(a_scores_raw)} beats)\n"]
-        parts.append(f"**Score avg:** {sum(a_scores_raw)/len(a_scores_raw):.3f}\n")
-        parts.append("Top interactions (by |correlation|):")
-        for name, corr in correlations[:12]:
-            rel = "COOPERATIVE" if corr > 0.4 else ("COMPETITIVE" if corr < -0.2 else "independent")
-            bar = "▶" * int(abs(corr) * 10)
-            parts.append(f"  {name:<30} r={corr:+.3f} {bar} ({rel})")
-        if len(correlations) > 12:
-            parts.append(f"  ... {len(correlations) - 12} more")
-        return "\n".join(parts)
-
-    a_lower, b_lower = module_a.lower(), module_b.lower()
-    a_scores, b_scores, a_weights, b_weights = [], [], [], []
-    co_hotspot = 0
-    total = 0
-
-    try:
-        with open(trace_path, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    record = json.loads(line)
-                except Exception:
-                    continue
-                trust = record.get("trust", {})
-                a_data = next((v for k, v in trust.items() if k.lower() == a_lower), None)
-                b_data = next((v for k, v in trust.items() if k.lower() == b_lower), None)
-                if not a_data or not b_data or not isinstance(a_data, dict) or not isinstance(b_data, dict):
-                    continue
-                total += 1
-                a_scores.append(a_data.get("score", 0))
-                b_scores.append(b_data.get("score", 0))
-                a_weights.append(a_data.get("weight", 1))
-                b_weights.append(b_data.get("weight", 1))
-                if a_data.get("hotspotPressure", 0) > 0.1 and b_data.get("hotspotPressure", 0) > 0.1:
-                    co_hotspot += 1
-    except Exception as e:
-        return f"Error reading trace: {e}"
-
-    if total < 10:
-        return f"Insufficient data: only {total} beats with both '{module_a}' and '{module_b}' trust data."
-
-    # Compute correlation
-    import math
-    def _corr(xs, ys):
-        n = len(xs)
-        mx, my = sum(xs)/n, sum(ys)/n
-        cov = sum((x-mx)*(y-my) for x, y in zip(xs, ys)) / n
-        sx = math.sqrt(sum((x-mx)**2 for x in xs) / n)
-        sy = math.sqrt(sum((y-my)**2 for y in ys) / n)
-        return cov / (sx * sy) if sx > 0 and sy > 0 else 0
-
-    score_corr = _corr(a_scores, b_scores)
-    weight_corr = _corr(a_weights, b_weights)
-
-    # Interpret
-    if score_corr > 0.5:
-        relationship = "COOPERATIVE (scores rise and fall together)"
-    elif score_corr < -0.3:
-        relationship = "COMPETITIVE (one gains when the other loses)"
-    else:
-        relationship = "INDEPENDENT (scores uncorrelated)"
-
-    parts = [f"## Interaction Map: {module_a} <-> {module_b}\n"]
-    parts.append(f"**Relationship:** {relationship}")
-    parts.append(f"**Score correlation:** {score_corr:.3f}")
-    parts.append(f"**Weight correlation:** {weight_corr:.3f}")
-    parts.append(f"**Hotspot co-occurrence:** {co_hotspot}/{total} beats ({co_hotspot/total:.0%})")
-    parts.append(f"\n**{module_a}:** score {min(a_scores):.3f}-{max(a_scores):.3f} (avg {sum(a_scores)/len(a_scores):.3f}), weight {min(a_weights):.3f}-{max(a_weights):.3f}")
-    parts.append(f"**{module_b}:** score {min(b_scores):.3f}-{max(b_scores):.3f} (avg {sum(b_scores)/len(b_scores):.3f}), weight {min(b_weights):.3f}-{max(b_weights):.3f}")
-
-    # Callers overlap — do they share code dependencies?
-    a_callers = set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in _find_callers(module_a, ctx.PROJECT_ROOT))
-    b_callers = set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in _find_callers(module_b, ctx.PROJECT_ROOT))
-    shared = a_callers & b_callers
-    if shared:
-        parts.append(f"\n**Shared callers ({len(shared)}):** {', '.join(sorted(shared)[:5])}")
-
-    return "\n".join(parts)
+    return "\n".join(out)
 
 
 def kb_seed(top_n: int = 15) -> str:
     """Auto-generate starter KB entries for the highest-dependency modules that have
-    zero KB entries. Reads each module's source code and uses a single batched LLM
-    call to generate concise architectural constraint summaries. Returns the entries
-    as add_knowledge calls you can execute.
-
-    Performance: single-pass file scan for all caller counts (not N scans per symbol),
-    plus one batched LLM call for all candidates (not N sequential calls)."""
+    zero KB entries."""
     ctx.ensure_ready_sync()
     _track("kb_seed")
     from .health import _compute_iife_caller_counts
@@ -782,360 +139,56 @@ def kb_seed(top_n: int = 15) -> str:
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
     sym_files, caller_counts, _ = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
     if not sym_files:
-        return "No IIFE globals found in src/."
+        return "No symbol files found."
 
-    modules = sorted(
-        [(count, name, sym_files[name]) for name, count in caller_counts.items()],
-        key=lambda x: -x[0]
-    )
+    # Get KB coverage
+    try:
+        all_kb = ctx.project_engine.list_knowledge()
+        kb_names = {e.lower() for e in all_kb} if all_kb else set()
+    except Exception:
+        kb_names = set()
 
-    # --- Load doc content once for doc-coverage filter ---
-    from . import _filter_kb_relevance
-    import glob as _glob
-    doc_content = ""
-    doc_paths = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "doc", "*.md"))
-    for root_doc in ["CLAUDE.md", "README.md"]:
-        rp = os.path.join(ctx.PROJECT_ROOT, root_doc)
-        if os.path.isfile(rp):
-            doc_paths.append(rp)
-    for dp in doc_paths:
-        try:
-            with open(dp, encoding="utf-8") as _f:
-                doc_content += _f.read().lower()
-        except Exception:
-            pass
-
-    # --- Filter: skip if already in KB or already documented ---
+    # Find candidates: high caller count + zero KB
     candidates = []
-    for count, name, path in modules:
-        if count == 0:
-            break  # zero callers → self-registered or truly unused, stop here
-        kb = ctx.project_engine.search_knowledge(name, top_k=2)
-        if _filter_kb_relevance(kb, name):
-            continue
-        if name.lower() in doc_content:
-            continue
-        candidates.append((count, name, path))
+    for sym_name, count in sorted(caller_counts.items(), key=lambda x: -x[1]):
+        if sym_name.lower() not in kb_names and count >= 3:
+            candidates.append((sym_name, count, sym_files.get(sym_name, "")))
         if len(candidates) >= top_n:
             break
 
     if not candidates:
         return "All high-dependency modules already have KB entries."
 
-    # --- Single batched LLM call for all candidates ---
-    # Read source snippets
-    sources: dict[str, str] = {}
-    for _, name, path in candidates:
-        try:
-            with open(path, encoding="utf-8", errors="ignore") as _f:
-                sources[name] = _f.read()[:800]
-        except Exception:
-            sources[name] = ""
+    out = ["# KB Seed Candidates\n"]
+    out.append(f"Modules with high caller count but zero KB entries ({len(candidates)} found):\n")
 
-    # Build one prompt covering all candidates
-    batch_sections = []
-    for count, name, _ in candidates:
-        src = sources.get(name, "")
-        batch_sections.append(
-            f"### {name} ({count} callers)\n```\n{src}\n```"
-        )
-    batch_prompt = (
-        "For each module below, write ONE sentence (max 120 chars) stating: "
-        "the key architectural constraint AND what breaks if edited carelessly.\n\n"
-        + "\n\n".join(batch_sections)
-        + "\n\nReply in this exact format (one line per module):\n"
-        + "\n".join(f"{name}: <constraint>" for _, name, _ in candidates)
-    )
-    raw = _think_local_or_claude(batch_prompt, _get_api_key(), max_tokens=80 * len(candidates))
+    for name, count, filepath in candidates:
+        out.append(f"  {name:<35} {count:3} callers  {filepath}")
 
-    # Parse responses: expect "name: summary" lines
-    summaries: dict[str, str] = {}
-    if raw:
-        for line in raw.splitlines():
-            for _, name, _ in candidates:
-                if line.startswith(f"{name}:"):
-                    summaries[name] = line[len(name) + 1:].strip()
-                    break
-
-    parts = [f"## KB Seed — {len(candidates)} modules need KB entries\n"]
-    for count, name, _ in candidates:
-        summary = summaries.get(name) or f"{name}: {count} callers, needs KB documentation"
-        parts.append(f"**{name}** ({count} callers)")
-        parts.append(f"  {summary[:200]}")
-        parts.append("")
-
-    parts.append(f"\n### To persist, call add_knowledge for each entry above.")
-    return "\n".join(parts)
-
-
-def hme_selftest() -> str:
-    """Verify HME's own health: tool registration, doc sync, index integrity,
-    Ollama connectivity, hash cache consistency."""
-    _track("hme_selftest")
-    results = []
-
-    # 1. Tool count
-    tool_count = 0
-    server_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for root, dirs, files in os.walk(server_root):
-        for f in files:
-            if f.endswith(".py"):
+    # Try to generate KB entries via synthesis
+    api_key = _get_api_key()
+    if api_key and candidates:
+        source_snippets = []
+        for name, count, filepath in candidates[:8]:
+            if filepath and os.path.isfile(filepath):
                 try:
-                    with open(os.path.join(root, f), encoding="utf-8") as _pyf:
-                        for line in _pyf:
-                            if line.strip() == "@ctx.mcp.tool()":
-                                tool_count += 1
+                    with open(filepath, encoding="utf-8") as _f:
+                        src = _f.read()[:1500]
+                    source_snippets.append(f"### {name} ({count} callers)\n```\n{src}\n```")
                 except Exception:
                     pass
-    results.append(f"{'PASS' if tool_count > 20 else 'FAIL'}: {tool_count} tools registered")
 
-    # 2. Doc sync
-    try:
-        from .health import doc_sync_check
-        sync = doc_sync_check("doc/HME.md")
-        is_sync = "IN SYNC" in sync
-        results.append(f"{'PASS' if is_sync else 'FAIL'}: doc sync — {sync[:80]}")
-    except Exception as e:
-        results.append(f"FAIL: doc sync — {e}")
+        if source_snippets:
+            prompt = (
+                "For each module below, write ONE concise KB entry (2-3 sentences) describing:\n"
+                "1. What it does and its architectural role\n"
+                "2. Key constraints or invariants that must be maintained\n"
+                "Format: `## module_name\\nContent`\n\n"
+                + "\n\n".join(source_snippets)
+            )
+            result = _claude_think(prompt, api_key, max_tool_calls=0)
+            if result:
+                out.append(f"\n## Generated Entries\n")
+                out.append(result)
 
-    # 3. Index health
-    status: dict = {}
-    try:
-        ctx.ensure_ready_sync()
-        status = ctx.project_engine.get_status()
-        files = status.get("total_files", 0)
-        chunks = status.get("total_chunks", 0)
-        results.append(f"{'PASS' if files > 100 else 'FAIL'}: index — {files} files, {chunks} chunks")
-    except Exception as e:
-        results.append(f"FAIL: index — {e}")
-
-    # 4. Hash cache consistency
-    try:
-        hashes = ctx.project_engine._file_hashes
-        table_files = status.get("total_files", 0)
-        hash_count = len(hashes)
-        consistent = abs(hash_count - table_files) < 15
-        results.append(f"{'PASS' if consistent else 'WARN'}: hash cache — {hash_count} hashes vs {table_files} indexed files")
-    except Exception as e:
-        results.append(f"FAIL: hash cache — {e}")
-
-    # 5. Ollama connectivity
-    try:
-        from .synthesis import _local_think
-        test = _local_think("respond with OK", max_tokens=5)
-        results.append(f"{'PASS' if test else 'FAIL'}: Ollama — {'connected' if test else 'no response'}")
-    except Exception as e:
-        results.append(f"FAIL: Ollama — {e}")
-
-    # 6. KB health
-    try:
-        kb = ctx.project_engine.list_knowledge()
-        results.append(f"{'PASS' if len(kb) > 0 else 'WARN'}: KB — {len(kb)} entries")
-    except Exception as e:
-        results.append(f"FAIL: KB — {e}")
-
-    # 7. Symlinks
-    for name, target in [
-        ("~/.claude/mcp/HME", "mcp symlink"),
-        ("~/.claude/skills/HME", "skills symlink"),
-    ]:
-        path = os.path.expanduser(name)
-        results.append(f"{'PASS' if os.path.islink(path) else 'FAIL'}: {target} — {path}")
-
-    passed = sum(1 for r in results if r.startswith("PASS"))
-    total = len(results)
-    header = f"## HME Self-Test: {passed}/{total} passed\n"
-    output = header + "\n".join(f"  {r}" for r in results)
-
-    # Include introspect output (session usage + compositional context)
-    try:
-        introspect_out = hme_introspect()
-        output += "\n\n" + introspect_out
-    except Exception:
-        pass
-
-    return output
-
-
-@ctx.mcp.tool()
-def hme_admin(action: str = "selftest", modules: str = "") -> str:
-    """HME maintenance dispatcher. action='selftest': verify tool registration, doc sync,
-    index integrity, Ollama, KB health, symlinks. action='reload': hot-reload tool modules
-    without restarting server (pass modules='health,evolution' or 'all'). action='index':
-    reindex all code chunks and symbols (replaces standalone index_codebase — run after batch
-    code changes when file watcher hasn't caught up). action='clear_index': wipe hash cache +
-    chunk store then rebuild from scratch (use when hash cache is stale or index is corrupted).
-    action='warm': pre-populate before_editing caller+KB caches for all src/ files — makes
-    all subsequent before_editing calls instant. action='both': reload then selftest.
-    Use after structural changes to HME tool files."""
-    _track("hme_admin")
-    parts = []
-    if action in ("reload", "both"):
-        parts.append(hme_hot_reload(modules))
-    if action in ("selftest", "both"):
-        parts.append(hme_selftest())
-    if action == "index":
-        try:
-            from tools_index import index_codebase as _index_codebase
-            parts.append(_index_codebase())
-        except Exception as e:
-            parts.append(f"index_codebase error: {e}")
-    if action == "clear_index":
-        try:
-            from tools_index import clear_index as _clear_index
-            parts.append(_clear_index())
-        except Exception as e:
-            parts.append(f"clear_index error: {e}")
-    if action == "warm":
-        try:
-            from .workflow import warm_pre_edit_cache as _warm
-            parts.append(_warm())
-        except Exception as e:
-            parts.append(f"warm_pre_edit_cache error: {e}")
-    if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', or 'both'."
-    return "\n\n".join(parts)
-
-
-def hme_inspect(mode: str = "both") -> str:
-    """Merged HME self-inspection. mode: 'introspect' (session tool usage + compositional context),
-    'selftest' (health check: tool count, doc sync, index integrity, Ollama), or 'both' (default).
-    Replaces calling hme_introspect + hme_selftest separately."""
-    _track("hme_inspect")
-    parts = []
-    if mode in ("introspect", "both"):
-        parts.append(hme_introspect())
-    if mode in ("selftest", "both"):
-        parts.append(hme_selftest())
-    if not parts:
-        return f"Unknown mode '{mode}'. Use 'introspect', 'selftest', or 'both'."
-    return "\n\n".join(parts)
-
-
-def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> str:
-    """Permanently enforce a rule against a stubborn antipattern by adding detection logic to
-    the specified hook script. hook_target: 'pretooluse_bash', 'posttooluse_bash', 'stop',
-    'userpromptsubmit', 'pretooluse_edit', 'pretooluse_grep', 'pretooluse_write'.
-    The tool synthesizes the bash detection snippet, appends it to the hook, and confirms.
-    Use this when a behavioral rule has been violated repeatedly and needs permanent enforcement."""
-    _track("fix_antipattern")
-    if not antipattern or not antipattern.strip():
-        return "Error: antipattern cannot be empty. Describe the bad behavior to prevent."
-    valid_hooks = {
-        "pretooluse_bash", "posttooluse_bash", "stop",
-        "userpromptsubmit", "pretooluse_edit", "pretooluse_grep", "pretooluse_write",
-    }
-    if hook_target not in valid_hooks:
-        return f"Error: hook_target must be one of: {', '.join(sorted(valid_hooks))}"
-    hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
-    hook_path = os.path.join(hooks_dir, f"{hook_target}.sh")
-    if not os.path.isfile(hook_path):
-        return f"Hook file not found: {hook_path}"
-    with open(hook_path, encoding="utf-8") as _f:
-        current = _f.read()
-
-    # Hook-specific context: different hooks have different inputs and capabilities
-    hook_context = {
-        "pretooluse_bash": (
-            "This hook fires ONCE PER TOOL CALL before a Bash command executes. "
-            "Available variables: CMD (the bash command string), INPUT (raw JSON). "
-            "Use CMD-based matching. Can only inspect a single command at a time — "
-            "do NOT try to detect patterns across multiple calls. "
-            "To block: exit 2 with JSON {\"decision\":\"block\",\"reason\":\"...\"}. "
-            "Example: if echo \"$CMD\" | grep -qE 'tail.*run\\.log'; then"
-        ),
-        "posttooluse_bash": (
-            "This hook fires ONCE PER TOOL CALL after a Bash command completes. "
-            "Available variables: CMD (the bash command), INPUT (raw JSON including output). "
-            "Use CMD-based matching. Cannot block (already executed). Warn to stderr."
-        ),
-        "stop": (
-            "This hook fires ONCE when Claude is about to stop responding (end of turn). "
-            "Available variables: INPUT (JSON with transcript_path). "
-            "Use TRANSCRIPT_PATH=$(echo \"$INPUT\" | jq -r '.transcript_path // \"\"') to access "
-            "the full conversation transcript. This is the ONLY hook that can detect BEHAVIORAL "
-            "PATTERNS across multiple tool calls in a turn (e.g. polling, repeated reads, loops). "
-            "Do NOT use CMD-based matching here — inspect the transcript instead. "
-            "To block: output JSON {\"decision\":\"block\",\"reason\":\"...\"} and exit 0. "
-            "Use python3 or jq to parse the transcript JSON lines if needed."
-        ),
-        "userpromptsubmit": (
-            "This hook fires when the user submits a prompt, before Claude responds. "
-            "Available variables: INPUT (JSON with the user prompt text). "
-            "Use to detect problematic prompt patterns and inject context or block."
-        ),
-        "pretooluse_edit": (
-            "This hook fires before an Edit tool call. "
-            "Available variables: INPUT (JSON with file_path, old_string, new_string). "
-            "Use to enforce file-level constraints."
-        ),
-        "pretooluse_grep": (
-            "This hook fires before a Grep tool call. "
-            "Available variables: INPUT (raw JSON). "
-            "Use to redirect to HME alternatives when appropriate."
-        ),
-        "pretooluse_write": (
-            "This hook fires before a Write tool call. "
-            "Available variables: INPUT (JSON with file_path, content). "
-            "Use to enforce file-level write constraints."
-        ),
-    }
-    hook_guidance = hook_context.get(hook_target, "")
-
-    # Synthesize the enforcement snippet via Claude or local
-    synthesis_prompt = (
-        f"You are writing a bash snippet to add to a Claude Code hook script.\n"
-        f"Hook: {hook_target}.sh\n"
-        f"Hook context: {hook_guidance}\n\n"
-        f"Current hook content:\n{current}\n\n"
-        f"Antipattern to prevent: {antipattern}\n\n"
-        f"Write ONLY the bash snippet (no markdown fences, no explanation) to detect and block or warn "
-        f"about this antipattern. The snippet must:\n"
-        f"1. Use the variables appropriate for this hook type (see hook context above)\n"
-        f"2. Output enforcement message to stderr (>&2) or JSON block decision to stdout\n"
-        f"3. Include a one-line comment explaining what it prevents\n"
-        f"4. Follow the detection approach for this hook type exactly\n"
-        f"Be concise — 5-15 lines maximum."
-    )
-    api_key = _get_api_key()
-    snippet = None
-    if api_key:
-        snippet = _claude_think(synthesis_prompt, api_key, max_tool_calls=0)
-    if not snippet:
-        snippet = _local_think(synthesis_prompt, max_tokens=256)
-    if not snippet:
-        return (
-            f"Could not synthesize snippet (no API key and Ollama unavailable).\n"
-            f"Manually add detection logic to: {hook_path}\n"
-            f"Antipattern to prevent: {antipattern}"
-        )
-
-    # Strip markdown fences if present
-    snippet = re.sub(r'^```[a-z]*\n?', '', snippet.strip())
-    snippet = re.sub(r'\n?```$', '', snippet)
-
-    # Insert before final 'exit 0' if present (appending after it creates dead code)
-    stripped = current.rstrip("\n")
-    insertion = f"\n\n# fix_antipattern: {antipattern[:80]}\n{snippet.strip()}\n"
-    if stripped.endswith("exit 0"):
-        # Find last 'exit 0' line and insert before it
-        lines = stripped.split("\n")
-        for i in range(len(lines) - 1, -1, -1):
-            if lines[i].strip() == "exit 0":
-                lines.insert(i, insertion.strip())
-                new_content = "\n".join(lines) + "\n"
-                break
-        else:
-            new_content = stripped + insertion
-    else:
-        new_content = stripped + insertion
-    with open(hook_path, "w", encoding="utf-8") as _f:
-        _f.write(new_content)
-
-    return (
-        f"# fix_antipattern: Applied enforcement to {hook_target}.sh\n\n"
-        f"**Antipattern:** {antipattern}\n\n"
-        f"**Appended snippet:**\n```bash\n{snippet.strip()}\n```\n\n"
-        f"Hook file: {hook_path}\n"
-        f"The enforcement is now active for all future sessions."
-    )
+    return "\n".join(out)

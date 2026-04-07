@@ -101,7 +101,7 @@ temporalGravity = (() => {
     // (complex rhythmic texture needs stronger temporal anchor to prevent metric blur).
     // Counterpart: entropyRegulator RAISES entropy under same signal (pitch variety expands while time anchors).
     const complexityTG = rhythmEntryTG && Number.isFinite(rhythmEntryTG.complexity) ? rhythmEntryTG.complexity : 0.5;
-    const complexityGravityScale = 1.0 + clamp((complexityTG - 0.5) * 0.20, -0.04, 0.10);
+    const complexityGravityScale = 1.0 + clamp((complexityTG - 0.5) * 0.14, -0.04, 0.06);
     const pullStrength = wellDensity * proximity * MAX_PULL_TICKS_RATIO * (0.5 + cimScale) * melodicGravityMult * (1.0 + hotspotsScaleTG * 0.30) * intervalFreshnessGravity * biasGravityScale * densityGravityScale * complexityGravityScale;
 
     // Direction: pull toward the gravity well's time position (seconds)
