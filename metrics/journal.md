@@ -1,3 +1,72 @@
+## R80 — 2026-04-06 — LEGENDARY (complexity triple-bridge + HME ecstasy audit)
+
+**Profile:** varied (restrained→explosive→atmospheric) | **Beats:** 1771 | **Sections:** 7 | **Verdict:** "new legendary xenolinguistic tier"
+**Run delta:** +29,528 notes | CB0 entropy +0.101 | tensionArc +0.091 (nearly doubled) | fingerprint STABLE (0/10)
+
+### What Changed
+- **E1: harmonicIntervalGuard ← complexity** — high rhythmic complexity narrows consonance deadband (-0.04 max). Harmony stabilizes during complex moments.
+- **E2: crossLayerClimaxEngine ← complexity** — high complexity boosts climax accumulation (+0.06 max). Antagonism bridge with E1: same signal → harmony tightens + climax accelerates.
+- **E3: harmonicIntervalGuard ← rhythmicPhaseLock.getMode()** — lock narrows deadband -0.03 (consonance preference), repel widens +0.04 (dissonance tolerance). First phase coupling for HIG.
+
+**HME tool evolutions (ecstasy audit — all sub-9/10 tools evolved):**
+- `think` 1→9: meta-HME questions skip two-stage (qwen structuring strips UX context), go direct to deepseek-r1
+- `module_intel` story 6→9: skip trace_query on non-greedy budget (388s→0s latency)
+- `check_pipeline` 6→9: shows step name + "log modified Xs ago" instead of bare "IN PROGRESS"
+- `before_editing` 7→9: Evolutionary Potential fused in (one call gives everything module_intel shows separately)
+- `pipeline_digest` 7→9: Evolution Velocity + Bridge Narrative sections added
+- `pipeline_digest` 2→9: in-progress guard fixed (log-mtime 90s guard catches inter-step race)
+- `build_evolutionary_potential()` extracted as shared function (reasoning.py→workflow.py)
+
+---
+
+## R79 — 2026-04-06 — LEGENDARY (freshnessEma antagonism bridge + ascendRatio + densitySurprise bridge)
+
+**Profile:** varied (restrained→explosive→atmospheric) | **Beats:** 1064 | **Sections:** 7 | **Verdict:** "new legendary xenolinguistic tier"
+**Run delta:** coherent +4.2%→36% | exploring -9.6%→29% | CB0 entropy stable
+
+### What Changed
+- **E1: entropyRegulator ← freshnessEma** — novel intervals raise entropy target by up to +0.04. Completes bridge with climaxEngine (R78 E3): fresh melody → entropy UP + climax DOWN.
+- **E2: entropyRegulator ← ascendRatio** — ascending fraction ±0.03 entropy. More granular than ternary registerMigrationDir already present.
+- **E3: velocityInterference ← freshnessEma** — novel intervals amplify interference ceilings ×up to 1.15. Fresh territory = stronger dynamic contrast.
+- **E4: stutterContagion ← densitySurprise** — surprising rhythmic events amplify contagion ×up to 1.10. Chaos invites more chaos.
+- **E5: restSynchronizer ← densitySurprise** — surprise suppresses synchronized rests by up to -0.06. Antagonism bridge with E4: surprise → contagion UP + rest DOWN.
+
+**HME evolutions:**
+- `_fast_claude()` in synthesis.py — Haiku model, no extended thinking, no tools (~200ms vs 15-30s)
+- `before_editing` Edit Risks uses `_fast_claude` + qwen2.5-coder fallback (was Sonnet+thinking+tools)
+- `warm_pre_edit_cache()` Tier 2: pre-synthesizes Edit Risks for 30 hot files (now cheap with Haiku)
+- `think` tool meta-HME routing: HME tool questions get HME doc injection + UX-focused prompt instead of coupling state + code directive
+
+---
+
+## R78 — 2026-04-06 — LEGENDARY (phase-lock coupling + HME evolutionary intelligence)
+
+**Profile:** atmospheric/default | **Beats:** 1553 | **Sections:** 7 | **Verdict:** "new legendary xenolinguistic tier"
+**Run delta:** CB0 entropy +0.075 | tensionArc +0.058 | coherent -7.6%→31.8% | evolving +6.6%→29.4%
+
+### What Changed
+
+**Pattern: rhythmicPhaseLock.getMode() as universal coupling signal** — first use of phase mode (lock/drift/repel) across 5 modules. Ternary state maps to musical archetypes: lock=unison/order, drift=neutral, repel=counterpoint/chaos.
+
+- **E1: motifEcho ← phaseLock.getMode()** — repel boosts echo ×1.15 (counterpoint invites imitation), lock suppresses ×0.88 (unison needs no echo).
+- **E2: stutterContagion ← phaseLock.getMode()** — lock boosts contagion ×1.12 (synchronized burst = rhythmic unison), repel suppresses ×0.88.
+- **E3: crossLayerClimaxEngine ← freshnessEma** — freshnessEma>0.60 damps climax accumulation by 0-0.08. Novel territory = still building, not peaking.
+- **E4: crossLayerSilhouette ← phaseLock.getMode()** — repel sharpens tracking ×0.88 (opposition demands faster correction), lock stabilizes ×1.10.
+- **E5: entropyRegulator ← phaseLock.getMode()** — repel raises entropy +0.04, lock lowers -0.03. Counterpoint = more chaos, unison = more order.
+
+**HME evolutions (R78):**
+- `module_intel`: Evolutionary Potential section (unused melodic dims, phase coupling status, live bridge opportunities)
+- `before_editing`: Antagonism Bridges section (top bridge opportunities for edited module)
+- `coupling.py`: phase coupling detection, bridge caching (O(n²)→O(1) repeat), cluster tags [M+R+P]/[PHZ]
+- `evolution_next.py`: beatPhase added to _KNOWN_CONNECTED (self-consumed internally via findClosest)
+- `main.py`: deferred pre-warm thread (warm_pre_edit_cache after startup — all before_editing instant)
+- Anti-polling hardening: pretooluse_check_pipeline.sh, stop.sh MCP detection, digest.py in-progress guard
+
+### Architecture Notes
+- Phase modes are semantic musical archetypes, not just timing metrics — this enables cross-system semantic coupling without new L0 channels
+
+---
+
 ## R77 — 2026-04-06 — LEGENDARY (10-sub-evolution xenolinguistic tier: dead-end harvests + antagonism bridges)
 
 **Profile:** atmospheric | **Beats:** 1002 | **Sections:** 5 | **Verdict:** "new legendary xenolinguistic tier"

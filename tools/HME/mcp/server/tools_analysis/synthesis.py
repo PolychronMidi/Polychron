@@ -341,7 +341,7 @@ def _ollama_background_yield():
         _t.sleep(0.5)
 
 
-def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None,
+def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                  priority: str = "interactive") -> str | None:
     """Call local Ollama model for synthesis tasks.
 
@@ -378,6 +378,13 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None,
         with resp_obj as resp:
             result = json.loads(resp.read())
             text = result.get("response", "").strip()
+            # qwen3 embeds thinking in <think>...</think> in the response field.
+            # Strip it and use only the final answer after </think>.
+            if "</think>" in text:
+                text = text[text.rfind("</think>") + len("</think>"):].strip()
+            elif "<think>" in text:
+                # Thinking started but was cut off by max_tokens — use thinking content
+                text = text[text.find("<think>") + len("<think>"):].strip()
             # deepseek-r1 puts reasoning in "thinking" field, final answer in "response".
             # If response is empty (ran out of tokens during thinking), use thinking content.
             if not text:
@@ -626,10 +633,10 @@ def _fast_claude(user_text: str, api_key: str, system_text: str = "", max_tokens
         return None
 
 
-def _two_stage_think(raw_context: str, question: str, max_tokens: int = 2048) -> str | None:
+def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) -> str | None:
     """Two-stage local synthesis: coder model structures context, reasoning model thinks deeply.
 
-    Stage 1 (qwen2.5-coder:14b on GPU 0): Extract and structure relevant facts into a brief.
+    Stage 1 (qwen3-coder:30b on GPU 0): Extract and structure relevant facts into a brief.
       Fast, code-specialized, no thinking overhead.
     Stage 2 (qwen3:30b-a3b on GPU 1): Reason deeply about the structured brief.
       MoE with hybrid thinking mode — only 3B params active but 30B knowledge.
@@ -647,7 +654,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 2048) ->
         "- Max 400 words\n\n"
         "Raw project context:\n" + raw_context[:6000]
     )
-    frame = _local_think(frame_prompt, max_tokens=600, model=_LOCAL_MODEL)
+    frame = _local_think(frame_prompt, max_tokens=2000, model=_LOCAL_MODEL)
     if not frame or len(frame) < 40:
         # Fall back to single-stage reasoning
         return _local_think(

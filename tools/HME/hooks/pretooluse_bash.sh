@@ -31,6 +31,13 @@ if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; the
     echo '{"decision":"block","reason":"ANTI-WAIT: npm run main must use run_in_background=true. Re-issue this Bash call with run_in_background: true, then CONTINUE with parallel work (HME indexing, doc updates, src/ improvements, what_did_i_forget). Stopping to wait for the pipeline is the antipattern."}'
     exit 2
   fi
+  # Block double-backgrounding: run_in_background=true AND & in command = premature exit code 0.
+  # The & makes the shell return immediately, firing a false "completed" notification while npm still runs.
+  # This is the root cause of check_pipeline polling loops.
+  if echo "$CMD" | grep -qE '[[:space:]]&[[:space:]]*$|[[:space:]]&$'; then
+    echo '{"decision":"block","reason":"BLOCKED: Do NOT use & with run_in_background=true — double-backgrounding fires a false exit-code-0 notification while npm is still running, which causes check_pipeline polling loops. Remove the & from the command."}'
+    exit 2
+  fi
 fi
 
 # Block polling: task output files or pipeline log

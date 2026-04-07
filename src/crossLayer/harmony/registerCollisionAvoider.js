@@ -40,7 +40,11 @@ registerCollisionAvoider = (() => {
     const melodicCtxRCA = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const intervalFreshness = melodicCtxRCA ? V.optionalFinite(melodicCtxRCA.intervalFreshness, 0.5) : 0.5;
     const freshnessAdjust = (intervalFreshness - 0.5) * 2; // [-1 stale ... +1 fresh]
-    const effectiveCollisionSemitones = clamp(m.round(2 + (1 - cimScale) * 5 + freshnessAdjust), 1, 8);
+    // R77 E8: hotspots coupling -- dense rhythmic bursts widen collision tolerance (intentional cluster dissonance)
+    const rhythmEntryRCA = L0.getLast('emergentRhythm', { layer: 'both' });
+    const hotspotsRCA = rhythmEntryRCA && Array.isArray(rhythmEntryRCA.hotspots) ? rhythmEntryRCA.hotspots.length : 0;
+    const hotspotWidenRCA = clamp(hotspotsRCA / 16, 0, 1) * 2.0; // up to +2 semitones at max hotspot density
+    const effectiveCollisionSemitones = clamp(m.round(2 + (1 - cimScale) * 5 + freshnessAdjust + hotspotWidenRCA), 1, 10);
     if (m.abs(other.midi - boundedMidi) >= effectiveCollisionSemitones) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
 
     // Choose octave displacement that favors spectrally sparse bins
