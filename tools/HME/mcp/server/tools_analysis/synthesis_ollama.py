@@ -71,12 +71,70 @@ _THINK_HISTORY_MAX = 3                    # keep last N exchanges
 # key decisions, arbiter resolutions, and pipeline verdicts. Injected into every
 # synthesis call so all three models share the same session context.
 #
-# Architecture: NOT a warm KV context (too dynamic). A live string injected
-# alongside existing context. Updated by: think calls, arbiter COMPLEX resolutions,
-# pipeline verdicts, and any external caller via append_session_narrative().
+# Persisted to metrics/hme-session-state.json so IDE restarts don't wipe context.
+# Loaded at module init; written on every append.
 _session_narrative: list[dict] = []       # [{seq, event, content}] rolling window
 _session_narrative_seq: int = 0           # monotonic event counter
 _SESSION_NARRATIVE_MAX = 10              # keep last N events
+
+_SESSION_STATE_FILE = None  # resolved lazily once PROJECT_ROOT is set — tools/HME/session-state.json
+
+
+_session_state_loaded = False
+
+
+def _session_state_path() -> str | None:
+    """Resolve path to session state file, or None if PROJECT_ROOT not yet set."""
+    global _SESSION_STATE_FILE
+    if _SESSION_STATE_FILE:
+        return _SESSION_STATE_FILE
+    root = getattr(ctx, "PROJECT_ROOT", "")
+    if root:
+        _SESSION_STATE_FILE = os.path.join(root, "tools", "HME", "session-state.json")
+        return _SESSION_STATE_FILE
+    return None
+
+
+def _load_session_state():
+    """Load persisted narrative + think history from disk. Lazy — runs once when PROJECT_ROOT
+    is available. Safe to call multiple times (no-ops after first load)."""
+    global _session_narrative, _session_narrative_seq, _think_history, _session_state_loaded
+    if _session_state_loaded:
+        return
+    path = _session_state_path()
+    if not path:
+        return  # PROJECT_ROOT not yet set — try again later
+    _session_state_loaded = True
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        _session_narrative = data.get("narrative", [])[-_SESSION_NARRATIVE_MAX:]
+        _session_narrative_seq = data.get("seq", 0)
+        _think_history = data.get("think_history", [])[-_THINK_HISTORY_MAX:]
+        logger.info(
+            f"session state loaded: {len(_session_narrative)} narrative events, "
+            f"{len(_think_history)} think exchanges"
+        )
+    except Exception as e:
+        logger.warning(f"session state load failed: {e}")
+
+
+def _save_session_state():
+    """Persist narrative + think history to disk. Called after every write."""
+    path = _session_state_path()
+    if not path:
+        return
+    try:
+        with open(path, "w") as f:
+            json.dump({
+                "narrative": _session_narrative,
+                "seq": _session_narrative_seq,
+                "think_history": _think_history,
+            }, f, indent=2)
+    except Exception as e:
+        logger.warning(f"session state save failed: {e}")
 
 
 def _ollama_background_yield():
@@ -91,16 +149,34 @@ def _gpu_persona(model: str) -> str:
     """Model-specialized persona for warm context priming.
     GPU0 (extractor): structured code facts — paths, signals, correlations.
     GPU1 (reasoner): musical effects, evolution strategy, coupling analysis.
-    Arbiter: conflict detection between independent analyses."""
-    recent_kb = ""
+    Arbiter: conflict detection between independent analyses.
+    All models receive the full KB (all entries, 300-char content) to maximize
+    pre-tokenized code awareness within the 6GB VRAM headroom per 24GB GPU.
+    (~24MB per 1000 tokens — full KB at ~15KB fits easily)."""
+    import glob as _glob
+    # Full KB — all entries, 300-char content truncation (was last 8 at 120 chars)
+    full_kb = ""
     try:
         all_kb = ctx.project_engine.list_knowledge_full() or []
-        recent_kb = "\n".join(
-            f"  [{k.get('category','')}] {k.get('title','')}: {k.get('content','')[:120]}"
-            for k in all_kb[-8:]
+        full_kb = "\n".join(
+            f"  [{k.get('category','')}] {k.get('title','')}: {k.get('content','')[:300]}"
+            for k in all_kb
         )
     except Exception:
         pass
+    # Real crossLayer module names from filesystem (dynamic, never stale)
+    _modules = []
+    try:
+        _cl_files = _glob.glob(
+            os.path.join(ctx.PROJECT_ROOT, "src", "crossLayer", "**", "*.js"), recursive=True
+        )
+        _modules = sorted(set(
+            os.path.basename(f).replace(".js", "") for f in _cl_files
+            if not os.path.basename(f).startswith("index")
+        ))
+    except Exception:
+        pass
+    modules_str = ", ".join(_modules) if _modules else "(unavailable)"
     if model == _LOCAL_MODEL:
         return (
             "You are the code extractor for Polychron, a self-evolving alien generative music "
@@ -108,41 +184,50 @@ def _gpu_persona(model: str) -> str:
             "Your role: extract FACTS. File paths (src/crossLayer/...), signal fields, "
             "correlation values, coupling dimensions, bridge status (VIRGIN/PARTIAL/SATURATED). "
             "Antagonism bridges couple BOTH modules of a negatively-correlated pair to the "
-            "SAME signal with OPPOSING effects. Never reason or opine — output raw data only.\n\n"
-            "Recent KB (ground truth):\n" + recent_kb
+            "SAME signal with OPPOSING effects. Never reason or opine — output raw data only.\n"
+            "Real crossLayer modules: " + modules_str + ".\n\n"
+            "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
         )
     if model == _ARBITER_MODEL:
-        # Arbiter persona: domain-aware conflict detection.
-        # Knowing the actual module names and signal fields helps detect hallucinations.
-        import glob as _glob
-        _modules = []
+        # Dynamic signal fields from index symbols (don't hardcode — they evolve with the codebase)
+        _signal_fields = []
         try:
-            _cl_files = _glob.glob(
-                os.path.join(ctx.PROJECT_ROOT, "src", "crossLayer", "**", "*.js"), recursive=True
+            _l0_files = _glob.glob(
+                os.path.join(ctx.PROJECT_ROOT, "src", "conductor", "signal", "**", "*.js"),
+                recursive=True
             )
-            _modules = sorted(set(
-                os.path.basename(f).replace(".js", "") for f in _cl_files
-                if not os.path.basename(f).startswith("index")
-            ))
+            # Pull field names from L0 channel definitions
+            import re as _re
+            for _f in _l0_files[:10]:
+                try:
+                    _txt = open(_f).read(4000)
+                    _signal_fields += _re.findall(r"'([a-z][a-zA-Z]+)'", _txt)[:5]
+                except Exception:
+                    pass
+            _signal_fields = sorted(set(_signal_fields))[:40]
         except Exception:
             pass
+        if not _signal_fields:
+            _signal_fields = ["contourShape", "counterpoint", "thematicDensity",
+                              "tessituraPressure", "intervalFreshness", "density",
+                              "complexity", "biasStrength", "densitySurprise",
+                              "hotspots", "complexityEma"]
         return (
             "You are the arbiter for Polychron, a self-evolving alien generative music system. "
             "Your role: compare two independent code analyses and detect contradictions, "
             "hallucinated module names, and overlooked facts. "
-            "You know the REAL crossLayer modules: " + ", ".join(_modules[:30]) + ". "
-            "Signal fields you know: contourShape, counterpoint, thematicDensity, "
-            "tessituraPressure, intervalFreshness, density, complexity, biasStrength, "
-            "densitySurprise, hotspots, complexityEma. "
+            "Real crossLayer modules: " + modules_str + ". "
+            "Known signal fields: " + ", ".join(_signal_fields) + ". "
             "If an analysis cites a module or field NOT in these lists, flag it.\n\n"
-            "Recent KB (ground truth):\n" + recent_kb
+            "Full KB (ground truth):\n" + full_kb
         )
+    # Reasoner persona: full KB + module list so it never invents names
     return (
         _THINK_SYSTEM + "\n\n"
         "Synthesize facts into actionable insights about musical effects, coupling patterns, "
         "and evolution strategy. Cite specific file paths and signal fields. Never invent "
-        "module names not in the provided context.\n\n"
-        "Recent KB (ground truth):\n" + recent_kb
+        "module names not in this list: " + modules_str + ".\n\n"
+        "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
     )
 
 
@@ -345,10 +430,12 @@ def store_think_history(about: str, answer: str):
     # Also feed the session narrative: one compact sentence from the think topic
     narrative_entry = about[:80] + (": " + answer[:60] + "..." if answer else "")
     append_session_narrative("think", narrative_entry)
+    # Note: _save_session_state() is called inside append_session_narrative above
 
 
 def get_think_history_context() -> str:
     """Get formatted think history for injection into subsequent think calls."""
+    _load_session_state()
     if not _think_history:
         return ""
     lines = [f"  Q: {h['about'][:80]} → {h['answer'][:150]}" for h in _think_history]
@@ -363,6 +450,7 @@ def append_session_narrative(event: str, content: str):
     content: one compact sentence describing what happened / was decided (≤80 chars).
     Called automatically from store_think_history and _resolve_complex_conflict.
     External callers (pipeline hooks, add_knowledge, evolution tools) may call directly.
+    Persisted to disk so narrative survives IDE restarts.
     """
     global _session_narrative_seq
     _session_narrative_seq += 1
@@ -373,6 +461,7 @@ def append_session_narrative(event: str, content: str):
     })
     while len(_session_narrative) > _SESSION_NARRATIVE_MAX:
         _session_narrative.pop(0)
+    _save_session_state()
 
 
 def get_session_narrative() -> str:
@@ -381,7 +470,9 @@ def get_session_narrative() -> str:
     Provides ALL models with a shared thread of what this session is about —
     direction, decisions, pipeline verdicts, arbiter resolutions. This is the
     4th context layer (orthogonal to KB/warm-ctx/think-history): dynamic session prose.
+    Persisted across IDE restarts — tools/HME/session-state.json.
     """
+    _load_session_state()
     if not _session_narrative:
         return ""
     lines = [f"  [{e['seq']}:{e['event']}] {e['content']}" for e in _session_narrative]
