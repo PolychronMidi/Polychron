@@ -170,8 +170,13 @@ crossLayerClimaxEngine = (() => {
     // Counterpart: grooveTransfer REDUCES transfer under same signal (rhythmic independence at extreme register).
     const tessituraLoadCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.tessituraLoad, 0) : 0;
     const tessituraClimaxBoost = clamp(tessituraLoadCCE * 0.05, 0, 0.03);
-    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp, R85: densitySurprise damp, R86: thematicDensity boost, R87: registerMigrationDir boost, R90: tessituraLoad boost)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost + thematicClimaxBoost + registerClimaxBoost + tessituraClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx - densitySurpriseDampClx) * preClimaxHold;
+    // R47 E2: ascendRatio antagonism bridge with crossLayerSilhouette -- ascending melodic
+    // intervals accelerate climax approach (melody climbing toward structural peak).
+    // Counterpart: crossLayerSilhouette TIGHTENS structural tracking under same signal (form braces for landing).
+    const ascendRatioCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.ascendRatio, 0.5) : 0.5;
+    const ascendClimaxBoost = clamp((ascendRatioCCE - 0.50) * 0.10, -0.03, 0.05);
+    // Composite climax signal (R40-R90 bridges + R47: ascendRatio)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost + thematicClimaxBoost + registerClimaxBoost + tessituraClimaxBoost + ascendClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx - densitySurpriseDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing

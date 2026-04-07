@@ -140,6 +140,9 @@ from . import section_compare    # noqa: E402, F401
 from . import perceptual         # noqa: E402, F401
 from . import evolution_next     # noqa: E402, F401
 from . import coupling           # noqa: E402, F401
+from . import evolution_evolve   # noqa: E402, F401
+from . import search_unified     # noqa: E402, F401
+from . import review_unified     # noqa: E402, F401
 
 # Re-export synthesis functions for tools_knowledge.py compatibility
 from .synthesis import (  # noqa: E402, F401

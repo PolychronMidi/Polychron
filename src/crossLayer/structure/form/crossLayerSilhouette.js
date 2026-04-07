@@ -81,7 +81,12 @@ crossLayerSilhouette = (() => {
     // Counterpart: entropyRegulator RAISES entropy target under same signal (form tightens while chaos expands).
     const intervalFreshnessCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.intervalFreshness, 0.5) : 0.5;
     const intervalFreshnessNarrowCS = clamp((intervalFreshnessCS - 0.45) * 0.18, -0.03, 0.09);
-    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS) * (1 - intervalFreshnessNarrowCS), 0.05, 0.40);
+    // R47 E3: ascendRatio antagonism bridge with climaxEngine -- ascending melodic intervals
+    // tighten structural tracking (form braces for landing as melody climbs).
+    // Counterpart: climaxEngine ACCELERATES climax approach under same signal (chaos rides the climb).
+    const ascendRatioCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.ascendRatio, 0.5) : 0.5;
+    const ascendFormTightenCS = clamp((ascendRatioCS - 0.50) * 0.16, -0.04, 0.08);
+    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS) * (1 - intervalFreshnessNarrowCS) * (1 - ascendFormTightenCS), 0.05, 0.40);
 
     // Smooth
     smoothedDensity = smoothedDensity * (1 - effectiveSmoothing) + rawDensity * effectiveSmoothing;

@@ -320,6 +320,14 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
 | `kb_seed` | Auto-generate starter KB entries for top-N highest-dependency modules with zero KB coverage |
 
+### Unified Workflow Tools (3 tools — "resort" experience)
+
+| Tool | Use For |
+|------|---------|
+| `evolve(focus)` | **"What should I work on next?"** One call replaces `codebase_health` LOC + `coupling_intel(gaps)` + `pipeline_digest(evolve)`. focus='all' (default): LOC offenders + coupling gaps + leverage + pipeline suggestions. focus='coupling'\|'loc'\|'pipeline' for specific views. |
+| `find(query, mode)` | **Smart search** — auto-routes by intent. "callers of X" → find_callers, "X should use Y" → find_anti_pattern, regex → grep, natural language → search_code. mode='auto' (default)\|'semantic'\|'grep'\|'callers'\|'boundary'. |
+| `review(mode)` | **Post-pipeline review hub.** mode='digest' (default): pipeline_digest + evolution suggestions. mode='regime'\|'trust'\|'sections'\|'audio' for deep slices. mode='full': digest + regime + trust combined. |
+
 ### Coupling Intelligence (1 tool)
 
 | Tool | Use For |
