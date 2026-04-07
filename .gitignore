@@ -17,11 +17,20 @@ deepwiki.config.json
 /lab
 /.claude/mcp
 /.claude/hme-evolver.local.md
+/.claude/projects/
+/.claude/settings.local.json
 
 # tools - track source, ignore runtime artifacts
 /tools/*/venv/
 /tools/*/__pycache__/
 /tools/*/global_kb/
 /tools/**/__pycache__/
+/tools/HME/session-state.json
+/tools/HME/mcp/db/
+/tools/HME/mcp/*.db
 *.bak
 log/
+
+# metrics - track only intentional files (journal, adaptive-state)
+/metrics/run-history/
+/metrics/snapshots/
