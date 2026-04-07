@@ -71,7 +71,7 @@ dynamicRoleSwap = (() => {
     const rhythmEntryDRS = L0.getLast('emergentRhythm', { layer: 'both' });
     const rhythmBiasBoost = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.biasStrength) && rhythmEntryDRS.biasStrength > 0.4 ? 0.06 : 0;
     // R75: registerMigrationDir antagonism bridge -- ascending pitch center = more frequent role swaps (dynamic reorganization as range expands).
-    const registerSwapBoostDRS = melodicCtxDRS ? (melodicCtxDRS.registerMigrationDir === 'ascending' ? 0.07 : melodicCtxDRS.registerMigrationDir === 'descending' ? -0.05 : 0) : 0;
+    const registerSwapBoostDRS = melodicCtxDRS ? (melodicCtxDRS.registerMigrationDir === 'ascending' ? 0.04 : melodicCtxDRS.registerMigrationDir === 'descending' ? -0.05 : 0) : 0;
     // R81 E1: complexityEma antagonism bridge with climaxEngine -- sustained high complexity
     // lowers swap threshold (dynamics reorganize into new roles as long-term complexity accumulates).
     // Counterpart: climaxEngine SUPPRESSES approach at same complexityEma (E2). Together:
@@ -92,7 +92,7 @@ dynamicRoleSwap = (() => {
     // amplifies role-swap frequency (novel melodic territory = dynamic reorganization needed).
     // Counterpart: verticalIntervalMonitor REDUCES collision penalty under same signal (harmonic exploration endorsed).
     const freshnessEmaDRS = melodicCtxDRS ? V.optionalFinite(melodicCtxDRS.freshnessEma, 0.5) : 0.5;
-    const freshnessEmaSwapBoost = clamp((freshnessEmaDRS - 0.45) * 0.12, -0.03, 0.07);
+    const freshnessEmaSwapBoost = clamp((freshnessEmaDRS - 0.45) * 0.08, -0.02, 0.035);
     const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost + rhythmBiasBoost + registerSwapBoostDRS + complexityEmaSwapBoost + complexityBeatSwapBoost + intervalFreshnessSwapBoost + freshnessEmaSwapBoost, 0, 1);
     if (rf() > gate) {
       return { swapped: false, swapCount };
