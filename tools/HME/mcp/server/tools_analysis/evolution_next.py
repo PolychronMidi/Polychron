@@ -749,8 +749,24 @@ def suggest_evolution() -> str:
         _rut = signals.get("evolution_rut", {})
         _arc = signals.get("recent_evo_arc", [])
         _perc = signals.get("perceptual_character", "unknown")
+        # Inject actual KB titles (not just category labels) so prescription has real content
+        _recent_kb_titles = ""
+        try:
+            all_kb_full2 = ctx.project_engine.list_knowledge_full() or []
+            _num_kb2 = []
+            for _k2 in all_kb_full2:
+                _m2 = _RNUM_PAT.search(_k2.get("title", ""))
+                if _m2:
+                    _num_kb2.append((int(_m2.group(1)), _k2.get("title", ""), _k2.get("content", "")[:80]))
+            _num_kb2.sort(key=lambda x: -x[0])
+            _recent_kb_titles = "\n".join(
+                f"  R{r}: {t} — {c}" for r, t, c in _num_kb2[:6]
+            )
+        except Exception:
+            pass
         _synthesis_ctx = (
-            f"Recent evolution arc: {' → '.join(_arc) if _arc else 'unknown'}\n"
+            f"Recent KB evolutions (newest first):\n{_recent_kb_titles}\n\n"
+            + f"Recent arc categories: {' → '.join(_arc) if _arc else 'unknown'}\n"
             + (f"Rut alert: {_rut.get('warning', '')} (consecutive: {_rut.get('consecutive', 0)})\n" if _rut else "")
             + f"Top cluster-pull targets: {', '.join(_cluster_top)}\n"
             + (f"Top bridge opportunity: {_bridge_top}\n" if _bridge_top else "")
@@ -767,9 +783,13 @@ def suggest_evolution() -> str:
             "If a rut is detected, prescribe an orthogonal target. "
             "Be concrete and decisive — no hedging. No code snippets.",
             max_tokens=512,
+            answer_format=(
+                "2-3 decisive sentences. No bullet format. No FILE/FUNCTION labels. "
+                "One paragraph: module, signal field, musical effect. Direct and concrete."
+            ),
         )
         if _prescription:
-            parts.append("\n---\n## NEXT EVOLUTION PRESCRIPTION *(two-stage)*\n")
+            parts.append("\n---\n## NEXT EVOLUTION PRESCRIPTION *(synthesized)*\n")
             parts.append(_prescription)
     except Exception:
         pass

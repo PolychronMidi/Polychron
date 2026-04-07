@@ -119,14 +119,7 @@ def _background_load():
 
         logger.info(f"HME ready | project={PROJECT_ROOT} | project_db={PROJECT_DB} | global_db={GLOBAL_DB} | libs={list(lib_engines.keys())}")
 
-        # Pre-warm system prompt + KB corpus cache so first tool call hits cached blocks
-        try:
-            from server.tools_analysis import _get_api_key, _warm_cache
-            api_key = _get_api_key()
-            if api_key:
-                _warm_cache(api_key)
-        except Exception as _e:
-            logger.debug(f"Cache warm skipped: {_e}")
+        # Ollama-based synthesis is on-demand; no warm-up needed
     except Exception as e:
         context._startup_error = e
         logger.error(f"HME background startup failed: {e}")

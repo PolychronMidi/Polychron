@@ -14,8 +14,9 @@ from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
-    _get_api_key, _claude_think, _local_think, _format_kb_corpus, _fast_claude,
+    _local_think,
     _THINK_MODEL, _REASONING_MODEL, _LOCAL_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+    _THINK_SYSTEM,
 )
 from . import _get_compositional_context, _track
 
@@ -210,7 +211,6 @@ def before_editing(file_path: str) -> str:
         parts.append(comp)
 
     # Adaptive synthesis: what are the specific edit risks?
-    # Uses _fast_claude (Haiku, no thinking, no tools) — 3-5x faster than Sonnet+thinking.
     # Cache by (abs_path, mtime) — reuse if file unchanged. warm_pre_edit_cache pre-populates this.
     try:
         _cache_key = (abs_path, os.path.getmtime(abs_path))
@@ -237,7 +237,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
                       symbols: list | None, recent_commits: str, comp: str,
                       priority: str = "interactive") -> str | None:
     """Build and return the Edit Risks synthesis text. Shared by before_editing and warm_pre_edit_cache.
-    Uses _fast_claude (Haiku) for speed; falls back to local model if API unavailable."""
+    Uses local model for synthesis."""
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
     kb_summary = "\n".join(
         f"  [{k['category']}] {k['title']}: {k['content'][:120]}"
@@ -258,15 +258,9 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
         "and any invariants (coupling targets, registration order, layer isolation) that must not change. "
         "If this module has musical impact, explain what the listener would notice if this code breaks."
     )
-    api_key = _get_api_key()
-    synthesis = None
-    if api_key:
-        synthesis = _fast_claude(user_text, api_key)
-    if not synthesis:
-        # Fallback: qwen2.5-coder (code-specialized synthesis, ~17-34s) rather than
-        # deepseek-r1 (reasoning model, ~45-90s — overkill for 3-bullet edit risks)
-        synthesis = _local_think(user_text, max_tokens=512, model=_LOCAL_MODEL,
-                                 priority=priority)
+    # Local model: coder model handles 3-bullet edit risks well (~17-34s).
+    synthesis = _local_think(user_text, max_tokens=512, model=_LOCAL_MODEL,
+                             system=_THINK_SYSTEM, priority=priority)
     return synthesis
 
 
@@ -275,7 +269,7 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
 
     Warms two cache tiers:
     - Tier 1 (all files): caller scan + KB hits — fast, covers max_files files
-    - Tier 2 (hot files): Edit Risks synthesis via _fast_claude — covers synthesis_hot
+    - Tier 2 (hot files): Edit Risks synthesis via local model — covers synthesis_hot
       most recently modified files (highest chance of being edited next session)
 
     Returns count of files warmed and synthesis hits pre-loaded."""
@@ -422,25 +416,21 @@ def what_did_i_forget(changed_files: str) -> str:
     parts.append("  - add_knowledge for any new calibration anchors or decisions")
 
     # Adaptive synthesis: always run when API key available — missed things aren't only in warnings
-    api_key = _get_api_key()
-    if api_key:
-        warnings_text = "\n".join(all_warnings[:15]) if all_warnings else "none"
-        docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
-        user_text = (
-            f"Changed files: {changed_files}\n"
-            f"Audit warnings: {warnings_text}\n"
-            f"Docs that may need updating: {docs_text}\n\n"
-            "In 3 numbered points: what specific things might the developer have forgotten? "
-            "Consider: registration requirements, doc sync, boundary rules, follow-on changes, "
-            "and anything the warnings above don't capture."
-        )
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
-                                   max_tool_calls=_get_tool_budget())
-        if not synthesis:
-            synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL)
-        if synthesis:
-            parts.append(f"\n## What You May Have Missed *(adaptive)*")
-            parts.append(synthesis)
+    warnings_text = "\n".join(all_warnings[:15]) if all_warnings else "none"
+    docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
+    user_text = (
+        f"Changed files: {changed_files}\n"
+        f"Audit warnings: {warnings_text}\n"
+        f"Docs that may need updating: {docs_text}\n\n"
+        "In 3 numbered points: what specific things might the developer have forgotten? "
+        "Consider: registration requirements, doc sync, boundary rules, follow-on changes, "
+        "and anything the warnings above don't capture."
+    )
+    synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL,
+                             system=_THINK_SYSTEM)
+    if synthesis:
+        parts.append(f"\n## What You May Have Missed *(adaptive)*")
+        parts.append(synthesis)
 
     return "\n".join(parts)
 
@@ -512,7 +502,7 @@ def diagnose_error(error_text: str) -> str:
     if not file_refs and not kb_results and not unique_symbols:
         parts.append("\nNo specific diagnosis available. Try search_knowledge with key terms from the error.")
 
-    # Adaptive thinking synthesis: root cause + fix steps, KB grounded via corpus cache
+    # Adaptive thinking synthesis: root cause + fix steps, KB grounded via corpus
     user_text = (
         f"Error:\n{error_text[:600]}\n\n"
         "Based on the error and the project KB, provide: "
@@ -520,16 +510,11 @@ def diagnose_error(error_text: str) -> str:
         "(2) exact fix steps as a numbered list, "
         "(3) any boundary/architectural rule to check."
     )
-    api_key = _get_api_key()
-    synthesis = None
-    if api_key:
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
-                                   max_tool_calls=_get_tool_budget())
-    if not synthesis:
-        # Ground local model in the KB entries already found — prevents hallucination
-        kb_lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:5]]
-        kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
-        synthesis = _local_think(user_text + kb_suffix, max_tokens=2048, model=_REASONING_MODEL)
+    # Ground local model in the KB entries already found — prevents hallucination
+    kb_lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:5]]
+    kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
+    synthesis = _local_think(user_text + kb_suffix, max_tokens=2048, model=_REASONING_MODEL,
+                             system=_THINK_SYSTEM)
     if synthesis:
         parts.append(f"\n## Fix Synthesis *(adaptive)*")
         parts.append(synthesis)

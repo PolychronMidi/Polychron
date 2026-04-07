@@ -149,6 +149,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     appends suggest_evolution output so no separate call is needed. critique=True
     appends a musical prose critique via Claude synthesis. Replaces pipeline_digest +
     regime_anomaly + evolution_delta + composition_critique + suggest_evolution.
+    critique=True uses local Ollama reasoning model (GPU1, temperature=0.55) for prose.
     FRESHNESS GUARD: only runs if pipeline output files are newer than last digest call.
     If stale, auto-runs check_pipeline and returns its status instead."""
     ctx.ensure_ready_sync()
@@ -515,7 +516,7 @@ def composition_critique() -> str:
     trace-replay for grounded musical prose."""
     ctx.ensure_ready_sync()
     _track("composition_critique")
-    from .synthesis import _get_api_key, _think_local_or_claude
+    from .synthesis import _think_local_or_claude
     import json
 
     context_parts = []
@@ -602,9 +603,9 @@ def composition_critique() -> str:
     # Use reasoning model (GPU 1) + higher temperature for creative music prose.
     # Coder model (GPU 0) produces stilted output for non-code tasks.
     from .synthesis import _REASONING_MODEL
-    synthesis = _think_local_or_claude(user_text, _get_api_key(),
-                                       local_model=_REASONING_MODEL,
-                                       local_temperature=0.55)
+    synthesis = _think_local_or_claude(user_text,
+                                       model=_REASONING_MODEL,
+                                       temperature=0.55)
     if synthesis:
         parts.append(synthesis)
     else:

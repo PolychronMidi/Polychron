@@ -43,14 +43,6 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
         action = r.get("action", "store")
         results.append(f"  [global]  ID: {r['id']}")
 
-    # Re-warm the KB corpus cache so next Claude call gets the updated KB without a cold-write penalty
-    try:
-        from server.tools_analysis import _get_api_key, _warm_cache
-        api_key = _get_api_key()
-        if api_key:
-            _warm_cache(api_key)
-    except Exception:
-        pass
     # Invalidate KB hits cache so before_editing re-fetches fresh constraints
     ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
 
@@ -106,13 +98,6 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     engine = ctx.global_engine if scope == "global" else ctx.project_engine
     ok = engine.remove_knowledge(entry_id)
     if ok:
-        try:
-            from server.tools_analysis import _get_api_key, _warm_cache
-            api_key = _get_api_key()
-            if api_key:
-                _warm_cache(api_key)
-        except Exception:
-            pass
         ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
         return f"Knowledge entry '{entry_id}' removed from {scope}."
     return f"Failed to remove entry '{entry_id}' from {scope}. It may not exist."
@@ -172,14 +157,6 @@ def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
         r = ctx.global_engine.compact_knowledge(similarity_threshold=threshold)
         results.append(f"  [global]  removed={r['removed']}, kept={r['kept']}")
         total_removed += r["removed"]
-    if total_removed > 0:
-        try:
-            from server.tools_analysis import _get_api_key, _warm_cache
-            api_key = _get_api_key()
-            if api_key:
-                _warm_cache(api_key)
-        except Exception:
-            pass
     return "Compaction complete:\n" + "\n".join(results)
 
 
@@ -248,7 +225,7 @@ def memory_dream() -> str:
 
     # Adaptive synthesis: what do the connections mean architecturally?
     try:
-        from server.tools_analysis import _get_api_key, _think_local_or_claude
+        from server.tools_analysis import _think_local_or_claude
         if top_pairs:
             pairs_text = "\n".join(
                 f"  {sim:.0%}: '{a}' <-> '{b}'" for sim, a, b, _, _ in top_pairs[:6]
@@ -260,7 +237,7 @@ def memory_dream() -> str:
                 "Which ones should be explicitly linked via add_knowledge? "
                 "Are any of these connections surprising given the codebase design?"
             )
-            synthesis = _think_local_or_claude(user_text, _get_api_key())
+            synthesis = _think_local_or_claude(user_text)
             if synthesis:
                 parts.append(f"\n## Architectural Interpretation *(adaptive)*")
                 parts.append(synthesis)
@@ -344,7 +321,7 @@ def knowledge_graph(query: str) -> str:
 
     # Adaptive synthesis: what does this KB cluster mean right now?
     try:
-        from server.tools_analysis import _get_api_key, _think_local_or_claude
+        from server.tools_analysis import _think_local_or_claude
         if results:
             cluster_text = "\n".join(
                 f"  [{r['category']}] {r['title']}: {r['content'][:120]}"
@@ -358,7 +335,7 @@ def knowledge_graph(query: str) -> str:
                 "(2) what current architectural risk does it highlight, "
                 "(3) which entry is most important to act on first?"
             )
-            synthesis = _think_local_or_claude(user_text, _get_api_key())
+            synthesis = _think_local_or_claude(user_text)
             if synthesis:
                 parts.append(f"\n## Cluster Analysis *(adaptive)*")
                 parts.append(synthesis)

@@ -4,7 +4,7 @@ import re
 import logging
 
 from server import context as ctx
-from .synthesis import _get_api_key, _claude_think, _local_think
+from .synthesis import _local_think
 from . import _get_compositional_context, _track, _usage_stats
 
 logger = logging.getLogger("HME")
@@ -110,7 +110,7 @@ def hme_hot_reload(modules: str = "") -> str:
     _track("hme_hot_reload")
 
     RELOADABLE = [
-        "synthesis", "synthesis_config", "synthesis_claude", "synthesis_ollama",
+        "synthesis", "synthesis_config", "synthesis_ollama",
         "symbols", "workflow", "reasoning", "health",
         "evolution", "evolution_next", "evolution_trace", "evolution_admin",
         "runtime", "composition", "trust_analysis",
@@ -243,6 +243,25 @@ def hme_selftest() -> str:
     except Exception as e:
         results.append(f"FAIL: Ollama -- {e}")
 
+    # Warm KV context + arbiter health
+    try:
+        from .synthesis import warm_context_status, _ARBITER_MODEL
+        wcs = warm_context_status()
+        for model_name, info in wcs.items():
+            if model_name in ("arbiter", "think_history"):
+                continue
+            if isinstance(info, dict) and info.get("primed"):
+                results.append(
+                    f"PASS: warm ctx {model_name[:20]} -- {info['tokens']} tokens, "
+                    f"{'fresh' if info.get('kb_fresh') else 'STALE'}, {info['age_s']:.0f}s old"
+                )
+            elif isinstance(info, dict):
+                results.append(f"INFO: warm ctx {model_name[:20]} -- not primed (run hme_admin warm)")
+        results.append(f"INFO: arbiter model -- {wcs.get('arbiter', '?')}")
+        results.append(f"INFO: think history -- {wcs.get('think_history', 0)} exchanges")
+    except Exception:
+        results.append("INFO: warm ctx -- not available")
+
     try:
         kb = ctx.project_engine.list_knowledge()
         results.append(f"{'PASS' if len(kb) > 0 else 'WARN'}: KB -- {len(kb)} entries")
@@ -278,8 +297,9 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
     reindex all code chunks and symbols (replaces standalone index_codebase -- run after batch
     code changes when file watcher hasn't caught up). action='clear_index': wipe hash cache +
     chunk store then rebuild from scratch (use when hash cache is stale or index is corrupted).
-    action='warm': pre-populate before_editing caller+KB caches for all src/ files -- makes
-    all subsequent before_editing calls instant. action='both': reload then selftest.
+    action='warm': pre-populate before_editing caller+KB caches for all src/ files AND
+    prime GPU warm KV contexts (persona + KB pre-tokenized for instant synthesis).
+    action='both': reload then selftest.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
     parts = []
@@ -305,6 +325,12 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
             parts.append(_warm())
         except Exception as e:
             parts.append(f"warm_pre_edit_cache error: {e}")
+        # Prime GPU warm KV contexts (persona + KB pre-tokenized in KV cache)
+        try:
+            from .synthesis import _prime_all_gpus
+            parts.append(_prime_all_gpus())
+        except Exception as e:
+            parts.append(f"warm_gpu_context error: {e}")
     if not parts:
         return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', or 'both'."
     return "\n\n".join(parts)
@@ -384,12 +410,7 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         f"Antipattern to prevent: {antipattern}\n\n"
         f"Write ONLY the bash snippet (no markdown fences). 5-15 lines maximum."
     )
-    api_key = _get_api_key()
-    snippet = None
-    if api_key:
-        snippet = _claude_think(synthesis_prompt, api_key, max_tool_calls=0)
-    if not snippet:
-        snippet = _local_think(synthesis_prompt, max_tokens=256)
+    snippet = _local_think(synthesis_prompt, max_tokens=256)
     if not snippet:
         return (
             f"Could not synthesize snippet.\n"

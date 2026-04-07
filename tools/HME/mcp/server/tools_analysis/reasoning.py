@@ -8,9 +8,9 @@ from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
-    _get_api_key, _claude_think, _local_think, _think_local_or_claude,
-    _format_kb_corpus, _THINK_MODEL, _DEEP_MODEL, _REASONING_MODEL,
-    _get_max_tokens, _get_effort, _get_tool_budget,
+    _local_think, _THINK_MODEL, _DEEP_MODEL, _REASONING_MODEL,
+    _get_max_tokens, _get_effort, _get_tool_budget, _THINK_SYSTEM,
+    store_think_history, get_think_history_context,
 )
 from . import _get_compositional_context, _track
 
@@ -310,13 +310,8 @@ def module_story(module_name: str) -> str:
         + f"\nBased on the actual code above, in 3 bullet points: {subsystem_prompt} "
         "Only reference behaviors visible in the code. Be specific about musical effects."
     )
-    api_key = _get_api_key()
-    synthesis = None
-    if api_key:
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
-                                   max_tool_calls=_get_tool_budget())
-    if not synthesis:
-        synthesis = _local_think(user_text, max_tokens=8192, model=_REASONING_MODEL)
+    synthesis = _local_think(user_text, max_tokens=1024, model=_REASONING_MODEL,
+                             system=_THINK_SYSTEM)
     if synthesis:
         parts.append(f"\n## Key Constraints *(adaptive)*")
         parts.append(synthesis)
@@ -326,10 +321,12 @@ def module_story(module_name: str) -> str:
 
 @ctx.mcp.tool()
 def think(about: str, context: str = "") -> str:
-    """Structured reflection tool. When ANTHROPIC_API_KEY is set, uses Claude with adaptive
-    thinking to produce real analysis. Falls back to Ollama (deepseek-r1) with project-grounded
-    context injection, then a structured template. For evolution/coupling/HME questions,
-    automatically injects antagonist map, dimension gaps, and recent KB patterns."""
+    """Structured reflection tool. Uses Ollama hybrid synthesis (qwen3-coder extract +
+    qwen3:30b-a3b reason) with project-grounded context injection. Routes by question type:
+    meta-HME tool questions → single-stage with HME doc+KB injection; evolution/coupling →
+    parallel two-stage with antagonist map + dimension gaps; channel questions → topology +
+    producer source injection. Shortcut keys: task_adherence, completeness, constraints,
+    impact, conventions, recent_changes."""
     ctx.ensure_ready_sync()
     import re as _re
 
@@ -496,28 +493,13 @@ def think(about: str, context: str = "") -> str:
             f"If something is already done per the KB, skip it. Max 4 items."
         )
 
-    # Claude API path
-    api_key = _get_api_key()
-    if api_key:
-        user_text = f"**Reflection topic:** {about}\n\n**Question/task:** {prompt}"
-        if injected_state:
-            user_text += f"\n\n{injected_state}"
-        if context:
-            user_text += f"\n\n**Additional context:** {context}"
-        think_effort = {"greedy": "max", "moderate": "high", "conservative": "medium", "minimal": "low"}.get(
-            get_context_budget(), "medium"
-        )
-        answer = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(), effort=think_effort,
-                               max_tool_calls=_get_tool_budget(), model=_DEEP_MODEL)
-        if answer:
-            parts = [f"# Think: {about} *(adaptive/{think_effort}, {_DEEP_MODEL})*\n", answer]
-            if kb_hits:
-                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
-            return "\n".join(parts)
-
     # Ollama path: route by question type for best quality
     from .synthesis import _two_stage_think, _parallel_two_stage_think, _local_think, _REASONING_MODEL
     raw_context = ""
+    # Inject think continuation history — cross-call session memory
+    _hist = get_think_history_context()
+    if _hist:
+        raw_context += _hist
     if injected_state:
         raw_context += injected_state + "\n\n"
     if context:
@@ -526,15 +508,22 @@ def think(about: str, context: str = "") -> str:
         raw_context += kb_block + "\n\n"
 
     if _is_meta_hme:
-        # Meta-HME: two-stage (qwen frames → deepseek reasons) with trimmed context.
-        # The HME doc + KB injection can be large — trim to fit M40 GPU timing.
-        # Stage 1 (qwen) structures the meta-HME context; Stage 2 (deepseek) reasons.
-        # 6000 chars (up from 4000): HME doc (3000) + KB history (1200) + kb_block (2000) = 6200
-        local_answer = _two_stage_think(raw_context[:6000], prompt, max_tokens=8192)
+        # Meta-HME: single-stage reasoning (qwen3:30b-a3b) with HME doc+KB context.
+        # _two_stage_think falls back to single-stage anyway (no src/ paths in meta-HME context)
+        # so skip Stage 1 entirely — faster and equally accurate for tool UX questions.
+        # Inject _THINK_SYSTEM so the model knows the alien music + HME domain from the start.
+        local_answer = _local_think(
+            raw_context[:6000] + "\n\n" + prompt,
+            max_tokens=2048, model=_REASONING_MODEL,
+            system=_THINK_SYSTEM,
+        )
         if local_answer:
-            parts = [f"# Think: {about} *(two-stage/meta-hme)*\n", local_answer]
+            store_think_history(about, local_answer)
+            parts = [f"# Think: {about} *(meta-hme)*\n", local_answer]
             if kb_hits:
-                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
+                parts.append("\n---\n**KB context used:**")
+                for k in kb_hits[:6]:
+                    parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:120]}")
             return "\n".join(parts)
     else:
         # Code/evolution questions: parallel two-stage (GPU 0 + GPU 1 simultaneously)
@@ -564,9 +553,12 @@ def think(about: str, context: str = "") -> str:
         # All processing from Stage 1 threads is preserved in the merged brief fallback.
         local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=1024)
         if local_answer:
+            store_think_history(about, local_answer)
             parts = [f"# Think: {about} *(parallel-two-stage)*\n", local_answer]
             if kb_hits:
-                parts.append("\n**KB references:** " + ", ".join(k["title"] for k in kb_hits[:8]))
+                parts.append("\n---\n**KB context used:**")
+                for k in kb_hits[:6]:
+                    parts.append(f"  [{k['category']}] {k['title']}: {k['content'][:120]}")
             return "\n".join(parts)
 
     # Template fallback: show project state so caller can still reason from it
@@ -688,9 +680,8 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
             "(2) what integration tests or validation steps are most important, "
             "(3) any cascade effects to watch for in deeper layers."
         )
-        api_key = _get_api_key()
-        synthesis = (_claude_think(user_text, api_key, kb_context=_format_kb_corpus())
-                     if api_key else _local_think(user_text, max_tokens=8192, model=_REASONING_MODEL))
+        synthesis = _local_think(user_text, max_tokens=1024, model=_REASONING_MODEL,
+                                 system=_THINK_SYSTEM)
         if synthesis:
             parts.append(f"\n## Change Risk *(adaptive)*")
             parts.append(synthesis)

@@ -37,8 +37,7 @@ class _LoggingMCP:
                 try:
                     result = fn(*args, **kwargs)
                     elapsed = time.time() - t0
-                    # Log truncated response
-                    result_str = str(result)[:200] if result else "(empty)"
+                    result_str = str(result) if result else "(empty)"
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {result_str}")
                     return result
                 except Exception as e:

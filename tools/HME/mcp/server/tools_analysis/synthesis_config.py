@@ -8,46 +8,31 @@ from server.helpers import get_context_budget, BUDGET_LIMITS
 logger = logging.getLogger("HME")
 
 
-def _get_api_key() -> str:
-    """Return Anthropic API key from env or common key file locations."""
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if key:
-        return key
-    for key_path in [
-        os.path.expanduser("~/.anthropic/api_key"),
-        os.path.expanduser("~/.config/anthropic/key"),
-    ]:
-        try:
-            with open(key_path) as _f:
-                key = _f.read().strip()
-            if key:
-                return key
-        except Exception:
-            pass
-    return ""
-
-
-_THINK_MODEL = os.environ.get("RAG_THINK_MODEL", "claude-sonnet-4-6")
-# Deep reasoning model — used by think tool and causal_trace where Opus pays off
-_DEEP_MODEL = os.environ.get("HME_DEEP_MODEL", "claude-opus-4-6")
+# These names are retained for import compatibility (callers import them by name).
+# All synthesis goes through Ollama — see synthesis_ollama.py for _LOCAL_MODEL/_REASONING_MODEL.
+_THINK_MODEL = "ollama/qwen3-coder:30b"
+_DEEP_MODEL = "ollama/qwen3:30b-a3b"
 
 
 def _build_think_system() -> str:
     project_name = os.path.basename(os.path.realpath(ctx.PROJECT_ROOT)) if ctx.PROJECT_ROOT else "project"
     return (
         f"You are the structured reflection engine for '{project_name}' — a self-evolving alien "
-        "generative music system. It produces xenolinguistic texture through 19 hypermeta "
-        "self-calibrating controllers, 20+ cross-layer modules, and an antagonism bridge evolution "
-        "loop that converts negative trust correlations into constructive musical tension. "
-        "HME (HyperMeta Ecstasy) is the MCP-based intelligence layer that makes this self-evolution "
-        "possible: 50+ tools spanning reactive search, architectural analysis, and collaborative "
-        "reasoning — each building on KB-grounded project state rather than generic advice. "
-        "Ground every claim in KB constraints or injected code — never speculate about "
-        "tool capabilities or module behavior without evidence. Cite exact file paths, "
-        "function names, and KB entry titles. No generic advice. No preamble. "
-        "Max 4 concrete items per answer. When asked about HME tool improvements: focus on UX "
-        "gaps, missing capabilities, and what would make the evolution workflow feel more alive "
-        "and self-aware — not refactoring for its own sake."
+        "generative music system producing xenolinguistic texture. Architecture: 19 hypermeta "
+        "self-calibrating controllers, 26 cross-layer modules, and an antagonism bridge evolution "
+        "loop that converts negative trust correlations into constructive musical tension via "
+        "coupling BOTH modules of a negatively-correlated pair to the SAME signal with OPPOSING "
+        "effects. Evolution verdicts: LEGENDARY > STABLE > EVOLVED > DRIFTED. "
+        "HME (HyperMeta Ecstasy) is the Ollama-powered MCP intelligence layer: 26 tools spanning "
+        "reactive search (search_code, find_callers, grep), architectural analysis (module_intel, "
+        "coupling_intel, codebase_health), pre/post-edit workflow (before_editing, what_did_i_forget), "
+        "and synthesis (think, pipeline_digest, suggest_evolution, diagnose_error). "
+        "All synthesis runs on local Ollama: qwen3-coder:30b (GPU0, extraction) + "
+        "qwen3:30b-a3b (GPU1, reasoning) — parallel two-stage for evolution questions, "
+        "single-stage for meta-HME and constraint questions. "
+        "Ground every claim in KB constraints or injected code. "
+        "Cite exact file paths, function names, and KB entry titles. "
+        "No generic advice. No preamble. Max 4 concrete items per answer."
     )
 
 
