@@ -51,9 +51,13 @@ _gpu1_lock = _threading.Lock()  # qwen3:30b-a3b (reasoning)
 #   GPU0 (_LOCAL_MODEL): extraction-focused — file paths, signals, facts
 #   GPU1 (_REASONING_MODEL): reasoning-focused — musical effects, evolution strategy
 # Primed lazily on first tool call and re-primed when KB version changes.
-# Benefits: ~1000 tokens of system+KB context pre-processed in KV cache, eliminating
-# re-tokenization on every synthesis call. The 6GB VRAM headroom per 24GB GPU
-# easily holds the KV cache (~24KB/token × ~1000 tokens = ~24MB).
+# Benefits: persona+KB context pre-tokenized once, reused across calls via Ollama
+# context= array (token IDs, not text). Avoids repeated tokenization overhead.
+#
+# GPU memory reality: qwen3-coder:30b uses ~21GB of the 24GB card, leaving <600 MiB
+# free. KV cache for 7350 tokens = ~2756 MiB — does NOT fit in VRAM. Ollama spills
+# it to RAM (64GB available). Warm context still saves tokenization cost; it just
+# lives in RAM, not GPU. This is correct behavior — don't try to "fill" GPU space.
 _warm_ctx: dict[str, list] = {}          # model → Ollama context array
 _warm_ctx_kb_ver: dict[str, int] = {}    # model → kb_version when primed
 _warm_ctx_ts: dict[str, float] = {}      # model → epoch timestamp of last priming
@@ -151,8 +155,8 @@ def _gpu_persona(model: str) -> str:
     GPU1 (reasoner): musical effects, evolution strategy, coupling analysis.
     Arbiter: conflict detection between independent analyses.
     All models receive the full KB (all entries, 300-char content) to maximize
-    pre-tokenized code awareness within the 6GB VRAM headroom per 24GB GPU.
-    (~24MB per 1000 tokens — full KB at ~15KB fits easily)."""
+    pre-tokenized code awareness. KV cache spills to RAM (models use ~21GB of
+    24GB VRAM, leaving <600 MiB — not enough for 7K-token KV cache in VRAM)."""
     import glob as _glob
     # Full KB — all entries, 300-char content truncation (was last 8 at 120 chars)
     full_kb = ""
