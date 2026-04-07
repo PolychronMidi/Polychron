@@ -330,7 +330,10 @@ _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generat
 import threading as _threading
 
 _ollama_interactive = _threading.Event()  # set = interactive call waiting
-_ollama_lock = _threading.Lock()          # serializes actual Ollama calls
+_ollama_lock = _threading.Lock()          # serializes actual Ollama calls (fallback)
+# Per-GPU locks for multi-stage ping-pong: coder and reasoner can run simultaneously
+_gpu0_lock = _threading.Lock()  # qwen3-coder:30b (extraction)
+_gpu1_lock = _threading.Lock()  # qwen3:30b-a3b (reasoning)
 
 
 def _ollama_background_yield():
@@ -377,7 +380,12 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     try:
         # 420s: 70b at ~5-8 tok/s on 2x M40 → 512 tokens needs ~64-102s + reasoning overhead.
         # 14b at ~15 tok/s → 512 tokens needs ~34s. Timeout covers both with margin.
-        with _ollama_lock:
+        # Per-GPU lock: coder (GPU 0) and reasoner (GPU 1) can run simultaneously.
+        # Falls back to global lock for unknown models.
+        active_lock = (_gpu0_lock if (model or _LOCAL_MODEL) == _LOCAL_MODEL
+                       else _gpu1_lock if (model or _LOCAL_MODEL) == _REASONING_MODEL
+                       else _ollama_lock)
+        with active_lock:
             resp_obj = urllib.request.urlopen(req, timeout=420)
         if priority == "interactive":
             _ollama_interactive.clear()  # release background callers
@@ -669,22 +677,22 @@ def _fast_claude(user_text: str, api_key: str, system_text: str = "", max_tokens
 
 
 def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) -> str | None:
-    """Two-stage local synthesis: coder model structures context, reasoning model thinks deeply.
+    """Multi-stage convergent synthesis: coder and reasoner ping-pong until answer converges.
 
-    Stage 1 (qwen3-coder:30b on GPU 0): Extract and structure relevant facts into a brief.
-      Fast, code-specialized, no thinking overhead.
-    Stage 2 (qwen3:30b-a3b on GPU 1): Reason deeply about the structured brief.
-      MoE with hybrid thinking mode — only 3B params active but 30B knowledge.
+    Stage 1 (qwen3-coder:30b, GPU 0): Extract and structure relevant facts into a brief.
+    Stage 2 (qwen3:30b-a3b, GPU 1): Identify gaps in the brief — what's missing?
+    Stage 3 (qwen3-coder:30b, GPU 0): Targeted re-extraction for just the gaps.
+    Stage 4 (qwen3:30b-a3b, GPU 1): Final answer from accumulated brief.
 
+    Convergence: if Stage 2 finds no gaps, skip Stage 3 and answer immediately.
     Falls back to single-stage reasoning if Stage 1 fails.
     """
-    # Stage 1: Coder model extracts relevant facts (GPU 0, fast, code-specialized)
-    # System prompt sets extraction-only role; low temperature for deterministic output.
     _STAGE1_SYSTEM = (
         "You are a code extraction assistant for the Polychron music synthesis project. "
         "Extract code facts only. No reasoning, no analysis, no opinions. "
         "Output: file paths, function names, signal fields, correlation values, bridge status."
     )
+    # Stage 1: Coder extracts (GPU 0, fast, deterministic)
     frame_prompt = (
         "Extract ONLY the facts relevant to answering this question:\n"
         f"  {question}\n\n"
@@ -701,16 +709,41 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
 
     # Quality gate: frame must contain at least one src/ path to be useful
     if not frame or len(frame) < 40 or "src/" not in frame:
-        # Fall back to single-stage reasoning with full context
         return _local_think(
             raw_context[:6000] + "\n\n" + question,
             max_tokens=max_tokens, model=_REASONING_MODEL
         )
 
-    # Stage 2: Reasoning model thinks deeply about the structured brief (GPU 1, Qwen3 MoE)
-    # Enable thinking mode — the MoE architecture activates 30B knowledge during thinking,
-    # then <think> tag stripping in _local_think extracts just the final answer.
-    # Also pass abbreviated raw context so Stage 2 can cross-reference if Stage 1 dropped facts.
+    # Stage 2: Reasoner identifies gaps (GPU 1, cheap — just gap detection)
+    gap_prompt = (
+        "Brief about the Polychron codebase:\n\n" + frame + "\n\n"
+        "Question to answer: " + question + "\n\n"
+        "What SPECIFIC facts are MISSING from this brief that are needed to answer the question?\n"
+        "List each gap as: NEED: <what is missing>\n"
+        "If the brief has everything needed, respond with exactly: NO GAPS\n"
+        "Max 5 gaps. /no_think"
+    )
+    gaps = _local_think(gap_prompt, max_tokens=500, model=_REASONING_MODEL, temperature=0.2)
+
+    # Convergence check: if no gaps found, skip Stage 3
+    if gaps and "NO GAP" not in gaps.upper() and "NEED:" in gaps:
+        # Stage 3: Coder does targeted re-extraction for identified gaps (GPU 0)
+        supplement_prompt = (
+            "The following information is MISSING from a previous extraction.\n"
+            "Extract ONLY these specific facts from the raw context:\n\n"
+            + gaps + "\n\n"
+            "Raw project context:\n" + raw_context[:8000] + "\n\n"
+            "Output only the missing facts. Max 300 words."
+        )
+        supplement = _local_think(supplement_prompt, max_tokens=1000, model=_LOCAL_MODEL,
+                                  system=_STAGE1_SYSTEM, temperature=0.1)
+        if supplement and len(supplement) > 20:
+            frame = frame + "\n\n## Supplemental extraction:\n" + supplement
+            logger.info(f"_two_stage_think: gap-fill round added {len(supplement)} chars")
+
+    # Stage 4 (or Stage 2 if no gaps): Final answer from accumulated brief
+    # /no_think on final stage — gap-fill already did the deep analysis;
+    # final stage just formats the answer cleanly.
     abbreviated_context = raw_context[:2000]
     reason_prompt = (
         "Structured brief about the Polychron codebase:\n\n"
@@ -721,7 +754,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         "Do NOT invent names. "
         "Format each item as:\n"
         "  FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence.\n"
-        "Max 4 items. No prose paragraphs."
+        "Max 4 items. No prose paragraphs. /no_think"
     )
     return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
 
