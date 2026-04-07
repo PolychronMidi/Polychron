@@ -389,11 +389,21 @@ def think(about: str, context: str = "") -> str:
              "what_did_i_forget", "think tool", "tool evolution", "hme evolution"])
     )
 
-    # Auto-inject project state for evolution/coupling questions (NOT for meta-HME tool questions)
+    # Detect pipeline/ML/perceptual infrastructure questions — about snapshot-run.js,
+    # train-verdict-predictor.js, perceptual-analysis.js, CLAP, EnCodec, verdict model.
+    # These need no coupling state injection (not about src/ module pairing) and no
+    # HME tool doc either — they're about the pipeline scripts themselves.
+    _is_pipeline_infra = any(t in _about_lower for t in [
+        "verdict predictor", "verdict model", "clap", "encodec", "cb0", "cb1",
+        "perceptual", "snapshot", "run-history", "train-verdict", "ml pipeline",
+        "logistic", "perceptual-analysis", "snapshot-run",
+    ])
+
+    # Auto-inject project state for evolution/coupling questions (NOT for meta-HME or pipeline questions)
     _EVOLUTION_TERMS = {"evolution", "evolve", "coupling", "antagonist", "bridge",
                         "ecstasy", "leverage", "cluster", "organism", "xenolinguistic",
                         "improve", "analysis", "insight", "exciting", "generative", "induce"}
-    is_evolution_q = any(t.lower() in _EVOLUTION_TERMS for t in key_terms) and not _is_meta_hme
+    is_evolution_q = any(t.lower() in _EVOLUTION_TERMS for t in key_terms) and not _is_meta_hme and not _is_pipeline_infra
     injected_state = ""
     if _is_meta_hme and not context:
         # Inject HME tool overview so the model reasons about HME UX, not music src
@@ -523,26 +533,30 @@ def think(about: str, context: str = "") -> str:
             return f"# Think: {about} *(meta-hme)*\n\n{local_answer}"
     else:
         # Code/evolution questions: parallel two-stage (GPU 0 + GPU 1 simultaneously)
-        if is_channel_q:
+        # Pipeline infrastructure questions skip the crossLayer file list — injecting
+        # src/ module paths causes the models to hallucinate crossLayer answers for
+        # questions that are actually about scripts/pipeline/*.js files.
+        if not _is_pipeline_infra:
+            if is_channel_q:
+                raw_context += (
+                    "TERMINOLOGY: 'dead-end channel' means an L0 channel that is posted (produced) but has "
+                    "ZERO consumers — no module reads it. 'Consuming' a dead-end channel means adding "
+                    "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
+                )
+            import glob as _cl_glob
+            _cl_files = sorted(_cl_glob.glob(
+                os.path.join(ctx.PROJECT_ROOT, "src", "crossLayer", "**", "*.js"), recursive=True
+            ))
+            _cl_rel = [f.replace(ctx.PROJECT_ROOT + "/", "") for f in _cl_files
+                       if not os.path.basename(f).startswith("index")]
             raw_context += (
-                "TERMINOLOGY: 'dead-end channel' means an L0 channel that is posted (produced) but has "
-                "ZERO consumers — no module reads it. 'Consuming' a dead-end channel means adding "
-                "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
+                "Polychron crossLayer module FILE PATHS (auto-generated):\n  "
+                + ",\n  ".join(_cl_rel[:32]) + ".\n"
+                "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
+                "Each channel posts specific fields — check the producer source code above for exact field names. "
+                "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
+                "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
             )
-        import glob as _cl_glob
-        _cl_files = sorted(_cl_glob.glob(
-            os.path.join(ctx.PROJECT_ROOT, "src", "crossLayer", "**", "*.js"), recursive=True
-        ))
-        _cl_rel = [f.replace(ctx.PROJECT_ROOT + "/", "") for f in _cl_files
-                   if not os.path.basename(f).startswith("index")]
-        raw_context += (
-            "Polychron crossLayer module FILE PATHS (auto-generated):\n  "
-            + ",\n  ".join(_cl_rel[:32]) + ".\n"
-            "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
-            "Each channel posts specific fields — check the producer source code above for exact field names. "
-            "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
-            "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
-        )
         # Parallel synthesis: GPU 0 (extract) + GPU 1 (analyze) run simultaneously,
         # then GPU 1 produces final answer from merged brief. ~2x faster than sequential.
         # max_tokens=1024: final answer is ≤4 items → caps chat stage at ~70s (vs 8192=546s).

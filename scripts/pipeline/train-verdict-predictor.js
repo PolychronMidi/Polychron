@@ -34,29 +34,39 @@ function main() {
     const d = JSON.parse(fs.readFileSync(path.join(HISTORY_DIR, f), 'utf-8'));
     if (d.verdict && d.features) {
       const ft = d.features;
-      // cb0Entropy fallback: old snapshots stored it in perceptual.encodec, not features
-      const cb0Fallback = d.perceptual && d.perceptual.encodec
-        ? (d.perceptual.encodec.cb0_entropy || 0) : 0;
-      labeled.push({
-        verdict: d.verdict,
-        features: FEATURES.map(k => {
-          if (k === 'cb0Entropy') return typeof ft[k] === 'number' ? ft[k] : cb0Fallback;
-          return typeof ft[k] === 'number' ? ft[k] : 0;
-        }),
-      });
+      // cb0Entropy: prefer features.cb0Entropy, fall back to perceptual.encodec.cb0_entropy.
+      // Store raw value (or null if missing) — will impute with mean below.
+      const cb0Raw = typeof ft.cb0Entropy === 'number' ? ft.cb0Entropy
+        : (d.perceptual && d.perceptual.encodec && typeof d.perceptual.encodec.cb0_entropy === 'number')
+          ? d.perceptual.encodec.cb0_entropy : null;
+      labeled.push({ verdict: d.verdict, features: ft, cb0Raw });
     }
   }
 
-  if (labeled.length < MIN_LABELED) {
-    console.log(`Verdict predictor: ${labeled.length} labeled snapshots (need ${MIN_LABELED}). Skipping training.`);
+  // Impute missing cb0Entropy with mean of observed values (not 0 — that contaminates weights)
+  const cb0Observed = labeled.map(l => l.cb0Raw).filter(v => v !== null);
+  const cb0Mean = cb0Observed.length > 0
+    ? cb0Observed.reduce((a, b) => a + b, 0) / cb0Observed.length : 6.1;
+
+  const labeledFinal = labeled.map(l => ({
+    verdict: l.verdict,
+    features: FEATURES.map(k => {
+      if (k === 'cb0Entropy') return l.cb0Raw !== null ? l.cb0Raw : cb0Mean;
+      return typeof l.features[k] === 'number' ? l.features[k] : 0;
+    }),
+  }));
+
+  if (labeledFinal.length < MIN_LABELED) {
+    console.log(`Verdict predictor: ${labeledFinal.length} labeled snapshots (need ${MIN_LABELED}). Skipping training.`);
     return;
   }
 
-  const legendaryCount = labeled.filter(l => l.verdict === 'LEGENDARY').length;
-  const stableCount = labeled.filter(l => l.verdict === 'STABLE').length;
-  console.log(`Training verdict predictor: ${labeled.length} samples (${legendaryCount} LEGENDARY, ${stableCount} STABLE)`);
+  const legendaryCount = labeledFinal.filter(l => l.verdict === 'LEGENDARY').length;
+  const stableCount = labeledFinal.filter(l => l.verdict === 'STABLE').length;
+  const cb0Imputed = labeled.filter(l => l.cb0Raw === null).length;
+  console.log(`Training verdict predictor: ${labeledFinal.length} samples (${legendaryCount} LEGENDARY, ${stableCount} STABLE, ${cb0Imputed} cb0 imputed with mean=${cb0Mean.toFixed(3)})`);
 
-  const trainJson = JSON.stringify({ samples: labeled, features: FEATURES });
+  const trainJson = JSON.stringify({ samples: labeledFinal, features: FEATURES });
 
   const pyScript = `
 import json, sys, numpy as np

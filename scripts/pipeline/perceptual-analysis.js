@@ -173,9 +173,15 @@ for sec in sorted(section_times):
         'sparse':  float(sec_sim[3, 0]),
     }
 
+# Confidence derived from tension-CB0 correlation magnitude.
+# At |r|=0.10 -> 0.10 (minimum gate). At |r|=0.644 -> ~0.36. At |r|=1.0 -> 0.80 (cap).
+# This replaces the hardcoded 0.15 so bias strength is empirically grounded.
+# perceptualTensionBias.js: strength = min(1, (confidence-0.10)/0.20) -> at 0.36 -> strength=1.3 (capped at 1)
+conf = min(0.80, max(0.10, abs(corr) * 0.80)) if len(tensions) > 2 else 0.10
+
 report = {
     'timestamp': __import__('datetime').datetime.now().isoformat(),
-    'confidence': 0.15,
+    'confidence': conf,
     'encodec': {
         'codebooks': int(n_cb),
         'total_frames': int(n_frames),
