@@ -37,7 +37,11 @@ class _LoggingMCP:
                 try:
                     result = fn(*args, **kwargs)
                     elapsed = time.time() - t0
-                    result_str = str(result) if result else "(empty)"
+                    if result is None:
+                        # Tools must return strings — None causes silent MCP failures.
+                        logger.error(f"ERR  {name} returned None — tool must return a string")
+                        result = f"Error: {name} returned None (bug in tool implementation)"
+                    result_str = str(result)[:200]
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {result_str}")
                     return result
                 except Exception as e:
@@ -81,8 +85,19 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     if _startup_done is None or _startup_done.is_set():
         if _startup_error:
             raise RuntimeError(f"HME startup failed: {_startup_error}")
+        if project_engine is None or global_engine is None or shared_model is None:
+            raise RuntimeError(
+                "HME startup completed but engines are not initialized "
+                f"(project_engine={project_engine!r}, global_engine={global_engine!r}, "
+                f"shared_model={shared_model!r})"
+            )
         return
     if not _startup_done.wait(timeout=timeout):
         raise RuntimeError(f"HME: model loading timed out after {timeout}s")
     if _startup_error:
         raise RuntimeError(f"HME startup failed: {_startup_error}")
+    if project_engine is None or global_engine is None or shared_model is None:
+        raise RuntimeError(
+            "HME startup completed but engines are not initialized — "
+            "check hme.log for background thread errors"
+        )

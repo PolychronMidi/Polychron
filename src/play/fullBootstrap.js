@@ -636,6 +636,7 @@ fullBootstrap = (() => {
     'crossLayerEmissionGateway',
     'adaptiveTrustScoresHelpers',
     'adaptiveTrustScores',
+    'sectionIntentCurvesHelpers',
     'sectionIntentCurves',
     'phaseAwareCadenceWindow',
     'negotiationEngine',

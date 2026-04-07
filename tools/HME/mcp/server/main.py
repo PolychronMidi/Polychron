@@ -117,6 +117,9 @@ def _background_load():
         context.shared_model = shared_model
         context.lib_engines = lib_engines
 
+        from server.startup_validator import validate_startup
+        validate_startup(context, PROJECT_ROOT)
+
         logger.info(f"HME ready | project={PROJECT_ROOT} | project_db={PROJECT_DB} | global_db={GLOBAL_DB} | libs={list(lib_engines.keys())}")
 
         # Ollama-based synthesis is on-demand; no warm-up needed

@@ -10,13 +10,19 @@ logger = logging.getLogger("HME")
 # Logic stays in Python; declarations live in config. Add new rules there.
 # ---------------------------------------------------------------------------
 def _load_project_rules() -> dict:
-    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "project-rules.json")
+    config_path = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "config", "project-rules.json")
+    )
+    if not os.path.isfile(config_path):
+        raise FileNotFoundError(
+            f"HME config missing: {config_path}\n"
+            "Run from the project root or set PROJECT_ROOT correctly."
+        )
     try:
-        with open(os.path.realpath(config_path), encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             return json.load(f)
-    except Exception as e:
-        logger.warning("Acceptable warning: helpers: could not load project-rules.json: %s", e)
-        return {}
+    except json.JSONDecodeError as e:
+        raise ValueError(f"HME config invalid JSON: {config_path}: {e}") from e
 
 _PROJECT_RULES = _load_project_rules()
 

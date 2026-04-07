@@ -111,15 +111,22 @@ def hme_hot_reload(modules: str = "") -> str:
 
     RELOADABLE = [
         "synthesis", "synthesis_config", "synthesis_ollama",
-        "symbols", "workflow", "reasoning", "health",
-        "evolution", "evolution_next", "evolution_trace", "evolution_admin",
+        "synthesis_session", "synthesis_warm", "synthesis_pipeline",
+        "symbols", "workflow", "workflow_audit",
+        "reasoning", "reasoning_think",
+        "health",
+        "evolution", "evolution_next", "evolution_suggest",
+        "evolution_trace", "evolution_admin",
         "runtime", "composition", "trust_analysis",
-        "digest", "section_compare", "perceptual",
+        "digest", "digest_analysis",
+        "section_compare", "perceptual", "perceptual_engines",
         "coupling", "coupling_data", "coupling_channels", "coupling_clusters", "coupling_bridges",
     ]
     TOP_LEVEL_RELOADABLE = ["tools_search"]
+    # Root-level modules (not under server/): imported directly, no package prefix
+    ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]
     if not modules or modules.strip().lower() == "all":
-        targets = RELOADABLE + TOP_LEVEL_RELOADABLE
+        targets = RELOADABLE + TOP_LEVEL_RELOADABLE + ROOT_RELOADABLE
     else:
         targets = [m.strip() for m in modules.split(",") if m.strip()]
 
@@ -130,14 +137,18 @@ def hme_hot_reload(modules: str = "") -> str:
     results = []
     try:
         for name in targets:
-            if name in TOP_LEVEL_RELOADABLE:
+            if name in ROOT_RELOADABLE:
+                full = name
+            elif name in TOP_LEVEL_RELOADABLE:
                 full = f"server.{name}"
             else:
                 full = f"server.tools_analysis.{name}"
             mod = sys.modules.get(full)
             if mod is None:
                 try:
-                    if name in TOP_LEVEL_RELOADABLE:
+                    if name in ROOT_RELOADABLE:
+                        mod = importlib.import_module(name)
+                    elif name in TOP_LEVEL_RELOADABLE:
                         mod = importlib.import_module(f".{name}", "server")
                     else:
                         mod = importlib.import_module(f".{name}", "server.tools_analysis")
@@ -251,10 +262,18 @@ def hme_selftest() -> str:
             if model_name in ("arbiter", "think_history", "session_narrative"):
                 continue
             if isinstance(info, dict) and info.get("primed"):
-                results.append(
-                    f"PASS: warm ctx {model_name[:20]} -- {info['tokens']} tokens, "
-                    f"{'fresh' if info.get('kb_fresh') else 'STALE'}, {info['age_s']:.0f}s old"
-                )
+                _tokens = info.get("tokens", 0)
+                _age = info.get("age_s", 0)
+                # Fail-fast: warm ctx with 0 tokens or extremely old (>1hr) is suspect
+                if _tokens < 100:
+                    results.append(f"FAIL: warm ctx {model_name[:20]} -- claims primed but only {_tokens} tokens (priming likely failed)")
+                elif _age > 3600:
+                    results.append(f"WARN: warm ctx {model_name[:20]} -- {_tokens} tokens but {_age:.0f}s old (stale)")
+                else:
+                    results.append(
+                        f"PASS: warm ctx {model_name[:20]} -- {_tokens} tokens, "
+                        f"{'fresh' if info.get('kb_fresh') else 'STALE'}, {_age:.0f}s old"
+                    )
             elif isinstance(info, dict):
                 results.append(f"INFO: warm ctx {model_name[:20]} -- not primed (run hme_admin warm)")
         arbiter_info = wcs.get(_ARBITER_MODEL, {})
@@ -270,6 +289,64 @@ def hme_selftest() -> str:
         results.append(f"{'PASS' if len(kb) > 0 else 'WARN'}: KB -- {len(kb)} entries")
     except Exception as e:
         results.append(f"FAIL: KB -- {e}")
+
+    # RELOADABLE completeness: every .py module in tools_analysis/ must be in the reload list
+    try:
+        _ta_dir = os.path.dirname(os.path.abspath(__file__))
+        _all_modules = {
+            f[:-3] for f in os.listdir(_ta_dir)
+            if f.endswith(".py") and f != "__init__.py" and not f.startswith("_")
+        }
+        _reloadable_set = set(hme_hot_reload.__code__.co_consts or [])
+        # Re-extract RELOADABLE from the function source since co_consts isn't reliable
+        import inspect as _inspect
+        _src = _inspect.getsource(hme_hot_reload)
+        import re as _re_reload
+        _in_list = set(_re_reload.findall(r'"(\w+)"', _src.split("RELOADABLE")[1].split("]")[0]))
+        _missing = _all_modules - _in_list
+        if _missing:
+            results.append(f"FAIL: hot-reload coverage -- missing modules: {sorted(_missing)}")
+        else:
+            results.append(f"PASS: hot-reload coverage -- all {len(_all_modules)} modules in RELOADABLE")
+    except Exception as e:
+        results.append(f"WARN: hot-reload coverage -- check failed: {e}")
+
+    # Timeout cooldown: surface _last_think_failure state
+    try:
+        from . import synthesis_ollama as _so
+        if _so._last_think_failure == "timeout":
+            import time as _ts_time
+            _cooldown_remaining = max(0, _so._TIMEOUT_COOLDOWN_S - (_ts_time.monotonic() - _so._last_think_failure_ts))
+            results.append(f"FAIL: Ollama cooldown -- timeout {int(_cooldown_remaining)}s remaining, synthesis calls blocked")
+        elif _so._last_think_failure == "error":
+            results.append(f"WARN: Ollama last failure -- non-timeout error (will retry)")
+    except Exception:
+        pass
+
+    # Log error surfacing: scan recent hme.log for unaddressed warnings/errors
+    try:
+        _log_path = os.path.join(ctx.PROJECT_ROOT, "log", "hme.log")
+        if os.path.isfile(_log_path):
+            import collections as _col
+            _error_counts = _col.Counter()
+            with open(_log_path, encoding="utf-8", errors="ignore") as _lf:
+                # Read last 200 lines
+                _lines = _lf.readlines()[-200:]
+            for _line in _lines:
+                if " WARNING " in _line or " ERROR " in _line:
+                    # Extract the message part after the log level
+                    _msg = _line.split(" WARNING ", 1)[-1].split(" ERROR ", 1)[-1].strip()[:80]
+                    _error_counts[_msg] += 1
+            if _error_counts:
+                _top = _error_counts.most_common(3)
+                _total_errs = sum(_error_counts.values())
+                results.append(f"WARN: hme.log -- {_total_errs} warnings/errors in last 200 lines:")
+                for _msg, _count in _top:
+                    results.append(f"  > ({_count}x) {_msg}")
+            else:
+                results.append("PASS: hme.log -- no warnings/errors in last 200 lines")
+    except Exception:
+        pass
 
     for name, target in [
         ("~/.claude/mcp/HME", "mcp symlink"),
