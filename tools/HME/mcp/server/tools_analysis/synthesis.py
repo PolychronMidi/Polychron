@@ -318,7 +318,29 @@ _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "deepseek-r1:14b")
 _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
 
 
-def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) -> str | None:
+# ── Ollama priority queue ──────────────────────────────────────────────────
+# Ollama processes requests sequentially. Background pre-warm can queue 30+ calls.
+# Interactive calls (think, before_editing on-demand) must pop to the top.
+#
+# Design: a threading.Event that background callers check before each Ollama call.
+# When an interactive call arrives, it sets the event, background callers yield
+# (sleep + re-check), and the interactive call proceeds immediately.
+import threading as _threading
+
+_ollama_interactive = _threading.Event()  # set = interactive call waiting
+_ollama_lock = _threading.Lock()          # serializes actual Ollama calls
+
+
+def _ollama_background_yield():
+    """Called by background tasks before each Ollama call. If an interactive call
+    is waiting, yields by sleeping until it clears."""
+    while _ollama_interactive.is_set():
+        import time as _t
+        _t.sleep(0.5)
+
+
+def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None,
+                 priority: str = "interactive") -> str | None:
     """Call local Ollama model for synthesis tasks.
 
     Uses only stdlib -- no extra dependencies. Returns None if Ollama isn't running
@@ -326,6 +348,14 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) 
     Pass model=_REASONING_MODEL for think/causal_trace/memory_dream tasks.
     """
     import urllib.request
+
+    # Priority queue: interactive calls signal background callers to yield.
+    # Background callers check _ollama_interactive before proceeding.
+    if priority == "background":
+        _ollama_background_yield()
+    elif priority == "interactive":
+        _ollama_interactive.set()  # signal background to pause
+
     body = json.dumps({
         "model": model or _LOCAL_MODEL,
         "prompt": prompt,
@@ -338,7 +368,11 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) 
     )
     try:
         # 240s: at ~15 tok/s, 1024 tokens needs ~68s + deepseek-r1 reasoning overhead
-        with urllib.request.urlopen(req, timeout=240) as resp:
+        with _ollama_lock:
+            resp_obj = urllib.request.urlopen(req, timeout=240)
+        if priority == "interactive":
+            _ollama_interactive.clear()  # release background callers
+        with resp_obj as resp:
             result = json.loads(resp.read())
             text = result.get("response", "").strip()
             # deepseek-r1 puts reasoning in "thinking" field, final answer in "response".
@@ -358,11 +392,17 @@ def _local_think(prompt: str, max_tokens: int = 1024, model: str | None = None) 
             text_lower = text.lower()
             if any(m in text_lower for m in _hallucination_markers):
                 logger.info(f"_local_think: suppressed hallucinated output ({len(text)} chars)")
+                if priority == "interactive":
+                    _ollama_interactive.clear()
                 return None
             # Strip non-ASCII (multilingual model leakage: CJK, emoji, etc.)
             text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            if priority == "interactive":
+                _ollama_interactive.clear()
             return text if text else None
     except Exception as e:
+        if priority == "interactive":
+            _ollama_interactive.clear()
         logger.debug(f"_local_think unavailable: {e}")
         return None
 
