@@ -128,8 +128,12 @@ velocityInterference = (() => {
     // NARROWS deadband under same signal (harmony stabilizes during ascending momentum).
     const ascendRatioVI = melodicCtxVI ? V.optionalFinite(melodicCtxVI.ascendRatio, 0.5) : 0.5;
     const ascendInterferenceScale = 1.0 + clamp((ascendRatioVI - 0.45) * 0.25, -0.05, 0.12);
-    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale;
-    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale;
+    // R86 E2: complexityEma antagonism bridge -- sustained rhythmic complexity amplifies velocity interference.
+    // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while dynamics intensify).
+    const complexityEmaVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.complexityEma) ? rhythmEntryVI.complexityEma : 0.5;
+    const complexityEmaInterferenceScale = 1.0 + clamp((complexityEmaVI - 0.45) * 0.20, -0.04, 0.10);
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale * complexityEmaInterferenceScale;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale * complexityEmaInterferenceScale;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength

@@ -272,6 +272,50 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
 
     concise = response_format == "concise"
 
+    # ── Hybrid search: semantic + keyword fusion ──────────────────────────────
+    # Extract code identifiers from query (camelCase, snake_case, module names).
+    # Grep for them in parallel with semantic search. Files found by BOTH methods
+    # get a score boost. Keyword-only files are appended as fallback results.
+    # This is the Ollama-context-equivalent for search: two orthogonal retrieval
+    # strategies fused into a single result set for higher precision and recall.
+    import re as _re_hybrid, subprocess as _sp_hybrid
+    _HYBRID_STOPWORDS = {"where", "does", "which", "what", "when", "that", "this",
+                         "with", "from", "have", "been", "into", "make", "more",
+                         "about", "would", "should", "could", "their", "there",
+                         "these", "those", "using", "every", "other", "after",
+                         "modules", "function", "read", "aware", "behavior",
+                         "how", "the", "for", "and", "not", "are", "get", "set",
+                         "used", "use", "cross", "layer", "best", "next", "given"}
+    _id_words = [w for w in _re_hybrid.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', query)
+                 if len(w) >= 4 and w.lower() not in _HYBRID_STOPWORDS]
+    # Keep words that look like code identifiers (camelCase, PascalCase, long nouns)
+    _identifiers = [w for w in _id_words
+                    if any(c.isupper() for c in w[1:]) or '_' in w or len(w) > 6][:5]
+    # Keyword grep: find files containing extracted identifiers
+    _keyword_hits: dict[str, int] = {}  # file -> hit count
+    _rg_scope = os.path.join(ctx.PROJECT_ROOT, path_filter) if path_filter else os.path.join(ctx.PROJECT_ROOT, "src")
+    import logging as _log_hybrid
+    _logger_hybrid = _log_hybrid.getLogger("HME")
+    for _ident in _identifiers:
+        try:
+            # Use grep (always available) instead of rg (Claude Code wrapper, not a binary).
+            _gr = _sp_hybrid.run(
+                ["grep", "-rl", "--include=*.js", _ident, _rg_scope],
+                capture_output=True, text=True, timeout=10
+            )
+            if _gr.returncode == 0:
+                _matches = [_f.strip() for _f in _gr.stdout.strip().split("\n") if _f.strip()]
+                # Skip identifiers that match >20 files (too common = noise, not signal)
+                if len(_matches) > 20:
+                    continue
+                for _f in _matches:
+                    _keyword_hits[_f] = _keyword_hits.get(_f, 0) + 1
+        except Exception as _e:
+            _logger_hybrid.warning(f"hybrid grep failed for '{_ident}': {_e}")
+    _logger_hybrid.info(f"search_code hybrid: identifiers={_identifiers}, hits={len(_keyword_hits)} files")
+    if _keyword_hits:
+        _logger_hybrid.info(f"search_code hybrid: {len(_keyword_hits)} keyword files from {_identifiers}")
+
     if scope in ("main", "all"):
         if not concise:
             proj_kb = ctx.project_engine.search_knowledge(query, top_k=3)
@@ -282,11 +326,37 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
         results = ctx.project_engine.search(query, top_k=top_k * (3 if path_filter else 1), language=lang)
         if path_filter:
             results = [r for r in results if path_filter in r.get('source', '')][:top_k]
+        # Hybrid fusion: boost semantic results that also have keyword matches
+        _seen_sources = set()
+        for r in results:
+            src = r.get('source', '')
+            full_src = os.path.join(ctx.PROJECT_ROOT, src) if not src.startswith("/") else src
+            if full_src in _keyword_hits or src in _keyword_hits:
+                r['score'] = min(r['score'] * 1.20, 0.99)  # 20% boost, cap at 99%
+                r['_hybrid'] = True
+                _seen_sources.add(full_src)
+                _seen_sources.add(src)
+            else:
+                _seen_sources.add(full_src)
+                _seen_sources.add(src)
+        # Sort and truncate semantic results first
+        results.sort(key=lambda r: r.get('score', 0), reverse=True)
+        results = results[:top_k]
+        # THEN append keyword-only results that semantic search missed (always visible)
+        for _kf, _kcount in sorted(_keyword_hits.items(), key=lambda x: -x[1]):
+            if _kf not in _seen_sources and len(results) < top_k + 3:
+                _rel_path = _kf.replace(ctx.PROJECT_ROOT + "/", "")
+                results.append({
+                    'source': _rel_path, 'start_line': 1, 'end_line': 1,
+                    'score': min(0.40 + _kcount * 0.12, 0.70), 'language': 'javascript',
+                    'content': f'(keyword match: {_kcount} identifiers found)', '_hybrid': True,
+                })
         if results:
             code_lines = []
             for i, r in enumerate(results):
+                _htag = " [HYBRID]" if r.get('_hybrid') else ""
                 if concise:
-                    code_lines.append(f"{r['source']}:{r['start_line']} ({fmt_sim_score(r['score'])})")
+                    code_lines.append(f"{r['source']}:{r['start_line']} ({fmt_sim_score(r['score'])}){_htag}")
                 else:
                     summary = summarize_chunk(r['content'], r['language'])
                     kb_tag = ""
@@ -294,7 +364,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                         kb_tag = f" [KB: {', '.join(r['kb_constraints'][:2])}]"
                     code_lines.append(
                         f"[{i+1}] {r['source']}:{r['start_line']}-{r['end_line']} "
-                        f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}{kb_tag}"
+                        f"({r['language']}, {fmt_sim_score(r['score'])}) {summary}{kb_tag}{_htag}"
                     )
             output_parts.append("=== Main ===\n" + "\n".join(code_lines))
 

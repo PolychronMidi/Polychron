@@ -137,7 +137,15 @@ harmonicIntervalGuard = (() => {
     // Counterpart: crossLayerClimaxEngine BACKS OFF climax approach under same signal (form stabilizes while arc defers).
     const densitySurpriseHIG = rhythmEntryHIG && Number.isFinite(rhythmEntryHIG.densitySurprise) ? rhythmEntryHIG.densitySurprise : 0;
     const densitySurpriseNarrowHIG = clamp(densitySurpriseHIG * 0.08, 0, 0.05);
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG - densitySurpriseNarrowHIG, 0.05, 0.30);
+    // R86 E2: complexityEma antagonism bridge -- sustained rhythmic complexity narrows harmonic deadband.
+    // Counterpart: velocityInterference AMPLIFIES interference under same signal (dynamics intensify while harmony stabilizes).
+    const complexityEmaHIG = rhythmEntryHIG && Number.isFinite(rhythmEntryHIG.complexityEma) ? rhythmEntryHIG.complexityEma : 0.5;
+    const complexityEmaNarrowHIG = clamp((complexityEmaHIG - 0.45) * 0.05, -0.02, 0.03);
+    // R86 E3: thematicDensity antagonism bridge -- rich thematic development narrows harmonic deadband.
+    // Counterpart: crossLayerClimaxEngine ACCELERATES climax approach under same signal (structure intensifies while harmony stabilizes).
+    const thematicDensityHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.thematicDensity, 0) : 0;
+    const thematicNarrowHIG = clamp(thematicDensityHIG * 0.06, 0, 0.04);
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG - densitySurpriseNarrowHIG - complexityEmaNarrowHIG - thematicNarrowHIG, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high
