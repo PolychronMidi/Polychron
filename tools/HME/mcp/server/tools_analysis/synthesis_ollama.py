@@ -24,6 +24,20 @@ _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
 # Pull with: ollama pull qwen3:4b
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 
+# keep_alive=-1: pin models in memory indefinitely (don't evict after inactivity).
+# qwen3:4b (2.5GB) pins cheaply alongside any 30b. The 30b models can't both fit in
+# VRAM simultaneously (2×21GB > 2×24GB), but Ollama keeps the most recently used one
+# warm so reload only happens on the first call after a model switch.
+# num_ctx=32768: explicit full context window for 30b models. Ensures consistent KV
+# allocation and prevents Ollama from silently reducing context on memory pressure.
+# 3 models at full 32768 ctx uses ~18GB RAM for KV caches (well within 52GB available).
+_KEEP_ALIVE = int(os.environ.get("HME_KEEP_ALIVE", "-1"))   # -1 = permanent
+_NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
+_NUM_CTX_4B  = int(os.environ.get("HME_NUM_CTX_4B",  "8192"))
+
+def _num_ctx_for(model: str) -> int:
+    return _NUM_CTX_4B if model == _ARBITER_MODEL else _NUM_CTX_30B
+
 _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
 # Chat endpoint: Ollama /api/chat accepts messages=[{role,content}] (OpenAI-compatible).
 # Prefer over /api/generate for multi-turn synthesis — model sees prior outputs as
@@ -149,15 +163,66 @@ def _ollama_background_yield():
         _t.sleep(0.5)
 
 
+def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
+    """Load src/ file contents up to a token budget for warm context expansion.
+
+    Returns a concatenated string of file contents formatted as:
+      // --- path/to/file.js ---
+      <full content>
+
+    token_budget: approximate token ceiling (1 token ≈ 4 chars).
+    Files are loaded smallest-first to maximize file count within budget.
+    The full context window (32768 tokens for 30b) minus the persona base
+    (~7500 tokens) leaves ~25000 tokens = ~100KB of source code.
+    With all 3 models at full ctx: ~18GB RAM for KV caches total.
+    """
+    import glob as _glob
+    char_budget = token_budget * 4
+    candidates = []
+    for pattern in patterns:
+        for fpath in _glob.glob(os.path.join(ctx.PROJECT_ROOT, pattern), recursive=True):
+            if "index.js" in os.path.basename(fpath) or "__pycache__" in fpath:
+                continue
+            try:
+                size = os.path.getsize(fpath)
+                candidates.append((size, fpath))
+            except Exception:
+                pass
+    candidates.sort()  # smallest first — maximize file count
+    parts = []
+    used = 0
+    for size, fpath in candidates:
+        if used >= char_budget:
+            break
+        try:
+            content = open(fpath, encoding="utf-8", errors="ignore").read()
+            rel = fpath.replace(ctx.PROJECT_ROOT + "/", "")
+            entry = f"\n// --- {rel} ---\n{content}\n"
+            if used + len(entry) > char_budget:
+                # Partial: truncate to fit
+                remaining = char_budget - used
+                entry = entry[:remaining]
+            parts.append(entry)
+            used += len(entry)
+        except Exception:
+            pass
+    return "".join(parts)
+
+
 def _gpu_persona(model: str) -> str:
     """Model-specialized persona for warm context priming.
-    GPU0 (extractor): structured code facts — paths, signals, correlations.
-    GPU1 (reasoner): musical effects, evolution strategy, coupling analysis.
-    Arbiter: conflict detection between independent analyses.
-    All models receive the full KB (all entries, 300-char content) to maximize
-    pre-tokenized code awareness. KV cache spills to RAM (models use ~21GB of
-    24GB VRAM, leaving <600 MiB — not enough for 7K-token KV cache in VRAM)."""
+    GPU0 (extractor): KB + crossLayer source files (what it extracts from).
+    GPU1 (reasoner): KB + conductor signal files + recently modified src/.
+    Arbiter: KB + pipeline scripts (to catch code hallucinations).
+
+    Fills up to the model's full context window (32768 for 30b, 8192 for 4b)
+    minus headroom for the actual query (~2000 tokens).
+    KV cache spills to RAM (models ~21GB VRAM, <600 MiB free per GPU).
+    3 models at full 32768 ctx = ~18GB RAM — well within 52GB available."""
     import glob as _glob
+    # Token budgets: full ctx minus persona base minus query headroom
+    _SRC_BUDGET_30B = _NUM_CTX_30B - 9000   # ~23768 tokens for src files
+    _SRC_BUDGET_4B  = _NUM_CTX_4B  - 3000   # ~5192 tokens for src files
     # Full KB — all entries, 300-char content truncation (was last 8 at 120 chars)
     full_kb = ""
     try:
@@ -182,7 +247,7 @@ def _gpu_persona(model: str) -> str:
         pass
     modules_str = ", ".join(_modules) if _modules else "(unavailable)"
     if model == _LOCAL_MODEL:
-        return (
+        base = (
             "You are the code extractor for Polychron, a self-evolving alien generative music "
             "system with 19 hypermeta controllers and 26 cross-layer modules. "
             "Your role: extract FACTS. File paths (src/crossLayer/...), signal fields, "
@@ -192,6 +257,13 @@ def _gpu_persona(model: str) -> str:
             "Real crossLayer modules: " + modules_str + ".\n\n"
             "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
         )
+        # Fill remaining context with crossLayer + conductor source files
+        src = _load_src_files_for_warm([
+            "src/crossLayer/**/*.js",
+            "src/conductor/**/*.js",
+            "src/fx/**/*.js",
+        ], _SRC_BUDGET_30B)
+        return base + "\n\n// ===== SOURCE FILES =====\n" + src
     if model == _ARBITER_MODEL:
         # Dynamic signal fields from index symbols (don't hardcode — they evolve with the codebase)
         _signal_fields = []
@@ -216,7 +288,7 @@ def _gpu_persona(model: str) -> str:
                               "tessituraPressure", "intervalFreshness", "density",
                               "complexity", "biasStrength", "densitySurprise",
                               "hotspots", "complexityEma"]
-        return (
+        arb_base = (
             "You are the arbiter for Polychron, a self-evolving alien generative music system. "
             "Your role: compare two independent code analyses and detect contradictions, "
             "hallucinated module names, and overlooked facts. "
@@ -225,14 +297,28 @@ def _gpu_persona(model: str) -> str:
             "If an analysis cites a module or field NOT in these lists, flag it.\n\n"
             "Full KB (ground truth):\n" + full_kb
         )
+        # Fill remaining context with pipeline scripts (arbiter needs to know real code)
+        src = _load_src_files_for_warm([
+            "scripts/pipeline/*.js",
+            "src/conductor/melodic/*.js",
+            "src/crossLayer/structure/**/*.js",
+        ], _SRC_BUDGET_4B)
+        return arb_base + "\n\n// ===== PIPELINE SCRIPTS =====\n" + src
     # Reasoner persona: full KB + module list so it never invents names
-    return (
+    rsn_base = (
         _THINK_SYSTEM + "\n\n"
         "Synthesize facts into actionable insights about musical effects, coupling patterns, "
         "and evolution strategy. Cite specific file paths and signal fields. Never invent "
         "module names not in this list: " + modules_str + ".\n\n"
         "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
     )
+    # Fill remaining context with conductor signal + recently modified src files
+    src = _load_src_files_for_warm([
+        "src/conductor/signal/**/*.js",
+        "src/crossLayer/**/*.js",
+        "src/composers/**/*.js",
+    ], _SRC_BUDGET_30B)
+    return rsn_base + "\n\n// ===== SOURCE FILES =====\n" + src
 
 
 def _prime_warm_context(model: str) -> bool:
@@ -348,7 +434,8 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
     )
     payload = {
         "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
-        "options": {"temperature": 0.0, "num_predict": 600},
+        "keep_alive": _KEEP_ALIVE,
+        "options": {"temperature": 0.0, "num_predict": 600, "num_ctx": _NUM_CTX_4B},
     }
     # Use warm context if primed — arbiter knows real module names and signal fields
     arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
@@ -454,7 +541,8 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     )
     payload = {
         "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
-        "options": {"temperature": 0.0, "num_predict": max(150, max_chars // 3)},
+        "keep_alive": _KEEP_ALIVE,
+        "options": {"temperature": 0.0, "num_predict": max(150, max_chars // 3), "num_ctx": _NUM_CTX_4B},
     }
     arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
     if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
@@ -624,7 +712,12 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         "model": _effective_model,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": temperature, "num_predict": max_tokens},
+        "keep_alive": _KEEP_ALIVE,
+        "options": {
+            "temperature": temperature,
+            "num_predict": max_tokens,
+            "num_ctx": _num_ctx_for(_effective_model),
+        },
     }
     if system:
         payload["system"] = system
@@ -737,11 +830,13 @@ def _local_chat(messages: list[dict], model: str | None = None,
     active_lock = (_gpu0_lock if (model or _LOCAL_MODEL) == _LOCAL_MODEL
                    else _gpu1_lock if (model or _LOCAL_MODEL) == _REASONING_MODEL
                    else _ollama_lock)
+    _m = model or _REASONING_MODEL
     payload = {
-        "model": model or _REASONING_MODEL,
+        "model": _m,
         "messages": messages,
         "stream": False,
-        "options": {"temperature": temperature, "num_predict": max_tokens},
+        "keep_alive": _KEEP_ALIVE,
+        "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m)},
     }
     body = json.dumps(payload).encode()
     req = urllib.request.Request(
