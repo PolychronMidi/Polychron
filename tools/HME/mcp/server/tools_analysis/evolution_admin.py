@@ -324,23 +324,30 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
             parts.append(f"clear_index error: {e}")
     if action == "warm":
         import threading as _threading
-        # Fire pre-edit cache + GPU warm KV context priming in the background.
-        # Returns immediately — progress logged to hme.log as each model completes.
-        def _bg_warm():
-            try:
-                from .workflow import warm_pre_edit_cache as _warm_cache
-                _warm_cache()
-            except Exception as e:
-                logger.warning(f"warm_pre_edit_cache error: {e}")
+        # Fire pre-edit cache and GPU warm KV context priming as independent parallel tasks.
+        # Pre-edit cache scans 630 files (slow). GPU priming sends Ollama requests (fast start).
+        # Running them separately means GPU priming logs appear immediately.
+        def _bg_gpu_warm():
+            logger.info("warm: GPU KV context priming starting (3 models)")
             try:
                 from .synthesis import _prime_all_gpus
                 _prime_all_gpus()
+                logger.info("warm: GPU KV context priming complete")
             except Exception as e:
-                logger.warning(f"warm_gpu_context error: {e}")
-        _threading.Thread(target=_bg_warm, daemon=True).start()
+                logger.warning(f"warm: GPU KV context error: {e}")
+        def _bg_pre_edit():
+            logger.info("warm: pre-edit cache priming starting (all src/ files)")
+            try:
+                from .workflow import warm_pre_edit_cache as _warm_cache
+                _warm_cache()
+                logger.info("warm: pre-edit cache priming complete")
+            except Exception as e:
+                logger.warning(f"warm: pre-edit cache error: {e}")
+        _threading.Thread(target=_bg_gpu_warm, daemon=True).start()
+        _threading.Thread(target=_bg_pre_edit, daemon=True).start()
         parts.append(
-            "Warm priming started in background (pre-edit cache + 3 GPU KV contexts).\n"
-            "Progress logged to hme.log. Use hme_admin(action='selftest') to check status."
+            "Warm priming started (2 parallel background tasks: GPU KV contexts + pre-edit cache).\n"
+            "Use hme_admin(action='selftest') to check status."
         )
     if not parts:
         return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', or 'both'."
