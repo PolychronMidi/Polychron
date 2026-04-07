@@ -320,13 +320,19 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
 | `kb_seed` | Auto-generate starter KB entries for top-N highest-dependency modules with zero KB coverage |
 
-### Unified Workflow Tools (3 tools — "resort" experience)
+### Unified Workflow Tools (7 tools — "resort" experience)
 
-| Tool | Use For |
-|------|---------|
-| `evolve(focus)` | **"What should I work on next?"** One call replaces `codebase_health` LOC + `coupling_intel(gaps)` + `pipeline_digest(evolve)`. focus='all' (default): LOC offenders + coupling gaps + leverage + pipeline suggestions. focus='coupling'\|'loc'\|'pipeline' for specific views. |
-| `find(query, mode)` | **Smart search** — auto-routes by intent. "callers of X" → find_callers, "X should use Y" → find_anti_pattern, regex → grep, natural language → search_code. mode='auto' (default)\|'semantic'\|'grep'\|'callers'\|'boundary'. |
-| `review(mode)` | **Post-pipeline review hub.** mode='digest' (default): pipeline_digest + evolution suggestions. mode='regime'\|'trust'\|'sections'\|'audio' for deep slices. mode='full': digest + regime + trust combined. |
+The primary interface. Each tool merges 2-5 underlying tools with auto-detection.
+
+| Tool | Use For | Replaces |
+|------|---------|----------|
+| `evolve(focus)` | **"What should I work on next?"** LOC offenders + coupling gaps + leverage + pipeline suggestions in one view. | `codebase_health` + `coupling_intel(gaps)` + `pipeline_digest(evolve)` |
+| `find(query, mode)` | **Smart search** — auto-routes: "callers of X" → call graph, "X should use Y" → boundary check, regex → grep, natural language → semantic. | `search_code` + `grep` + `find_callers` + `find_anti_pattern` |
+| `review(mode)` | **Post-pipeline hub.** digest/regime/trust/sections/audio/full. Auto-drafts KB entry when STABLE. | `pipeline_digest` + `regime_report` + `trust_report` + `section_compare` + `audio_analyze` |
+| `read(target, mode)` | **Smart code reader.** 'path.js' → structure, 'path.js:10-50' → lines, 'functionName' → body, 'moduleName' → story. | `file_intel` + `file_lines` + `get_function_body` + `module_intel` |
+| `learn(query/title/remove)` | **Unified KB.** query → search, title+content → add, remove=id → delete. | `search_knowledge` + `add_knowledge` + `remove_knowledge` |
+| `status()` | **"Is everything OK?"** Pipeline status + selftest. Auto-warms stale GPU contexts. | `check_pipeline` + `hme_admin(selftest)` |
+| `trace(target, mode)` | **Signal flow.** 'channelName' → L0 cascade 3 hops deep, 'moduleName' → per-section trace. | `trace_query` + `coupling_intel(cascade:X)` |
 
 ### Coupling Intelligence (1 tool)
 

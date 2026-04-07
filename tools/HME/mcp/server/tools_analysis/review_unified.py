@@ -48,4 +48,13 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
         else:
             parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, full.")
 
-    return "\n\n---\n\n".join(parts) if len(parts) > 1 else parts[0] if parts else "No data."
+    result = "\n\n---\n\n".join(parts) if len(parts) > 1 else parts[0] if parts else "No data."
+
+    # Auto-draft KB entry after digest with run delta
+    if "digest" in modes and "Run Delta" in result and "ALL CLEAR" in result:
+        result += ("\n\n## Quick KB Draft\n"
+                   "  Pipeline STABLE + regime health ALL CLEAR. Save round with:\n"
+                   "  learn(title='RXX: ...describe evolutions...', content='...run delta + what changed...', "
+                   "category='pattern', listening_notes='...')")
+
+    return result

@@ -122,6 +122,7 @@ def hme_hot_reload(modules: str = "") -> str:
         "section_compare", "perceptual", "perceptual_engines",
         "coupling", "coupling_data", "coupling_channels", "coupling_clusters", "coupling_bridges",
         "evolution_evolve", "search_unified", "review_unified",
+        "read_unified", "learn_unified", "status_unified", "trace_unified",
     ]
     TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge"]
     # Root-level modules (not under server/): imported directly, no package prefix
