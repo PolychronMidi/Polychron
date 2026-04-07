@@ -53,7 +53,14 @@ motifEcho = (() => {
     // lock mode suppresses echo (synchronized layers reinforce directly, no need for delayed imitation).
     const phaseModeEcho = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
     const phaseEchoScale = phaseModeEcho === 'repel' ? 1.15 : phaseModeEcho === 'lock' ? 0.88 : 1.0;
-    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2) * thematicMult * (1.0 + rhythmBiasME * 0.18) * (1 - journeySuppress) * phaseEchoScale;
+    // R90 E1: contourShape antagonism bridge with entropyRegulator (VIRGIN pair r=-0.503) -- falling melodic contour
+    // boosts echo probability (descending = nostalgic repetition, imitative memory natural).
+    // Rising contour suppresses echo (ascending = forward-looking, not looking back at old motifs).
+    // Counterpart: entropyRegulator RAISES entropy under same signal (rising motion expands variety).
+    const contourShapeScaleME = melodicCtx
+      ? (melodicCtx.contourShape === 'rising' ? 0.88 : melodicCtx.contourShape === 'falling' ? 1.12 : 1.0)
+      : 1.0;
+    const echoProbability = BASE_ECHO_PROBABILITY * (0.4 + cimScale * 1.2) * thematicMult * (1.0 + rhythmBiasME * 0.18) * (1 - journeySuppress) * phaseEchoScale * contourShapeScaleME;
     if (notes.length >= 3 && rf() < echoProbability && pendingEchoes.length < MAX_PENDING_ECHOES) {
       captureMotif(layer, absoluteSeconds);
     }

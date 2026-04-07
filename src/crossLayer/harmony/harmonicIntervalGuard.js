@@ -145,7 +145,12 @@ harmonicIntervalGuard = (() => {
     // Counterpart: crossLayerClimaxEngine ACCELERATES climax approach under same signal (structure intensifies while harmony stabilizes).
     const thematicDensityHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.thematicDensity, 0) : 0;
     const thematicNarrowHIG = clamp(thematicDensityHIG * 0.06, 0, 0.04);
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG - densitySurpriseNarrowHIG - complexityEmaNarrowHIG - thematicNarrowHIG, 0.05, 0.30);
+    // R90 E3: freshnessEma antagonism bridge with phaseAwareCadenceWindow -- sustained melodic novelty
+    // narrows harmonic deadband (novel territory = hunt interval variety more aggressively, tighter harmonic control).
+    // Counterpart: phaseAwareCadenceWindow COMPRESSES window under same signal (resolution deferred during novelty).
+    const freshnessEmaHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.freshnessEma, 0.5) : 0.5;
+    const freshnessEmaNarrowHIG = clamp((freshnessEmaHIG - 0.45) * 0.06, -0.02, 0.03);
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG - densitySurpriseNarrowHIG - complexityEmaNarrowHIG - thematicNarrowHIG - freshnessEmaNarrowHIG, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high

@@ -75,7 +75,17 @@ verticalIntervalMonitor = (() => {
       // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal cohesion + harmonic freedom).
       const biasStrengthVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.biasStrength) ? rhythmEntryVIM.biasStrength : 0;
       const biasPenaltyMod = 1.0 - clamp((biasStrengthVIM - 0.3) * 0.15, 0, 0.10);
-      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod * biasPenaltyMod;
+      // R88 E3: ascendRatio antagonism bridge with convergenceHarmonicTrigger -- ascending melodic momentum
+      // tightens collision penalty (ascending motion is harmonically directed; unison clashes disrupt).
+      // Counterpart: convergenceHarmonicTrigger BOOSTS trigger probability under same signal (harmonic assertiveness + discipline).
+      const ascendRatioVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.ascendRatio, 0.5) : 0.5;
+      const ascendPenaltyMod = 1.0 + clamp((ascendRatioVIM - 0.45) * 0.20, -0.04, 0.10);
+      // R89 E1: freshnessEma antagonism bridge with dynamicRoleSwap -- sustained melodic novelty
+      // reduces collision penalty (novel territory = exploratory dissonance is musically endorsed).
+      // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle during novelty).
+      const freshnessEmaVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.freshnessEma, 0.5) : 0.5;
+      const freshnessEmaVIMScale = 1.2 - freshnessEmaVIM * 0.40; // [0.8 novel ... 1.2 familiar]
+      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod * biasPenaltyMod * ascendPenaltyMod * freshnessEmaVIMScale;
     }
 
     return 0;

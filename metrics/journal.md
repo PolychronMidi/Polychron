@@ -1,3 +1,53 @@
+## R90 — 2026-04-07 — PENDING (contourShape+tessituraLoad+freshnessEma three-bridge round + VIRGIN pair debut)
+
+**Profile:** varied | **Sections:** 7 | **Verdict:** PENDING (pipeline not yet run)
+
+### What Changed (R90)
+
+Three new bridges using underused/dormant signals. contourShape had 0 uses in last 6 rounds (13 all-time) — full resurrection on a VIRGIN antagonist pair.
+
+- **E1: contourShape → entropyRegulator↔motifEcho** (r=-0.503, VIRGIN pair debut): rising contour raises entropy (+0.03) while suppressing echo (×0.88). Falling contour lowers entropy (−0.02) while amplifying echo (×1.12). Musical logic: ascending arc = forward-looking exploration (chaos expands, memory fades). Descending arc = nostalgic settling (order returns, imitative memory deepens).
+- **E2: tessituraLoad → grooveTransfer↔climaxEngine** (r=-0.487): extreme register reduces groove transfer (×down to 0.92) while accelerating climax approach (+0.05). Extreme register = layers pursue independent rhythmic territory while structural arc crests.
+- **E3: freshnessEma → harmonicIntervalGuard↔phaseAwareCadenceWindow** (r=-0.426): sustained novelty narrows harmonic deadband (up to −0.03) while compressing cadence window (up to −0.04 threshold). Novel territory = tighter harmonic discipline + deferred resolution.
+
+---
+
+## R88 — 2026-04-07 — STABLE (density+complexityEma+ascendRatio three-antagonism bridge + HME think fix)
+
+**Profile:** varied (restrained→explosive→atmospheric) | **Beats:** 1091 | **Sections:** 7 | **Verdict:** STABLE (combined R87+R88 pipeline)
+**Run delta:** +1082 notes | tensionArc +0.084 (0.156→0.240) | CB0 entropy +0.048 | evolvingShare +7.4% | regime health ALL CLEAR
+
+### What Changed (R88)
+
+Three independent antagonism pairs across rhythm, structure, and harmony — all using emergentRhythm and melodic signals.
+
+- **E1: density → entropyRegulator↔temporalGravity** (r=-0.537): high note density raises entropy target (up to +0.04) while strengthening temporal gravity wells (×up to 1.10). Dense textures generate pitch variety while temporal structure anchors the metric grid.
+- **E2: complexityEma → stutterContagion↔grooveTransfer** (r=-0.463): sustained rhythmic complexity amplifies stutter contagion spread (×up to 1.10) while dampening groove transfer (×down to 0.92). Complex texture propagates chaos through stutter while groove self-organizes independently.
+- **E3: ascendRatio → convergenceHarmonicTrigger↔verticalIntervalMonitor** (r=-0.450): ascending melodic momentum boosts harmonic trigger probability (×up to 1.12) while tightening collision penalty (×up to 1.10). Ascending motion demands harmonic assertiveness AND harmonic discipline simultaneously.
+
+**HME evolutions (R88):**
+- `think` tool: max_tokens=1024 cap on final Ollama chat stage (prevents 546s generation from default 8192 at 15 tok/s)
+- `/no_think` placement fix: must be at START of qwen3 message (first token), placing at end still triggers full chain-of-thought
+- `module_intel` Similar Modules: set-based dedup by source path — prevents duplicate file entries from multi-chunk returns
+- `coupling_intel` why field: now module-specific (`"{a} ↔ {b}: {base_why}"`) — more informative than generic template alone
+
+---
+
+## R87 — 2026-04-07 — STABLE (registerMigrationDir five-point bridge)
+
+**Profile:** varied | **Sections:** 7 | **Verdict:** STABLE (pipelined jointly with R88 — see R88 run delta above)
+**Note:** R87 solo pipeline showed -35% beat count (1611→1040) but note density was unchanged (37.8 vs 38.3 notes/beat). Analyzed as stochastic composition variation. R87+R88 combined pipeline confirmed STABLE.
+
+### What Changed (R87)
+
+One categorical signal — ascending vs. descending register migration — wired as two antagonism pairs (virgin pair first use) plus one solo amplifier.
+
+- **E1: registerMigrationDir → grooveTransfer↔crossLayerClimaxEngine** (r=-0.499, VIRGIN PAIR): ascending tightens groove transfer (×0.88 damping) while accelerating climax approach (+0.05). Rhythmic independence while structure climbs — layers individuate as the arc builds.
+- **E2: registerMigrationDir → feedbackOscillator↔convergenceDetector**: ascending amplifies feedback resonance energy (×1.10) while narrowing convergence tolerance (up to -0.05). Rich cross-layer dialogue at the cost of exact rhythmic unison — resonance vs. coincidence.
+- **E3: registerMigrationDir → polyrhythmicPhasePredictor**: ascending amplifies predicted phase convergence boost (×1.18). Register climbs make convergence moments structurally significant.
+
+---
+
 ## R80 — 2026-04-06 — LEGENDARY (complexity triple-bridge + HME ecstasy audit)
 
 **Profile:** varied (restrained→explosive→atmospheric) | **Beats:** 1771 | **Sections:** 7 | **Verdict:** "new legendary xenolinguistic tier"

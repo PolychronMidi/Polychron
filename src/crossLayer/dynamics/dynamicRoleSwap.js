@@ -88,7 +88,12 @@ dynamicRoleSwap = (() => {
     const intervalFreshnessSwapBoost = melodicCtxDRS
       ? clamp((V.optionalFinite(melodicCtxDRS.intervalFreshness, 0.5) - 0.45) * 0.10, -0.02, 0.05)
       : 0;
-    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost + rhythmBiasBoost + registerSwapBoostDRS + complexityEmaSwapBoost + complexityBeatSwapBoost + intervalFreshnessSwapBoost, 0, 1);
+    // R89 E1: freshnessEma antagonism bridge with verticalIntervalMonitor -- sustained melodic novelty
+    // amplifies role-swap frequency (novel melodic territory = dynamic reorganization needed).
+    // Counterpart: verticalIntervalMonitor REDUCES collision penalty under same signal (harmonic exploration endorsed).
+    const freshnessEmaDRS = melodicCtxDRS ? V.optionalFinite(melodicCtxDRS.freshnessEma, 0.5) : 0.5;
+    const freshnessEmaSwapBoost = clamp((freshnessEmaDRS - 0.45) * 0.12, -0.03, 0.07);
+    const gate = clamp((inValley ? SWAP_PROBABILITY : DROUGHT_SWAP_PROBABILITY) * regimeSwapScale + transitionBoost + feedbackBoost + contourSwapBoost + rhythmBiasBoost + registerSwapBoostDRS + complexityEmaSwapBoost + complexityBeatSwapBoost + intervalFreshnessSwapBoost + freshnessEmaSwapBoost, 0, 1);
     if (rf() > gate) {
       return { swapped: false, swapCount };
     }

@@ -126,7 +126,12 @@ stutterContagion = (() => {
     // harmonic control under same signal (structure anchors at extremes).
     const tessituraContagionSC = melodicCtxSC ? V.optionalFinite(melodicCtxSC.tessituraLoad, 0) : 0;
     const tessituraContagionScale = 1.0 + clamp(tessituraContagionSC * 0.15, 0, 0.12);
-    const gatedIntensity = decayedIntensity * melodicContagionScale * phaseContagionScale * surpriseContagionScale * tessituraContagionScale;
+    // R88 E2: complexityEma antagonism bridge with grooveTransfer -- sustained rhythmic complexity
+    // amplifies stutter contagion (complex texture propagates chaos more aggressively).
+    // Counterpart: grooveTransfer REDUCES transfer under same signal (groove stability anchors complexity).
+    const complexityEmaSC = rhythmEntrySC && Number.isFinite(rhythmEntrySC.complexityEma) ? rhythmEntrySC.complexityEma : 0.5;
+    const complexityContagionScale = 1.0 + clamp((complexityEmaSC - 0.45) * 0.20, -0.04, 0.10);
+    const gatedIntensity = decayedIntensity * melodicContagionScale * phaseContagionScale * surpriseContagionScale * tessituraContagionScale * complexityContagionScale;
     if (gatedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space

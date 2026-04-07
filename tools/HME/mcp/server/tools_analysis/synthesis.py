@@ -749,12 +749,12 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
 
     # Stage 2: Reasoner identifies gaps (GPU 1, cheap — just gap detection)
     gap_prompt = (
-        "Brief about the Polychron codebase:\n\n" + frame + "\n\n"
+        "/no_think Brief about the Polychron codebase:\n\n" + frame + "\n\n"
         "Question to answer: " + question + "\n\n"
         "What SPECIFIC facts are MISSING from this brief that are needed to answer the question?\n"
         "List each gap as: NEED: <what is missing>\n"
         "If the brief has everything needed, respond with exactly: NO GAPS\n"
-        "Max 5 gaps. /no_think"
+        "Max 5 gaps."
     )
     gaps = _local_think(gap_prompt, max_tokens=500, model=_REASONING_MODEL, temperature=0.2)
 
@@ -781,7 +781,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
     # final stage just formats the answer cleanly.
     abbreviated_context = raw_context[:2000]
     reason_prompt = (
-        "Structured brief about the Polychron codebase:\n\n"
+        "/no_think Structured brief about the Polychron codebase:\n\n"
         + frame + "\n\n"
         "Additional raw context (cross-reference only):\n" + abbreviated_context + "\n\n"
         "Question: " + question + "\n\n"
@@ -789,7 +789,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         "Do NOT invent names. "
         "Format each item as:\n"
         "  FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence.\n"
-        "Max 4 items. No prose paragraphs. /no_think"
+        "Max 4 items. No prose paragraphs."
     )
     return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
 
@@ -858,11 +858,11 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
 
     def _gpu1_analyze():
         prompt = (
-            "Question: " + question + "\n\n"
+            "/no_think Question: " + question + "\n\n"
             "Analyze this Polychron codebase context. What coupling patterns, antagonism "
             "bridges, or signal flows directly answer this question?\n"
             "Be specific: name modules, exact fields, and effects.\n"
-            "Max 300 words. /no_think\n\n"
+            "Max 300 words.\n\n"
             "Context:\n" + raw_context[:6000]
         )
         results[1] = _local_think(prompt, max_tokens=1200, model=_REASONING_MODEL,
@@ -929,12 +929,16 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         {
             "role": "user",
             "content": (
-                "Based on your analysis, answer the question:\n  " + question + "\n\n"
+                # /no_think MUST be at message start for qwen3 to suppress chain-of-thought.
+                # Placing it at the end (common mistake) still triggers full thinking → 20min.
+                "/no_think Based on your analysis, answer the question:\n  " + question + "\n\n"
                 "Use ONLY modules and signals from your analysis above. " + _fmt_instruction + "\n"
-                "Max 4 items. No prose. /no_think"
+                "Max 4 items. No prose."
             )
         },
     ]
+    # max_tokens caps generation: 1024 tokens ≈ 70s at 15 tok/s.
+    # Caller passes max_tokens=1024 for think tool; full 8192 available for deep synthesis.
     result = _local_chat(chat_messages, model=_REASONING_MODEL, max_tokens=max_tokens, temperature=0.15)
     if not result:
         # Fallback: single-stage generate if chat endpoint unavailable

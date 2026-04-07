@@ -222,9 +222,17 @@ def module_story(module_name: str) -> str:
             if similar:
                 source_file = matching[0]["file"]
                 # Filter to src/ files only — tools/HME Python files are false positives
-                filtered = [r for r in similar
-                            if r.get("source") != source_file
-                            and "/src/" in (r.get("source") or "")][:sim_limit]
+                # Dedup by source path (embedding index returns multiple chunks per file)
+                seen_sources: set = set()
+                filtered = []
+                for r in similar:
+                    src = r.get("source") or ""
+                    if src == source_file or "/src/" not in src or src in seen_sources:
+                        continue
+                    seen_sources.add(src)
+                    filtered.append(r)
+                    if len(filtered) >= sim_limit:
+                        break
                 if filtered:
                     parts.append(f"\n## Similar Modules")
                     for r in filtered:
@@ -543,7 +551,9 @@ def think(about: str, context: str = "") -> str:
         )
         # Parallel synthesis: GPU 0 (extract) + GPU 1 (analyze) run simultaneously,
         # then GPU 1 produces final answer from merged brief. ~2x faster than sequential.
-        local_answer = _parallel_two_stage_think(raw_context, prompt)
+        # max_tokens=1024: final answer is ≤4 items → caps chat stage at ~70s (vs 8192=546s).
+        # All processing from Stage 1 threads is preserved in the merged brief fallback.
+        local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=1024)
         if local_answer:
             parts = [f"# Think: {about} *(parallel-two-stage)*\n", local_answer]
             if kb_hits:
