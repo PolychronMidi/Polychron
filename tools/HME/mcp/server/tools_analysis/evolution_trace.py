@@ -8,9 +8,7 @@ from server import context as ctx
 from server.helpers import SUBSYSTEM_NAMES
 from symbols import find_callers as _find_callers
 from .synthesis import (
-    _get_api_key, _claude_think,
-    _format_kb_corpus, _two_stage_think, _read_module_source,
-    _get_tool_budget,
+    _two_stage_think, _read_module_source,
 )
 from . import _get_compositional_context, _track
 
@@ -102,14 +100,7 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
         "Be specific about musical quality (e.g. 'less rhythmic tension', 'denser texture')."
     )
 
-    api_key = _get_api_key()
-    synthesis = None
-    if api_key:
-        user_text = raw_context + "\n" + question
-        synthesis = _claude_think(user_text, api_key, kb_context=_format_kb_corpus(),
-                                   max_tool_calls=_get_tool_budget())
-    if not synthesis:
-        synthesis = _two_stage_think(raw_context, question)
+    synthesis = _two_stage_think(raw_context, question)
     if synthesis:
         mentioned = set(re.findall(r'[a-z][a-zA-Z]{8,}', synthesis))
         if known_modules and len(known_modules) >= 2:

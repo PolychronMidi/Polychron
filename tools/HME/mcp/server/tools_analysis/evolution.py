@@ -13,8 +13,7 @@ from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, BUDGET_LIMITS, SUBSYSTEM_NAMES
 from symbols import find_callers as _find_callers
 from .synthesis import (
-    _get_api_key, _claude_think, _local_think, _think_local_or_claude,
-    _format_kb_corpus, _THINK_MODEL, _REASONING_MODEL,
+    _local_think, _THINK_MODEL, _REASONING_MODEL,
     _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from . import _get_compositional_context, _track, _usage_stats
@@ -166,8 +165,7 @@ def kb_seed(top_n: int = 15) -> str:
         out.append(f"  {name:<35} {count:3} callers  {filepath}")
 
     # Try to generate KB entries via synthesis
-    api_key = _get_api_key()
-    if api_key and candidates:
+    if candidates:
         source_snippets = []
         for name, count, filepath in candidates[:8]:
             if filepath and os.path.isfile(filepath):
@@ -186,7 +184,7 @@ def kb_seed(top_n: int = 15) -> str:
                 "Format: `## module_name\\nContent`\n\n"
                 + "\n\n".join(source_snippets)
             )
-            result = _claude_think(prompt, api_key, max_tool_calls=0)
+            result = _local_think(prompt, max_tokens=1024)
             if result:
                 out.append(f"\n## Generated Entries\n")
                 out.append(result)

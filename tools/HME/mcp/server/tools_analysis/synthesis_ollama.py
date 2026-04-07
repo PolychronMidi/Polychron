@@ -6,7 +6,7 @@ import logging
 import threading as _threading
 
 from server import context as ctx
-from .synthesis_config import _LOCAL_MODEL as _DEFAULT_LOCAL_MODEL  # re-exported below
+from .synthesis_config import _THINK_SYSTEM
 
 logger = logging.getLogger("HME")
 
@@ -16,6 +16,13 @@ _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
 # Beats QwQ-32B and DeepSeek-R1 on reasoning benchmarks at lower compute.
 # ~18.6GB Q4 — fits on one M40. qwen2.5-coder:14b (~9GB) on the other. Both loaded.
 _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
+# Arbiter model: Qwen3 4B (~2.5GB Q4) — same architecture family as GPU models.
+# Hybrid thinking mode: arbiter THINKS before judging — reasoning is essential for catching
+# contradictions between complex code analyses. Fits alongside 18.6GB models (~4-5GB free
+# per 24GB GPU). Runs during GPU idle time (between Stage 1 and Stage 2) — zero contention.
+# Ollama auto-schedules GPU layers; falls back to CPU/RAM (64GB) when GPUs are busy.
+# Pull with: ollama pull qwen3:4b
+_ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 
 _LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
 # Chat endpoint: Ollama /api/chat accepts messages=[{role,content}] (OpenAI-compatible).
@@ -39,12 +46,195 @@ _gpu0_lock = _threading.Lock()  # qwen3-coder:30b (extraction)
 _gpu1_lock = _threading.Lock()  # qwen3:30b-a3b (reasoning)
 
 
+# ── Warm KV context ───────────────────────────────────────────────────────
+# Persistent pre-tokenized contexts per GPU model. Each model gets a specialized persona:
+#   GPU0 (_LOCAL_MODEL): extraction-focused — file paths, signals, facts
+#   GPU1 (_REASONING_MODEL): reasoning-focused — musical effects, evolution strategy
+# Primed lazily on first tool call and re-primed when KB version changes.
+# Benefits: ~1000 tokens of system+KB context pre-processed in KV cache, eliminating
+# re-tokenization on every synthesis call. The 6GB VRAM headroom per 24GB GPU
+# easily holds the KV cache (~24KB/token × ~1000 tokens = ~24MB).
+_warm_ctx: dict[str, list] = {}          # model → Ollama context array
+_warm_ctx_kb_ver: dict[str, int] = {}    # model → kb_version when primed
+_warm_ctx_ts: dict[str, float] = {}      # model → epoch timestamp of last priming
+
+# ── Think continuation ────────────────────────────────────────────────────
+# Cross-call memory for the think tool. Stores the last 3 think Q&A pairs as text
+# and injects them as conversation history in subsequent think calls. This gives
+# the think tool continuous session memory without growing the KV cache unboundedly.
+_think_history: list[dict] = []           # [{about, answer}] sliding window
+_THINK_HISTORY_MAX = 3                    # keep last N exchanges
+
+
 def _ollama_background_yield():
     """Called by background tasks before each Ollama call. If an interactive call
     is waiting, yields by sleeping until it clears."""
     while _ollama_interactive.is_set():
         import time as _t
         _t.sleep(0.5)
+
+
+def _gpu_persona(model: str) -> str:
+    """GPU-specialized persona for warm context priming.
+    GPU0 (extractor): structured code facts — paths, signals, correlations.
+    GPU1 (reasoner): musical effects, evolution strategy, coupling analysis."""
+    recent_kb = ""
+    try:
+        all_kb = ctx.project_engine.list_knowledge_full() or []
+        recent_kb = "\n".join(
+            f"  [{k.get('category','')}] {k.get('title','')}: {k.get('content','')[:120]}"
+            for k in all_kb[-8:]
+        )
+    except Exception:
+        pass
+    if model == _LOCAL_MODEL:
+        return (
+            "You are the code extractor for Polychron, a self-evolving alien generative music "
+            "system with 19 hypermeta controllers and 26 cross-layer modules. "
+            "Your role: extract FACTS. File paths (src/crossLayer/...), signal fields, "
+            "correlation values, coupling dimensions, bridge status (VIRGIN/PARTIAL/SATURATED). "
+            "Antagonism bridges couple BOTH modules of a negatively-correlated pair to the "
+            "SAME signal with OPPOSING effects. Never reason or opine — output raw data only.\n\n"
+            "Recent KB (ground truth):\n" + recent_kb
+        )
+    return (
+        _THINK_SYSTEM + "\n\n"
+        "Synthesize facts into actionable insights about musical effects, coupling patterns, "
+        "and evolution strategy. Cite specific file paths and signal fields. Never invent "
+        "module names not in the provided context.\n\n"
+        "Recent KB (ground truth):\n" + recent_kb
+    )
+
+
+def _prime_warm_context(model: str) -> bool:
+    """Prime warm KV context for a specific model.
+    Embeds GPU-specialized persona + recent KB into the model's KV cache.
+    Background priority (yields to interactive). Skips if KB unchanged."""
+    kb_ver = getattr(ctx, "_kb_version", 0)
+    if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
+        return True
+    persona = _gpu_persona(model)
+    # Embed persona in prompt (not system=) so KV cache contains it.
+    # Subsequent calls pass context= without system=, avoiding double-processing.
+    result = _local_think(
+        persona + "\n\nI understand this codebase context. Ready.",
+        max_tokens=8, model=model, priority="background",
+        temperature=0.0, return_context=True,
+    )
+    if isinstance(result, tuple) and result[1]:
+        import time as _t
+        _warm_ctx[model] = result[1]
+        _warm_ctx_kb_ver[model] = kb_ver
+        _warm_ctx_ts[model] = _t.time()
+        logger.info(f"warm ctx primed: {model} ({len(result[1])} ctx tokens, kb_ver={kb_ver})")
+        return True
+    return False
+
+
+def _prime_all_gpus() -> str:
+    """Prime both GPUs in parallel threads. Returns status summary."""
+    import time as _t
+    results = [False, False]
+    def _do0():
+        results[0] = _prime_warm_context(_LOCAL_MODEL)
+    def _do1():
+        results[1] = _prime_warm_context(_REASONING_MODEL)
+    t0 = _t.time()
+    th0 = _threading.Thread(target=_do0, daemon=True)
+    th1 = _threading.Thread(target=_do1, daemon=True)
+    th0.start(); th1.start()
+    th0.join(timeout=120); th1.join(timeout=120)
+    elapsed = _t.time() - t0
+    parts = [f"Warm context priming ({elapsed:.1f}s):"]
+    for model, ok in [(_LOCAL_MODEL, results[0]), (_REASONING_MODEL, results[1])]:
+        ctx_len = len(_warm_ctx.get(model, []))
+        parts.append(f"  {model}: {'PRIMED' if ok else 'FAILED'}" +
+                     (f" ({ctx_len} ctx tokens)" if ok else ""))
+    return "\n".join(parts)
+
+
+def warm_context_status() -> dict:
+    """Health dict of warm contexts for selftest."""
+    import time as _t
+    now = _t.time()
+    status = {}
+    for model in [_LOCAL_MODEL, _REASONING_MODEL]:
+        if model in _warm_ctx:
+            status[model] = {
+                "primed": True, "tokens": len(_warm_ctx[model]),
+                "age_s": round(now - _warm_ctx_ts.get(model, 0), 1),
+                "kb_fresh": _warm_ctx_kb_ver.get(model) == getattr(ctx, "_kb_version", 0),
+            }
+        else:
+            status[model] = {"primed": False}
+    status["arbiter"] = _ARBITER_MODEL
+    status["think_history"] = len(_think_history)
+    return status
+
+
+def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
+                   question: str) -> str | None:
+    """Run the nimble arbiter model to contrast GPU0/GPU1 outputs.
+    Qwen3:4b thinks before judging — reasoning is essential for accurate conflict detection.
+    num_predict=600 gives budget for ~400 thinking tokens + ~200 answer tokens.
+    Runs during GPU idle time (between stages) — Ollama auto-schedules GPU layers
+    from the ~4-5GB free per 24GB GPU alongside 18.6GB models. Falls back to CPU/64GB RAM
+    when GPUs are busy. Returns conflict report, or None if aligned / unavailable."""
+    if not gpu0_out or not gpu1_out or len(gpu0_out) < 30 or len(gpu1_out) < 30:
+        return None
+    import urllib.request
+    prompt = (
+        "Two independent analyses of the same Polychron codebase question.\n\n"
+        f"Question: {question[:200]}\n\n"
+        f"EXTRACTOR (GPU0, structured facts):\n{gpu0_out[:800]}\n\n"
+        f"REASONER (GPU1, analysis):\n{gpu1_out[:800]}\n\n"
+        "Are there CONTRADICTIONS between these analyses? "
+        "Does the reasoner cite module names or signal fields NOT in the extractor output? "
+        "If everything aligns, respond with exactly: ALIGNED\n"
+        "If conflicts exist, name the specific conflict in 1-2 sentences."
+    )
+    body = json.dumps({
+        "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
+        # No num_gpu override — Ollama auto-schedules layers across available VRAM.
+        # During GPU idle time (between stages), 4B model gets partial GPU offload for speed.
+        "options": {"temperature": 0.0, "num_predict": 600},
+    }).encode()
+    req = urllib.request.Request(
+        _LOCAL_URL, data=body, headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            result = json.loads(resp.read())
+            text = result.get("response", "").strip()
+            if not text:
+                text = result.get("thinking", "").strip()
+            if "</think>" in text:
+                text = text[text.rfind("</think>") + len("</think>"):].strip()
+            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            if text and "ALIGNED" not in text.upper():
+                logger.info(f"arbiter conflict detected: {text[:200]}")
+                return text
+            if text:
+                logger.info("arbiter: ALIGNED")
+            return None
+    except Exception as e:
+        logger.debug(f"arbiter unavailable: {e}")
+        return None
+
+
+def store_think_history(about: str, answer: str):
+    """Store a think Q&A pair for cross-call continuation."""
+    _think_history.append({"about": about, "answer": answer[:300]})
+    while len(_think_history) > _THINK_HISTORY_MAX:
+        _think_history.pop(0)
+
+
+def get_think_history_context() -> str:
+    """Get formatted think history for injection into subsequent think calls."""
+    if not _think_history:
+        return ""
+    lines = [f"  Q: {h['about'][:80]} → {h['answer'][:150]}" for h in _think_history]
+    return "Previous think exchanges this session:\n" + "\n".join(lines) + "\n\n"
 
 
 def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
@@ -56,7 +246,9 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     Uses only stdlib -- no extra dependencies. Returns None if Ollama isn't running
     or the model isn't available, allowing callers to fall back gracefully.
     Pass model=_REASONING_MODEL for think/causal_trace/memory_dream tasks.
-    system: optional system prompt for role-setting.
+    system: optional system prompt for role-setting. When system==_THINK_SYSTEM and
+      warm KV context is available, automatically uses the warm context and drops system=
+      (already baked into the KV cache) — transparent speedup, no caller changes needed.
     temperature: 0.1 for deterministic extraction, 0.3 for balanced, 0.5 for creative.
     context: Ollama KV cache context array from a prior call (same model only).
       When provided, Ollama resumes from the cached model state instead of re-processing
@@ -71,8 +263,22 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     elif priority == "interactive":
         _ollama_interactive.set()
 
+    _effective_model = model or _LOCAL_MODEL
+
+    # ── Auto-warm: use warm KV context when available ──
+    # When system==_THINK_SYSTEM and no explicit context, swap in the warm KV cache.
+    # The warm context already contains _THINK_SYSTEM + recent KB, pre-tokenized.
+    # Drop system= to avoid double-processing (system is baked into context).
+    if system == _THINK_SYSTEM and context is None:
+        warm = _warm_ctx.get(_effective_model)
+        kb_ver = getattr(ctx, "_kb_version", 0)
+        if warm and _warm_ctx_kb_ver.get(_effective_model) == kb_ver:
+            context = warm
+            system = ""
+            logger.debug(f"_local_think: warm ctx hit ({len(warm)} tokens, {_effective_model})")
+
     payload: dict = {
-        "model": model or _LOCAL_MODEL,
+        "model": _effective_model,
         "prompt": prompt,
         "stream": False,
         "options": {"temperature": temperature, "num_predict": max_tokens},
@@ -245,7 +451,8 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
         return None
 
 
-def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) -> str | None:
+def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
+                     answer_format: str | None = None) -> str | None:
     """Multi-stage convergent synthesis: coder and reasoner ping-pong until answer converges.
 
     Stage 1 (qwen3-coder:30b, GPU 0): Extract and structure relevant facts into a brief.
@@ -255,6 +462,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
 
     Convergence: if Stage 2 finds no gaps, skip Stage 3 and answer immediately.
     Falls back to single-stage reasoning if Stage 1 fails.
+    answer_format: override the default FILE/FUNCTION/SIGNAL/EFFECT format instruction.
     """
     _STAGE1_SYSTEM = (
         "You are a code extraction assistant for the Polychron music synthesis project. "
@@ -280,7 +488,8 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
     if not frame or len(frame) < 40 or "src/" not in frame:
         return _local_think(
             raw_context[:6000] + "\n\n" + question,
-            max_tokens=max_tokens, model=_REASONING_MODEL
+            max_tokens=max_tokens, model=_REASONING_MODEL,
+            system=_THINK_SYSTEM,
         )
 
     gap_prompt = (
@@ -291,7 +500,8 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
         "If the brief has everything needed, respond with exactly: NO GAPS\n"
         "Max 5 gaps."
     )
-    gaps = _local_think(gap_prompt, max_tokens=500, model=_REASONING_MODEL, temperature=0.2)
+    gaps = _local_think(gap_prompt, max_tokens=500, model=_REASONING_MODEL, temperature=0.2,
+                        system=_THINK_SYSTEM)
 
     if gaps and "NO GAP" not in gaps.upper() and "NEED:" in gaps:
         supplement_prompt = (
@@ -308,18 +518,22 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
             logger.info(f"_two_stage_think: gap-fill round added {len(supplement)} chars")
 
     abbreviated_context = raw_context[:2000]
-    reason_prompt = (
-        "/no_think Structured brief about the Polychron codebase:\n\n"
-        + frame + "\n\n"
-        "Additional raw context (cross-reference only):\n" + abbreviated_context + "\n\n"
-        "Question: " + question + "\n\n"
+    _fmt = answer_format if answer_format else (
         "Answer using ONLY modules, files, signals, and functions named in the brief. "
         "Do NOT invent names. "
         "Format each item as:\n"
         "  FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence.\n"
         "Max 4 items. No prose paragraphs."
     )
-    return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
+    reason_prompt = (
+        "/no_think Structured brief about the Polychron codebase:\n\n"
+        + frame + "\n\n"
+        "Additional raw context (cross-reference only):\n" + abbreviated_context + "\n\n"
+        "Question: " + question + "\n\n"
+        + _fmt
+    )
+    return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL,
+                        system=_THINK_SYSTEM)
 
 
 def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) -> str | None:
@@ -393,7 +607,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
             "Context:\n" + raw_context[:6000]
         )
         results[1] = _local_think(prompt, max_tokens=1200, model=_REASONING_MODEL,
-                                   temperature=0.2, priority="parallel")
+                                   system=_THINK_SYSTEM, temperature=0.2, priority="parallel")
 
     try:
         t0 = threading.Thread(target=_gpu0_extract, daemon=True)
@@ -411,11 +625,18 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         logger.warning("_parallel_two_stage_think: both stages failed, falling back to sequential")
         return _two_stage_think(raw_context, question, max_tokens)
 
+    # ── Stage 1.5: Arbiter conflict check (CPU-only, ~2-3s) ──
+    # Runs the nimble qwen3:4b on CPU from RAM while GPUs are idle between stages.
+    # Catches: hallucinated module names, contradicting analysis, scope misalignment.
+    arbiter_report = _arbiter_check(gpu0_out, gpu1_out, question)
+
     merged_parts = []
     if gpu0_out and len(gpu0_out) > 30:
         merged_parts.append("## Structural Facts (extracted)\n" + gpu0_out)
     if gpu1_out and len(gpu1_out) > 30:
         merged_parts.append("## Coupling Analysis (reasoned)\n" + gpu1_out)
+    if arbiter_report:
+        merged_parts.append("## Arbiter Conflict Report (resolve before answering)\n" + arbiter_report)
     merged = "\n\n".join(merged_parts) if merged_parts else (gpu0_out or gpu1_out or "")
 
     if _is_evolution_q:
@@ -432,11 +653,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     chat_messages = [
         {
             "role": "system",
-            "content": (
-                "You are a Polychron music synthesis codebase expert. "
-                "Answer only from facts in the conversation. Do NOT invent module names, "
-                "function names, or signal fields. /no_think"
-            )
+            "content": _THINK_SYSTEM + " Answer only from facts in the conversation. Do NOT invent module names, function names, or signal fields. /no_think"
         },
         {
             "role": "user",

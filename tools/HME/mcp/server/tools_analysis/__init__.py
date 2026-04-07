@@ -141,7 +141,6 @@ from . import coupling           # noqa: E402, F401
 
 # Re-export synthesis functions for tools_knowledge.py compatibility
 from .synthesis import (  # noqa: E402, F401
-    _get_api_key, _local_think, _think_local_or_claude, _claude_think,
-    _format_kb_corpus, _THINK_MODEL, _warm_cache,
-    _get_max_tokens, _get_effort, _get_tool_budget,
+    _local_think, _think_local_or_claude,
+    _THINK_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
 )
