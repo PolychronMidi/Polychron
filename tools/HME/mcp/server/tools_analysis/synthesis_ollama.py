@@ -589,18 +589,23 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
 
 
 def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) -> str | None:
-    """True parallel two-GPU synthesis. GPU 0 and GPU 1 run simultaneously in Stage 1.
+    """Three-model five-stage synthesis pipeline.
 
-    Stage 1A (qwen3-coder:30b, GPU 0): Extract structured code facts — file paths,
-      function names, signal fields, bridge status. Deterministic (temp=0.1).
-    Stage 1B (qwen3:30b-a3b, GPU 1): Independent first-pass analysis — coupling
-      patterns, musical effects, antagonism logic. Speculative (temp=0.2).
-    Both run simultaneously via threading.Thread with per-GPU locks.
+    Stage 1A (qwen3-coder:30b, GPU 0): Extract structured code facts.
+    Stage 1B (qwen3:30b-a3b, GPU 1): Independent coupling/musical analysis.
+      Both run simultaneously via threading.Thread with per-GPU locks.
 
-    Stage 2 (GPU 1): Final synthesis from merged Stage 1A + 1B briefs.
+    Stage 1.5 (qwen3:4b, arbiter): Triage conflict detection between 1A/1B.
+      Classifies as ALIGNED (proceed), MINOR (advisory note), or COMPLEX (escalate).
 
-    Performance: ~max(GPU0_time, GPU1_time) instead of sum — roughly 2× faster
-    than the 4-stage sequential flow for most questions.
+    Stage 1.75 (qwen3:30b-a3b, GPU 1): Deep conflict resolution.
+      Only runs on COMPLEX conflicts — reasoning model reconciles contradictions
+      so Stage 2 works from a corrected brief.
+
+    Stage 2 (qwen3:30b-a3b, GPU 1): Final synthesis from merged + resolved brief.
+
+    Performance: Stage 1 is parallel (~max of GPU times). Arbiter runs during GPU
+    idle. Stage 1.75 only fires on complex conflicts (~10% of questions).
     Falls back to _two_stage_think if threading fails.
     """
     import threading
@@ -748,6 +753,20 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         fallback_prompt = ("Based on this analysis:\n\n" + merged + "\n\nAnswer: " + question +
                            "\n\n" + _fmt_instruction + "\nMax 4 items. /no_think")
         result = _local_think(fallback_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
+
+    # Build pipeline trace for transparency
+    _trace_parts = [f"1A:{len(gpu0_out or '')}c", f"1B:{len(gpu1_out or '')}c"]
+    if arbiter_result:
+        sev = arbiter_result["severity"].upper()
+        _trace_parts.append(f"arbiter:{sev}")
+        if sev == "COMPLEX":
+            _trace_parts.append("1.75:resolved" if "Conflict Resolution" in merged else "1.75:failed")
+    else:
+        _trace_parts.append("arbiter:ALIGNED")
+    _trace_parts.append(f"2:{len(result or '')}c")
+    _trace = " → ".join(_trace_parts)
+
     if result:
-        logger.info(f"_parallel_two_stage_think: merged {len(gpu0_out or '')}+{len(gpu1_out or '')} chars → {len(result)} chars answer (chat)")
+        result = result + f"\n\n*pipeline: {_trace}*"
+        logger.info(f"_parallel_two_stage_think: {_trace}")
     return result or merged
