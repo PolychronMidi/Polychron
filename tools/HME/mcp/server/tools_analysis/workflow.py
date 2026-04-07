@@ -174,7 +174,9 @@ def before_editing(file_path: str) -> str:
     try:
         from .coupling import get_top_bridges, _TRUST_FILE_ALIASES, _FILE_TRUST_ALIASES
         trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
-        bridges = get_top_bridges(n=6)
+        # n=20 + threshold=-0.20: process all antagonist pairs so weak ones (e.g. r=-0.211) aren't
+        # cut off before module-specific filtering. Global calls use default n=3/8 with -0.30.
+        bridges = get_top_bridges(n=20, threshold=-0.20)
         def _is_this_mod(name: str) -> bool:
             return (name == module_name or name == trust_alias
                     or _TRUST_FILE_ALIASES.get(name, name) == module_name)

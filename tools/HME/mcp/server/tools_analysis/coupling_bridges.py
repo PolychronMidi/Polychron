@@ -147,16 +147,18 @@ def _get_bridge_cache() -> dict:
     return ctx._bridge_cache
 
 
-def get_top_bridges(n: int = 3) -> list:
+def get_top_bridges(n: int = 3, threshold: float = -0.30) -> list:
     """Return top N antagonist bridge opportunities as structured dicts.
-    Each dict: {pair_a, pair_b, r, arch_a, arch_b, field, eff_a, eff_b, why, already_bridged}."""
+    Each dict: {pair_a, pair_b, r, arch_a, arch_b, field, eff_a, eff_b, why, already_bridged}.
+    threshold: r-value cutoff (default -0.30 for global views; pass -0.20 for module-specific
+    lookups to surface weaker-but-real virgin tensions like feedbackOscillator↔motifEcho)."""
     try:
         trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
         trace_mtime = os.path.getmtime(trace_path) if os.path.isfile(trace_path) else 0
         src_root_b = os.path.join(ctx.PROJECT_ROOT, "src")
         cl_dir = os.path.join(src_root_b, "crossLayer")
         cl_mtime = os.path.getmtime(cl_dir) if os.path.isdir(cl_dir) else 0
-        cache_key = (trace_mtime, cl_mtime, n)
+        cache_key = (trace_mtime, cl_mtime, n, threshold)
         _bridge_cache = _get_bridge_cache()
         if cache_key in _bridge_cache:
             return _bridge_cache[cache_key]
@@ -206,7 +208,7 @@ def get_top_bridges(n: int = 3) -> list:
         pairs: list = []
         for (a, b), r in corr.items():
             key = tuple(sorted([a, b]))
-            if key not in seen and r < -0.30:
+            if key not in seen and r < threshold:
                 seen.add(key)
                 pairs.append((a, b, r))
         pairs.sort(key=lambda x: x[2])

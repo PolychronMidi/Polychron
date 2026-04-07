@@ -37,7 +37,8 @@ def build_evolutionary_potential(module_name: str) -> list[str]:
         unused_r = [f for f in _ALL_RHYTHM  if f not in used_r]
 
         trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
-        bridges = get_top_bridges(n=6)
+        # Use -0.20 threshold to surface weaker virgin pairs (e.g. r=-0.211) in module-specific view
+        bridges = get_top_bridges(n=6, threshold=-0.20)
         def _is_this(name: str) -> bool:
             return (name == module_name or name == trust_alias
                     or _TRUST_FILE_ALIASES.get(name, name) == module_name)
