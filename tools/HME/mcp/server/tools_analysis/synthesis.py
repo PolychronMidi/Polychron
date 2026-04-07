@@ -342,12 +342,15 @@ def _ollama_background_yield():
 
 
 def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
-                 priority: str = "interactive") -> str | None:
+                 priority: str = "interactive", system: str = "",
+                 temperature: float = 0.3) -> str | None:
     """Call local Ollama model for synthesis tasks.
 
     Uses only stdlib -- no extra dependencies. Returns None if Ollama isn't running
     or the model isn't available, allowing callers to fall back gracefully.
     Pass model=_REASONING_MODEL for think/causal_trace/memory_dream tasks.
+    system: optional system prompt for role-setting.
+    temperature: 0.1 for deterministic extraction, 0.3 for balanced, 0.5 for creative.
     """
     import urllib.request
 
@@ -358,12 +361,15 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     elif priority == "interactive":
         _ollama_interactive.set()  # signal background to pause
 
-    body = json.dumps({
+    payload: dict = {
         "model": model or _LOCAL_MODEL,
         "prompt": prompt,
         "stream": False,
-        "options": {"temperature": 0.3, "num_predict": max_tokens},
-    }).encode()
+        "options": {"temperature": temperature, "num_predict": max_tokens},
+    }
+    if system:
+        payload["system"] = system
+    body = json.dumps(payload).encode()
     req = urllib.request.Request(
         _LOCAL_URL, data=body,
         headers={"Content-Type": "application/json"},
@@ -672,37 +678,50 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192) ->
 
     Falls back to single-stage reasoning if Stage 1 fails.
     """
-    # Stage 1: Coder model structures the raw context (GPU 0, fast, code-specialized)
+    # Stage 1: Coder model extracts relevant facts (GPU 0, fast, code-specialized)
+    # System prompt sets extraction-only role; low temperature for deterministic output.
+    _STAGE1_SYSTEM = (
+        "You are a code extraction assistant for the Polychron music synthesis project. "
+        "Extract code facts only. No reasoning, no analysis, no opinions. "
+        "Output: file paths, function names, signal fields, correlation values, bridge status."
+    )
     frame_prompt = (
-        "Extract and structure ONLY the facts relevant to answering this question:\n"
+        "Extract ONLY the facts relevant to answering this question:\n"
         f"  {question}\n\n"
         "Rules:\n"
         "- Preserve EXACT file paths (src/crossLayer/...), function names, signal field names, and KB entry titles\n"
-        "- Remove irrelevant context — keep only what bears on the question\n"
         "- For each relevant module: state its file, its coupling dimensions, and its antagonist pair\n"
+        "- Mark pairs as VIRGIN (0 bridges), PARTIAL (1-2), or SATURATED (3+)\n"
         "- Preserve code snippets that directly relate\n"
         "- Max 500 words\n\n"
         "Raw project context:\n" + raw_context[:8000]
     )
-    frame = _local_think(frame_prompt, max_tokens=2000, model=_LOCAL_MODEL)
-    if not frame or len(frame) < 40:
-        # Fall back to single-stage reasoning
+    frame = _local_think(frame_prompt, max_tokens=2000, model=_LOCAL_MODEL,
+                         system=_STAGE1_SYSTEM, temperature=0.1)
+
+    # Quality gate: frame must contain at least one src/ path to be useful
+    if not frame or len(frame) < 40 or "src/" not in frame:
+        # Fall back to single-stage reasoning with full context
         return _local_think(
             raw_context[:6000] + "\n\n" + question,
             max_tokens=max_tokens, model=_REASONING_MODEL
         )
 
-    # Stage 2: Reasoning model answers directly (GPU 1, Qwen3 MoE)
-    # /no_think: Stage 1 already did the thinking — Stage 2 just answers from structured facts.
+    # Stage 2: Reasoning model thinks deeply about the structured brief (GPU 1, Qwen3 MoE)
+    # Enable thinking mode — the MoE architecture activates 30B knowledge during thinking,
+    # then <think> tag stripping in _local_think extracts just the final answer.
+    # Also pass abbreviated raw context so Stage 2 can cross-reference if Stage 1 dropped facts.
+    abbreviated_context = raw_context[:2000]
     reason_prompt = (
         "Structured brief about the Polychron codebase:\n\n"
         + frame + "\n\n"
+        "Additional raw context (cross-reference only):\n" + abbreviated_context + "\n\n"
         "Question: " + question + "\n\n"
-        "Answer using ONLY modules, files, signals, and functions named in the brief above. "
+        "Answer using ONLY modules, files, signals, and functions named in the brief. "
         "Do NOT invent names. "
         "Format each item as:\n"
         "  FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence.\n"
-        "Max 4 items. No prose paragraphs. /no_think"
+        "Max 4 items. No prose paragraphs."
     )
     return _local_think(reason_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
 
