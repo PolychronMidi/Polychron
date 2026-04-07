@@ -415,11 +415,22 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
             out.append(f"## Musical Critique\n*(unavailable: {e})*")
 
     # --- Inline evolution suggestions (default on) ---
+    # Cap total digest output at ~8000 chars (~2000 tokens) to limit Claude context spend.
+    # If budget remains after composition arc/delta, include evolution; else skip with note.
+    _DIGEST_CHAR_CAP = 8000
+    _current_len = sum(len(s) for s in out)
     if evolve:
         try:
             from .evolution_next import suggest_evolution as _suggest_ev
-            out.append("\n---")
-            out.append(_suggest_ev())
+            _evo = _suggest_ev()
+            if _current_len + len(_evo) <= _DIGEST_CHAR_CAP:
+                out.append("\n---")
+                out.append(_evo)
+            else:
+                # Over budget: include truncated version with budget note
+                _remaining = max(0, _DIGEST_CHAR_CAP - _current_len - 8)
+                out.append("\n---")
+                out.append(_evo[:_remaining] + f"\n*(truncated — {len(_evo) - _remaining} chars omitted for token budget)*")
         except Exception as e:
             out.append(f"\n## Evolution\n*(unavailable: {e})*")
 
