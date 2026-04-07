@@ -406,9 +406,12 @@ def think(about: str, context: str = "") -> str:
             injected_state += f"  [{k['category']}] {k['title']}: {k['content'][:200]}\n"
     elif is_evolution_q:
         try:
-            from .coupling import antagonist_map as _ant_map, dimension_gap_finder as _dim_gaps
-            injected_state = "## Live Project State\n### Antagonist pairs (top creative tensions):\n"
-            injected_state += _ant_map()[:800]
+            from .coupling import antagonism_leverage as _ant_leverage, dimension_gap_finder as _dim_gaps
+            # Use leverage data (concrete bridge recommendations with file paths, correlations,
+            # and opposing-response recipes) instead of raw antagonist_map
+            leverage_full = _ant_leverage(pair_limit=3)
+            injected_state = "## Live Project State\n### Top 3 Antagonist Leverage Opportunities:\n"
+            injected_state += leverage_full[:1600]
             injected_state += "\n\n### Dimension gaps (underused coupling signals):\n"
             injected_state += _dim_gaps()[:400]
         except Exception:
@@ -521,10 +524,18 @@ def think(about: str, context: str = "") -> str:
                 "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
             )
         raw_context += (
-            "Polychron modules: motifEcho, entropyRegulator, harmonicIntervalGuard, convergenceDetector, "
-            "dynamicRoleSwap, stutterContagion, feedbackOscillator, temporalGravity, crossLayerSilhouette, "
-            "texturalMirror, rhythmicPhaseLock, polyrhythmicPhasePredictor, restSynchronizer, "
-            "registerCollisionAvoider, spectralComplementarity, grooveTransfer, phaseAwareCadenceWindow. "
+            "Polychron crossLayer module FILE PATHS:\n"
+            "  src/crossLayer/harmony/motifEcho.js, src/crossLayer/structure/entropy/entropyRegulator.js,\n"
+            "  src/crossLayer/harmony/harmonicIntervalGuard.js, src/crossLayer/rhythm/convergenceDetector.js,\n"
+            "  src/crossLayer/dynamics/dynamicRoleSwap.js, src/crossLayer/rhythm/stutterContagion.js,\n"
+            "  src/crossLayer/rhythm/feedbackOscillator.js, src/crossLayer/rhythm/temporalGravity.js,\n"
+            "  src/crossLayer/structure/form/crossLayerSilhouette.js, src/crossLayer/dynamics/texturalMirror.js,\n"
+            "  src/crossLayer/rhythm/rhythmicPhaseLock.js, src/crossLayer/rhythm/polyrhythmicPhasePredictor.js,\n"
+            "  src/crossLayer/dynamics/restSynchronizer.js, src/crossLayer/harmony/registerCollisionAvoider.js,\n"
+            "  src/crossLayer/harmony/spectralComplementarity.js, src/crossLayer/rhythm/grooveTransfer.js,\n"
+            "  src/crossLayer/harmony/phaseAwareCadenceWindow.js, src/crossLayer/structure/form/crossLayerClimaxEngine.js,\n"
+            "  src/crossLayer/dynamics/crossLayerDynamicEnvelope.js, src/crossLayer/rhythm/rhythmicComplementEngine.js,\n"
+            "  src/crossLayer/melody/emergentMelodicEngine.js, src/crossLayer/rhythm/emergentRhythmEngine.js.\n"
             "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
             "Each channel posts specific fields — check the producer source code above for exact field names. "
             "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
