@@ -3,6 +3,7 @@ import os
 import logging
 
 from server import context as ctx
+from server.tools_analysis import _track
 from server.helpers import (
     get_context_budget, validate_project_path, fmt_score, fmt_sim_score,
     format_knowledge_results, check_path_in_project,
@@ -242,6 +243,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
 @ctx.mcp.tool()
 def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", scope: str = "main", path: str = "", response_format: str = "detailed") -> str:
     """Semantic natural-language code search across the indexed codebase. Use this for intent-based queries like 'where does convergence detection happen' — it uses vector similarity, not string matching. Set path='src/crossLayer' to scope results to a directory. Set lib='<name>' to search an indexed library. Set scope='all' to include both main and libs. Results include chunk summaries, relevance scores, and any KB constraints tagged to matching modules. For exact string/regex matching, use grep instead. Set response_format='concise' to get file:line locations only (saves ~2/3 tokens); 'detailed' (default) includes full summaries and KB tags."""
+    _track("search_code")
     ctx.ensure_ready_sync()
     if not query or not query.strip():
         return "Empty query. Provide a natural-language description of what you're looking for, e.g. 'where does convergence detection happen'."

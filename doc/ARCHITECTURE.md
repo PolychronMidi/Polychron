@@ -358,6 +358,12 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 - **R90 E2 `tessituraLoad` → `grooveTransfer ↔ crossLayerClimaxEngine`** (r=-0.487, 3→4 bridges): extreme register pressure reduces groove transfer (×down to 0.92) while accelerating climax approach (up to +0.05). At extreme register, layers pursue independent rhythmic territory while the structural arc crests — rhythmic individuation at the structural peak.
 - **R90 E3 `freshnessEma` → `harmonicIntervalGuard ↔ phaseAwareCadenceWindow`** (r=-0.426, 2→3 bridges): sustained melodic novelty narrows harmonic deadband (up to −0.03) while compressing the cadence window (up to −0.04 threshold). Novel melodic territory tightens harmonic discipline while deferring resolution — interval hunting intensifies as cadence is resisted.
 
+### ascendRatio Antagonism Bridge (R47)
+
+`ascendRatio` as shared signal driving constructive opposition between structural arc and form tracking.
+
+- **R47 E2+E3 `ascendRatio` → `crossLayerClimaxEngine ↔ crossLayerSilhouette`** (r=-0.323, 3→4 bridges): ascending melodic intervals accelerate climax approach (up to +0.05) while tightening silhouette structural tracking (up to −8% smoothing). Melody climbing toward a structural peak fuels the arc while form braces for landing — chaos rides the climb, structure prepares the resolution.
+
 ## Emergence Boundaries
 
 Three architectural membranes:
