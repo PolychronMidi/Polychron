@@ -65,6 +65,19 @@ _warm_ctx_ts: dict[str, float] = {}      # model → epoch timestamp of last pri
 _think_history: list[dict] = []           # [{about, answer}] sliding window
 _THINK_HISTORY_MAX = 3                    # keep last N exchanges
 
+# ── Unified session narrative ─────────────────────────────────────────────
+# A running prose thread of what's happening this session — orthogonal to both
+# think history (narrow Q&A) and KB (static facts). Captures session direction,
+# key decisions, arbiter resolutions, and pipeline verdicts. Injected into every
+# synthesis call so all three models share the same session context.
+#
+# Architecture: NOT a warm KV context (too dynamic). A live string injected
+# alongside existing context. Updated by: think calls, arbiter COMPLEX resolutions,
+# pipeline verdicts, and any external caller via append_session_narrative().
+_session_narrative: list[dict] = []       # [{seq, event, content}] rolling window
+_session_narrative_seq: int = 0           # monotonic event counter
+_SESSION_NARRATIVE_MAX = 10              # keep last N events
+
 
 def _ollama_background_yield():
     """Called by background tasks before each Ollama call. If an interactive call
@@ -139,7 +152,9 @@ def _prime_warm_context(model: str) -> bool:
     Background priority (yields to interactive). Skips if KB unchanged."""
     kb_ver = getattr(ctx, "_kb_version", 0)
     if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
+        logger.debug(f"warm ctx already fresh: {model} (kb_ver={kb_ver})")
         return True
+    logger.info(f"warm ctx priming: {model} (kb_ver={kb_ver}) — sending Ollama request...")
     persona = _gpu_persona(model)
     # Embed persona in prompt (not system=) so KV cache contains it.
     # Subsequent calls pass context= without system=, avoiding double-processing.
@@ -153,8 +168,9 @@ def _prime_warm_context(model: str) -> bool:
         _warm_ctx[model] = result[1]
         _warm_ctx_kb_ver[model] = kb_ver
         _warm_ctx_ts[model] = _t.time()
-        logger.info(f"warm ctx primed: {model} ({len(result[1])} ctx tokens, kb_ver={kb_ver})")
+        logger.info(f"warm ctx PRIMED: {model} ({len(result[1])} ctx tokens, kb_ver={kb_ver})")
         return True
+    logger.warning(f"warm ctx priming FAILED: {model} (Ollama returned no context)")
     return False
 
 
@@ -203,6 +219,7 @@ def warm_context_status() -> dict:
         else:
             status[model] = {"primed": False}
     status["think_history"] = len(_think_history)
+    status["session_narrative"] = len(_session_narrative)
     return status
 
 
@@ -224,7 +241,9 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
     if not gpu0_out or not gpu1_out or len(gpu0_out) < 30 or len(gpu1_out) < 30:
         return None
     import urllib.request
+    session_ctx = get_session_narrative()
     prompt = (
+        (session_ctx if session_ctx else "") +
         "Two independent analyses of the same Polychron codebase question.\n\n"
         f"Question: {question[:200]}\n\n"
         f"EXTRACTOR (GPU0, structured facts):\n{gpu0_out[:800]}\n\n"
@@ -311,6 +330,10 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
                             system=_THINK_SYSTEM, temperature=0.15)
     if resolved:
         logger.info(f"Stage 1.75: complex conflict resolved ({len(resolved)} chars)")
+        append_session_narrative(
+            "arbiter_resolved",
+            f"COMPLEX conflict on '{question[:60]}' resolved by Stage 1.75"
+        )
     return resolved
 
 
@@ -319,6 +342,9 @@ def store_think_history(about: str, answer: str):
     _think_history.append({"about": about, "answer": answer[:300]})
     while len(_think_history) > _THINK_HISTORY_MAX:
         _think_history.pop(0)
+    # Also feed the session narrative: one compact sentence from the think topic
+    narrative_entry = about[:80] + (": " + answer[:60] + "..." if answer else "")
+    append_session_narrative("think", narrative_entry)
 
 
 def get_think_history_context() -> str:
@@ -329,23 +355,65 @@ def get_think_history_context() -> str:
     return "Previous think exchanges this session:\n" + "\n".join(lines) + "\n\n"
 
 
+def append_session_narrative(event: str, content: str):
+    """Append an event to the unified session narrative.
+
+    event: short label for the event type (e.g. 'think', 'arbiter_resolved',
+           'pipeline', 'evolution', 'knowledge_added')
+    content: one compact sentence describing what happened / was decided (≤80 chars).
+    Called automatically from store_think_history and _resolve_complex_conflict.
+    External callers (pipeline hooks, add_knowledge, evolution tools) may call directly.
+    """
+    global _session_narrative_seq
+    _session_narrative_seq += 1
+    _session_narrative.append({
+        "seq": _session_narrative_seq,
+        "event": event,
+        "content": content[:100],
+    })
+    while len(_session_narrative) > _SESSION_NARRATIVE_MAX:
+        _session_narrative.pop(0)
+
+
+def get_session_narrative() -> str:
+    """Returns the unified session narrative block for injection into any model call.
+
+    Provides ALL models with a shared thread of what this session is about —
+    direction, decisions, pipeline verdicts, arbiter resolutions. This is the
+    4th context layer (orthogonal to KB/warm-ctx/think-history): dynamic session prose.
+    """
+    if not _session_narrative:
+        return ""
+    lines = [f"  [{e['seq']}:{e['event']}] {e['content']}" for e in _session_narrative]
+    return "Session narrative (this session's work so far):\n" + "\n".join(lines) + "\n\n"
+
+
 _lazy_prime_attempted = False
 
 def _ensure_warm(model: str):
     """Lazy warm context priming — fires on first synthesis call if not already primed.
     Non-blocking: runs in a background thread so the first call isn't delayed.
-    Subsequent calls check _warm_ctx dict directly (instant)."""
+    Subsequent calls check _warm_ctx dict directly (instant).
+    If Ollama was down at first attempt, resets _lazy_prime_attempted so the next call retries.
+    """
     global _lazy_prime_attempted
-    if model in _warm_ctx or _lazy_prime_attempted:
-        return
+    if model in _warm_ctx:
+        return  # already primed — fast path
+    if _lazy_prime_attempted:
+        return  # background thread already running or recently attempted
     _lazy_prime_attempted = True
     def _bg():
+        global _lazy_prime_attempted
         try:
-            _prime_warm_context(_LOCAL_MODEL)
-            _prime_warm_context(_REASONING_MODEL)
-            _prime_warm_context(_ARBITER_MODEL)
+            ok0 = _prime_warm_context(_LOCAL_MODEL)
+            ok1 = _prime_warm_context(_REASONING_MODEL)
+            ok2 = _prime_warm_context(_ARBITER_MODEL)
+            if not any([ok0, ok1, ok2]):
+                # All failed (Ollama likely down) — allow future retry
+                _lazy_prime_attempted = False
+                logger.info("lazy warm priming: all failed, will retry on next synthesis call")
         except Exception:
-            pass
+            _lazy_prime_attempted = False
     _threading.Thread(target=_bg, daemon=True).start()
     logger.info("lazy warm context priming started (background)")
 
@@ -393,6 +461,16 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             context = warm
             system = ""
             logger.debug(f"_local_think: warm ctx hit ({len(warm)} tokens, {_effective_model})")
+
+    # ── Inject session narrative into synthesis calls ──
+    # Inject when: (a) _THINK_SYSTEM — reasoner synthesis calls, or
+    #              (b) warm KV context is active (system was cleared by the swap above).
+    # Do NOT inject when an extractor call passes its own context array (stage1_kv_ctx)
+    # with system=_STAGE1_SYSTEM — extractors need clean context, not session prose.
+    if system == _THINK_SYSTEM or (system == "" and context is not None):
+        narrative = get_session_narrative()
+        if narrative and not prompt.startswith("Session narrative"):
+            prompt = narrative + prompt
 
     payload: dict = {
         "model": _effective_model,
@@ -788,6 +866,8 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
             "Format each finding as:\n"
             "  FILE: path, SIGNAL: field, EFFECT: one sentence."
         )
+    # Inject session narrative into Stage 2 so the final synthesizer knows session direction
+    _narrative_prefix = get_session_narrative()
     chat_messages = [
         {
             "role": "system",
@@ -796,6 +876,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         {
             "role": "user",
             "content": (
+                (_narrative_prefix if _narrative_prefix else "") +
                 f"Analyze the Polychron codebase for:\n  {question}\n\n"
                 "Context:\n" + raw_context[:2000]
             )

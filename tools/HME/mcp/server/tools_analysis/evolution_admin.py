@@ -248,7 +248,7 @@ def hme_selftest() -> str:
         from .synthesis import warm_context_status, _ARBITER_MODEL
         wcs = warm_context_status()
         for model_name, info in wcs.items():
-            if model_name in ("arbiter", "think_history"):
+            if model_name in ("arbiter", "think_history", "session_narrative"):
                 continue
             if isinstance(info, dict) and info.get("primed"):
                 results.append(
@@ -257,8 +257,11 @@ def hme_selftest() -> str:
                 )
             elif isinstance(info, dict):
                 results.append(f"INFO: warm ctx {model_name[:20]} -- not primed (run hme_admin warm)")
-        results.append(f"INFO: arbiter model -- {wcs.get('arbiter', '?')}")
+        arbiter_info = wcs.get(_ARBITER_MODEL, {})
+        arbiter_state = "primed" if isinstance(arbiter_info, dict) and arbiter_info.get("primed") else "not primed"
+        results.append(f"INFO: arbiter ({_ARBITER_MODEL[:20]}) -- {arbiter_state}")
         results.append(f"INFO: think history -- {wcs.get('think_history', 0)} exchanges")
+        results.append(f"INFO: session narrative -- {wcs.get('session_narrative', 0)} events")
     except Exception:
         results.append("INFO: warm ctx -- not available")
 
@@ -320,17 +323,25 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
         except Exception as e:
             parts.append(f"clear_index error: {e}")
     if action == "warm":
-        try:
-            from .workflow import warm_pre_edit_cache as _warm
-            parts.append(_warm())
-        except Exception as e:
-            parts.append(f"warm_pre_edit_cache error: {e}")
-        # Prime GPU warm KV contexts (persona + KB pre-tokenized in KV cache)
-        try:
-            from .synthesis import _prime_all_gpus
-            parts.append(_prime_all_gpus())
-        except Exception as e:
-            parts.append(f"warm_gpu_context error: {e}")
+        import threading as _threading
+        # Fire pre-edit cache + GPU warm KV context priming in the background.
+        # Returns immediately — progress logged to hme.log as each model completes.
+        def _bg_warm():
+            try:
+                from .workflow import warm_pre_edit_cache as _warm_cache
+                _warm_cache()
+            except Exception as e:
+                logger.warning(f"warm_pre_edit_cache error: {e}")
+            try:
+                from .synthesis import _prime_all_gpus
+                _prime_all_gpus()
+            except Exception as e:
+                logger.warning(f"warm_gpu_context error: {e}")
+        _threading.Thread(target=_bg_warm, daemon=True).start()
+        parts.append(
+            "Warm priming started in background (pre-edit cache + 3 GPU KV contexts).\n"
+            "Progress logged to hme.log. Use hme_admin(action='selftest') to check status."
+        )
     if not parts:
         return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', or 'both'."
     return "\n\n".join(parts)

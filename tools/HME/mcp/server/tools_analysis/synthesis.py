@@ -3,7 +3,8 @@
 Split into focused modules:
   synthesis_config.py  — model names, system prompt, budget tables
   synthesis_ollama.py  — Ollama: _local_think, _local_chat, _two_stage_think,
-                         _parallel_two_stage_think, warm KV context, arbiter, think history
+                         _parallel_two_stage_think, warm KV context, arbiter,
+                         think history, unified session narrative
 """
 import logging
 
@@ -26,6 +27,7 @@ from .synthesis_ollama import (  # noqa: F401
     _prime_warm_context, _prime_all_gpus, warm_context_status,
     _arbiter_check, _resolve_complex_conflict,
     store_think_history, get_think_history_context,
+    append_session_narrative, get_session_narrative,
 )
 
 

@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 50+ tools: semantic search, KB, architectural analysis, Claude synthesis |
+| **MCP Server** | `tools/HME/` | 50+ tools: semantic search, KB, architectural analysis, local Ollama synthesis |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Cognitive frameworks loaded per session via `/HME` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -108,11 +108,15 @@ Polychron/.claude/mcp/HME/
 {
   "mcpServers": {
     "HME": {
+      "type": "stdio",
       "command": "python3",
-      "args": ["tools/HME/mcp/server/main.py"],
+      "args": ["/home/jah/Polychron/tools/HME/mcp/server/main.py"],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
-        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME"
+        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME",
+        "HME_LOCAL_MODEL": "qwen3-coder:30b",
+        "HME_LOCAL_URL": "http://localhost:11434/api/generate",
+        "HME_ARBITER_MODEL": "qwen3:4b"
       }
     }
   }
@@ -355,7 +359,7 @@ Starts at **15% confidence** — verify against listening before trusting. Confi
 | Tool | Use For |
 |------|---------|
 | `hme_admin(action='index')` | Reindex all code chunks + symbols. Use after batch changes when file watcher hasn't caught up. |
-| `hme_admin(action='warm')` | Pre-populate caches: Tier 1 (caller+KB for all src/ files) + Tier 2 (Edit Risks synthesis via Haiku for 30 hot files). Runs automatically at startup. Edit Risks uses Haiku (~200ms) — 3-5× faster than previous Sonnet+extended-thinking. |
+| `hme_admin(action='warm')` | Pre-populate all caches: (1) Tier 1 caller+KB for all src/ files, (2) Tier 2 Edit Risks synthesis for 30 hot files, (3) Warm KV context for all three Ollama models (GPU0 extractor, GPU1 reasoner, arbiter) in parallel background threads. |
 | `get_index_status` | Check index health |
 | `clear_index` | Wipe index for full rebuild |
 
@@ -418,38 +422,123 @@ Polychron's primary module pattern: `globalName = (() => { function tick() {...}
 
 321 IIFE globals + 1914 inner functions = 3848+ total symbols. `lookup_symbol` and `find_callers` work with Polychron's global-assignment pattern.
 
-### Tiered Model Architecture
+### Three-Model Ollama Fleet
 
-HME routes synthesis to the right model for each task — Claude for high-value architectural insight, local models for mechanical analysis:
+HME runs a three-model local synthesis fleet. No external API. All synthesis is local on two dedicated GPUs + CPU RAM.
 
-**Claude API** (when `ANTHROPIC_API_KEY` is set):
-- `before_editing`, `what_did_i_forget`, `module_intel`, `diagnose_error`, `causal_trace`, `think` — these need deep architectural reasoning
-- Adaptive thinking, prompt caching (system 5-min, KB corpus 1-hour), agentic tool use
+**GPU0 — Extractor** (`qwen3-coder:30b`, 18.6GB VRAM, `/api/generate`):
+- Specialized persona: "expert code extractor — facts, file paths, module names, no speculation"
+- Runs Stage 1A in parallel two-stage synthesis
+- Default model for `_local_think`, `before_editing` edit risks, `blast_radius`, `codebase_health`, `knowledge_graph`, `memory_dream`
+- Configured via `HME_LOCAL_MODEL` + `HME_LOCAL_URL`
 
-**Local model** (Ollama, configurable via `HME_LOCAL_MODEL`):
-- `evolution_patterns`, `codebase_health`, `blast_radius`, `knowledge_graph`, `memory_dream` — mechanical analysis that doesn't need Claude tokens
-- Falls back to Claude if Ollama unavailable, falls back to no synthesis if neither available
-- Default model: `qwen2.5-coder:7b` at `http://localhost:11434/api/generate`
+**GPU1 — Reasoner** (`qwen3:30b-a3b`, 18.6GB VRAM, `/api/chat` streaming):
+- Specialized persona: full `_THINK_SYSTEM` prompt + synthesis guidance ("synthesizer for a self-evolving music composition system")
+- Runs Stage 1B (parallel) + Stage 1.75 (complex conflict resolution) + Stage 2 (final synthesis)
+- All deep architectural reasoning routes here
+- Configured via `HME_DEEP_MODEL` + `HME_DEEP_CHAT_URL`
+
+**Arbiter** (`qwen3:4b`, ~2.5GB, CPU/GPU hybrid from 64GB RAM):
+- Specialized persona: domain-aware hallucination guard — auto-discovers real module names via `src/crossLayer/**/*.js` glob, lists known signal fields
+- Runs Stage 1.5: triages GPU0/GPU1 output for conflicts
+- Three severity levels: `ALIGNED` (pass through), `MINOR` (advisory note injected), `COMPLEX` (escalate to Stage 1.75)
+- Configured via `HME_ARBITER_MODEL` (default: `qwen3:4b`)
 
 **No model needed:**
 - All hooks (pure bash), all search/grep/index operations, `hme_inspect(mode='introspect')`, `doc_sync_check`
 
 **Configuration** (in `.mcp.json` env):
 ```
-HME_LOCAL_MODEL=qwen2.5-coder:7b     # Ollama model name
-HME_LOCAL_URL=http://localhost:11434/api/generate  # Ollama endpoint
+HME_LOCAL_MODEL=qwen3-coder:30b               # GPU0 extractor
+HME_LOCAL_URL=http://localhost:11434/api/generate
+HME_DEEP_MODEL=qwen3:30b-a3b                  # GPU1 reasoner
+HME_DEEP_CHAT_URL=http://localhost:11434/api/chat
+HME_ARBITER_MODEL=qwen3:4b                    # Arbiter (CPU/GPU hybrid)
 ```
+
+### Warm KV Context System
+
+Each model maintains an independent pre-tokenized KV context cache. The system prompt + KB prefix (~1000 tokens) is pre-processed once and reused across calls — subsequent calls skip re-tokenization entirely.
+
+**How it works:**
+- On the first interactive synthesis call, `_ensure_warm()` spawns a background daemon thread that primes all three models in parallel via `_prime_all_gpus()`
+- Each model gets a *different* warm context tailored to its persona — not a shared global cache
+- Warm context is embedded in the PROMPT field (not `system=`), so Ollama's KV cache captures it
+- On subsequent `_local_think` calls with `system=_THINK_SYSTEM`, the system auto-swaps `system=` for `context=warm_ctx` transparently — no caller changes needed
+- Arbiter passes `payload["context"] = arbiter_warm_ctx` for every conflict check
+
+**Staleness detection:**
+- Every warm context stores `_kb_version` at prime time
+- KB writes increment the global KB version counter
+- If `ctx._kb_version < current_version`, the context is stale and auto-reprimed
+- `warm_context_status()` returns per-model: primed, tokens cached, age (seconds), kb_fresh flag
+
+**Manual control:**
+- `hme_admin(action='warm')` — prime all three GPU warm contexts + Tier 1/2 pre-edit cache
+- `warm_context_status()` — inspect current state of all three contexts
+
+### Five-Stage Synthesis Pipeline
+
+`_parallel_two_stage_think` runs a five-stage pipeline for maximum quality:
+
+```
+Stage 1A (GPU0 extract)  ──┐
+                            ├── parallel ──> Stage 1.5: Arbiter triage
+Stage 1B (GPU1 analyze) ──┘
+        │
+        ├── ALIGNED  → proceed to Stage 2
+        ├── MINOR    → inject advisory note, proceed to Stage 2
+        └── COMPLEX  → Stage 1.75: GPU1 deep resolution → Stage 2
+
+Stage 2 (GPU1 final synthesis)  →  result + pipeline trace
+```
+
+Every output from `_parallel_two_stage_think` ends with a pipeline trace line:
+```
+*pipeline: 1A:Xc → 1B:Xc → arbiter:SEVERITY → 2:Xc*
+```
+(where `Xc` = token count per stage)
+
+**Arbiter escalation (Stage 1.75):** When arbiter detects COMPLEX conflicts (hallucinated module names, contradictory architectural claims, boundary violations), it escalates to GPU1 for authoritative reconciliation before Stage 2. The resolved brief replaces the conflicted input.
+
+### Think Session Memory
+
+HME maintains a rolling window of the last 3 think Q&A pairs within a session. These are injected as "Previous think exchanges this session" at the top of every subsequent `think` call — giving the reasoning model continuity across calls without bloating individual prompts.
+
+- `store_think_history(about, answer)` — persists a Q&A pair (auto-called after each successful think)
+- `get_think_history_context()` — returns formatted history block for injection
+- Max 3 pairs (`_THINK_HISTORY_MAX=3`) — oldest pair drops when window is full
+- History survives across tool calls within a session; resets on server restart
+
+### Unified Session Narrative (4th Context Layer)
+
+A running prose thread of what's happening this session — orthogonal to KB (static facts), warm KV context (static persona), and think history (narrow Q&A).
+
+**What it provides:** session direction, key decisions, pipeline verdicts, arbiter resolutions — a coherent "what we're building and what was decided" context available to ALL models.
+
+**Architecture:** NOT baked into warm KV cache (too dynamic). A live string prepended to every synthesis call's prompt. Updated automatically by:
+- Every `think` call (via `store_think_history`)
+- Every `add_knowledge` call (new calibration anchor logged)
+- Every `_resolve_complex_conflict` call (COMPLEX arbiter resolution logged)
+
+**Injection points:** Every `_local_think(system=_THINK_SYSTEM)` call (GPU0, GPU1) and every `_arbiter_check` prompt — so all three models share the same session thread.
+
+**API:**
+- `append_session_narrative(event, content)` — external callers (pipeline hooks, evolution tools) can push events
+- `get_session_narrative()` — returns formatted narrative block for injection anywhere
+- Max 10 events (`_SESSION_NARRATIVE_MAX=10`); oldest drops when full
+- `hme_admin(mode='selftest')` shows event count under "session narrative"
 
 ### Context-Budget Awareness
 
 Composite tools auto-scale output via `/tmp/claude-context.json`:
 
-| Context Remaining | Budget | KB Entries | Callers | Claude max_tokens | Claude effort |
-|---|---|---|---|---|---|
-| >75% | greedy | 10 | 20 | 4096 | high (think: max) |
-| 50-75% | moderate | 5 | 10 | 2048 | medium (think: high) |
-| 25-50% | conservative | 3 | 6 | 1024 | low (think: medium) |
-| <25% | minimal | 1 | 3 | 256 | low |
+| Context Remaining | Budget | KB Entries | Callers | Local model max_tokens |
+|---|---|---|---|---|
+| >75% | greedy | 10 | 20 | 4096 |
+| 50-75% | moderate | 5 | 10 | 2048 |
+| 25-50% | conservative | 3 | 6 | 1024 |
+| <25% | minimal | 1 | 3 | 256 |
 
 ### Temporal Relevance Decay
 
