@@ -407,10 +407,14 @@ def think(about: str, context: str = "") -> str:
         except Exception:
             pass
         injected_state += "\n\n## Recent HME Evolution History (from KB):\n"
+        _hme_keywords = {"hme", "mcp", "server", "tool", "evolution_", "coupling_",
+                         "synthesis", "reasoning", "before_editing", "module_intel",
+                         "coupling_intel", "what_did_i_forget", "pipeline_digest",
+                         "split", "extract", "refactor", "kb_seed", "hot_reload"}
         hme_kb = [k for k in (ctx.project_engine.list_knowledge_full() or [])
                   if any(t in (k.get("title","") + k.get("content","")).lower()
-                         for t in ["hme", "r72", "r73", "r74", "r75", "r76", "r77", "r78", "r79"])]
-        for k in hme_kb[:6]:
+                         for t in _hme_keywords)]
+        for k in hme_kb[-8:]:  # most recent 8 entries
             injected_state += f"  [{k['category']}] {k['title']}: {k['content'][:200]}\n"
     elif is_evolution_q:
         try:
@@ -462,14 +466,23 @@ def think(about: str, context: str = "") -> str:
     if about in prompts:
         prompt = prompts[about]
     elif _is_meta_hme:
+        _HME_TOOL_INVENTORY = (
+            "Current HME tools: before_editing, what_did_i_forget, module_intel (story/impact/both), "
+            "coupling_intel (full/network/antagonists/personalities/gaps/leverage/channels/cascade/ledger), "
+            "think, trace_query (module/causal), codebase_health, pipeline_digest, regime_report, "
+            "section_compare, trust_report, audio_analyze, file_intel, file_lines, grep, search_code, "
+            "find_callers, find_anti_pattern, get_function_body, diagnose_error, hme_admin, "
+            "add_knowledge, remove_knowledge, search_knowledge, check_pipeline, bulk_rename_preview."
+        )
         prompt = (
             f"Question: {about}\n\n"
             f"You are reasoning about HME (HyperMeta Ecstasy) tooling improvements — "
-            f"NOT about music source code changes. Focus on: tool UX gaps, missing capabilities, "
-            f"workflows that still require manual mental work, and new tool ideas that would make "
-            f"the system feel more alive and self-aware. Reference specific tool names, "
-            f"the HME doc, and KB patterns above. Be concrete about what exists, what's missing, "
-            f"and why the gap matters for the evolution workflow. Max 5 items, no code file paths."
+            f"NOT about music source code changes. {_HME_TOOL_INVENTORY} "
+            f"Focus on: tool UX gaps, missing capabilities, workflows that still require manual "
+            f"mental work, and new tool ideas that would make the system feel more alive and "
+            f"self-aware. Reference specific existing tool names from the inventory above. "
+            f"Be concrete about what exists, what's missing, and why the gap matters "
+            f"for the evolution workflow. Max 5 items, no code file paths."
         )
     else:
         prompt = (
@@ -516,8 +529,8 @@ def think(about: str, context: str = "") -> str:
         # Meta-HME: two-stage (qwen frames → deepseek reasons) with trimmed context.
         # The HME doc + KB injection can be large — trim to fit M40 GPU timing.
         # Stage 1 (qwen) structures the meta-HME context; Stage 2 (deepseek) reasons.
-        # deepseek-r1 thinking field fix in _local_think makes Stage 2 work now.
-        local_answer = _two_stage_think(raw_context[:4000], prompt, max_tokens=8192)
+        # 6000 chars (up from 4000): HME doc (3000) + KB history (1200) + kb_block (2000) = 6200
+        local_answer = _two_stage_think(raw_context[:6000], prompt, max_tokens=8192)
         if local_answer:
             parts = [f"# Think: {about} *(two-stage/meta-hme)*\n", local_answer]
             if kb_hits:
@@ -531,19 +544,15 @@ def think(about: str, context: str = "") -> str:
                 "ZERO consumers — no module reads it. 'Consuming' a dead-end channel means adding "
                 "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
             )
+        import glob as _cl_glob
+        _cl_files = sorted(_cl_glob.glob(
+            os.path.join(ctx.PROJECT_ROOT, "src", "crossLayer", "**", "*.js"), recursive=True
+        ))
+        _cl_rel = [f.replace(ctx.PROJECT_ROOT + "/", "") for f in _cl_files
+                   if not os.path.basename(f).startswith("index")]
         raw_context += (
-            "Polychron crossLayer module FILE PATHS:\n"
-            "  src/crossLayer/harmony/motifEcho.js, src/crossLayer/structure/entropy/entropyRegulator.js,\n"
-            "  src/crossLayer/harmony/harmonicIntervalGuard.js, src/crossLayer/rhythm/convergenceDetector.js,\n"
-            "  src/crossLayer/dynamics/dynamicRoleSwap.js, src/crossLayer/rhythm/stutterContagion.js,\n"
-            "  src/crossLayer/rhythm/feedbackOscillator.js, src/crossLayer/rhythm/temporalGravity.js,\n"
-            "  src/crossLayer/structure/form/crossLayerSilhouette.js, src/crossLayer/dynamics/texturalMirror.js,\n"
-            "  src/crossLayer/rhythm/rhythmicPhaseLock.js, src/crossLayer/rhythm/polyrhythmicPhasePredictor.js,\n"
-            "  src/crossLayer/dynamics/restSynchronizer.js, src/crossLayer/harmony/registerCollisionAvoider.js,\n"
-            "  src/crossLayer/harmony/spectralComplementarity.js, src/crossLayer/rhythm/grooveTransfer.js,\n"
-            "  src/crossLayer/harmony/phaseAwareCadenceWindow.js, src/crossLayer/structure/form/crossLayerClimaxEngine.js,\n"
-            "  src/crossLayer/dynamics/crossLayerDynamicEnvelope.js, src/crossLayer/rhythm/rhythmicComplementEngine.js,\n"
-            "  src/crossLayer/melody/emergentMelodicEngine.js, src/crossLayer/rhythm/emergentRhythmEngine.js.\n"
+            "Polychron crossLayer module FILE PATHS (auto-generated):\n  "
+            + ",\n  ".join(_cl_rel[:32]) + ".\n"
             "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
             "Each channel posts specific fields — check the producer source code above for exact field names. "
             "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "

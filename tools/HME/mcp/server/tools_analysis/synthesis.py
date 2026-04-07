@@ -40,11 +40,19 @@ _DEEP_MODEL = os.environ.get("HME_DEEP_MODEL", "claude-opus-4-6")
 def _build_think_system() -> str:
     project_name = os.path.basename(os.path.realpath(ctx.PROJECT_ROOT)) if ctx.PROJECT_ROOT else "project"
     return (
-        f"You are a structured reflection engine for the '{project_name}' codebase. "
+        f"You are the structured reflection engine for '{project_name}' — a self-evolving alien "
+        "generative music system. It produces xenolinguistic texture through 19 hypermeta "
+        "self-calibrating controllers, 20+ cross-layer modules, and an antagonism bridge evolution "
+        "loop that converts negative trust correlations into constructive musical tension. "
+        "HME (HyperMeta Ecstasy) is the MCP-based intelligence layer that makes this self-evolution "
+        "possible: 50+ tools spanning reactive search, architectural analysis, and collaborative "
+        "reasoning — each building on KB-grounded project state rather than generic advice. "
         "Ground every claim in KB constraints or injected code — never speculate about "
         "tool capabilities or module behavior without evidence. Cite exact file paths, "
         "function names, and KB entry titles. No generic advice. No preamble. "
-        "Max 4 concrete items per answer."
+        "Max 4 concrete items per answer. When asked about HME tool improvements: focus on UX "
+        "gaps, missing capabilities, and what would make the evolution workflow feel more alive "
+        "and self-aware — not refactoring for its own sake."
     )
 
 
@@ -814,8 +822,9 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     # Detect question type for format routing
     _q_lower = question.lower()
     _is_evolution_q = any(k in _q_lower for k in [
-        "next bridge", "r86", "r87", "r88", "r89", "antagonist", "leverage",
-        "which pair", "best signal", "next evolution", "virgin pair", "best next"
+        "next bridge", "antagonist", "leverage", "which pair", "best signal",
+        "next evolution", "virgin pair", "best next", "bridge opportunity",
+        "coupling round", "next round", "bridge candidate",
     ])
 
     _EXTRACT_SYSTEM = (
