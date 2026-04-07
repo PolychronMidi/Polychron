@@ -234,7 +234,8 @@ def before_editing(file_path: str) -> str:
 
 
 def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
-                      symbols: list | None, recent_commits: str, comp: str) -> str | None:
+                      symbols: list | None, recent_commits: str, comp: str,
+                      priority: str = "interactive") -> str | None:
     """Build and return the Edit Risks synthesis text. Shared by before_editing and warm_pre_edit_cache.
     Uses _fast_claude (Haiku) for speed; falls back to local model if API unavailable."""
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
@@ -264,7 +265,8 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     if not synthesis:
         # Fallback: qwen2.5-coder (code-specialized synthesis, ~17-34s) rather than
         # deepseek-r1 (reasoning model, ~45-90s — overkill for 3-bullet edit risks)
-        synthesis = _local_think(user_text, max_tokens=512, model=_LOCAL_MODEL)
+        synthesis = _local_think(user_text, max_tokens=512, model=_LOCAL_MODEL,
+                                 priority=priority)
     return synthesis
 
 
@@ -301,14 +303,8 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
             _kb_cache[kb_key] = ctx.project_engine.search_knowledge(module_name, 8)
         warmed += 1
     # Tier 2: pre-synthesize Edit Risks for most recently modified files.
-    # ONLY when API key is available (Haiku ~200ms per call). Without API key, each call
-    # falls through to Ollama (~73s per file × 30 files = 36 min of background queue that
-    # blocks ALL interactive model calls like think/module_intel). Never pre-warm via Ollama.
-    api_key = _get_api_key()
-    if not api_key:
-        return (f"Pre-edit cache warmed: {warmed} files (callers+KB). "
-                f"Synthesis pre-load skipped (no API key — would flood Ollama queue). "
-                f"before_editing synthesis runs on-demand per file.")
+    # Uses Ollama queue with low priority — interactive calls (think, before_editing)
+    # pop to top of stack via ollama_priority_call().
     hot_files = sorted(js_files, key=lambda f: os.path.getmtime(f) if os.path.exists(f) else 0, reverse=True)[:synthesis_hot]
     synth_warmed = 0
     from structure import file_summary as _fs
@@ -339,6 +335,7 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
         synthesis = _build_edit_risks(
             rel_path=rel_path, caller_files=caller_files, relevant_kb=relevant_kb,
             symbols=symbols, recent_commits="", comp="",
+            priority="background",
         )
         if synthesis:
             _be_cache[_cache_key] = synthesis
