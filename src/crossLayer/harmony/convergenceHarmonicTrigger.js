@@ -36,7 +36,15 @@ convergenceHarmonicTrigger = (() => {
     // Rhythmic coupling: strong rhythmic bias at convergence -> more harmonic change triggers.
     const rhythmEntryRHT = L0.getLast('emergentRhythm', { layer: 'both' });
     const rhythmBiasRHT = rhythmEntryRHT && Number.isFinite(rhythmEntryRHT.biasStrength) ? rhythmEntryRHT.biasStrength : 0;
-    const triggerChance = TRIGGER_PROBABILITY * (0.5 + rarity * 0.5) * (1.0 + rhythmBiasRHT * 0.25);
+    // Melodic context used both for trigger probability (ascendRatio) and change type (directionBias).
+    // Single call to emergentMelodicEngine.getContext() reused throughout onConvergence.
+    const melodicCtxCHT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    // R88 E3: ascendRatio antagonism bridge with verticalIntervalMonitor -- ascending melodic momentum
+    // boosts harmonic trigger probability (ascending motion naturally seeks harmonic resolution at convergence).
+    // Counterpart: verticalIntervalMonitor TIGHTENS collision penalty under same signal (harmonic assertiveness + discipline).
+    const ascendRatioCHT = melodicCtxCHT ? V.optionalFinite(melodicCtxCHT.ascendRatio, 0.5) : 0.5;
+    const ascendTriggerBoost = 1.0 + clamp((ascendRatioCHT - 0.45) * 0.25, -0.05, 0.12);
+    const triggerChance = TRIGGER_PROBABILITY * (0.5 + rarity * 0.5) * (1.0 + rhythmBiasRHT * 0.25) * ascendTriggerBoost;
     if (rf() > triggerChance) return;
 
     // Check trust in convergence system
@@ -52,7 +60,6 @@ convergenceHarmonicTrigger = (() => {
     // Melodic coupling: directionBias primes the change type when no explicit alignment is available.
     // Ascending melody at convergence -> dominant-push (amplify the build).
     // Descending melody at convergence -> tonic-reaffirm (invite resolution).
-    const melodicCtxCHT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const dirBias = melodicCtxCHT ? V.optionalFinite(melodicCtxCHT.directionBias, 0) : 0;
 
     const alignment = (ev.alignment !== undefined) ? ev.alignment : null;

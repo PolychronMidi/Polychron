@@ -187,7 +187,7 @@ All cross-layer buffer writes route through `crossLayerEmissionGateway.emit(sour
 - **Quantization grid**: 16-slot subdivision per regime-adaptive rolling window (exploring: 3 beats, coherent: 1.5, evolving: 2)
 - **Metrics**: grid density + syncopation complexity with self-calibrating EMA thresholds
 - **Bias output**: 4th link in `getRhythm.js` weight-selection bias chain (after `journeyRhythmCoupler`)
-- **Consumers**: `crossModulateRhythms`, `stutterVariants`, `convergenceDetector`, `feedbackOscillator`, `emergentDownbeat`; rhythmic coupling arc (R69+): `stutterContagion` (decay stickiness), `grooveTransfer` (transfer strength), `dynamicRoleSwap` (swap gate), `convergenceVelocitySurge` (surge amp), `rhythmicComplementEngine` (effective density for mode), `motifEcho` (echo probability), `articulationComplement` (contrast strength); R71+: `velocityInterference` (densitySurprise→interference scale), `cadenceAlignment` (biasStrength→resolve threshold), `convergenceHarmonicTrigger` (biasStrength→trigger probability), `verticalIntervalMonitor` (density→collision penalty), `phaseAwareCadenceWindow` (complexity→phase tolerance), `emergentDownbeat` (biasStrength→downbeat score); R72+: `rhythmicPhaseLock` (hotspots→lock threshold), `crossLayerDynamicEnvelope` (complexityEma→envelope amplitude), `convergenceDetector` (complexityEma→momentum decay rate); R73+: `entropyRegulator` (densitySurprise→entropy target spike), `crossLayerSilhouette` (densitySurprise→tracking sharpness), `temporalGravity` (hotspots→gravity well strength), `texturalMirror` (hotspots→texture suggestion weight); R74+: `harmonicIntervalGuard` (hotspots→deadband widening); R75+: `harmonicIntervalGuard` (registerMigrationDir→deadband narrowing/inversion)
+- **Consumers**: `crossModulateRhythms`, `stutterVariants`, `convergenceDetector`, `feedbackOscillator`, `emergentDownbeat`; rhythmic coupling arc (R69+): `stutterContagion` (decay stickiness), `grooveTransfer` (transfer strength), `dynamicRoleSwap` (swap gate), `convergenceVelocitySurge` (surge amp), `rhythmicComplementEngine` (effective density for mode), `motifEcho` (echo probability), `articulationComplement` (contrast strength); R71+: `velocityInterference` (densitySurprise→interference scale), `cadenceAlignment` (biasStrength→resolve threshold), `convergenceHarmonicTrigger` (biasStrength→trigger probability), `verticalIntervalMonitor` (density→collision penalty), `phaseAwareCadenceWindow` (complexity→phase tolerance), `emergentDownbeat` (biasStrength→downbeat score); R72+: `rhythmicPhaseLock` (hotspots→lock threshold), `crossLayerDynamicEnvelope` (complexityEma→envelope amplitude), `convergenceDetector` (complexityEma→momentum decay rate); R73+: `entropyRegulator` (densitySurprise→entropy target spike), `crossLayerSilhouette` (densitySurprise→tracking sharpness), `temporalGravity` (hotspots→gravity well strength), `texturalMirror` (hotspots→texture suggestion weight); R74+: `harmonicIntervalGuard` (hotspots→deadband widening); R75+: `harmonicIntervalGuard` (registerMigrationDir→deadband narrowing/inversion); R89+: `entropyRegulator` (complexity→entropy target), `temporalGravity` (complexity→gravity scale), `feedbackOscillator` (biasStrength→injection energy), `grooveTransfer` (biasStrength→transfer scale)
 - **CIM pair**: `feedbackOsc-emergentDownbeat`
 - **Feedback enrollment**: `emergentRhythmPort` in `feedbackRegistry`
 
@@ -325,6 +325,38 @@ Three new signals bridging three pairs, recovering `thematicDensity` (absent 6 r
 - **R86 E1 `biasStrength` → `temporalGravity ↔ verticalIntervalMonitor`** (r=-0.477): confident rhythmic pulse strengthens gravity wells (×up to 1.15) while reducing collision penalty (×down to 0.90). Temporal cohesion + harmonic freedom at rhythmically confident moments.
 - **R86 E2 `complexityEma` → `velocityInterference ↔ harmonicIntervalGuard`** (r=-0.408): sustained rhythmic complexity amplifies velocity interference (×up to 1.10) while narrowing harmonic deadband (up to -0.03). Dynamics intensify while harmony stabilizes — slow-memory complexity creates dual-response.
 - **R86 E3 `thematicDensity` → `harmonicIntervalGuard ↔ crossLayerClimaxEngine`** (r=-0.354): rich thematic development narrows harmonic deadband (up to -0.04) while accelerating climax approach (up to +0.05). Harmony stabilizes while the structural arc intensifies during peak thematic richness.
+
+### registerMigrationDir Five-Point Bridge (R87)
+
+One categorical signal — ascending vs. descending register migration — wired across five modules as two antagonism pairs plus a solo amplifier.
+
+- **R87 E1 `registerMigrationDir` → `grooveTransfer ↔ crossLayerClimaxEngine`** (r=-0.499, virgin pair): ascending register migration tightens groove transfer (×0.88 damping, rhythmic independence) while accelerating climax approach (+0.05). Rhythm stabilizes while structure climbs — layers individuate as the arc builds.
+- **R87 E2 `registerMigrationDir` → `feedbackOscillator ↔ convergenceDetector`**: ascending amplifies feedback resonance energy (×1.10 injection scale) while narrowing convergence tolerance (up to -0.05 melodicBoost). Ascending register builds cross-layer dialogue while making exact rhythmic unison harder — rich resonance, sparse coincidence.
+- **R87 E3 `registerMigrationDir` → `polyrhythmicPhasePredictor`**: ascending amplifies predicted phase convergence boost (×1.18). Layers meeting at the top of a register climb produce the most structurally significant unison moments.
+
+### density + complexityEma + ascendRatio Three-Antagonism Bridge (R88)
+
+Three independent antagonism pairs across rhythm, structure, and harmony.
+
+- **R88 E1 `density` → `entropyRegulator ↔ temporalGravity`** (r=-0.537): high note density raises entropy target (up to +0.04) while strengthening temporal gravity wells (×up to 1.10). Dense textures generate more pitch variety while temporal structure anchors the metric grid.
+- **R88 E2 `complexityEma` → `stutterContagion ↔ grooveTransfer`** (r=-0.463): sustained rhythmic complexity amplifies stutter contagion spread (×up to 1.10) while dampening groove transfer (×down to 0.92). Complex texture propagates chaos through stutter while groove self-organizes independently.
+- **R88 E3 `ascendRatio` → `convergenceHarmonicTrigger ↔ verticalIntervalMonitor`** (r=-0.450): ascending melodic momentum boosts harmonic trigger probability at convergence points (×up to 1.12) while tightening interval collision penalty (×up to 1.10). Ascending motion demands both harmonic assertiveness and harmonic discipline.
+
+### freshnessEma + complexity + biasStrength Three-Antagonism Bridge (R89)
+
+Three new antagonism pairs using sustained melodic novelty, per-beat rhythmic complexity, and rhythmic bias confidence.
+
+- **R89 E1 `freshnessEma` → `dynamicRoleSwap ↔ verticalIntervalMonitor`** (r=-0.527): sustained melodic novelty amplifies role-swap frequency (gate up to +0.07) while reducing collision penalty (×down to 0.80). Novel melodic territory endorses both dynamic reorganization and harmonic exploration — roles reshuffle as collisions are forgiven.
+- **R89 E2 `complexity` → `entropyRegulator ↔ temporalGravity`** (r=-0.410): per-beat rhythmic complexity raises entropy target (up to +0.03) while tightening temporal gravity wells (×up to 1.10). Complex rhythmic events open up pitch variety while the temporal anchor firms — pitch chaos expands as time structure grips.
+- **R89 E3 `biasStrength` → `feedbackOscillator ↔ grooveTransfer`** (r=-0.399): confident rhythm pulse calms feedback injection energy (×down to 0.91) while amplifying groove transfer rate (×up to 1.09). Established groove quiets cross-layer oscillation dialogue while simultaneously strengthening timing synchrony — resonance calms as shared pulse deepens.
+
+### contourShape + tessituraLoad + freshnessEma Three-Bridge Round (R90)
+
+Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus two new bridges using underused melodic dimensions.
+
+- **R90 E1 `contourShape` → `entropyRegulator ↔ motifEcho`** (r=-0.503, VIRGIN pair): rising melodic contour raises entropy target (up to +0.03) while suppressing echo probability (×down to 0.88). Falling contour lowers entropy (−0.02) while amplifying echo (×up to 1.12). Ascending arc drives pitch exploration while refusing to look back — chaos expands as memory fades. Descending arc settles into familiar territory — order returns as imitative memory deepens.
+- **R90 E2 `tessituraLoad` → `grooveTransfer ↔ crossLayerClimaxEngine`** (r=-0.487, 3→4 bridges): extreme register pressure reduces groove transfer (×down to 0.92) while accelerating climax approach (up to +0.05). At extreme register, layers pursue independent rhythmic territory while the structural arc crests — rhythmic individuation at the structural peak.
+- **R90 E3 `freshnessEma` → `harmonicIntervalGuard ↔ phaseAwareCadenceWindow`** (r=-0.426, 2→3 bridges): sustained melodic novelty narrows harmonic deadband (up to −0.03) while compressing the cadence window (up to −0.04 threshold). Novel melodic territory tightens harmonic discipline while deferring resolution — interval hunting intensifies as cadence is resisted.
 
 ## Emergence Boundaries
 

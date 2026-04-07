@@ -90,7 +90,12 @@ polyrhythmicPhasePredictor = (() => {
       const rhythmEntryPPP = L0.getLast('emergentRhythm', { layer: 'both' });
       const hotspotsPPP = rhythmEntryPPP && Array.isArray(rhythmEntryPPP.hotspots) ? rhythmEntryPPP.hotspots.length : 0;
       const hotspotMult = 1.0 + clamp(hotspotsPPP / 16, 0, 1) * 0.20;
-      return PROB_BOOST * proximity * cpMult * hotspotMult;
+      // R87 E3: registerMigrationDir coupling -- ascending pitch center amplifies predicted convergence
+      // boost (layers meeting at the top of a register climb = high-impact structural moment).
+      const registerMultPPP = melodicCtxPPP
+        ? (melodicCtxPPP.registerMigrationDir === 'ascending' ? 1.18 : melodicCtxPPP.registerMigrationDir === 'descending' ? 0.90 : 1.0)
+        : 1.0;
+      return PROB_BOOST * proximity * cpMult * hotspotMult * registerMultPPP;
     }
 
     return 0;

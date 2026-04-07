@@ -50,19 +50,28 @@ feedbackOscillator = (() => {
     // R57: melodic contour shapes feedback energy. Rising -> stronger resonance (ascending momentum).
     // Contrary counterpoint -> dampened (layers diverging, don't force resonance).
     // High thematic density -> slight boost (familiar material creates stronger feedback echo).
+    // R87 E2: registerMigrationDir antagonism bridge with convergenceDetector -- ascending pitch center
+    // amplifies feedback resonance (climbing register builds cross-layer dialogue energy).
+    // Counterpart: convergenceDetector NARROWS tolerance under same signal (ascending divergence makes rhythmic unison harder).
     const melodicCtxFO = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
     const melodicScaleFO = melodicCtxFO
       ? (melodicCtxFO.contourShape === 'rising' ? 1.12 : melodicCtxFO.contourShape === 'falling' ? 0.90 : 1.0)
       * (melodicCtxFO.counterpoint === 'contrary' ? 0.82 : 1.0)
       * (1.0 + clamp(melodicCtxFO.thematicDensity, 0, 1) * 0.12)
+      * (melodicCtxFO.registerMigrationDir === 'ascending' ? 1.10 : melodicCtxFO.registerMigrationDir === 'descending' ? 0.92 : 1.0)
       : 1.0;
     // R77 E4: channel-coherence gate -- high cross-layer coherence dampens impulse (already synchronized)
     const ccEntry = L0.getLast('channel-coherence', { layer: 'both' });
     const ccDamp = ccEntry && Number.isFinite(ccEntry.coherence) && ccEntry.coherence > 0.70
       ? clamp((ccEntry.coherence - 0.70) * 0.30, 0, 0.09)
       : 0;
+    // R89 E3: biasStrength antagonism bridge with grooveTransfer -- confident rhythm pulse calms feedback energy
+    // (groove is established; cross-layer oscillation settles as shared pulse takes hold).
+    // Counterpart: grooveTransfer AMPLIFIES transfer rate under same signal (confident pulse = reliable groove = amplify).
+    const biasStrengthFO = emergentEntry && Number.isFinite(emergentEntry.biasStrength) ? emergentEntry.biasStrength : 0;
+    const biasScaleFO = 1.0 - clamp((biasStrengthFO - 0.30) * 0.20, 0, 0.09);
     L0.post(CHANNEL, layer, absoluteSeconds, {
-      energy: clamp(energy * artScale * emergentScale * melodicScaleFO * (1 - ccDamp), 0, 1),
+      energy: clamp(energy * artScale * emergentScale * melodicScaleFO * biasScaleFO * (1 - ccDamp), 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
       originLayer: layer,

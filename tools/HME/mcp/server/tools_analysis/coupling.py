@@ -1041,7 +1041,11 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
             for field, score in scored[:4]:
                 g = _FIELD_GUIDE.get(field, {})
                 eff_a, eff_b = _opposing_recipe(arch_a, arch_b, field)
-                why = g.get("bridge_why", "shared signal drives constructive opposition")
+                # Personalize why: combine module names with field rationale for actionable context.
+                # Generic "density is the shared currency" becomes "entropyRegulator opens up
+                # while temporalGravity anchors — density is the shared currency."
+                base_why = g.get("bridge_why", "shared signal drives constructive opposition")
+                why = f"{a} ↔ {b}: {base_why}"
                 sig = g.get("signal", field)
                 users_n = len(rhythm_field_users.get(field, [])) + len(melodic_dim_users.get(field, []))
                 out.append(f"   ▸ {field:<22} [{sig}]  ({users_n} existing users)")
@@ -1299,12 +1303,13 @@ def bridge_ledger() -> str:
                 confirmed_rounds.append(f"R{round_match.group(1)}")
         already = set(x.lower() for x in b.get("already_bridged", []))
         proposed = b.get("field", "")
-        saturation = len(already | confirmed_fields)
+        # Use code-analysis bridges only for saturation/display — KB text scan (confirmed_fields)
+        # over-counts by picking up field mentions from unrelated bridges in shared KB entries.
         out.append(f"## {a_name} [{b['arch_a']}] ↔ {b_name} [{b['arch_b']}]  r={b['r']:+.3f}")
         out.append(f"  KB rounds mentioning this pair: {', '.join(sorted(set(confirmed_rounds))) or 'none'}")
-        out.append(f"  Confirmed bridged fields: {', '.join(sorted(already | confirmed_fields)) or 'none'}")
-        out.append(f"  Next proposed bridge: `{proposed}` ({'DONE' if proposed.lower() in (already | confirmed_fields) else 'open'})")
-        out.append(f"  Saturation: {saturation} field(s) bridged")
+        out.append(f"  Confirmed bridged fields: {', '.join(sorted(already)) or 'none'}")
+        out.append(f"  Next proposed bridge: `{proposed}` ({'DONE' if proposed.lower() in already else 'open'})")
+        out.append(f"  Saturation: {len(already)} field(s) bridged")
         out.append("")
 
     return "\n".join(out)

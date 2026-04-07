@@ -216,7 +216,22 @@ entropyRegulator = (() => {
       // lock mode (layers synchronized) creates coherent order (reduced entropy target).
       const phaseModeER = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
       const phaseMod = phaseModeER === 'repel' ? 0.04 : phaseModeER === 'lock' ? -0.03 : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + intervalFreshnessMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod;
+      // R88 E1: density antagonism bridge with temporalGravity -- high note density raises entropy target
+      // (dense textures generate pitch variety naturally; entropy should open up to match).
+      // Counterpart: temporalGravity STRENGTHENS pull under same signal (structure tightens while chaos expands).
+      const densityER = clamp(V.optionalFinite(conductorSignalBridge.getSignals().density, 0.5), 0, 1);
+      const densityEntMod = clamp((densityER - 0.5) * 0.06, -0.02, 0.04);
+      // R89 E2: complexity antagonism bridge with temporalGravity -- high per-beat complexity raises entropy target
+      // (complex rhythmic events open up pitch variety to match their structural richness).
+      // Counterpart: temporalGravity STRENGTHENS gravity wells under same signal (temporal anchor tightens while entropy expands).
+      const complexityBeatER = rhythmEntryER && Number.isFinite(rhythmEntryER.complexity) ? rhythmEntryER.complexity : 0.5;
+      const complexityBeatEntMod = clamp((complexityBeatER - 0.5) * 0.06, -0.02, 0.03);
+      // R90 E1: contourShape antagonism bridge with motifEcho (VIRGIN pair r=-0.503) -- rising contour raises entropy target
+      // (ascending arc = exploratory territory demands pitch variety).
+      // Counterpart: motifEcho REDUCES echo probability under same signal (rising motion looks forward, not backward).
+      const contourShapeER = melodicCtxER ? melodicCtxER.contourShape : null;
+      const contourShapeEntMod = contourShapeER === 'rising' ? 0.03 : contourShapeER === 'falling' ? -0.02 : 0;
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + intervalFreshnessMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod + densityEntMod + complexityBeatEntMod + contourShapeEntMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

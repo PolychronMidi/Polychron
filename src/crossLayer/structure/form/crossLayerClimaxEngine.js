@@ -160,8 +160,18 @@ crossLayerClimaxEngine = (() => {
     // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while structural arc intensifies).
     const thematicDensityCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.thematicDensity, 0) : 0;
     const thematicClimaxBoost = clamp(thematicDensityCCE * 0.08, 0, 0.05);
-    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp, R85: densitySurprise damp, R86: thematicDensity boost)
-    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost + thematicClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx - densitySurpriseDampClx) * preClimaxHold;
+    // R87 E1: registerMigrationDir antagonism bridge with grooveTransfer -- ascending pitch center
+    // accelerates climax build (register climbing toward expressive peak fuels structural arc).
+    // Counterpart: grooveTransfer REDUCES transfer under same signal (rhythm stabilizes while arc climbs).
+    const registerDirClx = melodicCtxClx ? melodicCtxClx.registerMigrationDir : null;
+    const registerClimaxBoost = registerDirClx === 'ascending' ? 0.05 : registerDirClx === 'descending' ? -0.03 : 0;
+    // R90 E2: tessituraLoad antagonism bridge with grooveTransfer -- extreme register pressure accelerates climax approach
+    // (extreme register = composition pushing toward structural peak, both vertically and structurally).
+    // Counterpart: grooveTransfer REDUCES transfer under same signal (rhythmic independence at extreme register).
+    const tessituraLoadCCE = melodicCtxClx ? V.optionalFinite(melodicCtxClx.tessituraLoad, 0) : 0;
+    const tessituraClimaxBoost = clamp(tessituraLoadCCE * 0.07, 0, 0.05);
+    // Composite climax signal (R40: fractal arc, R76: entropy antagonism, R78: freshnessEma suppression, R80: complexity boost, R81: complexityEma damp, R85: densitySurprise damp, R86: thematicDensity boost, R87: registerMigrationDir boost, R90: tessituraLoad boost)
+    const raw = (sectionArc * ARC_WEIGHT + conductorIntensity * CONDUCTOR_WEIGHT + heatLevel * HEAT_WEIGHT + intentPressure * INTENT_WEIGHT + excursionBoost + fractalIntensity + complexityClimaxBoost + thematicClimaxBoost + registerClimaxBoost + tessituraClimaxBoost - entropyDampClx - freshnessDampClx - complexityEmaDampClx - densitySurpriseDampClx) * preClimaxHold;
     smoothedClimax = smoothedClimax * (1 - SMOOTHING) + raw * SMOOTHING;
 
     // Detect peak crossing
