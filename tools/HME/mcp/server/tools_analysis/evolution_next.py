@@ -569,13 +569,25 @@ def suggest_evolution() -> str:
         r'emergentRhythm|rhythmic coupling|rhythm coupling)\b', _re2.IGNORECASE
     )
     _HME_PATTERN = _re2.compile(r'\bHME\b|mcp.tool|suggest_evolution|coupling_network', _re2.IGNORECASE)
+    _BRIDGE_PATTERN = _re2.compile(r'\b(antagonism bridge|bridge.*r=|r=.*bridge|antagonist.*pair)\b', _re2.IGNORECASE)
+    _RNUM_PAT = _re2.compile(r'\bR(\d+)\b')
     try:
-        recent_kb = ctx.project_engine.search_knowledge("R5 R6 evolution round", top_k=12)
+        # List all KB entries, sort by round number (parsed from title), take last 12
+        all_kb_full = ctx.project_engine.list_knowledge_full() or []
+        numbered_kb = []
+        for _k in all_kb_full:
+            _m = _RNUM_PAT.search(_k.get("title", ""))
+            if _m:
+                numbered_kb.append((int(_m.group(1)), _k))
+        numbered_kb.sort(key=lambda x: -x[0])  # most recent first
+        recent_kb = [k for _, k in numbered_kb[:12]]
         rut_types = []
         for k in recent_kb:
             text = k.get("title", "") + " " + k.get("content", "")[:200]
             if _COUPLING_PATTERN.search(text):
                 rut_types.append("melodic_coupling")
+            elif _BRIDGE_PATTERN.search(text):
+                rut_types.append("antagonism_bridge")
             elif _HME_PATTERN.search(text):
                 rut_types.append("hme_tool")
             else:
@@ -591,6 +603,8 @@ def suggest_evolution() -> str:
                                "consider orthogonal target (architecture, perceptual loop, "
                                "new engine, or structural refactor)"
                 }
+            # Always surface the recent arc (not just rut state)
+            signals["recent_evo_arc"] = rut_types[:6]
     except Exception:
         pass
 
@@ -603,6 +617,9 @@ def suggest_evolution() -> str:
         parts.append(f"**Perceptual character:** {signals['perceptual_character']}")
     if signals.get("cb0_entropy_mean"):
         parts.append(f"**CB0 entropy:** {signals['cb0_entropy_mean']}")
+    if signals.get("recent_evo_arc"):
+        arc_str = " → ".join(signals["recent_evo_arc"])
+        parts.append(f"**Recent arc:** {arc_str}")
     if signals.get("evolution_rut"):
         rut = signals["evolution_rut"]
         parts.append(f"**RUT ALERT:** {rut['warning']}")

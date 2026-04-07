@@ -110,7 +110,8 @@ def hme_hot_reload(modules: str = "") -> str:
     _track("hme_hot_reload")
 
     RELOADABLE = [
-        "synthesis", "symbols", "workflow", "reasoning", "health",
+        "synthesis", "synthesis_config", "synthesis_claude", "synthesis_ollama",
+        "symbols", "workflow", "reasoning", "health",
         "evolution", "evolution_next", "evolution_trace", "evolution_admin",
         "runtime", "composition", "trust_analysis",
         "digest", "section_compare", "perceptual",
