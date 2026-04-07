@@ -71,7 +71,13 @@ crossLayerSilhouette = (() => {
     // lock mode (sync) stabilizes the holistic arc (layers moving together need less correction).
     const phaseModeCSil = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
     const phaseSmoothing = phaseModeCSil === 'repel' ? 0.88 : phaseModeCSil === 'lock' ? 1.10 : 1.0;
-    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing, 0.05, 0.40);
+    // R82 E1: registerMigrationDir bridge -- ascending register migration tightens silhouette form
+    // (structural tracking firms up as pitch center rises). Counterpart: phaseAwareCadenceWindow
+    // COMPRESSES cadence window under same signal (resist resolution during ascent).
+    const registerMigFormCS = melodicCtxCS
+      ? (melodicCtxCS.registerMigrationDir === 'ascending' ? 0.08 : melodicCtxCS.registerMigrationDir === 'descending' ? -0.05 : 0)
+      : 0;
+    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS), 0.05, 0.40);
 
     // Smooth
     smoothedDensity = smoothedDensity * (1 - effectiveSmoothing) + rawDensity * effectiveSmoothing;
