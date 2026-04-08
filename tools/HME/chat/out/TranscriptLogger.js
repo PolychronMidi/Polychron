@@ -226,10 +226,10 @@ class TranscriptLogger {
     setNarrativeCallback(cb) {
         this._narrativeCallback = cb;
     }
-    /** Force narrative synthesis immediately (e.g. on session end/panel close). */
-    forceNarrative() {
+    /** Force narrative synthesis immediately (e.g. on session end/panel close). Awaitable. */
+    async forceNarrative() {
         if (this._entries.length >= 2)
-            this._synthesizeNarrative();
+            await this._synthesizeNarrative();
     }
     async _synthesizeNarrative() {
         if (!this._narrativeCallback)

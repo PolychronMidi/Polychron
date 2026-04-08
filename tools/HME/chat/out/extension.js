@@ -49,4 +49,9 @@ function activate(context) {
         },
     }));
 }
-function deactivate() { }
+async function deactivate() {
+    // Graceful shutdown: cancel any running stream, force narrative synthesis,
+    // kill HME shim process. Called on window close and developer reload.
+    // VS Code awaits the returned Promise — all cleanup completes before unload.
+    return ChatPanel_1.ChatPanel.current?.dispose();
+}

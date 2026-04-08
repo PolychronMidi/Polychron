@@ -121,8 +121,6 @@ def _background_load():
         validate_startup(context, PROJECT_ROOT)
 
         logger.info(f"HME ready | project={PROJECT_ROOT} | project_db={PROJECT_DB} | global_db={GLOBAL_DB} | libs={list(lib_engines.keys())}")
-
-        # Ollama-based synthesis is on-demand; no warm-up needed
     except Exception as e:
         context._startup_error = e
         logger.error(f"HME background startup failed: {e}")
@@ -133,21 +131,43 @@ def _background_load():
 threading.Thread(target=_background_load, daemon=True, name="HME-startup").start()
 
 
-def _deferred_prewarm():
-    """Wait for startup then pre-warm the before_editing caller+KB caches for all src/ files.
-    Means the first before_editing call of every session is instant rather than ~500ms."""
+def _background_startup_chain():
+    """Ordered startup chain — runs after RAG engine is ready.
+
+    Step 1: _init_ollama_models() — load models to correct devices (GPU0, GPU1, CPU)
+            in deterministic order before any priming requests fly.
+    Step 2: _prime_all_gpus() — sequential KV cache warm (one model at a time,
+            yields to interactive between each). Interactive calls jump ahead.
+    Step 3: warm_pre_edit_cache() — caller+KB cache for fast before_editing().
+
+    All steps background priority — interactive requests always preempt.
+    """
     _startup_done.wait(timeout=90)
     if context.project_engine is None:
+        logger.warning("startup chain: RAG engine not ready — skipping Ollama init and prewarm")
         return
     try:
+        from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
         from server.tools_analysis.workflow import warm_pre_edit_cache
-        result = warm_pre_edit_cache(max_files=200)
-        logger.info(f"HME pre-edit warm: {result}")
+
+        logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
+        init_result = _init_ollama_models()
+        logger.info(f"startup chain [1/3]: {init_result}")
+
+        logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
+        warm_result = _prime_all_gpus()
+        logger.info(f"startup chain [2/3]: {warm_result}")
+
+        logger.info("startup chain [3/3]: warming pre-edit caller+KB cache...")
+        cache_result = warm_pre_edit_cache(max_files=200)
+        logger.info(f"startup chain [3/3]: {cache_result}")
+
+        logger.info("startup chain complete")
     except Exception as _e:
-        logger.debug(f"Pre-edit warm skipped: {_e}")
+        logger.warning(f"startup chain error: {type(_e).__name__}: {_e}")
 
 
-threading.Thread(target=_deferred_prewarm, daemon=True, name="HME-prewarm").start()
+threading.Thread(target=_background_startup_chain, daemon=True, name="HME-startup-chain").start()
 
 if __name__ == "__main__":
     from server.protocol_logging import install as _install_logging

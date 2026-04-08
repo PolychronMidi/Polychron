@@ -20,4 +20,9 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-export function deactivate() {}
+export async function deactivate(): Promise<void> {
+  // Graceful shutdown: cancel any running stream, force narrative synthesis,
+  // kill HME shim process. Called on window close and developer reload.
+  // VS Code awaits the returned Promise — all cleanup completes before unload.
+  return ChatPanel.current?.dispose();
+}

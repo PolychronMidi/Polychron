@@ -216,9 +216,9 @@ export class TranscriptLogger {
     this._narrativeCallback = cb;
   }
 
-  /** Force narrative synthesis immediately (e.g. on session end/panel close). */
-  forceNarrative(): void {
-    if (this._entries.length >= 2) this._synthesizeNarrative();
+  /** Force narrative synthesis immediately (e.g. on session end/panel close). Awaitable. */
+  async forceNarrative(): Promise<void> {
+    if (this._entries.length >= 2) await this._synthesizeNarrative();
   }
 
   private async _synthesizeNarrative() {
