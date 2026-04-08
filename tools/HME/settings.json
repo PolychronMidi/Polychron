@@ -19,6 +19,15 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/pretooluse_lifesaver.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Edit",
         "hooks": [
           {

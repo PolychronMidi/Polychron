@@ -447,8 +447,8 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     if not antipattern or not antipattern.strip():
         return "Error: antipattern cannot be empty."
     valid_hooks = {
-        "pretooluse_bash", "posttooluse_bash", "stop",
-        "userpromptsubmit", "pretooluse_edit", "pretooluse_grep", "pretooluse_write",
+        "pretooluse_bash", "pretooluse_read", "pretooluse_edit", "pretooluse_grep",
+        "pretooluse_write", "posttooluse_bash", "stop", "userpromptsubmit",
     }
     if hook_target not in valid_hooks:
         return f"Error: hook_target must be one of: {', '.join(sorted(valid_hooks))}"

@@ -69,6 +69,18 @@ async function run() {
   const results = {};
 
   // ═══════════════════════════════════════════════════════════════
+  // WARMUP: pre-load qwen3:4b so arbiter tests don't hit cold-model timeouts
+  // ═══════════════════════════════════════════════════════════════
+  {
+    console.log("\n=== ARBITER MODEL WARMUP ===");
+    const t0 = Date.now();
+    const w = await classifyMessage("hi", "", 0);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    if (w.isError) console.warn(`[WARMUP] failed (${elapsed}s): ${w.reason} — arbiter tests may be slow`);
+    else console.log(`[WARMUP] qwen3:4b ready (${elapsed}s)`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // SECTION 1: HAPPY PATH — all routes should succeed
   // ═══════════════════════════════════════════════════════════════
 

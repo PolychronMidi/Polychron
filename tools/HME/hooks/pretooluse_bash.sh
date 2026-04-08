@@ -40,9 +40,9 @@ if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; the
   fi
 fi
 
-# Block polling: task output files or pipeline log
-if echo "$CMD" | grep -qE '(tail|cat|head|grep).*(/tasks/[a-z0-9]+\.output|r4[0-9]+_run|run\.log|pipeline\.log)'; then
-  echo '{"decision":"block","reason":"BLOCKED: Polling task output or pipeline log is the antipattern. Call the check_pipeline MCP tool NOW for current status, then continue with other work."}'
+# Block polling: pipeline log files (NOT task output — those are legitimate post-completion reads)
+if echo "$CMD" | grep -qE '(tail|cat|head|grep).*(r4[0-9]+_run|run\.log|pipeline\.log)'; then
+  echo '{"decision":"block","reason":"BLOCKED: Polling pipeline log is the antipattern. Call the check_pipeline MCP tool NOW for current status, then continue with other work."}'
   exit 2
 fi
 

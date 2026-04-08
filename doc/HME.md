@@ -388,7 +388,7 @@ Two-tier warming: Tier 1 scans up to `max_files` src/ files for callers+KB (fast
 
 ### 11. `fix_antipattern(antipattern, hook_target)` — Hook enforcement
 
-Synthesizes bash detection logic for a behavioral anti-pattern and appends it to the target hook script. Use when a rule is repeatedly violated and needs automated enforcement. Valid targets: `pretooluse_bash`, `posttooluse_bash`, `stop`, `userpromptsubmit`, `pretooluse_edit`, `pretooluse_grep`, `pretooluse_write`.
+Synthesizes bash detection logic for a behavioral anti-pattern and appends it to the target hook script. Use when a rule is repeatedly violated and needs automated enforcement. Valid targets: `pretooluse_bash`, `pretooluse_read`, `pretooluse_edit`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
 
 ## Knowledge KB
 
@@ -405,17 +405,20 @@ Synthesizes bash detection logic for a behavioral anti-pattern and appends it to
 
 All hooks live in `tools/HME/hooks/` as standalone scripts, referenced from `.claude/settings.json`. This keeps hook logic version-controlled, testable, and visible from the HME directory.
 
-### Hook Scripts (14 hooks across 7 lifecycle events)
+### Hook Scripts (16 hooks across 7 lifecycle events)
 
 All hooks share `_tab_helpers.sh` for deduped tab operations (`_append_file_to_tab`, `_extract_bg_output_path`).
 
 | Script | Event | Matcher | What It Does |
 |--------|-------|---------|-------------|
 | `sessionstart.sh` | SessionStart | * | Reset compact tab, inject HME awareness, persist `$HME_ACTIVE` env var |
-| `pretooluse_edit.sh` | PreToolUse | Edit | Remind: `before_editing` or `search_knowledge` for src/ files |
-| `pretooluse_grep.sh` | PreToolUse | Grep | Soft warn: prefer HME `grep()` for KB enrichment |
-| `pretooluse_write.sh` | PreToolUse | Write | Lab rules for `sketches.js`: audible postBoot, no empty sketches |
-| `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock` + suggest HME `file_lines`/`count_lines` |
+| `pretooluse_lifesaver.sh` | PreToolUse | * | **LIFESAVER**: stamp start time to `/tmp/hme_lifesaver_{session}_{tool}` for every tool call |
+| `pretooluse_read.sh` | PreToolUse | Read | Block polling of task output files; surface live KB entries for project source files via shim |
+| `pretooluse_edit.sh` | PreToolUse | Edit | Surface live KB constraint warnings via shim for all project files; remind `read(mode="before")` |
+| `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim; remind `find()` for enriched search; multiline exempt |
+| `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
+| `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement |
+| `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: warn to stderr when `mcp__HME__*` tools exceed 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
@@ -675,7 +678,7 @@ Sessions stored at `~/.config/hme-chat/workspaces/{hash}/`:
 
 ### PostToolUse Transcript Hook
 
-`tools/HME/hooks/log-tool-call.sh` — universal PostToolUse hook (matcher: `""`) that logs every tool call from the main Claude Code session to `log/session-transcript.jsonl` and mirrors to the HTTP shim. Also triggers `/reindex` for Edit/Write operations.
+`tools/HME/hooks/log-tool-call.sh` — universal PostToolUse hook (matcher: `""`) that logs every tool call from the main Claude Code session to `log/session-transcript.jsonl` and mirrors to the HTTP shim. Also triggers `/reindex` for Edit/Write operations. **LIFESAVER**: reads the start timestamp written by `pretooluse_lifesaver.sh` and emits a stderr warning when any `mcp__HME__*` tool exceeds its expected duration (15s for most tools, 30s for `review`/`warm_pre_edit_cache`).
 
 ### Installation
 

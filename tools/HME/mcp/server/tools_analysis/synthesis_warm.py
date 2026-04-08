@@ -183,7 +183,15 @@ def _prime_warm_context(model: str) -> bool:
         max_tokens=8, model=model, priority="background",
         temperature=0.0, return_context=True,
     )
-    ctx_array = result[1] if isinstance(result, tuple) else None
+    # _local_think returns (text, ctx_array) with return_context=True.
+    # On cooldown-refused: (None, []) — distinguish from real failure.
+    if isinstance(result, tuple):
+        text_result, ctx_array = result
+    else:
+        text_result, ctx_array = result, None
+    if text_result is None and isinstance(result, tuple) and result == (None, []):
+        logger.info(f"warm ctx priming SKIPPED: {model} — cooldown active, will retry next cycle")
+        return False
     if ctx_array:
         import time as _t
         _warm_ctx[model] = ctx_array
@@ -192,9 +200,8 @@ def _prime_warm_context(model: str) -> bool:
         logger.info(f"warm ctx PRIMED: {model} ({len(ctx_array)} ctx tokens, kb_ver={kb_ver})")
         return True
     logger.warning(
-        f"warm ctx priming FAILED: {model} — result type={type(result).__name__}, "
-        f"is_tuple={isinstance(result, tuple)}, "
-        f"ctx_array_len={len(ctx_array) if ctx_array else 'None'}"
+        f"warm ctx priming FAILED: {model} — text={'present' if text_result else 'None'}, "
+        f"ctx_array={'present' if ctx_array else 'None'}"
     )
     return False
 
@@ -215,12 +222,13 @@ def _prime_all_gpus() -> str:
     ]
     for t in threads:
         t.start()
-    # 600s: Ollama serializes 3 large persona prompts — worst case ~10-12 min total
+    # 120s: models should load and respond within 2 min; if not, they're stuck.
+    # Threads continue as daemons — warm ctx gets populated if they eventually succeed.
     for t in threads:
-        t.join(timeout=600)
+        t.join(timeout=120)
     for t in threads:
         if t.is_alive():
-            logger.warning(f"_prime_all_gpus: thread {t.name} still running after 600s — Ollama may be overloaded")
+            logger.warning(f"_prime_all_gpus: thread {t.name} still running after 120s — model may not be loaded in Ollama (run: ollama ps)")
     elapsed = _t.time() - t0
     parts = [f"Warm context priming ({elapsed:.1f}s):"]
     for model, ok in [(_LOCAL_MODEL, results[0]), (_REASONING_MODEL, results[1]),
