@@ -43,6 +43,7 @@ exports.postTranscript = postTranscript;
 exports.reindexFiles = reindexFiles;
 exports.postNarrative = postNarrative;
 exports.isHmeShimReady = isHmeShimReady;
+exports.logShimError = logShimError;
 exports.streamHybrid = streamHybrid;
 const child_process_1 = require("child_process");
 const http = __importStar(require("http"));
@@ -515,7 +516,7 @@ async function postNarrative(narrative) {
         req.end();
     });
 }
-/** Check whether the HME HTTP shim is reachable. */
+/** Check whether the HME HTTP shim is reachable. Returns {ready, errors}. */
 async function isHmeShimReady() {
     return new Promise((resolve) => {
         const req = http.get(`${HME_HTTP_URL}/health`, (res) => {
@@ -523,15 +524,32 @@ async function isHmeShimReady() {
             res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
                 try {
-                    resolve(JSON.parse(raw).status === "ready");
+                    const parsed = JSON.parse(raw);
+                    resolve({ ready: parsed.status === "ready", errors: parsed.recent_errors ?? [] });
                 }
                 catch {
-                    resolve(false);
+                    resolve({ ready: false, errors: [] });
                 }
             });
         });
-        req.on("error", () => resolve(false));
-        req.setTimeout(1000, () => { req.destroy(); resolve(false); });
+        req.on("error", () => resolve({ ready: false, errors: [] }));
+        req.setTimeout(1000, () => { req.destroy(); resolve({ ready: false, errors: [] }); });
+    });
+}
+/**
+ * Post a critical error to the HME HTTP shim error log.
+ * Writes to log/hme-errors.log on disk — readable by main Claude session.
+ */
+async function logShimError(source, message, detail = "") {
+    return new Promise((resolve) => {
+        const body = JSON.stringify({ source, message, detail });
+        const req = http.request({
+            hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/error", method: "POST",
+            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+        }, () => resolve());
+        req.on("error", () => resolve());
+        req.write(body);
+        req.end();
     });
 }
 /**

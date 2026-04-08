@@ -537,19 +537,42 @@ export async function postNarrative(narrative: string): Promise<void> {
   });
 }
 
-/** Check whether the HME HTTP shim is reachable. */
-export async function isHmeShimReady(): Promise<boolean> {
+/** Check whether the HME HTTP shim is reachable. Returns {ready, errors}. */
+export async function isHmeShimReady(): Promise<{ ready: boolean; errors: any[] }> {
   return new Promise((resolve) => {
     const req = http.get(`${HME_HTTP_URL}/health`, (res) => {
       let raw = "";
       res.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
       res.on("end", () => {
-        try { resolve(JSON.parse(raw).status === "ready"); }
-        catch { resolve(false); }
+        try {
+          const parsed = JSON.parse(raw);
+          resolve({ ready: parsed.status === "ready", errors: parsed.recent_errors ?? [] });
+        }
+        catch { resolve({ ready: false, errors: [] }); }
       });
     });
-    req.on("error", () => resolve(false));
-    req.setTimeout(1000, () => { req.destroy(); resolve(false); });
+    req.on("error", () => resolve({ ready: false, errors: [] }));
+    req.setTimeout(1000, () => { req.destroy(); resolve({ ready: false, errors: [] }); });
+  });
+}
+
+/**
+ * Post a critical error to the HME HTTP shim error log.
+ * Writes to log/hme-errors.log on disk — readable by main Claude session.
+ */
+export async function logShimError(source: string, message: string, detail: string = ""): Promise<void> {
+  return new Promise((resolve) => {
+    const body = JSON.stringify({ source, message, detail });
+    const req = http.request(
+      {
+        hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/error", method: "POST",
+        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      },
+      () => resolve()
+    );
+    req.on("error", () => resolve());
+    req.write(body);
+    req.end();
   });
 }
 
