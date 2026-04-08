@@ -1164,8 +1164,10 @@ function appendChunk(id, chunkType, chunk) {
     }
     streamCurrentThinking.querySelector('.thinking-body').textContent += chunk;
   } else if (chunkType === 'tool') {
-    streamCurrentBody = null;    // next text starts fresh
-    streamCurrentThinking = null; // next thinking starts fresh
+    // Hide cursor in current text block — prevents multiple cursors animating at once
+    streamCurrentBody?.querySelector('.stream-cursor')?.classList.add('done');
+    streamCurrentBody = null;
+    streamCurrentThinking = null;
     const toolDiv = document.createElement('div');
     toolDiv.className = 'tool-step';
     toolDiv.textContent = chunk;
