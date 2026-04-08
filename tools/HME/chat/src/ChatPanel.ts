@@ -38,10 +38,12 @@ export class ChatPanel {
   private _messageQueue: any[] = [];
   private _disposables: vscode.Disposable[] = [];
   private _transcript: TranscriptLogger;
+  private _restoreSessionId: string | null = null;
 
-  private constructor(panel: vscode.WebviewPanel, projectRoot: string) {
+  private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
     this._panel = panel;
     this._projectRoot = projectRoot;
+    this._restoreSessionId = restoreSessionId ?? null;
 
     // Wrap all init that touches disk or native modules in try/catch
     // so a failure here never prevents the panel from opening
@@ -95,6 +97,11 @@ export class ChatPanel {
     ChatPanel.current = new ChatPanel(panel, projectRoot);
   }
 
+  public static deserialize(panel: vscode.WebviewPanel, state: any, projectRoot: string) {
+    const restoreSessionId: string | undefined = state?.activeSessionId;
+    ChatPanel.current = new ChatPanel(panel, projectRoot, restoreSessionId);
+  }
+
   private _handleMessage(msg: any) {
     switch (msg.type) {
       case "send":
@@ -137,6 +144,12 @@ export class ChatPanel {
         break;
       case "listSessions":
         this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
+        // On first listSessions after deserialize, auto-load the previously active session
+        if (this._restoreSessionId) {
+          const id = this._restoreSessionId;
+          this._restoreSessionId = null;
+          this._loadSession(id);
+        }
         break;
       case "loadSession":
         this._loadSession(msg.id);
@@ -1400,15 +1413,18 @@ window.addEventListener('message', (event) => {
     renderSessions(msg.sessions);
   } else if (msg.type === 'sessionCreated') {
     activeSessionId = msg.session.id;
+    vscode.setState({ activeSessionId });
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'sessionLoaded') {
     activeSessionId = msg.id;
+    vscode.setState({ activeSessionId });
     messages.innerHTML = '';
     for (const m of msg.messages) appendMessage(m);
     setStatus(\`Loaded: \${msg.title}\`);
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'historyCleared') {
     activeSessionId = null;
+    vscode.setState({ activeSessionId: null });
     messages.innerHTML = '';
     setStatus('');
     vscode.postMessage({ type: 'listSessions' });

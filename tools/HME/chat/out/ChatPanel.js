@@ -42,13 +42,15 @@ const SessionStore_1 = require("./SessionStore");
 const TranscriptLogger_1 = require("./TranscriptLogger");
 const Arbiter_1 = require("./Arbiter");
 class ChatPanel {
-    constructor(panel, projectRoot) {
+    constructor(panel, projectRoot, restoreSessionId) {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
         this._isStreaming = false;
         this._messageQueue = [];
         this._disposables = [];
+        this._restoreSessionId = null;
         this._panel = panel;
         this._projectRoot = projectRoot;
+        this._restoreSessionId = restoreSessionId ?? null;
         // Wrap all init that touches disk or native modules in try/catch
         // so a failure here never prevents the panel from opening
         try {
@@ -92,6 +94,10 @@ class ChatPanel {
         });
         ChatPanel.current = new ChatPanel(panel, projectRoot);
     }
+    static deserialize(panel, state, projectRoot) {
+        const restoreSessionId = state?.activeSessionId;
+        ChatPanel.current = new ChatPanel(panel, projectRoot, restoreSessionId);
+    }
     _handleMessage(msg) {
         switch (msg.type) {
             case "send":
@@ -133,6 +139,12 @@ class ChatPanel {
                 break;
             case "listSessions":
                 this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
+                // On first listSessions after deserialize, auto-load the previously active session
+                if (this._restoreSessionId) {
+                    const id = this._restoreSessionId;
+                    this._restoreSessionId = null;
+                    this._loadSession(id);
+                }
                 break;
             case "loadSession":
                 this._loadSession(msg.id);
@@ -1351,15 +1363,18 @@ window.addEventListener('message', (event) => {
     renderSessions(msg.sessions);
   } else if (msg.type === 'sessionCreated') {
     activeSessionId = msg.session.id;
+    vscode.setState({ activeSessionId });
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'sessionLoaded') {
     activeSessionId = msg.id;
+    vscode.setState({ activeSessionId });
     messages.innerHTML = '';
     for (const m of msg.messages) appendMessage(m);
     setStatus(\`Loaded: \${msg.title}\`);
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'historyCleared') {
     activeSessionId = null;
+    vscode.setState({ activeSessionId: null });
     messages.innerHTML = '';
     setStatus('');
     vscode.postMessage({ type: 'listSessions' });
