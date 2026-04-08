@@ -9,7 +9,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": ["onCommand:hme-chat.open", "*"],
+  "activationEvents": ["onCommand:hme-chat.open", "onWebviewPanel:hmeChat", "*"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [

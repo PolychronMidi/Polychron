@@ -97,8 +97,9 @@ def _log_error(source: str, message: str, detail: str = "") -> None:
             if detail:
                 f.write(f" | {detail}")
             f.write("\n")
-    except Exception:
-        pass
+    except Exception as e:
+        # Disk write failed — last resort stderr (cannot call logger, may be broken)
+        print(f"[HME FAILFAST] Error log disk write failed: {e}", file=sys.stderr, flush=True)
 
 
 def _get_recent_errors(minutes: int = 60) -> list[dict]:
@@ -135,8 +136,8 @@ def _load_transcript():
                     pass
         with _transcript_lock:
             _transcript_entries = entries
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[HME FAILFAST] Transcript load failed: {e}", file=sys.stderr, flush=True)
 
 _load_transcript()
 
@@ -201,18 +202,20 @@ def _reindex_files(files: list[str]) -> dict:
     """Trigger immediate mini-reindex of specific files via RAG engine."""
     _engine_ready.wait(timeout=10)
     if _project_engine is None:
+        _log_error("reindex", "engines not ready — cannot reindex files")
         return {"error": "engines not ready", "indexed": []}
 
     indexed = []
     for filepath in files[:20]:
         abs_path = filepath if os.path.isabs(filepath) else os.path.join(PROJECT_ROOT, filepath)
         if not os.path.exists(abs_path):
+            _log_error("reindex", f"file not found: {filepath}")
             continue
         try:
             _project_engine.index_file(abs_path)
             indexed.append(filepath)
         except Exception as e:
-            logger.warning(f"reindex failed for {filepath}: {e}")
+            _log_error("reindex", f"index_file failed for {filepath}: {e}")
     return {"indexed": indexed, "count": len(indexed)}
 
 
@@ -302,8 +305,8 @@ def _post_audit(changed_files: str = "") -> dict:
                 cwd=os.environ.get("PROJECT_ROOT", os.getcwd())
             )
             files = [f.strip() for f in result.stdout.strip().splitlines() if f.strip()]
-        except Exception:
-            pass
+        except Exception as e:
+            _log_error("audit", f"git diff failed: {e}")
 
     if not files:
         return {"violations": [], "changed_files": []}

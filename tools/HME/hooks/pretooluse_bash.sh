@@ -57,16 +57,23 @@ if echo "$CMD" | grep -qE '^(grep |cat |head |tail |wc -l)'; then
   TOOL=$(echo "$CMD" | cut -d' ' -f1)
   echo "PREFER HME: use grep(), file_lines(), or count_lines() MCP tools for KB-enriched results. Bash $TOOL is allowed but misses KB context." >&2
 fi
-# fix_antipattern: Silent error swallowing in HME Chat stream/arbiter paths: error callbacks that d
-# Block silent error swallowing in HME Chat stream paths
-if echo "$CMD" | grep -qE 'onError|onError.*return'; then
-  echo '{"decision":"block","reason":"BLOCKED: Silent error swallowing in HME Chat stream paths. Every error handler MUST call _drainQueue(), reset _isStreaming=false, log to hme-errors.log, and surface UI warnings. No silent failures allowed."}'
-  exit 2
-fi
-# fix_antipattern: Fallback values that masquerade as success: parseArbiterResponse returns reason:
-# Block fallback values that mask parse failures
-if echo "$CMD" | grep -q 'parseArbiterResponse.*no reason given'; then
-  echo '{"decision":"block","reason":"BLOCKED: parseArbiterResponse fallback \"no reason given\" cannot be distinguished from success. Must use \"timeout\", \"unreachable\", or \"failed\" to trigger error detection."}'
+# FAIL FAST — the core invariant of this project: NO error, anywhere, ever, may be silently
+# swallowed, suppressed, logged-and-dropped, or masked by a fallback value.
+# Every error must surface immediately with full context all the way to the top of the agent's
+# context stack. Treat every error as life-saving criticality.
+#
+# Block any command that introduces silent-failure patterns in code or scripts:
+#   1. Empty catch blocks: catch {} or catch(e) {}
+#   2. Empty .catch chains: .catch(() => {}) or .catch(function() {})
+#   3. No-op error callbacks: onError: () => {}, reject: () => {}, onFail = () => {}
+#   4. Fallback values masquerading as success (e.g. "no reason given" where "timeout" is needed)
+#   5. Build/compile stderr suppressed: tsc/npm/node 2>/dev/null hides errors that must surface
+if echo "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]]*\}' \
+   || echo "$CMD" | grep -qE '\.catch\([[:space:]]*(function[[:space:]]*\(\)|(\([^)]*\))[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}\)' \
+   || echo "$CMD" | grep -qE '(onError|onFail|reject)[[:space:]]*[:(=][[:space:]]*(function\s*\(\)|\([^)]*\)[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}' \
+   || echo "$CMD" | grep -q 'parseArbiterResponse.*no reason given' \
+   || echo "$CMD" | grep -qE '(tsc|npm run|node scripts/|eslint)[^|;&]*2>/dev/null'; then
+  echo '{"decision":"block","reason":"FAIL FAST VIOLATION — silent error suppression detected. No empty catch{}, .catch(()=>{}), no-op onError/reject handlers, fallback values masking failures, or suppressed build stderr. Every error MUST bubble immediately: throw it, call onError(), call _postError(), reject the promise. Log to hme-errors.log. Surface in UI. No silent failures. Assume life-saving criticality."}'
   exit 2
 fi
 exit 0
