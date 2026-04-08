@@ -877,9 +877,9 @@ const vscode = acquireVsCodeApi();
 // ── State ──────────────────────────────────────────────────────────────────
 let streaming = false;
 let streamingId = null;
-let streamText = '';
 let streamThinking = '';
 let streamTools = [];
+let streamCurrentBody = null; // active text block — nulled after each tool call
 
 // ── UI refs ────────────────────────────────────────────────────────────────
 const routeSel    = document.getElementById('route-select');
@@ -977,12 +977,32 @@ function appendMessage(msg) {
     header.innerHTML += \`<span class="queued-badge">queued</span>\`;
   }
 
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.textContent = msg.text || '';
-
   div.appendChild(header);
-  div.appendChild(body);
+
+  if (msg.thinking) {
+    const details = document.createElement('details');
+    details.className = 'thinking';
+    details.innerHTML = \`<summary>🧠 Thinking</summary><div class="thinking-body"></div>\`;
+    details.querySelector('.thinking-body').textContent = msg.thinking;
+    div.appendChild(details);
+  }
+
+  if (msg.text) {
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.textContent = msg.text;
+    div.appendChild(body);
+  }
+
+  if (msg.tools && msg.tools.length) {
+    for (const t of msg.tools) {
+      const toolDiv = document.createElement('div');
+      toolDiv.className = 'tool-step';
+      toolDiv.textContent = t;
+      div.appendChild(toolDiv);
+    }
+  }
+
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
 }
@@ -990,9 +1010,9 @@ function appendMessage(msg) {
 function startStream(id, route, model) {
   streaming = true;
   streamingId = id;
-  streamText = '';
   streamThinking = '';
   streamTools = [];
+  streamCurrentBody = null;
 
   const div = document.createElement('div');
   div.className = 'msg assistant';
@@ -1025,6 +1045,7 @@ function appendChunk(id, chunkType, chunk) {
     }
     details.querySelector('.thinking-body').textContent = streamThinking;
   } else if (chunkType === 'tool') {
+    streamCurrentBody = null; // next text starts a fresh block after this tool
     const toolDiv = document.createElement('div');
     toolDiv.className = 'tool-step';
     toolDiv.textContent = chunk;
@@ -1035,15 +1056,13 @@ function appendChunk(id, chunkType, chunk) {
     errDiv.textContent = '⚠ ' + chunk;
     div.appendChild(errDiv);
   } else {
-    // text
-    streamText += chunk;
-    let body = div.querySelector('.msg-body');
-    if (!body) {
-      body = document.createElement('div');
-      body.className = 'msg-body streaming-cursor';
-      div.appendChild(body);
+    // text — one block per inter-tool segment
+    if (!streamCurrentBody) {
+      streamCurrentBody = document.createElement('div');
+      streamCurrentBody.className = 'msg-body streaming-cursor';
+      div.appendChild(streamCurrentBody);
     }
-    body.textContent = streamText;
+    streamCurrentBody.textContent += chunk;
   }
   messages.scrollTop = messages.scrollHeight;
 }
@@ -1051,12 +1070,12 @@ function appendChunk(id, chunkType, chunk) {
 function endStream(id, cost) {
   streaming = false;
   streamingId = null;
+  streamCurrentBody = null;
   cancelBtn.style.display = 'none';
 
   const div = document.getElementById(\`msg-\${id}\`);
   if (div) {
-    const body = div.querySelector('.msg-body');
-    if (body) body.classList.remove('streaming-cursor');
+    div.querySelectorAll('.streaming-cursor').forEach(b => b.classList.remove('streaming-cursor'));
 
     // Update thinking summary with elapsed time label
     const details = div.querySelector('details.thinking summary');
