@@ -63,4 +63,10 @@ if echo "$CMD" | grep -qE 'onError|onError.*return'; then
   echo '{"decision":"block","reason":"BLOCKED: Silent error swallowing in HME Chat stream paths. Every error handler MUST call _drainQueue(), reset _isStreaming=false, log to hme-errors.log, and surface UI warnings. No silent failures allowed."}'
   exit 2
 fi
+# fix_antipattern: Fallback values that masquerade as success: parseArbiterResponse returns reason:
+# Block fallback values that mask parse failures
+if echo "$CMD" | grep -q 'parseArbiterResponse.*no reason given'; then
+  echo '{"decision":"block","reason":"BLOCKED: parseArbiterResponse fallback \"no reason given\" cannot be distinguished from success. Must use \"timeout\", \"unreachable\", or \"failed\" to trigger error detection."}'
+  exit 2
+fi
 exit 0
