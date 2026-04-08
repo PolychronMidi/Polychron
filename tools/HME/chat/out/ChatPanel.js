@@ -599,14 +599,10 @@ class ChatPanel {
     _reindexFromTools(tools) {
         const files = new Set();
         for (const t of tools) {
-            // Claude format: [Edit] {"file_path":"src/foo.js"...}
+            // Claude format: [Edit] or [Write] {"file_path":"src/foo.js"...}
             const fileMatch = t.match(/"file_path"\s*:\s*"([^"]+)"/);
             if (fileMatch)
                 files.add(fileMatch[1]);
-            // Claude [Write] patterns
-            const writeMatch = t.match(/\[Write\].*?"([^"]+)"/);
-            if (writeMatch)
-                files.add(writeMatch[1]);
             // Ollama agentic format: [write_file] {"path":"src/foo.js"...}
             const ollamaMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
             if (ollamaMatch)
@@ -828,6 +824,11 @@ class ChatPanel {
                 this._post({ type: "hmeShimStatus", ready: false });
                 if (!wasStarted) {
                     this._postError("shim", `HME shim exited before becoming ready (code ${code ?? "?"})`);
+                }
+                else if (!this._disposed) {
+                    // Shim died after a successful start — restart it after a brief delay to release port
+                    setTimeout(() => { if (!this._disposed)
+                        this._startHmeShim(); }, 3000);
                 }
             });
             // Poll readiness — retry up to 5 times every 2s
