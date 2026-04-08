@@ -31,9 +31,13 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
         from .coupling import coupling_intel as _ci
         return _ci(mode=f"cascade:{target}")
 
+    if mode == "interaction":
+        from .evolution_trace import interaction_map as _im
+        return _im(module_a=target, module_b="")
+
     # Module or causal trace
     from .evolution_trace import trace_query as _tq
-    return _tq(module=target, section=section, limit=limit, mode=mode if mode != "auto" else "module")
+    return _tq(module=target, section=section, limit=limit, mode=mode if mode not in ("auto", "interaction") else "module")
 
 
 def _detect_trace_type(target: str) -> str:
@@ -41,9 +45,20 @@ def _detect_trace_type(target: str) -> str:
     # Known L0 channel name patterns: lowercase with hyphens
     if '-' in target:
         return "cascade"
-    # camelCase = likely a module
-    if any(c.isupper() for c in target[1:]):
-        return "module"
+    # Known camelCase L0 channel names (posted via L0.post())
+    _KNOWN_CAMEL_CHANNELS = {
+        "emergentRhythm", "emergentMelody", "emergentDownbeat",
+        "feedbackLoop", "feedbackPitch", "stutterContagion",
+        "regimeTransition", "sectionQuality",
+    }
+    if target in _KNOWN_CAMEL_CHANNELS:
+        return "cascade"
+    # camelCase starting with uppercase = likely a module (e.g. "crossLayerClimaxEngine")
+    # camelCase starting with lowercase but has uppercase = could be module or channel
+    # Heuristic: if it matches a JS module naming pattern (multi-word camel) → module
+    import re
+    if re.search(r'[A-Z][a-z]', target[1:]) and len(target) > 15:
+        return "module"  # long camelCase = almost always a module name
     # All lowercase, no hyphens — check known channels
     _KNOWN_CHANNELS = {
         "articulation", "chord", "coherence", "density", "entropy",

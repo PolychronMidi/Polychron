@@ -190,6 +190,61 @@ print('idle' if calls_after_bg < 20 else 'ok')
   fi
 fi
 
+# ── Plan-abandonment detection ────────────────────────────────────────────────
+# Detect: Agent spawned for KB/HME work (should use HME tools directly),
+# or a sweep was started (edit/grep loop) but fewer than expected completions.
+if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
+  ABANDON_CHECK=$(python3 -c "
+import json, sys
+data = open('$TRANSCRIPT_PATH').read()
+lines = data.strip().split('\n')
+in_turn = False
+agent_for_kb = False
+edits_started = 0
+edits_note = ''
+
+for line in reversed(lines):
+    try:
+        obj = json.loads(line)
+    except Exception:
+        continue
+    role = obj.get('role','')
+    if role == 'user' and not in_turn:
+        continue
+    if role == 'assistant':
+        in_turn = True
+    if role == 'user' and in_turn:
+        break
+    if in_turn:
+        for block in obj.get('content', []):
+            if not isinstance(block, dict): continue
+            if block.get('type') == 'tool_use':
+                name = block.get('name','')
+                inp = block.get('input', {})
+                # Agent spawned for KB/HME work
+                if name == 'Agent':
+                    prompt = inp.get('prompt','').lower()
+                    if any(kw in prompt for kw in ['knowledge', 'kb ', 'hme', 'search_knowledge', 'compact', 'remove_knowledge']):
+                        agent_for_kb = True
+                # Count edits — proxy for sweep progress
+                if name == 'Edit':
+                    edits_started += 1
+
+if agent_for_kb:
+    print('AGENT_FOR_KB')
+else:
+    print('ok')
+" 2>/dev/null || echo ok)
+
+  if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
+    jq -n '{
+      "decision": "block",
+      "reason": "PLAN-ABANDONMENT DETECTED: You spawned an Agent for KB/HME work. Use HME tools directly: search_knowledge, compact_knowledge, remove_knowledge, list_knowledge, memory_dream, kb_health. Subagents for KB work are the abandoning-plans antipattern (KB entry 524061657661). Complete the task using HME tools now."
+    }'
+    exit 0
+  fi
+fi
+
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 exit 0

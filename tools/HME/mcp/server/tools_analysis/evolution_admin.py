@@ -376,11 +376,10 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
     """HME maintenance dispatcher. action='selftest': verify tool registration, doc sync,
     index integrity, Ollama, KB health, symlinks. action='reload': hot-reload tool modules
     without restarting server (pass modules='health,evolution' or 'all'). action='index':
-    reindex all code chunks and symbols (replaces standalone index_codebase -- run after batch
-    code changes when file watcher hasn't caught up). action='clear_index': wipe hash cache +
-    chunk store then rebuild from scratch (use when hash cache is stale or index is corrupted).
-    action='warm': pre-populate before_editing caller+KB caches for all src/ files AND
-    prime GPU warm KV contexts (persona + KB pre-tokenized for instant synthesis).
+    reindex all code chunks and symbols (run after batch code changes when file watcher
+    hasn't caught up). action='clear_index': wipe hash cache + chunk store then rebuild.
+    action='warm': pre-populate before_editing caches for all src/ files AND prime GPU KV contexts.
+    action='introspect': self-benchmarking — tool usage patterns, workflow discipline, KB health.
     action='both': reload then selftest.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
@@ -428,8 +427,10 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
             "Warm priming started (2 parallel background tasks: GPU KV contexts + pre-edit cache).\n"
             "Use hme_admin(action='selftest') to check status."
         )
+    if action == "introspect":
+        parts.append(hme_introspect())
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', or 'both'."
     return "\n\n".join(parts)
 
 
@@ -446,6 +447,7 @@ def hme_inspect(mode: str = "both") -> str:
     return "\n\n".join(parts)
 
 
+@ctx.mcp.tool()
 def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> str:
     """Permanently enforce a rule against a stubborn antipattern by adding detection logic
     to the specified hook script."""

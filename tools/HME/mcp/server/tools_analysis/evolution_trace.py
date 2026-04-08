@@ -117,7 +117,6 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "module") -> str:
     """Query the last pipeline run's trace.jsonl for runtime behavior of a specific module.
     Shows what a module ACTUALLY DID: when it fired, what values it produced, which

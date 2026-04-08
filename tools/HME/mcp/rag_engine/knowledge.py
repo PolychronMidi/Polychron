@@ -118,7 +118,7 @@ class RAGKnowledgeMixin:
 
         cache_key = ("kb", query, top_k, category)
         cached = self._knowledge_cache.get(cache_key)
-        if cached is not None:
+        if cached:  # don't cache empty results — empty could be stale from pre-init
             return cached
 
         fetch_k = min(top_k * 3, 30)
@@ -171,7 +171,8 @@ class RAGKnowledgeMixin:
                 "score": max(0.0, score) * temporal_factor,
             })
 
-        self._knowledge_cache.set(cache_key, results)
+        if results:  # don't cache empty results
+            self._knowledge_cache.set(cache_key, results)
         return results
 
     def remove_knowledge(self, entry_id: str) -> bool:

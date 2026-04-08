@@ -160,6 +160,7 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 - **Never delete unused code/config before checking if it should be implemented.** Only delete code which can't be reasonably adapted and whose concerns are already covered elsewhere in a better manner, otherwise — wire it up and implement.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
 - **Comments are terse.** No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
+- **Never abandon a plan mid-execution.** When executing a task, finish the current atomic unit before pivoting. If user feedback changes the direction, explicitly acknowledge the pivot, state what was left undone, and get confirmation before switching. Never leave code/tools in a broken intermediate state while switching to a different approach. Clarifying questions belong BEFORE starting implementation, not after. Atomic units: a file sweep is not done until every file in scope is fixed; a merge is not done until the routing logic exists; a KB cleanup is not done until every candidate entry has been processed. Enforced: KB entry 524061657661, Stop hook plan-abandonment check.
 
 ## Working Style
 

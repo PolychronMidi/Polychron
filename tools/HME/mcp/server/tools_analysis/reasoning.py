@@ -318,7 +318,6 @@ def module_story(module_name: str) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def module_intel(target: str, mode: str = "story") -> str:
     """Unified module intelligence. Replaces module_story + impact_analysis in one call.
     mode='story' (default): full living biography — definition, KB evolution history, callers,

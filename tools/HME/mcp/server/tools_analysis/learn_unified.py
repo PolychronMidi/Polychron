@@ -16,15 +16,45 @@ def learn(query: str = "", title: str = "", content: str = "",
           category: str = "general", tags: list[str] = [],
           remove: str = "", scope: str = "project",
           related_to: str = "", relation_type: str = "",
-          listening_notes: str = "", top_k: int = 5) -> str:
-    """Unified KB interface. Auto-detects action:
+          listening_notes: str = "", top_k: int = 5,
+          action: str = "") -> str:
+    """Unified KB interface. Auto-detects action from parameters:
     learn(query='coupling') → search KB.
     learn(title='...', content='...') → add entry.
     learn(remove='entry_id') → delete entry.
-    All parameters from add_knowledge/search_knowledge/remove_knowledge
-    are supported."""
+    action='list' → list all entries (category filters).
+    action='compact' → deduplicate similar entries.
+    action='export' → export KB as markdown.
+    action='graph' → spreading-activation knowledge graph (uses query).
+    action='dream' → pairwise similarity pass, find hidden connections.
+    action='health' → KB staleness check."""
     _track("learn")
     ctx.ensure_ready_sync()
+
+    # Explicit action routing
+    if action == "list":
+        from server.tools_knowledge import list_knowledge as _lk
+        return _lk(category=category, scope=scope)
+
+    if action == "compact":
+        from server.tools_knowledge import compact_knowledge as _ck
+        return _ck(scope=scope)
+
+    if action == "export":
+        from server.tools_knowledge import export_knowledge as _ek
+        return _ek(scope=scope, category=category)
+
+    if action == "graph":
+        from server.tools_knowledge import knowledge_graph as _kg
+        return _kg(query or title or "")
+
+    if action == "dream":
+        from server.tools_knowledge import memory_dream as _md
+        return _md()
+
+    if action == "health":
+        from server.tools_knowledge import kb_health as _kbh
+        return _kbh()
 
     # Remove action
     if remove:
@@ -42,10 +72,14 @@ def learn(query: str = "", title: str = "", content: str = "",
     search_term = query or title
     if search_term:
         from server.tools_knowledge import search_knowledge as _sk
-        return _sk(search_term, top_k=top_k, category=category)
+        # Only filter by category if explicitly set (not the default 'general')
+        search_cat = category if category and category != "general" else ""
+        return _sk(search_term, top_k=top_k, category=search_cat)
 
-    return ("Error: provide query (search), title+content (add), or remove=id (delete).\n"
+    return ("Error: provide query (search), title+content (add), remove=id (delete), or action=list/compact/export/graph/dream/health.\n"
             "Examples:\n"
             "  learn(query='coupling constraints')\n"
             "  learn(title='R49 fix', content='...', category='bugfix')\n"
-            "  learn(remove='abc123')")
+            "  learn(remove='abc123')\n"
+            "  learn(action='compact')\n"
+            "  learn(action='health')")

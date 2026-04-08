@@ -48,7 +48,6 @@ def _touch_digest_sentinel():
 
 _check_pipeline_blocked: bool = False  # True after first IN PROGRESS; cleared on finish/fail
 
-@ctx.mcp.tool()
 def check_pipeline() -> str:
     """Check current pipeline status by reading pipeline.log directly.
     Reports: IN PROGRESS (pipeline currently running), the finished line
@@ -141,7 +140,6 @@ def _load_trace() -> list[dict]:
     return _load_trace_impl(os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl"))
 
 
-@ctx.mcp.tool()
 def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     """The single post-pipeline ritual. Consolidates: composition arc, regime health,
     regime anomaly detection, top hotspot systems, dramatic moments, run delta

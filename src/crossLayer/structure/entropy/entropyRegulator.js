@@ -231,7 +231,12 @@ entropyRegulator = (() => {
       // Counterpart: motifEcho REDUCES echo probability under same signal (rising motion looks forward, not backward).
       const contourShapeER = melodicCtxER ? melodicCtxER.contourShape : null;
       const contourShapeEntMod = contourShapeER === 'rising' ? 0.015 : contourShapeER === 'falling' ? -0.02 : 0;
-      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + intervalFreshnessMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod + densityEntMod + complexityBeatEntMod + contourShapeEntMod;
+      // R92 E3: hotspots antagonism bridge with feedbackOscillator -- dense active grid slots suppress entropy target
+      // (rhythmic concentration brings order from density; entropy should follow the structural convergence).
+      // Counterpart: feedbackOscillator AMPLIFIES inject energy under same signal (grid concentration = richer cross-layer resonance).
+      const hotspotsER = rhythmEntryER && Number.isFinite(rhythmEntryER.hotspots) ? rhythmEntryER.hotspots : 0;
+      const hotspotsEntMod = -clamp(hotspotsER * 0.08, 0, 0.04);
+      const computed = arcTarget * arcWeight + target * intentWeight - targetTrim + narMod + melodicMod + tessEntropy + freshnessMod + ascendMod + intervalFreshnessMod + densitySurpriseER * 0.06 + motifEchoMod + climaxMod + complexityMod + phaseMod + densityEntMod + complexityBeatEntMod + contourShapeEntMod + hotspotsEntMod;
       targetEntropy = Number.isFinite(computed) ? clamp(computed, 0, 1) : 0.5;
     } else {
       targetEntropy = Number.isFinite(target) ? clamp(target, 0, 1) : 0.5;

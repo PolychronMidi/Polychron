@@ -13,7 +13,6 @@ from server.helpers import (
 
 logger = logging.getLogger("HME")
 
-@ctx.mcp.tool()
 def add_knowledge(title: str, content: str, category: str = "general", tags: list[str] = [], scope: str = "project", related_to: str = "", relation_type: str = "", listening_notes: str = "") -> str:
     """Persist a knowledge entry to the KB. Tell the STORY, not just the fact: include WHY this matters musically, what the listener experiences when this constraint is violated, and what happened in the round that discovered it. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use listening_notes to describe the musical effect ('coherent sections lost their sense of arrival'). Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) for knowledge_graph edges. Scope 'project'/'global'/'both'."""
     _track("add_knowledge")
@@ -59,7 +58,6 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
 
 
 
-@ctx.mcp.tool()
 def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
     """Search the persistent knowledge base for constraints, decisions, patterns, and bugfixes. MANDATORY before modifying any module — always check for existing constraints first. Returns matching entries from both project and global KBs, ranked by relevance. Filter by category ('architecture', 'decision', 'pattern', 'bugfix') to narrow results. Each result includes ID, title, content, tags, and relevance score."""
     _track("search_knowledge")
@@ -99,7 +97,6 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
 
 
 
-@ctx.mcp.tool()
 def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     """Delete a knowledge entry by its ID. Use after kb_health identifies stale entries, or when a decision has been superseded. Specify scope='global' to remove from the shared KB instead of the project KB."""
     ctx.ensure_ready_sync()

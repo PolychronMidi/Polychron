@@ -162,6 +162,7 @@ def drama_finder(top_n: int = 10) -> str:
     return "\n".join(parts)
 
 
+@ctx.mcp.tool()
 def beat_snapshot(beat_key: str) -> str:
     """Show the complete system state at a specific beat: regime, all trust scores/weights,
     snap fields, coupling labels, notes emitted. A cross-section of everything happening

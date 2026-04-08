@@ -70,8 +70,13 @@ feedbackOscillator = (() => {
     // Counterpart: grooveTransfer AMPLIFIES transfer rate under same signal (confident pulse = reliable groove = amplify).
     const biasStrengthFO = emergentEntry && Number.isFinite(emergentEntry.biasStrength) ? emergentEntry.biasStrength : 0;
     const biasScaleFO = 1.0 - clamp((biasStrengthFO - 0.30) * 0.20, 0, 0.09);
+    // R92 E3: hotspots antagonism bridge with entropyRegulator -- dense active grid slots amplify feedback depth
+    // (rhythmic concentration gives oscillation more signal to work with, deepening cross-layer resonance).
+    // Counterpart: entropyRegulator LOWERS entropy target under same signal (concentration brings order, not chaos).
+    const hotspotsFO = emergentEntry && Number.isFinite(emergentEntry.hotspots) ? emergentEntry.hotspots : 0;
+    const hotspotsScaleFO = 1.0 + clamp(hotspotsFO * 0.18, 0, 0.09);
     L0.post(CHANNEL, layer, absoluteSeconds, {
-      energy: clamp(energy * artScale * emergentScale * melodicScaleFO * biasScaleFO * (1 - ccDamp), 0, 1),
+      energy: clamp(energy * artScale * emergentScale * melodicScaleFO * biasScaleFO * hotspotsScaleFO * (1 - ccDamp), 0, 1),
       roundTrip: 0,
       impulseType: finalImpulseType,
       originLayer: layer,

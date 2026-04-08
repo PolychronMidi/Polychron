@@ -35,7 +35,6 @@ def _coupling_label_display(raw_label: str) -> str:
     return raw_label
 
 
-@ctx.mcp.tool()
 def section_compare(section_a: int, section_b: int) -> str:
     """Compare two sections head-to-head: regime shift, tension delta, trust system
     winners/losers, coupling label changes, note density change. Reveals what drove
@@ -296,7 +295,6 @@ def regime_timeline(row_width: int = 80) -> str:
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def regime_report(mode: str = "both", row_width: int = 80, top_n: int = 5) -> str:
     """Regime + drama analysis. mode='timeline': ASCII beat-map (I=initializing E=evolving
     X=exploring C=coherent) with tension overlay and per-section stats. mode='anomaly':
@@ -305,7 +303,7 @@ def regime_report(mode: str = "both", row_width: int = 80, top_n: int = 5) -> st
     reversals, density contrast pairs). mode='both' (default): timeline + anomaly."""
     ctx.ensure_ready_sync()
     _track("regime_report")
-    from .digest import regime_anomaly
+    from .digest_analysis import regime_anomaly
     parts = []
     if mode in ("timeline", "both"):
         parts.append(regime_timeline(row_width))

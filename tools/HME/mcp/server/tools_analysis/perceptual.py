@@ -60,7 +60,6 @@ def _load_audio_sections(wav_path: str, sr: int = 22050) -> list[tuple[int, any]
     return sections
 
 
-@ctx.mcp.tool()
 def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int = 3) -> str:
     """Unified perceptual audio analysis. Runs EnCodec, CLAP, or both on combined.wav.
     analysis: 'encodec' (neural token entropy per section), 'clap' (text↔audio similarity),

@@ -258,7 +258,6 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
     return "\n".join(lines)
 
 
-@ctx.mcp.tool()
 def trust_report(system_a: str = "", system_b: str = "", mode: str = "both") -> str:
     """Unified trust analysis. No args → leaderboard overview of all systems.
     system_a only → trajectory (weight/score arc, hotspot patterns, concerns).

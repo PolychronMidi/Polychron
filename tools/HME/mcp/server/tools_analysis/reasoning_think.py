@@ -14,7 +14,6 @@ from .synthesis import (
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
 def think(about: str, context: str = "") -> str:
     """Structured reflection tool. Uses Ollama hybrid synthesis (qwen3-coder extract +
     qwen3:30b-a3b reason) with project-grounded context injection. Routes by question type:

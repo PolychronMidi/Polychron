@@ -18,7 +18,6 @@ from tools_index import _resolve_lib_engine, _index_lib  # shared helpers
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
 def grep(pattern: str, path: str = "", file_type: str = "", context: int = 0, regex: bool = False, files_only: bool = False) -> str:
     """Exact string or regex search across project files, enriched with KB cross-references. Use this instead of built-in Grep for all exact-match searches — it automatically surfaces relevant knowledge constraints alongside results. Set regex=True for extended regex (-E), context=N for surrounding lines (-C), files_only=True for file paths only (-l). Returns up to 30 matching lines plus any KB entries related to the search pattern. For semantic/intent-based searches, use search_code instead."""
     import subprocess
@@ -77,7 +76,6 @@ def grep(pattern: str, path: str = "", file_type: str = "", context: int = 0, re
 
 
 
-@ctx.mcp.tool()
 def file_lines(file_path: str, start: int = 1, end: int = 0) -> str:
     """Read specific line ranges of a file with automatic KB context for the module. Use this instead of Bash cat/head/tail/sed — it surfaces any knowledge constraints associated with the file's module. Accepts relative paths (resolved against ctx.PROJECT_ROOT) or absolute paths. Specify start and end line numbers to read a range; omit end to read to EOF. Returns numbered lines plus any matching KB entries."""
     ctx.ensure_ready_sync()
@@ -240,7 +238,6 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
 
 
 
-@ctx.mcp.tool()
 def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", scope: str = "main", path: str = "", response_format: str = "detailed") -> str:
     """Semantic natural-language code search across the indexed codebase. Use this for intent-based queries like 'where does convergence detection happen' — it uses vector similarity, not string matching. Set path='src/crossLayer' to scope results to a directory. Set lib='<name>' to search an indexed library. Set scope='all' to include both main and libs. Results include chunk summaries, relevance scores, and any KB constraints tagged to matching modules. For exact string/regex matching, use grep instead. Set response_format='concise' to get file:line locations only (saves ~2/3 tokens); 'detailed' (default) includes full summaries and KB tags."""
     _track("search_code")
@@ -476,7 +473,6 @@ def find_similar_code(code_snippet: str, top_k: int = 10) -> str:
 
 
 
-@ctx.mcp.tool()
 def find_callers(symbol_name: str, language: str = "", path: str = "", exclude_path: str = "") -> str:
     """Find all call sites. Use path='src/crossLayer' to scope. Use exclude_path='src/conductor' to find boundary violations."""
     if not symbol_name.strip():
@@ -500,7 +496,6 @@ def find_callers(symbol_name: str, language: str = "", path: str = "", exclude_p
 
 
 
-@ctx.mcp.tool()
 def find_anti_pattern(wrong_symbol: str, right_symbol: str, path: str = "", exclude_path: str = "") -> str:
     """Find boundary violations: files using wrong_symbol (the banned direct access) that should use right_symbol (the approved bridge/wrapper) instead. Example: find_anti_pattern wrong_symbol='conductorState' right_symbol='conductorSignalBridge'. Auto-excludes the file that defines right_symbol."""
     if not wrong_symbol.strip():

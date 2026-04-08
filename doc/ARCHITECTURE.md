@@ -364,6 +364,14 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 
 - **R47 E2+E3 `ascendRatio` → `crossLayerClimaxEngine ↔ crossLayerSilhouette`** (r=-0.323, 3→4 bridges): ascending melodic intervals accelerate climax approach (up to +0.05) while tightening silhouette structural tracking (up to −8% smoothing). Melody climbing toward a structural peak fuels the arc while form braces for landing — chaos rides the climb, structure prepares the resolution.
 
+### tessituraLoad Register-Pressure Bridge + thematicDensity Virgin Coupling (R92)
+
+Two new couplings targeting the `verticalIntervalMonitor ↔ crossLayerSilhouette` unsaturated antagonist pair (r=-0.443), plus first use of `thematicDensity` in `crossLayerSilhouette`.
+
+- **R92 E1 `tessituraLoad` → `verticalIntervalMonitor ↔ crossLayerSilhouette`** (r=-0.443, 2→3 bridges): crowded register makes unison collisions muddier — VIM tightens collision penalty (×up to 1.09). Opposing: crossLayerSilhouette WIDENS effectiveSmoothing (up to +10% relaxation), giving structural form room to breathe under register pressure. Harmonic discipline intensifies while structural tracking loosens — the form opens up as the harmonic space compresses.
+- **R92 E2 `thematicDensity` → `crossLayerSilhouette`** (virgin coupling): recognizable motivic patterns tighten form tracking (up to −7% smoothing). When recurring themes are dense, the silhouette firms up around them — structural coherence follows motivic density.
+- **R92 E3 `hotspots` → `feedbackOscillator ↔ entropyRegulator`** (r=-0.488, 2→3 bridges): dense active rhythmic grid slots amplify feedbackOscillator inject energy (×up to 1.09), while simultaneously suppressing entropyRegulator target (up to −0.04). Rhythmic concentration deepens cross-layer resonance while drawing order from the density — oscillatory richness expands as entropy contracts.
+
 ## Emergence Boundaries
 
 Three architectural membranes:

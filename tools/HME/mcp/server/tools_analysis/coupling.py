@@ -265,7 +265,6 @@ def bridge_ledger() -> str:
     return "\n".join(out)
 
 
-@ctx.mcp.tool()
 def coupling_intel(mode: str = "full") -> str:
     """Unified coupling intelligence hub. Replaces coupling_network + antagonist_map +
     cluster_personality + dimension_gap_finder. mode='full' (default): all four views in one
@@ -289,6 +288,8 @@ def coupling_intel(mode: str = "full") -> str:
         return "\n\n---\n\n".join(parts)
     if mode == "network":
         return coupling_network(clusters=True)
+    if mode == "clusters":
+        return cluster_finder()
     if mode == "antagonists":
         return antagonist_map()
     if mode == "personalities":
@@ -303,4 +304,4 @@ def coupling_intel(mode: str = "full") -> str:
         return channel_topology(mode[len("cascade:"):])
     if mode == "ledger":
         return bridge_ledger()
-    return f"Unknown mode '{mode}'. Use 'full', 'network', 'antagonists', 'personalities', 'gaps', 'leverage', 'channels', 'cascade:channelName', or 'ledger'."
+    return f"Unknown mode '{mode}'. Use 'full', 'network', 'clusters', 'antagonists', 'personalities', 'gaps', 'leverage', 'channels', 'cascade:channelName', or 'ledger'."

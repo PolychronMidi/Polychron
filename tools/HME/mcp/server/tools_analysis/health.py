@@ -233,7 +233,6 @@ def _symbol_exists_in_src(name: str, project_root: str) -> bool:
         return False
 
 
-@ctx.mcp.tool()
 def codebase_health() -> str:
     """Full codebase health sweep: architectural violations, dead code, convention checks, symbol importance, and doc sync. Replaces 5 separate health tools."""
     from file_walker import walk_code_files
