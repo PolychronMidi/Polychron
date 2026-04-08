@@ -103,7 +103,27 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
             onDone(cost);
         }
     };
+    // Inactivity timer: if CLI produces no stdout for 30s it's stuck (API 500/timeout/stall).
+    // Mirrors Arbiter's 15s guard — fail fast rather than hanging indefinitely.
+    const INACTIVITY_MS = 30000;
+    let inactivityTimer = setTimeout(() => {
+        if (!doneFired) {
+            doneFired = true;
+            try {
+                proc.kill();
+            }
+            catch { }
+            onError(`CRITICAL: Claude CLI produced no output for ${INACTIVITY_MS / 1000}s — API may be down or rate-limited`);
+        }
+    }, INACTIVITY_MS);
+    const resetInactivity = () => {
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = null;
+        }
+    };
     proc.stdout.on("data", (data) => {
+        resetInactivity();
         buf += data.toString("utf8");
         const lines = buf.split("\n");
         buf = lines.pop() ?? "";
@@ -122,11 +142,13 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
         }
     });
     proc.stderr.on("data", (data) => {
+        resetInactivity();
         const text = data.toString("utf8").trim();
         if (text)
             onError(text);
     });
     proc.on("close", (code) => {
+        resetInactivity();
         // Flush any remaining buffered output
         if (buf.trim()) {
             try {
@@ -234,9 +256,33 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     // Wait for initial prompt before sending — CLI prints ">" or similar
     let initBuf = "";
     let doneTimer = null;
+    // Inactivity timer: 15s after message send with no data = CLI stuck (API 500/stall/runner dead).
+    // Mirrors Arbiter's 15s guard. Only active post-send — init phase has its own safe threshold.
+    const PTY_INACTIVITY_MS = 15000;
+    let ptyInactivityTimer = null;
+    const resetPtyInactivity = () => {
+        if (ptyInactivityTimer)
+            clearTimeout(ptyInactivityTimer);
+        ptyInactivityTimer = setTimeout(() => {
+            if (!turnDone) {
+                turnDone = true;
+                if (doneTimer)
+                    clearTimeout(doneTimer);
+                try {
+                    proc.kill();
+                }
+                catch { }
+                onError(`CRITICAL: Claude PTY produced no output for ${PTY_INACTIVITY_MS / 1000}s after message send — API may be down or CLI crashed`);
+            }
+        }, PTY_INACTIVITY_MS);
+    };
     const scheduleDone = () => {
         if (doneTimer)
             clearTimeout(doneTimer);
+        if (ptyInactivityTimer) {
+            clearTimeout(ptyInactivityTimer);
+            ptyInactivityTimer = null;
+        }
         doneTimer = setTimeout(() => {
             if (!turnDone) {
                 turnDone = true;
@@ -259,11 +305,12 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
                 initBuf.length > 200;
             if (ready) {
                 sentMessage = true;
-                // Send message then Enter
                 proc.write(message.replace(/\r?\n/g, " ") + "\r");
+                resetPtyInactivity(); // start inactivity guard from moment of send
             }
             return;
         }
+        resetPtyInactivity(); // any data post-send resets the inactivity clock
         // Strip echoed input line (first line after send)
         fullOutput += text;
         // Detect session ID from output — fire once only
@@ -295,6 +342,10 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     // fire onError so the stream never hangs. This catches: API 500, auth errors,
     // crashes, SIGKILL. The 1.5s delay lets any final onData flush arrive first.
     proc.onExit(({ exitCode }) => {
+        if (ptyInactivityTimer) {
+            clearTimeout(ptyInactivityTimer);
+            ptyInactivityTimer = null;
+        }
         if (turnDone)
             return; // already handled by done-pattern detection
         setTimeout(() => {
@@ -317,11 +368,30 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         turnDone = true;
         if (doneTimer)
             clearTimeout(doneTimer);
+        if (ptyInactivityTimer) {
+            clearTimeout(ptyInactivityTimer);
+            ptyInactivityTimer = null;
+        }
         try {
             proc.kill();
         }
         catch { }
     };
+}
+/**
+ * Strip <think>...</think> tags from model output. Qwen3 models emit CoT
+ * inside content even with think:false — defensive stripping at every exit.
+ */
+function stripThinkTags(text) {
+    if (!text)
+        return text;
+    const closeIdx = text.lastIndexOf("</think>");
+    if (closeIdx !== -1)
+        return text.slice(closeIdx + 8).trim();
+    const openIdx = text.indexOf("<think>");
+    if (openIdx !== -1)
+        return text.slice(0, openIdx).trim();
+    return text;
 }
 function streamOllama(messages, opts, onChunk, onDone, onError) {
     const body = JSON.stringify({
@@ -342,7 +412,10 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
             "Content-Type": "application/json",
             "Content-Length": Buffer.byteLength(body),
         },
-        timeout: 300000, // 5 min — match non-streaming timeout for consistency
+        // 30s socket inactivity: fires if Ollama sends no bytes.
+        // stream:true means chunks arrive as soon as generation starts.
+        // Silence = model not loaded (use hme_admin warm) or Ollama stuck.
+        timeout: 30000,
     }, (res) => {
         if (res.statusCode && res.statusCode >= 400) {
             let errBody = "";
@@ -359,6 +432,8 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
         }
         let buf = "";
         let doneFired = false;
+        let inThink = false; // true while accumulating <think>...</think> block
+        let thinkBuf = ""; // accumulated content — flushed after </think>
         const fireDone = () => { if (!doneFired) {
             doneFired = true;
             onDone();
@@ -374,9 +449,41 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
                     continue;
                 try {
                     const parsed = JSON.parse(line);
-                    const text = parsed?.message?.content ?? "";
-                    if (text)
-                        onChunk(text, "text");
+                    let text = parsed?.message?.content ?? "";
+                    // Defensive think-tag gate: buffer content inside <think> blocks
+                    if (text) {
+                        if (inThink) {
+                            thinkBuf += text;
+                            const closeIdx = thinkBuf.indexOf("</think>");
+                            if (closeIdx !== -1) {
+                                inThink = false;
+                                text = thinkBuf.slice(closeIdx + 8);
+                                thinkBuf = "";
+                                if (text)
+                                    onChunk(text, "text");
+                            }
+                        }
+                        else if (text.includes("<think>")) {
+                            const openIdx = text.indexOf("<think>");
+                            const before = text.slice(0, openIdx);
+                            if (before)
+                                onChunk(before, "text");
+                            inThink = true;
+                            thinkBuf = text.slice(openIdx + 7);
+                            // Check if </think> is in the same chunk
+                            const closeIdx = thinkBuf.indexOf("</think>");
+                            if (closeIdx !== -1) {
+                                inThink = false;
+                                const after = thinkBuf.slice(closeIdx + 8);
+                                thinkBuf = "";
+                                if (after)
+                                    onChunk(after, "text");
+                            }
+                        }
+                        else {
+                            onChunk(text, "text");
+                        }
+                    }
                     if (parsed?.done)
                         fireDone();
                 }
@@ -387,11 +494,12 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
         });
         res.on("end", () => { if (!aborted)
             fireDone(); });
-        res.on("error", (e) => onError(e.message));
+        res.on("error", (e) => { if (!aborted)
+            onError(e.message); });
     });
     req.on("error", (e) => { if (!aborted)
         onError(e.message); });
-    req.on("timeout", () => { req.destroy(); onError(`CRITICAL: Ollama stream stalled — no bytes for ${req.timeout ?? 300000}ms`); });
+    req.on("timeout", () => { aborted = true; req.destroy(); onError(`CRITICAL: Ollama stream stalled — no bytes for 30s. Model may not be loaded (run hme_admin warm) or Ollama queue is frozen.`); });
     req.write(body);
     req.end();
     return () => { aborted = true; req.destroy(); };
@@ -438,7 +546,7 @@ const OLLAMA_TOOLS = [
         },
     },
 ];
-const OLLAMA_HARD_TIMEOUT_MS = 300000; // 5 min — 30B models with large HME context can take 2-3 min
+const OLLAMA_HARD_TIMEOUT_MS = 120000; // 2 min — loaded 30B model on GPU should respond within 2 min
 /** Ping Ollama /api/tags — resolves true if alive, false otherwise. 3s timeout. */
 function isOllamaAlive(url) {
     return new Promise((resolve) => {
@@ -492,7 +600,12 @@ function ollamaChatOnce(messages, tools, opts) {
                     return;
                 }
                 try {
-                    resolve(JSON.parse(raw));
+                    const parsed = JSON.parse(raw);
+                    // Defensive: strip think tags from content before returning
+                    if (parsed?.message?.content) {
+                        parsed.message.content = stripThinkTags(parsed.message.content);
+                    }
+                    resolve(parsed);
                 }
                 catch (e) {
                     reject(new Error(`Ollama parse error: ${raw.slice(0, 200)}`));
@@ -595,8 +708,9 @@ function streamOllamaAgentic(messages, opts, workingDir, onChunk, onDone, onErro
                 toolCalls = parseXmlFunctionCalls(msg.content ?? "");
             }
             if (toolCalls.length === 0) {
-                // Final text response
-                const text = msg.content ?? "";
+                // Final text response — defensive strip (ollamaChatOnce already strips,
+                // but this is the last gate before user-visible output)
+                const text = stripThinkTags(msg.content ?? "");
                 if (text)
                     onChunk(text, "text");
                 onDone();

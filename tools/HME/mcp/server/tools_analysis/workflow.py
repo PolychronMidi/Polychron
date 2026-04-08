@@ -19,6 +19,7 @@ from .synthesis import (
     _THINK_SYSTEM,
 )
 from . import _get_compositional_context, _track
+from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -44,6 +45,7 @@ def before_editing(file_path: str) -> str:
     """Call BEFORE editing any file. Assembles everything you need to know: KB constraints, callers, boundary rules, recent changes, and danger zones. One call replaces the entire pre-edit research workflow."""
     ctx.ensure_ready_sync()
     _track("before_editing")
+    append_session_narrative("before_editing", file_path.strip()[:80])
     if not file_path or not file_path.strip():
         return "Error: file_path cannot be empty. Pass the relative or absolute path to the file you are about to edit."
     budget = get_context_budget()
@@ -272,6 +274,8 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     sym_summary = ""
     if symbols:
         sym_summary = ", ".join(f"L{s['line']}:{s['name']}" for s in symbols[:8])
+    # NOTE: session narrative is injected by _local_think itself (synthesis_ollama.py L111-116)
+    # when system==_THINK_SYSTEM — do NOT prepend it here or it gets injected twice.
     user_text = (
         f"File about to be edited: {rel_path}\n"
         f"Dependents: {callers_summary}\n"
@@ -328,6 +332,16 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
     # pop to top of stack via ollama_priority_call().
     hot_files = sorted(js_files, key=lambda f: os.path.getmtime(f) if os.path.exists(f) else 0, reverse=True)[:synthesis_hot]
     synth_warmed = 0
+    # Early-abort: skip entire synthesis tier if Ollama cooldown is active.
+    # Without this check, the sequential loop hammers _local_think for all hot_files
+    # and generates one REFUSED log per file in ~40ms — pure noise.
+    from .synthesis_ollama import _last_think_failure, _last_think_failure_ts, _TIMEOUT_COOLDOWN_S
+    import time as _time_check
+    if _last_think_failure == "timeout" and (_time_check.monotonic() - _last_think_failure_ts) < _TIMEOUT_COOLDOWN_S:
+        _remaining_s = int(_TIMEOUT_COOLDOWN_S - (_time_check.monotonic() - _last_think_failure_ts))
+        logger.info(f"warm_pre_edit_cache: synthesis tier skipped — Ollama cooldown active ({_remaining_s}s remaining).")
+        return (f"Pre-edit cache warmed: {warmed} files (callers+KB). "
+                f"Synthesis skipped — Ollama cooldown active ({_remaining_s}s remaining).")
     from structure import file_summary as _fs
     for fpath in hot_files:
         try:
@@ -353,6 +367,11 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
             symbols = sym_data.get("symbols") if not sym_data.get("error") else None
         except Exception:
             symbols = None
+        # Mid-loop cooldown check: abort synthesis tier if timeout fired during this warm run
+        from .synthesis_ollama import _last_think_failure as _ltf, _last_think_failure_ts as _ltf_ts
+        if _ltf == "timeout" and (_time_check.monotonic() - _ltf_ts) < _TIMEOUT_COOLDOWN_S:
+            logger.info(f"warm_pre_edit_cache: synthesis aborted mid-loop — timeout fired. {synth_warmed} files warmed before abort.")
+            break
         synthesis = _build_edit_risks(
             rel_path=rel_path, caller_files=caller_files, relevant_kb=relevant_kb,
             symbols=symbols, recent_commits="", comp="",

@@ -17,6 +17,7 @@ logger = logging.getLogger("HME")
 _last_think_failure: str | None = None
 _last_think_failure_ts: float = 0.0  # monotonic timestamp of last failure
 _TIMEOUT_COOLDOWN_S = 120  # seconds to refuse new requests after a timeout
+_cooldown_refused_bg: int = 0   # count of suppressed background REFUSED logs this cooldown episode
 
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
@@ -74,17 +75,29 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     import time as _time_mod
 
     # Timeout cooldown: refuse new requests while queue may be stacked
-    global _last_think_failure, _last_think_failure_ts
+    global _last_think_failure, _last_think_failure_ts, _cooldown_refused_bg
     if _last_think_failure == "timeout":
         _elapsed = _time_mod.monotonic() - _last_think_failure_ts
         if _elapsed < _TIMEOUT_COOLDOWN_S:
             _remaining = int(_TIMEOUT_COOLDOWN_S - _elapsed)
-            logger.warning(
-                f"_local_think REFUSED — {_remaining}s remaining in {_TIMEOUT_COOLDOWN_S}s "
-                "timeout cooldown. Ollama queue may still be stacked."
-            )
+            if priority == "background":
+                # Suppress per-call spam — log only the first background refusal in this episode
+                if _cooldown_refused_bg == 0:
+                    logger.warning(
+                        f"_local_think REFUSED (background) — {_remaining}s remaining. "
+                        "Subsequent background calls silently skipped until cooldown clears."
+                    )
+                _cooldown_refused_bg += 1
+            else:
+                logger.warning(
+                    f"_local_think REFUSED — {_remaining}s remaining in {_TIMEOUT_COOLDOWN_S}s "
+                    "timeout cooldown. Ollama queue may still be stacked."
+                )
             return (None, []) if return_context else None
         _last_think_failure = None
+        if _cooldown_refused_bg > 0:
+            logger.info(f"_local_think cooldown cleared — {_cooldown_refused_bg} background calls were silently skipped.")
+            _cooldown_refused_bg = 0
 
     if priority == "background":
         _ollama_background_yield()
@@ -139,9 +152,9 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         active_lock = (_gpu0_lock if _effective_model == _LOCAL_MODEL
                        else _gpu1_lock if _effective_model == _REASONING_MODEL
                        else _ollama_lock)
-        # Background warm priming: 3 models queue serially in Ollama, each waiting for others.
-        # 900s covers worst case (~15 min total for 3 large persona prompts).
-        _http_timeout = 900 if priority == "background" else 420
+        # Background: 300s max (5 min). Interactive: 60s max — fail fast.
+        # Prior 900s caused 13-min review calls when Ollama was stuck.
+        _http_timeout = 300 if priority == "background" else 60
         with active_lock:
             resp_obj = urllib.request.urlopen(req, timeout=_http_timeout)
         if priority == "interactive":
@@ -253,7 +266,7 @@ def _local_chat(messages: list[dict], model: str | None = None,
     req = urllib.request.Request(_LOCAL_CHAT_URL, data=body, headers={"Content-Type": "application/json"})
     try:
         with active_lock:
-            resp_obj = urllib.request.urlopen(req, timeout=420)
+            resp_obj = urllib.request.urlopen(req, timeout=60)
         with resp_obj as resp:
             result = json.loads(resp.read())
             msg = result.get("message", {})
@@ -294,7 +307,7 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
     }).encode()
     req = urllib.request.Request(_LOCAL_URL, data=body, headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=240) as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             result = json.loads(resp.read())
             text = re.sub(r'[^\x00-\x7F]+', '', result.get("response", "").strip()).strip()
             return text if text else None

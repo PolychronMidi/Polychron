@@ -8,8 +8,16 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_lifesaver.sh", "timeout": 5}]
+      },
+      {
         "matcher": "Edit",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_edit.sh", "timeout": 10}]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_read.sh", "timeout": 10}]
       },
       {
         "matcher": "Grep",

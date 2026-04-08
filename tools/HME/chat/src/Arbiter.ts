@@ -27,7 +27,7 @@ export type ArbiterDecision = {
   thinking?: string;   // raw chain-of-thought from model (if present)
 };
 
-const ARBITER_MODEL = "qwen3:4b";  // small, CPU-only — never competes with GPU-resident 30B models
+const ARBITER_MODEL = "qwen3-coder:30b";  // HME synthesis pins this with keep_alive=-1 → always GPU-resident, sub-second response
 const OLLAMA_URL = "http://localhost:11434";
 
 const CLASSIFY_PROMPT = `/no_think
@@ -78,15 +78,16 @@ export async function classifyMessage(
       if (!done) { done = true; req?.destroy(); resolve({ route: "claude", confidence: 0.5, reason, escalated: false, isError: true }); }
     };
 
-    // Hard cap: 60s total. stream:true gives us per-chunk inactivity detection.
+    // Hard cap: 60s total. qwen3-coder:30b is always GPU-resident (keep_alive=-1) — should respond in <5s.
     const hardTimer = setTimeout(() => fail("arbiter timeout (60s hard cap)"), 60000);
 
-    // Inactivity timer: if no bytes arrive within 15s, model is stuck (queue frozen or
-    // runner in error state). Fail fast rather than burning the full 60s.
-    let inactivityTimer = setTimeout(() => fail("arbiter inactive (no bytes in 15s — model queue frozen or runner stuck)"), 15000);
+    // Inactivity timer: starts only after FIRST byte. Before first byte, the hard cap
+    // covers truly stuck runners — cold model loading takes >15s and is not a stall.
+    // After first byte: 15s with no new data = runner stuck mid-stream.
+    let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
     const resetInactivity = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => fail("arbiter inactive (no bytes in 15s — model queue frozen or runner stuck)"), 15000);
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => fail("arbiter inactive (no bytes for 15s mid-stream — runner stuck)"), 15000);
     };
 
     // stream:true: first byte arrives as soon as Ollama starts processing.
@@ -98,7 +99,7 @@ export async function classifyMessage(
       stream: true,
       think: false,
       format: CLASSIFY_FORMAT,
-      options: { temperature: 0, num_predict: 256 },  // GPU auto-falls-back to CPU: only 1.3GB VRAM free, qwen3:4b needs 2.5GB
+      options: { temperature: 0, num_predict: 256 },
     });
 
     let req: ReturnType<typeof http.request>;
@@ -138,7 +139,7 @@ export async function classifyMessage(
         });
         res.on("end", () => {
           clearTimeout(hardTimer);
-          clearTimeout(inactivityTimer);
+          if (inactivityTimer) clearTimeout(inactivityTimer);
           if (done) return;
           done = true;
           try {
@@ -155,7 +156,7 @@ export async function classifyMessage(
     );
     req.on("error", (e: any) => {
       clearTimeout(hardTimer);
-      clearTimeout(inactivityTimer);
+      if (inactivityTimer !== null) clearTimeout(inactivityTimer);
       if (done) return;
       done = true;
       const reason = e?.code === "ECONNREFUSED" ? "arbiter unreachable — Ollama not running" : `arbiter unreachable: ${e?.message ?? e}`;
@@ -191,10 +192,11 @@ Digest:`;
     const fail = (err: Error) => { if (!done) { done = true; req?.destroy(); reject(err); } };
 
     const hardTimer = setTimeout(() => fail(new Error("Narrative synthesis timeout (60s hard cap)")), 60000);
-    let inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes in 15s — model stuck)")), 15000);
+    // Start only after first byte — cold model loading takes >15s and is not a stall.
+    let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
     const resetInactivity = () => {
-      clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes in 15s — model stuck)")), 15000);
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes for 15s mid-stream — model stuck)")), 15000);
     };
 
     const body = JSON.stringify({
@@ -202,7 +204,7 @@ Digest:`;
       messages: [{ role: "user", content: prompt }],
       stream: true,
       think: false,
-      options: { temperature: 0.2, num_predict: 512 },  // GPU auto-falls-back to CPU: only 1.3GB VRAM free
+      options: { temperature: 0.2, num_predict: 512 },
     });
 
     let req: ReturnType<typeof http.request>;
@@ -235,7 +237,7 @@ Digest:`;
         });
         res.on("end", () => {
           clearTimeout(hardTimer);
-          clearTimeout(inactivityTimer);
+          if (inactivityTimer) clearTimeout(inactivityTimer);
           if (done) return;
           done = true;
           resolve(contentAccum.trim().slice(0, 500));
@@ -244,7 +246,7 @@ Digest:`;
     );
     req.on("error", (e: any) => {
       clearTimeout(hardTimer);
-      clearTimeout(inactivityTimer);
+      if (inactivityTimer) clearTimeout(inactivityTimer);
       const reason = e?.code === "ECONNREFUSED" ? "Ollama not running" : (e?.message ?? e);
       fail(new Error(`Narrative synthesis unreachable: ${reason}`));
     });

@@ -8,6 +8,7 @@ import logging
 
 from server import context as ctx
 from . import _track
+from .synthesis_session import append_session_narrative, get_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -29,6 +30,7 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
     ctx.ensure_ready_sync()
     if not query or not query.strip():
         return "Error: query cannot be empty."
+    append_session_narrative("find", f"{mode}: {query[:80]}")
 
     if mode == "think":
         from .reasoning_think import think as _th
@@ -92,9 +94,13 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
         from server.tools_search import grep as _grep
         return _grep(query, path=path, regex=True)
 
-    # Default: semantic search
+    # Default: semantic search — prepend session thread for investigation continuity
     from server.tools_search import search_code as _sc
-    return _sc(query, path=path, response_format="detailed")
+    result = _sc(query, path=path, response_format="detailed")
+    narrative = get_session_narrative()
+    if narrative:
+        result = narrative + result
+    return result
 
 
 def _detect_intent(query: str) -> str:

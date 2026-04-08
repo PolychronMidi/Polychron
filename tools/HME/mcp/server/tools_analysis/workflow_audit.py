@@ -10,6 +10,7 @@ from server.helpers import (
 )
 from symbols import find_callers as _find_callers
 from .synthesis import _local_think, _REASONING_MODEL, _THINK_SYSTEM
+from .synthesis_session import append_session_narrative
 from . import _track
 
 logger = logging.getLogger("HME")
@@ -19,9 +20,9 @@ def what_did_i_forget(changed_files: str) -> str:
     """Call AFTER implementing changes, BEFORE running pipeline. Takes comma-separated file paths. Checks changed files against KB for missed constraints, boundary violations, and doc update needs. Output scales with remaining context window."""
     ctx.ensure_ready_sync()
     _track("what_did_i_forget")
+    append_session_narrative("audit", f"review {len(files)} files: {changed_files[:60]}" if (files := [f.strip() for f in changed_files.split(",") if f.strip()]) else "review (no files)")
     budget = get_context_budget()
     limits = BUDGET_LIMITS[budget]
-    files = [f.strip() for f in changed_files.split(",") if f.strip()]
     if not files:
         return "No changed files detected. If you just edited files, they may already be committed. Pass changed_files='path1,path2' explicitly."
     parts = [f"# Post-Change Audit (context: {budget})\n"]
@@ -111,6 +112,8 @@ def what_did_i_forget(changed_files: str) -> str:
     # Adaptive synthesis: always run when API key available — missed things aren't only in warnings
     warnings_text = "\n".join(all_warnings[:15]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
+    # NOTE: session narrative injected by _local_think (synthesis_ollama.py L111-116)
+    # when system==_THINK_SYSTEM — do NOT prepend here or narrative appears twice.
     user_text = (
         f"Changed files: {changed_files}\n"
         f"Audit warnings: {warnings_text}\n"
