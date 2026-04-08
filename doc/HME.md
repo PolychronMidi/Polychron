@@ -160,11 +160,11 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 
 ### Before Editing Code
 
-**`read("path/to/file.js", mode="before")`** — ONE CALL gets everything: KB constraints, callers, boundary warnings, file structure, evolutionary potential. Replaces multi-step research.
+**`read("moduleName", mode="before")`** — ONE CALL gets everything: KB constraints, callers, boundary warnings, file structure, evolutionary potential. Accepts module names OR file paths — auto-resolves `crossLayerSilhouette` → `src/crossLayer/structure/form/crossLayerSilhouette.js`.
 
 ### After Code Changes
 
-1. **`review(mode='forget', changed_files='file1.js,file2.js')`** — checks against KB constraints, boundary rules, L0 channels, doc needs
+1. **`review(mode='forget')`** — auto-detects changed files from git. Checks against KB constraints, boundary rules, L0 channels, doc needs. Optionally pass `changed_files='file1.js,file2.js'` to override.
 2. File watcher auto-reindexes on save (5s debounce, 5min cooldown between full reindexes)
 3. For batch changes: `hme_admin(action='index')` once at the end
 
@@ -287,7 +287,7 @@ All capabilities route through 7 mega-tools + 4 operational tools. There are no 
 | `"audio"` | | Perceptual analysis (EnCodec + CLAP). 15% confidence |
 | `"composition"` | | Section arc biographies + drama moments + hotspot leaderboard |
 | `"health"` | | Full-repo convention sweep, prioritized by severity |
-| `"forget"` | `changed_files` | Post-change audit: missed constraints, boundaries, doc needs |
+| `"forget"` | `changed_files` (auto-detects from git) | Post-change audit: missed constraints, boundaries, doc needs |
 | `"convention"` | `file_path` (required) | Audit single file against conventions |
 | `"symbols"` | | Dead code detection + importance ranking |
 | `"docs"` | | Verify docs match implementation |
@@ -353,7 +353,8 @@ All capabilities route through 7 mega-tools + 4 operational tools. There are no 
 | `"coupling"` | Full coupling topology + antagonist tensions + dimension gaps |
 | `"trust"` | Trust ecology leaderboard (all 27 systems) |
 | `"perceptual"` | Perceptual stack analysis (EnCodec + CLAP) |
-| `"hme"` | HME selftest + introspection (tool usage patterns, KB health) |
+| `"hme"` | HME selftest (tool count, doc sync, index, Ollama, KB, symlinks) |
+| `"introspect"` | Session introspection (tool usage patterns, musical context, journal, KB breakdown) |
 
 ### 7. `trace(target, mode, section, limit)` — Signal flow tracing
 
