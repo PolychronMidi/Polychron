@@ -8,6 +8,18 @@ PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-tab.txt"
 
+# Ensure HME HTTP shim is running — serves both VS Code extension and Claude Code hooks.
+# If already bound, skip. If not, start it in background.
+SHIM_PORT=7734
+if ! ss -tlnp 2>/dev/null | grep -q ":${SHIM_PORT} "; then
+  SHIM="$PROJECT/tools/HME/mcp/hme_http.py"
+  if [ -f "$SHIM" ]; then
+    nohup python3 "$SHIM" --port "$SHIM_PORT" \
+      > "$PROJECT/log/hme_http.out" 2>&1 &
+    echo "HME shim started (pid $!)" >&2
+  fi
+fi
+
 # Persist HME env vars for the session
 if [ -n "$CLAUDE_ENV_FILE" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"

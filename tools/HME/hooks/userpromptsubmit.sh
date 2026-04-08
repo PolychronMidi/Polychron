@@ -25,7 +25,8 @@ if [ -f "$ERROR_LOG" ]; then
 
   if [ "$TOTAL" -gt "$LAST" ]; then
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" | sort -u)
-    echo "$TOTAL" > "$WATERMARK"
+    # DO NOT advance watermark here — Stop hook is the only gate that advances it.
+    # If watermark advanced here, unfixed errors vanish when Stop sees TOTAL==TURNSTART.
     echo "" >&2
     echo "╔════════════════════════════════════════════════════════════════════════╗" >&2
     echo "║  🚨 LIFESAVER — ERRORS DETECTED — FIX BEFORE ANYTHING ELSE 🚨         ║" >&2
