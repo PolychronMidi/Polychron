@@ -93,6 +93,12 @@ class ChatPanel {
     _handleMessage(msg) {
         switch (msg.type) {
             case "send":
+                // Cancel any in-progress stream before starting new one (interrupt send)
+                if (this._cancelCurrent) {
+                    this._cancelCurrent();
+                    this._cancelCurrent = undefined;
+                    this._post({ type: "cancelConfirmed" });
+                }
                 this._onSend(msg).catch((e) => {
                     this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
                     this._post({ type: "streamEnd", id: "err" });
@@ -295,8 +301,8 @@ class ChatPanel {
         };
         // Use PTY mode so hooks fire; fall back to -p mode if PTY fails
         this._cancelCurrent = (0, router_1.streamClaudePty)(msg.text, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, onDone, (err) => {
-            // PTY failed — fall back to stream-json mode
-            this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: `[PTY unavailable, falling back: ${err}]` });
+            // PTY failed — fall back to stream-json mode silently
+            console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
             this._cancelCurrent = (0, router_1.streamClaude)(msg.text, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, (cost) => { onDone(); }, onError);
         });
     }
@@ -874,7 +880,7 @@ localCtrls.style.display = 'flex';
 // ── Send ───────────────────────────────────────────────────────────────────
 function send() {
   const text = input.value.trim();
-  if (!text || streaming) return;
+  if (!text) return;
   input.value = '';
   input.style.height = '';
   vscode.postMessage({
@@ -967,7 +973,6 @@ function startStream(id, route, model) {
   div.appendChild(header);
   messages.appendChild(div);
 
-  sendBtn.disabled = true;
   cancelBtn.style.display = 'inline-block';
   setStatus('Streaming…');
   messages.scrollTop = messages.scrollHeight;
@@ -1014,7 +1019,6 @@ function appendChunk(id, chunkType, chunk) {
 function endStream(id, cost) {
   streaming = false;
   streamingId = null;
-  sendBtn.disabled = false;
   cancelBtn.style.display = 'none';
 
   const div = document.getElementById(\`msg-\${id}\`);
