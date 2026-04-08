@@ -449,6 +449,76 @@ class RAGEngine:
             results.extend(embeddings.tolist())
         return results
 
+    def index_file(self, abs_path: str) -> dict:
+        """Index a single file (mini-reindex for per-file KB freshness)."""
+        with self._index_lock:
+            return self._index_file_locked(abs_path)
+
+    def _index_file_locked(self, abs_path: str) -> dict:
+        file_path = Path(abs_path)
+        if not file_path.exists():
+            return {"indexed": 0, "error": "file not found"}
+        try:
+            content = file_path.read_text(encoding="utf-8", errors="ignore")
+        except Exception as e:
+            return {"indexed": 0, "error": str(e)}
+
+        file_key = str(file_path)
+        content_hash = _file_hash(content)
+        if self._file_hashes.get(file_key) == content_hash:
+            return {"indexed": 0, "skipped_unchanged": 1}
+
+        lang = ext_to_lang(file_path.suffix if file_path.suffix else file_path.name)
+        from chunker import chunk_by_functions
+        chunks = chunk_by_functions(content, lang)
+
+        pending_chunks = []
+        pending_texts = []
+        for chunk in chunks:
+            if len(chunk["content"].strip()) < 10:
+                continue
+            ch = _chunk_hash(chunk["content"])
+            if ch in self._chunk_hashes:
+                continue
+            self._chunk_hashes.add(ch)
+            chunk_id = f"{file_key}:{chunk['start_line']}-{chunk['end_line']}"
+            pending_chunks.append({
+                "id": chunk_id,
+                "content": chunk["content"],
+                "source": file_key,
+                "start_line": chunk["start_line"],
+                "end_line": chunk["end_line"],
+                "language": lang,
+            })
+            pending_texts.append(chunk["content"])
+
+        if pending_texts:
+            vectors = self._batch_encode(pending_texts)
+            for chunk, vec in zip(pending_chunks, vectors):
+                chunk["vector"] = vec
+
+        if pending_chunks:
+            if self.table is not None:
+                try:
+                    existing = self.table.to_arrow()
+                    source_col = existing.column("source").to_pylist()
+                    keep_mask = [s != file_key for s in source_col]
+                    keep_table = existing.filter(keep_mask)
+                    merged = keep_table.to_pylist()
+                    merged.extend(pending_chunks)
+                    self.table = self.db.create_table("code_chunks", data=merged, schema=self._code_schema, mode="overwrite")
+                except Exception as e:
+                    logger.error(f"Table merge failed for {abs_path}: {e}")
+                    self.table = self.db.create_table("code_chunks", data=pending_chunks, schema=self._code_schema, mode="overwrite")
+            else:
+                self.table = self.db.create_table("code_chunks", data=pending_chunks, schema=self._code_schema, mode="overwrite")
+
+        self._file_hashes[file_key] = content_hash
+        self._save_hashes()
+        if pending_chunks:
+            self._search_cache.invalidate()
+        return {"indexed": 1, "chunks_created": len(pending_chunks)}
+
     def index_directory(self, directory: str) -> dict:
         with self._index_lock:
             return self._index_directory_locked(directory)
