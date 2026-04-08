@@ -203,7 +203,16 @@ class ChatPanel {
                     content: `ARBITER ERROR: ${decision.reason} — falling back to ${decision.route}`,
                     summary: `Arbiter failed: ${decision.reason}`,
                 });
-                // Write to log/hme-errors.log via shim — readable by main Claude session
+                // Write to log/hme-errors.log — direct file write (guaranteed) + shim (if running)
+                const errLine = `[${new Date().toISOString()}] [arbiter] ${decision.reason} — fell back to ${decision.route}\n`;
+                try {
+                    fs.mkdirSync(path.join(this._projectRoot, "log"), { recursive: true });
+                }
+                catch { }
+                try {
+                    fs.appendFileSync(path.join(this._projectRoot, "log", "hme-errors.log"), errLine);
+                }
+                catch { }
                 (0, router_1.logShimError)("arbiter", decision.reason, `fell back to ${decision.route}`).catch(() => { });
             }
             if (decision.thinking) {
