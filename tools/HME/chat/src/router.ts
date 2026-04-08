@@ -319,6 +319,8 @@ export function streamOllama(
     },
     (res) => {
       let buf = "";
+      let doneFired = false;
+      const fireDone = () => { if (!doneFired) { doneFired = true; onDone(); } };
       res.on("data", (chunk: Buffer) => {
         if (aborted) return;
         buf += chunk.toString("utf8");
@@ -330,11 +332,11 @@ export function streamOllama(
             const parsed = JSON.parse(line);
             const text = parsed?.message?.content ?? "";
             if (text) onChunk(text, "text");
-            if (parsed?.done) onDone();
+            if (parsed?.done) fireDone();
           } catch {}
         }
       });
-      res.on("end", () => { if (!aborted) onDone(); });
+      res.on("end", () => { if (!aborted) fireDone(); });
       res.on("error", (e) => onError(e.message));
     }
   );
