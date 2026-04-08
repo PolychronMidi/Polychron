@@ -1577,6 +1577,12 @@ function send() {
     claudeThinking: thinkingChk.checked,
     ollamaModel: localModel.value,
   });
+  // Show stop/queue immediately — don't wait for streamStart which may be delayed
+  // by arbiter classification (up to 60s on auto route).
+  streaming = true;
+  stopBtn.style.display = 'inline-block';
+  queueBtn.style.display = 'inline-block';
+  setStatus('Sending…');
 }
 
 input.addEventListener('keydown', (e) => {
