@@ -26,7 +26,7 @@ class RAGEngine(RAGKnowledgeMixin):
         self.db = _lancedb.connect(db_path)
         if model is None:
             from sentence_transformers import SentenceTransformer as _ST
-            model = _ST(model_name)
+            model = _ST(model_name, device="cpu")
         self.model = model
         # Dynamic vector dimension from the actual model
         self._dim = self.model.get_sentence_embedding_dimension()
