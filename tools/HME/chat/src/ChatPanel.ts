@@ -264,12 +264,14 @@ export class ChatPanel {
       model,
     });
 
+    // Stamp resolved route so stream functions log correctly (not "auto")
+    const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute };
     if (resolvedRoute === "local") {
-      this._streamOllama(msg, assistantId);
+      this._streamOllama(resolvedMsg, assistantId);
     } else if (resolvedRoute === "hybrid") {
-      this._streamHybrid(msg, assistantId);
+      this._streamHybrid(resolvedMsg, assistantId);
     } else {
-      this._streamClaude(msg, assistantId);
+      this._streamClaude(resolvedMsg, assistantId);
     }
   }
 
@@ -292,8 +294,8 @@ export class ChatPanel {
       this._persistState();
       this._post({ type: "streamEnd", id: assistantId });
       // Log to transcript + mirror to shim
-      this._transcript.logAssistant(text, msg.route ?? "claude", msg.claudeModel, tools);
-      this._mirrorAssistantToShim(text, msg.route ?? "claude", msg.claudeModel, tools);
+      this._transcript.logAssistant(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
+      this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
       this._reindexFromTools(tools);
       this._runPostAudit();
       this._drainQueue();
