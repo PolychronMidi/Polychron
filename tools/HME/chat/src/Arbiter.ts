@@ -28,7 +28,8 @@ export type ArbiterDecision = {
 const ARBITER_MODEL = "qwen3:4b";
 const OLLAMA_URL = "http://localhost:11434";
 
-const CLASSIFY_PROMPT = `You are a routing arbiter for a coding assistant. Classify the user's message to decide which AI should handle it.
+const CLASSIFY_PROMPT = `/no_think
+You are a routing arbiter for a coding assistant. Classify the user's message to decide which AI should handle it.
 
 ROUTE TO CLAUDE (expensive, powerful) when:
 - Multi-file architectural changes
@@ -56,8 +57,7 @@ User message:
 {message}
 
 Respond with EXACTLY one line in this format:
-ROUTE: claude|local CONFIDENCE: 0.0-1.0 REASON: brief explanation
-/no_think`;
+ROUTE: claude|local CONFIDENCE: 0.0-1.0 REASON: brief explanation`;
 
 /**
  * Ask the local arbiter to classify a message.
@@ -88,7 +88,7 @@ export async function classifyMessage(
         path: "/api/generate",
         method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        timeout: 5000,
+        timeout: 12000,
       },
       (res) => {
         let raw = "";
@@ -140,13 +140,13 @@ export async function synthesizeNarrative(
     .map((e) => e.summary || e.content.slice(0, 100))
     .join("\n");
 
-  const prompt = `Summarize this coding session activity into a 2-3 sentence digest. Focus on: what was being worked on, what succeeded, what failed, and what's pending. Be extremely concise.
+  const prompt = `/no_think
+Summarize this coding session activity into a 2-3 sentence digest. Focus on: what was being worked on, what succeeded, what failed, and what's pending. Be extremely concise.
 
 Session activity:
 ${summaries.slice(0, 2000)}
 
-Digest:
-/no_think`;
+Digest:`;
 
   return new Promise((resolve) => {
     const body = JSON.stringify({
