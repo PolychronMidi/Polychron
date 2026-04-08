@@ -314,6 +314,8 @@ export function streamOllama(
     model: opts.model,
     messages,
     stream: true,
+    think: false,  // suppress CoT tokens bleeding into content stream
+    options: { temperature: 0.7, num_predict: 4096 },
   });
 
   const url = new URL(`${opts.url}/api/chat`);
