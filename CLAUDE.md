@@ -184,29 +184,27 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 ## HyperMeta Ecstasy
 
-Master executive for hypermeta evolutionary intelligence. Not just 45 MCP tools — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
+Master executive for hypermeta evolutionary intelligence. 11 MCP tools (7 mega-tools + 4 operational) — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
 
 **Mandatory usage (not optional):**
-- **Before modifying a file:** `before_editing "path/to/file.js"` -- ONE CALL assembles KB constraints, callers, boundary warnings, and file structure. Replaces multi-step research.
-- **After implementing changes:** `what_did_i_forget "file1.js,file2.js"` -- checks against KB constraints, boundary rules, new L0 channels, doc update needs.
-- **For any search:** use `search_code`, `find_callers`, or `find_anti_pattern` instead of Grep.
-- **After each listen-confirmed round:** `add_knowledge` for new calibration anchors, decisions, anti-patterns, bugfixes. Do NOT add_knowledge until user confirms task complete.
-- **When pipeline fails:** `diagnose_error "paste error text"` -- traces source, finds similar KB bugs, suggests fix patterns.
-
-**Grep/file reads:** use `grep`, `file_lines`, `count_lines` tools in HME instead of Bash equivalents. These wrap the same operations but add KB cross-referencing and convention warnings automatically.
+- **Before modifying a file:** `read("path/to/file.js", mode="before")` -- ONE CALL assembles KB constraints, callers, boundary warnings, and file structure.
+- **After implementing changes:** `review(mode='forget', changed_files='file1.js,file2.js')` -- checks against KB constraints, boundary rules, new L0 channels, doc update needs.
+- **For any search:** use `find(query)` instead of Grep. Auto-routes by intent (callers/boundary/grep/semantic). Adds KB cross-referencing.
+- **After each listen-confirmed round:** `learn(title='...', content='...', category='pattern')` for calibration anchors. Do NOT add until user confirms task complete.
+- **When pipeline fails:** `find("paste error text", mode="diagnose")` -- traces source, finds similar KB bugs, suggests fix patterns.
 
 **Core workflow:**
 ```
 /HME
-before_editing "src/crossLayer/structure/form/crossLayerClimaxEngine.js"  -- pre-edit briefing
-search_code "where does convergence detection happen"                     -- semantic search
-module_intel "crossLayerClimaxEngine"                                     -- living biography
-what_did_i_forget "src/time/setBpm.js,src/time/setMeter.js"             -- post-change audit
-codebase_health                                                           -- full-repo sweep
-knowledge_graph "density suppression"                                     -- connected KB entries
+read("src/crossLayer/structure/form/crossLayerClimaxEngine.js", mode="before")  -- pre-edit briefing
+find("where does convergence detection happen")                                  -- semantic search
+read("crossLayerClimaxEngine", mode="story")                                     -- living biography
+review(mode='forget', changed_files='setBpm.js,setMeter.js')                     -- post-change audit
+review(mode='health')                                                            -- full-repo sweep
+learn(query='density suppression')                                               -- KB search
 ```
 
-**50+ tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME for KB enrichment.
+**11 tools, 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME mega-tools for KB enrichment.
 
 ## Related Documentation
 
