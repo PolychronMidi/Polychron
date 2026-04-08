@@ -54,9 +54,9 @@ export class TranscriptLogger {
       for (const line of recent) {
         try {
           this._entries.push(JSON.parse(line));
-        } catch {}
+        } catch (e) { console.error(`[TranscriptLogger] Malformed JSONL line: ${line.slice(0, 80)}`); }
       }
-    } catch {}
+    } catch (e: any) { console.error(`[TranscriptLogger] Failed to load existing transcript: ${e?.message ?? e}`); }
   }
 
   /** Set the active session ID — stamped on all subsequent entries. */
@@ -75,7 +75,7 @@ export class TranscriptLogger {
     // Append to JSONL file
     try {
       fs.appendFileSync(this._logPath, JSON.stringify(e) + "\n", "utf8");
-    } catch {}
+    } catch (err: any) { console.error(`[TranscriptLogger] Disk write failed: ${err?.message ?? err}`); }
   }
 
   /** Log a user message. */
@@ -234,7 +234,7 @@ export class TranscriptLogger {
           summary: `📋 ${narrative.slice(0, 100)}`,
         });
       }
-    } catch {}
+    } catch (e: any) { console.error(`[TranscriptLogger] Narrative synthesis failed: ${e?.message ?? e}`); }
   }
 
   /** Rotate the log file if it exceeds maxSize bytes. Keeps tail. */
@@ -247,6 +247,6 @@ export class TranscriptLogger {
       const lines = content.trim().split("\n");
       const keepLines = lines.slice(Math.floor(lines.length / 2));
       fs.writeFileSync(this._logPath, keepLines.join("\n") + "\n", "utf8");
-    } catch {}
+    } catch (e: any) { console.error(`[TranscriptLogger] Rotation failed: ${e?.message ?? e}`); }
   }
 }

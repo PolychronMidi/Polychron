@@ -58,13 +58,14 @@ const OLLAMA_URL = "http://localhost:11434";
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
 
-Route to claude: multi-file changes, architectural refactors, complex debugging, security work, KB constraint violations, thorough analysis requests.
+Route to claude: multi-file changes, architectural refactors, complex debugging, security work, KB constraint violations, thorough analysis requests, or when recent errors suggest complexity.
 Route to local: simple questions, single-file edits, code explanations, formatting, quick lookups.
 
 Recent session:
 {transcript}
 
-KB constraints: {constraint_count}
+KB constraint hits for this message: {constraint_count} (high count = touches heavily-constrained modules → prefer claude)
+Recent errors in session: {error_count} (high count = session is struggling → prefer claude)
 
 Message: {message}`;
 const CLASSIFY_FORMAT = {
@@ -82,11 +83,12 @@ const CLASSIFY_FORMAT = {
  * Falls back to "claude" on any error; error reason strings always contain
  * "timeout", "unreachable", or "failed" so isArbiterError fires downstream.
  */
-async function classifyMessage(message, transcriptContext, constraintCount) {
+async function classifyMessage(message, transcriptContext, constraintCount, errorCount = 0) {
     const prompt = CLASSIFY_PROMPT
         .replace("{message}", message.slice(0, 1000))
         .replace("{transcript}", transcriptContext.slice(0, 1500))
-        .replace("{constraint_count}", String(constraintCount));
+        .replace("{constraint_count}", String(constraintCount))
+        .replace("{error_count}", String(errorCount));
     return new Promise((resolve) => {
         let done = false;
         const fail = (reason) => {

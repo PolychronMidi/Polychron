@@ -112,7 +112,8 @@ async function run() {
   } catch (e) { shimOk = false; shimErrs.push(`health: ${e}`); }
   try {
     const ctx = await fetchHmeContext("crossLayerRegistry coupling signal", 3);
-    console.log(`[SHIM] fetchHmeContext: ${ctx.length} chars`);
+    const ctxLen = typeof ctx === "string" ? ctx.length : (ctx.warm?.length ?? 0);
+    console.log(`[SHIM] fetchHmeContext: ${ctxLen} chars, kbCount=${ctx.kbCount ?? "n/a"}`);
     if (!ctx) { shimOk = false; shimErrs.push("empty context"); }
   } catch (e) { shimOk = false; shimErrs.push(`fetchHmeContext: ${e}`); }
   try {
@@ -192,7 +193,8 @@ async function run() {
   try {
     // The shim IS running, so this should succeed. If it fails, that's a real bug.
     const ctx = await fetchHmeContext("test query", 1);
-    console.log(`  [DEAD_SHIM] Actually succeeded (shim is running): ${ctx.length} chars (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+    const ctxLen = typeof ctx === "string" ? ctx.length : (ctx.warm?.length ?? 0);
+    console.log(`  [DEAD_SHIM] Actually succeeded (shim is running): ${ctxLen} chars (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
     results["stress-shim-context"] = true;
   } catch (e) {
     console.log(`  [DEAD_SHIM] Rejected as expected: ${String(e).slice(0, 80)} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);

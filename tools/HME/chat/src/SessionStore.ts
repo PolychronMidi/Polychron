@@ -45,7 +45,8 @@ function sessionPath(projectRoot: string, id: string): string {
 function readJson<T>(filePath: string, fallback: T): T {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
-  } catch {
+  } catch (e: any) {
+    if (e?.code !== "ENOENT") console.error(`[SessionStore] readJson failed for ${filePath}: ${e?.message ?? e}`);
     return fallback;
   }
 }
@@ -105,7 +106,7 @@ export function saveSession(
 export function deleteSession(projectRoot: string, id: string): void {
   const index = readJson<SessionEntry[]>(indexPath(projectRoot), []).filter((s) => s.id !== id);
   writeJson(indexPath(projectRoot), index);
-  try { fs.unlinkSync(sessionPath(projectRoot, id)); } catch {}
+  try { fs.unlinkSync(sessionPath(projectRoot, id)); } catch (e: any) { if (e?.code !== "ENOENT") console.error(`[SessionStore] Delete failed: ${e?.message ?? e}`); }
 }
 
 export function renameSession(projectRoot: string, id: string, title: string): void {

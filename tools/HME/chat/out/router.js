@@ -657,8 +657,7 @@ function streamOllamaAgentic(messages, opts, workingDir, onChunk, onDone, onErro
         onError(e?.message ?? String(e)); });
     return abort;
 }
-// ── HME context enrichment ─────────────────────────────────────────────────
-/** Fetch KB context from the HME HTTP shim for a given query. Rejects on any failure. */
+/** Fetch KB context from the HME HTTP shim. Returns warm text + structured KB hits. */
 async function fetchHmeContext(query, topK = 5) {
     return new Promise((resolve, reject) => {
         let done = false;
@@ -687,7 +686,8 @@ async function fetchHmeContext(query, topK = 5) {
                 done = true;
                 try {
                     const parsed = JSON.parse(raw);
-                    resolve(parsed.warm ?? "");
+                    const kb = parsed.kb ?? [];
+                    resolve({ warm: parsed.warm ?? "", kb, kbCount: kb.length });
                 }
                 catch (e) {
                     reject(new Error(`HME shim /enrich parse error: ${e?.message ?? e}`));
@@ -864,9 +864,10 @@ async function logShimError(source, message, detail = "") {
  * Falls back to plain Ollama if shim is unreachable.
  */
 async function streamHybrid(message, history, opts, workingDir, onChunk, onDone, onError) {
-    let hmeContext = "";
+    let hmeWarm = "";
     try {
-        hmeContext = await fetchHmeContext(message);
+        const enriched = await fetchHmeContext(message);
+        hmeWarm = enriched.warm;
     }
     catch (e) {
         onChunk(`FAILFAST: HME context enrichment failed: ${e?.message ?? e}`, "error");
@@ -874,7 +875,7 @@ async function streamHybrid(message, history, opts, workingDir, onChunk, onDone,
     const messages = [];
     const systemContent = [
         "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
-        hmeContext ? `\nProject knowledge base context:\n${hmeContext}` : "",
+        hmeWarm ? `\nProject knowledge base context:\n${hmeWarm}` : "",
     ].join("").trim();
     messages.push({ role: "system", content: systemContent });
     messages.push(...history, { role: "user", content: message });
