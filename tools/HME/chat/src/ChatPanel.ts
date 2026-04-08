@@ -195,12 +195,21 @@ export class ChatPanel {
       const transcriptCtx = this._transcript.getRecentContext(20, 1500);
       const decision = await classifyMessage(msg.text, transcriptCtx, 0);
       resolvedRoute = decision.route;
+      const isArbiterError = decision.reason.includes("timeout") || decision.reason.includes("unreachable") || decision.reason.includes("failed");
       this._post({
         type: "notice",
-        level: "info",
+        level: isArbiterError ? "warn" : "info",
         text: `🔀 Arbiter → ${decision.route} (${Math.round(decision.confidence * 100)}%): ${decision.reason}`,
       });
       this._transcript.logRouteSwitch("auto", `${decision.route} (${decision.reason})`);
+      if (isArbiterError) {
+        // Log arbiter errors prominently so they're visible in transcript analysis
+        this._transcript.log({
+          ts: Date.now(), type: "audit", route: "auto",
+          content: `ARBITER ERROR: ${decision.reason} — falling back to ${decision.route}`,
+          summary: `Arbiter failed: ${decision.reason}`,
+        });
+      }
       if (decision.thinking) {
         this._transcript.log({
           ts: Date.now(), type: "tool_call", route: "auto",
