@@ -186,26 +186,12 @@ export class ChatPanel {
     claudeThinking: boolean;
     ollamaModel: string;
   }) {
-    // ── Pre-send validation (runs in parallel, non-blocking) ──
-    let constraintCount = 0;
-    validateMessage(msg.text).then(({ warnings, blocks }) => {
-      constraintCount = warnings.length + blocks.length;
-      this._transcript.logValidation(msg.text, warnings.length, blocks.length);
-      if (blocks.length > 0) {
-        const notice = blocks.map((b: any) => `⛔ [${b.title}] ${b.content}`).join("\n");
-        this._post({ type: "notice", level: "block", text: `HME anti-pattern alert:\n${notice}` });
-      } else if (warnings.length > 0) {
-        const notice = warnings.map((w: any) => `⚠ [${w.title}]`).join(" · ");
-        this._post({ type: "notice", level: "warn", text: `HME constraints: ${notice}` });
-      }
-    }).catch(() => {});
-
     // ── Auto-route: arbiter classifies message complexity ──
     let resolvedRoute = msg.route as "claude" | "local" | "hybrid";
     if (msg.route === "auto") {
       this._post({ type: "notice", level: "info", text: "🔀 Arbiter classifying…" });
       const transcriptCtx = this._transcript.getRecentContext(20, 1500);
-      const decision = await classifyMessage(msg.text, transcriptCtx, constraintCount);
+      const decision = await classifyMessage(msg.text, transcriptCtx, 0);
       resolvedRoute = decision.route;
       this._post({
         type: "notice",
@@ -223,9 +209,21 @@ export class ChatPanel {
       this._post({ type: "sessionCreated", session: entry });
     }
 
-    // ── Log user message to transcript ──
+    // ── Log user message first so transcript order is correct ──
     const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.ollamaModel : msg.claudeModel;
     this._transcript.logUser(msg.text, resolvedRoute, model);
+
+    // ── Pre-send validation (async, after user is logged) ──
+    validateMessage(msg.text).then(({ warnings, blocks }) => {
+      this._transcript.logValidation(msg.text, warnings.length, blocks.length);
+      if (blocks.length > 0) {
+        const notice = blocks.map((b: any) => `⛔ [${b.title}] ${b.content}`).join("\n");
+        this._post({ type: "notice", level: "block", text: `HME anti-pattern alert:\n${notice}` });
+      } else if (warnings.length > 0) {
+        const notice = warnings.map((w: any) => `⚠ [${w.title}]`).join(" · ");
+        this._post({ type: "notice", level: "warn", text: `HME constraints: ${notice}` });
+      }
+    }).catch(() => {});
 
     // ── Mirror transcript to HTTP shim ──
     postTranscript([{

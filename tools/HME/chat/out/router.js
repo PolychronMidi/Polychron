@@ -292,6 +292,11 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
         },
     }, (res) => {
         let buf = "";
+        let doneFired = false;
+        const fireDone = () => { if (!doneFired) {
+            doneFired = true;
+            onDone();
+        } };
         res.on("data", (chunk) => {
             if (aborted)
                 return;
@@ -307,13 +312,13 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
                     if (text)
                         onChunk(text, "text");
                     if (parsed?.done)
-                        onDone();
+                        fireDone();
                 }
                 catch { }
             }
         });
         res.on("end", () => { if (!aborted)
-            onDone(); });
+            fireDone(); });
         res.on("error", (e) => onError(e.message));
     });
     req.on("error", (e) => onError(e.message));
