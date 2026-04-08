@@ -42,5 +42,11 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('hme-chat.open', () => {
         ChatPanel_1.ChatPanel.createOrShow(projectRoot);
     }));
+    // Restore panel automatically on developer reload (like other editor tabs)
+    context.subscriptions.push(vscode.window.registerWebviewPanelSerializer('hmeChat', {
+        async deserializeWebviewPanel(panel, state) {
+            ChatPanel_1.ChatPanel.deserialize(panel, state, projectRoot);
+        },
+    }));
 }
 function deactivate() { }
