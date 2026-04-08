@@ -114,7 +114,11 @@ async function classifyMessage(message, transcriptContext, constraintCount) {
                 try {
                     const parsed = JSON.parse(raw);
                     const response = parsed.message?.content ?? "";
-                    resolve(parseArbiterResponse(response));
+                    const thinking = (parsed.message?.thinking ?? "").trim();
+                    const decision = parseArbiterResponse(response);
+                    if (thinking)
+                        decision.thinking = thinking;
+                    resolve(decision);
                 }
                 catch {
                     resolve({ route: "claude", confidence: 0.5, reason: "arbiter parse failed", escalated: false });

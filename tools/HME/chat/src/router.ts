@@ -84,7 +84,10 @@ export function streamClaude(
   proc.stdin.end();
 
   let buf = "";
-  let thinkingBuf = "";
+  let doneFired = false;
+  const safeOnDone = (cost?: number) => {
+    if (!doneFired) { doneFired = true; onDone(cost); }
+  };
 
   proc.stdout.on("data", (data: Buffer) => {
     buf += data.toString("utf8");
@@ -95,7 +98,7 @@ export function streamClaude(
       if (!line.trim()) continue;
       try {
         const evt = JSON.parse(line);
-        handleStreamEvent(evt, onChunk, onSessionId, onDone, thinkingBuf);
+        handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
       } catch {
         // non-JSON line, skip
       }
@@ -108,7 +111,15 @@ export function streamClaude(
   });
 
   proc.on("close", (code) => {
+    // Flush any remaining buffered output
+    if (buf.trim()) {
+      try {
+        const evt = JSON.parse(buf.trim());
+        handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
+      } catch {}
+    }
     if (code !== 0) onError(`Claude CLI exited with code ${code}`);
+    else safeOnDone(); // ensure done fires even if result event was missing
   });
 
   return () => { try { proc.kill(); } catch {} };
@@ -118,8 +129,7 @@ function handleStreamEvent(
   evt: any,
   onChunk: ChunkCallback,
   onSessionId: (id: string) => void,
-  onDone: (cost?: number) => void,
-  thinkingBuf: string
+  onDone: (cost?: number) => void
 ) {
   if (evt.type === "system" && evt.subtype === "init" && evt.session_id) {
     onSessionId(evt.session_id);
@@ -216,6 +226,7 @@ export function streamClaudePty(
   let fullOutput = "";
   let sentMessage = false;
   let turnDone = false;
+  let sessionIdSent = false;
   // Wait for initial prompt before sending — CLI prints ">" or similar
   let initBuf = "";
   let doneTimer: ReturnType<typeof setTimeout> | null = null;
@@ -253,9 +264,11 @@ export function streamClaudePty(
     // Strip echoed input line (first line after send)
     fullOutput += text;
 
-    // Detect session ID from output (Claude prints it on --resume or new session)
-    const sessionMatch = fullOutput.match(/Session(?:\s+ID)?:\s*([a-f0-9-]{8,})/i);
-    if (sessionMatch) onSessionId(sessionMatch[1]);
+    // Detect session ID from output — fire once only
+    if (!sessionIdSent) {
+      const sessionMatch = fullOutput.match(/Session(?:\s+ID)?:\s*([a-f0-9-]{8,})/i);
+      if (sessionMatch) { sessionIdSent = true; onSessionId(sessionMatch[1]); }
+    }
 
     // Classify and emit chunks
     // Thinking blocks: Claude wraps them in ⠋ spinner or "Thinking..." lines
@@ -318,6 +331,15 @@ export function streamOllama(
       },
     },
     (res) => {
+      if (res.statusCode && res.statusCode >= 400) {
+        let errBody = "";
+        res.on("data", (c: Buffer) => { errBody += c.toString("utf8"); });
+        res.on("end", () => {
+          try { onError((JSON.parse(errBody) as any).error ?? `Ollama error ${res.statusCode}`); }
+          catch { onError(`Ollama error ${res.statusCode}`); }
+        });
+        return;
+      }
       let buf = "";
       let doneFired = false;
       const fireDone = () => { if (!doneFired) { doneFired = true; onDone(); } };
