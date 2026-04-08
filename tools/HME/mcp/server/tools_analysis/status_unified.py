@@ -1,6 +1,7 @@
-"""HME status — unified health check.
+"""HME status — unified system health and status hub.
 
-Merges check_pipeline + hme_admin(selftest) into one 'is everything OK?' call.
+Merges check_pipeline + hme_admin(selftest) + coupling overview + trust ecology
+into one 'is everything OK?' call with mode selection.
 Auto-warms stale GPU contexts when detected.
 """
 import logging
@@ -12,11 +13,49 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
-def status() -> str:
-    """Is everything OK? Pipeline status + system health in one call.
-    Auto-kicks background warm prime when stale contexts detected."""
+def status(mode: str = "all") -> str:
+    """System health hub. mode='all' (default): pipeline + selftest + auto-warm.
+    mode='pipeline': pipeline status only. mode='health': codebase health sweep.
+    mode='coupling': coupling topology + antagonist tensions + dimension gaps.
+    mode='trust': trust ecology leaderboard (all 27 systems, 200-beat sample).
+    mode='perceptual': perceptual stack status (EnCodec/CLAP/verdict model).
+    mode='hme': HME selftest + introspection."""
     _track("status")
     ctx.ensure_ready_sync()
+
+    if mode == "pipeline":
+        from .digest import check_pipeline as _cp
+        return _cp()
+
+    if mode == "health":
+        from .health import codebase_health as _ch
+        return _ch()
+
+    if mode == "coupling":
+        from .coupling import coupling_intel as _ci
+        return _ci(mode="full")
+
+    if mode == "trust":
+        from .trust_analysis import trust_report as _tr
+        return _tr("", "")
+
+    if mode == "perceptual":
+        from .perceptual import audio_analyze as _aa
+        try:
+            return _aa(analysis="both")
+        except Exception as e:
+            return f"Perceptual analysis unavailable: {e}"
+
+    if mode == "hme":
+        from .evolution_admin import hme_selftest as _st, hme_introspect as _hi
+        parts = [_st()]
+        try:
+            parts.append(_hi())
+        except Exception:
+            pass
+        return "\n\n".join(parts)
+
+    # mode == "all" — unified overview
     parts = []
 
     # Pipeline status

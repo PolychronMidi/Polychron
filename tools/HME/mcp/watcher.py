@@ -5,12 +5,18 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# Minimum interval between reindex runs (seconds).
+# The debounce timer (5s) collapses rapid saves into one event,
+# but this cooldown prevents repeated reindexes during long editing sessions.
+MIN_REINDEX_INTERVAL = 300  # 5 minutes
+
 
 def start_watcher(project_root: str, engine, debounce: float = 5.0):
     """Start a background file watcher that re-indexes on source changes.
 
     Uses watchdog if available; silently skips if not installed.
-    Debounces rapid batches of changes into a single index_directory call.
+    Debounces rapid batches into a single index_directory call,
+    rate-limited to once per MIN_REINDEX_INTERVAL seconds.
     """
     try:
         from watchdog.observers import Observer
@@ -20,6 +26,8 @@ def start_watcher(project_root: str, engine, debounce: float = 5.0):
         return None
 
     _timer: list[threading.Timer] = [None]
+    _last_reindex: list[float] = [0.0]  # epoch of last completed reindex
+    _pending: list[bool] = [False]  # changes detected but cooldown active
     _lock = threading.Lock()
 
     IGNORE_DIRS = {".git", ".claude", "node_modules", "__pycache__", "venv", ".venv", "dist", "build", "output", "tmp", "lab"}
@@ -42,15 +50,36 @@ def start_watcher(project_root: str, engine, debounce: float = 5.0):
         with _lock:
             if _timer[0] is not None:
                 _timer[0].cancel()
-            t = threading.Timer(debounce, _do_reindex)
+            t = threading.Timer(debounce, _maybe_reindex)
             t.daemon = True
             _timer[0] = t
             t.start()
+
+    def _maybe_reindex():
+        """Run reindex if cooldown has elapsed, otherwise defer."""
+        now = time.time()
+        with _lock:
+            elapsed = now - _last_reindex[0]
+            if elapsed < MIN_REINDEX_INTERVAL:
+                # Cooldown active — mark pending and schedule retry at cooldown expiry
+                _pending[0] = True
+                remaining = MIN_REINDEX_INTERVAL - elapsed + 1
+                t = threading.Timer(remaining, _maybe_reindex)
+                t.daemon = True
+                _timer[0] = t
+                t.start()
+                logger.debug(f"Reindex deferred — cooldown has {remaining:.0f}s remaining")
+                return
+            _pending[0] = False
+
+        _do_reindex()
 
     def _do_reindex():
         try:
             logger.info(f"Auto-reindex triggered for {project_root}")
             result = engine.index_directory(project_root)
+            with _lock:
+                _last_reindex[0] = time.time()
             if result["indexed"] > 0:
                 logger.info(
                     f"Auto-reindex complete: {result['indexed']} files re-indexed, "
@@ -63,5 +92,5 @@ def start_watcher(project_root: str, engine, debounce: float = 5.0):
     observer.schedule(Handler(), project_root, recursive=True)
     observer.daemon = True
     observer.start()
-    logger.info(f"File watcher started: {project_root} (debounce={debounce}s)")
+    logger.info(f"File watcher started: {project_root} (debounce={debounce}s, cooldown={MIN_REINDEX_INTERVAL}s)")
     return observer

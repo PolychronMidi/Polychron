@@ -95,4 +95,10 @@ def _route_explicit(target: str, mode: str) -> str:
     if mode == "structure":
         from .symbols import file_intel as _fi
         return _fi(target)
-    return f"Unknown mode '{mode}'. Use: auto, story, impact, both, lines, function, structure."
+    if mode == "callers":
+        from server.tools_search import find_callers as _fc
+        return _fc(target)
+    if mode == "deps":
+        from .symbols import file_intel as _fi
+        return _fi(target, mode="deps")
+    return f"Unknown mode '{mode}'. Use: auto, before, story, impact, both, lines, function, structure, callers, deps."

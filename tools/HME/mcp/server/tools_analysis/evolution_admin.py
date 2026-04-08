@@ -221,7 +221,7 @@ def hme_selftest() -> str:
                                 tool_count += 1
                 except Exception:
                     pass
-    results.append(f"{'PASS' if tool_count > 20 else 'FAIL'}: {tool_count} tools registered")
+    results.append(f"{'PASS' if tool_count >= 11 else 'FAIL'}: {tool_count} tools registered")
 
     try:
         from .health import doc_sync_check

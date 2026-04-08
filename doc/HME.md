@@ -1,8 +1,8 @@
 # Hypermeta Ecstasy
 
-> Master executive for hypermeta evolutionary intelligence. Not a code search tool — the cognitive substrate that makes self-evolving composition possible. Agents are encouraged to continually evolve HME to always be a tool that is not just exciting to use, but ecstatic to even think about, removing the ceiling on coherence, through intelligently managed context-efficiency!
+> Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is the integration of five layers that together form Polychron's evolutionary nervous system. The MCP server provides 50+ intelligence tools. CLAUDE.md encodes the rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce intelligent workflow automatically. The Evolver and lab run the evolution loop that grows both Polychron and HME itself.
+HME is five layers integrated into one executive. **11 MCP tools** (7 mega-tools + 4 operational) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 50+ tools: semantic search, KB, architectural analysis, local Ollama synthesis |
+| **MCP Server** | `tools/HME/` | 11 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 4 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern) |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Cognitive frameworks loaded per session via `/HME` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -29,13 +29,12 @@ Observe (tools surface patterns)
 ```
 
 **What self-evolution looks like in practice:**
-- After a confirmed round, `add_knowledge` persists calibration anchors, decisions, anti-patterns — the KB grows with each cycle
-- `compact_knowledge` periodically deduplicates, keeping the KB sharp
-- `memory_dream` discovers hidden connections between distant entries
-- `doc_sync_check` verifies docs match implementation — when they diverge, docs get updated
-- `kb_health` finds stale references, aged entries, dead file pointers
-- Hooks can be extended when new anti-patterns emerge from KB patterns
-- Skills grow new pages as new cognitive frameworks are discovered
+- After a confirmed round, `learn(title='...', content='...')` persists calibration anchors — the KB grows with each cycle
+- `learn(action='compact')` periodically deduplicates, keeping the KB sharp
+- `learn(action='dream')` discovers hidden connections between distant entries
+- `review(mode='docs')` verifies docs match implementation — when they diverge, docs get updated
+- `learn(action='health')` finds stale references, aged entries, dead file pointers
+- Hooks can be extended when new anti-patterns emerge — `fix_antipattern` synthesizes enforcement
 - The Evolver's own phases can be refined based on KB entries about what works
 
 **The ecstatic principle:** Intelligence that makes working with it genuinely pleasurable. Every tool should feel like it reads your mind. Every constraint should prevent a mistake you'd regret. Every hook should arrive at exactly the right moment. When the system achieves this, using it is not just productive — it's ecstatic.
@@ -47,42 +46,34 @@ Observe (tools surface patterns)
 tools/HME/               The single source of truth
   .claude-plugin/
     plugin.json                         Plugin metadata (name, version, description)
-  mcp/                                  Python MCP server (symlinked from ~/.claude/mcp/)
+  mcp/                                  Python MCP server
     server/
-      main.py                           FastMCP entry point (50+ tools)
-      tools_analysis.py                 Architectural reasoning + Claude synthesis (20 tools)
-      tools_search.py                   Search, grep, file, context assembly (6 tools)
-      tools_knowledge.py                KB CRUD + memory_dream + knowledge_graph (9 tools)
-      tools_index.py                    Index management + recent_changes (5 tools)
-      context.py                        Shared engine references
+      main.py                           FastMCP entry point, background model loading
+      context.py                        Shared engine references (project_engine, etc.)
       helpers.py                        Budget limits, formatters; loads project-rules.json
-    rag_engine/                         LanceDB + BM25 + RRF fusion
-    chunker.py, symbols.py, etc.        IIFE-aware indexing
+      tools_analysis/                   All 11 registered tools live here:
+        evolution_evolve.py               evolve — evolution planning hub
+        search_unified.py                 find — universal search + analysis
+        review_unified.py                 review — post-pipeline review hub
+        read_unified.py                   read — smart code reader
+        learn_unified.py                  learn — unified KB interface
+        status_unified.py                 status — system health hub
+        trace_unified.py                  trace — signal flow tracing
+        evolution_admin.py                hme_admin + fix_antipattern
+        runtime.py                        beat_snapshot
+        workflow.py                       warm_pre_edit_cache + before_editing
+        (+ 20 internal modules: coupling, reasoning, symbols, etc.)
+      tools_search.py                   Internal: grep, search_code, find_callers, file_lines
+      tools_knowledge.py                Internal: add/search/list/compact/export/graph/dream/health
+      tools_index.py                    Internal: index_codebase, clear_index
+    rag_engine/                         LanceDB + BM25 + RRF fusion + cross-encoder reranking
+    watcher.py                          Auto-reindex on file changes (5s debounce, 5min cooldown)
+    chunker.py, lang_registry.py        IIFE-aware code chunking
   skills/                               Skill definitions (symlinked from ~/.claude/skills/)
-    SKILL.md                            Master skill index
-    analysis.md, search.md, etc.        Tool reference pages
-    evolution.md                        Evolver integration guide
   config/
-    project-rules.json                  Project-specific declarations (not logic):
-                                          crosslayer_boundary_violations, known_l0_channels,
-                                          dry_patterns, doc_update_triggers,
-                                          known_non_tool_identifiers (incl. relation_type
-                                          enum values + KB categories),
-                                          registration_patterns,
-                                          coupling_matrix_exempt_paths,
-                                          coupling_matrix_legacy_paths,
-                                          subsystem_names,
-                                          line_count_thresholds
-                                        Logic stays in Python; only DATA lives here.
-                                        Loaded at MCP server import time by helpers.py.
-  hooks/                                Hook scripts (referenced from .claude/settings.json)
-    hooks.json                          Plugin-format hook definitions
-    pretooluse_edit.sh                  before_editing reminder for src/ files
-    pretooluse_grep.sh                  Prefer HME grep() over built-in
-    pretooluse_write.sh                 Lab rules for sketches.js
-    pretooluse_bash.sh                  Block run.lock deletion + suggest HME tools
-    posttooluse_bash.sh                 Evolver phase triggers after pipeline/snapshot/lab
-    stop.sh                             Verify completeness; drive autonomous Evolver loop
+    project-rules.json                  Declarative project rules (boundary violations,
+                                          L0 channels, registration patterns, etc.)
+  hooks/                                Hook scripts (14 hooks across 7 lifecycle events)
   Evolver.agent.md                      -> .github/agents/Evolver.agent.md (symlink)
   doc                                   -> doc/ (symlink)
 ```
@@ -96,9 +87,9 @@ tools/HME/               The single source of truth
 ### Databases
 ```
 Polychron/.claude/mcp/HME/
-  code_chunks.lance/     Semantic code chunks (~3000 from 610 files)
-  knowledge.lance/       KB (20+ entries with prediction error gating)
-  symbols.lance/         Symbol index (3848+ symbols)
+  code_chunks.lance/     Semantic code chunks (~3000 from 610+ files)
+  knowledge.lance/       KB (68 entries with prediction error gating, FSRS-6 spaced repetition)
+  symbols.lance/         Symbol index (3848+ symbols: 321 IIFE globals + inner functions)
   file_hashes.json       Content hash cache for incremental reindex
   global_kb/             Cross-project shared KB
 ```
@@ -131,20 +122,20 @@ Source tracked in `tools/HME/`. MCP server at `mcp/`, symlinked from `~/.claude/
 
 HME is the cognitive backbone of every Evolver phase. The Evolver doesn't just *use* HME tools — it *thinks through* HME.
 
-| Phase | HME Role | Key Tools |
-|-------|----------|-----------|
-| **1. Perceive** | Surface patterns from metrics, KB context on changed files | `recent_changes`, `search_knowledge`, `knowledge_graph` |
-| **2. Diagnose** | Trace causal chains with KB constraints, find anti-patterns | `search_code`, `find_callers`, `find_anti_pattern`, `think` |
-| **3. Evolve** | Pre-edit briefing, constraint checking, boundary enforcement | `before_editing`, `search_knowledge`, `module_intel` |
-| **4. Run** | Pipeline executes; file watcher auto-reindexes | (automatic) |
-| **5. Verify** | Post-change audit, missed constraint detection | `what_did_i_forget`, `convention_check`, `codebase_health` |
-| **6. Journal** | Persist findings as KB entries, link related knowledge | `add_knowledge`, `knowledge_graph`, `compact_knowledge` |
-| **7. Maintain** | Reindex, KB health check, doc sync | `hme_admin(action='index')`, `kb_health`, `doc_sync_check` |
+| Phase | HME Role | Tools |
+|-------|----------|-------|
+| **1. Perceive** | Surface patterns from metrics, KB context on changed files | `status()`, `learn(query='...')` |
+| **2. Diagnose** | Trace causal chains with KB constraints, find anti-patterns | `find(query, mode='callers'/'boundary'/'think'/'diagnose')` |
+| **3. Evolve** | Pre-edit briefing, constraint checking, boundary enforcement | `read(target, mode='before')`, `learn(query='module')` |
+| **4. Run** | Pipeline executes; file watcher auto-reindexes (5min cooldown) | (automatic) |
+| **5. Verify** | Post-change audit, missed constraint detection | `review(mode='forget')`, `review(mode='convention')`, `review(mode='health')` |
+| **6. Journal** | Persist findings as KB entries, link related knowledge | `learn(title='...', content='...')`, `learn(action='graph')` |
+| **7. Maintain** | Reindex, KB health check, doc sync | `hme_admin(action='index')`, `learn(action='health')`, `review(mode='docs')` |
 
 **After every confirmed round:**
-1. `hme_admin(action='index')` — refresh embeddings for changed files
-2. `add_knowledge` — persist calibration anchors, decisions, anti-patterns
-3. `compact_knowledge` — if KB > 30 entries, deduplicate
+1. File watcher auto-reindexes (or `hme_admin(action='index')` for batch changes)
+2. `learn(title='...', content='...', category='pattern')` — persist calibration anchors
+3. `learn(action='compact')` — if KB > 30 entries, deduplicate
 4. Update CLAUDE.md and relevant doc files if architectural rules changed
 
 ## Lab Governance
@@ -169,27 +160,27 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 
 ### Before Editing Code
 
-**`before_editing "path/to/file.js"`** — ONE CALL gets everything: KB constraints, callers, boundary warnings, file structure. Replaces multi-step research.
+**`read("path/to/file.js", mode="before")`** — ONE CALL gets everything: KB constraints, callers, boundary warnings, file structure, evolutionary potential. Replaces multi-step research.
 
 ### After Code Changes
 
-1. **`what_did_i_forget "file1.js,file2.js"`** — checks against KB constraints, boundary rules, L0 channels, doc needs
-2. File watcher auto-reindexes on save (5s debounce)
+1. **`review(mode='forget', changed_files='file1.js,file2.js')`** — checks against KB constraints, boundary rules, L0 channels, doc needs
+2. File watcher auto-reindexes on save (5s debounce, 5min cooldown between full reindexes)
 3. For batch changes: `hme_admin(action='index')` once at the end
 
 ### After Confirmed Round
 
-1. `add_knowledge` for new calibration anchors, decisions, anti-patterns, bugfixes
-2. Use `related_to="<entry_id>"` to link related entries
+1. `learn(title='...', content='...', category='pattern')` for calibration anchors, decisions, anti-patterns
+2. Use `related_to="<entry_id>"` with `relation_type` to link related entries
 3. Update docs: CLAUDE.md, relevant doc/*.md files
 
 ### For Any Search
 
-Use `search_code`, `find_callers`, or `find_anti_pattern` — NOT Grep. HME tools add KB cross-referencing that Grep misses.
+Use `find(query)` — NOT Grep. Auto-routes by intent: "callers of X" → call graph, regex → grep, natural language → semantic search. All searches add KB cross-referencing that Grep misses.
 
 ### When Pipeline Fails
 
-`diagnose_error "paste error text"` — traces source, finds similar KB bugs, suggests fix patterns.
+`find("paste error text", mode="diagnose")` — traces source, finds similar KB bugs, suggests fix patterns.
 
 ## Autonomous Evolver Loop
 
@@ -230,161 +221,184 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 
 ## When to Use What
 
-| I want to... | Use | NOT |
-|---|---|---|
-| Find code by intent ("where does convergence happen") | `search_code` (`response_format="concise"` saves tokens) | Grep |
-| Find all callers of a function | `find_callers` | Grep |
-| Find callers in a specific directory | `find_callers path="src/crossLayer"` | Grep + manual filtering |
-| Find boundary violations | `find_anti_pattern` or `find_callers exclude_path=` | Multi-step Grep |
-| Check if a change is safe | `module_intel "symbolName" mode="impact"` | Reading code manually |
-| Audit a file for convention issues | `convention_check "path/to/file.js"` | Manual review |
-| Check constraints before editing | `before_editing "path"` or `search_knowledge "module"` | Hoping you remember |
-| Get optimal code within token budget | `get_context "query" max_tokens=4000` | Reading files manually |
-| Find exact variable name | `grep "varName" regex=True` | Built-in Grep |
-| Search 2-3 specific files | Read tool | `search_code` (overkill) |
-| Check KB for stale entries | `kb_health` | Manual review |
-| Understand a module deeply | `module_intel "moduleName"` | Multi-file reading |
-| Preview rename impact | `bulk_rename_preview "old" "new"` | Manual grep |
+| I want to... | Use |
+|---|---|
+| Find code by intent | `find("where does convergence happen")` |
+| Find all callers of a function | `find("callers of convergenceDetector")` |
+| Find boundary violations | `find("X should use Y", mode="boundary")` |
+| Check if a change is safe | `read("symbolName", mode="impact")` |
+| Audit a file for conventions | `review(mode='convention', file_path='path')` |
+| Check constraints before editing | `read("path/to/file.js", mode="before")` |
+| Find exact variable name | `find("varName", mode="grep")` |
+| Check KB for stale entries | `learn(action='health')` |
+| Understand a module deeply | `read("moduleName", mode="story")` |
+| Preview rename impact | `find("oldName→newName", mode="rename")` |
+| What should I work on next? | `evolve()` |
+| Is the pipeline OK? | `status()` or `status(mode='pipeline')` |
+| Post-pipeline review | `review()` or `review(mode='full')` |
+| Trace a signal through the system | `trace("emergentRhythm")` |
+| Search the KB | `learn(query='coupling constraints')` |
+| Add a KB entry | `learn(title='...', content='...', category='pattern')` |
+| Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## Tool Reference (50+ tools)
+## The 11 Tools — Complete Reference
 
-### Shell Replacements (use INSTEAD of Bash)
+All capabilities route through 7 mega-tools + 4 operational tools. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
 
-| Tool | Replaces | Intelligence Added |
-|------|----------|--------------------|
-| `grep` | Bash `grep -rn` | KB cross-reference, boundary warnings |
-| `file_lines` | Bash `cat`, `head`, `tail` | KB context for the module |
-| `count_lines` | Bash `wc -l` | Convention warnings (oversize flags) |
-| `recent_changes` | `git diff --name-only` | KB context per changed file |
+### 1. `evolve(focus)` — "What should I work on next?"
 
-### Architectural Reasoning (10 tools)
+| focus | What it does |
+|-------|-------------|
+| `"all"` (default) | LOC offenders + coupling gaps + pipeline suggestions + synthesis |
+| `"loc"` | Top oversized files in src/ |
+| `"coupling"` | Dimension gaps + antagonism leverage points |
+| `"pipeline"` | Pipeline-based evolution suggestions |
+| `"patterns"` | Meta-patterns across journal rounds: confirm rates, subsystem receptivity |
+| `"seed"` | Auto-generate starter KB entries for high-dependency modules with zero coverage |
 
-| Tool | Use For |
-|------|---------|
-| `before_editing` | **START HERE.** Pre-edit briefing: KB + callers + boundaries + structure |
-| `what_did_i_forget` | Post-change audit: missed constraints, boundaries, doc needs |
-| `module_intel(target, mode)` | mode='story': living biography (definition, evolution, callers, neighbors). mode='impact': callers + KB constraints. mode='both': biography + blast radius. |
-| `diagnose_error` | Error source + similar bugs + fix patterns |
-| `codebase_health` | Full-repo convention sweep, prioritized by severity |
-| `think` | Structured reflection (`completeness`, `constraints`, `impact`, `conventions`, `recent_changes`) |
-| `blast_radius` | Transitive dependency chain (depth 1-3) |
-| `knowledge_graph` | KB search with spreading activation + Claude cluster analysis |
-| `convention_check` | Audit file against conventions |
-| `find_anti_pattern` | Find boundary violations |
+### 2. `find(query, path, mode)` — Universal search + analysis
 
-### Search & Discovery (7 tools)
+| mode | What it does |
+|------|-------------|
+| `"auto"` (default) | Detects intent: "callers of X" → callers, regex → grep, "X should use Y" → boundary, else → semantic |
+| `"semantic"` | Natural language code search with KB enrichment |
+| `"grep"` | Regex search (replaces Bash grep — adds KB cross-references) |
+| `"callers"` | All call sites of a symbol (supports path filtering) |
+| `"boundary"` | Find anti-pattern / boundary violations |
+| `"think"` | Deep structured reasoning about a question |
+| `"diagnose"` | Diagnose error text — traces source, finds similar KB bugs |
+| `"blast"` | Transitive dependency chain (depth 1-3) for a symbol |
+| `"coupling"` | Coupling intelligence (query=sub-mode: full/network/antagonists/gaps/leverage/channels/cascade:X/ledger/clusters) |
+| `"symbols"` | Semantic symbol search (when you know purpose, not name) |
+| `"lookup"` | Exact symbol lookup (where defined) |
+| `"map"` | Module directory map with line counts (query=directory) |
+| `"hierarchy"` | Type/class hierarchy |
+| `"rename"` | Bulk rename preview (query='oldName→newName') |
+| `"xref"` | Cross-language trace for a symbol |
 
-| Tool | Use For |
-|------|---------|
-| `search_code` | Natural language semantic code search |
-| `find_callers` | All call sites (supports path/exclude_path filtering) |
-| `find_similar_code` | Pattern matching by code snippet |
-| `lookup_symbol` | Find where a symbol is defined |
-| `search_symbols` | Semantic symbol search (when you know purpose, not name) |
-| `file_intel(path, mode)` | mode='both' (default): structure + dependency graph. mode='summary': symbols/functions/globals. mode='deps': import/require graph. |
-| `get_module_map` | Directory tree with line counts |
-| `get_function_body` | Extract exact function source |
+### 3. `review(mode, ...)` — Post-pipeline review hub
 
-### Structure & Navigation (4 tools)
+| mode | Extra params | What it does |
+|------|-------------|-------------|
+| `"digest"` (default) | `critique=True/False` | Pipeline digest with evolution suggestions. Auto-drafts KB entry on STABLE |
+| `"regime"` | | ASCII regime timeline + transitions |
+| `"trust"` | `system_a`, `system_b` | Trust ecology. Empty = leaderboard. Two systems = rivalry with overtakes |
+| `"sections"` | `section_a`, `section_b` (0-indexed) | Side-by-side section comparison |
+| `"audio"` | | Perceptual analysis (EnCodec + CLAP). 15% confidence |
+| `"composition"` | | Section arc biographies + drama moments + hotspot leaderboard |
+| `"health"` | | Full-repo convention sweep, prioritized by severity |
+| `"forget"` | `changed_files` | Post-change audit: missed constraints, boundaries, doc needs |
+| `"convention"` | `file_path` (required) | Audit single file against conventions |
+| `"symbols"` | | Dead code detection + importance ranking |
+| `"docs"` | | Verify docs match implementation |
+| `"full"` | | Sequential: digest + regime + trust |
 
-| Tool | Use For |
-|------|---------|
-| `cross_language_trace` | All references across file types |
-| `type_hierarchy` | Interface/class hierarchy |
-| `bulk_rename_preview` | Preview rename impact |
-| `doc_sync_check` | Verify doc matches implementation |
+### 4. `read(target, mode)` — Smart code reader
 
-### Knowledge Management (9 tools)
+**Auto-detection** (mode="auto", default): format determines behavior.
 
-| Tool | Use For |
-|------|---------|
-| `search_knowledge` | Query persistent KB |
-| `add_knowledge` | Persist decision/anchor/pattern/bugfix |
-| `list_knowledge` | Show all KB entries (filter by category) |
-| `remove_knowledge` | Delete stale entry |
-| `compact_knowledge` | Deduplicate similar entries |
-| `export_knowledge` | Export KB as markdown |
-| `knowledge_graph` | Search with spreading activation + connections |
-| `memory_dream` | Discover hidden KB connections via pairwise similarity |
-| `kb_health` | Check for stale refs and aged entries |
+| target format | What happens |
+|--------------|-------------|
+| `"src/path/file.js"` | File structure + KB context |
+| `"src/path/file.js:10-50"` | Extract lines 10-50 |
+| `"src/path/file.js:42"` | Line 42 ± 10 lines context |
+| `"functionName"` (camelCase) | Get function body, or module story if it's a src/ module |
+| `"anything else"` | Semantic code search (top 5) |
 
-### Evolution & Causal Intelligence (6 tools)
+**Explicit modes:**
 
-| Tool | Use For |
-|------|---------|
-| `evolution_patterns` | Meta-patterns across journal rounds: confirm rates, subsystem receptivity, stabilization timelines |
-| `causal_trace` | Trace constant -> controller -> metric -> musical effect chain |
-| `hme_inspect(mode)` | mode='introspect': usage patterns, system health, musical context. mode='selftest': 8-point health check. mode='both' (default). |
-| `fix_antipattern(antipattern, hook_target)` | Permanently enforce a rule by synthesizing bash detection logic and appending it to the target hook script. Use when a behavioral rule is repeatedly violated and needs hook-level enforcement. |
-| `trace_query` | Query trace.jsonl for what a module ACTUALLY DID: trust scores, regime transitions, value ranges |
-| `interaction_map` | Correlate two modules' trust scores and hotspot co-occurrence: cooperative/competitive/independent |
-| `kb_seed` | Auto-generate starter KB entries for top-N highest-dependency modules with zero KB coverage |
+| mode | What it does |
+|------|-------------|
+| `"before"` | **Pre-edit briefing**: KB constraints + callers + boundaries + evolutionary potential |
+| `"story"` | Module living biography (definition, evolution, callers, neighbors) |
+| `"impact"` | Callers + KB constraints (blast radius) |
+| `"both"` | Story + impact combined |
+| `"lines"` | Line range extraction |
+| `"function"` | Function body extraction |
+| `"structure"` | File structure (symbols, functions, globals) |
+| `"callers"` | All call sites of the target |
+| `"deps"` | Dependency graph for a file |
 
-### Unified Workflow Tools (7 tools — "resort" experience)
+### 5. `learn(...)` — Unified KB interface
 
-The primary interface. Each tool merges 2-5 underlying tools with auto-detection.
+**Auto-detection** from parameters (no mode needed):
 
-| Tool | Use For | Replaces |
-|------|---------|----------|
-| `evolve(focus)` | **"What should I work on next?"** LOC offenders + coupling gaps + leverage + pipeline suggestions in one view. | `codebase_health` + `coupling_intel(gaps)` + `pipeline_digest(evolve)` |
-| `find(query, mode)` | **Smart search** — auto-routes: "callers of X" → call graph, "X should use Y" → boundary check, regex → grep, natural language → semantic. | `search_code` + `grep` + `find_callers` + `find_anti_pattern` |
-| `review(mode)` | **Post-pipeline hub.** digest/regime/trust/sections/audio/full. Auto-drafts KB entry when STABLE. | `pipeline_digest` + `regime_report` + `trust_report` + `section_compare` + `audio_analyze` |
-| `read(target, mode)` | **Smart code reader.** 'path.js' → structure, 'path.js:10-50' → lines, 'functionName' → body, 'moduleName' → story. | `file_intel` + `file_lines` + `get_function_body` + `module_intel` |
-| `learn(query/title/remove)` | **Unified KB.** query → search, title+content → add, remove=id → delete. | `search_knowledge` + `add_knowledge` + `remove_knowledge` |
-| `status()` | **"Is everything OK?"** Pipeline status + selftest. Auto-warms stale GPU contexts. | `check_pipeline` + `hme_admin(selftest)` |
-| `trace(target, mode)` | **Signal flow.** 'channelName' → L0 cascade 3 hops deep, 'moduleName' → per-section trace. | `trace_query` + `coupling_intel(cascade:X)` |
+| What you pass | What happens |
+|--------------|-------------|
+| `query='coupling constraints'` | Search KB (semantic + BM25 + cross-encoder reranking) |
+| `title='R94 fix', content='...'` | Add KB entry. Optional: `category`, `tags`, `related_to`, `listening_notes` |
+| `remove='entry_id'` | Delete KB entry |
 
-### Coupling Intelligence (1 tool)
+**Explicit actions** (override auto-detection):
 
-| Tool | Use For |
-|------|---------|
-| `coupling_intel(mode)` | mode='full' (default): all four views — topology + antagonist tensions + cluster biographies + dimension gaps. Use before planning a coupling round. mode='network': melodic/rhythmic topology, uncoupled modules by trust. mode='antagonists': negative correlation pairs (creative tensions). mode='personalities': cluster biographies (members, dims, bonds, antagonists). mode='gaps': underused melodic/rhythmic dims. mode='leverage': for each top pair, the bridge field with maximum constructive opposition — concrete opposing-response recipes. mode='channels': full L0 channel map. mode='cascade:channelName': signal cascade trace 3 hops deep. **mode='ledger'**: bridge completion ledger — for each antagonist pair, KB-confirmed bridges across rounds vs proposed (answers "how saturated is this pair?"). |
+| action | What it does |
+|--------|-------------|
+| `"list"` | List all entries (filter by `category`) |
+| `"compact"` | Deduplicate similar entries (threshold=0.85) |
+| `"export"` | Export entire KB as markdown |
+| `"graph"` | Spreading-activation knowledge graph (uses `query`) |
+| `"dream"` | Pairwise similarity pass — discover hidden connections |
+| `"health"` | KB staleness check (stale file refs, wrong line counts) |
 
-### Runtime Intelligence (7 tools)
+**Categories:** `architecture`, `decision`, `pattern`, `bugfix`, `general`
+**Relation types:** `caused_by`, `fixed_by`, `depends_on`, `contradicts`, `similar_to`, `supersedes`
 
-| Tool | Use For |
-|------|---------|
-| `pipeline_digest` | **ONE-CALL post-pipeline summary**: arc + hotspots + drama + regime health. Freshness-gated — auto-runs `check_pipeline` if no new output since last digest. |
-| `check_pipeline` | Read `pipeline.log` → IN PROGRESS / finished line / FAILED+last 30 lines. Only permitted way to check pipeline status. |
-| `composition_events(mode)` | mode='arc': per-section biography (regime, tension, trust, coupling). mode='drama': top-N dramatic moments. mode='both' (default). |
-| `regime_report(mode)` | mode='timeline': ASCII regime visualization. mode='anomaly': regime health. mode='both' (default). |
-| `hotspot_leaderboard` | Rank trust systems by hotspot frequency and pressure |
-| `trust_report(system_a, system_b)` | system_b empty: career arc with sparklines. system_b provided: head-to-head rivalry with overtakes. |
-| `section_compare` | Two sections side-by-side: tension delta, trust winners/losers |
-| `beat_snapshot` | Full system state at one beat: trust ecology, snap, coupling, notes |
+### 6. `status(mode)` — System health hub
 
-### Analysis (2 tools)
+| mode | What it does |
+|------|-------------|
+| `"all"` (default) | Pipeline status + selftest + auto-warm stale GPU contexts |
+| `"pipeline"` | Pipeline status only |
+| `"health"` | Codebase health sweep |
+| `"coupling"` | Full coupling topology + antagonist tensions + dimension gaps |
+| `"trust"` | Trust ecology leaderboard (all 27 systems) |
+| `"perceptual"` | Perceptual stack analysis (EnCodec + CLAP) |
+| `"hme"` | HME selftest + introspection (tool usage patterns, KB health) |
 
-| Tool | Use For |
-|------|---------|
-| `symbol_audit(mode)` | mode='dead': IIFE globals with 0 callers. mode='importance': rank by caller count. mode='both' (default). |
-| `list_libs` | Show indexed library directories |
+### 7. `trace(target, mode, section, limit)` — Signal flow tracing
 
-### Perceptual Intelligence (1 tool)
+| mode | What it does |
+|------|-------------|
+| `"auto"` (default) | Detects: L0 channel name → cascade, module name → per-section trace |
+| `"cascade"` | L0 channel cascade trace, 3 hops deep |
+| `"module"` | Per-section trace: regime, tension, trust scores, value ranges |
+| `"causal"` | Causal trace: constant → controller → metric → musical effect |
+| `"interaction"` | Correlate two modules' trust scores: cooperative/competitive/independent |
 
-| Tool | Use For |
-|------|---------|
-| `audio_analyze(analysis, queries)` | analysis='encodec': per-section token entropy (complexity), codebook activation. analysis='clap': text↔audio similarity with natural language queries. analysis='both' (default). EnCodec 24kHz + CLAP HTSAT-tiny on GPU. |
+### 8. `hme_admin(action, modules)` — HME maintenance
 
-Starts at **15% confidence** — verify against listening before trusting. Confidence earns trust through verdict correlation, like any trust system.
+| action | What it does |
+|--------|-------------|
+| `"selftest"` (default) | Verify tool registration, doc sync, index, Ollama, KB, symlinks |
+| `"reload"` | Hot-reload tool modules (modules='module1,module2' or 'all') |
+| `"both"` | Reload then selftest |
+| `"index"` | Reindex all code chunks + symbols |
+| `"clear_index"` | Wipe hash cache + chunk store, rebuild from scratch |
+| `"warm"` | Pre-populate all caches: Tier 1 callers+KB, Tier 2 synthesis, GPU KV contexts |
+| `"introspect"` | Self-benchmarking: tool usage patterns, workflow discipline, KB health |
 
-### Index Management (3 tools)
+### 9. `beat_snapshot(beat_key)` — Single beat state capture
 
-| Tool | Use For |
-|------|---------|
-| `hme_admin(action='index')` | Reindex all code chunks + symbols. Use after batch changes when file watcher hasn't caught up. |
-| `hme_admin(action='warm')` | Pre-populate all caches: (1) Tier 1 caller+KB for all src/ files, (2) Tier 2 Edit Risks synthesis for 30 hot files, (3) Warm KV context for all three Ollama models (GPU0 extractor, GPU1 reasoner, arbiter) in parallel background threads. |
-| `get_index_status` | Check index health |
-| `clear_index` | Wipe index for full rebuild |
+Returns full system state at one beat: regime, trust ecology, conductor snap, coupling labels, notes emitted. Use for deep-diving a specific moment.
 
-## Knowledge KB Categories
+### 10. `warm_pre_edit_cache(max_files, synthesis_hot)` — Cache warming
 
-| Category | What to Store | Example |
-|----------|--------------|---------|
-| `architecture` | Boundary rules, system topology, L0 channels | "conductor cannot write to crossLayer" |
-| `decision` | Calibration anchors, threshold choices, constraints | "coherent safety floor: 0.88 minimum" |
-| `pattern` | Anti-patterns, proven patterns, regime alignment | "compound suppression anti-pattern" |
-| `bugfix` | Root causes, fixes, prevention rules | "L0 channel persistence caveat" |
+Two-tier warming: Tier 1 scans up to `max_files` src/ files for callers+KB (fast). Tier 2 synthesizes edit risks for top `synthesis_hot` recently modified files (slow, uses Ollama). After warming, `read(target, mode='before')` is instant for warmed files.
+
+### 11. `fix_antipattern(antipattern, hook_target)` — Hook enforcement
+
+Synthesizes bash detection logic for a behavioral anti-pattern and appends it to the target hook script. Use when a rule is repeatedly violated and needs automated enforcement. Valid targets: `pretooluse_bash`, `posttooluse_bash`, `stop`, `userpromptsubmit`, `pretooluse_edit`, `pretooluse_grep`, `pretooluse_write`.
+
+## Knowledge KB
+
+68 entries across 4 categories. FSRS-6 spaced repetition: frequently retrieved entries resist temporal decay.
+
+| Category | Count | What to Store | Example |
+|----------|-------|--------------|---------|
+| `architecture` | 27 | Boundary rules, module profiles, system topology | "feedbackOscillator — 198 lines, highest hotspot rate 31.7%" |
+| `decision` | 17 | Calibration anchors, threshold choices, confirmed rounds | "R80 LEGENDARY: complexity triple-bridge" |
+| `pattern` | 15 | Anti-patterns, proven patterns, evolution recipes | "antagonism bridge: couple BOTH sides of antagonist pair" |
+| `bugfix` | 9 | Root causes, fixes, prevention rules | "perceptual OOM: force CPU when Ollama warm contexts resident" |
 
 ## Hooks Integration
 
@@ -564,30 +578,27 @@ KB entries < 1 day: 1.05x boost. > 7 days: gradual decay (0.7x at 37 days). Rece
 
 ## Maintenance
 
-### Reindex After Code Changes
+### Reindex
+File watcher auto-reindexes on save (5s debounce, 5min cooldown). For batch changes:
 ```
-reindex
-```
-
-### Full Rebuild
-```
-clear_index
-reindex
+hme_admin(action='index')    # incremental reindex
+hme_admin(action='clear_index')  # full rebuild from scratch
 ```
 
 ### KB Maintenance
-- After 30+ entries: `compact_knowledge threshold=0.85`
-- Periodic: `kb_health` to find stale refs
-- Backup: `export_knowledge` outputs all entries as markdown
+- Periodic: `learn(action='health')` — find stale refs, wrong line counts
+- After 30+ entries: `learn(action='compact')` — deduplicate
+- Backup: `learn(action='export')` — dump all entries as markdown
+- Discovery: `learn(action='dream')` — find hidden connections
 
 ### Doc Sync
-`doc_sync_check "doc/HME.md"` verifies tool counts, file references, and section completeness.
+`review(mode='docs')` verifies docs match implementation.
 
 ### HME Self-Maintenance
-When HME tools feel wrong (missing context, stale results, slow synthesis):
-1. `get_index_status` — verify chunk/symbol counts
-2. `kb_health` — find stale or conflicting entries
-3. `compact_knowledge` — deduplicate
-4. `doc_sync_check` — verify this doc matches reality
-5. Check hooks in `~/.claude/settings.json` — are they triggering correctly?
-6. Check skill files — do they reflect current tool signatures?
+When tools feel wrong (missing context, stale results, slow synthesis):
+1. `status(mode='hme')` — selftest + introspection
+2. `learn(action='health')` — find stale or conflicting KB entries
+3. `learn(action='compact')` — deduplicate
+4. `review(mode='docs')` — verify docs match reality
+5. `hme_admin(action='reload', modules='all')` — hot-reload all tool modules
+6. Check hooks in `.claude/settings.json` — are they triggering?
