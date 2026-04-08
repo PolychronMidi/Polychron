@@ -258,7 +258,6 @@ def cross_language_trace(symbol_name: str) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def bulk_rename_preview(old_name: str, new_name: str, language: str = "") -> str:
     """Preview what a symbol rename would change across the codebase WITHOUT making any modifications. Shows each occurrence categorized by type (definition, reference, import, string, comment) and whether it would be renamed or skipped. Use to assess rename safety and scope before committing to a refactor."""
     if not old_name.strip():
@@ -293,7 +292,6 @@ def bulk_rename_preview(old_name: str, new_name: str, language: str = "") -> str
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def get_function_body(function_name: str, file_path: str = "", language: str = "") -> str:
     """Extract the complete source code of a named function. If file_path is given, searches only that file. Otherwise, looks up the function in the symbol index and extracts from the first matching file(s). Returns the function body with line numbers and kind (function, method, etc). Useful for reading a specific function without loading the entire file."""
     ctx.ensure_ready_sync()
@@ -412,7 +410,6 @@ def l0_channel_map(channel: str = "") -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def file_intel(file_path: str, mode: str = "both") -> str:
     """Unified file intelligence. Replaces get_file_summary + get_dependency_graph in one call.
     mode='both' (default): structural overview AND dependency graph — use before editing a file

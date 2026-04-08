@@ -15,7 +15,6 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
 def what_did_i_forget(changed_files: str) -> str:
     """Call AFTER implementing changes, BEFORE running pipeline. Takes comma-separated file paths. Checks changed files against KB for missed constraints, boundary violations, and doc update needs. Output scales with remaining context window."""
     ctx.ensure_ready_sync()
@@ -139,7 +138,6 @@ def what_did_i_forget(changed_files: str) -> str:
     return "\n".join(parts)
 
 
-@ctx.mcp.tool()
 def diagnose_error(error_text: str) -> str:
     """Paste a pipeline error. Returns: likely source file, relevant KB entries, similar past bugs, and fix patterns."""
     ctx.ensure_ready_sync()

@@ -35,7 +35,7 @@ function main() {
     if (d.verdict && d.features) {
       const ft = d.features;
       // cb0Entropy: prefer features.cb0Entropy, fall back to perceptual.encodec.cb0_entropy.
-      // Store raw value (or null if missing) — will impute with mean below.
+      // Store raw value (or null if missing) -- will impute with mean below.
       const cb0Raw = typeof ft.cb0Entropy === 'number' ? ft.cb0Entropy
         : (d.perceptual && d.perceptual.encodec && typeof d.perceptual.encodec.cb0_entropy === 'number')
           ? d.perceptual.encodec.cb0_entropy : null;
@@ -43,7 +43,7 @@ function main() {
     }
   }
 
-  // Impute missing cb0Entropy with mean of observed values (not 0 — that contaminates weights)
+  // Impute missing cb0Entropy with mean of observed values (not 0 -- that contaminates weights)
   const cb0Observed = labeled.map(l => l.cb0Raw).filter(v => v !== null);
   const cb0Mean = cb0Observed.length > 0
     ? cb0Observed.reduce((a, b) => a + b, 0) / cb0Observed.length : 6.1;

@@ -45,7 +45,9 @@ import torch, torchaudio, numpy as np, librosa
 from encodec import EncodecModel
 from encodec.utils import convert_audio
 
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# Force CPU: Ollama KV cache processes occupy GPU; EnCodec + CLAP run CPU-only
+# to avoid torch.OutOfMemoryError when warm contexts are resident on GPU 0.
+device = 'cpu'
 model = EncodecModel.encodec_model_24khz()
 model.set_target_bandwidth(6.0)
 model.to(device).eval()
@@ -102,11 +104,10 @@ cb0_ents = [encodec_sections[s]['entropies']['cb0'] for s in sorted(encodec_sect
 corr = float(np.corrcoef(tensions, cb0_ents)[0,1]) if len(tensions) > 2 else 0
 
 # --- Phase 3: CLAP ---
-del model, wav, codes  # free GPU
-torch.cuda.empty_cache()
+del model, wav, codes  # free memory
 
 import laion_clap
-clap = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')
+clap = laion_clap.CLAP_Module(enable_fusion=False, device='cpu', amodel='HTSAT-tiny')
 clap.load_ckpt()
 
 queries = [

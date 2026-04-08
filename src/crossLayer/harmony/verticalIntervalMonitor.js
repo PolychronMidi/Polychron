@@ -85,7 +85,12 @@ verticalIntervalMonitor = (() => {
       // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle during novelty).
       const freshnessEmaVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.freshnessEma, 0.5) : 0.5;
       const freshnessEmaVIMScale = 1.12 - freshnessEmaVIM * 0.25; // [0.87 novel ... 1.12 familiar]
-      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod * biasPenaltyMod * ascendPenaltyMod * freshnessEmaVIMScale;
+      // R92 E1: tessituraLoad antagonism bridge with crossLayerSilhouette -- crowded register makes
+      // unison collisions muddier and more disruptive, so penalty tightens.
+      // Counterpart: crossLayerSilhouette WIDENS effectiveSmoothing (more form flexibility to breathe).
+      const tessituraLoadVIM = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.tessituraLoad, 0.5) : 0.5;
+      const tessituralPenaltyMod = 1.0 + clamp((tessituraLoadVIM - 0.5) * 0.18, -0.04, 0.09);
+      return BASE_PROB_REDUCE * m.min(collisions, 3) * regimeScale * cimPenaltyScale * freshnessScale * rhythmPenaltyMod * complexityPenaltyMod * biasPenaltyMod * ascendPenaltyMod * freshnessEmaVIMScale * tessituralPenaltyMod;
     }
 
     return 0;

@@ -40,7 +40,6 @@ def _get_kb_hits_cache() -> dict:
         ctx._kb_hits_cache = {}
     return ctx._kb_hits_cache
 
-@ctx.mcp.tool()
 def before_editing(file_path: str) -> str:
     """Call BEFORE editing any file. Assembles everything you need to know: KB constraints, callers, boundary rules, recent changes, and danger zones. One call replaces the entire pre-edit research workflow."""
     ctx.ensure_ready_sync()
@@ -53,7 +52,18 @@ def before_editing(file_path: str) -> str:
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
     if not os.path.isfile(abs_path):
-        return f"File not found: {abs_path}\nCheck the path and try again. Use get_module_map to find files by directory."
+        # Did-you-mean: search for closest filename match in the project
+        _basename = os.path.basename(file_path.strip())
+        _did_you_mean = []
+        try:
+            import glob as _glob
+            _candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "**", _basename), recursive=True)
+            _did_you_mean = [c.replace(ctx.PROJECT_ROOT + "/", "") for c in _candidates[:5]]
+        except Exception:
+            pass
+        _hint = (f"\nDid you mean?\n" + "\n".join(f"  {p}" for p in _did_you_mean)) if _did_you_mean else \
+                "\nUse get_module_map to find files by directory."
+        return f"File not found: {abs_path}{_hint}"
     rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
     module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
     parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]
@@ -269,6 +279,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     return synthesis
 
 
+@ctx.mcp.tool()
 def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
     """Pre-populate caches for src/ files so before_editing is instant.
 

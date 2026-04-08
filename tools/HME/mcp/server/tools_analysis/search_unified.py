@@ -14,15 +14,64 @@ logger = logging.getLogger("HME")
 
 @ctx.mcp.tool()
 def find(query: str, path: str = "", mode: str = "auto") -> str:
-    """Smart search — auto-routes by query intent. mode='auto' (default) detects
-    intent from the query: 'callers of X' → find_callers, 'X should use Y' →
-    find_anti_pattern, regex patterns → grep, natural language → search_code.
-    mode='semantic'|'grep'|'callers'|'boundary' to force a specific engine.
-    path scopes all engines to a directory."""
+    """Universal search and analysis hub. mode='auto' (default) detects intent:
+    'callers of X' → callers, 'X should use Y' → boundary, regex → grep, else → semantic.
+    mode='semantic'|'grep'|'callers'|'boundary' to force search engine.
+    mode='think' → deep reasoning about query. mode='diagnose' → diagnose error text.
+    mode='blast' → blast radius / transitive dependency chain for a symbol.
+    mode='coupling' → coupling intelligence (query=mode: full/network/antagonists/gaps/leverage).
+    mode='symbols' → search symbols semantically. mode='lookup' → exact symbol lookup.
+    mode='map' → module directory map (query=directory). mode='hierarchy' → type hierarchy.
+    mode='rename' → bulk rename preview (query='old_name→new_name').
+    mode='xref' → cross-language trace for a symbol.
+    path scopes search engines to a directory."""
     _track("find")
     ctx.ensure_ready_sync()
     if not query or not query.strip():
         return "Error: query cannot be empty."
+
+    if mode == "think":
+        from .reasoning_think import think as _th
+        return _th(about=query)
+
+    if mode == "diagnose":
+        from .workflow_audit import diagnose_error as _de
+        return _de(query)
+
+    if mode == "blast":
+        from .reasoning_think import blast_radius as _br
+        return _br(query)
+
+    if mode == "coupling":
+        from .coupling import coupling_intel as _ci
+        return _ci(mode=query or "full")
+
+    if mode == "symbols":
+        from .symbols import search_symbols as _ss
+        return _ss(query)
+
+    if mode == "lookup":
+        from .symbols import lookup_symbol as _ls
+        return _ls(query)
+
+    if mode == "map":
+        from .symbols import get_module_map as _gmm
+        return _gmm(query or "")
+
+    if mode == "hierarchy":
+        from .symbols import type_hierarchy as _th2
+        return _th2(query)
+
+    if mode == "rename":
+        parts = query.split("→") if "→" in query else query.split("->")
+        if len(parts) == 2:
+            from .symbols import bulk_rename_preview as _brp
+            return _brp(parts[0].strip(), parts[1].strip())
+        return "Error: rename mode needs 'old_name→new_name' format."
+
+    if mode == "xref":
+        from .symbols import cross_language_trace as _clt
+        return _clt(query)
 
     if mode == "auto":
         mode = _detect_intent(query)
@@ -33,7 +82,6 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
         return _fc(symbol, path=path)
 
     if mode == "boundary":
-        # Parse "X should use Y" or "X not Y"
         m = re.match(r'(\S+)\s+(?:should use|not|instead of|vs)\s+(\S+)', query, re.IGNORECASE)
         if m:
             from server.tools_search import find_anti_pattern as _fap

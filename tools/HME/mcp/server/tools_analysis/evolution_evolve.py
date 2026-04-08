@@ -16,11 +16,13 @@ logger = logging.getLogger("HME")
 
 @ctx.mcp.tool()
 def evolve(focus: str = "all") -> str:
-    """Unified evolution intelligence — one call replaces coupling_intel(gaps) +
-    codebase_health(LOC) + pipeline_digest(evolve). Shows what to work on next,
-    ranked by impact. focus='all' (default): LOC offenders + coupling gaps +
-    leverage + pipeline suggestions. focus='coupling': gaps + leverage only.
-    focus='loc': LOC offenders only. focus='pipeline': pipeline suggestions only."""
+    """Unified evolution intelligence hub. focus='all' (default): LOC offenders +
+    coupling gaps + leverage + pipeline suggestions + synthesis.
+    focus='coupling': coupling gaps + leverage only.
+    focus='loc': LOC offenders only.
+    focus='pipeline': pipeline suggestions only.
+    focus='patterns': journal meta-patterns across all rounds.
+    focus='seed': auto-generate starter KB entries for high-dependency uncovered modules."""
     _track("evolve")
     ctx.ensure_ready_sync()
     parts = ["# Evolution Intelligence\n"]
@@ -36,6 +38,14 @@ def evolve(focus: str = "all") -> str:
 
     if focus == "all":
         parts.append(_synthesis())
+
+    if focus == "patterns":
+        from .evolution import evolution_patterns
+        return evolution_patterns()
+
+    if focus == "seed":
+        from .evolution import kb_seed
+        return kb_seed()
 
     return "\n".join(parts)
 

@@ -20,11 +20,16 @@ def read(target: str, mode: str = "auto") -> str:
     'src/path/file.js:10-50' → file_lines (line range).
     'functionName' → get_function_body (search all files).
     'moduleName' with mode='story'|'impact'|'both' → module_intel.
+    mode='before' → before_editing pre-edit briefing (KB constraints, callers, risks).
     mode='auto' (default) detects from target format."""
     _track("read")
     ctx.ensure_ready_sync()
     if not target or not target.strip():
         return "Error: target cannot be empty. Pass a file path, function name, or module name."
+
+    if mode == "before":
+        from .workflow import before_editing as _be
+        return _be(target)
 
     if mode != "auto":
         return _route_explicit(target, mode)

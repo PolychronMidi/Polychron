@@ -86,7 +86,16 @@ crossLayerSilhouette = (() => {
     // Counterpart: climaxEngine ACCELERATES climax approach under same signal (chaos rides the climb).
     const ascendRatioCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.ascendRatio, 0.5) : 0.5;
     const ascendFormTightenCS = clamp((ascendRatioCS - 0.50) * 0.16, -0.04, 0.08);
-    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS) * (1 - intervalFreshnessNarrowCS) * (1 - ascendFormTightenCS), 0.05, 0.40);
+    // R92 E1: tessituraLoad antagonism bridge with verticalIntervalMonitor -- crowded register
+    // loosens silhouette form tracking (wider structural tolerance gives register pressure room to breathe).
+    // Counterpart: verticalIntervalMonitor TIGHTENS collision penalty under same signal (harmonic discipline + form flexibility).
+    const tessituraLoadCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.tessituraLoad, 0.5) : 0.5;
+    const tessituraFormRelaxCS = clamp((tessituraLoadCS - 0.5) * 0.22, -0.05, 0.10);
+    // R92 E2: thematicDensity virgin coupling -- high thematic recurrence density tightens form tracking.
+    // Recognizable motivic patterns demand structural coherence; the silhouette firms up around recurring themes.
+    const thematicDensityCS = melodicCtxCS ? V.optionalFinite(melodicCtxCS.thematicDensity, 0.5) : 0.5;
+    const thematicFormTightenCS = clamp((thematicDensityCS - 0.5) * 0.14, -0.03, 0.07);
+    const effectiveSmoothing = clamp(smoothing * (1 - densitySurpriseCS * 0.30) * (1 - complexityInertiaCS) * phaseSmoothing * (1 - registerMigFormCS) * (1 - intervalFreshnessNarrowCS) * (1 - ascendFormTightenCS) * (1 + tessituraFormRelaxCS) * (1 - thematicFormTightenCS), 0.05, 0.40);
 
     // Smooth
     smoothedDensity = smoothedDensity * (1 - effectiveSmoothing) + rawDensity * effectiveSmoothing;

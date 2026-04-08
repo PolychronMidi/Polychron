@@ -188,17 +188,21 @@ def hotspot_leaderboard() -> str:
 
 
 def composition_events(mode: str = "both", top_n: int = 10) -> str:
-    """Merged composition analysis. mode: 'arc' (section biography with regime/tension/trust),
-    'drama' (top-N most dramatic trust swings and regime transitions), or 'both' (default).
-    Replaces calling composition_arc + drama_finder separately."""
+    """Unified composition analysis hub. mode='both' (default): section arc + drama moments.
+    mode='arc': full section biography (regime/tension/trust/notes per section).
+    mode='drama': top-N most dramatic trust swings and regime transitions.
+    mode='hotspots': trust systems ranked by hotspot pressure frequency.
+    mode='full': all three views combined."""
     ctx.ensure_ready_sync()
     _track("composition_events")
     from .runtime import drama_finder
     parts = []
-    if mode in ("arc", "both"):
+    if mode in ("arc", "both", "full"):
         parts.append(composition_arc())
-    if mode in ("drama", "both"):
+    if mode in ("drama", "both", "full"):
         parts.append(drama_finder(top_n))
+    if mode in ("hotspots", "full"):
+        parts.append(hotspot_leaderboard())
     if not parts:
-        return f"Unknown mode '{mode}'. Use 'arc', 'drama', or 'both'."
+        return f"Unknown mode '{mode}'. Use 'arc', 'drama', 'hotspots', 'both', or 'full'."
     return "\n\n".join(parts)
