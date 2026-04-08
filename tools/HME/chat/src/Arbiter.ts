@@ -23,6 +23,7 @@ export type ArbiterDecision = {
   confidence: number;  // 0.0–1.0
   reason: string;
   escalated: boolean;  // true if overriding user's preference
+  thinking?: string;   // raw chain-of-thought from model (if present)
 };
 
 const ARBITER_MODEL = "qwen3:4b";
@@ -96,7 +97,10 @@ export async function classifyMessage(
           try {
             const parsed = JSON.parse(raw);
             const response = parsed.message?.content ?? "";
-            resolve(parseArbiterResponse(response));
+            const thinking = (parsed.message?.thinking ?? "").trim();
+            const decision = parseArbiterResponse(response);
+            if (thinking) decision.thinking = thinking;
+            resolve(decision);
           } catch {
             resolve({ route: "claude", confidence: 0.5, reason: "arbiter parse failed", escalated: false });
           }

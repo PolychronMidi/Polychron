@@ -18,6 +18,7 @@ export interface TranscriptEntry {
         "validation" | "audit" | "narrative" | "session_start" | "session_resume";
   route?: string;
   model?: string;
+  session_id?: string;
   content: string;
   /** Compact summary for narrative injection (< 120 chars) */
   summary?: string;
@@ -25,12 +26,13 @@ export interface TranscriptEntry {
 }
 
 const MAX_ENTRIES_IN_MEMORY = 500;
-const NARRATIVE_INTERVAL = 8; // Synthesize narrative every N turns
+const NARRATIVE_INTERVAL = 3; // Synthesize narrative every N turns
 
 export class TranscriptLogger {
   private _logPath: string;
   private _entries: TranscriptEntry[] = [];
   private _turnCount = 0;
+  private _sessionId = "";
   private _narrativeCallback?: (entries: TranscriptEntry[]) => Promise<string>;
 
   constructor(projectRoot: string) {
@@ -57,16 +59,22 @@ export class TranscriptLogger {
     } catch {}
   }
 
+  /** Set the active session ID — stamped on all subsequent entries. */
+  setSessionId(id: string): void {
+    this._sessionId = id;
+  }
+
   /** Append an entry to both memory and disk. */
   log(entry: TranscriptEntry): void {
-    this._entries.push(entry);
+    const e = this._sessionId ? { session_id: this._sessionId, ...entry } : entry;
+    this._entries.push(e);
     // Trim memory if over limit
     if (this._entries.length > MAX_ENTRIES_IN_MEMORY) {
       this._entries = this._entries.slice(-MAX_ENTRIES_IN_MEMORY);
     }
     // Append to JSONL file
     try {
-      fs.appendFileSync(this._logPath, JSON.stringify(entry) + "\n", "utf8");
+      fs.appendFileSync(this._logPath, JSON.stringify(e) + "\n", "utf8");
     } catch {}
   }
 
@@ -206,6 +214,11 @@ export class TranscriptLogger {
   /** Register a callback for narrative synthesis (called with recent entries). */
   setNarrativeCallback(cb: (entries: TranscriptEntry[]) => Promise<string>): void {
     this._narrativeCallback = cb;
+  }
+
+  /** Force narrative synthesis immediately (e.g. on session end/panel close). */
+  forceNarrative(): void {
+    if (this._entries.length >= 2) this._synthesizeNarrative();
   }
 
   private async _synthesizeNarrative() {

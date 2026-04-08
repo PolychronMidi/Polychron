@@ -163,6 +163,7 @@ export class ChatPanel {
       lastRoute: null,
       sessionEntry: persisted.entry,
     };
+    this._transcript.setSessionId(persisted.entry.id);
     this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
     this._post({ type: "sessionLoaded", messages: persisted.messages, title: persisted.entry.title });
   }
@@ -199,12 +200,20 @@ export class ChatPanel {
         text: `🔀 Arbiter → ${decision.route} (${Math.round(decision.confidence * 100)}%): ${decision.reason}`,
       });
       this._transcript.logRouteSwitch("auto", `${decision.route} (${decision.reason})`);
+      if (decision.thinking) {
+        this._transcript.log({
+          ts: Date.now(), type: "tool_call", route: "auto",
+          content: `Arbiter reasoning: ${decision.thinking.slice(0, 500)}`,
+          summary: `Arbiter thinking: ${decision.thinking.slice(0, 80)}`,
+        });
+      }
     }
 
     // ── Auto-create session on first message ──
     if (!this._state.sessionEntry) {
       const entry = createSession(this._projectRoot, deriveTitle(msg.text));
       this._state.sessionEntry = entry;
+      this._transcript.setSessionId(entry.id);
       this._transcript.logSessionStart(entry.id, entry.title, false);
       this._post({ type: "sessionCreated", session: entry });
     }
@@ -480,6 +489,7 @@ export class ChatPanel {
 
   public dispose() {
     this._cancelCurrent?.();
+    this._transcript.forceNarrative?.();
     ChatPanel.current = undefined;
     this._panel.dispose();
     this._disposables.forEach((d) => d.dispose());
@@ -762,11 +772,8 @@ function getInlineHtml(): string {
     font-family: var(--font-mono);
   }
 
-  /* Streaming cursor */
-  .streaming-cursor::after {
-    content: "▊";
-    animation: blink 0.8s step-end infinite;
-  }
+  /* Streaming cursor — inline span removed cleanly on done */
+  .stream-cursor { animation: blink 0.8s step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
 
   /* ── Notice bar ── */
@@ -1110,10 +1117,15 @@ function appendChunk(id, chunkType, chunk) {
     // text — one block per inter-tool segment
     if (!streamCurrentBody) {
       streamCurrentBody = document.createElement('div');
-      streamCurrentBody.className = 'msg-body streaming-cursor';
+      streamCurrentBody.className = 'msg-body';
+      const cur = document.createElement('span');
+      cur.className = 'stream-cursor';
+      cur.textContent = '▊';
+      streamCurrentBody.appendChild(cur);
       div.appendChild(streamCurrentBody);
     }
-    streamCurrentBody.textContent += chunk;
+    const cur = streamCurrentBody.querySelector('.stream-cursor');
+    streamCurrentBody.insertBefore(document.createTextNode(chunk), cur);
   }
   messages.scrollTop = messages.scrollHeight;
 }
@@ -1126,7 +1138,7 @@ function endStream(id, cost) {
 
   const div = document.getElementById(\`msg-\${id}\`);
   if (div) {
-    div.querySelectorAll('.streaming-cursor').forEach(b => b.classList.remove('streaming-cursor'));
+    div.querySelectorAll('.stream-cursor').forEach(c => c.remove());
 
     // Update thinking summary with elapsed time label
     const details = div.querySelector('details.thinking summary');

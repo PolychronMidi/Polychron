@@ -15,8 +15,10 @@ HOOK_DATA=$(cat)
 
 TOOL_NAME=$(echo "$HOOK_DATA" | jq -r '.tool_name // "unknown"' 2>/dev/null)
 TOOL_INPUT=$(echo "$HOOK_DATA" | jq -c '.tool_input // {}' 2>/dev/null | head -c 300)
+TOOL_RESULT=$(echo "$HOOK_DATA" | jq -r '.tool_response // ""' 2>/dev/null | head -c 500)
 FILE_PATH=$(echo "$HOOK_DATA" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
 CWD=$(echo "$HOOK_DATA" | jq -r '.cwd // ""' 2>/dev/null)
+SESSION_ID=$(echo "$HOOK_DATA" | jq -r '.session_id // ""' 2>/dev/null)
 
 TS=$(($(date +%s) * 1000))
 
@@ -25,9 +27,11 @@ ENTRY=$(jq -nc \
   --argjson ts "$TS" \
   --arg type "tool_call" \
   --arg route "main-session" \
+  --arg session_id "$SESSION_ID" \
   --arg content "$TOOL_NAME: $TOOL_INPUT" \
+  --arg result "$TOOL_RESULT" \
   --arg summary "Tool: $TOOL_NAME" \
-  '{ts: $ts, type: $type, route: $route, content: $content, summary: $summary}' 2>/dev/null)
+  '{ts: $ts, type: $type, route: $route, session_id: $session_id, content: $content, result: $result, summary: $summary}' 2>/dev/null)
 
 [ -z "$ENTRY" ] && exit 0
 
