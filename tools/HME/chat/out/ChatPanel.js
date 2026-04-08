@@ -116,6 +116,7 @@ class ChatPanel {
                 this._cancelCurrent?.();
                 this._cancelCurrent = undefined;
                 this._post({ type: "cancelConfirmed" });
+                this._drainQueue();
                 break;
             case "clearHistory":
                 this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
@@ -161,8 +162,9 @@ class ChatPanel {
             lastRoute: null,
             sessionEntry: persisted.entry,
         };
+        this._transcript.setSessionId(persisted.entry.id);
         this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
-        this._post({ type: "sessionLoaded", messages: persisted.messages, title: persisted.entry.title });
+        this._post({ type: "sessionLoaded", id: persisted.entry.id, messages: persisted.messages, title: persisted.entry.title });
     }
     _persistState() {
         if (!this._state.sessionEntry)
@@ -189,11 +191,19 @@ class ChatPanel {
                 text: `🔀 Arbiter → ${decision.route} (${Math.round(decision.confidence * 100)}%): ${decision.reason}`,
             });
             this._transcript.logRouteSwitch("auto", `${decision.route} (${decision.reason})`);
+            if (decision.thinking) {
+                this._transcript.log({
+                    ts: Date.now(), type: "tool_call", route: "auto",
+                    content: `Arbiter reasoning: ${decision.thinking.slice(0, 500)}`,
+                    summary: `Arbiter thinking: ${decision.thinking.slice(0, 80)}`,
+                });
+            }
         }
         // ── Auto-create session on first message ──
         if (!this._state.sessionEntry) {
             const entry = (0, SessionStore_1.createSession)(this._projectRoot, (0, SessionStore_1.deriveTitle)(msg.text));
             this._state.sessionEntry = entry;
+            this._transcript.setSessionId(entry.id);
             this._transcript.logSessionStart(entry.id, entry.title, false);
             this._post({ type: "sessionCreated", session: entry });
         }
@@ -225,6 +235,7 @@ class ChatPanel {
             this._post({ type: "message", message: userMsg });
         }
         // ── Cross-route history portability ──
+        let contextPrefix = "";
         if (this._state.lastRoute && this._state.lastRoute !== resolvedRoute) {
             this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
             if (resolvedRoute === "local" || resolvedRoute === "hybrid") {
@@ -235,6 +246,15 @@ class ChatPanel {
             }
             if (resolvedRoute === "claude" && this._state.lastRoute !== "claude") {
                 this._state.claudeSessionId = null;
+                // Inject prior local/hybrid conversation as context block so Claude has continuity
+                const prior = this._state.messages
+                    .filter((m) => m.role === "user" || m.role === "assistant")
+                    .slice(0, -1) // exclude the current user message just pushed
+                    .slice(-12); // cap at 12 messages to avoid huge context
+                if (prior.length > 0) {
+                    const lines = prior.map((m) => `${m.role === "user" ? "Human" : "Assistant"}: ${(m.text || "").slice(0, 600)}`).join("\n");
+                    contextPrefix = `[Prior conversation via local model — use for context only]\n${lines}\n[End of prior context]\n\n`;
+                }
             }
         }
         this._state.lastRoute = resolvedRoute;
@@ -246,7 +266,7 @@ class ChatPanel {
             model,
         });
         // Stamp resolved route so stream functions log correctly (not "auto")
-        const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute };
+        const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
         if (resolvedRoute === "local") {
             this._streamOllama(resolvedMsg, assistantId);
         }
@@ -261,6 +281,13 @@ class ChatPanel {
         let text = "";
         let thinking = "";
         let tools = [];
+        let streamEnded = false;
+        const safeEnd = () => {
+            if (streamEnded)
+                return;
+            streamEnded = true;
+            this._drainQueue();
+        };
         const onDone = () => {
             const assistantMsg = {
                 id: assistantId,
@@ -268,7 +295,7 @@ class ChatPanel {
                 text,
                 thinking: thinking || undefined,
                 tools: tools.length ? tools : undefined,
-                route: msg.route,
+                route: msg._resolvedRoute ?? msg.route,
                 ts: Date.now(),
             };
             this._state.messages.push(assistantMsg);
@@ -279,7 +306,7 @@ class ChatPanel {
             this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
             this._reindexFromTools(tools);
             this._runPostAudit();
-            this._drainQueue();
+            safeEnd();
         };
         const onChunk = (chunk, type) => {
             if (type === "text") {
@@ -294,7 +321,7 @@ class ChatPanel {
                 tools.push(chunk);
                 this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
                 // Log tool call to transcript
-                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg.route ?? "claude");
+                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg._resolvedRoute ?? msg.route ?? "claude");
             }
             else if (type === "error") {
                 this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk });
@@ -302,13 +329,18 @@ class ChatPanel {
         };
         const onError = (err) => {
             this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
-            this._post({ type: "streamEnd", id: assistantId });
+            if (!streamEnded) {
+                this._post({ type: "streamEnd", id: assistantId });
+                safeEnd();
+            }
         };
+        // Prepend prior-route context block if switching from local/hybrid → claude
+        const effectiveText = (msg._contextPrefix ?? "") + msg.text;
         // Use PTY mode so hooks fire; fall back to -p mode if PTY fails
-        this._cancelCurrent = (0, router_1.streamClaudePty)(msg.text, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, onDone, (err) => {
+        this._cancelCurrent = (0, router_1.streamClaudePty)(effectiveText, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, onDone, (err) => {
             // PTY failed — fall back to stream-json mode silently
             console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
-            this._cancelCurrent = (0, router_1.streamClaude)(msg.text, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, (cost) => { onDone(); }, onError);
+            this._cancelCurrent = (0, router_1.streamClaude)(effectiveText, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, (cost) => { onDone(); }, onError);
         });
     }
     /** Mirror assistant response to HTTP shim transcript. */
@@ -352,12 +384,21 @@ class ChatPanel {
         }).catch(() => { });
     }
     _streamOllama(msg, assistantId) {
-        this._state.ollamaHistory.push({ role: "user", content: msg.text });
+        const requestHistory = [...this._state.ollamaHistory, { role: "user", content: msg.text }];
         let text = "";
-        this._cancelCurrent = (0, router_1.streamOllama)(this._state.ollamaHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, (chunk, type) => {
+        let streamEnded = false;
+        const safeEnd = () => {
+            if (streamEnded)
+                return;
+            streamEnded = true;
+            this._drainQueue();
+        };
+        this._cancelCurrent = (0, router_1.streamOllama)(requestHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, (chunk, type) => {
             text += chunk;
             this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
         }, () => {
+            // Only commit to history on success to prevent dangling user message on error
+            this._state.ollamaHistory.push({ role: "user", content: msg.text });
             this._state.ollamaHistory.push({ role: "assistant", content: text });
             const assistantMsg = {
                 id: assistantId, role: "assistant", text, route: "local", ts: Date.now(),
@@ -368,16 +409,26 @@ class ChatPanel {
             this._transcript.logAssistant(text, "local", msg.ollamaModel);
             this._mirrorAssistantToShim(text, "local", msg.ollamaModel);
             this._runPostAudit();
-            this._drainQueue();
+            safeEnd();
         }, (err) => {
             this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
-            this._post({ type: "streamEnd", id: assistantId });
+            if (!streamEnded) {
+                this._post({ type: "streamEnd", id: assistantId });
+                safeEnd();
+            }
         });
     }
     _streamHybrid(msg, assistantId) {
         const history = [...this._state.ollamaHistory];
         let text = "";
         let cancelFn;
+        let streamEnded = false;
+        const safeEnd = () => {
+            if (streamEnded)
+                return;
+            streamEnded = true;
+            this._drainQueue();
+        };
         // Post "enriching…" status
         this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
         (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, (chunk, type) => {
@@ -395,13 +446,22 @@ class ChatPanel {
             this._transcript.logAssistant(text, "hybrid", msg.ollamaModel);
             this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel);
             this._runPostAudit();
-            this._drainQueue();
+            safeEnd();
         }, (err) => {
             this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
-            this._post({ type: "streamEnd", id: assistantId });
+            if (!streamEnded) {
+                this._post({ type: "streamEnd", id: assistantId });
+                safeEnd();
+            }
         }).then((cancel) => {
             cancelFn = cancel;
             this._cancelCurrent = () => cancelFn?.();
+        }).catch((err) => {
+            this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: String(err) });
+            if (!streamEnded) {
+                this._post({ type: "streamEnd", id: assistantId });
+                safeEnd();
+            }
         });
     }
     _drainQueue() {
@@ -428,6 +488,7 @@ class ChatPanel {
     }
     dispose() {
         this._cancelCurrent?.();
+        this._transcript.forceNarrative?.();
         ChatPanel.current = undefined;
         this._panel.dispose();
         this._disposables.forEach((d) => d.dispose());
@@ -709,11 +770,8 @@ function getInlineHtml() {
     font-family: var(--font-mono);
   }
 
-  /* Streaming cursor */
-  .streaming-cursor::after {
-    content: "▊";
-    animation: blink 0.8s step-end infinite;
-  }
+  /* Streaming cursor — inline span removed cleanly on done */
+  .stream-cursor { animation: blink 0.8s step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
 
   /* ── Notice bar ── */
@@ -1057,10 +1115,15 @@ function appendChunk(id, chunkType, chunk) {
     // text — one block per inter-tool segment
     if (!streamCurrentBody) {
       streamCurrentBody = document.createElement('div');
-      streamCurrentBody.className = 'msg-body streaming-cursor';
+      streamCurrentBody.className = 'msg-body';
+      const cur = document.createElement('span');
+      cur.className = 'stream-cursor';
+      cur.textContent = '▊';
+      streamCurrentBody.appendChild(cur);
       div.appendChild(streamCurrentBody);
     }
-    streamCurrentBody.textContent += chunk;
+    const cur = streamCurrentBody.querySelector('.stream-cursor');
+    streamCurrentBody.insertBefore(document.createTextNode(chunk), cur);
   }
   messages.scrollTop = messages.scrollHeight;
 }
@@ -1073,7 +1136,7 @@ function endStream(id, cost) {
 
   const div = document.getElementById(\`msg-\${id}\`);
   if (div) {
-    div.querySelectorAll('.streaming-cursor').forEach(b => b.classList.remove('streaming-cursor'));
+    div.querySelectorAll('.stream-cursor').forEach(c => c.remove());
 
     // Update thinking summary with elapsed time label
     const details = div.querySelector('details.thinking summary');
@@ -1138,6 +1201,28 @@ function renderSessions(sessions) {
     item.addEventListener('click', () => {
       vscode.postMessage({ type: 'loadSession', id: s.id });
     });
+    // Double-click title to rename inline
+    title.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = s.title;
+      inp.style.cssText = 'width:100%;background:var(--input-bg);color:var(--input-fg);border:1px solid var(--btn-bg);border-radius:2px;padding:1px 4px;font-size:11px;';
+      title.replaceWith(inp);
+      inp.focus();
+      inp.select();
+      const commit = () => {
+        const newTitle = inp.value.trim() || s.title;
+        if (newTitle !== s.title) vscode.postMessage({ type: 'renameSession', id: s.id, title: newTitle });
+        inp.replaceWith(title);
+        title.textContent = newTitle;
+      };
+      inp.addEventListener('blur', commit);
+      inp.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') { ke.preventDefault(); commit(); }
+        if (ke.key === 'Escape') { inp.replaceWith(title); }
+      });
+    });
     sessionList.appendChild(item);
   }
 }
@@ -1155,7 +1240,7 @@ window.addEventListener('message', (event) => {
     activeSessionId = msg.session.id;
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'sessionLoaded') {
-    activeSessionId = null; // updated below
+    activeSessionId = msg.id;
     messages.innerHTML = '';
     for (const m of msg.messages) appendMessage(m);
     setStatus(\`Loaded: \${msg.title}\`);

@@ -48,11 +48,12 @@ exports.TranscriptLogger = void 0;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const MAX_ENTRIES_IN_MEMORY = 500;
-const NARRATIVE_INTERVAL = 8; // Synthesize narrative every N turns
+const NARRATIVE_INTERVAL = 3; // Synthesize narrative every N turns
 class TranscriptLogger {
     constructor(projectRoot) {
         this._entries = [];
         this._turnCount = 0;
+        this._sessionId = "";
         const logDir = path.join(projectRoot, "log");
         fs.mkdirSync(logDir, { recursive: true });
         this._logPath = path.join(logDir, "session-transcript.jsonl");
@@ -76,16 +77,21 @@ class TranscriptLogger {
         }
         catch { }
     }
+    /** Set the active session ID — stamped on all subsequent entries. */
+    setSessionId(id) {
+        this._sessionId = id;
+    }
     /** Append an entry to both memory and disk. */
     log(entry) {
-        this._entries.push(entry);
+        const e = this._sessionId ? { session_id: this._sessionId, ...entry } : entry;
+        this._entries.push(e);
         // Trim memory if over limit
         if (this._entries.length > MAX_ENTRIES_IN_MEMORY) {
             this._entries = this._entries.slice(-MAX_ENTRIES_IN_MEMORY);
         }
         // Append to JSONL file
         try {
-            fs.appendFileSync(this._logPath, JSON.stringify(entry) + "\n", "utf8");
+            fs.appendFileSync(this._logPath, JSON.stringify(e) + "\n", "utf8");
         }
         catch { }
     }
@@ -213,6 +219,11 @@ class TranscriptLogger {
     /** Register a callback for narrative synthesis (called with recent entries). */
     setNarrativeCallback(cb) {
         this._narrativeCallback = cb;
+    }
+    /** Force narrative synthesis immediately (e.g. on session end/panel close). */
+    forceNarrative() {
+        if (this._entries.length >= 2)
+            this._synthesizeNarrative();
     }
     async _synthesizeNarrative() {
         if (!this._narrativeCallback)

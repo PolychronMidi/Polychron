@@ -118,6 +118,7 @@ export class ChatPanel {
         this._cancelCurrent?.();
         this._cancelCurrent = undefined;
         this._post({ type: "cancelConfirmed" });
+        this._drainQueue();
         break;
       case "clearHistory":
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
@@ -165,7 +166,7 @@ export class ChatPanel {
     };
     this._transcript.setSessionId(persisted.entry.id);
     this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
-    this._post({ type: "sessionLoaded", messages: persisted.messages, title: persisted.entry.title });
+    this._post({ type: "sessionLoaded", id: persisted.entry.id, messages: persisted.messages, title: persisted.entry.title });
   }
 
   private _persistState() {
@@ -249,6 +250,7 @@ export class ChatPanel {
     }
 
     // ── Cross-route history portability ──
+    let contextPrefix = "";
     if (this._state.lastRoute && this._state.lastRoute !== resolvedRoute) {
       this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
       if (resolvedRoute === "local" || resolvedRoute === "hybrid") {
@@ -259,6 +261,17 @@ export class ChatPanel {
       }
       if (resolvedRoute === "claude" && this._state.lastRoute !== "claude") {
         this._state.claudeSessionId = null;
+        // Inject prior local/hybrid conversation as context block so Claude has continuity
+        const prior = this._state.messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .slice(0, -1) // exclude the current user message just pushed
+          .slice(-12);  // cap at 12 messages to avoid huge context
+        if (prior.length > 0) {
+          const lines = prior.map((m) =>
+            `${m.role === "user" ? "Human" : "Assistant"}: ${(m.text || "").slice(0, 600)}`
+          ).join("\n");
+          contextPrefix = `[Prior conversation via local model — use for context only]\n${lines}\n[End of prior context]\n\n`;
+        }
       }
     }
     this._state.lastRoute = resolvedRoute;
@@ -272,7 +285,7 @@ export class ChatPanel {
     });
 
     // Stamp resolved route so stream functions log correctly (not "auto")
-    const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute };
+    const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
     if (resolvedRoute === "local") {
       this._streamOllama(resolvedMsg, assistantId);
     } else if (resolvedRoute === "hybrid") {
@@ -286,6 +299,12 @@ export class ChatPanel {
     let text = "";
     let thinking = "";
     let tools: string[] = [];
+    let streamEnded = false;
+    const safeEnd = () => {
+      if (streamEnded) return;
+      streamEnded = true;
+      this._drainQueue();
+    };
 
     const onDone = () => {
       const assistantMsg: ChatMessage = {
@@ -294,7 +313,7 @@ export class ChatPanel {
         text,
         thinking: thinking || undefined,
         tools: tools.length ? tools : undefined,
-        route: msg.route,
+        route: msg._resolvedRoute ?? msg.route,
         ts: Date.now(),
       };
       this._state.messages.push(assistantMsg);
@@ -305,7 +324,7 @@ export class ChatPanel {
       this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
       this._reindexFromTools(tools);
       this._runPostAudit();
-      this._drainQueue();
+      safeEnd();
     };
 
     const onChunk = (chunk: string, type: string) => {
@@ -315,19 +334,25 @@ export class ChatPanel {
         tools.push(chunk);
         this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
         // Log tool call to transcript
-        this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg.route ?? "claude");
+        this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg._resolvedRoute ?? msg.route ?? "claude");
       }
       else if (type === "error") { this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk }); }
     };
 
     const onError = (err: string) => {
       this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
-      this._post({ type: "streamEnd", id: assistantId });
+      if (!streamEnded) {
+        this._post({ type: "streamEnd", id: assistantId });
+        safeEnd();
+      }
     };
+
+    // Prepend prior-route context block if switching from local/hybrid → claude
+    const effectiveText = (msg._contextPrefix ?? "") + msg.text;
 
     // Use PTY mode so hooks fire; fall back to -p mode if PTY fails
     this._cancelCurrent = streamClaudePty(
-      msg.text,
+      effectiveText,
       this._state.claudeSessionId,
       { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" },
       this._projectRoot,
@@ -338,7 +363,7 @@ export class ChatPanel {
         // PTY failed — fall back to stream-json mode silently
         console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
         this._cancelCurrent = streamClaude(
-          msg.text, this._state.claudeSessionId,
+          effectiveText, this._state.claudeSessionId,
           { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" },
           this._projectRoot, onChunk as any,
           (sessionId) => { this._state.claudeSessionId = sessionId; },
@@ -391,18 +416,26 @@ export class ChatPanel {
   }
 
   private _streamOllama(msg: any, assistantId: string) {
-    this._state.ollamaHistory.push({ role: "user", content: msg.text });
+    const requestHistory = [...this._state.ollamaHistory, { role: "user" as const, content: msg.text }];
 
     let text = "";
+    let streamEnded = false;
+    const safeEnd = () => {
+      if (streamEnded) return;
+      streamEnded = true;
+      this._drainQueue();
+    };
 
     this._cancelCurrent = streamOllama(
-      this._state.ollamaHistory,
+      requestHistory,
       { model: msg.ollamaModel, url: "http://localhost:11434" },
       (chunk, type) => {
         text += chunk;
         this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
       },
       () => {
+        // Only commit to history on success to prevent dangling user message on error
+        this._state.ollamaHistory.push({ role: "user", content: msg.text });
         this._state.ollamaHistory.push({ role: "assistant", content: text });
         const assistantMsg: ChatMessage = {
           id: assistantId, role: "assistant", text, route: "local", ts: Date.now(),
@@ -413,11 +446,14 @@ export class ChatPanel {
         this._transcript.logAssistant(text, "local", msg.ollamaModel);
         this._mirrorAssistantToShim(text, "local", msg.ollamaModel);
         this._runPostAudit();
-        this._drainQueue();
+        safeEnd();
       },
       (err) => {
         this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
-        this._post({ type: "streamEnd", id: assistantId });
+        if (!streamEnded) {
+          this._post({ type: "streamEnd", id: assistantId });
+          safeEnd();
+        }
       }
     );
   }
@@ -426,6 +462,12 @@ export class ChatPanel {
     const history = [...this._state.ollamaHistory];
     let text = "";
     let cancelFn: (() => void) | undefined;
+    let streamEnded = false;
+    const safeEnd = () => {
+      if (streamEnded) return;
+      streamEnded = true;
+      this._drainQueue();
+    };
 
     // Post "enriching…" status
     this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
@@ -450,15 +492,24 @@ export class ChatPanel {
         this._transcript.logAssistant(text, "hybrid", msg.ollamaModel);
         this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel);
         this._runPostAudit();
-        this._drainQueue();
+        safeEnd();
       },
       (err) => {
         this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
-        this._post({ type: "streamEnd", id: assistantId });
+        if (!streamEnded) {
+          this._post({ type: "streamEnd", id: assistantId });
+          safeEnd();
+        }
       }
     ).then((cancel) => {
       cancelFn = cancel;
       this._cancelCurrent = () => cancelFn?.();
+    }).catch((err) => {
+      this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: String(err) });
+      if (!streamEnded) {
+        this._post({ type: "streamEnd", id: assistantId });
+        safeEnd();
+      }
     });
   }
 
@@ -1203,6 +1254,28 @@ function renderSessions(sessions) {
     item.addEventListener('click', () => {
       vscode.postMessage({ type: 'loadSession', id: s.id });
     });
+    // Double-click title to rename inline
+    title.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = s.title;
+      inp.style.cssText = 'width:100%;background:var(--input-bg);color:var(--input-fg);border:1px solid var(--btn-bg);border-radius:2px;padding:1px 4px;font-size:11px;';
+      title.replaceWith(inp);
+      inp.focus();
+      inp.select();
+      const commit = () => {
+        const newTitle = inp.value.trim() || s.title;
+        if (newTitle !== s.title) vscode.postMessage({ type: 'renameSession', id: s.id, title: newTitle });
+        inp.replaceWith(title);
+        title.textContent = newTitle;
+      };
+      inp.addEventListener('blur', commit);
+      inp.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') { ke.preventDefault(); commit(); }
+        if (ke.key === 'Escape') { inp.replaceWith(title); }
+      });
+    });
     sessionList.appendChild(item);
   }
 }
@@ -1220,7 +1293,7 @@ window.addEventListener('message', (event) => {
     activeSessionId = msg.session.id;
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'sessionLoaded') {
-    activeSessionId = null; // updated below
+    activeSessionId = msg.id;
     messages.innerHTML = '';
     for (const m of msg.messages) appendMessage(m);
     setStatus(\`Loaded: \${msg.title}\`);

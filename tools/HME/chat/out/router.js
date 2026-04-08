@@ -92,7 +92,13 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
     proc.stdin.write(message);
     proc.stdin.end();
     let buf = "";
-    let thinkingBuf = "";
+    let doneFired = false;
+    const safeOnDone = (cost) => {
+        if (!doneFired) {
+            doneFired = true;
+            onDone(cost);
+        }
+    };
     proc.stdout.on("data", (data) => {
         buf += data.toString("utf8");
         const lines = buf.split("\n");
@@ -102,7 +108,7 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
                 continue;
             try {
                 const evt = JSON.parse(line);
-                handleStreamEvent(evt, onChunk, onSessionId, onDone, thinkingBuf);
+                handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
             }
             catch {
                 // non-JSON line, skip
@@ -115,15 +121,25 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
             onError(text);
     });
     proc.on("close", (code) => {
+        // Flush any remaining buffered output
+        if (buf.trim()) {
+            try {
+                const evt = JSON.parse(buf.trim());
+                handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
+            }
+            catch { }
+        }
         if (code !== 0)
             onError(`Claude CLI exited with code ${code}`);
+        else
+            safeOnDone(); // ensure done fires even if result event was missing
     });
     return () => { try {
         proc.kill();
     }
     catch { } };
 }
-function handleStreamEvent(evt, onChunk, onSessionId, onDone, thinkingBuf) {
+function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
     if (evt.type === "system" && evt.subtype === "init" && evt.session_id) {
         onSessionId(evt.session_id);
         return;
@@ -205,6 +221,7 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     let fullOutput = "";
     let sentMessage = false;
     let turnDone = false;
+    let sessionIdSent = false;
     // Wait for initial prompt before sending — CLI prints ">" or similar
     let initBuf = "";
     let doneTimer = null;
@@ -240,10 +257,14 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         }
         // Strip echoed input line (first line after send)
         fullOutput += text;
-        // Detect session ID from output (Claude prints it on --resume or new session)
-        const sessionMatch = fullOutput.match(/Session(?:\s+ID)?:\s*([a-f0-9-]{8,})/i);
-        if (sessionMatch)
-            onSessionId(sessionMatch[1]);
+        // Detect session ID from output — fire once only
+        if (!sessionIdSent) {
+            const sessionMatch = fullOutput.match(/Session(?:\s+ID)?:\s*([a-f0-9-]{8,})/i);
+            if (sessionMatch) {
+                sessionIdSent = true;
+                onSessionId(sessionMatch[1]);
+            }
+        }
         // Classify and emit chunks
         // Thinking blocks: Claude wraps them in ⠋ spinner or "Thinking..." lines
         if (/^(?:⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏)\s/.test(text.trim())) {
@@ -291,6 +312,19 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
             "Content-Length": Buffer.byteLength(body),
         },
     }, (res) => {
+        if (res.statusCode && res.statusCode >= 400) {
+            let errBody = "";
+            res.on("data", (c) => { errBody += c.toString("utf8"); });
+            res.on("end", () => {
+                try {
+                    onError(JSON.parse(errBody).error ?? `Ollama error ${res.statusCode}`);
+                }
+                catch {
+                    onError(`Ollama error ${res.statusCode}`);
+                }
+            });
+            return;
+        }
         let buf = "";
         let doneFired = false;
         const fireDone = () => { if (!doneFired) {
