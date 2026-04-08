@@ -1497,9 +1497,9 @@ const thinkingChk = document.getElementById('thinking-toggle');
 const localModel  = document.getElementById('local-model');
 const messages    = document.getElementById('messages');
 const input       = document.getElementById('msg-input');
-const sendBtn     = document.getElementById('send-btn');
-const stopBtn     = document.getElementById('stop-btn');
-const queueBtn    = document.getElementById('queue-btn');
+const sendBtn     = document.getElementById('send-btn')!;
+const stopBtn     = document.getElementById('stop-btn')!;
+const queueBtn    = document.getElementById('queue-btn')!;
 const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
 
