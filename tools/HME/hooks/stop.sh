@@ -2,6 +2,30 @@
 # HME Stop: enforce implementation completeness + drive autonomous Evolver loop
 INPUT=$(cat)
 
+# ── LIFESAVER — mid-turn error detection ──────────────────────────────────────
+# LIFE-OR-DEATH: Catch errors that fired in HME Chat DURING this turn.
+# Block stopping — errors that appeared while you worked MUST be fixed before return.
+# Acknowledging without fixing is the violation this system exists to prevent.
+PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+ERROR_LOG="$PROJECT/log/hme-errors.log"
+TURNSTART="$PROJECT/tmp/hme-errors.turnstart"
+WATERMARK="$PROJECT/tmp/hme-errors.lastread"
+
+if [ -f "$ERROR_LOG" ] && [ -f "$TURNSTART" ]; then
+  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null || echo 0)
+  TURN_START_LINE=$(cat "$TURNSTART" 2>/dev/null || echo 0)
+
+  if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
+    NEW_ERRORS=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sort -u)
+    echo "$TOTAL" > "$WATERMARK"
+    echo "$TOTAL" > "$TURNSTART"
+    jq -n \
+      --arg errors "$NEW_ERRORS" \
+      '{"decision":"block","reason":("🚨 LIFESAVER — ERRORS FIRED DURING THIS TURN:\n" + $errors + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
+    exit 0
+  fi
+fi
+
 # ── Evolver Loop (ralph-loop pattern) ─────────────────────────────────────────
 # When .claude/hme-evolver.local.md exists, block exit and inject next iteration.
 LOOP_FILE="$CLAUDE_PROJECT_DIR/.claude/hme-evolver.local.md"

@@ -48,6 +48,8 @@ class ChatPanel {
         this._messageQueue = [];
         this._disposables = [];
         this._restoreSessionId = null;
+        this._shimProc = null;
+        this._shimFailed = false;
         this._panel = panel;
         this._projectRoot = projectRoot;
         this._restoreSessionId = restoreSessionId ?? null;
@@ -58,11 +60,13 @@ class ChatPanel {
             this._transcript.setNarrativeCallback(async (entries) => {
                 try {
                     const narrative = await (0, Arbiter_1.synthesizeNarrative)(entries);
-                    if (narrative)
-                        (0, router_1.postNarrative)(narrative).catch(() => { });
+                    if (narrative) {
+                        (0, router_1.postNarrative)(narrative).catch((e) => this._postError("narrative", String(e)));
+                    }
                     return narrative;
                 }
-                catch {
+                catch (e) {
+                    this._postError("narrative-synthesis", String(e));
                     return "";
                 }
             });
@@ -112,8 +116,7 @@ class ChatPanel {
                 else {
                     this._isStreaming = true;
                     this._onSend(msg).catch((e) => {
-                        this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
-                        this._post({ type: "streamEnd", id: "err" });
+                        this._postError("send", String(e));
                         this._drainQueue();
                     });
                 }
@@ -130,7 +133,10 @@ class ChatPanel {
                 break;
             case "checkHmeShim":
                 (0, router_1.isHmeShimReady)().then(({ ready, errors }) => {
-                    this._post({ type: "hmeShimStatus", ready });
+                    this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
+                    if (!ready) {
+                        this._startHmeShim();
+                    }
                     if (errors.length > 0) {
                         const summary = errors.slice(-3).map((e) => `[${e.ts_str ?? "?"}] [${e.source}] ${e.message}`).join("\n");
                         this._post({ type: "notice", level: "warn", text: `⚠ HME errors (check log/hme-errors.log):\n${summary}` });
@@ -194,6 +200,10 @@ class ChatPanel {
         (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory);
     }
     async _onSend(msg) {
+        // ── Agent route: parallel local + hybrid test (no auto-route needed) ──
+        if (msg.route === "agent") {
+            return this._onSendAgent(msg);
+        }
         // ── Auto-route: arbiter classifies message complexity ──
         let resolvedRoute = msg.route;
         if (msg.route === "auto") {
@@ -201,7 +211,7 @@ class ChatPanel {
             const transcriptCtx = this._transcript.getRecentContext(20, 1500);
             const decision = await (0, Arbiter_1.classifyMessage)(msg.text, transcriptCtx, 0);
             resolvedRoute = decision.route;
-            const isArbiterError = decision.reason.includes("timeout") || decision.reason.includes("unreachable") || decision.reason.includes("failed");
+            const isArbiterError = decision.isError;
             this._post({
                 type: "notice",
                 level: isArbiterError ? "warn" : "info",
@@ -215,17 +225,18 @@ class ChatPanel {
                     content: `ARBITER ERROR: ${decision.reason} — falling back to ${decision.route}`,
                     summary: `Arbiter failed: ${decision.reason}`,
                 });
-                // Write to log/hme-errors.log — direct file write (guaranteed) + shim (if running)
-                const errLine = `[${new Date().toISOString()}] [arbiter] ${decision.reason} — fell back to ${decision.route}\n`;
-                try {
-                    fs.mkdirSync(path.join(this._projectRoot, "log"), { recursive: true });
-                }
-                catch { }
-                try {
-                    fs.appendFileSync(path.join(this._projectRoot, "log", "hme-errors.log"), errLine);
-                }
-                catch { }
-                (0, router_1.logShimError)("arbiter", decision.reason, `fell back to ${decision.route}`).catch(() => { });
+                // Shim is single writer; fall back to direct disk write only if shim unreachable.
+                (0, router_1.logShimError)("arbiter", decision.reason, `fell back to ${decision.route}`).catch((e) => {
+                    console.error(`[HME FAILFAST] arbiter logShimError failed: ${e?.message ?? e}`);
+                    const errLine = `[${new Date().toISOString()}] [arbiter] ${decision.reason} — fell back to ${decision.route}\n`;
+                    try {
+                        fs.mkdirSync(path.join(this._projectRoot, "log"), { recursive: true });
+                        fs.appendFileSync(path.join(this._projectRoot, "log", "hme-errors.log"), errLine);
+                    }
+                    catch (fileErr) {
+                        console.error(`[HME FAILFAST] Arbiter disk fallback failed: ${fileErr?.message ?? fileErr}`);
+                    }
+                });
             }
             if (decision.thinking) {
                 this._transcript.log({
@@ -257,12 +268,12 @@ class ChatPanel {
                 const notice = warnings.map((w) => `⚠ [${w.title}]`).join(" · ");
                 this._post({ type: "notice", level: "warn", text: `HME constraints: ${notice}` });
             }
-        }).catch(() => { });
+        }).catch((e) => this._postError("validation", String(e)));
         // ── Mirror transcript to HTTP shim ──
         (0, router_1.postTranscript)([{
                 ts: Date.now(), type: "user", route: resolvedRoute, model,
                 content: msg.text, summary: `User [${resolvedRoute}]: ${msg.text.slice(0, 100)}`,
-            }]).catch(() => { });
+            }]).catch((e) => this._postError("transcript", String(e)));
         const userMsg = msg._queuedUserMsg ?? {
             id: uid(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
         };
@@ -313,6 +324,143 @@ class ChatPanel {
             this._streamClaude(resolvedMsg, assistantId);
         }
     }
+    /**
+     * Agent route: fires local AND hybrid in parallel so I can compare both without
+     * making the user manually switch routes. Neither response writes to ollamaHistory
+     * to avoid double-appending; local result wins for history after both complete.
+     */
+    async _onSendAgent(msg) {
+        if (!this._state.sessionEntry) {
+            const entry = (0, SessionStore_1.createSession)(this._projectRoot, (0, SessionStore_1.deriveTitle)(msg.text));
+            this._state.sessionEntry = entry;
+            this._transcript.setSessionId(entry.id);
+            this._transcript.logSessionStart(entry.id, entry.title, false);
+            this._post({ type: "sessionCreated", session: entry });
+        }
+        this._transcript.logUser(msg.text, "agent", msg.ollamaModel);
+        (0, router_1.postTranscript)([{
+                ts: Date.now(), type: "user", route: "agent", model: msg.ollamaModel,
+                content: msg.text, summary: `User [agent]: ${msg.text.slice(0, 100)}`,
+            }]).catch((e) => this._postError("transcript", String(e)));
+        const userMsg = { id: uid(), role: "user", text: msg.text, route: "local", ts: Date.now() };
+        this._state.messages.push(userMsg);
+        this._post({ type: "message", message: userMsg });
+        this._post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
+        const localId = uid();
+        const hybridId = uid();
+        this._post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.ollamaModel}` });
+        this._post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.ollamaModel}` });
+        let doneCount = 0;
+        let drained = false;
+        const cancelFns = [];
+        const safeDrain = () => { if (!drained) {
+            drained = true;
+            this._drainQueue();
+        } };
+        const checkBothDone = () => {
+            doneCount++;
+            if (doneCount >= 2) {
+                this._persistState();
+                safeDrain();
+            }
+        };
+        this._cancelCurrent = () => cancelFns.forEach((fn) => fn());
+        // FAILFAST: on error, surface immediately but let surviving sibling continue.
+        // checkBothDone increments the counter — when both streams complete (success or error),
+        // the queue drains. Never kill a working response because its sibling failed.
+        this._streamAgent(msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
+        this._streamAgentHybrid(msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
+    }
+    _streamAgent(msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
+        const systemPrompt = {
+            role: "system",
+            content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
+        };
+        const requestHistory = [systemPrompt, ...this._state.ollamaHistory, { role: "user", content: msg.text }];
+        let text = "";
+        let tools = [];
+        let streamEnded = false;
+        const safeEnd = () => { if (streamEnded)
+            return; streamEnded = true; onBothDone(); };
+        const onDone = () => {
+            if (label === "local") {
+                this._state.ollamaHistory.push({ role: "user", content: msg.text });
+                this._state.ollamaHistory.push({ role: "assistant", content: text });
+            }
+            this._state.messages.push({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: label, ts: Date.now() });
+            this._post({ type: "streamEnd", id: assistantId });
+            this._transcript.logAssistant(text, label, msg.ollamaModel, tools);
+            safeEnd();
+        };
+        const onChunk = (chunk, type) => {
+            if (type === "tool") {
+                tools.push(chunk);
+                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
+            }
+            else {
+                text += chunk;
+                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+            }
+        };
+        const cancel = (0, router_1.streamOllamaAgentic)(requestHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, onChunk, onDone, (err) => {
+            this._postError(label, err);
+            if (!streamEnded) {
+                streamEnded = true;
+                this._post({ type: "streamEnd", id: assistantId });
+                onForceDrain(); // counts as done — lets surviving sibling continue
+            }
+        });
+        cancelFns.push(cancel);
+    }
+    _streamAgentHybrid(msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
+        const history = [...this._state.ollamaHistory];
+        let text = "";
+        let aborted = false;
+        let streamEnded = false;
+        const safeEnd = () => { if (streamEnded)
+            return; streamEnded = true; onBothDone(); };
+        // Register cancel immediately so abort works during HME context fetch
+        const cancelWrapper = () => { aborted = true; };
+        cancelFns.push(cancelWrapper);
+        this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
+        (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, (chunk, type) => {
+            if (aborted)
+                return;
+            text += chunk;
+            this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+        }, () => {
+            if (aborted)
+                return;
+            this._state.messages.push({ id: assistantId, role: "assistant", text, route: "hybrid", ts: Date.now() });
+            this._post({ type: "streamEnd", id: assistantId });
+            this._transcript.logAssistant(text, "hybrid", msg.ollamaModel);
+            safeEnd();
+        }, (err) => {
+            if (aborted)
+                return;
+            this._postError(label, err);
+            if (!streamEnded) {
+                streamEnded = true;
+                this._post({ type: "streamEnd", id: assistantId });
+                onForceDrain(); // counts as done — lets surviving sibling continue
+            }
+        }).then((cancel) => {
+            if (aborted) {
+                cancel();
+                return;
+            }
+            cancelFns.push(cancel);
+        }).catch((err) => {
+            if (aborted)
+                return;
+            this._postError(label, String(err));
+            if (!streamEnded) {
+                streamEnded = true;
+                this._post({ type: "streamEnd", id: assistantId });
+                onForceDrain();
+            }
+        });
+    }
     _streamClaude(msg, assistantId) {
         let text = "";
         let thinking = "";
@@ -360,15 +508,15 @@ class ChatPanel {
                 this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg._resolvedRoute ?? msg.route ?? "claude");
             }
             else if (type === "error") {
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk });
+                this._postError("claude", chunk);
             }
         };
         const onError = (err) => {
-            this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
             if (!streamEnded) {
                 this._post({ type: "streamEnd", id: assistantId });
                 safeEnd();
             }
+            this._postError("claude", err);
         };
         // Prepend prior-route context block if switching from local/hybrid → claude
         const effectiveText = (msg._contextPrefix ?? "") + msg.text;
@@ -386,7 +534,7 @@ class ChatPanel {
                 content: text.slice(0, 2000),
                 summary: `Assistant [${route}]: ${text.slice(0, 100)}`,
                 meta: tools?.length ? { tools } : undefined,
-            }]).catch(() => { });
+            }]).catch((e) => this._postError("transcript", String(e)));
     }
     /**
      * Detect files modified by tool calls and trigger immediate mini-reindex.
@@ -405,7 +553,7 @@ class ChatPanel {
                 files.add(writeMatch[1]);
         }
         if (files.size > 0) {
-            (0, router_1.reindexFiles)([...files]).catch(() => { });
+            (0, router_1.reindexFiles)([...files]).catch((e) => this._postError("reindex", String(e)));
         }
     }
     _runPostAudit() {
@@ -417,11 +565,19 @@ class ChatPanel {
                     .join("\n");
                 this._post({ type: "notice", level: "audit", text: `HME post-audit (${changed_files.length} files changed):\n${summary}` });
             }
-        }).catch(() => { });
+        }).catch((e) => this._postError("audit", String(e)));
     }
     _streamOllama(msg, assistantId) {
-        const requestHistory = [...this._state.ollamaHistory, { role: "user", content: msg.text }];
+        const systemPrompt = {
+            role: "system",
+            content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
+        };
+        const contextMessages = msg._contextPrefix
+            ? [{ role: "user", content: msg._contextPrefix }, { role: "assistant", content: "Understood. I have the prior conversation context." }]
+            : [];
+        const requestHistory = [systemPrompt, ...contextMessages, ...this._state.ollamaHistory, { role: "user", content: msg.text }];
         let text = "";
+        let tools = [];
         let streamEnded = false;
         const safeEnd = () => {
             if (streamEnded)
@@ -429,35 +585,49 @@ class ChatPanel {
             streamEnded = true;
             this._drainQueue();
         };
-        this._cancelCurrent = (0, router_1.streamOllama)(requestHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, (chunk, type) => {
-            text += chunk;
-            this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-        }, () => {
-            // Only commit to history on success to prevent dangling user message on error
+        const onDone = () => {
             this._state.ollamaHistory.push({ role: "user", content: msg.text });
             this._state.ollamaHistory.push({ role: "assistant", content: text });
             const assistantMsg = {
-                id: assistantId, role: "assistant", text, route: "local", ts: Date.now(),
+                id: assistantId, role: "assistant", text,
+                tools: tools.length ? tools : undefined,
+                route: "local", ts: Date.now(),
             };
             this._state.messages.push(assistantMsg);
             this._persistState();
             this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, "local", msg.ollamaModel);
-            this._mirrorAssistantToShim(text, "local", msg.ollamaModel);
+            this._transcript.logAssistant(text, "local", msg.ollamaModel, tools);
+            this._mirrorAssistantToShim(text, "local", msg.ollamaModel, tools);
+            this._reindexFromTools(tools);
             this._runPostAudit();
             safeEnd();
-        }, (err) => {
-            this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
+        };
+        const onChunk = (chunk, type) => {
+            if (type === "tool") {
+                tools.push(chunk);
+                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
+            }
+            else {
+                text += chunk;
+                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+            }
+        };
+        this._cancelCurrent = (0, router_1.streamOllamaAgentic)(requestHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, onChunk, onDone, (err) => {
             if (!streamEnded) {
                 this._post({ type: "streamEnd", id: assistantId });
                 safeEnd();
             }
+            this._postError("local", err);
         });
     }
     _streamHybrid(msg, assistantId) {
-        const history = [...this._state.ollamaHistory];
+        const contextMessages = msg._contextPrefix
+            ? [{ role: "user", content: msg._contextPrefix }, { role: "assistant", content: "Understood. I have the prior conversation context." }]
+            : [];
+        const history = [...contextMessages, ...this._state.ollamaHistory];
         let text = "";
         let cancelFn;
+        let aborted = false;
         let streamEnded = false;
         const safeEnd = () => {
             if (streamEnded)
@@ -465,12 +635,18 @@ class ChatPanel {
             streamEnded = true;
             this._drainQueue();
         };
+        // Cancelable immediately — even during HME context fetch
+        this._cancelCurrent = () => { aborted = true; cancelFn?.(); };
         // Post "enriching…" status
         this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
-        (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, (chunk, type) => {
+        (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, (chunk, type) => {
+            if (aborted)
+                return;
             text += chunk;
             this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
         }, () => {
+            if (aborted)
+                return;
             this._state.ollamaHistory.push({ role: "user", content: msg.text });
             this._state.ollamaHistory.push({ role: "assistant", content: text });
             const assistantMsg = {
@@ -484,21 +660,121 @@ class ChatPanel {
             this._runPostAudit();
             safeEnd();
         }, (err) => {
-            this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
+            if (aborted)
+                return;
             if (!streamEnded) {
                 this._post({ type: "streamEnd", id: assistantId });
                 safeEnd();
             }
+            this._postError("hybrid", err);
         }).then((cancel) => {
+            if (aborted) {
+                cancel();
+                return;
+            }
             cancelFn = cancel;
-            this._cancelCurrent = () => cancelFn?.();
         }).catch((err) => {
-            this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: String(err) });
+            if (aborted)
+                return;
             if (!streamEnded) {
                 this._post({ type: "streamEnd", id: assistantId });
                 safeEnd();
+            }
+            this._postError("hybrid", String(err));
+        });
+    }
+    /** Fail-fast error surface: bubble in chat + VSCode notification + log file + KB antipattern lookup. */
+    _postError(source, message) {
+        const isCritical = message.includes("CRITICAL") || message.includes("timeout") || message.includes("refused");
+        // Primary: webview bubble (critical = blocking overlay, non-critical = inline bubble)
+        this._post({ type: isCritical ? "criticalError" : "errorBubble", source, message });
+        // Fallback: VSCode notification — guaranteed visible even if webview drops the message
+        if (isCritical) {
+            vscode.window.showErrorMessage(`🚨 CRITICAL [HME/${source}] ${message}`, { modal: true });
+        }
+        else {
+            vscode.window.showErrorMessage(`[HME/${source}] ${message}`);
+        }
+        // Shim is the single writer to hme-errors.log — avoids duplicate entries.
+        // Fall back to direct disk write only if shim is unreachable.
+        (0, router_1.logShimError)(source, message).catch((e) => {
+            console.error(`[HME FAILFAST] logShimError failed for [${source}] ${message}: ${e?.message ?? e}`);
+            const errLine = `[${new Date().toISOString()}] [${source}] ${message}\n`;
+            try {
+                fs.mkdirSync(path.join(this._projectRoot, "log"), { recursive: true });
+                fs.appendFileSync(path.join(this._projectRoot, "log", "hme-errors.log"), errLine);
+            }
+            catch (fileErr) {
+                console.error(`[HME FAILFAST] Disk fallback also failed for [${source}] ${message}: ${fileErr?.message ?? fileErr}`);
             }
         });
+        // Query KB for antipatterns — console.error on failure (no recursion)
+        (0, router_1.validateMessage)(`${source} error: ${message}`).then(({ warnings, blocks }) => {
+            const relevant = [...blocks, ...warnings];
+            if (relevant.length > 0) {
+                const lines = relevant.map((r) => `• [${r.title}] ${r.content ?? r.title}`).join("\n");
+                this._post({ type: "notice", level: blocks.length > 0 ? "block" : "warn", text: `HME antipatterns for this error:\n${lines}` });
+            }
+        }).catch((e) => {
+            console.error(`[HME FAILFAST] KB antipattern lookup failed for [${source}] ${message}: ${e?.message ?? e}`);
+        });
+    }
+    _startHmeShim() {
+        if (this._shimProc && !this._shimProc.killed)
+            return; // already running
+        this._shimFailed = false;
+        const shimPath = path.join(__dirname, "..", "..", "mcp", "hme_http.py");
+        const env = { ...process.env };
+        if (!env["PATH"]?.includes(".local/bin")) {
+            env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
+        }
+        try {
+            this._shimProc = require("child_process").spawn("python3", [shimPath], {
+                cwd: this._projectRoot,
+                env,
+                detached: false,
+                stdio: "ignore",
+            });
+            let started = false;
+            this._shimProc.on("error", (e) => {
+                this._shimProc = null;
+                this._post({ type: "hmeShimStatus", ready: false });
+                this._postError("shim", `HME shim failed to start: ${e.message}`);
+            });
+            this._shimProc.on("exit", (code) => {
+                const wasStarted = started;
+                this._shimProc = null;
+                this._post({ type: "hmeShimStatus", ready: false });
+                if (!wasStarted) {
+                    this._postError("shim", `HME shim exited before becoming ready (code ${code ?? "?"})`);
+                }
+            });
+            // Poll readiness — retry up to 5 times every 2s
+            let attempts = 0;
+            const poll = () => {
+                attempts++;
+                (0, router_1.isHmeShimReady)().then(({ ready }) => {
+                    if (ready) {
+                        started = true;
+                        this._post({ type: "hmeShimStatus", ready: true });
+                        return;
+                    }
+                    if (attempts < 5 && this._shimProc) {
+                        this._post({ type: "hmeShimStatus", ready: false, failed: false });
+                        setTimeout(poll, 2000);
+                    }
+                    else {
+                        this._shimFailed = true;
+                        this._post({ type: "hmeShimStatus", ready: false, failed: true });
+                        this._postError("shim", `HME shim started but /health not ready after ${attempts * 2}s — check log/hme-errors.log or run mcp/hme_http.py manually`);
+                    }
+                });
+            };
+            setTimeout(poll, 2000);
+        }
+        catch (e) {
+            this._postError("shim", `HME shim spawn error: ${e?.message ?? e}`);
+        }
     }
     _drainQueue() {
         this._isStreaming = false;
@@ -525,6 +801,10 @@ class ChatPanel {
     dispose() {
         this._cancelCurrent?.();
         this._transcript.forceNarrative?.();
+        try {
+            this._shimProc?.kill();
+        }
+        catch { }
         ChatPanel.current = undefined;
         this._panel.dispose();
         this._disposables.forEach((d) => d.dispose());
@@ -846,6 +1126,82 @@ function getInlineHtml() {
     font-family: var(--font-mono);
   }
 
+  /* Standalone error bubble — fail-fast, always visible, never buried */
+  .error-bubble {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid var(--error-fg);
+    background: color-mix(in srgb, var(--error-fg) 10%, var(--bg));
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--error-fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+    animation: error-flash 0.3s ease-out;
+  }
+  .error-bubble-icon { flex-shrink: 0; font-size: 14px; }
+  .error-bubble-body { flex: 1; }
+  .error-bubble-source {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  @keyframes error-flash {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* CRITICAL error overlay — blocks UI until acknowledged */
+  .critical-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: overlay-in 0.2s ease-out;
+  }
+  .critical-box {
+    max-width: 90%;
+    padding: 20px 24px;
+    border-radius: 10px;
+    border: 2px solid var(--error-fg);
+    background: var(--bg);
+    color: var(--error-fg);
+    font-family: var(--font-mono);
+    text-align: left;
+  }
+  .critical-box h2 { margin: 0 0 12px; font-size: 16px; }
+  .critical-box pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    margin: 8px 0 16px;
+    padding: 8px;
+    background: rgba(255,0,0,0.08);
+    border-radius: 4px;
+  }
+  .critical-box button {
+    padding: 6px 16px;
+    border: 1px solid var(--error-fg);
+    background: transparent;
+    color: var(--error-fg);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .critical-box button:hover { background: rgba(255,0,0,0.15); }
+  @keyframes overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   /* Streaming cursor — inline span, instantly hidden on done to prevent flash */
   .stream-cursor { animation: blink 0.8s step-end infinite; }
   .stream-cursor.done { animation: none; visibility: hidden; }
@@ -954,6 +1310,7 @@ function getInlineHtml() {
     <option value="claude">Claude</option>
     <option value="local">Local</option>
     <option value="hybrid">Hybrid</option>
+    <option value="agent" style="display:none"></option>
   </select>
 
   <!-- Claude controls -->
@@ -1015,10 +1372,10 @@ const vscode = acquireVsCodeApi();
 
 // ── State ──────────────────────────────────────────────────────────────────
 let streaming = false;
-let streamingId = null;
+const activeStreams = new Set();   // supports parallel streams (agent mode)
 let streamTools = [];
-let streamCurrentBody = null;    // active text block — nulled after each tool/thinking segment
-let streamCurrentThinking = null; // active thinking block — nulled after each text/tool chunk
+const streamBodyMap = new Map();      // per-stream active text block
+const streamThinkingMap = new Map();  // per-stream active thinking block
 
 // ── UI refs ────────────────────────────────────────────────────────────────
 const routeSel    = document.getElementById('route-select');
@@ -1039,7 +1396,7 @@ const clearBtn    = document.getElementById('clear-btn');
 routeSel.addEventListener('change', () => {
   const r = routeSel.value;
   claudeCtrls.style.display = (r === 'claude' || r === 'hybrid' || r === 'auto') ? 'flex' : 'none';
-  localCtrls.style.display  = (r === 'local' || r === 'auto') ? 'flex' : 'none';
+  localCtrls.style.display  = (r === 'local' || r === 'auto' || r === 'agent') ? 'flex' : 'none';
 });
 // Fire initial state
 claudeCtrls.style.display = 'flex';
@@ -1047,14 +1404,19 @@ localCtrls.style.display = 'flex';
 
 // ── Send ───────────────────────────────────────────────────────────────────
 function send() {
-  const text = input.value.trim();
+  let text = input.value.trim();
   if (!text) return;
   input.value = '';
   input.style.height = '';
+  let route = routeSel.value;
+  if (text.startsWith('/agent ')) {
+    text = text.slice(7).trim();
+    route = 'agent';
+  }
   vscode.postMessage({
     type: 'send',
     text,
-    route: routeSel.value,
+    route,
     claudeModel: claudeModel.value,
     claudeEffort: claudeEffort.value,
     claudeThinking: thinkingChk.checked,
@@ -1086,11 +1448,18 @@ window.addEventListener('message', (event) => {
     case 'streamChunk':
       appendChunk(msg.id, msg.chunkType, msg.chunk);
       break;
+    case 'errorBubble':
+      appendErrorBubble(msg.source, msg.message);
+      break;
+    case 'criticalError':
+      appendErrorBubble(msg.source, msg.message);
+      showCriticalOverlay(msg.source, msg.message);
+      break;
     case 'streamEnd':
       endStream(msg.id, msg.cost);
       break;
     case 'cancelConfirmed':
-      endStream(streamingId, undefined);
+      [...activeStreams].forEach(sid => endStream(sid, undefined));
       break;
     case 'historyCleared':
       messages.innerHTML = '';
@@ -1149,10 +1518,8 @@ function appendMessage(msg) {
 
 function startStream(id, route, model) {
   streaming = true;
-  streamingId = id;
+  activeStreams.add(id);
   streamTools = [];
-  streamCurrentBody = null;
-  streamCurrentThinking = null;
 
   const div = document.createElement('div');
   div.className = 'msg assistant';
@@ -1175,20 +1542,21 @@ function appendChunk(id, chunkType, chunk) {
   if (!div) return;
 
   if (chunkType === 'thinking') {
-    // Each thinking segment gets its own block; nulled by text/tool chunks
-    if (!streamCurrentThinking) {
-      streamCurrentThinking = document.createElement('details');
-      streamCurrentThinking.className = 'thinking';
-      streamCurrentThinking.open = true;
-      streamCurrentThinking.innerHTML = \`<summary>🧠 Thinking…</summary><div class="thinking-body"></div>\`;
-      div.appendChild(streamCurrentThinking);
+    // Each thinking segment gets its own block per stream; nulled by text/tool chunks
+    if (!streamThinkingMap.get(id)) {
+      const thk = document.createElement('details');
+      thk.className = 'thinking';
+      thk.open = true;
+      thk.innerHTML = \`<summary>🧠 Thinking…</summary><div class="thinking-body"></div>\`;
+      div.appendChild(thk);
+      streamThinkingMap.set(id, thk);
     }
-    streamCurrentThinking.querySelector('.thinking-body').textContent += chunk;
+    streamThinkingMap.get(id).querySelector('.thinking-body').textContent += chunk;
   } else if (chunkType === 'tool') {
-    // Hide cursor in current text block — prevents multiple cursors animating at once
-    streamCurrentBody?.querySelector('.stream-cursor')?.classList.add('done');
-    streamCurrentBody = null;
-    streamCurrentThinking = null;
+    // Hide cursor in current text block for this stream
+    streamBodyMap.get(id)?.querySelector('.stream-cursor')?.classList.add('done');
+    streamBodyMap.delete(id);
+    streamThinkingMap.delete(id);
     const toolDiv = document.createElement('div');
     toolDiv.className = 'tool-step';
     toolDiv.textContent = chunk;
@@ -1199,29 +1567,31 @@ function appendChunk(id, chunkType, chunk) {
     errDiv.textContent = '⚠ ' + chunk;
     div.appendChild(errDiv);
   } else {
-    streamCurrentThinking = null; // entering text mode — close current thinking segment
-    // text — one block per inter-tool segment
-    if (!streamCurrentBody) {
-      streamCurrentBody = document.createElement('div');
-      streamCurrentBody.className = 'msg-body';
+    streamThinkingMap.delete(id); // entering text mode — close current thinking segment
+    // text — one block per inter-tool segment per stream
+    if (!streamBodyMap.get(id)) {
+      const body = document.createElement('div');
+      body.className = 'msg-body';
       const cur = document.createElement('span');
       cur.className = 'stream-cursor';
       cur.textContent = '▊';
-      streamCurrentBody.appendChild(cur);
-      div.appendChild(streamCurrentBody);
+      body.appendChild(cur);
+      div.appendChild(body);
+      streamBodyMap.set(id, body);
     }
-    const cur = streamCurrentBody.querySelector('.stream-cursor');
-    streamCurrentBody.insertBefore(document.createTextNode(chunk), cur);
+    const body = streamBodyMap.get(id);
+    const cur = body.querySelector('.stream-cursor');
+    body.insertBefore(document.createTextNode(chunk), cur);
   }
   messages.scrollTop = messages.scrollHeight;
 }
 
 function endStream(id, cost) {
-  streaming = false;
-  streamingId = null;
-  streamCurrentBody = null;
-  streamCurrentThinking = null;
-  cancelBtn.style.display = 'none';
+  activeStreams.delete(id);
+  streaming = activeStreams.size > 0;
+  streamBodyMap.delete(id);
+  streamThinkingMap.delete(id);
+  if (!streaming) cancelBtn.style.display = 'none';
 
   const div = document.getElementById(\`msg-\${id}\`);
   if (div) {
@@ -1239,7 +1609,49 @@ function endStream(id, cost) {
     }
   }
 
-  setStatus(cost !== undefined ? \`Cost: $\${cost?.toFixed(4) ?? '?'}\` : '');
+  if (!streaming) setStatus(cost !== undefined ? \`Cost: $\${cost?.toFixed(4) ?? '?'}\` : '');
+}
+
+function appendErrorBubble(source, message) {
+  const wrap = document.createElement('div');
+  wrap.className = 'error-bubble';
+
+  const icon = document.createElement('span');
+  icon.className = 'error-bubble-icon';
+  icon.textContent = '⚠';
+
+  const body = document.createElement('div');
+  body.className = 'error-bubble-body';
+
+  const src = document.createElement('div');
+  src.className = 'error-bubble-source';
+  src.textContent = source;
+
+  const text = document.createElement('div');
+  text.textContent = message;
+
+  body.appendChild(src);
+  body.appendChild(text);
+  wrap.appendChild(icon);
+  wrap.appendChild(body);
+  messages.appendChild(wrap);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function showCriticalOverlay(source, message) {
+  // Remove any existing overlay first
+  document.querySelectorAll('.critical-overlay').forEach(el => el.remove());
+  const overlay = document.createElement('div');
+  overlay.className = 'critical-overlay';
+  overlay.innerHTML = '<div class="critical-box">'
+    + '<h2>CRITICAL ERROR</h2>'
+    + '<pre></pre>'
+    + '<button>Acknowledge</button>'
+    + '</div>';
+  overlay.querySelector('pre').textContent = '[' + source + '] ' + message;
+  overlay.querySelector('button').addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+  setStatus('CRITICAL ERROR: ' + source);
 }
 
 function setStatus(text) {
@@ -1392,16 +1804,16 @@ function checkShim() {
 window.addEventListener('message', (event) => {
   if (event.data.type === 'hmeShimStatus') {
     if (shimStatus) {
-      shimStatus.textContent = event.data.ready ? 'HME ●' : 'HME ○';
-      shimStatus.style.color = event.data.ready ? 'var(--route-hybrid)' : 'var(--subtle)';
-      shimStatus.title = event.data.ready ? 'HME KB shim: ready' : 'HME KB shim: not running (start hme_http.py)';
+      shimStatus.textContent = event.data.ready ? 'HME ●' : event.data.failed ? 'HME ✗' : 'HME ○';
+      shimStatus.style.color = event.data.ready ? 'var(--route-hybrid)' : event.data.failed ? 'var(--error-fg)' : 'var(--subtle)';
+      shimStatus.title = event.data.ready ? 'HME KB shim: ready' : event.data.failed ? 'HME KB shim: FAILED — see chat for error' : 'HME KB shim: starting…';
     }
   }
 }, true);
 // Check on load and when switching to hybrid
 checkShim();
 routeSel.addEventListener('change', () => {
-  if (routeSel.value === 'hybrid') checkShim();
+  if (routeSel.value === 'hybrid' || routeSel.value === 'agent') checkShim();
 });
 </script>
 </body>

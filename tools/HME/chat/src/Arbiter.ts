@@ -23,10 +23,11 @@ export type ArbiterDecision = {
   confidence: number;  // 0.0–1.0
   reason: string;
   escalated: boolean;  // true if overriding user's preference
+  isError: boolean;    // true whenever arbiter failed — never rely on string matching reason
   thinking?: string;   // raw chain-of-thought from model (if present)
 };
 
-const ARBITER_MODEL = "qwen3:4b";
+const ARBITER_MODEL = "qwen3:4b";  // small, CPU-only — never competes with GPU-resident 30B models
 const OLLAMA_URL = "http://localhost:11434";
 
 const CLASSIFY_PROMPT = `/no_think
@@ -69,45 +70,83 @@ export async function classifyMessage(
     .replace("{constraint_count}", String(constraintCount));
 
   return new Promise((resolve) => {
+    let done = false;
+    const fail = (reason: string) => {
+      if (!done) { done = true; req?.destroy(); resolve({ route: "claude", confidence: 0.5, reason, escalated: false, isError: true }); }
+    };
+
+    // Hard cap: 60s total. stream:true gives us per-chunk inactivity detection.
+    const hardTimer = setTimeout(() => fail("arbiter timeout (60s hard cap)"), 60000);
+
+    // Inactivity timer: if no bytes arrive within 15s, model is stuck (queue frozen or
+    // runner in error state). Fail fast rather than burning the full 60s.
+    let inactivityTimer = setTimeout(() => fail("arbiter inactive (no bytes in 15s — model queue frozen or runner stuck)"), 15000);
+    const resetInactivity = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => fail("arbiter inactive (no bytes in 15s — model queue frozen or runner stuck)"), 15000);
+    };
+
+    // stream:true: first byte arrives as soon as Ollama starts processing.
+    // If stuck (runner status:2, queue full), we get 0 bytes → inactivity fires in 15s.
+    // Accumulate all content chunks; parse final assembled JSON at stream end.
     const body = JSON.stringify({
       model: ARBITER_MODEL,
       messages: [{ role: "user", content: prompt }],
-      stream: false,
+      stream: true,
       think: false,
       format: CLASSIFY_FORMAT,
-      options: { temperature: 0, num_predict: 256 },
+      options: { temperature: 0, num_predict: 256 },  // GPU auto-falls-back to CPU: only 1.3GB VRAM free, qwen3:4b needs 2.5GB
     });
 
-    const req = http.request(
+    let req: ReturnType<typeof http.request>;
+    req = http.request(
       {
         hostname: "localhost",
         port: 11434,
         path: "/api/chat",
         method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        timeout: 15000,
       },
       (res) => {
-        let raw = "";
-        res.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
+        let contentAccum = "";
+        let rawChunk = "";
+        res.on("data", (c: Buffer) => {
+          resetInactivity();
+          rawChunk += c.toString("utf8");
+          // Each streamed line is a JSON object with message.content fragment
+          const lines = rawChunk.split("\n");
+          rawChunk = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const obj = JSON.parse(line);
+              contentAccum += obj.message?.content ?? "";
+            } catch { /* partial line, handled by rawChunk buffer */ }
+          }
+        });
         res.on("end", () => {
+          clearTimeout(hardTimer);
+          clearTimeout(inactivityTimer);
+          if (done) return;
+          done = true;
           try {
-            const outer = JSON.parse(raw);
-            const inner = JSON.parse(outer.message?.content ?? "{}");
+            const inner = JSON.parse(contentAccum);
             const route = inner.route === "local" ? "local" : "claude" as "claude" | "local";
             const confidence = Math.min(1, Math.max(0, Number(inner.confidence) || 0.5));
             const reason = String(inner.reason ?? "").slice(0, 200) || "arbiter parse failed";
-            resolve({ route, confidence, reason, escalated: false });
+            resolve({ route, confidence, reason, escalated: false, isError: false });
           } catch {
-            resolve({ route: "claude", confidence: 0.5, reason: "arbiter parse failed", escalated: false });
+            resolve({ route: "claude", confidence: 0.5, reason: "arbiter parse failed", escalated: false, isError: true });
           }
         });
       }
     );
-    req.on("error", () => resolve({ route: "claude", confidence: 0.5, reason: "arbiter unreachable", escalated: false }));
-    req.on("timeout", () => {
-      req.destroy();
-      resolve({ route: "claude", confidence: 0.5, reason: "arbiter timeout", escalated: false });
+    req.on("error", () => {
+      clearTimeout(hardTimer);
+      clearTimeout(inactivityTimer);
+      if (done) return;
+      done = true;
+      resolve({ route: "claude", confidence: 0.5, reason: "arbiter unreachable", escalated: false, isError: true });
     });
     req.write(body);
     req.end();
@@ -134,36 +173,58 @@ ${summaries.slice(0, 2000)}
 
 Digest:`;
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const fail = (err: Error) => { if (!done) { done = true; req?.destroy(); reject(err); } };
+
+    const hardTimer = setTimeout(() => fail(new Error("Narrative synthesis timeout (60s hard cap)")), 60000);
+    let inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes in 15s — model stuck)")), 15000);
+    const resetInactivity = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes in 15s — model stuck)")), 15000);
+    };
+
     const body = JSON.stringify({
       model: ARBITER_MODEL,
       messages: [{ role: "user", content: prompt }],
-      stream: false,
+      stream: true,
       think: false,
-      options: { temperature: 0.2, num_predict: 512 },
+      options: { temperature: 0.2, num_predict: 512 },  // GPU auto-falls-back to CPU: only 1.3GB VRAM free
     });
 
-    const req = http.request(
+    let req: ReturnType<typeof http.request>;
+    req = http.request(
       {
         hostname: "localhost", port: 11434, path: "/api/chat", method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        timeout: 15000,
       },
       (res) => {
-        let raw = "";
-        res.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
-        res.on("end", () => {
-          try {
-            const parsed = JSON.parse(raw);
-            resolve((parsed.message?.content ?? "").trim().slice(0, 500));
-          } catch {
-            resolve("");
+        let contentAccum = "";
+        let rawChunk = "";
+        res.on("data", (c: Buffer) => {
+          resetInactivity();
+          rawChunk += c.toString("utf8");
+          const lines = rawChunk.split("\n");
+          rawChunk = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try { contentAccum += JSON.parse(line).message?.content ?? ""; } catch { /* partial */ }
           }
+        });
+        res.on("end", () => {
+          clearTimeout(hardTimer);
+          clearTimeout(inactivityTimer);
+          if (done) return;
+          done = true;
+          resolve(contentAccum.trim().slice(0, 500));
         });
       }
     );
-    req.on("error", () => resolve(""));
-    req.on("timeout", () => { req.destroy(); resolve(""); });
+    req.on("error", (e: any) => {
+      clearTimeout(hardTimer);
+      clearTimeout(inactivityTimer);
+      fail(new Error(`Narrative synthesis unreachable: ${e?.message ?? e}`));
+    });
     req.write(body);
     req.end();
   });

@@ -36,6 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.streamClaude = streamClaude;
 exports.streamClaudePty = streamClaudePty;
 exports.streamOllama = streamOllama;
+exports.streamOllamaAgentic = streamOllamaAgentic;
 exports.fetchHmeContext = fetchHmeContext;
 exports.validateMessage = validateMessage;
 exports.auditChanges = auditChanges;
@@ -47,6 +48,8 @@ exports.logShimError = logShimError;
 exports.streamHybrid = streamHybrid;
 const child_process_1 = require("child_process");
 const http = __importStar(require("http"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 // node-pty is loaded lazily inside streamClaudePty only — a native module crash
 // must never take down the extension host at startup.
 let _pty = null;
@@ -314,6 +317,7 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
             "Content-Type": "application/json",
             "Content-Length": Buffer.byteLength(body),
         },
+        timeout: 300000, // 5 min — match non-streaming timeout for consistency
     }, (res) => {
         if (res.statusCode && res.statusCode >= 400) {
             let errBody = "";
@@ -351,25 +355,281 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
                     if (parsed?.done)
                         fireDone();
                 }
-                catch { }
+                catch (e) {
+                    onError(`Ollama stream parse error: ${e?.message ?? String(e)}`);
+                }
             }
         });
         res.on("end", () => { if (!aborted)
             fireDone(); });
         res.on("error", (e) => onError(e.message));
     });
-    req.on("error", (e) => onError(e.message));
+    req.on("error", (e) => { if (!aborted)
+        onError(e.message); });
+    req.on("timeout", () => { req.destroy(); onError(`CRITICAL: Ollama stream stalled — no bytes for ${req.timeout ?? 300000}ms`); });
     req.write(body);
     req.end();
     return () => { aborted = true; req.destroy(); };
 }
-// ── HME context enrichment ─────────────────────────────────────────────────
-/**
- * Fetch KB context from the HME HTTP shim for a given query.
- * Returns the warm context string, or empty string if shim is unreachable.
- */
-async function fetchHmeContext(query, topK = 5) {
+// ── Ollama agentic tool loop ───────────────────────────────────────────────
+const OLLAMA_TOOLS = [
+    {
+        type: "function",
+        function: {
+            name: "bash",
+            description: "Execute a bash command in the project working directory. Use for creating/deleting files, running scripts, installing packages, etc.",
+            parameters: {
+                type: "object",
+                properties: { command: { type: "string", description: "The bash command to execute" } },
+                required: ["command"],
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "read_file",
+            description: "Read the full contents of a file by path.",
+            parameters: {
+                type: "object",
+                properties: { path: { type: "string", description: "File path relative to project root" } },
+                required: ["path"],
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "write_file",
+            description: "Write or overwrite a file with the given content.",
+            parameters: {
+                type: "object",
+                properties: {
+                    path: { type: "string", description: "File path relative to project root" },
+                    content: { type: "string", description: "File content to write" },
+                },
+                required: ["path", "content"],
+            },
+        },
+    },
+];
+const OLLAMA_HARD_TIMEOUT_MS = 300000; // 5 min — 30B models with large HME context can take 2-3 min
+/** Ping Ollama /api/tags — resolves true if alive, false otherwise. 3s timeout. */
+function isOllamaAlive(url) {
     return new Promise((resolve) => {
+        const u = new URL(url);
+        const req = http.get({ hostname: u.hostname, port: u.port || 80, path: "/api/tags", timeout: 3000 }, (res) => {
+            res.resume();
+            resolve(res.statusCode === 200);
+        });
+        req.on("error", () => resolve(false));
+        req.on("timeout", () => { req.destroy(); resolve(false); });
+    });
+}
+function ollamaChatOnce(messages, tools, opts) {
+    let req = null;
+    let hardTimer = null;
+    const promise = new Promise((resolve, reject) => {
+        hardTimer = setTimeout(() => { req?.destroy(); reject(new Error(`Ollama timeout: no response after ${OLLAMA_HARD_TIMEOUT_MS / 1000}s`)); }, OLLAMA_HARD_TIMEOUT_MS);
+        if (hardTimer.unref)
+            hardTimer.unref();
+        const body = JSON.stringify({
+            model: opts.model,
+            messages,
+            tools,
+            stream: false,
+            think: false,
+            options: { temperature: 0.7, num_predict: 4096 },
+        });
+        const url = new URL(`${opts.url}/api/chat`);
+        req = http.request({
+            hostname: url.hostname,
+            port: url.port || 80,
+            path: url.pathname,
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+            // NO socket timeout: stream:false means Ollama sends ZERO bytes until the
+            // full response is computed. A socket inactivity timeout is meaningless and
+            // causes false-alarm kills on large prompts. The hard timer is the sole safeguard.
+        }, (res) => {
+            let raw = "";
+            res.on("data", (c) => { raw += c.toString("utf8"); });
+            res.on("end", () => {
+                if (hardTimer)
+                    clearTimeout(hardTimer);
+                try {
+                    resolve(JSON.parse(raw));
+                }
+                catch (e) {
+                    reject(new Error(`Ollama parse error: ${raw.slice(0, 200)}`));
+                }
+            });
+            res.on("error", (e) => { if (hardTimer)
+                clearTimeout(hardTimer); reject(e); });
+        });
+        req.on("error", (e) => {
+            if (hardTimer)
+                clearTimeout(hardTimer);
+            const msg = e.code === "ECONNREFUSED" ? "Ollama not running — connection refused" : e.message;
+            reject(new Error(msg));
+        });
+        req.write(body);
+        req.end();
+    });
+    const cancel = () => { req?.destroy(); if (hardTimer)
+        clearTimeout(hardTimer); };
+    return { promise, cancel };
+}
+/** Parse XML-style function calls emitted by some models when structured tool_calls is absent. */
+function parseXmlFunctionCalls(content) {
+    const calls = [];
+    const fnRe = /<function=(\w+)>([\s\S]*?)<\/function>/g;
+    const paramRe = /<parameter=(\w+)>([\s\S]*?)<\/parameter>/g;
+    let fm;
+    while ((fm = fnRe.exec(content)) !== null) {
+        const name = fm[1];
+        const body = fm[2];
+        const args = {};
+        let pm;
+        const localRe = new RegExp(paramRe.source, "g");
+        while ((pm = localRe.exec(body)) !== null) {
+            args[pm[1]] = pm[2].trim();
+        }
+        calls.push({ function: { name, arguments: args } });
+    }
+    return calls;
+}
+/**
+ * Agentic Ollama loop: sends tools to the model, executes tool_calls, feeds
+ * results back, and repeats until the model produces a final text response.
+ * Supports bash, read_file, write_file tool calls.
+ */
+function streamOllamaAgentic(messages, opts, workingDir, onChunk, onDone, onError) {
+    let aborted = false;
+    let currentRequest = null;
+    const abort = () => {
+        aborted = true;
+        currentRequest?.cancel();
+    };
+    const runLoop = async () => {
+        const current = [...messages];
+        let iterations = 0;
+        const MAX = 15;
+        while (iterations++ < MAX && !aborted) {
+            onChunk(`⏳ Ollama thinking…`, "tool");
+            let response;
+            try {
+                currentRequest = ollamaChatOnce(current, OLLAMA_TOOLS, opts);
+                response = await currentRequest.promise;
+                currentRequest = null;
+            }
+            catch (e) {
+                currentRequest = null;
+                if (aborted)
+                    return;
+                // FAILFAST with auto-retry: check if Ollama is alive before giving up
+                const alive = await isOllamaAlive(opts.url);
+                if (alive) {
+                    onChunk(`⚠ Timeout but Ollama is alive — model may be slow. Retrying once…`, "error");
+                    try {
+                        currentRequest = ollamaChatOnce(current, OLLAMA_TOOLS, opts);
+                        response = await currentRequest.promise;
+                        currentRequest = null;
+                    }
+                    catch (retryErr) {
+                        currentRequest = null;
+                        if (!aborted)
+                            onError(`CRITICAL AFTER RETRY: ${retryErr.message ?? String(retryErr)}`);
+                        return;
+                    }
+                }
+                else {
+                    onError(`CRITICAL: ${e.message ?? String(e)} — Ollama is NOT responding at ${opts.url}`);
+                    return;
+                }
+            }
+            if (aborted)
+                return;
+            const msg = response?.message ?? {};
+            let toolCalls = msg.tool_calls ?? [];
+            // Fallback: parse XML-style function calls from content when structured tool_calls absent.
+            // Some models emit <function=name><parameter=key>val</parameter></function> in content.
+            if (toolCalls.length === 0 && (msg.content ?? "").includes("<function=")) {
+                toolCalls = parseXmlFunctionCalls(msg.content ?? "");
+            }
+            if (toolCalls.length === 0) {
+                // Final text response
+                const text = msg.content ?? "";
+                if (text)
+                    onChunk(text, "text");
+                onDone();
+                return;
+            }
+            // Add the assistant turn (may have empty content)
+            current.push({ role: "assistant", content: msg.content ?? "", tool_calls: toolCalls });
+            // Execute each tool call and add results
+            for (const tc of toolCalls) {
+                if (aborted)
+                    return;
+                const fnName = tc.function?.name ?? "";
+                let args = {};
+                try {
+                    args = typeof tc.function?.arguments === "string"
+                        ? JSON.parse(tc.function.arguments)
+                        : (tc.function?.arguments ?? {});
+                }
+                catch {
+                    args = {};
+                }
+                onChunk(`[${fnName}] ${JSON.stringify(args).slice(0, 120)}`, "tool");
+                let result = "";
+                try {
+                    if (fnName === "bash") {
+                        result = (0, child_process_1.execSync)(String(args.command ?? ""), {
+                            cwd: workingDir,
+                            timeout: 30000,
+                            encoding: "utf8",
+                        });
+                        result = result.trim() || "(no output)";
+                    }
+                    else if (fnName === "read_file") {
+                        const abs = path.resolve(workingDir, String(args.path ?? ""));
+                        result = fs.readFileSync(abs, "utf8");
+                    }
+                    else if (fnName === "write_file") {
+                        const abs = path.resolve(workingDir, String(args.path ?? ""));
+                        fs.mkdirSync(path.dirname(abs), { recursive: true });
+                        fs.writeFileSync(abs, String(args.content ?? ""), "utf8");
+                        result = `Written: ${args.path}`;
+                    }
+                    else {
+                        result = `Unknown tool: ${fnName}`;
+                    }
+                }
+                catch (e) {
+                    result = `Error: ${e.message ?? String(e)}`;
+                }
+                current.push({ role: "tool", content: result });
+                onChunk(`  → ${result.slice(0, 200)}`, "tool");
+            }
+        }
+        if (!aborted)
+            onError("Agentic loop exceeded max iterations");
+    };
+    runLoop().catch((e) => { if (!aborted)
+        onError(e?.message ?? String(e)); });
+    return abort;
+}
+// ── HME context enrichment ─────────────────────────────────────────────────
+/** Fetch KB context from the HME HTTP shim for a given query. Rejects on any failure. */
+async function fetchHmeContext(query, topK = 5) {
+    return new Promise((resolve, reject) => {
+        let done = false;
+        const fail = (msg) => { if (!done) {
+            done = true;
+            reject(new Error(msg));
+        } };
+        const timer = setTimeout(() => { req.destroy(); fail("HME shim /enrich timeout (5s)"); }, 5000);
         const body = JSON.stringify({ query, top_k: topK });
         const req = http.request({
             hostname: "127.0.0.1",
@@ -384,16 +644,20 @@ async function fetchHmeContext(query, topK = 5) {
             let raw = "";
             res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
+                clearTimeout(timer);
+                if (done)
+                    return;
+                done = true;
                 try {
                     const parsed = JSON.parse(raw);
                     resolve(parsed.warm ?? "");
                 }
-                catch {
-                    resolve("");
+                catch (e) {
+                    reject(new Error(`HME shim /enrich parse error: ${e?.message ?? e}`));
                 }
             });
         });
-        req.on("error", () => resolve(""));
+        req.on("error", (e) => { clearTimeout(timer); fail(`HME shim /enrich unreachable: ${e?.message ?? e}`); });
         req.write(body);
         req.end();
     });
@@ -404,7 +668,7 @@ async function fetchHmeContext(query, topK = 5) {
  * warnings are softer architectural nudges.
  */
 async function validateMessage(message) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const body = JSON.stringify({ query: message });
         const req = http.request({
             hostname: "127.0.0.1",
@@ -419,12 +683,12 @@ async function validateMessage(message) {
                 try {
                     resolve(JSON.parse(raw));
                 }
-                catch {
-                    resolve({ warnings: [], blocks: [] });
+                catch (e) {
+                    reject(new Error(`HME /validate parse error: ${e?.message ?? e}`));
                 }
             });
         });
-        req.on("error", () => resolve({ warnings: [], blocks: [] }));
+        req.on("error", (e) => reject(new Error(`HME /validate unreachable: ${e?.message ?? e}`)));
         req.write(body);
         req.end();
     });
@@ -434,7 +698,7 @@ async function validateMessage(message) {
  * Returns {violations, changed_files}.
  */
 async function auditChanges(changedFiles = "") {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const body = JSON.stringify({ changed_files: changedFiles });
         const req = http.request({
             hostname: "127.0.0.1",
@@ -449,12 +713,12 @@ async function auditChanges(changedFiles = "") {
                 try {
                     resolve(JSON.parse(raw));
                 }
-                catch {
-                    resolve({ violations: [], changed_files: [] });
+                catch (e) {
+                    reject(new Error(`HME /audit parse error: ${e?.message ?? e}`));
                 }
             });
         });
-        req.on("error", () => resolve({ violations: [], changed_files: [] }));
+        req.on("error", (e) => reject(new Error(`HME /audit unreachable: ${e?.message ?? e}`)));
         req.write(body);
         req.end();
     });
@@ -464,13 +728,13 @@ async function auditChanges(changedFiles = "") {
  * Mirrors the TranscriptLogger's JSONL entries to the server-side store.
  */
 async function postTranscript(entries) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const body = JSON.stringify({ entries });
         const req = http.request({
             hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/transcript", method: "POST",
             headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
         }, () => resolve());
-        req.on("error", () => resolve());
+        req.on("error", (e) => reject(new Error(`HME /transcript unreachable: ${e?.message ?? e}`)));
         req.write(body);
         req.end();
     });
@@ -480,7 +744,7 @@ async function postTranscript(entries) {
  * Called after tool calls that modify files (Edit/Write).
  */
 async function reindexFiles(files) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const body = JSON.stringify({ files });
         const req = http.request({
             hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/reindex", method: "POST",
@@ -492,12 +756,12 @@ async function reindexFiles(files) {
                 try {
                     resolve(JSON.parse(raw));
                 }
-                catch {
-                    resolve({ indexed: [], count: 0 });
+                catch (e) {
+                    reject(new Error(`HME /reindex parse error: ${e?.message ?? e}`));
                 }
             });
         });
-        req.on("error", () => resolve({ indexed: [], count: 0 }));
+        req.on("error", (e) => reject(new Error(`HME /reindex unreachable: ${e?.message ?? e}`)));
         req.write(body);
         req.end();
     });
@@ -507,13 +771,13 @@ async function reindexFiles(files) {
  * Called after the Ollama arbiter synthesizes a rolling summary.
  */
 async function postNarrative(narrative) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const body = JSON.stringify({ narrative });
         const req = http.request({
             hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/narrative", method: "POST",
             headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
         }, () => resolve());
-        req.on("error", () => resolve());
+        req.on("error", (e) => reject(new Error(`HME /narrative unreachable: ${e?.message ?? e}`)));
         req.write(body);
         req.end();
     });
@@ -543,13 +807,13 @@ async function isHmeShimReady() {
  * Writes to log/hme-errors.log on disk — readable by main Claude session.
  */
 async function logShimError(source, message, detail = "") {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const body = JSON.stringify({ source, message, detail });
         const req = http.request({
             hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/error", method: "POST",
             headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
         }, () => resolve());
-        req.on("error", () => resolve());
+        req.on("error", (e) => reject(new Error(`HME /error unreachable: ${e?.message ?? e}`)));
         req.write(body);
         req.end();
     });
@@ -558,15 +822,20 @@ async function logShimError(source, message, detail = "") {
  * Hybrid route: enrich message with HME KB context, then send to Ollama.
  * Falls back to plain Ollama if shim is unreachable.
  */
-async function streamHybrid(message, history, opts, onChunk, onDone, onError) {
-    const hmeContext = await fetchHmeContext(message);
-    const messages = [];
-    if (hmeContext) {
-        messages.push({
-            role: "system",
-            content: `You are an expert assistant with access to the following project knowledge base context. Use it to ground your response.\n\n${hmeContext}`,
-        });
+async function streamHybrid(message, history, opts, workingDir, onChunk, onDone, onError) {
+    let hmeContext = "";
+    try {
+        hmeContext = await fetchHmeContext(message);
     }
+    catch (e) {
+        onChunk(`FAILFAST: HME context enrichment failed: ${e?.message ?? e}`, "error");
+    }
+    const messages = [];
+    const systemContent = [
+        "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
+        hmeContext ? `\nProject knowledge base context:\n${hmeContext}` : "",
+    ].join("").trim();
+    messages.push({ role: "system", content: systemContent });
     messages.push(...history, { role: "user", content: message });
-    return streamOllama(messages, opts, onChunk, onDone, onError);
+    return streamOllamaAgentic(messages, opts, workingDir, onChunk, onDone, onError);
 }
