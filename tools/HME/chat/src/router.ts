@@ -102,7 +102,8 @@ export function streamClaude(
         const evt = JSON.parse(line);
         handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
       } catch {
-        // non-JSON line, skip
+        // Non-JSON lines from CLI are often error messages — surface them
+        if (line.trim()) onChunk(line.trim(), "error");
       }
     }
   });
@@ -118,7 +119,10 @@ export function streamClaude(
       try {
         const evt = JSON.parse(buf.trim());
         handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
-      } catch {}
+      } catch {
+        // Final buffer wasn't JSON — surface it (often a critical error message)
+        onChunk(buf.trim(), "error");
+      }
     }
     if (code !== 0) onError(`Claude CLI exited with code ${code}`);
     else safeOnDone(); // ensure done fires even if result event was missing
@@ -287,6 +291,23 @@ export function streamClaudePty(
     if (PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-400)))) {
       scheduleDone();
     }
+  });
+
+  // FAILFAST: if the CLI process exits without triggering a done-pattern,
+  // fire onError so the stream never hangs. This catches: API 500, auth errors,
+  // crashes, SIGKILL. The 1.5s delay lets any final onData flush arrive first.
+  proc.onExit(({ exitCode }: { exitCode: number; signal?: number }) => {
+    if (turnDone) return;  // already handled by done-pattern detection
+    setTimeout(() => {
+      if (turnDone) return;
+      turnDone = true;
+      if (doneTimer) clearTimeout(doneTimer);
+      if (exitCode !== 0) {
+        onError(`Claude CLI exited with code ${exitCode}`);
+      } else {
+        onDone();  // clean exit but no done-pattern matched (short response)
+      }
+    }, 1500);
   });
 
   const killed = { v: false };
@@ -477,6 +498,11 @@ function ollamaChatOnce(
         res.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
         res.on("end", () => {
           if (hardTimer) clearTimeout(hardTimer);
+          if (res.statusCode && res.statusCode >= 400) {
+            try { reject(new Error((JSON.parse(raw) as any).error ?? `Ollama HTTP ${res.statusCode}`)); }
+            catch { reject(new Error(`Ollama HTTP ${res.statusCode}: ${raw.slice(0, 200)}`)); }
+            return;
+          }
           try { resolve(JSON.parse(raw)); }
           catch (e) { reject(new Error(`Ollama parse error: ${raw.slice(0, 200)}`)); }
         });
@@ -485,7 +511,9 @@ function ollamaChatOnce(
     );
     req.on("error", (e: any) => {
       if (hardTimer) clearTimeout(hardTimer);
-      const msg = e.code === "ECONNREFUSED" ? "Ollama not running — connection refused" : e.message;
+      const msg = e.code === "ECONNREFUSED"
+        ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${opts.url}`
+        : e.message;
       reject(new Error(msg));
     });
     req.write(body);
@@ -565,7 +593,8 @@ export function streamOllamaAgentic(
             return;
           }
         } else {
-          onError(`CRITICAL: ${e.message ?? String(e)} — Ollama is NOT responding at ${opts.url}`);
+          const errMsg = e.message ?? String(e);
+          onError(errMsg.startsWith("CRITICAL") ? errMsg : `CRITICAL: ${errMsg} — Ollama is NOT responding at ${opts.url}`);
           return;
         }
       }
@@ -821,11 +850,17 @@ export async function isHmeShimReady(): Promise<{ ready: boolean; errors: any[] 
           const parsed = JSON.parse(raw);
           resolve({ ready: parsed.status === "ready", errors: parsed.recent_errors ?? [] });
         }
-        catch { resolve({ ready: false, errors: [] }); }
+        catch (e: any) {
+          console.error(`[HME] shim /health parse error: ${e?.message ?? e}`);
+          resolve({ ready: false, errors: [{ message: `parse error: ${e?.message}` }] });
+        }
       });
     });
-    req.on("error", () => resolve({ ready: false, errors: [] }));
-    req.setTimeout(1000, () => { req.destroy(); resolve({ ready: false, errors: [] }); });
+    req.on("error", (e: any) => {
+      console.error(`[HME] shim /health unreachable: ${e?.message ?? e}`);
+      resolve({ ready: false, errors: [{ message: `unreachable: ${e?.message}` }] });
+    });
+    req.setTimeout(1000, () => { req.destroy(); resolve({ ready: false, errors: [{ message: "timeout" }] }); });
   });
 }
 

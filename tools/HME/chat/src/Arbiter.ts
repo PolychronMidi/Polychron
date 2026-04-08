@@ -108,12 +108,21 @@ export async function classifyMessage(
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
       },
       (res) => {
+        // HTTP error from Ollama (model not found, overloaded, etc)
+        if (res.statusCode && res.statusCode >= 400) {
+          let errBody = "";
+          res.on("data", (c: Buffer) => { errBody += c.toString("utf8"); });
+          res.on("end", () => {
+            try { fail(`arbiter HTTP ${res.statusCode}: ${(JSON.parse(errBody) as any).error ?? errBody.slice(0, 100)}`); }
+            catch { fail(`arbiter HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`); }
+          });
+          return;
+        }
         let contentAccum = "";
         let rawChunk = "";
         res.on("data", (c: Buffer) => {
           resetInactivity();
           rawChunk += c.toString("utf8");
-          // Each streamed line is a JSON object with message.content fragment
           const lines = rawChunk.split("\n");
           rawChunk = lines.pop() ?? "";
           for (const line of lines) {
@@ -121,7 +130,7 @@ export async function classifyMessage(
             try {
               const obj = JSON.parse(line);
               contentAccum += obj.message?.content ?? "";
-            } catch { /* partial line, handled by rawChunk buffer */ }
+            } catch { /* partial streaming line — rawChunk buffer handles reassembly */ }
           }
         });
         res.on("end", () => {
@@ -136,17 +145,18 @@ export async function classifyMessage(
             const reason = String(inner.reason ?? "").slice(0, 200) || "arbiter parse failed";
             resolve({ route, confidence, reason, escalated: false, isError: false });
           } catch {
-            resolve({ route: "claude", confidence: 0.5, reason: "arbiter parse failed", escalated: false, isError: true });
+            resolve({ route: "claude", confidence: 0.5, reason: `arbiter parse failed: ${contentAccum.slice(0, 80)}`, escalated: false, isError: true });
           }
         });
       }
     );
-    req.on("error", () => {
+    req.on("error", (e: any) => {
       clearTimeout(hardTimer);
       clearTimeout(inactivityTimer);
       if (done) return;
       done = true;
-      resolve({ route: "claude", confidence: 0.5, reason: "arbiter unreachable", escalated: false, isError: true });
+      const reason = e?.code === "ECONNREFUSED" ? "arbiter unreachable — Ollama not running" : `arbiter unreachable: ${e?.message ?? e}`;
+      resolve({ route: "claude", confidence: 0.5, reason, escalated: false, isError: true });
     });
     req.write(body);
     req.end();
@@ -199,6 +209,15 @@ Digest:`;
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
       },
       (res) => {
+        if (res.statusCode && res.statusCode >= 400) {
+          let errBody = "";
+          res.on("data", (c: Buffer) => { errBody += c.toString("utf8"); });
+          res.on("end", () => {
+            try { fail(new Error(`Narrative HTTP ${res.statusCode}: ${(JSON.parse(errBody) as any).error ?? errBody.slice(0, 100)}`)); }
+            catch { fail(new Error(`Narrative HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`)); }
+          });
+          return;
+        }
         let contentAccum = "";
         let rawChunk = "";
         res.on("data", (c: Buffer) => {
@@ -208,7 +227,7 @@ Digest:`;
           rawChunk = lines.pop() ?? "";
           for (const line of lines) {
             if (!line.trim()) continue;
-            try { contentAccum += JSON.parse(line).message?.content ?? ""; } catch { /* partial */ }
+            try { contentAccum += JSON.parse(line).message?.content ?? ""; } catch { /* partial streaming line */ }
           }
         });
         res.on("end", () => {
@@ -223,7 +242,8 @@ Digest:`;
     req.on("error", (e: any) => {
       clearTimeout(hardTimer);
       clearTimeout(inactivityTimer);
-      fail(new Error(`Narrative synthesis unreachable: ${e?.message ?? e}`));
+      const reason = e?.code === "ECONNREFUSED" ? "Ollama not running" : (e?.message ?? e);
+      fail(new Error(`Narrative synthesis unreachable: ${reason}`));
     });
     req.write(body);
     req.end();
