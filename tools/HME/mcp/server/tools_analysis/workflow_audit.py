@@ -23,7 +23,7 @@ def what_did_i_forget(changed_files: str) -> str:
     limits = BUDGET_LIMITS[budget]
     files = [f.strip() for f in changed_files.split(",") if f.strip()]
     if not files:
-        return "No files specified. Pass comma-separated paths."
+        return "No changed files detected. If you just edited files, they may already be committed. Pass changed_files='path1,path2' explicitly."
     parts = [f"# Post-Change Audit (context: {budget})\n"]
     all_warnings = []
     doc_updates_needed = set()
