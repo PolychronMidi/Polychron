@@ -577,6 +577,116 @@ KB entries < 1 day: 1.05x boost. > 7 days: gradual decay (0.7x at 37 days). Rece
 
 `add_knowledge` supports `related_to="<entry_id>"` with `relation_type`: `caused_by`, `fixed_by`, `depends_on`, `contradicts`, `similar_to`, `supersedes`. Creates typed graph edges for `knowledge_graph()` traversal.
 
+## HME Chat — Custom VS Code Chat Panel
+
+A custom VS Code chat panel at `tools/HME/chat/` that surpasses Claude's built-in plugin by routing every message through the HME intelligence layer. Not a wrapper — a full orchestration hub.
+
+### Architecture
+
+```
+tools/HME/chat/
+  src/
+    extension.ts          VS Code activation entrypoint (Ctrl+Shift+H)
+    ChatPanel.ts          WebviewPanel with inline HTML/CSS/JS chat UI
+    router.ts             Claude CLI, PTY, Ollama, Hybrid streaming + HME HTTP calls
+    Arbiter.ts            Local qwen3:4b classifies message complexity for auto-routing
+    TranscriptLogger.ts   Append-only JSONL session transcript (survives compaction)
+    SessionStore.ts       Persistent session storage (~/.config/hme-chat/workspaces/)
+    types.ts              Shared ChatMessage interface
+  out/                    Compiled JS
+  package.json            VS Code extension manifest
+```
+
+### Five Routes
+
+| Route | Backend | HME Integration | Cost |
+|-------|---------|----------------|------|
+| **Auto** | Arbiter decides | Full: validation + enrichment + audit + transcript | Free classification, then Claude or Local |
+| **Claude** | `claude` via PTY (hooks fire) | Hooks enforce constraints, PostToolUse logs to transcript | Subscription (Max/Pro) |
+| **Local** | Ollama (qwen3-coder:30b) | Pre-send validation, post-response audit, transcript | Free |
+| **Hybrid** | HME HTTP enrich → Ollama | KB + transcript context injected as system prompt | Free |
+| _(fallback)_ | `claude -p` stream-json | No hooks, but pre/post validation still runs | Subscription |
+
+### HME Integration Pipeline
+
+Every message, regardless of route, passes through this pipeline:
+
+```
+User types message
+    │
+    ├─ POST /validate → KB anti-pattern check → ⛔ block or ⚠ warn notice
+    │
+    ├─ [Auto?] Arbiter (qwen3:4b) classifies → Claude or Local
+    │
+    ├─ TranscriptLogger.logUser() + POST /transcript (mirror to HTTP shim)
+    │
+    ├─ Dispatch to backend (PTY Claude / Ollama / Hybrid)
+    │  └─ Tool calls logged to transcript in real-time
+    │
+    ├─ TranscriptLogger.logAssistant() + mirror to shim
+    │
+    ├─ Parse tool calls for file paths → POST /reindex (sub-second KB freshness)
+    │
+    ├─ POST /audit → git diff → KB constraint check → notice bar
+    │
+    ├─ Every 8 turns: qwen3:4b synthesizes narrative digest → POST /narrative
+    │
+    └─ Session saved to disk (messages + claudeSessionId + ollamaHistory)
+```
+
+### HME HTTP Shim
+
+Standalone Python server that exposes the RAG engine over HTTP for the chat panel and hooks.
+
+```bash
+PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py
+# Listens on 127.0.0.1:7734
+```
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Readiness + transcript count + KB status |
+| `/enrich` | POST | KB hits + transcript context for message enrichment |
+| `/validate` | POST | Pre-send anti-pattern/constraint check |
+| `/audit` | POST | Post-response changed-file constraint audit |
+| `/transcript` | GET | Read recent transcript entries (windowed) |
+| `/transcript` | POST | Append entries to transcript |
+| `/reindex` | POST | Immediate mini-reindex of specific files |
+| `/narrative` | GET/POST | Read/store narrative digest |
+
+### KB and Context Access
+
+**Claude route** has full access: the PTY-spawned `claude` process connects to the MCP server (which holds the warm pre-edit cache, full KB, symbol index). Hooks from `.claude/settings.json` fire — including the PostToolUse transcript logger.
+
+**Local/Hybrid routes** access KB via the HTTP shim (`/enrich` pulls KB + transcript context). They do NOT have the warm pre-edit cache (that lives in the MCP server's memory). Transcript context partially compensates — recent tool calls and narrative digests provide session awareness.
+
+**To maximize local route intelligence:**
+1. Start the HTTP shim before opening the chat panel
+2. Run `warm_pre_edit_cache()` in the main Claude session first (warms KB search caches)
+3. Use Hybrid route — it injects KB context as a system prompt
+
+### Session Persistence
+
+Sessions stored at `~/.config/hme-chat/workspaces/{hash}/`:
+- Auto-created on first message (title from first 60 chars)
+- `claudeSessionId` persisted for `--resume` across VS Code restarts
+- `ollamaHistory` persisted for local/hybrid conversation continuity
+- Session sidebar: click to load, `+` for new, `×` to delete
+
+### PostToolUse Transcript Hook
+
+`tools/HME/hooks/log-tool-call.sh` — universal PostToolUse hook (matcher: `""`) that logs every tool call from the main Claude Code session to `log/session-transcript.jsonl` and mirrors to the HTTP shim. Also triggers `/reindex` for Edit/Write operations.
+
+### Installation
+
+```bash
+cd tools/HME/chat && npm install && npm run compile
+ln -s /home/jah/Polychron/tools/HME/chat ~/.vscode/extensions/hme-chat
+# Reload VS Code, then Ctrl+Shift+H to open
+# Start the HTTP shim for hybrid/local KB enrichment:
+PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py &
+```
+
 ## Maintenance
 
 ### Reindex
