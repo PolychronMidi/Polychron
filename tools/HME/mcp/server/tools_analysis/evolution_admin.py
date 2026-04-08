@@ -21,7 +21,7 @@ def hme_introspect() -> str:
         for tool, count in sorted_usage:
             parts.append(f"  {tool}: {count}")
         parts.append(f"\n**Total tracked calls:** {sum(c for _, c in sorted_usage)}")
-        expected = {"before_editing", "what_did_i_forget", "search_knowledge", "search_code", "add_knowledge"}
+        expected = {"learn", "find", "read", "review", "evolve", "status", "trace"}
         unused = expected - set(_usage_stats.keys())
         if unused:
             parts.append(f"**Mandatory but unused:** {', '.join(sorted(unused))}")
@@ -360,15 +360,7 @@ def hme_selftest() -> str:
     passed = sum(1 for r in results if r.startswith("PASS"))
     total = len(results)
     header = f"## HME Self-Test: {passed}/{total} passed\n"
-    output = header + "\n".join(f"  {r}" for r in results)
-
-    try:
-        introspect_out = hme_introspect()
-        output += "\n\n" + introspect_out
-    except Exception:
-        pass
-
-    return output
+    return header + "\n".join(f"  {r}" for r in results)
 
 
 @ctx.mcp.tool()

@@ -59,8 +59,20 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             from .health import codebase_health as _ch
             parts.append(_ch())
         elif m == "forget":
+            _cf = changed_files
+            if not _cf:
+                # Auto-detect changed files from git
+                try:
+                    import subprocess as _sp
+                    _git = _sp.run(
+                        ["git", "-C", ctx.PROJECT_ROOT, "diff", "--name-only", "HEAD"],
+                        capture_output=True, text=True, timeout=5
+                    )
+                    _cf = ",".join(f.strip() for f in _git.stdout.strip().splitlines() if f.strip())
+                except Exception:
+                    pass
             from .workflow_audit import what_did_i_forget as _wdif
-            parts.append(_wdif(changed_files or ""))
+            parts.append(_wdif(_cf or ""))
         elif m == "convention":
             if not file_path:
                 parts.append("Error: convention mode requires file_path.")

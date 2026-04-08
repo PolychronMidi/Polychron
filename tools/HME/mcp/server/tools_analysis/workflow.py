@@ -52,18 +52,29 @@ def before_editing(file_path: str) -> str:
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
     if not os.path.isfile(abs_path):
-        # Did-you-mean: search for closest filename match in the project
+        # Auto-resolve module names: try adding .js and searching src/
         _basename = os.path.basename(file_path.strip())
         _did_you_mean = []
         try:
             import glob as _glob
-            _candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "**", _basename), recursive=True)
-            _did_you_mean = [c.replace(ctx.PROJECT_ROOT + "/", "") for c in _candidates[:5]]
+            # Try exact basename first, then with .js extension
+            for _pattern in [_basename, f"{_basename}.js", f"{_basename}.ts", f"{_basename}.py"]:
+                _candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", _pattern), recursive=True)
+                if not _candidates:
+                    _candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "**", _pattern), recursive=True)
+                if _candidates:
+                    # If exactly one match, auto-resolve instead of suggesting
+                    if len(_candidates) == 1:
+                        abs_path = _candidates[0]
+                        break
+                    _did_you_mean = [c.replace(ctx.PROJECT_ROOT + "/", "") for c in _candidates[:5]]
+                    break
         except Exception:
             pass
-        _hint = (f"\nDid you mean?\n" + "\n".join(f"  {p}" for p in _did_you_mean)) if _did_you_mean else \
-                "\nUse get_module_map to find files by directory."
-        return f"File not found: {abs_path}{_hint}"
+        if not os.path.isfile(abs_path):
+            _hint = (f"\nDid you mean?\n" + "\n".join(f"  {p}" for p in _did_you_mean)) if _did_you_mean else \
+                    "\nUse find(query, mode='map') to find files by directory."
+            return f"File not found: {abs_path}{_hint}"
     rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
     module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
     parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]

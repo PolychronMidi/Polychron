@@ -47,13 +47,12 @@ def status(mode: str = "all") -> str:
             return f"Perceptual analysis unavailable: {e}"
 
     if mode == "hme":
-        from .evolution_admin import hme_selftest as _st, hme_introspect as _hi
-        parts = [_st()]
-        try:
-            parts.append(_hi())
-        except Exception:
-            pass
-        return "\n\n".join(parts)
+        from .evolution_admin import hme_selftest as _st
+        return _st()
+
+    if mode == "introspect":
+        from .evolution_admin import hme_introspect as _hi
+        return _hi()
 
     # mode == "all" — unified overview
     parts = []
