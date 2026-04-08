@@ -34,6 +34,8 @@ export class ChatPanel {
   private readonly _projectRoot: string;
   private _state: SessionState = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
   private _cancelCurrent?: () => void;
+  private _isStreaming = false;
+  private _messageQueue: any[] = [];
   private _disposables: vscode.Disposable[] = [];
   private _transcript: TranscriptLogger;
 
@@ -96,16 +98,21 @@ export class ChatPanel {
   private _handleMessage(msg: any) {
     switch (msg.type) {
       case "send":
-        // Cancel any in-progress stream before starting new one (interrupt send)
-        if (this._cancelCurrent) {
-          this._cancelCurrent();
-          this._cancelCurrent = undefined;
-          this._post({ type: "cancelConfirmed" });
+        if (this._isStreaming) {
+          // Show user message immediately; queue response until current stream ends
+          const queuedUserMsg: ChatMessage = {
+            id: uid(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
+          };
+          this._post({ type: "message", message: queuedUserMsg });
+          this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
+        } else {
+          this._isStreaming = true;
+          this._onSend(msg).catch((e) => {
+            this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
+            this._post({ type: "streamEnd", id: "err" });
+            this._drainQueue();
+          });
         }
-        this._onSend(msg).catch((e) => {
-          this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
-          this._post({ type: "streamEnd", id: "err" });
-        });
         break;
       case "cancel":
         this._cancelCurrent?.();
@@ -226,15 +233,13 @@ export class ChatPanel {
       content: msg.text, summary: `User [${resolvedRoute}]: ${msg.text.slice(0, 100)}`,
     }]).catch(() => {});
 
-    const userMsg: ChatMessage = {
-      id: uid(),
-      role: "user",
-      text: msg.text,
-      route: resolvedRoute,
-      ts: Date.now(),
+    const userMsg: ChatMessage = (msg as any)._queuedUserMsg ?? {
+      id: uid(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
     };
     this._state.messages.push(userMsg);
-    this._post({ type: "message", message: userMsg });
+    if (!(msg as any)._queuedUserMsg) {
+      this._post({ type: "message", message: userMsg });
+    }
 
     // ── Cross-route history portability ──
     if (this._state.lastRoute && this._state.lastRoute !== resolvedRoute) {
@@ -289,10 +294,9 @@ export class ChatPanel {
       // Log to transcript + mirror to shim
       this._transcript.logAssistant(text, msg.route ?? "claude", msg.claudeModel, tools);
       this._mirrorAssistantToShim(text, msg.route ?? "claude", msg.claudeModel, tools);
-      // Detect files modified by tool calls and trigger reindex
       this._reindexFromTools(tools);
-      // Post-response audit
       this._runPostAudit();
+      this._drainQueue();
     };
 
     const onChunk = (chunk: string, type: string) => {
@@ -400,6 +404,7 @@ export class ChatPanel {
         this._transcript.logAssistant(text, "local", msg.ollamaModel);
         this._mirrorAssistantToShim(text, "local", msg.ollamaModel);
         this._runPostAudit();
+        this._drainQueue();
       },
       (err) => {
         this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
@@ -436,6 +441,7 @@ export class ChatPanel {
         this._transcript.logAssistant(text, "hybrid", msg.ollamaModel);
         this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel);
         this._runPostAudit();
+        this._drainQueue();
       },
       (err) => {
         this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
@@ -445,6 +451,19 @@ export class ChatPanel {
       cancelFn = cancel;
       this._cancelCurrent = () => cancelFn?.();
     });
+  }
+
+  private _drainQueue() {
+    this._isStreaming = false;
+    if (this._messageQueue.length > 0) {
+      const next = this._messageQueue.shift();
+      this._isStreaming = true;
+      this._onSend(next).catch((e) => {
+        this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
+        this._post({ type: "streamEnd", id: "err" });
+        this._drainQueue();
+      });
+    }
   }
 
   private _post(data: any) {
@@ -728,6 +747,14 @@ function getInlineHtml(): string {
     color: var(--subtle);
     font-size: 10px;
   }
+  .queued-badge {
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    opacity: 0.7;
+  }
 
   .error-msg {
     color: var(--error-fg);
@@ -996,6 +1023,9 @@ function appendMessage(msg) {
   header.innerHTML = \`<span>\${roleLabel}</span>\`;
   if (msg.route) {
     header.innerHTML += \`<span class="route-badge route-\${msg.route}">\${msg.route}</span>\`;
+  }
+  if (streaming && msg.role === 'user') {
+    header.innerHTML += \`<span class="queued-badge">queued</span>\`;
   }
 
   const body = document.createElement('div');

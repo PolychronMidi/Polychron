@@ -44,6 +44,8 @@ const Arbiter_1 = require("./Arbiter");
 class ChatPanel {
     constructor(panel, projectRoot) {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+        this._isStreaming = false;
+        this._messageQueue = [];
         this._disposables = [];
         this._panel = panel;
         this._projectRoot = projectRoot;
@@ -93,16 +95,22 @@ class ChatPanel {
     _handleMessage(msg) {
         switch (msg.type) {
             case "send":
-                // Cancel any in-progress stream before starting new one (interrupt send)
-                if (this._cancelCurrent) {
-                    this._cancelCurrent();
-                    this._cancelCurrent = undefined;
-                    this._post({ type: "cancelConfirmed" });
+                if (this._isStreaming) {
+                    // Show user message immediately; queue response until current stream ends
+                    const queuedUserMsg = {
+                        id: uid(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
+                    };
+                    this._post({ type: "message", message: queuedUserMsg });
+                    this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
                 }
-                this._onSend(msg).catch((e) => {
-                    this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
-                    this._post({ type: "streamEnd", id: "err" });
-                });
+                else {
+                    this._isStreaming = true;
+                    this._onSend(msg).catch((e) => {
+                        this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
+                        this._post({ type: "streamEnd", id: "err" });
+                        this._drainQueue();
+                    });
+                }
                 break;
             case "cancel":
                 this._cancelCurrent?.();
@@ -211,15 +219,13 @@ class ChatPanel {
                 ts: Date.now(), type: "user", route: resolvedRoute, model,
                 content: msg.text, summary: `User [${resolvedRoute}]: ${msg.text.slice(0, 100)}`,
             }]).catch(() => { });
-        const userMsg = {
-            id: uid(),
-            role: "user",
-            text: msg.text,
-            route: resolvedRoute,
-            ts: Date.now(),
+        const userMsg = msg._queuedUserMsg ?? {
+            id: uid(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
         };
         this._state.messages.push(userMsg);
-        this._post({ type: "message", message: userMsg });
+        if (!msg._queuedUserMsg) {
+            this._post({ type: "message", message: userMsg });
+        }
         // ── Cross-route history portability ──
         if (this._state.lastRoute && this._state.lastRoute !== resolvedRoute) {
             this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
@@ -271,10 +277,9 @@ class ChatPanel {
             // Log to transcript + mirror to shim
             this._transcript.logAssistant(text, msg.route ?? "claude", msg.claudeModel, tools);
             this._mirrorAssistantToShim(text, msg.route ?? "claude", msg.claudeModel, tools);
-            // Detect files modified by tool calls and trigger reindex
             this._reindexFromTools(tools);
-            // Post-response audit
             this._runPostAudit();
+            this._drainQueue();
         };
         const onChunk = (chunk, type) => {
             if (type === "text") {
@@ -363,6 +368,7 @@ class ChatPanel {
             this._transcript.logAssistant(text, "local", msg.ollamaModel);
             this._mirrorAssistantToShim(text, "local", msg.ollamaModel);
             this._runPostAudit();
+            this._drainQueue();
         }, (err) => {
             this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
             this._post({ type: "streamEnd", id: assistantId });
@@ -389,6 +395,7 @@ class ChatPanel {
             this._transcript.logAssistant(text, "hybrid", msg.ollamaModel);
             this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel);
             this._runPostAudit();
+            this._drainQueue();
         }, (err) => {
             this._post({ type: "streamChunk", id: assistantId, chunkType: "error", chunk: err });
             this._post({ type: "streamEnd", id: assistantId });
@@ -396,6 +403,18 @@ class ChatPanel {
             cancelFn = cancel;
             this._cancelCurrent = () => cancelFn?.();
         });
+    }
+    _drainQueue() {
+        this._isStreaming = false;
+        if (this._messageQueue.length > 0) {
+            const next = this._messageQueue.shift();
+            this._isStreaming = true;
+            this._onSend(next).catch((e) => {
+                this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
+                this._post({ type: "streamEnd", id: "err" });
+                this._drainQueue();
+            });
+        }
     }
     _post(data) {
         this._panel.webview.postMessage(data);
@@ -675,6 +694,14 @@ function getInlineHtml() {
     color: var(--subtle);
     font-size: 10px;
   }
+  .queued-badge {
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    opacity: 0.7;
+  }
 
   .error-msg {
     color: var(--error-fg);
@@ -943,6 +970,9 @@ function appendMessage(msg) {
   header.innerHTML = \`<span>\${roleLabel}</span>\`;
   if (msg.route) {
     header.innerHTML += \`<span class="route-badge route-\${msg.route}">\${msg.route}</span>\`;
+  }
+  if (streaming && msg.role === 'user') {
+    header.innerHTML += \`<span class="queued-badge">queued</span>\`;
   }
 
   const body = document.createElement('div');
