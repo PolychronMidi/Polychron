@@ -51,8 +51,8 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     try:
         from server.tools_analysis.synthesis import append_session_narrative
         append_session_narrative("knowledge_added", f"[{category}] {title[:70]}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("append_session_narrative failed: %s", e)
 
     return f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
 
@@ -248,8 +248,8 @@ def memory_dream() -> str:
             if synthesis:
                 parts.append(f"\n## Architectural Interpretation *(adaptive)*")
                 parts.append(synthesis)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Architectural synthesis failed: %s", e)
 
     return "\n".join(parts)
 
@@ -346,8 +346,8 @@ def knowledge_graph(query: str) -> str:
             if synthesis:
                 parts.append(f"\n## Cluster Analysis *(adaptive)*")
                 parts.append(synthesis)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Cluster analysis synthesis failed: %s", e)
 
     return "\n".join(parts)
 

@@ -62,7 +62,9 @@ function readJson(filePath, fallback) {
     try {
         return JSON.parse(fs.readFileSync(filePath, "utf8"));
     }
-    catch {
+    catch (e) {
+        if (e?.code !== "ENOENT")
+            console.error(`[SessionStore] readJson failed for ${filePath}: ${e?.message ?? e}`);
         return fallback;
     }
 }
@@ -112,7 +114,10 @@ function deleteSession(projectRoot, id) {
     try {
         fs.unlinkSync(sessionPath(projectRoot, id));
     }
-    catch { }
+    catch (e) {
+        if (e?.code !== "ENOENT")
+            console.error(`[SessionStore] Delete failed: ${e?.message ?? e}`);
+    }
 }
 function renameSession(projectRoot, id, title) {
     const index = readJson(indexPath(projectRoot), []);

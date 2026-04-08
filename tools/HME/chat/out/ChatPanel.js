@@ -209,7 +209,16 @@ class ChatPanel {
         if (msg.route === "auto") {
             this._post({ type: "notice", level: "info", text: "🔀 Arbiter classifying…" });
             const transcriptCtx = this._transcript.getRecentContext(20, 1500);
-            const decision = await (0, Arbiter_1.classifyMessage)(msg.text, transcriptCtx, 0);
+            // Wire real signals into the arbiter — constraint density + error rate
+            let constraintCount = 0;
+            try {
+                const { warnings, blocks } = await (0, router_1.validateMessage)(msg.text);
+                constraintCount = warnings.length + blocks.length;
+            }
+            catch { /* shim down — arbiter proceeds with 0 constraints */ }
+            const recentErrors = this._transcript.getWindow(15)
+                .filter((e) => (e.type === "audit" || e.type === "tool_result") && e.content?.includes("ERROR")).length;
+            const decision = await (0, Arbiter_1.classifyMessage)(msg.text, transcriptCtx, constraintCount, recentErrors);
             resolvedRoute = decision.route;
             const isArbiterError = decision.isError;
             this._post({
@@ -390,12 +399,15 @@ class ChatPanel {
             this._state.messages.push({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: label, ts: Date.now() });
             this._post({ type: "streamEnd", id: assistantId });
             this._transcript.logAssistant(text, label, msg.ollamaModel, tools);
+            const changedFiles = this._reindexFromTools(tools);
+            this._runPostAudit(changedFiles);
             safeEnd();
         };
         const onChunk = (chunk, type) => {
             if (type === "tool") {
                 tools.push(chunk);
                 this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
+                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, label);
             }
             else {
                 text += chunk;
@@ -407,7 +419,7 @@ class ChatPanel {
             if (!streamEnded) {
                 streamEnded = true;
                 this._post({ type: "streamEnd", id: assistantId });
-                onForceDrain(); // counts as done — lets surviving sibling continue
+                onForceDrain();
             }
         });
         cancelFns.push(cancel);
@@ -415,6 +427,7 @@ class ChatPanel {
     _streamAgentHybrid(msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
         const history = [...this._state.ollamaHistory];
         let text = "";
+        let tools = [];
         let aborted = false;
         let streamEnded = false;
         const safeEnd = () => { if (streamEnded)
@@ -426,14 +439,23 @@ class ChatPanel {
         (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, (chunk, type) => {
             if (aborted)
                 return;
-            text += chunk;
-            this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+            if (type === "tool") {
+                tools.push(chunk);
+                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
+                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
+            }
+            else {
+                text += chunk;
+                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+            }
         }, () => {
             if (aborted)
                 return;
-            this._state.messages.push({ id: assistantId, role: "assistant", text, route: "hybrid", ts: Date.now() });
+            this._state.messages.push({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: "hybrid", ts: Date.now() });
             this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, "hybrid", msg.ollamaModel);
+            this._transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
+            const changedFiles = this._reindexFromTools(tools);
+            this._runPostAudit(changedFiles);
             safeEnd();
         }, (err) => {
             if (aborted)
@@ -488,8 +510,8 @@ class ChatPanel {
             // Log to transcript + mirror to shim
             this._transcript.logAssistant(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
             this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
-            this._reindexFromTools(tools);
-            this._runPostAudit();
+            const changedFiles = this._reindexFromTools(tools);
+            this._runPostAudit(changedFiles);
             safeEnd();
         };
         const onChunk = (chunk, type) => {
@@ -538,26 +560,33 @@ class ChatPanel {
     }
     /**
      * Detect files modified by tool calls and trigger immediate mini-reindex.
-     * Parses tool call strings for file paths (Edit, Write, Bash with redirect).
+     * Parses tool call strings for file paths — Claude ("file_path") and Ollama ("path") formats.
+     * Returns the set of detected file paths for downstream use (audit).
      */
     _reindexFromTools(tools) {
         const files = new Set();
         for (const t of tools) {
-            // Match patterns like [Edit] {"file_path":"src/foo.js"...}
+            // Claude format: [Edit] {"file_path":"src/foo.js"...}
             const fileMatch = t.match(/"file_path"\s*:\s*"([^"]+)"/);
             if (fileMatch)
                 files.add(fileMatch[1]);
-            // Match [Write] patterns
+            // Claude [Write] patterns
             const writeMatch = t.match(/\[Write\].*?"([^"]+)"/);
             if (writeMatch)
                 files.add(writeMatch[1]);
+            // Ollama agentic format: [write_file] {"path":"src/foo.js"...}
+            const ollamaMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
+            if (ollamaMatch)
+                files.add(ollamaMatch[2]);
         }
         if (files.size > 0) {
             (0, router_1.reindexFiles)([...files]).catch((e) => this._postError("reindex", String(e)));
         }
+        return files;
     }
-    _runPostAudit() {
-        (0, router_1.auditChanges)().then(({ violations, changed_files }) => {
+    _runPostAudit(changedFiles) {
+        const filesArg = changedFiles?.size ? [...changedFiles].join(",") : "";
+        (0, router_1.auditChanges)(filesArg).then(({ violations, changed_files }) => {
             this._transcript.logAudit(changed_files.length, violations.length);
             if (violations.length > 0) {
                 const summary = violations
@@ -598,14 +627,15 @@ class ChatPanel {
             this._post({ type: "streamEnd", id: assistantId });
             this._transcript.logAssistant(text, "local", msg.ollamaModel, tools);
             this._mirrorAssistantToShim(text, "local", msg.ollamaModel, tools);
-            this._reindexFromTools(tools);
-            this._runPostAudit();
+            const changedFiles = this._reindexFromTools(tools);
+            this._runPostAudit(changedFiles);
             safeEnd();
         };
         const onChunk = (chunk, type) => {
             if (type === "tool") {
                 tools.push(chunk);
                 this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
+                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "local");
             }
             else {
                 text += chunk;
@@ -626,6 +656,7 @@ class ChatPanel {
             : [];
         const history = [...contextMessages, ...this._state.ollamaHistory];
         let text = "";
+        let tools = [];
         let cancelFn;
         let aborted = false;
         let streamEnded = false;
@@ -642,22 +673,32 @@ class ChatPanel {
         (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, (chunk, type) => {
             if (aborted)
                 return;
-            text += chunk;
-            this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+            if (type === "tool") {
+                tools.push(chunk);
+                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
+                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
+            }
+            else {
+                text += chunk;
+                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+            }
         }, () => {
             if (aborted)
                 return;
             this._state.ollamaHistory.push({ role: "user", content: msg.text });
             this._state.ollamaHistory.push({ role: "assistant", content: text });
             const assistantMsg = {
-                id: assistantId, role: "assistant", text, route: "hybrid", ts: Date.now(),
+                id: assistantId, role: "assistant", text,
+                tools: tools.length ? tools : undefined,
+                route: "hybrid", ts: Date.now(),
             };
             this._state.messages.push(assistantMsg);
             this._persistState();
             this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, "hybrid", msg.ollamaModel);
-            this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel);
-            this._runPostAudit();
+            this._transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
+            this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel, tools);
+            const changedFiles = this._reindexFromTools(tools);
+            this._runPostAudit(changedFiles);
             safeEnd();
         }, (err) => {
             if (aborted)
@@ -804,7 +845,9 @@ class ChatPanel {
         try {
             this._shimProc?.kill();
         }
-        catch { }
+        catch (e) {
+            console.error(`[HME] shimProc kill failed: ${e?.message ?? e}`);
+        }
         ChatPanel.current = undefined;
         this._panel.dispose();
         this._disposables.forEach((d) => d.dispose());
