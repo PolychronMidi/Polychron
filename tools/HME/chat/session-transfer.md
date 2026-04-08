@@ -71,8 +71,7 @@ User message → /validate (KB anti-patterns) → [Auto?] Arbiter classifies
 ### Known Issues to Investigate
 - PTY mode prompt detection (`PTY_DONE_PATTERNS`) may need tuning — Claude CLI output patterns may vary by version
 - Narrative synthesis (every 8 turns) hasn't been tested end-to-end — verify qwen3:4b produces useful digests
-- `/reindex` endpoint calls `_project_engine.index_file()` — verify this method exists on RAGEngine (may need `index_files` or similar)
-- The `hme_http.py` `_reindex_files` function needs the RAGEngine to have an `index_file` method — check if it exists or needs to be adapted to use the existing indexing path
+- ~~`/reindex` endpoint calls `_project_engine.index_file()` — verify this method exists~~ **FIXED (R97)**: `index_file` + `_index_file_locked` added to `RAGEngine` in `rag_engine.py`. Single-file mini-reindex now works correctly.
 - Cross-route history injection for Claude→after→Local (prepending prior Local history as context block in Claude's first message) is not yet implemented — currently just starts a fresh Claude session
 
 ### Development Roadmap
