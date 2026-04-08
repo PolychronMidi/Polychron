@@ -57,4 +57,10 @@ if echo "$CMD" | grep -qE '^(grep |cat |head |tail |wc -l)'; then
   TOOL=$(echo "$CMD" | cut -d' ' -f1)
   echo "PREFER HME: use grep(), file_lines(), or count_lines() MCP tools for KB-enriched results. Bash $TOOL is allowed but misses KB context." >&2
 fi
+# fix_antipattern: Silent error swallowing in HME Chat stream/arbiter paths: error callbacks that d
+# Block silent error swallowing in HME Chat stream paths
+if echo "$CMD" | grep -qE 'onError|onError.*return'; then
+  echo '{"decision":"block","reason":"BLOCKED: Silent error swallowing in HME Chat stream paths. Every error handler MUST call _drainQueue(), reset _isStreaming=false, log to hme-errors.log, and surface UI warnings. No silent failures allowed."}'
+  exit 2
+fi
 exit 0
