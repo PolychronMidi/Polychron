@@ -1,0 +1,41 @@
+{
+  "name": "hme-chat",
+  "displayName": "HME Chat",
+  "description": "HME unified chat — route to Claude (Max/Pro), Ollama, or hybrid",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": ["onCommand:hme-chat.open", "*"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "hme-chat.open",
+        "title": "HME: Open Chat"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "hme-chat.open",
+        "key": "ctrl+shift+h",
+        "mac": "cmd+shift+h"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "watch": "tsc -watch -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "node-pty": "^1.1.0"
+  }
+}
