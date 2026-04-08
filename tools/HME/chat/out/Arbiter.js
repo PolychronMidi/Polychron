@@ -55,38 +55,32 @@ exports.synthesizeNarrative = synthesizeNarrative;
 const http = __importStar(require("http"));
 const ARBITER_MODEL = "qwen3:4b";
 const OLLAMA_URL = "http://localhost:11434";
-const CLASSIFY_PROMPT = `You are a routing arbiter for a coding assistant. Classify the user's message to decide which AI should handle it.
+const CLASSIFY_PROMPT = `/no_think
+Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
 
-ROUTE TO CLAUDE (expensive, powerful) when:
-- Multi-file architectural changes
-- Complex debugging requiring deep codebase understanding
-- Refactoring across module boundaries
-- Security-sensitive operations
-- When KB constraints/anti-patterns are dense (high violation risk)
-- When recent transcript shows errors or failed attempts
-- The message explicitly asks for thorough analysis
+Route to claude: multi-file changes, architectural refactors, complex debugging, security work, KB constraint violations, thorough analysis requests.
+Route to local: simple questions, single-file edits, code explanations, formatting, quick lookups.
 
-ROUTE TO LOCAL (free, fast) when:
-- Simple questions about code
-- Single-file edits
-- Explanations of existing code
-- Formatting/style changes
-- Quick lookups or searches
-- The message is short and straightforward
-
-Recent session activity:
+Recent session:
 {transcript}
 
-KB constraint density: {constraint_count} relevant constraints found
+KB constraints: {constraint_count}
 
-User message:
-{message}
-
-Respond with EXACTLY one line in this format:
-ROUTE: claude|local CONFIDENCE: 0.0-1.0 REASON: brief explanation`;
+Message: {message}`;
+const CLASSIFY_FORMAT = {
+    type: "object",
+    properties: {
+        route: { type: "string", enum: ["claude", "local"] },
+        confidence: { type: "number" },
+        reason: { type: "string" },
+    },
+    required: ["route", "confidence", "reason"],
+};
 /**
  * Ask the local arbiter to classify a message.
- * Falls back to "claude" if Ollama is unreachable or response is unparseable.
+ * Uses Ollama structured JSON output — eliminates CoT bleed into content field.
+ * Falls back to "claude" on any error; error reason strings always contain
+ * "timeout", "unreachable", or "failed" so isArbiterError fires downstream.
  */
 async function classifyMessage(message, transcriptContext, constraintCount) {
     const prompt = CLASSIFY_PROMPT
@@ -98,8 +92,9 @@ async function classifyMessage(message, transcriptContext, constraintCount) {
             model: ARBITER_MODEL,
             messages: [{ role: "user", content: prompt }],
             stream: false,
-            think: false, // suppress chain-of-thought to avoid consuming num_predict budget
-            options: { temperature: 0.1, num_predict: 256 },
+            think: false,
+            format: CLASSIFY_FORMAT,
+            options: { temperature: 0, num_predict: 256 },
         });
         const req = http.request({
             hostname: "localhost",
@@ -113,13 +108,12 @@ async function classifyMessage(message, transcriptContext, constraintCount) {
             res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
                 try {
-                    const parsed = JSON.parse(raw);
-                    const response = parsed.message?.content ?? "";
-                    const thinking = (parsed.message?.thinking ?? "").trim();
-                    const decision = parseArbiterResponse(response);
-                    if (thinking)
-                        decision.thinking = thinking;
-                    resolve(decision);
+                    const outer = JSON.parse(raw);
+                    const inner = JSON.parse(outer.message?.content ?? "{}");
+                    const route = inner.route === "local" ? "local" : "claude";
+                    const confidence = Math.min(1, Math.max(0, Number(inner.confidence) || 0.5));
+                    const reason = String(inner.reason ?? "").slice(0, 200) || "arbiter parse failed";
+                    resolve({ route, confidence, reason, escalated: false });
                 }
                 catch {
                     resolve({ route: "claude", confidence: 0.5, reason: "arbiter parse failed", escalated: false });
@@ -135,16 +129,6 @@ async function classifyMessage(message, transcriptContext, constraintCount) {
         req.end();
     });
 }
-function parseArbiterResponse(text) {
-    // Expected: ROUTE: claude|local CONFIDENCE: 0.8 REASON: multi-file refactor
-    const routeMatch = text.match(/ROUTE:\s*(claude|local)/i);
-    const confMatch = text.match(/CONFIDENCE:\s*([0-9.]+)/i);
-    const reasonMatch = text.match(/REASON:\s*(.+)/i);
-    const route = (routeMatch?.[1]?.toLowerCase() === "local" ? "local" : "claude");
-    const confidence = confMatch ? Math.min(1, Math.max(0, parseFloat(confMatch[1]))) : 0.5;
-    const reason = reasonMatch?.[1]?.trim() ?? "no reason given";
-    return { route, confidence, reason, escalated: false };
-}
 /**
  * Narrative synthesis — ask local model to summarize recent session activity
  * into a compact digest for transcript injection.
@@ -155,7 +139,7 @@ async function synthesizeNarrative(entries) {
     const summaries = entries
         .map((e) => e.summary || e.content.slice(0, 100))
         .join("\n");
-    const prompt = `Summarize this coding session activity into a 2-3 sentence digest. Focus on: what was being worked on, what succeeded, what failed, and what's pending. Be extremely concise.
+    const prompt = `/no_think\n\nSummarize this coding session activity into a 2-3 sentence digest. Focus on: what was being worked on, what succeeded, what failed, and what's pending. Be extremely concise.
 
 Session activity:
 ${summaries.slice(0, 2000)}
