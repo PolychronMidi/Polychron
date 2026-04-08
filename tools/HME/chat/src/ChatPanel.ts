@@ -1405,7 +1405,7 @@ function getInlineHtml(): string {
   }
   #send-btn:hover { background: var(--btn-hover); }
   #send-btn:disabled { opacity: 0.5; cursor: default; }
-  #cancel-btn {
+  #stop-btn {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--fg);
@@ -1415,7 +1415,18 @@ function getInlineHtml(): string {
     font-size: 12px;
     display: none;
   }
-  #cancel-btn:hover { border-color: var(--error-fg); color: var(--error-fg); }
+  #stop-btn:hover { border-color: var(--error-fg); color: var(--error-fg); }
+  #queue-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    display: none;
+  }
+  #queue-btn:hover { border-color: var(--btn-bg); color: var(--btn-bg); }
   #status-line {
     font-size: 11px;
     color: var(--subtle);
@@ -1501,7 +1512,8 @@ function getInlineHtml(): string {
   <textarea id="msg-input" placeholder="Message… (Enter to send, Shift+Enter for newline)"></textarea>
   <div id="input-row">
     <button id="send-btn">Send</button>
-    <button id="cancel-btn">Cancel</button>
+    <button id="stop-btn">Stop</button>
+    <button id="queue-btn">Queue</button>
     <span id="status-line"></span>
   </div>
 </div>
@@ -1530,7 +1542,8 @@ const localModel  = document.getElementById('local-model');
 const messages    = document.getElementById('messages');
 const input       = document.getElementById('msg-input');
 const sendBtn     = document.getElementById('send-btn');
-const cancelBtn   = document.getElementById('cancel-btn');
+const stopBtn     = document.getElementById('stop-btn');
+const queueBtn    = document.getElementById('queue-btn');
 const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
 
@@ -1574,7 +1587,22 @@ input.addEventListener('input', () => {
   input.style.height = Math.min(input.scrollHeight, 200) + 'px';
 });
 sendBtn.addEventListener('click', send);
-cancelBtn.addEventListener('click', () => vscode.postMessage({ type: 'cancel' }));
+stopBtn.addEventListener('click', () => vscode.postMessage({ type: 'cancel' }));
+queueBtn.addEventListener('click', () => {
+  let text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = '';
+  vscode.postMessage({
+    type: 'queue',
+    text,
+    route: routeSel.value,
+    claudeModel: claudeModel.value,
+    claudeEffort: claudeEffort.value,
+    claudeThinking: thinkingChk.checked,
+    ollamaModel: localModel.value,
+  });
+});
 clearBtn.addEventListener('click', () => vscode.postMessage({ type: 'clearHistory' }));
 
 // ── Receive messages from extension ───────────────────────────────────────
@@ -1674,7 +1702,8 @@ function startStream(id, route, model) {
   div.appendChild(header);
   messages.appendChild(div);
 
-  cancelBtn.style.display = 'inline-block';
+  stopBtn.style.display = 'inline-block';
+  queueBtn.style.display = 'inline-block';
   setStatus('Streaming…');
   messages.scrollTop = messages.scrollHeight;
 }
@@ -1733,7 +1762,7 @@ function endStream(id, cost) {
   streaming = activeStreams.size > 0;
   streamBodyMap.delete(id);
   streamThinkingMap.delete(id);
-  if (!streaming) cancelBtn.style.display = 'none';
+  if (!streaming) { stopBtn.style.display = 'none'; queueBtn.style.display = 'none'; }
 
   const div = document.getElementById(\`msg-\${id}\`);
   if (div) {
