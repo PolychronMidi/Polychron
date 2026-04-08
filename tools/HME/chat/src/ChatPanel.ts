@@ -600,6 +600,19 @@ function getInlineHtml(): string {
   /* ── Layout ── */
   #layout { display: flex; flex: 1; overflow: hidden; }
 
+  /* ── Sidebar toggle ── */
+  #sidebar-toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--subtle);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    line-height: 1;
+  }
+  #sidebar-toggle-btn:hover { color: var(--fg); background: var(--user-bg); }
+
   /* ── Session sidebar ── */
   #sidebar {
     width: 200px;
@@ -630,6 +643,32 @@ function getInlineHtml(): string {
     font-size: 11px;
   }
   #new-session-btn:hover { background: var(--btn-hover); }
+  #sidebar-settings {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .zoom-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .zoom-btn:hover { border-color: var(--fg); background: var(--user-bg); }
+  #zoom-label { font-size: 10px; color: var(--subtle); min-width: 34px; text-align: center; }
   #session-list {
     flex: 1;
     overflow-y: auto;
@@ -823,8 +862,9 @@ function getInlineHtml(): string {
     font-family: var(--font-mono);
   }
 
-  /* Streaming cursor — inline span removed cleanly on done */
+  /* Streaming cursor — inline span, instantly hidden on done to prevent flash */
   .stream-cursor { animation: blink 0.8s step-end infinite; }
+  .stream-cursor.done { animation: none; visibility: hidden; }
   @keyframes blink { 50% { opacity: 0; } }
 
   /* ── Notice bar ── */
@@ -911,6 +951,11 @@ function getInlineHtml(): string {
     <span>Sessions</span>
     <button id="new-session-btn" title="New session">+</button>
   </div>
+  <div id="sidebar-settings">
+    <button class="zoom-btn" id="zoom-out-btn" title="Zoom out">−</button>
+    <span id="zoom-label">100%</span>
+    <button class="zoom-btn" id="zoom-in-btn" title="Zoom in">+</button>
+  </div>
   <div id="session-list"></div>
 </div>
 
@@ -958,6 +1003,7 @@ function getInlineHtml(): string {
   </div>
 
   <span id="shim-status" title="HME KB shim status" style="font-size:10px;color:var(--subtle);margin-left:4px;">HME ○</span>
+  <button id="sidebar-toggle-btn" title="Toggle session sidebar">⚙</button>
   <button id="clear-btn">Clear</button>
 </div>
 
@@ -1189,7 +1235,10 @@ function endStream(id, cost) {
 
   const div = document.getElementById(\`msg-\${id}\`);
   if (div) {
-    div.querySelectorAll('.stream-cursor').forEach(c => c.remove());
+    div.querySelectorAll('.stream-cursor').forEach(c => {
+      c.classList.add('done'); // hide immediately — stops animation in same paint
+      requestAnimationFrame(() => c.remove());
+    });
 
     // Update thinking summary with elapsed time label
     const details = div.querySelector('details.thinking summary');
@@ -1221,6 +1270,33 @@ window.addEventListener('message', (event) => {
     noticeBar.style.display = 'block';
   }
 }, true);
+
+// ── Sidebar toggle ─────────────────────────────────────────────────────────
+const sidebar = document.getElementById('sidebar');
+const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+let sidebarVisible = true;
+sidebarToggleBtn?.addEventListener('click', () => {
+  sidebarVisible = !sidebarVisible;
+  if (sidebar) sidebar.style.display = sidebarVisible ? 'flex' : 'none';
+  if (sidebarToggleBtn) sidebarToggleBtn.style.color = sidebarVisible ? 'var(--subtle)' : 'var(--btn-fg)';
+});
+
+// ── Zoom controls ──────────────────────────────────────────────────────────
+let zoomLevel = 1.0;
+const ZOOM_STEP = 0.1, ZOOM_MIN = 0.6, ZOOM_MAX = 1.8;
+const zoomLabel = document.getElementById('zoom-label');
+function applyZoom() {
+  document.body.style.zoom = String(zoomLevel);
+  if (zoomLabel) zoomLabel.textContent = Math.round(zoomLevel * 100) + '%';
+}
+document.getElementById('zoom-in-btn')?.addEventListener('click', () => {
+  zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 10) / 10);
+  applyZoom();
+});
+document.getElementById('zoom-out-btn')?.addEventListener('click', () => {
+  zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 10) / 10);
+  applyZoom();
+});
 
 // ── Session sidebar ────────────────────────────────────────────────────────
 const sessionList = document.getElementById('session-list');

@@ -78,7 +78,8 @@ export async function classifyMessage(
       model: ARBITER_MODEL,
       messages: [{ role: "user", content: prompt }],
       stream: false,
-      options: { temperature: 0.1, num_predict: 512 },
+      think: false,  // suppress chain-of-thought to avoid consuming num_predict budget
+      options: { temperature: 0.1, num_predict: 256 },
     });
 
     const req = http.request(
@@ -88,7 +89,7 @@ export async function classifyMessage(
         path: "/api/chat",
         method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        timeout: 12000,
+        timeout: 15000,
       },
       (res) => {
         let raw = "";
@@ -155,6 +156,7 @@ Digest:`;
       model: ARBITER_MODEL,
       messages: [{ role: "user", content: prompt }],
       stream: false,
+      think: false,
       options: { temperature: 0.2, num_predict: 512 },
     });
 
