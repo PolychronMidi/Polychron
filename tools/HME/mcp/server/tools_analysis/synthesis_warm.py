@@ -206,33 +206,63 @@ def _prime_warm_context(model: str) -> bool:
     return False
 
 
+def _init_ollama_models() -> str:
+    """Explicitly load all three models to their correct devices at startup.
+
+    Load order: GPU0 (extractor) → GPU1 (reasoner) → CPU (arbiter).
+    Uses keep_alive=-1 so models stay resident. Yields to interactive between each model.
+    Called once at startup before prewarm — ensures device assignment is deterministic.
+    """
+    import urllib.request as _req
+    import json as _json
+    import time as _t
+    from .synthesis_ollama import (
+        _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
+        _KEEP_ALIVE, _NUM_CTX_30B, _NUM_CTX_4B, _LOCAL_URL,
+        _ollama_background_yield,
+    )
+    models_config = [
+        (_LOCAL_MODEL,     {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
+        (_REASONING_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
+        (_ARBITER_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_4B, "num_gpu": 0}),
+    ]
+    results = {}
+    for model, options in models_config:
+        _ollama_background_yield()  # yield to interactive before loading each model
+        t0 = _t.time()
+        logger.info(f"model init: loading {model} (options={options})...")
+        payload = {"model": model, "prompt": "", "stream": False,
+                   "keep_alive": _KEEP_ALIVE, "options": options}
+        request = _req.Request(_LOCAL_URL, data=_json.dumps(payload).encode(),
+                               headers={"Content-Type": "application/json"})
+        try:
+            with _req.urlopen(request, timeout=120) as resp:
+                resp.read()
+            elapsed = _t.time() - t0
+            results[model] = f"OK ({elapsed:.1f}s)"
+            logger.info(f"model init: {model} ready ({elapsed:.1f}s)")
+        except Exception as e:
+            results[model] = f"FAILED: {type(e).__name__}: {e}"
+            logger.warning(f"model init: {model} FAILED: {e}")
+    return "Model init: " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
+
+
 def _prime_all_gpus() -> str:
-    """Prime all three models in parallel threads. Returns status summary."""
+    """Prime all three models sequentially. Yields to interactive between each model.
+
+    Sequential (not parallel) prevents all three GPU locks being held simultaneously,
+    which would block interactive calls for the full priming duration.
+    Each model primes one at a time — interactive calls jump ahead between priming steps.
+    """
     from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
     import time as _t
-    results = [False, False, False]
-    def _do0(): results[0] = _prime_warm_context(_LOCAL_MODEL)
-    def _do1(): results[1] = _prime_warm_context(_REASONING_MODEL)
-    def _do2(): results[2] = _prime_warm_context(_ARBITER_MODEL)
+    results = {}
     t0 = _t.time()
-    threads = [
-        _threading.Thread(target=_do0, daemon=True),
-        _threading.Thread(target=_do1, daemon=True),
-        _threading.Thread(target=_do2, daemon=True),
-    ]
-    for t in threads:
-        t.start()
-    # 120s: models should load and respond within 2 min; if not, they're stuck.
-    # Threads continue as daemons — warm ctx gets populated if they eventually succeed.
-    for t in threads:
-        t.join(timeout=120)
-    for t in threads:
-        if t.is_alive():
-            logger.warning(f"_prime_all_gpus: thread {t.name} still running after 120s — model may not be loaded in Ollama (run: ollama ps)")
+    for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+        results[model] = _prime_warm_context(model)
     elapsed = _t.time() - t0
     parts = [f"Warm context priming ({elapsed:.1f}s):"]
-    for model, ok in [(_LOCAL_MODEL, results[0]), (_REASONING_MODEL, results[1]),
-                      (_ARBITER_MODEL, results[2])]:
+    for model, ok in results.items():
         ctx_len = len(_warm_ctx.get(model, []))
         parts.append(f"  {model}: {'PRIMED' if ok else 'FAILED'}" +
                      (f" ({ctx_len} ctx tokens)" if ok else ""))

@@ -39,6 +39,7 @@ export class ChatPanel {
   private _disposables: vscode.Disposable[] = [];
   private _transcript: TranscriptLogger;
   private _restoreSessionId: string | null = null;
+  private _disposed = false;
 
   private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
     this._panel = panel;
@@ -68,6 +69,7 @@ export class ChatPanel {
         logRouteSwitch: () => {}, logValidation: () => {}, logAudit: () => {},
         logSessionStart: () => {}, getRecentContext: () => "", getWindow: () => [],
         getAll: () => [], count: 0, setNarrativeCallback: () => {}, rotate: () => {},
+        forceNarrative: () => Promise.resolve(),
       } as any;
     }
 
@@ -99,7 +101,10 @@ export class ChatPanel {
         retainContextWhenHidden: true,
       }
     );
-    ChatPanel.current = new ChatPanel(panel, projectRoot);
+    // Auto-restore the most recently active session (same as window-reload path)
+    const sessions = listSessions(projectRoot);
+    const restoreId = sessions[0]?.id;
+    ChatPanel.current = new ChatPanel(panel, projectRoot, restoreId);
   }
 
   public static deserialize(panel: vscode.WebviewPanel, state: any, projectRoot: string) {
@@ -110,8 +115,25 @@ export class ChatPanel {
   private _handleMessage(msg: any) {
     switch (msg.type) {
       case "send":
+        // Hard interrupt: cancel current stream + clear queue, start new message immediately.
+        // This is what Enter key and Send button do — new thought always takes priority.
         if (this._isStreaming) {
-          // Show user message immediately; queue response until current stream ends
+          this._cancelCurrent?.();
+          this._cancelCurrent = undefined;
+          this._messageQueue = [];
+          this._post({ type: "cancelConfirmed" });
+          this._isStreaming = false;
+        }
+        this._isStreaming = true;
+        this._onSend(msg).catch((e) => {
+          this._postError("send", String(e));
+          this._drainQueue();
+        });
+        break;
+      case "queue":
+        // Queue: waits behind current stream (explicit "send after current finishes").
+        // Only Queue button uses this — gives user control when they want sequential order.
+        if (this._isStreaming) {
           const queuedUserMsg: ChatMessage = {
             id: uid(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
           };
@@ -128,8 +150,9 @@ export class ChatPanel {
       case "cancel":
         this._cancelCurrent?.();
         this._cancelCurrent = undefined;
+        this._messageQueue = [];
         this._post({ type: "cancelConfirmed" });
-        this._drainQueue();
+        this._isStreaming = false;
         break;
       case "clearHistory":
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
@@ -518,6 +541,7 @@ export class ChatPanel {
     let thinking = "";
     let tools: string[] = [];
     let streamEnded = false;
+    let aborted = false; // gate: prevents buffered PTY/pipe chunks posting after cancel
     const safeEnd = () => {
       if (streamEnded) return;
       streamEnded = true;
@@ -525,6 +549,7 @@ export class ChatPanel {
     };
 
     const onDone = () => {
+      if (aborted) return;
       const assistantMsg: ChatMessage = {
         id: assistantId,
         role: "assistant",
@@ -546,6 +571,7 @@ export class ChatPanel {
     };
 
     const onChunk = (chunk: string, type: string) => {
+      if (aborted) return; // discard buffered chunks after cancel
       if (type === "text") { text += chunk; this._post({ type: "streamChunk", id: assistantId, chunkType: "text", chunk }); }
       else if (type === "thinking") { thinking += chunk; this._post({ type: "streamChunk", id: assistantId, chunkType: "thinking", chunk }); }
       else if (type === "tool") {
@@ -558,6 +584,7 @@ export class ChatPanel {
     };
 
     const onError = (err: string) => {
+      if (aborted) return;
       if (!streamEnded) {
         this._post({ type: "streamEnd", id: assistantId });
         safeEnd();
@@ -568,8 +595,11 @@ export class ChatPanel {
     // Prepend prior-route context block if switching from local/hybrid → claude
     const effectiveText = (msg._contextPrefix ?? "") + msg.text;
 
-    // Use PTY mode so hooks fire; fall back to -p mode if PTY fails
-    this._cancelCurrent = streamClaudePty(
+    // Use PTY mode so hooks fire; fall back to -p mode if PTY fails.
+    // cancelFn: set aborted=true first so buffered PTY/pipe chunks are dropped immediately.
+    let cancelFn: (() => void) | undefined;
+    this._cancelCurrent = () => { aborted = true; cancelFn?.(); };
+    cancelFn = streamClaudePty(
       effectiveText,
       this._state.claudeSessionId,
       { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" },
@@ -580,7 +610,7 @@ export class ChatPanel {
       (err) => {
         // PTY failed — fall back to stream-json mode silently
         console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
-        this._cancelCurrent = streamClaude(
+        cancelFn = streamClaude(
           effectiveText, this._state.claudeSessionId,
           { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" },
           this._projectRoot, onChunk as any,
@@ -652,6 +682,7 @@ export class ChatPanel {
     let text = "";
     let tools: string[] = [];
     let streamEnded = false;
+    let aborted = false; // gate: drops buffered Ollama chunks after cancel
     const safeEnd = () => {
       if (streamEnded) return;
       streamEnded = true;
@@ -659,6 +690,7 @@ export class ChatPanel {
     };
 
     const onDone = () => {
+      if (aborted) return;
       this._state.ollamaHistory.push({ role: "user", content: msg.text });
       this._state.ollamaHistory.push({ role: "assistant", content: text });
       const assistantMsg: ChatMessage = {
@@ -677,6 +709,7 @@ export class ChatPanel {
     };
 
     const onChunk = (chunk: string, type: string) => {
+      if (aborted) return; // discard buffered chunks after cancel
       if (type === "tool") {
         tools.push(chunk);
         this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
@@ -687,7 +720,9 @@ export class ChatPanel {
       }
     };
 
-    this._cancelCurrent = streamOllamaAgentic(
+    let ollamaCancelFn: (() => void) | undefined;
+    this._cancelCurrent = () => { aborted = true; ollamaCancelFn?.(); };
+    ollamaCancelFn = streamOllamaAgentic(
       requestHistory,
       { model: msg.ollamaModel, url: "http://localhost:11434" },
       this._projectRoot,
@@ -894,11 +929,24 @@ export class ChatPanel {
     return getInlineHtml();
   }
 
-  public dispose() {
+  public async dispose(): Promise<void> {
+    if (this._disposed) return;
+    this._disposed = true;
     this._cancelCurrent?.();
-    this._transcript.forceNarrative?.();
-    try { this._shimProc?.kill(); } catch (e: any) { console.error(`[HME] shimProc kill failed: ${e?.message ?? e}`); }
+    this._cancelCurrent = undefined;
+    this._messageQueue = [];
+    this._isStreaming = false;
     ChatPanel.current = undefined;
+    // Persist in-flight state synchronously before anything async (writeFileSync — always completes)
+    try { this._persistState(); } catch (e) {}
+    // Graceful async cleanup: await narrative synthesis with 5s cap, then kill shim
+    const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 5000));
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: "HME Chat closing gracefully…", cancellable: false },
+      () => Promise.race([narrativeWork, timeout])
+    );
+    try { this._shimProc?.kill(); } catch (e: any) { console.error(`[HME] shimProc kill failed: ${e?.message ?? e}`); }
     this._panel.dispose();
     this._disposables.forEach((d) => d.dispose());
     this._disposables = [];

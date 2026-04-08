@@ -16,6 +16,17 @@ if echo "$CONTENT" | grep -qE '(api[_-]?key|password|secret|token)[[:space:]]*[:
   exit 2
 fi
 
+# Block stub/placeholder writes — LLM-generated code with "# ... existing code ..." patterns
+# destroys files by replacing real content with placeholder references.
+if echo "$CONTENT" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
+  echo '{"decision":"block","reason":"BLOCKED: Write contains LLM stub placeholder (e.g. \"# ... existing code ...\"). This destroys files. Write the COMPLETE file content or use Edit for partial changes."}' >&2
+  exit 2
+fi
+if echo "$CONTENT" | grep -qE '\.\.\. rest of (file|implementation|code)'; then
+  echo '{"decision":"block","reason":"BLOCKED: Write contains \"... rest of ...\" stub placeholder. Write complete content or use Edit."}' >&2
+  exit 2
+fi
+
 if echo "$FILE" | grep -q 'lab/sketches.js'; then
   echo 'LAB RULES: Every postBoot() must create AUDIBLE behavior via real monkey-patching. No empty sketches. Do not use V (validator) -- use Number.isFinite directly. Do not use crossLayerHelpers -- use inline layer logic. Do not return values from void functions (playNotesEmitPick returns void).' >&2
 fi

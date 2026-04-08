@@ -2,6 +2,12 @@
 # HME PreToolUse: Edit — surface live KB constraints before editing project files.
 INPUT=$(cat)
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+NEW_STRING=$(echo "$INPUT" | jq -r '.tool_input.new_string // ""')
+if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
+  echo '{"decision":"block","reason":"BLOCKED: Edit contains LLM stub placeholder (e.g. \"# ... existing code ...\"). Use the ACTUAL replacement content — no stubs."}' >&2
+  exit 2
+fi
+
 if echo "$FILE" | grep -qE '/Polychron/(src|tools/HME/(chat/src|mcp/server)|scripts)/'; then
   MODULE=$(basename "$FILE" | sed 's/\.[jt]sx\?$//')
   # Pull live constraint check from shim (2s timeout)

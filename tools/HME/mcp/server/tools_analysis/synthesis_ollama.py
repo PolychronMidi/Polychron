@@ -137,6 +137,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             "temperature": temperature,
             "num_predict": max_tokens,
             "num_ctx": _num_ctx_for(_effective_model),
+            **({"num_gpu": 0} if _effective_model == _ARBITER_MODEL else {}),  # 4B: CPU-only, never steal VRAM
         },
     }
     if system:
@@ -152,9 +153,14 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         active_lock = (_gpu0_lock if _effective_model == _LOCAL_MODEL
                        else _gpu1_lock if _effective_model == _REASONING_MODEL
                        else _ollama_lock)
-        # Background: 300s max (5 min). Interactive: 60s max — fail fast.
-        # Prior 900s caused 13-min review calls when Ollama was stuck.
-        _http_timeout = 300 if priority == "background" else 60
+        # Second yield: re-check interactive just before acquiring the lock.
+        # First yield (above) handles "interactive arrived before we started".
+        # This handles "interactive arrived while we were preparing the payload".
+        if priority == "background":
+            _ollama_background_yield()
+        # Background: 30s max — interrupted by interactive calls, expected to timeout occasionally.
+        # Interactive: 60s max — fail fast, never block for a stuck/unloaded model.
+        _http_timeout = 30 if priority == "background" else 60
         with active_lock:
             resp_obj = urllib.request.urlopen(req, timeout=_http_timeout)
         if priority == "interactive":
@@ -218,13 +224,18 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         _is_timeout = ("timed out" in _err_str or "timeout" in type(e).__name__.lower()
                        or "urlopen error" in _err_str)
         if _is_timeout:
-            _last_think_failure = "timeout"
-            _last_think_failure_ts = _time_mod.monotonic()
-            logger.warning(
-                f"_local_think TIMEOUT ({_effective_model}) — Ollama queue may be stacked. "
-                "Do NOT retry immediately. Wait for queued requests to drain or restart Ollama. "
-                f"Error: {type(e).__name__}: {e}"
-            )
+            if priority == "background":
+                # Background timeout is expected and normal — warm priming is a long-running
+                # background job that interactive calls interrupt. Never poison the cooldown gate.
+                logger.debug(f"_local_think background timeout ({_effective_model}) — normal, not setting cooldown")
+            else:
+                _last_think_failure = "timeout"
+                _last_think_failure_ts = _time_mod.monotonic()
+                logger.warning(
+                    f"_local_think TIMEOUT ({_effective_model}) — Ollama queue may be stacked. "
+                    "Do NOT retry immediately. Wait for queued requests to drain or restart Ollama. "
+                    f"Error: {type(e).__name__}: {e}"
+                )
         else:
             _last_think_failure = "error"
             logger.warning(f"_local_think unavailable ({_effective_model}): {type(e).__name__}: {e}")
@@ -260,7 +271,8 @@ def _local_chat(messages: list[dict], model: str | None = None,
     payload = {
         "model": _m, "messages": messages, "stream": False,
         "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m)},
+        "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m),
+                    **({"num_gpu": 0} if _m == _ARBITER_MODEL else {})},
     }
     body = json.dumps(payload).encode()
     req = urllib.request.Request(_LOCAL_CHAT_URL, data=body, headers={"Content-Type": "application/json"})
@@ -303,7 +315,8 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
     body = json.dumps({
         "model": _m, "system": system, "prompt": prompt, "stream": False,
         "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m)},
+        "options": {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m),
+                    **({"num_gpu": 0} if _m == _ARBITER_MODEL else {})},
     }).encode()
     req = urllib.request.Request(_LOCAL_URL, data=body, headers={"Content-Type": "application/json"})
     try:
@@ -340,7 +353,7 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     payload = {
         "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
         "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": 0.0, "num_predict": max(200, max_chars // 2), "num_ctx": _NUM_CTX_4B},
+        "options": {"temperature": 0.0, "num_predict": max(200, max_chars // 2), "num_ctx": _NUM_CTX_4B, "num_gpu": 0},
     }
     arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
     if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):

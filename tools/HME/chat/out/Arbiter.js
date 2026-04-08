@@ -53,7 +53,7 @@ exports.synthesizeNarrative = synthesizeNarrative;
  * - Recent error rate in transcript (errors → escalate to Claude)
  */
 const http = __importStar(require("http"));
-const ARBITER_MODEL = "qwen3-coder:30b"; // HME synthesis pins this with keep_alive=-1 → always GPU-resident, sub-second response
+const ARBITER_MODEL = "qwen3:4b"; // small, CPU-only (num_gpu:0) — never competes with GPU-resident 30B models
 const OLLAMA_URL = "http://localhost:11434";
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
@@ -118,7 +118,7 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
             stream: true,
             think: false,
             format: CLASSIFY_FORMAT,
-            options: { temperature: 0, num_predict: 256 },
+            options: { temperature: 0, num_predict: 256, num_gpu: 0 }, // num_gpu:0 = CPU-only, never steal VRAM from 30B models
         });
         let req;
         req = http.request({
@@ -228,7 +228,7 @@ Digest:`;
             messages: [{ role: "user", content: prompt }],
             stream: true,
             think: false,
-            options: { temperature: 0.2, num_predict: 512 },
+            options: { temperature: 0.2, num_predict: 512, num_gpu: 0 }, // CPU-only
         });
         let req;
         req = http.request({
