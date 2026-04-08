@@ -68,6 +68,45 @@ def _load_engines():
 
 threading.Thread(target=_load_engines, daemon=True).start()
 
+# ── Critical error log — surfaced in /health and written to disk ─────────────
+
+_ERRORS_PATH = os.path.join(PROJECT_ROOT, "log", "hme-errors.log")
+_error_lock = threading.Lock()
+_MAX_ERRORS_MEMORY = 50
+_error_log: list[dict] = []
+
+
+def _log_error(source: str, message: str, detail: str = "") -> None:
+    """Append a critical error to the in-memory log and hme-errors.log."""
+    global _error_log
+    entry = {
+        "ts": int(time.time() * 1000),
+        "ts_str": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "source": source,
+        "message": message,
+        "detail": detail,
+    }
+    with _error_lock:
+        _error_log.append(entry)
+        if len(_error_log) > _MAX_ERRORS_MEMORY:
+            _error_log = _error_log[-_MAX_ERRORS_MEMORY:]
+    try:
+        os.makedirs(os.path.dirname(_ERRORS_PATH), exist_ok=True)
+        with open(_ERRORS_PATH, "a") as f:
+            f.write(f"[{entry['ts_str']}] [{source}] {message}")
+            if detail:
+                f.write(f" | {detail}")
+            f.write("\n")
+    except Exception:
+        pass
+
+
+def _get_recent_errors(minutes: int = 60) -> list[dict]:
+    cutoff = (time.time() - minutes * 60) * 1000
+    with _error_lock:
+        return [e for e in _error_log if e["ts"] >= cutoff]
+
+
 # ── Transcript store (server-side mirror of the JSONL log) ──────────────────
 
 _TRANSCRIPT_PATH = os.path.join(PROJECT_ROOT, "log", "session-transcript.jsonl")
@@ -312,10 +351,13 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
             ready = _engine_ready.is_set() and _project_engine is not None
+            recent_errors = _get_recent_errors(minutes=120)
             self._send_json(200, {
                 "status": "ready" if ready else "loading",
                 "transcript_entries": len(_transcript_entries),
                 "kb_ready": _project_engine is not None,
+                "recent_errors": recent_errors[-10:],
+                "error_count": len(recent_errors),
             })
         elif self.path.startswith("/transcript"):
             # Parse ?minutes=N&max=M from query string
@@ -374,6 +416,17 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             result = _reindex_files(files)
             self._send_json(200, result)
+
+        elif self.path == "/error":
+            # Critical error from chat panel — log it visibly for main session inspection
+            source = body.get("source", "unknown")
+            message = body.get("message", "")
+            detail = body.get("detail", "")
+            if not message:
+                self._send_json(400, {"error": "message required"})
+                return
+            _log_error(source, message, detail)
+            self._send_json(200, {"logged": True})
 
         elif self.path == "/narrative":
             # Store a narrative digest

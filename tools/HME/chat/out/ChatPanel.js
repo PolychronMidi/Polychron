@@ -123,8 +123,12 @@ class ChatPanel {
                 this._post({ type: "historyCleared" });
                 break;
             case "checkHmeShim":
-                (0, router_1.isHmeShimReady)().then((ready) => {
+                (0, router_1.isHmeShimReady)().then(({ ready, errors }) => {
                     this._post({ type: "hmeShimStatus", ready });
+                    if (errors.length > 0) {
+                        const summary = errors.slice(-3).map((e) => `[${e.ts_str ?? "?"}] [${e.source}] ${e.message}`).join("\n");
+                        this._post({ type: "notice", level: "warn", text: `⚠ HME errors (check log/hme-errors.log):\n${summary}` });
+                    }
                 });
                 break;
             case "listSessions":
@@ -193,12 +197,14 @@ class ChatPanel {
             });
             this._transcript.logRouteSwitch("auto", `${decision.route} (${decision.reason})`);
             if (isArbiterError) {
-                // Log arbiter errors prominently so they're visible in transcript analysis
+                // Log prominently in transcript
                 this._transcript.log({
                     ts: Date.now(), type: "audit", route: "auto",
                     content: `ARBITER ERROR: ${decision.reason} — falling back to ${decision.route}`,
                     summary: `Arbiter failed: ${decision.reason}`,
                 });
+                // Write to log/hme-errors.log via shim — readable by main Claude session
+                (0, router_1.logShimError)("arbiter", decision.reason, `fell back to ${decision.route}`).catch(() => { });
             }
             if (decision.thinking) {
                 this._transcript.log({
@@ -517,6 +523,7 @@ function getInlineHtml() {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HME Chat</title>
 <style>
+  html { overflow: hidden; }
   :root {
     --bg: var(--vscode-editor-background);
     --fg: var(--vscode-editor-foreground);
@@ -919,6 +926,7 @@ function getInlineHtml() {
 <div id="main">
 <!-- Toolbar -->
 <div id="toolbar">
+  <button id="sidebar-toggle-btn" title="Toggle session sidebar">⚙</button>
   <label>Route</label>
   <select id="route-select">
     <option value="auto">Auto</option>
@@ -959,7 +967,6 @@ function getInlineHtml() {
   </div>
 
   <span id="shim-status" title="HME KB shim status" style="font-size:10px;color:var(--subtle);margin-left:4px;">HME ○</span>
-  <button id="sidebar-toggle-btn" title="Toggle session sidebar">⚙</button>
   <button id="clear-btn">Clear</button>
 </div>
 
@@ -1245,7 +1252,14 @@ let zoomLevel = 1.0;
 const ZOOM_STEP = 0.1, ZOOM_MIN = 0.6, ZOOM_MAX = 1.8;
 const zoomLabel = document.getElementById('zoom-label');
 function applyZoom() {
-  document.body.style.zoom = String(zoomLevel);
+  if (zoomLevel === 1.0) {
+    document.body.style.zoom = '';
+    document.body.style.height = '';
+  } else {
+    // Compensate body height so zoomed content still fills exactly the viewport
+    document.body.style.zoom = String(zoomLevel);
+    document.body.style.height = \`\${(100 / zoomLevel).toFixed(3)}vh\`;
+  }
   if (zoomLabel) zoomLabel.textContent = Math.round(zoomLevel * 100) + '%';
 }
 document.getElementById('zoom-in-btn')?.addEventListener('click', () => {
