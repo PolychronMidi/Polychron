@@ -1041,9 +1041,9 @@ const vscode = acquireVsCodeApi();
 // ── State ──────────────────────────────────────────────────────────────────
 let streaming = false;
 let streamingId = null;
-let streamThinking = '';
 let streamTools = [];
-let streamCurrentBody = null; // active text block — nulled after each tool call
+let streamCurrentBody = null;    // active text block — nulled after each tool/thinking segment
+let streamCurrentThinking = null; // active thinking block — nulled after each text/tool chunk
 
 // ── UI refs ────────────────────────────────────────────────────────────────
 const routeSel    = document.getElementById('route-select');
@@ -1146,6 +1146,7 @@ function appendMessage(msg) {
   if (msg.thinking) {
     const details = document.createElement('details');
     details.className = 'thinking';
+    details.open = true;
     details.innerHTML = \`<summary>🧠 Thinking</summary><div class="thinking-body"></div>\`;
     details.querySelector('.thinking-body').textContent = msg.thinking;
     div.appendChild(details);
@@ -1174,9 +1175,9 @@ function appendMessage(msg) {
 function startStream(id, route, model) {
   streaming = true;
   streamingId = id;
-  streamThinking = '';
   streamTools = [];
   streamCurrentBody = null;
+  streamCurrentThinking = null;
 
   const div = document.createElement('div');
   div.className = 'msg assistant';
@@ -1199,17 +1200,18 @@ function appendChunk(id, chunkType, chunk) {
   if (!div) return;
 
   if (chunkType === 'thinking') {
-    streamThinking += chunk;
-    let details = div.querySelector('details.thinking');
-    if (!details) {
-      details = document.createElement('details');
-      details.className = 'thinking';
-      details.innerHTML = \`<summary>Thinking…</summary><div class="thinking-body"></div>\`;
-      div.appendChild(details);
+    // Each thinking segment gets its own block; nulled by text/tool chunks
+    if (!streamCurrentThinking) {
+      streamCurrentThinking = document.createElement('details');
+      streamCurrentThinking.className = 'thinking';
+      streamCurrentThinking.open = true;
+      streamCurrentThinking.innerHTML = \`<summary>🧠 Thinking…</summary><div class="thinking-body"></div>\`;
+      div.appendChild(streamCurrentThinking);
     }
-    details.querySelector('.thinking-body').textContent = streamThinking;
+    streamCurrentThinking.querySelector('.thinking-body').textContent += chunk;
   } else if (chunkType === 'tool') {
-    streamCurrentBody = null; // next text starts a fresh block after this tool
+    streamCurrentBody = null;    // next text starts fresh
+    streamCurrentThinking = null; // next thinking starts fresh
     const toolDiv = document.createElement('div');
     toolDiv.className = 'tool-step';
     toolDiv.textContent = chunk;
@@ -1220,6 +1222,7 @@ function appendChunk(id, chunkType, chunk) {
     errDiv.textContent = '⚠ ' + chunk;
     div.appendChild(errDiv);
   } else {
+    streamCurrentThinking = null; // entering text mode — close current thinking segment
     // text — one block per inter-tool segment
     if (!streamCurrentBody) {
       streamCurrentBody = document.createElement('div');
@@ -1240,6 +1243,7 @@ function endStream(id, cost) {
   streaming = false;
   streamingId = null;
   streamCurrentBody = null;
+  streamCurrentThinking = null;
   cancelBtn.style.display = 'none';
 
   const div = document.getElementById(\`msg-\${id}\`);
@@ -1249,9 +1253,8 @@ function endStream(id, cost) {
       requestAnimationFrame(() => c.remove());
     });
 
-    // Update thinking summary with elapsed time label
-    const details = div.querySelector('details.thinking summary');
-    if (details) details.textContent = '🧠 Thinking';
+    // Update all thinking block summaries (may be multiple interspersed blocks)
+    div.querySelectorAll('details.thinking summary').forEach(s => { s.textContent = '🧠 Thinking'; });
 
     if (cost !== undefined && cost !== null) {
       const header = div.querySelector('.msg-header');
