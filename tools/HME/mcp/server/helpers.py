@@ -66,7 +66,7 @@ def get_context_budget() -> str:
     try:
         with open("/tmp/claude-context.json") as _f:
             ctx_data = json.load(_f)
-        remaining = ctx_data.get("remaining_pct", 50)
+        remaining = ctx_data.get("remaining_pct") or 50
     except Exception:
         remaining = 50
 
