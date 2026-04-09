@@ -27,8 +27,8 @@ export type ArbiterDecision = {
   thinking?: string;   // raw chain-of-thought from model (if present)
 };
 
-const ARBITER_MODEL = "qwen3:4b";  // small, CPU-only (num_gpu:0) — never competes with GPU-resident 30B models
-const OLLAMA_URL = "http://localhost:11434";
+const ARBITER_MODEL = "qwen3:4b";  // small, CPU-only — dedicated instance on port 11436
+const OLLAMA_URL = "http://localhost:11436";
 
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
@@ -106,7 +106,7 @@ export async function classifyMessage(
     req = http.request(
       {
         hostname: "localhost",
-        port: 11434,
+        port: 11436,
         path: "/api/chat",
         method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
@@ -211,7 +211,7 @@ Digest:`;
     let req: ReturnType<typeof http.request>;
     req = http.request(
       {
-        hostname: "localhost", port: 11434, path: "/api/chat", method: "POST",
+        hostname: "localhost", port: 11436, path: "/api/chat", method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
       },
       (res) => {

@@ -30,17 +30,34 @@ _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 
 # keep_alive=-1: pin models permanently. num_ctx: explicit full context window.
-# 3 models at full 32768 ctx uses ~18GB RAM for KV caches (well within 52GB available).
+# GPU models overflow KV cache to RAM beyond VRAM capacity — safe with isolated instances.
 _KEEP_ALIVE = int(os.environ.get("HME_KEEP_ALIVE", "-1"))
-_NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
-_NUM_CTX_4B  = int(os.environ.get("HME_NUM_CTX_4B",  "8192"))
+_NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "65536"))
+_NUM_CTX_4B  = int(os.environ.get("HME_NUM_CTX_4B",  "32768"))
 
 def _num_ctx_for(model: str) -> int:
     return _NUM_CTX_4B if model == _ARBITER_MODEL else _NUM_CTX_30B
 
-_LOCAL_URL = os.environ.get("HME_LOCAL_URL", "http://localhost:11434/api/generate")
-# /api/chat: multi-turn format, model sees prior outputs as assistant turns it produced.
-_LOCAL_CHAT_URL = _LOCAL_URL.replace("/api/generate", "/api/chat")
+# ── Per-model Ollama instance routing ──────────────────────────────────────
+# 3 isolated Ollama instances: GPU0 (:11434), GPU1 (:11435), CPU (:11436).
+# Each instance sees only its assigned device via CUDA_VISIBLE_DEVICES.
+_OLLAMA_PORT_GPU0 = int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434"))
+_OLLAMA_PORT_GPU1 = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
+_OLLAMA_PORT_CPU  = int(os.environ.get("HME_OLLAMA_PORT_CPU",  "11436"))
+
+def _url_for(model: str, endpoint: str = "generate") -> str:
+    """Route model to its dedicated Ollama instance."""
+    if model == _LOCAL_MODEL:
+        port = _OLLAMA_PORT_GPU0
+    elif model == _REASONING_MODEL:
+        port = _OLLAMA_PORT_GPU1
+    else:
+        port = _OLLAMA_PORT_CPU
+    return f"http://localhost:{port}/api/{endpoint}"
+
+# Legacy compat — used by callers that don't pass model
+_LOCAL_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/generate"
+_LOCAL_CHAT_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/chat"
 
 
 # ── Ollama priority queue ──────────────────────────────────────────────────
@@ -169,7 +186,6 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             "temperature": temperature,
             "num_predict": max_tokens,
             "num_ctx": _num_ctx_for(_effective_model),
-            **({"num_gpu": 0} if _effective_model == _ARBITER_MODEL else {}),  # 4B: CPU-only, never steal VRAM
         },
     }
     if system:
@@ -178,7 +194,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         payload["context"] = context
     body = json.dumps(payload).encode()
     req = urllib.request.Request(
-        _LOCAL_URL, data=body,
+        _url_for(_effective_model), data=body,
         headers={"Content-Type": "application/json"},
     )
     try:
@@ -308,11 +324,10 @@ def _local_chat(messages: list[dict], model: str | None = None,
     payload = {
         "model": _m, "messages": messages, "stream": False,
         "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m),
-                    **({"num_gpu": 0} if _m == _ARBITER_MODEL else {})},
+        "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m)},
     }
     body = json.dumps(payload).encode()
-    req = urllib.request.Request(_LOCAL_CHAT_URL, data=body, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(_url_for(_m, "chat"), data=body, headers={"Content-Type": "application/json"})
     try:
         with active_lock:
             resp_obj = urllib.request.urlopen(req, timeout=60)
@@ -352,10 +367,9 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
     body = json.dumps({
         "model": _m, "system": system, "prompt": prompt, "stream": False,
         "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m),
-                    **({"num_gpu": 0} if _m == _ARBITER_MODEL else {})},
+        "options": {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m)},
     }).encode()
-    req = urllib.request.Request(_LOCAL_URL, data=body, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(_url_for(_m), data=body, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
             result = json.loads(resp.read())
@@ -390,13 +404,13 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     payload = {
         "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
         "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": 0.0, "num_predict": max(200, max_chars // 2), "num_ctx": _NUM_CTX_4B, "num_gpu": 0},
+        "options": {"temperature": 0.0, "num_predict": max(200, max_chars // 2), "num_ctx": _NUM_CTX_4B},
     }
     arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
     if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
         payload["context"] = arbiter_ctx
     body = json.dumps(payload).encode()
-    req = urllib.request.Request(_LOCAL_URL, data=body, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(_url_for(_ARBITER_MODEL), data=body, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read())
