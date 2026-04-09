@@ -671,8 +671,7 @@ window.addEventListener('message', (event) => {
       setStatus('Streaming…');
       break;
     case 'historyCleared':
-      messages.innerHTML = '';
-      setStatus('');
+      // Handled by session message listener below (also clears session state)
       break;
   }
 });
@@ -1036,9 +1035,6 @@ window.addEventListener('message', (event) => {
     }
   }
 }, true);
-// Check on load and when switching to hybrid
-checkShim();
-// Always check shim on load (claude route always active)
 checkShim();
 </script>
 </body>
