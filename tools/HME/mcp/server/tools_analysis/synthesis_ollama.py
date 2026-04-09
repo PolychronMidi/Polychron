@@ -16,7 +16,7 @@ logger = logging.getLogger("HME")
 # None means no recent failure.
 _last_think_failure: str | None = None
 _last_think_failure_ts: float = 0.0  # monotonic timestamp of last failure
-_TIMEOUT_COOLDOWN_S = 120  # seconds to refuse new requests after a timeout
+_TIMEOUT_COOLDOWN_S = 10  # seconds to refuse new requests after a timeout (short — agent pops the stack)
 _cooldown_refused_bg: int = 0   # count of suppressed background REFUSED logs this cooldown episode
 
 
