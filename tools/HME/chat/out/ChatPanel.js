@@ -1483,11 +1483,13 @@ function send() {
   if (!text) return;
   input.value = '';
   input.style.height = '';
-  // Route is always claude. /agent prefix preserved for backend testing.
+  // Default route is claude. Slash prefixes override for backend testing:
+  // /local, /hybrid, /auto, /agent — e.g. "/local what is X?"
   let route = 'claude';
-  if (text.startsWith('/agent ')) {
-    text = text.slice(7).trim();
-    route = 'agent';
+  const routeMatch = text.match(/^\/(local|hybrid|auto|agent) /);
+  if (routeMatch) {
+    route = routeMatch[1];
+    text = text.slice(routeMatch[0].length).trim();
   }
   vscode.postMessage({
     type: 'send',
@@ -1523,7 +1525,7 @@ queueBtn.addEventListener('click', () => {
   vscode.postMessage({
     type: 'queue',
     text,
-    route: 'claude',
+    route: 'claude', // queue always sends as claude; use /route prefix in send() for testing
     claudeModel: claudeModel.value,
     claudeEffort: claudeEffort.value,
     claudeThinking: thinkingChk.checked,
