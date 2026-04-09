@@ -36,16 +36,15 @@ BluesComposer = class BluesComposer extends MeasureComposer {
 
     // Full blues scale (includes the blue note - b5 for minor, b3 for major)
     const bluesScale = t.Scale.get(`${root} blues`);
-    const bluesNotes = (bluesScale && Array.isArray(bluesScale.notes) && bluesScale.notes.length > 0)
-      ? bluesScale.notes
-      : pentatonic.notes;
+    let bluesNotes = pentatonic.notes;
+    if (bluesScale && bluesScale.notes) { try { V.assertArray(bluesScale.notes, 'bluesScale.notes'); if (bluesScale.notes.length > 0) bluesNotes = bluesScale.notes; } catch (_) { /* use pentatonic fallback */ } }
 
     // Identify blue notes (notes in blues scale but not in pentatonic)
     const pentatonicSet = new Set(pentatonic.notes);
     this.BluesComposerBlueNotes = bluesNotes.filter(n => !pentatonicSet.has(n));
     this.BluesComposerBlueMidis = this.BluesComposerBlueNotes
       .map(note => t.Note.midi(`${note}4`))
-      .filter(midi => Number.isFinite(midi));
+      .filter(midi => V.optionalFinite(midi, null) !== null);
 
     // Use the full blues scale as the note pool
     this.notes = bluesNotes;
@@ -78,7 +77,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     const isResponse = this.BluesComposerPhraseCount % 2 === 0;
 
     const normalized = baseNotes.map((entry) => {
-      const midi = typeof entry === 'number' ? entry : BluesComposer.V.requireFinite(entry && entry.note, 'BluesComposer.getNotes.sortEntry.note');
+      const midi = V.optionalFinite(entry, null) !== null ? entry : V.requireFinite(entry && entry.note, 'BluesComposer.getNotes.sortEntry.note');
       return { entry, midi };
     });
     normalized.sort((a, b) => a.midi - b.midi);
@@ -90,7 +89,7 @@ BluesComposer = class BluesComposer extends MeasureComposer {
     // Blue note injection: probabilistically add chromatic approach tones
     if (this.BluesComposerBlueMidis.length > 0 && rf() < this.blueNoteProb) {
       const blueMidi = this.BluesComposerBlueMidis[ri(this.BluesComposerBlueMidis.length - 1)];
-      if (Number.isFinite(blueMidi)) {
+      if (V.optionalFinite(blueMidi, null) !== null) {
         // Insert blue note before a random position (chromatic approach)
         const insertIdx = ri(0, m.max(0, shaped.length - 1));
         const blueEntry = { note: blueMidi };
@@ -100,14 +99,14 @@ BluesComposer = class BluesComposer extends MeasureComposer {
 
     // Ghost notes: quiet grace notes at low velocity (marked via BluesComposerGhost flag)
     const result = shaped.map(n => {
-      const note = typeof n === 'number' ? n : (n && typeof n.note === 'number' ? n.note : null);
+      const note = V.optionalFinite(n, null) !== null ? n : (n && V.optionalFinite(n.note, null) !== null ? n.note : null);
       BluesComposer.V.requireFinite(note, 'output note');
       if (rf() < this.blueNoteProb * 0.3) {
         // Ghost note: shift by 1 semitone as grace
         const ghostNote = note + (rf() < 0.5 ? -1 : 1);
         return { note: clamp(ghostNote, 0, 127), BluesComposerGhost: true };
       }
-      return typeof n === 'number' ? { note: n } : n;
+      return V.optionalFinite(n, null) !== null ? { note: n } : n;
     });
 
     return result;

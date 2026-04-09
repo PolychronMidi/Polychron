@@ -48,7 +48,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   for (let bi = 0; bi < bucket.length; bi++) {
     const gid = bucket[bi].groupId;
     if (gid && !cycleTracker.has(gid)) {
-      if (Number.isFinite(bucket[bi].seqLen)) {
+      if (V.optionalFinite(bucket[bi].seqLen, null) !== null) {
         cycleTracker.set(gid, { playedIndices: new Set(), seqLen: bucket[bi].seqLen, cycleCount: 0 });
       }
     }
@@ -61,7 +61,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   if (!bucketEntry) throw new Error(`${unit}.playMotifs: invalid bucket entry at cursor=${cursor} - entry: ${JSON.stringify(bucketEntry)}`);
   V.requireFinite(bucketEntry.note, 'bucketEntry.note');
   // Apply working overrides (non-destructive cycle transforms) if available
-  const overrideKey = bucketEntry.groupId && Number.isFinite(bucketEntry.seqIndex) ? `${bucketEntry.groupId}:${bucketEntry.seqIndex}` : null;
+  const overrideKey = bucketEntry.groupId && V.optionalFinite(bucketEntry.seqIndex, null) !== null ? `${bucketEntry.groupId}:${bucketEntry.seqIndex}` : null;
   const resolvedNote = (overrideKey && layer.playMotifsWorkingOverrides && layer.playMotifsWorkingOverrides.has(overrideKey))
     ? layer.playMotifsWorkingOverrides.get(overrideKey)
     : bucketEntry.note;
@@ -91,10 +91,11 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
     const parentUnit = unit === 'subsubdiv' ? 'subdiv' : unit === 'subdiv' ? 'div' : unit === 'div' ? 'beat' : null;
     if (parentUnit && layer.playMotifsVoiceManagers[parentUnit]) {
       const parentVM = layer.playMotifsVoiceManagers[parentUnit];
-      const layerId = (layer && typeof layer.id === 'string' && layer.id.length > 0) ? layer.id : 'default';
+      const layerId = (layer && V.optionalType(layer.id, 'string', null) !== null && layer.id.length > 0) ? layer.id : 'default';
       const parentHistory = parentVM.voiceHistoryByLayer.get(layerId);
-      if (Array.isArray(parentHistory) && parentHistory.length > 0) {
-        layer.playMotifsVoiceManagers[unit].voiceHistoryByLayer.set(layerId, parentHistory.map(h => Array.isArray(h) ? [...h] : []));
+      const parentHistIsArr = (() => { try { V.assertArray(parentHistory, 'parentHistory'); return true; } catch (_) { return false; } })();
+      if (parentHistIsArr && parentHistory.length > 0) {
+        layer.playMotifsVoiceManagers[unit].voiceHistoryByLayer.set(layerId, parentHistory.map(h => { try { V.assertArray(h, 'h'); return [...h]; } catch (_) { return []; } }));
       }
     }
   }
@@ -120,7 +121,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
   }
 
   // Pass voicing options from composer for voice spacing constraints
-  const voicingOptions = (activeComposer && typeof activeComposer.voicingOptions === 'object') ? activeComposer.voicingOptions : null;
+  const voicingOptions = (activeComposer && V.optionalType(activeComposer.voicingOptions, 'object', null) !== null) ? activeComposer.voicingOptions : null;
   const selectionOptions = { phraseContext };
   if (voicingOptions) Object.assign(selectionOptions, voicingOptions);
   if (runtimeVoiceOptions) Object.assign(selectionOptions, runtimeVoiceOptions);
@@ -146,7 +147,7 @@ playMotifs = /** @type {any} */ (function playMotifs(unit = 'subdiv', layer) {
 
   // Track which motif indices are being played this beat
   const playedGroupIndices = new Map();
-  if (bucketEntry && bucketEntry.groupId && Number.isFinite(bucketEntry.seqIndex)) {
+  if (bucketEntry && bucketEntry.groupId && V.optionalFinite(bucketEntry.seqIndex, null) !== null) {
     playedGroupIndices.set(bucketEntry.groupId, [bucketEntry.seqIndex]);
   }
 

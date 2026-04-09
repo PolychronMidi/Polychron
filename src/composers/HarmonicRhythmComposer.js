@@ -13,7 +13,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       useCorpusHarmonicPriors: opts && opts.useCorpusHarmonicPriors === true,
       corpusHarmonicStrength: opts && opts.corpusHarmonicStrength
     };
-    if (typeof progression === 'string') {
+    if (V.optionalType(progression, 'string', null) !== null) {
       const mode = /** @type {string} */ (progression).toLowerCase();
       if (mode === 'corpus') {
         chordSymbols = generator.generate('corpus', Object.assign({}, harmonicCorpusOpts, {
@@ -24,7 +24,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
       } else {
         chordSymbols = generator.generate(progression, { source: 'harmonicRhythm' });
       }
-    } else if (Array.isArray(progression) && progression[0] && typeof progression[0] === 'string' && progression[0].match(/^[ivIV]/)) {
+    } else if (progression && progression[0] && V.optionalType(progression[0], 'string', null) !== null && progression[0].match(/^[ivIV]/)) {
       chordSymbols = progression.map(roman => generator.romanToChord(roman)).filter(c => c !== null);
     }
     super(chordSymbols);
@@ -78,11 +78,11 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
   }
 
   noteSet(progression, direction = 'R') {
-    if (progression && Array.isArray(progression) && progression.length > 0) {
+    if (progression && progression.length > 0 && (() => { try { V.assertArray(progression, 'progression'); return true; } catch (_) { return false; } })()) {
       const firstItem = progression[0];
       if (firstItem === null) { throw new Error('HarmonicRhythmComposer.noteSet: progression first item is null'); }
-      const isStringArray = typeof firstItem === 'string';
-      const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
+      const isStringArray = V.optionalType(firstItem, 'string', null) !== null;
+      const isChordArray = V.optionalType(firstItem, 'object', null) !== null && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
         super.noteSet(progression, direction);
         return;
@@ -92,7 +92,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
     const currentChord = this.getCurrentChord();
 
     // Detect chord change
-    const currentSymbol = typeof currentChord === 'string' ? currentChord : (currentChord.symbol || currentChord);
+    const currentSymbol = V.optionalType(currentChord, 'string', null) !== null ? currentChord : (currentChord.symbol || currentChord);
     const lastSymbol = this.HarmonicRhythmComposerLastChord;
     this.HarmonicRhythmComposerIsChordChange = (lastSymbol !== null && lastSymbol !== currentSymbol);
 

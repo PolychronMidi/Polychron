@@ -30,7 +30,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
     }
     this.inversionMode = inversionMode;
     this.inversionPivotMode = inversionPivotMode;
-    this.inversionFixedDegree = Number.isFinite(Number(opts.inversionFixedDegree)) ? m.round(Number(opts.inversionFixedDegree)) : 0;
+    this.inversionFixedDegree = V.optionalFinite(m.round(Number(opts.inversionFixedDegree)), 0);
     this.normalizeToScale = opts.normalizeToScale !== false;
     this.useDegreeNoise = opts.useDegreeNoise !== false;
     // Phrase-level coordination
@@ -83,15 +83,17 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
   getNotes(octaveRange) {
     // Prefer harmonicContext window scale when composer declares timeVaryingScaleContext
     const hcScale = harmonicContext.getField('scale');
-    const effectiveScale = (this.hasCapability('timeVaryingScaleContext') && Array.isArray(hcScale) && hcScale.length > 0)
+    const hcScaleIsArray = (() => { try { V.assertArray(hcScale, 'hcScale'); return true; } catch (_) { return false; } })();
+    const notesIsArray = (() => { try { V.assertArray(this.notes, 'this.notes'); return true; } catch (_) { return false; } })();
+    const effectiveScale = (this.hasCapability('timeVaryingScaleContext') && hcScaleIsArray && hcScale.length > 0)
       ? hcScale
-      : (Array.isArray(this.notes) && this.notes.length > 0 ? this.notes : hcScale);
+      : (notesIsArray && this.notes.length > 0 ? this.notes : hcScale);
     V.assertArray(effectiveScale, 'effectiveScale', true);
     const { fitMidi } = scaleNormalization.createMidiFitter(effectiveScale, 'MelodicDevelopmentComposer.getNotes');
 
     // If composer honors time-varying scale context, derive baseNotes from the effectiveScale (fail-fast if not available)
     let baseNotes;
-    if (this.hasCapability('timeVaryingScaleContext') && Array.isArray(effectiveScale) && effectiveScale.length > 0) {
+    if (this.hasCapability('timeVaryingScaleContext') && effectiveScale && effectiveScale.length > 0) {
       const prevNotes = this.notes;
       try {
         this.notes = effectiveScale;
@@ -105,7 +107,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
     V.assertArray(baseNotes, 'baseNotes', true);
     const normalizedBaseNotes = baseNotes.map((item) => {
-      const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+      const midi = V.optionalFinite(item, null) !== null ? item : (item && V.optionalFinite(item.note, null) !== null ? item.note : NaN);
       V.requireFinite(midi, 'normalizedBaseNotes.midi');
       return { item, midi };
     });
@@ -153,7 +155,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
           developedNotes = normalizedBaseNotes.map(({ item, midi }) => {
             const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset0, { clampToMidi: false });
             const transposed = fitMidi(transposedRaw);
-            return (typeof item === 'number') ? transposed : Object.assign({}, item, { note: transposed });
+            return V.optionalFinite(item, null) !== null ? transposed : Object.assign({}, item, { note: transposed });
           });
         }
         break;
@@ -168,7 +170,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
           developedNotes = normalizedBaseNotes.map(({ item, midi }) => {
             const transposedRaw = transposeByDegree(midi, effectiveScale, degreeOffset1, { clampToMidi: false });
             const transposed = fitMidi(transposedRaw);
-            return (typeof item === 'number') ? transposed : Object.assign({}, item, { note: transposed });
+            return V.optionalFinite(item, null) !== null ? transposed : Object.assign({}, item, { note: transposed });
           });
         }
         break;
@@ -184,7 +186,7 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
             pivotSeed = valid[m.floor(valid.length / 2)];
           } else {
             const firstBase = baseNotes[0];
-            pivotSeed = (typeof firstBase === 'number') ? firstBase : (firstBase && typeof firstBase.note === 'number' ? firstBase.note : NaN);
+            pivotSeed = V.optionalFinite(firstBase, null) !== null ? firstBase : (firstBase && V.optionalFinite(firstBase.note, null) !== null ? firstBase.note : NaN);
             V.requireFinite(pivotSeed, 'pivotSeed');
           }
 
@@ -197,23 +199,23 @@ MelodicDevelopmentComposer = class MelodicDevelopmentComposer extends ScaleCompo
 
           if (this.inversionMode === 'chromatic') {
             developedNotes = baseNotes.map((item) => {
-              const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+              const midi = V.optionalFinite(item, null) !== null ? item : (item && V.optionalFinite(item.note, null) !== null ? item.note : NaN);
               V.requireFinite(midi, 'midi');
               const inverted = clamp(m.round(2 * noisyPivot - midi), 0, 127);
               const out = this.normalizeToScale ? fitMidi(inverted) : inverted;
-              return (typeof item === 'number') ? out : Object.assign({}, item, { note: out });
+              return V.optionalFinite(item, null) !== null ? out : Object.assign({}, item, { note: out });
             });
           } else {
             const pivotInfo = midiToDegree(noisyPivot, theScale, { quantize: true });
             const pivotAbs = pivotInfo.absDegree;
             developedNotes = baseNotes.map((item) => {
-              const midi = (typeof item === 'number') ? item : (item && typeof item.note === 'number' ? item.note : NaN);
+              const midi = V.optionalFinite(item, null) !== null ? item : (item && V.optionalFinite(item.note, null) !== null ? item.note : NaN);
               V.requireFinite(midi, 'midi');
               const info = midiToDegree(midi, theScale, { quantize: true });
               const invAbs = 2 * pivotAbs - info.absDegree;
               const invMidiRaw = degreeToMidi(invAbs, theScale, 0, { clampToMidi: false });
               const invMidi = fitMidi(invMidiRaw);
-              return (typeof item === 'number') ? invMidi : Object.assign({}, item, { note: invMidi });
+              return V.optionalFinite(item, null) !== null ? invMidi : Object.assign({}, item, { note: invMidi });
             });
           }
         }
