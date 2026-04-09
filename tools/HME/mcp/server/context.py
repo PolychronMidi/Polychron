@@ -76,6 +76,22 @@ _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None
 
 
+def _fmt_startup_error(err: Exception) -> str:
+    """Format startup error with type, message, and traceback origin."""
+    import traceback
+    msg = str(err)
+    etype = type(err).__name__
+    # Get the last frame from the original traceback for location info
+    tb_info = ""
+    if err.__traceback__:
+        tb_lines = traceback.format_tb(err.__traceback__)
+        if tb_lines:
+            tb_info = f" | origin: {tb_lines[-1].strip()}"
+    if not msg:
+        msg = "(empty exception message)"
+    return f"{etype}: {msg}{tb_info}"
+
+
 def ensure_ready_sync(timeout: float = 45.0) -> None:
     """Block until background model/engine initialization completes.
 
@@ -84,7 +100,7 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     """
     if _startup_done is None or _startup_done.is_set():
         if _startup_error:
-            raise RuntimeError(f"HME startup failed: {_startup_error}")
+            raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
         if project_engine is None or global_engine is None or shared_model is None:
             raise RuntimeError(
                 "HME startup completed but engines are not initialized "
@@ -95,7 +111,7 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     if not _startup_done.wait(timeout=timeout):
         raise RuntimeError(f"HME: model loading timed out after {timeout}s")
     if _startup_error:
-        raise RuntimeError(f"HME startup failed: {_startup_error}")
+        raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
     if project_engine is None or global_engine is None or shared_model is None:
         raise RuntimeError(
             "HME startup completed but engines are not initialized — "
