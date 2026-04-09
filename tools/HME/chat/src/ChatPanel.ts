@@ -58,7 +58,9 @@ export class ChatPanel {
           }
           return narrative;
         } catch (e: any) {
-          this._postError("narrative-synthesis", String(e));
+          // Narrative synthesis is background enrichment — timeout on CPU is expected.
+          // Log to console only; never surface as a user-visible error or lifesaver trigger.
+          console.error(`[HME] narrative-synthesis skipped: ${(e as any)?.message ?? e}`);
           return "";
         }
       });
