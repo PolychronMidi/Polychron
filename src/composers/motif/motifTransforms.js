@@ -58,7 +58,7 @@ motifTransforms = {
   augmentDuration(entries) {
     const factor = rf(1.1, 2.0);
     entries.forEach(e => {
-      if (e.duration && V.optionalFinite(e.duration, null) !== null) {
+      if (e.duration && typeof e.duration === 'number') {
         e.duration = m.max(1, m.round(e.duration * factor));
       }
     });
@@ -75,7 +75,7 @@ motifTransforms = {
     const shift = m.round(Number(semitones));
     if (shift === 0) return;
     entries.forEach(e => {
-      if (V.optionalFinite(e.note, null) !== null) {
+      if (typeof e.note === 'number' && Number.isFinite(e.note)) {
         e.note = m.max(0, m.min(127, e.note + shift));
       }
     });
@@ -88,13 +88,13 @@ motifTransforms = {
    * @param {number} [axis] - Mirror axis (MIDI note). Auto-detected if omitted.
    */
   pitchInvert(entries, axis) {
-    const notes = entries.filter(e => V.optionalFinite(e.note, null) !== null).map(e => e.note);
+    const notes = entries.filter(e => typeof e.note === 'number' && Number.isFinite(e.note)).map(e => e.note);
     if (notes.length === 0) return;
-    const mirrorAxis = V.optionalFinite(axis, null) !== null
+    const mirrorAxis = (typeof axis === 'number' && Number.isFinite(axis))
       ? axis
       : m.round((m.min(...notes) + m.max(...notes)) / 2);
     entries.forEach(e => {
-      if (V.optionalFinite(e.note, null) !== null) {
+      if (typeof e.note === 'number' && Number.isFinite(e.note)) {
         e.note = m.max(0, m.min(127, 2 * mirrorAxis - e.note));
       }
     });
@@ -146,7 +146,7 @@ motifTransforms = {
         this.augmentDuration(entries);
       } else if (transform === 'pitchInvert') {
         this.pitchInvert(entries);
-      } else if (V.optionalType(transform, 'object', null) !== null && transform !== null) {
+      } else if (typeof transform === 'object' && transform !== null) {
         const t = /** @type {{type: string, amount?: number, pivot?: number, semitones?: number, axis?: number}} */ (transform);
         if (t.type === 'rotate') {
           this.rotate(entries, t.amount ?? 1);

@@ -275,9 +275,9 @@ VoiceLeadingScore = class VoiceLeadingScore {
       V.assertPlainObject(cfgAny.weights, 'updateConfig.weights');
       Object.assign(this.weights, cfgAny.weights);
     }
-    if (V.optionalFinite(cfgAny.commonToneWeight, null) !== null) this.commonToneWeight = clamp(cfgAny.commonToneWeight, 0, 1);
-    if (V.optionalFinite(cfgAny.contraryMotionPreference, null) !== null) this.contraryMotionPreference = clamp(cfgAny.contraryMotionPreference, 0, 1);
-    if (V.optionalFinite(cfgAny.dynamism, null) !== null) this.dynamism = clamp(cfgAny.dynamism, 0, 1);
+    if (typeof cfgAny.commonToneWeight === 'number') this.commonToneWeight = clamp(cfgAny.commonToneWeight, 0, 1);
+    if (typeof cfgAny.contraryMotionPreference === 'number') this.contraryMotionPreference = clamp(cfgAny.contraryMotionPreference, 0, 1);
+    if (typeof cfgAny.dynamism === 'number') this.dynamism = clamp(cfgAny.dynamism, 0, 1);
     if (cfgAny.registers) {
       V.assertPlainObject(cfgAny.registers, 'updateConfig.registers');
       this.registers = Object.assign({}, this.registers, cfgAny.registers);

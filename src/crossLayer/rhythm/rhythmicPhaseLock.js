@@ -45,7 +45,7 @@ rhythmicPhaseLock = (() => {
     const other = L0.findClosest(
       CHANNEL, absoluteSeconds, (PHASE_TOLERANCE_MS * 10) / 1000, activeLayer
     );
-    if (!other || !Number.isFinite(other.spBeat)) return null;
+    if (!other || V.optionalFinite(other.spBeat) === undefined) return null;
 
     const otherTimeSec = other.timeInSeconds;
     // Phase difference as fraction of beat duration (0 = in sync, 0.5 = max opposition)

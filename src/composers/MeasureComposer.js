@@ -182,7 +182,7 @@ MeasureComposer = class MeasureComposer {
 
     if (!scorerOrConfig) {
       this.VoiceLeadingScore = new VoiceLeadingScore();
-    } else if (V.optionalType(scorerOrConfig, 'object', null) !== null) {
+    } else if (typeof scorerOrConfig === 'object') {
       try {
         validateInstance(scorerOrConfig);
         // looks like a real instance
@@ -218,7 +218,7 @@ MeasureComposer = class MeasureComposer {
     if (!this.VoiceLeadingScore) {
       // if no scorer exists, treat config as basis for a new one
       this.enableVoiceLeading(cfg);
-    } else if (V.optionalType(this.VoiceLeadingScore.updateConfig, 'function', null) !== null) {
+    } else if (typeof this.VoiceLeadingScore.updateConfig === 'function') {
       // update existing scorer in-place
       this.VoiceLeadingScore.updateConfig(cfg);
       // ensure update didn't somehow corrupt the object

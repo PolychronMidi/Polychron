@@ -142,10 +142,7 @@ FXFeedbackListener = (() => {
     }
 
     for (const [key, spec] of Object.entries(rhythmsObj)) {
-      if (!spec || !Array.isArray(spec.weights)) {
-        modified[key] = spec;
-        continue;
-      }
+      if (!spec || !Array.isArray(spec.weights)) { modified[key] = spec; continue; } // eslint-disable-line local/prefer-validator
 
       const methodName = spec.method;
       const methodScore = (methodName && methodScores[methodName] !== undefined) ? methodScores[methodName] : 0.5;

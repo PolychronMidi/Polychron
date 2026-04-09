@@ -33,7 +33,7 @@ registerCollisionAvoider = (() => {
     const boundedMidi = clamp(midi, lo, hi);
 
     const other = L0.findClosest(CHANNEL, absoluteSeconds, TIME_TOLERANCE_SEC, activeLayer);
-    if (!other || !Number.isFinite(other.midi)) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
+    if (!other || V.optionalFinite(other.midi) === undefined) return { midi: boundedMidi, adjusted: boundedMidi !== midi };
     // Melodic coupling: intervalFreshness scales collision tolerance.
     // Fresh intervals -> wider tolerance (novel dissonances are expressive, let them through).
     // Stale intervals -> tighter (muddy register collisions need harder avoidance).

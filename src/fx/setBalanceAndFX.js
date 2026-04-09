@@ -64,7 +64,7 @@ const resolveRangeScale = (groupName, effectNum) => {
 const scaleFxRange = (minValue, maxValue, rangeScale) => {
   const lo = Number(minValue);
   const hi = Number(maxValue);
-  if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+  if (V.optionalFinite(lo) === undefined || V.optionalFinite(hi) === undefined) {
     return [minValue, maxValue];
   }
   const floor = m.min(lo, hi);

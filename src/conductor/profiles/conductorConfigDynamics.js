@@ -51,6 +51,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
         result[key] = av + (bv - av) * t;
       } else if (Array.isArray(bv) && Array.isArray(av) && av.length === bv.length) {
         result[key] = bv.map((value, index) => typeof value === 'number' && typeof av[index] === 'number' ? av[index] + (value - av[index]) * t : value);
+      // eslint-disable-next-line local/prefer-validator
       } else if (bv && typeof bv === 'object' && !Array.isArray(bv) && av && typeof av === 'object') {
         result[key] = lerpObject(av, bv, t);
       } else {

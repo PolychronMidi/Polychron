@@ -69,10 +69,8 @@ factoryProfiles = {
 
     const factoryKeysByType = getConstructorOptionKeysByType();
     for (const [type, schemaKeys] of Object.entries(schemaKeysByType)) {
-      let schemaArr; try { V.assertArray(schemaKeys, 'schemaKeys'); schemaArr = schemaKeys; } catch (_) { schemaArr = []; }
-      const schemaSet = new Set(schemaArr);
-      let factoryArr; try { V.assertArray(factoryKeysByType[type], 'factoryKeysByType[type]'); factoryArr = factoryKeysByType[type]; } catch (_) { factoryArr = []; }
-      const factorySet = new Set(factoryArr);
+      const schemaSet = new Set(Array.isArray(schemaKeys) ? schemaKeys : []);
+      const factorySet = new Set(Array.isArray(factoryKeysByType[type]) ? factoryKeysByType[type] : []);
       if (factorySet.size === 0) {
         throw new Error(`factoryProfiles.validateProfileSchemaFactoryCompatibility: missing factory config key map for type "${type}"`);
       }
@@ -119,14 +117,14 @@ factoryProfiles = {
     }
     const defaultProfile = { preservesScale: true, mutatesPitchClasses: false, deterministic: false, notesReflectOutputSet: false, timeVaryingScaleContext: false };
     const profile = capabilityProfiles[type] || defaultProfile;
-    const fromComposer = V.optionalType(composer.getCapabilities, 'function', null) !== null
+    const fromComposer = (typeof composer.getCapabilities === 'function')
       ? composer.getCapabilities()
-      : (composer.capabilities && V.optionalType(composer.capabilities, 'object', null) !== null ? composer.capabilities : {});
-    const fromConfig = (config && V.optionalType(config.capabilities, 'object', null) !== null && config.capabilities !== null) ? config.capabilities : {};
+      : (composer.capabilities && typeof composer.capabilities === 'object' ? composer.capabilities : {});
+    const fromConfig = (config && typeof config.capabilities === 'object' && config.capabilities !== null) ? config.capabilities : {};
     const merged = Object.assign({}, profile, fromComposer, fromConfig);
 
     const validated = assertComposerCapabilities(merged);
-    if (V.optionalType(composer.setCapabilities, 'function', null) !== null) {
+    if (typeof composer.setCapabilities === 'function') {
       composer.setCapabilities(validated);
     } else {
       composer.capabilities = validated;

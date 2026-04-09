@@ -43,7 +43,7 @@ voiceLeadingCore = {
       currentRegister = opts.register;
     }
 
-    try { V.assertArray(constraints, 'constraints'); } catch (_) { constraints = []; }
+    constraints = Array.isArray(constraints) ? constraints : [];
 
     // Noise context
     const currentTime = beatStartTime;
@@ -84,54 +84,51 @@ voiceLeadingCore = {
     }
 
     // Parallel motion
-    const scorerHistIsArr = (() => { try { V.assertArray(scorer.history, 'scorer.history'); return true; } catch (_) { return false; } })();
-    if (scorerHistIsArr && scorer.history.length > 0) {
+    if (Array.isArray(scorer.history) && scorer.history.length > 0) {
       const lastHistory = scorer.history[scorer.history.length - 1];
-      const lastMotion = V.optionalFinite(lastHistory && lastHistory.interval, 0);
+      const lastMotion = (lastHistory && typeof lastHistory.interval === 'number') ? lastHistory.interval : 0;
       totalCost += voiceLeadingScorers.scoreParallelMotion(candidate - lastNote, lastMotion) * (scorer.weights?.parallelMotion ?? 0.3);
     }
 
     // Common-tone preference
-    const baseCtWeight = V.optionalFinite(opts && opts.commonToneWeight, null) !== null ? opts.commonToneWeight : scorer.commonToneWeight;
+    const baseCtWeight = (opts && typeof opts.commonToneWeight === 'number') ? opts.commonToneWeight : scorer.commonToneWeight;
     const ctWeightMod = applyVoiceLeadingWeightNoise(1.0, 'commonTone', noiseContext);
-    const ctWeight = V.optionalFinite(baseCtWeight, null) !== null ? (baseCtWeight * ctWeightMod) : 0;
-    if (V.optionalFinite(ctWeight, null) !== null && ctWeight > 0) {
+    const ctWeight = (typeof baseCtWeight === 'number') ? (baseCtWeight * ctWeightMod) : 0;
+    if (typeof ctWeight === 'number' && ctWeight > 0) {
       const samePC = (((candidate % 12) + 12) % 12) === (((lastNote % 12) + 12) % 12);
       if (samePC) totalCost -= m.min(8, ctWeight * 4);
     }
 
     // Candidate weight bias
-    if (opts && V.optionalFinite(opts.weight, null) !== null && opts.weight > 0) {
+    if (opts && typeof opts.weight === 'number' && opts.weight > 0) {
       totalCost -= m.min(8, opts.weight * 4);
     }
 
     // Hard constraints
-    const constraintsIsArr2 = (() => { try { V.assertArray(constraints, 'constraints'); return true; } catch (_) { return false; } })();
-    if (constraintsIsArr2 && constraints.includes('avoidsStrident') && interval > 7) {
+    if (Array.isArray(constraints) && constraints.includes('avoidsStrident') && interval > 7) {
       totalCost += 5;
     }
-    const constraintsIsArr3 = (() => { try { V.assertArray(constraints, 'constraints3'); return true; } catch (_) { return false; } })();
-    if (constraintsIsArr3 && constraints.includes('stepsOnly') && interval > 2) {
+    if (Array.isArray(constraints) && constraints.includes('stepsOnly') && interval > 2) {
       totalCost += 10;
     }
 
     const useCorpusVoiceLeadingPriors = opts && opts.useCorpusVoiceLeadingPriors === true;
     if (useCorpusVoiceLeadingPriors) {
-      const phrasePhase = (opts && V.optionalType(opts.phase, 'string', null) !== null && opts.phase.length > 0)
+      const phrasePhase = (opts && typeof opts.phase === 'string' && opts.phase.length > 0)
         ? opts.phase
-        : (opts && opts.phraseContext && V.optionalType(opts.phraseContext.phase, 'string', null) !== null && opts.phraseContext.phase.length > 0)
+        : (opts && opts.phraseContext && typeof opts.phraseContext.phase === 'string' && opts.phraseContext.phase.length > 0)
           ? opts.phraseContext.phase
           : undefined;
 
-      const harmonicKey = (opts && V.optionalType(opts.tonic, 'string', null) !== null && opts.tonic.length > 0)
+      const harmonicKey = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
         ? opts.tonic
         : (harmonicContext.getField('key') || undefined);
 
-      const harmonicQuality = (opts && V.optionalType(opts.quality, 'string', null) !== null && opts.quality.length > 0)
+      const harmonicQuality = (opts && typeof opts.quality === 'string' && opts.quality.length > 0)
         ? opts.quality
         : (harmonicContext.getField('quality') || 'major');
 
-      const corpusStrength = V.optionalFinite(Number(opts && opts.corpusVoiceLeadingStrength), null) !== null
+      const corpusStrength = Number.isFinite(Number(opts && opts.corpusVoiceLeadingStrength))
         ? Number(opts.corpusVoiceLeadingStrength)
         : 0.8;
 

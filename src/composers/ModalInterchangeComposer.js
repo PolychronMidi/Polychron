@@ -67,11 +67,11 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
   }
 
   noteSet(progression, direction = 'R') {
-    if (progression && progression.length > 0 && (() => { try { V.assertArray(progression, 'progression'); return true; } catch (_) { return false; } })()) {
+    if (progression && Array.isArray(progression) && progression.length > 0) {
       const firstItem = progression[0];
       if (firstItem === null) { throw new Error('ModalInterchangeComposer.noteSet: progression first item is null'); }
-      const isStringArray = V.optionalType(firstItem, 'string', null) !== null;
-      const isChordArray = V.optionalType(firstItem, 'object', null) !== null && firstItem !== null && firstItem.symbol;
+      const isStringArray = typeof firstItem === 'string';
+      const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
         super.noteSet(progression, direction);
         return;
@@ -105,7 +105,7 @@ ModalInterchangeComposer = class ModalInterchangeComposer extends ChordComposer 
     if (this.ModalInterchangeComposerLastBorrowed) {
       for (const note of candidateNotes) {
         const key = String(note);
-        const existing = V.optionalFinite(base.candidateWeights[key], 0);
+        const existing = typeof base.candidateWeights[key] === 'number' ? base.candidateWeights[key] : 0;
         if (existing > 0) base.candidateWeights[key] = existing * 1.5;
       }
     }

@@ -199,7 +199,7 @@ harmonicContext = (() => {
    */
   function isNoteInScale(noteInput) {
     const chroma = typeof noteInput === 'number' ? noteInput % 12 : (t && t.Note) ? t.Note.chroma(noteInput) : -1;
-    if (!Number.isFinite(chroma) || chroma < 0) return false;
+    if (V.optionalFinite(chroma) === undefined || chroma < 0) return false;
     return scaleChromaSet.has(chroma);
   }
 

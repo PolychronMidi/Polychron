@@ -80,7 +80,7 @@ cadenceAlignment = (() => {
     const other = L0.findClosest(
       CHANNEL, absoluteSeconds, _getSyncTolerance() / 1000, activeLayer
     );
-    if (!other || !Number.isFinite(other.tension)) return null;
+    if (!other || V.optionalFinite(other.tension) === undefined) return null;
     if (other.tension < HIGH_TENSION_THRESHOLD) return null;
     const localCadenceSuggested = Boolean(ourCadenceSuggested);
     const otherCadenceSuggested = Boolean(other.cadenceSuggested);

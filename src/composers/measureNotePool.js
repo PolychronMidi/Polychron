@@ -40,7 +40,7 @@ measureNotePool = {
       const noteName = notes[noteIndex];
       if (!noteName) continue; // Skip if note name undefined
       const chroma = t.Note.chroma(noteName);
-      if (V.optionalFinite(chroma, null) === null) continue; // Skip invalid chroma
+      if (V.optionalFinite(chroma) === undefined) continue; // Skip invalid chroma
       for (let octave = minOctave; octave <= maxOctave; octave++) {
         const note = chroma + 12 * octave;
         if (!uniqueNotes.has(note)) {

@@ -52,11 +52,11 @@ intervalComposer = {
     }
     count = clamp(count, minNotes, maxNotes);
 
-    let preferRaw; try { V.assertArray(options.preferIndices, 'options.preferIndices'); preferRaw = options.preferIndices; } catch (_) { preferRaw = []; }
+    const preferRaw = Array.isArray(options.preferIndices) ? options.preferIndices : [];
     const preferIndices = [];
     for (let i = 0; i < preferRaw.length; i++) {
       const normalized = V.optionalFinite(preferRaw[i], NaN);
-      if (V.optionalFinite(normalized, null) !== null) {
+      if (Number.isFinite(normalized)) {
         preferIndices.push(clamp(m.round(normalized), 0, len - 1));
       }
     }
@@ -67,7 +67,7 @@ intervalComposer = {
     count = m.max(Number(count), preferIndices.length);
 
     const styles = ['sparse', 'rising', 'even', 'cluster', 'skip', 'full'];
-    let style = V.optionalType(options.style, 'string', 'random');
+    let style = typeof options.style === 'string' ? options.style : 'random';
     if (style === 'random' || !style) style = styles[ri(styles.length - 1)];
     if (!styles.includes(style)) {
       throw new Error(`intervalComposer.selectIntervals: invalid style="${style}"`);
@@ -89,7 +89,7 @@ intervalComposer = {
         throw new Error('intervalComposer.selectIntervals.pickFromPool: seedSet must be provided');
       }
       const result = new Set(seedSet);
-      let src; try { V.assertArray(pool, 'pool'); src = pool.length > 0 ? pool : allIndices; } catch (_) { src = allIndices; }
+      const src = Array.isArray(pool) && pool.length > 0 ? pool : allIndices;
       let guard = len * 4;
       while (result.size < targetCount && guard-- > 0) {
         result.add(src[ri(src.length - 1)]);

@@ -102,7 +102,8 @@ texturalMirror = (() => {
     // R34: spectral L0 awareness -- sparse spectrum = densify texture, full spectrum = thin
     const spectralEntry = L0.getLast('spectral', { layer: otherLayer });
     const spectralBoost = (() => {
-      if (!spectralEntry || !Array.isArray(spectralEntry.histogram)) return 0;
+      if (!spectralEntry) return 0;
+      V.assertArray(spectralEntry.histogram, 'spectralEntry.histogram');
       const h = spectralEntry.histogram;
       const mean = h.reduce((a, b) => a + b, 0) / m.max(h.length, 1);
       let variance = 0;

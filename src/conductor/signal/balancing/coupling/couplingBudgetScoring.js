@@ -39,7 +39,7 @@ couplingBudgetScoring = (() => {
         const flags = couplingConstants.classifyPair(key, dimA, dimB);
         const { isDensityFlickerPair, isFlickerTrustPair, isTensionPhasePair, isDensityTrustPair, isDensityTensionPair, isTensionEntropyPair, isEntropySurfacePair, isTrustPair, isPhasePair } = flags;
         const corr = matrix[key];
-        if (!V.optionalType(corr, 'number') || !Number.isFinite(corr)) continue;
+        if (!V.optionalType(corr, 'number') || V.optionalFinite(corr) === undefined) continue;
         const absCorr = m.abs(corr);
         // R66 E3: Use phaseTargetScale for phase pairs
         const pairTargetScale = isPhasePair && setup.phaseTargetScale !== undefined

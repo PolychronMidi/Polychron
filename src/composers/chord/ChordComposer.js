@@ -46,7 +46,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
   noteSet(progression,direction='R') {
     if (progression !== undefined) V.requireType(progression, 'array', 'progression');
     V.assertNonEmptyString(direction, 'direction');
-    let arr; try { V.assertArray(progression, 'progression'); arr = progression; } catch (_) { arr = []; }
+    const arr = Array.isArray(progression) ? progression : [];
     const validatedProgression = arr.map(raw => {
       const asRaw = String(raw);
       const normalized = normalizeChordSymbol(raw);
@@ -85,7 +85,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         case '?': next=ri(-2,2); break;
         default: throw new Error(`ChordComposer.noteSet: invalid direction "${direction}"`);
       }
-      const lastMeasure = V.optionalFinite(this.ChordComposerLastMeasureCount, measureCount);
+      const lastMeasure = (typeof this.ChordComposerLastMeasureCount === 'number') ? this.ChordComposerLastMeasureCount : measureCount;
       const measureAdvanced = measureCount > lastMeasure;
       const progressChord = measureAdvanced || rf() < 0.05;
       if (progressChord) { allNotesOff(subdivStartTime); }
@@ -108,17 +108,17 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         jitter: false,
       };
 
-      const runtimeProfile = (this.runtimeProfile && V.optionalType(this.runtimeProfile, 'object', null) !== null) ? this.runtimeProfile : null;
-      if (runtimeProfile && V.optionalFinite(Number(runtimeProfile.chordVoices), null) !== null) {
+      const runtimeProfile = (this.runtimeProfile && typeof this.runtimeProfile === 'object') ? this.runtimeProfile : null;
+      if (runtimeProfile && Number.isFinite(Number(runtimeProfile.chordVoices))) {
         const boundedVoices = m.max(1, m.min(this.notes.length, m.round(Number(runtimeProfile.chordVoices))));
         this.intervalOptions.minNotes = boundedVoices;
         this.intervalOptions.maxNotes = boundedVoices;
       }
-      if (runtimeProfile && V.optionalFinite(Number(runtimeProfile.inversionPreference), null) !== null) {
+      if (runtimeProfile && Number.isFinite(Number(runtimeProfile.inversionPreference))) {
         const sourceCount = this.notes.length;
         if (sourceCount > 0) {
           const inversion = ((m.round(Number(runtimeProfile.inversionPreference)) % sourceCount) + sourceCount) % sourceCount;
-          let nextPrefer; try { V.assertArray(this.intervalOptions.preferIndices, 'preferIndices'); nextPrefer = this.intervalOptions.preferIndices.slice(); } catch (_) { nextPrefer = []; }
+          const nextPrefer = Array.isArray(this.intervalOptions.preferIndices) ? this.intervalOptions.preferIndices.slice() : [];
           if (!nextPrefer.includes(inversion)) {
             this.intervalOptions.preferIndices = [inversion, ...nextPrefer];
           }
@@ -134,7 +134,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
         throw new Error('ChordComposer.noteSet: current chord missing for harmonicContext update');
       }
       const chordSymbols = this.progression.map(c => c.symbol);
-      let scale; try { V.assertArray(currentChord.notes, 'currentChord.notes'); scale = currentChord.notes; } catch (_) { scale = []; }
+      const scale = Array.isArray(currentChord.notes) ? currentChord.notes : [];
       if (!scale.length) {
         throw new Error(`ChordComposer.noteSet: current chord has no notes for scale (${currentChord.symbol})`);
       }

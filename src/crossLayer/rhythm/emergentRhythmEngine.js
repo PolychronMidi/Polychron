@@ -29,7 +29,7 @@ emergentRhythmEngine = (() => {
 
   function stampEvents(events, windowStart, windowDuration, grid, amplitude, spread) {
     for (const evt of events) {
-      if (!Number.isFinite(evt.timeInSeconds)) continue;
+      if (V.optionalFinite(evt.timeInSeconds) === undefined) continue;
       const intensity = V.optionalFinite(
         evt.intensity !== undefined ? evt.intensity
           : evt.strength !== undefined ? evt.strength
@@ -66,7 +66,7 @@ emergentRhythmEngine = (() => {
   }
 
   function buildGrid() {
-    if (!Number.isFinite(beatStartTime) || !Number.isFinite(spBeat)) return null;
+    if (V.optionalFinite(beatStartTime) === undefined || V.optionalFinite(spBeat) === undefined) return null;
     // Per-beat cache: getRhythm calls biasRhythmWeights 4x per beat (beat/div/subdiv/subsubdiv)
     if (beatStartTime === cachedBeatTime && cachedResult) return cachedResult;
     cachedBeatTime = beatStartTime;
@@ -150,7 +150,7 @@ emergentRhythmEngine = (() => {
     const { biasStrength, complexityBias } = result;
     const modified = {};
     for (const [key, spec] of Object.entries(rhythmsObj)) {
-      if (!spec || !Array.isArray(spec.weights)) { modified[key] = spec; continue; }
+      if (!spec || !Array.isArray(spec.weights)) { modified[key] = spec; continue; } // eslint-disable-line local/prefer-validator
       const newWeights = spec.weights.map((w, idx) => {
         const wN = V.optionalFinite(Number(w), 0.1);
         const position = idx / spec.weights.length;

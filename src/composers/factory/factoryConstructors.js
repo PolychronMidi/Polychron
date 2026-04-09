@@ -15,7 +15,7 @@ factoryConstructors = {
       if (chordProfile !== null) V.assertObject(chordProfile, 'resolvedProfiles.chord');
       const useCorpusHarmonicPriors = Boolean(chordProfile && chordProfile.useCorpusHarmonicPriors === true);
       const corpusHarmonicStrength = useCorpusHarmonicPriors
-        ? clamp(V.optionalFinite(Number(chordProfile.corpusHarmonicStrength), 0.55), 0, 1)
+        ? clamp(Number.isFinite(Number(chordProfile.corpusHarmonicStrength)) ? Number(chordProfile.corpusHarmonicStrength) : 0.55, 0, 1)
         : 0;
       return { useCorpusHarmonicPriors, corpusHarmonicStrength };
     };
@@ -39,8 +39,7 @@ factoryConstructors = {
           p = [];
           for (let i = 0; i < len; i++) p.push(allChords[ri(allChords.length - 1)]);
         }
-        try { V.assertArray(p, 'p'); } catch (_) { p = []; }
-        if (p.length > 0) {
+        if (Array.isArray(p)) {
           p = p.map(normalizeChordSymbol);
         }
         V.assertNonEmptyString(direction, 'direction');

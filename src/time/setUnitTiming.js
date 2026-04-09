@@ -83,7 +83,7 @@ setUnitTiming = (unitType) => {
 
       // DIVS-only planner invocation (use DIV API and run once per measure)
       const plannedDivCount = Number(divsPerBeat) * Number(numerator);
-      if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer.setUnitTimingPlannedDivCount !== plannedDivCount) {
+      if (beatIndex === 0 || !Array.isArray(activeLayer.divMotifs) || activeLayer.setUnitTimingPlannedDivCount !== plannedDivCount) { // eslint-disable-line local/prefer-validator
         motifManager.planDivs(activeLayer, Number(divsPerBeat), Number(numerator), activeComposer);
       }
       V.assertArray(activeLayer.divMotifs, 'activeLayer.divMotifs');

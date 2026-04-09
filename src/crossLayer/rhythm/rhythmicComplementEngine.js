@@ -127,7 +127,7 @@ rhythmicComplementEngine = (() => {
     if (mode === 'canon') {
       // Apply groove offset from other layer for imitation effect
       let grooveOffset = grooveTransfer.applyOffset(crossLayerHelpers.getOtherLayer(layer), onTime, 'beat') - onTime;
-      if (!Number.isFinite(grooveOffset)) grooveOffset = 0;
+      if (V.optionalFinite(grooveOffset) === undefined) grooveOffset = 0;
       return { time: onTime + grooveOffset * es * CANON_GROOVE_SCALE, velocityScale: CANON_VELOCITY, modified: grooveOffset !== 0 };
     }
 
