@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreCompact: surface pending KB anchors and tracked note files before compaction
 cat > /dev/null  # consume stdin
 

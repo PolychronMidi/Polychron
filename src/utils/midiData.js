@@ -304,8 +304,8 @@ allModes=(()=>{
         if (Array.isArray(notes) && notes.length > 0) {
           allModes.add(modeName);
         }
-      } catch { /* boot-safety: dependency may not be ready */
-        // skip invalid combinations
+      } catch (_modeErr) {
+        console.warn('Acceptable warning: midiData: skipping invalid mode combination:', _modeErr && _modeErr.message ? _modeErr.message : _modeErr);
       }
     });
   });

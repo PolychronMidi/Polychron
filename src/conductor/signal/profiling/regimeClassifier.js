@@ -157,7 +157,7 @@ regimeClassifier = (() => {
         );
       }
     }
-  } catch (_rcErr) { void _rcErr; }
+  } catch (_rcErr) { console.warn('Acceptable warning: regimeClassifier: warm-start load failed:', _rcErr && _rcErr.message ? _rcErr.message : _rcErr); }
 
   function setOscillatingThreshold(threshold) {
     regimeClassifierState.oscillatingCurvatureThreshold = V.requireFinite(threshold, 'threshold');

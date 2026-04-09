@@ -1,12 +1,7 @@
 systemDynamicsProfilerHelpers = (() => {
   const V = validator.create('systemDynamicsProfilerHelpers');
   function getAnalysisSettings(minWindowDefault) {
-    let profile = null;
-    try {
-      profile = conductorConfig.getActiveProfile();
-    } catch { /* boot-safety: dependency may not be ready */
-      profile = null;
-    }
+    const profile = safePreBoot.call(() => conductorConfig.getActiveProfile(), null);
     const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
     const configuredWarmup = analysis && Number.isFinite(analysis.warmupTicks)
       ? m.round(analysis.warmupTicks)
@@ -81,7 +76,7 @@ systemDynamicsProfilerHelpers = (() => {
     const snap = signalReader.snapshot();
     let avgTrust = 0;
     let trustCount = 0;
-    try {
+    safePreBoot.call(() => {
       const trustSnapshot = adaptiveTrustScores.getSnapshot();
       const entries = Object.values(trustSnapshot);
       for (let i = 0; i < entries.length; i++) {
@@ -91,9 +86,7 @@ systemDynamicsProfilerHelpers = (() => {
         }
       }
       if (trustCount > 0) avgTrust /= trustCount;
-    } catch { /* boot-safety: dependency may not be ready */
-      void 0;
-    }
+    });
 
     let entropy = 0.5;
     try {
@@ -165,22 +158,18 @@ systemDynamicsProfilerHelpers = (() => {
         // creates faster coupling opportunities with other dimensions.
         const sectionPart = sampledSectionProgress;
         let phrasePart = 0;
-        try {
-          const phraseProgress = timeStream.normalizedProgress('phrase');
+        {
+          const phraseProgress = safePreBoot.call(() => timeStream.normalizedProgress('phrase'), undefined);
           if (typeof phraseProgress === 'number' && Number.isFinite(phraseProgress)) {
             phrasePart = phraseProgress;
           }
-        } catch { /* boot-safety: dependency may not be ready */
-          void 0;
         }
         let measurePart = 0;
-        try {
-          const measureProgress = timeStream.normalizedProgress('measure');
+        {
+          const measureProgress = safePreBoot.call(() => timeStream.normalizedProgress('measure'), undefined);
           if (typeof measureProgress === 'number' && Number.isFinite(measureProgress)) {
             measurePart = measureProgress;
           }
-        } catch { /* boot-safety: dependency may not be ready */
-          void 0;
         }
         const harmonicPart = 0.5 + 0.5 * m.sin(sampledSectionProgress * m.PI * 2);
         // R74 E3: Rebalanced phase weights -- section 0.45->0.40,
@@ -242,8 +231,8 @@ systemDynamicsProfilerHelpers = (() => {
         phase = clamp(sectionPart * adjSectionFinal + phrasePart * adjPhraseFinal + measurePart * adjMeasure + harmonicPart * adjHarmonic + phaseLfo * lfoWeight, 0, 1);
         state.lastPhaseSignalValid = true;
       }
-    } catch { /* boot-safety: dependency may not be ready */
-      void 0;
+    } catch (e) {
+      console.warn('Acceptable warning: systemDynamicsProfilerHelpers: phase sampling failed:', e && e.message ? e.message : e);
     }
 
     // Stale-phase dither applied BEFORE staleness detection so the

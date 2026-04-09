@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Shared helpers for compact tab operations
+# Note: _safety.sh is sourced by each hook script before this file
 
 _tab_path() {
   local project="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"

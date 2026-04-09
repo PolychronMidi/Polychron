@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PostToolUse: add_knowledge — clear pending KB entries from tab after save
 cat > /dev/null  # consume stdin
 

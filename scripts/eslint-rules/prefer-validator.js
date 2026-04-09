@@ -18,23 +18,14 @@ module.exports = {
     const src = context.getSourceCode().getText();
     if (!src.includes('validator.create(')) return {};
 
-    function isThrowingGuard(node) {
+    function isInsideSafePreBoot(node) {
       let parent = node.parent;
       while (parent) {
-        if (parent.type === 'IfStatement') {
-          // Check if consequent or alternate has a throw
-          const hasThrow = (stmt) => {
-            if (!stmt) return false;
-            if (stmt.type === 'ThrowStatement') return true;
-            if (stmt.type === 'BlockStatement') {
-              return stmt.body.some(s => s.type === 'ThrowStatement');
-            }
-            return false;
-          };
-          if (hasThrow(parent.consequent) || hasThrow(parent.alternate)) {
-            return true;
-          }
-          return false;
+        // safePreBoot.call(() => ...) wraps boot-safety checks centrally
+        if (parent.type === 'CallExpression' &&
+            parent.callee && parent.callee.type === 'MemberExpression' &&
+            parent.callee.object && parent.callee.object.name === 'safePreBoot') {
+          return true;
         }
         parent = parent.parent;
       }
@@ -42,51 +33,53 @@ module.exports = {
     }
 
     return {
-      // typeof x !== 'type' (guards, not conditionals)
+      // typeof x !== 'type' or typeof x === 'type' (guards and conditionals)
       BinaryExpression(node) {
-        if (node.operator !== '!==') return;
+        if (node.operator !== '!==' && node.operator !== '===') return;
         const { left, right } = node;
         const hasTypeof =
           (left.type === 'UnaryExpression' && left.operator === 'typeof') ||
           (right.type === 'UnaryExpression' && right.operator === 'typeof');
         if (!hasTypeof) return;
+        if (isInsideSafePreBoot(node)) return;
+
+        // Extract the type string being compared
+        const typeStr = (right.type === 'Literal' && typeof right.value === 'string')
+          ? right.value
+          : (left.type === 'Literal' && typeof left.value === 'string') ? left.value : null;
+
+        const hint = typeStr === 'number' ? 'V.requireFinite() or V.optionalFinite()'
+          : typeStr === 'string' ? 'V.assertNonEmptyString() or V.optionalType()'
+          : typeStr === 'function' ? 'V.requireType(x, \'function\', name)'
+          : typeStr === 'object' ? 'V.assertObject() or V.assertPlainObject()'
+          : 'validator methods';
 
         context.report({
           node,
-          message:
-            'Prefer validator methods (V.requireType, V.assertNonEmptyString) over typeof checks.'
+          message: `Prefer ${hint} over typeof checks.`
         });
       },
 
-      // !Number.isFinite(x) or !Array.isArray(x)
-      UnaryExpression(node) {
-        if (node.operator !== '!') return;
-        const arg = node.argument;
-        if (!arg || arg.type !== 'CallExpression') return;
-        const callee = arg.callee;
+      // Number.isFinite(x) or !Number.isFinite(x) or Array.isArray(x) or !Array.isArray(x)
+      CallExpression(node) {
+        const callee = node.callee;
         if (!callee || callee.type !== 'MemberExpression') return;
-
         const obj = callee.object;
         const prop = callee.property;
         if (!obj || !prop || obj.type !== 'Identifier') return;
+        if (isInsideSafePreBoot(node)) return;
 
         if (obj.name === 'Number' && prop.name === 'isFinite') {
-          // Only flag if it's a throwing guard
-          if (isThrowingGuard(node)) {
-            context.report({
-              node,
-              message: 'Prefer V.requireFinite() over !Number.isFinite() guard.'
-            });
-          }
+          context.report({
+            node,
+            message: 'Prefer V.requireFinite() or V.optionalFinite() over Number.isFinite().'
+          });
         }
         if (obj.name === 'Array' && prop.name === 'isArray') {
-          // Only flag if it's a throwing guard
-          if (isThrowingGuard(node)) {
-            context.report({
-              node,
-              message: 'Prefer V.assertArray() over !Array.isArray() guard.'
-            });
-          }
+          context.report({
+            node,
+            message: 'Prefer V.assertArray() over Array.isArray().'
+          });
         }
       }
     };

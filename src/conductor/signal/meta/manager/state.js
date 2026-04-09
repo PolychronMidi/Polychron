@@ -47,7 +47,7 @@ hyperMetaManagerState = (() => {
     if (fs.existsSync(statePath)) {
       warmStartState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
     }
-  } catch (warmErr) { void warmErr; }
+  } catch (warmErr) { console.warn('Acceptable warning: hyperMetaManagerState: warm-start load failed:', warmErr && warmErr.message ? warmErr.message : warmErr); }
 
   // Xenolinguistic L5: cross-run personality from previous composition
   const lastRunPersonality = warmStartState && warmStartState.lastRunPersonality

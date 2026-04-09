@@ -152,7 +152,7 @@ densityWaveAnalyzer = (() => {
     const profile = getWaveProfile();
     if (profile.isFlat) {
       let phraseProgress = 0;
-      try { phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1); } catch { /* timeStream boot-safety */ }
+      phraseProgress = /** @type {number} */ (safePreBoot.call(() => clamp(timeStream.compoundProgress('phrase'), 0, 1), 0));
       return phraseProgress < 0.5 ? 1.06 : 0.97;
     }
     if (profile.isWaving) return 0.97;

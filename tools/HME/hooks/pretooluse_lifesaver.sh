@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # LIFESAVER PreToolUse — stamp start time for every tool call.
 # PostToolUse (log-tool-call.sh) reads this to compute elapsed and emit
 # warnings when MCP HME synthesis calls take longer than expected.

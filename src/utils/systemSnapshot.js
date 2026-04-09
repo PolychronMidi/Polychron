@@ -105,7 +105,7 @@ systemSnapshot = (() => {
         enumerable: false,
         configurable: true
       });
-    } catch { /* cannot enrich - move on */ }
+    } catch (_enrichErr) { console.warn('Acceptable warning: systemSnapshot: enrichError failed:', _enrichErr && _enrichErr.message ? _enrichErr.message : _enrichErr); }
     return err;
   }
 

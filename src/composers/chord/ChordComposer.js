@@ -58,7 +58,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
       // Case B: raw invalid but normalization produced a valid chord -> acceptable
       if (chordRaw.empty && !chordNorm.empty) {
         if (!chordComposerWarnedInvalidChordSymbols.has(asRaw)) {
-          try { console.warn(`Acceptable warning: ChordComposer.noteSet: normalized chord symbol from "${asRaw}" -> "${normalized}"`); } catch { /* swallow logging errors - logging should never crash */ }
+          try { console.warn(`Acceptable warning: ChordComposer.noteSet: normalized chord symbol from "${asRaw}" -> "${normalized}"`); } catch (_logErr) { process.stderr.write('ChordComposer: logging failed: ' + (_logErr && _logErr.message ? _logErr.message : String(_logErr)) + '\n'); }
           chordComposerWarnedInvalidChordSymbols.add(asRaw);
         }
         return normalized;
@@ -66,7 +66,7 @@ ChordComposer = class ChordComposer extends MeasureComposer {
 
       // Case C: both raw and normalized are invalid -> real warning (not labeled acceptable)
       if (!chordComposerWarnedInvalidChordSymbols.has(asRaw)) {
-        try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch { /* swallow logging errors - noncritical */ }
+        try { console.warn('Acceptable warning: ChordComposer.noteSet: invalid chord symbol "' + asRaw + '" (normalized -> "' + normalized + '")'); } catch (_logErr) { process.stderr.write('ChordComposer: logging failed: ' + (_logErr && _logErr.message ? _logErr.message : String(_logErr)) + '\n'); }
         chordComposerWarnedInvalidChordSymbols.add(asRaw);
       }
       return null;

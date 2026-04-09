@@ -60,7 +60,7 @@ adaptiveTrustScores = (() => {
         }
       }
     }
-  } catch (_atsErr) { void _atsErr; }
+  } catch (_atsErr) { console.warn('Acceptable warning: adaptiveTrustScores: cross-run warm-start load failed:', _atsErr && _atsErr.message ? _atsErr.message : _atsErr); }
 
   function ensure(systemName) {
     V.assertNonEmptyString(systemName, 'systemName');

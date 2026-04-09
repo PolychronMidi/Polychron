@@ -93,7 +93,7 @@ coordinationIndependenceManager = (() => {
         }
       }
     }
-  } catch (_cimErr) { void _cimErr; }
+  } catch (_cimErr) { console.warn('Acceptable warning: coordinationIndependenceManager: warm-start load failed:', _cimErr && _cimErr.message ? _cimErr.message : _cimErr); }
 
   /**
    * Compute the target coordination level for a pair based on all signals.

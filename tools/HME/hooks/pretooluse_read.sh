@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreToolUse: Read — anti-polling + live KB surface for project files.
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
@@ -13,12 +14,10 @@ fi
 if echo "$FILE_PATH" | grep -qE '/Polychron/(src|tools/HME/(chat/src|mcp/server))/'; then
   MODULE=$(basename "$FILE_PATH" | sed 's/\.[jt]sx\?$//')
   # Pull live KB hits from shim (2s timeout — graceful if shim is down)
-  KB_JSON=$(curl -s --max-time 2 -X POST http://127.0.0.1:7734/enrich \
-    -H 'Content-Type: application/json' \
-    -d "{\"query\":\"$MODULE\",\"top_k\":3}" 2>/dev/null)
-  KB_COUNT=$(echo "$KB_JSON" | jq -r '.kbCount // 0' 2>/dev/null)
+  KB_JSON=$(_safe_curl "http://127.0.0.1:7734/enrich" "{\"query\":\"$MODULE\",\"top_k\":3}")
+  KB_COUNT=$(_safe_int "$(_safe_jq "$KB_JSON" '.kbCount' '0')")
   if [[ "$KB_COUNT" -gt 0 ]]; then
-    KB_TITLES=$(echo "$KB_JSON" | jq -r '.kb[]?.title // empty' 2>/dev/null | head -3 | sed 's/^/    /')
+    KB_TITLES=$(_safe_jq "$KB_JSON" '.kb[]?.title // empty' '' | head -3 | sed 's/^/    /')
     echo "HME KNOWS $MODULE ($KB_COUNT KB entries). Use mcp__HME__read(target=\"$MODULE\") for full briefing:" >&2
     echo "$KB_TITLES" >&2
   else

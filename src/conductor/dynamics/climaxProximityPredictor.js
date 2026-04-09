@@ -42,11 +42,7 @@ climaxProximityPredictor = (() => {
     // and tension ramp (up to 1.25x) that are currently dormant because
     // proximity rarely exceeds 0.3. Section progress * 0.12 max contribution.
     let sectionProg = 0;
-    try {
-      sectionProg = clamp(timeStream.compoundProgress('section'), 0, 1);
-    } catch { /* boot-safety: dependency may not be ready */
-      void 0;
-    }
+    sectionProg = /** @type {number} */ (safePreBoot.call(() => clamp(timeStream.compoundProgress('section'), 0, 1), 0));
     climaxSignal += sectionProg * 0.12;
 
     const proximity = clamp(climaxSignal, 0, 1);
@@ -116,7 +112,7 @@ climaxProximityPredictor = (() => {
     // Q3 0.765->0.643 collapse. Structural gating replaces constant tweaking.
     if (pred.phase === 'receding') {
       let secProg = 0;
-      try { secProg = clamp(timeStream.compoundProgress('section'), 0, 1); } catch { /* timeStream boot-safety */ }
+      secProg = /** @type {number} */ (safePreBoot.call(() => clamp(timeStream.compoundProgress('section'), 0, 1), 0));
       const lateProtection = clamp((secProg - 0.50) / 0.30, 0, 1);
       const recedingMax = 0.06 * (1 - lateProtection * 0.75);
       return 1.0 - clamp((1.0 - pred.proximity) * 0.20, 0, recedingMax);

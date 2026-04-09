@@ -2,25 +2,31 @@
 // convergence points. R17: limited to 3-10s windows per convergence event
 // to prevent sustained overwhelming. Silent when layers diverge.
 
-let convergenceBurstWindowStart = -Infinity;
-let convergenceBurstWindowActive = false;
+// Per-layer burst window state prevents L1/L2 cross-contamination
+const convergenceBurstByLayer = {};
+function getLayerBurst(layer) {
+  if (!convergenceBurstByLayer[layer]) {
+    convergenceBurstByLayer[layer] = { windowStart: -Infinity, windowActive: false };
+  }
+  return convergenceBurstByLayer[layer];
+}
 
 stutterVariants.register('convergenceBurst', function convergenceBurst(opts) {
   const layer = /** @type {string} */ (LM.activeLayer);
+  const burst = getLayerBurst(layer);
   const converged = convergenceDetector.wasRecent(opts.on, layer, 300);
 
-  if (converged && !convergenceBurstWindowActive) {
-    // Start a new burst window
-    convergenceBurstWindowActive = true;
-    convergenceBurstWindowStart = opts.on;
+  if (converged && !burst.windowActive) {
+    burst.windowActive = true;
+    burst.windowStart = opts.on;
   } else if (!converged) {
-    convergenceBurstWindowActive = false;
+    burst.windowActive = false;
   }
 
-  if (!convergenceBurstWindowActive) return opts.shared;
+  if (!burst.windowActive) return opts.shared;
 
   // Only fire within 3-10s of window start
-  const windowAge = opts.on - convergenceBurstWindowStart;
+  const windowAge = opts.on - burst.windowStart;
   if (windowAge < 3 || windowAge > 10) return opts.shared;
 
   const burstSize = ri(4, 7);
