@@ -1388,7 +1388,7 @@ function getInlineHtml() {
 
 <div id="layout">
 <!-- Session sidebar -->
-<div id="sidebar">
+<div id="sidebar" style="display:none">
   <div id="sidebar-header">
     <span>Sessions</span>
     <button id="new-session-btn" title="New session">+</button>
@@ -1406,6 +1406,7 @@ function getInlineHtml() {
 <!-- Toolbar -->
 <div id="toolbar">
   <button id="sidebar-toggle-btn" title="Toggle session sidebar">⚙</button>
+  <span style="color:lime;font-size:10px" id="build-tag">v5.1</span>
 
   <!-- Model + effort controls (claude route always active) -->
   <select id="claude-model">
@@ -1417,7 +1418,6 @@ function getInlineHtml() {
     <option value="low">Low</option>
     <option value="medium">Medium</option>
     <option value="high" selected>High</option>
-    <option value="max">Max</option>
   </select>
   <div id="thinking-wrap">
     <input type="checkbox" id="thinking-toggle" />
@@ -1449,8 +1449,8 @@ function getInlineHtml() {
 </div><!-- /layout -->
 
 <script>
-window.onerror = (msg, src, line) => {
-  document.body.insertAdjacentHTML('afterbegin', \`<div style="background:red;color:white;padding:8px;font-size:12px;z-index:9999;position:fixed;top:0;left:0;right:0">JS ERROR line \${line}: \${msg}</div>\`);
+window.onerror = function(msg, src, line) {
+  document.body.insertAdjacentHTML('afterbegin', '<div style="background:red;color:white;padding:8px;font-size:12px;z-index:9999;position:fixed;top:0;left:0;right:0">JS ERROR line ' + line + ': ' + msg + '</div>');
 };
 const vscode = acquireVsCodeApi();
 
@@ -1467,21 +1467,23 @@ const claudeEffort= document.getElementById('claude-effort');
 const thinkingChk = document.getElementById('thinking-toggle');
 
 // Update effort/thinking visibility when model changes:
-// Opus: all options including Max. Sonnet: no Max (removed from DOM). Haiku: hide effort+thinking.
+// Opus: all options including Max. Sonnet: no Max. Haiku: hide effort+thinking entirely.
 const _maxOptHtml = '<option value="max">Max</option>';
 function updateModelControls() {
   const m = claudeModel.value;
-  const isHaiku = m === 'claude-haiku-4-5-20251001';
-  const isSonnet = m === 'claude-sonnet-4-6';
+  const isHaiku = m.indexOf('haiku') !== -1;
+  const isOpus = m.indexOf('opus') !== -1;
   const effortEl = document.getElementById('claude-effort');
   const thinkingWrap = document.getElementById('thinking-wrap');
+  console.log('[HME] updateModelControls:', m, 'haiku='+isHaiku, 'opus='+isOpus, 'effortEl='+!!effortEl, 'thinkWrap='+!!thinkingWrap);
+  if (!effortEl || !thinkingWrap) return;
   effortEl.style.display = isHaiku ? 'none' : '';
   thinkingWrap.style.display = isHaiku ? 'none' : '';
-  // Add/remove Max option from DOM — display:none on <option> is unreliable cross-browser
-  const maxOpt = effortEl.querySelector('option[value="max"]');
-  if (isSonnet && maxOpt) { maxOpt.remove(); }
-  if (!isSonnet && !maxOpt) { effortEl.insertAdjacentHTML('beforeend', _maxOptHtml); }
-  if (isSonnet && effortEl.value === 'max') effortEl.value = 'high';
+  // Max only valid for Opus — add/remove from DOM (display:none unreliable on <option>)
+  var maxOpt = effortEl.querySelector('option[value="max"]');
+  if (isOpus && !maxOpt) { effortEl.insertAdjacentHTML('beforeend', _maxOptHtml); }
+  if (!isOpus && maxOpt) { maxOpt.remove(); }
+  if (!isOpus && effortEl.value === 'max') effortEl.value = 'high';
 }
 claudeModel.addEventListener('change', updateModelControls);
 updateModelControls();
@@ -1502,7 +1504,7 @@ function send() {
   // Default route is claude. Slash prefixes override for backend testing:
   // /local, /hybrid, /auto, /agent — e.g. "/local what is X?"
   let route = 'claude';
-  const routeMatch = text.match(/^\/(local|hybrid|auto|agent) /);
+  var routeMatch = text.match(new RegExp('^/(local|hybrid|auto|agent) '));
   if (routeMatch) {
     route = routeMatch[1];
     text = text.slice(routeMatch[0].length).trim();
@@ -1790,46 +1792,57 @@ window.addEventListener('message', (event) => {
 }, true);
 
 // ── Sidebar toggle ─────────────────────────────────────────────────────────
-const sidebar = document.getElementById('sidebar');
-const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-const _uiState = vscode.getState() || {};
-let sidebarVisible = _uiState.sidebarVisible ?? false;  // hidden by default
+var sidebar = document.getElementById('sidebar');
+var sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+var _uiState = vscode.getState() || {};
+var sidebarVisible = _uiState.sidebarVisible === true;  // hidden unless explicitly true
+console.log('[HME] sidebar init: sidebarVisible='+sidebarVisible, 'sidebar='+!!sidebar, 'btn='+!!sidebarToggleBtn, 'state=', _uiState);
 function applySidebar() {
   if (sidebar) sidebar.style.display = sidebarVisible ? 'flex' : 'none';
   if (sidebarToggleBtn) sidebarToggleBtn.style.color = sidebarVisible ? 'var(--subtle)' : 'var(--btn-fg)';
+  console.log('[HME] applySidebar: visible='+sidebarVisible);
 }
-sidebarToggleBtn?.addEventListener('click', () => {
-  sidebarVisible = !sidebarVisible;
-  applySidebar();
-  vscode.setState({ ...(vscode.getState() || {}), sidebarVisible });
-});
+if (sidebarToggleBtn) {
+  sidebarToggleBtn.addEventListener('click', function() {
+    sidebarVisible = !sidebarVisible;
+    applySidebar();
+    vscode.setState(Object.assign({}, vscode.getState() || {}, { sidebarVisible: sidebarVisible }));
+  });
+}
 applySidebar();
 
 // ── Zoom controls ──────────────────────────────────────────────────────────
-let zoomLevel = _uiState.zoomLevel ?? 1.0;
-const ZOOM_STEP = 0.1, ZOOM_MIN = 0.6, ZOOM_MAX = 1.8;
-const zoomLabel = document.getElementById('zoom-label');
+var zoomLevel = (typeof _uiState.zoomLevel === 'number') ? _uiState.zoomLevel : 1.0;
+var ZOOM_STEP = 0.1, ZOOM_MIN = 0.6, ZOOM_MAX = 1.8;
+var zoomLabel = document.getElementById('zoom-label');
+var zoomInBtn = document.getElementById('zoom-in-btn');
+var zoomOutBtn = document.getElementById('zoom-out-btn');
+console.log('[HME] zoom init: level='+zoomLevel, 'inBtn='+!!zoomInBtn, 'outBtn='+!!zoomOutBtn, 'label='+!!zoomLabel);
 function applyZoom() {
   if (zoomLevel === 1.0) {
     document.body.style.zoom = '';
     document.body.style.height = '';
   } else {
-    // Compensate body height so zoomed content still fills exactly the viewport
     document.body.style.zoom = String(zoomLevel);
-    document.body.style.height = \`\${(100 / zoomLevel).toFixed(3)}vh\`;
+    document.body.style.height = (100 / zoomLevel).toFixed(3) + 'vh';
   }
   if (zoomLabel) zoomLabel.textContent = Math.round(zoomLevel * 100) + '%';
+  console.log('[HME] applyZoom: '+zoomLevel);
 }
-document.getElementById('zoom-in-btn')?.addEventListener('click', () => {
-  zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 10) / 10);
-  applyZoom();
-  vscode.setState({ ...(vscode.getState() || {}), zoomLevel });
-});
-document.getElementById('zoom-out-btn')?.addEventListener('click', () => {
-  zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 10) / 10);
-  applyZoom();
-  vscode.setState({ ...(vscode.getState() || {}), zoomLevel });
-});
+if (zoomInBtn) {
+  zoomInBtn.addEventListener('click', function() {
+    zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 10) / 10);
+    applyZoom();
+    vscode.setState(Object.assign({}, vscode.getState() || {}, { zoomLevel: zoomLevel }));
+  });
+}
+if (zoomOutBtn) {
+  zoomOutBtn.addEventListener('click', function() {
+    zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 10) / 10);
+    applyZoom();
+    vscode.setState(Object.assign({}, vscode.getState() || {}, { zoomLevel: zoomLevel }));
+  });
+}
 applyZoom();
 
 // ── Session sidebar ────────────────────────────────────────────────────────
