@@ -45,8 +45,9 @@ class _LoggingMCP:
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {result_str}")
                     return result
                 except Exception as e:
+                    import traceback as _tb
                     elapsed = time.time() - t0
-                    logger.error(f"ERR  {name} [{elapsed:.1f}s] {e}")
+                    logger.error(f"ERR  {name} [{elapsed:.1f}s] {e}\n{_tb.format_exc()}")
                     raise
             return original_decorator(logged)
         return wrapper

@@ -24,7 +24,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
             import json as _json
             with open("/tmp/claude-context.json") as _ctxf:
                 _ctx_data = _json.load(_ctxf)
-            remaining = _ctx_data.get("remaining_pct", 50)
+            remaining = _ctx_data.get("remaining_pct") or 50
             if remaining > 75:
                 budget = 16000
             elif remaining > 50:
