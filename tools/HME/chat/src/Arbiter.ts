@@ -191,12 +191,13 @@ Digest:`;
     let done = false;
     const fail = (err: Error) => { if (!done) { done = true; req?.destroy(); reject(err); } };
 
-    const hardTimer = setTimeout(() => fail(new Error("Narrative synthesis timeout (60s hard cap)")), 60000);
-    // Start only after first byte — cold model loading takes >15s and is not a stall.
+    // 180s cap — CPU-only qwen3:4b for 512 tokens can exceed 60s when busy.
+    // Narrative is background enrichment; timeout is expected and non-actionable.
+    const hardTimer = setTimeout(() => fail(new Error("Narrative synthesis timeout (180s hard cap)")), 180000);
     let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
     const resetInactivity = () => {
       if (inactivityTimer) clearTimeout(inactivityTimer);
-      inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes for 15s mid-stream — model stuck)")), 15000);
+      inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes for 30s mid-stream — model stuck)")), 30000);
     };
 
     const body = JSON.stringify({
