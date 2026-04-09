@@ -149,7 +149,7 @@ def _background_startup_chain():
         return
     try:
         from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
-        from server.tools_analysis.workflow import warm_pre_edit_cache
+        from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
 
         logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
         init_result = _init_ollama_models()

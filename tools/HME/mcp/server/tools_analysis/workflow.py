@@ -298,13 +298,29 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
 def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
     """Pre-populate caches for src/ files so before_editing is instant.
 
+    Fires in a background thread and returns immediately — never blocks Claude.
     Warms two cache tiers:
     - Tier 1 (all files): caller scan + KB hits — fast, covers max_files files
     - Tier 2 (hot files): Edit Risks synthesis via local model — covers synthesis_hot
       most recently modified files (highest chance of being edited next session)
 
-    Returns count of files warmed and synthesis hits pre-loaded."""
+    Returns confirmation that warming started (results logged to hme.log)."""
+    import threading
     ctx.ensure_ready_sync()
+
+    def _warm_background():
+        try:
+            result = _warm_pre_edit_cache_sync(max_files, synthesis_hot)
+            logger.info(f"warm_pre_edit_cache (background): {result}")
+        except Exception as e:
+            logger.warning(f"warm_pre_edit_cache (background) failed: {type(e).__name__}: {e}")
+
+    threading.Thread(target=_warm_background, daemon=True, name="HME-warm-cache").start()
+    return f"Cache warming started in background (max_files={max_files}, synthesis_hot={synthesis_hot}). Results in hme.log."
+
+
+def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30) -> str:
+    """Synchronous cache warming — called from background thread."""
     import glob as _glob
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
     js_files = _glob.glob(os.path.join(src_root, "**", "*.js"), recursive=True)
