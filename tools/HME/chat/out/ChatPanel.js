@@ -760,18 +760,11 @@ class ChatPanel {
             this._postError("hybrid", String(err));
         });
     }
-    /** Fail-fast error surface: bubble in chat + VSCode notification + log file + KB antipattern lookup. */
+    /** Fail-fast error surface: bubble in chat + log file + KB antipattern lookup. */
     _postError(source, message) {
         const isCritical = message.includes("CRITICAL") || message.includes("timeout") || message.includes("refused");
-        // Primary: webview bubble (critical = blocking overlay, non-critical = inline bubble)
+        // Errors surface in the webview bubble — never as VS Code popups (those interrupt the user).
         this._post({ type: isCritical ? "criticalError" : "errorBubble", source, message });
-        // Fallback: VSCode notification — guaranteed visible even if webview drops the message
-        if (isCritical) {
-            vscode.window.showErrorMessage(`🚨 CRITICAL [HME/${source}] ${message}`, { modal: true });
-        }
-        else {
-            vscode.window.showErrorMessage(`[HME/${source}] ${message}`);
-        }
         // Shim is the single writer to hme-errors.log — avoids duplicate entries.
         // Fall back to direct disk write only if shim is unreachable.
         (0, router_1.logShimError)(source, message).catch((e) => {
@@ -897,7 +890,7 @@ class ChatPanel {
         // Graceful async cleanup: await narrative synthesis with 5s cap, then kill shim
         const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
         const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
-        await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "HME Chat closing gracefully…", cancellable: false }, () => Promise.race([narrativeWork, timeout]));
+        await Promise.race([narrativeWork, timeout]);
         try {
             this._shimProc?.kill();
         }
