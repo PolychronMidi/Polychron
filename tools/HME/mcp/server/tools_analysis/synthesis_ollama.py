@@ -59,6 +59,38 @@ def _ollama_background_yield():
         _t.sleep(0.5)
 
 
+def _cancellable_urlopen(req, timeout, cancel_event):
+    """urlopen in a thread, aborted immediately if cancel_event is set.
+
+    Returns (response_bytes, None) on success, (None, exception) on failure.
+    """
+    import time as _t
+    result_box = [None, None]  # [data, error]
+    done = _threading.Event()
+
+    def _do():
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                result_box[0] = resp.read()
+        except Exception as e:
+            result_box[1] = e
+        finally:
+            done.set()
+
+    import urllib.request
+    t = _threading.Thread(target=_do, daemon=True)
+    t.start()
+    # Poll: check cancel_event every 0.25s instead of blocking on done
+    while not done.is_set():
+        if cancel_event.is_set():
+            # Interactive call arrived — abandon this background request.
+            # Thread will finish on its own (daemon), we just stop waiting.
+            logger.info("_cancellable_urlopen: background request abandoned — interactive call arrived")
+            return None, InterruptedError("cancelled by interactive call")
+        done.wait(0.25)
+    return result_box[0], result_box[1]
+
+
 def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                  priority: str = "interactive", system: str = "",
                  temperature: float = 0.3, context: list | None = None,
@@ -154,69 +186,74 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                        else _gpu1_lock if _effective_model == _REASONING_MODEL
                        else _ollama_lock)
         # Second yield: re-check interactive just before acquiring the lock.
-        # First yield (above) handles "interactive arrived before we started".
-        # This handles "interactive arrived while we were preparing the payload".
         if priority == "background":
             _ollama_background_yield()
-        # Background: 30s max — interrupted by interactive calls, expected to timeout occasionally.
+        # Background: cancellable — abandoned immediately when interactive arrives.
         # Interactive: 60s max — fail fast, never block for a stuck/unloaded model.
-        _http_timeout = 30 if priority == "background" else 60
-        with active_lock:
-            resp_obj = urllib.request.urlopen(req, timeout=_http_timeout)
+        if priority == "background":
+            with active_lock:
+                raw_bytes, cancel_err = _cancellable_urlopen(req, timeout=30, cancel_event=_ollama_interactive)
+            if cancel_err:
+                if isinstance(cancel_err, InterruptedError):
+                    return (None, []) if return_context else None
+                raise cancel_err
+            resp_obj = None  # handled below via raw_bytes path
+        else:
+            _http_timeout = 60
+            with active_lock:
+                resp_obj = urllib.request.urlopen(req, timeout=_http_timeout)
         if priority == "interactive":
             _ollama_interactive.clear()
-        with resp_obj as resp:
-            result = json.loads(resp.read())
-            text = result.get("response", "").strip()
-            if "</think>" in text:
-                text = text[text.rfind("</think>") + len("</think>"):].strip()
-            elif "<think>" in text:
-                text = text[text.find("<think>") + len("<think>"):].strip()
-            if not text:
-                thinking = result.get("thinking", "").strip()
-                if thinking:
-                    text = thinking
-                else:
-                    # Return context even on empty text — warm priming needs KV state
-                    return (None, result.get("context", [])) if return_context else None
-            _hallucination_markers = [
-                "in this hypothetical scenario", "as an AI", "I don't have access",
-                "this document provides", "these documents provide",
-                "as a language model", "i cannot determine",
-            ]
-            if any(m in text.lower() for m in _hallucination_markers):
-                logger.info(f"_local_think: suppressed hallucinated output ({len(text)} chars)")
-                if priority == "interactive":
-                    _ollama_interactive.clear()
-                return None
-            _reasoning_markers = [
-                "but note:", "however,", "let's look", "we are to", "given the above",
-                "so we", "but we don't know", "we have to", "let's consider",
-                "we need to find", "we can assume", "first, note that",
-            ]
-            reasoning_hits = sum(1 for m in _reasoning_markers if m in text.lower())
-            if reasoning_hits >= 4 and len(text) > 1500:
-                for marker in ["therefore,", "so the answer", "in summary", "the next two", "answer:"]:
-                    idx = text.lower().rfind(marker)
-                    if idx != -1:
-                        text = text[idx:].strip()
-                        break
-                else:
-                    text = text[len(text) * 3 // 4:].strip()
-            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-            _filler_phrases = [
-                "enhancing the alien", "creating a rich tapestry",
-                "a fascinating interplay", "this creates a dynamic",
-            ]
-            sentences = re.split(r'(?<=[.!])\s+', text)
-            text = " ".join(s for s in sentences if not any(fp in s.lower() for fp in _filler_phrases)).strip()
-            if priority == "interactive":
-                _ollama_interactive.clear()
-            if not text:
-                return (None, []) if return_context else None
-            if return_context:
-                return (text, result.get("context", []))
-            return text
+        if resp_obj is not None:
+            with resp_obj as resp:
+                raw_bytes = resp.read()
+        result = json.loads(raw_bytes)
+        text = result.get("response", "").strip()
+        if "</think>" in text:
+            text = text[text.rfind("</think>") + len("</think>"):].strip()
+        elif "<think>" in text:
+            text = text[text.find("<think>") + len("<think>"):].strip()
+        if not text:
+            thinking = result.get("thinking", "").strip()
+            if thinking:
+                text = thinking
+            else:
+                # Return context even on empty text — warm priming needs KV state
+                return (None, result.get("context", [])) if return_context else None
+        _hallucination_markers = [
+            "in this hypothetical scenario", "as an AI", "I don't have access",
+            "this document provides", "these documents provide",
+            "as a language model", "i cannot determine",
+        ]
+        if any(m in text.lower() for m in _hallucination_markers):
+            logger.info(f"_local_think: suppressed hallucinated output ({len(text)} chars)")
+            return None
+        _reasoning_markers = [
+            "but note:", "however,", "let's look", "we are to", "given the above",
+            "so we", "but we don't know", "we have to", "let's consider",
+            "we need to find", "we can assume", "first, note that",
+        ]
+        reasoning_hits = sum(1 for m in _reasoning_markers if m in text.lower())
+        if reasoning_hits >= 4 and len(text) > 1500:
+            for marker in ["therefore,", "so the answer", "in summary", "the next two", "answer:"]:
+                idx = text.lower().rfind(marker)
+                if idx != -1:
+                    text = text[idx:].strip()
+                    break
+            else:
+                text = text[len(text) * 3 // 4:].strip()
+        text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+        _filler_phrases = [
+            "enhancing the alien", "creating a rich tapestry",
+            "a fascinating interplay", "this creates a dynamic",
+        ]
+        sentences = re.split(r'(?<=[.!])\s+', text)
+        text = " ".join(s for s in sentences if not any(fp in s.lower() for fp in _filler_phrases)).strip()
+        if not text:
+            return (None, []) if return_context else None
+        if return_context:
+            return (text, result.get("context", []))
+        return text
     except Exception as e:
         if priority == "interactive":
             _ollama_interactive.clear()
