@@ -128,6 +128,8 @@ Perceptual snapshot with audio: `node scripts/pipeline/snapshot-run.js --percept
 
 Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` uses isolated temp working directories (never touches `output/`). Lab runner timeout is 180s with explicit timeout message.
 
+**Non-fatal step error scanning**: `main-pipeline.js` captures stdout+stderr from all non-fatal (post-composition) steps and scans for error keywords (Traceback, RuntimeError, CUDA error, OOM, MemoryError, FATAL, segfault, killed). Detected errors are reported in the pipeline summary and written to `metrics/pipeline-summary.json` under `errorPatterns`. The `posttooluse_bash.sh` hook reads this after `npm run main` and emits a loud banner. **A non-fatal step marked OK with exit code 0 can still contain real failures** — always check `errorPatterns` in the summary. Never ignore these.
+
 ## Custom ESLint Rules
 
 20 project-specific rules in `scripts/eslint-rules/`:

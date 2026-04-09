@@ -216,6 +216,7 @@ function main() {
   const WAV_PATH = path.join(__dirname, '..', '..', 'output', 'combined.wav');
   const wavFresh = fs.existsSync(WAV_PATH) &&
     fs.statSync(WAV_PATH).mtimeMs > fs.statSync(TS_PATH).mtimeMs - 600000; // within 10min
+  let encodecFailed = false;
   if (args.includes('--perceptual') && !wavFresh && fs.existsSync(WAV_PATH)) {
     console.log('  ! Skipping perceptual: combined.wav is stale (older than trace-summary). Run `npm run render` first.');
   }
@@ -258,7 +259,8 @@ print(json.dumps(result))
       snapshot.features.cb0Entropy = snapshot.perceptual.encodec.cb0_entropy || 0;
       console.log(`  + EnCodec: ${snapshot.perceptual.encodec.codebooks} codebooks, CB0 entropy=${snapshot.perceptual.encodec.cb0_entropy.toFixed(2)}`);
     } catch (e) {
-      console.log(`  ! EnCodec analysis failed: ${e.message.slice(0, 80)}`);
+      console.error(`SNAPSHOT-RUN ERROR: EnCodec analysis failed: ${e.message.slice(0, 200)}`);
+      encodecFailed = true;
     }
   }
 
@@ -272,6 +274,10 @@ print(json.dumps(result))
   if (prediction) {
     const pct = (prediction.probability * 100).toFixed(1);
     console.log(`  Predicted verdict: ${prediction.predicted} (${pct}% LEGENDARY confidence)`);
+  }
+
+  if (encodecFailed) {
+    process.exit(1);
   }
 }
 
