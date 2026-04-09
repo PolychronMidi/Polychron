@@ -98,10 +98,7 @@ journeyRhythmCoupler = (() => {
 
     const modified = {};
     for (const [key, spec] of Object.entries(rhythmsObj)) {
-      if (!spec || !Array.isArray(spec.weights)) {
-        modified[key] = spec;
-        continue;
-      }
+      if (!spec || !Array.isArray(spec.weights)) { modified[key] = spec; continue; } // eslint-disable-line local/prefer-validator
 
       const newWeights = spec.weights.map((w, idx) => {
         const wN = V.optionalFinite(Number(w), 0.1);

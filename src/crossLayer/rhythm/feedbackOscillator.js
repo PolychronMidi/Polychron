@@ -100,7 +100,7 @@ feedbackOscillator = (() => {
     );
     if (!incoming) return null;
     V.assertObject(incoming, 'incoming');
-    if (!Number.isFinite(incoming.energy) || incoming.energy < MIN_ENERGY) return null;
+    if (V.optionalFinite(incoming.energy) === undefined || incoming.energy < MIN_ENERGY) return null;
     if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
 
     // Modulate damping by entropy - high entropy means feedback should be stronger to create convergence

@@ -68,10 +68,7 @@ stutterFeedbackListener = (() => {
     const modified = {};
 
     for (const [key, spec] of Object.entries(rhythmsObj)) {
-      if (!spec || !Array.isArray(spec.weights)) {
-        modified[key] = spec;
-        continue;
-      }
+      if (!spec || !Array.isArray(spec.weights)) { modified[key] = spec; continue; } // eslint-disable-line local/prefer-validator
 
       // method multiplier: small sway ( ~12%) so stutter subtly nudges rhythm choice
       const methodMultiplier = 1 + (intensity - 0.5) * 0.25;

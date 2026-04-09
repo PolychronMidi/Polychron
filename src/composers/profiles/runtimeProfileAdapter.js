@@ -1,9 +1,9 @@
 const V = validator.create('runtimeProfileAdapter');
 const isFiniteNumber = (value) => {
-  if (V.optionalType(value, 'number', null) !== null) return V.optionalFinite(value, null) !== null;
-  if (V.optionalType(value, 'string', null) !== null) {
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value === 'string') {
     if (value.trim().length === 0) return false;
-    return V.optionalFinite(Number(value), null) !== null;
+    return Number.isFinite(Number(value));
   }
   return false;
 };
@@ -30,7 +30,9 @@ const buildNormalizedRuntimeProfileOrFail = (resolvedProfiles = {}, opts = {}) =
   const motif = composerProfileUtils.isPlainObject(resolvedProfiles.motif) ? resolvedProfiles.motif : null;
   const rhythm = composerProfileUtils.isPlainObject(resolvedProfiles.rhythm) ? resolvedProfiles.rhythm : null;
 
-  let baseVelocityPrecedence; { const bvpIsArr = (() => { try { V.assertArray(opts.baseVelocityPrecedence, 'opts.baseVelocityPrecedence'); return true; } catch (_) { return false; } })(); baseVelocityPrecedence = bvpIsArr && opts.baseVelocityPrecedence.length > 0 ? opts.baseVelocityPrecedence : ['chord', 'voice']; }
+  const baseVelocityPrecedence = Array.isArray(opts.baseVelocityPrecedence) && opts.baseVelocityPrecedence.length > 0
+    ? opts.baseVelocityPrecedence
+    : ['chord', 'voice'];
 
   const baseVelocityBySource = {
     chord: chord && isFiniteNumber(chord.baseVelocity) ? Number(chord.baseVelocity) : null,
@@ -117,8 +119,7 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
     : {};
   composer.profileConfigs = Object.assign({}, composer.profileConfigs || {}, namedProfiles);
 
-  const composerNotesIsArr = (() => { try { V.assertArray(composer.notes, 'composer.notes'); return true; } catch (_) { return false; } })();
-  if (composer.intervalOptions && V.optionalType(composer.intervalOptions, 'object', null) !== null && composerNotesIsArr && composer.notes.length > 0) {
+  if (composer.intervalOptions && typeof composer.intervalOptions === 'object' && Array.isArray(composer.notes) && composer.notes.length > 0) {
     if (isFiniteNumber(runtimeProfile.chordVoices)) {
       const boundedVoices = m.max(1, m.min(composer.notes.length, m.round(Number(runtimeProfile.chordVoices))));
       composer.intervalOptions.minNotes = boundedVoices;
@@ -129,7 +130,9 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
       const sourceCount = composer.notes.length;
       if (sourceCount > 0) {
         const inversion = ((m.round(Number(runtimeProfile.inversionPreference)) % sourceCount) + sourceCount) % sourceCount;
-        let priorPrefer; try { V.assertArray(composer.intervalOptions.preferIndices, 'preferIndices'); priorPrefer = composer.intervalOptions.preferIndices.slice(); } catch (_) { priorPrefer = []; }
+        const priorPrefer = Array.isArray(composer.intervalOptions.preferIndices)
+          ? composer.intervalOptions.preferIndices.slice()
+          : [];
         if (!priorPrefer.includes(inversion)) {
           composer.intervalOptions.preferIndices = [inversion, ...priorPrefer];
         } else {
@@ -140,7 +143,7 @@ const applyToComposerOrFail = (composer, runtimeProfile = {}) => {
   }
 
   if (isFiniteNumber(runtimeProfile.baseVelocity)) composer.baseVelocity = Number(runtimeProfile.baseVelocity);
-  if (V.optionalType(runtimeProfile.baseVelocitySource, 'string', null) !== null && runtimeProfile.baseVelocitySource) {
+  if (typeof runtimeProfile.baseVelocitySource === 'string' && runtimeProfile.baseVelocitySource) {
     composer.baseVelocitySource = runtimeProfile.baseVelocitySource;
   }
 

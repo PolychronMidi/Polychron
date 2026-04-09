@@ -8,7 +8,8 @@ pipelineCouplingManagerSnapshot = (() => {
   }
 
   function computeExceedanceRate(arr, threshold) {
-    if (!Array.isArray(arr) || arr.length === 0) return 0;
+    V.assertArray(arr, 'arr');
+    if (arr.length === 0) return 0;
     let count = 0;
     for (let i = 0; i < arr.length; i++) {
       if (arr[i] > threshold) count++;

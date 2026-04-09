@@ -29,7 +29,7 @@ voiceLeadingPriors = (function() {
 
     if (tonic === null || tonic.length === 0) return null;
     const chroma = t.Note.chroma(tonic);
-    if (!Number.isFinite(Number(chroma))) return null;
+    if (V.optionalFinite(Number(chroma)) === undefined) return null;
     return ((Number(chroma) % 12) + 12) % 12;
   }
 

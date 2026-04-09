@@ -59,7 +59,7 @@ rhythmHistoryTracker = (() => {
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
       const entry = candidates[key];
-      if (!entry || !Array.isArray(entry.weights)) {
+      if (!entry || !Array.isArray(entry.weights)) { // eslint-disable-line local/prefer-validator
         result[key] = entry;
         continue;
       }

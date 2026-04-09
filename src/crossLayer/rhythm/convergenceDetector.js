@@ -202,7 +202,7 @@ convergenceDetector = (() => {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const window = V.optionalFinite(windowMs, 250);
     const lastSec = Number(lastConvergenceByLayer[layer]);
-    if (!Number.isFinite(lastSec)) return false;
+    if (V.optionalFinite(lastSec) === undefined) return false;
     return (absoluteSeconds - lastSec) <= m.max(0, window / 1000);
   }
 

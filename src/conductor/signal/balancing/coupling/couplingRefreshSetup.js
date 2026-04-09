@@ -38,7 +38,7 @@ couplingRefreshSetup = (() => {
       for (let vi = 0; vi < prevKeys.length; vi++) {
         const vk = prevKeys[vi];
         const currCorr = snap.couplingMatrix[vk];
-        if (!V.optionalType(currCorr, 'number') || !Number.isFinite(currCorr)) continue;
+        if (!V.optionalType(currCorr, 'number') || V.optionalFinite(currCorr) === undefined) continue;
         const delta = m.abs(m.abs(currCorr) - (V.optionalFinite(S.prevBeatAbsCorr[vk], 0)));
         if (delta > maxPairDelta) maxPairDelta = delta;
       }

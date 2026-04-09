@@ -94,7 +94,9 @@ const DEFAULT_POOL_SELECTORS = [
   ['quartal', 'openFourths']
 ];
 
-const isPlainObject = (value) => { try { V.assertPlainObject(value, 'value'); return true; } catch (_) { return false; } };
+const isPlainObject = (value) => {
+  try { V.assertPlainObject(value, 'value'); return true; } catch { return false; }
+};
 
 const assertStringOrFail = (value, label) => {
   V.requireType(value, 'string', label);
@@ -104,7 +106,7 @@ const assertStringOrFail = (value, label) => {
 };
 
 const serializeDimensionValue = (value) => {
-  try { V.assertArray(value, 'value'); return JSON.stringify(value); } catch (_) { }
+  if (Array.isArray(value)) return JSON.stringify(value);
   if (isPlainObject(value)) return JSON.stringify(value);
   return String(value);
 };

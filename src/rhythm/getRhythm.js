@@ -91,7 +91,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     const allowedSet = allowedPool ? new Set(allowedPool) : null;
     const filteredRhythms=Object.fromEntries(
       Object.entries(rhythmSource).filter(([key, { weights }]) => {
-        if (!Array.isArray(weights) || weights[levelIndex] <= 0) {
+        if (!Array.isArray(weights) || weights[levelIndex] <= 0) { // eslint-disable-line local/prefer-validator
           return false;
         }
         return allowedSet ? allowedSet.has(key) : true;

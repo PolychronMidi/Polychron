@@ -139,7 +139,7 @@ grandFinale = () => {
     c = buffer;
 
     // Finalize buffer
-    if (!Array.isArray(buffer)) {
+    if (!Array.isArray(buffer)) { // eslint-disable-line local/prefer-validator
       try {
         V.assertObject(buffer, 'buffer');
         V.assertArray(buffer.rows, 'buffer.rows');

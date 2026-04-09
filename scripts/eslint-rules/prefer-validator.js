@@ -33,9 +33,10 @@ module.exports = {
     }
 
     return {
-      // typeof x !== 'type' or typeof x === 'type' (guards and conditionals)
+      // typeof x !== 'type' -- negative guards are clearly validation patterns.
+      // Positive typeof x === 'type' checks (ternaries, if-branches) are runtime logic -- do not flag.
       BinaryExpression(node) {
-        if (node.operator !== '!==' && node.operator !== '===') return;
+        if (node.operator !== '!==') return;
         const { left, right } = node;
         const hasTypeof =
           (left.type === 'UnaryExpression' && left.operator === 'typeof') ||
@@ -60,9 +61,13 @@ module.exports = {
         });
       },
 
-      // Number.isFinite(x) or !Number.isFinite(x) or Array.isArray(x) or !Array.isArray(x)
-      CallExpression(node) {
-        const callee = node.callee;
+      // !Number.isFinite(x) or !Array.isArray(x) -- negative guards are clearly validation patterns.
+      // Positive checks (ternaries, if-branches, filter predicates) are runtime logic -- do not flag.
+      UnaryExpression(node) {
+        if (node.operator !== '!') return;
+        const arg = node.argument;
+        if (!arg || arg.type !== 'CallExpression') return;
+        const callee = arg.callee;
         if (!callee || callee.type !== 'MemberExpression') return;
         const obj = callee.object;
         const prop = callee.property;

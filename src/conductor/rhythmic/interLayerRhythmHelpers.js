@@ -21,7 +21,7 @@ interLayerRhythmHelpers = (() => {
     const layerOnsets = {};
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
-      if (!e || !Number.isFinite(e.time)) continue;
+      if (!e || V.optionalFinite(e.time) === undefined) continue;
       const layer = String(e.layer || 'default');
       if (!layerOnsets[layer]) layerOnsets[layer] = [];
       layerOnsets[layer].push(e.time);

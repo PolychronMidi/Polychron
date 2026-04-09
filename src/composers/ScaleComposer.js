@@ -68,15 +68,17 @@ ScaleComposer = class ScaleComposer extends MeasureComposer {
     }
 
     let selectedNote;
-    if (this.VoiceLeadingScore && V.optionalType(this.VoiceLeadingScore.selectNextNote, 'function', null) !== null) {
+    if (this.VoiceLeadingScore && typeof this.VoiceLeadingScore.selectNextNote === 'function') {
       V.requireType(this.voiceHistory, 'array', 'this.voiceHistory');
-      selectedNote = this.VoiceLeadingScore.selectNextNote(this.voiceHistory, candidates, {});
+      selectedNote = this.VoiceLeadingScore.selectNextNote(Array.isArray(this.voiceHistory) ? this.voiceHistory : [], candidates, {});
     }
 
-    selectedNote = V.optionalFinite(selectedNote, candidates[m.floor(candidates.length / 2)]);
+    if (typeof selectedNote === 'undefined') {
+      selectedNote = candidates[m.floor(candidates.length / 2)];
+    }
 
     // Apply noise-based pitch variation via helper
-    this.ScaleComposerNoiseCallCount = V.optionalFinite(this.ScaleComposerNoiseCallCount, -1) + 1;
+    if (typeof this.ScaleComposerNoiseCallCount === 'undefined') this.ScaleComposerNoiseCallCount = 0;
     this.ScaleComposerNoiseCallCount++;
     const voiceId = this.root ? this.root.charCodeAt(0) : 60;
     return applyComposerPitchNoise(selectedNote, { voiceId, callCount: this.ScaleComposerNoiseCallCount });

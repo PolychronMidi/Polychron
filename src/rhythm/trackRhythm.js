@@ -34,22 +34,23 @@ trackRhythm = (unit, layer, played) => {
     let idxFinal = idx;
 
     // Try global fallbacks without using globalThis (project convention: naked globals)
+    // eslint-disable-next-line local/prefer-validator
     if (!Array.isArray(rhythmFinal) || idxFinal === undefined) {
       switch (key) {
         case 'beat':
-          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(beatRhythm) ? beatRhythm : null;
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(beatRhythm) ? beatRhythm : null; // eslint-disable-line local/prefer-validator
           if (idxFinal === undefined) idxFinal = beatIndex;
           break;
         case 'div':
-          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(divRhythm) ? divRhythm : null;
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(divRhythm) ? divRhythm : null; // eslint-disable-line local/prefer-validator
           if (idxFinal === undefined) idxFinal = divIndex;
           break;
         case 'subdiv':
-          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subdivRhythm) ? subdivRhythm : null;
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subdivRhythm) ? subdivRhythm : null; // eslint-disable-line local/prefer-validator
           if (idxFinal === undefined) idxFinal = subdivIndex;
           break;
         case 'subsubdiv':
-          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subsubdivRhythm) ? subsubdivRhythm : null;
+          if (!Array.isArray(rhythmFinal)) rhythmFinal = Array.isArray(subsubdivRhythm) ? subsubdivRhythm : null; // eslint-disable-line local/prefer-validator
           if (idxFinal === undefined) idxFinal = subsubdivIndex;
           break;
         default:

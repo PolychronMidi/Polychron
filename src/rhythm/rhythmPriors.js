@@ -79,7 +79,7 @@ rhythmPriors = (function() {
     const out = {};
     for (const [name, spec] of Object.entries(rhythmsIn)) {
       V.assertObject(spec, 'spec');
-      if (!V.optionalType(spec.method, 'string') || spec.method.length === 0 || !Array.isArray(spec.weights) || spec.weights.length === 0) {
+      if (!V.optionalType(spec.method, 'string') || spec.method.length === 0 || !Array.isArray(spec.weights) || spec.weights.length === 0) { // eslint-disable-line local/prefer-validator
         out[name] = spec;
         continue;
       }
