@@ -3,5 +3,6 @@
 require('./harmonicContext');
 require('./harmonicRhythmTracker');
 require('./harmonicJourneyHelpers');
+require('./harmonicJourneyPlannerStepBuilder');
 require('./harmonicJourneyPlanner');
 require('./harmonicJourney');

@@ -1356,6 +1356,7 @@ declare var harmonicContext: HarmonicContextAPI;
 declare var harmonicJourney: HarmonicJourneyAPI;
 declare var harmonicRhythmTracker: HarmonicRhythmTrackerAPI;
 declare var harmonicJourneyHelpers: any;
+declare var harmonicJourneyPlannerStepBuilder: any;
 declare var harmonicJourneyPlanner: any;
 declare var dynamismEngine: DynamismEngineAPI;
 declare var dynamismPulse: any;
@@ -1908,6 +1909,8 @@ declare var explainabilityBus: ExplainabilityBusAPI;
 declare var crossLayerHelpers: CrossLayerHelpersAPI;
 declare var crossLayerEmissionGateway: CrossLayerEmissionGatewayAPI;
 declare var adaptiveTrustScoresHelpers: any;
+declare var adaptiveTrustScoresCaching: any;
+declare var adaptiveTrustScoresVelocityNourishment: any;
 declare var adaptiveTrustScores: AdaptiveTrustScoresAPI;
 declare var sectionIntentCurvesHelpers: {
   getClapNudges(sectionIdx: number): { density: number; dissonance: number; interaction: number };
