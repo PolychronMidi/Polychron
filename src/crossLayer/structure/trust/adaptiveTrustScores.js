@@ -26,27 +26,6 @@ adaptiveTrustScores = (() => {
 
   let decayCycleCount = 0;
 
-  // -- #5: Trust Starvation Auto-Nourishment (Hypermeta) --
-  // Tracks per-system trust velocity EMA (rate of change). When velocity
-  // is near zero for >100 beats, the system is stuck and receives a
-  // synthetic payoff proportional to the gap from mean trust. This self-
-  // heals the cadenceAlignment 0.122 starvation pattern without manual
-  // threshold tweaking.
-  const _VELOCITY_EMA_ALPHA = 0.02;         // ~50-beat horizon
-  const _STAGNATION_THRESHOLD = 0.001;      // velocity below this is "stagnant"
-  const _DISENGAGE_THRESHOLD = 0.003;       // 3x threshold for hysteresis disengage
-  const _DISENGAGE_BEATS = 50;              // beats above disengage threshold before stopping
-  const _STAGNATION_BEATS_TRIGGER = 70;     // R33 E2: 100->70 faster recovery of stuck systems
-  // R16 E4: Lower coherent trigger 100->70. With coherent at 50.7% in R15,
-  // trust starvation is waiting too long to nourish during coherent passages.
-  // maxConsecutiveCoherent was 72 beats -- barely exceeds old 100 threshold.
-  const STAGNATION_BEATS_REGIME = { exploring: 50, evolving: 70, coherent: 70 };
-  const _BASE_NOURISHMENT_STRENGTH = 0.15;  // max synthetic payoff scaling
-  const _MIN_NOURISHMENT_STRENGTH = 0.05;   // floor after decay
-  const _NOURISHMENT_DECAY = 0.90;          // 10% decay per application
-  /** @type {Map<string, { velocityEma: number, stagnantBeats: number, lastScore: number, disengageBeats: number, nourishmentCount: number, effectiveStrength: number }>} */
-  const adaptiveTrustScoresVelocityState = new Map();
-
   // -- Trust journal: ring buffer of significant trust changes --
   // Modeled after explainabilityBus. Keeps the most impactful trust
   // transitions across the entire run for post-hoc forensics.
@@ -83,63 +62,6 @@ adaptiveTrustScores = (() => {
     }
   } catch (_atsErr) { void _atsErr; }
 
-  let adaptiveTrustScoresCacheVersion = 0;
-  let adaptiveTrustScoresContextCacheKey = '';
-  let adaptiveTrustScoresContextCache = null;
-  let adaptiveTrustScoresWeightCacheKey = '';
-  const adaptiveTrustScoresWeightCache = new Map();
-  let adaptiveTrustScoresSnapshotCacheKey = '';
-  let adaptiveTrustScoresSnapshotCache = null;
-
-  function adaptiveTrustScoresGetBeatKey() {
-    const safeSection = Number.isFinite(sectionIndex) ? sectionIndex : -1;
-    const safePhrase = Number.isFinite(phraseIndex) ? phraseIndex : -1;
-    const safeBeat = Number.isFinite(beatStartTime) ? beatStartTime : (Number.isFinite(beatCount) ? beatCount : -1);
-    return safeSection + ':' + safePhrase + ':' + safeBeat;
-  }
-
-  function adaptiveTrustScoresGetCacheKey() {
-    return adaptiveTrustScoresGetBeatKey() + ':' + adaptiveTrustScoresCacheVersion;
-  }
-
-  function adaptiveTrustScoresInvalidateValueCaches() {
-    adaptiveTrustScoresCacheVersion++;
-    adaptiveTrustScoresWeightCacheKey = '';
-    adaptiveTrustScoresWeightCache.clear();
-    adaptiveTrustScoresSnapshotCacheKey = '';
-    adaptiveTrustScoresSnapshotCache = null;
-  }
-
-  function adaptiveTrustScoresResolveContext() {
-    const beatKey = adaptiveTrustScoresGetBeatKey();
-    if (adaptiveTrustScoresContextCacheKey === beatKey && adaptiveTrustScoresContextCache) {
-      return adaptiveTrustScoresContextCache;
-    }
-    const bridgeSigs = conductorSignalBridge.getSignals();
-    const regime = bridgeSigs.regime || 'evolving';
-    const axisShares = bridgeSigs.axisEnergyShares;
-    const tensionShare = axisShares && typeof axisShares.tension === 'number'
-      ? axisShares.tension
-      : 1.0 / 6.0;
-    const trustShare = axisShares && typeof axisShares.trust === 'number'
-      ? axisShares.trust
-      : 1.0 / 6.0;
-    const phaseShare = axisShares && typeof axisShares.phase === 'number'
-      ? axisShares.phase
-      : 1.0 / 6.0;
-    adaptiveTrustScoresContextCacheKey = beatKey;
-    adaptiveTrustScoresContextCache = {
-      regime,
-      tensionShare,
-      trustShare,
-      phaseShare,
-      trustAxisPressure: clamp((trustShare - 0.17) / 0.08, 0, 1),
-      phaseLaneNeed: clamp((0.07 - phaseShare) / 0.07, 0, 1)
-    };
-    return adaptiveTrustScoresContextCache;
-  }
-
-  /** @param {string} systemName */
   function ensure(systemName) {
     V.assertNonEmptyString(systemName, 'systemName');
     if (!scoreBySystem.has(systemName)) {
@@ -166,7 +88,7 @@ adaptiveTrustScores = (() => {
     const trustSurfacePressure = V.optionalFinite(hotspotProfile.trustSurfacePressure, 0);
     const trustClusterPressure = clamp((V.optionalFinite(hotspotProfile.trustHotPairCount, 0)) > 1 ? trustSurfacePressure * 0.40 + 0.08 : 0, 0, 0.24);
     const trustSurfaceSystem = hotspotProfile.hotspotPairs.some(function(entry) { return entry && entry.pair && entry.pair.indexOf('trust') >= 0; }) || hotspotProfile.dominantPair.indexOf('trust') >= 0;
-    const context = adaptiveTrustScoresResolveContext();
+    const context = adaptiveTrustScoresCaching.resolveContext();
 
     let newWeight = BASE_EMA_NEW;
     let decayWeight = BASE_EMA_DECAY;
@@ -251,7 +173,7 @@ adaptiveTrustScores = (() => {
       samples: state.samples
     }, state.lastMs);
 
-    adaptiveTrustScoresInvalidateValueCaches();
+    adaptiveTrustScoresCaching.invalidateValueCaches();
 
     return state.score;
   }
@@ -282,14 +204,8 @@ adaptiveTrustScores = (() => {
 
   /** @param {string} systemName */
   function getWeight(systemName) {
-    const cacheKey = adaptiveTrustScoresGetCacheKey();
-    if (adaptiveTrustScoresWeightCacheKey !== cacheKey) {
-      adaptiveTrustScoresWeightCacheKey = cacheKey;
-      adaptiveTrustScoresWeightCache.clear();
-    }
-    if (adaptiveTrustScoresWeightCache.has(systemName)) {
-      return adaptiveTrustScoresWeightCache.get(systemName);
-    }
+    const cached = adaptiveTrustScoresCaching.getWeightCached(systemName);
+    if (cached !== undefined) return cached;
     const baseWeight = getBaseWeight(systemName);
     const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(systemName);
     const trustSurfacePressure = V.optionalFinite(pairAwareProfile.trustSurfacePressure, 0);
@@ -297,7 +213,7 @@ adaptiveTrustScores = (() => {
     const contextualWeightGetter = contextualTrust ? V.optionalType(contextualTrust.getContextualWeight, 'function') : undefined;
     const contextualWeight = contextualWeightGetter ? contextualWeightGetter(systemName) : null;
     if (contextualWeight === null) {
-      adaptiveTrustScoresWeightCache.set(systemName, baseWeight);
+      adaptiveTrustScoresCaching.setWeightCached(systemName, baseWeight);
       return baseWeight;
     }
     const blend = clamp(0.18 + pairAwareProfile.pressure * 0.32 + pairAwareProfile.severePressure * 0.28, 0.18, 0.65);
@@ -305,12 +221,12 @@ adaptiveTrustScores = (() => {
     let hotspotAwareWeight = pairAwareProfile.severePressure > 0.10
       ? m.min(baseWeight, blendedWeight)
       : blendedWeight;
-    const context = adaptiveTrustScoresResolveContext();
+    const context = adaptiveTrustScoresCaching.resolveContext();
     hotspotAwareWeight = adaptiveTrustScoresHelpers.applyTrustBrakes(
       systemName, pairAwareProfile, context, hotspotAwareWeight, trustClusterPressure, trustSurfacePressure
     );
     const resolvedWeight = clamp(hotspotAwareWeight, TRUST_WEIGHT_MIN, TRUST_WEIGHT_MAX);
-    adaptiveTrustScoresWeightCache.set(systemName, resolvedWeight);
+    adaptiveTrustScoresCaching.setWeightCached(systemName, resolvedWeight);
     return resolvedWeight;
   }
 
@@ -396,7 +312,7 @@ adaptiveTrustScores = (() => {
       }
     }
 
-    // -- #5: Trust starvation auto-nourishment --
+    // -- #5: Trust stagnation auto-nourishment --
     // Detect per-system velocity stagnation and inject synthetic payoff
     // to break out of trust plateaus.
     let meanTrust = 0;
@@ -406,74 +322,9 @@ adaptiveTrustScores = (() => {
       trustCountForMean++;
     }
     meanTrust = trustCountForMean > 0 ? meanTrust / trustCountForMean : 0;
-    const context = adaptiveTrustScoresResolveContext();
-    const trustSharePressure = context.trustAxisPressure;
-    const phaseLaneNeed = context.phaseLaneNeed;
+    const context = adaptiveTrustScoresCaching.resolveContext();
 
-    for (const [name, state] of scoreBySystem.entries()) {
-      let vs = adaptiveTrustScoresVelocityState.get(name);
-      if (!vs) {
-        vs = { velocityEma: 0, stagnantBeats: 0, lastScore: state.score, disengageBeats: 0, nourishmentCount: 0, effectiveStrength: _BASE_NOURISHMENT_STRENGTH };
-        adaptiveTrustScoresVelocityState.set(name, vs);
-      }
-      if (trustSharePressure > 0 && state.score > meanTrust) {
-        const dominanceSurplus = clamp((state.score - meanTrust) / m.max(meanTrust, 0.05), 0, 1);
-        const dominanceDecay = clamp(trustSharePressure * 0.025 + phaseLaneNeed * 0.03 + dominanceSurplus * 0.02, 0, 0.06);
-        state.score *= 1 - dominanceDecay;
-      }
-      const scoreDelta = m.abs(state.score - vs.lastScore);
-      vs.velocityEma = vs.velocityEma * (1 - _VELOCITY_EMA_ALPHA) + scoreDelta * _VELOCITY_EMA_ALPHA;
-      vs.lastScore = state.score;
-
-      // Hysteresis - engage at threshold, disengage at 3x threshold
-      if (vs.velocityEma < _STAGNATION_THRESHOLD) {
-        vs.stagnantBeats++;
-        vs.disengageBeats = 0;
-      } else if (vs.velocityEma > _DISENGAGE_THRESHOLD) {
-        vs.disengageBeats++;
-        if (vs.disengageBeats >= _DISENGAGE_BEATS) {
-          vs.stagnantBeats = 0;
-          vs.disengageBeats = 0;
-          // Partial strength reset: a system that escaped stagnation and stayed active
-          // long enough to disengage has proven itself. Allow partial recovery of nourishment
-          // capacity so future stagnation episodes aren't permanently weaker.
-          if (vs.effectiveStrength < _BASE_NOURISHMENT_STRENGTH * 0.7) {
-            vs.effectiveStrength = m.min(_BASE_NOURISHMENT_STRENGTH, vs.effectiveStrength / _NOURISHMENT_DECAY);
-          }
-        }
-      } else {
-        // In between thresholds: hold current state (hysteresis band)
-        vs.disengageBeats = 0;
-      }
-
-      // R95 E4: Regime-responsive stagnation trigger
-      const stagnRegime = conductorSignalBridge.getSignals().regime || 'evolving';
-      const stagnTrigger = STAGNATION_BEATS_REGIME[stagnRegime] !== undefined ? STAGNATION_BEATS_REGIME[stagnRegime] : _STAGNATION_BEATS_TRIGGER;
-      // Scale trigger down for deeply stagnant systems (score far below mean = faster nourishment).
-      // Systems at 50% of mean or below get up to 2x faster nourishment to escape the catch-22
-      // where slow velocity EMA prevents the trigger from ever firing in time.
-      const depthPenalty = clamp(state.score / m.max(meanTrust, 0.01), 0.5, 1.0);
-      const stagnTriggerScaled = m.floor(stagnTrigger * depthPenalty);
-      if (vs.stagnantBeats >= stagnTriggerScaled && state.samples > 32) {
-        const gap = meanTrust - state.score;
-        if (gap > 0) {
-          const syntheticPayoff = clamp(gap * vs.effectiveStrength, 0, 0.10);
-          state.score = clamp(state.score + syntheticPayoff, -1, TRUST_CEILING);
-          vs.stagnantBeats = 0;
-          // Decay nourishment strength per application to prevent trust inflation
-          vs.nourishmentCount++;
-          vs.effectiveStrength = m.max(_MIN_NOURISHMENT_STRENGTH, vs.effectiveStrength * _NOURISHMENT_DECAY);
-          explainabilityBus.emit('trust-nourishment', 'both', {
-            systemName: name,
-            syntheticPayoff,
-            gapFromMean: gap,
-            newScore: state.score,
-            nourishmentCount: vs.nourishmentCount,
-            effectiveStrength: vs.effectiveStrength
-          });
-        }
-      }
-    }
+    adaptiveTrustScoresVelocityNourishment.runVelocityNourishment(scoreBySystem, meanTrust, context);
 
     // R36: trust ecosystem biodiversity -- when Gini is high (monopolistic),
     // create protected niches for bottom systems. Self-regulating: biodiversity
@@ -497,50 +348,52 @@ adaptiveTrustScores = (() => {
       }
     }
 
-    adaptiveTrustScoresInvalidateValueCaches();
+    adaptiveTrustScoresCaching.invalidateValueCaches();
+  }
+
+  function copySnapshotMap(src) {
+    const copy = {};
+    const names = Object.keys(src);
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
+      const c = src[name];
+      copy[name] = {
+        score: c.score,
+        samples: c.samples,
+        weight: c.weight,
+        hotspotPressure: c.hotspotPressure,
+        dominantPair: c.dominantPair,
+        hotspotPairs: c.hotspotPairs,
+        severePressure: c.severePressure,
+        severePair: c.severePair,
+        trustSurfacePressure: c.trustSurfacePressure,
+        trustHotPairCount: c.trustHotPairCount
+      };
+    }
+    return copy;
   }
 
   function getSnapshot() {
-    const cacheKey = adaptiveTrustScoresGetCacheKey();
-    if (adaptiveTrustScoresSnapshotCacheKey !== cacheKey || !adaptiveTrustScoresSnapshotCache) {
-      const snapshot = {};
-      for (const [name, state] of scoreBySystem.entries()) {
-        const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(name);
-        snapshot[name] = {
-          score: state.score,
-          samples: state.samples,
-          weight: getWeight(name),
-          hotspotPressure: pairAwareProfile.pressure,
-          dominantPair: pairAwareProfile.dominantPair,
-          hotspotPairs: pairAwareProfile.hotspotPairs,
-          severePressure: pairAwareProfile.severePressure,
-          severePair: pairAwareProfile.severePair,
-          trustSurfacePressure: V.optionalFinite(pairAwareProfile.trustSurfacePressure, 0),
-          trustHotPairCount: V.optionalFinite(pairAwareProfile.trustHotPairCount, 0)
-        };
-      }
-      adaptiveTrustScoresSnapshotCacheKey = cacheKey;
-      adaptiveTrustScoresSnapshotCache = snapshot;
-    }
-    const snapshotCopy = {};
-    const names = Object.keys(adaptiveTrustScoresSnapshotCache);
-    for (let i = 0; i < names.length; i++) {
-      const name = names[i];
-      const cached = adaptiveTrustScoresSnapshotCache[name];
-      snapshotCopy[name] = {
-        score: cached.score,
-        samples: cached.samples,
-        weight: cached.weight,
-        hotspotPressure: cached.hotspotPressure,
-        dominantPair: cached.dominantPair,
-        hotspotPairs: cached.hotspotPairs,
-        severePressure: cached.severePressure,
-        severePair: cached.severePair,
-        trustSurfacePressure: cached.trustSurfacePressure,
-        trustHotPairCount: cached.trustHotPairCount
+    const cached = adaptiveTrustScoresCaching.getSnapshotCached();
+    if (cached) return copySnapshotMap(cached);
+    const snapshot = {};
+    for (const [name, state] of scoreBySystem.entries()) {
+      const pairAwareProfile = adaptiveTrustScoresHelpers.getSystemPairHotspotProfile(name);
+      snapshot[name] = {
+        score: state.score,
+        samples: state.samples,
+        weight: getWeight(name),
+        hotspotPressure: pairAwareProfile.pressure,
+        dominantPair: pairAwareProfile.dominantPair,
+        hotspotPairs: pairAwareProfile.hotspotPairs,
+        severePressure: pairAwareProfile.severePressure,
+        severePair: pairAwareProfile.severePair,
+        trustSurfacePressure: V.optionalFinite(pairAwareProfile.trustSurfacePressure, 0),
+        trustHotPairCount: V.optionalFinite(pairAwareProfile.trustHotPairCount, 0)
       };
     }
-    return snapshotCopy;
+    adaptiveTrustScoresCaching.setSnapshotCached(snapshot);
+    return copySnapshotMap(snapshot);
   }
 
   /** @returns {{ section: number, beat: number, systemName: string, payoff: number, scoreBefore: number, scoreAfter: number, ms: number }[]} */
@@ -552,10 +405,8 @@ adaptiveTrustScores = (() => {
     scoreBySystem.clear();
     decayCycleCount = 0;
     journal.length = 0;
-    adaptiveTrustScoresVelocityState.clear();
-    adaptiveTrustScoresContextCacheKey = '';
-    adaptiveTrustScoresContextCache = null;
-    adaptiveTrustScoresInvalidateValueCaches();
+    adaptiveTrustScoresVelocityNourishment.resetVelocityState();
+    adaptiveTrustScoresCaching.resetCaches();
   }
 
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
