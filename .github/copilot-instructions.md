@@ -160,6 +160,7 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 - **Never delete unused code/config before checking if it should be implemented.** Only delete code which can't be reasonably adapted and whose concerns are already covered elsewhere in a better manner, otherwise — wire it up and implement.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
 - **Comments are terse.** No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
+- **Never abandon a plan mid-execution.** When executing a task, finish the current atomic unit before pivoting. If user feedback changes the direction, explicitly acknowledge the pivot, state what was left undone, and get confirmation before switching. Never leave code/tools in a broken intermediate state while switching to a different approach. Clarifying questions belong BEFORE starting implementation, not after. Atomic units: a file sweep is not done until every file in scope is fixed; a merge is not done until the routing logic exists; a KB cleanup is not done until every candidate entry has been processed. Enforced: KB entry 524061657661, Stop hook plan-abandonment check.
 
 ## Working Style
 
@@ -183,29 +184,27 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 ## HyperMeta Ecstasy
 
-Master executive for hypermeta evolutionary intelligence. Not just 45 MCP tools — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
+Master executive for hypermeta evolutionary intelligence. 11 MCP tools (7 mega-tools + 4 operational) — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
 
 **Mandatory usage (not optional):**
-- **Before modifying a file:** `before_editing "path/to/file.js"` -- ONE CALL assembles KB constraints, callers, boundary warnings, and file structure. Replaces multi-step research.
-- **After implementing changes:** `what_did_i_forget "file1.js,file2.js"` -- checks against KB constraints, boundary rules, new L0 channels, doc update needs.
-- **For any search:** use `search_code`, `find_callers`, or `find_anti_pattern` instead of Grep.
-- **After each listen-confirmed round:** `add_knowledge` for new calibration anchors, decisions, anti-patterns, bugfixes. Do NOT add_knowledge until user confirms task complete.
-- **When pipeline fails:** `diagnose_error "paste error text"` -- traces source, finds similar KB bugs, suggests fix patterns.
-
-**Grep/file reads:** use `grep`, `file_lines`, `count_lines` tools in HME instead of Bash equivalents. These wrap the same operations but add KB cross-referencing and convention warnings automatically.
+- **Before modifying a file:** `read("moduleName", mode="before")` -- ONE CALL assembles KB constraints, callers, boundary warnings, file structure. Accepts module names or paths — auto-resolves.
+- **After implementing changes:** `review(mode='forget')` -- auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
+- **For any search:** use `find(query)` instead of Grep. Auto-routes by intent (callers/boundary/grep/semantic). Adds KB cross-referencing.
+- **After each listen-confirmed round:** `learn(title='...', content='...', category='pattern')` for calibration anchors. Do NOT add until user confirms task complete.
+- **When pipeline fails:** `find("paste error text", mode="diagnose")` -- traces source, finds similar KB bugs, suggests fix patterns.
 
 **Core workflow:**
 ```
 /HME
-before_editing "src/crossLayer/structure/form/crossLayerClimaxEngine.js"  -- pre-edit briefing
-search_code "where does convergence detection happen"                     -- semantic search
-module_intel "crossLayerClimaxEngine"                                     -- living biography
-what_did_i_forget "src/time/setBpm.js,src/time/setMeter.js"             -- post-change audit
-codebase_health                                                           -- full-repo sweep
-knowledge_graph "density suppression"                                     -- connected KB entries
+read("crossLayerClimaxEngine", mode="before")                                   -- pre-edit briefing (auto-resolves path)
+find("where does convergence detection happen")                                  -- semantic search
+read("crossLayerClimaxEngine", mode="story")                                     -- living biography
+review(mode='forget')                                                            -- post-change audit (auto-detects from git)
+review(mode='health')                                                            -- full-repo sweep
+learn(query='density suppression')                                               -- KB search
 ```
 
-**50+ tools across 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME for KB enrichment.
+**11 tools, 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME mega-tools for KB enrichment.
 
 ## Related Documentation
 

@@ -38,7 +38,7 @@ const restrictedGlobalsMessage = 'Global keywords banned project-wide, use naked
 export default [
   {
     // Do not lint ESLint helpers and config shims
-    ignores: ['scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**', 'lab/**']
+    ignores: ['scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**', 'lab/**', 'tools/**']
   },
   {
     files: ['eslint.config.mjs'],
