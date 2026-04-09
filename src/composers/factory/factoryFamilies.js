@@ -23,7 +23,7 @@ factoryFamilies = {
     for (const familyName of familyNames) {
       const family = source[familyName];
       V.assertObject(family, `family "${familyName}"`);
-      const types = Array.isArray(family.types) ? family.types : null;
+      let types; try { V.assertArray(family.types, 'family.types'); types = family.types; } catch (_) { types = null; }
       if (!types || types.length === 0) {
         throw new Error(`FactoryManager.getComposerFamiliesOrFail: family "${familyName}" must define a non-empty types array`);
       }
@@ -54,7 +54,7 @@ factoryFamilies = {
         ? (TREND_FAMILY_BIAS[prevSection.trend][familyName] || 1.0) : 1.0;
       const profileMultiplier = (Number(biasedWeights[familyName]) || 1) * trendBias;
       normalized[familyName] = {
-        weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
+        weight: (V.optionalFinite(weight, null) !== null && weight > 0 ? weight : 1) * profileMultiplier,
         types: normalizedTypes
       };
     }
@@ -117,7 +117,7 @@ factoryFamilies = {
     let advisedTotal = 0;
     for (const familyName of familyNames) {
       const advisorMult = Number(advisorWeights[familyName]);
-      const mult = Number.isFinite(advisorMult) ? advisorMult : 1;
+      const mult = V.optionalFinite(advisorMult, 1);
       advisedTotal += Number(families[familyName].weight) * mult;
     }
     V.requireFinite(advisedTotal, 'advisedTotal');
@@ -128,7 +128,7 @@ factoryFamilies = {
     let roll = rf() * advisedTotal;
     for (const familyName of familyNames) {
       const advisorMult = Number(advisorWeights[familyName]);
-      const mult = Number.isFinite(advisorMult) ? advisorMult : 1;
+      const mult = V.optionalFinite(advisorMult, 1);
       roll -= Number(families[familyName].weight) * mult;
       if (roll <= 0) return familyName;
     }

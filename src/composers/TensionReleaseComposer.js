@@ -91,11 +91,11 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
   }
 
   noteSet(progression, direction = 'tension') {
-    if (progression && Array.isArray(progression) && progression.length > 0) {
+    if (progression && progression.length > 0 && (() => { try { V.assertArray(progression, 'progression'); return true; } catch (_) { return false; } })()) {
       const firstItem = progression[0];
       if (firstItem === null) { throw new Error('TensionReleaseComposer.noteSet: progression first item is null'); }
-      const isStringArray = typeof firstItem === 'string';
-      const isChordArray = typeof firstItem === 'object' && firstItem !== null && firstItem.symbol;
+      const isStringArray = V.optionalType(firstItem, 'string', null) !== null;
+      const isChordArray = V.optionalType(firstItem, 'object', null) !== null && firstItem !== null && firstItem.symbol;
       if (isStringArray || isChordArray) {
         super.noteSet(progression, direction === 'tension' ? 'R' : direction);
         return;
@@ -131,7 +131,7 @@ TensionReleaseComposer = class TensionReleaseComposer extends ChordComposer {
     // Apply tension curve: reduce chord-tone emphasis during high tension
     for (const note of candidateNotes) {
       const key = String(note);
-      const existing = typeof weights[key] === 'number' ? weights[key] : 0;
+      const existing = V.optionalFinite(weights[key], 0);
       weights[key] = existing > 0 ? existing * (1 - tension * 0.5) : (tension * 0.5);
     }
 

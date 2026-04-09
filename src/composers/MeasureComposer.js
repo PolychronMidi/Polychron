@@ -182,7 +182,7 @@ MeasureComposer = class MeasureComposer {
 
     if (!scorerOrConfig) {
       this.VoiceLeadingScore = new VoiceLeadingScore();
-    } else if (typeof scorerOrConfig === 'object') {
+    } else if (V.optionalType(scorerOrConfig, 'object', null) !== null) {
       try {
         validateInstance(scorerOrConfig);
         // looks like a real instance
@@ -218,7 +218,7 @@ MeasureComposer = class MeasureComposer {
     if (!this.VoiceLeadingScore) {
       // if no scorer exists, treat config as basis for a new one
       this.enableVoiceLeading(cfg);
-    } else if (typeof this.VoiceLeadingScore.updateConfig === 'function') {
+    } else if (V.optionalType(this.VoiceLeadingScore.updateConfig, 'function', null) !== null) {
       // update existing scorer in-place
       this.VoiceLeadingScore.updateConfig(cfg);
       // ensure update didn't somehow corrupt the object
@@ -285,11 +285,13 @@ MeasureComposer = class MeasureComposer {
    *   - voiceCountMultiplier: optional voice count scaling factor
    */
   getVoicingIntent(candidateNotes = []) {
-    if (!Array.isArray(candidateNotes) || candidateNotes.length === 0) return null;
+    V.assertArray(candidateNotes, 'candidateNotes');
+    if (candidateNotes.length === 0) return null;
 
     // Cast to any to access notes property (set by subclasses)
     const self = /** @type {any} */ (this);
-    if (!Array.isArray(self.notes) || self.notes.length === 0) return null;
+    V.assertArray(self.notes, 'self.notes');
+    if (self.notes.length === 0) return null;
 
     // Use centralized PC-matching helper
     const candidateWeights = voiceLeadingCore.buildPCWeights(candidateNotes, self.notes, 1, 0);

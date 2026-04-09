@@ -113,9 +113,7 @@ motifChain = (() => {
     }
 
     const mutationProfile = conductorConfig.getMotifMutationParams();
-    const defaultTransposeRange = (Array.isArray(mutationProfile.transposeRange) && mutationProfile.transposeRange.length === 2)
-      ? mutationProfile.transposeRange
-      : [-7, 7];
+    let defaultTransposeRange; try { V.assertArray(mutationProfile.transposeRange, 'transposeRange'); defaultTransposeRange = mutationProfile.transposeRange.length === 2 ? mutationProfile.transposeRange : [-7, 7]; } catch (_) { defaultTransposeRange = [-7, 7]; }
 
     // Overlay context-aware transform advice from motifTransformAdvisor
     const advisorOpts = motifTransformAdvisor.adviseTransform();

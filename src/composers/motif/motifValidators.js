@@ -24,9 +24,9 @@ motifValidators = {
     if (!V.optionalType(developer, 'object')) return fallback;
 
     let caps = null;
-    if (typeof developer.getCapabilities === 'function') {
+    if (V.optionalType(developer.getCapabilities, 'function', null) !== null) {
       caps = developer.getCapabilities();
-    } else if (developer.capabilities && typeof developer.capabilities === 'object') {
+    } else if (developer.capabilities && V.optionalType(developer.capabilities, 'object', null) !== null) {
       caps = developer.capabilities;
     } else {
       caps = {
@@ -59,7 +59,7 @@ motifValidators = {
     const caps = this.getCapabilities(developer);
     if (!caps.preservesScale) return;
 
-    const modeInput = (opts && typeof opts.mode === 'string') ? opts.mode : 'auto';
+    const modeInput = (opts && V.optionalType(opts.mode, 'string', null) !== null) ? opts.mode : 'auto';
     const validModes = ['auto', 'strict-global', 'local-window'];
     V.assertInSet(modeInput, new Set(validModes), 'mode');
     const mode = modeInput === 'auto'
@@ -68,20 +68,23 @@ motifValidators = {
 
     let expectedPCs = null;
     if (mode === 'strict-global') {
-      if (!caps.notesReflectOutputSet || !Array.isArray(developer.notes) || developer.notes.length === 0) return;
+      const notesIsArr = (() => { try { V.assertArray(developer.notes, 'developer.notes'); return true; } catch (_) { return false; } })();
+      if (!caps.notesReflectOutputSet || !notesIsArr || developer.notes.length === 0) return;
       expectedPCs = this.motifValidatorsToPCSet(developer.notes, 'developer.notes');
     } else {
       const maybeWindowScale = opts && /** @type {any} */ (opts).windowScale;
-      let windowScale = Array.isArray(maybeWindowScale) && maybeWindowScale.length > 0 ? /** @type {(string|number)[]} */ (maybeWindowScale) : null;
+      let windowScale; { const maybeIsArr = (() => { try { V.assertArray(maybeWindowScale, 'maybeWindowScale'); return true; } catch (_) { return false; } })(); windowScale = maybeIsArr && maybeWindowScale.length > 0 ? /** @type {(string|number)[]} */ (maybeWindowScale) : null; }
       if (!windowScale && harmonicContext) {
         try {
           const hcScale = harmonicContext.getField('scale');
-          if (Array.isArray(hcScale) && hcScale.length > 0) windowScale = hcScale;
+          const hcScaleIsArr = (() => { try { V.assertArray(hcScale, 'hcScale'); return true; } catch (_) { return false; } })();
+        if (hcScaleIsArr && hcScale.length > 0) windowScale = hcScale;
         } catch (err) {
           throw new Error(`motifValidators.assertScaleMatchesDeveloper: failed to read harmonicContext.scale - ${err && err.message ? err.message : String(err)}`);
         }
       }
-      if (!windowScale && caps.notesReflectOutputSet && Array.isArray(developer.notes) && developer.notes.length > 0) {
+      const devNotesIsArr = (() => { try { V.assertArray(developer.notes, 'developer.notes'); return true; } catch (_) { return false; } })();
+      if (!windowScale && caps.notesReflectOutputSet && devNotesIsArr && developer.notes.length > 0) {
         windowScale = developer.notes;
       }
       if (!windowScale) {
@@ -93,7 +96,7 @@ motifValidators = {
 
     const scalePCs = new Set();
     for (const s of scaleNotes) {
-      const pc = (typeof s.note === 'number') ? s.note : (typeof s === 'number' ? s : 0);
+      const pc = V.optionalFinite(s.note, null) !== null ? s.note : (V.optionalFinite(s, null) !== null ? s : 0);
       scalePCs.add(((pc % 12) + 12) % 12);
     }
 
