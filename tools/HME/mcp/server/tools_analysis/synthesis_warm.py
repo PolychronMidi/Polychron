@@ -218,22 +218,22 @@ def _init_ollama_models() -> str:
     import time as _t
     from .synthesis_ollama import (
         _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
-        _KEEP_ALIVE, _NUM_CTX_30B, _NUM_CTX_4B, _LOCAL_URL,
+        _KEEP_ALIVE, _NUM_CTX_30B, _NUM_CTX_4B, _url_for,
         _ollama_background_yield,
     )
     models_config = [
         (_LOCAL_MODEL,     {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
         (_REASONING_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
-        (_ARBITER_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_4B, "num_gpu": 0}),
+        (_ARBITER_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
     ]
     results = {}
     for model, options in models_config:
         _ollama_background_yield()  # yield to interactive before loading each model
         t0 = _t.time()
-        logger.info(f"model init: loading {model} (options={options})...")
+        logger.info(f"model init: loading {model} on {_url_for(model)} (options={options})...")
         payload = {"model": model, "prompt": "", "stream": False,
                    "keep_alive": _KEEP_ALIVE, "options": options}
-        request = _req.Request(_LOCAL_URL, data=_json.dumps(payload).encode(),
+        request = _req.Request(_url_for(model), data=_json.dumps(payload).encode(),
                                headers={"Content-Type": "application/json"})
         try:
             with _req.urlopen(request, timeout=120) as resp:

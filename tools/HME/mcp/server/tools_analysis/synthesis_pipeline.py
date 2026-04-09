@@ -22,7 +22,7 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
     if not gpu0_out or not gpu1_out or len(gpu0_out) < 30 or len(gpu1_out) < 30:
         return None
     import urllib.request
-    from .synthesis_ollama import _ARBITER_MODEL, _KEEP_ALIVE, _NUM_CTX_4B, _LOCAL_URL
+    from .synthesis_ollama import _ARBITER_MODEL, _KEEP_ALIVE, _NUM_CTX_4B, _url_for
     from .synthesis_warm import _warm_ctx, _warm_ctx_kb_ver
     from .synthesis_session import get_session_narrative
 
@@ -52,7 +52,7 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
         payload["context"] = arbiter_ctx
         logger.debug(f"arbiter: warm ctx hit ({len(arbiter_ctx)} tokens)")
     body = __import__("json").dumps(payload).encode()
-    req = urllib.request.Request(_LOCAL_URL, data=body, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(_url_for(_ARBITER_MODEL), data=body, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=45) as resp:
             result = __import__("json").loads(resp.read())
