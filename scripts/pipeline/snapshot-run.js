@@ -229,9 +229,9 @@ from encodec.utils import convert_audio
 
 model = EncodecModel.encodec_model_24khz()
 model.set_target_bandwidth(6.0)
-model.to('cuda' if torch.cuda.is_available() else 'cpu').eval()
+model.to('cpu').eval()  # Force CPU: Ollama KV cache occupies GPU, causes CUDA OOM
 wav, sr = torchaudio.load('${WAV_PATH.replace(/'/g, "\\'")}')
-wav = convert_audio(wav, sr, model.sample_rate, model.channels).unsqueeze(0).to(next(model.parameters()).device)
+wav = convert_audio(wav, sr, model.sample_rate, model.channels).unsqueeze(0)
 codes_list = []
 with torch.no_grad():
     for s in range(0, wav.shape[-1], model.sample_rate*30):
