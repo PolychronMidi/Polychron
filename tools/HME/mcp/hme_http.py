@@ -19,7 +19,6 @@ import json
 import logging
 import argparse
 import threading
-import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 _tool_root = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +38,10 @@ MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
 _engine_ready = threading.Event()
 _project_engine = None
 _global_engine = None
+
+# Initialise stores with paths before any request can arrive
+from hme_http_store import init_store
+init_store(PROJECT_ROOT)
 
 
 def _load_engines():
@@ -64,271 +67,11 @@ def _load_engines():
         logger.error(f"HME HTTP: engine load failed: {e}")
     finally:
         _engine_ready.set()
+        from hme_http_handlers import init_handlers
+        init_handlers(_engine_ready, _project_engine, _global_engine, PROJECT_ROOT)
 
 
 threading.Thread(target=_load_engines, daemon=True).start()
-
-# ── Critical error log — surfaced in /health and written to disk ─────────────
-
-_ERRORS_PATH = os.path.join(PROJECT_ROOT, "log", "hme-errors.log")
-_error_lock = threading.Lock()
-_MAX_ERRORS_MEMORY = 50
-_error_log: list[dict] = []
-
-
-def _log_error(source: str, message: str, detail: str = "") -> None:
-    """Append a critical error to the in-memory log and hme-errors.log."""
-    global _error_log
-    entry = {
-        "ts": int(time.time() * 1000),
-        "ts_str": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "source": source,
-        "message": message,
-        "detail": detail,
-    }
-    with _error_lock:
-        _error_log.append(entry)
-        if len(_error_log) > _MAX_ERRORS_MEMORY:
-            _error_log = _error_log[-_MAX_ERRORS_MEMORY:]
-    try:
-        os.makedirs(os.path.dirname(_ERRORS_PATH), exist_ok=True)
-        with open(_ERRORS_PATH, "a") as f:
-            f.write(f"[{entry['ts_str']}] [{source}] {message}")
-            if detail:
-                f.write(f" | {detail}")
-            f.write("\n")
-    except Exception as e:
-        # Disk write failed — last resort stderr (cannot call logger, may be broken)
-        print(f"[HME FAILFAST] Error log disk write failed: {e}", file=sys.stderr, flush=True)
-
-
-def _get_recent_errors(minutes: int = 60) -> list[dict]:
-    cutoff = (time.time() - minutes * 60) * 1000
-    with _error_lock:
-        return [e for e in _error_log if e["ts"] >= cutoff]
-
-
-# ── Transcript store (server-side mirror of the JSONL log) ──────────────────
-
-_TRANSCRIPT_PATH = os.path.join(PROJECT_ROOT, "log", "session-transcript.jsonl")
-_transcript_lock = threading.Lock()
-_MAX_TRANSCRIPT_MEMORY = 500
-_transcript_entries: list[dict] = []
-_latest_narrative: str = ""
-
-
-def _load_transcript():
-    """Load existing transcript from JSONL file into memory."""
-    global _transcript_entries
-    try:
-        if not os.path.exists(_TRANSCRIPT_PATH):
-            return
-        with open(_TRANSCRIPT_PATH, "r") as f:
-            lines = f.readlines()
-        recent = lines[-_MAX_TRANSCRIPT_MEMORY:] if len(lines) > _MAX_TRANSCRIPT_MEMORY else lines
-        entries = []
-        for line in recent:
-            line = line.strip()
-            if line:
-                try:
-                    entries.append(json.loads(line))
-                except Exception:
-                    pass
-        with _transcript_lock:
-            _transcript_entries = entries
-    except Exception as e:
-        print(f"[HME FAILFAST] Transcript load failed: {e}", file=sys.stderr, flush=True)
-
-_load_transcript()
-
-
-def _append_transcript(entries: list[dict]) -> int:
-    """Append entries to transcript JSONL and memory. Returns count appended."""
-    global _transcript_entries
-    os.makedirs(os.path.dirname(_TRANSCRIPT_PATH), exist_ok=True)
-    count = 0
-    with _transcript_lock:
-        with open(_TRANSCRIPT_PATH, "a") as f:
-            for entry in entries:
-                entry.setdefault("ts", int(time.time() * 1000))
-                f.write(json.dumps(entry) + "\n")
-                _transcript_entries.append(entry)
-                count += 1
-        if len(_transcript_entries) > _MAX_TRANSCRIPT_MEMORY:
-            _transcript_entries = _transcript_entries[-_MAX_TRANSCRIPT_MEMORY:]
-    return count
-
-
-def _get_transcript(minutes: int = 30, max_entries: int = 50) -> list[dict]:
-    """Get recent transcript entries within time window."""
-    cutoff = (time.time() - minutes * 60) * 1000  # ms
-    with _transcript_lock:
-        filtered = [e for e in _transcript_entries if e.get("ts", 0) >= cutoff]
-        return filtered[-max_entries:]
-
-
-def _get_transcript_context(query: str = "", max_chars: int = 3000) -> str:
-    """Build a context string from recent transcript for injection into messages."""
-    recent = _get_transcript(minutes=60, max_entries=40)
-    if not recent:
-        return ""
-    lines = ["[Session Transcript — recent activity]"]
-    chars = len(lines[0])
-
-    # Narratives first (most compact summary)
-    for e in recent:
-        if e.get("type") == "narrative":
-            n = f"[Digest] {e.get('content', '')[:500]}"
-            lines.append(n)
-            chars += len(n)
-
-    # Then summaries
-    for e in recent:
-        if e.get("type") == "narrative":
-            continue
-        ts = e.get("ts", 0)
-        ts_str = time.strftime("%H:%M:%S", time.gmtime(ts / 1000)) if ts else "??:??:??"
-        summary = e.get("summary", e.get("content", "")[:120])
-        line = f"[{ts_str}] {summary}"
-        if chars + len(line) > max_chars:
-            break
-        lines.append(line)
-        chars += len(line)
-
-    return "\n".join(lines)
-
-
-def _reindex_files(files: list[str]) -> dict:
-    """Trigger immediate mini-reindex of specific files via RAG engine."""
-    _engine_ready.wait(timeout=10)
-    if _project_engine is None:
-        _log_error("reindex", "engines not ready — cannot reindex files")
-        return {"error": "engines not ready", "indexed": []}
-
-    indexed = []
-    for filepath in files[:20]:
-        abs_path = filepath if os.path.isabs(filepath) else os.path.join(PROJECT_ROOT, filepath)
-        if not os.path.exists(abs_path):
-            _log_error("reindex", f"file not found: {filepath}")
-            continue
-        try:
-            _project_engine.index_file(abs_path)
-            indexed.append(filepath)
-        except Exception as e:
-            _log_error("reindex", f"index_file failed for {filepath}: {e}")
-    return {"indexed": indexed, "count": len(indexed)}
-
-
-def _enrich(query: str, top_k: int = 5) -> dict:
-    """Pull KB hits for query. Returns {kb: [...], warm: str}."""
-    _engine_ready.wait(timeout=45)
-    if _project_engine is None:
-        return {"kb": [], "warm": "", "error": "engines not ready"}
-
-    proj_hits = _project_engine.search_knowledge(query, top_k=top_k)
-    glob_hits = _global_engine.search_knowledge(query, top_k=2)
-
-    kb_entries = []
-    seen = set()
-    for h in (proj_hits + glob_hits):
-        eid = h.get("id", "")
-        if eid in seen:
-            continue
-        seen.add(eid)
-        kb_entries.append({
-            "title": h.get("title", ""),
-            "content": h.get("content", ""),
-            "category": h.get("category", ""),
-            "score": round(1.0 / (1.0 + h.get("_distance", 999)), 3),
-        })
-
-    # Build warm context string
-    if kb_entries:
-        lines = ["[HME Knowledge Context]"]
-        for e in kb_entries:
-            lines.append(f"[{e['category']}] {e['title']}")
-            lines.append(e["content"][:400])
-            lines.append("")
-        warm = "\n".join(lines).strip()
-    else:
-        warm = ""
-
-    # Append transcript context
-    transcript = _get_transcript_context(query)
-    if transcript:
-        warm = warm + "\n\n" + transcript if warm else transcript
-
-    return {"kb": kb_entries, "warm": warm, "transcript": transcript}
-
-
-def _validate(query: str) -> dict:
-    """Pre-send anti-pattern check. Returns {warnings: [...], blocks: [...]}."""
-    _engine_ready.wait(timeout=45)
-    if _project_engine is None:
-        return {"warnings": [], "blocks": [], "error": "engines not ready"}
-
-    # Search for anti-patterns, bugfixes, and architectural constraints related to the query
-    hits = _project_engine.search_knowledge(query, top_k=8)
-
-    warnings = []
-    blocks = []
-    for h in hits:
-        cat = h.get("category", "")
-        title = h.get("title", "")
-        content = h.get("content", "")
-        score = round(1.0 / (1.0 + h.get("_distance", 999)), 3)
-        if score < 0.35:
-            continue
-        entry = {"title": title, "content": content[:300], "score": score}
-        if cat in ("bugfix", "antipattern"):
-            blocks.append(entry)
-        elif cat in ("architecture", "pattern", "decision"):
-            warnings.append(entry)
-
-    return {"warnings": warnings, "blocks": blocks}
-
-
-def _post_audit(changed_files: str = "") -> dict:
-    """Post-response audit: run git diff to detect changed files, search KB for violations."""
-    import subprocess
-    _engine_ready.wait(timeout=10)
-    if _project_engine is None:
-        return {"violations": [], "error": "engines not ready"}
-
-    # Get changed files from git if not provided
-    files = [f.strip() for f in changed_files.split(",") if f.strip()]
-    if not files:
-        try:
-            result = subprocess.run(
-                ["git", "diff", "--name-only", "HEAD"],
-                capture_output=True, text=True, timeout=5,
-                cwd=os.environ.get("PROJECT_ROOT", os.getcwd())
-            )
-            files = [f.strip() for f in result.stdout.strip().splitlines() if f.strip()]
-        except Exception as e:
-            _log_error("audit", f"git diff failed: {e}")
-
-    if not files:
-        return {"violations": [], "changed_files": []}
-
-    violations = []
-    for f in files[:10]:  # cap at 10 files
-        # Search KB for constraints related to this file/module
-        module = os.path.splitext(os.path.basename(f))[0]
-        hits = _project_engine.search_knowledge(module, top_k=4)
-        for h in hits:
-            cat = h.get("category", "")
-            score = round(1.0 / (1.0 + h.get("_distance", 999)), 3)
-            if score >= 0.40 and cat in ("bugfix", "antipattern", "architecture"):
-                violations.append({
-                    "file": f,
-                    "title": h.get("title", ""),
-                    "content": h.get("content", "")[:300],
-                    "category": cat,
-                    "score": score,
-                })
-
-    return {"violations": violations, "changed_files": files}
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -352,6 +95,8 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        from hme_http_store import _get_recent_errors, _get_transcript, _transcript_entries
+        from hme_http_store import _latest_narrative
         if self.path == "/health":
             ready = _engine_ready.is_set() and _project_engine is not None
             recent_errors = _get_recent_errors(minutes=120)
@@ -372,7 +117,6 @@ class _Handler(BaseHTTPRequestHandler):
             entries = _get_transcript(minutes, max_entries)
             self._send_json(200, {"entries": entries, "count": len(entries)})
         elif self.path == "/narrative":
-            global _latest_narrative
             self._send_json(200, {"narrative": _latest_narrative})
         else:
             self._send_json(404, {"error": "not found"})
@@ -384,6 +128,10 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception as e:
             self._send_json(400, {"error": f"bad request: {e}"})
             return
+
+        from hme_http_handlers import _enrich, _validate, _post_audit, _reindex_files
+        from hme_http_store import _append_transcript, _log_error
+        import hme_http_store as _store
 
         if self.path == "/enrich":
             query = body.get("query", "")
@@ -433,12 +181,11 @@ class _Handler(BaseHTTPRequestHandler):
 
         elif self.path == "/narrative":
             # Store a narrative digest
-            global _latest_narrative
-            _latest_narrative = body.get("narrative", "")
+            _store._latest_narrative = body.get("narrative", "")
             _append_transcript([{
                 "type": "narrative",
-                "content": _latest_narrative,
-                "summary": f"📋 {_latest_narrative[:100]}",
+                "content": _store._latest_narrative,
+                "summary": f"[Digest] {_store._latest_narrative[:100]}",
             }])
             self._send_json(200, {"ok": True})
 
