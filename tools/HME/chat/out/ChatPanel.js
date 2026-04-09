@@ -93,6 +93,7 @@ class ChatPanel {
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
         if (ChatPanel.current) {
+            ChatPanel.current._panel.webview.html = ChatPanel.current._getHtml();
             ChatPanel.current._panel.reveal(col);
             return;
         }
