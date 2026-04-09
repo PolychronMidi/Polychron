@@ -91,6 +91,10 @@ export class ChatPanel {
           for (const m of this._displayMessages()) {
             this._post({ type: "message", message: m });
           }
+          // If a stream is active, tell the webview so it shows Stop/Queue
+          if (this._isStreaming) {
+            this._post({ type: "streamingRestored" });
+          }
         }
       },
       null,
@@ -104,7 +108,6 @@ export class ChatPanel {
       : undefined;
 
     if (ChatPanel.current) {
-      ChatPanel.current._panel.webview.html = ChatPanel.current._getHtml();
       ChatPanel.current._panel.reveal(col);
       return;
     }
@@ -115,10 +118,8 @@ export class ChatPanel {
       col || vscode.ViewColumn.One,
       { enableScripts: true }
     );
-    // Auto-restore the most recently active session (same as window-reload path)
-    const sessions = listSessions(projectRoot);
-    const restoreId = sessions[0]?.id;
-    ChatPanel.current = new ChatPanel(panel, projectRoot, restoreId);
+    // Start fresh — old sessions accessible from sidebar. Deserialize path handles reload restore.
+    ChatPanel.current = new ChatPanel(panel, projectRoot);
   }
 
   public static deserialize(panel: vscode.WebviewPanel, state: any, projectRoot: string) {
