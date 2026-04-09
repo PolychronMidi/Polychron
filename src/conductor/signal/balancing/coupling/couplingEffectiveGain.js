@@ -228,6 +228,11 @@ couplingEffectiveGain = (() => {
     if (effectiveGain < 0.01 && S.budgetPriorityRank && S.budgetPriorityRank[key] !== undefined) {
       effectiveGain = 0.01;
     }
+    // Floor for unranked pairs with severe p95 -- budget deprioritization
+    // should not zero a pair that genuinely needs decorrelation.
+    if (effectiveGain < 0.01 && ps.p95Ema > 0.80) {
+      effectiveGain = 0.01;
+    }
     ps.lastEffectiveGain = effectiveGain;
 
     // Nudge emission

@@ -32,6 +32,7 @@ pairGainCeilingController = (() => {
     'tension-entropy': { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.76, exceedanceSensitivity: 0.05 },
     'tension-phase':   { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.76, exceedanceSensitivity: 0.05 },
     'density-entropy': { baseCeiling: 0.18, minCeiling: 0.08, maxCeiling: 0.50, p95Sensitivity: 0.76, exceedanceSensitivity: 0.05 },
+    'density-phase':   { baseCeiling: 0.16, minCeiling: 0.06, maxCeiling: 0.45, p95Sensitivity: 0.76, exceedanceSensitivity: 0.06 },
   };
 
   function getPairState(pair) {
