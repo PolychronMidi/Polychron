@@ -36,10 +36,10 @@ def _get_clap():
     global _clap_model
     if _clap_model is None:
         import laion_clap
-        logger.info("Loading CLAP HTSAT-tiny model (one-time)...")
-        _clap_model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny')
+        logger.info("Loading CLAP HTSAT-tiny model onto CPU (GPUs reserved for Ollama)...")
+        _clap_model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny', device='cpu')
         _clap_model.load_ckpt()
-        logger.info("CLAP ready.")
+        logger.info("CLAP ready (CPU).")
     return _clap_model
 
 
