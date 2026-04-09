@@ -1458,6 +1458,7 @@ function getInlineHtml(): string {
     <option value="low">Low</option>
     <option value="medium">Medium</option>
     <option value="high" selected>High</option>
+    <option value="max">Max</option>
   </select>
   <div id="thinking-wrap">
     <input type="checkbox" id="thinking-toggle" />
@@ -1503,13 +1504,20 @@ const claudeModel = document.getElementById('claude-model') as HTMLSelectElement
 const claudeEffort= document.getElementById('claude-effort') as HTMLSelectElement;
 const thinkingChk = document.getElementById('thinking-toggle') as HTMLInputElement;
 
-// Update effort/thinking visibility when model changes
-// Haiku: hide effort + thinking entirely. Sonnet: effort (no max, already removed). Opus: all.
+// Update effort/thinking visibility when model changes:
+// Opus: all options including Max. Sonnet: hide Max. Haiku: hide effort + thinking entirely.
 function updateModelControls() {
   const m = claudeModel.value;
   const isHaiku = m === 'claude-haiku-4-5-20251001';
-  (document.getElementById('claude-effort') as HTMLElement).style.display = isHaiku ? 'none' : '';
-  (document.getElementById('thinking-wrap') as HTMLElement).style.display = isHaiku ? 'none' : '';
+  const isSonnet = m === 'claude-sonnet-4-6';
+  const effortEl = document.getElementById('claude-effort') as HTMLSelectElement;
+  const thinkingWrap = document.getElementById('thinking-wrap') as HTMLElement;
+  const maxOpt = effortEl.querySelector('option[value="max"]') as HTMLOptionElement | null;
+  effortEl.style.display = isHaiku ? 'none' : '';
+  thinkingWrap.style.display = isHaiku ? 'none' : '';
+  if (maxOpt) maxOpt.style.display = isSonnet ? 'none' : '';
+  // If Sonnet is selected and max was chosen, fall back to high
+  if (isSonnet && effortEl.value === 'max') effortEl.value = 'high';
 }
 claudeModel.addEventListener('change', updateModelControls);
 updateModelControls();
@@ -1820,15 +1828,21 @@ window.addEventListener('message', (event) => {
 // ── Sidebar toggle ─────────────────────────────────────────────────────────
 const sidebar = document.getElementById('sidebar');
 const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
-let sidebarVisible = true;
-sidebarToggleBtn?.addEventListener('click', () => {
-  sidebarVisible = !sidebarVisible;
+const _uiState = vscode.getState() || {};
+let sidebarVisible = _uiState.sidebarVisible ?? false;  // hidden by default
+function applySidebar() {
   if (sidebar) sidebar.style.display = sidebarVisible ? 'flex' : 'none';
   if (sidebarToggleBtn) sidebarToggleBtn.style.color = sidebarVisible ? 'var(--subtle)' : 'var(--btn-fg)';
+}
+sidebarToggleBtn?.addEventListener('click', () => {
+  sidebarVisible = !sidebarVisible;
+  applySidebar();
+  vscode.setState({ ...(vscode.getState() || {}), sidebarVisible });
 });
+applySidebar();
 
 // ── Zoom controls ──────────────────────────────────────────────────────────
-let zoomLevel = 1.0;
+let zoomLevel = _uiState.zoomLevel ?? 1.0;
 const ZOOM_STEP = 0.1, ZOOM_MIN = 0.6, ZOOM_MAX = 1.8;
 const zoomLabel = document.getElementById('zoom-label');
 function applyZoom() {
@@ -1845,11 +1859,14 @@ function applyZoom() {
 document.getElementById('zoom-in-btn')?.addEventListener('click', () => {
   zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 10) / 10);
   applyZoom();
+  vscode.setState({ ...(vscode.getState() || {}), zoomLevel });
 });
 document.getElementById('zoom-out-btn')?.addEventListener('click', () => {
   zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 10) / 10);
   applyZoom();
+  vscode.setState({ ...(vscode.getState() || {}), zoomLevel });
 });
+applyZoom();
 
 // ── Session sidebar ────────────────────────────────────────────────────────
 const sessionList = document.getElementById('session-list');
@@ -1920,18 +1937,18 @@ window.addEventListener('message', (event) => {
     renderSessions(msg.sessions);
   } else if (msg.type === 'sessionCreated') {
     activeSessionId = msg.session.id;
-    vscode.setState({ activeSessionId });
+    vscode.setState({ ...(vscode.getState() || {}), activeSessionId });
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'sessionLoaded') {
     activeSessionId = msg.id;
-    vscode.setState({ activeSessionId });
+    vscode.setState({ ...(vscode.getState() || {}), activeSessionId });
     messages.innerHTML = '';
     for (const m of msg.messages) appendMessage(m);
     setStatus(\`Loaded: \${msg.title}\`);
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'historyCleared') {
     activeSessionId = null;
-    vscode.setState({ activeSessionId: null });
+    vscode.setState({ ...(vscode.getState() || {}), activeSessionId: null });
     messages.innerHTML = '';
     setStatus('');
     vscode.postMessage({ type: 'listSessions' });
