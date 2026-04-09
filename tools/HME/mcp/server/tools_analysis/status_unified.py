@@ -44,6 +44,19 @@ def status(mode: str = "all") -> str:
         try:
             return _aa(analysis="both")
         except Exception as e:
+            err = str(e).lower()
+            if "cuda" in err or "out of memory" in err or "oom" in err or "gpu" in err:
+                # Check if pipeline is running (likely cause of GPU contention)
+                try:
+                    from .digest import check_pipeline as _cp_check
+                    pipeline_status = _cp_check()
+                    if "IN PROGRESS" in pipeline_status or "BLOCKED" in pipeline_status:
+                        return ("Perceptual analysis unavailable: GPU busy (composition pipeline is running).\n"
+                                "Re-run after pipeline completes.")
+                except Exception:
+                    pass
+                return ("Perceptual analysis unavailable: GPU out of memory.\n"
+                        "Another process may be using the GPU. Check with `nvidia-smi`.")
             return f"Perceptual analysis unavailable: {e}"
 
     if mode == "hme":

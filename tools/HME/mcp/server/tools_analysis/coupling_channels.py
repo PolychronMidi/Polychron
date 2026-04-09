@@ -146,6 +146,29 @@ def _format_full_channel_map(topo: dict) -> str:
     return "\n".join(out)
 
 
+def _count_direct_callers(module_name: str) -> int:
+    """Count how many files directly import/call a module (not via L0)."""
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    # Match the module name as a function call or property access
+    pat = re.compile(r'\b' + re.escape(module_name) + r'\b')
+    count = 0
+    for dirpath, _, filenames in os.walk(src_root):
+        for fname in filenames:
+            if not fname.endswith(".js") or fname == "index.js":
+                continue
+            # Don't count self-references
+            if fname.replace(".js", "") == module_name:
+                continue
+            fpath = os.path.join(dirpath, fname)
+            try:
+                with open(fpath, encoding="utf-8", errors="ignore") as f:
+                    if pat.search(f.read()):
+                        count += 1
+            except Exception:
+                continue
+    return count
+
+
 def _format_cascade_trace(topo: dict, ch: str) -> str:
     """Cascade trace from a specific channel up to 3 hops deep."""
     if ch not in topo:
@@ -156,6 +179,18 @@ def _format_cascade_trace(topo: dict, ch: str) -> str:
     sem_s = f"  -- {sem}" if sem else ""
     out = [f"# L0 Cascade: {ch}{sem_s}\n"]
     visited_channels: set = set()
+
+    # For the top-level channel, show producer bypass analysis
+    prods_top = topo[ch].get("producers", [])
+    cons_top = topo[ch].get("consumers", [])
+    if prods_top:
+        for prod in prods_top:
+            direct = _count_direct_callers(prod)
+            l0_cons = len(cons_top)
+            if direct > l0_cons * 2:
+                out.append(f"  ⚡ BYPASS ALERT: {prod} has {direct} direct callers but "
+                           f"only {l0_cons} L0 consumers on '{ch}'")
+                out.append(f"     {direct - l0_cons} modules bypass L0 — signal not observable\n")
 
     def _show_level(channels: list, depth: int) -> None:
         if depth > 3 or not channels:

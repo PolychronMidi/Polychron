@@ -88,7 +88,20 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
         if m:
             from server.tools_search import find_anti_pattern as _fap
             return _fap(wrong_symbol=m.group(1), right_symbol=m.group(2), path=path)
-        return "Error: boundary mode needs 'wrong_symbol should use right_symbol' format."
+        # Natural language fallback: extract symbol-like tokens and grep for the pattern
+        tokens = re.findall(r'[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*', query)
+        symbols = [t for t in tokens if len(t) > 3 and t.lower() not in
+                   {'should', 'using', 'instead', 'hardcoded', 'names', 'strings', 'not'}]
+        if len(symbols) >= 2:
+            from server.tools_search import find_anti_pattern as _fap
+            return _fap(wrong_symbol=symbols[0], right_symbol=symbols[1], path=path)
+        if len(symbols) == 1:
+            # Single symbol: grep for raw string uses that should go through the symbol
+            from server.tools_search import grep as _grep
+            return _grep(symbols[0], path=path or "src/", regex=False)
+        return ("Error: could not extract symbols from query. Use either:\n"
+                "  - 'wrong_symbol should use right_symbol' format\n"
+                "  - Natural language with at least one identifiable symbol")
 
     if mode == "grep":
         from server.tools_search import grep as _grep

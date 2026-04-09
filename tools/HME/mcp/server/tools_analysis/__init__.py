@@ -17,9 +17,38 @@ logger = logging.getLogger("HME")
 
 _usage_stats: dict[str, int] = {}
 
+# Session intent tracking: detect audit vs focused editing patterns
+_session_intent: str = "unknown"  # "audit", "editing", "exploring", "unknown"
+_AUDIT_TOOLS = {"status", "review", "coupling_intel", "codebase_health", "trust_report", "channel_topology"}
+_EDIT_TOOLS = {"before_editing", "what_did_i_forget", "convention_check", "file_intel"}
+_EXPLORE_TOOLS = {"find", "trace", "beat_snapshot", "search_code", "grep"}
+
 
 def _track(name: str):
+    global _session_intent
     _usage_stats[name] = _usage_stats.get(name, 0) + 1
+    # Update session intent based on tool usage pattern
+    total = sum(_usage_stats.values())
+    if total < 3:
+        return  # too early to classify
+    audit_count = sum(_usage_stats.get(t, 0) for t in _AUDIT_TOOLS)
+    edit_count = sum(_usage_stats.get(t, 0) for t in _EDIT_TOOLS)
+    explore_count = sum(_usage_stats.get(t, 0) for t in _EXPLORE_TOOLS)
+    if audit_count > edit_count and audit_count > explore_count:
+        _session_intent = "audit"
+    elif edit_count > audit_count:
+        _session_intent = "editing"
+    elif explore_count > audit_count:
+        _session_intent = "exploring"
+    else:
+        _session_intent = "unknown"
+
+
+def get_session_intent() -> str:
+    """Return the detected session intent: audit, editing, exploring, or unknown.
+    Tools can use this to adjust verbosity — audit sessions want maximum data density,
+    editing sessions want concise KB constraints only."""
+    return _session_intent
 
 
 def _filter_kb_relevance(kb_results: list, module_name: str) -> list:

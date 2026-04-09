@@ -59,21 +59,36 @@ BUDGET_LIMITS = {
 
 
 def get_context_budget() -> str:
-    """Read context-window pressure from status line. Returns 'greedy', 'moderate', 'conservative', or 'minimal'."""
+    """Read context-window pressure from status line, adjusted by session intent.
+    Returns 'greedy', 'moderate', 'conservative', or 'minimal'.
+    Audit sessions get a budget boost (more data density desired).
+    Editing sessions get a budget reduction (concise output preferred)."""
     try:
         with open("/tmp/claude-context.json") as _f:
-            ctx = json.load(_f)
-        remaining = ctx.get("remaining_pct", 50)
-        if remaining > 75:
-            return "greedy"
-        elif remaining > 50:
-            return "moderate"
-        elif remaining > 25:
-            return "conservative"
-        else:
-            return "minimal"
+            ctx_data = json.load(_f)
+        remaining = ctx_data.get("remaining_pct", 50)
     except Exception:
+        remaining = 50
+
+    # Session intent adjustment
+    try:
+        from tools_analysis import get_session_intent
+        intent = get_session_intent()
+        if intent == "audit":
+            remaining += 15  # boost: audit wants maximum data
+        elif intent == "editing":
+            remaining -= 15  # reduce: editing wants concise KB constraints
+    except Exception:
+        pass
+
+    if remaining > 75:
+        return "greedy"
+    elif remaining > 50:
         return "moderate"
+    elif remaining > 25:
+        return "conservative"
+    else:
+        return "minimal"
 
 
 def validate_project_path(file_path: str, project_root: str) -> str | None:

@@ -26,6 +26,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     mode='convention': convention check for a specific file (file_path required).
     mode='symbols': symbol audit (dead code + importance).
     mode='docs': doc sync check.
+    mode='evolve': unified evolution recommender (dead-ends + bypasses + gaps + bridges + trust).
     mode='full': digest + regime + trust in one call."""
     _track("review")
     ctx.ensure_ready_sync()
@@ -36,7 +37,16 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     for m in modes:
         if m == "digest":
             from .digest import pipeline_digest as _pd
-            parts.append(_pd(evolve=True, critique=critique))
+            try:
+                result = _pd(evolve=True, critique=critique)
+            except Exception as e:
+                result = f"pipeline_digest error: {e}"
+            # In 'full' mode, truncate verbose blocking messages to a single line
+            if mode == "full" and ("BLOCKED" in result or "STOP POLLING" in result or "IN PROGRESS" in result):
+                parts.append("pipeline_digest: pipeline is still running — cannot digest partial results.")
+            else:
+                parts.append(result)
+            continue
         elif m == "regime":
             from .section_compare import regime_report as _rr
             parts.append(_rr())
@@ -85,8 +95,10 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
         elif m == "docs":
             from .health import doc_sync_check as _ds
             parts.append(_ds())
+        elif m == "evolve":
+            parts.append(_unified_evolution_recommender())
         else:
-            parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, composition, health, forget, convention, symbols, docs, full.")
+            parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, composition, health, forget, convention, symbols, docs, evolve, full.")
 
     result = "\n\n---\n\n".join(parts) if len(parts) > 1 else parts[0] if parts else "No data."
 
@@ -98,3 +110,128 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                    "category='pattern', listening_notes='...')")
 
     return result
+
+
+def _unified_evolution_recommender() -> str:
+    """Synthesize dimension gaps, antagonism leverage, cascade bottlenecks,
+    signal dead-ends, and trust ecology into a single prioritized evolution plan."""
+    import os
+    out = ["# Unified Evolution Recommender\n"]
+    recommendations = []
+
+    # 1. Signal dead-ends and orphan channels
+    try:
+        from .coupling_channels import _scan_l0_topology
+        src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+        topo = _scan_l0_topology(src_root)
+        dead_ends = [(ch, d["producers"]) for ch, d in topo.items()
+                     if d["producers"] and not d["consumers"]
+                     and ch not in {"rest-sync", "section-quality", "binaural", "instrument", "note"}]
+        orphans = [(ch, d["consumers"]) for ch, d in topo.items()
+                   if d["consumers"] and not d["producers"]]
+        for ch, prods in dead_ends:
+            recommendations.append({
+                "priority": 9.0,
+                "type": "dead-end",
+                "title": f"Wire consumers for '{ch}' channel",
+                "detail": f"Posted by {', '.join(prods)} but never consumed. Adding consumers creates new coupling paths.",
+            })
+        for ch, cons in orphans:
+            recommendations.append({
+                "priority": 7.0,
+                "type": "orphan",
+                "title": f"Fix orphan channel '{ch}'",
+                "detail": f"Read by {', '.join(cons)} but never posted. Stale read or missing producer.",
+            })
+    except Exception:
+        pass
+
+    # 2. Cascade bypass detection (direct callers >> L0 consumers)
+    try:
+        from .coupling_channels import _count_direct_callers
+        for ch, data in topo.items():
+            prods = data.get("producers", [])
+            cons = data.get("consumers", [])
+            for prod in prods:
+                direct = _count_direct_callers(prod)
+                l0_count = len(cons)
+                if direct > l0_count * 2 and l0_count > 0:
+                    bypass_ratio = direct / max(l0_count, 1)
+                    recommendations.append({
+                        "priority": 8.0 + min(bypass_ratio, 5.0),
+                        "type": "bypass",
+                        "title": f"Route {prod} callers through L0 '{ch}'",
+                        "detail": f"{direct} direct callers vs {l0_count} L0 consumers — {direct - l0_count} bypass L0.",
+                    })
+    except Exception:
+        pass
+
+    # 3. Dimension gaps (underused coupling signals)
+    try:
+        from .coupling_bridges import dimension_gap_finder as _dgf
+        gaps_text = _dgf()
+        if gaps_text:
+            # Extract the lowest-coverage dimension
+            import re as _re_gap
+            dims = _re_gap.findall(r'(\w+)\s+x\s*(\d+)', gaps_text)
+            if dims:
+                lowest = min(dims, key=lambda x: int(x[1]))
+                recommendations.append({
+                    "priority": 6.5,
+                    "type": "dimension-gap",
+                    "title": f"Expand '{lowest[0]}' coverage ({lowest[1]} consumers)",
+                    "detail": f"Least-used coupling dimension. Adding consumers here creates new signal paths.",
+                })
+    except Exception:
+        pass
+
+    # 4. Unexplored antagonist pairs (from leverage analysis KB history)
+    try:
+        from .coupling_bridges import get_top_bridges as _gtb
+        bridges = _gtb(n=8, threshold=-0.20)
+        for b in bridges:
+            if not b.get("already_bridged"):
+                recommendations.append({
+                    "priority": 8.5,
+                    "type": "virgin-pair",
+                    "title": f"Bridge {b['pair_a']} <-> {b['pair_b']} (r={b['r']:.3f})",
+                    "detail": f"Antagonist pair with 0 bridges. Field: {b['field']} ({b['eff_a']} / {b['eff_b']})",
+                })
+    except Exception:
+        pass
+
+    # 5. Low-trust systems needing attention
+    try:
+        from .trust_analysis import trust_report as _tr_fn
+        # Just check for bottom-tier systems
+        from .coupling_data import _load_trust_scores
+        trust_scores = _load_trust_scores()
+        if trust_scores:
+            bottom = sorted(trust_scores.items(), key=lambda x: x[1])[:3]
+            for name, score in bottom:
+                if score < 0.30:
+                    recommendations.append({
+                        "priority": 5.0,
+                        "type": "low-trust",
+                        "title": f"Investigate low-trust system '{name}' (score={score:.2f})",
+                        "detail": "Consistently underperforming — may need outcome scoring recalibration.",
+                    })
+    except Exception:
+        pass
+
+    # Sort by priority descending and format
+    recommendations.sort(key=lambda r: -r["priority"])
+
+    if not recommendations:
+        out.append("No evolution opportunities detected. System is fully wired.")
+        return "\n".join(out)
+
+    out.append(f"Found {len(recommendations)} evolution opportunities, ranked by impact:\n")
+    for i, rec in enumerate(recommendations[:12], 1):
+        icon = {"dead-end": "📡", "orphan": "👻", "bypass": "⚡", "dimension-gap": "🔲",
+                "virgin-pair": "🌉", "low-trust": "📉"}.get(rec["type"], "•")
+        out.append(f"**{i}. {icon} [{rec['type']}] {rec['title']}** (priority: {rec['priority']:.1f})")
+        out.append(f"   {rec['detail']}")
+        out.append("")
+
+    return "\n".join(out)

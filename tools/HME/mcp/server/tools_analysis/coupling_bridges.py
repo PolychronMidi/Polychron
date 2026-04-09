@@ -324,6 +324,45 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
             antagonists.append((a, b, r))
     antagonists.sort(key=lambda x: x[2])
 
+    # Build KB round index for staleness tracking
+    _kb_pair_rounds: dict[str, list[str]] = defaultdict(list)
+    try:
+        all_kb = ctx.project_engine.list_knowledge_full() or []
+        for entry in all_kb:
+            title = (entry.get("title", "") or "").lower()
+            content = (entry.get("content", "") or "").lower()
+            text = title + " " + content
+            # Extract round number from title (e.g., "R85: ...")
+            import re as _re_kb
+            round_match = _re_kb.search(r'\bR(\d+)\b', entry.get("title", "") or "")
+            round_label = f"R{round_match.group(1)}" if round_match else None
+            if not round_label:
+                continue
+            # Check which pairs are mentioned
+            for a_name, b_name, _ in antagonists[:pair_limit]:
+                a_low = a_name.lower().replace("_", "")
+                b_low = b_name.lower().replace("_", "")
+                if (a_low in text or _TRUST_FILE_ALIASES.get(a_name, "").lower() in text) and \
+                   (b_low in text or _TRUST_FILE_ALIASES.get(b_name, "").lower() in text):
+                    pair_key = f"{a_name}:{b_name}"
+                    if round_label not in _kb_pair_rounds[pair_key]:
+                        _kb_pair_rounds[pair_key].append(round_label)
+    except Exception:
+        pass
+
+    # Get latest round number for staleness computation
+    _latest_round = 0
+    try:
+        journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
+        if os.path.isfile(journal_path):
+            import re as _re_j
+            with open(journal_path, encoding="utf-8") as _jf:
+                first_match = _re_j.search(r'\bR(\d+)\b', _jf.read(500))
+                if first_match:
+                    _latest_round = int(first_match.group(1))
+    except Exception:
+        pass
+
     out = [f"# Antagonism Leverage Analysis  ({len(antagonists)} strong pairs, {n_beats} beats)\n"]
     out.append("For each antagonist pair: candidate bridge fields that couple BOTH modules")
     out.append("to the SAME rhythmic/melodic signal with OPPOSING musical responses.\n")
@@ -347,6 +386,16 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         saturation = "VIRGIN" if n_bridged == 0 else (f"SATURATED ({n_bridged})" if n_bridged >= 4 else f"{n_bridged} bridged")
         out.append(f"## r={r:+.3f} {bar}  {a} (t={ta_s}) <-> {b} (t={tb_s})  [{saturation}]")
         out.append(f"   archetypes: [{arch_a[0]}] vs [{arch_b[0]}]")
+        # KB staleness annotation
+        pair_key = f"{a}:{b}"
+        kb_rounds = _kb_pair_rounds.get(pair_key, [])
+        if kb_rounds:
+            last_round_num = max(int(r_str[1:]) for r_str in kb_rounds if r_str[1:].isdigit())
+            rounds_ago = _latest_round - last_round_num if _latest_round else 0
+            staleness = "" if rounds_ago <= 3 else f" ⚠ {rounds_ago} rounds stale" if rounds_ago <= 10 else f" 🔴 {rounds_ago} rounds stale — may need re-evaluation"
+            out.append(f"   KB history: {', '.join(sorted(kb_rounds))}{staleness}")
+        else:
+            out.append(f"   KB history: none — unexplored pair (high discovery potential)")
         out.append(f"   {a} dims: [{', '.join(sorted(used_a)) or 'none'}]")
         out.append(f"   {b} dims: [{', '.join(sorted(used_b)) or 'none'}]")
         if already_bridged:

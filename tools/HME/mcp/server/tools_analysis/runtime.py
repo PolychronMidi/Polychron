@@ -166,7 +166,13 @@ def drama_finder(top_n: int = 10) -> str:
 def beat_snapshot(beat_key: str) -> str:
     """Show the complete system state at a specific beat: regime, all trust scores/weights,
     snap fields, coupling labels, notes emitted. A cross-section of everything happening
-    at one moment in the composition."""
+    at one moment in the composition.
+
+    beat_key formats (flexible):
+      '2:1:3:0' — exact section:phrase:measure:beat key
+      '2:1'     — prefix match (finds first beat starting with '2:1:')
+      '400'     — plain number: finds the 400th trace record (0-indexed)
+      'S3'      — section shorthand: finds first beat in section 3"""
     ctx.ensure_ready_sync()
     _track("beat_snapshot")
 
@@ -174,25 +180,61 @@ def beat_snapshot(beat_key: str) -> str:
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
-    # Find the beat — exact match first, then prefix match (e.g. "3:0" finds "3:0:0:0")
     target = beat_key.strip()
     record = None
+
+    # Detect format: plain number (Nth record), section shorthand (S3), or beat key
+    import re as _re
+    section_match = _re.match(r'^[Ss](\d+)$', target)
+    is_plain_number = _re.match(r'^\d+$', target) and ':' not in target
+
     try:
         with open(trace_path, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    r = json.loads(line)
-                except Exception:
-                    continue
-                bk = r.get("beatKey", "")
-                if bk == target or bk.startswith(target + ":"):
-                    record = r
-                    break
+            if is_plain_number:
+                # Plain number: skip to Nth record
+                idx = int(target)
+                for i, line in enumerate(f):
+                    if i == idx:
+                        try:
+                            record = json.loads(line)
+                        except Exception:
+                            pass
+                        break
+            elif section_match:
+                # Section shorthand: find first beat in that section
+                section_num = section_match.group(1)
+                for line in f:
+                    try:
+                        r = json.loads(line)
+                    except Exception:
+                        continue
+                    bk = r.get("beatKey", "")
+                    if bk.startswith(section_num + ":"):
+                        record = r
+                        break
+            else:
+                # Exact or prefix match
+                for line in f:
+                    try:
+                        r = json.loads(line)
+                    except Exception:
+                        continue
+                    bk = r.get("beatKey", "")
+                    if bk == target or bk.startswith(target + ":"):
+                        record = r
+                        break
     except Exception as e:
         return f"Error reading trace: {e}"
 
     if not record:
-        return f"Beat '{beat_key}' not found in trace.jsonl."
+        # Count total records for helpful message
+        try:
+            with open(trace_path, encoding="utf-8") as f:
+                total = sum(1 for _ in f)
+        except Exception:
+            total = "?"
+        return (f"Beat '{beat_key}' not found in trace.jsonl ({total} records total).\n"
+                f"Accepted formats: '2:1:3:0' (exact key), '2:1' (prefix), '400' (Nth record), 'S3' (section 3)")
 
     parts = [f"## Beat Snapshot: {beat_key}\n"]
 
