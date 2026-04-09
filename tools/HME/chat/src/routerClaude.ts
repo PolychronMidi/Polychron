@@ -1,0 +1,296 @@
+import { spawn } from "child_process";
+import { ClaudeOptions, ChunkCallback } from "./router";
+
+// node-pty is loaded lazily — a native module crash must never take down the extension host.
+let _pty: typeof import("node-pty") | null = null;
+function getPty(): typeof import("node-pty") | null {
+  if (_pty) return _pty;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    _pty = require("node-pty");
+    return _pty;
+  } catch {
+    return null;
+  }
+}
+
+// ── Claude CLI (pipe mode) ────────────────────────────────────────────────
+
+export function streamClaude(
+  message: string,
+  sessionId: string | null,
+  opts: ClaudeOptions,
+  workingDir: string,
+  onChunk: ChunkCallback,
+  onSessionId: (id: string) => void,
+  onDone: (cost?: number) => void,
+  onError: (msg: string) => void
+): () => void {
+  const args: string[] = ["-p", "--output-format", "stream-json", "--verbose"];
+  args.push("--model", opts.model);
+  args.push("--effort", opts.effort);
+  args.push("--permission-mode", opts.permissionMode || "acceptEdits");
+  if (opts.thinking) {
+    // Extended thinking is available on Opus; --verbose surfaces the thinking blocks
+    // in stream-json output. Nothing extra needed — thinking blocks come through natively.
+  }
+  if (sessionId) {
+    args.push("--resume", sessionId);
+  }
+
+  const env = { ...process.env };
+  delete env["ANTHROPIC_API_KEY"];
+  if (!env["PATH"]?.includes(".local/bin")) {
+    env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
+  }
+
+  const proc = spawn("claude", args, {
+    cwd: workingDir,
+    env,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+
+  proc.stdin.write(message);
+  proc.stdin.end();
+
+  let buf = "";
+  let doneFired = false;
+  const safeOnDone = (cost?: number) => {
+    if (!doneFired) { doneFired = true; onDone(cost); }
+  };
+
+  const INACTIVITY_MS = 30000;
+  let inactivityTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    if (!doneFired) {
+      doneFired = true;
+      try { proc.kill(); } catch {}
+      onError(`CRITICAL: Claude CLI produced no output for ${INACTIVITY_MS / 1000}s — API may be down or rate-limited`);
+    }
+  }, INACTIVITY_MS);
+  const resetInactivity = () => {
+    if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
+  };
+
+  proc.stdout.on("data", (data: Buffer) => {
+    resetInactivity();
+    buf += data.toString("utf8");
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const evt = JSON.parse(line);
+        handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
+      } catch {
+        if (line.trim()) onChunk(line.trim(), "error");
+      }
+    }
+  });
+
+  proc.stderr.on("data", (data: Buffer) => {
+    resetInactivity();
+    const text = data.toString("utf8").trim();
+    if (text) onError(text);
+  });
+
+  proc.on("close", (code) => {
+    resetInactivity();
+    if (buf.trim()) {
+      try {
+        const evt = JSON.parse(buf.trim());
+        handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
+      } catch {
+        onChunk(buf.trim(), "error");
+      }
+    }
+    if (code !== 0) onError(`Claude CLI exited with code ${code}`);
+    else safeOnDone();
+  });
+
+  return () => { try { proc.kill(); } catch {} };
+}
+
+function handleStreamEvent(
+  evt: any,
+  onChunk: ChunkCallback,
+  onSessionId: (id: string) => void,
+  onDone: (cost?: number) => void
+) {
+  if (evt.type === "system" && evt.subtype === "init" && evt.session_id) {
+    onSessionId(evt.session_id);
+    return;
+  }
+
+  if (evt.type === "assistant" && evt.message?.content) {
+    for (const block of evt.message.content) {
+      if (block.type === "thinking" && block.thinking) {
+        onChunk(block.thinking, "thinking");
+      } else if (block.type === "text" && block.text) {
+        onChunk(block.text, "text");
+      } else if (block.type === "tool_use") {
+        onChunk(`[${block.name}] ${JSON.stringify(block.input ?? {}).slice(0, 120)}`, "tool");
+      }
+    }
+    return;
+  }
+
+  if (evt.type === "result") {
+    onDone(evt.cost_usd ?? undefined);
+    return;
+  }
+}
+
+// ── Claude PTY (hook-aware interactive mode) ───────────────────────────────
+
+function stripAnsi(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/\x1b\[[0-9;]*[mGKHFABCDJsuhl]/g, "")
+            .replace(/\x1b\][^\x07]*\x07/g, "")
+            .replace(/\r/g, "");
+}
+
+const PTY_DONE_PATTERNS = [
+  /^>\s*$/m,
+  /\nHuman:\s*$/,
+  /\[H\]/,
+];
+
+export function streamClaudePty(
+  message: string,
+  sessionId: string | null,
+  opts: ClaudeOptions,
+  workingDir: string,
+  onChunk: ChunkCallback,
+  onSessionId: (id: string) => void,
+  onDone: () => void,
+  onError: (msg: string) => void
+): () => void {
+  const args: string[] = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
+  if (sessionId) args.push("--resume", sessionId);
+
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (k !== "ANTHROPIC_API_KEY" && v !== undefined) env[k] = v;
+  }
+  env["TERM"] = "xterm-256color";
+  if (!env["PATH"]?.includes(".local/bin")) {
+    env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
+  }
+
+  const ptyLib = getPty();
+  if (!ptyLib) {
+    onError("node-pty unavailable");
+    return () => {};
+  }
+
+  let proc: ReturnType<typeof ptyLib.spawn>;
+  try {
+    proc = ptyLib.spawn("claude", args, {
+      name: "xterm-256color",
+      cols: 220,
+      rows: 50,
+      cwd: workingDir,
+      env: env as NodeJS.ProcessEnv,
+    });
+  } catch (e: any) {
+    onError(`PTY spawn failed: ${e?.message ?? e}`);
+    return () => {};
+  }
+
+  let fullOutput = "";
+  let sentMessage = false;
+  let turnDone = false;
+  let sessionIdSent = false;
+  let initBuf = "";
+  let doneTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const PTY_INACTIVITY_MS = 15000;
+  let ptyInactivityTimer: ReturnType<typeof setTimeout> | null = null;
+  const resetPtyInactivity = () => {
+    if (ptyInactivityTimer) clearTimeout(ptyInactivityTimer);
+    ptyInactivityTimer = setTimeout(() => {
+      if (!turnDone) {
+        turnDone = true;
+        if (doneTimer) clearTimeout(doneTimer);
+        try { proc.kill(); } catch {}
+        onError(`CRITICAL: Claude PTY produced no output for ${PTY_INACTIVITY_MS / 1000}s after message send — API may be down or CLI crashed`);
+      }
+    }, PTY_INACTIVITY_MS);
+  };
+
+  const scheduleDone = () => {
+    if (doneTimer) clearTimeout(doneTimer);
+    if (ptyInactivityTimer) { clearTimeout(ptyInactivityTimer); ptyInactivityTimer = null; }
+    doneTimer = setTimeout(() => {
+      if (!turnDone) {
+        turnDone = true;
+        onDone();
+        try { proc.kill(); } catch {}
+      }
+    }, 800);
+  };
+
+  proc.onData((raw: string) => {
+    const text = stripAnsi(raw);
+
+    if (!sentMessage) {
+      initBuf += text;
+      const ready =
+        initBuf.includes("> ") ||
+        initBuf.includes("│") ||
+        initBuf.includes("Human:") ||
+        initBuf.length > 200;
+      if (ready) {
+        sentMessage = true;
+        proc.write(message.replace(/\r?\n/g, " ") + "\r");
+        resetPtyInactivity();
+      }
+      return;
+    }
+
+    resetPtyInactivity();
+    fullOutput += text;
+
+    if (!sessionIdSent) {
+      const sessionMatch = fullOutput.match(/Session(?:\s+ID)?:\s*([a-f0-9-]{8,})/i);
+      if (sessionMatch) { sessionIdSent = true; onSessionId(sessionMatch[1]); }
+    }
+
+    if (/^(?:⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏)\s/.test(text.trim())) {
+      onChunk(text.trim().replace(/^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*/, ""), "thinking");
+    } else if (/^●\s/.test(text.trim()) || /^\[.*\]/.test(text.trim())) {
+      onChunk(text.trim(), "tool");
+    } else if (text.trim() && !PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-200)))) {
+      onChunk(text, "text");
+    }
+
+    if (PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-400)))) {
+      scheduleDone();
+    }
+  });
+
+  proc.onExit(({ exitCode }: { exitCode: number; signal?: number }) => {
+    if (ptyInactivityTimer) { clearTimeout(ptyInactivityTimer); ptyInactivityTimer = null; }
+    if (turnDone) return;
+    setTimeout(() => {
+      if (turnDone) return;
+      turnDone = true;
+      if (doneTimer) clearTimeout(doneTimer);
+      if (exitCode !== 0) {
+        onError(`Claude CLI exited with code ${exitCode}`);
+      } else {
+        onDone();
+      }
+    }, 1500);
+  });
+
+  const killed = { v: false };
+  return () => {
+    killed.v = true;
+    turnDone = true;
+    if (doneTimer) clearTimeout(doneTimer);
+    if (ptyInactivityTimer) { clearTimeout(ptyInactivityTimer); ptyInactivityTimer = null; }
+    try { proc.kill(); } catch {}
+  };
+}
