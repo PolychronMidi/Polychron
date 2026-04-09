@@ -41,7 +41,7 @@ hyperMetaManagerContradictions = (() => {
     // P95 alpha multiplier -- accelerate tracking when controller p95 lags reality
     let p95AlphaMultiplier = 1.0;
     if (state.pairCeiling) {
-      const lagPairs = ['density-flicker', 'flicker-trust', 'tension-flicker'];
+      const lagPairs = ['density-flicker', 'flicker-trust', 'tension-flicker', 'tension-phase', 'density-phase', 'entropy-phase'];
       for (let i = 0; i < lagPairs.length; i++) {
         const ps = state.pairCeiling[lagPairs[i]];
         if (ps && ps.p95Ema < 0.70 && ps.activeBeats > 50) {
