@@ -76,36 +76,50 @@ def _ollama_background_yield():
         _t.sleep(0.5)
 
 
-def _cancellable_urlopen(req, timeout, cancel_event):
-    """urlopen in a thread, aborted immediately if cancel_event is set.
+def _cancellable_urlopen(req_data, url, timeout, cancel_event):
+    """Streaming urlopen that aborts Ollama generation when cancel_event fires.
 
+    Uses stream:true so closing the connection actually stops Ollama's generation.
+    Reassembles the streamed JSON lines into the same format as stream:false.
     Returns (response_bytes, None) on success, (None, exception) on failure.
     """
-    import time as _t
-    result_box = [None, None]  # [data, error]
-    done = _threading.Event()
-
-    def _do():
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                result_box[0] = resp.read()
-        except Exception as e:
-            result_box[1] = e
-        finally:
-            done.set()
-
     import urllib.request
-    t = _threading.Thread(target=_do, daemon=True)
-    t.start()
-    # Poll: check cancel_event every 0.25s instead of blocking on done
-    while not done.is_set():
-        if cancel_event.is_set():
-            # Interactive call arrived — abandon this background request.
-            # Thread will finish on its own (daemon), we just stop waiting.
-            logger.info("_cancellable_urlopen: background request abandoned — interactive call arrived")
-            return None, InterruptedError("cancelled by interactive call")
-        done.wait(0.25)
-    return result_box[0], result_box[1]
+    # Patch stream:true into the payload
+    payload = json.loads(req_data)
+    payload["stream"] = True
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    try:
+        resp = urllib.request.urlopen(req, timeout=timeout)
+    except Exception as e:
+        return None, e
+    try:
+        chunks = []
+        final_result = {}
+        for raw_line in resp:
+            if cancel_event.is_set():
+                resp.close()
+                logger.info("_cancellable_urlopen: background request ABORTED — Ollama generation stopped")
+                return None, InterruptedError("cancelled by interactive call")
+            line = raw_line.decode("utf-8", errors="ignore").strip()
+            if not line:
+                continue
+            chunk = json.loads(line)
+            text_piece = chunk.get("response", "")
+            if text_piece:
+                chunks.append(text_piece)
+            if chunk.get("done"):
+                final_result = chunk
+                break
+        # Reassemble into stream:false format
+        final_result["response"] = "".join(chunks)
+        return json.dumps(final_result).encode(), None
+    except Exception as e:
+        try:
+            resp.close()
+        except Exception:
+            pass
+        return None, e
 
 
 def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
@@ -208,7 +222,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         # Interactive: 60s max — fail fast, never block for a stuck/unloaded model.
         if priority == "background":
             with active_lock:
-                raw_bytes, cancel_err = _cancellable_urlopen(req, timeout=30, cancel_event=_ollama_interactive)
+                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=30, cancel_event=_ollama_interactive)
             if cancel_err:
                 if isinstance(cancel_err, InterruptedError):
                     return (None, []) if return_context else None
