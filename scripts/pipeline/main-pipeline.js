@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const { execSync, spawn } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const fs   = require('fs');
 const path = require('path');
 
@@ -58,6 +58,34 @@ const POST_COMPOSITION = [
 // runner
 
 const timings = [];
+const errorPatterns = [];
+
+// Error keywords that indicate real failures even when exit code is 0.
+// Each pattern: regex to match, severity label for reporting.
+const ERROR_KEYWORDS = [
+  { re: /Traceback \(most recent call last\)/i, tag: 'Python traceback' },
+  { re: /RuntimeError:/i, tag: 'RuntimeError' },
+  { re: /CUDA error/i, tag: 'CUDA error' },
+  { re: /out of memory/i, tag: 'OOM' },
+  { re: /MemoryError/i, tag: 'MemoryError' },
+  { re: /FATAL:/i, tag: 'FATAL' },
+  { re: /Segmentation fault/i, tag: 'segfault' },
+  { re: /killed$/im, tag: 'process killed' },
+];
+
+function scanForErrors(label, output) {
+  var found = [];
+  for (var i = 0; i < ERROR_KEYWORDS.length; i++) {
+    if (ERROR_KEYWORDS[i].re.test(output)) {
+      found.push(ERROR_KEYWORDS[i].tag);
+    }
+  }
+  if (found.length > 0) {
+    errorPatterns.push({ label: label, errors: found });
+    console.error('\n  *** ERROR DETECTED in ' + label + ': ' + found.join(', ') + ' ***');
+  }
+  return found;
+}
 
 function run(label, cmd, fatal) {
   const sep = '='.repeat(60);
@@ -67,13 +95,30 @@ function run(label, cmd, fatal) {
 
   var t0 = Date.now();
   try {
-    execSync(cmd, { stdio: 'inherit', env: process.env });
-    var elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-    timings.push({ label: label, elapsed: elapsed, ok: true });
-    console.log('\n  ' + label + ' OK (' + elapsed + 's)');
+    if (fatal) {
+      execSync(cmd, { stdio: 'inherit', env: process.env });
+      var elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+      timings.push({ label: label, elapsed: elapsed, ok: true });
+      console.log('\n  ' + label + ' OK (' + elapsed + 's)');
+    } else {
+      // Capture stdout+stderr for non-fatal steps to scan for error keywords
+      var result = spawnSync('sh', ['-c', cmd], { encoding: 'utf-8', env: process.env, maxBuffer: 50 * 1024 * 1024 });
+      var combined = (result.stdout || '') + (result.stderr || '');
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      scanForErrors(label, combined);
+      var elapsed2 = ((Date.now() - t0) / 1000).toFixed(1);
+      if (result.status === 0) {
+        timings.push({ label: label, elapsed: elapsed2, ok: true });
+        console.log('\n  ' + label + ' OK (' + elapsed2 + 's)');
+      } else {
+        timings.push({ label: label, elapsed: elapsed2, ok: false });
+        console.warn('\n  WARNING: ' + label + ' failed (exit ' + (result.status || '?') + ') -- continuing.\n');
+      }
+    }
   } catch (err) {
-    var elapsed2 = ((Date.now() - t0) / 1000).toFixed(1);
-    timings.push({ label: label, elapsed: elapsed2, ok: false });
+    var elapsed3 = ((Date.now() - t0) / 1000).toFixed(1);
+    timings.push({ label: label, elapsed: elapsed3, ok: false });
     if (fatal) {
       console.error('\n  FATAL: ' + label + ' failed (exit ' + (err.status || 1) + '). Pipeline aborted.\n');
       printSummary();
@@ -98,7 +143,16 @@ function printSummary() {
   }
   console.log(sep);
   console.log('  Total: ' + total.toFixed(1) + 's');
-  console.log(sep + '\n');
+  console.log(sep);
+  if (errorPatterns.length > 0) {
+    console.log('');
+    console.error('  !!! ERRORS DETECTED IN NON-FATAL STEPS !!!');
+    for (var k = 0; k < errorPatterns.length; k++) {
+      console.error('    ' + errorPatterns[k].label + ': ' + errorPatterns[k].errors.join(', '));
+    }
+    console.log('');
+  }
+  console.log('');
 }
 
 function writeSummaryJSON(wallTime) {
@@ -109,7 +163,8 @@ function writeSummaryJSON(wallTime) {
       return { label: t.label, elapsedSeconds: Number(t.elapsed), ok: t.ok };
     }),
     passed: timings.filter(function (t) { return t.ok; }).length,
-    failed: timings.filter(function (t) { return !t.ok; }).length
+    failed: timings.filter(function (t) { return !t.ok; }).length,
+    errorPatterns: errorPatterns.length > 0 ? errorPatterns : undefined
   };
   try {
     var outDir = path.join(__dirname, '../..', 'metrics');

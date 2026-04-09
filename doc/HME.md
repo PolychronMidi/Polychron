@@ -419,7 +419,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations (`_append_file_to_t
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: warn to stderr when `mcp__HME__*` tools exceed 15-30s threshold |
-| `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers |
+| `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
@@ -679,6 +679,26 @@ Sessions stored at `~/.config/hme-chat/workspaces/{hash}/`:
 ### PostToolUse Transcript Hook
 
 `tools/HME/hooks/log-tool-call.sh` — universal PostToolUse hook (matcher: `""`) that logs every tool call from the main Claude Code session to `log/session-transcript.jsonl` and mirrors to the HTTP shim. Also triggers `/reindex` for Edit/Write operations. **LIFESAVER**: reads the start timestamp written by `pretooluse_lifesaver.sh` and emits a stderr warning when any `mcp__HME__*` tool exceeds its expected duration (15s for most tools, 30s for `review`/`warm_pre_edit_cache`).
+
+### Pipeline Error Scanning (LIFESAVER)
+
+Three-layer defense against silent failures in non-fatal pipeline steps:
+
+1. **Script-level**: Each pipeline script must exit non-zero when a critical subsystem fails (e.g., `snapshot-run.js` exits 1 if EnCodec analysis fails, even though the snapshot itself is saved). Errors must use `console.error()`, never `console.log()`.
+
+2. **Pipeline-level**: `main-pipeline.js` captures stdout+stderr for all non-fatal steps and scans for error keywords: `Traceback`, `RuntimeError`, `CUDA error`, `OOM`, `MemoryError`, `FATAL`, `Segmentation fault`, `killed`. Detected errors are:
+   - Printed immediately with `*** ERROR DETECTED ***` banner
+   - Accumulated in `errorPatterns[]` array
+   - Written to `metrics/pipeline-summary.json` under `errorPatterns` field
+   - Displayed in the pipeline summary block
+
+3. **Hook-level**: `posttooluse_bash.sh` fires after `npm run main` completes. Reads `pipeline-summary.json`, checks `errorPatterns` and failed steps. If any exist, emits a loud `!!!` banner to stderr forcing Claude to acknowledge and address the failures before proceeding.
+
+**Scope clarification**: The LIFESAVER system has two distinct functions:
+- **Tool timing** (pretooluse_lifesaver.sh + log-tool-call.sh): monitors MCP tool call durations for stuck synthesis
+- **Pipeline error scanning** (main-pipeline.js + posttooluse_bash.sh): catches real failures hidden behind exit-0 non-fatal steps
+
+Both are critical. A `(non-fatal)` pipeline step that exits 0 is NOT the same as "no errors occurred" — the error scanning layer ensures real failures (CUDA OOM, Python tracebacks, segfaults) are never silently swallowed.
 
 ### Installation
 
