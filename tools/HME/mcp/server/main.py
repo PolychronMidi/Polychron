@@ -124,7 +124,8 @@ def _background_load():
         logger.info(f"HME ready | project={PROJECT_ROOT} | project_db={PROJECT_DB} | global_db={GLOBAL_DB} | libs={list(lib_engines.keys())}")
     except Exception as e:
         context._startup_error = e
-        logger.error(f"HME background startup failed: {e}")
+        import traceback
+        logger.error(f"HME background startup failed: {type(e).__name__}: {e}\n{traceback.format_exc()}")
     finally:
         _startup_done.set()
 
