@@ -14,6 +14,24 @@ from .synthesis import (
 logger = logging.getLogger("HME")
 
 
+def _ground_file_paths(text: str) -> str:
+    """Verify file paths referenced in model output. Annotate hallucinated paths."""
+    import re as _re
+    _path_re = _re.compile(r'(?:FILE:\s*|(?:^|\s))(src/[a-zA-Z0-9_./-]+\.(?:js|ts|py))', _re.MULTILINE)
+    seen: dict = {}
+    for m in _path_re.finditer(text):
+        path = m.group(1)
+        if path not in seen:
+            full = os.path.join(ctx.PROJECT_ROOT, path)
+            seen[path] = os.path.isfile(full)
+    hallucinated = [p for p, exists in seen.items() if not exists]
+    if hallucinated:
+        text += "\n\n⚠ *Grounding check: the following paths were referenced but do not exist:*"
+        for p in hallucinated:
+            text += f"\n  - `{p}` (hallucinated by local model)"
+    return text
+
+
 def think(about: str, context: str = "") -> str:
     """Structured reflection tool. Uses Ollama hybrid synthesis (qwen3-coder extract +
     qwen3:30b-a3b reason) with project-grounded context injection. Routes by question type:
@@ -222,6 +240,7 @@ def think(about: str, context: str = "") -> str:
             system=_THINK_SYSTEM,
         )
         if local_answer:
+            local_answer = _ground_file_paths(local_answer)
             store_think_history(about, local_answer)
             return f"# Think: {about} *(meta-hme)*\n\n{local_answer}"
     else:
@@ -256,6 +275,7 @@ def think(about: str, context: str = "") -> str:
         # All processing from Stage 1 threads is preserved in the merged brief fallback.
         local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=1024)
         if local_answer:
+            local_answer = _ground_file_paths(local_answer)
             store_think_history(about, local_answer)
             return f"# Think: {about} *(parallel-two-stage)*\n\n{local_answer}"
 
@@ -306,6 +326,14 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         if not current:
             break
     if not layers:
+        # Fallback: symbol may be a property/field name, not an IIFE global.
+        # Try grep to find usages as a property reference.
+        from server.search_basic import grep as _grep_fn
+        grep_result = _grep_fn(symbol_name, path="src/", regex=False, files_only=True)
+        if grep_result and "No matches" not in grep_result:
+            return (f"# Blast Radius: {symbol_name}\n\n"
+                    f"'{symbol_name}' is not an IIFE global — falling back to grep.\n"
+                    f"Found as property/field reference:\n\n{grep_result}")
         return f"No callers found for '{symbol_name}'. Blast radius = 0."
     parts = [f"# Blast Radius: {symbol_name}\n"]
     total = 0
