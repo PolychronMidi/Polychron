@@ -94,11 +94,12 @@ def _background_load():
         from watcher import start_watcher
 
         try:
-            shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, model_kwargs={"file_name": "onnx/model.onnx"})
-            logger.info(f"Loaded {MODEL_NAME} with {MODEL_BACKEND} backend")
+            shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, device="cpu",
+                                               model_kwargs={"file_name": "onnx/model.onnx"})
+            logger.info(f"Loaded {MODEL_NAME} with {MODEL_BACKEND} backend (CPU-only, GPUs reserved for Ollama)")
         except Exception as e:
             logger.warning(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
-            shared_model = SentenceTransformer(MODEL_NAME)
+            shared_model = SentenceTransformer(MODEL_NAME, device="cpu")
 
         project_engine = RAGEngine(db_path=PROJECT_DB, model=shared_model)
         global_engine = RAGEngine(db_path=GLOBAL_DB, model=shared_model)

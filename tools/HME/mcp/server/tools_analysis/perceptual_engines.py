@@ -22,7 +22,7 @@ def _get_encodec():
     if _encodec_model is None:
         import torch
         from encodec import EncodecModel
-        _encodec_device = "cuda" if torch.cuda.is_available() else "cpu"
+        _encodec_device = "cpu"  # GPUs reserved for Ollama instances
         logger.info("Loading EnCodec 24kHz model onto %s (one-time)...", _encodec_device)
         _encodec_model = EncodecModel.encodec_model_24khz()
         _encodec_model.set_target_bandwidth(6.0)
