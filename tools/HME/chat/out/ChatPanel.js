@@ -87,6 +87,16 @@ class ChatPanel {
         this._panel.webview.html = this._getHtml();
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
         this._panel.webview.onDidReceiveMessage((msg) => this._handleMessage(msg), null, this._disposables);
+        // Without retainContextWhenHidden, VS Code destroys webview content when the
+        // panel is hidden and recreates it when shown. Re-send HTML + messages on show.
+        this._panel.onDidChangeViewState(() => {
+            if (this._panel.visible) {
+                this._panel.webview.html = this._getHtml();
+                for (const m of this._displayMessages()) {
+                    this._post({ type: "message", message: m });
+                }
+            }
+        }, null, this._disposables);
     }
     static createOrShow(projectRoot) {
         const col = vscode.window.activeTextEditor
@@ -97,10 +107,7 @@ class ChatPanel {
             ChatPanel.current._panel.reveal(col);
             return;
         }
-        const panel = vscode.window.createWebviewPanel("hmeChat", "HME Chat", col || vscode.ViewColumn.One, {
-            enableScripts: true,
-            retainContextWhenHidden: true,
-        });
+        const panel = vscode.window.createWebviewPanel("hmeChat", "HME Chat", col || vscode.ViewColumn.One, { enableScripts: true });
         // Auto-restore the most recently active session (same as window-reload path)
         const sessions = (0, SessionStore_1.listSessions)(projectRoot);
         const restoreId = sessions[0]?.id;
@@ -199,6 +206,10 @@ class ChatPanel {
                 break;
         }
     }
+    /** Return the most recent messages up to the display cap. */
+    _displayMessages() {
+        return this._state.messages.slice(-ChatPanel.DISPLAY_CAP);
+    }
     _loadSession(id) {
         const persisted = (0, SessionStore_1.loadSession)(this._projectRoot, id);
         if (!persisted)
@@ -212,7 +223,12 @@ class ChatPanel {
         };
         this._transcript.setSessionId(persisted.entry.id);
         this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
-        this._post({ type: "sessionLoaded", id: persisted.entry.id, messages: persisted.messages, title: persisted.entry.title });
+        const display = this._displayMessages();
+        const pruned = display.length < persisted.messages.length;
+        this._post({ type: "sessionLoaded", id: persisted.entry.id, messages: display, title: persisted.entry.title });
+        if (pruned) {
+            this._post({ type: "notice", level: "info", text: `Showing last ${display.length} of ${persisted.messages.length} messages` });
+        }
     }
     _persistState() {
         if (!this._state.sessionEntry)
@@ -230,57 +246,8 @@ class ChatPanel {
         if (msg.route === "agent") {
             return this._onSendAgent(msg);
         }
-        // ── Auto-route: arbiter classifies message complexity ──
-        let resolvedRoute = msg.route;
-        if (msg.route === "auto") {
-            this._post({ type: "notice", level: "info", text: "🔀 Arbiter classifying…" });
-            const transcriptCtx = this._transcript.getRecentContext(20, 1500);
-            // Wire real signals into the arbiter — constraint density + error rate
-            let constraintCount = 0;
-            try {
-                const { warnings, blocks } = await (0, router_1.validateMessage)(msg.text);
-                constraintCount = warnings.length + blocks.length;
-            }
-            catch { /* shim down — arbiter proceeds with 0 constraints */ }
-            const recentErrors = this._transcript.getWindow(15)
-                .filter((e) => (e.type === "audit" || e.type === "tool_result") && e.content?.includes("ERROR")).length;
-            const decision = await (0, Arbiter_1.classifyMessage)(msg.text, transcriptCtx, constraintCount, recentErrors);
-            resolvedRoute = decision.route;
-            const isArbiterError = decision.isError;
-            this._post({
-                type: "notice",
-                level: isArbiterError ? "warn" : "info",
-                text: `🔀 Arbiter → ${decision.route} (${Math.round(decision.confidence * 100)}%): ${decision.reason}`,
-            });
-            this._transcript.logRouteSwitch("auto", `${decision.route} (${decision.reason})`);
-            if (isArbiterError) {
-                // Log prominently in transcript
-                this._transcript.log({
-                    ts: Date.now(), type: "audit", route: "auto",
-                    content: `ARBITER ERROR: ${decision.reason} — falling back to ${decision.route}`,
-                    summary: `Arbiter failed: ${decision.reason}`,
-                });
-                // Shim is single writer; fall back to direct disk write only if shim unreachable.
-                (0, router_1.logShimError)("arbiter", decision.reason, `fell back to ${decision.route}`).catch((e) => {
-                    console.error(`[HME FAILFAST] arbiter logShimError failed: ${e?.message ?? e}`);
-                    const errLine = `[${new Date().toISOString()}] [arbiter] ${decision.reason} — fell back to ${decision.route}\n`;
-                    try {
-                        fs.mkdirSync(path.join(this._projectRoot, "log"), { recursive: true });
-                        fs.appendFileSync(path.join(this._projectRoot, "log", "hme-errors.log"), errLine);
-                    }
-                    catch (fileErr) {
-                        console.error(`[HME FAILFAST] Arbiter disk fallback failed: ${fileErr?.message ?? fileErr}`);
-                    }
-                });
-            }
-            if (decision.thinking) {
-                this._transcript.log({
-                    ts: Date.now(), type: "tool_call", route: "auto",
-                    content: `Arbiter reasoning: ${decision.thinking.slice(0, 500)}`,
-                    summary: `Arbiter thinking: ${decision.thinking.slice(0, 80)}`,
-                });
-            }
-        }
+        // ── Route resolution: auto resolves to claude (arbiter classification removed) ──
+        let resolvedRoute = (msg.route === "auto" ? "claude" : msg.route);
         // ── Auto-create session on first message ──
         if (!this._state.sessionEntry) {
             const entry = (0, SessionStore_1.createSession)(this._projectRoot, (0, SessionStore_1.deriveTitle)(msg.text));
@@ -903,6 +870,8 @@ class ChatPanel {
     }
 }
 exports.ChatPanel = ChatPanel;
+/** Max messages sent to webview for display. Full history stays in _state.messages and transcript logs. */
+ChatPanel.DISPLAY_CAP = 100;
 function uid() {
     return Math.random().toString(36).slice(2, 10);
 }
