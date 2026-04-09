@@ -1089,10 +1089,7 @@ function getInlineHtml() {
     font-size: 12px;
     height: 24px;
   }
-  #route-select { font-weight: bold; }
-  #route-select option[value="claude"] { color: var(--route-claude); }
-  #route-select option[value="local"]  { color: var(--route-local); }
-  #route-select option[value="hybrid"] { color: var(--route-hybrid); }
+
 
   .claude-only, .local-only { transition: opacity 0.15s; }
 
@@ -1408,45 +1405,30 @@ function getInlineHtml() {
 <!-- Toolbar -->
 <div id="toolbar">
   <button id="sidebar-toggle-btn" title="Toggle session sidebar">⚙</button>
-  <label>Route</label>
-  <select id="route-select">
-    <option value="auto">Auto</option>
-    <option value="claude">Claude</option>
-    <option value="local">Local</option>
-    <option value="hybrid">Hybrid</option>
-    <option value="agent" style="display:none"></option>
+
+  <!-- Model + effort controls (claude route always active) -->
+  <select id="claude-model">
+    <option value="claude-opus-4-6">Opus 4.6</option>
+    <option value="claude-sonnet-4-6" selected>Sonnet 4.6</option>
+    <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
   </select>
-
-  <!-- Claude controls -->
-  <div class="claude-only" id="claude-controls" style="display:flex;gap:8px;align-items:center;">
-    <label>Model</label>
-    <select id="claude-model">
-      <option value="claude-opus-4-6">Opus 4.6</option>
-      <option value="claude-sonnet-4-6" selected>Sonnet 4.6</option>
-      <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
-    </select>
-    <label>Effort</label>
-    <select id="claude-effort">
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high" selected>High</option>
-      <option value="max">Max</option>
-    </select>
-    <div id="thinking-wrap">
-      <input type="checkbox" id="thinking-toggle" />
-      <label for="thinking-toggle">Thinking</label>
-    </div>
+  <select id="claude-effort">
+    <option value="low">Low</option>
+    <option value="medium">Medium</option>
+    <option value="high" selected>High</option>
+    <option value="max">Max</option>
+  </select>
+  <div id="thinking-wrap">
+    <input type="checkbox" id="thinking-toggle" />
+    <label for="thinking-toggle">Thinking</label>
   </div>
 
-  <!-- Local controls -->
-  <div class="local-only" id="local-controls" style="display:none;gap:8px;align-items:center;">
-    <label>Model</label>
-    <select id="local-model">
-      <option value="qwen3-coder:30b">qwen3-coder:30b (GPU0 — coder)</option>
-      <option value="qwen3:30b-a3b">qwen3:30b-a3b (GPU1 — reasoner)</option>
-      <option value="qwen3:4b">qwen3:4b (arbiter — fast)</option>
-    </select>
-  </div>
+  <!-- Hidden local model selector — kept for backend /agent route testing -->
+  <select id="local-model" style="display:none;">
+    <option value="qwen3-coder:30b">qwen3-coder:30b</option>
+    <option value="qwen3:30b-a3b">qwen3:30b-a3b</option>
+    <option value="qwen3:4b">qwen3:4b</option>
+  </select>
 
   <span id="shim-status" title="HME KB shim status" style="font-size:10px;color:var(--subtle);margin-left:4px;">HME ○</span>
   <button id="clear-btn">Clear</button>
@@ -1483,9 +1465,6 @@ const streamBodyMap = new Map();      // per-stream active text block
 const streamThinkingMap = new Map();  // per-stream active thinking block
 
 // ── UI refs ────────────────────────────────────────────────────────────────
-const routeSel    = document.getElementById('route-select');
-const claudeCtrls = document.getElementById('claude-controls');
-const localCtrls  = document.getElementById('local-controls');
 const claudeModel = document.getElementById('claude-model');
 const claudeEffort= document.getElementById('claude-effort');
 const thinkingChk = document.getElementById('thinking-toggle');
@@ -1498,23 +1477,14 @@ const queueBtn    = document.getElementById('queue-btn')!;
 const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
 
-// ── Route switching ────────────────────────────────────────────────────────
-routeSel.addEventListener('change', () => {
-  const r = routeSel.value;
-  claudeCtrls.style.display = (r === 'claude' || r === 'hybrid' || r === 'auto') ? 'flex' : 'none';
-  localCtrls.style.display  = (r === 'local' || r === 'auto' || r === 'agent') ? 'flex' : 'none';
-});
-// Fire initial state
-claudeCtrls.style.display = 'flex';
-localCtrls.style.display = 'flex';
-
 // ── Send ───────────────────────────────────────────────────────────────────
 function send() {
   let text = input.value.trim();
   if (!text) return;
   input.value = '';
   input.style.height = '';
-  let route = routeSel.value;
+  // Route is always claude. /agent prefix preserved for backend testing.
+  let route = 'claude';
   if (text.startsWith('/agent ')) {
     text = text.slice(7).trim();
     route = 'agent';
@@ -1553,7 +1523,7 @@ queueBtn.addEventListener('click', () => {
   vscode.postMessage({
     type: 'queue',
     text,
-    route: routeSel.value,
+    route: 'claude',
     claudeModel: claudeModel.value,
     claudeEffort: claudeEffort.value,
     claudeThinking: thinkingChk.checked,
@@ -1940,9 +1910,8 @@ window.addEventListener('message', (event) => {
 }, true);
 // Check on load and when switching to hybrid
 checkShim();
-routeSel.addEventListener('change', () => {
-  if (routeSel.value === 'hybrid' || routeSel.value === 'agent') checkShim();
-});
+// Always check shim on load (claude route always active)
+checkShim();
 </script>
 </body>
 </html>`;
