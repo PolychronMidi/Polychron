@@ -623,13 +623,15 @@ queueBtn.addEventListener('click', () => {
   if (!text) return;
   input.value = '';
   input.style.height = '';
+  var qModel = claudeModel.value;
+  var qIsHaiku = qModel.indexOf('haiku') !== -1;
   vscode.postMessage({
     type: 'queue',
     text,
-    route: 'claude', // queue always sends as claude; use /route prefix in send() for testing
-    claudeModel: claudeModel.value,
-    claudeEffort: claudeEffort.value,
-    claudeThinking: thinkingChk.checked,
+    route: 'claude',
+    claudeModel: qModel,
+    claudeEffort: qIsHaiku ? undefined : claudeEffort.value,
+    claudeThinking: qIsHaiku ? false : thinkingChk.checked,
     ollamaModel: 'qwen3-coder:30b',
   });
 });
@@ -660,6 +662,13 @@ window.addEventListener('message', (event) => {
       break;
     case 'cancelConfirmed':
       [...activeStreams].forEach(sid => endStream(sid, undefined));
+      break;
+    case 'streamingRestored':
+      // Panel was reshown during an active stream — restore stop/queue visibility
+      streaming = true;
+      stopBtn.style.display = 'inline-block';
+      queueBtn.style.display = 'inline-block';
+      setStatus('Streaming…');
       break;
     case 'historyCleared':
       messages.innerHTML = '';

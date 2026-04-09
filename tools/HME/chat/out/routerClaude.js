@@ -138,7 +138,7 @@ function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
 }
 // ── Claude PTY (hook-aware interactive mode) ───────────────────────────────
 function stripAnsi(str) {
-
+    // eslint-disable-next-line no-control-regex
     return str.replace(/\x1b\[[0-9;]*[mGKHFABCDJsuhl]/g, "")
         .replace(/\x1b\][^\x07]*\x07/g, "")
         .replace(/\r/g, "");
