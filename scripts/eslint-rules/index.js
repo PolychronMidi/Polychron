@@ -19,6 +19,7 @@ module.exports = {
     'no-direct-buffer-push-from-crosslayer': require('./no-direct-buffer-push-from-crosslayer'),
     'prefer-validator': require('./prefer-validator'),
     'no-bare-math': require('./no-bare-math'),
-    'no-direct-coupling-matrix-read': require('./no-direct-coupling-matrix-read')
+    'no-direct-coupling-matrix-read': require('./no-direct-coupling-matrix-read'),
+    'no-empty-catch': require('./no-empty-catch')
   }
 };

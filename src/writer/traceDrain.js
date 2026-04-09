@@ -189,8 +189,8 @@ traceDrain = (() => {
       if (fs.existsSync(filepath)) {
         fs.unlinkSync(filepath);
       }
-    } catch { /* boot-safety: dependency may not be ready */
-      // Non-fatal
+    } catch (_unlinkErr) {
+      console.warn('Acceptable warning: traceDrain: failed to remove old trace file:', _unlinkErr && _unlinkErr.message ? _unlinkErr.message : _unlinkErr);
     }
 
     fd = fs.openSync(filepath, 'a');
@@ -315,8 +315,8 @@ traceDrain = (() => {
     if (fd !== null) {
       try {
         fs.closeSync(fd);
-      } catch { /* boot-safety: dependency may not be ready */
-        // Non-fatal
+      } catch (_closeErr) {
+        console.warn('Acceptable warning: traceDrain: fd close failed:', _closeErr && _closeErr.message ? _closeErr.message : _closeErr);
       }
       fd = null;
     }

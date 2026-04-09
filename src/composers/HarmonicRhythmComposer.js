@@ -118,7 +118,7 @@ HarmonicRhythmComposer = class HarmonicRhythmComposer extends ChordComposer {
 
     // Update harmonicContext without overwriting other fields
     // (We don't know the full state here, just updating tension)
-    try { harmonicContext.set({ tension }); } catch { /* ignore if tension update fails */ }
+    try { harmonicContext.set({ tension }); } catch (e) { console.warn('Acceptable warning: HarmonicRhythmComposer: harmonicContext.set failed:', e && e.message ? e.message : e); }
 
     super.noteSet([currentChord], 'R');
     this.measureCount++;

@@ -199,8 +199,8 @@ validator = (() => {
           return parts[parts.length - 1];
         }
       }
-    } catch { /* boot-safety: dependency may not be ready */
-      /* ignore - fall through */
+    } catch (_stackErr) {
+      console.warn('Acceptable warning: validator: stack inference failed:', _stackErr && _stackErr.message ? _stackErr.message : _stackErr);
     }
 
     return 'Module';

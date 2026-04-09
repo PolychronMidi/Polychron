@@ -76,18 +76,13 @@ const manifestPath = 'metrics/system-manifest.json';
     const activeProfile = conductorConfig.getActiveProfileName();
 
     // -- Harmonic journey plan --
-    let journeyPlan = [];
-    try {
-      journeyPlan = harmonicJourney.getPlan().map((stop, i) => ({
-        section: i,
-        key: stop.key,
-        mode: stop.mode,
-        move: stop.move,
-        distance: stop.distance
-      }));
-    } catch { /* boot-safety: dependency may not be ready */
-      // Journey may not have been planned - non-fatal
-    }
+    const journeyPlan = safePreBoot.call(() => harmonicJourney.getPlan().map((stop, i) => ({
+      section: i,
+      key: stop.key,
+      mode: stop.mode,
+      move: stop.move,
+      distance: stop.distance
+    })), []);
 
     // -- Config constants snapshot --
     const configSnapshot = {
@@ -105,20 +100,10 @@ const manifestPath = 'metrics/system-manifest.json';
     const trustPayoffs = MAIN_LOOP_CONTROLS.trustPayoffs;
 
     // -- Adaptive trust scores (end-of-run state) --
-    let trustSnapshot = {};
-    try {
-      trustSnapshot = adaptiveTrustScores.getSnapshot();
-    } catch { /* boot-safety: dependency may not be ready */
-      // Non-fatal
-    }
+    const trustSnapshot = safePreBoot.call(() => adaptiveTrustScores.getSnapshot(), {});
 
     // -- Trust journal (significant trust changes across the run) --
-    let trustJournal = [];
-    try {
-      trustJournal = adaptiveTrustScores.getJournal();
-    } catch { /* boot-safety: dependency may not be ready */
-      // Non-fatal
-    }
+    const trustJournal = safePreBoot.call(() => adaptiveTrustScores.getJournal(), []);
 
     return {
       timestamp: new Date().toISOString(),
@@ -167,29 +152,17 @@ const manifestPath = 'metrics/system-manifest.json';
 
   /** @returns {object} */
   function systemManifestBuildSignalHealth() {
-    try {
-      return signalHealthAnalyzer.getSummary();
-    } catch { /* boot-safety: dependency may not be ready */
-      return { beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} };
-    }
+    return /** @type {object} */ (safePreBoot.call(() => signalHealthAnalyzer.getSummary(), /** @type {any} */ ({ beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} })));
   }
 
   /** @returns {object} */
   function systemManifestBuildPipelineNormalizer() {
-    try {
-      return pipelineNormalizer.getSnapshot();
-    } catch { /* boot-safety: dependency may not be ready */
-      return {};
-    }
+    return /** @type {object} */ (safePreBoot.call(() => pipelineNormalizer.getSnapshot(), {}));
   }
 
   /** @returns {object} */
   function systemManifestBuildSystemDynamics() {
-    try {
-      return systemDynamicsProfiler.getSummary();
-    } catch { /* boot-safety: dependency may not be ready */
-      return { beatsAnalyzed: 0, snapshot: {}, dimensionNames: [] };
-    }
+    return /** @type {object} */ (safePreBoot.call(() => systemDynamicsProfiler.getSummary(), /** @type {any} */ ({ beatsAnalyzed: 0, snapshot: {}, dimensionNames: [] })));
   }
 
   return { emit };

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PostToolUse: after pipeline run, extract trace-summary observations for KB auto-population
 # This runs AFTER posttooluse_bash.sh (which handles Evolver phase reminders)
 INPUT=$(cat)

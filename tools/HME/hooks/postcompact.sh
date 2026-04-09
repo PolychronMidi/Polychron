@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PostCompact: re-surface pending KB anchors and tracked note files after compaction
 cat > /dev/null  # consume stdin
 

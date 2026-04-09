@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PostToolUse: Bash — background file tracking + Evolver phase triggers
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_tab_helpers.sh"
@@ -17,22 +18,19 @@ if echo "$CMD" | grep -q 'npm run main'; then
   PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
   SUMMARY_FILE="$PROJECT/metrics/pipeline-summary.json"
   if [ -f "$SUMMARY_FILE" ]; then
-    ERROR_STEPS=$(python3 -c "
+    ERROR_STEPS=$(_safe_py3 "
 import json, sys
-try:
-    s = json.load(open('$SUMMARY_FILE'))
-    ep = s.get('errorPatterns', [])
-    failed = [st for st in s.get('steps', []) if not st.get('ok')]
-    lines = []
-    for e in ep:
-        lines.append(f\"  {e['label']}: {', '.join(e['errors'])}\")
-    for f in failed:
-        lines.append(f\"  {f['label']}: exit code failure\")
-    if lines:
-        print('\n'.join(lines))
-except Exception:
-    pass
-" 2>/dev/null)
+s = json.load(open('$SUMMARY_FILE'))
+ep = s.get('errorPatterns', [])
+failed = [st for st in s.get('steps', []) if not st.get('ok')]
+lines = []
+for e in ep:
+    lines.append(f\"  {e['label']}: {', '.join(e['errors'])}\")
+for f in failed:
+    lines.append(f\"  {f['label']}: exit code failure\")
+if lines:
+    print('\n'.join(lines))
+" "")
     if [ -n "$ERROR_STEPS" ]; then
       cat >&2 <<ERRMSG
 

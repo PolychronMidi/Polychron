@@ -68,9 +68,8 @@ conductorDampening = (() => {
       ? conductorDampeningFlickerDampeningBaseAdj * conductorMetaWatchdog.getAttenuation('flicker', 'elasticity')
       : 0;
     let base = pipelineName === 'flicker' ? 0.78 + elasticityAdj : BASE_DEVIATION_DAMPING;
-    try {
-      const snap = systemDynamicsProfiler.getSnapshot();
-      // Lab R3: no-dampening = raw energy not chaos. Widen regime multiplier range.
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    if (snap) {
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
         base *= 0.72;
       } else if (snap.regime === 'coherent') {
@@ -78,9 +77,6 @@ conductorDampening = (() => {
       } else if (snap.regime === 'exploring') {
         base *= 1.22;
       }
-    } catch { /* boot-safety: dependency may not be ready */
-      // profiler snapshot may not be available during early boot or testing;
-      // absence is non-fatal, so just ignore and proceed with default base.
     }
     // Use effective active count instead of raw registry length when available.
     // This prevents dormant contributors from inflating the dampening calibration.
@@ -108,19 +104,14 @@ conductorDampening = (() => {
     // flicker special case with a general data-driven formula.
     const pipelineActiveCount = pipelineName ? V.optionalFinite(conductorDampeningActiveCountByPipeline.get(pipelineName), REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
     let progStrength = PROGRESSIVE_STRENGTH * clamp(pipelineActiveCount / REF_PIPELINE_SIZE, 0.3, 1.5);
-    try {
-      const snap = systemDynamicsProfiler.getSnapshot();
+    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    if (snap) {
       if (snap.effectiveDimensionality < 2.0) {
-        progStrength *= 1.5; // Stronger resistance to crush if dimensionality is collapsing
+        progStrength *= 1.5;
       }
-      // R64 E3: Regime-responsive flicker dampening - evolving regime needs
-      // wider flicker range for rhythmic texture variety. Reduce progressive
-      // compounding so flicker deviations pass through more freely.
       if (pipelineName === 'flicker' && snap.regime === 'evolving') {
         progStrength *= 0.65;
       }
-    } catch { /* boot-safety: dependency may not be ready */
-      // snapshot retrieval could fail early in boot; safe to ignore
     }
 
     const productDeviation = runningProduct - 1.0;
@@ -148,8 +139,8 @@ conductorDampening = (() => {
         if (couplingPressures['density-entropy']) {
           densityEntropyPressure = clamp((couplingPressures['density-entropy'] - 0.50) / 0.20, 0, 1);
         }
-      } catch { /* boot-safety: dependency may not be ready */
-        // Axis energy is not always available during early boot.
+      } catch (e) {
+        console.warn('Acceptable warning: conductorDampening: axis energy read failed:', e && e.message ? e.message : e);
       }
       const hotspotPressure = clamp(m.max(0, productDeviation) + deviation + phaseCollapsePressure * 0.35 + edgePressure * 0.08 + densityEntropyPressure * 0.06, 0, 0.80);
       effectiveDamping = clamp(effectiveDamping - hotspotPressure * 0.20, 0.15, baseDamping);

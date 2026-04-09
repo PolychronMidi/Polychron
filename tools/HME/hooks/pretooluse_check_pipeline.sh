@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreToolUse: check_pipeline — block repeated calls (polling antipattern).
 # pipeline_digest has a freshness guard that auto-checks status; check_pipeline
 # should almost never be called directly. One call per turn max.

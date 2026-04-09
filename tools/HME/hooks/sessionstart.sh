@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME SessionStart: anticipatory orientation — read journal + git state + surface context
 cat > /dev/null  # consume stdin
 

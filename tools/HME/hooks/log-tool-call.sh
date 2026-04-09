@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # PostToolUse hook — logs every tool call from the main Claude Code session
 # to the HME session transcript JSONL and the HTTP shim.
 #
