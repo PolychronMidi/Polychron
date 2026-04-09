@@ -1448,6 +1448,9 @@ function getInlineHtml() {
 </div><!-- /layout -->
 
 <script>
+window.onerror = (msg, src, line) => {
+  document.body.insertAdjacentHTML('afterbegin', \`<div style="background:red;color:white;padding:8px;font-size:12px;z-index:9999;position:fixed;top:0;left:0;right:0">JS ERROR line \${line}: \${msg}</div>\`);
+};
 const vscode = acquireVsCodeApi();
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -1463,18 +1466,20 @@ const claudeEffort= document.getElementById('claude-effort');
 const thinkingChk = document.getElementById('thinking-toggle');
 
 // Update effort/thinking visibility when model changes:
-// Opus: all options including Max. Sonnet: hide Max. Haiku: hide effort + thinking entirely.
+// Opus: all options including Max. Sonnet: no Max (removed from DOM). Haiku: hide effort+thinking.
+const _maxOptHtml = '<option value="max">Max</option>';
 function updateModelControls() {
   const m = claudeModel.value;
   const isHaiku = m === 'claude-haiku-4-5-20251001';
   const isSonnet = m === 'claude-sonnet-4-6';
   const effortEl = document.getElementById('claude-effort');
   const thinkingWrap = document.getElementById('thinking-wrap');
-  const maxOpt = effortEl.querySelector('option[value="max"]');
   effortEl.style.display = isHaiku ? 'none' : '';
   thinkingWrap.style.display = isHaiku ? 'none' : '';
-  if (maxOpt) maxOpt.style.display = isSonnet ? 'none' : '';
-  // If Sonnet is selected and max was chosen, fall back to high
+  // Add/remove Max option from DOM — display:none on <option> is unreliable cross-browser
+  const maxOpt = effortEl.querySelector('option[value="max"]');
+  if (isSonnet && maxOpt) { maxOpt.remove(); }
+  if (!isSonnet && !maxOpt) { effortEl.insertAdjacentHTML('beforeend', _maxOptHtml); }
   if (isSonnet && effortEl.value === 'max') effortEl.value = 'high';
 }
 claudeModel.addEventListener('change', updateModelControls);
