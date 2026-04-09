@@ -1416,19 +1416,11 @@ function getInlineHtml() {
     <option value="low">Low</option>
     <option value="medium">Medium</option>
     <option value="high" selected>High</option>
-    <option value="max">Max</option>
   </select>
   <div id="thinking-wrap">
     <input type="checkbox" id="thinking-toggle" />
     <label for="thinking-toggle">Thinking</label>
   </div>
-
-  <!-- Hidden local model selector — kept for backend /agent route testing -->
-  <select id="local-model" style="display:none;">
-    <option value="qwen3-coder:30b">qwen3-coder:30b</option>
-    <option value="qwen3:30b-a3b">qwen3:30b-a3b</option>
-    <option value="qwen3:4b">qwen3:4b</option>
-  </select>
 
   <span id="shim-status" title="HME KB shim status" style="font-size:10px;color:var(--subtle);margin-left:4px;">HME ○</span>
   <button id="clear-btn">Clear</button>
@@ -1465,10 +1457,20 @@ const streamBodyMap = new Map();      // per-stream active text block
 const streamThinkingMap = new Map();  // per-stream active thinking block
 
 // ── UI refs ────────────────────────────────────────────────────────────────
-const claudeModel = document.getElementById('claude-model');
-const claudeEffort= document.getElementById('claude-effort');
-const thinkingChk = document.getElementById('thinking-toggle');
-const localModel  = document.getElementById('local-model');
+const claudeModel = document.getElementById('claude-model') as HTMLSelectElement;
+const claudeEffort= document.getElementById('claude-effort') as HTMLSelectElement;
+const thinkingChk = document.getElementById('thinking-toggle') as HTMLInputElement;
+
+// Update effort/thinking visibility when model changes
+// Haiku: hide effort + thinking entirely. Sonnet: effort (no max, already removed). Opus: all.
+function updateModelControls() {
+  const m = claudeModel.value;
+  const isHaiku = m === 'claude-haiku-4-5-20251001';
+  (document.getElementById('claude-effort') as HTMLElement).style.display = isHaiku ? 'none' : '';
+  (document.getElementById('thinking-wrap') as HTMLElement).style.display = isHaiku ? 'none' : '';
+}
+claudeModel.addEventListener('change', updateModelControls);
+updateModelControls();
 const messages    = document.getElementById('messages');
 const input       = document.getElementById('msg-input');
 const sendBtn     = document.getElementById('send-btn')!;
@@ -1491,14 +1493,15 @@ function send() {
     route = routeMatch[1];
     text = text.slice(routeMatch[0].length).trim();
   }
+  const isClaude = route === 'claude';
   vscode.postMessage({
     type: 'send',
     text,
     route,
     claudeModel: claudeModel.value,
-    claudeEffort: claudeEffort.value,
-    claudeThinking: thinkingChk.checked,
-    ollamaModel: localModel.value,
+    claudeEffort: isClaude ? claudeEffort.value : undefined,
+    claudeThinking: isClaude ? thinkingChk.checked : false,
+    ollamaModel: 'qwen3-coder:30b',
   });
   // Show stop/queue immediately — don't wait for streamStart which may be delayed
   // by arbiter classification (up to 60s on auto route).
@@ -1529,7 +1532,7 @@ queueBtn.addEventListener('click', () => {
     claudeModel: claudeModel.value,
     claudeEffort: claudeEffort.value,
     claudeThinking: thinkingChk.checked,
-    ollamaModel: localModel.value,
+    ollamaModel: 'qwen3-coder:30b',
   });
 });
 clearBtn.addEventListener('click', () => vscode.postMessage({ type: 'clearHistory' }));
