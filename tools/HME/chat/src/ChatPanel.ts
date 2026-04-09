@@ -1500,9 +1500,9 @@ const streamBodyMap = new Map();      // per-stream active text block
 const streamThinkingMap = new Map();  // per-stream active thinking block
 
 // ── UI refs ────────────────────────────────────────────────────────────────
-const claudeModel = document.getElementById('claude-model') as HTMLSelectElement;
-const claudeEffort= document.getElementById('claude-effort') as HTMLSelectElement;
-const thinkingChk = document.getElementById('thinking-toggle') as HTMLInputElement;
+const claudeModel = document.getElementById('claude-model');
+const claudeEffort= document.getElementById('claude-effort');
+const thinkingChk = document.getElementById('thinking-toggle');
 
 // Update effort/thinking visibility when model changes:
 // Opus: all options including Max. Sonnet: hide Max. Haiku: hide effort + thinking entirely.
@@ -1510,9 +1510,9 @@ function updateModelControls() {
   const m = claudeModel.value;
   const isHaiku = m === 'claude-haiku-4-5-20251001';
   const isSonnet = m === 'claude-sonnet-4-6';
-  const effortEl = document.getElementById('claude-effort') as HTMLSelectElement;
-  const thinkingWrap = document.getElementById('thinking-wrap') as HTMLElement;
-  const maxOpt = effortEl.querySelector('option[value="max"]') as HTMLOptionElement | null;
+  const effortEl = document.getElementById('claude-effort');
+  const thinkingWrap = document.getElementById('thinking-wrap');
+  const maxOpt = effortEl.querySelector('option[value="max"]');
   effortEl.style.display = isHaiku ? 'none' : '';
   thinkingWrap.style.display = isHaiku ? 'none' : '';
   if (maxOpt) maxOpt.style.display = isSonnet ? 'none' : '';
@@ -1523,9 +1523,9 @@ claudeModel.addEventListener('change', updateModelControls);
 updateModelControls();
 const messages    = document.getElementById('messages');
 const input       = document.getElementById('msg-input');
-const sendBtn     = document.getElementById('send-btn')!;
-const stopBtn     = document.getElementById('stop-btn')!;
-const queueBtn    = document.getElementById('queue-btn')!;
+const sendBtn     = document.getElementById('send-btn');
+const stopBtn     = document.getElementById('stop-btn');
+const queueBtn    = document.getElementById('queue-btn');
 const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
 
