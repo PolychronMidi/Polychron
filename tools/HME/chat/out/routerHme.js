@@ -87,104 +87,54 @@ async function fetchHmeContext(query, topK = 5) {
         req.end();
     });
 }
-async function validateMessage(message) {
+// ── Shim HTTP helper — 5s timeout on all fire-and-forget calls ───────────────
+function shimPost(path, body, parse) {
     return new Promise((resolve, reject) => {
-        const body = JSON.stringify({ query: message });
+        let done = false;
+        const fail = (msg) => { if (!done) {
+            done = true;
+            req.destroy();
+            reject(new Error(msg));
+        } };
+        const timer = setTimeout(() => fail(`HME shim ${path} timeout (5s)`), 5000);
         const req = http.request({
-            hostname: "127.0.0.1",
-            port: HME_HTTP_PORT,
-            path: "/validate",
-            method: "POST",
+            hostname: "127.0.0.1", port: HME_HTTP_PORT, path, method: "POST",
             headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
         }, (res) => {
             let raw = "";
             res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
+                clearTimeout(timer);
+                if (done)
+                    return;
+                done = true;
                 try {
-                    resolve(JSON.parse(raw));
+                    resolve(parse(raw));
                 }
                 catch (e) {
-                    reject(new Error(`HME /validate parse error: ${e?.message ?? e}`));
+                    reject(new Error(`HME shim ${path} parse error: ${e?.message ?? e}`));
                 }
             });
         });
-        req.on("error", (e) => reject(new Error(`HME /validate unreachable: ${e?.message ?? e}`)));
+        req.on("error", (e) => { clearTimeout(timer); fail(`HME shim ${path} unreachable: ${e?.message ?? e}`); });
         req.write(body);
         req.end();
     });
+}
+async function validateMessage(message) {
+    return shimPost("/validate", JSON.stringify({ query: message }), JSON.parse);
 }
 async function auditChanges(changedFiles = "") {
-    return new Promise((resolve, reject) => {
-        const body = JSON.stringify({ changed_files: changedFiles });
-        const req = http.request({
-            hostname: "127.0.0.1",
-            port: HME_HTTP_PORT,
-            path: "/audit",
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        }, (res) => {
-            let raw = "";
-            res.on("data", (c) => { raw += c.toString("utf8"); });
-            res.on("end", () => {
-                try {
-                    resolve(JSON.parse(raw));
-                }
-                catch (e) {
-                    reject(new Error(`HME /audit parse error: ${e?.message ?? e}`));
-                }
-            });
-        });
-        req.on("error", (e) => reject(new Error(`HME /audit unreachable: ${e?.message ?? e}`)));
-        req.write(body);
-        req.end();
-    });
+    return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), JSON.parse);
 }
 async function postTranscript(entries) {
-    return new Promise((resolve, reject) => {
-        const body = JSON.stringify({ entries });
-        const req = http.request({
-            hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/transcript", method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        }, () => resolve());
-        req.on("error", (e) => reject(new Error(`HME /transcript unreachable: ${e?.message ?? e}`)));
-        req.write(body);
-        req.end();
-    });
+    return shimPost("/transcript", JSON.stringify({ entries }), () => undefined);
 }
 async function reindexFiles(files) {
-    return new Promise((resolve, reject) => {
-        const body = JSON.stringify({ files });
-        const req = http.request({
-            hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/reindex", method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        }, (res) => {
-            let raw = "";
-            res.on("data", (c) => { raw += c.toString("utf8"); });
-            res.on("end", () => {
-                try {
-                    resolve(JSON.parse(raw));
-                }
-                catch (e) {
-                    reject(new Error(`HME /reindex parse error: ${e?.message ?? e}`));
-                }
-            });
-        });
-        req.on("error", (e) => reject(new Error(`HME /reindex unreachable: ${e?.message ?? e}`)));
-        req.write(body);
-        req.end();
-    });
+    return shimPost("/reindex", JSON.stringify({ files }), JSON.parse);
 }
 async function postNarrative(narrative) {
-    return new Promise((resolve, reject) => {
-        const body = JSON.stringify({ narrative });
-        const req = http.request({
-            hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/narrative", method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        }, () => resolve());
-        req.on("error", (e) => reject(new Error(`HME /narrative unreachable: ${e?.message ?? e}`)));
-        req.write(body);
-        req.end();
-    });
+    return shimPost("/narrative", JSON.stringify({ narrative }), () => undefined);
 }
 async function isHmeShimReady() {
     return new Promise((resolve) => {
@@ -210,15 +160,8 @@ async function isHmeShimReady() {
     });
 }
 async function logShimError(source, message, detail = "") {
-    return new Promise((resolve, reject) => {
-        const body = JSON.stringify({ source, message, detail });
-        const req = http.request({
-            hostname: "127.0.0.1", port: HME_HTTP_PORT, path: "/error", method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        }, () => resolve());
-        req.on("error", (e) => reject(new Error(`HME /error unreachable: ${e?.message ?? e}`)));
-        req.write(body);
-        req.end();
+    return shimPost("/error", JSON.stringify({ source, message, detail }), () => undefined).catch(() => {
+        // logShimError failure is already handled by ChatPanel's disk fallback — don't re-throw
     });
 }
 // ── Hybrid route ──────────────────────────────────────────────────────────

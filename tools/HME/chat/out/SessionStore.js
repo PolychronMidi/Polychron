@@ -109,8 +109,7 @@ function saveSession(projectRoot, entry, messages, ollamaHistory) {
     writeJson(sessionPath(projectRoot, entry.id), { messages, ollamaHistory });
 }
 function deleteSession(projectRoot, id) {
-    const index = readJson(indexPath(projectRoot), []).filter((s) => s.id !== id);
-    writeJson(indexPath(projectRoot), index);
+    // Delete file first — if it fails the index stays consistent; file-before-index prevents orphaned entries
     try {
         fs.unlinkSync(sessionPath(projectRoot, id));
     }
@@ -118,6 +117,8 @@ function deleteSession(projectRoot, id) {
         if (e?.code !== "ENOENT")
             console.error(`[SessionStore] Delete failed: ${e?.message ?? e}`);
     }
+    const index = readJson(indexPath(projectRoot), []).filter((s) => s.id !== id);
+    writeJson(indexPath(projectRoot), index);
 }
 function renameSession(projectRoot, id, title) {
     const index = readJson(indexPath(projectRoot), []);

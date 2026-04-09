@@ -51,6 +51,7 @@ class ChatPanel {
         this._disposed = false;
         this._shimProc = null;
         this._shimFailed = false;
+        this._shimPollTimer = null;
         this._panel = panel;
         this._projectRoot = projectRoot;
         this._restoreSessionId = restoreSessionId ?? null;
@@ -193,6 +194,7 @@ class ChatPanel {
                 (0, SessionStore_1.deleteSession)(this._projectRoot, msg.id);
                 if (this._state.sessionEntry?.id === msg.id) {
                     this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+                    this._transcript.setSessionId("");
                     this._post({ type: "historyCleared" });
                 }
                 this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
@@ -251,7 +253,14 @@ class ChatPanel {
         let resolvedRoute = (msg.route === "auto" ? "claude" : msg.route);
         // ── Auto-create session on first message ──
         if (!this._state.sessionEntry) {
-            const entry = (0, SessionStore_1.createSession)(this._projectRoot, (0, SessionStore_1.deriveTitle)(msg.text));
+            let entry;
+            try {
+                entry = (0, SessionStore_1.createSession)(this._projectRoot, (0, SessionStore_1.deriveTitle)(msg.text));
+            }
+            catch (e) {
+                this._isStreaming = false;
+                throw new Error(`Session create failed: ${e?.message ?? e}`);
+            }
             this._state.sessionEntry = entry;
             this._transcript.setSessionId(entry.id);
             this._transcript.logSessionStart(entry.id, entry.title, false);
@@ -795,28 +804,33 @@ class ChatPanel {
                         this._startHmeShim(); }, 3000);
                 }
             });
-            // Poll readiness — retry up to 5 times every 2s
+            // Poll readiness — retry up to 5 times every 2s. One poll loop at a time.
             let attempts = 0;
             const poll = () => {
                 attempts++;
                 (0, router_1.isHmeShimReady)().then(({ ready }) => {
                     if (ready) {
                         started = true;
+                        this._shimPollTimer = null;
                         this._post({ type: "hmeShimStatus", ready: true });
                         return;
                     }
                     if (attempts < 5 && this._shimProc) {
                         this._post({ type: "hmeShimStatus", ready: false, failed: false });
-                        setTimeout(poll, 2000);
+                        this._shimPollTimer = setTimeout(poll, 2000);
                     }
                     else {
+                        this._shimPollTimer = null;
                         this._shimFailed = true;
                         this._post({ type: "hmeShimStatus", ready: false, failed: true });
                         this._postError("shim", `HME shim started but /health not ready after ${attempts * 2}s — check log/hme-errors.log or run mcp/hme_http.py manually`);
                     }
                 });
             };
-            setTimeout(poll, 2000);
+            if (this._shimPollTimer) {
+                clearTimeout(this._shimPollTimer);
+            }
+            this._shimPollTimer = setTimeout(poll, 2000);
         }
         catch (e) {
             this._postError("shim", `HME shim spawn error: ${e?.message ?? e}`);
@@ -850,6 +864,10 @@ class ChatPanel {
         this._messageQueue = [];
         this._isStreaming = false;
         ChatPanel.current = undefined;
+        if (this._shimPollTimer) {
+            clearTimeout(this._shimPollTimer);
+            this._shimPollTimer = null;
+        }
         // Persist in-flight state synchronously before anything async (writeFileSync — always completes)
         try {
             this._persistState();
