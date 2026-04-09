@@ -1,0 +1,304 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Polychron Feedback Topology",
+  "description": "A machine-readable map of the closed loops, firewalls, and emergence boundaries governing the polychron composition engine.",
+  "firewalls": {
+    "CONDUCTOR_BLINDNESS": {
+      "description": "Cross-layer coordination affects local probability but cannot inject signals directly into the conductor. Conductor is insulated from structural micro-adjustments.",
+      "boundaryType": "isolating-membrane"
+    },
+    "SIGNAL_DELAY": {
+      "description": "Cross-layer queries the conductor via conductorSignalBridge, introducing a mandatory, one-beat delayed snapshot requirement.",
+      "boundaryType": "latency-barrier"
+    },
+    "REGISTRY_DAMPENING": {
+      "description": "All closed-loop feedback mechanisms must enroll through feedbackRegistry and pipelineCouplingManager to prevent resonant feedback cascades.",
+      "boundaryType": "dampener"
+    }
+  },
+  "feedbackLoops": [
+    {
+      "id": "dynamic-architect-planner",
+      "module": "dynamicArchitectPlanner",
+      "sourceDomain": "intensity",
+      "targetDomain": "tension",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "closedLoopController homeostatic: observes windowed average compositeIntensity (last 5 snapshots), targets piecewise ideal dynamic curve (pp-ff arch peaking at 70% macro position). Gain 0.25, clamp [0.9, 1.15]. Registered as tensionBias in conductorIntelligence."
+    },
+    {
+      "id": "coherence-monitor",
+      "module": "coherenceMonitor",
+      "sourceDomain": "notes_emitted",
+      "targetDomain": "density",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "Custom homeostatic: 16-beat rolling window compares actual vs intended note emission ratios. Phase-aware correction (stronger mid-phrase). Product-level density deficit boost (target 0.78). EMA smoothing 0.55. Anti-resonance: self-dampens 40% when conductor regulation pushes same direction. Clamp [0.60, 1.38]. Registered densityBias in conductorIntelligence."
+    },
+    {
+      "id": "pipeline-balancer-tension",
+      "module": "pipelineBalancer.tension",
+      "sourceDomain": "tension_product",
+      "targetDomain": "tension",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "closedLoopController homeostatic: observes tension product via signalReader, targets neutral 1.0 with 0.25 deadband. Gain 0.28, clamp [0.86, 1.14]. Companion density path uses attribution-driven anti-monopoly (>45% share triggers counter-bias) plus aggregate lift when density < 1.0."
+    },
+    {
+      "id": "pipeline-coupling-manager",
+      "module": "pipelineCouplingManager",
+      "sourceDomain": "coupling_matrix",
+      "targetDomain": "density_tension_flicker",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "Homeostatic decorrelation engine: reads full coupling matrix from systemDynamicsProfiler each beat. Per-pair adaptive correlation targets with graduated gain escalation, p95 EMA ceilings, budget scoring, and hotspot promotion. Nudges density [0.80, 1.20], tension [0.80, 1.22], flicker [0.70, 1.30] biases to decorrelate over-correlated pairs."
+    },
+    {
+      "id": "regime-reactive-damping",
+      "module": "regimeReactiveDamping",
+      "sourceDomain": "regime",
+      "targetDomain": "density",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "Multi-modal regime-conditional: per-regime directional biases (6 regimes x 3 axes) scaled by profiler curvature. Equilibrator sub-module tracks 64-beat regime share ring buffer, corrects toward budget (exploring/coherent/evolving 35/35/20%). Stagnation drift injection after 8 low-velocity beats. EMA smoothing 0.20. Density [0.88, 1.12], tension [0.88, 1.22], flicker [0.83, 1.19]."
+    },
+    {
+      "id": "entropy-regulator",
+      "module": "entropyRegulator",
+      "sourceDomain": "entropy",
+      "targetDomain": "cross_layer_prob",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "closedLoopController homeostatic: observes EMA-smoothed combined entropy (pitch 0.4, velocity 0.3, rhythm 0.3 weights, 10-note window). Target blended 45% arc curve (bell-shaped section position) + 55% intent + ~15 coupling modulations. Gain 1.3, clamp [0.3, 2.0]. Scales cross-layer module activity probabilities. Reads conductor via conductorSignalBridge (firewall-compliant)."
+    },
+    {
+      "id": "stutter-variant-feedback",
+      "module": "stutterVariantFeedback",
+      "sourceDomain": "stutter_density",
+      "targetDomain": "stutter_variant_selection",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "closedLoopController sentinel: observes stutterFeedbackListener.getIntensity().overall, targets 0.3 density. Gain 0.15, smoothing 0.4, clamp [0.5, 1.5]. Primary regulation via feedbackRegistry resonance dampening (not direct bias consumption). Actual variant diversity maintained by self-balancing inverse-frequency weights in selectForBeat() (12 signal dimensions)."
+    },
+    {
+      "id": "correlation-shuffler",
+      "module": "correlationShuffler",
+      "sourceDomain": "feedback_correlation",
+      "targetDomain": "feedback_loop_dampening",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "mechanism": "Meta-level perturbation: monitors Pearson correlations between all feedbackRegistry loops over 80-beat rolling window. Detects reinforcement spirals (r>0.65), tug-of-war (r<-0.65), cross-domain amplitude lock (r>0.65 for 60+ beats), and stasis (all loops near-zero for 100+ beats). Graduated interventions: scale-down, phase jitter, magnitude perturbation, random kicks. Inversely health-gated. MIN_SHUFFLE_INTERVAL=40 beats."
+    },
+    {
+      "id": "emergent-rhythm-port",
+      "module": "emergentRhythmPort",
+      "sourceDomain": "stutterContagion_downbeat_feedbackLoop",
+      "targetDomain": "rhythm_pattern_weights",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "conceptual": true,
+      "mechanism": "emergentRhythmEngine accumulates stutterContagion + emergentDownbeat + feedbackLoop L0 events into a 16-slot subdivision grid. Grid density and syncopation complexity bias getRhythm.js weight selection: high complexity -> syncopated patterns, low complexity -> steady patterns. Also posts to L0 emergentRhythm channel for crossModulateRhythms. Exploring regime 1.4x, coherent 0.5x."
+    },
+    {
+      "id": "rhythmic-contagion",
+      "module": "rhythmicContagionPort",
+      "sourceDomain": "emergent_downbeat_stutter_contagion",
+      "targetDomain": "cross_modulation",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "conceptual": true,
+      "mechanism": "emergentDownbeat and stutterContagion L0 events modulate crossMod in crossModulateRhythms. Downbeat proximity creates micro-breathing (build→spike→dip). Stutter contagion boosts rhythmic variance. Feedback: richer crossMod → more downbeat detection → more contagion → dancing rhythm. Rate-limited by emergentDownbeat MIN_DOWNBEAT_INTERVAL_SEC and contagion decay."
+    },
+    {
+      "id": "emergent-melodic-port",
+      "module": "emergentMelodicPort",
+      "sourceDomain": "melodicTrackers_synthesis",
+      "targetDomain": "variant_selection_melodicContext",
+      "latency": "beat-delayed",
+      "firewallsCrossed": [
+        "REGISTRY_DAMPENING"
+      ],
+      "conceptual": true,
+      "mechanism": "emergentMelodicEngine synthesizes 6 conductor melodic trackers (contour shape, interval freshness, tessiture pressure, thematic recall, ambitus migration, counterpoint motion) per beat. Downstream bias surfaces: nudgeNoveltyWeight() in harmonicIntervalGuard amplifies interval novelty steering when territory is stale; getMelodicWeights() adds a 12th signal dimension to stutterVariants (contour, freshness, tessiture, counterpoint each shift variant weights); getContourAscendBias() in alienArpeggio modulates pitch direction by melodic arc. Posts emergentMelody to L0 for future consumers. CIM harmonic-pitchCorrection dial scales noveltyWeight amplification authority."
+    }
+  ],
+  "firewallPorts": [
+    {
+      "id": "conductor-signal-bridge",
+      "direction": "conductor → crossLayer",
+      "mechanism": "Cached beat-delayed snapshot. conductorSignalBridge.refresh() runs each beat as a registered recorder, caches signalReader/hyperMetaManager/systemDynamicsProfiler state. CrossLayer reads via getSignals().",
+      "sourceModules": [
+        "signalReader",
+        "hyperMetaManager",
+        "systemDynamicsProfiler",
+        "pipelineCouplingManager"
+      ],
+      "targetModules": [
+        "all crossLayer modules"
+      ],
+      "enforcement": "no-direct-conductor-state-from-crosslayer",
+      "dataShape": "density, tension, flicker, compositeIntensity, sectionPhase, regime, regimeProb, axisEnergyShares, couplingLabels, healthEma, systemPhase"
+    },
+    {
+      "id": "conductor-regulation-bias",
+      "direction": "conductor → rhythm",
+      "mechanism": "conductorConfigDynamics.regulationTick() adjusts crossModBias and densityBias based on emission averages. Rhythm reads via getRegulationCrossModBias()/getRegulationDensityBias().",
+      "sourceModules": [
+        "conductorConfigDynamics"
+      ],
+      "targetModules": [
+        "crossModulateRhythms",
+        "conductorState"
+      ],
+      "enforcement": "conductorConfig API boundary",
+      "dataShape": "crossModBias (multiplicative ~0.8-1.2), densityBias (additive ~-0.15 to 0.15)"
+    },
+    {
+      "id": "hypermeta-rate-multipliers",
+      "direction": "conductor meta → anywhere",
+      "mechanism": "hyperMetaManager.getRateMultiplier(key) returns named multipliers that downstream modules read. 19 controllers produce multipliers consumed by rhythm, play, conductor, and crossLayer modules.",
+      "sourceModules": [
+        "hyperMetaManager",
+        "hyperMetaManagerEvolutions"
+      ],
+      "targetModules": [
+        "crossModulateRhythms (E19)",
+        "microUnitAttenuator (E20)",
+        "globalConductor (E9/E10/E11/E12/E21)",
+        "restSynchronizer (E11/E23)",
+        "pairGainCeilingController",
+        "criticalityEngine"
+      ],
+      "enforcement": "hyperMetaManager rate registry",
+      "dataShape": "named float multipliers, default 1.0"
+    },
+    {
+      "id": "l0-event-channels",
+      "direction": "bidirectional",
+      "mechanism": "L0 (absoluteTimeGrid) named event channels. Modules post timestamped events; any module can read via getLast()/findClosest(). ~40 active channels spanning conductor, crossLayer, rhythm, play, fx.",
+      "sourceModules": [
+        "harmonicJourney",
+        "regimeClassifier",
+        "coherenceMonitor",
+        "emergentDownbeat",
+        "stutterContagion",
+        "feedbackOscillator",
+        "emergentRhythmEngine",
+        "cadenceAlignment",
+        "motifEcho",
+        "and ~30 more"
+      ],
+      "targetModules": [
+        "any module via L0.getLast()/findClosest()"
+      ],
+      "enforcement": "channel naming convention, L0 API",
+      "dataShape": "per-channel: {timeInSeconds, layer, ...payload}"
+    },
+    {
+      "id": "cim-coordination-dials",
+      "direction": "crossLayer → crossLayer (bridge-informed)",
+      "mechanism": "coordinationIndependenceManager reads conductor state via conductorSignalBridge, computes 11 module-pair dials (0=independent, 1=coordinated), writes via setCoordinationScale().",
+      "sourceModules": [
+        "coordinationIndependenceManager"
+      ],
+      "targetModules": [
+        "restSynchronizer",
+        "rhythmicComplementEngine",
+        "stutterContagion",
+        "spectralComplementarity",
+        "feedbackOscillator",
+        "emergentDownbeat",
+        "emergentRhythmEngine",
+        "harmonicIntervalGuard",
+        "verticalIntervalMonitor",
+        "motifEcho",
+        "registerCollisionAvoider",
+        "rhythmicPhaseLock",
+        "temporalGravity",
+        "grooveTransfer",
+        "convergenceDetector",
+        "crossLayerDynamicEnvelope",
+        "velocityInterference",
+        "articulationComplement",
+        "texturalMirror",
+        "adaptiveTrustScores",
+        "negotiationEngine"
+      ],
+      "enforcement": "phase-gated (stabilized/converging only), intent-aware",
+      "dataShape": "float 0-1 per pair"
+    },
+    {
+      "id": "explainability-bus",
+      "direction": "bidirectional diagnostic",
+      "mechanism": "explainabilityBus.emit() — exempt from all boundary rules. Diagnostic event channel for tracing signal extremes, decisions, and cross-system interactions.",
+      "sourceModules": [
+        "any module"
+      ],
+      "targetModules": [
+        "any module"
+      ],
+      "enforcement": "ESLint explicit exemption in no-direct-crosslayer-write-from-conductor",
+      "dataShape": "{ type, payload, cause }"
+    },
+    {
+      "id": "emission-gateway",
+      "direction": "crossLayer → buffer output",
+      "mechanism": "crossLayerEmissionGateway.emit(sourceModule, buffer, event) — all cross-layer buffer writes route through this gateway. Prevents direct buffer.push() from crossLayer modules.",
+      "sourceModules": [
+        "all crossLayer modules that emit notes/CC"
+      ],
+      "targetModules": [
+        "MIDI buffer (c)"
+      ],
+      "enforcement": "no-direct-buffer-push-from-crosslayer",
+      "dataShape": "{ timeInSeconds, type, vals }"
+    },
+    {
+      "id": "recorder-callback",
+      "direction": "conductor → crossLayer callback",
+      "mechanism": "conductorIntelligence.registerRecorder() — per-beat callback hook. conductorSignalBridge registers itself to get refresh(ctx) calls. Registry gate: L1-only except bridge.",
+      "sourceModules": [
+        "conductorIntelligence"
+      ],
+      "targetModules": [
+        "conductorSignalBridge"
+      ],
+      "enforcement": "conductorRecorderRegistry L1 gate, no-conductor-registration-from-crosslayer",
+      "dataShape": "ctx: { absTime, compositeIntensity, currentDensity, harmonicRhythm }"
+    },
+    {
+      "id": "rhythmic-contagion-port",
+      "direction": "crossLayer → rhythm (via L0)",
+      "mechanism": "crossModulateRhythms reads L0 emergentDownbeat + stutterContagion channels. Emergent downbeats create micro-breathing (build→spike→dip). Stutter contagion events boost rhythmic variance. Creates feedback loop: downbeat/stutter → crossMod → rhythm → new patterns.",
+      "sourceModules": [
+        "emergentDownbeat",
+        "stutterContagion"
+      ],
+      "targetModules": [
+        "crossModulateRhythms"
+      ],
+      "enforcement": "feedbackRegistry enrollment, regime-gated intensity",
+      "dataShape": "emergentDownbeat: {strength, signalCount}; stutterContagion: {intensity, channels, type}"
+    }
+  ]
+}

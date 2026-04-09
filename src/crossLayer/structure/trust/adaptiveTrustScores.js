@@ -40,8 +40,8 @@ adaptiveTrustScores = (() => {
   // Warm-start overrides for systems that need early trust to
   // accumulate signal (e.g. cadenceAlignment needs phrase boundaries).
   const WARM_START = {
-    cadenceAlignment: 0.25,
-    restSynchronizer: 0.25  // break 3-generation stagnation at ~0.199
+    [trustSystems.names.CADENCE_ALIGNMENT]: 0.25,
+    [trustSystems.names.REST_SYNCHRONIZER]: 0.25  // break 3-generation stagnation at ~0.199
   };
 
   // Cross-run warm-start: restore terminal trust scores from previous run.
