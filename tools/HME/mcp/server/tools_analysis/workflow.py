@@ -256,7 +256,7 @@ def before_editing(file_path: str) -> str:
         parts.append(f"\n## Edit Risks *(adaptive)*")
         # Compress via arbiter to ~600 chars — preserves file paths and action verbs,
         # strips prose explanation. Falls back to truncation if arbiter unavailable.
-        parts.append(compress_for_claude(synthesis, max_chars=600,
+        parts.append(compress_for_claude(synthesis, max_chars=800,
                                          hint=f"edit risks for {rel_path}"))
 
     return "\n".join(parts)
