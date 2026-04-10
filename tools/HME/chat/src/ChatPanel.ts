@@ -9,6 +9,7 @@ import {
 import { ChatMessage } from "./types";
 import {
   SessionEntry,
+  ChainLink,
   listSessions,
   loadSession,
   createSession,
@@ -16,9 +17,29 @@ import {
   deleteSession,
   renameSession,
   deriveTitle,
+  saveChainLink,
+  loadChainSummaries,
+  listChainLinks,
 } from "./SessionStore";
+import { TokenUsage } from "./router";
 import { TranscriptLogger } from "./TranscriptLogger";
-import { synthesizeNarrative } from "./Arbiter";
+import { synthesizeNarrative, synthesizeChainSummary } from "./Arbiter";
+
+const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
+  "claude-opus-4-6": 1_000_000,
+  "claude-sonnet-4-6": 500_000,
+};
+const DEFAULT_CONTEXT_WINDOW = 500_000;
+const CHAIN_THRESHOLD_PCT = 75;
+const SYSTEM_OVERHEAD_TOKENS = 8_000;
+const CHARS_PER_TOKEN = 3.5;
+
+interface ContextTracker {
+  lastInputTokens: number | null;
+  lastOutputTokens: number | null;
+  totalChars: number;
+  model: string;
+}
 
 interface SessionState {
   messages: ChatMessage[];
@@ -26,13 +47,14 @@ interface SessionState {
   ollamaHistory: OllamaMessage[];
   lastRoute: "claude" | "local" | "hybrid" | "agent" | null;
   sessionEntry: SessionEntry | null;
+  chainIndex: number;
 }
 
 export class ChatPanel {
   public static current: ChatPanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _projectRoot: string;
-  private _state: SessionState = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+  private _state: SessionState = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
   private _cancelCurrent?: () => void;
   private _isStreaming = false;
   private _messageQueue: any[] = [];
@@ -40,6 +62,8 @@ export class ChatPanel {
   private _transcript: TranscriptLogger;
   private _restoreSessionId: string | null = null;
   private _disposed = false;
+  private _contextTracker: ContextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
+  private _chainingInProgress = false;
 
   private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
     this._panel = panel;
@@ -170,7 +194,8 @@ export class ChatPanel {
         this._isStreaming = false;
         break;
       case "clearHistory":
-        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+        this._resetContextTracker();
         this._post({ type: "historyCleared" });
         break;
       case "checkHmeShim":
@@ -202,7 +227,8 @@ export class ChatPanel {
       case "deleteSession":
         deleteSession(this._projectRoot, msg.id);
         if (this._state.sessionEntry?.id === msg.id) {
-          this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+          this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+          this._resetContextTracker();
           this._transcript.setSessionId("");
           this._post({ type: "historyCleared" });
         }
@@ -213,7 +239,8 @@ export class ChatPanel {
         this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
         break;
       case "newSession":
-        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+        this._resetContextTracker();
         this._post({ type: "historyCleared" });
         break;
     }
@@ -260,13 +287,17 @@ export class ChatPanel {
   private _loadSession(id: string) {
     const persisted = loadSession(this._projectRoot, id);
     if (!persisted) return;
+    const chainLinks = listChainLinks(this._projectRoot, id);
+    const chainIndex = chainLinks.length > 0 ? Math.max(...chainLinks) + 1 : (persisted.chainIndex ?? 0);
     this._state = {
       messages: persisted.messages,
       claudeSessionId: persisted.entry.claudeSessionId,
       ollamaHistory: persisted.ollamaHistory,
       lastRoute: null,
       sessionEntry: persisted.entry,
+      chainIndex,
     };
+    this._resetContextTracker(persisted.contextTokens);
     this._transcript.setSessionId(persisted.entry.id);
     this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
     const display = this._displayMessages();
@@ -285,7 +316,10 @@ export class ChatPanel {
       updatedAt: Date.now(),
     };
     this._state.sessionEntry = entry;
-    saveSession(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory);
+    saveSession(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
+      contextTokens: Math.round(this._contextTracker.totalChars / CHARS_PER_TOKEN),
+      chainIndex: this._state.chainIndex,
+    });
   }
 
   private async _onSend(msg: {
@@ -571,8 +605,9 @@ export class ChatPanel {
       this._drainQueue();
     };
 
-    const onDone = () => {
+    const onDone = (usage?: TokenUsage) => {
       if (aborted) return;
+      this._updateContextTracker(text, thinking, msg.claudeModel, usage);
       const assistantMsg: ChatMessage = {
         id: assistantId,
         role: "assistant",
@@ -589,6 +624,7 @@ export class ChatPanel {
       this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
       const changedFiles = this._reindexFromTools(tools);
       this._runPostAudit(changedFiles);
+      this._checkChainThreshold(msg);
       safeEnd();
     };
 
@@ -637,7 +673,7 @@ export class ChatPanel {
           { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" },
           this._projectRoot, onChunk as any,
           (sessionId) => { this._state.claudeSessionId = sessionId; },
-          (cost) => { onDone(); },
+          (_cost, usage) => { onDone(usage); },
           onError
         );
       }
@@ -686,6 +722,169 @@ export class ChatPanel {
         this._post({ type: "notice", level: "audit", text: `HME post-audit (${changed_files.length} files changed):\n${summary}` });
       }
     }).catch((e: any) => this._postError("audit", String(e)));
+  }
+
+  // ── Context tracking & chain ─────────────────────────────────────────────
+
+  private _resetContextTracker(restoredTokens?: number) {
+    this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
+    if (restoredTokens) {
+      this._contextTracker.totalChars = restoredTokens * CHARS_PER_TOKEN;
+    }
+    this._postContextUpdate();
+  }
+
+  private _updateContextTracker(text: string, thinking: string, model: string, usage?: TokenUsage) {
+    this._contextTracker.model = model;
+    this._contextTracker.totalChars += text.length + (thinking?.length ?? 0);
+    if (usage) {
+      this._contextTracker.lastInputTokens = usage.inputTokens;
+      this._contextTracker.lastOutputTokens = usage.outputTokens;
+    }
+    this._postContextUpdate();
+  }
+
+  private _getContextPct(): number {
+    const window = MODEL_CONTEXT_WINDOWS[this._contextTracker.model] ?? DEFAULT_CONTEXT_WINDOW;
+    if (this._contextTracker.lastInputTokens != null && this._contextTracker.lastOutputTokens != null) {
+      const used = this._contextTracker.lastInputTokens + this._contextTracker.lastOutputTokens;
+      return Math.min(99, Math.round(used / window * 100));
+    }
+    const estimatedTokens = this._contextTracker.totalChars / CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
+    return Math.min(99, Math.round(estimatedTokens / window * 100));
+  }
+
+  private _postContextUpdate() {
+    const pct = this._getContextPct();
+    const chainLinks = this._state.sessionEntry
+      ? listChainLinks(this._projectRoot, this._state.sessionEntry.id).length
+      : 0;
+    this._post({ type: "contextUpdate", pct, chainLinks, chainIndex: this._state.chainIndex });
+  }
+
+  private _checkChainThreshold(msg: any) {
+    const pct = this._getContextPct();
+    if (pct < CHAIN_THRESHOLD_PCT || this._chainingInProgress) return;
+    this._performChain(msg).catch((e) => {
+      console.error(`[HME Chat] Chain failed: ${e}`);
+      this._postError("chain", String(e));
+      this._chainingInProgress = false;
+    });
+  }
+
+  private async _performChain(msg: any) {
+    if (!this._state.sessionEntry || this._chainingInProgress) return;
+    this._chainingInProgress = true;
+    const sessionId = this._state.sessionEntry.id;
+    const linkIndex = this._state.chainIndex;
+
+    this._post({ type: "notice", level: "info", text: `Context chain: saving link ${linkIndex + 1} and generating summary...` });
+
+    // Load current todos from HME todo file
+    let todos: any[] = [];
+    try {
+      const todoPath = path.join(
+        process.env["HOME"] ?? process.env["USERPROFILE"] ?? "~",
+        ".claude", "mcp", "HME", "todos.json"
+      );
+      todos = JSON.parse(fs.readFileSync(todoPath, "utf8"));
+    } catch { /* no todos */ }
+
+    // Generate summary via a separate Claude -p call
+    const priorSummaries = loadChainSummaries(this._projectRoot, sessionId);
+    const recentMessages = this._state.messages.slice(-20);
+    const summaryPrompt = this._buildSummaryPrompt(recentMessages, todos, priorSummaries);
+    let summary = "";
+    try {
+      summary = await synthesizeChainSummary(summaryPrompt);
+    } catch (e) {
+      console.error(`[HME Chat] Chain summary via local model failed: ${e}`);
+      summary = this._buildFallbackSummary(recentMessages, todos, priorSummaries);
+    }
+
+    // Save chain link
+    const link: ChainLink = {
+      index: linkIndex,
+      sessionId,
+      messages: [...this._state.messages],
+      summary,
+      todos,
+      contextTokens: this._getContextPct(),
+      claudeSessionId: this._state.claudeSessionId,
+      createdAt: Date.now(),
+    };
+    saveChainLink(this._projectRoot, link);
+
+    // Reset session for new chain segment
+    this._state.messages = [];
+    this._state.claudeSessionId = null;
+    this._state.chainIndex = linkIndex + 1;
+    this._resetContextTracker();
+
+    // Prime the new session with the summary as a system context message
+    const contextMsg: ChatMessage = {
+      id: uid(),
+      role: "user",
+      text: `[Context Chain — Link ${linkIndex + 1} continuation]\n\n${summary}`,
+      route: "claude",
+      ts: Date.now(),
+    };
+    this._state.messages.push(contextMsg);
+    this._persistState();
+
+    this._post({ type: "chainCompleted", linkIndex, chainIndex: this._state.chainIndex });
+    this._post({ type: "notice", level: "info", text: `Context chain: link ${linkIndex + 1} saved. Fresh context resumed.` });
+    this._postContextUpdate();
+    this._chainingInProgress = false;
+  }
+
+  private _buildSummaryPrompt(messages: ChatMessage[], todos: any[], priorSummaries: string[]): string {
+    const priorContext = priorSummaries.length > 0
+      ? `Previous chain link summaries:\n${priorSummaries.map((s, i) => `--- Link ${i + 1} ---\n${s}`).join("\n\n")}\n\n`
+      : "";
+
+    const todoBlock = todos.length > 0
+      ? `Current todo list:\n${JSON.stringify(todos, null, 2)}\n\n`
+      : "No active todos.\n\n";
+
+    const conversationBlock = messages
+      .map((m) => `[${m.role}]: ${m.text.slice(0, 1500)}`)
+      .join("\n\n");
+
+    return `You are generating a context chain summary for an AI coding assistant conversation. This summary will be used to prime a fresh context window, replacing the full conversation history.
+
+Requirements:
+1. Be concise but preserve all actionable context — decisions made, approaches chosen, files modified, bugs found
+2. Include the current state of the todo list
+3. Reference specific file paths and function names when relevant
+4. Note any in-progress work that needs continuation
+5. Keep the summary under 2000 tokens
+
+${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerate the continuation summary:`;
+  }
+
+  private _buildFallbackSummary(messages: ChatMessage[], todos: any[], priorSummaries: string[]): string {
+    const lines: string[] = [];
+    if (priorSummaries.length > 0) {
+      lines.push("## Prior context");
+      lines.push(priorSummaries[priorSummaries.length - 1].slice(0, 800));
+    }
+    lines.push("\n## Recent activity");
+    for (const m of messages.slice(-8)) {
+      lines.push(`[${m.role}]: ${m.text.slice(0, 300)}`);
+    }
+    if (todos.length > 0) {
+      lines.push("\n## Active todos");
+      for (const t of todos) {
+        lines.push(`- [${t.done ? "x" : " "}] ${t.text}`);
+        if (t.subs) {
+          for (const s of t.subs) {
+            lines.push(`  - [${s.done ? "x" : " "}] ${s.text}`);
+          }
+        }
+      }
+    }
+    return lines.join("\n");
   }
 
   private _streamOllama(msg: any, assistantId: string) {

@@ -441,6 +441,38 @@
   }
   #send-btn:hover { background: var(--btn-hover); }
   #send-btn:disabled { opacity: 0.5; cursor: default; }
+  #context-meter {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--subtle);
+    font-family: var(--font-mono);
+    cursor: default;
+    user-select: none;
+  }
+  #context-meter-bar {
+    width: 40px;
+    height: 8px;
+    background: color-mix(in srgb, var(--fg) 15%, transparent);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  #context-meter-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease, background 0.4s ease;
+    width: 0%;
+    background: var(--route-auto);
+  }
+  #context-meter.warn #context-meter-fill { background: #daa520; }
+  #context-meter.critical #context-meter-fill { background: var(--error-fg); }
+  #context-chain-badge {
+    font-size: 10px;
+    color: var(--route-hybrid);
+    margin-left: 2px;
+  }
   #stop-btn {
     background: transparent;
     border: 1px solid var(--border);
@@ -525,6 +557,11 @@
   <textarea id="msg-input" placeholder="Message… (Enter to send, Shift+Enter for newline)"></textarea>
   <div id="input-row">
     <button id="send-btn">Send</button>
+    <div id="context-meter" title="Context window usage">
+      <div id="context-meter-bar"><div id="context-meter-fill"></div></div>
+      <span id="context-meter-pct">0%</span>
+      <span id="context-chain-badge"></span>
+    </div>
     <button id="stop-btn">Stop</button>
     <button id="queue-btn">Queue</button>
     <span id="status-line"></span>
@@ -672,6 +709,13 @@ window.addEventListener('message', (event) => {
       break;
     case 'historyCleared':
       // Handled by session message listener below (also clears session state)
+      updateContextMeter(0, 0, 0);
+      break;
+    case 'contextUpdate':
+      updateContextMeter(msg.pct, msg.chainLinks, msg.chainIndex);
+      break;
+    case 'chainCompleted':
+      updateContextMeter(0, msg.linkIndex + 1, msg.chainIndex);
       break;
   }
 });
@@ -865,6 +909,26 @@ function showCriticalOverlay(source, message) {
 
 function setStatus(text) {
   statusLine.textContent = text;
+}
+
+// ── Context meter ─────────────────────────────────────────────────────────
+const ctxMeter = document.getElementById('context-meter');
+const ctxFill = document.getElementById('context-meter-fill');
+const ctxPctLabel = document.getElementById('context-meter-pct');
+const ctxChainBadge = document.getElementById('context-chain-badge');
+
+function updateContextMeter(pct, chainLinks, chainIndex) {
+  if (!ctxFill || !ctxPctLabel || !ctxMeter) return;
+  const clamped = Math.max(0, Math.min(99, pct));
+  ctxFill.style.width = clamped + '%';
+  ctxPctLabel.textContent = clamped + '%';
+  ctxMeter.classList.remove('warn', 'critical');
+  if (clamped >= 75) ctxMeter.classList.add('critical');
+  else if (clamped >= 50) ctxMeter.classList.add('warn');
+  ctxMeter.title = 'Context: ' + clamped + '% used' + (chainLinks > 0 ? ' | ' + chainLinks + ' chain link' + (chainLinks > 1 ? 's' : '') : '');
+  if (ctxChainBadge) {
+    ctxChainBadge.textContent = chainLinks > 0 ? '\u26D3' + chainLinks : '';
+  }
 }
 
 // ── Notice bar ─────────────────────────────────────────────────────────────

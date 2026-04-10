@@ -28,6 +28,11 @@ export interface RouterOptions {
 
 export type ChunkCallback = (text: string, type: "text" | "thinking" | "tool" | "error") => void;
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 // Re-export all functions from split modules so existing imports from "./router" keep working.
 export { streamClaude, streamClaudePty } from "./routerClaude";
 export { streamOllama, streamOllamaAgentic } from "./routerOllama";
