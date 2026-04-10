@@ -17,20 +17,17 @@ flipBinCrossfadeWindow = [0, 0];
 
 /** Per-layer timeInSeconds of the last shared entry this layer consumed (dedup guard) */
 const lastConsumedByLayer = {};
-/** Dedup: timeInSeconds of the last shift whose MIDI events were emitted (prevents doubled glides from L1+L2 merge) */
-let lastEmittedShiftSec = -1;
 // Per-layer flipBin state lives in LM.perLayerState (restored on activate)
 
 /**
  * Emit pitch bend glides and volume crossfades for a binaural shift.
- * Hoisted so both the scheduling path and the consume path can call it.
+ * bendDuration and maxVol are passed in (pre-computed once in the scheduler,
+ * stored in L0) so L1 and L2 emit byte-identical events into their buffers.
  */
-function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
-  void shiftInterval;
+function emitShiftEvents(shiftSyncSec, shiftFlip, bendDuration, maxVol) {
   // Pitch bend glide completes within the crossfade window, not over the full
   // interval. After crossfade, channels are at full volume with final pitch bend
   // already applied. No gliding while audible = no detune artifacts.
-  const bendDuration = rf(0.01, 0.02);
   const bendSteps = 5;
   const bendStepSec = bendDuration / bendSteps;
   for (let i = 0; i <= bendSteps; i++) {
@@ -54,7 +51,6 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
   flipBinCrossfadeWindow = [fadeStart, fadeStart + flipBinCrossfade];
   const volSteps = 9;
   const volStepSec = flipBinCrossfade / volSteps;
-  const maxVol = rf(.9, 1.1);
   for (let i = 0; i <= volSteps; i++) {
     const t = fadeStart + volStepSec * i;
     const frac = i / volSteps;
@@ -125,7 +121,11 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    L0.post(L0_CHANNELS.binaural, 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin, interval: binauralInterval });
+    // Pre-compute crossfade params once so both layers emit identical MIDI events.
+    // rf() here advances the PRNG once; storing in L0 means L2 reads same values.
+    const bendDuration = rf(0.01, 0.02);
+    const maxVol = rf(.9, 1.1);
+    L0.post(L0_CHANNELS.binaural, 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin, interval: binauralInterval, bendDuration, maxVol });
   }
 
   // -- Consume the latest shared shift if not yet consumed by this layer --
@@ -143,14 +143,11 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    // Emit MIDI events once per shift -- first layer to consume wins.
-    // Both layers sync state above, but only one emits pitch bend/volume events.
-    // Without this guard, L1+L2 buffers merge with conflicting rf()-randomized
-    // glide curves on the same MIDI channels, causing audible detune artifacts.
-    if (sharedEntry.timeInSeconds !== lastEmittedShiftSec) {
-      lastEmittedShiftSec = sharedEntry.timeInSeconds;
-      emitShiftEvents(sharedEntry.timeInSeconds, flipBin, V.optionalFinite(sharedEntry.interval, 2.0));
-    }
+    // Both layers emit into their own buffers -- identical params from L0 guarantee
+    // identical MIDI event sequences, so the merged output has no conflicting glides.
+    const bendDuration = V.requireFinite(sharedEntry.bendDuration, 'sharedEntry.bendDuration');
+    const maxVol = V.requireFinite(sharedEntry.maxVol, 'sharedEntry.maxVol');
+    emitShiftEvents(sharedEntry.timeInSeconds, flipBin, bendDuration, maxVol);
 
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({
