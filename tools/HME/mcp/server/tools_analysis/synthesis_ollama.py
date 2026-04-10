@@ -67,13 +67,11 @@ _LOCAL_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/generate"
 _LOCAL_CHAT_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/chat"
 
 
-# ── Ollama priority queue ──────────────────────────────────────────────────
-# Interactive calls (think, before_editing) must not be blocked by background warm.
-# _ollama_interactive: set by interactive callers; background tasks yield until cleared.
+# ── Ollama priority ────────────────────────────────────────────────────────
+# _ollama_interactive: set by interactive callers. Background checks this flag and
+# yields (before sending) or cancels mid-stream (via socket timeout in _cancellable_urlopen).
+# No Python locks — Ollama handles its own per-model FIFO queue.
 _ollama_interactive = _threading.Event()
-_ollama_lock = _threading.Lock()
-_gpu0_lock = _threading.Lock()   # qwen3-coder:30b (extraction)
-_gpu1_lock = _threading.Lock()   # qwen3:30b-a3b (reasoning)
 
 
 def _ollama_background_yield():
@@ -249,43 +247,18 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         headers={"Content-Type": "application/json"},
     )
     try:
-        active_lock = (_gpu0_lock if _effective_model == _LOCAL_MODEL
-                       else _gpu1_lock if _effective_model == _REASONING_MODEL
-                       else _ollama_lock)
-        # Second yield: re-check interactive just before acquiring the lock.
         if priority == "background":
             _ollama_background_yield()
-        # Background: holds GPU lock + cancellable (socket timeout releases within 2s).
-        # Interactive/parallel: acquire lock with 8s timeout — background releases fast.
-        if priority == "background":
-            with active_lock:
-                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
+            raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
             if cancel_err:
                 if isinstance(cancel_err, InterruptedError):
                     return (None, []) if return_context else None
                 raise cancel_err
-            resp_obj = None  # handled below via raw_bytes path
         else:
-            _http_timeout = 60
-            # Background releases lock within ~2s of cancel (socket timeout).
-            # 8s timeout gives generous margin; if still held, warm priming is stuck.
-            acquired = active_lock.acquire(timeout=8)
-            if not acquired:
-                logger.warning(f"_local_think: GPU lock busy after 8s ({_effective_model}), skipping — warm priming may be stuck")
-                if priority == "interactive":
-                    _ollama_interactive.clear()
-                return (None, []) if return_context else None
-            try:
-                with urllib.request.urlopen(req, timeout=_http_timeout) as resp:
-                    raw_bytes = resp.read()
-                resp_obj = None
-            finally:
-                active_lock.release()
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                raw_bytes = resp.read()
         if priority == "interactive":
             _ollama_interactive.clear()
-        if resp_obj is not None:
-            with resp_obj as resp:
-                raw_bytes = resp.read()
         result = json.loads(raw_bytes)
         text = result.get("response", "").strip()
         if "</think>" in text:
@@ -381,9 +354,6 @@ def _local_chat(messages: list[dict], model: str | None = None,
     """
     import urllib.request
     _m = model or _REASONING_MODEL
-    active_lock = (_gpu0_lock if _m == _LOCAL_MODEL
-                   else _gpu1_lock if _m == _REASONING_MODEL
-                   else _ollama_lock)
     payload = {
         "model": _m, "messages": messages, "stream": False,
         "keep_alive": _KEEP_ALIVE,
@@ -392,9 +362,7 @@ def _local_chat(messages: list[dict], model: str | None = None,
     body = json.dumps(payload).encode()
     req = urllib.request.Request(_url_for(_m, "chat"), data=body, headers={"Content-Type": "application/json"})
     try:
-        with active_lock:
-            resp_obj = urllib.request.urlopen(req, timeout=60)
-        with resp_obj as resp:
+        with urllib.request.urlopen(req, timeout=60) as resp:
             result = json.loads(resp.read())
             msg = result.get("message", {})
             text = msg.get("content", "").strip() if isinstance(msg, dict) else ""

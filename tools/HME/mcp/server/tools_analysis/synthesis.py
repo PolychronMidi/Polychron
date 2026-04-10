@@ -18,7 +18,7 @@ from .synthesis_config import (  # noqa: F401
 )
 from .synthesis_ollama import (  # noqa: F401
     _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL, _LOCAL_URL, _LOCAL_CHAT_URL, _url_for,
-    _ollama_interactive, _ollama_lock, _gpu0_lock, _gpu1_lock,
+    _ollama_interactive,
     _ollama_background_yield, _local_think, _read_module_source,
     _local_chat, _local_think_with_system, compress_for_claude,
 )
