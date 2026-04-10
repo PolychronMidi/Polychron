@@ -63,7 +63,7 @@ class ChatPanel {
                 try {
                     const narrative = await (0, Arbiter_1.synthesizeNarrative)(entries);
                     if (narrative) {
-                        (0, router_1.postNarrative)(narrative).catch((e) => this._postError("narrative", String(e)));
+                        (0, router_1.postNarrative)(narrative).catch((e) => this._logBackgroundError("narrative", String(e)));
                     }
                     return narrative;
                 }
@@ -280,12 +280,12 @@ class ChatPanel {
                 const notice = warnings.map((w) => `⚠ [${w.title}]`).join(" · ");
                 this._post({ type: "notice", level: "warn", text: `HME constraints: ${notice}` });
             }
-        }).catch((e) => this._postError("validation", String(e)));
+        }).catch((e) => this._logBackgroundError("validation", String(e)));
         // ── Mirror transcript to HTTP shim ──
         (0, router_1.postTranscript)([{
                 ts: Date.now(), type: "user", route: resolvedRoute, model,
                 content: msg.text, summary: `User [${resolvedRoute}]: ${msg.text.slice(0, 100)}`,
-            }]).catch((e) => this._postError("transcript", String(e)));
+            }]).catch((e) => this._logBackgroundError("transcript", String(e)));
         const userMsg = msg._queuedUserMsg ?? {
             id: uid(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
         };
@@ -353,7 +353,7 @@ class ChatPanel {
         (0, router_1.postTranscript)([{
                 ts: Date.now(), type: "user", route: "agent", model: msg.ollamaModel,
                 content: msg.text, summary: `User [agent]: ${msg.text.slice(0, 100)}`,
-            }]).catch((e) => this._postError("transcript", String(e)));
+            }]).catch((e) => this._logBackgroundError("transcript", String(e)));
         const userMsg = { id: uid(), role: "user", text: msg.text, route: "local", ts: Date.now() };
         this._state.messages.push(userMsg);
         this._post({ type: "message", message: userMsg });
@@ -569,7 +569,7 @@ class ChatPanel {
                 content: text.slice(0, 2000),
                 summary: `Assistant [${route}]: ${text.slice(0, 100)}`,
                 meta: tools?.length ? { tools } : undefined,
-            }]).catch((e) => this._postError("transcript", String(e)));
+            }]).catch((e) => this._logBackgroundError("transcript", String(e)));
     }
     /**
      * Detect files modified by tool calls and trigger immediate mini-reindex.
@@ -589,7 +589,7 @@ class ChatPanel {
                 files.add(ollamaMatch[2]);
         }
         if (files.size > 0) {
-            (0, router_1.reindexFiles)([...files]).catch((e) => this._postError("reindex", String(e)));
+            (0, router_1.reindexFiles)([...files]).catch((e) => this._logBackgroundError("reindex", String(e)));
         }
         return files;
     }
@@ -603,7 +603,7 @@ class ChatPanel {
                     .join("\n");
                 this._post({ type: "notice", level: "audit", text: `HME post-audit (${changed_files.length} files changed):\n${summary}` });
             }
-        }).catch((e) => this._postError("audit", String(e)));
+        }).catch((e) => this._logBackgroundError("audit", String(e)));
     }
     _streamOllama(msg, assistantId) {
         const systemPrompt = {
@@ -738,6 +738,23 @@ class ChatPanel {
                 safeEnd();
             }
             this._postError("hybrid", String(err));
+        });
+    }
+    /** Log-only handler for background enrichment failures (reindex, audit, transcript, narrative, validation).
+     *  These operations are fire-and-forget — shim timeouts during model init/warm priming are expected.
+     *  Logged to disk + console.error; never surfaces in the chat UI as a popup/bubble. */
+    _logBackgroundError(source, message) {
+        console.error(`[HME background] [${source}] ${message}`);
+        (0, router_1.logShimError)(source, message).catch((shimErr) => {
+            console.error(`[HME background] logShimError failed for [${source}] ${message}: ${shimErr?.message ?? shimErr}`);
+            const errLine = `[${new Date().toISOString()}] [bg:${source}] ${message}\n`;
+            try {
+                fs.mkdirSync(path.join(this._projectRoot, "log"), { recursive: true });
+                fs.appendFileSync(path.join(this._projectRoot, "log", "hme-errors.log"), errLine);
+            }
+            catch (fileErr) {
+                console.error(`[HME background] Disk fallback also failed for [${source}] ${message}: ${fileErr?.message ?? fileErr}`);
+            }
         });
     }
     /** Fail-fast error surface: bubble in chat + log file + KB antipattern lookup. */
