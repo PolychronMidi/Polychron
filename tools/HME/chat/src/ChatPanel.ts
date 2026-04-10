@@ -21,7 +21,7 @@ import {
   loadChainSummaries,
   listChainLinks,
 } from "./SessionStore";
-import { TokenUsage } from "./router";
+import { TokenUsage, GPU_NUM_CTX } from "./router";
 import { TranscriptLogger } from "./TranscriptLogger";
 import { synthesizeNarrative, synthesizeChainSummary } from "./Arbiter";
 
@@ -33,6 +33,29 @@ const DEFAULT_CONTEXT_WINDOW = 500_000;
 const CHAIN_THRESHOLD_PCT = 75;
 const SYSTEM_OVERHEAD_TOKENS = 8_000;
 const CHARS_PER_TOKEN = 3.5;
+const OLLAMA_OUTPUT_BUFFER = 4096;
+
+function estimateTokens(messages: { content: string }[]): number {
+  let chars = 0;
+  for (const m of messages) chars += m.content.length;
+  return Math.ceil(chars / CHARS_PER_TOKEN);
+}
+
+function trimHistoryToFit(history: OllamaMessage[], currentMsg: string, extraMessages: OllamaMessage[] = []): OllamaMessage[] {
+  const budget = GPU_NUM_CTX - OLLAMA_OUTPUT_BUFFER;
+  const fixedTokens = estimateTokens([...extraMessages, { content: currentMsg }]);
+  const available = budget - fixedTokens;
+  if (available <= 0) return [];
+
+  let total = 0;
+  let keepFrom = 0;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const cost = Math.ceil(history[i].content.length / CHARS_PER_TOKEN);
+    if (total + cost > available) { keepFrom = i + 1; break; }
+    total += cost;
+  }
+  return history.slice(keepFrom);
+}
 
 interface ContextTracker {
   lastInputTokens: number | null;
@@ -484,7 +507,8 @@ export class ChatPanel {
       role: "system",
       content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
     };
-    const requestHistory = [systemPrompt, ...this._state.ollamaHistory, { role: "user" as const, content: msg.text }];
+    const trimmed = trimHistoryToFit(this._state.ollamaHistory, msg.text, [systemPrompt]);
+    const requestHistory = [systemPrompt, ...trimmed, { role: "user" as const, content: msg.text }];
     let text = "";
     let tools: string[] = [];
     let streamEnded = false;
@@ -532,7 +556,7 @@ export class ChatPanel {
   }
 
   private _streamAgentHybrid(msg: any, assistantId: string, label: "local" | "hybrid", onBothDone: () => void, onForceDrain: () => void, cancelFns: Array<() => void>) {
-    const history = [...this._state.ollamaHistory];
+    const history = trimHistoryToFit(this._state.ollamaHistory, msg.text);
     let text = "";
     let tools: string[] = [];
     let aborted = false;
@@ -895,7 +919,8 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
     const contextMessages: OllamaMessage[] = msg._contextPrefix
       ? [{ role: "user" as const, content: msg._contextPrefix }, { role: "assistant" as const, content: "Understood. I have the prior conversation context." }]
       : [];
-    const requestHistory = [systemPrompt, ...contextMessages, ...this._state.ollamaHistory, { role: "user" as const, content: msg.text }];
+    const trimmed = trimHistoryToFit(this._state.ollamaHistory, msg.text, [systemPrompt, ...contextMessages]);
+    const requestHistory = [systemPrompt, ...contextMessages, ...trimmed, { role: "user" as const, content: msg.text }];
 
     let text = "";
     let tools: string[] = [];
