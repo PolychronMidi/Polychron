@@ -47,7 +47,7 @@ class RAGEngine(
         self._chunk_hashes: set[str] = set()  # chunk-level dedup
         self._search_cache = _TTLCache(maxsize=256, ttl=CACHE_TTL)
         self._knowledge_cache = _TTLCache(maxsize=128, ttl=CACHE_TTL)
-        self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count for spaced repetition
+        self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count (persisted to knowledge_access.json)
         self._index_lock = threading.Lock()
         self._bulk_indexing = threading.Event()
         self._token_cache: dict[int, int] = {}
@@ -57,6 +57,7 @@ class RAGEngine(
         self._try_open_symbol_table()
         self._validate_cache()
         self._rebuild_chunk_hashes()
+        self._load_access_log()
 
     def get_status(self) -> dict:
         self._try_open_table()

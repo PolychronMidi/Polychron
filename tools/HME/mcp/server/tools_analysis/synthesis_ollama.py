@@ -10,18 +10,76 @@ from .synthesis_config import _THINK_SYSTEM
 
 logger = logging.getLogger("HME")
 
-# Tracks the reason for the last synthesis failure so tools can surface actionable messages.
-# "timeout" means Ollama timed out and queue may be stacked — caller should NOT retry immediately.
-# "error" means a non-timeout failure (connection refused, JSON parse error, etc.).
-# None means no recent failure.
-_last_think_failure: str | None = None
-_last_think_failure_ts: float = 0.0  # monotonic timestamp of last failure
-_TIMEOUT_COOLDOWN_S = 10  # seconds to refuse new requests after a timeout (short — agent pops the stack)
-_cooldown_refused_bg: int = 0   # count of suppressed background REFUSED logs this cooldown episode
-
 # Sentinel to distinguish cooldown refusal from background timeout in return values.
-# Both previously returned (None, []) which made _prime_warm_context log the wrong cause.
 _COOLDOWN_REFUSED = "cooldown_refused"
+
+
+class _CircuitBreaker:
+    """3-state circuit breaker: CLOSED → OPEN (after failures) → HALF_OPEN (probe) → CLOSED."""
+    CLOSED, OPEN, HALF_OPEN = "CLOSED", "OPEN", "HALF_OPEN"
+
+    def __init__(self, name: str, failure_threshold: int = 3,
+                 failure_window_s: float = 60.0, recovery_s: float = 15.0):
+        self.name = name
+        self._failure_threshold = failure_threshold
+        self._failure_window_s = failure_window_s
+        self._recovery_s = recovery_s
+        self._state = self.CLOSED
+        self._failures: list[float] = []
+        self._opened_at: float = 0.0
+        self._lock = _threading.Lock()
+
+    @property
+    def state(self) -> str:
+        with self._lock:
+            if self._state == self.OPEN:
+                import time as _t
+                if _t.monotonic() - self._opened_at >= self._recovery_s:
+                    self._state = self.HALF_OPEN
+                    logger.info(f"CircuitBreaker({self.name}): OPEN → HALF_OPEN (probe allowed)")
+            return self._state
+
+    def allow(self) -> bool:
+        s = self.state
+        if s == self.CLOSED:
+            return True
+        if s == self.HALF_OPEN:
+            return True
+        return False
+
+    def record_success(self):
+        with self._lock:
+            if self._state == self.HALF_OPEN:
+                logger.info(f"CircuitBreaker({self.name}): HALF_OPEN → CLOSED (probe succeeded)")
+            self._state = self.CLOSED
+            self._failures.clear()
+
+    def record_failure(self):
+        import time as _t
+        with self._lock:
+            now = _t.monotonic()
+            self._failures = [t for t in self._failures if now - t < self._failure_window_s]
+            self._failures.append(now)
+            if self._state == self.HALF_OPEN:
+                self._state = self.OPEN
+                self._opened_at = now
+                logger.info(f"CircuitBreaker({self.name}): HALF_OPEN → OPEN (probe failed)")
+            elif len(self._failures) >= self._failure_threshold:
+                self._state = self.OPEN
+                self._opened_at = now
+                logger.warning(
+                    f"CircuitBreaker({self.name}): CLOSED → OPEN "
+                    f"({len(self._failures)} failures in {self._failure_window_s}s)"
+                )
+
+
+_circuit_breakers: dict[str, _CircuitBreaker] = {}
+
+
+def _get_circuit_breaker(model: str) -> _CircuitBreaker:
+    if model not in _circuit_breakers:
+        _circuit_breakers[model] = _CircuitBreaker(model)
+    return _circuit_breakers[model]
 
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
@@ -169,29 +227,12 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     import urllib.request
     import time as _time_mod
 
-    # Timeout cooldown: refuse new requests while queue may be stacked
-    global _last_think_failure, _last_think_failure_ts, _cooldown_refused_bg
-    if _last_think_failure == "timeout":
-        _elapsed = _time_mod.monotonic() - _last_think_failure_ts
-        if _elapsed < _TIMEOUT_COOLDOWN_S:
-            _remaining = int(_TIMEOUT_COOLDOWN_S - _elapsed)
-            if priority == "background":
-                if _cooldown_refused_bg == 0:
-                    logger.info(
-                        f"_local_think REFUSED (background) — {_remaining}s remaining. "
-                        "Subsequent background calls silently skipped until cooldown clears."
-                    )
-                _cooldown_refused_bg += 1
-            else:
-                logger.warning(
-                    f"_local_think REFUSED — {_remaining}s remaining in {_TIMEOUT_COOLDOWN_S}s "
-                    "timeout cooldown. Ollama queue may still be stacked."
-                )
-            return (_COOLDOWN_REFUSED, []) if return_context else None
-        _last_think_failure = None
-        if _cooldown_refused_bg > 0:
-            logger.info(f"_local_think cooldown cleared — {_cooldown_refused_bg} background calls were silently skipped.")
-            _cooldown_refused_bg = 0
+    _effective_model_early = model or _LOCAL_MODEL
+    _cb = _get_circuit_breaker(_effective_model_early)
+    if not _cb.allow():
+        if priority != "background":
+            logger.warning(f"_local_think REFUSED — circuit breaker OPEN for {_effective_model_early}")
+        return (_COOLDOWN_REFUSED, []) if return_context else None
 
     # "parallel" = two threads hitting different GPUs simultaneously. Treated like
     # interactive (no yielding, uses interactive timeout) but does NOT set the
@@ -218,11 +259,11 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             system = ""
             logger.debug(f"_local_think: warm ctx hit ({len(warm)} tokens, {_effective_model})")
 
-    # Inject session narrative into interactive synthesis calls only.
-    # Background calls (warm cache) don't benefit from narrative context.
+    # Inject session narrative — filtered by relevance to the call type.
     if priority != "background" and (system == _THINK_SYSTEM or (system == "" and context is not None)):
         from .synthesis_session import get_session_narrative
-        narrative = get_session_narrative(max_entries=5)
+        _narrative_cats = ["think", "edit", "search"] if "callers" in prompt.lower() or "find" in prompt.lower() else None
+        narrative = get_session_narrative(max_entries=5, categories=_narrative_cats)
         if narrative and not prompt.startswith("Session narrative"):
             prompt = narrative + prompt
 
@@ -306,6 +347,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         text = " ".join(s for s in sentences if not any(fp in s.lower() for fp in _filler_phrases)).strip()
         if not text:
             return (None, []) if return_context else None
+        _cb.record_success()
         if return_context:
             return (text, result.get("context", []))
         return text
@@ -323,21 +365,15 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                 f"_local_think({_effective_model})",
                 f"{type(e).__name__}: {e}",
             )
+        _cb.record_failure()
         if _is_timeout:
-            if priority == "background":
-                logger.debug(f"_local_think background timeout ({_effective_model}) — normal, not setting cooldown")
-            else:
-                _last_think_failure = "timeout"
-                _last_think_failure_ts = _time_mod.monotonic()
+            if priority != "background":
                 logger.warning(
-                    f"_local_think TIMEOUT ({_effective_model}) — Ollama queue may be stacked. "
-                    "Do NOT retry immediately. Wait for queued requests to drain or restart Ollama. "
+                    f"_local_think TIMEOUT ({_effective_model}) — circuit breaker: {_cb.state}. "
                     f"Error: {type(e).__name__}: {e}"
                 )
-        else:
-            _last_think_failure = "error"
-            if not _is_critical:
-                logger.warning(f"_local_think unavailable ({_effective_model}): {type(e).__name__}: {e}")
+        elif not _is_critical:
+            logger.warning(f"_local_think unavailable ({_effective_model}): {type(e).__name__}: {e}")
         return (None, []) if return_context else None
 
 

@@ -11,7 +11,6 @@ if [ -n "$TARGET" ]; then
   _nexus_add BRIEF "$TARGET"
 fi
 
-# Reset streak counter — HME tool was used
-echo 0 > /tmp/hme-non-hme-streak.count
+_streak_reset
 
 exit 0

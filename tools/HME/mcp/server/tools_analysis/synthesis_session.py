@@ -86,6 +86,15 @@ def get_think_history_context() -> str:
     return "Previous think exchanges this session:\n" + "\n".join(lines) + "\n\n"
 
 
+_EVENT_CATEGORIES = {
+    "commit": "commit", "pipeline": "pipeline", "pipeline_verdict": "pipeline",
+    "think": "think", "arbiter_resolved": "think",
+    "edit": "edit", "review": "review",
+    "find": "search", "search": "search", "callers": "search",
+    "kb_add": "kb", "kb_compact": "kb",
+}
+
+
 def append_session_narrative(event: str, content: str):
     """Append an event to the rolling session narrative and persist to disk."""
     global _session_narrative_seq
@@ -93,6 +102,7 @@ def append_session_narrative(event: str, content: str):
     _session_narrative.append({
         "seq": _session_narrative_seq,
         "event": event,
+        "category": _EVENT_CATEGORIES.get(event, "other"),
         "content": content[:100],
     })
     while len(_session_narrative) > _SESSION_NARRATIVE_MAX:
@@ -100,13 +110,19 @@ def append_session_narrative(event: str, content: str):
     _save_session_state()
 
 
-def get_session_narrative(max_entries: int = 0) -> str:
+def get_session_narrative(max_entries: int = 0, categories: list[str] | None = None) -> str:
     """Return formatted narrative for injection into model calls.
-    max_entries: limit to N most recent entries (0 = all stored entries)."""
+    max_entries: limit to N most recent entries (0 = all stored entries).
+    categories: filter to entries matching these categories (None = all)."""
     _load_session_state()
     if not _session_narrative:
         return ""
-    entries = _session_narrative[-max_entries:] if max_entries > 0 else _session_narrative
+    entries = _session_narrative
+    if categories:
+        entries = [e for e in entries if e.get("category", "other") in categories]
+    if not entries:
+        return ""
+    entries = entries[-max_entries:] if max_entries > 0 else entries
     lines = [f"  [{e['seq']}:{e['event']}] {e['content']}" for e in entries]
     return "Session narrative (recent work):\n" + "\n".join(lines) + "\n\n"
 

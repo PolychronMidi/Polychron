@@ -37,9 +37,9 @@ if [ -f "$TS_FILE" ]; then
   rm -f "$TS_FILE" 2>/dev/null
 fi
 
-# Reset streak counter when HME tool is used (explicit reset, not implicit)
+# Reset streak counter when HME tool is used
 if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
-  echo 0 > /tmp/hme-non-hme-streak.count
+  _streak_reset
 fi
 
 # LIFESAVER threshold: warn when MCP HME synthesis exceeds expected duration

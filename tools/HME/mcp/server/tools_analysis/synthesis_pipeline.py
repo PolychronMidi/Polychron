@@ -1,12 +1,53 @@
 """HME five-stage synthesis pipeline — arbiter triage, conflict resolution, parallel two-stage think."""
+import json as _json
+import os as _os
 import re
 import logging
 import threading
+import time as _time
 
 from server import context as ctx
 from .synthesis_config import _THINK_SYSTEM
 
 logger = logging.getLogger("HME")
+
+_ARBITER_LOG = None
+_TRACE_LOG = None
+
+
+def _log_dir() -> str:
+    return _os.path.join(getattr(ctx, "PROJECT_ROOT", "."), "log")
+
+
+def _log_arbiter_decision(tool: str, question: str, classification: str,
+                          gpu0_chars: int, gpu1_chars: int, resolved_chars: int = 0):
+    global _ARBITER_LOG
+    if _ARBITER_LOG is None:
+        _ARBITER_LOG = _os.path.join(_log_dir(), "synthesis-arbiter.jsonl")
+    try:
+        entry = _json.dumps({
+            "ts": _time.time(), "tool": tool, "query_hash": hash(question) & 0xFFFFFFFF,
+            "classification": classification,
+            "gpu0_chars": gpu0_chars, "gpu1_chars": gpu1_chars,
+            "resolved_chars": resolved_chars,
+        })
+        with open(_ARBITER_LOG, "a") as f:
+            f.write(entry + "\n")
+    except Exception:
+        pass
+
+
+def _log_synthesis_trace(tool: str, question: str, trace: dict):
+    global _TRACE_LOG
+    if _TRACE_LOG is None:
+        _TRACE_LOG = _os.path.join(_log_dir(), "synthesis-traces.jsonl")
+    try:
+        entry = _json.dumps({"ts": _time.time(), "tool": tool,
+                             "query_hash": hash(question) & 0xFFFFFFFF, **trace})
+        with open(_TRACE_LOG, "a") as f:
+            f.write(entry + "\n")
+    except Exception:
+        pass
 
 
 def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
@@ -65,11 +106,17 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
             text_upper = text.upper()
             if "ALIGNED" in text_upper and "MINOR" not in text_upper and "COMPLEX" not in text_upper:
                 logger.info("arbiter: ALIGNED")
+                _log_arbiter_decision("arbiter", question, "ALIGNED",
+                                      len(gpu0_out or ""), len(gpu1_out or ""))
                 return None
             if "COMPLEX" in text_upper:
                 logger.info(f"arbiter: COMPLEX — {text[:200]}")
+                _log_arbiter_decision("arbiter", question, "COMPLEX",
+                                      len(gpu0_out or ""), len(gpu1_out or ""))
                 return {"severity": "complex", "report": text}
             logger.info(f"arbiter: MINOR — {text[:200]}")
+            _log_arbiter_decision("arbiter", question, "MINOR",
+                                  len(gpu0_out or ""), len(gpu1_out or ""))
             return {"severity": "minor", "report": text}
     except Exception as e:
         logger.warning(f"arbiter unavailable: {type(e).__name__}: {e}")
@@ -93,7 +140,7 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
         "signal fields; discard hallucinated module names from the reasoner. "
         "Output a CORRECTED brief (max 300 words) for Stage 2."
     )
-    resolved = _local_think(resolve_prompt, max_tokens=1024, model=_REASONING_MODEL,
+    resolved = _local_think(resolve_prompt, max_tokens=512, model=_REASONING_MODEL,
                             system=_THINK_SYSTEM, temperature=0.15)
     if resolved:
         logger.info(f"Stage 1.75: conflict resolved ({len(resolved)} chars)")
@@ -282,16 +329,21 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
                            "\n\n" + _fmt_instruction + "\nMax 4 items. /no_think")
         result = _local_think(fallback_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
 
+    _arbiter_class = arbiter_result["severity"].upper() if arbiter_result else "ALIGNED"
+    _resolved = "Conflict Resolution" in merged if _arbiter_class == "COMPLEX" else False
     _trace_parts = [f"1A:{len(gpu0_out or '')}c", f"1B:{len(gpu1_out or '')}c"]
-    if arbiter_result:
-        sev = arbiter_result["severity"].upper()
-        _trace_parts.append(f"arbiter:{sev}")
-        if sev == "COMPLEX":
-            _trace_parts.append("1.75:resolved" if "Conflict Resolution" in merged else "1.75:failed")
-    else:
-        _trace_parts.append("arbiter:ALIGNED")
+    _trace_parts.append(f"arbiter:{_arbiter_class}")
+    if _arbiter_class == "COMPLEX":
+        _trace_parts.append("1.75:resolved" if _resolved else "1.75:failed")
     _trace_parts.append(f"2:{len(result or '')}c")
     _trace = " → ".join(_trace_parts)
+
+    _trace_data = {
+        "stage_1a_chars": len(gpu0_out or ""), "stage_1b_chars": len(gpu1_out or ""),
+        "arbiter_class": _arbiter_class, "stage_175_resolved": _resolved,
+        "stage_2_chars": len(result or ""), "fallback_used": result is None,
+    }
+    _log_synthesis_trace("parallel_two_stage", question, _trace_data)
 
     if result:
         result = result + f"\n\n*pipeline: {_trace}*"

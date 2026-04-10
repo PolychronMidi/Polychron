@@ -1,4 +1,6 @@
+import json as _json
 import logging
+import os as _os
 import time
 import uuid
 import numpy as np
@@ -7,12 +9,40 @@ from .utils import _TTLCache, _bm25_search, _rrf_fuse, _cross_encode_rerank, _sa
 
 logger = logging.getLogger(__name__)
 
+_ACCESS_LOG_SAVE_INTERVAL = 10
+
 
 class RAGKnowledgeMixin:
     """Mixin providing knowledge base operations for RAGEngine."""
 
     def _sanitize(self, value: str) -> str:
         return _sanitize(value)
+
+    def _access_log_path(self) -> str:
+        return _os.path.join(self.db_path, "knowledge_access.json")
+
+    def _load_access_log(self):
+        path = self._access_log_path()
+        if not _os.path.exists(path):
+            return
+        try:
+            with open(path) as f:
+                data = _json.load(f)
+            if isinstance(data, dict):
+                self._access_log = data
+                logger.info(f"FSRS-6: loaded access log ({len(data)} entries)")
+        except Exception as e:
+            logger.info(f"FSRS-6: access log load failed: {e}")
+
+    def _save_access_log(self):
+        path = self._access_log_path()
+        try:
+            with open(path, "w") as f:
+                _json.dump(self._access_log, f)
+        except Exception as e:
+            logger.info(f"FSRS-6: access log save failed: {e}")
+
+    _access_log_writes: int = 0
 
     def _try_open_knowledge_table(self):
         try:
@@ -162,14 +192,23 @@ class RAGKnowledgeMixin:
             temporal_factor = base_decay * access_boost
             # Track this retrieval
             self._access_log[r["id"]] = access_count + 1
+            staleness_tag = ""
+            if age_days > 30 and access_count == 0:
+                staleness_tag = " [UNVERIFIED — last confirmed >30d ago]"
             results.append({
                 "id": r["id"],
-                "title": r["title"],
+                "title": r["title"] + staleness_tag,
                 "content": r["content"],
                 "category": r["category"],
                 "tags": r["tags"].split(",") if r["tags"] else [],
                 "score": max(0.0, score) * temporal_factor,
             })
+
+        # Debounced persistence of access log
+        self._access_log_writes = getattr(self, "_access_log_writes", 0) + 1
+        if self._access_log_writes >= _ACCESS_LOG_SAVE_INTERVAL:
+            self._access_log_writes = 0
+            self._save_access_log()
 
         if results:  # don't cache empty results
             self._knowledge_cache.set(cache_key, results)
