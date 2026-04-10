@@ -51,14 +51,14 @@ verticalIntervalMonitor = (() => {
       });
 
       // Regime-responsive penalty: coherent tolerates unisons, exploring penalizes
-      const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
+      const regime = regimeClassifier.getLastRegime();
       const regimeScale = regime === 'coherent' ? 0.4 : regime === 'exploring' ? 1.5 : 1.0;
       // CIM: coordinated = more tolerance (layers meant to overlap), independent = harder penalty
       const cimPenaltyScale = 1.3 - cimScale * 0.6;
       // Melodic coupling: intervalFreshness scales collision penalty.
       // Novel intervals -> collisions add exploratory dissonance -> reduce penalty.
       // Stale intervals -> collisions are muddy repetition -> increase penalty.
-      const melodicCtxVIM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+      const melodicCtxVIM = emergentMelodicEngine.getContext();
       const intervalFreshness = melodicCtxVIM ? V.optionalFinite(melodicCtxVIM.intervalFreshness, 0.5) : 0.5;
       const freshnessScale = 1.3 - intervalFreshness * 0.6; // [0.7 fresh ... 1.3 stale]
 

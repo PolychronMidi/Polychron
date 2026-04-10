@@ -104,7 +104,7 @@ velocityInterference = (() => {
     // Stronger interference at midpoint supports tension arc peak.
     const midpointFocus = m.exp(-m.pow((sectionProg - 0.5) * 2.5, 2));
     // R91 E4: Regime-responsive interference scaling.
-    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+    const regime = regimeClassifier.getLastRegime();
     const regimeScale = regime === 'exploring' ? 1.20
       : regime === 'coherent' ? 0.85
       : 1.0;
@@ -112,7 +112,7 @@ velocityInterference = (() => {
     // Melodic coupling: tessituraLoad amplifies interference in extreme registers.
     // High register extremity -> stronger velocity coordination between layers.
     // Comfortable register -> normal interference level.
-    const melodicCtxVI = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxVI = emergentMelodicEngine.getContext();
     const tessituraLoad = melodicCtxVI ? V.optionalFinite(melodicCtxVI.tessituraLoad, 0) : 0;
     const melodicIntensityScale = 1.0 + tessituraLoad * 0.25; // [1.0 comfortable ... 1.25 extreme]
     // R79 E3: freshnessEma coupling -- novel melodic intervals amplify interference strength.

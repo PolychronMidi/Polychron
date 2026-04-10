@@ -72,6 +72,9 @@ intervalDirectionMemory = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('intervalDirectionMemory', { reset }, ['section']);
+
   return {
     getFreshnessSignal
   };

@@ -68,7 +68,7 @@ conductorDampening = (() => {
       ? conductorDampeningFlickerDampeningBaseAdj * conductorMetaWatchdog.getAttenuation('flicker', 'elasticity')
       : 0;
     let base = pipelineName === 'flicker' ? 0.78 + elasticityAdj : BASE_DEVIATION_DAMPING;
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const snap = systemDynamicsProfiler.getSnapshot();
     if (snap) {
       if (snap.regime === 'fragmented' || snap.regime === 'oscillating') {
         base *= 0.72;
@@ -104,7 +104,7 @@ conductorDampening = (() => {
     // flicker special case with a general data-driven formula.
     const pipelineActiveCount = pipelineName ? V.optionalFinite(conductorDampeningActiveCountByPipeline.get(pipelineName), REF_PIPELINE_SIZE) : REF_PIPELINE_SIZE;
     let progStrength = PROGRESSIVE_STRENGTH * clamp(pipelineActiveCount / REF_PIPELINE_SIZE, 0.3, 1.5);
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const snap = systemDynamicsProfiler.getSnapshot();
     if (snap) {
       if (snap.effectiveDimensionality < 2.0) {
         progStrength *= 1.5;

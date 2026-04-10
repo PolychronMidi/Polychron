@@ -162,6 +162,9 @@ intervalBalanceTracker = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('intervalBalanceTracker', { reset }, ['section']);
+
   return {
     getIntervalProfile,
     getIntervalBias,

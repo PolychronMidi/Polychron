@@ -119,6 +119,9 @@ grooveTemplateAdvisor = (() => {
   conductorIntelligence.registerFlickerModifier('grooveTemplateAdvisor', () => grooveTemplateAdvisor.getVelocityHumanizeBias(), 0.8, 1.3);
   conductorIntelligence.registerTensionBias('grooveTemplateAdvisor', () => grooveTemplateAdvisor.getGrooveTensionBias(), 0.95, 1.06);
 
+  function reset() {}
+  conductorIntelligence.registerModule('grooveTemplateAdvisor', { reset }, ['section']);
+
   return {
     getGrooveProfile,
     suggestGrooveFeel,

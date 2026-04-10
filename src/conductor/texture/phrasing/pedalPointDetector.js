@@ -108,6 +108,9 @@ pedalPointDetector = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('pedalPointDetector', { reset }, ['section']);
+
   return {
     getPedalProfile,
     getBassSuggestion

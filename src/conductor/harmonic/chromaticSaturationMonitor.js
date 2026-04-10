@@ -68,6 +68,9 @@ chromaticSaturationMonitor = (() => {
   conductorIntelligence.registerDensityBias('chromaticSaturationMonitor', () => chromaticSaturationMonitor.getDensityBias(), 0.9, 1.1);
   conductorIntelligence.registerTensionBias('chromaticSaturationMonitor', () => chromaticSaturationMonitor.getTensionBias(), 0.95, 1.06);
 
+  function reset() {}
+  conductorIntelligence.registerModule('chromaticSaturationMonitor', { reset }, ['section']);
+
   return {
     getSaturationSignal,
     getDensityBias,

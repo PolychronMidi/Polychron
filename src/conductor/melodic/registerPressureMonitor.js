@@ -108,3 +108,6 @@ conductorIntelligence.registerStateProvider('registerPressureMonitor', () => ({
   overlap: registerPressureMonitor.getCrossLayerOverlap(),
   ...registerPressureMonitor.getPressureSignal()
 }));
+
+  function reset() {}
+  conductorIntelligence.registerModule('registerPressureMonitor', { reset }, ['section']);

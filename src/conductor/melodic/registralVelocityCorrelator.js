@@ -116,6 +116,9 @@ registralVelocityCorrelator = (() => {
   conductorIntelligence.registerFlickerModifier('registralVelocityCorrelator', () => registralVelocityCorrelator.getFlickerModifier(), 0.85, 1.20);
   conductorIntelligence.registerTensionBias('registralVelocityCorrelator', () => registralVelocityCorrelator.getTensionBias(), 0.97, 1.06);
 
+  function reset() {}
+  conductorIntelligence.registerModule('registralVelocityCorrelator', { reset }, ['section']);
+
   return {
     getCorrelationSignal,
     getFlickerModifier,

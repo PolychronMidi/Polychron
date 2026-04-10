@@ -57,6 +57,9 @@ motivicDensityTracker = (() => {
 
   conductorIntelligence.registerDensityBias('motivicDensityTracker', () => motivicDensityTracker.getDensityBias(), 0.8, 1.2);
 
+  function reset() {}
+  conductorIntelligence.registerModule('motivicDensityTracker', { reset }, ['section']);
+
   return {
     getMotivicProfile,
     getDensityBias

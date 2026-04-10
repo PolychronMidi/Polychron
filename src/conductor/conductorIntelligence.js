@@ -151,7 +151,7 @@ conductorIntelligence = (() => {
   function collectFlickerModifier() {
     let raw = conductorIntelligenceCollectDampened(flickerModifiers, 'flicker');
     // Flicker Target Expansion in Evolving Regime
-    const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);
+    const isEvolving = regimeClassifier.getLastRegime() === 'evolving';
     if (isEvolving) {
       raw *= 1.15;
     }
@@ -163,7 +163,7 @@ conductorIntelligence = (() => {
     const result = conductorIntelligenceCollectDampenedWithAttribution(flickerModifiers, 'flicker');
     let rawProduct = result.product;
     //  Flicker Target Expansion in Evolving Regime
-    const isEvolving = safePreBoot.call(() => regimeClassifier.getLastRegime() === 'evolving', false);
+    const isEvolving = regimeClassifier.getLastRegime() === 'evolving';
     if (isEvolving) {
       rawProduct *= 1.15;
     }

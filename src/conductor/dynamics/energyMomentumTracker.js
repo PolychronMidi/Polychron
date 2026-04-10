@@ -147,7 +147,7 @@ energyMomentumTracker = (() => {
     else if (mom.trend === 'plateaued') nudge = 1.06;
     else if (mom.trend === 'rising' && mom.momentum > 0.10) nudge = 1.04;
     if (nudge > 1.0) {
-      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
       const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
         ? axisEnergy.shares.phase : 1.0 / 6.0;
       const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'

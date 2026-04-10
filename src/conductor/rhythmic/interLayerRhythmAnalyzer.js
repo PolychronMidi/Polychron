@@ -110,6 +110,9 @@ interLayerRhythmAnalyzer = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('interLayerRhythmAnalyzer', { reset }, ['section']);
+
   return {
     getPhaseRelationship,
     suggestPhaseStrategy,

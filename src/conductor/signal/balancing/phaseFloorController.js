@@ -129,7 +129,7 @@ phaseFloorController = (() => {
     // E4 (R100): Phase-aware boost scaling from orchestrator system phase
     // When oscillating, dampen boosts to avoid amplifying instability
     // When stabilized, reduce boost urgency since system is healthy
-    const systemPhase = safePreBoot.call(() => hyperMetaManager.getSystemPhase(), 'converging');
+    const systemPhase = hyperMetaManager.getSystemPhase();
     const phaseScaling = systemPhase === 'oscillating' ? 0.6
       : systemPhase === 'stabilized' ? 0.85
       : 1.0;
@@ -155,7 +155,7 @@ phaseFloorController = (() => {
     // Extreme collapse: share < 1% -- emergency override
     // E1: boost ceiling managed by hyperMetaManager (#17)
     if (share < getExtremeCollapseShare() && phaseLowShareStreak > getExtremeCollapseStreak()) {
-      const boostCeiling = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getPhaseBoostCeiling(), 25.0)) || 25.0;
+      const boostCeiling = /** @type {number} */ (hyperMetaManager.getPhaseBoostCeiling()) || 25.0;
       phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor * phaseScaling, 14.0, boostCeiling);
     }
 
@@ -200,7 +200,7 @@ phaseFloorController = (() => {
     if (ctx && ctx.layer === 'L2') return;
     phaseFloorControllerBeatCount++;
 
-    const energyData = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const energyData = pipelineCouplingManager.getAxisEnergyShare();
     if (!energyData || !energyData.shares) return;
 
     const share = typeof energyData.shares.phase === 'number' ? energyData.shares.phase : 0.1667;
@@ -220,7 +220,7 @@ phaseFloorController = (() => {
     phaseFloorControllerLastShare = share;
 
     // Track coherent regime streak length
-    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+    const regime = regimeClassifier.getLastRegime();
     if (regime === 'coherent') {
       phaseFloorControllerCurrentCoherentStreak++;
     } else {

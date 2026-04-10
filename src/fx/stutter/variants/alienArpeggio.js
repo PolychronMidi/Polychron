@@ -15,7 +15,7 @@ stutterVariants.register('alienArpeggio', function alienArpeggio(opts) {
   // Dissonant mode ascends more (reaching out), consonant mode descends more (settling)
   // R54: melodic contour shape further modulates ascend bias via emergentMelodicEngine
   const baseAscendBias = dissonance > 0.52 ? 0.68 : 0.42;
-  const ascendBias = /** @type {number} */ (safePreBoot.call(() => emergentMelodicEngine.getContourAscendBias(baseAscendBias), baseAscendBias));
+  const ascendBias = /** @type {number} */ (emergentMelodicEngine.getContourAscendBias(baseAscendBias));
   let currentNote = opts.note;
   let lastShared = opts.shared;
   for (let i = 0; i < noteCount; i++) {

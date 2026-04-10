@@ -403,7 +403,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
     if (crossLayerBeatRecordTraceSnapBeatKey !== clBeatKey) {
       crossLayerBeatRecordTraceCachedConductorSnap = conductorState.getSnapshot();
       crossLayerBeatRecordTraceCachedDynamicsSnap = systemDynamicsProfiler.ensureBeatAnalysis(Boolean(isL1));
-      crossLayerBeatRecordTraceCachedForcedTransitionEvent = safePreBoot.call(() => regimeClassifier.consumeForcedTransitionEvent(), null);
+      crossLayerBeatRecordTraceCachedForcedTransitionEvent = regimeClassifier.consumeForcedTransitionEvent();
       crossLayerBeatRecordTraceCachedTrustScores = adaptiveTrustScores.getSnapshot();
       crossLayerBeatRecordTraceCachedCouplingTargets = pipelineCouplingManager.getAdaptiveTargetSnapshot();
       crossLayerBeatRecordTraceCachedAxisCouplingTotals = pipelineCouplingManager.getAxisCouplingTotals();
@@ -441,7 +441,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       // drops state-provider fields, so axisEnergyEquilibrator never reaches snap.
       axisEnergyEquilibrator: crossLayerBeatRecordTraceCachedAxisEnergyEquilibrator,
       // Per-beat transition readiness for coherent entry diagnosis
-      transitionReadiness: safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null),
+      transitionReadiness: regimeClassifier.getTransitionReadiness(),
       profilerTelemetry,
       outputLoadGuard: outputLoadGuard || null,
       forcedTransitionEvent: crossLayerBeatRecordTraceCachedForcedTransitionEvent,

@@ -49,7 +49,7 @@ crossLayerSilhouette = (() => {
     // Melodic coupling: contourShape amplifies or dampens the dynamic reading.
     // Rising contour -> higher dynamic presence (silhouette tracks the build).
     // Falling contour -> softer dynamic presence (silhouette tracks the descent).
-    const melodicCtxCS = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCS = emergentMelodicEngine.getContext();
     const contourDynBoost = melodicCtxCS
       ? (melodicCtxCS.contourShape === 'rising' ? 0.12 : melodicCtxCS.contourShape === 'falling' ? -0.08 : 0)
       : 0;

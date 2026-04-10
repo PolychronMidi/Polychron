@@ -104,6 +104,9 @@ syncopationDensityTracker = (() => {
     return 1.0;
   }, 0.96, 1.06);
 
+  function reset() {}
+  conductorIntelligence.registerModule('syncopationDensityTracker', { reset }, ['section']);
+
   return {
     getSyncopationProfile,
     getRhythmBias

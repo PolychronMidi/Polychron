@@ -71,7 +71,7 @@ hyperMetaManagerContradictions = (() => {
     ST.rateMultipliers.varianceGateRelax = varianceGateRelaxMultiplier;
 
     // E7: Trust axis rebalancing booster
-    const trustBoost = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e7TrustBoost'), 1.0));
+    const trustBoost = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e7TrustBoost'));
     if (trustBoost > 1.0) {
       ST.rateMultipliers.entropyRegulator = (ST.rateMultipliers.entropyRegulator) * trustBoost;
     }

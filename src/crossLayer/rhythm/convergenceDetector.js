@@ -88,7 +88,7 @@ convergenceDetector = (() => {
     // R87 E2: registerMigrationDir antagonism bridge with feedbackOscillator -- ascending pitch center
     // narrows convergence tolerance (layers diverging upward are harder to synchronize in exact unison).
     // Counterpart: feedbackOscillator AMPLIFIES injection energy under same signal (ascending builds dialogue).
-    const melodicCtxCD = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCD = emergentMelodicEngine.getContext();
     const melodicBoostCD = melodicCtxCD
       ? clamp(
         (melodicCtxCD.contourShape === 'rising' ? 0.08 : melodicCtxCD.contourShape === 'falling' ? -0.03 : 0)

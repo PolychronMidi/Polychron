@@ -22,7 +22,7 @@ convergenceMemory = (() => {
     const binScore = histogram[bin] / m.max(1, avgCount);
     // Melodic coupling: falling contour at a historical convergence point = natural cadence -> amplify.
     // Rising contour = momentum building -> moderate the convergence pull.
-    const melodicCtxCM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCM = emergentMelodicEngine.getContext();
     const contourBoost = melodicCtxCM
       ? (melodicCtxCM.contourShape === 'falling' ? 1.15 : melodicCtxCM.contourShape === 'rising' ? 0.88 : 1.0)
       : 1.0;

@@ -26,7 +26,7 @@ harmonicJourneyPlanner = (() => {
       // (dorian, minor, phrygian) for drama; coherent favors brighter (major,
       // mixolydian, ionian) for stability. Creates modal diversity organically
       // from regime dynamics rather than post-hoc palette breaks.
-      const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const regimeSnap = systemDynamicsProfiler.getSnapshot();
       const currentRegime = regimeSnap ? regimeSnap.regime : 'exploring';
       // R9 E4: Added locrian for maximum modal darkness during exploring.
       // Locrian's diminished tonic creates extreme harmonic tension, enriching

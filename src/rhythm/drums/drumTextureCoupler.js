@@ -83,7 +83,7 @@ drumTextureCoupler = (() => {
   // trigger accents -- fewer but more impactful rhythmic punctuation.
   function shouldAccent() {
     const intensity = getIntensity();
-    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+    const regime = regimeClassifier.getLastRegime();
     const threshold = regime === 'exploring' ? rf(0.10, 0.28)
       : regime === 'coherent' ? rf(0.22, 0.42)
       : rf(0.15, 0.35);

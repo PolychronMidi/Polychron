@@ -38,7 +38,7 @@ convergenceHarmonicTrigger = (() => {
     const rhythmBiasRHT = rhythmEntryRHT && Number.isFinite(rhythmEntryRHT.biasStrength) ? rhythmEntryRHT.biasStrength : 0;
     // Melodic context used both for trigger probability (ascendRatio) and change type (directionBias).
     // Single call to emergentMelodicEngine.getContext() reused throughout onConvergence.
-    const melodicCtxCHT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCHT = emergentMelodicEngine.getContext();
     // R88 E3: ascendRatio antagonism bridge with verticalIntervalMonitor -- ascending melodic momentum
     // boosts harmonic trigger probability (ascending motion naturally seeks harmonic resolution at convergence).
     // Counterpart: verticalIntervalMonitor TIGHTENS collision penalty under same signal (harmonic assertiveness + discipline).

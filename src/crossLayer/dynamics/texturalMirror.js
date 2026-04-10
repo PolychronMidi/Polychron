@@ -58,7 +58,7 @@ texturalMirror = (() => {
     const otherMode = layerTextures[otherLayer].mode;
     // R30 lab: regime-texture-mirror -- coherent mirrors other layer's texture,
     // exploring opposes it. Creates regime-aware cross-layer relationship.
-    const mirrorRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
+    const mirrorRegime = regimeClassifier.getLastRegime();
     let preferredMode = mirrorRegime === 'coherent'
       ? otherMode
       : (COMPLEMENT_MAP[otherMode] || 'normal');
@@ -73,7 +73,7 @@ texturalMirror = (() => {
     // R59: melodic contour gates texture mode. Rising arc builds energy -> push toward
     // energetic textures; falling releases energy -> calm down. High thematic density ->
     // reduce texture complexity (motif echo already provides melodic richness).
-    const melodicCtxTM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxTM = emergentMelodicEngine.getContext();
     if (melodicCtxTM) {
       if (melodicCtxTM.contourShape === 'rising') {
         if (preferredMode === 'sparse') preferredMode = 'normal';

@@ -75,7 +75,7 @@ temporalGravity = (() => {
     const wellTimeMs = wellTimeSec * 1000;
     const dist = m.abs(wellTimeMs - absoluteSeconds);
     const proximity = 1 - (dist / GRAVITY_TOLERANCE_MS);
-    const melodicCtxTG = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxTG = emergentMelodicEngine.getContext();
     const melodicGravityMult = melodicCtxTG
       ? (melodicCtxTG.contourShape === 'rising' ? 1.18 : melodicCtxTG.contourShape === 'falling' ? 0.80 : 1.0)
       * (melodicCtxTG.counterpoint === 'contrary' ? 0.70 : 1.0)

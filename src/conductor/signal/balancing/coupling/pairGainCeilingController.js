@@ -65,7 +65,7 @@ pairGainCeilingController = (() => {
     ps.activeBeats++;
 
     // p95 EMA alpha scaled by hyperMetaManager to reduce reconciliation gap
-    const p95AlphaMultiplier = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getP95AlphaMultiplier(), 1.0));
+    const p95AlphaMultiplier = /** @type {number} */ (hyperMetaManager.getP95AlphaMultiplier());
     const effectiveP95Alpha = _P95_EMA_ALPHA * p95AlphaMultiplier;
 
     // EMA tracking
@@ -76,11 +76,11 @@ pairGainCeilingController = (() => {
     const p95Excess = ps.p95Ema - profile.p95Sensitivity;
     const exceedanceExcess = ps.exceedanceEma - profile.exceedanceSensitivity;
 
-    const s0Multiplier = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getS0TighteningMultiplier(), 1.0));
+    const s0Multiplier = /** @type {number} */ (hyperMetaManager.getS0TighteningMultiplier());
 
-    const globalMultiplier = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('global'), 1.0));
+    const globalMultiplier = /** @type {number} */ (hyperMetaManager.getRateMultiplier('global'));
 
-    const topologyCreativity = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getTopologyCreativityMultiplier(), 1.0));
+    const topologyCreativity = /** @type {number} */ (hyperMetaManager.getTopologyCreativityMultiplier());
 
     if (p95Excess > 0 || exceedanceExcess > 0) {
       const exceedanceAccelerator = 1.0 + clamp(ps.exceedanceEma / m.max(0.01, profile.exceedanceSensitivity), 0, 3) * 0.5;
@@ -100,27 +100,27 @@ pairGainCeilingController = (() => {
     // Dimensionality expander ceiling floor: during locked topology with
     // collapsing dimensionality, the orchestrator emits a minimum ceiling
     // to preserve nudge capacity for the expander's perturbations.
-    const dimFloor = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('dimExpanderCeilingFloor'), 0));
+    const dimFloor = /** @type {number} */ (hyperMetaManager.getRateMultiplier('dimExpanderCeilingFloor'));
     if (dimFloor > 0 && ps.ceiling < dimFloor) {
       ps.ceiling = dimFloor;
     }
 
     // E1: Hotspot monopoly relief
-    const monopolyRelief = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('hotspotMonopolyRelief_' + pair), 1.0));
+    const monopolyRelief = /** @type {number} */ (hyperMetaManager.getRateMultiplier('hotspotMonopolyRelief_' + pair));
     if (monopolyRelief > 1.0 && ps.ceiling < profile.baseCeiling) {
       const reliefLift = _CEILING_RELAX_RATE * (monopolyRelief - 1.0) * 5.0;
       ps.ceiling = m.min(profile.baseCeiling, ps.ceiling + reliefLift);
     }
 
     // E6: Coherent regime tightening
-    const coherentTightening = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e6CoherentTightening'), 1.0));
+    const coherentTightening = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e6CoherentTightening'));
     if (coherentTightening < 1.0) {
       const tightenAmount = _CEILING_ADAPT_RATE * (1.0 - coherentTightening) * 2.0;
       ps.ceiling = m.max(profile.minCeiling, ps.ceiling - tightenAmount);
     }
 
     if (pair.indexOf('phase') !== -1 || pair === 'flicker-trust') {
-      const ceilingRelaxSignal = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('phasePairCeilingRelax'), 1.0));
+      const ceilingRelaxSignal = /** @type {number} */ (hyperMetaManager.getRateMultiplier('phasePairCeilingRelax'));
       if (ceilingRelaxSignal > 1.0 && ps.ceiling < profile.baseCeiling) {
         const relaxLift = _CEILING_RELAX_RATE * (ceilingRelaxSignal - 1.0) * 3.0;
         ps.ceiling = m.min(profile.baseCeiling, ps.ceiling + relaxLift);

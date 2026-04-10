@@ -140,7 +140,7 @@ coordinationIndependenceManager = (() => {
     // Scoped to harmonic/melodic pairs only -- applying globally was too aggressive
     // (contrary is normal in polyphony; -0.08 across all 12 pairs halved note output).
     // Similar motion -> mild coordination boost for the whole system.
-    const melodicCtxCIM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCIM = emergentMelodicEngine.getContext();
     const isHarmonicPair = pair === 'harmonic-pitchCorrection' || pair === 'motif-echoIdentity';
     const counterpointBias = melodicCtxCIM
       ? (melodicCtxCIM.counterpoint === 'contrary' && isHarmonicPair ? -0.06
@@ -180,7 +180,7 @@ coordinationIndependenceManager = (() => {
     }
 
     // R26: auto-activate oscillation mode during oscillating regime
-    const regimeForOsc = /** @type {string} */ (safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving'));
+    const regimeForOsc = /** @type {string} */ (regimeClassifier.getLastRegime());
     if (regimeForOsc === 'oscillating' && !oscillationEnabled) { oscillationEnabled = true; oscillationBeat = 0; }
     else if (regimeForOsc !== 'oscillating' && oscillationEnabled) { oscillationEnabled = false; }
 
@@ -292,7 +292,7 @@ coordinationIndependenceManager = (() => {
     const harmonicDial = dials['harmonic-pitchCorrection'];
     safePreBoot.call(() => harmonicIntervalGuard.setCoordinationScale(harmonicDial), null);
     // emergentMelodicEngine: noveltyWeight amplification scales with harmonic coordination
-    safePreBoot.call(() => emergentMelodicEngine.setCoordinationScale(harmonicDial), null);
+    emergentMelodicEngine.setCoordinationScale(harmonicDial);
     safePreBoot.call(() => registerCollisionAvoider.setCoordinationScale(harmonicDial), null);
     safePreBoot.call(() => verticalIntervalMonitor.setCoordinationScale(harmonicDial), null);
 

@@ -80,7 +80,7 @@ narrativeTrajectory = (() => {
     if (typeof secProgress === 'number' && Number.isFinite(secProgress)) {
       const edgeDistance = m.min(clamp(secProgress, 0, 1), clamp(1 - secProgress, 0, 1));
       const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
-      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
       const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
         ? axisEnergy.shares.phase
         : 1.0 / 6.0;
@@ -90,9 +90,9 @@ narrativeTrajectory = (() => {
       const lowPhasePressure = clamp((0.12 - phaseShare) / 0.12, 0, 1);
       const phaseRecoveryCredit = clamp((phaseShare - 0.10) / 0.06, 0, 1);
       const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
-      const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+      const snap = systemDynamicsProfiler.getSnapshot();
       const dynamicSnap = /** @type {any} */ (snap);
-      const couplingPressures = /** @type {Record<string,number>} */ (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {}) || {});
+      const couplingPressures = /** @type {Record<string,number>} */ (pipelineCouplingManager.getCouplingPressures() || {});
       const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
       const tensionFlickerPressure = clamp(((couplingPressures['tension-flicker'] || 0) - 0.78) / 0.16, 0, 1);
       const tensionProduct = conductorState.getField('tension');

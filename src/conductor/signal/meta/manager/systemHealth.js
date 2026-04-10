@@ -21,7 +21,7 @@ hyperMetaManagerHealth = (() => {
       watchdog:          safePreBoot.call(() => conductorMetaWatchdog.getSnapshot(), null),
       homeostasis:       safePreBoot.call(() => couplingHomeostasis.getState(), null),
       registry:          safePreBoot.call(() => metaControllerRegistry.getSnapshot(), null),
-      profiler:          safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null),
+      profiler:          systemDynamicsProfiler.getSnapshot(),
       criticality:       safePreBoot.call(() => criticalityEngine.getState(), null),
       dimExpander:       safePreBoot.call(() => dimensionalityExpander.getSnapshot(), null),
     };

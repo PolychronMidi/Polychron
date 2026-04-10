@@ -105,6 +105,9 @@ accentPatternTracker = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('accentPatternTracker', { reset }, ['section']);
+
   return {
     getAccentProfile,
     getAccentBias

@@ -91,8 +91,8 @@ grandFinale = () => {
     // Xenolinguistic L5: cross-run personality persistence
     const lastNarration = safePreBoot.call(() => L0.getLast('self-narration', { layer: 'both' }), null);
     const tensionTraj = safePreBoot.call(() => sectionMemory.getTensionTrajectory(), 0);
-    const hmSnap = safePreBoot.call(() => hyperMetaManager.getSnapshot(), null);
-    const rcReadiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
+    const hmSnap = hyperMetaManager.getSnapshot();
+    const rcReadiness = regimeClassifier.getTransitionReadiness();
     const cimSnap = safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null);
     const trustScores = safePreBoot.call(() => adaptiveTrustScores.getScores(), null);
     const adaptiveState = {

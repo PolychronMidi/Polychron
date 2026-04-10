@@ -48,7 +48,7 @@ rhythmHistoryTracker = (() => {
     // R98 E5: Regime-responsive repetition penalty strength.
     // Exploring: stronger penalty (0.35) forces more rhythmic novelty.
     // Coherent: weaker penalty (0.15) allows comfortable repetition.
-    const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regimeSnap = systemDynamicsProfiler.getSnapshot();
     const trackerRegime = regimeSnap && regimeSnap.regime ? regimeSnap.regime : 'evolving';
     const penaltyStrength = trackerRegime === 'exploring' ? 0.35
       : trackerRegime === 'coherent' ? 0.15

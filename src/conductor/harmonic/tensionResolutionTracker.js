@@ -96,6 +96,9 @@ tensionResolutionTracker = (() => {
     return 1.0;
   }, 0.96, 1.04);
 
+  function reset() {}
+  conductorIntelligence.registerModule('tensionResolutionTracker', { reset }, ['section']);
+
   return {
     getResolutionProfile,
     getTensionBias

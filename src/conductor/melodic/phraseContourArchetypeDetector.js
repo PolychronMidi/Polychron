@@ -113,6 +113,9 @@ phraseContourArchetypeDetector = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('phraseContourArchetypeDetector', { reset }, ['section']);
+
   return {
     getContourSignal,
     getFlickerBias

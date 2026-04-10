@@ -37,7 +37,7 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
   function refresh(ctx) {
     const snap = signalReader.snapshot();
     // Read hypermeta state (read-only, no boundary violation)
-    const hmSnap = safePreBoot.call(() => hyperMetaManager.getSnapshot(), null);
+    const hmSnap = hyperMetaManager.getSnapshot();
     cached = {
       density: snap.densityProduct,
       tension: snap.tensionProduct,
@@ -50,20 +50,20 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
       exceedanceTrendEma: hmSnap ? V.optionalFinite(hmSnap.exceedanceTrendEma, 0) : 0,
       topologyPhase: (hmSnap && hmSnap.topologyPhase) ? hmSnap.topologyPhase : 'fluid',
       // R46: expose regime and axis energy so crossLayer modules don't bypass the bridge
-      regime: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? ds.regime : 'evolving'; })(),
-      effectiveDimensionality: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.effectiveDimensionality, 3) : 3; })(),
-      couplingStrength: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return ds ? V.optionalFinite(ds.couplingStrength, 0.3) : 0.3; })(),
-      axisEnergyShares: (() => { const ae = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null); return (ae && ae.shares) ? /** @type {Record<string,number>} */ (ae.shares) : null; })(),
-      adaptiveTargetSnapshot: /** @type {Record<string,any>|null} */ (safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null) || null),
+      regime: (() => { const ds = systemDynamicsProfiler.getSnapshot(); return ds ? ds.regime : 'evolving'; })(),
+      effectiveDimensionality: (() => { const ds = systemDynamicsProfiler.getSnapshot(); return ds ? V.optionalFinite(ds.effectiveDimensionality, 3) : 3; })(),
+      couplingStrength: (() => { const ds = systemDynamicsProfiler.getSnapshot(); return ds ? V.optionalFinite(ds.couplingStrength, 0.3) : 0.3; })(),
+      axisEnergyShares: (() => { const ae = pipelineCouplingManager.getAxisEnergyShare(); return (ae && ae.shares) ? /** @type {Record<string,number>} */ (ae.shares) : null; })(),
+      adaptiveTargetSnapshot: /** @type {Record<string,any>|null} */ (pipelineCouplingManager.getAdaptiveTargetSnapshot() || null),
       // Semantic coupling labels for axis pairs -- 'opposed'/'contrasting' labels indicate
       // creative anti-correlations that should not be treated as structural failures.
-      couplingLabels: (() => { const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null); return (ds && ds.couplingLabels) ? ds.couplingLabels : null; })(),
+      couplingLabels: (() => { const ds = systemDynamicsProfiler.getSnapshot(); return (ds && ds.couplingLabels) ? ds.couplingLabels : null; })(),
       // Xenolinguistic L2: regime probability distribution (superposition).
       // Instead of collapsing to one regime, expose soft probabilities based on
       // velocity + coupling. Low velocity + high coupling = coherent-leaning.
       // High velocity + low coupling = exploring-leaning. Medium = evolving.
       regimeProb: (() => {
-        const ds = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+        const ds = systemDynamicsProfiler.getSnapshot();
         if (!ds) return { coherent: 0.33, exploring: 0.33, evolving: 0.34 };
         const vel = V.optionalFinite(ds.velocity, 0.1);
         const coup = V.optionalFinite(ds.couplingStrength, 0.3);

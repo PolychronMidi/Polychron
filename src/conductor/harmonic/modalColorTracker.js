@@ -96,6 +96,9 @@ modalColorTracker = (() => {
     }
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('modalColorTracker', { reset }, ['section']);
+
   return {
     getModalProfile,
     getColorBias,

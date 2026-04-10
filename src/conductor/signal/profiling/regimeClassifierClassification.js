@@ -79,7 +79,7 @@ regimeClassifierClassification = (() => {
     const rawEvolvingShare = state.runBeatCount > 0
       ? ((V.optionalFinite(state.runRawRegimeCounts.evolving, 0)) / state.runBeatCount)
       : 0;
-    const axisEnergyC = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const axisEnergyC = pipelineCouplingManager.getAxisEnergyShare();
     const trustShareC = axisEnergyC && axisEnergyC.shares && typeof axisEnergyC.shares.trust === 'number'
       ? axisEnergyC.shares.trust
       : 1.0 / 6.0;

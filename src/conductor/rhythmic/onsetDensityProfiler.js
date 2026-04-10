@@ -115,6 +115,9 @@ onsetDensityProfiler = (() => {
     onsetCrossModBias: clamp(onsetDensityProfiler.getCrossModBias(), 0.8, 1.2)
   }));
 
+  function reset() {}
+  conductorIntelligence.registerModule('onsetDensityProfiler', { reset }, ['section']);
+
   return {
     getDensity,
     getDensityBias,

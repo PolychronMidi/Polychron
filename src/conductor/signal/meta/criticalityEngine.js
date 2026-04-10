@@ -79,14 +79,14 @@ criticalityEngine = (() => {
 
     // Health-aware effective threshold: worse health -> lower trigger -> more corrective avalanches.
     // At healthEma=0.7 (nominal), scale=1.0 (unchanged). Stressed system (healthEma=0.35) -> scale=0.5 -> fires at half threshold.
-    const critHealthEma = V.optionalFinite(safePreBoot.call(() => hyperMetaManager.getSnapshot().healthEma, 0.7), 0.7);
+    const critHealthEma = V.optionalFinite(hyperMetaManager.getSnapshot().healthEma, 0.7);
     const criticalityHealthScale = clamp(critHealthEma / 0.7, 0.5, 1.4);
 
     // Orchestrator-modulated snap: during emergence, reduce snap to let
     // novel patterns express; during locked state, amplify to break stasis.
     // E22 (snap softening under pressure) was refuted in R35 -- removing the
     // stabilizing snap made exceedance worse (49->122). Engine unchanged.
-    const critSnapScale = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('criticalitySnap'), 1.0));
+    const critSnapScale = /** @type {number} */ (hyperMetaManager.getRateMultiplier('criticalitySnap'));
     const effectiveSnap = clamp(SNAP_STRENGTH + (1.0 - SNAP_STRENGTH) * (1.0 - critSnapScale), SNAP_STRENGTH, 1.0);
 
     if (inAvalanche > 0) {
@@ -150,7 +150,7 @@ criticalityEngine = (() => {
     // Orchestrator tension floor protection. When the manager detects
     // S0 tension collapse risk, it emits a protection signal. Reduce
     // avalanche damping on tension to let tension recover naturally.
-    const tensionProtection = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('tensionFloorProtection'), 1.0));
+    const tensionProtection = /** @type {number} */ (hyperMetaManager.getRateMultiplier('tensionFloorProtection'));
     const tensionHealth = signalHealthAnalyzer.getHealth().tension.grade;
     const scale = criticalityEngineHealthScale(tensionHealth);
     // Centralized tension damping gate: bypass when EITHER orchestrator protection OR health crisis

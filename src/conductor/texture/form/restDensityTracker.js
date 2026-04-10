@@ -154,6 +154,9 @@ restDensityTracker = (() => {
     return m.sqrt(onset * breathing);
   }, 0.90, 1.20);
 
+  function reset() {}
+  conductorIntelligence.registerModule('restDensityTracker', { reset }, ['section']);
+
   return {
     getOnsetDensity,
     getOnsetBias,

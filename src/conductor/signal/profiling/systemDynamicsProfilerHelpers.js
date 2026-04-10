@@ -97,7 +97,7 @@ systemDynamicsProfilerHelpers = (() => {
       // decorrelates from slow-changing tension), exploring uses wider 1.3s
       // (smoother, contrasting behavior). Creates regime-specific entropy
       // dynamics that break the TE coupling lock.
-      const entropyRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'coherent');
+      const entropyRegime = regimeClassifier.getLastRegime();
       const entropyWindow = entropyRegime === 'exploring' ? 1.3
         : entropyRegime === 'coherent' ? 0.7
         : 1.0;
@@ -222,7 +222,7 @@ systemDynamicsProfilerHelpers = (() => {
         // with density/tension/flicker axes that have regime-dependent
         // biases. Boost LFO weight: exploring 0.12, evolving 0.10,
         // coherent 0.08 (unchanged baseline).
-        const phaseRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'coherent');
+        const phaseRegime = regimeClassifier.getLastRegime();
         const lfoWeight = phaseRegime === 'exploring' ? 0.12
           : phaseRegime === 'evolving' ? 0.10
           : 0.08;
@@ -274,7 +274,7 @@ systemDynamicsProfilerHelpers = (() => {
     // R91 E1: Coherent trustVelAmp 2.5->3.5. Trust collapsed 0.1736->0.0866
     // in R90 because coherent (58.5%) dominates and 2.5x was too low.
     // Same pattern as phase recovery (R90 E5: 2.0->3.0 recovered phase +43%).
-    const currentRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'coherent');
+    const currentRegime = regimeClassifier.getLastRegime();
     const trustVelAmp = currentRegime === 'exploring' ? 5.0
       : currentRegime === 'evolving' ? 4.0
       : 3.5;

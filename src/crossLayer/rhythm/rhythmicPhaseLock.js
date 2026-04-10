@@ -56,7 +56,7 @@ rhythmicPhaseLock = (() => {
     let mode = /** @type {'lock'|'drift'|'repel'} */ ('drift');
     // R59: rising contour widens lock tolerance (layers converge as energy builds);
     // contrary counterpoint narrows it (opposing motion should diverge, not lock).
-    const melodicCtxPL = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxPL = emergentMelodicEngine.getContext();
     const melodicLockDelta = melodicCtxPL
       ? (melodicCtxPL.contourShape === 'rising' ? 0.06 : melodicCtxPL.contourShape === 'falling' ? -0.04 : 0)
         + (melodicCtxPL.counterpoint === 'contrary' ? -0.08 : 0)
@@ -90,7 +90,7 @@ rhythmicPhaseLock = (() => {
     V.requireFinite(measureStartTime, 'measureStartTime');
     V.requireFinite(spBeat, 'spBeat');
 
-    const melodicCtxPLApply = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxPLApply = emergentMelodicEngine.getContext();
     const melodicLockStr = melodicCtxPLApply
       ? (melodicCtxPLApply.contourShape === 'rising' ? 1.08 : melodicCtxPLApply.contourShape === 'falling' ? 0.90 : 1.0)
       : 1.0;

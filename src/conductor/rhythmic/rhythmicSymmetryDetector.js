@@ -107,6 +107,9 @@ rhythmicSymmetryDetector = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('rhythmicSymmetryDetector', { reset }, ['section']);
+
   return {
     getSymmetrySignal
   };

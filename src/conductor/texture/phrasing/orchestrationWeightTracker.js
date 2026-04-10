@@ -85,6 +85,9 @@ orchestrationWeightTracker = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('orchestrationWeightTracker', { reset }, ['section']);
+
   return {
     getWeightSignal
   };

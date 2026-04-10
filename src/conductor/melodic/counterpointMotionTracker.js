@@ -118,6 +118,9 @@ counterpointMotionTracker = (() => {
     return b.parallelBias < 1.0 ? 0.93 : (b.contraryBias < 1.0 ? 1.08 : 1.0);
   }, 0.93, 1.08);
 
+  function reset() {}
+  conductorIntelligence.registerModule('counterpointMotionTracker', { reset }, ['section']);
+
   return {
     getMotionProfile,
     getMotionBias

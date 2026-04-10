@@ -66,6 +66,9 @@ pitchClassGravityMap = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('pitchClassGravityMap', { reset }, ['section']);
+
   return {
     getGravitySignal
   };

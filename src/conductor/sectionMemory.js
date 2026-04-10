@@ -26,7 +26,7 @@ sectionMemory = (() => {
    */
   function snapshot() {
     const mom = energyMomentumTracker.getMomentum();
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const snap = systemDynamicsProfiler.getSnapshot();
     const coherenceBias = V.optionalFinite(coherenceMonitor.getDensityBias(), 1.0);
     const lastIntent = sectionIntentCurves.getLastIntent();
     sectionMemoryPrev = {

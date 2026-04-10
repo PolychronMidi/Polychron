@@ -35,7 +35,7 @@ regimeReactiveDampingEquilibrator = (() => {
     let rawNonCoherentOpportunityShare = 0;
     let opportunityGap = 0;
     let postForcedRecoveryPressure = 0;
-    const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
+    const readiness = regimeClassifier.getTransitionReadiness();
     if (readiness) {
       if (typeof readiness.runCoherentShare === 'number') runCoherentShare = readiness.runCoherentShare;
       if (typeof readiness.runCoherentBeats === 'number') coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);

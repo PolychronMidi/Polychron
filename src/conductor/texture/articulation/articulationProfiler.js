@@ -79,6 +79,9 @@ articulationProfiler = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('articulationProfiler', { reset }, ['section']);
+
   return {
     getArticulationProfile,
     getDurationBias

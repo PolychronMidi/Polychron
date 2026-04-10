@@ -31,7 +31,7 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   const directive = Object.assign({}, directiveDefaults, (cfg.directive || {}));
   // Select preset based on regime if not explicitly set
   if (!cfg.preset) {
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const snap = systemDynamicsProfiler.getSnapshot();
     const regime = snap ? snap.regime : null;
     if (regime === 'coherent') cfg.preset = 'subtle';
     else if (regime === 'exploring') cfg.preset = 'stereoWide';

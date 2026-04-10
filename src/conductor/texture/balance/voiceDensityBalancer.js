@@ -89,6 +89,9 @@ voiceDensityBalancer = (() => {
 
   conductorIntelligence.registerDensityBias('voiceDensityBalancer', () => voiceDensityBalancer.getVoiceCountBias(), 0.90, 1.3);
 
+  function reset() {}
+  conductorIntelligence.registerModule('voiceDensityBalancer', { reset }, ['section']);
+
   return {
     getVoiceDensity,
     getVoiceCountBias,

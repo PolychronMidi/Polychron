@@ -188,7 +188,7 @@ regimeReactiveDamping = (() => {
     const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number' && Number.isFinite(couplingMatrix['flicker-trust'])
       ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.68) / 0.18, 0, 1)
       : 0;
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;

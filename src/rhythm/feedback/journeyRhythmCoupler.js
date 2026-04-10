@@ -90,7 +90,7 @@ journeyRhythmCoupler = (() => {
 
     // R98 E3: Regime-responsive boldness amplification.
     // Exploring amplifies boldness effect, coherent dampens it.
-    const regimeSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const regimeSnap = systemDynamicsProfiler.getSnapshot();
     const regime = regimeSnap && regimeSnap.regime ? regimeSnap.regime : 'evolving';
     const boldnessScale = regime === 'exploring' ? 1.30
       : regime === 'coherent' ? 0.75

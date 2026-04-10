@@ -126,7 +126,7 @@ hyperMetaManagerEvolutions = (() => {
     // into flicker-trust exceedance (127 beats, +210% vs baseline) on long runs.
     let trustShare = 0;
     {
-      const axisEnergyShare = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const axisEnergyShare = pipelineCouplingManager.getAxisEnergyShare();
       trustShare = axisEnergyShare && axisEnergyShare.shares && Number.isFinite(axisEnergyShare.shares.trust) ? axisEnergyShare.shares.trust : 0;
     }
     if (trustShare > 0 && trustShare < 0.07) {

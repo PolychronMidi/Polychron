@@ -19,8 +19,8 @@ const path = require('path');
 const ROOT = path.join(__dirname, '../..');
 const SRC  = path.join(ROOT, 'src');
 
-const BASELINE_CALLS = 320;
-const BASELINE_FILES = 107;
+const BASELINE_CALLS = 171;
+const BASELINE_FILES = 59;
 
 function findJsFiles(dir) {
   const results = [];

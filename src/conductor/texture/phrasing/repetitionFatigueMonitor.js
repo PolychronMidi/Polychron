@@ -73,12 +73,12 @@ repetitionFatigueMonitor = (() => {
       ? m.min(clamp(secProgress, 0, 1), clamp(1 - secProgress, 0, 1))
       : 0.5;
     const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
     const lowPhasePressure = clamp((0.12 - phaseShare) / 0.12, 0, 1);
-    const couplingPressures = /** @type {Record<string,number>} */ (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {}) || {});
+    const couplingPressures = /** @type {Record<string,number>} */ (pipelineCouplingManager.getCouplingPressures() || {});
     const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
     const relief = clamp(edgePressure * 0.40 + lowPhasePressure * 0.30 + densityFlickerPressure * 0.30, 0, 0.75);
     penalty = 1.0 + (penalty - 1.0) * (1 - relief);
@@ -86,6 +86,9 @@ repetitionFatigueMonitor = (() => {
   }
 
   conductorIntelligence.registerTensionBias('repetitionFatigueMonitor', () => repetitionFatigueMonitor.getRepetitionPenalty(), 1, 1.12);
+
+  function reset() {}
+  conductorIntelligence.registerModule('repetitionFatigueMonitor', { reset }, ['section']);
 
   return {
     getRepetitionProfile,

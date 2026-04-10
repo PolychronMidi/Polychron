@@ -146,9 +146,9 @@ dynamismEngine = (() => {
     const journeyBoost = V.optionalFinite(Number(emissionGate.journeyBoost), 0.08);
     const feedbackBoost = V.optionalFinite(Number(emissionGate.feedbackBoost), 0.08);
     const layerBiasScale = V.optionalFinite(Number(emissionGate.layerBiasScale), 1.0);
-    const activeRegime = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot().regime, 'evolving');
-    const dynamics = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const activeRegime = systemDynamicsProfiler.getSnapshot().regime;
+    const dynamics = systemDynamicsProfiler.getSnapshot();
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
@@ -156,7 +156,7 @@ dynamismEngine = (() => {
       ? axisEnergy.shares.trust
       : 1.0 / 6.0;
     const dynamicSnap = /** @type {any} */ (dynamics);
-    const couplingPressures = /** @type {Record<string,number>} */ (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {}) || {});
+    const couplingPressures = /** @type {Record<string,number>} */ (pipelineCouplingManager.getCouplingPressures() || {});
     const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.74) / 0.18, 0, 1);
     const densityTrustPressure = clamp(((couplingPressures['density-trust'] || 0) - 0.72) / 0.18, 0, 1);
     const recoveryContainmentPressure = clamp(densityFlickerPressure * 0.60 + densityTrustPressure * 0.40, 0, 1);

@@ -39,7 +39,7 @@ motifEcho = (() => {
     // When we accumulate enough notes, potentially capture a motif fragment
     // R51: CIM-modulated echo probability -- coordinated = more imitative echo, independent = less
     // R55: thematic density gate -- high recall suppresses new capture (preserve existing material)
-    const melodicCtx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtx = emergentMelodicEngine.getContext();
     const thematicMult = melodicCtx ? clamp(1.0 - melodicCtx.thematicDensity * 0.45, 0.55, 1.0) : 1.0;
     // Rhythmic coupling: strong emergent rhythm structure = natural thematic imitation moment.
     const rhythmEntryME = L0.getLast('emergentRhythm', { layer: 'both' });
@@ -88,7 +88,7 @@ motifEcho = (() => {
       transform = rf() < 0.6 ? 'retrograde-inversion' : 'inversion';
     }
     // R55: contour-aware transform -- echo mirrors the melodic arc direction
-    const captureCtx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const captureCtx = emergentMelodicEngine.getContext();
     if (captureCtx && rf() < 0.55) {
       if (captureCtx.contourShape === 'rising')  transform = rf() < 0.65 ? 'retrograde' : transform;
       else if (captureCtx.contourShape === 'falling') transform = rf() < 0.65 ? 'inversion' : transform;
