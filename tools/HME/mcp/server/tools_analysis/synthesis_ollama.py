@@ -348,7 +348,8 @@ def _read_module_source(module_name: str, max_chars: int = 3000) -> str:
     try:
         with open(candidates[0], encoding="utf-8", errors="ignore") as _f:
             return _f.read()[:max_chars]
-    except Exception:
+    except Exception as e:
+        logger.warning(f"source_context: failed to read {candidates[0]}: {e}")
         return ""
 
 

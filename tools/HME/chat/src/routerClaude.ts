@@ -9,7 +9,8 @@ function getPty(): typeof import("node-pty") | null {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     _pty = require("node-pty");
     return _pty;
-  } catch {
+  } catch (e) {
+    console.error(`[HME] node-pty unavailable — PTY mode disabled, falling back to -p: ${(e as any)?.message ?? e}`);
     return null;
   }
 }
@@ -82,7 +83,8 @@ export function streamClaude(
       try {
         const evt = JSON.parse(line);
         handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
-      } catch {
+      } catch (e) {
+        console.error(`[HME] stream JSON parse failed: ${(e as any)?.message ?? e} | line: ${line.slice(0, 120)}`);
         if (line.trim()) onChunk(line.trim(), "error");
       }
     }
@@ -100,7 +102,8 @@ export function streamClaude(
       try {
         const evt = JSON.parse(buf.trim());
         handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
-      } catch {
+      } catch (e) {
+        console.error(`[HME] close-buf JSON parse failed: ${(e as any)?.message ?? e} | buf: ${buf.slice(0, 120)}`);
         onChunk(buf.trim(), "error");
       }
     }

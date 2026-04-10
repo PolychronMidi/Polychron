@@ -112,7 +112,7 @@ export class ChatPanel {
         }
       });
     } catch (e) {
-      // TranscriptLogger failed — use a no-op stub
+      console.error(`[HME] TranscriptLogger init failed — transcript disabled: ${(e as any)?.message ?? e}`);
       this._transcript = {
         logUser: () => {}, logAssistant: () => {}, logToolCall: () => {},
         logRouteSwitch: () => {}, logValidation: () => {}, logAudit: () => {},
@@ -818,7 +818,9 @@ export class ChatPanel {
         ".claude", "mcp", "HME", "todos.json"
       );
       todos = JSON.parse(fs.readFileSync(todoPath, "utf8"));
-    } catch { /* no todos */ }
+    } catch (e: any) {
+      if (e?.code !== "ENOENT") console.error(`[HME] Failed to load todos.json: ${e?.message ?? e}`);
+    }
 
     // Generate summary via a separate Claude -p call
     const priorSummaries = loadChainSummaries(this._projectRoot, sessionId);
@@ -1185,7 +1187,7 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
     ChatPanel.current = undefined;
     if (this._shimPollTimer) { clearTimeout(this._shimPollTimer); this._shimPollTimer = null; }
     // Persist in-flight state synchronously before anything async (writeFileSync — always completes)
-    try { this._persistState(); } catch (e) {}
+    try { this._persistState(); } catch (e) { console.error(`[HME] dispose: _persistState failed: ${(e as any)?.message ?? e}`); }
     // Graceful async cleanup: await narrative synthesis with 5s cap, then kill shim
     const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
     const timeout = new Promise<void>((resolve) => setTimeout(resolve, 5000));

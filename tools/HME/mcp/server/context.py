@@ -38,8 +38,8 @@ def register_critical_failure(source: str, error: str, severity: str = "CRITICAL
     try:
         from server.tools_analysis.todo import register_todo_from_lifesaver
         register_todo_from_lifesaver(source, error, severity)
-    except Exception:
-        pass
+    except Exception as _te:
+        logger.error(f"LIFESAVER todo append failed (failure still queued): {_te}")
 
 
 def drain_critical_failures() -> str:
