@@ -11,6 +11,7 @@ from server.helpers import (
 from symbols import find_callers as _find_callers
 from .synthesis import _local_think, _REASONING_MODEL, _THINK_SYSTEM
 from .synthesis_session import append_session_narrative
+from .tool_cache import cached_kb_search, cached_find_callers
 from . import _track
 
 logger = logging.getLogger("HME")
@@ -48,7 +49,7 @@ def what_did_i_forget(changed_files: str) -> str:
                 )
         else:
             # Check KB for constraints on this module — split actionable vs historical
-            kb_results = ctx.project_engine.search_knowledge(module_name, top_k=min(limits["kb_entries"], 5))
+            kb_results = cached_kb_search(module_name, min(limits["kb_entries"], 5), ctx.project_engine)
             _CONSTRAINT_MARKERS = ("never", "must", "always", "do not", "don't", "forbidden", "violation", "constraint:", "ban", "prevent")
             for k in kb_results[:3]:
                 body = k.get("content", "").lower()
@@ -193,17 +194,20 @@ def diagnose_error(error_text: str) -> str:
                         pass
     # Search KB for similar bugs — by error message AND by module names from stack
     kb_query = error_type.group(2)[:60] if error_type else error_text[:80]
-    kb_results = ctx.project_engine.search_knowledge(kb_query, top_k=5)
+    kb_results = cached_kb_search(kb_query, 5, ctx.project_engine)
     # Also search global KB for cross-project patterns
     if ctx.global_engine:
-        glob_hits = ctx.global_engine.search_knowledge(kb_query, top_k=2)
+        glob_hits = cached_kb_search(kb_query, 2, ctx.global_engine)
+        kb_results = list(kb_results)  # ensure mutable copy
         kb_results.extend([dict(k, title=f"[global] {k['title']}") for k in glob_hits
                            if k["id"] not in {r["id"] for r in kb_results}])
     # Also search by module names from file refs for broader matches
+    seen_ids = {r["id"] for r in kb_results}
     for fpath, _ in file_refs[:3]:
         module = os.path.basename(fpath).replace('.js', '').replace('.ts', '')
-        module_kb = ctx.project_engine.search_knowledge(module, top_k=2)
-        kb_results.extend([k for k in module_kb if k["id"] not in {r["id"] for r in kb_results}])
+        module_kb = cached_kb_search(module, 2, ctx.project_engine)
+        kb_results.extend([k for k in module_kb if k["id"] not in seen_ids])
+        seen_ids.update(k["id"] for k in module_kb)
     if kb_results:
         parts.append(f"\n## Related KB Entries ({len(kb_results)})")
         for k in kb_results:
@@ -221,19 +225,34 @@ def diagnose_error(error_text: str) -> str:
     if not file_refs and not kb_results and not unique_symbols:
         parts.append("\nNo specific diagnosis available. Try search_knowledge with key terms from the error.")
 
-    # Adaptive thinking synthesis: root cause + fix steps, KB grounded via corpus
-    user_text = (
-        f"Error:\n{error_text[:600]}\n\n"
-        "Based on the error and the project KB, provide: "
+    # Adaptive thinking synthesis: root cause + fix steps, KB grounded via corpus.
+    # Two-stage pipeline: GPU0 extracts error facts from stack + KB, GPU1 reasons fix steps.
+    kb_lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:5]]
+    raw_context = (
+        f"Error:\n{error_text[:800]}\n\n"
+        + ("Relevant KB entries:\n" + "\n".join(kb_lines) + "\n" if kb_lines else "")
+    )
+    question = (
+        "What is the root cause and exact fix steps for this error? "
         "(1) most likely root cause in one sentence, "
         "(2) exact fix steps as a numbered list, "
         "(3) any boundary/architectural rule to check."
     )
-    # Ground local model in the KB entries already found — prevents hallucination
-    kb_lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:5]]
-    kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
-    synthesis = _local_think(user_text + kb_suffix, max_tokens=800, model=_REASONING_MODEL,
-                             system=_THINK_SYSTEM)
+    answer_format = (
+        "ROOT CAUSE: one sentence naming the specific function, file, or signal.\n"
+        "FIX:\n1. first step\n2. second step\n3. third step (max 3 steps)\n"
+        "RULE: any architectural boundary or constraint to verify (omit if none)."
+    )
+    from .synthesis_pipeline import _two_stage_think
+    synthesis = _two_stage_think(raw_context, question, max_tokens=800,
+                                 answer_format=answer_format)
+    if synthesis is None:
+        # Fallback: single-stage reasoning model (Ollama unavailable or stage 1 failed)
+        kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
+        synthesis = _local_think(
+            f"Error:\n{error_text[:600]}\n\n{question}" + kb_suffix,
+            max_tokens=800, model=_REASONING_MODEL, system=_THINK_SYSTEM
+        )
     if synthesis:
         from .synthesis_ollama import compress_for_claude
         synthesis = compress_for_claude(synthesis, max_chars=800, hint="error fix steps")

@@ -112,6 +112,7 @@ def hme_hot_reload(modules: str = "") -> str:
     RELOADABLE = [
         "synthesis", "synthesis_config", "synthesis_ollama",
         "synthesis_session", "synthesis_warm", "synthesis_pipeline",
+        "tool_cache",
         "symbols", "workflow", "workflow_audit",
         "reasoning", "reasoning_think",
         "health",

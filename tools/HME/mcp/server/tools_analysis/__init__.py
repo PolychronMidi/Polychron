@@ -165,6 +165,7 @@ def _load_trace(trace_path: str) -> list[dict]:
 
 
 # Import sub-modules to register tools (order: synthesis first, then tools)
+from . import tool_cache    # noqa: E402, F401 — shared TTL cache (must load before workflow modules)
 from . import synthesis  # noqa: E402, F401 — synthesis engine (no tools, just helpers)
 from . import symbols    # noqa: E402, F401
 from . import workflow        # noqa: E402, F401
