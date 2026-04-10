@@ -1,6 +1,6 @@
 # Stutter Variant System
 
-19 octave-shifted note echo variants, selected per-beat by weighted random selection across 10 signal dimensions. Two-layer gating prevents note floods while preserving rhythmic structure.
+19 octave-shifted note echo variants, selected per-beat by weighted random selection across 12 signal dimensions. Two-layer gating prevents note floods while preserving rhythmic structure.
 
 ## Variants
 
@@ -30,7 +30,7 @@ All variants stay rooted to source note or octave shifts only -- no voicing conf
 
 ## Selection Algorithm
 
-`stutterVariants.selectForBeat()` builds a weighted pool from 10 signal dimensions, then rolls weighted random:
+`stutterVariants.selectForBeat()` builds a weighted pool from 12 signal dimensions, then rolls weighted random:
 
 1. **Base weight** per variant registration
 2. **Regime weights** (`REGIME_WEIGHTS` map): coherent favors ghost/rhythmicGrid, exploring favors machineGun/tremolo. Blended over 8 beats during transitions.
