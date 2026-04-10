@@ -205,7 +205,9 @@ def _prime_warm_context(model: str) -> bool:
         logger.info(f"warm ctx priming SKIPPED: {model} — cooldown active, will retry next cycle")
         return False
     if text_result is None and not ctx_array:
-        logger.info(f"warm ctx priming TIMEOUT: {model} — Ollama took too long ({len(persona)} char persona)")
+        from .synthesis_ollama import _ollama_interactive
+        cause = "cancelled by interactive call" if _ollama_interactive.is_set() else "Ollama took too long"
+        logger.info(f"warm ctx priming CANCELLED: {model} — {cause} ({len(persona)} char persona)")
         return False
     if ctx_array:
         import time as _t
@@ -331,9 +333,8 @@ def _init_ollama_models() -> str:
 def _prime_all_gpus() -> str:
     """Prime all three models sequentially. Yields to interactive between each model.
 
-    Sequential (not parallel) prevents all three GPU locks being held simultaneously,
-    which would block interactive calls for the full priming duration.
-    Each model primes one at a time — interactive calls jump ahead between priming steps.
+    Sequential so each model finishes before the next starts — interactive calls
+    cancel the active priming via _ollama_interactive and _cancellable_urlopen.
     """
     if _priming_in_progress.is_set():
         logger.info("_prime_all_gpus: already running, skipping duplicate")

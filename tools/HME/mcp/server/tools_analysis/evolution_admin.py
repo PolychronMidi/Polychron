@@ -121,6 +121,7 @@ def hme_hot_reload(modules: str = "") -> str:
         "digest", "digest_analysis",
         "section_compare", "perceptual", "perceptual_engines",
         "coupling", "coupling_data", "coupling_channels", "coupling_clusters", "coupling_bridges",
+        "drama_map", "health_analysis", "section_labels",
         "evolution_evolve", "search_unified", "review_unified",
         "read_unified", "learn_unified", "status_unified", "trace_unified",
     ]
