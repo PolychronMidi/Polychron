@@ -307,7 +307,7 @@ def _init_ollama_models() -> str:
             vram_warn = _check_vram_headroom(model, _url_for(model))
             if vram_warn:
                 results[model] = f"OK ({elapsed:.1f}s) ⚠ {vram_warn}"
-                logger.warning(f"model init: {model} ready ({elapsed:.1f}s) — {vram_warn}")
+                logger.info(f"model init: {model} ready ({elapsed:.1f}s) — {vram_warn}")
             else:
                 results[model] = f"OK ({elapsed:.1f}s)"
                 logger.info(f"model init: {model} ready ({elapsed:.1f}s)")
@@ -398,6 +398,6 @@ def ensure_warm(model: str):
                 logger.info("lazy warm priming: all failed, will retry on next synthesis call")
         except Exception as _e:
             _lazy_prime_attempted = False
-            logger.warning(f"lazy warm priming background thread failed: {type(_e).__name__}: {_e}")
+            logger.info(f"lazy warm priming background thread failed: {type(_e).__name__}: {_e}")
     _threading.Thread(target=_bg, daemon=True).start()
     logger.info("lazy warm context priming started (background)")

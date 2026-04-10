@@ -313,7 +313,7 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
             result = _warm_pre_edit_cache_sync(max_files, synthesis_hot)
             logger.info(f"warm_pre_edit_cache (background): {result}")
         except Exception as e:
-            logger.warning(f"warm_pre_edit_cache (background) failed: {type(e).__name__}: {e}")
+            logger.info(f"warm_pre_edit_cache (background) failed: {type(e).__name__}: {e}")
 
     threading.Thread(target=_warm_background, daemon=True, name="HME-warm-cache").start()
     return f"Cache warming started in background (max_files={max_files}, synthesis_hot={synthesis_hot}). Results in hme.log."

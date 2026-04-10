@@ -176,9 +176,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         if _elapsed < _TIMEOUT_COOLDOWN_S:
             _remaining = int(_TIMEOUT_COOLDOWN_S - _elapsed)
             if priority == "background":
-                # Suppress per-call spam — log only the first background refusal in this episode
                 if _cooldown_refused_bg == 0:
-                    logger.warning(
+                    logger.info(
                         f"_local_think REFUSED (background) — {_remaining}s remaining. "
                         "Subsequent background calls silently skipped until cooldown clears."
                     )
