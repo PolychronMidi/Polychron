@@ -283,6 +283,16 @@ else:
   fi
 fi
 
+# ── Nexus lifecycle audit ────────────────────────────────────────────────────
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+NEXUS_ISSUES=$(_nexus_pending)
+if [ -n "$NEXUS_ISSUES" ]; then
+  jq -n \
+    --arg issues "$NEXUS_ISSUES" \
+    '{"decision":"block","reason":("NEXUS — incomplete lifecycle steps:" + $issues + "\n\nFinish these before stopping.")}'
+  exit 0
+fi
+
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 exit 0

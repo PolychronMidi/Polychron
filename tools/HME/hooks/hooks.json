@@ -41,6 +41,12 @@
         ]
       },
       {
+        "matcher": "Edit",
+        "hooks": [
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_edit.sh", "timeout": 10}
+        ]
+      },
+      {
         "matcher": "Write",
         "hooks": [
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_write.sh", "timeout": 10}
@@ -56,6 +62,18 @@
         "matcher": "mcp__HME__add_knowledge",
         "hooks": [
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_addknowledge.sh", "timeout": 10}
+        ]
+      },
+      {
+        "matcher": "mcp__HME__read",
+        "hooks": [
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_hme_read.sh", "timeout": 10}
+        ]
+      },
+      {
+        "matcher": "mcp__HME__review",
+        "hooks": [
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_hme_review.sh", "timeout": 10}
         ]
       }
     ],
