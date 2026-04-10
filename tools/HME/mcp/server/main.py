@@ -17,10 +17,12 @@ _tool_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
 
+_stderr_handler = logging.StreamHandler(sys.stderr)
+_stderr_handler.setLevel(logging.WARNING)
 logging.basicConfig(
     level=logging.WARNING,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stderr)],
+    handlers=[_stderr_handler],
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -98,7 +100,7 @@ def _background_load():
                                                model_kwargs={"file_name": "onnx/model.onnx"})
             logger.info(f"Loaded {MODEL_NAME} with {MODEL_BACKEND} backend (CPU-only, GPUs reserved for Ollama)")
         except Exception as e:
-            logger.warning(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
+            logger.info(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
             shared_model = SentenceTransformer(MODEL_NAME, device="cpu")
 
         project_engine = RAGEngine(db_path=PROJECT_DB, model=shared_model)

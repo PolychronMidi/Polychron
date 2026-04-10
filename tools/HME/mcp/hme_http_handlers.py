@@ -48,7 +48,8 @@ def _reindex_files(files: list[str]) -> dict:
 def _enrich(query: str, top_k: int = 5) -> dict:
     """Pull KB hits for query. Returns {kb: [...], warm: str}."""
     from hme_http_store import _get_transcript_context
-    _engine_ready.wait(timeout=45)
+    if not _engine_ready.wait(timeout=5):
+        return {"kb": [], "warm": "", "deferred": "engines starting"}
     if _project_engine is None:
         return {"kb": [], "warm": "", "error": "engines not ready"}
 

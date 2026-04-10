@@ -405,7 +405,7 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
                 _prime_all_gpus()
                 logger.info("warm: GPU KV context priming complete")
             except Exception as e:
-                logger.warning(f"warm: GPU KV context error: {e}")
+                logger.info(f"warm: GPU KV context error: {e}")
         def _bg_pre_edit():
             logger.info("warm: pre-edit cache priming starting (all src/ files)")
             try:
@@ -413,7 +413,7 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
                 _warm_cache()
                 logger.info("warm: pre-edit cache priming complete")
             except Exception as e:
-                logger.warning(f"warm: pre-edit cache error: {e}")
+                logger.info(f"warm: pre-edit cache error: {e}")
         _threading.Thread(target=_bg_gpu_warm, daemon=True).start()
         _threading.Thread(target=_bg_pre_edit, daemon=True).start()
         parts.append(

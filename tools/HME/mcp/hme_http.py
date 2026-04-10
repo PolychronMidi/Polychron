@@ -20,6 +20,7 @@ import logging
 import argparse
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 
 _tool_root = os.path.dirname(os.path.abspath(__file__))
 if _tool_root not in sys.path:
@@ -72,6 +73,10 @@ def _load_engines():
 
 
 threading.Thread(target=_load_engines, daemon=True).start()
+
+
+class _ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -199,7 +204,7 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     args = parser.parse_args()
 
-    server = HTTPServer((args.host, args.port), _Handler)
+    server = _ThreadingHTTPServer((args.host, args.port), _Handler)
     logger.info(f"HME HTTP shim listening on {args.host}:{args.port}")
     try:
         server.serve_forever()

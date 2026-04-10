@@ -31,4 +31,13 @@ fi
 if echo "$FILE" | grep -q 'lab/sketches.js'; then
   echo 'LAB RULES: Every postBoot() must create AUDIBLE behavior via real monkey-patching. No empty sketches. Do not use V (validator) -- use Number.isFinite directly. Do not use crossLayerHelpers -- use inline layer logic. Do not return values from void functions (playNotesEmitPick returns void).' >&2
 fi
+# fix_antipattern: expected background failures must be logger.info, not logger.warning.
+# Only genuine critical failures (interactive timeout, HTTP 500, connection refused) stay as warning.
+# Catches: logger.warning(...background...) and logger.warning(...warm...failed/error...) in HME server code.
+if echo "$FILE" | grep -q 'tools/HME/mcp/server'; then
+  if echo "$CONTENT" | grep -qE 'logger\.warning\(.*\b(background|warm.*fail|warm.*error|onnx.*failed|VRAM TIGHT|lazy warm)\b'; then
+    echo '{"decision":"block","reason":"BLOCKED: Expected background failure logged as WARNING — use logger.info. Only critical failures (interactive timeout, HTTP 500) should be WARNING in HME server. See ANTIPATTERN: stderr-to-UI popup spam."}' >&2
+    exit 2
+  fi
+fi
 exit 0
