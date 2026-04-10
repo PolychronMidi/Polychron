@@ -75,6 +75,7 @@ interface SessionState {
 
 export class ChatPanel {
   public static current: ChatPanel | undefined;
+  private static _globalState: vscode.Memento | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _projectRoot: string;
   private _state: SessionState = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
@@ -148,6 +149,10 @@ export class ChatPanel {
       null,
       this._disposables
     );
+  }
+
+  public static setGlobalState(state: vscode.Memento) {
+    ChatPanel._globalState = state;
   }
 
   public static createOrShow(projectRoot: string) {
@@ -266,6 +271,11 @@ export class ChatPanel {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
         this._resetContextTracker();
         this._post({ type: "historyCleared" });
+        break;
+      case "setZoomLevel":
+        if (typeof msg.level === "number") {
+          ChatPanel._globalState?.update("hme.zoomLevel", msg.level);
+        }
         break;
     }
   }
@@ -1174,7 +1184,13 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
 
   private _getHtml(): string {
     const htmlPath = path.join(__dirname, "..", "webview", "index.html");
-    return fs.readFileSync(htmlPath, "utf8");
+    let html = fs.readFileSync(htmlPath, "utf8");
+    const storedZoom = ChatPanel._globalState?.get<number>("hme.zoomLevel") ?? 1.0;
+    html = html.replace(
+      "<head>",
+      `<head><script>window.__HME_ZOOM__=${storedZoom};</script>`
+    );
+    return html;
   }
 
   public async dispose(): Promise<void> {

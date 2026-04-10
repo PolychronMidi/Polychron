@@ -985,7 +985,8 @@ if (input && _uiState.inputDraft) {
 }
 
 // ── Zoom controls ──────────────────────────────────────────────────────────
-var zoomLevel = (typeof _uiState.zoomLevel === 'number') ? _uiState.zoomLevel : 1.0;
+var _defaultZoom = (typeof window.__HME_ZOOM__ === 'number') ? window.__HME_ZOOM__ : 1.0;
+var zoomLevel = (typeof _uiState.zoomLevel === 'number') ? _uiState.zoomLevel : _defaultZoom;
 var ZOOM_STEP = 0.1, ZOOM_MIN = 0.6, ZOOM_MAX = 1.8;
 var zoomLabel = document.getElementById('zoom-label');
 var zoomInBtn = document.getElementById('zoom-in-btn');
@@ -1005,6 +1006,7 @@ if (zoomInBtn) {
     zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 10) / 10);
     applyZoom();
     vscode.setState(Object.assign({}, vscode.getState() || {}, { zoomLevel: zoomLevel }));
+    vscode.postMessage({ type: 'setZoomLevel', level: zoomLevel });
   });
 }
 if (zoomOutBtn) {
@@ -1012,6 +1014,7 @@ if (zoomOutBtn) {
     zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 10) / 10);
     applyZoom();
     vscode.setState(Object.assign({}, vscode.getState() || {}, { zoomLevel: zoomLevel }));
+    vscode.postMessage({ type: 'setZoomLevel', level: zoomLevel });
   });
 }
 applyZoom();
