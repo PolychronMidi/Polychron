@@ -44,8 +44,16 @@ def _pearson(xs: list, ys: list) -> float:
     return num / (denom_sq ** 0.5)
 
 
+_coupling_cache: dict = {"result": {}, "ts": 0.0}
+_COUPLING_CACHE_TTL = 120.0
+
+
 def _scan_coupling_state(src_root: str) -> dict:
-    """Return per-module coupling state for all crossLayer JS files."""
+    """Return per-module coupling state for all crossLayer JS files. Cached 120s."""
+    import time as _time
+    now = _time.monotonic()
+    if _coupling_cache["result"] and (now - _coupling_cache["ts"]) < _COUPLING_CACHE_TTL:
+        return _coupling_cache["result"]
     cl_dir = os.path.join(src_root, "crossLayer")
     results = {}
     if not os.path.isdir(cl_dir):
@@ -96,6 +104,8 @@ def _scan_coupling_state(src_root: str) -> dict:
                 "phase": phase_coupled,
             }
 
+    _coupling_cache["result"] = results
+    _coupling_cache["ts"] = now
     return results
 
 

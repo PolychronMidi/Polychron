@@ -50,8 +50,17 @@ def evolve(focus: str = "all") -> str:
     return "\n".join(parts)
 
 
+_loc_cache: dict = {"result": "", "ts": 0.0}
+_LOC_CACHE_TTL = 120.0
+
+
 def _loc_offenders(top_n: int = 8) -> str:
-    """Top LOC offenders from src/."""
+    """Top LOC offenders from src/. Cached for 120s since file counts rarely change mid-session."""
+    import time as _time
+    now = _time.monotonic()
+    if _loc_cache["result"] and (now - _loc_cache["ts"]) < _LOC_CACHE_TTL:
+        return _loc_cache["result"]
+
     from file_walker import walk_code_files
     from server.helpers import LINE_COUNT_TARGET, LINE_COUNT_CRITICAL
 
@@ -68,13 +77,17 @@ def _loc_offenders(top_n: int = 8) -> str:
             oversize.append((rel, lc))
     oversize.sort(key=lambda x: -x[1])
     if not oversize:
-        return "## LOC: all src/ files under target"
-    lines = [f"## LOC Offenders ({len(oversize)} files > {LINE_COUNT_CRITICAL} lines)\n"]
-    for rel, lc in oversize[:top_n]:
-        lines.append(f"  {lc:>4} lines  {rel}")
-    if len(oversize) > top_n:
-        lines.append(f"  ... and {len(oversize) - top_n} more")
-    return "\n".join(lines)
+        result = "## LOC: all src/ files under target"
+    else:
+        lines = [f"## LOC Offenders ({len(oversize)} files > {LINE_COUNT_CRITICAL} lines)\n"]
+        for rel, lc in oversize[:top_n]:
+            lines.append(f"  {lc:>4} lines  {rel}")
+        if len(oversize) > top_n:
+            lines.append(f"  ... and {len(oversize) - top_n} more")
+        result = "\n".join(lines)
+    _loc_cache["result"] = result
+    _loc_cache["ts"] = now
+    return result
 
 
 def _coupling_opportunities() -> str:
