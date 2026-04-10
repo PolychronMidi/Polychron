@@ -1,8 +1,8 @@
 # Polychron
 
-Generative polyrhythmic composition engine. Two independent rhythmic layers interact through 39 cross-layer modules, governed by 27 trust-scored systems and 19 self-calibrating hypermeta controllers. Produces MIDI compositions with emergent musical behaviors arising from cross-system interaction.
+Generative polyrhythmic composition engine. Two independent rhythmic layers interact through 45 cross-layer modules, governed by 27 trust-scored systems and 19 self-calibrating hypermeta controllers. Produces MIDI compositions with emergent musical behaviors arising from cross-system interaction.
 
-473 source files | 58K LOC | 8 feedback loops | 18 stutter variants | 11 CIM coordination dials
+487 source files | 58K LOC | 11 feedback loops | 19 stutter variants | 12 CIM coordination dials
 
 ## Quick Start
 
@@ -24,9 +24,9 @@ node lab/run.js sketch-name        # run specific sketch
 
 The system has three interacting layers:
 
-**Conductor** (193 files) -- unified signal pipeline computing density, tension, and flicker products every beat. 34 registered recorders advance state. 19 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
+**Conductor** (193 files) -- unified signal pipeline computing density, tension, and flicker products every beat. 37 registered recorders advance state. 19 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
 
-**Cross-Layer** (58 files) -- 39 registered modules managing inter-layer dynamics: rhythmic complement (hocket/antiphony/canon), spectral gap-filling, velocity interference, articulation contrast, convergence detection, stutter contagion, and the Coordination Independence Manager (CIM) with 11 module-pair dials.
+**Cross-Layer** (58 files) -- 45 registered modules managing inter-layer dynamics: rhythmic complement (hocket/antiphony/canon), spectral gap-filling, velocity interference, articulation contrast, convergence detection, stutter contagion, and the Coordination Independence Manager (CIM) with 12 module-pair dials.
 
 **Play Loop** -- alternates L1/L2 via `LM.activate()` with full per-layer state isolation (crossModulation, balance, flipBin). Each beat: conductor tick -> processBeat -> playNotes -> crossLayerBeatRecord -> trust/feedback updates.
 
@@ -41,7 +41,7 @@ Signal flow: [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)
 | `src/rhythm/` | 22 | Pattern generation, feedback listeners, drums |
 | `src/time/` | 13 | LayerManager, tempo feel, timing |
 | `src/composers/` | 24 | 11 composer types, voice management, motif |
-| `src/fx/` | 55 | Stutter (18 variants), binaural, balance, noise |
+| `src/fx/` | 55 | Stutter (19 variants), binaural, balance, noise |
 | `src/crossLayer/` | 58 | Dynamics, harmony, rhythm, structure, trust, CIM |
 | `src/writer/` | 4 | CSV output, grandFinale |
 | `src/play/` | 18 | Beat loop, emission, layer passes |
@@ -51,12 +51,12 @@ Details: [doc/SUBSYSTEMS.md](doc/SUBSYSTEMS.md)
 ## Key Systems
 
 ### Stutter Variant Ecosystem
-18 note stutter variants selected per-beat by 10 weighted signal dimensions (regime, phase, articulation, harmonic distance, coupling labels, entropy reversal, call-response, phrase boundary, hocket mode, self-balancing frequency). Euclidean pattern gating (75%) + sustain-proportional probabilistic gate.
+19 note stutter variants selected per-beat by 10 weighted signal dimensions (regime, phase, articulation, harmonic distance, coupling labels, entropy reversal, call-response, phrase boundary, hocket mode, self-balancing frequency). Euclidean pattern gating (75%) + sustain-proportional probabilistic gate.
 
 Details: [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md)
 
 ### Coordination Independence Manager (CIM)
-11 module-pair dials (0=independent, 1=coordinated) dynamically driven by regime, phase, topology, intent curves, and entropy. Phase-gated operation, chaos mode, oscillation mode. Controls rest synchronization, stutter contagion, spectral complementarity, phase lock, velocity interference, and more.
+12 module-pair dials (0=independent, 1=coordinated) dynamically driven by regime, phase, topology, intent curves, and entropy. Phase-gated operation, chaos mode, oscillation mode. Controls rest synchronization, stutter contagion, spectral complementarity, phase lock, velocity interference, and more.
 
 Details: [doc/COORDINATION_INDEPENDENCE.md](doc/COORDINATION_INDEPENDENCE.md)
 
@@ -71,7 +71,7 @@ Details: [doc/HYPERMETA.md](doc/HYPERMETA.md)
 Details: [doc/TRUST_ECOLOGY.md](doc/TRUST_ECOLOGY.md)
 
 ### Feedback Loops
-8 registered closed-loop feedback controllers with resonance dampening. Correlation shuffler detects pathological correlations (reinforcement spirals, tug-of-war, stasis) and applies graduated perturbations. FeedbackOscillator creates multi-round-trip cross-layer energy loops with pitch class memory.
+11 registered closed-loop feedback controllers with resonance dampening. Correlation shuffler detects pathological correlations (reinforcement spirals, tug-of-war, stasis) and applies graduated perturbations. FeedbackOscillator creates multi-round-trip cross-layer energy loops with pitch class memory.
 
 Details: [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md)
 
@@ -114,7 +114,7 @@ Generated per-run in `metrics/`:
 | `narrative-digest.md` | Prose composition story |
 | `runtime-snapshots.json` | CIM dials, stutter variant counts, shuffler state |
 | `adaptive-state.json` | Cross-run warm-start EMAs |
-| `feedback_graph.json` | 8 feedback loop topology |
+| `feedback_graph.json` | 11 feedback loop topology |
 | `conductor-map.md` | Conductor intelligence map |
 | `crosslayer-map.md` | Cross-layer topology |
 
@@ -127,9 +127,9 @@ Generated per-run in `metrics/`:
 | [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) | Beat lifecycle, signal flow, layer isolation |
 | [doc/TUNING_MAP.md](doc/TUNING_MAP.md) | Feedback loop constants, cross-constant invariants |
 | [doc/HYPERMETA.md](doc/HYPERMETA.md) | 19 self-calibrating controllers |
-| [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md) | 18 variants, selection, gating |
-| [doc/COORDINATION_INDEPENDENCE.md](doc/COORDINATION_INDEPENDENCE.md) | CIM 11 dials |
-| [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) | 8 loops, correlation shuffler |
+| [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md) | 19 variants, selection, gating |
+| [doc/COORDINATION_INDEPENDENCE.md](doc/COORDINATION_INDEPENDENCE.md) | CIM 12 dials |
+| [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) | 11 loops, correlation shuffler |
 | [doc/ADAPTIVE_INFRASTRUCTURE.md](doc/ADAPTIVE_INFRASTRUCTURE.md) | Warm-start, reconvergence |
 | [doc/TRUST_ECOLOGY.md](doc/TRUST_ECOLOGY.md) | 27 trust-scored systems |
 | [doc/CONVERGENCE_SYSTEMS.md](doc/CONVERGENCE_SYSTEMS.md) | Convergence detection, cascades |

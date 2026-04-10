@@ -76,7 +76,7 @@ Per-beat energy proxy (density+tension deviation) at alpha=0.22 (~4-beat time co
 
 1. **SpecialCaps overrides** -- no manual axis floors/caps in equilibrator adjustments
 2. **Coupling matrix reads** -- firewall: only coupling engine, meta-controllers, profiler, diagnostics
-3. **Bias registration bounds lock** -- 92 registrations locked against `scripts/bias-bounds-manifest.json`
+3. **Bias registration bounds lock** -- 93 registrations locked against `scripts/bias-bounds-manifest.json`
 4. **Watched constants** -- 5 controller-managed constants must not be manually set
 
 To update bounds after structural changes: `node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`

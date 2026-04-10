@@ -1,6 +1,6 @@
 # Feedback Loops
 
-8 registered closed-loop feedback controllers, a correlation shuffler for pathological pattern detection, and the feedbackOscillator for cross-layer energy exchange.
+11 registered closed-loop feedback controllers, a correlation shuffler for pathological pattern detection, and the feedbackOscillator for cross-layer energy exchange.
 
 ## Registered Loops
 
@@ -16,6 +16,9 @@ All loops register via `closedLoopController.create()` which auto-enrolls with `
 | entropy-regulator | entropy | cross_layer_prob | entropyRegulator |
 | stutter-variant-feedback | stutter_density | stutter_variant_selection | stutterVariants |
 | correlation-shuffler | feedback_correlation | feedback_loop_dampening | correlationShuffler |
+| emergent-rhythm-port | emergent_rhythm | rhythm_density_complexity | emergentRhythmEngine |
+| rhythmic-contagion | stutter_contagion | rhythm_complement | stutterContagion |
+| emergent-melodic-port | melodic_context | interval_novelty_contour | emergentMelodicEngine |
 
 ## Resonance Dampening
 

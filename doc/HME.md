@@ -444,7 +444,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations (`_append_file_to_t
 
 ### IIFE-Aware Chunking
 
-Polychron's primary module pattern: `globalName = (() => { function tick() {...} })()` (473 files). The chunker creates named function chunks per IIFE.
+Polychron's primary module pattern: `globalName = (() => { function tick() {...} })()` (487 files). The chunker creates named function chunks per IIFE.
 
 ### Embedding Model
 

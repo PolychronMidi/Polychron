@@ -16,7 +16,7 @@ the density product so the system listens to its own song.
 |||||
 | `SMOOTHING` | 0.55 | EMA factor for `coherenceBias` - higher = slower adaptation | `BIAS_FLOOR/CEILING`, `phaseGain` |
 | `BIAS_FLOOR` | 0.60 | Min density correction multiplier | `SMOOTHING`, conductorConfig density range |
-| `BIAS_CEILING` | 1.3 | Max density correction multiplier | `SMOOTHING`, profileAdaptation restrained hint |
+| `BIAS_CEILING` | 1.38 | Max density correction multiplier | `SMOOTHING`, profileAdaptation restrained hint |
 | `WINDOW_SIZE` | 16 | Rolling observation window (beats) | `decayFactor`, entropy variance calc |
 | `ENTROPY_DECAY` | 0.92 | Exponential decay for entropy signal | `rawEntropy` offset/scale, entropyRegulator strength |
 | `phaseGain` bell | 0.25 + 0.3·sin(π·phraseProgress) | Correction strength peaks mid-phrase (0.55), drops at edges (0.25) | `SMOOTHING`, attribution spread boost |
@@ -40,9 +40,9 @@ systems toward a target curve driven by section position.
 | Pitch weight | 0.4 | Contribution of pitch diversity to combined entropy | Velocity weight (0.3), rhythm weight (0.3) |
 | Velocity weight | 0.3 | Contribution of velocity variance to combined entropy | Pitch weight, rhythm weight |
 | Rhythm weight | 0.3 | Contribution of rhythmic irregularity | Pitch weight, velocity weight, rhythm divisor (2) |
-| Arc floor | 0.2 | Minimum target entropy from section-shape arc | Arc amplitude (0.6) - range is [0.2, 0.8] |
-| Arc amplitude | 0.6 | Bell curve amplitude: 0.2 + 0.6·sin(π·progress) | Arc floor, section length |
-| Arc-intent blend | 0.3 / 0.7 | 30% section arc, 70% sectionIntentCurves target | sectionIntentCurves.entropyTarget |
+| Arc floor | 0.2 | Minimum target entropy from section-shape arc | Arc amplitude (0.7) - range is [0.2, 0.9] |
+| Arc amplitude | 0.7 | Bell curve amplitude: 0.2 + 0.7·sin(π·progress) | Arc floor, section length |
+| Arc-intent blend | 0.45 / 0.55 | 45% section arc, 55% sectionIntentCurves target | sectionIntentCurves.entropyTarget |
 | PID gain | 2.0 | Proportional response: scale = 1 + error·strength·2 | `regulationStrength`, scale clamp |
 | Scale clamp | [0.3, 2.0] | Min/max regulation scale - prevents extinction or explosion | PID gain, negotiation entropy modulation |
 
@@ -77,7 +77,7 @@ final `playProb` / `stutterProb` values.
 | Constant | Value | Role | Interaction Partners |
 |||||
 | Play scale formula | (0.75 + density·0.45) * (0.9 + trust·0.08) | Computes play probability scale from intent + trust | `playScale` clamp, adaptiveTrustScores |
-| `playScale` clamp | [0.4, 1.8] | Prevents play probability extinction or saturation | coherenceMonitor `BIAS_CEILING` (1.3) |
+| `playScale` clamp | [0.4, 1.8] | Prevents play probability extinction or saturation | coherenceMonitor `BIAS_CEILING` (1.38) |
 | stutter scale formula | (0.6 + interaction·0.75) * (0.85 + trust·0.1) | Computes stutter scale from interaction target + trust | `stutterScale` clamp |
 | `stutterScale` clamp | [0.25, 2.2] | Wider range than play - stutter is more exploratory | Play scale clamp |
 | Entropy play modulator | 0.7 + entropy·0.3, clamp [0.5, 1.5] | Entropy regulation adjusts play probability | entropyRegulator scale output |
@@ -88,7 +88,7 @@ final `playProb` / `stutterProb` values.
 | Cadence gate: phase | ≥ 0.45 | Min phase confidence for cadence allowance | phaseAwareCadenceWindow confidence |
 | Cadence gate: trust | ≥ 0.7 | Min cadence trust weight for cadence allowance | adaptiveTrustScores weight |
 
-**Sensitivity:** The play scale clamp [0.4, 1.8] is the single most important range in the system. If `BIAS_CEILING` (1.3) * `playScale` max (1.8) were to compound, density could exceed 2.3×. The cadence gate thresholds (0.45/0.7) determine how often cadences fire - lowering them increases cadence frequency dramatically.
+**Sensitivity:** The play scale clamp [0.4, 1.8] is the single most important range in the system. If `BIAS_CEILING` (1.38) * `playScale` max (1.8) were to compound, density could exceed 2.48×. The cadence gate thresholds (0.45/0.7) determine how often cadences fire - lowering them increases cadence frequency dramatically.
 
 
 
@@ -323,7 +323,7 @@ peak pressure (0.944) and a dramatic regime-dependent performance swing.
 
 These relationships must hold to prevent runaway behavior:
 
-1. **Density ceiling chain:** `coherenceMonitor.BIAS_CEILING` (1.3) * `negotiationEngine.playScale` max (1.8) = 2.34. This is the theoretical maximum density amplification. The floor chain: `BIAS_FLOOR` (0.60) * `playScale` min (0.4) = 0.24. Exceeding ~2.5 on the ceiling causes audible note-cramming.
+1. **Density ceiling chain:** `coherenceMonitor.BIAS_CEILING` (1.38) * `negotiationEngine.playScale` max (1.8) = 2.48. This is the theoretical maximum density amplification. The floor chain: `BIAS_FLOOR` (0.60) * `playScale` min (0.4) = 0.24. Exceeding ~2.5 on the ceiling causes audible note-cramming.
 
 2. **Trust-weight symmetry:** `adaptiveTrustScores.weight` clamp [0.4, 1.8] matches `negotiationEngine.playScale` clamp [0.4, 1.8]. This ensures trust cannot push play probability outside the negotiation's own range.
 

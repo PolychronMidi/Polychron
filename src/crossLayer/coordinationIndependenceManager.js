@@ -19,7 +19,6 @@ coordinationIndependenceManager = (() => {
     'dynamics-articulationTexture',
     'rhythm-grooveConvergence',
     'structure-trustNegotiation',
-    'motif-echoIdentity',
     'motif-echoIdentity'
   ];
 
