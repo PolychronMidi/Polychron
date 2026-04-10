@@ -341,7 +341,7 @@ def suggest_evolution() -> str:
             "Name the specific module(s) to modify, the signal field to use, "
             "and what the listener will hear differently. "
             "If a rut is detected, prescribe an orthogonal target. Be concrete and decisive.",
-            max_tokens=512,
+            max_tokens=2000,
             answer_format=(
                 "2-3 decisive sentences. No bullet format. No FILE/FUNCTION labels. "
                 "One paragraph: module, signal field, musical effect. Direct and concrete."
@@ -354,6 +354,6 @@ def suggest_evolution() -> str:
         pass
 
     result = "\n".join(parts)
-    if len(result) > 6000:
-        result = result[:6000] + f"\n*(truncated — {len(result) - 6000} chars omitted)*"
+    if len(result) > 10000:
+        result = result[:10000] + f"\n*(truncated — {len(result) - 10000} chars omitted)*"
     return result

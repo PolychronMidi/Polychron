@@ -36,12 +36,12 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     assembled_parts = []
 
     if triage["kb"] and ctx.project_engine:
-        kb_hits = ctx.project_engine.search_knowledge(prompt[:200], top_k=5)
+        kb_hits = ctx.project_engine.search_knowledge(prompt[:400], top_k=5)
         if kb_hits:
             kb_lines = ["[Knowledge Base Context]"]
             for h in kb_hits:
                 kb_lines.append(f"  [{h.get('category', '')}] {h.get('title', '')}")
-                kb_lines.append(f"    {h.get('content', '')[:200]}")
+                kb_lines.append(f"    {h.get('content', '')[:400]}")
             assembled_parts.append("\n".join(kb_lines))
 
     if triage["contextual"]:

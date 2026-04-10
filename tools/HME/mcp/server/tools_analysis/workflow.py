@@ -269,14 +269,14 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     Uses local model for synthesis."""
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
     kb_summary = "\n".join(
-        f"  [{k['category']}] {k['title']}: {k['content'][:120]}"
+        f"  [{k['category']}] {k['title']}: {k['content'][:200]}"
         for k in relevant_kb
     ) if relevant_kb else "none"
     sym_summary = ""
     if symbols:
         sym_summary = ", ".join(f"L{s['line']}:{s['name']}" for s in symbols[:8])
     from .synthesis_session import get_session_narrative
-    _session_ctx = get_session_narrative(max_entries=4, categories=["think", "find", "edit"])
+    _session_ctx = get_session_narrative(max_entries=6, categories=["think", "find", "edit"])
     user_text = (
         (_session_ctx if _session_ctx else "")
         + f"File about to be edited: {rel_path}\n"
@@ -292,7 +292,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
         "- Format: '1. [risk] because [specific caller/constraint].'\n"
     )
     # Local model: coder model handles 3-bullet edit risks well (~17-34s).
-    synthesis = _local_think(user_text, max_tokens=250, model=_LOCAL_MODEL,
+    synthesis = _local_think(user_text, max_tokens=800, model=_LOCAL_MODEL,
                              system=_THINK_SYSTEM, priority=priority)
     return synthesis
 
