@@ -152,7 +152,11 @@ class _Handler(BaseHTTPRequestHandler):
             if not prompt:
                 self._send_json(400, {"error": "prompt required"})
                 return
-            self._send_json(200, _enrich_prompt(prompt, frame))
+            try:
+                self._send_json(200, _enrich_prompt(prompt, frame))
+            except Exception as e:
+                logger.error(f"/enrich_prompt unhandled: {e}")
+                self._send_json(200, {"enriched": prompt, "original": prompt, "error": str(e)})
 
         elif self.path == "/validate":
             query = body.get("query", "")
