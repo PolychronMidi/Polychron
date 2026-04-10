@@ -240,8 +240,9 @@ def _init_ollama_models() -> str:
         (_ARBITER_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
     ]
     results = {}
+    failures = 0
     for model, options in models_config:
-        _ollama_background_yield()  # yield to interactive before loading each model
+        _ollama_background_yield()
         t0 = _t.time()
         logger.info(f"model init: loading {model} on {_url_for(model)} (options={options})...")
         payload = {"model": model, "prompt": "", "stream": False,
@@ -250,14 +251,33 @@ def _init_ollama_models() -> str:
                                headers={"Content-Type": "application/json"})
         try:
             with _req.urlopen(request, timeout=120) as resp:
-                resp.read()
+                body = resp.read()
+                if resp.status >= 500:
+                    err_detail = body.decode("utf-8", errors="ignore")[:200]
+                    results[model] = f"FAILED: HTTP {resp.status} — {err_detail}"
+                    logger.warning(f"model init: {model} HTTP {resp.status}: {err_detail}")
+                    failures += 1
+                    continue
             elapsed = _t.time() - t0
             results[model] = f"OK ({elapsed:.1f}s)"
             logger.info(f"model init: {model} ready ({elapsed:.1f}s)")
+        except _req.HTTPError as e:
+            err_body = ""
+            try:
+                err_body = e.read().decode("utf-8", errors="ignore")[:200]
+            except Exception:
+                pass
+            results[model] = f"FAILED: HTTP {e.code} — {err_body or e}"
+            logger.warning(f"model init: {model} HTTP {e.code}: {err_body or e}")
+            failures += 1
         except Exception as e:
             results[model] = f"FAILED: {type(e).__name__}: {e}"
             logger.warning(f"model init: {model} FAILED: {e}")
-    return "Model init: " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
+            failures += 1
+    summary = "Model init: " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
+    if failures:
+        summary += f" ({failures} FAILED — warm priming will be skipped for failed models)"
+    return summary
 
 
 def _prime_all_gpus() -> str:
