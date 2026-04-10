@@ -20,4 +20,18 @@ if [[ "$KB_COUNT" -gt 0 ]]; then
 else
   echo "HME FIRST: Use mcp__HME__find(query=\"$PATTERN\") — returns matches + KB cross-references. Raw Grep finds text; find() finds meaning." >&2
 fi
+# fix_antipattern: Track consecutive non-HME tool calls using /tmp/hme-non-hme-streak.count. Read c
+# Track consecutive non-HME tool calls
+STREAK_FILE="/tmp/hme-non-hme-streak.count"
+STREAK=$(cat "$STREAK_FILE" 2>/dev/null || echo 0)
+STREAK=$((STREAK + 1))
+echo "$STREAK" > "$STREAK_FILE"
+
+if [[ "$STREAK" -ge 5 ]]; then
+  echo "REMINDER: You've made $STREAK+ consecutive non-HME tool calls. Use HME tools (read, find, review) instead of raw Read/Grep/Bash  they add KB constraints and boundary warnings." >&2
+  if [[ "$STREAK" -ge 7 ]]; then
+    echo "BLOCKED: 7+ consecutive raw tool calls. You MUST use an mcp__HME__ tool (read, find, review) before continuing. They add KB context that raw tools miss." >&2
+    exit 1
+  fi
+fi
 exit 0

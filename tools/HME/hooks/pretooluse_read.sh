@@ -24,4 +24,17 @@ if echo "$FILE_PATH" | grep -qE '/Polychron/(src|tools/HME/(chat/src|mcp/server)
     echo "HME FIRST: Use mcp__HME__read(target=\"$MODULE\") for KB + callers + structure." >&2
   fi
 fi
+# fix_antipattern: Track consecutive non-HME tool calls using /tmp/hme-non-hme-streak.count. On thi
+STREAK_FILE="/tmp/hme-non-hme-streak.count"
+STREAK=$(cat "$STREAK_FILE" 2>/dev/null || echo 0)
+STREAK=$((STREAK + 1))
+echo "$STREAK" > "$STREAK_FILE"
+
+if [[ "$STREAK" -ge 5 ]]; then
+  echo "REMINDER: You've made 5+ consecutive non-HME tool calls. Use HME tools (read, find, review) instead of raw Read/Grep/Bash  they add KB constraints and boundary warnings." >&2
+  if [[ "$STREAK" -ge 7 ]]; then
+    echo "BLOCKED: 7+ consecutive raw tool calls. You MUST use an mcp__HME__ tool (read, find, review) before continuing. They add KB context that raw tools miss." >&2
+    exit 1
+  fi
+fi
 exit 0

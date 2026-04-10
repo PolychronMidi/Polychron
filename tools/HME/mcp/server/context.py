@@ -83,6 +83,11 @@ class _LoggingMCP:
         def wrapper(fn):
             @functools.wraps(fn)
             def logged(*args, **kwargs):
+                try:
+                    with open("/tmp/hme-non-hme-streak.count", "w") as _f:
+                        _f.write("0")
+                except OSError:
+                    pass
                 name = fn.__name__
                 # Compact args for logging (truncate long values)
                 arg_parts = []

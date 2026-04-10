@@ -82,4 +82,17 @@ if echo "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]
   echo '{"decision":"block","reason":"FAIL FAST VIOLATION — silent error suppression detected. No empty catch{}, .catch(()=>{}), no-op onError/reject handlers, fallback values masking failures, or suppressed build stderr. Every error MUST bubble immediately: throw it, call onError(), call _postError(), reject the promise. Log to hme-errors.log. Surface in UI. No silent failures. Assume life-saving criticality."}'
   exit 2
 fi
+# fix_antipattern: Track consecutive non-HME tool calls using /tmp/hme-non-hme-streak.count. Read c
+# Track consecutive non-HME tool calls
+STREAK_FILE="/tmp/hme-non-hme-streak.count"
+STREAK=$(cat "$STREAK_FILE" 2>/dev/null || echo 0)
+STREAK=$((STREAK + 1))
+echo "$STREAK" > "$STREAK_FILE"
+
+if [ "$STREAK" -ge 7 ]; then
+  echo '{"decision":"block","reason":"BLOCKED: 7+ consecutive raw tool calls. You MUST use an mcp__HME__ tool (read, find, review) before continuing. They add KB context that raw tools miss."}'
+  exit 1
+elif [ "$STREAK" -ge 5 ]; then
+  echo "REMINDER: You've made 5+ consecutive non-HME tool calls. Use HME tools (read, find, review) instead of raw Read/Grep/Bash  they add KB constraints and boundary warnings." >&2
+fi
 exit 0
