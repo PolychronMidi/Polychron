@@ -781,13 +781,11 @@ class ChatPanel {
             this._postError("hybrid", String(err));
         });
     }
-    /** Fail-fast error surface: bubble in chat + log file + KB antipattern lookup. */
+    /** Fail-fast error surface: log file + KB antipattern lookup. Lifesaver hook surfaces errors to Claude. */
     _postError(source, message) {
-        const isCritical = message.includes("CRITICAL") || message.includes("timeout") || message.includes("refused");
-        // Errors surface in the webview bubble — never as VS Code popups (those interrupt the user).
-        this._post({ type: isCritical ? "criticalError" : "errorBubble", source, message });
         // Shim is the single writer to hme-errors.log — avoids duplicate entries.
         // Fall back to direct disk write only if shim is unreachable.
+        // NO webview UI alert — Lifesaver (userpromptsubmit.sh reads hme-errors.log) is the aggressive channel.
         (0, router_1.logShimError)(source, message).catch((e) => {
             console.error(`[HME FAILFAST] logShimError failed for [${source}] ${message}: ${e?.message ?? e}`);
             const errLine = `[${new Date().toISOString()}] [${source}] ${message}\n`;
