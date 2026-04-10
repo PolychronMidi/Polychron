@@ -1,15 +1,21 @@
-"""HME warm KV context — persona construction, priming, and status for all three models.
+"""HME warm KV context — persona construction, priming, disk persistence, and status.
 
 Warm context = each model's specialized persona + full KB pre-tokenized into Ollama's KV
 cache via the context= array. Avoids re-tokenizing the same persona text on every call.
+
+Disk persistence: after every successful prime, context arrays are saved to disk (tmpfs
+buffer if mounted, else tools/HME/warm-context-cache/). On startup or after eviction,
+cached contexts load instantly (~0ms) instead of re-priming (~30s per model).
 
 VRAM safety: persona size is hard-capped at _MAX_PERSONA_CHARS to prevent KV cache
 overflow from crashing CUDA kernels on the M40s (<600 MiB headroom per GPU). The cap
 leaves headroom for inference. Failures register with ctx.register_critical_failure()
 so Lifesaver surfaces them in the next tool response — never silently swallowed.
 """
+import json as _json
 import os
 import logging
+import time as _time
 import threading as _threading
 
 from server import context as ctx
@@ -23,6 +29,94 @@ _warm_ctx_ts: dict[str, float] = {}
 
 _lazy_prime_attempted = False
 _priming_in_progress = _threading.Event()
+
+# ── Disk persistence for KV cache snapshots ──────────────────────────────────
+# Prefer tmpfs buffer (instant I/O) → fallback to project disk
+_TMPFS_PATHS = ["/mnt/ollama-buffer-gpu0", "/mnt/ollama-buffer-gpu1"]
+_DISK_CACHE_DIR = None  # lazily initialized
+
+_MODEL_CACHE_NAMES = {}  # model → cache file stem, set after model constants load
+
+
+def _cache_dir() -> str:
+    """Return the best available cache directory — tmpfs if mounted, else disk."""
+    global _DISK_CACHE_DIR
+    for tp in _TMPFS_PATHS:
+        if os.path.ismount(tp):
+            return tp
+    if _DISK_CACHE_DIR is None:
+        root = getattr(ctx, "PROJECT_ROOT", "")
+        _DISK_CACHE_DIR = os.path.join(root, "tools", "HME", "warm-context-cache") if root else "/tmp/hme-warm-cache"
+    os.makedirs(_DISK_CACHE_DIR, exist_ok=True)
+    return _DISK_CACHE_DIR
+
+
+def _model_cache_stem(model: str) -> str:
+    """Stable filename stem for a model (e.g. 'qwen3-coder:30b' → 'qwen3-coder-30b')."""
+    return model.replace(":", "-").replace("/", "-")
+
+
+def _save_warm_cache(model: str):
+    """Persist one model's warm context to disk after successful prime."""
+    if model not in _warm_ctx:
+        return
+    cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
+    try:
+        data = {
+            "model": model,
+            "kb_ver": _warm_ctx_kb_ver.get(model, 0),
+            "ts": _warm_ctx_ts.get(model, 0),
+            "context_len": len(_warm_ctx[model]),
+            "context": _warm_ctx[model],
+        }
+        with open(cache_file, "w") as f:
+            _json.dump(data, f)
+        logger.info(f"warm cache SAVED: {model} → {cache_file} ({len(_warm_ctx[model])} tokens)")
+    except Exception as e:
+        logger.warning(f"warm cache save failed: {model}: {e}")
+
+
+def _load_warm_cache(model: str) -> bool:
+    """Try to restore a model's warm context from disk. Returns True if cache was fresh and loaded."""
+    cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
+    if not os.path.exists(cache_file):
+        return False
+    try:
+        with open(cache_file) as f:
+            data = _json.load(f)
+        cached_model = data.get("model", "")
+        cached_kb_ver = data.get("kb_ver", -1)
+        cached_ctx = data.get("context", [])
+        cached_ts = data.get("ts", 0)
+        current_kb_ver = getattr(ctx, "_kb_version", 0)
+        if cached_model != model:
+            logger.debug(f"warm cache SKIP: model mismatch ({cached_model} != {model})")
+            return False
+        if cached_kb_ver != current_kb_ver:
+            logger.info(f"warm cache STALE: {model} kb_ver {cached_kb_ver} != {current_kb_ver}")
+            return False
+        if not cached_ctx or len(cached_ctx) < 10:
+            logger.debug(f"warm cache SKIP: empty context for {model}")
+            return False
+        _warm_ctx[model] = cached_ctx
+        _warm_ctx_kb_ver[model] = cached_kb_ver
+        _warm_ctx_ts[model] = cached_ts
+        age_s = _time.time() - cached_ts
+        logger.info(f"warm cache RESTORED: {model} ({len(cached_ctx)} tokens, {age_s:.0f}s old)")
+        return True
+    except Exception as e:
+        logger.warning(f"warm cache load failed: {model}: {e}")
+        return False
+
+
+def _load_all_warm_caches() -> int:
+    """Try to restore all model caches from disk. Returns count of successfully restored."""
+    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+    restored = 0
+    for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+        if _load_warm_cache(model):
+            restored += 1
+    return restored
 
 # Hard cap on persona size (chars). 12K chars ≈ 4K tokens — keeps prompt eval under
 # ~30s on M40, so interactive cancellation (via socket timeout in _cancellable_urlopen)
@@ -177,11 +271,15 @@ def _gpu_persona(model: str) -> str:
 
 
 def _prime_warm_context(model: str) -> bool:
-    """Prime warm KV context for a model. Background priority, skips if KB unchanged."""
+    """Prime warm KV context for a model. Background priority, skips if KB unchanged.
+    Tries disk cache first (instant) before falling back to Ollama prime (~30s)."""
     from .synthesis_ollama import _local_think, _THINK_SYSTEM
     kb_ver = getattr(ctx, "_kb_version", 0)
     if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
         logger.debug(f"warm ctx already fresh: {model} (kb_ver={kb_ver})")
+        return True
+    # Try disk cache before expensive Ollama prime
+    if _load_warm_cache(model):
         return True
     logger.info(f"warm ctx priming: {model} (kb_ver={kb_ver}) — building persona...")
     try:
@@ -211,11 +309,11 @@ def _prime_warm_context(model: str) -> bool:
         logger.info(f"warm ctx priming CANCELLED: {model} — {cause} ({len(persona)} char persona)")
         return False
     if ctx_array:
-        import time as _t
         _warm_ctx[model] = ctx_array
         _warm_ctx_kb_ver[model] = kb_ver
-        _warm_ctx_ts[model] = _t.time()
+        _warm_ctx_ts[model] = _time.time()
         logger.info(f"warm ctx PRIMED: {model} ({len(ctx_array)} ctx tokens, kb_ver={kb_ver})")
+        _save_warm_cache(model)
         return True
     logger.warning(
         f"warm ctx priming FAILED: {model} — text={'present' if text_result else 'None'}, "
@@ -354,13 +452,24 @@ def _prime_all_gpus() -> str:
     _priming_in_progress.set()
     try:
         from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
-        import time as _t
         results = {}
-        t0 = _t.time()
+        # Fast path: try restoring all from disk cache first
+        restored = _load_all_warm_caches()
+        if restored == 3:
+            for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+                results[model] = True
+            parts = [f"Warm context restored from cache (0.0s, all 3 models):"]
+            for model in results:
+                ctx_len = len(_warm_ctx.get(model, []))
+                parts.append(f"  {model}: CACHED ({ctx_len} ctx tokens)")
+            return "\n".join(parts)
+        # Slow path: prime any models not restored from cache
+        t0 = _time.time()
         for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
             results[model] = _prime_warm_context(model)
-        elapsed = _t.time() - t0
-        parts = [f"Warm context priming ({elapsed:.1f}s):"]
+        elapsed = _time.time() - t0
+        cached = sum(1 for m in results if m in _warm_ctx and _warm_ctx_kb_ver.get(m) == getattr(ctx, "_kb_version", 0))
+        parts = [f"Warm context priming ({elapsed:.1f}s, {restored} cached / {cached} fresh):"]
         for model, ok in results.items():
             ctx_len = len(_warm_ctx.get(model, []))
             parts.append(f"  {model}: {'PRIMED' if ok else 'FAILED'}" +
@@ -374,15 +483,17 @@ def warm_context_status() -> dict:
     """Health dict of warm contexts for selftest."""
     from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
     from .synthesis_session import session_state_counts
-    import time as _t
-    now = _t.time()
+    now = _time.time()
     status = {}
     for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
         if model in _warm_ctx:
+            cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
             status[model] = {
                 "primed": True, "tokens": len(_warm_ctx[model]),
                 "age_s": round(now - _warm_ctx_ts.get(model, 0), 1),
                 "kb_fresh": _warm_ctx_kb_ver.get(model) == getattr(ctx, "_kb_version", 0),
+                "disk_cached": os.path.exists(cache_file),
+                "cache_backend": "tmpfs" if any(os.path.ismount(tp) for tp in _TMPFS_PATHS) else "disk",
             }
         else:
             status[model] = {"primed": False}
