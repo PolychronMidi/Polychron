@@ -87,11 +87,11 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
     """Streaming urlopen that aborts Ollama generation when cancel_event fires.
 
     Uses stream:true so closing the connection actually stops Ollama's generation.
-    A watchdog thread monitors cancel_event and closes the connection immediately —
-    this handles cancellation during prompt eval when no output chunks arrive.
+    Socket timeout of 2s ensures the read loop never blocks longer than that, so
+    cancel_event is checked at least every 2 seconds even during prompt eval.
     Returns (response_bytes, None) on success, (None, exception) on failure.
     """
-    import urllib.request
+    import urllib.request, socket
     payload = json.loads(req_data)
     payload["stream"] = True
     body = json.dumps(payload).encode()
@@ -100,28 +100,33 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
         resp = urllib.request.urlopen(req, timeout=timeout)
     except Exception as e:
         return None, e
-    cancelled = _threading.Event()
-
-    def _watchdog():
-        while not cancelled.is_set():
-            if cancel_event.is_set():
-                try:
-                    resp.close()
-                except Exception:
-                    pass
-                cancelled.set()
-                logger.info("_cancellable_urlopen: background request ABORTED (watchdog) — Ollama generation stopped")
-                return
-            cancelled.wait(0.25)
-
-    watcher = _threading.Thread(target=_watchdog, daemon=True)
-    watcher.start()
+    # Set a short socket timeout so reads unblock regularly for cancel checks.
+    try:
+        sock = resp.fp.raw._sock if hasattr(resp.fp, 'raw') else None
+        if sock:
+            sock.settimeout(2.0)
+    except Exception:
+        pass
     try:
         chunks = []
         final_result = {}
-        for raw_line in resp:
-            if cancelled.is_set() or cancel_event.is_set():
+        deadline = __import__("time").time() + timeout
+        while True:
+            if cancel_event.is_set():
                 break
+            if __import__("time").time() > deadline:
+                resp.close()
+                return None, TimeoutError(f"timed out after {timeout}s")
+            try:
+                raw_line = next(resp)
+            except socket.timeout:
+                continue
+            except StopIteration:
+                break
+            except Exception as e:
+                if cancel_event.is_set():
+                    break
+                raise
             line = raw_line.decode("utf-8", errors="ignore").strip()
             if not line:
                 continue
@@ -132,17 +137,16 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
             if chunk.get("done"):
                 final_result = chunk
                 break
-        cancelled.set()
         if cancel_event.is_set():
             try:
                 resp.close()
             except Exception:
                 pass
+            logger.info("_cancellable_urlopen: background request ABORTED — Ollama generation stopped")
             return None, InterruptedError("cancelled by interactive call")
         final_result["response"] = "".join(chunks)
         return json.dumps(final_result).encode(), None
     except Exception as e:
-        cancelled.set()
         if cancel_event.is_set():
             return None, InterruptedError("cancelled by interactive call")
         try:
