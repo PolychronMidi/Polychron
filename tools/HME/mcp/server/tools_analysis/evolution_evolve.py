@@ -141,8 +141,13 @@ def _pipeline_suggestions() -> str:
 
 
 def _synthesis() -> str:
-    """Quick priority synthesis — what's the single highest-impact action?"""
+    """Dynamic priority synthesis from session context + data signals."""
+    from .synthesis_session import get_session_narrative
+    narrative = get_session_narrative(max_entries=5, categories=["pipeline", "kb", "evolve", "edit"])
     lines = ["\n## Priority Synthesis\n"]
+    if narrative:
+        lines.append(narrative.strip())
+        lines.append("")
     lines.append("Highest-impact actions (from combined signals above):")
     lines.append("  1. Split the worst LOC offender (reduces cognitive load + enables coupling)")
     lines.append("  2. Bridge the top unsaturated antagonist pair (maximum musical texture impact)")

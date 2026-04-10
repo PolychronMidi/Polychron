@@ -96,7 +96,8 @@ _EVENT_CATEGORIES = {
     "kb_add": "kb", "kb_compact": "kb",
     "enrich": "enrich", "enrich_prompt": "enrich",
     "evolve": "evolve",
-    "admin": "admin", "status": "admin", "trace": "admin",
+    "admin": "admin", "status": "admin",
+    "trace": "search",
 }
 
 

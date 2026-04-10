@@ -30,7 +30,8 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     mode='evolve': unified evolution recommender (dead-ends + bypasses + gaps + bridges + trust).
     mode='full': digest + regime + trust in one call."""
     _track("review")
-    append_session_narrative("review", f"{mode}: {changed_files[:60] or file_path[:60] or 'full'}")
+    if mode != "forget":
+        append_session_narrative("review", f"{mode}: {changed_files[:60] or file_path[:60] or 'full'}")
     ctx.ensure_ready_sync()
     parts = []
 
