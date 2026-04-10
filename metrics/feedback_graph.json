@@ -114,8 +114,7 @@
       "firewallsCrossed": [
         "REGISTRY_DAMPENING"
       ],
-      "conceptual": true,
-      "mechanism": "emergentRhythmEngine accumulates stutterContagion + emergentDownbeat + feedbackLoop L0 events into a 16-slot subdivision grid. Grid density and syncopation complexity bias getRhythm.js weight selection: high complexity -> syncopated patterns, low complexity -> steady patterns. Also posts to L0 emergentRhythm channel for crossModulateRhythms. Exploring regime 1.4x, coherent 0.5x."
+      "mechanism": "emergentRhythmEngine accumulates stutterContagion + emergentDownbeat + feedbackLoop L0 events into a 16-slot subdivision grid. Grid density and syncopation complexity bias getRhythm.js weight selection: high complexity -> syncopated patterns, low complexity -> steady patterns. Also posts to L0 emergentRhythm channel for crossModulateRhythms. Exploring regime 1.4x, coherent 0.5x. Registered via feedbackRegistry.registerLoop (L0-mediated signal path)."
     },
     {
       "id": "rhythmic-contagion",
@@ -126,8 +125,7 @@
       "firewallsCrossed": [
         "REGISTRY_DAMPENING"
       ],
-      "conceptual": true,
-      "mechanism": "emergentDownbeat and stutterContagion L0 events modulate crossMod in crossModulateRhythms. Downbeat proximity creates micro-breathing (build→spike→dip). Stutter contagion boosts rhythmic variance. Feedback: richer crossMod → more downbeat detection → more contagion → dancing rhythm. Rate-limited by emergentDownbeat MIN_DOWNBEAT_INTERVAL_SEC and contagion decay."
+      "mechanism": "emergentDownbeat and stutterContagion L0 events modulate crossMod in crossModulateRhythms. Downbeat proximity creates micro-breathing (build→spike→dip). Stutter contagion boosts rhythmic variance. Feedback: richer crossMod → more downbeat detection → more contagion → dancing rhythm. Rate-limited by emergentDownbeat MIN_DOWNBEAT_INTERVAL_SEC and contagion decay. Registered via feedbackRegistry.registerLoop (L0-mediated signal path)."
     },
     {
       "id": "emergent-melodic-port",
@@ -138,8 +136,7 @@
       "firewallsCrossed": [
         "REGISTRY_DAMPENING"
       ],
-      "conceptual": true,
-      "mechanism": "emergentMelodicEngine synthesizes 6 conductor melodic trackers (contour shape, interval freshness, tessiture pressure, thematic recall, ambitus migration, counterpoint motion) per beat. Downstream bias surfaces: nudgeNoveltyWeight() in harmonicIntervalGuard amplifies interval novelty steering when territory is stale; getMelodicWeights() adds a 12th signal dimension to stutterVariants (contour, freshness, tessiture, counterpoint each shift variant weights); getContourAscendBias() in alienArpeggio modulates pitch direction by melodic arc. Posts emergentMelody to L0 for future consumers. CIM harmonic-pitchCorrection dial scales noveltyWeight amplification authority."
+      "mechanism": "emergentMelodicEngine synthesizes 6 conductor melodic trackers (contour shape, interval freshness, tessiture pressure, thematic recall, ambitus migration, counterpoint motion) per beat. Downstream bias surfaces: nudgeNoveltyWeight() in harmonicIntervalGuard amplifies interval novelty steering when territory is stale; getMelodicWeights() adds a 12th signal dimension to stutterVariants (contour, freshness, tessiture, counterpoint each shift variant weights); getContourAscendBias() in alienArpeggio modulates pitch direction by melodic arc. Posts emergentMelody to L0 for future consumers. CIM harmonic-pitchCorrection dial scales noveltyWeight amplification authority. Registered via feedbackRegistry.registerLoop (L0-mediated signal path)."
     }
   ],
   "firewallPorts": [
