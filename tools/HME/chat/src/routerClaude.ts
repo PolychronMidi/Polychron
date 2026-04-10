@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { ClaudeOptions, ChunkCallback } from "./router";
+import { ClaudeOptions, ChunkCallback, TokenUsage } from "./router";
 
 // node-pty is loaded lazily — a native module crash must never take down the extension host.
 let _pty: typeof import("node-pty") | null = null;
@@ -23,7 +23,7 @@ export function streamClaude(
   workingDir: string,
   onChunk: ChunkCallback,
   onSessionId: (id: string) => void,
-  onDone: (cost?: number) => void,
+  onDone: (cost?: number, usage?: TokenUsage) => void,
   onError: (msg: string) => void
 ): () => void {
   const args: string[] = ["-p", "--output-format", "stream-json", "--verbose"];
@@ -115,7 +115,7 @@ function handleStreamEvent(
   evt: any,
   onChunk: ChunkCallback,
   onSessionId: (id: string) => void,
-  onDone: (cost?: number) => void
+  onDone: (cost?: number, usage?: TokenUsage) => void
 ) {
   if (evt.type === "system" && evt.subtype === "init" && evt.session_id) {
     onSessionId(evt.session_id);
@@ -136,7 +136,11 @@ function handleStreamEvent(
   }
 
   if (evt.type === "result") {
-    onDone(evt.cost_usd ?? undefined);
+    const usage: TokenUsage | undefined =
+      (evt.input_tokens != null && evt.output_tokens != null)
+        ? { inputTokens: evt.input_tokens, outputTokens: evt.output_tokens }
+        : undefined;
+    onDone(evt.cost_usd ?? undefined, usage);
     return;
   }
 }

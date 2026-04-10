@@ -255,3 +255,78 @@ Digest:`;
     req.end();
   });
 }
+
+const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
+const CHAIN_SUMMARY_PORT = 11434;
+
+/**
+ * Chain link summary — ask local reasoning model to generate a continuation
+ * summary for context chaining. Uses qwen3:30b-a3b (GPU, reasoning-capable)
+ * on the main Ollama port, not the tiny arbiter model.
+ */
+export async function synthesizeChainSummary(prompt: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const fail = (err: Error) => { if (!done) { done = true; req?.destroy(); reject(err); } };
+
+    const hardTimer = setTimeout(() => fail(new Error("Chain summary timeout (180s)")), 180000);
+    let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+    const resetInactivity = () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => fail(new Error("Chain summary inactive (30s)")), 30000);
+    };
+
+    const body = JSON.stringify({
+      model: CHAIN_SUMMARY_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      stream: true,
+      options: { temperature: 0.3, num_predict: 2048, num_ctx: 8192 },
+    });
+
+    let req: ReturnType<typeof http.request>;
+    req = http.request(
+      {
+        hostname: "localhost", port: CHAIN_SUMMARY_PORT, path: "/api/chat", method: "POST",
+        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+      },
+      (res) => {
+        if (res.statusCode && res.statusCode >= 400) {
+          let errBody = "";
+          res.on("data", (c: Buffer) => { errBody += c.toString("utf8"); });
+          res.on("end", () => {
+            try { fail(new Error(`Chain summary HTTP ${res.statusCode}: ${(JSON.parse(errBody) as any).error ?? errBody.slice(0, 100)}`)); }
+            catch { fail(new Error(`Chain summary HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`)); }
+          });
+          return;
+        }
+        let contentAccum = "";
+        let rawChunk = "";
+        res.on("data", (c: Buffer) => {
+          resetInactivity();
+          rawChunk += c.toString("utf8");
+          const lines = rawChunk.split("\n");
+          rawChunk = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try { contentAccum += JSON.parse(line).message?.content ?? ""; } catch { /* partial streaming line */ }
+          }
+        });
+        res.on("end", () => {
+          clearTimeout(hardTimer);
+          if (inactivityTimer) clearTimeout(inactivityTimer);
+          if (done) return;
+          done = true;
+          resolve(contentAccum.trim());
+        });
+      }
+    );
+    req.on("error", (e: any) => {
+      clearTimeout(hardTimer);
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      const reason = e?.code === "ECONNREFUSED" ? "Ollama not running" : (e?.message ?? e);
+      fail(new Error(`Chain summary unreachable: ${reason}`));
+    });
+    req.write(body);
+    req.end();
+  });
+}
