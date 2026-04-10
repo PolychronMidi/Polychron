@@ -12,7 +12,7 @@ _THINK_HISTORY_MAX = 3
 
 _session_narrative: list[dict] = []
 _session_narrative_seq: int = 0
-_SESSION_NARRATIVE_MAX = 10
+_SESSION_NARRATIVE_MAX = 50
 
 _SESSION_STATE_FILE = None
 _session_state_loaded = False
@@ -57,6 +57,7 @@ def _load_session_state():
 def _save_session_state():
     path = _session_state_path()
     if not path:
+        logger.warning("session state save SKIPPED — no path (PROJECT_ROOT not set?)")
         return
     try:
         with open(path, "w") as f:
@@ -89,20 +90,29 @@ def get_think_history_context() -> str:
 _EVENT_CATEGORIES = {
     "commit": "commit", "pipeline": "pipeline", "pipeline_verdict": "pipeline",
     "think": "think", "arbiter_resolved": "think",
-    "edit": "edit", "review": "review",
+    "edit": "edit", "before_editing": "edit",
+    "review": "review", "audit": "review", "forget": "review",
     "find": "search", "search": "search", "callers": "search",
     "kb_add": "kb", "kb_compact": "kb",
+    "enrich": "enrich", "enrich_prompt": "enrich",
+    "evolve": "evolve",
+    "admin": "admin", "status": "admin", "trace": "admin",
 }
 
 
 def append_session_narrative(event: str, content: str):
     """Append an event to the rolling session narrative and persist to disk."""
     global _session_narrative_seq
+    _load_session_state()
+    cat = _EVENT_CATEGORIES.get(event, None)
+    if cat is None:
+        logger.warning(f"session narrative: unknown event type '{event}' — add to _EVENT_CATEGORIES")
+        cat = "other"
     _session_narrative_seq += 1
     _session_narrative.append({
         "seq": _session_narrative_seq,
         "event": event,
-        "category": _EVENT_CATEGORIES.get(event, "other"),
+        "category": cat,
         "content": content[:100],
     })
     while len(_session_narrative) > _SESSION_NARRATIVE_MAX:
@@ -128,4 +138,5 @@ def get_session_narrative(max_entries: int = 0, categories: list[str] | None = N
 
 
 def session_state_counts() -> dict:
+    _load_session_state()
     return {"think_history": len(_think_history), "session_narrative": len(_session_narrative)}

@@ -7,6 +7,7 @@ import logging
 
 from server import context as ctx
 from . import _track
+from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -29,6 +30,8 @@ def learn(query: str = "", title: str = "", content: str = "",
     action='dream' → pairwise similarity pass, find hidden connections.
     action='health' → KB staleness check."""
     _track("learn")
+    _act = action or ("add" if title else "search" if query else "other")
+    append_session_narrative("kb_add" if _act == "add" else "search", f"learn({_act}): {title or query or action}")
     ctx.ensure_ready_sync()
 
     # Explicit action routing

@@ -134,7 +134,9 @@ def enrich_prompt(prompt: str, frame: str = "") -> str:
     frame: optional instruction for how to enrich (e.g. 'focus on coupling dimensions').
     """
     from . import _track
+    from .synthesis_session import append_session_narrative
     _track("enrich_prompt")
+    append_session_narrative("enrich_prompt", f"enrich: {prompt[:60]}")
     ctx.ensure_ready_sync()
 
     if not prompt or not prompt.strip():
