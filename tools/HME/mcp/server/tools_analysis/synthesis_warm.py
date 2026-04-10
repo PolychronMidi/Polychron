@@ -21,11 +21,13 @@ _warm_ctx_kb_ver: dict[str, int] = {}
 _warm_ctx_ts: dict[str, float] = {}
 
 _lazy_prime_attempted = False
+_priming_in_progress = _threading.Event()
 
-# Hard cap on persona size (chars). 50K chars ≈ 16K tokens — keeps KV cache within
-# the ~600 MiB VRAM headroom on M40 GPUs. Without this, personas fill the full 65K
-# context window and CUDA kernel launches fail from KV overflow.
-_MAX_PERSONA_CHARS = 50_000
+# Hard cap on persona size (chars). 12K chars ≈ 4K tokens — keeps prompt eval under
+# ~30s on M40, so interactive cancellation (via socket timeout in _cancellable_urlopen)
+# limits worst-case Ollama queue wait to ~30s. Larger personas (50K) caused ~120s prompt
+# eval during which Ollama ignores client disconnect, blocking interactive requests.
+_MAX_PERSONA_CHARS = 12_000
 
 
 def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
@@ -145,7 +147,7 @@ def _gpu_persona(model: str) -> str:
             "Known signal fields: " + ", ".join(_signal_fields) + ". "
             "If an analysis cites a module or field NOT in these lists, flag it."
         )
-        _arbiter_cap = min(_MAX_PERSONA_CHARS, 30_000)
+        _arbiter_cap = min(_MAX_PERSONA_CHARS, 4_000)
         _src_char_budget = max(500, _arbiter_cap - len(arb_base) - 100)
         _src_token_budget = _src_char_budget // 3
         src = _load_src_files_for_warm([
@@ -333,19 +335,26 @@ def _prime_all_gpus() -> str:
     which would block interactive calls for the full priming duration.
     Each model primes one at a time — interactive calls jump ahead between priming steps.
     """
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
-    import time as _t
-    results = {}
-    t0 = _t.time()
-    for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
-        results[model] = _prime_warm_context(model)
-    elapsed = _t.time() - t0
-    parts = [f"Warm context priming ({elapsed:.1f}s):"]
-    for model, ok in results.items():
-        ctx_len = len(_warm_ctx.get(model, []))
-        parts.append(f"  {model}: {'PRIMED' if ok else 'FAILED'}" +
-                     (f" ({ctx_len} ctx tokens)" if ok else ""))
-    return "\n".join(parts)
+    if _priming_in_progress.is_set():
+        logger.info("_prime_all_gpus: already running, skipping duplicate")
+        return "Warm context priming already in progress"
+    _priming_in_progress.set()
+    try:
+        from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+        import time as _t
+        results = {}
+        t0 = _t.time()
+        for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+            results[model] = _prime_warm_context(model)
+        elapsed = _t.time() - t0
+        parts = [f"Warm context priming ({elapsed:.1f}s):"]
+        for model, ok in results.items():
+            ctx_len = len(_warm_ctx.get(model, []))
+            parts.append(f"  {model}: {'PRIMED' if ok else 'FAILED'}" +
+                         (f" ({ctx_len} ctx tokens)" if ok else ""))
+        return "\n".join(parts)
+    finally:
+        _priming_in_progress.clear()
 
 
 def warm_context_status() -> dict:
@@ -373,7 +382,7 @@ def ensure_warm(model: str):
     global _lazy_prime_attempted
     if model in _warm_ctx:
         return
-    if _lazy_prime_attempted:
+    if _lazy_prime_attempted or _priming_in_progress.is_set():
         return
     _lazy_prime_attempted = True
     def _bg():
