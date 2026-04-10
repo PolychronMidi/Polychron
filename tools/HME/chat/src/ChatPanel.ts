@@ -142,6 +142,7 @@ export class ChatPanel {
           if (this._isStreaming) {
             this._post({ type: "streamingRestored" });
           }
+          this._postContextUpdate();
         }
       },
       null,
@@ -774,7 +775,12 @@ export class ChatPanel {
       const used = this._contextTracker.lastInputTokens + this._contextTracker.lastOutputTokens;
       return Math.min(99, Math.round(used / window * 100));
     }
-    const estimatedTokens = this._contextTracker.totalChars / CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
+    // PTY mode: no token counts available — estimate from all message chars (both user + assistant)
+    // so the meter reflects actual context usage rather than just output chars.
+    const allChars = this._state.messages.reduce(
+      (sum, m) => sum + (m.text?.length ?? 0) + ((m as any).thinking?.length ?? 0), 0
+    );
+    const estimatedTokens = allChars / CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
     return Math.min(99, Math.round(estimatedTokens / window * 100));
   }
 

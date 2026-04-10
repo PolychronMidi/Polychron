@@ -620,6 +620,7 @@ function send() {
   if (!text) return;
   input.value = '';
   input.style.height = '';
+  vscode.setState(Object.assign({}, vscode.getState() || {}, { inputDraft: '' }));
   // Default route is claude. Slash prefixes override for backend testing:
   // /local, /hybrid, /auto, /agent — e.g. "/local what is X?"
   let route = 'claude';
@@ -652,6 +653,7 @@ input.addEventListener('keydown', (e) => {
 input.addEventListener('input', () => {
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+  vscode.setState(Object.assign({}, vscode.getState() || {}, { inputDraft: input.value }));
 });
 sendBtn.addEventListener('click', send);
 stopBtn.addEventListener('click', () => vscode.postMessage({ type: 'cancel' }));
@@ -660,6 +662,7 @@ queueBtn.addEventListener('click', () => {
   if (!text) return;
   input.value = '';
   input.style.height = '';
+  vscode.setState(Object.assign({}, vscode.getState() || {}, { inputDraft: '' }));
   var qModel = claudeModel.value;
   var qIsHaiku = qModel.indexOf('haiku') !== -1;
   vscode.postMessage({
@@ -962,6 +965,24 @@ if (sidebarToggleBtn) {
   });
 }
 applySidebar();
+
+// ── Restore persisted thinking state ──────────────────────────────────────
+if (thinkingChk && typeof _uiState.thinkingEnabled === 'boolean') {
+  thinkingChk.checked = _uiState.thinkingEnabled;
+  updateModelControls();
+}
+if (thinkingChk) {
+  thinkingChk.addEventListener('change', function() {
+    vscode.setState(Object.assign({}, vscode.getState() || {}, { thinkingEnabled: thinkingChk.checked }));
+  });
+}
+
+// ── Restore persisted textarea draft ──────────────────────────────────────
+if (input && _uiState.inputDraft) {
+  input.value = _uiState.inputDraft;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+}
 
 // ── Zoom controls ──────────────────────────────────────────────────────────
 var zoomLevel = (typeof _uiState.zoomLevel === 'number') ? _uiState.zoomLevel : 1.0;
