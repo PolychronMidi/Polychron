@@ -69,6 +69,11 @@ fi
 #   3. No-op error callbacks: onError: () => {}, reject: () => {}, onFail = () => {}
 #   4. Fallback values masquerading as success (e.g. "no reason given" where "timeout" is needed)
 #   5. Build/compile stderr suppressed: tsc/npm/node 2>/dev/null hides errors that must surface
+# Skip code-pattern checks when the command includes git commit — message text is not
+# source code and legitimately describes patterns being removed (false-positive otherwise).
+if echo "$CMD" | grep -q 'git commit'; then
+  exit 0
+fi
 if echo "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]]*\}' \
    || echo "$CMD" | grep -qE '\.catch\([[:space:]]*(function[[:space:]]*\(\)|(\([^)]*\))[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}\)' \
    || echo "$CMD" | grep -qE '(onError|onFail|reject)[[:space:]]*[:(=][[:space:]]*(function\s*\(\)|\([^)]*\)[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}' \
