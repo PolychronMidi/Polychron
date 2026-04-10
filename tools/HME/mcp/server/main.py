@@ -148,25 +148,35 @@ def _background_startup_chain():
     if context.project_engine is None:
         logger.warning("startup chain: RAG engine not ready — skipping Ollama init and prewarm")
         return
-    try:
-        from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
-        from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
+    from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
+    from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
 
+    try:
         logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
         init_result = _init_ollama_models()
         logger.info(f"startup chain [1/3]: {init_result}")
+    except Exception as _e:
+        logger.warning(f"startup chain [1/3] FAILED: {type(_e).__name__}: {_e}")
+        init_result = "FAILED"
 
-        logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
-        warm_result = _prime_all_gpus()
-        logger.info(f"startup chain [2/3]: {warm_result}")
+    if "FAILED" in init_result:
+        logger.warning("startup chain [2/3]: SKIPPED — model init had failures, priming would crash")
+    else:
+        try:
+            logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
+            warm_result = _prime_all_gpus()
+            logger.info(f"startup chain [2/3]: {warm_result}")
+        except Exception as _e:
+            logger.warning(f"startup chain [2/3] FAILED: {type(_e).__name__}: {_e}")
 
+    try:
         logger.info("startup chain [3/3]: warming pre-edit caller+KB cache...")
         cache_result = warm_pre_edit_cache(max_files=200)
         logger.info(f"startup chain [3/3]: {cache_result}")
-
-        logger.info("startup chain complete")
     except Exception as _e:
-        logger.warning(f"startup chain error: {type(_e).__name__}: {_e}")
+        logger.warning(f"startup chain [3/3] FAILED: {type(_e).__name__}: {_e}")
+
+    logger.info("startup chain complete")
 
 
 threading.Thread(target=_background_startup_chain, daemon=True, name="HME-startup-chain").start()
