@@ -23,7 +23,6 @@ if [ "$MODE" = "forget" ]; then
   fi
 fi
 
-# Reset streak counter
-echo 0 > /tmp/hme-non-hme-streak.count
+_streak_reset
 
 exit 0
