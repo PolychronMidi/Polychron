@@ -424,6 +424,62 @@
     outline: none;
   }
   #msg-input:focus { border-color: var(--btn-bg); }
+  #enrich-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  #enrich-btn {
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  #enrich-btn:hover { background: var(--btn-hover); }
+  #enrich-btn:disabled { opacity: 0.5; cursor: default; }
+  #frame-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--subtle);
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  #frame-toggle-btn:hover { border-color: var(--fg); color: var(--fg); }
+  #restore-btn, #reject-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  #restore-btn:hover { border-color: var(--error-fg); color: var(--error-fg); }
+  #reject-btn:hover { border-color: var(--btn-bg); color: var(--btn-bg); }
+  #enrich-status {
+    font-size: 11px;
+    color: var(--subtle);
+  }
+  #frame-input {
+    background: var(--input-bg);
+    color: var(--input-fg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 12px;
+    min-height: 32px;
+    max-height: 80px;
+    resize: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
   #input-row {
     display: flex;
     gap: 6px;
@@ -555,6 +611,14 @@
 <!-- Input -->
 <div id="input-area">
   <textarea id="msg-input" placeholder="Message… (Enter to send, Shift+Enter for newline)"></textarea>
+  <div id="enrich-row">
+    <button id="enrich-btn" title="Enrich prompt with KB, structure, and session context (local models, zero tokens)">Enrich</button>
+    <button id="frame-toggle-btn" title="Add optional framing for how to enrich">Frame</button>
+    <button id="restore-btn" style="display:none;" title="Restore original prompt">Restore</button>
+    <button id="reject-btn" style="display:none;" title="Reject and re-enrich with updated framing">Reject</button>
+    <span id="enrich-status"></span>
+  </div>
+  <textarea id="frame-input" placeholder="How to enrich… (e.g. 'focus on coupling dimensions')" style="display:none;"></textarea>
   <div id="input-row">
     <button id="send-btn">Send</button>
     <div id="context-meter" title="Context window usage">
@@ -613,6 +677,60 @@ const stopBtn     = document.getElementById('stop-btn');
 const queueBtn    = document.getElementById('queue-btn');
 const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
+
+// ── Enrich ────────────────────────────────────────────────────────────────
+const enrichBtn    = document.getElementById('enrich-btn');
+const frameToggle  = document.getElementById('frame-toggle-btn');
+const frameInput   = document.getElementById('frame-input');
+const restoreBtn   = document.getElementById('restore-btn');
+const rejectBtn    = document.getElementById('reject-btn');
+const enrichStatus = document.getElementById('enrich-status');
+let _enrichOriginal = '';
+
+enrichBtn.addEventListener('click', () => {
+  const prompt = input.value.trim();
+  if (!prompt) return;
+  enrichBtn.disabled = true;
+  enrichStatus.textContent = 'Enriching\u2026';
+  _enrichOriginal = prompt;
+  vscode.postMessage({
+    type: 'enrichPrompt',
+    prompt: prompt,
+    frame: frameInput.value.trim(),
+  });
+});
+
+frameToggle.addEventListener('click', () => {
+  const show = frameInput.style.display === 'none';
+  frameInput.style.display = show ? 'block' : 'none';
+  frameToggle.textContent = show ? 'Frame \u25B2' : 'Frame';
+});
+
+restoreBtn.addEventListener('click', () => {
+  if (_enrichOriginal) {
+    input.value = _enrichOriginal;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+    vscode.setState(Object.assign({}, vscode.getState() || {}, { inputDraft: _enrichOriginal }));
+  }
+  restoreBtn.style.display = 'none';
+  rejectBtn.style.display = 'none';
+  enrichStatus.textContent = '';
+});
+
+rejectBtn.addEventListener('click', () => {
+  if (_enrichOriginal) {
+    input.value = _enrichOriginal;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+  }
+  restoreBtn.style.display = 'none';
+  rejectBtn.style.display = 'none';
+  enrichStatus.textContent = 'Update framing and click Enrich again';
+  frameInput.style.display = 'block';
+  frameToggle.textContent = 'Frame \u25B2';
+  frameInput.focus();
+});
 
 // ── Send ───────────────────────────────────────────────────────────────────
 function send() {
@@ -709,6 +827,34 @@ window.addEventListener('message', (event) => {
       stopBtn.style.display = 'inline-block';
       queueBtn.style.display = 'inline-block';
       setStatus('Streaming…');
+      break;
+    case 'enrichStatus':
+      enrichBtn.disabled = true;
+      enrichStatus.textContent = 'Enriching\u2026';
+      break;
+    case 'enrichResult':
+      enrichBtn.disabled = false;
+      if (msg.unchanged || msg.error) {
+        enrichStatus.textContent = msg.error ? 'Enrichment failed' : (msg.reason || 'No enrichment needed');
+        restoreBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
+      } else {
+        input.value = msg.enriched;
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+        vscode.setState(Object.assign({}, vscode.getState() || {}, { inputDraft: msg.enriched }));
+        _enrichOriginal = msg.original;
+        var modes = [];
+        if (msg.triage) {
+          if (msg.triage.kb) modes.push('KB');
+          if (msg.triage.structural) modes.push('structure');
+          if (msg.triage.contextual) modes.push('context');
+        }
+        var t = msg.trace || {};
+        enrichStatus.textContent = modes.join('+') + ' (' + ((t.triage_ms||0) + (t.assembly_ms||0) + (t.enrich_ms||0) + (t.compress_ms||0)) + 'ms)';
+        restoreBtn.style.display = 'inline-block';
+        rejectBtn.style.display = 'inline-block';
+      }
       break;
     case 'historyCleared':
       // Handled by session message listener below (also clears session state)

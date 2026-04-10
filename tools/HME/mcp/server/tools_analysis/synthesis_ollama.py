@@ -10,6 +10,12 @@ from .synthesis_config import _THINK_SYSTEM
 
 logger = logging.getLogger("HME")
 
+# Backward-compat: callers in workflow.py, evolution_admin.py, reasoning_think.py
+# check these to skip synthesis when Ollama is down. Updated by circuit breaker state.
+_last_think_failure: str | None = None
+_last_think_failure_ts: float = 0.0
+_TIMEOUT_COOLDOWN_S = 15  # matches circuit breaker recovery_s
+
 # Sentinel to distinguish cooldown refusal from background timeout in return values.
 _COOLDOWN_REFUSED = "cooldown_refused"
 
@@ -48,18 +54,26 @@ class _CircuitBreaker:
         return False
 
     def record_success(self):
+        global _last_think_failure
         with self._lock:
             if self._state == self.HALF_OPEN:
                 logger.info(f"CircuitBreaker({self.name}): HALF_OPEN → CLOSED (probe succeeded)")
             self._state = self.CLOSED
             self._failures.clear()
+            _last_think_failure = None
 
-    def record_failure(self):
+    def record_failure(self, is_timeout: bool = False):
         import time as _t
+        global _last_think_failure, _last_think_failure_ts
         with self._lock:
             now = _t.monotonic()
             self._failures = [t for t in self._failures if now - t < self._failure_window_s]
             self._failures.append(now)
+            if is_timeout:
+                _last_think_failure = "timeout"
+                _last_think_failure_ts = now
+            else:
+                _last_think_failure = "error"
             if self._state == self.HALF_OPEN:
                 self._state = self.OPEN
                 self._opened_at = now
@@ -365,7 +379,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                 f"_local_think({_effective_model})",
                 f"{type(e).__name__}: {e}",
             )
-        _cb.record_failure()
+        _cb.record_failure(is_timeout=_is_timeout)
         if _is_timeout:
             if priority != "background":
                 logger.warning(

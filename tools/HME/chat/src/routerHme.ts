@@ -81,6 +81,25 @@ function shimPost<T>(path: string, body: string, parse: (raw: string) => T, time
   });
 }
 
+export interface EnrichPromptResult {
+  enriched: string;
+  original: string;
+  triage: { kb: boolean; structural: boolean; contextual: boolean; raw: string };
+  trace: { triage_ms: number; assembly_ms: number; enrich_ms: number; compress_ms: number };
+  unchanged?: boolean;
+  reason?: string;
+  error?: string;
+}
+
+export async function enrichPrompt(prompt: string, frame: string = ""): Promise<EnrichPromptResult> {
+  return shimPost<EnrichPromptResult>(
+    "/enrich_prompt",
+    JSON.stringify({ prompt, frame }),
+    (raw) => JSON.parse(raw),
+    30000,
+  );
+}
+
 export async function validateMessage(message: string): Promise<{ warnings: any[]; blocks: any[] }> {
   return shimPost("/validate", JSON.stringify({ query: message }), JSON.parse);
 }

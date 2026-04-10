@@ -120,6 +120,18 @@ def _validate(query: str) -> dict:
     return {"warnings": warnings, "blocks": blocks}
 
 
+def _enrich_prompt(prompt: str, frame: str = "") -> dict:
+    """Prompt enrichment via local models. Returns {enriched, original, triage, trace}."""
+    if not _engine_ready.wait(timeout=5):
+        return {"enriched": prompt, "original": prompt, "error": "engines starting"}
+    try:
+        from server.tools_analysis.prompt_enricher import _enrich_prompt as _do_enrich
+        return _do_enrich(prompt, frame)
+    except Exception as e:
+        logger.error(f"enrich_prompt failed: {e}")
+        return {"enriched": prompt, "original": prompt, "error": str(e)}
+
+
 def _post_audit(changed_files: str = "") -> dict:
     """Post-response audit: run git diff to detect changed files, search KB for violations."""
     from hme_http_store import _log_error
