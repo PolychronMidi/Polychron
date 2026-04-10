@@ -139,9 +139,18 @@ def _get_compositional_context(module_name: str) -> str:
     return "\n".join(parts) if parts else ""
 
 
+_trace_cache: dict = {"path": "", "mtime": 0.0, "records": []}
+
+
 def _load_trace(trace_path: str) -> list[dict]:
-    """Load trace.jsonl and return list of beat records. Shared by composition/trust/section tools."""
+    """Load trace.jsonl with mtime-based caching. Shared by composition/trust/section tools."""
     import json as _json
+    try:
+        mt = os.path.getmtime(trace_path)
+    except OSError:
+        return []
+    if _trace_cache["path"] == trace_path and _trace_cache["mtime"] == mt:
+        return _trace_cache["records"]
     records = []
     with open(trace_path, encoding="utf-8") as f:
         for line in f:
@@ -149,6 +158,9 @@ def _load_trace(trace_path: str) -> list[dict]:
                 records.append(_json.loads(line))
             except Exception:
                 continue
+    _trace_cache["path"] = trace_path
+    _trace_cache["mtime"] = mt
+    _trace_cache["records"] = records
     return records
 
 

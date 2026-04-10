@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 
 from server import context as ctx
-from . import _track
+from . import _track, _load_trace
 from .section_labels import _coupling_label_display
 from .drama_map import drama_map
 
@@ -21,7 +21,8 @@ def section_compare(section_a: int, section_b: int) -> str:
     _track("section_compare")
 
     trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
-    if not os.path.isfile(trace_path):
+    records = _load_trace(trace_path)
+    if not records:
         return "No trace.jsonl found."
 
     sections: dict = {}
@@ -34,44 +35,39 @@ def section_compare(section_a: int, section_b: int) -> str:
         }
 
     try:
-        with open(trace_path, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    rec = json.loads(line)
-                except Exception:
+        for rec in records:
+            bk = rec.get("beatKey", "")
+            parts = bk.split(":")
+            sec = int(parts[0]) if parts and parts[0].isdigit() else -1
+            if sec not in sections:
+                continue
+            s = sections[sec]
+            s["beats"] += 1
+            s["regimes"][rec.get("regime", "?")] += 1
+            snap = rec.get("snap", {})
+            if isinstance(snap, dict):
+                t = snap.get("tension")
+                if isinstance(t, (int, float)):
+                    s["tensions"].append(t)
+                prof = snap.get("activeProfile", "")
+                if prof:
+                    s["profiles"][prof] += 1
+            s["note_counts"].append(len(rec.get("notes", [])))
+            for pair, label in (rec.get("couplingLabels") or {}).items():
+                s["coupling"][f"{pair}:{label}"] += 1
+            trust = rec.get("trust", {})
+            for sys_name, data in trust.items():
+                if not isinstance(data, dict):
                     continue
-                bk = rec.get("beatKey", "")
-                parts = bk.split(":")
-                sec = int(parts[0]) if parts and parts[0].isdigit() else -1
-                if sec not in sections:
-                    continue
-                s = sections[sec]
-                s["beats"] += 1
-                s["regimes"][rec.get("regime", "?")] += 1
-                snap = rec.get("snap", {})
-                if isinstance(snap, dict):
-                    t = snap.get("tension")
-                    if isinstance(t, (int, float)):
-                        s["tensions"].append(t)
-                    prof = snap.get("activeProfile", "")
-                    if prof:
-                        s["profiles"][prof] += 1
-                s["note_counts"].append(len(rec.get("notes", [])))
-                for pair, label in (rec.get("couplingLabels") or {}).items():
-                    s["coupling"][f"{pair}:{label}"] += 1
-                trust = rec.get("trust", {})
-                for sys_name, data in trust.items():
-                    if not isinstance(data, dict):
-                        continue
-                    w = data.get("weight")
-                    sc = data.get("score")
-                    hp = data.get("hotspotPressure", 0)
-                    if isinstance(w, (int, float)):
-                        s["trust_weights"][sys_name].append(w)
-                    if isinstance(sc, (int, float)):
-                        s["trust_scores"][sys_name].append(sc)
-                    if isinstance(hp, (int, float)) and hp > 0.1:
-                        s["hotspot_counts"][sys_name] += 1
+                w = data.get("weight")
+                sc = data.get("score")
+                hp = data.get("hotspotPressure", 0)
+                if isinstance(w, (int, float)):
+                    s["trust_weights"][sys_name].append(w)
+                if isinstance(sc, (int, float)):
+                    s["trust_scores"][sys_name].append(sc)
+                if isinstance(hp, (int, float)) and hp > 0.1:
+                    s["hotspot_counts"][sys_name] += 1
     except Exception as e:
         return f"Error: {e}"
 
@@ -204,7 +200,8 @@ def regime_timeline(row_width: int = 80) -> str:
     _track("regime_timeline")
 
     trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
-    if not os.path.isfile(trace_path):
+    records = _load_trace(trace_path)
+    if not records:
         return "No trace.jsonl found."
 
     regime_map = {"initializing": "I", "evolving": "E", "exploring": "X", "coherent": "C"}
@@ -214,23 +211,18 @@ def regime_timeline(row_width: int = 80) -> str:
     prev_sec = -1
 
     try:
-        with open(trace_path, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    rec = json.loads(line)
-                except Exception:
-                    continue
-                bk = rec.get("beatKey", "")
-                parts_bk = bk.split(":")
-                sec = int(parts_bk[0]) if parts_bk and parts_bk[0].isdigit() else -1
-                regime = rec.get("regime", "?")
-                snap = rec.get("snap", {})
-                tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
-                timeline.append(regime_map.get(regime, "?"))
-                tension_vals.append(float(tension) if isinstance(tension, (int, float)) else 0.5)
-                if sec != prev_sec:
-                    section_starts.append(len(timeline) - 1)
-                    prev_sec = sec
+        for rec in records:
+            bk = rec.get("beatKey", "")
+            parts_bk = bk.split(":")
+            sec = int(parts_bk[0]) if parts_bk and parts_bk[0].isdigit() else -1
+            regime = rec.get("regime", "?")
+            snap = rec.get("snap", {})
+            tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
+            timeline.append(regime_map.get(regime, "?"))
+            tension_vals.append(float(tension) if isinstance(tension, (int, float)) else 0.5)
+            if sec != prev_sec:
+                section_starts.append(len(timeline) - 1)
+                prev_sec = sec
     except Exception as e:
         return f"Error: {e}"
 

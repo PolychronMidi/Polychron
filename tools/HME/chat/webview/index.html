@@ -668,7 +668,13 @@ function updateModelControls() {
   if (!isOpus && maxOpt) { maxOpt.remove(); }
   if (!isOpus && effortEl.value === 'max') effortEl.value = 'high';
 }
-claudeModel.addEventListener('change', updateModelControls);
+claudeModel.addEventListener('change', function() {
+  updateModelControls();
+  vscode.setState(Object.assign({}, vscode.getState() || {}, { claudeModel: claudeModel.value }));
+});
+claudeEffort && claudeEffort.addEventListener('change', function() {
+  vscode.setState(Object.assign({}, vscode.getState() || {}, { claudeEffort: claudeEffort.value }));
+});
 updateModelControls();
 const messages    = document.getElementById('messages');
 const input       = document.getElementById('msg-input');
@@ -1111,6 +1117,15 @@ if (sidebarToggleBtn) {
   });
 }
 applySidebar();
+
+// ── Restore persisted model/effort selection ──────────────────────────────
+if (claudeModel && _uiState.claudeModel) {
+  claudeModel.value = _uiState.claudeModel;
+}
+if (claudeEffort && _uiState.claudeEffort) {
+  claudeEffort.value = _uiState.claudeEffort;
+}
+updateModelControls();
 
 // ── Restore persisted thinking state ──────────────────────────────────────
 if (thinkingChk && typeof _uiState.thinkingEnabled === 'boolean') {
