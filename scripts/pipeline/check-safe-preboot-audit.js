@@ -1,6 +1,6 @@
 // scripts/pipeline/check-safe-preboot-audit.js
 // Tracks safePreBoot.call() usage across the codebase to prevent debt growth.
-// safePreBoot silently catches errors when globals aren't ready — structurally
+// safePreBoot silently catches errors when globals aren't ready -- structurally
 // equivalent to the || 0 pattern that Principle 2 (fail fast) prohibits.
 // Legitimate uses: truly optional integrations (explainabilityBus, grandFinale
 // telemetry snapshots). Everything else should use moduleLifecycle dependencies.
@@ -51,7 +51,7 @@ for (const filePath of allFiles) {
 perFile.sort((a, b) => b.count - a.count);
 const totalFiles = perFile.length;
 
-// Identify wrapped globals — extract the function body inside safePreBoot.call(() => X.method(), ...)
+// Identify wrapped globals -- extract the function body inside safePreBoot.call(() => X.method(), ...)
 const wrappedGlobals = new Map();
 for (const filePath of allFiles) {
   const src = fs.readFileSync(filePath, 'utf8');
@@ -98,7 +98,7 @@ if (totalCalls > BASELINE_CALLS) {
 if (totalFiles > BASELINE_FILES) {
   failures.push(
     `safePreBoot file count grew: ${totalFiles} files (baseline: ${BASELINE_FILES}). ` +
-    'New files must not add safePreBoot — declare proper dependencies.'
+    'New files must not add safePreBoot -- declare proper dependencies.'
   );
 }
 

@@ -53,7 +53,7 @@ rhythmicComplementEngine = (() => {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
 
-    const notes = L0.query('note', {
+    const notes = L0.query(L0_CHANNELS.note, {
       layer: otherLayer,
       since: absoluteSeconds - ANALYSIS_WINDOW_S,
       windowSeconds: ANALYSIS_WINDOW_S
@@ -162,29 +162,29 @@ rhythmicComplementEngine = (() => {
 
     const interaction = V.optionalFinite(intent.interactionTarget, 0.5);
     // R35: density-rhythm L0 -- blend real-time density with intent for mode selection
-    const densityRhythmEntry = L0.getLast('density-rhythm', {
+    const densityRhythmEntry = L0.getLast(L0_CHANNELS.densityRhythm, {
       layer: crossLayerHelpers.getOtherLayer(LM.activeLayer || 'L1')
     });
     const realtimeDensity = densityRhythmEntry ? V.optionalFinite(densityRhythmEntry.density, 0.5) : 0.5;
     const density = V.optionalFinite(intent.densityTarget, 0.5) * 0.5 + realtimeDensity * 0.5;
     // Rhythmic coupling: high emergent rhythm complexity adds to effective density for mode selection.
     // Syncopated/complex rhythm patterns favor interlocking modes (hocket/antiphony) over free.
-    const rhythmEntryRCE = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryRCE = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmComplexityRCE = rhythmEntryRCE && Number.isFinite(rhythmEntryRCE.complexity) ? rhythmEntryRCE.complexity : 0;
     const effectiveDensity = clamp(density + rhythmComplexityRCE * 0.15, 0, 1);
 
     // Xenolinguistic: phase convergence prediction -> pre-position for canon before convergence
-    const phaseEntry = L0.getLast('phaseConvergence', { layer: 'both' });
+    const phaseEntry = L0.getLast(L0_CHANNELS.phaseConvergence, { layer: 'both' });
     const convergenceImminent = phaseEntry && Number.isFinite(phaseEntry.cycle) && phaseEntry.step < 2;
 
     // Harmonic distance awareness: far from home key favors canon (coherence in distant territory)
-    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     const excursion = harmonicEntry ? V.optionalFinite(harmonicEntry.excursion, 0) : 0;
     const farFromHome = excursion > 4;
 
     // Rhythm awareness: read other layer's rhythm pattern from L0
     const otherLayer = crossLayerHelpers.getOtherLayer(LM.activeLayer || 'L1');
-    const otherRhythm = L0.getLast('rhythm', { layer: otherLayer });
+    const otherRhythm = L0.getLast(L0_CHANNELS.rhythm, { layer: otherLayer });
     const otherIsDense = otherRhythm && (otherRhythm.method === 'onsets' || otherRhythm.method === 'random');
 
     // Lab R2: coherent+canon was "excellent" - favor canon during coherent regime

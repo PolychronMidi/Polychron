@@ -41,7 +41,7 @@ const resolvedBassProgramPool = bassProgramPool.length > 0
   : [bassInstrument, bassInstrument2].filter(program => Number.isFinite(Number(program)));
     // Bias instrument selection away from other layer's current programs
     const otherLayer = crossLayerHelpers.getOtherLayer(LM.activeLayer || 'L1');
-    const otherInst = L0.getLast('instrument', { layer: otherLayer });
+    const otherInst = L0.getLast(L0_CHANNELS.instrument, { layer: otherLayer });
     const otherPrograms = otherInst && Array.isArray(otherInst.programs) ? otherInst.programs : [];
     const gmFamily = (pg) => m.floor(Number(pg) / 8);
     const biasedOtherInstruments = otherPrograms.length > 0
@@ -66,7 +66,7 @@ p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:
     ...bassBinaural.map(ch=>({...tmp,vals:[ch,selectedBass]})),
     { ...tmp,vals:[drumCH,selectedDrum] }
   ];  })  );
-    L0.post('instrument', LM.activeLayer || 'shared', beatStartTime, { programs: [selectedReflection, selectedBass, selectedDrum] });
+    L0.post(L0_CHANNELS.instrument, LM.activeLayer || 'shared', beatStartTime, { programs: [selectedReflection, selectedBass, selectedDrum] });
   }
 }
 

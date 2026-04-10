@@ -81,7 +81,7 @@ fs.writeFileSync(outputPath, JSON.stringify({
 }, null, 2) + '\n');
 
 if (orphans.length > 0) {
-  console.log(`check-registration-coherence: WARNING — ${orphans.length} conductor modules have functional registrations without registerModule (no lifecycle reset):`);
+  console.log(`check-registration-coherence: WARNING -- ${orphans.length} conductor modules have functional registrations without registerModule (no lifecycle reset):`);
   for (const o of orphans) {
     console.log(`  ${o.file}: has ${o.registrations.join(', ')} but no registerModule`);
   }

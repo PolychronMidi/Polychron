@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // One-time migration: remove safePreBoot wrappers for 5 globals that never throw.
-// These globals are boot-validated with safe public APIs — the wrappers are
+// These globals are boot-validated with safe public APIs -- the wrappers are
 // unnecessary defensive code that violates the fail-fast principle.
 'use strict';
 

@@ -79,15 +79,14 @@ Each subsystem `index.js`: helpers first, then manager/orchestrator last.
 - **Meta-controller constants** (coupling targets, pair baselines, coherent relaxation, coherent threshold scale, progressive strength, flicker dampening base, axis energy distribution, global gain multiplier) are managed by hypermeta self-calibrating controllers. Never hand-tune these; modify the controller logic instead. Never set `coherentThresholdScale` per-profile -- the regime self-balancer owns it. Query topology via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()`.
 - **Hypermeta-first rule (no whack-a-mole overrides):** Never add manual axis floors/caps/thresholds in `axisEnergyEquilibratorAxisAdjustments.js` SpecialCaps or similar locations. The 17 hypermeta controllers already manage all 6 axes. When an axis is suppressed or dominant, diagnose WHY the responsible controller isn't working and fix its logic (e.g., dead thresholds, asymmetric handlers, self-reinforcing decay). Pipeline script `check-hypermeta-jurisdiction.js` enforces this across 4 phases: Phase 1 (SpecialCaps overrides), Phase 2 (coupling matrix reads), Phase 3 (bias registration bounds lock — 92 registrations locked against `scripts/bias-bounds-manifest.json`), Phase 4 (5 watched controller-managed constants). New manual overrides, changed bias bounds, or watched constant violations cause pipeline failure. Legacy violations are allowlisted and tracked for removal. To update the bias manifest after legitimate structural changes: `node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`.
 - **Coupling matrix firewall:** Never read `.couplingMatrix` from `systemDynamicsProfiler.getSnapshot()` outside the coupling engine (`src/conductor/signal/balancing/`), meta-controllers (`src/conductor/signal/meta/`), profiler, diagnostics, or pipeline plumbing. Modules that need coupling awareness must register a bias via `conductorIntelligence` and respond through the controller chain. ESLint `local/no-direct-coupling-matrix-read` enforces this; `check-hypermeta-jurisdiction.js` Phase 2 detects violations at pipeline time. Legacy violations are allowlisted and tracked for removal.
-- **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls.
+- **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls. Channel names must use `L0_CHANNELS.xxx` constants (defined in `src/time/l0Channels.js`). ESLint `local/no-bare-l0-channel` enforces this — bare string literals in `L0.post/getLast/query/count/getBounds/findClosest/reset` are a hard error. To add a new channel: add it to `l0Channels.js` and declare it in `globals.d.ts`.
 - **Firewall ports** are the 9 controlled openings in the architectural firewalls — each declared in `metrics/feedback_graph.json` under `firewallPorts`. Every port has a direction, mechanism, enforcement, and data shape. Validated by `scripts/pipeline/validate-feedback-graph.js`. When adding a new cross-boundary data flow, declare it as a firewall port.
 
 ## Layer Isolation (L1/L2 Polyrhythmic Safety)
 
 Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed between layers unless explicitly per-layer.
 
-- **Per-layer globals** live in `LM.perLayerState`, saved/restored by `loadLayerToGlobals`/`saveGlobalsToLayer` on every `activate()` call. Currently: crossModulation, lastCrossMod, balOffset, sideBias, lBal, rBal, cBal, cBal2, cBal3, refVar, bassVar.
-- **Per-layer flipBin** lives in `LM.flipBinByLayer`, restored in `activate()`.
+- **Per-layer globals** live in `LM.perLayerState`, saved/restored by `loadLayerToGlobals`/`saveGlobalsToLayer` on every `activate()` call. Currently: crossModulation, lastCrossMod, balOffset, sideBias, lBal, rBal, cBal, cBal2, cBal3, refVar, bassVar, flipBin.
 - **Conductor recorders** tick L1-only via registry gate in `conductorRecorderRegistry.runRecorders()`. Only `conductorSignalBridge` runs on L2 (needs per-layer signal refresh). Never add beat counters or ring buffers to recorders without accounting for this.
 - **Closure-based per-layer state** (stutterTempoFeel, crossLayerDynamicEnvelope, journeyRhythmCoupler, emissionFeedbackListener) uses `byLayer` maps keyed by `LM.activeLayer`.
 - **When adding new mutable state**: ask "does this get written during per-beat processing and read by both layers?" If yes, it needs per-layer treatment.
@@ -113,7 +112,7 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 
 ## Binaural Detune Prevention
 
-`setBinaural.js` pitch bend glide must complete WITHIN the volume crossfade window (0.06-0.12s), not over the full shift interval. Post-crossfade snap event ensures final pitch bend is applied. `flipBinCrossfadeWindow` global exposes the exact crossfade window for `stereoScatter` variant. Per-layer flipBin state in `LM.flipBinByLayer` prevents L1/L2 pitch bend desync.
+`setBinaural.js` pitch bend glide must complete WITHIN the volume crossfade window (0.06-0.12s), not over the full shift interval. Post-crossfade snap event ensures final pitch bend is applied. `flipBinCrossfadeWindow` global exposes the exact crossfade window for `stereoScatter` variant. Per-layer flipBin state in `LM.perLayerState` prevents L1/L2 pitch bend desync.
 
 ## Perceptual Intelligence (Neural Audio Analysis)
 
@@ -132,9 +131,10 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 
 ## Custom ESLint Rules
 
-20 project-specific rules in `scripts/eslint-rules/`:
+21 project-specific rules in `scripts/eslint-rules/`:
 
 - **`case-conventions`** - PascalCase for classes, camelCase for everything else
+- **`no-bare-l0-channel`** - ban bare string literals in L0 method calls; use `L0_CHANNELS.xxx` constants
 - **`no-bare-math`** - ban direct `Math.*` access; use the project `m = Math` alias
 - **`no-conductor-registration-from-crosslayer`** - prevent cross-layer modules from registering with conductor
 - **`no-console-acceptable-warning`** - restrict `console.warn` to `'Acceptable warning: ...'` format

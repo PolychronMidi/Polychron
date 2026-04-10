@@ -87,7 +87,7 @@ polyrhythmicPhasePredictor = (() => {
           : melodicCtxPPP.counterpoint === 'similar' ? 1.15 : 1.0)
         : 1.0;
       // R77 E5: emergentRhythm hotspots coupling -- dense moments amplify phase convergence boost
-      const rhythmEntryPPP = L0.getLast('emergentRhythm', { layer: 'both' });
+      const rhythmEntryPPP = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
       const hotspotsPPP = rhythmEntryPPP && Array.isArray(rhythmEntryPPP.hotspots) ? rhythmEntryPPP.hotspots.length : 0;
       const hotspotMult = 1.0 + clamp(hotspotsPPP / 16, 0, 1) * 0.20;
       // R87 E3: registerMigrationDir coupling -- ascending pitch center amplifies predicted convergence

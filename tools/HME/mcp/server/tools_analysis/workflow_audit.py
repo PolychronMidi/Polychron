@@ -135,7 +135,7 @@ def what_did_i_forget(changed_files: str) -> str:
         "covered by the audit warnings. Only include a point if you can name the exact "
         "file, function, or constraint it applies to. If nothing else was missed, say so."
     )
-    synthesis = _local_think(user_text, max_tokens=2048, model=_REASONING_MODEL,
+    synthesis = _local_think(user_text, max_tokens=512, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis_ollama import compress_for_claude

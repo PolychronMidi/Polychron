@@ -486,8 +486,7 @@ interface LayerManagerAPI {
   layerComposers: Record<string, any>;
   phraseFamily: string | null;
   activeLayer: string | null;
-  flipBinByLayer: Record<string, boolean>;
-  perLayerState: Record<string, { crossModulation: number; lastCrossMod: number; balOffset: number; sideBias: number; lBal: number; rBal: number; cBal: number; cBal2: number; cBal3: number; refVar: number; bassVar: number }>;
+  perLayerState: Record<string, { crossModulation: number; lastCrossMod: number; balOffset: number; sideBias: number; lBal: number; rBal: number; cBal: number; cBal2: number; cBal3: number; refVar: number; bassVar: number; flipBin: boolean }>;
   quantumState: { lastPitchClass: number; lastDensity: number; lastRegime: string; lastTexture: string };
   register(name: string, buffer: any[] | string, initialState?: object, setupFn?: Function): { layer: any; buffer: any[] };
   activate(name: string, isPoly?: boolean): any;
@@ -1698,6 +1697,7 @@ declare var midiMeterRatio: any;
 declare var midiBPM: any;
 declare var syncFactor: any;
 declare var timeGridSearchStart: any;
+declare var L0_CHANNELS: Readonly<Record<string, string>>;
 declare var L0: {
   post(channel: string, layer: string, timeInSeconds: number, data?: Record<string, unknown>): void;
   query(channel: string, opts?: { layer?: string; since?: number; windowSeconds?: number; aroundSeconds?: number; toleranceSec?: number }): any[];

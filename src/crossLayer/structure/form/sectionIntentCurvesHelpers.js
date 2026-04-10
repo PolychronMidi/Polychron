@@ -83,14 +83,14 @@ sectionIntentCurvesHelpers = (() => {
     const midSignals = safePreBoot.call(() => conductorSignalBridge.getSignals(), null);
     const midRegime = midSignals ? midSignals.regime || 'evolving' : 'evolving';
     if (midTensionSlope < -0.1 && midRegime !== 'coherent') {
-      L0.post('section-quality', 'both', beatStartTime, { quality: 0.35, bias: 0.08 });
+      L0.post(L0_CHANNELS.sectionQuality, 'both', beatStartTime, { quality: 0.35, bias: 0.08 });
     }
     const midCoupling = midSignals && typeof midSignals.couplingStrength === 'number' ? midSignals.couplingStrength : 0.3;
-    const prevCouplingEntry = L0.getLast('climax-pressure', { layer: 'both' });
+    const prevCouplingEntry = L0.getLast(L0_CHANNELS.climaxPressure, { layer: 'both' });
     const prevCoupling = prevCouplingEntry && Number.isFinite(prevCouplingEntry.level) ? prevCouplingEntry.level : midCoupling;
     const couplingTrend = midCoupling - prevCoupling;
     if (couplingTrend < -0.05) {
-      L0.post('section-quality', 'both', beatStartTime, {
+      L0.post(L0_CHANNELS.sectionQuality, 'both', beatStartTime, {
         quality: 0.3, bias: clamp(m.abs(couplingTrend) * 0.5, 0, 0.10)
       });
     }

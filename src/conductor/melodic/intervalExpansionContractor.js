@@ -20,7 +20,7 @@ intervalExpansionContractor = (() => {
   function recordSnapshot(absTime) {
     V.requireFinite(absTime, 'absTime');
 
-    const notes = L0.query('note', { windowSeconds: 4 });
+    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: 4 });
     const midis = analysisHelpers.extractMidiArray(notes);
 
     if (midis.length < 3) return;

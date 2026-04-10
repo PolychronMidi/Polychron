@@ -16,7 +16,7 @@ emitPickCrossLayerRecord = function(ctx) {
   const { noteToEmit, texVel, activeLayerName, unit, onTime, sourceCH, spUnit, texSustain, harmonicOtherMidi } = ctx;
 
   const timeInSeconds = onTime;
-  L0.post('note', activeLayerName, timeInSeconds, { midi: noteToEmit, velocity: texVel, unit, time: timeInSeconds });
+  L0.post(L0_CHANNELS.note, activeLayerName, timeInSeconds, { midi: noteToEmit, velocity: texVel, unit, time: timeInSeconds });
 
   // Cross-layer interactions
   convergenceDetector.postOnset(timeInSeconds, activeLayerName, noteToEmit, texVel);
@@ -70,7 +70,7 @@ emitPickCrossLayerRecord = function(ctx) {
   } else {
     // Fallback: query L0 directly (should not normally occur)
     const otherLayerForGuard = crossLayerHelpers.getOtherLayer(activeLayerName);
-    const otherRecentEntry = L0.getLast('note', { layer: otherLayerForGuard, since: timeInSeconds - 0.5, windowSeconds: 0.5 });
+    const otherRecentEntry = L0.getLast(L0_CHANNELS.note, { layer: otherLayerForGuard, since: timeInSeconds - 0.5, windowSeconds: 0.5 });
     if (otherRecentEntry) {
       const otherMidiCandidate = Number(
         (Number.isFinite(Number(otherRecentEntry.midi)))

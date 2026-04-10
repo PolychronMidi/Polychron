@@ -62,7 +62,7 @@ rhythmicPhaseLock = (() => {
         + (melodicCtxPL.counterpoint === 'contrary' ? -0.08 : 0)
       : 0;
     // R72: hotspots coupling -- dense rhythmic burst moments invite phase alignment.
-    const rhythmEntryPL = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryPL = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsPL = rhythmEntryPL && Array.isArray(rhythmEntryPL.hotspots) ? rhythmEntryPL.hotspots.length : 0;
     const rhythmHotspotDelta = -(hotspotsPL / 16) * 0.06;
     const effectiveLockThreshold = clamp(LOCK_THRESHOLD * (1.5 - cimScale) + melodicLockDelta + rhythmHotspotDelta, 0.05, 0.40);

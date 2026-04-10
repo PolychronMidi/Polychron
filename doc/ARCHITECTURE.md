@@ -76,10 +76,9 @@ Exposed fields (17 total):
 
 Two polyrhythmic layers alternate via `LM.activate()`. On every activation:
 
-1. **Save outgoing layer**: `saveGlobalsToLayer()` captures mutable globals into `LM.perLayerState[outgoingLayer]`
+1. **Save outgoing layer**: `saveGlobalsToLayer()` captures mutable globals (including flipBin) into `LM.perLayerState[outgoingLayer]`
 2. **Restore incoming layer**: `loadLayerToGlobals()` writes per-layer values back to globals
-3. **Restore flipBin**: `flipBin = LM.flipBinByLayer[incomingLayer]`
-4. **PRNG decorrelation**: L2 activation advances PRNG 17 steps to break cross-layer sequence coupling
+3. **PRNG decorrelation**: L2 activation advances PRNG 17 steps to break cross-layer sequence coupling
 
 ### Per-Layer Globals (LM.perLayerState)
 

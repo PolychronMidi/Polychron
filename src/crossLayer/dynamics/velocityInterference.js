@@ -46,7 +46,7 @@ velocityInterference = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = CONTOUR_WINDOW_MS / 1000;
-    const bounds = L0.getBounds('note', {
+    const bounds = L0.getBounds(L0_CHANNELS.note, {
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
@@ -120,7 +120,7 @@ velocityInterference = (() => {
     const freshnessEmaVI = melodicCtxVI ? V.optionalFinite(melodicCtxVI.freshnessEma, 0.5) : 0.5;
     const freshnessIntensityScale = 1.0 + clamp(freshnessEmaVI - 0.40, 0, 0.60) * 0.25; // [1.0 familiar ... 1.15 novel]
     // Rhythmic coupling: unexpected density surge sharpens velocity interference. Decline surprises soften it.
-    const rhythmEntryVI = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryVI = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const densitySurpriseVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.densitySurprise) ? rhythmEntryVI.densitySurprise : 1.0;
     const rhythmInterferenceMod = densitySurpriseVI > 1.1 ? 1.12 : densitySurpriseVI < 0.9 ? 0.92 : 1.0;
     // R83 E1: ascendRatio bridge -- ascending melodic momentum amplifies velocity interference

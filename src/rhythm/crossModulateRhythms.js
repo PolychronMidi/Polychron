@@ -104,7 +104,7 @@ crossModulateRhythms = () => {
   // sustained harmony = looser. Relationship occasionally inverts (20% chance)
   // for unpredictability, and scale is jittered via fuzzyClamp.
   {
-    const harmEntry = L0.getLast('harmonic', { layer: 'both' });
+    const harmEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     if (harmEntry && Number.isFinite(harmEntry.timestamp)) {
       const timeSinceHarmonic = beatStartTime - harmEntry.timestamp;
       // Fast chords (< 1s since last) = tighten, slow (> 3s) = loosen
@@ -123,7 +123,7 @@ crossModulateRhythms = () => {
   // (build->spike->dip). Stutter contagion -> boosted rhythmic variance.
   {
     let portContribution = 0;
-    const recentDownbeat = L0.getLast('emergentDownbeat', { layer: 'both' });
+    const recentDownbeat = L0.getLast(L0_CHANNELS.emergentDownbeat, { layer: 'both' });
     if (recentDownbeat && Number.isFinite(recentDownbeat.timeInSeconds)) {
       const secSinceDownbeat = beatStartTime - recentDownbeat.timeInSeconds;
       const dbStrength = V.optionalFinite(recentDownbeat.strength, 0);
@@ -140,7 +140,7 @@ crossModulateRhythms = () => {
         portContribution += m.abs(contrib);
       }
     }
-    const recentContagion = L0.getLast('stutterContagion', { layer: 'both' });
+    const recentContagion = L0.getLast(L0_CHANNELS.stutterContagion, { layer: 'both' });
     if (recentContagion && Number.isFinite(recentContagion.timeInSeconds)) {
       const secSinceContagion = beatStartTime - recentContagion.timeInSeconds;
       const contagionIntensity = V.optionalFinite(recentContagion.intensity, 0);
@@ -163,7 +163,7 @@ crossModulateRhythms = () => {
   // high complexity = looser (syncopated passages need room),
   // high density + low complexity = tighter (driving passages want cohesion).
   {
-    const emergent = L0.getLast('emergentRhythm', { layer: 'both' });
+    const emergent = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     if (emergent && Number.isFinite(emergent.density) && emergent.density > 0.05) {
       const eDensity = V.optionalFinite(emergent.density, 0);
       const eComplexity = V.optionalFinite(emergent.complexity, 0.5);
@@ -179,7 +179,7 @@ crossModulateRhythms = () => {
   // energy (layers diverging upward). Contrary counterpoint -> less cross-mod
   // (preserve independence). Stale intervals -> slight boost (explore more).
   {
-    const melody = L0.getLast('emergentMelody', { layer: 'both' });
+    const melody = L0.getLast(L0_CHANNELS.emergentMelody, { layer: 'both' });
     if (melody) {
       const mFreshness = V.optionalFinite(melody.intervalFreshness, 1);
       let melodicMod = 0;

@@ -111,6 +111,7 @@
       "sourceDomain": "stutterContagion_downbeat_feedbackLoop",
       "targetDomain": "rhythm_pattern_weights",
       "latency": "beat-delayed",
+      "contractExempt": true,
       "firewallsCrossed": [
         "REGISTRY_DAMPENING"
       ],
@@ -122,6 +123,7 @@
       "sourceDomain": "emergent_downbeat_stutter_contagion",
       "targetDomain": "cross_modulation",
       "latency": "beat-delayed",
+      "contractExempt": true,
       "firewallsCrossed": [
         "REGISTRY_DAMPENING"
       ],
@@ -133,6 +135,7 @@
       "sourceDomain": "melodicTrackers_synthesis",
       "targetDomain": "variant_selection_melodicContext",
       "latency": "beat-delayed",
+      "contractExempt": true,
       "firewallsCrossed": [
         "REGISTRY_DAMPENING"
       ],

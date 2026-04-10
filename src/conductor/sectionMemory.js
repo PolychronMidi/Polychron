@@ -39,8 +39,8 @@ sectionMemory = (() => {
       coherenceBias,
       intentDensity: lastIntent.densityTarget,
       intentTension: lastIntent.dissonanceTarget,
-      regimeTransitionCount: L0.count('regimeTransition', { since: beatStartTime - 60, windowSeconds: 60 }),
-      lastTransitionCause: (() => { const rt = L0.getLast('regimeTransition', {}); return rt && rt.cause ? rt.cause : null; })(),
+      regimeTransitionCount: L0.count(L0_CHANNELS.regimeTransition, { since: beatStartTime - 60, windowSeconds: 60 }),
+      lastTransitionCause: (() => { const rt = L0.getLast(L0_CHANNELS.regimeTransition, {}); return rt && rt.cause ? rt.cause : null; })(),
       spectralBrightness: (() => { const ctx = FactoryManager.sharedPhraseArcManager.getPhraseContext(); return ctx && Number.isFinite(ctx.spectralDensity) ? ctx.spectralDensity : 0.5; })()
     };
     tensionHistory.push(sectionMemoryPrev.tension);
@@ -72,7 +72,7 @@ sectionMemory = (() => {
     if (typeof sectionMemoryPrev.quality === 'number') {
       const qualityGap = 0.6 - sectionMemoryPrev.quality;
       if (qualityGap > 0.1) {
-        L0.post('section-quality', 'both', beatStartTime, {
+        L0.post(L0_CHANNELS.sectionQuality, 'both', beatStartTime, {
           quality: sectionMemoryPrev.quality,
           bias: qualityGap * QUALITY_FEEDFORWARD_STRENGTH
         });

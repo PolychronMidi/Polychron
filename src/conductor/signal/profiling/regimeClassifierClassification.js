@@ -5,7 +5,7 @@ regimeClassifierClassification = (() => {
     // Lab R3: oscillating at 0.15 sounded good. Swing threshold dynamically
     // between 0.15 (stressed/tense) and 0.65 (relaxed) based on system state.
     const tensionVal = safePreBoot.call(() => conductorState.getField('tension'), 0.5) || 0.5;
-    const entropyEntry = L0.getLast('entropy', { layer: 'both' });
+    const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: 'both' });
     const entropyVal = entropyEntry && typeof entropyEntry.smoothed === 'number' ? entropyEntry.smoothed : 0.5;
     const oscillatingDynamic = clamp(
       state.oscillatingCurvatureThreshold

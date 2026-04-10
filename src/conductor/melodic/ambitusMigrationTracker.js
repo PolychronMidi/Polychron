@@ -15,7 +15,7 @@ ambitusMigrationTracker = (() => {
    * @returns {{ low: number, high: number, range: number, center: number }}
    */
   function getCurrentAmbitus() {
-    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length === 0) {
       return { low: 60, high: 72, range: 12, center: 66 };

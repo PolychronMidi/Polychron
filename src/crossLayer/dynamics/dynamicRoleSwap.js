@@ -55,10 +55,10 @@ dynamicRoleSwap = (() => {
       : regime === 'coherent' ? 0.80
       : 1.0;
     // Regime transition recency boost: recent transition = natural swap moment
-    const recentTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 2, windowSeconds: 2 });
+    const recentTransition = L0.getLast(L0_CHANNELS.regimeTransition, { since: absoluteSeconds - 2, windowSeconds: 2 });
     const transitionBoost = recentTransition ? 0.15 : 0;
     // Active feedback loops = more cross-layer conversation = natural swap point
-    const feedbackCount = L0.count('feedbackLoop', { since: absoluteSeconds - 4, windowSeconds: 4 });
+    const feedbackCount = L0.count(L0_CHANNELS.feedbackLoop, { since: absoluteSeconds - 4, windowSeconds: 4 });
     const feedbackBoost = feedbackCount > 3 ? 0.1 : 0;
     // Melodic coupling: contourShape modulates swap gate.
     // Falling contour -> natural role handoff moment -> amplify gate.
@@ -68,7 +68,7 @@ dynamicRoleSwap = (() => {
       ? (melodicCtxDRS.contourShape === 'falling' ? 0.08 : melodicCtxDRS.contourShape === 'rising' ? -0.08 : 0)
       : 0;
     // Rhythmic coupling: strong emergent rhythm structure (high biasStrength) = natural role exchange moment.
-    const rhythmEntryDRS = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryDRS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasBoost = rhythmEntryDRS && Number.isFinite(rhythmEntryDRS.biasStrength) && rhythmEntryDRS.biasStrength > 0.4 ? 0.06 : 0;
     // R75: registerMigrationDir antagonism bridge -- ascending pitch center = more frequent role swaps (dynamic reorganization as range expands).
     const registerSwapBoostDRS = melodicCtxDRS ? (melodicCtxDRS.registerMigrationDir === 'ascending' ? 0.04 : melodicCtxDRS.registerMigrationDir === 'descending' ? -0.05 : 0) : 0;
@@ -127,8 +127,8 @@ dynamicRoleSwap = (() => {
       return { densityScale: 0.6, chordalBias: 0.3, melodicBias: -0.2, isSwapped: true };
     }
     // L2 takes on L1 characteristics: denser, more melodic
-    const recentL2Count = L0.count('note', { layer: 'L2', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
-    const recentL1Count = L0.count('note', { layer: 'L1', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
+    const recentL2Count = L0.count(L0_CHANNELS.note, { layer: 'L2', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
+    const recentL1Count = L0.count(L0_CHANNELS.note, { layer: 'L1', windowSeconds: SWAPPED_L2_WINDOW_SECONDS });
     const axisEnergyShares = conductorSignalBridge.getSignals().axisEnergyShares;
     const phaseShare = axisEnergyShares && typeof axisEnergyShares.phase === 'number'
       ? axisEnergyShares.phase

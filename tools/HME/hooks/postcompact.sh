@@ -25,4 +25,19 @@ fi
 if [[ ${#PARTS[@]} -gt 0 ]]; then
   printf '%s\n' "${PARTS[@]}" >&2
 fi
+
+# Log post-compact event. The statusline meter hasn't fired yet with the new (reset) context value,
+# so used_pct here is still the pre-compact reading — the delta between this and the next
+# statusline update shows how much context was freed.
+CTX_FILE=/tmp/claude-context.json
+LOG="$PROJECT/metrics/compact-log.jsonl"
+TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+if [[ -f "$CTX_FILE" ]]; then
+  USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
+  REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
+  echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":$USED,\"stale_remaining_pct\":$REM}" >> "$LOG"
+else
+  echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":null,\"stale_remaining_pct\":null}" >> "$LOG"
+fi
+
 exit 0

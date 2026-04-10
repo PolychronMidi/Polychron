@@ -82,7 +82,7 @@ phaseAwareCadenceWindow = (() => {
     const melodicCtxPACW = emergentMelodicEngine.getContext();
     const dirBias = melodicCtxPACW ? V.optionalFinite(melodicCtxPACW.directionBias, 0) : 0;
     // Rhythmic coupling: complex emergent rhythm creates natural cadence windows even with phase divergence.
-    const rhythmEntryPACW = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryPACW = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmComplexityPACW = rhythmEntryPACW && Number.isFinite(rhythmEntryPACW.complexity) ? rhythmEntryPACW.complexity : 0;
     // R82 E2: registerMigrationDir bridge -- ascending migration compresses cadence window
     // (resist premature resolution while pitch center climbs). Counterpart: crossLayerSilhouette

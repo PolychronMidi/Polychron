@@ -100,8 +100,8 @@ feedbackGraphContract = (() => {
         }
       }
 
-      // Conceptual loops are documentation-only (no runtime global expected)
-      if (loop.conceptual) continue;
+      // L0-mediated loops use feedbackRegistry but have no single global ref -- skip shape check.
+      if (loop.contractExempt) continue;
 
       const modRef = moduleRefs[modName];
       V.assertManagerShape(modRef, modName, V.assertArray(moduleMethodContracts[modName], "moduleMethodContracts[" + modName + "]"));

@@ -4,11 +4,12 @@
 // Runs as a static analysis step (no runtime coupling to the engine).
 //
 // Checks:
-//   1. Every JSON loop module corresponds to an existing source file
-//   2. Every feedbackRegistry.registerLoop() call in source has a JSON entry
-//   3. Every closedLoopController.create() call in source has a JSON entry
-//   4. Source/target domain strings are non-empty
-//   5. Firewall names reference valid ESLint rules
+//   1. JSON structure (non-empty arrays/objects)
+//   2. Every JSON loop has required fields (id, module, domains, mechanism, latency, firewalls)
+//   3. Every source registration (registerLoop / closedLoopController) has a JSON entry [HARD FAIL]
+//   4. Every JSON loop module has a source registration [HARD FAIL]
+//   5. Firewall ESLint rule mapping
+//   6. Firewall ports structure
 //
 // Run: node scripts/validate-feedback-graph.js
 // Integrated into `npm run main` pipeline (after check-tuning-invariants).
@@ -158,16 +159,17 @@ for (const loop of jsonLoops) {
   }
 }
 
-// Check 3: Source loops that have no corresponding JSON entry
-// We check by module name (source loop name) against JSON module fields
+// Check 3: Source loops MUST have corresponding JSON entry.
+// Every feedbackRegistry.registerLoop() / closedLoopController.create() in source
+// must be documented in feedback_graph.json -- undocumented loops are invisible to
+// resonance dampening validation and topology analysis.
 for (const sLoop of sourceLoops) {
   if (jsonLoopModules.has(sLoop.name)) {
     passes++;
   } else {
-    // It's a real loop not documented in feedback_graph.json
-    warnings.push(
+    failures.push(
       `Source loop "${sLoop.name}" (${sLoop.type} in ${sLoop.file}) has no entry in feedback_graph.json. ` +
-      'Consider adding it to maintain topology documentation.'
+      'Every registered feedback loop must be declared in the topology graph.'
     );
   }
 }

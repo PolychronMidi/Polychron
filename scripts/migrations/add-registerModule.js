@@ -22,7 +22,7 @@ const FUNCTIONAL_PATTERNS = [
   'conductorIntelligence.registerStateProvider',
 ];
 
-// Exclude crossLayer modules — they use crossLayerRegistry, not conductorIntelligence
+// Exclude crossLayer modules -- they use crossLayerRegistry, not conductorIntelligence
 const EXCLUDE = [
   'src/crossLayer/conductorSignalBridge.js',
 ];
@@ -101,7 +101,7 @@ for (const filePath of allFiles) {
 
   fs.writeFileSync(filePath, lines.join('\n'));
   migrated++;
-  console.log(`  ${rel} — added registerModule`);
+  console.log(`  ${rel} -- added registerModule`);
 }
 
 console.log(`\nMigrated ${migrated} modules.`);

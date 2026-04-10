@@ -28,8 +28,7 @@ stutterContagion = (() => {
    */
   function getAdaptiveDecay(absoluteSeconds) {
     // Check if convergence happened recently via ATG onset channel
-    const recentConvergence = L0.findClosest(
-      'onset', absoluteSeconds, CONVERGENCE_WINDOW_MS / 1000
+    const recentConvergence = L0.findClosest(L0_CHANNELS.onset, absoluteSeconds, CONVERGENCE_WINDOW_MS / 1000
     );
     if (!recentConvergence) return BASE_DECAY;
     const dist = m.abs(recentConvergence.timeInSeconds - absoluteSeconds);
@@ -38,11 +37,11 @@ stutterContagion = (() => {
     const baseResult = BASE_DECAY + recency * (ALIGNED_DECAY - BASE_DECAY) + (1 - recency) * (DIVERGED_DECAY - BASE_DECAY) * 0.3;
     // Tempo modulation: faster tempo = tighter decay, slower = more lingering
     const sctLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
-    const tempoEntry = L0.getLast('tickDuration', { layer: sctLayer });
+    const tempoEntry = L0.getLast(L0_CHANNELS.tickDuration, { layer: sctLayer });
     const bpmScale = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;
     // Rhythmic coupling: dense emergent rhythm = stickier contagion (lower decay).
     // When the cross-layer rhythm grid is busy, stutter infection propagates more readily.
-    const rhythmEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmDensity = rhythmEntry && Number.isFinite(rhythmEntry.density) ? rhythmEntry.density : 0;
     const rhythmDecayMod = 1.0 - rhythmDensity * 0.12; // [0.88-1.0] dense->sticky
     return baseResult * clamp(0.8 + bpmScale * 0.2, 0.85, 1.15) * rhythmDecayMod;
@@ -118,7 +117,7 @@ stutterContagion = (() => {
     // R79 E4: densitySurprise antagonism bridge with restSynchronizer -- surprising rhythmic events
     // amplify contagion spread (chaos invites more chaos). Counterpart: restSynchronizer SUPPRESSES
     // rests on same signal (surprise = no breathing room, both layers in contagion state).
-    const rhythmEntrySC = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntrySC = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const densitySurpriseSC = rhythmEntrySC && Number.isFinite(rhythmEntrySC.densitySurprise) ? rhythmEntrySC.densitySurprise : 1.0;
     const surpriseContagionScale = densitySurpriseSC > 1.1 ? 1.0 + clamp((densitySurpriseSC - 1.0) * 0.12, 0, 0.10) : 1.0;
     // R82 E4: tessituraLoad bridge -- extreme register amplifies stutter contagion
@@ -177,7 +176,7 @@ stutterContagion = (() => {
       const chs = flipBin ? flipBinT3 : flipBinF3;
       if (chs.length > 0) {
         const ch = chs[ri(chs.length - 1)];
-        const lastNote = L0.getLast('note', { layer: activeLayer });
+        const lastNote = L0.getLast(L0_CHANNELS.note, { layer: activeLayer });
         if (lastNote && Number.isFinite(lastNote.midi)) {
           StutterManager.scheduleStutterForUnit({
             profile: 'reflection', channel: ch,

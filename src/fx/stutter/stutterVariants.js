@@ -192,7 +192,7 @@ stutterVariants = (() => {
     // R30 lab: continuous excursion from L0 harmonic channel for smoother gradient
     const JOURNEY_SUBTLE = { ghostStutter: 1.4, echoTrail: 1.3, harmonicShadow: 1.2, rhythmicGrid: 1.1 };
     const JOURNEY_DRAMATIC = { octaveCascade: 1.5, machineGun: 1.3, stutterSwarm: 1.4, directionalOscillation: 1.3, stutterTremolo: 1.2, convergenceBurst: 1.3, stereoScatter: 1.2 };
-    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     const excursion = harmonicEntry && Number.isFinite(harmonicEntry.excursion) ? harmonicEntry.excursion : 0;
     const exoticness = clamp(excursion / 6, 0, 1);
 
@@ -241,7 +241,7 @@ stutterVariants = (() => {
     // grids boost percussive/dramatic variants; complex grids boost textural variants.
     const EMERGENT_DENSE_WEIGHTS = { machineGun: 1.6, stutterSwarm: 1.4, rhythmicGrid: 1.5, convergenceBurst: 1.3 };
     const EMERGENT_COMPLEX_WEIGHTS = { ghostStutter: 1.5, flickerStutter: 1.4, stereoWidthModulation: 1.3, echoTrail: 1.3, alienArpeggio: 1.6 };
-    const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const emergentEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const emergentDensity = emergentEntry && Number.isFinite(emergentEntry.density) ? emergentEntry.density : 0;
     const emergentComplexity = emergentEntry && Number.isFinite(emergentEntry.complexity) ? emergentEntry.complexity : 0.5;
     const emergentActive = emergentDensity > 0.06;

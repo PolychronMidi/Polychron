@@ -21,7 +21,7 @@ harmonicRhythmDensityRatio = (() => {
     const harmonicRate = clamp(Number(harmonicRhythmTracker.getHarmonicRhythm()), 0, 1);
 
     // Onset density from notes in window
-    const noteCount = L0.count('note', { layer, windowSeconds: ws });
+    const noteCount = L0.count(L0_CHANNELS.note, { layer, windowSeconds: ws });
     const onsetRate = noteCount > 1 && ws > 0
       ? clamp(noteCount / (ws * 4), 0, 1) // normalize: ~4 notes/sec = 1.0
       : 0.3;

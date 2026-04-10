@@ -42,10 +42,10 @@ motifEcho = (() => {
     const melodicCtx = emergentMelodicEngine.getContext();
     const thematicMult = melodicCtx ? clamp(1.0 - melodicCtx.thematicDensity * 0.45, 0.55, 1.0) : 1.0;
     // Rhythmic coupling: strong emergent rhythm structure = natural thematic imitation moment.
-    const rhythmEntryME = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryME = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasME = rhythmEntryME && Number.isFinite(rhythmEntryME.biasStrength) ? rhythmEntryME.biasStrength : 0;
     // R77 E2: harmonic-journey-eval gate -- suppress capture after key change (old-key motifs wrong tonal region)
-    const journeyEntryME = L0.getLast('harmonic-journey-eval', { layer: 'both', since: absoluteSeconds - 2, windowSeconds: 2 });
+    const journeyEntryME = L0.getLast(L0_CHANNELS.harmonicJourneyEval, { layer: 'both', since: absoluteSeconds - 2, windowSeconds: 2 });
     const journeySuppress = journeyEntryME && Number.isFinite(journeyEntryME.distance) && journeyEntryME.distance > 2
       ? clamp(journeyEntryME.distance * 0.08, 0, 0.45)
       : 0;
@@ -83,7 +83,7 @@ motifEcho = (() => {
 
     // Pick transform type - modulated by harmonic distance
     let transform = TRANSFORMS[ri(TRANSFORMS.length - 1)];
-    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     if (harmonicEntry && Number.isFinite(harmonicEntry.excursion) && harmonicEntry.excursion > 3) {
       transform = rf() < 0.6 ? 'retrograde-inversion' : 'inversion';
     }

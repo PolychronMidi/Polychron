@@ -254,7 +254,10 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                     return (None, []) if return_context else None
                 raise cancel_err
         else:
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            # Reasoning model needs more headroom — 30B MoE cold call (prompt eval + generation)
+            # can exceed 60s when warm KV context is stale. Local model stays at 60s.
+            _interact_timeout = 120 if _effective_model == _REASONING_MODEL else 60
+            with urllib.request.urlopen(req, timeout=_interact_timeout) as resp:
                 raw_bytes = resp.read()
         if priority == "interactive":
             _ollama_interactive.clear()

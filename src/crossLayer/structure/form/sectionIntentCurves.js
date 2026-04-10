@@ -77,7 +77,7 @@ sectionIntentCurves = (() => {
     // Rhythmic coupling: emergent rhythm density adjusts intent density floor.
     // High rhythm density -> raise density floor (match rhythmic activity).
     // Low rhythm density -> allow sparser texture (respect rhythmic space).
-    const rhythmEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmDensity = rhythmEntry && Number.isFinite(rhythmEntry.density) ? rhythmEntry.density : 0.5;
     const rhythmDensityMod = clamp((rhythmDensity - 0.5) * 0.08, -0.04, 0.04);
 
@@ -106,7 +106,7 @@ sectionIntentCurves = (() => {
       : currentPhase === 'climax' ? 1.5 : currentPhase === 'development' ? 1.2 : 1.0;
     const trajectoryCorrection = tensionSlope < -0.04 ? clamp(-tensionSlope * 0.20 * phaseIntentGate, 0, 0.12) : 0;
     // Xenolinguistic L1: feedback pitch complement bleeds into dissonance target
-    const feedbackPitchEntry = L0.getLast('feedbackPitch', { layer: 'both' });
+    const feedbackPitchEntry = L0.getLast(L0_CHANNELS.feedbackPitch, { layer: 'both' });
     const feedbackDissonancePull = feedbackPitchEntry && Number.isFinite(feedbackPitchEntry.pitchClass) ? 0.03 : 0;
     const dissonanceTarget = clamp(
       DISSONANCE_BASE + (DISSONANCE_WAVE_BASE + wave * DISSONANCE_WAVE_SCALE) * arc + lateLift * DISSONANCE_LATE_SURGE * lateSurgeGate - longFormRelief * LONG_FORM_DISSONANCE_RELIEF + cb.tensionContrast + cb.tensionLearning + trajectoryCorrection + gravityBoost * 0.7 + feedbackDissonancePull + melodicDissonanceMod
@@ -114,7 +114,7 @@ sectionIntentCurves = (() => {
       0, 1
     );
 
-    const recentTransitions = L0.count('regimeTransition', { since: beatStartTime - 5, windowSeconds: 5 });
+    const recentTransitions = L0.count(L0_CHANNELS.regimeTransition, { since: beatStartTime - 5, windowSeconds: 5 });
     const transitionSettling = recentTransitions > 2 ? clamp((recentTransitions - 2) * -0.02, -0.06, 0) : 0;
     const interactionTarget = clamp(
       INTERACTION_BASE + (INTERACTION_WAVE_BASE + wave * INTERACTION_WAVE_SCALE) * (INTERACTION_ARC_BASE + arc * INTERACTION_ARC_SCALE) + lateLift * INTERACTION_LATE_SURGE * lateSurgeGate - longFormRelief * LONG_FORM_INTERACTION_RELIEF + cb.flickerContrast + cb.turbulenceDampen + transitionSettling,
@@ -133,7 +133,7 @@ sectionIntentCurves = (() => {
     // Quality feed-forward via L0
     const halfPhrase = m.floor(totalPhrases / 2);
     const sectionStart = ph === 0 || ph === halfPhrase;
-    const qualityEntry = sectionStart ? L0.getLast('section-quality', { layer: 'both' }) : null;
+    const qualityEntry = sectionStart ? L0.getLast(L0_CHANNELS.sectionQuality, { layer: 'both' }) : null;
     const qBias = qualityEntry && Number.isFinite(qualityEntry.bias) ? qualityEntry.bias : 0;
     // Xenolinguistic L2: observation effect
     const bridgeSigs = conductorSignalBridge.getSignals();

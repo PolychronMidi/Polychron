@@ -103,7 +103,7 @@ pitchMemoryRecall = (() => {
 
     // Find best matching memory by pitch-class similarity + feedback pitch preference
     const currentPC = currentMidi % 12;
-    const feedbackPitchEntry = L0.getLast('feedbackPitch', { layer: activeLayer, windowSeconds: 2 });
+    const feedbackPitchEntry = L0.getLast(L0_CHANNELS.feedbackPitch, { layer: activeLayer, windowSeconds: 2 });
     const feedbackPC = feedbackPitchEntry && Number.isFinite(feedbackPitchEntry.pitchClass) ? feedbackPitchEntry.pitchClass : -1;
     let bestIdx = -1;
     let bestScore = -Infinity;

@@ -34,7 +34,7 @@ convergenceHarmonicTrigger = (() => {
 
     // Higher rarity convergences are more likely to trigger harmonic changes.
     // Rhythmic coupling: strong rhythmic bias at convergence -> more harmonic change triggers.
-    const rhythmEntryRHT = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryRHT = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasRHT = rhythmEntryRHT && Number.isFinite(rhythmEntryRHT.biasStrength) ? rhythmEntryRHT.biasStrength : 0;
     // Melodic context used both for trigger probability (ascendRatio) and change type (directionBias).
     // Single call to emergentMelodicEngine.getContext() reused throughout onConvergence.
@@ -70,7 +70,7 @@ convergenceHarmonicTrigger = (() => {
     // Harmonic function coupling: when alignment absent and melodic direction is indeterminate,
     // use current harmonic function to prime change type.
     // D (dominant) at convergence -> resolve to tonic; T (tonic) -> push toward dominant.
-    const hfEntryCHT = L0.getLast('harmonicFunction', { layer: 'both' });
+    const hfEntryCHT = L0.getLast(L0_CHANNELS.harmonicFunction, { layer: 'both' });
     const hfnCHT = hfEntryCHT ? hfEntryCHT.fn : null;
     if (!alignment && hfnCHT && changeType === 'modal-color') {
       if (hfnCHT === 'D') { changeType = 'tonic-reaffirm'; bias = 0.40; }

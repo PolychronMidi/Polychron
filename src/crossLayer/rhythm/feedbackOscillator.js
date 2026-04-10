@@ -41,11 +41,11 @@ feedbackOscillator = (() => {
     }
     // Xenolinguistic: articulation shapes feedback energy character.
     // Staccato -> percussive impulses (higher energy, shorter). Legato -> sustained (lower, longer).
-    const artEntry = L0.getLast('articulation', { layer });
+    const artEntry = L0.getLast(L0_CHANNELS.articulation, { layer });
     const artSustain = artEntry && Number.isFinite(artEntry.avgSustain) ? artEntry.avgSustain : 0.5;
     const artScale = artSustain > 0.7 ? 0.8 : artSustain < 0.3 ? 1.2 : 1.0;
     // R50: emergent rhythm density amplifies feedback energy (rhythmic activity = richer feedback)
-    const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const emergentEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const emergentScale = emergentEntry && Number.isFinite(emergentEntry.density) ? 1.0 + clamp(emergentEntry.density * 0.3, 0, 0.15) : 1.0;
     // R57: melodic contour shapes feedback energy. Rising -> stronger resonance (ascending momentum).
     // Contrary counterpoint -> dampened (layers diverging, don't force resonance).
@@ -61,7 +61,7 @@ feedbackOscillator = (() => {
       * (melodicCtxFO.registerMigrationDir === 'ascending' ? 1.10 : melodicCtxFO.registerMigrationDir === 'descending' ? 0.92 : 1.0)
       : 1.0;
     // R77 E4: channel-coherence gate -- high cross-layer coherence dampens impulse (already synchronized)
-    const ccEntry = L0.getLast('channel-coherence', { layer: 'both' });
+    const ccEntry = L0.getLast(L0_CHANNELS.channelCoherence, { layer: 'both' });
     const ccDamp = ccEntry && Number.isFinite(ccEntry.coherence) && ccEntry.coherence > 0.70
       ? clamp((ccEntry.coherence - 0.70) * 0.30, 0, 0.09)
       : 0;
@@ -104,7 +104,7 @@ feedbackOscillator = (() => {
     if (incoming.roundTrip >= MAX_ROUND_TRIPS) return null;
 
     // Modulate damping by entropy - high entropy means feedback should be stronger to create convergence
-    const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
+    const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: activeLayer });
     const entropyModulation = entropyEntry && Number.isFinite(entropyEntry.smoothed) ? clamp(1.0 + (entropyEntry.smoothed - 0.5) * 0.3, 0.85, 1.15) : 1.0;
     // CIM: coordinated = less damping (energy flows freely), independent = more
     const cimDamping = DAMPING * (1.3 - cimScale * 0.6);
@@ -146,7 +146,7 @@ feedbackOscillator = (() => {
       pitchClass: pitchBias
     });
     // Post feedback pitch preference to L0 for pitchMemoryRecall
-    if (pitchBias >= 0) L0.post('feedbackPitch', activeLayer, absoluteSeconds, { pitchClass: pitchBias, energy: dampedEnergy });
+    if (pitchBias >= 0) L0.post(L0_CHANNELS.feedbackPitch, activeLayer, absoluteSeconds, { pitchClass: pitchBias, energy: dampedEnergy });
 
     return {
       energy: dampedEnergy,

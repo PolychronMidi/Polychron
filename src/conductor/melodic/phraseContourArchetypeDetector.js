@@ -11,7 +11,7 @@ phraseContourArchetypeDetector = (() => {
    * @returns {{ archetype: string, confidence: number, suggestion: string }}
    */
   function getContourSignal() {
-    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 5) {
       return { archetype: 'undefined', confidence: 0, suggestion: 'maintain' };
