@@ -311,10 +311,16 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         _err_str = str(e).lower()
         _is_timeout = ("timed out" in _err_str or "timeout" in type(e).__name__.lower()
                        or "urlopen error" in _err_str)
+        _is_critical = ("cuda" in _err_str or "500" in _err_str or "oom" in _err_str
+                        or "out of memory" in _err_str or "killed" in _err_str
+                        or "internal server error" in _err_str or "panic" in _err_str)
+        if _is_critical:
+            ctx.register_critical_failure(
+                f"_local_think({_effective_model})",
+                f"{type(e).__name__}: {e}",
+            )
         if _is_timeout:
             if priority == "background":
-                # Background timeout is expected and normal — warm priming is a long-running
-                # background job that interactive calls interrupt. Never poison the cooldown gate.
                 logger.debug(f"_local_think background timeout ({_effective_model}) — normal, not setting cooldown")
             else:
                 _last_think_failure = "timeout"
@@ -326,7 +332,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                 )
         else:
             _last_think_failure = "error"
-            logger.warning(f"_local_think unavailable ({_effective_model}): {type(e).__name__}: {e}")
+            if not _is_critical:
+                logger.warning(f"_local_think unavailable ({_effective_model}): {type(e).__name__}: {e}")
         return (None, []) if return_context else None
 
 
@@ -385,7 +392,11 @@ def _local_chat(messages: list[dict], model: str | None = None,
                         break
             return text if text else None
     except Exception as e:
-        logger.warning(f"_local_chat unavailable ({_m}): {type(e).__name__}: {e}")
+        _err_str = str(e).lower()
+        if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
+            ctx.register_critical_failure(f"_local_chat({_m})", f"{type(e).__name__}: {e}")
+        else:
+            logger.warning(f"_local_chat unavailable ({_m}): {type(e).__name__}: {e}")
         return None
 
 
@@ -406,7 +417,11 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
             text = re.sub(r'[^\x00-\x7F]+', '', result.get("response", "").strip()).strip()
             return text if text else None
     except Exception as e:
-        logger.warning(f"_local_think_with_system unavailable ({_m}): {type(e).__name__}: {e}")
+        _err_str = str(e).lower()
+        if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
+            ctx.register_critical_failure(f"_local_think_with_system({_m})", f"{type(e).__name__}: {e}")
+        else:
+            logger.warning(f"_local_think_with_system unavailable ({_m}): {type(e).__name__}: {e}")
         return None
 
 
