@@ -38,6 +38,7 @@ export { streamClaude, streamClaudePty } from "./routerClaude";
 export { streamOllama, streamOllamaAgentic, GPU_NUM_CTX } from "./routerOllama";
 export {
   fetchHmeContext,
+  enrichPrompt,
   validateMessage,
   auditChanges,
   postTranscript,
@@ -47,4 +48,4 @@ export {
   logShimError,
   streamHybrid,
 } from "./routerHme";
-export type { EnrichResult } from "./routerHme";
+export type { EnrichResult, EnrichPromptResult } from "./routerHme";

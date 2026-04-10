@@ -134,7 +134,7 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": f"bad request: {e}"})
             return
 
-        from hme_http_handlers import _enrich, _validate, _post_audit, _reindex_files
+        from hme_http_handlers import _enrich, _enrich_prompt, _validate, _post_audit, _reindex_files
         from hme_http_store import _append_transcript, _log_error
         import hme_http_store as _store
 
@@ -145,6 +145,14 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "query required"})
                 return
             self._send_json(200, _enrich(query, top_k=top_k))
+
+        elif self.path == "/enrich_prompt":
+            prompt = body.get("prompt", "")
+            frame = body.get("frame", "")
+            if not prompt:
+                self._send_json(400, {"error": "prompt required"})
+                return
+            self._send_json(200, _enrich_prompt(prompt, frame))
 
         elif self.path == "/validate":
             query = body.get("query", "")

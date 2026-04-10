@@ -3,7 +3,7 @@ import * as path from "path";
 import * as fs from "fs";
 import {
   streamClaude, streamClaudePty, streamOllama, streamOllamaAgentic, streamHybrid,
-  isHmeShimReady, validateMessage, auditChanges,
+  isHmeShimReady, validateMessage, auditChanges, enrichPrompt,
   postTranscript, reindexFiles, postNarrative, logShimError, OllamaMessage,
 } from "./router";
 import { ChatMessage } from "./types";
@@ -226,6 +226,15 @@ export class ChatPanel {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
         this._resetContextTracker();
         this._post({ type: "historyCleared" });
+        break;
+      case "enrichPrompt":
+        this._post({ type: "enrichStatus", status: "enriching" });
+        enrichPrompt(msg.prompt, msg.frame ?? "").then((result) => {
+          this._post({ type: "enrichResult", ...result });
+        }).catch((e) => {
+          this._post({ type: "enrichResult", enriched: msg.prompt, original: msg.prompt,
+            error: String(e), unchanged: true });
+        });
         break;
       case "checkHmeShim":
         isHmeShimReady().then(({ ready, errors }) => {
