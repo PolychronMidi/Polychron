@@ -263,9 +263,9 @@ def module_story(module_name: str) -> str:
         for bs in blind_spots:
             parts.append(f"  - {bs}")
 
-    # Evolutionary Potential — shared function, also used by before_editing
+    # Evolutionary Potential — only show when actionable (mirrors before_editing gate)
     evo_lines = build_evolutionary_potential(module_name)
-    if evo_lines:
+    if any("OPPORTUNITY" in l or "Unused" in l or "Not " in l for l in evo_lines):
         parts.append(f"\n## Evolutionary Potential")
         parts.extend(evo_lines)
 
@@ -301,13 +301,15 @@ def module_story(module_name: str) -> str:
         subsystem_prompt = "What are the hidden invariants and caller contracts?"
     user_text = (
         f"Module: {module_name}\n"
-        f"Dependents: {callers_summary}\n"
+        f"Dependents ({len(caller_files)}): {callers_summary}\n"
         f"KB evolution history:\n{kb_summary}\n"
         + source_block
-        + f"\nBased on the actual code above, in 3 bullet points: {subsystem_prompt} "
-        "Only reference behaviors visible in the code. Be specific about musical effects."
+        + f"\nRules:\n"
+        "- If this module has 0 dependents and no KB history, respond: 'No constraints — leaf module.'\n"
+        "- Otherwise, in 1-3 bullet points: " + subsystem_prompt + "\n"
+        "- Only reference behaviors visible in the code above. Do NOT speculate.\n"
     )
-    synthesis = _local_think(user_text, max_tokens=1024, model=_REASONING_MODEL,
+    synthesis = _local_think(user_text, max_tokens=512, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis_ollama import compress_for_claude
