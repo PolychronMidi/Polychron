@@ -75,6 +75,37 @@ def _format_todos(todos: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _format_todos_mermaid(todos: list[dict]) -> str:
+    if not todos:
+        return "```mermaid\ngraph TD\n    empty[\"No todos\"]\n```"
+    lines = ["graph TD"]
+    seen_cls: set[str] = set()
+    for t in todos:
+        auto_done = _check_main_done(t)
+        nid = f"T{t['id']}"
+        label = t["text"][:42].replace('"', "'")
+        cls = "done" if auto_done else ("crit" if t.get("critical") else "open")
+        seen_cls.add(cls)
+        suffix = " ✓" if auto_done else (" !!!" if t.get("critical") else "")
+        lines.append(f'    {nid}["#{t["id"]} {label}{suffix}"]:::{cls}')
+        for s in t.get("subs", []):
+            sid = f"T{s['id']}"
+            s_label = s["text"][:38].replace('"', "'")
+            s_cls = "done" if s.get("done") else ("crit" if s.get("critical") else "open")
+            seen_cls.add(s_cls)
+            s_suffix = " ✓" if s.get("done") else (" !!!" if s.get("critical") else "")
+            lines.append(f'    {sid}["#{s["id"]} {s_label}{s_suffix}"]:::{s_cls}')
+            lines.append(f"    {nid} --> {sid}")
+    styles = {
+        "done": "fill:#1a4520,stroke:#3a8a3a,color:#90ee90",
+        "open": "fill:#1e1e2e,stroke:#555,color:#cdd6f4",
+        "crit": "fill:#4a1010,stroke:#cc3333,color:#ff9999",
+    }
+    for cls in seen_cls:
+        lines.append(f"    classDef {cls} {styles[cls]}")
+    return "```mermaid\n" + "\n".join(lines) + "\n```"
+
+
 def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL"):
     """Called by lifesaver to auto-append critical errors as todos."""
     text = f"CRITICAL ERROR - LIFESAVER ALERT: [{severity}] {source}: {error}"
@@ -95,7 +126,7 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
 
 @ctx.mcp.tool()
 def todo(action: str = "list", text: str = "", todo_id: int = 0,
-         parent_id: int = 0) -> str:
+         parent_id: int = 0, fmt: str = "text") -> str:
     """Hierarchical todo list. Main todos have sub-todos; main is done when all subs done.
 
     action='list': show all todos.
@@ -103,14 +134,18 @@ def todo(action: str = "list", text: str = "", todo_id: int = 0,
     action='done': mark #todo_id done. Sub-todo done → checks if parent auto-completes.
     action='undo': unmark #todo_id as done.
     action='remove': remove #todo_id (main or sub).
-    action='clear': remove all completed main todos (where all subs done)."""
+    action='clear': remove all completed main todos (where all subs done).
+    fmt='mermaid': render as a Mermaid graph diagram (works with any action)."""
     _track("todo")
+
+    def _render(todos: list[dict]) -> str:
+        return _format_todos_mermaid(todos) if fmt == "mermaid" else _format_todos(todos)
 
     with _todo_lock:
         todos = _load_todos()
 
         if action == "list":
-            return _format_todos(todos)
+            return _render(todos)
 
         if action == "add":
             if not text.strip():
@@ -131,7 +166,7 @@ def todo(action: str = "list", text: str = "", todo_id: int = 0,
                 })
             _save_todos(todos)
             parent_note = f" (sub of #{parent_id})" if parent_id else ""
-            return f"Added #{new_id}{parent_note}: {text.strip()}\n\n{_format_todos(todos)}"
+            return f"Added #{new_id}{parent_note}: {text.strip()}\n\n{_render(todos)}"
 
         if action == "done":
             if not todo_id:
@@ -142,10 +177,10 @@ def todo(action: str = "list", text: str = "", todo_id: int = 0,
                         undone = [s for s in t["subs"] if not s.get("done")]
                         if undone:
                             names = ", ".join(f"#{s['id']}" for s in undone)
-                            return f"Cannot complete #{todo_id} — sub-todos not done: {names}\n\n{_format_todos(todos)}"
+                            return f"Cannot complete #{todo_id} — sub-todos not done: {names}\n\n{_render(todos)}"
                     t["done"] = True
                     _save_todos(todos)
-                    return f"Done: #{todo_id}\n\n{_format_todos(todos)}"
+                    return f"Done: #{todo_id}\n\n{_render(todos)}"
                 for s in t.get("subs", []):
                     if s["id"] == todo_id:
                         s["done"] = True
@@ -153,7 +188,7 @@ def todo(action: str = "list", text: str = "", todo_id: int = 0,
                             t["done"] = True
                         _save_todos(todos)
                         auto = f" (parent #{t['id']} auto-completed!)" if t["done"] else ""
-                        return f"Done: #{todo_id}{auto}\n\n{_format_todos(todos)}"
+                        return f"Done: #{todo_id}{auto}\n\n{_render(todos)}"
             return f"Error: #{todo_id} not found."
 
         if action == "undo":
@@ -163,13 +198,13 @@ def todo(action: str = "list", text: str = "", todo_id: int = 0,
                 if t["id"] == todo_id:
                     t["done"] = False
                     _save_todos(todos)
-                    return f"Undone: #{todo_id}\n\n{_format_todos(todos)}"
+                    return f"Undone: #{todo_id}\n\n{_render(todos)}"
                 for s in t.get("subs", []):
                     if s["id"] == todo_id:
                         s["done"] = False
                         t["done"] = False
                         _save_todos(todos)
-                        return f"Undone: #{todo_id}\n\n{_format_todos(todos)}"
+                        return f"Undone: #{todo_id}\n\n{_render(todos)}"
             return f"Error: #{todo_id} not found."
 
         if action == "remove":
@@ -179,12 +214,12 @@ def todo(action: str = "list", text: str = "", todo_id: int = 0,
                 if t["id"] == todo_id:
                     todos.pop(i)
                     _save_todos(todos)
-                    return f"Removed #{todo_id}\n\n{_format_todos(todos)}"
+                    return f"Removed #{todo_id}\n\n{_render(todos)}"
                 for j, s in enumerate(t.get("subs", [])):
                     if s["id"] == todo_id:
                         t["subs"].pop(j)
                         _save_todos(todos)
-                        return f"Removed sub #{todo_id} from #{t['id']}\n\n{_format_todos(todos)}"
+                        return f"Removed sub #{todo_id} from #{t['id']}\n\n{_render(todos)}"
             return f"Error: #{todo_id} not found."
 
         if action == "clear":
@@ -192,6 +227,6 @@ def todo(action: str = "list", text: str = "", todo_id: int = 0,
             todos = [t for t in todos if not _check_main_done(t)]
             removed = before - len(todos)
             _save_todos(todos)
-            return f"Cleared {removed} completed todos.\n\n{_format_todos(todos)}"
+            return f"Cleared {removed} completed todos.\n\n{_render(todos)}"
 
         return f"Unknown action '{action}'. Use: list, add, done, undo, remove, clear."
