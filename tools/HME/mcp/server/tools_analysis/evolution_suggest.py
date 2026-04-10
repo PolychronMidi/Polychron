@@ -321,8 +321,11 @@ def suggest_evolution() -> str:
             _recent_kb_titles = "\n".join(f"  R{r}: {t} — {c}" for r, t, c in _num_kb2[:6])
         except Exception:
             pass
+        from .synthesis_session import get_session_narrative
+        _session_ctx = get_session_narrative(max_entries=5, categories=["pipeline", "kb", "commit", "review"])
         _synthesis_ctx = (
-            f"Recent KB evolutions (newest first):\n{_recent_kb_titles}\n\n"
+            (_session_ctx if _session_ctx else "")
+            + f"Recent KB evolutions (newest first):\n{_recent_kb_titles}\n\n"
             f"Recent arc categories: {' → '.join(_arc) if _arc else 'unknown'}\n"
             + (f"Rut alert: {_rut.get('warning', '')} (consecutive: {_rut.get('consecutive', 0)})\n" if _rut else "")
             + f"Top cluster-pull targets: {', '.join(_cluster_top)}\n"

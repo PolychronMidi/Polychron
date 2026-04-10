@@ -275,8 +275,11 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     sym_summary = ""
     if symbols:
         sym_summary = ", ".join(f"L{s['line']}:{s['name']}" for s in symbols[:8])
+    from .synthesis_session import get_session_narrative
+    _session_ctx = get_session_narrative(max_entries=4, categories=["think", "find", "edit"])
     user_text = (
-        f"File about to be edited: {rel_path}\n"
+        (_session_ctx if _session_ctx else "")
+        + f"File about to be edited: {rel_path}\n"
         f"Dependents ({len(caller_files)}): {callers_summary}\n"
         f"KB constraints:\n{kb_summary}\n"
         + (f"Recent commits: {recent_commits[:200]}\n" if recent_commits else "")
