@@ -218,6 +218,21 @@ def think(about: str, context: str = "") -> str:
 
     # Ollama path: route by question type for best quality
     raw_context = ""
+
+    # Inject query-aware session narrative — callers/search queries get search+think
+    # history; architectural questions get edit+review+pipeline context.
+    from .synthesis_session import get_session_narrative as _get_narr
+    _about_lower = about.lower()
+    if any(k in _about_lower for k in ("caller", "find", "grep", "where", "search")):
+        _narr_cats = ["search", "think"]
+    elif any(k in _about_lower for k in ("evolv", "pipeline", "round", "next")):
+        _narr_cats = ["pipeline", "kb", "commit"]
+    else:
+        _narr_cats = ["think", "edit", "search"]
+    _narr = _get_narr(max_entries=4, categories=_narr_cats)
+    if _narr:
+        raw_context += _narr
+
     # Inject think continuation history — cross-call session memory
     _hist = get_think_history_context()
     if _hist:

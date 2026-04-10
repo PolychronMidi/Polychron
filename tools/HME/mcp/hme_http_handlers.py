@@ -243,8 +243,9 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
                 "unchanged": True, "reason": "Reasoning model returned empty — original preserved"}
 
-    # ── Stage 4: Hard truncate if too long (no arbiter round-trip in shim) ───
-    max_len = len(prompt) * 3
+    # ── Stage 4: Hard truncate only if absurdly long ─────────────────────────
+    # Min floor of 2000 chars — short prompts can legitimately expand significantly.
+    max_len = max(len(prompt) * 10, 2000)
     if len(enriched) > max_len:
         enriched = enriched[:max_len]
 
