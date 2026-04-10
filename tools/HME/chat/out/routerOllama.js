@@ -33,12 +33,14 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.GPU_NUM_CTX = void 0;
 exports.streamOllama = streamOllama;
 exports.streamOllamaAgentic = streamOllamaAgentic;
 const child_process_1 = require("child_process");
 const http = __importStar(require("http"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+exports.GPU_NUM_CTX = 49152;
 // ── Ollama streaming ──────────────────────────────────────────────────────
 function stripThinkTags(text) {
     if (!text)
@@ -57,7 +59,7 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
         messages,
         stream: true,
         think: true,
-        options: { temperature: 0.7, num_predict: 4096, num_gpu: 99 },
+        options: { temperature: 0.7, num_predict: 4096, num_gpu: 99, num_ctx: exports.GPU_NUM_CTX },
     });
     const url = new URL(`${opts.url}/api/chat`);
     let aborted = false;
@@ -209,7 +211,7 @@ function ollamaChatOnce(messages, tools, opts) {
             tools,
             stream: false,
             think: false,
-            options: { temperature: 0.7, num_predict: 4096 },
+            options: { temperature: 0.7, num_predict: 4096, num_ctx: exports.GPU_NUM_CTX },
         });
         const url = new URL(`${opts.url}/api/chat`);
         req = http.request({

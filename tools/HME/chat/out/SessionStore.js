@@ -40,6 +40,10 @@ exports.saveSession = saveSession;
 exports.deleteSession = deleteSession;
 exports.renameSession = renameSession;
 exports.deriveTitle = deriveTitle;
+exports.saveChainLink = saveChainLink;
+exports.loadChainLink = loadChainLink;
+exports.listChainLinks = listChainLinks;
+exports.loadChainSummaries = loadChainSummaries;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const crypto = __importStar(require("crypto"));
@@ -83,7 +87,13 @@ function loadSession(projectRoot, id) {
     const data = readJson(sessionPath(projectRoot, id), null);
     if (!data)
         return null;
-    return { entry, messages: data.messages ?? [], ollamaHistory: data.ollamaHistory ?? [] };
+    return {
+        entry,
+        messages: data.messages ?? [],
+        ollamaHistory: data.ollamaHistory ?? [],
+        contextTokens: data.contextTokens,
+        chainIndex: data.chainIndex,
+    };
 }
 function createSession(projectRoot, title) {
     const id = crypto.randomBytes(6).toString("hex");
@@ -95,7 +105,7 @@ function createSession(projectRoot, title) {
     writeJson(sessionPath(projectRoot, id), { messages: [], ollamaHistory: [] });
     return entry;
 }
-function saveSession(projectRoot, entry, messages, ollamaHistory) {
+function saveSession(projectRoot, entry, messages, ollamaHistory, extra) {
     // Update index entry
     const index = readJson(indexPath(projectRoot), []);
     const idx = index.findIndex((s) => s.id === entry.id);
@@ -106,7 +116,11 @@ function saveSession(projectRoot, entry, messages, ollamaHistory) {
         index.unshift(entry);
     }
     writeJson(indexPath(projectRoot), index);
-    writeJson(sessionPath(projectRoot, entry.id), { messages, ollamaHistory });
+    writeJson(sessionPath(projectRoot, entry.id), {
+        messages, ollamaHistory,
+        ...(extra?.contextTokens != null ? { contextTokens: extra.contextTokens } : {}),
+        ...(extra?.chainIndex != null ? { chainIndex: extra.chainIndex } : {}),
+    });
 }
 function deleteSession(projectRoot, id) {
     // Delete file first — if it fails the index stays consistent; file-before-index prevents orphaned entries
@@ -132,4 +146,36 @@ function renameSession(projectRoot, id, title) {
 /** Derive a session title from the first user message (first 60 chars). */
 function deriveTitle(firstMessage) {
     return firstMessage.slice(0, 60).replace(/\n/g, " ").trim() || "New session";
+}
+// ── Chain link storage ────────────────────────────────────────────────────
+function chainDir(projectRoot, sessionId) {
+    return path.join(workspaceDir(projectRoot), "chains", sessionId);
+}
+function chainPath(projectRoot, sessionId, index) {
+    return path.join(chainDir(projectRoot, sessionId), `link-${String(index).padStart(3, "0")}.json`);
+}
+function saveChainLink(projectRoot, link) {
+    writeJson(chainPath(projectRoot, link.sessionId, link.index), link);
+}
+function loadChainLink(projectRoot, sessionId, index) {
+    return readJson(chainPath(projectRoot, sessionId, index), null);
+}
+function listChainLinks(projectRoot, sessionId) {
+    const dir = chainDir(projectRoot, sessionId);
+    try {
+        return fs.readdirSync(dir)
+            .filter((f) => f.startsWith("link-") && f.endsWith(".json"))
+            .map((f) => parseInt(f.slice(5, 8), 10))
+            .filter((n) => !isNaN(n))
+            .sort((a, b) => a - b);
+    }
+    catch {
+        return [];
+    }
+}
+function loadChainSummaries(projectRoot, sessionId) {
+    return listChainLinks(projectRoot, sessionId).map((idx) => {
+        const link = loadChainLink(projectRoot, sessionId, idx);
+        return link?.summary ?? "";
+    }).filter(Boolean);
 }
