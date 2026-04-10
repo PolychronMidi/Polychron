@@ -98,7 +98,7 @@ motifIdentityMemory = (() => {
     }
     // Melodic coupling: thematicDensity biases toward augmentation when themes are established.
     // Strong thematic recall -> stretch the familiar; fresh territory -> let contour drive.
-    const melodicCtxMIM = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxMIM = emergentMelodicEngine.getContext();
     const thematicDensity = melodicCtxMIM ? V.optionalFinite(melodicCtxMIM.thematicDensity, 0) : 0;
     if (!isSaturated && thematicDensity >= 1 && identity.confidence > 0.4) transform = 'augmentation';
 

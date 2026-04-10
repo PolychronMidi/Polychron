@@ -89,6 +89,9 @@ harmonicVelocityMonitor = (() => {
   // reversed stalling direction (rush=0.93 dampen, stall=1.12 boost).
   conductorIntelligence.registerTensionBias('harmonicVelocityMonitor', () => harmonicVelocityMonitor.getChangeThresholdBias(), 0.93, 1.12);
 
+  function reset() {}
+  conductorIntelligence.registerModule('harmonicVelocityMonitor', { reset }, ['section']);
+
   return {
     getHarmonicVelocity,
     diagnoseEnergyMatch,

@@ -79,7 +79,7 @@ negotiationEngine = (() => {
     const stutterRaw = (STUTTER_INTERACT_BASE + intent.interactionTarget * STUTTER_INTERACT_SCALE) * (STUTTER_TRUST_BASE + trustStutter * STUTTER_TRUST_SCALE);
     // Melodic coupling: falling contour invites rhythmic fill (stutter up);
     // rising contour preserves the build (stutter down).
-    const melodicCtxNE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxNE = emergentMelodicEngine.getContext();
     const contourStutterBias = melodicCtxNE
       ? (melodicCtxNE.contourShape === 'falling' ? 1.08 : melodicCtxNE.contourShape === 'rising' ? 0.92 : 1.0)
       : 1.0;

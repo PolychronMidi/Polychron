@@ -107,6 +107,9 @@ consonanceDissonanceTracker = (() => {
 
   conductorIntelligence.registerDensityBias('consonanceDissonanceTracker', () => consonanceDissonanceTracker.getDensityBias(), 0.96, 1.04);
 
+  function reset() {}
+  conductorIntelligence.registerModule('consonanceDissonanceTracker', { reset }, ['section']);
+
   return {
     getConsonanceProfile,
     getTensionBias,

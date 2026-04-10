@@ -158,7 +158,7 @@ dynamicRangeTracker = (() => {
   function getDensityBias() {
     const profile = getVelocityProfile();
     if (profile.spread < 12) {
-      const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+      const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
       const entropyShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.entropy === 'number'
         ? axisEnergy.shares.entropy : 1.0 / 6.0;
       if (entropyShare < 0.14) return 1.0;

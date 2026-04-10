@@ -71,6 +71,9 @@ attackDensityProfiler = (() => {
     return { attackSuggestion: s ? s.suggestion : 'balanced' };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('attackDensityProfiler', { reset }, ['section']);
+
   return {
     getAttackSignal,
     getDensityBias

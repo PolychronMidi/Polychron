@@ -91,7 +91,7 @@ grooveTransfer = (() => {
     // Melodic coupling: intervalFreshness controls groove independence vs. convergence.
     // Novel intervals -> layers explore independently (more damping = less groove transfer).
     // Stale intervals -> layers converge into shared groove (less damping = more transfer).
-    const melodicCtxGT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxGT = emergentMelodicEngine.getContext();
     const intervalFreshness = melodicCtxGT ? V.optionalFinite(melodicCtxGT.intervalFreshness, 0.5) : 0.5;
     const melodicDampingScale = 0.8 + intervalFreshness * 0.4; // [0.8 stale ... 1.2 fresh]
     // R87 E1: registerMigrationDir antagonism bridge with climaxEngine -- ascending pitch center

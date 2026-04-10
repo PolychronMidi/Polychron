@@ -83,7 +83,7 @@ adaptiveTrustScoresHelpers = (() => {
     }
     const pairList = pairAwareHotspotPairs[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
     const pairWeights = pairAwarePairWeights[systemName] || /** @type {Record<string, number>} */ ({});
-    const couplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
+    const couplingPressures = (pipelineCouplingManager.getCouplingPressures()) || {};
     const signals = safePreBoot.call(() => conductorSignalBridge.getSignals(), /** @type {any} */ ({}));
     const adaptiveSnapshot = signals.adaptiveTargetSnapshot || null;
     // Attenuate density-pair pressure when conductor intentionally suppresses density.
@@ -207,7 +207,7 @@ adaptiveTrustScoresHelpers = (() => {
     let coherentLockPressure = 0;
     let coherentSharePressure = 0;
     let lateRunPressure = 0;
-    const readiness = safePreBoot.call(() => regimeClassifier.getTransitionReadiness(), null);
+    const readiness = regimeClassifier.getTransitionReadiness();
     if (readiness) {
       if (typeof readiness.runCoherentBeats === 'number') {
         coherentLockPressure = clamp((readiness.runCoherentBeats - 36) / 96, 0, 1);
@@ -221,7 +221,7 @@ adaptiveTrustScoresHelpers = (() => {
     }
 
     let trustHotspotPressure = 0;
-    const trustCouplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
+    const trustCouplingPressures = (pipelineCouplingManager.getCouplingPressures()) || {};
     {
       const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust', 'entropy-trust'];
       let maxTrustCorrelation = 0;

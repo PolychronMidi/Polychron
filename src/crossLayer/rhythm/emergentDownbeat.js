@@ -37,7 +37,7 @@ emergentDownbeat = (() => {
     // Melodic coupling: freshnessEma scales minimum interval between downbeats.
     // Fresh territory -> space out downbeats (let novel moments breathe uninterrupted).
     // Stale/familiar territory -> allow more frequent downbeats to punctuate monotony.
-    const melodicCtxED = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxED = emergentMelodicEngine.getContext();
     const freshnessEma = melodicCtxED ? V.optionalFinite(melodicCtxED.freshnessEma, 0.5) : 0.5;
     const melodicInterval = MIN_DOWNBEAT_INTERVAL_SEC * (0.7 + freshnessEma * 0.6); // [0.7s fresh ... 1.3s stale]
     if (absoluteSeconds - lastDownbeatSec < melodicInterval) return null;

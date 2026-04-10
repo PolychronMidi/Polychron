@@ -66,13 +66,13 @@ densityWaveAnalyzer = (() => {
   }
 
   function densityWaveAnalyzerGetContainmentPressure() {
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
     const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
     const phaseRecoveryCredit = clamp((phaseShare - lowPhaseThreshold) / 0.08, 0, 1);
-    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), null);
+    const couplingPressures = pipelineCouplingManager.getCouplingPressures();
     if (!couplingPressures) {
       return 0;
     }
@@ -124,7 +124,7 @@ densityWaveAnalyzer = (() => {
     // troughs, reduce or invert the flat-density tension boost. This breaks
     // the vicious cycle where flat density -> tension boost -> more energy
     // consumption -> homeostasis suppresses gain -> flatter density.
-    const e10Suppress = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('e10TensionSuppress'), 1.0));
+    const e10Suppress = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e10TensionSuppress'));
     if (profile.isFlat) {
       // Normal: 1.06. With e10Suppress=0.6: 1.0 + 0.06*0.6 = 1.036
       // During deep trough: tension boost is nearly eliminated

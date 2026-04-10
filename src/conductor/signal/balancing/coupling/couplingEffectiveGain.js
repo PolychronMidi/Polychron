@@ -103,7 +103,7 @@ couplingEffectiveGain = (() => {
     // for phase pairs so they experience less tightening. This lets phase
     // correlations persist longer, increasing phase axis energy share.
     if (dimA === 'phase' || dimB === 'phase') {
-      const phaseExemption = /** @type {number} */ (safePreBoot.call(() => hyperMetaManager.getRateMultiplier('phaseExemption'), 1.0));
+      const phaseExemption = /** @type {number} */ (hyperMetaManager.getRateMultiplier('phaseExemption'));
       if (phaseExemption > 1.0) {
         const exemptionDamp = clamp(1.0 - (phaseExemption - 1.0) * 0.25, 0.4, 1.0);
         effectiveGain *= exemptionDamp;

@@ -82,6 +82,9 @@ crossLayerDensityBalancer = (() => {
     return { crossLayerImbalance: s ? s.imbalance : 0 };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('crossLayerDensityBalancer', { reset }, ['section']);
+
   return {
     getBalanceSignal,
     getDensityBias

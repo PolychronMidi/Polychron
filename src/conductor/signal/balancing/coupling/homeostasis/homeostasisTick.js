@@ -30,7 +30,7 @@ homeostasisTick = (() => {
     } else {
       S.nonNudgeableTailIdleTicks = 0;
     }
-    const dynamicsSnapshot = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const dynamicsSnapshot = systemDynamicsProfiler.getSnapshot();
     const densityFlickerAbs = dynamicsSnapshot && dynamicsSnapshot.couplingMatrix && typeof dynamicsSnapshot.couplingMatrix['density-flicker'] === 'number'
       ? m.abs(dynamicsSnapshot.couplingMatrix['density-flicker'])
       : 0;

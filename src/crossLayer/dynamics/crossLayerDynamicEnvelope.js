@@ -130,7 +130,7 @@ crossLayerDynamicEnvelope = (() => {
     // Melodic coupling: counterpoint motion biases arc type selection.
     // Contrary motion -> complementary arcs (layers diverge dynamically).
     // Similar motion -> parallel arcs (layers converge dynamically).
-    const melodicCtxCLDE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCLDE = emergentMelodicEngine.getContext();
     const cpBias = melodicCtxCLDE
       ? (melodicCtxCLDE.counterpoint === 'contrary' ? -0.12 : melodicCtxCLDE.counterpoint === 'similar' ? 0.12 : 0)
       : 0;

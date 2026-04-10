@@ -39,7 +39,7 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = s
       // lower coherence weight (0.6x) -> more stochastic -> looser stutter texture
       // with more rhythmic surprise. In coherent regime, higher coherence weight
       // (1.3x) -> more deterministic -> tighter cross-layer stutter sync.
-      const cohRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+      const cohRegime = regimeClassifier.getLastRegime();
       const cohScale = cohRegime === 'exploring' ? 0.6
         : cohRegime === 'coherent' ? 1.3
         : 1.0;

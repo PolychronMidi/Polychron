@@ -37,7 +37,7 @@ registerCollisionAvoider = (() => {
     // Melodic coupling: intervalFreshness scales collision tolerance.
     // Fresh intervals -> wider tolerance (novel dissonances are expressive, let them through).
     // Stale intervals -> tighter (muddy register collisions need harder avoidance).
-    const melodicCtxRCA = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxRCA = emergentMelodicEngine.getContext();
     const intervalFreshness = melodicCtxRCA ? V.optionalFinite(melodicCtxRCA.intervalFreshness, 0.5) : 0.5;
     const freshnessAdjust = (intervalFreshness - 0.5) * 2; // [-1 stale ... +1 fresh]
     // R77 E8: hotspots coupling -- dense rhythmic bursts widen collision tolerance (intentional cluster dissonance)

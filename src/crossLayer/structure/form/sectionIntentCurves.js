@@ -70,7 +70,7 @@ sectionIntentCurves = (() => {
     // Melodic coupling: directionBias modulates dissonance asymmetry.
     // Ascending contour (positive bias) pushes dissonance up -- building tension.
     // Descending contour (negative bias) eases dissonance -- resolving.
-    const melodicCtx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtx = emergentMelodicEngine.getContext();
     const dirBias = melodicCtx ? V.optionalFinite(melodicCtx.directionBias, 0) : 0;
     const melodicDissonanceMod = dirBias * 0.06;
 

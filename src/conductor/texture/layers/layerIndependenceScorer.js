@@ -80,6 +80,9 @@ layerIndependenceScorer = (() => {
 
   conductorIntelligence.registerDensityBias('layerIndependenceScorer', () => layerIndependenceScorer.getDensityBias(), 0.9, 1.15);
 
+  function reset() {}
+  conductorIntelligence.registerModule('layerIndependenceScorer', { reset }, ['section']);
+
   return {
     getIndependenceProfile,
     getDensityBias

@@ -55,7 +55,7 @@ contextualTrust = (() => {
     if (contextualScore === null) return null;
     // Melodic coupling: high thematic density = trust regime-contextual history more.
     // Thematic recall marks compositional convergence -- lean on proven regime knowledge.
-    const melodicCtxCT = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCT = emergentMelodicEngine.getContext();
     const thematicDensity = melodicCtxCT ? V.optionalFinite(melodicCtxCT.thematicDensity, 0) : 0;
     const dynamicWScale = W_SCALE * (1.0 + thematicDensity * 0.25); // 0.75 neutral ... 0.94 dense
     return m.max(W_LO, m.min(W_HI, 1 + contextualScore * dynamicWScale));

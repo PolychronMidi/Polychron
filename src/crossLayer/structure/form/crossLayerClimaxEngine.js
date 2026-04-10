@@ -136,7 +136,7 @@ crossLayerClimaxEngine = (() => {
       ? clamp((entropyEntryClx.smoothed - 0.55) * 0.22, 0, 0.10) : 0;
     // R78: freshnessEma suppression -- fresh melodic territory generates its own tension; climax piling on
     // top creates aural overload. Novel intervals demand attentive listening: climax backs off.
-    const melodicCtxClx = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxClx = emergentMelodicEngine.getContext();
     const freshnessEmaClx = melodicCtxClx ? V.optionalFinite(melodicCtxClx.freshnessEma, 0.5) : 0.5;
     const freshnessDampClx = clamp((freshnessEmaClx - 0.60) * 0.20, 0, 0.08);
 
@@ -263,7 +263,7 @@ crossLayerClimaxEngine = (() => {
     // Melodic coupling: directionBias steers register spread at climax.
     // Ascending direction -> widen register (building energy needs space);
     // descending -> compress (falling motion consolidates range).
-    const melodicCtxCCE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxCCE = emergentMelodicEngine.getContext();
     const dirBias = melodicCtxCCE ? V.optionalFinite(melodicCtxCCE.directionBias, 0) : 0;
     const melodicRegBias = dirBias * 2.5; // [-2.5 descending ... +2.5 ascending]
     // R38: trust velocity anticipation -- lean into rising trust, back off falling

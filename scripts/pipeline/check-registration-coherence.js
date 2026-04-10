@@ -33,6 +33,13 @@ const FUNCTIONAL_REGISTRATIONS = [
   'registerStateProvider',
 ];
 
+// crossLayer modules use crossLayerRegistry for lifecycle, not conductorIntelligence.
+// conductorSignalBridge is the only crossLayer module allowed to register a recorder
+// (architectural exception) but its lifecycle is managed by crossLayerRegistry.
+const EXCLUDED_FILES = new Set([
+  'src/crossLayer/conductorSignalBridge.js',
+]);
+
 const allFiles = findJsFiles(SRC);
 const orphans = [];
 let totalFunctional = 0;
@@ -41,6 +48,7 @@ let totalWithModule = 0;
 for (const filePath of allFiles) {
   const src = fs.readFileSync(filePath, 'utf8');
   const rel = path.relative(ROOT, filePath).replace(/\\/g, '/');
+  if (EXCLUDED_FILES.has(rel)) continue;
 
   const found = [];
   for (const reg of FUNCTIONAL_REGISTRATIONS) {

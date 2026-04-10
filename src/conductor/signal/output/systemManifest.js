@@ -162,7 +162,7 @@ const manifestPath = 'metrics/system-manifest.json';
 
   /** @returns {object} */
   function systemManifestBuildSystemDynamics() {
-    return /** @type {object} */ (safePreBoot.call(() => systemDynamicsProfiler.getSummary(), /** @type {any} */ ({ beatsAnalyzed: 0, snapshot: {}, dimensionNames: [] })));
+    return /** @type {object} */ (systemDynamicsProfiler.getSummary());
   }
 
   return { emit };

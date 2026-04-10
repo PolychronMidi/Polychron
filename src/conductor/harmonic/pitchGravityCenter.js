@@ -82,3 +82,6 @@ conductorIntelligence.registerStateProvider('pitchGravityCenter', () => ({
   ...pitchGravityCenter.getGravityCenter(),
   crossDrift: pitchGravityCenter.getCrossLayerDrift()
 }));
+
+  function reset() {}
+  conductorIntelligence.registerModule('pitchGravityCenter', { reset }, ['section']);

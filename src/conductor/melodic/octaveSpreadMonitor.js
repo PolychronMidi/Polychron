@@ -86,6 +86,9 @@ octaveSpreadMonitor = (() => {
     octaveSpreadBias: octaveSpreadMonitor.getSpreadBias()
   }));
 
+  function reset() {}
+  conductorIntelligence.registerModule('octaveSpreadMonitor', { reset }, ['section']);
+
   return {
     getOctaveProfile,
     getUnderusedOctaves,

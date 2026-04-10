@@ -151,7 +151,7 @@ entropyRegulator = (() => {
       let arcWeight = ARC_BLEND_WEIGHT;
       let intentWeight = INTENT_BLEND_WEIGHT;
       let targetTrim = 0;
-      const couplingPressures = (safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), {})) || {};
+      const couplingPressures = (pipelineCouplingManager.getCouplingPressures()) || {};
       const sectionProgress = safePreBoot.call(() => timeStream.normalizedProgress('section'), 0.5);
       const edgeDistance = typeof sectionProgress === 'number' && Number.isFinite(sectionProgress)
         ? m.min(clamp(sectionProgress, 0, 1), clamp(1 - sectionProgress, 0, 1))
@@ -175,7 +175,7 @@ entropyRegulator = (() => {
       // Melodic coupling: register migration direction nudges entropy target.
       // Ascending -> more entropy (exploring new register territory needs variety).
       // Descending -> less entropy (settling into lower register invites consolidation).
-      const melodicCtxER = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+      const melodicCtxER = emergentMelodicEngine.getContext();
       const melodicMod = melodicCtxER
         ? (melodicCtxER.registerMigrationDir === 'ascending' ? 0.02 : melodicCtxER.registerMigrationDir === 'descending' ? -0.02 : 0)
         : 0;

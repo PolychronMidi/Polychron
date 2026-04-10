@@ -115,6 +115,9 @@ durationalContourTracker = (() => {
     return { durationalContourBias: b ? b.durationBias : 1 };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('durationalContourTracker', { reset }, ['section']);
+
   return {
     getDurationContour,
     getDurationBias,

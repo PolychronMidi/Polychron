@@ -14,7 +14,7 @@ stutterTempoFeel = (() => {
     emaByLayer[layer] += (intensity - emaByLayer[layer]) * EMA_ALPHA;
     const base = clamp((emaByLayer[layer] - 0.3) * 0.06, -0.03, 0.03);
     // Melodic coupling: ascending phrases micro-accelerate, descending micro-decelerate.
-    const melodicCtxSTF = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxSTF = emergentMelodicEngine.getContext();
     const dirBias = melodicCtxSTF ? V.optionalFinite(melodicCtxSTF.directionBias, 0) : 0;
     return clamp(base + dirBias * 0.008, -0.04, 0.04);
   }

@@ -134,6 +134,9 @@ harmonicSurpriseIndex = (() => {
 
   conductorIntelligence.registerFlickerModifier('harmonicSurpriseIndex', () => harmonicSurpriseIndex.getFlickerBias(), 0.96, 1.05);
 
+  function reset() {}
+  conductorIntelligence.registerModule('harmonicSurpriseIndex', { reset }, ['section']);
+
   return {
     getSurpriseProfile,
     getTensionBias,

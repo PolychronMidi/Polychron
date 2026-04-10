@@ -133,6 +133,9 @@ voiceLeadingEfficiencyTracker = (() => {
     return { voiceLeadingEfficiency: s ? s.efficiency : 0.5 };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('voiceLeadingEfficiencyTracker', { reset }, ['section']);
+
   return {
     getEfficiencySignal,
     getDensityBias,

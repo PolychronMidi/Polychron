@@ -111,6 +111,9 @@ harmonicFieldDensityTracker = (() => {
     return { harmonicFieldAvgSimultaneous: s ? s.avgSimultaneous : 1 };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('harmonicFieldDensityTracker', { reset }, ['section']);
+
   return {
     getFieldDensitySignal,
     getDensityBias,

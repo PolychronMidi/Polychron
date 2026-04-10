@@ -60,6 +60,9 @@ harmonicRhythmDensityRatio = (() => {
 
   conductorIntelligence.registerDensityBias('harmonicRhythmDensityRatio', () => harmonicRhythmDensityRatio.getDensityBias(), 0.85, 1.2);
 
+  function reset() {}
+  conductorIntelligence.registerModule('harmonicRhythmDensityRatio', { reset }, ['section']);
+
   return {
     getRatioProfile,
     getDensityBias

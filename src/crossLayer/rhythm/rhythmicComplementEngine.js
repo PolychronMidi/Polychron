@@ -104,7 +104,7 @@ rhythmicComplementEngine = (() => {
 
     // R58: melodic contour modulates complement strength. Rising -> stronger momentum.
     // Falling -> softer complements. Contrary counterpoint -> tighter rhythmic contrast.
-    const melodicCtxRCE = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxRCE = emergentMelodicEngine.getContext();
     const melodicMult = melodicCtxRCE
       ? (melodicCtxRCE.contourShape === 'rising' ? 1.15 : melodicCtxRCE.contourShape === 'falling' ? 0.85 : 1.0)
       * (melodicCtxRCE.counterpoint === 'contrary' ? 1.10 : 1.0)

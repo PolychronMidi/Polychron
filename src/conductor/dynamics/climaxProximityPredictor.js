@@ -131,6 +131,9 @@ climaxProximityPredictor = (() => {
   conductorIntelligence.registerDensityBias('climaxProximityPredictor', () => climaxProximityPredictor.getDensityRampBias(), 0.82, 1.35);
   conductorIntelligence.registerTensionBias('climaxProximityPredictor', () => climaxProximityPredictor.getTensionBias(), 0.8, 1.3);
 
+  function reset() {}
+  conductorIntelligence.registerModule('climaxProximityPredictor', { reset }, ['section']);
+
   return {
     predict,
     getDensityRampBias,

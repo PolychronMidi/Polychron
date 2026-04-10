@@ -88,7 +88,7 @@ articulationComplement = (() => {
     const regimeContrast = artRegime === 'exploring' ? 1.25
       : artRegime === 'coherent' ? 0.80
       : 1.0;
-    const melodicCtxAC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxAC = emergentMelodicEngine.getContext();
     const melodicContrastScale = melodicCtxAC
       ? (melodicCtxAC.contourShape === 'rising' ? 1.15 : melodicCtxAC.contourShape === 'falling' ? 0.85 : 1.0)
       * (melodicCtxAC.counterpoint === 'contrary' ? 1.20 : 1.0)

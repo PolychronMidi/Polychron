@@ -39,7 +39,7 @@ trustEcologyCharacter = (() => {
   function biasWeights(baseWeights) {
     if (!dominantFamily || !baseWeights[dominantFamily]) return baseWeights;
     const result = Object.assign({}, baseWeights);
-    const melodicCtxTEC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxTEC = emergentMelodicEngine.getContext();
     const thematicDensity = melodicCtxTEC ? V.optionalFinite(melodicCtxTEC.thematicDensity, 0) : 0;
     const dynamicBoost = DOMINANCE_BOOST + thematicDensity * 0.3; // 1.5 neutral ... 1.8 strong recall
     result[dominantFamily] = (result[dominantFamily] || 1.0) * dynamicBoost;

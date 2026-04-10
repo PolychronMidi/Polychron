@@ -67,6 +67,9 @@ registerMigrationTracker = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('registerMigrationTracker', { reset }, ['section']);
+
   return {
     getMigrationProfile,
     getRegisterBias

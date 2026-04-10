@@ -90,6 +90,9 @@ silenceDistributionTracker = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('silenceDistributionTracker', { reset }, ['section']);
+
   return {
     getSilenceSignal
   };

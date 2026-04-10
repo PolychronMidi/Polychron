@@ -88,6 +88,9 @@ tessituraPressureMonitor = (() => {
     return { tessituraRegion: s ? s.region : 'comfortable' };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('tessituraPressureMonitor', { reset }, ['section']);
+
   return {
     getPressureSignal,
     getDensityBias

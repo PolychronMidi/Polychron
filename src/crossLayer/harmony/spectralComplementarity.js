@@ -120,7 +120,7 @@ spectralComplementarity = (() => {
     // Melodic coupling: contourShape modulates register gap-filling aggressiveness.
     // Rising contour -> amplify nudge (build spreads across registers).
     // Falling contour -> soften nudge (spectrum thins as phrases descend).
-    const melodicCtxSC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxSC = emergentMelodicEngine.getContext();
     const contourNudgeScale = melodicCtxSC
       ? (melodicCtxSC.contourShape === 'rising' ? 1.15 : melodicCtxSC.contourShape === 'falling' ? 0.82 : 1.0)
       : 1.0;

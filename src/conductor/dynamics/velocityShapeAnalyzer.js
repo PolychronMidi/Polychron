@@ -100,7 +100,7 @@ velocityShapeAnalyzer = (() => {
 
   function velocityShapeAnalyzerGetContainmentPressure() {
     const phaseContainmentTarget = 0.09;
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
@@ -111,7 +111,7 @@ velocityShapeAnalyzer = (() => {
     if (phaseRecoveryCredit <= 0) {
       return 0;
     }
-    const couplingPressures = safePreBoot.call(() => pipelineCouplingManager.getCouplingPressures(), null);
+    const couplingPressures = pipelineCouplingManager.getCouplingPressures();
     if (!couplingPressures) {
       return 0;
     }
@@ -183,6 +183,9 @@ velocityShapeAnalyzer = (() => {
     const s = velocityShapeAnalyzer.getVelocityShape();
     return { envelopeShape: s ? s.shape : 'neutral' };
   });
+
+  function reset() {}
+  conductorIntelligence.registerModule('velocityShapeAnalyzer', { reset }, ['section']);
 
   return {
     getVelocityShape,

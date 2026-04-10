@@ -50,7 +50,7 @@ regimeClassifierResolution = (() => {
     const exploringElapsedSec = beatStartTime - state.exploringStartSec;
     const coherentElapsedSec = beatStartTime - state.coherentStartSec;
     const evolvingElapsedSec = beatStartTime - state.evolvingStartSec;
-    const axisEnergy = safePreBoot.call(() => pipelineCouplingManager.getAxisEnergyShare(), null);
+    const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 0;

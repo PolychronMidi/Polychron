@@ -153,7 +153,7 @@ stutterVariants = (() => {
     const DENSE_VARIANTS = new Set(['machineGun', 'stutterTremolo', 'stutterSwarm', 'convergenceBurst']);
 
     // Regime-aware + phase-aware weighted selection with transition blending
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const snap = systemDynamicsProfiler.getSnapshot();
     const regime = (snap && snap.regime) ? snap.regime : 'exploring';
     if (regime !== prevRegime) {
       blendFromRegime = prevRegime;
@@ -227,7 +227,7 @@ stutterVariants = (() => {
       'exploratory-tension': { alienArpeggio: 1.8, octaveCascade: 1.4, reverseVelocity: 1.3 },
       'stable-variety': { ghostStutter: 1.4, echoTrail: 1.3, harmonicShadow: 1.2 }
     };
-    const profSnap = /** @type {any} */ (safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null));
+    const profSnap = /** @type {any} */ (systemDynamicsProfiler.getSnapshot());
     /** @type {Record<string, number>} */
     const labelMults = {};
     if (profSnap && profSnap.couplingLabels) {
@@ -247,7 +247,7 @@ stutterVariants = (() => {
     const emergentActive = emergentDensity > 0.06;
 
     // R54: melodic context (12th signal dimension) -- contour, freshness, tessiture, counterpoint
-    const melodicWeights = /** @type {Record<string, number>} */ (safePreBoot.call(() => emergentMelodicEngine.getMelodicWeights(), {}));
+    const melodicWeights = /** @type {Record<string, number>} */ (emergentMelodicEngine.getMelodicWeights());
 
     // R25: self-balancing - inverse-frequency boost for underrepresented variants
     const variantCounts = stutterMetrics.getMetrics().variantCounts;

@@ -43,7 +43,7 @@ composerFeedbackAdvisor = (() => {
 
     // R64 E4: Current regime for regime-responsive composer selection
     let currentRegime = 'exploring';
-    const snap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const snap = systemDynamicsProfiler.getSnapshot();
     if (snap && typeof snap.regime === 'string') currentRegime = snap.regime;
 
     return {

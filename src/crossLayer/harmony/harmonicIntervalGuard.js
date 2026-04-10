@@ -107,7 +107,7 @@ harmonicIntervalGuard = (() => {
     const vimTighten = vimEntry && Number.isFinite(vimEntry.collisionRate) ? vimEntry.collisionRate * 0.08 : 0;
     // Melodic coupling: intervalFreshness widens deadband for novel intervals,
     // tightens it for stale intervals (correct repetitive harmonic patterns harder).
-    const melodicCtxHIG = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxHIG = emergentMelodicEngine.getContext();
     const hiFreshness = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.intervalFreshness, 0.5) : 0.5;
     const freshnessBand = (hiFreshness - 0.5) * 0.06; // [-0.03 stale ... +0.03 fresh]
     // R74: emergentRhythm hotspots coupling -- rhythmic burst positions widen deadband (more interval tolerance during dense moments).
@@ -171,7 +171,7 @@ harmonicIntervalGuard = (() => {
     // R53: interval novelty steering -- under-used ICs get a score bonus when in dissonant+independent mode
     // R54: emergentMelodicEngine amplifies noveltyWeight when interval territory is stale
     const baseNoveltyWeight = histTotal > 12 ? dissonanceTarget * 0.28 * (1.0 - cimScale * 0.65) : 0;
-    const noveltyWeight = V.optionalFinite(safePreBoot.call(() => emergentMelodicEngine.nudgeNoveltyWeight(baseNoveltyWeight), baseNoveltyWeight), baseNoveltyWeight);
+    const noveltyWeight = V.optionalFinite(emergentMelodicEngine.nudgeNoveltyWeight(baseNoveltyWeight), baseNoveltyWeight);
     // R77 E6: underusedPitchClasses harvest -- bias interval selection toward modally underrepresented pitch classes
     const underusedEntry = L0.getLast('underusedPitchClasses', { layer: 'both' });
     const underusedPCs = underusedEntry && Array.isArray(underusedEntry.pitchClasses) ? underusedEntry.pitchClasses : [];

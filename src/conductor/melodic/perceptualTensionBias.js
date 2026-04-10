@@ -32,5 +32,8 @@ perceptualTensionBias = (() => {
     return 1.0 + m.max(-0.08, m.min(0.08, bias));
   }, 0.92, 1.08);
 
+  function reset() {}
+  conductorIntelligence.registerModule('perceptualTensionBias', { reset }, ['section']);
+
   return {};
 })();

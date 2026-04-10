@@ -72,7 +72,7 @@ homeostasisRefresh = (() => {
     }
 
     // Tail pressure computation
-    const adaptiveSnapshot = safePreBoot.call(() => pipelineCouplingManager.getAdaptiveTargetSnapshot(), null);
+    const adaptiveSnapshot = pipelineCouplingManager.getAdaptiveTargetSnapshot();
     // R77 E1: Exceedance-outcome-adaptive tail threshold (#18). Track rolling
     // aggregate hotspot rate. When exceedance is consistently low, raise the
     // per-pair adaptiveHotThreshold to reduce false-positive tail pressure.

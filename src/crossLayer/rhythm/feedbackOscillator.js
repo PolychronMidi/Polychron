@@ -53,7 +53,7 @@ feedbackOscillator = (() => {
     // R87 E2: registerMigrationDir antagonism bridge with convergenceDetector -- ascending pitch center
     // amplifies feedback resonance (climbing register builds cross-layer dialogue energy).
     // Counterpart: convergenceDetector NARROWS tolerance under same signal (ascending divergence makes rhythmic unison harder).
-    const melodicCtxFO = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxFO = emergentMelodicEngine.getContext();
     const melodicScaleFO = melodicCtxFO
       ? (melodicCtxFO.contourShape === 'rising' ? 1.12 : melodicCtxFO.contourShape === 'falling' ? 0.90 : 1.0)
       * (melodicCtxFO.counterpoint === 'contrary' ? 0.82 : 1.0)
@@ -111,7 +111,7 @@ feedbackOscillator = (() => {
     // R41: regime-responsive feedback character. Coherent = longer feedback chains
     // (less damping, energy sustains), exploring = shorter chains (more damping,
     // energy dissipates quickly). Creates regime-specific cross-layer dialogue depth.
-    const fbRegime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving');
+    const fbRegime = regimeClassifier.getLastRegime();
     const regimeDamping = fbRegime === 'coherent' ? 0.90 : fbRegime === 'exploring' ? 1.15 : 1.0;
     const dampedEnergy = incoming.energy * cimDamping * entropyModulation * regimeDamping;
     if (dampedEnergy < MIN_ENERGY) return null;

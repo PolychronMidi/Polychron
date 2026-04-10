@@ -30,7 +30,7 @@ convergenceVelocitySurge = (() => {
       const distScale = 1.0 + clamp(dist * 0.04, 0, 0.15);
       // Melodic coupling: tessituraLoad amplifies surge at extreme registers.
       // High register pressure at a convergence moment -> more expressive impact.
-      const melodicCtxCVS = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+      const melodicCtxCVS = emergentMelodicEngine.getContext();
       const tessLoad = melodicCtxCVS ? V.optionalFinite(melodicCtxCVS.tessituraLoad, 0) : 0;
       // Rhythmic coupling: density surprise amplifies convergence impact.
       // Convergence during a dense rhythmic moment = more expressive punch.

@@ -79,7 +79,7 @@ phaseAwareCadenceWindow = (() => {
     // Melodic coupling: directionBias shifts the phase threshold.
     // Ascending contour (building) -> narrow window -> resist premature cadence.
     // Descending contour (resolving) -> widen window -> welcome cadence.
-    const melodicCtxPACW = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxPACW = emergentMelodicEngine.getContext();
     const dirBias = melodicCtxPACW ? V.optionalFinite(melodicCtxPACW.directionBias, 0) : 0;
     // Rhythmic coupling: complex emergent rhythm creates natural cadence windows even with phase divergence.
     const rhythmEntryPACW = L0.getLast('emergentRhythm', { layer: 'both' });

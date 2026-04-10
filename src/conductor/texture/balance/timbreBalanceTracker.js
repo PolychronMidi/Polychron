@@ -96,6 +96,9 @@ timbreBalanceTracker = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('timbreBalanceTracker', { reset }, ['section']);
+
   return {
     getTimbreProfile,
     getUnderusedChannels,

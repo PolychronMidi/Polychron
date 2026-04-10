@@ -103,7 +103,7 @@ stutterContagion = (() => {
     // R58: melodic context gates contagion. High thematic density -> reduce (motif echo
     // already provides rhythmic "infection"). Stale intervals -> boost (rhythmic novelty).
     // Contrary counterpoint -> slight boost (opposing motion benefits from interruption).
-    const melodicCtxSC = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxSC = emergentMelodicEngine.getContext();
     // R77: ascendRatio bridge -- ascending melodic energy intensifies cross-layer stutter spread
     const melodicContagionScale = melodicCtxSC
       ? clamp(1.0 - melodicCtxSC.thematicDensity * 0.20

@@ -94,7 +94,7 @@ setBinaural = () => {
   // -- Schedule a new shared shift if due --
   const shiftDue = firstLoop < 1 || absoluteSeconds >= nextBinauralShiftSec;
   if (shiftDue) {
-    const binauralSnap = safePreBoot.call(() => systemDynamicsProfiler.getSnapshot(), null);
+    const binauralSnap = systemDynamicsProfiler.getSnapshot();
     let binauralInterval = rf(2,3);
     const binauralRegime = binauralSnap ? binauralSnap.regime : 'exploring';
     const binauralIntervalFactor = binauralRegime === 'exploring' ? rf(.8, .9)

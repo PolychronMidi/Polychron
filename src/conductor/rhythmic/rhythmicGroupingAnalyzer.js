@@ -89,6 +89,9 @@ rhythmicGroupingAnalyzer = (() => {
     };
   });
 
+  function reset() {}
+  conductorIntelligence.registerModule('rhythmicGroupingAnalyzer', { reset }, ['section']);
+
   return {
     getGroupingSignal
   };

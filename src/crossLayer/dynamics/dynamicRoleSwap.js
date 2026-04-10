@@ -50,7 +50,7 @@ dynamicRoleSwap = (() => {
     // R90 E4: Regime-responsive swap probability. Exploring passages benefit
     // from more frequent layer swaps (richer cross-layer dynamic interplay),
     // while coherent passages keep swaps rare to preserve musical stability.
-    const regime = safePreBoot.call(() => regimeClassifier.getLastRegime(), 'initializing');
+    const regime = regimeClassifier.getLastRegime();
     const regimeSwapScale = regime === 'exploring' ? 1.15
       : regime === 'coherent' ? 0.80
       : 1.0;
@@ -63,7 +63,7 @@ dynamicRoleSwap = (() => {
     // Melodic coupling: contourShape modulates swap gate.
     // Falling contour -> natural role handoff moment -> amplify gate.
     // Rising contour -> keep the build going with current roles -> suppress gate.
-    const melodicCtxDRS = safePreBoot.call(() => emergentMelodicEngine.getContext(), null);
+    const melodicCtxDRS = emergentMelodicEngine.getContext();
     const contourSwapBoost = melodicCtxDRS
       ? (melodicCtxDRS.contourShape === 'falling' ? 0.08 : melodicCtxDRS.contourShape === 'rising' ? -0.08 : 0)
       : 0;
