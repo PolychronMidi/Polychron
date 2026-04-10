@@ -51,7 +51,7 @@ Details: [doc/SUBSYSTEMS.md](doc/SUBSYSTEMS.md)
 ## Key Systems
 
 ### Stutter Variant Ecosystem
-19 note stutter variants selected per-beat by 10 weighted signal dimensions (regime, phase, articulation, harmonic distance, coupling labels, entropy reversal, call-response, phrase boundary, hocket mode, self-balancing frequency). Euclidean pattern gating (75%) + sustain-proportional probabilistic gate.
+19 note stutter variants selected per-beat by 12 weighted signal dimensions (regime, phase, articulation, harmonic distance, coupling labels, entropy reversal, call-response, phrase boundary, hocket mode, self-balancing frequency). Euclidean pattern gating (75%) + sustain-proportional probabilistic gate.
 
 Details: [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md)
 

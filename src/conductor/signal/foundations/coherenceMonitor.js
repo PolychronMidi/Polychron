@@ -162,8 +162,11 @@ coherenceMonitor = (() => {
       }
     }
 
-    // If emitting too many notes (deviation > 0) - dampen (bias < 1)
-    // If emitting too few notes (deviation < 0) - boost (bias > 1)
+    // densitySurprise bridge with entropyRegulator (r=-0.607): surprise sharpens tracking
+    const rhythmEntryCoM = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
+    const densitySurpriseCoM = rhythmEntryCoM && Number.isFinite(rhythmEntryCoM.densitySurprise) ? rhythmEntryCoM.densitySurprise : 0;
+    phaseGain *= 1.0 + clamp(densitySurpriseCoM * 0.15, 0, 0.10);
+
     const correction = 1.0 - deviation * phaseGain;
 
     // Density-level awareness: the emission-fidelity check above is blind to

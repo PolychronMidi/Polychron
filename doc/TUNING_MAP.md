@@ -314,7 +314,7 @@ peak pressure (0.944) and a dramatic regime-dependent performance swing.
 | Constant | Value | Role | Interaction Partners |
 |||||
 | Adaptive decay | EMA-based | Adjusts stutter propagation intensity over time | CIM `setCoordinationScale`, regime |
-| Stutter variants | 18 types | Selection weighted by 10 signal dimensions | `stutterVariants.selectForBeat()` |
+| Stutter variants | 19 types | Selection weighted by 12 signal dimensions | `stutterVariants.selectForBeat()` |
 
 **Sensitivity:** Performance is strongly regime-dependent: score surges from 0.30→0.60 at S2 transition (evolving→coherent emergence), then declines through exploring-dominant sections (S3 score=0.58, S4=0.40). Coherent sections provide stable rhythmic patterns that stutter can predict and amplify; exploring sections are too unpredictable. In intense rivalry with phaseLock (50/50 dominance split, 116 overtake events per run). S4 hotspot rate 92% — the explosive profile overwhelms stutter's prediction capacity.
 
