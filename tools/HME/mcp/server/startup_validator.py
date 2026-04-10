@@ -83,23 +83,34 @@ def _check_required_metrics_dirs(project_root: str) -> None:
 
 
 def _check_ollama_connectivity() -> None:
-    """Warn if Ollama is not reachable — synthesis will fall back to templates.
+    """Warn if any Ollama instance is not reachable — synthesis will fall back to templates.
 
+    Checks all three instances: GPU0 (extractor), GPU1 (reasoner), CPU (arbiter).
     Non-fatal: Ollama may not be running yet, or may be on a different host.
-    Logs a warning so the user knows synthesis is degraded, not silently missing.
+    Logs a warning per unreachable instance so failures are visible, not silent.
     """
     import urllib.request
     import urllib.error
-    ollama_url = "http://localhost:11434/api/tags"
-    try:
-        with urllib.request.urlopen(ollama_url, timeout=3) as resp:
-            if resp.status == 200:
-                logger.info("Ollama connectivity: OK (localhost:11434)")
-                return
-    except urllib.error.URLError as e:
-        logger.warning(
-            f"Ollama not reachable at localhost:11434 ({e}) — "
-            "synthesis tools will use template fallback until Ollama is available"
-        )
-    except Exception as e:
-        logger.warning(f"Ollama connectivity check failed: {type(e).__name__}: {e}")
+    instances = [
+        (int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434")), "GPU0 extractor"),
+        (int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435")), "GPU1 reasoner"),
+        (int(os.environ.get("HME_OLLAMA_PORT_CPU",  "11436")), "CPU arbiter"),
+    ]
+    ok_count = 0
+    for port, role in instances:
+        url = f"http://localhost:{port}/api/tags"
+        try:
+            with urllib.request.urlopen(url, timeout=3) as resp:
+                if resp.status == 200:
+                    ok_count += 1
+                    continue
+        except urllib.error.URLError as e:
+            logger.warning(f"Ollama {role} not reachable at localhost:{port} ({e})")
+        except Exception as e:
+            logger.warning(f"Ollama {role} connectivity check failed at localhost:{port}: {type(e).__name__}: {e}")
+    if ok_count == len(instances):
+        logger.info(f"Ollama connectivity: OK (all {len(instances)} instances)")
+    elif ok_count > 0:
+        logger.warning(f"Ollama connectivity: {ok_count}/{len(instances)} instances reachable — synthesis degraded")
+    else:
+        logger.warning("Ollama connectivity: NO instances reachable — synthesis will use template fallback")

@@ -166,6 +166,9 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             logger.info(f"_local_think cooldown cleared — {_cooldown_refused_bg} background calls were silently skipped.")
             _cooldown_refused_bg = 0
 
+    # "parallel" = two threads hitting different GPUs simultaneously. Treated like
+    # interactive (no yielding, uses interactive timeout) but does NOT set the
+    # interactive preemption flag (which would block the sibling parallel thread).
     if priority == "background":
         _ollama_background_yield()
     elif priority == "interactive":
@@ -173,8 +176,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
 
     _effective_model = model or _LOCAL_MODEL
 
-    # Lazy warm: kick off background priming on first interactive call
-    if priority == "interactive" and system == _THINK_SYSTEM:
+    # Lazy warm: kick off background priming on first interactive/parallel call
+    if priority in ("interactive", "parallel") and system == _THINK_SYSTEM:
         from .synthesis_warm import ensure_warm
         ensure_warm(_effective_model)
 

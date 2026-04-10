@@ -95,9 +95,7 @@ def _get_cross_encoder():
         with _cross_encoder_lock:
             if _cross_encoder_instance is None:
                 from sentence_transformers import CrossEncoder
-                import torch
-                device = "cuda" if torch.cuda.is_available() else "cpu"
-                _cross_encoder_instance = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-12-v2", device=device)
+                _cross_encoder_instance = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-12-v2", device="cpu")
     return _cross_encoder_instance
 
 
