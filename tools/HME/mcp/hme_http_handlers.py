@@ -160,7 +160,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
                     lines.append(f"    {h.get('content', '')[:200]}")
                 assembled_parts.append("\n".join(lines))
         except Exception as e:
-            logger.info(f"prompt_enricher: KB search failed: {e}")
+            logger.info(f"enrich_prompt: KB search failed: {e}")
 
     if triage["contextual"]:
         try:
@@ -233,7 +233,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
             if "</think>" in enriched:
                 enriched = enriched[enriched.rfind("</think>") + len("</think>"):].strip()
     except Exception as e:
-        logger.error(f"prompt_enricher: reasoning model failed: {e}")
+        logger.error(f"enrich_prompt: reasoning model failed: {e}")
         return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
                 "unchanged": True, "reason": f"Reasoning model failed: {e}"}
 
@@ -251,7 +251,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
     total_ms = int((_time.monotonic() - t0) * 1000)
     logger.info(
-        f"prompt_enricher: {len(prompt)}→{len(enriched)} chars, "
+        f"enrich_prompt: {len(prompt)}→{len(enriched)} chars, "
         f"modes={'|'.join(k for k, v in triage.items() if v and k != 'raw')}, "
         f"{total_ms}ms"
     )

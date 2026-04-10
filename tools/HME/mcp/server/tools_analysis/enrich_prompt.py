@@ -1,4 +1,4 @@
-"""Prompt enricher — arbiter triage → KB assembly → reasoning enrichment → compression."""
+"""enrich_prompt — KB assembly → reasoning enrichment → compression."""
 import json
 import logging
 import os
@@ -17,74 +17,19 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     arbiter compresses if needed. All local, zero Claude tokens.
     """
     from .synthesis_ollama import (
-        _local_think, _ARBITER_MODEL, _REASONING_MODEL, _LOCAL_MODEL,
-        _KEEP_ALIVE, _NUM_CTX_4B, _url_for, compress_for_claude,
+        _local_think, _REASONING_MODEL, compress_for_claude,
     )
-    from .synthesis_warm import _warm_ctx, _warm_ctx_kb_ver
     from .synthesis_session import get_session_narrative
-    import urllib.request
 
     trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
     t0 = time.monotonic()
 
-    # ── Stage 1: Arbiter triage ───────────────────────────────────────────
-    frame_ctx = f"\nUser framing: {frame}\n" if frame else ""
-    triage_prompt = (
-        f"Analyze this prompt for a code-evolving AI assistant working on Polychron "
-        f"(a generative music engine, 487 JS files).{frame_ctx}\n\n"
-        f"PROMPT:\n{prompt[:1500]}\n\n"
-        "Classify what enrichment this prompt needs. For each, answer YES or NO "
-        "with a one-line reason:\n"
-        "KB_NEEDED: Does it mention modules, signals, coupling, or patterns that "
-        "a knowledge base could ground with specific names/constraints?\n"
-        "STRUCTURAL_NEEDED: Is it ambiguous, compound, or missing specificity "
-        "that restructuring would fix?\n"
-        "CONTEXTUAL_NEEDED: Would recent session state (pipeline verdict, "
-        "regime distribution, last changes) make it more situated?\n\n"
-        "Format exactly:\n"
-        "KB_NEEDED: YES/NO — reason\n"
-        "STRUCTURAL_NEEDED: YES/NO — reason\n"
-        "CONTEXTUAL_NEEDED: YES/NO — reason"
-    )
-
-    payload = {
-        "model": _ARBITER_MODEL, "prompt": triage_prompt, "stream": False,
-        "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": 0.0, "num_predict": 300, "num_ctx": _NUM_CTX_4B},
-    }
-    arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
-    if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
-        payload["context"] = arbiter_ctx
-    body = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        _url_for(_ARBITER_MODEL), data=body,
-        headers={"Content-Type": "application/json"},
-    )
-
-    triage = {"kb": False, "structural": False, "contextual": False, "raw": ""}
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read())
-            full_text = result.get("response", "").strip()
-            text = full_text
-            if "</think>" in text:
-                after = text[text.rfind("</think>") + len("</think>"):].strip()
-                text = after if after else full_text
-            triage["raw"] = text
-            text_upper = text.upper()
-            triage["kb"] = "KB_NEEDED: YES" in text_upper or "KB_NEEDED:YES" in text_upper
-            triage["structural"] = "STRUCTURAL_NEEDED: YES" in text_upper or "STRUCTURAL_NEEDED:YES" in text_upper
-            triage["contextual"] = "CONTEXTUAL_NEEDED: YES" in text_upper or "CONTEXTUAL_NEEDED:YES" in text_upper
-    except Exception as e:
-        logger.info(f"prompt_enricher: arbiter triage failed ({e}), defaulting to all modes")
-        triage = {"kb": True, "structural": True, "contextual": True, "raw": f"triage failed: {e}"}
-
-    if not triage["kb"] and not triage["structural"] and not triage["contextual"]:
-        trace["triage_ms"] = int((time.monotonic() - t0) * 1000)
-        return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
-                "unchanged": True, "reason": "Arbiter: prompt needs no enrichment"}
-
-    trace["triage_ms"] = int((time.monotonic() - t0) * 1000)
+    # ── Stage 1: Skip arbiter triage ─────────────────────────────────────
+    # User explicitly called enrich_prompt — always run all modes.
+    # Arbiter adds ~30s latency (cold qwen3:4b) and frequently returns
+    # all-NO due to thinking token exhaustion. Same approach as HTTP shim.
+    triage = {"kb": True, "structural": True, "contextual": True, "raw": "explicit"}
+    trace["triage_ms"] = 0
 
     # ── Stage 2: Context assembly (instant, no model) ─────────────────────
     t1 = time.monotonic()
@@ -133,7 +78,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
             "session narrative and pipeline status below")
 
     frame_instruction = f"\nUser's enrichment framing: {frame}\n" if frame else ""
-    enrich_prompt = (
+    enrich_text = (
         "You are a prompt enrichment engine for Polychron, a generative music engine. "
         "Your job is to take a raw prompt and make it more specific, grounded, and actionable "
         "without changing the user's intent.\n\n"
@@ -152,7 +97,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     )
 
     enriched = _local_think(
-        enrich_prompt, max_tokens=2048, model=_REASONING_MODEL,
+        enrich_text, max_tokens=16000, model=_REASONING_MODEL,
         system="You enrich prompts with project-specific knowledge. Output only the enriched prompt.",
         temperature=0.2,
     )
@@ -164,7 +109,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
     # ── Stage 4: Arbiter compression (if enriched is too long) ────────────
     t3 = time.monotonic()
-    max_len = len(prompt) * 3
+    max_len = max(len(prompt) * 10, 2000)
     if len(enriched) > max_len:
         enriched = compress_for_claude(enriched, max_chars=max_len,
                                        hint="prompt enrichment — preserve specificity and intent")
@@ -172,7 +117,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
     total_ms = int((time.monotonic() - t0) * 1000)
     logger.info(
-        f"prompt_enricher: {len(prompt)}→{len(enriched)} chars, "
+        f"enrich_prompt: {len(prompt)}→{len(enriched)} chars, "
         f"modes={'|'.join(k for k, v in triage.items() if v and k != 'raw')}, "
         f"{total_ms}ms (triage:{trace['triage_ms']} assembly:{trace['assembly_ms']} "
         f"enrich:{trace['enrich_ms']} compress:{trace['compress_ms']})"
@@ -182,14 +127,14 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
 
 @ctx.mcp.tool()
-def prompt_enricher(prompt: str, frame: str = "") -> str:
+def enrich_prompt(prompt: str, frame: str = "") -> str:
     """Enrich a prompt with KB grounding, structural clarity, and session context.
     Runs entirely on local models — zero Claude token cost.
     Arbiter triages which enrichment modes are needed, reasoning model enriches.
     frame: optional instruction for how to enrich (e.g. 'focus on coupling dimensions').
     """
     from . import _track
-    _track("prompt_enricher")
+    _track("enrich_prompt")
     ctx.ensure_ready_sync()
 
     if not prompt or not prompt.strip():

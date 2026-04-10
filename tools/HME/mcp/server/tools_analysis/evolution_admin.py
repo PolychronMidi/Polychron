@@ -124,7 +124,7 @@ def hme_hot_reload(modules: str = "") -> str:
         "drama_map", "health_analysis", "section_labels",
         "evolution_evolve", "search_unified", "review_unified",
         "read_unified", "learn_unified", "status_unified", "trace_unified",
-        "todo",
+        "todo", "enrich_prompt",
     ]
     TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge"]
     # Root-level modules (not under server/): imported directly, no package prefix
