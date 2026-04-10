@@ -86,9 +86,9 @@ def _ollama_background_yield():
 def _cancellable_urlopen(req_data, url, timeout, cancel_event):
     """Streaming urlopen that aborts when cancel_event fires.
 
-    Uses timeout=2 on urlopen so every recv() unblocks within 2s for cancel checks
-    during prompt eval (when Ollama sends no data). Overall deadline enforced in loop.
-    Returns (response_bytes, None) or (None, exception).
+    Full timeout for initial urlopen (Ollama queues requests and won't send headers
+    until it starts processing ours). Then 2s socket timeout for reads so cancel_event
+    is checked every 2s during prompt eval. Returns (response_bytes, None) or (None, exception).
     """
     import urllib.request
     payload = json.loads(req_data)
@@ -96,9 +96,13 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
     body = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
     try:
-        resp = urllib.request.urlopen(req, timeout=2)
+        resp = urllib.request.urlopen(req, timeout=timeout)
     except Exception as e:
         return None, e
+    try:
+        resp.fp.raw._sock.settimeout(2.0)
+    except (AttributeError, Exception):
+        logger.debug("_cancellable_urlopen: could not set 2s socket timeout — cancel detection may be slow")
     try:
         chunks = []
         final_result = {}
