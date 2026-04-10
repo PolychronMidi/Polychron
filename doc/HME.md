@@ -12,7 +12,7 @@ No layer is optional. Removing any one collapses the executive.
 |-------|----------|-------------|
 | **MCP Server** | `tools/HME/` | 12 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 4 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern) + todo |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
-| **Skills** | `~/.claude/skills/HME/` | Cognitive frameworks loaded per session via `/HME` |
+| **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
 | **Evolver + Lab** | `.github/agents/Evolver.agent.md` + `lab/` | 7-phase evolution loop + experimental harness |
 
