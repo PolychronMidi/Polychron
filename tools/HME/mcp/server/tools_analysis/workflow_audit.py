@@ -232,9 +232,11 @@ def diagnose_error(error_text: str) -> str:
     # Ground local model in the KB entries already found — prevents hallucination
     kb_lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_results[:5]]
     kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
-    synthesis = _local_think(user_text + kb_suffix, max_tokens=2048, model=_REASONING_MODEL,
+    synthesis = _local_think(user_text + kb_suffix, max_tokens=512, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
+        from .synthesis_ollama import compress_for_claude
+        synthesis = compress_for_claude(synthesis, max_chars=600, hint="error fix steps")
         parts.append(f"\n## Fix Synthesis *(adaptive)*")
         parts.append(synthesis)
     else:
