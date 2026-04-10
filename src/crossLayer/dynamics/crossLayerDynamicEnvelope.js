@@ -76,7 +76,7 @@ crossLayerDynamicEnvelope = (() => {
       : envelopeRegime === 'coherent' ? 0.85
       : 1.0;
     // R72: complexityEma coupling -- high sustained rhythmic complexity widens envelope arc.
-    const rhythmEntryCLDE = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryCLDE = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmComplexEmaCLDE = rhythmEntryCLDE && Number.isFinite(rhythmEntryCLDE.complexityEma) ? rhythmEntryCLDE.complexityEma : 0;
     // Scale the deviation from neutral (1.0) by regime amplitude * complexity expansion
     targetScale = 1.0 + (targetScale - 1.0) * regimeAmplitude * (1.0 + rhythmComplexEmaCLDE * 0.25);

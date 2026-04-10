@@ -98,7 +98,7 @@ crossLayerClimaxEngine = (() => {
     const sigs = conductorSignalBridge.getSignals();
     lastDensity = sigs.density;
     // R37: perceptual crowding -- blend raw density with perceptual estimate
-    const crowdingEntry = L0.getLast('perceptual-crowding', { layer: 'both' });
+    const crowdingEntry = L0.getLast(L0_CHANNELS.perceptualCrowding, { layer: 'both' });
     const perceptualDensity = crowdingEntry && Number.isFinite(crowdingEntry.perceptualDensity)
       ? crowdingEntry.perceptualDensity : lastDensity;
     const effectiveDensity = lastDensity * 0.6 + perceptualDensity * 0.4;
@@ -110,7 +110,7 @@ crossLayerClimaxEngine = (() => {
     }
     // R33: post climax state to L0 for cross-module awareness
     if (smoothedClimax > 0.1) {
-      L0.post('climax-pressure', 'both', absoluteSeconds, {
+      L0.post(L0_CHANNELS.climaxPressure, 'both', absoluteSeconds, {
         level: smoothedClimax, densityPressure: densityPressureAccum / DENSITY_SATURATION_BEATS
       });
     }
@@ -125,13 +125,13 @@ crossLayerClimaxEngine = (() => {
     const intentPressure = (intent.densityTarget + intent.interactionTarget) / 2;
 
     // Harmonic excursion boost: distant keys amplify climax
-    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     const excursionBoost = harmonicEntry && Number.isFinite(harmonicEntry.excursion) ? clamp(harmonicEntry.excursion * 0.02, 0, 0.1) : 0;
     // R40: fractal arc multi-scale intensity -- dormant module now wired
     const fractalIntensity = fractalArcGenerator.composite() * 0.08;
     // R76: entropy antagonism bridge -- high current entropy damps climax accumulation.
     // Chaotic texture (high entropy) opposes coherent climax build (r=-0.604 pair).
-    const entropyEntryClx = L0.getLast('entropy', { layer: 'both' });
+    const entropyEntryClx = L0.getLast(L0_CHANNELS.entropy, { layer: 'both' });
     const entropyDampClx = entropyEntryClx && Number.isFinite(entropyEntryClx.smoothed)
       ? clamp((entropyEntryClx.smoothed - 0.55) * 0.22, 0, 0.10) : 0;
     // R78: freshnessEma suppression -- fresh melodic territory generates its own tension; climax piling on
@@ -144,7 +144,7 @@ crossLayerClimaxEngine = (() => {
     // accelerates climax build (complex texture = compositional density -> amplify structural arc).
     // Counterpart: HIG NARROWS deadband at same complexity (E1). Together: harmony stabilizes
     // while structural arc intensifies -- complexity is the shared currency.
-    const rhythmEntryClx = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryClx = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const complexityClx = rhythmEntryClx && Number.isFinite(rhythmEntryClx.complexity) ? rhythmEntryClx.complexity : 0.5;
     const complexityClimaxBoost = clamp((complexityClx - 0.45) * 0.10, 0, 0.06);
     // R81 E2: complexityEma antagonism bridge with dynamicRoleSwap -- sustained high complexity
@@ -244,7 +244,7 @@ crossLayerClimaxEngine = (() => {
     const indCompensation = indGap > 0.15 ? indGap * 6 : 0;
     // R37: cross-layer voice sensing -- contrary motion when registers overlap
     const voiceSenseLayer = crossLayerHelpers.getOtherLayer(activeLayer || 'L1');
-    const otherNotes = L0.query('note', { layer: voiceSenseLayer, windowSeconds: 0.3 });
+    const otherNotes = L0.query(L0_CHANNELS.note, { layer: voiceSenseLayer, windowSeconds: 0.3 });
     let contraryBias = 0;
     if (otherNotes && otherNotes.length > 0) {
       let otherAvg = 0;
@@ -254,7 +254,7 @@ crossLayerClimaxEngine = (() => {
       if (m.abs(selfAvg - otherAvg) < 5) contraryBias = selfAvg > otherAvg ? 3 : -3;
     }
     // R31 lab: convergence-driven density via L0 channel (R32: replaces direct call)
-    const convEntry = L0.getLast('convergence-density', { layer: 'both' });
+    const convEntry = L0.getLast(L0_CHANNELS.convergenceDensity, { layer: 'both' });
     const convDensityBoost = convEntry && Number.isFinite(convEntry.boost) ? convEntry.boost : 0;
     // R38: dimensionality response -- adapt palette to dimensional complexity
     const effDim = V.optionalFinite(bridgeSignals.effectiveDimensionality, 3);

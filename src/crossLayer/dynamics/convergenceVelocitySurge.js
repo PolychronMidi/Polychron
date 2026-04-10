@@ -34,7 +34,7 @@ convergenceVelocitySurge = (() => {
       const tessLoad = melodicCtxCVS ? V.optionalFinite(melodicCtxCVS.tessituraLoad, 0) : 0;
       // Rhythmic coupling: density surprise amplifies convergence impact.
       // Convergence during a dense rhythmic moment = more expressive punch.
-      const rhythmEntryVS = L0.getLast('emergentRhythm', { layer: 'both' });
+      const rhythmEntryVS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
       const densitySurpriseVS = rhythmEntryVS && Number.isFinite(rhythmEntryVS.densitySurprise) ? rhythmEntryVS.densitySurprise : 1.0;
       const rhythmSurgeMod = densitySurpriseVS > 1.1 ? 1.10 : densitySurpriseVS < 0.9 ? 0.95 : 1.0;
       surgeMultiplier = rf(1.15, 1.35) * distScale * (1.0 + tessLoad * 0.20) * rhythmSurgeMod;
@@ -55,7 +55,7 @@ convergenceVelocitySurge = (() => {
     if (densityBoostRemaining > 0) {
       densityBoostRemaining--;
       const boost = CONVERGENCE_DENSITY_BOOST * (densityBoostRemaining / CONVERGENCE_DENSITY_BEATS);
-      if (boost > 0.01) L0.post('convergence-density', 'both', absoluteSeconds, { boost });
+      if (boost > 0.01) L0.post(L0_CHANNELS.convergenceDensity, 'both', absoluteSeconds, { boost });
     }
   }
 

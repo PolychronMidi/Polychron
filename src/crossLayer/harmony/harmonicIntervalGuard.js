@@ -80,7 +80,7 @@ harmonicIntervalGuard = (() => {
     // Find other layer's most recent note from ATW
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);
     let otherRecentMidi = -1;
-    const lastNote = L0.getLast('note', {
+    const lastNote = L0.getLast(L0_CHANNELS.note, {
       layer: otherLayer,
       since: absoluteSeconds - 1,
       windowSeconds: 1
@@ -89,7 +89,7 @@ harmonicIntervalGuard = (() => {
       otherRecentMidi = lastNote.midi || lastNote.note || -1;
     }
     // R34: prefer collision-adjusted MIDI if recent (avoid conflicting nudges)
-    const collisionEntry = L0.getLast('registerCollision', { layer: otherLayer });
+    const collisionEntry = L0.getLast(L0_CHANNELS.registerCollision, { layer: otherLayer });
     if (collisionEntry && m.abs(collisionEntry.timeInSeconds - absoluteSeconds) < 0.2) {
       otherRecentMidi = V.optionalFinite(collisionEntry.midi, otherRecentMidi);
     }
@@ -103,7 +103,7 @@ harmonicIntervalGuard = (() => {
     const desiredConsonance = 1 - dissonanceTarget;
     const error = currentConsonance - desiredConsonance;
     // R51: verticalCollision awareness -- recent collisions tighten deadband
-    const vimEntry = L0.getLast('verticalCollision', { layer: 'both' });
+    const vimEntry = L0.getLast(L0_CHANNELS.verticalCollision, { layer: 'both' });
     const vimTighten = vimEntry && Number.isFinite(vimEntry.collisionRate) ? vimEntry.collisionRate * 0.08 : 0;
     // Melodic coupling: intervalFreshness widens deadband for novel intervals,
     // tightens it for stale intervals (correct repetitive harmonic patterns harder).
@@ -111,7 +111,7 @@ harmonicIntervalGuard = (() => {
     const hiFreshness = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.intervalFreshness, 0.5) : 0.5;
     const freshnessBand = (hiFreshness - 0.5) * 0.06; // [-0.03 stale ... +0.03 fresh]
     // R74: emergentRhythm hotspots coupling -- rhythmic burst positions widen deadband (more interval tolerance during dense moments).
-    const rhythmEntryHIG = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryHIG = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsScaleHIG = rhythmEntryHIG && Array.isArray(rhythmEntryHIG.hotspots) ? rhythmEntryHIG.hotspots.length / 16 : 0;
     // R75: registerMigrationDir antagonism bridge -- ascending pitch center narrows interval hunting (inverts roleSwap: chaos in dynamics, stability in harmony).
     const registerNarrowHIG = melodicCtxHIG ? (melodicCtxHIG.registerMigrationDir === 'ascending' ? 0.03 : melodicCtxHIG.registerMigrationDir === 'descending' ? -0.025 : 0) : 0;
@@ -157,7 +157,7 @@ harmonicIntervalGuard = (() => {
     const nudgeProb = m.abs(error) * (0.6 + dissonanceTarget * 0.3) * (0.4 + cimScale * 1.2);
     if (rf() > nudgeProb) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
-    const otherMotifEntry = L0.getLast('motifIdentity', { layer: otherLayer });
+    const otherMotifEntry = L0.getLast(L0_CHANNELS.motifIdentity, { layer: otherLayer });
     let motifIntervals = null;
     if (otherMotifEntry && otherMotifEntry.intervalDna && otherMotifEntry.confidence > 0.3) {
       motifIntervals = otherMotifEntry.intervalDna.split(',').map(Number).filter(Number.isFinite);
@@ -173,7 +173,7 @@ harmonicIntervalGuard = (() => {
     const baseNoveltyWeight = histTotal > 12 ? dissonanceTarget * 0.28 * (1.0 - cimScale * 0.65) : 0;
     const noveltyWeight = V.optionalFinite(emergentMelodicEngine.nudgeNoveltyWeight(baseNoveltyWeight), baseNoveltyWeight);
     // R77 E6: underusedPitchClasses harvest -- bias interval selection toward modally underrepresented pitch classes
-    const underusedEntry = L0.getLast('underusedPitchClasses', { layer: 'both' });
+    const underusedEntry = L0.getLast(L0_CHANNELS.underusedPitchClasses, { layer: 'both' });
     const underusedPCs = underusedEntry && Array.isArray(underusedEntry.pitchClasses) ? underusedEntry.pitchClasses : [];
     for (let candidate = lo; candidate <= hi; candidate++) {
       if (candidate === midi) continue;

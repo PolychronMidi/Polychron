@@ -239,7 +239,7 @@ playNotesEmitPick = function(opts = {}) {
       const pitchDelta = noteToEmit - pickNote;
       const timeDelta = onTime - preShiftTime;
       if (pitchDelta !== 0 || m.abs(timeDelta) > 0.001) {
-        L0.post('emissionDelta', activeLayerName, onTime, {
+        L0.post(L0_CHANNELS.emissionDelta, activeLayerName, onTime, {
           selected: pickNote, emitted: noteToEmit, pitchDelta,
           timeDelta: Number(timeDelta.toFixed(4)),
           stuttered: shouldStutter, shift: selectedShift

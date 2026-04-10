@@ -75,7 +75,7 @@ dynamicRangeTracker = (() => {
   function recordExtremes(time) {
     V.requireFinite(time, 'time');
 
-    const notes = L0.query('note', { windowSeconds: 2 });
+    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: 2 });
     if (notes.length < 2) return;
     const velocities = analysisHelpers.extractVelocityArray(notes, 64);
 

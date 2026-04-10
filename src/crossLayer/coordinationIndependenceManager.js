@@ -124,7 +124,7 @@ coordinationIndependenceManager = (() => {
     const densityBias = sigs.density < 0.5 ? -0.1 : sigs.density > 1.5 ? 0.1 : 0;
 
     // Xenolinguistic L4: read self-narration. System adapts coordination based on its own description.
-    const narrationEntry = L0.getLast('self-narration', { layer: 'both' });
+    const narrationEntry = L0.getLast(L0_CHANNELS.selfNarration, { layer: 'both' });
     const narrativeBias = narrationEntry && narrationEntry.narrative
       ? (narrationEntry.narrative.includes('crowded') ? 0.1 : narrationEntry.narrative.includes('sparse') ? -0.1 : 0) : 0;
 

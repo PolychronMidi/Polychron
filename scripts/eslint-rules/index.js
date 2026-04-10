@@ -20,6 +20,7 @@ module.exports = {
     'prefer-validator': require('./prefer-validator'),
     'no-bare-math': require('./no-bare-math'),
     'no-direct-coupling-matrix-read': require('./no-direct-coupling-matrix-read'),
-    'no-empty-catch': require('./no-empty-catch')
+    'no-empty-catch': require('./no-empty-catch'),
+    'no-bare-l0-channel': require('./no-bare-l0-channel')
   }
 };

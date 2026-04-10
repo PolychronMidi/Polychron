@@ -106,11 +106,11 @@ harmonicJourney = (() => {
 
     // Xenolinguistic: spectral awareness influences harmonic context.
     // If low registers dominate, post brightness hint for downstream modules.
-    const spectralEntry = L0.getLast('spectral', { layer: 'both' });
+    const spectralEntry = L0.getLast(L0_CHANNELS.spectral, { layer: 'both' });
     const spectralBrightness = spectralEntry && Array.isArray(spectralEntry.histogram)
       ? (spectralEntry.histogram[2] + spectralEntry.histogram[3]) / m.max(1, spectralEntry.histogram.reduce((a, b) => a + b, 0))
       : 0.5;
-    L0.post('harmonic', 'both', beatStartTime, {
+    L0.post(L0_CHANNELS.harmonic, 'both', beatStartTime, {
       key: stop.key, mode: stop.mode, excursion, sectionPhase: currentPhase,
       move: stop.move, distance: stop.distance, spectralBrightness
     });
@@ -120,7 +120,7 @@ harmonicJourney = (() => {
       const prevMem = sectionMemory.getPrevious();
       const prevStop = getStop(sectionIndex - 1);
       if (prevMem) {
-        L0.post('harmonic-journey-eval', 'both', beatStartTime, {
+        L0.post(L0_CHANNELS.harmonicJourneyEval, 'both', beatStartTime, {
           fromKey: prevStop.key, toKey: stop.key, move: stop.move,
           distance: stop.distance, excursion,
           quality: V.optionalFinite(prevMem.quality, 0.5),

@@ -62,7 +62,7 @@ restSynchronizer = (() => {
     const densityTarget = V.optionalFinite(sig.densityTarget, 0.5);
     // R34: rest-sync L0 -- other layer's rest intention boosts shared rest probability
     const restSyncLayer = crossLayerHelpers.getOtherLayer(layer);
-    const otherRestEntry = L0.getLast('rest-sync', {
+    const otherRestEntry = L0.getLast(L0_CHANNELS.restSync, {
       layer: restSyncLayer, since: absoluteSeconds - 0.5, windowSeconds: 0.5
     });
     const restSyncBoost = otherRestEntry ? 0.08 : 0;
@@ -95,15 +95,15 @@ restSynchronizer = (() => {
     // to avoid compounding with other pressure signals.
     const e23RestBoost = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e23RestPressureBoost'));
     // Coherence-aware rest boost: poor coherence (bias far from 1.0) increases rest value
-    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceEntry = L0.getLast(L0_CHANNELS.coherence, { layer: 'both' });
     const coherenceDeviation = coherenceEntry ? m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) : 0;
     const coherenceRestBoost = clamp(coherenceDeviation * 0.15, 0, 0.06);
     // Harmonic change breathing: rest more likely after recent key change
-    const harmonicEntry = L0.getLast('harmonic', { layer: 'both', since: absoluteSeconds - 3, windowSeconds: 3 });
+    const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both', since: absoluteSeconds - 3, windowSeconds: 3 });
     const harmonicRestBoost = harmonicEntry && harmonicEntry.excursion > 2 ? 0.05 : 0;
     // R34: articulation L0 awareness -- suppress rests when other layer is legato
     const otherLayer = crossLayerHelpers.getOtherLayer(layer);
-    const artEntry = L0.getLast('articulation', { layer: otherLayer });
+    const artEntry = L0.getLast(L0_CHANNELS.articulation, { layer: otherLayer });
     const otherSustain = artEntry ? V.optionalFinite(artEntry.avgSustain, 0.5) : 0.5;
     const legatoSuppression = otherSustain > 0.7 ? -0.03 : 0;
     // CIM coordination scale: high = more shared rests, low = independent rest timing
@@ -119,7 +119,7 @@ restSynchronizer = (() => {
       ? clamp((melodicCtxRest.ascendRatio - 0.55) * 0.22, 0, 0.10)
       : 0;
     // R77 E10: hotspots suppress rest -- rhythmic burst moments defer coordinated breathing
-    const rhythmEntryRS = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryRS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsRS = rhythmEntryRS && Array.isArray(rhythmEntryRS.hotspots) ? rhythmEntryRS.hotspots.length : 0;
     const hotspotRestSuppressRS = clamp(hotspotsRS / 16, 0, 1) * 0.08;
     // R79 E5: densitySurprise antagonism bridge with stutterContagion -- surprising rhythmic events
@@ -146,7 +146,7 @@ restSynchronizer = (() => {
     isResting[layer] = true;
     sharedRestCount++;
     // R34: post rest intention so other layer can respond
-    L0.post('rest-sync', layer, absoluteSeconds, { duration: durationSec, urgency: restUrgency });
+    L0.post(L0_CHANNELS.restSync, layer, absoluteSeconds, { duration: durationSec, urgency: restUrgency });
 
     return { shouldRest: true, duration: durationSec * 1000 };
   }
@@ -176,7 +176,7 @@ restSynchronizer = (() => {
     }
 
     // Check if other layer is sparse from ATW
-    const otherCount = L0.count('note', {
+    const otherCount = L0.count(L0_CHANNELS.note, {
       layer: otherLayer,
       since: absoluteSeconds - 0.5,
       windowSeconds: 0.5

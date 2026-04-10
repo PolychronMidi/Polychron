@@ -42,4 +42,20 @@ fi
 if [[ ${#PARTS[@]} -gt 0 ]]; then
   printf '%s\n' "${PARTS[@]}" >&2
 fi
+
+# Log compact event for context meter calibration.
+# Captures the statusline's last known reading so we can compare meter estimate vs actual trigger.
+CTX_FILE=/tmp/claude-context.json
+LOG="$PROJECT/metrics/compact-log.jsonl"
+TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+if [[ -f "$CTX_FILE" ]]; then
+  USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
+  REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
+  SIZE=$(jq -r '.size // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
+  AGE=$(( $(date +%s) - $(stat -c %Y "$CTX_FILE" 2>/dev/null || echo 0) ))
+  echo "{\"ts\":\"$TS\",\"event\":\"pre_compact\",\"used_pct\":$USED,\"remaining_pct\":$REM,\"ctx_size\":$SIZE,\"meter_age_s\":$AGE}" >> "$LOG"
+else
+  echo "{\"ts\":\"$TS\",\"event\":\"pre_compact\",\"used_pct\":null,\"remaining_pct\":null,\"ctx_size\":null,\"meter_age_s\":null,\"note\":\"no_statusline_data\"}" >> "$LOG"
+fi
+
 exit 0

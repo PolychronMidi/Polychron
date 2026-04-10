@@ -92,7 +92,7 @@ modalColorTracker = (() => {
   conductorIntelligence.registerRecorder('modalColorTracker', (ctx) => {
     const underused = modalColorTracker.getUnderusedPitchClasses();
     if (underused.length > 0) {
-      L0.post('underusedPitchClasses', 'both', ctx.absTime, { pitchClasses: underused });
+      L0.post(L0_CHANNELS.underusedPitchClasses, 'both', ctx.absTime, { pitchClasses: underused });
     }
   });
 

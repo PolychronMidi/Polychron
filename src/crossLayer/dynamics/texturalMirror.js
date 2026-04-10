@@ -97,10 +97,10 @@ texturalMirror = (() => {
       : texRegime === 'coherent' ? 0.75
       : 1.0;
     // Coherence-aware: poor coherence = stronger texture suggestions to create differentiation
-    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceEntry = L0.getLast(L0_CHANNELS.coherence, { layer: 'both' });
     const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.4, 0, 0.15) : 0;
     // R34: spectral L0 awareness -- sparse spectrum = densify texture, full spectrum = thin
-    const spectralEntry = L0.getLast('spectral', { layer: otherLayer });
+    const spectralEntry = L0.getLast(L0_CHANNELS.spectral, { layer: otherLayer });
     const spectralBoost = (() => {
       if (!spectralEntry) return 0;
       V.assertArray(spectralEntry.histogram, 'spectralEntry.histogram');
@@ -116,7 +116,7 @@ texturalMirror = (() => {
         * (melodicCtxTM.counterpoint === 'contrary' ? 1.08 : 1.0)
       : 1.0;
     // R73: emergentRhythm hotspots coupling -- rhythmic burst positions boost texture suggestion weight.
-    const rhythmEntryTM = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryTM = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsScaleTM = rhythmEntryTM && Array.isArray(rhythmEntryTM.hotspots) ? rhythmEntryTM.hotspots.length / 16 : 0;
     const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) * melodicWeightTM * (1.0 + hotspotsScaleTM * 0.12) + coherenceBoost + spectralBoost, 0.1, 0.8);
 

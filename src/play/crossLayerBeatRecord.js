@@ -123,17 +123,17 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   const clDensity = temporalGravity.measureDensity(layer, beatStartTime);
   temporalGravity.postDensity(absoluteSeconds, layer, clDensity);
   // R35: density-rhythm L0 channel for rhythm mode adaptation
-  L0.post('density-rhythm', layer, absoluteSeconds, { density: clamp(clDensity, 0, 1) });
+  L0.post(L0_CHANNELS.densityRhythm, layer, absoluteSeconds, { density: clamp(clDensity, 0, 1) });
   // R37: perceptual crowding estimate from note density + onset clustering
-  const recentNotes = L0.query('note', { layer, windowSeconds: 0.3 });
+  const recentNotes = L0.query(L0_CHANNELS.note, { layer, windowSeconds: 0.3 });
   const noteCount = recentNotes ? recentNotes.length : 0;
   const perceptualDensity = clamp(noteCount / 12, 0, 1);
-  L0.post('perceptual-crowding', layer, absoluteSeconds, { perceptualDensity, noteCount });
+  L0.post(L0_CHANNELS.perceptualCrowding, layer, absoluteSeconds, { perceptualDensity, noteCount });
   // Xenolinguistic L4: beat-level self-narration. The system describes what it just did.
   const selfRegime = conductorSignalBridge.getSignals().regime || 'evolving';
   const selfNarrative = (clDensity > 0.6 ? 'dense' : clDensity < 0.3 ? 'sparse' : 'balanced') + ' '
     + selfRegime + (perceptualDensity > 0.7 ? ' crowded' : '');
-  L0.post('self-narration', layer, absoluteSeconds, { narrative: selfNarrative, density: clDensity, regime: selfRegime });
+  L0.post(L0_CHANNELS.selfNarration, layer, absoluteSeconds, { narrative: selfNarrative, density: clDensity, regime: selfRegime });
   // Xenolinguistic L2: entanglement -- write quantum state for other layer to read
   LM.quantumState = { lastPitchClass: -1, lastDensity: clDensity, lastRegime: selfRegime, lastTexture: selfNarrative };
   // Xenolinguistic L3: channel unification. Measure alignment across 5 perceptual channels:
@@ -141,7 +141,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   // High alignment = unified xenolinguistic expression. Low = fragmented channels.
   const channelHarmonic = selfRegime === 'coherent' ? 1 : selfRegime === 'exploring' ? 0 : 0.5;
   const channelRhythmic = clamp(clDensity, 0, 1);
-  const channelSpectral = (() => { const se = L0.getLast('spectral', { layer }); return se && Array.isArray(se.histogram) ? clamp(se.histogram.reduce((a, b) => a + b, 0) / 4, 0, 1) : 0.5; })();
+  const channelSpectral = (() => { const se = L0.getLast(L0_CHANNELS.spectral, { layer }); return se && Array.isArray(se.histogram) ? clamp(se.histogram.reduce((a, b) => a + b, 0) / 4, 0, 1) : 0.5; })();
   const channelMicro = clamp(1 - perceptualDensity, 0, 1);
   const channels = [channelHarmonic, channelRhythmic, channelSpectral, channelMicro];
   const chMean = channels.reduce((a, b) => a + b, 0) / channels.length;
@@ -149,7 +149,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   for (let chi = 0; chi < channels.length; chi++) chVariance += (channels[chi] - chMean) * (channels[chi] - chMean);
   chVariance /= channels.length;
   const channelCoherence = clamp(1 - chVariance * 4, 0, 1);
-  L0.post('channel-coherence', layer, absoluteSeconds, { coherence: channelCoherence, mean: chMean });
+  L0.post(L0_CHANNELS.channelCoherence, layer, absoluteSeconds, { coherence: channelCoherence, mean: chMean });
   const clFeedback = feedbackOscillator.applyFeedback(absoluteSeconds, layer);
   V.assertObject(clFeedback, 'feedbackOscillator.applyFeedback result');
   const clFeedbackEnergy = requireUnitInterval('feedbackOscillator.applyFeedback.energy', clFeedback.energy);
@@ -198,7 +198,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   if (clConvergenceGate.allowHarmonicTrigger) convergenceHarmonicTrigger.onConvergence({ rarity: 0.5, absoluteSeconds, layer, alignment: clCadResult });
   const convergenceTriggered = convergenceHarmonicTrigger.getTriggerCount() > triggerCountBefore;
   // Convergence payoff: momentum-aware. Climax approach boosts convergence reward.
-  const convClimaxEntry = L0.getLast('climax-pressure', { layer: 'both' });
+  const convClimaxEntry = L0.getLast(L0_CHANNELS.climaxPressure, { layer: 'both' });
   const convClimaxBoost = convClimaxEntry && convClimaxEntry.level > 0.5 ? 0.10 : 0;
   adaptiveTrustScores.registerOutcome(trustSystems.names.CONVERGENCE, clamp(
     (convergenceTriggered ? 0.65 : (clConvergenceIntensity > 0 ? 0.30 : 0.12)) + convClimaxBoost, -1, 1));
@@ -224,7 +224,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   if (clFeedbackEnergy > 0.05) emergenceSystems.push('feedback');
   if (clDownbeat) emergenceSystems.push('downbeat');
   const otherLayerForEmergence = crossLayerHelpers.getOtherLayer(layer);
-  const convergenceEntry = L0.getLast('onset', { layer: otherLayerForEmergence, since: absoluteSeconds - 0.05, windowSeconds: 0.05 });
+  const convergenceEntry = L0.getLast(L0_CHANNELS.onset, { layer: otherLayerForEmergence, since: absoluteSeconds - 0.05, windowSeconds: 0.05 });
   if (convergenceEntry) emergenceSystems.push('convergence');
   const emergenceBonus = emergenceSystems.length >= 3 ? 0.04 * (emergenceSystems.length - 2) : 0;
 
@@ -287,13 +287,13 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   adaptiveTrustScores.registerOutcome(trustSystems.names.REST_SYNCHRONIZER, restOutcome);
 
   // grooveTransfer: reward when groove offset is small (layers aligned), penalize large offsets
-  const grooveEntry = L0.getLast('grooveTransfer', { layer: layer });
+  const grooveEntry = L0.getLast(L0_CHANNELS.grooveTransfer, { layer: layer });
   const grooveOffset = V.optionalFinite(grooveEntry ? grooveEntry.offset : NaN, 0);
   const grooveOutcome = grooveEntry ? clamp(1 - m.abs(grooveOffset) * 8, -1, 1) : 0.1;
   adaptiveTrustScores.registerOutcome(trustSystems.names.GROOVE_TRANSFER, grooveOutcome);
 
   // velocityInterference: reward when velocity delta between layers is moderate (contrast), penalize extremes
-  const velEntry = L0.getLast('velocity', { layer: layer });
+  const velEntry = L0.getLast(L0_CHANNELS.velocity, { layer: layer });
   const velDelta = velEntry ? m.abs(V.optionalFinite(velEntry.delta, 0)) : 0;
   const velOutcome = clamp(velDelta < 20 ? 0.3 + velDelta * 0.02 : 0.7 - (velDelta - 20) * 0.015, -1, 1);
   adaptiveTrustScores.registerOutcome(trustSystems.names.VELOCITY_INTERFERENCE, velOutcome);
@@ -346,7 +346,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   adaptiveTrustScores.registerOutcome(trustSystems.names.DYNAMIC_ENVELOPE, envOutcome);
 
   // temporalGravity: reward when density from L0 shows moderate cross-layer alignment
-  const gravDensity = L0.getLast('density', { layer: layer });
+  const gravDensity = L0.getLast(L0_CHANNELS.density, { layer: layer });
   const gravOutcome = gravDensity ? clamp(0.2 + V.optionalFinite(gravDensity.density, 0.5) * 0.5, -1, 1) : 0.1;
   adaptiveTrustScores.registerOutcome(trustSystems.names.TEMPORAL_GRAVITY, gravOutcome);
 
@@ -361,7 +361,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
   adaptiveTrustScores.registerOutcome(trustSystems.names.CONVERGENCE_HARMONIC_TRIGGER, chtOutcome);
 
   // registerCollisionAvoider: reward when collisions are being actively avoided (adjusted count > 0)
-  const rcaEntry = L0.getLast('registerCollision', { layer: layer });
+  const rcaEntry = L0.getLast(L0_CHANNELS.registerCollision, { layer: layer });
   const rcaOutcome = rcaEntry ? 0.35 : 0.15;
   adaptiveTrustScores.registerOutcome(trustSystems.names.REGISTER_COLLISION_AVOIDER, rcaOutcome);
 

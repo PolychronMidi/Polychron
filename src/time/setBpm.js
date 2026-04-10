@@ -16,7 +16,7 @@ setBpm = () => {
     throw new Error('setBpm: invalid spMeasure ' + spMeasure + ' from BPM=' + BPM + ' meterRatio=' + meterRatio);
   }
   p(c, { timeInSeconds: measureStartTime, type: 'bpm', vals: [effectiveBpm] });
-  L0.post('tickDuration', LM.activeLayer || 'shared', measureStartTime, {
+  L0.post(L0_CHANNELS.tickDuration, LM.activeLayer || 'shared', measureStartTime, {
     oneTickInSeconds: 60 / (effectiveBpm * PPQ), effectiveBpm, bpmScale: sectionBpmScale
   });
   lastBpmSnapshot = deepFreeze({ effectiveBpm, spMeasure, bpmScale: Number.isFinite(sectionBpmScale) ? sectionBpmScale : 1.0 });

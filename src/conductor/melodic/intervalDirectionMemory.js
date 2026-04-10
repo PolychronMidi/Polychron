@@ -12,7 +12,7 @@ intervalDirectionMemory = (() => {
    * @returns {{ overusedIntervals: string[], freshness: number, suggestion: string }}
    */
   function getFreshnessSignal() {
-    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 5) {
       return { overusedIntervals: [], freshness: 1, suggestion: 'maintain' };

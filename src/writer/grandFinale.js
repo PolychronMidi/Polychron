@@ -25,7 +25,7 @@ grandFinale = () => {
 
   // Schedule binaural shifts over the full track for both layers.
   // Single walk - both layers see each shift at each time step.
-  const noteBounds = L0.getBounds('note');
+  const noteBounds = L0.getBounds(L0_CHANNELS.note);
   if (noteBounds && noteBounds.first && noteBounds.last) {
     const trackStart = m.max(0, noteBounds.first.timeInSeconds);
     const trackEnd = noteBounds.last.timeInSeconds;
@@ -89,7 +89,7 @@ grandFinale = () => {
     console.log('Wrote file: metrics/runtime-snapshots.json');
     // Cross-run adaptive state: save terminal EMA values for next boot warm-start
     // Xenolinguistic L5: cross-run personality persistence
-    const lastNarration = safePreBoot.call(() => L0.getLast('self-narration', { layer: 'both' }), null);
+    const lastNarration = safePreBoot.call(() => L0.getLast(L0_CHANNELS.selfNarration, { layer: 'both' }), null);
     const tensionTraj = safePreBoot.call(() => sectionMemory.getTensionTrajectory(), 0);
     const hmSnap = hyperMetaManager.getSnapshot();
     const rcReadiness = regimeClassifier.getTransitionReadiness();

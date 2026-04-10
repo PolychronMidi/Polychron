@@ -12,7 +12,7 @@ harmonicFieldDensityTracker = (() => {
    * @returns {{ avgSimultaneous: number, maxSimultaneous: number, densityBias: number }}
    */
   function harmonicFieldDensityTrackerComputeFieldDensitySignal() {
-    const notes = L0.query('note', { windowSeconds: WINDOW_SECONDS });
+    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: WINDOW_SECONDS });
 
     if (notes.length < 3) {
       return { avgSimultaneous: 1, maxSimultaneous: 1, densityBias: 1 };

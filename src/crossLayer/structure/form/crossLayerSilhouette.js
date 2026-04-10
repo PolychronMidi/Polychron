@@ -61,7 +61,7 @@ crossLayerSilhouette = (() => {
     const smoothing = SMOOTHING_REGIME[regime] !== undefined ? SMOOTHING_REGIME[regime] : 0.15;
     // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts sharpen silhouette tracking.
     // Opposing response to entropyRegulator: same trigger, structure sharpens while entropy rises.
-    const rhythmEntryCS = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryCS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const densitySurpriseCS = rhythmEntryCS && Number.isFinite(rhythmEntryCS.densitySurprise) ? rhythmEntryCS.densitySurprise : 0;
     // R77 E9: complexityEma slow-form bridge -- sustained rhythmic complexity keeps form stable (inertia)
     // Counterpart: entropyRegulator raises target under same condition (fast-chaos / slow-form coupling)

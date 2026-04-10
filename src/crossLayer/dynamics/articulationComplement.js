@@ -33,7 +33,7 @@ articulationComplement = (() => {
     if (!hist) throw new Error('articulationComplement.recordSustain: missing history for ' + layer);
     hist.push(sustainSec);
     if (hist.length > WINDOW_SIZE) hist.shift();
-    L0.post('articulation', layer, absoluteSeconds, { sustainSec, avgSustain: hist.reduce((a, b) => a + b, 0) / hist.length });
+    L0.post(L0_CHANNELS.articulation, layer, absoluteSeconds, { sustainSec, avgSustain: hist.reduce((a, b) => a + b, 0) / hist.length });
   }
 
   /**
@@ -95,7 +95,7 @@ articulationComplement = (() => {
       * (1.0 - clamp(melodicCtxAC.thematicDensity, 0, 1) * 0.15)
       : 1.0;
     // Rhythmic coupling: dense emergent rhythm -> sharper articulation contrast.
-    const rhythmEntryAC = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryAC = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmDensityAC = rhythmEntryAC && Number.isFinite(rhythmEntryAC.density) ? rhythmEntryAC.density : 0;
     const rhythmContrastMod = 1.0 + rhythmDensityAC * 0.15; // [1.0-1.15] dense->sharper
     const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale) * melodicContrastScale * rhythmContrastMod;
@@ -104,7 +104,7 @@ articulationComplement = (() => {
     const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
 
     // Entropy-aware articulation: high entropy favors staccato for rhythmic clarity
-    const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
+    const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: activeLayer });
     const currentEntropy = entropyEntry ? V.optionalFinite(entropyEntry.smoothed, 0.5) : 0.5;
     const entropyStaccatoBias = currentEntropy > 0.6 ? clamp((currentEntropy - 0.6) * 0.5, 0, 0.15) : 0;
 

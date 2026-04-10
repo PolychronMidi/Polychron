@@ -86,7 +86,7 @@ grooveTransfer = (() => {
     }
 
     // Coherence-responsive groove coupling: good coherence = tighter coupling, poor = looser
-    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceEntry = L0.getLast(L0_CHANNELS.coherence, { layer: 'both' });
     const coherenceFactor = coherenceEntry ? clamp(0.8 + V.optionalFinite(coherenceEntry.bias, 1.0) * 0.4, 0.7, 1.3) : 1.0;
     // Melodic coupling: intervalFreshness controls groove independence vs. convergence.
     // Novel intervals -> layers explore independently (more damping = less groove transfer).
@@ -100,7 +100,7 @@ grooveTransfer = (() => {
     const registerDirGT = melodicCtxGT ? melodicCtxGT.registerMigrationDir : null;
     const registerTransferScale = registerDirGT === 'ascending' ? 0.88 : registerDirGT === 'descending' ? 1.10 : 1.0;
     // Rhythmic coupling: complex cross-layer rhythm = layers creating structure together -> amplify transfer.
-    const rhythmEntryGT = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryGT = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmComplexityGT = rhythmEntryGT && Number.isFinite(rhythmEntryGT.complexity) ? rhythmEntryGT.complexity : 0;
     const rhythmDampingMod = 1.0 + rhythmComplexityGT * 0.12; // [1.0-1.12] complex->stronger transfer
     // R88 E2: complexityEma antagonism bridge with stutterContagion -- sustained rhythmic complexity

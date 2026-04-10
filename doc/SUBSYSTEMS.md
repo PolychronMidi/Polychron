@@ -38,7 +38,8 @@ Module-level reference for each Polychron subsystem. 473 source files, 58K LOC.
 ## `src/time/` -- Temporal Infrastructure (13 files)
 
 - **`absoluteTimeGrid`** (L0) -- shared temporal memory: `post()`, `query()`, `findClosest()`, `count()`
-- **`LayerManager`** -- L1/L2 registration, timing, buffer management, per-layer state (`perLayerState`, `flipBinByLayer`), save/restore on `activate()`, PRNG decorrelation
+- **`l0Channels`** -- canonical L0 channel name registry (`L0_CHANNELS` global, 41 channels). All L0 calls must use `L0_CHANNELS.xxx` — ESLint `no-bare-l0-channel` enforces this
+- **`LayerManager`** -- L1/L2 registration, timing, buffer management, per-layer state (`perLayerState` with flipBin), save/restore on `activate()`, PRNG decorrelation
 - **`midiTiming`** -- tick/time conversion with sync factor
 - **`getMeterPair`** / **`getPolyrhythm`** -- meter pair selection, polyrhythm ratios
 - **`tempoFeelEngine`** -- tempo humanization (phase-aware + rubato + stutter tempo feel modulation)
@@ -56,7 +57,7 @@ Module-level reference for each Polychron subsystem. 473 source files, 58K LOC.
 
 ## `src/fx/` -- Effects (55 files, 2 subdirs)
 
-- **`setBinaural`** -- binaural beat mapping (alpha 8-12Hz, grandFinale post-loop walk only). Pitch bend completes within crossfade window. Per-layer flipBin via `LM.flipBinByLayer`. `flipBinCrossfadeWindow` global for stereoScatter.
+- **`setBinaural`** -- binaural beat mapping (alpha 8-12Hz, grandFinale post-loop walk only). Pitch bend completes within crossfade window. Per-layer flipBin via `LM.perLayerState`. `flipBinCrossfadeWindow` global for stereoScatter.
 - **`setBalanceAndFX`** -- per-layer balance (via LM.perLayerState), FX routing, trust/regime-driven instrument selection
 - **noise/** (7) -- simplex/FBM/worley/ridged noise engines
 - **stutter/** (37) -- StutterManager, 18 variants, stutterVariants (10-dimension selection), stutterSteps (Euclidean+probabilistic gating), stutterNotes (velocity contour, coherence cross-mod), fade/pan/FX CC strategies, config, metrics, channels, plans, registry

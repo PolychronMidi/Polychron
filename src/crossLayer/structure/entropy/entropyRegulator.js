@@ -115,7 +115,7 @@ entropyRegulator = (() => {
     const combined = (totalPitch / count) * PITCH_ENTROPY_WEIGHT + (totalVel / m.max(count, 1)) * VELOCITY_ENTROPY_WEIGHT + (totalRhythm / 2) * RHYTHM_ENTROPY_WEIGHT;
     smoothedEntropy = smoothedEntropy * (1 - SMOOTHING) + combined * SMOOTHING;
     lastRawEntropy = combined;
-    L0.post('entropy', LM.activeLayer || 'both', beatStartTime, { smoothed: smoothedEntropy, raw: combined });
+    L0.post(L0_CHANNELS.entropy, LM.activeLayer || 'both', beatStartTime, { smoothed: smoothedEntropy, raw: combined });
     return smoothedEntropy;
   }
 
@@ -169,7 +169,7 @@ entropyRegulator = (() => {
       intentWeight = 1 - arcWeight;
       targetTrim = entropyContainment * (0.02 + edgePressure * 0.03) * (0.25 + phaseProtection * 0.45);
       // Xenolinguistic L4: self-narration modulates entropy. Crowded = less entropy, sparse = more.
-      const narEntry = L0.getLast('self-narration', { layer: 'both' });
+      const narEntry = L0.getLast(L0_CHANNELS.selfNarration, { layer: 'both' });
       const narMod = narEntry && narEntry.narrative
         ? (narEntry.narrative.includes('crowded') ? -0.03 : narEntry.narrative.includes('sparse') ? 0.03 : 0) : 0;
       // Melodic coupling: register migration direction nudges entropy target.
@@ -197,15 +197,15 @@ entropyRegulator = (() => {
       const intervalFreshnessMod = clamp((intervalFreshnessER - 0.45) * 0.07, -0.02, 0.04); // familiar -0.02 ... novel +0.04
       // R73: emergentRhythm densitySurprise coupling -- unexpected rhythmic bursts spike entropy target.
       // Surprising rhythmic events should be more chaotic/entropic by nature.
-      const rhythmEntryER = L0.getLast('emergentRhythm', { layer: 'both' });
+      const rhythmEntryER = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
       const densitySurpriseER = rhythmEntryER && Number.isFinite(rhythmEntryER.densitySurprise) ? rhythmEntryER.densitySurprise : 0;
       // R75: motifEcho coupling -- imitative counterpoint activity suppresses entropy target (fugue structure invites order).
-      const motifEchoEntry = L0.getLast('motifEcho', { layer: 'both' });
+      const motifEchoEntry = L0.getLast(L0_CHANNELS.motifEcho, { layer: 'both' });
       const motifEchoMod = motifEchoEntry ? (motifEchoEntry.delayBeats <= 2 ? -0.04 : -0.02) : 0;
       // R76: climax-pressure antagonism bridge -- approaching climax suppresses entropy target.
       // Constructive opposition: climax needs definition (low entropy), entropy needs space (high).
       // Both sides coupled to entropy channel with opposing intent (r=-0.604 pair).
-      const climaxEntryER = L0.getLast('climax-pressure', { layer: 'both' });
+      const climaxEntryER = L0.getLast(L0_CHANNELS.climaxPressure, { layer: 'both' });
       const climaxMod = climaxEntryER && Number.isFinite(climaxEntryER.level)
         ? -clamp(climaxEntryER.level * 0.07, 0, 0.07) : 0;
       // R77 E9: complexityEma fast-chaos bridge -- high rhythmic complexity EMA amplifies entropy target

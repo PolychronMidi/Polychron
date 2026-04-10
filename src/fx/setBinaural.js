@@ -17,7 +17,7 @@ flipBinCrossfadeWindow = [0, 0];
 
 /** Per-layer timeInSeconds of the last shared entry this layer consumed (dedup guard) */
 const lastConsumedByLayer = {};
-// Per-layer flipBin state lives in LM.flipBinByLayer (restored on activate)
+// Per-layer flipBin state lives in LM.perLayerState (restored on activate)
 
 /**
  * Emit pitch bend glides and volume crossfades for a binaural shift.
@@ -104,8 +104,8 @@ setBinaural = () => {
     nextBinauralShiftSec = absoluteSeconds + binauralInterval;
     const freqChangeRateLimit = binauralInterval / 10;
     // Toggle per-layer to prevent cross-layer desync
-    LM.flipBinByLayer[activeLayer] = !LM.flipBinByLayer[activeLayer];
-    flipBin = LM.flipBinByLayer[activeLayer];
+    LM.perLayerState[activeLayer].flipBin = !LM.perLayerState[activeLayer].flipBin;
+    flipBin = LM.perLayerState[activeLayer].flipBin;
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
     const brightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
     // Xenolinguistic: modal color drives binaural frequency. Chromatic = higher beta (alert),
@@ -123,20 +123,20 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    L0.post('binaural', 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin, interval: binauralInterval });
+    L0.post(L0_CHANNELS.binaural, 'shared', absoluteSeconds, { freqOffset: binauralFreqOffset, flip: flipBin, interval: binauralInterval });
   }
 
   // -- Consume the latest shared shift if not yet consumed by this layer --
   // CRITICAL: this runs OUTSIDE the shiftDue gate so L2 processes L1's shifts
   // even when L2's own shift isn't due. Prevents detune bleed-through from
   // desynchronized pitch bend state between layers.
-  const sharedEntry = L0.getLast('binaural', { layer: 'shared' });
+  const sharedEntry = L0.getLast(L0_CHANNELS.binaural, { layer: 'shared' });
   if (sharedEntry && sharedEntry.timeInSeconds !== lastConsumedByLayer[activeLayer]) {
     lastConsumedByLayer[activeLayer] = sharedEntry.timeInSeconds;
     binauralFreqOffset = V.requireFinite(sharedEntry.freqOffset, 'sharedEntry.freqOffset');
     // Sync per-layer flipBin from shared entry, set global to this layer's state
-    LM.flipBinByLayer[activeLayer] = V.assertBoolean(sharedEntry.flip, 'sharedEntry.flip');
-    flipBin = LM.flipBinByLayer[activeLayer];
+    LM.perLayerState[activeLayer].flipBin = V.assertBoolean(sharedEntry.flip, 'sharedEntry.flip');
+    flipBin = LM.perLayerState[activeLayer].flipBin;
     [binauralPlus, binauralMinus] = [1, -1].map(binauralOffset);
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');

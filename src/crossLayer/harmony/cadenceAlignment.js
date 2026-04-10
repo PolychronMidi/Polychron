@@ -143,7 +143,7 @@ cadenceAlignment = (() => {
     const melodicCtxCA = emergentMelodicEngine.getContext();
     const ascendRatio = melodicCtxCA ? V.optionalFinite(melodicCtxCA.ascendRatio, 0.5) : 0.5;
     // Rhythmic coupling: strong rhythmic bias at cadence invites resolution (rhythm drives harmonic landing).
-    const rhythmEntryCA = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryCA = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const rhythmBiasCA = rhythmEntryCA && Number.isFinite(rhythmEntryCA.biasStrength) ? rhythmEntryCA.biasStrength : 0;
     const adjustedResolveThreshold = resolveThreshold + (ascendRatio - 0.5) * 0.04 - rhythmBiasCA * 0.03;
     const shouldResolve = alignment.consensus || alignment.combinedTension > adjustedResolveThreshold;

@@ -59,7 +59,7 @@ emergentMelodicEngine = (() => {
       beatsSincePost = 0;
       if (Number.isFinite(beatStartTime)) {
         const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
-        L0.post('emergentMelody', layer, beatStartTime, {
+        L0.post(L0_CHANNELS.emergentMelody, layer, beatStartTime, {
           contourShape, directionBias, intervalFreshness, tessituraLoad,
           thematicDensity, counterpoint, freshnessEma
         });

@@ -31,7 +31,7 @@ cadenceAdvisor = (() => {
 
       // Feed chord changes into L0 for cross-layer analysis (skip if no layer active yet)
       if (LM.activeLayer && typeof LM.activeLayer === 'string') {
-        L0.post('chord', LM.activeLayer, beatStartTime, { chords: data.chords, key: data.key, mode: data.mode });
+        L0.post(L0_CHANNELS.chord, LM.activeLayer, beatStartTime, { chords: data.chords, key: data.key, mode: data.mode });
       }
     });
   }
@@ -53,7 +53,7 @@ cadenceAdvisor = (() => {
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
 
     // Distant keys need stronger cadence resolution
-    const harmonicEntry = L0.getLast('harmonic', { layer: 'both' });
+    const harmonicEntry = L0.getLast(L0_CHANNELS.harmonic, { layer: 'both' });
     const excursion = harmonicEntry ? V.optionalFinite(harmonicEntry.excursion, 0) : 0;
     const excursionBoost = excursion > 3 ? 0.15 : excursion > 1 ? 0.05 : 0;
 

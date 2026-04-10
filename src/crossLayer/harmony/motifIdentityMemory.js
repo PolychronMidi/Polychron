@@ -36,7 +36,7 @@ motifIdentityMemory = (() => {
     V.requireFinite(midi, 'midi');
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     // R36: emission accountability -- use actual emitted note if available
-    const deltaEntry = L0.getLast('emissionDelta', { layer, since: absoluteSeconds - 0.05, windowSeconds: 0.05 });
+    const deltaEntry = L0.getLast(L0_CHANNELS.emissionDelta, { layer, since: absoluteSeconds - 0.05, windowSeconds: 0.05 });
     const actualMidi = deltaEntry && Number.isFinite(deltaEntry.emitted) ? deltaEntry.emitted : midi;
 
     const notes = ensureNotes(layer);
@@ -64,7 +64,7 @@ motifIdentityMemory = (() => {
     hist.set(intervalDna, (hist.get(intervalDna) || 0) + 1);
     const patternCount = hist.get(intervalDna) || 0;
     const isSaturated = patternCount > 4;
-    L0.post('motifIdentity', layer, absoluteSeconds, { intervalDna, contour, confidence, saturated: isSaturated });
+    L0.post(L0_CHANNELS.motifIdentity, layer, absoluteSeconds, { intervalDna, contour, confidence, saturated: isSaturated });
     if (identities.length > MAX_IDENTITIES) identities.shift();
 
     return identity;

@@ -48,7 +48,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   const clArcTarget = entropyRegulator.getArcTarget(timeStream.normalizedProgress('section'));
   const pendingEchoes = motifEcho.getPendingCount();
   const echoEntropyBias = pendingEchoes > 2 ? -0.05 * m.min(pendingEchoes - 2, 4) : 0;
-  const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+  const coherenceEntry = L0.getLast(L0_CHANNELS.coherence, { layer: 'both' });
   const coherenceBiasVal = coherenceEntry && Number.isFinite(coherenceEntry.bias) ? coherenceEntry.bias : 1.0;
   const coherenceEntropyBias = coherenceEntry ? clamp((m.abs(coherenceBiasVal - 1.0)) * -0.08, -0.04, 0) : 0;
   entropyRegulator.setTarget(clamp(clIntent.entropyTarget + echoEntropyBias + coherenceEntropyBias, 0, 1), clArcTarget);

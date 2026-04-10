@@ -126,7 +126,7 @@ spectralComplementarity = (() => {
       : 1.0;
     // CIM: coordinated = stronger gap-filling, independent = each layer owns spectrum
     // R77 E7: hotspots coupling -- rhythmic burst positions amplify spectral gap-filling
-    const rhythmEntrySpec = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntrySpec = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsSpec = rhythmEntrySpec && Array.isArray(rhythmEntrySpec.hotspots) ? rhythmEntrySpec.hotspots.length : 0;
     const hotspotNudgeScale = 1.0 + clamp(hotspotsSpec / 16, 0, 1) * 0.18;
     const effectiveNudge = NUDGE_STRENGTH * (1 - intentDissonance * 0.95) * (0.4 + cimScale * 1.2) * contourNudgeScale * hotspotNudgeScale;

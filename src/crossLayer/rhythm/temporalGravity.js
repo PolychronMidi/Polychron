@@ -39,7 +39,7 @@ temporalGravity = (() => {
     V.assertNonEmptyString(layer, 'layer');
     const at = V.requireFinite(absTimeSec, 'absTimeSec');
     const windowSec = DENSITY_WINDOW_MS / 1000;
-    const count = L0.count('note', {
+    const count = L0.count(L0_CHANNELS.note, {
       layer,
       since: at - windowSec,
       windowSeconds: windowSec
@@ -82,7 +82,7 @@ temporalGravity = (() => {
       * (1.0 + clamp(melodicCtxTG.thematicDensity, 0, 1) * 0.20)
       : 1.0;
     // R73: hotspots coupling -- rhythmically dense burst positions strengthen gravity wells.
-    const rhythmEntryTG = L0.getLast('emergentRhythm', { layer: 'both' });
+    const rhythmEntryTG = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsScaleTG = rhythmEntryTG && Array.isArray(rhythmEntryTG.hotspots) ? rhythmEntryTG.hotspots.length / 16 : 0;
     // R85 E2: intervalFreshness antagonism bridge -- novel intervals strengthen temporal gravity wells.
     // Counterpart: dynamicRoleSwap INCREASES swap frequency under same signal (roles reshuffle while time pulls tighter).

@@ -96,7 +96,8 @@ export default [
       'local/prefer-validator': 'warn',
       'local/no-bare-math': 'error',
       'local/no-direct-coupling-matrix-read': 'error',
-      'local/no-empty-catch': 'error'
+      'local/no-empty-catch': 'error',
+      'local/no-bare-l0-channel': 'error'
     },
 
   },

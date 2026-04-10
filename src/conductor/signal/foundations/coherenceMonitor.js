@@ -267,7 +267,7 @@ coherenceMonitor = (() => {
   function flushToL0() {
     if (!coherenceBufferDirty || coherenceBuffer.length === 0) return;
     const latest = coherenceBuffer[coherenceBuffer.length - 1];
-    L0.post('coherence', 'both', latest.t, { bias: latest.bias, ratio: latest.ratio, entropySignal: latest.entropySignal });
+    L0.post(L0_CHANNELS.coherence, 'both', latest.t, { bias: latest.bias, ratio: latest.ratio, entropySignal: latest.entropySignal });
     coherenceBufferDirty = false;
   }
 

@@ -49,10 +49,10 @@ emergentDownbeat = (() => {
     if (signals.cadenceAlign) { score += 0.3; signalCount++; }
     if (signals.velReinforce) { score += 0.2; signalCount++; }
     if (signals.phaseLock) { score += 0.15; signalCount++; }
-    const recentTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 2, windowSeconds: 2 });
+    const recentTransition = L0.getLast(L0_CHANNELS.regimeTransition, { since: absoluteSeconds - 2, windowSeconds: 2 });
     if (recentTransition) { score += 0.25; signalCount++; }
     // R50: emergent rhythm grid density feeds back as a downbeat signal (completing the loop)
-    const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const emergentEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     if (emergentEntry && Number.isFinite(emergentEntry.density) && emergentEntry.density > 0.15) {
       score += clamp(emergentEntry.density * 0.2, 0, 0.15);
       signalCount++;

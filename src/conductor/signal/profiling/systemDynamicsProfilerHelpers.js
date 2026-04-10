@@ -102,7 +102,7 @@ systemDynamicsProfilerHelpers = (() => {
         : entropyRegime === 'coherent' ? 0.7
         : 1.0;
       const atwSince = beatStartTime - entropyWindow;
-      const recentNotes = L0.query('note', { since: atwSince, windowSeconds: entropyWindow });
+      const recentNotes = L0.query(L0_CHANNELS.note, { since: atwSince, windowSeconds: entropyWindow });
       if (recentNotes.length >= 3) {
         const midis = new Array(recentNotes.length);
         const velocities = new Array(recentNotes.length);

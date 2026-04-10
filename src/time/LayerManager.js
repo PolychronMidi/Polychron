@@ -10,11 +10,10 @@ class LayerManager {
   static layerComposers = {};
   static phraseFamily = /** @type {string|null} */ (null);
   static activeLayer = /** @type {string|null} */ (null);
-  static flipBinByLayer = { L1: false, L2: false };
   // Per-layer state for globals that must not bleed between layers
   static perLayerState = {
-    L1: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0 },
-    L2: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0 }
+    L1: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0, flipBin: false },
+    L2: { crossModulation: 0, lastCrossMod: 0, balOffset: 0, sideBias: 0, lBal: 0, rBal: 127, cBal: 64, cBal2: 64, cBal3: 64, refVar: 0, bassVar: 0, flipBin: false }
   };
   // Xenolinguistic L2: quantum entanglement register. L1 writes its last pitch/rhythm
   // choices here, L2 reads them at activation to pre-constrain its search space.
@@ -91,13 +90,10 @@ class LayerManager {
     // Save outgoing layer's state before switching
     if (LayerManager.activeLayer && LayerManager.layers[LayerManager.activeLayer]) {
       saveGlobalsToLayer(LayerManager.layers[LayerManager.activeLayer]);
-      LayerManager.flipBinByLayer[LayerManager.activeLayer] = flipBin;
     }
     const layer = LayerManager.layers[name];
     c = layer.buffer;
     LayerManager.activeLayer = name;
-    // Restore per-layer flipBin
-    flipBin = LayerManager.flipBinByLayer[name] !== undefined ? LayerManager.flipBinByLayer[name] : false;
     // Decorrelate PRNG between layers to break systematic sequence coupling
     if (name === 'L2') { for (let _rng = 0; _rng < 17; _rng++) m.random(); }
     loadLayerToGlobals(layer);
@@ -294,6 +290,7 @@ function loadLayerToGlobals(layer) {
     cBal3 = pls.cBal3;
     refVar = pls.refVar;
     bassVar = pls.bassVar;
+    flipBin = pls.flipBin;
   }
 }
 
@@ -322,5 +319,6 @@ function saveGlobalsToLayer(layer) {
     pls.cBal3 = cBal3;
     pls.refVar = refVar;
     pls.bassVar = bassVar;
+    pls.flipBin = flipBin;
   }
 }

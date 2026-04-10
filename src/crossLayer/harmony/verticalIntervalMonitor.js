@@ -22,8 +22,8 @@ verticalIntervalMonitor = (() => {
     if (nowSec <= lastCheckSec) return 0;
     lastCheckSec = nowSec;
 
-    const l1Events = L0.query('note', { aroundSeconds: nowSec, toleranceSec: TOLERANCE / 1000, layer: 'L1' });
-    const l2Events = L0.query('note', { aroundSeconds: nowSec, toleranceSec: TOLERANCE / 1000, layer: 'L2' });
+    const l1Events = L0.query(L0_CHANNELS.note, { aroundSeconds: nowSec, toleranceSec: TOLERANCE / 1000, layer: 'L1' });
+    const l2Events = L0.query(L0_CHANNELS.note, { aroundSeconds: nowSec, toleranceSec: TOLERANCE / 1000, layer: 'L2' });
 
     if (!l1Events.length || !l2Events.length) return 0;
 
@@ -46,7 +46,7 @@ verticalIntervalMonitor = (() => {
       collisionCount += collisions;
 
       // Post to L0 so harmonicIntervalGuard and spectralComplementarity can react
-      L0.post('verticalCollision', layer || 'both', nowSec, {
+      L0.post(L0_CHANNELS.verticalCollision, layer || 'both', nowSec, {
         collisions, totalCollisions: collisionCount, collisionRate: recentCollisionRate
       });
 
@@ -63,7 +63,7 @@ verticalIntervalMonitor = (() => {
       const freshnessScale = 1.3 - intervalFreshness * 0.6; // [0.7 fresh ... 1.3 stale]
 
       // Rhythmic coupling: dense rhythm -> collisions statistically expected -> reduce penalty.
-      const rhythmEntryVIM = L0.getLast('emergentRhythm', { layer: 'both' });
+      const rhythmEntryVIM = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
       const rhythmDensityVIM = rhythmEntryVIM && Number.isFinite(rhythmEntryVIM.density) ? rhythmEntryVIM.density : 0;
       const rhythmPenaltyMod = 1.0 - rhythmDensityVIM * 0.20; // [0.80-1.0] dense->less penalty
       // R84 E1: complexity bridge -- high rhythmic complexity raises collision penalty

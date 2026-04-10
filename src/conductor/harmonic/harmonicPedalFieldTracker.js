@@ -25,7 +25,7 @@ harmonicPedalFieldTracker = (() => {
   function recordBass(absTime) {
     V.requireFinite(absTime, 'absTime');
 
-    const notes = L0.query('note', { windowSeconds: 2 });
+    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: 2 });
     const midis = analysisHelpers.extractMidiArray(notes, 127);
 
     // Find lowest recent note as "bass"

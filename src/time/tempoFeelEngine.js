@@ -52,7 +52,7 @@ tempoFeelEngine = (() => {
 
     // Phrase-level rubato: ritardando approaching phrase end, accelerando in early phrase
     const tempoLayer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
-    const tempoEntry = L0.getLast('tickDuration', { layer: tempoLayer });
+    const tempoEntry = L0.getLast(L0_CHANNELS.tickDuration, { layer: tempoLayer });
     const bpmScaleForRubato = tempoEntry && Number.isFinite(tempoEntry.bpmScale) ? tempoEntry.bpmScale : 1.0;
     const rubatoDepth = clamp(1.2 - bpmScaleForRubato * 0.4, 0.5, 1.5);
     const phraseProgress = clamp(timeStream.normalizedProgress('phrase'), 0, 1);

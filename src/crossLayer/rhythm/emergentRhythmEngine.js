@@ -84,20 +84,20 @@ emergentRhythmEngine = (() => {
     const grid = new Array(GRID_SIZE).fill(0);
 
     // Low-frequency L0 channels: query() is safe (small event counts)
-    stampEvents(L0.query('stutterContagion', { since: windowStart }),
+    stampEvents(L0.query(L0_CHANNELS.stutterContagion, { since: windowStart }),
       windowStart, windowDuration, grid, 0.55, false);
-    stampEvents(L0.query('emergentDownbeat', { since: windowStart }),
+    stampEvents(L0.query(L0_CHANNELS.emergentDownbeat, { since: windowStart }),
       windowStart, windowDuration, grid, 0.75, true);
-    stampEvents(L0.query('feedbackLoop', { since: windowStart }),
+    stampEvents(L0.query(L0_CHANNELS.feedbackLoop, { since: windowStart }),
       windowStart, windowDuration, grid, 0.40, false);
     // convergence-density (not onset -- onset has 250k+ events)
-    stampEvents(L0.query('convergence-density', { since: windowStart }),
+    stampEvents(L0.query(L0_CHANNELS.convergenceDensity, { since: windowStart }),
       windowStart, windowDuration, grid, 0.30, true);
-    stampEvents(L0.query('regimeTransition', { since: windowStart }),
+    stampEvents(L0.query(L0_CHANNELS.regimeTransition, { since: windowStart }),
       windowStart, windowDuration, grid, 0.50, true);
 
     // High-frequency channels: getLast() only (O(1) reverse scan)
-    const cadenceEntry = L0.getLast('cadenceAlignment', { since: windowStart });
+    const cadenceEntry = L0.getLast(L0_CHANNELS.cadenceAlignment, { since: windowStart });
     if (cadenceEntry && Number.isFinite(cadenceEntry.timeInSeconds)) {
       const slot = toSlot(cadenceEntry.timeInSeconds, windowStart, windowDuration);
       const strength = V.optionalFinite(cadenceEntry.strength, 0.5);
@@ -131,7 +131,7 @@ emergentRhythmEngine = (() => {
     if (biasStrength >= 0.03) {
       const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
       const hotspots = grid.map((v, i) => (v > 0.3 ? i : -1)).filter(i => i >= 0);
-      L0.post('emergentRhythm', layer, beatStartTime, {
+      L0.post(L0_CHANNELS.emergentRhythm, layer, beatStartTime, {
         density, complexity, hotspots, densitySurprise, biasStrength, complexityEma
       });
     }

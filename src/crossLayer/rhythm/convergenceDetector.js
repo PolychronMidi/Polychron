@@ -61,26 +61,26 @@ convergenceDetector = (() => {
     const intent = sectionIntentCurves.getLastIntent();
     const ct = V.requireFinite(intent.convergenceTarget, 'intent.convergenceTarget');
     // Read current entropy from L0 - high entropy environments benefit from convergence moments
-    const entropyEntry = L0.getLast('entropy', { layer: activeLayer });
+    const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: activeLayer });
     const currentEntropy = V.optionalFinite(entropyEntry ? entropyEntry.smoothed : NaN, 0.5);
     const entropyBoost = clamp((currentEntropy - 0.5) * 0.4, 0, 0.2);
     // Recent regime transition = natural convergence opportunity
-    const recentRegimeTransition = L0.getLast('regimeTransition', { since: absoluteSeconds - 3, windowSeconds: 3 });
+    const recentRegimeTransition = L0.getLast(L0_CHANNELS.regimeTransition, { since: absoluteSeconds - 3, windowSeconds: 3 });
     const transitionBoost = recentRegimeTransition ? 0.15 : 0;
     // Poor coherence = convergence helps recalibrate
-    const coherenceEntry = L0.getLast('coherence', { layer: 'both' });
+    const coherenceEntry = L0.getLast(L0_CHANNELS.coherence, { layer: 'both' });
     const coherenceBoost = coherenceEntry ? clamp(m.abs(V.optionalFinite(coherenceEntry.bias, 1.0) - 1.0) * 0.3, 0, 0.1) : 0;
     // R33: climax approach widens tolerance (pull layers together during peaks)
-    const climaxEntry = L0.getLast('climax-pressure', { layer: 'both' });
+    const climaxEntry = L0.getLast(L0_CHANNELS.climaxPressure, { layer: 'both' });
     const climaxBoost = climaxEntry && Number.isFinite(climaxEntry.level) ? clamp(climaxEntry.level * 0.15, 0, 0.1) : 0;
     // R74: tension channel coupling -- high harmonic tension from cadenceAlignment widens convergence tolerance (harmonic peaks invite rhythmic singularity).
-    const tensionEntry = L0.getLast('tension', { layer: 'both' });
+    const tensionEntry = L0.getLast(L0_CHANNELS.tension, { layer: 'both' });
     const tensionBoost = tensionEntry && Number.isFinite(tensionEntry.tension) ? clamp((tensionEntry.tension - 0.5) * 0.2, 0, 0.1) : 0;
     // R50: emergent rhythm density widens tolerance (rhythmic activity = natural convergence opportunity)
-    const emergentEntry = L0.getLast('emergentRhythm', { layer: 'both' });
+    const emergentEntry = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const emergentBoost = emergentEntry && Number.isFinite(emergentEntry.density) ? clamp(emergentEntry.density * 0.2, 0, 0.12) : 0;
     // R77 E3: chord mode -- minor tonality invites rhythmic convergence (harmonic tension craves resolution)
-    const chordEntryCD = L0.getLast('chord', { layer: 'both' });
+    const chordEntryCD = L0.getLast(L0_CHANNELS.chord, { layer: 'both' });
     const chordModeBoost = chordEntryCD && chordEntryCD.mode === 'minor' ? 0.06 : 0;
     // R57: melodic contour modulates convergence tolerance. Rising -> widen (ascending together).
     // Contrary counterpoint -> narrow (layers pulling apart, convergence harder).
