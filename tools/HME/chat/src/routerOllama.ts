@@ -4,6 +4,8 @@ import * as fs from "fs";
 import * as path from "path";
 import { OllamaOptions, OllamaMessage, ChunkCallback } from "./router";
 
+export const GPU_NUM_CTX = 49152;
+
 // ── Ollama streaming ──────────────────────────────────────────────────────
 
 function stripThinkTags(text: string): string {
@@ -27,7 +29,7 @@ export function streamOllama(
     messages,
     stream: true,
     think: true,
-    options: { temperature: 0.7, num_predict: 4096, num_gpu: 99 },
+    options: { temperature: 0.7, num_predict: 4096, num_gpu: 99, num_ctx: GPU_NUM_CTX },
   });
   const url = new URL(`${opts.url}/api/chat`);
   let aborted = false;
@@ -176,7 +178,7 @@ function ollamaChatOnce(
       tools,
       stream: false,
       think: false,
-      options: { temperature: 0.7, num_predict: 4096 },
+      options: { temperature: 0.7, num_predict: 4096, num_ctx: GPU_NUM_CTX },
     });
     const url = new URL(`${opts.url}/api/chat`);
     req = http.request(

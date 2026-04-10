@@ -99,7 +99,7 @@ export async function classifyMessage(
       stream: true,
       think: false,
       format: CLASSIFY_FORMAT,
-      options: { temperature: 0, num_predict: 256, num_gpu: 0 },  // num_gpu:0 = CPU-only, never steal VRAM from 30B models
+      options: { temperature: 0, num_predict: 256, num_gpu: 0, num_ctx: 4096 },
     });
 
     let req: ReturnType<typeof http.request>;
@@ -205,7 +205,7 @@ Digest:`;
       messages: [{ role: "user", content: prompt }],
       stream: true,
       think: false,
-      options: { temperature: 0.2, num_predict: 512, num_gpu: 0 },  // CPU-only
+      options: { temperature: 0.2, num_predict: 512, num_gpu: 0, num_ctx: 4096 },
     });
 
     let req: ReturnType<typeof http.request>;
@@ -280,7 +280,7 @@ export async function synthesizeChainSummary(prompt: string): Promise<string> {
       model: CHAIN_SUMMARY_MODEL,
       messages: [{ role: "user", content: prompt }],
       stream: true,
-      options: { temperature: 0.3, num_predict: 2048, num_ctx: 8192 },
+      options: { temperature: 0.3, num_predict: 2048, num_ctx: 49152 },
     });
 
     let req: ReturnType<typeof http.request>;
