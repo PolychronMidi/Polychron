@@ -310,6 +310,8 @@ def module_story(module_name: str) -> str:
     synthesis = _local_think(user_text, max_tokens=1024, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
+        from .synthesis_ollama import compress_for_claude
+        synthesis = compress_for_claude(synthesis, max_chars=600, hint=f"key constraints for {module_name}")
         parts.append(f"\n## Key Constraints *(adaptive)*")
         parts.append(synthesis)
     else:
