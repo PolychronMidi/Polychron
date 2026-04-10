@@ -65,9 +65,11 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read())
-            text = result.get("response", "").strip()
+            full_text = result.get("response", "").strip()
+            text = full_text
             if "</think>" in text:
-                text = text[text.rfind("</think>") + len("</think>"):].strip()
+                after = text[text.rfind("</think>") + len("</think>"):].strip()
+                text = after if after else full_text
             triage["raw"] = text
             text_upper = text.upper()
             triage["kb"] = "KB_NEEDED: YES" in text_upper or "KB_NEEDED:YES" in text_upper

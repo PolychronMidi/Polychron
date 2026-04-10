@@ -207,6 +207,15 @@ class ChatPanel {
                 this._resetContextTracker();
                 this._post({ type: "historyCleared" });
                 break;
+            case "enrichPrompt":
+                this._post({ type: "enrichStatus", status: "enriching" });
+                (0, router_1.enrichPrompt)(msg.prompt, msg.frame ?? "").then((result) => {
+                    this._post({ type: "enrichResult", ...result });
+                }).catch((e) => {
+                    this._post({ type: "enrichResult", enriched: msg.prompt, original: msg.prompt,
+                        error: String(e), unchanged: true });
+                });
+                break;
             case "checkHmeShim":
                 (0, router_1.isHmeShimReady)().then(({ ready, errors }) => {
                     this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });

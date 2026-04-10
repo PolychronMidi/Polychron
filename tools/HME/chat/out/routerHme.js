@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchHmeContext = fetchHmeContext;
+exports.enrichPrompt = enrichPrompt;
 exports.validateMessage = validateMessage;
 exports.auditChanges = auditChanges;
 exports.postTranscript = postTranscript;
@@ -119,6 +120,9 @@ function shimPost(path, body, parse, timeoutMs = 5000) {
         req.write(body);
         req.end();
     });
+}
+async function enrichPrompt(prompt, frame = "") {
+    return shimPost("/enrich_prompt", JSON.stringify({ prompt, frame }), (raw) => JSON.parse(raw), 200000);
 }
 async function validateMessage(message) {
     return shimPost("/validate", JSON.stringify({ query: message }), JSON.parse);

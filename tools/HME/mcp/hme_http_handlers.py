@@ -121,15 +121,140 @@ def _validate(query: str) -> dict:
 
 
 def _enrich_prompt(prompt: str, frame: str = "") -> dict:
-    """Prompt enrichment via local models. Returns {enriched, original, triage, trace}."""
-    if not _engine_ready.wait(timeout=5):
-        return {"enriched": prompt, "original": prompt, "error": "engines starting"}
+    """Prompt enrichment via local models — self-contained, no MCP server imports.
+
+    Uses the shim's own _project_engine for KB and calls Ollama directly.
+    Returns {enriched, original, triage, trace}.
+    """
+    import json as _json
+    import time as _time
+    import urllib.request as _urlreq
+
+    # Model/URL config — same env vars as MCP server, same defaults.
+    _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
+    _PORT_GPU1 = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
+    _REASONING_URL = f"http://localhost:{_PORT_GPU1}/api/chat"
+    _KEEP_ALIVE  = int(os.environ.get("HME_KEEP_ALIVE",   "-1"))
+    _NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
+
+    trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
+    t0 = _time.monotonic()
+
+    # ── Stage 1: Skip arbiter triage in HTTP shim ─────────────────────────────
+    # The user clicked Enrich explicitly — always run all modes.
+    # Arbiter triage is reserved for the MCP tool path (where warm KV context
+    # makes it fast); in the shim the thinking model is cold and unreliable.
+    triage = {"kb": True, "structural": True, "contextual": True, "raw": "explicit"}
+
+    # ── Stage 2: Context assembly (instant, no model) ─────────────────────────
+    t1 = _time.monotonic()
+    assembled_parts = []
+
+    if triage["kb"] and _project_engine is not None:
+        try:
+            kb_hits = _project_engine.search_knowledge(prompt[:200], top_k=5)
+            if kb_hits:
+                lines = ["[Knowledge Base Context]"]
+                for h in kb_hits:
+                    lines.append(f"  [{h.get('category', '')}] {h.get('title', '')}")
+                    lines.append(f"    {h.get('content', '')[:200]}")
+                assembled_parts.append("\n".join(lines))
+        except Exception as e:
+            logger.info(f"prompt_enricher: KB search failed: {e}")
+
+    if triage["contextual"]:
+        try:
+            from hme_http_store import _get_transcript
+            entries = _get_transcript(minutes=30, max_entries=5)
+            if entries:
+                lines = ["[Recent Session]"]
+                for e in entries[-3:]:
+                    lines.append(f"  {e.get('type','')}: {str(e.get('content',''))[:100]}")
+                assembled_parts.append("\n".join(lines))
+        except Exception:
+            pass
+        summary_path = os.path.join(PROJECT_ROOT, "metrics", "pipeline-summary.json")
+        if os.path.exists(summary_path):
+            try:
+                with open(summary_path) as f:
+                    ps = _json.load(f)
+                assembled_parts.append(f"[Pipeline: {ps.get('verdict', 'unknown')}]")
+            except Exception:
+                pass
+
+    assembled = "\n\n".join(assembled_parts)
+    trace["assembly_ms"] = int((_time.monotonic() - t1) * 1000)
+
+    # ── Stage 3: Reasoning model enrichment ──────────────────────────────────
+    t2 = _time.monotonic()
+    mode_instructions = []
+    if triage["kb"]:
+        mode_instructions.append(
+            "- GROUND with specifics: replace vague module references with exact "
+            "file paths, signal field names, and constraints from the KB context below")
+    if triage["structural"]:
+        mode_instructions.append(
+            "- RESTRUCTURE for clarity: split compound requests, resolve ambiguity, "
+            "add missing specificity")
+    if triage["contextual"]:
+        mode_instructions.append(
+            "- SITUATE with session state: weave in relevant context from the "
+            "session narrative and pipeline status below")
+
+    frame_instruction = f"\nUser's enrichment framing: {frame}\n" if frame else ""
+    enrich_content = (
+        "You are a prompt enrichment engine for Polychron, a generative music engine. "
+        "Take the raw prompt and make it more specific, grounded, and actionable "
+        "without changing the user's intent.\n\n"
+        f"MODES ACTIVE:\n" + "\n".join(mode_instructions) + "\n\n"
+        + frame_instruction
+        + f"RAW PROMPT:\n{prompt}\n\n"
+        + (f"ASSEMBLED CONTEXT:\n{assembled}\n\n" if assembled else "")
+        + "OUTPUT RULES:\n"
+        "- Return ONLY the enriched prompt text, nothing else\n"
+        "- Preserve the user's voice and intent exactly\n"
+        "- Do NOT add meta-commentary about the enrichment"
+    )
+    enriched = ""
     try:
-        from server.tools_analysis.prompt_enricher import _enrich_prompt as _do_enrich
-        return _do_enrich(prompt, frame)
+        body = _json.dumps({
+            "model": _REASONING_MODEL,
+            "messages": [
+                {"role": "system", "content": "You enrich prompts with project-specific knowledge. Output only the enriched prompt."},
+                {"role": "user",   "content": enrich_content},
+            ],
+            "stream": False,
+            "keep_alive": _KEEP_ALIVE,
+            "options": {"temperature": 0.2, "num_predict": 16000, "num_ctx": _NUM_CTX_30B},
+        }).encode()
+        req = _urlreq.Request(_REASONING_URL, data=body, headers={"Content-Type": "application/json"})
+        with _urlreq.urlopen(req, timeout=180) as resp:
+            enriched = _json.loads(resp.read()).get("message", {}).get("content", "").strip()
+            if "</think>" in enriched:
+                enriched = enriched[enriched.rfind("</think>") + len("</think>"):].strip()
     except Exception as e:
-        logger.error(f"enrich_prompt failed: {e}")
-        return {"enriched": prompt, "original": prompt, "error": str(e)}
+        logger.error(f"prompt_enricher: reasoning model failed: {e}")
+        return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
+                "unchanged": True, "reason": f"Reasoning model failed: {e}"}
+
+    trace["enrich_ms"] = int((_time.monotonic() - t2) * 1000)
+
+    if not enriched or len(enriched.strip()) < 10:
+        return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
+                "unchanged": True, "reason": "Reasoning model returned empty — original preserved"}
+
+    # ── Stage 4: Hard truncate if too long (no arbiter round-trip in shim) ───
+    max_len = len(prompt) * 3
+    if len(enriched) > max_len:
+        enriched = enriched[:max_len]
+
+    total_ms = int((_time.monotonic() - t0) * 1000)
+    logger.info(
+        f"prompt_enricher: {len(prompt)}→{len(enriched)} chars, "
+        f"modes={'|'.join(k for k, v in triage.items() if v and k != 'raw')}, "
+        f"{total_ms}ms"
+    )
+    return {"enriched": enriched, "original": prompt, "triage": triage, "trace": trace}
 
 
 def _post_audit(changed_files: str = "") -> dict:

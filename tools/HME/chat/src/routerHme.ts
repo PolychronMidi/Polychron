@@ -96,7 +96,7 @@ export async function enrichPrompt(prompt: string, frame: string = ""): Promise<
     "/enrich_prompt",
     JSON.stringify({ prompt, frame }),
     (raw) => JSON.parse(raw),
-    30000,
+    200000,  // 200s — reasoning model needs time to think + generate
   );
 }
 
