@@ -255,11 +255,10 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         # Second yield: re-check interactive just before acquiring the lock.
         if priority == "background":
             _ollama_background_yield()
-        # Background: cancellable — abandoned immediately when interactive arrives.
+        # Background: cancellable, NO GPU lock — interactive must never block behind it.
         # Interactive: 60s max — fail fast, never block for a stuck/unloaded model.
         if priority == "background":
-            with active_lock:
-                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
+            raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
             if cancel_err:
                 if isinstance(cancel_err, InterruptedError):
                     return (None, []) if return_context else None
