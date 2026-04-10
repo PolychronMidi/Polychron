@@ -25,10 +25,11 @@ def init_handlers(engine_ready: threading.Event, project_engine, global_engine, 
 def _reindex_files(files: list[str]) -> dict:
     """Trigger immediate mini-reindex of specific files via RAG engine."""
     from hme_http_store import _log_error
-    _engine_ready.wait(timeout=10)
+    if not _engine_ready.is_set():
+        return {"indexed": [], "count": 0, "deferred": "engines starting"}
     if _project_engine is None:
         _log_error("reindex", "engines not ready — cannot reindex files")
-        return {"error": "engines not ready", "indexed": []}
+        return {"error": "engines not ready", "indexed": [], "count": 0}
 
     indexed = []
     for filepath in files[:20]:
@@ -89,7 +90,8 @@ def _enrich(query: str, top_k: int = 5) -> dict:
 
 def _validate(query: str) -> dict:
     """Pre-send anti-pattern check. Returns {warnings: [...], blocks: [...]}."""
-    _engine_ready.wait(timeout=45)
+    if not _engine_ready.is_set():
+        return {"warnings": [], "blocks": [], "deferred": "engines starting"}
     if _project_engine is None:
         return {"warnings": [], "blocks": [], "error": "engines not ready"}
 
@@ -117,9 +119,10 @@ def _validate(query: str) -> dict:
 def _post_audit(changed_files: str = "") -> dict:
     """Post-response audit: run git diff to detect changed files, search KB for violations."""
     from hme_http_store import _log_error
-    _engine_ready.wait(timeout=10)
+    if not _engine_ready.is_set():
+        return {"violations": [], "changed_files": [], "deferred": "engines starting"}
     if _project_engine is None:
-        return {"violations": [], "error": "engines not ready"}
+        return {"violations": [], "changed_files": [], "error": "engines not ready"}
 
     # Get changed files from git if not provided
     files = [f.strip() for f in changed_files.split(",") if f.strip()]
