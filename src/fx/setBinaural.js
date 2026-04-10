@@ -17,6 +17,8 @@ flipBinCrossfadeWindow = [0, 0];
 
 /** Per-layer timeInSeconds of the last shared entry this layer consumed (dedup guard) */
 const lastConsumedByLayer = {};
+/** Dedup: timeInSeconds of the last shift whose MIDI events were emitted (prevents doubled glides from L1+L2 merge) */
+let lastEmittedShiftSec = -1;
 // Per-layer flipBin state lives in LM.perLayerState (restored on activate)
 
 /**
@@ -52,6 +54,7 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
   flipBinCrossfadeWindow = [fadeStart, fadeStart + flipBinCrossfade];
   const volSteps = 9;
   const volStepSec = flipBinCrossfade / volSteps;
+  const maxVol = rf(.9, 1.1);
   for (let i = 0; i <= volSteps; i++) {
     const t = fadeStart + volStepSec * i;
     const frac = i / volSteps;
@@ -61,7 +64,6 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, shiftInterval) {
     const volIn = shiftFlip ? m.floor(100 * frac) : m.floor(100 * (1 - frac));
     // Volume dip at midpoint to mask detune overlap
     const dipScale = 1.0 - 0.25 * m.exp(-m.pow((frac - 0.5) / 0.15, 2));
-    const maxVol = rf(.9, 1.2);
     flipBinF2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volOut * maxVol * dipScale)] }); });
     flipBinT2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volIn * maxVol * dipScale)] }); });
   }
@@ -141,7 +143,14 @@ setBinaural = () => {
     V.requireFinite(binauralPlus, 'binauralPlus');
     V.requireFinite(binauralMinus, 'binauralMinus');
 
-    emitShiftEvents(sharedEntry.timeInSeconds, flipBin, V.optionalFinite(sharedEntry.interval, 2.0));
+    // Emit MIDI events once per shift -- first layer to consume wins.
+    // Both layers sync state above, but only one emits pitch bend/volume events.
+    // Without this guard, L1+L2 buffers merge with conflicting rf()-randomized
+    // glide curves on the same MIDI channels, causing audible detune artifacts.
+    if (sharedEntry.timeInSeconds !== lastEmittedShiftSec) {
+      lastEmittedShiftSec = sharedEntry.timeInSeconds;
+      emitShiftEvents(sharedEntry.timeInSeconds, flipBin, V.optionalFinite(sharedEntry.interval, 2.0));
+    }
 
     if (traceDrain && traceDrain.isEnabled()) {
       traceDrain.recordBinauralShift({

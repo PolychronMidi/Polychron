@@ -49,6 +49,7 @@ class RAGEngine(
         self._knowledge_cache = _TTLCache(maxsize=128, ttl=CACHE_TTL)
         self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count for spaced repetition
         self._index_lock = threading.Lock()
+        self._bulk_indexing = threading.Event()
         self._token_cache: dict[int, int] = {}
         self._load_hashes()
         self._try_open_table()
