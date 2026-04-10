@@ -97,8 +97,12 @@ class RAGEngineIndexingMixin:
         return {"indexed": 1, "chunks_created": len(pending_chunks)}
 
     def index_directory(self, directory: str) -> dict:
-        with self._index_lock:
-            return self._index_directory_locked(directory)
+        self._bulk_indexing.set()
+        try:
+            with self._index_lock:
+                return self._index_directory_locked(directory)
+        finally:
+            self._bulk_indexing.clear()
 
     def _index_directory_locked(self, directory: str) -> dict:
         # Block if clear is in progress

@@ -31,6 +31,9 @@ def _reindex_files(files: list[str]) -> dict:
         _log_error("reindex", "engines not ready — cannot reindex files")
         return {"error": "engines not ready", "indexed": [], "count": 0}
 
+    if _project_engine._bulk_indexing.is_set():
+        return {"indexed": [], "count": 0, "deferred": "bulk index in progress"}
+
     indexed = []
     for filepath in files[:20]:
         abs_path = filepath if os.path.isabs(filepath) else os.path.join(PROJECT_ROOT, filepath)
@@ -140,6 +143,9 @@ def _post_audit(changed_files: str = "") -> dict:
 
     if not files:
         return {"violations": [], "changed_files": []}
+
+    if _project_engine._bulk_indexing.is_set():
+        return {"violations": [], "changed_files": files, "deferred": "bulk index in progress"}
 
     violations = []
     for f in files[:10]:  # cap at 10 files
