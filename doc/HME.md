@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 13 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 5 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern/prompt_enricher) + todo |
+| **MCP Server** | `tools/HME/` | 13 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 5 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern/enrich_prompt) + todo |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -62,7 +62,7 @@ tools/HME/               The single source of truth
         evolution_admin.py                hme_admin + fix_antipattern
         runtime.py                        beat_snapshot
         workflow.py                       warm_pre_edit_cache + before_editing
-        prompt_enricher.py                prompt_enricher — local prompt enrichment
+        enrich_prompt.py                enrich_prompt — local prompt enrichment
         (+ 20 internal modules: coupling, reasoning, symbols, etc.)
       tools_search.py                   Internal: grep, search_code, find_callers, file_lines
       tools_knowledge.py                Internal: add/search/list/compact/export/graph/dream/health
@@ -240,7 +240,7 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Trace a signal through the system | `trace("emergentRhythm")` |
 | Search the KB | `learn(query='coupling constraints')` |
 | Add a KB entry | `learn(title='...', content='...', category='pattern')` |
-| Enrich a prompt with project context | `prompt_enricher(prompt='...', frame='focus on...')` |
+| Enrich a prompt with project context | `enrich_prompt(prompt='...', frame='focus on...')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
 ## The 13 Tools — Complete Reference
@@ -392,7 +392,7 @@ Two-tier warming: Tier 1 scans up to `max_files` src/ files for callers+KB (fast
 
 Synthesizes bash detection logic for a behavioral anti-pattern and appends it to the target hook script. Use when a rule is repeatedly violated and needs automated enforcement. Valid targets: `pretooluse_bash`, `pretooluse_read`, `pretooluse_edit`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
 
-### 12. `prompt_enricher(prompt, frame)` — Local prompt enrichment
+### 12. `enrich_prompt(prompt, frame)` — Local prompt enrichment
 
 Four-stage local pipeline that enriches prompts with project context at zero Claude token cost:
 
