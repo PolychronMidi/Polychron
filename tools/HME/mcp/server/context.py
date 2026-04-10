@@ -12,6 +12,59 @@ from mcp.server.fastmcp import FastMCP
 logger = logging.getLogger("HME")
 
 
+# ── LIFESAVER critical failure accumulator ────────────────────────────────
+# Background threads (warm priming, model init, synthesis) register failures
+# here. The _LoggingMCP choke point drains them into the NEXT tool response
+# so they pop to Claude's attention immediately — never buried in a log file.
+_critical_failures: list[dict] = []
+_critical_failures_lock = threading.Lock()
+
+
+def register_critical_failure(source: str, error: str, severity: str = "CRITICAL"):
+    """Register a failure that MUST surface in the next tool response.
+
+    Called from background threads when CUDA errors, 500s, OOM kills, or
+    repeated warm priming failures occur. Lifesaver philosophy: errors pop
+    to the top of attention immediately.
+    """
+    with _critical_failures_lock:
+        _critical_failures.append({
+            "ts": time.time(),
+            "source": source,
+            "error": error,
+            "severity": severity,
+        })
+    logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}")
+
+
+def drain_critical_failures() -> str:
+    """Drain all queued failures into a LIFESAVER banner string.
+
+    Returns empty string if no failures. Called by _LoggingMCP on every
+    tool response — the only way background failures reach Claude.
+    """
+    with _critical_failures_lock:
+        if not _critical_failures:
+            return ""
+        failures = list(_critical_failures)
+        _critical_failures.clear()
+    lines = [
+        "",
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+        "  LIFESAVER: CRITICAL FAILURES DETECTED — ADDRESS NOW",
+        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+    ]
+    for f in failures:
+        lines.append(f"  [{f['severity']}] {f['source']}: {f['error']}")
+    lines.append("")
+    lines.append("  These failures occurred in background threads and were")
+    lines.append("  queued for your attention. Diagnose and fix before")
+    lines.append("  proceeding with other work.")
+    lines.append("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    lines.append("")
+    return "\n".join(lines)
+
+
 class _LoggingMCP:
     """Wraps FastMCP to add request/response logging on every tool call."""
 
@@ -38,9 +91,12 @@ class _LoggingMCP:
                     result = fn(*args, **kwargs)
                     elapsed = time.time() - t0
                     if result is None:
-                        # Tools must return strings — None causes silent MCP failures.
                         logger.error(f"ERR  {name} returned None — tool must return a string")
                         result = f"Error: {name} returned None (bug in tool implementation)"
+                    # LIFESAVER: drain queued background failures into this response
+                    lifesaver_banner = drain_critical_failures()
+                    if lifesaver_banner:
+                        result = lifesaver_banner + str(result)
                     result_str = str(result)[:200]
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {result_str}")
                     return result

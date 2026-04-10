@@ -2,10 +2,11 @@
 
 Warm context = each model's specialized persona + full KB pre-tokenized into Ollama's KV
 cache via the context= array. Avoids re-tokenizing the same persona text on every call.
-KV cache spills to RAM (models ~21GB VRAM, <600 MiB free per GPU) — correct behavior.
 
 VRAM safety: persona size is hard-capped at _MAX_PERSONA_CHARS to prevent KV cache
-overflow from crashing CUDA kernels on the M40s. The cap leaves headroom for inference.
+overflow from crashing CUDA kernels on the M40s (<600 MiB headroom per GPU). The cap
+leaves headroom for inference. Failures register with ctx.register_critical_failure()
+so Lifesaver surfaces them in the next tool response — never silently swallowed.
 """
 import os
 import logging
@@ -300,14 +301,19 @@ def _init_ollama_models() -> str:
                 if resp.status >= 500:
                     err_detail = body.decode("utf-8", errors="ignore")[:200]
                     results[model] = f"FAILED: HTTP {resp.status} — {err_detail}"
-                    logger.warning(f"model init: {model} HTTP {resp.status}: {err_detail}")
+                    ctx.register_critical_failure(
+                        f"model_init({model})",
+                        f"HTTP {resp.status}: {err_detail}",
+                    )
                     failures += 1
                     continue
             elapsed = _t.time() - t0
             vram_warn = _check_vram_headroom(model, _url_for(model))
             if vram_warn:
                 results[model] = f"OK ({elapsed:.1f}s) ⚠ {vram_warn}"
-                logger.info(f"model init: {model} ready ({elapsed:.1f}s) — {vram_warn}")
+                ctx.register_critical_failure(
+                    f"model_init({model})", vram_warn, severity="WARNING",
+                )
             else:
                 results[model] = f"OK ({elapsed:.1f}s)"
                 logger.info(f"model init: {model} ready ({elapsed:.1f}s)")
@@ -318,11 +324,17 @@ def _init_ollama_models() -> str:
             except Exception:
                 pass
             results[model] = f"FAILED: HTTP {e.code} — {err_body or e}"
-            logger.warning(f"model init: {model} HTTP {e.code}: {err_body or e}")
+            ctx.register_critical_failure(
+                f"model_init({model})",
+                f"HTTP {e.code}: {err_body or e}",
+            )
             failures += 1
         except Exception as e:
             results[model] = f"FAILED: {type(e).__name__}: {e}"
-            logger.warning(f"model init: {model} FAILED: {e}")
+            ctx.register_critical_failure(
+                f"model_init({model})",
+                f"{type(e).__name__}: {e}",
+            )
             failures += 1
     summary = "Model init: " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
     if failures:

@@ -158,7 +158,10 @@ def _background_startup_chain():
         init_result = _init_ollama_models()
         logger.info(f"startup chain [1/3]: {init_result}")
     except Exception as _e:
-        logger.warning(f"startup chain [1/3] FAILED: {type(_e).__name__}: {_e}")
+        context.register_critical_failure(
+            "startup_chain[1/3]",
+            f"Model init crashed: {type(_e).__name__}: {_e}",
+        )
         init_result = "FAILED"
 
     if "FAILED" in init_result:
@@ -169,7 +172,10 @@ def _background_startup_chain():
             warm_result = _prime_all_gpus()
             logger.info(f"startup chain [2/3]: {warm_result}")
         except Exception as _e:
-            logger.warning(f"startup chain [2/3] FAILED: {type(_e).__name__}: {_e}")
+            context.register_critical_failure(
+                "startup_chain[2/3]",
+                f"Warm priming crashed: {type(_e).__name__}: {_e}",
+            )
 
     try:
         logger.info("startup chain [3/3]: warming pre-edit caller+KB cache...")
