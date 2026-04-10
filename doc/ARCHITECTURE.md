@@ -48,13 +48,13 @@ Three pipeline products computed per beat:
 
 ### Recorders
 
-34 registered recorders tick via `conductorIntelligence.runRecorders(ctx)`. The registry gates L2: only `conductorSignalBridge` runs on L2 pass (needs per-layer signal refresh). All other recorders skip L2 to prevent polyrhythmic beat-count asymmetry.
+37 registered recorders tick via `conductorIntelligence.runRecorders(ctx)`. The registry gates L2: only `conductorSignalBridge` runs on L2 pass (needs per-layer signal refresh). All other recorders skip L2 to prevent polyrhythmic beat-count asymmetry.
 
 Recorder context carries: `{ absTime, compositeIntensity, currentDensity, harmonicRhythm, layer }`.
 
 ### Bias Providers
 
-Modules register density/tension/flicker biases via `conductorIntelligence.registerDensityBias(name, fn, lo, hi)`. At pipeline time, all biases are collected, dampened, and multiplied into the final products. 92 bias registrations are locked against `scripts/bias-bounds-manifest.json`.
+Modules register density/tension/flicker biases via `conductorIntelligence.registerDensityBias(name, fn, lo, hi)`. At pipeline time, all biases are collected, dampened, and multiplied into the final products. 93 bias registrations are locked against `scripts/bias-bounds-manifest.json`.
 
 **`conductorIntelligence`** is the most-called module in the codebase (282 callers). Never call `getSignalSnapshot()` directly — use `signalReader` (ESLint `no-direct-signal-read`). Cross-layer modules must NOT register biases here — use `crossLayerRegistry` instead (ESLint `no-conductor-registration-from-crosslayer`).
 

@@ -1,6 +1,6 @@
 # Subsystem Detail
 
-Module-level reference for each Polychron subsystem. 473 source files, 58K LOC.
+Module-level reference for each Polychron subsystem. 487 source files, 58K LOC.
 
 ## `src/utils/` -- Shared Foundation (35 files)
 
@@ -60,11 +60,11 @@ Module-level reference for each Polychron subsystem. 473 source files, 58K LOC.
 - **`setBinaural`** -- binaural beat mapping (alpha 8-12Hz, grandFinale post-loop walk only). Pitch bend completes within crossfade window. Per-layer flipBin via `LM.perLayerState`. `flipBinCrossfadeWindow` global for stereoScatter.
 - **`setBalanceAndFX`** -- per-layer balance (via LM.perLayerState), FX routing, trust/regime-driven instrument selection
 - **noise/** (7) -- simplex/FBM/worley/ridged noise engines
-- **stutter/** (37) -- StutterManager, 18 variants, stutterVariants (10-dimension selection), stutterSteps (Euclidean+probabilistic gating), stutterNotes (velocity contour, coherence cross-mod), fade/pan/FX CC strategies, config, metrics, channels, plans, registry
+- **stutter/** (37) -- StutterManager, 19 variants, stutterVariants (10-dimension selection), stutterSteps (Euclidean+probabilistic gating), stutterNotes (velocity contour, coherence cross-mod), fade/pan/FX CC strategies, config, metrics, channels, plans, registry
 
 ## `src/crossLayer/` -- Layer Coordination (58 files, 5 subdirs)
 
-39 registered modules. CIM manages 11 module-pair coordination dials.
+45 registered modules. CIM manages 12 module-pair coordination dials.
 
 **Infrastructure:** `crossLayerRegistry`, `crossLayerLifecycleManager`, `conductorSignalBridge` (firewall + hypermeta state), `explainabilityBus`, `crossLayerEmissionGateway`, `coordinationIndependenceManager` (CIM)
 

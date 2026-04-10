@@ -1,6 +1,6 @@
 # Stutter Variant System
 
-18 octave-shifted note echo variants, selected per-beat by weighted random selection across 10 signal dimensions. Two-layer gating prevents note floods while preserving rhythmic structure.
+19 octave-shifted note echo variants, selected per-beat by weighted random selection across 10 signal dimensions. Two-layer gating prevents note floods while preserving rhythmic structure.
 
 ## Variants
 
@@ -24,6 +24,7 @@
 | convergenceBurst | Ghost-quiet burst at layer convergence (3-10s windows) | 0.7 | 0.95 | 280 |
 | tensionStutter | Echo count/velocity tracks conductor tension | 0.7 | 0.7 | 170 |
 | directionalOscillation | Ascending then descending octave series | 0.7 | 0.6 | 150 |
+| alienArpeggio | Xenolinguistic interval arpeggios (alien/suspended grammars) | 1.1 | 0.92 | 190 |
 
 All variants stay rooted to source note or octave shifts only -- no voicing conflicts.
 

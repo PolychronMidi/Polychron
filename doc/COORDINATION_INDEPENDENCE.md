@@ -6,7 +6,7 @@
 
 Lives in crossLayer subsystem. Reads conductor state via `conductorSignalBridge` (no boundary violation). Writes to peer crossLayer modules via `setCoordinationScale()`. Self-registers with `crossLayerRegistry` for lifecycle management.
 
-## 11 Module-Pair Dials
+## 12 Module-Pair Dials
 
 Each dial ranges 0 (fully independent) to 1 (fully coordinated):
 
@@ -23,6 +23,7 @@ Each dial ranges 0 (fully independent) to 1 (fully coordinated):
 | `dynamics-envelopeInterference` | crossLayerDynamicEnvelope, velocityInterference | Parallel arcs, stronger velocity reinforcement | Independent arcs, weaker reinforcement |
 | `dynamics-articulationTexture` | articulationComplement, texturalMirror | Less forced contrast, weaker opposition | More contrast, stronger opposition |
 | `structure-trustNegotiation` | adaptiveTrustScores, negotiationEngine | Less trust exploration nudge, lower convergence floor | More exploration nudge, higher floor |
+| `motif-echoIdentity` | motifEcho, motifIdentityMemory | More imitative counterpoint, coordinated recall | Original material, independent motif exploration |
 
 ## Target Computation
 
