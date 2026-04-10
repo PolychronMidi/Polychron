@@ -33,10 +33,13 @@ _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
 # Ollama auto-schedules GPU layers; falls back to CPU/RAM (64GB) when GPUs are busy.
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 
-# keep_alive=-1: pin models permanently. num_ctx: explicit full context window.
-# GPU models overflow KV cache to RAM beyond VRAM capacity — safe with isolated instances.
+# keep_alive=-1: pin models permanently. num_ctx sized to fit KV cache in VRAM.
+# 30B Q4_K_M on M40 24GB: model weights ~18.5GB, KV ~69KB/token.
+# At 32K ctx: KV ≈ 2.2GB, total ≈ 20.7GB, leaving ~1.8GB headroom.
+# At 65K ctx: KV ≈ 4.3GB, total ≈ 22.8GB — overflows VRAM, KV spills to RAM,
+# inference drops to ~0.02 tok/s (114s for 2 tokens). Never exceed VRAM.
 _KEEP_ALIVE = int(os.environ.get("HME_KEEP_ALIVE", "-1"))
-_NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "65536"))
+_NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
 _NUM_CTX_4B  = int(os.environ.get("HME_NUM_CTX_4B",  "32768"))
 
 def _num_ctx_for(model: str) -> int:

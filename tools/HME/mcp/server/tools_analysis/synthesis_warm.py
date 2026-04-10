@@ -219,12 +219,53 @@ def _prime_warm_context(model: str) -> bool:
     return False
 
 
+def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> str | None:
+    """Post-load VRAM check. Returns warning string if headroom is dangerously low."""
+    import urllib.request as _req
+    import json as _json
+    try:
+        ps_url = url.rsplit("/api/", 1)[0] + "/api/ps"
+        with _req.urlopen(ps_url, timeout=5) as resp:
+            data = _json.loads(resp.read())
+        models = data.get("models", [])
+        if not models:
+            return None
+        m = models[0]
+        size_vram = m.get("size_vram", 0)
+        ctx = m.get("context_length", 0)
+        if size_vram == 0:
+            return None
+        # Query GPU total via nvidia-smi for the instance's GPU
+        import subprocess
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.total,memory.free", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return None
+        lines = [l.strip() for l in result.stdout.strip().splitlines() if l.strip()]
+        # Find the GPU this model is on by checking which has the least free memory
+        min_free = None
+        for line in lines:
+            parts = line.split(",")
+            if len(parts) == 2:
+                total_mb, free_mb = int(parts[0].strip()), int(parts[1].strip())
+                if min_free is None or free_mb < min_free:
+                    min_free = free_mb
+        if min_free is not None and min_free < min_headroom_mb:
+            return (f"VRAM TIGHT: {model} ctx={ctx} — only {min_free}MB free "
+                    f"(need {min_headroom_mb}MB). KV cache may be in RAM, crippling speed.")
+    except Exception:
+        return None
+    return None
+
+
 def _init_ollama_models() -> str:
     """Explicitly load all three models to their correct devices at startup.
 
     Load order: GPU0 (extractor) → GPU1 (reasoner) → CPU (arbiter).
     Uses keep_alive=-1 so models stay resident. Yields to interactive between each model.
-    Called once at startup before prewarm — ensures device assignment is deterministic.
+    Post-load: VRAM headroom check warns if KV cache is spilling to RAM.
     """
     import urllib.request as _req
     import json as _json
@@ -259,8 +300,13 @@ def _init_ollama_models() -> str:
                     failures += 1
                     continue
             elapsed = _t.time() - t0
-            results[model] = f"OK ({elapsed:.1f}s)"
-            logger.info(f"model init: {model} ready ({elapsed:.1f}s)")
+            vram_warn = _check_vram_headroom(model, _url_for(model))
+            if vram_warn:
+                results[model] = f"OK ({elapsed:.1f}s) ⚠ {vram_warn}"
+                logger.warning(f"model init: {model} ready ({elapsed:.1f}s) — {vram_warn}")
+            else:
+                results[model] = f"OK ({elapsed:.1f}s)"
+                logger.info(f"model init: {model} ready ({elapsed:.1f}s)")
         except _req.HTTPError as e:
             err_body = ""
             try:
