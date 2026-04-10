@@ -124,6 +124,7 @@ def hme_hot_reload(modules: str = "") -> str:
         "drama_map", "health_analysis", "section_labels",
         "evolution_evolve", "search_unified", "review_unified",
         "read_unified", "learn_unified", "status_unified", "trace_unified",
+        "todo",
     ]
     TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge"]
     # Root-level modules (not under server/): imported directly, no package prefix
@@ -247,7 +248,13 @@ def hme_selftest() -> str:
         table_files = status.get("total_files", 0)
         hash_count = len(hashes)
         consistent = abs(hash_count - table_files) < 15
-        results.append(f"{'PASS' if consistent else 'WARN'}: hash cache -- {hash_count} hashes vs {table_files} indexed files")
+        if consistent:
+            results.append(f"PASS: hash cache -- {hash_count} hashes vs {table_files} indexed files")
+        else:
+            results.append(
+                f"WARN: hash cache -- {hash_count} hashes vs {table_files} indexed files "
+                f"(stale entries from deleted/renamed files — fix: hme_admin(action='clear_index'))"
+            )
     except Exception as e:
         results.append(f"FAIL: hash cache -- {e}")
 
@@ -453,6 +460,24 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     }
     if hook_target not in valid_hooks:
         return f"Error: hook_target must be one of: {', '.join(sorted(valid_hooks))}"
+
+    # Warn when hook choice is likely wrong for the antipattern type
+    _ap_lower = antipattern.lower()
+    _code_content_signals = ("console.log", "console.warn", "catch {}", ".catch(", "throw", "import", "require",
+                              "in src/", "in source", "in code", "pattern in file", "code smell")
+    _bash_cmd_signals = ("npm run", "git ", "bash ", "shell command", "script")
+    if hook_target == "pretooluse_bash" and any(s in _ap_lower for s in _code_content_signals):
+        return (
+            f"WRONG HOOK: '{antipattern}' is a code-content antipattern (file contents), not a bash-command antipattern.\n"
+            f"Use hook_target='pretooluse_edit' (catches Edit new_string) or 'pretooluse_write' (catches Write content).\n"
+            f"pretooluse_bash only sees shell commands — it cannot reliably detect patterns inside source files."
+        )
+    if hook_target in ("pretooluse_edit", "pretooluse_write") and any(s in _ap_lower for s in _bash_cmd_signals):
+        return (
+            f"WRONG HOOK: '{antipattern}' is a bash-command antipattern.\n"
+            f"Use hook_target='pretooluse_bash' which sees the command string before execution."
+        )
+
     hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
     hook_path = os.path.join(hooks_dir, f"{hook_target}.sh")
     if not os.path.isfile(hook_path):

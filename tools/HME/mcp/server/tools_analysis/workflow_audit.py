@@ -34,14 +34,26 @@ def what_did_i_forget(changed_files: str) -> str:
             all_warnings.append(f"[{file_path}] SKIPPED: outside project root")
             continue
         rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
-        module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
-        # Check KB for constraints on this module — split actionable vs historical
-        kb_results = ctx.project_engine.search_knowledge(module_name, top_k=min(limits["kb_entries"], 5))
-        _CONSTRAINT_MARKERS = ("never", "must", "always", "do not", "don't", "forbidden", "violation", "constraint:", "ban", "prevent")
-        for k in kb_results[:3]:
-            body = k.get("content", "").lower()
-            if any(m in body for m in _CONSTRAINT_MARKERS):
-                all_warnings.append(f"[{rel_path}] KB: [{k['category']}] {k['title']}")
+        module_name = (os.path.basename(abs_path)
+                       .replace(".js", "").replace(".ts", "").replace(".sh", "").replace(".py", ""))
+        # Hook files: KB search won't find relevant entries by filename — emit structural reminders instead
+        if rel_path.endswith(".sh") and "/hooks/" in rel_path:
+            all_warnings.append(
+                f"[{rel_path}] HOOK CHANGE: check other hooks in tools/HME/hooks/ for the same issue, "
+                "and verify tools/HME/settings.json still references this hook correctly."
+            )
+            if "sessionstart" in rel_path or "pretooluse" in rel_path or "posttooluse" in rel_path:
+                all_warnings.append(
+                    f"[{rel_path}] DOC CHECK: update doc/HME.md hook descriptions if behavior changed."
+                )
+        else:
+            # Check KB for constraints on this module — split actionable vs historical
+            kb_results = ctx.project_engine.search_knowledge(module_name, top_k=min(limits["kb_entries"], 5))
+            _CONSTRAINT_MARKERS = ("never", "must", "always", "do not", "don't", "forbidden", "violation", "constraint:", "ban", "prevent")
+            for k in kb_results[:3]:
+                body = k.get("content", "").lower()
+                if any(m in body for m in _CONSTRAINT_MARKERS):
+                    all_warnings.append(f"[{rel_path}] KB: [{k['category']}] {k['title']}")
         # Check if crossLayer file touches conductor
         try:
             with open(abs_path, encoding="utf-8", errors="ignore") as _f:

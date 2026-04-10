@@ -148,7 +148,11 @@ def _background_startup_chain():
     """
     _startup_done.wait(timeout=90)
     if context.project_engine is None:
-        logger.warning("startup chain: RAG engine not ready — skipping Ollama init and prewarm")
+        context.register_critical_failure(
+            "startup_chain",
+            "RAG engine not ready — index may be missing. Run hme_admin(action='index') to rebuild.",
+            severity="WARNING",
+        )
         return
     from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
     from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
@@ -182,7 +186,11 @@ def _background_startup_chain():
         cache_result = warm_pre_edit_cache(max_files=200)
         logger.info(f"startup chain [3/3]: {cache_result}")
     except Exception as _e:
-        logger.warning(f"startup chain [3/3] FAILED: {type(_e).__name__}: {_e}")
+        context.register_critical_failure(
+            "startup_chain[3/3]",
+            f"Pre-edit cache warming crashed: {type(_e).__name__}: {_e}",
+            severity="WARNING",
+        )
 
     logger.info("startup chain complete")
 

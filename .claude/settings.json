@@ -1,1 +1,5 @@
-../tools/HME/settings.json
+{
+    "enabledPlugins": {
+        "HME@polychron-local": true
+    }
+}
