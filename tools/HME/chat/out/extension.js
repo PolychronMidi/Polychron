@@ -39,6 +39,7 @@ const vscode = __importStar(require("vscode"));
 const ChatPanel_1 = require("./ChatPanel");
 function activate(context) {
     const projectRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? process.cwd();
+    ChatPanel_1.ChatPanel.setGlobalState(context.globalState);
     context.subscriptions.push(vscode.commands.registerCommand('hme-chat.open', () => {
         ChatPanel_1.ChatPanel.createOrShow(projectRoot);
     }));

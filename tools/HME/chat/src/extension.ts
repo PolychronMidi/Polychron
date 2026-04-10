@@ -3,6 +3,7 @@ import { ChatPanel } from './ChatPanel';
 
 export function activate(context: vscode.ExtensionContext) {
   const projectRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? process.cwd();
+  ChatPanel.setGlobalState(context.globalState);
 
   context.subscriptions.push(
     vscode.commands.registerCommand('hme-chat.open', () => {

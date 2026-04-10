@@ -39,16 +39,52 @@ const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const router_1 = require("./router");
 const SessionStore_1 = require("./SessionStore");
+const router_2 = require("./router");
 const TranscriptLogger_1 = require("./TranscriptLogger");
 const Arbiter_1 = require("./Arbiter");
+const MODEL_CONTEXT_WINDOWS = {
+    "claude-opus-4-6": 1000000,
+    "claude-sonnet-4-6": 500000,
+};
+const DEFAULT_CONTEXT_WINDOW = 500000;
+const CHAIN_THRESHOLD_PCT = 75;
+const SYSTEM_OVERHEAD_TOKENS = 8000;
+const CHARS_PER_TOKEN = 3.5;
+const OLLAMA_OUTPUT_BUFFER = 4096;
+function estimateTokens(messages) {
+    let chars = 0;
+    for (const m of messages)
+        chars += m.content.length;
+    return Math.ceil(chars / CHARS_PER_TOKEN);
+}
+function trimHistoryToFit(history, currentMsg, extraMessages = []) {
+    const budget = router_2.GPU_NUM_CTX - OLLAMA_OUTPUT_BUFFER;
+    const fixedTokens = estimateTokens([...extraMessages, { content: currentMsg }]);
+    const available = budget - fixedTokens;
+    if (available <= 0)
+        return [];
+    let total = 0;
+    let keepFrom = 0;
+    for (let i = history.length - 1; i >= 0; i--) {
+        const cost = Math.ceil(history[i].content.length / CHARS_PER_TOKEN);
+        if (total + cost > available) {
+            keepFrom = i + 1;
+            break;
+        }
+        total += cost;
+    }
+    return history.slice(keepFrom);
+}
 class ChatPanel {
     constructor(panel, projectRoot, restoreSessionId) {
-        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
         this._isStreaming = false;
         this._messageQueue = [];
         this._disposables = [];
         this._restoreSessionId = null;
         this._disposed = false;
+        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
+        this._chainingInProgress = false;
         this._shimProc = null;
         this._shimFailed = false;
         this._shimPollTimer = null;
@@ -76,7 +112,7 @@ class ChatPanel {
             });
         }
         catch (e) {
-            // TranscriptLogger failed — use a no-op stub
+            console.error(`[HME] TranscriptLogger init failed — transcript disabled: ${e?.message ?? e}`);
             this._transcript = {
                 logUser: () => { }, logAssistant: () => { }, logToolCall: () => { },
                 logRouteSwitch: () => { }, logValidation: () => { }, logAudit: () => { },
@@ -100,8 +136,12 @@ class ChatPanel {
                 if (this._isStreaming) {
                     this._post({ type: "streamingRestored" });
                 }
+                this._postContextUpdate();
             }
         }, null, this._disposables);
+    }
+    static setGlobalState(state) {
+        ChatPanel._globalState = state;
     }
     static createOrShow(projectRoot) {
         const col = vscode.window.activeTextEditor
@@ -163,7 +203,8 @@ class ChatPanel {
                 this._isStreaming = false;
                 break;
             case "clearHistory":
-                this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+                this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+                this._resetContextTracker();
                 this._post({ type: "historyCleared" });
                 break;
             case "checkHmeShim":
@@ -193,7 +234,8 @@ class ChatPanel {
             case "deleteSession":
                 (0, SessionStore_1.deleteSession)(this._projectRoot, msg.id);
                 if (this._state.sessionEntry?.id === msg.id) {
-                    this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+                    this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+                    this._resetContextTracker();
                     this._transcript.setSessionId("");
                     this._post({ type: "historyCleared" });
                 }
@@ -204,8 +246,14 @@ class ChatPanel {
                 this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
                 break;
             case "newSession":
-                this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null };
+                this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+                this._resetContextTracker();
                 this._post({ type: "historyCleared" });
+                break;
+            case "setZoomLevel":
+                if (typeof msg.level === "number") {
+                    ChatPanel._globalState?.update("hme.zoomLevel", msg.level);
+                }
                 break;
         }
     }
@@ -250,13 +298,17 @@ class ChatPanel {
         const persisted = (0, SessionStore_1.loadSession)(this._projectRoot, id);
         if (!persisted)
             return;
+        const chainLinks = (0, SessionStore_1.listChainLinks)(this._projectRoot, id);
+        const chainIndex = chainLinks.length > 0 ? Math.max(...chainLinks) + 1 : (persisted.chainIndex ?? 0);
         this._state = {
             messages: persisted.messages,
             claudeSessionId: persisted.entry.claudeSessionId,
             ollamaHistory: persisted.ollamaHistory,
             lastRoute: null,
             sessionEntry: persisted.entry,
+            chainIndex,
         };
+        this._resetContextTracker(persisted.contextTokens);
         this._transcript.setSessionId(persisted.entry.id);
         this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
         const display = this._displayMessages();
@@ -275,7 +327,10 @@ class ChatPanel {
             updatedAt: Date.now(),
         };
         this._state.sessionEntry = entry;
-        (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory);
+        (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
+            contextTokens: Math.round(this._contextTracker.totalChars / CHARS_PER_TOKEN),
+            chainIndex: this._state.chainIndex,
+        });
     }
     async _onSend(msg) {
         // ── Agent route: parallel local + hybrid test (no auto-route needed) ──
@@ -423,7 +478,8 @@ class ChatPanel {
             role: "system",
             content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
         };
-        const requestHistory = [systemPrompt, ...this._state.ollamaHistory, { role: "user", content: msg.text }];
+        const trimmed = trimHistoryToFit(this._state.ollamaHistory, msg.text, [systemPrompt]);
+        const requestHistory = [systemPrompt, ...trimmed, { role: "user", content: msg.text }];
         let text = "";
         let tools = [];
         let streamEnded = false;
@@ -465,7 +521,7 @@ class ChatPanel {
         cancelFns.push(cancel);
     }
     _streamAgentHybrid(msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
-        const history = [...this._state.ollamaHistory];
+        const history = trimHistoryToFit(this._state.ollamaHistory, msg.text);
         let text = "";
         let tools = [];
         let aborted = false;
@@ -538,9 +594,10 @@ class ChatPanel {
             streamEnded = true;
             this._drainQueue();
         };
-        const onDone = () => {
+        const onDone = (usage) => {
             if (aborted)
                 return;
+            this._updateContextTracker(text, thinking, msg.claudeModel, usage);
             const assistantMsg = {
                 id: assistantId,
                 role: "assistant",
@@ -557,6 +614,7 @@ class ChatPanel {
             this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
             const changedFiles = this._reindexFromTools(tools);
             this._runPostAudit(changedFiles);
+            this._checkChainThreshold(msg);
             safeEnd();
         };
         const onChunk = (chunk, type) => {
@@ -598,7 +656,7 @@ class ChatPanel {
         cancelFn = (0, router_1.streamClaudePty)(effectiveText, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, onDone, (err) => {
             // PTY failed — fall back to stream-json mode silently
             console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
-            cancelFn = (0, router_1.streamClaude)(effectiveText, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, (cost) => { onDone(); }, onError);
+            cancelFn = (0, router_1.streamClaude)(effectiveText, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, (_cost, usage) => { onDone(usage); }, onError);
         });
     }
     /** Mirror assistant response to HTTP shim transcript. */
@@ -644,6 +702,157 @@ class ChatPanel {
             }
         }).catch((e) => this._postError("audit", String(e)));
     }
+    // ── Context tracking & chain ─────────────────────────────────────────────
+    _resetContextTracker(restoredTokens) {
+        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
+        if (restoredTokens) {
+            this._contextTracker.totalChars = restoredTokens * CHARS_PER_TOKEN;
+        }
+        this._postContextUpdate();
+    }
+    _updateContextTracker(text, thinking, model, usage) {
+        this._contextTracker.model = model;
+        this._contextTracker.totalChars += text.length + (thinking?.length ?? 0);
+        if (usage) {
+            this._contextTracker.lastInputTokens = usage.inputTokens;
+            this._contextTracker.lastOutputTokens = usage.outputTokens;
+        }
+        this._postContextUpdate();
+    }
+    _getContextPct() {
+        const window = MODEL_CONTEXT_WINDOWS[this._contextTracker.model] ?? DEFAULT_CONTEXT_WINDOW;
+        if (this._contextTracker.lastInputTokens != null && this._contextTracker.lastOutputTokens != null) {
+            const used = this._contextTracker.lastInputTokens + this._contextTracker.lastOutputTokens;
+            return Math.min(99, Math.round(used / window * 100));
+        }
+        // PTY mode: no token counts available — estimate from all message chars (both user + assistant)
+        // so the meter reflects actual context usage rather than just output chars.
+        const allChars = this._state.messages.reduce((sum, m) => sum + (m.text?.length ?? 0) + (m.thinking?.length ?? 0), 0);
+        const estimatedTokens = allChars / CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
+        return Math.min(99, Math.round(estimatedTokens / window * 100));
+    }
+    _postContextUpdate() {
+        const pct = this._getContextPct();
+        const chainLinks = this._state.sessionEntry
+            ? (0, SessionStore_1.listChainLinks)(this._projectRoot, this._state.sessionEntry.id).length
+            : 0;
+        this._post({ type: "contextUpdate", pct, chainLinks, chainIndex: this._state.chainIndex });
+    }
+    _checkChainThreshold(msg) {
+        const pct = this._getContextPct();
+        if (pct < CHAIN_THRESHOLD_PCT || this._chainingInProgress)
+            return;
+        this._performChain(msg).catch((e) => {
+            console.error(`[HME Chat] Chain failed: ${e}`);
+            this._postError("chain", String(e));
+            this._chainingInProgress = false;
+        });
+    }
+    async _performChain(msg) {
+        if (!this._state.sessionEntry || this._chainingInProgress)
+            return;
+        this._chainingInProgress = true;
+        const sessionId = this._state.sessionEntry.id;
+        const linkIndex = this._state.chainIndex;
+        this._post({ type: "notice", level: "info", text: `Context chain: saving link ${linkIndex + 1} and generating summary...` });
+        // Load current todos from HME todo file
+        let todos = [];
+        try {
+            const todoPath = path.join(process.env["HOME"] ?? process.env["USERPROFILE"] ?? "~", ".claude", "mcp", "HME", "todos.json");
+            todos = JSON.parse(fs.readFileSync(todoPath, "utf8"));
+        }
+        catch (e) {
+            if (e?.code !== "ENOENT")
+                console.error(`[HME] Failed to load todos.json: ${e?.message ?? e}`);
+        }
+        // Generate summary via a separate Claude -p call
+        const priorSummaries = (0, SessionStore_1.loadChainSummaries)(this._projectRoot, sessionId);
+        const recentMessages = this._state.messages.slice(-20);
+        const summaryPrompt = this._buildSummaryPrompt(recentMessages, todos, priorSummaries);
+        let summary = "";
+        try {
+            summary = await (0, Arbiter_1.synthesizeChainSummary)(summaryPrompt);
+        }
+        catch (e) {
+            console.error(`[HME Chat] Chain summary via local model failed: ${e}`);
+            summary = this._buildFallbackSummary(recentMessages, todos, priorSummaries);
+        }
+        // Save chain link
+        const link = {
+            index: linkIndex,
+            sessionId,
+            messages: [...this._state.messages],
+            summary,
+            todos,
+            contextTokens: this._getContextPct(),
+            claudeSessionId: this._state.claudeSessionId,
+            createdAt: Date.now(),
+        };
+        (0, SessionStore_1.saveChainLink)(this._projectRoot, link);
+        // Reset session for new chain segment
+        this._state.messages = [];
+        this._state.claudeSessionId = null;
+        this._state.chainIndex = linkIndex + 1;
+        this._resetContextTracker();
+        // Prime the new session with the summary as a system context message
+        const contextMsg = {
+            id: uid(),
+            role: "user",
+            text: `[Context Chain — Link ${linkIndex + 1} continuation]\n\n${summary}`,
+            route: "claude",
+            ts: Date.now(),
+        };
+        this._state.messages.push(contextMsg);
+        this._persistState();
+        this._post({ type: "chainCompleted", linkIndex, chainIndex: this._state.chainIndex });
+        this._post({ type: "notice", level: "info", text: `Context chain: link ${linkIndex + 1} saved. Fresh context resumed.` });
+        this._postContextUpdate();
+        this._chainingInProgress = false;
+    }
+    _buildSummaryPrompt(messages, todos, priorSummaries) {
+        const priorContext = priorSummaries.length > 0
+            ? `Previous chain link summaries:\n${priorSummaries.map((s, i) => `--- Link ${i + 1} ---\n${s}`).join("\n\n")}\n\n`
+            : "";
+        const todoBlock = todos.length > 0
+            ? `Current todo list:\n${JSON.stringify(todos, null, 2)}\n\n`
+            : "No active todos.\n\n";
+        const conversationBlock = messages
+            .map((m) => `[${m.role}]: ${m.text.slice(0, 1500)}`)
+            .join("\n\n");
+        return `You are generating a context chain summary for an AI coding assistant conversation. This summary will be used to prime a fresh context window, replacing the full conversation history.
+
+Requirements:
+1. Be concise but preserve all actionable context — decisions made, approaches chosen, files modified, bugs found
+2. Include the current state of the todo list
+3. Reference specific file paths and function names when relevant
+4. Note any in-progress work that needs continuation
+5. Keep the summary under 2000 tokens
+
+${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerate the continuation summary:`;
+    }
+    _buildFallbackSummary(messages, todos, priorSummaries) {
+        const lines = [];
+        if (priorSummaries.length > 0) {
+            lines.push("## Prior context");
+            lines.push(priorSummaries[priorSummaries.length - 1].slice(0, 800));
+        }
+        lines.push("\n## Recent activity");
+        for (const m of messages.slice(-8)) {
+            lines.push(`[${m.role}]: ${m.text.slice(0, 300)}`);
+        }
+        if (todos.length > 0) {
+            lines.push("\n## Active todos");
+            for (const t of todos) {
+                lines.push(`- [${t.done ? "x" : " "}] ${t.text}`);
+                if (t.subs) {
+                    for (const s of t.subs) {
+                        lines.push(`  - [${s.done ? "x" : " "}] ${s.text}`);
+                    }
+                }
+            }
+        }
+        return lines.join("\n");
+    }
     _streamOllama(msg, assistantId) {
         const systemPrompt = {
             role: "system",
@@ -652,7 +861,8 @@ class ChatPanel {
         const contextMessages = msg._contextPrefix
             ? [{ role: "user", content: msg._contextPrefix }, { role: "assistant", content: "Understood. I have the prior conversation context." }]
             : [];
-        const requestHistory = [systemPrompt, ...contextMessages, ...this._state.ollamaHistory, { role: "user", content: msg.text }];
+        const trimmed = trimHistoryToFit(this._state.ollamaHistory, msg.text, [systemPrompt, ...contextMessages]);
+        const requestHistory = [systemPrompt, ...contextMessages, ...trimmed, { role: "user", content: msg.text }];
         let text = "";
         let tools = [];
         let streamEnded = false;
@@ -892,7 +1102,10 @@ class ChatPanel {
     }
     _getHtml() {
         const htmlPath = path.join(__dirname, "..", "webview", "index.html");
-        return fs.readFileSync(htmlPath, "utf8");
+        let html = fs.readFileSync(htmlPath, "utf8");
+        const storedZoom = ChatPanel._globalState?.get("hme.zoomLevel") ?? 1.0;
+        html = html.replace("<head>", `<head><script>window.__HME_ZOOM__=${storedZoom};</script>`);
+        return html;
     }
     async dispose() {
         if (this._disposed)
@@ -911,7 +1124,9 @@ class ChatPanel {
         try {
             this._persistState();
         }
-        catch (e) { }
+        catch (e) {
+            console.error(`[HME] dispose: _persistState failed: ${e?.message ?? e}`);
+        }
         // Graceful async cleanup: await narrative synthesis with 5s cap, then kill shim
         const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
         const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
