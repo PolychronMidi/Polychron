@@ -45,7 +45,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
             assembled_parts.append("\n".join(kb_lines))
 
     if triage["contextual"]:
-        narrative = get_session_narrative(max_entries=3)
+        narrative = get_session_narrative(max_entries=5, categories=["edit", "search", "enrich", "evolve"])
         if narrative:
             assembled_parts.append(narrative.strip())
         summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "pipeline-summary.json")
@@ -123,7 +123,17 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         f"enrich:{trace['enrich_ms']} compress:{trace['compress_ms']})"
     )
 
-    return {"enriched": enriched, "original": prompt, "triage": triage, "trace": trace}
+    # ── Stage 5: Grounding check — flag hallucinated paths ────────────────
+    hallucinated = []
+    import re as _re
+    for m in _re.finditer(r'(?:src/|tools/)[^\s,)]+\.(?:js|py|ts)', enriched):
+        p = m.group(0)
+        full = os.path.join(ctx.PROJECT_ROOT, p)
+        if not os.path.exists(full):
+            hallucinated.append(p)
+
+    return {"enriched": enriched, "original": prompt, "triage": triage, "trace": trace,
+            "hallucinated_paths": hallucinated}
 
 
 @ctx.mcp.tool()
@@ -151,6 +161,11 @@ def enrich_prompt(prompt: str, frame: str = "") -> str:
     trace = result["trace"]
 
     out = [f"## Enriched Prompt\n\n{result['enriched']}"]
+    bad_paths = result.get("hallucinated_paths", [])
+    if bad_paths:
+        out.append(f"\n\n⚠ *Grounding check: these paths don't exist — verify before using:*")
+        for p in bad_paths:
+            out.append(f"  - `{p}`")
     out.append(f"\n\n---\n*Modes: {', '.join(modes)} | "
                f"Triage: {trace['triage_ms']}ms, Assembly: {trace['assembly_ms']}ms, "
                f"Enrich: {trace['enrich_ms']}ms, Compress: {trace['compress_ms']}ms*")
