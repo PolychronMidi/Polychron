@@ -25,7 +25,7 @@ def register_critical_failure(source: str, error: str, severity: str = "CRITICAL
 
     Called from background threads when CUDA errors, 500s, OOM kills, or
     repeated warm priming failures occur. Lifesaver philosophy: errors pop
-    to the top of attention immediately.
+    to the top of attention immediately. Also appends to the HME todo list.
     """
     with _critical_failures_lock:
         _critical_failures.append({
@@ -35,6 +35,11 @@ def register_critical_failure(source: str, error: str, severity: str = "CRITICAL
             "severity": severity,
         })
     logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}")
+    try:
+        from server.tools_analysis.todo import register_todo_from_lifesaver
+        register_todo_from_lifesaver(source, error, severity)
+    except Exception:
+        pass
 
 
 def drain_critical_failures() -> str:
