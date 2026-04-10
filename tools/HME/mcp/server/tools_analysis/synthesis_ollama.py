@@ -84,29 +84,21 @@ def _ollama_background_yield():
 
 
 def _cancellable_urlopen(req_data, url, timeout, cancel_event):
-    """Streaming urlopen that aborts Ollama generation when cancel_event fires.
+    """Streaming urlopen that aborts when cancel_event fires.
 
-    Uses stream:true so closing the connection actually stops Ollama's generation.
-    Socket timeout of 2s ensures the read loop never blocks longer than that, so
-    cancel_event is checked at least every 2 seconds even during prompt eval.
-    Returns (response_bytes, None) on success, (None, exception) on failure.
+    Uses timeout=2 on urlopen so every recv() unblocks within 2s for cancel checks
+    during prompt eval (when Ollama sends no data). Overall deadline enforced in loop.
+    Returns (response_bytes, None) or (None, exception).
     """
-    import urllib.request, socket
+    import urllib.request
     payload = json.loads(req_data)
     payload["stream"] = True
     body = json.dumps(payload).encode()
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
     try:
-        resp = urllib.request.urlopen(req, timeout=timeout)
+        resp = urllib.request.urlopen(req, timeout=2)
     except Exception as e:
         return None, e
-    # Set a short socket timeout so reads unblock regularly for cancel checks.
-    try:
-        sock = resp.fp.raw._sock if hasattr(resp.fp, 'raw') else None
-        if sock:
-            sock.settimeout(2.0)
-    except Exception:
-        pass
     try:
         chunks = []
         final_result = {}
@@ -119,8 +111,12 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
                 return None, TimeoutError(f"timed out after {timeout}s")
             try:
                 raw_line = next(resp)
-            except socket.timeout:
-                continue
+            except OSError as _sock_err:
+                if cancel_event.is_set():
+                    break
+                if isinstance(_sock_err, TimeoutError):
+                    continue
+                raise
             except StopIteration:
                 break
             except Exception as e:
@@ -142,7 +138,7 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
                 resp.close()
             except Exception:
                 pass
-            logger.info("_cancellable_urlopen: background request ABORTED — Ollama generation stopped")
+            logger.info("_cancellable_urlopen: cancelled in %.1fs", __import__("time").time() - (deadline - timeout))
             return None, InterruptedError("cancelled by interactive call")
         final_result["response"] = "".join(chunks)
         return json.dumps(final_result).encode(), None
@@ -255,10 +251,11 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         # Second yield: re-check interactive just before acquiring the lock.
         if priority == "background":
             _ollama_background_yield()
-        # Background: cancellable, NO GPU lock — interactive must never block behind it.
-        # Interactive: 60s max — fail fast, never block for a stuck/unloaded model.
+        # Background: holds GPU lock + cancellable (socket timeout releases within 2s).
+        # Interactive/parallel: acquire lock with 8s timeout — background releases fast.
         if priority == "background":
-            raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
+            with active_lock:
+                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
             if cancel_err:
                 if isinstance(cancel_err, InterruptedError):
                     return (None, []) if return_context else None
@@ -266,8 +263,20 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             resp_obj = None  # handled below via raw_bytes path
         else:
             _http_timeout = 60
-            with active_lock:
-                resp_obj = urllib.request.urlopen(req, timeout=_http_timeout)
+            # Background releases lock within ~2s of cancel (socket timeout).
+            # 8s timeout gives generous margin; if still held, warm priming is stuck.
+            acquired = active_lock.acquire(timeout=8)
+            if not acquired:
+                logger.warning(f"_local_think: GPU lock busy after 8s ({_effective_model}), skipping — warm priming may be stuck")
+                if priority == "interactive":
+                    _ollama_interactive.clear()
+                return (None, []) if return_context else None
+            try:
+                with urllib.request.urlopen(req, timeout=_http_timeout) as resp:
+                    raw_bytes = resp.read()
+                resp_obj = None
+            finally:
+                active_lock.release()
         if priority == "interactive":
             _ollama_interactive.clear()
         if resp_obj is not None:
