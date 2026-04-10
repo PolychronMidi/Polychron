@@ -213,6 +213,39 @@ class ChatPanel {
     _displayMessages() {
         return this._state.messages.slice(-ChatPanel.DISPLAY_CAP);
     }
+    /**
+     * Track a streaming assistant message so partial text survives ext host crashes.
+     * Pushes a placeholder into _state.messages immediately and persists every 10s.
+     * Returns { update, finalize } — call update() on chunks, finalize(msg) to replace.
+     */
+    _trackStream(assistantId, route) {
+        const partial = { id: assistantId, role: "assistant", text: "", route, ts: Date.now() };
+        this._state.messages.push(partial);
+        this._persistState();
+        const idx = this._state.messages.length - 1;
+        let dirty = false;
+        const timer = setInterval(() => {
+            if (dirty) {
+                dirty = false;
+                this._persistState();
+            }
+        }, ChatPanel.STREAM_PERSIST_MS);
+        return {
+            update: (text, tools, thinking) => {
+                partial.text = text;
+                if (tools?.length)
+                    partial.tools = tools;
+                if (thinking)
+                    partial.thinking = thinking;
+                dirty = true;
+            },
+            finalize: (final) => {
+                clearInterval(timer);
+                this._state.messages[idx] = final;
+                this._persistState();
+            },
+        };
+    }
     _loadSession(id) {
         const persisted = (0, SessionStore_1.loadSession)(this._projectRoot, id);
         if (!persisted)
@@ -290,6 +323,7 @@ class ChatPanel {
             id: uid(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
         };
         this._state.messages.push(userMsg);
+        this._persistState();
         if (!msg._queuedUserMsg) {
             this._post({ type: "message", message: userMsg });
         }
@@ -356,6 +390,7 @@ class ChatPanel {
             }]).catch((e) => this._postError("transcript", String(e)));
         const userMsg = { id: uid(), role: "user", text: msg.text, route: "local", ts: Date.now() };
         this._state.messages.push(userMsg);
+        this._persistState();
         this._post({ type: "message", message: userMsg });
         this._post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
         const localId = uid();
@@ -392,6 +427,7 @@ class ChatPanel {
         let text = "";
         let tools = [];
         let streamEnded = false;
+        const tracker = this._trackStream(assistantId, label);
         const safeEnd = () => { if (streamEnded)
             return; streamEnded = true; onBothDone(); };
         const onDone = () => {
@@ -399,7 +435,7 @@ class ChatPanel {
                 this._state.ollamaHistory.push({ role: "user", content: msg.text });
                 this._state.ollamaHistory.push({ role: "assistant", content: text });
             }
-            this._state.messages.push({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: label, ts: Date.now() });
+            tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: label, ts: Date.now() });
             this._post({ type: "streamEnd", id: assistantId });
             this._transcript.logAssistant(text, label, msg.ollamaModel, tools);
             const changedFiles = this._reindexFromTools(tools);
@@ -416,6 +452,7 @@ class ChatPanel {
                 text += chunk;
                 this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
             }
+            tracker.update(text, tools);
         };
         const cancel = (0, router_1.streamOllamaAgentic)(requestHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, onChunk, onDone, (err) => {
             this._postError(label, err);
@@ -433,6 +470,7 @@ class ChatPanel {
         let tools = [];
         let aborted = false;
         let streamEnded = false;
+        const tracker = this._trackStream(assistantId, "hybrid");
         const safeEnd = () => { if (streamEnded)
             return; streamEnded = true; onBothDone(); };
         // Register cancel immediately so abort works during HME context fetch
@@ -451,10 +489,11 @@ class ChatPanel {
                 text += chunk;
                 this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
             }
+            tracker.update(text, tools);
         }, () => {
             if (aborted)
                 return;
-            this._state.messages.push({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: "hybrid", ts: Date.now() });
+            tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: "hybrid", ts: Date.now() });
             this._post({ type: "streamEnd", id: assistantId });
             this._transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
             const changedFiles = this._reindexFromTools(tools);
@@ -492,6 +531,7 @@ class ChatPanel {
         let tools = [];
         let streamEnded = false;
         let aborted = false; // gate: prevents buffered PTY/pipe chunks posting after cancel
+        const tracker = this._trackStream(assistantId, msg._resolvedRoute ?? msg.route);
         const safeEnd = () => {
             if (streamEnded)
                 return;
@@ -510,8 +550,7 @@ class ChatPanel {
                 route: msg._resolvedRoute ?? msg.route,
                 ts: Date.now(),
             };
-            this._state.messages.push(assistantMsg);
-            this._persistState();
+            tracker.finalize(assistantMsg);
             this._post({ type: "streamEnd", id: assistantId });
             // Log to transcript + mirror to shim
             this._transcript.logAssistant(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
@@ -534,12 +573,12 @@ class ChatPanel {
             else if (type === "tool") {
                 tools.push(chunk);
                 this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-                // Log tool call to transcript
                 this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg._resolvedRoute ?? msg.route ?? "claude");
             }
             else if (type === "error") {
                 this._postError("claude", chunk);
             }
+            tracker.update(text, tools, thinking);
         };
         const onError = (err) => {
             if (aborted)
@@ -618,6 +657,7 @@ class ChatPanel {
         let tools = [];
         let streamEnded = false;
         let aborted = false; // gate: drops buffered Ollama chunks after cancel
+        const tracker = this._trackStream(assistantId, "local");
         const safeEnd = () => {
             if (streamEnded)
                 return;
@@ -634,8 +674,7 @@ class ChatPanel {
                 tools: tools.length ? tools : undefined,
                 route: "local", ts: Date.now(),
             };
-            this._state.messages.push(assistantMsg);
-            this._persistState();
+            tracker.finalize(assistantMsg);
             this._post({ type: "streamEnd", id: assistantId });
             this._transcript.logAssistant(text, "local", msg.ollamaModel, tools);
             this._mirrorAssistantToShim(text, "local", msg.ollamaModel, tools);
@@ -655,6 +694,7 @@ class ChatPanel {
                 text += chunk;
                 this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
             }
+            tracker.update(text, tools);
         };
         let ollamaCancelFn;
         this._cancelCurrent = () => { aborted = true; ollamaCancelFn?.(); };
@@ -676,6 +716,7 @@ class ChatPanel {
         let cancelFn;
         let aborted = false;
         let streamEnded = false;
+        const tracker = this._trackStream(assistantId, "hybrid");
         const safeEnd = () => {
             if (streamEnded)
                 return;
@@ -698,6 +739,7 @@ class ChatPanel {
                 text += chunk;
                 this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
             }
+            tracker.update(text, tools);
         }, () => {
             if (aborted)
                 return;
@@ -708,8 +750,7 @@ class ChatPanel {
                 tools: tools.length ? tools : undefined,
                 route: "hybrid", ts: Date.now(),
             };
-            this._state.messages.push(assistantMsg);
-            this._persistState();
+            tracker.finalize(assistantMsg);
             this._post({ type: "streamEnd", id: assistantId });
             this._transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
             this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel, tools);
@@ -891,6 +932,7 @@ class ChatPanel {
 exports.ChatPanel = ChatPanel;
 /** Max messages sent to webview for display. Full history stays in _state.messages and transcript logs. */
 ChatPanel.DISPLAY_CAP = 100;
+ChatPanel.STREAM_PERSIST_MS = 10000;
 function uid() {
     return Math.random().toString(36).slice(2, 10);
 }
