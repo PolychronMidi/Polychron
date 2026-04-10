@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **11 MCP tools** (7 mega-tools + 4 operational) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
+HME is five layers integrated into one executive. **12 MCP tools** (7 mega-tools + 4 operational + 1 todo) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 11 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 4 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern) |
+| **MCP Server** | `tools/HME/` | 12 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 4 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern) + todo |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Cognitive frameworks loaded per session via `/HME` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -51,7 +51,7 @@ tools/HME/               The single source of truth
       main.py                           FastMCP entry point, background model loading
       context.py                        Shared engine references (project_engine, etc.)
       helpers.py                        Budget limits, formatters; loads project-rules.json
-      tools_analysis/                   All 11 registered tools live here:
+      tools_analysis/                   All 12 registered tools live here:
         evolution_evolve.py               evolve — evolution planning hub
         search_unified.py                 find — universal search + analysis
         review_unified.py                 review — post-pipeline review hub
@@ -241,9 +241,9 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Add a KB entry | `learn(title='...', content='...', category='pattern')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## The 11 Tools — Complete Reference
+## The 12 Tools — Complete Reference
 
-All capabilities route through 7 mega-tools + 4 operational tools. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
+All capabilities route through 7 mega-tools + 4 operational tools + todo. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
 
 ### 1. `evolve(focus)` — "What should I work on next?"
 

@@ -22,7 +22,7 @@ if ! ss -tlnp 2>/dev/null | grep -q ":${SHIM_PORT} "; then
 fi
 
 # Persist HME env vars for the session
-if [ -n "$CLAUDE_ENV_FILE" ]; then
+if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"
 fi
 
