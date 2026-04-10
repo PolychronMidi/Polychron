@@ -19,6 +19,10 @@ _last_think_failure_ts: float = 0.0  # monotonic timestamp of last failure
 _TIMEOUT_COOLDOWN_S = 10  # seconds to refuse new requests after a timeout (short — agent pops the stack)
 _cooldown_refused_bg: int = 0   # count of suppressed background REFUSED logs this cooldown episode
 
+# Sentinel to distinguish cooldown refusal from background timeout in return values.
+# Both previously returned (None, []) which made _prime_warm_context log the wrong cause.
+_COOLDOWN_REFUSED = "cooldown_refused"
+
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
 # Reasoning model: Qwen3-30B-A3B (MoE, 3B active params, hybrid thinking mode).
@@ -156,7 +160,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                     f"_local_think REFUSED — {_remaining}s remaining in {_TIMEOUT_COOLDOWN_S}s "
                     "timeout cooldown. Ollama queue may still be stacked."
                 )
-            return (None, []) if return_context else None
+            return (_COOLDOWN_REFUSED, []) if return_context else None
         _last_think_failure = None
         if _cooldown_refused_bg > 0:
             logger.info(f"_local_think cooldown cleared — {_cooldown_refused_bg} background calls were silently skipped.")
@@ -222,7 +226,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         # Interactive: 60s max — fail fast, never block for a stuck/unloaded model.
         if priority == "background":
             with active_lock:
-                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=30, cancel_event=_ollama_interactive)
+                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
             if cancel_err:
                 if isinstance(cancel_err, InterruptedError):
                     return (None, []) if return_context else None
