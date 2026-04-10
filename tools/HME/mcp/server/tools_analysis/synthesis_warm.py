@@ -3,6 +3,9 @@
 Warm context = each model's specialized persona + full KB pre-tokenized into Ollama's KV
 cache via the context= array. Avoids re-tokenizing the same persona text on every call.
 KV cache spills to RAM (models ~21GB VRAM, <600 MiB free per GPU) — correct behavior.
+
+VRAM safety: persona size is hard-capped at _MAX_PERSONA_CHARS to prevent KV cache
+overflow from crashing CUDA kernels on the M40s. The cap leaves headroom for inference.
 """
 import os
 import logging
@@ -18,6 +21,11 @@ _warm_ctx_kb_ver: dict[str, int] = {}
 _warm_ctx_ts: dict[str, float] = {}
 
 _lazy_prime_attempted = False
+
+# Hard cap on persona size (chars). 50K chars ≈ 16K tokens — keeps KV cache within
+# the ~600 MiB VRAM headroom on M40 GPUs. Without this, personas fill the full 65K
+# context window and CUDA kernel launches fail from KV overflow.
+_MAX_PERSONA_CHARS = 50_000
 
 
 def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
@@ -60,7 +68,7 @@ def _gpu_persona(model: str) -> str:
     """Build model-specialized warm persona. GPU0=extractor, GPU1=reasoner, arbiter=hallucination guard."""
     import glob as _glob
     # Import model constants from synthesis_ollama to avoid circular imports
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL, _NUM_CTX_30B, _NUM_CTX_4B
+    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
     from .synthesis_config import _THINK_SYSTEM
 
     full_kb = ""
@@ -97,14 +105,14 @@ def _gpu_persona(model: str) -> str:
             "Real crossLayer modules: " + modules_str + ".\n\n"
             "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
         )
-        _base_tokens = len(base) // 3
-        _src_budget = max(1000, _NUM_CTX_30B - _base_tokens - 1024)
+        _src_char_budget = max(1000, _MAX_PERSONA_CHARS - len(base) - 100)
+        _src_token_budget = _src_char_budget // 3
         src = _load_src_files_for_warm([
             "src/crossLayer/**/*.js",
             "src/conductor/**/*.js",
             "src/fx/**/*.js",
-        ], _src_budget)
-        return base + "\n\n// ===== SOURCE FILES =====\n" + src
+        ], _src_token_budget)
+        return (base + "\n\n// ===== SOURCE FILES =====\n" + src)[:_MAX_PERSONA_CHARS]
 
     if model == _ARBITER_MODEL:
         _signal_fields = []
@@ -137,14 +145,15 @@ def _gpu_persona(model: str) -> str:
             "Known signal fields: " + ", ".join(_signal_fields) + ". "
             "If an analysis cites a module or field NOT in these lists, flag it."
         )
-        _base_tokens = len(arb_base) // 3
-        _src_budget = max(500, _NUM_CTX_4B - _base_tokens - 512)
+        _arbiter_cap = min(_MAX_PERSONA_CHARS, 30_000)
+        _src_char_budget = max(500, _arbiter_cap - len(arb_base) - 100)
+        _src_token_budget = _src_char_budget // 3
         src = _load_src_files_for_warm([
             "scripts/pipeline/*.js",
             "src/conductor/melodic/*.js",
             "src/crossLayer/structure/**/*.js",
-        ], _src_budget)
-        return arb_base + "\n\n// ===== PIPELINE SCRIPTS =====\n" + src
+        ], _src_token_budget)
+        return (arb_base + "\n\n// ===== PIPELINE SCRIPTS =====\n" + src)[:_arbiter_cap]
 
     # Reasoner persona: full KB + module list
     rsn_base = (
@@ -154,14 +163,14 @@ def _gpu_persona(model: str) -> str:
         "module names not in this list: " + modules_str + ".\n\n"
         "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
     )
-    _base_tokens = len(rsn_base) // 3
-    _src_budget = max(1000, _NUM_CTX_30B - _base_tokens - 1024)
+    _src_char_budget = max(1000, _MAX_PERSONA_CHARS - len(rsn_base) - 100)
+    _src_token_budget = _src_char_budget // 3
     src = _load_src_files_for_warm([
         "src/conductor/signal/**/*.js",
         "src/crossLayer/**/*.js",
         "src/composers/**/*.js",
-    ], _src_budget)
-    return rsn_base + "\n\n// ===== SOURCE FILES =====\n" + src
+    ], _src_token_budget)
+    return (rsn_base + "\n\n// ===== SOURCE FILES =====\n" + src)[:_MAX_PERSONA_CHARS]
 
 
 def _prime_warm_context(model: str) -> bool:
@@ -184,13 +193,17 @@ def _prime_warm_context(model: str) -> bool:
         temperature=0.0, return_context=True,
     )
     # _local_think returns (text, ctx_array) with return_context=True.
-    # On cooldown-refused: (None, []) — distinguish from real failure.
+    # Cooldown-refused: (_COOLDOWN_REFUSED, []). Background timeout: (None, []).
+    from .synthesis_ollama import _COOLDOWN_REFUSED
     if isinstance(result, tuple):
         text_result, ctx_array = result
     else:
         text_result, ctx_array = result, None
-    if text_result is None and isinstance(result, tuple) and result == (None, []):
+    if text_result == _COOLDOWN_REFUSED:
         logger.info(f"warm ctx priming SKIPPED: {model} — cooldown active, will retry next cycle")
+        return False
+    if text_result is None and not ctx_array:
+        logger.info(f"warm ctx priming TIMEOUT: {model} — Ollama took too long ({len(persona)} char persona)")
         return False
     if ctx_array:
         import time as _t
