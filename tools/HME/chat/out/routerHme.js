@@ -87,8 +87,7 @@ async function fetchHmeContext(query, topK = 5) {
         req.end();
     });
 }
-// ── Shim HTTP helper — 5s timeout on all fire-and-forget calls ───────────────
-function shimPost(path, body, parse) {
+function shimPost(path, body, parse, timeoutMs = 5000) {
     return new Promise((resolve, reject) => {
         let done = false;
         const fail = (msg) => { if (!done) {
@@ -96,7 +95,7 @@ function shimPost(path, body, parse) {
             req.destroy();
             reject(new Error(msg));
         } };
-        const timer = setTimeout(() => fail(`HME shim ${path} timeout (5s)`), 5000);
+        const timer = setTimeout(() => fail(`HME shim ${path} timeout (${timeoutMs / 1000}s)`), timeoutMs);
         const req = http.request({
             hostname: "127.0.0.1", port: HME_HTTP_PORT, path, method: "POST",
             headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
@@ -125,13 +124,13 @@ async function validateMessage(message) {
     return shimPost("/validate", JSON.stringify({ query: message }), JSON.parse);
 }
 async function auditChanges(changedFiles = "") {
-    return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), JSON.parse);
+    return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), JSON.parse, 15000);
 }
 async function postTranscript(entries) {
     return shimPost("/transcript", JSON.stringify({ entries }), () => undefined);
 }
 async function reindexFiles(files) {
-    return shimPost("/reindex", JSON.stringify({ files }), JSON.parse);
+    return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 15000);
 }
 async function postNarrative(narrative) {
     return shimPost("/narrative", JSON.stringify({ narrative }), () => undefined);

@@ -124,22 +124,22 @@ def what_did_i_forget(changed_files: str) -> str:
     # Adaptive synthesis: always run when API key available — missed things aren't only in warnings
     warnings_text = "\n".join(all_warnings[:15]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
-    # NOTE: session narrative injected by _local_think (synthesis_ollama.py L111-116)
-    # when system==_THINK_SYSTEM — do NOT prepend here or narrative appears twice.
     user_text = (
         f"Changed files: {changed_files}\n"
         f"Audit warnings: {warnings_text}\n"
         f"Docs that may need updating: {docs_text}\n\n"
-        "List only SPECIFIC things the developer may have forgotten — grounded in the KB "
-        "and the actual changed files above. Omit generic advice. Omit anything already "
-        "covered by the audit warnings. Only include a point if you can name the exact "
-        "file, function, or constraint it applies to. If nothing else was missed, say so."
+        "Rules:\n"
+        "- ONLY list items you can tie to a specific file, function, or constraint name.\n"
+        "- Do NOT list generic best practices (run tests, update docs, check types).\n"
+        "- Do NOT repeat anything already in the audit warnings above.\n"
+        "- If nothing concrete was missed, respond with exactly: 'Nothing missed.'\n"
+        "- Maximum 3 bullet points. Each must name the exact file or function affected.\n"
     )
-    synthesis = _local_think(user_text, max_tokens=512, model=_REASONING_MODEL,
+    synthesis = _local_think(user_text, max_tokens=256, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis_ollama import compress_for_claude
-        synthesis = compress_for_claude(synthesis, max_chars=800, hint="post-change audit missed items")
+        synthesis = compress_for_claude(synthesis, max_chars=500, hint="post-change audit missed items")
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
         parts.append(synthesis)
     else:
