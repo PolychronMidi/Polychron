@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **12 MCP tools** (7 mega-tools + 4 operational + 1 todo) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
+HME is five layers integrated into one executive. **13 MCP tools** (7 mega-tools + 5 operational + 1 todo) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 12 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 4 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern) + todo |
+| **MCP Server** | `tools/HME/` | 13 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 5 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern/prompt_enricher) + todo |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -51,7 +51,7 @@ tools/HME/               The single source of truth
       main.py                           FastMCP entry point, background model loading
       context.py                        Shared engine references (project_engine, etc.)
       helpers.py                        Budget limits, formatters; loads project-rules.json
-      tools_analysis/                   All 12 registered tools live here:
+      tools_analysis/                   All 13 registered tools live here:
         evolution_evolve.py               evolve — evolution planning hub
         search_unified.py                 find — universal search + analysis
         review_unified.py                 review — post-pipeline review hub
@@ -62,6 +62,7 @@ tools/HME/               The single source of truth
         evolution_admin.py                hme_admin + fix_antipattern
         runtime.py                        beat_snapshot
         workflow.py                       warm_pre_edit_cache + before_editing
+        prompt_enricher.py                prompt_enricher — local prompt enrichment
         (+ 20 internal modules: coupling, reasoning, symbols, etc.)
       tools_search.py                   Internal: grep, search_code, find_callers, file_lines
       tools_knowledge.py                Internal: add/search/list/compact/export/graph/dream/health
@@ -88,7 +89,7 @@ tools/HME/               The single source of truth
 ```
 Polychron/.claude/mcp/HME/
   code_chunks.lance/     Semantic code chunks (~3000 from 610+ files)
-  knowledge.lance/       KB (68 entries with prediction error gating, FSRS-6 spaced repetition)
+  knowledge.lance/       KB (68 entries with prediction error gating, FSRS-6 spaced repetition with persistent access log)
   symbols.lance/         Symbol index (3848+ symbols: 321 IIFE globals + inner functions)
   file_hashes.json       Content hash cache for incremental reindex
   global_kb/             Cross-project shared KB
@@ -239,11 +240,12 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Trace a signal through the system | `trace("emergentRhythm")` |
 | Search the KB | `learn(query='coupling constraints')` |
 | Add a KB entry | `learn(title='...', content='...', category='pattern')` |
+| Enrich a prompt with project context | `prompt_enricher(prompt='...', frame='focus on...')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## The 12 Tools — Complete Reference
+## The 13 Tools — Complete Reference
 
-All capabilities route through 7 mega-tools + 4 operational tools + todo. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
+All capabilities route through 7 mega-tools + 5 operational tools + todo. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
 
 ### 1. `evolve(focus)` — "What should I work on next?"
 
@@ -390,6 +392,19 @@ Two-tier warming: Tier 1 scans up to `max_files` src/ files for callers+KB (fast
 
 Synthesizes bash detection logic for a behavioral anti-pattern and appends it to the target hook script. Use when a rule is repeatedly violated and needs automated enforcement. Valid targets: `pretooluse_bash`, `pretooluse_read`, `pretooluse_edit`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
 
+### 12. `prompt_enricher(prompt, frame)` — Local prompt enrichment
+
+Four-stage local pipeline that enriches prompts with project context at zero Claude token cost:
+
+| Stage | What it does |
+|-------|-------------|
+| **1. Arbiter triage** | qwen3:4b classifies needs: `KB_NEEDED`, `STRUCTURAL_NEEDED`, `CONTEXTUAL_NEEDED` |
+| **2. Context assembly** | Instant KB search + session narrative + pipeline verdict (only for flagged needs) |
+| **3. Reasoning enrichment** | GPU1 reasoner weaves context into the prompt naturally |
+| **4. Arbiter compression** | If enriched > 3x original length, arbiter compresses to essentials |
+
+Returns `{enriched, original, triage, trace}`. Available via MCP tool, HTTP shim (`/enrich_prompt`), and HME Chat UI (Enrich button with optional frame textarea). Use `frame` to guide enrichment direction (e.g. "focus on architectural constraints").
+
 ## Knowledge KB
 
 68 entries across 4 categories. FSRS-6 spaced repetition: frequently retrieved entries resist temporal decay.
@@ -407,7 +422,7 @@ All hooks live in `tools/HME/hooks/` as standalone scripts, referenced from `.cl
 
 ### Hook Scripts (16 hooks across 7 lifecycle events)
 
-All hooks share `_tab_helpers.sh` for deduped tab operations (`_append_file_to_tab`, `_extract_bg_output_path`).
+All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` for weighted streak counter (`_streak_tick WEIGHT` / `_streak_check` / `_streak_reset`) and HME HTTP enrichment helpers (`_hme_enrich` / `_hme_validate` / `_hme_kb_count` / `_hme_kb_titles`). Streak weights: Read=5, Edit=10, Write=10, Bash=15, Grep=20. Warns at 50, blocks at 70.
 
 | Script | Event | Matcher | What It Does |
 |--------|-------|---------|-------------|
@@ -476,6 +491,8 @@ HME runs a three-model local synthesis fleet. No external API. All synthesis is 
 - Three severity levels: `ALIGNED` (pass through), `MINOR` (advisory note injected), `COMPLEX` (escalate to Stage 1.75)
 - Configured via `HME_ARBITER_MODEL` (default: `qwen3:4b`)
 
+**Failure recovery:** Each model has a 3-state circuit breaker (CLOSED → OPEN → HALF_OPEN) that replaces fixed cooldowns. 3 failures within 60s opens the circuit (blocks calls for 15s recovery). HALF_OPEN allows one probe call — success resets, failure reopens.
+
 **No model needed:**
 - All hooks (pure bash), all search/grep/index operations, `hme_inspect(mode='introspect')`, `doc_sync_check`
 
@@ -531,6 +548,8 @@ Every output from `_parallel_two_stage_think` ends with a pipeline trace line:
 ```
 (where `Xc` = token count per stage)
 
+Structured traces are logged to `log/synthesis-traces.jsonl` and arbiter decisions to `log/synthesis-arbiter.jsonl` for telemetry analysis.
+
 **Arbiter escalation (Stage 1.75):** When arbiter detects COMPLEX conflicts (hallucinated module names, contradictory architectural claims, boundary violations), it escalates to GPU1 for authoritative reconciliation before Stage 2. The resolved brief replaces the conflicted input.
 
 ### Think Session Memory
@@ -557,7 +576,7 @@ A running prose thread of what's happening this session — orthogonal to KB (st
 
 **API:**
 - `append_session_narrative(event, content)` — external callers (pipeline hooks, evolution tools) can push events
-- `get_session_narrative()` — returns formatted narrative block for injection anywhere
+- `get_session_narrative(categories=['think','edit','search'])` — returns formatted narrative block, optionally filtered by category (commit/pipeline/think/search/edit/review/kb/other)
 - Max 10 events (`_SESSION_NARRATIVE_MAX=10`); oldest drops when full
 - `hme_admin(mode='selftest')` shows event count under "session narrative"
 
@@ -650,6 +669,7 @@ PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py
 |----------|--------|---------|
 | `/health` | GET | Readiness + transcript count + KB status |
 | `/enrich` | POST | KB hits + transcript context for message enrichment |
+| `/enrich_prompt` | POST | Four-stage local prompt enrichment (arbiter triage → KB assembly → reasoning → compression) |
 | `/validate` | POST | Pre-send anti-pattern/constraint check |
 | `/audit` | POST | Post-response changed-file constraint audit |
 | `/transcript` | GET | Read recent transcript entries (windowed) |
