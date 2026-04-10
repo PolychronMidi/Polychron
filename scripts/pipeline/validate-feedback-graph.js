@@ -172,21 +172,17 @@ for (const sLoop of sourceLoops) {
   }
 }
 
-// Check 4: JSON loop modules that have no corresponding source registration
-// Loops marked "conceptual": true in JSON are advisory documentation -
-// they represent implicit feedback paths without explicit feedbackRegistry
-// enrollment. Skip the source-match check for these.
+// Check 4: JSON loop modules MUST have corresponding source registration.
+// Every declared loop must be enrolled in feedbackRegistry for resonance dampening.
 for (const jsonLoop of jsonLoops) {
   const jsonMod = jsonLoop.module;
-  if (jsonLoop.conceptual) {
-    passes++; // conceptual loops are documentation-only, not enrolled in resonance dampening
-  } else if (sourceLoopNames.has(jsonMod)) {
+  if (sourceLoopNames.has(jsonMod)) {
     passes++;
   } else {
-    warnings.push(
+    failures.push(
       `feedback_graph.json declares loop module "${jsonMod}" (id: ${jsonModuleToId[jsonMod]}) ` +
       'but no feedbackRegistry.registerLoop() or closedLoopController.create() call found in source. ' +
-      'This may be a conceptual loop not enrolled in resonance dampening.'
+      'Every declared loop must be enrolled in resonance dampening.'
     );
   }
 }
