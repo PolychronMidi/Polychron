@@ -181,7 +181,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
     gaps = _local_think(
         "/no_think Brief:\n\n" + frame + "\n\nQuestion: " + question + "\n\n"
         "What SPECIFIC facts are MISSING? List as: NEED: <what>. If nothing, respond: NO GAPS\nMax 5 gaps.",
-        max_tokens=500, model=_REASONING_MODEL, temperature=0.2, system=_THINK_SYSTEM
+        max_tokens=800, model=_REASONING_MODEL, temperature=0.2, system=_THINK_SYSTEM
     )
     if gaps and "NO GAP" not in gaps.upper() and "NEED:" in gaps:
         supplement = _local_think(
@@ -197,7 +197,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
         "Format: FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence. Max 4 items."
     )
     return _local_think(
-        "/no_think Brief:\n\n" + frame + "\n\nContext:\n" + raw_context[:2000] +
+        "/no_think Brief:\n\n" + frame + "\n\nContext:\n" + raw_context[:4000] +
         "\n\nQuestion: " + question + "\n\n" + _fmt,
         max_tokens=max_tokens, model=_REASONING_MODEL, system=_THINK_SYSTEM
     )

@@ -229,7 +229,7 @@ def think(about: str, context: str = "") -> str:
         _narr_cats = ["pipeline", "kb", "commit"]
     else:
         _narr_cats = ["think", "edit", "search"]
-    _narr = _get_narr(max_entries=4, categories=_narr_cats)
+    _narr = _get_narr(max_entries=6, categories=_narr_cats)
     if _narr:
         raw_context += _narr
 
@@ -250,8 +250,8 @@ def think(about: str, context: str = "") -> str:
         # so skip Stage 1 entirely — faster and equally accurate for tool UX questions.
         # Inject _THINK_SYSTEM so the model knows the alien music + HME domain from the start.
         local_answer = _local_think(
-            raw_context[:6000] + "\n\n" + prompt,
-            max_tokens=2048, model=_REASONING_MODEL,
+            raw_context[:10000] + "\n\n" + prompt,
+            max_tokens=4096, model=_REASONING_MODEL,
             system=_THINK_SYSTEM,
         )
         if local_answer:
@@ -288,7 +288,7 @@ def think(about: str, context: str = "") -> str:
         # then GPU 1 produces final answer from merged brief. ~2x faster than sequential.
         # max_tokens=1024: final answer is ≤4 items → caps chat stage at ~70s (vs 8192=546s).
         # All processing from Stage 1 threads is preserved in the merged brief fallback.
-        local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=1024)
+        local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=2048)
         if local_answer:
             local_answer = _ground_file_paths(local_answer)
             store_think_history(about, local_answer)

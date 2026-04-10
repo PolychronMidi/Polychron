@@ -135,11 +135,11 @@ def what_did_i_forget(changed_files: str) -> str:
         "- If nothing concrete was missed, respond with exactly: 'Nothing missed.'\n"
         "- Maximum 3 bullet points. Each must name the exact file or function affected.\n"
     )
-    synthesis = _local_think(user_text, max_tokens=256, model=_REASONING_MODEL,
+    synthesis = _local_think(user_text, max_tokens=800, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis_ollama import compress_for_claude
-        synthesis = compress_for_claude(synthesis, max_chars=500, hint="post-change audit missed items")
+        synthesis = compress_for_claude(synthesis, max_chars=800, hint="post-change audit missed items")
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
         parts.append(synthesis)
     else:
