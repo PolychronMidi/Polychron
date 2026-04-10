@@ -88,7 +88,7 @@ def think(about: str, context: str = "") -> str:
         _add_kb_hits(term, top_k=2)
     kb_block = ""
     if kb_hits:
-        lines = [f"  [{k['category']}] {k['title']}: {k['content'][:200]}" for k in kb_hits[:10]]
+        lines = [f"  [{k['category']}] {k['title']}: {k['content'][:300]}" for k in kb_hits[:10]]
         kb_block = "Relevant KB patterns and constraints:\n" + "\n".join(lines)
 
     # Detect meta-HME questions (about improving HME tools themselves, not the music src).
@@ -426,7 +426,7 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
                                  system=_THINK_SYSTEM)
         if synthesis:
             from .synthesis_ollama import compress_for_claude
-            synthesis = compress_for_claude(synthesis, max_chars=600, hint=f"blast radius risk for {symbol_name}")
+            synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"blast radius risk for {symbol_name}")
             parts.append(f"\n## Change Risk *(adaptive)*")
             parts.append(synthesis)
         else:

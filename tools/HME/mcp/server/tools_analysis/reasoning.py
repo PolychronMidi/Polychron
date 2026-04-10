@@ -309,11 +309,11 @@ def module_story(module_name: str) -> str:
         "- Otherwise, in 1-3 bullet points: " + subsystem_prompt + "\n"
         "- Only reference behaviors visible in the code above. Do NOT speculate.\n"
     )
-    synthesis = _local_think(user_text, max_tokens=512, model=_REASONING_MODEL,
+    synthesis = _local_think(user_text, max_tokens=800, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis_ollama import compress_for_claude
-        synthesis = compress_for_claude(synthesis, max_chars=600, hint=f"key constraints for {module_name}")
+        synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"key constraints for {module_name}")
         parts.append(f"\n## Key Constraints *(adaptive)*")
         parts.append(synthesis)
     else:
