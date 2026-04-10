@@ -9,6 +9,7 @@ import logging
 
 from server import context as ctx
 from . import _track
+from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -23,6 +24,8 @@ def read(target: str, mode: str = "auto") -> str:
     mode='before' → before_editing pre-edit briefing (KB constraints, callers, risks).
     mode='auto' (default) detects from target format."""
     _track("read")
+    if mode != "before":
+        append_session_narrative("search", f"read({mode}): {target[:60]}")
     ctx.ensure_ready_sync()
     if not target or not target.strip():
         return "Error: target cannot be empty. Pass a file path, function name, or module name."

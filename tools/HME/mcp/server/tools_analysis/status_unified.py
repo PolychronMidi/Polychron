@@ -8,6 +8,7 @@ import logging
 
 from server import context as ctx
 from . import _track
+from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -21,6 +22,7 @@ def status(mode: str = "all") -> str:
     mode='perceptual': perceptual stack status (EnCodec/CLAP/verdict model).
     mode='hme': HME selftest + introspection."""
     _track("status")
+    append_session_narrative("status", f"status({mode})")
     ctx.ensure_ready_sync()
 
     if mode == "pipeline":

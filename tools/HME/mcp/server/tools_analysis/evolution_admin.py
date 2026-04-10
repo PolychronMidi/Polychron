@@ -383,6 +383,8 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
     action='both': reload then selftest.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
+    from .synthesis_session import append_session_narrative
+    append_session_narrative("admin", f"hme_admin({action}): {modules or 'default'}")
     parts = []
     if action in ("reload", "both"):
         parts.append(hme_hot_reload(modules))

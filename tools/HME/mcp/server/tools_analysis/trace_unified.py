@@ -6,6 +6,7 @@ import logging
 
 from server import context as ctx
 from . import _track
+from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -18,6 +19,7 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
     mode='auto' (default) detects from target: known L0 channel names → cascade,
     otherwise → module trace. mode='cascade'|'module'|'causal' to force."""
     _track("trace")
+    append_session_narrative("trace", f"trace({mode}): {target[:60]}")
     ctx.ensure_ready_sync()
     if not target or not target.strip():
         return "Error: target cannot be empty. Pass a channel name or module name."

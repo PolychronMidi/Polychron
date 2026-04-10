@@ -10,6 +10,7 @@ import logging
 
 from server import context as ctx
 from . import _track
+from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -24,6 +25,7 @@ def evolve(focus: str = "all") -> str:
     focus='patterns': journal meta-patterns across all rounds.
     focus='seed': auto-generate starter KB entries for high-dependency uncovered modules."""
     _track("evolve")
+    append_session_narrative("evolve", f"evolve({focus})")
     ctx.ensure_ready_sync()
     parts = ["# Evolution Intelligence\n"]
 
