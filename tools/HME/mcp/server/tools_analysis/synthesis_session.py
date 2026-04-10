@@ -100,13 +100,15 @@ def append_session_narrative(event: str, content: str):
     _save_session_state()
 
 
-def get_session_narrative() -> str:
-    """Return formatted narrative for injection into any model call."""
+def get_session_narrative(max_entries: int = 0) -> str:
+    """Return formatted narrative for injection into model calls.
+    max_entries: limit to N most recent entries (0 = all stored entries)."""
     _load_session_state()
     if not _session_narrative:
         return ""
-    lines = [f"  [{e['seq']}:{e['event']}] {e['content']}" for e in _session_narrative]
-    return "Session narrative (this session's work so far):\n" + "\n".join(lines) + "\n\n"
+    entries = _session_narrative[-max_entries:] if max_entries > 0 else _session_narrative
+    lines = [f"  [{e['seq']}:{e['event']}] {e['content']}" for e in entries]
+    return "Session narrative (recent work):\n" + "\n".join(lines) + "\n\n"
 
 
 def session_state_counts() -> dict:

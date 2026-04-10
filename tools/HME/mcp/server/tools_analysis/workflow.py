@@ -218,12 +218,13 @@ def before_editing(file_path: str) -> str:
     except Exception:
         pass
 
-    # Evolutionary Potential — fused from module_intel (R80 E4: one call gives everything)
+    # Evolutionary Potential — only show when actionable (uncoupled dims or bridge opportunities)
     if abs_path.endswith(".js") and "/src/" in abs_path:
         try:
             from .reasoning import build_evolutionary_potential
             evo_lines = build_evolutionary_potential(module_name)
-            if evo_lines:
+            actionable = [l for l in evo_lines if "OPPORTUNITY" in l or "Unused" in l or "Not " in l]
+            if actionable:
                 parts.append(f"\n## Evolutionary Potential")
                 parts.extend(evo_lines)
         except Exception:
@@ -274,19 +275,18 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     sym_summary = ""
     if symbols:
         sym_summary = ", ".join(f"L{s['line']}:{s['name']}" for s in symbols[:8])
-    # NOTE: session narrative is injected by _local_think itself (synthesis_ollama.py L111-116)
-    # when system==_THINK_SYSTEM — do NOT prepend it here or it gets injected twice.
     user_text = (
         f"File about to be edited: {rel_path}\n"
-        f"Dependents: {callers_summary}\n"
-        f"Project KB constraints for this module:\n{kb_summary}\n"
+        f"Dependents ({len(caller_files)}): {callers_summary}\n"
+        f"KB constraints:\n{kb_summary}\n"
         + (f"Recent commits: {recent_commits[:200]}\n" if recent_commits else "")
         + (f"Key symbols: {sym_summary}\n" if sym_summary else "")
         + (f"Musical context: {comp[:300]}\n" if comp else "")
-        + "\nIn 3 numbered points: what are the specific risks of editing this file? "
-        "Be concrete about which callers could break, which architectural boundaries apply, "
-        "and any invariants (coupling targets, registration order, layer isolation) that must not change. "
-        "If this module has musical impact, explain what the listener would notice if this code breaks."
+        + "\nRules:\n"
+        "- List 1-3 CONCRETE risks. Each must name the specific caller, boundary, or invariant.\n"
+        "- Do NOT speculate about risks not grounded in the dependents and constraints above.\n"
+        "- If this file has 0 dependents and no KB constraints, respond: 'Low risk — leaf module.'\n"
+        "- Format: '1. [risk] because [specific caller/constraint].'\n"
     )
     # Local model: coder model handles 3-bullet edit risks well (~17-34s).
     synthesis = _local_think(user_text, max_tokens=250, model=_LOCAL_MODEL,

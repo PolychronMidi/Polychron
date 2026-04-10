@@ -53,12 +53,11 @@ export async function fetchHmeContext(query: string, topK: number = 5): Promise<
   });
 }
 
-// ── Shim HTTP helper — 5s timeout on all fire-and-forget calls ───────────────
-function shimPost<T>(path: string, body: string, parse: (raw: string) => T): Promise<T> {
+function shimPost<T>(path: string, body: string, parse: (raw: string) => T, timeoutMs: number = 5000): Promise<T> {
   return new Promise((resolve, reject) => {
     let done = false;
     const fail = (msg: string) => { if (!done) { done = true; req.destroy(); reject(new Error(msg)); } };
-    const timer = setTimeout(() => fail(`HME shim ${path} timeout (5s)`), 5000);
+    const timer = setTimeout(() => fail(`HME shim ${path} timeout (${timeoutMs / 1000}s)`), timeoutMs);
     const req = http.request(
       {
         hostname: "127.0.0.1", port: HME_HTTP_PORT, path, method: "POST",
@@ -87,7 +86,7 @@ export async function validateMessage(message: string): Promise<{ warnings: any[
 }
 
 export async function auditChanges(changedFiles: string = ""): Promise<{ violations: any[]; changed_files: string[] }> {
-  return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), JSON.parse);
+  return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), JSON.parse, 15000);
 }
 
 export async function postTranscript(entries: any[]): Promise<void> {
@@ -95,7 +94,7 @@ export async function postTranscript(entries: any[]): Promise<void> {
 }
 
 export async function reindexFiles(files: string[]): Promise<{ indexed: string[]; count: number }> {
-  return shimPost("/reindex", JSON.stringify({ files }), JSON.parse);
+  return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 15000);
 }
 
 export async function postNarrative(narrative: string): Promise<void> {

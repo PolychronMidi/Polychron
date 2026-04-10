@@ -218,10 +218,11 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             system = ""
             logger.debug(f"_local_think: warm ctx hit ({len(warm)} tokens, {_effective_model})")
 
-    # Inject session narrative into synthesis calls
-    if system == _THINK_SYSTEM or (system == "" and context is not None):
+    # Inject session narrative into interactive synthesis calls only.
+    # Background calls (warm cache) don't benefit from narrative context.
+    if priority != "background" and (system == _THINK_SYSTEM or (system == "" and context is not None)):
         from .synthesis_session import get_session_narrative
-        narrative = get_session_narrative()
+        narrative = get_session_narrative(max_entries=5)
         if narrative and not prompt.startswith("Session narrative"):
             prompt = narrative + prompt
 
