@@ -5,9 +5,10 @@ cat > /dev/null  # consume stdin
 
 PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 
-# Reset compact tab for fresh session
+# Reset compact tab and nexus state for fresh session
 mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-tab.txt"
+> "${PROJECT}/tmp/hme-nexus.state"
 
 # Ensure HME HTTP shim is running — serves both VS Code extension and Claude Code hooks.
 # If already bound, skip. If not, start it in background.

@@ -37,6 +37,11 @@ if [ -f "$TS_FILE" ]; then
   rm -f "$TS_FILE" 2>/dev/null
 fi
 
+# Reset streak counter when HME tool is used (explicit reset, not implicit)
+if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
+  echo 0 > /tmp/hme-non-hme-streak.count
+fi
+
 # LIFESAVER threshold: warn when MCP HME synthesis exceeds expected duration
 if [[ "$TOOL_NAME" == mcp__HME__* ]] && [ "$ELAPSED_S" -gt 0 ]; then
   # warm_pre_edit_cache / review: 30s expected max (synthesis is now 60s HTTP timeout)

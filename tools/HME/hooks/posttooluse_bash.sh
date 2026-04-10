@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
-# HME PostToolUse: Bash — background file tracking + Evolver phase triggers
+# HME PostToolUse: Bash — background file tracking + Evolver phase triggers + nexus state
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_tab_helpers.sh"
+source "$SCRIPT_DIR/_nexus.sh"
 
 INPUT=$(cat)
 CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
@@ -62,4 +63,37 @@ elif echo "$CMD" | grep -q 'npm run snapshot'; then
 elif echo "$CMD" | grep -q 'node lab/run'; then
   echo 'LAB COMPLETE: Check results for FAIL/PASS. Every sketch must render a .wav file. Failed sketches need diagnosis and re-run before reporting verdicts.' >&2
 fi
+
+# Nexus: track pipeline verdicts
+if echo "$CMD" | grep -q 'npm run main'; then
+  RESULT=$(echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | tail -c 500)
+  if echo "$RESULT" | grep -q 'Pipeline finished'; then
+    PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+    PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
+    FP="$PROJECT/metrics/fingerprint-comparison.json"
+    VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
+    if [ "$PASSED" = "0" ]; then
+      _nexus_mark PIPELINE "$VERDICT"
+      _nexus_clear_type COMMIT
+      if [ "$VERDICT" = "STABLE" ] || [ "$VERDICT" = "EVOLVED" ]; then
+        echo "NEXUS: Pipeline $VERDICT — commit all changed files now." >&2
+      elif [ "$VERDICT" = "DRIFTED" ]; then
+        echo "NEXUS: Pipeline DRIFTED — do NOT commit. Diagnose regression." >&2
+      fi
+    else
+      _nexus_mark PIPELINE "FAILED"
+      echo "NEXUS: Pipeline FAILED — diagnose with find(error_text, mode='diagnose')." >&2
+    fi
+  fi
+fi
+
+# Nexus: track git commits
+if echo "$CMD" | grep -qE '^git commit'; then
+  EXIT_CODE=$(echo "$INPUT" | jq -r '.tool_result.exit_code // .exit_code // "0"' 2>/dev/null)
+  if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
+    _nexus_mark COMMIT
+    echo "NEXUS: Committed. Next: check doc sync (review mode='docs') and reindex (hme_admin action='index')." >&2
+  fi
+fi
+
 exit 0

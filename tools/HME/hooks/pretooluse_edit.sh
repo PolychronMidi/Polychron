@@ -9,6 +9,15 @@ if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(e
   exit 2
 fi
 
+# Nexus: check if file was briefed with read(mode='before')
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+if echo "$FILE" | grep -qE '/Polychron/src/'; then
+  MODULE=$(basename "$FILE" | sed 's/\.[jt]sx\?$//')
+  if ! _nexus_has BRIEF "$MODULE" && ! _nexus_has BRIEF "$FILE"; then
+    echo "NEXUS: Editing $MODULE without pre-edit briefing. Call read(\"$MODULE\", mode=\"before\") first for KB constraints + callers + risks." >&2
+  fi
+fi
+
 if echo "$FILE" | grep -qE '/Polychron/(src|tools/HME/(chat/src|mcp/server)|scripts)/'; then
   MODULE=$(basename "$FILE" | sed 's/\.[jt]sx\?$//')
   # Pull live constraint check from shim (2s timeout)
