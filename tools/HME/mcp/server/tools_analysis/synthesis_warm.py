@@ -109,6 +109,198 @@ def _load_warm_cache(model: str) -> bool:
         return False
 
 
+_incremental_update_lock = _threading.Lock()
+
+# Append count + baseline tokens for GC / drift detection (#4 and #5)
+_warm_ctx_append_count: dict = {}
+_warm_ctx_baseline_tokens: dict = {}
+_MAX_INCREMENTAL_APPENDS = 8       # schedule GC re-prime after N incremental appends
+_GC_TOKEN_GROWTH_RATIO = 0.20      # or if token count grew > 20% above full-prime baseline
+
+# Batch debounce queue — coalesces rapid-fire learn() calls into one Ollama round-trip (#3)
+_pending_entries: list = []
+_batch_timer = None
+_batch_lock = _threading.Lock()
+_BATCH_DEBOUNCE_S = 3.0
+
+# Debounce timer for background re-prime after KB removes (#2)
+_reprime_timer = None
+_reprime_lock = _threading.Lock()
+
+
+def queue_incremental_update(title: str, content: str, category: str, new_kb_ver: int):
+    """Queue a KB entry for batched incremental context extension.
+
+    Debounced: resets timer on each call, flushes after BATCH_DEBOUNCE_S of silence.
+    Multiple learn() calls within the window are coalesced into one Ollama round-trip.
+    """
+    global _batch_timer
+    with _batch_lock:
+        _pending_entries.append({
+            "title": title, "content": content, "category": category, "kb_ver": new_kb_ver,
+        })
+        if _batch_timer is not None:
+            _batch_timer.cancel()
+        t = _threading.Timer(_BATCH_DEBOUNCE_S, _flush_pending_entries)
+        t.daemon = True
+        t.start()
+        _batch_timer = t
+
+
+def _flush_pending_entries():
+    """Flush queued KB entries to all warm contexts — GPU0 and GPU1 updated in parallel (#1).
+
+    Builds one concatenated prompt from all pending entries and sends a num_predict=1
+    Ollama call to each model concurrently via ThreadPoolExecutor. Saves caches and
+    runs GC check after each successful update.
+    """
+    global _batch_timer
+    if _priming_in_progress.is_set():
+        logger.debug("incr KB flush: skipped — full prime in progress")
+        return
+
+    with _incremental_update_lock:
+        # Drain the queue INSIDE the lock — any entries added while we were waiting
+        # (e.g. a third learn() call during GPU0's 17-90s VRAM reload) are included
+        # in this batch instead of spawning a separate redundant flush.
+        with _batch_lock:
+            if not _pending_entries:
+                _batch_timer = None
+                return
+            entries = list(_pending_entries)
+            _pending_entries.clear()
+            _batch_timer = None
+
+        new_kb_ver = entries[-1]["kb_ver"]
+        # Concatenate all pending entries — one Ollama call evaluates all of them at once
+        entry_text = "".join(
+            f"\n\n[KB #{e['kb_ver']}] [{e['category']}] {e['title']}: {e['content'][:400]}"
+            for e in entries
+        )
+        import urllib.request as _req
+        from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
+        from .synthesis_ollama import (
+            _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
+            _url_for, _KEEP_ALIVE, _num_ctx_for,
+        )
+        # Restore from disk if warm contexts were wiped (e.g. hot-reload)
+        if not any(m in _warm_ctx for m in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]):
+            restored = _load_all_warm_caches()
+            if restored == 0:
+                logger.info("incr KB flush: no warm contexts in memory or cache — skipping (will prime on next use)")
+                return
+            logger.info(f"incr KB flush: restored {restored} contexts from cache for update")
+
+        # Dense 30B (GPU0) may need up to 90s to reload from VRAM eviction before eval
+        _incr_timeout = {_LOCAL_MODEL: 90, _REASONING_MODEL: 45, _ARBITER_MODEL: 45}
+
+        def _update_one(model):
+            if model not in _warm_ctx:
+                return model, None, "not_primed"
+            if _warm_ctx_kb_ver.get(model) == new_kb_ver:
+                return model, None, "already_fresh"
+            old_len = len(_warm_ctx[model])
+            num_ctx = _num_ctx_for(model)
+            if old_len > num_ctx - 500:
+                return model, None, "near_limit"
+            try:
+                payload = _json.dumps({
+                    "model": model, "prompt": entry_text, "context": _warm_ctx[model],
+                    "stream": False, "keep_alive": _KEEP_ALIVE,
+                    "options": {"num_predict": 1, "temperature": 0.0, "num_ctx": num_ctx},
+                }).encode()
+                req = _req.Request(
+                    _url_for(model), data=payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                with _req.urlopen(req, timeout=_incr_timeout.get(model, 60)) as resp:
+                    data = _json.loads(resp.read())
+                new_ctx = data.get("context", [])
+                if new_ctx and len(new_ctx) > old_len:
+                    return model, (old_len, new_ctx), "ok"
+                return model, None, "no_new_ctx"
+            except Exception as e:
+                return model, None, e
+
+        updated = 0
+        with ThreadPoolExecutor(max_workers=3) as ex:
+            futures = {
+                ex.submit(_update_one, m): m
+                for m in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]
+            }
+            for fut in _as_completed(futures):
+                model, result, status = fut.result()
+                if status == "ok":
+                    old_len, new_ctx = result
+                    _warm_ctx[model] = new_ctx
+                    _warm_ctx_kb_ver[model] = new_kb_ver
+                    _warm_ctx_ts[model] = _time.time()
+                    _warm_ctx_append_count[model] = _warm_ctx_append_count.get(model, 0) + len(entries)
+                    logger.info(
+                        f"incr KB update: {model} {old_len}→{len(new_ctx)} tokens, kb_ver→{new_kb_ver}"
+                    )
+                    _save_warm_cache(model)
+                    updated += 1
+                    _check_and_schedule_gc(model)
+                elif status == "near_limit":
+                    logger.info(f"incr KB update: {model} ctx near limit, marking stale for full re-prime")
+                elif isinstance(status, Exception):
+                    logger.warning(f"incr KB update: {model} failed: {type(status).__name__}: {status}")
+
+        if updated > 0:
+            try:
+                from .tool_cache import cache_invalidate_kb
+                cache_invalidate_kb()
+            except Exception:
+                pass
+        n = len(entries)
+        logger.info(
+            f"incr KB update: {updated}/3 models updated to kb_ver={new_kb_ver}"
+            + (f" ({n} entries batched)" if n > 1 else "")
+        )
+
+
+def _check_and_schedule_gc(model: str):
+    """Schedule a background full re-prime when incremental drift exceeds thresholds (#4/#5).
+
+    Triggers when append count >= _MAX_INCREMENTAL_APPENDS OR token growth >= 20%
+    above the baseline established at last full prime.
+    """
+    count = _warm_ctx_append_count.get(model, 0)
+    baseline = _warm_ctx_baseline_tokens.get(model, 0)
+    current = len(_warm_ctx.get(model, []))
+    growth = (current - baseline) / max(baseline, 1) if baseline > 0 else 0.0
+    if count >= _MAX_INCREMENTAL_APPENDS or growth >= _GC_TOKEN_GROWTH_RATIO:
+        logger.info(
+            f"warm GC: {model} ({count} appends, {growth:.0%} token growth) "
+            "— scheduling background full re-prime"
+        )
+        def _gc_reprime():
+            _warm_ctx_append_count.pop(model, None)
+            _warm_ctx_baseline_tokens.pop(model, None)
+            _prime_warm_context(model)
+        _threading.Thread(target=_gc_reprime, daemon=True, name=f"HME-gc-{model}").start()
+
+
+def _schedule_reprime_async(delay: float = 5.0):
+    """Debounced background full re-prime — coalesces multiple KB removes into one re-prime (#2).
+
+    Resets timer on each call so a burst of removes produces exactly one re-prime
+    after delay seconds of silence.
+    """
+    global _reprime_timer
+    with _reprime_lock:
+        if _reprime_timer is not None:
+            _reprime_timer.cancel()
+        def _do_reprime():
+            logger.info("warm re-prime: background re-prime after KB removes")
+            _prime_all_gpus()
+        t = _threading.Timer(delay, _do_reprime)
+        t.daemon = True
+        t.start()
+        _reprime_timer = t
+
+
 def _load_all_warm_caches() -> int:
     """Try to restore all model caches from disk. Returns count of successfully restored."""
     from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
@@ -312,6 +504,8 @@ def _prime_warm_context(model: str) -> bool:
         _warm_ctx[model] = ctx_array
         _warm_ctx_kb_ver[model] = kb_ver
         _warm_ctx_ts[model] = _time.time()
+        _warm_ctx_append_count[model] = 0
+        _warm_ctx_baseline_tokens[model] = len(ctx_array)
         logger.info(f"warm ctx PRIMED: {model} ({len(ctx_array)} ctx tokens, kb_ver={kb_ver})")
         _save_warm_cache(model)
         return True
