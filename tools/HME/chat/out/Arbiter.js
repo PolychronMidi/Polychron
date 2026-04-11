@@ -55,7 +55,7 @@ exports.synthesizeChainSummary = synthesizeChainSummary;
  */
 const http = __importStar(require("http"));
 const ARBITER_MODEL = "qwen3:4b"; // small, CPU-only — dedicated instance on port 11436
-const OLLAMA_URL = "http://localhost:11436";
+const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
 
@@ -79,66 +79,43 @@ const CLASSIFY_FORMAT = {
     required: ["route", "confidence", "reason"],
 };
 /**
- * Ask the local arbiter to classify a message.
- * Uses Ollama structured JSON output — eliminates CoT bleed into content field.
- * Falls back to "claude" on any error; error reason strings always contain
- * "timeout", "unreachable", or "failed" so isArbiterError fires downstream.
+ * Shared NDJSON streaming helper for Ollama API calls.
+ * Accumulates message.content fields across chunks. Throws on HTTP errors,
+ * hard timeout, inactivity timeout, or connection failure.
+ * Inactivity timer starts at first byte (covers cold model loads before that).
  */
-async function classifyMessage(message, transcriptContext, constraintCount, errorCount = 0) {
-    const prompt = CLASSIFY_PROMPT
-        .replace("{message}", message.slice(0, 1000))
-        .replace("{transcript}", transcriptContext.slice(0, 1500))
-        .replace("{constraint_count}", String(constraintCount))
-        .replace("{error_count}", String(errorCount));
-    return new Promise((resolve) => {
+function ollamaStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
+    return new Promise((resolve, reject) => {
         let done = false;
-        const fail = (reason) => {
-            if (!done) {
-                done = true;
-                req?.destroy();
-                resolve({ route: "claude", confidence: 0.5, reason, escalated: false, isError: true });
-            }
-        };
-        // Hard cap: 60s total. qwen3-coder:30b is always GPU-resident (keep_alive=-1) — should respond in <5s.
-        const hardTimer = setTimeout(() => fail("arbiter timeout (60s hard cap)"), 60000);
-        // Inactivity timer: starts only after FIRST byte. Before first byte, the hard cap
-        // covers truly stuck runners — cold model loading takes >15s and is not a stall.
-        // After first byte: 15s with no new data = runner stuck mid-stream.
+        const fail = (err) => { if (!done) {
+            done = true;
+            req?.destroy();
+            reject(err);
+        } };
+        const hardTimer = setTimeout(() => fail(new Error(`Ollama timeout (${hardMs / 1000}s)`)), hardMs);
         let inactivityTimer = null;
         const resetInactivity = () => {
             if (inactivityTimer)
                 clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => fail("arbiter inactive (no bytes for 15s mid-stream — runner stuck)"), 15000);
+            inactivityTimer = setTimeout(() => fail(new Error(`Ollama inactive (${inactivityMs / 1000}s mid-stream)`)), inactivityMs);
         };
-        // stream:true: first byte arrives as soon as Ollama starts processing.
-        // If stuck (runner status:2, queue full), we get 0 bytes → inactivity fires in 15s.
-        // Accumulate all content chunks; parse final assembled JSON at stream end.
-        const body = JSON.stringify({
-            model: ARBITER_MODEL,
-            messages: [{ role: "user", content: prompt }],
-            stream: true,
-            think: false,
-            format: CLASSIFY_FORMAT,
-            options: { temperature: 0, num_predict: 256, num_gpu: 0, num_ctx: 4096 },
-        });
         let req;
         req = http.request({
-            hostname: "localhost",
-            port: 11436,
-            path: "/api/chat",
-            method: "POST",
+            hostname, port, path: "/api/chat", method: "POST",
             headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
         }, (res) => {
-            // HTTP error from Ollama (model not found, overloaded, etc)
             if (res.statusCode && res.statusCode >= 400) {
                 let errBody = "";
                 res.on("data", (c) => { errBody += c.toString("utf8"); });
                 res.on("end", () => {
+                    clearTimeout(hardTimer);
+                    if (inactivityTimer)
+                        clearTimeout(inactivityTimer);
                     try {
-                        fail(`arbiter HTTP ${res.statusCode}: ${JSON.parse(errBody).error ?? errBody.slice(0, 100)}`);
+                        fail(new Error(`HTTP ${res.statusCode}: ${JSON.parse(errBody).error ?? errBody.slice(0, 100)}`));
                     }
                     catch {
-                        fail(`arbiter HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`);
+                        fail(new Error(`HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`));
                     }
                 });
                 return;
@@ -154,10 +131,9 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
                     if (!line.trim())
                         continue;
                     try {
-                        const obj = JSON.parse(line);
-                        contentAccum += obj.message?.content ?? "";
+                        contentAccum += JSON.parse(line).message?.content ?? "";
                     }
-                    catch { /* partial streaming line — rawChunk buffer handles reassembly */ }
+                    catch { /* partial streaming line */ }
                 }
             });
             res.on("end", () => {
@@ -167,31 +143,57 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
                 if (done)
                     return;
                 done = true;
-                try {
-                    const inner = JSON.parse(contentAccum);
-                    const route = inner.route === "local" ? "local" : "claude";
-                    const confidence = Math.min(1, Math.max(0, Number(inner.confidence) || 0.5));
-                    const reason = String(inner.reason ?? "").slice(0, 200) || "arbiter parse failed";
-                    resolve({ route, confidence, reason, escalated: false, isError: false });
-                }
-                catch {
-                    resolve({ route: "claude", confidence: 0.5, reason: `arbiter parse failed: ${contentAccum.slice(0, 80)}`, escalated: false, isError: true });
-                }
+                resolve(contentAccum);
             });
         });
         req.on("error", (e) => {
             clearTimeout(hardTimer);
-            if (inactivityTimer !== null)
+            if (inactivityTimer)
                 clearTimeout(inactivityTimer);
-            if (done)
-                return;
-            done = true;
-            const reason = e?.code === "ECONNREFUSED" ? "arbiter unreachable — Ollama not running" : `arbiter unreachable: ${e?.message ?? e}`;
-            resolve({ route: "claude", confidence: 0.5, reason, escalated: false, isError: true });
+            const msg = e?.code === "ECONNREFUSED" ? "Ollama not running" : (e?.message ?? String(e));
+            fail(new Error(msg));
         });
         req.write(body);
         req.end();
     });
+}
+/**
+ * Ask the local arbiter to classify a message.
+ * Uses Ollama structured JSON output — eliminates CoT bleed into content field.
+ * Falls back to "claude" on any error; isError=true flags the failure downstream.
+ */
+async function classifyMessage(message, transcriptContext, constraintCount, errorCount = 0) {
+    const prompt = CLASSIFY_PROMPT
+        .replace("{message}", message.slice(0, 1000))
+        .replace("{transcript}", transcriptContext.slice(0, 1500))
+        .replace("{constraint_count}", String(constraintCount))
+        .replace("{error_count}", String(errorCount));
+    const body = JSON.stringify({
+        model: ARBITER_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        stream: true, think: false, format: CLASSIFY_FORMAT,
+        options: { temperature: 0, num_predict: 256, num_gpu: 0, num_ctx: 4096 },
+    });
+    let contentAccum;
+    try {
+        contentAccum = await ollamaStreamNdjson("localhost", 11436, body, 60000, 15000);
+    }
+    catch (e) {
+        const reason = e?.message?.includes("not running")
+            ? "arbiter unreachable — Ollama not running"
+            : `arbiter ${e?.message ?? e}`;
+        return { route: "claude", confidence: 0.5, reason, escalated: false, isError: true };
+    }
+    try {
+        const inner = JSON.parse(contentAccum);
+        const route = inner.route === "local" ? "local" : "claude";
+        const confidence = Math.min(1, Math.max(0, Number(inner.confidence) || 0.5));
+        const reason = String(inner.reason ?? "").slice(0, 200) || "arbiter parse failed";
+        return { route, confidence, reason, escalated: false, isError: false };
+    }
+    catch {
+        return { route: "claude", confidence: 0.5, reason: `arbiter parse failed: ${contentAccum.slice(0, 80)}`, escalated: false, isError: true };
+    }
 }
 /**
  * Narrative synthesis — ask local model to summarize recent session activity
@@ -200,173 +202,36 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
 async function synthesizeNarrative(entries) {
     if (entries.length < 4)
         return "";
-    const summaries = entries
-        .map((e) => e.summary || e.content.slice(0, 100))
-        .join("\n");
+    const summaries = entries.map((e) => e.summary || e.content.slice(0, 100)).join("\n");
     const prompt = `/no_think\n\nSummarize this coding session activity into a 2-3 sentence digest. Focus on: what was being worked on, what succeeded, what failed, and what's pending. Be extremely concise.
 
 Session activity:
 ${summaries.slice(0, 2000)}
 
 Digest:`;
-    return new Promise((resolve, reject) => {
-        let done = false;
-        const fail = (err) => { if (!done) {
-            done = true;
-            req?.destroy();
-            reject(err);
-        } };
-        // 180s cap — CPU-only qwen3:4b for 512 tokens can exceed 60s when busy.
-        // Narrative is background enrichment; timeout is expected and non-actionable.
-        const hardTimer = setTimeout(() => fail(new Error("Narrative synthesis timeout (180s hard cap)")), 180000);
-        let inactivityTimer = null;
-        const resetInactivity = () => {
-            if (inactivityTimer)
-                clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => fail(new Error("Narrative synthesis inactive (no bytes for 30s mid-stream — model stuck)")), 30000);
-        };
-        const body = JSON.stringify({
-            model: ARBITER_MODEL,
-            messages: [{ role: "user", content: prompt }],
-            stream: true,
-            think: false,
-            options: { temperature: 0.2, num_predict: 512, num_gpu: 0, num_ctx: 4096 },
-        });
-        let req;
-        req = http.request({
-            hostname: "localhost", port: 11436, path: "/api/chat", method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        }, (res) => {
-            if (res.statusCode && res.statusCode >= 400) {
-                let errBody = "";
-                res.on("data", (c) => { errBody += c.toString("utf8"); });
-                res.on("end", () => {
-                    try {
-                        fail(new Error(`Narrative HTTP ${res.statusCode}: ${JSON.parse(errBody).error ?? errBody.slice(0, 100)}`));
-                    }
-                    catch {
-                        fail(new Error(`Narrative HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`));
-                    }
-                });
-                return;
-            }
-            let contentAccum = "";
-            let rawChunk = "";
-            res.on("data", (c) => {
-                resetInactivity();
-                rawChunk += c.toString("utf8");
-                const lines = rawChunk.split("\n");
-                rawChunk = lines.pop() ?? "";
-                for (const line of lines) {
-                    if (!line.trim())
-                        continue;
-                    try {
-                        contentAccum += JSON.parse(line).message?.content ?? "";
-                    }
-                    catch { /* partial streaming line */ }
-                }
-            });
-            res.on("end", () => {
-                clearTimeout(hardTimer);
-                if (inactivityTimer)
-                    clearTimeout(inactivityTimer);
-                if (done)
-                    return;
-                done = true;
-                resolve(contentAccum.trim().slice(0, 500));
-            });
-        });
-        req.on("error", (e) => {
-            clearTimeout(hardTimer);
-            if (inactivityTimer)
-                clearTimeout(inactivityTimer);
-            const reason = e?.code === "ECONNREFUSED" ? "Ollama not running" : (e?.message ?? e);
-            fail(new Error(`Narrative synthesis unreachable: ${reason}`));
-        });
-        req.write(body);
-        req.end();
+    const body = JSON.stringify({
+        model: ARBITER_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        stream: true, think: false,
+        options: { temperature: 0.2, num_predict: 512, num_gpu: 0, num_ctx: 4096 },
     });
+    // 180s cap — CPU-only qwen3:4b for 512 tokens can exceed 60s when busy.
+    // Narrative is background enrichment; timeout is expected and non-actionable.
+    const content = await ollamaStreamNdjson("localhost", 11436, body, 180000, 30000);
+    return content.trim().slice(0, 500);
 }
-const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
-const CHAIN_SUMMARY_PORT = 11434;
 /**
  * Chain link summary — ask local reasoning model to generate a continuation
  * summary for context chaining. Uses qwen3:30b-a3b (GPU, reasoning-capable)
  * on the main Ollama port, not the tiny arbiter model.
  */
 async function synthesizeChainSummary(prompt) {
-    return new Promise((resolve, reject) => {
-        let done = false;
-        const fail = (err) => { if (!done) {
-            done = true;
-            req?.destroy();
-            reject(err);
-        } };
-        const hardTimer = setTimeout(() => fail(new Error("Chain summary timeout (180s)")), 180000);
-        let inactivityTimer = null;
-        const resetInactivity = () => {
-            if (inactivityTimer)
-                clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => fail(new Error("Chain summary inactive (30s)")), 30000);
-        };
-        const body = JSON.stringify({
-            model: CHAIN_SUMMARY_MODEL,
-            messages: [{ role: "user", content: prompt }],
-            stream: true,
-            options: { temperature: 0.3, num_predict: 2048, num_ctx: 49152 },
-        });
-        let req;
-        req = http.request({
-            hostname: "localhost", port: CHAIN_SUMMARY_PORT, path: "/api/chat", method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
-        }, (res) => {
-            if (res.statusCode && res.statusCode >= 400) {
-                let errBody = "";
-                res.on("data", (c) => { errBody += c.toString("utf8"); });
-                res.on("end", () => {
-                    try {
-                        fail(new Error(`Chain summary HTTP ${res.statusCode}: ${JSON.parse(errBody).error ?? errBody.slice(0, 100)}`));
-                    }
-                    catch {
-                        fail(new Error(`Chain summary HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`));
-                    }
-                });
-                return;
-            }
-            let contentAccum = "";
-            let rawChunk = "";
-            res.on("data", (c) => {
-                resetInactivity();
-                rawChunk += c.toString("utf8");
-                const lines = rawChunk.split("\n");
-                rawChunk = lines.pop() ?? "";
-                for (const line of lines) {
-                    if (!line.trim())
-                        continue;
-                    try {
-                        contentAccum += JSON.parse(line).message?.content ?? "";
-                    }
-                    catch { /* partial streaming line */ }
-                }
-            });
-            res.on("end", () => {
-                clearTimeout(hardTimer);
-                if (inactivityTimer)
-                    clearTimeout(inactivityTimer);
-                if (done)
-                    return;
-                done = true;
-                resolve(contentAccum.trim());
-            });
-        });
-        req.on("error", (e) => {
-            clearTimeout(hardTimer);
-            if (inactivityTimer)
-                clearTimeout(inactivityTimer);
-            const reason = e?.code === "ECONNREFUSED" ? "Ollama not running" : (e?.message ?? e);
-            fail(new Error(`Chain summary unreachable: ${reason}`));
-        });
-        req.write(body);
-        req.end();
+    const body = JSON.stringify({
+        model: CHAIN_SUMMARY_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        stream: true,
+        options: { temperature: 0.3, num_predict: 2048, num_ctx: 49152 },
     });
+    const content = await ollamaStreamNdjson("localhost", 11434, body, 180000, 30000);
+    return content.trim();
 }

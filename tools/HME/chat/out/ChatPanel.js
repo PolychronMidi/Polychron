@@ -39,9 +39,11 @@ const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const router_1 = require("./router");
 const SessionStore_1 = require("./SessionStore");
-const router_2 = require("./router");
 const TranscriptLogger_1 = require("./TranscriptLogger");
 const Arbiter_1 = require("./Arbiter");
+const streamUtils_1 = require("./streamUtils");
+const chatChain_1 = require("./chatChain");
+const chatStreaming_1 = require("./chatStreaming");
 const MODEL_CONTEXT_WINDOWS = {
     "claude-opus-4-6": 1000000,
     "claude-sonnet-4-6": 500000,
@@ -49,32 +51,6 @@ const MODEL_CONTEXT_WINDOWS = {
 const DEFAULT_CONTEXT_WINDOW = 500000;
 const CHAIN_THRESHOLD_PCT = 75;
 const SYSTEM_OVERHEAD_TOKENS = 8000;
-const CHARS_PER_TOKEN = 3.5;
-const OLLAMA_OUTPUT_BUFFER = 4096;
-function estimateTokens(messages) {
-    let chars = 0;
-    for (const m of messages)
-        chars += m.content.length;
-    return Math.ceil(chars / CHARS_PER_TOKEN);
-}
-function trimHistoryToFit(history, currentMsg, extraMessages = []) {
-    const budget = router_2.GPU_NUM_CTX - OLLAMA_OUTPUT_BUFFER;
-    const fixedTokens = estimateTokens([...extraMessages, { content: currentMsg }]);
-    const available = budget - fixedTokens;
-    if (available <= 0)
-        return [];
-    let total = 0;
-    let keepFrom = 0;
-    for (let i = history.length - 1; i >= 0; i--) {
-        const cost = Math.ceil(history[i].content.length / CHARS_PER_TOKEN);
-        if (total + cost > available) {
-            keepFrom = i + 1;
-            break;
-        }
-        total += cost;
-    }
-    return history.slice(keepFrom);
-}
 class ChatPanel {
     constructor(panel, projectRoot, restoreSessionId) {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
@@ -85,27 +61,25 @@ class ChatPanel {
         this._disposed = false;
         this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
         this._chainingInProgress = false;
+        // ── HME shim process management ────────────────────────────────────────────
         this._shimProc = null;
         this._shimFailed = false;
         this._shimPollTimer = null;
         this._panel = panel;
         this._projectRoot = projectRoot;
         this._restoreSessionId = restoreSessionId ?? null;
-        // Wrap all init that touches disk or native modules in try/catch
-        // so a failure here never prevents the panel from opening
         try {
             this._transcript = new TranscriptLogger_1.TranscriptLogger(projectRoot);
             this._transcript.setNarrativeCallback(async (entries) => {
                 try {
                     const narrative = await (0, Arbiter_1.synthesizeNarrative)(entries);
                     if (narrative) {
-                        (0, router_1.postNarrative)(narrative).catch((e) => this._postError("narrative", String(e)));
+                        (0, router_1.postTranscript)([{ ts: Date.now(), type: "narrative", content: narrative }])
+                            .catch((e) => this._postError("narrative", String(e)));
                     }
                     return narrative;
                 }
                 catch (e) {
-                    // Narrative synthesis is background enrichment — timeout on CPU is expected.
-                    // Log to console only; never surface as a user-visible error or lifesaver trigger.
                     console.error(`[HME] narrative-synthesis skipped: ${e?.message ?? e}`);
                     return "";
                 }
@@ -132,7 +106,6 @@ class ChatPanel {
                 for (const m of this._displayMessages()) {
                     this._post({ type: "message", message: m });
                 }
-                // If a stream is active, tell the webview so it shows Stop/Queue
                 if (this._isStreaming) {
                     this._post({ type: "streamingRestored" });
                 }
@@ -152,7 +125,6 @@ class ChatPanel {
             return;
         }
         const panel = vscode.window.createWebviewPanel("hmeChat", "HME Chat", col || vscode.ViewColumn.One, { enableScripts: true });
-        // Start fresh — old sessions accessible from sidebar. Deserialize path handles reload restore.
         ChatPanel.current = new ChatPanel(panel, projectRoot);
     }
     static deserialize(panel, state, projectRoot) {
@@ -163,7 +135,6 @@ class ChatPanel {
         switch (msg.type) {
             case "send":
                 // Hard interrupt: cancel current stream + clear queue, start new message immediately.
-                // This is what Enter key and Send button do — new thought always takes priority.
                 if (this._isStreaming) {
                     this._cancelCurrent?.();
                     this._cancelCurrent = undefined;
@@ -179,10 +150,9 @@ class ChatPanel {
                 break;
             case "queue":
                 // Queue: waits behind current stream (explicit "send after current finishes").
-                // Only Queue button uses this — gives user control when they want sequential order.
                 if (this._isStreaming) {
                     const queuedUserMsg = {
-                        id: uid(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
+                        id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
                     };
                     this._post({ type: "message", message: queuedUserMsg });
                     this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
@@ -219,14 +189,12 @@ class ChatPanel {
             case "checkHmeShim":
                 (0, router_1.isHmeShimReady)().then(({ ready }) => {
                     this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
-                    if (!ready) {
+                    if (!ready)
                         this._startHmeShim();
-                    }
                 });
                 break;
             case "listSessions":
                 this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
-                // On first listSessions after deserialize, auto-load the previously active session
                 if (this._restoreSessionId) {
                     const id = this._restoreSessionId;
                     this._restoreSessionId = null;
@@ -262,14 +230,12 @@ class ChatPanel {
                 break;
         }
     }
-    /** Return the most recent messages up to the display cap. */
     _displayMessages() {
         return this._state.messages.slice(-ChatPanel.DISPLAY_CAP);
     }
     /**
      * Track a streaming assistant message so partial text survives ext host crashes.
      * Pushes a placeholder into _state.messages immediately and persists every 10s.
-     * Returns { update, finalize } — call update() on chunks, finalize(msg) to replace.
      */
     _trackStream(assistantId, route) {
         const partial = { id: assistantId, role: "assistant", text: "", route, ts: Date.now() };
@@ -297,6 +263,21 @@ class ChatPanel {
                 this._state.messages[idx] = final;
                 this._persistState();
             },
+        };
+    }
+    _makeCtx() {
+        const self = this;
+        return {
+            get projectRoot() { return self._projectRoot; },
+            get transcript() { return self._transcript; },
+            get state() { return self._state; },
+            post: (data) => self._post(data),
+            postError: (s, m) => self._postError(s, m),
+            drainQueue: () => self._drainQueue(),
+            trackStream: (id, r) => self._trackStream(id, r),
+            updateContextTracker: (t, th, m, u) => self._updateContextTracker(t, th, m, u),
+            checkChainThreshold: (msg) => self._checkChainThreshold(msg),
+            setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
         };
     }
     _loadSession(id) {
@@ -333,18 +314,15 @@ class ChatPanel {
         };
         this._state.sessionEntry = entry;
         (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
-            contextTokens: Math.round(this._contextTracker.totalChars / CHARS_PER_TOKEN),
+            contextTokens: Math.round(this._contextTracker.totalChars / streamUtils_1.CHARS_PER_TOKEN),
             chainIndex: this._state.chainIndex,
         });
     }
     async _onSend(msg) {
-        // ── Agent route: parallel local + hybrid test (no auto-route needed) ──
         if (msg.route === "agent") {
             return this._onSendAgent(msg);
         }
-        // ── Route resolution: auto resolves to claude (arbiter classification removed) ──
-        let resolvedRoute = (msg.route === "auto" ? "claude" : msg.route);
-        // ── Auto-create session on first message ──
+        const resolvedRoute = (msg.route === "auto" ? "claude" : msg.route);
         if (!this._state.sessionEntry) {
             let entry;
             try {
@@ -359,10 +337,8 @@ class ChatPanel {
             this._transcript.logSessionStart(entry.id, entry.title, false);
             this._post({ type: "sessionCreated", session: entry });
         }
-        // ── Log user message first so transcript order is correct ──
         const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.ollamaModel : msg.claudeModel;
         this._transcript.logUser(msg.text, resolvedRoute, model);
-        // ── Pre-send validation (async, after user is logged) ──
         (0, router_1.validateMessage)(msg.text).then(({ warnings, blocks }) => {
             this._transcript.logValidation(msg.text, warnings.length, blocks.length);
             if (blocks.length > 0) {
@@ -374,13 +350,12 @@ class ChatPanel {
                 this._post({ type: "notice", level: "warn", text: `HME constraints: ${notice}` });
             }
         }).catch((e) => this._postError("validation", String(e)));
-        // ── Mirror transcript to HTTP shim ──
         (0, router_1.postTranscript)([{
                 ts: Date.now(), type: "user", route: resolvedRoute, model,
                 content: msg.text, summary: `User [${resolvedRoute}]: ${msg.text.slice(0, 100)}`,
             }]).catch((e) => this._postError("transcript", String(e)));
         const userMsg = msg._queuedUserMsg ?? {
-            id: uid(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
+            id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
         };
         this._state.messages.push(userMsg);
         this._persistState();
@@ -399,11 +374,9 @@ class ChatPanel {
             }
             if (resolvedRoute === "claude" && this._state.lastRoute !== "claude") {
                 this._state.claudeSessionId = null;
-                // Inject prior local/hybrid conversation as context block so Claude has continuity
                 const prior = this._state.messages
                     .filter((m) => m.role === "user" || m.role === "assistant")
-                    .slice(0, -1) // exclude the current user message just pushed
-                    .slice(-12); // cap at 12 messages to avoid huge context
+                    .slice(0, -1).slice(-12);
                 if (prior.length > 0) {
                     const lines = prior.map((m) => `${m.role === "user" ? "Human" : "Assistant"}: ${(m.text || "").slice(0, 600)}`).join("\n");
                     contextPrefix = `[Prior conversation via local model — use for context only]\n${lines}\n[End of prior context]\n\n`;
@@ -411,29 +384,24 @@ class ChatPanel {
             }
         }
         this._state.lastRoute = resolvedRoute;
-        const assistantId = uid();
-        this._post({
-            type: "streamStart",
-            id: assistantId,
-            route: resolvedRoute,
-            model,
-        });
-        // Stamp resolved route so stream functions log correctly (not "auto")
+        const assistantId = (0, streamUtils_1.uid)();
+        this._post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
         const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
+        const ctx = this._makeCtx();
         if (resolvedRoute === "local") {
-            this._streamOllama(resolvedMsg, assistantId);
+            (0, chatStreaming_1.streamOllamaMsg)(ctx, resolvedMsg, assistantId);
         }
         else if (resolvedRoute === "hybrid") {
-            this._streamHybrid(resolvedMsg, assistantId);
+            (0, chatStreaming_1.streamHybridMsg)(ctx, resolvedMsg, assistantId);
         }
         else {
-            this._streamClaude(resolvedMsg, assistantId);
+            (0, chatStreaming_1.streamClaudeMsg)(ctx, resolvedMsg, assistantId);
         }
     }
     /**
-     * Agent route: fires local AND hybrid in parallel so I can compare both without
-     * making the user manually switch routes. Neither response writes to ollamaHistory
-     * to avoid double-appending; local result wins for history after both complete.
+     * Agent route: fires local AND hybrid in parallel for side-by-side comparison.
+     * Neither response writes to ollamaHistory to avoid double-appending;
+     * local result wins for history after both complete.
      */
     async _onSendAgent(msg) {
         if (!this._state.sessionEntry) {
@@ -448,13 +416,13 @@ class ChatPanel {
                 ts: Date.now(), type: "user", route: "agent", model: msg.ollamaModel,
                 content: msg.text, summary: `User [agent]: ${msg.text.slice(0, 100)}`,
             }]).catch((e) => this._postError("transcript", String(e)));
-        const userMsg = { id: uid(), role: "user", text: msg.text, route: "local", ts: Date.now() };
+        const userMsg = { id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: "local", ts: Date.now() };
         this._state.messages.push(userMsg);
         this._persistState();
         this._post({ type: "message", message: userMsg });
         this._post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
-        const localId = uid();
-        const hybridId = uid();
+        const localId = (0, streamUtils_1.uid)();
+        const hybridId = (0, streamUtils_1.uid)();
         this._post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.ollamaModel}` });
         this._post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.ollamaModel}` });
         let doneCount = 0;
@@ -464,296 +432,20 @@ class ChatPanel {
             drained = true;
             this._drainQueue();
         } };
-        const checkBothDone = () => {
-            doneCount++;
-            if (doneCount >= 2) {
-                this._persistState();
-                safeDrain();
-            }
-        };
+        const checkBothDone = () => { if (++doneCount >= 2) {
+            this._persistState();
+            safeDrain();
+        } };
         this._cancelCurrent = () => cancelFns.forEach((fn) => fn());
-        // FAILFAST: on error, surface immediately but let surviving sibling continue.
-        // checkBothDone increments the counter — when both streams complete (success or error),
-        // the queue drains. Never kill a working response because its sibling failed.
-        this._streamAgent(msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
-        this._streamAgentHybrid(msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
+        const ctx = this._makeCtx();
+        (0, chatStreaming_1.streamAgentMsg)(ctx, msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
+        (0, chatStreaming_1.streamAgentHybridMsg)(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
     }
-    _streamAgent(msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
-        const systemPrompt = {
-            role: "system",
-            content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
-        };
-        const trimmed = trimHistoryToFit(this._state.ollamaHistory, msg.text, [systemPrompt]);
-        const requestHistory = [systemPrompt, ...trimmed, { role: "user", content: msg.text }];
-        let text = "";
-        let tools = [];
-        const blocks = [];
-        let lastBlockType = null;
-        let streamEnded = false;
-        const tracker = this._trackStream(assistantId, label);
-        const safeEnd = () => { if (streamEnded)
-            return; streamEnded = true; onBothDone(); };
-        const appendBlock = (type, content) => {
-            if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
-                blocks.push({ type, content });
-            }
-            else {
-                blocks[blocks.length - 1].content += content;
-            }
-            lastBlockType = type;
-        };
-        const onDone = () => {
-            if (label === "local") {
-                this._state.ollamaHistory.push({ role: "user", content: msg.text });
-                this._state.ollamaHistory.push({ role: "assistant", content: text });
-            }
-            tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, blocks: blocks.length ? blocks : undefined, route: label, ts: Date.now() });
-            this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, label, msg.ollamaModel, tools);
-            const changedFiles = this._reindexFromTools(tools);
-            this._runPostAudit(changedFiles);
-            safeEnd();
-        };
-        const onChunk = (chunk, type) => {
-            if (type === "tool") {
-                tools.push(chunk);
-                appendBlock("tool", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, label);
-            }
-            else {
-                text += chunk;
-                appendBlock(type === "thinking" ? "thinking" : "text", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-            }
-            tracker.update(text, tools);
-        };
-        const cancel = (0, router_1.streamOllamaAgentic)(requestHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, onChunk, onDone, (err) => {
-            this._postError(label, err);
-            if (!streamEnded) {
-                streamEnded = true;
-                this._post({ type: "streamEnd", id: assistantId });
-                onForceDrain();
-            }
-        });
-        cancelFns.push(cancel);
-    }
-    _streamAgentHybrid(msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
-        const history = trimHistoryToFit(this._state.ollamaHistory, msg.text);
-        let text = "";
-        let tools = [];
-        const blocks = [];
-        let lastBlockType = null;
-        let aborted = false;
-        let streamEnded = false;
-        const tracker = this._trackStream(assistantId, "hybrid");
-        const safeEnd = () => { if (streamEnded)
-            return; streamEnded = true; onBothDone(); };
-        const appendBlock = (type, content) => {
-            if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
-                blocks.push({ type, content });
-            }
-            else {
-                blocks[blocks.length - 1].content += content;
-            }
-            lastBlockType = type;
-        };
-        // Register cancel immediately so abort works during HME context fetch
-        const cancelWrapper = () => { aborted = true; };
-        cancelFns.push(cancelWrapper);
-        this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
-        appendBlock("tool", "[HME] Enriching with KB context…");
-        (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, (chunk, type) => {
-            if (aborted)
-                return;
-            if (type === "tool") {
-                tools.push(chunk);
-                appendBlock("tool", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
-            }
-            else {
-                text += chunk;
-                appendBlock(type === "thinking" ? "thinking" : "text", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-            }
-            tracker.update(text, tools);
-        }, () => {
-            if (aborted)
-                return;
-            tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, blocks: blocks.length ? blocks : undefined, route: "hybrid", ts: Date.now() });
-            this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
-            const changedFiles = this._reindexFromTools(tools);
-            this._runPostAudit(changedFiles);
-            safeEnd();
-        }, (err) => {
-            if (aborted)
-                return;
-            this._postError(label, err);
-            if (!streamEnded) {
-                streamEnded = true;
-                this._post({ type: "streamEnd", id: assistantId });
-                onForceDrain(); // counts as done — lets surviving sibling continue
-            }
-        }).then((cancel) => {
-            if (aborted) {
-                cancel();
-                return;
-            }
-            cancelFns.push(cancel);
-        }).catch((err) => {
-            if (aborted)
-                return;
-            this._postError(label, String(err));
-            if (!streamEnded) {
-                streamEnded = true;
-                this._post({ type: "streamEnd", id: assistantId });
-                onForceDrain();
-            }
-        });
-    }
-    _streamClaude(msg, assistantId) {
-        let text = "";
-        let thinking = "";
-        let tools = [];
-        const blocks = [];
-        let lastBlockType = null;
-        let streamEnded = false;
-        let aborted = false; // gate: prevents buffered PTY/pipe chunks posting after cancel
-        const tracker = this._trackStream(assistantId, msg._resolvedRoute ?? msg.route);
-        const safeEnd = () => {
-            if (streamEnded)
-                return;
-            streamEnded = true;
-            this._drainQueue();
-        };
-        const appendBlock = (type, content) => {
-            if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
-                blocks.push({ type, content });
-            }
-            else {
-                blocks[blocks.length - 1].content += content;
-            }
-            lastBlockType = type;
-        };
-        const onDone = (usage) => {
-            if (aborted)
-                return;
-            this._updateContextTracker(text, thinking, msg.claudeModel, usage);
-            const assistantMsg = {
-                id: assistantId,
-                role: "assistant",
-                text,
-                thinking: thinking || undefined,
-                tools: tools.length ? tools : undefined,
-                blocks: blocks.length ? blocks : undefined,
-                route: msg._resolvedRoute ?? msg.route,
-                ts: Date.now(),
-            };
-            tracker.finalize(assistantMsg);
-            this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
-            this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
-            const changedFiles = this._reindexFromTools(tools);
-            this._runPostAudit(changedFiles);
-            this._checkChainThreshold(msg);
-            safeEnd();
-        };
-        const onChunk = (chunk, type) => {
-            if (aborted)
-                return; // discard buffered chunks after cancel
-            if (type === "text") {
-                text += chunk;
-                appendBlock("text", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "text", chunk });
-            }
-            else if (type === "thinking") {
-                thinking += chunk;
-                appendBlock("thinking", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "thinking", chunk });
-            }
-            else if (type === "tool") {
-                tools.push(chunk);
-                appendBlock("tool", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg._resolvedRoute ?? msg.route ?? "claude");
-            }
-            else if (type === "error") {
-                this._postError("claude", chunk);
-            }
-            tracker.update(text, tools, thinking);
-        };
-        const onError = (err) => {
-            if (aborted)
-                return;
-            if (!streamEnded) {
-                this._post({ type: "streamEnd", id: assistantId });
-                safeEnd();
-            }
-            this._postError("claude", err);
-        };
-        // Prepend prior-route context block if switching from local/hybrid → claude
-        const effectiveText = (msg._contextPrefix ?? "") + msg.text;
-        // Use PTY mode so hooks fire; fall back to -p mode if PTY fails.
-        // cancelFn: set aborted=true first so buffered PTY/pipe chunks are dropped immediately.
-        let cancelFn;
-        this._cancelCurrent = () => { aborted = true; cancelFn?.(); };
-        cancelFn = (0, router_1.streamClaudePty)(effectiveText, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, onDone, (err) => {
-            // PTY failed — fall back to stream-json mode silently
-            console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
-            cancelFn = (0, router_1.streamClaude)(effectiveText, this._state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, this._projectRoot, onChunk, (sessionId) => { this._state.claudeSessionId = sessionId; }, (_cost, usage) => { onDone(usage); }, onError);
-        });
-    }
-    /** Mirror assistant response to HTTP shim transcript. */
-    _mirrorAssistantToShim(text, route, model, tools) {
-        (0, router_1.postTranscript)([{
-                ts: Date.now(), type: "assistant", route, model,
-                content: text.slice(0, 2000),
-                summary: `Assistant [${route}]: ${text.slice(0, 100)}`,
-                meta: tools?.length ? { tools } : undefined,
-            }]).catch((e) => this._postError("transcript", String(e)));
-    }
-    _reindexFromTools(tools) {
-        const files = new Set();
-        for (const t of tools) {
-            // Claude format: [Edit] or [Write] {"file_path":"src/foo.js"...}
-            const fileMatch = t.match(/"file_path"\s*:\s*"([^"]+)"/);
-            if (fileMatch)
-                files.add(fileMatch[1]);
-            // Ollama agentic format: [write_file] {"path":"src/foo.js"...}
-            const ollamaMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
-            if (ollamaMatch)
-                files.add(ollamaMatch[2]);
-        }
-        const indexable = [...files].filter(f => {
-            const ext = path.extname(f).toLowerCase();
-            return ChatPanel._INDEXABLE_EXTS.has(ext);
-        });
-        if (indexable.length > 0) {
-            // Best-effort background work — file watcher handles normal saves.
-            // Timeouts/errors are silently dropped; no _postError to avoid false LIFESAVER alarms.
-            (0, router_1.reindexFiles)(indexable).catch(() => { });
-        }
-        return files;
-    }
-    _runPostAudit(changedFiles) {
-        const filesArg = changedFiles?.size ? [...changedFiles].join(",") : "";
-        (0, router_1.auditChanges)(filesArg).then(({ violations, changed_files }) => {
-            this._transcript.logAudit(changed_files.length, violations.length);
-            if (violations.length > 0) {
-                const summary = violations
-                    .map((v) => `• [${v.category}] ${v.file}: ${v.title}`)
-                    .join("\n");
-                this._post({ type: "notice", level: "audit", text: `HME post-audit (${changed_files.length} files changed):\n${summary}` });
-            }
-        }).catch((e) => this._postError("audit", String(e)));
-    }
-    // ── Context tracking & chain ─────────────────────────────────────────────
+    // ── Context tracking & chain ───────────────────────────────────────────────
     _resetContextTracker(restoredTokens) {
         this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
         if (restoredTokens) {
-            this._contextTracker.totalChars = restoredTokens * CHARS_PER_TOKEN;
+            this._contextTracker.totalChars = restoredTokens * streamUtils_1.CHARS_PER_TOKEN;
         }
         this._postContextUpdate();
     }
@@ -772,10 +464,9 @@ class ChatPanel {
             const used = this._contextTracker.lastInputTokens + this._contextTracker.lastOutputTokens;
             return Math.min(99, Math.round(used / window * 100));
         }
-        // PTY mode: no token counts available — estimate from all message chars (both user + assistant)
-        // so the meter reflects actual context usage rather than just output chars.
+        // PTY mode: no token counts — estimate from all message chars
         const allChars = this._state.messages.reduce((sum, m) => sum + (m.text?.length ?? 0) + (m.thinking?.length ?? 0), 0);
-        const estimatedTokens = allChars / CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
+        const estimatedTokens = allChars / streamUtils_1.CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
         return Math.min(99, Math.round(estimatedTokens / window * 100));
     }
     _postContextUpdate() {
@@ -802,7 +493,6 @@ class ChatPanel {
         const sessionId = this._state.sessionEntry.id;
         const linkIndex = this._state.chainIndex;
         this._post({ type: "notice", level: "info", text: `Context chain: saving link ${linkIndex + 1} and generating summary...` });
-        // Load current todos from HME todo file
         let todos = [];
         try {
             const todoPath = path.join(process.env["HOME"] ?? process.env["USERPROFILE"] ?? "~", ".claude", "mcp", "HME", "todos.json");
@@ -812,19 +502,17 @@ class ChatPanel {
             if (e?.code !== "ENOENT")
                 console.error(`[HME] Failed to load todos.json: ${e?.message ?? e}`);
         }
-        // Generate summary via a separate Claude -p call
         const priorSummaries = (0, SessionStore_1.loadChainSummaries)(this._projectRoot, sessionId);
         const recentMessages = this._state.messages.slice(-20);
-        const summaryPrompt = this._buildSummaryPrompt(recentMessages, todos, priorSummaries);
+        const summaryPrompt = (0, chatChain_1.buildSummaryPrompt)(recentMessages, todos, priorSummaries);
         let summary = "";
         try {
             summary = await (0, Arbiter_1.synthesizeChainSummary)(summaryPrompt);
         }
         catch (e) {
             console.error(`[HME Chat] Chain summary via local model failed: ${e}`);
-            summary = this._buildFallbackSummary(recentMessages, todos, priorSummaries);
+            summary = (0, chatChain_1.buildFallbackSummary)(recentMessages, todos, priorSummaries);
         }
-        // Save chain link
         const link = {
             index: linkIndex,
             sessionId,
@@ -836,14 +524,12 @@ class ChatPanel {
             createdAt: Date.now(),
         };
         (0, SessionStore_1.saveChainLink)(this._projectRoot, link);
-        // Reset session for new chain segment
         this._state.messages = [];
         this._state.claudeSessionId = null;
         this._state.chainIndex = linkIndex + 1;
         this._resetContextTracker();
-        // Prime the new session with the summary as a system context message
         const contextMsg = {
-            id: uid(),
+            id: (0, streamUtils_1.uid)(),
             role: "user",
             text: `[Context Chain — Link ${linkIndex + 1} continuation]\n\n${summary}`,
             route: "claude",
@@ -856,218 +542,7 @@ class ChatPanel {
         this._postContextUpdate();
         this._chainingInProgress = false;
     }
-    _buildSummaryPrompt(messages, todos, priorSummaries) {
-        const priorContext = priorSummaries.length > 0
-            ? `Previous chain link summaries:\n${priorSummaries.map((s, i) => `--- Link ${i + 1} ---\n${s}`).join("\n\n")}\n\n`
-            : "";
-        const todoBlock = todos.length > 0
-            ? `Current todo list:\n${JSON.stringify(todos, null, 2)}\n\n`
-            : "No active todos.\n\n";
-        const conversationBlock = messages
-            .map((m) => `[${m.role}]: ${m.text.slice(0, 1500)}`)
-            .join("\n\n");
-        return `You are generating a context chain summary for an AI coding assistant conversation. This summary will be used to prime a fresh context window, replacing the full conversation history.
-
-Requirements:
-1. Be concise but preserve all actionable context — decisions made, approaches chosen, files modified, bugs found
-2. Include the current state of the todo list
-3. Reference specific file paths and function names when relevant
-4. Note any in-progress work that needs continuation
-5. Keep the summary under 2000 tokens
-
-${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerate the continuation summary:`;
-    }
-    _buildFallbackSummary(messages, todos, priorSummaries) {
-        const lines = [];
-        if (priorSummaries.length > 0) {
-            lines.push("## Prior context");
-            lines.push(priorSummaries[priorSummaries.length - 1].slice(0, 800));
-        }
-        lines.push("\n## Recent activity");
-        for (const m of messages.slice(-8)) {
-            lines.push(`[${m.role}]: ${m.text.slice(0, 300)}`);
-        }
-        if (todos.length > 0) {
-            lines.push("\n## Active todos");
-            for (const t of todos) {
-                lines.push(`- [${t.done ? "x" : " "}] ${t.text}`);
-                if (t.subs) {
-                    for (const s of t.subs) {
-                        lines.push(`  - [${s.done ? "x" : " "}] ${s.text}`);
-                    }
-                }
-            }
-        }
-        return lines.join("\n");
-    }
-    _streamOllama(msg, assistantId) {
-        const systemPrompt = {
-            role: "system",
-            content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
-        };
-        const contextMessages = msg._contextPrefix
-            ? [{ role: "user", content: msg._contextPrefix }, { role: "assistant", content: "Understood. I have the prior conversation context." }]
-            : [];
-        const trimmed = trimHistoryToFit(this._state.ollamaHistory, msg.text, [systemPrompt, ...contextMessages]);
-        const requestHistory = [systemPrompt, ...contextMessages, ...trimmed, { role: "user", content: msg.text }];
-        let text = "";
-        let tools = [];
-        const blocks = [];
-        let lastBlockType = null;
-        let streamEnded = false;
-        let aborted = false; // gate: drops buffered Ollama chunks after cancel
-        const tracker = this._trackStream(assistantId, "local");
-        const safeEnd = () => {
-            if (streamEnded)
-                return;
-            streamEnded = true;
-            this._drainQueue();
-        };
-        const appendBlock = (type, content) => {
-            if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
-                blocks.push({ type, content });
-            }
-            else {
-                blocks[blocks.length - 1].content += content;
-            }
-            lastBlockType = type;
-        };
-        const onDone = () => {
-            if (aborted)
-                return;
-            this._state.ollamaHistory.push({ role: "user", content: msg.text });
-            this._state.ollamaHistory.push({ role: "assistant", content: text });
-            const assistantMsg = {
-                id: assistantId, role: "assistant", text,
-                tools: tools.length ? tools : undefined,
-                blocks: blocks.length ? blocks : undefined,
-                route: "local", ts: Date.now(),
-            };
-            tracker.finalize(assistantMsg);
-            this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, "local", msg.ollamaModel, tools);
-            this._mirrorAssistantToShim(text, "local", msg.ollamaModel, tools);
-            const changedFiles = this._reindexFromTools(tools);
-            this._runPostAudit(changedFiles);
-            safeEnd();
-        };
-        const onChunk = (chunk, type) => {
-            if (aborted)
-                return; // discard buffered chunks after cancel
-            if (type === "tool") {
-                tools.push(chunk);
-                appendBlock("tool", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "local");
-            }
-            else {
-                text += chunk;
-                appendBlock(type === "thinking" ? "thinking" : "text", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-            }
-            tracker.update(text, tools);
-        };
-        let ollamaCancelFn;
-        this._cancelCurrent = () => { aborted = true; ollamaCancelFn?.(); };
-        ollamaCancelFn = (0, router_1.streamOllamaAgentic)(requestHistory, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, onChunk, onDone, (err) => {
-            if (!streamEnded) {
-                this._post({ type: "streamEnd", id: assistantId });
-                safeEnd();
-            }
-            this._postError("local", err);
-        });
-    }
-    _streamHybrid(msg, assistantId) {
-        const contextMessages = msg._contextPrefix
-            ? [{ role: "user", content: msg._contextPrefix }, { role: "assistant", content: "Understood. I have the prior conversation context." }]
-            : [];
-        const history = [...contextMessages, ...this._state.ollamaHistory];
-        let text = "";
-        let tools = [];
-        const blocks = [];
-        let lastBlockType = null;
-        let cancelFn;
-        let aborted = false;
-        let streamEnded = false;
-        const tracker = this._trackStream(assistantId, "hybrid");
-        const safeEnd = () => {
-            if (streamEnded)
-                return;
-            streamEnded = true;
-            this._drainQueue();
-        };
-        const appendBlock = (type, content) => {
-            if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
-                blocks.push({ type, content });
-            }
-            else {
-                blocks[blocks.length - 1].content += content;
-            }
-            lastBlockType = type;
-        };
-        // Cancelable immediately — even during HME context fetch
-        this._cancelCurrent = () => { aborted = true; cancelFn?.(); };
-        // Post "enriching…" status
-        this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
-        appendBlock("tool", "[HME] Enriching with KB context…");
-        (0, router_1.streamHybrid)(msg.text, history, { model: msg.ollamaModel, url: "http://localhost:11434" }, this._projectRoot, (chunk, type) => {
-            if (aborted)
-                return;
-            if (type === "tool") {
-                tools.push(chunk);
-                appendBlock("tool", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-                this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
-            }
-            else {
-                text += chunk;
-                appendBlock(type === "thinking" ? "thinking" : "text", chunk);
-                this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-            }
-            tracker.update(text, tools);
-        }, () => {
-            if (aborted)
-                return;
-            this._state.ollamaHistory.push({ role: "user", content: msg.text });
-            this._state.ollamaHistory.push({ role: "assistant", content: text });
-            const assistantMsg = {
-                id: assistantId, role: "assistant", text,
-                tools: tools.length ? tools : undefined,
-                blocks: blocks.length ? blocks : undefined,
-                route: "hybrid", ts: Date.now(),
-            };
-            tracker.finalize(assistantMsg);
-            this._post({ type: "streamEnd", id: assistantId });
-            this._transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
-            this._mirrorAssistantToShim(text, "hybrid", msg.ollamaModel, tools);
-            const changedFiles = this._reindexFromTools(tools);
-            this._runPostAudit(changedFiles);
-            safeEnd();
-        }, (err) => {
-            if (aborted)
-                return;
-            if (!streamEnded) {
-                this._post({ type: "streamEnd", id: assistantId });
-                safeEnd();
-            }
-            this._postError("hybrid", err);
-        }).then((cancel) => {
-            if (aborted) {
-                cancel();
-                return;
-            }
-            cancelFn = cancel;
-        }).catch((err) => {
-            if (aborted)
-                return;
-            if (!streamEnded) {
-                this._post({ type: "streamEnd", id: assistantId });
-                safeEnd();
-            }
-            this._postError("hybrid", String(err));
-        });
-    }
-    /** Fail-fast error surface: log file + KB antipattern lookup. Lifesaver hook surfaces errors to Claude. */
+    // ── Error handling ─────────────────────────────────────────────────────────
     _postError(source, message) {
         // Errors route to hme-errors.log only — Lifesaver reads it for Claude's awareness.
         // No UI notices: the user reads logs when they want to; this channel is not for them.
@@ -1085,7 +560,7 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
     }
     _startHmeShim() {
         if (this._shimProc && !this._shimProc.killed)
-            return; // already running
+            return;
         this._shimFailed = false;
         const shimPath = path.join(__dirname, "..", "..", "mcp", "hme_http.py");
         const env = { ...process.env };
@@ -1094,10 +569,7 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
         }
         try {
             this._shimProc = require("child_process").spawn("python3", [shimPath], {
-                cwd: this._projectRoot,
-                env,
-                detached: false,
-                stdio: "ignore",
+                cwd: this._projectRoot, env, detached: false, stdio: "ignore",
             });
             let started = false;
             this._shimProc.on("error", (e) => {
@@ -1113,12 +585,10 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
                     this._postError("shim", `HME shim exited before becoming ready (code ${code ?? "?"})`);
                 }
                 else if (!this._disposed) {
-                    // Shim died after a successful start — restart it after a brief delay to release port
                     setTimeout(() => { if (!this._disposed)
                         this._startHmeShim(); }, 3000);
                 }
             });
-            // Poll readiness — retry up to 5 times every 2s. One poll loop at a time.
             let attempts = 0;
             const poll = () => {
                 attempts++;
@@ -1141,15 +611,15 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
                     }
                 });
             };
-            if (this._shimPollTimer) {
+            if (this._shimPollTimer)
                 clearTimeout(this._shimPollTimer);
-            }
             this._shimPollTimer = setTimeout(poll, 2000);
         }
         catch (e) {
             this._postError("shim", `HME shim spawn error: ${e?.message ?? e}`);
         }
     }
+    // ── Message queue & webview plumbing ───────────────────────────────────────
     _drainQueue() {
         this._isStreaming = false;
         if (this._messageQueue.length > 0) {
@@ -1185,14 +655,12 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
             clearTimeout(this._shimPollTimer);
             this._shimPollTimer = null;
         }
-        // Persist in-flight state synchronously before anything async (writeFileSync — always completes)
         try {
             this._persistState();
         }
         catch (e) {
             console.error(`[HME] dispose: _persistState failed: ${e?.message ?? e}`);
         }
-        // Graceful async cleanup: await narrative synthesis with 5s cap, then kill shim
         const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
         const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
         await Promise.race([narrativeWork, timeout]);
@@ -1208,17 +676,5 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
     }
 }
 exports.ChatPanel = ChatPanel;
-/** Max messages sent to webview for display. Full history stays in _state.messages and transcript logs. */
 ChatPanel.DISPLAY_CAP = 100;
 ChatPanel.STREAM_PERSIST_MS = 10000;
-/**
- * Detect files modified by tool calls and trigger immediate mini-reindex.
- * Parses tool call strings for file paths — Claude ("file_path") and Ollama ("path") formats.
- * Returns the set of detected file paths for downstream use (audit).
- */
-ChatPanel._INDEXABLE_EXTS = new Set([
-    ".js", ".ts", ".tsx", ".jsx", ".py", ".json", ".md", ".css", ".html", ".sh",
-]);
-function uid() {
-    return Math.random().toString(36).slice(2, 10);
-}
