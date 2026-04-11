@@ -875,6 +875,17 @@ window.addEventListener('message', (event) => {
   }
 });
 
+// ── Scroll helpers ─────────────────────────────────────────────────────────
+function isNearBottom() {
+  return messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
+}
+function scrollToBottom() {
+  if (isNearBottom()) messages.scrollTop = messages.scrollHeight;
+}
+function forceScrollToBottom() {
+  messages.scrollTop = messages.scrollHeight;
+}
+
 // ── Message rendering ──────────────────────────────────────────────────────
 function appendMessage(msg) {
   const div = document.createElement('div');
@@ -894,33 +905,54 @@ function appendMessage(msg) {
 
   div.appendChild(header);
 
-  if (msg.thinking) {
-    const details = document.createElement('details');
-    details.className = 'thinking';
-    details.open = true;
-    details.innerHTML = `<summary>🧠 Thinking</summary><div class="thinking-body"></div>`;
-    details.querySelector('.thinking-body').textContent = msg.thinking;
-    div.appendChild(details);
-  }
+  if (msg.blocks && msg.blocks.length) {
+    for (const block of msg.blocks) {
+      if (block.type === 'thinking') {
+        const details = document.createElement('details');
+        details.className = 'thinking';
+        details.innerHTML = `<summary>🧠 Thinking</summary><div class="thinking-body"></div>`;
+        details.querySelector('.thinking-body').textContent = block.content;
+        div.appendChild(details);
+      } else if (block.type === 'tool') {
+        const toolDiv = document.createElement('div');
+        toolDiv.className = 'tool-step';
+        toolDiv.textContent = block.content;
+        div.appendChild(toolDiv);
+      } else {
+        const body = document.createElement('div');
+        body.className = 'msg-body';
+        body.textContent = block.content;
+        div.appendChild(body);
+      }
+    }
+  } else {
+    if (msg.thinking) {
+      const details = document.createElement('details');
+      details.className = 'thinking';
+      details.innerHTML = `<summary>🧠 Thinking</summary><div class="thinking-body"></div>`;
+      details.querySelector('.thinking-body').textContent = msg.thinking;
+      div.appendChild(details);
+    }
 
-  if (msg.text) {
-    const body = document.createElement('div');
-    body.className = 'msg-body';
-    body.textContent = msg.text;
-    div.appendChild(body);
-  }
+    if (msg.text) {
+      const body = document.createElement('div');
+      body.className = 'msg-body';
+      body.textContent = msg.text;
+      div.appendChild(body);
+    }
 
-  if (msg.tools && msg.tools.length) {
-    for (const t of msg.tools) {
-      const toolDiv = document.createElement('div');
-      toolDiv.className = 'tool-step';
-      toolDiv.textContent = t;
-      div.appendChild(toolDiv);
+    if (msg.tools && msg.tools.length) {
+      for (const t of msg.tools) {
+        const toolDiv = document.createElement('div');
+        toolDiv.className = 'tool-step';
+        toolDiv.textContent = t;
+        div.appendChild(toolDiv);
+      }
     }
   }
 
   messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 }
 
 function startStream(id, route, model) {
@@ -942,7 +974,7 @@ function startStream(id, route, model) {
   stopBtn.style.display = 'inline-block';
   queueBtn.style.display = 'inline-block';
   setStatus('Streaming…');
-  messages.scrollTop = messages.scrollHeight;
+  forceScrollToBottom();
 }
 
 function appendChunk(id, chunkType, chunk) {
@@ -991,7 +1023,7 @@ function appendChunk(id, chunkType, chunk) {
     const cur = body.querySelector('.stream-cursor');
     body.insertBefore(document.createTextNode(chunk), cur);
   }
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 }
 
 function endStream(id, cost) {
@@ -1043,7 +1075,7 @@ function appendErrorBubble(source, message) {
   wrap.appendChild(icon);
   wrap.appendChild(body);
   messages.appendChild(wrap);
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 }
 
 function showCriticalOverlay(source, message) {
@@ -1256,6 +1288,7 @@ window.addEventListener('message', (event) => {
     vscode.setState({ ...(vscode.getState() || {}), activeSessionId });
     messages.innerHTML = '';
     for (const m of msg.messages) appendMessage(m);
+    forceScrollToBottom();
     setStatus(`Loaded: ${msg.title}`);
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'historyCleared') {

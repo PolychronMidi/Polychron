@@ -134,7 +134,7 @@ async function postTranscript(entries) {
     return shimPost("/transcript", JSON.stringify({ entries }), () => undefined);
 }
 async function reindexFiles(files) {
-    return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 15000);
+    return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 30000);
 }
 async function postNarrative(narrative) {
     return shimPost("/narrative", JSON.stringify({ narrative }), () => undefined);
