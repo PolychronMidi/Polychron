@@ -127,24 +127,91 @@ _BATCH_DEBOUNCE_S = 3.0
 _reprime_timer = None
 _reprime_lock = _threading.Lock()
 
+# Per-model incremental update latency telemetry (#1)
+_warm_ctx_incr_latency: dict = {}
+
+# Rate tracking for adaptive debounce window (#3)
+_queue_timestamps: list = []
+_RATE_WINDOW_S = 10.0
+_DEBOUNCE_LOW = 1.0    # rate < 0.5/s → fast feedback
+_DEBOUNCE_HIGH = 10.0  # rate > 3/s → aggressive batching (compact/bulk)
+
+# GPU0 VRAM prefetch throttle (#4)
+_last_prefetch_ts = 0.0
+
 
 def queue_incremental_update(title: str, content: str, category: str, new_kb_ver: int):
     """Queue a KB entry for batched incremental context extension.
 
-    Debounced: resets timer on each call, flushes after BATCH_DEBOUNCE_S of silence.
-    Multiple learn() calls within the window are coalesced into one Ollama round-trip.
+    Debounced with adaptive window: resets timer on each call. Window stretches
+    to 10s during bulk operations (>3 calls/10s) and shrinks to 1s for single
+    interactive learn() calls.
     """
     global _batch_timer
+    now = _time.time()
+    _queue_timestamps.append(now)
+    # Trim to rate window
+    while _queue_timestamps and now - _queue_timestamps[0] > _RATE_WINDOW_S:
+        _queue_timestamps.pop(0)
+    rate = len(_queue_timestamps) / _RATE_WINDOW_S
+    if rate > 3.0:
+        debounce = _DEBOUNCE_HIGH
+    elif rate < 0.5:
+        debounce = _DEBOUNCE_LOW
+    else:
+        debounce = _BATCH_DEBOUNCE_S
     with _batch_lock:
         _pending_entries.append({
             "title": title, "content": content, "category": category, "kb_ver": new_kb_ver,
         })
         if _batch_timer is not None:
             _batch_timer.cancel()
-        t = _threading.Timer(_BATCH_DEBOUNCE_S, _flush_pending_entries)
+        t = _threading.Timer(debounce, _flush_pending_entries)
         t.daemon = True
         t.start()
         _batch_timer = t
+    _prefetch_gpu0_if_needed()
+
+
+def queue_tombstone(entry_id: str, new_kb_ver: int):
+    """Queue a tombstone marker for a removed KB entry — same mechanism as incremental add."""
+    queue_incremental_update(
+        title=f"REMOVED entry {entry_id}",
+        content="This KB entry has been deleted — disregard it in all future analysis.",
+        category="TOMBSTONE",
+        new_kb_ver=new_kb_ver,
+    )
+
+
+def _prefetch_gpu0_if_needed():
+    """Poke GPU0 so it starts VRAM reload during the debounce window.
+
+    If GPU0 was evicted, this ping forces Ollama to reload it before the real
+    incremental update arrives. By the time the debounce fires, GPU0 is hot.
+    Throttled to max once per 30s to avoid spamming.
+    """
+    global _last_prefetch_ts
+    now = _time.time()
+    if now - _last_prefetch_ts < 30.0:
+        return
+    _last_prefetch_ts = now
+    def _ping():
+        try:
+            import urllib.request as _req
+            from .synthesis_ollama import _LOCAL_MODEL, _url_for, _KEEP_ALIVE
+            payload = _json.dumps({
+                "model": _LOCAL_MODEL, "prompt": "", "stream": False,
+                "keep_alive": _KEEP_ALIVE, "options": {"num_predict": 0},
+            }).encode()
+            req = _req.Request(
+                _url_for(_LOCAL_MODEL), data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            with _req.urlopen(req, timeout=90) as resp:
+                resp.read()
+        except Exception:
+            pass
+    _threading.Thread(target=_ping, daemon=True, name="HME-gpu0-prefetch").start()
 
 
 def _flush_pending_entries():
@@ -203,6 +270,7 @@ def _flush_pending_entries():
             num_ctx = _num_ctx_for(model)
             if old_len > num_ctx - 500:
                 return model, None, "near_limit"
+            t0 = _time.time()
             try:
                 payload = _json.dumps({
                     "model": model, "prompt": entry_text, "context": _warm_ctx[model],
@@ -215,9 +283,10 @@ def _flush_pending_entries():
                 )
                 with _req.urlopen(req, timeout=_incr_timeout.get(model, 60)) as resp:
                     data = _json.loads(resp.read())
+                elapsed = _time.time() - t0
                 new_ctx = data.get("context", [])
                 if new_ctx and len(new_ctx) > old_len:
-                    return model, (old_len, new_ctx), "ok"
+                    return model, (old_len, new_ctx, elapsed), "ok"
                 return model, None, "no_new_ctx"
             except Exception as e:
                 return model, None, e
@@ -231,13 +300,15 @@ def _flush_pending_entries():
             for fut in _as_completed(futures):
                 model, result, status = fut.result()
                 if status == "ok":
-                    old_len, new_ctx = result
+                    old_len, new_ctx, elapsed = result
                     _warm_ctx[model] = new_ctx
                     _warm_ctx_kb_ver[model] = new_kb_ver
                     _warm_ctx_ts[model] = _time.time()
                     _warm_ctx_append_count[model] = _warm_ctx_append_count.get(model, 0) + len(entries)
+                    _warm_ctx_incr_latency[model] = round(elapsed, 1)
                     logger.info(
-                        f"incr KB update: {model} {old_len}→{len(new_ctx)} tokens, kb_ver→{new_kb_ver}"
+                        f"incr KB update: {model} {old_len}→{len(new_ctx)} tokens, "
+                        f"kb_ver→{new_kb_ver} ({elapsed:.1f}s)"
                     )
                     _save_warm_cache(model)
                     updated += 1
@@ -264,7 +335,8 @@ def _check_and_schedule_gc(model: str):
     """Schedule a background full re-prime when incremental drift exceeds thresholds (#4/#5).
 
     Triggers when append count >= _MAX_INCREMENTAL_APPENDS OR token growth >= 20%
-    above the baseline established at last full prime.
+    above the baseline established at last full prime. Saves a checkpoint before
+    rebuilding so future stale-cache loads can recover instantly.
     """
     count = _warm_ctx_append_count.get(model, 0)
     baseline = _warm_ctx_baseline_tokens.get(model, 0)
@@ -278,8 +350,65 @@ def _check_and_schedule_gc(model: str):
         def _gc_reprime():
             _warm_ctx_append_count.pop(model, None)
             _warm_ctx_baseline_tokens.pop(model, None)
-            _prime_warm_context(model)
+            _prime_warm_context(model, force=True)
+            _save_checkpoint(model)
         _threading.Thread(target=_gc_reprime, daemon=True, name=f"HME-gc-{model}").start()
+
+
+def _save_checkpoint(model: str):
+    """Persist a GC checkpoint — used for fast recovery when main cache is stale."""
+    if model not in _warm_ctx:
+        return
+    ckpt_file = os.path.join(_cache_dir(), f"warm-kv-checkpoint-{_model_cache_stem(model)}.json")
+    try:
+        data = {
+            "model": model,
+            "kb_ver": _warm_ctx_kb_ver.get(model, 0),
+            "ts": _warm_ctx_ts.get(model, 0),
+            "context_len": len(_warm_ctx[model]),
+            "context": _warm_ctx[model],
+        }
+        with open(ckpt_file, "w") as f:
+            _json.dump(data, f)
+        logger.info(f"warm checkpoint SAVED: {model} ({len(_warm_ctx[model])} tokens, kb_ver={data['kb_ver']})")
+    except Exception as e:
+        logger.warning(f"warm checkpoint save failed: {model}: {e}")
+
+
+def _try_checkpoint_recovery(model: str) -> bool:
+    """Load a GC checkpoint when main cache is stale — instant availability while
+    a background full re-prime catches up to current kb_ver.
+
+    Only loads if the checkpoint is within 20 kb_ver versions of current.
+    """
+    ckpt_file = os.path.join(_cache_dir(), f"warm-kv-checkpoint-{_model_cache_stem(model)}.json")
+    if not os.path.exists(ckpt_file):
+        return False
+    try:
+        with open(ckpt_file) as f:
+            data = _json.load(f)
+        ckpt_kb_ver = data.get("kb_ver", -1)
+        ckpt_ctx = data.get("context", [])
+        target_kb_ver = getattr(ctx, "_kb_version", 0)
+        if not ckpt_ctx or len(ckpt_ctx) < 10:
+            return False
+        ver_gap = target_kb_ver - ckpt_kb_ver
+        if ver_gap > 20 or ver_gap <= 0:
+            logger.debug(f"warm checkpoint SKIP: {model} — gap {ver_gap} out of range")
+            return False
+        _warm_ctx[model] = ckpt_ctx
+        _warm_ctx_kb_ver[model] = ckpt_kb_ver
+        _warm_ctx_ts[model] = data.get("ts", 0)
+        _warm_ctx_append_count[model] = 0
+        _warm_ctx_baseline_tokens[model] = len(ckpt_ctx)
+        logger.info(
+            f"warm checkpoint RECOVERED: {model} ({len(ckpt_ctx)} tokens, "
+            f"kb_ver={ckpt_kb_ver}, gap={ver_gap} — usable while re-prime catches up)"
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"warm checkpoint load failed: {model}: {e}")
+        return False
 
 
 def _schedule_reprime_async(delay: float = 5.0):
@@ -462,17 +591,20 @@ def _gpu_persona(model: str) -> str:
     return (rsn_base + "\n\n// ===== SOURCE FILES =====\n" + src)[:_MAX_PERSONA_CHARS]
 
 
-def _prime_warm_context(model: str) -> bool:
+def _prime_warm_context(model: str, force: bool = False) -> bool:
     """Prime warm KV context for a model. Background priority, skips if KB unchanged.
-    Tries disk cache first (instant) before falling back to Ollama prime (~30s)."""
+    Tries disk cache first (instant) before falling back to Ollama prime (~30s).
+    force=True: skip freshness check and rebuild from persona (used by GC to clean drift)."""
     from .synthesis_ollama import _local_think, _THINK_SYSTEM
     kb_ver = getattr(ctx, "_kb_version", 0)
-    if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
-        logger.debug(f"warm ctx already fresh: {model} (kb_ver={kb_ver})")
-        return True
-    # Try disk cache before expensive Ollama prime
-    if _load_warm_cache(model):
-        return True
+    if not force:
+        if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
+            logger.debug(f"warm ctx already fresh: {model} (kb_ver={kb_ver})")
+            return True
+        if _load_warm_cache(model):
+            return True
+        if _try_checkpoint_recovery(model):
+            return True
     logger.info(f"warm ctx priming: {model} (kb_ver={kb_ver}) — building persona...")
     try:
         persona = _gpu_persona(model)
@@ -682,12 +814,21 @@ def warm_context_status() -> dict:
     for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
         if model in _warm_ctx:
             cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
+            baseline = _warm_ctx_baseline_tokens.get(model, 0)
+            current = len(_warm_ctx[model])
+            growth = round((current - baseline) / max(baseline, 1), 3) if baseline > 0 else 0.0
+            ckpt_file = os.path.join(_cache_dir(), f"warm-kv-checkpoint-{_model_cache_stem(model)}.json")
             status[model] = {
-                "primed": True, "tokens": len(_warm_ctx[model]),
+                "primed": True, "tokens": current,
                 "age_s": round(now - _warm_ctx_ts.get(model, 0), 1),
                 "kb_fresh": _warm_ctx_kb_ver.get(model) == getattr(ctx, "_kb_version", 0),
                 "disk_cached": os.path.exists(cache_file),
+                "checkpoint": os.path.exists(ckpt_file),
                 "cache_backend": "tmpfs" if any(os.path.ismount(tp) for tp in _TMPFS_PATHS) else "disk",
+                "append_count": _warm_ctx_append_count.get(model, 0),
+                "baseline_tokens": baseline,
+                "token_growth": growth,
+                "last_incr_latency_s": _warm_ctx_incr_latency.get(model),
             }
         else:
             status[model] = {"primed": False}
