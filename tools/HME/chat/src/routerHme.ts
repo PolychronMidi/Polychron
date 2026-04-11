@@ -113,7 +113,7 @@ export async function postTranscript(entries: any[]): Promise<void> {
 }
 
 export async function reindexFiles(files: string[]): Promise<{ indexed: string[]; count: number }> {
-  return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 15000);
+  return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 30000);
 }
 
 export async function postNarrative(narrative: string): Promise<void> {

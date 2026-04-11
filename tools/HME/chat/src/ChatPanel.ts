@@ -6,7 +6,7 @@ import {
   isHmeShimReady, validateMessage, auditChanges, enrichPrompt,
   postTranscript, reindexFiles, postNarrative, logShimError, OllamaMessage,
 } from "./router";
-import { ChatMessage } from "./types";
+import { ChatMessage, ContentBlock } from "./types";
 import {
   SessionEntry,
   ChainLink,
@@ -237,16 +237,10 @@ export class ChatPanel {
         });
         break;
       case "checkHmeShim":
-        isHmeShimReady().then(({ ready, errors }) => {
+        isHmeShimReady().then(({ ready }) => {
           this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
           if (!ready) {
             this._startHmeShim();
-          }
-          if (errors.length > 0) {
-            const summary = errors.slice(-3).map((e: any) =>
-              `[${e.ts_str ?? "?"}] [${e.source}] ${e.message}`
-            ).join("\n");
-            this._post({ type: "notice", level: "warn", text: `⚠ HME errors (check log/hme-errors.log):\n${summary}` });
           }
         });
         break;
@@ -531,15 +525,25 @@ export class ChatPanel {
     const requestHistory = [systemPrompt, ...trimmed, { role: "user" as const, content: msg.text }];
     let text = "";
     let tools: string[] = [];
+    const blocks: ContentBlock[] = [];
+    let lastBlockType: string | null = null;
     let streamEnded = false;
     const tracker = this._trackStream(assistantId, label);
     const safeEnd = () => { if (streamEnded) return; streamEnded = true; onBothDone(); };
+    const appendBlock = (type: "thinking" | "text" | "tool", content: string) => {
+      if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
+        blocks.push({ type, content });
+      } else {
+        blocks[blocks.length - 1].content += content;
+      }
+      lastBlockType = type;
+    };
     const onDone = () => {
       if (label === "local") {
         this._state.ollamaHistory.push({ role: "user", content: msg.text });
         this._state.ollamaHistory.push({ role: "assistant", content: text });
       }
-      tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: label, ts: Date.now() });
+      tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, blocks: blocks.length ? blocks : undefined, route: label, ts: Date.now() });
       this._post({ type: "streamEnd", id: assistantId });
       this._transcript.logAssistant(text, label, msg.ollamaModel, tools);
       const changedFiles = this._reindexFromTools(tools);
@@ -549,10 +553,12 @@ export class ChatPanel {
     const onChunk = (chunk: string, type: string) => {
       if (type === "tool") {
         tools.push(chunk);
+        appendBlock("tool", chunk);
         this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
         this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, label);
       } else {
         text += chunk;
+        appendBlock(type === "thinking" ? "thinking" : "text", chunk);
         this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
       }
       tracker.update(text, tools);
@@ -579,14 +585,25 @@ export class ChatPanel {
     const history = trimHistoryToFit(this._state.ollamaHistory, msg.text);
     let text = "";
     let tools: string[] = [];
+    const blocks: ContentBlock[] = [];
+    let lastBlockType: string | null = null;
     let aborted = false;
     let streamEnded = false;
     const tracker = this._trackStream(assistantId, "hybrid");
     const safeEnd = () => { if (streamEnded) return; streamEnded = true; onBothDone(); };
+    const appendBlock = (type: "thinking" | "text" | "tool", content: string) => {
+      if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
+        blocks.push({ type, content });
+      } else {
+        blocks[blocks.length - 1].content += content;
+      }
+      lastBlockType = type;
+    };
     // Register cancel immediately so abort works during HME context fetch
     const cancelWrapper = () => { aborted = true; };
     cancelFns.push(cancelWrapper);
     this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
+    appendBlock("tool", "[HME] Enriching with KB context…");
     streamHybrid(
       msg.text,
       history,
@@ -596,17 +613,19 @@ export class ChatPanel {
         if (aborted) return;
         if (type === "tool") {
           tools.push(chunk);
+          appendBlock("tool", chunk);
           this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
           this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
         } else {
           text += chunk;
+          appendBlock(type === "thinking" ? "thinking" : "text", chunk);
           this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
         }
         tracker.update(text, tools);
       },
       () => {
         if (aborted) return;
-        tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, route: "hybrid", ts: Date.now() });
+        tracker.finalize({ id: assistantId, role: "assistant", text, tools: tools.length ? tools : undefined, blocks: blocks.length ? blocks : undefined, route: "hybrid", ts: Date.now() });
         this._post({ type: "streamEnd", id: assistantId });
         this._transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
         const changedFiles = this._reindexFromTools(tools);
@@ -640,6 +659,8 @@ export class ChatPanel {
     let text = "";
     let thinking = "";
     let tools: string[] = [];
+    const blocks: ContentBlock[] = [];
+    let lastBlockType: string | null = null;
     let streamEnded = false;
     let aborted = false; // gate: prevents buffered PTY/pipe chunks posting after cancel
     const tracker = this._trackStream(assistantId, msg._resolvedRoute ?? msg.route);
@@ -647,6 +668,15 @@ export class ChatPanel {
       if (streamEnded) return;
       streamEnded = true;
       this._drainQueue();
+    };
+
+    const appendBlock = (type: "thinking" | "text" | "tool", content: string) => {
+      if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
+        blocks.push({ type, content });
+      } else {
+        blocks[blocks.length - 1].content += content;
+      }
+      lastBlockType = type;
     };
 
     const onDone = (usage?: TokenUsage) => {
@@ -658,12 +688,12 @@ export class ChatPanel {
         text,
         thinking: thinking || undefined,
         tools: tools.length ? tools : undefined,
+        blocks: blocks.length ? blocks : undefined,
         route: msg._resolvedRoute ?? msg.route,
         ts: Date.now(),
       };
       tracker.finalize(assistantMsg);
       this._post({ type: "streamEnd", id: assistantId });
-      // Log to transcript + mirror to shim
       this._transcript.logAssistant(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
       this._mirrorAssistantToShim(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
       const changedFiles = this._reindexFromTools(tools);
@@ -674,10 +704,11 @@ export class ChatPanel {
 
     const onChunk = (chunk: string, type: string) => {
       if (aborted) return; // discard buffered chunks after cancel
-      if (type === "text") { text += chunk; this._post({ type: "streamChunk", id: assistantId, chunkType: "text", chunk }); }
-      else if (type === "thinking") { thinking += chunk; this._post({ type: "streamChunk", id: assistantId, chunkType: "thinking", chunk }); }
+      if (type === "text") { text += chunk; appendBlock("text", chunk); this._post({ type: "streamChunk", id: assistantId, chunkType: "text", chunk }); }
+      else if (type === "thinking") { thinking += chunk; appendBlock("thinking", chunk); this._post({ type: "streamChunk", id: assistantId, chunkType: "thinking", chunk }); }
       else if (type === "tool") {
         tools.push(chunk);
+        appendBlock("tool", chunk);
         this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
         this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg._resolvedRoute ?? msg.route ?? "claude");
       }
@@ -739,6 +770,10 @@ export class ChatPanel {
    * Parses tool call strings for file paths — Claude ("file_path") and Ollama ("path") formats.
    * Returns the set of detected file paths for downstream use (audit).
    */
+  private static readonly _INDEXABLE_EXTS = new Set([
+    ".js", ".ts", ".tsx", ".jsx", ".py", ".json", ".md", ".css", ".html", ".sh",
+  ]);
+
   private _reindexFromTools(tools: string[]): Set<string> {
     const files = new Set<string>();
     for (const t of tools) {
@@ -749,8 +784,14 @@ export class ChatPanel {
       const ollamaMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
       if (ollamaMatch) files.add(ollamaMatch[2]);
     }
-    if (files.size > 0) {
-      reindexFiles([...files]).catch((e: any) => this._postError("reindex", String(e)));
+    const indexable = [...files].filter(f => {
+      const ext = path.extname(f).toLowerCase();
+      return ChatPanel._INDEXABLE_EXTS.has(ext);
+    });
+    if (indexable.length > 0) {
+      // Best-effort background work — file watcher handles normal saves.
+      // Timeouts/errors are silently dropped; no _postError to avoid false LIFESAVER alarms.
+      reindexFiles(indexable).catch(() => {});
     }
     return files;
   }
@@ -951,6 +992,8 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
 
     let text = "";
     let tools: string[] = [];
+    const blocks: ContentBlock[] = [];
+    let lastBlockType: string | null = null;
     let streamEnded = false;
     let aborted = false; // gate: drops buffered Ollama chunks after cancel
     const tracker = this._trackStream(assistantId, "local");
@@ -958,6 +1001,14 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
       if (streamEnded) return;
       streamEnded = true;
       this._drainQueue();
+    };
+    const appendBlock = (type: "thinking" | "text" | "tool", content: string) => {
+      if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
+        blocks.push({ type, content });
+      } else {
+        blocks[blocks.length - 1].content += content;
+      }
+      lastBlockType = type;
     };
 
     const onDone = () => {
@@ -967,6 +1018,7 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
       const assistantMsg: ChatMessage = {
         id: assistantId, role: "assistant", text,
         tools: tools.length ? tools : undefined,
+        blocks: blocks.length ? blocks : undefined,
         route: "local", ts: Date.now(),
       };
       tracker.finalize(assistantMsg);
@@ -982,10 +1034,12 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
       if (aborted) return; // discard buffered chunks after cancel
       if (type === "tool") {
         tools.push(chunk);
+        appendBlock("tool", chunk);
         this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
         this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "local");
       } else {
         text += chunk;
+        appendBlock(type === "thinking" ? "thinking" : "text", chunk);
         this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
       }
       tracker.update(text, tools);
@@ -1016,6 +1070,8 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
     const history = [...contextMessages, ...this._state.ollamaHistory];
     let text = "";
     let tools: string[] = [];
+    const blocks: ContentBlock[] = [];
+    let lastBlockType: string | null = null;
     let cancelFn: (() => void) | undefined;
     let aborted = false;
     let streamEnded = false;
@@ -1025,12 +1081,21 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
       streamEnded = true;
       this._drainQueue();
     };
+    const appendBlock = (type: "thinking" | "text" | "tool", content: string) => {
+      if (type === "tool" || lastBlockType !== type || blocks.length === 0) {
+        blocks.push({ type, content });
+      } else {
+        blocks[blocks.length - 1].content += content;
+      }
+      lastBlockType = type;
+    };
 
     // Cancelable immediately — even during HME context fetch
     this._cancelCurrent = () => { aborted = true; cancelFn?.(); };
 
     // Post "enriching…" status
     this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
+    appendBlock("tool", "[HME] Enriching with KB context…");
 
     streamHybrid(
       msg.text,
@@ -1041,10 +1106,12 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
         if (aborted) return;
         if (type === "tool") {
           tools.push(chunk);
+          appendBlock("tool", chunk);
           this._post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
           this._transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
         } else {
           text += chunk;
+          appendBlock(type === "thinking" ? "thinking" : "text", chunk);
           this._post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
         }
         tracker.update(text, tools);
@@ -1056,6 +1123,7 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
         const assistantMsg: ChatMessage = {
           id: assistantId, role: "assistant", text,
           tools: tools.length ? tools : undefined,
+          blocks: blocks.length ? blocks : undefined,
           route: "hybrid", ts: Date.now(),
         };
         tracker.finalize(assistantMsg);
@@ -1089,9 +1157,8 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
 
   /** Fail-fast error surface: log file + KB antipattern lookup. Lifesaver hook surfaces errors to Claude. */
   private _postError(source: string, message: string) {
-    // Shim is the single writer to hme-errors.log — avoids duplicate entries.
-    // Fall back to direct disk write only if shim is unreachable.
-    // NO webview UI alert — Lifesaver (userpromptsubmit.sh reads hme-errors.log) is the aggressive channel.
+    // Errors route to hme-errors.log only — Lifesaver reads it for Claude's awareness.
+    // No UI notices: the user reads logs when they want to; this channel is not for them.
     logShimError(source, message).catch((e: any) => {
       console.error(`[HME FAILFAST] logShimError failed for [${source}] ${message}: ${e?.message ?? e}`);
       const errLine = `[${new Date().toISOString()}] [${source}] ${message}\n`;
@@ -1101,16 +1168,6 @@ ${priorContext}${todoBlock}Recent conversation:\n${conversationBlock}\n\nGenerat
       } catch (fileErr: any) {
         console.error(`[HME FAILFAST] Disk fallback also failed for [${source}] ${message}: ${fileErr?.message ?? fileErr}`);
       }
-    });
-    // Query KB for antipatterns — console.error on failure (no recursion)
-    validateMessage(`${source} error: ${message}`).then(({ warnings, blocks }) => {
-      const relevant = [...blocks, ...warnings];
-      if (relevant.length > 0) {
-        const lines = relevant.map((r: any) => `• [${r.title}] ${r.content ?? r.title}`).join("\n");
-        this._post({ type: "notice", level: blocks.length > 0 ? "block" : "warn", text: `HME antipatterns for this error:\n${lines}` });
-      }
-    }).catch((e: any) => {
-      console.error(`[HME FAILFAST] KB antipattern lookup failed for [${source}] ${message}: ${e?.message ?? e}`);
     });
   }
 
