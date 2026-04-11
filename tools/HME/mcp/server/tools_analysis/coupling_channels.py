@@ -38,6 +38,18 @@ _CHANNEL_SEMANTICS: dict[str, str] = {
 _INFRA_CHANNELS = {"rest-sync", "section-quality", "binaural", "instrument", "note"}
 
 
+def _load_l0_channels(src_root: str) -> dict:
+    """Parse l0Channels.js to build {propertyKey: 'channelValue'} map."""
+    l0c_path = os.path.join(src_root, "time", "l0Channels.js")
+    try:
+        with open(l0c_path, encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        return {}
+    pat = re.compile(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[\'"]([^\'"]+)[\'"]')
+    return {k: v for k, v in pat.findall(content)}
+
+
 def _scan_l0_topology(src_root: str) -> dict:
     """Scan ALL JS source files for L0.post / L0.getLast patterns.
     Returns {channel: {producers: [module, ...], consumers: [module, ...]}}."""
@@ -47,6 +59,10 @@ def _scan_l0_topology(src_root: str) -> dict:
     _post_var  = re.compile(r"L0\.post\(\s*([A-Z_][A-Z0-9_]*)\s*,")
     _get_var   = re.compile(r"L0\.(?:getLast|findClosest|getAll|query|count|getBounds)\(\s*([A-Z_][A-Z0-9_]*)\s*,")
     _const_re  = re.compile(r"(?:const|let)\s+([A-Z_][A-Z0-9_]*)\s*=\s*['\"]([^'\"]+)['\"]")
+    # Patterns for L0_CHANNELS.key property access (the dominant style in this codebase)
+    _post_l0ch = re.compile(r"L0\.post\(\s*L0_CHANNELS\.([a-zA-Z_][a-zA-Z0-9_]*)")
+    _get_l0ch  = re.compile(r"L0\.(?:getLast|findClosest|getAll|query|count|getBounds)\(\s*L0_CHANNELS\.([a-zA-Z_][a-zA-Z0-9_]*)")
+    l0_channels = _load_l0_channels(src_root)
 
     for dirpath, _, filenames in os.walk(src_root):
         for fname in filenames:
@@ -72,6 +88,14 @@ def _scan_l0_topology(src_root: str) -> dict:
                     topology[ch]["producers"].append(module_name)
             for var in _get_var.findall(content):
                 ch = consts.get(var)
+                if ch and module_name not in topology[ch]["consumers"]:
+                    topology[ch]["consumers"].append(module_name)
+            for key in _post_l0ch.findall(content):
+                ch = l0_channels.get(key)
+                if ch and module_name not in topology[ch]["producers"]:
+                    topology[ch]["producers"].append(module_name)
+            for key in _get_l0ch.findall(content):
+                ch = l0_channels.get(key)
                 if ch and module_name not in topology[ch]["consumers"]:
                     topology[ch]["consumers"].append(module_name)
     return dict(topology)
