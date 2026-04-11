@@ -115,11 +115,11 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     ok = engine.remove_knowledge(entry_id)
     if ok:
         ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
-        # Schedule background re-prime after removes — debounced so a burst of removes
-        # produces one re-prime, not N. Contexts stay warm without blocking the response.
+        # Inject tombstone into warm contexts — cheap (~1-2s) vs full re-prime (~30s).
+        # Models see "REMOVED entry X" and disregard it. GC re-prime cleans up tombstones.
         try:
-            from server.tools_analysis.synthesis_warm import _schedule_reprime_async
-            _schedule_reprime_async(delay=5.0)
+            from server.tools_analysis.synthesis_warm import queue_tombstone
+            queue_tombstone(entry_id=entry_id, new_kb_ver=ctx._kb_version)
         except Exception:
             pass
         return f"Knowledge entry '{entry_id}' removed from {scope}."
