@@ -6,6 +6,12 @@ import { OllamaOptions, OllamaMessage, ChunkCallback } from "./router";
 
 export const GPU_NUM_CTX = 49152;
 
+function ollamaErrMsg(e: any, url: string): string {
+  return e?.code === "ECONNREFUSED"
+    ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${url}`
+    : (e?.message ?? String(e));
+}
+
 // ── Ollama streaming ──────────────────────────────────────────────────────
 
 function stripThinkTags(text: string): string {
@@ -86,12 +92,7 @@ export function streamOllama(
     }
   );
   req.on("error", (e: any) => {
-    if (!aborted) {
-      const msg = e.code === "ECONNREFUSED"
-        ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${opts.url}`
-        : e.message;
-      onError(msg);
-    }
+    if (!aborted) onError(ollamaErrMsg(e, opts.url));
   });
   req.write(body);
   req.end();
@@ -213,10 +214,7 @@ function ollamaChatOnce(
     );
     req.on("error", (e: any) => {
       if (hardTimer) clearTimeout(hardTimer);
-      const msg = e.code === "ECONNREFUSED"
-        ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${opts.url}`
-        : e.message;
-      reject(new Error(msg));
+      reject(new Error(ollamaErrMsg(e, opts.url)));
     });
     req.write(body);
     req.end();
@@ -288,8 +286,8 @@ export function streamOllamaAgentic(
             return;
           }
         } else {
-          const errMsg = e.message ?? String(e);
-          onError(errMsg.startsWith("CRITICAL") ? errMsg : `CRITICAL: ${errMsg} — Ollama is NOT responding at ${opts.url}`);
+          const errMsg = ollamaErrMsg(e, opts.url);
+          onError(errMsg.startsWith("CRITICAL") ? errMsg : `CRITICAL: ${errMsg}`);
           return;
         }
       }

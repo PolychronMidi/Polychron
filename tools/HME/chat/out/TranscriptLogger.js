@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TranscriptLogger = void 0;
+exports.nullTranscript = nullTranscript;
 /**
  * TranscriptLogger — append-only JSONL session transcript.
  *
@@ -250,7 +251,7 @@ class TranscriptLogger {
             console.error(`[TranscriptLogger] Narrative synthesis failed: ${e?.message ?? e}`);
         }
     }
-    /** Rotate the log file if it exceeds maxSize bytes. Keeps tail. */
+    /** Rotate log file if it exceeds maxSize bytes. Keeps tail. */
     rotate(maxSize = 2 * 1024 * 1024) {
         try {
             const stat = fs.statSync(this._logPath);
@@ -268,3 +269,14 @@ class TranscriptLogger {
     }
 }
 exports.TranscriptLogger = TranscriptLogger;
+/** No-op TranscriptLogger for use when initialization fails. */
+function nullTranscript() {
+    return {
+        log: () => { }, setSessionId: () => { },
+        logUser: () => { }, logAssistant: () => { }, logToolCall: () => { },
+        logRouteSwitch: () => { }, logValidation: () => { }, logAudit: () => { },
+        logSessionStart: () => { }, getRecentContext: () => "", getWindow: () => [],
+        getAll: () => [], count: 0, setNarrativeCallback: () => { }, rotate: () => { },
+        forceNarrative: () => Promise.resolve(),
+    };
+}

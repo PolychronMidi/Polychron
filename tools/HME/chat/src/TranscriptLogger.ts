@@ -237,7 +237,7 @@ export class TranscriptLogger {
     } catch (e: any) { console.error(`[TranscriptLogger] Narrative synthesis failed: ${e?.message ?? e}`); }
   }
 
-  /** Rotate the log file if it exceeds maxSize bytes. Keeps tail. */
+  /** Rotate log file if it exceeds maxSize bytes. Keeps tail. */
   rotate(maxSize = 2 * 1024 * 1024): void {
     try {
       const stat = fs.statSync(this._logPath);
@@ -249,4 +249,16 @@ export class TranscriptLogger {
       fs.writeFileSync(this._logPath, keepLines.join("\n") + "\n", "utf8");
     } catch (e: any) { console.error(`[TranscriptLogger] Rotation failed: ${e?.message ?? e}`); }
   }
+}
+
+/** No-op TranscriptLogger for use when initialization fails. */
+export function nullTranscript(): TranscriptLogger {
+  return {
+    log: () => {}, setSessionId: () => {},
+    logUser: () => {}, logAssistant: () => {}, logToolCall: () => {},
+    logRouteSwitch: () => {}, logValidation: () => {}, logAudit: () => {},
+    logSessionStart: () => {}, getRecentContext: () => "", getWindow: () => [],
+    getAll: () => [], count: 0, setNarrativeCallback: () => {}, rotate: () => {},
+    forceNarrative: () => Promise.resolve(),
+  } as unknown as TranscriptLogger;
 }

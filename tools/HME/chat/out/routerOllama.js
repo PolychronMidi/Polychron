@@ -41,6 +41,11 @@ const http = __importStar(require("http"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 exports.GPU_NUM_CTX = 49152;
+function ollamaErrMsg(e, url) {
+    return e?.code === "ECONNREFUSED"
+        ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${url}`
+        : (e?.message ?? String(e));
+}
 // ── Ollama streaming ──────────────────────────────────────────────────────
 function stripThinkTags(text) {
     if (!text)
@@ -133,12 +138,8 @@ function streamOllama(messages, opts, onChunk, onDone, onError) {
             onError(e.message); });
     });
     req.on("error", (e) => {
-        if (!aborted) {
-            const msg = e.code === "ECONNREFUSED"
-                ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${opts.url}`
-                : e.message;
-            onError(msg);
-        }
+        if (!aborted)
+            onError(ollamaErrMsg(e, opts.url));
     });
     req.write(body);
     req.end();
@@ -252,10 +253,7 @@ function ollamaChatOnce(messages, tools, opts) {
         req.on("error", (e) => {
             if (hardTimer)
                 clearTimeout(hardTimer);
-            const msg = e.code === "ECONNREFUSED"
-                ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${opts.url}`
-                : e.message;
-            reject(new Error(msg));
+            reject(new Error(ollamaErrMsg(e, opts.url)));
         });
         req.write(body);
         req.end();
@@ -321,8 +319,8 @@ function streamOllamaAgentic(messages, opts, workingDir, onChunk, onDone, onErro
                     }
                 }
                 else {
-                    const errMsg = e.message ?? String(e);
-                    onError(errMsg.startsWith("CRITICAL") ? errMsg : `CRITICAL: ${errMsg} — Ollama is NOT responding at ${opts.url}`);
+                    const errMsg = ollamaErrMsg(e, opts.url);
+                    onError(errMsg.startsWith("CRITICAL") ? errMsg : `CRITICAL: ${errMsg}`);
                     return;
                 }
             }
