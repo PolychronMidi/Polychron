@@ -46,6 +46,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
 
     # Invalidate KB hits cache so before_editing re-fetches fresh constraints
     ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
+    _new_kb_ver = ctx._kb_version
 
     # Feed the session narrative so models know what was just learned this session
     try:
@@ -53,6 +54,14 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
         append_session_narrative("knowledge_added", f"[{category}] {title[:70]}")
     except Exception as e:
         logger.warning("append_session_narrative failed: %s", e)
+
+    # Incremental warm context update — batched and parallelized across all 3 models.
+    # Debounced 3s so rapid-fire learn() calls coalesce into one Ollama round-trip.
+    try:
+        from server.tools_analysis.synthesis_warm import queue_incremental_update
+        queue_incremental_update(title=title, content=content, category=category, new_kb_ver=_new_kb_ver)
+    except Exception as _e:
+        logger.warning(f"incremental KB update queue failed: {_e}")
 
     return f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
 
@@ -106,6 +115,13 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     ok = engine.remove_knowledge(entry_id)
     if ok:
         ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
+        # Schedule background re-prime after removes — debounced so a burst of removes
+        # produces one re-prime, not N. Contexts stay warm without blocking the response.
+        try:
+            from server.tools_analysis.synthesis_warm import _schedule_reprime_async
+            _schedule_reprime_async(delay=5.0)
+        except Exception:
+            pass
         return f"Knowledge entry '{entry_id}' removed from {scope}."
     return f"Failed to remove entry '{entry_id}' from {scope}. It may not exist."
 

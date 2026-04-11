@@ -93,7 +93,7 @@ _EVENT_CATEGORIES = {
     "edit": "edit", "before_editing": "edit",
     "review": "review", "audit": "review", "forget": "review",
     "find": "search", "search": "search", "callers": "search",
-    "kb_add": "kb", "kb_compact": "kb",
+    "kb_add": "kb", "kb_compact": "kb", "knowledge_added": "kb",
     "enrich": "enrich", "enrich_prompt": "enrich",
     "evolve": "evolve",
     "admin": "admin", "status": "admin",
