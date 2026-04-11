@@ -2,7 +2,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreToolUse: Read — anti-polling + live KB surface for project files.
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+FILE_PATH=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 
 # Warn on background task output reads — the task notification system is the real
 # guard against polling. Blocking here causes false positives on post-completion reads.

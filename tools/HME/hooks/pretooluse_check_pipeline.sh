@@ -5,7 +5,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # should almost never be called directly. One call per turn max.
 INPUT=$(cat)
 
-TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""')
+TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -z "$TRANSCRIPT_PATH" || ! -f "$TRANSCRIPT_PATH" ]]; then
   exit 0
 fi

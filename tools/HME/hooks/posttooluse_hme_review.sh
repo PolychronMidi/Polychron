@@ -3,7 +3,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
 # PostToolUse: mcp__HME__review — clear edit backlog, point to next step.
 INPUT=$(cat)
-MODE=$(echo "$INPUT" | jq -r '.tool_input.mode // "digest"')
+MODE=$(_safe_jq "$INPUT" '.tool_input.mode' 'digest')
 
 if [ "$MODE" = "forget" ]; then
   EDIT_COUNT=$(_nexus_count EDIT)

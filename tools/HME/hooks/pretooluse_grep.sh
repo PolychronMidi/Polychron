@@ -2,8 +2,8 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreToolUse: Grep — surface KB relevance for search queries.
 INPUT=$(cat)
-PATTERN=$(echo "$INPUT" | jq -r '.tool_input.pattern // ""')
-MULTILINE=$(echo "$INPUT" | jq -r '.tool_input.multiline // false')
+PATTERN=$(_safe_jq "$INPUT" '.tool_input.pattern' '')
+MULTILINE=$(_safe_jq "$INPUT" '.tool_input.multiline' 'false')
 
 # Allow multiline silently — HME can't do cross-line patterns
 if [[ "$MULTILINE" == "true" ]]; then

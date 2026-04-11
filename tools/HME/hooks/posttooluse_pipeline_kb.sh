@@ -3,7 +3,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PostToolUse: after pipeline run, extract trace-summary observations for KB auto-population
 # This runs AFTER posttooluse_bash.sh (which handles Evolver phase reminders)
 INPUT=$(cat)
-CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
+CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
 # Only trigger on pipeline completion
 echo "$CMD" | grep -q 'npm run main' || exit 0

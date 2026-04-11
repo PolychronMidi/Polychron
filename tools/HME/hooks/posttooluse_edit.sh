@@ -3,7 +3,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
 # PostToolUse: Edit — track edited files, remind about review when backlog grows.
 INPUT=$(cat)
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 
 # Only track src/ and tools/HME/ edits (not docs, configs, etc.)
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat))/'; then

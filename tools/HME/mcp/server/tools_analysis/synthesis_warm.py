@@ -1,16 +1,10 @@
-"""HME warm KV context — persona construction, priming, disk persistence, and status.
+"""HME warm KV context — priming, incremental updates, GC, and status.
 
 Warm context = each model's specialized persona + full KB pre-tokenized into Ollama's KV
 cache via the context= array. Avoids re-tokenizing the same persona text on every call.
 
-Disk persistence: after every successful prime, context arrays are saved to disk (tmpfs
-buffer if mounted, else tools/HME/warm-context-cache/). On startup or after eviction,
-cached contexts load instantly (~0ms) instead of re-priming (~30s per model).
-
-VRAM safety: persona size is hard-capped at _MAX_PERSONA_CHARS to prevent KV cache
-overflow from crashing CUDA kernels on the M40s (<600 MiB headroom per GPU). The cap
-leaves headroom for inference. Failures register with ctx.register_critical_failure()
-so Lifesaver surfaces them in the next tool response — never silently swallowed.
+Disk persistence and shared state live in warm_disk.py.
+Persona construction lives in warm_persona.py.
 """
 import json as _json
 import os
@@ -19,101 +13,22 @@ import time as _time
 import threading as _threading
 
 from server import context as ctx
+from .warm_disk import (
+    _warm_ctx, _warm_ctx_kb_ver, _warm_ctx_ts,
+    _warm_ctx_append_count, _warm_ctx_baseline_tokens, _warm_ctx_incr_latency,
+    _cache_dir, _model_cache_stem, _save_warm_cache, _load_warm_cache,
+    _save_checkpoint, _try_checkpoint_recovery, _load_all_warm_caches,
+)
+from .warm_persona import _MAX_PERSONA_CHARS, _gpu_persona  # noqa: F401
 
 logger = logging.getLogger("HME")
-
-# Shared warm context state — imported by synthesis_ollama for context= injection
-_warm_ctx: dict[str, list] = {}
-_warm_ctx_kb_ver: dict[str, int] = {}
-_warm_ctx_ts: dict[str, float] = {}
 
 _lazy_prime_attempted = False
 _priming_in_progress = _threading.Event()
 
-# ── Disk persistence for KV cache snapshots ──────────────────────────────────
-# Prefer tmpfs buffer (instant I/O) → fallback to project disk
-_TMPFS_PATHS = ["/mnt/ollama-buffer-gpu0", "/mnt/ollama-buffer-gpu1"]
-_DISK_CACHE_DIR = None  # lazily initialized
-
-_MODEL_CACHE_NAMES = {}  # model → cache file stem, set after model constants load
-
-
-def _cache_dir() -> str:
-    """Return the best available cache directory — tmpfs if mounted, else disk."""
-    global _DISK_CACHE_DIR
-    for tp in _TMPFS_PATHS:
-        if os.path.ismount(tp):
-            return tp
-    if _DISK_CACHE_DIR is None:
-        root = getattr(ctx, "PROJECT_ROOT", "")
-        _DISK_CACHE_DIR = os.path.join(root, "tools", "HME", "warm-context-cache") if root else "/tmp/hme-warm-cache"
-    os.makedirs(_DISK_CACHE_DIR, exist_ok=True)
-    return _DISK_CACHE_DIR
-
-
-def _model_cache_stem(model: str) -> str:
-    """Stable filename stem for a model (e.g. 'qwen3-coder:30b' → 'qwen3-coder-30b')."""
-    return model.replace(":", "-").replace("/", "-")
-
-
-def _save_warm_cache(model: str):
-    """Persist one model's warm context to disk after successful prime."""
-    if model not in _warm_ctx:
-        return
-    cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
-    try:
-        data = {
-            "model": model,
-            "kb_ver": _warm_ctx_kb_ver.get(model, 0),
-            "ts": _warm_ctx_ts.get(model, 0),
-            "context_len": len(_warm_ctx[model]),
-            "context": _warm_ctx[model],
-        }
-        with open(cache_file, "w") as f:
-            _json.dump(data, f)
-        logger.info(f"warm cache SAVED: {model} → {cache_file} ({len(_warm_ctx[model])} tokens)")
-    except Exception as e:
-        logger.warning(f"warm cache save failed: {model}: {e}")
-
-
-def _load_warm_cache(model: str) -> bool:
-    """Try to restore a model's warm context from disk. Returns True if cache was fresh and loaded."""
-    cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
-    if not os.path.exists(cache_file):
-        return False
-    try:
-        with open(cache_file) as f:
-            data = _json.load(f)
-        cached_model = data.get("model", "")
-        cached_kb_ver = data.get("kb_ver", -1)
-        cached_ctx = data.get("context", [])
-        cached_ts = data.get("ts", 0)
-        current_kb_ver = getattr(ctx, "_kb_version", 0)
-        if cached_model != model:
-            logger.debug(f"warm cache SKIP: model mismatch ({cached_model} != {model})")
-            return False
-        if cached_kb_ver != current_kb_ver:
-            logger.info(f"warm cache STALE: {model} kb_ver {cached_kb_ver} != {current_kb_ver}")
-            return False
-        if not cached_ctx or len(cached_ctx) < 10:
-            logger.debug(f"warm cache SKIP: empty context for {model}")
-            return False
-        _warm_ctx[model] = cached_ctx
-        _warm_ctx_kb_ver[model] = cached_kb_ver
-        _warm_ctx_ts[model] = cached_ts
-        age_s = _time.time() - cached_ts
-        logger.info(f"warm cache RESTORED: {model} ({len(cached_ctx)} tokens, {age_s:.0f}s old)")
-        return True
-    except Exception as e:
-        logger.warning(f"warm cache load failed: {model}: {e}")
-        return False
-
-
 _incremental_update_lock = _threading.Lock()
 
 # Append count + baseline tokens for GC / drift detection (#4 and #5)
-_warm_ctx_append_count: dict = {}
-_warm_ctx_baseline_tokens: dict = {}
 _MAX_INCREMENTAL_APPENDS = 8       # schedule GC re-prime after N incremental appends
 _GC_TOKEN_GROWTH_RATIO = 0.20      # or if token count grew > 20% above full-prime baseline
 
@@ -126,9 +41,6 @@ _BATCH_DEBOUNCE_S = 3.0
 # Debounce timer for background re-prime after KB removes (#2)
 _reprime_timer = None
 _reprime_lock = _threading.Lock()
-
-# Per-model incremental update latency telemetry (#1)
-_warm_ctx_incr_latency: dict = {}
 
 # Rate tracking for adaptive debounce window (#3)
 _queue_timestamps: list = []
@@ -150,7 +62,6 @@ def queue_incremental_update(title: str, content: str, category: str, new_kb_ver
     global _batch_timer
     now = _time.time()
     _queue_timestamps.append(now)
-    # Trim to rate window
     while _queue_timestamps and now - _queue_timestamps[0] > _RATE_WINDOW_S:
         _queue_timestamps.pop(0)
     rate = len(_queue_timestamps) / _RATE_WINDOW_S
@@ -227,9 +138,6 @@ def _flush_pending_entries():
         return
 
     with _incremental_update_lock:
-        # Drain the queue INSIDE the lock — any entries added while we were waiting
-        # (e.g. a third learn() call during GPU0's 17-90s VRAM reload) are included
-        # in this batch instead of spawning a separate redundant flush.
         with _batch_lock:
             if not _pending_entries:
                 _batch_timer = None
@@ -239,7 +147,6 @@ def _flush_pending_entries():
             _batch_timer = None
 
         new_kb_ver = entries[-1]["kb_ver"]
-        # Concatenate all pending entries — one Ollama call evaluates all of them at once
         entry_text = "".join(
             f"\n\n[KB #{e['kb_ver']}] [{e['category']}] {e['title']}: {e['content'][:400]}"
             for e in entries
@@ -250,7 +157,6 @@ def _flush_pending_entries():
             _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
             _url_for, _KEEP_ALIVE, _num_ctx_for,
         )
-        # Restore from disk if warm contexts were wiped (e.g. hot-reload)
         if not any(m in _warm_ctx for m in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]):
             restored = _load_all_warm_caches()
             if restored == 0:
@@ -355,62 +261,6 @@ def _check_and_schedule_gc(model: str):
         _threading.Thread(target=_gc_reprime, daemon=True, name=f"HME-gc-{model}").start()
 
 
-def _save_checkpoint(model: str):
-    """Persist a GC checkpoint — used for fast recovery when main cache is stale."""
-    if model not in _warm_ctx:
-        return
-    ckpt_file = os.path.join(_cache_dir(), f"warm-kv-checkpoint-{_model_cache_stem(model)}.json")
-    try:
-        data = {
-            "model": model,
-            "kb_ver": _warm_ctx_kb_ver.get(model, 0),
-            "ts": _warm_ctx_ts.get(model, 0),
-            "context_len": len(_warm_ctx[model]),
-            "context": _warm_ctx[model],
-        }
-        with open(ckpt_file, "w") as f:
-            _json.dump(data, f)
-        logger.info(f"warm checkpoint SAVED: {model} ({len(_warm_ctx[model])} tokens, kb_ver={data['kb_ver']})")
-    except Exception as e:
-        logger.warning(f"warm checkpoint save failed: {model}: {e}")
-
-
-def _try_checkpoint_recovery(model: str) -> bool:
-    """Load a GC checkpoint when main cache is stale — instant availability while
-    a background full re-prime catches up to current kb_ver.
-
-    Only loads if the checkpoint is within 20 kb_ver versions of current.
-    """
-    ckpt_file = os.path.join(_cache_dir(), f"warm-kv-checkpoint-{_model_cache_stem(model)}.json")
-    if not os.path.exists(ckpt_file):
-        return False
-    try:
-        with open(ckpt_file) as f:
-            data = _json.load(f)
-        ckpt_kb_ver = data.get("kb_ver", -1)
-        ckpt_ctx = data.get("context", [])
-        target_kb_ver = getattr(ctx, "_kb_version", 0)
-        if not ckpt_ctx or len(ckpt_ctx) < 10:
-            return False
-        ver_gap = target_kb_ver - ckpt_kb_ver
-        if ver_gap > 20 or ver_gap <= 0:
-            logger.debug(f"warm checkpoint SKIP: {model} — gap {ver_gap} out of range")
-            return False
-        _warm_ctx[model] = ckpt_ctx
-        _warm_ctx_kb_ver[model] = ckpt_kb_ver
-        _warm_ctx_ts[model] = data.get("ts", 0)
-        _warm_ctx_append_count[model] = 0
-        _warm_ctx_baseline_tokens[model] = len(ckpt_ctx)
-        logger.info(
-            f"warm checkpoint RECOVERED: {model} ({len(ckpt_ctx)} tokens, "
-            f"kb_ver={ckpt_kb_ver}, gap={ver_gap} — usable while re-prime catches up)"
-        )
-        return True
-    except Exception as e:
-        logger.warning(f"warm checkpoint load failed: {model}: {e}")
-        return False
-
-
 def _schedule_reprime_async(delay: float = 5.0):
     """Debounced background full re-prime — coalesces multiple KB removes into one re-prime (#2).
 
@@ -430,172 +280,11 @@ def _schedule_reprime_async(delay: float = 5.0):
         _reprime_timer = t
 
 
-def _load_all_warm_caches() -> int:
-    """Try to restore all model caches from disk. Returns count of successfully restored."""
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
-    restored = 0
-    for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
-        if _load_warm_cache(model):
-            restored += 1
-    return restored
-
-# Hard cap on persona size (chars). 12K chars ≈ 4K tokens — keeps prompt eval under
-# ~30s on M40, so interactive cancellation (via socket timeout in _cancellable_urlopen)
-# limits worst-case Ollama queue wait to ~30s. Larger personas (50K) caused ~120s prompt
-# eval during which Ollama ignores client disconnect, blocking interactive requests.
-_MAX_PERSONA_CHARS = 12_000
-
-
-def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
-    """Load src/ file contents up to a token budget for warm context expansion.
-
-    Files loaded smallest-first to maximize file count within budget.
-    token_budget: approximate token ceiling (1 token ≈ 3 chars for mixed code+text).
-    """
-    import glob as _glob
-    char_budget = token_budget * 3  # conservative: mixed code+text averages ~3 chars/token
-    candidates = []
-    for pattern in patterns:
-        for fpath in _glob.glob(os.path.join(ctx.PROJECT_ROOT, pattern), recursive=True):
-            if "index.js" in os.path.basename(fpath) or "__pycache__" in fpath:
-                continue
-            try:
-                candidates.append((os.path.getsize(fpath), fpath))
-            except Exception:
-                pass
-    candidates.sort()
-    parts = []
-    used = 0
-    for size, fpath in candidates:
-        if used >= char_budget:
-            break
-        try:
-            content = open(fpath, encoding="utf-8", errors="ignore").read()
-            rel = fpath.replace(ctx.PROJECT_ROOT + "/", "")
-            entry = f"\n// --- {rel} ---\n{content}\n"
-            if used + len(entry) > char_budget:
-                entry = entry[:char_budget - used]
-            parts.append(entry)
-            used += len(entry)
-        except Exception:
-            pass
-    return "".join(parts)
-
-
-def _gpu_persona(model: str) -> str:
-    """Build model-specialized warm persona. GPU0=extractor, GPU1=reasoner, arbiter=hallucination guard."""
-    import glob as _glob
-    # Import model constants from synthesis_ollama to avoid circular imports
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
-    from .synthesis_config import _THINK_SYSTEM
-
-    full_kb = ""
-    try:
-        all_kb = ctx.project_engine.list_knowledge_full() or []
-        full_kb = "\n".join(
-            f"  [{k.get('category','')}] {k.get('title','')}: {k.get('content','')[:300]}"
-            for k in all_kb
-        )
-    except Exception:
-        pass
-
-    _modules = []
-    try:
-        _cl_files = _glob.glob(
-            os.path.join(ctx.PROJECT_ROOT, "src", "crossLayer", "**", "*.js"), recursive=True
-        )
-        _modules = sorted(set(
-            os.path.basename(f).replace(".js", "") for f in _cl_files
-            if not os.path.basename(f).startswith("index")
-        ))
-    except Exception:
-        pass
-    modules_str = ", ".join(_modules) if _modules else "(unavailable)"
-
-    if model == _LOCAL_MODEL:
-        base = (
-            "You are the code extractor for Polychron, a self-evolving alien generative music "
-            "system with 19 hypermeta controllers and 26 cross-layer modules. "
-            "Your role: extract FACTS. File paths (src/crossLayer/...), signal fields, "
-            "correlation values, coupling dimensions, bridge status (VIRGIN/PARTIAL/SATURATED). "
-            "Antagonism bridges couple BOTH modules of a negatively-correlated pair to the "
-            "SAME signal with OPPOSING effects. Never reason or opine — output raw data only.\n"
-            "Real crossLayer modules: " + modules_str + ".\n\n"
-            "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
-        )
-        _src_char_budget = max(1000, _MAX_PERSONA_CHARS - len(base) - 100)
-        _src_token_budget = _src_char_budget // 3
-        src = _load_src_files_for_warm([
-            "src/crossLayer/**/*.js",
-            "src/conductor/**/*.js",
-            "src/fx/**/*.js",
-        ], _src_token_budget)
-        return (base + "\n\n// ===== SOURCE FILES =====\n" + src)[:_MAX_PERSONA_CHARS]
-
-    if model == _ARBITER_MODEL:
-        _signal_fields = []
-        try:
-            import re as _re
-            _l0_files = _glob.glob(
-                os.path.join(ctx.PROJECT_ROOT, "src", "conductor", "signal", "**", "*.js"),
-                recursive=True
-            )
-            for _f in _l0_files[:10]:
-                try:
-                    _txt = open(_f).read(4000)
-                    _signal_fields += _re.findall(r"'([a-z][a-zA-Z]+)'", _txt)[:5]
-                except Exception:
-                    pass
-            _signal_fields = sorted(set(_signal_fields))[:40]
-        except Exception:
-            pass
-        if not _signal_fields:
-            _signal_fields = ["contourShape", "counterpoint", "thematicDensity",
-                              "tessituraPressure", "intervalFreshness", "density",
-                              "complexity", "biasStrength", "densitySurprise",
-                              "hotspots", "complexityEma"]
-        # Arbiter only needs module/field lists for hallucination detection — not full KB
-        arb_base = (
-            "You are the arbiter for Polychron, a self-evolving alien generative music system. "
-            "Your role: compare two independent code analyses and detect contradictions, "
-            "hallucinated module names, and overlooked facts. "
-            "Real crossLayer modules: " + modules_str + ". "
-            "Known signal fields: " + ", ".join(_signal_fields) + ". "
-            "If an analysis cites a module or field NOT in these lists, flag it."
-        )
-        _arbiter_cap = min(_MAX_PERSONA_CHARS, 4_000)
-        _src_char_budget = max(500, _arbiter_cap - len(arb_base) - 100)
-        _src_token_budget = _src_char_budget // 3
-        src = _load_src_files_for_warm([
-            "scripts/pipeline/*.js",
-            "src/conductor/melodic/*.js",
-            "src/crossLayer/structure/**/*.js",
-        ], _src_token_budget)
-        return (arb_base + "\n\n// ===== PIPELINE SCRIPTS =====\n" + src)[:_arbiter_cap]
-
-    # Reasoner persona: full KB + module list
-    rsn_base = (
-        _THINK_SYSTEM + "\n\n"
-        "Synthesize facts into actionable insights about musical effects, coupling patterns, "
-        "and evolution strategy. Cite specific file paths and signal fields. Never invent "
-        "module names not in this list: " + modules_str + ".\n\n"
-        "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
-    )
-    _src_char_budget = max(1000, _MAX_PERSONA_CHARS - len(rsn_base) - 100)
-    _src_token_budget = _src_char_budget // 3
-    src = _load_src_files_for_warm([
-        "src/conductor/signal/**/*.js",
-        "src/crossLayer/**/*.js",
-        "src/composers/**/*.js",
-    ], _src_token_budget)
-    return (rsn_base + "\n\n// ===== SOURCE FILES =====\n" + src)[:_MAX_PERSONA_CHARS]
-
-
 def _prime_warm_context(model: str, force: bool = False) -> bool:
     """Prime warm KV context for a model. Background priority, skips if KB unchanged.
     Tries disk cache first (instant) before falling back to Ollama prime (~30s).
     force=True: skip freshness check and rebuild from persona (used by GC to clean drift)."""
-    from .synthesis_ollama import _local_think, _THINK_SYSTEM
+    from .synthesis_ollama import _local_think
     kb_ver = getattr(ctx, "_kb_version", 0)
     if not force:
         if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
@@ -617,8 +306,6 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
         max_tokens=8, model=model, priority="background",
         temperature=0.0, return_context=True,
     )
-    # _local_think returns (text, ctx_array) with return_context=True.
-    # Cooldown-refused: (_COOLDOWN_REFUSED, []). Background timeout: (None, []).
     from .synthesis_ollama import _COOLDOWN_REFUSED
     if isinstance(result, tuple):
         text_result, ctx_array = result
@@ -661,10 +348,8 @@ def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> st
             return None
         m = models[0]
         size_vram = m.get("size_vram", 0)
-        ctx = m.get("context_length", 0)
         if size_vram == 0:
             return None
-        # Query GPU total via nvidia-smi for the instance's GPU
         import subprocess
         result = subprocess.run(
             ["nvidia-smi", "--query-gpu=memory.total,memory.free", "--format=csv,noheader,nounits"],
@@ -673,7 +358,6 @@ def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> st
         if result.returncode != 0:
             return None
         lines = [l.strip() for l in result.stdout.strip().splitlines() if l.strip()]
-        # Find the GPU this model is on by checking which has the least free memory
         min_free = None
         for line in lines:
             parts = line.split(",")
@@ -682,7 +366,7 @@ def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> st
                 if min_free is None or free_mb < min_free:
                     min_free = free_mb
         if min_free is not None and min_free < min_headroom_mb:
-            return (f"VRAM TIGHT: {model} ctx={ctx} — only {min_free}MB free "
+            return (f"VRAM TIGHT: {model} — only {min_free}MB free "
                     f"(need {min_headroom_mb}MB). KV cache may be in RAM, crippling speed.")
     except Exception:
         return None
@@ -779,7 +463,6 @@ def _prime_all_gpus() -> str:
     try:
         from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
         results = {}
-        # Fast path: try restoring all from disk cache first
         restored = _load_all_warm_caches()
         if restored == 3:
             for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
@@ -789,7 +472,6 @@ def _prime_all_gpus() -> str:
                 ctx_len = len(_warm_ctx.get(model, []))
                 parts.append(f"  {model}: CACHED ({ctx_len} ctx tokens)")
             return "\n".join(parts)
-        # Slow path: prime any models not restored from cache
         t0 = _time.time()
         for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
             results[model] = _prime_warm_context(model)
@@ -809,6 +491,7 @@ def warm_context_status() -> dict:
     """Health dict of warm contexts for selftest."""
     from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
     from .synthesis_session import session_state_counts
+    from .warm_disk import _TMPFS_PATHS
     now = _time.time()
     status = {}
     for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:

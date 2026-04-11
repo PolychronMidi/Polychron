@@ -14,12 +14,12 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # Read hook JSON from stdin
 HOOK_DATA=$(cat)
 
-TOOL_NAME=$(echo "$HOOK_DATA" | jq -r '.tool_name // "unknown"' 2>/dev/null)
+TOOL_NAME=$(_safe_jq "$HOOK_DATA" '.tool_name' 'unknown')
 TOOL_INPUT=$(echo "$HOOK_DATA" | jq -c '.tool_input // {}' 2>/dev/null | head -c 300)
-TOOL_RESULT=$(echo "$HOOK_DATA" | jq -r '.tool_response // ""' 2>/dev/null | head -c 500)
-FILE_PATH=$(echo "$HOOK_DATA" | jq -r '.tool_input.file_path // ""' 2>/dev/null)
-CWD=$(echo "$HOOK_DATA" | jq -r '.cwd // ""' 2>/dev/null)
-SESSION_ID=$(echo "$HOOK_DATA" | jq -r '.session_id // ""' 2>/dev/null)
+TOOL_RESULT=$(_safe_jq "$HOOK_DATA" '.tool_response' '' | head -c 500)
+FILE_PATH=$(_safe_jq "$HOOK_DATA" '.tool_input.file_path' '')
+CWD=$(_safe_jq "$HOOK_DATA" '.cwd' '')
+SESSION_ID=$(_safe_jq "$HOOK_DATA" '.session_id' '')
 
 NOW_MS=$(date +%s%3N)
 TS=$NOW_MS
@@ -79,19 +79,13 @@ mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
 echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null
 
 # 2. POST to HTTP shim (background, non-blocking)
-(curl -s -X POST "http://127.0.0.1:7734/transcript" \
-  -H "Content-Type: application/json" \
-  -d "{\"entries\":[$ENTRY]}" \
-  --connect-timeout 1 --max-time 2 2>/dev/null || true) &
+(_safe_curl "http://127.0.0.1:7734/transcript" "{\"entries\":[$ENTRY]}") &
 
 # 3. If tool modified a file, trigger mini-reindex
 if [ -n "$FILE_PATH" ]; then
   case "$TOOL_NAME" in
     Edit|Write)
-      (curl -s -X POST "http://127.0.0.1:7734/reindex" \
-        -H "Content-Type: application/json" \
-        -d "{\"files\":[\"$FILE_PATH\"]}" \
-        --connect-timeout 1 --max-time 3 2>/dev/null || true) &
+      (_safe_curl "http://127.0.0.1:7734/reindex" "{\"files\":[\"$FILE_PATH\"]}") &
       ;;
   esac
 fi

@@ -2,8 +2,8 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreToolUse: Write — enforce lab rules, block memory saves, detect secrets
 INPUT=$(cat)
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
-CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // ""')
+FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
+CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
 # Block writes to the auto-memory directory — memory saving is an antipattern here
 if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then

@@ -2,8 +2,8 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreToolUse: Edit — surface live KB constraints before editing project files.
 INPUT=$(cat)
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
-NEW_STRING=$(echo "$INPUT" | jq -r '.tool_input.new_string // ""')
+FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
+NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
   echo '{"decision":"block","reason":"BLOCKED: Edit contains LLM stub placeholder (e.g. \"# ... existing code ...\"). Use the ACTUAL replacement content — no stubs."}' >&2
   exit 2
