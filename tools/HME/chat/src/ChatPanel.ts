@@ -20,7 +20,7 @@ import {
   loadChainSummaries,
   listChainLinks,
 } from "./SessionStore";
-import { TranscriptLogger } from "./TranscriptLogger";
+import { TranscriptLogger, nullTranscript } from "./TranscriptLogger";
 import { synthesizeNarrative, synthesizeChainSummary } from "./Arbiter";
 import {
   uid, CHARS_PER_TOKEN,
@@ -78,13 +78,7 @@ export class ChatPanel {
       });
     } catch (e) {
       console.error(`[HME] TranscriptLogger init failed — transcript disabled: ${(e as any)?.message ?? e}`);
-      this._transcript = {
-        logUser: () => {}, logAssistant: () => {}, logToolCall: () => {},
-        logRouteSwitch: () => {}, logValidation: () => {}, logAudit: () => {},
-        logSessionStart: () => {}, getRecentContext: () => "", getWindow: () => [],
-        getAll: () => [], count: 0, setNarrativeCallback: () => {}, rotate: () => {},
-        forceNarrative: () => Promise.resolve(),
-      } as any;
+      this._transcript = nullTranscript();
     }
 
     this._panel.webview.html = this._getHtml();
@@ -143,6 +137,7 @@ export class ChatPanel {
 
   private _handleMessage(msg: any) {
     switch (msg.type) {
+      // ── Stream control ───────────────────────────────────────────────────
       case "send":
         // Hard interrupt: cancel current stream + clear queue, start new message immediately.
         if (this._isStreaming) {
@@ -181,11 +176,13 @@ export class ChatPanel {
         this._post({ type: "cancelConfirmed" });
         this._isStreaming = false;
         break;
+      // ── Session management ───────────────────────────────────────────────
       case "clearHistory":
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
         this._resetContextTracker();
         this._post({ type: "historyCleared" });
         break;
+      // ── HME features ─────────────────────────────────────────────────────
       case "enrichPrompt":
         this._post({ type: "enrichStatus", status: "enriching" });
         enrichPrompt(msg.prompt, msg.frame ?? "").then((result) => {
@@ -201,6 +198,7 @@ export class ChatPanel {
           if (!ready) this._startHmeShim();
         });
         break;
+      // ── Session management ───────────────────────────────────────────────
       case "listSessions":
         this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
         if (this._restoreSessionId) {
@@ -231,6 +229,7 @@ export class ChatPanel {
         this._resetContextTracker();
         this._post({ type: "historyCleared" });
         break;
+      // ── UI state ─────────────────────────────────────────────────────────
       case "setZoomLevel":
         if (typeof msg.level === "number") {
           ChatPanel._globalState?.update("hme.zoomLevel", msg.level);

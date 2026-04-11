@@ -15,6 +15,17 @@ function getPty(): typeof import("node-pty") | null {
   }
 }
 
+function buildClaudeEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (k !== "ANTHROPIC_API_KEY" && v !== undefined) env[k] = v;
+  }
+  if (!env["PATH"]?.includes(".local/bin")) {
+    env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
+  }
+  return env;
+}
+
 // ── Claude CLI (pipe mode) ────────────────────────────────────────────────
 
 export function streamClaude(
@@ -39,12 +50,7 @@ export function streamClaude(
     args.push("--resume", sessionId);
   }
 
-  const env = { ...process.env };
-  delete env["ANTHROPIC_API_KEY"];
-  if (!env["PATH"]?.includes(".local/bin")) {
-    env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
-  }
-
+  const env = buildClaudeEnv();
   const proc = spawn("claude", args, {
     cwd: workingDir,
     env,
@@ -176,14 +182,8 @@ export function streamClaudePty(
   const args: string[] = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
   if (sessionId) args.push("--resume", sessionId);
 
-  const env: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) {
-    if (k !== "ANTHROPIC_API_KEY" && v !== undefined) env[k] = v;
-  }
+  const env = buildClaudeEnv();
   env["TERM"] = "xterm-256color";
-  if (!env["PATH"]?.includes(".local/bin")) {
-    env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
-  }
 
   const ptyLib = getPty();
   if (!ptyLib) {

@@ -18,6 +18,17 @@ function getPty() {
         return null;
     }
 }
+function buildClaudeEnv() {
+    const env = {};
+    for (const [k, v] of Object.entries(process.env)) {
+        if (k !== "ANTHROPIC_API_KEY" && v !== undefined)
+            env[k] = v;
+    }
+    if (!env["PATH"]?.includes(".local/bin")) {
+        env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
+    }
+    return env;
+}
 // ── Claude CLI (pipe mode) ────────────────────────────────────────────────
 function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
     const args = ["-p", "--output-format", "stream-json", "--verbose"];
@@ -31,11 +42,7 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
     if (sessionId) {
         args.push("--resume", sessionId);
     }
-    const env = { ...process.env };
-    delete env["ANTHROPIC_API_KEY"];
-    if (!env["PATH"]?.includes(".local/bin")) {
-        env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
-    }
+    const env = buildClaudeEnv();
     const proc = (0, child_process_1.spawn)("claude", args, {
         cwd: workingDir,
         env,
@@ -158,15 +165,8 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     const args = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
     if (sessionId)
         args.push("--resume", sessionId);
-    const env = {};
-    for (const [k, v] of Object.entries(process.env)) {
-        if (k !== "ANTHROPIC_API_KEY" && v !== undefined)
-            env[k] = v;
-    }
+    const env = buildClaudeEnv();
     env["TERM"] = "xterm-256color";
-    if (!env["PATH"]?.includes(".local/bin")) {
-        env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
-    }
     const ptyLib = getPty();
     if (!ptyLib) {
         onError("node-pty unavailable");

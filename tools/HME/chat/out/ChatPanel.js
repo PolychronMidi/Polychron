@@ -87,13 +87,7 @@ class ChatPanel {
         }
         catch (e) {
             console.error(`[HME] TranscriptLogger init failed — transcript disabled: ${e?.message ?? e}`);
-            this._transcript = {
-                logUser: () => { }, logAssistant: () => { }, logToolCall: () => { },
-                logRouteSwitch: () => { }, logValidation: () => { }, logAudit: () => { },
-                logSessionStart: () => { }, getRecentContext: () => "", getWindow: () => [],
-                getAll: () => [], count: 0, setNarrativeCallback: () => { }, rotate: () => { },
-                forceNarrative: () => Promise.resolve(),
-            };
+            this._transcript = (0, TranscriptLogger_1.nullTranscript)();
         }
         this._panel.webview.html = this._getHtml();
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -133,6 +127,7 @@ class ChatPanel {
     }
     _handleMessage(msg) {
         switch (msg.type) {
+            // ── Stream control ───────────────────────────────────────────────────
             case "send":
                 // Hard interrupt: cancel current stream + clear queue, start new message immediately.
                 if (this._isStreaming) {
@@ -172,11 +167,13 @@ class ChatPanel {
                 this._post({ type: "cancelConfirmed" });
                 this._isStreaming = false;
                 break;
+            // ── Session management ───────────────────────────────────────────────
             case "clearHistory":
                 this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
                 this._resetContextTracker();
                 this._post({ type: "historyCleared" });
                 break;
+            // ── HME features ─────────────────────────────────────────────────────
             case "enrichPrompt":
                 this._post({ type: "enrichStatus", status: "enriching" });
                 (0, router_1.enrichPrompt)(msg.prompt, msg.frame ?? "").then((result) => {
@@ -193,6 +190,7 @@ class ChatPanel {
                         this._startHmeShim();
                 });
                 break;
+            // ── Session management ───────────────────────────────────────────────
             case "listSessions":
                 this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
                 if (this._restoreSessionId) {
@@ -223,6 +221,7 @@ class ChatPanel {
                 this._resetContextTracker();
                 this._post({ type: "historyCleared" });
                 break;
+            // ── UI state ─────────────────────────────────────────────────────────
             case "setZoomLevel":
                 if (typeof msg.level === "number") {
                     ChatPanel._globalState?.update("hme.zoomLevel", msg.level);

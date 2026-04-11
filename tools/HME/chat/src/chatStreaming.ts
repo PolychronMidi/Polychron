@@ -4,8 +4,7 @@ import {
   streamClaude, streamClaudePty, streamOllamaAgentic, streamHybrid,
   postTranscript, reindexFiles, auditChanges,
 } from "./router";
-import { ChatMessage } from "./types";
-import { ChatCtx, makeBlockAccumulator, trimHistoryToFit, uid } from "./streamUtils";
+import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit } from "./streamUtils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -50,6 +49,45 @@ export function runPostAudit(ctx: ChatCtx, changedFiles?: Set<string>) {
   }).catch((e: any) => ctx.postError("audit", String(e)));
 }
 
+// ── Chunk accumulation state + shared onChunk factory ────────────────────────
+
+interface ChunkState {
+  text: string;
+  thinking: string;
+  tools: string[];
+}
+
+function makeOnChunk(
+  ctx: ChatCtx,
+  assistantId: string,
+  acc: ReturnType<typeof makeBlockAccumulator>,
+  state: ChunkState,
+  tracker: StreamTracker,
+  route: string,
+  opts: { abortCheck?: () => boolean; handleError?: (chunk: string) => void } = {}
+): (chunk: string, type: string) => void {
+  return (chunk, type) => {
+    if (opts.abortCheck?.()) return;
+    if (type === "tool") {
+      state.tools.push(chunk);
+      acc.append("tool", chunk);
+      ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
+      ctx.transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, route);
+    } else if (type === "thinking") {
+      state.thinking += chunk;
+      acc.append("thinking", chunk);
+      ctx.post({ type: "streamChunk", id: assistantId, chunkType: "thinking", chunk });
+    } else if (type === "error") {
+      opts.handleError?.(chunk);
+    } else {
+      state.text += chunk;
+      acc.append("text", chunk);
+      ctx.post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
+    }
+    tracker.update(state.text, state.tools, state.thinking || undefined);
+  };
+}
+
 // ── Streaming methods ─────────────────────────────────────────────────────────
 
 const AGENTIC_SYSTEM: OllamaMessage = {
@@ -58,52 +96,35 @@ const AGENTIC_SYSTEM: OllamaMessage = {
 };
 
 export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
-  let text = "";
-  let thinking = "";
-  let tools: string[] = [];
+  const state: ChunkState = { text: "", thinking: "", tools: [] };
   const acc = makeBlockAccumulator();
   let streamEnded = false;
   let aborted = false;
-  const tracker = ctx.trackStream(assistantId, msg._resolvedRoute ?? msg.route);
+  const route = msg._resolvedRoute ?? msg.route ?? "claude";
+  const tracker = ctx.trackStream(assistantId, route);
   const safeEnd = () => { if (!streamEnded) { streamEnded = true; ctx.drainQueue(); } };
+  const onChunk = makeOnChunk(ctx, assistantId, acc, state, tracker, route, {
+    abortCheck: () => aborted,
+    handleError: (chunk) => ctx.postError("claude", chunk),
+  });
 
   const onDone = (usage?: TokenUsage) => {
     if (aborted) return;
-    ctx.updateContextTracker(text, thinking, msg.claudeModel, usage);
-    const assistantMsg: ChatMessage = {
-      id: assistantId, role: "assistant", text,
-      thinking: thinking || undefined,
-      tools: tools.length ? tools : undefined,
+    ctx.updateContextTracker(state.text, state.thinking, msg.claudeModel, usage);
+    tracker.finalize({
+      id: assistantId, role: "assistant", text: state.text,
+      thinking: state.thinking || undefined,
+      tools: state.tools.length ? state.tools : undefined,
       blocks: acc.blocks.length ? acc.blocks : undefined,
-      route: msg._resolvedRoute ?? msg.route,
-      ts: Date.now(),
-    };
-    tracker.finalize(assistantMsg);
+      route, ts: Date.now(),
+    });
     ctx.post({ type: "streamEnd", id: assistantId });
-    ctx.transcript.logAssistant(text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
-    mirrorAssistantToShim(ctx, text, msg._resolvedRoute ?? msg.route ?? "claude", msg.claudeModel, tools);
-    const changedFiles = reindexFromTools(tools);
+    ctx.transcript.logAssistant(state.text, route, msg.claudeModel, state.tools);
+    mirrorAssistantToShim(ctx, state.text, route, msg.claudeModel, state.tools);
+    const changedFiles = reindexFromTools(state.tools);
     runPostAudit(ctx, changedFiles);
     ctx.checkChainThreshold(msg);
     safeEnd();
-  };
-
-  const onChunk = (chunk: string, type: string) => {
-    if (aborted) return;
-    if (type === "text") {
-      text += chunk; acc.append("text", chunk);
-      ctx.post({ type: "streamChunk", id: assistantId, chunkType: "text", chunk });
-    } else if (type === "thinking") {
-      thinking += chunk; acc.append("thinking", chunk);
-      ctx.post({ type: "streamChunk", id: assistantId, chunkType: "thinking", chunk });
-    } else if (type === "tool") {
-      tools.push(chunk); acc.append("tool", chunk);
-      ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-      ctx.transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, msg._resolvedRoute ?? msg.route ?? "claude");
-    } else if (type === "error") {
-      ctx.postError("claude", chunk);
-    }
-    tracker.update(text, tools, thinking);
   };
 
   const onError = (err: string) => {
@@ -142,43 +163,30 @@ export function streamOllamaMsg(ctx: ChatCtx, msg: any, assistantId: string) {
   const trimmed = trimHistoryToFit(ctx.state.ollamaHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
   const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user" as const, content: msg.text }];
 
-  let text = "";
-  let tools: string[] = [];
+  const state: ChunkState = { text: "", thinking: "", tools: [] };
   const acc = makeBlockAccumulator();
   let streamEnded = false;
   let aborted = false;
   const tracker = ctx.trackStream(assistantId, "local");
   const safeEnd = () => { if (!streamEnded) { streamEnded = true; ctx.drainQueue(); } };
+  const onChunk = makeOnChunk(ctx, assistantId, acc, state, tracker, "local", { abortCheck: () => aborted });
 
   const onDone = () => {
     if (aborted) return;
     ctx.state.ollamaHistory.push({ role: "user", content: msg.text });
-    ctx.state.ollamaHistory.push({ role: "assistant", content: text });
+    ctx.state.ollamaHistory.push({ role: "assistant", content: state.text });
     tracker.finalize({
-      id: assistantId, role: "assistant", text,
-      tools: tools.length ? tools : undefined,
+      id: assistantId, role: "assistant", text: state.text,
+      tools: state.tools.length ? state.tools : undefined,
       blocks: acc.blocks.length ? acc.blocks : undefined,
       route: "local", ts: Date.now(),
     });
     ctx.post({ type: "streamEnd", id: assistantId });
-    ctx.transcript.logAssistant(text, "local", msg.ollamaModel, tools);
-    mirrorAssistantToShim(ctx, text, "local", msg.ollamaModel, tools);
-    const changedFiles = reindexFromTools(tools);
+    ctx.transcript.logAssistant(state.text, "local", msg.ollamaModel, state.tools);
+    mirrorAssistantToShim(ctx, state.text, "local", msg.ollamaModel, state.tools);
+    const changedFiles = reindexFromTools(state.tools);
     runPostAudit(ctx, changedFiles);
     safeEnd();
-  };
-
-  const onChunk = (chunk: string, type: string) => {
-    if (aborted) return;
-    if (type === "tool") {
-      tools.push(chunk); acc.append("tool", chunk);
-      ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-      ctx.transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "local");
-    } else {
-      text += chunk; acc.append(type === "thinking" ? "thinking" : "text", chunk);
-      ctx.post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-    }
-    tracker.update(text, tools);
   };
 
   let ollamaCancelFn: (() => void) | undefined;
@@ -199,14 +207,14 @@ export function streamHybridMsg(ctx: ChatCtx, msg: any, assistantId: string) {
     ? [{ role: "user" as const, content: msg._contextPrefix }, { role: "assistant" as const, content: "Understood. I have the prior conversation context." }]
     : [];
   const history = [...contextMessages, ...ctx.state.ollamaHistory];
-  let text = "";
-  let tools: string[] = [];
+  const state: ChunkState = { text: "", thinking: "", tools: [] };
   const acc = makeBlockAccumulator();
   let cancelFn: (() => void) | undefined;
   let aborted = false;
   let streamEnded = false;
   const tracker = ctx.trackStream(assistantId, "hybrid");
   const safeEnd = () => { if (!streamEnded) { streamEnded = true; ctx.drainQueue(); } };
+  const onChunk = makeOnChunk(ctx, assistantId, acc, state, tracker, "hybrid", { abortCheck: () => aborted });
 
   ctx.setCancelCurrent(() => { aborted = true; cancelFn?.(); });
   ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
@@ -215,33 +223,21 @@ export function streamHybridMsg(ctx: ChatCtx, msg: any, assistantId: string) {
   streamHybrid(
     msg.text, history,
     { model: msg.ollamaModel, url: "http://localhost:11434" },
-    ctx.projectRoot,
-    (chunk, type) => {
-      if (aborted) return;
-      if (type === "tool") {
-        tools.push(chunk); acc.append("tool", chunk);
-        ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-        ctx.transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
-      } else {
-        text += chunk; acc.append(type === "thinking" ? "thinking" : "text", chunk);
-        ctx.post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-      }
-      tracker.update(text, tools);
-    },
+    ctx.projectRoot, onChunk,
     () => {
       if (aborted) return;
       ctx.state.ollamaHistory.push({ role: "user", content: msg.text });
-      ctx.state.ollamaHistory.push({ role: "assistant", content: text });
+      ctx.state.ollamaHistory.push({ role: "assistant", content: state.text });
       tracker.finalize({
-        id: assistantId, role: "assistant", text,
-        tools: tools.length ? tools : undefined,
+        id: assistantId, role: "assistant", text: state.text,
+        tools: state.tools.length ? state.tools : undefined,
         blocks: acc.blocks.length ? acc.blocks : undefined,
         route: "hybrid", ts: Date.now(),
       });
       ctx.post({ type: "streamEnd", id: assistantId });
-      ctx.transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
-      mirrorAssistantToShim(ctx, text, "hybrid", msg.ollamaModel, tools);
-      const changedFiles = reindexFromTools(tools);
+      ctx.transcript.logAssistant(state.text, "hybrid", msg.ollamaModel, state.tools);
+      mirrorAssistantToShim(ctx, state.text, "hybrid", msg.ollamaModel, state.tools);
+      const changedFiles = reindexFromTools(state.tools);
       runPostAudit(ctx, changedFiles);
       safeEnd();
     },
@@ -271,41 +267,29 @@ export function streamAgentMsg(
 ) {
   const trimmed = trimHistoryToFit(ctx.state.ollamaHistory, msg.text, [AGENTIC_SYSTEM]);
   const requestHistory = [AGENTIC_SYSTEM, ...trimmed, { role: "user" as const, content: msg.text }];
-  let text = "";
-  let tools: string[] = [];
+  const state: ChunkState = { text: "", thinking: "", tools: [] };
   const acc = makeBlockAccumulator();
   let streamEnded = false;
   const tracker = ctx.trackStream(assistantId, label);
   const safeEnd = () => { if (!streamEnded) { streamEnded = true; onBothDone(); } };
+  const onChunk = makeOnChunk(ctx, assistantId, acc, state, tracker, label);
 
   const onDone = () => {
     if (label === "local") {
       ctx.state.ollamaHistory.push({ role: "user", content: msg.text });
-      ctx.state.ollamaHistory.push({ role: "assistant", content: text });
+      ctx.state.ollamaHistory.push({ role: "assistant", content: state.text });
     }
     tracker.finalize({
-      id: assistantId, role: "assistant", text,
-      tools: tools.length ? tools : undefined,
+      id: assistantId, role: "assistant", text: state.text,
+      tools: state.tools.length ? state.tools : undefined,
       blocks: acc.blocks.length ? acc.blocks : undefined,
       route: label, ts: Date.now(),
     });
     ctx.post({ type: "streamEnd", id: assistantId });
-    ctx.transcript.logAssistant(text, label, msg.ollamaModel, tools);
-    const changedFiles = reindexFromTools(tools);
+    ctx.transcript.logAssistant(state.text, label, msg.ollamaModel, state.tools);
+    const changedFiles = reindexFromTools(state.tools);
     runPostAudit(ctx, changedFiles);
     safeEnd();
-  };
-
-  const onChunk = (chunk: string, type: string) => {
-    if (type === "tool") {
-      tools.push(chunk); acc.append("tool", chunk);
-      ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-      ctx.transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, label);
-    } else {
-      text += chunk; acc.append(type === "thinking" ? "thinking" : "text", chunk);
-      ctx.post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-    }
-    tracker.update(text, tools);
   };
 
   const cancel = streamOllamaAgentic(
@@ -330,13 +314,13 @@ export function streamAgentHybridMsg(
   cancelFns: Array<() => void>
 ) {
   const history = trimHistoryToFit(ctx.state.ollamaHistory, msg.text);
-  let text = "";
-  let tools: string[] = [];
+  const state: ChunkState = { text: "", thinking: "", tools: [] };
   const acc = makeBlockAccumulator();
   let aborted = false;
   let streamEnded = false;
   const tracker = ctx.trackStream(assistantId, "hybrid");
   const safeEnd = () => { if (!streamEnded) { streamEnded = true; onBothDone(); } };
+  const onChunk = makeOnChunk(ctx, assistantId, acc, state, tracker, "hybrid", { abortCheck: () => aborted });
 
   cancelFns.push(() => { aborted = true; });
   ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: "[HME] Enriching with KB context…" });
@@ -345,30 +329,18 @@ export function streamAgentHybridMsg(
   streamHybrid(
     msg.text, history,
     { model: msg.ollamaModel, url: "http://localhost:11434" },
-    ctx.projectRoot,
-    (chunk, type) => {
-      if (aborted) return;
-      if (type === "tool") {
-        tools.push(chunk); acc.append("tool", chunk);
-        ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
-        ctx.transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, "hybrid");
-      } else {
-        text += chunk; acc.append(type === "thinking" ? "thinking" : "text", chunk);
-        ctx.post({ type: "streamChunk", id: assistantId, chunkType: type, chunk });
-      }
-      tracker.update(text, tools);
-    },
+    ctx.projectRoot, onChunk,
     () => {
       if (aborted) return;
       tracker.finalize({
-        id: assistantId, role: "assistant", text,
-        tools: tools.length ? tools : undefined,
+        id: assistantId, role: "assistant", text: state.text,
+        tools: state.tools.length ? state.tools : undefined,
         blocks: acc.blocks.length ? acc.blocks : undefined,
         route: "hybrid", ts: Date.now(),
       });
       ctx.post({ type: "streamEnd", id: assistantId });
-      ctx.transcript.logAssistant(text, "hybrid", msg.ollamaModel, tools);
-      const changedFiles = reindexFromTools(tools);
+      ctx.transcript.logAssistant(state.text, "hybrid", msg.ollamaModel, state.tools);
+      const changedFiles = reindexFromTools(state.tools);
       runPostAudit(ctx, changedFiles);
       safeEnd();
     },
