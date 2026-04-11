@@ -2,7 +2,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME UserPromptSubmit: inject context on evolution-related prompts
 INPUT=$(cat)
-PROMPT=$(echo "$INPUT" | jq -r '.user_prompt // ""')
+PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 
 # ── LIFESAVER — HME Error Log Monitor ───────────────────────────────────────
 # LIFE-OR-DEATH: The HME Chat panel writes errors to log/hme-errors.log.

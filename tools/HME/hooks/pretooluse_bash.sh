@@ -2,7 +2,7 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreToolUse: Bash — block run.lock deletion + suggest HME alternatives + anti-wait injection
 INPUT=$(cat)
-CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
+CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
 # Block run.lock deletion (hard rule)
 if echo "$CMD" | grep -q 'run\.lock' && echo "$CMD" | grep -q 'rm'; then
@@ -27,7 +27,7 @@ fi
 # the string appears inside a heredoc, commit message, or other argument).
 TRIMMED_CMD=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
 if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; then
-  RUN_BG=$(echo "$INPUT" | jq -r '.tool_input.run_in_background // false')
+  RUN_BG=$(_safe_jq "$INPUT" '.tool_input.run_in_background' 'false')
   if [[ "$RUN_BG" != "true" ]]; then
     echo '{"decision":"block","reason":"ANTI-WAIT: npm run main must use run_in_background=true. Re-issue this Bash call with run_in_background: true, then CONTINUE with parallel work (HME indexing, doc updates, src/ improvements, what_did_i_forget). Stopping to wait for the pipeline is the antipattern."}'
     exit 2

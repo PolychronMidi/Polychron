@@ -66,7 +66,7 @@ if [[ -f "$LOOP_FILE" ]]; then
       rm "$LOOP_FILE"
     else
       # Check transcript for done_signal
-      TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""')
+      TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
       DONE=false
       if [[ -n "$DONE_SIGNAL" && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
         if grep -q "$DONE_SIGNAL" "$TRANSCRIPT_PATH" 2>/dev/null; then
@@ -106,7 +106,7 @@ fi
 # ── Background task polling detection ─────────────────────────────────────────
 # Catches both Bash-based polling (task output files) and MCP tool polling
 # (repeated check_pipeline calls). Both are the same antipattern.
-TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // ""')
+TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   POLL_COUNT=$(python3 -c "
 import json, sys

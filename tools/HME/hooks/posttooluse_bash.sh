@@ -6,7 +6,7 @@ source "$SCRIPT_DIR/_tab_helpers.sh"
 source "$SCRIPT_DIR/_nexus.sh"
 
 INPUT=$(cat)
-CMD=$(echo "$INPUT" | jq -r '.tool_input.command // ""')
+CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
 # Track background task output files to compact tab
 BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
@@ -66,7 +66,7 @@ fi
 
 # Nexus: track pipeline verdicts
 if echo "$CMD" | grep -q 'npm run main'; then
-  RESULT=$(echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | tail -c 500)
+  RESULT=$(_safe_jq "$INPUT" '.tool_response' '' | tail -c 500)
   if echo "$RESULT" | grep -q 'Pipeline finished'; then
     PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
     PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
@@ -89,7 +89,7 @@ fi
 
 # Nexus: track git commits
 if echo "$CMD" | grep -qE '^git commit'; then
-  EXIT_CODE=$(echo "$INPUT" | jq -r '.tool_result.exit_code // .exit_code // "0"' 2>/dev/null)
+  EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
     _nexus_mark COMMIT
     echo "NEXUS: Committed. Next: check doc sync (review mode='docs') and reindex (hme_admin action='index')." >&2

@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_tab_helpers.sh"
 
 INPUT=$(cat)
-FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""')
+FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 
 # Only track note files outside tmp/ (tmp/ is covered by precompact find)
 [[ "$FILE" =~ \.(md|txt)$ ]] || exit 0
