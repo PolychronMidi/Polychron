@@ -692,7 +692,7 @@ def _adversarial_stress() -> str:
     results: list[tuple[str, bool, str]] = []
 
     hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
-    settings_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "settings.json")
+    hooks_json_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks", "hooks.json")
 
     # Probe 1: LIFESAVER grep pattern catches FAIL in tool output
     test_output = "FAIL: synthetic probe -- adversarial stress test"
@@ -765,12 +765,12 @@ def _adversarial_stress() -> str:
         results.append((f"Hook: {hook}", ok,
                         "" if ok else ("missing" if not exists else "not executable")))
 
-    # Probe 8: Settings.json hook coverage — every hook script should be registered
+    # Probe 8: hooks.json hook coverage — every hook script should be registered
     try:
-        with open(settings_path, encoding="utf-8") as f:
-            settings = json.load(f)
+        with open(hooks_json_path, encoding="utf-8") as f:
+            hooks_cfg = json.load(f)
         registered_scripts = set()
-        for event_hooks in settings.get("hooks", {}).values():
+        for event_hooks in hooks_cfg.get("hooks", {}).values():
             for h in event_hooks:
                 for cmd in h.get("hooks", []):
                     script = cmd.get("command", "").split("/")[-1]
@@ -780,11 +780,11 @@ def _adversarial_stress() -> str:
             if f.endswith(".sh") and not f.startswith("_")
         }
         unregistered = hook_scripts - registered_scripts
-        results.append((f"Settings: hook registration ({len(hook_scripts)} scripts)",
+        results.append((f"hooks.json: hook registration ({len(hook_scripts)} scripts)",
                         len(unregistered) == 0,
                         f"unregistered: {', '.join(sorted(unregistered))}" if unregistered else ""))
     except Exception as e:
-        results.append(("Settings: parseable", False, str(e)))
+        results.append(("hooks.json: parseable", False, str(e)))
 
     # Probe 9: Feedback graph exists and declares loops
     fg_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "feedback_graph.json")

@@ -278,7 +278,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 ### Critical Invariants (errors)
 
 - Every hook script executable (`files_executable`)
-- Every hook registered in settings.json (`files_referenced`)
+- Every hook registered in hooks/hooks.json (`files_referenced`)
 - Every custom ESLint rule registered in eslint.config.mjs (`files_referenced`)
 - All JSON config files valid (`json_valid` x7)
 - Stop hook contains all 5 enforcement sections (`patterns_all_in_file`)

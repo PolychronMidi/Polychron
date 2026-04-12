@@ -1,16 +1,4 @@
 {
   "name": "HME",
-  "version": "1.0.0",
-  "description": "Hypermeta evolutionary intelligence. 11 MCP mega-tools for semantic search, KB, architectural analysis, and evolutionary composition.",
-  "author": {
-    "name": "i1li"
-  },
-  "keywords": [
-    "rag",
-    "semantic-search",
-    "knowledge-base",
-    "code-analysis",
-    "evolutionary-intelligence",
-    "self-evolving"
-  ]
+  "description": "HyperMeta Ecstasy — lifecycle enforcement, KB enrichment, and evolutionary composition intelligence"
 }
