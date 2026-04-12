@@ -96,12 +96,12 @@ class RAGEngine(
             return {"indexed": False, "total_chunks": 0, "total_files": 0}
         try:
             count = self.table.count_rows()
-            arrow_table = self.table.to_arrow()
-            sources = len(set(arrow_table.column("source").to_pylist()))
         except Exception as e:
             logger.warning(f"get_status count_rows failed: {e}")
             count = 0
-            sources = 0
+        # Use file_hashes as source of truth for file count — resilient to
+        # Lance deletion log corruption that crashes to_arrow() full scans.
+        sources = len(self._file_hashes)
         return {"indexed": True, "total_chunks": count, "total_files": sources}
 
     def clear(self):
