@@ -230,7 +230,7 @@ regimeClassifierResolution = (() => {
       const effectiveCoherentElapsedSec = beatStartTime - state.coherentStartSec;
       const projectedRunCoherentBeats = state.runLastResolvedRegime === 'coherent' ? state.runCoherentBeats + beatSpan : beatSpan;
       let coherentMaxDwellSec = config.COHERENT_MAX_DWELL_SEC;
-      const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
+      const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
       if (phaseShare < lowPhaseThreshold) {
         const phaseCollapsePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
         coherentMaxDwellSec = m.max(config.COHERENT_FLOOR_HIGH_SEC, coherentMaxDwellSec * (1 - phaseCollapsePressure * 0.35));

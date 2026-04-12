@@ -44,7 +44,7 @@ traceDrain = (() => {
   function traceDrainRecordFamilyVelocity(family, velocity) {
     if (!isTracing) return;
     const vel = Number(velocity);
-    if (!Number.isFinite(vel)) return;
+    if (!Number.isFinite(vel)) throw new Error('traceDrain.recordFamilyVelocity: velocity must be finite, got ' + velocity);
     const clamped = clamp(m.round(vel), 0, MIDI_MAX_VALUE);
     const bucket = traceDrainEnsureFamilyBucket(family);
     bucket.count += 1;
@@ -139,7 +139,7 @@ traceDrain = (() => {
     if (!isTracing) return;
     const metricName = String(name || 'unknown');
     const duration = Number(durationMs);
-    if (!Number.isFinite(duration) || duration < 0) return;
+    if (!Number.isFinite(duration) || duration < 0) throw new Error('traceDrain.recordRuntimeMetric: durationMs must be finite non-negative, got ' + durationMs);
     const bucket = traceDrainRuntimeBuckets[metricName] || { totalMs: 0, count: 0, maxMs: 0 };
     bucket.totalMs += duration;
     bucket.count += 1;

@@ -145,7 +145,7 @@ hyperMetaManagerEvolutions = (() => {
     // Uses a slow EMA ramp to avoid the coupling discontinuities that
     // killed the E10 arch floor drop attempt. Max drop 0.15 at full resolution.
     {
-      const sectionPhase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), '') || '';
+      const sectionPhase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), '');
       let sectionProgress = 0;
       sectionProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("section"), 0)), 0, 1);
       const inResolution = sectionPhase === 'resolution' && sectionProgress > 0.80;
@@ -277,7 +277,7 @@ hyperMetaManagerEvolutions = (() => {
     // E18: strength scaled by e18Scale (health * exceedance-awareness).
     {
       let phraseIdx = -1;
-      phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1;
+      phraseIdx = /** @type {number} */ (safePreBoot.call(() => timeStream.getPosition('phrase'), -1));
       if (phraseIdx >= 0 && phraseIdx !== S.e9LastPhraseIndex) {
         S.e9LastPhraseIndex = phraseIdx;
         S.e9BreathingCountdown = m.max(2, m.min(6, m.round(layerNumerator * 0.5)));
@@ -344,7 +344,7 @@ hyperMetaManagerEvolutions = (() => {
     // share lost in E11 while concentrating breathing in coherent passages.
     {
       let phraseIdx = -1;
-      phraseIdx = safePreBoot.call(() => timeStream.getPosition('phrase'), -1) || -1;
+      phraseIdx = /** @type {number} */ (safePreBoot.call(() => timeStream.getPosition('phrase'), -1));
       let phraseProgress = 0;
       phraseProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("phrase"), 0)), 0, 1);
       // Sparse window at phrase wrap: last 5% of phrase

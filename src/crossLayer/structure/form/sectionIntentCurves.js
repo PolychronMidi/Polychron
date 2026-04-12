@@ -52,7 +52,7 @@ sectionIntentCurves = (() => {
     const phaseShare = axisEnergyShares && typeof axisEnergyShares.phase === 'number' ? axisEnergyShares.phase : 1.0 / 6.0;
     const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
-    const intentRegime = safePreBoot.call(() => conductorSignalBridge.getSignals().regime, 'evolving') || 'evolving';
+    const intentRegime = safePreBoot.call(() => conductorSignalBridge.getSignals().regime, 'evolving');
     const phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);
 
     const arc = m.sin(m.pow(p, 1.15) * m.PI);

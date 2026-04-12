@@ -10,6 +10,7 @@
  */
 
 narrativeTrajectory = (() => {
+  const V = validator.create('narrativeTrajectory');
 
   const HISTORY_LEN      = 16;
   const SMOOTHING        = 0.3;
@@ -92,9 +93,9 @@ narrativeTrajectory = (() => {
       const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
       const snap = systemDynamicsProfiler.getSnapshot();
       const dynamicSnap = /** @type {any} */ (snap);
-      const couplingPressures = /** @type {Record<string,number>} */ (pipelineCouplingManager.getCouplingPressures() || {});
-      const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
-      const tensionFlickerPressure = clamp(((couplingPressures['tension-flicker'] || 0) - 0.78) / 0.16, 0, 1);
+      const couplingPressures = pipelineCouplingManager.getCouplingPressures();
+      const densityFlickerPressure = clamp((V.optionalFinite(couplingPressures['density-flicker'], 0) - 0.80) / 0.16, 0, 1);
+      const tensionFlickerPressure = clamp((V.optionalFinite(couplingPressures['tension-flicker'], 0) - 0.78) / 0.16, 0, 1);
       const tensionProduct = conductorState.getField('tension');
       const tensionSaturationPressure = clamp((tensionProduct - 1.10) / 0.20, 0, 1);
       const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'

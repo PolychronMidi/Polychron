@@ -151,14 +151,14 @@ entropyRegulator = (() => {
       let arcWeight = ARC_BLEND_WEIGHT;
       let intentWeight = INTENT_BLEND_WEIGHT;
       let targetTrim = 0;
-      const couplingPressures = (pipelineCouplingManager.getCouplingPressures()) || {};
+      const couplingPressures = pipelineCouplingManager.getCouplingPressures();
       const sectionProgress = safePreBoot.call(() => timeStream.normalizedProgress('section'), 0.5);
       const edgeDistance = typeof sectionProgress === 'number' && Number.isFinite(sectionProgress)
         ? m.min(clamp(sectionProgress, 0, 1), clamp(1 - sectionProgress, 0, 1))
         : 0.5;
       const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
-      const densityEntropyPressure = clamp(((couplingPressures['density-entropy'] || 0) - 0.50) / 0.20, 0, 1);
-      const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.80) / 0.16, 0, 1);
+      const densityEntropyPressure = clamp((V.optionalFinite(couplingPressures['density-entropy'], 0) - 0.50) / 0.20, 0, 1);
+      const densityFlickerPressure = clamp((V.optionalFinite(couplingPressures['density-flicker'], 0) - 0.80) / 0.16, 0, 1);
       const bridgeAxis = conductorSignalBridge.getSignals().axisEnergyShares;
       const phaseShare = bridgeAxis && typeof bridgeAxis.phase === 'number'
         ? bridgeAxis.phase

@@ -197,7 +197,7 @@ regimeReactiveDamping = (() => {
       : 1.0 / 6.0;
     const signalHealth = safePreBoot.call(() => signalHealthAnalyzer.getHealth(), null);
     const densityHealth = signalHealth && signalHealth.density ? signalHealth.density : null;
-    const lowPhaseThreshold = safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03) || 0.03;
+    const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
     const phaseContainmentTarget = 0.09;
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
     const phaseRecoveryCredit = clamp((phaseShare - phaseContainmentTarget) / 0.05, 0, 1);

@@ -112,11 +112,8 @@ velocityShapeAnalyzer = (() => {
       return 0;
     }
     const couplingPressures = pipelineCouplingManager.getCouplingPressures();
-    if (!couplingPressures) {
-      return 0;
-    }
-    const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.76) / 0.16, 0, 1);
-    const flickerPhasePressure = clamp(((couplingPressures['flicker-phase'] || 0) - 0.74) / 0.16, 0, 1);
+    const densityFlickerPressure = clamp((V.optionalFinite(couplingPressures['density-flicker'], 0) - 0.76) / 0.16, 0, 1);
+    const flickerPhasePressure = clamp((V.optionalFinite(couplingPressures['flicker-phase'], 0) - 0.74) / 0.16, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
     return clamp((densityFlickerPressure * 0.55 + flickerPhasePressure * 0.25 + trustSharePressure * 0.20) * phaseRecoveryCredit, 0, 1);
   }

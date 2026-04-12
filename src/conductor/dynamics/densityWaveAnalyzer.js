@@ -3,6 +3,7 @@
 // Pure query API - amplifies or dampens density flicker for musical shape.
 
 densityWaveAnalyzer = (() => {
+  const V = validator.create('densityWaveAnalyzer');
   /** @type {Array<{ time: number, density: number }>} */
   const samples = [];
   const MAX_SAMPLES = 48;
@@ -13,12 +14,8 @@ densityWaveAnalyzer = (() => {
    * @param {number} time - absolute time in seconds
    */
   function recordDensity(density, time) {
-    if (typeof density !== 'number' || !Number.isFinite(density)) {
-      throw new Error('densityWaveAnalyzer.recordDensity: density must be finite');
-    }
-    if (typeof time !== 'number' || !Number.isFinite(time)) {
-      throw new Error('densityWaveAnalyzer.recordDensity: time must be finite');
-    }
+    V.requireFinite(density, 'density');
+    V.requireFinite(time, 'time');
     samples.push({ time, density: clamp(density, 0, 1) });
     if (samples.length > MAX_SAMPLES) samples.shift();
   }
@@ -73,13 +70,10 @@ densityWaveAnalyzer = (() => {
     const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
     const phaseRecoveryCredit = clamp((phaseShare - lowPhaseThreshold) / 0.08, 0, 1);
     const couplingPressures = pipelineCouplingManager.getCouplingPressures();
-    if (!couplingPressures) {
-      return 0;
-    }
     const signalHealth = safePreBoot.call(() => signalHealthAnalyzer.getHealth(), null);
     const densityHealth = signalHealth && signalHealth.density ? signalHealth.density : null;
-    const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.78) / 0.16, 0, 1);
-    const densityPhasePressure = clamp(((couplingPressures['density-phase'] || 0) - 0.68) / 0.16, 0, 1);
+    const densityFlickerPressure = clamp((V.optionalFinite(couplingPressures['density-flicker'], 0) - 0.78) / 0.16, 0, 1);
+    const densityPhasePressure = clamp((V.optionalFinite(couplingPressures['density-phase'], 0) - 0.68) / 0.16, 0, 1);
     const densitySaturationPressure = densityHealth
       ? clamp((densityHealth.saturated ? 0.45 : 0) + clamp((densityHealth.crushFactor - 0.35) / 0.40, 0, 1) * 0.55, 0, 1)
       : 0;
