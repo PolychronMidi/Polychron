@@ -169,6 +169,31 @@ def _check_symbols_used(inv: dict) -> tuple[bool, str]:
     return True, f"all {len(symbols)} symbols used"
 
 
+def _check_symbols_have_kb(inv: dict) -> tuple[bool, str]:
+    """Top-N highest-caller IIFE globals must each have at least one KB entry."""
+    from tools_analysis.health_analysis import _compute_iife_caller_counts
+    src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+    _, caller_counts, _ = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
+    if not caller_counts:
+        return False, "no IIFE globals found"
+    top_n = inv.get("top_n", 10)
+    min_callers = inv.get("min_callers", 5)
+    ranked = sorted(
+        [(n, c) for n, c in caller_counts.items() if c >= min_callers],
+        key=lambda x: -x[1]
+    )[:top_n]
+    if not ranked:
+        return True, "no modules meet min_callers threshold"
+    uncovered = []
+    for name, _ in ranked:
+        hits = ctx.project_engine.search_knowledge(name, top_k=1)
+        if not hits:
+            uncovered.append(name)
+    if uncovered:
+        return False, f"{len(uncovered)}/{len(ranked)} uncovered: {', '.join(uncovered)}"
+    return True, f"all {len(ranked)} top-caller modules have KB entries"
+
+
 def _is_regex(s: str) -> bool:
     return any(c in s for c in r"\.[](){}*+?^$|")
 
@@ -187,6 +212,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "patterns_all_in_file": _check_patterns_all_in_file,
         "pattern_count_gte": _check_pattern_count_gte,
         "symbols_used": _check_symbols_used,
+        "symbols_have_kb": _check_symbols_have_kb,
     }
     inv_type = inv.get("type", "")
     checker = checkers.get(inv_type)

@@ -24,6 +24,7 @@ def status(mode: str = "all") -> str:
     mode='trust': trust ecology leaderboard (all 27 systems, 200-beat sample).
     mode='perceptual': perceptual stack status (EnCodec/CLAP/verdict model).
     mode='hme': HME selftest + introspection.
+    mode='freshness': age of every data source — flags stale or out-of-sync data.
     mode='resume': cold-start session briefing — synthesizes git state, nexus lifecycle,
     pipeline verdict, session narrative, and think history for context recovery."""
     _track("status")
@@ -72,6 +73,9 @@ def status(mode: str = "all") -> str:
     if mode == "hme":
         from .evolution_admin import hme_selftest as _st
         return _st()
+
+    if mode == "freshness":
+        return _freshness_report()
 
     if mode == "introspect":
         from .evolution_admin import hme_introspect as _hi
@@ -131,6 +135,78 @@ def status(mode: str = "all") -> str:
         pass
 
     return "\n\n".join(parts)
+
+
+def _freshness_report() -> str:
+    """Show age and sync status of every HME data source."""
+    import glob as _glob
+    from datetime import datetime
+
+    def _age(path: str) -> str:
+        if not os.path.exists(path):
+            return "MISSING"
+        mtime = os.path.getmtime(path)
+        delta = datetime.now().timestamp() - mtime
+        if delta < 60:
+            return f"{delta:.0f}s ago"
+        if delta < 3600:
+            return f"{delta/60:.0f}m ago"
+        if delta < 86400:
+            return f"{delta/3600:.1f}h ago"
+        return f"{delta/86400:.1f}d ago"
+
+    def _ts(path: str) -> float:
+        return os.path.getmtime(path) if os.path.exists(path) else 0.0
+
+    m = os.path.join(ctx.PROJECT_ROOT, "metrics")
+    sources = [
+        ("trace.jsonl",          os.path.join(m, "trace.jsonl")),
+        ("pipeline-summary.json", os.path.join(m, "pipeline-summary.json")),
+        ("adaptive-state.json",  os.path.join(m, "adaptive-state.json")),
+        ("feedback_graph.json",  os.path.join(m, "feedback_graph.json")),
+        ("trace-replay.json",    os.path.join(m, "trace-replay.json")),
+        ("journal.md",           os.path.join(m, "journal.md")),
+        ("conductor-map.md",     os.path.join(m, "conductor-map.md")),
+        ("crosslayer-map.md",    os.path.join(m, "crosslayer-map.md")),
+        ("narrative-digest.md",  os.path.join(m, "narrative-digest.md")),
+    ]
+
+    # Latest run-history snapshot
+    rh_dir = os.path.join(m, "run-history")
+    snapshots = sorted(_glob.glob(os.path.join(rh_dir, "*.json"))) if os.path.isdir(rh_dir) else []
+    if snapshots:
+        sources.append(("run-history (latest)", snapshots[-1]))
+    else:
+        sources.append(("run-history (latest)", ""))
+
+    parts = ["## Data Source Freshness\n"]
+    parts.append(f"{'Source':<28} {'Age':<14} {'Status'}")
+    parts.append("-" * 60)
+
+    for label, path in sources:
+        age = _age(path)
+        if age == "MISSING":
+            status_flag = "MISSING"
+        elif "d ago" in age and float(age.split("d")[0]) > 3:
+            status_flag = "STALE"
+        else:
+            status_flag = "OK"
+        parts.append(f"  {label:<26} {age:<14} {status_flag}")
+
+    # Sync check: trace.jsonl vs latest run-history snapshot
+    if snapshots:
+        trace_path = os.path.join(m, "trace.jsonl")
+        delta = abs(_ts(trace_path) - _ts(snapshots[-1]))
+        if delta > 300:
+            from datetime import datetime as _dt
+            t_ts = _dt.fromtimestamp(_ts(trace_path)).strftime("%Y-%m-%d %H:%M") if _ts(trace_path) else "missing"
+            s_ts = _dt.fromtimestamp(_ts(snapshots[-1])).strftime("%Y-%m-%d %H:%M")
+            parts.append(f"\n**SYNC WARNING**: trace.jsonl ({t_ts}) and run-history ({s_ts}) "
+                         f"differ by {delta/60:.0f}m — different pipeline runs. Run `npm run main` to sync.")
+        else:
+            parts.append(f"\nSync: trace.jsonl and run-history are in sync (delta={delta:.0f}s).")
+
+    return "\n".join(parts)
 
 
 def _resume_briefing() -> str:
