@@ -89,10 +89,12 @@ articulationComplement = (() => {
       : artRegime === 'coherent' ? 0.80
       : 1.0;
     const melodicCtxAC = emergentMelodicEngine.getContext();
+    // directionBias float (-1=descending→sharper, +1=ascending→softer): continuous layer under contourShape's categorical ±15%.
     const melodicContrastScale = melodicCtxAC
       ? (melodicCtxAC.contourShape === 'rising' ? 1.15 : melodicCtxAC.contourShape === 'falling' ? 0.85 : 1.0)
       * (melodicCtxAC.counterpoint === 'contrary' ? 1.20 : 1.0)
       * (1.0 - clamp(melodicCtxAC.thematicDensity, 0, 1) * 0.15)
+      * clamp(1.0 - V.optionalFinite(melodicCtxAC.directionBias, 0) * 0.06, 0.92, 1.06)
       : 1.0;
     // Rhythmic coupling: dense emergent rhythm -> sharper articulation contrast.
     const rhythmEntryAC = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });

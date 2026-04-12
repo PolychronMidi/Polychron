@@ -574,16 +574,18 @@ def _detect_contradictions() -> str:
     def _has_relation(a, b):
         a_tags = (a.get("tags") or "").split(",")
         b_tags = (b.get("tags") or "").split(",")
+        # If EITHER entry is a synthesis/supersedes/clarifies entry, skip the pair entirely.
+        # Synthesis entries summarize many specific entries and will always look similar to them —
+        # that similarity is intentional, not a contradiction.
         for tag in a_tags + b_tags:
-            parts = tag.split(":", 1)
-            if len(parts) == 2 and parts[0] in _skip_relations:
-                if parts[1] == a["id"] or parts[1] == b["id"]:
-                    return True
+            rel = tag.strip().split(":", 1)[0]
+            if rel in _skip_relations:
+                return True
+        # Skip if both entries share round identifiers (same-round coverage)
         a_rounds = set(re.findall(r'\bR(\d+)\b', a["title"]))
         b_rounds = set(re.findall(r'\bR(\d+)\b', b["title"]))
         if a_rounds and b_rounds and (a_rounds & b_rounds):
-            if any(t.startswith("synthesizes:") for t in a_tags + b_tags):
-                return True
+            return True
         return False
     candidates = [(i, j, s) for i, j, s in candidates if not _has_relation(entries[i], entries[j])]
 
