@@ -32,12 +32,17 @@ convergenceVelocitySurge = (() => {
       // High register pressure at a convergence moment -> more expressive impact.
       const melodicCtxCVS = emergentMelodicEngine.getContext();
       const tessLoad = melodicCtxCVS ? V.optionalFinite(melodicCtxCVS.tessituraLoad, 0) : 0;
+      // contourShape: rising arc at convergence = more expressive impact (build cresting);
+      // falling arc = softer impact (release phase doesn't need the punch).
+      const contourSurgeMod = melodicCtxCVS
+        ? (melodicCtxCVS.contourShape === 'rising' ? 1.08 : melodicCtxCVS.contourShape === 'falling' ? 0.93 : 1.0)
+        : 1.0;
       // Rhythmic coupling: density surprise amplifies convergence impact.
       // Convergence during a dense rhythmic moment = more expressive punch.
       const rhythmEntryVS = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
       const densitySurpriseVS = rhythmEntryVS && Number.isFinite(rhythmEntryVS.densitySurprise) ? rhythmEntryVS.densitySurprise : 1.0;
       const rhythmSurgeMod = densitySurpriseVS > 1.1 ? 1.10 : densitySurpriseVS < 0.9 ? 0.95 : 1.0;
-      surgeMultiplier = rf(1.15, 1.35) * distScale * (1.0 + tessLoad * 0.20) * rhythmSurgeMod;
+      surgeMultiplier = rf(1.15, 1.35) * distScale * (1.0 + tessLoad * 0.20) * contourSurgeMod * rhythmSurgeMod;
       lastSurgeTime = absoluteSeconds;
       // R23: convergence cascade - surge triggers emergent downbeat tempo mult
       if (surgeMultiplier > 1.2) {

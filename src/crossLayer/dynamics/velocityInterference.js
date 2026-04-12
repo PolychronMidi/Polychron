@@ -132,8 +132,13 @@ velocityInterference = (() => {
     // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmony stabilizes while dynamics intensify).
     const complexityEmaVI = rhythmEntryVI && Number.isFinite(rhythmEntryVI.complexityEma) ? rhythmEntryVI.complexityEma : 0.5;
     const complexityEmaInterferenceScale = 1.0 + clamp((complexityEmaVI - 0.45) * 0.20, -0.04, 0.10);
-    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale * complexityEmaInterferenceScale;
-    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale * complexityEmaInterferenceScale;
+    // contourShape: rising arc = stronger velocity interference (dynamic contrast builds as energy climbs);
+    // falling arc = softer interference (release phase convergences layers dynamically).
+    const contourShapeVI = melodicCtxVI
+      ? (melodicCtxVI.contourShape === 'rising' ? 1.07 : melodicCtxVI.contourShape === 'falling' ? 0.95 : 1.0)
+      : 1.0;
+    const boostCeiling = (0.13 + midpointFocus * 0.10) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale * complexityEmaInterferenceScale * contourShapeVI;
+    const reductionCeiling = (0.08 + midpointFocus * 0.06) * regimeScale * cimFactor * melodicIntensityScale * freshnessIntensityScale * rhythmInterferenceMod * ascendInterferenceScale * complexityEmaInterferenceScale * contourShapeVI;
 
     if (sameDirection) {
       // Reinforce: boost velocity proportional to alignment strength

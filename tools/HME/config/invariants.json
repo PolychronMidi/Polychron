@@ -12,7 +12,8 @@
     "pattern_count_gte": "Count of regex matches in file must be >= min_count",
     "symbols_used": "Every symbol matching definition_pattern in definition_file must appear in files matching usage_glob (usage_pattern template with {symbol} placeholder)",
     "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry",
-    "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other"
+    "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other",
+    "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)"
   },
   "invariants": [
     {
@@ -300,6 +301,25 @@
         "entropy-phase", "entropy-trust", "flicker-entropy", "flicker-phase",
         "tension-entropy", "tension-flicker", "tension-phase"
       ],
+      "severity": "warning"
+    },
+    {
+      "id": "directionbias-documented",
+      "description": "ARCHITECTURE.md must document all three directionBias coupling sections",
+      "type": "patterns_all_in_file",
+      "path": "doc/ARCHITECTURE.md",
+      "patterns": [
+        "directionBias Swap Gate Coupling",
+        "directionBias Articulation Contrast Coupling",
+        "contourShape Surge and Groove Couplings"
+      ],
+      "severity": "warning"
+    },
+    {
+      "id": "kb-no-thinking-leak",
+      "description": "KB entries must not contain LLM thinking artifact tags",
+      "type": "kb_content_no_pattern",
+      "pattern": "<\\|thinking\\||<think>|```thinking|<\\|im_start\\||<\\|im_end\\|",
       "severity": "warning"
     }
   ]
