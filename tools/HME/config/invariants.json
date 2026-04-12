@@ -11,7 +11,8 @@
     "patterns_all_in_file": "All patterns (array) must match somewhere in file at path",
     "pattern_count_gte": "Count of regex matches in file must be >= min_count",
     "symbols_used": "Every symbol matching definition_pattern in definition_file must appear in files matching usage_glob (usage_pattern template with {symbol} placeholder)",
-    "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry"
+    "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry",
+    "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other"
   },
   "invariants": [
     {
@@ -274,10 +275,19 @@
     },
     {
       "id": "top-callers-have-kb",
-      "description": "Top 10 highest-caller IIFE globals must each have a KB entry",
+      "description": "Top 15 highest-caller IIFE globals must each have a KB entry",
       "type": "symbols_have_kb",
-      "top_n": 10,
-      "min_callers": 20,
+      "top_n": 15,
+      "min_callers": 10,
+      "severity": "warning"
+    },
+    {
+      "id": "trace-run-history-sync",
+      "description": "trace.jsonl and latest run-history snapshot must be from the same pipeline run (within 5 minutes)",
+      "type": "files_mtime_window",
+      "path_a": "metrics/trace.jsonl",
+      "path_b_glob": "metrics/run-history/*.json",
+      "max_delta_seconds": 300,
       "severity": "warning"
     }
   ]

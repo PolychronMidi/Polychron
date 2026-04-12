@@ -84,6 +84,35 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # Compact freshness summary — surface STALE/MISSING/SYNC issues upfront
+    try:
+        import glob as _gl
+        from datetime import datetime as _dt
+        _m = os.path.join(ctx.PROJECT_ROOT, "metrics")
+        _key_files = [
+            ("trace.jsonl", os.path.join(_m, "trace.jsonl")),
+            ("pipeline-summary", os.path.join(_m, "pipeline-summary.json")),
+            ("adaptive-state", os.path.join(_m, "adaptive-state.json")),
+        ]
+        _flags = []
+        for _lbl, _p in _key_files:
+            if not os.path.exists(_p):
+                _flags.append(f"{_lbl}:MISSING")
+            else:
+                _age = _dt.now().timestamp() - os.path.getmtime(_p)
+                if _age > 86400 * 3:
+                    _flags.append(f"{_lbl}:STALE({_age/86400:.0f}d)")
+        _snaps = sorted(_gl.glob(os.path.join(_m, "run-history", "*.json")))
+        if _snaps:
+            _delta = abs(os.path.getmtime(os.path.join(_m, "trace.jsonl"))
+                         - os.path.getmtime(_snaps[-1])) if os.path.exists(os.path.join(_m, "trace.jsonl")) else 0
+            if _delta > 300:
+                _flags.append(f"SYNC:trace+run-history differ by {_delta/60:.0f}m")
+        if _flags:
+            parts.append(f"## Data Freshness\n  " + " | ".join(_flags) + "\n  Run `npm run main` or `status(mode='freshness')` for details.")
+    except Exception:
+        pass
+
     # Pipeline status
     try:
         from .digest import check_pipeline as _cp

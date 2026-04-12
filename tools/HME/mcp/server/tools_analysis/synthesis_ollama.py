@@ -321,6 +321,13 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         text = result.get("response", "").strip()
         # Strip markdown fenced thinking blocks (```thinking ... ``` or ```reasoning ... ```)
         text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
+        # Strip XML-style thinking tags (<think>, <|thinking|>, <|answer|> delimiters)
+        if "<|answer|>" in text:
+            text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
+        elif "<|thinking|>" in text:
+            after = text[text.rfind("<|/thinking|>") + len("<|/thinking|>"):].strip() if "<|/thinking|>" in text else ""
+            before = text[:text.find("<|thinking|>")].strip()
+            text = after or before or ""
         if "</think>" in text:
             text = text[text.rfind("</think>") + len("</think>"):].strip()
         elif "<think>" in text:
@@ -437,6 +444,12 @@ def _local_chat(messages: list[dict], model: str | None = None,
             msg = result.get("message", {})
             text = msg.get("content", "").strip() if isinstance(msg, dict) else ""
             text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
+            if "<|answer|>" in text:
+                text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
+            elif "<|thinking|>" in text:
+                after = text[text.rfind("<|/thinking|>") + len("<|/thinking|>"):].strip() if "<|/thinking|>" in text else ""
+                before = text[:text.find("<|thinking|>")].strip()
+                text = after or before or ""
             if "</think>" in text:
                 text = text[text.rfind("</think>") + len("</think>"):].strip()
             elif "<think>" in text:

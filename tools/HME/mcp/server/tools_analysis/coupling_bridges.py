@@ -657,8 +657,27 @@ def forge_bridges(top_n: int = 2) -> str:
                 sketch = "\n".join(sketch.split("\n")[1:])
             if sketch.endswith("```"):
                 sketch = "\n".join(sketch.split("\n")[:-1])
+            sketch = sketch.strip()
 
-            parts.append(f"\n```javascript\n{sketch.strip()}\n```\n")
+            # API validation: check that module.method references in sketch exist in symbol table
+            import re as _re
+            method_refs = _re.findall(r'\b(\w+)\.(\w+)\s*\(', sketch)
+            unknown_refs = []
+            if ctx.project_engine.symbol_table is not None:
+                try:
+                    all_rows = ctx.project_engine.symbol_table.to_arrow().to_pylist()
+                    known_symbols = {r["name"].lower() for r in all_rows}
+                    for mod, method in method_refs:
+                        if mod.lower() in (pair_a.lower(), pair_b.lower()):
+                            if method.lower() not in known_symbols and not method.startswith("_"):
+                                unknown_refs.append(f"{mod}.{method}()")
+                except Exception:
+                    pass
+
+            parts.append(f"\n```javascript\n{sketch}\n```\n")
+            if unknown_refs:
+                parts.append(f"  ⚠ **API WARNING**: {len(unknown_refs)} unverified method call(s): {', '.join(unknown_refs[:5])}")
+                parts.append(f"    Verify these methods exist before running the sketch.")
             parts.append(f"  Add to `lab/sketches.js` array, then: `node lab/run.js forge-{pair_a}-{pair_b}`")
             parts.append(f"  If STABLE: integrate bridge code into src/{pair_a}.js and src/{pair_b}.js")
         else:
