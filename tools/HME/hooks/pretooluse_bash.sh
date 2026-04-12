@@ -84,4 +84,16 @@ if echo "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]
 fi
 _streak_tick 15
 if ! _streak_check; then exit 1; fi
+# fix_antipattern: Block repeated polling of background task output files.
+# 2 checks allowed per session, then hard block. Counter resets when pipeline completes.
+TASK_POLL_COUNTER="/tmp/polychron-task-poll-count"
+if echo "$CMD" | grep -qE '(tail|cat|head|grep|wc).*/tmp/claude-'; then
+  COUNT=$(_safe_int "$(cat "$TASK_POLL_COUNTER" 2>/dev/null)" 0)
+  COUNT=$((COUNT + 1))
+  echo "$COUNT" > "$TASK_POLL_COUNTER"
+  if [ "$COUNT" -gt 2 ]; then
+    echo "{\"decision\":\"block\",\"reason\":\"BLOCKED: Background task output polling (check #${COUNT}). You already checked twice. WAIT for the background task notification. Do other productive work while waiting.\"}"
+    exit 2
+  fi
+fi
 exit 0

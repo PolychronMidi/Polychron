@@ -5,7 +5,7 @@ Each layer has: current state and items for next dedicated pass.
 
 ## Layer 1: Enforcement (TIGHT)
 
-**State**: 39 invariants. `symbols_have_kb`, `files_mtime_window`, `kb_content_no_pattern`, `kb_freshness` types live. `coupling-labels-documented` enforces ARCHITECTURE.md sync. `kb-no-thinking-leak` guards LLM artifact leaks. `directionbias-documented` guards directionBias coupling doc coverage. `kb-freshness` warns if no KB entry updated in >14 days.
+**State**: 40 invariants. `symbols_have_kb`, `files_mtime_window`, `kb_content_no_pattern`, `kb_freshness` types live. `coupling-labels-documented` enforces ARCHITECTURE.md sync. `kb-no-thinking-leak` guards LLM artifact leaks. `directionbias-documented` guards directionBias coupling doc coverage. `kb-freshness` warns if no KB entry updated in >14 days.
 
 ### Next pass
 - seed remaining modules below top-15 as they become edit targets
@@ -24,13 +24,12 @@ Each layer has: current state and items for next dedicated pass.
 ### Next pass
 - ongoing: reindex after major batch changes if watcher hasn't caught up
 
-## Layer 4: Data Coherence (IMPROVING)
+## Layer 4: Data Coherence (SOLID)
 
-**State**: `metrics/current-run.json` unified pointer now written by `snapshot-run.js` on every pipeline run — tools can read this instead of hunting the latest run-history snapshot. adaptive-state.json VERY_STALE flag will clear after next successful run.
+**State**: `metrics/current-run.json` unified pointer written by `snapshot-run.js` every pipeline run — tools read this instead of hunting the latest run-history snapshot. `current-run-valid` invariant guards against corrupt JSON. adaptive-state.json warm-start healthy (9 keys, load-and-clamp prevents stressed-state boot loops, VERY_STALE auto-clears after successful run). EnCodec S1 truncation hypothesis verified NOT confirmed (S0=6.040, S1=6.176 — normal tension arc). `trace-run-history-sync` invariant enforces mtime coherence (300s window). current-run.json in freshness display (verified).
 
 ### Next pass
-- EnCodec S1 truncation hypothesis verified NOT confirmed: per-section cb0 entropy S0=6.040, S1=6.176, S2=6.240, S3=6.924, S4=6.162, S5=6.145, S6=6.134 — S1 is higher than S0, normal tension arc, no truncation artifact.
-- current-run.json now appears in freshness display (verified after reload)
+- ongoing: monitor perceptual data consistency between snapshot-run inline capture and post-render perceptual-analysis
 
 ## Layer 5: Architectural Intelligence (MATURE)
 
@@ -39,9 +38,9 @@ Each layer has: current state and items for next dedicated pass.
 ### Next pass
 - ongoing: reindex after major batch changes if watcher hasn't caught up
 
-## Layer 6: Compositional Self-Awareness (EXPANDING)
+## Layer 6: Compositional Self-Awareness (MATURE)
 
-**State**: L0 swapDecision channel live. directionBias in 8 consumer files (added voiceModulator spread ±8% via L0 emergentMelody). contourShape couplings in convergenceVelocitySurge (±8%/−7%), grooveTransfer (±6%), velocityInterference (±7%/−5%), stutterContagion (×1.07/×0.93). ARCHITECTURE.md documents all directionBias + contourShape couplings; directionbias-documented invariant updated. interactionHeat L0 channel live: flushBeat/flushBeatPair post trend+density, crossLayerDynamicEnvelope reads via L0 with fallback.
+**State**: L0 swapDecision channel live. directionBias in 8 consumer files (voiceModulator spread +/-8% via L0 emergentMelody). contourShape couplings in convergenceVelocitySurge (+/-8%/-7%), grooveTransfer (+/-6%), velocityInterference (+/-7%/-5%), stutterContagion (x1.07/x0.93). interactionHeat L0 channel: flushBeat/flushBeatPair post `{ trend, slope, density }`; 4 consumers now read via L0 with direct-call fallback (crossLayerDynamicEnvelope, crossLayerClimaxEngine, crossLayerSilhouette, processBeat). 43 L0 channels defined, all referenced (invariant-enforced). ARCHITECTURE.md documents all directionBias + contourShape + interactionHeat couplings; directionbias-documented invariant enforces doc sync.
 
 ### Next pass
 - seed remaining modules below top-15 as they become edit targets

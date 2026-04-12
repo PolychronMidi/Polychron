@@ -381,7 +381,13 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 
 ### L0 interactionHeat channel
 
-`interactionHeatMap.flushBeat()` and `flushBeatPair()` now post `L0_CHANNELS.interactionHeat` with `{ trend, slope, density, absoluteSeconds }` after each beat snapshot is committed to history. `crossLayerDynamicEnvelope.tick()` reads via `L0.getLast(L0_CHANNELS.interactionHeat)` instead of direct `getTrend()` call, with fallback to `interactionHeatMap.getTrend()` on the first beat before any flush has occurred. This decouples the dynamics-decision triad's directional read from a synchronous function call, routing it through the L0 event bus and enabling future consumers to tap interaction trend without coupling to `interactionHeatMap` directly.
+`interactionHeatMap.flushBeat()` and `flushBeatPair()` post `L0_CHANNELS.interactionHeat` with `{ trend, slope, density }` after each beat snapshot is committed to history. Four consumers read via `L0.getLast(L0_CHANNELS.interactionHeat)` with direct-call fallback on the first beat before any flush:
+- **`crossLayerDynamicEnvelope.tick()`** reads `trend` (replaces direct `getTrend()` call)
+- **`crossLayerClimaxEngine.tick()`** reads `density` for heat-level climax accumulation
+- **`crossLayerSilhouette.tick()`** reads `density` for raw silhouette density input
+- **`processBeat.js`** reads `density` for rest-synchronizer heat signals
+
+This decouples 4 modules from synchronous `interactionHeatMap` function calls, routing all heat reads through L0. Covered by existing `l0-event-channels` firewall port.
 
 ### contourShape Surge and Groove Couplings
 

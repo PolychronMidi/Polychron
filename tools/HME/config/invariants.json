@@ -330,6 +330,13 @@
       "type": "kb_freshness",
       "max_age_days": 14,
       "severity": "warning"
+    },
+    {
+      "id": "current-run-valid",
+      "description": "current-run.json unified pointer must be valid JSON",
+      "type": "json_valid",
+      "path": "metrics/current-run.json",
+      "severity": "error"
     }
   ]
 }
