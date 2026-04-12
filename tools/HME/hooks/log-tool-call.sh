@@ -41,16 +41,8 @@ fi
 if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _streak_reset
 
-  # LIFESAVER: scan HME tool output for FAIL — log to hme-errors.log for stop.sh pickup.
-  # Exclude diagnostic tools whose job IS reporting failures (evolve, status, hme_admin).
-  SKIP_FAIL_SCAN=false
-  case "$TOOL_NAME" in
-    mcp__HME__evolve|mcp__HME__status|mcp__HME__hme_admin) SKIP_FAIL_SCAN=true ;;
-  esac
-  FAILS=""
-  if [[ "$SKIP_FAIL_SCAN" == "false" ]]; then
-    FAILS=$(echo "$TOOL_RESULT" | grep -i 'FAIL' 2>/dev/null)
-  fi
+  # LIFESAVER: scan ALL HME tool output for FAIL — log to hme-errors.log for stop.sh pickup
+  FAILS=$(echo "$TOOL_RESULT" | grep -i 'FAIL' 2>/dev/null)
   if [[ -n "$FAILS" ]]; then
     PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
     ERROR_LOG="$PROJECT/log/hme-errors.log"
