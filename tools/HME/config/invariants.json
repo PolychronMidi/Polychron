@@ -10,7 +10,8 @@
     "pattern_in_file": "Regex pattern must match somewhere in file at path",
     "patterns_all_in_file": "All patterns (array) must match somewhere in file at path",
     "pattern_count_gte": "Count of regex matches in file must be >= min_count",
-    "symbols_used": "Every symbol matching definition_pattern in definition_file must appear in files matching usage_glob (usage_pattern template with {symbol} placeholder)"
+    "symbols_used": "Every symbol matching definition_pattern in definition_file must appear in files matching usage_glob (usage_pattern template with {symbol} placeholder)",
+    "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry"
   },
   "invariants": [
     {
@@ -270,6 +271,14 @@
       "pattern": "require\\(",
       "min_count": 19,
       "severity": "error"
+    },
+    {
+      "id": "top-callers-have-kb",
+      "description": "Top 10 highest-caller IIFE globals must each have a KB entry",
+      "type": "symbols_have_kb",
+      "top_n": 10,
+      "min_callers": 20,
+      "severity": "warning"
     }
   ]
 }

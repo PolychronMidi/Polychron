@@ -319,6 +319,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             _ollama_interactive.clear()
         result = json.loads(raw_bytes)
         text = result.get("response", "").strip()
+        # Strip markdown fenced thinking blocks (```thinking ... ``` or ```reasoning ... ```)
+        text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
         if "</think>" in text:
             text = text[text.rfind("</think>") + len("</think>"):].strip()
         elif "<think>" in text:
@@ -434,6 +436,7 @@ def _local_chat(messages: list[dict], model: str | None = None,
             result = json.loads(resp.read())
             msg = result.get("message", {})
             text = msg.get("content", "").strip() if isinstance(msg, dict) else ""
+            text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
             if "</think>" in text:
                 text = text[text.rfind("</think>") + len("</think>"):].strip()
             elif "<think>" in text:
