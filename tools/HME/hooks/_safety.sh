@@ -3,6 +3,11 @@
 # Source this at the top of every hook script.
 set -euo pipefail
 
+# ── Tunable constants (adjust here — not in individual hooks) ─────────────────
+_HME_HTTP_PORT=7734
+_HME_SRC_PATTERN='/Polychron/(src|tools/HME/(chat/src|mcp/server))/'
+_HME_EDIT_PATTERN='/Polychron/(src|tools/HME/(chat/src|mcp/server)|scripts)/'
+
 # Safe curl: returns empty string on timeout/failure, never crashes the hook.
 # Usage: result=$(_safe_curl "http://..." '{"key":"val"}')
 _safe_curl() {
@@ -38,6 +43,33 @@ _safe_int() {
   local val="$1"
   if [[ "$val" =~ ^-?[0-9]+$ ]]; then echo "$val"; else echo "0"; fi
 }
+
+# ── Hook output emitters ──────────────────────────────────────────────────────
+
+# Emit hookSpecificOutput allow + systemMessage (enrichment/warnings).
+# Usage: _emit_enrich_allow "message text"; exit 0
+_emit_enrich_allow() {
+  jq -n --arg msg "$1" '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":$msg}'
+}
+
+# Emit hard block decision (required format for built-in tools + hard rules).
+# Outputs JSON to stdout; caller must still: exit 2
+# Usage: _emit_block "BLOCKED: reason"; exit 2
+_emit_block() {
+  jq -n --arg reason "$1" '{"decision":"block","reason":$reason}'
+}
+
+# ── Path / module helpers ─────────────────────────────────────────────────────
+
+# Returns 0 if PATH is a project source file (src/ or HME chat/mcp).
+_is_project_src() { echo "$1" | grep -qE "$_HME_SRC_PATTERN"; }
+
+# Returns 0 if PATH is a project editable source file (adds scripts/).
+_is_project_edit_src() { echo "$1" | grep -qE "$_HME_EDIT_PATTERN"; }
+
+# Extract module name: strip directory + any file extension.
+# "src/foo/barBaz.js" → "barBaz"
+_extract_module() { basename "$1" | sed 's/\.[^.]*$//'; }
 
 # ── Streak counter ────────────────────────────────────────────────────────
 # Weighted tool-type streak tracking. Weight guide:
@@ -76,12 +108,12 @@ _streak_reset() {
 
 _hme_enrich() {
   local module="$1" top_k="${2:-3}"
-  _safe_curl "http://127.0.0.1:7734/enrich" "{\"query\":\"$module\",\"top_k\":$top_k}"
+  _safe_curl "http://127.0.0.1:${_HME_HTTP_PORT}/enrich" "{\"query\":\"$module\",\"top_k\":$top_k}"
 }
 
 _hme_validate() {
   local module="$1"
-  _safe_curl "http://127.0.0.1:7734/validate" "{\"query\":\"$module\"}"
+  _safe_curl "http://127.0.0.1:${_HME_HTTP_PORT}/validate" "{\"query\":\"$module\"}"
 }
 
 _hme_kb_count() {
