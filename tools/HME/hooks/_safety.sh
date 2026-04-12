@@ -5,8 +5,8 @@ set -euo pipefail
 
 # ── Tunable constants (adjust here — not in individual hooks) ─────────────────
 _HME_HTTP_PORT=7734
-_HME_SRC_PATTERN='/Polychron/(src|tools/HME/(chat/src|mcp/server))/'
-_HME_EDIT_PATTERN='/Polychron/(src|tools/HME/(chat/src|mcp/server)|scripts)/'
+_HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
+_HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 
 # Safe curl: returns empty string on timeout/failure, never crashes the hook.
 # Usage: result=$(_safe_curl "http://..." '{"key":"val"}')

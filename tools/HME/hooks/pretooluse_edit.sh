@@ -37,10 +37,6 @@ $WARN_TITLES
 Call mcp__HME__read(target=\"$MODULE\", mode=\"before\") for full pre-edit briefing."
     _streak_tick 10
     exit 0
-  else
-    _emit_enrich_allow "BEFORE EDITING $MODULE: Call mcp__HME__read(target=\"$MODULE\", mode=\"before\") for KB constraints + callers + edit risks."
-    _streak_tick 10
-    exit 0
   fi
 fi
 _streak_tick 10

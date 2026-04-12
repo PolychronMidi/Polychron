@@ -18,8 +18,7 @@ if [[ "$KB_COUNT" -gt 0 ]]; then
 $TITLES"
   _streak_tick 20
   exit 0
-else
-  _emit_enrich_allow "mcp__HME__find(query=\"$PATTERN\") returns matches + KB cross-references. Raw Grep finds text; find() finds meaning."
-  _streak_tick 20
-  exit 0
 fi
+_streak_tick 20
+if ! _streak_check; then exit 1; fi
+exit 0
