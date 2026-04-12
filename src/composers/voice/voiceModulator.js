@@ -4,6 +4,7 @@
 // ensemble feel rather than flat machine-gun velocity.
 
 voiceModulator = (function() {
+  const V = validator.create('voiceModulator');
   /**
    * Distribute velocity across voices with humanized variation.
    * The first voice (melody) gets a slight accent; inner voices are softer;
@@ -11,6 +12,8 @@ voiceModulator = (function() {
    * calls produce identical distributions.
    * Texture-aware shaping (#4): chord bursts accent inner voices for fat stabs;
    * flurries apply decrescendo cascade for natural scalar taper.
+   * directionBias coupling via L0: ascending melody widens spread (open voicing);
+   * descending melody tightens spread (close voicing). +/-8% max.
    * @param {number[]} selectedNotes - MIDI note numbers
    * @param {{ baseVelocity?: number, spread?: number, textureMode?: string }} options
    * @returns {{ note: number, channel: number, velocity: number }[]}
@@ -20,7 +23,11 @@ voiceModulator = (function() {
     const base = Number.isFinite(Number(options && options.baseVelocity)) ? Number(options.baseVelocity) : 90;
     // Voice spread params from conductorConfig (profile-driven)
     const vsCfg = conductorConfig.getVoiceSpreadScaling();
-    const spread = Number.isFinite(Number(options && options.spread)) ? Number(options.spread) : vsCfg.spread;
+    const baseSpread = Number.isFinite(Number(options && options.spread)) ? Number(options.spread) : vsCfg.spread;
+    // directionBias: ascending melody -> wider spread (open voicing); descending -> tighter (close voicing)
+    const melodicEntry = L0.getLast(L0_CHANNELS.emergentMelody);
+    const dirBias = melodicEntry ? V.optionalFinite(melodicEntry.directionBias, 0) : 0;
+    const spread = baseSpread * clamp(1.0 + dirBias * 0.08, 0.92, 1.08);
     const texMode = (options && typeof options.textureMode === 'string') ? options.textureMode : 'single';
     const count = selectedNotes.length;
     if (count === 0) return [];

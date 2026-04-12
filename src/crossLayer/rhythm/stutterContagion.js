@@ -130,7 +130,12 @@ stutterContagion = (() => {
     // Counterpart: grooveTransfer REDUCES transfer under same signal (groove stability anchors complexity).
     const complexityEmaSC = rhythmEntrySC && Number.isFinite(rhythmEntrySC.complexityEma) ? rhythmEntrySC.complexityEma : 0.5;
     const complexityContagionScale = 1.0 + clamp((complexityEmaSC - 0.45) * 0.20, -0.04, 0.10);
-    const gatedIntensity = decayedIntensity * melodicContagionScale * phaseContagionScale * surpriseContagionScale * tessituraContagionScale * complexityContagionScale;
+    // contourShape: rising arc = stutter infection spreads harder (ascending energy amplifies chaos cascade);
+    // falling arc = contagion softens (descent = release phase, stutter settles rather than spreads).
+    const contourContagionSC = melodicCtxSC
+      ? (melodicCtxSC.contourShape === 'rising' ? 1.07 : melodicCtxSC.contourShape === 'falling' ? 0.93 : 1.0)
+      : 1.0;
+    const gatedIntensity = decayedIntensity * melodicContagionScale * phaseContagionScale * surpriseContagionScale * tessituraContagionScale * complexityContagionScale * contourContagionSC;
     if (gatedIntensity < 0.05) return null;
 
     // Convert the source stutter's ms to this layer's tick space

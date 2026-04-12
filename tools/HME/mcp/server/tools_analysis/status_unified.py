@@ -206,10 +206,14 @@ def _freshness_report() -> str:
         ("narrative-digest.md",  os.path.join(m, "narrative-digest.md")),
     ]
 
-    # Latest run-history snapshot
+    # Latest snapshot — prefer metrics/current-run.json named pointer (written by snapshot-run.js),
+    # fall back to latest run-history glob for pre-existing runs.
     rh_dir = os.path.join(m, "run-history")
     snapshots = sorted(_glob.glob(os.path.join(rh_dir, "*.json"))) if os.path.isdir(rh_dir) else []
-    if snapshots:
+    current_run_path = os.path.join(m, "current-run.json")
+    if os.path.exists(current_run_path):
+        sources.append(("current-run.json", current_run_path))
+    elif snapshots:
         sources.append(("run-history (latest)", snapshots[-1]))
     else:
         sources.append(("run-history (latest)", ""))

@@ -325,10 +325,16 @@ def type_hierarchy(type_name: str = "") -> str:
             continue
         n_users = len(rev_graph.get(basename, set()))
         defacto.append((basename, subsystem, n_users))
-    # Compute per-subsystem median
+    # Compute per-subsystem median — exclude single-use helpers (<=1 caller) and
+    # known helper-naming patterns so the median represents real module usage distribution.
     import statistics as _stats
+    _helper_suffixes = ('Helpers', 'Config', 'Data', 'Values', 'Priors', 'Profiles', 'Scorers', 'Analyzers')
     sub_users: dict[str, list] = {}
     for name, sub, nu in defacto:
+        if nu <= 1:
+            continue  # single-use helpers skew median down; exclude from baseline
+        if any(name.endswith(s) for s in _helper_suffixes):
+            continue  # pure helper/config files are not representative modules
         sub_users.setdefault(sub, []).append(nu)
     sub_median = {sub: _stats.median(vals) for sub, vals in sub_users.items() if vals}
     named_managers = {mgr for mgr, _, _ in manager_pairs}
