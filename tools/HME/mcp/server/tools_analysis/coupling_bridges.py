@@ -1,4 +1,5 @@
-"""Antagonism bridge intelligence — leverage analysis, bridge cache, and field guides."""
+"""Antagonism bridge intelligence — leverage analysis, bridge cache, field guides, and design synthesis."""
+import glob as _glob_mod
 import os
 import re
 from collections import defaultdict
@@ -383,7 +384,7 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         arch_b = _archetype(file_b)
         bar = "<" * min(int(abs(r) * 10), 8)
         n_bridged = len(already_bridged)
-        saturation = "VIRGIN" if n_bridged == 0 else (f"SATURATED ({n_bridged})" if n_bridged >= 4 else f"{n_bridged} bridged")
+        saturation = "VIRGIN" if n_bridged == 0 else (f"SATURATED ({n_bridged})" if n_bridged >= 3 else f"{n_bridged} bridged")
         out.append(f"## r={r:+.3f} {bar}  {a} (t={ta_s}) <-> {b} (t={tb_s})  [{saturation}]")
         out.append(f"   archetypes: [{arch_a[0]}] vs [{arch_b[0]}]")
         # KB staleness annotation
@@ -440,3 +441,232 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         out.append(f"  {name:<30} {ant_count[name]} pairs  trust={t_s}  dims=[{', '.join(sorted(used)) or 'none'}]")
 
     return "\n".join(out)
+
+
+def _read_module_src(module_name: str, max_chars: int = 2000) -> str:
+    """Read module source for bridge design context."""
+    for pattern in [
+        os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{module_name}.js"),
+        os.path.join(ctx.PROJECT_ROOT, "tools", "**", f"{module_name}.py"),
+    ]:
+        matches = _glob_mod.glob(pattern, recursive=True)
+        if matches:
+            try:
+                with open(matches[0], encoding="utf-8", errors="ignore") as f:
+                    return f.read()[:max_chars]
+            except Exception:
+                pass
+    return f"(source for {module_name} not found)"
+
+
+def _algorithmic_fallback(b: dict, pair_a: str, pair_b: str) -> str:
+    """Generate a bridge design from the field guide when synthesis fails."""
+    field = b["field"]
+    g = _FIELD_GUIDE.get(field, {})
+    signal = g.get("signal", field)
+    lines = [
+        f"  Field: `{field}` ({signal})",
+        f"  {pair_a}: {b['eff_a']}",
+        f"  {pair_b}: {b['eff_b']}",
+        f"  Rationale: {b['why']}",
+    ]
+    return "\n".join(lines)
+
+
+_DESIGN_KEYS = ("FIELD", "A_READS", "A_EFFECT", "A_CODE", "A_INSERT_AFTER", "A_APPLY_TO",
+                 "B_READS", "B_EFFECT", "B_CODE", "B_INSERT_AFTER", "B_APPLY_TO", "MUSICAL_WHY")
+
+
+def _parse_design(raw: str) -> str:
+    """Extract structured FIELD/CODE/etc. lines from model output, discarding reasoning."""
+    lines = raw.split("\n")
+    extracted: dict[str, str] = {}
+    for line in lines:
+        for key in _DESIGN_KEYS:
+            if line.strip().startswith(key + ":"):
+                extracted[key] = line.strip()[len(key) + 1:].strip()
+                break
+
+    if len(extracted) >= 4:
+        out = []
+        for key in _DESIGN_KEYS:
+            if key in extracted:
+                out.append(f"  {key}: {extracted[key]}")
+        return "\n".join(out)
+    return ""
+
+
+def design_bridges(top_n: int = 3) -> str:
+    """Propose specific antagonism bridge designs for top unsaturated pairs.
+
+    For each pair: reads both module sources, analyzes existing coupling dimensions,
+    and uses local code model to propose the specific dimension, direction,
+    code insertion point, and musical rationale.
+    """
+    from .synthesis import _local_think, _LOCAL_MODEL, compress_for_claude
+
+    bridges = get_top_bridges(n=top_n * 2, threshold=-0.30)
+    unsaturated = [b for b in bridges if len(b.get("already_bridged", [])) < 3][:top_n]
+
+    if not unsaturated:
+        return "# Bridge Design\n\nNo unsaturated antagonist pairs available."
+
+    parts = ["# Bridge Design Proposals\n"]
+
+    coupling_state = _scan_coupling_state(os.path.join(ctx.PROJECT_ROOT, "src"))
+
+    for b in unsaturated:
+        pair_a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
+        pair_b = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
+
+        src_a = _read_module_src(pair_a)
+        src_b = _read_module_src(pair_b)
+
+        state_a = coupling_state.get(pair_a, coupling_state.get(b["pair_a"], {}))
+        state_b = coupling_state.get(pair_b, coupling_state.get(b["pair_b"], {}))
+        dims_a = sorted(set(state_a.get("melodic_dims", []) + state_a.get("rhythm_dims", [])))
+        dims_b = sorted(set(state_b.get("melodic_dims", []) + state_b.get("rhythm_dims", [])))
+        already = b.get("already_bridged", [])
+
+        raw_context = (
+            f"MODULE A: {pair_a} (archetype: {b['arch_a']})\n"
+            f"  Coupled dimensions: {', '.join(dims_a) or 'none'}\n"
+            f"  Already bridged with B on: {', '.join(already) or 'none'}\n"
+            f"  Source:\n{src_a}\n\n"
+            f"MODULE B: {pair_b} (archetype: {b['arch_b']})\n"
+            f"  Coupled dimensions: {', '.join(dims_b) or 'none'}\n"
+            f"  Already bridged with A on: {', '.join(already) or 'none'}\n"
+            f"  Source:\n{src_b}\n\n"
+            f"Pearson r = {b['r']:+.3f} (negative = antagonist)\n"
+            f"Algorithmic suggestion: bridge on `{b['field']}`\n"
+            f"  A effect: {b['eff_a']}\n"
+            f"  B effect: {b['eff_b']}\n"
+            f"  Rationale: {b['why']}\n"
+        )
+
+        prompt = (
+            raw_context + "\n"
+            "TASK: Design ONE antagonism bridge. "
+            "Both modules must read the SAME field with OPPOSING effects.\n"
+            "Do NOT use a field in the 'Already bridged' list.\n\n"
+            "Respond with ONLY these labeled lines:\n"
+            "FIELD: <field name from melodicCtx or rhythmCtx>\n"
+            "A_EFFECT: <1 line: effect on module A>\n"
+            "A_CODE: <JS const, e.g. const mod = ctx.field === 'rising' ? 0.03 : -0.02;>\n"
+            "A_APPLY_TO: <variable to add the modifier to>\n"
+            "B_EFFECT: <1 line: OPPOSING effect on module B>\n"
+            "B_CODE: <JS const with OPPOSITE sign>\n"
+            "B_APPLY_TO: <variable to add the modifier to>\n"
+            "MUSICAL_WHY: <1 sentence>\n"
+        )
+
+        design = _local_think(
+            prompt, max_tokens=600, model=_LOCAL_MODEL,
+            system="You are a code generator. Output ONLY labeled lines, no reasoning.",
+            temperature=0.2,
+        )
+
+        bridged_label = f"{len(already)} bridged" if already else "VIRGIN"
+        parts.append(f"## {pair_a} <-> {pair_b}  (r={b['r']:+.3f}, {bridged_label})")
+
+        parsed = _parse_design(design) if design else ""
+        if parsed:
+            parts.append(parsed)
+        elif design:
+            compressed = compress_for_claude(
+                design, max_chars=500,
+                hint=(f"Extract from this bridge design: 1) which signal field, "
+                      f"2) JS code for {pair_a}, 3) JS code for {pair_b}, "
+                      f"4) why the opposing effects create musical interest. "
+                      f"Output 4 bullet points only, no reasoning.")
+            )
+            if compressed and len(compressed.strip()) > 20:
+                parts.append(f"  {compressed}")
+            else:
+                parts.append(_algorithmic_fallback(b, pair_a, pair_b))
+        else:
+            parts.append(_algorithmic_fallback(b, pair_a, pair_b))
+        parts.append("")
+
+    return "\n".join(parts)
+
+
+def forge_bridges(top_n: int = 2) -> str:
+    """Generate verified bridge proposals as lab sketches with executable monkey-patch code.
+
+    For each unsaturated antagonist pair: reads both module sources, generates a complete
+    lab sketch via code model, and returns it ready to paste into lab/sketches.js.
+    """
+    from .synthesis import _local_think, _LOCAL_MODEL
+
+    bridges = get_top_bridges(n=top_n * 2, threshold=-0.30)
+    unsaturated = [b for b in bridges if len(b.get("already_bridged", [])) < 3][:top_n]
+
+    if not unsaturated:
+        return "# Bridge Forge\n\nNo unsaturated antagonist pairs available."
+
+    parts = ["# Bridge Forge: Verified Skill Recipes\n"]
+
+    for b in unsaturated:
+        pair_a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
+        pair_b = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
+        already = b.get("already_bridged", [])
+
+        src_a = _read_module_src(pair_a, max_chars=2000)
+        src_b = _read_module_src(pair_b, max_chars=2000)
+
+        prompt = (
+            f"Generate a Polychron lab sketch that bridges two antagonist modules.\n\n"
+            f"MODULE A: {pair_a}\n{src_a[:1500]}\n\n"
+            f"MODULE B: {pair_b}\n{src_b[:1500]}\n\n"
+            f"Pearson r = {b['r']:+.3f} (negative = antagonist)\n"
+            f"Already bridged on: {', '.join(already) or 'none'}\n"
+            f"Suggested field: {b['field']}\n"
+            f"A should: {b['eff_a']}\n"
+            f"B should: {b['eff_b']}\n"
+            f"Why: {b['why']}\n\n"
+            f"Write a lab sketch JS object with:\n"
+            f"  name: 'forge-{pair_a}-{pair_b}'\n"
+            f"  postBoot() that monkey-patches BOTH modules via their globals\n"
+            f"  Both sides read the SAME conductor signal field\n"
+            f"  OPPOSING effects (one boosts, one dampens)\n"
+            f"  Small effect sizes (+/-0.02 to +/-0.08), clamped\n"
+            f"  Access globals directly (no require/import)\n"
+            f"  Do NOT use fields: [{', '.join(already)}]\n\n"
+            f"Format:\n{{\n  name: 'forge-...',\n"
+            f"  overrides: {{ SECTIONS: {{ min: 4, max: 4 }}, PHRASES_PER_SECTION: {{ min: 3, max: 3 }} }},\n"
+            f"  postBoot() {{\n    // monkey-patch code here\n  }}\n}}\n"
+            f"Output ONLY the JS object. No markdown fences. No explanation."
+        )
+
+        sketch = _local_think(
+            prompt, max_tokens=1200, model=_LOCAL_MODEL,
+            system="You are a JavaScript code generator for a music composition system. Output ONLY valid JS code.",
+            temperature=0.3,
+        )
+
+        bridged_label = f"{len(already)} bridged" if already else "VIRGIN"
+        parts.append(f"## {pair_a} <-> {pair_b}  (r={b['r']:+.3f}, {bridged_label})")
+
+        if sketch:
+            sketch = sketch.strip()
+            if sketch.startswith("```"):
+                sketch = "\n".join(sketch.split("\n")[1:])
+            if sketch.endswith("```"):
+                sketch = "\n".join(sketch.split("\n")[:-1])
+
+            parts.append(f"\n```javascript\n{sketch.strip()}\n```\n")
+            parts.append(f"  Add to `lab/sketches.js` array, then: `node lab/run.js forge-{pair_a}-{pair_b}`")
+            parts.append(f"  If STABLE: integrate bridge code into src/{pair_a}.js and src/{pair_b}.js")
+        else:
+            parts.append(_algorithmic_fallback(b, pair_a, pair_b))
+        parts.append("")
+
+    parts.append("## Forge Workflow")
+    parts.append("  1. Copy sketch into lab/sketches.js array")
+    parts.append("  2. Run: node lab/run.js forge-NAME")
+    parts.append("  3. Listen to lab/output/forge-NAME.wav")
+    parts.append("  4. If STABLE: integrate bridge code into src/ modules")
+    parts.append("  5. learn() the verified bridge as a calibration anchor")
+
+    return "\n".join(parts)

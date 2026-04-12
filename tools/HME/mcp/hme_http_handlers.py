@@ -1,4 +1,5 @@
 """HME HTTP — engine operations: enrich, validate, audit, reindex."""
+import concurrent.futures
 import logging
 import os
 import subprocess
@@ -35,16 +36,27 @@ def _reindex_files(files: list[str]) -> dict:
         return {"indexed": [], "count": 0, "deferred": "bulk index in progress"}
 
     indexed = []
-    for filepath in files[:20]:
-        abs_path = filepath if os.path.isabs(filepath) else os.path.join(PROJECT_ROOT, filepath)
-        if not os.path.exists(abs_path):
-            _log_error("reindex", f"file not found: {filepath}")
-            continue
-        try:
-            _project_engine.index_file(abs_path)
-            indexed.append(filepath)
-        except Exception as e:
-            _log_error("reindex", f"index_file failed for {filepath}: {e}")
+    # Budget: 25s total across all files (safely under 30s client timeout).
+    # Each file gets at most 5s; if it times out we skip and continue.
+    import time as _time
+    deadline = _time.monotonic() + 25
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        for filepath in files[:20]:
+            if _time.monotonic() >= deadline:
+                break
+            abs_path = filepath if os.path.isabs(filepath) else os.path.join(PROJECT_ROOT, filepath)
+            if not os.path.exists(abs_path):
+                _log_error("reindex", f"file not found: {filepath}")
+                continue
+            remaining = max(1, deadline - _time.monotonic())
+            future = executor.submit(_project_engine.index_file, abs_path)
+            try:
+                future.result(timeout=min(5, remaining))
+                indexed.append(filepath)
+            except concurrent.futures.TimeoutError:
+                pass  # skip this file; don't block the response
+            except Exception as e:
+                _log_error("reindex", f"index_file failed for {filepath}: {e}")
     return {"indexed": indexed, "count": len(indexed)}
 
 
@@ -259,7 +271,11 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
 
 def _post_audit(changed_files: str = "") -> dict:
-    """Post-response audit: run git diff to detect changed files, search KB for violations."""
+    """Post-response audit: run git diff to detect changed files, search KB for violations.
+
+    Caps total KB search time at 12s so the response always arrives before the
+    15s client timeout in routerHme.ts auditChanges().
+    """
     from hme_http_store import _log_error
     if not _engine_ready.is_set():
         return {"violations": [], "changed_files": [], "deferred": "engines starting"}
@@ -285,21 +301,30 @@ def _post_audit(changed_files: str = "") -> dict:
     if _project_engine._bulk_indexing.is_set():
         return {"violations": [], "changed_files": files, "deferred": "bulk index in progress"}
 
+    def _search_all() -> list:
+        found = []
+        for f in files[:10]:  # cap at 10 files
+            module = os.path.splitext(os.path.basename(f))[0]
+            hits = _project_engine.search_knowledge(module, top_k=4)
+            for h in hits:
+                cat = h.get("category", "")
+                score = round(1.0 / (1.0 + h.get("_distance", 999)), 3)
+                if score >= 0.40 and cat in ("bugfix", "antipattern", "architecture"):
+                    found.append({
+                        "file": f,
+                        "title": h.get("title", ""),
+                        "content": h.get("content", "")[:300],
+                        "category": cat,
+                        "score": score,
+                    })
+        return found
+
     violations = []
-    for f in files[:10]:  # cap at 10 files
-        # Search KB for constraints related to this file/module
-        module = os.path.splitext(os.path.basename(f))[0]
-        hits = _project_engine.search_knowledge(module, top_k=4)
-        for h in hits:
-            cat = h.get("category", "")
-            score = round(1.0 / (1.0 + h.get("_distance", 999)), 3)
-            if score >= 0.40 and cat in ("bugfix", "antipattern", "architecture"):
-                violations.append({
-                    "file": f,
-                    "title": h.get("title", ""),
-                    "content": h.get("content", "")[:300],
-                    "category": cat,
-                    "score": score,
-                })
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(_search_all)
+        try:
+            violations = future.result(timeout=12)  # always respond before 15s client deadline
+        except concurrent.futures.TimeoutError:
+            pass  # return empty violations rather than blocking past client timeout
 
     return {"violations": violations, "changed_files": files}

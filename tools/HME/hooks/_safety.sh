@@ -86,7 +86,7 @@ _hme_validate() {
 
 _hme_kb_count() {
   local json="$1"
-  _safe_int "$(_safe_jq "$json" '.kbCount' '0')"
+  _safe_int "$(_safe_jq "$json" '.kb | length' '0')"
 }
 
 _hme_kb_titles() {

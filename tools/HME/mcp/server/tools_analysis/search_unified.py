@@ -134,7 +134,7 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
     # Default: semantic search — prepend session thread for investigation continuity
     from server.tools_search import search_code as _sc
     result = _sc(query, path=path, response_format="detailed")
-    narrative = get_session_narrative()
+    narrative = get_session_narrative(max_entries=20)
     if narrative:
         result = narrative + result
     return _cache_and_return(result)

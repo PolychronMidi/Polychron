@@ -186,7 +186,7 @@ Every sketch `postBoot()` must contain **real implementation code** that creates
 
 ## HyperMeta Ecstasy
 
-Master executive for hypermeta evolutionary intelligence. 11 MCP tools (7 mega-tools + 4 operational) — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
+Master executive for hypermeta evolutionary intelligence. 13 MCP mega-tools — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
 
 **Mandatory usage (not optional):**
 - **Before modifying a file:** `read("moduleName", mode="before")` -- ONE CALL assembles KB constraints, callers, boundary warnings, file structure. Accepts module names or paths — auto-resolves.
@@ -206,7 +206,7 @@ review(mode='health')                                                           
 learn(query='density suppression')                                               -- KB search
 ```
 
-**11 tools, 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME mega-tools for KB enrichment.
+**13 tools, 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME mega-tools for KB enrichment.
 
 ## Related Documentation
 

@@ -77,6 +77,7 @@ def _scan_coupling_state(src_root: str) -> dict:
                 "emergentRhythmEngine" in content
                 or "L0.getLast('emergentRhythm'" in content
                 or 'L0.getLast("emergentRhythm"' in content
+                or "L0_CHANNELS.emergentRhythm" in content
             )
             phase_coupled = "rhythmicPhaseLock.getMode()" in content
 
