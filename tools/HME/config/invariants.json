@@ -152,10 +152,10 @@
     },
     {
       "id": "log-tool-call-fail-scan",
-      "description": "log-tool-call.sh must scan HME tool output for FAIL and write to hme-errors.log",
+      "description": "log-tool-call.sh must scan HME tool output for FAIL (with diagnostic exclusion) and write to hme-errors.log",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/log-tool-call.sh",
-      "patterns": ["FAIL", "hme-errors\\.log", "mcp__HME__"],
+      "patterns": ["FAIL", "hme-errors\\.log", "mcp__HME__", "SKIP_FAIL_SCAN"],
       "severity": "error"
     },
     {
