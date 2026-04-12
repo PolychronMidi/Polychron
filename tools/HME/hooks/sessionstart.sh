@@ -73,10 +73,8 @@ if [ "$CHANGED_COUNT" -gt 0 ] || [ "$STAGED_COUNT" -gt 0 ]; then
   HAS_STATE=true
 fi
 
-# Suggest resume if there's meaningful state to recover
-if [ "$HAS_STATE" = true ]; then
-  MSG="$MSG\n→ mcp__HME__status(mode='resume') for full session briefing"
-fi
+# Always suggest resume — live briefing complements the static primer
+MSG="$MSG\n→ status(mode='resume') for live session briefing"
 
 echo -e "HyperMeta Ecstasy active. Load skill: /HME$MSG" >&2
 exit 0

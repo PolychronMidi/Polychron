@@ -1,44 +1,77 @@
-# Polychron / HME — Agent Kickstart
+# Agent Primer
 
-You're working on a self-evolving generative music engine (487 JS files, 58K LOC). HME is the AI layer on top — semantic KB, architectural analysis, evolutionary tracking. Your job is to evolve both the music code and HME itself; they're the same loop.
+Self-evolving algorithmic composition. 482 JS files produce MIDI, rendered to WAV, analyzed by neural codecs. HME (13 MCP tools) is the evolutionary nervous system — KB, architectural analysis, enforcement hooks. They co-evolve: improving the music improves HME, improving HME improves the music.
 
-## You don't need to memorize the rules
-
-The system enforces them for you:
-
-- **Hooks** gate edits behind `read()`, accumulate review backlogs, block Stop on unreviewed work
-- **LIFESAVER** watches `log/hme-errors.log` and blocks Stop until errors are fixed — not acknowledged. Catches FAIL output from any HME tool. All errors route to `log/hme-errors.log`.
-- **CLAUDE.md** is loaded every prompt; the hard rules are already in your context
-
-When a hook blocks you, that's a diagnostic — read the message, fix the root cause, retry.
-
-## The loop
+## Boot
 
 ```
-/HME                                             ← load the skill (once per session)
-hme_admin(action='selftest')                     ← baseline health; if it fails, check log/hme-errors.log
-read("target_module", mode='before')             ← pre-edit briefing (KB + callers + boundaries)
-  → edit
-review(mode='forget')                            ← post-edit audit (auto-detects changed files)
-  → npm run main                                 ← full pipeline
-      STABLE / EVOLVED → commit
-      FAILED           → find("error text", mode="diagnose")
-find(query)                                      ← for any search; never Grep
-evolve()                                         ← when you need a next target
-evolve(focus='contradict')                       ← scan KB for conflicting entries
-evolve(focus='stress')                           ← 35 enforcement probes: hooks, ESLint, LIFESAVER, docs
-evolve(focus='invariants')                       ← declarative battery from config/invariants.json
+/HME                                    load skill (once per session)
+status(mode='resume')                   live briefing: verdict, uncommitted, session state
 ```
 
-The hooks enforce each step transition. If you skip one, the block will tell you what's missing.
+## Work Loop
 
-## Fresh eyes (calibration asks)
+```
+read("module", mode="before")           pre-edit: KB constraints + callers + boundaries + risks
+  -> edit
+review(mode='forget')                   post-edit: auto-detects changed files from git
+npm run main                            pipeline (run_in_background=true, ~5-10 min)
+  STABLE/EVOLVED -> auto-commit         descriptive message, all changed files
+  FAILED -> find("error text", mode="diagnose")
+learn(title='...', content='...')       persist calibration anchors after user-confirmed rounds
+```
 
-HME is actively being refined. After your first full cycle, note:
+Hooks enforce each transition. A block IS a diagnostic — read it, fix the cause, continue.
 
-- Do `read()` briefings surface actionable constraints, or noise?
-- Which hook blocks felt surprising vs. genuinely useful?
-- Is KB context from `find()` helping, or just historical clutter?
-- Does the `status()` session narrative give useful orientation?
+## Intelligence
 
-Bring observations back after your first confirmed round.
+```
+find(query)                             universal search: auto-routes by intent (callers/grep/semantic/coupling)
+evolve()                                next evolution target: dead-ends, bypasses, gaps, antagonism bridges
+evolve(focus='invariants')              40 declarative structural checks
+evolve(focus='stress')                  35 adversarial probes across hooks, ESLint, LIFESAVER, docs
+evolve(focus='contradict')              KB conflict scanner
+review(mode='full')                     digest + regime + trust in one call
+review(mode='composition')              section arc, drama finder, hotspot leaderboard
+```
+
+## Guardrails
+
+**Load order** (strict): `utils -> conductor -> rhythm -> time -> composers -> fx -> crossLayer -> writer -> play`
+
+**Firewalls** (ESLint-enforced):
+- conductor cannot write crossLayer state (read-only via `conductorSignalBridge`)
+- crossLayer cannot register with conductor (only local `playProb`/`stutterProb` mods)
+- inter-module communication via L0 channels only (`L0_CHANNELS.xxx` constants, never bare strings)
+- coupling matrix reads only inside `src/conductor/signal/balancing/`, `meta/`, profiler, diagnostics
+
+**Ownership**: 19 meta-controllers own all coupling constants. Never hand-tune what a controller manages. `check-hypermeta-jurisdiction.js` enforces across 4 phases. Modify controller logic instead.
+
+**New feedback loops**: register with `feedbackRegistry` + declare in `metrics/feedback_graph.json`.
+
+## Hard Rules
+
+- **Binaural 8-12Hz only.** Never experiment with frequency. `setBinaural` from grandFinale post-loop ONLY.
+- **Never remove `tmp/run.lock`.** Pipeline running or abandoned — never your problem to delete.
+- **Never abandon a plan mid-execution.** Finish the atomic unit before pivoting.
+- **Fail fast.** `validator.create('ModuleName')` for all checks. No `|| 0`, no silent returns.
+- **Globals via `require()` side-effects** in `index.js` files. Never `global.`/`globalThis.`.
+- **Comments terse.** One-line inline where logic is not self-evident. No essays.
+- **Auto-commit** after verified STABLE/EVOLVED runs. Never commit DRIFTED/FAILED.
+
+## Verify Bootstrap
+
+```
+hme_admin(action='selftest')            0 FAILs = tools + index + KB healthy
+evolve(focus='invariants')              0 errors = structural coherence holds
+```
+
+If either fails, the output tells you exactly what to fix.
+
+## Reference (consult as needed, not upfront)
+
+- `CLAUDE.md` -- complete rule set, loaded every prompt (229 lines)
+- `doc/ARCHITECTURE.md` -- beat lifecycle, signal flow, L1/L2 layer isolation
+- `doc/HME.md` -- HME internals, databases, evolution loop
+- `doc/7_LAYERS.md` -- self-coherence audit: current state of all 7 layers
+- `metrics/journal.md` -- listening verdicts and calibration anchors
