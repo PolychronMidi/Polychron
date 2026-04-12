@@ -15,9 +15,10 @@ class RAGEngineIndexingMixin:
         return list(walk_code_files(directory))
 
     def _batch_encode(self, texts: list[str]) -> list[list[float]]:
+        batch_size = getattr(self, "_embed_batch_size", BATCH_SIZE)
         results = []
-        for i in range(0, len(texts), BATCH_SIZE):
-            batch = texts[i:i + BATCH_SIZE]
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
             embeddings = self.model.encode(batch, show_progress_bar=False)
             results.extend(embeddings.tolist())
         return results
