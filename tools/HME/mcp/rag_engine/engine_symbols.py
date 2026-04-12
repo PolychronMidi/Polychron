@@ -48,8 +48,16 @@ class RAGEngineSymbolsMixin:
             rows = self.symbol_table.to_arrow().to_pylist()
             results = []
             name_lower = name.lower()
+            # Support dotted paths: "module.method" → search for "method" in files matching "module"
+            _module_filter = ""
+            if "." in name_lower:
+                parts = name_lower.rsplit(".", 1)
+                _module_filter = parts[0]
+                name_lower = parts[1]
             for r in rows:
                 if r["name"].lower() != name_lower:
+                    continue
+                if _module_filter and _module_filter not in r["file"].lower():
                     continue
                 if kind and r["kind"] != kind:
                     continue

@@ -132,6 +132,13 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
         return "No trace.jsonl found. Run `npm run main` to generate."
 
     module_lower = module.lower()
+    # Build alias list: original name + common prefix strippings for crossLayer modules
+    _aliases = {module_lower}
+    for prefix in ("crosslayer", "adaptive", "emergent", "section"):
+        if module_lower.startswith(prefix):
+            _aliases.add(module_lower[len(prefix):])
+    # Also try adding "crosslayer" prefix for short names like "climaxEngine"
+    _aliases.add("crosslayer" + module_lower)
     beats = []
     total_beats = 0
     try:
@@ -155,9 +162,10 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
 
                 values = {}
                 trust = record.get("trust", {})
-                if module_lower in {k.lower() for k in trust}:
+                _trust_keys_lower = {k.lower() for k in trust}
+                if _aliases & _trust_keys_lower:
                     for k, v in trust.items():
-                        if k.lower() == module_lower and isinstance(v, dict):
+                        if k.lower() in _aliases and isinstance(v, dict):
                             values["score"] = round(v.get("score", 0), 3)
                             values["weight"] = round(v.get("weight", 0), 3)
                             dp = v.get("dominantPair", "")
@@ -169,7 +177,7 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
 
                 snap = record.get("snap", {})
                 for k, v in snap.items():
-                    if module_lower in k.lower():
+                    if any(a in k.lower() for a in _aliases):
                         if isinstance(v, (int, float)):
                             values[k] = round(v, 4) if isinstance(v, float) else v
                         elif isinstance(v, str) and len(v) < 50:
@@ -178,7 +186,7 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
                 for k, v in record.items():
                     if k in ("trust", "snap", "notes", "stageTiming"):
                         continue
-                    if module_lower in k.lower():
+                    if any(a in k.lower() for a in _aliases):
                         if isinstance(v, (int, float)):
                             values[k] = round(v, 4) if isinstance(v, float) else v
                         elif isinstance(v, str) and len(v) < 80:
@@ -187,7 +195,7 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
                 labels = record.get("couplingLabels", {})
                 if isinstance(labels, dict):
                     for k, v in labels.items():
-                        if module_lower in k.lower():
+                        if any(a in k.lower() for a in _aliases):
                             values[f"coupling:{k}"] = v
 
                 if values:
