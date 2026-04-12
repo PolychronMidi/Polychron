@@ -14,7 +14,8 @@
     "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry",
     "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other",
     "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)",
-    "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)"
+    "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)",
+    "shell_output_empty": "Run shell command; pass if stdout is empty, fail if any output produced. Use for git-clean checks."
   },
   "invariants": [
     {
@@ -336,6 +337,13 @@
       "description": "current-run.json unified pointer must be valid JSON",
       "type": "json_valid",
       "path": "metrics/current-run.json",
+      "severity": "error"
+    },
+    {
+      "id": "git-no-untracked",
+      "description": "No untracked files exist outside .gitignore — every intentional file must be committed",
+      "type": "shell_output_empty",
+      "shell": "git ls-files --others --exclude-standard",
       "severity": "error"
     }
   ]

@@ -282,6 +282,28 @@ def _check_kb_content_no_pattern(inv: dict) -> tuple[bool, str]:
     return True, f"all {len(entries)} entries clean"
 
 
+def _check_shell_output_empty(inv: dict) -> tuple[bool, str]:
+    """Run a shell command; pass if stdout is empty, fail if it produces any output.
+
+    Use for git-clean checks: shell='git ls-files --others --exclude-standard'
+    fails if any untracked non-gitignored files exist.
+    Optional 'cwd' key (default: PROJECT_ROOT).
+    """
+    import subprocess
+    shell_cmd = inv["shell"]
+    cwd = inv.get("cwd", ctx.PROJECT_ROOT)
+    result = subprocess.run(
+        shell_cmd, shell=True, capture_output=True, text=True, cwd=cwd
+    )
+    output = result.stdout.strip()
+    if output:
+        lines = output.splitlines()
+        preview = ", ".join(lines[:5])
+        suffix = f" (+{len(lines)-5} more)" if len(lines) > 5 else ""
+        return False, f"{len(lines)} untracked file(s): {preview}{suffix}"
+    return True, "no untracked files"
+
+
 # ── Main entry point ────────────────────────────────────────────────────────
 
 def _eval(inv: dict) -> tuple[bool, str]:
@@ -300,6 +322,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "files_mtime_window": _check_files_mtime_window,
         "kb_content_no_pattern": _check_kb_content_no_pattern,
         "kb_freshness": _check_kb_freshness,
+        "shell_output_empty": _check_shell_output_empty,
     }
     inv_type = inv.get("type", "")
     checker = checkers.get(inv_type)
