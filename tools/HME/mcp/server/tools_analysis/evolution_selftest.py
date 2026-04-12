@@ -266,6 +266,8 @@ def hme_selftest() -> str:
         results.append(f"{'PASS' if os.path.islink(path) else 'FAIL'}: {target} -- {path}")
 
     passed = sum(1 for r in results if r.startswith("PASS"))
+    failed = sum(1 for r in results if r.startswith("FAIL"))
     total = len(results)
-    header = f"## HME Self-Test: {passed}/{total} passed\n"
+    verdict = "READY" if failed == 0 else f"{failed} FAIL"
+    header = f"## HME Self-Test: {passed}/{total} passed ({verdict})\n"
     return header + "\n".join(f"  {r}" for r in results)

@@ -4,6 +4,8 @@ description: Hypermeta evolutionary intelligence. 11 MCP mega-tools for semantic
 allowed-tools: mcp__HME__*
 ---
 
+First session? Read `doc/AGENT_PRIMER.md` for full onboarding.
+
 # 11 Mega-Tools
 
 | Tool | When to Use |
