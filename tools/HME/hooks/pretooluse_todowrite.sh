@@ -8,6 +8,10 @@ INPUT=$(cat)
 TODOS=$(_safe_jq "$INPUT" '[.tool_input.todos[]? | .content] | join("\n  - ")' '')
 if [ -z "$TODOS" ]; then TODOS="(no items parsed)"; fi
 
-jq -n --arg todos "$TODOS" \
-  '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":("Use mcp__HME__todo instead of TodoWrite — it supports hierarchical subtodos and auto-completion.\n\nYour tasks:\n  - " + $todos + "\n\nAPI: mcp__HME__todo(action=\"add\", text=\"task\") for main todos.\nmcp__HME__todo(action=\"add\", text=\"subtask\", parent_id=N) for subtodos.\nmcp__HME__todo(action=\"done\", todo_id=N) to complete. Main auto-completes when all subs done.\nmcp__HME__todo(action=\"list\") to view.")}'
-exit 0
+HME_LOG="${CLAUDE_PROJECT_DIR:-$(pwd)}/log/hme.log"
+printf '%s INFO hook: TodoWrite REDIRECTED → mcp__HME__todo (%s)\n' \
+  "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TODOS" >> "$HME_LOG" 2>/dev/null
+
+MSG="BLOCKED: Use mcp__HME__todo instead of TodoWrite — subtodo support + auto-completion.\n\nYour tasks:\n  - ${TODOS}\n\nAPI: mcp__HME__todo(action=\"add\", text=\"task\") | mcp__HME__todo(action=\"done\", todo_id=N) | mcp__HME__todo(action=\"list\")"
+jq -n --arg msg "$MSG" '{"decision":"block","reason":$msg}'
+exit 2
