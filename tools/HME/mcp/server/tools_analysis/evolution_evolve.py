@@ -745,8 +745,8 @@ def _adversarial_stress() -> str:
     eslint_dir = os.path.join(ctx.PROJECT_ROOT, "scripts", "eslint-rules")
     if os.path.isdir(eslint_dir):
         rules = [f for f in os.listdir(eslint_dir) if f.endswith(".js")]
-        results.append((f"ESLint: {len(rules)} custom rules (need >=21)",
-                        len(rules) >= 21, "" if len(rules) >= 21 else f"only {len(rules)}"))
+        results.append((f"ESLint: {len(rules)} custom rules (need >=22)",
+                        len(rules) >= 22, "" if len(rules) >= 22 else f"only {len(rules)}"))
     else:
         results.append(("ESLint: rules directory exists", False, "scripts/eslint-rules/ missing"))
 

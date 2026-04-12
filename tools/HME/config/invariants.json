@@ -394,6 +394,22 @@
       "exclude": ["_*.sh", "hooks.json"],
       "reference_file": "doc/HME.md",
       "severity": "warning"
+    },
+    {
+      "id": "nexus-functions-complete",
+      "description": "_nexus.sh must define all 10 lifecycle state functions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/_nexus.sh",
+      "patterns": ["_nexus_ensure", "_nexus_reset", "_nexus_add", "_nexus_mark", "_nexus_clear_type", "_nexus_has", "_nexus_count", "_nexus_get", "_nexus_list", "_nexus_pending"],
+      "severity": "error"
+    },
+    {
+      "id": "tab-helpers-functions-complete",
+      "description": "_tab_helpers.sh must define all 4 compact tab functions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/_tab_helpers.sh",
+      "patterns": ["_tab_path", "_ensure_tab", "_append_file_to_tab", "_extract_bg_output_path"],
+      "severity": "error"
     }
   ]
 }
