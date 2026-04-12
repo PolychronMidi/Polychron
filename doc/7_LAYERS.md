@@ -30,7 +30,7 @@ Each layer has: current state and items for next dedicated pass.
 
 ### Next pass
 - [ ] Verify EnCodec S1 WAV truncation hypothesis — verify S0 entropy in next successful pipeline run with EnCodec section breakdown
-- [ ] status_unified.py freshness now shows current-run.json (wired); verify it appears after pipeline run
+- current-run.json now appears in freshness display (verified after reload)
 
 ## Layer 5: Architectural Intelligence (MATURE)
 
