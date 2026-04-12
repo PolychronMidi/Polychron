@@ -1,0 +1,242 @@
+{
+  "_comment": "Declarative invariant battery for evolve(focus='invariants'). Add new checks as JSON — no Python changes needed.",
+  "_types": {
+    "files_executable": "All files matching glob (minus exclude) must be executable",
+    "files_referenced": "All files matching glob must appear in reference_file. match_mode='stem' strips extension before matching",
+    "file_exists": "File at path must exist",
+    "symlink_valid": "Symlink at path must resolve to existing target",
+    "json_valid": "File at path must be valid JSON",
+    "glob_count_gte": "Count of files matching glob (minus exclude) must be >= min_count",
+    "pattern_in_file": "Regex pattern must match somewhere in file at path",
+    "patterns_all_in_file": "All patterns (array) must match somewhere in file at path",
+    "pattern_count_gte": "Count of regex matches in file must be >= min_count",
+    "symbols_used": "Every symbol matching definition_pattern in definition_file must appear in files matching usage_glob (usage_pattern template with {symbol} placeholder)"
+  },
+  "invariants": [
+    {
+      "id": "hooks-executable",
+      "description": "Every hook script must be executable",
+      "type": "files_executable",
+      "glob": "tools/HME/hooks/*.sh",
+      "exclude": ["_*.sh"],
+      "severity": "error"
+    },
+    {
+      "id": "hooks-registered",
+      "description": "Every hook script (excluding helpers) must be registered in settings.json",
+      "type": "files_referenced",
+      "glob": "tools/HME/hooks/*.sh",
+      "exclude": ["_*.sh", "hooks.json"],
+      "reference_file": "tools/HME/settings.json",
+      "severity": "error"
+    },
+    {
+      "id": "eslint-rules-registered",
+      "description": "Every custom ESLint rule must be registered in eslint.config.mjs",
+      "type": "files_referenced",
+      "glob": "scripts/eslint-rules/*.js",
+      "exclude": ["index.js"],
+      "reference_file": "eslint.config.mjs",
+      "match_mode": "stem",
+      "severity": "error"
+    },
+    {
+      "id": "symlink-mcp",
+      "description": "MCP symlink must resolve to tools/HME/mcp",
+      "type": "symlink_valid",
+      "path": "~/.claude/mcp/HME",
+      "severity": "error"
+    },
+    {
+      "id": "symlink-skills",
+      "description": "Skills symlink must resolve to tools/HME/skills",
+      "type": "symlink_valid",
+      "path": "~/.claude/skills/HME",
+      "severity": "error"
+    },
+    {
+      "id": "project-rules-valid",
+      "description": "project-rules.json must be valid JSON",
+      "type": "json_valid",
+      "path": "tools/HME/config/project-rules.json",
+      "severity": "error"
+    },
+    {
+      "id": "invariants-config-valid",
+      "description": "invariants.json must be valid JSON (meta-invariant)",
+      "type": "json_valid",
+      "path": "tools/HME/config/invariants.json",
+      "severity": "error"
+    },
+    {
+      "id": "mcp-json-valid",
+      "description": ".mcp.json must be valid JSON",
+      "type": "json_valid",
+      "path": ".mcp.json",
+      "severity": "error"
+    },
+    {
+      "id": "feedback-graph-valid",
+      "description": "feedback_graph.json must be valid JSON",
+      "type": "json_valid",
+      "path": "metrics/feedback_graph.json",
+      "severity": "error"
+    },
+    {
+      "id": "adaptive-state-valid",
+      "description": "adaptive-state.json must be valid JSON",
+      "type": "json_valid",
+      "path": "metrics/adaptive-state.json",
+      "severity": "warning"
+    },
+    {
+      "id": "bias-manifest-exists",
+      "description": "Bias bounds manifest must exist for Phase 3 enforcement",
+      "type": "file_exists",
+      "path": "scripts/pipeline/bias-bounds-manifest.json",
+      "severity": "error"
+    },
+    {
+      "id": "globals-dts-exists",
+      "description": "globals.d.ts must exist for TypeScript ambient declarations",
+      "type": "file_exists",
+      "path": "src/types/globals.d.ts",
+      "severity": "error"
+    },
+    {
+      "id": "journal-exists",
+      "description": "Evolution journal must exist for calibration anchors",
+      "type": "file_exists",
+      "path": "metrics/journal.md",
+      "severity": "warning"
+    },
+    {
+      "id": "eslint-rules-count",
+      "description": "Must have at least 22 custom ESLint rules",
+      "type": "glob_count_gte",
+      "glob": "scripts/eslint-rules/*.js",
+      "exclude": ["index.js"],
+      "min_count": 22,
+      "severity": "error"
+    },
+    {
+      "id": "stutter-variants-count",
+      "description": "Must have at least 19 stutter variant files",
+      "type": "glob_count_gte",
+      "glob": "src/fx/stutter/variants/*.js",
+      "exclude": ["index.js"],
+      "min_count": 19,
+      "severity": "warning"
+    },
+    {
+      "id": "l0-channels-defined",
+      "description": "l0Channels.js must define at least 25 channel constants",
+      "type": "pattern_count_gte",
+      "path": "src/time/l0Channels.js",
+      "pattern": "  \\w+:\\s*'\\w",
+      "min_count": 25,
+      "severity": "error"
+    },
+    {
+      "id": "stop-hook-enforcement",
+      "description": "Stop hook must have all critical enforcement sections",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/stop.sh",
+      "patterns": ["hme-errors\\.log", "hme-evolver\\.local\\.md", "_nexus_pending", "ANTI-POLLING", "PLAN-ABANDONMENT"],
+      "severity": "error"
+    },
+    {
+      "id": "log-tool-call-fail-scan",
+      "description": "log-tool-call.sh must scan HME tool output for FAIL and write to hme-errors.log",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/log-tool-call.sh",
+      "patterns": ["FAIL", "hme-errors\\.log", "mcp__HME__"],
+      "severity": "error"
+    },
+    {
+      "id": "safety-helpers-complete",
+      "description": "_safety.sh must define all required helper functions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/_safety.sh",
+      "patterns": ["_safe_jq", "_safe_py3", "_safe_int", "_hme_enrich", "_hme_kb_count", "_streak_tick", "_streak_reset"],
+      "severity": "error"
+    },
+    {
+      "id": "l0-channels-used",
+      "description": "Every L0_CHANNELS constant must be referenced in at least one src/ file",
+      "type": "symbols_used",
+      "definition_file": "src/time/l0Channels.js",
+      "definition_pattern": "\\b(\\w+)\\s*:",
+      "usage_glob": "src/**/*.js",
+      "usage_pattern": "L0_CHANNELS\\.{symbol}",
+      "min_usages": 1,
+      "severity": "warning"
+    },
+    {
+      "id": "settings-json-valid",
+      "description": "Hook settings must be valid JSON",
+      "type": "json_valid",
+      "path": "tools/HME/settings.json",
+      "severity": "error"
+    },
+    {
+      "id": "hme-http-shim-exists",
+      "description": "HTTP shim script must exist for session enrichment",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/hme_http.py",
+      "severity": "error"
+    },
+    {
+      "id": "pipeline-main-exists",
+      "description": "Pipeline main script must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "severity": "error"
+    },
+    {
+      "id": "nexus-helper-exists",
+      "description": "NEXUS state helper must exist for edit tracking hooks",
+      "type": "file_exists",
+      "path": "tools/HME/hooks/_nexus.sh",
+      "severity": "error"
+    },
+    {
+      "id": "settings-has-all-events",
+      "description": "settings.json must register hooks for all 7 lifecycle events",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/settings.json",
+      "patterns": ["SessionStart", "PreToolUse", "PostToolUse", "UserPromptSubmit", "PreCompact", "PostCompact", "Stop"],
+      "severity": "error"
+    },
+    {
+      "id": "scripts-executable",
+      "description": "Every shell script in scripts/ must be executable",
+      "type": "files_executable",
+      "glob": "scripts/*.sh",
+      "exclude": ["_*.sh"],
+      "severity": "error"
+    },
+    {
+      "id": "log-dir-exists",
+      "description": "log/ directory must exist for LIFESAVER and error logging",
+      "type": "file_exists",
+      "path": "log",
+      "severity": "error"
+    },
+    {
+      "id": "tmp-dir-exists",
+      "description": "tmp/ directory must exist for LIFESAVER watermarks and session state",
+      "type": "file_exists",
+      "path": "tmp",
+      "severity": "warning"
+    },
+    {
+      "id": "run-history-snapshots",
+      "description": "Must have at least 5 run-history snapshots",
+      "type": "glob_count_gte",
+      "glob": "metrics/run-history/*.json",
+      "min_count": 5,
+      "severity": "info"
+    }
+  ]
+}

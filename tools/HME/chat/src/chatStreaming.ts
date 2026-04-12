@@ -42,9 +42,9 @@ export function runPostAudit(ctx: ChatCtx, changedFiles?: Set<string>) {
     ctx.transcript.logAudit(changed_files.length, violations.length);
     if (violations.length > 0) {
       const summary = violations
-        .map((v: any) => `• [${v.category}] ${v.file}: ${v.title}`)
-        .join("\n");
-      ctx.post({ type: "notice", level: "audit", text: `HME post-audit (${changed_files.length} files changed):\n${summary}` });
+        .map((v: any) => `[${v.category}] ${v.file}: ${v.title}`)
+        .join("; ");
+      ctx.postError("audit", `post-audit (${changed_files.length} files): ${summary}`);
     }
   }).catch((e: any) => ctx.postError("audit", String(e)));
 }

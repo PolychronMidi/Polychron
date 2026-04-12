@@ -7,7 +7,7 @@ You're working on a self-evolving generative music engine (487 JS files, 58K LOC
 The system enforces them for you:
 
 - **Hooks** gate edits behind `read()`, accumulate review backlogs, block Stop on unreviewed work
-- **LIFESAVER** watches `log/hme-errors.log` and blocks Stop until errors are fixed — not acknowledged
+- **LIFESAVER** watches `log/hme-errors.log` and blocks Stop until errors are fixed — not acknowledged. Catches FAIL output from any HME tool. All errors route to `log/hme-errors.log`.
 - **CLAUDE.md** is loaded every prompt; the hard rules are already in your context
 
 When a hook blocks you, that's a diagnostic — read the message, fix the root cause, retry.
@@ -25,6 +25,9 @@ review(mode='forget')                            ← post-edit audit (auto-detec
       FAILED           → find("error text", mode="diagnose")
 find(query)                                      ← for any search; never Grep
 evolve()                                         ← when you need a next target
+evolve(focus='contradict')                       ← scan KB for conflicting entries
+evolve(focus='stress')                           ← 35 enforcement probes: hooks, ESLint, LIFESAVER, docs
+evolve(focus='invariants')                       ← declarative battery from config/invariants.json
 ```
 
 The hooks enforce each step transition. If you skip one, the block will tell you what's missing.

@@ -5,6 +5,24 @@ cat > /dev/null  # consume stdin
 
 PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 
+# Failfast: verify all hook scripts are executable before any run
+HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ERROR_LOG="${PROJECT}/log/hme-errors.log"
+BROKEN_HOOKS=()
+for hook in "$HOOKS_DIR"/*.sh; do
+  name="$(basename "$hook")"
+  [[ "$name" == _* ]] && continue
+  [[ -x "$hook" ]] || BROKEN_HOOKS+=("$name")
+done
+if [[ "${#BROKEN_HOOKS[@]}" -gt 0 ]]; then
+  TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  mkdir -p "$(dirname "$ERROR_LOG")"
+  for name in "${BROKEN_HOOKS[@]}"; do
+    echo "[$TS] [hooks] FAIL: $name not executable — run: chmod +x tools/HME/hooks/$name" >> "$ERROR_LOG"
+  done
+  echo "🚨 LIFESAVER: ${#BROKEN_HOOKS[@]} hook(s) not executable: ${BROKEN_HOOKS[*]} — logged to hme-errors.log" >&2
+fi
+
 # Reset compact tab and nexus state for fresh session
 mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-tab.txt"

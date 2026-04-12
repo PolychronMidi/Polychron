@@ -46,6 +46,7 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   if [[ -n "$FAILS" ]]; then
     PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
     ERROR_LOG="$PROJECT/log/hme-errors.log"
+    mkdir -p "$(dirname "$ERROR_LOG")"
     FAIL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     while IFS= read -r line; do
       echo "[$FAIL_TS] $TOOL_NAME: $line" >> "$ERROR_LOG"

@@ -26,7 +26,7 @@ RELOADABLE = [
     "section_compare", "perceptual", "perceptual_engines",
     "coupling_channels", "coupling_data", "coupling_clusters", "coupling_bridges", "coupling",
     "drama_map", "health_analysis", "section_labels",
-    "evolution_evolve", "search_unified", "review_unified",
+    "evolution_evolve", "evolution_invariants", "search_unified", "review_unified",
     "read_unified", "learn_unified", "status_unified", "trace_unified",
     "todo", "enrich_prompt",
 ]

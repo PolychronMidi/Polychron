@@ -174,7 +174,9 @@ function writeSummaryJSON(wallTime) {
     fs.writeFileSync(path.join(outDir, 'pipeline-summary.json'), JSON.stringify(summary, null, 2) + '\n');
     console.log('  Pipeline summary -> metrics/pipeline-summary.json');
   } catch (e) {
-    console.warn('  WARNING: failed to write pipeline-summary.json: ' + (e && e.message ? e.message : e));
+    console.error('  FAILFAST: pipeline-summary.json write failed: ' + (e && e.message ? e.message : e));
+    console.error('  Summary dump: ' + JSON.stringify(summary));
+    throw e;
   }
 }
 

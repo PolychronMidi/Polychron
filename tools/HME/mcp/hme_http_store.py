@@ -35,8 +35,10 @@ def init_store(project_root: str) -> None:
 # ── Critical error log ────────────────────────────────────────────────────────
 
 def _log_error(source: str, message: str, detail: str = "") -> None:
-    """Append a critical error to the in-memory log and hme-errors.log."""
+    """Append a critical error to the in-memory log and hme-errors.log.
+    Transient timeouts go to memory only (not disk) — they're operational, not code defects."""
     global _error_log
+    _transient = "timeout" in message.lower() and ("unreachable" in message.lower() or "/enrich" in message or "/audit" in message or "/reindex" in message)
     entry = {
         "ts": int(time.time() * 1000),
         "ts_str": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -48,15 +50,16 @@ def _log_error(source: str, message: str, detail: str = "") -> None:
         _error_log.append(entry)
         if len(_error_log) > _MAX_ERRORS_MEMORY:
             _error_log = _error_log[-_MAX_ERRORS_MEMORY:]
-    try:
-        os.makedirs(os.path.dirname(_ERRORS_PATH), exist_ok=True)
-        with open(_ERRORS_PATH, "a") as f:
-            f.write(f"[{entry['ts_str']}] [{source}] {message}")
-            if detail:
-                f.write(f" | {detail}")
-            f.write("\n")
-    except Exception as e:
-        print(f"[HME FAILFAST] Error log disk write failed: {e}", file=sys.stderr, flush=True)
+    if not _transient:
+        try:
+            os.makedirs(os.path.dirname(_ERRORS_PATH), exist_ok=True)
+            with open(_ERRORS_PATH, "a") as f:
+                f.write(f"[{entry['ts_str']}] [{source}] {message}")
+                if detail:
+                    f.write(f" | {detail}")
+                f.write("\n")
+        except Exception as e:
+            print(f"[HME FAILFAST] Error log disk write failed: {e}", file=sys.stderr, flush=True)
 
 
 def _get_recent_errors(minutes: int = 60) -> list[dict]:

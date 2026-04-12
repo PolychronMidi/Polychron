@@ -36,6 +36,7 @@ def _reindex_files(files: list[str]) -> dict:
         return {"indexed": [], "count": 0, "deferred": "bulk index in progress"}
 
     indexed = []
+    skipped = []
     # Budget: 25s total across all files (safely under 30s client timeout).
     # Each file gets at most 5s; if it times out we skip and continue.
     import time as _time
@@ -43,10 +44,13 @@ def _reindex_files(files: list[str]) -> dict:
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         for filepath in files[:20]:
             if _time.monotonic() >= deadline:
+                skipped.extend(f for f in files[:20] if f not in indexed and f != filepath)
+                skipped.append(filepath)
                 break
             abs_path = filepath if os.path.isabs(filepath) else os.path.join(PROJECT_ROOT, filepath)
             if not os.path.exists(abs_path):
                 _log_error("reindex", f"file not found: {filepath}")
+                skipped.append(filepath)
                 continue
             remaining = max(1, deadline - _time.monotonic())
             future = executor.submit(_project_engine.index_file, abs_path)
@@ -54,10 +58,15 @@ def _reindex_files(files: list[str]) -> dict:
                 future.result(timeout=min(5, remaining))
                 indexed.append(filepath)
             except concurrent.futures.TimeoutError:
-                pass  # skip this file; don't block the response
+                _log_error("reindex", f"timeout indexing {filepath} (5s)")
+                skipped.append(filepath)
             except Exception as e:
                 _log_error("reindex", f"index_file failed for {filepath}: {e}")
-    return {"indexed": indexed, "count": len(indexed)}
+                skipped.append(filepath)
+    result = {"indexed": indexed, "count": len(indexed)}
+    if skipped:
+        result["skipped"] = skipped
+    return result
 
 
 def _enrich(query: str, top_k: int = 5) -> dict:
@@ -183,16 +192,16 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
                 for e in entries[-3:]:
                     lines.append(f"  {e.get('type','')}: {str(e.get('content',''))[:100]}")
                 assembled_parts.append("\n".join(lines))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.info(f"enrich_prompt: transcript load failed: {e}")
         summary_path = os.path.join(PROJECT_ROOT, "metrics", "pipeline-summary.json")
         if os.path.exists(summary_path):
             try:
                 with open(summary_path) as f:
                     ps = _json.load(f)
                 assembled_parts.append(f"[Pipeline: {ps.get('verdict', 'unknown')}]")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.info(f"enrich_prompt: pipeline summary load failed: {e}")
 
     assembled = "\n\n".join(assembled_parts)
     trace["assembly_ms"] = int((_time.monotonic() - t1) * 1000)
@@ -320,11 +329,16 @@ def _post_audit(changed_files: str = "") -> dict:
         return found
 
     violations = []
+    truncated = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(_search_all)
         try:
-            violations = future.result(timeout=12)  # always respond before 15s client deadline
+            violations = future.result(timeout=12)
         except concurrent.futures.TimeoutError:
-            pass  # return empty violations rather than blocking past client timeout
+            truncated = True
+            logger.warning(f"audit: KB search timed out (12s) for {len(files)} files")
 
-    return {"violations": violations, "changed_files": files}
+    result = {"violations": violations, "changed_files": files}
+    if truncated:
+        result["truncated"] = True
+    return result
