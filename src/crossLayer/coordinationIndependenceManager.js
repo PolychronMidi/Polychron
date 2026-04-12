@@ -5,6 +5,7 @@
 // bridge, writes to peer crossLayer modules via setCoordinationScale).
 
 coordinationIndependenceManager = (() => {
+  const V = validator.create('coordinationIndependenceManager');
 
   // Module pairs and their coordination dials (0=independent, 1=coordinated)
   const MODULE_PAIRS = [
@@ -104,17 +105,19 @@ coordinationIndependenceManager = (() => {
     const phase = sigs.sectionPhase || 'development';
     // Xenolinguistic L2: regime superposition -- blend targets by probability instead of hard switch
     const rp = sigs.regimeProb || { coherent: 0.33, exploring: 0.33, evolving: 0.34 };
-    const phaseTarget = PHASE_TARGETS[phase] || 0.5;
-    const regimeTarget = (REGIME_TARGETS.coherent || 0.75) * rp.coherent
-      + (REGIME_TARGETS.exploring || 0.25) * rp.exploring
-      + (REGIME_TARGETS.evolving || 0.5) * rp.evolving;
-    const topoTarget = TOPOLOGY_TARGETS[sigs.topologyPhase] || 0.5;
+    const phaseTarget = PHASE_TARGETS[phase];
+    if (phaseTarget === undefined) throw new Error('coordinationIndependenceManager: unknown sectionPhase "' + phase + '"');
+    const regimeTarget = REGIME_TARGETS.coherent * rp.coherent
+      + REGIME_TARGETS.exploring * rp.exploring
+      + REGIME_TARGETS.evolving * rp.evolving;
+    const topoTarget = TOPOLOGY_TARGETS[sigs.topologyPhase];
+    if (topoTarget === undefined) throw new Error('coordinationIndependenceManager: unknown topologyPhase "' + sigs.topologyPhase + '"');
 
     // Intent-aware: read actual interactionTarget from sectionIntentCurves
     // which encodes trajectory learning, contrast bias, and phase position.
     // Blends with the static phase target for a more nuanced dial.
     const lastIntent = safePreBoot.call(() => sectionIntentCurves.getLastIntent(), null);
-    const intentInteraction = lastIntent ? clamp(lastIntent.interactionTarget || 0.5, 0, 1) : 0.5;
+    const intentInteraction = lastIntent ? clamp(V.optionalFinite(lastIntent.interactionTarget, 0.5), 0, 1) : 0.5;
 
     // Entropy modulation: high coherenceEntropy = loosen coordination
     const entropyBias = clamp((sigs.coherenceEntropy - 0.5) * -0.3, -0.15, 0.15);
