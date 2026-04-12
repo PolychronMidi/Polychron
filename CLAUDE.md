@@ -204,6 +204,9 @@ read("crossLayerClimaxEngine", mode="story")                                    
 review(mode='forget')                                                            -- post-change audit (auto-detects from git)
 review(mode='health')                                                            -- full-repo sweep
 learn(query='density suppression')                                               -- KB search
+evolve(focus='contradict')                                                       -- scan KB for conflicting entries
+evolve(focus='stress')                                                           -- 35 enforcement probes across LIFESAVER, hooks, ESLint, docs
+evolve(focus='invariants')                                                       -- declarative battery from config/invariants.json (no Python needed)
 ```
 
 **13 tools, 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME mega-tools for KB enrichment.

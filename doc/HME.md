@@ -13,7 +13,7 @@ No layer is optional. Removing any one collapses the executive.
 | **MCP Server** | `tools/HME/` | 13 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 5 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern/enrich_prompt) + todo |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
-| **Hooks** | `hooks/` (6 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
+| **Hooks** | `hooks/` (22 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
 | **Evolver + Lab** | `.github/agents/Evolver.agent.md` + `lab/` | 7-phase evolution loop + experimental harness |
 
 ## Self-Evolution
@@ -257,6 +257,9 @@ All capabilities route through 7 mega-tools + 5 operational tools + todo. There 
 | `"pipeline"` | Pipeline-based evolution suggestions |
 | `"patterns"` | Meta-patterns across journal rounds: confirm rates, subsystem receptivity |
 | `"seed"` | Auto-generate starter KB entries for high-dependency modules with zero coverage |
+| `"contradict"` | Full KB pairwise contradiction scan — finds conflicting entries, suggests resolution |
+| `"stress"` | Adversarial self-play — 35 enforcement probes across LIFESAVER, hooks, ESLint, feedback graph, selftest |
+| `"invariants"` | Declarative invariant battery — loads checks from `config/invariants.json`. 10 check types, extensible without Python changes |
 
 ### 2. `find(query, path, mode)` — Universal search + analysis
 
@@ -420,7 +423,7 @@ Returns `{enriched, original, triage, trace}`. Available via MCP tool, HTTP shim
 
 All hooks live in `tools/HME/hooks/` as standalone scripts, referenced from `.claude/settings.json`. This keeps hook logic version-controlled, testable, and visible from the HME directory.
 
-### Hook Scripts (16 hooks across 7 lifecycle events)
+### Hook Scripts (22 hooks across 7 lifecycle events)
 
 All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` for weighted streak counter (`_streak_tick WEIGHT` / `_streak_check` / `_streak_reset`) and HME HTTP enrichment helpers (`_hme_enrich` / `_hme_validate` / `_hme_kb_count` / `_hme_kb_titles`). Streak weights: Read=5, Edit=10, Write=10, Bash=15, Grep=20. Warns at 50, blocks at 70.
 
@@ -433,12 +436,17 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim; remind `find()` for enriched search; multiline exempt |
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement |
-| `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: warn to stderr when `mcp__HME__*` tools exceed 15-30s threshold |
+| `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | Block repeated check_pipeline calls (polling anti-pattern — one call per turn max) |
+| `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
+| `posttooluse_read.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
+| `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
-| `posttooluse_addknowledge.sh` | PostToolUse | add_knowledge | Clear `KB:` entries from tab after save |
+| `posttooluse_hme_read.sh` | PostToolUse | mcp__HME__read | Track briefed files to NEXUS; reset streak |
+| `posttooluse_hme_review.sh` | PostToolUse | mcp__HME__review | Clear NEXUS edit backlog on `forget` mode; point to next step (pipeline / commit) |
+| `posttooluse_addknowledge.sh` | PostToolUse | mcp__HME__add_knowledge | Clear `KB:` entries from tab after save |
 | `userpromptsubmit.sh` | UserPromptSubmit | * | Inject Evolver context on evolution-related prompts |
 | `precompact.sh` | PreCompact | * | Surface `KB:`/`FILE:` entries from tab + untracked `tmp/` files |
 | `postcompact.sh` | PostCompact | * | Re-surface the same tab state after compaction |

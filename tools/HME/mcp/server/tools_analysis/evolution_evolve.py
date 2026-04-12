@@ -37,7 +37,12 @@ def evolve(focus: str = "all") -> str:
     with resolution suggestions (merge, supersede, or tag contradicts).
     focus='stress': adversarial self-play — runs enforcement probes against LIFESAVER,
     boundary rules, doc sync, hook registration, selftest, and other guardrails.
-    Reports gaps in enforcement that could let violations slip through."""
+    Reports gaps in enforcement that could let violations slip through.
+    focus='invariants': declarative invariant battery — loads checks from
+    config/invariants.json and evaluates each one. Add new invariants as JSON
+    without modifying Python. 10 check types: files_executable, files_referenced,
+    file_exists, symlink_valid, json_valid, glob_count_gte, pattern_in_file,
+    patterns_all_in_file, pattern_count_gte, symbols_used."""
     _track("evolve")
     append_session_narrative("evolve", f"evolve({focus})")
     ctx.ensure_ready_sync()
@@ -82,6 +87,10 @@ def evolve(focus: str = "all") -> str:
 
     if focus == "stress":
         return _adversarial_stress()
+
+    if focus == "invariants":
+        from .evolution_invariants import check_invariants
+        return check_invariants()
 
     return "\n".join(parts)
 
@@ -505,8 +514,13 @@ def _auto_curate() -> str:
 
 
 def _detect_contradictions() -> str:
-    """Full KB contradiction scan — find entries that are related but conflicting."""
+    """Full KB contradiction scan — find entries that are related but conflicting.
+
+    Two passes: (1) semantic similarity band for topically-related pairs,
+    (2) same-category pairs with shared title keywords (catches rephrased conflicts).
+    """
     import numpy as np
+    import re
 
     entries = ctx.project_engine.list_knowledge_full()
     if len(entries) < 2:
@@ -523,76 +537,120 @@ def _detect_contradictions() -> str:
     normalized = vectors / norms
     sim_matrix = np.dot(normalized, normalized.T)
 
+    seen_pairs = set()
     candidates = []
+
+    # Pass 1: similarity band — topically related but not redundant
     for i in range(len(entries)):
         for j in range(i + 1, len(entries)):
             sim = float(sim_matrix[i, j])
-            if 0.40 < sim < 0.85:
+            if 0.30 < sim < 0.85:
                 candidates.append((i, j, sim))
+                seen_pairs.add((i, j))
+
+    # Pass 2: same-category + shared title keywords (catches rephrased conflicts)
+    def _title_tokens(t):
+        return {w.lower() for w in re.findall(r'[a-zA-Z]{4,}', t)
+                if w.lower() not in {"with", "from", "that", "this", "legendary", "round"}}
+
+    for i in range(len(entries)):
+        for j in range(i + 1, len(entries)):
+            if (i, j) in seen_pairs:
+                continue
+            if entries[i].get("category") != entries[j].get("category"):
+                continue
+            ti, tj = _title_tokens(entries[i]["title"]), _title_tokens(entries[j]["title"])
+            overlap = ti & tj
+            if len(overlap) >= 2:
+                sim = float(sim_matrix[i, j])
+                if sim > 0.25:
+                    candidates.append((i, j, sim))
 
     candidates.sort(key=lambda x: -x[2])
-    candidates = candidates[:10]
+    candidates = candidates[:20]
 
     if not candidates:
         return "# Contradiction Scan\n\nNo related-but-distinct entry pairs found. KB is internally consistent at the semantic level."
 
     from .synthesis_ollama import _local_think, _LOCAL_MODEL
 
-    batch_items = []
-    for idx, (i, j, sim) in enumerate(candidates):
-        a, b = entries[i], entries[j]
-        batch_items.append(
-            f"PAIR {idx + 1} (similarity={sim:.2f}):\n"
-            f"  A [{a['id']}] \"{a['title']}\": {a['content'][:300]}\n"
-            f"  B [{b['id']}] \"{b['title']}\": {b['content'][:300]}\n"
+    # Batch into groups of 5 for LLM checking (keeps prompt focused)
+    all_contradictions = []
+    for batch_start in range(0, len(candidates), 5):
+        batch = candidates[batch_start:batch_start + 5]
+        batch_items = []
+        for idx, (i, j, sim) in enumerate(batch):
+            a, b = entries[i], entries[j]
+            batch_items.append(
+                f"PAIR {idx + 1} (similarity={sim:.2f}):\n"
+                f"  A [{a['id']}] \"{a['title']}\" (category: {a.get('category', '?')}):\n"
+                f"    {a['content'][:400]}\n"
+                f"  B [{b['id']}] \"{b['title']}\" (category: {b.get('category', '?')}):\n"
+                f"    {b['content'][:400]}\n"
+            )
+
+        prompt = (
+            "Analyze these knowledge base entry pairs for GENUINE contradictions.\n\n"
+            "CONTRADICT means: two entries make INCOMPATIBLE claims about the SAME specific thing.\n"
+            "Examples of real contradictions:\n"
+            "- Entry A says 'module X should INCREASE density' vs Entry B says 'module X should DECREASE density'\n"
+            "- Entry A says 'this bug is fixed' vs Entry B says 'this bug still exists'\n"
+            "- Entry A says 'use approach X for this' vs Entry B says 'never use approach X for this'\n\n"
+            "NOT contradictions (mark OK):\n"
+            "- Entries about DIFFERENT rounds, modules, or coupling pairs (even if they mention the same signal)\n"
+            "- A bugfix entry + an architecture entry about the same system (bug was fixed, architecture describes normal state)\n"
+            "- One entry mentions something the other doesn't (omission is NOT contradiction)\n"
+            "- Entries that ADD to each other (complementary coupling bridges, different aspects)\n"
+            "- Entries from different time periods that reflect evolution (later supersedes earlier)\n"
+            "- Entries that describe different modules interacting with the same signal differently\n"
+            "- Different coupling bridges involving the same module but different partners or dimensions\n\n"
+            + "\n".join(batch_items) + "\n\n"
+            "For each pair, respond with EXACTLY one line:\n"
+            "PAIR N: CONTRADICT — <the specific incompatible claims>\n"
+            "or\n"
+            "PAIR N: OK\n"
+            "Nothing else."
         )
 
-    prompt = (
-        "Analyze these knowledge base entry pairs for contradictions.\n"
-        "A contradiction means two entries make conflicting claims about the same topic "
-        "(e.g., one says a parameter should increase while another says it should decrease, "
-        "or one says a module is responsible for X while another assigns X to a different module).\n\n"
-        + "\n".join(batch_items) + "\n\n"
-        "For each pair, respond with EXACTLY one line:\n"
-        "PAIR N: CONTRADICT — <one-sentence explanation>\n"
-        "or\n"
-        "PAIR N: OK\n"
-        "Nothing else."
-    )
+        result = _local_think(
+            prompt, max_tokens=400, model=_LOCAL_MODEL,
+            system="You are a strict KB consistency auditor. You RARELY flag contradictions — only when two entries make genuinely incompatible claims about the same specific thing. When in doubt, say OK.",
+            temperature=0.05,
+        )
 
-    result = _local_think(
-        prompt, max_tokens=600, model=_LOCAL_MODEL,
-        system="You are a knowledge base consistency auditor. Be precise and terse.",
-        temperature=0.1,
-    )
-
-    contradictions = []
-    if result:
-        for line in result.strip().splitlines():
-            line = line.strip()
-            if "CONTRADICT" in line:
-                try:
-                    pair_num = int(line.split("PAIR")[1].split(":")[0].strip()) - 1
-                    explanation = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
-                    if 0 <= pair_num < len(candidates):
-                        i, j, sim = candidates[pair_num]
-                        contradictions.append({
-                            "a": entries[i], "b": entries[j],
-                            "sim": sim, "explanation": explanation,
-                        })
-                except (ValueError, IndexError):
-                    continue
+        if result:
+            omission_markers = ["without mention", "doesn't mention", "not mention",
+                                "does not mention", "no mention", "without specif",
+                                "not directly", "without indicating",
+                                "no genuine contra", "no contradiction", "not a contra",
+                                "no real contra", "consistently", "no conflict"]
+            for line in result.strip().splitlines():
+                line = line.strip()
+                if "CONTRADICT" in line:
+                    try:
+                        pair_num = int(line.split("PAIR")[1].split(":")[0].strip()) - 1
+                        explanation = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
+                        if any(m in explanation.lower() for m in omission_markers):
+                            continue
+                        if 0 <= pair_num < len(batch):
+                            i, j, sim = batch[pair_num]
+                            all_contradictions.append({
+                                "a": entries[i], "b": entries[j],
+                                "sim": sim, "explanation": explanation,
+                            })
+                    except (ValueError, IndexError):
+                        continue
 
     parts = [f"# Contradiction Scan: {len(entries)} entries, {len(candidates)} pairs checked\n"]
 
-    if not contradictions:
+    if not all_contradictions:
         parts.append("No contradictions detected. KB is internally consistent.")
     else:
-        parts.append(f"**{len(contradictions)} contradiction(s) found:**\n")
-        for c in contradictions:
+        parts.append(f"**{len(all_contradictions)} contradiction(s) found:**\n")
+        for c in all_contradictions:
             a, b = c["a"], c["b"]
             parts.append(f"## [{a['id']}] \"{a['title']}\"  vs  [{b['id']}] \"{b['title']}\"")
-            parts.append(f"  Similarity: {c['sim']:.2f}")
+            parts.append(f"  Similarity: {c['sim']:.2f} | Categories: {a.get('category', '?')}/{b.get('category', '?')}")
             parts.append(f"  Conflict: {c['explanation']}")
             parts.append(f"  Resolution options:")
             parts.append(f"    1. Supersede older: learn(title=..., related_to='{a['id']}', relation_type='supersedes')")
@@ -746,6 +804,135 @@ def _adversarial_stress() -> str:
 
     # Probe 12: Contradiction detection exists in evolve
     results.append(("Self-coherence: contradict focus available", True, "this probe proves it"))
+
+    # Probe 13: All RELOADABLE modules exist as actual files
+    try:
+        from .evolution_selftest import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE
+        ta_dir = os.path.dirname(os.path.abspath(__file__))
+        server_dir = os.path.dirname(ta_dir)
+        root_dir = os.path.dirname(server_dir)
+        missing_modules = []
+        for name in RELOADABLE:
+            if not os.path.isfile(os.path.join(ta_dir, f"{name}.py")):
+                missing_modules.append(name)
+        for name in TOP_LEVEL_RELOADABLE:
+            if not os.path.isfile(os.path.join(server_dir, f"{name}.py")):
+                missing_modules.append(name)
+        for name in ROOT_RELOADABLE:
+            if not os.path.isfile(os.path.join(root_dir, f"{name}.py")):
+                missing_modules.append(name)
+        results.append((f"RELOADABLE: all {len(RELOADABLE) + len(TOP_LEVEL_RELOADABLE) + len(ROOT_RELOADABLE)} modules exist",
+                        len(missing_modules) == 0,
+                        f"missing: {', '.join(missing_modules)}" if missing_modules else ""))
+    except Exception as e:
+        results.append(("RELOADABLE: importable", False, str(e)))
+
+    # Probe 14: L0_CHANNELS consistency — l0Channels.js exists and declares channels
+    l0_path = os.path.join(ctx.PROJECT_ROOT, "src", "time", "l0Channels.js")
+    try:
+        with open(l0_path, encoding="utf-8") as f:
+            l0_content = f.read()
+        import re as _re
+        channel_count = len(_re.findall(r"['\"](\w+)['\"]", l0_content))
+        results.append((f"L0_CHANNELS: {channel_count} channels declared",
+                        channel_count >= 25, "" if channel_count >= 25 else f"only {channel_count}"))
+    except Exception as e:
+        results.append(("L0_CHANNELS: l0Channels.js readable", False, str(e)))
+
+    # Probe 15: Pipeline summary exists and has verdict
+    ps_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "pipeline-summary.json")
+    try:
+        with open(ps_path, encoding="utf-8") as f:
+            ps = json.load(f)
+        verdict = ps.get("verdict", "")
+        has_errors = len(ps.get("errorPatterns", [])) > 0
+        results.append((f"Pipeline summary: exists (verdict={verdict or 'none'})",
+                        True, ""))
+        if has_errors:
+            results.append(("Pipeline summary: error patterns detected",
+                            False, f"{len(ps['errorPatterns'])} error pattern(s) in last run"))
+    except FileNotFoundError:
+        results.append(("Pipeline summary: exists", False, "metrics/pipeline-summary.json missing"))
+    except Exception as e:
+        results.append(("Pipeline summary: parseable", False, str(e)))
+
+    # Probe 16: Run-history has recent snapshots
+    rh_dir = os.path.join(ctx.PROJECT_ROOT, "metrics", "run-history")
+    if os.path.isdir(rh_dir):
+        snapshots = sorted([f for f in os.listdir(rh_dir) if f.endswith(".json")])
+        results.append((f"Run-history: {len(snapshots)} snapshots",
+                        len(snapshots) >= 5, "" if len(snapshots) >= 5 else f"only {len(snapshots)}"))
+    else:
+        results.append(("Run-history: directory exists", False, "metrics/run-history/ missing"))
+
+    # Probe 17: Journal exists and has rounds
+    journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
+    try:
+        with open(journal_path, encoding="utf-8") as f:
+            journal = f.read()
+        import re as _re2
+        rounds = len(_re2.findall(r'^## R\d+', journal, _re2.MULTILINE))
+        results.append((f"Journal: {rounds} rounds documented",
+                        rounds >= 10, "" if rounds >= 10 else f"only {rounds} rounds"))
+    except Exception as e:
+        results.append(("Journal: readable", False, str(e)))
+
+    # Probe 18: Adaptive state file exists and has valid structure
+    as_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "adaptive-state.json")
+    try:
+        with open(as_path, encoding="utf-8") as f:
+            astate = json.load(f)
+        has_emas = "healthEma" in astate or "exceedanceTrendEma" in astate
+        results.append(("Adaptive state: valid structure",
+                        has_emas, "" if has_emas else "missing EMA fields"))
+    except FileNotFoundError:
+        results.append(("Adaptive state: exists", False, "metrics/adaptive-state.json missing"))
+    except Exception as e:
+        results.append(("Adaptive state: parseable", False, str(e)))
+
+    # Probe 19: bias-bounds-manifest.json exists (Phase 3 enforcement)
+    bb_path = os.path.join(ctx.PROJECT_ROOT, "scripts", "pipeline", "bias-bounds-manifest.json")
+    results.append(("Bias bounds manifest: exists",
+                    os.path.isfile(bb_path), "" if os.path.isfile(bb_path) else "missing"))
+
+    # Probe 20: _safety.sh helper functions are defined
+    safety_path = os.path.join(hooks_dir, "_safety.sh")
+    try:
+        with open(safety_path, encoding="utf-8") as f:
+            safety_content = f.read()
+        required_fns = ["_safe_jq", "_hme_enrich", "_hme_kb_count", "_streak_tick", "_streak_reset"]
+        missing_fns = [fn for fn in required_fns if fn not in safety_content]
+        results.append((f"_safety.sh: {len(required_fns)} helper functions",
+                        len(missing_fns) == 0,
+                        f"missing: {', '.join(missing_fns)}" if missing_fns else ""))
+    except Exception as e:
+        results.append(("_safety.sh: readable", False, str(e)))
+
+    # Probe 21: globals.d.ts exists and declares ambient globals
+    gdts_path = os.path.join(ctx.PROJECT_ROOT, "src", "types", "globals.d.ts")
+    try:
+        with open(gdts_path, encoding="utf-8") as f:
+            gdts = f.read()
+        import re as _re3
+        decl_count = len(_re3.findall(r'^declare var \w+', gdts, _re3.MULTILINE))
+        results.append((f"globals.d.ts: {decl_count} ambient declarations",
+                        decl_count >= 50, "" if decl_count >= 50 else f"only {decl_count}"))
+    except Exception as e:
+        results.append(("globals.d.ts: readable", False, str(e)))
+
+    # Probe 22: CLAUDE.md is current and references key enforcement systems
+    claude_path = os.path.join(ctx.PROJECT_ROOT, "CLAUDE.md")
+    try:
+        with open(claude_path, encoding="utf-8") as f:
+            claude_md = f.read()
+        enforcement_refs = ["crossLayerEmissionGateway", "trustSystems.names",
+                            "feedbackRegistry", "L0_CHANNELS"]
+        missing_refs = [r for r in enforcement_refs if r not in claude_md]
+        results.append((f"CLAUDE.md: {len(enforcement_refs)} enforcement system references",
+                        len(missing_refs) == 0,
+                        f"missing: {', '.join(missing_refs)}" if missing_refs else ""))
+    except Exception as e:
+        results.append(("CLAUDE.md: readable", False, str(e)))
 
     # Format output
     passed = sum(1 for _, ok, _ in results if ok)

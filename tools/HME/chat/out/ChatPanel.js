@@ -625,7 +625,7 @@ class ChatPanel {
             const next = this._messageQueue.shift();
             this._isStreaming = true;
             this._onSend(next).catch((e) => {
-                this._post({ type: "streamChunk", id: "err", chunkType: "error", chunk: String(e) });
+                this._postError("send", String(e));
                 this._post({ type: "streamEnd", id: "err" });
                 this._drainQueue();
             });

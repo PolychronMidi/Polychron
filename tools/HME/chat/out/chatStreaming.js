@@ -78,9 +78,9 @@ function runPostAudit(ctx, changedFiles) {
         ctx.transcript.logAudit(changed_files.length, violations.length);
         if (violations.length > 0) {
             const summary = violations
-                .map((v) => `• [${v.category}] ${v.file}: ${v.title}`)
-                .join("\n");
-            ctx.post({ type: "notice", level: "audit", text: `HME post-audit (${changed_files.length} files changed):\n${summary}` });
+                .map((v) => `[${v.category}] ${v.file}: ${v.title}`)
+                .join("; ");
+            ctx.postError("audit", `post-audit (${changed_files.length} files): ${summary}`);
         }
     }).catch((e) => ctx.postError("audit", String(e)));
 }

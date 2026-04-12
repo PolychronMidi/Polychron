@@ -91,18 +91,20 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
     try:
         from server.tools_analysis.synthesis_ollama import _local_think, _LOCAL_MODEL
         prompt = (
-            f"Does this new knowledge base entry contradict any of the existing entries below?\n\n"
+            f"Does this new knowledge base entry make claims INCOMPATIBLE with any existing entry?\n\n"
             f"NEW ENTRY: \"{title}\"\n{content[:400]}\n\n"
             + "\n".join(batch) + "\n\n"
+            "CONTRADICT = incompatible claims about the SAME thing (one says increase, other says decrease).\n"
+            "OK = different topics, complementary, or one extends/supersedes the other.\n\n"
             "For each existing entry, respond with ONE line:\n"
-            "EXISTING N: CONTRADICT — <reason>\n"
+            "EXISTING N: CONTRADICT — <the specific incompatible claims>\n"
             "or\n"
             "EXISTING N: OK\n"
         )
         result = _local_think(
             prompt, max_tokens=300, model=_LOCAL_MODEL,
-            system="You are a KB consistency checker. Only flag genuine contradictions, not complementary information.",
-            temperature=0.1,
+            system="You are a strict KB consistency checker. You RARELY flag contradictions. When in doubt, say OK.",
+            temperature=0.05,
         )
     except Exception:
         return ""
@@ -110,10 +112,18 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
     if not result:
         return ""
 
+    omission_markers = ["without mention", "doesn't mention", "not mention",
+                        "does not mention", "no mention", "without specif",
+                        "not directly", "without indicating",
+                        "no genuine contra", "no contradiction", "not a contra",
+                        "no real contra", "consistently", "no conflict"]
     warnings = []
     for line in result.strip().splitlines():
         if "CONTRADICT" in line:
             try:
+                explanation_text = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
+                if any(m in explanation_text.lower() for m in omission_markers):
+                    continue
                 num = int(line.split("EXISTING")[1].split(":")[0].strip()) - 1
                 explanation = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
                 if 0 <= num < len(candidates):
