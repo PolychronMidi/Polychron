@@ -74,12 +74,17 @@ class RAGEngineSearchMixin:
         results.sort(key=lambda x: -x["score"])
 
         # Auto-KB enrichment: tag each result with relevant knowledge constraints
+        # Module-name embeddings are cached to avoid re-encoding the same module name
+        # for every search call (up to 30 per call without cache → O(1) with cache).
         if self.knowledge_table is not None:
             for r in results:
                 module = os.path.basename(r["source"]).replace(".js", "").replace(".ts", "")
                 try:
-                    kb_vec = self.model.encode(module).tolist()
-                    kb_hits = self.knowledge_table.search(kb_vec).limit(2).to_list()
+                    cached_vec = self._module_embed_cache.get(module)
+                    if cached_vec is None:
+                        cached_vec = self.model.encode(module).tolist()
+                        self._module_embed_cache.set(module, cached_vec)
+                    kb_hits = self.knowledge_table.search(cached_vec).limit(2).to_list()
                     kb_tags = [h["title"] for h in kb_hits if h.get("_distance", 999) < 1.2]
                     if kb_tags:
                         r["kb_constraints"] = kb_tags

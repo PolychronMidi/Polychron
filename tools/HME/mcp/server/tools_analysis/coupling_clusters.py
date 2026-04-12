@@ -11,10 +11,21 @@ from .coupling_data import (
 )
 
 
+_clusters_cache: dict = {"key": None, "result": None}
+
+
 def _compute_clusters(min_r: float = 0.35) -> tuple:
-    """Compute cooperation clusters from trace data.
+    """Compute cooperation clusters from trace data. Cached by trace mtime + min_r.
     Returns (clusters, corr, modules, n_beats, coupling_state, trust)."""
     trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    try:
+        _mt = os.path.getmtime(trace_path) if os.path.exists(trace_path) else 0.0
+    except OSError:
+        _mt = 0.0
+    _cache_key = (_mt, min_r)
+    if _clusters_cache["key"] == _cache_key and _clusters_cache["result"] is not None:
+        return _clusters_cache["result"]
+
     try:
         records = _load_trace(trace_path)
     except Exception:
@@ -101,7 +112,10 @@ def _compute_clusters(min_r: float = 0.35) -> tuple:
         return sum(scores) / len(scores) if scores else 0.0
 
     clusters.sort(key=avg_trust, reverse=True)
-    return clusters, corr, modules, n_beats, coupling_state, trust
+    result = clusters, corr, modules, n_beats, coupling_state, trust
+    _clusters_cache["key"] = _cache_key
+    _clusters_cache["result"] = result
+    return result
 
 
 def _format_clusters(clusters, corr, modules, n_beats, coupling_state, trust, min_r=0.35) -> list[str]:

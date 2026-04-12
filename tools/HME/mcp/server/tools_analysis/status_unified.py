@@ -7,10 +7,8 @@ Auto-warms stale GPU contexts when detected.
 import json
 import logging
 import os
-import subprocess
-
 from server import context as ctx
-from . import _track, get_session_intent, _budget_gate, _budget_section, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
+from . import _track, get_session_intent, _budget_gate, _budget_section, _git_run, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from .synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 
 logger = logging.getLogger("HME")
@@ -257,20 +255,13 @@ def _resume_briefing() -> str:
     parts = ["# Session Resume Briefing\n"]
 
     # 1. Uncommitted changes (what am I in the middle of?)
-    try:
-        r = subprocess.run(
-            ["git", "diff", "--stat", "HEAD"],
-            capture_output=True, text=True, timeout=5, cwd=ctx.PROJECT_ROOT,
-        )
-        if r.stdout.strip():
-            lines = r.stdout.strip().splitlines()
-            parts.append("## Uncommitted Changes")
-            for line in lines:
-                parts.append(f"  {line.strip()}")
-        else:
-            parts.append("## Changes: working tree clean")
-    except Exception:
-        parts.append("## Changes: git unavailable")
+    diff_stat = _git_run(["git", "diff", "--stat", "HEAD"], cwd=ctx.PROJECT_ROOT)
+    if diff_stat.strip():
+        parts.append("## Uncommitted Changes")
+        for line in diff_stat.strip().splitlines():
+            parts.append(f"  {line.strip()}")
+    else:
+        parts.append("## Changes: working tree clean")
 
     # 2. Pipeline verdict + timing
     try:
@@ -343,16 +334,10 @@ def _resume_briefing() -> str:
         parts.append(f"\n## Detected Intent: {intent}")
 
     # 7. Recent git commits (what was the last thing committed?)
-    try:
-        r = subprocess.run(
-            ["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "-5"],
-            capture_output=True, text=True, timeout=3,
-        )
-        if r.stdout.strip():
-            parts.append(f"\n## Recent Commits")
-            for line in r.stdout.strip().splitlines():
-                parts.append(f"  {line}")
-    except Exception:
-        pass
+    log_out = _git_run(["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "-5"], cwd=ctx.PROJECT_ROOT)
+    if log_out.strip():
+        parts.append(f"\n## Recent Commits")
+        for line in log_out.strip().splitlines():
+            parts.append(f"  {line}")
 
     return "\n".join(parts)
