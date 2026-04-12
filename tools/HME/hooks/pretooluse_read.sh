@@ -19,6 +19,9 @@ if echo "$FILE_PATH" | grep -qE '/Polychron/(src|tools/HME/(chat/src|mcp/server)
   KB_COUNT=$(_hme_kb_count "$KB_JSON")
   if [[ "$KB_COUNT" -gt 0 ]]; then
     TITLES=$(_hme_kb_titles "$KB_JSON" 5)
+    HME_LOG="${CLAUDE_PROJECT_DIR:-$(pwd)}/log/hme.log"
+    printf '%s INFO hook: Read ENRICHED %s (%s KB entries)\n' \
+      "$(date '+%Y-%m-%d %H:%M:%S,000')" "$MODULE" "$KB_COUNT" >> "$HME_LOG" 2>/dev/null
     jq -n --arg module "$MODULE" --arg count "$KB_COUNT" --arg titles "$TITLES" \
       '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("KB context for " + $module + " (" + $count + " entries). For full briefing with callers + risks: mcp__HME__read(target=\"" + $module + "\", mode=\"before\")\n" + $titles)}'
     _streak_tick 5
