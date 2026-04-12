@@ -10,7 +10,7 @@ import os
 import subprocess
 
 from server import context as ctx
-from . import _track, get_session_intent
+from . import _track, get_session_intent, _budget_gate, _budget_section, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from .synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 
 logger = logging.getLogger("HME")
@@ -44,7 +44,7 @@ def status(mode: str = "all") -> str:
 
     if mode == "coupling":
         from .coupling import coupling_intel as _ci
-        return _ci(mode="full")
+        return _budget_gate(_ci(mode="full"))
 
     if mode == "trust":
         from .trust_analysis import trust_report as _tr
@@ -169,7 +169,7 @@ def status(mode: str = "all") -> str:
     except Exception:
         pass
 
-    return "\n\n".join(parts)
+    return _budget_gate("\n\n".join(parts), budget=BUDGET_COMPOUND)
 
 
 def _freshness_report() -> str:
