@@ -242,21 +242,21 @@ traceDrain = (() => {
       trust: data.trustScores,
       regime: data.regime,
       coupling: data.couplingMatrix,
-      couplingLabels: data.couplingLabels || undefined,
-      phaseTelemetry: data.phaseTelemetry || undefined,
-      couplingTargets: data.couplingTargets || undefined,
-      axisCouplingTotals: data.axisCouplingTotals || undefined,
-      axisEnergyShare: data.axisEnergyShare || undefined,
-      couplingGates: data.couplingGates || undefined,
-      couplingHomeostasis: data.couplingHomeostasis || undefined,
-      axisEnergyEquilibrator: data.axisEnergyEquilibrator || undefined,
-      transitionReadiness: data.transitionReadiness || undefined,
-      profilerTelemetry: data.profilerTelemetry || undefined,
-      outputLoadGuard: data.outputLoadGuard || undefined,
-      forcedTransitionEvent: data.forcedTransitionEvent || undefined,
-      climaxTelemetry: data.climaxTelemetry || undefined,
+      couplingLabels: data.couplingLabels,
+      phaseTelemetry: data.phaseTelemetry,
+      couplingTargets: data.couplingTargets,
+      axisCouplingTotals: data.axisCouplingTotals,
+      axisEnergyShare: data.axisEnergyShare,
+      couplingGates: data.couplingGates,
+      couplingHomeostasis: data.couplingHomeostasis,
+      axisEnergyEquilibrator: data.axisEnergyEquilibrator,
+      transitionReadiness: data.transitionReadiness,
+      profilerTelemetry: data.profilerTelemetry,
+      outputLoadGuard: data.outputLoadGuard,
+      forcedTransitionEvent: data.forcedTransitionEvent,
+      climaxTelemetry: data.climaxTelemetry,
       notes: traceDrainPendingNotes.length > 0 ? traceDrainPendingNotes.slice() : undefined,
-      stageTiming: data.stageTiming || undefined
+      stageTiming: data.stageTiming
     };
     // Clear accumulated notes after embedding
     traceDrainPendingNotes = [];
@@ -286,7 +286,7 @@ traceDrain = (() => {
       timeMs: data.timeMs,
       effectiveDim: data.effectiveDim,
       trust: data.trustScores,
-      trustVelocity: data.trustVelocity || null,
+      trustVelocity: data.trustVelocity,
       activeProfile: data.activeProfile || 'unknown',
       couplingMeans: data.couplingMeans,
       globalGainMultiplier: data.globalGainMultiplier,
@@ -294,10 +294,9 @@ traceDrain = (() => {
       couplingStrength: data.couplingStrength,
       phaseIntegrity: data.phaseIntegrity,
       // R8 E1: Forward axis energy shares for section-level phase tracking
-      axisEnergyShare: data.axisEnergyShare || null,
-      // R12 E1: section harmonic context for harmonicArc metric
-      sectionKey: data.sectionKey || null,
-      sectionMode: data.sectionMode || null
+      axisEnergyShare: data.axisEnergyShare,
+      sectionKey: data.sectionKey,
+      sectionMode: data.sectionMode
     };
     traceDrainBuffer.push(JSON.stringify(payload) + '\n');
     traceDrainRecordCount++;

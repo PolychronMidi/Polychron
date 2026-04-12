@@ -4,6 +4,15 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
+# Block explicit timeouts — all project scripts handle timeouts inline.
+# Passing a timeout from the harness wastes compute when it fires before the script finishes.
+# CLAUDE.md hard rule prevents this upstream; hook is the backstop.
+TIMEOUT=$(_safe_jq "$INPUT" '.tool_input.timeout' '')
+if [ -n "$TIMEOUT" ] && [ "$TIMEOUT" != "0" ]; then
+  echo "{\"decision\":\"block\",\"reason\":\"Do not pass timeout to Bash commands — all project scripts handle timeouts inline (CLAUDE.md hard rule). Retry without the timeout parameter.\"}"
+  exit 2
+fi
+
 # Block run.lock deletion (hard rule)
 if echo "$CMD" | grep -q 'run\.lock' && echo "$CMD" | grep -q 'rm'; then
   echo '{"decision":"block","reason":"BLOCKED: Never delete run.lock"}'

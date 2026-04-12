@@ -136,8 +136,9 @@ conductorDampening = (() => {
           edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);
         }
         const couplingPressures = pipelineCouplingManager.getCouplingPressures();
-        if (couplingPressures['density-entropy']) {
-          densityEntropyPressure = clamp((couplingPressures['density-entropy'] - 0.50) / 0.20, 0, 1);
+        const densityEntropyRaw = V.optionalFinite(couplingPressures['density-entropy'], 0);
+        if (densityEntropyRaw > 0) {
+          densityEntropyPressure = clamp((densityEntropyRaw - 0.50) / 0.20, 0, 1);
         }
       } catch (e) {
         console.warn('Acceptable warning: conductorDampening: axis energy read failed:', e && e.message ? e.message : e);
