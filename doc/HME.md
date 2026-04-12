@@ -437,7 +437,8 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
 | `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Redirect** TodoWrite → `mcp__HME__todo` (subtodo support); extracts tasks and formats them for the HME tool in `systemMessage` |
-| `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | Block repeated check_pipeline calls (polling anti-pattern — one call per turn max) |
+| `pretooluse_hme_primer.sh` | PreToolUse | mcp__HME__ | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; clears flag so it only fires once |
+| `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | **Redirect** — deny repeated check_pipeline calls (polling anti-pattern); suggests `status(mode='pipeline')` instead |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |

@@ -923,7 +923,9 @@ def _adversarial_stress() -> str:
     try:
         with open(safety_path, encoding="utf-8") as f:
             safety_content = f.read()
-        required_fns = ["_safe_jq", "_hme_enrich", "_hme_kb_count", "_streak_tick", "_streak_reset"]
+        required_fns = ["_safe_jq", "_safe_py3", "_safe_int", "_safe_curl", "_hme_enrich",
+                        "_hme_kb_count", "_hme_kb_titles", "_hme_validate",
+                        "_streak_tick", "_streak_reset", "_streak_check"]
         missing_fns = [fn for fn in required_fns if fn not in safety_content]
         results.append((f"_safety.sh: {len(required_fns)} helper functions",
                         len(missing_fns) == 0,
