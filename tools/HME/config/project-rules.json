@@ -39,7 +39,11 @@
     "_append_file_to_tab", "_extract_bg_output_path", "_tab_helpers",
     "pretooluse_bash", "pretooluse_edit", "pretooluse_grep", "pretooluse_write", "pretooluse_read",
     "posttooluse_bash", "posttooluse_write", "posttooluse_agent", "posttooluse_addknowledge",
-    "userpromptsubmit", "pretooluse_check_pipeline"
+    "posttooluse_hme_admin", "posttooluse_read", "posttooluse_edit",
+    "posttooluse_hme_read", "posttooluse_hme_review", "posttooluse_pipeline_kb",
+    "userpromptsubmit", "pretooluse_check_pipeline", "pretooluse_lifesaver",
+    "_hme_enrich", "_hme_validate", "_hme_kb_count", "_hme_kb_titles",
+    "_streak_tick", "_streak_check", "_streak_reset", "_safe_jq", "_safe_py3", "_safe_int"
   ],
 
   "registration_patterns": [

@@ -133,6 +133,33 @@
         ]
       },
       {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/posttooluse_edit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__HME__read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/posttooluse_hme_read.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__HME__review",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/posttooluse_hme_review.sh"
+          }
+        ]
+      },
+      {
         "matcher": "mcp__HME__add_knowledge",
         "hooks": [
           {
