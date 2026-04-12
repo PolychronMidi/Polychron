@@ -38,6 +38,7 @@ L0_CHANNELS = Object.freeze({
   sectionQuality: 'section-quality',
   selfNarration: 'self-narration',
   spectral: 'spectral',
+  swapDecision: 'swapDecision',
   stutterContagion: 'stutterContagion',
   tension: 'tension',
   tickDuration: 'tickDuration',

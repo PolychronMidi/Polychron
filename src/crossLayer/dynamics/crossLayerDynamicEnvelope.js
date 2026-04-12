@@ -39,8 +39,8 @@ crossLayerDynamicEnvelope = (() => {
     // Get interaction trend from interactionHeatMap
     const trend = interactionHeatMap.getTrend();
 
-    // Check role swap
-    const swapped = dynamicRoleSwap.getIsSwapped();
+    // Check role swap via L0 channel (phrase-boundary stable, so getLast is equivalent to getIsSwapped)
+    const swapped = L0.getLast(L0_CHANNELS.swapDecision)?.swapped ?? false;
 
     // Compute base envelope from phrase arc
     const phraseArc = m.sin(phraseProgress * m.PI); // peaks mid-phrase

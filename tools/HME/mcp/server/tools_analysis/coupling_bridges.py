@@ -663,6 +663,7 @@ def forge_bridges(top_n: int = 2) -> str:
             import re as _re
             method_refs = _re.findall(r'\b(\w+)\.(\w+)\s*\(', sketch)
             unknown_refs = []
+            module_methods: dict[str, list[str]] = {}
             if ctx.project_engine.symbol_table is not None:
                 try:
                     all_rows = ctx.project_engine.symbol_table.to_arrow().to_pylist()
@@ -671,8 +672,54 @@ def forge_bridges(top_n: int = 2) -> str:
                         if mod.lower() in (pair_a.lower(), pair_b.lower()):
                             if method.lower() not in known_symbols and not method.startswith("_"):
                                 unknown_refs.append(f"{mod}.{method}()")
+                    # Collect valid exported methods per module for re-prompt
+                    for mod_name in (pair_a, pair_b):
+                        valid_methods = [
+                            r["name"] for r in all_rows
+                            if r.get("file", "").endswith(f"{mod_name}.js")
+                            and r.get("kind", "") in ("function", "method", "property")
+                        ]
+                        if valid_methods:
+                            module_methods[mod_name] = valid_methods
                 except Exception:
                     pass
+
+            # Re-prompt if too many unknown API calls — inject valid symbol list as constraint
+            if len(unknown_refs) > 2 and ctx.project_engine.symbol_table is not None:
+                api_constraints = []
+                for mod_name, methods in module_methods.items():
+                    api_constraints.append(f"{mod_name} exports: {', '.join(methods[:20])}")
+                if api_constraints:
+                    corrected_prompt = (
+                        prompt
+                        + f"\n\nCRITICAL: Use ONLY these verified exported methods:\n"
+                        + "\n".join(api_constraints)
+                        + f"\n\nDo NOT call any other methods on {pair_a} or {pair_b}."
+                    )
+                    corrected_sketch = _local_think(
+                        corrected_prompt, max_tokens=1200, model=_LOCAL_MODEL,
+                        system="You are a JavaScript code generator for a music composition system. Output ONLY valid JS code.",
+                        temperature=0.2,
+                    )
+                    if corrected_sketch:
+                        corrected_sketch = corrected_sketch.strip()
+                        if corrected_sketch.startswith("```"):
+                            corrected_sketch = "\n".join(corrected_sketch.split("\n")[1:])
+                        if corrected_sketch.endswith("```"):
+                            corrected_sketch = "\n".join(corrected_sketch.split("\n")[:-1])
+                        corrected_sketch = corrected_sketch.strip()
+                        # Re-validate corrected sketch
+                        corrected_refs = _re.findall(r'\b(\w+)\.(\w+)\s*\(', corrected_sketch)
+                        all_rows2 = ctx.project_engine.symbol_table.to_arrow().to_pylist()
+                        known2 = {r["name"].lower() for r in all_rows2}
+                        still_unknown = [
+                            f"{m}.{fn}()" for m, fn in corrected_refs
+                            if m.lower() in (pair_a.lower(), pair_b.lower())
+                            and fn.lower() not in known2 and not fn.startswith("_")
+                        ]
+                        sketch = corrected_sketch
+                        unknown_refs = still_unknown
+                        parts.append(f"  _(Re-prompted with valid symbol list — {len(still_unknown)} unverified remaining)_")
 
             parts.append(f"\n```javascript\n{sketch}\n```\n")
             if unknown_refs:

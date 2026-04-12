@@ -102,6 +102,12 @@ def status(mode: str = "all") -> str:
                 _age = _dt.now().timestamp() - os.path.getmtime(_p)
                 if _age > 86400 * 3:
                     _flags.append(f"{_lbl}:STALE({_age/86400:.0f}d)")
+        # adaptive-state specific: warn if very old (cross-run warm-start depends on it)
+        _as_path = os.path.join(_m, "adaptive-state.json")
+        if os.path.exists(_as_path):
+            _as_age = _dt.now().timestamp() - os.path.getmtime(_as_path)
+            if _as_age > 86400 * 7:
+                _flags.append(f"adaptive-state:VERY_STALE({_as_age/86400:.0f}d — warm-start EMAs may be stale)")
         _snaps = sorted(_gl.glob(os.path.join(_m, "run-history", "*.json")))
         if _snaps:
             _delta = abs(os.path.getmtime(os.path.join(_m, "trace.jsonl"))
