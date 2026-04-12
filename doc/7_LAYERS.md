@@ -51,5 +51,5 @@ Each layer has: current state and items for next dedicated pass.
 **State**: Forge validates API, re-prompts with valid symbol list, ChatML tags stripped. `kb_content_no_pattern` + `kb_freshness` invariants live (guards 104 KB entries). Forge sketch for convergenceHarmonicTrigger↔verticalIntervalMonitor written with correct densitySurprise bridge (rarity boost + penalty scale). Lab runner requires ~10 min for full render pipeline.
 
 ### Next pass
-- [ ] Run forge sketch: `node lab/run.js forge-convergenceHarmonicTrigger-verticalIntervalMonitor` — requires 10+ min, run unattended (fluidsynth render ×2 is the bottleneck)
+- Forge sketch ran successfully: 287.6s gen, 106.4s audio → `lab/forge-convergenceHarmonicTrigger-verticalIntervalMonitor.wav`. densitySurprise bridge (rarity boost + penalty scale) verified clean. Ready for listening verdict.
 - [ ] Design multi-organism round: interactionHeatMap L0 posting — `flushBeat()` posts trend snapshot to new `L0_CHANNELS.interactionHeat` channel; `crossLayerDynamicEnvelope.tick()` reads via `L0.getLast` instead of direct `getTrend()` call. Requires: new L0 channel + globals.d.ts + 7-dependent audit. Risk: boot-sequence ordering (pushHistorySnapshot called during boot) and homeostasisState interdependencies. Start with adding the L0 post in flushBeat without removing direct calls first.
