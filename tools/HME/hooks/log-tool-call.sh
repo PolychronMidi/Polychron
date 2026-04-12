@@ -42,8 +42,9 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _streak_reset
 
   # LIFESAVER: scan ALL HME tool output for FAIL — log to hme-errors.log for stop.sh pickup.
-  # Exclude: PASS lines mentioning FAIL in descriptions, and "fail-fast" (project term, not failure).
-  FAILS=$(echo "$TOOL_RESULT" | grep -i 'FAIL' | grep -v '^\s*PASS' | grep -vi 'fail-fast' 2>/dev/null)
+  # Exclude: any line containing PASS (tool result is raw JSON — line-start anchors don't apply),
+  # and "fail-fast" (project term, not failure). Real failures never share a line with PASS.
+  FAILS=$(echo "$TOOL_RESULT" | grep -i 'FAIL' | grep -v 'PASS' | grep -vi 'fail-fast' 2>/dev/null)
   if [[ -n "$FAILS" ]]; then
     PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
     ERROR_LOG="$PROJECT/log/hme-errors.log"
