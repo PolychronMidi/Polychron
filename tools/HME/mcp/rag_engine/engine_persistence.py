@@ -1,4 +1,4 @@
-"""RAGEngine persistence mixin — file hash cache and table validation."""
+"""RAGEngine persistence mixin — file hash cache, per-file chunk cache, table validation."""
 import json
 import logging
 import os
@@ -22,6 +22,28 @@ class RAGEnginePersistenceMixin:
         with open(self.hash_cache_path, "w") as f:
             json.dump(self._file_hashes, f)
 
+    @property
+    def _per_file_chunks_path(self):
+        return os.path.join(self.db_path, "per_file_chunks.json")
+
+    def _load_per_file_chunks(self):
+        """Load per-file chunk hash cache (maps file_key -> set of chunk content hashes)."""
+        if os.path.exists(self._per_file_chunks_path):
+            try:
+                with open(self._per_file_chunks_path, "r") as f:
+                    raw = json.load(f)
+                self._per_file_chunks = {k: set(v) for k, v in raw.items()}
+            except Exception:
+                self._per_file_chunks = {}
+        else:
+            self._per_file_chunks = {}
+
+    def _save_per_file_chunks(self):
+        os.makedirs(os.path.dirname(self._per_file_chunks_path), exist_ok=True)
+        serializable = {k: list(v) for k, v in self._per_file_chunks.items()}
+        with open(self._per_file_chunks_path, "w") as f:
+            json.dump(serializable, f)
+
     def _try_open_table(self):
         try:
             self.table = self.db.open_table("code_chunks")
@@ -32,14 +54,18 @@ class RAGEnginePersistenceMixin:
         if self._file_hashes and self.table is None:
             logger.info("Hash cache exists but code_chunks table missing - clearing cache for full re-index")
             self._file_hashes = {}
+            self._per_file_chunks = {}
             self._save_hashes()
+            self._save_per_file_chunks()
         elif self.table is not None and self._file_hashes:
             try:
                 table_count = self.table.count_rows()
                 if table_count == 0:
                     logger.info("code_chunks table empty but cache non-empty - clearing cache")
                     self._file_hashes = {}
+                    self._per_file_chunks = {}
                     self._save_hashes()
+                    self._save_per_file_chunks()
             except Exception as e:
                 logger.warning(f"Cache validation failed (count_rows): {e}")
 
