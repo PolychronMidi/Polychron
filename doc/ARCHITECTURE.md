@@ -373,6 +373,14 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 
 `dynamicRoleSwap.evaluateSwap()` now posts `L0_CHANNELS.swapDecision` with `{ swapped, swapCount }` on every successful swap. `articulationComplement` and `crossLayerDynamicEnvelope` consume swap state via `L0.getLast(L0_CHANNELS.swapDecision)` instead of direct `getIsSwapped()` call, routing through the L0 event bus for architectural consistency. Note: `dynamismEngine` (conductor) and `crossLayerBeatRecord` (play) still use `getIsSwapped()` directly — conductor read-only access is explicitly permitted.
 
+### contourShape Surge and Groove Couplings
+
+`contourShape` (categorical: `'rising'`/`'falling'`/`'static'`/`'arc'`) from `emergentMelodicEngine.getContext()` wired into two additional cross-layer modules.
+
+- **`contourShape` → `convergenceVelocitySurge`**: rising arc at convergence = bigger impact punch (`contourSurgeMod` ×1.08); falling arc = softer release (×0.93). Applied as a multiplier on `surgeMultiplier` alongside `distScale`, `tessLoad`, and `rhythmSurgeMod`. Rising melodies build toward the convergence moment, so convergence impact is amplified; falling melodies release, so the punch softens.
+- **`contourShape` → `grooveTransfer` damping**: rising arc = less groove bleed between layers (`contourTransferScale` ×0.94), consistent with ascending register reducing transfer (layers explore independent timing on the climb); falling arc = more bleed (×1.06, layers converge into shared groove on descent). Applied as 9th multiplier in `effectiveDamping`.
+- **`contourShape` → `velocityInterference`**: rising arc = stronger velocity interference (dynamic contrast builds as energy climbs, `contourShapeVI` ×1.07); falling arc = softer interference (×0.95, release phase convergences layers dynamically). Applied as final multiplier in both `boostCeiling` and `reductionCeiling`. Complements the continuous `ascendRatio` coupler already in that chain with categorical arc-shape granularity.
+
 ### ascendRatio Antagonism Bridge (R47)
 
 `ascendRatio` as shared signal driving constructive opposition between structural arc and form tracking.

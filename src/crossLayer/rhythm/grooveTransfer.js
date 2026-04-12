@@ -118,7 +118,12 @@ grooveTransfer = (() => {
     // Counterpart: crossLayerClimaxEngine ACCELERATES climax approach under same signal (structural arc crests at extremes).
     const tessituraLoadGT = melodicCtxGT ? V.optionalFinite(melodicCtxGT.tessituraLoad, 0) : 0;
     const tessituraTransferScale = 1.0 - clamp(tessituraLoadGT * 0.15, 0, 0.08);
-    const effectiveDamping = DAMPING * (1.3 - cimScale * 0.6) * melodicDampingScale * rhythmDampingMod * registerTransferScale * complexityTransferScale * biasTransferScale * tessituraTransferScale;
+    // contourShape: rising arc = layers explore independent timing (consistent with ascending register reducing transfer);
+    // falling arc = layers settle into shared groove (mutual timing convergence in descent).
+    const contourTransferScale = melodicCtxGT
+      ? (melodicCtxGT.contourShape === 'rising' ? 0.94 : melodicCtxGT.contourShape === 'falling' ? 1.06 : 1.0)
+      : 1.0;
+    const effectiveDamping = DAMPING * (1.3 - cimScale * 0.6) * melodicDampingScale * rhythmDampingMod * registerTransferScale * complexityTransferScale * biasTransferScale * tessituraTransferScale * contourTransferScale;
     return timeInSeconds + localTransfer * effectiveDamping * coherenceFactor;
   }
 

@@ -245,6 +245,25 @@ def _is_regex(s: str) -> bool:
     return any(c in s for c in r"\.[](){}*+?^$|")
 
 
+def _check_kb_content_no_pattern(inv: dict) -> tuple[bool, str]:
+    """Scan all KB entries; fail if any title or content matches the given pattern.
+
+    Use to guard against LLM artifact leaks (e.g. <|thinking|> tags in KB content).
+    """
+    pattern = inv["pattern"]
+    entries = ctx.project_engine.list_knowledge_full()
+    if not entries:
+        return True, "KB empty (nothing to check)"
+    leaking = []
+    for e in entries:
+        text = (e.get("title", "") or "") + "\n" + (e.get("content", "") or "")
+        if re.search(pattern, text, re.IGNORECASE):
+            leaking.append(e.get("id", "?")[:12])
+    if leaking:
+        return False, f"{len(leaking)} entries contain pattern '{pattern}': {', '.join(leaking[:5])}"
+    return True, f"all {len(entries)} entries clean"
+
+
 # ── Main entry point ────────────────────────────────────────────────────────
 
 def _eval(inv: dict) -> tuple[bool, str]:
@@ -261,6 +280,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "symbols_used": _check_symbols_used,
         "symbols_have_kb": _check_symbols_have_kb,
         "files_mtime_window": _check_files_mtime_window,
+        "kb_content_no_pattern": _check_kb_content_no_pattern,
     }
     inv_type = inv.get("type", "")
     checker = checkers.get(inv_type)
