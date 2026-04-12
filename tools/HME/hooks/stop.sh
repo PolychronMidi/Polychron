@@ -295,4 +295,34 @@ fi
 
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
-exit 0
+# fix_antipattern: After receiving "No response requested" or similar empty/non-actionable tool res
+#  Non-response continuation check 
+# If last tool result was empty/non-actionable, continue working instead of stopping
+LAST_RESULT=$(python3 -c "
+import json, sys
+data = open('$TRANSCRIPT_PATH').read()
+lines = data.strip().split('\n')
+for line in reversed(lines):
+    try:
+        obj = json.loads(line)
+    except Exception:
+        continue
+    if obj.get('role') == 'assistant':
+        for block in obj.get('content', []):
+            if isinstance(block, dict) and block.get('type') == 'tool_result':
+                content = block.get('content', [])
+                if not any(isinstance(c, dict) and c.get('type') == 'text' and c.get('text') for c in content):
+                    print('EMPTY_RESULT')
+                    sys.exit(0)
+    elif obj.get('role') == 'user':
+        break
+print('ok')
+" 2>/dev/null || echo ok)
+
+if [[ "$LAST_RESULT" == "EMPTY_RESULT" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "CONTINUATION REQUIRED: Your last tool result was empty or non-actionable. Continue working and produce a substantive result before stopping."
+  }'
+  exit 0
+fi
