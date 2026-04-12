@@ -295,34 +295,48 @@ fi
 
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
-# fix_antipattern: After receiving "No response requested" or similar empty/non-actionable tool res
-#  Non-response continuation check 
-# If last tool result was empty/non-actionable, continue working instead of stopping
-LAST_RESULT=$(python3 -c "
+# Stop-work antipattern: detect when Claude's last turn was text-only with no tool calls,
+# or contained dismissive phrases like "No response requested". Both indicate premature stop.
+STOP_WORK=$(python3 -c "
 import json, sys
 data = open('$TRANSCRIPT_PATH').read()
 lines = data.strip().split('\n')
+# Find the last assistant message
 for line in reversed(lines):
     try:
         obj = json.loads(line)
     except Exception:
         continue
     if obj.get('role') == 'assistant':
-        for block in obj.get('content', []):
-            if isinstance(block, dict) and block.get('type') == 'tool_result':
-                content = block.get('content', [])
-                if not any(isinstance(c, dict) and c.get('type') == 'text' and c.get('text') for c in content):
-                    print('EMPTY_RESULT')
-                    sys.exit(0)
+        blocks = obj.get('content', [])
+        has_tool_use = any(isinstance(b, dict) and b.get('type') == 'tool_use' for b in blocks)
+        text_parts = [b.get('text','') for b in blocks if isinstance(b, dict) and b.get('type') == 'text']
+        full_text = ' '.join(text_parts).strip().lower()
+        dismissive = ['no response requested', 'nothing to do', 'no action needed',
+                      'no further action', 'no work remaining', 'all done']
+        if any(d in full_text for d in dismissive):
+            print('DISMISSIVE')
+        elif not has_tool_use and len(full_text) < 200:
+            print('TEXT_ONLY_SHORT')
+        else:
+            print('ok')
+        sys.exit(0)
     elif obj.get('role') == 'user':
         break
 print('ok')
 " 2>/dev/null || echo ok)
 
-if [[ "$LAST_RESULT" == "EMPTY_RESULT" ]]; then
+if [[ "$STOP_WORK" == "DISMISSIVE" ]]; then
   jq -n '{
     "decision": "block",
-    "reason": "CONTINUATION REQUIRED: Your last tool result was empty or non-actionable. Continue working and produce a substantive result before stopping."
+    "reason": "STOP-WORK ANTIPATTERN: You responded with dismissive text instead of doing work. Re-read the user prompt and the conversation. There is always pending work after a user message — find it and do it. If genuinely nothing remains, explain what was completed and why."
+  }'
+  exit 0
+fi
+if [[ "$STOP_WORK" == "TEXT_ONLY_SHORT" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "STOP-WORK ANTIPATTERN: Your last turn was a short text-only response with no tool calls. If there is remaining work, continue it now. If you genuinely completed everything, provide a substantive summary of what was done."
   }'
   exit 0
 fi
