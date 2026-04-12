@@ -13,7 +13,8 @@
     "symbols_used": "Every symbol matching definition_pattern in definition_file must appear in files matching usage_glob (usage_pattern template with {symbol} placeholder)",
     "symbols_have_kb": "The top_n highest-caller IIFE globals (with >= min_callers callers) must each have at least one KB entry",
     "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other",
-    "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)"
+    "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)",
+    "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)"
   },
   "invariants": [
     {
@@ -311,6 +312,7 @@
       "patterns": [
         "directionBias Swap Gate Coupling",
         "directionBias Articulation Contrast Coupling",
+        "directionBias Voicing Spread Coupling",
         "contourShape Surge and Groove Couplings"
       ],
       "severity": "warning"
@@ -320,6 +322,13 @@
       "description": "KB entries must not contain LLM thinking artifact tags",
       "type": "kb_content_no_pattern",
       "pattern": "<\\|thinking\\||<think>|```thinking|<\\|im_start\\||<\\|im_end\\|",
+      "severity": "warning"
+    },
+    {
+      "id": "kb-freshness",
+      "description": "KB must have been updated within the last 14 days (staleness signal)",
+      "type": "kb_freshness",
+      "max_age_days": 14,
       "severity": "warning"
     }
   ]

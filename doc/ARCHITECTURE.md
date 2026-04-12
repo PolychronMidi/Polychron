@@ -369,6 +369,12 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 
 - **`directionBias` → `articulationComplement` melodicContrastScale**: `clamp(1.0 − directionBias × 0.06, 0.92, 1.06)` — ascending (+1.0) gives 0.94× (−6%); descending (−1.0) gives 1.06× (+6%). Complementary to `contourShape` categorical factor (±15%) and adds continuous granularity beneath it. Combined effect at `contourShape='rising'` + `directionBias=+1.0`: 1.15 × 0.94 = 1.08 (softer than rising alone).
 
+### directionBias Voicing Spread Coupling
+
+`directionBias` also modulates `voiceModulator`'s per-chord velocity spread in the composers layer. Read via `L0.getLast(L0_CHANNELS.emergentMelody)` (covered by `l0-event-channels` firewall port — no new port required). Ascending melody opens chord voicing (wider velocity contrast between melody and inner voices); descending melody closes voicing (more uniform, settled ensemble).
+
+- **`directionBias` → `voiceModulator` spread** (±8% max): `spread = baseSpread × clamp(1.0 + directionBias × 0.08, 0.92, 1.08)`. Ascending (+1.0): baseSpread × 1.08 (melody accent more prominent, inner voices recede further). Descending (−1.0): baseSpread × 0.92 (uniform, close voicing). Null-safe: if no `emergentMelody` L0 entry yet, `dirBias = 0` and spread is unchanged.
+
 ### L0 swapDecision channel
 
 `dynamicRoleSwap.evaluateSwap()` now posts `L0_CHANNELS.swapDecision` with `{ swapped, swapCount }` on every successful swap. `articulationComplement` and `crossLayerDynamicEnvelope` consume swap state via `L0.getLast(L0_CHANNELS.swapDecision)` instead of direct `getIsSwapped()` call, routing through the L0 event bus for architectural consistency. Note: `dynamismEngine` (conductor) and `crossLayerBeatRecord` (play) still use `getIsSwapped()` directly — conductor read-only access is explicitly permitted.
@@ -380,6 +386,7 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 - **`contourShape` → `convergenceVelocitySurge`**: rising arc at convergence = bigger impact punch (`contourSurgeMod` ×1.08); falling arc = softer release (×0.93). Applied as a multiplier on `surgeMultiplier` alongside `distScale`, `tessLoad`, and `rhythmSurgeMod`. Rising melodies build toward the convergence moment, so convergence impact is amplified; falling melodies release, so the punch softens.
 - **`contourShape` → `grooveTransfer` damping**: rising arc = less groove bleed between layers (`contourTransferScale` ×0.94), consistent with ascending register reducing transfer (layers explore independent timing on the climb); falling arc = more bleed (×1.06, layers converge into shared groove on descent). Applied as 9th multiplier in `effectiveDamping`.
 - **`contourShape` → `velocityInterference`**: rising arc = stronger velocity interference (dynamic contrast builds as energy climbs, `contourShapeVI` ×1.07); falling arc = softer interference (×0.95, release phase convergences layers dynamically). Applied as final multiplier in both `boostCeiling` and `reductionCeiling`. Complements the continuous `ascendRatio` coupler already in that chain with categorical arc-shape granularity.
+- **`contourShape` → `stutterContagion`**: rising arc = stutter infection spreads harder (`contourContagionSC` ×1.07, ascending energy amplifies chaos cascade across layers); falling arc = contagion softens (×0.93, descent = release phase, stutter settles rather than propagates). Applied as the final gate multiplier in `gatedIntensity` inside `checkContagion()`, stacking with melodic, phase-lock, density-surprise, tessiture, and complexity contagion scales.
 
 ### ascendRatio Antagonism Bridge (R47)
 

@@ -89,7 +89,7 @@ articulationComplement = (() => {
       : artRegime === 'coherent' ? 0.80
       : 1.0;
     const melodicCtxAC = emergentMelodicEngine.getContext();
-    // directionBias float (-1=descending→sharper, +1=ascending→softer): continuous layer under contourShape's categorical ±15%.
+    // directionBias float (-1=descending->sharper, +1=ascending->softer): continuous layer under contourShape's categorical +/-15%.
     const melodicContrastScale = melodicCtxAC
       ? (melodicCtxAC.contourShape === 'rising' ? 1.15 : melodicCtxAC.contourShape === 'falling' ? 0.85 : 1.0)
       * (melodicCtxAC.counterpoint === 'contrary' ? 1.20 : 1.0)

@@ -266,6 +266,9 @@ print(json.dumps(result))
 
   const outPath = path.join(HISTORY_DIR, `${timestamp}.json`);
   fs.writeFileSync(outPath, JSON.stringify(snapshot, null, 2));
+  // Unified current-run pointer -- tools always read metrics/current-run.json for fresh data
+  const currentRunPath = path.join(path.dirname(HISTORY_DIR), 'current-run.json');
+  fs.writeFileSync(currentRunPath, JSON.stringify({ timestamp, path: path.relative(path.dirname(HISTORY_DIR), outPath), ...snapshot }, null, 2));
   console.log(`Snapshot saved: ${path.basename(outPath)} (${features.traceEntries} beats, ${features.sectionCount} sections)`);
 
   // Verdict prediction: apply trained regressor if model exists

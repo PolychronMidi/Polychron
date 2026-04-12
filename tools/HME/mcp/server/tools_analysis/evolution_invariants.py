@@ -245,6 +245,24 @@ def _is_regex(s: str) -> bool:
     return any(c in s for c in r"\.[](){}*+?^$|")
 
 
+def _check_kb_freshness(inv: dict) -> tuple[bool, str]:
+    """Warn if no KB entry has been updated within max_age_days days (staleness signal)."""
+    import time
+    max_age_days = inv.get("max_age_days", 14)
+    entries = ctx.project_engine.list_knowledge_full()
+    if not entries:
+        return True, "KB empty"
+    max_ts = max(e.get("timestamp", 0) for e in entries)
+    age_days = (time.time() - max_ts) / 86400
+    if age_days > max_age_days:
+        from datetime import datetime
+        last_str = datetime.fromtimestamp(max_ts).strftime("%Y-%m-%d") if max_ts else "never"
+        return False, f"most recent KB update {age_days:.0f}d ago (last: {last_str}, threshold: {max_age_days}d)"
+    from datetime import datetime
+    last_str = datetime.fromtimestamp(max_ts).strftime("%Y-%m-%d")
+    return True, f"last updated {age_days:.0f}d ago ({last_str})"
+
+
 def _check_kb_content_no_pattern(inv: dict) -> tuple[bool, str]:
     """Scan all KB entries; fail if any title or content matches the given pattern.
 
@@ -281,6 +299,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "symbols_have_kb": _check_symbols_have_kb,
         "files_mtime_window": _check_files_mtime_window,
         "kb_content_no_pattern": _check_kb_content_no_pattern,
+        "kb_freshness": _check_kb_freshness,
     }
     inv_type = inv.get("type", "")
     checker = checkers.get(inv_type)
@@ -353,6 +372,7 @@ def check_invariants() -> str:
     parts.append(f"Add to `tools/HME/config/invariants.json` — no Python changes needed.")
     parts.append(f"Types: files_executable, files_referenced, file_exists, symlink_valid,")
     parts.append(f"json_valid, glob_count_gte, pattern_in_file, patterns_all_in_file,")
-    parts.append(f"pattern_count_gte, symbols_used")
+    parts.append(f"pattern_count_gte, symbols_used, symbols_have_kb, files_mtime_window,")
+    parts.append(f"kb_content_no_pattern, kb_freshness")
 
     return "\n".join(parts)

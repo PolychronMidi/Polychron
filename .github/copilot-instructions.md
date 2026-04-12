@@ -131,7 +131,7 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 
 ## Custom ESLint Rules
 
-21 project-specific rules in `scripts/eslint-rules/`:
+22 project-specific rules in `scripts/eslint-rules/`:
 
 - **`case-conventions`** - PascalCase for classes, camelCase for everything else
 - **`no-bare-l0-channel`** - ban bare string literals in L0 method calls; use `L0_CHANNELS.xxx` constants
@@ -143,6 +143,7 @@ Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` us
 - **`no-direct-coupling-matrix-read`** - ban `.couplingMatrix` reads outside coupling engine, meta-controllers, and pipeline plumbing (use controller chain)
 - **`no-direct-crosslayer-write-from-conductor`** - prevent conductor modules from mutating cross-layer state (read-only access allowed)
 - **`no-direct-signal-read`** - ban `conductorIntelligence.getSignalSnapshot()` - use `signalReader`
+- **`no-empty-catch`** - ban empty catch blocks - errors must be handled or rethrown
 - **`no-math-random`** - ban `Math.random()` - use project random sources
 - **`no-non-ascii`** - ban non-ASCII characters in source
 - **`no-requires-outside-index`** - restrict `require()` to `index.js` files
@@ -204,6 +205,9 @@ read("crossLayerClimaxEngine", mode="story")                                    
 review(mode='forget')                                                            -- post-change audit (auto-detects from git)
 review(mode='health')                                                            -- full-repo sweep
 learn(query='density suppression')                                               -- KB search
+evolve(focus='contradict')                                                       -- scan KB for conflicting entries
+evolve(focus='stress')                                                           -- 35 enforcement probes across LIFESAVER, hooks, ESLint, docs
+evolve(focus='invariants')                                                       -- declarative battery from config/invariants.json (no Python needed)
 ```
 
 **13 tools, 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME mega-tools for KB enrichment.

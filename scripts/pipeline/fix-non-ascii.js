@@ -28,6 +28,7 @@ const REPLACEMENTS = [
   ['\u2265', '>='],         // greater-than or equal to
   ['\u00D7', '*'],          // multiplication sign
   ['\u00B7', '.'],          // middle dot
+  ['\u00B1', '+/-'],         // plus-minus sign
   ['\u00B0', 'deg'],        // degree sign
   ['\u03B1', 'alpha'],      // greek small alpha
   ['\u03B2', 'beta'],       // greek small beta
