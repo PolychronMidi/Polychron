@@ -24,11 +24,21 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
     t0 = time.monotonic()
 
-    # ── Stage 1: Skip arbiter triage ─────────────────────────────────────
-    # User explicitly called enrich_prompt — always run all modes.
-    # Arbiter adds ~30s latency (cold qwen3:4b) and frequently returns
-    # all-NO due to thinking token exhaustion. Same approach as HTTP shim.
-    triage = {"kb": True, "structural": True, "contextual": True, "raw": "explicit"}
+    # ── Stage 1: Rule-based triage (instant, no model calls) ──────────────
+    # Arbiter model adds ~30s cold-start latency and frequently returns all-NO
+    # due to thinking token exhaustion. Use lightweight heuristics instead:
+    # - KB mode: only when prompt mentions code symbols (camelCase, file paths, module names)
+    # - Structural mode: always (cheap to include, rarely harmful)
+    # - Contextual mode: only when prompt is long enough to benefit from session context
+    import re as _re_triage
+    _has_symbols = bool(_re_triage.search(r'[a-z][a-zA-Z]{4,}[A-Z]|src/|\.js\b|\.ts\b', prompt))
+    _is_short = len(prompt.strip()) < 60
+    triage = {
+        "kb": _has_symbols,
+        "structural": True,
+        "contextual": not _is_short,
+        "raw": "heuristic",
+    }
     trace["triage_ms"] = 0
 
     # ── Stage 2: Context assembly (instant, no model) ─────────────────────

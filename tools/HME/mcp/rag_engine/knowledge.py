@@ -152,7 +152,11 @@ class RAGKnowledgeMixin:
             return cached
 
         fetch_k = min(top_k * 3, 30)
-        query_vec = self.model.encode(query).tolist()
+        cached_qvec = self._module_embed_cache.get(f"kbq:{query}")
+        if cached_qvec is None:
+            cached_qvec = self.model.encode(query).tolist()
+            self._module_embed_cache.set(f"kbq:{query}", cached_qvec)
+        query_vec = cached_qvec
         builder = self.knowledge_table.search(query_vec).limit(fetch_k)
         if category:
             builder = builder.where(f"category = '{_sanitize(category)}'")

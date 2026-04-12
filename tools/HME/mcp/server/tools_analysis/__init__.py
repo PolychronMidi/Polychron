@@ -205,12 +205,27 @@ def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
     return filtered  # no fallback — irrelevant KB entries are worse than no entries
 
 
+_compositional_context_cache: dict = {}  # (module_name, digest_mtime, summary_mtime) → str
+
+
 def _get_compositional_context(module_name: str) -> str:
     """Read narrative-digest.md and trace-summary.json for musical context.
 
     Searches narrative by module name AND related terms (subsystem keywords,
     camelCase fragments) to find mentions even when prose uses different phrasing.
+    Mtime-cached to avoid redundant file I/O across compound tool calls.
     """
+    digest_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
+    summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-summary.json")
+    try:
+        d_mt = os.path.getmtime(digest_path) if os.path.isfile(digest_path) else 0.0
+        s_mt = os.path.getmtime(summary_path) if os.path.isfile(summary_path) else 0.0
+    except OSError:
+        d_mt, s_mt = 0.0, 0.0
+    cache_key = (module_name, d_mt, s_mt)
+    if cache_key in _compositional_context_cache:
+        return _compositional_context_cache[cache_key]
+
     parts = []
     # Build search terms: module name + camelCase fragments (specific enough to avoid noise)
     search_terms = {module_name.lower()}
@@ -221,7 +236,6 @@ def _get_compositional_context(module_name: str) -> str:
         if len(frag) > 5 and frag.lower() not in _generic:
             search_terms.add(frag.lower())
 
-    digest_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
     if os.path.isfile(digest_path):
         try:
             with open(digest_path, encoding="utf-8") as _f:
@@ -241,7 +255,6 @@ def _get_compositional_context(module_name: str) -> str:
                     parts.append(f"  {l[:200]}")
         except Exception:
             pass
-    summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-summary.json")
     if os.path.isfile(summary_path):
         try:
             with open(summary_path) as f:
@@ -263,10 +276,37 @@ def _get_compositional_context(module_name: str) -> str:
                 parts.append(f"**Top trust systems:** {', '.join(top)}")
         except Exception:
             pass
-    return "\n".join(parts) if parts else ""
+    result = "\n".join(parts) if parts else ""
+    _compositional_context_cache[cache_key] = result
+    # Evict stale entries (keep cache bounded — only current mtime matters)
+    stale = [k for k in _compositional_context_cache if k != cache_key and k[0] == module_name]
+    for k in stale:
+        del _compositional_context_cache[k]
+    return result
 
 
 _trace_cache: dict = {"path": "", "mtime": 0.0, "records": []}
+
+# Git subprocess result cache — keyed by (cwd, args_tuple), TTL 30s
+import time as _time_git
+_git_cache: dict = {}
+_GIT_CACHE_TTL = 30.0
+
+
+def _git_run(args: list, cwd: str, timeout: int = 5) -> str:
+    """Run a git command with 30s result caching. Returns stdout or ''."""
+    import subprocess as _subprocess_git
+    cache_key = (cwd, tuple(args))
+    entry = _git_cache.get(cache_key)
+    if entry and (_time_git.monotonic() - entry[0]) < _GIT_CACHE_TTL:
+        return entry[1]
+    try:
+        r = _subprocess_git.run(args, capture_output=True, text=True, timeout=timeout, cwd=cwd)
+        result = r.stdout
+    except Exception:
+        result = ""
+    _git_cache[cache_key] = (_time_git.monotonic(), result)
+    return result
 
 
 def _load_trace(trace_path: str) -> list[dict]:

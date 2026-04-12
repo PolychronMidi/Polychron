@@ -110,25 +110,40 @@ def _scan_coupling_state(src_root: str) -> dict:
     return results
 
 
+_trust_scores_cache: dict = {"path": "", "mtime": 0.0, "scores": {}}
+
+
 def _load_trust_scores(project_root: str) -> dict:
-    """Load ALL per-module trust scores from trace-summary.json."""
+    """Load ALL per-module trust scores from trace-summary.json. Mtime-cached."""
     summary_path = os.path.join(project_root, "metrics", "trace-summary.json")
     if not os.path.isfile(summary_path):
         return {}
+    try:
+        mt = os.path.getmtime(summary_path)
+    except OSError:
+        return {}
+    if _trust_scores_cache["path"] == summary_path and _trust_scores_cache["mtime"] == mt:
+        return _trust_scores_cache["scores"]
     try:
         with open(summary_path) as f:
             summary = json.load(f)
         score_abs = summary.get("trustScoreAbs", {})
         if isinstance(score_abs, dict) and score_abs:
-            return {name: round(data.get("avg", 0), 3)
-                    for name, data in score_abs.items()
-                    if isinstance(data, dict)}
-        dom = summary.get("trustDominance", {})
-        if isinstance(dom, dict):
-            systems = dom.get("dominantSystems", [])
-            return {s["system"]: round(s.get("score", 0), 3)
-                    for s in systems if isinstance(s, dict) and "system" in s}
-        return {}
+            scores = {name: round(data.get("avg", 0), 3)
+                      for name, data in score_abs.items()
+                      if isinstance(data, dict)}
+        else:
+            dom = summary.get("trustDominance", {})
+            if isinstance(dom, dict):
+                systems = dom.get("dominantSystems", [])
+                scores = {s["system"]: round(s.get("score", 0), 3)
+                          for s in systems if isinstance(s, dict) and "system" in s}
+            else:
+                scores = {}
+        _trust_scores_cache["path"] = summary_path
+        _trust_scores_cache["mtime"] = mt
+        _trust_scores_cache["scores"] = scores
+        return scores
     except Exception:
         return {}
 

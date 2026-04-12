@@ -48,6 +48,7 @@ class RAGEngine(
         self._per_file_chunks: dict[str, set[str]] = {}  # file_key -> chunk content hashes
         self._search_cache = _TTLCache(maxsize=256, ttl=CACHE_TTL)
         self._knowledge_cache = _TTLCache(maxsize=128, ttl=CACHE_TTL)
+        self._module_embed_cache = _TTLCache(maxsize=512, ttl=CACHE_TTL)  # module-name → vector
         self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count (persisted to knowledge_access.json)
         self._index_lock = threading.Lock()
         self._bulk_indexing = threading.Event()

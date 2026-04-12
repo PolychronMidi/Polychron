@@ -5,10 +5,8 @@ Merges trace_query (module/causal) + coupling_intel(cascade:X) + delta compariso
 import json
 import logging
 import os
-import subprocess
-
 from server import context as ctx
-from . import _track, _load_trace, _budget_gate, BUDGET_TOOL
+from . import _track, _load_trace, _budget_gate, _git_run, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
@@ -115,16 +113,10 @@ def _trace_delta(focus: str = "") -> str:
     if focus:
         changed_modules = {focus}
     else:
-        try:
-            r = subprocess.run(
-                ["git", "diff", "--name-only", "HEAD"],
-                capture_output=True, text=True, timeout=5, cwd=ctx.PROJECT_ROOT,
-            )
-            for line in r.stdout.strip().splitlines():
-                if line.startswith("src/") and line.endswith(".js"):
-                    changed_modules.add(os.path.basename(line).replace(".js", ""))
-        except Exception:
-            pass
+        stdout = _git_run(["git", "diff", "--name-only", "HEAD"], cwd=ctx.PROJECT_ROOT)
+        for line in stdout.strip().splitlines():
+            if line.startswith("src/") and line.endswith(".js"):
+                changed_modules.add(os.path.basename(line).replace(".js", ""))
 
     # Feature deltas
     cf = curr.get("features", {})
