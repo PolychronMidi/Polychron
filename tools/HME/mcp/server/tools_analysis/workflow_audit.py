@@ -41,7 +41,7 @@ def what_did_i_forget(changed_files: str) -> str:
         if rel_path.endswith(".sh") and "/hooks/" in rel_path:
             all_warnings.append(
                 f"[{rel_path}] HOOK CHANGE: check other hooks in tools/HME/hooks/ for the same issue, "
-                "and verify tools/HME/settings.json still references this hook correctly."
+                "and verify tools/HME/hooks/hooks.json still references this hook correctly."
             )
             if "sessionstart" in rel_path or "pretooluse" in rel_path or "posttooluse" in rel_path:
                 all_warnings.append(

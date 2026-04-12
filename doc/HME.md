@@ -13,8 +13,8 @@ No layer is optional. Removing any one collapses the executive.
 | **MCP Server** | `tools/HME/` | 13 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 5 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern/enrich_prompt) + todo |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
-| **Hooks** | `hooks/` (22 scripts, referenced from `.claude/settings.json`) | Automated workflow enforcement (pre/post tool use) |
-| **Evolver + Lab** | `.github/agents/Evolver.agent.md` + `lab/` | 7-phase evolution loop + experimental harness |
+| **Hooks** | `hooks/` (22 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
+| **Evolver + Lab** | `agents/Evolver.agent.md` + `lab/` | 7-phase evolution loop + experimental harness |
 
 ## Self-Evolution
 
@@ -74,8 +74,9 @@ tools/HME/               The single source of truth
   config/
     project-rules.json                  Declarative project rules (boundary violations,
                                           L0 channels, registration patterns, etc.)
-  hooks/                                Hook scripts (14 hooks across 7 lifecycle events)
-  Evolver.agent.md                      -> .github/agents/Evolver.agent.md (symlink)
+  hooks/                                Hook scripts (22 scripts + hooks.json plugin manifest)
+  agents/
+    Evolver.agent.md                    7-phase evolution loop agent
   doc                                   -> doc/ (symlink)
 ```
 
@@ -421,7 +422,7 @@ Returns `{enriched, original, triage, trace}`. Available via MCP tool, HTTP shim
 
 ## Hooks Integration
 
-All hooks live in `tools/HME/hooks/` as standalone scripts, referenced from `.claude/settings.json`. This keeps hook logic version-controlled, testable, and visible from the HME directory.
+All hooks live in `tools/HME/hooks/` as standalone scripts, registered in `hooks/hooks.json` (Claude Code plugin format). This keeps hook logic version-controlled, testable, and visible from the HME directory.
 
 ### Hook Scripts (22 hooks across 7 lifecycle events)
 
@@ -454,16 +455,11 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `postcompact.sh` | PostCompact | * | Re-surface the same tab state after compaction |
 | `stop.sh` | Stop | * | Verify all work is implemented in code, not just documented |
 
-### Plugin-Ready
-
-`hooks/hooks.json` defines hooks in Claude Code plugin format using `${CLAUDE_PLUGIN_ROOT}`. When Claude Code supports project-level plugin auto-discovery, HME hooks will load automatically. Until then, `.claude/settings.json` calls the scripts directly.
-
 ### Adding a New Hook
 
-1. Create `tools/HME/hooks/your_hook.sh` (read JSON from stdin, write to stderr for messages, exit 0 for allow / exit 2 for block)
-2. Add entry to `.claude/settings.json` hooks section
-3. Add entry to `hooks/hooks.json` (plugin format)
-4. Document in this table
+1. Create `tools/HME/hooks/your_hook.sh` (read JSON from stdin, write hookSpecificOutput JSON to stdout, exit 0)
+2. Add entry to `hooks/hooks.json` with `${CLAUDE_PLUGIN_ROOT}/hooks/your_hook.sh`
+3. Document in this table
 
 ## Polychron-Specific Features
 
@@ -689,7 +685,7 @@ PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py
 
 ### KB and Context Access
 
-**Claude route** has full access: the PTY-spawned `claude` process connects to the MCP server (which holds the warm pre-edit cache, full KB, symbol index). Hooks from `.claude/settings.json` fire — including the PostToolUse transcript logger.
+**Claude route** has full access: the PTY-spawned `claude` process connects to the MCP server (which holds the warm pre-edit cache, full KB, symbol index). Hooks from `hooks/hooks.json` fire — including the PostToolUse transcript logger.
 
 **Local/Hybrid routes** access KB via the HTTP shim (`/enrich` pulls KB + transcript context). They do NOT have the warm pre-edit cache (that lives in the MCP server's memory). Transcript context partially compensates — recent tool calls and narrative digests provide session awareness.
 
@@ -765,4 +761,4 @@ When tools feel wrong (missing context, stale results, slow synthesis):
 3. `learn(action='compact')` — deduplicate
 4. `review(mode='docs')` — verify docs match reality
 5. `hme_admin(action='reload', modules='all')` — hot-reload all tool modules
-6. Check hooks in `.claude/settings.json` — are they triggering?
+6. Check hooks in `tools/HME/hooks/hooks.json` — are they triggering?
