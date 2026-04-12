@@ -1,0 +1,373 @@
+# LIFESAVER — Safety, Invariants & Self-Correction
+
+Complete reference for every enforcement mechanism that keeps the agent, pipeline, and codebase honest. ~80 mechanisms across 6 enforcement layers: hook blocks, hook corrections, declarative invariants, ESLint rules, pipeline validators, and lifecycle tracking.
+
+## Design Principles
+
+1. **Fail fast** — no error, anywhere, may be silently swallowed. Every error surfaces immediately with full context.
+2. **Anti-polling** — background tasks fire notifications when done. Polling is the antipattern.
+3. **Anti-idle** — launching a background pipeline then stopping is wasted compute. Do substantive work while it runs.
+4. **Plan discipline** — finish atomic units before pivoting. Never leave code in a broken intermediate state.
+5. **Lifecycle completeness** — edits need review, stable pipelines need commits, failures need diagnosis.
+6. **Correction over rejection** — where possible, fix the input and let it proceed (updatedInput) rather than blocking and forcing a retry.
+
+## Enforcement Layers
+
+```
+Layer 1: PreToolUse hooks     — intercept before execution (block, correct, or advise)
+Layer 2: PostToolUse hooks    — react after execution (track state, surface errors)
+Layer 3: Stop hook            — prevent premature exit (8 blocking checks)
+Layer 4: Declarative invariants — config/invariants.json (40+ checks, no code changes needed)
+Layer 5: ESLint rules         — 23 custom rules enforcing fail-fast + architectural boundaries
+Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
+```
+
+---
+
+## Layer 1: PreToolUse Hooks
+
+### Corrections (updatedInput — command proceeds with fixed parameters)
+
+| Hook | Trigger | Correction | Message |
+|------|---------|------------|---------|
+| `pretooluse_bash.sh` | `timeout` field in tool_input (non-zero) | Strip timeout, pass command + run_in_background only | "timeout removed — all project scripts handle timeouts inline" |
+
+The `updatedInput` mechanism is the newest enforcement pattern. Instead of blocking (exit 2) and forcing a retry — which wastes a turn and adds context — the hook silently corrects the tool parameters and returns `permissionDecision: "allow"`. The command executes immediately with corrected input. A brief `systemMessage` explains what changed.
+
+```json
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "allow",
+    "updatedInput": {"command": "<original>", "run_in_background": true}
+  },
+  "systemMessage": "timeout removed — all project scripts handle timeouts inline"
+}
+```
+
+### Hard Blocks (exit 2 — command rejected, agent must retry differently)
+
+| Hook | Trigger | Principle |
+|------|---------|-----------|
+| `pretooluse_bash.sh` | `rm` + `run.lock` in command | LIFESAVER — never delete run.lock |
+| `pretooluse_bash.sh` | Any `run.lock` access | Anti-polling — checking lock IS polling |
+| `pretooluse_bash.sh` | `stat`/`ls -l` on pipeline metric files | Anti-polling — timestamp checking is indirect polling |
+| `pretooluse_bash.sh` | Pipeline command without `run_in_background=true` | Anti-wait — pipeline must run in background |
+| `pretooluse_bash.sh` | `run_in_background=true` AND trailing `&` | Correctness — double-backgrounding fires false completion |
+| `pretooluse_bash.sh` | `tail`/`cat`/`grep` on pipeline log files | Anti-polling — use check_pipeline MCP tool |
+| `pretooluse_bash.sh` | `sleep` + `tail`/`cat`/`grep` in same command | Anti-polling — sleep-then-check is the antipattern |
+| `pretooluse_bash.sh` | Empty catch blocks, no-op error handlers, suppressed stderr | Fail fast — no silent error suppression |
+| `pretooluse_bash.sh` | 3rd+ read of `/tmp/claude-*` task output | Anti-polling — already checked twice, wait for notification |
+| `pretooluse_edit.sh` | LLM stub placeholder pattern (ellipsis + "remaining" language) | Correctness — use actual replacement content |
+| `pretooluse_write.sh` | Write to `.claude/projects/*/memory/` | Anti-pattern — memory saving supplanted by HME |
+| `pretooluse_write.sh` | API key/password/secret/token pattern detected | Security — review before writing credentials |
+| `pretooluse_write.sh` | LLM stub placeholder in full file write | Correctness — stubs destroy files |
+| `pretooluse_write.sh` | `logger.warning()` for expected background failures | fix_antipattern — use logger.info for expected failures |
+| `pretooluse_check_pipeline.sh` | 2nd+ `check_pipeline` call in same turn | Anti-polling — already checked this turn |
+
+### Soft Feedback (stderr — command proceeds, agent sees advice)
+
+| Hook | Trigger | Advice |
+|------|---------|--------|
+| `pretooluse_bash.sh` | `grep`/`cat`/`head`/`tail` command | Suggest HME MCP tools for KB-enriched results |
+| `pretooluse_edit.sh` | Editing src/ without prior `read(mode='before')` | NEXUS: call read() for KB constraints + callers + risks |
+| `pretooluse_edit.sh` | Module has KB entries (via HTTP shim) | Surface KB constraint titles and counts |
+| `pretooluse_grep.sh` | Any grep pattern with KB matches | Suggest `find()` for KB-enriched results |
+| `pretooluse_read.sh` | Reading task output file | Remind to wait for completion notification |
+| `pretooluse_read.sh` | Reading project module file | Suggest `read()` for KB + callers + structure |
+| `pretooluse_write.sh` | Writing to `lab/sketches.js` | Lab rules: real monkey-patching, no empty sketches |
+
+### Streak Counter (weighted tool tracking)
+
+Raw tool calls accumulate a weighted score. HME MCP tool calls reset it to zero.
+
+| Tool | Weight | Calls to warn (50) | Calls to block (70) |
+|------|--------|---------------------|---------------------|
+| Read | 5 | 10 | 14 |
+| Edit/Write | 10 | 5 | 7 |
+| Bash | 15 | ~3 | ~5 |
+| Grep | 20 | ~3 | ~4 |
+
+Block message: "Use an mcp__HME__ tool (read, find, review) before continuing."
+
+---
+
+## Layer 2: PostToolUse Hooks
+
+### posttooluse_bash.sh — Pipeline verdict tracking
+
+After `npm run main` completes:
+1. Scan `metrics/pipeline-summary.json` for `errorPatterns` (Traceback, CUDA OOM, RuntimeError)
+2. Scan for failed steps (`ok: false`)
+3. If errors found: emit loud banner — "PIPELINE ERRORS DETECTED — DO NOT IGNORE"
+4. Track NEXUS state: mark pipeline verdict (STABLE/EVOLVED/DRIFTED/FAILED)
+5. Remind about evolver phases 5-7 (fingerprint, trace-summary, journal, KB update)
+
+After `npm run snapshot`: remind to persist calibration anchors.
+After `node lab/run`: check for FAIL/PASS in sketch results.
+
+### posttooluse_edit.sh — Edit backlog tracking
+
+Counts edits to `src/` and `tools/HME/` files via NEXUS state:
+- 3+ edits: "Consider review(mode='forget') soon"
+- 5+ edits: "Run review(mode='forget') now — backlog is growing"
+
+### log-tool-call.sh — LIFESAVER timing + FAIL scanning
+
+Runs on every `mcp__HME__*` tool:
+1. **Timing**: reads start timestamp from pretooluse_lifesaver.sh, warns if threshold exceeded (15s default, 30s for review/warm_pre_edit_cache)
+2. **FAIL scan**: greps tool output for "FAIL", writes to `log/hme-errors.log` with timestamp
+3. **Streak reset**: resets raw tool streak to 0 (HME tool used = streak cleared)
+
+---
+
+## Layer 3: Stop Hook
+
+8 independent blocking checks in `stop.sh`, all returning `{"decision":"block","reason":"..."}`:
+
+### 1. LIFESAVER — mid-turn error detection
+
+**State files**: `log/hme-errors.log`, `tmp/hme-errors.turnstart`, `tmp/hme-errors.lastread`
+
+Two checks:
+- **New errors this turn**: total lines > turnstart count -> block with error text
+- **Unfixed errors from previous turn**: watermark < turnstart count -> block
+
+"Acknowledging an error without fixing it is a CRITICAL VIOLATION."
+
+### 2. Evolver loop
+
+**State file**: `.claude/hme-evolver.local.md` (frontmatter: enabled, iteration, max_iterations, done_signal)
+
+If enabled and not done: block exit, inject next evolution prompt, increment iteration counter. The Stop hook re-injects the prompt, preventing the agent from stopping between rounds.
+
+### 3. Anti-polling (transcript analysis)
+
+Python script parses transcript for:
+- Bash calls reading `/tasks/*.output` files
+- Multiple `check_pipeline` MCP calls
+
+2+ polls -> hard block.
+
+### 4. Anti-idle (background launch detection)
+
+Detects pipeline commands with `run_in_background=true`, then:
+- If pipeline still running: require 20+ real tool calls before exit
+- If pipeline complete: require 5+ real tool calls
+
+Block message lists substantive work: index_codebase, next evolution, what_did_i_forget, docs/KB updates.
+
+### 5. Plan abandonment
+
+Detects Agent spawned with KB/HME work keywords. Block: use HME tools directly, don't delegate KB work to subagents.
+
+### 6. NEXUS lifecycle audit
+
+`_nexus_pending()` checks:
+- Edited files not reviewed -> "run review(mode='forget')"
+- Pipeline STABLE/EVOLVED but not committed
+- Pipeline FAILED/DRIFTED without diagnosis
+
+### 7. Stop-work antipattern (dismissive text)
+
+Detects last assistant message containing: "no response requested", "nothing to do", "no action needed". Hard block — there is always pending work after a user message.
+
+### 8. Stop-work antipattern (text-only short)
+
+Last message was <200 chars with no tool_use blocks. Hard block — if work remains, continue; if genuinely done, provide substantive summary.
+
+---
+
+## Layer 4: Declarative Invariants
+
+**File**: `tools/HME/config/invariants.json` — 40+ checks run via `evolve(focus='invariants')`.
+
+No code changes needed to add new checks — add JSON entries with a type, path, and severity.
+
+### Check Types
+
+| Type | Description |
+|------|-------------|
+| `files_executable` | Glob files must be executable |
+| `files_referenced` | Glob files must appear in reference file |
+| `file_exists` | Path must exist |
+| `symlink_valid` | Symlink must resolve |
+| `json_valid` | File must parse as valid JSON |
+| `glob_count_gte` | Count of glob matches >= minimum |
+| `pattern_in_file` | Regex pattern found in file |
+| `patterns_all_in_file` | All patterns present in file |
+| `pattern_count_gte` | Count of pattern matches >= minimum |
+| `symbols_used` | Defined symbols must be referenced |
+| `symbols_have_kb` | High-caller symbols need KB entries |
+| `files_mtime_window` | Two files modified within time delta |
+| `kb_content_no_pattern` | KB entries must not contain regex |
+| `kb_freshness` | KB updated within max_age_days |
+
+### Critical Invariants (errors)
+
+- Every hook script executable (`files_executable`)
+- Every hook registered in settings.json (`files_referenced`)
+- Every custom ESLint rule registered in eslint.config.mjs (`files_referenced`)
+- All JSON config files valid (`json_valid` x7)
+- Stop hook contains all 5 enforcement sections (`patterns_all_in_file`)
+- LIFESAVER FAIL scan present in log-tool-call.sh (`patterns_all_in_file`)
+- All _safety.sh helpers present (`patterns_all_in_file`)
+- All 7 lifecycle events registered in settings (`patterns_all_in_file`)
+- Minimum 22 ESLint rules (`glob_count_gte`)
+- Minimum 25 L0 channel constants (`pattern_count_gte`)
+- All 27 trust system pairs (`pattern_count_gte`)
+- 19 stutter variants self-registered (`pattern_count_gte`)
+- Symlinks valid: MCP and skills (`symlink_valid`)
+
+### Warning Invariants
+
+- adaptive-state.json valid
+- Evolution journal exists
+- KB has data files (>=1 .lance)
+- Top 15 IIFE globals have KB entries
+- Every L0_CHANNELS constant used somewhere
+- trace.jsonl and run-history within 300s mtime
+- Coupling labels documented in ARCHITECTURE.md
+- KB free of thinking artifact tags
+- KB updated within 14 days
+
+---
+
+## Layer 5: ESLint Rules
+
+23 custom rules in `scripts/eslint-rules/`, all integrated into `npm run main`.
+
+### Fail Fast Enforcement
+
+| Rule | Prevents |
+|------|----------|
+| `no-empty-catch` | Empty catch blocks — must rethrow, log, or recover |
+| `only-error-throws` | Throwing strings/objects — must throw Error instances |
+| `no-silent-early-return` | Bare returns without prior error handling |
+
+### Architectural Boundaries
+
+| Rule | Prevents |
+|------|----------|
+| `no-direct-buffer-push-from-crosslayer` | Cross-layer calling p()/push() — must use crossLayerEmissionGateway |
+| `no-unregistered-feedback-loop` | Feedback loops without feedbackRegistry registration |
+| `no-direct-conductor-state-from-crosslayer` | Cross-layer reading conductorState — must use conductorSignalBridge |
+| `no-conductor-registration-from-crosslayer` | Cross-layer registering with conductorIntelligence |
+| `no-direct-coupling-matrix-read` | Reading .couplingMatrix outside coupling engine |
+| `no-direct-signal-read` | Reading signal snapshot directly — must use signalReader |
+| `no-direct-crosslayer-write-from-conductor` | Conductor writing to cross-layer state |
+
+### Channel & Math Discipline
+
+| Rule | Prevents |
+|------|----------|
+| `no-bare-l0-channel` | Bare string literals in L0 calls — must use L0_CHANNELS constants |
+| `no-bare-math` | Direct Math.* access — must use project `m = Math` alias |
+| `no-math-random` | Math.random() — must use deterministic RNG |
+
+### Validator & Code Organization
+
+| Rule | Prevents |
+|------|----------|
+| `prefer-validator` | Ad-hoc typeof/isFinite checks when validator exists |
+| `validator-name-matches-filename` | Mismatched validator.create() name vs filename |
+| `no-unstamped-validator` | Validators without module name stamp |
+| `no-requires-outside-index` | require() outside index.js files |
+| `case-conventions` | Wrong casing (camelCase vars, PascalCase classes) |
+| `no-non-ascii` | Non-ASCII characters in source code |
+| `no-typeof-validated-global` | typeof checks on boot-validated globals |
+| `no-console-acceptable-warning` | Console calls outside accepted format |
+| `no-useless-expose-dependencies-comments` | Dead @expose-dependencies comments |
+
+---
+
+## Layer 6: Pipeline Validators
+
+6 scripts integrated into `npm run main`, run before composition:
+
+### validate-feedback-graph.js
+Cross-validates `metrics/feedback_graph.json` against source code registrations. Every JSON loop must have a source registration, and vice versa. Checks firewall port structure.
+
+### check-registration-coherence.js
+Modules with functional registrations (registerDensityBias, etc.) must also call `conductorIntelligence.registerModule()` for lifecycle resets. Reports orphans.
+
+### check-safe-preboot-audit.js
+Prevents growth of `safePreBoot.call()`. Baseline: 171 calls in 59 files. Pipeline fails if count exceeds baseline — new code must use `moduleLifecycle.registerInitializer()`.
+
+### check-hypermeta-jurisdiction.js
+4-phase enforcement:
+- Phase 1: No manual axis floors/caps in SpecialCaps
+- Phase 2: No coupling matrix reads outside approved modules
+- Phase 3: 93 bias registration bounds locked against manifest
+- Phase 4: 5 watched controller-managed constants unchanged
+
+### check-tuning-invariants.js
+Validates adaptive tuning parameters within declared bounds from `doc/TUNING_MAP.md`.
+
+### check-manifest-health.js
+Post-composition validation: regime distribution, density rates, coupling bounds, tail-end P90 limits.
+
+---
+
+## Supporting Infrastructure
+
+### _safety.sh — shared preamble
+
+Sourced by every hook. Provides:
+- `_safe_curl(url, body)` — 2s timeout, returns empty on failure
+- `_safe_jq(json, query, fallback)` — field extraction with fallback
+- `_safe_py3(script, fallback)` — Python one-liner with fallback
+- `_safe_int(val)` — numeric validation, returns 0 if invalid
+- `_streak_tick(weight)` / `_streak_check()` / `_streak_reset()` — weighted tool counter
+- `_hme_enrich(module)` / `_hme_validate(module)` — HTTP shim calls to localhost:7734
+
+### _nexus.sh — lifecycle state tracker
+
+State file: `tmp/hme-nexus.state` (TYPE:TIMESTAMP:PAYLOAD per line)
+
+| Type | Set by | Meaning |
+|------|--------|---------|
+| BRIEF | pretooluse_edit.sh | File briefed with read(mode='before') |
+| EDIT | posttooluse_edit.sh | File edited |
+| PIPELINE | posttooluse_bash.sh | Pipeline verdict |
+| COMMIT | posttooluse_bash.sh | Git commit executed |
+
+`_nexus_pending()` checks lifecycle completeness for the Stop hook.
+
+### LIFESAVER error flow
+
+```
+Tool execution
+     |
+log-tool-call.sh scans output for FAIL
+     |
+Writes to log/hme-errors.log
+     |
+userpromptsubmit.sh surfaces errors at turn start
+     |
+stop.sh blocks exit if unfixed errors remain
+     |
+Watermark advances only after fix confirmed
+```
+
+### Compact preservation
+
+precompact.sh and postcompact.sh surface:
+- Pending KB anchors from hme-tab.txt
+- Tracked note files
+- Untracked session files in tmp/
+- Context meter snapshots to metrics/compact-log.jsonl
+
+---
+
+## Evolution: Block to Correct
+
+The original enforcement pattern was **block** (exit 2): reject the tool call and force a retry. This works but costs a full turn cycle and adds context.
+
+The newer pattern is **correct** (updatedInput): fix the input parameters and let the call proceed. Zero wasted turns, minimal context tax. The `systemMessage` field provides a one-line explanation.
+
+```
+Block pattern (old):     detect -> exit 2 -> agent retries -> wasted turn
+Correct pattern (new):   detect -> updatedInput -> command proceeds -> one-line note
+```
+
+Where correction is possible (stripping a timeout, fixing a parameter), prefer `updatedInput` over blocking. Reserve hard blocks for cases where no safe correction exists (deleting run.lock, silent error suppression).

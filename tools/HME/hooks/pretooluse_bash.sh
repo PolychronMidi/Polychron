@@ -4,13 +4,20 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
-# Block explicit timeouts — all project scripts handle timeouts inline.
-# Passing a timeout from the harness wastes compute when it fires before the script finishes.
-# CLAUDE.md hard rule prevents this upstream; hook is the backstop.
+# Strip explicit timeouts — all project scripts handle timeouts inline.
+# Uses updatedInput to silently remove timeout and let the command proceed.
 TIMEOUT=$(_safe_jq "$INPUT" '.tool_input.timeout' '')
 if [ -n "$TIMEOUT" ] && [ "$TIMEOUT" != "0" ]; then
-  echo "{\"decision\":\"block\",\"reason\":\"Do not pass timeout to Bash commands — all project scripts handle timeouts inline (CLAUDE.md hard rule). Retry without the timeout parameter.\"}"
-  exit 2
+  RUN_BG=$(_safe_jq "$INPUT" '.tool_input.run_in_background' 'false')
+  # Build updatedInput: command + run_in_background (if set) + no timeout
+  if [ "$RUN_BG" = "true" ]; then
+    jq -n --arg cmd "$CMD" \
+      '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd,"run_in_background":true}},"systemMessage":"timeout removed — all project scripts handle timeouts inline"}'
+  else
+    jq -n --arg cmd "$CMD" \
+      '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd}},"systemMessage":"timeout removed — all project scripts handle timeouts inline"}'
+  fi
+  exit 0
 fi
 
 # Block run.lock deletion (hard rule)
