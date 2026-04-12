@@ -19,7 +19,7 @@ Layer 1: PreToolUse hooks     — intercept before execution (block, correct, or
 Layer 2: PostToolUse hooks    — react after execution (track state, surface errors)
 Layer 3: Stop hook            — prevent premature exit (8 blocking checks)
 Layer 4: Declarative invariants — config/invariants.json (45+ checks, no code changes needed)
-Layer 5: ESLint rules         — 23 custom rules enforcing fail-fast + architectural boundaries
+Layer 5: ESLint rules         — 22 custom rules enforcing fail-fast + architectural boundaries
 Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
 ```
 
@@ -57,7 +57,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 | `pretooluse_grep.sh` | Any Grep without KB matches | **Enrich** — allow Grep, inject find() nudge | "find() returns matches + KB cross-references" |
 | `pretooluse_write.sh` | Write to src/ file with KB entries | **Enrich** — allow Write, inject KB constraint titles | "Writing to {module} — N KB constraints exist. Verify compliance..." |
 | `pretooluse_todowrite.sh` | Any TodoWrite call | **Redirect** — deny, extract tasks, format for HME todo | "Use mcp__HME__todo instead — supports subtodos. Your tasks: ..." |
-| `pretooluse_hme_primer.sh` | First HME MCP tool call of session | **Enrich** — inject AGENT_PRIMER.md once, clear flag | One-shot primer injection on first HME usage |
+| `pretooluse_hme_primer.sh` | First HME MCP tool call of session | **Enrich** — allow tool, inject AGENT_PRIMER.md content via systemMessage | One-shot primer injection via hookSpecificOutput |
 
 #### Correct example (Bash timeout stripping)
 ```json
@@ -104,7 +104,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 | `pretooluse_write.sh` | API key/password/secret/token pattern detected | Security — review before writing credentials |
 | `pretooluse_write.sh` | LLM stub placeholder in full file write | Correctness — stubs destroy files |
 | `pretooluse_write.sh` | `logger.warning()` for expected background failures | fix_antipattern — use logger.info for expected failures |
-| `pretooluse_check_pipeline.sh` | 2nd+ `check_pipeline` call in same turn | Anti-polling — already checked this turn |
+| `pretooluse_check_pipeline.sh` | 2nd+ `check_pipeline` call in same turn | **Redirect** — deny + suggest `status(mode='pipeline')` |
 
 ### Soft Feedback (stderr — command proceeds, agent sees advice)
 
@@ -312,7 +312,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 
 ## Layer 5: ESLint Rules
 
-23 custom rules in `scripts/eslint-rules/`, all integrated into `npm run main`.
+22 custom rules in `scripts/eslint-rules/`, all integrated into `npm run main`.
 
 ### Fail Fast Enforcement
 
@@ -396,7 +396,7 @@ Sourced by every hook. Provides:
 - `_safe_py3(script, fallback)` — Python one-liner with fallback
 - `_safe_int(val)` — numeric validation, returns 0 if invalid
 - `_streak_tick(weight)` / `_streak_check()` / `_streak_reset()` — weighted tool counter
-- `_hme_enrich(module)` / `_hme_validate(module)` — HTTP shim calls to localhost:7734
+- `_hme_enrich(module)` / `_hme_validate(module)` / `_hme_kb_count(json)` / `_hme_kb_titles(json, n)` — HTTP shim calls to localhost:7734
 
 ### _nexus.sh — lifecycle state tracker
 
@@ -427,13 +427,30 @@ stop.sh blocks exit if unfixed errors remain
 Watermark advances only after fix confirmed
 ```
 
-### Compact preservation
+### userpromptsubmit.sh — turn-start error surface + Evolver context
 
-precompact.sh and postcompact.sh surface:
-- Pending KB anchors from hme-tab.txt
-- Tracked note files
-- Untracked session files in tmp/
-- Context meter snapshots to metrics/compact-log.jsonl
+Runs at the start of every user turn. Three responsibilities:
+
+1. **LIFESAVER error surface** — reads `log/hme-errors.log`, compares against `tmp/hme-errors.lastread` watermark. If new errors exist, emits a loud banner with the error text. Records line count to `tmp/hme-errors.turnstart` for the Stop hook to compare against.
+2. **Evolver context injection** — if the prompt matches evolution-related keywords (evolve, pipeline, lab, sketch), injects a reminder to use `before_editing`, `what_did_i_forget`, and `add_knowledge`.
+3. **Plan discipline reminder** — unconditionally appends anti-abandonment reminder every turn.
+
+### precompact.sh — pre-compaction state surface
+
+Runs before Claude Code compacts context. Three responsibilities:
+
+1. **KB anchor surface** — reads `tmp/hme-tab.txt` for `KB:` entries (pending, unsaved knowledge). Surfaces them to stderr so the agent can persist them before context is wiped.
+2. **Note file surface** — surfaces `FILE:` entries from tab (tracked note files from background tasks, writes, agents).
+3. **Context meter logging** — reads `/tmp/claude-context.json` from the statusline, writes a `pre_compact` entry to `metrics/compact-log.jsonl` with used/remaining percentages and timestamp for compaction frequency analysis.
+
+### postcompact.sh — post-compaction re-surface
+
+Runs after compaction completes. Mirrors precompact surface so the agent can immediately act on pending work:
+
+1. Re-surfaces unsaved `KB:` entries from tab (still pending after compaction).
+2. Re-surfaces tracked `FILE:` entries.
+3. Logs `post_compact` event to `metrics/compact-log.jsonl`.
+4. Suggests `status(mode='resume')` for full session state recovery.
 
 ---
 

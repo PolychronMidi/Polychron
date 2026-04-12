@@ -39,10 +39,7 @@ print(count)
 " 2>/dev/null || echo 0)
 
 if [[ "$CALL_COUNT" -ge 1 ]]; then
-  jq -n '{
-    "decision": "block",
-    "reason": "ANTI-POLLING: check_pipeline already called this turn. The pipeline runs in background and fires a task notification when done. Use pipeline_digest (has freshness guard + auto-status-check). Do substantive work while waiting: implement next evolution, run what_did_i_forget, update KB/docs, explore with module_intel."
-  }'
+  jq -n '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":"ANTI-POLLING: check_pipeline already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- mcp__HME__status(mode=\"pipeline\") — has freshness guard, auto-checks status\n- Do real work: implement next evolution, run mcp__HME__review, update KB/docs"}'
   exit 0
 fi
 

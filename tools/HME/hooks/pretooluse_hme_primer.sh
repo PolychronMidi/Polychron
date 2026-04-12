@@ -8,12 +8,13 @@ FLAG="${PROJECT}/tmp/hme-primer-needed.flag"
 
 if [ -f "$FLAG" ]; then
   PRIMER="${PROJECT}/doc/AGENT_PRIMER.md"
-  if [ -f "$PRIMER" ]; then
-    echo "━━━ AGENT PRIMER (injected once per session) ━━━" >&2
-    cat "$PRIMER" >&2
-    echo "━━━ END PRIMER ━━━" >&2
-  fi
   rm -f "$FLAG"
+  if [ -f "$PRIMER" ]; then
+    CONTENT=$(cat "$PRIMER")
+    jq -n --arg content "$CONTENT" \
+      '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("━━━ AGENT PRIMER (once per session) ━━━\n" + $content + "\n━━━ END PRIMER ━━━")}'
+    exit 0
+  fi
 fi
 
 exit 0

@@ -144,10 +144,10 @@
     },
     {
       "id": "stop-hook-enforcement",
-      "description": "Stop hook must have all critical enforcement sections",
+      "description": "Stop hook must have all 8 critical enforcement sections",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/stop.sh",
-      "patterns": ["hme-errors\\.log", "hme-evolver\\.local\\.md", "_nexus_pending", "ANTI-POLLING", "PLAN-ABANDONMENT"],
+      "patterns": ["hme-errors\\.log", "hme-evolver\\.local\\.md", "_nexus_pending", "ANTI-POLLING", "PLAN-ABANDONMENT", "ANTI-IDLE", "DISMISSIVE", "TEXT_ONLY_SHORT"],
       "severity": "error"
     },
     {
@@ -163,7 +163,7 @@
       "description": "_safety.sh must define all required helper functions",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/_safety.sh",
-      "patterns": ["_safe_jq", "_safe_py3", "_safe_int", "_hme_enrich", "_hme_kb_count", "_streak_tick", "_streak_reset"],
+      "patterns": ["_safe_jq", "_safe_py3", "_safe_int", "_safe_curl", "_hme_enrich", "_hme_kb_count", "_hme_kb_titles", "_hme_validate", "_streak_tick", "_streak_reset", "_streak_check"],
       "severity": "error"
     },
     {
@@ -378,6 +378,22 @@
       "type": "file_exists",
       "path": "doc/LIFESAVER.md",
       "severity": "error"
+    },
+    {
+      "id": "tab-helpers-exists",
+      "description": "_tab_helpers.sh must exist — sourced by posttooluse_addknowledge, posttooluse_agent, posttooluse_write",
+      "type": "file_exists",
+      "path": "tools/HME/hooks/_tab_helpers.sh",
+      "severity": "error"
+    },
+    {
+      "id": "hooks-documented-hme-md",
+      "description": "Every hook script must be documented in doc/HME.md hook table",
+      "type": "files_referenced",
+      "glob": "tools/HME/hooks/*.sh",
+      "exclude": ["_*.sh", "hooks.json"],
+      "reference_file": "doc/HME.md",
+      "severity": "warning"
     }
   ]
 }
