@@ -182,6 +182,45 @@ def convention_check(file_path: str) -> str:
         stamp_match = _re.search(r"validator\.create\(['\"](\w+)['\"]\)", content)
         if stamp_match and stamp_match.group(1) != fname:
             issues.append(f"CONVENTION: Validator stamp '{stamp_match.group(1)}' doesn't match filename '{fname}'.")
+    # console.warn format — must be 'Acceptable warning: ...'
+    warn_matches = re.findall(r'console\.warn\(([^\)]+)\)', content)
+    for wm in warn_matches:
+        if "Acceptable warning:" not in wm:
+            issues.append(f"CONVENTION: console.warn must use 'Acceptable warning: ...' format.")
+            break
+
+    # Fallback patterns — ad-hoc || 0, || [], || '' instead of validator
+    fallback_hits = re.findall(r'\|\|\s*(?:0(?:\.\d+)?|(?:\[\])|(?:\{\})|(?:["\']["\']))\b', content)
+    if fallback_hits and "validator" not in content.lower():
+        issues.append(f"CONVENTION: {len(fallback_hits)} fallback pattern(s) (|| 0, || [], etc). Use validator methods.")
+
+    # Comment verbosity — JSDoc blocks and multi-line comments
+    jsdoc_blocks = re.findall(r'/\*\*[\s\S]*?\*/', content)
+    long_jsdoc = [b for b in jsdoc_blocks if b.count('\n') > 3]
+    if long_jsdoc:
+        issues.append(f"CONVENTION: {len(long_jsdoc)} verbose JSDoc block(s). Keep comments terse — one-line inline only.")
+
+    # Self-registration check for src/ modules
+    if rel_path.startswith("src/") and rel_path.endswith(".js") and "/index.js" not in rel_path:
+        has_registration = any(p in content for p in REGISTRATION_PATTERNS)
+        has_iife = "(function" in content or "(() =>" in content
+        if not has_iife:
+            issues.append("CONVENTION: No IIFE wrapper found. src/ modules should use (function(){...})() pattern.")
+        if not has_registration and has_iife:
+            # Only flag if file defines something (not a pure helper)
+            if "module.exports" not in content and "= function" in content:
+                issues.append("NOTE: No self-registration detected. If this module defines a global, it should self-register.")
+
+    # File name vs export match
+    fname_stem = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
+    if rel_path.startswith("src/") and rel_path.endswith(".js") and "/index.js" not in rel_path:
+        # Check if the IIFE assigns to a global matching the filename
+        iife_assign = re.search(r'^\s*(\w+)\s*=\s*\(function', content, re.MULTILINE)
+        if iife_assign:
+            global_name = iife_assign.group(1)
+            if global_name != fname_stem and global_name.lower() != fname_stem.lower():
+                issues.append(f"CONVENTION: File '{fname_stem}' defines global '{global_name}'. Name should match.")
+
     # Knowledge check
     module_name = os.path.basename(abs_path).replace(".js", "")
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=2)

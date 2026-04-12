@@ -237,6 +237,39 @@
       "glob": "metrics/run-history/*.json",
       "min_count": 5,
       "severity": "info"
+    },
+    {
+      "id": "7layers-doc-exists",
+      "description": "7-layer coherence audit document must exist",
+      "type": "file_exists",
+      "path": "doc/7_LAYERS.md",
+      "severity": "warning"
+    },
+    {
+      "id": "kb-minimum-entries",
+      "description": "KB must have at least 50 entries for adequate coverage",
+      "type": "glob_count_gte",
+      "glob": "tools/HME/mcp/rag_data/project_knowledge/*.json",
+      "min_count": 1,
+      "severity": "warning"
+    },
+    {
+      "id": "trust-system-count",
+      "description": "Must have all 27 trust system pair assignments defined",
+      "type": "pattern_count_gte",
+      "path": "src/crossLayer/structure/trust/adaptiveTrustScoresHelpers.js",
+      "pattern": "trustSystems\\.names\\.",
+      "min_count": 27,
+      "severity": "error"
+    },
+    {
+      "id": "stutter-variant-registry",
+      "description": "All stutter variants must self-register via stutterVariants.register",
+      "type": "pattern_count_gte",
+      "path": "src/fx/stutter/variants/index.js",
+      "pattern": "require\\(",
+      "min_count": 19,
+      "severity": "error"
     }
   ]
 }

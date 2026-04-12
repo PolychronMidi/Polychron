@@ -74,6 +74,10 @@ def composition_arc() -> str:
         return "No section data found."
 
     parts = ["# Composition Arc\n"]
+    from .runtime import _check_trace_staleness
+    _stale = _check_trace_staleness()
+    if _stale:
+        parts.append(_stale)
     for sec_num in sorted(sections.keys()):
         s = sections[sec_num]
         beats = s["beats"]

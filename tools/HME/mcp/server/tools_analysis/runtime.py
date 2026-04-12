@@ -2,11 +2,34 @@
 import json
 import os
 import logging
+import glob as _glob
 
 from server import context as ctx
 from . import _track
 
 logger = logging.getLogger("HME")
+
+
+def _check_trace_staleness() -> str:
+    """Compare trace.jsonl mtime against latest run-history snapshot. Returns warning if stale."""
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    rh_dir = os.path.join(ctx.PROJECT_ROOT, "metrics", "run-history")
+    if not os.path.isfile(trace_path) or not os.path.isdir(rh_dir):
+        return ""
+    trace_mtime = os.path.getmtime(trace_path)
+    snapshots = sorted(_glob.glob(os.path.join(rh_dir, "*.json")))
+    if not snapshots:
+        return ""
+    latest_mtime = os.path.getmtime(snapshots[-1])
+    delta_sec = abs(trace_mtime - latest_mtime)
+    if delta_sec > 300:
+        from datetime import datetime
+        trace_ts = datetime.fromtimestamp(trace_mtime).strftime("%Y-%m-%d %H:%M")
+        snap_ts = datetime.fromtimestamp(latest_mtime).strftime("%Y-%m-%d %H:%M")
+        return (f"\n> **STALE DATA WARNING**: trace.jsonl ({trace_ts}) is from a different "
+                f"pipeline run than the latest snapshot ({snap_ts}). "
+                f"Run `npm run main` to sync.\n")
+    return ""
 
 
 def drama_finder(top_n: int = 10) -> str:
@@ -237,6 +260,9 @@ def beat_snapshot(beat_key: str) -> str:
                 f"Accepted formats: '2:1:3:0' (exact key), '2:1' (prefix), '400' (Nth record), 'S3' (section 3)")
 
     parts = [f"## Beat Snapshot: {beat_key}\n"]
+    _stale = _check_trace_staleness()
+    if _stale:
+        parts.append(_stale)
 
     # Regime and timing
     parts.append(f"**Regime:** {record.get('regime', '?')}")
