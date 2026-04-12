@@ -14,13 +14,28 @@ Complete reference for every enforcement mechanism that keeps the agent, pipelin
 ## Enforcement Layers
 
 ```
+Layer 0: SessionStart hook    — bootstrap: validate hooks, start HTTP shim, reset state, orient
 Layer 1: PreToolUse hooks     — intercept before execution (block, correct, or advise)
 Layer 2: PostToolUse hooks    — react after execution (track state, surface errors)
 Layer 3: Stop hook            — prevent premature exit (8 blocking checks)
-Layer 4: Declarative invariants — config/invariants.json (40+ checks, no code changes needed)
+Layer 4: Declarative invariants — config/invariants.json (45+ checks, no code changes needed)
 Layer 5: ESLint rules         — 23 custom rules enforcing fail-fast + architectural boundaries
 Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
 ```
+
+---
+
+## Layer 0: SessionStart
+
+### sessionstart.sh — bootstrap and orientation
+
+Runs once at session start. Five responsibilities:
+
+1. **Hook executable check** — scans every `*.sh` in hooks/ (excluding `_*` helpers). Non-executable hooks logged to `hme-errors.log` and surfaced via stderr.
+2. **State reset** — clears `tmp/hme-tab.txt`, `tmp/hme-nexus.state`, `tmp/hme-primer-needed.flag` for a fresh session.
+3. **HTTP shim** — ensures `hme_http.py` is listening on port 7734. Starts in background if not bound.
+4. **Environment** — exports `HME_ACTIVE=1` via `CLAUDE_ENV_FILE`.
+5. **Orientation** — surfaces pipeline verdict, last journal round, uncommitted change count, and suggests `status(mode='resume')`.
 
 ---
 
@@ -38,7 +53,11 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 |------|---------|---------|---------|
 | `pretooluse_bash.sh` | `timeout` in tool_input | **Correct** — strip timeout via updatedInput | "timeout removed — all project scripts handle timeouts inline" |
 | `pretooluse_read.sh` | Read on project src/ file with KB entries | **Enrich** — allow Read, inject KB titles + entry count | "KB context for {module} (N entries). For full briefing: mcp__HME__read(...)" |
+| `pretooluse_grep.sh` | Any Grep with KB matches | **Enrich** — allow Grep, inject KB titles + find() nudge | "HME has N KB entries. For KB-enriched results: mcp__HME__find(...)" |
+| `pretooluse_grep.sh` | Any Grep without KB matches | **Enrich** — allow Grep, inject find() nudge | "find() returns matches + KB cross-references" |
+| `pretooluse_write.sh` | Write to src/ file with KB entries | **Enrich** — allow Write, inject KB constraint titles | "Writing to {module} — N KB constraints exist. Verify compliance..." |
 | `pretooluse_todowrite.sh` | Any TodoWrite call | **Redirect** — deny, extract tasks, format for HME todo | "Use mcp__HME__todo instead — supports subtodos. Your tasks: ..." |
+| `pretooluse_hme_primer.sh` | First HME MCP tool call of session | **Enrich** — inject AGENT_PRIMER.md once, clear flag | One-shot primer injection on first HME usage |
 
 #### Correct example (Bash timeout stripping)
 ```json
@@ -138,10 +157,38 @@ Counts edits to `src/` and `tools/HME/` files via NEXUS state:
 
 ### log-tool-call.sh — LIFESAVER timing + FAIL scanning
 
-Runs on every `mcp__HME__*` tool:
+Runs on every tool (empty matcher):
 1. **Timing**: reads start timestamp from pretooluse_lifesaver.sh, warns if threshold exceeded (15s default, 30s for review/warm_pre_edit_cache)
 2. **FAIL scan**: greps tool output for "FAIL", writes to `log/hme-errors.log` with timestamp
 3. **Streak reset**: resets raw tool streak to 0 (HME tool used = streak cleared)
+
+### posttooluse_addknowledge.sh — KB tab cleanup
+
+After `add_knowledge`: clears pending `KB:` entries from `tmp/hme-tab.txt`. Prevents compact preservation from surfacing already-saved anchors.
+
+### posttooluse_agent.sh — background output tracking
+
+After Agent spawns: extracts background output file path and appends to compact tab. Ensures random-hash `/tmp/claude-*` paths survive compaction.
+
+### posttooluse_hme_read.sh — NEXUS briefing tracker
+
+After `mcp__HME__read`: marks target file as BRIEF in NEXUS state. The `pretooluse_edit.sh` hook checks NEXUS before edits — files not briefed trigger a warning. Also resets streak.
+
+### posttooluse_hme_review.sh — edit backlog lifecycle
+
+After `mcp__HME__review(mode='forget')`: clears EDIT entries from NEXUS, marks REVIEW complete, and surfaces next step (commit if pipeline passed, run pipeline otherwise). Resets streak.
+
+### posttooluse_pipeline_kb.sh — trace summary extraction
+
+After `npm run main` via Bash: parses `metrics/trace-summary.json` for regime distribution, trust dominance, coupling labels, beat/section counts. Writes a summary line to `tmp/hme-tab.txt` as a pending KB anchor.
+
+### posttooluse_read.sh — silent KB enrichment
+
+After Read on project source files: checks KB for module entries. If found, surfaces count and suggests `mcp__HME__read()` for full briefing. Resets streak (reading = gathering context).
+
+### posttooluse_write.sh — note file tracking
+
+After Write to `.md`/`.txt` files outside `tmp/`: appends path to compact tab. Ensures doc and note files survive compaction.
 
 ---
 
@@ -204,7 +251,7 @@ Last message was <200 chars with no tool_use blocks. Hard block — if work rema
 
 ## Layer 4: Declarative Invariants
 
-**File**: `tools/HME/config/invariants.json` — 40+ checks run via `evolve(focus='invariants')`.
+**File**: `tools/HME/config/invariants.json` — 45+ checks run via `evolve(focus='invariants')`.
 
 No code changes needed to add new checks — add JSON entries with a type, path, and severity.
 
@@ -226,6 +273,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 | `files_mtime_window` | Two files modified within time delta |
 | `kb_content_no_pattern` | KB entries must not contain regex |
 | `kb_freshness` | KB updated within max_age_days |
+| `shell_output_empty` | Shell command must produce no stdout |
 
 ### Critical Invariants (errors)
 
@@ -242,6 +290,10 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 - All 27 trust system pairs (`pattern_count_gte`)
 - 19 stutter variants self-registered (`pattern_count_gte`)
 - Symlinks valid: MCP and skills (`symlink_valid`)
+- Every hook registered in hooks.json (`files_referenced`)
+- No untracked files outside .gitignore (`shell_output_empty`)
+- Feedback graph has >= 11 loops (`pattern_count_gte`)
+- LIFESAVER.md exists (`file_exists`)
 
 ### Warning Invariants
 
@@ -254,6 +306,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 - Coupling labels documented in ARCHITECTURE.md
 - KB free of thinking artifact tags
 - KB updated within 14 days
+- CLAUDE.md documents correct ESLint rule count (`pattern_in_file`)
 
 ---
 

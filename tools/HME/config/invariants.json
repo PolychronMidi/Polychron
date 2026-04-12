@@ -345,6 +345,39 @@
       "type": "shell_output_empty",
       "shell": "git ls-files --others --exclude-standard",
       "severity": "error"
+    },
+    {
+      "id": "hooks-registered-hooks-json",
+      "description": "Every hook script (excluding helpers) must also be registered in hooks.json",
+      "type": "files_referenced",
+      "glob": "tools/HME/hooks/*.sh",
+      "exclude": ["_*.sh", "hooks.json"],
+      "reference_file": "tools/HME/hooks/hooks.json",
+      "severity": "error"
+    },
+    {
+      "id": "claude-md-eslint-count",
+      "description": "CLAUDE.md must document the correct ESLint rule count (22)",
+      "type": "pattern_in_file",
+      "path": "CLAUDE.md",
+      "pattern": "22 project-specific rules",
+      "severity": "warning"
+    },
+    {
+      "id": "feedback-loops-count",
+      "description": "feedback_graph.json must have at least 11 feedback loops",
+      "type": "pattern_count_gte",
+      "path": "metrics/feedback_graph.json",
+      "pattern": "\"id\":\\s*\"[a-z]",
+      "min_count": 11,
+      "severity": "error"
+    },
+    {
+      "id": "lifesaver-doc-exists",
+      "description": "LIFESAVER.md enforcement reference must exist",
+      "type": "file_exists",
+      "path": "doc/LIFESAVER.md",
+      "severity": "error"
     }
   ]
 }

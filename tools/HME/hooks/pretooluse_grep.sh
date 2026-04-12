@@ -13,11 +13,14 @@ fi
 KB_JSON=$(_hme_enrich "$PATTERN" 2)
 KB_COUNT=$(_hme_kb_count "$KB_JSON")
 if [[ "$KB_COUNT" -gt 0 ]]; then
-  echo "HME HAS CONTEXT ($KB_COUNT entries). Use mcp__HME__find(query=\"$PATTERN\") for KB-enriched results:" >&2
-  _hme_kb_titles "$KB_JSON" 2 >&2
+  TITLES=$(_hme_kb_titles "$KB_JSON" 3)
+  jq -n --arg pattern "$PATTERN" --arg count "$KB_COUNT" --arg titles "$TITLES" \
+    '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("HME has " + $count + " KB entries matching \"" + $pattern + "\". For KB-enriched results: mcp__HME__find(query=\"" + $pattern + "\")\n" + $titles)}'
+  _streak_tick 20
+  exit 0
 else
-  echo "HME FIRST: Use mcp__HME__find(query=\"$PATTERN\") — returns matches + KB cross-references. Raw Grep finds text; find() finds meaning." >&2
+  jq -n --arg pattern "$PATTERN" \
+    '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("mcp__HME__find(query=\"" + $pattern + "\") returns matches + KB cross-references. Raw Grep finds text; find() finds meaning.")}'
+  _streak_tick 20
+  exit 0
 fi
-_streak_tick 20
-if ! _streak_check; then exit 1; fi
-exit 0

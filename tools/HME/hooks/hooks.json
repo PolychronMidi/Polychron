@@ -8,6 +8,10 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "mcp__HME__check_pipeline",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_check_pipeline.sh", "timeout": 10}]
+      },
+      {
         "matcher": "mcp__HME__",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_hme_primer.sh", "timeout": 5}]
       },
@@ -42,11 +46,19 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/log-tool-call.sh", "timeout": 10}]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_bash.sh", "timeout": 10},
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_pipeline_kb.sh", "timeout": 10}
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_read.sh", "timeout": 10}]
       },
       {
         "matcher": "Edit",
