@@ -56,6 +56,10 @@ def _reindex_files(files: list[str]) -> dict:
                 _log_error("reindex", f"file not found: {filepath}")
                 skipped.append(filepath)
                 continue
+            # Skip large files (>32KB) — watcher handles bulk reindex; mini-reindex is for small edits
+            if os.path.getsize(abs_path) > 32768:
+                skipped.append(filepath)
+                continue
             remaining = max(1, deadline - _time.monotonic())
             future = executor.submit(_project_engine.index_file, abs_path)
             try:
