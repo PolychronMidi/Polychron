@@ -40,6 +40,19 @@ if echo "$FILE" | grep -q 'tools/HME/mcp/server'; then
     exit 2
   fi
 fi
+# Enrich: inject KB context for src/ files before write proceeds
+if echo "$FILE" | grep -qE '/Polychron/src/'; then
+  MODULE=$(basename "$FILE" | sed 's/\.[jt]sx\?$//')
+  KB_JSON=$(_hme_enrich "$MODULE")
+  KB_COUNT=$(_hme_kb_count "$KB_JSON")
+  if [[ "$KB_COUNT" -gt 0 ]]; then
+    TITLES=$(_hme_kb_titles "$KB_JSON" 3)
+    jq -n --arg module "$MODULE" --arg count "$KB_COUNT" --arg titles "$TITLES" \
+      '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("Writing to " + $module + " — " + $count + " KB constraints exist. Verify compliance: mcp__HME__read(target=\"" + $module + "\", mode=\"before\")\n" + $titles)}'
+    _streak_tick 10
+    exit 0
+  fi
+fi
 _streak_tick 10
 if ! _streak_check; then exit 1; fi
 exit 0
