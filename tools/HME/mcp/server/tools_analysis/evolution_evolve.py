@@ -9,7 +9,7 @@ import os
 import logging
 
 from server import context as ctx
-from . import _track
+from . import _track, _budget_gate, BUDGET_COMPOUND, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
@@ -92,7 +92,8 @@ def evolve(focus: str = "all") -> str:
         from .evolution_invariants import check_invariants
         return check_invariants()
 
-    return "\n".join(parts)
+    budget = BUDGET_COMPOUND if focus == "all" else BUDGET_TOOL
+    return _budget_gate("\n".join(parts), budget=budget)
 
 
 _loc_cache: dict = {"result": "", "ts": 0.0}
@@ -362,9 +363,9 @@ def _auto_curate() -> str:
     latest = runs[0]
     feats = latest.get("features", {})
 
-    kb_entries = ctx.project_engine.search_knowledge("", top_k=200)
+    kb_entries = ctx.project_engine.search_knowledge("", top_k=50)
     kb_text = " ".join(
-        (e.get("title", "") + " " + e.get("content", "")).lower()
+        (e.get("title", "") + " " + e.get("content", "")[:200]).lower()
         for e in kb_entries
     )
 

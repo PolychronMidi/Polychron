@@ -8,7 +8,7 @@ import time
 import logging
 
 from server import context as ctx
-from . import _track
+from . import _track, _budget_gate, BUDGET_TOOL
 from .synthesis_session import append_session_narrative, get_session_narrative
 
 logger = logging.getLogger("HME")
@@ -63,7 +63,7 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
 
     if mode == "coupling":
         from .coupling import coupling_intel as _ci
-        return _ci(mode=query or "full")
+        return _budget_gate(_ci(mode=query or "full"))
 
     if mode == "symbols":
         from .symbols import search_symbols as _ss
@@ -137,7 +137,7 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
     narrative = get_session_narrative(max_entries=20)
     if narrative:
         result = narrative + result
-    return _cache_and_return(result)
+    return _cache_and_return(_budget_gate(result))
 
 
 def _detect_intent(query: str) -> str:

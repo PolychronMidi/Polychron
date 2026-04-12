@@ -8,7 +8,7 @@ import os
 import subprocess
 
 from server import context as ctx
-from . import _track, _load_trace
+from . import _track, _load_trace, _budget_gate, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
@@ -29,7 +29,7 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
     ctx.ensure_ready_sync()
 
     if mode == "delta":
-        return _trace_delta(target if target and target != "auto" else "")
+        return _budget_gate(_trace_delta(target if target and target != "auto" else ""))
 
     if not target or not target.strip():
         return "Error: target cannot be empty. Pass a channel name or module name."

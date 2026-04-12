@@ -6,7 +6,7 @@ and audio_analyze into one tool with mode routing.
 import logging
 
 from server import context as ctx
-from . import _track
+from . import _track, _budget_gate, _budget_section, BUDGET_COMPOUND, BUDGET_SECTION, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
@@ -103,6 +103,9 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
         else:
             parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, composition, health, forget, convention, symbols, docs, evolve, full.")
 
+    # Apply per-section budgets for compound modes, single budget otherwise
+    if len(parts) > 1:
+        parts = [_budget_section(p, BUDGET_SECTION) for p in parts]
     result = "\n\n---\n\n".join(parts) if len(parts) > 1 else parts[0] if parts else "No data."
 
     # Auto-draft KB entry after digest with run delta
@@ -112,7 +115,8 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                    "  learn(title='RXX: ...describe evolutions...', content='...run delta + what changed...', "
                    "category='pattern', listening_notes='...')")
 
-    return result
+    budget = BUDGET_COMPOUND if mode == "full" else BUDGET_TOOL
+    return _budget_gate(result, budget=budget)
 
 
 def _unified_evolution_recommender() -> str:
