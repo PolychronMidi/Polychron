@@ -48,6 +48,10 @@ def _reindex_files(files: list[str]) -> dict:
                 skipped.append(filepath)
                 break
             abs_path = filepath if os.path.isabs(filepath) else os.path.join(PROJECT_ROOT, filepath)
+            abs_path = os.path.realpath(abs_path)
+            if not abs_path.startswith(os.path.realpath(PROJECT_ROOT) + os.sep):
+                skipped.append(filepath)
+                continue
             if not os.path.exists(abs_path):
                 _log_error("reindex", f"file not found: {filepath}")
                 skipped.append(filepath)
