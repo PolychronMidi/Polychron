@@ -45,6 +45,7 @@ class RAGEngine(
         self.hash_cache_path = os.path.join(db_path, "file_hashes.json")
         self._file_hashes: dict[str, str] = {}
         self._chunk_hashes: set[str] = set()  # chunk-level dedup
+        self._per_file_chunks: dict[str, set[str]] = {}  # file_key -> chunk content hashes
         self._search_cache = _TTLCache(maxsize=256, ttl=CACHE_TTL)
         self._knowledge_cache = _TTLCache(maxsize=128, ttl=CACHE_TTL)
         self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count (persisted to knowledge_access.json)
@@ -52,6 +53,7 @@ class RAGEngine(
         self._bulk_indexing = threading.Event()
         self._token_cache: dict[int, int] = {}
         self._load_hashes()
+        self._load_per_file_chunks()
         self._try_open_table()
         self._try_open_knowledge_table()
         self._try_open_symbol_table()
@@ -84,16 +86,20 @@ class RAGEngine(
             self.table = None
             self._file_hashes = {}
             self._chunk_hashes = set()
+            self._per_file_chunks = {}
             self._access_log = {}
             self._search_cache.invalidate()
-            # Nuclear: delete hash file FIRST, then save empty, then delete again
-            try:
-                os.remove(self.hash_cache_path)
-            except OSError:
-                pass
-            self._save_hashes()  # writes {} to disk
-            try:
-                os.remove(self.hash_cache_path)
-            except OSError:
-                pass
+            # Nuclear: delete hash files FIRST, then save empty, then delete again
+            for path in (self.hash_cache_path, self._per_file_chunks_path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+            self._save_hashes()
+            self._save_per_file_chunks()
+            for path in (self.hash_cache_path, self._per_file_chunks_path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
             self._clearing = False
