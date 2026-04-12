@@ -294,6 +294,25 @@ def type_hierarchy(type_name: str = "") -> str:
     top_depended = sorted(rev_graph.items(), key=lambda x: -len(x[1]))[:10]
     for g, users in top_depended:
         parts.append(f"  {g}: {len(users)} modules depend on it")
+
+    # Manager/helper pairing: detect *Manager files and their *Helpers counterparts
+    manager_pairs = []
+    for js_file in _glob_mod.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", "*Manager.js"), recursive=True):
+        stem = os.path.basename(js_file).replace("Manager.js", "")
+        # Search for matching *Helpers.js (plural suffix convention in this project)
+        helpers_pat = os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{stem}*Helpers.js")
+        helper_matches = _glob_mod.glob(helpers_pat, recursive=True)
+        helper_name = os.path.basename(helper_matches[0]).replace(".js", "") if helper_matches else None
+        mgr_name = os.path.basename(js_file).replace(".js", "")
+        users_of_mgr = len(rev_graph.get(mgr_name, set()))
+        manager_pairs.append((mgr_name, helper_name, users_of_mgr))
+
+    if manager_pairs:
+        parts.append(f"\n## Manager/Helper Pairs ({len(manager_pairs)} managers):")
+        for mgr, hlp, users in sorted(manager_pairs, key=lambda x: -x[2]):
+            hlp_str = f" + {hlp}" if hlp else " (no helpers file)"
+            parts.append(f"  {mgr}{hlp_str} [{users} dependents]")
+
     return "\n".join(parts)
 
 
@@ -387,7 +406,29 @@ def cross_language_trace(symbol_name: str) -> str:
             req_str = f" via {reqs[0]}" if reqs else ""
             parts.append(f"  {rel}{req_str}")
 
-    # 4. KB constraints
+    # 4. Reverse xref — exported API (what methods does this module expose?)
+    if ctx.project_engine.symbol_table is not None:
+        try:
+            all_rows = ctx.project_engine.symbol_table.to_arrow().to_pylist()
+            # Find the defining file first
+            defs = [r for r in all_rows if r["name"].lower() == symbol_name.lower()]
+            if defs:
+                def_file = defs[0]["file"]
+                # All symbols in that file = exported API surface
+                api = [r for r in all_rows if r["file"] == def_file
+                       and r["name"].lower() != symbol_name.lower()
+                       and r["kind"] in ("function", "method", "variable")]
+                if api:
+                    parts.append(f"\n**Exported API** ({len(api)} symbols in {def_file.replace(ctx.PROJECT_ROOT + '/', '')}):")
+                    for sym in sorted(api, key=lambda x: x["line"])[:20]:
+                        sig = f"  {sym['name']}: {sym['signature'][:80]}" if sym.get("signature") else f"  {sym['name']} [{sym['kind']}]"
+                        parts.append(sig)
+                    if len(api) > 20:
+                        parts.append(f"  ... and {len(api) - 20} more")
+        except Exception:
+            pass
+
+    # 5. KB constraints
     kb = ctx.project_engine.search_knowledge(symbol_name, top_k=3)
     if kb:
         parts.append(f"\n**KB constraints** ({len(kb)} entries):")

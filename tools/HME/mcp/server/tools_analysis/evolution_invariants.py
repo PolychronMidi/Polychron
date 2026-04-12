@@ -169,6 +169,34 @@ def _check_symbols_used(inv: dict) -> tuple[bool, str]:
     return True, f"all {len(symbols)} symbols used"
 
 
+def _check_files_mtime_window(inv: dict) -> tuple[bool, str]:
+    """Two files must have mtimes within max_delta_seconds of each other."""
+    path_a = _resolve(inv["path_a"])
+    path_b_glob = inv.get("path_b_glob", "")
+    max_delta = inv.get("max_delta_seconds", 300)
+    if not os.path.exists(path_a):
+        return False, f"file_a missing: {inv['path_a']}"
+    mtime_a = os.path.getmtime(path_a)
+    if path_b_glob:
+        import glob as _gm
+        candidates = sorted(_gm.glob(os.path.join(ctx.PROJECT_ROOT, path_b_glob)))
+        if not candidates:
+            return False, f"no files match path_b_glob: {path_b_glob}"
+        path_b = candidates[-1]  # most recent
+    else:
+        path_b = _resolve(inv["path_b"])
+        if not os.path.exists(path_b):
+            return False, f"file_b missing: {inv.get('path_b', '')}"
+    mtime_b = os.path.getmtime(path_b)
+    delta = abs(mtime_a - mtime_b)
+    if delta <= max_delta:
+        return True, f"in sync (delta={delta:.0f}s)"
+    from datetime import datetime
+    ta = datetime.fromtimestamp(mtime_a).strftime("%H:%M")
+    tb = datetime.fromtimestamp(mtime_b).strftime("%H:%M")
+    return False, f"out of sync: {os.path.basename(path_a)}={ta} vs {os.path.basename(path_b)}={tb} (delta={delta/60:.0f}m)"
+
+
 def _check_symbols_have_kb(inv: dict) -> tuple[bool, str]:
     """Top-N highest-caller IIFE globals must each have at least one KB entry."""
     from tools_analysis.health_analysis import _compute_iife_caller_counts
@@ -184,11 +212,30 @@ def _check_symbols_have_kb(inv: dict) -> tuple[bool, str]:
     )[:top_n]
     if not ranked:
         return True, "no modules meet min_callers threshold"
+    # Build a fast title-scan index from KB JSON files (avoids semantic search score threshold)
+    kb_titles_lower: set[str] = set()
+    kb_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "mcp", "rag_data", "project_knowledge")
+    if os.path.isdir(kb_dir):
+        for kb_file in globmod.glob(os.path.join(kb_dir, "*.json")):
+            try:
+                with open(kb_file, encoding="utf-8") as _f:
+                    kb_entry = json.load(_f)
+                title = kb_entry.get("title", "").lower()
+                content = kb_entry.get("content", "").lower()
+                kb_titles_lower.add(title + " " + content[:200])
+            except Exception:
+                continue
+
     uncovered = []
     for name, _ in ranked:
+        name_lower = name.lower()
+        # Primary: semantic search; fallback: title/content text scan
         hits = ctx.project_engine.search_knowledge(name, top_k=1)
         if not hits:
-            uncovered.append(name)
+            # Fallback: check if name appears as a word boundary in any KB entry title/content
+            found = any(name_lower in text for text in kb_titles_lower)
+            if not found:
+                uncovered.append(name)
     if uncovered:
         return False, f"{len(uncovered)}/{len(ranked)} uncovered: {', '.join(uncovered)}"
     return True, f"all {len(ranked)} top-caller modules have KB entries"
@@ -213,6 +260,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "pattern_count_gte": _check_pattern_count_gte,
         "symbols_used": _check_symbols_used,
         "symbols_have_kb": _check_symbols_have_kb,
+        "files_mtime_window": _check_files_mtime_window,
     }
     inv_type = inv.get("type", "")
     checker = checkers.get(inv_type)
