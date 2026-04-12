@@ -40,6 +40,18 @@ fi
 # Reset streak counter when HME tool is used
 if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _streak_reset
+
+  # LIFESAVER: scan ALL HME tool output for FAIL — log to hme-errors.log for stop.sh pickup
+  FAILS=$(echo "$TOOL_RESULT" | grep -i 'FAIL' 2>/dev/null)
+  if [[ -n "$FAILS" ]]; then
+    PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+    ERROR_LOG="$PROJECT/log/hme-errors.log"
+    FAIL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    while IFS= read -r line; do
+      echo "[$FAIL_TS] $TOOL_NAME: $line" >> "$ERROR_LOG"
+    done <<< "$FAILS"
+    echo "🚨 LIFESAVER: FAIL in ${TOOL_NAME} output logged to hme-errors.log — stop.sh will block until fixed." >&2
+  fi
 fi
 
 # LIFESAVER threshold: warn when MCP HME synthesis exceeds expected duration

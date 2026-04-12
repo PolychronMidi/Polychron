@@ -63,7 +63,71 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     except Exception as _e:
         logger.warning(f"incremental KB update queue failed: {_e}")
 
-    return f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
+    # Contradiction detection: check if new entry conflicts with existing KB
+    contradiction_warning = ""
+    if scope in ("project", "both"):
+        contradiction_warning = _check_kb_contradictions(title, content, ctx.project_engine)
+
+    base = f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
+    return base + contradiction_warning if not contradiction_warning else base + "\n\n" + contradiction_warning
+
+
+def _check_kb_contradictions(title: str, content: str, engine) -> str:
+    """Check if a new KB entry contradicts existing entries. Returns warning string or empty."""
+    try:
+        related = engine.search_knowledge(f"{title} {content}", top_k=5)
+    except Exception:
+        return ""
+    candidates = [e for e in related if 0.3 < e.get("score", 0) < 0.9]
+    if not candidates:
+        return ""
+
+    batch = []
+    for i, e in enumerate(candidates[:3]):
+        batch.append(
+            f"EXISTING {i + 1} [{e['id']}] \"{e['title']}\": {e['content'][:300]}"
+        )
+
+    try:
+        from server.tools_analysis.synthesis_ollama import _local_think, _LOCAL_MODEL
+        prompt = (
+            f"Does this new knowledge base entry contradict any of the existing entries below?\n\n"
+            f"NEW ENTRY: \"{title}\"\n{content[:400]}\n\n"
+            + "\n".join(batch) + "\n\n"
+            "For each existing entry, respond with ONE line:\n"
+            "EXISTING N: CONTRADICT — <reason>\n"
+            "or\n"
+            "EXISTING N: OK\n"
+        )
+        result = _local_think(
+            prompt, max_tokens=300, model=_LOCAL_MODEL,
+            system="You are a KB consistency checker. Only flag genuine contradictions, not complementary information.",
+            temperature=0.1,
+        )
+    except Exception:
+        return ""
+
+    if not result:
+        return ""
+
+    warnings = []
+    for line in result.strip().splitlines():
+        if "CONTRADICT" in line:
+            try:
+                num = int(line.split("EXISTING")[1].split(":")[0].strip()) - 1
+                explanation = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
+                if 0 <= num < len(candidates):
+                    e = candidates[num]
+                    warnings.append(
+                        f"  ⚠ CONTRADICTS [{e['id']}] \"{e['title']}\": {explanation}\n"
+                        f"    → Tag: learn(..., related_to='{e['id']}', relation_type='contradicts')"
+                    )
+            except (ValueError, IndexError):
+                continue
+
+    if not warnings:
+        return ""
+    return "⚠ CONTRADICTION WARNING:\n" + "\n".join(warnings)
 
 
 

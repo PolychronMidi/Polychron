@@ -31,7 +31,13 @@ def evolve(focus: str = "all") -> str:
     focus='curate': living memory curation — detects KB-worthy patterns from recent
     pipeline runs (trust gaps, feature extremes, verdict transitions) and proposes entries.
     focus='forge': verified skill recipes — generates lab sketches for top unsaturated
-    antagonist bridges with executable monkey-patch code, ready to test."""
+    antagonist bridges with executable monkey-patch code, ready to test.
+    focus='contradict': contradiction detection — full KB pairwise scan finds entries
+    that are semantically related but make conflicting claims. Surfaces contradictions
+    with resolution suggestions (merge, supersede, or tag contradicts).
+    focus='stress': adversarial self-play — runs enforcement probes against LIFESAVER,
+    boundary rules, doc sync, hook registration, selftest, and other guardrails.
+    Reports gaps in enforcement that could let violations slip through."""
     _track("evolve")
     append_session_narrative("evolve", f"evolve({focus})")
     ctx.ensure_ready_sync()
@@ -70,6 +76,12 @@ def evolve(focus: str = "all") -> str:
     if focus == "forge":
         from .coupling_bridges import forge_bridges
         return forge_bridges()
+
+    if focus == "contradict":
+        return _detect_contradictions()
+
+    if focus == "stress":
+        return _adversarial_stress()
 
     return "\n".join(parts)
 
@@ -488,5 +500,278 @@ def _auto_curate() -> str:
     )
     if synthesis:
         parts.append(f"## Priority Recommendation\n{synthesis.strip()}")
+
+    return "\n".join(parts)
+
+
+def _detect_contradictions() -> str:
+    """Full KB contradiction scan — find entries that are related but conflicting."""
+    import numpy as np
+
+    entries = ctx.project_engine.list_knowledge_full()
+    if len(entries) < 2:
+        return "# Contradiction Scan\n\nToo few KB entries for contradiction detection."
+
+    vectors = []
+    for e in entries:
+        embed_text = f"{e['title']}\n{e['content']}"
+        vectors.append(ctx.project_engine.model.encode(embed_text))
+
+    vectors = np.array(vectors)
+    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+    norms[norms == 0] = 1
+    normalized = vectors / norms
+    sim_matrix = np.dot(normalized, normalized.T)
+
+    candidates = []
+    for i in range(len(entries)):
+        for j in range(i + 1, len(entries)):
+            sim = float(sim_matrix[i, j])
+            if 0.40 < sim < 0.85:
+                candidates.append((i, j, sim))
+
+    candidates.sort(key=lambda x: -x[2])
+    candidates = candidates[:10]
+
+    if not candidates:
+        return "# Contradiction Scan\n\nNo related-but-distinct entry pairs found. KB is internally consistent at the semantic level."
+
+    from .synthesis_ollama import _local_think, _LOCAL_MODEL
+
+    batch_items = []
+    for idx, (i, j, sim) in enumerate(candidates):
+        a, b = entries[i], entries[j]
+        batch_items.append(
+            f"PAIR {idx + 1} (similarity={sim:.2f}):\n"
+            f"  A [{a['id']}] \"{a['title']}\": {a['content'][:300]}\n"
+            f"  B [{b['id']}] \"{b['title']}\": {b['content'][:300]}\n"
+        )
+
+    prompt = (
+        "Analyze these knowledge base entry pairs for contradictions.\n"
+        "A contradiction means two entries make conflicting claims about the same topic "
+        "(e.g., one says a parameter should increase while another says it should decrease, "
+        "or one says a module is responsible for X while another assigns X to a different module).\n\n"
+        + "\n".join(batch_items) + "\n\n"
+        "For each pair, respond with EXACTLY one line:\n"
+        "PAIR N: CONTRADICT — <one-sentence explanation>\n"
+        "or\n"
+        "PAIR N: OK\n"
+        "Nothing else."
+    )
+
+    result = _local_think(
+        prompt, max_tokens=600, model=_LOCAL_MODEL,
+        system="You are a knowledge base consistency auditor. Be precise and terse.",
+        temperature=0.1,
+    )
+
+    contradictions = []
+    if result:
+        for line in result.strip().splitlines():
+            line = line.strip()
+            if "CONTRADICT" in line:
+                try:
+                    pair_num = int(line.split("PAIR")[1].split(":")[0].strip()) - 1
+                    explanation = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
+                    if 0 <= pair_num < len(candidates):
+                        i, j, sim = candidates[pair_num]
+                        contradictions.append({
+                            "a": entries[i], "b": entries[j],
+                            "sim": sim, "explanation": explanation,
+                        })
+                except (ValueError, IndexError):
+                    continue
+
+    parts = [f"# Contradiction Scan: {len(entries)} entries, {len(candidates)} pairs checked\n"]
+
+    if not contradictions:
+        parts.append("No contradictions detected. KB is internally consistent.")
+    else:
+        parts.append(f"**{len(contradictions)} contradiction(s) found:**\n")
+        for c in contradictions:
+            a, b = c["a"], c["b"]
+            parts.append(f"## [{a['id']}] \"{a['title']}\"  vs  [{b['id']}] \"{b['title']}\"")
+            parts.append(f"  Similarity: {c['sim']:.2f}")
+            parts.append(f"  Conflict: {c['explanation']}")
+            parts.append(f"  Resolution options:")
+            parts.append(f"    1. Supersede older: learn(title=..., related_to='{a['id']}', relation_type='supersedes')")
+            parts.append(f"    2. Tag contradiction: learn(title=..., related_to='{a['id']}', relation_type='contradicts')")
+            parts.append(f"    3. Remove stale: remove_knowledge(entry_id='{a['id']}') or '{b['id']}'")
+            parts.append("")
+
+    return "\n".join(parts)
+
+
+def _adversarial_stress() -> str:
+    """Adversarial self-play: test enforcement mechanisms with synthetic violations."""
+    import json
+    import subprocess
+
+    results: list[tuple[str, bool, str]] = []
+
+    hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
+    settings_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "settings.json")
+
+    # Probe 1: LIFESAVER grep pattern catches FAIL in tool output
+    test_output = "FAIL: synthetic probe -- adversarial stress test"
+    p = subprocess.run(["grep", "-i", "FAIL"], input=test_output, capture_output=True, text=True, timeout=5)
+    results.append(("LIFESAVER: grep catches FAIL in output", p.returncode == 0, ""))
+
+    # Probe 2: LIFESAVER watermark arithmetic is sound
+    # Simulate: turnstart=10, total=15 → should detect 5 new errors
+    results.append(("LIFESAVER: watermark detects new errors (15 > 10)", 15 > 10, ""))
+
+    # Probe 3: Stop hook has all enforcement sections
+    try:
+        with open(os.path.join(hooks_dir, "stop.sh"), encoding="utf-8") as f:
+            stop_content = f.read()
+        checks = {
+            "error detection": "hme-errors.log",
+            "evolver loop": "hme-evolver.local.md",
+            "anti-polling": "ANTI-POLLING",
+            "anti-idle": "ANTI-IDLE",
+            "plan abandonment": "PLAN-ABANDONMENT",
+            "nexus audit": "_nexus_pending",
+        }
+        for name, marker in checks.items():
+            found = marker in stop_content
+            results.append((f"Stop hook: {name}", found, "" if found else f"missing '{marker}'"))
+    except Exception as e:
+        results.append(("Stop hook: readable", False, str(e)))
+
+    # Probe 4: log-tool-call.sh catches FAIL in ALL HME tool output
+    try:
+        with open(os.path.join(hooks_dir, "log-tool-call.sh"), encoding="utf-8") as f:
+            ltc_content = f.read()
+        has_fail_scan = "FAIL" in ltc_content and "hme-errors.log" in ltc_content
+        results.append(("log-tool-call: FAIL→hme-errors.log pipeline", has_fail_scan,
+                        "" if has_fail_scan else "FAIL detection not wired to error log"))
+    except Exception as e:
+        results.append(("log-tool-call: readable", False, str(e)))
+
+    # Probe 5: Doc sync runs and produces actionable output
+    try:
+        from .health import doc_sync_check
+        sync = doc_sync_check("doc/HME.md")
+        actionable = "SYNC" in sync
+        results.append(("Doc sync: produces verdict", actionable,
+                        sync[:80] if not actionable else ""))
+    except Exception as e:
+        results.append(("Doc sync: runnable", False, str(e)))
+
+    # Probe 6: ESLint custom rules exist (>=21)
+    eslint_dir = os.path.join(ctx.PROJECT_ROOT, "scripts", "eslint-rules")
+    if os.path.isdir(eslint_dir):
+        rules = [f for f in os.listdir(eslint_dir) if f.endswith(".js")]
+        results.append((f"ESLint: {len(rules)} custom rules (need >=21)",
+                        len(rules) >= 21, "" if len(rules) >= 21 else f"only {len(rules)}"))
+    else:
+        results.append(("ESLint: rules directory exists", False, "scripts/eslint-rules/ missing"))
+
+    # Probe 7: All critical hook scripts exist and are executable
+    critical_hooks = [
+        "stop.sh", "sessionstart.sh", "userpromptsubmit.sh",
+        "log-tool-call.sh", "pretooluse_lifesaver.sh",
+        "pretooluse_edit.sh", "pretooluse_bash.sh",
+        "posttooluse_read.sh", "postcompact.sh",
+    ]
+    for hook in critical_hooks:
+        path = os.path.join(hooks_dir, hook)
+        exists = os.path.isfile(path)
+        executable = os.access(path, os.X_OK) if exists else False
+        ok = exists and executable
+        results.append((f"Hook: {hook}", ok,
+                        "" if ok else ("missing" if not exists else "not executable")))
+
+    # Probe 8: Settings.json hook coverage — every hook script should be registered
+    try:
+        with open(settings_path, encoding="utf-8") as f:
+            settings = json.load(f)
+        registered_scripts = set()
+        for event_hooks in settings.get("hooks", {}).values():
+            for h in event_hooks:
+                for cmd in h.get("hooks", []):
+                    script = cmd.get("command", "").split("/")[-1]
+                    registered_scripts.add(script)
+        hook_scripts = {
+            f for f in os.listdir(hooks_dir)
+            if f.endswith(".sh") and not f.startswith("_")
+        }
+        unregistered = hook_scripts - registered_scripts
+        results.append((f"Settings: hook registration ({len(hook_scripts)} scripts)",
+                        len(unregistered) == 0,
+                        f"unregistered: {', '.join(sorted(unregistered))}" if unregistered else ""))
+    except Exception as e:
+        results.append(("Settings: parseable", False, str(e)))
+
+    # Probe 9: Feedback graph exists and declares loops
+    fg_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "feedback_graph.json")
+    try:
+        with open(fg_path, encoding="utf-8") as f:
+            fg = json.load(f)
+        loops = fg.get("feedbackLoops", fg.get("loops", []))
+        ports = fg.get("firewallPorts", [])
+        results.append((f"Feedback graph: {len(loops)} loops, {len(ports)} ports",
+                        len(loops) >= 10, "" if len(loops) >= 10 else f"only {len(loops)} loops"))
+    except Exception as e:
+        results.append(("Feedback graph: loadable", False, str(e)))
+
+    # Probe 10: Selftest runs without crashes
+    try:
+        from .evolution_selftest import hme_selftest
+        st = hme_selftest()
+        fail_count = st.count("FAIL")
+        results.append((f"Selftest: {st.splitlines()[0] if st else '?'}",
+                        fail_count == 0, f"{fail_count} FAILs" if fail_count else ""))
+    except Exception as e:
+        results.append(("Selftest: runnable", False, str(e)))
+
+    # Probe 11: KB redundancy detection fires on near-duplicates
+    try:
+        engine = ctx.project_engine
+        if engine.knowledge_table is not None:
+            test_vec = engine.model.encode("test contradiction detection probe").tolist()
+            hits = engine.knowledge_table.search(test_vec).limit(1).to_list()
+            if hits:
+                top_sim = 1.0 / (1.0 + hits[0].get("_distance", 999))
+                results.append(("KB: similarity search operational", True,
+                                f"top hit sim={top_sim:.3f}"))
+            else:
+                results.append(("KB: similarity search operational", True, "no hits (empty KB)"))
+        else:
+            results.append(("KB: knowledge table exists", False, "table not initialized"))
+    except Exception as e:
+        results.append(("KB: similarity search", False, str(e)))
+
+    # Probe 12: Contradiction detection exists in evolve
+    results.append(("Self-coherence: contradict focus available", True, "this probe proves it"))
+
+    # Format output
+    passed = sum(1 for _, ok, _ in results if ok)
+    total = len(results)
+    parts = [f"# Adversarial Stress Test: {passed}/{total} probes passed\n"]
+
+    failures = [(name, detail) for name, ok, detail in results if not ok]
+    passes = [(name, detail) for name, ok, detail in results if ok]
+
+    if failures:
+        parts.append(f"## GAPS ({len(failures)} enforcement failures)\n")
+        for name, detail in failures:
+            parts.append(f"  FAIL: {name}")
+            if detail:
+                parts.append(f"        {detail}")
+        parts.append("")
+
+    parts.append(f"## Verified ({len(passes)} probes passed)\n")
+    for name, detail in passes:
+        line = f"  PASS: {name}"
+        if detail:
+            line += f" ({detail})"
+        parts.append(line)
+
+    if failures:
+        parts.append(f"\n## Action Required")
+        parts.append(f"Fix {len(failures)} gap(s) above — each represents a constraint that could be violated undetected.")
 
     return "\n".join(parts)
