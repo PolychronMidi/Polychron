@@ -5,24 +5,24 @@ Each layer has: current state and items for next dedicated pass.
 
 ## Layer 1: Enforcement (TIGHT)
 
-**State**: 40 invariants. `symbols_have_kb`, `files_mtime_window`, `kb_content_no_pattern`, `kb_freshness` types live. `coupling-labels-documented` enforces ARCHITECTURE.md sync. `kb-no-thinking-leak` guards LLM artifact leaks. `directionbias-documented` guards directionBias coupling doc coverage. `kb-freshness` warns if no KB entry updated in >14 days.
+**State**: 40 invariants (39 pass, 1 trace-sync warning that clears after pipeline). 14 invariant types: `files_executable`, `files_referenced`, `file_exists`, `symlink_valid`, `json_valid`, `glob_count_gte`, `pattern_in_file`, `patterns_all_in_file`, `pattern_count_gte`, `symbols_used`, `symbols_have_kb`, `files_mtime_window`, `kb_content_no_pattern`, `kb_freshness`. `coupling-labels-documented` enforces ARCHITECTURE.md sync. `kb-no-thinking-leak` guards LLM artifact leaks. `directionbias-documented` guards directionBias coupling doc coverage. `kb-freshness` warns if no KB entry updated in >14 days. `current-run-valid` guards metrics/current-run.json integrity.
 
 ### Next pass
 - seed remaining modules below top-15 as they become edit targets
 
 ## Layer 2: Knowledge Base (COMPREHENSIVE)
 
-**State**: 104 entries. All top-15 caller modules covered. velocityInterference, articulationComplement, convergenceDetector, convergenceVelocitySurge, grooveTransfer, crossLayerDynamicEnvelope all seeded.
+**State**: 105 entries. All top-15 caller modules covered. velocityInterference, articulationComplement, convergenceDetector, convergenceVelocitySurge, grooveTransfer, crossLayerDynamicEnvelope, interactionHeatMap all seeded. Zero thinking-leak artifacts (invariant-enforced).
 
 ### Next pass
 - seed remaining modules below top-15 as they become edit targets
 
 ## Layer 3: Tool Output Quality (SOLID)
 
-**State**: 6 thinking artifact patterns stripped. JS-native hierarchy (IIFE dep graph, de-facto hubs, subsystem rollup, outgoing deps). Forge re-prompts with valid symbol list on >2 unknown methods. Hierarchy de-facto hub median now excludes single-use helpers and helper-suffix files. Symbol index refreshed.
+**State**: 6 thinking artifact patterns stripped. JS-native hierarchy (IIFE dep graph, de-facto hubs, subsystem rollup, outgoing deps). Forge re-prompts with valid symbol list on >2 unknown methods. Hierarchy de-facto hub median now excludes single-use helpers and helper-suffix files. Symbol index: 716 files, 3244 chunks, 4600 symbols.
 
 ### Next pass
-- ongoing: reindex after major batch changes if watcher hasn't caught up
+- ongoing: reindex after major batch changes if watcher hasn't caught up (index drifts under compaction — clear_index rebuilds from scratch)
 
 ## Layer 4: Data Coherence (SOLID)
 
@@ -45,10 +45,10 @@ Each layer has: current state and items for next dedicated pass.
 ### Next pass
 - seed remaining modules below top-15 as they become edit targets
 
-## Layer 7: Evolution Intelligence (FORGE-READY)
+## Layer 7: Evolution Intelligence (MATURE)
 
-**State**: Forge validates API, re-prompts with valid symbol list, ChatML tags stripped. `kb_content_no_pattern` + `kb_freshness` invariants live (guards 104 KB entries). Forge sketch for convergenceHarmonicTrigger↔verticalIntervalMonitor written with correct densitySurprise bridge (rarity boost + penalty scale). Lab runner requires ~10 min for full render pipeline.
+**State**: Forge validates API, re-prompts with valid symbol list, ChatML tags stripped. `kb_content_no_pattern` + `kb_freshness` invariants live (guards 105 KB entries). Forge sketch for convergenceHarmonicTrigger↔verticalIntervalMonitor ran successfully (287.6s gen, 106.4s audio) — densitySurprise bridge verified clean, ready for listening verdict. `fix_antipattern` hardened: `bash -n` syntax validation gate rejects broken snippets before writing to hooks, `max_tokens` bumped 256->512. Stop hook detects stop-work antipattern (dismissive text, text-only-short responses) and blocks. Lab runner requires ~10 min for full render pipeline.
 
 ### Next pass
-- Forge sketch ran successfully: 287.6s gen, 106.4s audio → `lab/forge-convergenceHarmonicTrigger-verticalIntervalMonitor.wav`. densitySurprise bridge (rarity boost + penalty scale) verified clean. Ready for listening verdict.
-- interactionHeat L0 channel implemented: flushBeat/flushBeatPair post `{ trend, slope, density, absoluteSeconds }`; crossLayerDynamicEnvelope reads via `L0.getLast(L0_CHANNELS.interactionHeat)` with direct-call fallback. ARCHITECTURE.md updated. Verified by pipeline run.
+- ongoing: forge listening verdict for convergenceHarmonicTrigger↔verticalIntervalMonitor sketch
+- ongoing: monitor fix_antipattern output quality now that validation gate is live
