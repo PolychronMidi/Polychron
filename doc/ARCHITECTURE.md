@@ -363,6 +363,12 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 
 - **`directionBias` → `dynamicRoleSwap` gate** (±0.03 max): ascending pitch tendency suppresses swap (sustain the build with current roles); descending tendency amplifies swap probability (natural role handoff moment). Complements `contourSwapBoost` (±0.08 categorical) with finer-grained continuous modulation. Implemented as `clamp(directionBias * −0.06, −0.03, 0.03)`.
 
+### directionBias Articulation Contrast Coupling (R90+)
+
+`directionBias` float now also modulates `articulationComplement`'s `melodicContrastScale` as a 4th multiplicative factor. Ascending tendency softens articulation contrast (ascending melodies blend layers); descending tendency sharpens contrast (falling arcs push layers apart).
+
+- **`directionBias` → `articulationComplement` melodicContrastScale**: `clamp(1.0 − directionBias × 0.06, 0.92, 1.06)` — ascending (+1.0) gives 0.94× (−6%); descending (−1.0) gives 1.06× (+6%). Complementary to `contourShape` categorical factor (±15%) and adds continuous granularity beneath it. Combined effect at `contourShape='rising'` + `directionBias=+1.0`: 1.15 × 0.94 = 1.08 (softer than rising alone).
+
 ### L0 swapDecision channel
 
 `dynamicRoleSwap.evaluateSwap()` now posts `L0_CHANNELS.swapDecision` with `{ swapped, swapCount }` on every successful swap. `articulationComplement` and `crossLayerDynamicEnvelope` consume swap state via `L0.getLast(L0_CHANNELS.swapDecision)` instead of direct `getIsSwapped()` call, routing through the L0 event bus for architectural consistency. Note: `dynamismEngine` (conductor) and `crossLayerBeatRecord` (play) still use `getIsSwapped()` directly — conductor read-only access is explicitly permitted.

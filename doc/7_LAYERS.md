@@ -19,8 +19,8 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - [x] Add invariant: coupling-labels-documented — all 11 active labels in trace.jsonl must appear in ARCHITECTURE.md (patterns_all_in_file)
 - [x] Run evolve(invariants): 35/36 pass; `kb-minimum-entries` fixed (was checking missing JSON export dir, now checks Lance DB data files); only `trace-run-history-sync` warns (expected — pipeline stale by 30h)
 - [x] `top-callers-have-kb`: all 15 pass
-- [ ] Consider adding invariant: no `<|thinking|>` leak in KB entry content (LLM artifact guard)
-- [ ] eslint-rules-count: count is now 22 but CLAUDE.md says 21 — verify after next ESLint rule addition
+- [x] eslint-rules-count resolved: 22 rules confirmed (grep -v index.js masked no-requires-outside-index earlier); CLAUDE.md updated 21→22, added `no-empty-catch` entry
+- [ ] Consider adding invariant: no `<|thinking|>` leak in KB entry content — requires new Python type `kb_content_no_pattern` (KB in Lance DB, not flat file)
 
 ## Layer 2: Knowledge Base (COMPREHENSIVE)
 
@@ -39,8 +39,9 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 ### Next pass
 - [x] Seed modules below the top-15 threshold: traceDrain (28 callers) and systemDynamicsProfiler (41 callers) seeded
 - [x] Add KB entry: section count confirmed as 6 (S0–S5); S0 entropy anomaly documented as warmup, not truncation
-- [ ] Improve contradiction scanner: after adding synthesis entries, false-positive rate spiked — revisit filter logic
-- [ ] Seed remaining below-threshold modules: entropyAmplificationController, regimeClassifier, pipelineCouplingManager
+- [x] Contradiction scanner: synthesis-entry false-positives fixed — `_has_relation` now skips pair if EITHER entry has ANY synthesizes/supersedes/clarifies tag; also skips shared-round pairs unconditionally
+- [x] Seed remaining below-threshold modules: entropyAmplificationController, regimeClassifier, pipelineCouplingManager seeded
+- [ ] Seed next tier: crossLayerRegistry, feedbackRegistry, signalReader (still uncovered)
 
 ## Layer 3: Tool Output Quality (FULLY FIXED)
 
@@ -63,8 +64,10 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - [x] Add `<|im_start|>` / `<|im_end|>` ChatML tag stripping (used by Qwen models)
 - [x] Hierarchy mode: subsystem-level rollup (files, avg_deps, total_users per src/ subsystem)
 - [x] Forge validation: re-prompt model with valid symbol list if >2 unknown methods detected (second attempt with corrected sketch)
-- [ ] find xref exported API: symbol table has low coverage of JS functions — may need reindex after changes
-- [ ] Hierarchy mode: improve manager detection beyond filename pattern (detect by caller count ratio)
+- [x] find xref reverse: step 4 "Outgoing dependencies" added — scans module file for architectural global references (what does this module read from others?)
+- [x] Hierarchy mode: de-facto hubs section added — detects modules with >2× subsystem median caller count regardless of *Manager.js filename
+- [ ] find xref exported API: symbol table has low coverage of JS functions — needs reindex after batch changes
+- [ ] Hierarchy mode: improve subsystem median weighting to exclude index.js and single-use helpers
 
 ## Layer 4: Data Coherence (STALENESS FULLY SURFACED)
 
@@ -77,8 +80,8 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - `status(mode='all')`: compact freshness summary at top — surfaces STALE/MISSING/SYNC flags inline
 
 ### Next pass
-- [ ] Unify all tool reads to a single "current run" pointer (e.g., symlink `metrics/current/` → latest run)
-- [ ] Verify EnCodec S1 WAV truncation hypothesis — check WAV file durations for each section
+- [ ] Unify all tool reads to a single "current run" pointer — complex; requires pipeline script change + symlink + tool updates
+- [ ] Verify EnCodec S1 WAV truncation hypothesis — output1/2.wav are combined 3.7min files (not per-section); can only verify S0 entropy after next pipeline run with EnCodec section breakdown
 - [x] Surface adaptive-state.json staleness in status(all) — VERY_STALE flag (>7d) added to compact freshness summary
 
 ## Layer 5: Architectural Intelligence (MATURE)
@@ -94,8 +97,8 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 
 ### Next pass
 - [ ] find xref reverse: "what does this module import from others?" (outgoing dependency scan)
-- [ ] Hierarchy: subsystem-level rollup (group module dep graph by src/subsystem/ prefix)
-- [ ] Forge validation: re-prompt model with valid symbol list if >2 unknown methods detected
+- [x] Hierarchy: subsystem-level rollup done (files, avg_deps, total_users per src/ subsystem)
+- [x] Forge validation: re-prompt with valid symbol list done
 
 ## Layer 6: Compositional Self-Awareness (SECOND ORGANISM DESIGNED)
 
@@ -110,9 +113,10 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 ### Next pass
 - [x] L0 swapDecision channel: added `L0_CHANNELS.swapDecision`; dynamicRoleSwap posts on each swap; articulationComplement and crossLayerDynamicEnvelope read via getLast instead of getIsSwapped()
 - [x] directionBias consumer: `directionBiasSwapBoost` added to dynamicRoleSwap gate (±0.03 max, ascending=suppress, descending=boost)
-- [ ] Design contourShape evolution round: add contourShape dimension to 2-3 modules that ignore it
-- [ ] Test voicing layer as directionBias consumer (open voicing on ascent)
-- [ ] directionBias in articulationComplement: falling bias → sharper articulation contrast, ascending → softer
+- [x] directionBias in articulationComplement: `clamp(1.0 - directionBias * 0.06, 0.92, 1.06)` added as 4th factor in melodicContrastScale (ascending=softer, descending=sharper)
+- [ ] Design contourShape evolution round: candidate modules — motifEcho, restSynchronizer, velocityInterference (all ignore contourShape currently)
+- [ ] Test voicing layer as directionBias consumer (open voicing on ascent, close on descent)
+- [ ] Topology second organism: pilot interactionHeatMap reading L0 channels instead of direct module calls
 
 ## Layer 7: Evolution Intelligence (FORGE-READY)
 
@@ -127,6 +131,7 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 ### Next pass
 - [x] Add ChatML `<|im_start|>` tag stripping to synthesis_ollama.py (used by Qwen coder model)
 - [x] Forge re-prompt: re-prompt with valid symbol list if >2 unknown methods; re-validates corrected sketch
-- [ ] Execute top forge sketch (convergenceHarmonicTrigger↔verticalIntervalMonitor densitySurprise bridge)
-- [ ] Run `evolve(focus='forge')` after next pipeline run — validate API check fires on generated sketches
-- [ ] Design multi-organism round: pilot L0 routing for dynamicRoleSwap → interactionHeatMap
+- [x] evolve(forge) run: 2 clean sketches generated (convergenceHarmonicTrigger↔verticalIntervalMonitor, entropyRegulator↔convergenceHarmonicTrigger); no API warnings fired
+- [ ] Execute top forge sketch in lab — paste convergenceHarmonicTrigger↔verticalIntervalMonitor sketch into lab/sketches.js and run
+- [ ] Design multi-organism round: interactionHeatMap as L0 consumer — break direct module calls into event reads
+- [ ] `kb_content_no_pattern` Python invariant type: scan Lance KB entries for `<|thinking|>` / `<think>` leaks

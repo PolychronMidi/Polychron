@@ -313,6 +313,40 @@ def type_hierarchy(type_name: str = "") -> str:
             hlp_str = f" + {hlp}" if hlp else " (no helpers file)"
             parts.append(f"  {mgr}{hlp_str} [{users} dependents]")
 
+    # De-facto managers by caller count: modules with >2x the subsystem median — architectural hubs
+    # regardless of filename convention.
+    defacto = []
+    for js_file in _glob_mod.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", "*.js"), recursive=True):
+        rel = js_file.replace(ctx.PROJECT_ROOT + "/src/", "")
+        parts_rel = rel.split("/")
+        subsystem = parts_rel[0] if len(parts_rel) > 1 else "root"
+        basename = os.path.basename(js_file).replace(".js", "")
+        if basename == "index":
+            continue
+        n_users = len(rev_graph.get(basename, set()))
+        defacto.append((basename, subsystem, n_users))
+    # Compute per-subsystem median
+    import statistics as _stats
+    sub_users: dict[str, list] = {}
+    for name, sub, nu in defacto:
+        sub_users.setdefault(sub, []).append(nu)
+    sub_median = {sub: _stats.median(vals) for sub, vals in sub_users.items() if vals}
+    named_managers = {mgr for mgr, _, _ in manager_pairs}
+    defacto_hubs = [
+        (name, sub, nu)
+        for name, sub, nu in defacto
+        if name not in named_managers
+        and sub_median.get(sub, 0) > 0
+        and nu >= 2 * sub_median.get(sub, 1)
+        and nu >= 5
+    ]
+    defacto_hubs.sort(key=lambda x: -x[2])
+    if defacto_hubs:
+        parts.append(f"\n## De-facto Hubs by Caller Ratio (>2× subsystem median, not *Manager named):")
+        for name, sub, nu in defacto_hubs[:15]:
+            med = sub_median.get(sub, 0)
+            parts.append(f"  {name} [{sub}] {nu} users (median={med:.0f}, ratio={nu/max(med,1):.1f}×)")
+
     # Subsystem rollup: group module dep counts by src/ subdirectory
     subsystem_totals: dict[str, dict] = {}
     for js_file in _glob_mod.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", "*.js"), recursive=True):
@@ -426,7 +460,29 @@ def cross_language_trace(symbol_name: str) -> str:
             req_str = f" via {reqs[0]}" if reqs else ""
             parts.append(f"  {rel}{req_str}")
 
-    # 4. Reverse xref — exported API (what methods does this module expose?)
+    # 4. Outgoing dependencies — what architectural globals does this module read?
+    # Complements callers (who reads me) with what I read from others.
+    if ctx.project_engine.symbol_table is not None:
+        try:
+            all_rows_od = ctx.project_engine.symbol_table.to_arrow().to_pylist()
+            defs_od = [r for r in all_rows_od if r["name"].lower() == symbol_name.lower()]
+            if defs_od:
+                def_file_od = defs_od[0]["file"]
+                if os.path.isfile(def_file_od):
+                    src_od = open(def_file_od, encoding="utf-8", errors="ignore").read()
+                    arch_globals = _get_architectural_globals()
+                    own_name = symbol_name.lower()
+                    outgoing = [g for g in arch_globals
+                                if g.lower() != own_name
+                                and _re.search(r'\b' + _re.escape(g) + r'\b', src_od)]
+                    if outgoing:
+                        parts.append(f"\n**Outgoing dependencies** ({len(outgoing)} architectural globals read):")
+                        for g in sorted(outgoing):
+                            parts.append(f"  {g}")
+        except Exception:
+            pass
+
+    # 5. Exported API (what methods does this module expose?)
     if ctx.project_engine.symbol_table is not None:
         try:
             all_rows = ctx.project_engine.symbol_table.to_arrow().to_pylist()
@@ -448,7 +504,7 @@ def cross_language_trace(symbol_name: str) -> str:
         except Exception:
             pass
 
-    # 5. KB constraints
+    # 6. KB constraints
     kb = ctx.project_engine.search_knowledge(symbol_name, top_k=3)
     if kb:
         parts.append(f"\n**KB constraints** ({len(kb)} entries):")
