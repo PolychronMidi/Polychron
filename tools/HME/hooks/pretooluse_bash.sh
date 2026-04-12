@@ -22,13 +22,13 @@ fi
 
 # Block run.lock deletion (hard rule)
 if echo "$CMD" | grep -q 'run\.lock' && echo "$CMD" | grep -q 'rm'; then
-  echo '{"decision":"block","reason":"BLOCKED: Never delete run.lock"}'
+  _emit_block "BLOCKED: Never delete run.lock"
   exit 2
 fi
 
 # Block ALL other run.lock access — reading lock status IS polling
 if echo "$CMD" | grep -q 'run\.lock'; then
-  echo '{"decision":"block","reason":"BLOCKED: Checking run.lock is pipeline status polling. Call the check_pipeline MCP tool NOW for current status, then continue with other work."}'
+  _emit_block "BLOCKED: Checking run.lock is pipeline status polling. Call the check_pipeline MCP tool NOW for current status, then continue with other work."
   exit 2
 fi
 
@@ -45,14 +45,14 @@ TRIMMED_CMD=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
 if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; then
   RUN_BG=$(_safe_jq "$INPUT" '.tool_input.run_in_background' 'false')
   if [[ "$RUN_BG" != "true" ]]; then
-    echo '{"decision":"block","reason":"ANTI-WAIT: npm run main must use run_in_background=true. Re-issue this Bash call with run_in_background: true, then CONTINUE with parallel work (HME indexing, doc updates, src/ improvements, what_did_i_forget). Stopping to wait for the pipeline is the antipattern."}'
+    _emit_block "ANTI-WAIT: npm run main must use run_in_background=true. Re-issue this Bash call with run_in_background: true, then CONTINUE with parallel work (HME indexing, doc updates, src/ improvements). Stopping to wait for the pipeline is the antipattern."
     exit 2
   fi
   # Block double-backgrounding: run_in_background=true AND & in command = premature exit code 0.
   # The & makes the shell return immediately, firing a false "completed" notification while npm still runs.
   # This is the root cause of check_pipeline polling loops.
   if echo "$CMD" | grep -qE '[[:space:]]&[[:space:]]*$|[[:space:]]&$'; then
-    echo '{"decision":"block","reason":"BLOCKED: Do NOT use & with run_in_background=true — double-backgrounding fires a false exit-code-0 notification while npm is still running, which causes check_pipeline polling loops. Remove the & from the command."}'
+    _emit_block "BLOCKED: Do NOT use & with run_in_background=true — double-backgrounding fires a false exit-code-0 notification while npm is still running, which causes check_pipeline polling loops. Remove the & from the command."
     exit 2
   fi
 fi
@@ -95,7 +95,7 @@ if echo "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]
    || echo "$CMD" | grep -qE '(onError|onFail|reject)[[:space:]]*[:(=][[:space:]]*(function\s*\(\)|\([^)]*\)[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}' \
    || echo "$CMD" | grep -q 'parseArbiterResponse.*no reason given' \
    || echo "$CMD" | grep -qE '(tsc|npm run|node scripts/|eslint)[^|;&]*2>/dev/null'; then
-  echo '{"decision":"block","reason":"FAIL FAST VIOLATION — silent error suppression detected. No empty catch{}, .catch(()=>{}), no-op onError/reject handlers, fallback values masking failures, or suppressed build stderr. Every error MUST bubble immediately: throw it, call onError(), call _postError(), reject the promise. Log to hme-errors.log. Surface in UI. No silent failures. Assume life-saving criticality."}'
+  _emit_block "FAIL FAST VIOLATION — silent error suppression detected. No empty catch blocks, no-op onError/reject handlers, fallback values masking failures, or suppressed build stderr. Every error MUST bubble immediately: throw it, call onError(), call _postError(), reject the promise. Log to hme-errors.log. Surface in UI. No silent failures. Assume life-saving criticality."
   exit 2
 fi
 _streak_tick 15

@@ -163,7 +163,7 @@
       "description": "_safety.sh must define all required helper functions",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/_safety.sh",
-      "patterns": ["_safe_jq", "_safe_py3", "_safe_int", "_safe_curl", "_hme_enrich", "_hme_kb_count", "_hme_kb_titles", "_hme_validate", "_streak_tick", "_streak_reset", "_streak_check"],
+      "patterns": ["_safe_jq", "_safe_py3", "_safe_int", "_safe_curl", "_hme_enrich", "_hme_kb_count", "_hme_kb_titles", "_hme_validate", "_streak_tick", "_streak_reset", "_streak_check", "_emit_enrich_allow", "_emit_block", "_is_project_src", "_is_project_edit_src", "_extract_module"],
       "severity": "error"
     },
     {

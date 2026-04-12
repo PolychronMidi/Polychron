@@ -6,8 +6,8 @@ INPUT=$(cat)
 FILE_PATH=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 
 # Only enrich project source files
-if echo "$FILE_PATH" | grep -qE '/Polychron/(src|tools/HME/(chat/src|mcp/server))/'; then
-  MODULE=$(basename "$FILE_PATH" | sed 's/\.[jt]sx\?$//' | sed 's/\.py$//')
+if _is_project_src "$FILE_PATH"; then
+  MODULE=$(_extract_module "$FILE_PATH")
   KB_JSON=$(_hme_enrich "$MODULE" 2)
   KB_COUNT=$(_hme_kb_count "$KB_JSON")
   if [[ "$KB_COUNT" -gt 0 ]]; then
