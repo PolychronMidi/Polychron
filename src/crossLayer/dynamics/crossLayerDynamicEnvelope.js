@@ -36,8 +36,9 @@ crossLayerDynamicEnvelope = (() => {
     const intent = sectionIntentCurves.getLastIntent();
     const densityTarget = V.optionalFinite(intent.densityTarget, 0.5);
 
-    // Get interaction trend from interactionHeatMap
-    const trend = interactionHeatMap.getTrend();
+    // Get interaction trend via L0 (posted by interactionHeatMap.flushBeat); fall back to direct call on first beat
+    const heatEntry = L0.getLast(L0_CHANNELS.interactionHeat);
+    const trend = heatEntry ?? interactionHeatMap.getTrend();
 
     // Check role swap via L0 channel (phrase-boundary stable, so getLast is equivalent to getIsSwapped)
     const swapped = L0.getLast(L0_CHANNELS.swapDecision)?.swapped ?? false;

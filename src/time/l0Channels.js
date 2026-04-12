@@ -21,6 +21,7 @@ L0_CHANNELS = Object.freeze({
   feedbackLoop: 'feedbackLoop',
   feedbackPitch: 'feedbackPitch',
   grooveTransfer: 'grooveTransfer',
+  interactionHeat: 'interactionHeat',
   harmonic: 'harmonic',
   harmonicFunction: 'harmonicFunction',
   harmonicJourneyEval: 'harmonic-journey-eval',
