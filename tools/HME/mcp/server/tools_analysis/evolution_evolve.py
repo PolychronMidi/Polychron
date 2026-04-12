@@ -567,6 +567,26 @@ def _detect_contradictions() -> str:
                     candidates.append((i, j, sim))
 
     candidates.sort(key=lambda x: -x[2])
+
+    # Skip pairs linked by synthesizes/supersedes/clarifies relations,
+    # or where one entry's title contains the other's round identifier (arc entries)
+    _skip_relations = {"synthesizes", "supersedes", "clarifies"}
+    def _has_relation(a, b):
+        a_tags = (a.get("tags") or "").split(",")
+        b_tags = (b.get("tags") or "").split(",")
+        for tag in a_tags + b_tags:
+            parts = tag.split(":", 1)
+            if len(parts) == 2 and parts[0] in _skip_relations:
+                if parts[1] == a["id"] or parts[1] == b["id"]:
+                    return True
+        a_rounds = set(re.findall(r'\bR(\d+)\b', a["title"]))
+        b_rounds = set(re.findall(r'\bR(\d+)\b', b["title"]))
+        if a_rounds and b_rounds and (a_rounds & b_rounds):
+            if any(t.startswith("synthesizes:") for t in a_tags + b_tags):
+                return True
+        return False
+    candidates = [(i, j, s) for i, j, s in candidates if not _has_relation(entries[i], entries[j])]
+
     candidates = candidates[:20]
 
     if not candidates:

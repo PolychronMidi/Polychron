@@ -322,7 +322,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         if "</think>" in text:
             text = text[text.rfind("</think>") + len("</think>"):].strip()
         elif "<think>" in text:
-            text = text[text.find("<think>") + len("<think>"):].strip()
+            before_think = text[:text.find("<think>")].strip()
+            text = before_think if before_think else ""
         if not text:
             thinking = result.get("thinking", "").strip()
             if thinking:
@@ -342,10 +343,16 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             "but note:", "however,", "let's look", "we are to", "given the above",
             "so we", "but we don't know", "we have to", "let's consider",
             "we need to find", "we can assume", "first, note that",
+            "let me ", "let's form", "we can list", "we don't have",
+            "the problem ", "how to be specific", "we must not speculate",
+            "okay,", "hmm,", "the challenge is", "double-check",
+            "*final polish*", "making sure each", "should i check",
         ]
         reasoning_hits = sum(1 for m in _reasoning_markers if m in text.lower())
-        if reasoning_hits >= 4 and len(text) > 1500:
-            for marker in ["therefore,", "so the answer", "in summary", "the next two", "answer:"]:
+        if reasoning_hits >= 2 and len(text) > 400:
+            for marker in ["therefore,", "so the answer", "in summary", "the next two", "answer:",
+                          "the key ", "the most critical", "in conclusion", "to summarize",
+                          "here's the", "the fix ", "the result"]:
                 idx = text.lower().rfind(marker)
                 if idx != -1:
                     text = text[idx:].strip()
