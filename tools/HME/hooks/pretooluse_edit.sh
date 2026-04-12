@@ -25,16 +25,23 @@ if echo "$FILE" | grep -qE '/Polychron/(src|tools/HME/(chat/src|mcp/server)|scri
   WARNS=$(_safe_int "$(_safe_jq "$VAL_JSON" '.warnings | length' '0')")
   if [[ "$BLOCKS" -gt 0 ]]; then
     BLOCK_TITLES=$(_safe_jq "$VAL_JSON" '.blocks[]?.title // empty' '' | head -2 | sed 's/^/    /')
-    echo "KB CONSTRAINTS for $MODULE ($BLOCKS blocks, $WARNS warnings):" >&2
-    echo "$BLOCK_TITLES" >&2
-    echo "Call mcp__HME__read(target=\"$MODULE\", mode=\"before\") for full pre-edit briefing." >&2
+    MSG="KB CONSTRAINTS for $MODULE ($BLOCKS blocks, $WARNS warnings):\n$BLOCK_TITLES\nCall mcp__HME__read(target=\"$MODULE\", mode=\"before\") for full pre-edit briefing."
+    jq -n --arg msg "$MSG" \
+      '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":$msg}'
+    _streak_tick 10
+    exit 0
   elif [[ "$WARNS" -gt 0 ]]; then
     WARN_TITLES=$(_safe_jq "$VAL_JSON" '.warnings[]?.title // empty' '' | head -2 | sed 's/^/    /')
-    echo "KB CONTEXT for $MODULE ($WARNS entries):" >&2
-    echo "$WARN_TITLES" >&2
-    echo "Call mcp__HME__read(target=\"$MODULE\", mode=\"before\") for full pre-edit briefing." >&2
+    MSG="KB CONTEXT for $MODULE ($WARNS entries):\n$WARN_TITLES\nCall mcp__HME__read(target=\"$MODULE\", mode=\"before\") for full pre-edit briefing."
+    jq -n --arg msg "$MSG" \
+      '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":$msg}'
+    _streak_tick 10
+    exit 0
   else
-    echo "BEFORE EDITING $MODULE: Call mcp__HME__read(target=\"$MODULE\", mode=\"before\") for KB constraints + callers + edit risks." >&2
+    jq -n --arg module "$MODULE" \
+      '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("BEFORE EDITING " + $module + ": Call mcp__HME__read(target=\"" + $module + "\", mode=\"before\") for KB constraints + callers + edit risks.")}'
+    _streak_tick 10
+    exit 0
   fi
 fi
 _streak_tick 10

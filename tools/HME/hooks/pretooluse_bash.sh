@@ -32,10 +32,10 @@ if echo "$CMD" | grep -q 'run\.lock'; then
   exit 2
 fi
 
-# Block indirect pipeline polling via metric file timestamps
+# Redirect: metric file timestamp polling → status tool
 if echo "$CMD" | grep -qE '(stat|ls -l).*(pipeline-summary|trace-summary|run-history|perceptual-report)'; then
-  echo '{"decision":"block","reason":"BLOCKED: Checking metric timestamps is indirect pipeline polling. Continue with other work."}'
-  exit 2
+  jq -n '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":"Checking metric timestamps is indirect pipeline polling. Use mcp__HME__status(mode=\"pipeline\") for current status, then continue with other work."}'
+  exit 0
 fi
 
 # Anti-wait enforcement: pipeline commands MUST use run_in_background=true.
@@ -57,16 +57,16 @@ if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; the
   fi
 fi
 
-# Block polling: pipeline log files (NOT task output — those are legitimate post-completion reads)
+# Redirect: pipeline log file polling → status tool
 if echo "$CMD" | grep -qE '(tail|cat|head|grep).*(r4[0-9]+_run|run\.log|pipeline\.log)'; then
-  echo '{"decision":"block","reason":"BLOCKED: Polling pipeline log is the antipattern. Call the check_pipeline MCP tool NOW for current status, then continue with other work."}'
-  exit 2
+  jq -n '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":"Polling pipeline logs is the antipattern. Use mcp__HME__status(mode=\"pipeline\") for current status, then continue with other work."}'
+  exit 0
 fi
 
-# Block sleep-then-check patterns (sleep N && tail/cat/grep)
+# Enrich: sleep+check pattern — allow but inject guidance
 if echo "$CMD" | grep -qE 'sleep.*(tail|cat|head|grep|\.output)'; then
-  echo '{"decision":"block","reason":"BLOCKED: sleep+check is the polling antipattern. Do not sleep-poll background tasks — a notification fires when done. Continue with other work."}'
-  exit 2
+  jq -n '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":"sleep+check detected. Background tasks fire a completion notification — no need to poll. If you must wait, use run_in_background=true instead of sleep loops."}'
+  exit 0
 fi
 
 # Suggest HME alternatives for shell commands
@@ -100,16 +100,16 @@ if echo "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]
 fi
 _streak_tick 15
 if ! _streak_check; then exit 1; fi
-# fix_antipattern: Block repeated polling of background task output files.
-# 2 checks allowed per session, then hard block. Counter resets when pipeline completes.
+# Redirect: repeated polling of background task output files (3rd+ check)
 TASK_POLL_COUNTER="/tmp/polychron-task-poll-count"
 if echo "$CMD" | grep -qE '(tail|cat|head|grep|wc).*/tmp/claude-'; then
   COUNT=$(_safe_int "$(cat "$TASK_POLL_COUNTER" 2>/dev/null)" 0)
   COUNT=$((COUNT + 1))
   echo "$COUNT" > "$TASK_POLL_COUNTER"
   if [ "$COUNT" -gt 2 ]; then
-    echo "{\"decision\":\"block\",\"reason\":\"BLOCKED: Background task output polling (check #${COUNT}). You already checked twice. WAIT for the background task notification. Do other productive work while waiting.\"}"
-    exit 2
+    jq -n --arg count "$COUNT" \
+      '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":("Background task output polling (check #" + $count + "). You already checked twice. WAIT for the background task notification. Do other productive work while waiting.")}'
+    exit 0
   fi
 fi
 exit 0
