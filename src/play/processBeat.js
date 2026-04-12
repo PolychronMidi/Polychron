@@ -83,7 +83,7 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   // -- [stage: rest]
   if (PROFILE) marks[7] = process.hrtime.bigint();
   const clRestSignals = {
-    heatLevel: interactionHeatMap.getDensity(),
+    heatLevel: L0.getLast(L0_CHANNELS.interactionHeat)?.density ?? interactionHeatMap.getDensity(),
     densityTarget: clIntent.densityTarget,
     phaseMode: requireNonEmptyString('rhythmicPhaseLock.getMode()', rhythmicPhaseLock.getMode())
   };

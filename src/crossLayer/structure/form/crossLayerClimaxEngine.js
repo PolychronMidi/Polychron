@@ -119,7 +119,7 @@ crossLayerClimaxEngine = (() => {
     const tensionPressure = clamp((sigs.tension - PRESSURE_ONSET) / PRESSURE_RANGE, 0, 1);
     const conductorIntensity = clamp((sigs.compositeIntensity * COMPOSITE_WEIGHT + densityPressure * DENSITY_PRESSURE_WEIGHT + tensionPressure * TENSION_PRESSURE_WEIGHT) * earlySectionDamp, 0, 1);
 
-    const heatLevel = clamp(interactionHeatMap.getDensity(), 0, 1);
+    const heatLevel = clamp(L0.getLast(L0_CHANNELS.interactionHeat)?.density ?? interactionHeatMap.getDensity(), 0, 1);
 
     const intent = sectionIntentCurves.getLastIntent();
     const intentPressure = (intent.densityTarget + intent.interactionTarget) / 2;

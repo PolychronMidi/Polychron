@@ -37,8 +37,8 @@ crossLayerSilhouette = (() => {
     // Register balance from spectralComplementarity (using active layer, not hardcoded)
     const spectralComplement = spectralComplementarity.analyzeComplement(layerForSpectral);
 
-    // Heat from interactionHeatMap
-    const heat = interactionHeatMap.getDensity();
+    // Heat from interactionHeatMap via L0 (fallback to direct call on first beat before any flush)
+    const heat = L0.getLast(L0_CHANNELS.interactionHeat)?.density ?? interactionHeatMap.getDensity();
 
     // Convergence intensity boosts dynamic reading
     const convergenceRecent = convergenceDetector.wasRecent(absoluteSeconds, 'L1', 500) || convergenceDetector.wasRecent(absoluteSeconds, 'L2', 500);
