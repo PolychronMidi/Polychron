@@ -321,6 +321,17 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         text = result.get("response", "").strip()
         # Strip markdown fenced thinking blocks (```thinking ... ``` or ```reasoning ... ```)
         text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
+        # Strip ChatML system/turn tags used by Qwen and similar models
+        if "<|im_start|>" in text:
+            # Keep only content inside the last assistant turn, or strip all tags
+            import re as _re2
+            # Extract last assistant block if present
+            _asst = _re2.findall(r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)', text, _re2.IGNORECASE)
+            if _asst:
+                text = _asst[-1].strip()
+            else:
+                text = _re2.sub(r'<\|im_start\|>[\s\S]*?<\|im_end\|>', '', text).strip()
+                text = _re2.sub(r'<\|im_start\|>|<\|im_end\|>', '', text).strip()
         # Strip XML-style thinking tags (<think>, <|thinking|>, <|answer|> delimiters)
         if "<|answer|>" in text:
             text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
@@ -444,6 +455,13 @@ def _local_chat(messages: list[dict], model: str | None = None,
             msg = result.get("message", {})
             text = msg.get("content", "").strip() if isinstance(msg, dict) else ""
             text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
+            if "<|im_start|>" in text:
+                import re as _re2c
+                _asst = _re2c.findall(r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)', text, _re2c.IGNORECASE)
+                if _asst:
+                    text = _asst[-1].strip()
+                else:
+                    text = _re2c.sub(r'<\|im_start\|>[\s\S]*?<\|im_end\|>', '', text).strip()
             if "<|answer|>" in text:
                 text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
             elif "<|thinking|>" in text:

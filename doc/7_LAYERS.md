@@ -16,9 +16,11 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - 4 previous invariants: `7layers-doc-exists`, `kb-minimum-entries`, `trust-system-count`, `stutter-variant-registry`
 
 ### Next pass
-- [ ] Add invariant: all active coupling labels extracted from trace.jsonl must appear in KB
-- [ ] Run `evolve(focus='invariants')` — verify `top-callers-have-kb` and `trace-run-history-sync` pass after next pipeline run
+- [x] Add invariant: coupling-labels-documented — all 11 active labels in trace.jsonl must appear in ARCHITECTURE.md (patterns_all_in_file)
+- [x] Run evolve(invariants): 35/36 pass; `kb-minimum-entries` fixed (was checking missing JSON export dir, now checks Lance DB data files); only `trace-run-history-sync` warns (expected — pipeline stale by 30h)
+- [x] `top-callers-have-kb`: all 15 pass
 - [ ] Consider adding invariant: no `<|thinking|>` leak in KB entry content (LLM artifact guard)
+- [ ] eslint-rules-count: count is now 22 but CLAUDE.md says 21 — verify after next ESLint rule addition
 
 ## Layer 2: Knowledge Base (COMPREHENSIVE)
 
@@ -35,9 +37,10 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - densityMean >2σ spike (0.470 vs 0.443 mean) documented as texture accumulation pattern (146751f990c7)
 
 ### Next pass
-- [ ] Seed modules below the top-15 threshold (traceDrain 28, systemDynamicsProfiler 41, etc.)
+- [x] Seed modules below the top-15 threshold: traceDrain (28 callers) and systemDynamicsProfiler (41 callers) seeded
+- [x] Add KB entry: section count confirmed as 6 (S0–S5); S0 entropy anomaly documented as warmup, not truncation
 - [ ] Improve contradiction scanner: after adding synthesis entries, false-positive rate spiked — revisit filter logic
-- [ ] Add KB entry: section count 6→7 structural shift cause (from curate candidates)
+- [ ] Seed remaining below-threshold modules: entropyAmplificationController, regimeClassifier, pipelineCouplingManager
 
 ## Layer 3: Tool Output Quality (FULLY FIXED)
 
@@ -57,7 +60,9 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - forge sketch: method-patching enforcement, API validation (warns on unverified method calls)
 
 ### Next pass
-- [ ] Add `<|im_start|>` / `<|im_end|>` ChatML tag stripping (used by Qwen models)
+- [x] Add `<|im_start|>` / `<|im_end|>` ChatML tag stripping (used by Qwen models)
+- [x] Hierarchy mode: subsystem-level rollup (files, avg_deps, total_users per src/ subsystem)
+- [x] Forge validation: re-prompt model with valid symbol list if >2 unknown methods detected (second attempt with corrected sketch)
 - [ ] find xref exported API: symbol table has low coverage of JS functions — may need reindex after changes
 - [ ] Hierarchy mode: improve manager detection beyond filename pattern (detect by caller count ratio)
 
@@ -74,7 +79,7 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 ### Next pass
 - [ ] Unify all tool reads to a single "current run" pointer (e.g., symlink `metrics/current/` → latest run)
 - [ ] Verify EnCodec S1 WAV truncation hypothesis — check WAV file durations for each section
-- [ ] Surface adaptive-state.json staleness in status(all) (currently not checked)
+- [x] Surface adaptive-state.json staleness in status(all) — VERY_STALE flag (>7d) added to compact freshness summary
 
 ## Layer 5: Architectural Intelligence (MATURE)
 
@@ -103,10 +108,11 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - dynamicEnvelope second-organism triad: envelope + roleSwap + interactionHeatMap directly coupled
 
 ### Next pass
-- [ ] Pilot L0-routing experiment: add L0_CHANNELS.dynamicsDecision, post dynamicRoleSwap.getIsSwapped() to it
-- [ ] directionBias expansion: implement consumer in dynamicRoleSwap (swap gate modulated by ascent/descent)
+- [x] L0 swapDecision channel: added `L0_CHANNELS.swapDecision`; dynamicRoleSwap posts on each swap; articulationComplement and crossLayerDynamicEnvelope read via getLast instead of getIsSwapped()
+- [x] directionBias consumer: `directionBiasSwapBoost` added to dynamicRoleSwap gate (±0.03 max, ascending=suppress, descending=boost)
 - [ ] Design contourShape evolution round: add contourShape dimension to 2-3 modules that ignore it
 - [ ] Test voicing layer as directionBias consumer (open voicing on ascent)
+- [ ] directionBias in articulationComplement: falling bias → sharper articulation contrast, ascending → softer
 
 ## Layer 7: Evolution Intelligence (FORGE-READY)
 
@@ -119,7 +125,8 @@ Each layer has: current state, fixes applied, and items for next dedicated pass.
 - directionBias expansion roadmap: 3 concrete modules, specific effect magnitudes mapped
 
 ### Next pass
+- [x] Add ChatML `<|im_start|>` tag stripping to synthesis_ollama.py (used by Qwen coder model)
+- [x] Forge re-prompt: re-prompt with valid symbol list if >2 unknown methods; re-validates corrected sketch
 - [ ] Execute top forge sketch (convergenceHarmonicTrigger↔verticalIntervalMonitor densitySurprise bridge)
 - [ ] Run `evolve(focus='forge')` after next pipeline run — validate API check fires on generated sketches
 - [ ] Design multi-organism round: pilot L0 routing for dynamicRoleSwap → interactionHeatMap
-- [ ] Add ChatML `<|im_start|>` tag stripping to synthesis_ollama.py (used by Qwen coder model)

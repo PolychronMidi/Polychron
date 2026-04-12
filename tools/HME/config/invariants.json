@@ -249,9 +249,9 @@
     },
     {
       "id": "kb-minimum-entries",
-      "description": "KB must have at least 50 entries for adequate coverage",
+      "description": "KB Lance database must exist and contain at least one data file",
       "type": "glob_count_gte",
-      "glob": "tools/HME/mcp/rag_data/project_knowledge/*.json",
+      "glob": ".claude/mcp/HME/knowledge.lance/data/*.lance",
       "min_count": 1,
       "severity": "warning"
     },
@@ -288,6 +288,18 @@
       "path_a": "metrics/trace.jsonl",
       "path_b_glob": "metrics/run-history/*.json",
       "max_delta_seconds": 300,
+      "severity": "warning"
+    },
+    {
+      "id": "coupling-labels-documented",
+      "description": "All 11 known active coupling label pairs must be documented in ARCHITECTURE.md",
+      "type": "patterns_all_in_file",
+      "path": "doc/ARCHITECTURE.md",
+      "patterns": [
+        "density-entropy", "density-flicker", "density-phase", "density-tension",
+        "entropy-phase", "entropy-trust", "flicker-entropy", "flicker-phase",
+        "tension-entropy", "tension-flicker", "tension-phase"
+      ],
       "severity": "warning"
     }
   ]

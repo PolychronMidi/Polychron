@@ -100,8 +100,8 @@ articulationComplement = (() => {
     const rhythmContrastMod = 1.0 + rhythmDensityAC * 0.15; // [1.0-1.15] dense->sharper
     const effectiveContrast = contrastStrength * regimeContrast * (1.5 - cimScale) * melodicContrastScale * rhythmContrastMod;
 
-    // Check role swap state
-    const swapped = dynamicRoleSwap.getIsSwapped() ?? false;
+    // Check role swap state via L0 channel (phrase-boundary stable, so getLast is equivalent to getIsSwapped)
+    const swapped = L0.getLast(L0_CHANNELS.swapDecision)?.swapped ?? false;
 
     // Entropy-aware articulation: high entropy favors staccato for rhythmic clarity
     const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: activeLayer });

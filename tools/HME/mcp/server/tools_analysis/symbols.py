@@ -313,6 +313,26 @@ def type_hierarchy(type_name: str = "") -> str:
             hlp_str = f" + {hlp}" if hlp else " (no helpers file)"
             parts.append(f"  {mgr}{hlp_str} [{users} dependents]")
 
+    # Subsystem rollup: group module dep counts by src/ subdirectory
+    subsystem_totals: dict[str, dict] = {}
+    for js_file in _glob_mod.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", "*.js"), recursive=True):
+        rel = js_file.replace(ctx.PROJECT_ROOT + "/src/", "")
+        parts_rel = rel.split("/")
+        subsystem = parts_rel[0] if len(parts_rel) > 1 else "root"
+        basename = os.path.basename(js_file).replace(".js", "")
+        n_deps = len(dep_graph.get(basename, set()))
+        n_users = len(rev_graph.get(basename, set()))
+        if subsystem not in subsystem_totals:
+            subsystem_totals[subsystem] = {"files": 0, "total_deps": 0, "total_users": 0}
+        subsystem_totals[subsystem]["files"] += 1
+        subsystem_totals[subsystem]["total_deps"] += n_deps
+        subsystem_totals[subsystem]["total_users"] += n_users
+    if subsystem_totals:
+        parts.append(f"\n## Subsystem Rollup ({len(subsystem_totals)} subsystems):")
+        for sub, stats in sorted(subsystem_totals.items(), key=lambda x: -x[1]["total_users"]):
+            avg_deps = stats["total_deps"] / max(stats["files"], 1)
+            parts.append(f"  {sub:<20} {stats['files']:3} files  avg_deps={avg_deps:.1f}  total_users={stats['total_users']}")
+
     return "\n".join(parts)
 
 

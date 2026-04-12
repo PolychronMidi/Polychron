@@ -357,6 +357,16 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 - **R90 E2 `tessituraLoad` → `grooveTransfer ↔ crossLayerClimaxEngine`** (r=-0.487, 3→4 bridges): extreme register pressure reduces groove transfer (×down to 0.92) while accelerating climax approach (up to +0.05). At extreme register, layers pursue independent rhythmic territory while the structural arc crests — rhythmic individuation at the structural peak.
 - **R90 E3 `freshnessEma` → `harmonicIntervalGuard ↔ phaseAwareCadenceWindow`** (r=-0.426, 2→3 bridges): sustained melodic novelty narrows harmonic deadband (up to −0.03) while compressing the cadence window (up to −0.04 threshold). Novel melodic territory tightens harmonic discipline while deferring resolution — interval hunting intensifies as cadence is resisted.
 
+### directionBias Swap Gate Coupling (R90+)
+
+`directionBias` float (−1=descending, 0=neutral, +1=ascending) from `emergentMelodicEngine.getContext()` now modulates the `dynamicRoleSwap` swap gate as a continuous signal layer below the categorical `contourShape` boost.
+
+- **`directionBias` → `dynamicRoleSwap` gate** (±0.03 max): ascending pitch tendency suppresses swap (sustain the build with current roles); descending tendency amplifies swap probability (natural role handoff moment). Complements `contourSwapBoost` (±0.08 categorical) with finer-grained continuous modulation. Implemented as `clamp(directionBias * −0.06, −0.03, 0.03)`.
+
+### L0 swapDecision channel
+
+`dynamicRoleSwap.evaluateSwap()` now posts `L0_CHANNELS.swapDecision` with `{ swapped, swapCount }` on every successful swap. `articulationComplement` and `crossLayerDynamicEnvelope` consume swap state via `L0.getLast(L0_CHANNELS.swapDecision)` instead of direct `getIsSwapped()` call, routing through the L0 event bus for architectural consistency. Note: `dynamismEngine` (conductor) and `crossLayerBeatRecord` (play) still use `getIsSwapped()` directly — conductor read-only access is explicitly permitted.
+
 ### ascendRatio Antagonism Bridge (R47)
 
 `ascendRatio` as shared signal driving constructive opposition between structural arc and form tracking.
