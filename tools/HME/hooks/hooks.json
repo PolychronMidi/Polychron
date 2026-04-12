@@ -34,6 +34,10 @@
       {
         "matcher": "Bash",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_bash.sh", "timeout": 10}]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_todowrite.sh", "timeout": 5}]
       }
     ],
     "PostToolUse": [
