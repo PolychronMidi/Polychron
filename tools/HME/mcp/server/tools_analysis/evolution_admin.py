@@ -2,6 +2,7 @@
 import os
 import re
 import logging
+import subprocess
 
 from server import context as ctx
 from .synthesis import _local_think
@@ -268,7 +269,7 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         f"Antipattern to prevent: {antipattern}\n\n"
         f"Write ONLY the bash snippet (no markdown fences). 5-15 lines maximum."
     )
-    snippet = _local_think(synthesis_prompt, max_tokens=256)
+    snippet = _local_think(synthesis_prompt, max_tokens=512)
     if not snippet:
         return (
             f"Could not synthesize snippet.\n"
@@ -292,6 +293,20 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
             new_content = stripped + insertion
     else:
         new_content = stripped + insertion
+
+    # Validate bash syntax before writing — reject truncated/broken snippets
+    check = subprocess.run(
+        ["bash", "-n"],
+        input=new_content, capture_output=True, text=True, timeout=5,
+    )
+    if check.returncode != 0:
+        return (
+            f"REJECTED: Generated snippet has bash syntax errors — refusing to write broken code.\n"
+            f"bash -n stderr: {check.stderr.strip()}\n\n"
+            f"**Snippet that failed:**\n```bash\n{snippet.strip()}\n```\n\n"
+            f"Fix manually or retry. Hook file NOT modified: {hook_path}"
+        )
+
     with open(hook_path, "w", encoding="utf-8") as _f:
         _f.write(new_content)
 
