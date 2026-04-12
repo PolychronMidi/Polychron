@@ -40,4 +40,7 @@ else
   echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":null,\"stale_remaining_pct\":null}" >> "$LOG"
 fi
 
+# Suggest resume after compaction — context was just lost
+echo "Context compacted. Use mcp__HME__status(mode='resume') for session state recovery." >&2
+
 exit 0

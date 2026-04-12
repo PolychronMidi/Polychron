@@ -4,11 +4,14 @@ Merges check_pipeline + hme_admin(selftest) + coupling overview + trust ecology
 into one 'is everything OK?' call with mode selection.
 Auto-warms stale GPU contexts when detected.
 """
+import json
 import logging
+import os
+import subprocess
 
 from server import context as ctx
-from . import _track
-from .synthesis_session import append_session_narrative
+from . import _track, get_session_intent
+from .synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 
 logger = logging.getLogger("HME")
 
@@ -20,10 +23,15 @@ def status(mode: str = "all") -> str:
     mode='coupling': coupling topology + antagonist tensions + dimension gaps.
     mode='trust': trust ecology leaderboard (all 27 systems, 200-beat sample).
     mode='perceptual': perceptual stack status (EnCodec/CLAP/verdict model).
-    mode='hme': HME selftest + introspection."""
+    mode='hme': HME selftest + introspection.
+    mode='resume': cold-start session briefing — synthesizes git state, nexus lifecycle,
+    pipeline verdict, session narrative, and think history for context recovery."""
     _track("status")
     append_session_narrative("status", f"status({mode})")
     ctx.ensure_ready_sync()
+
+    if mode == "resume":
+        return _resume_briefing()
 
     if mode == "pipeline":
         from .digest import check_pipeline as _cp
@@ -123,3 +131,113 @@ def status(mode: str = "all") -> str:
         pass
 
     return "\n\n".join(parts)
+
+
+def _resume_briefing() -> str:
+    """Cold-start briefing for context recovery after compaction or new session.
+
+    Synthesizes git state, nexus lifecycle, pipeline verdict, session narrative,
+    and think history into a structured briefing optimized for rapid re-orientation.
+    """
+    parts = ["# Session Resume Briefing\n"]
+
+    # 1. Uncommitted changes (what am I in the middle of?)
+    try:
+        r = subprocess.run(
+            ["git", "diff", "--stat", "HEAD"],
+            capture_output=True, text=True, timeout=5, cwd=ctx.PROJECT_ROOT,
+        )
+        if r.stdout.strip():
+            lines = r.stdout.strip().splitlines()
+            parts.append("## Uncommitted Changes")
+            for line in lines:
+                parts.append(f"  {line.strip()}")
+        else:
+            parts.append("## Changes: working tree clean")
+    except Exception:
+        parts.append("## Changes: git unavailable")
+
+    # 2. Pipeline verdict + timing
+    try:
+        summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "pipeline-summary.json")
+        with open(summary_path, encoding="utf-8") as f:
+            ps = json.load(f)
+        verdict = ps.get("verdict")
+        wall = ps.get("wallTimeSeconds", 0)
+        failed = ps.get("failed", 0)
+        gen = ps.get("generated", "")[:19]
+        errors = ps.get("errorPatterns", [])
+        parts.append(f"\n## Pipeline: {verdict or 'no verdict'} ({gen})")
+        parts.append(f"  Wall time: {wall:.0f}s | Failed steps: {failed}")
+        if errors:
+            parts.append(f"  Error patterns: {', '.join(str(e) for e in errors[:3])}")
+    except Exception:
+        parts.append("\n## Pipeline: no summary available")
+
+    # 3. Nexus lifecycle state (bash hook state read directly)
+    try:
+        nexus_path = os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-nexus.state")
+        if os.path.isfile(nexus_path):
+            with open(nexus_path, encoding="utf-8") as f:
+                nexus_lines = [l.strip() for l in f.readlines() if l.strip()]
+            if nexus_lines:
+                edits, pipeline_v, has_commit, briefs = [], "", False, []
+                for line in nexus_lines:
+                    segs = line.split(":", 2)
+                    ntype = segs[0]
+                    payload = segs[2] if len(segs) > 2 else ""
+                    if ntype == "EDIT":
+                        edits.append(payload)
+                    elif ntype == "PIPELINE":
+                        pipeline_v = payload
+                    elif ntype == "COMMIT":
+                        has_commit = True
+                    elif ntype == "BRIEF":
+                        briefs.append(payload)
+                pending = []
+                if edits:
+                    pending.append(f"Unreviewed edits ({len(edits)}): {', '.join(edits[:6])}")
+                if pipeline_v in ("STABLE", "EVOLVED") and not has_commit:
+                    pending.append(f"Pipeline {pipeline_v} but NOT committed")
+                if pipeline_v in ("FAILED", "DRIFTED"):
+                    pending.append(f"Pipeline {pipeline_v} — needs diagnosis before continuing")
+                if pending:
+                    parts.append("\n## Lifecycle Pending")
+                    for p in pending:
+                        parts.append(f"  - {p}")
+                if briefs:
+                    parts.append(f"  Briefed files: {', '.join(briefs[:5])}")
+    except Exception:
+        pass
+
+    # 4. Session narrative (what has the session been doing?)
+    narrative = get_session_narrative(max_entries=12)
+    if narrative:
+        parts.append(f"\n## Session Thread")
+        parts.append(narrative.strip())
+
+    # 5. Think history (prior reasoning exchanges)
+    think_ctx = get_think_history_context()
+    if think_ctx:
+        parts.append(f"\n## Prior Reasoning")
+        parts.append(think_ctx.strip())
+
+    # 6. Session intent
+    intent = get_session_intent()
+    if intent != "unknown":
+        parts.append(f"\n## Detected Intent: {intent}")
+
+    # 7. Recent git commits (what was the last thing committed?)
+    try:
+        r = subprocess.run(
+            ["git", "-C", ctx.PROJECT_ROOT, "log", "--oneline", "-5"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if r.stdout.strip():
+            parts.append(f"\n## Recent Commits")
+            for line in r.stdout.strip().splitlines():
+                parts.append(f"  {line}")
+    except Exception:
+        pass
+
+    return "\n".join(parts)

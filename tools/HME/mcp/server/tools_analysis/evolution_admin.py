@@ -21,6 +21,8 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
     hasn't caught up). action='clear_index': wipe hash cache + chunk store then rebuild.
     action='warm': pre-populate before_editing caches for all src/ files AND prime GPU KV contexts.
     action='introspect': self-benchmarking — tool usage patterns, workflow discipline, KB health.
+    action='validate': empirical self-validation — runs golden queries through MCP tools
+    and checks output quality (expected sections, no errors, minimum length).
     action='both': reload then selftest.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
@@ -69,9 +71,109 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
         )
     if action == "introspect":
         parts.append(hme_introspect())
+    if action == "validate":
+        parts.append(_hme_validate_golden())
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', or 'both'."
     return "\n\n".join(parts)
+
+
+def _hme_validate_golden() -> str:
+    """Empirical self-validation: run golden queries through MCP tools and check output quality."""
+
+    def _call(tool_fn, **kwargs):
+        try:
+            return tool_fn(**kwargs)
+        except Exception as e:
+            return f"Error: {type(e).__name__}: {e}"
+
+    from .read_unified import read as _read
+    from .evolution_evolve import evolve as _evolve
+    from .status_unified import status as _status
+    from .trace_unified import trace as _trace
+
+    golden = [
+        {
+            "name": "read(before) src module",
+            "call": lambda: _call(_read, target="harmonicIntervalGuard", mode="before"),
+            "expect": ["KB Constraints", "Structure"],
+            "reject": ["Error:", "Traceback"],
+            "min_lines": 10,
+        },
+        {
+            "name": "read(before) HME module",
+            "call": lambda: _call(_read, target="coupling_bridges", mode="before"),
+            "expect": ["HME Internal Context", "RELOADABLE"],
+            "reject": ["Error:", "Traceback"],
+            "min_lines": 8,
+        },
+        {
+            "name": "evolve(coupling)",
+            "call": lambda: _call(_evolve, focus="coupling"),
+            "expect": ["Coupling"],
+            "reject": ["Traceback"],
+            "min_lines": 3,
+        },
+        {
+            "name": "status(hme) selftest",
+            "call": lambda: _call(_status, mode="hme"),
+            "expect": ["Self-Test", "tools registered"],
+            "reject": ["FAIL"],
+            "min_lines": 5,
+        },
+        {
+            "name": "trace(delta)",
+            "call": lambda: _call(_trace, target="auto", mode="delta"),
+            "expect": ["Delta"],
+            "reject": ["Traceback"],
+            "min_lines": 2,
+        },
+        {
+            "name": "evolve(curate)",
+            "call": lambda: _call(_evolve, focus="curate"),
+            "expect": ["Curate"],
+            "reject": ["Traceback"],
+            "min_lines": 2,
+        },
+    ]
+
+    passed, failed = 0, 0
+    results = []
+
+    for gq in golden:
+        try:
+            output = gq["call"]()
+            if not output:
+                results.append(f"  FAIL: {gq['name']} -- empty output")
+                failed += 1
+                continue
+
+            lines = output.split("\n")
+            issues = []
+
+            if len(lines) < gq.get("min_lines", 1):
+                issues.append(f"short ({len(lines)}<{gq['min_lines']})")
+
+            for kw in gq.get("expect", []):
+                if kw not in output:
+                    issues.append(f"missing '{kw}'")
+
+            for kw in gq.get("reject", []):
+                if kw in output:
+                    issues.append(f"has '{kw}'")
+
+            if issues:
+                results.append(f"  FAIL: {gq['name']} -- {'; '.join(issues)}")
+                failed += 1
+            else:
+                results.append(f"  PASS: {gq['name']} ({len(lines)} lines)")
+                passed += 1
+        except Exception as e:
+            results.append(f"  ERROR: {gq['name']} -- {type(e).__name__}: {e}")
+            failed += 1
+
+    verdict = "ALL PASS" if failed == 0 else f"{failed} FAILED"
+    return f"## Golden Query Validation: {verdict}\n  {passed}/{passed + failed} passed\n" + "\n".join(results)
 
 
 def hme_inspect(mode: str = "both") -> str:

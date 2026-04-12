@@ -106,6 +106,15 @@
         ]
       },
       {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/posttooluse_read.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Write",
         "hooks": [
           {

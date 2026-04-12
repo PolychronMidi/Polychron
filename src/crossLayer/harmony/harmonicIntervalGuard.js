@@ -150,7 +150,13 @@ harmonicIntervalGuard = (() => {
     // Counterpart: phaseAwareCadenceWindow COMPRESSES window under same signal (resolution deferred during novelty).
     const freshnessEmaHIG = melodicCtxHIG ? V.optionalFinite(melodicCtxHIG.freshnessEma, 0.5) : 0.5;
     const freshnessEmaNarrowHIG = clamp((freshnessEmaHIG - 0.45) * 0.06, -0.02, 0.03);
-    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG - densitySurpriseNarrowHIG - complexityEmaNarrowHIG - thematicNarrowHIG - freshnessEmaNarrowHIG, 0.05, 0.30);
+    // R92 E1: contourShape antagonism bridge with phaseAwareCadenceWindow -- rising contour widens
+    // deadband (ascending phrases naturally leap; don't fight the direction). Falling contour narrows
+    // (guide descending melody toward consonant landing). Counterpart: phaseAwareCadenceWindow COMPRESSES
+    // window during rising (defer resolution) and OPENS during falling (welcome cadence).
+    const contourShapeHIG = melodicCtxHIG ? melodicCtxHIG.contourShape : null;
+    const contourWideHIG = contourShapeHIG === 'rising' ? 0.02 : contourShapeHIG === 'falling' ? -0.02 : 0;
+    const deadband = clamp(0.18 - clamp(vimTighten, 0, 0.06) + freshnessBand + hotspotsScaleHIG * 0.04 - registerNarrowHIG - complexityNarrowHIG - phaseNarrowHIG - tessituraNarrowHIG - ascendNarrowHIG - densitySurpriseNarrowHIG - complexityEmaNarrowHIG - thematicNarrowHIG - freshnessEmaNarrowHIG + contourWideHIG, 0.05, 0.30);
     if (m.abs(error) < deadband) return { midi, nudged: false, interval: currentIC, otherMidi: otherRecentMidi };
 
     // Nudge probability: scale by error magnitude, boosted when dissonance is high

@@ -95,7 +95,13 @@ phaseAwareCadenceWindow = (() => {
     // Counterpart: harmonicIntervalGuard NARROWS deadband under same signal (harmonic control tightens).
     const freshnessEmaPACW = melodicCtxPACW ? V.optionalFinite(melodicCtxPACW.freshnessEma, 0.5) : 0.5;
     const freshnessEmaPACWMod = clamp((freshnessEmaPACW - 0.45) * (-0.08), -0.04, 0.02); // novel->compress window
-    const phaseDiffThreshold = clamp(0.3 + ct * 0.15 - dirBias * 0.06 + rhythmComplexityPACW * 0.06 + registerMigDirPACW + freshnessEmaPACWMod, 0.15, 0.55);
+    // R92 E1: contourShape antagonism bridge with harmonicIntervalGuard -- rising contour compresses
+    // cadence window (ascending phrase = defer resolution, sustain the climb). Falling opens window
+    // (descending phrase naturally resolves; let cadence land). Counterpart: harmonicIntervalGuard
+    // WIDENS deadband during rising and NARROWS during falling.
+    const contourShapePACW = melodicCtxPACW ? melodicCtxPACW.contourShape : null;
+    const contourShapePACWMod = contourShapePACW === 'rising' ? -0.03 : contourShapePACW === 'falling' ? 0.03 : 0;
+    const phaseDiffThreshold = clamp(0.3 + ct * 0.15 - dirBias * 0.06 + rhythmComplexityPACW * 0.06 + registerMigDirPACW + freshnessEmaPACWMod + contourShapePACWMod, 0.15, 0.55);
     const allowed = Boolean(cadenceSuggested) && snap.confidence >= MIN_CONFIDENCE && snap.phaseDiff <= phaseDiffThreshold;
 
     explainabilityBus.emit('phase-cadence-window', layer, {

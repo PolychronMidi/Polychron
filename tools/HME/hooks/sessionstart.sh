@@ -29,33 +29,35 @@ fi
 
 # Build orientation message
 MSG=""
+HAS_STATE=false
+
+# Pipeline verdict (most important signal)
+PS="$PROJECT/metrics/pipeline-summary.json"
+if [ -f "$PS" ]; then
+  VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
+  [ -n "$VERDICT" ] && MSG="$MSG\nPipeline: $VERDICT"
+fi
 
 # Last journal round
 JOURNAL="$PROJECT/metrics/journal.md"
 if [ -f "$JOURNAL" ]; then
   LAST_ROUND=$(grep -m1 '^## R' "$JOURNAL" | head -1)
-  if [ -n "$LAST_ROUND" ]; then
-    MSG="$MSG\n$LAST_ROUND"
-    # Grab next 3 non-empty lines for context
-    CONTEXT=$(sed -n "/^## R/{n;n;p;n;p;n;p;}" "$JOURNAL" | head -3 | sed 's/^/  /')
-    [ -n "$CONTEXT" ] && MSG="$MSG\n$CONTEXT"
-  fi
+  [ -n "$LAST_ROUND" ] && MSG="$MSG\n$LAST_ROUND"
 fi
 
-# Recent uncommitted changes
-CHANGED=$(git -C "$PROJECT" diff --name-only 2>/dev/null | head -5)
-STAGED=$(git -C "$PROJECT" diff --cached --name-only 2>/dev/null | head -5)
-if [ -n "$CHANGED" ] || [ -n "$STAGED" ]; then
-  MSG="$MSG\nPending changes:"
-  [ -n "$CHANGED" ] && MSG="$MSG\n  modified: $(echo $CHANGED | tr '\n' ', ')"
-  [ -n "$STAGED" ] && MSG="$MSG\n  staged: $(echo $STAGED | tr '\n' ', ')"
+# Uncommitted changes (count + subsystems)
+CHANGED_COUNT=$(_safe_int "$(git -C "$PROJECT" diff --name-only 2>/dev/null | wc -l)")
+STAGED_COUNT=$(_safe_int "$(git -C "$PROJECT" diff --cached --name-only 2>/dev/null | wc -l)")
+if [ "$CHANGED_COUNT" -gt 0 ] || [ "$STAGED_COUNT" -gt 0 ]; then
+  SUBSYSTEMS=$(git -C "$PROJECT" diff --name-only 2>/dev/null | sed 's|/.*||' | sort -u | tr '\n' ',' | sed 's/,$//')
+  MSG="$MSG\nUncommitted: $CHANGED_COUNT modified ($SUBSYSTEMS)"
+  [ "$STAGED_COUNT" -gt 0 ] && MSG="$MSG + $STAGED_COUNT staged"
+  HAS_STATE=true
 fi
 
-# Fingerprint verdict from last run
-FP="$PROJECT/metrics/fingerprint-comparison.json"
-if [ -f "$FP" ]; then
-  VERDICT=$(python3 -c "import json; print(json.load(open('$FP')).get('verdict','?'))" 2>/dev/null)
-  [ -n "$VERDICT" ] && MSG="$MSG\nLast fingerprint: $VERDICT"
+# Suggest resume if there's meaningful state to recover
+if [ "$HAS_STATE" = true ]; then
+  MSG="$MSG\n→ mcp__HME__status(mode='resume') for full session briefing"
 fi
 
 echo -e "HyperMeta Ecstasy active. Load skill: /HME$MSG" >&2

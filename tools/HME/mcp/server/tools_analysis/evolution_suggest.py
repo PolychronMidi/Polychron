@@ -354,6 +354,6 @@ def suggest_evolution() -> str:
         pass
 
     result = "\n".join(parts)
-    if len(result) > 10000:
-        result = result[:10000] + f"\n*(truncated — {len(result) - 10000} chars omitted)*"
+    if len(result) > 20000:
+        result = result[:20000] + f"\n*(truncated — {len(result) - 20000} chars omitted)*"
     return result

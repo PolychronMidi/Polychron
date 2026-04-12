@@ -214,10 +214,9 @@ def hme_selftest() -> str:
             f[:-3] for f in os.listdir(_ta_dir)
             if f.endswith(".py") and f != "__init__.py" and not f.startswith("_")
         }
-        import inspect as _inspect
-        _src = _inspect.getsource(hme_hot_reload)
-        import re as _re_reload
-        _in_list = set(_re_reload.findall(r'"(\w+)"', _src.split("RELOADABLE")[1].split("]")[0]))
+        # Read RELOADABLE directly from module attributes (not from function source,
+        # which doesn't contain the list definition).
+        _in_list = set(RELOADABLE + TOP_LEVEL_RELOADABLE + ROOT_RELOADABLE)
         _missing = _all_modules - _in_list
         if _missing:
             results.append(f"FAIL: hot-reload coverage -- missing modules: {sorted(_missing)}")

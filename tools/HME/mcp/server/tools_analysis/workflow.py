@@ -80,9 +80,10 @@ def before_editing(file_path: str) -> str:
             return f"File not found: {abs_path}{_hint}"
     rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
     module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
-    parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]
 
-    # 0. Recent git commits for this file (temporal context for Claude synthesis)
+    # ── Data gathering (order determined by dependencies) ─────────────────
+
+    # Git commits (needed by edit risks synthesis)
     _recent_commits = ""
     try:
         import subprocess as _sp
@@ -92,14 +93,10 @@ def before_editing(file_path: str) -> str:
         )
         if _git.stdout.strip():
             _recent_commits = _git.stdout.strip()
-            parts.append("## Recent Commits")
-            for line in _recent_commits.splitlines():
-                parts.append(f"  {line}")
-            parts.append("")
     except Exception:
         pass
 
-    # 1+2. KB constraints + callers — cached parallel fetch (eliminates repeated scans)
+    # KB constraints + callers — cached parallel fetch
     from . import _filter_kb_relevance
     _caller_cache = _get_caller_cache()
     _kb_cache = _get_kb_hits_cache()
@@ -117,11 +114,67 @@ def before_editing(file_path: str) -> str:
             _all_callers = _cal_fut.result()
         _caller_cache[_caller_key] = _all_callers
         _kb_cache[_kb_key] = kb_results
-        # Populate shared TTL cache so review(forget)/diagnose_error get a free hit within 60s
         from server import context as _ctx
         _cache_set(("kb", id(_ctx.project_engine), module_name[:120], limits["kb_entries"]), kb_results, _TTL_KB)
         _cache_set(("callers", module_name, _ctx.PROJECT_ROOT), _all_callers, _TTL_CALLERS)
     relevant_kb = _filter_kb_relevance(kb_results, module_name)
+
+    callers = [r for r in _all_callers if module_name not in os.path.basename(r.get('file', ''))]
+    caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
+
+    # File content + conventions
+    content = ""
+    warnings: list[str] = []
+    try:
+        with open(abs_path, encoding="utf-8", errors="ignore") as _f:
+            content = _f.read()
+        file_lines = content.split("\n")
+        if len(file_lines) > LINE_COUNT_WARN:
+            warnings.append(f"OVERSIZE: {len(file_lines)} lines (target {LINE_COUNT_TARGET})")
+        if "/crossLayer/" in rel_path:
+            for dr in CROSSLAYER_BOUNDARY_VIOLATIONS:
+                if dr in content and "conductorSignalBridge" not in content:
+                    warnings.append(f"BOUNDARY VIOLATION: uses '{dr}' without conductorSignalBridge")
+        for dry in DRY_PATTERNS:
+            if dry["pattern"] in content and "crossLayerHelpers" not in os.path.basename(abs_path):
+                warnings.append(dry["message"])
+    except Exception:
+        warnings.append("file unreadable")
+
+    # File summary
+    result = _file_summary(abs_path)
+
+    # Musical context (needed by edit risks)
+    comp = _get_compositional_context(module_name)
+
+    # Edit risks synthesis
+    try:
+        _cache_key = (abs_path, os.path.getmtime(abs_path))
+    except Exception:
+        _cache_key = (abs_path, 0)
+    _be_cache = _get_before_editing_cache()
+    synthesis = _be_cache.get(_cache_key)
+    if synthesis is None:
+        synthesis = _build_edit_risks(
+            rel_path=rel_path, caller_files=caller_files, relevant_kb=relevant_kb,
+            symbols=result.get("symbols") if not result.get("error") else None,
+            recent_commits=_recent_commits, comp=comp,
+        )
+        if synthesis:
+            _be_cache[_cache_key] = synthesis
+
+    hme_ctx = None
+    if "tools/HME/" in rel_path and abs_path.endswith(".py"):
+        _py_stem = os.path.basename(abs_path).replace(".py", "")
+        hme_ctx = _hme_self_aware_context(abs_path, _py_stem)
+
+    # ── Assembly: constraint-first order ──────────────────────────────────
+    # Priority zone: constraints, warnings, bridges, edit risks (what will bite you)
+    # Reference zone: dependents, structure, signals, evolutionary potential, context, commits
+
+    parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]
+
+    # P1. KB Constraints — what you MUST NOT violate
     if relevant_kb:
         parts.append(f"## KB Constraints ({len(relevant_kb)} entries)")
         for k in relevant_kb:
@@ -131,79 +184,22 @@ def before_editing(file_path: str) -> str:
     else:
         parts.append("## KB Constraints: none found\n")
 
-    # 2. Who depends on this?
-    callers = [r for r in _all_callers if module_name not in os.path.basename(r.get('file', ''))]
-    caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
-    caller_limit = limits["callers"]
-    parts.append(f"## Dependents ({len(caller_files)} files)")
-    for f in caller_files[:caller_limit]:
-        parts.append(f"  {f}")
-    if len(caller_files) > caller_limit:
-        parts.append(f"  ... and {len(caller_files) - caller_limit} more")
-    parts.append("")
+    # P2. Warnings — boundary violations you're at risk of
+    if warnings:
+        parts.append("## Warnings")
+        for w in warnings:
+            parts.append(f"  - {w}")
+    else:
+        parts.append("## Warnings: none")
 
-    # 3. Convention check
-    try:
-        with open(abs_path, encoding="utf-8", errors="ignore") as _f:
-            content = _f.read()
-        lines = content.split("\n")
-        warnings = []
-        if len(lines) > LINE_COUNT_WARN:
-            warnings.append(f"OVERSIZE: {len(lines)} lines (target {LINE_COUNT_TARGET})")
-        if "/crossLayer/" in rel_path:
-            for dr in CROSSLAYER_BOUNDARY_VIOLATIONS:
-                if dr in content and "conductorSignalBridge" not in content:
-                    warnings.append(f"BOUNDARY VIOLATION: uses '{dr}' without conductorSignalBridge")
-        for dry in DRY_PATTERNS:
-            if dry["pattern"] in content and "crossLayerHelpers" not in os.path.basename(abs_path):
-                warnings.append(dry["message"])
-        if warnings:
-            parts.append("## Warnings")
-            for w in warnings:
-                parts.append(f"  - {w}")
-        else:
-            parts.append("## Warnings: none")
-    except Exception:
-        parts.append("## Warnings: file unreadable")
+    if hme_ctx:
+        parts.append(f"\n## HME Internal Context")
+        parts.append(hme_ctx)
 
-    # 4. File summary
-    result = _file_summary(abs_path)
-    if not result.get("error"):
-        sym_limit = limits["symbols"]
-        parts.append(f"\n## Structure ({result.get('lines', '?')} lines)")
-        if result.get("symbols"):
-            for s in result["symbols"][:sym_limit]:
-                sig = f" {s['signature']}" if s.get('signature') else ""
-                parts.append(f"  L{s['line']}: [{s['kind']}] {s['name']}{sig}")
-            if len(result["symbols"]) > sym_limit:
-                parts.append(f"  ... and {len(result['symbols']) - sym_limit} more symbols")
-
-    # L0 Signal I/O — what channels this file reads and posts
-    try:
-        import re as _re
-        with open(abs_path, encoding="utf-8", errors="ignore") as _mf:
-            _src = _mf.read()
-        _posts = sorted(set(_re.findall(r"L0\.post\('([^']+)'", _src)))
-        _chan_vars = dict(_re.findall(r"const\s+(\w+)\s*=\s*'([^']+)'", _src))
-        for _var, _ch in _chan_vars.items():
-            if _re.search(r"L0\.post\(" + _re.escape(_var) + r"\b", _src):
-                _posts = sorted(set(_posts + [_ch]))
-        _reads = sorted(set(_re.findall(r"L0\.getLast\('([^']+)'", _src)))
-        if _posts or _reads:
-            parts.append(f"\n## L0 Signal I/O")
-            if _posts:
-                parts.append(f"  POSTS: {', '.join(_posts)}")
-            if _reads:
-                parts.append(f"  READS: {', '.join(_reads)}")
-    except Exception:
-        pass
-
-    # Antagonism bridges — live r values, flag bridged vs virgin opportunities
+    # P3. Antagonism Bridges — active coupling you must preserve
     try:
         from .coupling import get_top_bridges, _TRUST_FILE_ALIASES, _FILE_TRUST_ALIASES
         trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
-        # n=20 + threshold=-0.20: process all antagonist pairs so weak ones (e.g. r=-0.211) aren't
-        # cut off before module-specific filtering. Global calls use default n=3/8 with -0.30.
         bridges = get_top_bridges(n=20, threshold=-0.20)
         def _is_this_mod(name: str) -> bool:
             return (name == module_name or name == trust_alias
@@ -223,7 +219,52 @@ def before_editing(file_path: str) -> str:
     except Exception:
         pass
 
-    # Evolutionary Potential — only show when actionable (uncoupled dims or bridge opportunities)
+    # P4. Edit Risks — synthesized danger zones
+    if synthesis:
+        parts.append(f"\n## Edit Risks *(adaptive)*")
+        parts.append(compress_for_claude(synthesis, max_chars=800,
+                                         hint=f"edit risks for {rel_path}"))
+
+    # ── Reference zone (below the fold) ──────────────────────────────────
+
+    # R1. Dependents
+    caller_limit = limits["callers"]
+    parts.append(f"\n## Dependents ({len(caller_files)} files)")
+    for f in caller_files[:caller_limit]:
+        parts.append(f"  {f}")
+    if len(caller_files) > caller_limit:
+        parts.append(f"  ... and {len(caller_files) - caller_limit} more")
+
+    # R2. Structure
+    if not result.get("error"):
+        sym_limit = limits["symbols"]
+        parts.append(f"\n## Structure ({result.get('lines', '?')} lines)")
+        if result.get("symbols"):
+            for s in result["symbols"][:sym_limit]:
+                sig = f" {s['signature']}" if s.get('signature') else ""
+                parts.append(f"  L{s['line']}: [{s['kind']}] {s['name']}{sig}")
+            if len(result["symbols"]) > sym_limit:
+                parts.append(f"  ... and {len(result['symbols']) - sym_limit} more symbols")
+
+    # R3. L0 Signal I/O
+    try:
+        import re as _re
+        _posts = sorted(set(_re.findall(r"L0\.post\('([^']+)'", content)))
+        _chan_vars = dict(_re.findall(r"const\s+(\w+)\s*=\s*'([^']+)'", content))
+        for _var, _ch in _chan_vars.items():
+            if _re.search(r"L0\.post\(" + _re.escape(_var) + r"\b", content):
+                _posts = sorted(set(_posts + [_ch]))
+        _reads = sorted(set(_re.findall(r"L0\.getLast\('([^']+)'", content)))
+        if _posts or _reads:
+            parts.append(f"\n## L0 Signal I/O")
+            if _posts:
+                parts.append(f"  POSTS: {', '.join(_posts)}")
+            if _reads:
+                parts.append(f"  READS: {', '.join(_reads)}")
+    except Exception:
+        pass
+
+    # R4. Evolutionary Potential
     if abs_path.endswith(".js") and "/src/" in abs_path:
         try:
             from .reasoning import build_evolutionary_potential
@@ -235,34 +276,16 @@ def before_editing(file_path: str) -> str:
         except Exception:
             pass
 
-    # Musical context
-    comp = _get_compositional_context(module_name)
+    # R5. Musical Context
     if comp:
         parts.append(f"\n## Musical Context (last run)")
         parts.append(comp)
 
-    # Adaptive synthesis: what are the specific edit risks?
-    # Cache by (abs_path, mtime) — reuse if file unchanged. warm_pre_edit_cache pre-populates this.
-    try:
-        _cache_key = (abs_path, os.path.getmtime(abs_path))
-    except Exception:
-        _cache_key = (abs_path, 0)
-    _be_cache = _get_before_editing_cache()
-    synthesis = _be_cache.get(_cache_key)
-    if synthesis is None:
-        synthesis = _build_edit_risks(
-            rel_path=rel_path, caller_files=caller_files, relevant_kb=relevant_kb,
-            symbols=result.get("symbols") if not result.get("error") else None,
-            recent_commits=_recent_commits, comp=comp,
-        )
-        if synthesis:
-            _be_cache[_cache_key] = synthesis
-    if synthesis:
-        parts.append(f"\n## Edit Risks *(adaptive)*")
-        # Compress via arbiter to ~600 chars — preserves file paths and action verbs,
-        # strips prose explanation. Falls back to truncation if arbiter unavailable.
-        parts.append(compress_for_claude(synthesis, max_chars=800,
-                                         hint=f"edit risks for {rel_path}"))
+    # R6. Recent Commits
+    if _recent_commits:
+        parts.append(f"\n## Recent Commits")
+        for line in _recent_commits.splitlines():
+            parts.append(f"  {line}")
 
     return "\n".join(parts)
 
@@ -327,6 +350,86 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     synthesis = _local_think(user_text, max_tokens=800, model=_LOCAL_MODEL,
                              system=_THINK_SYSTEM, priority=priority)
     return synthesis
+
+
+def _hme_self_aware_context(abs_path: str, py_stem: str) -> str | None:
+    """Extra context when editing HME's own Python files."""
+    import glob as _glob_mod
+    import re as _re
+
+    parts = []
+    hme_mcp_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "mcp")
+
+    importers = []
+    for py_file in _glob_mod.glob(os.path.join(hme_mcp_dir, "**", "*.py"), recursive=True):
+        if py_file == abs_path:
+            continue
+        try:
+            with open(py_file, encoding="utf-8", errors="ignore") as f:
+                src = f.read(8000)
+            rel = os.path.relpath(py_file, hme_mcp_dir)
+            if _re.search(rf'from\s+\.{_re.escape(py_stem)}\s+import\b', src):
+                importers.append(rel)
+            elif _re.search(rf'from\s+server\.tools_analysis\.{_re.escape(py_stem)}\s+import\b', src):
+                importers.append(rel)
+        except Exception:
+            continue
+    if importers:
+        parts.append(f"  Imported by: {', '.join(sorted(importers))}")
+
+    try:
+        from .evolution_selftest import RELOADABLE
+        if py_stem in RELOADABLE:
+            idx = RELOADABLE.index(py_stem)
+            neighbors = []
+            if idx > 0:
+                neighbors.append(RELOADABLE[idx - 1])
+            neighbors.append(f"**{py_stem}**")
+            if idx < len(RELOADABLE) - 1:
+                neighbors.append(RELOADABLE[idx + 1])
+            parts.append(f"  RELOADABLE[{idx}/{len(RELOADABLE)}]: {' -> '.join(neighbors)}")
+            for imp in importers:
+                imp_stem = os.path.splitext(os.path.basename(imp))[0]
+                if imp_stem in RELOADABLE:
+                    imp_idx = RELOADABLE.index(imp_stem)
+                    if imp_idx < idx:
+                        parts.append(f"  RELOAD ORDER: {imp_stem}[{imp_idx}] loads before {py_stem}[{idx}] — reload both")
+        else:
+            parts.append(f"  NOT in RELOADABLE — hot-reload won't pick up changes")
+    except Exception:
+        pass
+
+    try:
+        with open(abs_path, encoding="utf-8", errors="ignore") as f:
+            src = f.read()
+        tools_found = _re.findall(r'@ctx\.mcp\.tool\(\)\n\s*def\s+(\w+)', src)
+        if tools_found:
+            parts.append(f"  MCP tools: {', '.join(tools_found)}")
+    except Exception:
+        pass
+
+    try:
+        log_dir = os.path.join(ctx.PROJECT_ROOT, "log")
+        for log_name in ["hme.log", "hme_http.out"]:
+            log_path = os.path.join(log_dir, log_name)
+            if not os.path.isfile(log_path):
+                continue
+            import subprocess as _sp
+            r = _sp.run(
+                ["grep", "-in", py_stem, log_path],
+                capture_output=True, text=True, timeout=2,
+            )
+            errors = [l for l in r.stdout.splitlines()
+                      if any(kw in l.lower() for kw in ("error", "traceback", "exception", "failed"))]
+            if errors:
+                parts.append(f"  Recent errors in {log_name} ({len(errors)}):")
+                for e in errors[-3:]:
+                    parts.append(f"    {e.strip()[:120]}")
+                break
+    except Exception:
+        pass
+
+    return "\n".join(parts) if parts else None
 
 
 @ctx.mcp.tool()
