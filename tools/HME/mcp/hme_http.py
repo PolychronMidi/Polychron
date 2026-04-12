@@ -1,6 +1,11 @@
-"""HME HTTP shim — full enrichment server for the HME chat ecosystem.
+"""HME HTTP shim — persistent RAG authority and enrichment server.
+
+The MCP server delegates all RAG operations here via /rag dispatch,
+eliminating duplicate SentenceTransformer loading on every MCP restart.
+The shim is long-lived (managed by ChatPanel or auto-started by MCP server).
 
 Endpoints:
+  POST /rag          — generic RAG dispatch (MCP server proxy calls)
   POST /enrich       — KB + transcript context for message enrichment
   POST /validate     — pre-send anti-pattern/constraint check
   POST /audit        — post-response changed-file constraint audit
@@ -11,7 +16,7 @@ Endpoints:
   GET  /narrative    — latest narrative digest from transcript
 
 Usage:
-  PROJECT_ROOT=/path/to/project python hme_http.py [--port 7734]
+  PROJECT_ROOT=/path/to/project python hme_http.py [--port 7734] [--daemon]
 """
 import os
 import sys
@@ -39,6 +44,7 @@ MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
 _engine_ready = threading.Event()
 _project_engine = None
 _global_engine = None
+_shared_model = None
 
 # Initialise stores with paths before any request can arrive
 from hme_http_store import init_store
@@ -46,24 +52,25 @@ init_store(PROJECT_ROOT)
 
 
 def _load_engines():
-    global _project_engine, _global_engine
+    global _project_engine, _global_engine, _shared_model
     try:
         from sentence_transformers import SentenceTransformer
         from rag_engine import RAGEngine
         from file_walker import init_config
+        from watcher import start_watcher
         init_config(PROJECT_ROOT)
         os.makedirs(PROJECT_DB, exist_ok=True)
         os.makedirs(GLOBAL_DB, exist_ok=True)
-        # Load model once, share across engines (same as MCP main.py)
         try:
-            shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, model_kwargs={"file_name": "onnx/model.onnx"})
+            _shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, model_kwargs={"file_name": "onnx/model.onnx"})
             logger.info(f"Loaded {MODEL_NAME} with {MODEL_BACKEND} backend")
         except Exception as e:
             logger.warning(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
-            shared_model = SentenceTransformer(MODEL_NAME)
-        _project_engine = RAGEngine(PROJECT_DB, model_name=MODEL_NAME, model=shared_model)
-        _global_engine = RAGEngine(GLOBAL_DB, model_name=MODEL_NAME, model=shared_model)
-        logger.info("HME HTTP: engines ready")
+            _shared_model = SentenceTransformer(MODEL_NAME)
+        _project_engine = RAGEngine(PROJECT_DB, model_name=MODEL_NAME, model=_shared_model)
+        _global_engine = RAGEngine(GLOBAL_DB, model_name=MODEL_NAME, model=_shared_model)
+        start_watcher(PROJECT_ROOT, _project_engine)
+        logger.info("HME HTTP: engines + file watcher ready")
     except Exception as e:
         logger.error(f"HME HTTP: engine load failed: {e}")
     finally:
@@ -91,6 +98,39 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
+
+    def _handle_rag_dispatch(self, body: dict):
+        """Generic dispatch: MCP server proxy calls any engine method via HTTP."""
+        engine_name = body.get("engine", "project")
+        method = body.get("method", "")
+        kwargs = body.get("kwargs", {})
+
+        if not _engine_ready.wait(timeout=10):
+            self._send_json(503, {"error": "engines loading"})
+            return
+
+        engine = _project_engine if engine_name == "project" else _global_engine
+        if engine is None:
+            self._send_json(503, {"error": f"{engine_name} engine not ready"})
+            return
+
+        try:
+            if method == "_symbol_table_list":
+                result = engine.symbol_table.to_arrow().to_pylist() if engine.symbol_table is not None else []
+            elif method == "_encode":
+                texts = kwargs.get("texts", [])
+                result = _shared_model.encode(texts).tolist() if _shared_model else []
+            elif method == "_get_file_hashes":
+                result = dict(getattr(engine, "_file_hashes", {}))
+            elif hasattr(engine, method) and callable(getattr(engine, method)):
+                result = getattr(engine, method)(**kwargs)
+            else:
+                self._send_json(400, {"error": f"unknown method: {method}"})
+                return
+            self._send_json(200, {"result": result})
+        except Exception as e:
+            logger.error(f"/rag dispatch {engine_name}.{method}: {type(e).__name__}: {e}")
+            self._send_json(500, {"error": str(e)})
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -185,8 +225,10 @@ class _Handler(BaseHTTPRequestHandler):
             result = _reindex_files(files)
             self._send_json(200, result)
 
+        elif self.path == "/rag":
+            self._handle_rag_dispatch(body)
+
         elif self.path == "/error":
-            # Critical error from chat panel — log it visibly for main session inspection
             source = body.get("source", "unknown")
             message = body.get("message", "")
             detail = body.get("detail", "")
@@ -210,18 +252,32 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "not found"})
 
 
+_PID_FILE = "/tmp/hme-http-shim.pid"
+
+
 def main():
     parser = argparse.ArgumentParser(description="HME HTTP enrichment shim")
     parser.add_argument("--port", type=int, default=7734)
     parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--daemon", action="store_true", help="Write PID file for lifecycle management")
     args = parser.parse_args()
 
+    if args.daemon:
+        with open(_PID_FILE, "w") as f:
+            f.write(str(os.getpid()))
+
     server = _ThreadingHTTPServer((args.host, args.port), _Handler)
-    logger.info(f"HME HTTP shim listening on {args.host}:{args.port}")
+    logger.info(f"HME HTTP shim listening on {args.host}:{args.port} (pid={os.getpid()})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        if args.daemon and os.path.exists(_PID_FILE):
+            try:
+                os.unlink(_PID_FILE)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":

@@ -91,40 +91,40 @@ context._startup_done = _startup_done
 
 
 def _background_load():
+    from server.rag_proxy import RAGProxy, ensure_shim_running, check_shim_health
     try:
-        from sentence_transformers import SentenceTransformer
-        from rag_engine import RAGEngine
-        from watcher import start_watcher
-
-        try:
-            shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, device="cpu",
-                                               model_kwargs={"file_name": "onnx/model.onnx"})
-            logger.info(f"Loaded {MODEL_NAME} with {MODEL_BACKEND} backend (CPU-only, GPUs reserved for Ollama)")
-        except Exception as e:
-            logger.info(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
-            shared_model = SentenceTransformer(MODEL_NAME, device="cpu")
-
-        project_engine = RAGEngine(db_path=PROJECT_DB, model=shared_model)
-        global_engine = RAGEngine(db_path=GLOBAL_DB, model=shared_model)
-        start_watcher(PROJECT_ROOT, project_engine)
-
-        lib_engines: dict = {}
-        for _lib_rel in get_lib_dirs():
-            _lib_name = _lib_rel.replace("/", "_").replace("\\", "_").strip("_")
-            _lib_db = os.path.join(PROJECT_DB, "libs", _lib_name)
-            os.makedirs(_lib_db, exist_ok=True)
-            lib_engines[_lib_rel] = RAGEngine(db_path=_lib_db, model=shared_model)
-            logger.info(f"Lib engine created: {_lib_rel} -> {_lib_db}")
-
-        context.project_engine = project_engine
-        context.global_engine = global_engine
-        context.shared_model = shared_model
-        context.lib_engines = lib_engines
-
+        if ensure_shim_running():
+            logger.info("RAG delegated to persistent HTTP shim (no local model loading)")
+            context.project_engine = RAGProxy("project")
+            context.global_engine = RAGProxy("global")
+            context.shared_model = context.project_engine.model
+            context.lib_engines = {}
+            logger.info(f"HME ready (proxy mode) | project={PROJECT_ROOT}")
+        else:
+            logger.warning("HTTP shim unavailable — loading RAG engines locally (duplicate, wasteful)")
+            from sentence_transformers import SentenceTransformer
+            from rag_engine import RAGEngine
+            from watcher import start_watcher
+            try:
+                shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, device="cpu",
+                                                   model_kwargs={"file_name": "onnx/model.onnx"})
+            except Exception as e:
+                logger.info(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
+                shared_model = SentenceTransformer(MODEL_NAME, device="cpu")
+            context.project_engine = RAGEngine(db_path=PROJECT_DB, model=shared_model)
+            context.global_engine = RAGEngine(db_path=GLOBAL_DB, model=shared_model)
+            context.shared_model = shared_model
+            start_watcher(PROJECT_ROOT, context.project_engine)
+            lib_engines: dict = {}
+            for _lib_rel in get_lib_dirs():
+                _lib_name = _lib_rel.replace("/", "_").replace("\\", "_").strip("_")
+                _lib_db = os.path.join(PROJECT_DB, "libs", _lib_name)
+                os.makedirs(_lib_db, exist_ok=True)
+                lib_engines[_lib_rel] = RAGEngine(db_path=_lib_db, model=shared_model)
+            context.lib_engines = lib_engines
+            logger.info(f"HME ready (local mode) | project={PROJECT_ROOT} | libs={list(lib_engines.keys())}")
         from server.startup_validator import validate_startup
         validate_startup(context, PROJECT_ROOT)
-
-        logger.info(f"HME ready | project={PROJECT_ROOT} | project_db={PROJECT_DB} | global_db={GLOBAL_DB} | libs={list(lib_engines.keys())}")
     except Exception as e:
         context._startup_error = e
         import traceback
@@ -158,16 +158,28 @@ def _background_startup_chain():
     from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
     from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
 
+    init_result = ""
     try:
-        logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
-        init_result = _init_ollama_models()
-        logger.info(f"startup chain [1/3]: {init_result}")
-    except Exception as _e:
-        context.register_critical_failure(
-            "startup_chain[1/3]",
-            f"Model init crashed: {type(_e).__name__}: {_e}",
-        )
-        init_result = "FAILED"
+        import urllib.request, json as _json
+        _ollama_req = urllib.request.Request("http://127.0.0.1:7735/health")
+        with urllib.request.urlopen(_ollama_req, timeout=2) as _resp:
+            _ollama_status = _json.loads(_resp.read())
+        if _ollama_status.get("status") == "ready":
+            init_result = "Models managed by Ollama daemon — skipped local init"
+            logger.info(f"startup chain [1/3]: {init_result}")
+        else:
+            raise ConnectionError("daemon not ready")
+    except Exception:
+        try:
+            logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
+            init_result = _init_ollama_models()
+            logger.info(f"startup chain [1/3]: {init_result}")
+        except Exception as _e:
+            context.register_critical_failure(
+                "startup_chain[1/3]",
+                f"Model init crashed: {type(_e).__name__}: {_e}",
+            )
+            init_result = "FAILED"
 
     if "FAILED" in init_result:
         logger.warning("startup chain [2/3]: SKIPPED — model init had failures, priming would crash")
