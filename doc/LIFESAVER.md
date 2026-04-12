@@ -26,14 +26,21 @@ Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
 
 ## Layer 1: PreToolUse Hooks
 
-### Corrections (updatedInput — command proceeds with fixed parameters)
+### Corrections (updatedInput / systemMessage — zero wasted turns)
 
-| Hook | Trigger | Correction | Message |
-|------|---------|------------|---------|
-| `pretooluse_bash.sh` | `timeout` field in tool_input (non-zero) | Strip timeout, pass command + run_in_background only | "timeout removed — all project scripts handle timeouts inline" |
+The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three variants:
 
-The `updatedInput` mechanism is the newest enforcement pattern. Instead of blocking (exit 2) and forcing a retry — which wastes a turn and adds context — the hook silently corrects the tool parameters and returns `permissionDecision: "allow"`. The command executes immediately with corrected input. A brief `systemMessage` explains what changed.
+**Correct** (`permissionDecision: "allow"` + `updatedInput`): fix input parameters, let the call proceed.
+**Enrich** (`permissionDecision: "allow"` + `systemMessage`): let the call proceed, inject extra context.
+**Redirect** (`permissionDecision: "deny"` + `systemMessage`): deny the tool, tell agent which tool to use instead with the original data pre-formatted.
 
+| Hook | Trigger | Pattern | Message |
+|------|---------|---------|---------|
+| `pretooluse_bash.sh` | `timeout` in tool_input | **Correct** — strip timeout via updatedInput | "timeout removed — all project scripts handle timeouts inline" |
+| `pretooluse_read.sh` | Read on project src/ file with KB entries | **Enrich** — allow Read, inject KB titles + entry count | "KB context for {module} (N entries). For full briefing: mcp__HME__read(...)" |
+| `pretooluse_todowrite.sh` | Any TodoWrite call | **Redirect** — deny, extract tasks, format for HME todo | "Use mcp__HME__todo instead — supports subtodos. Your tasks: ..." |
+
+#### Correct example (Bash timeout stripping)
 ```json
 {
   "hookSpecificOutput": {
@@ -41,6 +48,22 @@ The `updatedInput` mechanism is the newest enforcement pattern. Instead of block
     "updatedInput": {"command": "<original>", "run_in_background": true}
   },
   "systemMessage": "timeout removed — all project scripts handle timeouts inline"
+}
+```
+
+#### Enrich example (Read KB injection)
+```json
+{
+  "hookSpecificOutput": {"permissionDecision": "allow"},
+  "systemMessage": "KB context for conductorDampening (3 entries):\n    conductorState - mutable conductor state container\n    ..."
+}
+```
+
+#### Redirect example (TodoWrite to HME todo)
+```json
+{
+  "hookSpecificOutput": {"permissionDecision": "deny"},
+  "systemMessage": "Use mcp__HME__todo instead of TodoWrite...\nYour tasks:\n  - Fix coupling\n  - Run pipeline\nAPI: mcp__HME__todo(action=\"add\", text=\"task\") ..."
 }
 ```
 
@@ -73,8 +96,10 @@ The `updatedInput` mechanism is the newest enforcement pattern. Instead of block
 | `pretooluse_edit.sh` | Module has KB entries (via HTTP shim) | Surface KB constraint titles and counts |
 | `pretooluse_grep.sh` | Any grep pattern with KB matches | Suggest `find()` for KB-enriched results |
 | `pretooluse_read.sh` | Reading task output file | Remind to wait for completion notification |
-| `pretooluse_read.sh` | Reading project module file | Suggest `read()` for KB + callers + structure |
+| `pretooluse_read.sh` | Project file with no KB entries | Suggest `read()` for KB + callers + structure |
 | `pretooluse_write.sh` | Writing to `lab/sketches.js` | Lab rules: real monkey-patching, no empty sketches |
+
+Note: `pretooluse_read.sh` on project files WITH KB entries now uses the Enrich pattern (see Corrections above) instead of stderr. The Read proceeds and KB context is injected via `systemMessage`.
 
 ### Streak Counter (weighted tool tracking)
 
@@ -359,15 +384,21 @@ precompact.sh and postcompact.sh surface:
 
 ---
 
-## Evolution: Block to Correct
+## Evolution: Block to Correct / Enrich / Redirect
 
 The original enforcement pattern was **block** (exit 2): reject the tool call and force a retry. This works but costs a full turn cycle and adds context.
 
-The newer pattern is **correct** (updatedInput): fix the input parameters and let the call proceed. Zero wasted turns, minimal context tax. The `systemMessage` field provides a one-line explanation.
+Three newer patterns via `hookSpecificOutput`:
 
 ```
-Block pattern (old):     detect -> exit 2 -> agent retries -> wasted turn
-Correct pattern (new):   detect -> updatedInput -> command proceeds -> one-line note
+Block (old):      detect -> exit 2 -> agent retries -> wasted turn
+Correct (new):    detect -> updatedInput -> command proceeds -> one-line note
+Enrich (new):     detect -> allow + systemMessage -> command proceeds + KB context injected
+Redirect (new):   detect -> deny + systemMessage with data -> agent uses better tool
 ```
 
-Where correction is possible (stripping a timeout, fixing a parameter), prefer `updatedInput` over blocking. Reserve hard blocks for cases where no safe correction exists (deleting run.lock, silent error suppression).
+**Correct** — for fixable parameters (timeout stripping). Zero turns wasted.
+**Enrich** — for augmentable tools (Read on project files). Tool proceeds, agent gets bonus context without a separate HME call.
+**Redirect** — for replaceable tools (TodoWrite -> HME todo). One turn to switch, but the systemMessage pre-formats the data so the agent just copies it to the correct tool.
+
+Reserve hard blocks (exit 2) for cases where no safe correction, enrichment, or redirect exists (deleting run.lock, silent error suppression, empty catch blocks).
