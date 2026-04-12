@@ -431,11 +431,12 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 |--------|-------|---------|-------------|
 | `sessionstart.sh` | SessionStart | * | Reset compact tab, inject HME awareness, persist `$HME_ACTIVE` env var |
 | `pretooluse_lifesaver.sh` | PreToolUse | * | **LIFESAVER**: stamp start time to `/tmp/hme_lifesaver_{session}_{tool}` for every tool call |
-| `pretooluse_read.sh` | PreToolUse | Read | Block polling of task output files; surface live KB entries for project source files via shim |
+| `pretooluse_read.sh` | PreToolUse | Read | Block polling of task output files; **enrich** project source reads with KB titles via `systemMessage` (Read proceeds + KB injected, no extra turn) |
 | `pretooluse_edit.sh` | PreToolUse | Edit | Surface live KB constraint warnings via shim for all project files; remind `read(mode="before")` |
 | `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim; remind `find()` for enriched search; multiline exempt |
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
-| `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement |
+| `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
+| `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Redirect** TodoWrite → `mcp__HME__todo` (subtodo support); extracts tasks and formats them for the HME tool in `systemMessage` |
 | `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | Block repeated check_pipeline calls (polling anti-pattern — one call per turn max) |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
