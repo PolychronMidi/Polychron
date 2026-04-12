@@ -86,11 +86,14 @@ ENTRY=$(jq -nc \
 
 [ -z "$ENTRY" ] && exit 0
 
-# 1. Append to JSONL
+# 1. Append to JSONL + hme.log
 PROJECT_ROOT="${CWD:-${PROJECT_ROOT:-$(pwd)}}"
 LOG_FILE="$PROJECT_ROOT/log/session-transcript.jsonl"
+HME_LOG="$PROJECT_ROOT/log/hme.log"
 mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
 echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null
+TOOL_LOG_LINE=$(echo "$TOOL_INPUT" | head -c 120 | tr '\n' ' ')
+printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "$TOOL_LOG_LINE" >> "$HME_LOG" 2>/dev/null
 
 # 2. POST to HTTP shim (background, non-blocking)
 (_safe_curl "http://127.0.0.1:7734/transcript" "{\"entries\":[$ENTRY]}") &
