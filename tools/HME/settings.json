@@ -80,6 +80,24 @@
             "command": "bash tools/HME/hooks/pretooluse_check_pipeline.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__HME__",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/pretooluse_hme_primer.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash tools/HME/hooks/pretooluse_todowrite.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
