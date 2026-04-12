@@ -10,6 +10,7 @@ import os
 import sys
 import logging
 import threading
+import time
 
 # Ensure the tool root (parent of server/) is on sys.path so that rag_engine,
 # file_walker, symbols, etc. are importable regardless of how this script is launched.
@@ -181,16 +182,31 @@ def _background_startup_chain():
                 f"Warm priming crashed: {type(_e).__name__}: {_e}",
             )
 
+    cache_stamp = os.path.join(PROJECT_ROOT, "tmp", "hme-cache-warmed-at")
+    skip_warming = False
     try:
-        logger.info("startup chain [3/3]: warming pre-edit caller+KB cache...")
-        cache_result = warm_pre_edit_cache(max_files=200)
-        logger.info(f"startup chain [3/3]: {cache_result}")
-    except Exception as _e:
-        context.register_critical_failure(
-            "startup_chain[3/3]",
-            f"Pre-edit cache warming crashed: {type(_e).__name__}: {_e}",
-            severity="WARNING",
-        )
+        if os.path.exists(cache_stamp):
+            age_s = time.time() - os.path.getmtime(cache_stamp)
+            if age_s < 600:
+                logger.info(f"startup chain [3/3]: skipped — cache warmed {age_s:.0f}s ago (< 600s)")
+                skip_warming = True
+    except Exception:
+        pass
+
+    if not skip_warming:
+        try:
+            logger.info("startup chain [3/3]: warming pre-edit caller+KB cache...")
+            cache_result = warm_pre_edit_cache(max_files=200)
+            logger.info(f"startup chain [3/3]: {cache_result}")
+            os.makedirs(os.path.dirname(cache_stamp), exist_ok=True)
+            with open(cache_stamp, "w") as f:
+                f.write(str(int(time.time())))
+        except Exception as _e:
+            context.register_critical_failure(
+                "startup_chain[3/3]",
+                f"Pre-edit cache warming crashed: {type(_e).__name__}: {_e}",
+                severity="WARNING",
+            )
 
     logger.info("startup chain complete")
 
