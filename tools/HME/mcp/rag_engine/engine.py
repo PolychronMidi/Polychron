@@ -19,6 +19,24 @@ from .engine_symbols import RAGEngineSymbolsMixin
 logger = logging.getLogger(__name__)
 
 
+def _pick_embed_device() -> str:
+    """Pick best device for embedding model: CUDA if >=800MB free, else CPU."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            # Prefer the GPU with the most free memory (avoid stealing from active inference)
+            best_idx, best_free = 0, 0
+            for i in range(torch.cuda.device_count()):
+                free, _ = torch.cuda.mem_get_info(i)
+                if free > best_free:
+                    best_free, best_idx = free, i
+            if best_free >= 800 * 1024 * 1024:  # need at least 800MB free
+                return f"cuda:{best_idx}"
+    except Exception:
+        pass
+    return "cpu"
+
+
 class RAGEngine(
     RAGEnginePersistenceMixin,
     RAGEngineIndexingMixin,
@@ -32,8 +50,18 @@ class RAGEngine(
         self.db = _lancedb.connect(db_path)
         if model is None:
             from sentence_transformers import SentenceTransformer as _ST
-            model = _ST(model_name, device="cpu")
+            _device = _pick_embed_device()
+            try:
+                model = _ST(model_name, device=_device)
+                logger.info(f"Embedding model on {_device}")
+            except Exception as e:
+                logger.warning(f"Embedding model failed on {_device}, falling back to cpu: {e}")
+                model = _ST(model_name, device="cpu")
+                _device = "cpu"
+        else:
+            _device = str(getattr(getattr(model, "device", None), "type", "cpu"))
         self.model = model
+        self._embed_batch_size = 256 if _device.startswith("cuda") else 64
         # Dynamic vector dimension from the actual model
         self._dim = self.model.get_sentence_embedding_dimension()
         self._code_schema = _code_schema(self._dim)
