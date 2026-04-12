@@ -1,5 +1,6 @@
 """HME pre/post-edit workflow tools."""
 import os
+import json
 import logging
 
 from server import context as ctx
@@ -25,9 +26,65 @@ from .tool_cache import cached_kb_search, cached_find_callers, _cache_set, _TTL_
 logger = logging.getLogger("HME")
 
 # Synthesis cache — keyed (abs_path, mtime), eliminates repeated Ollama waits.
+# Persisted to disk so cache survives server restarts. Stale entries (mtime mismatch)
+# are silently dropped on load; valid entries are used immediately without re-synthesis.
+_SYNTHESIS_CACHE_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "before-editing-cache.json"
+)
+
+
+def _load_synthesis_cache_from_disk() -> dict:
+    """Load persisted synthesis cache, filtering out entries whose mtime no longer matches."""
+    try:
+        with open(_SYNTHESIS_CACHE_PATH, "r", encoding="utf-8") as _f:
+            raw = json.load(_f)
+        valid = {}
+        for key_str, synthesis in raw.items():
+            try:
+                abs_path, mtime_str = key_str.rsplit("::", 1)
+                mtime = float(mtime_str)
+                if os.path.exists(abs_path) and abs(os.path.getmtime(abs_path) - mtime) < 1.0:
+                    valid[(abs_path, mtime)] = synthesis
+            except Exception:
+                continue
+        logger.info(f"before-editing cache: loaded {len(valid)}/{len(raw)} valid entries from disk")
+        return valid
+    except FileNotFoundError:
+        return {}
+    except Exception as _e:
+        logger.warning(f"before-editing cache: disk load failed ({_e}), starting empty")
+        return {}
+
+
+def _persist_synthesis_cache_entry(abs_path: str, mtime: float, synthesis: str) -> None:
+    """Append one entry to the on-disk synthesis cache (non-blocking, best-effort)."""
+    try:
+        try:
+            with open(_SYNTHESIS_CACHE_PATH, "r", encoding="utf-8") as _f:
+                raw = json.load(_f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            raw = {}
+        raw[f"{abs_path}::{mtime}"] = synthesis
+        # Prune entries whose source file has since changed mtime to keep the file lean.
+        pruned = {k: v for k, v in raw.items() if _disk_entry_still_valid(k)}
+        with open(_SYNTHESIS_CACHE_PATH, "w", encoding="utf-8") as _f:
+            json.dump(pruned, _f, ensure_ascii=False, separators=(",", ":"))
+    except Exception as _e:
+        logger.debug(f"before-editing cache: disk write failed ({_e})")
+
+
+def _disk_entry_still_valid(key_str: str) -> bool:
+    try:
+        abs_path, mtime_str = key_str.rsplit("::", 1)
+        return os.path.exists(abs_path) and abs(os.path.getmtime(abs_path) - float(mtime_str)) < 1.0
+    except Exception:
+        return False
+
+
 def _get_before_editing_cache() -> dict:
     if not hasattr(ctx, "_before_editing_synthesis_cache"):
-        ctx._before_editing_synthesis_cache = {}
+        ctx._before_editing_synthesis_cache = _load_synthesis_cache_from_disk()
     return ctx._before_editing_synthesis_cache
 
 # Caller cache — keyed (abs_path, mtime); file change auto-invalidates.
@@ -162,6 +219,7 @@ def before_editing(file_path: str) -> str:
         )
         if synthesis:
             _be_cache[_cache_key] = synthesis
+            _persist_synthesis_cache_entry(_cache_key[0], _cache_key[1], synthesis)
 
     hme_ctx = None
     if "tools/HME/" in rel_path and abs_path.endswith(".py"):
@@ -307,11 +365,11 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     from .synthesis_session import get_session_narrative
     _session_ctx = get_session_narrative(max_entries=6, categories=["think", "find", "edit"])
 
-    # Two-stage for interactive calls with non-trivial context.
-    # Stage 1 (GPU0) extracts callers/KB facts; Stage 2 (GPU1) reasons about risks.
+    # Parallel two-stage for interactive calls with non-trivial context.
+    # GPU0 (extract) + GPU1 (analyze) run simultaneously, ~2x faster than sequential.
     # Falls back to single-stage when there's nothing non-trivial to extract from.
     if priority == "interactive" and (caller_files or relevant_kb):
-        from .synthesis_pipeline import _two_stage_think
+        from .synthesis_pipeline import _parallel_two_stage_think
         raw_context = (
             (_session_ctx if _session_ctx else "")
             + f"File being edited: {rel_path}\n"
@@ -321,14 +379,13 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
             + (f"Recent commits: {recent_commits[:200]}\n" if recent_commits else "")
             + (f"Musical context: {comp[:300]}\n" if comp else "")
         )
-        question = f"What are the specific edit risks for {rel_path}?"
-        answer_format = (
-            "List 1-3 concrete edit risks. Each must name the specific dependent file, "
-            "boundary rule, or KB constraint. No generic advice.\n"
+        question = (
+            f"What are the specific edit risks for {rel_path}? "
+            "List 1-3 concrete edit risks, each naming the specific dependent file, "
+            "boundary rule, or KB constraint. No generic advice. "
             "Format: '1. [risk] because [specific caller/constraint].'"
         )
-        synthesis = _two_stage_think(raw_context, question, max_tokens=800,
-                                     answer_format=answer_format)
+        synthesis = _parallel_two_stage_think(raw_context, question, max_tokens=800)
         if synthesis:
             return synthesis
 
@@ -533,6 +590,7 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30) -> 
         )
         if synthesis:
             _be_cache[_cache_key] = synthesis
+            _persist_synthesis_cache_entry(_cache_key[0], _cache_key[1], synthesis)
             synth_warmed += 1
     return (f"Pre-edit cache warmed: {warmed} files (callers+KB). "
             f"Synthesis pre-loaded: {synth_warmed}/{len(hot_files)} hot files. "

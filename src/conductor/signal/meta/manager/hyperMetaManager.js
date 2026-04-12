@@ -45,8 +45,8 @@ hyperMetaManager = (() => {
     // Used alongside the slow exceedanceTrendEma (~12-tick lag) to give
     // the system early warning of transient spikes before they compound.
     {
-      const fd = safePreBoot.call(() => signalReader.density(), 0.6) || 0.6;
-      const ft = safePreBoot.call(() => signalReader.tension(), 0.95) || 0.95;
+      const fd = /** @type {number} */ (safePreBoot.call(() => signalReader.density(), 0.6));
+      const ft = /** @type {number} */ (safePreBoot.call(() => signalReader.tension(), 0.95));
       const fEnergy = (fd - 0.6) * (fd - 0.6) + (ft - 0.95) * (ft - 0.95);
       S.fastExceedanceEma += (fEnergy - S.fastExceedanceEma) * ST.FAST_EMA_ALPHA;
     }

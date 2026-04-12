@@ -27,6 +27,7 @@ fi
 mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-tab.txt"
 > "${PROJECT}/tmp/hme-nexus.state"
+> "${PROJECT}/tmp/hme-primer-needed.flag"
 
 # Ensure HME HTTP shim is running — serves both VS Code extension and Claude Code hooks.
 # If already bound, skip. If not, start it in background.

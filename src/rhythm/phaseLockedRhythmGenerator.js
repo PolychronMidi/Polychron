@@ -125,15 +125,15 @@ phaseLockedRhythmGenerator = (() => {
       const deepPhaseCollapse = phaseShare < collapseThreshold;
       const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
       const couplingPressures = pipelineCouplingManager.getCouplingPressures();
-      const densityFlickerPressure = clamp(((couplingPressures['density-flicker'] || 0) - 0.74) / 0.18, 0, 1);
-      const densityTrustPressure = clamp(((couplingPressures['density-trust'] || 0) - 0.72) / 0.18, 0, 1);
-      const flickerTrustPressure = clamp(((couplingPressures['flicker-trust'] || 0) - 0.74) / 0.18, 0, 1);
+      const densityFlickerPressure = clamp((V.optionalFinite(couplingPressures['density-flicker'], 0) - 0.74) / 0.18, 0, 1);
+      const densityTrustPressure = clamp((V.optionalFinite(couplingPressures['density-trust'], 0) - 0.72) / 0.18, 0, 1);
+      const flickerTrustPressure = clamp((V.optionalFinite(couplingPressures['flicker-trust'], 0) - 0.74) / 0.18, 0, 1);
       // R8 E4: Lowered FP containment threshold from 0.72 to 0.45 and widened
       // divisor from 0.16 to 0.25. FP correlation was the only persistent
       // increasing correlation (R6: 0.421, R7: 0.473) with no containment
       // activating until 0.72. The new threshold begins gentle containment at
       // FP > 0.45, graduating to full pressure at 0.70.
-      const flickerPhasePressure = clamp(((couplingPressures['flicker-phase'] || 0) - 0.45) / 0.25, 0, 1);
+      const flickerPhasePressure = clamp((V.optionalFinite(couplingPressures['flicker-phase'], 0) - 0.45) / 0.25, 0, 1);
       const phaseRecoveryCredit = clamp((phaseShare - 0.09) / 0.05, 0, 1);
       const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
         ? dynamicSnap.evolvingShare
