@@ -74,6 +74,8 @@ interactionHeatMap = (() => {
     pushHistorySnapshot({ systems: { ...currentBeat }, totalFirings: currentBeatTotalFirings, absoluteSeconds });
     currentBeat = /** @type {Record<string, number>} */ ({});
     currentBeatTotalFirings = 0;
+    const trendSnap = getTrend();
+    L0.post(L0_CHANNELS.interactionHeat, LM.activeLayer || 'L1', absoluteSeconds, { trend: trendSnap.trend, slope: trendSnap.slope, density: getDensity() });
   }
 
   /**
@@ -117,6 +119,8 @@ interactionHeatMap = (() => {
     pushHistorySnapshot({ systems: merged, totalFirings, absoluteSeconds });
     currentBeat = /** @type {Record<string, number>} */ ({});
     currentBeatTotalFirings = 0;
+    const trendSnapPair = getTrend();
+    L0.post(L0_CHANNELS.interactionHeat, LM.activeLayer || 'L1', absoluteSeconds, { trend: trendSnapPair.trend, slope: trendSnapPair.slope, density: getDensity() });
   }
 
   /**

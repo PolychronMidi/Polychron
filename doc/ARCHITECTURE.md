@@ -379,6 +379,10 @@ Resurrects `contourShape` (dormant 6 rounds) on a VIRGIN antagonist pair, plus t
 
 `dynamicRoleSwap.evaluateSwap()` now posts `L0_CHANNELS.swapDecision` with `{ swapped, swapCount }` on every successful swap. `articulationComplement` and `crossLayerDynamicEnvelope` consume swap state via `L0.getLast(L0_CHANNELS.swapDecision)` instead of direct `getIsSwapped()` call, routing through the L0 event bus for architectural consistency. Note: `dynamismEngine` (conductor) and `crossLayerBeatRecord` (play) still use `getIsSwapped()` directly — conductor read-only access is explicitly permitted.
 
+### L0 interactionHeat channel
+
+`interactionHeatMap.flushBeat()` and `flushBeatPair()` now post `L0_CHANNELS.interactionHeat` with `{ trend, slope, density, absoluteSeconds }` after each beat snapshot is committed to history. `crossLayerDynamicEnvelope.tick()` reads via `L0.getLast(L0_CHANNELS.interactionHeat)` instead of direct `getTrend()` call, with fallback to `interactionHeatMap.getTrend()` on the first beat before any flush has occurred. This decouples the dynamics-decision triad's directional read from a synchronous function call, routing it through the L0 event bus and enabling future consumers to tap interaction trend without coupling to `interactionHeatMap` directly.
+
 ### contourShape Surge and Groove Couplings
 
 `contourShape` (categorical: `'rising'`/`'falling'`/`'static'`/`'arc'`) from `emergentMelodicEngine.getContext()` wired into two additional cross-layer modules.

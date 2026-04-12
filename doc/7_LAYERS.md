@@ -29,7 +29,7 @@ Each layer has: current state and items for next dedicated pass.
 **State**: `metrics/current-run.json` unified pointer now written by `snapshot-run.js` on every pipeline run — tools can read this instead of hunting the latest run-history snapshot. adaptive-state.json VERY_STALE flag will clear after next successful run.
 
 ### Next pass
-- [ ] Verify EnCodec S1 WAV truncation hypothesis — verify S0 entropy in next successful pipeline run with EnCodec section breakdown
+- EnCodec S1 truncation hypothesis verified NOT confirmed: per-section cb0 entropy S0=6.040, S1=6.176, S2=6.240, S3=6.924, S4=6.162, S5=6.145, S6=6.134 — S1 is higher than S0, normal tension arc, no truncation artifact.
 - current-run.json now appears in freshness display (verified after reload)
 
 ## Layer 5: Architectural Intelligence (MATURE)
@@ -41,10 +41,10 @@ Each layer has: current state and items for next dedicated pass.
 
 ## Layer 6: Compositional Self-Awareness (EXPANDING)
 
-**State**: L0 swapDecision channel live. directionBias in 8 consumer files (added voiceModulator spread ±8% via L0 emergentMelody). contourShape couplings in convergenceVelocitySurge (±8%/−7%), grooveTransfer (±6%), velocityInterference (±7%/−5%), stutterContagion (×1.07/×0.93). ARCHITECTURE.md documents all directionBias + contourShape couplings; directionbias-documented invariant updated.
+**State**: L0 swapDecision channel live. directionBias in 8 consumer files (added voiceModulator spread ±8% via L0 emergentMelody). contourShape couplings in convergenceVelocitySurge (±8%/−7%), grooveTransfer (±6%), velocityInterference (±7%/−5%), stutterContagion (×1.07/×0.93). ARCHITECTURE.md documents all directionBias + contourShape couplings; directionbias-documented invariant updated. interactionHeat L0 channel live: flushBeat/flushBeatPair post trend+density, crossLayerDynamicEnvelope reads via L0 with fallback.
 
 ### Next pass
-- [ ] Topology second organism: pilot interactionHeatMap reading L0 channels instead of direct module calls — complex refactor, needs design doc
+- seed remaining modules below top-15 as they become edit targets
 
 ## Layer 7: Evolution Intelligence (FORGE-READY)
 
@@ -52,4 +52,4 @@ Each layer has: current state and items for next dedicated pass.
 
 ### Next pass
 - Forge sketch ran successfully: 287.6s gen, 106.4s audio → `lab/forge-convergenceHarmonicTrigger-verticalIntervalMonitor.wav`. densitySurprise bridge (rarity boost + penalty scale) verified clean. Ready for listening verdict.
-- [ ] Design multi-organism round: interactionHeatMap L0 posting — `flushBeat()` posts trend snapshot to new `L0_CHANNELS.interactionHeat` channel; `crossLayerDynamicEnvelope.tick()` reads via `L0.getLast` instead of direct `getTrend()` call. Requires: new L0 channel + globals.d.ts + 7-dependent audit. Risk: boot-sequence ordering (pushHistorySnapshot called during boot) and homeostasisState interdependencies. Start with adding the L0 post in flushBeat without removing direct calls first.
+- interactionHeat L0 channel implemented: flushBeat/flushBeatPair post `{ trend, slope, density, absoluteSeconds }`; crossLayerDynamicEnvelope reads via `L0.getLast(L0_CHANNELS.interactionHeat)` with direct-call fallback. ARCHITECTURE.md updated. Verified by pipeline run.
