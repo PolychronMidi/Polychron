@@ -177,21 +177,25 @@ const PTY_DONE_PATTERNS = [
   /\[H\]/,
 ];
 
+function parseK(s: string): number {
+  const n = parseFloat(s);
+  return s.endsWith("k") || s.endsWith("K") ? Math.round(n * 1000) : Math.round(n);
+}
+
 function parseContextOutput(text: string): TokenUsage | undefined {
-  const stripped = text.replace(/,/g, "");
-  const pctMatch = stripped.match(/(\d+(?:\.\d+)?)\s*%/);
-  const tokenMatch = stripped.match(/(\d+)\s*\/\s*(\d+)/);
-  if (!pctMatch && !tokenMatch) return undefined;
-  let usedPct: number | undefined;
-  let inputTokens = 0;
-  if (pctMatch) usedPct = parseFloat(pctMatch[1]);
-  if (tokenMatch) {
-    inputTokens = parseInt(tokenMatch[1]);
-    const total = parseInt(tokenMatch[2]);
-    if (usedPct == null && total > 0) usedPct = Math.round(inputTokens / total * 100);
+  // Match "23k / 200k (11%)" — the primary /context output format
+  const lineMatch = text.match(/Tokens[:\s]+([\d.]+k?)\s*\/\s*([\d.]+k?)\s*\((\d+(?:\.\d+)?)%\)/i);
+  if (lineMatch) {
+    return {
+      inputTokens: parseK(lineMatch[1]),
+      outputTokens: 0,
+      usedPct: parseFloat(lineMatch[3]),
+    };
   }
-  if (usedPct == null) return undefined;
-  return { inputTokens, outputTokens: 0, usedPct };
+  // Fallback: bare percentage in parentheses
+  const pctMatch = text.match(/\((\d+(?:\.\d+)?)%\)/);
+  if (pctMatch) return { inputTokens: 0, outputTokens: 0, usedPct: parseFloat(pctMatch[1]) };
+  return undefined;
 }
 
 export function streamClaudePty(
