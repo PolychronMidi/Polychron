@@ -342,6 +342,8 @@ def edit(file_path: str, old_string: str, new_string: str,
     ctx.ensure_ready_sync()
     if not file_path:
         return "Error: file_path cannot be empty."
+    if not old_string:
+        return "Error: old_string cannot be empty."
     if old_string == new_string:
         return "Error: old_string and new_string are identical."
 
