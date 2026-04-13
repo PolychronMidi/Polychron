@@ -31,7 +31,7 @@ fi
 # Log post-compact event. The statusline meter hasn't fired yet with the new (reset) context value,
 # so used_pct here is still the pre-compact reading — the delta between this and the next
 # statusline update shows how much context was freed.
-CTX_FILE=/tmp/claude-context.json
+CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
 LOG="$PROJECT/metrics/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
@@ -43,7 +43,7 @@ else
 fi
 
 # Reset context meter — compaction freed the context window; PTY will see this on next initBuf
-echo '{"used_pct":5,"remaining_pct":95,"size":200000,"input_tokens":10000,"output_tokens":0}' > /tmp/claude-context.json
+echo '{"used_pct":5,"remaining_pct":95,"size":200000,"input_tokens":10000,"output_tokens":0}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
 
 # Suggest resume after compaction — context was just lost
 echo "Context compacted. Use mcp__HME__status(mode='resume') for session state recovery." >&2

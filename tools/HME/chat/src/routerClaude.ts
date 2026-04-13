@@ -191,6 +191,10 @@ export function streamClaudePty(
 
   const env = buildClaudeEnv();
   env["TERM"] = "xterm-256color";
+  // Each PTY session writes context data to its own file so the main Claude Code
+  // session's Stop hook (writing to /tmp/claude-context.json) can't overwrite it.
+  const ctxFile = `/tmp/claude-ctx-pty-${Date.now()}.json`;
+  env["HME_CTX_FILE"] = ctxFile;
 
   const ptyLib = getPty();
   if (!ptyLib) {
@@ -277,10 +281,11 @@ export function streamClaudePty(
         initBuf.includes("Human:") ||
         initBuf.length > 200;
       if (ready) {
-        // Read context data written by the previous turn's Stop hook.
-        // Stop hook completes before Claude shows `> `, so this file is always fresh here.
+        // Read context data written by this PTY session's Stop hook.
+        // Uses HME_CTX_FILE (session-unique path) so the main Claude Code session's
+        // Stop hook writing /tmp/claude-context.json can't contaminate this session.
         try {
-          const ctxData = JSON.parse(readFileSync("/tmp/claude-context.json", "utf8"));
+          const ctxData = JSON.parse(readFileSync(ctxFile, "utf8"));
           if (typeof ctxData.input_tokens === "number") {
             ctxInputTokens = ctxData.input_tokens;
             ctxOutputTokens = ctxData.output_tokens ?? 0;

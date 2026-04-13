@@ -283,6 +283,16 @@
     padding: 3px 8px;
     border-radius: 3px;
     border-left: 2px solid var(--tool-fg);
+    cursor: pointer;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .tool-step.expanded {
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
   .cost-badge {
@@ -886,6 +896,15 @@ function forceScrollToBottom() {
   messages.scrollTop = messages.scrollHeight;
 }
 
+// ── Tool step factory ───────────────────────────────────────────────────────
+function makeToolStep(text) {
+  const div = document.createElement('div');
+  div.className = 'tool-step';
+  div.textContent = text;
+  div.addEventListener('click', function() { this.classList.toggle('expanded'); });
+  return div;
+}
+
 // ── Message rendering ──────────────────────────────────────────────────────
 function appendMessage(msg) {
   const div = document.createElement('div');
@@ -914,10 +933,7 @@ function appendMessage(msg) {
         details.querySelector('.thinking-body').textContent = block.content;
         div.appendChild(details);
       } else if (block.type === 'tool') {
-        const toolDiv = document.createElement('div');
-        toolDiv.className = 'tool-step';
-        toolDiv.textContent = block.content;
-        div.appendChild(toolDiv);
+        div.appendChild(makeToolStep(block.content));
       } else {
         const body = document.createElement('div');
         body.className = 'msg-body';
@@ -943,10 +959,7 @@ function appendMessage(msg) {
 
     if (msg.tools && msg.tools.length) {
       for (const t of msg.tools) {
-        const toolDiv = document.createElement('div');
-        toolDiv.className = 'tool-step';
-        toolDiv.textContent = t;
-        div.appendChild(toolDiv);
+        div.appendChild(makeToolStep(t));
       }
     }
   }
@@ -980,6 +993,10 @@ function startStream(id, route, model) {
 function appendChunk(id, chunkType, chunk) {
   const div = document.getElementById(`msg-${id}`);
   if (!div) return;
+  // Check scroll position BEFORE DOM mutation — large thinking blocks can grow
+  // scrollHeight by more than the 80px threshold in a single chunk, making the
+  // post-mutation isNearBottom() check incorrectly conclude the user scrolled up.
+  const wasAtBottom = isNearBottom();
 
   if (chunkType === 'thinking') {
     // Each thinking segment gets its own block per stream; nulled by text/tool chunks
@@ -997,10 +1014,7 @@ function appendChunk(id, chunkType, chunk) {
     streamBodyMap.get(id)?.querySelector('.stream-cursor')?.classList.add('done');
     streamBodyMap.delete(id);
     streamThinkingMap.delete(id);
-    const toolDiv = document.createElement('div');
-    toolDiv.className = 'tool-step';
-    toolDiv.textContent = chunk;
-    div.appendChild(toolDiv);
+    div.appendChild(makeToolStep(chunk));
   } else if (chunkType === 'error') {
     const errDiv = document.createElement('div');
     errDiv.className = 'error-msg';
@@ -1023,7 +1037,7 @@ function appendChunk(id, chunkType, chunk) {
     const cur = body.querySelector('.stream-cursor');
     body.insertBefore(document.createTextNode(chunk), cur);
   }
-  scrollToBottom();
+  if (wasAtBottom) messages.scrollTop = messages.scrollHeight;
 }
 
 function endStream(id, cost) {
