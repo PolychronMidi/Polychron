@@ -42,7 +42,19 @@ fi
 _AC_PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   git -C "$_AC_PROJECT" add -A 2>/dev/null
-  git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null || true
+  if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null; then
+    # Retry once — transient lock or index contention
+    sleep 1
+    if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet 2>/dev/null; then
+      source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+      _nexus_mark COMMIT_FAILED "auto-commit failed twice — uncommitted changes may exist"
+      echo "WARNING: auto-commit failed twice. Changes NOT committed. Check git status." >&2
+    fi
+  else
+    # Clear any stale commit-failed flag from a previous failed attempt
+    source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+    _nexus_clear_type COMMIT_FAILED
+  fi
 fi
 
 # ── LIFESAVER — mid-turn error detection ──────────────────────────────────────
