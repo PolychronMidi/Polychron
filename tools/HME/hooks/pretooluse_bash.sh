@@ -70,9 +70,8 @@ if echo "$CMD" | grep -qE 'sleep.*(tail|cat|head|grep|\.output)'; then
 fi
 
 # Suggest HME alternatives for shell commands
-if echo "$CMD" | grep -qE '^(grep |cat |head |tail |wc -l)'; then
-  TOOL=$(echo "$CMD" | cut -d' ' -f1)
-  echo "PREFER HME: use grep(), file_lines(), or count_lines() MCP tools for KB-enriched results. Bash $TOOL is allowed but misses KB context." >&2
+if echo "$CMD" | grep -qE '^grep '; then
+  echo "PREFER: use the Grep tool — it is passthru-enriched with KB context." >&2
 fi
 # FAIL FAST — the core invariant of this project: NO error, anywhere, ever, may be silently
 # swallowed, suppressed, logged-and-dropped, or masked by a fallback value.

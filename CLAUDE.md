@@ -192,15 +192,13 @@ Master executive for hypermeta evolutionary intelligence. 13 MCP mega-tools — 
 **Mandatory usage (not optional):**
 - **Before modifying a file:** `read("moduleName", mode="before")` -- ONE CALL assembles KB constraints, callers, boundary warnings, file structure. Accepts module names or paths — auto-resolves.
 - **After implementing changes:** `review(mode='forget')` -- auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
-- **For any search:** use `find(query)` instead of Grep. Auto-routes by intent (callers/boundary/grep/semantic). Adds KB cross-referencing.
 - **After each listen-confirmed round:** `learn(title='...', content='...', category='pattern')` for calibration anchors. Do NOT add until user confirms task complete.
-- **When pipeline fails:** `find("paste error text", mode="diagnose")` -- traces source, finds similar KB bugs, suggests fix patterns.
+- **When pipeline fails:** read pipeline output, fix root cause. Use `read("moduleName", mode="before")` on the failing file.
 
 **Core workflow:**
 ```
 /HME
 read("crossLayerClimaxEngine", mode="before")                                   -- pre-edit briefing (auto-resolves path)
-find("where does convergence detection happen")                                  -- semantic search
 read("crossLayerClimaxEngine", mode="story")                                     -- living biography
 review(mode='forget')                                                            -- post-change audit (auto-detects from git)
 review(mode='health')                                                            -- full-repo sweep
