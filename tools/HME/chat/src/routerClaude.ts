@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { readFileSync } from "fs";
+import { readFileSync, appendFileSync } from "fs";
 import { ClaudeOptions, ChunkCallback, TokenUsage } from "./router";
 
 // node-pty is loaded lazily — a native module crash must never take down the extension host.
@@ -14,6 +14,11 @@ function getPty(): typeof import("node-pty") | null {
     console.error(`[HME] node-pty unavailable — PTY mode disabled, falling back to -p: ${(e as any)?.message ?? e}`);
     return null;
   }
+}
+
+const HME_LOG = "/home/jah/Polychron/log/hme-errors.log";
+function hmeLog(msg: string) {
+  try { appendFileSync(HME_LOG, `[${new Date().toISOString()}] [hme-chat] ${msg}\n`); } catch {}
 }
 
 function buildClaudeEnv(): Record<string, string> {
@@ -269,8 +274,8 @@ export function streamClaudePty(
     if (!turnDone) {
       turnDone = true;
       const ctxParsed = parseContextOutput(contextQueryBuf);
-      console.log("[HME ctx] contextQueryBuf:", JSON.stringify(contextQueryBuf.slice(0, 300)));
-      console.log("[HME ctx] parsed:", ctxParsed);
+      hmeLog(`ctx: buf=${JSON.stringify(contextQueryBuf.slice(0, 300))}`);
+      hmeLog(`ctx: parsed=${JSON.stringify(ctxParsed)}`);
       onDone(ctxParsed ?? _buildPtyUsage());
       try { proc.kill(); } catch {}
     }
@@ -281,8 +286,8 @@ export function streamClaudePty(
     if (ptyInactivityTimer) { clearTimeout(ptyInactivityTimer); ptyInactivityTimer = null; }
     contextQueryActive = true;
     contextQueryBuf = "";
-    console.log("[HME ctx] sending /context");
-    try { proc.write("/context\r"); } catch (e) { console.log("[HME ctx] write failed:", e); }
+    hmeLog("ctx: sending /context");
+    try { proc.write("/context\r"); } catch (e) { hmeLog(`ctx: write failed: ${e}`); }
     doneTimer = setTimeout(finalizeTurn, 1500);
   };
 

@@ -19,6 +19,13 @@ function getPty() {
         return null;
     }
 }
+const HME_LOG = "/home/jah/Polychron/log/hme-errors.log";
+function hmeLog(msg) {
+    try {
+        (0, fs_1.appendFileSync)(HME_LOG, `[${new Date().toISOString()}] [hme-chat] ${msg}\n`);
+    }
+    catch { }
+}
 function buildClaudeEnv() {
     const env = {};
     for (const [k, v] of Object.entries(process.env)) {
@@ -256,8 +263,8 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         if (!turnDone) {
             turnDone = true;
             const ctxParsed = parseContextOutput(contextQueryBuf);
-            console.log("[HME ctx] contextQueryBuf:", JSON.stringify(contextQueryBuf.slice(0, 300)));
-            console.log("[HME ctx] parsed:", ctxParsed);
+            hmeLog(`ctx: buf=${JSON.stringify(contextQueryBuf.slice(0, 300))}`);
+            hmeLog(`ctx: parsed=${JSON.stringify(ctxParsed)}`);
             onDone(ctxParsed ?? _buildPtyUsage());
             try {
                 proc.kill();
@@ -274,12 +281,12 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         }
         contextQueryActive = true;
         contextQueryBuf = "";
-        console.log("[HME ctx] sending /context");
+        hmeLog("ctx: sending /context");
         try {
             proc.write("/context\r");
         }
         catch (e) {
-            console.log("[HME ctx] write failed:", e);
+            hmeLog(`ctx: write failed: ${e}`);
         }
         doneTimer = setTimeout(finalizeTurn, 1500);
     };
