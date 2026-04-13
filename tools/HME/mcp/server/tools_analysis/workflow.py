@@ -195,6 +195,14 @@ def before_editing(file_path: str) -> str:
         for dry in DRY_PATTERNS:
             if dry["pattern"] in content and "crossLayerHelpers" not in os.path.basename(abs_path):
                 warnings.append(dry["message"])
+        # Python static bug scan for HME server files being edited
+        if abs_path.endswith(".py"):
+            try:
+                from .workflow_audit import _scan_python_bug_patterns as _sbp
+                for _pw in _sbp(rel_path, content):
+                    warnings.append(_pw)
+            except Exception:
+                pass
     except Exception:
         warnings.append("file unreadable")
 

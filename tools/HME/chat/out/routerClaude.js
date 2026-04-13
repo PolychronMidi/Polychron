@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.streamClaude = streamClaude;
 exports.streamClaudePty = streamClaudePty;
 const child_process_1 = require("child_process");
+const fs_1 = require("fs");
 // node-pty is loaded lazily — a native module crash must never take down the extension host.
 let _pty = null;
 function getPty() {
@@ -161,6 +162,11 @@ const PTY_DONE_PATTERNS = [
     /\nHuman:\s*$/,
     /\[H\]/,
 ];
+/** Parse remaining-context percentage from PTY output (statusLine outputs `ctx:N%`). */
+function _parseCtxRemainingPct(text) {
+    const m = text.match(/ctx:(\d+(?:\.\d+)?)%/);
+    return m ? parseFloat(m[1]) : null;
+}
 function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
     const args = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
     if (sessionId)
@@ -192,6 +198,12 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     let sessionIdSent = false;
     let initBuf = "";
     let doneTimer = null;
+    // Context data from /tmp/claude-context.json — written by Stop hook after each turn.
+    // Stop hook fires (and completes) before the `> ` prompt appears, so this file
+    // is always fresh by the time initBuf detects the prompt.
+    let ctxRemainingPct = null;
+    let ctxInputTokens = null;
+    let ctxOutputTokens = null;
     const PTY_INACTIVITY_MS = 15000;
     let ptyInactivityTimer = null;
     const resetPtyInactivity = () => {
@@ -210,6 +222,21 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
             }
         }, PTY_INACTIVITY_MS);
     };
+    const _buildPtyUsage = () => {
+        // Primary: direct token counts written by Stop hook to /tmp/claude-context.json.
+        // These are the actual API usage numbers (input = cached + non-cached).
+        if (ctxInputTokens != null) {
+            return { inputTokens: ctxInputTokens, outputTokens: ctxOutputTokens ?? 0 };
+        }
+        // Fallback: remaining_pct from file or parsed from PTY output (statusLine, rarely fires in CLI).
+        const postPct = _parseCtxRemainingPct(fullOutput.slice(-500));
+        const rem = postPct ?? ctxRemainingPct;
+        if (rem == null)
+            return undefined;
+        const windowTokens = 200000;
+        const usedTokens = Math.round((100 - rem) / 100 * windowTokens);
+        return { inputTokens: usedTokens, outputTokens: 0 };
+    };
     const scheduleDone = () => {
         if (doneTimer)
             clearTimeout(doneTimer);
@@ -220,7 +247,7 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         doneTimer = setTimeout(() => {
             if (!turnDone) {
                 turnDone = true;
-                onDone();
+                onDone(_buildPtyUsage());
                 try {
                     proc.kill();
                 }
@@ -237,6 +264,21 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
                 initBuf.includes("Human:") ||
                 initBuf.length > 200;
             if (ready) {
+                // Read context data written by the previous turn's Stop hook.
+                // Stop hook completes before Claude shows `> `, so this file is always fresh here.
+                try {
+                    const ctxData = JSON.parse((0, fs_1.readFileSync)("/tmp/claude-context.json", "utf8"));
+                    if (typeof ctxData.input_tokens === "number") {
+                        ctxInputTokens = ctxData.input_tokens;
+                        ctxOutputTokens = ctxData.output_tokens ?? 0;
+                    }
+                    if (typeof ctxData.remaining_pct === "number") {
+                        ctxRemainingPct = ctxData.remaining_pct;
+                    }
+                }
+                catch { }
+                // Also try parsing ctx:N% from terminal (statusLine fallback, doesn't fire in CLI mode)
+                ctxRemainingPct = _parseCtxRemainingPct(initBuf) ?? ctxRemainingPct;
                 sentMessage = true;
                 proc.write(message.replace(/\r?\n/g, " ") + "\r");
                 resetPtyInactivity();
@@ -282,7 +324,7 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
                 onError(`Claude CLI exited with code ${exitCode}`);
             }
             else {
-                onDone();
+                onDone(_buildPtyUsage());
             }
         }, 1500);
     });

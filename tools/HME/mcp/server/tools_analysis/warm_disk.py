@@ -67,8 +67,30 @@ def _save_warm_cache(model: str):
         logger.warning(f"warm cache save failed: {model}: {e}")
 
 
+def _kb_newest_mtime() -> float:
+    """Return the most recent mtime across all KB JSON files (project + global)."""
+    import glob as _glob
+    root = getattr(ctx, "PROJECT_ROOT", "")
+    newest = 0.0
+    for kb_subdir in ("project_knowledge", "global_knowledge"):
+        kb_dir = os.path.join(root, "tools", "HME", "mcp", "rag_data", kb_subdir)
+        try:
+            for f in _glob.glob(os.path.join(kb_dir, "*.json")):
+                mt = os.path.getmtime(f)
+                if mt > newest:
+                    newest = mt
+        except Exception:
+            pass
+    return newest
+
+
 def _load_warm_cache(model: str) -> bool:
-    """Try to restore a model's warm context from disk. Returns True if cache was fresh and loaded."""
+    """Try to restore a model's warm context from disk. Returns True if cache was fresh and loaded.
+
+    Cross-restart resilience: _kb_version resets to 0 on each MCP server start.
+    When cached_kb_ver != 0, check KB file mtimes — if no KB file changed since
+    the cache was saved, the cache is still valid and _kb_version is realigned.
+    """
     cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
     if not os.path.exists(cache_file):
         return False
@@ -84,8 +106,17 @@ def _load_warm_cache(model: str) -> bool:
             logger.debug(f"warm cache SKIP: model mismatch ({cached_model} != {model})")
             return False
         if cached_kb_ver != current_kb_ver:
-            logger.info(f"warm cache STALE: {model} kb_ver {cached_kb_ver} != {current_kb_ver}")
-            return False
+            # _kb_version resets to 0 on restart. If KB files haven't changed since
+            # the cache was saved, the cache is still valid across the restart.
+            if _kb_newest_mtime() > cached_ts:
+                logger.info(f"warm cache STALE: {model} kb_ver {cached_kb_ver} != {current_kb_ver}, KB modified since save")
+                return False
+            # KB unchanged since cache was saved — realign session counter and use cache.
+            ctx._kb_version = max(current_kb_ver, cached_kb_ver)
+            logger.info(
+                f"warm cache CROSS-RESTART: {model} kb_ver {cached_kb_ver} vs session {current_kb_ver} "
+                f"— KB unchanged, cache valid, _kb_version → {ctx._kb_version}"
+            )
         if not cached_ctx or len(cached_ctx) < 10:
             logger.debug(f"warm cache SKIP: empty context for {model}")
             return False

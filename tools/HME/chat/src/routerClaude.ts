@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import { readFileSync } from "fs";
 import { ClaudeOptions, ChunkCallback, TokenUsage } from "./router";
 
 // node-pty is loaded lazily — a native module crash must never take down the extension host.
@@ -169,6 +170,12 @@ const PTY_DONE_PATTERNS = [
   /\[H\]/,
 ];
 
+/** Parse remaining-context percentage from PTY output (statusLine outputs `ctx:N%`). */
+function _parseCtxRemainingPct(text: string): number | null {
+  const m = text.match(/ctx:(\d+(?:\.\d+)?)%/);
+  return m ? parseFloat(m[1]) : null;
+}
+
 export function streamClaudePty(
   message: string,
   sessionId: string | null,
@@ -176,7 +183,7 @@ export function streamClaudePty(
   workingDir: string,
   onChunk: ChunkCallback,
   onSessionId: (id: string) => void,
-  onDone: () => void,
+  onDone: (usage?: TokenUsage) => void,
   onError: (msg: string) => void
 ): () => void {
   const args: string[] = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
@@ -211,6 +218,12 @@ export function streamClaudePty(
   let sessionIdSent = false;
   let initBuf = "";
   let doneTimer: ReturnType<typeof setTimeout> | null = null;
+  // Context data from /tmp/claude-context.json — written by Stop hook after each turn.
+  // Stop hook fires (and completes) before the `> ` prompt appears, so this file
+  // is always fresh by the time initBuf detects the prompt.
+  let ctxRemainingPct: number | null = null;
+  let ctxInputTokens: number | null = null;
+  let ctxOutputTokens: number | null = null;
 
   const PTY_INACTIVITY_MS = 15000;
   let ptyInactivityTimer: ReturnType<typeof setTimeout> | null = null;
@@ -226,13 +239,28 @@ export function streamClaudePty(
     }, PTY_INACTIVITY_MS);
   };
 
+  const _buildPtyUsage = (): TokenUsage | undefined => {
+    // Primary: direct token counts written by Stop hook to /tmp/claude-context.json.
+    // These are the actual API usage numbers (input = cached + non-cached).
+    if (ctxInputTokens != null) {
+      return { inputTokens: ctxInputTokens, outputTokens: ctxOutputTokens ?? 0 };
+    }
+    // Fallback: remaining_pct from file or parsed from PTY output (statusLine, rarely fires in CLI).
+    const postPct = _parseCtxRemainingPct(fullOutput.slice(-500));
+    const rem = postPct ?? ctxRemainingPct;
+    if (rem == null) return undefined;
+    const windowTokens = 200_000;
+    const usedTokens = Math.round((100 - rem) / 100 * windowTokens);
+    return { inputTokens: usedTokens, outputTokens: 0 };
+  };
+
   const scheduleDone = () => {
     if (doneTimer) clearTimeout(doneTimer);
     if (ptyInactivityTimer) { clearTimeout(ptyInactivityTimer); ptyInactivityTimer = null; }
     doneTimer = setTimeout(() => {
       if (!turnDone) {
         turnDone = true;
-        onDone();
+        onDone(_buildPtyUsage());
         try { proc.kill(); } catch {}
       }
     }, 800);
@@ -249,6 +277,20 @@ export function streamClaudePty(
         initBuf.includes("Human:") ||
         initBuf.length > 200;
       if (ready) {
+        // Read context data written by the previous turn's Stop hook.
+        // Stop hook completes before Claude shows `> `, so this file is always fresh here.
+        try {
+          const ctxData = JSON.parse(readFileSync("/tmp/claude-context.json", "utf8"));
+          if (typeof ctxData.input_tokens === "number") {
+            ctxInputTokens = ctxData.input_tokens;
+            ctxOutputTokens = ctxData.output_tokens ?? 0;
+          }
+          if (typeof ctxData.remaining_pct === "number") {
+            ctxRemainingPct = ctxData.remaining_pct;
+          }
+        } catch {}
+        // Also try parsing ctx:N% from terminal (statusLine fallback, doesn't fire in CLI mode)
+        ctxRemainingPct = _parseCtxRemainingPct(initBuf) ?? ctxRemainingPct;
         sentMessage = true;
         proc.write(message.replace(/\r?\n/g, " ") + "\r");
         resetPtyInactivity();
@@ -287,7 +329,7 @@ export function streamClaudePty(
       if (exitCode !== 0) {
         onError(`Claude CLI exited with code ${exitCode}`);
       } else {
-        onDone();
+        onDone(_buildPtyUsage());
       }
     }, 1500);
   });

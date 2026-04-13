@@ -73,6 +73,10 @@ _nexus_pending() {
   if [ "$edit_count" -gt 0 ]; then
     issues="${issues}\n  - ${edit_count} edited file(s) not yet reviewed: run review(mode='forget')"
   fi
+  local ri_count; ri_count=$(_nexus_get REVIEW_ISSUES)
+  if [ -n "$ri_count" ] && [ "$ri_count" -gt 3 ] 2>/dev/null; then
+    issues="${issues}\n  - ${ri_count} unresolved review issue(s) — fix then re-run review(mode='forget') until count drops to 0"
+  fi
   local verdict; verdict=$(_nexus_get PIPELINE)
   if [ "$verdict" = "STABLE" ] || [ "$verdict" = "EVOLVED" ]; then
     if ! _nexus_has COMMIT; then

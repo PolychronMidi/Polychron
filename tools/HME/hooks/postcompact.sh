@@ -42,6 +42,9 @@ else
   echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":null,\"stale_remaining_pct\":null}" >> "$LOG"
 fi
 
+# Reset context meter — compaction freed the context window; PTY will see this on next initBuf
+echo '{"used_pct":5,"remaining_pct":95,"size":200000,"input_tokens":10000,"output_tokens":0}' > /tmp/claude-context.json
+
 # Suggest resume after compaction — context was just lost
 echo "Context compacted. Use mcp__HME__status(mode='resume') for session state recovery." >&2
 

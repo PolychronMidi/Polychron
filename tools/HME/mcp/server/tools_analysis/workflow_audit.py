@@ -86,6 +86,40 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
                 "— verify it's not referenced where the guard is False (NameError risk)."
             )
 
+    # 6. time.time() - d.get(...) or reverse: arithmetic on potentially-None value.
+    # If the key is absent or stored as None, the subtraction raises TypeError.
+    none_arith = re.findall(
+        r'time\.(?:time|monotonic)\(\)\s*[-+]\s*\w+\.get\('
+        r'|\w+\.get\([^)]+\)\s*[-+]\s*time\.(?:time|monotonic)\(\)',
+        content
+    )
+    if none_arith:
+        warnings.append(
+            f"[{rel_path}] PYTHON: {len(none_arith)} `time.time() ± d.get(...)` — "
+            "if key is absent or None, arithmetic raises TypeError. "
+            "Guard with `if d.get(key) is not None` or `(d.get(key) or 0.0)`."
+        )
+
+    # 7. except Exception: pass or bare except: pass — silent catch-all.
+    # These swallow all errors without logging, making bugs invisible in production.
+    silent_except = re.findall(r'except\s+(?:Exception\s*)?:\s*pass\b', content)
+    if silent_except:
+        warnings.append(
+            f"[{rel_path}] PYTHON: {len(silent_except)} silent `except ... pass` — "
+            "swallows all errors. At minimum log the exception; "
+            "narrow the type or re-raise if possible."
+        )
+
+    # 8. Attribute access directly on .get() result without a None guard.
+    # Pattern: d.get('key').something — raises AttributeError when key absent or value is None.
+    none_attr = re.findall(r'\.get\(["\'][^"\']+["\']\)\.[a-zA-Z_]', content)
+    if none_attr:
+        warnings.append(
+            f"[{rel_path}] PYTHON: {len(none_attr)} `.get(...).attribute` without None guard — "
+            "absent/None key raises AttributeError. "
+            "Use `(d.get(key) or obj).attr` or check `is not None` first."
+        )
+
     return warnings
 
 
@@ -220,15 +254,66 @@ def what_did_i_forget(changed_files: str) -> str:
     except Exception:
         pass
 
+    # Parse diff for ±20-line hunk context in changed .py files (up to 1000 chars total).
+    # Skipped when diff is already large (>2000 chars) to keep synthesis prompt within
+    # the local model's comfortable context range and avoid 10+ minute hangs.
+    hunk_context = ""
+    if diff_context and len(diff_context) < 2000:
+        try:
+            import re as _re_hunk
+            file_hunk_map: dict = {}  # rel_path -> [(hunk_start, hunk_end)]
+            current_hunk_file = None
+            for _dl in diff_context.splitlines():
+                _fm = _re_hunk.match(r'^\+\+\+ b/(.+\.py)', _dl)
+                if _fm:
+                    current_hunk_file = _fm.group(1)
+                    if current_hunk_file not in file_hunk_map:
+                        file_hunk_map[current_hunk_file] = []
+                elif current_hunk_file:
+                    _hm = _re_hunk.match(r'^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@', _dl)
+                    if _hm:
+                        _hstart = int(_hm.group(1))
+                        _hcount = int(_hm.group(2)) if _hm.group(2) else 1
+                        file_hunk_map[current_hunk_file].append((_hstart, _hstart + _hcount - 1))
+            hunk_parts = []
+            total_hunk_chars = 0
+            for _rel_file, _hunks in list(file_hunk_map.items())[:2]:
+                _abs_file = os.path.join(ctx.PROJECT_ROOT, _rel_file)
+                if not os.path.isfile(_abs_file):
+                    continue
+                try:
+                    with open(_abs_file, encoding="utf-8", errors="ignore") as _hf:
+                        _flines = _hf.read().splitlines()
+                    for _hs, _he in _hunks[:1]:
+                        _cs = max(0, _hs - 11)
+                        _ce = min(len(_flines), _he + 10)
+                        _snip = "\n".join(
+                            f"{i + 1}: {line}" for i, line in enumerate(_flines[_cs:_ce], _cs)
+                        )
+                        hunk_parts.append(f"## {_rel_file} lines {_cs+1}-{_ce}:\n```python\n{_snip}\n```")
+                        total_hunk_chars += len(_snip)
+                        if total_hunk_chars >= 1000:
+                            break
+                    if total_hunk_chars >= 1000:
+                        break
+                except (OSError, ValueError):
+                    pass
+            if hunk_parts:
+                hunk_context = "\nChanged file context (±10 lines around diff hunks):\n" + "\n\n".join(hunk_parts)
+        except Exception:
+            pass
+
     # Adaptive synthesis — thorough bug probe, no artificial bullet limit, no default "Nothing missed"
     warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
     diff_section = f"\nCode diff (first 4000 chars):\n```\n{diff_context}\n```\n" if diff_context else ""
+    hunk_section = hunk_context if hunk_context else ""
     user_text = (
         f"Changed files: {changed_files}\n"
         f"Static audit warnings already found: {warnings_text}\n"
         f"Docs flagged: {docs_text}\n"
-        f"{diff_section}\n"
+        f"{diff_section}"
+        f"{hunk_section}\n"
         "PROBE for missed bugs systematically. For each changed Python file, check:\n"
         "1. dict.get(key, non-None-default) — can the key exist with value None? If so, .get(key, X) "
         "returns None, not X. Should use (d.get(key) or X) or an explicit `is None` check.\n"
