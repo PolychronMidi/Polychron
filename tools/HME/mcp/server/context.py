@@ -89,13 +89,6 @@ class _LoggingMCP:
                 except OSError:
                     pass
                 name = fn.__name__
-                # Compact args for logging (truncate long values)
-                arg_parts = []
-                for k, v in kwargs.items():
-                    s = str(v)
-                    arg_parts.append(f"{k}={s[:120]}{'...' if len(s) > 120 else ''}")
-                arg_str = ", ".join(arg_parts) if arg_parts else "()"
-                logger.info(f"REQ  {name}({arg_str})")
                 t0 = time.time()
                 try:
                     result = fn(*args, **kwargs)
@@ -169,6 +162,12 @@ def _try_recover_from_proxy_error() -> bool:
         lib_engines = get_lib_engines()
         _startup_error = None
         logger.info("HME: auto-recovered from proxy startup error — shim is now healthy")
+        register_critical_failure(
+            "startup_recovery",
+            "Session started degraded (proxy smoke-test failed) but auto-recovered. "
+            "Root cause: shim was running without /rag endpoint (old version). Now healthy.",
+            severity="WARNING",
+        )
         return True
     except Exception as e:
         logger.warning(f"HME: recovery attempt failed: {e}")

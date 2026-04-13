@@ -10,6 +10,7 @@ import os
 import subprocess
 import time
 import threading
+import urllib.error
 import urllib.request
 
 logger = logging.getLogger("HME")
@@ -17,6 +18,8 @@ logger = logging.getLogger("HME")
 _DEFAULT_PORT = 7734
 _DISPATCH_TIMEOUT = 30
 _HEALTH_TIMEOUT = 2
+_SHIM_MAX_WAIT = int(os.environ.get("HME_SHIM_WAIT", "40"))  # seconds; override via env
+_MAX_CONSECUTIVE_404S = 5  # consecutive /rag 404s before LIFESAVER fires
 
 
 def _shim_path():
@@ -33,7 +36,9 @@ def check_shim_health(port=_DEFAULT_PORT):
         return False
 
 
-def ensure_shim_running(port=_DEFAULT_PORT, max_wait=20):
+def ensure_shim_running(port=_DEFAULT_PORT, max_wait=None):
+    if max_wait is None:
+        max_wait = _SHIM_MAX_WAIT
     if check_shim_health(port):
         return True
     env = os.environ.copy()
@@ -51,7 +56,22 @@ def ensure_shim_running(port=_DEFAULT_PORT, max_wait=20):
         time.sleep(1)
         if check_shim_health(port):
             return True
+    logger.warning(f"Shim did not become healthy within {max_wait}s — falling back to local mode")
     return False
+
+
+def _notify_proxy_degraded(engine_name: str, fail_count: int) -> None:
+    """Background: surface LIFESAVER when /rag returns repeated 404s (stale shim without /rag)."""
+    try:
+        from server import context as _ctx
+        _ctx.register_critical_failure(
+            "rag_proxy",
+            f"{engine_name}: {fail_count} consecutive /rag 404s — shim lacks /rag endpoint (old version). "
+            "Restart shim: kill $(cat /tmp/hme-http-shim.pid) and let it auto-restart.",
+            severity="WARNING",
+        )
+    except Exception as _e:
+        logger.warning(f"_notify_proxy_degraded: {_e}")
 
 
 class RAGProxy:
@@ -61,6 +81,8 @@ class RAGProxy:
         self._engine = engine_name
         self._base = f"http://127.0.0.1:{port}"
         self._bulk_indexing = _FalseEvent()
+        self._consecutive_404s = 0
+        self._degraded_notified = False
 
     def _call(self, method: str, timeout=_DISPATCH_TIMEOUT, **kwargs):
         body = json.dumps({
@@ -74,7 +96,20 @@ class RAGProxy:
         )
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
+                self._consecutive_404s = 0
                 return json.loads(resp.read()).get("result")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                self._consecutive_404s += 1
+                if self._consecutive_404s >= _MAX_CONSECUTIVE_404S and not self._degraded_notified:
+                    self._degraded_notified = True
+                    threading.Thread(
+                        target=_notify_proxy_degraded,
+                        args=(self._engine, self._consecutive_404s),
+                        daemon=True,
+                    ).start()
+            logger.warning(f"RAG proxy {self._engine}.{method}: {e}")
+            return None
         except Exception as e:
             logger.warning(f"RAG proxy {self._engine}.{method}: {e}")
             return None
