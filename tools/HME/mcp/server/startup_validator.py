@@ -94,14 +94,37 @@ def _check_required_metrics_dirs(project_root: str) -> None:
 
 
 def _check_ollama_connectivity() -> None:
-    """Warn if any Ollama instance is not reachable — synthesis will fall back to templates.
+    """Warn if Ollama models are not loaded — synthesis will fall back to templates.
 
-    Checks all three instances: GPU0 (extractor), GPU1 (reasoner), CPU (arbiter).
+    Checks the Ollama persistence daemon first (port 7735) — it has authoritative
+    model-loaded status for all three instances. Falls back to probing each Ollama
+    port directly if the daemon is not running.
     Non-fatal: Ollama may not be running yet, or may be on a different host.
-    Logs a warning per unreachable instance so failures are visible, not silent.
     """
     import urllib.request
     import urllib.error
+    import json
+
+    # Prefer daemon: single call, authoritative per-model loaded status
+    try:
+        with urllib.request.urlopen(
+            urllib.request.Request("http://127.0.0.1:7735/health"), timeout=2
+        ) as resp:
+            daemon_status = json.loads(resp.read())
+        models = daemon_status.get("models", {})
+        if models:
+            loaded = [m for m, s in models.items() if s.get("loaded")]
+            failed = [m for m, s in models.items() if not s.get("loaded")]
+            if failed:
+                logger.warning(f"Ollama daemon: {len(failed)} model(s) not loaded: {failed}")
+            else:
+                logger.info(f"Ollama connectivity: OK via daemon ({len(loaded)} model(s) loaded)")
+            return
+        # Daemon running but no models yet — fall through to port probing
+    except Exception:
+        pass
+
+    # Fallback: probe each Ollama instance directly
     instances = [
         (int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434")), "GPU0 extractor"),
         (int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435")), "GPU1 reasoner"),
@@ -118,7 +141,7 @@ def _check_ollama_connectivity() -> None:
         except urllib.error.URLError as e:
             logger.warning(f"Ollama {role} not reachable at localhost:{port} ({e})")
         except Exception as e:
-            logger.warning(f"Ollama {role} connectivity check failed at localhost:{port}: {type(e).__name__}: {e}")
+            logger.warning(f"Ollama {role} check failed at localhost:{port}: {type(e).__name__}: {e}")
     if ok_count == len(instances):
         logger.info(f"Ollama connectivity: OK (all {len(instances)} instances)")
     elif ok_count > 0:

@@ -192,6 +192,11 @@ class _Handler(BaseHTTPRequestHandler):
                 "kb_ready": _project_engine is not None,
                 "recent_errors": recent_errors[-10:],
                 "error_count": len(recent_errors),
+                "endpoints": [
+                    "/rag", "/enrich", "/enrich_prompt", "/validate", "/audit",
+                    "/reindex", "/transcript", "/health", "/narrative",
+                    "/rag/lib-list", "/capabilities",
+                ],
             })
         elif self.path.startswith("/transcript"):
             # Parse ?minutes=N&max=M from query string
