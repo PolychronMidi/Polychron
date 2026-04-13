@@ -33,12 +33,15 @@ import {
 } from "./chatStreaming";
 
 const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
-  "claude-opus-4-6": 1_000_000,
-  "claude-sonnet-4-6": 500_000,
+  // Claude Code enforces ~200k effective context regardless of API maximum.
+  "claude-opus-4-6": 200_000,
+  "claude-sonnet-4-6": 200_000,
 };
-const DEFAULT_CONTEXT_WINDOW = 500_000;
-const CHAIN_THRESHOLD_PCT = 75;
-const SYSTEM_OVERHEAD_TOKENS = 8_000;
+const DEFAULT_CONTEXT_WINDOW = 200_000;
+// Fire chain at 70% (140k tokens) — well before Claude Code autocompacts at ~85-90%.
+const CHAIN_THRESHOLD_PCT = 70;
+// Overhead estimate for PTY char-estimation fallback: CLAUDE.md (~10k) + system prompt (~8k) + hook outputs (~7k).
+const SYSTEM_OVERHEAD_TOKENS = 25_000;
 
 export class ChatPanel {
   public static current: ChatPanel | undefined;
@@ -88,18 +91,12 @@ export class ChatPanel {
       null,
       this._disposables
     );
-    // Without retainContextWhenHidden, VS Code destroys webview content when the
-    // panel is hidden and recreates it when shown. Re-send HTML + messages on show.
+    // retainContextWhenHidden keeps the webview alive when the tab is hidden —
+    // scroll position, model/effort/thinking controls, and streaming state are
+    // all preserved automatically. Only refresh the context meter on show.
     this._panel.onDidChangeViewState(
       () => {
         if (this._panel.visible) {
-          this._panel.webview.html = this._getHtml();
-          for (const m of this._displayMessages()) {
-            this._post({ type: "message", message: m });
-          }
-          if (this._isStreaming) {
-            this._post({ type: "streamingRestored" });
-          }
           this._postContextUpdate();
         }
       },
@@ -125,7 +122,7 @@ export class ChatPanel {
     const panel = vscode.window.createWebviewPanel(
       "hmeChat", "HME Chat",
       col || vscode.ViewColumn.One,
-      { enableScripts: true }
+      { enableScripts: true, retainContextWhenHidden: true }
     );
     ChatPanel.current = new ChatPanel(panel, projectRoot);
   }

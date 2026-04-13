@@ -1154,15 +1154,17 @@ applySidebar();
 if (claudeModel && _uiState.claudeModel) {
   claudeModel.value = _uiState.claudeModel;
 }
+// updateModelControls FIRST — adds the "max" option for Opus before we try to
+// set effort to "max". Setting a select value to a missing option silently falls
+// back to the first option ("low"), so order matters here.
+updateModelControls();
 if (claudeEffort && _uiState.claudeEffort) {
   claudeEffort.value = _uiState.claudeEffort;
 }
-updateModelControls();
 
 // ── Restore persisted thinking state ──────────────────────────────────────
 if (thinkingChk && typeof _uiState.thinkingEnabled === 'boolean') {
   thinkingChk.checked = _uiState.thinkingEnabled;
-  updateModelControls();
 }
 if (thinkingChk) {
   thinkingChk.addEventListener('change', function() {

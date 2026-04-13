@@ -3,6 +3,35 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME Stop: enforce implementation completeness + drive autonomous Evolver loop
 INPUT=$(cat)
 
+# ── Context meter: runs before any exit so /tmp/claude-context.json is always fresh ──
+# Stop hook fires BEFORE the next `> ` prompt — by the time PTY initBuf detects
+# the prompt, this file is already written with the current turn's real token counts.
+_CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
+if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
+  python3 -c "
+import json,sys
+try:
+    with open(sys.argv[1]) as f:
+        lines=[l for l in f if l.strip()]
+    for line in reversed(lines):
+        obj=json.loads(line)
+        if obj.get('type')=='assistant':
+            u=obj.get('message',{}).get('usage',{})
+            if u:
+                inp=(u.get('input_tokens',0)+u.get('cache_read_input_tokens',0)
+                     +u.get('cache_creation_input_tokens',0))
+                out=u.get('output_tokens',0)
+                w=200000
+                used=round((inp+out)/w*100)
+                open('/tmp/claude-context.json','w').write(
+                    json.dumps({'used_pct':used,'remaining_pct':100-used,
+                                'size':w,'input_tokens':inp,'output_tokens':out}))
+                break
+except Exception:
+    pass
+" "$_CTX_TRANSCRIPT" 2>/dev/null
+fi
+
 # ── LIFESAVER — mid-turn error detection ──────────────────────────────────────
 # LIFE-OR-DEATH: Catch errors that fired in HME Chat DURING this turn.
 # Block stopping — errors that appeared while you worked MUST be fixed before return.

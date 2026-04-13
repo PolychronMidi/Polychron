@@ -45,12 +45,15 @@ const streamUtils_1 = require("./streamUtils");
 const chatChain_1 = require("./chatChain");
 const chatStreaming_1 = require("./chatStreaming");
 const MODEL_CONTEXT_WINDOWS = {
-    "claude-opus-4-6": 1000000,
-    "claude-sonnet-4-6": 500000,
+    // Claude Code enforces ~200k effective context regardless of API maximum.
+    "claude-opus-4-6": 200000,
+    "claude-sonnet-4-6": 200000,
 };
-const DEFAULT_CONTEXT_WINDOW = 500000;
-const CHAIN_THRESHOLD_PCT = 75;
-const SYSTEM_OVERHEAD_TOKENS = 8000;
+const DEFAULT_CONTEXT_WINDOW = 200000;
+// Fire chain at 70% (140k tokens) — well before Claude Code autocompacts at ~85-90%.
+const CHAIN_THRESHOLD_PCT = 70;
+// Overhead estimate for PTY char-estimation fallback: CLAUDE.md (~10k) + system prompt (~8k) + hook outputs (~7k).
+const SYSTEM_OVERHEAD_TOKENS = 25000;
 class ChatPanel {
     constructor(panel, projectRoot, restoreSessionId) {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
@@ -92,17 +95,11 @@ class ChatPanel {
         this._panel.webview.html = this._getHtml();
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
         this._panel.webview.onDidReceiveMessage((msg) => this._handleMessage(msg), null, this._disposables);
-        // Without retainContextWhenHidden, VS Code destroys webview content when the
-        // panel is hidden and recreates it when shown. Re-send HTML + messages on show.
+        // retainContextWhenHidden keeps the webview alive when the tab is hidden —
+        // scroll position, model/effort/thinking controls, and streaming state are
+        // all preserved automatically. Only refresh the context meter on show.
         this._panel.onDidChangeViewState(() => {
             if (this._panel.visible) {
-                this._panel.webview.html = this._getHtml();
-                for (const m of this._displayMessages()) {
-                    this._post({ type: "message", message: m });
-                }
-                if (this._isStreaming) {
-                    this._post({ type: "streamingRestored" });
-                }
                 this._postContextUpdate();
             }
         }, null, this._disposables);
@@ -118,7 +115,7 @@ class ChatPanel {
             ChatPanel.current._panel.reveal(col);
             return;
         }
-        const panel = vscode.window.createWebviewPanel("hmeChat", "HME Chat", col || vscode.ViewColumn.One, { enableScripts: true });
+        const panel = vscode.window.createWebviewPanel("hmeChat", "HME Chat", col || vscode.ViewColumn.One, { enableScripts: true, retainContextWhenHidden: true });
         ChatPanel.current = new ChatPanel(panel, projectRoot);
     }
     static deserialize(panel, state, projectRoot) {

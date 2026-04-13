@@ -689,6 +689,44 @@ def _detect_contradictions() -> str:
             parts.append(f"    3. Remove stale: remove_knowledge(entry_id='{a['id']}') or '{b['id']}'")
             parts.append("")
 
+    # Code-vs-KB grounding: for hme-infrastructure entries, verify key backtick-quoted
+    # symbols still exist in the actual HME server codebase. Stale entries are flagged.
+    code_mismatches = []
+    try:
+        import subprocess as _sp_cgrep
+        _server_root = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "mcp", "server")
+        for _e in entries:
+            _cat = _e.get("category", "")
+            _tags = _e.get("tags", "")
+            if _cat != "hme-infrastructure" and "hme-infrastructure" not in _tags:
+                continue
+            _body = _e.get("content", "")
+            # Extract backtick-quoted identifiers (function/class names)
+            _claimed = re.findall(r'`([a-zA-Z_]\w{3,})`', _body)[:4]
+            if not _claimed:
+                continue
+            for _sym in _claimed:
+                _gr = _sp_cgrep.run(
+                    ["grep", "-rql", "--include=*.py", _sym, _server_root],
+                    capture_output=True, text=True, timeout=3
+                )
+                if _gr.returncode != 0 or not _gr.stdout.strip():
+                    code_mismatches.append({
+                        "id": _e["id"], "title": _e["title"], "symbol": _sym,
+                    })
+                    break  # one mismatch per entry is sufficient
+    except Exception:
+        pass
+
+    if code_mismatches:
+        parts.append(f"\n## Code-vs-KB Grounding ({len(code_mismatches)} stale claim(s))\n")
+        for _m in code_mismatches:
+            parts.append(f"  [{_m['id']}] \"{_m['title']}\"")
+            parts.append(f"    Symbol `{_m['symbol']}` not found in tools/HME/mcp/server/")
+            parts.append(f"    → Verify manually: grep -r '{_m['symbol']}' tools/HME/mcp/server/")
+            parts.append(f"    → If removed: remove_knowledge(entry_id='{_m['id']}')")
+            parts.append("")
+
     return "\n".join(parts)
 
 

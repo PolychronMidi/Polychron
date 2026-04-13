@@ -410,6 +410,44 @@
       "path": "tools/HME/hooks/_tab_helpers.sh",
       "patterns": ["_tab_path", "_ensure_tab", "_append_file_to_tab", "_extract_bg_output_path"],
       "severity": "error"
+    },
+    {
+      "id": "hme-py-no-silent-catchall",
+      "description": "HME Python server files must not use silent `except Exception: pass` catch-all (swallows all errors)",
+      "type": "shell_output_empty",
+      "shell": "grep -rn 'except Exception: *pass' tools/HME/mcp/server/ --include='*.py'",
+      "severity": "warning"
+    },
+    {
+      "id": "hme-py-meta-has-trim",
+      "description": "meta_observer.py must define a trim helper (_trim_) alongside its append-only file writes",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/meta_observer.py",
+      "patterns": ["_trim_"],
+      "severity": "warning"
+    },
+    {
+      "id": "hme-py-valueerror-coverage",
+      "description": "OSError-only except handlers in operational_state.py must also catch ValueError (int/float conversion safety)",
+      "type": "shell_output_empty",
+      "shell": "grep -n 'except (OSError' tools/HME/mcp/server/operational_state.py | grep -v ValueError",
+      "severity": "warning"
+    },
+    {
+      "id": "nexus-review-issues-tracked",
+      "description": "posttooluse_hme_review.sh must extract depth meter count and write REVIEW_ISSUES to nexus",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/posttooluse_hme_review.sh",
+      "patterns": ["REVIEW_ISSUES", "issues total"],
+      "severity": "error"
+    },
+    {
+      "id": "nexus-pending-review-gate",
+      "description": "_nexus_pending() must check REVIEW_ISSUES count and block stop when count > 3",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/_nexus.sh",
+      "patterns": ["REVIEW_ISSUES", "ri_count"],
+      "severity": "error"
     }
   ]
 }
