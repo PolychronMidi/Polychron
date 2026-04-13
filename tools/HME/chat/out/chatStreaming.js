@@ -93,6 +93,10 @@ function makeOnChunk(ctx, assistantId, acc, state, tracker, route, opts = {}) {
             acc.append("tool", chunk);
             ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk });
             ctx.transcript.logToolCall(chunk.split("]")[0].replace("[", ""), chunk, route);
+            if (/^\[(?:Pre|Post)Compact\]/.test(chunk)) {
+                ctx.post({ type: "notice", level: "block", text: `CRITICAL: ${chunk}` });
+                ctx.postError("compact", chunk);
+            }
         }
         else if (type === "thinking") {
             state.thinking += chunk;

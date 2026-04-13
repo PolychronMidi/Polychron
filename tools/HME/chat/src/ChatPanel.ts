@@ -23,7 +23,7 @@ import {
 import { TranscriptLogger, nullTranscript } from "./TranscriptLogger";
 import { synthesizeNarrative, synthesizeChainSummary } from "./Arbiter";
 import {
-  uid, CHARS_PER_TOKEN,
+  uid,
   SessionState, ContextTracker, StreamTracker, ChatCtx,
 } from "./streamUtils";
 import { buildSummaryPrompt, buildFallbackSummary } from "./chatChain";
@@ -32,16 +32,8 @@ import {
   streamAgentMsg, streamAgentHybridMsg,
 } from "./chatStreaming";
 
-const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
-  // Claude Code enforces ~200k effective context regardless of API maximum.
-  "claude-opus-4-6": 200_000,
-  "claude-sonnet-4-6": 200_000,
-};
-const DEFAULT_CONTEXT_WINDOW = 200_000;
-// Fire chain at 70% (140k tokens) — well before Claude Code autocompacts at ~85-90%.
+// Fire chain at 70% — well before Claude Code autocompacts at ~85-90%.
 const CHAIN_THRESHOLD_PCT = 70;
-// Overhead estimate for PTY char-estimation fallback: CLAUDE.md (~10k) + system prompt (~8k) + hook outputs (~7k).
-const SYSTEM_OVERHEAD_TOKENS = 25_000;
 
 export class ChatPanel {
   public static current: ChatPanel | undefined;
@@ -56,7 +48,7 @@ export class ChatPanel {
   private _transcript: TranscriptLogger;
   private _restoreSessionId: string | null = null;
   private _disposed = false;
-  private _contextTracker: ContextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
+  private _contextTracker: ContextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
   private _chainingInProgress = false;
 
   private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
@@ -319,7 +311,7 @@ export class ChatPanel {
     };
     this._state.sessionEntry = entry;
     saveSession(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
-      contextTokens: Math.round(this._contextTracker.totalChars / CHARS_PER_TOKEN),
+      contextTokens: this._contextTracker.usedPct ?? 0,
       chainIndex: this._state.chainIndex,
     });
   }
@@ -463,10 +455,10 @@ export class ChatPanel {
 
   // ── Context tracking & chain ───────────────────────────────────────────────
 
-  private _resetContextTracker(restoredTokens?: number) {
-    this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
-    if (restoredTokens) {
-      this._contextTracker.totalChars = restoredTokens * CHARS_PER_TOKEN;
+  private _resetContextTracker(restoredPct?: number) {
+    this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
+    if (restoredPct) {
+      this._contextTracker.usedPct = restoredPct;
     }
     this._postContextUpdate();
   }
@@ -477,22 +469,13 @@ export class ChatPanel {
     if (usage) {
       this._contextTracker.lastInputTokens = usage.inputTokens;
       this._contextTracker.lastOutputTokens = usage.outputTokens;
+      if (usage.usedPct != null) this._contextTracker.usedPct = usage.usedPct;
     }
     this._postContextUpdate();
   }
 
   private _getContextPct(): number {
-    const window = MODEL_CONTEXT_WINDOWS[this._contextTracker.model] ?? DEFAULT_CONTEXT_WINDOW;
-    if (this._contextTracker.lastInputTokens != null && this._contextTracker.lastOutputTokens != null) {
-      const used = this._contextTracker.lastInputTokens + this._contextTracker.lastOutputTokens;
-      return Math.min(99, Math.round(used / window * 100));
-    }
-    // PTY mode: no token counts — estimate from all message chars
-    const allChars = this._state.messages.reduce(
-      (sum, m) => sum + (m.text?.length ?? 0) + ((m as any).thinking?.length ?? 0), 0
-    );
-    const estimatedTokens = allChars / CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
-    return Math.min(99, Math.round(estimatedTokens / window * 100));
+    return this._contextTracker.usedPct ?? 0;
   }
 
   private _postContextUpdate() {
@@ -550,7 +533,7 @@ export class ChatPanel {
       messages: [...this._state.messages],
       summary,
       todos,
-      contextTokens: this._getContextPct(),
+      contextTokens: this._contextTracker.usedPct ?? 0,
       claudeSessionId: this._state.claudeSessionId,
       createdAt: Date.now(),
     };
