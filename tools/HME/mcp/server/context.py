@@ -141,6 +141,38 @@ _kb_version: int = 0
 # Background startup synchronization — set by main.py after background load completes
 _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None
+_recovery_attempted: bool = False
+
+
+def _try_recover_from_proxy_error() -> bool:
+    """Recovery path for proxy-mode startup failures.
+
+    If the MCP server failed startup because the shim was running but didn't yet have
+    the /rag endpoint (e.g., old ChatPanel-managed shim), the error is cached and
+    every tool call fails. This detects that condition and re-initializes using the
+    proxy if the shim is now healthy.
+
+    Returns True if recovery succeeded.
+    """
+    global _startup_error, _recovery_attempted, project_engine, global_engine, shared_model, lib_engines
+    if _recovery_attempted:
+        return False
+    _recovery_attempted = True
+    try:
+        from server.rag_proxy import RAGProxy, check_shim_health, get_lib_engines
+        if not check_shim_health():
+            logger.warning("HME recovery: shim not healthy — cannot recover")
+            return False
+        project_engine = RAGProxy("project")
+        global_engine = RAGProxy("global")
+        shared_model = project_engine.model
+        lib_engines = get_lib_engines()
+        _startup_error = None
+        logger.info("HME: auto-recovered from proxy startup error — shim is now healthy")
+        return True
+    except Exception as e:
+        logger.warning(f"HME: recovery attempt failed: {e}")
+        return False
 
 
 def _fmt_startup_error(err: Exception) -> str:
@@ -167,7 +199,12 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     """
     if _startup_done is None or _startup_done.is_set():
         if _startup_error:
-            raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
+            # Auto-recover from proxy smoke-test failure if shim is now healthy
+            err_str = str(_startup_error)
+            if "smoke-test" in err_str or "encode" in err_str:
+                _try_recover_from_proxy_error()
+            if _startup_error:
+                raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
         if project_engine is None or global_engine is None or shared_model is None:
             raise RuntimeError(
                 "HME startup completed but engines are not initialized "

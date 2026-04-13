@@ -44,8 +44,12 @@ def _check_engines(context) -> None:
     # Smoke-test: ensure the embedding model actually works (local mode only)
     try:
         result = context.shared_model.encode(["test"], show_progress_bar=False)
-        if result is None or len(result) == 0:
+        if result is None:
+            return  # proxy mode: _ModelProxy.encode returns None — shim owns the model
+        if len(result) == 0:
             raise RuntimeError("shared_model.encode returned empty result")
+    except RuntimeError:
+        raise
     except Exception as e:
         raise RuntimeError(f"shared_model smoke-test failed: {e}") from e
 
