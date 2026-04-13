@@ -1007,7 +1007,7 @@ def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
     t0 = _threading.Thread(target=_g0, daemon=True)
     t1 = _threading.Thread(target=_g1, daemon=True)
     t0.start(); t1.start()
-    t0.join(timeout=120); t1.join(timeout=120)
+    t0.join(timeout=30); t1.join(timeout=30)
 
     g0, g1 = results[0], results[1]
     if not g0 and not g1:

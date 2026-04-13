@@ -32,7 +32,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     _track("review")
     if mode != "forget":
         append_session_narrative("review", f"{mode}: {changed_files[:60] or file_path[:60] or 'full'}")
-    ctx.ensure_ready_sync()
+        ctx.ensure_ready_sync()
     parts = []
 
     modes = [mode] if mode != "full" else ["digest", "regime", "trust"]
@@ -78,13 +78,11 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     import subprocess as _sp
                     _git = _sp.run(
                         ["git", "-C", ctx.PROJECT_ROOT, "diff", "--name-only", "HEAD"],
-                        capture_output=True, text=True, timeout=5
+                        capture_output=True, text=True, timeout=2
                     )
                     _cf = ",".join(f.strip() for f in _git.stdout.strip().splitlines() if f.strip())
                 except Exception:
                     pass
-            # Hard 10s wall cap — thread wrapper at MCP entry point.
-            # Cannot be bypassed by stale imports or downstream blocking.
             import threading as _forget_t
             _forget_box = [None]
             def _run_forget():
@@ -95,9 +93,9 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     _forget_box[0] = f"what_did_i_forget error: {_fe}"
             _ft = _forget_t.Thread(target=_run_forget, daemon=True)
             _ft.start()
-            _ft.join(timeout=10)
+            _ft.join(timeout=3)
             if _ft.is_alive():
-                parts.append("## Post-Change Audit\nAdaptive synthesis timed out (10s cap). Static analysis skipped to protect MCP connection.\nRe-run with fewer files or use `evolve(focus='think', query='...')` for deep analysis.")
+                parts.append("## Post-Change Audit\nSynthesis timed out (3s cap). Use `evolve(focus='think', query='...')` for deep analysis.")
             else:
                 parts.append(_forget_box[0] or "No audit data.")
         elif m == "convention":
