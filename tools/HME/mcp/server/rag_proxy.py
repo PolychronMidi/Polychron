@@ -131,10 +131,17 @@ def start_proxy_monitor(port: int = _DEFAULT_PORT) -> None:
     if _proxy_monitor_active:
         return
     _proxy_monitor_active = True
-    threading.Thread(
+    _t = threading.Thread(
         target=_proxy_health_monitor, args=(port,),
         daemon=True, name="HME-proxy-monitor",
-    ).start()
+    )
+    _t.start()
+    # L13: register monitor thread with meta-observer so it can detect thread death
+    try:
+        from server import meta_observer
+        meta_observer.register_monitor_thread(_t)
+    except Exception:
+        pass
     logger.info(f"Proxy health monitor started (interval={_MONITOR_INTERVAL}s)")
 
 
@@ -220,6 +227,16 @@ def _proxy_health_monitor(port: int) -> None:
                 if _stable_since == 0:
                     _stable_since = time.time()  # mark start of stable window
                 crash_count = 0  # reset crash counter on healthy cycle
+                # L18: if shim is healthy and we had crash predictions, they were prevented
+                try:
+                    from server import meta_observer as _mo18
+                    for pred in list(_mo18._predictions):
+                        if pred["outcome"] is None and pred["type"] in (
+                            "shim_decay_precursor", "shim_latency_crash"
+                        ) and time.time() > pred["deadline"]:
+                            _mo18.resolve_prediction(pred["id"], outcome_occurred=False)
+                except Exception:
+                    pass
                 _check_ollama_daemon_health()
                 _intent_propagation_tick()  # Layer 11: pre-warm cache from transcript
                 # Layer 8: coherence snapshot → metrics/hme-coherence.jsonl
@@ -250,6 +267,16 @@ def _proxy_health_monitor(port: int) -> None:
                     pass
                 continue
             _stable_since = 0.0  # Layer 5: reset stability clock on any unhealthy event
+            # L18: shim crashed — resolve any active crash predictions as "occurred"
+            try:
+                from server import meta_observer as _mo18
+                for pred in list(_mo18._predictions):
+                    if pred["outcome"] is None and pred["type"] in (
+                        "shim_decay_precursor", "shim_latency_crash"
+                    ):
+                        _mo18.resolve_prediction(pred["id"], outcome_occurred=True)
+            except Exception:
+                pass
             logger.warning("Proxy health monitor: shim unhealthy — attempting restart")
             # Layer 0 + 2: mark RECOVERING, record crash
             try:
