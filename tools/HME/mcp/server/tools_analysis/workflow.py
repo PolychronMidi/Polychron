@@ -17,7 +17,7 @@ from analysis import find_similar_code as _find_similar
 from .synthesis import (
     _local_think, compress_for_claude,
     _THINK_MODEL, _REASONING_MODEL, _LOCAL_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
-    _THINK_SYSTEM,
+    _THINK_SYSTEM, route_model,
 )
 from . import _get_compositional_context, _track
 from .synthesis_session import append_session_narrative
@@ -404,7 +404,7 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
         "- If this file has 0 dependents and no KB constraints, respond: 'Low risk — leaf module.'\n"
         "- Format: '1. [risk] because [specific caller/constraint].'\n"
     )
-    synthesis = _local_think(user_text, max_tokens=800, model=_LOCAL_MODEL,
+    synthesis = _local_think(user_text, max_tokens=800, model=route_model(user_text),
                              system=_THINK_SYSTEM, priority=priority)
     return synthesis
 

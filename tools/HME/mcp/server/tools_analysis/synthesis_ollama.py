@@ -481,6 +481,10 @@ def _local_chat(messages: list[dict], model: str | None = None,
     """
     import urllib.request
     _m = model or _REASONING_MODEL
+    _cb = _get_circuit_breaker(_m)
+    if not _cb.allow():
+        logger.warning(f"_local_chat REFUSED — circuit breaker OPEN for {_m}")
+        return None
     payload = {
         "model": _m, "messages": messages, "stream": False,
         "keep_alive": _KEEP_ALIVE,
@@ -525,8 +529,10 @@ def _local_chat(messages: list[dict], model: str | None = None,
                     if idx != -1:
                         text = text[idx:].strip()
                         break
+            _cb.record_success()
             return text if text else None
     except Exception as e:
+        _cb.record_failure(is_timeout="timed out" in str(e).lower())
         _err_str = str(e).lower()
         if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
             ctx.register_critical_failure(f"_local_chat({_m})", f"{type(e).__name__}: {e}")
@@ -540,6 +546,10 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
     """Call local Ollama model with an explicit system prompt (rarely used, no warm ctx)."""
     import urllib.request
     _m = model or _LOCAL_MODEL
+    _cb = _get_circuit_breaker(_m)
+    if not _cb.allow():
+        logger.warning(f"_local_think_with_system REFUSED — circuit breaker OPEN for {_m}")
+        return None
     body = json.dumps({
         "model": _m, "system": system, "prompt": prompt, "stream": False,
         "keep_alive": _KEEP_ALIVE,
@@ -555,8 +565,10 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
             if "</think>" in text:
                 text = text[text.rfind("</think>") + len("</think>"):].strip()
             text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            _cb.record_success()
             return text if text else None
     except Exception as e:
+        _cb.record_failure(is_timeout="timed out" in str(e).lower())
         _err_str = str(e).lower()
         if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
             ctx.register_critical_failure(f"_local_think_with_system({_m})", f"{type(e).__name__}: {e}")
@@ -594,6 +606,9 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
     if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
         payload["context"] = arbiter_ctx
+    _cb = _get_circuit_breaker(_ARBITER_MODEL)
+    if not _cb.allow():
+        return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
     body = json.dumps(payload).encode()
     req = urllib.request.Request(_url_for(_ARBITER_MODEL), data=body, headers={"Content-Type": "application/json"})
     try:
@@ -603,12 +618,14 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
             if "</think>" in compressed:
                 compressed = compressed[compressed.rfind("</think>") + len("</think>"):].strip()
             compressed = re.sub(r'[^\x00-\x7F]+', '', compressed).strip()
+            _cb.record_success()
             if compressed and len(compressed) < len(text):
                 logger.debug(f"compress_for_claude: {len(text)} → {len(compressed)} chars")
                 if len(compressed) > max_chars:
                     return compressed[:max_chars] + f"…(+{len(compressed) - max_chars} chars)"
                 return compressed
     except Exception as e:
+        _cb.record_failure(is_timeout="timed out" in str(e).lower())
         logger.debug(f"compress_for_claude: arbiter unavailable ({e}), falling back to truncation")
     return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
 
@@ -620,11 +637,16 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
 #   enriched (2): source grounding + best model (balanced)
 #   cascade (3):  arbiter plan → coder kickstart → reasoner deep (thorough)
 
-_COMPLEXITY_SIGNALS = frozenset({
-    "relationship", "interact", "coupling", "boundary", "between",
-    "compare", "contrast", "multiple", "across", "architecture",
-    "design", "trade-off", "cascade", "feedback", "resonance",
+_DEEP_SIGNALS = frozenset({
+    "relationship", "interact", "coupling", "architectur",
+    "design", "trade-off", "tradeoff", "feedback", "resonance",
+    "implicat", "independen", "coheren",
     "how does", "why does", "what happens",
+})
+_MOD_SIGNALS = frozenset({
+    "between", "multiple", "across", "cascade", "boundar",
+    "compar", "contrast", "behavior", "detect", "trace",
+    "understand", "flow", "sequence", "lifecycle", "coordinat",
 })
 _SIMPLE_SIGNALS = frozenset({
     "where is", "find", "what file", "show me", "list",
@@ -633,32 +655,80 @@ _SIMPLE_SIGNALS = frozenset({
 
 
 def _assess_complexity(prompt: str) -> dict:
-    """Score prompt complexity 1-3 via instant heuristic. No model call — zero latency.
+    """Score prompt complexity 1-3 via two-tier heuristic. No model call — zero latency.
 
-    The arbiter's value is in cascade Stage 1 (planning) where it reasons about
-    investigation strategy, not in classification where a keyword scan suffices.
+    Deep signals (architecture, coupling, feedback) score 1.0 each.
+    Moderate signals (detect, trace, flow) score 0.5 each.
+    Mentioning specific modules (camelCase) adds 0.5 bonus.
+    Score >= 3.0 → cascade, >= 1.5 → enriched, else direct.
     """
     words_lower = prompt.lower()
 
     if any(s in words_lower for s in _SIMPLE_SIGNALS):
         return {"complexity": 1, "strategy": "direct", "reasoning": "simple"}
 
-    signal_hits = sum(1 for s in _COMPLEXITY_SIGNALS if s in words_lower)
+    deep = sum(1 for s in _DEEP_SIGNALS if s in words_lower)
+    mod = sum(1 for s in _MOD_SIGNALS if s in words_lower)
+    modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', prompt)
+    score = deep + mod * 0.5 + (0.5 if modules else 0)
 
-    if signal_hits == 0 and len(prompt) < 150:
+    if score < 0.5 and len(prompt) < 150:
         return {"complexity": 1, "strategy": "direct", "reasoning": "short, no signals"}
-    if signal_hits >= 3:
-        return {"complexity": 3, "strategy": "cascade", "reasoning": f"{signal_hits} signals"}
-    if signal_hits >= 2 or len(prompt) > 300:
-        return {"complexity": 2, "strategy": "enriched", "reasoning": f"{signal_hits} signals"}
-    return {"complexity": 1, "strategy": "direct", "reasoning": "default"}
+    if score >= 3.0:
+        return {"complexity": 3, "strategy": "cascade", "reasoning": f"score={score:.1f}"}
+    if score >= 1.5 or len(prompt) > 300:
+        return {"complexity": 2, "strategy": "enriched", "reasoning": f"score={score:.1f}"}
+    return {"complexity": 1, "strategy": "direct", "reasoning": f"score={score:.1f}"}
+
+
+def _camel_acronym(name: str) -> str:
+    """Compute first-letter acronym of a camelCase name.
+    coordinationIndependenceManager → 'cim'
+    """
+    parts = re.sub(r'([A-Z])', r' \1', name).split()
+    return ''.join(p[0] for p in parts).lower() if parts else name[0].lower()
+
+
+def _fuzzy_find_modules(prompt: str, max_results: int = 3) -> list[str]:
+    """Fuzzy module discovery: find src/ JS modules whose names overlap with prompt terms.
+
+    Handles non-camelCase prompts (e.g. "CIM", "coupling", "feedback loop") via:
+    - Substring matching of significant words against lowercased module names
+    - camelCase component word decomposition
+    - Acronym matching: all-caps terms (CIM) matched against module first-letter acronyms
+    Returns module basenames (without .js), highest-score first.
+    """
+    import glob as _g
+    significant = {w for w in re.split(r'\W+', prompt.lower()) if len(w) > 3}
+    # All-caps terms (acronyms like CIM, KB) matched against module acronyms
+    acronyms = {w.lower() for w in re.split(r'\W+', prompt) if len(w) >= 2 and w.isupper()}
+    significant |= acronyms
+    if not significant:
+        return []
+    scored: list[tuple[int, str]] = []
+    root = getattr(ctx, "PROJECT_ROOT", os.environ.get("POLYCHRON_ROOT", ""))
+    for f in _g.glob(os.path.join(root, "src", "**", "*.js"), recursive=True):
+        m = os.path.basename(f).replace('.js', '')
+        m_lower = m.lower()
+        m_words = set(re.sub(r'([A-Z])', r' \1', m).lower().split())
+        m_acronym = _camel_acronym(m)
+        # Acronym match scores 2 (intentional abbreviation) vs 1 (substring hit)
+        hits = (
+            sum(1 for s in significant if s in m_lower or any(s in w for w in m_words))
+            + sum(2 for s in significant if s == m_acronym)
+        )
+        if hits > 0:
+            scored.append((hits, m))
+    scored.sort(key=lambda x: -x[0])
+    return [m for _, m in scored[:max_results]]
 
 
 def _inject_context(prompt: str) -> str:
     """Enrich prompt with source code grounding + operational health.
 
     Session narrative is NOT added here — _local_think handles that separately.
-    Extracts module names from prompt, reads their source for grounding.
+    Extracts module names from prompt (camelCase-first), falls back to fuzzy
+    search when prompt uses plain English terms for known modules.
     """
     modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', prompt)
     path_bases = re.findall(r'(?:src|tools)/\S+/([a-zA-Z]+)\.\w+', prompt)
@@ -669,7 +739,18 @@ def _inject_context(prompt: str) -> str:
         src = _read_module_source(mod, max_chars=2000)
         if src:
             parts.append(f"[Source: {mod}]\n{src}")
-            break
+            if len("\n".join(parts)) > 3500:
+                break
+
+    # If camelCase/path candidates yielded no source (e.g. "crossLayer" is a directory),
+    # fuzzy-search src/ by prompt term overlap to find real modules.
+    if not parts:
+        for mod in _fuzzy_find_modules(prompt, max_results=3):
+            src = _read_module_source(mod, max_chars=2000)
+            if src:
+                parts.append(f"[Source: {mod}]\n{src}")
+                if len("\n".join(parts)) > 3500:
+                    break
 
     try:
         from server import operational_state
@@ -694,14 +775,33 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
     The coder provides verified structural facts (file paths, function names,
     signal fields). The reasoner uses those as grounded context for deep analysis,
     preventing hallucinated module names while enabling rich architectural reasoning.
+
+    Grounding chain (all three must provide at least one source):
+    1. Pre-discovery: fuzzy module search → source in enriched_prompt
+    2. Arbiter plan: given module registry → names real modules → source injection
+    3. Stage 2 coder: receives BOTH pre-discovered AND plan-derived sources
     """
     from .synthesis_config import _THINK_SYSTEM
 
-    # Stage 1: Arbiter plans the investigation
+    # Extract pre-discovered sources already in enriched_prompt (from _inject_context)
+    # These exist even when prompt has no camelCase module names (fuzzy discovery ran).
+    _pre_sources = re.findall(r'\[Source: \w+\]\n[\s\S]*?(?=\[Source:|\[Health:|\Z)', enriched_prompt)
+    _pre_source_block = "\n".join(_pre_sources[:2])[:3000]
+
+    # Build arbiter module registry: fuzzy-find relevant modules so arbiter can name them
+    _registry_mods = _fuzzy_find_modules(prompt, max_results=12)
+    _registry_hint = (
+        f"\nKnown project modules (use exact names): {', '.join(_registry_mods)}"
+        if _registry_mods else ""
+    )
+
+    # Stage 1: Arbiter plans the investigation — context-aware via module registry
     plan = _local_think_with_system(
-        f"Break into 3-5 investigation steps:\n\n{prompt[:400]}\n\n"
-        "Each step: WHAT (module/signal), WHERE (subsystem), WHY (relevance).",
-        "Code investigation planner. Concrete steps only.", 500, _ARBITER_MODEL,
+        f"Break into 3-5 investigation steps:\n\n{prompt[:400]}"
+        f"{_registry_hint}\n\n"
+        "Each step: WHAT (exact module name from list above), WHERE (subsystem), WHY (relevance).",
+        "Code investigation planner. Use exact module names from the list. Concrete steps only.",
+        500, _ARBITER_MODEL,
     )
     if plan and "</think>" in plan:
         plan = plan[plan.rfind("</think>") + len("</think>"):].strip()
@@ -710,23 +810,35 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         return _local_think(enriched_prompt, max_tokens=max_tokens,
                            model=_REASONING_MODEL, system=_THINK_SYSTEM)
 
-    # Source injection: read actual code for modules the arbiter's plan mentions
+    # Source injection from arbiter plan: any new camelCase names the plan introduced
     _plan_modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', plan)
-    _source_block = ""
+    _plan_source_block = ""
     for _pm in list(dict.fromkeys(_plan_modules))[:3]:
         _src = _read_module_source(_pm, max_chars=1200)
         if _src:
-            _source_block += f"\n[{_pm} source]\n{_src}\n"
-            if len(_source_block) > 3000:
+            _plan_source_block += f"\n[{_pm} source]\n{_src}\n"
+            if len(_plan_source_block) > 2000:
                 break
+
+    # Merge pre-discovered + plan-derived sources (pre-discovered takes priority)
+    _source_block = (_pre_source_block + "\n" + _plan_source_block).strip()
+    if not _source_block and _registry_mods:
+        # Last resort: inject first matching module from registry
+        _src = _read_module_source(_registry_mods[0], max_chars=1500)
+        if _src:
+            _source_block = f"[{_registry_mods[0]} source]\n{_src}"
+    logger.info(
+        f"cascade: sources={len(_source_block)}c registry={len(_registry_mods)} "
+        f"plan_mods={len(_plan_modules)}"
+    )
 
     # Stage 2: Coder kickstart — structured fact extraction grounded in source
     _coder_prefix = f"SOURCE CODE:\n{_source_block}\n\n" if _source_block else ""
     coder_out = _local_think(
         f"{_coder_prefix}"
         f"Execute this analysis plan:\n\n{plan}\n\nQUESTION: {prompt[:300]}\n\n"
-        "For each step extract: FILE (exact path), FUNCTION, SIGNALS, CONNECTS.\n"
-        "Exhaustive facts. No analysis.",
+        "For each step extract: FILE (exact path from source code above), FUNCTION, SIGNALS, CONNECTS.\n"
+        "Only use paths and names from SOURCE CODE above. Exhaustive facts. No analysis.",
         max_tokens=2500, model=_LOCAL_MODEL, system=_THINK_SYSTEM,
         temperature=0.1, priority="interactive",
     )
@@ -811,39 +923,36 @@ def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
 
 
 def _quality_gate(output: str, prompt: str) -> str:
-    """Arbiter spot-check: PASS or tag as [unverified]."""
+    """Deterministic quality gate: verify camelCase module names in output exist.
+
+    Zero latency — no model call. Extracts camelCase module references, verifies
+    each resolves via _read_module_source. Skips modules embedded in file paths
+    (directory names cause false phantoms). Flags if >50% are unresolvable.
+    """
     if not output or len(output) < 80:
         return output
-    cb = _get_circuit_breaker(_ARBITER_MODEL)
-    if not cb.allow():
+
+    paths = set(re.findall(r'(?:src|tools)/[\w/]+\.(?:js|py|json|ts)', output))
+    path_basenames = {p.rsplit('/', 1)[-1].rsplit('.', 1)[0] for p in paths}
+    modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', output)
+    unique = []
+    for m in dict.fromkeys(modules):
+        if m in ("camelCase", "toString", "valueOf", "hasOwnProperty"):
+            continue
+        if m in path_basenames:
+            continue
+        unique.append(m)
+    if not unique:
         return output
 
-    import urllib.request
-    payload = json.dumps({
-        "model": _ARBITER_MODEL,
-        "prompt": (
-            f"Quality check:\nQ: {prompt[:150]}\nA: {output[:500]}\n\n"
-            "PASS if relevant with real paths. FAIL if hallucinated or off-topic.\nOne word:"
-        ),
-        "stream": False, "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": 0.0, "num_predict": 200, "num_ctx": _NUM_CTX_4B},
-    }).encode()
-    req = urllib.request.Request(
-        _url_for(_ARBITER_MODEL), data=payload,
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            result = json.loads(resp.read())
-            text = result.get("response", "") or result.get("thinking", "")
-            if "</think>" in text:
-                text = text[text.rfind("</think>") + len("</think>"):]
-            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-            if "FAIL" in text.upper():
-                logger.info(f"quality_gate: FAIL — {text[:60]}")
-                return f"[unverified] {output}"
-    except Exception:
-        pass
+    phantom = 0
+    for m in unique[:5]:
+        if not _read_module_source(m, max_chars=100):
+            phantom += 1
+
+    if len(unique) > 0 and phantom / len(unique[:5]) > 0.5:
+        logger.info(f"quality_gate: {phantom}/{len(unique[:5])} module refs unresolvable")
+        return f"[unverified — {phantom} refs unresolved] {output}"
     return output
 
 
@@ -879,8 +988,8 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
         result = _local_think(prompt, max_tokens=min(max_tokens, 4096), model=model,
                              system=_THINK_SYSTEM, priority=priority)
 
-    # Auto-escalate on failure: direct → enriched → cascade
-    if not result and strategy == "direct":
+    # Auto-escalate on failure: try alt GPU with enriched context → cascade
+    if not result and strategy != "cascade":
         enriched = _inject_context(prompt) if auto_context else prompt
         alt = _REASONING_MODEL if route_model(prompt) == _LOCAL_MODEL else _LOCAL_MODEL
         result = _local_think(enriched, max_tokens=max_tokens, model=alt,
@@ -892,7 +1001,7 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
     if not result:
         return None
 
-    if quality_check:
+    if quality_check and strategy == "cascade":
         result = _quality_gate(result, prompt)
 
     elapsed = _t.time() - t0

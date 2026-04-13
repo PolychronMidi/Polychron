@@ -10,6 +10,7 @@ from .synthesis import (
     store_think_history, get_think_history_context,
     _read_module_source,
 )
+from .synthesis_ollama import _cascade_synthesis, _assess_complexity, _fuzzy_find_modules
 
 logger = logging.getLogger("HME")
 
@@ -258,7 +259,32 @@ def think(about: str, context: str = "") -> str:
             local_answer = _ground_file_paths(local_answer)
             store_think_history(about, local_answer)
             return f"# Think: {about} *(meta-hme)*\n\n{local_answer}"
-    else:
+    elif not is_evolution_q and not is_channel_q and not _is_pipeline_infra:
+        # Route by complexity (heuristic, zero latency):
+        # ≥ 3 → cascade (arbiter plan + source injection + coder + reasoner)
+        # == 2 → enrich raw_context with live source, then parallel two-stage
+        # < 2 → parallel two-stage with KB context only
+        _complexity = _assess_complexity(about)
+        if _complexity["complexity"] >= 3:
+            logger.info(f"think: routing to cascade (complexity={_complexity['complexity']})")
+            local_answer = _cascade_synthesis(
+                prompt, raw_context[:8000] + "\n\n" + prompt, max_tokens=4096,
+            )
+            if local_answer:
+                local_answer = _ground_file_paths(local_answer)
+                store_think_history(about, local_answer)
+                return f"# Think: {about} *(cascade c={_complexity['complexity']})*\n\n{local_answer}"
+            logger.info("think: cascade returned None, falling through to parallel")
+        elif _complexity["complexity"] == 2:
+            # Enriched: inject live source into raw_context so parallel pipeline
+            # works from actual code, not just KB abstractions.
+            for _m in _fuzzy_find_modules(about, max_results=2):
+                _src = _read_module_source(_m, max_chars=1500)
+                if _src:
+                    raw_context += f"\n\n[Live source: {_m}]\n{_src}"
+                    logger.info(f"think: enriched raw_context with live source for {_m}")
+
+    if not _is_meta_hme:
         # Code/evolution questions: parallel two-stage (GPU 0 + GPU 1 simultaneously)
         # Pipeline infrastructure questions skip the crossLayer file list — injecting
         # src/ module paths causes the models to hallucinate crossLayer answers for
