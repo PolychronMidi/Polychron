@@ -448,6 +448,13 @@
       "path": "tools/HME/hooks/_nexus.sh",
       "patterns": ["REVIEW_ISSUES", "ri_count"],
       "severity": "error"
+    },
+    {
+      "id": "no-mcp-side-timeouts-synthesis",
+      "description": "Ollama timeout enforcement belongs in the daemon, not scattered across synthesis files. synthesis_ollama.py and synthesis_pipeline.py must not use join(timeout=) — use plain join() and let the daemon enforce wall clocks.",
+      "type": "shell_output_empty",
+      "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_ollama.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null",
+      "severity": "error"
     }
   ]
 }
