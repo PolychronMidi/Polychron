@@ -35,7 +35,9 @@ _HEALTH_TIMEOUT = 2
 _last_topology: dict = {}
 _topology_lock = threading.Lock()
 _topology_ts: float = 0.0
-_TOPOLOGY_CACHE_TTL = 10.0  # seconds
+_TOPOLOGY_CACHE_TTL = 30.0  # seconds — longer TTL; background refresh keeps it fresh
+_refresh_lock = threading.Lock()
+_refresh_running: bool = False
 
 # Layer 7: shim response time tracking
 _shim_response_ms: list[float] = []  # recent response times
@@ -45,17 +47,52 @@ _SLOWDOWN_WARN_THRESHOLD = 3.0  # shim response time EMA > 3× baseline → warn
 
 
 def get_topology(force: bool = False) -> dict:
-    """Return the current health topology snapshot. Cached for _TOPOLOGY_CACHE_TTL seconds."""
+    """Return cached topology snapshot. Stale cache triggers background refresh; never blocks callers."""
     global _last_topology, _topology_ts
     now = time.time()
+
+    if force:
+        topo = _build_topology()
+        with _topology_lock:
+            _last_topology = topo
+            _topology_ts = time.time()
+        return topo
+
     with _topology_lock:
-        if not force and _last_topology and now - _topology_ts < _TOPOLOGY_CACHE_TTL:
-            return dict(_last_topology)
-    topo = _build_topology()
-    with _topology_lock:
-        _last_topology = topo
-        _topology_ts = now
-    return topo
+        cached = dict(_last_topology) if _last_topology else None
+        stale = not cached or (now - _topology_ts >= _TOPOLOGY_CACHE_TTL)
+
+    if stale:
+        _trigger_background_refresh()
+
+    return cached or {
+        "ts": 0, "elapsed_ms": 0, "system_healthy": False, "coherence": 0.0,
+        "slowdown_warning": None, "nodes": {}, "meta_observer": {},
+    }
+
+
+def _trigger_background_refresh() -> None:
+    """Start a background topology refresh unless one is already running."""
+    global _refresh_running
+    with _refresh_lock:
+        if _refresh_running:
+            return
+        _refresh_running = True
+
+    def _do_refresh():
+        global _refresh_running, _last_topology, _topology_ts
+        try:
+            topo = _build_topology()
+            with _topology_lock:
+                _last_topology = topo
+                _topology_ts = time.time()
+        except Exception:
+            pass
+        finally:
+            with _refresh_lock:
+                _refresh_running = False
+
+    threading.Thread(target=_do_refresh, daemon=True, name="hme-topology-refresh").start()
 
 
 def _build_topology() -> dict:
@@ -216,6 +253,8 @@ def _check_shim_slowdown() -> dict | None:
 def describe_topology(topo: dict) -> str:
     """Human-readable topology description for self-narration (Layer 6)."""
     nodes = topo.get("nodes", {})
+    if not nodes:
+        return "[topology: pending first check]"
     shim = nodes.get("shim", {})
     daemon = nodes.get("daemon", {})
     ollama = nodes.get("ollama", {})

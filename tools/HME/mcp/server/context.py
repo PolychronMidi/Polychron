@@ -128,11 +128,13 @@ class _LoggingMCP:
                         ops.update_ema("tool_response_ms_ema", elapsed * 1000)
                     except Exception:
                         pass
+                    # Log immediately — post-processing must not delay this timestamp
+                    logger.info(f"RESP {name} [{elapsed:.1f}s] {str(result)[:200]}")
                     # Layer 4: LIFESAVER drain with causal tree format
                     lifesaver_banner = drain_critical_failures()
                     if lifesaver_banner:
                         result = lifesaver_banner + str(result)
-                    # Layer 6: rich self-narration replaces bare [DEGRADED] flag
+                    # Layer 6: rich self-narration — non-blocking (topology refreshes in background)
                     try:
                         from server import self_narration as sn
                         narration = sn.build_status_narrative()
@@ -142,8 +144,6 @@ class _LoggingMCP:
                         # Fallback: bare degraded flag if narration fails
                         if is_degraded():
                             result = "[DEGRADED] RAG proxy unhealthy — shim may be restarting.\n" + str(result)
-                    result_str = str(result)[:200]
-                    logger.info(f"RESP {name} [{elapsed:.1f}s] {result_str}")
                     return result
                 except Exception as e:
                     import traceback as _tb
