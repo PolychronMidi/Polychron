@@ -660,12 +660,39 @@ _SIMPLE_SIGNALS = frozenset({
 })
 
 
+_patterns_cache: dict | None = None
+_patterns_cache_ts: float = 0.0
+_PATTERNS_CACHE_TTL = 300  # 5 minutes
+
+
+def _load_patterns_cache() -> dict | None:
+    """L25: load synthesis patterns file for adaptive routing. Cached for 5min."""
+    global _patterns_cache, _patterns_cache_ts
+    import time as _t
+    now = _t.time()
+    if _patterns_cache is not None and now - _patterns_cache_ts < _PATTERNS_CACHE_TTL:
+        return _patterns_cache
+    try:
+        path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-synthesis-patterns.json")
+        with open(path) as f:
+            _patterns_cache = json.load(f)
+        _patterns_cache_ts = now
+        return _patterns_cache
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 def _assess_complexity(prompt: str) -> dict:
-    """Score prompt complexity 1-3 via two-tier heuristic. No model call — zero latency.
+    """Score prompt complexity 1-3 via two-tier heuristic + L25 adaptive evidence.
 
     Deep signals (architecture, coupling, feedback) score 1.0 each.
     Moderate signals (detect, trace, flow) score 0.5 each.
     Mentioning specific modules (camelCase) adds 0.5 bonus.
+
+    L25 Adaptive Routing: consults hme-synthesis-patterns.json for historical
+    per-strategy phantom rates. If direct strategy has phantom_rate > 0.4 for
+    similar prompts, boosts score toward cascade. If cascade has high phantom
+    rate, doesn't penalize — cascade is already the safest route.
     Score >= 3.0 → cascade, >= 1.5 → enriched, else direct.
     """
     words_lower = prompt.lower()
@@ -678,13 +705,38 @@ def _assess_complexity(prompt: str) -> dict:
     modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', prompt)
     score = deep + mod * 0.5 + (0.5 if modules else 0)
 
+    # L25: adaptive adjustment from historical synthesis patterns
+    l25_adj = 0.0
+    patterns = _load_patterns_cache()
+    if patterns and patterns.get("total_calls_analyzed", 0) >= 20:
+        strat_phantoms = patterns.get("strategy_phantom_rates", {})
+        direct_pr = strat_phantoms.get("direct", 0.0)
+        enriched_pr = strat_phantoms.get("enriched", 0.0)
+        # If direct/enriched routes have high phantom rates historically,
+        # nudge toward cascade for complex-ish prompts
+        if direct_pr > 0.4 and score >= 0.5:
+            l25_adj += 0.5
+        if enriched_pr > 0.4 and score >= 1.0:
+            l25_adj += 0.5
+        # Check if prompt contains known phantom-trigger words
+        trigger_words = {w for w, _ in patterns.get("top_phantom_trigger_words", [])}
+        prompt_words = set(words_lower.split())
+        trigger_hits = len(prompt_words & trigger_words)
+        if trigger_hits >= 2:
+            l25_adj += 0.5 * min(trigger_hits, 3)
+    score += l25_adj
+
+    reasoning = f"score={score:.1f}"
+    if l25_adj > 0:
+        reasoning += f" (L25:+{l25_adj:.1f})"
+
     if score < 0.5 and len(prompt) < 150:
         return {"complexity": 1, "strategy": "direct", "reasoning": "short, no signals"}
     if score >= 3.0:
-        return {"complexity": 3, "strategy": "cascade", "reasoning": f"score={score:.1f}"}
+        return {"complexity": 3, "strategy": "cascade", "reasoning": reasoning}
     if score >= 1.5 or len(prompt) > 300:
-        return {"complexity": 2, "strategy": "enriched", "reasoning": f"score={score:.1f}"}
-    return {"complexity": 1, "strategy": "direct", "reasoning": f"score={score:.1f}"}
+        return {"complexity": 2, "strategy": "enriched", "reasoning": reasoning}
+    return {"complexity": 1, "strategy": "direct", "reasoning": reasoning}
 
 
 def _camel_acronym(name: str) -> str:
@@ -772,6 +824,33 @@ def _inject_context(prompt: str) -> str:
             parts.append(f"[Health: {', '.join(alerts)}]")
     except Exception:
         pass
+
+    # L26: morphogenetic pre-loading — inject semantic field from intent + patterns
+    try:
+        from server import meta_observer
+        intent = meta_observer.get_current_intent()
+        if intent and intent.get("mode"):
+            field_parts = []
+            mode = intent["mode"]
+            if mode == "debugging" and intent.get("hints"):
+                field_parts.append(f"[Intent: debugging — {', '.join(intent['hints'][:3])}]")
+            elif mode == "design":
+                field_parts.append("[Intent: architectural design — prioritize boundary constraints]")
+            elif mode == "stress_testing":
+                field_parts.append("[Intent: stress testing — be precise about enforcement gaps]")
+            if field_parts:
+                parts = field_parts + parts
+    except Exception:
+        pass
+
+    # L25: surface historical phantom risk for this prompt type
+    patterns = _load_patterns_cache()
+    if patterns and patterns.get("strategy_phantom_rates"):
+        high_phantom_strats = [
+            f"{s}:{r:.0%}" for s, r in patterns["strategy_phantom_rates"].items() if r > 0.3
+        ]
+        if high_phantom_strats:
+            parts.append(f"[Phantom risk: {', '.join(high_phantom_strats)}]")
 
     return "\n".join(parts) + "\n\n" + prompt if parts else prompt
 
@@ -1024,6 +1103,7 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
     logger.info(f"synthesize: {strategy}(c={complexity}) {len(result)}c {elapsed:.1f}s")
 
     # Layer 19: record routing decision + quality outcome for synthesis observability
+    # Layer 34: thermodynamic efficiency tracking
     try:
         from server import operational_state as _ops
         _ops.record_synthesis_call(
@@ -1035,6 +1115,10 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
             verified_count=_verified_count,
             elapsed_s=elapsed,
             prompt_head=prompt[:60],
+        )
+        _ops.record_thermodynamic(
+            verified=_verified_count, phantom=_phantom_count,
+            elapsed_s=elapsed, cache_hit=False,
         )
     except Exception:
         pass

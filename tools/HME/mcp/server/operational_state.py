@@ -8,6 +8,10 @@ Tracks system health metrics that survive across MCP server restarts:
   - cache hit rate EMA
   - circuit breaker trip history + flap detection (L21)
   - synthesis routing + quality gate EMAs (L19)
+  - multi-timescale coherence EMAs (L23)
+  - prediction accuracy / Brier score EMA (L29)
+  - session identity documents (L30)
+  - thermodynamic efficiency metrics (L34)
 
 Written atomically to $PROJECT_ROOT/tmp/hme-ops.json on every state change.
 Read on startup; per-day counters reset on new calendar day while preserving
@@ -17,6 +21,9 @@ Layer 5 (Temporal Rhythm) reads is_crash_loop() and restarts_today to adapt
 the startup chain aggressiveness. Layer 7 (Predictive Health) updates EMAs here.
 Layer 19 (Synthesis Observability) records routing decisions + quality outcomes.
 Layer 21 (CB Flap Detection) tracks HALF_OPEN→OPEN transitions per model.
+Layer 23 (Multi-Timescale) maintains coherence EMAs at beat/phrase/section/structure scales.
+Layer 29 (Second-Order Accuracy) tracks Brier score of prediction calibration.
+Layer 34 (Thermodynamic) models information-theoretic efficiency of synthesis.
 """
 import json
 import os
@@ -28,9 +35,16 @@ logger = logging.getLogger("HME")
 
 _STATE_FILE: str = ""
 _SYNTHESIS_FILE: str = ""  # hme-synthesis.jsonl path set in init()
+_SESSIONS_FILE: str = ""   # hme-sessions.jsonl path set in init() (L30)
 _state: dict = {}
 _state_lock = threading.Lock()
 _EMA_ALPHA = 0.2  # exponential moving average decay for rolling metrics
+
+# L23: multi-timescale EMA alphas (beat=fast, structure=glacial)
+_ALPHA_BEAT = 0.8
+_ALPHA_PHRASE = 0.3
+_ALPHA_SECTION = 0.1
+_ALPHA_STRUCTURE = 0.05
 
 
 def init(project_root: str) -> dict:
@@ -39,11 +53,12 @@ def init(project_root: str) -> dict:
     Increments restarts_today; preserves EMAs and long-term metrics across day boundaries.
     Safe to call multiple times — subsequent calls are no-ops (STATE_FILE already set).
     """
-    global _STATE_FILE, _SYNTHESIS_FILE, _state
+    global _STATE_FILE, _SYNTHESIS_FILE, _SESSIONS_FILE, _state
     if _STATE_FILE:
         return snapshot()  # already initialized
     _STATE_FILE = os.path.join(project_root, "tmp", "hme-ops.json")
     _SYNTHESIS_FILE = os.path.join(project_root, "metrics", "hme-synthesis.jsonl")
+    _SESSIONS_FILE = os.path.join(project_root, "metrics", "hme-sessions.jsonl")
     os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
     os.makedirs(os.path.dirname(_SYNTHESIS_FILE), exist_ok=True)
     today = time.strftime("%Y-%m-%d")
@@ -70,6 +85,17 @@ def init(project_root: str) -> dict:
                 "synthesis_quality_gate_ema": loaded.get("synthesis_quality_gate_ema", 0.0),
                 "synthesis_escalation_rate_ema": loaded.get("synthesis_escalation_rate_ema", 0.0),
                 "synthesis_phantom_rate_ema": loaded.get("synthesis_phantom_rate_ema", 0.0),
+                # L23: multi-timescale coherence EMAs persist across days
+                "coherence_beat_ema": loaded.get("coherence_beat_ema"),
+                "coherence_phrase_ema": loaded.get("coherence_phrase_ema"),
+                "coherence_section_ema": loaded.get("coherence_section_ema"),
+                "coherence_structure_ema": loaded.get("coherence_structure_ema"),
+                # L29: prediction accuracy Brier score
+                "brier_score_ema": loaded.get("brier_score_ema"),
+                "prediction_outcomes_today": 0,
+                # L34: thermodynamic efficiency
+                "thermo_efficiency_ema": loaded.get("thermo_efficiency_ema"),
+                "thermo_entropy_ema": loaded.get("thermo_entropy_ema"),
             }
         else:
             _state = loaded
@@ -91,6 +117,14 @@ def init(project_root: str) -> dict:
             "synthesis_quality_gate_ema": 0.0,
             "synthesis_escalation_rate_ema": 0.0,
             "synthesis_phantom_rate_ema": 0.0,
+            "coherence_beat_ema": None,
+            "coherence_phrase_ema": None,
+            "coherence_section_ema": None,
+            "coherence_structure_ema": None,
+            "brier_score_ema": None,
+            "prediction_outcomes_today": 0,
+            "thermo_efficiency_ema": None,
+            "thermo_entropy_ema": None,
         }
     _state["restarts_today"] = _state.get("restarts_today", 0) + 1
     _state["last_restart"] = time.time()
@@ -286,3 +320,167 @@ def _trim_synthesis_file() -> None:
                 f.writelines(lines[-1000:])
     except OSError:
         pass
+
+
+# ── Layer 23: Multi-Timescale Coherence ───────────────────────────────────
+
+def record_coherence_multiscale(coherence: float) -> dict:
+    """Update coherence EMAs at all four timescales. Returns the current multi-scale snapshot.
+
+    Beat (α=0.8): reacts within 2-3 samples — captures per-call quality.
+    Phrase (α=0.3): smooths over ~10 samples — session health trend.
+    Section (α=0.1): smooths over ~30 samples — daily operational rhythm.
+    Structure (α=0.05): smooths over ~60 samples — weekly drift detection.
+    """
+    with _state_lock:
+        for key, alpha in [
+            ("coherence_beat_ema", _ALPHA_BEAT),
+            ("coherence_phrase_ema", _ALPHA_PHRASE),
+            ("coherence_section_ema", _ALPHA_SECTION),
+            ("coherence_structure_ema", _ALPHA_STRUCTURE),
+        ]:
+            cur = _state.get(key)
+            _state[key] = round(coherence if cur is None else alpha * coherence + (1 - alpha) * cur, 4)
+        _save_unlocked()
+        return {
+            "beat": _state.get("coherence_beat_ema"),
+            "phrase": _state.get("coherence_phrase_ema"),
+            "section": _state.get("coherence_section_ema"),
+            "structure": _state.get("coherence_structure_ema"),
+        }
+
+
+def get_multiscale_coherence() -> dict:
+    with _state_lock:
+        return {
+            "beat": _state.get("coherence_beat_ema"),
+            "phrase": _state.get("coherence_phrase_ema"),
+            "section": _state.get("coherence_section_ema"),
+            "structure": _state.get("coherence_structure_ema"),
+        }
+
+
+def is_coherence_ceiling() -> bool:
+    """L∞∞: detect when all timescale EMAs exceed 0.95 — system may be over-modeled."""
+    with _state_lock:
+        vals = [_state.get(k) for k in (
+            "coherence_beat_ema", "coherence_phrase_ema",
+            "coherence_section_ema", "coherence_structure_ema",
+        )]
+        return all(v is not None and v > 0.95 for v in vals)
+
+
+# ── Layer 29: Prediction Accuracy (Brier Score) ──────────────────────────
+
+def record_prediction_brier(predicted_prob: float, occurred: bool) -> float:
+    """Record a prediction outcome via Brier score: (predicted_prob - actual)².
+
+    Returns the updated Brier score EMA. Lower = better calibrated (0.0 = perfect).
+    """
+    brier = (predicted_prob - (1.0 if occurred else 0.0)) ** 2
+    with _state_lock:
+        cur = _state.get("brier_score_ema")
+        _state["brier_score_ema"] = round(
+            brier if cur is None else _EMA_ALPHA * brier + (1 - _EMA_ALPHA) * cur, 4
+        )
+        _state["prediction_outcomes_today"] = _state.get("prediction_outcomes_today", 0) + 1
+        _save_unlocked()
+        return _state["brier_score_ema"]
+
+
+# ── Layer 30: Session Identity Document ───────────────────────────────────
+
+def write_session_document() -> None:
+    """Persist this session's identity + trajectory to hme-sessions.jsonl.
+
+    Called on shutdown or periodically. New sessions read prior documents to detect
+    cross-session behavioral patterns (coherence degradation in long sessions,
+    time-of-day effects, phantom rate correlations with run outcomes).
+    """
+    if not _SESSIONS_FILE:
+        return
+    with _state_lock:
+        doc = {
+            "session_start": _state.get("session_start"),
+            "session_end": time.time(),
+            "date": _state.get("date"),
+            "restarts_today": _state.get("restarts_today", 0),
+            "synthesis_calls": _state.get("synthesis_calls_today", 0),
+            "synthesis_phantom_rate_ema": _state.get("synthesis_phantom_rate_ema"),
+            "synthesis_cascade_rate_ema": _state.get("synthesis_cascade_rate_ema"),
+            "coherence_phrase_ema": _state.get("coherence_phrase_ema"),
+            "coherence_section_ema": _state.get("coherence_section_ema"),
+            "cb_flaps": _state.get("circuit_breaker_flaps_total_today", 0),
+            "cb_trips": _state.get("circuit_breaker_trips_total_today", 0),
+            "shim_crashes": _state.get("shim_crashes_today", 0),
+            "recovery_rate": _state.get("recovery_success_rate_ema"),
+            "brier_score": _state.get("brier_score_ema"),
+            "thermo_efficiency": _state.get("thermo_efficiency_ema"),
+        }
+        session_start = _state.get("session_start", time.time())
+        doc["session_duration_s"] = round(time.time() - session_start, 1)
+    try:
+        with open(_SESSIONS_FILE, "a") as f:
+            f.write(json.dumps(doc) + "\n")
+        _trim_sessions_file()
+    except OSError as e:
+        logger.debug(f"ops: session document write failed: {e}")
+
+
+def load_recent_sessions(max_age_days: int = 7) -> list[dict]:
+    """Load session documents from the last N days for cross-session pattern detection."""
+    if not _SESSIONS_FILE:
+        return []
+    cutoff = time.time() - max_age_days * 86400
+    sessions = []
+    try:
+        with open(_SESSIONS_FILE) as f:
+            for line in f:
+                try:
+                    doc = json.loads(line.strip())
+                    if doc.get("session_start", 0) >= cutoff:
+                        sessions.append(doc)
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        pass
+    return sessions
+
+
+def _trim_sessions_file() -> None:
+    if not _SESSIONS_FILE:
+        return
+    try:
+        with open(_SESSIONS_FILE) as f:
+            lines = f.readlines()
+        if len(lines) > 500:
+            with open(_SESSIONS_FILE, "w") as f:
+                f.writelines(lines[-500:])
+    except OSError:
+        pass
+
+
+# ── Layer 34: Thermodynamic Efficiency ────────────────────────────────────
+
+def record_thermodynamic(verified: int, phantom: int, elapsed_s: float,
+                         cache_hit: bool = False) -> dict:
+    """Model synthesis as thermodynamics: efficiency = useful work / total cost.
+
+    Negentropy (cache hits) = free information. Entropy production = phantom generation.
+    Efficiency = verified / (verified + phantom + 1) / max(elapsed_s, 0.1).
+    Returns dict with current efficiency and entropy EMAs.
+    """
+    total_refs = verified + phantom
+    efficiency = (verified / max(total_refs, 1)) / max(elapsed_s, 0.1) if total_refs > 0 else 0.0
+    entropy = phantom / max(total_refs, 1) if total_refs > 0 else 0.0
+    if cache_hit:
+        efficiency *= 2.0  # negentropy bonus: cache hits double effective efficiency
+    with _state_lock:
+        for key, val in [("thermo_efficiency_ema", efficiency), ("thermo_entropy_ema", entropy)]:
+            cur = _state.get(key)
+            _state[key] = round(val if cur is None else _EMA_ALPHA * val + (1 - _EMA_ALPHA) * cur, 4)
+        _save_unlocked()
+        return {
+            "efficiency": _state.get("thermo_efficiency_ema"),
+            "entropy": _state.get("thermo_entropy_ema"),
+        }
