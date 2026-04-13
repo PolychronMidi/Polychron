@@ -34,7 +34,14 @@ def _check_engines(context) -> None:
         raise RuntimeError("global_engine is None — RAGEngine failed to initialize")
     if context.shared_model is None:
         raise RuntimeError("shared_model is None — SentenceTransformer failed to load")
-    # Smoke-test: ensure the embedding model actually works
+
+    # In proxy mode the shim owns the model — its health check already verified readiness.
+    # Skip the smoke-test that would make an HTTP round-trip before the shim is fully warm.
+    from server.rag_proxy import RAGProxy, _ModelProxy
+    if isinstance(context.project_engine, RAGProxy):
+        return
+
+    # Smoke-test: ensure the embedding model actually works (local mode only)
     try:
         result = context.shared_model.encode(["test"], show_progress_bar=False)
         if result is None or len(result) == 0:
