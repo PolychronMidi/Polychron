@@ -359,42 +359,33 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         payload["context"] = context
     body = json.dumps(payload).encode()
 
-    # Daemon-first: route through ollama_daemon /generate for wall-clock enforcement.
-    # Background calls skip the daemon (they use cancellable streaming with interactive preemption).
+    # Route through ollama_daemon /generate for wall-clock enforcement.
+    # Background calls use direct Ollama with cancellable streaming.
+    # Non-background calls NEVER fall back to direct Ollama — daemon-only.
     result = None
-    if priority != "background":
-        _wall = 45 if _effective_model == _ARBITER_MODEL else 60
-        result = _daemon_generate(payload, wall_timeout=_wall)
-
-    if result is None:
-        # Fallback: direct Ollama call (daemon down, or background priority)
+    if priority == "background":
         req = urllib.request.Request(
             _url_for(_effective_model), data=body,
             headers={"Content-Type": "application/json"},
         )
         try:
-            if priority == "background":
-                _ollama_background_yield()
-                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
-                if cancel_err:
-                    if isinstance(cancel_err, InterruptedError):
-                        return (None, []) if return_context else None
-                    raise cancel_err
-            else:
-                _interact_timeout = 120 if _effective_model == _REASONING_MODEL else 60
-                _never_cancel = _threading.Event()
-                raw_bytes, _err = _cancellable_urlopen(body, _url_for(_effective_model),
-                                                       timeout=_interact_timeout,
-                                                       cancel_event=_never_cancel)
-                if _err:
-                    raise _err
-            if priority == "interactive":
-                _ollama_interactive.clear()
+            _ollama_background_yield()
+            raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
+            if cancel_err:
+                if isinstance(cancel_err, InterruptedError):
+                    return (None, []) if return_context else None
+                raise cancel_err
             result = json.loads(raw_bytes)
         except Exception:
+            raise
+    else:
+        _wall = 12 if _effective_model == _ARBITER_MODEL else 15
+        result = _daemon_generate(payload, wall_timeout=_wall)
+        if result is None:
+            logger.warning(f"_local_think: daemon unavailable, skipping synthesis ({_effective_model})")
             if priority == "interactive":
                 _ollama_interactive.clear()
-            raise
+            return (None, []) if return_context else None
 
     if priority == "interactive":
         _ollama_interactive.clear()
@@ -658,8 +649,8 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     _cb = _get_circuit_breaker(_ARBITER_MODEL)
     if not _cb.allow():
         return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
-    # Daemon-first: wall-clock enforced generation
-    daemon_result = _daemon_generate(payload, wall_timeout=30)
+    # Daemon-only: wall-clock enforced, no direct Ollama fallback.
+    daemon_result = _daemon_generate(payload, wall_timeout=10)
     if daemon_result:
         compressed = daemon_result.get("response", "").strip()
         if "</think>" in compressed:
@@ -670,26 +661,6 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
             if len(compressed) > max_chars:
                 return compressed[:max_chars] + f"…(+{len(compressed) - max_chars} chars)"
             return compressed
-        return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
-    # Fallback: direct Ollama call
-    body = json.dumps(payload).encode()
-    req = urllib.request.Request(_url_for(_ARBITER_MODEL), data=body, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read())
-            compressed = result.get("response", "").strip()
-            if "</think>" in compressed:
-                compressed = compressed[compressed.rfind("</think>") + len("</think>"):].strip()
-            compressed = re.sub(r'[^\x00-\x7F]+', '', compressed).strip()
-            _cb.record_success()
-            if compressed and len(compressed) < len(text):
-                logger.debug(f"compress_for_claude: {len(text)} → {len(compressed)} chars")
-                if len(compressed) > max_chars:
-                    return compressed[:max_chars] + f"…(+{len(compressed) - max_chars} chars)"
-                return compressed
-    except Exception as e:
-        _cb.record_failure(is_timeout="timed out" in str(e).lower())
-        logger.debug(f"compress_for_claude: arbiter unavailable ({e}), falling back to truncation")
     return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
 
 
