@@ -44,8 +44,8 @@ const Arbiter_1 = require("./Arbiter");
 const streamUtils_1 = require("./streamUtils");
 const chatChain_1 = require("./chatChain");
 const chatStreaming_1 = require("./chatStreaming");
-// Fire chain at 70% — well before Claude Code autocompacts at ~85-90%.
-const CHAIN_THRESHOLD_PCT = 70;
+// Fire chain at 99% — meter reaches this before autocompact kicks in.
+const CHAIN_THRESHOLD_PCT = 99;
 class ChatPanel {
     constructor(panel, projectRoot, restoreSessionId) {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };

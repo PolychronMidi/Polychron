@@ -179,19 +179,24 @@ function parseK(s) {
     return s.endsWith("k") || s.endsWith("K") ? Math.round(n * 1000) : Math.round(n);
 }
 function parseContextOutput(text) {
-    // Match "23k / 200k (11%)" — the primary /context output format
+    // Extract Free space % and Autocompact buffer % from /context output.
+    // Used% = 100 - freeSpace% - autocompact%
+    const freeMatch = text.match(/Free\s+space[^\n]*\((\d+(?:\.\d+)?)%\)/i);
+    const autoMatch = text.match(/Autocompact\s+buffer[^\n]*\((\d+(?:\.\d+)?)%\)/i);
+    if (freeMatch && autoMatch) {
+        const freePct = parseFloat(freeMatch[1]);
+        const autoPct = parseFloat(autoMatch[1]);
+        const usedPct = Math.round((100 - freePct - autoPct) * 10) / 10;
+        // Also grab total token count from "Tokens: Xk / Yk (N%)" for inputTokens
+        const tokenLine = text.match(/Tokens[:\s]+([\d.]+k?)\s*\/\s*([\d.]+k?)/i);
+        const inputTokens = tokenLine ? parseK(tokenLine[1]) : 0;
+        return { inputTokens, outputTokens: 0, usedPct };
+    }
+    // Fallback: use token line percentage directly
     const lineMatch = text.match(/Tokens[:\s]+([\d.]+k?)\s*\/\s*([\d.]+k?)\s*\((\d+(?:\.\d+)?)%\)/i);
     if (lineMatch) {
-        return {
-            inputTokens: parseK(lineMatch[1]),
-            outputTokens: 0,
-            usedPct: parseFloat(lineMatch[3]),
-        };
+        return { inputTokens: parseK(lineMatch[1]), outputTokens: 0, usedPct: parseFloat(lineMatch[3]) };
     }
-    // Fallback: bare percentage in parentheses
-    const pctMatch = text.match(/\((\d+(?:\.\d+)?)%\)/);
-    if (pctMatch)
-        return { inputTokens: 0, outputTokens: 0, usedPct: parseFloat(pctMatch[1]) };
     return undefined;
 }
 function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
