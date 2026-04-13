@@ -32,8 +32,8 @@ import {
   streamAgentMsg, streamAgentHybridMsg,
 } from "./chatStreaming";
 
-// Fire chain at 70% — well before Claude Code autocompacts at ~85-90%.
-const CHAIN_THRESHOLD_PCT = 70;
+// Fire chain at 99% — meter reaches this before autocompact kicks in.
+const CHAIN_THRESHOLD_PCT = 99;
 
 export class ChatPanel {
   public static current: ChatPanel | undefined;
