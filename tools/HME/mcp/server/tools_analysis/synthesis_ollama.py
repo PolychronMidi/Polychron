@@ -154,22 +154,24 @@ _DAEMON_PORT = int(os.environ.get("HME_OLLAMA_DAEMON_PORT", "7735"))
 _DAEMON_URL = f"http://127.0.0.1:{_DAEMON_PORT}/generate"
 
 
-def _daemon_generate(payload: dict, wall_timeout: float = 45.0) -> dict | None:
+def _daemon_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None:
     """Route generation through the daemon's /generate proxy for wall-clock enforcement.
-    Returns the Ollama response dict, or None if the daemon is unreachable."""
+    Returns the Ollama response dict, or None if the daemon is unreachable.
+    Hard-capped: urllib timeout = min(wall_timeout + 2, 15). Never blocks MCP for long."""
     import urllib.request as _ur
     payload["wall_timeout"] = wall_timeout
     body = json.dumps(payload).encode()
     req = _ur.Request(_DAEMON_URL, data=body, headers={"Content-Type": "application/json"})
+    _http_timeout = min(wall_timeout + 2, 15)
     try:
-        with _ur.urlopen(req, timeout=wall_timeout + 5) as resp:
+        with _ur.urlopen(req, timeout=_http_timeout) as resp:
             result = json.loads(resp.read())
             if "error" in result:
                 logger.warning(f"daemon /generate: {result['error']}")
                 return None
             return result
     except Exception as e:
-        logger.info(f"daemon /generate unavailable ({type(e).__name__}), falling back to direct Ollama")
+        logger.info(f"daemon /generate: {type(e).__name__} (timeout={_http_timeout}s)")
         return None
 
 # ── Intelligent model routing ──────────────────────────────────────────────

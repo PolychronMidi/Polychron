@@ -19,10 +19,18 @@ from .synthesis_config import (  # noqa: F401
 from .synthesis_ollama import (  # noqa: F401
     _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL, _LOCAL_URL, _LOCAL_CHAT_URL, _url_for,
     _ollama_interactive,
-    _ollama_background_yield, _local_think, _read_module_source,
-    _local_chat, _local_think_with_system, compress_for_claude,
+    _ollama_background_yield, _read_module_source,
+    _local_chat, _local_think_with_system,
     route_model, synthesize, dual_gpu_consensus,
 )
+# Late-binding proxies: survive hot-reload of synthesis_ollama without stale references.
+from . import synthesis_ollama as _so
+
+def _local_think(*args, **kwargs):
+    return _so._local_think(*args, **kwargs)
+
+def compress_for_claude(*args, **kwargs):
+    return _so.compress_for_claude(*args, **kwargs)
 # _last_think_failure is a mutable module-level sentinel in synthesis_ollama.
 # Must be read via module reference (not re-exported) to get the live value after mutation.
 from . import synthesis_ollama as _synthesis_ollama_mod  # noqa: F401
