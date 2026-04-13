@@ -86,5 +86,9 @@ _nexus_pending() {
   if [ "$verdict" = "FAILED" ] || [ "$verdict" = "DRIFTED" ]; then
     issues="${issues}\n  - Pipeline $verdict — needs diagnosis before stopping"
   fi
+  local commit_fail; commit_fail=$(_nexus_get COMMIT_FAILED)
+  if [ -n "$commit_fail" ]; then
+    issues="${issues}\n  - COMMIT FAILED: $commit_fail — run 'git status' and commit manually"
+  fi
   echo -e "$issues"
 }
