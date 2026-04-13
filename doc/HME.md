@@ -440,6 +440,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Redirect** TodoWrite → `mcp__HME__todo` (subtodo support); extracts tasks and formats them for the HME tool in `systemMessage` |
 | `pretooluse_hme_primer.sh` | PreToolUse | mcp__HME__ | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; clears flag so it only fires once |
 | `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | **Redirect** — deny repeated check_pipeline calls (polling anti-pattern); suggests `status(mode='pipeline')` instead |
+| `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local Ollama agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on Ollama unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |

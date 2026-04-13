@@ -68,7 +68,7 @@ def start(project_root: str) -> None:
     _active = True
     _thread = threading.Thread(target=_meta_loop, daemon=True, name="hme-meta-observer")
     _thread.start()
-    logger.info("Meta-observer started (L13 monitor-watch + L14 correlator + L15 narrator)")
+    logger.info("Meta-observer started (L13-L35+L∞∞: monitor, correlator, narrator, causal, lookahead, intent, routing, thermo, archaeology, ceiling)")
 
 
 def stop() -> None:
@@ -1229,7 +1229,7 @@ def _classify_intent() -> dict:
     try:
         transcript_path = os.path.join(
             os.environ.get("PROJECT_ROOT", ""),
-            "tools", "HME", "mcp", "log", "session-transcript.jsonl"
+            "log", "session-transcript.jsonl"
         )
         if not os.path.exists(transcript_path):
             return _current_intent
