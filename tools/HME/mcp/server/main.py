@@ -158,18 +158,22 @@ def _background_startup_chain():
     from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
     from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
 
-    init_result = ""
+    # Single daemon health gate: if daemon is ready AND all warm caches are fresh, skip steps 1+2.
+    # Avoids two redundant HTTP round-trips and two separate skip decisions.
+    _skip_ollama_steps = False
     try:
-        import urllib.request, json as _json
-        _ollama_req = urllib.request.Request("http://127.0.0.1:7735/health")
-        with urllib.request.urlopen(_ollama_req, timeout=2) as _resp:
-            _ollama_status = _json.loads(_resp.read())
-        if _ollama_status.get("status") == "ready":
-            init_result = "Models managed by Ollama daemon — skipped local init"
-            logger.info(f"startup chain [1/3]: {init_result}")
-        else:
-            raise ConnectionError("daemon not ready")
+        import urllib.request as _ureq, json as _js
+        with _ureq.urlopen(_ureq.Request("http://127.0.0.1:7735/health"), timeout=2) as _r:
+            _daemon_status = _js.loads(_r.read())
+        _wc = _daemon_status.get("warm_caches", {})
+        if _daemon_status.get("status") == "ready" and _wc and all(v.get("fresh") for v in _wc.values()):
+            logger.info("startup chain [1+2/3]: daemon ready + all caches fresh — skipping model init and priming")
+            _skip_ollama_steps = True
     except Exception:
+        pass
+
+    if not _skip_ollama_steps:
+        init_result = ""
         try:
             logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
             init_result = _init_ollama_models()
@@ -181,21 +185,9 @@ def _background_startup_chain():
             )
             init_result = "FAILED"
 
-    if "FAILED" in init_result:
-        logger.warning("startup chain [2/3]: SKIPPED — model init had failures, priming would crash")
-    else:
-        _skip_priming = False
-        try:
-            import urllib.request as _ureq, json as _js
-            with _ureq.urlopen(_ureq.Request("http://127.0.0.1:7735/health"), timeout=2) as _r:
-                _ds = _js.loads(_r.read())
-            _wc = _ds.get("warm_caches", {})
-            if _wc and all(v.get("fresh") for v in _wc.values()):
-                logger.info("startup chain [2/3]: warm caches fresh per daemon — skipping prime")
-                _skip_priming = True
-        except Exception:
-            pass
-        if not _skip_priming:
+        if "FAILED" in init_result:
+            logger.warning("startup chain [2/3]: SKIPPED — model init had failures, priming would crash")
+        else:
             try:
                 logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
                 warm_result = _prime_all_gpus()

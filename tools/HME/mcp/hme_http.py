@@ -299,28 +299,47 @@ _PID_FILE = "/tmp/hme-http-shim.pid"
 
 
 def main():
+    import errno as _errno
     parser = argparse.ArgumentParser(description="HME HTTP enrichment shim")
     parser.add_argument("--port", type=int, default=7734)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--daemon", action="store_true", help="Write PID file for lifecycle management")
     args = parser.parse_args()
 
-    if args.daemon:
-        with open(_PID_FILE, "w") as f:
-            f.write(str(os.getpid()))
+    # Always write PID file — both ChatPanel-managed and MCP-spawned instances need coordination.
+    with open(_PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
 
-    server = _ThreadingHTTPServer((args.host, args.port), _Handler)
+    try:
+        server = _ThreadingHTTPServer((args.host, args.port), _Handler)
+    except OSError as _e:
+        if _e.errno == _errno.EADDRINUSE:
+            # Port taken — check if our PID file points to a live process
+            try:
+                _existing_pid = int(open(_PID_FILE).read().strip())
+                os.kill(_existing_pid, 0)  # raises if process is dead
+                logger.warning(
+                    f"Port {args.port} already in use by pid={_existing_pid} — not starting duplicate shim"
+                )
+                sys.exit(0)
+            except (ProcessLookupError, ValueError, OSError):
+                pass  # stale PID file or dead process — proceed with error
+        raise
+
     logger.info(f"HME HTTP shim listening on {args.host}:{args.port} (pid={os.getpid()})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        if args.daemon and os.path.exists(_PID_FILE):
-            try:
-                os.unlink(_PID_FILE)
-            except OSError:
-                pass
+        # Always clean up PID file — only remove if it still points to us
+        try:
+            if os.path.exists(_PID_FILE):
+                with open(_PID_FILE) as _f:
+                    if _f.read().strip() == str(os.getpid()):
+                        os.unlink(_PID_FILE)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":
