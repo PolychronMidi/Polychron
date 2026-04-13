@@ -1,10 +1,10 @@
 ---
 name: HME
-description: Hypermeta evolutionary intelligence. 11 MCP mega-tools for semantic search, KB, architectural analysis, and evolutionary composition.
+description: Hypermeta evolutionary intelligence. 9 MCP mega-tools for semantic search, KB, architectural analysis, and evolutionary composition.
 allowed-tools: mcp__HME__*
 ---
 
-# 11 Mega-Tools
+# 9 Mega-Tools
 
 | Tool | When to Use |
 |------|-------------|
@@ -17,8 +17,6 @@ allowed-tools: mcp__HME__*
 | `trace(target)` | Signal flow: L0 cascade traces, module chains, causal chains |
 | `hme_admin(action)` | Maintenance: selftest, reload, index, clear_index, warm, introspect |
 | `beat_snapshot(beat)` | Composition state cross-section at a specific beat |
-| `warm_pre_edit_cache()` | Pre-populate before_editing caches for all src/ files |
-| `todo(action)` | Task tracking: list, add, done, undo, remove, clear |
 
 ## Mandatory Pattern
 

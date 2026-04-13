@@ -1,6 +1,6 @@
 # Agent Primer
 
-Self-evolving algorithmic composition. 482 JS files produce MIDI, rendered to WAV, analyzed by neural codecs. HME (13 MCP tools) is the evolutionary nervous system — KB, architectural analysis, enforcement hooks. They co-evolve: improving the music improves HME, improving HME improves the music.
+Self-evolving algorithmic composition. 482 JS files produce MIDI, rendered to WAV, analyzed by neural codecs. HME (11 MCP tools) is the evolutionary nervous system — KB, architectural analysis, enforcement hooks. They co-evolve: improving the music improves HME, improving HME improves the music.
 
 ## Boot
 
@@ -10,6 +10,8 @@ status(mode='resume')                   live briefing: verdict, uncommitted, ses
 ```
 
 ## Work Loop
+
+A block IS a diagnostic — read it, fix the cause, continue.
 
 ```
 read("module", mode="before")           pre-edit: KB constraints + callers + boundaries + risks
@@ -21,16 +23,30 @@ npm run main                            pipeline (run_in_background=true, ~5-10 
 learn(title='...', content='...')       persist calibration anchors after user-confirmed rounds
 ```
 
-Hooks enforce each transition. A block IS a diagnostic — read it, fix the cause, continue.
+Hooks enforce each adherence, completetion, and transition.
 
 ## Intelligence
 
+**Search & Diagnosis**
 ```
-find(query)                             universal search: auto-routes by intent (callers/grep/semantic/coupling)
-evolve()                                next evolution target: dead-ends, bypasses, gaps, antagonism bridges
+find(query)                             auto-routes: callers/grep/semantic/coupling/diagnose/blast
+trace(target)                           signal flow: L0 cascade, module chains, causal chains
+beat_snapshot(beat)                     full system state at one beat: regime, trust, notes emitted
+```
+
+**Evolution Planning**
+```
+evolve()                                next target: dead-ends, bypasses, gaps, antagonism bridges
+evolve(focus='design')                  antagonist bridge: dimension + code location + rationale
+evolve(focus='forge')                   executable lab sketch for top unsaturated bridge
+evolve(focus='curate')                  KB-worthy patterns from recent pipeline runs
 evolve(focus='invariants')              40 declarative structural checks
-evolve(focus='stress')                  35 adversarial probes across hooks, ESLint, LIFESAVER, docs
+evolve(focus='stress')                  35 adversarial probes: hooks, ESLint, LIFESAVER, docs
 evolve(focus='contradict')              KB conflict scanner
+```
+
+**Post-Run Analysis**
+```
 review(mode='full')                     digest + regime + trust in one call
 review(mode='composition')              section arc, drama finder, hotspot leaderboard
 ```

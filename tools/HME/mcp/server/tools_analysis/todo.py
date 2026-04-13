@@ -124,7 +124,6 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
     logger.info(f"LIFESAVER→TODO #{new_id}: {text[:120]}")
 
 
-@ctx.mcp.tool()
 def todo(action: str = "list", text: str = "", todo_id: int = 0,
          parent_id: int = 0, fmt: str = "text") -> str:
     """Hierarchical todo list. Main todos have sub-todos; main is done when all subs done.
