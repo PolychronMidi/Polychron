@@ -150,6 +150,28 @@ def _url_for(model: str, endpoint: str = "generate") -> str:
 _LOCAL_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/generate"
 _LOCAL_CHAT_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/chat"
 
+_DAEMON_PORT = int(os.environ.get("HME_OLLAMA_DAEMON_PORT", "7735"))
+_DAEMON_URL = f"http://127.0.0.1:{_DAEMON_PORT}/generate"
+
+
+def _daemon_generate(payload: dict, wall_timeout: float = 45.0) -> dict | None:
+    """Route generation through the daemon's /generate proxy for wall-clock enforcement.
+    Returns the Ollama response dict, or None if the daemon is unreachable."""
+    import urllib.request as _ur
+    payload["wall_timeout"] = wall_timeout
+    body = json.dumps(payload).encode()
+    req = _ur.Request(_DAEMON_URL, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with _ur.urlopen(req, timeout=wall_timeout + 5) as resp:
+            result = json.loads(resp.read())
+            if "error" in result:
+                logger.warning(f"daemon /generate: {result['error']}")
+                return None
+            return result
+    except Exception as e:
+        logger.info(f"daemon /generate unavailable ({type(e).__name__}), falling back to direct Ollama")
+        return None
+
 # ── Intelligent model routing ──────────────────────────────────────────────
 _CODE_SIGNALS = {"function", "implementation", "code", "callers", "logic",
                  "algorithm", "pattern", "method", "class", "module", "import",
@@ -336,33 +358,48 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     if context:
         payload["context"] = context
     body = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        _url_for(_effective_model), data=body,
-        headers={"Content-Type": "application/json"},
-    )
+
+    # Daemon-first: route through ollama_daemon /generate for wall-clock enforcement.
+    # Background calls skip the daemon (they use cancellable streaming with interactive preemption).
+    result = None
+    if priority != "background":
+        _wall = 45 if _effective_model == _ARBITER_MODEL else 60
+        result = _daemon_generate(payload, wall_timeout=_wall)
+
+    if result is None:
+        # Fallback: direct Ollama call (daemon down, or background priority)
+        req = urllib.request.Request(
+            _url_for(_effective_model), data=body,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            if priority == "background":
+                _ollama_background_yield()
+                raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
+                if cancel_err:
+                    if isinstance(cancel_err, InterruptedError):
+                        return (None, []) if return_context else None
+                    raise cancel_err
+            else:
+                _interact_timeout = 120 if _effective_model == _REASONING_MODEL else 60
+                _never_cancel = _threading.Event()
+                raw_bytes, _err = _cancellable_urlopen(body, _url_for(_effective_model),
+                                                       timeout=_interact_timeout,
+                                                       cancel_event=_never_cancel)
+                if _err:
+                    raise _err
+            if priority == "interactive":
+                _ollama_interactive.clear()
+            result = json.loads(raw_bytes)
+        except Exception:
+            if priority == "interactive":
+                _ollama_interactive.clear()
+            raise
+
+    if priority == "interactive":
+        _ollama_interactive.clear()
+
     try:
-        if priority == "background":
-            _ollama_background_yield()
-            raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
-            if cancel_err:
-                if isinstance(cancel_err, InterruptedError):
-                    return (None, []) if return_context else None
-                raise cancel_err
-        else:
-            # Reasoning model needs more headroom — 30B MoE cold call (prompt eval + generation)
-            # can exceed 60s when warm KV context is stale. Local model stays at 60s.
-            _interact_timeout = 120 if _effective_model == _REASONING_MODEL else 60
-            # Use streaming + wall-clock deadline so Ollama's token-by-token stream
-            # doesn't keep the socket alive past the timeout budget.
-            _never_cancel = _threading.Event()
-            raw_bytes, _err = _cancellable_urlopen(body, _url_for(_effective_model),
-                                                   timeout=_interact_timeout,
-                                                   cancel_event=_never_cancel)
-            if _err:
-                raise _err
-        if priority == "interactive":
-            _ollama_interactive.clear()
-        result = json.loads(raw_bytes)
         text = result.get("response", "").strip()
         # Strip markdown fenced thinking blocks (```thinking ... ``` or ```reasoning ... ```)
         text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
@@ -621,6 +658,20 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     _cb = _get_circuit_breaker(_ARBITER_MODEL)
     if not _cb.allow():
         return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
+    # Daemon-first: wall-clock enforced generation
+    daemon_result = _daemon_generate(payload, wall_timeout=30)
+    if daemon_result:
+        compressed = daemon_result.get("response", "").strip()
+        if "</think>" in compressed:
+            compressed = compressed[compressed.rfind("</think>") + len("</think>"):].strip()
+        compressed = re.sub(r'[^\x00-\x7F]+', '', compressed).strip()
+        _cb.record_success()
+        if compressed and len(compressed) < len(text):
+            if len(compressed) > max_chars:
+                return compressed[:max_chars] + f"…(+{len(compressed) - max_chars} chars)"
+            return compressed
+        return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
+    # Fallback: direct Ollama call
     body = json.dumps(payload).encode()
     req = urllib.request.Request(_url_for(_ARBITER_MODEL), data=body, headers={"Content-Type": "application/json"})
     try:

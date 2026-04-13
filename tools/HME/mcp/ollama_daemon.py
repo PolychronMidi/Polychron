@@ -45,6 +45,7 @@ _MODELS = [
 _model_status: dict = {}
 _status_lock = threading.Lock()
 _HEALTH_INTERVAL = 300
+_DEFAULT_WALL_TIMEOUT = 45  # hard wall-clock cap for /generate proxy
 
 _TMPFS_PATHS = ["/mnt/ollama-buffer-gpu0", "/mnt/ollama-buffer-gpu1"]
 
@@ -128,6 +129,50 @@ def _ensure_all_loaded():
     return results
 
 
+def _resolve_port(model: str) -> int:
+    for m, port, _ in _MODELS:
+        if m == model:
+            return port
+    return _PORT_GPU0
+
+
+def _generate_with_timeout(payload: dict, wall_timeout: float) -> dict:
+    """Proxy a generation request to the correct Ollama port with a hard wall-clock cap.
+
+    Runs the Ollama HTTP call in a daemon thread. If the thread doesn't finish
+    within wall_timeout seconds, returns a timeout error — the daemon thread
+    is abandoned (daemon=True ensures cleanup on process exit).
+    """
+    model = payload.get("model", _LOCAL_MODEL)
+    port = _resolve_port(model)
+    url = f"http://localhost:{port}/api/generate"
+    payload["stream"] = False
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+
+    result_box = [None, None]  # [response_dict, error_string]
+
+    def _worker():
+        try:
+            with urllib.request.urlopen(req, timeout=wall_timeout) as resp:
+                result_box[0] = json.loads(resp.read())
+        except Exception as e:
+            result_box[1] = f"{type(e).__name__}: {e}"
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    t.join(timeout=wall_timeout)
+
+    if t.is_alive():
+        logger.warning(f"/generate: wall timeout ({wall_timeout}s) for {model} on port {port}")
+        return {"error": f"wall timeout after {wall_timeout}s", "timeout": True}
+
+    if result_box[1]:
+        return {"error": result_box[1], "timeout": "timed out" in result_box[1].lower()}
+
+    return result_box[0] or {"error": "empty response"}
+
+
 def _health_loop():
     while True:
         time.sleep(_HEALTH_INTERVAL)
@@ -177,6 +222,16 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/ensure-loaded":
             results = _ensure_all_loaded()
             self._send_json(200, {"results": results})
+        elif self.path == "/generate":
+            if "model" not in body:
+                self._send_json(400, {"error": "model required"})
+                return
+            wall_timeout = float(body.pop("wall_timeout", _DEFAULT_WALL_TIMEOUT))
+            result = _generate_with_timeout(body, wall_timeout)
+            if "error" in result:
+                self._send_json(504 if result.get("timeout") else 500, result)
+            else:
+                self._send_json(200, result)
         else:
             self._send_json(404, {"error": "not found"})
 
