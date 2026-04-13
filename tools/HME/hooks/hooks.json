@@ -32,6 +32,10 @@
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_grep.sh", "timeout": 10}]
       },
       {
+        "matcher": "Glob",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_glob.sh", "timeout": 10}]
+      },
+      {
         "matcher": "Write",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_write.sh", "timeout": 10}]
       },
