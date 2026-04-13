@@ -244,8 +244,18 @@ export function streamClaudePty(
   };
 
   const _buildPtyUsage = (): TokenUsage | undefined => {
-    // Primary: direct token counts written by Stop hook to /tmp/claude-context.json.
-    // These are the actual API usage numbers (input = cached + non-cached).
+    // Re-read context file — Stop hook writes real API token counts here
+    // BEFORE the `> ` prompt appears, so by scheduleDone time it's always fresh.
+    try {
+      const ctxData = JSON.parse(readFileSync(ctxFile, "utf8"));
+      if (typeof ctxData.input_tokens === "number") {
+        ctxInputTokens = ctxData.input_tokens;
+        ctxOutputTokens = ctxData.output_tokens ?? 0;
+      }
+      if (typeof ctxData.remaining_pct === "number") {
+        ctxRemainingPct = ctxData.remaining_pct;
+      }
+    } catch {}
     if (ctxInputTokens != null) {
       return { inputTokens: ctxInputTokens, outputTokens: ctxOutputTokens ?? 0 };
     }

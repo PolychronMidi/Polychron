@@ -73,4 +73,5 @@ else
   echo "{\"ts\":\"$TS\",\"event\":\"pre_compact\",\"used_pct\":null,\"remaining_pct\":null,\"ctx_size\":null,\"meter_age_s\":null,\"note\":\"no_statusline_data\"}" >> "$LOG"
 fi
 
+echo "[PreCompact] Context compaction starting — chain preemption did not fire" >&2
 exit 0

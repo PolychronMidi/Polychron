@@ -46,6 +46,6 @@ fi
 echo '{"used_pct":5,"remaining_pct":95,"size":200000,"input_tokens":10000,"output_tokens":0}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
 
 # Suggest resume after compaction — context was just lost
-echo "Context compacted. Use mcp__HME__status(mode='resume') for session state recovery." >&2
+echo "[PostCompact] Context compacted — chain preemption failed. Use status(mode='resume') for recovery." >&2
 
 exit 0

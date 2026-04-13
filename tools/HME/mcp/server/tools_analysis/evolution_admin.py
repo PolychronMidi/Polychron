@@ -63,7 +63,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
         def _bg_pre_edit():
             logger.info("warm: pre-edit cache priming starting (all src/ files)")
             try:
-                from .workflow import warm_pre_edit_cache as _warm_cache
+                from .workflow import _warm_pre_edit_cache_sync as _warm_cache
                 _warm_cache()
                 logger.info("warm: pre-edit cache priming complete")
             except Exception as e:
@@ -78,8 +78,10 @@ def hme_admin(action: str = "selftest", modules: str = "",
         parts.append(hme_introspect())
     if action == "validate":
         parts.append(_hme_validate_golden())
+    if action == "fix_antipattern":
+        parts.append(fix_antipattern(antipattern, hook_target))
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', or 'both'."
     return "\n\n".join(parts)
 
 
@@ -194,7 +196,6 @@ def hme_inspect(mode: str = "both") -> str:
     return "\n\n".join(parts)
 
 
-@ctx.mcp.tool()
 def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> str:
     """Permanently enforce a rule against a stubborn antipattern by adding detection logic
     to the specified hook script."""

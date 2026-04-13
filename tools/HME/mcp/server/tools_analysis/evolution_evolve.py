@@ -26,9 +26,7 @@ def evolve(focus: str = "all") -> str:
     focus='seed': auto-generate starter KB entries for high-dependency uncovered modules.
     focus='design': bridge design synthesis — proposes specific dimension, direction,
     code location, and musical rationale for top unsaturated antagonist pairs.
-    focus='preflight': pre-flight impact prediction — analyzes current uncommitted
-    changes against historical run patterns to predict regression risk.
-    focus='curate': living memory curation — detects KB-worthy patterns from recent
+focus='curate': living memory curation — detects KB-worthy patterns from recent
     pipeline runs (trust gaps, feature extremes, verdict transitions) and proposes entries.
     focus='forge': verified skill recipes — generates lab sketches for top unsaturated
     antagonist bridges with executable monkey-patch code, ready to test.
@@ -71,9 +69,6 @@ def evolve(focus: str = "all") -> str:
     if focus == "design":
         from .coupling_bridges import design_bridges
         return design_bridges()
-
-    if focus == "preflight":
-        return _preflight_prediction()
 
     if focus == "curate":
         return _auto_curate()
@@ -197,141 +192,6 @@ def _synthesis() -> str:
     lines.append("  2. Bridge the top unsaturated antagonist pair (maximum musical texture impact)")
     lines.append("  3. Add coupling to uncoupled high-trust modules (leverages existing quality)")
     return "\n".join(lines)
-
-
-def _preflight_prediction() -> str:
-    """Predict likely impact of current uncommitted changes on pipeline verdict.
-
-    Analyzes changed files by subsystem, correlates with historical run-history
-    feature trends, and flags high-risk modules based on coupling density.
-    """
-    import json
-    import subprocess
-    from collections import Counter
-
-    try:
-        r = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD"],
-            capture_output=True, text=True, timeout=5, cwd=ctx.PROJECT_ROOT,
-        )
-        changed = [f.strip() for f in r.stdout.strip().splitlines() if f.strip()]
-    except Exception:
-        return "## Pre-flight: git diff unavailable"
-
-    if not changed:
-        return "## Pre-flight: no uncommitted changes"
-
-    subsystems: dict[str, list[str]] = {}
-    for f in changed:
-        parts = f.split("/")
-        if len(parts) >= 2 and parts[0] == "src":
-            subsystems.setdefault(parts[1], []).append(f)
-        elif parts[0] == "tools":
-            subsystems.setdefault("tooling", []).append(f)
-        else:
-            subsystems.setdefault("other", []).append(f)
-
-    out = ["# Pre-flight Impact Prediction\n"]
-    out.append(f"Changed: {len(changed)} files across {len(subsystems)} subsystem(s)")
-    for sub, files in sorted(subsystems.items(), key=lambda x: -len(x[1])):
-        out.append(f"  {sub}: {', '.join(os.path.basename(f) for f in files[:5])}")
-    out.append("")
-
-    # Load run history for trend analysis
-    history_dir = os.path.join(ctx.PROJECT_ROOT, "metrics", "run-history")
-    snapshots = []
-    if os.path.isdir(history_dir):
-        for fname in sorted(os.listdir(history_dir)):
-            if fname.endswith(".json"):
-                try:
-                    with open(os.path.join(history_dir, fname), encoding="utf-8") as f:
-                        snapshots.append(json.load(f))
-                except Exception:
-                    pass
-
-    # Verdict distribution
-    verdicts = [s.get("verdict") for s in snapshots if s.get("verdict")]
-    if verdicts:
-        vc = Counter(verdicts)
-        out.append(f"## Historical Verdicts (n={len(verdicts)})")
-        for v, c in vc.most_common():
-            out.append(f"  {v}: {c} ({c*100//len(verdicts)}%)")
-        out.append("")
-
-    # Feature trends in last 5 runs
-    if len(snapshots) >= 2:
-        recent = snapshots[-5:]
-        out.append(f"## Feature Trends (last {len(recent)} runs)")
-        trend_keys = [
-            "coherentShare", "exploringShare", "evolvingShare",
-            "densityMean", "pitchEntropy", "healthScore",
-            "exceedanceRate", "trustConvergence",
-        ]
-        for key in trend_keys:
-            vals = [s.get("features", {}).get(key) for s in recent
-                    if s.get("features", {}).get(key) is not None]
-            if len(vals) >= 2:
-                delta = vals[-1] - vals[0]
-                arrow = "+" if delta > 0 else ""
-                direction = "trending up" if delta > 0.02 else ("trending down" if delta < -0.02 else "stable")
-                out.append(f"  {key:<22} {vals[-1]:.3f} ({arrow}{delta:.3f}) {direction}")
-        out.append("")
-
-    # Risk assessment by module coupling density
-    risks = []
-    src_changed = [f for f in changed if f.startswith("src/") and f.endswith(".js")]
-    if src_changed:
-        try:
-            from .coupling_bridges import get_top_bridges
-            bridges = get_top_bridges(n=20, threshold=-0.20)
-            bridge_modules = set()
-            for b in bridges:
-                bridge_modules.add(b["pair_a"])
-                bridge_modules.add(b["pair_b"])
-                from .coupling_data import _TRUST_FILE_ALIASES
-                bridge_modules.add(_TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"]))
-                bridge_modules.add(_TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"]))
-
-            for f in src_changed:
-                basename = os.path.basename(f).replace(".js", "")
-                if basename in bridge_modules:
-                    n_bridges = sum(
-                        1 for b in bridges
-                        if basename in (b["pair_a"], b["pair_b"],
-                                        _TRUST_FILE_ALIASES.get(b["pair_a"], ""),
-                                        _TRUST_FILE_ALIASES.get(b["pair_b"], ""))
-                    )
-                    bridged_fields = set()
-                    for b in bridges:
-                        if basename in (b["pair_a"], b["pair_b"],
-                                        _TRUST_FILE_ALIASES.get(b["pair_a"], ""),
-                                        _TRUST_FILE_ALIASES.get(b["pair_b"], "")):
-                            bridged_fields.update(b.get("already_bridged", []))
-                    risk_level = "HIGH" if n_bridges >= 3 or len(bridged_fields) >= 2 else "MED"
-                    risks.append(
-                        f"{risk_level}: {basename} — {n_bridges} antagonist pair(s), "
-                        f"bridged on [{', '.join(sorted(bridged_fields)) or 'none'}]"
-                    )
-                elif "/crossLayer/" in f:
-                    risks.append(f"MED: {basename} — cross-layer module (check boundary rules)")
-                elif "/conductor/" in f:
-                    risks.append(f"LOW-MED: {basename} — conductor module (may shift regime balance)")
-        except Exception:
-            for f in src_changed:
-                basename = os.path.basename(f).replace(".js", "")
-                if "/crossLayer/" in f:
-                    risks.append(f"MED: {basename} — cross-layer module")
-
-    tooling_only = all(not f.startswith("src/") for f in changed)
-    if tooling_only:
-        risks.append("NONE: tooling-only changes — no composition impact expected")
-
-    if risks:
-        out.append("## Risk Assessment")
-        for r in risks:
-            out.append(f"  {r}")
-
-    return "\n".join(out)
 
 
 def _auto_curate() -> str:
