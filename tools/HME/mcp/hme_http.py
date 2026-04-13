@@ -206,6 +206,15 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json(200, {"narrative": _latest_narrative})
         elif self.path == "/rag/lib-list":
             self._send_json(200, {"keys": list(_lib_engines.keys())})
+        elif self.path == "/capabilities":
+            self._send_json(200, {
+                "endpoints": [
+                    "/rag", "/enrich", "/enrich_prompt", "/validate", "/audit",
+                    "/reindex", "/transcript", "/health", "/narrative",
+                    "/rag/lib-list", "/capabilities",
+                ],
+                "rag_ready": _engine_ready.is_set() and _project_engine is not None,
+            })
         else:
             self._send_json(404, {"error": "not found"})
 
