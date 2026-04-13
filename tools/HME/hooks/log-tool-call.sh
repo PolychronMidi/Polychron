@@ -44,8 +44,9 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   # LIFESAVER: scan ALL HME tool output for FAIL/FAILED — log to hme-errors.log for stop.sh pickup.
   # Use word-boundary match (\bFAIL(ED)?\b) to avoid false positives from prose words like
   # "failure", "failing", "fallback", "default" that contain "fail" as a substring.
-  # Exclude lines containing PASS (test passed) or "fail-fast" (project term, not a failure).
-  FAILS=$(echo "$TOOL_RESULT" | grep -iE '\bFAIL(ED)?\b' | grep -v 'PASS' | grep -vi 'fail-fast' 2>/dev/null)
+  # Exclude lines containing PASS (test passed), "fail-fast" (project term), or prose infinitive/modal
+  # constructions ("fail to", "may fail", "might fail", "could fail") from Edit Risks narrative text.
+  FAILS=$(echo "$TOOL_RESULT" | grep -iE '\bFAIL(ED)?\b' | grep -v 'PASS' | grep -vi 'fail-fast\|fail to\|may fail\|might fail\|could fail' 2>/dev/null)
   if [[ -n "$FAILS" ]]; then
     PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
     ERROR_LOG="$PROJECT/log/hme-errors.log"
