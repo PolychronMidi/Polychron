@@ -514,12 +514,23 @@ def warm_pre_edit_cache(max_files: int = 200, synthesis_hot: int = 30) -> str:
     return f"Cache warming started in background (max_files={max_files}, synthesis_hot={synthesis_hot}). Results in hme.log."
 
 
-def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30) -> str:
-    """Synchronous cache warming — called from background thread."""
+def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, target_hints: list = None) -> str:
+    """Synchronous cache warming — called from background thread.
+
+    target_hints: optional list of file paths or module names to prioritize at the
+    front of the warming queue (Layer 11 intent propagation). Matching files are
+    moved to the top of js_files before the max_files slice is applied.
+    """
     import glob as _glob
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
     js_files = _glob.glob(os.path.join(src_root, "**", "*.js"), recursive=True)
-    js_files = [f for f in js_files if not f.endswith("index.js")][:max_files]
+    js_files = [f for f in js_files if not f.endswith("index.js")]
+    if target_hints:
+        def _hint_priority(fpath):
+            name = os.path.basename(fpath).replace(".js", "")
+            return any(h in fpath or h in name for h in target_hints)
+        js_files = sorted(js_files, key=_hint_priority, reverse=True)
+    js_files = js_files[:max_files]
     _caller_cache = _get_caller_cache()
     _kb_cache = _get_kb_hits_cache()
     _be_cache = _get_before_editing_cache()

@@ -811,17 +811,23 @@ def _adversarial_stress() -> str:
     # Probe 11: KB redundancy detection fires on near-duplicates
     try:
         engine = ctx.project_engine
-        if engine.knowledge_table is not None:
+        if hasattr(engine, 'knowledge_table') and engine.knowledge_table is not None:
+            # Local mode: direct vector table access
             test_vec = engine.model.encode("test contradiction detection probe").tolist()
             hits = engine.knowledge_table.search(test_vec).limit(1).to_list()
             if hits:
                 top_sim = 1.0 / (1.0 + hits[0].get("_distance", 999))
-                results.append(("KB: similarity search operational", True,
+                results.append(("KB: similarity search", True,
                                 f"top hit sim={top_sim:.3f}"))
             else:
-                results.append(("KB: similarity search operational", True, "no hits (empty KB)"))
+                results.append(("KB: similarity search", True, "no hits (empty KB)"))
+        elif hasattr(engine, 'search_knowledge'):
+            # Proxy mode: verify via HTTP API (routes through shim→engine→vector-search)
+            proxy_hits = engine.search_knowledge("contradiction detection probe", top_k=1)
+            results.append(("KB: similarity search", True,
+                            f"proxy search OK ({len(proxy_hits)} result(s))"))
         else:
-            results.append(("KB: knowledge table exists", False, "table not initialized"))
+            results.append(("KB: similarity search", False, "engine has no search capability"))
     except Exception as e:
         results.append(("KB: similarity search", False, str(e)))
 

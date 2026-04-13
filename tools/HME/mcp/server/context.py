@@ -1,9 +1,17 @@
 """Shared server state — engines, model, config, MCP app instance.
 
 Initialized by main.py at startup. Tool modules import from here.
+
+Self-coherence stack wired here:
+  Layer 0 — system_phase: lifecycle state machine
+  Layer 2 — operational_state: persistent operational memory
+  Layer 4 — failure_genealogy: causal failure trees (replaces flat _critical_failures list)
+  Layer 6 — self_narration: rich status narrative prepended to tool responses
+  Layer 10 — resonance_detector: cascade detection (called from register_critical_failure)
 """
 import os
 import time
+import uuid
 import logging
 import threading
 import functools
@@ -11,67 +19,85 @@ from mcp.server.fastmcp import FastMCP
 
 logger = logging.getLogger("HME")
 
-
-# ── LIFESAVER critical failure accumulator ────────────────────────────────
-# Background threads (warm priming, model init, synthesis) register failures
-# here. The _LoggingMCP choke point drains them into the NEXT tool response
-# so they pop to Claude's attention immediately — never buried in a log file.
-_critical_failures: list[dict] = []
-_critical_failures_lock = threading.Lock()
+# ── Cross-component session identity (Layer 1) ────────────────────────────────
+# Unique per MCP server process lifetime. Passed as X-HME-Session header on all
+# shim requests so logs across MCP server, shim, and daemon can be correlated.
+SESSION_ID: str = str(uuid.uuid4())[:12]
 
 
-def register_critical_failure(source: str, error: str, severity: str = "CRITICAL"):
+# ── LIFESAVER: register_critical_failure → failure_genealogy (Layer 4) ────────
+
+def register_critical_failure(
+    source: str,
+    error: str,
+    severity: str = "CRITICAL",
+    caused_by: str | None = None,
+) -> str:
     """Register a failure that MUST surface in the next tool response.
 
-    Called from background threads when CUDA errors, 500s, OOM kills, or
-    repeated warm priming failures occur. Lifesaver philosophy: errors pop
-    to the top of attention immediately. Also appends to the HME todo list.
+    Returns the failure_id so callers can link downstream failures with caused_by.
+    Calls resonance_detector to detect cascade patterns (Layer 10).
+    Also appends to the HME todo list.
     """
-    with _critical_failures_lock:
-        _critical_failures.append({
-            "ts": time.time(),
-            "source": source,
-            "error": error,
-            "severity": severity,
-        })
-    logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}")
+    try:
+        from server import failure_genealogy as fg
+        fid = fg.record_failure(source, error, severity, caused_by)
+    except Exception:
+        fid = "?"
+    logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}" + (f" (#{fid})" if fid != "?" else ""))
+    # Layer 10: notify resonance detector
+    try:
+        from server import resonance_detector as rd
+        rd.record_failure_event(source)
+    except Exception:
+        pass
+    # Layer 2: update operational state on shim crash
+    if "shim" in source.lower() and severity == "CRITICAL":
+        try:
+            from server import operational_state as ops
+            ops.record_shim_crash()
+        except Exception:
+            pass
     try:
         from server.tools_analysis.todo import register_todo_from_lifesaver
         register_todo_from_lifesaver(source, error, severity)
     except Exception as _te:
         logger.error(f"LIFESAVER todo append failed (failure still queued): {_te}")
+    return fid
 
 
 def drain_critical_failures() -> str:
-    """Drain all queued failures into a LIFESAVER banner string.
+    """Drain all queued failures into a LIFESAVER banner string (causal tree format).
 
-    Returns empty string if no failures. Called by _LoggingMCP on every
-    tool response — the only way background failures reach Claude.
+    Returns empty string if no failures. Called by _LoggingMCP on every tool response.
+    Failures are grouped into causal trees (Layer 4) and deduplicated (×N counts).
     """
-    with _critical_failures_lock:
-        if not _critical_failures:
-            return ""
-        failures = list(_critical_failures)
-        _critical_failures.clear()
-    lines = [
-        "",
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-        "  LIFESAVER: CRITICAL FAILURES DETECTED — ADDRESS NOW",
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-    ]
-    for f in failures:
-        lines.append(f"  [{f['severity']}] {f['source']}: {f['error']}")
-    lines.append("")
-    lines.append("  These failures occurred in background threads and were")
-    lines.append("  queued for your attention. Diagnose and fix before")
-    lines.append("  proceeding with other work.")
-    lines.append("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    lines.append("")
-    return "\n".join(lines)
+    try:
+        from server import failure_genealogy as fg
+        trees = fg.drain_as_causal_trees()
+        return fg.format_tree_as_banner(trees)
+    except Exception:
+        return ""
+
+
+def is_degraded() -> bool:
+    """Return True if system phase is degraded or worse (Layer 0)."""
+    try:
+        from server import system_phase as sp
+        return sp.is_degraded_or_worse()
+    except Exception:
+        # Fallback to old proxy-state check if phase module not yet loaded
+        try:
+            from server.rag_proxy import RAGProxy
+            if isinstance(project_engine, RAGProxy):
+                return bool(project_engine._connection_failed or project_engine._consecutive_404s > 0)
+        except Exception:
+            pass
+    return False
 
 
 class _LoggingMCP:
-    """Wraps FastMCP to add request/response logging on every tool call."""
+    """Wraps FastMCP to add request/response logging and self-coherence banners on every tool call."""
 
     def __init__(self, inner: FastMCP):
         self._inner = inner
@@ -96,10 +122,26 @@ class _LoggingMCP:
                     if result is None:
                         logger.error(f"ERR  {name} returned None — tool must return a string")
                         result = f"Error: {name} returned None (bug in tool implementation)"
-                    # LIFESAVER: drain queued background failures into this response
+                    # Layer 2: track tool response time EMA (feeds Layer 7 predictive health)
+                    try:
+                        from server import operational_state as ops
+                        ops.update_ema("tool_response_ms_ema", elapsed * 1000)
+                    except Exception:
+                        pass
+                    # Layer 4: LIFESAVER drain with causal tree format
                     lifesaver_banner = drain_critical_failures()
                     if lifesaver_banner:
                         result = lifesaver_banner + str(result)
+                    # Layer 6: rich self-narration replaces bare [DEGRADED] flag
+                    try:
+                        from server import self_narration as sn
+                        narration = sn.build_status_narrative()
+                        if narration:
+                            result = narration + str(result)
+                    except Exception:
+                        # Fallback: bare degraded flag if narration fails
+                        if is_degraded():
+                            result = "[DEGRADED] RAG proxy unhealthy — shim may be restarting.\n" + str(result)
                     result_str = str(result)[:200]
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {result_str}")
                     return result
@@ -136,6 +178,7 @@ _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None
 _recovery_last_attempt: float = 0.0  # epoch time of last recovery attempt; 0 = never tried
 _RECOVERY_COOLDOWN = 300.0  # seconds before allowing another recovery attempt
+_post_recovery_hook = None  # callable set by main.py; triggered after successful in-process recovery
 
 
 def _try_recover_from_proxy_error() -> bool:
@@ -156,23 +199,55 @@ def _try_recover_from_proxy_error() -> bool:
     if now - _recovery_last_attempt < _RECOVERY_COOLDOWN:
         return False
     _recovery_last_attempt = now
+
+    # Layer 0: transition to RECOVERING
+    try:
+        from server import system_phase as sp
+        sp.set_phase(sp.SystemPhase.RECOVERING, "in-process recovery attempt")
+    except Exception:
+        pass
+
     try:
         from server.rag_proxy import RAGProxy, check_shim_rag_capable, get_lib_engines
         if not check_shim_rag_capable():
             logger.warning("HME recovery: shim not healthy or lacks /rag — cannot recover")
+            try:
+                from server import system_phase as sp
+                from server import operational_state as ops
+                sp.set_phase(sp.SystemPhase.DEGRADED, "shim not rag-capable")
+                ops.record_recovery(False)
+            except Exception:
+                pass
             return False
         new_project = RAGProxy("project")
         new_global = RAGProxy("global")
         # Self-test: verify proxies actually work before committing
         test_result = new_project.list_knowledge()
-        if test_result is None:
-            logger.warning("HME recovery: proxy self-test failed (list_knowledge returned None) — aborting")
+        if not isinstance(test_result, list):
+            logger.warning(f"HME recovery: proxy self-test failed (list_knowledge returned {type(test_result).__name__}) — aborting")
+            try:
+                from server import system_phase as sp
+                from server import operational_state as ops
+                sp.set_phase(sp.SystemPhase.DEGRADED, "proxy self-test failed")
+                ops.record_recovery(False)
+            except Exception:
+                pass
             return False
         project_engine = new_project
         global_engine = new_global
         shared_model = project_engine.model
         lib_engines = get_lib_engines()
         _startup_error = None
+
+        # Layer 0 + 2: mark READY, record success
+        try:
+            from server import system_phase as sp
+            from server import operational_state as ops
+            sp.set_phase(sp.SystemPhase.READY, "proxy self-test passed")
+            ops.record_recovery(True)
+        except Exception:
+            pass
+
         logger.info(f"HME: auto-recovered — shim healthy + /rag verified ({len(test_result)} KB entries)")
         register_critical_failure(
             "startup_recovery",
@@ -180,9 +255,22 @@ def _try_recover_from_proxy_error() -> bool:
             "Root cause: shim was running without /rag endpoint (old version).",
             severity="WARNING",
         )
+        if _post_recovery_hook is not None:
+            try:
+                _post_recovery_hook()
+                logger.info("HME: post-recovery startup chain triggered")
+            except Exception as _hk:
+                logger.warning(f"HME: post-recovery hook failed: {_hk}")
         return True
     except Exception as e:
         logger.warning(f"HME: recovery attempt failed: {e}")
+        try:
+            from server import system_phase as sp
+            from server import operational_state as ops
+            sp.set_phase(sp.SystemPhase.DEGRADED, f"recovery exception: {type(e).__name__}")
+            ops.record_recovery(False)
+        except Exception:
+            pass
         return False
 
 
@@ -191,7 +279,6 @@ def _fmt_startup_error(err: Exception) -> str:
     import traceback
     msg = str(err)
     etype = type(err).__name__
-    # Get the last frame from the original traceback for location info
     tb_info = ""
     if err.__traceback__:
         tb_lines = traceback.format_tb(err.__traceback__)
