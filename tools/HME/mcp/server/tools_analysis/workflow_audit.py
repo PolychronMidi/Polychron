@@ -334,20 +334,13 @@ def what_did_i_forget(changed_files: str) -> str:
         "- List every concrete missed bug you find. No bullet limit.\n"
         "- If truly nothing concrete remains, say 'Nothing missed.'\n"
     )
-    # Both Ollama calls (synthesis + compression) run inside a single daemon thread
-    # with a hard wall-clock cap. Prevents MCP connection timeout when Ollama is slow.
-    import threading as _thr
-    _syn_result = [None]
-    def _syn_worker():
-        raw = _local_think("/no_think\n" + user_text, max_tokens=400,
-                           model=_REASONING_MODEL, system=_THINK_SYSTEM)
-        if raw:
-            from .synthesis_ollama import compress_for_claude
-            _syn_result[0] = compress_for_claude(raw, max_chars=1200, hint="post-change audit missed bugs")
-    _syn_thread = _thr.Thread(target=_syn_worker, daemon=True)
-    _syn_thread.start()
-    _syn_thread.join(timeout=45)
-    synthesis = _syn_result[0]
+    # Wall-clock timeout enforced at the Ollama daemon level (ollama_daemon.py /generate).
+    # No caller-side threading needed.
+    synthesis = _local_think("/no_think\n" + user_text, max_tokens=400,
+                             model=_REASONING_MODEL, system=_THINK_SYSTEM)
+    if synthesis:
+        from .synthesis_ollama import compress_for_claude
+        synthesis = compress_for_claude(synthesis, max_chars=1200, hint="post-change audit missed bugs")
     if synthesis:
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
         parts.append(synthesis)
