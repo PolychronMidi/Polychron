@@ -352,10 +352,10 @@ def what_did_i_forget(changed_files: str) -> str:
 
     _t = _synth_threading.Thread(target=_do_synthesis, daemon=True)
     _t.start()
-    _t.join(timeout=5)
+    _t.join(timeout=12)
     synthesis = _synth_box[0] if not _t.is_alive() else None
     if _t.is_alive():
-        logger.warning("what_did_i_forget: synthesis hard-killed at 5s wall cap")
+        logger.warning("what_did_i_forget: synthesis hard-killed at 12s wall cap")
 
     if synthesis:
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
@@ -489,10 +489,10 @@ def diagnose_error(error_text: str) -> str:
 
     _dt = _diag_threading.Thread(target=_do_diag_synthesis, daemon=True)
     _dt.start()
-    _dt.join(timeout=5)
+    _dt.join(timeout=12)
     synthesis = _diag_box[0] if not _dt.is_alive() else None
     if _dt.is_alive():
-        logger.warning("diagnose_error: synthesis hard-killed at 5s wall cap")
+        logger.warning("diagnose_error: synthesis hard-killed at 12s wall cap")
 
     if synthesis:
         parts.append(f"\n## Fix Synthesis *(adaptive)*")
