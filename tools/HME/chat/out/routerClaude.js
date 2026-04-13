@@ -162,6 +162,26 @@ const PTY_DONE_PATTERNS = [
     /\nHuman:\s*$/,
     /\[H\]/,
 ];
+function parseContextOutput(text) {
+    const stripped = text.replace(/,/g, "");
+    const pctMatch = stripped.match(/(\d+(?:\.\d+)?)\s*%/);
+    const tokenMatch = stripped.match(/(\d+)\s*\/\s*(\d+)/);
+    if (!pctMatch && !tokenMatch)
+        return undefined;
+    let usedPct;
+    let inputTokens = 0;
+    if (pctMatch)
+        usedPct = parseFloat(pctMatch[1]);
+    if (tokenMatch) {
+        inputTokens = parseInt(tokenMatch[1]);
+        const total = parseInt(tokenMatch[2]);
+        if (usedPct == null && total > 0)
+            usedPct = Math.round(inputTokens / total * 100);
+    }
+    if (usedPct == null)
+        return undefined;
+    return { inputTokens, outputTokens: 0, usedPct };
+}
 function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
     const args = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
     if (sessionId)
@@ -197,6 +217,8 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     let sessionIdSent = false;
     let initBuf = "";
     let doneTimer = null;
+    let contextQueryActive = false;
+    let contextQueryBuf = "";
     const PTY_INACTIVITY_MS = 15000;
     let ptyInactivityTimer = null;
     const resetPtyInactivity = () => {
@@ -230,23 +252,30 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         catch { }
         return undefined;
     };
-    const scheduleDone = () => {
+    const finalizeTurn = () => {
+        if (!turnDone) {
+            turnDone = true;
+            onDone(parseContextOutput(contextQueryBuf) ?? _buildPtyUsage());
+            try {
+                proc.kill();
+            }
+            catch { }
+        }
+    };
+    const scheduleContextQuery = () => {
         if (doneTimer)
             clearTimeout(doneTimer);
         if (ptyInactivityTimer) {
             clearTimeout(ptyInactivityTimer);
             ptyInactivityTimer = null;
         }
-        doneTimer = setTimeout(() => {
-            if (!turnDone) {
-                turnDone = true;
-                onDone(_buildPtyUsage());
-                try {
-                    proc.kill();
-                }
-                catch { }
-            }
-        }, 800);
+        contextQueryActive = true;
+        contextQueryBuf = "";
+        try {
+            proc.write("/context\r");
+        }
+        catch { }
+        doneTimer = setTimeout(finalizeTurn, 1500);
     };
     proc.onData((raw) => {
         const text = stripAnsi(raw);
@@ -260,6 +289,16 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
                 sentMessage = true;
                 proc.write(message.replace(/\r?\n/g, " ") + "\r");
                 resetPtyInactivity();
+            }
+            return;
+        }
+        if (contextQueryActive) {
+            contextQueryBuf += text;
+            // New prompt means /context finished — fire immediately if we have data
+            if (PTY_DONE_PATTERNS.some((p) => p.test(text)) && parseContextOutput(contextQueryBuf)) {
+                if (doneTimer)
+                    clearTimeout(doneTimer);
+                finalizeTurn();
             }
             return;
         }
@@ -282,7 +321,7 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
             onChunk(text, "text");
         }
         if (PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-400)))) {
-            scheduleDone();
+            scheduleContextQuery();
         }
     });
     proc.onExit(({ exitCode }) => {
@@ -295,16 +334,16 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         setTimeout(() => {
             if (turnDone)
                 return;
-            turnDone = true;
             if (doneTimer)
                 clearTimeout(doneTimer);
             if (exitCode !== 0) {
+                turnDone = true;
                 onError(`Claude CLI exited with code ${exitCode}`);
             }
             else {
-                onDone(_buildPtyUsage());
+                finalizeTurn();
             }
-        }, 1500);
+        }, 200);
     });
     const killed = { v: false };
     return () => {
