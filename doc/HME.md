@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **7 MCP tools** provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
+HME is five layers integrated into one executive. **6 MCP tools** provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 7 tools: evolve / review / read / learn / status / trace / hme_admin |
+| **MCP Server** | `tools/HME/` | 6 tools: evolve / review / read / learn / trace / hme_admin |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `hooks/` (22 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -53,12 +53,12 @@ tools/HME/               The single source of truth
       helpers.py                        Budget limits, formatters; loads project-rules.json
       tools_analysis/                   All 13 registered tools live here:
         evolution_evolve.py               evolve — evolution planning hub
-        search_unified.py                 find — universal search + analysis
         review_unified.py                 review — post-pipeline review hub
         read_unified.py                   read — smart code reader
         learn_unified.py                  learn — unified KB interface
-        status_unified.py                 status — system health hub
         trace_unified.py                  trace — signal flow tracing
+        status_unified.py                 (automated — surfaced by lifecycle hooks)
+        search_unified.py                 (automated — search routing via passthru)
         evolution_admin.py                hme_admin + fix_antipattern
         runtime.py                        beat_snapshot
         workflow.py                       before_editing (cache warming automated at startup)
@@ -126,7 +126,7 @@ HME is the cognitive backbone of every Evolver phase. The Evolver doesn't just *
 
 | Phase | HME Role | Tools |
 |-------|----------|-------|
-| **1. Perceive** | Surface patterns from metrics, KB context on changed files | `status()`, `learn(query='...')` |
+| **1. Perceive** | Surface patterns from metrics, KB context on changed files | `learn(query='...')` |
 | **2. Diagnose** | Trace causal chains with KB constraints, find anti-patterns | `find(query, mode='callers'/'boundary'/'think'/'diagnose')` |
 | **3. Evolve** | Pre-edit briefing, constraint checking, boundary enforcement | `read(target, mode='before')`, `learn(query='module')` |
 | **4. Run** | Pipeline executes; file watcher auto-reindexes (5min cooldown) | (automatic) |
@@ -236,7 +236,6 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Understand a module deeply | `read("moduleName", mode="story")` |
 | Preview rename impact | `find("oldName→newName", mode="rename")` |
 | What should I work on next? | `evolve()` |
-| Is the pipeline OK? | `status()` or `status(mode='pipeline')` |
 | Post-pipeline review | `review()` or `review(mode='full')` |
 | Trace a signal through the system | `trace("emergentRhythm")` |
 | Search the KB | `learn(query='coupling constraints')` |
@@ -244,9 +243,9 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Enrich a prompt with project context | `enrich_prompt(prompt='...', frame='focus on...')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## The 7 Tools — Complete Reference
+## The 6 Tools — Complete Reference
 
-All capabilities route through these 7 tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
+All capabilities route through these 6 tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
 
 ### 1. `evolve(focus)` — "What should I work on next?"
 
@@ -262,27 +261,7 @@ All capabilities route through these 7 tools. Internal functions (search_code, f
 | `"stress"` | Adversarial self-play — 35 enforcement probes across LIFESAVER, hooks, ESLint, feedback graph, selftest |
 | `"invariants"` | Declarative invariant battery — loads checks from `config/invariants.json`. 10 check types, extensible without Python changes |
 
-### 2. `find(query, path, mode)` — Universal search + analysis
-
-| mode | What it does |
-|------|-------------|
-| `"auto"` (default) | Detects intent: "callers of X" → callers, regex → grep, "X should use Y" → boundary, else → semantic |
-| `"semantic"` | Natural language code search with KB enrichment |
-| `"grep"` | Regex search (replaces Bash grep — adds KB cross-references) |
-| `"callers"` | All call sites of a symbol (supports path filtering) |
-| `"boundary"` | Find anti-pattern / boundary violations |
-| `"think"` | Deep structured reasoning about a question |
-| `"diagnose"` | Diagnose error text — traces source, finds similar KB bugs |
-| `"blast"` | Transitive dependency chain (depth 1-3) for a symbol |
-| `"coupling"` | Coupling intelligence (query=sub-mode: full/network/antagonists/gaps/leverage/channels/cascade:X/ledger/clusters) |
-| `"symbols"` | Semantic symbol search (when you know purpose, not name) |
-| `"lookup"` | Exact symbol lookup (where defined) |
-| `"map"` | Module directory map with line counts (query=directory) |
-| `"hierarchy"` | Type/class hierarchy |
-| `"rename"` | Bulk rename preview (query='oldName→newName') |
-| `"xref"` | Cross-language trace for a symbol |
-
-### 3. `review(mode, ...)` — Post-pipeline review hub
+### 2. `review(mode, ...)` — Post-pipeline review hub
 
 | mode | Extra params | What it does |
 |------|-------------|-------------|
@@ -299,7 +278,7 @@ All capabilities route through these 7 tools. Internal functions (search_code, f
 | `"docs"` | | Verify docs match implementation |
 | `"full"` | | Sequential: digest + regime + trust |
 
-### 4. `read(target, mode)` — Smart code reader
+### 3. `read(target, mode)` — Smart code reader
 
 **Auto-detection** (mode="auto", default): format determines behavior.
 
@@ -325,7 +304,7 @@ All capabilities route through these 7 tools. Internal functions (search_code, f
 | `"callers"` | All call sites of the target |
 | `"deps"` | Dependency graph for a file |
 
-### 5. `learn(...)` — Unified KB interface
+### 4. `learn(...)` — Unified KB interface
 
 **Auto-detection** from parameters (no mode needed):
 
@@ -349,20 +328,7 @@ All capabilities route through these 7 tools. Internal functions (search_code, f
 **Categories:** `architecture`, `decision`, `pattern`, `bugfix`, `general`
 **Relation types:** `caused_by`, `fixed_by`, `depends_on`, `contradicts`, `similar_to`, `supersedes`
 
-### 6. `status(mode)` — System health hub
-
-| mode | What it does |
-|------|-------------|
-| `"all"` (default) | Pipeline status + selftest + auto-warm stale GPU contexts |
-| `"pipeline"` | Pipeline status only |
-| `"health"` | Codebase health sweep |
-| `"coupling"` | Full coupling topology + antagonist tensions + dimension gaps |
-| `"trust"` | Trust ecology leaderboard (all 27 systems) |
-| `"perceptual"` | Perceptual stack analysis (EnCodec + CLAP) |
-| `"hme"` | HME selftest (tool count, doc sync, index, Ollama, KB, symlinks) |
-| `"introspect"` | Session introspection (tool usage patterns, musical context, journal, KB breakdown) |
-
-### 7. `trace(target, mode, section, limit)` — Signal flow tracing
+### 5. `trace(target, mode, section, limit)` — Signal flow tracing
 
 | mode | What it does |
 |------|-------------|
@@ -374,7 +340,7 @@ All capabilities route through these 7 tools. Internal functions (search_code, f
 | `"interaction"` | Correlate two modules' trust scores: cooperative/competitive/independent |
 | `"delta"` | Compare current vs previous pipeline run: feature deltas, regime shifts, trust changes |
 
-### 8. `hme_admin(action, modules, antipattern, hook_target)` — HME maintenance
+### 6. `hme_admin(action, modules, antipattern, hook_target)` — HME maintenance
 
 | action | What it does |
 |--------|-------------|
@@ -412,7 +378,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 
 | Script | Event | Matcher | What It Does |
 |--------|-------|---------|-------------|
-| `sessionstart.sh` | SessionStart | * | Reset compact tab, inject HME awareness, persist `$HME_ACTIVE` env var |
+| `sessionstart.sh` | SessionStart | * | Reset compact tab, capture previous session's nexus pending state before reset, inject HME awareness (pipeline verdict + wall time, last journal round, uncommitted changes, last commit), surface previous session unfinished items |
 | `pretooluse_lifesaver.sh` | PreToolUse | * | **LIFESAVER**: stamp start time to `/tmp/hme_lifesaver_{session}_{tool}` for every tool call |
 | `pretooluse_read.sh` | PreToolUse | Read | Block polling of task output files; **enrich** project source reads with KB titles via `systemMessage` (Read proceeds + KB injected, no extra turn) |
 | `pretooluse_edit.sh` | PreToolUse | Edit | Surface live KB constraint warnings via shim for all project files; remind `read(mode="before")` |
@@ -421,10 +387,10 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
 | `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** — writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
 | `pretooluse_hme_primer.sh` | PreToolUse | mcp__HME__ | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `hme_admin(action='selftest')` + `evolve(focus='invariants')`); clears flag so it only fires once |
-| `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | **Redirect** — deny repeated check_pipeline calls (polling anti-pattern); suggests `status(mode='pipeline')` instead |
+| `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | **Redirect** — deny repeated check_pipeline calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
 | `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local Ollama agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on Ollama unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
-| `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
+| `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
 | `posttooluse_read.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
 | `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files |
@@ -739,7 +705,7 @@ hme_admin(action='clear_index')  # full rebuild from scratch
 
 ### HME Self-Maintenance
 When tools feel wrong (missing context, stale results, slow synthesis):
-1. `status(mode='hme')` — selftest + introspection
+1. `hme_admin(action='selftest')` — selftest + introspection
 2. `learn(action='health')` — find stale or conflicting KB entries
 3. `learn(action='compact')` — deduplicate
 4. `review(mode='docs')` — verify docs match reality

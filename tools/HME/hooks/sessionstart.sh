@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
-# HME SessionStart: anticipatory orientation — read journal + git state + surface context
+# HME SessionStart: orientation — surface previous session state + current project state
 cat > /dev/null  # consume stdin
+
+HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HOOKS_DIR/_nexus.sh"
 
 PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 
 # Failfast: verify all hook scripts are executable before any run
-HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ERROR_LOG="${PROJECT}/log/hme-errors.log"
 BROKEN_HOOKS=()
 for hook in "$HOOKS_DIR"/*.sh; do
@@ -23,14 +25,16 @@ if [[ "${#BROKEN_HOOKS[@]}" -gt 0 ]]; then
   echo "🚨 LIFESAVER: ${#BROKEN_HOOKS[@]} hook(s) not executable: ${BROKEN_HOOKS[*]} — logged to hme-errors.log" >&2
 fi
 
-# Reset compact tab and nexus state for fresh session
+# Capture previous session's pending items BEFORE state reset
+PREV_PENDING=$(_nexus_pending)
+
+# Reset session state for fresh session
 mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-tab.txt"
 > "${PROJECT}/tmp/hme-nexus.state"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
-# Ensure HME HTTP shim is running — serves both VS Code extension and Claude Code hooks.
-# If already bound, skip. If not, start it in background.
+# Ensure HME HTTP shim is running
 SHIM_PORT=7734
 if ! ss -tlnp 2>/dev/null | grep -q ":${SHIM_PORT} "; then
   SHIM="$PROJECT/tools/HME/mcp/hme_http.py"
@@ -48,13 +52,13 @@ fi
 
 # Build orientation message
 MSG=""
-HAS_STATE=false
 
-# Pipeline verdict (most important signal)
+# Pipeline verdict + wall time
 PS="$PROJECT/metrics/pipeline-summary.json"
 if [ -f "$PS" ]; then
   VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
-  [ -n "$VERDICT" ] && MSG="$MSG\nPipeline: $VERDICT"
+  WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
+  [ -n "$VERDICT" ] && MSG="$MSG\nPipeline: $VERDICT${WALL:+ (${WALL})}"
 fi
 
 # Last journal round
@@ -71,11 +75,17 @@ if [ "$CHANGED_COUNT" -gt 0 ] || [ "$STAGED_COUNT" -gt 0 ]; then
   SUBSYSTEMS=$(git -C "$PROJECT" diff --name-only 2>/dev/null | sed 's|/.*||' | sort -u | tr '\n' ',' | sed 's/,$//')
   MSG="$MSG\nUncommitted: $CHANGED_COUNT modified ($SUBSYSTEMS)"
   [ "$STAGED_COUNT" -gt 0 ] && MSG="$MSG + $STAGED_COUNT staged"
-  HAS_STATE=true
 fi
 
-# Always suggest resume — live briefing complements the static primer
-MSG="$MSG\n→ status(mode='resume') for live session briefing"
+# Most recent commit
+LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
+[ -n "$LAST_COMMIT" ] && MSG="$MSG\nLast commit: $LAST_COMMIT"
 
 echo -e "HyperMeta Ecstasy active. Load skill: /HME$MSG" >&2
+
+# Previous session pending items (surfaced as a warning after main message)
+if [ -n "$PREV_PENDING" ]; then
+  echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
+fi
+
 exit 0
