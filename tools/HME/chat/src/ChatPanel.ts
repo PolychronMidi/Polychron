@@ -48,7 +48,7 @@ export class ChatPanel {
   private _transcript: TranscriptLogger;
   private _restoreSessionId: string | null = null;
   private _disposed = false;
-  private _contextTracker: ContextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
+  private _contextTracker: ContextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
   private _chainingInProgress = false;
 
   private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
@@ -456,7 +456,7 @@ export class ChatPanel {
   // ── Context tracking & chain ───────────────────────────────────────────────
 
   private _resetContextTracker(restoredPct?: number) {
-    this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
+    this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
     if (restoredPct) {
       this._contextTracker.usedPct = restoredPct;
     }
@@ -470,6 +470,8 @@ export class ChatPanel {
       this._contextTracker.lastInputTokens = usage.inputTokens;
       this._contextTracker.lastOutputTokens = usage.outputTokens;
       if (usage.usedPct != null) this._contextTracker.usedPct = usage.usedPct;
+      if (usage.modelId) this._contextTracker.cliModelId = usage.modelId;
+      if (usage.modelName) this._contextTracker.cliModelName = usage.modelName;
     }
     this._postContextUpdate();
   }
@@ -483,7 +485,10 @@ export class ChatPanel {
     const chainLinks = this._state.sessionEntry
       ? listChainLinks(this._projectRoot, this._state.sessionEntry.id).length
       : 0;
-    this._post({ type: "contextUpdate", pct, chainLinks, chainIndex: this._state.chainIndex });
+    this._post({
+      type: "contextUpdate", pct, chainLinks, chainIndex: this._state.chainIndex,
+      cliModel: this._contextTracker.cliModelName || this._contextTracker.cliModelId || undefined,
+    });
   }
 
   private _checkChainThreshold(msg: any) {

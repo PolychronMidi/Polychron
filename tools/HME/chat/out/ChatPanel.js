@@ -54,7 +54,7 @@ class ChatPanel {
         this._disposables = [];
         this._restoreSessionId = null;
         this._disposed = false;
-        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
+        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
         this._chainingInProgress = false;
         // ── HME shim process management ────────────────────────────────────────────
         this._shimProc = null;
@@ -431,7 +431,7 @@ class ChatPanel {
     }
     // ── Context tracking & chain ───────────────────────────────────────────────
     _resetContextTracker(restoredPct) {
-        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
+        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
         if (restoredPct) {
             this._contextTracker.usedPct = restoredPct;
         }
@@ -445,6 +445,10 @@ class ChatPanel {
             this._contextTracker.lastOutputTokens = usage.outputTokens;
             if (usage.usedPct != null)
                 this._contextTracker.usedPct = usage.usedPct;
+            if (usage.modelId)
+                this._contextTracker.cliModelId = usage.modelId;
+            if (usage.modelName)
+                this._contextTracker.cliModelName = usage.modelName;
         }
         this._postContextUpdate();
     }
@@ -456,7 +460,10 @@ class ChatPanel {
         const chainLinks = this._state.sessionEntry
             ? (0, SessionStore_1.listChainLinks)(this._projectRoot, this._state.sessionEntry.id).length
             : 0;
-        this._post({ type: "contextUpdate", pct, chainLinks, chainIndex: this._state.chainIndex });
+        this._post({
+            type: "contextUpdate", pct, chainLinks, chainIndex: this._state.chainIndex,
+            cliModel: this._contextTracker.cliModelName || this._contextTracker.cliModelId || undefined,
+        });
     }
     _checkChainThreshold(msg) {
         const pct = this._getContextPct();

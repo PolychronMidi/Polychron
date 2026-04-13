@@ -66,6 +66,8 @@ export interface ContextTracker {
   usedPct: number | null;
   totalChars: number;
   model: string;
+  cliModelId: string | null;
+  cliModelName: string | null;
 }
 
 export interface StreamTracker {

@@ -3,17 +3,21 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME Stop: enforce implementation completeness + drive autonomous Evolver loop
 INPUT=$(cat)
 
-# ── Context meter: runs before any exit so the ctx file is always fresh ──────
-# Stop hook fires BEFORE the next `> ` prompt — by the time PTY initBuf detects
-# the prompt, this file is already written with the current turn's real token counts.
-# HME_CTX_FILE is set by the HME Chat PTY to a session-unique path, preventing the
-# main Claude Code session's Stop hook from overwriting the chat session's data.
+# ── Context meter: merge token counts into existing statusLine data ───────────
+# StatusLine writes authoritative used_pct/remaining_pct/size from the API.
+# Stop hook only adds input_tokens/output_tokens from the transcript — never
+# overwrites used_pct (that would replace real API data with a fabricated estimate).
 _CTX_OUT="${HME_CTX_FILE:-/tmp/claude-context.json}"
 _CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
   python3 -c "
 import json,sys
 try:
+    ctx_file = sys.argv[2]
+    try:
+        existing = json.loads(open(ctx_file).read())
+    except Exception:
+        existing = {}
     with open(sys.argv[1]) as f:
         lines=[l for l in f if l.strip()]
     for line in reversed(lines):
@@ -24,11 +28,9 @@ try:
                 inp=(u.get('input_tokens',0)+u.get('cache_read_input_tokens',0)
                      +u.get('cache_creation_input_tokens',0))
                 out=u.get('output_tokens',0)
-                w=200000
-                used=round((inp+out)/w*100)
-                open(sys.argv[2],'w').write(
-                    json.dumps({'used_pct':used,'remaining_pct':100-used,
-                                'size':w,'input_tokens':inp,'output_tokens':out}))
+                existing['input_tokens']=inp
+                existing['output_tokens']=out
+                open(ctx_file,'w').write(json.dumps(existing))
                 break
 except Exception:
     pass

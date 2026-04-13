@@ -216,8 +216,6 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         }, PTY_INACTIVITY_MS);
     };
     const _buildPtyUsage = () => {
-        // Read context file — statusLine writes real API context data here (used_pct
-        // from Claude CLI), stop.sh writes token counts. Prefer used_pct (authoritative).
         try {
             const ctxData = JSON.parse((0, fs_1.readFileSync)(ctxFile, "utf8"));
             const usedPct = typeof ctxData.used_pct === "number" ? ctxData.used_pct : undefined;
@@ -225,6 +223,8 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
                 inputTokens: ctxData.input_tokens ?? 0,
                 outputTokens: ctxData.output_tokens ?? 0,
                 usedPct,
+                modelId: ctxData.model_id || undefined,
+                modelName: ctxData.model_name || undefined,
             };
         }
         catch { }

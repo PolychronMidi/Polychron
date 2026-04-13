@@ -232,8 +232,6 @@ export function streamClaudePty(
   };
 
   const _buildPtyUsage = (): TokenUsage | undefined => {
-    // Read context file — statusLine writes real API context data here (used_pct
-    // from Claude CLI), stop.sh writes token counts. Prefer used_pct (authoritative).
     try {
       const ctxData = JSON.parse(readFileSync(ctxFile, "utf8"));
       const usedPct = typeof ctxData.used_pct === "number" ? ctxData.used_pct : undefined;
@@ -241,6 +239,8 @@ export function streamClaudePty(
         inputTokens: ctxData.input_tokens ?? 0,
         outputTokens: ctxData.output_tokens ?? 0,
         usedPct,
+        modelId: ctxData.model_id || undefined,
+        modelName: ctxData.model_name || undefined,
       };
     } catch {}
     return undefined;
