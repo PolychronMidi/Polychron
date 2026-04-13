@@ -268,7 +268,10 @@ export function streamClaudePty(
   const finalizeTurn = () => {
     if (!turnDone) {
       turnDone = true;
-      onDone(parseContextOutput(contextQueryBuf) ?? _buildPtyUsage());
+      const ctxParsed = parseContextOutput(contextQueryBuf);
+      console.log("[HME ctx] contextQueryBuf:", JSON.stringify(contextQueryBuf.slice(0, 300)));
+      console.log("[HME ctx] parsed:", ctxParsed);
+      onDone(ctxParsed ?? _buildPtyUsage());
       try { proc.kill(); } catch {}
     }
   };
@@ -278,7 +281,8 @@ export function streamClaudePty(
     if (ptyInactivityTimer) { clearTimeout(ptyInactivityTimer); ptyInactivityTimer = null; }
     contextQueryActive = true;
     contextQueryBuf = "";
-    try { proc.write("/context\r"); } catch {}
+    console.log("[HME ctx] sending /context");
+    try { proc.write("/context\r"); } catch (e) { console.log("[HME ctx] write failed:", e); }
     doneTimer = setTimeout(finalizeTurn, 1500);
   };
 
