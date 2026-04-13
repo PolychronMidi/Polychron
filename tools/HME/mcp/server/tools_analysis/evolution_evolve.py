@@ -527,11 +527,19 @@ def _detect_contradictions() -> str:
     if len(entries) < 2:
         return "# Contradiction Scan\n\nToo few KB entries for contradiction detection."
 
+    valid_entries = []
     vectors = []
     for e in entries:
         embed_text = f"{e['title']}\n{e['content']}"
-        vectors.append(ctx.project_engine.model.encode(embed_text))
+        v = ctx.project_engine.model.encode(embed_text)
+        if v is None or not hasattr(v, 'shape') or v.ndim != 1:
+            continue
+        valid_entries.append(e)
+        vectors.append(v)
 
+    if len(vectors) < 2:
+        return "# Contradiction Scan\n\nToo few valid embeddings (shim may be unavailable)."
+    entries = valid_entries
     vectors = np.array(vectors)
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     norms[norms == 0] = 1

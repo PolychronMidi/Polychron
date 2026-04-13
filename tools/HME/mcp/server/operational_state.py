@@ -6,7 +6,8 @@ Tracks system health metrics that survive across MCP server restarts:
   - shim crash frequency
   - startup timing EMA
   - cache hit rate EMA
-  - circuit breaker trip history
+  - circuit breaker trip history + flap detection (L21)
+  - synthesis routing + quality gate EMAs (L19)
 
 Written atomically to $PROJECT_ROOT/tmp/hme-ops.json on every state change.
 Read on startup; per-day counters reset on new calendar day while preserving
@@ -14,6 +15,8 @@ rolling EMAs so long-term trends survive day boundaries.
 
 Layer 5 (Temporal Rhythm) reads is_crash_loop() and restarts_today to adapt
 the startup chain aggressiveness. Layer 7 (Predictive Health) updates EMAs here.
+Layer 19 (Synthesis Observability) records routing decisions + quality outcomes.
+Layer 21 (CB Flap Detection) tracks HALF_OPEN→OPEN transitions per model.
 """
 import json
 import os
@@ -24,6 +27,7 @@ import logging
 logger = logging.getLogger("HME")
 
 _STATE_FILE: str = ""
+_SYNTHESIS_FILE: str = ""  # hme-synthesis.jsonl path set in init()
 _state: dict = {}
 _state_lock = threading.Lock()
 _EMA_ALPHA = 0.2  # exponential moving average decay for rolling metrics
@@ -35,11 +39,13 @@ def init(project_root: str) -> dict:
     Increments restarts_today; preserves EMAs and long-term metrics across day boundaries.
     Safe to call multiple times — subsequent calls are no-ops (STATE_FILE already set).
     """
-    global _STATE_FILE, _state
+    global _STATE_FILE, _SYNTHESIS_FILE, _state
     if _STATE_FILE:
         return snapshot()  # already initialized
     _STATE_FILE = os.path.join(project_root, "tmp", "hme-ops.json")
+    _SYNTHESIS_FILE = os.path.join(project_root, "metrics", "hme-synthesis.jsonl")
     os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
+    os.makedirs(os.path.dirname(_SYNTHESIS_FILE), exist_ok=True)
     today = time.strftime("%Y-%m-%d")
     try:
         with open(_STATE_FILE) as f:
@@ -57,6 +63,13 @@ def init(project_root: str) -> dict:
                 "cache_hit_rate_ema": loaded.get("cache_hit_rate_ema", 0.0),
                 "tool_response_ms_ema": loaded.get("tool_response_ms_ema"),
                 "circuit_breaker_trips": {},
+                "circuit_breaker_flaps": {},
+                # L19: synthesis routing EMAs persist across days (long-term behavior)
+                "synthesis_calls_today": 0,
+                "synthesis_cascade_rate_ema": loaded.get("synthesis_cascade_rate_ema", 0.0),
+                "synthesis_quality_gate_ema": loaded.get("synthesis_quality_gate_ema", 0.0),
+                "synthesis_escalation_rate_ema": loaded.get("synthesis_escalation_rate_ema", 0.0),
+                "synthesis_phantom_rate_ema": loaded.get("synthesis_phantom_rate_ema", 0.0),
             }
         else:
             _state = loaded
@@ -72,6 +85,12 @@ def init(project_root: str) -> dict:
             "cache_hit_rate_ema": 0.0,
             "tool_response_ms_ema": None,
             "circuit_breaker_trips": {},
+            "circuit_breaker_flaps": {},
+            "synthesis_calls_today": 0,
+            "synthesis_cascade_rate_ema": 0.0,
+            "synthesis_quality_gate_ema": 0.0,
+            "synthesis_escalation_rate_ema": 0.0,
+            "synthesis_phantom_rate_ema": 0.0,
         }
     _state["restarts_today"] = _state.get("restarts_today", 0) + 1
     _state["last_restart"] = time.time()
@@ -195,3 +214,75 @@ def record_circuit_breaker_trip(model: str) -> int:
         _state["circuit_breaker_trips_total_today"] = sum(trips.values())
         _save_unlocked()
         return trips[model]
+
+
+def record_circuit_breaker_flap(model: str) -> int:
+    """Record a HALF_OPEN → OPEN flap for a model (probe fired but failed immediately).
+
+    Layer 21: Flapping is distinct from steady-state OPEN — it means Ollama is partially
+    available but too unstable for recovery. Tracked separately from trips so the
+    L14 correlator can detect sustained instability vs one-time outages.
+    """
+    with _state_lock:
+        flaps = _state.setdefault("circuit_breaker_flaps", {})
+        flaps[model] = flaps.get(model, 0) + 1
+        _state["circuit_breaker_flaps_total_today"] = sum(flaps.values())
+        _save_unlocked()
+        return flaps[model]
+
+
+def record_synthesis_call(strategy: str, used_cascade: bool, escalated: bool,
+                          quality_gate_fired: bool, phantom_count: int,
+                          verified_count: int, elapsed_s: float,
+                          prompt_head: str = "") -> None:
+    """Record synthesis routing + quality outcome. Layer 19: Synthesis Observability.
+
+    Updates EMAs for cascade rate, quality gate rate, escalation rate, and phantom rate.
+    Appends a structured record to hme-synthesis.jsonl for L14 Correlator pattern detection.
+    """
+    phantom_rate = phantom_count / max(phantom_count + verified_count, 1) if quality_gate_fired else 0.0
+    with _state_lock:
+        _state["synthesis_calls_today"] = _state.get("synthesis_calls_today", 0) + 1
+        a = _EMA_ALPHA
+        _state["synthesis_cascade_rate_ema"] = round(
+            a * (1.0 if used_cascade else 0.0) + (1 - a) * _state.get("synthesis_cascade_rate_ema", 0.0), 3)
+        _state["synthesis_quality_gate_ema"] = round(
+            a * (1.0 if quality_gate_fired else 0.0) + (1 - a) * _state.get("synthesis_quality_gate_ema", 0.0), 3)
+        _state["synthesis_escalation_rate_ema"] = round(
+            a * (1.0 if escalated else 0.0) + (1 - a) * _state.get("synthesis_escalation_rate_ema", 0.0), 3)
+        _state["synthesis_phantom_rate_ema"] = round(
+            a * phantom_rate + (1 - a) * _state.get("synthesis_phantom_rate_ema", 0.0), 3)
+        _save_unlocked()
+    if _SYNTHESIS_FILE:
+        try:
+            entry = json.dumps({
+                "ts": time.time(),
+                "strategy": strategy,
+                "used_cascade": used_cascade,
+                "escalated": escalated,
+                "quality_gate_fired": quality_gate_fired,
+                "phantom_count": phantom_count,
+                "verified_count": verified_count,
+                "phantom_rate": round(phantom_rate, 3) if quality_gate_fired else None,
+                "elapsed_s": round(elapsed_s, 1),
+                "prompt_head": prompt_head[:60],
+            })
+            with open(_SYNTHESIS_FILE, "a") as f:
+                f.write(entry + "\n")
+            _trim_synthesis_file()
+        except OSError as e:
+            logger.debug(f"ops: synthesis log write failed: {e}")
+
+
+def _trim_synthesis_file() -> None:
+    """Keep hme-synthesis.jsonl bounded at 1000 entries."""
+    if not _SYNTHESIS_FILE:
+        return
+    try:
+        with open(_SYNTHESIS_FILE) as f:
+            lines = f.readlines()
+        if len(lines) > 1000:
+            with open(_SYNTHESIS_FILE, "w") as f:
+                f.writelines(lines[-1000:])
+    except OSError:
+        pass

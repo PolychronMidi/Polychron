@@ -40,11 +40,14 @@ _narrative_file = ""
 _ops_file = ""
 _counterfactual_file = ""
 _entanglement_file = ""
+_synthesis_file = ""          # hme-synthesis.jsonl (L19/L20)
+_synthesis_patterns_file = "" # hme-synthesis-patterns.json (L∞)
 
 
 def start(project_root: str) -> None:
     global _active, _thread, _heartbeat_file, _coherence_file, _narrative_file
     global _ops_file, _counterfactual_file, _entanglement_file
+    global _synthesis_file, _synthesis_patterns_file
     if _active:
         return
     _heartbeat_file = os.path.join(project_root, "tmp", "hme-meta-observer.heartbeat")
@@ -53,6 +56,8 @@ def start(project_root: str) -> None:
     _ops_file = os.path.join(project_root, "tmp", "hme-ops.json")
     _counterfactual_file = os.path.join(project_root, "metrics", _COUNTERFACTUAL_FILE_SUFFIX)
     _entanglement_file = os.path.join(project_root, "tmp", "hme-entanglement.json")
+    _synthesis_file = os.path.join(project_root, "metrics", "hme-synthesis.jsonl")
+    _synthesis_patterns_file = os.path.join(project_root, "metrics", "hme-synthesis-patterns.json")
     os.makedirs(os.path.dirname(_heartbeat_file), exist_ok=True)
     os.makedirs(os.path.dirname(_narrative_file), exist_ok=True)
 
@@ -164,6 +169,30 @@ def _detect_observation_gap() -> str | None:
 # ── Layer 14: Temporal Correlator ──────────────────────────────────────────
 
 _last_correlations: dict = {}
+_SYNTHESIS_WINDOW = 3600  # 1 hour of synthesis records for pattern detection
+
+
+def _load_synthesis_history() -> list[dict]:
+    """Load recent synthesis call records from hme-synthesis.jsonl (L19/L20)."""
+    if not _synthesis_file:
+        return []
+    try:
+        entries = []
+        cutoff = time.time() - _SYNTHESIS_WINDOW
+        with open(_synthesis_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                    if entry.get("ts", 0) >= cutoff:
+                        entries.append(entry)
+                except json.JSONDecodeError:
+                    continue
+        return entries
+    except OSError:
+        return []
 
 
 def _load_coherence_history() -> list[dict]:
@@ -245,7 +274,7 @@ def _correlate(history: list[dict]) -> dict:
                 "message": f"{dips} coherence dips (<0.7) in last hour — systemic instability",
             })
 
-    # Ops state cross-reference
+    # Ops state cross-reference + L19/L21 synthesis + flap correlations
     try:
         with open(_ops_file) as f:
             ops = json.load(f)
@@ -261,6 +290,46 @@ def _correlate(history: list[dict]) -> dict:
                 "type": "shim_decay_precursor",
                 "message": f"{shim_crashes} shim crashes + rising latency — next crash imminent",
             })
+
+        # L21: circuit breaker flap detection
+        flaps = ops.get("circuit_breaker_flaps", {})
+        flap_total = ops.get("circuit_breaker_flaps_total_today", 0)
+        if flap_total >= 3:
+            flap_models = [f"{m}×{n}" for m, n in flaps.items() if n >= 2]
+            result["alerts"].append({
+                "type": "cb_flapping",
+                "message": (
+                    f"Circuit breaker flapping ({flap_total} HALF_OPEN→OPEN today"
+                    + (f": {', '.join(flap_models)}" if flap_models else "")
+                    + ") — model recovering but unstable, possible GPU thrash"
+                ),
+            })
+
+        # L19/L20: synthesis quality correlation
+        synth_calls = ops.get("synthesis_calls_today", 0)
+        if synth_calls >= 5:
+            phantom_ema = ops.get("synthesis_phantom_rate_ema", 0.0)
+            gate_ema = ops.get("synthesis_quality_gate_ema", 0.0)
+            escalation_ema = ops.get("synthesis_escalation_rate_ema", 0.0)
+            result["synthesis_calls_today"] = synth_calls
+            result["synthesis_phantom_rate_ema"] = phantom_ema
+            result["synthesis_cascade_rate_ema"] = ops.get("synthesis_cascade_rate_ema", 0.0)
+            if phantom_ema > 0.4:
+                result["alerts"].append({
+                    "type": "synthesis_phantom_surge",
+                    "message": (
+                        f"Synthesis phantom rate {phantom_ema:.0%} EMA — module grounding degraded. "
+                        "Fuzzy discovery may be missing relevant modules or source files moved."
+                    ),
+                })
+            if escalation_ema > 0.3:
+                result["alerts"].append({
+                    "type": "synthesis_escalation_high",
+                    "message": (
+                        f"Synthesis escalation rate {escalation_ema:.0%} EMA — primary model "
+                        "failing frequently. Check circuit breaker state and GPU availability."
+                    ),
+                })
     except (OSError, json.JSONDecodeError):
         pass
 
@@ -319,6 +388,16 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
         acc = eff.get("accuracy", 0)
         parts.append(f"Intervention track record: {acc:.0%} accuracy over {eff['total_interventions']} interventions.")
 
+    # L19/L20: synthesis quality insights
+    synth_calls = correlations.get("synthesis_calls_today", 0)
+    if synth_calls >= 5:
+        phantom_ema = correlations.get("synthesis_phantom_rate_ema", 0.0)
+        cascade_ema = correlations.get("synthesis_cascade_rate_ema", 0.0)
+        parts.append(
+            f"Synthesis: {synth_calls} calls today, "
+            f"cascade {cascade_ema:.0%}, phantom rate {phantom_ema:.0%}."
+        )
+
     # Prescriptive guidance
     if any(a.get("type") == "shim_decay_precursor" for a in correlations.get("alerts", [])):
         parts.append("ACTION: Preemptively restart shim before the next crash to avoid cascade disruption.")
@@ -328,6 +407,10 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
         parts.append("ACTION: Monitor closely. If decline continues, run status(mode='health') for full diagnostic.")
     elif any(a.get("type") == "gpu_memory_pressure" for a in _last_env_snapshot.get("alerts", [])):
         parts.append("ACTION: GPU memory critical — consider unloading unused models or reducing batch size.")
+    elif any(a.get("type") == "cb_flapping" for a in correlations.get("alerts", [])):
+        parts.append("ACTION: Circuit breaker flapping — model is oscillating between available/unavailable. Check GPU OOM pressure or thermal throttling.")
+    elif any(a.get("type") == "synthesis_phantom_surge" for a in correlations.get("alerts", [])):
+        parts.append("ACTION: High phantom rate in synthesis outputs — consider running hme_admin(action='index') to refresh module index.")
 
     return " ".join(parts)
 
@@ -484,13 +567,23 @@ def _checkpoint_entanglement() -> None:
             )
             state["process_rss_mb"] = _last_env_snapshot.get("process_rss_mb")
 
-        # Operational state cross-reference
+        # Operational state cross-reference + L19/L21
         try:
             with open(_ops_file) as f:
                 ops = json.load(f)
             state["restarts_today"] = ops.get("restarts_today", 0)
             state["recovery_rate"] = ops.get("recovery_success_rate_ema")
             state["session_age_s"] = round(time.time() - ops.get("session_start", time.time()))
+            # L19: synthesis routing profile for compaction context
+            synth_calls = ops.get("synthesis_calls_today", 0)
+            if synth_calls > 0:
+                state["synthesis_calls"] = synth_calls
+                state["synthesis_phantom_rate"] = ops.get("synthesis_phantom_rate_ema")
+                state["synthesis_cascade_rate"] = ops.get("synthesis_cascade_rate_ema")
+            # L21: CB flap summary
+            flap_total = ops.get("circuit_breaker_flaps_total_today", 0)
+            if flap_total > 0:
+                state["cb_flaps_today"] = flap_total
         except (OSError, json.JSONDecodeError):
             pass
 
@@ -576,6 +669,12 @@ def read_entanglement_for_compaction() -> str | None:
         parts.append(f"files={','.join(os.path.basename(f) for f in state['recent_files'][:5])}")
     if state.get("intervention_accuracy") is not None:
         parts.append(f"intervention_accuracy={state['intervention_accuracy']:.0%}")
+    if state.get("synthesis_calls", 0) > 0:
+        parts.append(f"synth={state['synthesis_calls']}calls")
+        if state.get("synthesis_phantom_rate") is not None:
+            parts.append(f"phantom={state['synthesis_phantom_rate']:.0%}")
+    if state.get("cb_flaps_today", 0) > 0:
+        parts.append(f"cb_flaps={state['cb_flaps_today']}")
     return "[HME state] " + " | ".join(parts) if parts else None
 
 
@@ -689,6 +788,77 @@ def _compute_effectiveness() -> dict:
         return {"total_predictions": 0}
 
 
+def _detect_synthesis_patterns() -> None:
+    """Layer ∞: build a grounding self-model from accumulated synthesis call records.
+
+    After 20+ synthesis calls, identifies per-strategy phantom rates and the most
+    common prompt words in quality-gate-triggered calls. Writes findings to
+    hme-synthesis-patterns.json for L15 narrator and entanglement context.
+
+    This is the recursive step: the system's synthesis behavior becomes legible
+    from data, allowing the narrator to surface actionable grounding guidance.
+    """
+    if not _synthesis_file or not _synthesis_patterns_file:
+        return
+    try:
+        entries = []
+        with open(_synthesis_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entries.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+        if len(entries) < 20:
+            return
+
+        # Per-strategy phantom rates
+        by_strategy: dict[str, list[float]] = {}
+        word_freq: dict[str, int] = {}
+        for e in entries:
+            strat = e.get("strategy", "unknown")
+            pr = e.get("phantom_rate")
+            if pr is not None:
+                by_strategy.setdefault(strat, []).append(pr)
+            # Word frequency in quality-gate-flagged prompts
+            if e.get("quality_gate_fired") and pr is not None and pr > 0.5:
+                for w in e.get("prompt_head", "").lower().split():
+                    if len(w) > 3:
+                        word_freq[w] = word_freq.get(w, 0) + 1
+
+        strategy_phantom_rates = {
+            s: round(sum(vals) / len(vals), 3)
+            for s, vals in by_strategy.items()
+            if vals
+        }
+        top_phantom_words = sorted(word_freq.items(), key=lambda x: -x[1])[:10]
+
+        total = len(entries)
+        gate_fired = sum(1 for e in entries if e.get("quality_gate_fired"))
+        patterns = {
+            "ts": time.time(),
+            "total_calls_analyzed": total,
+            "quality_gate_rate": round(gate_fired / max(total, 1), 3),
+            "strategy_phantom_rates": strategy_phantom_rates,
+            "top_phantom_trigger_words": top_phantom_words,
+            "cascade_rate": round(sum(1 for e in entries if e.get("used_cascade")) / max(total, 1), 3),
+            "escalation_rate": round(sum(1 for e in entries if e.get("escalated")) / max(total, 1), 3),
+        }
+        tmp = _synthesis_patterns_file + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(patterns, f, indent=2)
+        os.replace(tmp, _synthesis_patterns_file)
+        logger.debug(
+            f"Meta-observer L∞: synthesis self-model updated "
+            f"({total} calls, gate_rate={patterns['quality_gate_rate']:.0%}, "
+            f"top_phantom_words={[w for w, _ in top_phantom_words[:3]]})"
+        )
+    except (OSError, json.JSONDecodeError) as e:
+        logger.debug(f"Meta-observer L∞: pattern detection failed: {e}")
+
+
 def _auto_predictions_from_correlator() -> None:
     """Generate predictions from L14 correlator alerts — feeding L18 automatically."""
     if not _last_correlations or not _last_correlations.get("alerts"):
@@ -725,11 +895,13 @@ def _auto_predictions_from_correlator() -> None:
 _last_narration_ts: float = 0.0
 _last_env_ts: float = 0.0
 _last_entangle_ts: float = 0.0
+_last_synthesis_pattern_ts: float = 0.0
+_SYNTHESIS_PATTERN_INTERVAL = 1800  # 30 minutes
 
 
 def _meta_loop() -> None:
     global _last_correlations, _last_narration_ts, _last_env_ts, _last_entangle_ts
-    global _last_env_snapshot
+    global _last_env_snapshot, _last_synthesis_pattern_ts
     cycle = 0
     while _active:
         try:
@@ -745,7 +917,7 @@ def _meta_loop() -> None:
             if cycle % max(1, _MONITOR_CHECK_INTERVAL // _HEARTBEAT_INTERVAL) == 0:
                 monitor_status = _check_monitor_alive()
 
-            # L14: temporal correlation (every 2 minutes)
+            # L14: temporal correlation (every 2 minutes) — includes synthesis + flap data
             if cycle % max(1, 120 // _HEARTBEAT_INTERVAL) == 0:
                 history = _load_coherence_history()
                 _last_correlations = _correlate(history)
@@ -773,6 +945,11 @@ def _meta_loop() -> None:
             if now - _last_entangle_ts >= _ENTANGLE_INTERVAL:
                 _checkpoint_entanglement()
                 _last_entangle_ts = now
+
+            # L∞: synthesis self-model (every 30 minutes when enough data)
+            if now - _last_synthesis_pattern_ts >= _SYNTHESIS_PATTERN_INTERVAL:
+                _detect_synthesis_patterns()
+                _last_synthesis_pattern_ts = now
 
             # L18: expire stale predictions + generate new ones from correlator
             _expire_predictions()
