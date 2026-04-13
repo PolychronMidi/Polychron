@@ -334,8 +334,18 @@ def what_did_i_forget(changed_files: str) -> str:
         "- List every concrete missed bug you find. No bullet limit.\n"
         "- If truly nothing concrete remains, say 'Nothing missed.'\n"
     )
-    synthesis = _local_think("/no_think\n" + user_text, max_tokens=400, model=_REASONING_MODEL,
-                             system=_THINK_SYSTEM)
+    # Thread-based total timeout: each _local_think call is bounded at 120s by wall-clock
+    # deadline, but /no_think + 400 tokens at slow GPU can still take up to that full cap.
+    # 75s thread join caps the whole synthesis block regardless.
+    import threading as _thr
+    _syn_result = [None]
+    def _syn_worker():
+        _syn_result[0] = _local_think("/no_think\n" + user_text, max_tokens=400,
+                                      model=_REASONING_MODEL, system=_THINK_SYSTEM)
+    _syn_thread = _thr.Thread(target=_syn_worker, daemon=True)
+    _syn_thread.start()
+    _syn_thread.join(timeout=75)
+    synthesis = _syn_result[0]
     if synthesis:
         from .synthesis_ollama import compress_for_claude
         synthesis = compress_for_claude(synthesis, max_chars=1200, hint="post-change audit missed bugs")
