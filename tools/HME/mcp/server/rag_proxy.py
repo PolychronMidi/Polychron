@@ -30,28 +30,24 @@ def _shim_path():
     return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hme_http.py")
 
 
-def check_shim_health(port=_DEFAULT_PORT):
-    try:
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/health")
-        with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
-            data = json.loads(resp.read())
-            return data.get("status") == "ready" and data.get("kb_ready", False)
-    except Exception:
-        return False
+def check_shim_health(port=_DEFAULT_PORT) -> bool:
+    """Return True if shim is ready and KB is loaded."""
+    return _get_shim_status(port).get("healthy", False)
 
 
 def check_shim_rag_capable(port=_DEFAULT_PORT) -> bool:
-    """Verify the running shim exposes /rag. Uses /capabilities if available, falls back to test call."""
-    try:
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/capabilities")
-        with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
-            data = json.loads(resp.read())
-            return "/rag" in data.get("endpoints", [])
-    except urllib.error.HTTPError:
-        pass  # old shim without /capabilities — try direct test
-    except Exception:
+    """Return True if shim is healthy AND exposes /rag.
+
+    Uses the endpoints list embedded in /health (single call). Falls back to a
+    direct /rag probe for old shims that don't embed endpoints in /health.
+    """
+    status = _get_shim_status(port)
+    if not status.get("healthy", False):
         return False
-    # Fallback: probe /rag directly (list_knowledge is lightweight)
+    endpoints = status.get("endpoints")
+    if endpoints is not None:
+        return "/rag" in endpoints
+    # Old shim without endpoints in /health — probe /rag directly
     try:
         body = json.dumps({"engine": "project", "method": "list_knowledge", "kwargs": {}}).encode()
         req = urllib.request.Request(
@@ -64,6 +60,18 @@ def check_shim_rag_capable(port=_DEFAULT_PORT) -> bool:
         return e.code != 404
     except Exception:
         return False
+
+
+def _get_shim_status(port=_DEFAULT_PORT) -> dict:
+    """Single /health call returning parsed status dict. Shared by health + rag_capable checks."""
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/health")
+        with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
+            data = json.loads(resp.read())
+            data["healthy"] = data.get("status") == "ready" and data.get("kb_ready", False)
+            return data
+    except Exception:
+        return {"healthy": False}
 
 
 def kill_shim_by_pid() -> bool:
@@ -129,32 +137,79 @@ def start_proxy_monitor(port: int = _DEFAULT_PORT) -> None:
 
 
 def _proxy_health_monitor(port: int) -> None:
-    """Background: ping shim every 60s; restart if dead; reset one-shot flags on recovery."""
+    """Background: ping shim every 60s; restart if dead; reset one-shot flags on recovery.
+
+    Wrapped in a crash watchdog — if an unhandled exception escapes, registers a
+    LIFESAVER and restarts the monitor thread so monitoring never silently dies.
+    """
+    crash_count = 0
     while _proxy_monitor_active:
-        time.sleep(_MONITOR_INTERVAL)
-        if not _proxy_monitor_active:
-            break
-        if check_shim_health(port):
-            continue
-        logger.warning("Proxy health monitor: shim unhealthy — attempting restart")
-        if ensure_shim_running(port):
-            logger.info("Proxy health monitor: shim recovered")
-            # Reset recovery gate so _try_recover_from_proxy_error() can re-run if needed
-            try:
-                from server import context as _ctx
-                _ctx._recovery_last_attempt = 0.0
-            except Exception:
-                pass
-        else:
-            try:
-                from server import context as _ctx
-                _ctx.register_critical_failure(
-                    "proxy_monitor",
-                    "Shim died and could not be restarted — RAG calls will return empty results.",
-                    severity="CRITICAL",
-                )
-            except Exception:
-                pass
+        try:
+            time.sleep(_MONITOR_INTERVAL)
+            if not _proxy_monitor_active:
+                break
+            if check_shim_health(port):
+                crash_count = 0  # reset crash counter on healthy cycle
+                continue
+            logger.warning("Proxy health monitor: shim unhealthy — attempting restart")
+            if ensure_shim_running(port):
+                logger.info("Proxy health monitor: shim recovered")
+                try:
+                    from server import context as _ctx
+                    _ctx._recovery_last_attempt = 0.0
+                except Exception:
+                    pass
+            else:
+                try:
+                    from server import context as _ctx
+                    _ctx.register_critical_failure(
+                        "proxy_monitor",
+                        "Shim died and could not be restarted — RAG calls will return empty results.",
+                        severity="CRITICAL",
+                    )
+                except Exception:
+                    pass
+        except Exception as _e:
+            crash_count += 1
+            logger.error(f"Proxy health monitor crashed (#{crash_count}): {type(_e).__name__}: {_e}")
+            if crash_count <= 3:
+                # Watchdog: re-enter loop after brief pause rather than dying silently
+                try:
+                    from server import context as _ctx
+                    _ctx.register_critical_failure(
+                        "proxy_monitor",
+                        f"Monitor loop crashed #{crash_count}: {type(_e).__name__}: {_e} — watchdog restarting",
+                        severity="WARNING",
+                    )
+                except Exception:
+                    pass
+                time.sleep(5)
+            else:
+                logger.error("Proxy health monitor: too many crashes — giving up")
+                break
+
+
+def _revive_dead_shim(port: int, engine_name: str, error: str) -> None:
+    """Background: called on first connection error — shim is dead, attempt immediate restart."""
+    logger.warning(f"RAG proxy {engine_name}: connection failed ({error}) — attempting shim revival")
+    if ensure_shim_running(port):
+        logger.info(f"RAG proxy {engine_name}: shim revived after connection failure")
+        try:
+            from server import context as _ctx
+            _ctx._recovery_last_attempt = 0.0  # allow recovery path to re-run
+        except Exception:
+            pass
+    else:
+        try:
+            from server import context as _ctx
+            _ctx.register_critical_failure(
+                "rag_proxy",
+                f"{engine_name}: shim connection failed ({error}) and could not be revived. "
+                "RAG calls will return empty results until shim restarts.",
+                severity="CRITICAL",
+            )
+        except Exception:
+            pass
 
 
 def _notify_proxy_degraded(engine_name: str, fail_count: int) -> None:
@@ -176,10 +231,12 @@ class RAGProxy:
 
     def __init__(self, engine_name: str, port: int = _DEFAULT_PORT):
         self._engine = engine_name
+        self._port = port
         self._base = f"http://127.0.0.1:{port}"
         self._bulk_indexing = _FalseEvent()
         self._consecutive_404s = 0
         self._degraded_notified = False
+        self._connection_failed = False  # True after first connection error; reset on success
 
     def _call(self, method: str, timeout=_DISPATCH_TIMEOUT, **kwargs):
         body = json.dumps({
@@ -196,6 +253,7 @@ class RAGProxy:
                 if self._consecutive_404s > 0:
                     self._consecutive_404s = 0
                     self._degraded_notified = False  # allow re-notification on future degradation
+                self._connection_failed = False
                 return json.loads(resp.read()).get("result")
         except urllib.error.HTTPError as e:
             if e.code == 404:
@@ -208,6 +266,17 @@ class RAGProxy:
                         daemon=True,
                     ).start()
             logger.warning(f"RAG proxy {self._engine}.{method}: {e}")
+            return None
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            # Connection refused / timeout — shim is dead, not just stale. Trigger immediate restart.
+            if not self._connection_failed:
+                self._connection_failed = True
+                threading.Thread(
+                    target=_revive_dead_shim,
+                    args=(self._port, self._engine, str(e)),
+                    daemon=True,
+                ).start()
+            logger.warning(f"RAG proxy {self._engine}.{method}: {type(e).__name__}: {e}")
             return None
         except Exception as e:
             logger.warning(f"RAG proxy {self._engine}.{method}: {e}")

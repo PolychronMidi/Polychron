@@ -157,20 +157,27 @@ def _try_recover_from_proxy_error() -> bool:
         return False
     _recovery_last_attempt = now
     try:
-        from server.rag_proxy import RAGProxy, check_shim_health, get_lib_engines
-        if not check_shim_health():
-            logger.warning("HME recovery: shim not healthy — cannot recover")
+        from server.rag_proxy import RAGProxy, check_shim_rag_capable, get_lib_engines
+        if not check_shim_rag_capable():
+            logger.warning("HME recovery: shim not healthy or lacks /rag — cannot recover")
             return False
-        project_engine = RAGProxy("project")
-        global_engine = RAGProxy("global")
+        new_project = RAGProxy("project")
+        new_global = RAGProxy("global")
+        # Self-test: verify proxies actually work before committing
+        test_result = new_project.list_knowledge()
+        if test_result is None:
+            logger.warning("HME recovery: proxy self-test failed (list_knowledge returned None) — aborting")
+            return False
+        project_engine = new_project
+        global_engine = new_global
         shared_model = project_engine.model
         lib_engines = get_lib_engines()
         _startup_error = None
-        logger.info("HME: auto-recovered from proxy startup error — shim is now healthy")
+        logger.info(f"HME: auto-recovered — shim healthy + /rag verified ({len(test_result)} KB entries)")
         register_critical_failure(
             "startup_recovery",
-            "Session started degraded (proxy smoke-test failed) but auto-recovered. "
-            "Root cause: shim was running without /rag endpoint (old version). Now healthy.",
+            f"Session started degraded but auto-recovered ({len(test_result)} KB entries accessible). "
+            "Root cause: shim was running without /rag endpoint (old version).",
             severity="WARNING",
         )
         return True
@@ -203,10 +210,8 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     """
     if _startup_done is None or _startup_done.is_set():
         if _startup_error:
-            # Auto-recover from proxy smoke-test failure if shim is now healthy
-            err_str = str(_startup_error)
-            if "smoke-test" in err_str or "encode" in err_str:
-                _try_recover_from_proxy_error()
+            # Attempt recovery for any startup error — shim restart fixes most proxy failures
+            _try_recover_from_proxy_error()
             if _startup_error:
                 raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
         if project_engine is None or global_engine is None or shared_model is None:
