@@ -53,9 +53,24 @@ def _reindex_files(files: list[str]) -> dict:
                 skipped.append(filepath)
                 continue
             if not os.path.exists(abs_path):
-                _log_error("reindex", f"file not found: {filepath}")
-                skipped.append(filepath)
-                continue
+                # Try finding file by basename under PROJECT_ROOT (handles wrong intermediate dirs)
+                basename = os.path.basename(abs_path)
+                found = None
+                _skip = {".git", "node_modules", "__pycache__", "venv", ".venv", "out", "lab"}
+                for root, _dirs, fnames in os.walk(PROJECT_ROOT):
+                    _dirs[:] = [d for d in _dirs if d not in _skip]
+                    if basename in fnames:
+                        candidate = os.path.join(root, basename)
+                        if os.path.realpath(candidate).startswith(os.path.realpath(PROJECT_ROOT) + os.sep):
+                            found = candidate
+                            break
+                if found:
+                    abs_path = os.path.realpath(found)
+                    logger.info(f"reindex: resolved {filepath} → {found}")
+                else:
+                    _log_error("reindex", f"file not found: {filepath}")
+                    skipped.append(filepath)
+                    continue
             # Skip large files (>32KB) — watcher handles bulk reindex; mini-reindex is for small edits
             if os.path.getsize(abs_path) > 32768:
                 skipped.append(filepath)

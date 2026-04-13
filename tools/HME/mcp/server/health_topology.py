@@ -83,6 +83,14 @@ def _build_topology() -> dict:
     coherence = _compute_coherence(shim, daemon, ollama_instances)
     slowdown = _check_shim_slowdown()
 
+    # L13-15: meta-observer status
+    meta_obs = {}
+    try:
+        from server import meta_observer
+        meta_obs = meta_observer.get_status()
+    except Exception:
+        pass
+
     return {
         "ts": time.time(),
         "elapsed_ms": int((time.time() - t0) * 1000),
@@ -94,6 +102,7 @@ def _build_topology() -> dict:
             "daemon": daemon,
             "ollama": ollama_instances,
         },
+        "meta_observer": meta_obs,
     }
 
 

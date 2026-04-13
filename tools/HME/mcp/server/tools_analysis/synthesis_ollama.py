@@ -144,6 +144,33 @@ def _url_for(model: str, endpoint: str = "generate") -> str:
 _LOCAL_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/generate"
 _LOCAL_CHAT_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/chat"
 
+# ── Intelligent model routing ──────────────────────────────────────────────
+_CODE_SIGNALS = {"function", "implementation", "code", "callers", "logic",
+                 "algorithm", "pattern", "method", "class", "module", "import",
+                 "variable", "constant", "return", "parameter", "signature",
+                 "source", "snippet", "syntax", "definition"}
+_REASON_SIGNALS = {"why", "design", "architecture", "relationship", "trade-off",
+                   "decision", "compare", "difference", "purpose", "motivation",
+                   "constraint", "boundary", "coupling", "coherence", "explain",
+                   "pros", "cons", "should", "strategy"}
+
+
+def route_model(prompt: str) -> str:
+    """Pick coder vs reasoner based on query intent. Returns model name.
+
+    Callers that currently hardcode model= can use this instead for adaptive routing.
+    Code-focused queries → _LOCAL_MODEL (coder, GPU0).
+    Architecture/reasoning queries → _REASONING_MODEL (reasoner, GPU1).
+    """
+    words = set(prompt.lower().split())
+    code_score = len(words & _CODE_SIGNALS)
+    reason_score = len(words & _REASON_SIGNALS)
+    if reason_score > code_score:
+        return _REASONING_MODEL
+    if code_score > reason_score:
+        return _LOCAL_MODEL
+    return _REASONING_MODEL  # default: reasoner for ambiguous queries
+
 
 # ── Ollama priority ────────────────────────────────────────────────────────
 # _ollama_interactive: set by interactive callers. Background checks this flag and
@@ -522,7 +549,12 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
     try:
         with urllib.request.urlopen(req, timeout=60) as resp:
             result = json.loads(resp.read())
-            text = re.sub(r'[^\x00-\x7F]+', '', result.get("response", "").strip()).strip()
+            text = result.get("response", "").strip()
+            if not text:
+                text = result.get("thinking", "").strip()
+            if "</think>" in text:
+                text = text[text.rfind("</think>") + len("</think>"):].strip()
+            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
             return text if text else None
     except Exception as e:
         _err_str = str(e).lower()
@@ -579,3 +611,296 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     except Exception as e:
         logger.debug(f"compress_for_claude: arbiter unavailable ({e}), falling back to truncation")
     return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
+
+
+# ── Adaptive multi-stage synthesis ────────────────────────────────────────
+# synthesize() auto-detects complexity, injects context, routes to optimal
+# strategy, and quality-gates output. Strategies:
+#   direct (1):   route_model() → single call (fast)
+#   enriched (2): source grounding + best model (balanced)
+#   cascade (3):  arbiter plan → coder kickstart → reasoner deep (thorough)
+
+_COMPLEXITY_SIGNALS = frozenset({
+    "relationship", "interact", "coupling", "boundary", "between",
+    "compare", "contrast", "multiple", "across", "architecture",
+    "design", "trade-off", "cascade", "feedback", "resonance",
+    "how does", "why does", "what happens",
+})
+_SIMPLE_SIGNALS = frozenset({
+    "where is", "find", "what file", "show me", "list",
+    "which module", "path to", "definition of", "callers of",
+})
+
+
+def _assess_complexity(prompt: str) -> dict:
+    """Score prompt complexity 1-3 via instant heuristic. No model call — zero latency.
+
+    The arbiter's value is in cascade Stage 1 (planning) where it reasons about
+    investigation strategy, not in classification where a keyword scan suffices.
+    """
+    words_lower = prompt.lower()
+
+    if any(s in words_lower for s in _SIMPLE_SIGNALS):
+        return {"complexity": 1, "strategy": "direct", "reasoning": "simple"}
+
+    signal_hits = sum(1 for s in _COMPLEXITY_SIGNALS if s in words_lower)
+
+    if signal_hits == 0 and len(prompt) < 150:
+        return {"complexity": 1, "strategy": "direct", "reasoning": "short, no signals"}
+    if signal_hits >= 3:
+        return {"complexity": 3, "strategy": "cascade", "reasoning": f"{signal_hits} signals"}
+    if signal_hits >= 2 or len(prompt) > 300:
+        return {"complexity": 2, "strategy": "enriched", "reasoning": f"{signal_hits} signals"}
+    return {"complexity": 1, "strategy": "direct", "reasoning": "default"}
+
+
+def _inject_context(prompt: str) -> str:
+    """Enrich prompt with source code grounding + operational health.
+
+    Session narrative is NOT added here — _local_think handles that separately.
+    Extracts module names from prompt, reads their source for grounding.
+    """
+    modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', prompt)
+    path_bases = re.findall(r'(?:src|tools)/\S+/([a-zA-Z]+)\.\w+', prompt)
+    candidates = list(dict.fromkeys(modules + path_bases))
+
+    parts = []
+    for mod in candidates[:2]:
+        src = _read_module_source(mod, max_chars=2000)
+        if src:
+            parts.append(f"[Source: {mod}]\n{src}")
+            break
+
+    try:
+        from server import operational_state
+        ops = operational_state.snapshot()
+        alerts = []
+        if ops.get("shim_crashes_today", 0) > 0:
+            alerts.append(f"shim_crashes={ops['shim_crashes_today']}")
+        if ops.get("recovery_success_rate_ema", 1.0) < 0.8:
+            alerts.append(f"recovery={ops['recovery_success_rate_ema']:.0%}")
+        if alerts:
+            parts.append(f"[Health: {', '.join(alerts)}]")
+    except Exception:
+        pass
+
+    return "\n".join(parts) + "\n\n" + prompt if parts else prompt
+
+
+def _cascade_synthesis(prompt: str, enriched_prompt: str,
+                       max_tokens: int = 8192) -> str | None:
+    """Three-stage: arbiter plan → coder kickstart → reasoner deep synthesis.
+
+    The coder provides verified structural facts (file paths, function names,
+    signal fields). The reasoner uses those as grounded context for deep analysis,
+    preventing hallucinated module names while enabling rich architectural reasoning.
+    """
+    from .synthesis_config import _THINK_SYSTEM
+
+    # Stage 1: Arbiter plans the investigation
+    plan = _local_think_with_system(
+        f"Break into 3-5 investigation steps:\n\n{prompt[:400]}\n\n"
+        "Each step: WHAT (module/signal), WHERE (subsystem), WHY (relevance).",
+        "Code investigation planner. Concrete steps only.", 500, _ARBITER_MODEL,
+    )
+    if plan and "</think>" in plan:
+        plan = plan[plan.rfind("</think>") + len("</think>"):].strip()
+    if not plan or len(plan) < 30:
+        logger.info("cascade: arbiter plan failed, enriched fallback")
+        return _local_think(enriched_prompt, max_tokens=max_tokens,
+                           model=_REASONING_MODEL, system=_THINK_SYSTEM)
+
+    # Source injection: read actual code for modules the arbiter's plan mentions
+    _plan_modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', plan)
+    _source_block = ""
+    for _pm in list(dict.fromkeys(_plan_modules))[:3]:
+        _src = _read_module_source(_pm, max_chars=1200)
+        if _src:
+            _source_block += f"\n[{_pm} source]\n{_src}\n"
+            if len(_source_block) > 3000:
+                break
+
+    # Stage 2: Coder kickstart — structured fact extraction grounded in source
+    _coder_prefix = f"SOURCE CODE:\n{_source_block}\n\n" if _source_block else ""
+    coder_out = _local_think(
+        f"{_coder_prefix}"
+        f"Execute this analysis plan:\n\n{plan}\n\nQUESTION: {prompt[:300]}\n\n"
+        "For each step extract: FILE (exact path), FUNCTION, SIGNALS, CONNECTS.\n"
+        "Exhaustive facts. No analysis.",
+        max_tokens=2500, model=_LOCAL_MODEL, system=_THINK_SYSTEM,
+        temperature=0.1, priority="interactive",
+    )
+    if not coder_out or len(coder_out) < 40:
+        logger.info("cascade: coder failed, reasoner with plan")
+        return _local_think(
+            f"Plan:\n{plan}\n\n{enriched_prompt}",
+            max_tokens=max_tokens, model=_REASONING_MODEL, system=_THINK_SYSTEM,
+        )
+
+    # Stage 3: Reasoner deep synthesis using coder's verified facts
+    result = _local_think(
+        f"Question: {prompt[:300]}\n\n"
+        f"VERIFIED FACTS (trust these paths/names):\n{coder_out}\n\n"
+        "Synthesize: module interactions, architectural implications, recommendations.\n"
+        "Use ONLY names from verified facts. Max 600 words.",
+        max_tokens=max_tokens, model=_REASONING_MODEL,
+        system=_THINK_SYSTEM, temperature=0.2,
+    )
+    if result:
+        logger.info(
+            f"cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→reasoner({len(result)}c)"
+        )
+        result += (
+            f"\n\n*cascade: arbiter({len(plan)}c)"
+            f"→coder({len(coder_out)}c)→reasoner({len(result)}c)*"
+        )
+    return result
+
+
+def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
+    """Fire both GPUs in parallel on the same prompt. Arbiter picks the best.
+
+    Coder and reasoner analyze independently — if they agree, high confidence.
+    If they disagree, the disagreement itself is a valuable finding.
+    """
+    from .synthesis_config import _THINK_SYSTEM
+
+    results = [None, None]
+
+    def _g0():
+        results[0] = _local_think(prompt, max_tokens=max_tokens, model=_LOCAL_MODEL,
+                                   system=_THINK_SYSTEM, temperature=0.15, priority="parallel")
+
+    def _g1():
+        results[1] = _local_think(prompt, max_tokens=max_tokens, model=_REASONING_MODEL,
+                                   system=_THINK_SYSTEM, temperature=0.2, priority="parallel")
+
+    t0 = _threading.Thread(target=_g0, daemon=True)
+    t1 = _threading.Thread(target=_g1, daemon=True)
+    t0.start(); t1.start()
+    t0.join(timeout=120); t1.join(timeout=120)
+
+    g0, g1 = results[0], results[1]
+    if not g0 and not g1:
+        return None
+    if not g0:
+        return g1
+    if not g1:
+        return g0
+
+    # Both succeeded — arbiter picks winner
+    pick = _local_think_with_system(
+        f"Two analyses of: {prompt[:150]}\n\n"
+        f"A (coder):\n{g0[:600]}\n\nB (reasoner):\n{g1[:600]}\n\n"
+        "Which is better? Respond: A or B, then one sentence why.",
+        "Pick A or B. Default B if equal.", 80, _ARBITER_MODEL,
+    )
+    picked_a = False
+    if pick:
+        if "</think>" in pick:
+            pick = pick[pick.rfind("</think>") + len("</think>"):].strip()
+        tokens = pick.strip().split()
+        if tokens and tokens[0].upper().startswith("A"):
+            picked_a = True
+
+    if picked_a:
+        logger.info(f"dual_gpu: coder picked ({len(g0)}c vs {len(g1)}c)")
+        return g0
+    logger.info(f"dual_gpu: reasoner picked ({len(g1)}c vs {len(g0)}c)")
+    return g1
+
+
+def _quality_gate(output: str, prompt: str) -> str:
+    """Arbiter spot-check: PASS or tag as [unverified]."""
+    if not output or len(output) < 80:
+        return output
+    cb = _get_circuit_breaker(_ARBITER_MODEL)
+    if not cb.allow():
+        return output
+
+    import urllib.request
+    payload = json.dumps({
+        "model": _ARBITER_MODEL,
+        "prompt": (
+            f"Quality check:\nQ: {prompt[:150]}\nA: {output[:500]}\n\n"
+            "PASS if relevant with real paths. FAIL if hallucinated or off-topic.\nOne word:"
+        ),
+        "stream": False, "keep_alive": _KEEP_ALIVE,
+        "options": {"temperature": 0.0, "num_predict": 200, "num_ctx": _NUM_CTX_4B},
+    }).encode()
+    req = urllib.request.Request(
+        _url_for(_ARBITER_MODEL), data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+            text = result.get("response", "") or result.get("thinking", "")
+            if "</think>" in text:
+                text = text[text.rfind("</think>") + len("</think>"):]
+            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+            if "FAIL" in text.upper():
+                logger.info(f"quality_gate: FAIL — {text[:60]}")
+                return f"[unverified] {output}"
+    except Exception:
+        pass
+    return output
+
+
+def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive",
+               auto_context: bool = True, quality_check: bool = True) -> str | None:
+    """Adaptive multi-stage synthesis — highest-quality inference path in HME.
+
+    1. Assesses complexity (arbiter scores 1-3)
+    2. Injects source grounding + operational context
+    3. Routes: direct (1) / enriched (2) / cascade (3)
+    4. Quality-gates output via arbiter
+    5. Auto-escalates strategy on failure (direct→enriched→cascade)
+    """
+    import time as _t
+    from .synthesis_config import _THINK_SYSTEM
+    t0 = _t.time()
+
+    assessment = _assess_complexity(prompt)
+    complexity = assessment["complexity"]
+    strategy = assessment["strategy"]
+
+    result = None
+    if strategy == "cascade":
+        enriched = _inject_context(prompt) if auto_context else prompt
+        result = _cascade_synthesis(prompt, enriched, max_tokens)
+    elif strategy == "enriched":
+        enriched = _inject_context(prompt) if auto_context else prompt
+        model = route_model(prompt)
+        result = _local_think(enriched, max_tokens=max_tokens, model=model,
+                             system=_THINK_SYSTEM, priority=priority)
+    else:
+        model = route_model(prompt)
+        result = _local_think(prompt, max_tokens=min(max_tokens, 4096), model=model,
+                             system=_THINK_SYSTEM, priority=priority)
+
+    # Auto-escalate on failure: direct → enriched → cascade
+    if not result and strategy == "direct":
+        enriched = _inject_context(prompt) if auto_context else prompt
+        alt = _REASONING_MODEL if route_model(prompt) == _LOCAL_MODEL else _LOCAL_MODEL
+        result = _local_think(enriched, max_tokens=max_tokens, model=alt,
+                             system=_THINK_SYSTEM, priority=priority)
+    if not result and strategy != "cascade":
+        enriched = _inject_context(prompt) if auto_context else prompt
+        result = _cascade_synthesis(prompt, enriched, max_tokens)
+
+    if not result:
+        return None
+
+    if quality_check:
+        result = _quality_gate(result, prompt)
+
+    elapsed = _t.time() - t0
+    logger.info(f"synthesize: {strategy}(c={complexity}) {len(result)}c {elapsed:.1f}s")
+
+    from .synthesis_session import append_session_narrative
+    append_session_narrative(
+        "think", f"synthesize({strategy},c={complexity}): {prompt[:50]}→{len(result)}c"
+    )
+
+    return result

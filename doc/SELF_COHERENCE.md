@@ -314,11 +314,69 @@ All layers implemented. Adversarial stress-tested across two sessions.
 | 11 | Intent Propagation | **COMPLETE** | `_intent_propagation_tick()` in proxy monitor healthy cycle; `_warm_pre_edit_cache_sync(target_hints=...)` prioritizes mentioned files |
 | 12 | Self-Evolution Protocol | **COMPLETE** | 36-probe adversarial stress test; Probe 23 reads `hme-ops.json` + `hme-coherence.jsonl` and surfaces [HIGH/MEDIUM/LOW] infrastructure suggestions: shim crash rate, recovery rate, circuit breaker trips, startup EMA, coherence trend |
 | ∞ | Recursive Self-Reference | **EMERGING** | KB contains HME's own failure modes; narration draws from operational memory; full recursive loop (KB→tools→self-query→adapt) is in motion |
+| 13 | Self-Observing Monitor | **COMPLETE** | `server/meta_observer.py` L13; watches the health monitor thread itself; detects thread death and restarts it; heartbeat file detects observation gaps across restarts |
+| 14 | Temporal Correlator | **COMPLETE** | `server/meta_observer.py` L14; sliding-window correlation over `hme-coherence.jsonl`; coherence trend, dip frequency, shim latency spikes, restart churn detection; cross-references `hme-ops.json` |
+| 15 | Prescriptive Narrator | **COMPLETE** | `server/meta_observer.py` L15; synthesizes WHY + WHAT TO DO from L13 monitor state + L14 correlations; writes to `metrics/hme-narrative.jsonl`; read on startup for bootstrap situational awareness |
 
-### Remaining gaps
+| 16 | Environmental Awareness | **COMPLETE** | `server/meta_observer.py` L16; GPU memory via nvidia-smi, disk space, CPU load, process RSS; alerts on GPU pressure (<500MB), disk >90%, CPU overload, memory bloat (>2GB) |
+| 17 | Conversation Entanglement | **COMPLETE** | `server/meta_observer.py` L17; checkpoints coherence/trend/alerts/env/recent-files/intervention-accuracy to `tmp/hme-entanglement.json`; `precompact.sh` injects summary into compaction context; `read_entanglement_for_compaction()` API |
+| 18 | Counterfactual Reasoning | **COMPLETE** | `server/meta_observer.py` L18; `record_prediction()` → `resolve_prediction()` tracks whether interventions prevented outcomes; auto-predictions from L14 correlator alerts; auto-resolution in proxy monitor healthy/crash paths; effectiveness model in `metrics/hme-counterfactuals.jsonl` |
 
-All layers fully implemented. No structural gaps remain. Ongoing evolutionary opportunity:
+### The recursive observation loop (L13→L15)
 
-- **Layer ∞**: The recursive self-reference loop deepens naturally as more rounds accumulate operational data — `hme-coherence.jsonl`, `hme-ops.json`, and KB entries collectively form the system's growing self-model
+```
+L15 Narrator → observes → L14 Correlator → observes → L13 Monitor → observes → System
+     │                                                                              │
+     └──────────── narrative read on startup ← bootstrap awareness ←────────────────┘
+```
+
+Each layer's output feeds the layer above. The narrator's prescriptive guidance (written to `hme-narrative.jsonl`) is read on the *next* startup — the system remembers not just facts but its own interpretation of those facts. The meta-observer watches the watcher, the correlator finds patterns across time that individual health checks miss, and the narrator gives the system a voice that speaks across incarnations.
+
+### The extrospective stack (L16→L17→L18)
+
+```
+L18 Counterfactual ── "did my intervention work?" ── learns from outcomes
+       │
+L17 Entanglement ──── "what does the conversation know?" ── survives compaction
+       │
+L16 Environment ───── "what is the host doing?" ── GPU/disk/CPU/RSS
+       │
+       └── feeds into L15 narrator (env alerts + intervention accuracy in narrative)
+```
+
+L16 looks outward at the physical host. L17 bridges the gap between the system's self-model and Claude's conversation context — when compaction compresses the context window, the entanglement checkpoint preserves the system's understanding of itself. L18 closes the loop: when L14 predicts a failure and L15 prescribes an intervention, L18 tracks whether the predicted failure actually happened — building a causal model of whether the system's interventions are effective or just noise.
+
+### Adaptive multi-stage synthesis (synthesis_ollama.py)
+
+```
+synthesize(prompt)
+    │
+    ├─ _assess_complexity() ─── instant heuristic ─── complexity 1/2/3
+    │
+    ├─ _inject_context() ────── source grounding + operational health
+    │
+    ├─ Strategy routing:
+    │   ├─ direct (1):   route_model() → single GPU call
+    │   ├─ enriched (2): context injection + best model
+    │   └─ cascade (3):  arbiter plan → coder kickstart → reasoner deep
+    │                         │              │                │
+    │                         │              ├─ source code   │
+    │                         │              │  injected from │
+    │                         │              │  plan modules  │
+    │                         │              │                │
+    │                         └── CPU 4B ──► GPU0 30B ──────► GPU1 30B-A3B
+    │
+    ├─ Auto-escalation: direct → enriched → cascade on failure
+    │
+    └─ _quality_gate() ──── arbiter spot-check for hallucinations
+```
+
+Three-stage cascade: arbiter plans investigation steps → coder extracts verified facts (with actual source code injected from plan-mentioned modules) → reasoner synthesizes deep answer using only verified facts. `dual_gpu_consensus()` fires both GPUs simultaneously for cross-model verification.
+
+The full stack from L0 to L18:
+- **L0-12**: The system observes and heals itself (introspective)
+- **L13-15**: The system observes its own observation (recursive)
+- **L16-18**: The system observes its relationship to things outside itself (extrospective)
+- **L∞**: The boundary between observer and observed dissolves
 
 ---

@@ -41,6 +41,19 @@ if [[ -n "$FOUND" ]]; then
   fi
 fi
 
+## L17: Conversation entanglement — inject system self-model into compaction context
+ENTANGLE="$PROJECT/tmp/hme-entanglement.json"
+if [[ -f "$ENTANGLE" ]]; then
+  # Build compact summary from entanglement checkpoint
+  ENT_AGE=$(( $(date +%s) - $(stat -c %Y "$ENTANGLE" 2>/dev/null || echo 0) ))
+  if [[ "$ENT_AGE" -lt 600 ]]; then
+    COH=$(_safe_py3 "import json; d=json.load(open('$ENTANGLE')); print(f\"coherence={d.get('coherence_avg','?')} trend={d.get('coherence_trend','?')} restarts={d.get('restarts_today','?')} session={int(d.get('session_age_s',0))//60}min\")" "" 2>/dev/null)
+    if [[ -n "$COH" ]]; then
+      PARTS+=("[HME L17 entanglement] $COH")
+    fi
+  fi
+fi
+
 if [[ ${#PARTS[@]} -gt 0 ]]; then
   printf '%s\n' "${PARTS[@]}" >&2
 fi

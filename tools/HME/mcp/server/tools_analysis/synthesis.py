@@ -21,6 +21,7 @@ from .synthesis_ollama import (  # noqa: F401
     _ollama_interactive,
     _ollama_background_yield, _local_think, _read_module_source,
     _local_chat, _local_think_with_system, compress_for_claude,
+    route_model, synthesize, dual_gpu_consensus,
 )
 # _last_think_failure is a mutable module-level sentinel in synthesis_ollama.
 # Must be read via module reference (not re-exported) to get the live value after mutation.

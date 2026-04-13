@@ -159,16 +159,28 @@ def record_shim_crash() -> None:
 
 
 def is_crash_loop() -> bool:
-    """Return True if shim crash frequency suggests a crash loop this session.
+    """Return True if shim crash frequency suggests a crash loop.
 
     Layer 5 (Temporal Rhythm): used to skip expensive startup steps when the
     system is clearly in trouble — don't waste time on Ollama priming if the
     shim crashes every 2 minutes.
+
+    MCP restarts are routine (~70/day from Claude Code kill/restart cycle).
+    Only shim crashes and rapid restart velocity indicate real trouble.
     """
     with _state_lock:
         shim_crashes = _state.get("shim_crashes_today", 0)
+        if shim_crashes >= 3:
+            return True
+        # Rapid restart velocity: 5+ restarts in the last 10 minutes
+        session_start = _state.get("session_start", 0)
+        last_restart = _state.get("last_restart", 0)
         restarts = _state.get("restarts_today", 1)
-        return shim_crashes >= 3 or restarts >= 8
+        if restarts >= 5 and session_start and last_restart:
+            elapsed_min = (last_restart - session_start) / 60
+            if elapsed_min > 0 and restarts / elapsed_min > 0.5:
+                return True
+        return False
 
 
 def record_circuit_breaker_trip(model: str) -> int:

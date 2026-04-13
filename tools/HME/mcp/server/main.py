@@ -97,6 +97,13 @@ init_config(PROJECT_ROOT)
 from server import operational_state as _ops
 _ops.init(PROJECT_ROOT)
 
+# --- Layers 13-15: Meta-observer (self-observing monitor + correlator + narrator) ---
+from server import meta_observer as _mo
+_prior_narrative = _mo.read_startup_narrative()
+if _prior_narrative:
+    logger.info(f"L15 prior narrative: {_prior_narrative[:200]}")
+_mo.start(PROJECT_ROOT)
+
 # --- Layer 0: Transition to WARMING immediately ---
 from server import system_phase as _sp
 _sp.set_phase(_sp.SystemPhase.WARMING, "main.py starting")
