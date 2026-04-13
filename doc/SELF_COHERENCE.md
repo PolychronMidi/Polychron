@@ -351,27 +351,40 @@ L16 looks outward at the physical host. L17 bridges the gap between the system's
 ```
 synthesize(prompt)
     │
-    ├─ _assess_complexity() ─── instant heuristic ─── complexity 1/2/3
+    ├─ _assess_complexity() ─── two-tier heuristic (zero latency)
+    │   deep signals (1.0): architectur, coupling, feedback, design, ...
+    │   mod  signals (0.5): detect, trace, flow, boundar, coordinat, ...
+    │   module bonus  (0.5): camelCase names in prompt
+    │   → score ≥ 3.0: cascade │ ≥ 1.5: enriched │ else: direct
     │
-    ├─ _inject_context() ────── source grounding + operational health
+    ├─ _inject_context() ─── source grounding + operational health
     │
     ├─ Strategy routing:
     │   ├─ direct (1):   route_model() → single GPU call
     │   ├─ enriched (2): context injection + best model
-    │   └─ cascade (3):  arbiter plan → coder kickstart → reasoner deep
+    │   └─ cascade (3):  arbiter plan → source injection → coder → reasoner
     │                         │              │                │
-    │                         │              ├─ source code   │
-    │                         │              │  injected from │
-    │                         │              │  plan modules  │
+    │                         │              ├─ actual .js    │
+    │                         │              │  source read   │
+    │                         │              │  from plan's   │
+    │                         │              │  camelCase refs │
     │                         │              │                │
     │                         └── CPU 4B ──► GPU0 30B ──────► GPU1 30B-A3B
     │
-    ├─ Auto-escalation: direct → enriched → cascade on failure
+    ├─ Auto-escalation: any → alt GPU enriched → cascade on failure
+    │   (all strategies try alt GPU before cascade)
     │
-    └─ _quality_gate() ──── arbiter spot-check for hallucinations
+    ├─ _quality_gate() ─── deterministic (zero latency, no model call)
+    │   extracts camelCase module refs → _read_module_source() verify
+    │   >50% phantom → [unverified] tag
+    │
+    └─ Circuit breakers: all 4 call paths protected
+        _local_think, _local_chat, _local_think_with_system, compress_for_claude
+        3-state: CLOSED → OPEN (3 failures/60s) → HALF_OPEN (probe) → CLOSED
+        Persisted in hme-ops.json, survives MCP restarts
 ```
 
-Three-stage cascade: arbiter plans investigation steps → coder extracts verified facts (with actual source code injected from plan-mentioned modules) → reasoner synthesizes deep answer using only verified facts. `dual_gpu_consensus()` fires both GPUs simultaneously for cross-model verification.
+Three-stage cascade: arbiter plans investigation steps → source code from plan-mentioned modules injected into coder prompt → coder extracts verified facts → reasoner synthesizes deep answer using only verified facts. `dual_gpu_consensus()` fires both GPUs simultaneously for cross-model verification. Complexity scoring uses stemmed signal prefixes ("architectur" matches both "architecture" and "architectural") to avoid morphological false negatives.
 
 The full stack from L0 to L18:
 - **L0-12**: The system observes and heals itself (introspective)
