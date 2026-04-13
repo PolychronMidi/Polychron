@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **11 MCP tools** (7 mega-tools + 4 operational) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
+HME is five layers integrated into one executive. **8 MCP tools** (7 mega-tools + 1 operational) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 11 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 4 operational (hme_admin/beat_snapshot/fix_antipattern/enrich_prompt) |
+| **MCP Server** | `tools/HME/` | 8 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 1 operational (hme_admin) |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `hooks/` (22 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -244,9 +244,9 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Enrich a prompt with project context | `enrich_prompt(prompt='...', frame='focus on...')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## The 12 Tools — Complete Reference
+## The 8 Tools — Complete Reference
 
-All capabilities route through 7 mega-tools + 4 operational tools. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
+All capabilities route through 7 mega-tools + 1 operational tool. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
 
 ### 1. `evolve(focus)` — "What should I work on next?"
 
@@ -366,13 +366,15 @@ All capabilities route through 7 mega-tools + 4 operational tools. There are no 
 
 | mode | What it does |
 |------|-------------|
-| `"auto"` (default) | Detects: L0 channel name → cascade, module name → per-section trace |
+| `"auto"` (default) | Detects: beat key (S3/2:1:3:0/400) → snapshot; L0 channel → cascade; else → module |
+| `"snapshot"` | Full state at one beat: regime, trust, coupling labels, notes. Beat key formats: `S3`, `2:1:3:0`, `400` |
 | `"cascade"` | L0 channel cascade trace, 3 hops deep |
 | `"module"` | Per-section trace: regime, tension, trust scores, value ranges |
 | `"causal"` | Causal trace: constant → controller → metric → musical effect |
 | `"interaction"` | Correlate two modules' trust scores: cooperative/competitive/independent |
+| `"delta"` | Compare current vs previous pipeline run: feature deltas, regime shifts, trust changes |
 
-### 8. `hme_admin(action, modules)` — HME maintenance
+### 8. `hme_admin(action, modules, antipattern, hook_target)` — HME maintenance
 
 | action | What it does |
 |--------|-------------|
@@ -383,27 +385,11 @@ All capabilities route through 7 mega-tools + 4 operational tools. There are no 
 | `"clear_index"` | Wipe hash cache + chunk store, rebuild from scratch |
 | `"warm"` | Pre-populate all caches: Tier 1 callers+KB, Tier 2 synthesis, GPU KV contexts |
 | `"introspect"` | Self-benchmarking: tool usage patterns, workflow discipline, KB health |
+| `"fix_antipattern"` | Synthesize bash snippet to enforce a behavioral rule in a hook (antipattern=, hook_target=) |
 
-### 9. `beat_snapshot(beat_key)` — Single beat state capture
+`hook_target` options: `pretooluse_bash`, `pretooluse_edit`, `pretooluse_read`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
 
-Returns full system state at one beat: regime, trust ecology, conductor snap, coupling labels, notes emitted. Use for deep-diving a specific moment.
-
-### 10. `fix_antipattern(antipattern, hook_target)` — Hook enforcement
-
-Synthesizes bash detection logic for a behavioral anti-pattern and appends it to the target hook script. Use when a rule is repeatedly violated and needs automated enforcement. Valid targets: `pretooluse_bash`, `pretooluse_read`, `pretooluse_edit`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
-
-### 11. `enrich_prompt(prompt, frame)` — Local prompt enrichment
-
-Four-stage local pipeline that enriches prompts with project context at zero Claude token cost:
-
-| Stage | What it does |
-|-------|-------------|
-| **1. Arbiter triage** | qwen3:4b classifies needs: `KB_NEEDED`, `STRUCTURAL_NEEDED`, `CONTEXTUAL_NEEDED` |
-| **2. Context assembly** | Instant KB search + session narrative + pipeline verdict (only for flagged needs) |
-| **3. Reasoning enrichment** | GPU1 reasoner weaves context into the prompt naturally |
-| **4. Arbiter compression** | If enriched > 3x original length, arbiter compresses to essentials |
-
-Returns `{enriched, original, triage, trace}`. Available via MCP tool, HTTP shim (`/enrich_prompt`), and HME Chat UI (Enrich button with optional frame textarea). Use `frame` to guide enrichment direction (e.g. "focus on architectural constraints").
+`enrich_prompt` is an internal function accessible via HTTP shim (`/enrich_prompt`) and HME Chat UI — not an MCP tool.
 
 ## Knowledge KB
 

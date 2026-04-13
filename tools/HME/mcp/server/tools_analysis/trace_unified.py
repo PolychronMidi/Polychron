@@ -17,8 +17,11 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
     """Trace signal flow through the system.
     'channelName' → L0 cascade trace (follow signal through consumers 3 hops deep).
     'moduleName' → per-section trace (regime, tension, notes, profile per section).
-    mode='auto' (default) detects from target: known L0 channel names → cascade,
-    otherwise → module trace. mode='cascade'|'module'|'causal' to force.
+    'S3' / '2:1:3:0' / '400' → beat snapshot: full system state at one beat (regime,
+    trust scores, coupling labels, notes emitted). Auto-detected from target format.
+    mode='auto' (default) detects from target: L0 channel names → cascade,
+    beat keys (S3, 2:1:3:0, plain number) → snapshot, otherwise → module trace.
+    mode='cascade'|'module'|'causal'|'snapshot' to force.
     mode='delta': compare current vs previous pipeline run — shows feature deltas,
     section regime shifts, and trust score changes for changed modules.
     Pass target='' or target='auto' for delta mode (auto-detects changed modules from git)."""
@@ -30,12 +33,16 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
         return _budget_gate(_trace_delta(target if target and target != "auto" else ""))
 
     if not target or not target.strip():
-        return "Error: target cannot be empty. Pass a channel name or module name."
+        return "Error: target cannot be empty. Pass a channel name, module name, or beat key (S3, 2:1:3:0, 400)."
 
     target = target.strip()
 
     if mode == "auto":
         mode = _detect_trace_type(target)
+
+    if mode == "snapshot":
+        from .runtime import beat_snapshot as _bs
+        return _bs(target)
 
     if mode == "cascade":
         from .coupling import coupling_intel as _ci
@@ -51,7 +58,15 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
 
 
 def _detect_trace_type(target: str) -> str:
-    """Detect whether target is an L0 channel name or a module name."""
+    """Detect whether target is a beat key, L0 channel name, or module name."""
+    import re
+    # Beat key formats: 'S3'/'s3', '2:1:3:0' (colon-separated numeric), plain integer
+    if re.match(r'^[Ss]\d+$', target):
+        return "snapshot"
+    if re.match(r'^\d+:\d+', target):
+        return "snapshot"
+    if re.match(r'^\d+$', target):
+        return "snapshot"
     # Known L0 channel name patterns: lowercase with hyphens
     if '-' in target:
         return "cascade"
@@ -66,7 +81,6 @@ def _detect_trace_type(target: str) -> str:
     # camelCase starting with uppercase = likely a module (e.g. "crossLayerClimaxEngine")
     # camelCase starting with lowercase but has uppercase = could be module or channel
     # Heuristic: if it matches a JS module naming pattern (multi-word camel) → module
-    import re
     if re.search(r'[A-Z][a-z]', target[1:]) and len(target) > 15:
         return "module"  # long camelCase = almost always a module name
     # All lowercase, no hyphens — check known channels

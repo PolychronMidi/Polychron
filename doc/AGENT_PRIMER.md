@@ -1,6 +1,6 @@
 # Agent Primer
 
-Self-evolving algorithmic composition. 482 JS files produce MIDI, rendered to WAV, analyzed by neural codecs. HME (11 MCP tools) is the evolutionary nervous system — KB, architectural analysis, enforcement hooks. They co-evolve: improving the music improves HME, improving HME improves the music.
+Self-evolving algorithmic composition. 482 JS files produce MIDI, rendered to WAV, analyzed by neural codecs. HME (8 MCP tools) is the evolutionary nervous system — KB, architectural analysis, enforcement hooks. They co-evolve: improving the music improves HME, improving HME improves the music.
 
 ## Boot
 
@@ -31,7 +31,7 @@ Hooks enforce each adherence, completetion, and transition.
 ```
 find(query)                             auto-routes: callers/grep/semantic/coupling/diagnose/blast
 trace(target)                           signal flow: L0 cascade, module chains, causal chains
-beat_snapshot(beat)                     full system state at one beat: regime, trust, notes emitted
+trace(target, mode='snapshot')          beat state: S3 / 2:1:3:0 / 400 → regime, trust, notes
 ```
 
 **Evolution Planning**
