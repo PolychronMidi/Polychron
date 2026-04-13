@@ -334,29 +334,19 @@ def suggest_evolution() -> str:
             + (f"CB0 entropy: mean={signals.get('cb0_entropy_mean', '?')}\n" if signals.get('cb0_entropy_mean') else "")
             + (f"Verdict top features: {signals.get('verdict_top_features', [])[:3]}\n" if signals.get('verdict_top_features') else "")
         )
-        # Thread-based total timeout: _two_stage_think makes up to 4 sequential
-        # _local_think calls, each capped at 120s individually = 480s possible.
-        # 75s thread join caps the entire prescription block regardless.
-        import threading as _thr
-        _presc_result = [None]
-        def _presc_worker():
-            _presc_result[0] = _two_stage_think(
-                _synthesis_ctx,
-                "You are an evolution strategist for a self-evolving alien generative music system. "
-                "In 2-3 sentences: what is the single highest-leverage evolution action for the NEXT ROUND? "
-                "Name the specific module(s) to modify, the signal field to use, "
-                "and what the listener will hear differently. "
-                "If a rut is detected, prescribe an orthogonal target. Be concrete and decisive.",
-                max_tokens=600,
-                answer_format=(
-                    "2-3 decisive sentences. No bullet format. No FILE/FUNCTION labels. "
-                    "One paragraph: module, signal field, musical effect. Direct and concrete."
-                ),
-            )
-        _presc_thread = _thr.Thread(target=_presc_worker, daemon=True)
-        _presc_thread.start()
-        _presc_thread.join(timeout=75)
-        _prescription = _presc_result[0]
+        _prescription = _two_stage_think(
+            _synthesis_ctx,
+            "You are an evolution strategist for a self-evolving alien generative music system. "
+            "In 2-3 sentences: what is the single highest-leverage evolution action for the NEXT ROUND? "
+            "Name the specific module(s) to modify, the signal field to use, "
+            "and what the listener will hear differently. "
+            "If a rut is detected, prescribe an orthogonal target. Be concrete and decisive.",
+            max_tokens=600,
+            answer_format=(
+                "2-3 decisive sentences. No bullet format. No FILE/FUNCTION labels. "
+                "One paragraph: module, signal field, musical effect. Direct and concrete."
+            ),
+        )
         if _prescription:
             parts.append("\n---\n## NEXT EVOLUTION PRESCRIPTION *(synthesized)*\n")
             parts.append(_prescription)
