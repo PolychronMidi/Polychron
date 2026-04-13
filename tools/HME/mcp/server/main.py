@@ -91,15 +91,15 @@ context._startup_done = _startup_done
 
 
 def _background_load():
-    from server.rag_proxy import RAGProxy, ensure_shim_running, check_shim_health
+    from server.rag_proxy import RAGProxy, ensure_shim_running, check_shim_health, get_lib_engines
     try:
         if ensure_shim_running():
             logger.info("RAG delegated to persistent HTTP shim (no local model loading)")
             context.project_engine = RAGProxy("project")
             context.global_engine = RAGProxy("global")
             context.shared_model = context.project_engine.model
-            context.lib_engines = {}
-            logger.info(f"HME ready (proxy mode) | project={PROJECT_ROOT}")
+            context.lib_engines = get_lib_engines()
+            logger.info(f"HME ready (proxy mode) | project={PROJECT_ROOT} | libs={list(context.lib_engines.keys())}")
         else:
             logger.warning("HTTP shim unavailable — loading RAG engines locally (duplicate, wasteful)")
             from sentence_transformers import SentenceTransformer
@@ -184,15 +184,27 @@ def _background_startup_chain():
     if "FAILED" in init_result:
         logger.warning("startup chain [2/3]: SKIPPED — model init had failures, priming would crash")
     else:
+        _skip_priming = False
         try:
-            logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
-            warm_result = _prime_all_gpus()
-            logger.info(f"startup chain [2/3]: {warm_result}")
-        except Exception as _e:
-            context.register_critical_failure(
-                "startup_chain[2/3]",
-                f"Warm priming crashed: {type(_e).__name__}: {_e}",
-            )
+            import urllib.request as _ureq, json as _js
+            with _ureq.urlopen(_ureq.Request("http://127.0.0.1:7735/health"), timeout=2) as _r:
+                _ds = _js.loads(_r.read())
+            _wc = _ds.get("warm_caches", {})
+            if _wc and all(v.get("fresh") for v in _wc.values()):
+                logger.info("startup chain [2/3]: warm caches fresh per daemon — skipping prime")
+                _skip_priming = True
+        except Exception:
+            pass
+        if not _skip_priming:
+            try:
+                logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
+                warm_result = _prime_all_gpus()
+                logger.info(f"startup chain [2/3]: {warm_result}")
+            except Exception as _e:
+                context.register_critical_failure(
+                    "startup_chain[2/3]",
+                    f"Warm priming crashed: {type(_e).__name__}: {_e}",
+                )
 
     cache_stamp = os.path.join(PROJECT_ROOT, "tmp", "hme-cache-warmed-at")
     skip_warming = False

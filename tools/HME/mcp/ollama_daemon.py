@@ -46,6 +46,34 @@ _model_status: dict = {}
 _status_lock = threading.Lock()
 _HEALTH_INTERVAL = 300
 
+_TMPFS_PATHS = ["/mnt/ollama-buffer-gpu0", "/mnt/ollama-buffer-gpu1"]
+
+
+def _warm_cache_dir() -> str:
+    for tp in _TMPFS_PATHS:
+        if os.path.ismount(tp):
+            return tp
+    project_root = os.environ.get("PROJECT_ROOT", "")
+    if project_root:
+        return os.path.join(project_root, "tools", "HME", "warm-context-cache")
+    return "/tmp/hme-warm-cache"
+
+
+def _warm_cache_status() -> dict:
+    """Report age and presence of warm KV cache files for each model."""
+    cache_dir = _warm_cache_dir()
+    now = time.time()
+    result = {}
+    for model, _port, _opts in _MODELS:
+        stem = model.replace(":", "-").replace("/", "-")
+        cache_file = os.path.join(cache_dir, f"warm-kv-{stem}.json")
+        if os.path.exists(cache_file):
+            age_s = round(now - os.path.getmtime(cache_file))
+            result[model] = {"cached": True, "age_s": age_s, "fresh": age_s < 3600}
+        else:
+            result[model] = {"cached": False}
+    return result
+
 
 def _ollama_url(port):
     return f"http://localhost:{port}/api/generate"
@@ -129,9 +157,11 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             with _status_lock:
                 all_loaded = all(s.get("loaded") for s in _model_status.values())
+            warm_status = _warm_cache_status()
             self._send_json(200, {
                 "status": "ready" if all_loaded and len(_model_status) == len(_MODELS) else "loading",
                 "models": dict(_model_status),
+                "warm_caches": warm_status,
             })
         else:
             self._send_json(404, {"error": "not found"})

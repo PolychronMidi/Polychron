@@ -45,18 +45,45 @@ _engine_ready = threading.Event()
 _project_engine = None
 _global_engine = None
 _shared_model = None
+_lib_engines: dict = {}  # key = lib_rel path
 
 # Initialise stores with paths before any request can arrive
 from hme_http_store import init_store
 init_store(PROJECT_ROOT)
 
 
+def _ensure_ollama_daemon():
+    """Start the Ollama persistence daemon if not already running."""
+    import urllib.request as _urlreq
+    _daemon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ollama_daemon.py")
+    if not os.path.exists(_daemon_path):
+        return
+    try:
+        with _urlreq.urlopen(_urlreq.Request("http://127.0.0.1:7735/health"), timeout=1) as _r:
+            if _r.status == 200:
+                return  # already running
+    except Exception:
+        pass
+    import subprocess
+    env = os.environ.copy()
+    env["PROJECT_ROOT"] = PROJECT_ROOT
+    try:
+        subprocess.Popen(
+            ["python3", _daemon_path],
+            env=env, start_new_session=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        logger.info("Ollama daemon started (port 7735)")
+    except Exception as e:
+        logger.warning(f"Ollama daemon start failed: {e}")
+
+
 def _load_engines():
-    global _project_engine, _global_engine, _shared_model
+    global _project_engine, _global_engine, _shared_model, _lib_engines
     try:
         from sentence_transformers import SentenceTransformer
         from rag_engine import RAGEngine
-        from file_walker import init_config
+        from file_walker import init_config, get_lib_dirs
         from watcher import start_watcher
         init_config(PROJECT_ROOT)
         os.makedirs(PROJECT_DB, exist_ok=True)
@@ -69,14 +96,21 @@ def _load_engines():
             _shared_model = SentenceTransformer(MODEL_NAME)
         _project_engine = RAGEngine(PROJECT_DB, model_name=MODEL_NAME, model=_shared_model)
         _global_engine = RAGEngine(GLOBAL_DB, model_name=MODEL_NAME, model=_shared_model)
+        for _lib_rel in get_lib_dirs():
+            _lib_name = _lib_rel.replace("/", "_").replace("\\", "_").strip("_")
+            _lib_db = os.path.join(PROJECT_DB, "libs", _lib_name)
+            os.makedirs(_lib_db, exist_ok=True)
+            _lib_engines[_lib_rel] = RAGEngine(db_path=_lib_db, model=_shared_model)
         start_watcher(PROJECT_ROOT, _project_engine)
-        logger.info("HME HTTP: engines + file watcher ready")
+        logger.info(f"HME HTTP: engines + file watcher ready | libs={list(_lib_engines.keys())}")
     except Exception as e:
         logger.error(f"HME HTTP: engine load failed: {e}")
     finally:
         _engine_ready.set()
         from hme_http_handlers import init_handlers
         init_handlers(_engine_ready, _project_engine, _global_engine, PROJECT_ROOT)
+    # Start Ollama daemon after engines ready — non-blocking
+    threading.Thread(target=_ensure_ollama_daemon, daemon=True, name="HME-ollama-daemon-start").start()
 
 
 threading.Thread(target=_load_engines, daemon=True).start()
@@ -109,7 +143,14 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json(503, {"error": "engines loading"})
             return
 
-        engine = _project_engine if engine_name == "project" else _global_engine
+        if engine_name == "project":
+            engine = _project_engine
+        elif engine_name == "global":
+            engine = _global_engine
+        elif engine_name.startswith("lib/"):
+            engine = _lib_engines.get(engine_name[4:])
+        else:
+            engine = None
         if engine is None:
             self._send_json(503, {"error": f"{engine_name} engine not ready"})
             return
@@ -163,6 +204,8 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json(200, {"entries": entries, "count": len(entries)})
         elif self.path == "/narrative":
             self._send_json(200, {"narrative": _latest_narrative})
+        elif self.path == "/rag/lib-list":
+            self._send_json(200, {"keys": list(_lib_engines.keys())})
         else:
             self._send_json(404, {"error": "not found"})
 
