@@ -63,6 +63,7 @@ export interface SessionState {
 export interface ContextTracker {
   lastInputTokens: number | null;
   lastOutputTokens: number | null;
+  usedPct: number | null;
   totalChars: number;
   model: string;
 }

@@ -44,16 +44,8 @@ const Arbiter_1 = require("./Arbiter");
 const streamUtils_1 = require("./streamUtils");
 const chatChain_1 = require("./chatChain");
 const chatStreaming_1 = require("./chatStreaming");
-const MODEL_CONTEXT_WINDOWS = {
-    // Claude Code enforces ~200k effective context regardless of API maximum.
-    "claude-opus-4-6": 200000,
-    "claude-sonnet-4-6": 200000,
-};
-const DEFAULT_CONTEXT_WINDOW = 200000;
-// Fire chain at 70% (140k tokens) — well before Claude Code autocompacts at ~85-90%.
+// Fire chain at 70% — well before Claude Code autocompacts at ~85-90%.
 const CHAIN_THRESHOLD_PCT = 70;
-// Overhead estimate for PTY char-estimation fallback: CLAUDE.md (~10k) + system prompt (~8k) + hook outputs (~7k).
-const SYSTEM_OVERHEAD_TOKENS = 25000;
 class ChatPanel {
     constructor(panel, projectRoot, restoreSessionId) {
         this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
@@ -62,7 +54,7 @@ class ChatPanel {
         this._disposables = [];
         this._restoreSessionId = null;
         this._disposed = false;
-        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
+        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
         this._chainingInProgress = false;
         // ── HME shim process management ────────────────────────────────────────────
         this._shimProc = null;
@@ -310,7 +302,7 @@ class ChatPanel {
         };
         this._state.sessionEntry = entry;
         (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
-            contextTokens: Math.round(this._contextTracker.totalChars / streamUtils_1.CHARS_PER_TOKEN),
+            contextTokens: this._contextTracker.usedPct ?? 0,
             chainIndex: this._state.chainIndex,
         });
     }
@@ -438,10 +430,10 @@ class ChatPanel {
         (0, chatStreaming_1.streamAgentHybridMsg)(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
     }
     // ── Context tracking & chain ───────────────────────────────────────────────
-    _resetContextTracker(restoredTokens) {
-        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, totalChars: 0, model: "" };
-        if (restoredTokens) {
-            this._contextTracker.totalChars = restoredTokens * streamUtils_1.CHARS_PER_TOKEN;
+    _resetContextTracker(restoredPct) {
+        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "" };
+        if (restoredPct) {
+            this._contextTracker.usedPct = restoredPct;
         }
         this._postContextUpdate();
     }
@@ -451,19 +443,13 @@ class ChatPanel {
         if (usage) {
             this._contextTracker.lastInputTokens = usage.inputTokens;
             this._contextTracker.lastOutputTokens = usage.outputTokens;
+            if (usage.usedPct != null)
+                this._contextTracker.usedPct = usage.usedPct;
         }
         this._postContextUpdate();
     }
     _getContextPct() {
-        const window = MODEL_CONTEXT_WINDOWS[this._contextTracker.model] ?? DEFAULT_CONTEXT_WINDOW;
-        if (this._contextTracker.lastInputTokens != null && this._contextTracker.lastOutputTokens != null) {
-            const used = this._contextTracker.lastInputTokens + this._contextTracker.lastOutputTokens;
-            return Math.min(99, Math.round(used / window * 100));
-        }
-        // PTY mode: no token counts — estimate from all message chars
-        const allChars = this._state.messages.reduce((sum, m) => sum + (m.text?.length ?? 0) + (m.thinking?.length ?? 0), 0);
-        const estimatedTokens = allChars / streamUtils_1.CHARS_PER_TOKEN + SYSTEM_OVERHEAD_TOKENS;
-        return Math.min(99, Math.round(estimatedTokens / window * 100));
+        return this._contextTracker.usedPct ?? 0;
     }
     _postContextUpdate() {
         const pct = this._getContextPct();
@@ -515,7 +501,7 @@ class ChatPanel {
             messages: [...this._state.messages],
             summary,
             todos,
-            contextTokens: this._getContextPct(),
+            contextTokens: this._contextTracker.usedPct ?? 0,
             claudeSessionId: this._state.claudeSessionId,
             createdAt: Date.now(),
         };
