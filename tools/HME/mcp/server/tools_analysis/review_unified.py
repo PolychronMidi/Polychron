@@ -95,21 +95,11 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                         _cf = ",".join(_nexus_files)
                 except Exception:
                     pass
-            import threading as _forget_t
-            _forget_box = [None]
-            def _run_forget():
-                try:
-                    from .workflow_audit import what_did_i_forget as _wdif
-                    _forget_box[0] = _wdif(_cf or "")
-                except Exception as _fe:
-                    _forget_box[0] = f"what_did_i_forget error: {_fe}"
-            _ft = _forget_t.Thread(target=_run_forget, daemon=True)
-            _ft.start()
-            _ft.join(timeout=3)
-            if _ft.is_alive():
-                parts.append("## Post-Change Audit\nSynthesis timed out (3s cap). Use `evolve(focus='think', query='...')` for deep analysis.")
-            else:
-                parts.append(_forget_box[0] or "No audit data.")
+            try:
+                from .workflow_audit import what_did_i_forget as _wdif
+                parts.append(_wdif(_cf or ""))
+            except Exception as _fe:
+                parts.append(f"what_did_i_forget error: {_fe}")
         elif m == "convention":
             if not file_path:
                 parts.append("Error: convention mode requires file_path.")
