@@ -32,6 +32,8 @@ export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
   usedPct?: number;
+  modelId?: string;
+  modelName?: string;
 }
 
 // Re-export all functions from split modules so existing imports from "./router" keep working.

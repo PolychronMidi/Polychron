@@ -45,8 +45,9 @@ else
   echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":null,\"stale_remaining_pct\":null}" >> "$LOG"
 fi
 
-# Reset context meter — compaction freed the context window; PTY will see this on next initBuf
-echo '{"used_pct":5,"remaining_pct":95,"size":200000,"input_tokens":10000,"output_tokens":0}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
+# Reset context meter — compaction freed the window. Only clear token counts;
+# used_pct will be written by statusLine on the next assistant message.
+echo '{}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
 
 # Re-orient after compaction — surface current session state directly
 ORIENT=""

@@ -637,6 +637,7 @@
       <div id="context-meter-bar"><div id="context-meter-fill"></div></div>
       <span id="context-meter-pct">0%</span>
       <span id="context-chain-badge"></span>
+      <span id="cli-model-label" style="margin-left:6px;font-size:10px;opacity:0.6;"></span>
     </div>
     <button id="stop-btn">Stop</button>
     <button id="queue-btn">Queue</button>
@@ -879,7 +880,7 @@ window.addEventListener('message', (event) => {
       updateContextMeter(0, 0, 0);
       break;
     case 'contextUpdate':
-      updateContextMeter(msg.pct, msg.chainLinks, msg.chainIndex);
+      updateContextMeter(msg.pct, msg.chainLinks, msg.chainIndex, msg.cliModel);
       break;
     case 'chainCompleted':
       updateContextMeter(0, msg.linkIndex + 1, msg.chainIndex);
@@ -1119,8 +1120,9 @@ const ctxMeter = document.getElementById('context-meter');
 const ctxFill = document.getElementById('context-meter-fill');
 const ctxPctLabel = document.getElementById('context-meter-pct');
 const ctxChainBadge = document.getElementById('context-chain-badge');
+const cliModelLabel = document.getElementById('cli-model-label');
 
-function updateContextMeter(pct, chainLinks, chainIndex) {
+function updateContextMeter(pct, chainLinks, chainIndex, cliModel) {
   if (!ctxFill || !ctxPctLabel || !ctxMeter) return;
   const clamped = Math.max(0, Math.min(99, pct));
   ctxFill.style.width = clamped + '%';
@@ -1128,9 +1130,12 @@ function updateContextMeter(pct, chainLinks, chainIndex) {
   ctxMeter.classList.remove('warn', 'critical');
   if (clamped >= 75) ctxMeter.classList.add('critical');
   else if (clamped >= 50) ctxMeter.classList.add('warn');
-  ctxMeter.title = 'Context: ' + clamped + '% used' + (chainLinks > 0 ? ' | ' + chainLinks + ' chain link' + (chainLinks > 1 ? 's' : '') : '');
+  ctxMeter.title = 'Context: ' + clamped + '% used' + (chainLinks > 0 ? ' | ' + chainLinks + ' chain link' + (chainLinks > 1 ? 's' : '') : '') + (cliModel ? ' | CLI: ' + cliModel : '');
   if (ctxChainBadge) {
     ctxChainBadge.textContent = chainLinks > 0 ? '\u26D3' + chainLinks : '';
+  }
+  if (cliModelLabel && cliModel) {
+    cliModelLabel.textContent = cliModel;
   }
 }
 
