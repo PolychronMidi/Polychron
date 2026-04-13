@@ -50,8 +50,10 @@ $ERROR_STEPS
 ERRMSG
     fi
   fi
-  cat >&2 <<'MSG'
-EVOLVER: Pipeline complete. You MUST now:
+  PIPELINE_VERDICT=$(_safe_py3 "import json; print(json.load(open('$SUMMARY_FILE')).get('verdict','?'))" '?')
+  PIPELINE_WALL=$(_safe_py3 "import json; d=json.load(open('$SUMMARY_FILE')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
+  cat >&2 <<MSG
+EVOLVER: Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})} complete. You MUST now:
 (1) Read fingerprint-comparison.json
 (2) Read trace-summary metrics
 (3) Journal the round in metrics/journal.md

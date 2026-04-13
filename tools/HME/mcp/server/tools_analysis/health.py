@@ -208,7 +208,7 @@ def doc_sync_check(doc_path: str = "") -> str:
     server_content_parts = []
     for _root, _dirs, _files in os.walk(_server_root):
         for _tf in _files:
-            if not _tf.endswith(".py") or _tf == "tools_passthru.py":
+            if not _tf.endswith(".py") or _tf in ("tools_passthru.py", "status_unified.py"):
                 continue
             _tf_path = os.path.join(_root, _tf)
             try:

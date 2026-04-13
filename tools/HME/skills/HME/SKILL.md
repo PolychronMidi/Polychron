@@ -1,10 +1,10 @@
 ---
 name: HME
-description: Hypermeta evolutionary intelligence. 7 MCP tools — evolutionary nervous system for self-evolving composition: KB, architectural analysis, enforcement, evolution planning.
+description: Hypermeta evolutionary intelligence. 6 MCP tools — evolutionary nervous system for self-evolving composition: KB, architectural analysis, enforcement, evolution planning.
 allowed-tools: mcp__HME__*
 ---
 
-# 7 Tools
+# 6 Tools
 
 | Tool | When to Use |
 |------|-------------|
@@ -12,7 +12,6 @@ allowed-tools: mcp__HME__*
 | `review(mode)` | mode='forget': post-edit audit. mode='full': digest+regime+trust. mode='composition': arc/drama/hotspot |
 | `learn(action)` | action='search': KB query. action='add': new entry. action='health': coverage/staleness |
 | `evolve(focus)` | focus: design / forge / curate / invariants / stress / contradict |
-| `status(mode)` | mode='resume': session briefing. mode='pipeline': current run. mode='hme': selftest |
 | `trace(target)` | Signal flow: L0 cascade, module chains, causal chains; mode='snapshot' (S3/2:1:3:0/400) for beat state |
 | `hme_admin(action)` | selftest / reload / index / clear_index / warm / introspect / fix_antipattern |
 
