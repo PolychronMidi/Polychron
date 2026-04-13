@@ -1,15 +1,14 @@
 ---
 name: HME
-description: Hypermeta evolutionary intelligence. 8 MCP mega-tools for semantic search, KB, architectural analysis, and evolutionary composition.
+description: Hypermeta evolutionary intelligence. 7 MCP tools for semantic search, KB, architectural analysis, and evolutionary composition.
 allowed-tools: mcp__HME__*
 ---
 
-# 8 Mega-Tools
+# 7 Tools
 
 | Tool | When to Use |
 |------|-------------|
 | `read(target)` | Before editing a file. Pre-edit briefing (mode='before'), file structure, module story/impact |
-| `find(query)` | Any search. Auto-routes: callers, boundary, grep, semantic, coupling, symbols, diagnosis |
 | `review(mode)` | After changes (mode='forget'), pipeline digest, regime, trust, health, convention, docs |
 | `learn(...)` | KB: search, add, remove, list, compact, export, graph, dream, health |
 | `evolve(focus)` | Evolution intelligence: LOC offenders, coupling gaps, leverage, pipeline suggestions |
@@ -27,12 +26,6 @@ learn(title='...', content='...')    # PERSIST confirmed learnings
 ```
 
 ## Auto-Routing
-
-`find()` detects intent from query text:
-- "callers of X" → caller search
-- "X should use Y" → boundary check
-- regex pattern → grep
-- natural language → semantic search
 
 `read()` detects from target format:
 - `src/path/file.js` → file structure + KB
