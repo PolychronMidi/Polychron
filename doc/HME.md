@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **13 MCP tools** (7 mega-tools + 5 operational + 1 todo) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
+HME is five layers integrated into one executive. **11 MCP tools** (7 mega-tools + 4 operational) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 13 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 5 operational (hme_admin/beat_snapshot/warm_pre_edit_cache/fix_antipattern/enrich_prompt) + todo |
+| **MCP Server** | `tools/HME/` | 11 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 4 operational (hme_admin/beat_snapshot/fix_antipattern/enrich_prompt) |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `hooks/` (22 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -61,7 +61,7 @@ tools/HME/               The single source of truth
         trace_unified.py                  trace — signal flow tracing
         evolution_admin.py                hme_admin + fix_antipattern
         runtime.py                        beat_snapshot
-        workflow.py                       warm_pre_edit_cache + before_editing
+        workflow.py                       before_editing (cache warming automated at startup)
         enrich_prompt.py                enrich_prompt — local prompt enrichment
         (+ 20 internal modules: coupling, reasoning, symbols, etc.)
       tools_search.py                   Internal: grep, search_code, find_callers, file_lines
@@ -244,9 +244,9 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Enrich a prompt with project context | `enrich_prompt(prompt='...', frame='focus on...')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## The 13 Tools — Complete Reference
+## The 12 Tools — Complete Reference
 
-All capabilities route through 7 mega-tools + 5 operational tools + todo. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
+All capabilities route through 7 mega-tools + 4 operational tools. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
 
 ### 1. `evolve(focus)` — "What should I work on next?"
 
@@ -388,15 +388,11 @@ All capabilities route through 7 mega-tools + 5 operational tools + todo. There 
 
 Returns full system state at one beat: regime, trust ecology, conductor snap, coupling labels, notes emitted. Use for deep-diving a specific moment.
 
-### 10. `warm_pre_edit_cache(max_files, synthesis_hot)` — Cache warming
-
-Two-tier warming: Tier 1 scans up to `max_files` src/ files for callers+KB (fast). Tier 2 synthesizes edit risks for top `synthesis_hot` recently modified files (slow, uses Ollama). After warming, `read(target, mode='before')` is instant for warmed files.
-
-### 11. `fix_antipattern(antipattern, hook_target)` — Hook enforcement
+### 10. `fix_antipattern(antipattern, hook_target)` — Hook enforcement
 
 Synthesizes bash detection logic for a behavioral anti-pattern and appends it to the target hook script. Use when a rule is repeatedly violated and needs automated enforcement. Valid targets: `pretooluse_bash`, `pretooluse_read`, `pretooluse_edit`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
 
-### 12. `enrich_prompt(prompt, frame)` — Local prompt enrichment
+### 11. `enrich_prompt(prompt, frame)` — Local prompt enrichment
 
 Four-stage local pipeline that enriches prompts with project context at zero Claude token cost:
 
@@ -437,8 +433,8 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim; remind `find()` for enriched search; multiline exempt |
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
-| `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Redirect** TodoWrite → `mcp__HME__todo` (subtodo support); extracts tasks and formats them for the HME tool in `systemMessage` |
-| `pretooluse_hme_primer.sh` | PreToolUse | mcp__HME__ | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; clears flag so it only fires once |
+| `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** — writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
+| `pretooluse_hme_primer.sh` | PreToolUse | mcp__HME__ | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `hme_admin(action='selftest')` + `evolve(focus='invariants')`); clears flag so it only fires once |
 | `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | **Redirect** — deny repeated check_pipeline calls (polling anti-pattern); suggests `status(mode='pipeline')` instead |
 | `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local Ollama agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on Ollama unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
@@ -692,7 +688,7 @@ PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py
 
 **To maximize local route intelligence:**
 1. Start the HTTP shim before opening the chat panel
-2. Run `warm_pre_edit_cache()` in the main Claude session first (warms KB search caches)
+2. KB search caches are pre-warmed automatically at server startup (no manual step needed)
 3. Use Hybrid route — it injects KB context as a system prompt
 
 ### Session Persistence
@@ -705,7 +701,7 @@ Sessions stored at `~/.config/hme-chat/workspaces/{hash}/`:
 
 ### PostToolUse Transcript Hook
 
-`tools/HME/hooks/log-tool-call.sh` — universal PostToolUse hook (matcher: `""`) that logs every tool call from the main Claude Code session to `log/session-transcript.jsonl` and mirrors to the HTTP shim. Also triggers `/reindex` for Edit/Write operations. **LIFESAVER**: reads the start timestamp written by `pretooluse_lifesaver.sh` and emits a stderr warning when any `mcp__HME__*` tool exceeds its expected duration (15s for most tools, 30s for `review`/`warm_pre_edit_cache`).
+`tools/HME/hooks/log-tool-call.sh` — universal PostToolUse hook (matcher: `""`) that logs every tool call from the main Claude Code session to `log/session-transcript.jsonl` and mirrors to the HTTP shim. Also triggers `/reindex` for Edit/Write operations. **LIFESAVER**: reads the start timestamp written by `pretooluse_lifesaver.sh` and emits a stderr warning when any `mcp__HME__*` tool exceeds its expected duration (15s for most tools, 30s for `review`).
 
 ### Pipeline Error Scanning (LIFESAVER)
 
