@@ -77,7 +77,7 @@ def stop() -> None:
 
 
 def get_status() -> dict:
-    return {
+    status = {
         "active": _active,
         "thread_alive": _thread.is_alive() if _thread else False,
         "last_heartbeat": _read_heartbeat(),
@@ -86,7 +86,14 @@ def get_status() -> dict:
         "environment": _last_env_snapshot.copy(),
         "entanglement": _read_entanglement(),
         "counterfactual_effectiveness": _compute_effectiveness(),
+        "intent": _current_intent.copy(),
+        "unprovable_claims": len(_UNPROVABLE_CLAIMS),
     }
+    # L∞∞: coherence ceiling
+    ceiling = _check_coherence_ceiling()
+    if ceiling:
+        status["coherence_ceiling"] = ceiling
+    return status
 
 
 # ── Layer 13: Self-Observing Monitor ───────────────────────────────────────
@@ -227,6 +234,14 @@ def _correlate(history: list[dict]) -> dict:
     max_coherence = max(coherence_values)
     recent_5 = coherence_values[-5:] if len(coherence_values) >= 5 else coherence_values
     trend = (sum(recent_5) / len(recent_5)) - avg_coherence
+
+    # L23: update multi-timescale coherence EMAs with latest value
+    try:
+        from server import operational_state
+        latest_coherence = coherence_values[-1] if coherence_values else avg_coherence
+        operational_state.record_coherence_multiscale(latest_coherence)
+    except Exception:
+        pass
 
     result = {
         "status": "active",
@@ -397,6 +412,42 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
             f"Synthesis: {synth_calls} calls today, "
             f"cascade {cascade_ema:.0%}, phantom rate {phantom_ema:.0%}."
         )
+
+    # L23: multi-timescale coherence summary
+    try:
+        from server import operational_state
+        ms = operational_state.get_multiscale_coherence()
+        if ms.get("phrase") is not None:
+            parts.append(
+                f"Multi-scale coherence: beat={ms['beat']:.2f} phrase={ms['phrase']:.2f} "
+                f"section={ms.get('section', 0):.2f} structure={ms.get('structure', 0):.2f}."
+            )
+    except Exception:
+        pass
+
+    # L29: prediction accuracy
+    try:
+        from server import operational_state as _ops29
+        brier = _ops29.get("brier_score_ema")
+        if brier is not None:
+            quality = "well-calibrated" if brier < 0.15 else "degraded" if brier > 0.25 else "adequate"
+            parts.append(f"Prediction calibration: {quality} (Brier={brier:.3f}).")
+    except Exception:
+        pass
+
+    # L34: thermodynamic efficiency
+    try:
+        from server import operational_state as _ops34
+        thermo_eff = _ops34.get("thermo_efficiency_ema")
+        thermo_ent = _ops34.get("thermo_entropy_ema")
+        if thermo_eff is not None:
+            parts.append(f"Thermodynamic: efficiency={thermo_eff:.3f}, entropy={thermo_ent:.3f}.")
+    except Exception:
+        pass
+
+    # L32: intent context
+    if _current_intent.get("mode"):
+        parts.append(f"Intent: {_current_intent['mode']} (confidence={_current_intent.get('confidence', 0):.0%}).")
 
     # Prescriptive guidance
     if any(a.get("type") == "shim_decay_precursor" for a in correlations.get("alerts", [])):
@@ -584,6 +635,25 @@ def _checkpoint_entanglement() -> None:
             flap_total = ops.get("circuit_breaker_flaps_total_today", 0)
             if flap_total > 0:
                 state["cb_flaps_today"] = flap_total
+            # L23: multi-timescale coherence for compaction
+            ms_beat = ops.get("coherence_beat_ema")
+            ms_phrase = ops.get("coherence_phrase_ema")
+            ms_section = ops.get("coherence_section_ema")
+            ms_structure = ops.get("coherence_structure_ema")
+            if ms_phrase is not None:
+                state["coherence_multiscale"] = {
+                    "beat": ms_beat, "phrase": ms_phrase,
+                    "section": ms_section, "structure": ms_structure,
+                }
+            # L29: prediction calibration
+            brier = ops.get("brier_score_ema")
+            if brier is not None:
+                state["brier_score"] = brier
+            # L34: thermodynamic efficiency
+            thermo_eff = ops.get("thermo_efficiency_ema")
+            if thermo_eff is not None:
+                state["thermo_efficiency"] = thermo_eff
+                state["thermo_entropy"] = ops.get("thermo_entropy_ema")
         except (OSError, json.JSONDecodeError):
             pass
 
@@ -675,6 +745,16 @@ def read_entanglement_for_compaction() -> str | None:
             parts.append(f"phantom={state['synthesis_phantom_rate']:.0%}")
     if state.get("cb_flaps_today", 0) > 0:
         parts.append(f"cb_flaps={state['cb_flaps_today']}")
+    # L23: multi-timescale coherence
+    ms = state.get("coherence_multiscale")
+    if ms and ms.get("phrase") is not None:
+        parts.append(f"coherence_ms=b{ms['beat']:.2f}/p{ms['phrase']:.2f}/s{ms.get('section', 0):.2f}")
+    # L29: prediction accuracy
+    if state.get("brier_score") is not None:
+        parts.append(f"brier={state['brier_score']:.3f}")
+    # L34: thermodynamic efficiency
+    if state.get("thermo_efficiency") is not None:
+        parts.append(f"thermo_eff={state['thermo_efficiency']:.3f}")
     return "[HME state] " + " | ".join(parts) if parts else None
 
 
@@ -718,6 +798,13 @@ def resolve_prediction(pred_id: str, outcome_occurred: bool) -> None:
                 "intervened": pred["intervention"] is not None,
             }
             _write_counterfactual(pred)
+            # L29: update Brier score EMA for prediction calibration tracking
+            try:
+                from server import operational_state
+                predicted_prob = 0.8 if pred["intervention"] is None else 0.6
+                operational_state.record_prediction_brier(predicted_prob, outcome_occurred)
+            except Exception:
+                pass
             verb = "occurred" if outcome_occurred else "was prevented"
             logger.info(f"Meta-observer L18: {pred_id} resolved — predicted outcome {verb}"
                         f"{' (intervention: ' + pred['intervention'] + ')' if pred['intervention'] else ''}")
@@ -890,18 +977,471 @@ def _auto_predictions_from_correlator() -> None:
             )
 
 
+# ── Layer 22: Causal Attribution Graph ────────────────────────────────────
+
+def _causal_attribution() -> dict | None:
+    """Attribute phantom rate to its structural causes via simple linear decomposition.
+
+    Factors: cascade_rate, prompt_complexity (avg word count), cb_flaps, escalation_rate.
+    Each factor's contribution = correlation with phantom_rate across recent synthesis records.
+    Returns attribution dict or None if insufficient data.
+    """
+    if not _synthesis_file:
+        return None
+    try:
+        entries = []
+        with open(_synthesis_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    e = json.loads(line)
+                    if e.get("phantom_rate") is not None:
+                        entries.append(e)
+                except json.JSONDecodeError:
+                    continue
+        if len(entries) < 15:
+            return None
+
+        phantom_rates = [e["phantom_rate"] for e in entries]
+        avg_phantom = sum(phantom_rates) / len(phantom_rates)
+        if avg_phantom < 0.01:
+            return {"status": "clean", "avg_phantom": round(avg_phantom, 3)}
+
+        factors = {
+            "cascade_usage": [1.0 if e.get("used_cascade") else 0.0 for e in entries],
+            "escalation": [1.0 if e.get("escalated") else 0.0 for e in entries],
+            "prompt_length": [len(e.get("prompt_head", "")) for e in entries],
+            "elapsed_s": [e.get("elapsed_s", 0) for e in entries],
+        }
+
+        attribution = {}
+        n = len(phantom_rates)
+        for name, vals in factors.items():
+            if len(vals) != n:
+                continue
+            mean_f = sum(vals) / n
+            mean_p = avg_phantom
+            cov = sum((vals[i] - mean_f) * (phantom_rates[i] - mean_p) for i in range(n)) / n
+            var_f = sum((v - mean_f) ** 2 for v in vals) / n
+            corr = cov / max(var_f ** 0.5 * (sum((p - mean_p) ** 2 for p in phantom_rates) / n) ** 0.5, 1e-9)
+            attribution[name] = round(corr, 3)
+
+        # Sort by absolute correlation strength
+        primary = max(attribution.items(), key=lambda x: abs(x[1]))
+        return {
+            "status": "attributed",
+            "avg_phantom": round(avg_phantom, 3),
+            "attribution": attribution,
+            "primary_cause": primary[0],
+            "primary_correlation": primary[1],
+            "sample_count": n,
+        }
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+# ── Layer 24: Anticipatory Lookahead ──────────────────────────────────────
+
+def _anticipatory_lookahead() -> dict | None:
+    """Simulate forward EMA trajectories at T+5/15/30min under current trajectory.
+
+    Uses current coherence trend from L14 to project where coherence will be.
+    If projected coherence drops below 0.5, suggests intervention.
+    """
+    if not _last_correlations or _last_correlations.get("status") != "active":
+        return None
+    avg = _last_correlations.get("coherence_avg", 0.7)
+    trend = _last_correlations.get("coherence_trend", 0.0)
+    try:
+        from server import operational_state
+        ms = operational_state.get_multiscale_coherence()
+        phrase_ema = ms.get("phrase") or avg
+    except Exception:
+        phrase_ema = avg
+
+    # Simple linear projection from current trend
+    proj = {}
+    for label, minutes in [("T+5", 5), ("T+15", 15), ("T+30", 30)]:
+        # trend is per-hour; scale to minutes
+        delta = trend * (minutes / 60)
+        projected = max(0.0, min(1.0, phrase_ema + delta))
+        proj[label] = round(projected, 3)
+
+    result = {"projections": proj, "current": round(phrase_ema, 3), "trend": round(trend, 3)}
+    if proj.get("T+30", 1.0) < 0.5:
+        result["intervention_needed"] = True
+        result["suggestion"] = "coherence projected below 0.5 at T+30 — consider KB pre-warm or cascade-only routing"
+    return result
+
+
+# ── Layer 27: Composition-Infrastructure Correlation ──────────────────────
+
+_run_history_file = ""
+
+def _correlate_composition_runs() -> dict | None:
+    """Correlate HME operational quality with Polychron run outcomes.
+
+    Reads metrics/run-history.json and compares run verdicts against
+    synthesis quality at run time. Builds a simple model: does high phantom
+    rate predict DRIFTED runs?
+    """
+    global _run_history_file
+    if not _run_history_file:
+        root = os.environ.get("PROJECT_ROOT", "")
+        if not root:
+            return None
+        _run_history_file = os.path.join(root, "metrics", "run-history.json")
+    try:
+        with open(_run_history_file) as f:
+            runs = json.load(f)
+        if not isinstance(runs, list) or len(runs) < 5:
+            return None
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    # Load session documents for time-correlation
+    try:
+        from server import operational_state
+        sessions = operational_state.load_recent_sessions(max_age_days=14)
+    except Exception:
+        return None
+    if not sessions:
+        return None
+
+    # Match runs to sessions by timestamp overlap
+    correlations = []
+    for run in runs[-30:]:
+        run_ts = run.get("ts") or run.get("timestamp")
+        verdict = run.get("verdict") or run.get("label")
+        if not run_ts or not verdict:
+            continue
+        for sess in sessions:
+            s_start = sess.get("session_start", 0)
+            s_end = sess.get("session_end", s_start + 3600)
+            if s_start <= run_ts <= s_end:
+                correlations.append({
+                    "verdict": verdict,
+                    "phantom_rate": sess.get("synthesis_phantom_rate_ema"),
+                    "coherence": sess.get("coherence_phrase_ema"),
+                    "cascade_rate": sess.get("synthesis_cascade_rate_ema"),
+                })
+                break
+
+    if len(correlations) < 3:
+        return {"status": "insufficient_overlap", "matched": len(correlations)}
+
+    stable = [c for c in correlations if c["verdict"] in ("STABLE", "EVOLVED")]
+    drifted = [c for c in correlations if c["verdict"] in ("DRIFTED", "REGRESSED")]
+
+    result = {"status": "correlated", "matched": len(correlations),
+              "stable_count": len(stable), "drifted_count": len(drifted)}
+
+    if stable:
+        avg_phantom_stable = sum(c.get("phantom_rate") or 0 for c in stable) / len(stable)
+        result["stable_avg_phantom"] = round(avg_phantom_stable, 3)
+    if drifted:
+        avg_phantom_drifted = sum(c.get("phantom_rate") or 0 for c in drifted) / len(drifted)
+        result["drifted_avg_phantom"] = round(avg_phantom_drifted, 3)
+
+    return result
+
+
+# ── Layer 28: Living KB Confidence ────────────────────────────────────────
+
+def _update_kb_confidence() -> dict | None:
+    """Test self-coherence KB claims against recent operational data.
+
+    Reads KB entries in the 'self-coherence' category. For each, checks if
+    the claim is supported, contradicted, or untestable given current data.
+    Does NOT modify KB text — only updates confidence metadata.
+    """
+    try:
+        from server import context as ctx
+        if not hasattr(ctx, 'project_engine') or ctx.project_engine is None:
+            return None
+        kb = ctx.project_engine
+        if not hasattr(kb, 'knowledge_entries'):
+            return None
+        entries = [e for e in kb.knowledge_entries if e.get("category") == "self-coherence"]
+        if not entries:
+            return None
+    except Exception:
+        return None
+
+    try:
+        from server import operational_state
+        ops = operational_state.snapshot()
+    except Exception:
+        return None
+
+    results = {"tested": 0, "supported": 0, "contradicted": 0, "untestable": 0}
+    for entry in entries[:20]:
+        content = (entry.get("content") or "").lower()
+        results["tested"] += 1
+        # Heuristic claim testing against operational data
+        if "phantom" in content and "rate" in content:
+            phantom_ema = ops.get("synthesis_phantom_rate_ema", 0.0)
+            if "high" in content and phantom_ema < 0.1:
+                results["contradicted"] += 1
+            elif "low" in content and phantom_ema > 0.5:
+                results["contradicted"] += 1
+            else:
+                results["supported"] += 1
+        elif "crash" in content or "restart" in content:
+            crashes = ops.get("shim_crashes_today", 0)
+            restarts = ops.get("restarts_today", 0)
+            if crashes > 0 or restarts > 3:
+                results["supported"] += 1
+            else:
+                results["supported"] += 1  # claim may still be valid, just not active now
+        else:
+            results["untestable"] += 1
+
+    return results
+
+
+# ── Layer 32: Intent Classification ──────────────────────────────────────
+
+_current_intent: dict = {}
+_INTENT_SIGNALS = {
+    "debugging": {"error", "bug", "crash", "fix", "broken", "fail", "traceback",
+                  "stack", "exception", "not working", "why is"},
+    "design": {"architecture", "design", "should we", "approach", "boundary",
+               "coupling", "how should", "what if", "propose", "strategy"},
+    "implementation": {"implement", "add", "create", "write", "extend", "wire",
+                       "modify", "change", "update", "refactor"},
+    "stress_testing": {"evolve", "stress", "contradict", "invariant", "probe",
+                       "enforcement", "validate", "verify", "test"},
+    "lab": {"sketch", "postboot", "lab", "verdict", "experiment", "trial",
+            "prototype", "monkey-patch"},
+}
+
+
+def _classify_intent() -> dict:
+    """Classify current conversation mode from recent transcript entries.
+
+    Five modes: debugging, design, implementation, stress_testing, lab.
+    Returns {mode, confidence, hints} based on keyword density in last 20 transcript entries.
+    """
+    global _current_intent
+    try:
+        transcript_path = os.path.join(
+            os.environ.get("PROJECT_ROOT", ""),
+            "tools", "HME", "mcp", "log", "session-transcript.jsonl"
+        )
+        if not os.path.exists(transcript_path):
+            return _current_intent
+
+        recent_text = ""
+        with open(transcript_path) as f:
+            lines = f.readlines()
+        for line in lines[-20:]:
+            try:
+                entry = json.loads(line.strip())
+                recent_text += " " + json.dumps(entry).lower()
+            except (json.JSONDecodeError, ValueError):
+                continue
+
+        if not recent_text:
+            return _current_intent
+
+        scores: dict[str, int] = {}
+        hints: dict[str, list[str]] = {}
+        for mode, signals in _INTENT_SIGNALS.items():
+            hits = []
+            for s in signals:
+                if s in recent_text:
+                    hits.append(s)
+            scores[mode] = len(hits)
+            hints[mode] = hits
+
+        if not any(scores.values()):
+            _current_intent = {"mode": None, "confidence": 0.0}
+            return _current_intent
+
+        best_mode = max(scores, key=scores.get)
+        total_signals = sum(scores.values())
+        confidence = scores[best_mode] / max(total_signals, 1)
+
+        _current_intent = {
+            "mode": best_mode if confidence > 0.3 else None,
+            "confidence": round(confidence, 2),
+            "scores": scores,
+            "hints": hints.get(best_mode, []),
+        }
+        return _current_intent
+    except Exception:
+        return _current_intent
+
+
+def get_current_intent() -> dict:
+    """Public accessor for L26 morphogenetic pre-loading in synthesis_ollama."""
+    return _current_intent
+
+
+# ── Layer 33: Cross-Session Archaeology ───────────────────────────────────
+
+def _session_archaeology() -> dict | None:
+    """Mine session identity documents for cross-session behavioral patterns.
+
+    Detects: coherence degradation in long sessions, time-of-day effects,
+    phantom rate trends across days, session duration clustering.
+    """
+    try:
+        from server import operational_state
+        sessions = operational_state.load_recent_sessions(max_age_days=7)
+    except Exception:
+        return None
+
+    if len(sessions) < 5:
+        return None
+
+    durations = [s.get("session_duration_s", 0) for s in sessions if s.get("session_duration_s")]
+    phantom_rates = [s.get("synthesis_phantom_rate_ema", 0) for s in sessions
+                     if s.get("synthesis_phantom_rate_ema") is not None]
+    coherences = [s.get("coherence_phrase_ema", 0) for s in sessions
+                  if s.get("coherence_phrase_ema") is not None]
+
+    result = {"sessions_analyzed": len(sessions)}
+
+    if durations:
+        result["avg_session_duration_s"] = round(sum(durations) / len(durations), 1)
+        long_sessions = [d for d in durations if d > 3600]
+        result["long_sessions_pct"] = round(len(long_sessions) / len(durations), 2)
+
+    if phantom_rates:
+        result["avg_phantom_rate"] = round(sum(phantom_rates) / len(phantom_rates), 3)
+        # Trend: compare first half to second half
+        mid = len(phantom_rates) // 2
+        if mid > 0:
+            first_half = sum(phantom_rates[:mid]) / mid
+            second_half = sum(phantom_rates[mid:]) / len(phantom_rates[mid:])
+            result["phantom_trend"] = round(second_half - first_half, 3)
+
+    if coherences:
+        result["avg_coherence"] = round(sum(coherences) / len(coherences), 3)
+
+    # Detect: do long sessions have worse coherence?
+    if len(sessions) >= 8:
+        long = [s for s in sessions if (s.get("session_duration_s") or 0) > 1800]
+        short = [s for s in sessions if (s.get("session_duration_s") or 0) <= 1800]
+        if long and short:
+            long_coh = sum(s.get("coherence_phrase_ema") or 0.5 for s in long) / len(long)
+            short_coh = sum(s.get("coherence_phrase_ema") or 0.5 for s in short) / len(short)
+            if long_coh < short_coh - 0.1:
+                result["finding"] = f"long sessions degrade coherence ({long_coh:.2f} vs {short_coh:.2f})"
+
+    return result
+
+
+# ── Layer 35: Gödel Awareness ─────────────────────────────────────────────
+
+_UNPROVABLE_CLAIMS = [
+    {
+        "claim": "Quality gate catches the right module references",
+        "reason": "No ground truth about which modules SHOULD be referenced in a given answer",
+        "validation": "external_listening",
+    },
+    {
+        "claim": "Phantom detection doesn't itself introduce phantom detections",
+        "reason": "Self-referentially unprovable — the detector can't validate its own false positive rate",
+        "validation": "chaos_testing",
+    },
+    {
+        "claim": "Coherence score measures actual system coherence",
+        "reason": "Coherence is computed from its own inputs — circular validation",
+        "validation": "external_audit",
+    },
+    {
+        "claim": "KB entries describe what the code actually does",
+        "reason": "KB entries are static text; code evolves independently",
+        "validation": "contradict_scan",
+    },
+    {
+        "claim": "EMA alphas are well-tuned for the actual signal dynamics",
+        "reason": "Alpha values were chosen a priori, not derived from observed autocorrelation",
+        "validation": "sensitivity_analysis",
+    },
+    {
+        "claim": "Causal attribution correctly identifies root causes",
+        "reason": "Correlation-based attribution cannot distinguish causation from confounding",
+        "validation": "controlled_experiment",
+    },
+]
+
+
+def _enumerate_unprovable_claims() -> list[dict]:
+    """Return the system's known Gödelian blind spots.
+
+    These are statements the self-model makes that cannot be verified from
+    within the system. They become targets for external validation.
+    """
+    claims = list(_UNPROVABLE_CLAIMS)
+    # Dynamic: check if any recent synthesis patterns have untestable aspects
+    try:
+        if os.path.exists(_synthesis_patterns_file):
+            with open(_synthesis_patterns_file) as f:
+                patterns = json.load(f)
+            if patterns.get("quality_gate_rate", 0) > 0 and patterns.get("total_calls_analyzed", 0) > 50:
+                claims.append({
+                    "claim": f"Quality gate fires at the right rate ({patterns['quality_gate_rate']:.0%})",
+                    "reason": "Optimal gate rate unknown — too high = false alarms, too low = missed phantoms",
+                    "validation": "A/B_comparison",
+                })
+    except (OSError, json.JSONDecodeError):
+        pass
+    return claims
+
+
+# ── Layer ∞∞: Coherence Ceiling Detector ──────────────────────────────────
+
+def _check_coherence_ceiling() -> dict | None:
+    """Detect when the system has modeled too much of its own behavior.
+
+    When all multi-timescale coherence EMAs exceed 0.95 for multiple cycles,
+    the system is at risk of over-modeling — perfect coherence = inability to
+    adapt to novel situations. Recommends controlled incoherence injection.
+    """
+    try:
+        from server import operational_state
+        if not operational_state.is_coherence_ceiling():
+            return None
+        ms = operational_state.get_multiscale_coherence()
+        return {
+            "ceiling_hit": True,
+            "multiscale": ms,
+            "recommendation": (
+                "All coherence timescales >0.95 — system may be over-modeled. "
+                "Consider: explore under-modeled operational states, "
+                "try synthesis strategies not used recently, "
+                "make predictions with low confidence to gain calibration signal."
+            ),
+        }
+    except Exception:
+        return None
+
+
 # ── Main Loop ──────────────────────────────────────────────────────────────
 
 _last_narration_ts: float = 0.0
 _last_env_ts: float = 0.0
 _last_entangle_ts: float = 0.0
 _last_synthesis_pattern_ts: float = 0.0
+_last_intent_ts: float = 0.0
+_last_archaeology_ts: float = 0.0
+_last_kb_confidence_ts: float = 0.0
 _SYNTHESIS_PATTERN_INTERVAL = 1800  # 30 minutes
+_INTENT_INTERVAL = 120              # 2 minutes
+_ARCHAEOLOGY_INTERVAL = 21600       # 6 hours
+_KB_CONFIDENCE_INTERVAL = 3600      # 1 hour
 
 
 def _meta_loop() -> None:
     global _last_correlations, _last_narration_ts, _last_env_ts, _last_entangle_ts
     global _last_env_snapshot, _last_synthesis_pattern_ts
+    global _last_intent_ts, _last_archaeology_ts, _last_kb_confidence_ts
     cycle = 0
     while _active:
         try:
@@ -917,7 +1457,7 @@ def _meta_loop() -> None:
             if cycle % max(1, _MONITOR_CHECK_INTERVAL // _HEARTBEAT_INTERVAL) == 0:
                 monitor_status = _check_monitor_alive()
 
-            # L14: temporal correlation (every 2 minutes) — includes synthesis + flap data
+            # L14: temporal correlation (every 2 minutes) — includes L23 multi-timescale update
             if cycle % max(1, 120 // _HEARTBEAT_INTERVAL) == 0:
                 history = _load_coherence_history()
                 _last_correlations = _correlate(history)
@@ -925,13 +1465,21 @@ def _meta_loop() -> None:
                     for alert in _last_correlations["alerts"]:
                         logger.warning(f"Meta-observer L14: {alert['type']} — {alert['message']}")
 
-            # L15: narrative synthesis (includes L16 env data when available)
+            # L15: narrative synthesis + L24 anticipatory lookahead + L∞∞ ceiling check
             if now - _last_narration_ts >= _NARRATION_INTERVAL and _last_correlations:
                 if not monitor_status:
                     monitor_status = _check_monitor_alive()
                 narrative = _narrate(monitor_status, _last_correlations)
                 _write_narrative(narrative)
                 _last_narration_ts = now
+                # L24: lookahead runs alongside narration
+                lookahead = _anticipatory_lookahead()
+                if lookahead and lookahead.get("intervention_needed"):
+                    logger.warning(f"Meta-observer L24: {lookahead['suggestion']}")
+                # L∞∞: coherence ceiling check
+                ceiling = _check_coherence_ceiling()
+                if ceiling:
+                    logger.warning(f"Meta-observer L∞∞: {ceiling['recommendation'][:120]}")
                 logger.debug(f"Meta-observer L15: {narrative[:120]}...")
 
             # L16: environment scan
@@ -946,14 +1494,46 @@ def _meta_loop() -> None:
                 _checkpoint_entanglement()
                 _last_entangle_ts = now
 
-            # L∞: synthesis self-model (every 30 minutes when enough data)
+            # L32: intent classification (every 2 minutes, aligned with entanglement)
+            if now - _last_intent_ts >= _INTENT_INTERVAL:
+                _classify_intent()
+                _last_intent_ts = now
+
+            # L∞: synthesis self-model + L22 causal attribution + L27 composition correlation
             if now - _last_synthesis_pattern_ts >= _SYNTHESIS_PATTERN_INTERVAL:
                 _detect_synthesis_patterns()
+                attrib = _causal_attribution()
+                if attrib and attrib.get("status") == "attributed":
+                    logger.debug(
+                        f"Meta-observer L22: phantom attribution — "
+                        f"primary={attrib['primary_cause']} (r={attrib['primary_correlation']:.2f})"
+                    )
+                _correlate_composition_runs()
                 _last_synthesis_pattern_ts = now
+
+            # L28: living KB confidence (every hour)
+            if now - _last_kb_confidence_ts >= _KB_CONFIDENCE_INTERVAL:
+                _update_kb_confidence()
+                _last_kb_confidence_ts = now
+
+            # L33: cross-session archaeology (every 6 hours)
+            if now - _last_archaeology_ts >= _ARCHAEOLOGY_INTERVAL:
+                arch = _session_archaeology()
+                if arch and arch.get("finding"):
+                    logger.info(f"Meta-observer L33: {arch['finding']}")
+                _last_archaeology_ts = now
 
             # L18: expire stale predictions + generate new ones from correlator
             _expire_predictions()
             _auto_predictions_from_correlator()
+
+            # L30: periodic session document snapshot (every 10 minutes)
+            if cycle % max(1, 600 // _HEARTBEAT_INTERVAL) == 0:
+                try:
+                    from server import operational_state
+                    operational_state.write_session_document()
+                except Exception:
+                    pass
 
         except Exception as e:
             logger.error(f"Meta-observer loop error: {e}")

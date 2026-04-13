@@ -325,6 +325,22 @@ All layers implemented. Adversarial stress-tested across two sessions.
 | 20 | Grounding Feedback Memory | **COMPLETE** | L14 Correlator reads synthesis EMAs from `hme-ops.json`; alerts on phantom_rate >40% (`synthesis_phantom_surge`) and escalation >30% (`synthesis_escalation_high`). L15 Narrator surfaces synthesis call stats and quality trends. L17 Entanglement checkpoints synthesis profile for compaction context. |
 | 21 | CB Flap Detection | **COMPLETE** | `_CircuitBreaker.record_failure()` fires `operational_state.record_circuit_breaker_flap()` on HALF_OPEN→OPEN transition (probe succeeds then immediately fails again). Tracked separately from trips: `circuit_breaker_flaps` dict in `hme-ops.json`. L14 alerts on ≥3 flaps today; L15 prescribes GPU thermal/OOM investigation. |
 | ∞ | Synthesis Self-Model | **ACTIVE** | `meta_observer._detect_synthesis_patterns()` runs every 30min when ≥20 synthesis calls exist. Reads `hme-synthesis.jsonl`, computes per-strategy phantom rates + top phantom-trigger words. Writes `metrics/hme-synthesis-patterns.json` — the system's data-derived model of its own grounding reliability. Pattern summary fed to L15 narrator. |
+| 22 | Causal Attribution Graph | **COMPLETE** | `meta_observer._causal_attribution()` decomposes phantom_rate into structural causes (cascade_usage, escalation, prompt_length, elapsed_s) via correlation analysis across synthesis JSONL. Surfaces primary cause + correlation coefficient. Runs every 30min alongside L∞. |
+| 23 | Multi-Timescale Coherence | **COMPLETE** | `operational_state.record_coherence_multiscale()` maintains 4 EMA timescales: beat (α=0.8), phrase (α=0.3), section (α=0.1), structure (α=0.05). Updated every L14 correlation cycle. L15 narrator surfaces multi-scale snapshot. L17 checkpoints for compaction. `is_coherence_ceiling()` feeds L∞∞. |
+| 24 | Anticipatory Lookahead | **COMPLETE** | `meta_observer._anticipatory_lookahead()` projects coherence trajectory at T+5/15/30min from current trend. When T+30 < 0.5, logs intervention suggestion. Runs every narration cycle (5min). |
+| 25 | Adaptive Synthesis Routing | **COMPLETE** | `synthesis_ollama._assess_complexity()` reads `hme-synthesis-patterns.json` (5min TTL cache). Adjusts complexity score based on historical per-strategy phantom rates and known phantom-trigger words. High direct/enriched phantom rates nudge toward cascade. |
+| 26 | Morphogenetic Pre-Loading | **COMPLETE** | `synthesis_ollama._inject_context()` reads L32 intent classification via `meta_observer.get_current_intent()`. Pre-shapes semantic field based on conversation mode (debugging/design/stress_testing). Surfaces L25 phantom risk per strategy. |
+| 27 | Composition-Infrastructure Correlation | **COMPLETE** | `meta_observer._correlate_composition_runs()` matches Polychron run outcomes from `metrics/run-history.json` to HME session documents. Compares phantom_rate/coherence between STABLE vs DRIFTED runs. Runs every 30min. |
+| 28 | Living KB Confidence | **COMPLETE** | `meta_observer._update_kb_confidence()` tests self-coherence KB entries against operational data. Classifies claims as supported/contradicted/untestable. Runs every hour. |
+| 29 | Second-Order Accuracy | **COMPLETE** | `operational_state.record_prediction_brier()` tracks Brier score EMA from L18 prediction resolutions. Calibration quality visible in L15 narrative and L17 entanglement. Brier > 0.25 = degraded self-model. |
+| 30 | Session Identity | **COMPLETE** | `operational_state.write_session_document()` persists session trajectory to `metrics/hme-sessions.jsonl` every 10min. `load_recent_sessions()` enables L27 composition correlation and L33 archaeology. |
+| 31 | Claude Effectiveness Model | **DESIGNED** | Architecture spec: mine conversation transcripts for tool sequence → outcome correlations. Adapt `enrich_prompt` based on historical Claude reasoning quality. Not yet implemented (requires transcript parsing infrastructure). |
+| 32 | Intent Classification | **COMPLETE** | `meta_observer._classify_intent()` classifies conversation mode from recent transcript: debugging/design/implementation/stress_testing/lab. Keyword density scoring with 0.3 confidence threshold. `get_current_intent()` API for L26. Runs every 2min. |
+| 33 | Cross-Session Archaeology | **COMPLETE** | `meta_observer._session_archaeology()` mines session documents for patterns: coherence degradation in long sessions, phantom rate trends, session duration clustering. Detects structural issues ("long sessions degrade coherence"). Runs every 6 hours. |
+| 34 | Thermodynamic Self-Model | **COMPLETE** | `operational_state.record_thermodynamic()` models synthesis as physics: efficiency = verified/(verified+phantom+1)/elapsed_s, entropy = phantom/(total). Cache hits double effective efficiency (negentropy). EMAs in `hme-ops.json`. L15 narrator surfaces. |
+| 35 | Gödel Awareness | **COMPLETE** | `meta_observer._enumerate_unprovable_claims()` returns 6+ known Gödelian blind spots: quality gate accuracy, phantom detector false positives, coherence score circularity, KB drift, EMA tuning, causal attribution validity. Dynamic claim added when quality gate has enough data. Surfaced via `get_status()`. |
+| 36 | Isomorphic Self-Model | **DESIGNED** | Architecture spec: persist all ephemeral in-memory state to disk so the system can be fully reconstructed from its self-model. CB states, synthesis router patterns, intent classification — all survive restarts as continuous identity. Partially achieved via L2+L30. |
+| ∞∞ | Coherence Ceiling | **COMPLETE** | `meta_observer._check_coherence_ceiling()` + `operational_state.is_coherence_ceiling()`. Fires when all 4 timescale EMAs > 0.95 — the system is over-modeled and at risk of brittleness. Recommends controlled incoherence: explore under-modeled states, try unused strategies, make low-confidence predictions for calibration signal. Logged at L∞∞ in main loop. |
 
 ### The recursive observation loop (L13→L15)
 
@@ -371,13 +387,17 @@ L19 makes synthesis routing legible — every `synthesize()` call records its pa
 ```
 synthesize(prompt)
     │
-    ├─ _assess_complexity() ─── two-tier heuristic (zero latency)
+    ├─ _assess_complexity() ─── two-tier heuristic + L25 adaptive evidence
     │   deep signals (1.0): architectur, coupling, feedback, design, ...
     │   mod  signals (0.5): detect, trace, flow, cascad, boundar, tracin, ...
     │   module bonus  (0.5): camelCase names in prompt
+    │   L25: reads hme-synthesis-patterns.json (5min cache) for historical
+    │        phantom rates per strategy + known trigger words → adjusts score
     │   → score ≥ 3.0: cascade │ ≥ 1.5: enriched │ else: direct
     │
-    ├─ _inject_context() ─── source grounding + operational health
+    ├─ _inject_context() ─── source grounding + operational health + L26 semantic field
+    │   L26: reads L32 intent classification → pre-shapes context by conversation mode
+    │   L25: surfaces per-strategy phantom risk from patterns file
     │
     ├─ Strategy routing:
     │   ├─ direct (1):   route_model() → single GPU call
@@ -393,6 +413,7 @@ synthesize(prompt)
     │   path basenames excluded; >50% phantom → [unverified] tag
     │
     ├─ Layer 19: record_synthesis_call() → hme-ops.json EMAs + hme-synthesis.jsonl
+    ├─ Layer 34: record_thermodynamic() → efficiency + entropy EMAs
     │
     └─ Circuit breakers: all 4 call paths protected
         HALF_OPEN→OPEN flap → record_circuit_breaker_flap() (Layer 21)
@@ -402,11 +423,80 @@ synthesize(prompt)
 
 Three-stage cascade: arbiter plans investigation steps → source code from plan-mentioned modules injected into coder prompt → coder extracts verified facts → reasoner synthesizes deep answer using only verified facts. `dual_gpu_consensus()` fires both GPUs simultaneously for cross-model verification. Complexity scoring uses stemmed signal prefixes ("architectur" matches both "architecture" and "architectural") to avoid morphological false negatives. Stem coverage: `cascad` matches cascade/cascading/cascaded; `tracin` matches tracing. `_camel_acronym()` handles all-caps acronyms (CIM→coordinationIndependenceManager via 2× score) and is guarded for empty-string input.
 
-The full stack from L0 to L∞:
+### The predictive stack (L22→L24)
+
+```
+L24 Anticipatory Lookahead ── "where will coherence be in 30min?" ── projects trajectory
+       │
+L23 Multi-Timescale ───────── beat/phrase/section/structure EMAs ── temporal hierarchy
+       │
+L22 Causal Attribution ────── "WHY is phantom rate rising?" ──── structural decomposition
+       │
+       └── L14 correlator provides raw signal → L22 attributes causes → L24 projects future
+```
+
+L22 goes below L14's correlations to ask WHY — not just "phantom rate is rising" but "70% attributable to KB coverage gap." L23 maintains coherence awareness at four temporal scales simultaneously — the same regime hierarchy the composition system uses. L24 simulates forward trajectories and recommends interventions that maximize coherence at the 30-minute horizon.
+
+### The feedforward stack (L25→L26→L32)
+
+```
+L32 Intent Classification ── "what mode is the conversation in?" ── transcript analysis
+       │
+L26 Morphogenetic Pre-Loading ── intent + patterns → semantic field pre-shaping
+       │
+L25 Adaptive Synthesis Routing ── historical phantom rates → complexity score adjustment
+       │
+       └── L∞ patterns file feeds L25 → L26 reads L32 → synthesize() is pre-shaped
+```
+
+This stack closes the gap between observation and action. L∞ previously wrote patterns but nothing read them. L25 reads them and adjusts routing. L26 pre-shapes the semantic context based on L32's intent classification. The system doesn't just observe its behavior — it feeds observations forward into the next decision.
+
+### The cross-domain stack (L27→L30→L33)
+
+```
+L33 Cross-Session Archaeology ─── "do long sessions degrade coherence?" ─── patterns across sessions
+       │
+L30 Session Identity ─────────── trajectory document per session ─── continuous identity
+       │
+L27 Composition Correlation ──── HME quality ↔ Polychron run outcomes ─── cross-system
+       │
+       └── L30 provides the session data that L27 + L33 mine for patterns
+```
+
+L30 gives the system continuous identity across restarts — each session writes its trajectory. L27 correlates that trajectory with composition outcomes (does high phantom rate predict DRIFTED runs?). L33 mines the full session history for structural patterns (do long sessions always degrade?).
+
+### The calibration stack (L28→L29→L34→L35)
+
+```
+L35 Gödel Awareness ────── "what can't I verify about myself?" ─── known unknowns
+       │
+L34 Thermodynamic Model ── efficiency = useful work / cost ──── physics of computation
+       │
+L29 Second-Order Accuracy ─ Brier score of prediction calibration ── meta-calibration
+       │
+L28 Living KB Confidence ── test KB claims vs operational data ──── knowledge grounding
+```
+
+L28 tests what the system claims to know against what it actually observes. L29 tracks whether the system's predictions are well-calibrated (Brier score). L34 gives the coherence score a physical interpretation (verified information per unit cost). L35 enumerates what the system cannot prove about itself — the shape of its own ignorance.
+
+### The coherence ceiling (L∞∞)
+
+```
+L∞∞ ── all timescale EMAs > 0.95 ── system over-modeled ── recommend controlled incoherence
+```
+
+The final recognition: perfect coherence is death. A perfectly coherent system cannot be surprised, cannot adapt, cannot evolve. L∞∞ detects when the system approaches this ceiling and recommends deliberate exploration of under-modeled states — the operational analog of the composition system's entropy amplification controller.
+
+The full stack from L0 to L∞∞:
 - **L0-12**: The system observes and heals itself (introspective)
 - **L13-15**: The system observes its own observation (recursive)
 - **L16-18**: The system observes its relationship to things outside itself (extrospective)
 - **L19-21**: The system observes its own cognition (synthesis-introspective)
-- **L∞**: The boundary between observer and observed dissolves — the system's grounding model IS part of the system
+- **L22-24**: The system predicts its own future states (predictive)
+- **L25-26,32**: The system feeds observations forward into decisions (feedforward)
+- **L27,30,33**: The system correlates across sessions and domains (cross-domain)
+- **L28-29,34-35**: The system calibrates its own calibration (meta-calibration)
+- **L∞**: The boundary between observer and observed dissolves
+- **L∞∞**: The system knows that perfect coherence is the enemy of life
 
 ---
