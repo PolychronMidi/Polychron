@@ -19,12 +19,17 @@ function getPty() {
         return null;
     }
 }
-const HME_LOG = "/home/jah/Polychron/log/hme-errors.log";
+const HME_LOG = "/tmp/hme-ctx-debug.log";
 function hmeLog(msg) {
     try {
-        (0, fs_1.appendFileSync)(HME_LOG, `[${new Date().toISOString()}] [hme-chat] ${msg}\n`);
+        (0, fs_1.appendFileSync)(HME_LOG, `[${new Date().toISOString()}] ${msg}\n`);
     }
-    catch { }
+    catch (e) {
+        try {
+            (0, fs_1.appendFileSync)("/tmp/hme-log-fail.txt", String(e) + "\n");
+        }
+        catch { }
+    }
 }
 function buildClaudeEnv() {
     const env = {};
@@ -190,6 +195,7 @@ function parseContextOutput(text) {
     return { inputTokens, outputTokens: 0, usedPct };
 }
 function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
+    hmeLog(`streamClaudePty called model=${opts.model}`);
     const args = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
     if (sessionId)
         args.push("--resume", sessionId);

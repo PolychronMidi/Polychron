@@ -16,9 +16,11 @@ function getPty(): typeof import("node-pty") | null {
   }
 }
 
-const HME_LOG = "/home/jah/Polychron/log/hme-errors.log";
+const HME_LOG = "/tmp/hme-ctx-debug.log";
 function hmeLog(msg: string) {
-  try { appendFileSync(HME_LOG, `[${new Date().toISOString()}] [hme-chat] ${msg}\n`); } catch {}
+  try { appendFileSync(HME_LOG, `[${new Date().toISOString()}] ${msg}\n`); } catch (e) {
+    try { appendFileSync("/tmp/hme-log-fail.txt", String(e) + "\n"); } catch {}
+  }
 }
 
 function buildClaudeEnv(): Record<string, string> {
@@ -202,6 +204,7 @@ export function streamClaudePty(
   onDone: (usage?: TokenUsage) => void,
   onError: (msg: string) => void
 ): () => void {
+  hmeLog(`streamClaudePty called model=${opts.model}`);
   const args: string[] = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
   if (sessionId) args.push("--resume", sessionId);
 
