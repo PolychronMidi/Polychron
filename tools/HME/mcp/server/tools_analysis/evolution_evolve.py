@@ -16,10 +16,9 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
-def evolve(focus: str = "all") -> str:
+def evolve(focus: str = "all", query: str = "") -> str:
     """Unified evolution intelligence hub. focus='all' (default): LOC offenders +
     coupling gaps + leverage + pipeline suggestions + synthesis.
-    focus='coupling': coupling gaps + leverage only.
     focus='loc': LOC offenders only.
     focus='pipeline': pipeline suggestions only.
     focus='patterns': journal meta-patterns across all rounds.
@@ -38,9 +37,10 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
     Reports gaps in enforcement that could let violations slip through.
     focus='invariants': declarative invariant battery — loads checks from
     config/invariants.json and evaluates each one. Add new invariants as JSON
-    without modifying Python. 10 check types: files_executable, files_referenced,
-    file_exists, symlink_valid, json_valid, glob_count_gte, pattern_in_file,
-    patterns_all_in_file, pattern_count_gte, symbols_used."""
+    without modifying Python.
+    focus='think': deep reasoning about a question (pass question in query param).
+    focus='blast': blast radius / transitive dependency chain (pass symbol in query).
+    focus='coupling': coupling intelligence (pass sub-mode in query: full/network/antagonists/gaps/leverage)."""
     _track("evolve")
     append_session_narrative("evolve", f"evolve({focus})")
     ctx.ensure_ready_sync()
@@ -49,7 +49,7 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
     if focus in ("all", "loc"):
         parts.append(_loc_offenders())
 
-    if focus in ("all", "coupling"):
+    if focus == "all":
         parts.append(_coupling_opportunities())
 
     if focus in ("all", "pipeline"):
@@ -86,6 +86,22 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
     if focus == "invariants":
         from .evolution_invariants import check_invariants
         return check_invariants()
+
+    if focus == "think":
+        if not query:
+            return "Error: focus='think' requires query param with the question."
+        from .reasoning_think import think as _th
+        return _th(about=query)
+
+    if focus == "blast":
+        if not query:
+            return "Error: focus='blast' requires query param with the symbol name."
+        from .reasoning_think import blast_radius as _br
+        return _br(query)
+
+    if focus == "coupling":
+        from .coupling import coupling_intel as _ci
+        return _budget_gate(_ci(mode=query or "full"))
 
     budget = BUDGET_COMPOUND if focus == "all" else BUDGET_TOOL
     return _budget_gate("\n".join(parts), budget=budget)
