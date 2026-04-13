@@ -138,6 +138,10 @@ class _Handler(BaseHTTPRequestHandler):
         engine_name = body.get("engine", "project")
         method = body.get("method", "")
         kwargs = body.get("kwargs", {})
+        # Layer 1: log session ID for cross-component correlation
+        session_id = self.headers.get("X-HME-Session", "")
+        if session_id:
+            logger.debug(f"/rag session={session_id} {engine_name}.{method}")
 
         if not _engine_ready.wait(timeout=10):
             self._send_json(503, {"error": "engines loading"})
@@ -192,6 +196,7 @@ class _Handler(BaseHTTPRequestHandler):
                 "kb_ready": _project_engine is not None,
                 "recent_errors": recent_errors[-10:],
                 "error_count": len(recent_errors),
+                "pid": os.getpid(),  # Layer 1: shim identity for cross-component correlation
                 "endpoints": [
                     "/rag", "/enrich", "/enrich_prompt", "/validate", "/audit",
                     "/reindex", "/transcript", "/health", "/narrative",

@@ -1,10 +1,18 @@
 """HME MCP server entry point.
 
 Bootstrap order (critical for fast MCP handshake):
-  1. Create FastMCP app + populate context (no model needed)
-  2. Register all tool decorators
-  3. Start background thread to load SentenceTransformer + RAGEngine
-  4. mcp.run() — handshake completes instantly; tools block via ensure_ready_sync()
+  1. Purge stale .pyc files (Layer 0 prerequisite)
+  2. Create FastMCP app + populate context (no model needed)
+  3. Register all tool decorators
+  4. Start background thread to load SentenceTransformer + RAGEngine
+  5. mcp.run() — handshake completes instantly; tools block via ensure_ready_sync()
+
+Self-coherence layers wired here:
+  Layer 0  — system_phase transitions (COLD→WARMING→READY/FAILED)
+  Layer 1  — SESSION_ID logged at startup for cross-component correlation
+  Layer 2  — operational_state.init() at startup; startup timing recorded
+  Layer 5  — crash loop detection via ops.is_crash_loop() skips expensive steps
+  Layer 11 — intent propagation: proxy monitor pre-warms cache from transcript
 """
 import os
 import sys
@@ -17,6 +25,34 @@ import time
 _tool_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
+
+
+def _purge_stale_server_pyc() -> None:
+    """Delete .pyc files in server/__pycache__/ whose source .py is newer — prevents stale bytecode."""
+    pkg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server")
+    pycache = os.path.join(pkg_dir, "__pycache__")
+    if not os.path.isdir(pycache):
+        return
+    purged = []
+    for pyc in os.listdir(pycache):
+        if not pyc.endswith(".pyc"):
+            continue
+        parts = pyc.rsplit(".", 2)  # "module.cpython-312.pyc" → ["module", "cpython-312", "pyc"]
+        if len(parts) < 3:
+            continue
+        src = os.path.join(pkg_dir, parts[0] + ".py")
+        pyc_path = os.path.join(pycache, pyc)
+        if os.path.exists(src) and os.path.getmtime(src) > os.path.getmtime(pyc_path):
+            try:
+                os.unlink(pyc_path)
+                purged.append(pyc)
+            except OSError:
+                pass
+    if purged:
+        print(f"HME startup: purged {len(purged)} stale .pyc(s): {purged}", file=sys.stderr)
+
+
+_purge_stale_server_pyc()
 
 _stderr_handler = logging.StreamHandler(sys.stderr)
 _stderr_handler.setLevel(logging.WARNING)
@@ -57,6 +93,14 @@ os.makedirs(PROJECT_DB, exist_ok=True)
 os.makedirs(GLOBAL_DB, exist_ok=True)
 init_config(PROJECT_ROOT)
 
+# --- Layer 2: Initialize operational state before any startup work ---
+from server import operational_state as _ops
+_ops.init(PROJECT_ROOT)
+
+# --- Layer 0: Transition to WARMING immediately ---
+from server import system_phase as _sp
+_sp.set_phase(_sp.SystemPhase.WARMING, "main.py starting")
+
 # --- MCP App (created BEFORE model load so handshake is instant) ---
 mcp = FastMCP(
     "HME",
@@ -79,6 +123,9 @@ context.global_engine = None
 context.shared_model = None
 context.lib_engines = {}
 
+# Layer 1: Log session ID for cross-component correlation
+logger.info(f"HME session={context.SESSION_ID} | project={PROJECT_ROOT}")
+
 # --- Register all tools (import triggers @mcp.tool() decorators — no model needed at decorator time) ---
 from server import tools_search     # noqa: F401
 from server import tools_index      # noqa: F401
@@ -88,6 +135,7 @@ from server import tools_analysis   # noqa: F401
 # --- Background model + engine loading ---
 _startup_done = threading.Event()
 context._startup_done = _startup_done
+_startup_t0 = time.time()
 
 
 def _background_load():
@@ -136,8 +184,12 @@ def _background_load():
             logger.info(f"HME ready (local mode) | project={PROJECT_ROOT} | libs={list(lib_engines.keys())}")
         from server.startup_validator import validate_startup
         validate_startup(context, PROJECT_ROOT)
+        # Layer 0 + 2: record successful startup
+        _sp.set_phase(_sp.SystemPhase.READY, "startup validation passed")
+        _ops.record_startup_ms((time.time() - _startup_t0) * 1000)
     except Exception as e:
         context._startup_error = e
+        _sp.set_phase(_sp.SystemPhase.FAILED, f"{type(e).__name__}: {e}")
         import traceback
         logger.error(f"HME background startup failed: {type(e).__name__}: {e}\n{traceback.format_exc()}")
     finally:
@@ -156,6 +208,9 @@ def _background_startup_chain():
             yields to interactive between each). Interactive calls jump ahead.
     Step 3: warm_pre_edit_cache() — caller+KB cache for fast before_editing().
 
+    Layer 5 (Temporal Rhythm): if crash loop detected, skip expensive steps 1+2
+    to avoid wasting resources when the system is clearly in trouble.
+
     All steps background priority — interactive requests always preempt.
     """
     _startup_done.wait(timeout=90)
@@ -166,48 +221,56 @@ def _background_startup_chain():
             severity="WARNING",
         )
         return
-    from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
-    from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
 
-    # Single daemon health gate: if daemon is ready AND all warm caches are fresh, skip steps 1+2.
-    # Avoids two redundant HTTP round-trips and two separate skip decisions.
-    _skip_ollama_steps = False
-    try:
-        import urllib.request as _ureq, json as _js
-        with _ureq.urlopen(_ureq.Request("http://127.0.0.1:7735/health"), timeout=2) as _r:
-            _daemon_status = _js.loads(_r.read())
-        _wc = _daemon_status.get("warm_caches", {})
-        if _daemon_status.get("status") == "ready" and _wc and all(v.get("fresh") for v in _wc.values()):
-            logger.info("startup chain [1+2/3]: daemon ready + all caches fresh — skipping model init and priming")
-            _skip_ollama_steps = True
-    except Exception:
-        pass
+    # Layer 5: crash loop → skip Ollama steps to minimize resource waste
+    in_crash_loop = _ops.is_crash_loop()
+    if in_crash_loop:
+        logger.warning(
+            "startup chain [1+2/3]: SKIPPED — crash loop detected "
+            f"({_ops.get('shim_crashes_today', 0)} shim crashes, "
+            f"{_ops.get('restarts_today', 0)} restarts today)"
+        )
+    else:
+        from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
 
-    if not _skip_ollama_steps:
-        init_result = ""
+        # Single daemon health gate: if daemon is ready AND all warm caches are fresh, skip steps 1+2.
+        _skip_ollama_steps = False
         try:
-            logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
-            init_result = _init_ollama_models()
-            logger.info(f"startup chain [1/3]: {init_result}")
-        except Exception as _e:
-            context.register_critical_failure(
-                "startup_chain[1/3]",
-                f"Model init crashed: {type(_e).__name__}: {_e}",
-            )
-            init_result = "FAILED"
+            import urllib.request as _ureq, json as _js
+            with _ureq.urlopen(_ureq.Request("http://127.0.0.1:7735/health"), timeout=2) as _r:
+                _daemon_status = _js.loads(_r.read())
+            _wc = _daemon_status.get("warm_caches", {})
+            if _daemon_status.get("status") == "ready" and _wc and all(v.get("fresh") for v in _wc.values()):
+                logger.info("startup chain [1+2/3]: daemon ready + all caches fresh — skipping model init and priming")
+                _skip_ollama_steps = True
+        except Exception:
+            pass
 
-        if "FAILED" in init_result:
-            logger.warning("startup chain [2/3]: SKIPPED — model init had failures, priming would crash")
-        else:
+        if not _skip_ollama_steps:
+            init_result = ""
             try:
-                logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
-                warm_result = _prime_all_gpus()
-                logger.info(f"startup chain [2/3]: {warm_result}")
+                logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
+                init_result = _init_ollama_models()
+                logger.info(f"startup chain [1/3]: {init_result}")
             except Exception as _e:
                 context.register_critical_failure(
-                    "startup_chain[2/3]",
-                    f"Warm priming crashed: {type(_e).__name__}: {_e}",
+                    "startup_chain[1/3]",
+                    f"Model init crashed: {type(_e).__name__}: {_e}",
                 )
+                init_result = "FAILED"
+
+            if "FAILED" in init_result:
+                logger.warning("startup chain [2/3]: SKIPPED — model init had failures, priming would crash")
+            else:
+                try:
+                    logger.info("startup chain [2/3]: priming warm KV contexts (sequential)...")
+                    warm_result = _prime_all_gpus()
+                    logger.info(f"startup chain [2/3]: {warm_result}")
+                except Exception as _e:
+                    context.register_critical_failure(
+                        "startup_chain[2/3]",
+                        f"Warm priming crashed: {type(_e).__name__}: {_e}",
+                    )
 
     cache_stamp = os.path.join(PROJECT_ROOT, "tmp", "hme-cache-warmed-at")
     skip_warming = False
@@ -222,6 +285,7 @@ def _background_startup_chain():
 
     if not skip_warming:
         try:
+            from server.tools_analysis.workflow import _warm_pre_edit_cache_sync as warm_pre_edit_cache
             logger.info("startup chain [3/3]: warming pre-edit caller+KB cache...")
             cache_result = warm_pre_edit_cache(max_files=200)
             logger.info(f"startup chain [3/3]: {cache_result}")
@@ -239,6 +303,10 @@ def _background_startup_chain():
 
 
 threading.Thread(target=_background_startup_chain, daemon=True, name="HME-startup-chain").start()
+# Wire recovery hook so in-process recovery re-runs the full startup chain (Ollama init + priming + cache warm).
+context._post_recovery_hook = lambda: threading.Thread(
+    target=_background_startup_chain, daemon=True, name="HME-recovery-chain"
+).start()
 
 if __name__ == "__main__":
     from server.protocol_logging import install as _install_logging

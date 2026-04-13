@@ -136,6 +136,64 @@ def start_proxy_monitor(port: int = _DEFAULT_PORT) -> None:
     logger.info(f"Proxy health monitor started (interval={_MONITOR_INTERVAL}s)")
 
 
+_intent_propagation_last: float = 0.0
+_INTENT_INTERVAL = 120.0  # seconds between intent propagation ticks
+
+
+def _intent_propagation_tick() -> None:
+    """Layer 11: pre-warm pre-edit cache for files Claude is actively discussing.
+
+    Reads the last 5 minutes of transcript from the shim, extracts file/module
+    mentions from Claude's messages, and pre-warms the pre-edit cache for those
+    targets. When read() is then called, the cache is already warm (~50ms vs ~3s).
+
+    Runs at most every _INTENT_INTERVAL seconds in the healthy-cycle of the proxy monitor.
+    Non-fatal: any failure is silently ignored (this is a latency optimization, not correctness).
+    """
+    global _intent_propagation_last
+    now = time.time()
+    if now - _intent_propagation_last < _INTENT_INTERVAL:
+        return
+    _intent_propagation_last = now
+    try:
+        import re
+        import urllib.request as _ureq
+        # Fetch recent transcript
+        req = _ureq.Request(f"http://127.0.0.1:{_DEFAULT_PORT}/transcript?minutes=5&max=20")
+        with _ureq.urlopen(req, timeout=3) as resp:
+            import json as _js
+            entries = _js.loads(resp.read()).get("entries", [])
+        if not entries:
+            return
+        # Extract file/module mentions from assistant messages
+        text = " ".join(
+            e.get("content", "") for e in entries
+            if e.get("type") in ("assistant", "user")
+        )
+        # Match src/... paths and module names (CamelCase or camelCase identifiers)
+        files = re.findall(r'src/[\w/.-]+\.js', text)
+        modules = re.findall(r'\b[a-z][a-zA-Z]{3,}(?:Manager|Engine|Controller|Registry|Handler|Bridge)\b', text)
+        targets = list(set(files + modules))[:5]  # top 5 candidates
+        if not targets:
+            return
+        logger.info(f"Intent propagation: pre-warming cache for {targets}")
+        from server import context as _ctx
+        from server.tools_analysis.workflow import _warm_pre_edit_cache_sync
+        _warm_pre_edit_cache_sync(max_files=len(targets), target_hints=targets)
+    except Exception:
+        pass  # strictly non-fatal: this is a latency optimization
+
+
+def _check_ollama_daemon_health() -> None:
+    """Warn if Ollama persistence daemon (port 7735) is unreachable — non-fatal, logged only."""
+    try:
+        req = urllib.request.Request("http://127.0.0.1:7735/health")
+        with urllib.request.urlopen(req, timeout=2):
+            return  # daemon alive
+    except Exception as e:
+        logger.warning(f"Proxy health monitor: Ollama daemon (port 7735) unreachable: {type(e).__name__}")
+
+
 def _proxy_health_monitor(port: int) -> None:
     """Background: ping shim every 60s; restart if dead; reset one-shot flags on recovery.
 
@@ -150,13 +208,64 @@ def _proxy_health_monitor(port: int) -> None:
                 break
             if check_shim_health(port):
                 crash_count = 0  # reset crash counter on healthy cycle
+                _check_ollama_daemon_health()
+                _intent_propagation_tick()  # Layer 11: pre-warm cache from transcript
+                # Layer 8: coherence snapshot → metrics/hme-coherence.jsonl
+                try:
+                    from server import health_topology as ht
+                    import json as _jc
+                    topo = ht.get_topology()
+                    coherence = topo.get("coherence", 0.0)
+                    _pr = os.environ.get("PROJECT_ROOT", "")
+                    if _pr:
+                        _mdir = os.path.join(_pr, "metrics")
+                        os.makedirs(_mdir, exist_ok=True)
+                        _entry = _jc.dumps({
+                            "ts": time.time(),
+                            "coherence": coherence,
+                            "shim_ms": topo.get("nodes", {}).get("shim", {}).get("response_ms"),
+                        })
+                        with open(os.path.join(_mdir, "hme-coherence.jsonl"), "a") as _f:
+                            _f.write(_entry + "\n")
+                    if coherence < 0.5:
+                        from server import context as _ctx
+                        _ctx.register_critical_failure(
+                            "health_topology",
+                            f"System coherence below threshold: {coherence:.0%} — multiple components degraded",
+                            severity="WARNING",
+                        )
+                except Exception:
+                    pass
                 continue
             logger.warning("Proxy health monitor: shim unhealthy — attempting restart")
+            # Layer 0 + 2: mark RECOVERING, record crash
+            try:
+                from server import system_phase as sp
+                from server import operational_state as ops
+                sp.set_phase(sp.SystemPhase.RECOVERING, "proxy_monitor: shim unhealthy")
+                ops.record_shim_crash()
+            except Exception:
+                pass
+            # Layer 4 + 10: register failure as parent (triggers cascade detection), capture ID
+            monitor_fid = None
+            try:
+                from server import context as _ctx
+                monitor_fid = _ctx.register_critical_failure(
+                    "proxy_monitor",
+                    "Shim health check failed — attempting restart",
+                    severity="WARNING",
+                )
+            except Exception:
+                pass
             if ensure_shim_running(port):
                 logger.info("Proxy health monitor: shim recovered")
                 try:
                     from server import context as _ctx
+                    from server import system_phase as sp
+                    from server import resonance_detector as rd
                     _ctx._recovery_last_attempt = 0.0
+                    sp.set_phase(sp.SystemPhase.READY, "proxy_monitor: shim revived")
+                    rd.resolve_cascade("shim revived by proxy monitor")
                 except Exception:
                     pass
             else:
@@ -166,7 +275,10 @@ def _proxy_health_monitor(port: int) -> None:
                         "proxy_monitor",
                         "Shim died and could not be restarted — RAG calls will return empty results.",
                         severity="CRITICAL",
+                        caused_by=monitor_fid,  # Layer 4: causal chain from health-check failure
                     )
+                    from server import system_phase as sp
+                    sp.set_phase(sp.SystemPhase.DEGRADED, "proxy_monitor: shim restart failed")
                 except Exception:
                     pass
         except Exception as _e:
@@ -189,7 +301,7 @@ def _proxy_health_monitor(port: int) -> None:
                 break
 
 
-def _revive_dead_shim(port: int, engine_name: str, error: str) -> None:
+def _revive_dead_shim(port: int, engine_name: str, error: str, caused_by: str = None) -> None:
     """Background: called on first connection error — shim is dead, attempt immediate restart."""
     logger.warning(f"RAG proxy {engine_name}: connection failed ({error}) — attempting shim revival")
     if ensure_shim_running(port):
@@ -207,6 +319,7 @@ def _revive_dead_shim(port: int, engine_name: str, error: str) -> None:
                 f"{engine_name}: shim connection failed ({error}) and could not be revived. "
                 "RAG calls will return empty results until shim restarts.",
                 severity="CRITICAL",
+                caused_by=caused_by,  # Layer 4: causal chain from connection failure
             )
         except Exception:
             pass
@@ -244,38 +357,93 @@ class RAGProxy:
             "method": method,
             "kwargs": kwargs,
         }).encode()
+        # Layer 1: include session ID header for cross-component log correlation
+        try:
+            from server import context as _ctx
+            session_id = _ctx.SESSION_ID
+        except Exception:
+            session_id = "unknown"
         req = urllib.request.Request(
             f"{self._base}/rag", data=body,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "X-HME-Session": session_id},
         )
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 if self._consecutive_404s > 0:
                     self._consecutive_404s = 0
                     self._degraded_notified = False  # allow re-notification on future degradation
-                self._connection_failed = False
+                if self._connection_failed:
+                    self._connection_failed = False
+                    # Layer 0: proxy recovered — transition to READY if we were degraded
+                    try:
+                        from server import system_phase as sp
+                        if sp.is_degraded_or_worse():
+                            sp.set_phase(sp.SystemPhase.READY, f"{self._engine} proxy recovered")
+                    except Exception:
+                        pass
                 return json.loads(resp.read()).get("result")
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 self._consecutive_404s += 1
                 if self._consecutive_404s >= _MAX_CONSECUTIVE_404S and not self._degraded_notified:
                     self._degraded_notified = True
-                    threading.Thread(
-                        target=_notify_proxy_degraded,
-                        args=(self._engine, self._consecutive_404s),
-                        daemon=True,
-                    ).start()
+                    # Layer 0: stale shim without /rag → DEGRADED
+                    try:
+                        from server import system_phase as sp
+                        sp.set_phase(sp.SystemPhase.DEGRADED, f"{self._engine}: repeated 404 on /rag")
+                    except Exception:
+                        pass
+                    # Layer 10: only notify if not already in cascade (prevent amplification)
+                    _cascade_404 = False
+                    try:
+                        from server import resonance_detector as rd
+                        _cascade_404 = rd.is_cascade_active()
+                    except Exception:
+                        pass
+                    if not _cascade_404:
+                        threading.Thread(
+                            target=_notify_proxy_degraded,
+                            args=(self._engine, self._consecutive_404s),
+                            daemon=True,
+                        ).start()
             logger.warning(f"RAG proxy {self._engine}.{method}: {e}")
             return None
         except (urllib.error.URLError, TimeoutError, OSError) as e:
-            # Connection refused / timeout — shim is dead, not just stale. Trigger immediate restart.
+            # Connection refused / timeout — shim is dead. Trigger immediate restart.
             if not self._connection_failed:
                 self._connection_failed = True
-                threading.Thread(
-                    target=_revive_dead_shim,
-                    args=(self._port, self._engine, str(e)),
-                    daemon=True,
-                ).start()
+                # Layer 0: mark DEGRADED
+                try:
+                    from server import system_phase as sp
+                    sp.set_phase(sp.SystemPhase.DEGRADED, f"{self._engine}: connection failed ({type(e).__name__})")
+                except Exception:
+                    pass
+                # Layer 4 + 10: register failure (triggers cascade detection), capture ID for causal chain
+                conn_fid = None
+                try:
+                    from server import context as _ctx
+                    conn_fid = _ctx.register_critical_failure(
+                        f"rag_proxy.{self._engine}",
+                        f"Shim connection failed ({type(e).__name__}) — attempting revival",
+                        severity="WARNING",
+                    )
+                except Exception:
+                    pass
+                # Layer 10: check cascade gate — don't amplify an already-cascading failure storm
+                _cascade = False
+                try:
+                    from server import resonance_detector as rd
+                    _cascade = rd.is_cascade_active()
+                except Exception:
+                    pass
+                if not _cascade:
+                    threading.Thread(
+                        target=_revive_dead_shim,
+                        args=(self._port, self._engine, str(e), conn_fid),
+                        daemon=True,
+                    ).start()
+                else:
+                    logger.warning(f"RAG proxy {self._engine}: cascade active — skipping revival to prevent amplification")
             logger.warning(f"RAG proxy {self._engine}.{method}: {type(e).__name__}: {e}")
             return None
         except Exception as e:
