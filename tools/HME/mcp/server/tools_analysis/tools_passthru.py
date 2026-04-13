@@ -158,6 +158,10 @@ def _rg_search(pattern, path, glob_filter, file_type, output_mode,
         target = os.path.join(ctx.PROJECT_ROOT, target)
     if not target:
         target = ctx.PROJECT_ROOT
+    target = os.path.realpath(target)
+    _root = os.path.realpath(ctx.PROJECT_ROOT)
+    if not target.startswith(_root + os.sep) and target != _root:
+        return f"Error: path is outside the project root."
 
     cmd = ["rg", "--no-heading"]
     if output_mode == "files_with_matches":
@@ -179,6 +183,9 @@ def _rg_search(pattern, path, glob_filter, file_type, output_mode,
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
         raw = r.stdout.strip()
+        if r.returncode == 2:
+            err = r.stderr.strip()[:200] or "invalid pattern or argument"
+            return f"Error: rg failed — {err}"
     except FileNotFoundError:
         return _grep_fallback(pattern, target, output_mode, head_limit)
     except Exception as e:
@@ -210,6 +217,9 @@ def _grep_fallback(pattern, target, output_mode, head_limit):
     cmd.extend([pattern, target])
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        if r.returncode > 1:
+            err = r.stderr.strip()[:200] or "grep error"
+            return f"Error: grep failed — {err}"
         lines = r.stdout.strip().split("\n")
         if output_mode == "count":
             lines = [l for l in lines if not l.endswith(":0")]
@@ -279,6 +289,10 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
         base = os.path.join(ctx.PROJECT_ROOT, base)
     if not base:
         base = ctx.PROJECT_ROOT
+    base = os.path.realpath(base)
+    _root = os.path.realpath(ctx.PROJECT_ROOT)
+    if not base.startswith(_root + os.sep) and base != _root:
+        return f"Error: path is outside the project root."
 
     full_pattern = os.path.join(base, pattern) if not os.path.isabs(pattern) else pattern
     matches = sorted(_gl.glob(full_pattern, recursive=True))
@@ -286,13 +300,18 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
     if not matches:
         return f"No files matching '{pattern}'"
 
+    _GLOB_CAP = 500
+    truncated = len(matches) > _GLOB_CAP
+    matches = matches[:_GLOB_CAP]
+
     enrich_fn = _kb_full if enrich == "full" else _kb_light
     parts = []
     kb_modules_seen = set()
+    _KB_LOOKUP_CAP = 50
     for m in matches:
         rel = m.replace(ctx.PROJECT_ROOT + "/", "")
         tag = ""
-        if m.endswith(".js") and enrich != "none":
+        if m.endswith(".js") and enrich != "none" and len(kb_modules_seen) < _KB_LOOKUP_CAP:
             module = os.path.basename(m).replace(".js", "")
             if module not in kb_modules_seen and ctx.project_engine is not None:
                 hits = ctx.project_engine.search_knowledge(module, top_k=1)
@@ -301,7 +320,7 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
                     kb_modules_seen.add(module)
         parts.append(f"{rel}{tag}")
 
-    header = f"{len(matches)} files"
+    header = f"{len(matches)} files" + (f" (capped at {_GLOB_CAP})" if truncated else "")
     if enrich == "full" and kb_modules_seen:
         full_kb = enrich_fn(list(kb_modules_seen)[0])
         if full_kb:
@@ -329,6 +348,9 @@ def edit(file_path: str, old_string: str, new_string: str,
     abs_path = file_path
     if not os.path.isabs(abs_path):
         abs_path = os.path.join(ctx.PROJECT_ROOT, abs_path)
+    abs_path = os.path.realpath(abs_path)
+    if not abs_path.startswith(os.path.realpath(ctx.PROJECT_ROOT) + os.sep):
+        return f"Error: file_path is outside the project root."
     if not os.path.isfile(abs_path):
         return f"Error: file not found: {abs_path}"
 
