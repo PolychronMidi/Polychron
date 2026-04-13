@@ -18,17 +18,16 @@ read("module", mode="before")           pre-edit: KB constraints + callers + bou
 review(mode='forget')                   post-edit: auto-detects changed files from git
 npm run main                            pipeline (run_in_background=true, ~5-10 min)
   STABLE/EVOLVED -> auto-commit         descriptive message, all changed files
-  FAILED -> find("error text", mode="diagnose")
+  FAILED -> read pipeline output, fix root cause
 learn(title='...', content='...')       persist calibration anchors after user-confirmed rounds
 ```
 
-Hooks enforce each adherence, completetion, and transition.
+Hooks enforce each adherence, completion, and transition.
 
 ## Intelligence
 
 **Search & Diagnosis**
 ```
-find(query)                             auto-routes: callers/grep/semantic/coupling/diagnose/blast
 trace(target)                           signal flow: L0 cascade, module chains, causal chains
 trace(target, mode='snapshot')          beat state: S3 / 2:1:3:0 / 400 → regime, trust, notes
 ```

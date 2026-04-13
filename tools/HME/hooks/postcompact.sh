@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
-# HME PostCompact: re-surface pending KB anchors and tracked note files after compaction
+# HME PostCompact: re-surface pending KB anchors, tracked note files, and session orientation
 cat > /dev/null  # consume stdin
+
+HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$HOOKS_DIR/_nexus.sh"
 
 PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 HME_LOG="$PROJECT/log/hme.log"
@@ -45,7 +48,20 @@ fi
 # Reset context meter — compaction freed the context window; PTY will see this on next initBuf
 echo '{"used_pct":5,"remaining_pct":95,"size":200000,"input_tokens":10000,"output_tokens":0}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
 
-# Suggest resume after compaction — context was just lost
-echo "[PostCompact] Context compacted — chain preemption failed. Use status(mode='resume') for recovery." >&2
+# Re-orient after compaction — surface current session state directly
+ORIENT=""
+PS="$PROJECT/metrics/pipeline-summary.json"
+if [ -f "$PS" ]; then
+  VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
+  WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
+  [ -n "$VERDICT" ] && ORIENT="$ORIENT\n  Pipeline: $VERDICT${WALL:+ (${WALL})}"
+fi
+CHANGED=$(_safe_int "$(git -C "$PROJECT" diff --name-only 2>/dev/null | wc -l)")
+[ "$CHANGED" -gt 0 ] && ORIENT="$ORIENT\n  Uncommitted: $CHANGED file(s)"
+LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
+[ -n "$LAST_COMMIT" ] && ORIENT="$ORIENT\n  Last commit: $LAST_COMMIT"
+PENDING=$(_nexus_pending)
+[ -n "$PENDING" ] && ORIENT="$ORIENT\n  Pending:$PENDING"
+echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 
 exit 0
