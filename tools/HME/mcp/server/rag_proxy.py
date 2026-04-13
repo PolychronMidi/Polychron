@@ -620,7 +620,9 @@ class _ModelProxy:
         self._base = base_url
 
     def encode(self, texts, **kwargs):
-        body = json.dumps({"method": "_encode", "kwargs": {"texts": list(texts) if not isinstance(texts, list) else texts}}).encode()
+        _single = isinstance(texts, str)
+        texts_list = [texts] if _single else (texts if isinstance(texts, list) else list(texts))
+        body = json.dumps({"method": "_encode", "kwargs": {"texts": texts_list}}).encode()
         req = urllib.request.Request(
             f"{self._base}/rag", data=body,
             headers={"Content-Type": "application/json"},
@@ -628,6 +630,10 @@ class _ModelProxy:
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 import numpy as np
-                return np.array(json.loads(resp.read()).get("result", []))
+                result = np.array(json.loads(resp.read()).get("result", []))
+                # Single-string input: return 1D vector, not (1, 384) batch
+                if _single and result.ndim == 2 and len(result) > 0:
+                    return result[0]
+                return result
         except Exception:
             return None

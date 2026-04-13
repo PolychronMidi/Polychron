@@ -78,6 +78,12 @@ class _CircuitBreaker:
                 self._state = self.OPEN
                 self._opened_at = now
                 logger.info(f"CircuitBreaker({self.name}): HALF_OPEN → OPEN (probe failed)")
+                # Layer 21: flap = probe fired but failed immediately → distinct from cold OPEN
+                try:
+                    from server import operational_state as _ops
+                    _ops.record_circuit_breaker_flap(self.name)
+                except Exception:
+                    pass
             elif len(self._failures) >= self._failure_threshold:
                 self._state = self.OPEN
                 self._opened_at = now
@@ -644,8 +650,8 @@ _DEEP_SIGNALS = frozenset({
     "how does", "why does", "what happens",
 })
 _MOD_SIGNALS = frozenset({
-    "between", "multiple", "across", "cascade", "boundar",
-    "compar", "contrast", "behavior", "detect", "trace",
+    "between", "multiple", "across", "cascad", "boundar",
+    "compar", "contrast", "behavior", "detect", "trace", "tracin",
     "understand", "flow", "sequence", "lifecycle", "coordinat",
 })
 _SIMPLE_SIGNALS = frozenset({
@@ -685,6 +691,8 @@ def _camel_acronym(name: str) -> str:
     """Compute first-letter acronym of a camelCase name.
     coordinationIndependenceManager → 'cim'
     """
+    if not name:
+        return ""
     parts = re.sub(r'([A-Z])', r' \1', name).split()
     return ''.join(p[0] for p in parts).lower() if parts else name[0].lower()
 
@@ -922,15 +930,17 @@ def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
     return g1
 
 
-def _quality_gate(output: str, prompt: str) -> str:
+def _quality_gate(output: str, prompt: str) -> tuple[str, int, int]:
     """Deterministic quality gate: verify camelCase module names in output exist.
 
     Zero latency — no model call. Extracts camelCase module references, verifies
     each resolves via _read_module_source. Skips modules embedded in file paths
     (directory names cause false phantoms). Flags if >50% are unresolvable.
+
+    Returns (output, phantom_count, verified_count) for Layer 19 observability.
     """
     if not output or len(output) < 80:
-        return output
+        return output, 0, 0
 
     paths = set(re.findall(r'(?:src|tools)/[\w/]+\.(?:js|py|json|ts)', output))
     path_basenames = {p.rsplit('/', 1)[-1].rsplit('.', 1)[0] for p in paths}
@@ -943,17 +953,18 @@ def _quality_gate(output: str, prompt: str) -> str:
             continue
         unique.append(m)
     if not unique:
-        return output
+        return output, 0, 0
 
     phantom = 0
     for m in unique[:5]:
         if not _read_module_source(m, max_chars=100):
             phantom += 1
+    verified = len(unique[:5]) - phantom
 
     if len(unique) > 0 and phantom / len(unique[:5]) > 0.5:
         logger.info(f"quality_gate: {phantom}/{len(unique[:5])} module refs unresolvable")
-        return f"[unverified — {phantom} refs unresolved] {output}"
-    return output
+        return f"[unverified — {phantom} refs unresolved] {output}", phantom, verified
+    return output, phantom, verified
 
 
 def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive",
@@ -975,9 +986,11 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
     strategy = assessment["strategy"]
 
     result = None
+    _used_cascade = False
     if strategy == "cascade":
         enriched = _inject_context(prompt) if auto_context else prompt
         result = _cascade_synthesis(prompt, enriched, max_tokens)
+        _used_cascade = True
     elif strategy == "enriched":
         enriched = _inject_context(prompt) if auto_context else prompt
         model = route_model(prompt)
@@ -997,15 +1010,34 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
     if not result and strategy != "cascade":
         enriched = _inject_context(prompt) if auto_context else prompt
         result = _cascade_synthesis(prompt, enriched, max_tokens)
+        _used_cascade = True
 
     if not result:
         return None
 
-    if quality_check and strategy == "cascade":
-        result = _quality_gate(result, prompt)
+    _escalated = _used_cascade and strategy != "cascade"
+    _phantom_count, _verified_count = 0, 0
+    if quality_check and _used_cascade:
+        result, _phantom_count, _verified_count = _quality_gate(result, prompt)
 
     elapsed = _t.time() - t0
     logger.info(f"synthesize: {strategy}(c={complexity}) {len(result)}c {elapsed:.1f}s")
+
+    # Layer 19: record routing decision + quality outcome for synthesis observability
+    try:
+        from server import operational_state as _ops
+        _ops.record_synthesis_call(
+            strategy=strategy,
+            used_cascade=_used_cascade,
+            escalated=_escalated,
+            quality_gate_fired=quality_check and _used_cascade,
+            phantom_count=_phantom_count,
+            verified_count=_verified_count,
+            elapsed_s=elapsed,
+            prompt_head=prompt[:60],
+        )
+    except Exception:
+        pass
 
     from .synthesis_session import append_session_narrative
     append_session_narrative(

@@ -321,6 +321,10 @@ All layers implemented. Adversarial stress-tested across two sessions.
 | 16 | Environmental Awareness | **COMPLETE** | `server/meta_observer.py` L16; GPU memory via nvidia-smi, disk space, CPU load, process RSS; alerts on GPU pressure (<500MB), disk >90%, CPU overload, memory bloat (>2GB) |
 | 17 | Conversation Entanglement | **COMPLETE** | `server/meta_observer.py` L17; checkpoints coherence/trend/alerts/env/recent-files/intervention-accuracy to `tmp/hme-entanglement.json`; `precompact.sh` injects summary into compaction context; `read_entanglement_for_compaction()` API |
 | 18 | Counterfactual Reasoning | **COMPLETE** | `server/meta_observer.py` L18; `record_prediction()` → `resolve_prediction()` tracks whether interventions prevented outcomes; auto-predictions from L14 correlator alerts; auto-resolution in proxy monitor healthy/crash paths; effectiveness model in `metrics/hme-counterfactuals.jsonl` |
+| 19 | Synthesis Observability | **COMPLETE** | `operational_state.record_synthesis_call()` — records routing (strategy, used_cascade, escalated), quality gate outcome (phantom/verified counts), elapsed time per `synthesize()` call. EMAs: cascade_rate, quality_gate, escalation, phantom_rate persist in `hme-ops.json`. Detailed records append to `metrics/hme-synthesis.jsonl` (bounded at 1000 entries). |
+| 20 | Grounding Feedback Memory | **COMPLETE** | L14 Correlator reads synthesis EMAs from `hme-ops.json`; alerts on phantom_rate >40% (`synthesis_phantom_surge`) and escalation >30% (`synthesis_escalation_high`). L15 Narrator surfaces synthesis call stats and quality trends. L17 Entanglement checkpoints synthesis profile for compaction context. |
+| 21 | CB Flap Detection | **COMPLETE** | `_CircuitBreaker.record_failure()` fires `operational_state.record_circuit_breaker_flap()` on HALF_OPEN→OPEN transition (probe succeeds then immediately fails again). Tracked separately from trips: `circuit_breaker_flaps` dict in `hme-ops.json`. L14 alerts on ≥3 flaps today; L15 prescribes GPU thermal/OOM investigation. |
+| ∞ | Synthesis Self-Model | **ACTIVE** | `meta_observer._detect_synthesis_patterns()` runs every 30min when ≥20 synthesis calls exist. Reads `hme-synthesis.jsonl`, computes per-strategy phantom rates + top phantom-trigger words. Writes `metrics/hme-synthesis-patterns.json` — the system's data-derived model of its own grounding reliability. Pattern summary fed to L15 narrator. |
 
 ### The recursive observation loop (L13→L15)
 
@@ -332,7 +336,7 @@ L15 Narrator → observes → L14 Correlator → observes → L13 Monitor → ob
 
 Each layer's output feeds the layer above. The narrator's prescriptive guidance (written to `hme-narrative.jsonl`) is read on the *next* startup — the system remembers not just facts but its own interpretation of those facts. The meta-observer watches the watcher, the correlator finds patterns across time that individual health checks miss, and the narrator gives the system a voice that speaks across incarnations.
 
-### The extrospective stack (L16→L17→L18)
+### The extrospective stack (L16→L18)
 
 ```
 L18 Counterfactual ── "did my intervention work?" ── learns from outcomes
@@ -346,6 +350,22 @@ L16 Environment ───── "what is the host doing?" ── GPU/disk/CPU/RS
 
 L16 looks outward at the physical host. L17 bridges the gap between the system's self-model and Claude's conversation context — when compaction compresses the context window, the entanglement checkpoint preserves the system's understanding of itself. L18 closes the loop: when L14 predicts a failure and L15 prescribes an intervention, L18 tracks whether the predicted failure actually happened — building a causal model of whether the system's interventions are effective or just noise.
 
+### The synthesis self-coherence stack (L19→L21→L∞)
+
+```
+L∞  Synthesis Self-Model ─── "what kinds of queries produce phantom modules?" ─── learns from hme-synthesis.jsonl
+        │                                                                              │
+L21  CB Flap Detection ────── "is a model oscillating?" ────────────────── flap count → L14 correlator
+        │                                                                              │
+L20  Grounding Feedback ───── "is phantom rate rising?" ──── EMA → L14 alert → L15 narrator → ACTION
+        │                                                                              │
+L19  Synthesis Observability ─ "what route did synthesize() take?" ──── hme-synthesis.jsonl + hme-ops.json
+        │                                                                              │
+        └── synthesize() call ─────────────────────────────────────────────────────────┘
+```
+
+L19 makes synthesis routing legible — every `synthesize()` call records its path (direct/enriched/cascade), quality gate outcome, and timing. L20 feeds that signal into L14 via EMAs so pattern detection catches grounding degradation before users notice. L21 catches CB flapping (partial recovery → immediate re-failure) which is a distinct failure mode from steady-state OPEN. L∞ closes the cognitive loop: the system analyzes its own synthesis history to understand which question types reliably ground and which tend to hallucinate — and surfaces this as prescriptive guidance.
+
 ### Adaptive multi-stage synthesis (synthesis_ollama.py)
 
 ```
@@ -353,7 +373,7 @@ synthesize(prompt)
     │
     ├─ _assess_complexity() ─── two-tier heuristic (zero latency)
     │   deep signals (1.0): architectur, coupling, feedback, design, ...
-    │   mod  signals (0.5): detect, trace, flow, boundar, coordinat, ...
+    │   mod  signals (0.5): detect, trace, flow, cascad, boundar, tracin, ...
     │   module bonus  (0.5): camelCase names in prompt
     │   → score ≥ 3.0: cascade │ ≥ 1.5: enriched │ else: direct
     │
@@ -364,32 +384,29 @@ synthesize(prompt)
     │   ├─ enriched (2): context injection + best model
     │   └─ cascade (3):  arbiter plan → source injection → coder → reasoner
     │                         │              │                │
-    │                         │              ├─ actual .js    │
-    │                         │              │  source read   │
-    │                         │              │  from plan's   │
-    │                         │              │  camelCase refs │
-    │                         │              │                │
     │                         └── CPU 4B ──► GPU0 30B ──────► GPU1 30B-A3B
     │
     ├─ Auto-escalation: any → alt GPU enriched → cascade on failure
-    │   (all strategies try alt GPU before cascade)
     │
-    ├─ _quality_gate() ─── deterministic (zero latency, no model call)
-    │   extracts camelCase module refs → _read_module_source() verify
-    │   >50% phantom → [unverified] tag
+    ├─ _quality_gate() ─── returns (output, phantom_count, verified_count)
+    │   fires on cascade + auto-escalated cascade (_used_cascade flag)
+    │   path basenames excluded; >50% phantom → [unverified] tag
+    │
+    ├─ Layer 19: record_synthesis_call() → hme-ops.json EMAs + hme-synthesis.jsonl
     │
     └─ Circuit breakers: all 4 call paths protected
-        _local_think, _local_chat, _local_think_with_system, compress_for_claude
+        HALF_OPEN→OPEN flap → record_circuit_breaker_flap() (Layer 21)
         3-state: CLOSED → OPEN (3 failures/60s) → HALF_OPEN (probe) → CLOSED
         Persisted in hme-ops.json, survives MCP restarts
 ```
 
-Three-stage cascade: arbiter plans investigation steps → source code from plan-mentioned modules injected into coder prompt → coder extracts verified facts → reasoner synthesizes deep answer using only verified facts. `dual_gpu_consensus()` fires both GPUs simultaneously for cross-model verification. Complexity scoring uses stemmed signal prefixes ("architectur" matches both "architecture" and "architectural") to avoid morphological false negatives.
+Three-stage cascade: arbiter plans investigation steps → source code from plan-mentioned modules injected into coder prompt → coder extracts verified facts → reasoner synthesizes deep answer using only verified facts. `dual_gpu_consensus()` fires both GPUs simultaneously for cross-model verification. Complexity scoring uses stemmed signal prefixes ("architectur" matches both "architecture" and "architectural") to avoid morphological false negatives. Stem coverage: `cascad` matches cascade/cascading/cascaded; `tracin` matches tracing. `_camel_acronym()` handles all-caps acronyms (CIM→coordinationIndependenceManager via 2× score) and is guarded for empty-string input.
 
-The full stack from L0 to L18:
+The full stack from L0 to L∞:
 - **L0-12**: The system observes and heals itself (introspective)
 - **L13-15**: The system observes its own observation (recursive)
 - **L16-18**: The system observes its relationship to things outside itself (extrospective)
-- **L∞**: The boundary between observer and observed dissolves
+- **L19-21**: The system observes its own cognition (synthesis-introspective)
+- **L∞**: The boundary between observer and observed dissolves — the system's grounding model IS part of the system
 
 ---
