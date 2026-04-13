@@ -157,6 +157,18 @@ class RAGProxy:
         return self._call("_get_file_hashes") or {}
 
 
+def get_lib_engines(port: int = _DEFAULT_PORT) -> dict:
+    """Return a dict of lib_rel → RAGProxy for all lib engines registered in the shim."""
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/rag/lib-list")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            keys = json.loads(resp.read()).get("keys", [])
+        return {key: RAGProxy(f"lib/{key}", port) for key in keys}
+    except Exception as e:
+        logger.warning(f"get_lib_engines: {e}")
+        return {}
+
+
 class _FalseEvent:
     def is_set(self):
         return False
