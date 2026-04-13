@@ -75,7 +75,30 @@ def _strip_think(text: str) -> str:
     elif "<think>" in text:
         before = text[:text.find("<think>")].strip()
         text = before if before else ""
-    return text
+    return _dedup_output(text)
+
+
+def _dedup_output(text: str, max_repeats: int = 2) -> str:
+    """Detect and truncate repetition loops in model output."""
+    lines = text.split("\n")
+    if len(lines) < 6:
+        return text
+    seen_counts: dict[str, int] = {}
+    kept = []
+    truncated = 0
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            kept.append(line)
+            continue
+        seen_counts[stripped] = seen_counts.get(stripped, 0) + 1
+        if seen_counts[stripped] <= max_repeats:
+            kept.append(line)
+        else:
+            truncated += 1
+    if truncated > 0:
+        kept.append(f"\n[{truncated} repetitive lines removed]")
+    return "\n".join(kept)
 
 
 def _call_model(prompt: str, model: str, port: int, system: str = "",

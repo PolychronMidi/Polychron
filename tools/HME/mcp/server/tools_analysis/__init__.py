@@ -20,8 +20,8 @@ _usage_stats: dict[str, int] = {}
 # Session intent tracking: detect audit vs focused editing patterns
 _session_intent: str = "unknown"  # "audit", "editing", "exploring", "unknown"
 _AUDIT_TOOLS = {"status", "review", "coupling_intel", "codebase_health", "trust_report", "channel_topology"}
-_EDIT_TOOLS = {"before_editing", "what_did_i_forget", "convention_check", "file_intel"}
-_EXPLORE_TOOLS = {"find", "trace", "beat_snapshot", "search_code", "grep"}
+_EDIT_TOOLS = {"before_editing", "what_did_i_forget", "convention_check", "file_intel", "edit"}
+_EXPLORE_TOOLS = {"find", "trace", "beat_snapshot", "search_code", "grep", "glob"}
 
 
 def _track(name: str):
