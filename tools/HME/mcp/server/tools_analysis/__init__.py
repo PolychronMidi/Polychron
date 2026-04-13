@@ -350,7 +350,7 @@ from . import perceptual         # noqa: E402, F401
 from . import evolution_next     # noqa: E402, F401
 from . import coupling           # noqa: E402, F401
 from . import evolution_evolve   # noqa: E402, F401
-from . import search_unified     # noqa: E402, F401
+# search_unified: find() absorbed into grep/glob_search/evolve — no tool registration needed
 from . import review_unified     # noqa: E402, F401
 from . import read_unified       # noqa: E402, F401
 from . import learn_unified      # noqa: E402, F401

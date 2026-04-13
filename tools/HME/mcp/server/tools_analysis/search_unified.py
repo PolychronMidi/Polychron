@@ -20,19 +20,9 @@ _FIND_DEDUP_WINDOW_S = 60  # return cached result if same query within 60s
 _FIND_DEDUP_MAX = 50  # max entries before pruning
 
 
-@ctx.mcp.tool()
 def find(query: str, path: str = "", mode: str = "auto") -> str:
-    """Universal search and analysis hub. mode='auto' (default) detects intent:
-    'callers of X' → callers, 'X should use Y' → boundary, regex → grep, else → semantic.
-    mode='semantic'|'grep'|'callers'|'boundary' to force search engine.
-    mode='think' → deep reasoning about query. mode='diagnose' → diagnose error text.
-    mode='blast' → blast radius / transitive dependency chain for a symbol.
-    mode='coupling' → coupling intelligence (query=mode: full/network/antagonists/gaps/leverage).
-    mode='symbols' → search symbols semantically. mode='lookup' → exact symbol lookup.
-    mode='map' → module directory map (query=directory). mode='hierarchy' → type hierarchy.
-    mode='rename' → bulk rename preview (query='old_name→new_name').
-    mode='xref' → cross-language trace for a symbol.
-    path scopes search engines to a directory."""
+    """Deprecated — absorbed into grep (search modes), glob_search (structural modes),
+    and evolve (analysis modes). Kept as internal function for backward compatibility."""
     _track("find")
     ctx.ensure_ready_sync()
     if not query or not query.strip():
