@@ -83,6 +83,18 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     _cf = ",".join(f.strip() for f in _git.stdout.strip().splitlines() if f.strip())
                 except Exception:
                     pass
+            # If still no files (e.g. auto-committed before review), read EDIT backlog from nexus
+            if not _cf:
+                import os as _os
+                try:
+                    _nexus_path = _os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-nexus.state")
+                    with open(_nexus_path) as _nf:
+                        _edit_entries = [l.strip() for l in _nf if l.startswith("EDIT:")]
+                    _nexus_files = [e.split(":", 2)[2] for e in _edit_entries if e.count(":") >= 2]
+                    if _nexus_files:
+                        _cf = ",".join(_nexus_files)
+                except Exception:
+                    pass
             import threading as _forget_t
             _forget_box = [None]
             def _run_forget():

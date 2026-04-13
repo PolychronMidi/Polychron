@@ -79,20 +79,27 @@ def _strip_think(text: str) -> str:
 
 
 def _dedup_output(text: str, max_repeats: int = 2) -> str:
-    """Detect and truncate repetition loops in model output."""
+    """Detect and truncate consecutive repetition loops in model output.
+
+    Only removes lines that repeat consecutively — scattered mentions of the
+    same string are kept. Fixes runaway loops (550 identical lines) without
+    stripping legitimate repeated references.
+    """
     lines = text.split("\n")
     if len(lines) < 6:
         return text
-    seen_counts: dict[str, int] = {}
     kept = []
     truncated = 0
+    run_line: str | None = None
+    run_count = 0
     for line in lines:
         stripped = line.strip()
-        if not stripped:
-            kept.append(line)
-            continue
-        seen_counts[stripped] = seen_counts.get(stripped, 0) + 1
-        if seen_counts[stripped] <= max_repeats:
+        if stripped == run_line:
+            run_count += 1
+        else:
+            run_line = stripped
+            run_count = 1
+        if run_count <= max_repeats:
             kept.append(line)
         else:
             truncated += 1

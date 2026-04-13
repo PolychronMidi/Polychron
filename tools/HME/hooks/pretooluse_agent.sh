@@ -30,7 +30,7 @@ if [[ ! -f "$AGENT_SCRIPT" ]]; then
 fi
 
 # Generate agent ID and create placeholder (mirrors Claude subagent file pattern)
-AGENT_ID=$(head -c 4 /dev/urandom | xxd -p)
+AGENT_ID=$(head -c 8 /dev/urandom | xxd -p)
 RESULT_FILE="/tmp/hme-agent-${AGENT_ID}.md"
 echo "subagent still working" > "$RESULT_FILE"
 

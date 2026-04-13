@@ -658,8 +658,8 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
         if "</think>" in compressed:
             compressed = compressed[compressed.rfind("</think>") + len("</think>"):].strip()
         compressed = re.sub(r'[^\x00-\x7F]+', '', compressed).strip()
-        _cb.record_success()
         if compressed and len(compressed) < len(text):
+            _cb.record_success()
             if len(compressed) > max_chars:
                 return compressed[:max_chars] + f"…(+{len(compressed) - max_chars} chars)"
             return compressed
