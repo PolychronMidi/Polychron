@@ -20,6 +20,10 @@ _DISPATCH_TIMEOUT = 30
 _HEALTH_TIMEOUT = 2
 _SHIM_MAX_WAIT = int(os.environ.get("HME_SHIM_WAIT", "40"))  # seconds; override via env
 _MAX_CONSECUTIVE_404S = 5  # consecutive /rag 404s before LIFESAVER fires
+_MONITOR_INTERVAL = 60     # seconds between shim health checks in proxy monitor
+_PID_FILE = "/tmp/hme-http-shim.pid"
+
+_proxy_monitor_active = False
 
 
 def _shim_path():
@@ -36,28 +40,121 @@ def check_shim_health(port=_DEFAULT_PORT):
         return False
 
 
+def check_shim_rag_capable(port=_DEFAULT_PORT) -> bool:
+    """Verify the running shim exposes /rag. Uses /capabilities if available, falls back to test call."""
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/capabilities")
+        with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
+            data = json.loads(resp.read())
+            return "/rag" in data.get("endpoints", [])
+    except urllib.error.HTTPError:
+        pass  # old shim without /capabilities — try direct test
+    except Exception:
+        return False
+    # Fallback: probe /rag directly (list_knowledge is lightweight)
+    try:
+        body = json.dumps({"engine": "project", "method": "list_knowledge", "kwargs": {}}).encode()
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{port}/rag", data=body,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return True
+    except urllib.error.HTTPError as e:
+        return e.code != 404
+    except Exception:
+        return False
+
+
+def kill_shim_by_pid() -> bool:
+    """Kill the shim process recorded in the PID file. Returns True if killed."""
+    import signal
+    try:
+        pid = int(open(_PID_FILE).read().strip())
+        os.kill(pid, signal.SIGTERM)
+        logger.info(f"Killed stale shim pid={pid}")
+        return True
+    except (FileNotFoundError, ValueError, ProcessLookupError, OSError):
+        return False
+
+
 def ensure_shim_running(port=_DEFAULT_PORT, max_wait=None):
     if max_wait is None:
         max_wait = _SHIM_MAX_WAIT
     if check_shim_health(port):
         return True
-    env = os.environ.copy()
-    env["PROJECT_ROOT"] = os.environ.get("PROJECT_ROOT", os.getcwd())
+
+    # PID-first: if a shim process is alive but not yet healthy, wait before spawning a duplicate
+    pid_alive = False
     try:
-        subprocess.Popen(
-            ["python3", _shim_path(), "--port", str(port), "--daemon"],
-            env=env, start_new_session=True,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-    except Exception as e:
-        logger.warning(f"Failed to start HTTP shim: {e}")
-        return False
+        pid = int(open(_PID_FILE).read().strip())
+        os.kill(pid, 0)  # signal 0 = liveness check, no-op if alive
+        pid_alive = True
+        logger.info(f"Shim pid={pid} alive but not healthy — waiting for it to become ready")
+    except (FileNotFoundError, ValueError, ProcessLookupError, OSError):
+        pass
+
+    if not pid_alive:
+        env = os.environ.copy()
+        env["PROJECT_ROOT"] = os.environ.get("PROJECT_ROOT", os.getcwd())
+        try:
+            subprocess.Popen(
+                ["python3", _shim_path(), "--port", str(port), "--daemon"],
+                env=env, start_new_session=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to start HTTP shim: {e}")
+            return False
+
     for _ in range(max_wait):
         time.sleep(1)
         if check_shim_health(port):
             return True
     logger.warning(f"Shim did not become healthy within {max_wait}s — falling back to local mode")
     return False
+
+
+def start_proxy_monitor(port: int = _DEFAULT_PORT) -> None:
+    """Start background shim health monitor. Restarts shim if it dies mid-session."""
+    global _proxy_monitor_active
+    if _proxy_monitor_active:
+        return
+    _proxy_monitor_active = True
+    threading.Thread(
+        target=_proxy_health_monitor, args=(port,),
+        daemon=True, name="HME-proxy-monitor",
+    ).start()
+    logger.info(f"Proxy health monitor started (interval={_MONITOR_INTERVAL}s)")
+
+
+def _proxy_health_monitor(port: int) -> None:
+    """Background: ping shim every 60s; restart if dead; reset one-shot flags on recovery."""
+    while _proxy_monitor_active:
+        time.sleep(_MONITOR_INTERVAL)
+        if not _proxy_monitor_active:
+            break
+        if check_shim_health(port):
+            continue
+        logger.warning("Proxy health monitor: shim unhealthy — attempting restart")
+        if ensure_shim_running(port):
+            logger.info("Proxy health monitor: shim recovered")
+            # Reset recovery gate so _try_recover_from_proxy_error() can re-run if needed
+            try:
+                from server import context as _ctx
+                _ctx._recovery_last_attempt = 0.0
+            except Exception:
+                pass
+        else:
+            try:
+                from server import context as _ctx
+                _ctx.register_critical_failure(
+                    "proxy_monitor",
+                    "Shim died and could not be restarted — RAG calls will return empty results.",
+                    severity="CRITICAL",
+                )
+            except Exception:
+                pass
 
 
 def _notify_proxy_degraded(engine_name: str, fail_count: int) -> None:
@@ -96,7 +193,9 @@ class RAGProxy:
         )
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                self._consecutive_404s = 0
+                if self._consecutive_404s > 0:
+                    self._consecutive_404s = 0
+                    self._degraded_notified = False  # allow re-notification on future degradation
                 return json.loads(resp.read()).get("result")
         except urllib.error.HTTPError as e:
             if e.code == 404:

@@ -91,14 +91,25 @@ context._startup_done = _startup_done
 
 
 def _background_load():
-    from server.rag_proxy import RAGProxy, ensure_shim_running, check_shim_health, get_lib_engines
+    from server.rag_proxy import (
+        RAGProxy, ensure_shim_running, check_shim_rag_capable,
+        kill_shim_by_pid, get_lib_engines, start_proxy_monitor,
+    )
     try:
-        if ensure_shim_running():
+        shim_ok = ensure_shim_running()
+        if shim_ok and not check_shim_rag_capable():
+            # Shim is healthy but lacks /rag (old version) — kill it and start fresh
+            logger.warning("Shim healthy but lacks /rag endpoint — killing stale version and restarting")
+            kill_shim_by_pid()
+            time.sleep(1)
+            shim_ok = ensure_shim_running()
+        if shim_ok:
             logger.info("RAG delegated to persistent HTTP shim (no local model loading)")
             context.project_engine = RAGProxy("project")
             context.global_engine = RAGProxy("global")
             context.shared_model = context.project_engine.model
             context.lib_engines = get_lib_engines()
+            start_proxy_monitor()
             logger.info(f"HME ready (proxy mode) | project={PROJECT_ROOT} | libs={list(context.lib_engines.keys())}")
         else:
             logger.warning("HTTP shim unavailable — loading RAG engines locally (duplicate, wasteful)")

@@ -134,7 +134,8 @@ _kb_version: int = 0
 # Background startup synchronization — set by main.py after background load completes
 _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None
-_recovery_attempted: bool = False
+_recovery_last_attempt: float = 0.0  # epoch time of last recovery attempt; 0 = never tried
+_RECOVERY_COOLDOWN = 300.0  # seconds before allowing another recovery attempt
 
 
 def _try_recover_from_proxy_error() -> bool:
@@ -145,12 +146,16 @@ def _try_recover_from_proxy_error() -> bool:
     every tool call fails. This detects that condition and re-initializes using the
     proxy if the shim is now healthy.
 
+    Retries at most once per _RECOVERY_COOLDOWN seconds so mid-session shim
+    restarts can trigger a second recovery without permanently suppressing it.
+
     Returns True if recovery succeeded.
     """
-    global _startup_error, _recovery_attempted, project_engine, global_engine, shared_model, lib_engines
-    if _recovery_attempted:
+    global _startup_error, _recovery_last_attempt, project_engine, global_engine, shared_model, lib_engines
+    now = time.time()
+    if now - _recovery_last_attempt < _RECOVERY_COOLDOWN:
         return False
-    _recovery_attempted = True
+    _recovery_last_attempt = now
     try:
         from server.rag_proxy import RAGProxy, check_shim_health, get_lib_engines
         if not check_shim_health():
