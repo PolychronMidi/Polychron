@@ -57,8 +57,10 @@ EVOLVER: Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})} compl
 (1) Read fingerprint-comparison.json
 (2) Read trace-summary metrics
 (3) Journal the round in metrics/journal.md
-(4) index_codebase + add_knowledge for confirmed rounds
-Do NOT skip Phases 5-7.
+(4) hme_admin(action='index') + learn() for confirmed rounds
+(5) Auto-commit if STABLE/EVOLVED (descriptive message, all changed files)
+(6) evolve(focus='curate') to prune stale KB entries
+(7) Pivot to next evolution target
 MSG
 elif echo "$CMD" | grep -q 'npm run snapshot'; then
   echo 'Baseline captured. Persist any new calibration anchors or decisions to HME add_knowledge.' >&2
@@ -84,7 +86,7 @@ if echo "$CMD" | grep -q 'npm run main'; then
       fi
     else
       _nexus_mark PIPELINE "FAILED"
-      echo "NEXUS: Pipeline FAILED — diagnose with find(error_text, mode='diagnose')." >&2
+      echo "NEXUS: Pipeline FAILED — read pipeline output, fix root cause." >&2
     fi
   fi
 fi
@@ -94,7 +96,7 @@ if echo "$CMD" | grep -qE '^git commit'; then
   EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
     _nexus_mark COMMIT
-    echo "NEXUS: Committed. Next: check doc sync (review mode='docs') and reindex (hme_admin action='index')." >&2
+    echo "NEXUS: Committed. Next: hme_admin(action='index') then review(mode='health') for doc sync." >&2
   fi
 fi
 
