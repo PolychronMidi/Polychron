@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **8 MCP tools** (7 mega-tools + 1 operational) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
+HME is five layers integrated into one executive. **10 MCP tools** (7 mega-tools + 3 passthru) provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -10,7 +10,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 |-------|----------|-------------|
-| **MCP Server** | `tools/HME/` | 8 tools: 7 mega-tools (evolve/find/review/read/learn/status/trace) + 1 operational (hme_admin) |
+| **MCP Server** | `tools/HME/` | 10 tools: 7 mega-tools (evolve/review/read/learn/status/trace/hme_admin) + 3 passthru (grep/glob_search/edit) |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `hooks/` (22 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
@@ -244,9 +244,9 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Enrich a prompt with project context | `enrich_prompt(prompt='...', frame='focus on...')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## The 8 Tools — Complete Reference
+## The 10 Tools — Complete Reference
 
-All capabilities route through 7 mega-tools + 1 operational tool. There are no other registered MCP tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
+All capabilities route through 7 mega-tools + 3 passthru tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
 
 ### 1. `evolve(focus)` — "What should I work on next?"
 
