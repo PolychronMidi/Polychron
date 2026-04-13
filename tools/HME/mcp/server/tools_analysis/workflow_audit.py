@@ -334,13 +334,29 @@ def what_did_i_forget(changed_files: str) -> str:
         "- List every concrete missed bug you find. No bullet limit.\n"
         "- If truly nothing concrete remains, say 'Nothing missed.'\n"
     )
-    # Wall-clock timeout enforced at the Ollama daemon level (ollama_daemon.py /generate).
-    # No caller-side threading needed.
-    synthesis = _local_think("/no_think\n" + user_text, max_tokens=400,
-                             model=_REASONING_MODEL, system=_THINK_SYSTEM)
-    if synthesis:
-        from .synthesis_ollama import compress_for_claude
-        synthesis = compress_for_claude(synthesis, max_chars=1200, hint="post-change audit missed bugs")
+    # Hard 12s wall-clock cap — thread wrapper that cannot be bypassed by any
+    # downstream blocking (stale imports, daemon hangs, direct Ollama calls).
+    import threading as _synth_threading
+    _synth_box = [None]
+
+    def _do_synthesis():
+        try:
+            result = _local_think("/no_think\n" + user_text, max_tokens=400,
+                                  model=_REASONING_MODEL, system=_THINK_SYSTEM)
+            if result:
+                from .synthesis_ollama import compress_for_claude
+                result = compress_for_claude(result, max_chars=1200, hint="post-change audit missed bugs")
+            _synth_box[0] = result
+        except Exception as _e:
+            logger.warning(f"what_did_i_forget: synthesis error: {_e}")
+
+    _t = _synth_threading.Thread(target=_do_synthesis, daemon=True)
+    _t.start()
+    _t.join(timeout=12)
+    synthesis = _synth_box[0] if not _t.is_alive() else None
+    if _t.is_alive():
+        logger.warning("what_did_i_forget: synthesis hard-killed at 12s wall cap")
+
     if synthesis:
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
         parts.append(synthesis)
@@ -450,19 +466,35 @@ def diagnose_error(error_text: str) -> str:
         "FIX:\n1. first step\n2. second step\n3. third step (max 3 steps)\n"
         "RULE: any architectural boundary or constraint to verify (omit if none)."
     )
-    from .synthesis_pipeline import _two_stage_think
-    synthesis = _two_stage_think(raw_context, question, max_tokens=800,
-                                 answer_format=answer_format)
-    if synthesis is None:
-        # Fallback: single-stage reasoning model (Ollama unavailable or stage 1 failed)
-        kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
-        synthesis = _local_think(
-            f"Error:\n{error_text[:600]}\n\n{question}" + kb_suffix,
-            max_tokens=800, model=_REASONING_MODEL, system=_THINK_SYSTEM
-        )
+    import threading as _diag_threading
+    _diag_box = [None]
+
+    def _do_diag_synthesis():
+        try:
+            from .synthesis_pipeline import _two_stage_think
+            result = _two_stage_think(raw_context, question, max_tokens=800,
+                                      answer_format=answer_format)
+            if result is None:
+                kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
+                result = _local_think(
+                    f"Error:\n{error_text[:600]}\n\n{question}" + kb_suffix,
+                    max_tokens=800, model=_REASONING_MODEL, system=_THINK_SYSTEM
+                )
+            if result:
+                from .synthesis_ollama import compress_for_claude
+                result = compress_for_claude(result, max_chars=800, hint="error fix steps")
+            _diag_box[0] = result
+        except Exception as _e:
+            logger.warning(f"diagnose_error: synthesis error: {_e}")
+
+    _dt = _diag_threading.Thread(target=_do_diag_synthesis, daemon=True)
+    _dt.start()
+    _dt.join(timeout=12)
+    synthesis = _diag_box[0] if not _dt.is_alive() else None
+    if _dt.is_alive():
+        logger.warning("diagnose_error: synthesis hard-killed at 12s wall cap")
+
     if synthesis:
-        from .synthesis_ollama import compress_for_claude
-        synthesis = compress_for_claude(synthesis, max_chars=800, hint="error fix steps")
         parts.append(f"\n## Fix Synthesis *(adaptive)*")
         parts.append(synthesis)
     else:
