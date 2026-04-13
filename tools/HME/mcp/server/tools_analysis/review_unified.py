@@ -74,7 +74,6 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
         elif m == "forget":
             _cf = changed_files
             if not _cf:
-                # Auto-detect changed files from git
                 try:
                     import subprocess as _sp
                     _git = _sp.run(
@@ -84,8 +83,23 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     _cf = ",".join(f.strip() for f in _git.stdout.strip().splitlines() if f.strip())
                 except Exception:
                     pass
-            from .workflow_audit import what_did_i_forget as _wdif
-            parts.append(_wdif(_cf or ""))
+            # Hard 10s wall cap — thread wrapper at MCP entry point.
+            # Cannot be bypassed by stale imports or downstream blocking.
+            import threading as _forget_t
+            _forget_box = [None]
+            def _run_forget():
+                try:
+                    from .workflow_audit import what_did_i_forget as _wdif
+                    _forget_box[0] = _wdif(_cf or "")
+                except Exception as _fe:
+                    _forget_box[0] = f"what_did_i_forget error: {_fe}"
+            _ft = _forget_t.Thread(target=_run_forget, daemon=True)
+            _ft.start()
+            _ft.join(timeout=10)
+            if _ft.is_alive():
+                parts.append("## Post-Change Audit\nAdaptive synthesis timed out (10s cap). Static analysis skipped to protect MCP connection.\nRe-run with fewer files or use `evolve(focus='think', query='...')` for deep analysis.")
+            else:
+                parts.append(_forget_box[0] or "No audit data.")
         elif m == "convention":
             if not file_path:
                 parts.append("Error: convention mode requires file_path.")
