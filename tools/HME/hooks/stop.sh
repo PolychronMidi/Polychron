@@ -3,9 +3,12 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME Stop: enforce implementation completeness + drive autonomous Evolver loop
 INPUT=$(cat)
 
-# ── Context meter: runs before any exit so /tmp/claude-context.json is always fresh ──
+# ── Context meter: runs before any exit so the ctx file is always fresh ──────
 # Stop hook fires BEFORE the next `> ` prompt — by the time PTY initBuf detects
 # the prompt, this file is already written with the current turn's real token counts.
+# HME_CTX_FILE is set by the HME Chat PTY to a session-unique path, preventing the
+# main Claude Code session's Stop hook from overwriting the chat session's data.
+_CTX_OUT="${HME_CTX_FILE:-/tmp/claude-context.json}"
 _CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
   python3 -c "
@@ -23,13 +26,13 @@ try:
                 out=u.get('output_tokens',0)
                 w=200000
                 used=round((inp+out)/w*100)
-                open('/tmp/claude-context.json','w').write(
+                open(sys.argv[2],'w').write(
                     json.dumps({'used_pct':used,'remaining_pct':100-used,
                                 'size':w,'input_tokens':inp,'output_tokens':out}))
                 break
 except Exception:
     pass
-" "$_CTX_TRANSCRIPT" 2>/dev/null
+" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null
 fi
 
 # ── LIFESAVER — mid-turn error detection ──────────────────────────────────────

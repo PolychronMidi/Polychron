@@ -60,7 +60,7 @@ fi
 
 # Log compact event for context meter calibration.
 # Captures the statusline's last known reading so we can compare meter estimate vs actual trigger.
-CTX_FILE=/tmp/claude-context.json
+CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
 LOG="$PROJECT/metrics/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
