@@ -146,7 +146,6 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
             "hallucinated_paths": hallucinated}
 
 
-@ctx.mcp.tool()
 def enrich_prompt(prompt: str, frame: str = "") -> str:
     """Enrich a prompt with KB grounding, structural clarity, and session context.
     Runs entirely on local models — zero Claude token cost.
