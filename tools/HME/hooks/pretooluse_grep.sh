@@ -14,7 +14,7 @@ KB_JSON=$(_hme_enrich "$PATTERN" 2)
 KB_COUNT=$(_hme_kb_count "$KB_JSON")
 if [[ "$KB_COUNT" -gt 0 ]]; then
   TITLES=$(_hme_kb_titles "$KB_JSON" 3)
-  _emit_enrich_allow "HME has $KB_COUNT KB entries matching \"$PATTERN\". For KB-enriched results: mcp__HME__find(query=\"$PATTERN\")
+  _emit_enrich_allow "HME: $KB_COUNT KB entries match \"$PATTERN\":
 $TITLES"
   _streak_tick 20
   exit 0
