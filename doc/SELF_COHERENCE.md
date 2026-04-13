@@ -305,21 +305,20 @@ All layers implemented. Adversarial stress-tested across two sessions.
 | 2 | Self-Knowledge | **COMPLETE** | `server/operational_state.py` → `tmp/hme-ops.json`; restarts, shim crashes, recovery EMAs, startup timing, crash loop detection |
 | 3 | Unified Health Topology | **COMPLETE** | `server/health_topology.py`; dependency-aware snapshot; shim/daemon/ollama nodes; 10s cache; wired into self-narration |
 | 4 | Failure Genealogy | **COMPLETE** | `server/failure_genealogy.py`; `failure_id` UUIDs; `caused_by` causal chains wired in `rag_proxy._call()` and `_proxy_health_monitor()` |
-| 5 | Temporal Rhythm Awareness | **PARTIAL** | Crash loop detection → skips Ollama steps; adaptive monitor interval (60s→120s after 30min stability) not yet implemented |
+| 5 | Temporal Rhythm Awareness | **COMPLETE** | Crash loop detection → skips Ollama steps; adaptive monitor interval: 60s normally → 120s after 30min uninterrupted health (`_stable_since` clock in `_proxy_health_monitor`, reset on any unhealthy event) |
 | 6 | Self-Narration | **COMPLETE** | `server/self_narration.py`; rich paragraph from all layers; prepended to tool responses when not READY |
 | 7 | Predictive Health | **COMPLETE** | `health_topology._check_shim_slowdown()`; response time EMA vs baseline; 3× + >1000ms threshold warns before OOM |
 | 8 | Coherence Metrics | **COMPLETE** | `_compute_coherence()` in topology (shim 40% + daemon 20% + ollama 40%); written to `metrics/hme-coherence.jsonl` every monitor cycle; <0.5 fires LIFESAVER |
 | 9 | Self-Healing Knowledge | **COMPLETE** | 6 KB entries: stale pyc, boot loop, old shim, cascade pattern, ops.json schema, layer architecture |
 | 10 | Resonance Detection | **COMPLETE** | `server/resonance_detector.py`; CASCADE on 3+ distinct sources in 10s window; cascade gate in `rag_proxy._call()` prevents revival amplification |
 | 11 | Intent Propagation | **COMPLETE** | `_intent_propagation_tick()` in proxy monitor healthy cycle; `_warm_pre_edit_cache_sync(target_hints=...)` prioritizes mentioned files |
-| 12 | Self-Evolution Protocol | **PARTIAL** | 35-probe adversarial stress test; infrastructure evolution suggestions (OOM trends, model evictions) not yet surfaced in output |
+| 12 | Self-Evolution Protocol | **COMPLETE** | 36-probe adversarial stress test; Probe 23 reads `hme-ops.json` + `hme-coherence.jsonl` and surfaces [HIGH/MEDIUM/LOW] infrastructure suggestions: shim crash rate, recovery rate, circuit breaker trips, startup EMA, coherence trend |
 | ∞ | Recursive Self-Reference | **EMERGING** | KB contains HME's own failure modes; narration draws from operational memory; full recursive loop (KB→tools→self-query→adapt) is in motion |
 
 ### Remaining gaps
 
-- **Layer 5**: Adaptive monitor interval — track `_monitor_stable_since` timestamp; after 30min with zero crashes, set `_MONITOR_INTERVAL = 120`
-- **Layer 2**: `record_circuit_breaker_trip()` — implement and call from `synthesis_ollama.py` on repeated Ollama failures
-- **Layer 12**: Infrastructure evolution suggestions in `evolve(focus='stress')` — parse `hme-ops.json` + `hme-coherence.jsonl` to surface trends
-- **Stress test 34→35**: Probe 11 ("KB: similarity search") passes after next MCP restart — proxy-mode path wired; cached module in current session prevents pickup
+All layers fully implemented. No structural gaps remain. Ongoing evolutionary opportunity:
+
+- **Layer ∞**: The recursive self-reference loop deepens naturally as more rounds accumulate operational data — `hme-coherence.jsonl`, `hme-ops.json`, and KB entries collectively form the system's growing self-model
 
 ---

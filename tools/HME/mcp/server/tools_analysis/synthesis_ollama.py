@@ -85,6 +85,12 @@ class _CircuitBreaker:
                     f"CircuitBreaker({self.name}): CLOSED → OPEN "
                     f"({len(self._failures)} failures in {self._failure_window_s}s)"
                 )
+                # Layer 2: persist trip in operational state (survives MCP restarts)
+                try:
+                    from server import operational_state as _ops
+                    _ops.record_circuit_breaker_trip(self.name)
+                except Exception:
+                    pass
 
 
 _circuit_breakers: dict[str, _CircuitBreaker] = {}

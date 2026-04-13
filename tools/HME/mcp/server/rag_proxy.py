@@ -24,6 +24,8 @@ _MONITOR_INTERVAL = 60     # seconds between shim health checks in proxy monitor
 _PID_FILE = "/tmp/hme-http-shim.pid"
 
 _proxy_monitor_active = False
+_MONITOR_INTERVAL_STABLE = 120   # seconds when system has been healthy >30min (Layer 5)
+_MONITOR_STABLE_THRESHOLD = 1800  # 30 minutes of uninterrupted health → reduce cadence
 
 
 def _shim_path():
@@ -195,18 +197,28 @@ def _check_ollama_daemon_health() -> None:
 
 
 def _proxy_health_monitor(port: int) -> None:
-    """Background: ping shim every 60s; restart if dead; reset one-shot flags on recovery.
+    """Background: ping shim periodically; restart if dead; reset one-shot flags on recovery.
 
+    Layer 5 (Temporal Rhythm): interval adapts — 60s normally, 120s after 30min of stability.
     Wrapped in a crash watchdog — if an unhandled exception escapes, registers a
     LIFESAVER and restarts the monitor thread so monitoring never silently dies.
     """
     crash_count = 0
+    _stable_since: float = 0.0  # epoch when shim last became continuously healthy
     while _proxy_monitor_active:
         try:
-            time.sleep(_MONITOR_INTERVAL)
+            # Layer 5: adaptive interval — reduce overhead when system is stable
+            _now = time.time()
+            if _stable_since > 0 and (_now - _stable_since) >= _MONITOR_STABLE_THRESHOLD:
+                _interval = _MONITOR_INTERVAL_STABLE
+            else:
+                _interval = _MONITOR_INTERVAL
+            time.sleep(_interval)
             if not _proxy_monitor_active:
                 break
             if check_shim_health(port):
+                if _stable_since == 0:
+                    _stable_since = time.time()  # mark start of stable window
                 crash_count = 0  # reset crash counter on healthy cycle
                 _check_ollama_daemon_health()
                 _intent_propagation_tick()  # Layer 11: pre-warm cache from transcript
@@ -237,6 +249,7 @@ def _proxy_health_monitor(port: int) -> None:
                 except Exception:
                     pass
                 continue
+            _stable_since = 0.0  # Layer 5: reset stability clock on any unhealthy event
             logger.warning("Proxy health monitor: shim unhealthy — attempting restart")
             # Layer 0 + 2: mark RECOVERING, record crash
             try:

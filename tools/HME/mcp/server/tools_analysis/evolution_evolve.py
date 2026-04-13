@@ -965,6 +965,57 @@ def _adversarial_stress() -> str:
     except Exception as e:
         results.append(("CLAUDE.md: readable", False, str(e)))
 
+    # Probe 23: Infrastructure evolution — scan ops + coherence for actionable trends (Layer 12)
+    try:
+        ops_path = os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-ops.json")
+        with open(ops_path) as f:
+            ops = json.load(f)
+        suggestions = []
+        crashes = ops.get("shim_crashes_today", 0)
+        restarts = ops.get("restarts_today", 0)
+        recovery_rate = ops.get("recovery_success_rate_ema", 1.0)
+        cb_trips = ops.get("circuit_breaker_trips", {})
+        cb_total = sum(cb_trips.values())
+        startup_ms = ops.get("startup_ms_ema")
+
+        if crashes >= 2:
+            suggestions.append(f"[HIGH] {crashes} shim crashes today — investigate OOM or index_directory volume")
+        if restarts >= 6:
+            suggestions.append(f"[MEDIUM] {restarts} MCP restarts today — consider crash loop root cause")
+        if recovery_rate < 0.7:
+            suggestions.append(f"[HIGH] Recovery rate {recovery_rate:.0%} — shim revive often failing; check startup logs")
+        if cb_total >= 3:
+            top_model = max(cb_trips, key=cb_trips.get)
+            suggestions.append(f"[MEDIUM] {cb_total} circuit breaker trips today ({top_model}: {cb_trips[top_model]}) — Ollama model unstable")
+        if startup_ms and startup_ms > 15000:
+            suggestions.append(f"[LOW] Startup EMA {startup_ms:.0f}ms — shim cold-start is slow; consider keepalive")
+
+        # Coherence trend from JSONL
+        coherence_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-coherence.jsonl")
+        if os.path.isfile(coherence_path):
+            with open(coherence_path) as f:
+                raw_lines = f.readlines()[-20:]
+            scores = []
+            for ln in raw_lines:
+                try:
+                    scores.append(json.loads(ln).get("coherence", 1.0))
+                except Exception:
+                    pass
+            if scores:
+                avg_coh = sum(scores) / len(scores)
+                if avg_coh < 0.6:
+                    suggestions.append(f"[HIGH] Avg coherence {avg_coh:.0%} over last {len(scores)} monitor cycles — multiple components degraded")
+                elif avg_coh < 0.8:
+                    suggestions.append(f"[LOW] Avg coherence {avg_coh:.0%} — Ollama partially unavailable; shim healthy")
+
+        label = f"Infrastructure trends ({len(suggestions)} suggestion(s))"
+        detail = "; ".join(suggestions) if suggestions else "no anomalies detected"
+        results.append((label, True, detail))
+    except FileNotFoundError:
+        results.append(("Infrastructure trends: hme-ops.json exists", False, "tmp/hme-ops.json missing — run HME once first"))
+    except Exception as e:
+        results.append(("Infrastructure trends: readable", False, str(e)))
+
     # Format output
     passed = sum(1 for _, ok, _ in results if ok)
     total = len(results)

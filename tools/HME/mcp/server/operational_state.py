@@ -169,3 +169,17 @@ def is_crash_loop() -> bool:
         shim_crashes = _state.get("shim_crashes_today", 0)
         restarts = _state.get("restarts_today", 1)
         return shim_crashes >= 3 or restarts >= 8
+
+
+def record_circuit_breaker_trip(model: str) -> int:
+    """Record a circuit breaker opening for a model. Returns total trips for this model today.
+
+    Layer 2: persists circuit breaker state across MCP restarts so operational memory
+    reflects Ollama instability that predates the current process.
+    """
+    with _state_lock:
+        trips = _state.setdefault("circuit_breaker_trips", {})
+        trips[model] = trips.get(model, 0) + 1
+        _state["circuit_breaker_trips_total_today"] = sum(trips.values())
+        _save_unlocked()
+        return trips[model]
