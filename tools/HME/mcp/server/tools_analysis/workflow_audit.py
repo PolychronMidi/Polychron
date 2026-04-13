@@ -334,7 +334,7 @@ def what_did_i_forget(changed_files: str) -> str:
         "- List every concrete missed bug you find. No bullet limit.\n"
         "- If truly nothing concrete remains, say 'Nothing missed.'\n"
     )
-    synthesis = _local_think(user_text, max_tokens=1200, model=_REASONING_MODEL,
+    synthesis = _local_think("/no_think\n" + user_text, max_tokens=400, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis_ollama import compress_for_claude

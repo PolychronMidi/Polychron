@@ -352,8 +352,14 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             # Reasoning model needs more headroom — 30B MoE cold call (prompt eval + generation)
             # can exceed 60s when warm KV context is stale. Local model stays at 60s.
             _interact_timeout = 120 if _effective_model == _REASONING_MODEL else 60
-            with urllib.request.urlopen(req, timeout=_interact_timeout) as resp:
-                raw_bytes = resp.read()
+            # Use streaming + wall-clock deadline so Ollama's token-by-token stream
+            # doesn't keep the socket alive past the timeout budget.
+            _never_cancel = _threading.Event()
+            raw_bytes, _err = _cancellable_urlopen(body, _url_for(_effective_model),
+                                                   timeout=_interact_timeout,
+                                                   cancel_event=_never_cancel)
+            if _err:
+                raise _err
         if priority == "interactive":
             _ollama_interactive.clear()
         result = json.loads(raw_bytes)
