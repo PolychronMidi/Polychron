@@ -267,12 +267,12 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         t0 = threading.Thread(target=_gpu0_extract, daemon=True)
         t1 = threading.Thread(target=_gpu1_analyze, daemon=True)
         t0.start(); t1.start()
-        t0.join(timeout=30)
-        t1.join(timeout=30)
+        t0.join(timeout=450)
+        t1.join(timeout=450)
         if t0.is_alive():
-            logger.warning("_parallel_two_stage_think: GPU0 extract timed out (30s)")
+            logger.warning("_parallel_two_stage_think: GPU0 extract thread still running after 450s timeout")
         if t1.is_alive():
-            logger.warning("_parallel_two_stage_think: GPU1 analyze timed out (30s)")
+            logger.warning("_parallel_two_stage_think: GPU1 analyze thread still running after 450s timeout")
     finally:
         _ollama_interactive.clear()
 

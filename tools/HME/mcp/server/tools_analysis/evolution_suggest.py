@@ -355,7 +355,7 @@ def suggest_evolution() -> str:
             )
         _presc_thread = _thr.Thread(target=_presc_worker, daemon=True)
         _presc_thread.start()
-        _presc_thread.join(timeout=20)
+        _presc_thread.join(timeout=75)
         _prescription = _presc_result[0]
         if _prescription:
             parts.append("\n---\n## NEXT EVOLUTION PRESCRIPTION *(synthesized)*\n")
