@@ -210,8 +210,13 @@ def _grep_fallback(pattern, target, output_mode, head_limit):
     cmd.extend([pattern, target])
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-        lines = r.stdout.strip().split("\n")[:head_limit]
-        return "\n".join(l.replace(ctx.PROJECT_ROOT + "/", "") for l in lines)
+        lines = r.stdout.strip().split("\n")
+        if output_mode == "count":
+            lines = [l for l in lines if not l.endswith(":0")]
+        lines = [l.replace(ctx.PROJECT_ROOT + "/", "") for l in lines[:head_limit]]
+        if not lines or lines == [""]:
+            return f"No matches for '{pattern}'"
+        return "\n".join(lines)
     except Exception as e:
         return f"Error: {e}"
 

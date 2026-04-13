@@ -103,6 +103,9 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
         from .coupling import coupling_intel as _ci
         return _budget_gate(_ci(mode=query or "full"))
 
+    if focus not in ("all", "loc", "pipeline"):
+        return f"Unknown focus '{focus}'. Use: all, loc, pipeline, patterns, seed, design, curate, forge, contradict, stress, invariants, think, blast, coupling."
+
     budget = BUDGET_COMPOUND if focus == "all" else BUDGET_TOOL
     return _budget_gate("\n".join(parts), budget=budget)
 
