@@ -14,7 +14,8 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
-def hme_admin(action: str = "selftest", modules: str = "") -> str:
+def hme_admin(action: str = "selftest", modules: str = "",
+              antipattern: str = "", hook_target: str = "pretooluse_bash") -> str:
     """HME maintenance dispatcher. action='selftest': verify tool registration, doc sync,
     index integrity, Ollama, KB health, symlinks. action='reload': hot-reload tool modules
     without restarting server (pass modules='health,evolution' or 'all'). action='index':
@@ -24,6 +25,9 @@ def hme_admin(action: str = "selftest", modules: str = "") -> str:
     action='introspect': self-benchmarking — tool usage patterns, workflow discipline, KB health.
     action='validate': empirical self-validation — runs golden queries through MCP tools
     and checks output quality (expected sections, no errors, minimum length).
+    action='fix_antipattern': synthesize bash detection logic for a behavioral rule and append
+    to a hook script (antipattern=, hook_target= one of: pretooluse_bash/edit/read/grep/write,
+    posttooluse_bash, stop, userpromptsubmit).
     action='both': reload then selftest.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
