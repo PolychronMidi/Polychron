@@ -17,6 +17,78 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
+def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
+    """Heuristic scan for common Python bug patterns in HME server code.
+
+    Checks for null-sentinel .get() traps, unguarded ValueError in OSError handlers,
+    unbounded append-only file growth, `or` idioms that mask 0.0, and variable-before-
+    assignment across guard boundaries.
+    """
+    import re
+    warnings = []
+
+    # 1. dict.get(key, non-None-default) where key could exist with None value.
+    # Pattern: .get("...", <number_or_call>) used in arithmetic/comparison/subtraction.
+    # The default is only used when the KEY IS ABSENT — not when it's present with None.
+    null_sentinel = re.findall(
+        r'\.get\(["\'][^"\']+["\'],\s*(?:0|time\.\w+\(\)|[0-9]+\.?[0-9]*)\)',
+        content
+    )
+    if null_sentinel:
+        warnings.append(
+            f"[{rel_path}] PYTHON: {len(null_sentinel)} .get(key, default) call(s) — "
+            "if the key can exist with None, .get(key, X) returns None not X. "
+            "Use `(d.get(key) or X)` or `if d.get(key) is None`."
+        )
+
+    # 2. int()/float() conversion inside a try block that only catches OSError-family.
+    # ValueError from bad string conversion won't be caught.
+    if re.search(r'\bint\(|\bfloat\(', content):
+        for block_match in re.finditer(
+            r'except\s+\(([^)]+)\)', content
+        ):
+            exc_types = block_match.group(1)
+            if ("OSError" in exc_types or "JSONDecodeError" in exc_types) \
+                    and "ValueError" not in exc_types and "TypeError" not in exc_types:
+                warnings.append(
+                    f"[{rel_path}] PYTHON: `except ({exc_types.strip()})` — "
+                    "int()/float() conversions present but ValueError/TypeError not caught; "
+                    "malformed values will escape to the outer exception handler."
+                )
+                break  # one warning per file is enough
+
+    # 3. Append-only file write without a corresponding trim/truncate.
+    append_opens = re.findall(r'open\([^,)]+,\s*["\']a["\']\)', content)
+    has_trim = bool(re.search(r'_trim_\w+|\.writelines\(.*\[-|truncate\(', content))
+    if append_opens and not has_trim:
+        warnings.append(
+            f"[{rel_path}] PYTHON: {len(append_opens)} append-only write(s) with no trim — "
+            "file will grow without bound over time."
+        )
+
+    # 4. `.get(...) or X` idiom that masks legitimate zero/False values.
+    zero_or = re.findall(r'\.get\([^)]+\)\s+or\s+(?:[0-9]+\.?[0-9]*|time\.\w+\(\))', content)
+    if zero_or:
+        warnings.append(
+            f"[{rel_path}] PYTHON: {len(zero_or)} `.get() or X` — "
+            "returns fallback for 0, 0.0, and '' too, not just None. "
+            "Use `if .get() is None else X` when zero is a valid value."
+        )
+
+    # 5. Bare variable reference that might be used outside the `if` guard defining it.
+    # Heuristic: variable assigned only inside `if len(...) >= N:` and referenced outside.
+    guarded = re.findall(r'if\s+len\([^)]+\)\s*>=\s*(\d+):[^\n]*\n(?:[ \t]+[^\n]+\n)*[ \t]+(\w+)\s*=', content)
+    for _threshold, var in guarded:
+        # Check if var appears after the block (simplified: appears more than once in file)
+        if content.count(f"\n    {var}") + content.count(f"\n        {var}") > 1:
+            warnings.append(
+                f"[{rel_path}] PYTHON: `{var}` assigned inside `if len() >= N` guard "
+                "— verify it's not referenced where the guard is False (NameError risk)."
+            )
+
+    return warnings
+
+
 def what_did_i_forget(changed_files: str) -> str:
     """Call AFTER implementing changes, BEFORE running pipeline. Takes comma-separated file paths. Checks changed files against KB for missed constraints, boundary violations, and doc update needs. Output scales with remaining context window."""
     ctx.ensure_ready_sync()
@@ -122,27 +194,75 @@ def what_did_i_forget(changed_files: str) -> str:
     parts.append("  - hme_admin(action='index') after batch changes (file watcher handles individual saves)")
     parts.append("  - add_knowledge for any new calibration anchors or decisions")
 
-    # Adaptive synthesis: always run when API key available — missed things aren't only in warnings
-    warnings_text = "\n".join(all_warnings[:15]) if all_warnings else "none"
+    # Python-specific static bug pattern scan (HME server + all .py files)
+    py_files = [f.strip() for f in changed_files.split(",") if f.strip().endswith(".py")]
+    for py_path in py_files:
+        abs_py = validate_project_path(py_path, ctx.PROJECT_ROOT)
+        if abs_py is None:
+            continue
+        rel_py = abs_py.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
+        try:
+            with open(abs_py, encoding="utf-8", errors="ignore") as _pyf:
+                py_content = _pyf.read()
+            all_warnings.extend(_scan_python_bug_patterns(rel_py, py_content))
+        except OSError:
+            pass
+
+    # Collect git diff for synthesis context (bounded to 4000 chars)
+    diff_context = ""
+    try:
+        import subprocess as _sp_diff
+        _diff_result = _sp_diff.run(
+            ["git", "-C", ctx.PROJECT_ROOT, "diff", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+        diff_context = _diff_result.stdout[:4000]
+    except Exception:
+        pass
+
+    # Adaptive synthesis — thorough bug probe, no artificial bullet limit, no default "Nothing missed"
+    warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
+    diff_section = f"\nCode diff (first 4000 chars):\n```\n{diff_context}\n```\n" if diff_context else ""
     user_text = (
         f"Changed files: {changed_files}\n"
-        f"Audit warnings: {warnings_text}\n"
-        f"Docs that may need updating: {docs_text}\n\n"
+        f"Static audit warnings already found: {warnings_text}\n"
+        f"Docs flagged: {docs_text}\n"
+        f"{diff_section}\n"
+        "PROBE for missed bugs systematically. For each changed Python file, check:\n"
+        "1. dict.get(key, non-None-default) — can the key exist with value None? If so, .get(key, X) "
+        "returns None, not X. Should use (d.get(key) or X) or an explicit `is None` check.\n"
+        "2. Exception handler gaps — does `except (OSError, json.JSONDecodeError)` miss "
+        "ValueError/TypeError from int()/float() conversions or comparison of incompatible types?\n"
+        "3. Append-only file writes — is there a corresponding trim to bound file growth?\n"
+        "4. `x or fallback` idioms after .get() — could `x` legitimately be 0.0 or False?\n"
+        "5. Path assumptions — does code assume a path is a file when it might be a directory?\n"
+        "6. Variable used before assignment — any variable defined inside an `if` guard but "
+        "referenced in an outer scope where the guard might be False?\n"
+        "7. State/type key mismatches — are dict keys used for dedup/lookup consistent with the "
+        "keys used when storing?\n"
+        "8. None-guarded arithmetic — is `time.time() - value` ever called where value could be None?\n"
         "Rules:\n"
-        "- ONLY list items you can tie to a specific file, function, or constraint name.\n"
+        "- Name the exact file, function, and the specific line-level issue.\n"
+        "- Do NOT repeat anything already listed in static audit warnings.\n"
         "- Do NOT list generic best practices (run tests, update docs, check types).\n"
-        "- Do NOT repeat anything already in the audit warnings above.\n"
-        "- If nothing concrete was missed, respond with exactly: 'Nothing missed.'\n"
-        "- Maximum 3 bullet points. Each must name the exact file or function affected.\n"
+        "- List every concrete missed bug you find. No bullet limit.\n"
+        "- If truly nothing concrete remains, say 'Nothing missed.'\n"
     )
-    synthesis = _local_think(user_text, max_tokens=800, model=_REASONING_MODEL,
+    synthesis = _local_think(user_text, max_tokens=1200, model=_REASONING_MODEL,
                              system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis_ollama import compress_for_claude
-        synthesis = compress_for_claude(synthesis, max_chars=800, hint="post-change audit missed items")
+        synthesis = compress_for_claude(synthesis, max_chars=1200, hint="post-change audit missed bugs")
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
         parts.append(synthesis)
+        # Depth meter: if total issues are high, recommend another pass
+        total_issues = len(all_warnings) + synthesis.count("\n- ") + synthesis.count("\n* ")
+        if total_issues >= 4:
+            parts.append(
+                f"\n_Found {total_issues} issues total — run `review(mode='forget')` again after fixing "
+                "to surface any remaining bugs (iterate until 0 remaining)._"
+            )
     else:
         logger.warning("what_did_i_forget: adaptive synthesis unavailable")
 

@@ -65,6 +65,9 @@ def start(project_root: str) -> None:
     if gap:
         logger.warning(f"Meta-observer: observation gap detected — {gap}")
 
+    if not os.path.exists(_synthesis_file):
+        logger.info("Meta-observer: hme-synthesis.jsonl absent — L22/L25/L∞ layers dormant until first synthesis call")
+
     _active = True
     _thread = threading.Thread(target=_meta_loop, daemon=True, name="hme-meta-observer")
     _thread.start()
@@ -300,7 +303,7 @@ def _correlate(history: list[dict]) -> dict:
                 "type": "restart_churn",
                 "message": f"{restarts} MCP restarts today with coherence dips — crash loop pattern",
             })
-        if shim_crashes >= 2 and len(shim_ms_values) >= 3 and recent_ms > 1000:
+        if shim_crashes >= 2 and len(shim_ms_values) >= 5 and recent_ms > 1000:
             result["alerts"].append({
                 "type": "shim_decay_precursor",
                 "message": f"{shim_crashes} shim crashes + rising latency — next crash imminent",
@@ -354,6 +357,7 @@ def _correlate(history: list[dict]) -> dict:
 # ── Layer 15: Prescriptive Narrator ────────────────────────────────────────
 
 def _narrate(monitor_status: dict, correlations: dict) -> str:
+    intent = _current_intent  # snap to avoid TOCTOU between guard and access
     parts = []
 
     # System state summary
@@ -446,8 +450,8 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
         pass
 
     # L32: intent context
-    if _current_intent.get("mode"):
-        parts.append(f"Intent: {_current_intent['mode']} (confidence={_current_intent.get('confidence', 0):.0%}).")
+    if intent.get("mode"):
+        parts.append(f"Intent: {intent['mode']} (confidence={intent.get('confidence', 0):.0%}).")
 
     # Prescriptive guidance
     if any(a.get("type") == "shim_decay_precursor" for a in correlations.get("alerts", [])):
@@ -555,14 +559,17 @@ def _scan_environment() -> dict:
             for line in result.stdout.strip().split("\n"):
                 parts = [p.strip() for p in line.split(",")]
                 if len(parts) >= 4:
-                    used, total, free = int(parts[1]), int(parts[2]), int(parts[3])
-                    gpus.append({
-                        "index": int(parts[0]),
-                        "used_mb": used,
-                        "total_mb": total,
-                        "free_mb": free,
-                        "pct_used": round((used / max(total, 1)) * 100, 1),
-                    })
+                    try:
+                        used, total, free = int(parts[1]), int(parts[2]), int(parts[3])
+                        gpus.append({
+                            "index": int(parts[0]),
+                            "used_mb": used,
+                            "total_mb": total,
+                            "free_mb": free,
+                            "pct_used": round((used / max(total, 1)) * 100, 1),
+                        })
+                    except (ValueError, IndexError):
+                        continue  # skip lines with N/A or malformed values
             env["gpus"] = gpus
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         pass
@@ -624,7 +631,7 @@ def _checkpoint_entanglement() -> None:
                 ops = json.load(f)
             state["restarts_today"] = ops.get("restarts_today", 0)
             state["recovery_rate"] = ops.get("recovery_success_rate_ema")
-            state["session_age_s"] = round(time.time() - ops.get("session_start", time.time()))
+            state["session_age_s"] = round(time.time() - (ops.get("session_start") or time.time()))
             # L19: synthesis routing profile for compaction context
             synth_calls = ops.get("synthesis_calls_today", 0)
             if synth_calls > 0:
@@ -669,9 +676,10 @@ def _checkpoint_entanglement() -> None:
 
         # Recent transcript topics (what files/modules were discussed)
         try:
+            import re as _re
             transcript_path = os.path.join(
                 os.environ.get("PROJECT_ROOT", ""),
-                "tools", "HME", "mcp", "log", "session-transcript.jsonl"
+                "log", "session-transcript.jsonl"
             )
             if os.path.exists(transcript_path):
                 recent_files = set()
@@ -681,9 +689,7 @@ def _checkpoint_entanglement() -> None:
                     try:
                         entry = json.loads(line.strip())
                         text = json.dumps(entry)
-                        # Extract file paths mentioned
-                        import re
-                        paths = re.findall(r'(?:src|tools)/[\w/]+\.(?:js|py|ts)', text)
+                        paths = _re.findall(r'(?:src|tools)/[\w/]+\.(?:js|py|ts)', text)
                         recent_files.update(paths[:5])
                     except (json.JSONDecodeError, ValueError):
                         continue
@@ -764,11 +770,13 @@ _predictions: list[dict] = []  # active predictions awaiting outcome
 
 
 def record_prediction(prediction_type: str, predicted_outcome: str,
-                      intervention: str | None = None, window_s: float = 600) -> str:
+                      intervention: str | None = None, window_s: float = 600,
+                      confidence: float | None = None) -> str:
     """Record a prediction about what will happen. Returns prediction ID.
 
-    If an intervention is taken, we later check whether the predicted
-    outcome was actually prevented — building an effectiveness model.
+    confidence: explicit probability that predicted_outcome occurs (0-1).
+    If None, defaults to 0.8 (no intervention) or 0.6 (with intervention) for L29 Brier.
+    Use low confidence (e.g. 0.1) for baseline/healthy-state predictions of bad outcomes.
     """
     pred_id = f"pred-{int(time.time())}-{len(_predictions)}"
     pred = {
@@ -779,6 +787,7 @@ def record_prediction(prediction_type: str, predicted_outcome: str,
         "intervention": intervention,
         "window_s": window_s,
         "deadline": time.time() + window_s,
+        "confidence": confidence,
         "outcome": None,
     }
     _predictions.append(pred)
@@ -801,7 +810,8 @@ def resolve_prediction(pred_id: str, outcome_occurred: bool) -> None:
             # L29: update Brier score EMA for prediction calibration tracking
             try:
                 from server import operational_state
-                predicted_prob = 0.8 if pred["intervention"] is None else 0.6
+                predicted_prob = (pred["confidence"] if pred.get("confidence") is not None
+                                  else (0.8 if pred["intervention"] is None else 0.6))
                 operational_state.record_prediction_brier(predicted_prob, outcome_occurred)
             except Exception:
                 pass
@@ -812,7 +822,12 @@ def resolve_prediction(pred_id: str, outcome_occurred: bool) -> None:
 
 
 def _expire_predictions() -> None:
-    """Check for predictions past their deadline — if no outcome recorded, assume prevented."""
+    """Check for predictions past their deadline — if no outcome recorded, assume prevented.
+
+    All predictions are phrased as negative outcomes ('bad thing happens within X').
+    Expiry with no explicit resolution means the bad thing was prevented: occurred=False.
+    Also updates L29 Brier score so expiry contributes to calibration tracking.
+    """
     now = time.time()
     for pred in _predictions:
         if pred["outcome"] is None and now > pred["deadline"]:
@@ -823,6 +838,14 @@ def _expire_predictions() -> None:
                 "auto_expired": True,
             }
             _write_counterfactual(pred)
+            # L29: expired predictions count toward Brier — outcome_occurred=False (prevented)
+            try:
+                from server import operational_state
+                predicted_prob = (pred["confidence"] if pred.get("confidence") is not None
+                                  else (0.8 if pred["intervention"] is None else 0.6))
+                operational_state.record_prediction_brier(predicted_prob, False)
+            except Exception:
+                pass
     # Prune resolved predictions older than 1 hour
     _predictions[:] = [p for p in _predictions if
                        p["outcome"] is None or
@@ -833,6 +856,18 @@ def _write_counterfactual(pred: dict) -> None:
     try:
         with open(_counterfactual_file, "a") as f:
             f.write(json.dumps(pred) + "\n")
+        _trim_counterfactuals_file()
+    except OSError:
+        pass
+
+
+def _trim_counterfactuals_file(max_lines: int = 2000) -> None:
+    try:
+        with open(_counterfactual_file) as f:
+            lines = f.readlines()
+        if len(lines) > max_lines:
+            with open(_counterfactual_file, "w") as f:
+                f.writelines(lines[-max_lines:])
     except OSError:
         pass
 
@@ -947,12 +982,35 @@ def _detect_synthesis_patterns() -> None:
 
 
 def _auto_predictions_from_correlator() -> None:
-    """Generate predictions from L14 correlator alerts — feeding L18 automatically."""
+    """Generate predictions from L14 correlator alerts — feeding L18 automatically.
+
+    Also emits a baseline healthy-state prediction every 15min so L29 Brier score
+    updates during normal operation (not only when the system is under stress).
+    """
+    # L29 baseline: when coherence is stable and good, predict it stays good.
+    # This ensures Brier score has signal to track during healthy sessions.
+    if _last_correlations and _last_correlations.get("status") == "active":
+        coherence = _last_correlations.get("coherence_avg", 0.0)
+        if coherence >= 0.7 and not any(
+            p["type"] == "coherence_stable" and p["outcome"] is None for p in _predictions
+        ):
+            record_prediction(
+                "coherence_stable",
+                "coherence drops below 0.6 within 15 minutes",
+                window_s=900,
+                confidence=0.1,  # healthy system — bad outcome is unlikely; low prob → low Brier on expiry
+            )
+
     if not _last_correlations or not _last_correlations.get("alerts"):
         return
     for alert in _last_correlations["alerts"]:
         atype = alert.get("type", "")
-        # Don't duplicate — check if we already have an active prediction for this type
+        # Resolve active coherence_stable baseline when coherence actually declines
+        if atype == "coherence_declining":
+            for p in _predictions:
+                if p["type"] == "coherence_stable" and p["outcome"] is None:
+                    resolve_prediction(p["id"], outcome_occurred=True)
+        # Don't duplicate — stored prediction type equals atype (consistent naming)
         if any(p["type"] == atype and p["outcome"] is None for p in _predictions):
             continue
         if atype == "shim_decay_precursor":
@@ -964,13 +1022,13 @@ def _auto_predictions_from_correlator() -> None:
             )
         elif atype == "coherence_declining":
             record_prediction(
-                "coherence_decline",
+                "coherence_declining",
                 "coherence drops below 0.3 within 15 minutes",
                 window_s=900,
             )
         elif atype == "shim_latency_spike":
             record_prediction(
-                "shim_latency_crash",
+                "shim_latency_spike",
                 "shim becomes unreachable within 5 minutes",
                 intervention="latency alert surfaced",
                 window_s=300,
@@ -1016,6 +1074,13 @@ def _causal_attribution() -> dict | None:
             "elapsed_s": [e.get("elapsed_s", 0) for e in entries],
         }
 
+        # Guard: if phantom_rate has near-zero variance, all correlations = 0
+        # and attribution is meaningless — report insufficient_variation instead
+        phantom_var = sum((p - avg_phantom) ** 2 for p in phantom_rates) / len(phantom_rates)
+        if phantom_var < 1e-6:
+            return {"status": "insufficient_variation", "avg_phantom": round(avg_phantom, 3),
+                    "sample_count": len(phantom_rates)}
+
         attribution = {}
         n = len(phantom_rates)
         for name, vals in factors.items():
@@ -1025,7 +1090,7 @@ def _causal_attribution() -> dict | None:
             mean_p = avg_phantom
             cov = sum((vals[i] - mean_f) * (phantom_rates[i] - mean_p) for i in range(n)) / n
             var_f = sum((v - mean_f) ** 2 for v in vals) / n
-            corr = cov / max(var_f ** 0.5 * (sum((p - mean_p) ** 2 for p in phantom_rates) / n) ** 0.5, 1e-9)
+            corr = cov / max(var_f ** 0.5 * phantom_var ** 0.5, 1e-9)
             attribution[name] = round(corr, 3)
 
         # Sort by absolute correlation strength
@@ -1057,7 +1122,7 @@ def _anticipatory_lookahead() -> dict | None:
     try:
         from server import operational_state
         ms = operational_state.get_multiscale_coherence()
-        phrase_ema = ms.get("phrase") or avg
+        phrase_ema = avg if ms.get("phrase") is None else ms["phrase"]
     except Exception:
         phrase_ema = avg
 
@@ -1078,27 +1143,57 @@ def _anticipatory_lookahead() -> dict | None:
 
 # ── Layer 27: Composition-Infrastructure Correlation ──────────────────────
 
-_run_history_file = ""
+_run_history_dir = ""
+
+def _load_run_history() -> list[dict]:
+    """Load run history from metrics/run-history/ directory (individual JSON files per run)."""
+    global _run_history_dir
+    if not _run_history_dir:
+        root = os.environ.get("PROJECT_ROOT", "")
+        if not root:
+            return []
+        _run_history_dir = os.path.join(root, "metrics", "run-history")
+    try:
+        filenames = sorted(os.listdir(_run_history_dir))
+    except OSError:
+        return []
+    runs = []
+    for fn in filenames[-50:]:
+        if not fn.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(_run_history_dir, fn)) as f:
+                runs.append(json.load(f))
+        except (OSError, json.JSONDecodeError):
+            continue
+    return runs
+
+
+def _iso_to_unix(ts_str) -> float | None:
+    """Convert ISO 8601 timestamp string to Unix float. Returns None on failure."""
+    if isinstance(ts_str, (int, float)):
+        return float(ts_str)
+    if not isinstance(ts_str, str):
+        return None
+    try:
+        import datetime
+        # Handle trailing Z (UTC) and fractional seconds
+        s = ts_str.rstrip("Z").split(".")[0]
+        dt = datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%S")
+        return dt.replace(tzinfo=datetime.timezone.utc).timestamp()
+    except (ValueError, AttributeError):
+        return None
+
 
 def _correlate_composition_runs() -> dict | None:
     """Correlate HME operational quality with Polychron run outcomes.
 
-    Reads metrics/run-history.json and compares run verdicts against
-    synthesis quality at run time. Builds a simple model: does high phantom
-    rate predict DRIFTED runs?
+    Reads metrics/run-history/ directory (individual JSON files per run) and
+    compares run verdicts against synthesis quality at run time.
+    Builds a simple model: does high phantom rate predict DRIFTED runs?
     """
-    global _run_history_file
-    if not _run_history_file:
-        root = os.environ.get("PROJECT_ROOT", "")
-        if not root:
-            return None
-        _run_history_file = os.path.join(root, "metrics", "run-history.json")
-    try:
-        with open(_run_history_file) as f:
-            runs = json.load(f)
-        if not isinstance(runs, list) or len(runs) < 5:
-            return None
-    except (OSError, json.JSONDecodeError):
+    runs = _load_run_history()
+    if len(runs) < 5:
         return None
 
     # Load session documents for time-correlation
@@ -1113,13 +1208,14 @@ def _correlate_composition_runs() -> dict | None:
     # Match runs to sessions by timestamp overlap
     correlations = []
     for run in runs[-30:]:
-        run_ts = run.get("ts") or run.get("timestamp")
+        run_ts_raw = run.get("ts") or run.get("timestamp")
+        run_ts = _iso_to_unix(run_ts_raw)
         verdict = run.get("verdict") or run.get("label")
         if not run_ts or not verdict:
             continue
         for sess in sessions:
-            s_start = sess.get("session_start", 0)
-            s_end = sess.get("session_end", s_start + 3600)
+            s_start = sess.get("session_start") or 0
+            s_end = sess.get("session_end") or s_start + 3600
             if s_start <= run_ts <= s_end:
                 correlations.append({
                     "verdict": verdict,
@@ -1153,18 +1249,20 @@ def _correlate_composition_runs() -> dict | None:
 def _update_kb_confidence() -> dict | None:
     """Test self-coherence KB claims against recent operational data.
 
-    Reads KB entries in the 'self-coherence' category. For each, checks if
-    the claim is supported, contradicted, or untestable given current data.
-    Does NOT modify KB text — only updates confidence metadata.
+    Reads KB entries tagged 'hme-infrastructure' (HME self-description entries).
+    For each, checks if the claim is supported, contradicted, or untestable
+    given current operational data. Does NOT modify KB text.
     """
     try:
         from server import context as ctx
         if not hasattr(ctx, 'project_engine') or ctx.project_engine is None:
             return None
         kb = ctx.project_engine
-        if not hasattr(kb, 'knowledge_entries'):
+        if not hasattr(kb, 'list_knowledge_full'):
             return None
-        entries = [e for e in kb.knowledge_entries if e.get("category") == "self-coherence"]
+        all_entries = kb.list_knowledge_full()
+        # HME self-description entries are tagged 'hme-infrastructure', not category='self-coherence'
+        entries = [e for e in all_entries if "hme-infrastructure" in (e.get("tags") or "")]
         if not entries:
             return None
     except Exception:

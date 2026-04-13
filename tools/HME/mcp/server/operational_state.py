@@ -400,14 +400,16 @@ def write_session_document() -> None:
     if not _SESSIONS_FILE:
         return
     with _state_lock:
+        synth_calls = _state.get("synthesis_calls_today", 0)
         doc = {
             "session_start": _state.get("session_start"),
             "session_end": time.time(),
             "date": _state.get("date"),
             "restarts_today": _state.get("restarts_today", 0),
-            "synthesis_calls": _state.get("synthesis_calls_today", 0),
-            "synthesis_phantom_rate_ema": _state.get("synthesis_phantom_rate_ema"),
-            "synthesis_cascade_rate_ema": _state.get("synthesis_cascade_rate_ema"),
+            "synthesis_calls": synth_calls,
+            # Synthesis quality metrics only valid when synthesis was actually used
+            "synthesis_phantom_rate_ema": _state.get("synthesis_phantom_rate_ema") if synth_calls > 0 else None,
+            "synthesis_cascade_rate_ema": _state.get("synthesis_cascade_rate_ema") if synth_calls > 0 else None,
             "coherence_phrase_ema": _state.get("coherence_phrase_ema"),
             "coherence_section_ema": _state.get("coherence_section_ema"),
             "cb_flaps": _state.get("circuit_breaker_flaps_total_today", 0),
@@ -415,9 +417,9 @@ def write_session_document() -> None:
             "shim_crashes": _state.get("shim_crashes_today", 0),
             "recovery_rate": _state.get("recovery_success_rate_ema"),
             "brier_score": _state.get("brier_score_ema"),
-            "thermo_efficiency": _state.get("thermo_efficiency_ema"),
+            "thermo_efficiency": _state.get("thermo_efficiency_ema") if synth_calls > 0 else None,
         }
-        session_start = _state.get("session_start", time.time())
+        session_start = _state.get("session_start") or time.time()
         doc["session_duration_s"] = round(time.time() - session_start, 1)
     try:
         with open(_SESSIONS_FILE, "a") as f:
@@ -438,7 +440,7 @@ def load_recent_sessions(max_age_days: int = 7) -> list[dict]:
             for line in f:
                 try:
                     doc = json.loads(line.strip())
-                    if doc.get("session_start", 0) >= cutoff:
+                    if (doc.get("session_start") or 0) >= cutoff:
                         sessions.append(doc)
                 except json.JSONDecodeError:
                     continue
