@@ -118,7 +118,7 @@
     ],
     "Stop": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/stop.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/stop.sh", "timeout": 30}]
       }
     ]
   }

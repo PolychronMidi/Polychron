@@ -4,6 +4,15 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 
+# ── Auto-commit snapshot ──────────────────────────────────────────────────────
+# Commit any uncommitted changes before Claude processes the message.
+# Timestamps only — no description. Skipped during pipeline runs (run.lock present).
+_AC_PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
+  git -C "$_AC_PROJECT" add -A 2>/dev/null
+  git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null || true
+fi
+
 # ── LIFESAVER — HME Error Log Monitor ───────────────────────────────────────
 # LIFE-OR-DEATH: The HME Chat panel writes errors to log/hme-errors.log.
 # THIS is the ONLY mechanism that makes those errors visible to this agent.

@@ -35,6 +35,16 @@ except Exception:
 " "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null
 fi
 
+# ── Auto-commit snapshot ──────────────────────────────────────────────────────
+# Commit any uncommitted changes before lifecycle checks run.
+# Timestamps only — no description. Skipped during pipeline runs (run.lock present).
+# After commit, the nexus EDIT backlog triggers review(mode='forget') automatically.
+_AC_PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
+  git -C "$_AC_PROJECT" add -A 2>/dev/null
+  git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null || true
+fi
+
 # ── LIFESAVER — mid-turn error detection ──────────────────────────────────────
 # LIFE-OR-DEATH: Catch errors that fired in HME Chat DURING this turn.
 # Block stopping — errors that appeared while you worked MUST be fixed before return.
