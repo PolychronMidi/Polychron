@@ -200,8 +200,8 @@ function parseContextOutput(text) {
     return undefined;
 }
 function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
-    hmeLog(`streamClaudePty called model=${opts.model}`);
-    const args = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
+    hmeLog(`streamClaudePty called model=${opts.model} effort=${opts.effort}`);
+    const args = ["--model", opts.model, "--effort", opts.effort, "--permission-mode", "bypassPermissions"];
     if (sessionId)
         args.push("--resume", sessionId);
     const env = buildClaudeEnv();

@@ -214,8 +214,8 @@ export function streamClaudePty(
   onDone: (usage?: TokenUsage) => void,
   onError: (msg: string) => void
 ): () => void {
-  hmeLog(`streamClaudePty called model=${opts.model}`);
-  const args: string[] = ["--model", opts.model, "--permission-mode", "bypassPermissions"];
+  hmeLog(`streamClaudePty called model=${opts.model} effort=${opts.effort}`);
+  const args: string[] = ["--model", opts.model, "--effort", opts.effort, "--permission-mode", "bypassPermissions"];
   if (sessionId) args.push("--resume", sessionId);
 
   const env = buildClaudeEnv();
