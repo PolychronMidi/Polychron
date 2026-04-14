@@ -38,9 +38,12 @@ def _reindex_files(files: list[str]) -> dict:
     indexed = []
     skipped = []
     # Budget: 25s total across all files (safely under 30s client timeout).
-    # Each file gets at most 5s; if it times out we skip and continue.
+    # Each file gets up to 15s (bounded by remaining budget). 5s proved too
+    # tight for ~10KB files with many function chunks under CPU ONNX load
+    # during busy edit bursts (multiple rewrites of the same file in one turn).
     import time as _time
     deadline = _time.monotonic() + 25
+    _per_file_cap = 15
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         for filepath in files[:20]:
             if _time.monotonic() >= deadline:
@@ -76,12 +79,13 @@ def _reindex_files(files: list[str]) -> dict:
                 skipped.append(filepath)
                 continue
             remaining = max(1, deadline - _time.monotonic())
+            per_file_timeout = min(_per_file_cap, remaining)
             future = executor.submit(_project_engine.index_file, abs_path)
             try:
-                future.result(timeout=min(5, remaining))
+                future.result(timeout=per_file_timeout)
                 indexed.append(filepath)
             except concurrent.futures.TimeoutError:
-                _log_error("reindex", f"timeout indexing {filepath} (5s)")
+                _log_error("reindex", f"timeout indexing {filepath} ({per_file_timeout:.0f}s)")
                 skipped.append(filepath)
             except Exception as e:
                 _log_error("reindex", f"index_file failed for {filepath}: {e}")
