@@ -11,22 +11,25 @@ provider-first to quality-first.
 Ranking (strongest → weakest):
      1. OpenRouter  deepseek/deepseek-r1:free             — full R1, top open reasoning
      2. Cerebras    qwen-3-235b-a22b-instruct-2507        — 235B MoE, wafer-scale fast
-     3. Groq        openai/gpt-oss-120b                   — 120B OpenAI-open, Groq flagship free
-     4. Cerebras    gpt-oss-120b                          — same weights, separate free pool
-     5. Mistral     mistral-large-latest                  — flagship Mistral, 1B tok/month pool
+     3. Mistral     magistral-medium-latest               — Mistral reasoning flagship
+     4. Groq        openai/gpt-oss-120b                   — 120B OpenAI-open, Groq flagship free
+     5. Mistral     mistral-large-latest                  — Mistral general flagship
      6. Groq        moonshotai/kimi-k2-instruct-0905      — Kimi K2, 262k context
-     7. Cerebras    llama-3.3-70b                         — Meta 70B on Cerebras
+     7. Mistral     devstral-medium-latest                — agentic coding specialist
      8. Gemini      gemini-3-flash-preview                — newest Gemini 3 flash
-     9. Z.ai        glm-4.7-flash                         — newest GLM free flash
+     9. Mistral     codestral-latest                      — code completion specialist
     10. Gemini      gemini-flash-latest                   — floating alias
-    11. Mistral     codestral-latest                      — code specialist
-    12. Groq        llama-3.3-70b-versatile               — Meta 70B, fast on Groq
-    13. Cerebras    qwen-3-32b                            — Qwen 32B fallback
-    14. OpenRouter  meta-llama/llama-3.3-70b-instruct:free — same weights, slower host
-    15. Z.ai        glm-4.5-flash                         — older GLM free fallback
-    16. Gemini      gemini-2.5-flash                      — solid workhorse
-    17. Gemini      gemini-2.0-flash                      — older 2.x
+    11. Groq        llama-3.3-70b-versatile               — Meta 70B, fast on Groq
+    12. Mistral     mistral-medium-latest                 — smaller Mistral general
+    13. OpenRouter  meta-llama/llama-3.3-70b-instruct:free — same weights, slower host
+    14. Mistral     magistral-small-latest                — small reasoning fallback
+    15. Gemini      gemini-2.5-flash                      — solid workhorse
+    16. Gemini      gemini-2.0-flash                      — older 2.x
+    17. Cerebras    llama3.1-8b                           — 8B weak fallback, fast
     18. Gemini      gemini-2.5-flash-lite                 — lite, last before local
+
+Z.ai provider omitted: all GLM models on z.ai are paywalled despite "free tier"
+marketing — API returns "insufficient balance" on every request.
 
 Local qwen3-coder:30b-a3b is the final fallback handled by the caller.
 """
@@ -75,21 +78,21 @@ def _refresh_env() -> None:
 _RANKING: list[tuple[str, str]] = [
     ("openrouter", "deepseek/deepseek-r1:free"),
     ("cerebras",   "qwen-3-235b-a22b-instruct-2507"),
+    ("mistral",    "magistral-medium-latest"),
     ("groq",       "openai/gpt-oss-120b"),
-    ("cerebras",   "gpt-oss-120b"),
     ("mistral",    "mistral-large-latest"),
     ("groq",       "moonshotai/kimi-k2-instruct-0905"),
-    ("cerebras",   "llama-3.3-70b"),
+    ("mistral",    "devstral-medium-latest"),
     ("gemini",     "gemini-3-flash-preview"),
-    ("zai",        "glm-4.7-flash"),
-    ("gemini",     "gemini-flash-latest"),
     ("mistral",    "codestral-latest"),
+    ("gemini",     "gemini-flash-latest"),
     ("groq",       "llama-3.3-70b-versatile"),
-    ("cerebras",   "qwen-3-32b"),
+    ("mistral",    "mistral-medium-latest"),
     ("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
-    ("zai",        "glm-4.5-flash"),
+    ("mistral",    "magistral-small-latest"),
     ("gemini",     "gemini-2.5-flash"),
     ("gemini",     "gemini-2.0-flash"),
+    ("cerebras",   "llama3.1-8b"),
     ("gemini",     "gemini-2.5-flash-lite"),
 ]
 
@@ -98,13 +101,12 @@ def _load_providers():
     """Lazy-load provider modules so this file has no import-time deps."""
     from . import (
         synthesis_gemini, synthesis_groq, synthesis_openrouter,
-        synthesis_zai, synthesis_cerebras, synthesis_mistral,
+        synthesis_cerebras, synthesis_mistral,
     )
     return {
         "gemini":     synthesis_gemini,
         "groq":       synthesis_groq,
         "openrouter": synthesis_openrouter,
-        "zai":        synthesis_zai,
         "cerebras":   synthesis_cerebras,
         "mistral":    synthesis_mistral,
     }

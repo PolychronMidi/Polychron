@@ -6,15 +6,16 @@ free pools available. OpenAI-compatible at https://api.cerebras.ai/v1.
 
 Free tier cascade (best-first):
     T1: qwen-3-235b-a22b-instruct-2507 — 235B MoE, top open-weight reasoning
-    T2: gpt-oss-120b                    — OpenAI-open 120B, strong general
-    T3: llama-3.3-70b                   — Meta 70B, proven fallback
-    T4: qwen-3-32b                      — Qwen 32B, light fallback
+    T2: llama3.1-8b                     — Meta 8B, weak but fast fallback
+
+Note: Cerebras lists gpt-oss-120b and zai-glm-4.7 in /models but both are
+gated behind paid plans and return 404 on the free tier.
 
 Returns None when RPM/RPD exhausted or quota hit — caller cascades to next provider.
 
 Config (env vars):
     CEREBRAS_API_KEY       — required to enable
-    CEREBRAS_MODEL_T1..T4  — override tier model
+    CEREBRAS_MODEL_T1..T2  — override tier model
     CEREBRAS_RPD_LIMIT_*   — per-tier requests-per-day cap (default: 3000)
     CEREBRAS_RPM_LIMIT_*   — per-tier requests-per-minute cap (default: 28)
 """
@@ -50,9 +51,7 @@ _TIMEOUT = 60
 
 _TIER_DEFS = [
     ("T1", os.environ.get("CEREBRAS_MODEL_T1", "qwen-3-235b-a22b-instruct-2507")),
-    ("T2", os.environ.get("CEREBRAS_MODEL_T2", "gpt-oss-120b")),
-    ("T3", os.environ.get("CEREBRAS_MODEL_T3", "llama-3.3-70b")),
-    ("T4", os.environ.get("CEREBRAS_MODEL_T4", "qwen-3-32b")),
+    ("T2", os.environ.get("CEREBRAS_MODEL_T2", "llama3.1-8b")),
 ]
 
 
