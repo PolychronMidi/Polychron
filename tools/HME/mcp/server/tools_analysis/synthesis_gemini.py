@@ -23,7 +23,7 @@ from collections import deque
 logger = logging.getLogger("HME.gemini")
 
 _API_KEY = os.environ.get("GEMINI_API_KEY", "")
-_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-preview-05-20")
+_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 _DAILY_TOKEN_LIMIT = int(os.environ.get("GEMINI_DAILY_LIMIT", "900000"))
 _RPM_LIMIT = int(os.environ.get("GEMINI_RPM_LIMIT", "14"))
