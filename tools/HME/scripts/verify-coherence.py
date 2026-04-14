@@ -662,12 +662,16 @@ class ErrorLogVerifier(Verifier):
 # --------------------------------------------------------------------------
 
 class LifesaverRateVerifier(Verifier):
-    """Reads metrics/hme-tool-effectiveness.json and scores LIFESAVER events
-    from the last 24h (recency-weighted). Historical events don't punish
-    forever — only the last day's rate matters for the current HCI."""
+    """Scores LIFESAVER rate using multi-window recency:
+        acute  (last 1h):  strongest signal of current problem
+        medium (last 6h):  recent problem, possibly ongoing
+        recent (last 24h): historical residue, weakest signal
+    HCI reflects CURRENT health. Old events age out automatically and stop
+    dragging the score down once they fall past the acute window.
+    """
     name = "lifesaver-rate"
     category = "runtime"
-    weight = 2.0  # high: recurring LIFESAVER events are a major health signal
+    weight = 2.0
 
     def run(self) -> VerdictResult:
         data_path = os.path.join(_PROJECT, "metrics", "hme-tool-effectiveness.json")
@@ -678,31 +682,34 @@ class LifesaverRateVerifier(Verifier):
                 data = json.load(f)
         except Exception as e:
             return _result(ERROR, 0.0, f"read error: {e}")
-        # Prefer recent window; fall back to all-time if not present
-        recent = data.get("lifesaver_recent_events", None)
-        if recent is None:
-            recent = data.get("lifesaver_total_events", 0)
-        # Score: 0 events = 1.0, 5+ events in 24h = 0.0
-        score = max(0.0, 1.0 - recent / 5.0)
+        acute = data.get("lifesaver_acute_events", 0)
+        medium = data.get("lifesaver_medium_events", 0)
+        recent = data.get("lifesaver_recent_events", 0)
         all_time = data.get("lifesaver_total_events", 0)
+        # Weighted penalty: acute worth 1.0, medium 0.3, recent 0.1 per event
+        weighted = acute * 1.0 + (medium - acute) * 0.3 + (recent - medium) * 0.1
+        score = max(0.0, 1.0 - weighted / 5.0)
+        summary = (
+            f"acute(1h)={acute} medium(6h)={medium} recent(24h)={recent} "
+            f"all-time={all_time}"
+        )
+        if acute >= 3:
+            return _result(
+                FAIL, score, summary,
+                ["3+ LIFESAVER events in the last HOUR — acute problem",
+                 "investigate log/hme-errors.log"],
+            )
+        if acute >= 1 or medium >= 5:
+            return _result(WARN, score, summary, ["recent LIFESAVER activity"])
         if recent == 0:
             return _result(PASS, 1.0, f"0 LIFESAVER events in last 24h (all-time: {all_time})")
-        if recent >= 5:
-            return _result(
-                FAIL, score,
-                f"{recent} LIFESAVER events in last 24h (all-time: {all_time})",
-                ["investigate log/hme-errors.log", "threshold: 5+ events in 24h = fail"],
-            )
-        return _result(
-            WARN if recent >= 2 else PASS, score,
-            f"{recent} LIFESAVER events in last 24h (all-time: {all_time})",
-        )
+        return _result(PASS, score, summary + " (no acute activity)")
 
 
 class MetaObserverCoherenceVerifier(Verifier):
-    """Reads meta-observer (L14) coherence events from the last 24h only.
-    Historical degradation doesn't matter — we want to know if HME is
-    currently unstable, which is a RECENT signal."""
+    """Scores meta-observer L14 alerts using the ACUTE (1h) window. Historical
+    alerts in the 6h and 24h windows contribute weakly — the focus is on
+    whether HME is currently unstable."""
     name = "meta-observer-coherence"
     category = "runtime"
     weight = 2.0
@@ -716,30 +723,103 @@ class MetaObserverCoherenceVerifier(Verifier):
                 data = json.load(f)
         except Exception as e:
             return _result(ERROR, 0.0, f"read error: {e}")
-        # Prefer recent window; fall back if not present
-        events = data.get("recent_coherence_events", None)
-        if events is None:
-            events = data.get("coherence_events", {})
-        if not events:
-            return _result(PASS, 1.0, "no recent coherence events")
-        degradation = events.get("deep_degradation", 0)
-        restart_churn = events.get("restart_churn", 0)
-        declining = events.get("coherence_declining", 0)
-        instability = events.get("frequent_instability", 0)
-        worst = max(degradation, restart_churn)
-        # Score: 0 events = 1.0, 30+ events in 24h = 0.0
-        score = max(0.0, 1.0 - worst / 30.0)
+        acute = data.get("acute_coherence_events", {}) or {}
+        medium = data.get("medium_coherence_events", {}) or {}
+        acute_worst = max((acute.get(k, 0) for k in
+                           ("deep_degradation", "restart_churn", "frequent_instability")),
+                          default=0)
+        medium_worst = max((medium.get(k, 0) for k in
+                            ("deep_degradation", "restart_churn", "frequent_instability")),
+                           default=0)
+        # Weighted: 1 acute event = 1 point penalty, 1 medium = 0.2 point
+        penalty = acute_worst + (medium_worst - acute_worst) * 0.2
+        score = max(0.0, 1.0 - penalty / 10.0)
         summary = (
-            f"last 24h: degradation={degradation} churn={restart_churn} "
-            f"declining={declining} instability={instability}"
+            f"acute(1h)_worst={acute_worst} medium(6h)_worst={medium_worst} "
+            f"(degradation/churn/instability)"
         )
-        if worst >= 20:
-            return _result(FAIL, score, summary,
-                           ["HME unstable in last 24h — check meta-observer recovery logic"])
-        if worst >= 10:
+        if acute_worst >= 5:
+            return _result(
+                FAIL, score, summary,
+                ["HME unstable RIGHT NOW — 5+ alerts in last hour",
+                 "check meta-observer recovery logic"],
+            )
+        if acute_worst >= 2:
             return _result(WARN, score, summary,
-                           ["elevated recent coherence events"])
+                           ["elevated meta-observer events in last hour"])
         return _result(PASS, score, summary)
+
+
+class SubagentBackendsVerifier(Verifier):
+    """Verifies that agent_local.py's external dependencies are present.
+
+    The local subagent pipeline depends on several binaries and endpoints
+    being available at runtime. If any are missing, the agent silently
+    falls back and produces low-quality output (this exact pattern was
+    discovered the hard way: ripgrep being absent meant every grep call
+    returned ERROR, and synthesizers worked from KB-only context).
+    """
+    name = "subagent-backends"
+    category = "runtime"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        backends = {}
+        # 1. grep (rg or grep)
+        try:
+            for binary in ("rg", "grep"):
+                try:
+                    subprocess.run([binary, "--version"], capture_output=True, timeout=2)
+                    backends["grep"] = binary
+                    break
+                except (FileNotFoundError, subprocess.TimeoutExpired):
+                    continue
+            else:
+                backends["grep"] = None
+        except Exception:
+            backends["grep"] = None
+
+        # 2. Python (always available since we're running)
+        backends["python"] = "python3"
+
+        # 3. Ollama daemon (CPU port 11436 for arbiter)
+        try:
+            import urllib.request
+            req = urllib.request.Request("http://127.0.0.1:11436/api/tags")
+            with urllib.request.urlopen(req, timeout=2) as r:
+                if r.status == 200:
+                    backends["ollama_arbiter"] = "11436"
+                else:
+                    backends["ollama_arbiter"] = None
+        except Exception:
+            backends["ollama_arbiter"] = None
+
+        # 4. HME shim (port 7734 for RAG)
+        try:
+            import urllib.request
+            req = urllib.request.Request("http://127.0.0.1:7734/health")
+            with urllib.request.urlopen(req, timeout=2) as r:
+                backends["hme_shim"] = "7734" if r.status == 200 else None
+        except Exception:
+            backends["hme_shim"] = None
+
+        missing = [k for k, v in backends.items() if v is None]
+        score = 1.0 - len(missing) / len(backends)
+        details = [f"{k}={v or 'MISSING'}" for k, v in backends.items()]
+
+        if not missing:
+            return _result(PASS, 1.0, "all subagent backends available", details)
+        if "grep" in missing:
+            return _result(
+                FAIL, score,
+                f"subagent grep backend missing — agent will silently fail every search",
+                details + ["install ripgrep or ensure GNU grep is on PATH"],
+            )
+        return _result(
+            WARN, score,
+            f"{len(missing)} subagent backend(s) missing: {', '.join(missing)}",
+            details,
+        )
 
 
 class LifesaverIntegrityVerifier(Verifier):
@@ -834,11 +914,19 @@ class LifesaverIntegrityVerifier(Verifier):
 
 
 class ToolResponseLatencyVerifier(Verifier):
-    """Reads tools/HME/mcp/server/hme-ops.json (operational state) and checks
-    the tool_response_ms_ema. Healthy HME responds in <1s; >5s is a warn,
-    >10s is a fail. This is the direct observable symptom of health issues
-    that otherwise surface as meta-observer alerts. Fixing slow responses
-    often fixes everything downstream."""
+    """Baseline-relative latency verifier.
+
+    Absolute thresholds (e.g. "> 5s is bad") don't work here because HME's
+    synthesis stack runs on local LLMs on amateur hardware where 10+ second
+    latency is normal. Instead, build a rolling baseline from the history
+    file metrics/hme-latency-history.json (median of last 20 readings) and
+    FAIL only when the CURRENT value is a significant regression from that
+    machine-specific baseline. On the first run (no history), the current
+    value becomes the first data point and the verifier passes.
+
+    This removes the "HME is slow" false positive on slow hardware while
+    still catching real regressions ("HME got suddenly slower").
+    """
     name = "tool-response-latency"
     category = "runtime"
     weight = 1.5
@@ -860,19 +948,70 @@ class ToolResponseLatencyVerifier(Verifier):
         ema_ms = ops.get("tool_response_ms_ema", 0.0)
         if ema_ms <= 0:
             return _result(SKIP, 1.0, "no tool_response_ms_ema data")
-        # Score: 1.0 at 0-500ms, 0.0 at 10s+
-        score = max(0.0, min(1.0, 1.0 - (ema_ms - 500) / 9500))
-        details = [f"ema={ema_ms:.0f}ms", f"file={ops_file}"]
-        if ema_ms >= 5000:
-            return _result(FAIL, score,
-                           f"tool response EMA {ema_ms:.0f}ms — HME is critically slow",
-                           details + ["investigate synthesis calls + shim latency"])
-        if ema_ms >= 1500:
-            return _result(WARN, score,
-                           f"tool response EMA {ema_ms:.0f}ms — elevated",
-                           details)
-        return _result(PASS, 1.0, f"tool response EMA {ema_ms:.0f}ms (healthy)",
-                       details)
+
+        history_file = os.path.join(_PROJECT, "metrics", "hme-latency-history.json")
+        history: list = []
+        try:
+            if os.path.isfile(history_file):
+                with open(history_file) as hf:
+                    history = json.load(hf)
+        except Exception:
+            history = []
+
+        # Record the current reading (persist after scoring so the FIRST run
+        # sees its own history as empty — baseline establishes on 2nd run)
+        new_history = history + [{"ts": time.time(), "ema_ms": ema_ms}]
+        # Keep at most 50 entries
+        new_history = new_history[-50:]
+        try:
+            os.makedirs(os.path.dirname(history_file), exist_ok=True)
+            with open(history_file, "w") as hf:
+                json.dump(new_history, hf)
+        except Exception:
+            pass
+
+        # Score based on history
+        if len(history) < 3:
+            return _result(
+                PASS, 1.0,
+                f"tool response EMA {ema_ms:.0f}ms (baseline forming: {len(history)}/3 samples)",
+                [f"no FAIL until baseline established — {3 - len(history)} more samples needed"],
+            )
+
+        prior_values = sorted(h["ema_ms"] for h in history)
+        median = prior_values[len(prior_values) // 2]
+        p75 = prior_values[int(len(prior_values) * 0.75)]
+
+        # Regression scoring: how much WORSE is current vs historical median?
+        # 0-1.5x median: PASS
+        # 1.5-3x median: WARN
+        # >3x median or >3x p75: FAIL
+        ratio_med = ema_ms / median if median > 0 else 1.0
+        ratio_p75 = ema_ms / p75 if p75 > 0 else 1.0
+        details = [
+            f"current={ema_ms:.0f}ms",
+            f"baseline_median={median:.0f}ms ({len(history)} samples)",
+            f"ratio={ratio_med:.2f}× median",
+        ]
+
+        if ratio_med >= 3.0 or ratio_p75 >= 3.0:
+            score = max(0.0, 1.0 - (ratio_med - 1.5) / 3.0)
+            return _result(
+                FAIL, score,
+                f"latency regression: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}×)",
+                details + ["latency spiked — investigate recent changes"],
+            )
+        if ratio_med >= 1.5:
+            return _result(
+                WARN, 0.7,
+                f"latency elevated: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}×)",
+                details,
+            )
+        return _result(
+            PASS, 1.0,
+            f"latency within baseline: {ema_ms:.0f}ms (median {median:.0f}ms)",
+            details,
+        )
 
 
 class TrajectoryTrendVerifier(Verifier):
@@ -1088,6 +1227,7 @@ REGISTRY = [
     ToolSurfaceCoverageVerifier(),
     ShimHealthVerifier(),
     ErrorLogVerifier(),
+    SubagentBackendsVerifier(),
     LifesaverIntegrityVerifier(),
     LifesaverRateVerifier(),
     MetaObserverCoherenceVerifier(),

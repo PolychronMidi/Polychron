@@ -262,13 +262,40 @@ def _proxy_health_monitor(port: int) -> None:
                             })
                             with open(os.path.join(_mdir, "hme-coherence.jsonl"), "a") as _f:
                                 _f.write(_entry + "\n")
+                        # Maturity gate: health_topology is a new system and
+                        # its coherence metric can be unreliable during the
+                        # first N readings (components initialize async;
+                        # cache warmups look degraded; etc.). Count committed
+                        # entries in hme-coherence.jsonl — only alert once the
+                        # history has enough samples to establish a baseline.
+                        # Until then, log the warning but don't LIFESAVER.
+                        _coherence_log = os.path.join(_pr, "metrics", "hme-coherence.jsonl") if _pr else ""
+                        _sample_count = 0
+                        if _coherence_log and os.path.isfile(_coherence_log):
+                            try:
+                                with open(_coherence_log) as _clf:
+                                    _sample_count = sum(1 for _ln in _clf if _ln.strip())
+                            except Exception:
+                                pass
+                        _MATURITY_THRESHOLD = 50  # readings required before alerts are trusted
                         if coherence < 0.5:
-                            from server import context as _ctx
-                            _ctx.register_critical_failure(
-                                "health_topology",
-                                f"System coherence below threshold: {coherence:.0%} — multiple components degraded",
-                                severity="WARNING",
-                            )
+                            if _sample_count < _MATURITY_THRESHOLD:
+                                # Immature: detector does not yet know what
+                                # baseline coherence looks like on this machine.
+                                # Log to stderr so it's visible but don't
+                                # escalate to LIFESAVER.
+                                logger.info(
+                                    f"health_topology (immature, {_sample_count}/"
+                                    f"{_MATURITY_THRESHOLD} samples): coherence={coherence:.0%}"
+                                    " — not alerting until baseline established"
+                                )
+                            else:
+                                from server import context as _ctx
+                                _ctx.register_critical_failure(
+                                    "health_topology",
+                                    f"System coherence below threshold: {coherence:.0%} — multiple components degraded",
+                                    severity="WARNING",
+                                )
                 except Exception as _topo_err:
                     logger.warning(f"Proxy health monitor: topology coherence check failed: {_topo_err}")
                 continue

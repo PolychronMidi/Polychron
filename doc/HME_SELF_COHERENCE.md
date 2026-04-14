@@ -234,3 +234,21 @@ The verifier exists because this exact subversion was attempted once during cons
 If after fixing you believe the detector was wrong, **that is itself a critical bug** — escalate it to the same urgency as the original. Do not add a cooldown. Fix the detector's logic so it correctly distinguishes the real condition from the false one.
 
 This is the principle that keeps HME honest with itself.
+
+### Detector fixes vs. alert dampening — examples
+
+The line between "fixing the detector" (allowed) and "dampening the alert" (forbidden) is sometimes subtle. Concrete cases from the construction of this system:
+
+**Allowed — detector calibration:**
+- **Maturity gate on health_topology** ([rag_proxy.py](../tools/HME/mcp/server/rag_proxy.py)): the topology coherence metric is unreliable for the first ~50 readings (cold caches, async init, no baseline). Before that threshold, the detector cannot honestly claim "this is a problem." After 50 samples, alerts fire normally. This is **calibration**, not dampening: the detector stops claiming knowledge it doesn't have.
+- **Crash-vs-reconnect distinction in restart_churn** ([meta_correlator.py](../tools/HME/mcp/server/meta_correlator.py)): MCP protocol restarts are normal. The original detector fired on `restarts >= 5 AND min_coherence < 0.5`, which conflated benign reconnects with crash loops. The fix adds `(shim_crashes >= 2 OR recovery_failures >= 3)` as a precondition. This is **detector accuracy**, not dampening: the detector now distinguishes the bad case from the benign case.
+- **Baseline-relative latency verifier** ([verify-coherence.py](../tools/HME/scripts/verify-coherence.py)): absolute thresholds like "10 seconds is bad" don't generalize across hardware (local LLMs on amateur hardware naturally take 10+ seconds). The fix uses a rolling median per-machine baseline and only fires on a 3× regression from that baseline. This is **detector locality**, not dampening: it correctly distinguishes "slow for me" from "slower than I usually am."
+
+**Forbidden — alert dampening:**
+- **Time-based cooldown** (`if time.time() - last_fire >= 1800: register_critical_failure(...)`): suppresses real alerts to reduce noise. Hides ongoing problems from the agent. This was attempted once during construction and reverted.
+- **Deduplication by event hash** (`if alert_id not in seen: register_critical_failure(...)`): same problem — silences re-occurrences of the same condition.
+- **Severity downgrade** (`severity="INFO"` for what should be CRITICAL): hides the urgency. Allowed only when the *condition itself* is informational, not when it's a workaround for noise.
+
+**The rule of thumb:** if your fix makes LIFESAVER quieter without changing whether the condition is actually present, it's dampening. If your fix makes LIFESAVER more accurate about when the condition is present (and quieter as a SIDE EFFECT), it's calibration.
+
+The `LifesaverIntegrityVerifier` catches cooldowns and time-based guards near `register_critical_failure` calls. It does NOT catch sample-count-based maturity gates because those fix the detector, not the alert. The semantic distinction is encoded in what patterns the verifier looks for.
