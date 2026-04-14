@@ -8,7 +8,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__HME__check_pipeline",
+        "matcher": "mcp__HME__status",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_check_pipeline.sh", "timeout": 10}]
       },
       {
@@ -87,7 +87,7 @@
         ]
       },
       {
-        "matcher": "mcp__HME__add_knowledge",
+        "matcher": "mcp__HME__learn",
         "hooks": [
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_addknowledge.sh", "timeout": 10}
         ]

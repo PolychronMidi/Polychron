@@ -349,6 +349,28 @@ if [ -n "$NEXUS_ISSUES" ]; then
   exit 0
 fi
 
+# ── Session-end holograph diff ───────────────────────────────────────────────
+# Compare the session-start holograph (captured at sessionstart.sh) against
+# the current state. Surfaces drift that happened during this session — e.g.,
+# a new hook that was added but not registered in hooks.json, a KB entry
+# added but not committed, a tool whose docstring was changed. This is where
+# the holograph machinery becomes LOAD-BEARING: not just a snapshot, but a
+# diff that surfaces unexpected state changes before the agent stops.
+SESSION_HOLO="$_AC_PROJECT/tmp/hme-session-start.holograph.json"
+HOLO_SCRIPT="$_AC_PROJECT/tools/HME/scripts/snapshot-holograph.py"
+if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
+  DIFF_OUT=$(PROJECT_ROOT="$_AC_PROJECT" python3 "$HOLO_SCRIPT" --diff "$SESSION_HOLO" 2>/dev/null)
+  if [ -n "$DIFF_OUT" ] && ! echo "$DIFF_OUT" | grep -q "No drift"; then
+    # Filter noise — only surface dimensions that actually matter
+    FILTERED=$(echo "$DIFF_OUT" | grep -vE "^  (hci|streak|onboarding|git_state|kb_summary|pipeline_history|codebase|todo_store)\.")
+    if [ -n "$FILTERED" ] && [ "$(echo "$FILTERED" | wc -l)" -gt 1 ]; then
+      echo "$FILTERED" | head -20 >&2
+      echo "" >&2
+      echo "[session holograph diff: structural changes above — review before stopping]" >&2
+    fi
+  fi
+fi
+
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 # Stop-work antipattern: detect when Claude's last turn was text-only with no tool calls,

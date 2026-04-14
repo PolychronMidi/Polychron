@@ -124,6 +124,16 @@ PYEOF
 )
 [ -n "$CARRIED" ] && echo "$CARRIED" >&2
 
+# Capture a session-start holograph so the stop hook can diff against it and
+# surface drift that happened during the session. The holograph is the
+# substrate for self-coherence time-series analysis — every session adds a
+# data point. Run in background so SessionStart stays fast.
+HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
+if [ -f "$HOLO_SCRIPT" ]; then
+  SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"
+  PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout > "$SESSION_HOLO" 2>/dev/null &
+fi
+
 # Previous session pending items (surfaced as a warning after main message)
 if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2

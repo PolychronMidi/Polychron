@@ -57,15 +57,39 @@ ERRMSG
   fi
   PIPELINE_VERDICT=$(_safe_py3 "import json; print(json.load(open('$SUMMARY_FILE')).get('verdict','?'))" '?')
   PIPELINE_WALL=$(_safe_py3 "import json; d=json.load(open('$SUMMARY_FILE')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
+
+  # Composition ↔ coherence coupling: compute HCI right now and write it into
+  # pipeline-summary.json alongside the music verdict. Two axes converge into
+  # one record. Snapshot a holograph for time-series analysis.
+  HCI_SCRIPT="$PROJECT/tools/HME/scripts/verify-coherence.py"
+  HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
+  PIPELINE_HCI=""
+  if [ -f "$HCI_SCRIPT" ]; then
+    PIPELINE_HCI=$(PROJECT_ROOT="$PROJECT" python3 "$HCI_SCRIPT" --score 2>/dev/null | tr -d '\n ')
+    if [ -n "$PIPELINE_HCI" ]; then
+      _safe_py3 "
+import json
+d = json.load(open('$SUMMARY_FILE'))
+d['hci'] = int('$PIPELINE_HCI')
+d['hci_captured_at'] = $(date +%s)
+json.dump(d, open('$SUMMARY_FILE','w'), indent=2)
+print('wrote hci=' + str(d['hci']))
+" "" >/dev/null
+    fi
+  fi
+  if [ -f "$HOLO_SCRIPT" ]; then
+    PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" > /dev/null 2>&1 &
+  fi
+
   cat >&2 <<MSG
-EVOLVER: Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})} complete. You MUST now:
+EVOLVER: Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})}${PIPELINE_HCI:+ | HCI ${PIPELINE_HCI}/100} complete. You MUST now:
 (1) Read fingerprint-comparison.json
 (2) Read trace-summary metrics
 (3) Journal the round in metrics/journal.md
 (4) hme_admin(action='index') + learn() for confirmed rounds
 (5) Auto-commit if STABLE/EVOLVED (descriptive message, all changed files)
 (6) evolve(focus='curate') to prune stale KB entries
-(7) Pivot to next evolution target
+(7) Pivot to next evolution target — use HCI delta to ensure HME coherence stayed healthy
 MSG
 elif echo "$CMD" | grep -q 'npm run snapshot'; then
   echo 'Baseline captured. Persist any new calibration anchors or decisions to HME add_knowledge.' >&2
