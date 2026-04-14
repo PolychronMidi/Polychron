@@ -222,6 +222,38 @@ def hme_selftest() -> str:
     except Exception as e:
         results.append(f"WARN: STATES sync -- {e}")
 
+    # Unified HME Coherence Index — runs ALL 15 verifiers (subsumes the three
+    # individual verifiers above into a single weighted score 0-100). This is
+    # the subquantum-depth dimension that treats HME's own coherence the way
+    # Polychron treats musical coherence: as a continuous signal, not a binary
+    # pass/fail. Wired in addition to the individual verifiers so failures
+    # surface granularly AND as an aggregate.
+    try:
+        import subprocess
+        verifier = os.path.join(_project_root, "tools", "HME", "scripts", "verify-coherence.py")
+        if os.path.isfile(verifier):
+            rc = subprocess.run(
+                ["python3", verifier, "--score"],
+                capture_output=True, text=True, timeout=60,
+                env={**os.environ, "PROJECT_ROOT": _project_root},
+            )
+            try:
+                hci = int(rc.stdout.strip())
+            except (ValueError, AttributeError):
+                hci = -1
+            if hci >= 95:
+                results.append(f"PASS: HCI -- {hci}/100 (HME coherence index)")
+            elif hci >= 80:
+                results.append(f"WARN: HCI -- {hci}/100 (run verify-coherence.py for breakdown)")
+            elif hci >= 0:
+                results.append(f"FAIL: HCI -- {hci}/100 (significant coherence drift; run verify-coherence.py)")
+            else:
+                results.append(f"WARN: HCI -- could not parse score from verifier")
+        else:
+            results.append("INFO: HCI -- verifier script not found")
+    except Exception as e:
+        results.append(f"WARN: HCI -- {e}")
+
     status: dict = {}
     try:
         ctx.ensure_ready_sync()
