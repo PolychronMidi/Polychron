@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
-# HME PreToolUse: Agent — intercept Explore subagents → local Ollama + RAG.
+# HME PreToolUse: Agent — intercept read-only research subagents → local Ollama + RAG.
 # Async pattern: creates placeholder file, launches agent in background, returns
 # immediately with file reference — mirrors Claude subagent behavior.
+#
+# Interception policy (read this before changing):
+#   Explore         → INTERCEPT (mode=explore)   — code research, perfect fit for local
+#   Plan            → INTERCEPT (mode=plan)      — architecture planner, reasoning-heavy, context-hungry
+#   general-purpose → PASSTHROUGH                — needs Write/Edit/Bash; local is read-only,
+#                                                  replacement would be strict downgrade + safety risk
+#   claude-code-guide → PASSTHROUGH              — needs up-to-date Claude Code docs in KB (not loaded)
+#   statusline-setup → PASSTHROUGH               — one-shot JSON generation, too niche, locals bad at it
+#
+# Do NOT route general-purpose to local without first adding safe write gates.
+# The SubagentPassthroughVerifier enforces this at HCI check time.
 INPUT=$(cat)
 
 PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
@@ -12,10 +23,13 @@ SUBAGENT_TYPE=$(_safe_jq "$INPUT" '.tool_input.subagent_type' 'general-purpose')
 DESCRIPTION=$(_safe_jq "$INPUT" '.tool_input.description' '')
 PROMPT=$(_safe_jq "$INPUT" '.tool_input.prompt' '')
 
-# Only intercept Explore agents — other types pass through
-if [[ "$SUBAGENT_TYPE" != "Explore" ]]; then
-  exit 0
-fi
+# Route by subagent type
+HME_MODE=""
+case "$SUBAGENT_TYPE" in
+  Explore) HME_MODE="explore" ;;
+  Plan)    HME_MODE="plan" ;;
+  *)       exit 0 ;;  # passthrough for general-purpose, claude-code-guide, statusline-setup
+esac
 
 # Check Ollama reachable
 if ! curl -sf --max-time 2 "http://127.0.0.1:11435/api/tags" > /dev/null 2>&1; then
@@ -34,14 +48,20 @@ AGENT_ID=$(head -c 8 /dev/urandom | xxd -p)
 RESULT_FILE="/tmp/hme-agent-${AGENT_ID}.md"
 echo "subagent still working" > "$RESULT_FILE"
 
-printf '%s INFO hook: Agent INTERCEPTED [%s] "%s" → %s\n' \
-  "$(date '+%Y-%m-%d %H:%M:%S,000')" "$SUBAGENT_TYPE" "$DESCRIPTION" "$RESULT_FILE" \
+printf '%s INFO hook: Agent INTERCEPTED [%s/%s] "%s" → %s\n' \
+  "$(date '+%Y-%m-%d %H:%M:%S,000')" "$SUBAGENT_TYPE" "$HME_MODE" "$DESCRIPTION" "$RESULT_FILE" \
   >> "$HME_LOG" 2>/dev/null
 
 # Launch agent in background — writes result to file when done
-PROMPT_JSON=$(echo "$PROMPT" | jq -Rs '{"prompt": .}')
+# Plan mode gets a longer timeout (12 files × 150 lines of research + 6144 token synthesis)
+if [[ "$HME_MODE" == "plan" ]]; then
+  _AGENT_TIMEOUT=420
+else
+  _AGENT_TIMEOUT=300
+fi
+PROMPT_JSON=$(echo "$PROMPT" | jq -Rs --arg mode "$HME_MODE" '{"prompt": ., "mode": $mode}')
 (
-  RESULT=$(echo "$PROMPT_JSON" | timeout 240 python3 "$AGENT_SCRIPT" \
+  RESULT=$(echo "$PROMPT_JSON" | timeout "$_AGENT_TIMEOUT" python3 "$AGENT_SCRIPT" \
     --stdin --json --project "$PROJECT" 2>/dev/null)
 
   if [[ -n "$RESULT" ]]; then
