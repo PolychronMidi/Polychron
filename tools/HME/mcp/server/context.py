@@ -42,22 +42,23 @@ def register_critical_failure(
     try:
         from server import failure_genealogy as fg
         fid = fg.record_failure(source, error, severity, caused_by)
-    except Exception:
+    except Exception as _fge:
         fid = "?"
+        logger.error(f"LIFESAVER failure_genealogy.record_failure failed — failure may be lost: {_fge}")
     logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}" + (f" (#{fid})" if fid != "?" else ""))
     # Layer 10: notify resonance detector
     try:
         from server import resonance_detector as rd
         rd.record_failure_event(source)
-    except Exception:
-        pass
+    except Exception as _rde:
+        logger.warning(f"LIFESAVER resonance_detector.record_failure_event failed: {_rde}")
     # Layer 2: update operational state on shim crash
     if "shim" in source.lower() and severity == "CRITICAL":
         try:
             from server import operational_state as ops
             ops.record_shim_crash()
-        except Exception:
-            pass
+        except Exception as _opse:
+            logger.warning(f"LIFESAVER ops.record_shim_crash failed: {_opse}")
     try:
         from server.tools_analysis.todo import register_todo_from_lifesaver
         register_todo_from_lifesaver(source, error, severity)
@@ -76,8 +77,9 @@ def drain_critical_failures() -> str:
         from server import failure_genealogy as fg
         trees = fg.drain_as_causal_trees()
         return fg.format_tree_as_banner(trees)
-    except Exception:
-        return ""
+    except Exception as e:
+        logger.error(f"LIFESAVER drain failed — queued failures may be lost: {e}")
+        return f"\n[LIFESAVER DRAIN FAILED: {e} — check hme.log for queued failures]\n"
 
 
 def is_degraded() -> bool:
@@ -85,15 +87,17 @@ def is_degraded() -> bool:
     try:
         from server import system_phase as sp
         return sp.is_degraded_or_worse()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"is_degraded: system_phase check failed: {e}")
         # Fallback to old proxy-state check if phase module not yet loaded
         try:
             from server.rag_proxy import RAGProxy
             if isinstance(project_engine, RAGProxy):
                 return bool(project_engine._connection_failed or project_engine._consecutive_404s > 0)
-        except Exception:
-            pass
-    return False
+        except Exception as e2:
+            logger.warning(f"is_degraded: proxy fallback check also failed: {e2}")
+    # Both checks failed — assume degraded (fail-safe: better to show warning than hide it)
+    return True
 
 
 class _LoggingMCP:

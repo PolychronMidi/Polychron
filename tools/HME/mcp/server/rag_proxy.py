@@ -269,8 +269,8 @@ def _proxy_health_monitor(port: int) -> None:
                                 f"System coherence below threshold: {coherence:.0%} — multiple components degraded",
                                 severity="WARNING",
                             )
-                except Exception:
-                    pass
+                except Exception as _topo_err:
+                    logger.warning(f"Proxy health monitor: topology coherence check failed: {_topo_err}")
                 continue
             _stable_since = 0.0  # Layer 5: reset stability clock on any unhealthy event
             # L18: shim crashed — resolve any active crash predictions as "occurred"
