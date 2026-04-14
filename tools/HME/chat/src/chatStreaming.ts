@@ -108,6 +108,8 @@ interface HarnessHandle {
   markEnded: () => void;
   safeEnd: () => void;
   postStreamEnd: () => void;
+  /** Register the transport cancel fn so the harness abort propagates to it. */
+  setCancel: (fn: () => void) => void;
 }
 
 interface RunStreamOpts {
@@ -145,6 +147,9 @@ function runStream(opts: RunStreamOpts): { cancel: () => void; handle: HarnessHa
     handleError: (chunk) => ctx.postError(route, chunk),
   });
 
+  let cancelFn: (() => void) | undefined;
+  const setCancel = (fn: () => void) => { cancelFn = fn; };
+
   const handle: HarnessHandle = {
     state,
     acc,
@@ -155,6 +160,7 @@ function runStream(opts: RunStreamOpts): { cancel: () => void; handle: HarnessHa
     markEnded: () => { streamEnded = true; },
     safeEnd,
     postStreamEnd,
+    setCancel,
   };
 
   if (opts.preludeChunk) {
@@ -162,14 +168,10 @@ function runStream(opts: RunStreamOpts): { cancel: () => void; handle: HarnessHa
     acc.append("tool", opts.preludeChunk);
   }
 
-  let cancelFn: (() => void) | undefined;
-  const setCancel = (fn: () => void) => { cancelFn = fn; };
   if (opts.ownCancel ?? true) {
     ctx.setCancelCurrent(() => { aborted = true; cancelFn?.(); });
   }
 
-  // start() may assign cancel synchronously or via a promise; we expose a mutable setter.
-  (handle as any).setCancel = setCancel;
   opts.start(handle);
 
   return {
@@ -251,8 +253,7 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
         (_cost, usage) => { onDone(usage); },
         onError,
       );
-      const setCancel = (h as any).setCancel as (fn: () => void) => void;
-      setCancel(streamClaudePty(
+      h.setCancel(streamClaudePty(
         effectiveText, ctx.state.claudeSessionId,
         claudeOpts,
         ctx.projectRoot, h.onChunk as any,
@@ -260,7 +261,7 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
         onDone,
         (err) => {
           console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
-          setCancel(startPipe());
+          h.setCancel(startPipe());
         },
         ctx.mirrorPty ? (raw) => ctx.mirrorPty!.onRawData(raw) : undefined,
         ctx.mirrorPty ? (fn) => ctx.mirrorPty!.onPtyReady(fn) : undefined,
@@ -284,8 +285,7 @@ export function streamOllamaMsg(ctx: ChatCtx, msg: any, assistantId: string) {
         finalizeSideEffects(ctx, h.state, "local", msg.ollamaModel, true, msg.text);
         h.safeEnd();
       };
-      const setCancel = (h as any).setCancel as (fn: () => void) => void;
-      setCancel(streamOllamaAgentic(
+      h.setCancel(streamOllamaAgentic(
         requestHistory,
         ollamaOptsFromMsg(msg),
         ctx.projectRoot, h.onChunk, onDone,
@@ -306,7 +306,6 @@ export function streamHybridMsg(ctx: ChatCtx, msg: any, assistantId: string) {
     ctx, assistantId, route: "hybrid",
     preludeChunk: "[HME] Enriching with KB context…",
     start: (h) => {
-      const setCancel = (h as any).setCancel as (fn: () => void) => void;
       const onDone = () => {
         if (h.isAborted()) return;
         h.tracker.finalize(toFinalMessage(assistantId, "hybrid", h.state, h.acc));
@@ -326,7 +325,7 @@ export function streamHybridMsg(ctx: ChatCtx, msg: any, assistantId: string) {
         onDone, onError,
       ).then((cancel) => {
         if (h.isAborted()) { cancel(); return; }
-        setCancel(cancel);
+        h.setCancel(cancel);
       }).catch((err) => {
         if (h.isAborted()) return;
         if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
@@ -365,8 +364,7 @@ export function streamAgentMsg(
         runPostAudit(ctx, changedFiles);
         h.safeEnd();
       };
-      const setCancel = (h as any).setCancel as (fn: () => void) => void;
-      setCancel(streamOllamaAgentic(
+      h.setCancel(streamOllamaAgentic(
         requestHistory,
         ollamaOptsFromMsg(msg),
         ctx.projectRoot, h.onChunk, onDone,
@@ -399,7 +397,6 @@ export function streamAgentHybridMsg(
     preludeChunk: "[HME] Enriching with KB context…",
     ownCancel: false, drainOnEnd: false, onEnd: onBothDone,
     start: (h) => {
-      const setCancel = (h as any).setCancel as (fn: () => void) => void;
       const onDone = () => {
         if (h.isAborted()) return;
         h.tracker.finalize(toFinalMessage(assistantId, "hybrid", h.state, h.acc));
@@ -424,7 +421,7 @@ export function streamAgentHybridMsg(
         onDone, onError,
       ).then((c) => {
         if (h.isAborted()) { c(); return; }
-        setCancel(c);
+        h.setCancel(c);
       }).catch((err) => {
         if (h.isAborted()) return;
         ctx.postError(label, String(err));

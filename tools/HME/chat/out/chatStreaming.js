@@ -136,6 +136,8 @@ function runStream(opts) {
         abortCheck: () => aborted,
         handleError: (chunk) => ctx.postError(route, chunk),
     });
+    let cancelFn;
+    const setCancel = (fn) => { cancelFn = fn; };
     const handle = {
         state,
         acc,
@@ -146,18 +148,15 @@ function runStream(opts) {
         markEnded: () => { streamEnded = true; },
         safeEnd,
         postStreamEnd,
+        setCancel,
     };
     if (opts.preludeChunk) {
         ctx.post({ type: "streamChunk", id: assistantId, chunkType: "tool", chunk: opts.preludeChunk });
         acc.append("tool", opts.preludeChunk);
     }
-    let cancelFn;
-    const setCancel = (fn) => { cancelFn = fn; };
     if (opts.ownCancel ?? true) {
         ctx.setCancelCurrent(() => { aborted = true; cancelFn?.(); });
     }
-    // start() may assign cancel synchronously or via a promise; we expose a mutable setter.
-    handle.setCancel = setCancel;
     opts.start(handle);
     return {
         cancel: () => { aborted = true; cancelFn?.(); },
@@ -224,10 +223,9 @@ function streamClaudeMsg(ctx, msg, assistantId) {
                 ctx.postError("claude", err);
             };
             const startPipe = () => (0, router_1.streamClaude)(effectiveText, ctx.state.claudeSessionId, claudeOpts, ctx.projectRoot, h.onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, (_cost, usage) => { onDone(usage); }, onError);
-            const setCancel = h.setCancel;
-            setCancel((0, router_1.streamClaudePty)(effectiveText, ctx.state.claudeSessionId, claudeOpts, ctx.projectRoot, h.onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, onDone, (err) => {
+            h.setCancel((0, router_1.streamClaudePty)(effectiveText, ctx.state.claudeSessionId, claudeOpts, ctx.projectRoot, h.onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, onDone, (err) => {
                 console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
-                setCancel(startPipe());
+                h.setCancel(startPipe());
             }, ctx.mirrorPty ? (raw) => ctx.mirrorPty.onRawData(raw) : undefined, ctx.mirrorPty ? (fn) => ctx.mirrorPty.onPtyReady(fn) : undefined));
         },
     });
@@ -247,8 +245,7 @@ function streamOllamaMsg(ctx, msg, assistantId) {
                 finalizeSideEffects(ctx, h.state, "local", msg.ollamaModel, true, msg.text);
                 h.safeEnd();
             };
-            const setCancel = h.setCancel;
-            setCancel((0, router_1.streamOllamaAgentic)(requestHistory, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
+            h.setCancel((0, router_1.streamOllamaAgentic)(requestHistory, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
                 if (!h.isEnded()) {
                     h.postStreamEnd();
                     h.safeEnd();
@@ -265,7 +262,6 @@ function streamHybridMsg(ctx, msg, assistantId) {
         ctx, assistantId, route: "hybrid",
         preludeChunk: "[HME] Enriching with KB context…",
         start: (h) => {
-            const setCancel = h.setCancel;
             const onDone = () => {
                 if (h.isAborted())
                     return;
@@ -288,7 +284,7 @@ function streamHybridMsg(ctx, msg, assistantId) {
                     cancel();
                     return;
                 }
-                setCancel(cancel);
+                h.setCancel(cancel);
             }).catch((err) => {
                 if (h.isAborted())
                     return;
@@ -322,8 +318,7 @@ function streamAgentMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, 
                 runPostAudit(ctx, changedFiles);
                 h.safeEnd();
             };
-            const setCancel = h.setCancel;
-            setCancel((0, router_1.streamOllamaAgentic)(requestHistory, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
+            h.setCancel((0, router_1.streamOllamaAgentic)(requestHistory, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
                 ctx.postError(label, err);
                 if (h.isEnded())
                     return;
@@ -342,7 +337,6 @@ function streamAgentHybridMsg(ctx, msg, assistantId, label, onBothDone, onForceD
         preludeChunk: "[HME] Enriching with KB context…",
         ownCancel: false, drainOnEnd: false, onEnd: onBothDone,
         start: (h) => {
-            const setCancel = h.setCancel;
             const onDone = () => {
                 if (h.isAborted())
                     return;
@@ -368,7 +362,7 @@ function streamAgentHybridMsg(ctx, msg, assistantId, label, onBothDone, onForceD
                     c();
                     return;
                 }
-                setCancel(c);
+                h.setCancel(c);
             }).catch((err) => {
                 if (h.isAborted())
                     return;
