@@ -14,7 +14,7 @@ logger = logging.getLogger("HME")
 RELOADABLE = [
     "synthesis", "synthesis_config", "synthesis_ollama", "synthesis_gemini",
     "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
-    "synthesis_mistral", "synthesis_reasoning",
+    "synthesis_mistral", "synthesis_nvidia", "synthesis_reasoning",
     "synthesis_session", "synthesis_warm", "synthesis_pipeline",
     "warm_disk", "warm_persona",
     "tool_cache",
