@@ -44,14 +44,15 @@ const Arbiter_1 = require("./Arbiter");
 const streamUtils_1 = require("./streamUtils");
 const chatChain_1 = require("./chatChain");
 const chatStreaming_1 = require("./chatStreaming");
+const crossRouteHistory_1 = require("./crossRouteHistory");
 // Fire chain at 99% — meter reaches this before autocompact kicks in.
 const CHAIN_THRESHOLD_PCT = 99;
 class ChatPanel {
     static _blankState() {
-        return ChatPanel._blankState();
+        return { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
     }
     static _blankContextTracker() {
-        return ChatPanel._blankContextTracker();
+        return { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
     }
     constructor(panel, projectRoot, restoreSessionId) {
         this._state = ChatPanel._blankState();
@@ -62,6 +63,114 @@ class ChatPanel {
         this._disposed = false;
         this._contextTracker = ChatPanel._blankContextTracker();
         this._chainingInProgress = false;
+        this._messageHandlers = {
+            // ── Stream control ───────────────────────────────────────────────────
+            send: (msg) => {
+                // Hard interrupt: cancel current stream + clear queue, start new message immediately.
+                if (this._isStreaming) {
+                    this._cancelCurrent?.();
+                    this._cancelCurrent = undefined;
+                    this._messageQueue = [];
+                    this._post({ type: "cancelConfirmed" });
+                    this._isStreaming = false;
+                }
+                this._isStreaming = true;
+                this._onSend(msg).catch((e) => {
+                    this._postError("send", String(e));
+                    this._drainQueue();
+                });
+            },
+            queue: (msg) => {
+                // Queue: waits behind current stream (explicit "send after current finishes").
+                if (this._isStreaming) {
+                    const queuedUserMsg = {
+                        id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
+                    };
+                    this._post({ type: "message", message: queuedUserMsg });
+                    this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
+                }
+                else {
+                    this._isStreaming = true;
+                    this._onSend(msg).catch((e) => {
+                        this._postError("send", String(e));
+                        this._drainQueue();
+                    });
+                }
+            },
+            cancel: () => {
+                this._cancelCurrent?.();
+                this._cancelCurrent = undefined;
+                this._messageQueue = [];
+                this._post({ type: "cancelConfirmed" });
+                this._isStreaming = false;
+            },
+            // ── Session management ───────────────────────────────────────────────
+            clearHistory: () => {
+                this._state = ChatPanel._blankState();
+                this._resetContextTracker();
+                this._post({ type: "historyCleared" });
+            },
+            listSessions: () => {
+                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
+                if (this._restoreSessionId) {
+                    const id = this._restoreSessionId;
+                    this._restoreSessionId = null;
+                    this._loadSession(id);
+                }
+            },
+            loadSession: (msg) => this._loadSession(msg.id),
+            deleteSession: (msg) => {
+                (0, SessionStore_1.deleteSession)(this._projectRoot, msg.id);
+                if (this._state.sessionEntry?.id === msg.id) {
+                    this._state = ChatPanel._blankState();
+                    this._resetContextTracker();
+                    this._transcript.setSessionId("");
+                    this._post({ type: "historyCleared" });
+                }
+                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
+            },
+            renameSession: (msg) => {
+                (0, SessionStore_1.renameSession)(this._projectRoot, msg.id, msg.title);
+                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
+            },
+            newSession: () => {
+                this._state = ChatPanel._blankState();
+                this._resetContextTracker();
+                this._post({ type: "historyCleared" });
+            },
+            // ── HME features ─────────────────────────────────────────────────────
+            enrichPrompt: (msg) => {
+                this._post({ type: "enrichStatus", status: "enriching" });
+                (0, router_1.enrichPrompt)(msg.prompt, msg.frame ?? "").then((result) => {
+                    this._post({ type: "enrichResult", ...result });
+                }).catch((e) => {
+                    this._post({
+                        type: "enrichResult", enriched: msg.prompt, original: msg.prompt,
+                        error: String(e), unchanged: true,
+                    });
+                });
+            },
+            checkHmeShim: () => {
+                (0, router_1.isHmeShimReady)().then(({ ready }) => {
+                    this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
+                    if (!ready)
+                        this._startHmeShim();
+                });
+            },
+            // ── UI state ─────────────────────────────────────────────────────────
+            setZoomLevel: (msg) => {
+                if (typeof msg.level === "number") {
+                    ChatPanel._globalState?.update("hme.zoomLevel", msg.level);
+                }
+            },
+            setMirrorMode: (msg) => {
+                this._mirrorMode = !!msg.enabled;
+                if (this._mirrorMode) {
+                    this._ensureMirrorTerminal(msg.model || "claude-sonnet-4-6", msg.effort || "high");
+                }
+                this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
+            },
+        };
         // ── HME shim process management ────────────────────────────────────────────
         // ── Mirror terminal ────────────────────────────────────────────────────────
         // A live native VS Code terminal running Claude directly — fully interactive.
@@ -125,115 +234,9 @@ class ChatPanel {
         ChatPanel.current = new ChatPanel(panel, projectRoot, restoreSessionId);
     }
     _handleMessage(msg) {
-        switch (msg.type) {
-            // ── Stream control ───────────────────────────────────────────────────
-            case "send":
-                // Hard interrupt: cancel current stream + clear queue, start new message immediately.
-                if (this._isStreaming) {
-                    this._cancelCurrent?.();
-                    this._cancelCurrent = undefined;
-                    this._messageQueue = [];
-                    this._post({ type: "cancelConfirmed" });
-                    this._isStreaming = false;
-                }
-                this._isStreaming = true;
-                this._onSend(msg).catch((e) => {
-                    this._postError("send", String(e));
-                    this._drainQueue();
-                });
-                break;
-            case "queue":
-                // Queue: waits behind current stream (explicit "send after current finishes").
-                if (this._isStreaming) {
-                    const queuedUserMsg = {
-                        id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
-                    };
-                    this._post({ type: "message", message: queuedUserMsg });
-                    this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
-                }
-                else {
-                    this._isStreaming = true;
-                    this._onSend(msg).catch((e) => {
-                        this._postError("send", String(e));
-                        this._drainQueue();
-                    });
-                }
-                break;
-            case "cancel":
-                this._cancelCurrent?.();
-                this._cancelCurrent = undefined;
-                this._messageQueue = [];
-                this._post({ type: "cancelConfirmed" });
-                this._isStreaming = false;
-                break;
-            // ── Session management ───────────────────────────────────────────────
-            case "clearHistory":
-                this._state = ChatPanel._blankState();
-                this._resetContextTracker();
-                this._post({ type: "historyCleared" });
-                break;
-            // ── HME features ─────────────────────────────────────────────────────
-            case "enrichPrompt":
-                this._post({ type: "enrichStatus", status: "enriching" });
-                (0, router_1.enrichPrompt)(msg.prompt, msg.frame ?? "").then((result) => {
-                    this._post({ type: "enrichResult", ...result });
-                }).catch((e) => {
-                    this._post({ type: "enrichResult", enriched: msg.prompt, original: msg.prompt,
-                        error: String(e), unchanged: true });
-                });
-                break;
-            case "checkHmeShim":
-                (0, router_1.isHmeShimReady)().then(({ ready }) => {
-                    this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
-                    if (!ready)
-                        this._startHmeShim();
-                });
-                break;
-            // ── Session management ───────────────────────────────────────────────
-            case "listSessions":
-                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
-                if (this._restoreSessionId) {
-                    const id = this._restoreSessionId;
-                    this._restoreSessionId = null;
-                    this._loadSession(id);
-                }
-                break;
-            case "loadSession":
-                this._loadSession(msg.id);
-                break;
-            case "deleteSession":
-                (0, SessionStore_1.deleteSession)(this._projectRoot, msg.id);
-                if (this._state.sessionEntry?.id === msg.id) {
-                    this._state = ChatPanel._blankState();
-                    this._resetContextTracker();
-                    this._transcript.setSessionId("");
-                    this._post({ type: "historyCleared" });
-                }
-                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
-                break;
-            case "renameSession":
-                (0, SessionStore_1.renameSession)(this._projectRoot, msg.id, msg.title);
-                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
-                break;
-            case "newSession":
-                this._state = ChatPanel._blankState();
-                this._resetContextTracker();
-                this._post({ type: "historyCleared" });
-                break;
-            // ── UI state ─────────────────────────────────────────────────────────
-            case "setZoomLevel":
-                if (typeof msg.level === "number") {
-                    ChatPanel._globalState?.update("hme.zoomLevel", msg.level);
-                }
-                break;
-            case "setMirrorMode":
-                this._mirrorMode = !!msg.enabled;
-                if (this._mirrorMode) {
-                    this._ensureMirrorTerminal(msg.model || "claude-sonnet-4-6", msg.effort || "high");
-                }
-                this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
-                break;
-        }
+        const handler = this._messageHandlers[msg.type];
+        if (handler)
+            handler(msg);
     }
     _displayMessages() {
         return this._state.messages.slice(-ChatPanel.DISPLAY_CAP);
@@ -378,26 +381,15 @@ class ChatPanel {
             this._post({ type: "message", message: userMsg });
         }
         // ── Cross-route history portability ──
-        let contextPrefix = "";
         if (this._state.lastRoute && this._state.lastRoute !== resolvedRoute) {
             this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
-            if (resolvedRoute === "local" || resolvedRoute === "hybrid") {
-                this._state.ollamaHistory = this._state.messages
-                    .filter((m) => m.role === "user" || m.role === "assistant")
-                    .map((m) => ({ role: m.role, content: m.text || "" }));
-                this._state.ollamaHistory.pop();
-            }
-            if (resolvedRoute === "claude" && this._state.lastRoute !== "claude") {
-                this._state.claudeSessionId = null;
-                const prior = this._state.messages
-                    .filter((m) => m.role === "user" || m.role === "assistant")
-                    .slice(0, -1).slice(-12);
-                if (prior.length > 0) {
-                    const lines = prior.map((m) => `${m.role === "user" ? "Human" : "Assistant"}: ${(m.text || "").slice(0, 600)}`).join("\n");
-                    contextPrefix = `[Prior conversation via local model — use for context only]\n${lines}\n[End of prior context]\n\n`;
-                }
-            }
         }
+        const cross = (0, crossRouteHistory_1.buildCrossRouteContext)(this._state.messages, this._state.lastRoute, resolvedRoute);
+        if (cross.ollamaHistory)
+            this._state.ollamaHistory = cross.ollamaHistory;
+        if (cross.claudeSessionIdReset)
+            this._state.claudeSessionId = null;
+        const contextPrefix = cross.contextPrefix;
         this._state.lastRoute = resolvedRoute;
         const assistantId = (0, streamUtils_1.uid)();
         this._post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
