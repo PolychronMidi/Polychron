@@ -41,10 +41,10 @@ _CODER_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
 _REASONER_PORT = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
 _REASONER_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
 
-_MAX_TOOL_OUTPUT = 3000
-_ARBITER_TIMEOUT = 30
-_REASONER_TIMEOUT = 180
-_TOTAL_TIMEOUT = 300
+_MAX_TOOL_OUTPUT = 8000   # was 3000 — bigger tool outputs for comprehensive audits
+_ARBITER_TIMEOUT = 120    # was 30 — CPU 4b model needs more time for JSON planning
+_REASONER_TIMEOUT = 240   # was 180 — larger contexts need more generation budget
+_TOTAL_TIMEOUT = 420      # was 300 — matches expanded per-stage budgets
 
 # Query type signals for model routing
 _CODE_SIGNALS = {"function", "implementation", "code", "how does", "logic",
@@ -66,6 +66,55 @@ def _route_model(prompt: str) -> tuple[str, int, str]:
         return _CODER_MODEL, _CODER_PORT, "coder"
     # Tie or no signals — default to reasoner (broader capability)
     return _REASONER_MODEL, _REASONER_PORT, "reasoner"
+
+
+def _infer_directories(prompt: str) -> list[str]:
+    """Extract explicit path hints from the prompt so search scope matches
+    what the user actually asked about. Without this, every query defaults
+    to `src/` even when the prompt talks about `tools/HME/` or `doc/`."""
+    dirs: list[str] = []
+    lower = prompt.lower()
+    # Direct path mentions — extract anything that looks like a / path
+    for m in re.finditer(r'(?:^|[\s`])(tools/HME/\w*/?|src/\w*/?|doc/?|metrics/?|scripts/?|tmp/?|log/?)', prompt):
+        p = m.group(1).rstrip("/") + "/"
+        if p not in dirs:
+            dirs.append(p)
+    # Topical keyword → directory mapping
+    if "hook" in lower or "pretooluse" in lower or "posttooluse" in lower or "sessionstart" in lower:
+        if "tools/HME/hooks/" not in dirs:
+            dirs.append("tools/HME/hooks/")
+    if "mcp" in lower or "server" in lower or "ollama" in lower or "verifier" in lower or "onboard" in lower:
+        if "tools/HME/mcp/" not in dirs:
+            dirs.append("tools/HME/mcp/")
+    if "chat" in lower or "typescript" in lower:
+        if "tools/HME/chat/" not in dirs:
+            dirs.append("tools/HME/chat/")
+    if "skill" in lower:
+        if "tools/HME/skills/" not in dirs:
+            dirs.append("tools/HME/skills/")
+    if "crosslayer" in lower or "cross-layer" in lower or "cross_layer" in lower:
+        if "src/crossLayer/" not in dirs:
+            dirs.append("src/crossLayer/")
+    if "conductor" in lower or "signal" in lower or "coupling" in lower or "hypermeta" in lower:
+        if "src/conductor/" not in dirs:
+            dirs.append("src/conductor/")
+    if "stutter" in lower or "fx" in lower:
+        if "src/fx/" not in dirs:
+            dirs.append("src/fx/")
+    if "rhythm" in lower or "beat" in lower:
+        if "src/rhythm/" not in dirs:
+            dirs.append("src/rhythm/")
+    if "doc" in lower or "readme" in lower or "claude.md" in lower:
+        if "doc/" not in dirs:
+            dirs.append("doc/")
+    if "metrics" in lower or "journal" in lower:
+        if "metrics/" not in dirs:
+            dirs.append("metrics/")
+    # Default fallback: if nothing matched, search src AND tools/HME so we
+    # never accidentally scope away the audit target
+    if not dirs:
+        dirs = ["src/", "tools/HME/"]
+    return dirs[:6]
 
 
 def _strip_think(text: str) -> str:
@@ -195,26 +244,70 @@ def _validate_path(path: str) -> str | None:
     return abs_path
 
 
+_GREP_BIN: str | None = None  # cached resolved binary
+
+
+def _resolve_grep() -> str | None:
+    """Find an available grep binary — prefer ripgrep, fall back to GNU grep.
+    Cached after first resolution so we don't re-probe on every call."""
+    global _GREP_BIN
+    if _GREP_BIN is not None:
+        return _GREP_BIN or None
+    for candidate in ("rg", "grep"):
+        try:
+            subprocess.run([candidate, "--version"], capture_output=True, timeout=2)
+            _GREP_BIN = candidate
+            logger.info(f"agent_local: grep backend resolved to '{candidate}'")
+            return _GREP_BIN
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            continue
+    _GREP_BIN = ""  # sentinel: probed and failed
+    return None
+
+
 def _exec_grep(pattern: str, path: str = "src/") -> str:
-    """Execute ripgrep search — read-only."""
+    """Execute grep search — read-only. Uses ripgrep if available, falls
+    back to GNU grep. Both produce comparable output for the common case."""
     target = _validate_path(path)
     if not target:
         return f"ERROR: path '{path}' is outside project root"
+    binary = _resolve_grep()
+    if binary is None:
+        return "ERROR: no grep backend available (tried rg, grep)"
     try:
-        result = subprocess.run(
-            ["rg", "-n", "--max-count=30", "--max-columns=200", pattern, target],
-            capture_output=True, text=True, timeout=10,
-        )
+        if binary == "rg":
+            cmd = ["rg", "-n", "--max-count=30", "--max-columns=200", pattern, target]
+        else:
+            # GNU grep: -r recursive, -n line numbers, --include for source files,
+            # --max-count limits per file. Some output formatting differs but the
+            # path:line:content shape that downstream parsing expects is preserved.
+            cmd = [
+                "grep", "-rn", "--max-count=30",
+                "--include=*.js", "--include=*.py", "--include=*.sh",
+                "--include=*.ts", "--include=*.md", "--include=*.json",
+                "--exclude-dir=node_modules", "--exclude-dir=.git",
+                "--exclude-dir=__pycache__", "--exclude-dir=tmp",
+                pattern, target,
+            ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         output = result.stdout.strip()
         if not output:
             return f"No matches for '{pattern}' in {path}"
         # Trim project root prefix for readability
         output = output.replace(PROJECT_ROOT + "/", "")
-        return output[:_MAX_TOOL_OUTPUT]
+        # GNU grep lines may be very long — cap each line at 200 chars so the
+        # synthesizer doesn't choke on a single huge minified blob.
+        capped = []
+        for ln in output.split("\n"):
+            if len(ln) > 220:
+                capped.append(ln[:220] + " ...[truncated]")
+            else:
+                capped.append(ln)
+        return "\n".join(capped)[:_MAX_TOOL_OUTPUT]
     except subprocess.TimeoutExpired:
         return "ERROR: grep timed out"
     except FileNotFoundError:
-        return "ERROR: ripgrep (rg) not found"
+        return "ERROR: grep backend disappeared"
 
 
 def _exec_glob(pattern: str) -> str:
@@ -455,7 +548,12 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
     search_terms = []
     grep_patterns = []
     glob_patterns = []
-    directories = ["src/"]
+    # Always include directories inferred from the prompt as a baseline,
+    # then let the arbiter ADD to that set. Prevents the "arbiter failed →
+    # default to src/ only" failure mode where audits targeting tools/HME/
+    # silently search the wrong place.
+    inferred_dirs = _infer_directories(prompt)
+    directories = list(inferred_dirs)
 
     if arbiter_plan:
         try:
@@ -466,7 +564,12 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
                 search_terms = plan.get("terms", [])[:6]
                 grep_patterns = plan.get("grep_patterns", [])[:6]
                 glob_patterns = plan.get("glob_patterns", [])[:4]
-                directories = plan.get("directories", ["src/"])[:4]
+                # Union arbiter-proposed dirs with inferred dirs — never
+                # shrink the search scope below what the prompt implies
+                arbiter_dirs = plan.get("directories", []) or []
+                for d in arbiter_dirs[:4]:
+                    if d not in directories:
+                        directories.append(d)
         except (json.JSONDecodeError, AttributeError):
             pass
 
@@ -475,6 +578,12 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
         search_terms = _extract_search_terms(prompt)
     if not grep_patterns:
         grep_patterns = search_terms[:4]
+    # Also use explicit symbol/path names from the prompt as grep patterns
+    for sym_match in re.finditer(r'`([^`]+)`|\b([_a-zA-Z][\w.]*\.\w+)\b', prompt):
+        sym = sym_match.group(1) or sym_match.group(2)
+        if sym and len(sym) >= 4 and sym not in grep_patterns:
+            grep_patterns.append(sym)
+    grep_patterns = grep_patterns[:8]  # cap
 
     # ── Stage 2: Execute tools (parallel-safe, pure I/O) ──
     sections = []
@@ -485,15 +594,28 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
         sections.append(f"=== Knowledge Base ===\n{kb_context}")
         tools_used.append("KB(query)")
 
-    # Grep with arbiter-planned patterns
+    # Grep with arbiter-planned patterns across inferred directories.
+    # Widen to 6 patterns × 4 directories (was 5×3) for better coverage.
     grep_results = {}
-    for pattern in grep_patterns[:5]:
-        for directory in directories[:3]:
+    for pattern in grep_patterns[:6]:
+        for directory in directories[:4]:
             result = _exec_grep(pattern, directory)
             if not result.startswith("No matches") and not result.startswith("ERROR"):
                 key = f"{pattern} in {directory}"
                 grep_results[key] = result
                 tools_used.append(f"GREP({pattern}, {directory})")
+
+    # Iteration: if first pass returned NOTHING, broaden to the full project
+    # root and retry with the original patterns. Many audit questions target
+    # paths outside src/, and this second pass catches them even if the
+    # inferred-directories heuristic missed them.
+    if not grep_results and grep_patterns:
+        for pattern in grep_patterns[:6]:
+            result = _exec_grep(pattern, ".")
+            if not result.startswith("No matches") and not result.startswith("ERROR"):
+                key = f"{pattern} in ./ (broadened)"
+                grep_results[key] = result
+                tools_used.append(f"GREP_BROAD({pattern})")
 
     if grep_results:
         parts = [f"--- {key} ---\n{result}" for key, result in grep_results.items()]
@@ -549,23 +671,74 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
 ---
 Question: {prompt}
 
-Based on the search results above, provide a thorough answer. List every relevant file path and function name. Distinguish primary implementations from consumers/downstream effects."""
+INSTRUCTIONS:
+- Answer the question using the search results above.
+- The "Grep Results" section contains LITERAL file:line:content matches from the actual codebase. These are GROUND TRUTH.
+- The "Knowledge Base" section is descriptive metadata that may be incomplete. Treat KB silence as "unknown", NOT as "absent". KB silence does NOT mean a file doesn't exist.
+- If grep results show file paths matching the question, USE THEM in your answer — list every match.
+- If you say something doesn't exist, you must FIRST verify there are zero grep matches for it. Don't conflate "KB has no entry" with "file doesn't exist".
+- Be specific: name every relevant file, line number, and function. Count matches when asked."""
 
     try:
         answer, model_label = _call_synthesizer(
             synth_prompt,
-            system="You are a code research expert. Synthesize the search results into a comprehensive answer. List exact file paths and function signatures. Be thorough and precise.",
+            system=(
+                "You are a code research expert. Synthesize the search results into a comprehensive answer. "
+                "Critical rule: GREP RESULTS ARE GROUND TRUTH. Knowledge Base entries are metadata and may be "
+                "incomplete — never say 'no info' just because the KB is silent if there are grep results. "
+                "Always cite exact file paths and line numbers from grep matches. Count matches when asked."
+            ),
             max_tokens=4096,
             query_prompt=prompt,
         )
         tools_used.append(f"{model_label.upper()}(synthesize)")
     except Exception as e:
-        answer = f"[Synthesis failed: {e}]\n\nRaw research:\n{research_context[:3000]}"
+        answer = ""
         model_label = "failed"
+        logger.warning(f"Primary synthesizer failed: {e}")
 
-    if not answer:
-        answer = f"[Synthesizer produced empty output]\n\nRaw research:\n{research_context[:3000]}"
-        model_label = "empty"
+    # Fallback 1: swap models if the primary synthesizer returned empty
+    if not answer or not answer.strip():
+        try:
+            # Swap — if we routed to reasoner, try coder (and vice versa)
+            primary_model, _port, primary_label = _route_model(prompt)
+            if primary_label == "reasoner":
+                fallback_model, fallback_port, fallback_label = (_CODER_MODEL, _CODER_PORT, "coder")
+            else:
+                fallback_model, fallback_port, fallback_label = (_REASONER_MODEL, _REASONER_PORT, "reasoner")
+            fallback_answer = _call_model(
+                synth_prompt, fallback_model, fallback_port,
+                system="You are a code research expert. Synthesize the search results into a thorough answer with exact file paths.",
+                max_tokens=4096, timeout=_REASONER_TIMEOUT,
+            )
+            if fallback_answer and fallback_answer.strip():
+                answer = fallback_answer
+                model_label = f"{fallback_label}(fallback)"
+                tools_used.append(f"FALLBACK({fallback_label})")
+        except Exception as e:
+            logger.warning(f"Fallback synthesizer failed: {e}")
+
+    # Fallback 2: if BOTH models returned empty, produce an extractive
+    # summary from the raw research. Better than admitting defeat.
+    if not answer or not answer.strip():
+        extractive_parts = [
+            "[Both synthesizer models produced empty output. Extractive summary of raw research:]",
+            "",
+        ]
+        # List every file mentioned in grep/read results
+        mentioned_files = set()
+        for line in research_context.split("\n"):
+            for fm in re.finditer(r'([a-zA-Z0-9_/.-]+\.(?:js|py|sh|md|json|ts))', line):
+                mentioned_files.add(fm.group(1))
+        if mentioned_files:
+            extractive_parts.append(f"Files referenced in search results ({len(mentioned_files)}):")
+            for f in sorted(mentioned_files)[:30]:
+                extractive_parts.append(f"  - {f}")
+            extractive_parts.append("")
+        extractive_parts.append("Raw research:")
+        extractive_parts.append(research_context[:6000])
+        answer = "\n".join(extractive_parts)
+        model_label = "extractive"
 
     elapsed = time.time() - t0
 

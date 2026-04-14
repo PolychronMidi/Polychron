@@ -83,14 +83,27 @@ def correlate(
                 "message": f"{dips} coherence dips (<0.7) in last hour — systemic instability",
             })
 
-    # Ops cross-reference
+    # Ops cross-reference — distinguish protocol-level reconnects (benign,
+    # expected behavior of MCP stdio transport) from real crash loops. The
+    # MCP protocol itself may cycle the server process several times per
+    # day as a normal part of session handshaking. Restarts ALONE are not a
+    # problem. Restarts alongside ACTUAL crashes or failed recoveries ARE.
     restarts = ops.get("restarts_today", 0)
     shim_crashes = ops.get("shim_crashes_today", 0)
+    recovery_attempts = ops.get("recovery_attempts_today", 0)
+    recovery_successes = ops.get("recovery_successes_today", 0)
+    recovery_failures = recovery_attempts - recovery_successes
     recent_ms_val = result.get("shim_ms_recent", 0)
-    if restarts >= 5 and min_coherence < 0.5:
+
+    # Restart churn = restarts + unclean causes. Shim crashes > 0 or failed
+    # recoveries > 0 means the restarts aren't just protocol handshaking.
+    if restarts >= 5 and (shim_crashes >= 2 or recovery_failures >= 3) and min_coherence < 0.5:
         result["alerts"].append({
             "type": "restart_churn",
-            "message": f"{restarts} MCP restarts today with coherence dips — crash loop pattern",
+            "message": (
+                f"{restarts} MCP restarts + {shim_crashes} shim crashes + "
+                f"{recovery_failures} failed recoveries — real crash loop"
+            ),
         })
     if shim_crashes >= 2 and len(shim_ms_values) >= 5 and recent_ms_val > 1000:
         result["alerts"].append({

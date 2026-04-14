@@ -49,10 +49,14 @@ _TOOL_PAT = re.compile(r"INFO tool: (\w+)")
 _LIFESAVER_PAT = re.compile(r"LIFESAVER QUEUED")
 _COHERENCE_PAT = re.compile(r"Meta-observer L14: (\w+)")
 
-# Recency window for scoring: events older than this don't count toward the
-# health signal. 24 hours is a reasonable "what happened today" baseline —
-# forgotten events from last week shouldn't punish the current HCI forever.
-_RECENT_WINDOW_S = 86400  # 24 hours
+# Recency windows for scoring. The HCI verifiers score based on how RECENT
+# the health signals are — a LIFESAVER fire 10 minutes ago is strong evidence
+# that HME is currently unhealthy; a fire from 20 hours ago is weak evidence
+# that the system WAS unhealthy. Multiple buckets let the verifier
+# distinguish acute current problems from historical residue.
+_RECENT_WINDOW_S = 86400  # 24 hours (outer window)
+_ACUTE_WINDOW_S = 3600    # 1 hour (strong current signal)
+_MEDIUM_WINDOW_S = 21600  # 6 hours (medium current signal)
 
 
 def _parse_log() -> dict:
@@ -64,10 +68,17 @@ def _parse_log() -> dict:
     lifesaver_events = 0
     coherence_events: dict = defaultdict(int)
     recent_coherence_events: dict = defaultdict(int)
+    acute_coherence_events: dict = defaultdict(int)
+    medium_coherence_events: dict = defaultdict(int)
     recent_lifesaver_events = 0
+    acute_lifesaver_events = 0
+    medium_lifesaver_events = 0
     total_lines = 0
     global_tool_invocations: dict = defaultdict(int)
-    recent_cutoff = time.time() - _RECENT_WINDOW_S
+    now = time.time()
+    recent_cutoff = now - _RECENT_WINDOW_S
+    medium_cutoff = now - _MEDIUM_WINDOW_S
+    acute_cutoff = now - _ACUTE_WINDOW_S
 
     try:
         with open(_LOG_FILE, encoding="utf-8", errors="replace") as f:
@@ -111,6 +122,10 @@ def _parse_log() -> dict:
                     line_ts = _extract_ts(line)
                     if line_ts >= recent_cutoff:
                         recent_lifesaver_events += 1
+                    if line_ts >= medium_cutoff:
+                        medium_lifesaver_events += 1
+                    if line_ts >= acute_cutoff:
+                        acute_lifesaver_events += 1
                     continue
                 m = _COHERENCE_PAT.search(line)
                 if m:
@@ -118,6 +133,10 @@ def _parse_log() -> dict:
                     line_ts = _extract_ts(line)
                     if line_ts >= recent_cutoff:
                         recent_coherence_events[m.group(1)] += 1
+                    if line_ts >= medium_cutoff:
+                        medium_coherence_events[m.group(1)] += 1
+                    if line_ts >= acute_cutoff:
+                        acute_coherence_events[m.group(1)] += 1
     except Exception as e:
         return {"_error": f"parse error: {e}", "sessions": [], "events": []}
 
@@ -134,8 +153,12 @@ def _parse_log() -> dict:
         "total_log_lines": total_lines,
         "total_lifesaver_events": lifesaver_events,
         "recent_lifesaver_events": recent_lifesaver_events,
+        "medium_lifesaver_events": medium_lifesaver_events,
+        "acute_lifesaver_events": acute_lifesaver_events,
         "coherence_events": dict(coherence_events),
         "recent_coherence_events": dict(recent_coherence_events),
+        "medium_coherence_events": dict(medium_coherence_events),
+        "acute_coherence_events": dict(acute_coherence_events),
         "global_tool_invocations": dict(global_tool_invocations),
     }
 
@@ -258,9 +281,13 @@ def compute_effectiveness() -> dict:
         "hme_tool_pair_cooccurrence": dict(sorted(pair_counts.items(), key=lambda x: -x[1])[:30]),
         "lifesaver_total_events": raw.get("total_lifesaver_events", 0),
         "lifesaver_recent_events": raw.get("recent_lifesaver_events", 0),
+        "lifesaver_medium_events": raw.get("medium_lifesaver_events", 0),
+        "lifesaver_acute_events": raw.get("acute_lifesaver_events", 0),
         "lifesaver_session_rate": round(lifesaver_rate, 3),
         "coherence_events": raw.get("coherence_events", {}),
         "recent_coherence_events": raw.get("recent_coherence_events", {}),
+        "medium_coherence_events": raw.get("medium_coherence_events", {}),
+        "acute_coherence_events": raw.get("acute_coherence_events", {}),
         # Slim per-session records for the coupling matrix builder
         "sessions": slim_sessions,
     }
