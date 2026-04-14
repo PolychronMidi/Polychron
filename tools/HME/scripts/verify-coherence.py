@@ -472,6 +472,78 @@ class HookRegistrationVerifier(Verifier):
                        missing)
 
 
+class HookMatcherValidityVerifier(Verifier):
+    """Every `mcp__HME__*` matcher in hooks.json refers to a tool that
+    actually exists in the current tool surface. Catches post-unification
+    drift where a matcher is pinned to a renamed/removed tool — the hook
+    is then silently dead because the MCP event never fires it.
+    """
+    name = "hook-matcher-validity"
+    category = "coverage"
+    weight = 2.0  # high: silently-dead hooks are a major self-coherence failure
+
+    def run(self) -> VerdictResult:
+        import ast
+        # Collect actual tool names from the server source
+        actual: set = set()
+        for root, _dirs, files in os.walk(_SERVER_DIR):
+            for f in files:
+                if not f.endswith(".py"):
+                    continue
+                path = os.path.join(root, f)
+                try:
+                    with open(path) as fp:
+                        tree = ast.parse(fp.read())
+                except Exception:
+                    continue
+                for node in ast.walk(tree):
+                    if not isinstance(node, ast.FunctionDef):
+                        continue
+                    if any(
+                        isinstance(d, ast.Call)
+                        and isinstance(d.func, ast.Attribute)
+                        and d.func.attr == "tool"
+                        for d in node.decorator_list
+                    ):
+                        actual.add(f"mcp__HME__{node.name}")
+
+        # Read hooks.json and collect all mcp__HME__* matchers
+        hooks_json = os.path.join(_HOOKS_DIR, "hooks.json")
+        try:
+            with open(hooks_json) as f:
+                data = json.load(f)
+        except Exception as e:
+            return _result(FAIL, 0.0, f"hooks.json invalid: {e}")
+
+        dead = []
+        checked = 0
+        for _event, entries in data.get("hooks", {}).items():
+            for entry in entries:
+                matcher = entry.get("matcher", "")
+                # Skip empty matcher (matches all), non-MCP matchers, and the
+                # broad `mcp__HME__` prefix matcher which is a prefix filter.
+                if not matcher:
+                    continue
+                if not matcher.startswith("mcp__HME__"):
+                    continue
+                if matcher == "mcp__HME__":
+                    continue  # prefix matcher — matches any HME tool
+                checked += 1
+                if matcher not in actual:
+                    dead.append(matcher)
+
+        if checked == 0:
+            return _result(SKIP, 1.0, "no specific mcp__HME__ matchers to check")
+        if not dead:
+            return _result(PASS, 1.0, f"{checked}/{checked} HME matchers resolve to real tools")
+        score = 1.0 - len(dead) / checked
+        return _result(
+            FAIL, score,
+            f"{len(dead)}/{checked} HME matchers point at dead tools",
+            [f"{m} — no @ctx.mcp.tool() function with this name" for m in dead],
+        )
+
+
 class ToolSurfaceCoverageVerifier(Verifier):
     """Every public @ctx.mcp.tool() function appears in either AGENT_PRIMER.md
     or HME.md. Hidden tools don't need to be documented."""
@@ -610,6 +682,128 @@ class FeedbackGraphVerifier(Verifier):
                        f"{len(loops)} loops + {len(ports)} firewall ports declared")
 
 
+class ReloadableModuleSyncVerifier(Verifier):
+    """Every module in RELOADABLE list in evolution_selftest.py actually exists."""
+    name = "reloadable-sync"
+    category = "state"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        selftest = os.path.join(_SERVER_DIR, "tools_analysis", "evolution_selftest.py")
+        if not os.path.isfile(selftest):
+            return _result(SKIP, 1.0, "no selftest file")
+        try:
+            with open(selftest) as f:
+                src = f.read()
+            m = re.search(r'RELOADABLE\s*=\s*\[(.*?)\]', src, re.DOTALL)
+            if not m:
+                return _result(ERROR, 0.0, "could not find RELOADABLE list")
+            declared = re.findall(r'"([^"]+)"', m.group(1))
+        except Exception as e:
+            return _result(ERROR, 0.0, f"parse error: {e}")
+        ta_dir = os.path.join(_SERVER_DIR, "tools_analysis")
+        missing = [name for name in declared
+                   if not os.path.isfile(os.path.join(ta_dir, f"{name}.py"))]
+        if not missing:
+            return _result(PASS, 1.0, f"{len(declared)}/{len(declared)} modules exist")
+        score = 1.0 - len(missing) / len(declared)
+        return _result(FAIL, score, f"{len(missing)}/{len(declared)} reloadable modules missing",
+                       missing)
+
+
+class MCPInstructionsEmptyVerifier(Verifier):
+    """FastMCP instructions field in main.py should be empty per the A1 fix —
+    SKILL.md is the single source of truth. A populated instructions field
+    risks drifting out of sync with the actual tool surface."""
+    name = "mcp-instructions-empty"
+    category = "coverage"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        main_py = os.path.join(_SERVER_DIR, "main.py")
+        if not os.path.isfile(main_py):
+            return _result(SKIP, 1.0, "main.py not found")
+        try:
+            with open(main_py) as f:
+                src = f.read()
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        # Find FastMCP(...) call and check if it has an instructions kwarg
+        m = re.search(r'FastMCP\s*\(\s*"HME"\s*(,\s*[^)]*)?\)', src, re.DOTALL)
+        if not m:
+            return _result(ERROR, 0.0, "FastMCP call not found")
+        args = m.group(1) or ""
+        if "instructions" in args:
+            return _result(
+                WARN, 0.5,
+                "FastMCP has instructions= field — risks drift from SKILL.md",
+                ["consider removing to keep SKILL.md as single source of truth"],
+            )
+        return _result(PASS, 1.0, "FastMCP instructions field not set (SKILL.md is source of truth)")
+
+
+class TodoMergeHookConsistencyVerifier(Verifier):
+    """The TodoWrite hook should NOT block — it should exit 0 so native
+    TodoWrite proceeds. If it ever goes back to exit 2 / decision:block the
+    agent's session-visible todo list freezes. This regression check."""
+    name = "todowrite-hook-nonblock"
+    category = "code"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        hook = os.path.join(_HOOKS_DIR, "pretooluse_todowrite.sh")
+        if not os.path.isfile(hook):
+            return _result(SKIP, 1.0, "todowrite hook not found")
+        try:
+            with open(hook) as f:
+                src = f.read()
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        # Regression check: must NOT contain a blocking decision
+        if '"decision":"block"' in src or "'decision':'block'" in src:
+            return _result(FAIL, 0.0,
+                           "TodoWrite hook has a blocking decision — native TodoWrite will be frozen",
+                           ["remove the decision: block to restore native TodoWrite"])
+        if "exit 2" in src:
+            return _result(FAIL, 0.5,
+                           "TodoWrite hook has exit 2 — may block native TodoWrite",
+                           ["replace exit 2 with exit 0 so native TodoWrite proceeds"])
+        if "exit 0" not in src:
+            return _result(WARN, 0.5, "TodoWrite hook has no explicit exit 0")
+        return _result(PASS, 1.0, "TodoWrite hook allows native TodoWrite to proceed")
+
+
+class OnboardingChainImportVerifier(Verifier):
+    """onboarding_chain.py should import cleanly (no syntax errors or
+    top-level side effects that require the MCP server)."""
+    name = "onboarding-chain-importable"
+    category = "state"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        import ast
+        path = os.path.join(_SERVER_DIR, "onboarding_chain.py")
+        if not os.path.isfile(path):
+            return _result(FAIL, 0.0, "onboarding_chain.py missing — state machine broken")
+        try:
+            with open(path) as f:
+                tree = ast.parse(f.read())
+        except SyntaxError as e:
+            return _result(FAIL, 0.0, f"syntax error: {e}")
+        # Check for top-level statements that would block import
+        risky_patterns = ("FastMCP(", "mcp.tool(", "ensure_ready_sync(")
+        for node in tree.body:
+            if isinstance(node, ast.Expr):
+                src_snippet = ast.unparse(node) if hasattr(ast, 'unparse') else ""
+                for pat in risky_patterns:
+                    if pat in src_snippet:
+                        return _result(
+                            WARN, 0.5,
+                            f"top-level {pat} — would block standalone import",
+                        )
+        return _result(PASS, 1.0, "onboarding_chain parses and has no risky top-level calls")
+
+
 # --------------------------------------------------------------------------
 # Registry
 # --------------------------------------------------------------------------
@@ -621,11 +815,16 @@ REGISTRY = [
     ShellSyntaxVerifier(),
     HookExecutabilityVerifier(),
     DecoratorOrderVerifier(),
+    TodoMergeHookConsistencyVerifier(),
     StatesSyncVerifier(),
     OnboardingFlowVerifier(),
     OnboardingStateIntegrityVerifier(),
+    OnboardingChainImportVerifier(),
     TodoStoreSchemaVerifier(),
+    ReloadableModuleSyncVerifier(),
     HookRegistrationVerifier(),
+    HookMatcherValidityVerifier(),
+    MCPInstructionsEmptyVerifier(),
     ToolSurfaceCoverageVerifier(),
     ShimHealthVerifier(),
     ErrorLogVerifier(),
