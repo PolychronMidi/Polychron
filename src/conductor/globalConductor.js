@@ -53,12 +53,9 @@ globalConductor = (() => {
     const excursion = harmonicContext.getField('excursion');
     const sectionProgress = clamp(timeStream.compoundProgress('section'), 0, 1);
     const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
-      : 0;
-    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
-      ? axisEnergy.shares.trust
-      : 0;
+    const axisShares = axisEnergy && axisEnergy.shares;
+    const phaseShare = V.optionalFinite(axisShares && axisShares.phase, 0);
+    const trustShare = V.optionalFinite(axisShares && axisShares.trust, 0);
     const phaseEstablished = clamp((phaseShare - 0.06) / 0.05, 0, 1);
     const phaseRecoveryPressure = clamp((0.08 - phaseShare) / 0.08, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.18) / 0.08, 0, 1);
@@ -232,9 +229,7 @@ globalConductor = (() => {
     const flickerDir = registryFlickerMod - prevFlickerSnapshot; // use pre-update snapshot (fixes R4 bug: was always 0)
     const signAgreement = (densityDir > 0 && flickerDir > 0) || (densityDir < 0 && flickerDir < 0) ? 1 : -1;
     globalConductorDfCorrEma = globalConductorDfCorrEma * (1 - DF_CORR_ALPHA) + signAgreement * DF_CORR_ALPHA;
-    const flickerShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.flicker === 'number'
-      ? axisEnergy.shares.flicker
-      : 0;
+    const flickerShare = V.optionalFinite(axisShares && axisShares.flicker, 0);
     const flickerAxisPressure = clamp((flickerShare - 0.16) / 0.10, 0, 1);
     const phaseSafeTrim = 1 - phaseEstablished * flickerAxisPressure * 0.18 - hotspotContainmentPressure * 0.12;
     // When correlation is positive (co-moving), attenuate the additive flicker;

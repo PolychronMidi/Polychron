@@ -202,9 +202,8 @@ class LayerManager {
     const mappedComposer = LayerManager.layerComposers[name];
     const layerComposer = layer.measureComposer;
     const globalComposer = composer ? composer : null;
-    const resolvedComposer = (mappedComposer && typeof mappedComposer === 'object')
-      ? mappedComposer
-      : ((layerComposer && typeof layerComposer === 'object') ? layerComposer : globalComposer);
+    const resolvedComposer = V.optionalType(mappedComposer, 'object', null)
+      || V.optionalType(layerComposer, 'object', globalComposer);
 
     if (!resolvedComposer) {
       V.requireDefined(resolvedComposer, `composer for layer "${name}"`);

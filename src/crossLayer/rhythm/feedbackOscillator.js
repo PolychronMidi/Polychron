@@ -31,9 +31,7 @@ feedbackOscillator = (() => {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
     V.assertNonEmptyString(layer, 'layer');
     V.requireFinite(energy, 'energy');
-    const safePitchClass = (typeof pitchClass === 'number' && Number.isFinite(pitchClass))
-      ? pitchClass
-      : -1;
+    const safePitchClass = Number.isFinite(pitchClass) ? pitchClass : -1;
     let finalImpulseType = 'accent';
     const impulseTypeMaybe = V.optionalType(impulseType, 'string');
     if (impulseTypeMaybe !== undefined) {

@@ -81,8 +81,8 @@ homeostasisRefresh = (() => {
     let totalHotspotRateSum = 0;
     for (let i = 0; i < TAIL_TRACKED_PAIRS.length; i++) {
       const ae = adaptiveSnapshot && adaptiveSnapshot[TAIL_TRACKED_PAIRS[i]];
-      if (ae && typeof ae.hotspotRate === 'number') totalHotspotRateSum += ae.hotspotRate;
-      if (ae && typeof ae.severeRate === 'number') totalHotspotRateSum += ae.severeRate * 2;
+      if (ae && Number.isFinite(ae.hotspotRate)) totalHotspotRateSum += ae.hotspotRate;
+      if (ae && Number.isFinite(ae.severeRate)) totalHotspotRateSum += ae.severeRate * 2;
     }
     S.exceedanceOutcomeEma = S.exceedanceOutcomeEma * 0.97 + totalHotspotRateSum * 0.03;
     S.exceedanceRelaxOffset = S.exceedanceOutcomeEma < 0.05
@@ -99,14 +99,12 @@ homeostasisRefresh = (() => {
     for (let i = 0; i < TAIL_TRACKED_PAIRS.length; i++) {
       const pair = TAIL_TRACKED_PAIRS[i];
       const pairAbs = V.optionalFinite(S.pairAbsR[pair], 0);
-      const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
-        ? adaptiveSnapshot[pair]
-        : null;
-      const baseline = adaptiveEntry && typeof adaptiveEntry.baseline === 'number' ? adaptiveEntry.baseline : 0.25;
-      const targetAnchor = adaptiveEntry && typeof adaptiveEntry.current === 'number' ? adaptiveEntry.current : baseline;
-      const pairP95 = adaptiveEntry && typeof adaptiveEntry.p95AbsCorr === 'number' ? adaptiveEntry.p95AbsCorr : pairAbs;
-      const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
-      const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
+      const adaptiveEntry = V.optionalType(adaptiveSnapshot && adaptiveSnapshot[pair], 'object', null);
+      const baseline = V.optionalFinite(adaptiveEntry && adaptiveEntry.baseline, 0.25);
+      const targetAnchor = V.optionalFinite(adaptiveEntry && adaptiveEntry.current, baseline);
+      const pairP95 = V.optionalFinite(adaptiveEntry && adaptiveEntry.p95AbsCorr, pairAbs);
+      const hotspotRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.hotspotRate, 0);
+      const severeRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.severeRate, 0);
       // R77 E1 + R78 E1: Raise threshold when exceedance outcome is low.
       // R78: Cap 0.88->0.84. The 0.88 cap was too permissive, allowing
       // high-baseline pairs to escape tail pressure (DT 55-beat exceedance).
@@ -155,7 +153,7 @@ homeostasisRefresh = (() => {
     // Non-nudgeable baseline auto-ratchet
     if (strongestNonNudgeableTail > 0.50 && strongestNonNudgeablePair && S.beatCount > 30) {
       const homeostasisRefreshNnAdaptive = adaptiveSnapshot && adaptiveSnapshot[strongestNonNudgeablePair];
-      if (homeostasisRefreshNnAdaptive && typeof homeostasisRefreshNnAdaptive.rawRollingAbsCorr === 'number' && typeof homeostasisRefreshNnAdaptive.baseline === 'number') {
+      if (homeostasisRefreshNnAdaptive && Number.isFinite(homeostasisRefreshNnAdaptive.rawRollingAbsCorr) && Number.isFinite(homeostasisRefreshNnAdaptive.baseline)) {
         const homeostasisRefreshNnTarget = clamp(homeostasisRefreshNnAdaptive.rawRollingAbsCorr * 0.85, 0.04, 0.30);
         if (homeostasisRefreshNnAdaptive.baseline < homeostasisRefreshNnTarget) {
           const homeostasisRefreshNnRatchetRate = 0.0008 * clamp((strongestNonNudgeableTail - 0.50) / 0.30, 0.2, 1.0);

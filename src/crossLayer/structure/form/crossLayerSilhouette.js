@@ -27,7 +27,7 @@ crossLayerSilhouette = (() => {
    */
   function tick(absoluteSeconds, activeLayer) {
     V.requireFinite(absoluteSeconds, 'absoluteSeconds');
-    const layerForSpectral = (typeof activeLayer === 'string' && activeLayer.length > 0) ? activeLayer : 'L1';
+    const layerForSpectral = V.optionalString(activeLayer, 'L1');
 
     // Gather all available signals
 

@@ -37,23 +37,23 @@ regimeReactiveDampingEquilibrator = (() => {
     let postForcedRecoveryPressure = 0;
     const readiness = regimeClassifier.getTransitionReadiness();
     if (readiness) {
-      if (typeof readiness.runCoherentShare === 'number') runCoherentShare = readiness.runCoherentShare;
-      if (typeof readiness.runCoherentBeats === 'number') coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);
-      if (typeof readiness.runTransitionCount === 'number' && typeof readiness.runBeatCount === 'number' && readiness.runBeatCount > 64) {
+      runCoherentShare = V.optionalFinite(readiness.runCoherentShare, runCoherentShare);
+      if (Number.isFinite(readiness.runCoherentBeats)) coherentLockPressure = clamp((readiness.runCoherentBeats - 48) / 96, 0, 1);
+      if (Number.isFinite(readiness.runTransitionCount) && Number.isFinite(readiness.runBeatCount) && readiness.runBeatCount > 64) {
         const transitionRate = readiness.runTransitionCount / readiness.runBeatCount;
         transitionScarcity = clamp((0.035 - transitionRate) / 0.035, 0, 1);
       }
-      if (typeof readiness.runBeatCount === 'number' && readiness.runBeatCount > 96) {
-        const noForcedBreaks = typeof readiness.forcedBreakCount === 'number' && readiness.forcedBreakCount === 0;
+      if (Number.isFinite(readiness.runBeatCount) && readiness.runBeatCount > 96) {
+        const noForcedBreaks = Number.isFinite(readiness.forcedBreakCount) && readiness.forcedBreakCount === 0;
         if (noForcedBreaks && runCoherentShare > 0.55) {
           forcedBreakPressure = clamp((readiness.runBeatCount - 96) / 192, 0, 0.35);
         }
       }
-      if (typeof readiness.cadenceMonopolyPressure === 'number') cadenceMonopolyPressure = clamp(readiness.cadenceMonopolyPressure, 0, 1);
-      if (typeof readiness.rawNonCoherentOpportunityShare === 'number') rawNonCoherentOpportunityShare = clamp(readiness.rawNonCoherentOpportunityShare, 0, 1);
-      if (typeof readiness.opportunityGap === 'number') opportunityGap = clamp(readiness.opportunityGap, 0, 1);
-      if (typeof readiness.postForcedRecoveryRemainingSec === 'number') postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryRemainingSec / 20, 0, 1);
-      else if (typeof readiness.postForcedRecoveryBeats === 'number') postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryBeats / 24, 0, 1);
+      if (Number.isFinite(readiness.cadenceMonopolyPressure)) cadenceMonopolyPressure = clamp(readiness.cadenceMonopolyPressure, 0, 1);
+      if (Number.isFinite(readiness.rawNonCoherentOpportunityShare)) rawNonCoherentOpportunityShare = clamp(readiness.rawNonCoherentOpportunityShare, 0, 1);
+      if (Number.isFinite(readiness.opportunityGap)) opportunityGap = clamp(readiness.opportunityGap, 0, 1);
+      if (Number.isFinite(readiness.postForcedRecoveryRemainingSec)) postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryRemainingSec / 20, 0, 1);
+      else if (Number.isFinite(readiness.postForcedRecoveryBeats)) postForcedRecoveryPressure = clamp(readiness.postForcedRecoveryBeats / 24, 0, 1);
     }
 
     let phaseHotspotPressure = 0;
@@ -72,9 +72,7 @@ regimeReactiveDampingEquilibrator = (() => {
       densityFlickerPressure = clamp((m.abs(V.optionalFinite(matrix['density-flicker'], 0)) - 0.82) / 0.16, 0, 1);
     }
     const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-    const stickyTailPressure = homeostasis && typeof homeostasis.stickyTailPressure === 'number'
-      ? clamp(homeostasis.stickyTailPressure / 0.55, 0, 1)
-      : 0;
+    const stickyTailPressure = clamp(V.optionalFinite(homeostasis && homeostasis.stickyTailPressure, 0) / 0.55, 0, 1);
     const hotspotCounterpressure = clamp(
       phaseHotspotPressure * 0.40 +
       trustHotspotPressure * 0.32 +
@@ -125,9 +123,7 @@ regimeReactiveDampingEquilibrator = (() => {
     if (expShare > 0.55) {
       const monopolyPressure = clamp((expShare - 0.55) / 0.15, 0, 1);
       const squaredEscalation = 1.0 + monopolyPressure * monopolyPressure * 1.20;
-      const budgetDampen = homeostasis && typeof homeostasis.budgetConstraintPressure === 'number'
-        ? 1.0 - homeostasis.budgetConstraintPressure * 0.35
-        : 1.0;
+      const budgetDampen = 1.0 - V.optionalFinite(homeostasis && homeostasis.budgetConstraintPressure, 0) * 0.35;
       args.eqCorrT += monopolyPressure * args.equilibStrength * 1.50 * squaredEscalation * budgetDampen;
       args.eqCorrD -= monopolyPressure * args.equilibStrength * 0.60 * squaredEscalation * budgetDampen;
       args.eqCorrF -= monopolyPressure * args.equilibStrength * 0.85 * squaredEscalation * budgetDampen;

@@ -253,7 +253,7 @@ adaptiveTrustScores = (() => {
     decayCycleCount++;
 
     const currentTension = safePreBoot.call(() => conductorSignalBridge.getSignals().tension, 1.0);
-    const resolvedTension = typeof currentTension === 'number' ? currentTension : 1.0;
+    const resolvedTension = V.optionalFinite(currentTension, 1.0);
     accumulatedTensionDelta += m.abs(resolvedTension - lastTensionForExploration);
     lastTensionForExploration = resolvedTension;
 

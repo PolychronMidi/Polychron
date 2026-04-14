@@ -98,8 +98,7 @@ adaptiveTrustScoresHelpers = (() => {
     // Discount hotspot pressure for semantically labeled "opposed" pairs.
     // Creative anti-correlations (phase-opposed-flicker, smooth-tension, etc.) are structural
     // features of the composition, not failures -- penalizing them suppresses valid patterns.
-    const couplingLabels = (signals.couplingLabels && typeof signals.couplingLabels === 'object')
-      ? signals.couplingLabels : null;
+    const couplingLabels = V.optionalType(signals.couplingLabels, 'object', null);
 
     const hotspotPairs = [];
     let maxPressure = 0;
@@ -114,12 +113,10 @@ adaptiveTrustScoresHelpers = (() => {
       const pair = pairList[i];
       const absCorrelation = V.optionalFinite(couplingPressures[pair], -1);
       if (absCorrelation < 0) continue;
-      const adaptiveEntry = adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object'
-        ? adaptiveSnapshot[pair]
-        : null;
-      const pairP95 = adaptiveEntry && typeof adaptiveEntry.p95AbsCorr === 'number' ? adaptiveEntry.p95AbsCorr : absCorrelation;
-      const hotspotRate = adaptiveEntry && typeof adaptiveEntry.hotspotRate === 'number' ? adaptiveEntry.hotspotRate : 0;
-      const severeRate = adaptiveEntry && typeof adaptiveEntry.severeRate === 'number' ? adaptiveEntry.severeRate : 0;
+      const adaptiveEntry = V.optionalType(adaptiveSnapshot && adaptiveSnapshot[pair], 'object', null);
+      const pairP95 = V.optionalFinite(adaptiveEntry && adaptiveEntry.p95AbsCorr, absCorrelation);
+      const hotspotRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.hotspotRate, 0);
+      const severeRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.severeRate, 0);
       // Attenuate if pair has a recognized creative "opposed" coupling label:
       // these are structural anti-correlations by design, not underperformance.
       const pairLabel = couplingLabels ? (couplingLabels[pair] || '') : '';
@@ -209,13 +206,13 @@ adaptiveTrustScoresHelpers = (() => {
     let lateRunPressure = 0;
     const readiness = regimeClassifier.getTransitionReadiness();
     if (readiness) {
-      if (typeof readiness.runCoherentBeats === 'number') {
+      if (Number.isFinite(readiness.runCoherentBeats)) {
         coherentLockPressure = clamp((readiness.runCoherentBeats - 36) / 96, 0, 1);
       }
-      if (typeof readiness.runCoherentShare === 'number') {
+      if (Number.isFinite(readiness.runCoherentShare)) {
         coherentSharePressure = clamp((readiness.runCoherentShare - 0.46) / 0.22, 0, 1);
       }
-      if (typeof readiness.runBeatCount === 'number') {
+      if (Number.isFinite(readiness.runBeatCount)) {
         lateRunPressure = clamp((readiness.runBeatCount - 48) / 96, 0, 1);
       }
     }
@@ -246,16 +243,16 @@ adaptiveTrustScoresHelpers = (() => {
     let trustAxisPressure = 0;
     let phaseStarvationPressure = 0;
     const axisEnergyShares = safePreBoot.call(() => conductorSignalBridge.getSignals().axisEnergyShares, null);
-    if (axisEnergyShares && typeof axisEnergyShares.trust === 'number') {
+    if (axisEnergyShares && Number.isFinite(axisEnergyShares.trust)) {
       trustAxisPressure = clamp((axisEnergyShares.trust - 0.19) / 0.09, 0, 1);
-      if (typeof axisEnergyShares.phase === 'number') {
+      if (Number.isFinite(axisEnergyShares.phase)) {
         phaseStarvationPressure = clamp((0.08 - axisEnergyShares.phase) / 0.08, 0, 1);
       }
     }
 
     let stickyTailPressure = 0;
     const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-    if (homeostasis && typeof homeostasis.stickyTailPressure === 'number') {
+    if (homeostasis && Number.isFinite(homeostasis.stickyTailPressure)) {
       stickyTailPressure = clamp(homeostasis.stickyTailPressure / 0.55, 0, 1);
     }
     const pairAwareProfile = getSystemPairHotspotProfile(systemName);

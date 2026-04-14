@@ -142,6 +142,12 @@ validator = (() => {
     return fallback;
   }
 
+  /** Returns value if it is a non-empty string, otherwise returns fallback. */
+  function optionalString(value, fallback) {
+    if (typeof value === 'string' && value.length > 0) return value;
+    return fallback;
+  }
+
   /**
    * Assert a manager-shaped global: defined, has expected static methods.
    * Works for both plain objects and class constructors with static members.
@@ -250,6 +256,7 @@ validator = (() => {
       requireFinite: validatorWrapWithFrom(requireFinite, from),
       optionalFinite,
       optionalType,
+      optionalString,
       assertManagerShape: validatorWrapWithFrom(assertManagerShape, from),
       requireType: validatorWrapWithFrom(requireType, from),
       requireEnum: validatorWrapWithFrom(requireEnum, from),
@@ -274,6 +281,7 @@ validator = (() => {
     requireFinite,
     optionalFinite,
     optionalType,
+    optionalString,
     assertManagerShape,
     requireType,
     requireEnum,

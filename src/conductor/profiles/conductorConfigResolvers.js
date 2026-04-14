@@ -19,7 +19,7 @@ conductorConfigResolvers = function({ getProfileTuning }) {
     const tuning = profileTuning.journeyFx;
 
     /** @type {{distance?:number,move?:string}|null} */
-    let stop = (stopOverride && typeof stopOverride === 'object') ? stopOverride : null;
+    let stop = V.optionalType(stopOverride, 'object', null);
     if (!stop) {
       V.requireFinite(sectionIndex, 'sectionIndex');
       const maybe = harmonicJourney.getStop(Number(sectionIndex));
