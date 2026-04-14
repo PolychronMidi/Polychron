@@ -349,7 +349,7 @@ export function streamClaudePty(
       // Wait for the prompt character at the very end of the buffer — never trigger
       // on │ (box-drawing borders in the startup banner) which causes the remainder
       // of the banner, including "bypassPermissions" notices, to leak into chat.
-      const promptFound = />\s*$/.test(initBuf.slice(-20)) || initBuf.includes("Human:");
+      const promptFound = initBuf.includes("> ") || initBuf.includes("Human:");
       const ready = promptFound || initBuf.length > 2000;
       if (ready) {
         if (!promptFound) {
