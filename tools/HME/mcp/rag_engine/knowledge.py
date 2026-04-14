@@ -56,7 +56,7 @@ class RAGKnowledgeMixin:
         superseded_id = None
         if self.knowledge_table is not None:
             embed_text_check = f"{title}\n{content}"
-            check_vec = self.model.encode(embed_text_check).tolist()
+            check_vec = self.text_model.encode(embed_text_check).tolist()
             try:
                 existing = self.knowledge_table.search(check_vec).limit(3).to_list()
                 for ex in existing:
@@ -121,7 +121,7 @@ class RAGKnowledgeMixin:
         if superseded_id and prediction_action == "supersede":
             tags_str = f"{tags_str},supersedes:{superseded_id}" if tags_str else f"supersedes:{superseded_id}"
         embed_text = f"{title}\n{content}"
-        vector = self.model.encode(embed_text).tolist()
+        vector = self.text_model.encode(embed_text).tolist()
 
         record = {
             "id": entry_id,
@@ -154,7 +154,7 @@ class RAGKnowledgeMixin:
         fetch_k = min(top_k * 3, 30)
         cached_qvec = self._module_embed_cache.get(f"kbq:{query}")
         if cached_qvec is None:
-            cached_qvec = self.model.encode(query).tolist()
+            cached_qvec = self.text_model.encode(query).tolist()
             self._module_embed_cache.set(f"kbq:{query}", cached_qvec)
         query_vec = cached_qvec
         builder = self.knowledge_table.search(query_vec).limit(fetch_k)

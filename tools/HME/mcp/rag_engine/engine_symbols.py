@@ -32,7 +32,7 @@ class RAGEngineSymbolsMixin:
             })
             texts.append(embed_text)
 
-        vectors = self._batch_encode(texts)
+        vectors = self._batch_encode(texts, kind="text")
         for rec, vec in zip(records, vectors):
             rec["vector"] = vec
 
@@ -80,7 +80,7 @@ class RAGEngineSymbolsMixin:
     def search_symbols(self, query: str, top_k: int = 20, kind: str = "") -> list[dict]:
         if self.symbol_table is None:
             return []
-        query_vec = self.model.encode(query).tolist()
+        query_vec = self.text_model.encode(query).tolist()
         builder = self.symbol_table.search(query_vec).limit(top_k)
         if kind:
             builder = builder.where(f"kind = '{_sanitize(kind)}'")

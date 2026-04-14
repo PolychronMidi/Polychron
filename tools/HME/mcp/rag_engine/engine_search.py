@@ -22,9 +22,13 @@ class RAGEngineSearchMixin:
         if cached is not None:
             return cached
 
-        # Semantic search: fetch 2x candidates for RRF headroom
-        fetch_k = min(top_k * 2, 60)
-        query_vec = self.model.encode(query).tolist()
+        # With a reranker we can afford a wider candidate pool because the cross-encoder
+        # will refine the ordering. Without one, 2x is the safe default.
+        _rerank_on = (getattr(self, "reranker", None) is not None
+                      and os.environ.get("RAG_RERANK", "1") == "1")
+        _multiplier = 4 if _rerank_on else 2
+        fetch_k = min(top_k * _multiplier, 120 if _rerank_on else 60)
+        query_vec = self.code_model.encode(query).tolist()
         builder = self.table.search(query_vec).limit(fetch_k)
         if language:
             builder = builder.where(f"language = '{_sanitize(language)}'")
@@ -43,7 +47,10 @@ class RAGEngineSearchMixin:
         bm25_ranked = [i for i, _ in bm25_hits]
         sem_ranked = list(range(len(sem_rows)))
 
-        fused = _rrf_fuse(sem_ranked, bm25_ranked)[:top_k]
+        # When rerank is on, keep all fetch_k candidates so the cross-encoder has
+        # more to choose from. Without rerank, slice to top_k immediately.
+        _rerank_pool = fetch_k if _rerank_on else top_k
+        fused = _rrf_fuse(sem_ranked, bm25_ranked)[:_rerank_pool]
 
         # Filename-boost: if query contains a camelCase/PascalCase token that exactly matches
         # a result's filename, that result should rank first. Handles "crossLayerClimaxEngine
@@ -73,6 +80,60 @@ class RAGEngineSearchMixin:
 
         results.sort(key=lambda x: -x["score"])
 
+        # Cross-encoder rerank: BGE reranker scores (query, chunk) pairs directly
+        # instead of relying on bi-encoder similarity. Typically +5-15% retrieval
+        # quality. Runs on top of RRF, so the filename-boost (score=1.5) signal is
+        # preserved by blending rather than overwriting.
+        if _rerank_on and len(results) > 1:
+            try:
+                pairs = [(query, r["content"][:2000]) for r in results]
+                rerank_scores = self.reranker.predict(pairs, show_progress_bar=False)
+                # Normalize reranker logits to [0,1] via sigmoid so they combine
+                # cleanly with the sem+bm25 score. bge-reranker outputs are logits
+                # roughly in [-10,+10].
+                import math
+                for r, s in zip(results, rerank_scores):
+                    norm = 1.0 / (1.0 + math.exp(-float(s)))
+                    # Blend: 70% reranker, 30% retrieval signal (keeps filename boost felt)
+                    if r["score"] < 1.4:  # not a filename-boosted exact match
+                        r["score"] = 0.7 * norm + 0.3 * r["score"]
+                    else:
+                        # Exact filename match stays at top, but reranker nudges ties
+                        r["score"] = 1.5 + 0.01 * norm
+            except Exception as e:
+                logger.warning(f"Reranker failed, falling back to RRF score: {e}")
+
+        # AST-aware symbol boost: if the query references a symbol name we have
+        # indexed, boost chunks from the defining file (+0.5) and co-located
+        # chunks in the same directory (+0.15). Uses the existing symbol table
+        # with zero additional inference cost.
+        if self.symbol_table is not None:
+            try:
+                _symbol_tokens = set()
+                for tok in _re.findall(r'[A-Za-z_][A-Za-z0-9_]+', query):
+                    if len(tok) >= 4 and not tok.islower() and not tok.isupper():
+                        _symbol_tokens.add(tok)
+                # Also pick up camelCase tokens the filename boost already detected
+                _symbol_tokens.update(t for t in _re.findall(r'[A-Za-z][a-z0-9]+(?:[A-Z][a-z0-9]+)+', query) if len(t) >= 4)
+                _defining_files: set = set()
+                _defining_dirs: set = set()
+                for sym in _symbol_tokens:
+                    hits = self.lookup_symbol(sym)
+                    for h in hits[:3]:  # cap: avoid pathological 50-hit expansion
+                        _defining_files.add(h["file"])
+                        _defining_dirs.add(os.path.dirname(h["file"]))
+                if _defining_files:
+                    for r in results:
+                        if r["source"] in _defining_files:
+                            r["score"] += 0.5
+                        elif os.path.dirname(r["source"]) in _defining_dirs:
+                            r["score"] += 0.15
+            except Exception as e:
+                logger.warning(f"AST-aware boost failed: {e}")
+
+        results.sort(key=lambda x: -x["score"])
+        results = results[:top_k]
+
         # Auto-KB enrichment: tag each result with relevant knowledge constraints
         # Module-name embeddings are cached to avoid re-encoding the same module name
         # for every search call (up to 30 per call without cache → O(1) with cache).
@@ -82,7 +143,7 @@ class RAGEngineSearchMixin:
                 try:
                     cached_vec = self._module_embed_cache.get(module)
                     if cached_vec is None:
-                        cached_vec = self.model.encode(module).tolist()
+                        cached_vec = self.text_model.encode(module).tolist()
                         self._module_embed_cache.set(module, cached_vec)
                     kb_hits = self.knowledge_table.search(cached_vec).limit(2).to_list()
                     kb_tags = [h["title"] for h in kb_hits if h.get("_distance", 999) < 1.2]

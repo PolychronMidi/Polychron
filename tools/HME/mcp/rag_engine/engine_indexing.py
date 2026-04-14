@@ -14,12 +14,18 @@ class RAGEngineIndexingMixin:
         from file_walker import walk_code_files
         return list(walk_code_files(directory))
 
-    def _batch_encode(self, texts: list[str]) -> list[list[float]]:
+    def _batch_encode(self, texts: list[str], kind: str = "code") -> list[list[float]]:
+        """Encode texts using the appropriate embedder.
+
+        kind='code' → self.code_model (jina-embeddings-v2-base-code) for code_chunks.
+        kind='text' → self.text_model (bge-base-en-v1.5) for knowledge + symbols.
+        """
         batch_size = getattr(self, "_embed_batch_size", BATCH_SIZE)
+        model = self.code_model if kind == "code" else self.text_model
         results = []
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
-            embeddings = self.model.encode(batch, show_progress_bar=False)
+            embeddings = model.encode(batch, show_progress_bar=False)
             results.extend(embeddings.tolist())
         return results
 
