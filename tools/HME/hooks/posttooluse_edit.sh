@@ -16,8 +16,11 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat))/'; then
     echo "NEXUS: ${EDIT_COUNT} files edited since last review. Consider review(mode='forget') soon." >&2
   fi
 
-  # Onboarding: advance briefed -> edited on first successful src/ edit
-  if ! _onb_is_graduated && [ "$(_onb_state)" = "briefed" ]; then
+  # Onboarding: advance targeted -> edited on first successful src/ edit.
+  # Briefing is auto-chained via pretooluse_edit.sh's _hme_validate call, so
+  # there's no separate 'briefed' state — the agent goes targeted → edited
+  # in one step.
+  if ! _onb_is_graduated && [ "$(_onb_state)" = "targeted" ]; then
     _onb_advance_to edited
     echo "NEXUS: onboarding advanced to 'edited'. Next: run review(mode='forget') to audit changes." >&2
   fi

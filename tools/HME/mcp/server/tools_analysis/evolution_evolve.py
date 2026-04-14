@@ -70,7 +70,19 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
 
     if focus == "design":
         from .coupling_bridges import design_bridges
-        return design_bridges()
+        _design_out = design_bridges()
+        # D1: append structured target marker so onboarding_chain can extract
+        # the picked target deterministically even if design output format changes.
+        try:
+            from server.onboarding_chain import (
+                emit_target_marker, _extract_target_from_evolve as _et
+            )
+            tgt = _et(_design_out)
+            if tgt:
+                _design_out = _design_out + "\n\n" + emit_target_marker(tgt)
+        except Exception:
+            pass
+        return _design_out
 
     if focus == "curate":
         return _auto_curate()

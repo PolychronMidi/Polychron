@@ -28,10 +28,7 @@ This document is the design spec. Edit it when the flow changes; the code follow
      │                │ evolve(focus='design'|'forge'|'curate'|'stress'|'invariants')
      ▼                ▼
   targeted            │
-     │                │ read(target, mode='before')
-     ▼                ▼
-   briefed            │
-     │                │ Edit on /src/ (pretooluse/posttooluse_edit.sh)
+     │                │ Edit on /src/ (briefing auto-chains; posttooluse_edit.sh advances state)
      ▼                ▼
    edited             │
      │                │ review(mode='forget') reports zero warnings
@@ -54,13 +51,14 @@ This document is the design spec. Edit it when the flow changes; the code follow
 |---|---|---|---|
 | `boot` | Fresh session | `hme_admin(action='selftest')` | output contains no `FAIL:` lines |
 | `selftest_ok` | Tool surface + index + KB verified | `evolve(focus=...)` with a target-picking focus | always |
-| `targeted` | Evolution target chosen | `read(target, mode='before')` | non-empty target arg |
-| `briefed` | KB constraints absorbed | Edit on any `/src/` file | successful Edit in PostToolUse |
+| `targeted` | Evolution target chosen; ready for Edit | Edit on any `/src/` file | successful Edit in PostToolUse (briefing surfaces via pretooluse_edit's `_hme_validate`) |
 | `edited` | Changes applied | `review(mode='forget')` | output contains `Warnings: none` or `No changed files detected` |
 | `reviewed` | Changes pass KB audit | `Bash: npm run main` | command actually launched in PostToolUse |
 | `piped` | Pipeline running in background | pipeline completion | `pipeline-summary.json.failed == 0` AND `fingerprint-comparison.json.verdict in {STABLE, EVOLVED}` |
 | `verified` | Pipeline passed | `learn(title=, content=)` | both `title` and `content` non-empty |
 | `graduated` | Loop complete | — | state file is deleted |
+
+The `briefed` state was removed: the KB briefing that used to be its own step is now auto-chained into every Edit via `_hme_validate` in [pretooluse_edit.sh](../tools/HME/hooks/pretooluse_edit.sh), so the agent never needs to call `read(target, mode='before')` explicitly. The `read` tool still exists as a hidden internal utility called by the hook.
 
 ## Auto-chaining rules
 

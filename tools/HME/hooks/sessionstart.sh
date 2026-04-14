@@ -38,9 +38,21 @@ mkdir -p "${PROJECT}/tmp"
 source "$HOOKS_DIR/_onboarding.sh"
 _onb_init
 
-# Ensure HME HTTP shim is running
+# Ensure HME HTTP shim is running. Port-based check is insufficient — a
+# different process could hold port 7734 (not HME) and the health endpoint
+# won't respond. Probe the /health endpoint explicitly; if it doesn't respond
+# or returns non-200, start the HME shim even if the port appears taken
+# (port-collision failure surfaces to hme_http.py which will log it).
 SHIM_PORT=7734
-if ! ss -tlnp 2>/dev/null | grep -q ":${SHIM_PORT} "; then
+SHIM_HEALTHY=0
+if curl -sf --max-time 2 "http://127.0.0.1:${SHIM_PORT}/health" > /dev/null 2>&1; then
+  SHIM_HEALTHY=1
+fi
+if [ "$SHIM_HEALTHY" -eq 0 ]; then
+  # Check if port is held by something non-HME
+  if ss -tlnp 2>/dev/null | grep -q ":${SHIM_PORT} "; then
+    echo "WARN: port ${SHIM_PORT} is held but /health didn't respond — a non-HME process may be squatting the port" >&2
+  fi
   SHIM="$PROJECT/tools/HME/mcp/hme_http.py"
   if [ -f "$SHIM" ]; then
     nohup python3 "$SHIM" --port "$SHIM_PORT" \

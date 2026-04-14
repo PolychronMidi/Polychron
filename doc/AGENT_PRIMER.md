@@ -16,15 +16,16 @@ Every new session starts in onboarding state `boot`. The chain decider — livin
 ```
  1. hme_admin(action='selftest')            → boot check
  2. evolve(focus='design')                  → pick target module
- 3. read(target, mode='before')             → absorb KB constraints, callers, risks
- 4. Edit                                    → apply the change on target
- 5. review(mode='forget')                   → audit changes against KB (must be clean)
- 6. Bash: npm run main                      → run the pipeline (run_in_background=true)
- 7. STABLE | EVOLVED verdict                → auto-commit, hooks advance state
- 8. learn(title=, content=)                 → persist the round + HME observations
+ 3. Edit                                    → KB briefing auto-chains into the Edit hook;
+                                              constraints/callers/risks appear as a
+                                              systemMessage before the edit runs
+ 4. review(mode='forget')                   → audit changes against KB (must be clean)
+ 5. Bash: npm run main                      → run the pipeline (run_in_background=true)
+ 6. STABLE | EVOLVED verdict                → auto-commit, hooks advance state
+ 7. learn(title=, content=)                 → persist the round + HME observations
 ```
 
-Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
+You never call `read(mode='before')` explicitly — the briefing is woven into every Edit on a `/src/` file automatically by the pretooluse hook. Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
 
 ## Other HME tools (use when needed)
 

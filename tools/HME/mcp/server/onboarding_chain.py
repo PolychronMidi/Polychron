@@ -40,7 +40,6 @@ STATES = [
     "boot",
     "selftest_ok",
     "targeted",
-    "briefed",
     "edited",
     "reviewed",
     "piped",
@@ -49,14 +48,13 @@ STATES = [
 ]
 
 STEP_LABELS = {
-    "boot":        "1/8 boot check (run hme_admin selftest)",
-    "selftest_ok": "2/8 pick evolution target (run evolve focus=design)",
-    "targeted":    "3/8 brief on target (run read mode=before)",
-    "briefed":     "4/8 edit target module (Edit tool)",
-    "edited":      "5/8 audit changes (run review mode=forget)",
-    "reviewed":    "6/8 run pipeline (Bash: npm run main)",
-    "piped":       "7/8 await verdict (hooks advance automatically)",
-    "verified":    "8/8 persist learning (run learn title=, content=)",
+    "boot":        "1/7 boot check (run hme_admin selftest)",
+    "selftest_ok": "2/7 pick evolution target (run evolve focus=design)",
+    "targeted":    "3/7 edit target module (Edit tool — briefing auto-chains)",
+    "edited":      "4/7 audit changes (run review mode=forget)",
+    "reviewed":    "5/7 run pipeline (Bash: npm run main)",
+    "piped":       "6/7 await verdict (hooks advance automatically)",
+    "verified":    "7/7 persist learning (run learn title=, content=)",
     "graduated":   "graduated — blocks relax",
 }
 
@@ -64,8 +62,7 @@ STEP_LABELS = {
 STEP_SHORT = [
     "boot check (hme_admin action=selftest)",
     "pick evolution target (evolve focus=design)",
-    "brief on target (read mode=before)",
-    "edit target module",
+    "edit target module (KB briefing auto-chains)",
     "audit changes (review mode=forget)",
     "run pipeline (Bash: npm run main)",
     "await pipeline verdict",
@@ -77,6 +74,9 @@ _PROJECT_ROOT = (
     or os.environ.get("CLAUDE_PROJECT_DIR")
     or "/home/jah/Polychron"
 )
+# Flat per-field state files — kept separate (not merged into JSON) so shell
+# helpers can read them via `cat` without pulling in `jq` or Python. The
+# tradeoff: two files instead of one, but much simpler hook code.
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
 _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 
@@ -268,13 +268,13 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
                 set_state("targeted")
                 return
 
-    # read(mode='before') on a module -> briefed (captures target)
+    # read(mode='before') on a module -> captures target if missing (the hook
+    # auto-chains read() into Edit, so this is a passive capture, not a state
+    # transition). State advances on Edit, not on read.
     if tool == "read" and args.get("mode") == "before":
         tgt = args.get("target", "") or ""
-        if tgt and idx < step_index("briefed"):
+        if tgt and not target():
             set_target(tgt)
-            set_state("briefed")
-            return
 
     # review(mode='forget') clean -> reviewed
     # Only advances from 'edited' state; can't jump over Edit.
@@ -389,7 +389,18 @@ def _selftest_clean(output: str) -> bool:
 
 
 def _review_clean(output: str) -> bool:
-    """Return True if review(mode='forget') found no warnings."""
+    """Return True if review(mode='forget') reports clean status.
+
+    Preferred path: structured `<!-- HME_REVIEW_VERDICT: clean -->` marker.
+    Fallback: text heuristics matching current review output format. The
+    fallback becomes unnecessary once review_unified.py starts emitting
+    markers via emit_review_verdict_marker().
+    """
+    # Preferred: structured marker
+    m = re.search(r'<!--\s*HME_REVIEW_VERDICT:\s*(clean|warnings|error)\s*-->', output)
+    if m:
+        return m.group(1) == "clean"
+    # Fallback: text heuristics
     lo = output.lower()
     if "warnings: none" in lo:
         return True
@@ -399,17 +410,62 @@ def _review_clean(output: str) -> bool:
 
 
 def _extract_target_from_evolve(output: str) -> str:
-    """Best-effort parse: find a module name in evolve() output."""
-    # Pattern 1: explicit "target: crossLayerClimaxEngine" or similar
+    """Parse a target module name out of evolve() output.
+
+    Robust layered lookup — tries structured markers first, falls back to
+    regex heuristics. When upstream generators start emitting markers via
+    `emit_target_marker()`, the structured path takes over and brittle
+    regex fallbacks become unnecessary.
+    """
+    # Layer 1 (preferred): structured HTML-comment marker
+    #   <!-- HME_TARGET: moduleName -->
+    m = re.search(r'<!--\s*HME_TARGET:\s*([a-zA-Z_][a-zA-Z0-9_]+)\s*-->', output)
+    if m:
+        return m.group(1)
+    # Layer 2: fenced marker — used when HTML comments would break rendering
+    #   [HME_TARGET:moduleName]
+    m = re.search(r'\[HME_TARGET:\s*([a-zA-Z_][a-zA-Z0-9_]+)\s*\]', output)
+    if m:
+        return m.group(1)
+    # Layer 3: explicit "target: crossLayerClimaxEngine" or similar
     m = re.search(r'(?:target|module|file|focus)[:\s]+`?([a-zA-Z_][a-zA-Z0-9_]+)`?',
                   output, re.IGNORECASE)
     if m:
         return m.group(1)
-    # Pattern 2: backtick-wrapped camelCase identifier
+    # Layer 4: backtick-wrapped camelCase identifier
     m = re.search(r'`([a-z][a-zA-Z0-9]+[A-Z][a-zA-Z0-9_]*)`', output)
     if m:
         return m.group(1)
     return ""
+
+
+def emit_target_marker(module_name: str) -> str:
+    """Format a structured target marker for embedding in evolve() output.
+
+    Producers should append this line to their output when they want the
+    chain decider to reliably pick up a target module regardless of text
+    formatting. Example:
+        result = build_design_report(...)
+        result += "\\n" + emit_target_marker("crossLayerClimaxEngine")
+        return result
+    """
+    if not module_name or not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]+$', module_name):
+        return ""
+    return f"<!-- HME_TARGET: {module_name} -->"
+
+
+def emit_review_verdict_marker(verdict: str) -> str:
+    """Format a structured review verdict marker.
+
+    Producers should append this line to `review(mode='forget')` output so
+    the chain decider can advance state deterministically:
+        clean:      agent may proceed (edited → reviewed)
+        warnings:   agent must fix warnings first (stay at edited)
+        error:      verifier itself failed (stay at edited, surface error)
+    """
+    if verdict not in ("clean", "warnings", "error"):
+        return ""
+    return f"<!-- HME_REVIEW_VERDICT: {verdict} -->"
 
 
 # --------------------------------------------------------------------------
