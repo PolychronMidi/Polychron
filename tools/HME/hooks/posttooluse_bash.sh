@@ -88,6 +88,18 @@ print('wrote hci=' + str(d['hci']))
   [ -f "$EFF_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 &
   [ -f "$TRAJ_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 &
   [ -f "$COUPLING_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$COUPLING_SCRIPT" > /dev/null 2>&1 &
+  # H11: sonify HCI as MIDI drone alongside the pipeline output
+  SONIFY_SCRIPT="$PROJECT/tools/HME/scripts/sonify-hci.py"
+  [ -f "$SONIFY_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$SONIFY_SCRIPT" > /dev/null 2>&1 &
+  # H15: emit HCI as a structured composition-layer signal
+  EMIT_SIGNAL="$PROJECT/tools/HME/scripts/emit-hci-signal.py"
+  [ -f "$EMIT_SIGNAL" ] && PROJECT_ROOT="$PROJECT" python3 "$EMIT_SIGNAL" > /dev/null 2>&1 &
+  # H13: refresh verifier coverage report (cheap)
+  COVERAGE_SCRIPT="$PROJECT/tools/HME/scripts/suggest-verifiers.py"
+  [ -f "$COVERAGE_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$COVERAGE_SCRIPT" > /dev/null 2>&1 &
+  # H16: refresh memetic drift (cheap)
+  MEMETIC_SCRIPT="$PROJECT/tools/HME/scripts/memetic-drift.py"
+  [ -f "$MEMETIC_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$MEMETIC_SCRIPT" > /dev/null 2>&1 &
 
   cat >&2 <<MSG
 EVOLVER: Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})}${PIPELINE_HCI:+ | HCI ${PIPELINE_HCI}/100} complete. You MUST now:

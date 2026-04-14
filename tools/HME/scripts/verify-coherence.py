@@ -851,6 +851,70 @@ class SubagentPassthroughVerifier(Verifier):
         )
 
 
+class VerifierCoverageGapVerifier(Verifier):
+    """H13 consumer: reads metrics/hme-verifier-coverage.json and flags
+    gaps — fix commits with no matching verifier. Low weight because
+    this is aspirational."""
+    name = "verifier-coverage-gap"
+    category = "runtime"
+    weight = 0.5
+
+    def run(self) -> VerdictResult:
+        data_path = os.path.join(_PROJECT, "metrics", "hme-verifier-coverage.json")
+        if not os.path.isfile(data_path):
+            return _result(SKIP, 1.0, "no coverage report — run suggest-verifiers.py")
+        try:
+            with open(data_path) as f:
+                data = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        gaps = data.get("gap_count", 0)
+        scanned = data.get("commits_scanned", 0)
+        if scanned == 0:
+            return _result(SKIP, 1.0, "no recent fix commits to check")
+        if gaps == 0:
+            return _result(PASS, 1.0, f"{scanned} fix commits, all have verifier coverage")
+        ratio = gaps / max(1, scanned)
+        score = max(0.0, 1.0 - ratio * 2)
+        return _result(
+            WARN, score,
+            f"{gaps}/{scanned} fix commits without matching verifiers",
+            [f"first gap: {data.get('gaps', [{}])[0].get('message', '?')[:80]}"] if gaps else [],
+        )
+
+
+class MemeticDriftVerifier(Verifier):
+    """H16 consumer: reads metrics/hme-memetic-drift.json and flags rules
+    with elevated violation counts. Low weight because the signal is noisy
+    (violation detection is heuristic)."""
+    name = "memetic-drift"
+    category = "doc"
+    weight = 0.5
+
+    def run(self) -> VerdictResult:
+        data_path = os.path.join(_PROJECT, "metrics", "hme-memetic-drift.json")
+        if not os.path.isfile(data_path):
+            return _result(SKIP, 1.0, "no memetic drift report")
+        try:
+            with open(data_path) as f:
+                data = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        violations = data.get("violation_counts", {})
+        if not violations:
+            return _result(PASS, 1.0, "no violations detected")
+        worst = max(violations.values()) if violations else 0
+        total = sum(violations.values())
+        if worst >= 3:
+            score = max(0.0, 1.0 - worst / 10.0)
+            return _result(
+                WARN, score,
+                f"{total} total violations, worst rule: {worst} occurrences",
+                [f"{k}: {v}" for k, v in sorted(violations.items(), key=lambda x: -x[1])[:3] if v > 0],
+            )
+        return _result(PASS, 1.0, f"{total} violations across {len(violations)} tracked rules (none severe)")
+
+
 class TransientErrorFilterVerifier(Verifier):
     """Ensures _log_error in hme_http_store.py uses SOURCE-based transient
     detection, not message-substring matching. The old detector looked for
@@ -1710,6 +1774,8 @@ REGISTRY = [
     PlanOutputValidityVerifier(),
     GitCommitTestCoverageVerifier(),
     TransientErrorFilterVerifier(),
+    VerifierCoverageGapVerifier(),
+    MemeticDriftVerifier(),
     PredictiveHCIVerifier(),
     LifesaverIntegrityVerifier(),
     LifesaverRateVerifier(),
