@@ -742,6 +742,139 @@ class MetaObserverCoherenceVerifier(Verifier):
         return _result(PASS, score, summary)
 
 
+class LifesaverIntegrityVerifier(Verifier):
+    """Enforce the LIFESAVER no-dilution rule at the code level.
+
+    LIFESAVER's entire purpose is to be painful until the root cause is fixed.
+    Any cooldown, throttle, deduplication, or suppression of LIFESAVER fires
+    is a CRITICAL VIOLATION because it dilutes the signal that motivates fixes.
+    A "false positive" LIFESAVER is itself a life-critical bug: either the
+    detector is wrong (fix the detector at full urgency) or the condition is
+    real (fix the condition at full urgency). NEVER reduce alert frequency
+    without first eliminating the trigger.
+
+    This verifier scans the call sites of register_critical_failure and the
+    Meta-observer L14 alert emission loop. If it finds any gating logic
+    (cooldowns, last_fired timestamps, _seen sets, dedup flags) in the call
+    path, it FAILs with score 0 and weight 5 — enough to break HCI on its own.
+
+    Reason: if this fails, LIFESAVER is lying about how bad things are,
+    which is worse than the original problem.
+    """
+    name = "lifesaver-integrity"
+    category = "runtime"
+    weight = 5.0  # highest weight — silencing LIFESAVER is a category-killing bug
+
+    def run(self) -> VerdictResult:
+        # Files that contain LIFESAVER firing sites
+        fire_sites = [
+            os.path.join(_SERVER_DIR, "rag_proxy.py"),
+            os.path.join(_SERVER_DIR, "context.py"),
+            os.path.join(_SERVER_DIR, "meta_observer.py"),
+        ]
+        # Patterns that would indicate LIFESAVER gating / dampening
+        # Note: _ALERT_LOG_COOLDOWN is an existing, intentional 30-min cooldown
+        # on Meta-observer L14 ALERT LOGGING — not on LIFESAVER fires. That's
+        # allowed because it only throttles the log message, not the
+        # condition detection. But any NEW pattern matching "cooldown" near a
+        # register_critical_failure call is a violation.
+        forbidden_near_fire = [
+            r"cooldown.*register_critical_failure",
+            r"_last_.*_alert.*register_critical_failure",
+            r"dedupe.*register_critical_failure",
+            r"_suppress.*register_critical_failure",
+            r"register_critical_failure.*cooldown",
+            r"register_critical_failure.*if _now.*>=",
+            r"register_critical_failure.*alerted_set",
+        ]
+        violations = []
+        for path in fire_sites:
+            if not os.path.isfile(path):
+                continue
+            try:
+                with open(path) as f:
+                    src = f.read()
+            except Exception as e:
+                return _result(ERROR, 0.0, f"read error on {path}: {e}")
+            # Find every call to register_critical_failure and check the
+            # surrounding 5 lines for gating patterns
+            lines = src.splitlines()
+            for i, line in enumerate(lines):
+                if "register_critical_failure" not in line:
+                    continue
+                context_start = max(0, i - 5)
+                context_end = min(len(lines), i + 5)
+                window = "\n".join(lines[context_start:context_end])
+                for pat in forbidden_near_fire:
+                    if re.search(pat, window, re.IGNORECASE | re.DOTALL):
+                        violations.append(
+                            f"{os.path.basename(path)}:{i+1} — potential LIFESAVER gating near register_critical_failure: matched /{pat}/"
+                        )
+                        break
+                # Explicit check: any `if _now - X >=` pattern within 3 lines
+                # before register_critical_failure suggests a cooldown guard
+                for j in range(max(0, i - 3), i):
+                    if re.search(r"if\s+.*(now|time\.time\(\)).*(>=|>|<|<=).*\d", lines[j]):
+                        if "register_critical_failure" in "\n".join(lines[j:i + 1]):
+                            violations.append(
+                                f"{os.path.basename(path)}:{j+1}-{i+1} — time-based guard immediately before register_critical_failure (possible cooldown subversion)"
+                            )
+                            break
+        if not violations:
+            return _result(PASS, 1.0,
+                           "LIFESAVER fire paths are ungated (no cooldown/dampening detected)")
+        return _result(
+            FAIL, 0.0,
+            f"{len(violations)} LIFESAVER gating pattern(s) found — CRITICAL: signal dilution subversion",
+            violations + [
+                "RULE: LIFESAVER must fire for every real occurrence. Dampening hides pain from the agent.",
+                "If alert is 'false positive', fix the detector at life-critical urgency — do NOT silence it.",
+            ],
+        )
+
+
+class ToolResponseLatencyVerifier(Verifier):
+    """Reads tools/HME/mcp/server/hme-ops.json (operational state) and checks
+    the tool_response_ms_ema. Healthy HME responds in <1s; >5s is a warn,
+    >10s is a fail. This is the direct observable symptom of health issues
+    that otherwise surface as meta-observer alerts. Fixing slow responses
+    often fixes everything downstream."""
+    name = "tool-response-latency"
+    category = "runtime"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        candidates = [
+            os.path.join(_PROJECT, "tools", "HME", "mcp", "server", "hme-ops.json"),
+            os.path.join(_PROJECT, ".claude", "mcp", "HME", "hme-ops.json"),
+            os.path.join(_PROJECT, "tmp", "hme-ops.json"),
+        ]
+        ops_file = next((p for p in candidates if os.path.isfile(p)), None)
+        if ops_file is None:
+            return _result(SKIP, 1.0, "no hme-ops.json found")
+        try:
+            with open(ops_file) as f:
+                ops = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        ema_ms = ops.get("tool_response_ms_ema", 0.0)
+        if ema_ms <= 0:
+            return _result(SKIP, 1.0, "no tool_response_ms_ema data")
+        # Score: 1.0 at 0-500ms, 0.0 at 10s+
+        score = max(0.0, min(1.0, 1.0 - (ema_ms - 500) / 9500))
+        details = [f"ema={ema_ms:.0f}ms", f"file={ops_file}"]
+        if ema_ms >= 5000:
+            return _result(FAIL, score,
+                           f"tool response EMA {ema_ms:.0f}ms — HME is critically slow",
+                           details + ["investigate synthesis calls + shim latency"])
+        if ema_ms >= 1500:
+            return _result(WARN, score,
+                           f"tool response EMA {ema_ms:.0f}ms — elevated",
+                           details)
+        return _result(PASS, 1.0, f"tool response EMA {ema_ms:.0f}ms (healthy)",
+                       details)
+
+
 class TrajectoryTrendVerifier(Verifier):
     """Reads metrics/hme-trajectory.json and scores the HCI trend direction.
     A prolonged downward trend or a predicted drift below threshold 80 is a
@@ -955,8 +1088,10 @@ REGISTRY = [
     ToolSurfaceCoverageVerifier(),
     ShimHealthVerifier(),
     ErrorLogVerifier(),
+    LifesaverIntegrityVerifier(),
     LifesaverRateVerifier(),
     MetaObserverCoherenceVerifier(),
+    ToolResponseLatencyVerifier(),
     TrajectoryTrendVerifier(),
     FeedbackGraphVerifier(),
 ]
