@@ -4,6 +4,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/_tab_helpers.sh"
 source "$SCRIPT_DIR/_nexus.sh"
+source "$SCRIPT_DIR/_onboarding.sh"
 
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
@@ -13,6 +14,10 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 [[ -n "$BG_FILE" ]] && _append_file_to_tab "$BG_FILE"
 
 if echo "$CMD" | grep -q 'npm run main'; then
+  # Onboarding: reviewed -> piped the moment npm run main is launched
+  if ! _onb_is_graduated && [ "$(_onb_state)" = "reviewed" ]; then
+    _onb_advance_to piped
+  fi
   # LIFESAVER: Scan pipeline summary for errors in non-fatal steps.
   # These are real failures (Traceback, CUDA OOM, RuntimeError) that the
   # pipeline continued past. They MUST be addressed — not ignored.
@@ -81,6 +86,11 @@ if echo "$CMD" | grep -q 'npm run main'; then
       _nexus_clear_type COMMIT
       if [ "$VERDICT" = "STABLE" ] || [ "$VERDICT" = "EVOLVED" ]; then
         echo "NEXUS: Pipeline $VERDICT — commit all changed files now." >&2
+        # Onboarding: piped/reviewed -> verified on clean STABLE/EVOLVED
+        if ! _onb_is_graduated; then
+          _onb_advance_to verified
+          echo "NEXUS: onboarding advanced to 'verified'. Next: run learn(title=, content=) to persist the round." >&2
+        fi
       elif [ "$VERDICT" = "DRIFTED" ]; then
         echo "NEXUS: Pipeline DRIFTED — do NOT commit. Diagnose regression." >&2
       fi

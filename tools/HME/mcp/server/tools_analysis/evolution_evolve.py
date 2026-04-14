@@ -9,6 +9,7 @@ import os
 import logging
 
 from server import context as ctx
+from server.onboarding_chain import chained
 from . import _track, _budget_gate, BUDGET_COMPOUND, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
 
@@ -16,6 +17,7 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
+@chained("evolve")
 def evolve(focus: str = "all", query: str = "") -> str:
     """Unified evolution intelligence hub. focus='all' (default): LOC offenders +
     coupling gaps + leverage + pipeline suggestions + synthesis.

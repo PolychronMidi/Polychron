@@ -34,6 +34,10 @@ mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-nexus.state"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
+# Initialize onboarding state machine — every new session re-arms the walkthrough
+source "$HOOKS_DIR/_onboarding.sh"
+_onb_init
+
 # Ensure HME HTTP shim is running
 SHIM_PORT=7734
 if ! ss -tlnp 2>/dev/null | grep -q ":${SHIM_PORT} "; then
@@ -81,7 +85,8 @@ fi
 LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
 [ -n "$LAST_COMMIT" ] && MSG="$MSG\nLast commit: $LAST_COMMIT"
 
-echo -e "HyperMeta Ecstasy active. Load skill: /HME$MSG" >&2
+ONB_STEP="$(_onb_step_label)"
+echo -e "HyperMeta Ecstasy active. Load skill: /HME\nOnboarding: $ONB_STEP$MSG" >&2
 
 # Previous session pending items (surfaced as a warning after main message)
 if [ -n "$PREV_PENDING" ]; then

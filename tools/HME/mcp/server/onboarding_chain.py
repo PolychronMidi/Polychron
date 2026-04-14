@@ -1,0 +1,403 @@
+"""HME onboarding chain — per-session walkthrough state machine.
+
+The "chain decider middleman" from HME_ONBOARDING_FLOW.md. Lives INSIDE the
+MCP server so tool handlers can invoke each other directly (hooks cannot).
+
+Linear state machine with silent prerequisite auto-chaining:
+
+    boot            fresh session — waiting for selftest
+    selftest_ok     selftest passed — waiting for evolve(focus='design')
+    targeted        target picked — waiting for read(target, mode='before')
+    briefed         KB briefing absorbed — waiting for Edit(s) on target
+    edited          Edit done — waiting for review(mode='forget')
+    reviewed        review clean — waiting for npm run main
+    piped           pipeline running in background — waiting for verdict
+    verified        STABLE/EVOLVED — waiting for learn(title=, content=)
+    graduated       loop complete — blocks relax, state file deleted
+
+Design rules:
+  * Agents see ONE tool call per logical step. Prerequisites run silently
+    inside the tool handler and their output is prepended to the result.
+  * Advancement is automatic — tools and hooks write state, agent never does.
+  * Missing state file = graduated (permissive). Hooks create it on SessionStart.
+  * Chain never HARD-blocks a tool. Failures are reported, tool still runs.
+    Hard gates live in shell hooks (for Edit/Bash, which this module can't reach).
+  * Graduation is irreversible within a session. Next SessionStart re-arms boot.
+
+State persists across auto-compaction (tmp/ survives). PreCompact/PostCompact
+handle edge cases.
+"""
+import functools
+import logging
+import os
+import re
+import sys
+from typing import Callable, Optional
+
+logger = logging.getLogger("HME.onboarding")
+
+STATES = [
+    "boot",
+    "selftest_ok",
+    "targeted",
+    "briefed",
+    "edited",
+    "reviewed",
+    "piped",
+    "verified",
+    "graduated",
+]
+
+STEP_LABELS = {
+    "boot":        "1/8 boot check (run hme_admin selftest)",
+    "selftest_ok": "2/8 pick evolution target (run evolve focus=design)",
+    "targeted":    "3/8 brief on target (run read mode=before)",
+    "briefed":     "4/8 edit target module (Edit tool)",
+    "edited":      "5/8 audit changes (run review mode=forget)",
+    "reviewed":    "6/8 run pipeline (Bash: npm run main)",
+    "piped":       "7/8 await verdict (hooks advance automatically)",
+    "verified":    "8/8 persist learning (run learn title=, content=)",
+    "graduated":   "graduated — blocks relax",
+}
+
+_PROJECT_ROOT = (
+    os.environ.get("PROJECT_ROOT")
+    or os.environ.get("CLAUDE_PROJECT_DIR")
+    or "/home/jah/Polychron"
+)
+_STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
+_TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
+
+
+# --------------------------------------------------------------------------
+# State I/O — single-file flat storage, never raises
+# --------------------------------------------------------------------------
+
+def state() -> str:
+    """Current onboarding state. Missing file = 'graduated' (permissive)."""
+    try:
+        with open(_STATE_FILE) as f:
+            s = f.read().strip()
+        return s if s in STATES else "graduated"
+    except FileNotFoundError:
+        return "graduated"
+    except Exception as e:
+        logger.warning(f"onboarding: state read failed: {e}")
+        return "graduated"
+
+
+def set_state(s: str) -> None:
+    """Write new state. Deletes file on 'graduated'. Never raises."""
+    if s not in STATES:
+        logger.warning(f"onboarding: rejected invalid state {s!r}")
+        return
+    try:
+        if s == "graduated":
+            for f in (_STATE_FILE, _TARGET_FILE):
+                try:
+                    os.remove(f)
+                except FileNotFoundError:
+                    pass
+            return
+        os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
+        with open(_STATE_FILE, "w") as f:
+            f.write(s)
+    except Exception as e:
+        logger.warning(f"onboarding: state write failed: {e}")
+
+
+def target() -> str:
+    """Briefed target module name (or empty)."""
+    try:
+        with open(_TARGET_FILE) as f:
+            return f.read().strip()
+    except Exception:
+        return ""
+
+
+def set_target(t: str) -> None:
+    """Write target module name. Never raises."""
+    if not t:
+        return
+    try:
+        os.makedirs(os.path.dirname(_TARGET_FILE), exist_ok=True)
+        with open(_TARGET_FILE, "w") as f:
+            f.write(t)
+    except Exception as e:
+        logger.warning(f"onboarding: target write failed: {e}")
+
+
+def is_graduated() -> bool:
+    return state() == "graduated"
+
+
+def step_index(s: str) -> int:
+    try:
+        return STATES.index(s)
+    except ValueError:
+        return len(STATES)
+
+
+def status_line() -> str:
+    """One-line suffix for tool output (empty if graduated)."""
+    s = state()
+    if s == "graduated":
+        return ""
+    return f"\n\n[HME onboarding: step {STEP_LABELS.get(s, s)}]"
+
+
+# --------------------------------------------------------------------------
+# Chain enter/exit — the "middleman" that decides when to chain prerequisites
+# --------------------------------------------------------------------------
+
+def chain_enter(tool: str, args: dict) -> Optional[str]:
+    """Auto-run prerequisites for `tool` based on current state.
+
+    Returns prereq output text to be prepended to the tool's own result, or
+    None if no chaining needed. Never raises. Never hard-aborts the tool —
+    if a prereq fails, the output is still prepended but the tool runs.
+    """
+    s = state()
+    if s == "graduated":
+        return None
+
+    # Prerequisite rule: every HME tool except selftest auto-runs selftest
+    # when state is 'boot'. This is the single chaining rule — everything
+    # else is state advancement, not prerequisite chaining.
+    if s == "boot":
+        needs_selftest = not (
+            tool == "hme_admin" and args.get("action") == "selftest"
+        )
+        if needs_selftest:
+            return _run_selftest_prereq()
+
+    return None
+
+
+def chain_exit(tool: str, args: dict, output: str) -> str:
+    """Advance state based on tool completion. Append status line.
+
+    Never raises. Advancement is strictly forward — never moves state
+    backwards, never skips steps it doesn't understand.
+    """
+    if not isinstance(output, str):
+        output = str(output)
+
+    s = state()
+    if s == "graduated":
+        return output
+
+    try:
+        _advance(tool, args, output, s)
+    except Exception as e:
+        logger.warning(f"onboarding: advance failed for {tool}: {e}")
+
+    return output + status_line()
+
+
+def _advance(tool: str, args: dict, output: str, s: str) -> None:
+    """State transition table. Each branch only advances FORWARD."""
+    idx = step_index(s)
+
+    # hme_admin(action='selftest') passes -> selftest_ok
+    if tool == "hme_admin" and args.get("action") == "selftest":
+        if idx <= step_index("selftest_ok") and _selftest_clean(output):
+            set_state("selftest_ok")
+            return
+
+    # evolve(focus='design'|'forge'|'curate'|'stress'|'invariants') -> targeted
+    # Any "pick a target" call advances. We also capture the target module if
+    # we can parse one out of the output.
+    if tool == "evolve":
+        focus = args.get("focus", "all")
+        if focus in ("design", "forge", "curate", "stress", "invariants", "patterns"):
+            if idx < step_index("targeted"):
+                picked = _extract_target_from_evolve(output)
+                if picked:
+                    set_target(picked)
+                set_state("targeted")
+                return
+
+    # read(mode='before') on a module -> briefed (captures target)
+    if tool == "read" and args.get("mode") == "before":
+        tgt = args.get("target", "") or ""
+        if tgt and idx < step_index("briefed"):
+            set_target(tgt)
+            set_state("briefed")
+            return
+
+    # review(mode='forget') clean -> reviewed
+    # Only advances from 'edited' state; can't jump over Edit.
+    if tool == "review" and args.get("mode") == "forget":
+        if idx == step_index("edited") and _review_clean(output):
+            set_state("reviewed")
+            return
+
+    # learn(title=, content=) while verified -> graduated
+    if tool == "learn" and args.get("title") and args.get("content"):
+        if idx >= step_index("verified"):
+            set_state("graduated")
+            return
+
+
+# --------------------------------------------------------------------------
+# Decorator — the clean wrap point for @ctx.mcp.tool() functions
+# --------------------------------------------------------------------------
+
+def chained(tool_name: str) -> Callable:
+    """Decorator that wraps an HME tool handler with chain_enter/chain_exit.
+
+    Usage:
+        @ctx.mcp.tool()
+        @chained("evolve")
+        def evolve(focus: str = "all", query: str = "") -> str:
+            ...
+
+    Decorator order matters — @ctx.mcp.tool() must be OUTERMOST so FastMCP
+    registers the wrapped function. functools.wraps preserves __wrapped__ so
+    inspect.signature() still sees the original signature for MCP schema.
+    """
+    def decorator(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            # Build arg dict from kwargs — positional args rare for MCP tools
+            arg_dict = dict(kwargs)
+            prereq = None
+            try:
+                prereq = chain_enter(tool_name, arg_dict)
+            except Exception as e:
+                logger.warning(f"onboarding: chain_enter failed for {tool_name}: {e}")
+
+            try:
+                result = fn(*args, **kwargs)
+            except Exception:
+                import traceback
+                result = f"Error: {traceback.format_exc()}"
+
+            if not isinstance(result, str):
+                result = str(result)
+
+            if prereq:
+                result = prereq + "\n" + result
+
+            try:
+                return chain_exit(tool_name, arg_dict, result)
+            except Exception as e:
+                logger.warning(f"onboarding: chain_exit failed for {tool_name}: {e}")
+                return result
+
+        return wrapper
+    return decorator
+
+
+# --------------------------------------------------------------------------
+# External API — for shell hooks to drive Edit/Bash state transitions
+# --------------------------------------------------------------------------
+
+def force_state(s: str) -> bool:
+    """External state advance — used by hooks via `python3 -c`.
+    Only advances forward; refuses backward moves. Returns True on success.
+    """
+    if s not in STATES:
+        return False
+    cur = state()
+    if step_index(s) <= step_index(cur):
+        return False
+    set_state(s)
+    return True
+
+
+# --------------------------------------------------------------------------
+# Helpers
+# --------------------------------------------------------------------------
+
+def _run_selftest_prereq() -> str:
+    """Run hme_admin(action='selftest') in-process and format its output."""
+    try:
+        from server.tools_analysis.evolution_admin import hme_admin
+        result = hme_admin(action="selftest")
+        header = (
+            "[AUTO-CHAIN] Onboarding step 1/8: ran selftest as prerequisite.\n"
+            "--- selftest output ---"
+        )
+        footer = "--- prerequisite done, continuing with your original call ---\n"
+        return f"{header}\n{result}\n{footer}"
+    except Exception as e:
+        return f"[AUTO-CHAIN] selftest prerequisite error: {e}\n"
+
+
+def _selftest_clean(output: str) -> bool:
+    """Return True if selftest output indicates 0 FAILs."""
+    lo = output.lower()
+    if "0 fail" in lo:
+        return True
+    if "fail:" in lo and "0 fail" not in lo:
+        # Has explicit FAIL lines
+        return False
+    # Default: assume OK if no explicit FAIL
+    return "fail" not in lo or "0 fail" in lo
+
+
+def _review_clean(output: str) -> bool:
+    """Return True if review(mode='forget') found no warnings."""
+    lo = output.lower()
+    if "warnings: none" in lo:
+        return True
+    if "no changed files detected" in lo:
+        return True
+    return False
+
+
+def _extract_target_from_evolve(output: str) -> str:
+    """Best-effort parse: find a module name in evolve() output."""
+    # Pattern 1: explicit "target: crossLayerClimaxEngine" or similar
+    m = re.search(r'(?:target|module|file|focus)[:\s]+`?([a-zA-Z_][a-zA-Z0-9_]+)`?',
+                  output, re.IGNORECASE)
+    if m:
+        return m.group(1)
+    # Pattern 2: backtick-wrapped camelCase identifier
+    m = re.search(r'`([a-z][a-zA-Z0-9]+[A-Z][a-zA-Z0-9_]*)`', output)
+    if m:
+        return m.group(1)
+    return ""
+
+
+# --------------------------------------------------------------------------
+# CLI — callable from shell hooks via `python3 -m server.onboarding_chain ...`
+# --------------------------------------------------------------------------
+
+def _cli():
+    """CLI for shell hooks. Usage:
+        python3 -m server.onboarding_chain state
+        python3 -m server.onboarding_chain target
+        python3 -m server.onboarding_chain set <state>
+        python3 -m server.onboarding_chain advance <state>
+        python3 -m server.onboarding_chain graduated
+        python3 -m server.onboarding_chain status_line
+    """
+    if len(sys.argv) < 2:
+        print(state())
+        return
+    cmd = sys.argv[1]
+    if cmd == "state":
+        print(state())
+    elif cmd == "target":
+        print(target())
+    elif cmd == "set" and len(sys.argv) > 2:
+        set_state(sys.argv[2])
+    elif cmd == "advance" and len(sys.argv) > 2:
+        print("ok" if force_state(sys.argv[2]) else "no-op")
+    elif cmd == "graduated":
+        print("yes" if is_graduated() else "no")
+    elif cmd == "status_line":
+        print(status_line().strip())
+    elif cmd == "step":
+        s = state()
+        print(STEP_LABELS.get(s, s))
+    else:
+        sys.stderr.write(f"unknown command: {cmd}\n")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    _cli()

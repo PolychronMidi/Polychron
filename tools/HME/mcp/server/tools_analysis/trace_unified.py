@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from server import context as ctx
+from server.onboarding_chain import chained
 from . import _track, _load_trace, _budget_gate, _git_run, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
 
@@ -13,6 +14,7 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
+@chained("trace")
 def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -> str:
     """Trace signal flow through the system.
     'channelName' → L0 cascade trace (follow signal through consumers 3 hops deep).

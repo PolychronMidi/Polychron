@@ -5,6 +5,7 @@ import logging
 import subprocess
 
 from server import context as ctx
+from server.onboarding_chain import chained
 from .synthesis import _local_think
 from . import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
@@ -14,6 +15,7 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
+@chained("hme_admin")
 def hme_admin(action: str = "selftest", modules: str = "",
               antipattern: str = "", hook_target: str = "pretooluse_bash") -> str:
     """HME maintenance dispatcher. action='selftest': verify tool registration, doc sync,

@@ -1,8 +1,20 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_onboarding.sh"
 # HME PreToolUse: Bash — block run.lock deletion + suggest HME alternatives + anti-wait injection
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
+
+# Onboarding gate: npm run main requires 'reviewed' state (edited + reviewed)
+TRIMMED_CHECK=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
+if echo "$TRIMMED_CHECK" | grep -qE '^npm run main' && ! _onb_is_graduated; then
+  if _onb_before "reviewed"; then
+    CUR_STEP=$(_onb_step_label)
+    jq -n --arg step "$CUR_STEP" \
+      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("HME onboarding " + $step + "\n\nYou are about to run the pipeline but changes have not been audited against the KB.\n\nAUTO-CHAIN: call mcp__HME__review(mode=\"forget\") first.\nWhen it reports zero warnings, onboarding advances to reviewed and your npm run main will go through.")}}'
+    exit 0
+  fi
+fi
 
 # Strip explicit timeouts — all project scripts handle timeouts inline.
 # Uses updatedInput to silently remove timeout and let the command proceed.

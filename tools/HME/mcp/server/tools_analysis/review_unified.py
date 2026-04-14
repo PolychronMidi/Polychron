@@ -6,6 +6,7 @@ and audio_analyze into one tool with mode routing.
 import logging
 
 from server import context as ctx
+from server.onboarding_chain import chained
 from . import _track, _budget_gate, _budget_section, BUDGET_COMPOUND, BUDGET_SECTION, BUDGET_TOOL
 from .synthesis_session import append_session_narrative
 
@@ -13,6 +14,7 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
+@chained("review")
 def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
            system_a: str = "", system_b: str = "", changed_files: str = "",
            file_path: str = "", critique: bool = False) -> str:
