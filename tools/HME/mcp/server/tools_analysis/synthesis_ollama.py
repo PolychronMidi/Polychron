@@ -109,12 +109,13 @@ def _get_circuit_breaker(model: str) -> _CircuitBreaker:
 
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
-# Reasoning model: Qwen3-30B-A3B (MoE, 3B active params, hybrid thinking mode).
-# Beats QwQ-32B and DeepSeek-R1 on reasoning benchmarks at lower compute.
-# ~18.6GB Q4 — fits on one M40.
+# Reasoning model: kept as local fallback only. Cloud cascade in synthesis_reasoning.py
+# handles all live reasoning calls. qwen3:30b-a3b stays in config for warm-priming
+# continuity; GPU1 is now freed for the upgraded arbiter model.
 _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
-# Arbiter model: Qwen3 4B (~2.5GB Q4) — runs during GPU idle between Stage 1 and Stage 2.
-# Ollama auto-schedules GPU layers; falls back to CPU/RAM (64GB) when GPUs are busy.
+# Arbiter model: upgraded from qwen3:4b (CPU) to GPU1 now that reasoner uses cloud.
+# HME_ARBITER_MODEL: set to pulled model (e.g. qwen3:14b) via .env after ollama pull.
+# HME_ARBITER_PORT: defaults to GPU1 (11435); set to 11436 to fall back to CPU.
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 
 # keep_alive=-1: pin models permanently. num_ctx sized to fit KV cache in VRAM.
@@ -132,18 +133,22 @@ def _num_ctx_for(model: str) -> int:
 # ── Per-model Ollama instance routing ──────────────────────────────────────
 # 3 isolated Ollama instances: GPU0 (:11434), GPU1 (:11435), CPU (:11436).
 # Each instance sees only its assigned device via CUDA_VISIBLE_DEVICES.
+# Arbiter now defaults to GPU1 (11435) — reasoner GPU freed for upgraded arbiter.
+# Override with HME_ARBITER_PORT=11436 to put arbiter back on CPU if needed.
 _OLLAMA_PORT_GPU0 = int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434"))
 _OLLAMA_PORT_GPU1 = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
 _OLLAMA_PORT_CPU  = int(os.environ.get("HME_OLLAMA_PORT_CPU",  "11436"))
+_OLLAMA_PORT_ARBITER = int(os.environ.get("HME_ARBITER_PORT", str(_OLLAMA_PORT_GPU1)))
 
 def _url_for(model: str, endpoint: str = "generate") -> str:
     """Route model to its dedicated Ollama instance."""
     if model == _LOCAL_MODEL:
         port = _OLLAMA_PORT_GPU0
-    elif model == _REASONING_MODEL:
-        port = _OLLAMA_PORT_GPU1
+    elif model == _ARBITER_MODEL:
+        port = _OLLAMA_PORT_ARBITER
     else:
-        port = _OLLAMA_PORT_CPU
+        # Reasoner and unknown models → GPU1 (reasoner slot, kept for local fallback)
+        port = _OLLAMA_PORT_GPU1
     return f"http://localhost:{port}/api/{endpoint}"
 
 # Legacy compat — used by callers that don't pass model

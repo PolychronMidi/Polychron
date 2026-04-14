@@ -35,6 +35,8 @@ _PORT_GPU1 = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
 _PORT_CPU = int(os.environ.get("HME_OLLAMA_PORT_CPU", "11436"))
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "hf.co/bartowski/Qwen3-30B-A3B-GGUF:Q4_K_XL")
+# Reasoner: cloud cascade handles live calls; local model is warm-priming fallback only.
+# GPU1 is now assigned to the upgraded arbiter model.
 _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3:30b-a3b")
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 
@@ -42,10 +44,13 @@ _KEEP_ALIVE = int(os.environ.get("HME_KEEP_ALIVE", "-1"))
 _NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
 _NUM_CTX_4B = int(os.environ.get("HME_NUM_CTX_4B", "8192"))
 
+# Arbiter runs on GPU1 (reasoner GPU freed since cloud cascade handles reasoning).
+# Override HME_ARBITER_PORT=11436 to put arbiter back on CPU if needed.
+_PORT_ARBITER = int(os.environ.get("HME_ARBITER_PORT", str(_PORT_GPU1)))
+
 _MODELS = [
-    (_LOCAL_MODEL, _PORT_GPU0, {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
-    (_REASONING_MODEL, _PORT_GPU1, {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
-    (_ARBITER_MODEL, _PORT_CPU, {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
+    (_LOCAL_MODEL,     _PORT_GPU0,    {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
+    (_ARBITER_MODEL,   _PORT_ARBITER, {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
 ]
 
 _model_status: dict = {}
@@ -142,7 +147,8 @@ def _resolve_port(model: str) -> int:
     for m, port, _ in _MODELS:
         if m == model:
             return port
-    return _PORT_GPU0
+    # Unknown model (e.g. legacy reasoner calls) → GPU1
+    return _PORT_GPU1
 
 
 def _generate_with_timeout(payload: dict, wall_timeout: float) -> dict:
