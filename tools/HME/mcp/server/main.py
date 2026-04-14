@@ -27,6 +27,26 @@ if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
 
 
+def _load_dotenv() -> None:
+    """Load .env from project root into os.environ (no dependencies required)."""
+    project_root = os.environ.get("PROJECT_ROOT", os.path.dirname(_tool_root))
+    env_path = os.path.join(project_root, ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            if key and key not in os.environ:  # don't override existing env
+                os.environ[key] = val
+
+_load_dotenv()
+
+
 def _purge_stale_server_pyc() -> None:
     """Delete .pyc files in server/__pycache__/ whose source .py is newer — prevents stale bytecode."""
     pkg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "server")
