@@ -4,7 +4,7 @@ import {
   streamClaude, streamClaudePty, streamOllamaAgentic, streamHybrid,
   postTranscript, reindexFiles, auditChanges,
 } from "./router";
-import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit } from "./streamUtils";
+import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit, AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -94,10 +94,7 @@ function makeOnChunk(
 
 // ── Streaming methods ─────────────────────────────────────────────────────────
 
-const AGENTIC_SYSTEM: OllamaMessage = {
-  role: "system",
-  content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
-};
+const AGENTIC_SYSTEM: OllamaMessage = { role: "system", content: AGENTIC_SYSTEM_PROMPT };
 
 export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
   const state: ChunkState = { text: "", thinking: "", tools: [] };

@@ -74,8 +74,18 @@ export function streamOllama(
             const content = obj?.message?.content ?? "";
             if (!content) continue;
 
-            if (content.includes("<think>")) { inThink = true; accThink += content.replace("<think>", ""); continue; }
-            if (content.includes("</think>")) { inThink = false; accThink += content.replace("</think>", ""); onChunk(accThink.trim(), "thinking"); accThink = ""; continue; }
+            if (content.includes("<think>")) {
+              inThink = true;
+              accThink += content.replace("<think>", "");
+              continue;
+            }
+            if (content.includes("</think>")) {
+              inThink = false;
+              accThink += content.replace("</think>", "");
+              onChunk(accThink.trim(), "thinking");
+              accThink = "";
+              continue;
+            }
             if (inThink) { accThink += content; continue; }
             accText += content;
           } catch {}

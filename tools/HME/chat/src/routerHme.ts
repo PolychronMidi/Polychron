@@ -1,6 +1,7 @@
 import * as http from "http";
 import { OllamaMessage, ChunkCallback } from "./router";
 import { streamOllamaAgentic } from "./routerOllama";
+import { AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
 
 const HME_HTTP_PORT = 7734;
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
@@ -172,7 +173,7 @@ export async function streamHybrid(
   const messages: OllamaMessage[] = [];
 
   const systemContent = [
-    "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
+    AGENTIC_SYSTEM_PROMPT,
     hmeWarm ? `\nProject knowledge base context:\n${hmeWarm}` : "",
   ].join("").trim();
 

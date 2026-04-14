@@ -278,7 +278,10 @@ export function streamClaudePty(
         turnDone = true;
         if (doneTimer) clearTimeout(doneTimer);
         try { proc.kill(); } catch {}
-        onError(`CRITICAL: Claude PTY produced no output for ${PTY_INACTIVITY_MS / 1000}s after message send — API may be down or CLI crashed`);
+        onError(
+          `CRITICAL: Claude PTY produced no output for ${PTY_INACTIVITY_MS / 1000}s` +
+          " after message send — API may be down or CLI crashed"
+        );
       }
     }, PTY_INACTIVITY_MS);
   };
@@ -316,8 +319,14 @@ export function streamClaudePty(
       }
       const usage = ctxParsed ?? _buildPtyUsage();
       if (!usage) {
-        hmeLog(`WARN finalize: no context data — done patterns ${donePatternMatched ? "matched but /context parse failed" : "never matched (PTY output format may have changed)"}`);
-        onChunk(`[HME] WARN: context % unavailable — ${donePatternMatched ? "/context parse failed" : "PTY done patterns never matched, check hme-ctx-debug.log"}`, "error");
+        const reason = donePatternMatched
+          ? "matched but /context parse failed"
+          : "never matched (PTY output format may have changed)";
+        hmeLog(`WARN finalize: no context data — done patterns ${reason}`);
+        const chunkReason = donePatternMatched
+          ? "/context parse failed"
+          : "PTY done patterns never matched, check hme-ctx-debug.log";
+        onChunk(`[HME] WARN: context % unavailable — ${chunkReason}`, "error");
       }
       onDone(usage);
       try { proc.kill(); } catch {}
@@ -353,8 +362,14 @@ export function streamClaudePty(
       const ready = promptFound || initBuf.length > 2000;
       if (ready) {
         if (!promptFound) {
-          hmeLog(`WARN init fallback: prompt not found in ${initBuf.length} chars — banner format may have changed. Head: ${JSON.stringify(initBuf.slice(0, 300))}`);
-          onChunk("[HME] WARN: PTY prompt not detected — banner format may have changed, see hme-ctx-debug.log", "error");
+          hmeLog(
+            `WARN init fallback: prompt not found in ${initBuf.length} chars — ` +
+            `banner format may have changed. Head: ${JSON.stringify(initBuf.slice(0, 300))}`
+          );
+          onChunk(
+            "[HME] WARN: PTY prompt not detected — banner format may have changed, see hme-ctx-debug.log",
+            "error"
+          );
         }
         sentMessage = true;
         proc.write(message.replace(/\r?\n/g, " ") + "\r");

@@ -45,6 +45,7 @@ exports.logShimError = logShimError;
 exports.streamHybrid = streamHybrid;
 const http = __importStar(require("http"));
 const routerOllama_1 = require("./routerOllama");
+const streamUtils_1 = require("./streamUtils");
 const HME_HTTP_PORT = 7734;
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
 async function fetchHmeContext(query, topK = 5) {
@@ -179,7 +180,7 @@ async function streamHybrid(message, history, opts, workingDir, onChunk, onDone,
     }
     const messages = [];
     const systemContent = [
-        "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
+        streamUtils_1.AGENTIC_SYSTEM_PROMPT,
         hmeWarm ? `\nProject knowledge base context:\n${hmeWarm}` : "",
     ].join("").trim();
     messages.push({ role: "system", content: systemContent });
