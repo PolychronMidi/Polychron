@@ -86,8 +86,8 @@ def _trigger_background_refresh() -> None:
             with _topology_lock:
                 _last_topology = topo
                 _topology_ts = time.time()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"health_topology: background refresh failed: {e}")
         finally:
             with _refresh_lock:
                 _refresh_running = False
