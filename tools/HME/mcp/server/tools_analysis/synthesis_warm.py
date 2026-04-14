@@ -102,6 +102,9 @@ def _prefetch_gpu0_if_needed():
     Throttled to max once per 30s to avoid spamming.
     """
     global _last_prefetch_ts
+    import os as _os
+    if _os.path.exists(_os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")):
+        return
     now = _time.time()
     if now - _last_prefetch_ts < 30.0:
         return
@@ -383,6 +386,10 @@ def _init_ollama_models() -> str:
     import urllib.request as _req
     import json as _json
     import time as _t
+    import os as _os
+    if _os.path.exists(_os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")):
+        logger.info("_init_ollama_models: training lock present, skipping startup load")
+        return "training_locked"
     from .synthesis_ollama import (
         _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
         _KEEP_ALIVE, _NUM_CTX_30B, _NUM_CTX_4B, _url_for,
@@ -525,6 +532,10 @@ def ensure_warm(model: str):
     if model in _warm_ctx:
         return
     if _lazy_prime_attempted or _priming_in_progress.is_set():
+        return
+    import os as _os
+    if _os.path.exists(_os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")):
+        logger.info("ensure_warm: training lock present, skipping warm priming")
         return
     _lazy_prime_attempted = True
     def _bg():

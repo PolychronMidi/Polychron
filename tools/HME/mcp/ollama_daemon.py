@@ -23,6 +23,12 @@ logger = logging.getLogger("HME.ollama")
 logger.setLevel(logging.INFO)
 
 PID_FILE = "/tmp/hme-ollama-daemon.pid"
+TRAINING_LOCK = os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")
+
+
+def _training_locked() -> bool:
+    """Skip all auto-load/reload when training lock exists — frees GPU for training."""
+    return os.path.exists(TRAINING_LOCK)
 
 _PORT_GPU0 = int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434"))
 _PORT_GPU1 = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
@@ -118,6 +124,9 @@ def _check_model(model, port):
 
 def _ensure_all_loaded():
     results = {}
+    if _training_locked():
+        logger.info(f"Training lock present ({TRAINING_LOCK}); skipping _ensure_all_loaded")
+        return {"status": "training_locked"}
     for model, port, options in _MODELS:
         if _check_model(model, port):
             with _status_lock:
@@ -176,6 +185,8 @@ def _generate_with_timeout(payload: dict, wall_timeout: float) -> dict:
 def _health_loop():
     while True:
         time.sleep(_HEALTH_INTERVAL)
+        if _training_locked():
+            continue
         for model, port, options in _MODELS:
             if not _check_model(model, port):
                 logger.warning(f"Model evicted: {model} on port {port} — reloading")
