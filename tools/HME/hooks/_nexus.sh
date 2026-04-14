@@ -90,5 +90,14 @@ _nexus_pending() {
   if [ -n "$commit_fail" ]; then
     issues="${issues}\n  - COMMIT FAILED: $commit_fail — run 'git status' and commit manually"
   fi
+  # Onboarding: if state is 'verified', the agent has a clean pipeline but
+  # hasn't called learn() yet — graduation requires it.
+  local _onb_f="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}/tmp/hme-onboarding.state"
+  if [ -f "$_onb_f" ]; then
+    local _onb_s; _onb_s="$(cat "$_onb_f" 2>/dev/null | tr -d '[:space:]')"
+    if [ "$_onb_s" = "verified" ]; then
+      issues="${issues}\n  - Onboarding step 8/8: pipeline STABLE but learn() not called — run learn(title='round summary', content='...') to graduate"
+    fi
+  fi
   echo -e "$issues"
 }

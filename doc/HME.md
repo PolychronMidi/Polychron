@@ -160,6 +160,8 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 
 ## Mandatory Workflow
 
+The per-session walkthrough that enforces this workflow is specified in [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) — a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest → evolve → read → edit → review → pipeline → commit → learn).
+
 ### Before Editing Code
 
 **`read("moduleName", mode="before")`** — ONE CALL gets everything: KB constraints, callers, boundary warnings, file structure, evolutionary potential. Accepts module names OR file paths — auto-resolves `crossLayerSilhouette` → `src/crossLayer/structure/form/crossLayerSilhouette.js`.

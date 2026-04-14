@@ -6,6 +6,7 @@ into one tool with action auto-detection.
 import logging
 
 from server import context as ctx
+from server.onboarding_chain import chained
 from . import _track
 from .synthesis_session import append_session_narrative
 
@@ -13,6 +14,7 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool()
+@chained("learn")
 def learn(query: str = "", title: str = "", content: str = "",
           category: str = "general", tags: list[str] = [],
           remove: str = "", scope: str = "project",
